@@ -1,13 +1,31 @@
-# AI System 6
+<p align="center">
+  <strong>AI System 6</strong><br>
+  Source-based writing, kept out of the one-chat-box trap.<br>
+  <span lang="zh-CN">一个本地优先的写作桌面：把资料、摘录、草稿、审校和导出放回可见对象里。</span>
+</p>
+
+<p align="center">
+  <a href="README.zh-CN.md">简体中文</a> · <a href="README.md">English</a>
+</p>
+
+---
 
 AI System 6 is a local-first writing desktop for people who work from sources.
-It keeps research, notes, drafts, review, and export as visible objects instead
-of folding the whole job into one chat box.
+It gives research, notes, drafts, review, and export their own visible places
+instead of folding the whole job into a single chat.
 
 The project borrows the restraint of Macintosh System 6: small windows, named
-objects, deliberate saving, and one writing task at a time. The goal is not a
-retro skin. The goal is to keep the writer's own language, sources, and intent
-from being flattened into generic model prose.
+objects, deliberate saving, and one writing task at a time. The point is not a
+retro skin. The point is to protect the writer's language, sources, judgment,
+and handoff intent from being flattened into generic model prose.
+
+## Chinese intro
+
+AI System 6 是一个本地优先的写作桌面，适合需要围绕资料工作的写作者。它把研究、摘录、草稿、审校和导出放成可见对象，而不是全塞进一个聊天框。
+
+它借用 Macintosh System 6 的克制感：小窗口、清楚的对象、主动保存，以及一次只处理一件写作任务。重点不在复古皮肤；它要保护写作者自己的语言、来源、判断和交付意图。
+
+完整中文说明见 [README.zh-CN.md](README.zh-CN.md)。
 
 ## What is here
 
@@ -18,6 +36,17 @@ It does not include private drafts, local browser data, API keys, generated
 bundles, build output, package caches, large scraped corpora, or the original
 private Git history.
 
+## Writing flow
+
+```text
+Project Hard Disk -> File Floppy -> Question Sheet -> Outline
+-> Section Drafts -> Manuscript -> Review Desk -> Project CD
+```
+
+Each stop has a job. AI can help read, organize, draft, rewrite, and review,
+but its output stays temporary until the writer saves, clips, inserts, or
+exports it.
+
 ## Run it
 
 ```sh
@@ -27,8 +56,7 @@ npm start
 
 Then open `http://localhost:4173`.
 
-`npm start` rebuilds the browser bundle before starting the local Node server.
-For frontend-only edits, this is usually enough:
+For frontend-only edits, rebuild the browser bundle:
 
 ```sh
 npm run build:app
@@ -55,10 +83,23 @@ DEEPSEEK_API_KEY=...
 npm run build:app
 npm run verify:features
 npm run verify:css
+npm run verify:docs
 ```
 
 `npm run verify:release` is the heavier local gate. It is useful before a
 packaged build, but it may require release assets and a valid build stamp.
+
+## Maintaining both READMEs
+
+`README.md` is the canonical source. `README.zh-CN.md` is the Simplified
+Chinese mirror for readers, not a separate product spec.
+
+When changing this page:
+
+1. Update `README.md`.
+2. Update `README.zh-CN.md` in the same change.
+3. Run `npm run verify:docs`; it checks the Chinese mirror's source marker and
+   hash.
 
 ## License
 
