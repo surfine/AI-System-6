@@ -1,0 +1,11 @@
+{
+  "name": "ai-system-6-rewrite",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Mirror rewrite of AI System 6. Shares node_modules with the parent project.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "typecheck": "tsc --noEmit"
+  }
+}

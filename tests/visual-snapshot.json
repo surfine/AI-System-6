@@ -1,0 +1,262 @@
+{
+  "default": {
+    ":root": {
+      "--ink": "#000000",
+      "--paper": "#ffffff",
+      "--shade": "#bfbfbf",
+      "--shade-dark": "#696969",
+      "--desktop": "#b6b6b6",
+      "--rule": "#777777",
+      "--control-radius": "0",
+      "--system-menu-height": "24px",
+      "--menu-divider-color": "#777777",
+      "--active-window-shadow": "3px 3px 0 #000000",
+      "--card-caption-color": "#696969",
+      "--finder-op-caption-color": "#696969",
+      "--select-divider": "1px dotted #696969",
+      "_w": 1440,
+      "_h": 900
+    },
+    "body": {
+      "--ink": "#000000",
+      "--paper": "#ffffff",
+      "--shade": "#bfbfbf",
+      "--desktop": "#b6b6b6",
+      "--menu-divider-color": "#777777",
+      "--active-window-shadow": "3px 3px 0 #000000",
+      "--glass-accent": "",
+      "--glass-border": "",
+      "--liquid-window-radius": "",
+      "--print-directory-preview-bg": "#ffffff",
+      "--file-preview-bg": "#ffffff",
+      "--project-cd-grid-bg": "transparent",
+      "--note-pad-pane-bg": "transparent",
+      "--clipboard-pane-bg": "transparent",
+      "--cmf-panel-bg": "#ffffff",
+      "_w": 1440,
+      "_h": 900
+    },
+    ".menu-bar": {
+      "height": "24px",
+      "background-color": "rgb(255, 255, 255)",
+      "border-bottom-width": "2px",
+      "border-bottom-color": "rgb(0, 0, 0)",
+      "padding-left": "8px",
+      "padding-right": "8px",
+      "_w": 1440,
+      "_h": 24
+    },
+    ".menu-bar > .menu > button": {
+      "height": "22px",
+      "border-radius": "0px",
+      "padding-left": "0px",
+      "padding-right": "0px",
+      "background-color": "rgba(0, 0, 0, 0)",
+      "color": "rgb(0, 0, 0)",
+      "_w": 34,
+      "_h": 22
+    },
+    ".window.is-active": {
+      "border-radius": "0px",
+      "background-color": "rgb(255, 255, 255)",
+      "box-shadow": "rgb(0, 0, 0) 3px 3px 0px 0px",
+      "border-top-width": "2px",
+      "border-top-color": "rgb(0, 0, 0)",
+      "outline-width": "0px",
+      "outline-color": "rgb(0, 0, 0)",
+      "_w": 430,
+      "_h": 726
+    },
+    ".window.is-active > .title-bar": {
+      "height": "23px",
+      "background-color": "rgb(255, 255, 255)",
+      "_w": 426,
+      "_h": 23
+    },
+    ".window.is-active > .title-bar :is(h1, h2)": {
+      "font-size": "13px",
+      "color": "rgb(0, 0, 0)",
+      "font-weight": "600",
+      "_w": 65,
+      "_h": 20
+    },
+    ".window.is-active > .title-bar .close-box": {
+      "width": "40px",
+      "height": "40px",
+      "border-radius": "0px",
+      "background-color": "rgb(255, 255, 255)",
+      "_w": 12,
+      "_h": 12
+    },
+    ".window .title-bar .resize-box:not(.hidden):not([disabled])": {
+      "width": "40px",
+      "height": "40px",
+      "right": "auto",
+      "bottom": "auto",
+      "_w": 0,
+      "_h": 0
+    },
+    ".window.is-active > .window-pane": {
+      "padding-top": "8px",
+      "padding-right": "8px",
+      "padding-bottom": "8px",
+      "padding-left": "8px",
+      "background-color": "rgba(0, 0, 0, 0)",
+      "_w": 426,
+      "_h": 697
+    },
+    ".btn": {
+      "border-radius": "7px",
+      "padding-top": "2px",
+      "padding-right": "12px",
+      "padding-bottom": "2px",
+      "padding-left": "12px",
+      "background-color": "rgb(255, 255, 255)",
+      "color": "rgb(0, 0, 0)",
+      "_w": 220,
+      "_h": 26
+    },
+    ".desktop-app-icon": {
+      "width": "82px",
+      "height": "67.8594px",
+      "_w": 82,
+      "_h": 68
+    },
+    ".desktop-app-icon span:last-child": {
+      "font-size": "13px",
+      "color": "rgb(0, 0, 0)",
+      "_w": 47,
+      "_h": 20
+    }
+  },
+  "liquid-glass": {
+    ":root": {
+      "--ink": "#000000",
+      "--paper": "#ffffff",
+      "--shade": "#bfbfbf",
+      "--shade-dark": "#696969",
+      "--desktop": "#b6b6b6",
+      "--rule": "#777777",
+      "--control-radius": "0",
+      "--system-menu-height": "24px",
+      "--menu-divider-color": "#777777",
+      "--active-window-shadow": "3px 3px 0 #000000",
+      "--card-caption-color": "#696969",
+      "--finder-op-caption-color": "#696969",
+      "--select-divider": "1px dotted #696969",
+      "_w": 1440,
+      "_h": 900
+    },
+    "body": {
+      "--ink": "#101114",
+      "--paper": "rgba(255,255,255,0.5)",
+      "--shade": "rgba(255,255,255,0.46)",
+      "--desktop": "#dce2e6",
+      "--menu-divider-color": "rgba(16,17,20,0.12)",
+      "--active-window-shadow": "0 8px 15px rgba(0,0,0,0.045),0 28px 68px rgba(18,28,38,0.1)",
+      "--glass-accent": "#0a84ff",
+      "--glass-border": "rgba(255,255,255,0.72)",
+      "--liquid-window-radius": "18px",
+      "--print-directory-preview-bg": "linear-gradient(180deg,rgba(255,255,255,0.92),rgba(246,251,253,0.86)),rgba(246,251,253,0.9)",
+      "--file-preview-bg": "linear-gradient(180deg,rgba(255,255,255,0.92),rgba(246,251,253,0.86)),rgba(246,251,253,0.9)",
+      "--project-cd-grid-bg": "linear-gradient(180deg,rgba(255,255,255,0.34),rgba(255,255,255,0.12)),rgba(255,255,255,0.14)",
+      "--note-pad-pane-bg": "rgba(255,255,255,0.08)",
+      "--clipboard-pane-bg": "rgba(255,255,255,0.08)",
+      "--cmf-panel-bg": "linear-gradient(180deg,rgba(255,255,255,0.34),rgba(255,255,255,0.12)),rgba(255,255,255,0.14)",
+      "_w": 1440,
+      "_h": 900
+    },
+    ".menu-bar": {
+      "height": "30px",
+      "background-color": "rgba(255, 255, 255, 0.2)",
+      "border-bottom-width": "1px",
+      "border-bottom-color": "rgba(16, 17, 20, 0.1)",
+      "padding-left": "8px",
+      "padding-right": "8px",
+      "_w": 1440,
+      "_h": 30
+    },
+    ".menu-bar > .menu > button": {
+      "height": "24px",
+      "border-radius": "999px",
+      "padding-left": "0px",
+      "padding-right": "0px",
+      "background-color": "rgba(0, 0, 0, 0)",
+      "color": "rgb(0, 0, 0)",
+      "_w": 34,
+      "_h": 24
+    },
+    ".window.is-active": {
+      "border-radius": "18px",
+      "background-color": "rgba(255, 255, 255, 0.14)",
+      "box-shadow": "rgba(0, 0, 0, 0.043) 0px 8px 15px 0px, rgba(18, 28, 38, 0.1) 0px 28px 68px 0px",
+      "border-top-width": "0px",
+      "border-top-color": "rgb(16, 17, 20)",
+      "outline-width": "0px",
+      "outline-color": "rgb(16, 17, 20)",
+      "_w": 430,
+      "_h": 768
+    },
+    ".window.is-active > .title-bar": {
+      "height": "34px",
+      "background-color": "rgba(255, 255, 255, 0.34)",
+      "_w": 430,
+      "_h": 34
+    },
+    ".window.is-active > .title-bar :is(h1, h2)": {
+      "font-size": "13px",
+      "color": "rgba(16, 17, 20, 0.82)",
+      "font-weight": "700",
+      "_w": 72,
+      "_h": 20
+    },
+    ".window.is-active > .title-bar .close-box": {
+      "width": "15px",
+      "height": "15px",
+      "border-radius": "50%",
+      "background-color": "rgb(255, 95, 87)",
+      "_w": 15,
+      "_h": 15
+    },
+    ".window .title-bar .resize-box:not(.hidden):not([disabled])": {
+      "width": "15px",
+      "height": "15px",
+      "right": "auto",
+      "bottom": "auto",
+      "_w": 0,
+      "_h": 0
+    },
+    ".window.is-active > .window-pane": {
+      "padding-top": "8px",
+      "padding-right": "8px",
+      "padding-bottom": "8px",
+      "padding-left": "8px",
+      "background-color": "rgba(255, 255, 255, 0.12)",
+      "_w": 430,
+      "_h": 731
+    },
+    ".btn": {
+      "border-radius": "999px",
+      "padding-top": "2px",
+      "padding-right": "12px",
+      "padding-bottom": "2px",
+      "padding-left": "12px",
+      "background-color": "rgb(255, 255, 255)",
+      "color": "rgb(255, 255, 255)",
+      "_w": 220,
+      "_h": 26
+    },
+    ".desktop-app-icon": {
+      "width": "84px",
+      "height": "66.5469px",
+      "_w": 84,
+      "_h": 67
+    },
+    ".desktop-app-icon span:last-child": {
+      "font-size": "0px",
+      "color": "rgb(16, 17, 20)",
+      "_w": 47,
+      "_h": 19
+    }
+  }
+}

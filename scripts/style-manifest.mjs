@@ -1,0 +1,14 @@
+export const styleRuntimePaths = [
+  "styles/00-foundation.css",
+  "styles/10-windows.css",
+  "styles/20-reader-docmap.css",
+  "styles/30-surfaces.css",
+  "styles/40-icons.css",
+  "styles/50-apps.css",
+  "styles/60-responsive.css",
+  "styles/70-liquid-glass.css",
+  "styles/80-bureaucracy-meme.css",
+  "styles/85-liquid-cover.css",
+  "styles/86-cmf-studio.css",
+  "styles/90-endfield-terminal.css",
+];

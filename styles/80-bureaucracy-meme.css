@@ -1,0 +1,397 @@
+.bureaucracy-meme-window {
+  width: min(1180px, calc(100vw - 64px));
+  height: min(780px, calc(100vh - 74px));
+}
+
+.bureaucracy-meme-pane {
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.22)),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.035) 0 1px, rgba(0, 0, 0, 0.035) 1px 3px),
+    #242523;
+  color: #f5f2e8;
+  overflow: auto;
+}
+
+.bureaucracy-safety,
+.bureaucracy-panel {
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.08) 42%, rgba(0, 0, 0, 0.24)),
+    rgba(28, 30, 29, 0.82);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.38), 0 16px 30px rgba(0, 0, 0, 0.28);
+}
+
+.bureaucracy-safety {
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  line-height: 1.45;
+}
+
+.bureaucracy-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) minmax(460px, 1fr);
+  gap: 14px;
+}
+
+.bureaucracy-controls,
+.bureaucracy-main {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.bureaucracy-panel {
+  padding: 12px;
+}
+
+.bureaucracy-panel h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.bureaucracy-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.bureaucracy-status {
+  margin: 0 0 8px;
+  color: rgba(245, 242, 232, 0.72);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.bureaucracy-error {
+  min-height: 18px;
+  color: #ffd0c5;
+  font-size: 13px;
+}
+
+.bureaucracy-template-list,
+.bureaucracy-tone-list,
+.bureaucracy-candidates {
+  display: grid;
+  gap: 8px;
+}
+
+.bureaucracy-template,
+.bureaucracy-tone,
+.bureaucracy-candidate {
+  display: grid;
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 7px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(0, 0, 0, 0.18)),
+    rgba(28, 29, 28, 0.75);
+  color: #f7f3e7;
+  text-align: left;
+  cursor: pointer;
+}
+
+.bureaucracy-template {
+  grid-template-columns: 76px 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+}
+
+.bureaucracy-template img {
+  width: 76px;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border: 1px solid rgba(0, 0, 0, 0.65);
+  border-radius: 4px;
+  background: #111;
+}
+
+.bureaucracy-template b,
+.bureaucracy-tone b,
+.bureaucracy-candidate b {
+  display: block;
+  font-size: 14px;
+}
+
+.bureaucracy-template small,
+.bureaucracy-tone small,
+.bureaucracy-candidate small {
+  display: block;
+  margin-top: 3px;
+  color: rgba(245, 242, 232, 0.68);
+  font-size: 12px;
+}
+
+.bureaucracy-template.is-active,
+.bureaucracy-tone.is-active,
+.bureaucracy-candidate.is-active {
+  border-color: rgba(160, 65, 48, 0.95);
+  box-shadow: inset 0 0 0 1px rgba(160, 65, 48, 0.6);
+}
+
+.bureaucracy-tone {
+  padding: 10px;
+}
+
+.bureaucracy-topic-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.bureaucracy-topic-row input {
+  min-width: 0;
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  border-radius: 7px;
+  padding: 8px 10px;
+  background: rgba(12, 13, 13, 0.72);
+  color: #f7f3e7;
+  font: inherit;
+}
+
+.bureaucracy-upload-button,
+.bureaucracy-download,
+.bureaucracy-secondary {
+  white-space: nowrap;
+}
+
+.bureaucracy-download {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  text-decoration: none;
+  line-height: 1.1;
+}
+
+.bureaucracy-download:hover,
+.bureaucracy-download:focus,
+.bureaucracy-download:active {
+  text-decoration: none;
+}
+
+.bureaucracy-secondary {
+  margin-top: 8px;
+}
+
+.bureaucracy-canvas-wrap {
+  border: 1px solid rgba(0, 0, 0, 0.8);
+  border-radius: 8px;
+  background: #080908;
+  padding: 10px;
+}
+
+.bureaucracy-canvas-wrap canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 4px;
+  background: #111;
+}
+
+.bureaucracy-candidates-panel {
+  min-height: 220px;
+}
+
+.bureaucracy-candidate {
+  padding: 10px;
+}
+
+.bureaucracy-candidate span {
+  display: block;
+  margin-top: 4px;
+  color: rgba(245, 242, 232, 0.86);
+  font-size: 13px;
+}
+
+.bureaucracy-empty {
+  margin: 0;
+  color: rgba(245, 242, 232, 0.66);
+}
+
+.bureaucracy-download.is-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+@media (max-width: 900px) {
+  .bureaucracy-meme-window {
+    width: calc(100vw - 24px);
+  }
+
+  .bureaucracy-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .bureaucracy-topic-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+body:not(.use-liquid-glass) .bureaucracy-meme-window {
+  width: min(940px, calc(100vw - 64px));
+  height: min(720px, calc(100vh - 74px));
+}
+
+body:not(.use-liquid-glass) .bureaucracy-meme-pane {
+  padding: 14px;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+body:not(.use-liquid-glass) .bureaucracy-safety,
+body:not(.use-liquid-glass) .bureaucracy-panel {
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+  box-shadow: none;
+}
+
+body:not(.use-liquid-glass) .bureaucracy-safety {
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  color: var(--ink);
+}
+
+body:not(.use-liquid-glass) .bureaucracy-layout {
+  grid-template-columns: 260px minmax(360px, 1fr);
+  gap: 12px;
+}
+
+body:not(.use-liquid-glass) .bureaucracy-controls,
+body:not(.use-liquid-glass) .bureaucracy-main {
+  gap: 10px;
+}
+
+body:not(.use-liquid-glass) .bureaucracy-panel {
+  padding: 10px;
+}
+
+body:not(.use-liquid-glass) .bureaucracy-panel h3 {
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+body:not(.use-liquid-glass) .bureaucracy-panel-head {
+  align-items: center;
+}
+
+body:not(.use-liquid-glass) .bureaucracy-status,
+body:not(.use-liquid-glass) .bureaucracy-empty,
+body:not(.use-liquid-glass) .bureaucracy-template small,
+body:not(.use-liquid-glass) .bureaucracy-tone small,
+body:not(.use-liquid-glass) .bureaucracy-candidate small,
+body:not(.use-liquid-glass) .bureaucracy-candidate span {
+  color: var(--shade-dark);
+}
+
+body:not(.use-liquid-glass) .bureaucracy-error {
+  color: var(--ink);
+}
+
+body:not(.use-liquid-glass) .bureaucracy-template-list,
+body:not(.use-liquid-glass) .bureaucracy-tone-list,
+body:not(.use-liquid-glass) .bureaucracy-candidates {
+  gap: 0;
+  border: 1px solid var(--ink);
+  border-bottom: 0;
+}
+
+body:not(.use-liquid-glass) .bureaucracy-template,
+body:not(.use-liquid-glass) .bureaucracy-tone,
+body:not(.use-liquid-glass) .bureaucracy-candidate {
+  border: 0;
+  border-bottom: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+  box-shadow: none;
+  color: var(--ink);
+}
+
+body:not(.use-liquid-glass) .bureaucracy-template {
+  grid-template-columns: 66px 1fr;
+  padding: 6px;
+}
+
+body:not(.use-liquid-glass) .bureaucracy-template img {
+  width: 66px;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+  filter: grayscale(1) contrast(1.2);
+}
+
+body:not(.use-liquid-glass) .bureaucracy-template b,
+body:not(.use-liquid-glass) .bureaucracy-tone b,
+body:not(.use-liquid-glass) .bureaucracy-candidate b {
+  font-size: 13px;
+}
+
+body:not(.use-liquid-glass) .bureaucracy-template small,
+body:not(.use-liquid-glass) .bureaucracy-tone small,
+body:not(.use-liquid-glass) .bureaucracy-candidate small {
+  font-size: 11px;
+}
+
+body:not(.use-liquid-glass) .bureaucracy-template.is-active,
+body:not(.use-liquid-glass) .bureaucracy-tone.is-active,
+body:not(.use-liquid-glass) .bureaucracy-candidate.is-active {
+  border-color: var(--ink);
+  background: var(--ink);
+  box-shadow: none;
+  color: var(--paper);
+}
+
+body:not(.use-liquid-glass) .bureaucracy-template.is-active small,
+body:not(.use-liquid-glass) .bureaucracy-tone.is-active small,
+body:not(.use-liquid-glass) .bureaucracy-candidate.is-active small,
+body:not(.use-liquid-glass) .bureaucracy-candidate.is-active span {
+  color: var(--paper);
+}
+
+body:not(.use-liquid-glass) .bureaucracy-tone,
+body:not(.use-liquid-glass) .bureaucracy-candidate {
+  padding: 7px 8px;
+}
+
+body:not(.use-liquid-glass) .bureaucracy-topic-row {
+  gap: 6px;
+}
+
+body:not(.use-liquid-glass) .bureaucracy-topic-row input {
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  padding: 4px 6px;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+body:not(.use-liquid-glass) .bureaucracy-canvas-wrap {
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+  padding: 6px;
+}
+
+body:not(.use-liquid-glass) .bureaucracy-canvas-wrap canvas {
+  border-radius: 0;
+  background: var(--paper);
+}
+
+body:not(.use-liquid-glass) .bureaucracy-candidates-panel {
+  min-height: 180px;
+}
+
+body:not(.use-liquid-glass) .bureaucracy-download.is-disabled {
+  opacity: 1;
+  color: var(--shade-dark);
+}
+
+@media (max-width: 900px) {
+  body:not(.use-liquid-glass) .bureaucracy-layout {
+    grid-template-columns: 1fr;
+  }
+}

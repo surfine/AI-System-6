@@ -1,0 +1,44 @@
+{
+  "_note": "Ratcheting budgets to stop CSS churn. Numbers are the count at baseline (2026-05-28). Verify fails if any current count exceeds its budget. To raise a budget, edit this file in a commit that justifies the bump in the PR description. To lower a budget, just shrink the number after refactoring.",
+  "important": {
+    "styles/00-foundation.css": 3,
+    "styles/10-windows.css": 4,
+    "styles/20-reader-docmap.css": 4,
+    "styles/30-surfaces.css": 9,
+    "styles/40-icons.css": 2,
+    "styles/50-apps.css": 8,
+    "styles/60-responsive.css": 189,
+    "styles/70-liquid-glass.css": 111,
+    "styles/80-bureaucracy-meme.css": 0,
+    "styles/85-liquid-cover.css": 0,
+    "styles/86-cmf-studio.css": 0,
+    "styles/90-endfield-terminal.css": 0
+  },
+  "zIndex": {
+    "styles/00-foundation.css": 9,
+    "styles/10-windows.css": 13,
+    "styles/20-reader-docmap.css": 5,
+    "styles/30-surfaces.css": 0,
+    "styles/40-icons.css": 0,
+    "styles/50-apps.css": 6,
+    "styles/60-responsive.css": 7,
+    "styles/70-liquid-glass.css": 2,
+    "styles/80-bureaucracy-meme.css": 0,
+    "styles/85-liquid-cover.css": 0,
+    "styles/86-cmf-studio.css": 0,
+    "styles/90-endfield-terminal.css": 1
+  },
+  "inlineLayoutStyles": {
+    "_pattern": "element.style.{top,left,right,bottom,width,height,padding,margin,maxWidth,maxHeight,minWidth,minHeight} = ...",
+    "total": 172
+  },
+  "_liquidGlassNote": "Total twin selectors (body.use-liquid-glass <X>) in 70-liquid-glass.css; ratchet pushes the architecture toward token-based theming. Orphan count tracks twins whose base class/id no longer appears in any non-theme CSS file — a strong drift signal. Both numbers may only shrink; raising either requires explicit justification in the PR.",
+  "liquidGlassTwinCount": 588,
+  "liquidGlassOrphanCount": 32,
+  "themeSelectorsOutsideLiquid": {
+    "styles/50-apps.css": 12,
+    "styles/80-bureaucracy-meme.css": 48,
+    "styles/85-liquid-cover.css": 44,
+    "styles/90-endfield-terminal.css": 11
+  }
+}

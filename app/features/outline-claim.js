@@ -1,0 +1,1576 @@
+// Feature module: outline-claim.
+
+// Loaded before app.js as a classic script; shares the AI System 6 global scope.
+
+
+let selectedClaimSectionIndex = 0;
+let currentClaimCheckScope = { type: "manuscript", label: "" };
+
+function stripRebuildMarkdownFence(markdown) {
+  return String(markdown || "")
+    .replace(/^```(?:markdown|md)?\s*/i, "")
+    .replace(/```\s*$/i, "")
+    .trim();
+}
+
+function getRebuildParagraphs(text) {
+  const blocks = String(text || "")
+    .split(/\n\s*\n+/)
+    .map((item) => item.replace(/\s+/g, " ").trim())
+    .filter((item) => item.length > 30);
+
+  if (blocks.length >= 3) return blocks;
+
+  return String(text || "")
+    .split(/(?<=[。！？.!?])\s+/)
+    .map((item) => item.replace(/\s+/g, " ").trim())
+    .filter((item) => item.length > 30);
+}
+
+function inferRebuildClaims(paragraphs) {
+  const claimPattern = /(\d{4}|\d+%|\d+\s*(?:个|项|种|users?|features?)|宣布|推出|支持|更新|将|首次|available|announced|supports?|will|new\s+features?)/i;
+  return paragraphs
+    .filter((paragraph) => claimPattern.test(paragraph))
+    .slice(0, 6)
+    .map((paragraph) => shortClaimText(paragraph, currentLanguage === "zh" ? 96 : 140));
+}
+
+function shortClaimText(text, max = 80) {
+  const clean = String(text || "").replace(/\s+/g, " ").trim();
+  if (clean.length <= max) return clean;
+  return `${clean.slice(0, Math.max(0, max - 1)).trim()}...`;
+}
+
+function validateGeneratedWritingOutline(markdown) {
+  const content = String(markdown || "").trim();
+  if (!content) throw new Error("empty outline response");
+  const sections = content.match(/^##\s+.+$/gm) || [];
+  if (!sections.length) {
+    throw new Error(currentLanguage === "zh" ? "生成的大纲没有可写作章节（缺少 ## 标题）。" : "Generated outline has no writable ## sections.");
+  }
+  const forbiddenHeading = /^##\s*(?:[一二三四五六七八九十\d.、\s-]*)?(?:核验|确认|校验|资料补充|补充资料|下一步|后续行动|行动计划|风险|备注|输出规则|写作准备|读者导向|结构逻辑|数据准确性|工作清单|写作大纲总结)\b/im;
+  if (forbiddenHeading.test(content)) {
+    throw new Error(currentLanguage === "zh"
+      ? "生成的大纲包含工作清单章节，不能直接进入章节草稿。"
+      : "Generated outline contains work-list sections that cannot be drafted directly.");
+  }
+  if (/^###\s+/m.test(content)) {
+    throw new Error(currentLanguage === "zh"
+      ? "生成的大纲层级过深；请只使用 ## 章节。"
+      : "Generated outline is too deeply nested; use ## sections only.");
+  }
+  if (sections.length > 7) {
+    throw new Error(currentLanguage === "zh"
+      ? "生成的大纲章节过多，无法快速进入章节草稿。"
+      : "Generated outline has too many sections for the drafting flow.");
+  }
+  const workListLines = content.split("\n").filter((line) => /(?:确认|核验|待补充|资料补充|下一步|后续|风险|备注|输出规则|不要输出解释|只返回|确保)/.test(line));
+  if (workListLines.length >= 3) {
+    throw new Error(currentLanguage === "zh"
+      ? "生成的大纲混入了过多工作流/提示词说明，不能作为口播章节。"
+      : "Generated outline contains too many workflow or prompt notes.");
+  }
+  return content;
+}
+
+function buildGeneratedOutlineRetryMessages({
+  questions = "",
+  existingOutline = "",
+  readerClipContext = "",
+  projectContext = "",
+  badOutput = "",
+  failureReason = "",
+} = {}) {
+  const badSummary = clipContextContent(String(badOutput || ""), 1200);
+  const prompt = `你是 AI System 6 的中文视频稿大纲编辑。上一次生成的大纲没有通过校验：${failureReason || "输出不是可直接起草的章节大纲"}。
+
+请重新生成一份能直接进入“章节草稿”的 Markdown 大纲。
+
+硬性要求：
+- 只输出最终口播会出现的 4-6 个 ## 章节。
+- 不要写研究计划、核验清单、资料补充、后续行动、风险提示、输出规则或提示词说明。
+- 不要使用 ###。
+- 每个 ## 章节下面写 2-4 条要点；每条说明“这一段要讲什么 / 观众为什么在意 / 可用事实或画面”。
+- 章节标题要像视频分段，不要像报告目录或工作流栏目。
+- 只返回 Markdown 大纲，不解释。
+
+READER CLIPS:
+${readerClipContext || "No Reader clips saved yet."}
+
+PROJECT CONTEXT:
+${projectContext || "No relevant project context selected yet."}
+
+USER QUESTIONS & GOALS:
+${questions}
+
+EXISTING OUTLINE:
+${existingOutline || "No existing outline yet."}
+
+上一次失败输出摘要（不要照抄）：
+${badSummary || "No failed output captured."}`;
+
+  return withMarkdownModelMessages([
+    {
+      role: "system",
+      content: "你是中文视频稿大纲编辑。只输出可起草的 Markdown 大纲，不输出元说明、工作流、核验清单或提示词规则。",
+    },
+    { role: "user", content: prompt },
+  ]);
+}
+
+async function readRebuildMarkdownPackStream(response, onProgress = null) {
+  const markdown = await readModelTextStream(response, {
+    signal: getLongTaskSignal(),
+    throttleMs: 80,
+    onSnapshot: onProgress,
+  });
+  if (!markdown.trim()) throw new Error("lmstudio_bad_response: empty writing object pack stream");
+  return markdown;
+}
+
+async function generateOutlineFromQuestionSheetCore(options = {}) {
+  const project = getActiveProject();
+  if (!project) throw new Error(t("no_project_mounted"));
+  const questions = String(options.questions ?? questionSheetBodyInput?.value ?? project.questionSheet ?? "").trim();
+  if (!questions) throw new Error(t("question_sheet_hint"));
+  const existingOutline = String(options.existingOutline ?? currentOutlineMarkdown(project) ?? "").trim();
+  const taskId = options.taskId || "generate-outline";
+  const statusLabel = options.statusLabel || t("making_outline");
+  const modelName = options.modelName || getLocalModelRequestName();
+  const maxTokens = Number.isFinite(options.maxTokens) ? options.maxTokens : 900;
+  if (!beginLongTask(taskId, statusLabel)) {
+    throw new Error(t("task_already_running", localModelState?.task || t("working_locally")));
+  }
+  try {
+    project.questionSheet = questions;
+    project.updatedAt = new Date().toISOString();
+    saveDeskState();
+    const readerClipContext = clipContextContent(getReaderClipOutlineContext(), 1800);
+    const projectContext = await buildBudgetedProjectContext([questions, existingOutline].filter(Boolean).join("\n\n"), {
+      budget: Number.isFinite(options.contextBudget) ? options.contextBudget : 5000,
+      topK: Number.isFinite(options.contextTopK) ? options.contextTopK : 6,
+      maxReferenceChunks: Number.isFinite(options.maxReferenceChunks) ? options.maxReferenceChunks : 5,
+      maxCuratedContextItems: Number.isFinite(options.maxCuratedContextItems) ? options.maxCuratedContextItems : 3,
+      itemLimit: Number.isFinite(options.contextItemLimit) ? options.contextItemLimit : 800,
+      taskKind: "generate-outline",
+    });
+    const prompt = `你是 AI System 6 的中文视频稿大纲编辑。请根据用户的问题、已有大纲和资料摘录，生成一份能直接进入“章节草稿”的 Markdown 大纲。
+
+    大纲目标：
+    - 只规划最终视频口播会出现的章节，不写研究计划、核验清单、资料补充、下一步行动或风险提示章节。
+    - 每个 ## 章节都必须能立刻交给“AI 起草”写成口播段落。
+    - 4-6 个 ## 章节即可；每节 2-4 条要点，每条写“要讲什么/观众为什么在意/可用事实或画面”。
+    - 保留用户真正想解决的问题、口吻和事实边界；资料摘录只作为支撑线索，不编造摘录中没有的事实。
+    - 标题要自然、具体，像视频分段，不要写成报告目录、发布会摘要、研究备忘录或工作流说明。
+    - 避免 AI 腔标题和套话：不要写“深入探讨、关键作用、未来展望、不断演变的格局、作为……的证明、彰显”等空泛表达。
+    - 不要出现“核验、确认、待补充、下一步、资料补充、风险、备注、输出规则、写作准备、读者导向、结构逻辑、数据准确性校验”等工作清单栏目。
+    - 对消费电子视频，优先使用“第一眼反差、颜色/手感、日常体验、相机限制、购买建议”这类观众视角，不要按发布会参数分成价格、芯片、营销政策、发售时间线。
+
+    READER CLIPS:
+    ${readerClipContext || "No Reader clips saved yet."}
+
+    PROJECT CONTEXT:
+    ${projectContext || "No relevant project context selected yet."}
+
+    USER QUESTIONS & GOALS:
+    ${questions}
+
+    EXISTING OUTLINE:
+    ${existingOutline || "No existing outline yet."}
+
+    只返回 Markdown 大纲。使用 ## 作为可写作章节；不要使用 ###；不要输出解释、操作过程、核验事项或后续工作。`;
+
+    const maxAttempts = Number.isFinite(options.maxAttempts) ? Math.max(1, options.maxAttempts) : 2;
+    let content = "";
+    let lastError = null;
+    await prepareStreamingMarkdownPreview();
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      const messages = attempt === 0
+        ? withMarkdownModelMessages([{ role: "user", content: prompt }])
+        : buildGeneratedOutlineRetryMessages({
+          questions,
+          existingOutline,
+          readerClipContext,
+          projectContext,
+          badOutput: lastError?.badOutput || "",
+          failureReason: lastError?.message || "",
+        });
+      if (attempt > 0) {
+        updateLocalModelState({
+          running: true,
+          task: currentLanguage === "zh" ? "正在重试生成大纲..." : "Retrying outline generation...",
+        });
+      }
+      const response = await fetchModelPayload({
+        model: modelName,
+        messages,
+        temperature: attempt === 0
+          ? (Number.isFinite(options.temperature) ? options.temperature : 0.5)
+          : (Number.isFinite(options.retryTemperature) ? options.retryTemperature : 0.15),
+        max_tokens: maxTokens,
+        ai_system6_task_kind: "generate-outline",
+        stream: true,
+      }, getLongTaskSignal());
+
+      const streamedContent = await readModelTextStream(response, {
+        signal: getLongTaskSignal(),
+        throttleMs: 120,
+        onSnapshot: (markdown) => showStreamingSurfacePreview("outline", stripRebuildMarkdownFence(markdown)),
+      });
+      const rawContent = stripRebuildMarkdownFence(streamedContent || "").trim();
+      try {
+        content = validateGeneratedWritingOutline(rawContent);
+        showStreamingSurfacePreview("outline", content, { final: true });
+        break;
+      } catch (error) {
+        lastError = error;
+        lastError.badOutput = rawContent;
+        if (attempt >= maxAttempts - 1) throw error;
+      }
+    }
+    setProjectOutlineMarkdown(project, content);
+    markTeachTextAiAssisted();
+    project.updatedAt = new Date().toISOString();
+    saveDeskState();
+    updateFlowGuideChecklist({ render: false });
+    renderPipeline();
+    return content;
+  } finally {
+    endLongTask(taskId);
+  }
+}
+
+async function generateOutline() {
+  await ensureWritingFlowModule();
+  const project = getActiveProject();
+  if (!project) {
+    setStatus(t("no_project_mounted"));
+    openWindow("projects");
+    return;
+  }
+  const questions = questionSheetBodyInput.value.trim();
+  if (!questions) {
+    setStatus(t("question_sheet_hint"));
+    return;
+  }
+
+  const existingOutline = currentOutlineMarkdown(project).trim();
+  if (existingOutline) {
+    const result = await showSystemModal(t("outline_overwrite_confirm"), "confirm");
+    if (result !== "yes") return;
+  }
+
+  let didGenerateOutline = false;
+  let didFail = false;
+  try {
+    await generateOutlineFromQuestionSheetCore({ questions, existingOutline });
+    openWindow("outline");
+    didGenerateOutline = true;
+  } catch (error) {
+    if (!isAbortError(error)) {
+      didFail = true;
+      console.error("Generate outline failed", error);
+      setStatus(currentLanguage === "zh"
+        ? `生成大纲失败：${error?.message || error}`
+        : `Outline generation failed: ${error?.message || error}`);
+      try {
+        await showSystemModal(currentLanguage === "zh"
+          ? `生成大纲失败：${error?.message || error}`
+          : `Outline generation failed: ${error?.message || error}`, "alert");
+      } catch {
+        // Keep the status text visible if the modal cannot open.
+      }
+    }
+  } finally {
+    if (!didFail) setStatus(didGenerateOutline ? t("outline_generated") : t("ready"));
+  }
+}
+
+function questionSheetPromptLeakReason(markdown) {
+  const text = String(markdown || "");
+  const promptLeakPatterns = [
+    /固定语义[:：]/,
+    /Fixed semantics:/i,
+    /输入来源[:：]/,
+    /Input source:/i,
+    /现有问题单[:：]/,
+    /Existing Question Sheet:/i,
+    /项目上下文[:：]/,
+    /Project context:/i,
+    /使用这些栏目/,
+    /Use these sections/i,
+    /只返回完整的问题单 Markdown/,
+    /Return the full Question Sheet Markdown only/i,
+    /不要改成摘要、大纲、正文、事实核查报告或泛泛建议/,
+    /Do not turn it into a summary, outline, draft, fact-check report/i,
+  ];
+  const hits = promptLeakPatterns.filter((pattern) => pattern.test(text)).length;
+  if (hits >= 2) {
+    return currentLanguage === "zh"
+      ? "模型输出包含提示词契约，而不是可保存的问题单。"
+      : "The model output contains prompt contract text instead of a usable Question Sheet.";
+  }
+  if (/输出规则[\s\S]{0,240}(?:只返回完整的问题单 Markdown|不要解释|不要改成摘要、大纲、正文)/.test(text)) {
+    return currentLanguage === "zh"
+      ? "模型把系统输出规则写进了问题单。"
+      : "The model copied system output rules into the Question Sheet.";
+  }
+  if (/(?:##\s+输出规则|##\s+Output Rules)[\s\S]{0,900}(?:不要输出任何关于任务|提示词|系统消息|操作过程|只使用输入和项目材料中已有的信息|保留用户原本的问题意识|接收者要写成真实的人或真实群体|Do not output notes about the task|prompt|system message|Use only the input and project material|Preserve the user's questions)/i.test(text)) {
+    return currentLanguage === "zh"
+      ? "模型把任务规则当成了问题单的输出规则。"
+      : "The model treated task rules as Question Sheet output rules.";
+  }
+  if (/(?:保留用户原本的问题意识|不要为了整齐把它们改成模型自己的均质语言|只使用输入和项目材料中已有的信息提出问题与边界|不要新增没有来源支持的事实结论|交付减摩擦要说明怎样让对方更容易接收|可保存的问题单 Markdown|优先使用上述栏目|只保留最有用的栏目|每个栏目\s*1-2\s*行|不要长段落|Preserve the user's questions|do not wash them into generic model language|Use only the input and project material|do not add unsupported factual conclusions|handoff friction should make the work easier to receive|Keep only the useful sections|no long paragraphs)/i.test(text)) {
+    return currentLanguage === "zh"
+      ? "模型把系统任务约束写进了问题单内容。"
+      : "The model copied system task constraints into the Question Sheet content.";
+  }
+  return "";
+}
+
+function validateOrganizedQuestionSheet(markdown) {
+  const text = stripRebuildMarkdownFence(markdown).trim();
+  if (!text) {
+    throw new Error(currentLanguage === "zh" ? "模型没有返回问题单内容。" : "The model returned an empty Question Sheet.");
+  }
+  const leakReason = questionSheetPromptLeakReason(text);
+  if (leakReason) throw new Error(leakReason);
+  const hasQuestionHeading = questionSheetSectionHeadingPattern(QUESTION_SHEET_SECTION_KEYS, currentLanguage).test(text);
+  const questionLikeCount = (text.match(/[？?]/g) || []).length;
+  const bulletCount = (text.match(/^\s*[-*+]\s+\S/gm) || []).length;
+  if (!hasQuestionHeading) {
+    throw new Error(currentLanguage === "zh"
+      ? "整理后的问题单缺少标准栏目标题。"
+      : "The organized Question Sheet is missing standard section headings.");
+  }
+  if (questionLikeCount < 2 && bulletCount < 6) {
+    throw new Error(currentLanguage === "zh"
+      ? "整理后的问题单太薄，无法支撑下一步大纲。"
+      : "The organized Question Sheet is too thin to support an outline.");
+  }
+  return text;
+}
+
+function buildQuestionSheetRetryPrompt({
+  sourceName = "",
+  sourceMarkdown = "",
+  existing = "",
+  context = "",
+  badOutput = "",
+  language = currentLanguage,
+} = {}) {
+  const spec = questionSheetSpec(language);
+  const sourceLabel = sourceName || spec.title;
+  const badSummary = clipContextContent(String(badOutput || ""), 1200);
+  return [
+    language === "zh"
+      ? "你是 AI System 6 的写作规划助手。上一次整理失败，因为输出像提示词规则或元说明。请重新整理成真正可用于写作流程的问题单。"
+      : "You are an AI System 6 writing planner. The previous organization failed because the output looked like prompt rules or meta instructions. Rewrite it into a real Question Sheet for the writing workflow.",
+    "",
+    language === "zh"
+      ? "输出必须是用户会保存并继续用于大纲的问题单，不是摘要、正文、建议清单或提示词说明。"
+      : "The output must be a Question Sheet a user would save and use for an outline, not a summary, draft, suggestion list, or prompt note.",
+    language === "zh"
+      ? "硬性要求：输出必须以 `## 主题` 或 `# 标题` 后接 `## 主题` 开始；不要出现“固定语义 / 输入来源 / 现有问题单 / 项目上下文 / 使用这些栏目 / 只返回完整的问题单 Markdown / 不要解释”等提示词说明；只写用户会保存并继续用于大纲的问题单。"
+      : "Hard rule: start with `## Topic` or a title followed by `## Topic`; do not include prompt instructions such as Fixed semantics, Input source, Existing Question Sheet, Project context, Use these sections, Return the full Question Sheet Markdown only, or No explanation; write only the Question Sheet a user would save and use for an outline.",
+    "",
+    language === "zh" ? `输入来源：${sourceLabel}` : `Input source: ${sourceLabel}`,
+    sourceMarkdown || spec.emptyMarker,
+    "",
+    language === "zh" ? "现有问题单：" : "Existing Question Sheet:",
+    existing || spec.emptyMarker,
+    "",
+    context ? (language === "zh" ? "项目上下文（已压缩去重，用来提出更有效的问题）：" : "Project context (compressed and deduplicated, for better questions):") : "",
+    context,
+    "",
+    badSummary ? (language === "zh" ? "上一次失败输出摘要（不要照抄）：" : "Previous failed output excerpt (do not copy):") : "",
+    badSummary,
+  ].join("\n");
+}
+
+function buildQuestionSheetRetryMessages(options = {}) {
+  const retryPrompt = buildQuestionSheetRetryPrompt(options);
+  const language = options.language || currentLanguage;
+  return [
+    {
+      role: "system",
+      content: language === "zh"
+        ? "你是 AI System 6 的中文写作规划助手。只整理问题单正文，不输出提示词说明。"
+        : "You are an AI System 6 writing planner. Output only the Question Sheet body, not prompt notes.",
+    },
+    { role: "user", content: retryPrompt },
+  ];
+}
+
+function compactQuestionSheetPromptInput(markdown, limit = 1600) {
+  const text = String(markdown || "").replace(/\r\n?/g, "\n").trim();
+  if (text.length <= limit) return text;
+  const lines = text.split("\n");
+  const kept = [];
+  const seen = new Set();
+  for (const line of lines) {
+    const clean = line.trim();
+    if (!clean) {
+      if (kept.at(-1) !== "") kept.push("");
+      continue;
+    }
+    if (/^(Context before|Context after|Time|Site):/i.test(clean)) continue;
+    const key = clean.replace(/\d+/g, "#").slice(0, 120);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    kept.push(line);
+    if (kept.join("\n").length >= limit) break;
+  }
+  const compact = kept.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+  return clipContextContent(compact || text, limit);
+}
+
+async function organizeQuestionSheetCore(options = {}) {
+  const sourceMarkdown = String(options.sourceMarkdown ?? questionSheetBodyInput?.value ?? "").trim();
+  if (!sourceMarkdown) throw new Error(t("question_sheet_hint"));
+  const taskId = options.taskId || "organize-question-sheet";
+  const statusLabel = options.statusLabel || t("organizing_question_sheet");
+  const modelName = options.modelName || getLocalModelRequestName();
+  const maxAttempts = Number.isFinite(options.maxAttempts) ? Math.max(1, options.maxAttempts) : 2;
+  if (!beginLongTask(taskId, statusLabel)) {
+    throw new Error(t("task_already_running", localModelState?.task || t("working_locally")));
+  }
+
+  try {
+    updateLocalModelState({ running: true, task: currentLanguage === "zh" ? "正在检索问题单上下文..." : "Retrieving Question Sheet context..." });
+    const projectContext = options.context ?? await buildBudgetedProjectContext(sourceMarkdown, {
+      budget: Number.isFinite(options.contextBudget) ? options.contextBudget : 9000,
+      topK: Number.isFinite(options.contextTopK) ? options.contextTopK : 8,
+      maxReferenceChunks: Number.isFinite(options.maxReferenceChunks) ? options.maxReferenceChunks : 8,
+      maxCuratedContextItems: Number.isFinite(options.maxCuratedContextItems) ? options.maxCuratedContextItems : 4,
+      itemLimit: Number.isFinite(options.contextItemLimit) ? options.contextItemLimit : 1000,
+      taskKind: "organize-question-sheet",
+    });
+    updateLocalModelState({ running: true, task: statusLabel });
+    const sourceForPrompt = options.compactSource === false
+      ? sourceMarkdown
+      : compactQuestionSheetPromptInput(sourceMarkdown, Number.isFinite(options.sourceBudget) ? options.sourceBudget : 1600);
+    const baseMessages = buildQuestionSheetRewriteMessages({
+      sourceName: options.sourceName || t("question_sheet"),
+      sourceMarkdown: sourceForPrompt,
+      existing: options.existing || "",
+      context: projectContext || "No relevant project context selected yet.",
+    });
+    const requestTimeoutMs = Number.isFinite(options.timeoutMs) ? options.timeoutMs : 90000;
+    let lastError = null;
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      const messages = attempt === 0
+        ? baseMessages
+        : buildQuestionSheetRetryMessages({
+          sourceName: options.sourceName || t("question_sheet"),
+          sourceMarkdown: sourceForPrompt,
+          existing: options.existing || "",
+          context: projectContext || "No relevant project context selected yet.",
+          badOutput: lastError?.badOutput || "",
+        });
+      const attemptLabel = attempt === 0
+        ? statusLabel
+        : (currentLanguage === "zh" ? "正在重试整理问题单..." : "Retrying Question Sheet organization...");
+      updateLocalModelState({ running: true, task: `${attemptLabel} ${currentLanguage === "zh" ? `上下文约 ${projectContext.length} 字。` : `Context ~${projectContext.length} chars.`}` });
+      const controller = new AbortController();
+      const longTaskSignal = getLongTaskSignal();
+      const abortFromLongTask = () => controller.abort();
+      if (longTaskSignal) {
+        if (longTaskSignal.aborted) controller.abort();
+        else longTaskSignal.addEventListener("abort", abortFromLongTask, { once: true });
+      }
+      const timer = setTimeout(() => controller.abort(), requestTimeoutMs);
+      let response;
+      try {
+        response = await fetchModelPayload({
+          model: modelName,
+          messages: withMarkdownModelMessages(messages),
+          temperature: attempt === 0
+            ? (Number.isFinite(options.temperature) ? options.temperature : 0.25)
+            : (Number.isFinite(options.retryTemperature) ? options.retryTemperature : 0.12),
+          max_tokens: Number.isFinite(options.maxTokens) ? options.maxTokens : 420,
+          ai_system6_task_kind: "organize-question-sheet",
+        }, controller.signal);
+      } catch (error) {
+        if (controller.signal.aborted && !longTaskSignal?.aborted) {
+          throw new Error(currentLanguage === "zh"
+            ? `整理问题单超时：${Math.round(requestTimeoutMs / 1000)} 秒内没有返回。请减少重复材料或换用更快模型后重试。`
+            : `Question Sheet organization timed out after ${Math.round(requestTimeoutMs / 1000)}s. Reduce duplicated material or use a faster model and retry.`);
+        }
+        throw error;
+      } finally {
+        clearTimeout(timer);
+        if (longTaskSignal) longTaskSignal.removeEventListener("abort", abortFromLongTask);
+      }
+      const data = await readChatJson(response);
+      const finishReason = data?.choices?.[0]?.finish_reason || data?.stop_reason || "";
+      const organized = stripRebuildMarkdownFence(data?.choices?.[0]?.message?.content || "").trim();
+      try {
+        updateLocalModelState({ running: true, task: currentLanguage === "zh" ? "正在校验问题单输出..." : "Validating Question Sheet output..." });
+        const validated = validateOrganizedQuestionSheet(organized);
+        if (String(finishReason).toLowerCase() === "length" && /(?:[,，、:：;；（(]|\b(?:and|or|the|to|of))\s*$/i.test(validated)) {
+          throw new Error(currentLanguage === "zh"
+            ? "整理问题单失败：模型输出疑似半截，请降低输出长度或提高输出预算后重试。"
+            : "Question Sheet organization failed: model output appears truncated. Shorten the output or increase the output budget and retry.");
+        }
+        return validated;
+      } catch (error) {
+        lastError = error;
+        lastError.badOutput = organized;
+        if (attempt >= maxAttempts - 1) throw error;
+      }
+    }
+    throw lastError || new Error(currentLanguage === "zh" ? "整理问题单失败。" : "Question Sheet organization failed.");
+  } finally {
+    endLongTask(taskId);
+  }
+}
+
+function applyOrganizedQuestionSheet(organized, project = getActiveProject()) {
+  const nextQuestionSheet = validateOrganizedQuestionSheet(organized);
+  if (!project) throw new Error(t("no_project_mounted"));
+  questionSheetBodyInput.value = nextQuestionSheet;
+  project.questionSheet = nextQuestionSheet;
+  project.flowState = { ...(project.flowState || {}), topic: true };
+  project.updatedAt = new Date().toISOString();
+  saveDeskState();
+  refreshTeachTextSurfacePreview("questionSheet");
+  renderPipeline();
+  openWindow("questionSheet");
+  questionSheetBodyInput.focus();
+  return nextQuestionSheet;
+}
+
+async function organizeQuestionSheet() {
+  await ensureWritingFlowModule();
+  const project = getActiveProject();
+  const questions = questionSheetBodyInput.value.trim();
+  if (!project) {
+    setStatus(t("no_project_mounted"));
+    openWindow("projects");
+    return;
+  }
+  if (!questions) {
+    setStatus(t("question_sheet_hint"));
+    openWindow("questionSheet");
+    questionSheetBodyInput.focus();
+    return;
+  }
+
+  let organized = "";
+  try {
+    organized = await organizeQuestionSheetCore({ sourceMarkdown: questions });
+  } catch (error) {
+    if (!isAbortError(error)) {
+      console.error("Organize question sheet failed", error);
+      setStatus(currentLanguage === "zh"
+        ? `整理问题失败：${error?.message || error}`
+        : `Question Sheet organization failed: ${error?.message || error}`);
+      try {
+        await showSystemModal(currentLanguage === "zh"
+          ? `整理问题失败：${error?.message || error}`
+          : `Question Sheet organization failed: ${error?.message || error}`, "alert");
+      } catch {
+        // Keep the status text visible if the modal cannot open.
+      }
+    }
+  }
+
+  if (!organized) {
+    setStatus(t("ready"));
+    return;
+  }
+
+  const preview = clipContextContent(organized, 1600);
+  const result = await showSystemModal(t("organize_question_sheet_confirm", preview), "confirm");
+  if (result !== "yes") {
+    setStatus(t("ready"));
+    return;
+  }
+
+  try {
+    applyOrganizedQuestionSheet(organized, project);
+  } catch (error) {
+    setStatus(currentLanguage === "zh"
+      ? `整理问题失败：${error?.message || error}`
+      : `Question Sheet organization failed: ${error?.message || error}`);
+    return;
+  }
+  setStatus(t("question_sheet_organized"));
+}
+
+async function expandOutline() {
+  await ensureWritingFlowModule();
+  const project = getActiveProject();
+  if (!project) {
+    setStatus(t("no_project_mounted"));
+    openWindow("projects");
+    return;
+  }
+
+  savePipelineData();
+  const outline = currentOutlineMarkdown(project).trim();
+  if (!outline) {
+    setStatus(t("outline_needs_content"));
+    openWindow("outline");
+    requestAnimationFrame(() => outlineContentEl?.focus());
+    return;
+  }
+
+  if (!beginLongTask("expand-outline", t("expanding_outline"))) return;
+  let content = "";
+  try {
+    await prepareStreamingMarkdownPreview();
+    const questionSheet = (project.questionSheet || "").trim();
+    const contextQuery = [questionSheet, outline].filter(Boolean).join("\n");
+    const projectContext = await buildBudgetedProjectContext(contextQuery, { taskKind: "rewrite-outline" });
+    const prompt = `你是 AI System 6 的中文写作编辑。请改进当前 Markdown 大纲，补强薄弱处、断裂处和缺少读者问题的地方。
+
+规则：问题单只作为约束和方向参考；保留用户原本的问题意识、关键反对意见和有价值章节；可以合并重复章节、补过渡、补证据位置、补读者追问；不要新增没有资料或问题单支持的事实结论；不要追加第二份大纲。
+只返回一份完整替换用 Markdown 大纲。使用 ## 作为可写作章节，### 只用于章节内部。
+
+QUESTION SHEET:
+${questionSheet || "No Question Sheet provided."}
+
+PROJECT CONTEXT:
+${projectContext || "No relevant project context selected yet."}
+
+CURRENT OUTLINE:
+${outline}`;
+    const response = await fetchModelPayload({
+      model: getLocalModelRequestName(),
+      messages: withMarkdownModelMessages([{ role: "user", content: prompt }]),
+      temperature: 0.7,
+      ai_system6_task_kind: "expand-outline",
+      stream: true,
+    }, getLongTaskSignal());
+
+    const streamedContent = await readModelTextStream(response, {
+      signal: getLongTaskSignal(),
+      throttleMs: 120,
+      onSnapshot: (markdown) => showStreamingSurfacePreview("outline", stripRebuildMarkdownFence(markdown)),
+    });
+    content = stripRebuildMarkdownFence(streamedContent || "").trim();
+    if (content) showStreamingSurfacePreview("outline", content, { final: true });
+  } catch (error) {
+    if (!isAbortError(error)) console.error("Expand outline failed", error);
+  } finally {
+    endLongTask("expand-outline");
+  }
+
+  if (!content) {
+    setStatus(t("ready"));
+    return;
+  }
+
+  await confirmAndApplyAiOutline(content, "outline_fill_weak_confirm", "outline_filled_weak");
+}
+
+function getOutlineOperationContext(project) {
+  const selection = getOutlineSelectionText();
+  const outlineSections = getProjectOutlineSections(project);
+  const outline = currentOutlineMarkdown(project).trim();
+  return { selection, outlineSections, outline };
+}
+
+async function runOutlineOperation(mode) {
+  await ensureWritingFlowModule();
+  const project = getActiveProject();
+  if (!project) {
+    setStatus(t("no_project_mounted"));
+    openWindow("projects");
+    return;
+  }
+
+  savePipelineData();
+  const { outlineSections, outline } = getOutlineOperationContext(project);
+  if (!outline) {
+    setStatus(t("outline_needs_content"));
+    openWindow("outline");
+    requestAnimationFrame(() => outlineContentEl?.focus());
+    return;
+  }
+
+  const statusByMode = {
+    critique: "critiquing_outline",
+    mingming: "mingming_outline_running",
+    reduce: "reducing_outline",
+    structure: "structuring_outline",
+  };
+  const taskKey = `outline-${mode}`;
+  if (!beginLongTask(taskKey, t(statusByMode[mode] || "expanding_outline"))) return;
+
+  let failed = false;
+  let content = "";
+  try {
+    await prepareStreamingMarkdownPreview();
+    const readerClipContext = getReaderClipOutlineContext(4000);
+    const questionSheet = (project.questionSheet || "").trim();
+    const contextQuery = [questionSheet, outline].filter(Boolean).join("\n");
+    const projectContext = await buildBudgetedProjectContext(contextQuery, { taskKind: "review-outline" });
+    const instructions = {
+      critique: `你是 AI System 6 的中文写作编辑。请批评这份大纲，指出最值得先改的问题。关注：原始问题是否被磨平、章节是否断裂、是否有空泛标题或概念空转、是否缺少证据/例子/场景/反对意见、是否重复、是否能支撑中文读者读下去。不要重写大纲，不要打分，不要泛泛教学。只返回 3-6 条 Markdown 项目符号。`,
+      mingming: null,
+      reduce: `你是 AI System 6 的中文写作编辑。请精简这份 Markdown 大纲：删除重复，合并重叠章节，保留用户原始问题和尖锐反对意见。只返回更干净的一份完整 Markdown 大纲。`,
+      structure: `你是 AI System 6 的中文写作编辑。请把当前 Markdown 大纲重构成更清楚、更有推进感的顺序。保留有价值的章节、问题、反对意见和资料线索；合并重复内容，调整章节顺序和层级；不要编造新事实，不要追加第二份大纲。只返回一份完整替换用 Markdown 大纲，使用 ## 作为可写作章节，### 只用于章节内部。`,
+    };
+    const prompt = mode === "mingming"
+      ? buildMingmingRewritePrompt({ questionSheet, readerClipContext, projectContext, outline })
+      : `${instructions[mode]}
+
+QUESTION SHEET:
+${questionSheet || "No Question Sheet provided."}
+
+READER CLIPS:
+${readerClipContext || "No Reader clips saved yet."}
+
+PROJECT CONTEXT:
+${projectContext || "No relevant project context selected yet."}
+
+CURRENT OUTLINE:
+${outline}`;
+
+    const response = await fetchModelPayload({
+      model: getLocalModelRequestName(),
+      messages: withMarkdownModelMessages([{ role: "user", content: prompt }]),
+      temperature: mode === "critique" ? 0.35 : 0.45,
+      max_tokens: mode === "mingming" ? 5200 : undefined,
+      ai_system6_task_kind: mode === "mingming" ? "mingming_rewrite" : `outline_${mode}`,
+      stream: true,
+    }, getLongTaskSignal());
+
+    const streamedContent = await readModelTextStream(response, {
+      signal: getLongTaskSignal(),
+      throttleMs: 120,
+      onSnapshot: (markdown) => showStreamingSurfacePreview("outline", stripRebuildMarkdownFence(markdown)),
+    });
+    content = stripRebuildMarkdownFence(streamedContent || "").trim();
+    if (!content) return;
+    showStreamingSurfacePreview("outline", content, { final: true });
+
+    if (mode === "critique") {
+      project.outlineCritique = content;
+      markTeachTextAiAssisted();
+      project.flowState = { ...(project.flowState || {}), outline: true };
+      project.updatedAt = new Date().toISOString();
+      saveDeskState();
+      updateFlowGuideChecklist({ render: false });
+      renderPipeline();
+      openWindow("outline");
+    }
+  } catch (error) {
+    failed = true;
+    if (!isAbortError(error)) {
+      console.error("Outline operation failed", error);
+      setStatus(t("reader_error", error.message));
+    }
+  } finally {
+    const cancelled = endLongTask(taskKey);
+    if (!failed && !cancelled && mode === "critique") setStatus(t("ready"));
+  }
+
+  if (!failed && mode !== "critique" && content) {
+    const confirmKey = mode === "mingming" ? "mingming_outline_confirm" : "outline_structure_confirm";
+    const statusKey = mode === "mingming" ? "mingming_outline_done" : "outline_structured";
+    await confirmAndApplyAiOutline(content, confirmKey, statusKey);
+  }
+}
+
+async function confirmAndApplyAiOutline(markdown, confirmKey, statusKey) {
+  const project = getActiveProject();
+  if (!project) {
+    setStatus(t("no_project_mounted"));
+    openWindow("projects");
+    return false;
+  }
+
+  const nextOutline = stripRebuildMarkdownFence(markdown).trim();
+  if (!nextOutline) return false;
+  const preview = clipContextContent(nextOutline, 1800);
+  const result = await showSystemModal(t(confirmKey, preview), "confirm");
+  if (result !== "yes") {
+    setStatus(t("ready"));
+    return false;
+  }
+
+  const outlineSections = setProjectOutlineMarkdown(project, nextOutline);
+  project.outlineCritique = "";
+  project.flowState = { ...(project.flowState || {}), outline: getMeaningfulOutlineSections(outlineSections).length > 0 };
+  project.updatedAt = new Date().toISOString();
+  markTeachTextAiAssisted();
+  syncDraftsFromProjectOutline(project);
+  syncLinkedTeachTextFromProject(project);
+  saveDeskState();
+  updateFlowGuideChecklist({ render: false });
+  renderPipeline();
+  openWindow("outline");
+  setStatus(t(statusKey));
+  requestAnimationFrame(() => outlineContentEl?.focus());
+  return true;
+}
+
+async function polishDraft() {
+  await ensureWritingFlowModule();
+  const context = currentSectionDraftContext({ ensureDraft: true });
+  if (!context) {
+    setStatus(t("section_draft_needs_section"));
+    openWindow("outline");
+    return;
+  }
+  const body = draftBodyInput.value.trim();
+  if (!body) {
+    setStatus(t("draft_needs_content"));
+    openWindow("sectionDrafts");
+    requestAnimationFrame(() => draftBodyInput?.focus());
+    return;
+  }
+
+  if (!beginLongTask("polish-draft", t("polishing_draft"))) return;
+  let content = "";
+  try {
+    await prepareStreamingMarkdownPreview();
+    const questionSheet = (context.project.questionSheet || "").trim();
+    const projectContext = await buildBudgetedProjectContext([questionSheet, context.outlineMarkdown, body].filter(Boolean).join("\n\n"), { taskKind: "polish-section" });
+    const prompt = `你是 AI System 6 的中文文字编辑。请润色当前章节草稿，让它更清楚、更顺、更像自然中文。
+
+规则：保留核心意思、论点顺序、段落结构和 Markdown 格式；不新增事实、例子、人物、数字或结论；不改变作者基本口吻；优先处理句子过长、转折生硬、重复、翻译腔、抽象空话、节奏堵塞。源文里的 AI 套话不要忠实保留，要换成具体平实的说法；如果源文没有具体信息，不要用另一组抽象词代替，宁可写得短一点。输出不得包含“此外、至关重要、深入探讨、不断演变、格局、作为、证明、彰显、赋能、无缝、直观、强大、关键作用、重要性、奠定基础、打下基础、体现、不仅、而且”等词或结构。不要改成公文腔、论文腔或营销腔。只返回完整润色后的章节草稿，不要解释。
+
+QUESTION SHEET:
+${questionSheet || "No Question Sheet provided."}
+
+PROJECT CONTEXT:
+${projectContext || "No relevant project context selected yet."}
+
+CURRENT SECTION:
+${context.title}
+
+SECTION OUTLINE:
+${context.outlineMarkdown || context.outlineBody || context.title}
+
+CURRENT DRAFT:
+${body}`;
+    const response = await fetchModelPayload({
+      model: getLocalModelRequestName(),
+      messages: withMarkdownModelMessages([{ role: "user", content: prompt }]),
+      temperature: 0.3,
+      ai_system6_task_kind: "polish-draft",
+      stream: true,
+    }, getLongTaskSignal());
+
+    const streamedContent = await readModelTextStream(response, {
+      signal: getLongTaskSignal(),
+      throttleMs: 120,
+      onSnapshot: (markdown) => showStreamingSurfacePreview("sectionDrafts", stripRebuildMarkdownFence(markdown)),
+    });
+    content = stripRebuildMarkdownFence(streamedContent || "").trim();
+    if (content) showStreamingSurfacePreview("sectionDrafts", content, { final: true });
+  } catch (error) {
+    if (!isAbortError(error)) console.error("Polish draft failed", error);
+  } finally {
+    endLongTask("polish-draft");
+  }
+
+  if (!content) {
+    setStatus(t("ready"));
+    return;
+  }
+
+  await confirmAndApplySectionDraft(content, "polish_replace_confirm", "section_draft_polished");
+}
+
+async function suggestDraft() {
+  await ensureWritingFlowModule();
+  const context = currentSectionDraftContext({ ensureDraft: true, seedBody: true });
+  if (!context) {
+    setStatus(t("section_draft_needs_section"));
+    openWindow("outline");
+    return;
+  }
+
+  if (!beginLongTask("suggest-draft", t("suggesting_draft"))) return;
+  let content = "";
+  try {
+    await prepareStreamingMarkdownPreview();
+    const questionSheet = (context.project.questionSheet || "").trim();
+    const currentDraft = String(draftBodyInput.value || context.body || "").trim();
+    const projectContext = await buildBudgetedProjectContext([questionSheet, context.outlineMarkdown, currentDraft].filter(Boolean).join("\n\n"), { taskKind: "review-section" });
+    const prompt = `你是 AI System 6 的中文写作编辑。请给当前章节提供下一步修改建议，不要重写草稿。
+
+规则：建议必须具体、可执行；每条说明该改哪里、为什么改、怎么改；优先指出影响理解、节奏、证据、转折、读者兴趣和 AI 腔的问题；不要泛泛说“加强逻辑”“丰富内容”“提升表达”。如果草稿已经成立，也指出最值得保留的地方。
+只返回 3-6 条 Markdown 项目符号，标题使用：### AI 建议
+
+QUESTION SHEET:
+${questionSheet || "No Question Sheet provided."}
+
+PROJECT CONTEXT:
+${projectContext || "No relevant project context selected yet."}
+
+CURRENT SECTION:
+${context.title}
+
+SECTION OUTLINE:
+${context.outlineMarkdown || context.outlineBody || context.title}
+
+CURRENT DRAFT:
+${currentDraft || "No draft yet. Give planning suggestions for starting this section."}`;
+    const response = await fetchModelPayload({
+      model: getLocalModelRequestName(),
+      messages: withMarkdownModelMessages([{ role: "user", content: prompt }]),
+      temperature: 0.35,
+      ai_system6_task_kind: "suggest-draft",
+      stream: true,
+    }, getLongTaskSignal());
+
+    const streamedContent = await readModelTextStream(response, {
+      signal: getLongTaskSignal(),
+      throttleMs: 120,
+      onSnapshot: (markdown) => showStreamingSurfacePreview("sectionDrafts", stripRebuildMarkdownFence(markdown)),
+    });
+    content = stripRebuildMarkdownFence(streamedContent || "").trim();
+    if (content) showStreamingSurfacePreview("sectionDrafts", content, { final: true });
+  } catch (error) {
+    if (!isAbortError(error)) console.error("Suggest draft failed", error);
+  } finally {
+    endLongTask("suggest-draft");
+  }
+
+  if (!content) {
+    setStatus(t("ready"));
+    return;
+  }
+
+  const preview = clipContextContent(content, 1800);
+  const result = await showSystemModal(t("suggest_append_confirm", preview), "confirm");
+  if (result !== "yes") {
+    setStatus(t("ready"));
+    return;
+  }
+
+  applySectionDraftMarkdown(content, { append: true, ai: true, statusKey: "section_draft_suggested" });
+}
+
+async function insertDraftToTeachText() {
+  await ensureWritingFlowModule();
+  savePipelineData();
+  const project = getActiveProject();
+  const text = draftBodyInput.value.trim();
+  if (!project || !text) return;
+  const inserted = syncProjectOutlineToTeachText(project, { open: false, markModified: true });
+  if (!inserted) return;
+  await openWindow("teachText");
+  requestAnimationFrame(() => {
+    if (teachTextPipelineLabel()) {
+      showTeachTextPreview({ announce: false, focus: false, preserveScroll: false });
+      restoreLinkedManuscriptScroll();
+    } else {
+      teachTextBodyInput.focus();
+    }
+  });
+
+  if (selectedDraftIndex >= 0 && project?.drafts?.[selectedDraftIndex]) {
+    const insertedAt = new Date().toISOString();
+    project.drafts[selectedDraftIndex].insertedAt = insertedAt;
+    project.drafts[selectedDraftIndex].updatedAt = insertedAt;
+    project.drafts[selectedDraftIndex].insertedFileId = activeTextFileId || null;
+    project.drafts[selectedDraftIndex].insertedFileName = getTeachTextDocumentName();
+    saveDeskState();
+    renderPipeline();
+  }
+  setStatus(t("draft_inserted_status"));
+}
+
+function openCitationContextItem(contextItem) {
+  if (!contextItem) {
+    setStatus(t("citation_not_found"));
+    return;
+  }
+
+  if (contextItem.kind === "scrap" && contextItem.id && isInActiveProject(contextItem)) {
+    selectedScrapId = contextItem.id;
+    selectedScrapIds.clear();
+    selectedScrapIds.add(contextItem.id);
+    renderScraps();
+    openWindow("scrapbook");
+    setStatus(contextSourceLabel(contextItem));
+    return;
+  }
+
+  if (contextItem.kind === "file" && contextItem.id && isInActiveProject(contextItem)) {
+    openTextFile(contextItem.id);
+    setStatus(contextSourceLabel(contextItem));
+    return;
+  }
+
+  if (contextItem.fromProjectReference && contextItem.referenceId && contextItem.projectId === activeProjectId) {
+    selectedProjectReferenceId = contextItem.referenceId;
+    renderProjectReferences();
+    openSelectedProjectReference();
+    setStatus(contextSourceLabel(contextItem));
+    return;
+  }
+
+  if (contextItem.source && contextItem.projectId === activeProjectId) {
+    selectedMountedFile = contextItem.source;
+    renderMountedTextDisk();
+    openWindow("textDisk");
+    openMountedTextFile(contextItem.source);
+    setStatus(contextSourceLabel(contextItem));
+    return;
+  }
+
+  setStatus(t("citation_not_found"));
+}
+
+function resolveCitationRef(ref) {
+  const rawRef = String(ref || "");
+  const exact = claimCitationContextItems.find((contextItem) =>
+    contextItem.citationId === rawRef
+  );
+  if (exact) return exact;
+
+  const sourceMatch = rawRef.match(/\[S(\d+)(?::(\d+))?\]/i);
+  if (sourceMatch) {
+    const sourceId = `S${sourceMatch[1]}`;
+    const sourceItem = buildProjectSourceRegistry().find((source) => source.sourceId === sourceId);
+    if (!sourceItem) return null;
+    const sourceKey = sourceItem.key;
+    const contextItems = claimCitationContextItems.filter((contextItem) => getContextSourceKey(contextItem) === sourceKey);
+    if (sourceMatch[2]) return contextItems[Number(sourceMatch[2]) - 1] || contextItems[0] || null;
+    return contextItems[0] || null;
+  }
+
+  const match = rawRef.match(/\[([MR])(\d+)\]/i);
+  if (!match) return null;
+  const prefix = match[1].toUpperCase();
+  const citationId = `[${prefix}${match[2]}]`;
+  const byCitationId = claimCitationContextItems.find((contextItem) =>
+    contextItem.citationId === citationId
+  );
+  if (byCitationId) return byCitationId;
+  const index = parseInt(match[2], 10) - 1;
+  const contextItems = claimCitationContextItems.filter((contextItem) =>
+    prefix === "M" ? contextItem.type === "curated" : contextItem.type === "ranked"
+  );
+  return contextItems[index] || null;
+}
+
+function getClaimCheckWritingObjectContext(project = getActiveProject()) {
+  const parts = [];
+  if (currentDocMap) {
+    parts.push([
+      "## Current DocMap",
+      clipContextContent(formatDocMapMarkdown(currentDocMap), 3200),
+    ].join("\n\n"));
+  }
+
+  const files = getProjectFiles(project)
+    .filter((file) => file.type === "text" && String(file.body || "").trim())
+    .filter((file) => /docmap|claim|事实|核查|writing object pack/i.test(file.name || ""))
+    .slice(0, 4);
+
+  files.forEach((file) => {
+    parts.push([
+      `## ${file.name}`,
+      clipContextContent(file.body, 2200),
+    ].join("\n\n"));
+  });
+
+  return parts.join("\n\n---\n\n");
+}
+
+function normalizeReviewSectionBlock(block, index = 0) {
+  const title = String(block?.title || "").trim() || `${t("claim_check_section")} ${index + 1}`;
+  const source = String(block?.source || block?.sourceMarkdown || "").trim();
+  const text = source || [`## ${title}`, block?.body || ""].filter(Boolean).join("\n\n");
+  return {
+    index,
+    title,
+    body: String(block?.body || "").trim(),
+    text: text.trim(),
+    offset: Math.max(0, Number(block?.offset) || 0),
+  };
+}
+
+function reviewMarkdownSectionBlocks(raw) {
+  const levelTwoBlocks = markdownDocumentSectionBlocks(raw, 2);
+  if (levelTwoBlocks.length) return levelTwoBlocks;
+
+  const levelOneBlocks = markdownDocumentSectionBlocks(raw, 1);
+  if (levelOneBlocks.length) return levelOneBlocks;
+
+  const levelThreeBlocks = markdownDocumentSectionBlocks(raw, 3);
+  if (levelThreeBlocks.length) return levelThreeBlocks;
+
+  return [];
+}
+
+function looksLikePlainReviewHeading(line, previousLine, nextLine) {
+  const text = String(line || "").replace(/\s+/g, " ").trim();
+  if (!text) return false;
+  if (text.length > 32) return false;
+  if (/^[>“"']/.test(text)) return false;
+  if (/[。！？!?，,；;：:]$/.test(text)) return false;
+  if (/^\s*(?:[-*+]|\d+[.)、])\s+/.test(text)) return false;
+
+  const hasBoundaryBefore = !String(previousLine || "").trim();
+  const hasBodyAfter = String(nextLine || "").trim().length >= 8;
+  if (!hasBoundaryBefore || !hasBodyAfter) return false;
+
+  return /^(?:第.{1,12}[章节]|[一二三四五六七八九十]+[、.]\s*.+|\d+[.)]\s*.+|[\p{L}\p{N}][\p{L}\p{N}\s&/＋+\-—：:·「」《》()（）]{0,31})$/u.test(text);
+}
+
+function plainReviewSectionBlocks(raw) {
+  const lines = normalizeMarkdownText(raw).split("\n");
+  const starts = [];
+
+  lines.forEach((line, index) => {
+    const previousLine = index > 0 ? lines[index - 1] : "";
+    const nextLine = lines.slice(index + 1).find((item) => item.trim()) || "";
+    if (looksLikePlainReviewHeading(line, previousLine, nextLine)) {
+      starts.push({ index, title: line.trim() });
+    }
+  });
+
+  if (starts.length < 2 || starts.length > 24) return [];
+
+  const blocks = starts.map((start, index) => {
+    const endLine = starts[index + 1]?.index ?? lines.length;
+    const sourceLines = trimMarkdownBlockLines(lines.slice(start.index, endLine));
+    const bodyLines = trimMarkdownBlockLines(sourceLines.slice(1));
+    const source = sourceLines.join("\n").trim();
+    return {
+      title: stripMarkdownInlineSyntax(start.title),
+      body: bodyLines.join("\n").trim(),
+      source,
+      offset: raw.indexOf(source),
+    };
+  }).filter((block) => block.source);
+
+  return blocks.length >= 2 ? blocks : [];
+}
+
+function getTeachTextSectionBlocks(body = teachTextBodyInput?.value || "") {
+  const raw = String(body || "").trim();
+  if (!raw) return [];
+
+  const markdownBlocks = reviewMarkdownSectionBlocks(raw);
+  const blocks = markdownBlocks.length ? markdownBlocks : plainReviewSectionBlocks(raw);
+
+  if (blocks.length) {
+    return blocks
+      .map((block, index) => normalizeReviewSectionBlock(block, index))
+      .filter((block) => block.text);
+  }
+
+  return [{
+    index: 0,
+    title: markdownDocumentTitle(raw) || t("claim_scope_manuscript"),
+    body: raw,
+    text: raw,
+    offset: 0,
+  }];
+}
+
+function getClaimCheckSectionBlocks(body = teachTextBodyInput?.value || "") {
+  return getTeachTextSectionBlocks(body);
+}
+
+function revealReviewDeskSection(index = selectedStyleSectionIndex) {
+  if (!reviewDeskBodyInput || getWindow("reviewDesk")?.classList.contains("is-hidden")) return;
+  const source = teachTextBodyInput?.value || "";
+  const sections = getTeachTextSectionBlocks(source);
+  const section = sections[Math.max(0, Math.min(sections.length - 1, Number(index) || 0))];
+  if (!section) return;
+
+  syncReviewDeskFromTeachText({ force: true });
+  reviewDeskBodyInput.classList.remove("is-hidden");
+  reviewDeskPreviewEl?.classList.add("is-hidden");
+  reviewDeskBodyInput.focus({ preventScroll: true });
+  reviewDeskBodyInput.setSelectionRange(0, Math.min(reviewDeskBodyInput.value.length, Math.max(1, section.title.length)));
+  reviewDeskBodyInput.scrollTop = 0;
+  scrollTextareaToOffset(teachTextBodyInput, section.offset || 0);
+}
+
+function selectedClaimCheckSection() {
+  const sections = getClaimCheckSectionBlocks();
+  if (!sections.length) return null;
+  selectedClaimSectionIndex = Math.max(0, Math.min(sections.length - 1, selectedClaimSectionIndex));
+  return sections[selectedClaimSectionIndex];
+}
+
+function renderClaimCheckSections() {
+  if (!claimSectionSelectEl) return;
+  const sections = getClaimCheckSectionBlocks();
+  const previous = selectedClaimSectionIndex;
+  claimSectionSelectEl.replaceChildren();
+
+  if (!sections.length) {
+    selectedClaimSectionIndex = 0;
+    claimSectionSelectEl.disabled = true;
+    [claimSectionPreviousButton, claimSectionNextButton].forEach((button) => {
+      if (button) button.disabled = true;
+    });
+    if (claimSectionMetaEl) claimSectionMetaEl.textContent = t("claim_section_empty");
+    updateReviewDeskStatusTitle?.();
+    return;
+  }
+
+  selectedClaimSectionIndex = Math.max(0, Math.min(sections.length - 1, previous));
+  sections.forEach((section, index) => {
+    const option = document.createElement("option");
+    option.value = String(index);
+    option.textContent = `${index + 1}. ${section.title}`;
+    claimSectionSelectEl.append(option);
+  });
+  claimSectionSelectEl.disabled = false;
+  claimSectionSelectEl.value = String(selectedClaimSectionIndex);
+  [claimSectionPreviousButton, claimSectionNextButton].forEach((button) => {
+    if (button) button.disabled = sections.length < 2;
+  });
+
+  const active = sections[selectedClaimSectionIndex];
+  if (claimSectionMetaEl) {
+    claimSectionMetaEl.textContent = t("claim_section_meta", selectedClaimSectionIndex + 1, sections.length, active.title);
+  }
+  updateReviewDeskStatusTitle?.();
+}
+
+function selectClaimCheckSection(index) {
+  const sections = getClaimCheckSectionBlocks();
+  if (!sections.length) {
+    renderClaimCheckSections();
+    return;
+  }
+  selectedClaimSectionIndex = Math.max(0, Math.min(sections.length - 1, Number.isFinite(index) ? index : 0));
+  selectedStyleSectionIndex = selectedClaimSectionIndex;
+  renderStyleCheckSections();
+  renderClaimCheckSections();
+  revealReviewDeskSection(selectedClaimSectionIndex);
+}
+
+function showAdjacentClaimCheckSection(direction) {
+  const sections = getClaimCheckSectionBlocks();
+  if (!sections.length) {
+    renderClaimCheckSections();
+    return;
+  }
+  const next = selectedClaimSectionIndex + direction;
+  selectClaimCheckSection((next + sections.length) % sections.length);
+}
+
+function claimCheckScopeLabel(scope) {
+  if (scope?.type === "section") return scope.label || t("claim_check_section");
+  return t("claim_scope_manuscript");
+}
+
+function claimCheckQueryText(body) {
+  const documentModel = parseMarkdownDocument(body);
+  const headings = documentModel.headings.map((heading) => heading.text).filter(Boolean).slice(0, 8);
+  const claims = inferRebuildClaims(getRebuildParagraphs(body)).slice(0, 10);
+  return [
+    markdownDocumentTitle(body),
+    headings.length ? `Headings:\n${headings.map((item) => `- ${item}`).join("\n")}` : "",
+    claims.length ? `Likely claims:\n${claims.map((item) => `- ${item}`).join("\n")}` : "",
+    clipContextContent(documentModel.plainText || body, 1800),
+  ].filter(Boolean).join("\n\n");
+}
+
+function setClaimCheckWaiting(message) {
+  claimResultsEl.replaceChildren();
+  const waiting = document.createElement("div");
+  waiting.className = "empty-folder-note";
+  waiting.textContent = message;
+  claimResultsEl.append(waiting);
+  setStatus(message);
+}
+
+function renderClaimCheckDraft(markdown) {
+  if (!claimResultsEl) return;
+  const clean = stripRebuildMarkdownFence(markdown);
+  claimResultsEl.innerHTML = clean.trim()
+    ? markdownToSystemHtml(clean)
+    : `<div class="empty-folder-note">${escapeHtml(t("running_check"))}</div>`;
+}
+
+async function runClaimCheck(options = {}) {
+  if (!ensureTeachTextReviewState({ promoteSavedFinal: true })) return;
+  const fullBody = teachTextBodyInput.value.trim();
+  if (!fullBody) {
+    setStatus(t("teachtext_empty"));
+    return;
+  }
+
+  const sectionOnly = options.sectionOnly === true;
+  const section = sectionOnly ? selectedClaimCheckSection() : null;
+  if (sectionOnly && !section?.text) {
+    setStatus(t("claim_section_empty"));
+    renderClaimCheckSections();
+    return;
+  }
+  const body = sectionOnly ? section.text : fullBody;
+  const scope = sectionOnly
+    ? { type: "section", label: section.title, index: section.index }
+    : { type: "manuscript", label: t("claim_scope_manuscript") };
+  currentClaimCheckScope = scope;
+  const taskKey = sectionOnly ? "claim-check-section" : "claim-check";
+  const runningLabel = sectionOnly ? t("running_section_check", section.title) : t("running_check");
+
+  if (!beginLongTask(taskKey, runningLabel)) return;
+  openReviewDesk("facts");
+  setClaimCheckWaiting(sectionOnly ? t("claim_check_scanning_section", section.title) : t("claim_check_scanning"));
+
+  try {
+    setClaimCheckWaiting(sectionOnly ? t("claim_check_retrieving_section", section.title) : t("claim_check_retrieving"));
+    const queryText = claimCheckQueryText(body);
+    const context = await buildBudgetedProjectContext(queryText, {
+      budget: Math.min(maxPipelineContextChars, 12000),
+      topK: Math.min(maxPipelineReferenceChunks, 8),
+      maxCuratedContextItems: 4,
+      itemLimit: 1800,
+      taskKind: "claim-check",
+    });
+    claimCitationContextItems = lastRetrievedContextItems.map((contextItem) => ({ ...contextItem }));
+    const writingObjectContext = getClaimCheckWritingObjectContext();
+    const sourceCount = claimCitationContextItems.filter((item) => item.included !== false && !item.excluded).length;
+    setClaimCheckWaiting(sectionOnly ? t("claim_check_generating_section", sourceCount, section.title) : t("claim_check_generating", sourceCount));
+
+    const prompt = `You are a forensic fact-checking editor for AI System 6.
+Verify the factual claims in the ${sectionOnly ? `selected TeachText section "${section.title}"` : "TeachText manuscript"} against the verification sources.
+Return Markdown only. Do not return JSON.
+
+Rules:
+- Use only citation IDs that appear in VERIFICATION SOURCES, such as [S1], [S1:2], [M1], or [R2].
+- Do not invent citation IDs.
+- DocMap and Fact Queue are planning context. They may suggest what to inspect, but they are not evidence unless they cite a verification source.
+- Extract concrete checkable claims first. Check each claim separately.
+- If a claim is not supported by the verification sources, mark it "证据不足 / Evidence Insufficient".
+- If a source appears to contradict the manuscript, mark it "可能矛盾 / Possible Contradiction".
+- If a claim is too subjective or not factual, mark it "不需核查 / Not factual" and suggest tightening only if needed.
+- Quote short evidence snippets from sources when available.
+- If this is a section check, do not imply that the whole manuscript has been checked.
+- Do not summarize vaguely. Prefer a row-by-row claim table.
+- Write in ${currentLanguage === "zh" ? "Chinese" : "English"}.
+
+Required Markdown format:
+# ${currentLanguage === "zh" ? "事实核查报告" : "Claim Check Report"}
+
+## ${currentLanguage === "zh" ? "核查范围" : "Scope"}
+- ${currentLanguage === "zh" ? "核查对象：" : "Checked text:"}
+- ${currentLanguage === "zh" ? "可用来源数量：" : "Available source count:"}
+- ${currentLanguage === "zh" ? "限制：" : "Limit:"} ${currentLanguage === "zh" ? "只基于当前项目内来源，不联网，不凭常识补证据。" : "Project sources only; no web lookup and no evidence from model memory."}
+
+## ${currentLanguage === "zh" ? "逐条主张核查" : "Claim-by-Claim Check"}
+| ${currentLanguage === "zh" ? "位置" : "Location"} | ${currentLanguage === "zh" ? "主张" : "Claim"} | ${currentLanguage === "zh" ? "类型" : "Type"} | ${currentLanguage === "zh" ? "证据" : "Evidence"} | ${currentLanguage === "zh" ? "状态" : "Status"} | ${currentLanguage === "zh" ? "建议" : "Suggestion"} |
+|---|---|---|---|---|---|
+| ${currentLanguage === "zh" ? "段落/句子" : "Paragraph/sentence"} | ${currentLanguage === "zh" ? "可核查主张" : "Checkable claim"} | ${currentLanguage === "zh" ? "数字/时间/人物/因果/绝对化/引用/其他" : "number/date/person/causal/absolute/quote/other"} | ${currentLanguage === "zh" ? "短证据 + 来源 ID，或“无”" : "short evidence + source ID, or None"} | ${currentLanguage === "zh" ? "已支持/证据不足/可能矛盾/不需核查" : "Supported/Evidence Insufficient/Possible Contradiction/Not factual"} | ${currentLanguage === "zh" ? "保留、补来源、弱化、删去或改写方向" : "keep, add source, soften, remove, or revision direction"} |
+
+## ${currentLanguage === "zh" ? "优先处理" : "Priorities"}
+- ${currentLanguage === "zh" ? "列出最需要作者处理的 1-3 个风险。" : "List the 1-3 issues the author should handle first."}
+
+CHECK SCOPE:
+${sectionOnly ? `Selected section: ${section.title}` : "Full TeachText manuscript"}
+
+WRITING OBJECT CONTEXT:
+${writingObjectContext || "No DocMap or fact queue saved for this project."}
+
+VERIFICATION SOURCES:
+${context || "No verification sources were found in the current Project Disk."}
+
+${sectionOnly ? "TEACHTEXT SECTION:" : "TEACHTEXT MANUSCRIPT:"}
+${body}`;
+
+    const response = await fetchModelPayload({
+      model: getLocalModelRequestName(),
+      messages: withMarkdownModelMessages([{ role: "user", content: prompt }]),
+      temperature: 0.1,
+      max_tokens: 3000,
+      ai_system6_task_kind: "critique",
+      stream: true,
+    }, getLongTaskSignal());
+
+    let lastPreviewAt = 0;
+    const content = await readRebuildMarkdownPackStream(response, (markdown) => {
+      const now = Date.now();
+      if (now - lastPreviewAt < 360) return;
+      lastPreviewAt = now;
+      setStatus(t("claim_check_receiving", markdown.length));
+      renderClaimCheckDraft(markdown);
+    });
+    renderClaimResults(stripRebuildMarkdownFence(content));
+  } catch (error) {
+    if (!isAbortError(error)) {
+      console.error("Claim check failed", error);
+      const message = t("claim_check_error", error.message);
+      claimResultsEl.innerHTML = `<div class="empty-folder-note">${message}</div>`;
+      setStatus(message);
+    }
+  } finally {
+    endLongTask(taskKey);
+  }
+}
+
+function markClaimCheckComplete(results = []) {
+  const project = getActiveProject();
+  if (!project) return;
+  const scope = currentClaimCheckScope || { type: "manuscript", label: "" };
+  project.flowState = {
+    ...(project.flowState || {}),
+    check: scope.type === "manuscript" ? true : project.flowState?.check === true,
+  };
+  project.lastClaimCheck = {
+    checkedAt: new Date().toISOString(),
+    scope: scope.type,
+    sectionTitle: scope.type === "section" ? scope.label : "",
+    resultCount: Array.isArray(results) ? results.length : 0,
+  };
+  project.updatedAt = new Date().toISOString();
+  saveDeskState();
+  setStatus(scope.type === "section" ? t("claim_section_check_done", claimCheckScopeLabel(scope)) : t("claim_check_done"));
+}
+
+function handleCitationIdClick(ref) {
+  openCitationContextItem(resolveCitationRef(ref));
+}
+
+function openSourceForContextItem(contextItem) {
+  if (contextItem?.kind === "scrap") {
+    const scrap = scraps.find((item) => item.id === contextItem.id && isInActiveProject(item));
+    if (scrap && canOpenScrapSource(scrap)) {
+      const contract = sourceContractForScrap(scrap);
+      if (contract.kind === "readerClip" && contract.url) {
+        readerUrlInput.value = contract.url;
+        openWindow("reader");
+        fetchReaderPage(contract.url);
+        return;
+      }
+      if (contract.kind === "documentClip" && contract.fileId) {
+        openTextFile(contract.fileId);
+        return;
+      }
+    }
+  }
+  openCitationContextItem(contextItem);
+}
+
+function normalizeClaimSearchText(text) {
+  return String(text || "")
+    .replace(/\[[^\]]+\]/g, "")
+    .replace(/[“”"']/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function jumpToTeachTextClaim(claim) {
+  const text = teachTextBodyInput.value;
+  const normalizedClaim = normalizeClaimSearchText(claim);
+  if (!text.trim() || !normalizedClaim) {
+    setStatus(t("claim_jump_missing"));
+    return;
+  }
+
+  const candidates = [
+    String(claim || "").trim(),
+    normalizedClaim,
+    normalizedClaim.split(/[.;。！？!?]/)[0]?.trim(),
+    normalizedClaim.slice(0, 120).trim(),
+  ].filter((item, index, arr) => item && item.length > 8 && arr.indexOf(item) === index);
+
+  let start = -1;
+  let found = "";
+  for (const candidate of candidates) {
+    start = text.indexOf(candidate);
+    if (start >= 0) {
+      found = candidate;
+      break;
+    }
+  }
+
+  if (start < 0) {
+    const lowerText = text.toLowerCase();
+    for (const candidate of candidates) {
+      start = lowerText.indexOf(candidate.toLowerCase());
+      if (start >= 0) {
+        found = text.slice(start, start + candidate.length);
+        break;
+      }
+    }
+  }
+
+  if (start < 0) {
+    setStatus(t("claim_jump_missing"));
+    return;
+  }
+
+  openWindow("teachText");
+  teachTextBodyInput.focus();
+  teachTextBodyInput.selectionStart = start;
+  teachTextBodyInput.selectionEnd = start + found.length;
+  setStatus(t("ready"));
+}
+
+function renderClaimResults(markdown) {
+  claimResultsEl.innerHTML = markdownToSystemHtml(markdown);
+
+  // Make REF IDs interactive (S for Scrapbook, D for File Floppy)
+  let content = claimResultsEl.innerHTML;
+
+  // Replace [REF-S-...]
+  content = content.replace(/\[REF-S-([a-z0-9-]+)\]/gi, (match, id) => {
+    return `<button class="btn mini-btn citation-btn" data-type="scrap" data-id="${id}">${match}</button>`;
+  });
+
+  // Replace [REF-D-...]
+  content = content.replace(/\[REF-D-(\d+)\]/gi, (match, index) => {
+    return `<button class="btn mini-btn citation-btn" data-type="disk" data-index="${index}">${match}</button>`;
+  });
+
+  content = content.replace(/\[([MR])(\d+)\]/gi, (match, prefix, index) => {
+    return `<button class="btn mini-btn citation-btn" data-type="context" data-prefix="${prefix.toUpperCase()}" data-index="${index}">${match}</button>`;
+  });
+
+  content = content.replace(/\[S\d+(?::\d+)?\]/gi, (match) => {
+    return `<button class="btn mini-btn citation-btn" data-type="source-ref" data-ref="${escapeHtml(match)}">${match}</button>`;
+  });
+
+  claimResultsEl.innerHTML = content;
+
+  // Add listeners
+  claimResultsEl.querySelectorAll(".citation-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const type = btn.dataset.type;
+      if (type === "scrap") {
+        const scrapId = btn.dataset.id;
+        const scrap = scraps.find(s => s.id === scrapId);
+        if (scrap) {
+          selectedScrapId = scrapId;
+          // Try to find URL for Reader
+          const urlMatch = scrap.body.match(/URL:\s*(https?:\/\/\S+)/i);
+          if (urlMatch) {
+            readerUrlInput.value = urlMatch[1];
+            openWindow("reader");
+            fetchReaderPage(urlMatch[1]);
+          } else {
+            openWindow("scrapbook");
+            renderScraps();
+          }
+        }
+      } else if (type === "disk") {
+        const index = parseInt(btn.dataset.index, 10);
+        const chunks = getMountedTextDiskChunks();
+        const chunk = chunks[index];
+        if (chunk) {
+          selectedMountedFile = chunk.source;
+          openWindow("textDisk");
+          renderMountedTextDisk();
+          openMountedTextFile(chunk.source);
+        }
+      } else if (type === "context") {
+        openCitationContextItem(resolveCitationRef(`[${btn.dataset.prefix}${btn.dataset.index}]`));
+      } else if (type === "source-ref") {
+        openCitationContextItem(resolveCitationRef(btn.dataset.ref));
+      }
+    });
+  });
+  markClaimCheckComplete();
+  updateFlowGuideChecklist({ render: false });
+}

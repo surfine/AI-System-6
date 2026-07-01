@@ -1,0 +1,13 @@
+{
+  "_note": "Ratcheting design-governance budgets. Counts capture current historical debt; verify:design fails only when new agent-default design anti-patterns exceed the baseline. Lower a count when cleanup removes instances. Raising a count requires a deliberate justification.",
+  "checks": {
+    "thickSideAccentDeclarations": 14,
+    "layoutPropertyTransitions": 2,
+    "gradientTextRules": 0,
+    "nestedCardSelectors": 1,
+    "marketingHeroClassUses": 0,
+    "arbitraryZIndexDeclarations": 37,
+    "placeholderCopyUses": 0,
+    "sketchyDecorativeSvgTells": 0
+  }
+}

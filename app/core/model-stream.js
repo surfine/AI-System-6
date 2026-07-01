@@ -1,0 +1,102 @@
+// Core module: shared model response streaming helpers.
+
+async function readModelTextStream(response, options = {}) {
+  const { onSnapshot, onUsage, throttleMs = 80, signal } = options;
+  if (!response?.ok) {
+    const text = await response?.text?.().catch(() => "") || "";
+    const detail = text || response?.statusText || `HTTP ${response?.status || 0}`;
+    const code = typeof classifyLmStudioError === "function" ? classifyLmStudioError(detail, response) : "";
+    throw new Error([code, detail].filter(Boolean).join(": "));
+  }
+
+  const emitSnapshot = (() => {
+    let lastEmitAt = 0;
+    let pending = "";
+    return (text, force = false) => {
+      pending = text;
+      const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+      if (!force && throttleMs > 0 && now - lastEmitAt < throttleMs) return;
+      lastEmitAt = now;
+      onSnapshot?.(pending);
+    };
+  })();
+
+  const readJsonFallback = async () => {
+    const data = await response.json();
+    if (data?.usage?.prompt_tokens) onUsage?.(data.usage);
+    const content = data?.choices?.[0]?.message?.content
+      ?? data?.choices?.[0]?.text
+      ?? data?.choices?.[0]?.delta?.content
+      ?? "";
+    const text = String(content || "");
+    emitSnapshot(text, true);
+    return text;
+  };
+
+  const reader = response.body?.getReader?.();
+  const contentType = response.headers?.get?.("content-type") || "";
+  if (/json/i.test(contentType) && !/event-stream/i.test(contentType)) return readJsonFallback();
+  if (!reader) return readJsonFallback();
+
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let content = "";
+  let usage = null;
+  let sawEventFrame = false;
+
+  const appendChunk = (chunk) => {
+    if (!chunk) return;
+    content += chunk;
+    emitSnapshot(content);
+  };
+
+  const consumeDataLine = (line) => {
+    const trimmed = String(line || "").trim();
+    if (!trimmed.startsWith("data:")) return false;
+    sawEventFrame = true;
+    const raw = trimmed.replace(/^data:\s*/, "");
+    if (!raw || raw === "[DONE]") return true;
+    try {
+      const data = JSON.parse(raw);
+      if (data.usage?.prompt_tokens) usage = data.usage;
+      appendChunk(
+        data?.choices?.[0]?.delta?.content
+        ?? data?.choices?.[0]?.message?.content
+        ?? data?.choices?.[0]?.text
+        ?? ""
+      );
+    } catch {
+      // Ignore keepalive or partial event frames; the buffer splitter handles partial frames.
+    }
+    return true;
+  };
+
+  const consumeEvent = (eventText) => {
+    const lines = String(eventText || "").split(/\r?\n/);
+    let consumedSse = false;
+    lines.forEach((line) => {
+      consumedSse = consumeDataLine(line) || consumedSse;
+    });
+    if (!consumedSse && !sawEventFrame) appendChunk(eventText);
+  };
+
+  while (!signal?.aborted) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    if (/data:\s*/.test(buffer) || sawEventFrame) {
+      const events = buffer.split(/\n\n|\r\n\r\n/);
+      buffer = events.pop() || "";
+      events.forEach(consumeEvent);
+    } else {
+      appendChunk(buffer);
+      buffer = "";
+    }
+  }
+
+  buffer += decoder.decode();
+  if (buffer.trim()) consumeEvent(buffer);
+  if (usage) onUsage?.(usage);
+  emitSnapshot(content, true);
+  return content;
+}

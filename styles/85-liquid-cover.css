@@ -1,0 +1,1027 @@
+/* Liquid Cover — glass-text cover generator window.
+   Scoped under .liquid-cover-window / .lc-*. Override-free and stacking-free:
+   layout is pure flexbox so it cooperates with the base .window cascade. */
+
+/* Default frame so the tool is usable in every layout regime. Desktop
+   maximize sets inline width/height (which win); portrait-flow override
+   rules also win. This is only the fallback when neither runs, and the
+   max-height keeps the tall control panel scrolling on-screen. */
+.liquid-cover-window {
+  width: min(1040px, calc(100vw - 36px));
+  height: calc(100vh - var(--system-menu-height, 26px) - 36px);
+  max-height: calc(100vh - var(--system-menu-height, 26px) - 36px);
+}
+
+.liquid-cover-body {
+  flex: 1 1 auto;
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+}
+
+/* Bottom mood form — the primary control. DocMap-style: a label, then an
+   input + button row (describe a vibe / adjustment, AI or rules configure all). */
+.lc-ask-bar {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 12px;
+  border-top: 2px solid var(--ink);
+  background: var(--paper);
+}
+
+.lc-ask-label {
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.lc-ask-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lc-ask-bar input[type="text"] {
+  flex: 1 1 auto;
+  min-width: 0;
+  font: inherit;
+  padding: 6px 9px;
+  border: 1px solid var(--ink);
+  border-radius: var(--control-radius, 4px);
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.lc-ask-status {
+  font-size: 11px;
+  opacity: 0.7;
+  min-height: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lc-status-bar {
+  justify-content: flex-start;
+}
+
+.lc-status-bar .lc-ask-status {
+  flex: 1 1 auto;
+}
+
+.lc-stage {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 0;
+  padding: 16px;
+  overflow: hidden;
+  background: var(--shade, #c8c8c8);
+}
+
+.lc-canvas {
+  max-width: 100%;
+  max-height: 100%;
+  border: 2px solid var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+  background: var(--paper);
+  cursor: grab;
+  touch-action: none;
+}
+
+.lc-canvas.is-grabbing {
+  cursor: grabbing;
+}
+
+.lc-panel {
+  flex: 0 0 clamp(360px, 24vw, 420px);
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  gap: 7px;
+  padding: 9px;
+  min-height: 0;
+  overflow: hidden;
+  border-left: 2px solid var(--ink);
+  background: var(--paper);
+}
+
+.lc-panel-head {
+  display: grid;
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  gap: 8px;
+  min-width: 0;
+}
+
+.lc-group {
+  border: 1px solid var(--ink);
+  border-radius: var(--control-radius, 4px);
+  padding: 6px 7px;
+  background: var(--paper);
+}
+
+.lc-group-title {
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+
+.lc-subtitle {
+  margin-top: 5px;
+}
+
+.lc-note {
+  display: none;
+  margin: 4px 0 0;
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.lc-export-group .lc-note {
+  display: block;
+}
+
+.lc-row {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr) 32px;
+  align-items: center;
+  gap: 6px;
+  margin: 3px 0;
+}
+
+.lc-row > span:first-child {
+  font-size: 12px;
+}
+
+.lc-row .lc-val {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+}
+
+.lc-row input[type="range"] {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Classic skin keeps range controls in System 6 chrome: square, black-white,
+   and visibly mechanical instead of leaking the Liquid Glass control language. */
+.liquid-cover-window input[type="range"] {
+  --lc-accent: var(--ink);
+  --lc-track: var(--paper);
+  --lc-fill: 0%;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 20px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.liquid-cover-window input[type="range"]:focus { outline: none; }
+.liquid-cover-window input[type="range"]:focus-visible::-webkit-slider-thumb {
+  box-shadow:
+    2px 2px 0 var(--ink),
+    0 0 0 2px var(--paper),
+    0 0 0 4px var(--ink);
+}
+
+.liquid-cover-window input[type="range"]::-webkit-slider-runnable-track {
+  height: 7px;
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  background: linear-gradient(to right, var(--lc-accent) 0 var(--lc-fill), var(--lc-track) var(--lc-fill) 100%);
+  box-shadow: inset 1px 1px 0 var(--shade-dark);
+}
+
+.liquid-cover-window input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 13px;
+  height: 18px;
+  margin-top: -7px;
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.liquid-cover-window input[type="range"]::-moz-range-track {
+  height: 7px;
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  background: linear-gradient(to right, var(--lc-accent) 0 var(--lc-fill), var(--lc-track) var(--lc-fill) 100%);
+  box-shadow: inset 1px 1px 0 var(--shade-dark);
+}
+
+.liquid-cover-window input[type="range"]::-moz-range-thumb {
+  width: 13px;
+  height: 18px;
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.liquid-cover-window input[type="range"]:disabled {
+  --lc-accent: var(--shade);
+  cursor: default;
+}
+.liquid-cover-window input[type="range"]:disabled::-webkit-slider-thumb { background: var(--shade); }
+.liquid-cover-window input[type="range"]:disabled::-moz-range-thumb { background: var(--shade); }
+
+.lc-row input[type="checkbox"].lc-check {
+  grid-column: 2;
+  justify-self: start;
+}
+
+/* Classic skin keeps the square inset checkbox from system.css. */
+.liquid-cover-window input[type="checkbox"] {
+  border-radius: 0;
+  box-shadow: inset 1px 1px 0 var(--shade-dark);
+  cursor: pointer;
+}
+
+.liquid-cover-window .lc-color {
+  border-radius: 0;
+  box-shadow: inset 1px 1px 0 var(--paper), inset -1px -1px 0 var(--shade-dark);
+}
+
+.lc-row .lc-color {
+  grid-column: 2;
+  justify-self: start;
+  width: 36px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+}
+
+.lc-row .select-wrap {
+  grid-column: 2 / span 2;
+}
+
+.lc-row input[type="text"],
+.lc-row input[type="password"] {
+  grid-column: 2 / span 2;
+  min-width: 0;
+  font: inherit;
+  padding: 5px 7px;
+  border: 1px solid var(--ink);
+  border-radius: var(--control-radius, 4px);
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.lc-textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 38px;
+  font: inherit;
+  padding: 5px 7px;
+  border: 1px solid var(--ink);
+  border-radius: var(--control-radius, 4px);
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.lc-inspector-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+  min-width: 0;
+}
+
+.lc-inspector-tab {
+  min-width: 0;
+  min-height: 26px;
+  padding: 3px 4px;
+  border: 1px solid var(--ink);
+  border-radius: var(--control-radius, 4px);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  line-height: 1.15;
+  text-align: center;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lc-inspector-tab.is-active {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.lc-inspector-panel {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.lc-inspector-panel.is-active {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+}
+
+.lc-aspect {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.lc-aspect button {
+  font: inherit;
+  font-weight: 700;
+  padding: 5px 0;
+  border: 2px solid var(--ink);
+  border-radius: var(--control-radius, 4px);
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.lc-aspect button.is-active {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.lc-layer-list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  margin-bottom: 5px;
+}
+
+.lc-layer-item {
+  font: inherit;
+  text-align: left;
+  padding: 5px 6px;
+  border: 1px solid var(--ink);
+  border-radius: var(--control-radius, 4px);
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lc-layer-item.is-active {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.lc-button-row {
+  display: flex;
+  gap: 6px;
+}
+
+#liquid-cover-app .lc-button-row:has(#lc-add-layer),
+#liquid-cover-app .lc-button-row:has(#lc-shape-circle) {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+#liquid-cover-app .lc-button-row:has(#lc-add-layer) .btn,
+#liquid-cover-app .lc-button-row:has(#lc-shape-circle) .btn {
+  min-width: 0;
+  min-height: 24px;
+  width: 100%;
+  padding-right: 4px;
+  padding-left: 4px;
+  line-height: 1.2;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lc-layers-group .lc-layer-item {
+  min-height: 24px;
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+
+#liquid-cover-app .lc-button-row:has(#lc-add-layer) {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.14fr);
+}
+
+#liquid-cover-app .lc-button-row:has(#lc-shape-circle) {
+  grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.28fr) minmax(0, 0.86fr);
+  margin-top: 5px;
+}
+
+.lc-shape-tray,
+.lc-layer-advanced {
+  grid-column: 1 / -1;
+}
+
+.lc-layer-advanced {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 8px;
+  row-gap: 4px;
+}
+
+.lc-layer-advanced .lc-row:has(#lc-tint-alpha) {
+  grid-column: 1 / -1;
+  grid-template-columns: 72px minmax(0, 1fr) 30px;
+}
+
+.lc-text-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 8px;
+  row-gap: 4px;
+}
+
+.lc-text-group > .lc-group-title:first-child,
+.lc-text-group > .lc-textarea,
+.lc-text-group > .lc-row:has(#lc-font),
+.lc-text-group > .lc-note {
+  grid-column: 1 / -1;
+}
+
+.lc-layers-group > .lc-group-title,
+.lc-text-group > .lc-subtitle {
+  display: none;
+}
+
+.lc-text-group > .lc-textarea {
+  height: 54px;
+  min-height: 54px;
+  line-height: 1.18;
+  resize: none;
+}
+
+.liquid-cover-window .select-wrap.has-system-select {
+  min-height: 26px;
+}
+
+.lc-text-group .lc-row {
+  grid-template-columns: 48px minmax(0, 1fr) 30px;
+  gap: 5px;
+  margin: 0;
+}
+
+.lc-text-group > .lc-row:has(#lc-font) {
+  min-height: 26px;
+}
+
+.lc-text-group .lc-row:has(#lc-layer-solid),
+.lc-text-group .lc-row:has(#lc-tint-color) {
+  grid-template-columns: 72px minmax(0, 1fr);
+}
+
+.lc-text-group .lc-row:has(#lc-layer-solid) .lc-check,
+.lc-text-group .lc-row:has(#lc-tint-color) .lc-color {
+  grid-column: 2;
+}
+
+.lc-export-group {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+}
+
+.lc-export-choice {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.lc-export-choice > span {
+  font-size: 12px;
+}
+
+.lc-export-choice .select-wrap {
+  min-width: 0;
+}
+
+.lc-export-choice select,
+.lc-export-choice .system-select-button {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lc-material-group .lc-row {
+  grid-template-columns: 84px minmax(0, 1fr) 32px;
+  margin: 0;
+}
+
+.lc-control-strip {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 0;
+}
+
+.lc-control-strip .lc-group-title {
+  margin-bottom: 0;
+}
+
+.lc-control-strip .lc-row {
+  grid-template-columns: 84px minmax(0, 1fr) 30px;
+}
+
+.lc-control-strip .lc-note {
+  display: none;
+}
+
+.lc-export-group .lc-button-row {
+  justify-content: stretch;
+}
+
+.lc-export-group .btn {
+  width: 100%;
+}
+
+.lc-bg-row {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 4px;
+  margin-bottom: 5px;
+}
+
+.liquid-cover-window .file-picker {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+  align-items: center;
+  gap: 5px;
+}
+
+.liquid-cover-window .file-picker .btn {
+  min-width: 0;
+}
+
+.liquid-cover-window .file-picker-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lc-t2i-group,
+.lc-bg-group,
+.lc-fg-group,
+.lc-presets-group {
+  display: grid;
+  gap: 5px;
+}
+
+.lc-t2i-group {
+  grid-template-columns: 84px minmax(0, 1fr);
+  align-items: center;
+}
+
+.lc-t2i-group .lc-group-title,
+.lc-t2i-group .lc-button-row {
+  margin: 0;
+}
+
+.lc-t2i-group .lc-note,
+.lc-t2i-group .lc-textarea {
+  grid-column: 1 / -1;
+}
+
+.lc-t2i-group .lc-button-row,
+.lc-presets-group .lc-button-row {
+  justify-content: stretch;
+}
+
+.lc-t2i-group .btn {
+  width: 100%;
+}
+
+.lc-bg-group .lc-row,
+.lc-fg-group .lc-row {
+  margin: 1px 0;
+}
+
+.lc-preset-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.lc-preset-row .btn {
+  min-height: 32px;
+}
+
+/* Manual fine-tune stays collapsed by default. Once opened, all subgroups open
+   together so manual work is one-click, while the preset gallery hides above it. */
+.lc-finetune > .lc-group {
+  margin-top: 6px;
+}
+
+.lc-finetune > summary {
+  list-style: none;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  padding: 6px 8px;
+  border: 1px solid var(--ink);
+  border-radius: var(--control-radius, 4px);
+  background: var(--paper);
+}
+
+.lc-finetune > summary::-webkit-details-marker { display: none; }
+
+.lc-finetune > summary::before {
+  content: "\25B8  ";
+}
+
+.lc-finetune[open] > summary::before {
+  content: "\25BE  ";
+}
+
+.lc-finetune[open] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 5px;
+}
+
+.lc-inspector-panel:has(.lc-finetune[open]) .lc-presets-group {
+  display: none;
+}
+
+.lc-finetune[open] > summary {
+  grid-column: 1 / -1;
+}
+
+.lc-finetune[open] > .lc-group {
+  margin-top: 0;
+  padding: 5px 6px;
+}
+
+.lc-tune-group > summary {
+  list-style: none;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.lc-tune-group > summary::-webkit-details-marker {
+  display: none;
+}
+
+.lc-tune-group > summary::before {
+  content: "\25B8  ";
+}
+
+.lc-tune-group[open] > summary::before {
+  content: "\25BE  ";
+}
+
+.lc-finetune[open] .lc-row {
+  grid-template-columns: 74px minmax(0, 1fr) 28px;
+  gap: 4px;
+  margin: 2px 0;
+}
+
+.lc-bg-item {
+  aspect-ratio: 16 / 10;
+  border: 2px solid transparent;
+  border-radius: var(--control-radius, 4px);
+  padding: 0;
+  cursor: pointer;
+  background-size: cover;
+  background-position: center;
+}
+
+.lc-bg-item.is-active {
+  border-color: var(--ink);
+}
+
+.liquid-cover-window button[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+#liquid-cover-app .lc-button-row:has(#lc-add-layer) .btn:disabled,
+#liquid-cover-app .lc-button-row:has(#lc-shape-circle) .btn:disabled {
+  background: var(--paper);
+  box-shadow:
+    inset 1px 1px 0 var(--paper),
+    inset -1px -1px 0 var(--shade-dark),
+    1px 1px 0 var(--ink);
+  opacity: 1;
+}
+
+/* GPT Image background generation is gated behind a Control Panel advanced
+   toggle (body.image-gen-enabled). Hidden by default. */
+.lc-img-group {
+  display: none;
+}
+
+body.image-gen-enabled .lc-img-group {
+  display: block;
+}
+
+/* ============================================================================
+   Strict System 6 buttons (scoped to this window per system.css-reference):
+   square (no radius) + raised 2-tone bevel (light top-left, dark bottom-right,
+   hard outer drop); pressed/active = sunken inset bevel.
+   ========================================================================== */
+.liquid-cover-window .btn,
+.liquid-cover-window .lc-aspect button,
+.liquid-cover-window .lc-layer-item,
+.liquid-cover-window .lc-inspector-tab,
+.liquid-cover-window .lc-finetune > summary {
+  border-radius: 0;
+  box-shadow:
+    inset 1px 1px 0 var(--paper),
+    inset -1px -1px 0 var(--shade-dark),
+    1px 1px 0 var(--ink);
+}
+
+.liquid-cover-window .btn:active,
+.liquid-cover-window .lc-aspect button.is-active,
+.liquid-cover-window .lc-layer-item.is-active,
+.liquid-cover-window .lc-inspector-tab.is-active,
+.liquid-cover-window .lc-finetune[open] > summary {
+  box-shadow: inset 1px 1px 0 var(--shade-dark);
+}
+
+/* ============================================================================
+   Liquid Glass theme: same Liquid Cover tool, different material. The default
+   theme keeps hard System 6 chrome; here the stage, panel, groups, controls and
+   canvas use one frosted material language so the window stops looking like a
+   classic form pasted over a glass desktop.
+   ========================================================================== */
+body.use-liquid-glass .liquid-cover-window {
+  background:
+    radial-gradient(120% 120% at 14% 0%, rgba(255, 255, 255, 0.36), transparent 44%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.08)),
+    rgba(255, 255, 255, 0.18);
+}
+
+body.use-liquid-glass .liquid-cover-window .title-bar {
+  border-bottom-color: rgba(16, 17, 20, 0.08);
+}
+
+body.use-liquid-glass .liquid-cover-body {
+  background: transparent;
+}
+
+body.use-liquid-glass .lc-stage {
+  background:
+    radial-gradient(92% 82% at 42% 34%, rgba(255, 255, 255, 0.62), transparent 56%),
+    radial-gradient(80% 84% at 82% 80%, rgba(166, 186, 194, 0.08), transparent 54%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.12)),
+    rgba(255, 255, 255, 0.12);
+}
+
+body.use-liquid-glass .lc-canvas {
+  border: 1px solid rgba(16, 17, 20, 0.56);
+  border-radius: 6px;
+  box-shadow:
+    0 16px 42px rgba(18, 28, 38, 0.14),
+    0 1px 0 rgba(255, 255, 255, 0.74),
+    0 0 0 1px rgba(255, 255, 255, 0.48);
+}
+
+body.use-liquid-glass .lc-panel {
+  border-left: 1px solid rgba(255, 255, 255, 0.42);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.12)),
+    rgba(255, 255, 255, 0.14);
+  box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.58);
+  backdrop-filter: blur(18px) saturate(128%);
+  -webkit-backdrop-filter: blur(18px) saturate(128%);
+}
+
+body.use-liquid-glass .lc-group,
+body.use-liquid-glass .lc-finetune > summary {
+  border: 1px solid rgba(255, 255, 255, 0.56);
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.54), rgba(255, 255, 255, 0.2)),
+    rgba(255, 255, 255, 0.2);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.76),
+    0 10px 24px rgba(18, 28, 38, 0.08);
+}
+
+body.use-liquid-glass .lc-group-title {
+  color: rgba(16, 17, 20, 0.9);
+}
+
+body.use-liquid-glass .lc-note,
+body.use-liquid-glass .lc-row .lc-val {
+  color: rgba(16, 17, 20, 0.62);
+  opacity: 1;
+}
+
+body.use-liquid-glass .lc-ask-bar {
+  border-top: 1px solid rgba(16, 17, 20, 0.18);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.36), rgba(255, 255, 255, 0.18)),
+    rgba(255, 255, 255, 0.16);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.64);
+  backdrop-filter: blur(18px) saturate(128%);
+  -webkit-backdrop-filter: blur(18px) saturate(128%);
+}
+
+body.use-liquid-glass .lc-ask-bar input[type="text"],
+body.use-liquid-glass .lc-row input[type="text"],
+body.use-liquid-glass .lc-row input[type="password"],
+body.use-liquid-glass .lc-textarea {
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.3)),
+    rgba(255, 255, 255, 0.24);
+  color: rgba(16, 17, 20, 0.94);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 6px 16px rgba(18, 28, 38, 0.06);
+}
+
+body.use-liquid-glass .liquid-cover-window .btn,
+body.use-liquid-glass .liquid-cover-window .lc-aspect button,
+body.use-liquid-glass .liquid-cover-window .lc-layer-item,
+body.use-liquid-glass .liquid-cover-window .lc-inspector-tab,
+body.use-liquid-glass .liquid-cover-window .lc-finetune > summary,
+body.use-liquid-glass .liquid-cover-window input[type="checkbox"],
+body.use-liquid-glass .liquid-cover-window .lc-color {
+  border-color: rgba(255, 255, 255, 0.62);
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.48), rgba(255, 255, 255, 0.18)),
+    rgba(255, 255, 255, 0.2);
+  color: rgba(16, 17, 20, 0.9);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    0 6px 16px rgba(18, 28, 38, 0.07);
+}
+
+body.use-liquid-glass .liquid-cover-window .lc-layer-item {
+  border-radius: 8px;
+}
+
+body.use-liquid-glass .liquid-cover-window input[type="checkbox"].lc-check {
+  position: relative;
+  display: inline-block;
+  width: 34px;
+  min-width: 34px;
+  height: 20px;
+  min-height: 20px;
+  border: 1px solid rgba(72, 86, 98, 0.24);
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.76), rgba(255, 255, 255, 0.28)),
+    rgba(220, 229, 234, 0.34);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.82),
+    inset 0 -1px 0 rgba(70, 86, 100, 0.08),
+    0 5px 12px rgba(18, 28, 38, 0.08);
+}
+
+body.use-liquid-glass .liquid-cover-window input[type="checkbox"].lc-check::before {
+  content: "";
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  clip-path: none;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(241, 247, 250, 0.88));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 2px 6px rgba(18, 28, 38, 0.16);
+  transform: translateX(0);
+  transition:
+    transform 0.16s ease,
+    background 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+body.use-liquid-glass .liquid-cover-window input[type="checkbox"].lc-check:checked {
+  border-color: rgba(255, 255, 255, 0.68);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.08)),
+    linear-gradient(180deg, #2f9bff, #0071e3);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 7px 16px rgba(0, 113, 227, 0.18);
+}
+
+body.use-liquid-glass .liquid-cover-window input[type="checkbox"].lc-check:checked::before {
+  background:
+    linear-gradient(180deg, #ffffff, rgba(245, 250, 253, 0.94));
+  transform: translateX(14px);
+}
+
+body.use-liquid-glass .liquid-cover-window input[type="checkbox"].lc-check:focus-visible {
+  outline: 0;
+  box-shadow:
+    0 0 0 3px rgba(0, 122, 255, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82),
+    inset 0 -1px 0 rgba(70, 86, 100, 0.08),
+    0 5px 12px rgba(18, 28, 38, 0.08);
+}
+
+body.use-liquid-glass .lc-bg-item {
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  border-radius: 10px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.64),
+    0 6px 16px rgba(18, 28, 38, 0.08);
+}
+
+body.use-liquid-glass .lc-bg-item.is-active {
+  border-color: rgba(16, 17, 20, 0.68);
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.78),
+    0 10px 24px rgba(18, 28, 38, 0.12);
+}
+
+body.use-liquid-glass .liquid-cover-window input[type="range"] {
+  --lc-accent: #0a84ff;
+  --lc-track: rgba(120, 122, 128, 0.26);
+}
+
+body.use-liquid-glass .liquid-cover-window input[type="range"]:focus-visible::-webkit-slider-thumb {
+  box-shadow:
+    0 0 0 3px rgba(10, 132, 255, 0.35),
+    0 1px 3px rgba(16, 24, 32, 0.28);
+}
+
+body.use-liquid-glass .liquid-cover-window input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--lc-accent) 0 var(--lc-fill), var(--lc-track) var(--lc-fill) 100%);
+  box-shadow: none;
+}
+
+body.use-liquid-glass .liquid-cover-window input[type="range"]::-webkit-slider-thumb {
+  width: 24px;
+  height: 18px;
+  margin-top: -7px;
+  border: 0;
+  border-radius: 9px;
+  background: #ffffff;
+  box-shadow:
+    0 0 0 0.5px rgba(16, 24, 32, 0.06),
+    0 1px 3px rgba(16, 24, 32, 0.28);
+}
+
+body.use-liquid-glass .liquid-cover-window input[type="range"]::-moz-range-track {
+  height: 4px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--lc-accent) 0 var(--lc-fill), var(--lc-track) var(--lc-fill) 100%);
+  box-shadow: none;
+}
+
+body.use-liquid-glass .liquid-cover-window input[type="range"]::-moz-range-thumb {
+  width: 24px;
+  height: 18px;
+  border: 0;
+  border-radius: 9px;
+  background: #ffffff;
+  box-shadow:
+    0 0 0 0.5px rgba(16, 24, 32, 0.06),
+    0 1px 3px rgba(16, 24, 32, 0.28);
+}
+
+body.use-liquid-glass .liquid-cover-window input[type="range"]:disabled {
+  --lc-accent: rgba(120, 122, 128, 0.4);
+}
+
+body.use-liquid-glass .liquid-cover-window input[type="range"]:disabled::-webkit-slider-thumb { background: #e6e6e8; }
+body.use-liquid-glass .liquid-cover-window input[type="range"]:disabled::-moz-range-thumb { background: #e6e6e8; }
+
+body.use-liquid-glass .liquid-cover-window .btn.default,
+body.use-liquid-glass .liquid-cover-window .lc-aspect button.is-active,
+body.use-liquid-glass .liquid-cover-window .lc-inspector-tab.is-active,
+body.use-liquid-glass .liquid-cover-window .lc-layer-item.is-active {
+  border-color: rgba(255, 255, 255, 0.68);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.04)),
+    linear-gradient(180deg, #0a84ff, #0071e3);
+  color: #ffffff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    0 8px 20px rgba(0, 64, 128, 0.18);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.18);
+}
