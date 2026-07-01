@@ -1,18 +1,25 @@
 <p align="center">
   <strong>AI System 6</strong><br>
-  Source-based writing, kept out of the one-chat-box trap.<br>
-  <span lang="zh-CN">一个本地优先的写作桌面：把资料、摘录、草稿、审校和导出放回可见对象里。</span>
+  A local-first writing desktop for source-based work.<br>
+  <span lang="zh-CN">把资料、摘录、草稿、审校和导出放回可见对象里。</span>
 </p>
 
 <p align="center">
   <a href="README.zh-CN.md">简体中文</a> · <a href="README.md">English</a>
 </p>
 
+<p align="center">
+  <a href="https://www.bilibili.com/video/BV1Bw726uE9g/">
+    <img src="assets/readme/ai-system-6-desktop.png" alt="AI System 6 desktop screenshot" width="900">
+  </a><br>
+  <sub>Click the screenshot to watch the demo on Bilibili.</sub>
+</p>
+
 ---
 
 AI System 6 is a local-first writing desktop for people who work from sources.
-It gives research, notes, drafts, review, and export their own visible places
-instead of folding the whole job into a single chat.
+Research, notes, drafts, review, and export each get their own place, so the
+writing job does not collapse into a single chat transcript.
 
 The project borrows the restraint of Macintosh System 6: small windows, named
 objects, deliberate saving, and one writing task at a time. The point is not a
@@ -21,9 +28,9 @@ and handoff intent from being flattened into generic model prose.
 
 ## Chinese intro
 
-AI System 6 是一个本地优先的写作桌面，适合需要围绕资料工作的写作者。它把研究、摘录、草稿、审校和导出放成可见对象，而不是全塞进一个聊天框。
+AI System 6 是一个本地优先的写作桌面，适合需要围绕资料工作的写作者。研究、摘录、草稿、审校和导出都有自己的位置，不必全挤进一个聊天框。
 
-它借用 Macintosh System 6 的克制感：小窗口、清楚的对象、主动保存，以及一次只处理一件写作任务。重点不在复古皮肤；它要保护写作者自己的语言、来源、判断和交付意图。
+它借用 Macintosh System 6 的克制感：小窗口、清楚的对象、主动保存，一次只处理一件写作任务。重点不在复古皮肤；它要保护写作者自己的语言、来源、判断和交付意图。
 
 完整中文说明见 [README.zh-CN.md](README.zh-CN.md)。
 

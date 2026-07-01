@@ -1,32 +1,36 @@
 <!-- canonical-source: README.md -->
-<!-- source-sha256: 654c4f3e445419e4405575e605b3b25d89582533b97aef2dbeef3985c16b4d48 -->
+<!-- source-sha256: 3e2553f7c1b3b3b2f5ecc5a6e9fbc2f5c443a012f3081cb0094de552a6fe9412 -->
 
 # AI System 6
 
 英文版为准。本文档仅供人类参考。
 
-[English](README.md) · [简体中文](README.zh-CN.md)
+[English](README.md) · [演示视频](https://www.bilibili.com/video/BV1Bw726uE9g/)
 
-AI System 6 是一个本地优先的写作桌面，适合需要围绕资料工作的写作者。它把研究、摘录、草稿、审校和导出放成可见对象，而不是全塞进一个聊天框。
+[![AI System 6 桌面截图](assets/readme/ai-system-6-desktop.png)](https://www.bilibili.com/video/BV1Bw726uE9g/)
 
-它借用 Macintosh System 6 的克制感：小窗口、清楚的对象、主动保存，以及一次只处理一件写作任务。重点不在复古皮肤；它要保护写作者自己的语言、来源、判断和交付意图。
+AI System 6 是一个本地优先的写作桌面。它适合那种要翻资料、摘句子、搭结构、反复改稿的人。
 
-## 这里包含什么
+我不想把整个写作过程塞进一个聊天框。研究、摘录、草稿、审校、导出，都应该有自己的位置。模型可以帮忙，但不能把作者的语气、判断和犹豫磨成一段看起来很顺的通用文本。
 
-这是公开安全版源码快照，包含 app 源码、服务端路由、测试和本地开发所需的小型运行资产。
+界面借了一点 Macintosh System 6 的克制感：小窗口，清楚的对象，主动保存，一次只处理一件事。复古不是目的，只是一个约束。
 
-这里不包含私人草稿、本地浏览器数据、API key、生成 bundle、构建产物、包缓存、大型抓取语料，也不包含原来的私有 Git 历史。
+## 公开版里有什么
 
-## 写作流程
+这份仓库是公开安全版源码快照。里面有 app 源码、服务端路由、测试，以及本地开发需要的小型运行资产。
+
+没有私人草稿、本地浏览器数据、API key、生成 bundle、构建产物、包缓存、大型抓取语料，也没有原来的私有 Git 历史。
+
+## 写作路线
 
 ```text
 Project Hard Disk -> File Floppy -> Question Sheet -> Outline
 -> Section Drafts -> Manuscript -> Review Desk -> Project CD
 ```
 
-每一站都有自己的任务。AI 可以帮助阅读、整理、起草、改写和审校，但模型输出在写作者保存、摘录、插入或导出之前都只是临时内容。
+每一站只做一件事。模型输出在你保存、摘录、插入或导出之前，都只是临时内容。
 
-## 本地运行
+## 跑起来
 
 ```sh
 npm install
@@ -35,7 +39,7 @@ npm start
 
 然后打开 `http://localhost:4173`。
 
-前端改动通常可以只重建浏览器 bundle：
+只改前端时，通常重建 bundle 就够了：
 
 ```sh
 npm run build:app
@@ -43,9 +47,9 @@ npm run build:app
 
 ## 模型
 
-AI System 6 可以连接 LM Studio 兼容的本地端点，也可以连接用户配置的云模型。API key 由用户在运行时或环境变量中提供，不写入仓库。
+可以接 LM Studio 兼容的本地端点，也可以接用户自己配置的云模型。API key 由运行时或环境变量提供，不写进仓库。
 
-常用本地设置：
+常见本地设置：
 
 ```sh
 PORT=4173
@@ -54,7 +58,7 @@ LM_STUDIO_URL=http://127.0.0.1:1234/v1/chat/completions
 DEEPSEEK_API_KEY=...
 ```
 
-## 常用检查
+## 检查
 
 ```sh
 npm run build:app
@@ -63,17 +67,19 @@ npm run verify:css
 npm run verify:docs
 ```
 
-`npm run verify:release` 更重，适合打包前使用，可能需要发布资产和有效构建号。
+`npm run verify:release` 更重，适合打包前跑。它可能需要发布资产和有效构建号。
 
 ## 双语维护
 
-`README.md` 是 canonical source。`README.zh-CN.md` 是给中文读者看的简体中文镜像，不是另一份产品规格。
+`README.md` 是 canonical source；这份中文 README 给中文读者看，不单独当产品规格。
 
-修改 README 时：
+改 README 时，请同一次更新英文和中文，然后跑：
 
-1. 先改 `README.md`。
-2. 同一次改动里更新 `README.zh-CN.md`。
-3. 运行 `npm run verify:docs`；它会检查中文镜像的 source marker 和 hash。
+```sh
+npm run verify:docs
+```
+
+这个检查会确认中文镜像的 source marker 和 hash 没有落后。
 
 ## License
 
