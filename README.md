@@ -1,23 +1,24 @@
 # AI System 6
 
-A local-first AI writing environment that protects the writer's voice, sources,
-and intent.
+AI System 6 is a local-first writing desktop for people who work from sources.
+It keeps research, notes, drafts, review, and export as visible objects instead
+of folding the whole job into one chat box.
 
-AI System 6 is a quiet desktop for source-based writing. It separates projects,
-temporary source material, reading, clipping, outlining, section drafting,
-manuscript editing, review, and export into visible objects instead of putting
-the whole writing process into one chat box.
+The project borrows the restraint of Macintosh System 6: small windows, named
+objects, deliberate saving, and one writing task at a time. The goal is not a
+retro skin. The goal is to keep the writer's own language, sources, and intent
+from being flattened into generic model prose.
 
-## Status
+## What is here
 
-This repository is a public-safe source snapshot. It intentionally excludes
-local build output, package caches, private drafts, captured screenshots,
-experimental side projects, generated bundles, and scraped reference corpora.
+This is a public-safe source snapshot. It includes the app source, server
+routes, tests, and the small runtime assets needed for local development.
 
-The current app is a beta. The core route is usable, but releases should still
-be treated as unsigned beta builds unless a release explicitly says otherwise.
+It does not include private drafts, local browser data, API keys, generated
+bundles, build output, package caches, large scraped corpora, or the original
+private Git history.
 
-## Run Locally
+## Run it
 
 ```sh
 npm install
@@ -26,8 +27,8 @@ npm start
 
 Then open `http://localhost:4173`.
 
-`npm start` rebuilds the browser bundles before starting the local Node server.
-If you edit files under `app/` or `app.js`, run:
+`npm start` rebuilds the browser bundle before starting the local Node server.
+For frontend-only edits, this is usually enough:
 
 ```sh
 npm run build:app
@@ -35,41 +36,29 @@ npm run build:app
 
 ## Models
 
-Local models are supported through LM Studio-compatible endpoints. Cloud model
-routes use API keys supplied by the user at runtime or through environment
-variables.
+AI System 6 can talk to local LM Studio-compatible endpoints and to configured
+cloud providers. Keys are supplied by the user at runtime or through environment
+variables; no keys are stored in this repository.
 
-No API keys, local conversations, IndexedDB records, private drafts, or local
-profile data are included in this repository.
-
-Common environment variables:
+Common local settings:
 
 ```sh
 PORT=4173
-LM_STUDIO_URL=http://127.0.0.1:1234/v1/chat/completions
 LM_STUDIO_BASE_URL=http://127.0.0.1:1234
+LM_STUDIO_URL=http://127.0.0.1:1234/v1/chat/completions
 DEEPSEEK_API_KEY=...
 ```
 
-## Useful Commands
+## Useful checks
 
 ```sh
-npm run build:app        # rebuild app.bundle.js and styles.bundle.css
-npm run verify:features  # run executable feature contracts
-npm run verify:css       # CSS budget and layer checks
-npm run verify:release   # full local release gate
-npm run bundle:mac-app   # build the packaged macOS app shell
+npm run build:app
+npm run verify:features
+npm run verify:css
 ```
 
-## Public Snapshot Notes
-
-This source snapshot vendors the small System 6-style font and UI assets needed
-by the app. Generated files such as `app.bundle.js`, `styles.bundle.css`,
-`dist/`, `.build/`, and `node_modules/` are intentionally ignored.
-
-Large scraped corpora and private writing/demo material are not part of the
-public source release. Demo text included in `app/data/` is synthetic or
-sanitized for public development.
+`npm run verify:release` is the heavier local gate. It is useful before a
+packaged build, but it may require release assets and a valid build stamp.
 
 ## License
 

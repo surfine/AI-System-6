@@ -1,4 +1,4 @@
-# AI System 6 Product Charter
+# AI System 6 Product Notes
 
 AI System 6 is a local-first AI writing environment for source-based writing.
 It protects a writer's own language, sources, judgment, feeling, and handoff
@@ -19,7 +19,6 @@ questions, personal observations, objections, usage details, pressure points,
 and handoff friction.
 
 Review Desk must check for AI-mouthpiece drift as well as factual and
-structural risk: over-regular rhythm, generic summary language, missing
-personal detail, flattened flavor, and advice that multiplies pressure.
+structural risk.
 
-For full development setup, see `README.md`.
+For setup and commands, see `README.md`.
