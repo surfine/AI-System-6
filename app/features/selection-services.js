@@ -460,7 +460,10 @@ async function runSelectionTranslate(context = getSelectionServiceContext()) {
 
 async function runSelectionServiceCommand(command) {
   const context = getSelectionServiceContext() || lastSelectionServiceContext;
-  if (command === "lookup") return lookupSelectionTerm(context);
+  if (command === "lookup") {
+    await ensureDictionaryHelpModule();
+    return lookupSelectionTerm(context);
+  }
   if (command === "find") return runSelectionFindSources(context);
   if (command === "copy") return runSelectionCopy(context);
   if (command === "clip") return runSelectionClip(context);

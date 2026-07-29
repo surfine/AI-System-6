@@ -100,6 +100,12 @@ const systemIconPaths = {
     <path d="M27 7H17c-2 0-3 1-3 3v17c0-2 1-3 3-3h10z" />
     <path d="M9 12h5M9 17h5M19 12h5M19 17h5" />
   `,
+  timeMachine: `
+    <path d="M4 7h24v20H4zM4 12h24" />
+    <circle cx="17" cy="19" r="6" />
+    <path d="M17 15v4l3 2M9 9h2M14 9h2" />
+    <path d="M8 19l-3 3 3 3" />
+  `,
   docMap: `
     <rect x="12" y="4" width="8" height="8" />
     <rect x="4" y="20" width="8" height="8" />
@@ -114,6 +120,12 @@ const systemIconPaths = {
     <path d="M22 25l4 3M10 25l-4 3" />
     <path d="M24 10l3 3-3 3" />
   `,
+  clioChart: `
+    <path d="M9 4v24" />
+    <path d="M9 6h17v5H9zM9 22h8v5H9z" />
+    <path d="M9 14h12v5H9z" />
+    <path d="M3 14l5 2.5L3 19z" />
+  `,
   liquidCover: `
     <path d="M4 6h24v20H4z" />
     <path d="M9 21a5 5 0 0 1 10 0" />
@@ -126,6 +138,11 @@ const systemIconPaths = {
     <circle cx="14" cy="13" r="2" />
     <circle cx="18" cy="18" r="2" />
     <path d="M5 27l22-22" />
+  `,
+  soundscape: `
+    <path d="M5 6h22v20H5z" />
+    <path d="M8 16h3l2-6 3 12 3-10 2 7h3" />
+    <path d="M8 24c3-3 5-3 8 0s5 3 8 0" />
   `,
   scrapbook: `
     <path d="M8 5h18v22H8z" />
@@ -140,6 +157,40 @@ const systemIconPaths = {
     <rect x="19" y="10" width="3" height="3" />
     <rect x="10" y="19" width="3" height="3" />
     <rect x="19" y="19" width="3" height="3" />
+  `,
+  systemFile: `
+    <path d="M5 10h22v17H5z" />
+    <path d="M11 6h10v4H11zM9 14h14v9H9z" />
+    <path d="M12 17h8M12 20h8M15 24h2v3" />
+  `,
+  finderApp: `
+    <path d="M7 5h18v21H7z" />
+    <path d="M10 9h12v11H10zM12 23h8M14 26h4" />
+    <path d="M13 13h1M18 13h1M13 17c2 2 4 2 6 0" />
+  `,
+  multiFinderApp: `
+    <path d="M4 6h17v15H4zM9 11h19v16H9z" />
+    <path d="M4 10h17M9 15h19M13 19h11M13 23h7" />
+    <path d="M7 8h1M11 13h1M15 13h1" />
+  `,
+  daHandler: `
+    <path d="M7 9h18v18H7zM11 6h10v3" />
+    <path d="M11 14v8h3c3 0 3-8 0-8zM18 22l3-8 3 8M19 19h4" />
+  `,
+  systemFolder: `
+    <path d="M4 11h24v16H4zM7 7h8l3 4H7z" />
+    <path d="M11 17h2M19 17h2M12 21c3 2 5 2 8 0" />
+  `,
+  helpFolder: `
+    <path d="M4 11h24v16H4zM7 7h8l3 4H7z" />
+    <path d="M14 15c1-2 5-2 5 1 0 2-3 2-3 4M16 23h1" />
+  `,
+  writingStudio: `
+    <path d="M9 4h14v10H9z" />
+    <path d="M5 13h22v12H5z" />
+    <path d="M4 25h24v3H4z" />
+    <path d="M12 8h8M12 11h8" />
+    <path d="M9 17h3M15 17h3M21 17h2M9 21h3M15 21h3M21 21h2" />
   `,
   folder: `
     <path d="M4 11h24v16H4z" />
@@ -190,9 +241,10 @@ const systemIconPaths = {
     <path d="M21 5v5h4" />
   `,
   assistant: `
-    <path d="M6 8h20v13H6z" />
-    <path d="M10 21l-3 5 7-5" />
-    <path d="M11 13h2M19 13h2M13 17h6" />
+    <path d="M4 5h13v9H4z" />
+    <path d="M7 14l-2 4 5-4" />
+    <path d="M13 17h16v11H13z" stroke-dasharray="3 2" />
+    <path d="M25 28l2 3-6-3" stroke-dasharray="3 2" />
   `,
   teachText: `
     <path d="M8 5h16v22H8z" />
@@ -310,6 +362,12 @@ const liquidSystemIconPaths = {
     <path class="icon-fill-soft" d="M26.5 7.5H17c-2 0-3 1-3 3v16c0-2 1-3 3-3h9.5z" />
     <path d="M9 13h5M9 18h5M19 13h4M19 18h4" />
   `,
+  timeMachine: `
+    <rect class="icon-fill" x="4.5" y="7" width="23" height="20" rx="4" />
+    <path d="M5 12h22M9 9.5h.1M13 9.5h.1" />
+    <circle class="icon-fill-soft" cx="17" cy="19" r="6" />
+    <path class="icon-accent" d="M17 15v4l3 2M9 19l-3 3 3 3" />
+  `,
   docMap: `
     <rect class="icon-fill" x="12" y="4.5" width="8" height="8" rx="2" />
     <rect class="icon-fill-soft" x="4.5" y="20" width="8" height="8" rx="2" />
@@ -320,6 +378,12 @@ const liquidSystemIconPaths = {
     <rect class="icon-fill" x="5.5" y="7" width="21" height="14" rx="3" />
     <path d="M10 12h12M10 16.5h8M16 21v6M11 27h10" />
     <path class="icon-accent" d="M23 12l3 2.5-3 2.5" />
+  `,
+  clioChart: `
+    <rect class="icon-fill" x="3.5" y="4.5" width="25" height="23" rx="4" />
+    <path d="M10 8v16" />
+    <path class="icon-fill-soft" d="M10 9.5h14v4H10zM10 20.5h7v4H10z" />
+    <path class="icon-accent" d="M10 15h11v4H10z" />
   `,
   liquidCover: `
     <rect class="icon-fill" x="4.5" y="6" width="23" height="20" rx="3" />
@@ -333,6 +397,12 @@ const liquidSystemIconPaths = {
     <circle class="icon-accent" cx="14" cy="13" r="2" />
     <circle class="icon-accent" cx="18" cy="18" r="2" />
   `,
+  soundscape: `
+    <rect class="icon-fill" x="5" y="6" width="22" height="20" rx="3" />
+    <path class="icon-fill-soft" d="M8 23h16v2H8z" />
+    <path d="M8 16h3l2-6 3 12 3-10 2 7h3" />
+    <path class="icon-accent" d="M8 24c3-3 5-3 8 0s5 3 8 0" />
+  `,
   scrapbook: `
     <path class="icon-fill" d="M8 5.5h17.5v21H8z" />
     <path class="icon-fill-soft" d="M5.5 8.5h4v18h-4z" />
@@ -345,6 +415,44 @@ const liquidSystemIconPaths = {
     <circle class="icon-fill-soft" cx="21" cy="11" r="1.8" />
     <circle class="icon-fill-soft" cx="11" cy="21" r="1.8" />
     <circle class="icon-fill-soft" cx="21" cy="21" r="1.8" />
+  `,
+  systemFile: `
+    <rect class="icon-fill" x="5.5" y="10" width="21" height="16.5" rx="3" />
+    <path d="M11 10V6.5h10V10M10 14h12v9H10zM13 18h6" />
+    <path class="icon-accent" d="M15 23h2v3.5h-2z" />
+  `,
+  finderApp: `
+    <rect class="icon-fill" x="7" y="5.5" width="18" height="20.5" rx="4" />
+    <rect class="icon-fill-soft" x="10" y="9" width="12" height="11" rx="2" />
+    <path d="M13 13h.1M19 13h.1M13 17c2 2 4 2 6 0M12 23h8" />
+  `,
+  multiFinderApp: `
+    <rect class="icon-fill-soft" x="4.5" y="6" width="16.5" height="15" rx="3" />
+    <rect class="icon-fill" x="9" y="11" width="19" height="16" rx="3" />
+    <path d="M5 10h16M9 15h19M13 19h11M13 23h7" />
+    <path class="icon-accent" d="M12 13h.1M16 13h.1" />
+  `,
+  daHandler: `
+    <rect class="icon-fill" x="7" y="9" width="18" height="18" rx="3" />
+    <path d="M11 9V6.5h10V9M11 14v8h3c3 0 3-8 0-8zM18 22l3-8 3 8M19 19h4" />
+    <path class="icon-accent" d="M9 25h14" />
+  `,
+  systemFolder: `
+    <path class="icon-fill" d="M4.5 11h23v15.5a2 2 0 0 1-2 2h-19a2 2 0 0 1-2-2z" />
+    <path class="icon-fill-soft" d="M7 7.5h8l3 3.5H7z" />
+    <path class="icon-accent" d="M11 17h2M19 17h2M12 21c3 2 5 2 8 0" />
+  `,
+  helpFolder: `
+    <path class="icon-fill" d="M4.5 11h23v15.5a2 2 0 0 1-2 2h-19a2 2 0 0 1-2-2z" />
+    <path class="icon-fill-soft" d="M7 7.5h8l3 3.5H7z" />
+    <path class="icon-accent" d="M13 16c1-2 6-2 6 1 0 2.5-3 2.5-3 4.5M16 24h.1" />
+  `,
+  writingStudio: `
+    <rect class="icon-fill-soft" x="9" y="4.5" width="14" height="10" rx="2" />
+    <rect class="icon-fill" x="5" y="13" width="22" height="12" rx="3" />
+    <path d="M12 8h8M12 11h8" />
+    <path d="M9 17h3M15 17h3M21 17h2M9 21h3M15 21h3M21 21h2" />
+    <path class="icon-accent" d="M4 24h24v4H4z" />
   `,
   folder: `
     <path class="icon-fill" d="M4.5 11h23v15.5a2 2 0 0 1-2 2h-19a2 2 0 0 1-2-2z" />
@@ -388,8 +496,8 @@ const liquidSystemIconPaths = {
     <path d="M11 6v20M14 11h7M14 16h6M14 21h7" />
   `,
   assistant: `
-    <path class="icon-fill" d="M6 8h20v13H14l-6.5 5 2.5-5H6z" />
-    <path d="M11 13.5h.1M20.5 13.5h.1M13 17h6" />
+    <path class="icon-accent" d="M4.5 5.5h12v8.5H9.5l-4 3.5 1.5-3.5H4.5z" />
+    <path class="icon-fill" d="M13.5 17.5h15v10h-5l3 3-7-3h-6z" stroke-dasharray="3 2" />
   `,
   teachText: `
     <rect class="icon-fill" x="8" y="5.5" width="16" height="21" rx="3" />
@@ -490,6 +598,12 @@ const classicPlusSystemIconPaths = {
     <path d="M27 7H17c-2 0-3 1-3 3v17c0-2 1-3 3-3h10z" />
     <path d="M9 12h5M9 17h5M19 12h5M19 17h5M16 8v17" />
   `,
+  timeMachine: `
+    <path d="M4 7h24v20H4zM4 12h24" />
+    <path class="classic-ink" d="M7 9h3v2H7zM12 9h3v2h-3z" />
+    <circle cx="17" cy="19" r="6" />
+    <path d="M17 15v4l3 2M9 19l-3 3 3 3" />
+  `,
   docMap: `
     <rect x="12" y="4" width="8" height="8" />
     <rect x="4" y="20" width="8" height="8" />
@@ -502,10 +616,22 @@ const classicPlusSystemIconPaths = {
     <path d="M10 12h12M10 16h8M16 21v6M11 27h10" />
     <path d="M23 12l3 2-3 2" />
   `,
+  clioChart: `
+    <path d="M9 4v24" />
+    <path d="M9 6h17v5H9zM9 22h8v5H9z" />
+    <path class="classic-ink" d="M9 14h12v5H9z" />
+    <path class="classic-ink" d="M3 14l5 2.5L3 19z" />
+  `,
   liquidCover: `
     <path d="M4 6h24v20H4z" />
     <path d="M9 21a5 5 0 0 1 10 0" />
     <path d="M21 10l1 2 2 1-2 1-1 2-1-2-2-1 2-1z" />
+  `,
+  soundscape: `
+    <path d="M5 6h22v20H5z" />
+    <path class="classic-ink" d="M7 23h18v2H7z" />
+    <path d="M8 16h3l2-6 3 12 3-10 2 7h3" />
+    <path d="M8 24c3-3 5-3 8 0s5 3 8 0" />
   `,
   scrapbook: `
     <path d="M8 5h18v22H8zM5 8h3v19H5z" />
@@ -515,6 +641,39 @@ const classicPlusSystemIconPaths = {
   applications: `
     <path d="M6 6h20v20H6zM16 6v20M6 16h20" />
     <path class="classic-ink" d="M10 10h3v3h-3zM19 10h3v3h-3zM10 19h3v3h-3zM19 19h3v3h-3z" />
+  `,
+  systemFile: `
+    <path d="M5 10h22v17H5zM11 6h10v4H11zM9 14h14v9H9z" />
+    <path d="M12 17h8M12 20h8" />
+    <path class="classic-ink" d="M15 23h3v4h-3z" />
+  `,
+  finderApp: `
+    <path d="M7 5h18v21H7zM10 9h12v11H10zM12 23h8M14 26h4" />
+    <path class="classic-ink" d="M12 12h3v3h-3zM18 12h3v3h-3z" />
+    <path d="M13 17c2 2 4 2 6 0" />
+  `,
+  multiFinderApp: `
+    <path d="M4 6h17v15H4zM9 11h19v16H9zM4 10h17M9 15h19M13 19h11M13 23h7" />
+    <path class="classic-ink" d="M6 7h3v2H6zM11 12h3v2h-3zM16 12h3v2h-3z" />
+  `,
+  daHandler: `
+    <path d="M7 9h18v18H7zM11 6h10v3M11 14v8h3c3 0 3-8 0-8zM18 22l3-8 3 8M19 19h4" />
+    <path class="classic-ink" d="M9 24h14v3H9z" />
+  `,
+  systemFolder: `
+    <path d="M4 11h24v16H4zM7 7h8l3 4H7zM4 14h24" />
+    <path class="classic-ink" d="M10 17h4v3h-4zM19 17h4v3h-4z" />
+    <path d="M12 22c3 2 5 2 8 0" />
+  `,
+  helpFolder: `
+    <path d="M4 11h24v16H4zM7 7h8l3 4H7zM4 14h24" />
+    <path d="M13 17c1-2 6-2 6 1 0 2-3 2-3 4" />
+    <path class="classic-ink" d="M15 24h3v2h-3z" />
+  `,
+  writingStudio: `
+    <path d="M9 4h14v10H9zM5 13h22v12H5zM4 25h24v3H4z" />
+    <path d="M12 8h8M12 11h8" />
+    <path class="classic-ink" d="M9 17h3v2H9zM15 17h3v2h-3zM21 17h3v2h-3zM9 21h3v2H9zM15 21h3v2h-3zM21 21h3v2h-3z" />
   `,
   folder: `
     <path d="M4 11h24v16H4z" />
@@ -545,8 +704,8 @@ const classicPlusSystemIconPaths = {
     <path class="classic-ink" d="M7 10h5v5H7zM17 15h5v5h-5z" />
   `,
   assistant: `
-    <path d="M6 8h20v13H14l-7 5 3-5H6z" />
-    <path class="classic-ink" d="M11 13h2v2h-2zM19 13h2v2h-2zM13 17h6v2h-6z" />
+    <path class="classic-ink" d="M4 5h13v9H9l-4 4 1.5-4H4z" />
+    <path d="M13 17h16v11h-5l2 3-6-3h-7z" stroke-dasharray="3 2" />
   `,
   teachText: `
     <path d="M8 5h16v22H8z" />

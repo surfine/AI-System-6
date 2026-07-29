@@ -87,8 +87,16 @@ async function runBootSequence() {
     return;
   }
   setBootMacState("sleeping");
+  const desktopProfile = workspaceProfile === workspaceProfileDesktop;
+  bootProjectDiskEl?.classList.toggle("is-hidden", desktopProfile);
+  bootLocalModelEl?.classList.toggle("is-hidden", desktopProfile);
   updateBootLedger("startup");
-  const steps = [
+  const steps = desktopProfile ? [
+    [t("boot_starting"), "24%", "startup", "sleeping", 190],
+    [t("boot_fonts"), "56%", "system", "sleeping", 190],
+    [t("boot_disks"), "84%", "project", "happy", 430],
+    [t("boot_ready"), "84%", "ready", "happy", 760],
+  ] : [
     [t("boot_starting"), "18%", "startup", "sleeping", 190],
     [t("boot_fonts"), "42%", "system", "sleeping", 190],
     [t("boot_disks"), "66%", "project", "sleeping", 190],
@@ -465,6 +473,8 @@ function ejectActiveProject() {
   selectedProjectId = project.id;
   clearProjectTransientState();
   messagesEl.replaceChildren();
+  renderClioTalkWelcome();
+  renderClioTalkRunAssembly();
   scheduleWorkspaceRender({ projectLabels: true, projectReferences: true, mountedTextDisk: true, menuState: true });
   saveDeskState();
   openWindow("projects");
@@ -496,9 +506,10 @@ function showStartupSettingsDialog() {
 }
 
 function normalizeStartupOpenMode(mode, environment = startupEnvironment) {
-  if (environment !== "multifinder") return "quick-draft";
-  if (mode === "quick-draft") return "quick-draft";
-  return mode === "selected-items" || mode === "opened-apps" ? mode : "cliotalk";
+  if (environment === "multifinder" && (mode === "selected-items" || mode === "opened-apps")) {
+    return mode;
+  }
+  return "cliotalk";
 }
 
 function syncStartupOpenOptions(environment = startupEnvironment) {
@@ -551,11 +562,14 @@ function openStartupItems() {
     openWindow("guide");
     return;
   }
-  const selectedApp = getStartupSelectedApplicationItem();
-  if (startupOpenMode === "quick-draft") {
-    handleAction("open-quick-draft");
+  if (workspaceProfile === workspaceProfileDesktop) {
+    const assistant = getWindow("assistant");
+    assistant?.classList.add("is-hidden");
+    if (assistant) forgetWindowFromRunningApps("assistant");
+    openWindow("disk");
     return;
   }
+  const selectedApp = getStartupSelectedApplicationItem();
   if (startupOpenMode === "selected-items" && selectedApp && isMultiFinderMode()) {
     handleAction(selectedApp.action);
     return;
@@ -728,12 +742,17 @@ function openFileInfo() {
     iconClass = "scrapbook-icon";
     iconId = "scrap";
     sizeBytes = (item.body || "").length;
+  } else if (item.virtual) {
+    kindLabel = item.kind || t("system_component");
+    iconClass = item.icon || "doc-icon";
+    iconId = item.iconId || item.icon || "document";
   }
 
   fileInfoKindEl.textContent = `${t("kind")}: ${kindLabel}`;
-  fileInfoSizeEl.textContent = projects.includes(item) || item.type === "finder-root" || item.type === "folder" ? t("items_count", sizeBytes) : `${sizeBytes} bytes`;
+  fileInfoSizeEl.textContent = item.sizeLabel
+    || (projects.includes(item) || item.type === "finder-root" || item.type === "folder" ? t("items_count", sizeBytes) : `${sizeBytes} bytes`);
   const project = item.projectId ? projects.find((entry) => entry.id === item.projectId) : getActiveProject();
-  fileInfoLocationEl.textContent = project ? projectDisplayName(project) : t("project_disk");
+  fileInfoLocationEl.textContent = item.location || (project ? projectDisplayName(project) : t("project_disk"));
   const folder = item.folderId ? chatFolders.find((entry) => entry.id === item.folderId) : null;
   const sourceMatch = (item.body || "").match(/URL:\s*(https?:\/\/\S+)/i);
   fileInfoFolderEl.textContent = item.type === "finder-root"
@@ -742,7 +761,9 @@ function openFileInfo() {
       ? getFinderItemPathLabel(item)
     : folder ? getProjectFolderPathLabel(folder.id, item.projectId || activeProjectId) : getProjectFolderPathLabel(null, item.projectId || activeProjectId);
   fileInfoSourceEl.textContent = sourceMatch?.[1] || t("local_source");
-  fileInfoContextEl.textContent = item.projectId || projects.includes(item) || item.type === "finder-root" || item.type === "folder" ? t("durable_yes") : t("durable_no");
+  fileInfoContextEl.textContent = item.virtual
+    ? t("local_desktop")
+    : item.projectId || projects.includes(item) || item.type === "finder-root" || item.type === "folder" ? t("durable_yes") : t("durable_no");
   fileInfoCommentsEl.value = item.comments || "";
 
   fileInfoIconEl.className = `large-mini-icon sys-icon ${iconClass}`;
@@ -757,7 +778,9 @@ function getActiveItem() {
   if (!activeWin) return null;
 
   const name = activeWin.dataset.window;
-  if (name === "documents") {
+  if (finderContainerWindowNames.includes(name)) {
+    return getSelectedStaticFinderItem(name);
+  } else if (name === "documents") {
     return getSelectedDocumentItem();
   } else if (name === "scrapbook") {
     return scraps.find((scrap) => scrap.id === selectedScrapId && isInActiveProject(scrap));

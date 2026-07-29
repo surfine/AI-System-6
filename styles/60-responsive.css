@@ -436,7 +436,11 @@ body.is-writer-mode .context-panel-window {
 .title-bar {
   height: var(--system-titlebar-height);
   min-height: var(--system-titlebar-height);
-  display: flex;
+  display: grid;
+  grid-template-columns:
+    var(--system-titlebar-control-slot)
+    minmax(0, 1fr)
+    var(--system-titlebar-control-slot);
   margin: var(--system-titlebar-margin-y) 0;
   padding: var(--system-titlebar-padding-y) var(--system-titlebar-padding-x);
   border-bottom: 2px solid var(--ink);
@@ -469,36 +473,20 @@ body.is-writer-mode .context-panel-window {
 
 .window:not(.is-active) .title-bar h1,
 .window:not(.is-active) .title-bar h2 {
-  color: #565656;
-  border-left: 1px solid var(--shade);
-  border-right: 1px solid var(--shade);
-}
-
-/* .close-box, .resize-box — already in styles/10-windows.css with these
-   exact values. Audited DEAD on 2026-05-28. */
-
-.resize-box {
-  background:
-    linear-gradient(var(--ink) 0%, var(--ink) 100%) left 58%,
-    linear-gradient(to bottom, var(--ink) 0%, var(--ink) 100%) 58% top;
-  background-size: 60% 4px, 4px 60%;
-  background-repeat: no-repeat;
-  background-color: var(--paper);
+  color: var(--system-titlebar-inactive-title-color);
 }
 
 .window:not(.is-active) .close-box,
 .window:not(.is-active) .resize-box {
-  border-color: var(--shade-dark);
-  background:
-    linear-gradient(45deg, transparent 0 46%, var(--shade) 47% 53%, transparent 54% 100%),
-    var(--paper);
+  --system-titlebar-control-art-ink: var(--shade-dark);
+  /* Glass-only values, inert in Classic: a background window's lamps go one
+     flat gray and drop their glyphs. */
+  --glass-lamp-close: var(--glass-lamp-inactive);
+  --glass-lamp-zoom: var(--glass-lamp-inactive);
+  --glass-lamp-mark-opacity: 0;
+  visibility: var(--system-titlebar-inactive-control-visibility);
   filter: var(--system-titlebar-inactive-control-filter);
   opacity: var(--system-titlebar-inactive-control-opacity);
-}
-
-.grow-box {
-  width: 15px;
-  height: 15px;
 }
 
 .details-bar {
@@ -569,11 +557,11 @@ body.is-writer-mode .context-panel-window {
 }
 
 .assistant-window {
-  left: 168px;
+  left: clamp(28px, 6vw, 96px);
   top: 18px;
-  width: min(720px, calc(100vw - 376px));
-  min-width: 360px;
-  height: min(540px, calc(100vh - 108px));
+  width: min(920px, calc(100vw - 248px));
+  min-width: 380px;
+  height: min(700px, calc(100vh - 76px));
 }
 
 /* .assistant-window.is-desklet right moved to base (styles/10-windows.css). */
@@ -582,6 +570,10 @@ body.is-writer-mode .context-panel-window {
   background:
     linear-gradient(var(--quiet-panel), var(--quiet-panel)) 0 0 / 100% 22px no-repeat,
     var(--paper);
+}
+
+.assistant-window:not(.is-quick-draft-sideask) .messages {
+  background: var(--paper);
 }
 
 .message {
@@ -597,10 +589,9 @@ body.is-writer-mode .context-panel-window {
 /* .message-content max-width moved to base (styles/10-windows.css). */
 
 .composer {
-  gap: 7px;
-  padding: 9px 10px 10px;
-  border-top: 2px solid var(--ink);
-  /* background: var(--paper) provided by base (styles/10-windows.css). */
+  gap: 0;
+  padding: 8px;
+  border: var(--clio-composer-border);
 }
 
 .assistant-window .messages {
@@ -608,8 +599,7 @@ body.is-writer-mode .context-panel-window {
 }
 
 .assistant-window .composer {
-  display: grid;
-  grid-template-rows: auto minmax(68px, auto) auto;
+  display: block;
   flex: 0 0 auto;
   min-height: 0;
   overflow: visible;
@@ -621,9 +611,9 @@ body.is-writer-mode .context-panel-window {
 
 .assistant-window .composer textarea {
   box-sizing: border-box;
-  height: clamp(70px, 12vh, 112px);
-  min-height: 68px;
-  max-height: min(112px, 24vh);
+  height: auto;
+  min-height: 46px;
+  max-height: min(160px, 28vh);
   overflow-y: auto;
 }
 
@@ -670,31 +660,85 @@ select:focus {
   }
 
   .assistant-window .composer {
-    padding: 8px;
+    margin: 7px 8px 8px;
+    padding: 7px;
+  }
+
+  .assistant-window:not(.is-quick-draft-sideask) .message:not(.clio-welcome) {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+    padding: 13px 14px;
+  }
+
+  .assistant-window:not(.is-quick-draft-sideask) .message:not(.clio-welcome) .speaker {
+    padding-top: 0;
+    text-align: left;
+  }
+
+  .assistant-window:not(.is-quick-draft-sideask) .message-grounding-strip,
+  .assistant-window:not(.is-quick-draft-sideask) .message-actions {
+    grid-column: 1;
+  }
+
+  .assistant-window:not(.is-quick-draft-sideask) .clio-welcome {
+    grid-template-columns: 38px minmax(0, 1fr);
+    gap: 12px;
+    padding: 34px 22px 24px;
+  }
+
+  .assistant-window:not(.is-quick-draft-sideask) .clio-welcome::before {
+    width: 32px;
+    height: 39px;
   }
 
   .assistant-window .composer textarea {
-    height: 64px;
-    min-height: 56px;
-    max-height: 84px;
+    height: auto;
+    min-height: 42px;
+    max-height: min(112px, 22vh);
   }
 
   .assistant-window .composer-action-row {
-    grid-template-columns: 1fr;
-    align-items: stretch;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
   }
 
   .assistant-window .compose-tools-anchor {
-    align-items: stretch;
+    align-items: center;
   }
 
   .assistant-window .composer-file-button {
-    width: 100%;
-    min-width: 0;
+    width: 32px;
+    min-width: 32px;
   }
 
-  .assistant-window .composer-action-row > .button-row {
-    justify-content: flex-start;
+  .assistant-window .composer-key-hint {
+    display: none;
+  }
+
+  .assistant-window .assistant-context-button {
+    max-width: none;
+  }
+
+  .assistant-window .clio-run-assembly > summary {
+    max-width: none;
+  }
+
+  .assistant-window .clio-run-panel {
+    left: -40px;
+    width: calc(100vw - 34px);
+    max-height: min(62vh, 480px);
+  }
+
+  .assistant-details-bar {
+    padding-inline: 8px;
+  }
+
+  .clio-chat-file-link {
+    max-width: 45%;
+  }
+
+  .clio-chat-file-link > small {
+    display: none;
   }
 }
 
@@ -714,7 +758,6 @@ select:focus {
 .btn:hover:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected) {
   background: var(--btn-hover-bg);
   color: var(--btn-hover-fg);
-  outline: 0;
   box-shadow: var(--btn-hover-shadow);
 }
 
@@ -885,6 +928,25 @@ select:focus {
 }
 
 @media (max-width: 860px) {
+  /* A phone scrolls with a finger and cannot size a window at all, so the
+     System 6 bars would be decoration with 16px tap targets. Values only —
+     the frame structure itself is unchanged. */
+  body {
+    --window-frame-bar-display: none;
+    --window-frame-reserve: 0px;
+    --window-frame-scrollbar-width: auto;
+  }
+
+  /* iOS Safari zooms the whole page when a focused field's text is under 16px,
+     which throws the desk out of alignment the moment you start typing. 16px is
+     that platform threshold, not a chosen type size, so fields never go below
+     it on a phone while the rest of the System 6 type scale is untouched. */
+  body input:not([type="checkbox"]):not([type="radio"]),
+  body textarea,
+  body select {
+    font-size: max(16px, var(--system-text-size));
+  }
+
   .writing-demo-caption {
     max-width: calc(100vw - 36px);
   }
@@ -899,32 +961,71 @@ select:focus {
     padding: 0 5px;
   }
 
+  /* Hang the popover off the real bottom of the menu bar. Standalone on iOS the
+     bar grows by the status-bar inset, and a fixed 24px put the first items
+     under the notch where they could not be tapped. */
   .menu-bar > .menu > .menu-popover {
     position: fixed;
-    top: 24px;
+    top: var(--menu-popover-top);
     left: var(--menu-popover-left, 4px);
     right: auto;
     max-width: calc(100vw - 8px);
-    max-height: calc(100vh - 32px);
-    overflow: visible;
+    max-height: calc(
+      100vh - var(--menu-bar-height) - var(--safe-area-top) - var(--safe-area-bottom) - 8px
+    );
+    overflow: auto;
   }
 
   .menu-bar > .menu > .apple-menu-popover {
-    max-height: calc(100vh - var(--system-menu-height) - 8px);
+    max-height: calc(
+      100vh - var(--menu-bar-height) - var(--safe-area-top) - var(--safe-area-bottom) - 8px
+    );
     overflow: auto;
   }
 
-  .menu-item-with-sub > .menu-sub-popover {
+  .menu-bar .menu-item-with-sub > .menu-sub-popover {
     position: static;
-    margin: 2px 0 3px 12px;
+    margin: 0 5px 4px 18px;
+    padding: 1px 0 1px 8px;
     max-width: calc(100vw - 28px);
     max-height: none;
-    overflow: auto;
+    overflow: visible;
+    border: 0;
+    border-left: 1px solid var(--menu-divider-color);
+    border-radius: 0;
+    background: transparent;
     box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .menu-bar .menu-item-with-sub.is-open > .menu-submenu-trigger,
+  .menu-bar .menu-item-with-sub.is-open:hover > .menu-submenu-trigger,
+  .menu-bar .menu-item-with-sub.is-open:focus-within > .menu-submenu-trigger {
+    --menu-item-bg: var(--menu-item-active-bg);
+    --menu-item-fg: var(--menu-item-active-fg);
+    --menu-item-shadow: var(--menu-item-active-shadow);
+    font-weight: var(--system-emphasis-weight);
+  }
+
+  .menu-bar .menu-sub-popover button:hover:not(:disabled):not(.is-disabled) {
+    --menu-item-bg: var(--menu-item-active-bg);
+    --menu-item-fg: var(--menu-item-active-fg);
+    --menu-item-shadow: var(--menu-item-active-shadow);
+  }
+
+  .menu-bar .menu-sub-popover button:disabled,
+  .menu-bar .menu-sub-popover button.is-disabled {
+    --menu-item-bg: transparent;
+    --menu-item-shadow: none;
   }
 
   .menu-item-with-sub > button::after {
     content: "▼";
+  }
+
+  .menu-item-with-sub.is-open > button::after {
+    content: "▲";
   }
 
   .menu-bar > .menu > .menu-popover .shortcut {
@@ -957,7 +1058,7 @@ select:focus {
     padding: 4px 8px 6px;
   }
 
-  body:not(.is-writer-mode) .window:not(.about-window):not(.save-chat-window):not(.guide-window):not(.control-panel):not(.chooser-panel):not(.find-file-window):not(.note-pad-window):not(.clipboard-window):not(.dictation-window):not(.translation-pad-window):not(.dictionary-window):not(.key-caps-window):not(.system-status-window):not(.notification-center-window):not(.writing-bell-window):not(.calculator-window):not(.puzzle-window):not(.memory-cards-window):not(.model-meter-window) {
+  body:not(.is-writer-mode) .window:not(.about-window):not(.save-chat-window):not(.guide-window):not(.control-panel):not(.chooser-panel):not(.find-file-window):not(.note-pad-window):not(.clipboard-window):not(.dictation-window):not(.translation-pad-window):not(.dictionary-window):not(.key-caps-window):not(.system-status-window):not(.notification-center-window):not(.writing-bell-window):not(.alarm-clock-window):not(.calculator-window):not(.puzzle-window):not(.memory-cards-window):not(.model-meter-window):not(.is-mobile-fullscreen) {
     position: absolute !important;
     left: var(--mobile-work-left) !important;
     right: auto !important;
@@ -968,11 +1069,18 @@ select:focus {
     transform: none !important;
   }
 
-  body:not(.is-writer-mode) .window:is(.find-file-window, .note-pad-window, .clipboard-window, .dictation-window, .translation-pad-window, .dictionary-window, .key-caps-window, .system-status-window, .notification-center-window, .writing-bell-window, .calculator-window, .puzzle-window, .memory-cards-window, .model-meter-window):not(.is-hidden):not(.is-collapsed) {
+  body:not(.is-writer-mode) .window:is(.find-file-window, .note-pad-window, .clipboard-window, .dictation-window, .translation-pad-window, .dictionary-window, .key-caps-window, .system-status-window, .notification-center-window, .writing-bell-window, .alarm-clock-window, .calculator-window, .puzzle-window, .memory-cards-window, .model-meter-window):not(.is-hidden):not(.is-collapsed) {
     min-width: 0 !important;
     max-width: calc(100vw - 28px) !important;
     height: auto !important;
     transform: none !important;
+    /* Desktop base rules pin these accessories with right:<N>px; on a narrow
+       screen that makes the used left negative (viewport - right - width < 0),
+       clipping them off the left edge. Neutralise the stray right and anchor
+       left to the work inset. Non-important on purpose: JS cascade placement
+       sets an inline left that must still win. */
+    right: auto;
+    left: var(--mobile-work-left, 0px);
   }
 
   body:not(.is-writer-mode) .window:is(.find-file-window, .memory-cards-window):not(.is-hidden):not(.is-collapsed) {
@@ -1146,6 +1254,10 @@ select:focus {
 }
 
 @media (max-width: 620px) {
+  .memory-cards-board {
+    --memory-cards-columns: 4;
+  }
+
   .desktop {
     padding: 10px;
     --mobile-work-left: 144px;
@@ -1394,8 +1506,8 @@ body.is-writer-mode .system-help-window .system-help-pane {
 }
 
 @media (max-width: 860px) {
-  body:not(.is-writer-mode) .window.assistant-window:not(.about-window):not(.save-chat-window):not(.guide-window):not(.is-collapsed),
-  body:not(.is-writer-mode) .window.assistant-window.is-desklet:not(.about-window):not(.save-chat-window):not(.guide-window):not(.is-collapsed) {
+  body:not(.is-writer-mode) .window.assistant-window:not(.about-window):not(.save-chat-window):not(.guide-window):not(.is-collapsed):not(.is-mobile-fullscreen),
+  body:not(.is-writer-mode) .window.assistant-window.is-desklet:not(.about-window):not(.save-chat-window):not(.guide-window):not(.is-collapsed):not(.is-mobile-fullscreen) {
     min-height: 72vh !important;
   }
 
@@ -1415,12 +1527,25 @@ body.is-writer-mode .system-help-window .system-help-pane {
 @media (max-width: 860px) and (orientation: portrait) {
   body:not(.is-writer-mode) {
     overflow: hidden auto;
-    padding-top: var(--system-menu-height);
+    padding-top: calc(var(--menu-bar-height) + var(--safe-area-top));
   }
 
+  /* A foregrounded app is fixed and already fills the screen, so there is
+     nothing under it to scroll. Locking the page keeps iOS from scrolling the
+     whole desk up when the keyboard opens — that scroll is what pushed the
+     window's title bar under the status bar. */
+  body.mobile-app-foreground:not(.is-writer-mode) {
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  /* Standalone on iOS the menu bar is the topmost thing on screen, so it grows
+     into the status-bar area instead of hiding under it. */
   body:not(.is-writer-mode) .menu-bar {
     position: fixed;
     inset: 0 0 auto 0;
+    height: calc(var(--menu-bar-height) + var(--safe-area-top));
+    padding-top: var(--safe-area-top);
     z-index: var(--z-system-menu);
   }
 
@@ -1492,9 +1617,9 @@ body.is-writer-mode .system-help-window .system-help-pane {
     left: calc(50% - 31px);
   }
 
-  body:not(.is-writer-mode) .window:not(.about-window):not(.save-chat-window):not(.guide-window):not(.control-panel):not(.chooser-panel):not(.find-file-window):not(.note-pad-window):not(.clipboard-window):not(.dictation-window):not(.translation-pad-window):not(.dictionary-window):not(.key-caps-window):not(.system-status-window):not(.notification-center-window):not(.writing-bell-window):not(.calculator-window):not(.puzzle-window):not(.memory-cards-window):not(.model-meter-window),
-  body:not(.is-writer-mode) .assistant-window,
-  body:not(.is-writer-mode) .assistant-window.is-desklet {
+  body:not(.is-writer-mode) .window:not(.about-window):not(.save-chat-window):not(.guide-window):not(.control-panel):not(.chooser-panel):not(.find-file-window):not(.note-pad-window):not(.clipboard-window):not(.dictation-window):not(.translation-pad-window):not(.dictionary-window):not(.key-caps-window):not(.system-status-window):not(.notification-center-window):not(.writing-bell-window):not(.alarm-clock-window):not(.calculator-window):not(.puzzle-window):not(.memory-cards-window):not(.model-meter-window):not(.is-mobile-fullscreen),
+  body:not(.is-writer-mode) .assistant-window:not(.is-mobile-fullscreen),
+  body:not(.is-writer-mode) .assistant-window.is-desklet:not(.is-mobile-fullscreen) {
     position: relative !important;
     order: 2;
     left: auto !important;
@@ -1522,10 +1647,76 @@ body.is-writer-mode .system-help-window .system-help-pane {
     transform: none !important;
   }
 
-  body:not(.is-writer-mode) .assistant-window,
-  body:not(.is-writer-mode) .assistant-window.is-desklet {
+  body:not(.is-writer-mode) .assistant-window:not(.is-mobile-fullscreen),
+  body:not(.is-writer-mode) .assistant-window.is-desklet:not(.is-mobile-fullscreen) {
     order: 3 !important;
   }
+
+  /* Mobile full-screen app shell (ClioTalk pilot). A foregrounded real app fills
+     the screen below the fixed menu bar. App-agnostic class so later apps reuse
+     it. The flow rules above are scoped away with :not(.is-mobile-fullscreen),
+     so these win by specificity without adding a forced override. */
+  body.mobile-app-foreground:not(.is-writer-mode) .window.is-mobile-fullscreen {
+    position: fixed;
+    /* The window fills to the true bottom edge — iOS no longer expects content
+       to stop short of the home indicator, it floats over the app instead (only
+       the composer keeps a comfortable inner inset below). Bottom still lifts
+       by --keyboard-inset so the composer clears the keyboard when it is up;
+       top clears the status bar when the desk runs standalone. */
+    inset:
+      calc(var(--menu-bar-height) + var(--safe-area-top))
+      0
+      var(--keyboard-inset, 0px)
+      0;
+    order: 0;
+    width: 100%;
+    max-width: none;
+    height: auto;
+    max-height: none;
+    min-width: 0;
+    /* An aspect-locked window (ClioStage) must fill the phone screen and
+       letterbox its own content instead of shrinking the whole window. */
+    aspect-ratio: auto;
+    margin: 0;
+    border-width: 0;
+    border-radius: 0;
+    transform: none;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Inside the full-screen shell the pane between title bar and composer takes
+     the slack and scrolls; the composer stays pinned at the bottom. */
+  body.mobile-app-foreground:not(.is-writer-mode) .window.is-mobile-fullscreen .window-pane,
+  body.mobile-app-foreground:not(.is-writer-mode) .window.is-mobile-fullscreen #messages {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  body.mobile-app-foreground:not(.is-writer-mode) .window.is-mobile-fullscreen .composer {
+    flex: 0 0 auto;
+    /* The window's own background already reaches the true edge; this keeps
+       the send button and text clear of the home indicator without pulling the
+       window boundary up. env() reports 0 here once the keyboard covers the
+       indicator, so this never doubles up with --keyboard-inset. */
+    padding-bottom: var(--safe-area-bottom);
+  }
+
+  /* Home = clear this state; the desktop launcher underneath returns. While an
+     app is foregrounded, the launcher column and writing spine stay out of the
+     way behind it. */
+  body.mobile-app-foreground:not(.is-writer-mode) .icon-column,
+  body.mobile-app-foreground:not(.is-writer-mode) .writing-spine-panel {
+    display: none;
+  }
+
+  /* The full-screen shell keeps the whole System 6 title bar: the close box
+     (top-left) quits, and the zoom box (top-right) restores the window down to
+     a floating window so several can share the screen — it pairs with the grow
+     box in the bottom-right corner. Returning to the desktop while keeping the
+     app running is done from the switcher. */
 
   body:not(.is-writer-mode) .teachtext-window:not(.is-hidden):not(.is-collapsed) .mde-surface {
     min-height: min(52vh, 420px);
@@ -1602,6 +1793,10 @@ body.is-writer-mode .system-help-window .system-help-pane {
     overflow: auto;
   }
 
+  /* A fixed height here (rather than a cap) forced this dialog to a fraction of
+     the viewport regardless of how much its content actually needed — visibly
+     empty for a short tab (Control Panel's General, or Chooser). Content now
+     drives the height, up to the same on-screen fraction as a ceiling. */
   body:not(.is-writer-mode) .window:is(.control-panel, .chooser-panel):not(.is-hidden):not(.is-collapsed) {
     position: fixed;
     top: calc(var(--system-menu-height, 26px) + 10px);
@@ -1611,7 +1806,7 @@ body.is-writer-mode .system-help-window .system-help-pane {
     width: min(540px, calc(100vw - 16px));
     max-width: calc(100vw - 16px);
     min-height: 0;
-    height: min(82vh, calc(100vh - var(--system-menu-height, 26px) - 20px));
+    height: auto;
     max-height: min(82vh, calc(100vh - var(--system-menu-height, 26px) - 20px));
   }
 
@@ -1620,18 +1815,18 @@ body.is-writer-mode .system-help-window .system-help-pane {
     overflow-y: auto;
   }
 
-  body:not(.is-writer-mode) .assistant-window:not(.is-collapsed) {
+  body:not(.is-writer-mode) .assistant-window:not(.is-collapsed):not(.is-mobile-fullscreen) {
     height: min(78vh, calc(100vh - var(--system-menu-height, 26px) - 24px)) !important;
     max-height: min(78vh, calc(100vh - var(--system-menu-height, 26px) - 24px)) !important;
     min-height: 360px !important;
   }
 
-  body:not(.is-writer-mode) .endfield-terminal-window:not(.is-hidden):not(.is-collapsed) {
+  body:not(.is-writer-mode) .endfield-terminal-window:not(.is-hidden):not(.is-collapsed):not(.is-mobile-fullscreen) {
     height: var(--portrait-window-height, calc(100vh - var(--system-menu-height, 26px) - 72px)) !important;
     min-height: min(560px, calc(100vh - var(--system-menu-height, 26px) - 72px)) !important;
   }
 
-  .window[data-zoomed=true] {
+  .window[data-zoomed=true]:not(.is-mobile-fullscreen) {
     height: calc(100vh - 60px) !important;
   }
 
@@ -1726,7 +1921,7 @@ body.use-modern-fonts .mde-surface * {
 }
 
 .menu-bar {
-  height: var(--system-menu-height);
+  height: var(--menu-bar-height);
   padding: 0 8px;
   border-bottom: 2px solid var(--ink);
   box-shadow: inset 0 -1px 0 var(--paper);
@@ -1778,7 +1973,7 @@ body.use-modern-fonts .mde-surface * {
 .spine-title-row {
   height: var(--system-titlebar-height);
   min-height: var(--system-titlebar-height);
-  display: flex;
+  display: grid;
   margin: var(--system-titlebar-margin-y) 0;
   padding: var(--system-titlebar-padding-y) var(--system-titlebar-padding-x);
   border-bottom: 2px solid var(--ink);
@@ -1793,6 +1988,13 @@ body.use-modern-fonts .mde-surface * {
   background-repeat: repeat-y;
   background-origin: content-box;
   background-clip: content-box;
+}
+
+.title-bar {
+  grid-template-columns:
+    var(--system-titlebar-control-slot)
+    minmax(0, 1fr)
+    var(--system-titlebar-control-slot);
 }
 
 .window:not(.is-active) .title-bar {
@@ -1827,18 +2029,40 @@ body.use-modern-fonts .mde-surface * {
   line-height: 20px;
 }
 
-.window:not(.is-active) .title-bar h1,
-.window:not(.is-active) .title-bar h2 {
-  color: #555555;
-  font-weight: 500;
+.title-bar h1,
+.title-bar h2 {
+  align-self: flex-start;
+  min-height: var(--system-titlebar-title-height);
+  height: var(--system-titlebar-title-height);
+  margin: 0;
+  line-height: var(--system-titlebar-title-height);
 }
 
-.close-box,
-.resize-box {
-  width: var(--system-titlebar-control-size);
-  height: var(--system-titlebar-control-size);
-  margin: 0 var(--system-titlebar-control-margin-x);
-  border: var(--system-titlebar-control-stroke) solid var(--ink);
+/* Alarm Clock owns a plain instrument face instead of Finder title stripes.
+   Keep its period typography even when the desktop uses modern fonts. */
+body .window.alarm-clock-window > .title-bar.alarm-clock-title-bar {
+  background-color: var(--alarm-clock-title-bg);
+  background-image: none;
+}
+
+body .window.alarm-clock-window .alarm-clock-current-time {
+  font-size: 28px;
+}
+
+body .window.alarm-clock-window .alarm-clock-value {
+  font-size: 28px;
+}
+
+body.use-modern-fonts .alarm-clock-current-time,
+body.use-modern-fonts .alarm-clock-value {
+  font-family: Chicago_12, Chicago, Charcoal, "Songti SC", "SimSun", serif;
+}
+
+.window:not(.is-active) .title-bar h1,
+.window:not(.is-active) .title-bar h2 {
+  /* Same black Chicago as the front window — System 6 marks a background window
+     by removing its stripes and controls, not by graying its name. */
+  color: var(--system-titlebar-inactive-title-color);
 }
 
 /* .details-bar/.finder-list-header/.teachtext-desk-strip/.control-section h3
@@ -2257,7 +2481,7 @@ input[type="radio"] {
 }
 
 @media (max-width: 860px) and (orientation: portrait) {
-  body:not(.is-writer-mode) .window.scrapbook-window:not(.is-hidden):not(.is-collapsed) {
+  body:not(.is-writer-mode) .window.scrapbook-window:not(.is-hidden):not(.is-collapsed):not(.is-mobile-fullscreen) {
     left: 18px !important;
     top: 74px !important;
     width: calc(100vw - 54px) !important;

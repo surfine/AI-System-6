@@ -8,6 +8,7 @@ const test = createFeatureTest("humanizer-guardrail");
 const manifest = read("scripts/runtime-manifest.mjs");
 const appHumanizer = read("app/core/humanizer-guidance.js");
 const config = read("app/core/config.js");
+const clioTalkPrompt = read("app/content/ai-prompts/cliotalk/main.md");
 const index = read("index.html");
 const serverHumanizer = read("src/server/humanizer.js");
 const serverChat = read("src/server/chat.js");
@@ -17,7 +18,11 @@ const draftRoute = read("src/server/routes/draft-thesis.js");
 const chatMessages = read("app/core/chat-messages.js");
 const writingFlow = read("app/features/writing-flow.js");
 const outlineClaim = read("app/features/outline-claim.js");
+const sectionDraftPrompt = read("app/content/ai-prompts/writing-route/section-draft.md");
+const sectionPolishPrompt = read("app/content/ai-prompts/writing-route/section-polish.md");
+const outlinePrompt = read("app/content/ai-prompts/writing-route/outline-generate.md");
 const translation = read("app/features/translation.js");
+const rewritePrompt = read("app/content/ai-prompts/writing-tools/rewrite.md");
 const bureaucracy = read("src/server/bureaucracy.js");
 const bureaucracyRoute = read("src/server/routes/bureaucracy-captions.js");
 
@@ -46,7 +51,8 @@ test.assertIncludes(config, "window.AISystem6Humanizer", "Markdown model message
 test.assertIncludes(config, "humanizer.hasHumanizerInstruction(normalized)", "Frontend injection avoids duplicate guardrails");
 test.assertIncludes(config, "humanizer.instruction()", "Frontend Markdown model calls receive the Humanizer instruction");
 test.assertIncludes(config, "AI-flavored filler, inflated significance, promotional polish", "Default ClioTalk prompt rejects AI voice");
-test.assertIncludes(index, "AI-flavored filler, inflated significance, promotional polish", "Boot HTML default prompt matches the config default");
+test.assertIncludes(index, 'data-prompt-file="cliotalk.main"', "Boot HTML delegates the default prompt to its visible file");
+test.assertIncludes(clioTalkPrompt, "AI-flavored filler, inflated significance, promotional polish", "ClioTalk visible file rejects AI voice");
 
 test.assertIncludes(serverHumanizer, "function shouldApplyHumanizer", "Server proxy has a task-aware Humanizer gate");
 test.assertIncludes(serverHumanizer, "extract|ocr|embedding", "Server skips source-preservation tasks where humanizing would be unsafe");
@@ -91,17 +97,17 @@ test.assertIncludes(chatMessages, "qwen35TaskTemperature(taskKind)", "Client qwe
 test.assertIncludes(chatMessages, "qwenNeedsHumanizerRepair", "Client qwen chat uses non-stream output so the repair pass can run");
 test.assertIncludes(chatMessages, "isQwen35ModelName(budgetedPayload.model)", "Client qwen stream gating reads the budgeted payload before final payload creation");
 
-test.assertIncludes(writingFlow, "避免论文腔、公文腔、营销腔和 AI 腔", "Section Draft generation explicitly rejects AI voice");
-test.assertIncludes(writingFlow, "不要用“不仅……而且……”和机械三段式撑场面", "Section Draft generation bans common formula structures");
+test.assertIncludes(sectionDraftPrompt, "避免论文腔、公文腔、营销腔和 AI 腔", "Section Draft generation explicitly rejects AI voice");
+test.assertIncludes(sectionDraftPrompt, "不要用“不仅……而且……”和机械三段式撑场面", "Section Draft generation bans common formula structures");
 test.assertIncludes(writingFlow, 'ai_system6_task_kind: "draft-section"', "Section Draft generation identifies itself to model tuning");
 test.assertIncludes(writingFlow, "temperature: 0.55", "Section Draft generation stays restrained for larger qwen3.6 models");
 
-test.assertIncludes(outlineClaim, "避免 AI 腔标题和套话", "Outline generation rejects AI-flavored headings");
-test.assertIncludes(outlineClaim, "源文里的 AI 套话不要忠实保留", "Draft polishing strips common AI trigger words");
+test.assertIncludes(outlinePrompt, "避免 AI 腔标题和套话", "Outline generation rejects AI-flavored headings");
+test.assertIncludes(sectionPolishPrompt, "源文里的 AI 套话不要忠实保留", "Draft polishing strips common AI trigger words");
 test.assertIncludes(outlineClaim, 'ai_system6_task_kind: "polish-draft"', "Draft polishing identifies itself to model tuning");
 test.assertIncludes(outlineClaim, 'ai_system6_task_kind: "suggest-draft"', "Draft suggestions identify themselves to model tuning");
 
-test.assertIncludes(translation, "降低 AI 腔，同时保留意思和声音", "Rewrite tool treats humanizing as clarity plus voice preservation");
+test.assertIncludes(rewritePrompt, "降低 AI 腔，同时保留意思和声音", "Rewrite tool treats humanizing as clarity plus voice preservation");
 test.assertIncludes(translation, "taskKind: `writing-tool-${mode}`", "Writing tools pass task kind through shared model routing");
 test.assertIncludes(bureaucracy, "field values only", "Bureaucracy captions keep table cells from becoming template-labeled mini reports");
 test.assertIncludes(bureaucracy, "^:?-{2,}:?$", "Bureaucracy captions reject Markdown separator rows as model captions");

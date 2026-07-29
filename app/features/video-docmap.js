@@ -429,7 +429,7 @@ ${clipContextContent(source.text, 14000)}`;
     const response = await fetchModelPayload({
       model: getLocalModelRequestName(),
       messages: [
-        { role: "system", content: "You convert transcripts into Markdown Video DocMaps. Return Markdown only, never JSON." },
+        { role: "system", content: resolveWritingRoutePrompt("source-apps.video-docmap-markdown", "en") },
         { role: "user", content: prompt },
       ],
       temperature: 0.1,

@@ -65,7 +65,7 @@ const TEXT_PROPS = [
 
 const SURFACES = {
   "system-menu": {
-    description: "System menu bar buttons, popovers, and submenu interaction states",
+    description: "System menu bar buttons, application menus, and popover interaction states",
     scenarios: [
       {
         id: "file-open",
@@ -81,10 +81,16 @@ const SURFACES = {
         },
       },
       {
-        id: "edit-submenu-hover",
+        id: "writing-tools-hover",
         setup: async (page) => {
-          await setupSystemMenu(page, "edit");
-          await page.hover(".menu.is-open .menu-submenu:not(.is-disabled) > .menu-submenu-trigger");
+          await setupSystemMenu(page, "writing-tools");
+          await page.hover('.menu.is-open .menu-popover button[data-action="ai-proofread"]');
+        },
+      },
+      {
+        id: "apple-open",
+        setup: async (page) => {
+          await setupSystemMenu(page, "apple");
         },
       },
       {
@@ -109,9 +115,10 @@ const SURFACES = {
       { sel: ".menu-popover", props: MATERIAL_PROPS.concat(["top", "min-width", "max-height", "overflow"]) },
       { sel: ".menu.is-open .menu-popover button:not(:disabled):not(.is-disabled)", props: MATERIAL_PROPS.concat(TEXT_PROPS).concat(["min-height", "margin-top", "margin-right", "margin-bottom", "margin-left"]) },
       { sel: ".menu.is-open .menu-popover button:hover:not(:disabled):not(.is-disabled)", props: MATERIAL_PROPS.concat(TEXT_PROPS).concat(["min-height", "margin-top", "margin-right", "margin-bottom", "margin-left"]) },
-      { sel: ".menu-submenu:not(.is-disabled) > .menu-submenu-trigger", props: MATERIAL_PROPS.concat(TEXT_PROPS).concat(["min-height", "margin-top", "margin-right", "margin-bottom", "margin-left"]) },
-      { sel: ".menu-submenu:not(.is-disabled):hover > .menu-submenu-trigger", props: MATERIAL_PROPS.concat(TEXT_PROPS).concat(["min-height", "margin-top", "margin-right", "margin-bottom", "margin-left"]) },
-      { sel: ".menu-submenu:not(.is-disabled):hover > .menu-submenu-popover", props: MATERIAL_PROPS.concat(["display", "top", "left", "min-width"]) },
+      { sel: ".menu.is-open .menu-popover button:hover:not(:disabled):not(.is-disabled) .shortcut", props: ["color", "opacity"] },
+      { sel: '.menu-bar > .menu > button[data-i18n="menu_edit"]', props: MATERIAL_PROPS.concat(TEXT_PROPS).concat(["height", "min-height", "border-radius"]) },
+      { sel: '.menu.is-open .menu-popover button[data-action="ai-proofread"]', props: MATERIAL_PROPS.concat(TEXT_PROPS).concat(["min-height", "margin-top", "margin-right", "margin-bottom", "margin-left"]) },
+      { sel: '.menu.is-open .menu-popover button[data-action="ai-proofread"]:hover', props: MATERIAL_PROPS.concat(TEXT_PROPS).concat(["min-height", "margin-top", "margin-right", "margin-bottom", "margin-left"]) },
       { sel: ".multifinder-menu > .multifinder-button", props: MATERIAL_PROPS.concat(TEXT_PROPS).concat(["height", "min-height", "border-radius"]) },
       { sel: ".multifinder-menu.is-open > .multifinder-button", props: MATERIAL_PROPS.concat(TEXT_PROPS).concat(["height", "min-height", "border-radius"]) },
       { sel: ".multifinder-menu:focus-within > .multifinder-button", props: MATERIAL_PROPS.concat(TEXT_PROPS).concat(["height", "min-height", "border-radius"]) },
@@ -726,6 +733,131 @@ const SURFACES = {
       { sel: ".context-item .button-row", props: MATERIAL_PROPS.concat(["gap"]) },
     ],
   },
+  "clio-talk": {
+    description: "ClioTalk empty state, conversation, reply actions, and composer",
+    scenarios: [
+      {
+        id: "empty",
+        setup: async (page) => {
+          await setupClioTalk(page, "empty");
+        },
+      },
+      {
+        id: "ready-to-send",
+        setup: async (page) => {
+          await setupClioTalk(page, "ready-to-send");
+        },
+      },
+      {
+        id: "conversation",
+        setup: async (page) => {
+          await setupClioTalk(page, "conversation");
+        },
+      },
+      {
+        id: "sideask",
+        setup: async (page) => {
+          await setupClioTalk(page, "sideask");
+        },
+      },
+      {
+        id: "compose-tools",
+        setup: async (page) => {
+          await setupClioTalk(page, "conversation");
+          await page.click("#compose-tools-toggle");
+        },
+      },
+      {
+        id: "run-assembly",
+        setup: async (page) => {
+          await setupClioTalk(page, "run-assembly");
+          await page.click("#clio-run-summary");
+        },
+      },
+      {
+        id: "run-record",
+        setup: async (page) => {
+          await setupClioTalk(page, "run-record");
+        },
+      },
+      {
+        id: "reply-actions",
+        setup: async (page) => {
+          await setupClioTalk(page, "conversation");
+          await page.click(".message-use-actions > summary");
+          await page.evaluate(() => {
+            const messages = document.querySelector("#messages");
+            if (messages) messages.scrollTop = messages.scrollHeight;
+          });
+        },
+      },
+      {
+        id: "failure",
+        setup: async (page) => {
+          await setupClioTalk(page, "failure");
+        },
+      },
+      {
+        id: "stopped",
+        setup: async (page) => {
+          await setupClioTalk(page, "stopped");
+        },
+      },
+      {
+        id: "streaming",
+        setup: async (page) => {
+          await setupClioTalk(page, "streaming");
+        },
+      },
+      {
+        id: "reading-history",
+        setup: async (page) => {
+          await setupClioTalk(page, "reading-history");
+        },
+      },
+    ],
+    targets: [
+      { sel: ".assistant-window", props: MATERIAL_PROPS.concat(["width", "height"]) },
+      { sel: ".assistant-details-bar", props: MATERIAL_PROPS.concat(["gap", "grid-template-columns"]) },
+      { sel: ".assistant-window .clio-chat-file-link", props: MATERIAL_PROPS.concat(TEXT_PROPS) },
+      { sel: ".assistant-window .sideask-mode-strip", props: MATERIAL_PROPS.concat(["gap"]) },
+      { sel: ".assistant-window .sideask-source-link", props: MATERIAL_PROPS.concat(TEXT_PROPS) },
+      { sel: ".assistant-window .sideask-end-button", props: MATERIAL_PROPS.concat(TEXT_PROPS) },
+      { sel: ".assistant-window .clio-new-chat-button", props: MATERIAL_PROPS.concat(TEXT_PROPS) },
+      { sel: ".assistant-window .assistant-context-button", props: MATERIAL_PROPS.concat(TEXT_PROPS) },
+      { sel: ".assistant-window .messages-stage", props: MATERIAL_PROPS.concat(["overflow"]) },
+      { sel: ".assistant-window .messages", props: MATERIAL_PROPS.concat(["overflow"]) },
+      { sel: ".assistant-window .clio-scroll-latest", props: MATERIAL_PROPS.concat(["width", "height"]) },
+      { sel: ".assistant-window .clio-welcome", props: MATERIAL_PROPS },
+      { sel: ".assistant-window .message.user", props: MATERIAL_PROPS.concat(["grid-template-columns", "gap", "max-width"]) },
+      { sel: ".assistant-window .message.assistant:not(.clio-welcome)", props: MATERIAL_PROPS.concat(["grid-template-columns", "gap", "max-width"]) },
+      { sel: ".assistant-window .message.pending.streaming", props: MATERIAL_PROPS },
+      { sel: ".assistant-window .speaker", props: TEXT_PROPS },
+      { sel: ".assistant-window .message-content", props: TEXT_PROPS.concat(["max-width"]) },
+      { sel: ".assistant-window .message-run-state", props: MATERIAL_PROPS.concat(TEXT_PROPS).concat(["gap"]) },
+      { sel: ".assistant-window .message-run-receipt", props: MATERIAL_PROPS.concat(TEXT_PROPS).concat(["gap"]) },
+      { sel: ".assistant-window .message-grounding-strip", props: MATERIAL_PROPS.concat(TEXT_PROPS) },
+      { sel: ".assistant-window .clio-context-link", props: MATERIAL_PROPS.concat(TEXT_PROPS) },
+      { sel: ".assistant-window .message-actions", props: MATERIAL_PROPS.concat(["gap"]) },
+      { sel: ".assistant-window .message-disposition", props: TEXT_PROPS },
+      { sel: ".assistant-window .message-use-menu", props: MATERIAL_PROPS },
+      { sel: ".assistant-window .message-more-actions", props: MATERIAL_PROPS },
+      { sel: ".assistant-window .message-action-menu", props: MATERIAL_PROPS },
+      { sel: ".assistant-window .message-error", props: MATERIAL_PROPS.concat(TEXT_PROPS) },
+      { sel: ".assistant-window .message-retry-button", props: MATERIAL_PROPS.concat(TEXT_PROPS) },
+      { sel: ".assistant-window .composer", props: MATERIAL_PROPS.concat(["gap"]) },
+      { sel: ".assistant-window .composer textarea", props: MATERIAL_PROPS.concat(TEXT_PROPS).concat(["height", "min-height", "max-height"]) },
+      { sel: ".assistant-window .composer-action-row", props: MATERIAL_PROPS.concat(["gap", "grid-template-columns"]) },
+      { sel: ".assistant-window .clio-run-assembly > summary", props: MATERIAL_PROPS.concat(TEXT_PROPS) },
+      { sel: ".assistant-window .clio-run-panel", props: MATERIAL_PROPS.concat(["width", "max-height"]) },
+      { sel: ".assistant-window .clio-run-file", props: MATERIAL_PROPS.concat(TEXT_PROPS) },
+      { sel: ".assistant-window .composer-file-button", props: MATERIAL_PROPS.concat(["width", "height", "min-width", "min-height"]) },
+      { sel: ".assistant-window .composer-submit-slot", props: MATERIAL_PROPS.concat(["width", "height"]) },
+      { sel: ".assistant-window .composer-submit-button", props: MATERIAL_PROPS.concat(["width", "height", "min-width", "min-height"]) },
+      { sel: ".assistant-window .composer-stop-button", props: MATERIAL_PROPS.concat(["width", "height", "min-width", "min-height"]) },
+      { sel: ".assistant-window .compose-tools-menu", props: MATERIAL_PROPS.concat(["width", "min-width", "max-width"]) },
+    ],
+  },
   "find-path": {
     description: "Searcher result rows",
     scenarios: [
@@ -848,6 +980,54 @@ const SURFACES = {
       { sel: ".clio-stage-cue-current h1", props: TEXT_PROPS },
       { sel: ".clio-stage-cue-current h2", props: TEXT_PROPS },
       { sel: ".clio-stage-cue-next", props: MATERIAL_PROPS.concat(TEXT_PROPS.concat(["gap"])) },
+    ],
+  },
+  "liquid-cover": {
+    description: "Cover Glass artboard, inspector hierarchy, and creative-control states",
+    scenarios: [
+      {
+        id: "layers",
+        setup: async (page) => {
+          await setupLiquidCover(page, "layers");
+        },
+      },
+      {
+        id: "media",
+        setup: async (page) => {
+          await setupLiquidCover(page, "media");
+        },
+      },
+      {
+        id: "glass",
+        setup: async (page) => {
+          await setupLiquidCover(page, "glass");
+        },
+      },
+      {
+        id: "export",
+        setup: async (page) => {
+          await setupLiquidCover(page, "export");
+        },
+      },
+    ],
+    targets: [
+      { sel: ".lc-toolbar", props: MATERIAL_PROPS.concat(["grid-template-columns", "gap"]) },
+      { sel: ".lc-toolbar-modes", props: MATERIAL_PROPS.concat(["gap"]) },
+      { sel: ".liquid-cover-body", props: MATERIAL_PROPS.concat(["grid-template-columns", "grid-template-rows"]) },
+      { sel: ".lc-sidebar", props: MATERIAL_PROPS.concat(["grid-template-columns", "grid-template-rows", "overflow"]) },
+      { sel: ".lc-stage", props: MATERIAL_PROPS.concat(["grid-template-rows", "overflow"]) },
+      { sel: ".lc-stage-head", props: MATERIAL_PROPS.concat(["gap", "grid-template-columns"]) },
+      { sel: ".lc-canvas", props: MATERIAL_PROPS.concat(["max-width", "max-height", "outline-width", "outline-color"]) },
+      { sel: ".lc-panel", props: MATERIAL_PROPS.concat(["width", "max-width", "overflow"]) },
+      { sel: ".lc-panel-intro", props: MATERIAL_PROPS.concat(["gap"]) },
+      { sel: ".lc-inspector-tab.is-active", props: MATERIAL_PROPS.concat(TEXT_PROPS).concat(["min-height"]) },
+      { sel: ".lc-inspector-tab:not(.is-active)", props: MATERIAL_PROPS.concat(TEXT_PROPS).concat(["min-height"]) },
+      { sel: ".lc-aspect button.is-active", props: MATERIAL_PROPS.concat(TEXT_PROPS).concat(["min-height"]) },
+      { sel: ".lc-layer-item.is-active", props: MATERIAL_PROPS.concat(TEXT_PROPS).concat(["min-height"]) },
+      { sel: ".lc-bg-item[aria-pressed=\"true\"]", props: MATERIAL_PROPS.concat(["min-height"]) },
+      { sel: ".lc-preset-row .btn", props: MATERIAL_PROPS.concat(TEXT_PROPS).concat(["min-height"]) },
+      { sel: ".lc-preset-row .btn::before", props: MATERIAL_PROPS.concat(["content", "height"]) },
+      { sel: ".lc-ask-bar", props: MATERIAL_PROPS.concat(["grid-template-columns", "gap"]) },
     ],
   },
   "writing-bell": {
@@ -1016,6 +1196,66 @@ const SURFACES = {
       { sel: ".puzzle-footer span", props: MATERIAL_PROPS.concat(TEXT_PROPS.concat(["display", "min-height"])) },
     ],
   },
+  "desktop-experience": {
+    description: "Desktop profile, Startup Disk, and Applications",
+    scenarios: [
+      {
+        id: "desktop",
+        setup: async (page) => {
+          await selectDesktopProfileForSnapshot(page);
+          await page.evaluate(() => {
+            for (const win of document.querySelectorAll(".window")) {
+              win.classList.add("is-hidden");
+              win.classList.remove("is-active");
+            }
+          });
+        },
+      },
+      {
+        id: "startup-disk",
+        setup: async (page) => {
+          await selectDesktopProfileForSnapshot(page);
+          await showOnlyWindow(page, "disk");
+          await placeSnapshotWindow(page, "disk");
+        },
+      },
+      {
+        id: "applications",
+        setup: async (page) => {
+          await selectDesktopProfileForSnapshot(page);
+          await showOnlyWindow(page, "applications");
+          await placeSnapshotWindow(page, "applications");
+        },
+      },
+      {
+        id: "writing-studio",
+        setup: async (page) => {
+          await selectDesktopProfileForSnapshot(page);
+          await page.evaluate(async () => {
+            await openWritingStudio();
+          });
+          await page.waitForFunction(() => document.body.dataset.workspaceProfile === "writing");
+          await showOnlyWindow(page, "projects");
+          await placeSnapshotWindow(page, "projects");
+          await page.evaluate(() => {
+            document.querySelector('.window[data-window="projects"]').style.left = "170px";
+          });
+        },
+      },
+    ],
+    targets: [
+      { sel: ".desktop", props: MATERIAL_PROPS },
+      { sel: ".icon-column", props: ["display", "gap", "top", "right"] },
+      { sel: ".desktop-icon:not(.is-hidden)", props: MATERIAL_PROPS.concat(TEXT_PROPS) },
+      { sel: '.window[data-window="disk"]', props: MATERIAL_PROPS.concat(["width", "height"]) },
+      { sel: '.window[data-window="applications"]', props: MATERIAL_PROPS.concat(["width", "height"]) },
+      { sel: '.window[data-window="disk"] .details-bar', props: MATERIAL_PROPS.concat(TEXT_PROPS) },
+      { sel: '.window[data-window="applications"] .details-bar', props: MATERIAL_PROPS.concat(TEXT_PROPS) },
+      { sel: '.window[data-window="disk"] .finder-item', props: MATERIAL_PROPS.concat(TEXT_PROPS) },
+      { sel: '.window[data-window="applications"] .finder-item', props: MATERIAL_PROPS.concat(TEXT_PROPS) },
+      { sel: ".writing-spine-panel", props: MATERIAL_PROPS.concat(["width", "height"]) },
+    ],
+  },
   "startup-settings": {
     description: "Startup Settings modal",
     scenarios: [
@@ -1077,6 +1317,7 @@ function usage(exitCode = 1) {
 
 Options:
   --surface   One of: ${Object.keys(SURFACES).join(", ")}, all
+  --scenario  Comma-separated scenario ids, or all. Default all
   --label     Required. Directory name under drafts/css-refactor-snapshots/
   --out       Output root, default drafts/css-refactor-snapshots
   --theme     classic, liquid, or all. Default all
@@ -1091,6 +1332,7 @@ Options:
 function parseArgs(argv) {
   const opts = {
     surface: "all",
+    scenario: "all",
     label: "",
     out: "drafts/css-refactor-snapshots",
     theme: "all",
@@ -1117,6 +1359,7 @@ function parseArgs(argv) {
       opts.diff = [before, after];
       i += 2;
     } else if (arg === "--surface") opts.surface = requireValue(arg, next, ++i);
+    else if (arg === "--scenario") opts.scenario = requireValue(arg, next, ++i);
     else if (arg === "--label") opts.label = requireValue(arg, next, ++i);
     else if (arg === "--out") opts.out = requireValue(arg, next, ++i);
     else if (arg === "--theme") opts.theme = requireValue(arg, next, ++i);
@@ -1158,6 +1401,18 @@ function selectedThemes(value) {
     usage();
   }
   return [theme];
+}
+
+function selectedScenarios(surface, value) {
+  if (value === "all") return surface.scenarios;
+  const ids = value.split(",").map((item) => item.trim()).filter(Boolean);
+  const scenarios = ids.map((id) => surface.scenarios.find((scenario) => scenario.id === id));
+  const unknownIndex = scenarios.findIndex((scenario) => !scenario);
+  if (unknownIndex >= 0) {
+    console.error(`Unknown scenario for this surface: ${ids[unknownIndex]}`);
+    usage();
+  }
+  return scenarios;
 }
 
 function selectedViewports(value) {
@@ -1291,9 +1546,10 @@ async function closeBrowser(browserInstance) {
 async function prepareBase(page, url, theme) {
   await page.goto(url, { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => document.querySelector("#boot-screen")?.hidden === true, null, { timeout: 12000 });
+  await page.waitForFunction(() => document.body.dataset.appReady === "ready", null, { timeout: 12000 });
   await page.evaluate((themeId) => {
     document.body.classList.toggle("use-liquid-glass", themeId === "liquid");
-    document.body.classList.remove("is-writer-mode", "is-cloud-active");
+    document.body.classList.remove("is-writer-mode", "is-cloud-active", "quick-draft-focus");
     for (const dialog of document.querySelectorAll("dialog[open]")) dialog.close();
     for (const win of document.querySelectorAll(".window")) {
       win.classList.add("is-hidden");
@@ -1339,6 +1595,13 @@ async function showOnlyWindow(page, name) {
   }, name);
 }
 
+async function selectDesktopProfileForSnapshot(page) {
+  await page.evaluate(async () => {
+    await activateWorkspaceProfile("desktop", { openDefault: false, persist: false });
+  });
+  await page.waitForFunction(() => document.body.dataset.workspaceProfile === "desktop");
+}
+
 async function showWindowChromePair(page) {
   await page.evaluate(() => {
     for (const win of document.querySelectorAll(".window")) {
@@ -1373,15 +1636,14 @@ async function setupSystemMenu(page, scenario) {
       win.classList.remove("is-active");
     }
     document.body.classList.add("is-multifinder");
+    renderAppMenuBar(scenarioId === "writing-tools" ? "teachText" : "finder", { force: true });
     document.querySelector(".multifinder-menu")?.classList.remove("is-hidden");
     document.querySelector("#notification-center-button")?.classList.add("is-hidden");
     document.querySelector("#clock")?.classList.add("is-hidden");
     document.querySelector("#cloud-model-indicator")?.classList.add("is-hidden");
     document.querySelectorAll(".menu").forEach((menu) => menu.classList.remove("is-open"));
 
-    const editSubmenu = document.querySelector('.menu-submenu [data-submenu-action="ask-cliotalk"]')?.closest(".menu-submenu");
-    editSubmenu?.classList.remove("is-disabled");
-    editSubmenu?.querySelector(".menu-submenu-trigger")?.classList.remove("is-disabled");
+    document.querySelector('[data-action="ai-proofread"]')?.classList.remove("is-disabled");
 
     const multifinderPopover = document.querySelector("#multifinder-popover");
     if (multifinderPopover) {
@@ -1401,13 +1663,18 @@ async function setupSystemMenu(page, scenario) {
     }
 
     const menu =
-      scenarioId === "edit"
+      scenarioId === "writing-tools"
         ? document.querySelector('.menu > button[data-i18n="menu_edit"]')?.closest(".menu")
+        : scenarioId === "apple"
+          ? document.querySelector(".menu")
         : scenarioId === "multifinder"
           ? document.querySelector(".multifinder-menu")
           : document.querySelector('.menu > button[data-i18n="menu_file"]')?.closest(".menu");
     if (!menu) throw new Error(`System menu scenario not found: ${scenarioId}`);
     menu.classList.add("is-open");
+    if (scenarioId === "writing-tools") {
+      menu.querySelector('[data-i18n="writing_tools"]')?.closest(".menu-item-with-sub")?.classList.add("is-open");
+    }
   }, scenario);
 }
 
@@ -1420,6 +1687,24 @@ async function placeSnapshotWindow(page, name) {
     target.style.right = "auto";
     target.style.bottom = "auto";
   }, name);
+}
+
+async function setupLiquidCover(page, panel) {
+  await page.evaluate(async () => {
+    await ensureLiquidCoverModule();
+    await window.AISystem6LiquidCover.open({ skipPlacement: true });
+  });
+  await showOnlyWindow(page, "liquidCover");
+  await placeSnapshotWindow(page, "liquidCover");
+  await page.click(`#lc-tab-${panel}`);
+  await page.waitForFunction((panelName) => {
+    const tab = document.querySelector(`#lc-tab-${panelName}`);
+    const activePanel = document.querySelector(`#lc-panel-${panelName}`);
+    const activeControl =
+      tab?.getAttribute("aria-selected") === "true" ||
+      tab?.getAttribute("aria-pressed") === "true";
+    return activeControl && activePanel?.hidden === false;
+  }, panel);
 }
 
 async function setupClioStage(page, scenario) {
@@ -1576,6 +1861,137 @@ async function setupContextPanelRows(page) {
       `;
     }
   });
+}
+
+async function setupClioTalk(page, scenario) {
+  await showOnlyWindow(page, "assistant");
+  await placeSnapshotWindow(page, "assistant");
+  await page.evaluate(async (scenarioId) => {
+    const win = document.querySelector('.window[data-window="assistant"]');
+    const messages = document.querySelector("#messages");
+    const prompt = document.querySelector("#prompt");
+    const status = document.querySelector("#status");
+    const context = document.querySelector("#assistant-context-space");
+    if (!win || !messages) throw new Error("ClioTalk snapshot targets are not available");
+    win.style.width = "720px";
+    win.style.height = "540px";
+    conversation.length = 0;
+    messages.replaceChildren();
+    setComposerBusy(false);
+    if (status) status.textContent = "Ready";
+    if (context) context.textContent = "Context available 7.4K / 8K · 93%";
+    if (prompt) prompt.value = "";
+    document.querySelector("#compose-tools-menu")?.classList.add("is-hidden");
+    document.querySelector("#compose-tools-toggle")?.setAttribute("aria-expanded", "false");
+    const chatFileButton = document.querySelector("#clio-chat-file-link");
+    const chatFileName = document.querySelector("#clio-chat-file-name");
+    const chatFilePath = document.querySelector("#clio-chat-file-path");
+    renderClioTalkRunAssembly();
+    if (chatFileButton) chatFileButton.disabled = false;
+    if (chatFileName) chatFileName.textContent = "Field Notes Chat";
+    if (chatFilePath) chatFilePath.textContent = "Project Hard Disk / ClioTalk / Conversations";
+
+    if (scenarioId === "sideask") {
+      setSideAskAnchorApp("teachText", "teachText");
+      enterSideAskClioTalkSession("teachText");
+      renderClioTalkWelcome();
+      return;
+    }
+
+    if (scenarioId === "empty") {
+      renderClioTalkWelcome();
+      return;
+    }
+
+    if (scenarioId === "ready-to-send") {
+      renderClioTalkWelcome();
+      if (prompt) prompt.value = "Help me clarify this opening.";
+      syncClioTalkSendButton();
+      return;
+    }
+
+    addMessage("user", "Help me turn these scattered notes into a clear opening paragraph.", {
+      messageRecord: { id: "snapshot-user-message", role: "user" },
+      messageIndex: 0,
+    });
+    if (scenarioId === "failure") {
+      const pending = createPendingMessage();
+      resolvePendingStatus(pending, "The model connection was interrupted.", {
+        retryText: "Help me turn these scattered notes into a clear opening paragraph.",
+      });
+      messages.scrollTop = messages.scrollHeight;
+      return;
+    }
+    if (scenarioId === "streaming") {
+      const pending = createPendingMessage();
+      updatePendingStreamContent(
+        pending,
+        "Start with the decision the reader needs to make. Then use each note as evidence for that decision, keeping the writer's own uncertainty visible"
+      );
+      setComposerBusy(true);
+      if (status) status.textContent = "Generating";
+      return;
+    }
+    const runManifest = {
+      scope: "application-supplied",
+      promptStack: [
+        { label: "System Integrity · runtime" },
+        { label: "ClioTalk Main Prompt" },
+        { label: "Interface Language · runtime" },
+      ],
+      skillFiles: [],
+      harnessFile: null,
+    };
+    const assistantRecord = {
+      id: "snapshot-assistant-message",
+      role: "assistant",
+      taskKind: "chat",
+      ...(scenarioId === "run-record" ? { runRecordId: "snapshot-run-record", runManifest } : {}),
+      ...(scenarioId === "stopped" ? { stopped: true, finishReason: "stopped" } : {}),
+    };
+    addMessage(
+      "assistant",
+      "Start with the decision the reader needs to make, then use the notes as evidence rather than as an inventory.\n\n**Possible opening**\n\nThe project succeeds when its files remain understandable outside the chat that created them.",
+      {
+        messageRecord: assistantRecord,
+        messageIndex: 1,
+        grounding: {
+          sources: [{ key: "snapshot-source", label: "Project Hard Disk · Field Notes", kind: "project-file" }],
+          sourceCount: 1,
+          missing: [],
+          contextPanelAvailable: true,
+        },
+      }
+    );
+    if (scenarioId === "reading-history") {
+      for (let index = 0; index < 8; index += 1) {
+        addMessage("user", `Earlier note ${index + 1}: keep the handoff concrete and name what remains uncertain.`, {
+          messageRecord: { id: `snapshot-history-user-${index}`, role: "user" },
+        });
+        addMessage("assistant", `Working note ${index + 1}: preserve the writer's wording, then separate evidence from inference.`, {
+          messageRecord: { id: `snapshot-history-assistant-${index}`, role: "assistant" },
+        });
+      }
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      messages.scrollTop = 0;
+      handleClioTalkMessagesScroll();
+      return;
+    }
+    if (scenarioId === "stopped") {
+      messages.scrollTop = messages.scrollHeight;
+      return;
+    }
+    if (scenarioId === "run-assembly") {
+      if (prompt) prompt.value = "Turn these field notes into a clear opening.";
+      renderClioTalkRunAssembly();
+      if (chatFileButton) chatFileButton.disabled = false;
+      if (chatFileName) chatFileName.textContent = "Field Notes Chat";
+      if (chatFilePath) chatFilePath.textContent = "Project Hard Disk / ClioTalk / Conversations";
+      messages.scrollTop = messages.scrollHeight;
+      return;
+    }
+    messages.scrollTop = 0;
+  }, scenario);
 }
 
 async function setupPuzzleRows(page) {
@@ -1955,7 +2371,7 @@ try {
     const surface = SURFACES[surfaceName];
     const surfaceDir = join(outDir, surfaceName);
     mkdirSync(surfaceDir, { recursive: true });
-    for (const scenario of surface.scenarios) {
+    for (const scenario of selectedScenarios(surface, opts.scenario)) {
       for (const theme of themes) {
         for (const viewport of viewports) {
           const page = await browser.newPage({

@@ -85,11 +85,16 @@ function settingsSnapshotPayload() {
   return {
     endpoint: endpointInput.value,
     localProvider: document.getElementById("local-provider")?.value || "lm-studio",
+    localApiToken: typeof localApiTokenInput !== "undefined" ? localApiTokenInput?.value || "" : "",
+    localLmStudioConnectionEnabled,
     model: modelInput.value === "ai-system-main" ? "" : modelInput.value,
     modelFieldInputMode: document.getElementById("manual-model-fields")?.checked ? "manual" : "select",
     chatModel: activeChatModelIdentifier,
     localModelReady: localModelState.ready,
     searchProvider: searchProviderInput?.value || "auto",
+    timeMachineProvider: typeof timeMachineProviderInput !== "undefined"
+      ? timeMachineProviderInput?.value || "auto"
+      : "auto",
     importerMode: importerModeInput?.value || "auto",
     ocrEngine: ocrEngineInput?.value || "auto",
     contextLength: contextLengthInput.value,
@@ -112,6 +117,7 @@ function settingsSnapshotPayload() {
     projectMounted: isProjectMounted,
     guideSeen,
     writingBell: getWritingBellState(),
+    alarmClock: getAlarmClockState(),
     puzzle: getPuzzleState(),
     pageSetup: { ...pageSetupSettings },
     notePadText: notePadTextInput.value,
@@ -128,6 +134,7 @@ function settingsSnapshotPayload() {
     clipboardTranslationModel,
     activeProjectId,
     startupProjectId,
+    workspaceProfile,
     startupEnvironment,
     startupOpenMode,
     startupSelectedApplicationAction,
@@ -176,6 +183,7 @@ function switchLanguage() {
     menuState: true,
   });
   scheduleStatusRender();
+  renderClioTalkRunAssembly();
   saveDeskState();
 }
 
@@ -461,11 +469,141 @@ function contextLengthPresetEl() {
   return document.getElementById("context-length-preset");
 }
 
-function localModelDiscoveryUrl() {
-  const params = new URLSearchParams();
-  params.set("provider", document.getElementById("local-provider")?.value || "lm-studio");
-  params.set("endpoint", endpointInput?.value || "");
-  return `/api/models?${params.toString()}`;
+function localConnectionErrorKey(error) {
+  const message = String(error?.message || error || "");
+  if (/lmstudio_auth_failed/.test(message)) return "local_connection_auth_failed";
+  if (/lmstudio_browser_permission_denied/.test(message)) return "local_connection_browser_permission_denied";
+  if (/lmstudio_v1_required/.test(message)) return "local_connection_v1_required";
+  if (/lmstudio_loopback_required|lmstudio_endpoint_invalid/.test(message)) return "local_connection_loopback_required";
+  return "local_connection_cors_failed";
+}
+
+function setLocalConnectionDetailStatus(element, key) {
+  if (!element || !key) return;
+  element.textContent = t(key);
+  element.dataset.state = /failed|denied/.test(key) ? "unavailable" : /verified|granted/.test(key) ? "ready" : "";
+  // These diagnostics sit inside a collapsed disclosure so a healthy connection
+  // reads as one line. A real failure has to stay visible, though, so anything
+  // that went wrong opens it — including the token field, which is what an auth
+  // failure needs the user to fill in.
+  const details = element.closest("details");
+  if (details && element.dataset.state === "unavailable") details.open = true;
+}
+
+function configurePublicLmStudioControls() {
+  if (!window.AISystem6LocalLMStudio?.isPublicWebMode?.()) return;
+  if (localProviderEl) {
+    localProviderEl.value = "lm-studio";
+    [...localProviderEl.options].forEach((option) => {
+      const unavailable = option.value !== "lm-studio";
+      option.hidden = unavailable;
+      option.disabled = unavailable;
+    });
+    localProviderEl.disabled = true;
+  }
+  endpointInput.value = window.AISystem6LocalLMStudio.normalizeBaseUrl(endpointInput.value);
+}
+
+// Local setup is two sequential steps, and showing both at once was most of
+// what made this panel feel long: before a connection exists the model pickers
+// are empty and cannot do anything. Once it exists, the address you just
+// connected to stops being worth a row of its own.
+//
+// The connect fields are *moved* between the two places rather than duplicated,
+// so ids stay unique and their existing listeners keep working.
+function syncLocalModelPhase(connected) {
+  const section = document.querySelector('[data-control-panel="local"]');
+  if (!section) return;
+  const connectFields = section.querySelector(".local-connect-fields");
+  const modelFields = section.querySelector(".local-model-fields");
+  const advanced = section.querySelector("#local-advanced-details");
+  const connectButton = section.querySelector("#connect-local-model");
+  if (!connectFields || !modelFields || !advanced || !connectButton) return;
+
+  modelFields.hidden = !connected;
+  if (connected) {
+    if (!advanced.contains(connectFields)) advanced.prepend(connectFields);
+  } else if (advanced.contains(connectFields)) {
+    connectButton.before(connectFields);
+  }
+  if (typeof refreshSystemSelectControls === "function") refreshSystemSelectControls();
+}
+
+function renderLocalConnectionStatus(state, data = null) {
+  const status = typeof localConnectionStatusEl !== "undefined"
+    ? localConnectionStatusEl
+    : document.getElementById("local-connection-status");
+  const button = typeof connectLocalModelButton !== "undefined"
+    ? connectLocalModelButton
+    : document.getElementById("connect-local-model");
+  if (!status || !button) return;
+  status.dataset.state = state === "ready" ? "ready" : state.startsWith("local_connection_") && state !== "local_connection_waiting" ? "unavailable" : "";
+  syncLocalModelPhase(state === "ready");
+  const hasToken = !!(typeof localApiTokenInput !== "undefined" && localApiTokenInput?.value?.trim());
+  if (state === "connecting") {
+    status.textContent = t("local_connection_connecting");
+    setLocalConnectionDetailStatus(localAuthStatusEl, hasToken ? "local_auth_status_token" : "local_auth_status_optional");
+    setLocalConnectionDetailStatus(localCorsStatusEl, "local_cors_status_waiting");
+    setLocalConnectionDetailStatus(localBrowserPermissionStatusEl, "local_browser_permission_waiting");
+    button.disabled = true;
+    return;
+  }
+  button.disabled = false;
+  if (state === "ready") {
+    status.textContent = t(
+      hasToken ? "local_connection_ready" : "local_connection_ready_no_token",
+      data?.chatModels?.length || 0,
+      data?.embeddingModels?.length || 0
+    );
+    setLocalConnectionDetailStatus(localAuthStatusEl, hasToken ? "local_auth_status_verified" : "local_auth_status_optional");
+    setLocalConnectionDetailStatus(localCorsStatusEl, "local_cors_status_verified");
+    const permission = ["granted", "prompt", "denied"].includes(data?.browserPermission)
+      ? data.browserPermission
+      : "unsupported";
+    setLocalConnectionDetailStatus(localBrowserPermissionStatusEl, `local_browser_permission_${permission}`);
+    button.textContent = t("disconnect_local_model");
+    return;
+  }
+  button.textContent = t("connect_local_model");
+  status.textContent = t(state === "disconnected" ? "local_connection_disconnected" : state);
+  setLocalConnectionDetailStatus(localAuthStatusEl, state === "local_connection_auth_failed"
+    ? "local_auth_status_failed"
+    : hasToken ? "local_auth_status_token" : "local_auth_status_optional");
+  setLocalConnectionDetailStatus(localCorsStatusEl, ["local_connection_auth_failed", "local_connection_v1_required"].includes(state)
+    ? "local_cors_status_verified"
+    : state === "disconnected" || state === "local_connection_waiting"
+      ? "local_cors_status_waiting"
+      : "local_cors_status_failed");
+  setLocalConnectionDetailStatus(localBrowserPermissionStatusEl, "local_browser_permission_waiting");
+  if (state === "local_connection_browser_permission_denied") {
+    setLocalConnectionDetailStatus(localBrowserPermissionStatusEl, "local_browser_permission_denied");
+  }
+}
+
+async function connectLocalLmStudio(options = {}) {
+  if (localLmStudioConnectionEnabled && options.toggle !== false) {
+    localLmStudioConnectionEnabled = false;
+    setModelPickerOptions([], []);
+    updateLocalModelState({ server: false, models: false, loaded: false, ready: false, running: false, task: "" });
+    renderLocalConnectionStatus("disconnected");
+    scheduleSettingsSave();
+    return null;
+  }
+  renderLocalConnectionStatus("connecting");
+  try {
+    endpointInput.value = window.AISystem6LocalLMStudio.normalizeBaseUrl(endpointInput.value);
+    const data = await window.AISystem6LocalLMStudio.listModels({ signal: options.signal });
+    localLmStudioConnectionEnabled = true;
+    renderLocalConnectionStatus("ready", data);
+    scheduleSettingsSave();
+    return data;
+  } catch (error) {
+    localLmStudioConnectionEnabled = false;
+    renderLocalConnectionStatus(localConnectionErrorKey(error));
+    updateLocalModelState({ server: false, models: false, loaded: false, ready: false, running: false, task: "" });
+    if (!options.silent) setStatus(t(localConnectionErrorKey(error)), { notify: false });
+    return null;
+  }
 }
 
 function isManualLocalModelMode() {
@@ -629,12 +767,11 @@ function syncLoadedLocalModel(data, chatModels) {
 }
 
 async function refreshLocalModelReadiness() {
+  if (!localLmStudioConnectionEnabled) return;
   if (localModelState.running) return;
   if (!modelInput.value.trim()) return;
   try {
-    const response = await fetch(localModelDiscoveryUrl());
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) return;
+    const data = await window.AISystem6LocalLMStudio.listModels();
     const chatModels = Array.isArray(data.chatModels) ? data.chatModels : Array.isArray(data.models) ? data.models : [];
     const embeddingModels = Array.isArray(data.embeddingModels) ? data.embeddingModels : [];
     setModelPickerOptions(chatModels, embeddingModels);
@@ -650,7 +787,9 @@ async function refreshLocalModelReadiness() {
     } else if (chatModels.length) {
       updateLocalModelState({ server: true, models: true, selected: true, loaded: false, ready: false, running: false, task: "" });
     }
-  } catch {
+    renderLocalConnectionStatus("ready", data);
+  } catch (error) {
+    renderLocalConnectionStatus(localConnectionErrorKey(error));
     // Leave saved settings intact; the next model action will report any connection issue.
   }
 }
@@ -668,6 +807,51 @@ function startLocalModelMonitor() {
   }, 5000);
 }
 
+// Control Panel used to be one long scroll; a phone user could not always
+// reach the close box below it. It is now three tabs (Local Model / Cloud
+// Model / General), each short enough to fit one screen, following the same
+// static tab-switch pattern as the Liquid Cover inspector.
+function setControlTab(name) {
+  // Cloud is the one-step path (key + Connect); local LM Studio needs a
+  // separate app already running, so it's more often the dead end on a first
+  // look. Default to cloud, unless local is the one actually in use.
+  const localInUse = typeof localModelState !== "undefined"
+    && (localModelState?.ready || localModelState?.loaded);
+  const target = String(name || (localInUse ? "local" : "cloud"));
+  document.querySelectorAll(".control-panel [data-control-tab]").forEach((button) => {
+    const active = button.dataset.controlTab === target;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-selected", active ? "true" : "false");
+  });
+  document.querySelectorAll(".control-panel [data-control-panel]").forEach((panel) => {
+    const active = panel.dataset.controlPanel === target;
+    panel.classList.toggle("is-active", active);
+    panel.hidden = !active;
+  });
+  if (typeof refreshSystemSelectControls === "function") refreshSystemSelectControls();
+
+  // Each tab is a different length, so a height saved from a taller tab left a
+  // block of dead space under a shorter one. The window has no CSS height of
+  // its own — it only ever had whatever px this same code (or a prior saved
+  // desk state) put inline — so clearing that lets it shrink-wrap the tab
+  // that's actually showing, then the new height is what gets persisted.
+  const win = document.querySelector(".control-panel");
+  if (win && win.dataset.userPositioned !== "true") {
+    win.style.height = "";
+    win.style.maxHeight = "";
+    scheduleWorkingSessionSave?.();
+  }
+}
+
+function wireControlTabs() {
+  document.querySelectorAll(".control-panel [data-control-tab]").forEach((button) => {
+    button.addEventListener("click", () => setControlTab(button.dataset.controlTab));
+  });
+  // Local model readiness is not known yet this early in boot; the markup's
+  // own default (Cloud) stands until the window is actually opened, where
+  // setControlTab() re-picks with real state.
+}
+
 let modelRefreshPromise = null;
 
 async function refreshControlPanelModels() {
@@ -680,14 +864,16 @@ async function refreshControlPanelModels() {
 }
 
 async function findLmStudioModels(options = {}) {
-  if (findModelsButton) findModelsButton.disabled = true;
+  setControlLoading(findModelsButton, true, t("models_loading"));
   modelPickerStatusEl.textContent = t("models_loading");
   updateLocalModelState({ server: false, models: false, loaded: false, ready: false, task: t("models_loading") });
 
   try {
-    const response = await fetch(localModelDiscoveryUrl());
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(firstErrorText(data.detail, data.error, response.statusText));
+    if (!localLmStudioConnectionEnabled) {
+      const connected = await connectLocalLmStudio({ toggle: false, silent: options.automatic === true });
+      if (!connected) return;
+    }
+    const data = await window.AISystem6LocalLMStudio.listModels();
 
     const chatModels = Array.isArray(data.chatModels) ? data.chatModels : Array.isArray(data.models) ? data.models : [];
     const embeddingModels = Array.isArray(data.embeddingModels) ? data.embeddingModels : [];
@@ -706,6 +892,7 @@ async function findLmStudioModels(options = {}) {
       ready: loadedMatchesSelected,
       task: "",
     });
+    renderLocalConnectionStatus("ready", data);
     if (loadedModel) {
       modelPickerStatusEl.textContent = loadedMatchesSelected
         ? t("models_auto_selected", loadedModel.name || loadedModel.id)
@@ -729,7 +916,7 @@ async function findLmStudioModels(options = {}) {
     modelPickerStatusEl.textContent = t("models_failed", friendlyLocalModelError(error.message));
     updateLocalModelState({ server: false, models: false, selected: !!modelInput.value.trim(), loaded: false, ready: false, task: "" });
   } finally {
-    if (findModelsButton) findModelsButton.disabled = false;
+    setControlLoading(findModelsButton, false);
   }
 }
 
@@ -742,24 +929,27 @@ async function loadSelectedLmStudioModel() {
   const contextConfig = getContextLoadConfig();
   if (!contextConfig) return;
 
-  loadModelButton.disabled = true;
+  setControlLoading(loadModelButton, true, t("load_model_loading"));
   loadModelStatusEl.textContent = t("load_model_loading");
   updateLocalModelState({ server: true, selected: true, loaded: false, ready: false, running: true, task: t("load_model_loading") });
 
   try {
-    const response = await fetch("/api/models/load", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model,
-        embedding_model: embeddingModelInput?.value?.trim() || "",
-        context_length: contextConfig.contextLength,
-        max_context_length: contextConfig.maxContextLength,
-        max_context_source: contextConfig.maxContextSource,
-      }),
+    if (!localLmStudioConnectionEnabled) {
+      const connected = await connectLocalLmStudio({ toggle: false });
+      if (!connected) throw new Error("lmstudio_server_offline");
+    }
+    const data = await window.AISystem6LocalLMStudio.loadModel(model, {
+      contextLength: contextConfig.contextLength,
     });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(firstErrorText(data.detail, data.error, response.statusText));
+    const embeddingModel = embeddingModelInput?.value?.trim() || "";
+    let embeddingWarning = "";
+    if (embeddingModel) {
+      try {
+        await window.AISystem6LocalLMStudio.loadModel(embeddingModel);
+      } catch (error) {
+        embeddingWarning = error?.message || String(error);
+      }
+    }
 
     activeChatModelIdentifier = "";
     const loadedModel = data.model || model;
@@ -773,8 +963,8 @@ async function loadSelectedLmStudioModel() {
       };
       updateContextMaxForCurrentModel();
     }
-    loadModelStatusEl.textContent = data.embedding_warning
-      ? `${t("load_model_done", loadedModel, loadedContext)} ${t("models_failed", data.embedding_warning)}`
+    loadModelStatusEl.textContent = embeddingWarning
+      ? `${t("load_model_done", loadedModel, loadedContext)} ${t("models_failed", embeddingWarning)}`
       : t("load_model_done", loadedModel, loadedContext);
     updateLocalModelState({ server: true, models: true, selected: true, loaded: true, ready: true, running: false, task: "" });
     scheduleSettingsSave();
@@ -783,64 +973,20 @@ async function loadSelectedLmStudioModel() {
     loadModelStatusEl.textContent = t("load_model_failed", message);
     updateLocalModelState({ server: message !== t("lm_studio_unavailable_short"), loaded: false, ready: false, running: false, task: "" });
   } finally {
-    loadModelButton.disabled = false;
+    setControlLoading(loadModelButton, false);
   }
 }
 
 async function setupLocalLmStudioModel() {
   if (!setupLocalModelButton) return;
-  const contextConfig = getContextLoadConfig();
-  if (!contextConfig) return;
-
-  setupLocalModelButton.disabled = true;
-  if (findModelsButton) findModelsButton.disabled = true;
-  loadModelButton.disabled = true;
-  modelPickerStatusEl.textContent = t("setup_local_model_loading");
-  loadModelStatusEl.textContent = t("setup_local_model_loading");
-  updateLocalModelState({ server: true, selected: !!modelInput.value.trim(), loaded: false, ready: false, running: true, task: t("setup_local_model_loading") });
-
+  setControlLoading(setupLocalModelButton, true, t("load_model_loading"));
+  setControlLoading(findModelsButton, true, t("models_loading"));
   try {
-    const response = await fetch("/api/lmstudio/setup", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: modelInput.value.trim(),
-        context_length: contextConfig.contextLength,
-        max_context_length: contextConfig.maxContextLength,
-        max_context_source: contextConfig.maxContextSource,
-        identifier: "ai-system-main",
-      }),
-    });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(firstErrorText(data.detail, data.error, response.statusText));
-
-    endpointInput.value = data.endpoint || "/api/chat";
-    activeChatModelIdentifier = data.chat_model || data.identifier || "";
-    const displayModel = data.loaded_model || data.model || modelInput.value.trim() || data.chat_model || data.identifier || t("local_lm_studio");
-    modelInput.value = displayModel;
-    if (data.context_length) contextLengthInput.value = String(data.context_length);
-    if (data.max_context_length) {
-      contextMaxByModel[modelContextKey(displayModel)] = {
-        max: data.max_context_length,
-        source: data.max_context_source || contextConfig.maxContextSource,
-      };
-      updateContextMaxForCurrentModel();
-    }
-    modelPickerStatusEl.textContent = t("setup_local_model_done", displayModel);
-    loadModelStatusEl.textContent = t("load_model_done", displayModel, data.context_length || contextLengthInput.value);
-    updateLocalModelState({ server: true, models: true, selected: true, loaded: true, ready: true, running: false, task: "" });
-    scheduleSettingsSave();
-    await findLmStudioModels();
-    updateLocalModelState({ server: true, models: true, selected: true, loaded: true, ready: true, running: false, task: "" });
-  } catch (error) {
-    const message = friendlyLocalModelError(error.message);
-    modelPickerStatusEl.textContent = t("setup_local_model_failed", message);
-    loadModelStatusEl.textContent = t("setup_local_model_failed", message);
-    updateLocalModelState({ server: message !== t("lm_studio_unavailable_short"), loaded: false, ready: false, running: false, task: "" });
+    const connected = await connectLocalLmStudio({ toggle: false });
+    if (connected && modelInput.value.trim()) await loadSelectedLmStudioModel();
   } finally {
-    setupLocalModelButton.disabled = false;
-    if (findModelsButton) findModelsButton.disabled = false;
-    loadModelButton.disabled = false;
+    setControlLoading(setupLocalModelButton, false);
+    setControlLoading(findModelsButton, false);
   }
 }
 
@@ -946,7 +1092,14 @@ async function loadDeskState() {
 }
 
 function applySettings(settings) {
-  if (settings.endpoint) endpointInput.value = settings.endpoint;
+  const savedEndpoint = String(settings.endpoint || "").trim();
+  endpointInput.value = !savedEndpoint || savedEndpoint.startsWith("/")
+    ? window.AISystem6LocalLMStudio.DEFAULT_BASE_URL
+    : savedEndpoint;
+  if (typeof localApiTokenInput !== "undefined" && localApiTokenInput) {
+    localApiTokenInput.value = String(settings.localApiToken || "");
+  }
+  localLmStudioConnectionEnabled = settings.localLmStudioConnectionEnabled === true;
   if (settings.model && settings.model !== "ai-system-main") {
     modelInput.value = settings.model;
   }
@@ -960,6 +1113,11 @@ function applySettings(settings) {
     searchProviderInput.value = settings.searchProvider;
   } else if (searchProviderInput) {
     searchProviderInput.value = "auto";
+  }
+  if (typeof timeMachineProviderInput !== "undefined" && timeMachineProviderInput) {
+    timeMachineProviderInput.value = ["auto", "wayback", "archive-is"].includes(settings.timeMachineProvider)
+      ? settings.timeMachineProvider
+      : "auto";
   }
   if (importerModeInput && ["auto", "markitdown"].includes(settings.importerMode)) {
     importerModeInput.value = settings.importerMode;
@@ -1010,7 +1168,8 @@ function applySettings(settings) {
     const legacyPrompts = Array.isArray(window.AISystem6Config?.legacyClioTalkSystemPrompts)
       ? window.AISystem6Config.legacyClioTalkSystemPrompts
       : [legacyPrompt];
-    const defaultPrompt = window.AISystem6Config?.defaultClioTalkSystemPrompt || systemInput.value;
+    const configuredDefault = window.AISystem6Config?.defaultClioTalkSystemPrompt;
+    const defaultPrompt = typeof configuredDefault === "function" ? configuredDefault() : (configuredDefault || systemInput.value);
     const savedSystemPrompt = String(settings.system || "").trim();
     systemInput.value = legacyPrompts.includes(savedSystemPrompt) ? defaultPrompt : settings.system;
   }
@@ -1070,6 +1229,7 @@ function applySettings(settings) {
   writerMode = false;
   if (typeof settings.guideSeen === "boolean") guideSeen = settings.guideSeen;
   restoreWritingBellState(settings.writingBell);
+  restoreAlarmClockState(settings.alarmClock);
   restorePuzzleState(settings.puzzle);
   restorePageSetupState(settings.pageSetup);
   if (Array.isArray(settings.notePadPages)) {
@@ -1094,6 +1254,9 @@ function applySettings(settings) {
   renderClipboard();
   if (settings.activeProjectId) activeProjectId = settings.activeProjectId;
   if (settings.startupProjectId) startupProjectId = settings.startupProjectId;
+  workspaceProfileWasRestored = Object.prototype.hasOwnProperty.call(settings, "workspaceProfile");
+  workspaceProfile = normalizeWorkspaceProfile(settings.workspaceProfile);
+  syncWorkspaceProfileDom();
   if (settings.startupEnvironment === "finder" || settings.startupEnvironment === "multifinder") {
     startupEnvironment = settings.startupEnvironment;
   } else if (typeof settings.multiFinderEnabled === "boolean") {
@@ -1285,9 +1448,10 @@ function renderSystemStatus() {
     const modeLabel = isMultiFinderMode()
       ? `${t("multifinder")} (${t("multifinder_multi_task")})`
       : `${t("finder")} (${t("finder_single_task")})`;
+    const workspaceLabel = t(workspaceProfile === workspaceProfileDesktop ? "workspace_desktop" : "workspace_writing");
     statusModeEl.textContent = !isMultiFinderMode() && sideAskEnabled
-      ? `${modeLabel} · ${t("sideask")}`
-      : modeLabel;
+      ? `${workspaceLabel} · ${modeLabel} · ${t("sideask")}`
+      : `${workspaceLabel} · ${modeLabel}`;
   }
 }
 
@@ -1460,6 +1624,7 @@ function markActiveLongTaskFailed(message) {
 function setStatus(text, options = {}) {
   const message = decorateStatusMessage(text);
   statusEl.textContent = message;
+  statusEl.hidden = String(text || "").trim() === String(t("ready") || "").trim();
   const shouldNotify = options.notify === true || (options.notify !== false && isSystemReceiptStatusMessage(message));
   if (!shouldNotify) return;
   const updatedTaskNotification = isSystemReceiptStatusMessage(message) ? markActiveLongTaskFailed(message) : "";
@@ -1729,6 +1894,33 @@ function explainStatusError(message) {
 function classifyLmStudioError(error, response = null) {
   const message = String(error?.message || error || response?.statusText || "");
   const lower = message.toLowerCase();
+  const isCloudError = /cloud api|deepseek|cloud proxy|cloud_invalid|cloud_insufficient|cloud_rate/.test(lower);
+  if (
+    /cloud_invalid_key/.test(lower)
+    || (isCloudError && (response?.status === 401 || /authentication.*fail|unauthorized|invalid.*api key|api key.*invalid|missing api key/.test(lower)))
+  ) return "cloud_invalid_key";
+  if (
+    /cloud_insufficient_balance/.test(lower)
+    || (isCloudError && (response?.status === 402 || /insufficient.*balance|balance.*insufficient/.test(lower)))
+  ) return "cloud_insufficient_balance";
+  if (
+    /cloud_rate_limit/.test(lower)
+    || (isCloudError && (response?.status === 429 || /rate limit|too many requests/.test(lower)))
+  ) return "cloud_rate_limit";
+  if (
+    /cloud_invalid_request/.test(lower)
+    || (isCloudError && (
+      [400, 422].includes(response?.status)
+      || /invalid (?:format|parameter|request)|unprocessable/.test(lower)
+    ))
+  ) return "cloud_invalid_request";
+  if (
+    /cloud_service_unavailable/.test(lower)
+    || (isCloudError && (
+      [500, 503].includes(response?.status)
+      || /server error|service unavailable|overloaded/.test(lower)
+    ))
+  ) return "cloud_service_unavailable";
   if (/context length|tokens to keep|too many tokens|prompt.*too long|input.*too long|shorter input|larger context/.test(lower)) return "lmstudio_context_length";
   if (/failed to fetch|fetch failed|networkerror|econnrefused|connection refused|not responding/.test(lower)) return "lmstudio_server_offline";
   if (/timeout|timed out|aborted/.test(lower)) return "lmstudio_timeout";

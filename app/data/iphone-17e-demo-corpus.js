@@ -3,7 +3,7 @@
 
 (function publishIphone17eDemoCorpus(root) {
   const corpus = {
-    id: "iphone-17e-creator-demo",
+    id: "iphone-17e-aaron-demo",
     projectNameZh: "录屏演示 - iPhone 17e",
     projectNameEn: "Recording Demo - iPhone 17e",
     searchKeyword: "iPhone 17e",
@@ -14,7 +14,7 @@
 - 写一篇面向 B 站观众的 iPhone 17e 中文口播视频稿。
 - 不是发布会文案，不是参数堆叠，是“看完就知道值不值买”的短视频口吻。
 - 只依据这次 demo 用到的研究材料生成，不编造新闻稿外信息。
-- 口吻保留 Creator 风格的自然调侃和轻松感，允许一点吐槽和真实犹豫。
+- 口吻保留 Aaron 风格的自然调侃和轻松感，允许一点吐槽和真实犹豫。
 
 ### 事实边界
 - 研究材料来自 Reader 与 Scrapbook；Searcher 只用于背景铺垫。
@@ -29,7 +29,7 @@
 - 开场要先反差钩子：为什么起初不想买却最后愿意推荐。
 - 中段要交代“为什么不是彻底缩水款”。
 - 结尾给出清晰的购买建议和分层结论。`,
-    creatorBulletInput: `# iPhone 17e
+    aaronBulletInput: `# iPhone 17e
 
 ## 序
 - 本来最没兴趣的一部：刘海、单摄、60Hz
@@ -86,7 +86,7 @@
 - 适用场景：海外、便宜的新 iPhone、备用机、给家人换机；比 16e 顺眼
 - 定调：16e 像没写完的作业，17e 像认真改过的一版，不满分但方向对了
 - 收尾意象：浅粉色丢进黑白灰机海，像 KTV 角落的波奇酱，忍不住多看一眼`,
-    mingmingReferenceOutput: `「接收者」KTV 角落里的波奇酱——聊聊浅粉色 iPhone 17e
+    mingmingReferenceOutput: `「落落」KTV 角落里的波奇酱——聊聊浅粉色 iPhone 17e
 
 今年这台 17e，本来是我最没兴趣的一部。刘海、单摄、60Hz，能砍的基本都砍了。我都想好了，这期走个过场就完事。结果看到这个颜色，诶，多看了两眼。它就像波奇酱，一身粉色运动服，缩在角落不起眼，但你知道，她其实挺有东西。今年标准版 17 已经是台「小 Pro」了，那 17e 才是新的「标准版」。虽然看着像个陪衬，但一台正常 iPhone 该有的，它全都老老实实给齐了，对我来说这就够了。
 

@@ -31,6 +31,11 @@ function formatChatFileMarkdown(file) {
   return [
     `# ${file.name}`,
     "",
+    `- Chat ID: ${file.id}`,
+    `- Parent Chat ID: ${file.parentChatId || "root"}`,
+    `- Fork Message ID: ${file.forkMessageId || "none"}`,
+    `- Generation: ${Number(file.generation || 0)}`,
+    "",
     ...file.messages.flatMap((item) => [
       `## ${item.role === "user" ? t("you") : t("assistant")}`,
       "",
@@ -71,8 +76,8 @@ async function copyMarkdown(markdown) {
   }
 }
 
-function downloadMarkdown(markdown, name) {
-  const projectCdItem = addProjectCdItem(markdown, name);
+function downloadMarkdown(markdown, name, options = {}) {
+  const projectCdItem = options.addToProjectCd === false ? null : addProjectCdItem(markdown, name);
   const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -381,6 +386,97 @@ function addProjectCdItem(markdown, name) {
   return item;
 }
 
+const projectAuditCapsuleSchemaVersion = "1.0";
+
+function projectAuditHash(value) {
+  const body = typeof value === "string" ? value : JSON.stringify(value);
+  return window.AISystem6PromptFilesRuntime?.hashPromptBody(body) || `length-${body.length}`;
+}
+
+function projectAuditFileSummary(file, options = {}) {
+  const body = String(file?.body || "");
+  return {
+    id: file?.id || "",
+    name: file?.name || "Untitled",
+    kind: file?.artifactKind || file?.type || "unknown",
+    sourceChatId: file?.sourceChatId || "",
+    createdAt: file?.createdAt || "",
+    updatedAt: file?.updatedAt || "",
+    contentHash: projectAuditHash(body),
+    ...(options.includeStatus ? { status: file?.memoryStatus || file?.skillStatus || file?.taskConfig?.status || "" } : {}),
+  };
+}
+
+function buildProjectAuditCapsule({ embedExternalBodies = false } = {}) {
+  const project = getActiveProject();
+  if (!project) return null;
+  const files = getProjectFiles();
+  const chats = files.filter((file) => file.type === "chat");
+  const roots = chats.filter((file) => !file.parentChatId || !chats.some((parent) => parent.id === file.parentChatId));
+  const promptReceipts = files.filter((file) => file.artifactKind === "ai-prompt-receipt");
+  const skills = files.filter((file) => file.artifactKind === "ai-skill");
+  const externalReferences = projectReferences.filter((reference) => reference.projectId === project.id);
+  const generatedAt = new Date().toISOString();
+  const missing = [];
+  if (!chats.length) missing.push("No saved conversations were included.");
+  if (!files.some((file) => file.artifactKind === "task-config")) missing.push("No task configuration was included.");
+  if (!promptReceipts.length) missing.push("No actual prompt-run receipt was included.");
+  if (!skills.length) missing.push("No project Skill was included.");
+  if (!externalReferences.length) missing.push("No external reference was included.");
+  return {
+    schemaVersion: projectAuditCapsuleSchemaVersion,
+    kind: "project-audit-capsule",
+    readOnly: true,
+    frozenAt: generatedAt,
+    project: { id: project.id, name: project.name || "Untitled Project", createdAt: project.createdAt || "", updatedAt: project.updatedAt || "" },
+    conversationRoots: roots.map((file) => ({ ...projectAuditFileSummary(file), generation: Number(file.generation || 0), parentChatId: file.parentChatId || "", childChatIds: chats.filter((child) => child.parentChatId === file.id).map((child) => child.id) })),
+    conversationLineage: chats.map((file) => ({ id: file.id, name: file.name || "Untitled", parentChatId: file.parentChatId || "", generation: Number(file.generation || 0), childChatIds: chats.filter((child) => child.parentChatId === file.id).map((child) => child.id) })),
+    taskConfigurations: files.filter((file) => file.artifactKind === "task-config").map((file) => ({ ...projectAuditFileSummary(file, { includeStatus: true }), configId: file.taskConfig?.id || "", lifecycle: file.taskConfig?.status || "" })),
+    actualPrompts: promptReceipts.map((file) => ({ id: file.id, promptId: file.promptId || "", feature: file.receipt?.feature || file.name || "", path: file.receipt?.path || file.path || "", source: file.receipt?.source || "", hash: file.receipt?.hash || file.hash || "", recordedAt: file.receipt?.time || file.createdAt || "" })),
+    skills: skills.map((file) => ({ ...projectAuditFileSummary(file, { includeStatus: true }), skillId: file.skillManifest?.id || "", version: file.skillManifest?.version || "", source: file.skillManifest?.source || file.sourceDraftId || "", capabilities: file.skillManifest?.capabilities || [] })),
+    projectMemory: files.filter((file) => file.artifactKind === "project-memory").map((file) => projectAuditFileSummary(file, { includeStatus: true })),
+    contextInventory: files.filter((file) => ["retrospective", "task-checkpoint", "skill-auto-call-receipt"].includes(file.artifactKind)).map((file) => projectAuditFileSummary(file)),
+    artifacts: files.filter((file) => file.type !== "chat").map((file) => projectAuditFileSummary(file)),
+    runRecords: files.filter((file) => /receipt|harness|checkpoint/.test(file.artifactKind || "")).map((file) => projectAuditFileSummary(file)),
+    retrospectives: files.filter((file) => file.artifactKind === "retrospective").map((file) => projectAuditFileSummary(file)),
+    externalReferences: externalReferences.map((reference) => {
+      const body = String(reference.body || reference.text || reference.content || (reference.chunks || []).map((chunk) => chunk.content || "").join("\n\n---\n\n"));
+      return { id: reference.id || "", name: reference.name || reference.title || "External reference", source: reference.source || reference.url || reference.sourceUrl || "", license: reference.license || reference.licenseName || "", contentHash: projectAuditHash(body), bodyIncluded: embedExternalBodies, ...(embedExternalBodies ? { body } : {}) };
+    }),
+    exclusions: { secrets: "Not included. Project metadata is allowlisted.", externalBodies: embedExternalBodies ? "Included only after explicit confirmation." : "Not included; content hashes, sources, and licenses are recorded instead." },
+    missing,
+    inspection: { mode: "read-only", anotherSystem: "Open this JSON in Reader or any JSON viewer; inspection does not mutate the project.", rerun: "Re-running any recorded work requires fresh confirmation of the model and external capabilities." },
+  };
+}
+
+async function burnProjectAuditCapsule() {
+  const project = getActiveProject();
+  if (!project) { setStatus(t("no_project_mounted")); return null; }
+  const externalReferences = projectReferences.filter((reference) => reference.projectId === project.id);
+  const preview = buildProjectAuditCapsule({ embedExternalBodies: false });
+  const confirmed = await showSystemModal([
+    currentLanguage === "zh" ? "审计胶囊刻录前检查" : "Audit capsule pre-burn check",
+    currentLanguage === "zh" ? `项目：${project.name}` : `Project: ${project.name}`,
+    currentLanguage === "zh" ? `缺失项：${preview.missing.join("；") || "无"}` : `Missing: ${preview.missing.join("; ") || "none"}`,
+    currentLanguage === "zh" ? "将生成只读 JSON 快照，不包含密钥。" : "This creates a read-only JSON snapshot and excludes secrets.",
+  ].join("\n"), "confirm");
+  if (!confirmed) return null;
+  const embedExternalBodies = externalReferences.length
+    ? window.confirm(currentLanguage === "zh" ? "是否把外部引用正文嵌入胶囊？默认仅保存 hash、来源和许可信息。" : "Embed external reference bodies? By default, only hashes, sources, and licenses are saved.")
+    : false;
+  const capsule = buildProjectAuditCapsule({ embedExternalBodies });
+  const item = addProjectCdTextItem(JSON.stringify(capsule, null, 2), "Project Audit Capsule.json", {
+    format: "application/json", sourceKind: "project-audit-capsule", languageMode: "original",
+    metadata: { schemaVersion: projectAuditCapsuleSchemaVersion, readOnly: true, externalBodiesEmbedded: embedExternalBodies, frozenAt: capsule.frozenAt },
+  });
+  if (!item) return null;
+  item.readOnly = true;
+  renderProjectCd();
+  saveDeskState();
+  setStatus(currentLanguage === "zh" ? "项目审计胶囊已刻录到项目光盘。" : "Project audit capsule burned to Project CD.");
+  return item;
+}
+
 function renderProjectCd() {
   if (!projectCdGridEl) return;
   const visibleItems = getProjectCdItems();
@@ -650,6 +746,23 @@ async function refreshImporterStatus() {
   importerStatusEl.dataset.state = "checking";
 
   try {
+    const capabilities = await getDeploymentCapabilities();
+    if (capabilities.public_deployment) {
+      importerStatusEl.textContent = t("importer_status_browser");
+      importerStatusEl.dataset.state = "ready";
+      importerStatusEl.title = t("importer_status_browser_detail");
+      if (ocrEngineInput) {
+        ocrEngineInput.value = "paddle";
+        ocrEngineInput.disabled = true;
+        refreshSystemSelectControl(ocrEngineInput);
+      }
+      if (importerModeInput) {
+        importerModeInput.value = "builtin";
+        importerModeInput.disabled = true;
+        refreshSystemSelectControl(importerModeInput);
+      }
+      return;
+    }
     const response = await fetch(apiUrl("/api/importer-status"));
     const status = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(status.detail || response.statusText);
@@ -687,7 +800,7 @@ function isSupportedImportFile(file) {
 }
 
 function isPlainTextImportFile(file) {
-  return /\.(txt|text|srt|csv|tsv|json|js|ts|css|xml|log)$/i.test(file.name || "");
+  return /\.(txt|text|srt|md|mdx|markdown|mdown|mkd|mkdn|csv|tsv|json|js|ts|htm|html|xhtml|css|xml|log)$/i.test(file.name || "");
 }
 
 function isAudioImportFile(file) {
@@ -702,7 +815,21 @@ function importTranscriptionLanguage() {
 const importPayloadMaxRawBytes = 60 * 1024 * 1024;
 const paddleOcrDetModelPath = "/assets/ocr/paddle/det/model.json";
 const paddleOcrRecModelPath = "/assets/ocr/paddle/rec/model.json";
+const pdfJsBrowserPath = "/app/vendor/pdf.min.js";
+const pdfJsWorkerPath = "/app/vendor/pdf.worker.min.js";
 let paddleOcrBrowserPromise = null;
+let pdfJsBrowserPromise = null;
+
+async function getDeploymentCapabilities() {
+  if (window.AISystem6PublicAccess?.getCapabilities) {
+    return window.AISystem6PublicAccess.getCapabilities();
+  }
+  return {
+    deployment_profile: "local",
+    public_deployment: false,
+    features: {},
+  };
+}
 
 function stripLeadingBom(value) {
   return String(value || "").replace(/^\uFEFF/, "");
@@ -861,7 +988,7 @@ function loadClassicScriptOnce(src) {
 
 async function getBrowserPaddleOcr() {
   if (!paddleOcrBrowserPromise) {
-    paddleOcrBrowserPromise = loadClassicScriptOnce("/node_modules/@paddlejs-models/ocr/lib/index.js")
+    paddleOcrBrowserPromise = loadClassicScriptOnce("/app/vendor/paddle-ocr.js")
       .then(async () => {
         const ocr = window.paddlejs?.ocr;
         if (!ocr || typeof ocr.init !== "function" || typeof ocr.recognize !== "function") {
@@ -872,6 +999,20 @@ async function getBrowserPaddleOcr() {
       });
   }
   return paddleOcrBrowserPromise;
+}
+
+async function getBrowserPdfJs() {
+  if (!pdfJsBrowserPromise) {
+    pdfJsBrowserPromise = import(pdfJsBrowserPath)
+      .then((pdfjs) => {
+        if (!pdfjs || typeof pdfjs.getDocument !== "function") {
+          throw new Error("PDF.js did not expose its browser PDF API.");
+        }
+        pdfjs.GlobalWorkerOptions.workerSrc = pdfJsWorkerPath;
+        return pdfjs;
+      });
+  }
+  return pdfJsBrowserPromise;
 }
 
 async function extractImageTextWithBrowserPaddle(file, options = {}) {
@@ -912,6 +1053,74 @@ async function recognizePaddleImageElement(image, options = {}) {
   const result = await ocr.recognize(image);
   const lines = Array.isArray(result?.text) ? result.text : [result?.text || ""];
   return lines.map((line) => String(line || "").trim()).filter(Boolean).join("\n").trim();
+}
+
+async function extractPdfTextInBrowser(file, options = {}) {
+  const signal = options.signal;
+  throwIfAborted(signal);
+  if ((file.size || 0) > 20 * 1024 * 1024) {
+    throw new Error(t("public_import_pdf_too_large"));
+  }
+
+  const pdfjs = await getBrowserPdfJs();
+  const data = new Uint8Array(await file.arrayBuffer());
+  throwIfAborted(signal);
+  const loadingTask = pdfjs.getDocument({ data });
+  const pdfDocument = await loadingTask.promise;
+  const pageLimit = Math.min(pdfDocument.numPages, 20);
+  const chunks = [];
+
+  try {
+    for (let pageNumber = 1; pageNumber <= pageLimit; pageNumber += 1) {
+      throwIfAborted(signal);
+      const page = await pdfDocument.getPage(pageNumber);
+      try {
+        const textContent = await page.getTextContent();
+        const embeddedText = (textContent.items || [])
+          .map((item) => String(item?.str || "").trim())
+          .filter(Boolean)
+          .join(" ")
+          .trim();
+        if (embeddedText) {
+          chunks.push(`${t("public_import_page", pageNumber)}\n${embeddedText}`);
+          continue;
+        }
+
+        const baseViewport = page.getViewport({ scale: 1 });
+        const pixelBudget = 6_000_000;
+        const scale = Math.min(
+          1.75,
+          Math.sqrt(pixelBudget / Math.max(1, baseViewport.width * baseViewport.height))
+        );
+        const viewport = page.getViewport({ scale });
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.ceil(viewport.width));
+        canvas.height = Math.max(1, Math.ceil(viewport.height));
+        const context = canvas.getContext("2d", { alpha: false });
+        await page.render({
+          canvasContext: context,
+          viewport,
+          background: "rgb(255,255,255)",
+        }).promise;
+        throwIfAborted(signal);
+        const text = await recognizePaddleImageElement(canvas, { signal });
+        canvas.width = 1;
+        canvas.height = 1;
+        if (text) chunks.push(`${t("public_import_page", pageNumber)}\n${text}`);
+      } finally {
+        page.cleanup();
+      }
+    }
+  } finally {
+    await pdfDocument.destroy();
+  }
+
+  if (pdfDocument.numPages > pageLimit) {
+    chunks.push(t("public_import_pdf_truncated", pageLimit, pdfDocument.numPages));
+  }
+  const text = chunks.join("\n\n").trim();
+  if (!text) throw new Error(t("public_import_pdf_empty"));
+  return text;
 }
 
 async function extractRenderedPagesWithBrowserPaddle(file, options = {}) {
@@ -971,6 +1180,7 @@ async function buildImportFilePayload(file, options = {}) {
       return {
         name: file.name,
         type: "image/png",
+        model_execution: "client",
         importerMode: importerModeInput?.value || "auto",
         ocrEngine: ocrEngineInput?.value || "auto",
         data: arrayBufferToBase64(pngBuffer),
@@ -986,6 +1196,7 @@ async function buildImportFilePayload(file, options = {}) {
   return {
     name: file.name,
     type: file.type,
+    model_execution: "client",
     language: isAudioImportFile(file) ? importTranscriptionLanguage() : undefined,
     importerMode: importerModeInput?.value || "auto",
     ocrEngine: ocrEngineInput?.value || "auto",
@@ -993,9 +1204,35 @@ async function buildImportFilePayload(file, options = {}) {
   };
 }
 
+async function repairImportedTextWithLocalModel(text, file, signal) {
+  if (!localLmStudioConnectionEnabled || !String(text || "").trim()) return text;
+  const source = String(text).trim();
+  const chunkSize = 12000;
+  const repaired = [];
+  for (let offset = 0; offset < source.length; offset += chunkSize) {
+    const chunk = source.slice(offset, offset + chunkSize);
+    const result = await sendLocalModelTask({
+      payload: {
+        model: getLocalModelRequestName(),
+        messages: window.AISystem6ModelTaskRuntime.buildImportRepairMessages(chunk, file?.name),
+        temperature: 0.1,
+        max_tokens: 2600,
+        stream: false,
+        ai_system6_task_kind: "import-text-repair",
+      },
+      signal,
+      taskKind: "import-text-repair",
+      streamPreference: "json",
+    });
+    repaired.push(window.AISystem6ModelTaskRuntime.cleanModelOutput(result.text || chunk));
+  }
+  return repaired.join("\n\n").trim() || source;
+}
+
 async function extractFileText(file, options = {}) {
   const signal = options.signal;
   throwIfAborted(signal);
+  const capabilities = await getDeploymentCapabilities();
 
   if ((file.size || 0) > importPayloadMaxRawBytes) {
     throw new Error("This file is too large for direct import. Split it or import a smaller file.");
@@ -1018,11 +1255,24 @@ async function extractFileText(file, options = {}) {
     return { text, subtitleTranslations: null, videoTranscript: null };
   }
 
-  if (ocrEngineInput?.value === "paddle" && isBrowserPaddleOcrFile(file)) {
+  if (capabilities.public_deployment && /\.pdf$/i.test(file.name || "")) {
+    const text = await extractPdfTextInBrowser(file, { signal });
+    return { text, subtitleTranslations: null, videoTranscript: null };
+  }
+
+  const browserPaddleRequired =
+    capabilities.public_deployment || ocrEngineInput?.value === "paddle";
+  if (browserPaddleRequired && isBrowserPaddleOcrFile(file)) {
     const text = isImageImportFile(file)
       ? await extractImageTextWithBrowserPaddle(file, { signal })
-      : await extractRenderedPagesWithBrowserPaddle(file, { signal });
+      : capabilities.public_deployment
+        ? (() => { throw new Error(t("public_import_unsupported", file.name)); })()
+        : await extractRenderedPagesWithBrowserPaddle(file, { signal });
     return { text, subtitleTranslations: null, videoTranscript: null };
+  }
+
+  if (capabilities.public_deployment) {
+    throw new Error(t("public_import_unsupported", file.name));
   }
 
   const payload = await buildImportFilePayload(file, { signal });
@@ -1044,8 +1294,12 @@ async function extractFileText(file, options = {}) {
   if (!response.ok) {
     throw new Error(data.detail || data.error || response.statusText);
   }
+  let extractedText = data.text || "";
+  if (data.modelPostprocessRequired && !isCloud) {
+    extractedText = await repairImportedTextWithLocalModel(extractedText, file, signal);
+  }
   return {
-    text: data.text || "",
+    text: extractedText,
     subtitleTranslations: data.subtitleTranslations || null,
     videoTranscript: data.videoTranscript || null,
   };

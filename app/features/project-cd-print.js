@@ -1,6 +1,6 @@
-// Feature module: project-cd-print.
+// Lazy feature module: project-cd-print.
 
-// Loaded before app.js as a classic script; shares the AI System 6 global scope.
+// Loaded during boot as a classic script; shares the AI System 6 global scope.
 
 
 
@@ -120,6 +120,31 @@ function printSelectedProjectCdPdf() {
   printWindow.document.write(buildProjectCdPrintHtml(item));
   printWindow.document.close();
   setStatus(t("project_cd_pdf_printing", item.title));
+  setTimeout(() => {
+    try {
+      printWindow.focus();
+      printWindow.print();
+    } catch {
+      setStatus(t("project_cd_pdf_blocked"));
+    }
+  }, 120);
+}
+
+function printCurrentTeachTextDocument() {
+  const body = String(teachTextBodyInput?.value || "");
+  if (!body.trim()) return;
+  const title = getTeachTextDocumentName({
+    fallback: teachTextNameInput?.value?.trim() || teachTextTitleEl?.textContent?.trim() || t("untitled"),
+  });
+  const printWindow = window.open("", "_blank", "width=960,height=720");
+  if (!printWindow) {
+    setStatus(t("project_cd_pdf_blocked"));
+    return;
+  }
+  printWindow.document.open();
+  printWindow.document.write(buildProjectCdPrintHtml({ title, body }));
+  printWindow.document.close();
+  setStatus(t("project_cd_pdf_printing", title));
   setTimeout(() => {
     try {
       printWindow.focus();

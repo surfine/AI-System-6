@@ -41,9 +41,9 @@ function createDocumentTabRecord(app, role, options = {}) {
 
 function normalizeDocumentTabRecord(tab, index = 0) {
   if (!tab || typeof tab !== "object") return null;
-  const app = ["reader", "teachText", "docMap"].includes(tab.app) ? tab.app : "reader";
-  const fallbackRole = app === "teachText" ? "scratch_file" : app === "docMap" ? "docmap" : "source_view";
-  const validRoles = ["source_view", "export_preview", "manuscript", "scratch_file", "docmap"];
+  const app = ["reader", "teachText", "docMap", "timeMachine"].includes(tab.app) ? tab.app : "reader";
+  const fallbackRole = app === "teachText" ? "scratch_file" : app === "docMap" ? "docmap" : app === "timeMachine" ? "web_navigation" : "source_view";
+  const validRoles = ["source_view", "export_preview", "manuscript", "scratch_file", "docmap", "web_navigation"];
   return {
     ...createDocumentTabRecord(app, validRoles.includes(tab.role) ? tab.role : fallbackRole, {
       ...tab,
@@ -59,6 +59,7 @@ function activeDocumentTabIdsFallback(project) {
     reader: null,
     teachText: null,
     docMap: null,
+    timeMachine: null,
     ...(project?.activeDocumentTabIds || {}),
   };
 }
@@ -80,7 +81,7 @@ function ensureProjectDocumentTabs(project) {
 
   project.documentTabs = tabs.map((tab, index) => ({ ...tab, order: index }));
   project.activeDocumentTabIds = activeDocumentTabIdsFallback(project);
-  ["reader", "teachText", "docMap"].forEach((app) => {
+  ["reader", "teachText", "docMap", "timeMachine"].forEach((app) => {
     const activeId = project.activeDocumentTabIds[app];
     if (!project.documentTabs.some((tab) => tab.app === app && tab.id === activeId)) {
       project.activeDocumentTabIds[app] = project.documentTabs.find((tab) => tab.app === app)?.id || null;
@@ -837,7 +838,7 @@ function createProjectRecord(name) {
     imageAttachments: [],
     writingSurfaces: createWritingSurfaceState(),
     documentTabs: [],
-    activeDocumentTabIds: { reader: null, teachText: null, docMap: null },
+    activeDocumentTabIds: { reader: null, teachText: null, docMap: null, timeMachine: null },
     dictionaryTerms: [],
     flowState: {
       topic: false,
@@ -945,6 +946,21 @@ function ensureActiveProject() {
   });
   chatFolders.forEach((folder) => {
     if (folder.parentId === undefined) folder.parentId = null;
+  });
+  chatFiles.forEach((file) => {
+    if (file?.artifactKind !== "project-memory") return;
+    if (file.memoryStatus !== "active" && file.memoryStatus !== "disabled") {
+      file.memoryStatus = "active";
+      changed = true;
+    }
+    if (!Array.isArray(file.sourceMessageIds)) {
+      file.sourceMessageIds = [];
+      changed = true;
+    }
+    if (file.sourceChatId === undefined) {
+      file.sourceChatId = "";
+      changed = true;
+    }
   });
   return changed;
 }
@@ -1072,6 +1088,11 @@ function closeComposeToolsMenu() {
 function toggleComposeToolsMenu() {
   const isOpen = composeToolsMenuEl && !composeToolsMenuEl.classList.contains("is-hidden");
   setComposeToolsMenu(!isOpen);
+  if (!isOpen) {
+    requestAnimationFrame(() => {
+      composeToolsMenuEl?.querySelector('button[role="menuitem"]:not(.is-hidden):not([hidden]):not(:disabled)')?.focus();
+    });
+  }
 }
 
 function removeProjectReferenceChunks() {
@@ -1304,7 +1325,11 @@ function getProjectFolderFinderItem(folder) {
 }
 
 function getProjectFileFinderItem(file) {
-  const kindLabel = file.type === "text" ? t("kind_teachtext") : t("kind_chat");
+  const kindLabel = file.artifactKind === "project-memory"
+    ? (file.memoryStatus === "disabled"
+      ? (currentLanguage === "zh" ? "项目记忆（已停用）" : "Project Memory (Disabled)")
+      : (currentLanguage === "zh" ? "项目记忆" : "Project Memory"))
+    : (file.type === "text" ? t("kind_teachtext") : t("kind_chat"));
   const iconClass = file.type === "text" ? "teachtext-icon" : "doc-icon";
   const iconId = file.type === "text" ? "teachText" : "chatFile";
   const bodyText = file.type === "text" ? (file.body || "") : formatChatFile(file);
@@ -1338,6 +1363,28 @@ function getProjectSystemFinderItems() {
   const mountedFileCount = hasMountedFileDiskContext() ? mountedTextDisk.files.length : 0;
   const updatedAt = project.updatedAt || project.createdAt || new Date().toISOString();
   const items = [
+    ...["提示词覆盖", "已停用提示词", "运行记录"].map((name) => ({
+      id: `cliotalk-${name}`,
+      type: "finder-root",
+      name,
+      kindLabel: t("folder_kind"),
+      iconClass: "folder-icon",
+      iconId: "folder",
+      itemCount: getProjectFolders().find((folder) => folder.name === name)?.id
+        ? getProjectFiles().filter((file) => file.folderId === getProjectFolders().find((folder) => folder.name === name)?.id).length : 0,
+      sizeValue: 0,
+      meta: "ClioTalk",
+      updatedAt,
+      modifiedAt: updatedAt,
+      virtual: true,
+      canDuplicate: false,
+      canRename: false,
+      canTrash: false,
+      open: () => {
+        const folder = window.AISystem6PromptFilesRuntime?.ensureProjectPromptFolder(activeProjectId, name);
+        if (folder) openProjectFinderFolder(folder.id);
+      },
+    })),
     {
       id: "scrapbook",
       type: "finder-root",
@@ -2023,20 +2070,23 @@ function closeProjectScopedWindows() {
 function parkConversationInProject(projectId) {
   if (!conversation.length || !projectId) return;
 
-  trashItems.unshift({
-    projectId,
-    title: `Digest ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`,
-    body: compressConversation(),
-  });
+  if (projectId === activeProjectId && getActiveProject()) {
+    ensureCurrentConversationFile();
+    persistActiveChatFile();
+  }
   conversation.length = 0;
+  activeChatFileId = null;
   compressedConversationMemory = { text: "", sourceMessages: 0, updatedAt: "" };
+  if (typeof renderClioTalkRunAssembly === "function") renderClioTalkRunAssembly();
 }
 
 function resetAssistantForProject(projectName) {
   messagesEl.replaceChildren();
+  renderClioTalkWelcome();
   lastAssistantText = "";
   lastUserText = "";
   setStatus(t("project_opened", projectName));
+  if (typeof renderClioTalkRunAssembly === "function") renderClioTalkRunAssembly();
   updateMenuState();
 }
 

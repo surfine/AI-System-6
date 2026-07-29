@@ -75,10 +75,18 @@ const {
   composeToolsToggleButton,
   composeToolsMenuEl,
   messagesEl,
+  clioScrollLatestButton,
+  composerKeyHintEl,
   statusEl,
   assistantMeterButton,
   localProviderEl,
   endpointInput,
+  localApiTokenInput,
+  connectLocalModelButton,
+  localConnectionStatusEl,
+  localAuthStatusEl,
+  localCorsStatusEl,
+  localBrowserPermissionStatusEl,
   modelInput,
   setupLocalModelButton,
   findModelsButton,
@@ -159,6 +167,7 @@ const {
   emptyTrashButton,
   projectCdCountEl,
   projectCdGridEl,
+  burnProjectAuditCapsuleButton,
   downloadProjectCdButton,
   printProjectCdPdfButton,
   clearProjectCdButton,
@@ -451,6 +460,7 @@ let appVersionInfo = { ...defaultAppVersionInfo };
 if (rememberInput) rememberInput.checked = true;
 
 const conversation = [];
+let activeChatFileId = null;
 let compressedConversationMemory = {
   text: "",
   sourceMessages: 0,
@@ -467,67 +477,146 @@ let fileInfoItem = null;
 // View Modes state
 const windowViewModes = { ...defaultWindowViewModes };
 let writingToolsViewMode = "icon";
+let systemFinderPath = "";
 const finderContainerWindowNames = ["finder", "helpFolder", "applications", "disk"];
 const viewWindowNames = [...finderContainerWindowNames, "projects", "documents", "imageManager"];
 const printableDirectoryWindowNames = new Set([...finderContainerWindowNames, "projects", "documents", "trash"]);
 
+function staticFinderBuildDate() {
+  const match = String(appVersionInfo.build || "").match(/^(\d{4})(\d{2})(\d{2})/);
+  return match ? `${match[1]}-${match[2]}-${match[3]}T00:00:00.000Z` : "";
+}
+
+function withStaticFinderMetadata(items, location) {
+  const buildDate = staticFinderBuildDate();
+  return items.map((item) => ({
+    virtual: true,
+    canDuplicate: false,
+    canTrash: false,
+    canOpen: item.canOpen !== false,
+    sizeLabel: item.sizeLabel || t("built_in"),
+    createdAt: item.createdAt || buildDate,
+    updatedAt: item.updatedAt || buildDate,
+    version: item.version || appVersionInfo.version,
+    location,
+    ...item,
+  }));
+}
+
 function getSystemFolderItems() {
-  return [
+  return withStaticFinderMetadata([
+    { name: "AI 提示词", iconId: "folder", icon: "folder-icon", action: "open-system-ai-prompts", kind: t("folder_kind") },
+    { name: "System", iconId: "systemFile", icon: "doc-icon", action: "open-system-file-system", kind: t("system_component"), canOpen: false },
+    { name: "Finder", iconId: "finderApp", icon: "app-icon", action: "open-system-file-finder", kind: t("application"), canOpen: false },
+    { name: "MultiFinder", iconId: "multiFinderApp", icon: "app-icon", action: "open-system-file-multifinder", kind: t("application"), canOpen: false },
+    { name: "DA Handler", iconId: "daHandler", icon: "doc-icon", action: "open-system-file-da-handler", kind: t("system_component"), canOpen: false },
     { name: t("chooser"), iconId: "chooser", icon: "panel-icon", action: "open-chooser", kind: t("system_component") },
     { name: t("control_panel"), iconId: "controlPanel", icon: "panel-icon", action: "open-control", kind: t("system_component") },
     { name: t("system_status"), iconId: "systemStatus", icon: "panel-icon", action: "open-system-status", kind: t("system_component") },
     { name: t("context_panel"), iconId: "contextPanel", icon: "panel-icon", action: "open-context-panel", kind: t("system_component") },
-  ];
+  ], t("system_folder"));
+}
+
+function getSystemPromptFinderItems() {
+  if (systemFinderPath === "ai-prompts") {
+    return withStaticFinderMetadata([
+      { name: "Writing Tools", iconId: "folder", icon: "folder-icon", action: "open-system-writing-tools-prompts", kind: t("folder_kind") },
+      { name: "Writing Route", iconId: "folder", icon: "folder-icon", action: "open-system-writing-route-prompts", kind: t("folder_kind") },
+      { name: "Source Apps", iconId: "folder", icon: "folder-icon", action: "open-system-source-app-prompts", kind: t("folder_kind") },
+      { name: "Other Apps", iconId: "folder", icon: "folder-icon", action: "open-system-other-app-prompts", kind: t("folder_kind") },
+      { name: "ClioTalk", iconId: "folder", icon: "folder-icon", action: "open-system-cliotalk-prompts", kind: t("folder_kind") },
+      { name: "System Boundaries", iconId: "folder", icon: "folder-icon", action: "open-system-boundary-prompts", kind: t("folder_kind") },
+    ], "System Folder/AI 提示词");
+  }
+  if (systemFinderPath === "writing-tools") {
+    return withStaticFinderMetadata((window.AISystem6PromptFiles || []).map((prompt) => ({
+      name: prompt.name,
+      iconId: "document",
+      icon: "doc-icon",
+      action: `open-system-prompt-file:${prompt.id}`,
+      kind: t("system_component"),
+    })).filter((item) => item.action.startsWith("open-system-prompt-file:writing-tools.")), "System Folder/AI 提示词/Writing Tools");
+  }
+  if (systemFinderPath === "writing-route") {
+    return withStaticFinderMetadata((window.AISystem6PromptFiles || []).filter((prompt) => prompt.category === "Writing Route").map((prompt) => ({
+      name: prompt.name, iconId: "document", icon: "doc-icon", action: `open-system-prompt-file:${prompt.id}`,
+      kind: t("system_component"),
+    })), "System Folder/AI 提示词/Writing Route");
+  }
+  if (systemFinderPath === "source-apps") {
+    return withStaticFinderMetadata((window.AISystem6PromptFiles || []).filter((prompt) => prompt.category === "Source Apps").map((prompt) => ({
+      name: prompt.name, iconId: "document", icon: "doc-icon", action: `open-system-prompt-file:${prompt.id}`,
+      kind: t("system_component"),
+    })), "System Folder/AI 提示词/Source Apps");
+  }
+  if (systemFinderPath === "other-apps") {
+    return withStaticFinderMetadata((window.AISystem6PromptFiles || []).filter((prompt) => prompt.category === "Other Apps").map((prompt) => ({
+      name: prompt.name, iconId: "document", icon: "doc-icon", action: `open-system-prompt-file:${prompt.id}`,
+      kind: prompt.editable === "project" ? t("system_component") : (currentLanguage === "zh" ? "系统只读" : "System read-only"),
+    })), "System Folder/AI 提示词/Other Apps");
+  }
+  if (systemFinderPath === "cliotalk" || systemFinderPath === "boundaries") {
+    const category = systemFinderPath === "cliotalk" ? "ClioTalk" : "System Boundaries";
+    return withStaticFinderMetadata((window.AISystem6PromptFiles || []).filter((prompt) => prompt.category === category).map((prompt) => ({
+      name: prompt.name, iconId: "document", icon: "doc-icon", action: `open-system-prompt-file:${prompt.id}`,
+      kind: prompt.editable === "project" ? t("system_component") : (currentLanguage === "zh" ? "系统只读" : "System read-only"),
+    })), `System Folder/AI 提示词/${category}`);
+  }
+  return getSystemFolderItems();
 }
 
 function getHelpFolderItems() {
-  return [
-    { name: t("start_here"), iconId: "document", icon: "doc-icon", action: "open-guide", kind: t("system_component") },
+  return withStaticFinderMetadata([
+    { name: t("start_here"), iconId: "document", icon: "doc-icon", action: "open-guide", kind: t("system_component"), workspaceCapability: workspaceCapabilityStudio },
     { name: t("system_help"), iconId: "systemHelp", icon: "doc-icon", action: "open-system-help", kind: t("system_component") },
     { name: t("read_me"), iconId: "document", icon: "doc-icon", action: "open-read-me", kind: t("system_component") },
-    { name: t("flow_readme"), iconId: "document", icon: "doc-icon", action: "open-flow-readme", kind: t("system_component") },
+    { name: t("flow_readme"), iconId: "document", icon: "doc-icon", action: "open-flow-readme", kind: t("system_component"), workspaceCapability: workspaceCapabilityStudio },
     { name: t("memory_readme"), iconId: "document", icon: "doc-icon", action: "open-memory-readme", kind: t("system_component") },
     { name: t("concepts_docmap"), iconId: "docMap", icon: "doc-icon", action: "open-system-concepts-docmap", kind: t("system_component") },
     { name: t("concepts_clio_stage"), iconId: "clioStage", icon: "doc-icon", action: "open-system-concepts-clio-stage", kind: t("system_component") },
-  ];
+  ], t("help_folder"));
 }
 
 function getApplicationsItems() {
-  return [
+  return withStaticFinderMetadata([
     { name: t("assistant_label"), iconId: "assistant", icon: "app-icon", action: "open-assistant", type: "application", kind: t("application") },
-    { name: t("quick_draft_label"), iconId: "teachText", icon: "teachtext-icon", action: "open-quick-draft", type: "application", kind: t("application") },
+    { name: t("writing_studio"), iconId: "writingStudio", icon: "writing-studio-icon", action: "open-writing-studio", type: "application", kind: t("application"), workspaceProfiles: [workspaceProfileDesktop] },
+    { name: t("quick_draft_label"), iconId: "teachText", icon: "teachtext-icon", action: "open-quick-draft", type: "application", kind: t("application"), workspaceCapability: workspaceCapabilityStudio },
     { name: t("teachtext_label"), iconId: "teachText", icon: "teachtext-icon", action: "open-teachtext", type: "application", kind: t("application") },
     { name: t("reader_label"), iconId: "reader", icon: "reader-desk-icon", iconBase: "icon", action: "open-reader", type: "application", kind: t("application") },
+    { name: t("time_machine_label"), iconId: "timeMachine", icon: "tools-icon", action: "open-time-machine", type: "application", kind: t("application") },
     { name: t("searcher_label"), iconId: "searcher", icon: "tools-icon", action: "open-find-path", type: "application", kind: t("application") },
     { name: t("docmap_label"), iconId: "docMap", icon: "folder-icon", action: "open-docmap", type: "application", kind: t("application") },
     { name: t("bureaucracy_meme_label"), iconId: "bureaucracyMeme", icon: "tools-icon", action: "open-bureaucracy-meme", type: "application", kind: t("application") },
     { name: t("endfield_terminal_label"), iconId: "endfieldTerminal", icon: "tools-icon", action: "open-endfield-terminal", type: "application", kind: t("application") },
     { name: t("clio_stage_label"), iconId: "clioStage", icon: "tools-icon", action: "open-clio-stage", type: "application", kind: t("application") },
+    { name: t("clio_chart_title"), iconId: "clioChart", icon: "tools-icon", action: "open-clio-chart", type: "application", kind: t("application") },
     { name: t("liquid_cover_label"), iconId: "liquidCover", icon: "tools-icon", action: "open-liquid-cover", type: "application", kind: t("application") },
     { name: t("cmf_studio_label"), iconId: "cmfStudio", icon: "tools-icon", action: "open-cmf-studio", type: "application", kind: t("application") },
-    { name: t("rebuild_article"), iconId: "rebuildArticle", icon: "tools-icon", action: "open-rebuild-flow", type: "application", kind: t("application") },
-  ];
+    { name: t("soundscape_label"), iconId: "soundscape", icon: "tools-icon", action: "open-soundscape", type: "application", kind: t("application") },
+    { name: t("rebuild_article"), iconId: "rebuildArticle", icon: "tools-icon", action: "open-rebuild-flow", type: "application", kind: t("application"), workspaceCapability: workspaceCapabilityStudio },
+  ], t("applications"));
 }
 
 function getStartupDiskItems() {
-  return [
-    { name: t("system_folder"), iconId: "folder", icon: "system-icon", action: "open-finder", kind: t("folder_kind") },
-    { name: t("help_folder"), iconId: "folder", icon: "folder-icon", action: "open-help-folder", kind: t("folder_kind") },
+  return withStaticFinderMetadata([
+    { name: t("system_folder"), iconId: "systemFolder", icon: "system-icon", action: "open-finder", kind: t("folder_kind") },
+    { name: t("help_folder"), iconId: "helpFolder", icon: "folder-icon", action: "open-help-folder", kind: t("folder_kind") },
     { name: t("applications"), iconId: "applications", icon: "applications-icon", action: "open-applications", kind: t("folder_kind") },
     { name: t("project_disk"), iconId: "projectDisk", icon: "project-disk-icon", action: "open-project-disks", kind: t("project_disk") },
     { name: t("documents"), iconId: "documents", icon: "folder-icon", action: "open-documents", kind: t("folder_kind") },
-    { name: t("project_cd"), iconId: "projectDisc", icon: "hard-disk-icon", action: "open-project-cd", kind: t("project_cd") },
+    { name: t("project_cd"), iconId: "projectDisc", icon: "hard-disk-icon", action: "open-project-cd", kind: t("project_cd"), workspaceCapability: workspaceCapabilityStudio },
     { name: t("import_utility"), iconId: "importUtility", icon: "tools-icon", action: "open-import-utility", type: "application", kind: t("application") },
-    { name: t("mount_text_disk"), iconId: "fileFloppy", icon: "tools-icon", action: "open-rag", type: "application", kind: t("application") },
+    { name: t("mount_text_disk"), iconId: "fileFloppy", icon: "tools-icon", action: "open-rag", type: "application", kind: t("application"), workspaceCapability: workspaceCapabilityStudio },
     { name: t("trash"), iconId: "trash", icon: "trash-icon", action: "open-trash", kind: t("folder_kind") },
-  ];
+  ], t("startup_disk"));
 }
 
 function getStaticFinderItems(winName) {
-  if (winName === "helpFolder") return getHelpFolderItems();
-  if (winName === "applications") return getApplicationsItems();
-  if (winName === "disk") return getStartupDiskItems();
-  return getSystemFolderItems();
+  if (winName === "helpFolder") return filterWorkspaceItems(getHelpFolderItems());
+  if (winName === "applications") return filterWorkspaceItems(getApplicationsItems());
+  if (winName === "disk") return filterWorkspaceItems(getStartupDiskItems());
+  return filterWorkspaceItems(getSystemPromptFinderItems());
 }
 
 function renderFinderItemIcon(item) {
@@ -584,6 +673,10 @@ function openDesktopIcon(icon) {
 }
 
 function finderMarqueeContext(event) {
+  // A finger drag means scroll, not select: the marquee calls preventDefault on
+  // pointerdown, which on a phone freezes the pane you were trying to scroll.
+  // Mouse and pen keep the rubber band.
+  if (event.pointerType === "touch") return null;
   if (event.button || event.target.closest("button,input,textarea,select,label,a,summary,.title-bar,.menu-bar,.resize-handle,.grow-box")) return null;
   const pane = event.target.closest(".window-pane");
   if (pane?.querySelector(".finder-item")) return {
@@ -746,6 +839,8 @@ function renderStaticFinderWindow(winName) {
   windowViewModes[winName] = mode;
   const items = sortFinderItemsForView(getStaticFinderItems(winName), mode);
   const selected = getSelectedStaticFinderItem(winName);
+  const count = win.querySelector(".details-bar > span:first-child");
+  if (count) count.textContent = t("items_count", items.length);
 
   updateFinderViewButtons(win, mode);
 
@@ -762,8 +857,8 @@ function renderStaticFinderWindow(winName) {
         <button class="finder-list-row${selected?.action === item.action ? " is-selected" : ""}" data-static-finder-window="${escapeHtml(winName)}" data-static-finder-action="${escapeHtml(item.action)}">
           <span class="finder-list-name-cell">${renderFinderItemIcon(item)}<span>${escapeHtml(item.name)}</span></span>
           <span>${escapeHtml(item.kind)}</span>
-          <span>--</span>
-          <span>--</span>
+          <span>${escapeHtml(item.sizeLabel || "--")}</span>
+          <span>${escapeHtml(item.updatedAt ? new Date(item.updatedAt).toLocaleDateString() : "--")}</span>
         </button>
       `).join("")}
     `;
@@ -896,13 +991,14 @@ let selectedProjectId = null;
 let selectedProjectRootItemId = null;
 let startupProjectId = null;
 let startupEnvironment = "finder";
-let startupOpenMode = "quick-draft";
-let startupSelectedApplicationAction = "open-quick-draft";
+let startupOpenMode = "cliotalk";
+let startupSelectedApplicationAction = "open-assistant";
 let startupSelectedApplicationName = "";
 let startupOpenedWindowNames = [];
 let runtimeEnvironment = "finder";
 let sideAskEnabled = false;
 let sideAskAnchorAppId = "teachText";
+let sideAskAnchorOwnerAppId = "teachText";
 let selectedDesktopIconEl = null;
 let selectedStaticFinderWindowName = "";
 let selectedStaticFinderAction = "";
@@ -922,7 +1018,7 @@ let selectedScrapStack = "all";
 let topZ = 10;
 let cascadeOffset = 0;
 let waitTimer = null;
-let currentLanguage = "zh";
+var currentLanguage = "zh";
 let writerMode = false;
 let activeAbortController = null;
 let lastUserText = "";
@@ -951,6 +1047,7 @@ let embeddingModelCatalog = [];
 let contextMaxByModel = {};
 let contextLengthByModel = {};
 let contextLengthUserOverrides = {};
+let localLmStudioConnectionEnabled = false;
 let localModelState = {
   server: false,
   models: false,
@@ -964,21 +1061,80 @@ let localModelState = {
 
 let cloudConfig = null;
 const CLOUD_STORAGE_KEY = "ai-system6-cloud-config";
+const CLOUD_SESSION_KEY = "ai-system6-cloud-api-key";
 
 function loadCloudConfig() {
+  let persistedConfig = null;
+
   try {
     const raw = localStorage.getItem(CLOUD_STORAGE_KEY);
-    if (raw) cloudConfig = JSON.parse(raw);
-  } catch { cloudConfig = null; }
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        persistedConfig = parsed;
+        persistedConfig.apiKey = typeof parsed.apiKey === "string" ? parsed.apiKey.trim() : "";
+      }
+    }
+  } catch {
+    persistedConfig = null;
+  }
+
+  // Migrate keys saved by the older session-only implementation. Cloud
+  // credentials remain device settings: they never enter a Project Hard Disk,
+  // project backup, chat file, or export.
+  let sessionApiKey = "";
+  try {
+    sessionApiKey = (sessionStorage.getItem(CLOUD_SESSION_KEY) || "").trim();
+    sessionStorage.removeItem(CLOUD_SESSION_KEY);
+  } catch {
+    // Persistent config can still load if sessionStorage is unavailable.
+  }
+
+  if (!persistedConfig && sessionApiKey) persistedConfig = { apiKey: sessionApiKey };
+  if (persistedConfig && !persistedConfig.apiKey && sessionApiKey) {
+    persistedConfig.apiKey = sessionApiKey;
+  }
+  if (persistedConfig && persistedConfig.active && !persistedConfig.apiKey) {
+    persistedConfig.active = false;
+  }
+
+  // Rewrite migrated session credentials into this device's cloud settings.
+  try {
+    if (persistedConfig && Object.keys(persistedConfig).length) {
+      localStorage.setItem(CLOUD_STORAGE_KEY, JSON.stringify(persistedConfig));
+    } else {
+      localStorage.removeItem(CLOUD_STORAGE_KEY);
+    }
+  } catch {
+    try { localStorage.removeItem(CLOUD_STORAGE_KEY); } catch {}
+  }
+
+  cloudConfig = persistedConfig;
   return cloudConfig;
 }
 
 function saveCloudConfig() {
-  if (cloudConfig && cloudConfig.provider && cloudConfig.apiKey) {
-    localStorage.setItem(CLOUD_STORAGE_KEY, JSON.stringify(cloudConfig));
-  } else {
-    localStorage.removeItem(CLOUD_STORAGE_KEY);
+  try {
+    if (cloudConfig) {
+      const persistedConfig = { ...cloudConfig };
+      persistedConfig.apiKey = typeof persistedConfig.apiKey === "string"
+        ? persistedConfig.apiKey.trim()
+        : "";
+      if (Object.keys(persistedConfig).length) {
+        localStorage.setItem(CLOUD_STORAGE_KEY, JSON.stringify(persistedConfig));
+      } else {
+        localStorage.removeItem(CLOUD_STORAGE_KEY);
+      }
+    } else {
+      localStorage.removeItem(CLOUD_STORAGE_KEY);
+    }
+  } catch {
+    // Runtime cloud use can continue even when browser persistence is blocked.
   }
+
+  try {
+    sessionStorage.removeItem(CLOUD_SESSION_KEY);
+  } catch {}
 }
 
 function getLocalModelRequestName() {
@@ -1042,7 +1198,7 @@ function projectDisplayName(projectOrName) {
   return displayNameRewrites.reduce((name, rule) => name.replace(rule.pattern, rule.replacement), String(value || ""));
 }
 
-const { translations = {} } = window.AISystem6Data || {};
+var translations = window.AISystem6Data?.translations || {};
 let systemDictionaryEntries = window.AISystem6DictionaryData?.systemDictionaryEntries || [];
 let systemDictionaryLoadPromise = null;
 
@@ -1063,8 +1219,9 @@ async function ensureSystemDictionaryData() {
 }
 
 function t(key, ...args) {
-  const table = translations[currentLanguage] || translations.en;
-  const value = table[key] ?? translations.en[key] ?? key;
+  const tables = translations || window.AISystem6Data?.translations || {};
+  const table = tables[currentLanguage || "zh"] || tables.en || {};
+  const value = table[key] ?? tables.en?.[key] ?? key;
   return typeof value === "function" ? value(...args) : value;
 }
 
@@ -1152,6 +1309,7 @@ function applyMenuClock(options = {}) {
 
 function applyLanguage() {
   document.documentElement.lang = currentLanguage === "zh" ? "zh-Hans" : "en";
+  if (typeof syncKeyboardShortcutLabels === "function") syncKeyboardShortcutLabels();
 
   document.querySelectorAll("[data-i18n]").forEach((el) => {
     const value = t(el.dataset.i18n);
@@ -1165,6 +1323,7 @@ function applyLanguage() {
       el.textContent = value;
     }
   });
+  if (typeof renderKeyCapsShortcuts === "function") renderKeyCapsShortcuts();
 
   document.querySelectorAll("[data-i18n-count]").forEach((el) => {
     const count = Number(el.dataset.i18nCountValue || 0);
@@ -1203,13 +1362,16 @@ function applyLanguage() {
   syncTeachTextNameDisplay();
   syncWritingToolsShadeToggle();
   renderRebuildFlow();
-  renderSystemHelp();
+  // System Help owns a sizeable lazy module. If it has already been opened,
+  // refresh it for the new language; otherwise its first open renders it.
+  window.renderSystemHelp?.();
   updateReaderTranslationClipButton();
   updateScrapTranslationControls(scraps.find((item) => item.id === selectedScrapId && isInActiveProject(item)));
   refreshMessageTranslationButtons();
   renderLocalModelState();
   if (typeof refreshCloudUsageDisplay === "function") refreshCloudUsageDisplay();
   renderWritingBell();
+  renderAlarmClock();
   if (typeof refreshBureaucracyMemeLanguage === "function") refreshBureaucracyMemeLanguage();
   refreshWritingBellStatusLanguage();
   renderPuzzle();
@@ -1239,12 +1401,17 @@ function applyLanguage() {
   updateFilePickerLabels();
   updateReviewDeskStats?.();
   if (typeof refreshSystemSelectControls === "function") refreshSystemSelectControls();
+  renderClioTalkRunAssembly();
 }
 
 function syncPromptPlaceholder() {
   if (!promptInput) return;
-  if (typeof sideAskEnabled !== "undefined" && sideAskEnabled && typeof isMultiFinderMode === "function" && !isMultiFinderMode() && sideAskAnchorAppId === "quickDraft") {
-    promptInput.placeholder = t("quick_draft_cliotalk_placeholder");
+  if (typeof sideAskEnabled !== "undefined" && sideAskEnabled && typeof isMultiFinderMode === "function" && !isMultiFinderMode()) {
+    promptInput.placeholder = t(
+      sideAskAnchorAppId === "quickDraft"
+        ? "quick_draft_cliotalk_placeholder"
+        : "sideask_prompt_placeholder"
+    );
     return;
   }
   const isCloudActive = typeof cloudConfig !== "undefined" && cloudConfig && cloudConfig.active && cloudConfig.provider && cloudConfig.apiKey;
@@ -1254,6 +1421,9 @@ function syncPromptPlaceholder() {
 let selectedDraftIndex = 0;
 
 let speechRecognition = null;
+let systemSelectControlSequence = 0;
+const systemSelectTypeaheadState = new WeakMap();
+let sharedControlBehaviorsInstalled = false;
 
 window.markdownToSystemHtml = markdownToSystemHtml;
 window.parseMarkdownDocument = parseMarkdownDocument;
@@ -1261,9 +1431,13 @@ window.parseMarkdownDocument = parseMarkdownDocument;
 const TRANSLATION_CHUNK_THRESHOLD = 5200;
 const TRANSLATION_CHUNK_MAX_LENGTH = 3600;
 
-function closeSystemSelectMenus(except = null) {
+function closeSystemSelectMenus(except = null, options = {}) {
   document.querySelectorAll(".select-wrap.is-system-select-open").forEach((wrap) => {
-    if (wrap !== except) wrap.classList.remove("is-system-select-open");
+    if (wrap === except) return;
+    wrap.classList.remove("is-system-select-open");
+    const button = wrap.querySelector(":scope > .system-select-button");
+    button?.setAttribute("aria-expanded", "false");
+    if (options.focusButton && options.wrap === wrap) button?.focus();
   });
 }
 
@@ -1273,14 +1447,44 @@ function systemSelectOptionText(select) {
     || "";
 }
 
+function systemSelectAccessibleName(select) {
+  const labelledBy = (select?.getAttribute("aria-labelledby") || "")
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((id) => document.getElementById(id)?.textContent?.trim())
+    .filter(Boolean)
+    .join(" ");
+  return select?.getAttribute("aria-label")
+    || labelledBy
+    || select?.closest("label")?.querySelector(":scope > span:not([aria-hidden='true'])")?.textContent?.trim()
+    || select?.closest(".control-section")?.querySelector(":scope > h3")?.textContent?.trim()
+    || select?.name
+    || systemSelectOptionText(select);
+}
+
 function refreshSystemSelectControl(select) {
   const wrap = select?.closest(".select-wrap");
   const button = wrap?.querySelector(":scope > .system-select-button");
   const menu = wrap?.querySelector(":scope > .system-select-menu");
   if (!select || !wrap || !button || !menu) return;
   const hidden = select.hidden || select.closest("[hidden]");
-  button.textContent = systemSelectOptionText(select);
+  // The label goes in its own element rather than as bare text: the button is a
+  // flex container, and text-overflow cannot truncate an anonymous flex item —
+  // long model ids ran out under the dropdown arrow instead of ellipsing.
+  let label = button.querySelector(":scope > .system-select-label");
+  if (!label) {
+    label = document.createElement("span");
+    label.className = "system-select-label";
+    button.replaceChildren(label);
+  }
+  label.textContent = systemSelectOptionText(select);
   button.disabled = select.disabled;
+  button.setAttribute("aria-expanded", String(wrap.classList.contains("is-system-select-open")));
+  const accessibleName = systemSelectAccessibleName(select);
+  if (accessibleName) {
+    button.setAttribute("aria-label", accessibleName);
+    menu.setAttribute("aria-label", accessibleName);
+  }
   button.title = select.title || select.getAttribute("aria-label") || "";
   button.classList.toggle("is-hidden", !!hidden);
   menu.classList.toggle("is-hidden", !!hidden);
@@ -1292,22 +1496,73 @@ function renderSystemSelectMenu(select) {
   const menu = wrap?.querySelector(":scope > .system-select-menu");
   if (!select || !menu) return;
   menu.replaceChildren();
-  [...select.options].forEach((option) => {
+  [...select.options].forEach((option, optionIndex) => {
     if (option.hidden || option.disabled) return;
     const item = document.createElement("button");
     item.type = "button";
     item.className = "system-select-option";
     item.textContent = option.textContent;
+    item.setAttribute("aria-label", option.textContent.trim());
     item.disabled = option.disabled;
-    item.classList.toggle("is-selected", option.value === select.value);
+    item.dataset.optionIndex = String(optionIndex);
+    item.id = `${menu.id}-option-${optionIndex}`;
+    item.setAttribute("role", "option");
+    const selected = option.value === select.value;
+    item.classList.toggle("is-selected", selected);
+    item.setAttribute("aria-selected", String(selected));
+    item.tabIndex = selected ? 0 : -1;
     item.addEventListener("click", () => {
       select.value = option.value;
       select.dispatchEvent(new Event("change", { bubbles: true }));
       closeSystemSelectMenus();
       refreshSystemSelectControl(select);
+      wrap?.querySelector(":scope > .system-select-button")?.focus();
     });
     menu.append(item);
   });
+}
+
+function systemSelectEnabledOptions(menu) {
+  return [...menu.querySelectorAll(".system-select-option:not(:disabled)")];
+}
+
+function focusSystemSelectOption(menu, index) {
+  const options = systemSelectEnabledOptions(menu);
+  if (!options.length) return;
+  const next = options[(index + options.length) % options.length];
+  options.forEach((item) => { item.tabIndex = item === next ? 0 : -1; });
+  next.focus();
+}
+
+function openSystemSelect(select, direction = 0) {
+  const wrap = select?.closest(".select-wrap");
+  const button = wrap?.querySelector(":scope > .system-select-button");
+  const menu = wrap?.querySelector(":scope > .system-select-menu");
+  if (!select || !wrap || !button || !menu || select.disabled || select.hidden) return;
+  renderSystemSelectMenu(select);
+  closeSystemSelectMenus(wrap);
+  wrap.classList.add("is-system-select-open");
+  button.setAttribute("aria-expanded", "true");
+  const options = systemSelectEnabledOptions(menu);
+  const selectedIndex = Math.max(0, options.findIndex((item) => item.classList.contains("is-selected")));
+  const targetIndex = direction < 0 ? options.length - 1 : direction > 0 ? 0 : selectedIndex;
+  queueMicrotask(() => focusSystemSelectOption(menu, targetIndex));
+}
+
+function handleSystemSelectTypeahead(menu, key) {
+  if (key.length !== 1 || /\s/.test(key)) return false;
+  const previous = systemSelectTypeaheadState.get(menu);
+  const now = performance.now();
+  const query = `${previous && now - previous.time < 650 ? previous.query : ""}${key}`.toLocaleLowerCase();
+  systemSelectTypeaheadState.set(menu, { query, time: now });
+  const options = systemSelectEnabledOptions(menu);
+  const activeIndex = Math.max(-1, options.indexOf(document.activeElement));
+  const ordered = [...options.slice(activeIndex + 1), ...options.slice(0, activeIndex + 1)];
+  const match = ordered.find((item) => item.textContent.trim().toLocaleLowerCase().startsWith(query));
+  if (!match) return true;
+  options.forEach((item) => { item.tabIndex = item === match ? 0 : -1; });
+  match.focus();
+  return true;
 }
 
 function initSystemSelectControls() {
@@ -1320,10 +1575,21 @@ function initSystemSelectControls() {
     button.type = "button";
     button.className = "system-select-button";
     button.setAttribute("aria-haspopup", "listbox");
+    button.setAttribute("aria-expanded", "false");
 
     const menu = document.createElement("div");
     menu.className = "system-select-menu";
     menu.setAttribute("role", "listbox");
+    const controlId = select.id || `system-select-${++systemSelectControlSequence}`;
+    menu.id = `${controlId}-listbox`;
+    button.setAttribute("aria-controls", menu.id);
+    const accessibleName = systemSelectAccessibleName(select);
+    if (accessibleName) {
+      button.setAttribute("aria-label", accessibleName);
+      menu.setAttribute("aria-label", accessibleName);
+    }
+    select.tabIndex = -1;
+    select.setAttribute("aria-hidden", "true");
 
     select.insertAdjacentElement("afterend", button);
     button.insertAdjacentElement("afterend", menu);
@@ -1332,10 +1598,48 @@ function initSystemSelectControls() {
       event.preventDefault();
       event.stopPropagation();
       if (select.disabled || select.hidden) return;
-      renderSystemSelectMenu(select);
       const willOpen = !wrap.classList.contains("is-system-select-open");
-      closeSystemSelectMenus(willOpen ? wrap : null);
-      wrap.classList.toggle("is-system-select-open", willOpen);
+      if (willOpen) openSystemSelect(select);
+      else {
+        closeSystemSelectMenus();
+        button.focus();
+      }
+    });
+    button.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault();
+        openSystemSelect(select, event.key === "ArrowUp" ? -1 : 1);
+      } else if (event.key === "Home" || event.key === "End") {
+        event.preventDefault();
+        openSystemSelect(select, event.key === "End" ? -1 : 1);
+      }
+    });
+    menu.addEventListener("keydown", (event) => {
+      const options = systemSelectEnabledOptions(menu);
+      const current = Math.max(0, options.indexOf(document.activeElement));
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        focusSystemSelectOption(menu, current + 1);
+      } else if (event.key === "ArrowUp") {
+        event.preventDefault();
+        focusSystemSelectOption(menu, current - 1);
+      } else if (event.key === "Home") {
+        event.preventDefault();
+        focusSystemSelectOption(menu, 0);
+      } else if (event.key === "End") {
+        event.preventDefault();
+        focusSystemSelectOption(menu, options.length - 1);
+      } else if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        document.activeElement?.click();
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        closeSystemSelectMenus(null, { focusButton: true, wrap });
+      } else if (event.key === "Tab") {
+        closeSystemSelectMenus();
+      } else if (handleSystemSelectTypeahead(menu, event.key)) {
+        event.preventDefault();
+      }
     });
     select.addEventListener("change", () => refreshSystemSelectControl(select));
     refreshSystemSelectControl(select);
@@ -1344,6 +1648,59 @@ function initSystemSelectControls() {
 
 function refreshSystemSelectControls() {
   document.querySelectorAll(".select-wrap.has-system-select > select").forEach(refreshSystemSelectControl);
+}
+
+function setControlLoading(control, loading, loadingLabel = "") {
+  if (!control) return;
+  if (loading) {
+    control.dataset.wasDisabled = String(control.disabled);
+    control.dataset.loading = "true";
+    control.dataset.loadingLabel = loadingLabel || "…";
+    control.setAttribute("aria-busy", "true");
+    control.disabled = true;
+    return;
+  }
+  const wasDisabled = control.dataset.wasDisabled === "true";
+  delete control.dataset.loading;
+  delete control.dataset.loadingLabel;
+  delete control.dataset.wasDisabled;
+  control.removeAttribute("aria-busy");
+  control.disabled = wasDisabled;
+}
+
+function syncRovingTabStops(tablist) {
+  const tabs = [...tablist.querySelectorAll(':scope > [role="tab"]:not(:disabled):not([hidden])')];
+  if (!tabs.length) return;
+  const selected = tabs.find((tab) => tab.getAttribute("aria-selected") === "true") || tabs[0];
+  tabs.forEach((tab) => { tab.tabIndex = tab === selected ? 0 : -1; });
+}
+
+function initSharedControlBehaviors() {
+  document.querySelectorAll('[role="tablist"]').forEach(syncRovingTabStops);
+  if (sharedControlBehaviorsInstalled) return;
+  sharedControlBehaviorsInstalled = true;
+  document.addEventListener("click", (event) => {
+    const tab = event.target.closest('[role="tab"]');
+    const tablist = tab?.closest('[role="tablist"]');
+    if (tablist) queueMicrotask(() => syncRovingTabStops(tablist));
+  });
+  document.addEventListener("keydown", (event) => {
+    const tab = event.target.closest('[role="tab"]');
+    const tablist = tab?.closest('[role="tablist"]');
+    if (!tablist) return;
+    const tabs = [...tablist.querySelectorAll(':scope > [role="tab"]:not(:disabled):not([hidden])')];
+    const current = tabs.indexOf(tab);
+    if (current < 0) return;
+    let next = current;
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") next = (current + 1) % tabs.length;
+    else if (event.key === "ArrowLeft" || event.key === "ArrowUp") next = (current - 1 + tabs.length) % tabs.length;
+    else if (event.key === "Home") next = 0;
+    else if (event.key === "End") next = tabs.length - 1;
+    else return;
+    event.preventDefault();
+    tabs[next].focus();
+    tabs[next].click();
+  });
 }
 
 function toggleMenuSubItem(item) {
@@ -1477,18 +1834,10 @@ async function importFilesToMountedTextDisk(files, options = {}) {
   if (!isCloud && selectedEmbeddingModel) {
     setImportStatus(t("embedding_model_loading", selectedEmbeddingModel));
     try {
-      const response = await fetch("/api/models/load-embedding", {
-        method: "POST",
+      if (!localLmStudioConnectionEnabled) throw new Error(t("local_connection_waiting"));
+      await window.AISystem6LocalLMStudio.loadModel(selectedEmbeddingModel, {
         signal: controller?.signal,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: selectedEmbeddingModel,
-          _local_provider: document.getElementById("local-provider")?.value || "lm-studio",
-          _local_endpoint: endpointInput?.value?.trim() || "",
-        }),
       });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.detail || data.error || response.statusText);
     } catch (error) {
       if (isAbortError(error)) throw error;
       embeddingFailed = true;

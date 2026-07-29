@@ -7,7 +7,8 @@ const test = createFeatureTest("ask-sidecar");
 const windowManager = read("app/core/window-manager.js");
 const multiFinder = read("app/core/multi-finder.js");
 const chatMessages = read("app/core/chat-messages.js");
-const responsiveCss = read("styles/60-responsive.css");
+const indexHtml = read("index.html");
+const styles = read("styles/10-windows.css");
 const app = readAppSurface([
   "app/features/reader.js",
   "app/features/scrapbook.js",
@@ -28,11 +29,16 @@ const app = readAppSurface([
 
 test.assertIncludes(windowManager, "async function arrangeWindowAssistantSplit", "Ask sidecars share one window split helper");
 test.assertIncludes(app, "let sideAskAnchorAppId = \"teachText\"", "SideAsk defaults to TeachText as its normal anchor");
-test.assertIncludes(multiFinder, "return appId === \"clioTalk\" || appId === sideAskAnchorAppId", "SideAsk permits only ClioTalk and the current anchor app");
-test.assertIncludes(windowManager, "setSideAskAnchorApp(sourceAppId)", "Ask surfaces become the current SideAsk anchor");
+test.assertIncludes(app, "let sideAskAnchorOwnerAppId = \"teachText\"", "SideAsk separately tracks the app that owns a logical source surface");
+test.assertIncludes(multiFinder, "return appId === \"clioTalk\" || appId === sideAskAnchorOwnerAppId", "SideAsk permits only ClioTalk and the current anchor owner app");
+test.assertIncludes(windowManager, "setSideAskAnchorApp(sourceAnchorId, sourceAppId)", "Ask surfaces record both the grounding anchor and owning app");
 test.assertIncludes(windowManager, "prepareFinderModeForApp(sourceAppId)", "Ask surfaces still run Finder single-task cleanup around the SideAsk pair");
+test.assertIncludes(windowManager, "if (!canOpenPair) return false", "Cancelling Finder cleanup cancels SideAsk before any source action is committed");
+test.assertIncludes(windowManager, 'if (!isMultiFinderMode() && typeof enterSideAskClioTalkSession === "function")', "Finder SideAsk owns an isolated temporary conversation without changing MultiFinder chat state");
 test.assertIncludes(windowManager, "if (sideAskEnabled && !isSideAskPairApp(appId)) clearSideAskMode()", "leaving the pair clears SideAsk instead of keeping a stale anchor");
 test.assertIncludes(windowManager, "function updateSideAskSourceChrome()", "SideAsk updates paired app chrome");
+test.assertIncludes(windowManager, "function focusSideAskSource()", "SideAsk source link returns focus to the paired app");
+test.assertIncludes(windowManager, "const sourceWindow = windowName ? getWindow(windowName) : null", "SideAsk source focus resolves the current anchor window");
 test.assertIncludes(windowManager, "function saveSideAskRestoreFrame(win)", "SideAsk saves the paired windows' pre-split frames");
 test.assertIncludes(windowManager, "function restoreSideAskFrames()", "leaving SideAsk restores only windows moved by the SideAsk pair");
 test.assertIncludes(windowManager, "saveSideAskRestoreFrame(sourceWindow)", "Ask split saves the source window before moving it");
@@ -47,8 +53,13 @@ test.assertIncludes(windowManager, 'openWindow("assistant", { skipFinderMode: tr
 test.assertNotIncludes(windowManager, "writerMode || !isMultiFinderMode()", "Finder mode still receives the document + ClioTalk split");
 test.assertIncludes(windowManager, "const sourceWidth = Math.round((totalWidth - gap) * 0.6)", "document side keeps the left 6/10 of the split");
 test.assertIncludes(windowManager, "const assistantWidth = Math.max(340, totalWidth - gap - sourceWidth)", "ClioTalk keeps the right side of the split");
-test.assertMatches(responsiveCss, /body\.is-writer-mode \.assistant-window[\s\S]*left: 0 !important;[\s\S]*width: 60vw !important;/, "TeachText SideAsk places ClioTalk on the left 6/10");
-test.assertMatches(responsiveCss, /body\.is-writer-mode \.teachtext-window[\s\S]*left: 60vw !important;[\s\S]*width: 40vw !important;/, "TeachText SideAsk places TeachText on the right 4/10");
+test.assertMatches(windowManager, /async function toggleSideAsk\(\)[\s\S]*arrangeWindowAssistantSplit\("teachText"\)/, "TeachText enters the same source-left SideAsk layout as every other source");
+test.assertIncludes(indexHtml, 'id="teachtext-sideask"', "TeachText exposes a visible SideAsk entry action");
+test.assertIncludes(indexHtml, 'id="sideask-mode-strip"', "ClioTalk shows an explicit SideAsk mode strip");
+test.assertIncludes(indexHtml, 'data-action="focus-sideask-source"', "The SideAsk strip links back to its paired source");
+test.assertIncludes(indexHtml, 'data-i18n="sideask_end"', "The SideAsk strip exposes an explicit exit");
+test.assertMatches(styles, /\.assistant-window\.is-sideask \.clio-chat-file-link \{[\s\S]*display: none;/, "Temporary SideAsk does not advertise the normal Chat-file lifecycle");
+test.assertMatches(styles, /\.sideask-source-link:focus-visible \{[\s\S]*outline:/, "The paired-source link preserves a visible keyboard focus state");
 test.assertIncludes(chatMessages, "function formatSideAskAnchorContext()", "SideAsk has a default context loader for the paired app");
 test.assertIncludes(chatMessages, "function sideAskAnswerStyleInstruction()", "SideAsk has a low-pressure answer style");
 test.assertIncludes(chatMessages, "function ragGroundingInstruction", "SideAsk has an explicit RAG grounding contract");
@@ -68,6 +79,10 @@ test.assertIncludes(chatMessages, "const sideAskContext = skipContext ? \"\" : f
 test.assertIncludes(app, "sideAskAnswerStyleInstruction()", "source Ask buttons share the low-pressure SideAsk style");
 test.assertIncludes(app, "ragGroundingInstruction", "source Ask buttons share the RAG grounding contract");
 test.assertIncludes(app, "taskKind: \"docmap-question\"", "DocMap questions use the short SideAsk budget instead of the DocMap generation budget");
+test.assertMatches(app, /await arrangeReaderAssistantSplit\(\)[\s\S]*if \(!paired\) return;[\s\S]*readerQuestionInput\.value = ""/, "Reader keeps the question intact when SideAsk pairing is cancelled");
+test.assertMatches(app, /await arrangeScrapbookAssistantSplit\(\)[\s\S]*if \(!paired\) return;[\s\S]*scrapbookQuestionInput\.value = ""/, "Scrapbook keeps the question intact when SideAsk pairing is cancelled");
+test.assertMatches(app, /await arrangeDocMapAssistantSplit\(\);[\s\S]*if \(!paired\) return;[\s\S]*docMapQuestionInput\.value = ""/, "DocMap keeps the question intact when SideAsk pairing is cancelled");
+test.assertMatches(app, /await arrangeClioStageAssistantSplit\(\)[\s\S]*if \(!paired\) return;[\s\S]*els\.question\.value = ""/, "ClioStage keeps the question intact when SideAsk pairing is cancelled");
 test.assertNotIncludes(app, "先给结论", "source Ask prompts no longer force conclusion-first report language");
 test.assertNotIncludes(app, "只根据下面", "source Ask prompts no longer make RAG a source-only prison");
 test.assertNotIncludes(app, "Answer only from", "English source Ask prompts no longer make RAG a source-only prison");

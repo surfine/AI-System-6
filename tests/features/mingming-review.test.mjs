@@ -1,5 +1,5 @@
 // Mingming Review protects the Review Desk pass: it should be a compact
-// creative self-check for Recipient-shaped video copy, not a relationship review.
+// creative self-check for Luoluo-shaped video copy, not a relationship review.
 
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
@@ -21,13 +21,13 @@ test.assertIncludes(persistenceStatus, '"mingming-review-section": { label: t("r
 test.assertIncludes(translation, "function reviewSectionAsMingming()", "Mingming review has a dedicated implementation");
 test.assertIncludes(translation, "buildMingmingReviewPrompt", "Mingming review uses the shared prompt builder");
 test.assertIncludes(translation, "代入铭铭视角", "Mingming review keeps the requested product language");
-test.assertNotIncludes(translation, "交稿前给自己用的镜子", "Review implementation no longer embeds Creator-only framing");
+test.assertNotIncludes(translation, "交稿前给自己用的镜子", "Review implementation no longer embeds Aaron-only framing");
 test.assertNotIncludes(translation, "交得更少、零压力", "Review implementation no longer embeds handoff-pressure framing");
-test.assertNotIncludes(translation, "这会给接收者增加压力吗", "Review implementation avoids relationship-specific preflight language");
+test.assertNotIncludes(translation, "这会给落落增加压力吗", "Review implementation avoids relationship-specific preflight language");
 
 test.assertIncludes(mingmingLens, "function buildMingmingReviewPrompt", "shared review prompt builder exists");
 test.assertIncludes(mingmingLens, "创作自检器", "review is framed as a creative self-check");
-test.assertIncludes(mingmingLens, "用户可能是 Creator，也可能是接收者本人", "review prompt supports both likely users");
+test.assertIncludes(mingmingLens, "用户可能是 Aaron，也可能是落落本人", "review prompt supports both likely users");
 test.assertIncludes(mingmingLens, "不要假设使用者身份", "review prompt avoids identity assumptions");
 test.assertIncludes(mingmingLens, "不要输出关系建议、交接压力或私人合作判断", "review prompt excludes relationship review");
 test.assertIncludes(mingmingLens, "视频口播稿，不是文章", "Mingming review applies the spoken-video register");
@@ -42,13 +42,13 @@ test.assertIncludes(mingmingLens, "像 Qwen 那样把稿子做成规整模板", 
 test.assertIncludes(mingmingLens, "像 DeepSeek v4 那样形容词偏多", "Mingming review detects DeepSeek v4 polished-summary drift");
 test.assertIncludes(mingmingLens, "核心/本质/关键", "Mingming review flags summary-heavy model language");
 test.assertIncludes(mingmingLens, "前两句看到重点", "Mingming review checks the two-sentence focus rule");
-test.assertIncludes(mingmingLens, "发现模式，不是讲课模式", "Mingming review checks Recipient's discovery-mode stance");
-test.assertIncludes(mingmingLens, "观察 → 原因/考据 → 判断 → 然后下一个", "Mingming review checks the real Recipient structure");
+test.assertIncludes(mingmingLens, "发现模式，不是讲课模式", "Mingming review checks Luoluo's discovery-mode stance");
+test.assertIncludes(mingmingLens, "观察 → 原因/考据 → 判断 → 然后下一个", "Mingming review checks the real Luoluo structure");
 test.assertIncludes(mingmingLens, "声画互补", "Mingming review checks show-don't-repeat behavior");
 test.assertIncludes(mingmingLens, "本代特异性", "Mingming review checks generation-specific value");
 test.assertIncludes(mingmingLens, "有没有写成文章/剧本/讲课", "Mingming review detects article/script/lecture drift");
 test.assertIncludes(mingmingLens, "画面能不能拍", "Mingming review checks shootability");
-test.assertIncludes(mingmingLens, "接收者基本盘", "Mingming review checks fit with Recipient's base");
+test.assertIncludes(mingmingLens, "落落基本盘", "Mingming review checks fit with Luoluo's base");
 test.assertIncludes(mingmingLens, "更顺、更轻", "Mingming review keeps creation lighter");
 test.assertIncludes(mingmingLens, "不要重写全文", "Mingming review stays a review pass, not a rewrite pass");
 test.assertIncludes(mingmingLens, "不要事实核查", "Mingming review stays separate from fact-checking");

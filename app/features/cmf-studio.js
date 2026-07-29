@@ -77,9 +77,11 @@
   let recipe = defaultRecipe();
   let currentViews = [];
   let selectedView = "02-back";
+  let selectedPartId = "frame";
   let previewRefreshTimer = 0;
   let previewRequestId = 0;
   let previewAbortController = null;
+  let canRenderViews = null;
 
   function defaultRecipe() {
     return {
@@ -119,32 +121,53 @@
       if (!preset) return;
       recipe.parts = { ...recipe.parts, ...preset };
       syncCmfForm();
+      refreshCmfPresetControl();
       saveRecipe({ quiet: true });
+      invalidateRenderedViews();
       schedulePreviewRender();
       setCmfStatus(t("cmf_preset_applied"));
     });
     cmfEl("cmf-shuffle")?.addEventListener("click", shuffleRecipe);
-    cmfEl("cmf-save")?.addEventListener("click", () => saveRecipe());
     cmfEl("cmf-reset")?.addEventListener("click", resetRecipe);
     cmfEl("cmf-render")?.addEventListener("click", renderViews);
     cmfEl("cmf-export")?.addEventListener("click", exportUsdz);
     cmfEl("cmf-view-strip")?.addEventListener("click", (event) => {
       const button = event.target.closest("[data-cmf-view]");
       if (!button) return;
-      selectedView = button.dataset.cmfView;
-      renderPreviewImage();
-      schedulePreviewRender(0);
+      selectCmfView(button.dataset.cmfView);
     });
+    cmfEl("cmf-parts")?.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-cmf-part-row]");
+      if (!button) return;
+      selectedPartId = button.dataset.cmfPartRow || selectedPartId;
+      syncCmfForm();
+    });
+    cmfEl("cmf-palette")?.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-cmf-color-option]");
+      if (!button || button.disabled) return;
+      recipe.parts[selectedPartId] = button.dataset.cmfColor;
+      cmfEl("cmf-preset") && (cmfEl("cmf-preset").value = "");
+      syncCmfForm();
+      refreshCmfPresetControl();
+      saveRecipe({ quiet: true });
+      invalidateRenderedViews();
+      schedulePreviewRender();
+    });
+    bindRovingGroup(cmfEl("cmf-parts"), "[data-cmf-part-row]", "vertical");
+    bindRovingGroup(cmfEl("cmf-palette"), "[data-cmf-color-option]", "horizontal");
   }
 
   function buildPartControls() {
     const target = cmfEl("cmf-parts");
-    if (!target || target.dataset.ready === "true") return;
+    const palette = cmfEl("cmf-palette");
+    if (!target || !palette || target.dataset.ready === "true") return;
     target.dataset.ready = "true";
     target.replaceChildren(...PARTS.map((part) => {
-      const row = document.createElement("div");
+      const row = document.createElement("button");
+      row.type = "button";
       row.className = "cmf-part-row";
       row.dataset.cmfPartRow = part.id;
+      row.setAttribute("role", "option");
 
       const text = document.createElement("span");
       text.className = "cmf-part-label";
@@ -158,42 +181,87 @@
       const currentName = document.createElement("span");
       currentName.dataset.cmfCurrentName = part.id;
       current.append(swatch, currentName);
-
-      const palette = document.createElement("span");
-      palette.className = "cmf-color-options";
-      palette.setAttribute("role", "group");
-      palette.setAttribute("aria-label", t(part.labelKey));
-      COLORS.forEach((color) => {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "cmf-color-chip";
-        button.dataset.cmfColorOption = "true";
-        button.dataset.cmfPart = part.id;
-        button.dataset.cmfColor = color.id;
-        button.title = t(color.labelKey);
-        button.setAttribute("aria-label", `${t(part.labelKey)} ${t(color.labelKey)}`);
-        button.addEventListener("click", () => {
-          recipe.parts[part.id] = color.id;
-          syncCmfForm();
-          saveRecipe({ quiet: true });
-          schedulePreviewRender();
-        });
-        palette.append(button);
-      });
-
-      row.append(text, current, palette);
+      const affordance = document.createElement("span");
+      affordance.className = "cmf-part-affordance";
+      affordance.setAttribute("aria-hidden", "true");
+      affordance.textContent = "›";
+      row.append(text, current, affordance);
       return row;
+    }));
+    palette.replaceChildren(...COLORS.map((color) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "cmf-color-chip";
+      button.dataset.cmfColorOption = "true";
+      button.dataset.cmfColor = color.id;
+      button.title = t(color.labelKey);
+      button.setAttribute("aria-label", t(color.labelKey));
+      const swatch = document.createElement("span");
+      swatch.className = "cmf-color-chip-swatch";
+      swatch.dataset.cmfColor = color.id;
+      const label = document.createElement("span");
+      label.textContent = t(color.labelKey);
+      button.append(swatch, label);
+      return button;
     }));
   }
 
   function syncCmfForm() {
-    cmfEl("cmf-model") && (cmfEl("cmf-model").value = recipe.model);
+    const selectedPart = PARTS.find((part) => part.id === selectedPartId) || PARTS[0];
+    const selectedColor = colorMeta(recipe.parts[selectedPart.id]);
+    const preset = cmfEl("cmf-preset");
+    if (preset && document.activeElement !== preset) preset.value = matchingPresetId() || "";
+    refreshCmfPresetControl();
+    document.querySelectorAll("[data-cmf-part-row]").forEach((button) => {
+      const selected = button.dataset.cmfPartRow === selectedPart.id;
+      button.classList.toggle("is-selected", selected);
+      button.setAttribute("aria-selected", String(selected));
+      button.tabIndex = selected ? 0 : -1;
+    });
     document.querySelectorAll("[data-cmf-color-option]").forEach((button) => {
-      const selected = recipe.parts[button.dataset.cmfPart] === button.dataset.cmfColor;
+      const selected = selectedColor.id === button.dataset.cmfColor;
       button.classList.toggle("is-selected", selected);
       button.setAttribute("aria-pressed", String(selected));
+      button.tabIndex = selected ? 0 : -1;
     });
     updatePartSwatches();
+    const summary = cmfEl("cmf-selection-summary");
+    if (summary) summary.textContent = `${t(selectedPart.labelKey)} · ${t(selectedColor.labelKey)}`;
+  }
+
+  function invalidateRenderedViews() {
+    currentViews = currentViews.filter((view) => view.name === selectedView);
+    renderPreviewImage();
+  }
+
+  function matchingPresetId() {
+    return Object.entries(PRESETS).find(([, parts]) => (
+      PARTS.every((part) => recipe.parts[part.id] === parts[part.id])
+    ))?.[0] || "";
+  }
+
+  function refreshCmfPresetControl() {
+    const preset = cmfEl("cmf-preset");
+    if (preset && typeof refreshSystemSelectControl === "function") refreshSystemSelectControl(preset);
+  }
+
+  function bindRovingGroup(container, selector, orientation) {
+    container?.addEventListener("keydown", (event) => {
+      const buttons = [...container.querySelectorAll(selector)].filter((button) => !button.disabled);
+      const currentIndex = buttons.indexOf(document.activeElement);
+      if (currentIndex < 0) return;
+      const previousKey = orientation === "vertical" ? "ArrowUp" : "ArrowLeft";
+      const nextKey = orientation === "vertical" ? "ArrowDown" : "ArrowRight";
+      if (![previousKey, nextKey, "Home", "End"].includes(event.key)) return;
+      event.preventDefault();
+      let nextIndex = currentIndex;
+      if (event.key === previousKey) nextIndex = (currentIndex - 1 + buttons.length) % buttons.length;
+      if (event.key === nextKey) nextIndex = (currentIndex + 1) % buttons.length;
+      if (event.key === "Home") nextIndex = 0;
+      if (event.key === "End") nextIndex = buttons.length - 1;
+      buttons[nextIndex]?.focus();
+      buttons[nextIndex]?.click();
+    });
   }
 
   function updatePartSwatches() {
@@ -203,6 +271,9 @@
       swatch.dataset.cmfColor = color.id;
       const label = document.querySelector(`[data-cmf-current-name="${part}"]`);
       if (label) label.textContent = t(color.labelKey);
+    });
+    document.querySelectorAll("[data-cmf-schematic]").forEach((surface) => {
+      surface.dataset.cmfColor = recipe.parts[surface.dataset.cmfSchematic] || COLORS[0].id;
     });
   }
 
@@ -230,8 +301,10 @@
     localStorage.removeItem(STORAGE_KEY);
     currentViews = [];
     selectedView = "02-back";
+    selectedPartId = "frame";
     syncCmfForm();
     renderPreviewImage();
+    refreshCmfPresetControl();
     schedulePreviewRender(0);
     setCmfStatus(t("cmf_reset_done"));
   }
@@ -250,6 +323,7 @@
     recipe.parts.cameraPlate = colors[3];
     syncCmfForm();
     saveRecipe({ quiet: true });
+    invalidateRenderedViews();
     schedulePreviewRender();
     setCmfStatus(t("cmf_shuffle_done"));
   }
@@ -267,20 +341,42 @@
     try {
       const response = await fetch("/api/cmf/capabilities", { cache: "no-store" });
       const data = await response.json();
-      const label = data.canRenderViews ? t("cmf_cap_ready") : data.canExport ? t("cmf_cap_export_only") : t("cmf_cap_missing");
+      canRenderViews = Boolean(data.canRenderViews || data.canExport);
+      const label = canRenderViews ? t("cmf_cap_ready") : t("cmf_cap_missing");
       const el = cmfEl("cmf-capabilities");
       if (el) el.textContent = label;
-      cmfEl("cmf-render") && (cmfEl("cmf-render").disabled = !data.canRenderViews);
-      cmfEl("cmf-export") && (cmfEl("cmf-export").disabled = !data.canExport);
+      if (cmfEl("cmf-render")) {
+        cmfEl("cmf-render").dataset.capabilityDisabled = String(!canRenderViews);
+        cmfEl("cmf-render").disabled = !canRenderViews;
+      }
+      if (cmfEl("cmf-export")) {
+        cmfEl("cmf-export").dataset.capabilityDisabled = String(!data.canExport);
+        cmfEl("cmf-export").disabled = !data.canExport;
+      }
+      const empty = cmfEl("cmf-preview-empty");
+      if (empty && !currentViews.length) {
+        empty.textContent = canRenderViews ? t("cmf_preview_empty") : t("cmf_preview_unavailable");
+      }
+      if (canRenderViews && !currentViews.length) schedulePreviewRender(0);
     } catch {
+      canRenderViews = false;
       const el = cmfEl("cmf-capabilities");
       if (el) el.textContent = t("cmf_cap_missing");
+      ["cmf-render", "cmf-export"].forEach((id) => {
+        const control = cmfEl(id);
+        if (!control) return;
+        control.dataset.capabilityDisabled = "true";
+        control.disabled = true;
+      });
+      const empty = cmfEl("cmf-preview-empty");
+      if (empty && !currentViews.length) empty.textContent = t("cmf_preview_unavailable");
     }
   }
 
   async function renderViews() {
     cancelPreviewRender();
     setBusy(true, t("cmf_rendering"));
+    setCmfControlLoading("cmf-render", true, t("cmf_rendering"));
     try {
       const response = await fetch("/api/cmf/render-views", {
         method: "POST",
@@ -297,6 +393,7 @@
       setCmfStatus(`${t("cmf_render_failed")} ${error.message}`);
       playSystemSound?.("alert");
     } finally {
+      setCmfControlLoading("cmf-render", false);
       setBusy(false);
     }
   }
@@ -304,6 +401,7 @@
   function renderPreviewImage() {
     const preview = cmfEl("cmf-preview-image");
     const empty = cmfEl("cmf-preview-empty");
+    const fallback = cmfEl("cmf-preview-fallback");
     const strip = cmfEl("cmf-view-strip");
     const active = currentViews.find((view) => view.name === selectedView) || currentViews[0];
 
@@ -312,6 +410,7 @@
       if (active) preview.src = active.dataUrl;
     }
     if (empty) empty.hidden = !!active;
+    if (fallback) fallback.hidden = !!active;
     if (strip) {
       strip.replaceChildren(...currentViews.map((view) => {
         const button = document.createElement("button");
@@ -333,12 +432,23 @@
     }
   }
 
+  function selectCmfView(name) {
+    selectedView = name;
+    renderPreviewImage();
+    schedulePreviewRender(0);
+  }
+
   function viewLabel(name) {
     return VIEW_LABELS[name] || name.replace(/^\d+-/, "").replace(/-/g, " ");
   }
 
   function schedulePreviewRender(delay = 420) {
     window.clearTimeout(previewRefreshTimer);
+    if (canRenderViews === false) {
+      setPreviewRefreshing(false);
+      setCmfStatus(t("cmf_ready"));
+      return;
+    }
     setPreviewRefreshing(true);
     setCmfStatus(t("cmf_preview_rendering"));
     previewRefreshTimer = window.setTimeout(renderLivePreview, delay);
@@ -390,11 +500,19 @@
   }
 
   function setPreviewRefreshing(refreshing) {
-    document.querySelector(".cmf-preview-panel")?.classList.toggle("is-refreshing", refreshing);
+    const panel = document.querySelector(".cmf-preview-panel");
+    panel?.classList.toggle("is-refreshing", refreshing);
+    panel?.setAttribute("aria-busy", String(refreshing));
+    const indicator = cmfEl("cmf-live-indicator");
+    if (indicator) {
+      indicator.dataset.state = refreshing ? "loading" : "ready";
+      indicator.textContent = t(refreshing ? "cmf_live_updating" : "cmf_live_preview");
+    }
   }
 
   async function exportUsdz() {
     setBusy(true, t("cmf_exporting"));
+    setCmfControlLoading("cmf-export", true, t("cmf_exporting"));
     try {
       const response = await fetch("/api/cmf/export-usdz", {
         method: "POST",
@@ -419,14 +537,27 @@
       setCmfStatus(`${t("cmf_export_failed")} ${error.message}`);
       playSystemSound?.("alert");
     } finally {
+      setCmfControlLoading("cmf-export", false);
       setBusy(false);
     }
   }
 
+  function setCmfControlLoading(id, loading, label = "") {
+    const control = cmfEl(id);
+    if (!control) return;
+    if (typeof setControlLoading === "function") {
+      setControlLoading(control, loading, label);
+      return;
+    }
+    control.toggleAttribute("aria-busy", loading);
+    control.dataset.loading = String(loading);
+    if (label) control.dataset.loadingLabel = label;
+  }
+
   function setBusy(busy, message = "") {
-    ["cmf-shuffle", "cmf-save", "cmf-reset", "cmf-render", "cmf-export"].forEach((id) => {
+    ["cmf-shuffle", "cmf-reset", "cmf-render", "cmf-export"].forEach((id) => {
       const button = cmfEl(id);
-      if (button) button.disabled = busy;
+      if (button) button.disabled = busy || button.dataset.capabilityDisabled === "true";
     });
     document.querySelectorAll("[data-cmf-color-option]").forEach((button) => {
       button.disabled = busy;
@@ -441,4 +572,19 @@
 
   window.AISystem6CMFStudioLoaded = true;
   window.renderCmfStudio = renderCmfStudio;
+  window.AISystem6CMFStudio = Object.freeze({
+    runMenuCommand(command) {
+      const commands = {
+        save: () => saveRecipe(),
+        export: exportUsdz,
+        shuffle: shuffleRecipe,
+        reset: resetRecipe,
+        render: renderViews,
+        "view-front": () => selectCmfView("01-front"),
+        "view-back": () => selectCmfView("02-back"),
+        "view-side": () => selectCmfView("05-buttons-side"),
+      };
+      return commands[command]?.();
+    },
+  });
 })();

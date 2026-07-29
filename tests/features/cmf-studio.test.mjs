@@ -79,6 +79,8 @@ test.assertIncludes(service, "actionButton", "engine maps UI action button namin
 test.assertIncludes(service, "usdcat", "engine rewrites USD layers, not CSS filters");
 test.assertIncludes(service, "usdzip", "engine repackages final USDZ");
 test.assertIncludes(service, "SCNRenderer", "view renderer uses SceneKit for Quick Look-style PNGs");
+test.assertIncludes(service, "canRenderViews: canExport", "software rendering remains available when Swift is absent");
+test.assertIncludes(service, 'renderBackend: byName.swift.available ? "scenekit+software" : "software"', "capabilities report the active render backend");
 test.assertIncludes(service, "up: [0, 0, -1]", "software preview keeps the phone top upright");
 test.assertIncludes(service, "const suppliedParts = new Set()", "engine tracks which hidden material groups were explicitly supplied");
 test.assertIncludes(service, 'if (!suppliedParts.has("frameSide")) parts.frameSide = parts.frame', "side frame follows the public frame color by default");

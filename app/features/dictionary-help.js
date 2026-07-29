@@ -525,7 +525,7 @@ ${sourceContextText(context) || "(none)"}`;
     const response = await fetchModelPayload({
       model: getLocalModelRequestName(),
       messages: withMarkdownModelMessages([
-        { role: "system", content: "你是给写作者使用的简明词典。只返回 Markdown，不要返回 JSON。" },
+        { role: "system", content: resolveWritingRoutePrompt("other-apps.dictionary-markdown") },
         { role: "user", content: prompt },
       ]),
       temperature: 0.1,
@@ -568,3 +568,5 @@ function lookupDictionaryInput(event) {
     end: term.length,
   });
 }
+
+window.AISystem6DictionaryHelpLoaded = true;

@@ -76,9 +76,6 @@ async function embedTexts(texts, signal) {
       input: texts,
       _cloud_api_key: cloudConfig.apiKey,
       _cloud_base_url: cloudConfig.baseUrl,
-      _local_provider: document.getElementById("local-provider")?.value || "lm-studio",
-      _local_endpoint: endpointInput?.value?.trim() || "",
-      _local_model: localModel,
     };
   } else {
     if (isDeepSeekEmbeddingUnsupported && !hasShownDeepseekEmbeddingNotice) {
@@ -89,21 +86,31 @@ async function embedTexts(texts, signal) {
     }
     const model = localModel;
     if (!model) throw new Error(t("embedding_model_missing"));
-    path = "/api/embeddings";
+    path = "";
     bodyObj = {
       model,
       input: texts,
-      _local_provider: document.getElementById("local-provider")?.value || "lm-studio",
-      _local_endpoint: endpointInput?.value?.trim() || "",
     };
   }
 
-  const response = await fetch(path, {
-    method: "POST",
-    signal,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(bodyObj),
-  });
+  let response;
+  if (path) {
+    response = await fetch(path, {
+      method: "POST",
+      signal,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(bodyObj),
+    });
+    if (!response.ok && localModel && localLmStudioConnectionEnabled) {
+      response = await window.AISystem6LocalLMStudio.embed({
+        model: localModel,
+        input: texts,
+      }, { signal });
+    }
+  } else {
+    if (!localLmStudioConnectionEnabled) throw new Error(t("local_connection_waiting"));
+    response = await window.AISystem6LocalLMStudio.embed(bodyObj, { signal });
+  }
 
   if (!response.ok) {
     throw new Error(`Embedding request failed: ${response.status} ${await response.text()}`);
@@ -907,6 +914,10 @@ function takeWithinBudgetDetailed(items, budget, formatItem) {
   return { selected, dropped, used };
 }
 
+function isImplicitProjectSourceFile(file) {
+  return file?.type === "text" && !String(file.artifactKind || "").trim();
+}
+
 function getCuratedContextItems(userText, limit = maxCuratedContextItems) {
   const queryWords = getQueryWords(userText);
   const contextItems = [
@@ -923,7 +934,7 @@ function getCuratedContextItems(userText, limit = maxCuratedContextItems) {
       tags: scrap.tags || [],
     })),
     ...getProjectFiles()
-      .filter((file) => file.type === "text")
+      .filter(isImplicitProjectSourceFile)
       .map((file) => ({
         id: file.id,
         name: `${file.name}.text`,

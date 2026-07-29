@@ -2,7 +2,60 @@
 
 // Loaded before app.js as a classic script; shares the AI System 6 global scope.
 
+let clioTalkAttachmentPickerActive = false;
 
+function isClioTalkAttachableProjectFile(file) {
+  if (!file || !isInActiveProject(file)) return false;
+  if (file.type === "chat") return true;
+  return file.type === "text" && !String(file.artifactKind || "").trim();
+}
+
+function attachProjectFileToNextClioTalkRun(fileId = selectedChatFileId) {
+  const file = getProjectFiles().find((item) => item.id === fileId);
+  if (!isClioTalkAttachableProjectFile(file)) {
+    setStatus(t("clio_attachment_not_supported"));
+    return false;
+  }
+  if (!(window.nextTaskInputFileIds instanceof Set)) window.nextTaskInputFileIds = new Set();
+  if (!window.nextTaskInputFileIds.has(file.id) && window.nextTaskInputFileIds.size >= 6) {
+    setStatus(t("clio_attachment_limit"));
+    return false;
+  }
+  window.nextTaskInputFileIds.add(file.id);
+  clioTalkAttachmentPickerActive = false;
+  renderAttachedClips();
+  renderClioTalkRunAssembly();
+  if (typeof scheduleWorkingSessionSave === "function") scheduleWorkingSessionSave();
+  openWindow("assistant");
+  promptInput?.focus();
+  setStatus(t("clio_attachment_added", file.name));
+  return true;
+}
+
+function beginClioTalkAttachmentPicker() {
+  if (!getActiveProject()) {
+    setStatus(t("no_project_mounted"));
+    openWindow("projects");
+    return false;
+  }
+  clioTalkAttachmentPickerActive = true;
+  selectedChatFileId = null;
+  selectedDocumentFolderId = null;
+  clearDocumentSelection();
+  renderDocuments();
+  openWindow("documents");
+  setStatus(t("clio_choose_attachment"));
+  return true;
+}
+
+function openDocumentFileOrAttachToClioTalk(file) {
+  if (clioTalkAttachmentPickerActive) {
+    attachProjectFileToNextClioTalkRun(file?.id || "");
+    return;
+  }
+  if (file?.type === "text") openTextFile(file.id);
+  else if (file) openChatFileWindow(file.id);
+}
 
 function renderFolderSuggestions() {
   folderSuggestionsEl.replaceChildren();
@@ -179,10 +232,8 @@ function openSelectedDocumentItem() {
   }
 
   const file = chatFiles.find((item) => item.id === selectedChatFileId && isInActiveProject(item));
-  if (file?.type === "text") {
-    openTextFile(file.id);
-  } else if (file) {
-    openChatFileWindow(file.id);
+  if (file) {
+    openDocumentFileOrAttachToClioTalk(file);
   } else {
     setStatus(t("select_finder_item_first"));
   }
@@ -242,6 +293,7 @@ function renameSelectedDocumentItem() {
   const name = window.prompt(t("rename_file_prompt"), file.name);
   if (!name?.trim()) return;
   file.name = name.trim();
+  if (file.type === "chat") file.titleMode = "manual";
   file.updatedAt = new Date().toISOString();
   if (file.id === activeTextFileId) {
     teachTextNameInput.value = file.name;
@@ -600,8 +652,7 @@ function renderDocuments() {
           selectDocumentItemFromEvent("file", file.id, event, sortedItems);
         };
         row.ondblclick = () => {
-          if (file.type === "text") openTextFile(file.id);
-          else openChatFileWindow(file.id);
+          openDocumentFileOrAttachToClioTalk(file);
         };
       }
       fragment.append(row);
@@ -660,11 +711,7 @@ function renderDocuments() {
         selectDocumentItemFromEvent("file", file.id, event, sortedItems);
       });
       button.addEventListener("dblclick", () => {
-        if (file.type === "text") {
-          openTextFile(file.id);
-        } else {
-          openChatFileWindow(file.id);
-        }
+        openDocumentFileOrAttachToClioTalk(file);
       });
       fragment.append(button);
     });
@@ -677,17 +724,1243 @@ function renderDocuments() {
 
 function renderChatTranscript(messages) {
   return `<div class="chat-transcript">${messages
-    .map((item) => `<article><b>${item.role === "user" ? t("you") : t("assistant")}</b><div>${markdownToSystemHtml(item.content)}</div></article>`)
+    .map((item) => {
+      const states = [];
+      if (item.role === "assistant" && (item.stopped || item.incomplete)) {
+        const stateKey = item.finishReason === "length"
+          ? "clio_reply_output_limit"
+          : ["content_filter", "insufficient_system_resource"].includes(item.finishReason)
+            ? "clio_reply_provider_stopped"
+            : item.finishReason === "interrupted"
+              ? "clio_reply_interrupted"
+              : "clio_reply_stopped";
+        states.push(t(stateKey));
+      }
+      if (item.role === "user" && item.deliveryState === "failed") states.push(t("clio_message_not_sent"));
+      const receiptState = clioTalkReplyReceiptState(item);
+      if (item.role === "assistant" && receiptState !== "temporary") {
+        states.push(t(clioTalkReplyReceiptKey(receiptState)));
+      }
+      const stateLine = states.length
+        ? `<small>${states.map((state) => escapeHtml(state)).join(" · ")}</small>`
+        : "";
+      return `<article><b>${item.role === "user" ? t("you") : t("assistant")}</b><div>${markdownToSystemHtml(item.displayContent || item.content)}${stateLine}</div></article>`;
+    })
     .join("")}</div>`;
+}
+
+function normalizeChatMessageRecords(messages = []) {
+  return messages.map((item) => ({
+    ...item,
+    id: String(item.id || crypto.randomUUID()),
+    role: item.role === "assistant" ? "assistant" : "user",
+    content: String(item.content || ""),
+    deliveryState: item.deliveryState === "sending" ? "failed" : String(item.deliveryState || ""),
+    createdAt: String(item.createdAt || new Date().toISOString()),
+  }));
+}
+
+function normalizeChatFileMetadata(file) {
+  if (!file || file.type !== "chat") return file;
+  const fallbackTime = String(file.createdAt || new Date().toISOString());
+  file.messages = normalizeChatMessageRecords(file.messages || []);
+  file.generation = Number.isFinite(Number(file.generation)) ? Number(file.generation) : 0;
+  file.createdAt = fallbackTime;
+  file.updatedAt = String(file.updatedAt || fallbackTime);
+  file.titleMode = ["manual", "auto", "auto-summary"].includes(file.titleMode)
+    ? file.titleMode
+    : "auto";
+  file.name = String(file.name || "Untitled Chat").trim() || "Untitled Chat";
+  return file;
+}
+
+function getActiveConversationFile() {
+  return activeChatFileId
+    ? chatFiles.find((file) => file.id === activeChatFileId && file.type === "chat" && isInActiveProject(file)) || null
+    : null;
+}
+
+function getRecentChatFiles(limit = 6) {
+  return chatFiles
+    .filter((file) => file.type === "chat" && isInActiveProject(file))
+    .sort((left, right) => Date.parse(right.updatedAt || right.createdAt || 0) - Date.parse(left.updatedAt || left.createdAt || 0))
+    .slice(0, Math.max(0, Number(limit) || 0));
+}
+
+function ensureProjectMemoryFolder() {
+  const clioTalk = ensureFolder("ClioTalk", null);
+  return ensureFolder("项目记忆", clioTalk.id);
+}
+
+function getProjectMemoryFiles({ activeOnly = false } = {}) {
+  return getProjectFiles().filter((file) => (
+    file.type === "text"
+    && file.artifactKind === "project-memory"
+    && (!activeOnly || file.memoryStatus !== "disabled")
+  ));
+}
+
+function createProjectMemoryDraft() {
+  const chat = getActiveConversationFile();
+  if (!chat || !getActiveProject()) return null;
+  const lastUser = [...chat.messages].reverse().find((message) => message.role === "user");
+  const lastAssistant = [...chat.messages].reverse().find((message) => message.role === "assistant");
+  const title = window.prompt(currentLanguage === "zh" ? "项目记忆标题" : "Project memory title", chat.name);
+  if (!title?.trim()) return null;
+  const body = window.prompt(
+    currentLanguage === "zh" ? "确认要保存的项目记忆内容（可稍后在项目硬盘中编辑）：" : "Confirm the project memory to save (you can edit it later on the Project Hard Disk):",
+    [lastUser?.content, lastAssistant?.content].filter(Boolean).join("\n\n").slice(0, 4000)
+  );
+  if (!body?.trim()) return null;
+  const confirmed = window.confirm(currentLanguage === "zh"
+    ? "确认将这份草稿保存为项目长期记忆？"
+    : "Save this draft as durable Project Memory?");
+  if (!confirmed) return null;
+  const folder = ensureProjectMemoryFolder();
+  const now = new Date().toISOString();
+  const file = {
+    id: crypto.randomUUID(), projectId: activeProjectId, type: "text", artifactKind: "project-memory",
+    name: nextAvailableFileName(title.trim()), folderId: folder.id, body: body.trim(),
+    memoryStatus: "active", sourceChatId: chat.id,
+    sourceMessageIds: [lastUser?.id, lastAssistant?.id].filter(Boolean),
+    createdAt: now, updatedAt: now,
+  };
+  chatFiles.unshift(file);
+  saveDeskState();
+  renderDocuments();
+  renderProjectDisks();
+  return file;
+}
+
+function toggleSelectedProjectMemory() {
+  const file = getProjectFiles().find((item) => item.id === selectedChatFileId && item.artifactKind === "project-memory");
+  if (!file) return false;
+  file.memoryStatus = file.memoryStatus === "disabled" ? "active" : "disabled";
+  file.updatedAt = new Date().toISOString();
+  saveDeskState();
+  renderDocuments();
+  return true;
+}
+
+async function summarizeChatTitle(file, { force = false } = {}) {
+  if (!file || file.type !== "chat" || file.titleMode === "manual") return false;
+  if (!force && (file.titleSummaryAt || file.titleSummaryAttemptedAt || file.titleSummaryPending || (file.messages || []).length < 4)) return false;
+  const excerpt = (file.messages || []).slice(0, 6)
+    .map((message) => `${message.role}: ${String(message.content || "").replace(/\s+/g, " ").slice(0, 360)}`)
+    .join("\n")
+    .slice(0, 1800);
+  if (!excerpt || typeof fetchModelPayload !== "function") return false;
+  file.titleSummaryAttemptedAt = new Date().toISOString();
+  file.titleSummaryPending = true;
+  try {
+    const response = await fetchModelPayload({
+      model: getLocalModelRequestName(),
+      messages: [
+        { role: "system", content: "Write one concise 3-8 word chat title. Preserve the user's language. Return only the title; no punctuation decoration." },
+        { role: "user", content: excerpt },
+      ],
+      temperature: 0.2,
+      max_tokens: 24,
+      ai_system6_task_kind: "chat-title",
+    });
+    const data = await readChatJson(response);
+    const title = String(data?.choices?.[0]?.message?.content || "").replace(/\s+/g, " ").trim().slice(0, 80);
+    if (!title || file.titleMode === "manual") return false;
+    file.name = title;
+    file.titleMode = "auto-summary";
+    file.titleSummaryAt = new Date().toISOString();
+    file.updatedAt = file.titleSummaryAt;
+    saveDeskState();
+    renderDocuments();
+    return true;
+  } catch {
+    return false;
+  } finally {
+    delete file.titleSummaryPending;
+  }
+}
+
+function persistActiveChatFile() {
+  const file = getActiveConversationFile();
+  if (!file) {
+    if (typeof renderClioTalkFileBar === "function") renderClioTalkFileBar();
+    return null;
+  }
+  normalizeChatFileMetadata(file);
+  file.messages = normalizeChatMessageRecords(conversation);
+  file.compressedMemory = { ...compressedConversationMemory };
+  file.updatedAt = new Date().toISOString();
+  saveDeskState();
+  renderDocuments();
+  if (typeof renderClioTalkFileBar === "function") renderClioTalkFileBar();
+  void summarizeChatTitle(file);
+  return file;
+}
+
+function ensureCurrentConversationFile() {
+  const existing = persistActiveChatFile();
+  if (existing) return existing;
+  if (!conversation.length || !getActiveProject()) return null;
+
+  const folder = ensureFolder(preferredFolderName());
+  const now = new Date().toISOString();
+  const file = {
+    id: crypto.randomUUID(),
+    projectId: activeProjectId,
+    type: "chat",
+    name: getChatFileTitle(),
+    folderId: folder.id,
+    messages: normalizeChatMessageRecords(conversation),
+    compressedMemory: { ...compressedConversationMemory },
+    generation: 0,
+    titleMode: "auto",
+    titleAutoGeneratedAt: now,
+    createdAt: now,
+    updatedAt: now,
+  };
+  chatFiles.unshift(file);
+  activeChatFileId = file.id;
+  selectedChatFileId = file.id;
+  saveDeskState();
+  renderDocuments();
+  if (typeof renderClioTalkRunAssembly === "function") renderClioTalkRunAssembly();
+  return file;
+}
+
+async function confirmDiscardTemporaryClioTalkConversation() {
+  if (!clioTalkTemporaryMode || !conversation.length) return true;
+  const result = await showSystemModal(t("clio_temporary_chat_discard_confirm"), "confirm");
+  return result === "yes";
+}
+
+function resetNextClioTalkRunSelection() {
+  window.nextTaskSkillIds = new Set();
+  window.nextTaskRetrospectiveIds = new Set();
+  window.nextTaskHarnessFileId = "";
+  window.nextTaskInputFileIds = new Set();
+}
+
+async function startNewClioTalkConversation() {
+  if (activeAbortController) {
+    setStatus(t("task_already_running", localModelState.task || t("working_locally")));
+    return false;
+  }
+  if (!await confirmDiscardTemporaryClioTalkConversation()) return false;
+  if (typeof isQuickDraftClioTalkActive === "function" && isQuickDraftClioTalkActive()) {
+    window.AISystem6QuickDraft?.clearVentLog?.({ silent: true });
+  } else if (!clioTalkTemporaryMode) {
+    persistActiveChatFile();
+  }
+  clioTalkTemporaryMode = false;
+  resetClioTalkRuntimeState({ clearPrompt: true });
+  resetNextClioTalkRunSelection();
+  setStatus(t("clio_new_chat_ready"));
+  saveDeskState();
+  if (typeof scheduleWorkingSessionSave === "function") scheduleWorkingSessionSave();
+  return true;
+}
+
+async function startTemporaryClioTalkConversation() {
+  if (activeAbortController) {
+    setStatus(t("task_already_running", localModelState.task || t("working_locally")));
+    return false;
+  }
+  if (!await confirmDiscardTemporaryClioTalkConversation()) return false;
+  if (sideAskEnabled && typeof clearSideAskMode === "function") {
+    clearSideAskMode();
+    if (typeof resetAssistantForStandalonePlacement === "function") {
+      resetAssistantForStandalonePlacement(getWindow("assistant"));
+    }
+  }
+  if (!clioTalkTemporaryMode) persistActiveChatFile();
+  clioTalkTemporaryMode = true;
+  resetClioTalkRuntimeState({ clearPrompt: true });
+  resetNextClioTalkRunSelection();
+  setStatus(t("clio_temporary_chat_ready"));
+  if (typeof scheduleWorkingSessionSave === "function") scheduleWorkingSessionSave();
+  return true;
+}
+
+function discardTemporaryClioTalkConversation() {
+  if (!clioTalkTemporaryMode) return false;
+  clioTalkTemporaryMode = false;
+  resetClioTalkRuntimeState({ clearPrompt: true });
+  resetNextClioTalkRunSelection();
+  setStatus(t("ready"));
+  if (typeof scheduleWorkingSessionSave === "function") scheduleWorkingSessionSave();
+  return true;
+}
+
+function ensureClioTalkRunRecordsFolder() {
+  const clioTalk = ensureFolder("ClioTalk", null);
+  return ensureFolder("Run Records", clioTalk.id);
+}
+
+function cloneClioRunManifest(manifest) {
+  try {
+    return JSON.parse(JSON.stringify(manifest || {}));
+  } catch {
+    return {};
+  }
+}
+
+function formatClioTalkRunRecordBody(record) {
+  const manifest = record.manifest || {};
+  const lines = [
+    `# ${record.name}`,
+    "",
+    `- Status: ${record.status}`,
+    `- Time: ${record.createdAt}`,
+    `- Chat: ${record.chatName || "—"} [${record.sourceChatId || "—"}]`,
+    `- Message: ${record.sourceMessageId || "—"}`,
+    `- Scope: ${manifest.scope || "application-supplied"}`,
+    `- Model: ${manifest.model || "—"}`,
+    `- Task: ${manifest.taskKind || "chat"}`,
+    `- Temperature: ${Number.isFinite(manifest.parameters?.temperature) ? manifest.parameters.temperature : "—"}`,
+    `- Max tokens: ${manifest.parameters?.maxTokens || "—"}`,
+    `- Stream: ${manifest.parameters?.stream ? "yes" : "no"}`,
+    record.error ? `- Error: ${record.error}` : "",
+    "",
+    "## Prompt files",
+    "",
+    ...(manifest.promptFiles || []).flatMap((file, index) => [
+      `### P${index + 1} · ${file.name}`,
+      `- ID: ${file.id || "—"}`,
+      `- Path: ${file.path || "—"}`,
+      `- Source: ${file.source || "—"}`,
+      `- Hash: ${file.hash || "—"}`,
+      "",
+      file.body || "",
+      "",
+    ]),
+    "## Exact application message stack",
+    "",
+    ...(manifest.messageStack || []).flatMap((message) => [
+      `### ${Number(message.index) + 1} · ${message.role} · ${message.label}`,
+      `- Hash: ${message.hash}`,
+      "",
+      message.body || "",
+      "",
+    ]),
+    "## Skills",
+    "",
+    ...((manifest.skillFiles || []).length ? manifest.skillFiles : [{ name: "None" }]).flatMap((file, index) => [
+      `### S${index + 1} · ${file.name}`,
+      file.id ? `- ID: ${file.id}` : "",
+      file.version ? `- Version: ${file.version}` : "",
+      file.reason ? `- Reason: ${file.reason}` : "",
+      file.hash ? `- Hash: ${file.hash}` : "",
+      file.body ? `\n${file.body}\n` : "",
+    ]),
+    "## Harness",
+    "",
+    manifest.harnessFile
+      ? [
+          `- Name: ${manifest.harnessFile.name}`,
+          `- ID: ${manifest.harnessFile.id}`,
+          `- Path: ${manifest.harnessFile.path || "—"}`,
+          `- Hash: ${manifest.harnessFile.hash}`,
+          "",
+          manifest.harnessFile.body || "",
+        ].join("\n")
+      : "Direct chat · no Harness file",
+    "",
+    "## Inputs",
+    "",
+    ...((manifest.inputFiles || []).length ? manifest.inputFiles : [{ name: "None" }]).flatMap((file, index) => [
+      `### I${index + 1} · ${file.name}`,
+      file.id ? `- ID: ${file.id}` : "",
+      file.kind ? `- Kind: ${file.kind}` : "",
+      file.path ? `- Path: ${file.path}` : "",
+      file.hash ? `- Hash: ${file.hash}` : "",
+      "",
+    ]),
+    "## Result use",
+    "",
+    record.resultUse
+      ? [
+          `- Status: ${record.resultUse.status || "applied"}`,
+          `- Destination: ${record.resultUse.targetName || record.resultUse.targetType || "—"} [${record.resultUse.targetId || "—"}]`,
+          `- Operation: ${record.resultUse.operation || "—"}`,
+          `- Applied: ${record.resultUse.appliedAt || "—"}`,
+          record.resultUse.undoneAt ? `- Undone: ${record.resultUse.undoneAt}` : "",
+          `- Before hash: ${record.resultUse.beforeHash || "—"}`,
+          `- After hash: ${record.resultUse.afterHash || "—"}`,
+        ].filter(Boolean).join("\n")
+      : "Reply remains temporary writing material.",
+    "",
+    "## Visibility boundary",
+    "",
+    manifest.scopeNote || "This record contains the exact application-supplied stack. Provider-side rules, if any, are outside the app.",
+  ];
+  return lines.filter((line, index) => line !== "" || lines[index - 1] !== "").join("\n").trim();
+}
+
+function saveClioTalkRunRecord({ chatFile, messageRecord, manifest, status = "completed", error = "" } = {}) {
+  const project = getActiveProject();
+  const chat = chatFile || getActiveConversationFile();
+  if (!project || !chat || !messageRecord) return null;
+  const folder = ensureClioTalkRunRecordsFolder();
+  const now = new Date().toISOString();
+  const shortTime = now.replace("T", " ").replace(/\.\d{3}Z$/, "Z");
+  const recordData = {
+    schemaVersion: 1,
+    name: `Run ${shortTime}`,
+    status,
+    createdAt: now,
+    sourceChatId: chat.id,
+    sourceMessageId: messageRecord.id,
+    chatName: chat.name,
+    error: String(error || ""),
+    manifest: cloneClioRunManifest(manifest),
+    resultUse: messageRecord.replyReceipt?.delivery
+      ? cloneClioRunManifest(messageRecord.replyReceipt.delivery)
+      : null,
+  };
+  const body = formatClioTalkRunRecordBody(recordData);
+  const file = {
+    id: crypto.randomUUID(),
+    projectId: activeProjectId,
+    folderId: folder.id,
+    type: "text",
+    artifactKind: "clio-run-record",
+    name: nextAvailableFileName(recordData.name, folder.id),
+    body,
+    hash: contentHash(body),
+    runRecord: recordData,
+    sourceChatId: chat.id,
+    sourceMessageId: messageRecord.id,
+    createdAt: now,
+    updatedAt: now,
+  };
+  chatFiles.unshift(file);
+  saveDeskState();
+  renderDocuments();
+  renderProjectDisks();
+  return file;
+}
+
+function conversationLineage(file) {
+  if (!file) return { parent: null, children: [] };
+  return {
+    parent: file.parentChatId
+      ? chatFiles.find((item) => item.id === file.parentChatId && item.type === "chat" && isInActiveProject(item)) || null
+      : null,
+    children: chatFiles.filter((item) => item.type === "chat" && item.parentChatId === file.id && isInActiveProject(item)),
+    missingParentId: file.parentChatId && !chatFiles.some((item) => item.id === file.parentChatId && item.type === "chat" && isInActiveProject(item))
+      ? file.parentChatId
+      : "",
+  };
+}
+
+function renderChatLineage(file) {
+  const { parent, children, missingParentId } = conversationLineage(file);
+  if (!parent && !children.length && !missingParentId) return null;
+
+  const lineage = document.createElement("div");
+  lineage.className = "button-row chat-lineage";
+  const label = document.createElement("strong");
+  label.textContent = t("clio_genealogy");
+  lineage.append(label);
+
+  if (parent) {
+    const parentButton = document.createElement("button");
+    parentButton.type = "button";
+    parentButton.className = "btn mini-btn";
+    parentButton.textContent = t("clio_open_parent", parent.name);
+    parentButton.onclick = () => openChatFileWindow(parent.id);
+    lineage.append(parentButton);
+  } else if (missingParentId) {
+    const missing = document.createElement("span");
+    missing.textContent = currentLanguage === "zh" ? "父对话文件不可用" : "Parent chat file unavailable";
+    lineage.append(missing);
+  }
+  children.forEach((child) => {
+    const childButton = document.createElement("button");
+    childButton.type = "button";
+    childButton.className = "btn mini-btn";
+    childButton.textContent = t("clio_open_branch", child.name);
+    childButton.onclick = () => openChatFileWindow(child.id);
+    lineage.append(childButton);
+  });
+  return lineage;
+}
+
+function relatedChatArtifacts(chatId) {
+  return getProjectFiles().filter((file) => file.sourceChatId === chatId && file.type === "text");
+}
+
+function saveBranchComparison(source, target) {
+  const sourceArtifacts = relatedChatArtifacts(source.id);
+  const targetArtifacts = relatedChatArtifacts(target.id);
+  const sourceMemories = sourceArtifacts.filter((file) => file.artifactKind === "project-memory");
+  const targetMemories = targetArtifacts.filter((file) => file.artifactKind === "project-memory");
+  const body = [
+    `# ${currentLanguage === "zh" ? "分支比较" : "Branch Comparison"}`,
+    "",
+    `- ${currentLanguage === "zh" ? "来源 Chat ID" : "Source Chat ID"}: ${source.id}`,
+    `- ${currentLanguage === "zh" ? "目标 Chat ID" : "Target Chat ID"}: ${target.id}`,
+    "",
+    `## ${currentLanguage === "zh" ? "消息" : "Messages"}`,
+    `- ${source.name}: ${source.messages.length}`,
+    `- ${target.name}: ${target.messages.length}`,
+    "",
+    `## ${currentLanguage === "zh" ? "关联文件" : "Related files"}`,
+    ...sourceArtifacts.map((file) => `- ${file.name} [${file.id}]`),
+    ...(!sourceArtifacts.length ? ["- —"] : []),
+    "",
+    `## ${currentLanguage === "zh" ? "明确项目记忆" : "Explicit Project Memory"}`,
+    ...sourceMemories.map((file) => `- ${file.name} (${file.memoryStatus || "active"}) [${file.id}]`),
+    ...(!sourceMemories.length ? ["- —"] : []),
+    "",
+    `> ${currentLanguage === "zh" ? "比较不会自动合并。" : "Comparison does not merge anything automatically."}`,
+    `> ${currentLanguage === "zh" ? `目标已有 ${targetArtifacts.length} 个关联文件和 ${targetMemories.length} 条明确项目记忆。` : `Target already has ${targetArtifacts.length} related files and ${targetMemories.length} explicit project memories.`}`,
+  ].join("\n");
+  return saveClioTalkArtifact("branch-comparison", `${source.name} ↔ ${target.name} ${currentLanguage === "zh" ? "比较" : "Comparison"}`, body);
+}
+
+function showBranchMergePicker(source, target) {
+  return new Promise((resolve) => {
+    const dialog = document.createElement("dialog");
+    dialog.className = "system-modal";
+    const sourceArtifacts = relatedChatArtifacts(source.id);
+    const choices = [
+      ...source.messages.map((message, index) => ({ key: `message:${message.id}`, label: `${currentLanguage === "zh" ? "消息" : "Message"} ${index + 1}: ${String(message.content || "").slice(0, 100)}`, kind: "message", item: message })),
+      ...sourceArtifacts.map((file) => ({ key: `file:${file.id}`, label: `${currentLanguage === "zh" ? "文件" : "File"}: ${file.name}`, kind: "file", item: file })),
+    ];
+    dialog.innerHTML = `<form method="dialog"><h2>${currentLanguage === "zh" ? "选择要合并的内容" : "Select items to merge"}</h2><p>${escapeHtml(source.name)} → ${escapeHtml(target.name)}</p><div class="branch-merge-choices"></div><menu><button value="cancel">${currentLanguage === "zh" ? "取消" : "Cancel"}</button><button value="merge">${currentLanguage === "zh" ? "确认合并" : "Confirm merge"}</button></menu></form>`;
+    const choicesEl = dialog.querySelector(".branch-merge-choices");
+    choices.forEach((choice) => {
+      const label = document.createElement("label");
+      label.style.display = "block";
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.name = choice.key;
+      input.checked = choice.kind === "message";
+      label.append(input, ` ${choice.label}`);
+      choicesEl.append(label);
+    });
+    dialog.addEventListener("close", () => {
+      const selected = dialog.returnValue === "merge"
+        ? choices.filter((choice) => dialog.querySelector(`[name="${CSS.escape(choice.key)}"]`)?.checked)
+        : [];
+      dialog.remove();
+      resolve(selected);
+    }, { once: true });
+    document.body.append(dialog);
+    dialog.showModal();
+  });
+}
+
+async function mergeBranchIntoTarget(sourceId, targetId = "") {
+  const source = chatFiles.find((file) => file.id === sourceId && file.type === "chat" && isInActiveProject(file));
+  const target = chatFiles.find((file) => file.id === (targetId || source?.parentChatId) && file.type === "chat" && isInActiveProject(file));
+  if (!source || !target || source.id === target.id) return null;
+  const selected = await showBranchMergePicker(source, target);
+  if (!selected.length) return null;
+  const messages = selected.filter((entry) => entry.kind === "message").map((entry) => entry.item);
+  const files = selected.filter((entry) => entry.kind === "file").map((entry) => entry.item);
+  const existing = new Set(target.messages.map((message) => message.id));
+  messages.forEach((message) => {
+    if (!existing.has(message.id)) target.messages.push({ ...structuredClone(message), mergedFromChatId: source.id });
+  });
+  files.forEach((file) => {
+    file.mergedIntoChatIds = [...new Set([...(file.mergedIntoChatIds || []), target.id])];
+    file.updatedAt = new Date().toISOString();
+  });
+  target.updatedAt = new Date().toISOString();
+  const receipt = saveClioTalkArtifact("branch-merge-receipt", `${source.name} → ${target.name} ${currentLanguage === "zh" ? "合并收据" : "Merge Receipt"}`, [
+    `# ${currentLanguage === "zh" ? "分支合并运行记录" : "Branch Merge Run Receipt"}`,
+    "",
+    `- ${currentLanguage === "zh" ? "来源 Chat ID" : "Source Chat ID"}: ${source.id}`,
+    `- ${currentLanguage === "zh" ? "目标 Chat ID" : "Target Chat ID"}: ${target.id}`,
+    `- ${currentLanguage === "zh" ? "消息" : "Messages"}: ${messages.map((message) => message.id).join(", ") || "—"}`,
+    `- ${currentLanguage === "zh" ? "文件/记忆" : "Files / memories"}: ${files.map((file) => file.id).join(", ") || "—"}`,
+  ].join("\n"));
+  saveDeskState();
+  renderDocuments();
+  return receipt;
+}
+
+async function editAndResendConversationMessage({ messageId = "", messageIndex = -1, content = "" } = {}) {
+  if (activeAbortController) {
+    setStatus(t("task_already_running", localModelState.task || t("working_locally")));
+    return null;
+  }
+  if (!getActiveProject()) {
+    setStatus(t("no_project_mounted"));
+    openWindow("projects");
+    return null;
+  }
+
+  const index = conversation.findIndex((item, candidateIndex) => (
+    (messageId && item.id === messageId)
+    || (!messageId && candidateIndex === messageIndex)
+  ));
+  const fallbackIndex = index >= 0
+    ? index
+    : conversation.findIndex((item) => item.role === "user" && item.content === content);
+  if (fallbackIndex < 0) return null;
+
+  const edited = window.prompt(t("clio_edit_and_resend_prompt"), content);
+  if (!edited?.trim() || edited.trim() === content.trim()) return null;
+
+  const parent = ensureCurrentConversationFile();
+  if (!parent) return null;
+  const now = new Date().toISOString();
+  const siblingNumber = conversationLineage(parent).children.length + 1;
+  const branch = {
+    id: crypto.randomUUID(),
+    projectId: activeProjectId,
+    type: "chat",
+    name: `${parent.name} — ${t("clio_branch_name", siblingNumber)}`,
+    folderId: parent.folderId || null,
+    messages: normalizeChatMessageRecords(conversation.slice(0, fallbackIndex)),
+    compressedMemory: { text: "", sourceMessages: 0, updatedAt: "" },
+    parentChatId: parent.id,
+    forkMessageId: conversation[fallbackIndex]?.id || "",
+    forkMessageIndex: fallbackIndex,
+    generation: Number(parent.generation || 0) + 1,
+    createdAt: now,
+    updatedAt: now,
+  };
+  chatFiles.unshift(branch);
+  activeChatFileId = branch.id;
+  selectedChatFileId = branch.id;
+  conversation.length = 0;
+  conversation.push(...branch.messages.map((item) => ({ ...item })));
+  compressedConversationMemory = { ...branch.compressedMemory };
+  messagesEl.replaceChildren();
+  conversation.forEach((item, candidateIndex) => addMessage(item.role, item.content, {
+    messageRecord: item,
+    messageIndex: candidateIndex,
+    grounding: item.grounding || null,
+  }));
+  renderClioTalkWelcome();
+  saveDeskState();
+  renderDocuments();
+  setStatus(t("clio_branch_created", branch.name));
+  await submitUserText(edited.trim(), { taskKind: "chat", branchChatId: branch.id });
+  return branch;
+}
+
+function activeChatArtifactContext() {
+  const file = ensureCurrentConversationFile();
+  if (!file) {
+    setStatus(t("no_chat_to_save"));
+    return null;
+  }
+  const lineage = conversationLineage(file);
+  return { file, lineage };
+}
+
+function saveClioTalkArtifact(kind, name, body) {
+  if (!getActiveProject()) return null;
+  const folder = ensureFolder(t("clio_records_folder"));
+  const now = new Date().toISOString();
+  const file = {
+    id: crypto.randomUUID(),
+    projectId: activeProjectId,
+    type: "text",
+    artifactKind: kind,
+    name: nextAvailableFileName(name, folder.id),
+    folderId: folder.id,
+    body,
+    label: "",
+    createdAt: now,
+    updatedAt: now,
+  };
+  chatFiles.unshift(file);
+  selectedChatFileId = file.id;
+  saveDeskState();
+  renderDocuments();
+  openTextFile(file.id);
+  setStatus(t("clio_artifact_saved", file.name));
+  return file;
+}
+
+function saveClioTalkHarness() {
+  const context = activeChatArtifactContext();
+  if (!context) return null;
+  const { file } = context;
+  const assistantRuns = file.messages.filter((item) => item.role === "assistant");
+  const sourceNames = [...new Set(assistantRuns.flatMap((item) => item.harness?.contextSources || []).map((source) => source.label).filter(Boolean))];
+  const models = [...new Set(assistantRuns.map((item) => item.harness?.model).filter(Boolean))];
+  const body = [
+    `# ${file.name} — Harness`,
+    "",
+    `- Chat ID: ${file.id}`,
+    `- Parent Chat ID: ${file.parentChatId || "root"}`,
+    `- Generation: ${Number(file.generation || 0)}`,
+    `- Model: ${models.join(", ") || t("clio_not_recorded")}`,
+    `- Sources: ${sourceNames.join(", ") || t("clio_no_sources_recorded")}`,
+    `- Compressed memory messages: ${Number(file.compressedMemory?.sourceMessages || 0)}`,
+    "",
+    "## Run records",
+    "",
+    ...assistantRuns.flatMap((item, index) => [
+      `### Run ${index + 1}`,
+      `- Task: ${item.harness?.taskKind || "chat"}`,
+      `- Model: ${item.harness?.model || t("clio_not_recorded")}`,
+      `- Sources: ${(item.harness?.contextSources || []).map((source) => source.label).filter(Boolean).join(", ") || t("clio_no_sources_recorded")}`,
+      "",
+    ]),
+  ].join("\n").trim();
+  const draft = saveClioTalkArtifact("task-config-draft", `${file.name} Task Config Draft`, body);
+  if (draft) draft.taskConfigStatus = "draft";
+  return draft;
+}
+
+function parseTaskConfig(file) {
+  if (!file || file.artifactKind !== "task-config") return { valid: false, reason: "not a task config" };
+  let config = file.taskConfig || {};
+  try { config = JSON.parse(String(file.body || "{}")); } catch { return { valid: false, reason: "invalid task config JSON" }; }
+  file.taskConfig = config;
+  const required = ["id", "title", "goal", "inputFileIds", "skillIds", "outputTarget", "outputFormat", "acceptance", "onFailure"];
+  const missing = required.filter((key) => config[key] === undefined || config[key] === "");
+  if (missing.length) return { valid: false, reason: `missing ${missing.join(", ")}` };
+  if (!Array.isArray(config.inputFileIds) || !Array.isArray(config.skillIds)) return { valid: false, reason: "inputs and skills must be arrays" };
+  if (!["chat", "teachtext"].includes(config.outputTarget)) return { valid: false, reason: "invalid output target" };
+  return { valid: true, config };
+}
+
+async function runSelectedTaskConfig() {
+  const file = getProjectFiles().find((item) => item.id === selectedChatFileId && item.artifactKind === "task-config");
+  const parsed = parseTaskConfig(file);
+  if (!parsed.valid) return null;
+  const { config } = parsed;
+  const taskFolder = ensureTaskFolderForConfig(file, config);
+  const inputs = config.inputFileIds.map((id) => getProjectFiles().find((item) => item.id === id)).filter(Boolean);
+  if (inputs.length !== config.inputFileIds.length) return null;
+  const skills = config.skillIds.map((id) => getProjectFiles().find((item) => item.id === id && item.skillStatus === "enabled")).filter(Boolean);
+  if (skills.length !== config.skillIds.length) return null;
+  window.nextTaskSkillIds = new Set(skills.map((skill) => skill.id));
+  window.nextTaskHarnessFileId = file.id;
+  window.nextTaskInputFileIds = new Set(inputs.map((input) => input.id));
+  if (typeof renderClioTalkRunAssembly === "function") renderClioTalkRunAssembly();
+  const inputText = inputs.map((input) => `# ${input.name}\n\n${input.body || formatChatFile(input)}`).join("\n\n");
+  const request = `${config.goal}\n\n${inputText}\n\nAcceptance: ${config.acceptance}\nOn failure: ${config.onFailure}`;
+  const teachTextTarget = config.outputTarget === "teachtext" ? getTeachTextFile() : null;
+  if (config.outputTarget === "teachtext" && !teachTextTarget) return null;
+  if (config.outputTarget === "teachtext") openWindow("teachText"); else openWindow("assistant");
+  await submitUserText(request, { taskKind: "task-config", maxTokens: 4096 });
+  const lastRunMessage = [...conversation].reverse().find((message) => message.runRecordId);
+  const receipt = lastRunMessage?.runRecordId
+    ? getProjectFiles().find((item) => item.id === lastRunMessage.runRecordId && item.artifactKind === "clio-run-record")
+    : null;
+  if (receipt) {
+    receipt.taskFolderId = taskFolder.id;
+    receipt.taskConfigId = config.id;
+  }
+  if (teachTextTarget && lastAssistantText) createTeachTextModificationSuggestion(teachTextTarget, lastAssistantText, { taskConfigId: config.id, runRecordId: receipt?.id || "" });
+  saveDeskState();
+  return file;
+}
+
+function contentHash(body = "") {
+  return window.AISystem6PromptFilesRuntime?.hashPromptBody(String(body || "")) || String(body || "").length.toString(16);
+}
+
+function createTeachTextModificationSuggestion(target, suggestedText, { taskConfigId = "", runRecordId = "" } = {}) {
+  if (!target || !String(suggestedText || "").trim()) return null;
+  const folder = ensureFolder("Modification Suggestions", null);
+  const now = new Date().toISOString();
+  const originalHash = contentHash(target.body);
+  const file = { id: crypto.randomUUID(), projectId: activeProjectId, folderId: folder.id, type: "text", artifactKind: "teachtext-modification-suggestion", name: `${target.name} ${currentLanguage === "zh" ? "修改建议" : "Modification Suggestion"}`, body: String(suggestedText).trim(), suggestion: { targetFileId: target.id, originalHash, targetRange: { start: 0, end: String(target.body || "").length }, suggestedText: String(suggestedText).trim(), reason: currentLanguage === "zh" ? "任务配置的 TeachText 输出先保存为待确认修改建议。" : "Task Config TeachText output is saved as a pending modification suggestion.", taskConfigId, runRecordId, status: "pending" }, createdAt: now, updatedAt: now };
+  chatFiles.unshift(file); saveDeskState(); renderDocuments(); renderProjectDisks(); return file;
+}
+
+function selectedTeachTextModificationSuggestion() {
+  const file = getProjectFiles().find((item) => item.id === selectedChatFileId && item.artifactKind === "teachtext-modification-suggestion");
+  return file?.suggestion?.status === "pending" ? file : null;
+}
+
+async function viewSelectedTeachTextModificationSuggestionDiff() {
+  const suggestionFile = selectedTeachTextModificationSuggestion();
+  if (!suggestionFile) return false;
+  const suggestion = suggestionFile.suggestion;
+  const target = getProjectFiles().find((item) => item.id === suggestion.targetFileId && item.type === "text");
+  await showSystemModal([currentLanguage === "zh" ? "修改建议差异" : "Modification suggestion diff", `Target: ${target?.name || suggestion.targetFileId}`, `Original hash: ${suggestion.originalHash}`, "", "--- Original ---", target?.body || "(missing)", "", "--- Suggested ---", suggestion.suggestedText, "", suggestion.reason].join("\n"));
+  return true;
+}
+
+function rejectSelectedTeachTextModificationSuggestion() {
+  const file = selectedTeachTextModificationSuggestion();
+  if (!file) return false;
+  file.suggestion.status = "rejected"; file.suggestion.rejectedAt = new Date().toISOString(); file.updatedAt = file.suggestion.rejectedAt;
+  saveDeskState(); renderDocuments(); renderProjectDisks(); return true;
+}
+
+function acceptSelectedTeachTextModificationSuggestion() {
+  const file = selectedTeachTextModificationSuggestion();
+  if (!file) return false;
+  const suggestion = file.suggestion;
+  const target = getProjectFiles().find((item) => item.id === suggestion.targetFileId && item.type === "text");
+  if (!target || contentHash(target.body) !== suggestion.originalHash) {
+    setStatus(currentLanguage === "zh" ? "正文已变化，不能盲目套用建议；请重新生成或人工处理。" : "The manuscript changed; do not apply this suggestion blindly. Regenerate it or handle it manually.");
+    return false;
+  }
+  const oldHash = contentHash(target.body);
+  target.body = suggestion.suggestedText; target.updatedAt = new Date().toISOString();
+  const newHash = contentHash(target.body);
+  suggestion.status = "accepted"; suggestion.acceptedAt = target.updatedAt; suggestion.oldHash = oldHash; suggestion.newHash = newHash;
+  if (target.id === activeTextFileId) { teachTextBodyInput.value = target.body; markTeachTextModified(); refreshTeachTextDocumentState(); }
+  const receipt = saveClioTalkArtifact("teachtext-modification-acceptance-receipt", `${target.name} ${currentLanguage === "zh" ? "修改接受记录" : "Modification Acceptance Receipt"}`, `Target file ID: ${target.id}\nOld hash: ${oldHash}\nNew hash: ${newHash}\nSuggestion ID: ${file.id}\nRun record ID: ${suggestion.runRecordId || ""}`);
+  if (receipt) suggestion.acceptanceRunRecordId = receipt.id;
+  saveDeskState(); renderDocuments(); renderProjectDisks(); return true;
+}
+
+function ensureTaskFolderForConfig(file, config) {
+  const root = ensureFolder(config.title || file.name, null);
+  ["Conversation", "Task Config", "Context", "Artifacts", "Run Records", "Retrospective", "Checkpoints"].forEach((name) => ensureFolder(name, root.id));
+  file.taskFolderId = root.id;
+  return root;
+}
+
+function taskConfigForCheckpoint() {
+  const file = getProjectFiles().find((item) => item.id === selectedChatFileId && item.artifactKind === "task-config");
+  const parsed = parseTaskConfig(file);
+  return parsed.valid ? { file, config: parsed.config } : null;
+}
+
+function taskCheckpointContextSources(chat) {
+  const assistant = [...(chat?.messages || [])].reverse().find((message) => message.role === "assistant");
+  return (assistant?.grounding?.sources || []).map((source) => ({ key: source.key || "", label: source.label || "", kind: source.kind || "" }));
+}
+
+function createTaskCheckpoint() {
+  const task = taskConfigForCheckpoint();
+  if (!task) return null;
+  const root = ensureTaskFolderForConfig(task.file, task.config);
+  const folder = ensureFolder("Checkpoints", root.id);
+  const chatId = task.file.taskLifecycle?.chatId || activeChatFileId || "";
+  const chat = getProjectFiles().find((item) => item.id === chatId && item.type === "chat");
+  const taskConfigHash = contentHash(JSON.stringify(task.config));
+  const artifacts = getProjectFiles().filter((item) => item.sourceChatId === chatId || item.taskConfigId === task.config.id).map((item) => ({ id: item.id, name: item.name, version: contentHash(item.body), artifactKind: item.artifactKind || item.type }));
+  const pendingSuggestions = getProjectFiles().filter((item) => item.artifactKind === "teachtext-modification-suggestion" && item.suggestion?.status === "pending").map((item) => item.id);
+  const now = new Date().toISOString();
+  const checkpoint = { schemaVersion: 1, taskConfigFileId: task.file.id, taskConfigId: task.config.id, taskConfigHash, chatId, contextSources: taskCheckpointContextSources(chat), artifacts, pendingSuggestionIds: pendingSuggestions, createdAt: now };
+  const file = { id: crypto.randomUUID(), projectId: activeProjectId, folderId: folder.id, type: "text", artifactKind: "task-checkpoint", name: `${task.config.title || task.file.name} ${currentLanguage === "zh" ? "检查点" : "Checkpoint"} ${now}`, body: JSON.stringify(checkpoint, null, 2), checkpoint, createdAt: now, updatedAt: now };
+  chatFiles.unshift(file); saveDeskState(); renderDocuments(); renderProjectDisks(); return file;
+}
+
+function parseTaskCheckpoint(file) {
+  if (!file || file.artifactKind !== "task-checkpoint") return null;
+  try {
+    const checkpoint = JSON.parse(String(file.body || "{}"));
+    return checkpoint.schemaVersion === 1 && checkpoint.taskConfigFileId ? checkpoint : null;
+  } catch { return null; }
+}
+
+function saveTaskCheckpointRestoreReceipt(checkpoint, taskFile) {
+  const folder = ensureFolder(t("clio_records_folder"));
+  const now = new Date().toISOString();
+  const file = { id: crypto.randomUUID(), projectId: activeProjectId, folderId: folder.id, type: "text", artifactKind: "task-checkpoint-restore-receipt", name: `${currentLanguage === "zh" ? "检查点恢复运行记录" : "Checkpoint Restore Run Receipt"} ${now}`, body: `Checkpoint task config ID: ${checkpoint.taskConfigId}\nTask config hash: ${checkpoint.taskConfigHash}\nChat ID: ${checkpoint.chatId}\nPending suggestion IDs: ${checkpoint.pendingSuggestionIds.join(", ") || "—"}\nRestored task config file: ${taskFile.id}\nNo later files were removed.`, createdAt: now, updatedAt: now };
+  chatFiles.unshift(file); saveDeskState(); renderDocuments(); renderProjectDisks(); return file;
+}
+
+async function restoreSelectedTaskCheckpoint() {
+  const file = getProjectFiles().find((item) => item.id === selectedChatFileId && item.artifactKind === "task-checkpoint");
+  const checkpoint = parseTaskCheckpoint(file);
+  const taskFile = checkpoint && getProjectFiles().find((item) => item.id === checkpoint.taskConfigFileId && item.artifactKind === "task-config");
+  if (!checkpoint || !taskFile) return false;
+  const currentChatId = taskFile.taskLifecycle?.chatId || "";
+  await showSystemModal([currentLanguage === "zh" ? "恢复检查点将切换以下任务引用：" : "Restoring this checkpoint will switch these task references:", `Chat: ${currentChatId || "—"} → ${checkpoint.chatId || "—"}`, `Task Config hash: ${contentHash(JSON.stringify(parseTaskConfig(taskFile).config || {}))} → ${checkpoint.taskConfigHash}`, `${currentLanguage === "zh" ? "待处理修改建议" : "Pending modification suggestions"}: ${checkpoint.pendingSuggestionIds.join(", ") || "—"}`, currentLanguage === "zh" ? "不会删除检查点之后创建的文件。" : "No files created after the checkpoint will be removed."].join("\n"));
+  if (!window.confirm(currentLanguage === "zh" ? "确认恢复这些任务引用？" : "Restore these task references?")) return false;
+  taskFile.taskLifecycle = { ...(taskFile.taskLifecycle || {}), state: "running", chatId: checkpoint.chatId, taskFolderId: taskFile.taskFolderId || "", restoredCheckpointId: file.id, updatedAt: new Date().toISOString() };
+  selectedChatFileId = taskFile.id;
+  if (checkpoint.chatId) openChatFileWindow(checkpoint.chatId);
+  saveTaskCheckpointRestoreReceipt(checkpoint, taskFile);
+  return true;
+}
+
+function setTaskConfigLifecycle(state) {
+  const file = getProjectFiles().find((item) => item.id === selectedChatFileId && item.artifactKind === "task-config");
+  const parsed = parseTaskConfig(file);
+  if (!parsed.valid) return false;
+  file.taskLifecycle = { ...(file.taskLifecycle || {}), state, chatId: activeChatFileId || "", taskFolderId: file.taskFolderId || "", updatedAt: new Date().toISOString() };
+  saveDeskState();
+  return true;
+}
+
+function resumeSelectedTaskConfig() {
+  const file = getProjectFiles().find((item) => item.id === selectedChatFileId && item.artifactKind === "task-config");
+  const chatId = file?.taskLifecycle?.chatId;
+  if (!file || !chatId) return false;
+  openChatFileWindow(chatId);
+  setTaskConfigLifecycle("running");
+  return true;
+}
+
+function createTaskConfigFromSelectedDraft() {
+  const draft = getProjectFiles().find((item) => item.id === selectedChatFileId && item.artifactKind === "task-config-draft");
+  if (!draft) return null;
+  const now = new Date().toISOString();
+  const folder = ensureFolder("Task Configs", null);
+  const config = { id: crypto.randomUUID(), title: draft.name.replace(/ Task Config Draft$/, ""), goal: "", inputFileIds: [], skillIds: [], outputTarget: "chat", outputFormat: "markdown", acceptance: "", onFailure: "report failure" };
+  const file = { id: crypto.randomUUID(), projectId: activeProjectId, folderId: folder.id, type: "text", artifactKind: "task-config", name: `${config.title} Task Config`, body: JSON.stringify(config, null, 2), taskConfig: config, sourceDraftId: draft.id, createdAt: now, updatedAt: now };
+  chatFiles.unshift(file); saveDeskState(); renderDocuments(); renderProjectDisks(); return file;
+}
+
+function saveClioTalkSkillDraft() {
+  const context = activeChatArtifactContext();
+  if (!context) return null;
+  const { file } = context;
+  const userRequests = file.messages.filter((item) => item.role === "user").map((item) => `- ${item.content}`);
+  const body = [
+    `# ${file.name} Skill`,
+    "",
+    "## Purpose",
+    "",
+    userRequests[0] || `- ${file.name}`,
+    "",
+    "## When to use",
+    "",
+    "- Reuse this workflow when a new task has the same goal, inputs, and acceptance boundary.",
+    "",
+    "## Workflow",
+    "",
+    ...userRequests,
+    "",
+    "## Harness requirements",
+    "",
+    "- Record model, attached sources, constraints, outputs, and verification evidence.",
+    "- Keep project facts in project files; keep transient reasoning out of durable memory.",
+    "",
+    "## Review checklist",
+    "",
+    "- [ ] Outcome matches the original request",
+    "- [ ] Sources and assumptions are traceable",
+    "- [ ] Help and product behavior still agree",
+  ].join("\n").trim();
+  return saveClioTalkArtifact("skill-draft", `${file.name} SKILL`, body);
+}
+
+function parseProjectSkillFile(file) {
+  if (!file || file.artifactKind !== "ai-skill") return { valid: false, reason: "not a skill file" };
+  const manifest = file.skillManifest || {};
+  const capabilities = Array.isArray(manifest.capabilities) ? manifest.capabilities : [];
+  if (!manifest.id || !manifest.name || !manifest.version) return { valid: false, reason: "missing id, name, or version" };
+  if (!/^[a-z0-9][a-z0-9.-]*$/i.test(manifest.id) || /\.\.|[\\/]/.test(manifest.id)) return { valid: false, reason: "invalid skill id path" };
+  if (capabilities.some((capability) => !["prompt", "references"].includes(capability))) return { valid: false, reason: "unknown capability" };
+  if (/\b(script|scripts|write|filesystem|shell)\b/i.test(JSON.stringify(manifest))) return { valid: false, reason: "scripts or write scope are not allowed" };
+  if (!String(file.body || "").trim()) return { valid: false, reason: "missing SKILL.md prompt" };
+  return { valid: true, manifest, references: Array.isArray(file.skillReferences) ? file.skillReferences : [] };
+}
+
+function getEnabledProjectSkills() {
+  return getProjectFiles()
+    .filter((file) => file.artifactKind === "ai-skill" && file.skillStatus === "enabled")
+    .map((file) => ({ file, parsed: parseProjectSkillFile(file) }))
+    .filter((entry) => entry.parsed.valid);
+}
+
+function getSkillAutoCallSettingsFile({ create = false } = {}) {
+  let file = getProjectFiles().find((item) => item.artifactKind === "skill-auto-call-settings");
+  if (file || !create || !activeProjectId) return file || null;
+  const folder = ensureFolder("Project Settings", null);
+  const now = new Date().toISOString();
+  file = {
+    id: crypto.randomUUID(), projectId: activeProjectId, folderId: folder.id, type: "text", artifactKind: "skill-auto-call-settings",
+    name: currentLanguage === "zh" ? "技能自动调用状态.json" : "Skill Auto Call Status.json",
+    body: JSON.stringify({ enabled: false, allowedSkillIds: [], readScopes: ["project"] }, null, 2),
+    skillAutoCall: { enabled: false, allowedSkillIds: [], readScopes: ["project"] }, createdAt: now, updatedAt: now,
+  };
+  chatFiles.unshift(file); saveDeskState(); renderDocuments(); renderProjectDisks();
+  return file;
+}
+
+function readSkillAutoCallSettings() {
+  const file = getSkillAutoCallSettingsFile();
+  if (!file) return { enabled: false, allowedSkillIds: [], readScopes: ["project"] };
+  try {
+    const parsed = JSON.parse(String(file.body || "{}"));
+    return {
+      enabled: parsed.enabled === true,
+      allowedSkillIds: Array.isArray(parsed.allowedSkillIds) ? parsed.allowedSkillIds : [],
+      readScopes: Array.isArray(parsed.readScopes) ? parsed.readScopes : ["project"],
+    };
+  } catch {
+    return { enabled: false, allowedSkillIds: [], readScopes: ["project"] };
+  }
+}
+
+function getAutoCallableProjectSkills(userText = "") {
+  const settings = readSkillAutoCallSettings();
+  if (!settings.enabled) return [];
+  const allowed = new Set(settings.allowedSkillIds);
+  return suggestProjectSkillsForTask(userText).filter(({ file, parsed }) => (
+    allowed.has(file.id)
+    && parsed.manifest.capabilities.every((capability) => ["prompt", "references"].includes(capability))
+    && Array.isArray(parsed.manifest.readScopes)
+    && parsed.manifest.readScopes.length > 0
+    && parsed.manifest.readScopes.every((scope) => scope === "project")
+  ));
+}
+
+function configureSkillAutoCall() {
+  const file = getSkillAutoCallSettingsFile({ create: true });
+  if (!file) return false;
+  const eligible = getEnabledProjectSkills().filter(({ parsed }) => (
+    parsed.manifest.capabilities.every((capability) => ["prompt", "references"].includes(capability))
+    && Array.isArray(parsed.manifest.readScopes)
+    && parsed.manifest.readScopes.length > 0
+    && parsed.manifest.readScopes.every((scope) => scope === "project")
+  ));
+  const current = readSkillAutoCallSettings();
+  const enabled = window.confirm(currentLanguage === "zh" ? "开启项目的只读技能自动调用？仅已列入状态文件、且仅有 prompt/references 与 project 读取范围的技能可自动调用。" : "Enable project read-only Skill auto calls? Only Skills listed in this status file with prompt/references and project-only read scope can run automatically.");
+  let allowedSkillIds = [];
+  if (enabled && eligible.length) {
+    const choice = window.prompt(currentLanguage === "zh" ? "输入可自动调用的技能编号（例如 1,2）：\n" : "Enter Skill numbers allowed to auto-call (for example 1,2):\n", eligible.map((entry, index) => `${index + 1}. ${entry.parsed.manifest.name} v${entry.parsed.manifest.version}`).join("\n"));
+    allowedSkillIds = String(choice || "").split(",").map((value) => eligible[Number(value.trim()) - 1]?.file.id).filter(Boolean);
+  }
+  const settings = { enabled: enabled && allowedSkillIds.length > 0, allowedSkillIds, readScopes: ["project"] };
+  file.body = JSON.stringify(settings, null, 2); file.skillAutoCall = settings; file.updatedAt = new Date().toISOString();
+  saveDeskState(); renderDocuments(); renderProjectDisks(); openTextFile(file.id);
+  return true;
+}
+
+function saveSkillAutoCallReceipt(skills) {
+  if (!skills?.length || !getActiveProject()) return null;
+  const folder = ensureFolder(t("clio_records_folder"));
+  const now = new Date().toISOString();
+  const file = { id: crypto.randomUUID(), projectId: activeProjectId, folderId: folder.id, type: "text", artifactKind: "skill-auto-call-receipt", name: `${currentLanguage === "zh" ? "技能自动调用运行记录" : "Skill Auto Call Run Receipt"} ${now}`, autoSkillIds: skills.map((entry) => entry.file.id), body: ["# Skill Auto Call Run Receipt", "", `- Time: ${now}`, `- Skills: ${skills.map((entry) => `${entry.parsed.manifest.name} v${entry.parsed.manifest.version} [${entry.file.id}]`).join(", ")}`, "- Permission: read-only prompt/references; project read scope only"].join("\n"), createdAt: now, updatedAt: now };
+  chatFiles.unshift(file); saveDeskState(); renderDocuments(); renderProjectDisks(); return file;
+}
+
+function disableAutoCalledSkillFromSelectedReceipt() {
+  const receipt = getProjectFiles().find((item) => item.id === selectedChatFileId && item.artifactKind === "skill-auto-call-receipt");
+  if (!receipt?.autoSkillIds?.length) return false;
+  const settingsFile = getSkillAutoCallSettingsFile({ create: true });
+  const settings = readSkillAutoCallSettings();
+  const skills = receipt.autoSkillIds.map((id) => getProjectFiles().find((file) => file.id === id)).filter(Boolean);
+  const choice = window.prompt(currentLanguage === "zh" ? "输入要停用自动调用的技能编号：\n" : "Enter the auto-called Skill number to disable:\n", skills.map((skill, index) => `${index + 1}. ${skill.skillManifest?.name || skill.name}`).join("\n"));
+  const skill = skills[Number(choice) - 1];
+  if (!skill) return false;
+  const next = { ...settings, allowedSkillIds: settings.allowedSkillIds.filter((id) => id !== skill.id) };
+  if (!next.allowedSkillIds.length) next.enabled = false;
+  settingsFile.body = JSON.stringify(next, null, 2); settingsFile.skillAutoCall = next; settingsFile.updatedAt = new Date().toISOString();
+  saveDeskState(); renderDocuments(); renderProjectDisks(); return true;
+}
+
+function selectProjectSkillForNextTask() {
+  const skills = getEnabledProjectSkills();
+  if (!skills.length) return false;
+  const choice = window.prompt(currentLanguage === "zh" ? "按顺序输入本次使用的技能编号（例如 1,2）：\n" : "Enter skill numbers in order for this task (for example 1,2):\n", skills.map((entry, index) => `${index + 1}. ${entry.parsed.manifest.name} v${entry.parsed.manifest.version}`).join("\n"));
+  const selected = String(choice || "").split(",").map((value) => skills[Number(value.trim()) - 1]).filter(Boolean);
+  if (!selected.length) return false;
+  window.nextTaskSkillIds = new Set(selected.map((entry) => entry.file.id));
+  if (typeof renderClioTalkRunAssembly === "function") renderClioTalkRunAssembly();
+  return true;
+}
+
+function suggestProjectSkillsForTask(text = "") {
+  const query = String(text || "").toLowerCase();
+  return getEnabledProjectSkills().filter(({ parsed }) => {
+    const haystack = `${parsed.manifest.name} ${parsed.manifest.description} ${(parsed.manifest.capabilities || []).join(" ")}`.toLowerCase();
+    return !query || query.split(/\s+/).some((word) => word.length > 2 && haystack.includes(word));
+  });
+}
+
+function confirmSuggestedProjectSkill(text = "") {
+  const candidates = suggestProjectSkillsForTask(text);
+  if (!candidates.length) return false;
+  const first = candidates[0];
+  const accepted = window.confirm(currentLanguage === "zh" ? `建议使用：${first.parsed.manifest.name}。是否用于本次任务？` : `Suggested: ${first.parsed.manifest.name}. Use it for this task?`);
+  window.lastSkillSuggestion = { candidates: candidates.map((entry) => entry.file.id), selected: accepted ? first.file.id : "", reason: "manifest description and capabilities" };
+  if (accepted) window.nextTaskSkillIds = new Set([first.file.id]);
+  if (typeof renderClioTalkRunAssembly === "function") renderClioTalkRunAssembly();
+  return accepted;
+}
+
+function createProjectSkillFromSelectedDraft() {
+  const draft = getProjectFiles().find((file) => file.id === selectedChatFileId && file.artifactKind === "skill-draft");
+  if (!draft) return null;
+  const name = window.prompt(currentLanguage === "zh" ? "技能名称" : "Skill name", draft.name.replace(/\s+SKILL$/i, ""));
+  if (!name?.trim()) return null;
+  const id = String(name).trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  if (!id) return null;
+  const folder = ensureFolder("Skills", null);
+  const now = new Date().toISOString();
+  const file = {
+    id: crypto.randomUUID(), projectId: activeProjectId, folderId: folder.id, type: "text", artifactKind: "ai-skill",
+    name: `${name.trim()} SKILL.md`, body: String(draft.body || "").trim(), skillStatus: "enabled",
+    skillManifest: { id, name: name.trim(), version: "0.1.0", description: "Project Skill draft", status: "enabled", source: { draftId: draft.id }, capabilities: ["prompt", "references"], readScopes: ["project"] },
+    skillReferences: [], sourceDraftId: draft.id, createdAt: now, updatedAt: now,
+  };
+  const parsed = parseProjectSkillFile(file);
+  if (!parsed.valid) return null;
+  chatFiles.unshift(file);
+  saveDeskState(); renderDocuments(); renderProjectDisks();
+  return file;
+}
+
+function parseMountedSkillPackage(name = selectedMountedFile) {
+  const text = String(mountedTextDisk.fileBodies[name] || "").trim();
+  if (!/\.skill\.json$/i.test(name || "")) return { valid: false, reason: "not a .skill.json package" };
+  try {
+    const pkg = JSON.parse(text);
+    const candidate = { artifactKind: "ai-skill", skillManifest: pkg.manifest, body: pkg.skill || "", skillReferences: pkg.references || [] };
+    const parsed = parseProjectSkillFile(candidate);
+    return parsed.valid ? { ...parsed, package: pkg, name } : parsed;
+  } catch {
+    return { valid: false, reason: "invalid skill package JSON" };
+  }
+}
+
+function installMountedSkillPackage() {
+  const parsed = parseMountedSkillPackage();
+  if (!parsed.valid || !activeProjectId) return null;
+  const existing = getProjectFiles().filter((file) => file.artifactKind === "ai-skill" && file.skillManifest?.id === parsed.manifest.id);
+  let mode = "install";
+  if (existing.length) {
+    mode = window.prompt(currentLanguage === "zh" ? "发现相同技能 ID：输入 replace 替换、keep 保留两者，或 cancel 取消。" : "Duplicate Skill ID: enter replace, keep, or cancel.", "cancel") || "cancel";
+    if (!/^(replace|keep)$/i.test(mode)) return null;
+    if (/^replace$/i.test(mode)) existing.forEach((file) => chatFiles.splice(chatFiles.indexOf(file), 1));
+  }
+  const folder = ensureFolder("Disabled Skills", null);
+  const now = new Date().toISOString();
+  const suffix = /^keep$/i.test(mode) ? `-${crypto.randomUUID().slice(0, 6)}` : "";
+  const file = {
+    id: crypto.randomUUID(), projectId: activeProjectId, folderId: folder.id, type: "text", artifactKind: "ai-skill",
+    name: `${parsed.manifest.name} SKILL.md`, body: parsed.package.skill, skillManifest: { ...parsed.manifest, id: `${parsed.manifest.id}${suffix}`, status: "disabled", source: { mountedFile: parsed.name, trusted: false } },
+    skillReferences: parsed.package.references || [], skillStatus: "disabled", createdAt: now, updatedAt: now,
+  };
+  chatFiles.unshift(file); saveDeskState(); renderDocuments(); renderProjectDisks(); return file;
+}
+
+async function previewMountedSkillPackage() {
+  const parsed = parseMountedSkillPackage();
+  if (!parsed.valid) return false;
+  await showSystemModal([
+    `${parsed.manifest.name} v${parsed.manifest.version}`,
+    parsed.manifest.description || "",
+    `Capabilities: ${(parsed.manifest.capabilities || []).join(", ")}`,
+    `Source: ${parsed.name}`,
+  ].filter(Boolean).join("\n"), "alert");
+  return true;
+}
+
+function toggleSelectedProjectSkill() {
+  const file = getProjectFiles().find((item) => item.id === selectedChatFileId && item.artifactKind === "ai-skill");
+  if (!file) return false;
+  const enabled = file.skillStatus !== "enabled";
+  file.skillStatus = enabled ? "enabled" : "disabled";
+  file.skillManifest = { ...(file.skillManifest || {}), status: file.skillStatus };
+  const folder = ensureFolder(enabled ? "Skills" : "Disabled Skills", null);
+  file.folderId = folder.id; file.updatedAt = new Date().toISOString();
+  saveDeskState(); renderDocuments(); renderProjectDisks(); return true;
+}
+
+function saveClioTalkRetrospective() {
+  const context = activeChatArtifactContext();
+  if (!context) return null;
+  const { file, lineage } = context;
+  const userMessages = file.messages.filter((item) => item.role === "user");
+  const assistantMessages = file.messages.filter((item) => item.role === "assistant");
+  const body = [
+    `# ${file.name} — ${t("clio_retrospective")}`,
+    "",
+    "## Outcome",
+    "",
+    assistantMessages.at(-1)?.content || t("clio_not_recorded"),
+    "",
+    "## Intent trail",
+    "",
+    ...userMessages.map((item) => `- ${item.content}`),
+    "",
+    "## Genealogy",
+    "",
+    `- Parent: ${lineage.parent?.name || "root"}`,
+    `- Children: ${lineage.children.map((item) => item.name).join(", ") || "none"}`,
+    `- Generation: ${Number(file.generation || 0)}`,
+    "",
+    "## Review",
+    "",
+    "- What worked:",
+    "- What failed or drifted:",
+    "- What should become a reusable Skill:",
+    "- Next action:",
+  ].join("\n").trim();
+  const retrospective = saveClioTalkArtifact("retrospective", `${file.name} ${t("clio_retrospective")}`, body);
+  if (retrospective) {
+    retrospective.sourceChatId = file.id;
+    retrospective.sourceMessageIds = file.messages.map((item) => item.id).filter(Boolean);
+    retrospective.artifactIds = chatFiles.filter((item) => item.sourceChatId === file.id).map((item) => item.id);
+    saveDeskState();
+  }
+  return retrospective;
+}
+
+function attachSelectedRetrospectiveToNextTask() {
+  const file = getProjectFiles().find((item) => item.id === selectedChatFileId && item.artifactKind === "retrospective");
+  if (!file) return false;
+  window.nextTaskRetrospectiveIds = new Set([file.id]);
+  if (typeof renderClioTalkRunAssembly === "function") renderClioTalkRunAssembly();
+  return true;
+}
+
+async function createSkillDraftFromSelectedRetrospective() {
+  const file = getProjectFiles().find((item) => item.id === selectedChatFileId && item.artifactKind === "retrospective");
+  if (!file) return null;
+  const confirmed = await showSystemModal(currentLanguage === "zh"
+    ? `根据“${file.name}”制作 Skill 草稿？不会自动安装或启用。`
+    : `Create a Skill draft from “${file.name}”? It will not be installed or enabled automatically.`, "confirm");
+  if (confirmed !== "yes") return null;
+  const draft = saveClioTalkArtifact("skill-draft", `${file.name} Skill Draft`, [
+    `# ${file.name} Skill Draft`, "", "## Source retrospective", `- ${file.id}`, "", "## Reusable workflow", file.body || "",
+  ].join("\n"));
+  if (draft) {
+    draft.sourceRetrospectiveId = file.id;
+    draft.sourceChatId = file.sourceChatId || "";
+    saveDeskState();
+  }
+  return draft;
+}
+
+function openClioTalkGenealogy() {
+  const context = activeChatArtifactContext();
+  if (!context) return null;
+  const chats = chatFiles.filter((file) => file.type === "chat" && isInActiveProject(file));
+  const roots = chats.filter((file) => !file.parentChatId || !chats.some((candidate) => candidate.id === file.parentChatId));
+  const lines = [`# ${t("clio_genealogy")}`, ""];
+  const visited = new Set();
+  const appendBranch = (file, depth = 0) => {
+    if (visited.has(file.id)) {
+      lines.push(`${"  ".repeat(depth)}- ${file.name} [${file.id}] (${currentLanguage === "zh" ? "谱系环已阻止" : "lineage cycle blocked"})`);
+      return;
+    }
+    visited.add(file.id);
+    lines.push(`${"  ".repeat(depth)}- ${file.name} [${file.id}]`);
+    chats.filter((candidate) => candidate.parentChatId === file.id).forEach((child) => appendBranch(child, depth + 1));
+  };
+  roots.forEach((root) => appendBranch(root));
+  chats.filter((file) => !visited.has(file.id)).forEach((file) => appendBranch(file));
+  lines.push("", `> ${t("clio_genealogy_hint")}`);
+  return saveClioTalkArtifact("genealogy", t("clio_genealogy"), lines.join("\n"));
 }
 
 function configureSaveDialog(mode) {
   saveDialogMode = mode;
   const isTeachText = mode === "teachtext";
+  const isTemporaryChat = mode === "temporary-chat";
   const saveWindow = getWindow("saveChat");
   if (saveWindow) saveWindow.dataset.app = isTeachText ? "teachText" : "clioTalk";
-  if (saveChatTitleEl) saveChatTitleEl.textContent = t(isTeachText ? "save_text_title" : "save_chat_title");
-  if (saveChatHintEl) saveChatHintEl.textContent = t(isTeachText ? "saved_text_hint" : "saved_chats_hint");
+  if (saveChatTitleEl) {
+    saveChatTitleEl.textContent = t(
+      isTeachText ? "save_text_title"
+        : isTemporaryChat ? "clio_temporary_save_title"
+          : "save_chat_title"
+    );
+  }
+  if (saveChatHintEl) {
+    const runCount = conversation.filter((message) => message?.runManifest).length;
+    saveChatHintEl.textContent = isTeachText
+      ? t("saved_text_hint")
+      : isTemporaryChat
+        ? t("clio_temporary_save_preview", conversation.length, runCount)
+        : t("saved_chats_hint");
+  }
   if (chatFileNameInput) {
     chatFileNameInput.readOnly = isTeachText;
     chatFileNameInput.classList.toggle("is-derived-name", isTeachText);
@@ -699,10 +1972,19 @@ function openSaveChatDialog() {
     setStatus(t("no_chat_to_save"));
     return;
   }
+  if (!getActiveProject()) {
+    setStatus(t("no_project_mounted"));
+    openWindow("projects");
+    return;
+  }
 
-  configureSaveDialog("chat");
-  chatFileNameInput.value = getChatFileTitle();
-  chatFolderNameInput.value = preferredFolderName();
+  const activeFile = getActiveConversationFile();
+  configureSaveDialog(clioTalkTemporaryMode ? "temporary-chat" : "chat");
+  chatFileNameInput.value = activeFile?.name || getChatFileTitle();
+  const activeFolder = activeFile?.folderId
+    ? getProjectFolders().find((folder) => folder.id === activeFile.folderId)
+    : null;
+  chatFolderNameInput.value = activeFolder?.name || preferredFolderName();
   renderFolderSuggestions();
   openWindow("saveChat");
 }
@@ -733,6 +2015,26 @@ function closeSaveChatDialog() {
   if (returnToTeachText) openWindow("teachText");
 }
 
+function clioTalkRunStatusForMessage(message) {
+  if (message?.deliveryState === "failed") return "failed";
+  if (message?.stopped) return "stopped";
+  if (message?.incomplete) return "incomplete";
+  return "completed";
+}
+
+function renderCurrentClioTalkConversation() {
+  messagesEl.replaceChildren();
+  conversation.forEach((item, index) => addMessage(item.role, item.content, {
+    messageRecord: item,
+    messageIndex: index,
+    grounding: item.grounding || null,
+  }));
+  renderClioTalkWelcome();
+  renderClioTalkFileBar();
+  renderClioTalkRunAssembly();
+  scrollMessagesToLatest({ force: true });
+}
+
 function saveCurrentChatAsFile(name, folderName) {
   if (!conversation.length) return null;
   if (!getActiveProject()) {
@@ -742,52 +2044,163 @@ function saveCurrentChatAsFile(name, folderName) {
   }
 
   const folder = ensureFolder(folderName);
-  const file = {
+  const convertingTemporaryChat = clioTalkTemporaryMode;
+  const existing = convertingTemporaryChat ? null : getActiveConversationFile();
+  const now = new Date().toISOString();
+  const file = existing || {
     id: crypto.randomUUID(),
     projectId: activeProjectId,
     type: "chat",
-    name: (name || "Untitled Chat").trim() || "Untitled Chat",
-    folderId: folder.id,
-    messages: conversation.map((item) => ({ ...item })),
-    compressedMemory: { ...compressedConversationMemory },
-    createdAt: new Date().toISOString(),
+    messages: [],
+    compressedMemory: { text: "", sourceMessages: 0, updatedAt: "" },
+    generation: 0,
+    titleMode: "manual",
+    createdAt: now,
+    updatedAt: now,
   };
-
-  chatFiles.unshift(file);
+  file.name = (name || "Untitled Chat").trim() || "Untitled Chat";
+  file.folderId = folder.id;
+  file.titleMode = "manual";
+  file.messages = normalizeChatMessageRecords(conversation);
+  file.compressedMemory = { ...compressedConversationMemory };
+  file.updatedAt = now;
+  if (!existing) chatFiles.unshift(file);
+  activeChatFileId = file.id;
   selectedFolderId = folder.id;
   selectedChatFileId = file.id;
+
+  if (convertingTemporaryChat) {
+    clioTalkTemporaryMode = false;
+    conversation.forEach((message) => {
+      message.temporaryChat = false;
+      if (message.requestOptions) delete message.requestOptions.temporaryChat;
+      if (!message.runManifest || message.runRecordId) return;
+      const runRecord = saveClioTalkRunRecord({
+        chatFile: file,
+        messageRecord: message,
+        manifest: message.runManifest,
+        status: clioTalkRunStatusForMessage(message),
+      });
+      message.runRecordId = runRecord?.id || "";
+    });
+    file.messages = normalizeChatMessageRecords(conversation);
+  }
+
   saveDeskState();
   renderDocuments();
   closeWindow("saveChat");
-  openWindow("documents");
+  renderCurrentClioTalkConversation();
+  openWindow("assistant");
+  setStatus(t(convertingTemporaryChat ? "clio_temporary_saved" : "clio_conversation_saved", file.name));
+  if (typeof scheduleWorkingSessionSave === "function") scheduleWorkingSessionSave();
   return file;
 }
 
-function openChatFile() {
+function renameActiveClioTalkConversation() {
+  const file = getActiveConversationFile();
+  if (!file || clioTalkTemporaryMode) return false;
+  const name = String(window.prompt(t("rename_file_prompt"), file.name) || "").trim();
+  if (!name || name === file.name) return false;
+  file.name = name;
+  file.titleMode = "manual";
+  file.updatedAt = new Date().toISOString();
+  saveDeskState();
+  renderDocuments();
+  renderClioTalkFileBar();
+  setStatus(t("clio_conversation_renamed", file.name));
+  return true;
+}
+
+function currentClioTalkMarkdownFile() {
+  const active = getActiveConversationFile();
+  return {
+    id: active?.id || "temporary",
+    name: active?.name || t("clio_temporary_chat"),
+    parentChatId: active?.parentChatId || "",
+    forkMessageId: active?.forkMessageId || "",
+    generation: Number(active?.generation || 0),
+    messages: normalizeChatMessageRecords(conversation),
+  };
+}
+
+function copyCurrentClioTalkMarkdown() {
+  if (!conversation.length) return setStatus(t("no_chat_to_save"));
+  return copyMarkdown(formatChatFileMarkdown(currentClioTalkMarkdownFile()));
+}
+
+function downloadCurrentClioTalkMarkdown() {
+  if (!conversation.length) return setStatus(t("no_chat_to_save"));
+  const file = currentClioTalkMarkdownFile();
+  return downloadMarkdown(formatChatFileMarkdown(file), file.name, {
+    addToProjectCd: !clioTalkTemporaryMode,
+  });
+}
+
+async function openChatFile() {
   const file = chatFiles.find((item) => item.id === selectedChatFileId && item.type !== "text" && isInActiveProject(item));
   if (!file) return;
+  if (!await confirmDiscardTemporaryClioTalkConversation()) return;
+  if (activeChatFileId && activeChatFileId !== file.id) persistActiveChatFile();
+  clioTalkTemporaryMode = false;
+  normalizeChatFileMetadata(file);
 
   conversation.length = 0;
+  attachedClipIds.clear();
+  window.nextTaskInputFileIds = new Set();
+  clioTalkFindQuery = "";
+  clioTalkFindMatchIndex = -1;
   compressedConversationMemory = {
     text: String(file.compressedMemory?.text || ""),
     sourceMessages: Number(file.compressedMemory?.sourceMessages || 0),
     updatedAt: String(file.compressedMemory?.updatedAt || ""),
   };
+  file.messages = normalizeChatMessageRecords(file.messages);
   conversation.push(...file.messages.map((item) => ({ ...item })));
+  activeChatFileId = file.id;
   messagesEl.replaceChildren();
-  file.messages.forEach((item) => addMessage(item.role, item.content));
+  file.messages.forEach((item, index) => addMessage(item.role, item.content, {
+    messageRecord: item,
+    messageIndex: index,
+    grounding: item.grounding || null,
+  }));
+  renderClioTalkWelcome();
+  renderAttachedClips();
+  renderClioTalkFileBar();
+  if (typeof renderClioTalkRunAssembly === "function") renderClioTalkRunAssembly();
   openWindow("assistant");
 }
 
 function openChatFileWindow(fileId) {
   const file = chatFiles.find((item) => item.id === fileId && item.type !== "text" && isInActiveProject(item));
   if (!file) return;
+  if (activeChatFileId && activeChatFileId !== file.id) persistActiveChatFile();
+  normalizeChatFileMetadata(file);
 
   selectedChatFileId = file.id;
   chatFileTitleEl.textContent = file.name;
-  chatFileMetaEl.textContent = t("messages_count", file.messages.length);
-  chatFileBodyEl.innerHTML = renderChatTranscript(file.messages);
+  const lastActivity = new Date(file.updatedAt || file.createdAt || Date.now()).toLocaleString();
+  chatFileMetaEl.textContent = `${t("messages_count", file.messages.length)} · ${t("clio_generation", Number(file.generation || 0))} · ${lastActivity}`;
+  chatFileBodyEl.replaceChildren();
+  const lineage = renderChatLineage(file);
+  if (lineage) chatFileBodyEl.append(lineage);
+  const transcript = document.createElement("div");
+  transcript.innerHTML = renderChatTranscript(file.messages);
+  chatFileBodyEl.append(...transcript.childNodes);
   openWindow("chatFile");
+}
+
+function revealChatFileInFinder(fileId) {
+  const file = chatFiles.find((item) => item.id === fileId && isInActiveProject(item));
+  if (!file) return false;
+  selectedFolderId = file.folderId && getProjectFolders().some((folder) => folder.id === file.folderId)
+    ? file.folderId
+    : "all";
+  selectedChatFileId = file.id;
+  selectedDocumentItemKeys.clear();
+  selectedDocumentItemKeys.add(documentSelectionKey("file", file.id));
+  renderDocuments();
+  openWindow("documents");
+  return true;
 }
 
 function insertChatFileIntoPrompt() {

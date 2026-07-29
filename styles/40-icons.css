@@ -1,3 +1,12 @@
+.memory-card-glyph {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  color: currentColor;
+  shape-rendering: crispEdges;
+}
+
 .scrapbook-icon::before {
   content: "";
   position: absolute;
@@ -598,19 +607,30 @@
     var(--paper);
 }
 
-.documents-pane {
-  display: grid;
-  grid-template-rows: auto 1fr;
-  gap: 10px;
-  min-height: 360px;
-}
-
-.project-disk-pane {
+.window-pane.documents-pane {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  gap: 6px;
-  min-height: 430px;
+  gap: 0;
+  min-height: 0;
+  flex-basis: 360px;
+  padding: 0;
+}
+
+
+.window-pane.project-disk-pane {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 0;
+  /* Basis, not a floor: it still sets the window's opening height, but a window
+     dragged shorter than this has to shrink the pane too — otherwise the bottom
+     scroll bar lane and the grow box's own corner get clipped out of the frame. */
+  min-height: 0;
+  flex-basis: 430px;
   max-height: calc(100vh - 152px);
+  /* No pane padding: the icon area below is the window's content area and has
+     to reach the frame, or the scroll bar lanes and the grow box end up
+     floating over content instead of framing it. */
+  padding: 0;
   overflow: hidden;
 }
 
@@ -620,8 +640,10 @@
   align-items: center;
   gap: 8px;
   min-width: 0;
-  border-bottom: 1px dotted var(--shade-dark);
-  padding-bottom: 6px;
+  /* Same single hairline a System 6 Finder draws under its item count row —
+     it is also the top edge of the content area's frame. */
+  border-bottom: 1px solid var(--ink);
+  padding: 10px 10px 6px;
 }
 
 .project-finder-pathbar:has(#project-disk-up:not([hidden])) {
@@ -656,11 +678,25 @@
   flex: 0 0 auto;
 }
 
+/* Flex, not grid: #documents-up is hidden at the top level, and with fixed
+   columns the remaining children slid left onto the flexible track. */
 .documents-toolbar {
-  display: grid;
-  grid-template-columns: auto auto 1fr auto;
+  display: flex;
   gap: 6px;
   align-items: center;
+  /* The row sits above the framed content area, and its hairline is that
+     area's top edge. */
+  padding: 10px;
+  border-bottom: 1px solid var(--ink);
+}
+
+.documents-toolbar > * {
+  flex: 0 0 auto;
+}
+
+.documents-toolbar #new-folder-name {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .project-disk-toolbar {
@@ -706,11 +742,8 @@
   min-height: 0;
   max-height: none;
   align-content: start;
-  border: 2px solid var(--ink);
   background: var(--paper);
   padding: 14px;
-  overflow: auto;
-  scrollbar-gutter: stable;
 }
 
 .finder-grid.finder-small-icons {

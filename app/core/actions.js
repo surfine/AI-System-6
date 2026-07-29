@@ -4,6 +4,62 @@
 
 let reviewDeskMode = "style";
 
+const keyboardShortcutRegistry = [
+  { id: "new-document", key: "n", action: "new-document", display: "⌘N", labelKey: "new_document", keyCaps: true, scope: ["teachText", "quickDraft"] },
+  { id: "new-folder", key: "n", shift: true, action: "new-folder", display: "⇧⌘N", labelKey: "new_folder", keyCaps: true, suppressInEditable: true, scope: ["finder"] },
+  { id: "open", key: "o", action: "open-menu-selection", display: "⌘O", labelKey: "open", keyCaps: true, suppressInEditable: true, scope: ["finder", "teachText"] },
+  { id: "save", key: "s", action: "save-current", display: "⌘S", labelKey: "save_current", keyCaps: true, scope: ["teachText", "clioTalk"] },
+  { id: "save-copy", key: "s", shift: true, action: "save-copy", display: "⇧⌘S", labelKey: "save_copy", keyCaps: true, scope: ["teachText"] },
+  { id: "close-window", key: "w", action: "close-active-window", display: "⌘W", labelKey: "close_window", keyCaps: true, scope: "global" },
+  { id: "undo", key: "z", action: "undo", display: "⌘Z / ⇧⌘Z", menuDisplay: "⌘Z", labelKey: "undo_redo", keyCaps: true, scope: "application" },
+  { id: "redo", key: "z", shift: true, action: "redo", display: "⇧⌘Z", labelKey: "redo", scope: "application" },
+  // display is the Key Caps summary for the whole cut/copy/paste/select-all
+  // family; menuDisplay is what the Edit menu's own Cut item shows.
+  { id: "cut", key: "x", action: "cut", display: "⌘X/C/V/A", menuDisplay: "⌘X", labelKey: "edit_basics", keyCaps: true, scope: "application" },
+  { id: "copy", key: "c", action: "copy", display: "⌘C", labelKey: "copy", scope: "application" },
+  { id: "paste", key: "v", action: "paste", display: "⌘V", labelKey: "paste", scope: "application" },
+  { id: "select-all", key: "a", action: "select-all", display: "⌘A", labelKey: "select_all", scope: "application" },
+  { id: "format-writing", key: "b", display: "⌘B/I/K", labelKey: "format_basics", keyCaps: true, dispatch: false },
+  { id: "get-info", key: "i", action: "open-file-info", display: "⌘I", labelKey: "get_info", keyCaps: true, suppressInEditable: true, scope: ["finder"] },
+  { id: "duplicate", key: "d", action: "duplicate-selection", display: "⌘D", labelKey: "duplicate", suppressInEditable: true, scope: ["finder"] },
+  { id: "move-to-trash", key: "backspace", action: "move-file-trash", display: "⌘⌫", labelKey: "move_to_trash", suppressInEditable: true, scope: ["finder"] },
+  { id: "move-to-trash-delete", key: "delete", action: "move-file-trash", display: "⌘⌫", labelKey: "move_to_trash", suppressInEditable: true, scope: ["finder"] },
+  { id: "eject", key: "e", action: "eject-menu-selection", display: "⌘E", labelKey: "eject", suppressInEditable: true, scope: ["finder"] },
+  { id: "system-help", key: "?", shift: true, action: "open-system-help", display: "⌘?", labelKey: "system_help", keyCaps: true, scope: "global" },
+  { id: "control-panel", key: ",", action: "open-control", display: "⌘,", labelKey: "control_panel", keyCaps: true, scope: "global" },
+  { id: "clio-chart-view-1", key: "1", action: "clio-chart-bars", display: "⌘1", labelKey: "clio_chart_bars", suppressInEditable: true, scope: ["clioChart"] },
+  { id: "clio-chart-view-2", key: "2", action: "clio-chart-matrix", display: "⌘2", labelKey: "clio_chart_matrix", suppressInEditable: true, scope: ["clioChart"] },
+  { id: "clio-chart-view-3", key: "3", action: "clio-chart-trace", display: "⌘3", labelKey: "clio_chart_trace", suppressInEditable: true, scope: ["clioChart"] },
+  { id: "clio-chart-view-4", key: "4", action: "clio-chart-grid", display: "⌘4", labelKey: "clio_chart_grid", suppressInEditable: true, scope: ["clioChart"] },
+  { id: "clio-chart-view-5", key: "5", action: "clio-chart-score", display: "⌘5", labelKey: "clio_chart_score", suppressInEditable: true, scope: ["clioChart"] },
+  { id: "clio-chart-reverse", key: "r", action: "clio-chart-reverse-sort", display: "⌘R", labelKey: "clio_chart_reverse_sort", suppressInEditable: true, scope: ["clioChart"] },
+];
+
+function keyboardShortcutById(id) {
+  return keyboardShortcutRegistry.find((shortcut) => shortcut.id === id) || null;
+}
+
+function syncKeyboardShortcutLabels() {
+  document.querySelectorAll("[data-shortcut-id]").forEach((element) => {
+    const shortcut = keyboardShortcutById(element.dataset.shortcutId);
+    if (shortcut) element.dataset.shortcut = shortcut.menuDisplay || shortcut.display;
+  });
+}
+
+function renderKeyCapsShortcuts() {
+  const grid = document.querySelector("#shortcut-grid");
+  if (!grid) return;
+  const fragment = document.createDocumentFragment();
+  keyboardShortcutRegistry.filter((shortcut) => shortcut.keyCaps).forEach((shortcut) => {
+    const key = document.createElement("span");
+    const label = document.createElement("b");
+    key.textContent = shortcut.display;
+    label.textContent = t(shortcut.labelKey);
+    fragment.append(key, label);
+  });
+  grid.replaceChildren(fragment);
+}
+
 
 function createFolderFromMenu() {
   if (!isProjectMounted) {
@@ -425,7 +481,7 @@ function runReviewDeskMingmingHandoffReview() {
   if (!isReviewDeskLinkedToFinal()) return syncReviewDeskAvailability();
   if (!syncReviewDeskToTeachText()) return;
   setReviewDeskMode("facts");
-  clearReviewFeedbackSlot("facts", currentLanguage === "zh" ? "正在生成若是接收者会怎么接..." : "Generating How Recipient Would Receive It...");
+  clearReviewFeedbackSlot("facts", currentLanguage === "zh" ? "正在生成若是落落会怎么接..." : "Generating How Luoluo Would Receive It...");
   ensureMingmingHandoffReviewModule().then(() => runMingmingHandoffReview({ mode: "card", sectionOnly: true }));
 }
 
@@ -619,6 +675,47 @@ async function openClioStageApp(source = null) {
   window.AISystem6ClioStage?.open(clioSource || null);
 }
 
+async function openClioChartApp(source = null) {
+  if (typeof ensureClioChartModule === "function") {
+    await ensureClioChartModule();
+  }
+  await window.AISystem6ClioChart?.open?.(source || null);
+}
+
+async function runClioChartMenuCommand(command) {
+  if (typeof ensureClioChartModule === "function") {
+    await ensureClioChartModule();
+  }
+  const chart = window.AISystem6ClioChart;
+  if (!chart?.open) return;
+  if (command === "import") {
+    openTransientFilePicker({
+      accept: ".csv,.tsv,.md,.markdown,.txt,text/csv,text/markdown,text/plain",
+      multiple: false,
+      onSelect: (files) => chart.importFiles?.(files),
+    });
+    return;
+  }
+  if (command === "hand-back") return chart.handBack?.();
+  if (command.startsWith("new:")) return chart.newFromTemplate?.(command.slice(4));
+  if (command === "save-template") return chart.saveTemplate?.();
+  if (command === "presentation") return chart.togglePresentation?.();
+  if (command === "send-stage") return chart.sendToStage?.();
+  if (command === "reverse-sort") return chart.reverseSort?.();
+  if (command === "lower-better") return chart.toggleColumnLower?.();
+  if (["bars", "matrix", "trace", "grid", "score", "source"].includes(command)) return chart.setProjection?.(command);
+  return chart.ask?.(command);
+}
+
+// TeachText hands one table block over to ClioChart; the block goes read-only
+// in the draft until it is handed back, so only one surface can edit it.
+async function seeSelectedTableAsChart() {
+  if (typeof ensureClioChartModule === "function") {
+    await ensureClioChartModule();
+  }
+  await window.AISystem6ClioChart?.openFromTeachText?.();
+}
+
 async function openLiquidCover() {
   if (typeof ensureLiquidCoverModule === "function") {
     await ensureLiquidCoverModule();
@@ -638,6 +735,91 @@ async function importQuickDraftChatRecords() {
     await ensureQuickDraftModule();
   }
   await window.AISystem6QuickDraft?.importChatScreenshots?.();
+}
+
+async function runQuickDraftMenuCommand(command) {
+  await ensureQuickDraftModule?.();
+  const quickDraft = window.AISystem6QuickDraft;
+  if (!quickDraft) return;
+  if (command === "vent-on") return quickDraft.setVentMode?.(true);
+  if (command === "vent-off") return quickDraft.setVentMode?.(false);
+  if (command === "vent-summary") return quickDraft.collectVentOutline?.();
+  if (command === "compose") return quickDraft.startWritingNow?.();
+  if (command === "save-project") return quickDraft.saveQuickDraftAsProjectDocument?.();
+  if (command === "copy-markdown") return quickDraft.copyMarkdown?.();
+  if (command === "send-teachtext") return quickDraft.transferQuickDraftToTeachText?.();
+  if (command === "send-review") return quickDraft.sendQuickDraftToReviewDesk?.();
+  return quickDraft.runClioTalkAction?.(command);
+}
+
+async function runClioStageMenuCommand(command) {
+  await ensureClioStageModule?.();
+  const stage = window.AISystem6ClioStage;
+  if (!stage) return;
+  if (command === "import") {
+    openTransientFilePicker({
+      accept: ".md,.markdown,.txt,text/markdown,text/plain",
+      multiple: true,
+      onSelect: (files) => importClioStageDroppedFiles(files),
+    });
+    return;
+  }
+  if (command === "previous") return stage.previous?.();
+  if (command === "next") return stage.next?.();
+  if (["source", "document", "slide", "cue"].includes(command)) return stage.setMode?.(command);
+}
+
+async function runLiquidCoverMenuCommand(command) {
+  await ensureLiquidCoverModule?.();
+  return window.AISystem6LiquidCover?.runMenuCommand?.(command);
+}
+
+async function runCmfMenuCommand(command) {
+  await ensureCmfStudioModule?.();
+  return window.AISystem6CMFStudio?.runMenuCommand?.(command);
+}
+
+async function runSoundscapeMenuCommand(command) {
+  await ensureSoundscapeModule?.();
+  return window.AISystem6Soundscape?.runMenuCommand?.(command);
+}
+
+async function dispatchEndfieldMenuCommand(command) {
+  await ensureEndfieldTerminalModule?.();
+  return window.AISystem6EndfieldTerminal?.runMenuCommand?.(command);
+}
+
+async function dispatchTimeMachineMenuCommand(command) {
+  await ensureTimeMachineModule?.();
+  return window.AISystem6TimeMachine?.runMenuCommand?.(command);
+}
+
+async function openTextDocumentFromDisk() {
+  if (typeof openTransientFilePicker !== "function" || typeof extractFileText !== "function") return;
+  openTransientFilePicker({
+    accept: ".txt,.text,.md,.markdown,.mdown,.mkd,text/plain,text/markdown",
+    onSelect: async (files) => {
+      const file = files[0];
+      if (!file) return;
+      const extracted = await extractFileText(file);
+      await newTextDocument();
+      teachTextNameInput.value = file.name.replace(/\.(?:txt|text|md|markdown|mdown|mkd)$/i, "") || t("untitled");
+      teachTextBodyInput.value = String(extracted?.text || extracted || "");
+      refreshTeachTextDocumentState();
+      setTeachTextStatus("modified");
+      teachTextBodyInput.focus();
+    },
+  });
+}
+
+function toggleWritingPreviewForActiveWindow() {
+  const name = document.querySelector(".window.is-active:not(.is-hidden)")?.dataset.window;
+  if (name === "quickDraft") return window.AISystem6QuickDraft?.togglePreview?.();
+  if (name === "questionSheet") return toggleTeachTextSurfacePreview("questionSheet");
+  if (name === "outline") return toggleTeachTextSurfacePreview("outline");
+  if (name === "sectionDrafts") return toggleTeachTextSurfacePreview("sectionDrafts");
+  if (name === "reviewDesk") return toggleReviewDeskPreview();
+  if (name === "teachText") return toggleTeachTextPreview();
 }
 
 async function openSystemConceptDocMap() {
@@ -679,22 +861,148 @@ async function playWritingDemoFromGuide() {
   await window.AISystem6WritingDemo?.play?.();
 }
 
-function handleAction(action) {
-  const availability = getActionAvailability();
-  if (availability[action] === false) {
-    updateMenuState();
-    return;
-  }
+let applicationActionHandlersCache = null;
+let applicationCommandRegistryCache = null;
 
-  const actions = {
+function getApplicationActionHandlers() {
+  return applicationActionHandlersCache ||= {
     "open-about": () => openWindow("about"),
     "open-about-multifinder": showAboutMultiFinder,
     "close-about": () => closeWindow("about"),
     "close-print-directory": () => closeWindow("printDirectory", true),
     "close-page-setup": () => closeWindow("pageSetup", true),
     "page-setup": openPageSetup,
+    "print-current": printCurrentTeachTextDocument,
     "open-guide": () => openWindow("guide"),
-    "open-system-help": () => openSystemHelpEntry(selectedSystemHelpEntryId || "system-help"),
+    "open-system-file-system": () => showSystemModal(t("system_file_not_openable"), "alert"),
+    "open-system-file-finder": () => showSystemModal(t("system_file_not_openable"), "alert"),
+    "open-system-file-multifinder": () => showSystemModal(t("system_file_not_openable"), "alert"),
+    "open-system-file-da-handler": () => showSystemModal(t("system_file_not_openable"), "alert"),
+    "open-system-ai-prompts": () => {
+      systemFinderPath = "ai-prompts";
+      selectedStaticFinderAction = "";
+      renderStaticFinderWindow("finder");
+    },
+    "open-system-writing-tools-prompts": () => {
+      systemFinderPath = "writing-tools";
+      selectedStaticFinderAction = "";
+      renderStaticFinderWindow("finder");
+    },
+    "open-system-writing-route-prompts": () => {
+      systemFinderPath = "writing-route";
+      selectedStaticFinderAction = "";
+      renderStaticFinderWindow("finder");
+    },
+    "open-system-source-app-prompts": () => {
+      systemFinderPath = "source-apps";
+      selectedStaticFinderAction = "";
+      renderStaticFinderWindow("finder");
+    },
+    "open-system-other-app-prompts": () => {
+      systemFinderPath = "other-apps";
+      selectedStaticFinderAction = "";
+      renderStaticFinderWindow("finder");
+    },
+    "open-system-cliotalk-prompts": () => {
+      systemFinderPath = "cliotalk";
+      selectedStaticFinderAction = "";
+      renderStaticFinderWindow("finder");
+    },
+    "open-system-boundary-prompts": () => {
+      systemFinderPath = "boundaries";
+      selectedStaticFinderAction = "";
+      renderStaticFinderWindow("finder");
+    },
+    "open-system-prompt-file": ({ promptId = "writing-tools.proofread" } = {}) => {
+      if (!activeProjectId) {
+        setStatus(t("no_project_mounted"));
+        openWindow("projects");
+        return;
+      }
+      const file = window.AISystem6PromptFilesRuntime?.ensureProjectPromptOverrideForEditing(activeProjectId, promptId);
+      if (!file) {
+        setStatus(currentLanguage === "zh" ? "该系统提示词只读，或提示词文件缺失。" : "This system prompt is read-only or missing.");
+        return;
+      }
+      selectedChatFileId = file.id;
+      activeTextFileId = file.id;
+      openTextFile(file.id);
+      saveDeskState?.();
+    },
+    "open-system-help": async () => {
+      await ensureSystemDictionaryData();
+      await ensureDictionaryHelpModule();
+      openSystemHelpEntry(selectedSystemHelpEntryId || "system-help");
+    },
+    "reveal-active-chat-file": () => {
+      const fileId = activeChatFileId || selectedChatFileId;
+      if (!fileId || !revealChatFileInFinder(fileId)) setStatus(t("no_project_mounted"));
+    },
+    "start-new-clio-chat": startNewClioTalkConversation,
+    "start-temporary-clio-chat": startTemporaryClioTalkConversation,
+    "open-chat-file": ({ fileId = "" } = {}) => openChatFileWindow(fileId),
+    "resummarize-chat-title": async () => {
+      const file = activeChatFileId ? getActiveConversationFile() : null;
+      if (!file || file.titleMode === "manual") return;
+      await summarizeChatTitle(file, { force: true });
+    },
+    "remember-chat-as-project-memory": () => {
+      const file = createProjectMemoryDraft();
+      if (file) setStatus(currentLanguage === "zh" ? "项目记忆已确认并保存。" : "Project memory confirmed and saved.");
+    },
+    "toggle-project-memory": () => {
+      if (!toggleSelectedProjectMemory()) setStatus(t("select_finder_item_first"));
+    },
+    "attach-retrospective-next-task": () => {
+      if (!attachSelectedRetrospectiveToNextTask()) return setStatus(t("select_finder_item_first"));
+      setStatus(currentLanguage === "zh" ? "复盘已附加到下一次任务。" : "Retrospective attached to the next task.");
+    },
+    "create-skill-draft-from-retrospective": async () => {
+      if (!selectedChatFileId) return setStatus(t("select_finder_item_first"));
+      await createSkillDraftFromSelectedRetrospective();
+    },
+    "create-project-skill-from-draft": () => {
+      if (!createProjectSkillFromSelectedDraft()) setStatus(t("select_finder_item_first"));
+    },
+    "toggle-project-skill": () => {
+      if (!toggleSelectedProjectSkill()) setStatus(t("select_finder_item_first"));
+    },
+    "configure-skill-auto-call": () => {
+      if (!configureSkillAutoCall()) setStatus(t("no_project_mounted"));
+    },
+    "disable-auto-called-skill": () => {
+      if (!disableAutoCalledSkillFromSelectedReceipt()) setStatus(t("select_finder_item_first"));
+    },
+    "view-modification-suggestion-diff": async () => {
+      if (!await viewSelectedTeachTextModificationSuggestionDiff()) setStatus(t("select_finder_item_first"));
+    },
+    "accept-modification-suggestion": () => {
+      if (!acceptSelectedTeachTextModificationSuggestion()) setStatus(t("select_finder_item_first"));
+    },
+    "reject-modification-suggestion": () => {
+      if (!rejectSelectedTeachTextModificationSuggestion()) setStatus(t("select_finder_item_first"));
+    },
+    "create-task-config-from-draft": () => {
+      if (!createTaskConfigFromSelectedDraft()) setStatus(t("select_finder_item_first"));
+    },
+    "run-task-config": async () => {
+      if (!await runSelectedTaskConfig()) setStatus(currentLanguage === "zh" ? "任务配置无效、缺少文件或技能不可用。" : "Task Config is invalid, missing files, or has unavailable Skills.");
+    },
+    "pause-task-config": () => { if (!setTaskConfigLifecycle("paused")) setStatus(t("select_finder_item_first")); },
+    "complete-task-config": () => {
+      if (!setTaskConfigLifecycle("completed")) return setStatus(t("select_finder_item_first"));
+      saveClioTalkRetrospective();
+    },
+    "resume-task-config": () => { if (!resumeSelectedTaskConfig()) setStatus(t("select_finder_item_first")); },
+    "cancel-task-config": () => { if (!setTaskConfigLifecycle("cancelled")) setStatus(t("select_finder_item_first")); },
+    "create-task-checkpoint": () => { if (!createTaskCheckpoint()) setStatus(t("select_finder_item_first")); },
+    "restore-task-checkpoint": async () => { if (!await restoreSelectedTaskCheckpoint()) setStatus(t("select_finder_item_first")); },
+    "install-mounted-skill": () => {
+      if (!installMountedSkillPackage()) setStatus(currentLanguage === "zh" ? "技能包无效或未选择。" : "Skill package is invalid or not selected.");
+    },
+    "preview-mounted-skill": async () => {
+      if (!await previewMountedSkillPackage()) setStatus(currentLanguage === "zh" ? "技能包无效或未选择。" : "Skill package is invalid or not selected.");
+    },
     "open-project-disks": () => {
       openWindow("projects");
       if (!isProjectMounted) setStatus(t("no_project_mounted"));
@@ -712,6 +1020,9 @@ function handleAction(action) {
     "rename-project-disk": renameSelectedProject,
     "dismiss-guide": dismissGuide,
     "guide-start-route": startGuidedWritingRoute,
+    "guide-connect-local": guideConnectLocal,
+    "guide-connect-cloud": guideConnectCloud,
+    "guide-open-cliotalk": startGuidedClioTalk,
     "play-writing-demo": playWritingDemoFromGuide,
     "guide-use-finder": () => setStartupEnvironmentPreference("finder"),
     "guide-use-multifinder": () => setStartupEnvironmentPreference("multifinder"),
@@ -727,18 +1038,36 @@ function handleAction(action) {
     "open-system-concepts-clio-stage": openSystemConceptClioStage,
     "copy-native-brief": copyNativeBrief,
     "export-native-handoff": exportNativeHandoff,
+    "new-document": newTextDocument,
+    "open-text-document": openTextDocumentFromDisk,
     "new-folder": createFolderFromMenu,
     "open-menu-selection": openFinderMenuSelection,
     "duplicate-selection": duplicateFinderMenuSelection,
     "open-assistant": () => openWindow("assistant"),
+    "open-writing-studio": openWritingStudio,
+    "exit-writing-studio": exitWritingStudio,
     "open-quick-draft": openQuickDraft,
     "quick-draft-import-chat": importQuickDraftChatRecords,
+    "quick-draft-vent-on": () => runQuickDraftMenuCommand("vent-on"),
+    "quick-draft-vent-off": () => runQuickDraftMenuCommand("vent-off"),
+    "quick-draft-vent-summary": () => runQuickDraftMenuCommand("vent-summary"),
+    "quick-draft-compose": () => runQuickDraftMenuCommand("compose"),
+    "quick-draft-talk-points": () => runQuickDraftMenuCommand("organize"),
+    "quick-draft-mingming": () => runQuickDraftMenuCommand("mingming"),
+    "quick-draft-luoluo": () => runQuickDraftMenuCommand("luoluo"),
+    "quick-draft-hkrr": () => runQuickDraftMenuCommand("hkrr"),
+    "quick-draft-praise": () => runQuickDraftMenuCommand("praise"),
+    "quick-draft-save-project": () => runQuickDraftMenuCommand("save-project"),
+    "quick-draft-copy-markdown": () => runQuickDraftMenuCommand("copy-markdown"),
+    "quick-draft-send-teachtext": () => runQuickDraftMenuCommand("send-teachtext"),
+    "quick-draft-send-review": () => runQuickDraftMenuCommand("send-review"),
     "open-writing-bell": () => openWindow("writingBell"),
     "open-note-pad": () => openWindow("notePad"),
     "open-clipboard": () => {
       renderClipboard();
       openWindow("clipboard");
     },
+    "open-alarm-clock": () => openWindow("alarmClock"),
     "open-calculator": () => openWindow("calculator"),
     "open-bureaucracy-meme": () => openWindow("bureaucracyMeme"),
     "open-endfield-terminal": () => openWindow("endfieldTerminal"),
@@ -776,14 +1105,18 @@ function handleAction(action) {
       openWindow("docMap");
     },
     "open-clio-stage": openClioStageApp,
+    "open-clio-chart": openClioChartApp,
+    "see-as-chart": seeSelectedTableAsChart,
     "open-liquid-cover": openLiquidCover,
     "open-cmf-studio": () => openWindow("cmfStudio"),
+    "open-soundscape": () => openWindow("soundscape"),
     "open-dictionary": () => openWindow("dictionary"),
     "open-style-sheet": () => openReviewDesk("style"),
     "generate-outline": generateOutline,
     "organize-question-sheet": organizeQuestionSheet,
     "open-writing-flow-windows": openWritingFlowWindows,
     "toggle-question-preview": () => toggleTeachTextSurfacePreview("questionSheet"),
+    "toggle-writing-preview": toggleWritingPreviewForActiveWindow,
     "insert-question-template": insertQuestionTemplate,
     "clear-question-sheet": clearQuestionSheet,
     "advance-question-to-outline": advanceQuestionSheetToOutline,
@@ -845,10 +1178,7 @@ function handleAction(action) {
     "ai-list": () => printTeachTextToAi("list"),
     "ai-table": () => printTeachTextToAi("table"),
     "print-to-ai": () => printTeachTextToAi("proofread"),
-    "open-teachtext": () => {
-      openWindow("teachText");
-      teachTextBodyInput.focus();
-    },
+    "open-teachtext": openTeachTextForWorkspace,
     "new-text-document": createTeachTextFileFromFinder,
     "duplicate-file": duplicateActiveFile,
     "rename-file": renameActiveFile,
@@ -919,6 +1249,31 @@ function handleAction(action) {
       openWindow("reader");
       readerUrlInput.focus();
     },
+    "reader-open-source": handleReaderOpenButton,
+    "reader-clip": clipReaderSelection,
+    "reader-clip-translate": clipReaderSelectionWithTranslation,
+    "reader-send-manuscript": sendReaderCopyToManuscript,
+    "reader-make-docmap": makeDocMapFromCurrentSource,
+    "reader-open-clio-stage": openCurrentReaderInClioStage,
+    "focus-reader-question": () => readerQuestionInput?.focus(),
+    "open-time-machine": () => dispatchTimeMachineMenuCommand("open"),
+    "time-machine-new-tab": () => dispatchTimeMachineMenuCommand("new-tab"),
+    "time-machine-close-tab": () => dispatchTimeMachineMenuCommand("close-tab"),
+    "time-machine-back": () => dispatchTimeMachineMenuCommand("back"),
+    "time-machine-forward": () => dispatchTimeMachineMenuCommand("forward"),
+    "time-machine-stop": () => dispatchTimeMachineMenuCommand("stop"),
+    "time-machine-refresh": () => dispatchTimeMachineMenuCommand("refresh"),
+    "time-machine-switch-source": () => dispatchTimeMachineMenuCommand("switch-source"),
+    "time-machine-toggle": () => dispatchTimeMachineMenuCommand("toggle"),
+    "time-machine-web-view": () => dispatchTimeMachineMenuCommand("web-view"),
+    "time-machine-reader-view": () => dispatchTimeMachineMenuCommand("reader-view"),
+    "time-machine-preserve-wayback": () => dispatchTimeMachineMenuCommand("preserve-wayback"),
+    "time-machine-preserve-archive-is": () => dispatchTimeMachineMenuCommand("preserve-archive-is"),
+    "time-machine-clip": () => dispatchTimeMachineMenuCommand("clip"),
+    "time-machine-clip-translate": () => dispatchTimeMachineMenuCommand("clip-translate"),
+    "time-machine-docmap": () => dispatchTimeMachineMenuCommand("docmap"),
+    "time-machine-ask": () => dispatchTimeMachineMenuCommand("ask"),
+    "time-machine-send-manuscript": () => dispatchTimeMachineMenuCommand("send-manuscript"),
     "clip-selected-find-path": clipSelectedFindPath,
     "open-selected-in-reader": () => {
       if (selectedFindPathIndex === null) {
@@ -935,21 +1290,154 @@ function handleAction(action) {
       renderMountedTextDisk();
       openWindow("textDisk");
     },
-    "open-finder": () => openWindow("finder"),
+    "open-finder": () => {
+      systemFinderPath = "";
+      openWindow("finder");
+      renderStaticFinderWindow("finder");
+    },
     "open-documents": () => {
       renderDocuments();
       openWindow("documents");
     },
     "open-scrapbook": () => openWindow("scrapbook"),
+    "scrapbook-open-source": openSelectedScrapSourceInReader,
+    "scrapbook-toggle-translation": toggleScrapTranslationView,
+    "scrapbook-insert": insertScrapIntoPrompt,
+    "scrapbook-attach": toggleClipAttachment,
+    "scrapbook-send-question": sendSelectedScrapsToQuestionSheet,
+    "scrapbook-outline": outlineSelectedScraps,
+    "scrapbook-export-bilingual": downloadSelectedScrapsBilingualMarkdown,
+    "scrapbook-delete": deleteSelectedScrap,
+    "focus-scrapbook-question": () => scrapbookQuestionInput?.focus(),
+    "focus-search-query": () => findPathQueryInput?.focus(),
+    "synthesize-search-results": synthesizeFindPath,
+    "copy-search-result-markdown": copySelectedFindPath,
+    "insert-search-result": insertFindPathIntoTeachText,
+    "clio-chart-import": () => runClioChartMenuCommand("import"),
+    "clio-chart-hand-back": () => runClioChartMenuCommand("hand-back"),
+    "clio-chart-new-cpu-gpu": () => runClioChartMenuCommand("new:cpu-gpu"),
+    "clio-chart-new-gaming": () => runClioChartMenuCommand("new:gaming"),
+    "clio-chart-new-battery-power": () => runClioChartMenuCommand("new:battery-power"),
+    "clio-chart-new-noise-heat": () => runClioChartMenuCommand("new:noise-heat"),
+    "clio-chart-new-display": () => runClioChartMenuCommand("new:display"),
+    "clio-chart-new-rating": () => runClioChartMenuCommand("new:rating"),
+    "clio-chart-new-blank": () => runClioChartMenuCommand("new:blank"),
+    "clio-chart-save-template": () => runClioChartMenuCommand("save-template"),
+    "clio-chart-bars": () => runClioChartMenuCommand("bars"),
+    "clio-chart-matrix": () => runClioChartMenuCommand("matrix"),
+    "clio-chart-trace": () => runClioChartMenuCommand("trace"),
+    "clio-chart-grid": () => runClioChartMenuCommand("grid"),
+    "clio-chart-score": () => runClioChartMenuCommand("score"),
+    "clio-chart-source": () => runClioChartMenuCommand("source"),
+    "clio-chart-presentation": () => runClioChartMenuCommand("presentation"),
+    "clio-chart-send-stage": () => runClioChartMenuCommand("send-stage"),
+    "clio-chart-reverse-sort": () => runClioChartMenuCommand("reverse-sort"),
+    "clio-chart-lower-better": () => runClioChartMenuCommand("lower-better"),
+    "clio-chart-read": () => runClioChartMenuCommand("read"),
+    "clio-chart-outliers": () => runClioChartMenuCommand("outliers"),
+    "clio-chart-gaps": () => runClioChartMenuCommand("gaps"),
+    "clio-chart-write-up": () => runClioChartMenuCommand("write-up"),
+    "clio-stage-import": () => runClioStageMenuCommand("import"),
+    "clio-stage-previous": () => runClioStageMenuCommand("previous"),
+    "clio-stage-next": () => runClioStageMenuCommand("next"),
+    "clio-stage-source": () => runClioStageMenuCommand("source"),
+    "clio-stage-document": () => runClioStageMenuCommand("document"),
+    "clio-stage-slide": () => runClioStageMenuCommand("slide"),
+    "clio-stage-cue": () => runClioStageMenuCommand("cue"),
+    "focus-clio-stage-question": () => document.querySelector("#clio-stage-question")?.focus(),
+    "cover-choose-background": () => runLiquidCoverMenuCommand("choose-background"),
+    "cover-choose-video": () => runLiquidCoverMenuCommand("choose-video"),
+    "cover-choose-subject": () => runLiquidCoverMenuCommand("choose-subject"),
+    "cover-export-png": () => runLiquidCoverMenuCommand("export-png"),
+    "cover-export-video": () => runLiquidCoverMenuCommand("export-video"),
+    "cover-add-layer": () => runLiquidCoverMenuCommand("add-layer"),
+    "cover-delete-layer": () => runLiquidCoverMenuCommand("delete-layer"),
+    "cover-shape-circle": () => runLiquidCoverMenuCommand("shape-circle"),
+    "cover-shape-squircle": () => runLiquidCoverMenuCommand("shape-squircle"),
+    "cover-shape-capsule": () => runLiquidCoverMenuCommand("shape-capsule"),
+    "cover-toggle-focus": () => runLiquidCoverMenuCommand("toggle-focus"),
+    "cover-preview-motion": () => runLiquidCoverMenuCommand("preview-motion"),
+    "cover-ai-compose": () => runLiquidCoverMenuCommand("ai-compose"),
+    "cmf-save-recipe": () => runCmfMenuCommand("save"),
+    "cmf-export-usdz": () => runCmfMenuCommand("export"),
+    "cmf-shuffle": () => runCmfMenuCommand("shuffle"),
+    "cmf-reset": () => runCmfMenuCommand("reset"),
+    "cmf-render": () => runCmfMenuCommand("render"),
+    "cmf-view-front": () => runCmfMenuCommand("view-front"),
+    "cmf-view-back": () => runCmfMenuCommand("view-back"),
+    "cmf-view-side": () => runCmfMenuCommand("view-side"),
+    "soundscape-choose-local": () => runSoundscapeMenuCommand("choose-local"),
+    "soundscape-save-moment": () => runSoundscapeMenuCommand("save-moment"),
+    "soundscape-toggle-play": () => runSoundscapeMenuCommand("toggle-play"),
+    "soundscape-previous": () => runSoundscapeMenuCommand("previous"),
+    "soundscape-next": () => runSoundscapeMenuCommand("next"),
+    "soundscape-shuffle": () => runSoundscapeMenuCommand("shuffle"),
+    "soundscape-repeat": () => runSoundscapeMenuCommand("repeat"),
+    "soundscape-reset-style": () => runSoundscapeMenuCommand("reset-style"),
+    "soundscape-link-project": () => runSoundscapeMenuCommand("link-project"),
+    "endfield-new-session": () => dispatchEndfieldMenuCommand("new-session"),
+    "endfield-run-query": () => dispatchEndfieldMenuCommand("run-query"),
+    "meme-upload": () => window.AISystem6BureaucracyMeme?.runMenuCommand?.("upload"),
+    "meme-download": () => window.AISystem6BureaucracyMeme?.runMenuCommand?.("download"),
+    "meme-focus-topic": () => window.AISystem6BureaucracyMeme?.runMenuCommand?.("focus-topic"),
+    "meme-generate": () => window.AISystem6BureaucracyMeme?.runMenuCommand?.("generate"),
     "open-trash": () => openWindow("trash"),
     "open-context-panel": () => openWindow("contextPanel"),
+    "focus-sideask-source": focusSideAskSource,
     "save-current": saveCurrentWork,
     "save-chat": openSaveChatDialog,
+    "save-conversation": openSaveChatDialog,
+    "rename-active-chat": renameActiveClioTalkConversation,
+    "copy-current-chat-markdown": copyCurrentClioTalkMarkdown,
+    "download-current-chat-markdown": downloadCurrentClioTalkMarkdown,
+    "find-in-cliotalk": () => findInClioTalkConversation(),
+    "find-next-in-cliotalk": findNextInClioTalkConversation,
+    "open-clio-attachment-picker": beginClioTalkAttachmentPicker,
+    "attach-selected-to-cliotalk": () => attachProjectFileToNextClioTalkRun(),
+    "open-clio-genealogy": openClioTalkGenealogy,
+    "compare-chat-branch": () => {
+      const source = getActiveConversationFile();
+      const target = source?.parentChatId ? chatFiles.find((file) => file.id === source.parentChatId && isInActiveProject(file)) : null;
+      if (!source || !target) return;
+      saveBranchComparison(source, target);
+    },
+    "merge-chat-branch": async () => {
+      const source = getActiveConversationFile();
+      if (!source?.parentChatId) return;
+      await mergeBranchIntoTarget(source.id, source.parentChatId);
+    },
+    "save-clio-harness": saveClioTalkHarness,
+    "save-clio-skill": saveClioTalkSkillDraft,
+    "use-project-skill-next-task": () => {
+      if (!selectProjectSkillForNextTask()) setStatus(currentLanguage === "zh" ? "没有可用的已启用技能。" : "No enabled project Skill is available.");
+    },
+    "suggest-project-skill": () => confirmSuggestedProjectSkill(promptInput?.value || lastUserText || ""),
+    "save-clio-retrospective": saveClioTalkRetrospective,
     "new-note": () => createScrap(null, ""),
     "save-last": saveLastReply,
     "clip-last-reply": clipLastReplyToScrapbook,
     "insert-last-reply": insertLastReplyIntoTeachText,
-    "clear-chat": clearChatToTrash,
+    "clear-chat": startNewClioTalkConversation,
+    "clip-assistant-selection": clipAssistantSelection,
+    "retry-last-message": () => {
+      if (lastUserText) submitUserText(lastUserText);
+    },
+    "stop-generation": stopGeneration,
+    "docmap-save": saveCurrentDocMap,
+    "docmap-print-pdf": printCurrentDocMapPdf,
+    "docmap-send-question": sendDocMapNodeToQuestionSheet,
+    "docmap-insert-outline": insertDocMapNodeAsOutline,
+    "docmap-hkrr": askDocMapHkrrTheoryReview,
+    "focus-docmap-question": () => docMapQuestionInput?.focus(),
+    "docmap-layout-tree": () => setCurrentDocMapLayout("tree"),
+    "docmap-layout-radial": () => setCurrentDocMapLayout("radial"),
+    "docmap-layout-fishbone": () => setCurrentDocMapLayout("fishbone"),
+    "docmap-fit-view": () => {
+      maximizeWindow(getWindow("docMap"));
+      requestAnimationFrame(fitDocMapCanvasToView);
+    },
+    "docmap-zoom-out": zoomDocMapOut,
+    "docmap-zoom-in": zoomDocMapIn,
     "clear-attached-clips": () => {
       attachedClipIds.clear();
       renderAttachedClips();
@@ -977,6 +1465,7 @@ function handleAction(action) {
       }
     },
     "undo": () => runEditCommand("undo"),
+    "redo": () => runEditCommand("redo"),
     "cut": () => runEditCommand("cut"),
     "copy": () => runEditCommand("copy"),
     "paste": () => runEditCommand("paste"),
@@ -995,6 +1484,7 @@ function handleAction(action) {
     "view-list": () => setActiveViewMode("name"),
     "tile-windows": tileWindows,
     "hide-sidebars": hideSidebars,
+    "focus-sideask-source": focusSideAskSource,
     "toggle-sideask": toggleSideAsk,
     "toggle-liquid-glass": toggleLiquidGlassAppearance,
     "toggle-writer-mode": toggleWriterMode,
@@ -1008,7 +1498,36 @@ function handleAction(action) {
     "close-save-chat": closeSaveChatDialog,
   };
 
-  actions[action]?.();
+}
+
+function getApplicationCommandRegistry() {
+  if (applicationCommandRegistryCache) return applicationCommandRegistryCache;
+  applicationCommandRegistryCache = new Map(
+    Object.entries(getApplicationActionHandlers()).map(([action, handler]) => [action, Object.freeze({
+      id: action,
+      handler,
+      isAvailable: () => isWorkspaceActionAllowed(action) && getActionAvailability()[action] !== false,
+      shortcut: () => keyboardShortcutRegistry.find((entry) => entry.action === action) || null,
+    })])
+  );
+  return applicationCommandRegistryCache;
+}
+
+function handleAction(action, commandContext = {}) {
+  if (String(action).startsWith("open-system-prompt-file:")) {
+    commandContext = { ...commandContext, promptId: String(action).slice("open-system-prompt-file:".length) };
+    action = "open-system-prompt-file";
+  }
+  if (String(action).startsWith("open-chat-file:")) {
+    commandContext = { ...commandContext, fileId: String(action).slice("open-chat-file:".length) };
+    action = "open-chat-file";
+  }
+  const command = getApplicationCommandRegistry().get(action);
+  if (!command?.isAvailable()) {
+    updateMenuState();
+    return;
+  }
+  command.handler(commandContext);
   updateMenuState();
 }
 
@@ -1028,65 +1547,28 @@ function closeTeachTextCommandMenus() {
 }
 
 function runShortcut(event) {
-  if (!event.metaKey || event.ctrlKey || event.altKey) return;
+  if (event.defaultPrevented || event.isComposing || !event.metaKey || event.ctrlKey) return;
 
   const key = event.key.toLowerCase();
-
-  // Handle Shift + Command shortcuts
-  if (event.shiftKey) {
-    const shiftShortcuts = {
-      c: "copy-active-markdown",
-      d: "download-active-markdown",
-      i: "insert-last-reply",
-      s: "save-copy",
-    };
-    const action = shiftShortcuts[key];
-    if (action) {
-      event.preventDefault();
-      closeMenus();
-      handleAction(action);
-    }
-    return;
-  }
-
-  const shortcuts = {
-    enter: "intent-key",
-    n: "new-folder",
-    s: "save-current",
-    d: "duplicate-selection",
-    r: "rename-file",
-    backspace: "move-file-trash",
-    delete: "move-file-trash",
-    w: "close-active-window",
-    z: "undo",
-    x: "cut",
-    c: "copy",
-    v: "paste",
-    a: "select-all",
-    i: "open-file-info",
-    l: "clip-last-reply",
-    k: "clear-chat",
-    g: "open-text-disk",
-    y: "open-reader",
-    m: "open-context-panel",
-    t: "tile-windows",
-    h: "open-assistant",
-    o: "open-menu-selection",
-    f: "open-documents",
-    j: "open-scrapbook",
-    b: "open-trash",
-    ".": "toggle-sideask",
-    "/": "open-find-path", // ⌘/ for ?
-    "?": "open-find-path",
-    u: "open-rag",
-    ",": "open-control",
-    e: "eject-menu-selection",
-  };
-  const action = shortcuts[key];
-
-  if (!action) return;
+  const shortcutAppId = activeAppId === "writingStudio" ? "teachText" : activeAppId;
+  const command = [...getApplicationCommandRegistry().values()].find((record) => {
+    const candidate = record.shortcut();
+    return candidate
+      && candidate.dispatch !== false
+      && candidate.key === key
+      && !!candidate.shift === !!event.shiftKey
+      && !!candidate.option === !!event.altKey
+      && (
+        candidate.scope === "global"
+        || candidate.scope === "application"
+        || (Array.isArray(candidate.scope) && candidate.scope.includes(shortcutAppId))
+      );
+  });
+  const shortcut = command?.shortcut();
+  if (!command || !shortcut) return;
+  if (shortcut.suppressInEditable && getActiveEditableElement()) return;
 
   event.preventDefault();
   closeMenus();
-  handleAction(action);
+  handleAction(command.id);
 }

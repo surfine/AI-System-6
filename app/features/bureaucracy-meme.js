@@ -1,6 +1,6 @@
 // Feature module: British Bureaucracy Meme Generator.
 
-// Loaded before app.js as a classic script; shares the AI System 6 global scope.
+// Loaded on demand as a classic script; shares the AI System 6 global scope.
 
 
 
@@ -52,6 +52,9 @@
     selectedCaptionId: "",
     generatedUrl: "",
     loading: false,
+    captionLanguage: "bilingual",
+    generationRequestId: 0,
+    previewRequestId: 0,
     initialized: false,
   };
 
@@ -115,10 +118,10 @@
 
   function renderTemplateList() {
     if (!els.templateList) return;
-    els.templateList.innerHTML = state.templates.map((item) => {
+    els.templateList.innerHTML = state.templates.map((item, index) => {
       const active = item.id === state.selectedTemplateId && !state.uploadedImageSrc ? " is-active" : "";
       return [
-        `<button class="bureaucracy-template${active}" type="button" data-template-id="${escapeHtml(item.id)}">`,
+        `<button class="bureaucracy-template${active}" type="button" data-template-id="${escapeHtml(item.id)}" aria-pressed="${active ? "true" : "false"}" tabindex="${active || index === 0 ? "0" : "-1"}">`,
         `<img src="${escapeHtml(item.imageUrl)}" alt="" />`,
         `<span><b>${escapeHtml(localizedTemplateName(item))}</b><small>${escapeHtml(localizedSourceType(item.sourceType))}</small></span>`,
         `</button>`,
@@ -137,10 +140,10 @@
 
   function renderToneList() {
     if (!els.toneList) return;
-    els.toneList.innerHTML = toneOptions.map(([value, labelKey, hintKey]) => {
+    els.toneList.innerHTML = toneOptions.map(([value, labelKey, hintKey], index) => {
       const active = value === state.tone ? " is-active" : "";
       return [
-        `<button class="bureaucracy-tone${active}" type="button" data-tone="${value}">`,
+        `<button class="bureaucracy-tone${active}" type="button" data-tone="${value}" aria-pressed="${active ? "true" : "false"}" tabindex="${active || index === 0 ? "0" : "-1"}">`,
         `<b>${escapeHtml(t(labelKey))}</b>`,
         `<small>${escapeHtml(t(hintKey))}</small>`,
         `</button>`,
@@ -158,10 +161,10 @@
       els.candidates.innerHTML = `<p class="bureaucracy-empty">${escapeHtml(t("bureaucracy_meme_candidates_empty"))}</p>`;
       return;
     }
-    els.candidates.innerHTML = state.captions.map((caption) => {
+    els.candidates.innerHTML = state.captions.map((caption, index) => {
       const active = caption.id === state.selectedCaptionId ? " is-active" : "";
       return [
-        `<button class="bureaucracy-candidate${active}" type="button" data-caption-id="${escapeHtml(caption.id)}">`,
+        `<button class="bureaucracy-candidate${active}" type="button" data-caption-id="${escapeHtml(caption.id)}" aria-pressed="${active ? "true" : "false"}" tabindex="${active || (!state.selectedCaptionId && index === 0) ? "0" : "-1"}">`,
         `<b>${escapeHtml(caption.zh)}</b>`,
         `<span>${escapeHtml(caption.en)}</span>`,
         `<small>${escapeHtml(localizedArchetype(caption.archetype || caption.tone))}</small>`,
@@ -172,19 +175,47 @@
 
   function syncButtons() {
     if (els.generateButton) {
-      els.generateButton.disabled = state.loading;
-      els.generateButton.textContent = state.loading
-        ? t("bureaucracy_meme_generating")
-        : state.captions.length
-          ? t("bureaucracy_meme_more")
-          : t("bureaucracy_meme_generate");
+      const restingLabel = state.captions.length ? t("bureaucracy_meme_more") : t("bureaucracy_meme_generate");
+      if (!state.loading) els.generateButton.textContent = restingLabel;
+      if (typeof setControlLoading === "function") {
+        if (state.loading && els.generateButton.dataset.loading !== "true") {
+          setControlLoading(els.generateButton, true, t("bureaucracy_meme_generating"));
+        } else if (!state.loading && els.generateButton.dataset.loading === "true") {
+          setControlLoading(els.generateButton, false);
+          els.generateButton.textContent = restingLabel;
+        }
+      } else {
+        els.generateButton.disabled = state.loading;
+        els.generateButton.toggleAttribute("aria-busy", state.loading);
+      }
     }
     if (els.downloadLink) {
       const enabled = !!state.generatedUrl;
-      els.downloadLink.classList.toggle("is-disabled", !enabled);
-      els.downloadLink.setAttribute("aria-disabled", enabled ? "false" : "true");
-      els.downloadLink.href = enabled ? state.generatedUrl : "#";
+      els.downloadLink.disabled = !enabled || state.loading;
     }
+    els.candidates?.setAttribute("aria-busy", String(state.loading));
+    renderLanguageControls();
+  }
+
+  function currentEditedCaption() {
+    const zh = els.captionZh?.value.trim() || "";
+    const en = els.captionEn?.value.trim() || "";
+    if (!zh && !en) return null;
+    return { id: state.selectedCaptionId || "manual", zh, en };
+  }
+
+  function syncCaptionEditor(caption) {
+    if (els.captionZh) els.captionZh.value = caption?.zh || "";
+    if (els.captionEn) els.captionEn.value = caption?.en || "";
+  }
+
+  function renderLanguageControls() {
+    els.language?.querySelectorAll("[data-caption-language]").forEach((button, index) => {
+      const selected = button.dataset.captionLanguage === state.captionLanguage;
+      button.classList.toggle("is-active", selected);
+      button.setAttribute("aria-pressed", String(selected));
+      button.tabIndex = selected || (!state.captionLanguage && index === 0) ? 0 : -1;
+    });
   }
 
   function currentBureaucracyModelRoute() {
@@ -290,11 +321,13 @@
 
   async function drawPreview(caption) {
     if (!els.canvas) return;
+    const requestId = ++state.previewRequestId;
     const canvas = els.canvas;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     const img = await loadImage(imageSrc());
+    if (requestId !== state.previewRequestId) return;
     const targetWidth = Math.max(900, img.naturalWidth || img.width || 1200);
     const ratio = (img.naturalHeight || img.height || 900) / Math.max(1, img.naturalWidth || img.width || 1200);
     canvas.width = targetWidth;
@@ -322,11 +355,13 @@
     let enLines = [];
     let lineHeight = 0;
 
+    const zhText = state.captionLanguage === "en" ? "" : caption.zh;
+    const enText = state.captionLanguage === "zh" ? "" : caption.en;
     for (let tries = 0; tries < 8; tries += 1) {
       ctx.font = `700 ${zhSize}px Arial, "PingFang SC", "Microsoft YaHei", sans-serif`;
-      zhLines = wrapChinese(ctx, caption.zh, maxTextWidth);
+      zhLines = wrapChinese(ctx, zhText, maxTextWidth);
       ctx.font = `700 ${enSize}px Arial, Helvetica, sans-serif`;
-      enLines = wrapEnglish(ctx, caption.en, maxTextWidth);
+      enLines = wrapEnglish(ctx, enText, maxTextWidth);
       lineHeight = zhSize * 1.18;
       const totalHeight = zhLines.length * lineHeight + enLines.length * enSize * 1.25 + canvas.height * 0.012;
       if (totalHeight <= boxH || zhSize < canvas.width * 0.028) break;
@@ -368,19 +403,19 @@
     });
 
     state.generatedUrl = canvas.toDataURL("image/png");
+    canvas.setAttribute("aria-label", t("bureaucracy_meme_canvas_caption", [zhText, enText].filter(Boolean).join(" / ")));
     syncButtons();
   }
 
   async function generateCaptions() {
+    if (state.loading) return;
     const topic = els.topicInput?.value.trim() || "";
     if (!topic) {
       setError(t("bureaucracy_meme_empty"));
       return;
     }
+    const requestId = ++state.generationRequestId;
     state.loading = true;
-    state.selectedCaptionId = "";
-    state.generatedUrl = "";
-    state.captions = [];
     setError("");
     setProviderNote(t("bureaucracy_meme_calling_model", currentBureaucracyModelLabel()));
     syncButtons();
@@ -397,35 +432,71 @@
     }
 
     try {
-      const response = await fetch("/api/bureaucracy/captions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          topic,
-          tone: state.tone,
-          templateId: template().id,
-          modelRoute: currentBureaucracyModelRoute(),
-          imageDataUrl,
-          requireLlm: true,
-        }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data?.detail || data?.error || `HTTP ${response.status}`);
+      let data;
+      const cloudActive = typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudConfig.apiKey;
+      if (cloudActive) {
+        const response = await fetch("/api/bureaucracy/captions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            topic,
+            tone: state.tone,
+            templateId: template().id,
+            modelRoute: currentBureaucracyModelRoute(),
+            imageDataUrl,
+            requireLlm: true,
+          }),
+        });
+        data = await response.json();
+        if (!response.ok) throw new Error(data?.detail || data?.error || `HTTP ${response.status}`);
+      } else {
+        const result = await sendLocalModelTask({
+          payload: {
+            model: getLocalModelRequestName(),
+            messages: window.AISystem6ModelTaskRuntime.buildBureaucracyMessages({
+              topic,
+              tone: state.tone,
+              mood: template().mood,
+              imageDataUrl,
+            }),
+            temperature: 0.55,
+            max_tokens: 1200,
+            stream: false,
+            ai_system6_task_kind: "bureaucracy_meme_caption",
+          },
+          taskKind: "bureaucracy_meme_caption",
+          streamPreference: "json",
+        });
+        const parsed = window.AISystem6LocalLMStudio.parseJsonText(result.text);
+        const captions = (Array.isArray(parsed?.captions) ? parsed.captions : [])
+          .filter((item) => item && String(item.zh || "").trim() && String(item.en || "").trim())
+          .slice(0, 6)
+          .map((item, index) => ({
+            id: `llm-${index + 1}`,
+            zh: String(item.zh).trim(),
+            en: String(item.en).trim(),
+            archetype: String(item.archetype || "senior_civil_servant"),
+            tone: String(item.tone || state.tone),
+          }));
+        if (captions.length !== 6) throw new Error("Model returned too few usable captions.");
+        data = { provider: "llm", captions };
+      }
       if (data.provider !== "llm") {
         throw new Error("llm_caption_unavailable");
       }
+      if (requestId !== state.generationRequestId) return;
       state.captions = Array.isArray(data.captions) ? data.captions : [];
       if (!state.captions.length) throw new Error("No captions returned");
       setProviderNote(t("bureaucracy_meme_generated_with_model", currentBureaucracyModelLabel()));
       state.selectedCaptionId = state.captions[0].id;
-      await drawPreview(state.captions[0]);
+      syncCaptionEditor(state.captions[0]);
+      await drawPreview(currentEditedCaption());
     } catch (error) {
-      state.captions = [];
-      state.selectedCaptionId = "";
-      state.generatedUrl = "";
+      if (requestId !== state.generationRequestId) return;
       setError(t("bureaucracy_meme_model_required"));
       setProviderNote(t("bureaucracy_meme_llm_failed"));
     } finally {
+      if (requestId !== state.generationRequestId) return;
       state.loading = false;
       syncButtons();
       renderCandidates();
@@ -440,7 +511,7 @@
       state.uploadedImageSrc = "";
       state.uploadedImageName = "";
       renderTemplateList();
-      await drawPreview(state.captions.find((caption) => caption.id === state.selectedCaptionId));
+      await drawPreview(currentEditedCaption());
     });
 
     els.toneList?.addEventListener("click", (event) => {
@@ -455,7 +526,9 @@
       if (!button) return;
       state.selectedCaptionId = button.dataset.captionId || "";
       renderCandidates();
-      await drawPreview(state.captions.find((caption) => caption.id === state.selectedCaptionId));
+      const caption = state.captions.find((item) => item.id === state.selectedCaptionId);
+      syncCaptionEditor(caption);
+      await drawPreview(currentEditedCaption());
       setProviderNote(t("bureaucracy_meme_caption_applied"));
     });
 
@@ -465,7 +538,7 @@
         state.uploadedImageName = "";
         if (els.uploadInput) els.uploadInput.value = "";
         renderTemplateList();
-        await drawPreview(state.captions.find((caption) => caption.id === state.selectedCaptionId));
+        await drawPreview(currentEditedCaption());
         return;
       }
       els.uploadInput?.click();
@@ -484,7 +557,7 @@
         state.uploadedImageName = file.name;
         renderTemplateList();
         setError("");
-        await drawPreview(state.captions.find((caption) => caption.id === state.selectedCaptionId));
+        await drawPreview(currentEditedCaption());
       };
       reader.onerror = () => setError(t("bureaucracy_meme_upload_failed"));
       reader.readAsDataURL(file);
@@ -492,10 +565,54 @@
 
     els.generateButton?.addEventListener("click", generateCaptions);
     els.topicInput?.addEventListener("keydown", (event) => {
-      if (event.key === "Enter") generateCaptions();
+      if (event.key === "Enter" && !event.isComposing) {
+        event.preventDefault();
+        generateCaptions();
+      }
     });
-    els.downloadLink?.addEventListener("click", (event) => {
-      if (!state.generatedUrl) event.preventDefault();
+    els.downloadLink?.addEventListener("click", () => {
+      if (!state.generatedUrl) return;
+      const link = document.createElement("a");
+      link.href = state.generatedUrl;
+      link.download = "bureaucracy-meme.png";
+      link.click();
+    });
+    els.language?.addEventListener("click", async (event) => {
+      const button = event.target.closest("[data-caption-language]");
+      if (!button) return;
+      state.captionLanguage = button.dataset.captionLanguage || "bilingual";
+      renderLanguageControls();
+      await drawPreview(currentEditedCaption());
+    });
+    [els.captionZh, els.captionEn].forEach((field) => {
+      field?.addEventListener("input", () => {
+        state.selectedCaptionId = "";
+        renderCandidates();
+        drawPreview(currentEditedCaption());
+      });
+    });
+    bindRovingButtons(els.templateList, "[data-template-id]", "horizontal");
+    bindRovingButtons(els.toneList, "[data-tone]", "horizontal");
+    bindRovingButtons(els.candidates, "[data-caption-id]", "vertical");
+    bindRovingButtons(els.language, "[data-caption-language]", "horizontal");
+  }
+
+  function bindRovingButtons(container, selector, orientation) {
+    container?.addEventListener("keydown", (event) => {
+      const buttons = [...container.querySelectorAll(selector)].filter((button) => !button.disabled);
+      const currentIndex = buttons.indexOf(document.activeElement);
+      if (currentIndex < 0) return;
+      const previousKey = orientation === "vertical" ? "ArrowUp" : "ArrowLeft";
+      const nextKey = orientation === "vertical" ? "ArrowDown" : "ArrowRight";
+      if (![previousKey, nextKey, "Home", "End"].includes(event.key)) return;
+      event.preventDefault();
+      let nextIndex = currentIndex;
+      if (event.key === previousKey) nextIndex = (currentIndex - 1 + buttons.length) % buttons.length;
+      if (event.key === nextKey) nextIndex = (currentIndex + 1) % buttons.length;
+      if (event.key === "Home") nextIndex = 0;
+      if (event.key === "End") nextIndex = buttons.length - 1;
+      buttons[nextIndex]?.focus();
+      buttons[nextIndex]?.click();
     });
   }
 
@@ -515,11 +632,15 @@
       error: byId("bureaucracy-error"),
       providerNote: byId("bureaucracy-provider-note"),
       downloadLink: byId("bureaucracy-download-link"),
+      captionZh: byId("bureaucracy-caption-zh"),
+      captionEn: byId("bureaucracy-caption-en"),
+      language: byId("bureaucracy-language"),
     });
     await loadTemplates();
     renderTemplateList();
     renderToneList();
     renderCandidates();
+    renderLanguageControls();
     bindEvents();
     state.initialized = true;
   }
@@ -537,10 +658,26 @@
     await init();
     syncButtons();
     try {
-      await drawPreview(state.captions.find((caption) => caption.id === state.selectedCaptionId));
+      await drawPreview(currentEditedCaption());
     } catch (error) {
       setError(t("bureaucracy_meme_image_failed"));
     }
   };
   window.refreshBureaucracyMemeLanguage = rerenderLocalizedText;
+  window.AISystem6BureaucracyMeme = Object.freeze({
+    async runMenuCommand(command) {
+      await init();
+      if (command === "upload") return els.uploadInput?.click();
+      if (command === "download") {
+        if (!state.generatedUrl) return;
+        const link = document.createElement("a");
+        link.href = state.generatedUrl;
+        link.download = "bureaucracy-meme.png";
+        link.click();
+        return;
+      }
+      if (command === "focus-topic") return els.topicInput?.focus();
+      if (command === "generate") return generateCaptions();
+    },
+  });
 })();

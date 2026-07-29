@@ -12,10 +12,18 @@ function getElements() {
   const composeToolsToggleButton = document.querySelector("#compose-tools-toggle");
   const composeToolsMenuEl = document.querySelector("#compose-tools-menu");
   const messagesEl = document.querySelector("#messages");
+  const clioScrollLatestButton = document.querySelector("#clio-scroll-latest");
+  const composerKeyHintEl = document.querySelector(".composer-key-hint");
   const statusEl = document.querySelector("#status");
   const assistantMeterButton = document.querySelector("#assistant-meter");
   const localProviderEl = document.querySelector("#local-provider");
   const endpointInput = document.querySelector("#endpoint");
+  const localApiTokenInput = document.querySelector("#local-api-token");
+  const connectLocalModelButton = document.querySelector("#connect-local-model");
+  const localConnectionStatusEl = document.querySelector("#local-connection-status");
+  const localAuthStatusEl = document.querySelector("#local-auth-status");
+  const localCorsStatusEl = document.querySelector("#local-cors-status");
+  const localBrowserPermissionStatusEl = document.querySelector("#local-browser-permission-status");
   const modelInput = document.querySelector("#model");
   const setupLocalModelButton = document.querySelector("#setup-local-model");
   const findModelsButton = document.querySelector("#find-models");
@@ -96,6 +104,7 @@ function getElements() {
   const emptyTrashButton = document.querySelector("#empty-trash");
   const projectCdCountEl = document.querySelector("#project-cd-count");
   const projectCdGridEl = document.querySelector("#project-cd-grid");
+  const burnProjectAuditCapsuleButton = document.querySelector("#burn-project-audit-capsule");
   const downloadProjectCdButton = document.querySelector("#download-project-cd");
   const printProjectCdPdfButton = document.querySelector("#print-project-cd-pdf");
   const clearProjectCdButton = document.querySelector("#clear-project-cd");
@@ -386,10 +395,18 @@ function getElements() {
     composeToolsToggleButton,
     composeToolsMenuEl,
     messagesEl,
+    clioScrollLatestButton,
+    composerKeyHintEl,
     statusEl,
     assistantMeterButton,
     localProviderEl,
     endpointInput,
+    localApiTokenInput,
+    connectLocalModelButton,
+    localConnectionStatusEl,
+    localAuthStatusEl,
+    localCorsStatusEl,
+    localBrowserPermissionStatusEl,
     modelInput,
     setupLocalModelButton,
     findModelsButton,
@@ -470,6 +487,7 @@ function getElements() {
     emptyTrashButton,
     projectCdCountEl,
     projectCdGridEl,
+    burnProjectAuditCapsuleButton,
     downloadProjectCdButton,
     printProjectCdPdfButton,
     clearProjectCdButton,

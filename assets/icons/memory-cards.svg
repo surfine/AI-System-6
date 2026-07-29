@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg">
+  <symbol id="memory-card-apple-ii" viewBox="0 0 64 64">
+    <g fill="none" stroke="currentColor" stroke-linecap="square" stroke-linejoin="miter">
+      <path stroke-width="3" d="M17 6h30v23H17z"/>
+      <path stroke-width="2" d="M21 10h22v14H21zM24 29v5h16v-5"/>
+      <path stroke-width="3" d="M11 36h42l5 15H6z"/>
+      <path stroke-width="2" d="M15 41h31M18 46h31M13 51h38"/>
+      <path stroke-width="3" d="M20 55h24"/>
+      <path stroke-width="2" d="M49 40h4v5h-4z"/>
+    </g>
+  </symbol>
+
+  <symbol id="memory-card-lisa" viewBox="0 0 64 64">
+    <g fill="none" stroke="currentColor" stroke-linecap="square" stroke-linejoin="miter">
+      <path stroke-width="3" d="M13 5h38v42H13z"/>
+      <path stroke-width="2" d="M18 10h22v18H18zM44 11h3v16h-3zM18 34h21M18 39h13"/>
+      <path stroke-width="3" d="M18 47v5h28v-5M8 55h48l-4 5H12z"/>
+      <path stroke-width="2" d="M17 58h28"/>
+      <path stroke-width="3" d="M45 34h2v2h-2z"/>
+    </g>
+  </symbol>
+
+  <symbol id="memory-card-mac-128k" viewBox="0 0 64 64">
+    <g fill="none" stroke="currentColor" stroke-linecap="square" stroke-linejoin="miter">
+      <path stroke-width="3" d="M14 5h36v50H14z"/>
+      <path stroke-width="2" d="M20 11h24v18H20zM23 14h18v12H23zM35 37h10v3H35zM20 46h24"/>
+      <path stroke-width="3" d="M10 58h44"/>
+      <path stroke-width="2" d="M22 33h2v2h-2z"/>
+      <path stroke-width="3" d="M17 55h30"/>
+    </g>
+  </symbol>
+
+  <symbol id="memory-card-mac-portable" viewBox="0 0 64 64">
+    <g fill="none" stroke="currentColor" stroke-linecap="square" stroke-linejoin="miter">
+      <path stroke-width="3" d="M21 8V4h22v4M15 8h34v23H15z"/>
+      <path stroke-width="2" d="M20 12h24v14H20z"/>
+      <path stroke-width="3" d="M9 34h46v22H9z"/>
+      <path stroke-width="2" d="M14 39h22v8H14zM17 41h16M17 44h16"/>
+      <circle cx="45" cy="45" r="5" stroke-width="2"/>
+      <path stroke-width="3" d="M5 59h54"/>
+    </g>
+  </symbol>
+
+  <symbol id="memory-card-powerbook-100" viewBox="0 0 64 64">
+    <g fill="none" stroke="currentColor" stroke-linecap="square" stroke-linejoin="miter">
+      <path stroke-width="3" d="M12 7h40v27H12z"/>
+      <path stroke-width="2" d="M17 12h30v17H17z"/>
+      <path stroke-width="3" d="M8 37h48l4 18H4z"/>
+      <path stroke-width="2" d="M13 41h36v7H13zM16 43h30M16 46h30"/>
+      <circle cx="32" cy="52" r="3" stroke-width="2"/>
+      <path stroke-width="3" d="M8 58h48"/>
+    </g>
+  </symbol>
+
+  <symbol id="memory-card-newton" viewBox="0 0 64 64">
+    <g fill="none" stroke="currentColor" stroke-linecap="square" stroke-linejoin="miter">
+      <path stroke-width="3" d="M15 4h32v56H15z"/>
+      <path stroke-width="2" d="M20 10h22v32H20zM24 16h14M24 22h10M24 28h12M24 34h8"/>
+      <path stroke-width="3" d="M27 51h8"/>
+      <path stroke-width="2" d="m50 11 4-4 3 3-4 4-8 31-4 5 1-7z"/>
+    </g>
+  </symbol>
+
+  <symbol id="memory-card-quicktake" viewBox="0 0 64 64">
+    <g fill="none" stroke="currentColor" stroke-linecap="square" stroke-linejoin="miter">
+      <path stroke-width="3" d="M8 22h41l7 7v22H8z"/>
+      <path stroke-width="2" d="M8 27H4v18h4M15 17h14v5M14 29h10"/>
+      <circle cx="41" cy="37" r="10" stroke-width="3"/>
+      <circle cx="41" cy="37" r="4" stroke-width="2"/>
+      <path stroke-width="3" d="M14 51v5h12v-5"/>
+      <path stroke-width="2" d="M51 27h5"/>
+    </g>
+  </symbol>
+
+  <symbol id="memory-card-laserwriter" viewBox="0 0 64 64">
+    <g fill="none" stroke="currentColor" stroke-linecap="square" stroke-linejoin="miter">
+      <path stroke-width="2" d="M20 4h24v18H20zM24 8h16M24 13h13"/>
+      <path stroke-width="3" d="M9 20h46v35H9z"/>
+      <path stroke-width="2" d="M15 27h34v7H15zM18 40h28v9H18zM42 24h6"/>
+      <path stroke-width="3" d="M15 55v4M49 55v4"/>
+      <path stroke-width="2" d="M43 44h2"/>
+    </g>
+  </symbol>
+
+  <symbol id="memory-card-applecd-sc" viewBox="0 0 64 64">
+    <g fill="none" stroke="currentColor" stroke-linecap="square" stroke-linejoin="miter">
+      <circle cx="32" cy="16" r="11" stroke-width="3"/>
+      <circle cx="32" cy="16" r="3" stroke-width="2"/>
+      <path stroke-width="3" d="M9 31h46v24H9z"/>
+      <path stroke-width="2" d="M15 38h34M19 43h26M47 48h2"/>
+      <path stroke-width="3" d="M14 55v4M50 55v4"/>
+    </g>
+  </symbol>
+
+  <symbol id="memory-card-keyboard" viewBox="0 0 64 64">
+    <g fill="none" stroke="currentColor" stroke-linecap="square" stroke-linejoin="miter">
+      <path stroke-width="3" d="M5 22h54l-4 28H9z"/>
+      <path stroke-width="2" d="M11 28h42M10 35h44M9 42h46M17 47h30"/>
+      <path stroke-width="2" d="M16 28v14M24 28v14M32 28v14M40 28v14M48 28v14"/>
+      <path stroke-width="3" d="M32 22V12c0-4 4-6 8-6h8"/>
+    </g>
+  </symbol>
+
+  <symbol id="memory-card-adb-mouse" viewBox="0 0 64 64">
+    <g fill="none" stroke="currentColor" stroke-linecap="square" stroke-linejoin="miter">
+      <path stroke-width="3" d="M32 16c-11 0-18 8-18 20v15h36V36c0-12-7-20-18-20z"/>
+      <path stroke-width="2" d="M32 17v17M23 25h18M20 44h24"/>
+      <path stroke-width="3" d="M32 16V9c0-4 3-6 7-6h9"/>
+      <path stroke-width="2" d="M27 21h10v9H27z"/>
+    </g>
+  </symbol>
+
+  <symbol id="memory-card-pippin" viewBox="0 0 64 64">
+    <g fill="none" stroke="currentColor" stroke-linecap="square" stroke-linejoin="miter">
+      <path stroke-width="3" d="M7 28h50v25H7z"/>
+      <path stroke-width="2" d="M14 34h25M44 35h5M14 47h36"/>
+      <circle cx="32" cy="16" r="10" stroke-width="3"/>
+      <circle cx="32" cy="16" r="3" stroke-width="2"/>
+      <path stroke-width="3" d="M15 53v5M49 53v5"/>
+      <path stroke-width="2" d="m14 24-5-8 5-5 7 7M50 24l5-8-5-5-7 7"/>
+    </g>
+  </symbol>
+</svg>

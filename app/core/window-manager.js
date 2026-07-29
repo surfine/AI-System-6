@@ -55,6 +55,9 @@ const windowLayerCompactBaseZ = readZLayerToken("--z-window-layer-compact-base",
 const windowLayerCompactThresholdZ = readZLayerToken("--z-window-layer-compact-threshold", 8800);
 const windowLayerMaxZ = readZLayerToken("--z-window-layer-max", 8990);
 const windowPinnedZ = readZLayerToken("--z-window-pinned", 9000);
+// About is the one window that dims the desk behind it, so it has to sit above
+// its own scrim; the pinned-window layer is below it.
+const systemModalZ = readZLayerToken("--z-system-modal", 9510);
 const windowSaveZ = readZLayerToken("--z-window-save", 8500);
 const writingLayoutWindowNames = new Set(["questionSheet", "outline", "sectionDrafts", "teachText", "reviewDesk"]);
 const finderCascadeWindowNames = new Set([
@@ -289,6 +292,15 @@ async function prepareFinderModeForApp(appId) {
   if (sideAskEnabled && !isSideAskPairApp(appId)) clearSideAskMode();
   const windowsToHide = Array.from(document.querySelectorAll(".window:not(.is-hidden)"))
     .filter((win) => {
+      // On a phone the foregrounded app is the full-screen backdrop, so a modal,
+      // system window, or desk accessory floats over it instead of replacing it.
+      // Only those may skip single-tasking: another real app must still quit the
+      // running one, or Finder mode would silently become MultiFinder on a phone.
+      if (
+        isPortraitDocumentFlow()
+        && win.classList.contains("is-mobile-fullscreen")
+        && !isFinderModeSingleTaskApp(appId)
+      ) return false;
       const currentAppId = getWindowAppId(win);
       if (finderModeForegroundAppIds.has(currentAppId)) {
         return isFinderModeSingleTaskApp(appId) || allowSideAskPair;
@@ -331,8 +343,9 @@ function updateQuickDraftFocusChrome() {
   document.body.classList.toggle("quick-draft-focus", !!visible);
 }
 
-function setSideAskAnchorApp(appId = "teachText") {
+function setSideAskAnchorApp(appId = "teachText", ownerAppId = appId) {
   sideAskAnchorAppId = appId || "teachText";
+  sideAskAnchorOwnerAppId = ownerAppId || sideAskAnchorAppId;
   sideAskEnabled = true;
   updateSideAskSourceChrome();
 }
@@ -343,12 +356,48 @@ function clearSideAskMode() {
   const wasQuickDraftSideAsk = sideAskAnchorAppId === "quickDraft";
   sideAskEnabled = false;
   sideAskAnchorAppId = "teachText";
+  sideAskAnchorOwnerAppId = "teachText";
   if (wasQuickDraftSideAsk && typeof exitQuickDraftClioTalkSession === "function") {
     exitQuickDraftClioTalkSession({ restore: true });
   } else if (typeof exitSideAskClioTalkSession === "function") {
     exitSideAskClioTalkSession({ restore: true });
   }
   updateSideAskSourceChrome();
+}
+
+function sideAskSourceDisplayLabel(appId = sideAskAnchorAppId) {
+  if (appId === "teachText") {
+    const title = typeof getTeachTextDocumentName === "function"
+      ? getTeachTextDocumentName({ fallback: teachTextNameInput?.value?.trim() || t("teachtext_label") })
+      : t("teachtext_label");
+    return `${t("teachtext_label")} / ${title}`;
+  }
+  if (appId === "quickDraft") return t("quick_draft_label");
+  if (appId === "reader") return currentReaderPage?.title
+    ? `${t("reader")} / ${currentReaderPage.title}`
+    : t("reader");
+  if (appId === "scrapbook") return t("scrapbook");
+  if (appId === "docMap") return currentDocMap?.sourceLabel
+    ? `${t("docmap")} / ${currentDocMap.sourceLabel}`
+    : t("docmap");
+  if (appId === "clioStage") return typeof clioStageState !== "undefined" && clioStageState?.source?.title
+    ? `${t("clio_stage_label")} / ${clioStageState.source.title}`
+    : t("clio_stage_label");
+  return t("sideask");
+}
+
+function focusSideAskSource() {
+  if (!sideAskEnabled || isMultiFinderMode()) return;
+  const windowName = {
+    quickDraft: "quickDraft",
+    teachText: "teachText",
+    reader: "reader",
+    scrapbook: "scrapbook",
+    docMap: "docMap",
+    clioStage: "clioStage",
+  }[sideAskAnchorAppId];
+  const sourceWindow = windowName ? getWindow(windowName) : null;
+  if (sourceWindow) focusWindow(sourceWindow);
 }
 
 function updateSideAskSourceChrome() {
@@ -363,8 +412,18 @@ function updateSideAskSourceChrome() {
     form.hidden = !isMultiFinderMode() && sideAskEnabled && sideAskAnchorAppId === appId;
   });
   const quickDraftSideAsk = !isMultiFinderMode() && sideAskEnabled && sideAskAnchorAppId === "quickDraft";
+  const sideAskActive = !isMultiFinderMode() && sideAskEnabled;
   if (!quickDraftSideAsk) restoreQuickDraftIntegratedAssistant();
-  getWindow("assistant")?.classList.remove("is-quick-draft-sideask");
+  const assistant = getWindow("assistant");
+  assistant?.classList.remove("is-quick-draft-sideask");
+  assistant?.classList.toggle("is-sideask", sideAskActive);
+  if (assistant) assistant.dataset.sideaskAnchor = sideAskActive ? sideAskAnchorAppId : "";
+  const modeStrip = document.getElementById("sideask-mode-strip");
+  if (modeStrip) modeStrip.hidden = !sideAskActive;
+  const sourceName = document.getElementById("sideask-source-name");
+  if (sourceName && sideAskActive) {
+    sourceName.textContent = t("sideask_paired_with", sideAskSourceDisplayLabel());
+  }
   document.getElementById("compose-tools-quick-draft")?.classList.add("is-hidden");
   document.querySelectorAll(".compose-tools-quick-draft-import").forEach((item) => {
     item.classList.add("is-hidden");
@@ -375,12 +434,13 @@ function updateSideAskSourceChrome() {
   }
   const composeToolsToggle = document.getElementById("compose-tools-toggle");
   if (composeToolsToggle && typeof t === "function") {
-    composeToolsToggle.textContent = t("compose_tools_symbol");
+    composeToolsToggle.setAttribute("aria-label", t("compose_tools"));
+    composeToolsToggle.title = t("compose_tools");
   }
   if (typeof syncPromptPlaceholder === "function") syncPromptPlaceholder();
   const assistantTitle = document.getElementById("assistant-title");
   if (assistantTitle && typeof t === "function") {
-    assistantTitle.textContent = sideAskEnabled && !isMultiFinderMode() ? t("quick_draft_copilot_title") : t("assistant_title");
+    assistantTitle.textContent = sideAskActive ? t("sideask_title") : t("assistant_title");
   }
 }
 
@@ -425,18 +485,14 @@ async function toggleSideAsk() {
   }
 
   if (!sideAskEnabled) {
-    setSideAskAnchorApp("teachText");
-    const canOpen = await prepareFinderModeForApp("teachText");
-    if (!canOpen) {
-      clearSideAskMode();
-      updateMenuState();
-      return;
-    }
-    await enterWriterMode();
+    const canOpen = await arrangeWindowAssistantSplit("teachText");
+    if (!canOpen) return;
     setStatus(t("sideask_on"));
   } else {
+    const sourceWindowName = sideAskAnchorAppId;
     clearSideAskMode();
-    leaveWriterMode();
+    const sourceWindow = getWindow(sourceWindowName);
+    if (sourceWindow) focusWindow(sourceWindow);
     setStatus(t("sideask_off"));
   }
   updateMenuState();
@@ -444,6 +500,10 @@ async function toggleSideAsk() {
 
 async function quitApp(appId = activeAppId) {
   if (nonQuittableAppIds.has(appId)) return;
+  if (appId === "writingStudio") {
+    await exitWritingStudio();
+    return;
+  }
 
   if (appId === "teachText" && shouldPromptForTeachTextFileSave()) {
     const result = await showSystemModal(teachTextUnsavedChangesMessage(), "save");
@@ -471,15 +531,43 @@ async function quitApp(appId = activeAppId) {
   scheduleWorkingSessionSave?.();
 }
 
+function resetDesktopScrollOffset() {
+  if (isPortraitDocumentFlow()) return;
+  const desktop = document.querySelector(".desktop");
+  if (!desktop) return;
+  const reset = () => {
+    desktop.scrollLeft = 0;
+    desktop.scrollTop = 0;
+  };
+  reset();
+  requestAnimationFrame(reset);
+}
+
+function installDesktopScrollLock() {
+  const desktop = document.querySelector(".desktop");
+  if (!desktop || desktop.dataset.scrollLockInstalled === "true") return;
+  desktop.dataset.scrollLockInstalled = "true";
+  desktop.addEventListener("scroll", resetDesktopScrollOffset, { passive: true });
+  resetDesktopScrollOffset();
+}
+
 function focusWindow(win, reveal=false) {
   if (!win) return;
-  if (reveal) requestAnimationFrame(() => {win.scrollIntoView();scrollBy(0,-36)});
+  if (reveal && isPortraitDocumentFlow()) {
+    revealWindowTitleInPortraitFlow(win);
+  } else {
+    resetDesktopScrollOffset();
+  }
 
   document.querySelectorAll(".window").forEach((item) => {
     item.classList.remove("is-active");
   });
   win.classList.add("is-active");
-  activeAppId = getWindowAppId(win);
+  const focusedAppId = getWindowAppId(win);
+  if (focusedAppId !== "accessories" && focusedAppId !== "system") {
+    activeAppId = focusedAppId;
+    menuOwnerAppId = focusedAppId;
+  }
   if (hiddenAppIds.has(activeAppId)) {
     hiddenAppIds.delete(activeAppId);
     windowsForApp(activeAppId).forEach((appWin) => {
@@ -489,7 +577,7 @@ function focusWindow(win, reveal=false) {
   }
 
   if (win.dataset.window === "about") {
-    win.style.zIndex = windowPinnedZ;
+    win.style.zIndex = systemModalZ;
     updateMenuState();
     renderMultiFinderMenu();
     scheduleWorkingSessionSave?.();
@@ -519,6 +607,92 @@ function focusWindow(win, reveal=false) {
 
 function isPortraitDocumentFlow() {
   return window.matchMedia("(max-width:860px) and (orientation:portrait)").matches;
+}
+
+// Mobile full-screen app shell (pilot: ClioTalk). On a phone a foregrounded
+// "real" app fills the screen below the menu bar and the desktop icon column
+// becomes the launcher. The CSS figure keys off .window.is-mobile-fullscreen +
+// body.mobile-app-foreground; here we only toggle those classes — no inline
+// layout styles. App-agnostic by design: roll the pattern out to another app by
+// adding its id to mobileFullScreenAppIds.
+// Deliberately excludes "accessories" (desk accessories float over the app, as
+// on AD98), "system" (About / Guide / System Help are overlays), and "finder"
+// (the desktop itself is the launcher you return to).
+const mobileFullScreenAppIds = new Set([
+  "clioTalk",
+  "teachText",
+  "quickDraft",
+  "searcher",
+  "reader",
+  "endfield",
+  "docMap",
+  "clioStage",
+  "clioChart",
+  "liquidCover",
+  "cmfStudio",
+  "soundscape",
+  "scrapbook",
+]);
+
+function mobileFullScreenTarget() {
+  if (!isPortraitDocumentFlow()) return null;
+  const wins = Array.from(
+    document.querySelectorAll(".window:not(.is-hidden):not(.is-app-hidden):not(.is-collapsed)")
+  ).filter((win) => (
+    mobileFullScreenAppIds.has(getWindowAppId(win))
+    // Zooming or dragging the grow box restores a window down; it then stays a
+    // normal floating window (so several can share the screen) until the zoom
+    // box maximizes it again.
+    && win.dataset.mobileRestored !== "true"
+  ));
+  if (!wins.length) return null;
+  return wins.sort((a, b) => Number(b.style.zIndex || 0) - Number(a.style.zIndex || 0))[0];
+}
+
+function syncMobileAppForeground() {
+  const target = mobileFullScreenTarget();
+  document.querySelectorAll(".window.is-mobile-fullscreen").forEach((win) => {
+    if (win !== target) win.classList.remove("is-mobile-fullscreen");
+  });
+  if (target) {
+    target.classList.add("is-mobile-fullscreen");
+    // Desktop placement code leaves inline left/top/width/height on some
+    // windows, and inline styles outrank the shell's rules. Drop that geometry
+    // so the maximized frame is the CSS shell's, not a stale desktop frame.
+    ["left", "top", "right", "bottom", "width", "height", "maxHeight", "transform", "order"]
+      .forEach((prop) => { target.style[prop] = ""; });
+  }
+  document.body.classList.toggle("mobile-app-foreground", !!target);
+}
+
+// The Finder entry in the switcher, so this is a MultiFinder-only path: bring
+// the Finder forward. Every running app is backgrounded with MultiFinder's own
+// hide vocabulary — they stay in the running-apps list and resume from the
+// switcher. Backgrounding only the frontmost one would just promote the next
+// running app to full-screen instead of revealing the desktop.
+function mobileHomeToDesktop() {
+  const appIds = new Set();
+  document.querySelectorAll(".window:not(.is-hidden)").forEach((win) => {
+    const appId = getWindowAppId(win);
+    if (mobileFullScreenAppIds.has(appId)) appIds.add(appId);
+  });
+  if (!appIds.size) return;
+  appIds.forEach((appId) => hideApp(appId, { preserveActive: true }));
+  activeAppId = "finder";
+  syncMobileAppForeground();
+  renderMultiFinderMenu();
+  playSystemSound?.("close");
+}
+
+// Re-foreground a running app full-screen from the mobile switcher.
+function foregroundMobileApp(appId) {
+  if (appId === "finder") {
+    mobileHomeToDesktop();
+    return;
+  }
+  const name = runningApps.get(appId)?.lastWindowName;
+  if (name) openWindow(name);
+  else syncMobileAppForeground();
 }
 
 function writingSpineAlignedTop(fallback = 18) {
@@ -766,8 +940,13 @@ function placeFinderCascadeWindow(win, options = {}) {
 
 function getActionAvailability() {
   const activeWin = document.querySelector(".window.is-active");
+  const focusedAppId = activeWin ? getWindowAppId(activeWin) : "finder";
+  const menuContextWin = ["accessories", "system"].includes(focusedAppId)
+    ? visibleWindowsForApp(menuOwnerAppId || activeAppId)
+      .sort((a, b) => Number(b.style.zIndex || 0) - Number(a.style.zIndex || 0))[0] || activeWin
+    : activeWin;
   const showResetSystemMenu = showResetSystemMenuInput ? showResetSystemMenuInput.checked : true;
-  const winName = activeWin?.dataset.window;
+  const winName = menuContextWin?.dataset.window;
   const teachTextWin = getWindow("teachText");
   const teachTextVisible = teachTextWin && !teachTextWin.classList.contains("is-hidden");
   const hasTeachTextBody = teachTextVisible && !!teachTextBodyInput.value.trim();
@@ -775,7 +954,7 @@ function getActionAvailability() {
   const hasConversation = conversation.length > 0;
   const isAssistant = winName === "assistant";
   const isTeachText = winName === "teachText" && teachTextVisible;
-  const isChatFile = winName === "chatFile" && !activeWin.classList.contains("is-hidden");
+  const isChatFile = winName === "chatFile" && !menuContextWin.classList.contains("is-hidden");
   const hasDocumentFileSelection = winName === "documents" && !!selectedChatFileId;
   const hasDocumentFolderSelection = winName === "documents" && !!selectedDocumentFolderId;
   const projectFinderItem = winName === "projects" ? getSelectedProjectFinderItem() : null;
@@ -786,7 +965,7 @@ function getActionAvailability() {
   const hasProjectFinderTrash = !!projectFinderItem && projectFinderItem.canTrash !== false && projectFinderItem.virtual !== true;
   const selectedTrashItem = winName === "trash" ? getSelectedTrashItem() : null;
   const canPrintDirectory = printableDirectoryWindowNames.has(winName);
-  const canUsePageSetup = winName === "projectCd" || winName === "pageSetup";
+  const canUsePageSetup = winName === "projectCd" || winName === "pageSetup" || isTeachText;
   const teachTextSelection = isTeachText ? getTeachTextSelectionInfo() : { text: "" };
   const hasTeachTextSelection = !!teachTextSelection.text;
   const teachTextIsManuscript = typeof activeTeachTextAllows === "function"
@@ -814,6 +993,8 @@ function getActionAvailability() {
   const activeEditable = getActiveEditableElement();
   const hasEditableText = !!String(activeEditable?.value || activeEditable?.textContent || "").trim();
   const canUseWritingTools = hasEditableText || (hasTeachTextBody && teachTextIsManuscript) || hasSelectionServiceText;
+  const writingToolPromptReady = (mode) => window.AISystem6PromptFilesRuntime
+    ?.resolvePromptFile(`writing-tools.${({ describeChange: "describe-change", keyPoints: "key-points" })[mode] || mode}`, activeProjectId, currentLanguage)?.status === "ready";
   const hasTeachTextTranslation = hasTeachTextBody && !!(
     (teachTextSelection.text && getTeachTextTranslationTarget(teachTextSelection.text))
       || getTeachTextTranslationTarget(teachTextBodyInput.value)
@@ -829,8 +1010,14 @@ function getActionAvailability() {
   const hasStyleSections = !!teachTextBodyInput.value.trim() && getTeachTextSectionBlocks().length > 0;
   const hasReviewDeskBody = !!reviewDeskBodyInput?.value?.trim();
   const reviewDeskReady = !!teachTextReviewLabel();
+  const activeControlEnabled = (selector) => {
+    const control = document.querySelector(selector);
+    return !!control && !control.disabled && !control.classList.contains("is-disabled") && !control.hidden;
+  };
 
-  return {
+  const availability = {
+    "new-document": true,
+    "open-text-document": true,
     "new-folder": isProjectMounted,
     "open-menu-selection": true,
     "duplicate-selection": canDuplicateFinderSelection,
@@ -844,10 +1031,22 @@ function getActionAvailability() {
     "eject-menu-selection": isProjectMounted || getMountedTextDiskChunks().length > 0 || winName === "projectCd",
     "set-startup-project": true,
     "open-project-info": isProjectMounted,
-    "open-file-info": isProjectMounted,
+    "open-file-info": !!activeItem || isProjectMounted,
     "new-text-document": isProjectMounted,
     "save-current": isTeachText || teachTextVisible || (isAssistant && hasConversation),
     "save-chat": isAssistant && hasConversation,
+    "save-conversation": isAssistant && hasConversation && isProjectMounted,
+    "rename-active-chat": isAssistant && !clioTalkTemporaryMode && !!activeChatFileId,
+    "copy-current-chat-markdown": isAssistant && hasConversation,
+    "download-current-chat-markdown": isAssistant && hasConversation,
+    "find-in-cliotalk": isAssistant && hasConversation,
+    "find-next-in-cliotalk": isAssistant && hasConversation && !!clioTalkFindQuery,
+    "open-clio-attachment-picker": isAssistant && isProjectMounted,
+    "attach-selected-to-cliotalk": winName === "documents" && isClioTalkAttachableProjectFile(getSelectedDocumentItem()),
+    "open-clio-genealogy": isAssistant && hasConversation && isProjectMounted,
+    "save-clio-harness": isAssistant && hasConversation && isProjectMounted,
+    "save-clio-skill": isAssistant && hasConversation && isProjectMounted,
+    "save-clio-retrospective": isAssistant && hasConversation && isProjectMounted,
     "save-copy": isTeachText,
     "copy-active-markdown": isTeachText || isChatFile,
     "download-active-markdown": isTeachText || isChatFile,
@@ -857,30 +1056,61 @@ function getActionAvailability() {
     "ai-print-to-slides": (hasTeachTextBody && teachTextCanExport) || hasOutlineBody,
     "generate-marp-open-clio-stage": hasTeachTextBody && teachTextCanExport,
     "toggle-teachtext-preview": teachTextVisible,
+    "toggle-writing-preview": ["quickDraft", "questionSheet", "outline", "sectionDrafts", "reviewDesk", "teachText"].includes(winName),
+    "quick-draft-import-chat": winName === "quickDraft",
+    "quick-draft-vent-on": winName === "quickDraft",
+    "quick-draft-vent-off": winName === "quickDraft",
+    "quick-draft-vent-summary": winName === "quickDraft",
+    "quick-draft-compose": winName === "quickDraft",
+    "quick-draft-talk-points": winName === "quickDraft",
+    "quick-draft-mingming": winName === "quickDraft",
+    "quick-draft-luoluo": winName === "quickDraft",
+    "quick-draft-hkrr": winName === "quickDraft",
+    "quick-draft-praise": winName === "quickDraft",
+    "quick-draft-save-project": winName === "quickDraft",
+    "quick-draft-copy-markdown": winName === "quickDraft",
+    "quick-draft-send-teachtext": winName === "quickDraft",
+    "quick-draft-send-review": winName === "quickDraft",
+    "insert-question-template": winName === "questionSheet",
+    "organize-question-sheet": winName === "questionSheet",
+    "generate-outline": winName === "questionSheet",
+    "advance-question-to-outline": winName === "questionSheet",
+    "add-outline-section": winName === "outline",
+    "mingming-outline": winName === "outline",
+    "structure-outline": winName === "outline",
+    "expand-outline": winName === "outline",
+    "advance-outline-to-drafts": winName === "outline",
+    "previous-section-draft": winName === "sectionDrafts",
+    "next-section-draft": winName === "sectionDrafts",
+    "draft-current-section": winName === "sectionDrafts",
+    "polish-draft": winName === "sectionDrafts",
+    "suggest-draft": winName === "sectionDrafts",
+    "advance-drafts-to-review": winName === "sectionDrafts",
     "translate-teachtext": hasTeachTextTranslation,
     "style-check-teachtext": hasTeachTextBody || hasFinderTextFileSelection,
     "clip-teachtext-selection": hasTeachTextSelection,
-    "ai-critique": canUseWritingTools,
-    "ai-praise": canUseWritingTools || (winName === "reviewDesk" && reviewDeskReady && hasReviewDeskBody),
-    "ai-digest": canUseWritingTools,
-    "ai-continue": canUseWritingTools,
+    "ai-critique": canUseWritingTools && writingToolPromptReady("critique"),
+    "ai-praise": (canUseWritingTools && writingToolPromptReady("praise")) || (winName === "reviewDesk" && reviewDeskReady && hasReviewDeskBody && writingToolPromptReady("reviewPraise")),
+    "ai-digest": canUseWritingTools && writingToolPromptReady("digest"),
+    "ai-continue": canUseWritingTools && writingToolPromptReady("continue"),
     "ai-transform": canUseWritingTools,
-    "ai-describe-change": canUseWritingTools,
-    "ai-proofread": canUseWritingTools,
-    "ai-rewrite": canUseWritingTools,
-    "ai-friendly": canUseWritingTools,
-    "ai-professional": canUseWritingTools,
-    "ai-concise": canUseWritingTools,
-    "ai-summary": canUseWritingTools,
-    "ai-key-points": canUseWritingTools,
-    "ai-list": canUseWritingTools,
-    "ai-table": canUseWritingTools,
+    "ai-describe-change": canUseWritingTools && writingToolPromptReady("describeChange"),
+    "ai-proofread": canUseWritingTools && writingToolPromptReady("proofread"),
+    "ai-rewrite": canUseWritingTools && writingToolPromptReady("rewrite"),
+    "ai-friendly": canUseWritingTools && writingToolPromptReady("friendly"),
+    "ai-professional": canUseWritingTools && writingToolPromptReady("professional"),
+    "ai-concise": canUseWritingTools && writingToolPromptReady("concise"),
+    "ai-summary": canUseWritingTools && writingToolPromptReady("summary"),
+    "ai-key-points": canUseWritingTools && writingToolPromptReady("keyPoints"),
+    "ai-list": canUseWritingTools && writingToolPromptReady("list"),
+    "ai-table": canUseWritingTools && writingToolPromptReady("table"),
     "print-to-ai": canUseWritingTools,
     "duplicate-file": hasOpenFile,
     "rename-file": hasOpenFile || hasDocumentFolderSelection || hasProjectFinderRename,
     "move-file-trash": hasOpenFile || hasDocumentFolderSelection || hasProjectFinderTrash || hasProjectCdSelection || hasMountedFileSelection,
     "put-away": !!selectedTrashItem,
     "page-setup": canUsePageSetup,
+    "print-current": isTeachText && hasTeachTextBody,
     "print-directory": canPrintDirectory,
     "close-active-window": !!activeWin && !activeWin.classList.contains("is-hidden"),
     "undo": hasEditableFocus || isTeachText || isAssistant,
@@ -900,6 +1130,13 @@ function getActionAvailability() {
     "insert-last-reply": !!lastAssistantText,
     "clip-last-reply": !!lastAssistantText,
     "clear-chat": isAssistant && hasConversation,
+    "start-new-clio-chat": isAssistant,
+    "start-temporary-clio-chat": isAssistant && !clioTalkTemporaryMode,
+    "reveal-active-chat-file": isAssistant && !clioTalkTemporaryMode && !!activeChatFileId,
+    "remember-chat-as-project-memory": isAssistant && !clioTalkTemporaryMode && !!activeChatFileId,
+    "clip-assistant-selection": isAssistant && !!window.getSelection().toString().trim(),
+    "retry-last-message": isAssistant && !!lastUserText && !activeAbortController,
+    "stop-generation": isAssistant && !!activeAbortController,
     "empty-trash": getProjectTrashItems().length > 0,
     "erase-disk": !!selectedProject,
     "reset-system": showResetSystemMenu,
@@ -932,6 +1169,107 @@ function getActionAvailability() {
     "previous-claim-section": hasClaimSections,
     "next-claim-section": hasClaimSections,
     "open-find-path": true,
+    "focus-search-query": winName === "findPath",
+    "synthesize-search-results": winName === "findPath" && findPathResults.length > 0,
+    "copy-search-result-markdown": winName === "findPath" && selectedFindPathIndex !== null,
+    "insert-search-result": winName === "findPath" && selectedFindPathIndex !== null,
+    "reader-open-source": winName === "reader",
+    "reader-clip": winName === "reader" && activeControlEnabled("#reader-clip-button"),
+    "reader-clip-translate": winName === "reader" && activeControlEnabled("#reader-clip-translate-button"),
+    "reader-send-manuscript": winName === "reader" && activeControlEnabled("#reader-send-manuscript"),
+    "reader-make-docmap": winName === "reader" && activeControlEnabled("#reader-docmap-button"),
+    "reader-open-clio-stage": winName === "reader" && activeControlEnabled("#reader-open-clio-stage"),
+    "focus-reader-question": winName === "reader" && !!currentReaderPage?.text,
+    "docmap-save": winName === "docMap" && !!currentDocMap,
+    "docmap-print-pdf": winName === "docMap" && !!currentDocMap,
+    "docmap-send-question": winName === "docMap" && activeControlEnabled("#docmap-send-question"),
+    "docmap-insert-outline": winName === "docMap" && activeControlEnabled("#docmap-insert-outline"),
+    "docmap-hkrr": winName === "docMap" && !!currentDocMap,
+    "focus-docmap-question": winName === "docMap" && !!currentDocMap,
+    "docmap-layout-tree": winName === "docMap" && !!currentDocMap,
+    "docmap-layout-radial": winName === "docMap" && !!currentDocMap,
+    "docmap-layout-fishbone": winName === "docMap" && !!currentDocMap,
+    "docmap-fit-view": winName === "docMap" && !!currentDocMap,
+    "docmap-zoom-out": winName === "docMap" && !!currentDocMap,
+    "docmap-zoom-in": winName === "docMap" && !!currentDocMap,
+    "scrapbook-open-source": winName === "scrapbook" && activeControlEnabled("#open-scrap-source"),
+    "scrapbook-toggle-translation": winName === "scrapbook" && activeControlEnabled("#toggle-scrap-translation"),
+    "scrapbook-insert": winName === "scrapbook" && activeControlEnabled("#insert-scrap"),
+    "scrapbook-attach": winName === "scrapbook" && activeControlEnabled("#attach-scrap-to-assistant"),
+    "scrapbook-send-question": winName === "scrapbook" && activeControlEnabled("#send-scraps-to-question"),
+    "scrapbook-outline": winName === "scrapbook" && activeControlEnabled("#outline-scraps"),
+    "scrapbook-export-bilingual": winName === "scrapbook" && activeControlEnabled("#download-scraps-bilingual"),
+    "scrapbook-delete": winName === "scrapbook" && activeControlEnabled("#delete-scrap"),
+    "focus-scrapbook-question": winName === "scrapbook" && getSelectedScraps().length > 0,
+    "clio-chart-import": winName === "clioChart",
+    "clio-chart-new-cpu-gpu": winName === "clioChart",
+    "clio-chart-new-gaming": winName === "clioChart",
+    "clio-chart-new-battery-power": winName === "clioChart",
+    "clio-chart-new-noise-heat": winName === "clioChart",
+    "clio-chart-new-display": winName === "clioChart",
+    "clio-chart-new-rating": winName === "clioChart",
+    "clio-chart-new-blank": winName === "clioChart",
+    "clio-chart-save-template": winName === "clioChart",
+    "clio-chart-hand-back": winName === "clioChart" && !!window.AISystem6ClioChart?.hasOwnedBlock?.(),
+    "clio-chart-bars": winName === "clioChart",
+    "clio-chart-matrix": winName === "clioChart",
+    "clio-chart-trace": winName === "clioChart",
+    "clio-chart-grid": winName === "clioChart",
+    "clio-chart-score": winName === "clioChart",
+    "clio-chart-source": winName === "clioChart",
+    "clio-chart-presentation": winName === "clioChart",
+    "clio-chart-send-stage": winName === "clioChart" && !!window.AISystem6ClioChart?.canSendToStage?.(),
+    "clio-chart-reverse-sort": winName === "clioChart",
+    "clio-chart-lower-better": winName === "clioChart",
+    "clio-chart-read": winName === "clioChart",
+    "clio-chart-outliers": winName === "clioChart",
+    "clio-chart-gaps": winName === "clioChart",
+    "clio-chart-write-up": winName === "clioChart",
+    "see-as-chart": winName === "teachText" && /\n[ \t]*\|?[-: |]*-{3,}[-: |]*\|?[ \t]*\n/.test(teachTextBodyInput?.value || ""),
+    "clio-stage-import": winName === "clioStage",
+    "clio-stage-previous": winName === "clioStage" && activeControlEnabled("#clio-stage-prev"),
+    "clio-stage-next": winName === "clioStage" && activeControlEnabled("#clio-stage-next"),
+    "clio-stage-source": winName === "clioStage" && activeControlEnabled("#clio-stage-source-view"),
+    "clio-stage-document": winName === "clioStage" && activeControlEnabled("#clio-stage-document-view"),
+    "clio-stage-slide": winName === "clioStage" && activeControlEnabled("#clio-stage-slide-view"),
+    "clio-stage-cue": winName === "clioStage" && activeControlEnabled("#clio-stage-cue-view"),
+    "focus-clio-stage-question": winName === "clioStage" && activeControlEnabled("#clio-stage-question"),
+    "cover-choose-background": winName === "liquidCover",
+    "cover-choose-video": winName === "liquidCover",
+    "cover-choose-subject": winName === "liquidCover",
+    "cover-export-png": winName === "liquidCover",
+    "cover-export-video": winName === "liquidCover" && activeControlEnabled("#lc-motion-export"),
+    "cover-add-layer": winName === "liquidCover",
+    "cover-delete-layer": winName === "liquidCover" && activeControlEnabled("#lc-del-layer"),
+    "cover-shape-circle": winName === "liquidCover",
+    "cover-shape-squircle": winName === "liquidCover",
+    "cover-shape-capsule": winName === "liquidCover",
+    "cover-toggle-focus": winName === "liquidCover",
+    "cover-preview-motion": winName === "liquidCover" && activeControlEnabled("#lc-motion-preview"),
+    "cover-ai-compose": winName === "liquidCover",
+    "cmf-save-recipe": winName === "cmfStudio",
+    "cmf-export-usdz": winName === "cmfStudio",
+    "cmf-shuffle": winName === "cmfStudio",
+    "cmf-reset": winName === "cmfStudio",
+    "cmf-render": winName === "cmfStudio",
+    "cmf-view-front": winName === "cmfStudio" && !!document.querySelector('[data-cmf-view="01-front"]'),
+    "cmf-view-back": winName === "cmfStudio" && !!document.querySelector('[data-cmf-view="02-back"]'),
+    "cmf-view-side": winName === "cmfStudio" && !!document.querySelector('[data-cmf-view="05-buttons-side"]'),
+    "soundscape-choose-local": winName === "soundscape",
+    "soundscape-save-moment": winName === "soundscape" && !!window.AISystem6Soundscape?.canSaveMoment?.(),
+    "soundscape-toggle-play": winName === "soundscape" && !!window.AISystem6Soundscape?.hasQueue?.(),
+    "soundscape-previous": winName === "soundscape" && !!window.AISystem6Soundscape?.hasQueue?.(),
+    "soundscape-next": winName === "soundscape" && !!window.AISystem6Soundscape?.hasQueue?.(),
+    "soundscape-shuffle": winName === "soundscape" && !!window.AISystem6Soundscape?.hasQueue?.(),
+    "soundscape-repeat": winName === "soundscape" && !!window.AISystem6Soundscape?.hasQueue?.(),
+    "soundscape-reset-style": winName === "soundscape",
+    "soundscape-link-project": winName === "soundscape" && !!window.AISystem6Soundscape?.canLinkProject?.(),
+    "endfield-new-session": winName === "endfieldTerminal",
+    "endfield-run-query": winName === "endfieldTerminal" && !!document.querySelector("#endfield-query")?.value.trim(),
+    "meme-upload": winName === "bureaucracyMeme",
+    "meme-download": winName === "bureaucracyMeme" && document.querySelector("#bureaucracy-download-link")?.getAttribute("aria-disabled") !== "true",
+    "meme-focus-topic": winName === "bureaucracyMeme",
+    "meme-generate": winName === "bureaucracyMeme" && !!document.querySelector("#bureaucracy-topic-input")?.value.trim(),
     "open-find-file": true,
     "open-selected-find-file": selectedFindFileIndex !== null,
     "reveal-selected-find-file": selectedFindFileIndex !== null,
@@ -943,6 +1281,7 @@ function getActionAvailability() {
     "run-rebuild-flow": true,
     "close-rebuild-flow": true,
     "open-context-panel": true,
+    "focus-sideask-source": sideAskEnabled && !isMultiFinderMode(),
     "open-model-meter": performanceMeterInput.checked && !!lastModelMetrics,
     "intent-key": true,
     "open-rag": true,
@@ -970,6 +1309,10 @@ function getActionAvailability() {
     "switch-language": true,
     "toggle-writer-mode": false
   };
+  Object.keys(availability).forEach((action) => {
+    if (!isWorkspaceActionAllowed(action)) availability[action] = false;
+  });
+  return availability;
 }
 
 let cachedMenuActionElements = null;
@@ -991,6 +1334,7 @@ function invalidateMenuActionCache() {
 }
 
 function updateMenuState() {
+  if (typeof renderAppMenuBar === "function") renderAppMenuBar(menuOwnerAppId || activeAppId);
   const state = getActionAvailability();
   const activeWin = document.querySelector(".window.is-active:not(.is-hidden)");
   const activeViewWindow = viewWindowNames.includes(activeWin?.dataset.window) ? activeWin.dataset.window : null;
@@ -1009,6 +1353,8 @@ function updateMenuState() {
     if (action === "toggle-sideask") {
       btn.classList.toggle("is-hidden", isMultiFinderMode());
       btn.classList.toggle("is-checked", sideAskEnabled);
+      btn.classList.toggle("is-active", sideAskEnabled && btn.id === "teachtext-sideask");
+      if (btn.hasAttribute("aria-pressed")) btn.setAttribute("aria-pressed", String(sideAskEnabled));
     }
     if (action === "tile-windows") {
       btn.classList.toggle("is-hidden", matchMedia("(max-width:860px) and (orientation:portrait)").matches);
@@ -1028,6 +1374,12 @@ function updateMenuState() {
       btn.classList.toggle("is-checked", normalizeFinderViewMode(btn.dataset.viewMode) === activeViewMode);
     }
   });
+  document.querySelectorAll(".menu-submenu").forEach((sub) => {
+    const children = [...sub.querySelectorAll(".menu-submenu-popover [data-action]")];
+    const enabled = children.some((button) => !button.classList.contains("is-disabled"));
+    sub.classList.toggle("is-disabled", !enabled);
+    sub.querySelector(":scope > .menu-submenu-trigger")?.classList.toggle("is-disabled", !enabled);
+  });
   submenuActionElements().forEach((btn) => {
     const action = btn.dataset.submenuAction;
     if (action === "ask-cliotalk") {
@@ -1039,7 +1391,75 @@ function updateMenuState() {
   renderMultiFinderMenu();
 }
 
+// Windows whose behaviour lives in a lazily loaded module.
+//
+// The load MUST happen here rather than in whichever action handler opens the
+// window, because openWindow() is the one path every opener shares — including
+// session restore, which reopens last session's windows directly. A window
+// wired only through its action comes back from restore visible but inert: the
+// frame is there and nothing responds. `attach` re-renders the restored window
+// so it is usable before the user touches it.
+//
+// liquidCover and quickDraft are absent on purpose: they load their module in
+// the entrypoint block above and return early through the module's own open().
+//
+// Contract: tests/features/lazy-window-restore.test.mjs
+const lazyWindowModules = {
+  questionSheet: { ensure: () => ensureWritingFlowModule() },
+  outline: { ensure: () => ensureWritingFlowModule() },
+  sectionDrafts: { ensure: () => ensureWritingFlowModule() },
+  rebuildFlow: { ensure: () => ensureWritingFlowModule() },
+  dictionary: {
+    ensure: async () => {
+      await ensureSystemDictionaryData();
+      await ensureDictionaryHelpModule();
+    },
+  },
+  systemHelp: {
+    ensure: async () => {
+      await ensureSystemDictionaryData();
+      await ensureDictionaryHelpModule();
+    },
+  },
+  memoryCards: { ensure: () => ensureMemoryCardsModule() },
+  alarmClock: { ensure: () => ensureAlarmClockModule() },
+  translationPad: { ensure: () => ensureTranslationPadModule() },
+  bureaucracyMeme: { ensure: () => ensureBureaucracyMemeModule() },
+  endfieldTerminal: {
+    ensure: () => ensureEndfieldTerminalModule(),
+    attach: () => window.AISystem6EndfieldTerminal?.attach?.(),
+  },
+  timeMachine: {
+    ensure: () => ensureTimeMachineModule(),
+    attach: () => window.AISystem6TimeMachine?.attach?.(),
+  },
+  cmfStudio: { ensure: () => ensureCmfStudioModule() },
+  soundscape: {
+    ensure: () => ensureSoundscapeModule(),
+    attach: () => window.AISystem6Soundscape?.attach?.(),
+  },
+  clioStage: {
+    ensure: () => ensureClioStageModule(),
+    attach: () => window.AISystem6ClioStage?.attach?.(),
+  },
+  clioChart: {
+    ensure: () => ensureClioChartModule(),
+    attach: () => window.AISystem6ClioChart?.attach?.(),
+  },
+};
+
+async function loadLazyWindowModule(name) {
+  const entry = lazyWindowModules[name];
+  if (!entry || typeof entry.ensure !== "function") return;
+  await entry.ensure();
+  entry.attach?.();
+}
+
 async function openWindow(name, options = {}) {
+  if (!isWorkspaceWindowAllowed(name)) {
+    updateMenuState();
+    return;
+  }
   const {
     skipFinderMode = false,
     skipPlacement = false,
@@ -1086,18 +1506,7 @@ async function openWindow(name, options = {}) {
   hiddenAppIds.delete(win.dataset.app);
   windowsForApp(win.dataset.app).forEach((item) => item.classList.remove("is-app-hidden"));
 
-  if (["questionSheet", "outline", "sectionDrafts", "rebuildFlow"].includes(name)) {
-    await ensureWritingFlowModule();
-  }
-  if (["dictionary", "systemHelp"].includes(name)) {
-    await ensureSystemDictionaryData();
-  }
-  if (name === "memoryCards") {
-    await ensureMemoryCardsModule();
-  }
-  if (name === "cmfStudio") {
-    await ensureCmfStudioModule();
-  }
+  await loadLazyWindowModule(name);
 
   if (name === "projects") {
     renderProjectDisks();
@@ -1128,7 +1537,7 @@ async function openWindow(name, options = {}) {
     renderWritingBell();
   }
   if (name === "memoryCards") {
-    newMemoryCardsGame();
+    if (!memoryCardsHasGame()) newMemoryCardsGame();
     renderMemoryCards();
   }
   if (name === "cmfStudio" && typeof renderCmfStudio === "function") {
@@ -1151,11 +1560,15 @@ async function openWindow(name, options = {}) {
   if (name === "about") {
     renderAboutMacintosh();
   }
+  if (name === "guide" && typeof renderGuideStep === "function") {
+    renderGuideStep();
+  }
   if (name === "systemStatus") {
     renderSystemStatus();
   }
   if (name === "control") {
     refreshControlPanelModels();
+    if (!wasAlreadyOpen && typeof setControlTab === "function") setControlTab();
   }
   if (name === "notificationCenter") {
     renderNotificationCenter();
@@ -1172,8 +1585,8 @@ async function openWindow(name, options = {}) {
   if (name === "systemHelp") {
     renderSystemHelp();
   }
-  if (name === "endfieldTerminal" && typeof renderEndfieldTerminal === "function") {
-    renderEndfieldTerminal();
+  if (name === "endfieldTerminal") {
+    window.AISystem6EndfieldTerminal?.attach?.();
   }
 
   win.classList.remove("is-hidden", "is-collapsed");
@@ -1279,6 +1692,8 @@ async function openWindow(name, options = {}) {
   if (name === "about") {
     modalScrim.classList.remove("is-hidden");
   }
+  syncMobileAppForeground();
+  updateMenuState();
   scheduleWorkingSessionSave?.();
 }
 
@@ -1391,6 +1806,10 @@ function arrangeReviewWorkspaceSplit() {
 // from openWindow's placement tail (so it runs after default cascade placement and
 // sticks). Priority follows the route: review > drafting > legacy outline split.
 function arrangeActiveWritingWorkspace() {
+  // On a phone each writing phase is one full-screen app, so pairing two paper
+  // widths side by side is meaningless — and these splits write inline frames
+  // that would override the full-screen shell.
+  if (isPortraitDocumentFlow() && mobileFullScreenAppIds.has("teachText")) return;
   const isOpen = (name) => {
     const win = getWindow(name);
     return win && !win.classList.contains("is-hidden");
@@ -1620,7 +2039,15 @@ function arrangeDeskAccessories(frontWin = null) {
   }
 
   sizes.forEach(({ candidate, width }, index) => {
-    candidate.style.left = `${Math.round(startX + stepX * index)}px`;
+    // The cascade step assumes desktop slack. In portrait a desk accessory is
+    // already sized to the whole working span, so every window after the first
+    // would hang off the right edge; clamp each step back inside it.
+    const cascadeLeft = clampNumber(
+      startX + stepX * index,
+      leftMin,
+      Math.max(leftMin, rightMax - width)
+    );
+    candidate.style.left = `${Math.round(cascadeLeft)}px`;
     candidate.style.top = `${Math.round(startY + stepY * index)}px`;
     candidate.style.width = `${Math.round(width)}px`;
     candidate.style.right = "auto";
@@ -1632,6 +2059,15 @@ function arrangeDeskAccessories(frontWin = null) {
 function placeDA(win) {
   ensureWritingSpineCollapsedForPortraitDA();
   if (win?.dataset.userPositioned === "true") {
+    setWindowLayerZ(win, nextWindowLayerZ());
+    return;
+  }
+  // Control Panel and Chooser have their own centered-dialog rule in the
+  // portrait stylesheet (fixed, transform: translateX(-50%)), but inline
+  // styles always beat it — the desktop cascade below was landing them at an
+  // arbitrary carried-over position instead of that designed spot.
+  if (isPortraitDocumentFlow() && (win?.classList.contains("control-panel") || win?.classList.contains("chooser-panel"))) {
+    ["left", "top", "right", "width", "transform"].forEach((prop) => { win.style[prop] = ""; });
     setWindowLayerZ(win, nextWindowLayerZ());
     return;
   }
@@ -1940,25 +2376,42 @@ async function arrangeClioStageAssistantSplit() {
 async function arrangeWindowAssistantSplit(sourceWindowName, options = {}) {
   const sourceWindow = getWindow(sourceWindowName);
   const assistant = getWindow("assistant");
-  if (!sourceWindow || !assistant) return;
+  if (!sourceWindow || !assistant) return false;
 
   const sourceAppId = getWindowAppId(sourceWindow);
+  const sourceAnchorId = {
+    quickDraft: "quickDraft",
+    teachText: "teachText",
+    reader: "reader",
+    scrapbook: "scrapbook",
+    docMap: "docMap",
+    clioStage: "clioStage",
+  }[sourceWindowName] || sourceAppId;
   if (!isMultiFinderMode()) {
-    setSideAskAnchorApp(sourceAppId);
     const canOpenPair = await prepareFinderModeForApp(sourceAppId);
-    if (!canOpenPair) return;
+    if (!canOpenPair) return false;
+    setSideAskAnchorApp(sourceAnchorId, sourceAppId);
   }
 
   await openWindow("assistant", { skipFinderMode: true, skipPlacement: true, skipFocus: true });
   const refreshedAssistant = getWindow("assistant") || assistant;
-  if (typeof enterSideAskClioTalkSession === "function") {
-    enterSideAskClioTalkSession(sourceAppId);
-  } else if (sourceAppId === "quickDraft" && typeof enterQuickDraftClioTalkSession === "function") {
+  if (!isMultiFinderMode() && typeof enterSideAskClioTalkSession === "function") {
+    enterSideAskClioTalkSession(sourceAnchorId);
+  } else if (!isMultiFinderMode() && sourceAnchorId === "quickDraft" && typeof enterQuickDraftClioTalkSession === "function") {
     enterQuickDraftClioTalkSession();
   }
   if (writerMode) {
     await openAssistantAvoidingWindow(sourceWindowName);
-    return;
+    return true;
+  }
+
+  // On a phone one app fills the screen, so there is no pair to lay out — and
+  // the frames below are inline styles that would override the full-screen
+  // shell. The ClioTalk session is already wired above; the user reaches it
+  // from the switcher.
+  if (isPortraitDocumentFlow()) {
+    syncMobileAppForeground();
+    return true;
   }
 
   const desktop = document.querySelector(".desktop");
@@ -2028,6 +2481,7 @@ async function arrangeWindowAssistantSplit(sourceWindowName, options = {}) {
   if (typeof options.onSplitApplied === "function") {
     options.onSplitApplied(refreshedAssistant, sourceWindow);
   }
+  return true;
 }
 
 function arrangeReaderAssistantSplit() {
@@ -2111,6 +2565,15 @@ async function closeWindow(name, force = false) {
   const win = getWindow(name);
   if (!win) return;
 
+  if (name === "assistant" && clioTalkTemporaryMode) {
+    if (activeAbortController && !force) {
+      setStatus(t("task_already_running", localModelState.task || t("working_locally")));
+      return;
+    }
+    if (!force && !await confirmDiscardTemporaryClioTalkConversation()) return;
+    discardTemporaryClioTalkConversation();
+  }
+
   if (name === "teachText" && !force && shouldPromptForTeachTextFileSave()) {
     const result = await showSystemModal(teachTextUnsavedChangesMessage(), "save");
     if (result === "cancel") return;
@@ -2123,6 +2586,9 @@ async function closeWindow(name, force = false) {
   }
 
   win.classList.add("is-hidden");
+  if (name === "memoryCards") {
+    pauseMemoryCardsGame();
+  }
   delete win.dataset.appHiddenCollapsed;
   playSystemSound("close");
   if (name === "guide") {
@@ -2134,6 +2600,9 @@ async function closeWindow(name, force = false) {
   }
   if (name === "contextPanel") {
     document.body.classList.remove("has-context-panel-open");
+  }
+  if (name === "documents") {
+    clioTalkAttachmentPickerActive = false;
   }
   if (name === "quickDraft" && sideAskEnabled && sideAskAnchorAppId === "quickDraft") {
     const assistantWindow = getWindow("assistant");
@@ -2209,6 +2678,7 @@ async function closeWindow(name, force = false) {
         .sort((a, b) => Number(b.style.zIndex || 0) - Number(a.style.zIndex || 0))[0];
     activeAppId = next ? getWindowAppId(next) : "finder";
   }
+  syncMobileAppForeground();
   renderMultiFinderMenu();
   scheduleWorkingSessionSave?.();
 }
@@ -2308,6 +2778,15 @@ function getDesktopAvoidanceInsets({ margin = 18, spineGap = 18, iconGap = 34 } 
 function zoomWindow(win) {
   if(matchMedia("(max-width:860px) and (orientation:portrait)").matches){
     win.classList.remove("is-collapsed");
+    // For an app that can take the full-screen shell, the zoom box is the
+    // maximize/restore control: it toggles between filling the screen and
+    // floating alongside the other windows.
+    if (mobileFullScreenAppIds.has(getWindowAppId(win))) {
+      win.dataset.mobileRestored = win.dataset.mobileRestored === "true" ? "false" : "true";
+      syncMobileAppForeground();
+      focusWindow(win, 1);
+      return;
+    }
     win.dataset.zoomed=win.dataset.zoomed!="true";
     focusWindow(win,1);
     if(win.dataset.window==="docMap")requestAnimationFrame(restoreDocMapCanvasView);
@@ -2407,6 +2886,36 @@ function maximizeWindow(win, options = {}) {
   scheduleWorkingSessionSave?.();
 }
 
+function positionWindowOutline(outline, left, top) {
+  outline.style.setProperty("--outline-left", `${Math.round(left)}px`);
+  outline.style.setProperty("--outline-top", `${Math.round(top)}px`);
+}
+
+function sizeWindowOutline(outline, width, height) {
+  outline.style.setProperty("--outline-width", `${Math.round(width)}px`);
+  outline.style.setProperty("--outline-height", `${Math.round(height)}px`);
+}
+
+// `win` turns the ghost into a frame preview: System 6's grow image shows the
+// title bar seam and the scroll bar lanes, so the corner cell being dragged is
+// part of the ghost. Moving a window shows the plain outline instead.
+function createWindowOutline(rect, win = null) {
+  const outline = document.createElement("div");
+  outline.className = win ? "window-outline is-frame" : "window-outline";
+  if (win) {
+    const titleBar = win.querySelector(":scope > .title-bar");
+    outline.style.setProperty("--outline-titlebar", `${Math.round(titleBar?.offsetHeight || 0)}px`);
+    // Only a framed content area has lanes to preview.
+    if (!win.querySelector(".window-frame-scroller")) {
+      outline.style.setProperty("--outline-lane", "0px");
+    }
+  }
+  positionWindowOutline(outline, rect.left, rect.top);
+  sizeWindowOutline(outline, rect.width, rect.height);
+  document.body.append(outline);
+  return outline;
+}
+
 function startWindowResize(event, win) {
   const portraitFlow = isPortraitDocumentFlow() && !writerMode && getWindowAppId(win) !== "accessories";
   if (!isResizableWindow(win) || (!portraitFlow && window.matchMedia("(max-width: 860px)").matches)) return;
@@ -2414,6 +2923,13 @@ function startWindowResize(event, win) {
   event.preventDefault();
   event.stopPropagation();
   focusWindow(win);
+  // The grow box and the zoom box are one control pair: dragging out of the
+  // full-screen shell restores the window down first, so the drag sizes a real
+  // floating window instead of fighting the maximized frame.
+  if (win.classList.contains("is-mobile-fullscreen")) {
+    win.dataset.mobileRestored = "true";
+    syncMobileAppForeground();
+  }
   if (win.classList.contains("is-desklet") && win.dataset.window === "assistant" && !writerMode) {
     const rect = win.getBoundingClientRect();
     win.classList.remove("is-desklet");
@@ -2451,14 +2967,18 @@ function startWindowResize(event, win) {
     } catch {}
   }
 
-  function resizeWindow(moveEvent) {
-    let width = Math.min(maxWidth, Math.max(minWidth, startWidth + moveEvent.clientX - startX));
-    let height = Math.min(maxHeight, Math.max(minHeight, startHeight + moveEvent.clientY - startY));
-    if (isAspectLockedWindow(win)) {
-      const size = lockedAspectSize(win, width, height, { minWidth, minHeight, maxWidth, maxHeight });
-      width = size.width;
-      height = size.height;
-    }
+  // Classic draws the prospective frame as a dotted outline and only reflows the
+  // window on release — the same dotted primitive the selection marquee uses.
+  // Liquid Glass sizes live, where a wait-for-release frame reads as a stall.
+  // Portrait flow sizes a document-flowed window, not a free-floating frame, so
+  // an outline anchored to the old top-left would promise the wrong box.
+  const outline = portraitFlow || document.body.classList.contains("use-liquid-glass")
+    ? null
+    : createWindowOutline(rect, win);
+  let pendingWidth = startWidth;
+  let pendingHeight = startHeight;
+
+  function applyWindowSize(width, height) {
     if (portraitFlow) {
       win.style.setProperty("--portrait-window-width", `${Math.round(width)}px`);
       win.style.setProperty("--portrait-window-height", `${Math.round(height)}px`);
@@ -2468,12 +2988,38 @@ function startWindowResize(event, win) {
     }
   }
 
-  function stopResize() {
+  function resizeWindow(moveEvent) {
+    let width = Math.min(maxWidth, Math.max(minWidth, startWidth + moveEvent.clientX - startX));
+    let height = Math.min(maxHeight, Math.max(minHeight, startHeight + moveEvent.clientY - startY));
+    if (isAspectLockedWindow(win)) {
+      const size = lockedAspectSize(win, width, height, { minWidth, minHeight, maxWidth, maxHeight });
+      width = size.width;
+      height = size.height;
+    }
+    pendingWidth = width;
+    pendingHeight = height;
+    if (outline) {
+      sizeWindowOutline(outline, width, height);
+      return;
+    }
+    applyWindowSize(width, height);
+  }
+
+  function stopResize(stopEvent) {
     window.removeEventListener("pointermove", resizeWindow);
     window.removeEventListener("pointerup", stopResize);
     window.removeEventListener("pointercancel", stopResize);
     window.removeEventListener("mousemove", resizeWindow);
     window.removeEventListener("mouseup", stopResize);
+    // A drag that emitted no move event still has to land where it was released.
+    if ((stopEvent?.type === "pointerup" || stopEvent?.type === "mouseup")
+      && typeof stopEvent.clientX === "number") {
+      resizeWindow(stopEvent);
+    }
+    if (outline) {
+      outline.remove();
+      applyWindowSize(pendingWidth, pendingHeight);
+    }
     markWindowUserPositioned(win);
     if(win.dataset.window==="docMap")requestAnimationFrame(restoreDocMapCanvasView);
     scheduleWorkingSessionSave?.();
@@ -2622,6 +3168,7 @@ function hideSidebars() {
     "writingBell",
     "notePad",
     "clipboard",
+    "alarmClock",
     "calculator",
     "puzzle",
     "memoryCards",
@@ -2636,6 +3183,7 @@ function hideSidebars() {
     "endfieldTerminal",
     "docMap",
     "cmfStudio",
+    "soundscape",
     "dictionary",
     "imageManager",
     "guide",

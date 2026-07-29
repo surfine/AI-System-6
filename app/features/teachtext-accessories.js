@@ -53,7 +53,8 @@ function captureActiveTeachTextTabState() {
 
 function renderTeachTextTabs() {
   if (!teachTextTabsEl || typeof getDocumentTabs !== "function") return;
-  const tabs = getDocumentTabs("teachText");
+  const tabs = getDocumentTabs("teachText")
+    .filter((tab) => workspaceProfile !== workspaceProfileDesktop || tab.role === "scratch_file");
   const activeId = getActiveTeachTextDocumentTab()?.id;
   renderTdiTabStrip(teachTextTabsEl, tabs, {
     activeId,
@@ -71,6 +72,26 @@ function renderTeachTextTabs() {
     },
   });
   setupTdiRailResize(teachTextTabsEl.closest(".tdi-shell"), { storageKey: "aiSystem6.tdiRail.teachText" });
+}
+
+function openDesktopTeachTextWindow() {
+  if (!isTeachTextManuscriptRole()) {
+    openWindow("teachText");
+    teachTextBodyInput.focus();
+    return getActiveTeachTextDocumentTab();
+  }
+  const scratchTab = typeof getDocumentTabs === "function"
+    ? getDocumentTabs("teachText").find((tab) => tab.role === "scratch_file")
+    : null;
+  if (scratchTab) return openTeachTextDocumentTab(scratchTab.id);
+  return newTextDocument();
+}
+
+function openTeachTextForWorkspace() {
+  if (workspaceProfile === workspaceProfileDesktop) return openDesktopTeachTextWindow();
+  openWindow("teachText");
+  teachTextBodyInput.focus();
+  return getActiveTeachTextDocumentTab();
 }
 
 function applyTeachTextRoleUi() {
@@ -339,26 +360,27 @@ async function analyzeTeachTextImageAttachment(attachment, mode = "writing-conte
 
   setStatus(t(mode === "ocr" ? "image_vision_ocr_reading" : "image_vision_reading", name));
   try {
-    const response = await fetch("/api/vision/analyze", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        dataUrl,
-        mode,
-        name,
+    const result = await sendLocalModelTask({
+      payload: {
         model: getTeachTextVisionModelRequestName(),
-      }),
+        messages: window.AISystem6ModelTaskRuntime.buildVisionMessages({ mode, name, dataUrl }),
+        temperature: 0.2,
+        max_tokens: mode === "ocr" ? 1400 : 900,
+        stream: false,
+        ai_system6_task_kind: mode === "ocr" ? "extract-vision-ocr" : "extract-vision-writing-context",
+      },
+      signal: typeof getLongTaskSignal === "function" ? getLongTaskSignal() : null,
+      taskKind: mode === "ocr" ? "extract-vision-ocr" : "extract-vision-writing-context",
+      streamPreference: "json",
     });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(firstErrorText(data.detail, data.error, response.statusText));
-    const text = String(data.text || "").trim();
+    const text = String(result.text || "").trim();
     if (!text) throw new Error(t("image_vision_empty"));
 
     const attachments = getTeachTextImageAttachments();
     const storedAttachment = attachments.find((item) => item.id === attachment.id) || attachment;
     storedAttachment.visionNotes = text;
     storedAttachment.visionMode = mode;
-    storedAttachment.visionModel = data.model || "";
+    storedAttachment.visionModel = getTeachTextVisionModelRequestName();
     storedAttachment.visionUpdatedAt = new Date().toISOString();
     project.imageAttachments = attachments;
     project.updatedAt = new Date().toISOString();

@@ -6,7 +6,7 @@
 // Self-contained WebGL2 renderer ported from the liquid-glass-text prototype:
 //   text -> Canvas2D coverage mask -> exact signed distance field (R32F) ->
 //   glass optics (Snell refraction, dispersion, Fresnel, glare) sampling the
-//   SDF instead of an analytic shape. Up to 4 text/shape layers (per-layer
+//   SDF instead of an analytic shape. Up to 8 text/shape layers (per-layer
 //   glass/solid style, tint + thickness via min-union with argmin);
 //   movable/scalable foreground subject.
 
@@ -15,7 +15,7 @@ window.AISystem6LiquidCoverLoaded = true;
 (function () {
   "use strict";
 
-  const MAX_LAYERS = 4;
+  const MAX_LAYERS = 8;
   const INF = 1e20;
 
   // ------------------------------------------------------------------
@@ -174,13 +174,31 @@ window.AISystem6LiquidCoverLoaded = true;
   // ------------------------------------------------------------------
   const VERT = "#version 300 es\nin vec2 a_position;\nout vec2 v_uv;\nvoid main(){ v_uv = a_position*0.5+0.5; gl_Position=vec4(a_position,0.0,1.0); }";
 
-  const UNION_SD = "\nuniform sampler2D u_sdf[4];\nuniform vec2 u_sdfOffset[4];\nuniform float u_sdfScale[4];\nuniform int u_layerCount;\nvec2 layerUv0(vec2 uv){ float s=max(u_sdfScale[0],0.001); vec2 c=vec2(0.5)+u_sdfOffset[0]; return (uv-c)/s+vec2(0.5); }\nvec2 layerUv1(vec2 uv){ float s=max(u_sdfScale[1],0.001); vec2 c=vec2(0.5)+u_sdfOffset[1]; return (uv-c)/s+vec2(0.5); }\nvec2 layerUv2(vec2 uv){ float s=max(u_sdfScale[2],0.001); vec2 c=vec2(0.5)+u_sdfOffset[2]; return (uv-c)/s+vec2(0.5); }\nvec2 layerUv3(vec2 uv){ float s=max(u_sdfScale[3],0.001); vec2 c=vec2(0.5)+u_sdfOffset[3]; return (uv-c)/s+vec2(0.5); }\nfloat layerSD0(vec2 uv){ return texture(u_sdf[0], layerUv0(uv)).r*max(u_sdfScale[0],0.001); }\nfloat layerSD1(vec2 uv){ return texture(u_sdf[1], layerUv1(uv)).r*max(u_sdfScale[1],0.001); }\nfloat layerSD2(vec2 uv){ return texture(u_sdf[2], layerUv2(uv)).r*max(u_sdfScale[2],0.001); }\nfloat layerSD3(vec2 uv){ return texture(u_sdf[3], layerUv3(uv)).r*max(u_sdfScale[3],0.001); }\nfloat unionSDIdx(vec2 uv, out int idx){\n  float d = layerSD0(uv); idx = 0;\n  if (u_layerCount > 1) { float v = layerSD1(uv); if (v < d) { d = v; idx = 1; } }\n  if (u_layerCount > 2) { float v = layerSD2(uv); if (v < d) { d = v; idx = 2; } }\n  if (u_layerCount > 3) { float v = layerSD3(uv); if (v < d) { d = v; idx = 3; } }\n  return d;\n}\nfloat unionSD(vec2 uv){ int i; return unionSDIdx(uv, i); }";
+  const LAYER_SHADER_CASES = Array.from({ length: MAX_LAYERS - 1 }, (_, index) => {
+    const i = index + 1;
+    return "  if (idx == " + i + ") return texture(u_sdf[" + i + "], uv - u_sdfOffset[" + i + "]).r;";
+  }).join("\n");
+  const LAYER_SHADER_UNION = Array.from({ length: MAX_LAYERS - 1 }, (_, index) => {
+    const i = index + 1;
+    return "  if (u_layerCount > " + i + ") { float v = layerSD(uv, " + i + "); if (v < d) { d = v; idx = " + i + "; } }";
+  }).join("\n");
+  const LAYER_SHADER_STACK = Array.from({ length: MAX_LAYERS - 1 }, (_, index) => {
+    const i = index + 1;
+    return "  if (u_layerCount > " + i + ") { float v = layerSD(uv, " + i + "); if (v <= 1.0) { d = v; idx = " + i + "; } }";
+  }).join("\n");
+  const UNION_SD = "\nuniform sampler2D u_sdf[" + MAX_LAYERS + "];\nuniform vec2 u_sdfOffset[" + MAX_LAYERS + "];\nuniform int u_layerCount;\nfloat layerSD(vec2 uv, int idx){\n"
+    + LAYER_SHADER_CASES
+    + "\n  return texture(u_sdf[0], uv - u_sdfOffset[0]).r;\n}\nfloat unionSDIdx(vec2 uv, out int idx){\n  float d = layerSD(uv, 0); idx = 0;\n"
+    + LAYER_SHADER_UNION
+    + "\n  return d;\n}\nfloat stackSDIdx(vec2 uv, out int idx){\n  float d = unionSDIdx(uv, idx);\n"
+    + LAYER_SHADER_STACK
+    + "\n  return d;\n}\nfloat unionSD(vec2 uv){ int i; return unionSDIdx(uv, i); }";
 
   const BG_FRAG = "#version 300 es\nprecision highp float;\nin vec2 v_uv;\nout vec4 fragColor;\nuniform sampler2D u_image;\nuniform vec2 u_resolution;\nuniform float u_dpr;\nuniform float u_imageAspect;\nuniform float u_shadowExpand;\nuniform float u_shadowFactor;\nuniform vec2 u_shadowOffset;\nuniform float u_bgZoom;\nuniform vec2 u_bgPan;\n" + UNION_SD + "\nvec2 cover(vec2 uv, float ca, float ta){ if (ca>ta){ float s=ta/ca; uv.y=uv.y*s+0.5-0.5*s; } else { float s=ca/ta; uv.x=uv.x*s+0.5-0.5*s; } return uv; }\nvoid main(){\n  vec2 uv = cover(v_uv, u_resolution.x/u_resolution.y, u_imageAspect);\n  uv = (uv - 0.5) / max(u_bgZoom, 0.001) + 0.5 + u_bgPan;\n  vec3 col = texture(u_image, uv).rgb;\n  vec2 off = u_shadowOffset * u_dpr / u_resolution;\n  float sd = unionSD(v_uv - off) / u_dpr;\n  float shadow = exp(-1.0/u_shadowExpand * abs(sd)) * 0.6 * u_shadowFactor;\n  col -= vec3(shadow);\n  fragColor = vec4(col, 1.0);\n}";
 
   const BLUR_FRAG = "#version 300 es\nprecision highp float;\n#define MAX_R 96\nin vec2 v_uv;\nout vec4 fragColor;\nuniform sampler2D u_tex;\nuniform vec2 u_resolution;\nuniform vec2 u_dir;\nuniform int u_radius;\nuniform float u_weights[MAX_R + 1];\nvoid main(){\n  vec2 texel = 1.0/u_resolution;\n  vec4 c = texture(u_tex, v_uv) * u_weights[0];\n  for (int i=1;i<=MAX_R;i++){ if (i>u_radius) break; vec2 o = u_dir*texel*float(i); c += texture(u_tex, v_uv+o)*u_weights[i]; c += texture(u_tex, v_uv-o)*u_weights[i]; }\n  fragColor = c;\n}";
 
-  const MAIN_FRAG = "#version 300 es\nprecision highp float;\n#define PI 3.14159265359\nconst float N_R=0.98; const float N_G=1.0; const float N_B=1.02;\nin vec2 v_uv;\nout vec4 fragColor;\nuniform sampler2D u_bg;\nuniform sampler2D u_blurredBg;\nuniform vec2 u_resolution;\nuniform float u_dpr;\nuniform float u_baseDpr;\nuniform float u_lensMag;\nuniform float u_refThickness[4];\nuniform float u_refFactor;\nuniform float u_refDispersion;\nuniform float u_refFresnelRange;\nuniform float u_refFresnelHardness;\nuniform float u_refFresnelFactor;\nuniform float u_glareRange;\nuniform float u_glareHardness;\nuniform float u_glareFactor;\nuniform float u_glareConvergence;\nuniform float u_glareOppositeFactor;\nuniform float u_glareAngle;\nuniform float u_bodyFactor;\nuniform float u_rimFactor;\nuniform float u_rimWidth;\nuniform float u_bevelFactor;\nuniform float u_saturationFactor;\nuniform vec4 u_tint[4];\nuniform int u_layerMode[4];\nuniform int u_blurEdge;\nuniform sampler2D u_fg;\nuniform float u_fgAspect;\nuniform int u_hasFg;\nuniform vec2 u_fgPos;\nuniform float u_fgScale;\nuniform int u_liquidOverlayMode;\nuniform float u_liquidOverlayAmount;\nuniform float u_liquidOverlayPhase;\nuniform vec3 u_liquidOverlayTint;\n" + UNION_SD + "\n"
+  const MAIN_FRAG = "#version 300 es\nprecision highp float;\n#define PI 3.14159265359\nconst float N_R=0.98; const float N_G=1.0; const float N_B=1.02;\nin vec2 v_uv;\nout vec4 fragColor;\nuniform sampler2D u_bg;\nuniform sampler2D u_blurredBg;\nuniform vec2 u_resolution;\nuniform float u_dpr;\nuniform float u_baseDpr;\nuniform float u_lensMag;\nuniform float u_refThickness[" + MAX_LAYERS + "];\nuniform float u_refFactor;\nuniform float u_refDispersion;\nuniform float u_refFresnelRange;\nuniform float u_refFresnelHardness;\nuniform float u_refFresnelFactor;\nuniform float u_glareRange;\nuniform float u_glareHardness;\nuniform float u_glareFactor;\nuniform float u_glareConvergence;\nuniform float u_glareOppositeFactor;\nuniform float u_glareAngle;\nuniform float u_bodyFactor;\nuniform float u_rimFactor;\nuniform float u_rimWidth;\nuniform float u_bevelFactor;\nuniform float u_saturationFactor;\nuniform vec4 u_tint[" + MAX_LAYERS + "];\nuniform int u_layerMode[" + MAX_LAYERS + "];\nuniform int u_blurEdge;\nuniform sampler2D u_fg;\nuniform float u_fgAspect;\nuniform int u_hasFg;\nuniform vec2 u_fgPos;\nuniform float u_fgScale;\n" + UNION_SD + "\n"
     + "const vec3 D65=vec3(0.95045592705,1.0,1.08905775076);\n"
     + "const mat3 RGB2XYZ=mat3(0.4124,0.3576,0.1805,0.2126,0.7152,0.0722,0.0193,0.1192,0.9505);\n"
     + "const mat3 XYZ2RGB=mat3(3.2406255,-1.537208,-0.4986286,-0.9689307,1.8757561,0.0415175,0.0557101,-0.2040211,1.0569959);\n"
@@ -200,95 +218,9 @@ window.AISystem6LiquidCoverLoaded = true;
     // stencil low-passes the normal direction so the angle-sensitive glare no
     // longer rings (the ribbed/corrugated edge). Normalized to keep |grad|~2 in
     // smooth regions so nlen still saturates to 1 and only drops at the skeleton.
-    + "vec2 getGrad(vec2 uv){ vec2 t=1.5/u_resolution; float tl=unionSD(uv+vec2(-t.x,t.y)); float tc=unionSD(uv+vec2(0.0,t.y)); float tr=unionSD(uv+vec2(t.x,t.y)); float ml=unionSD(uv+vec2(-t.x,0.0)); float mr=unionSD(uv+vec2(t.x,0.0)); float bl=unionSD(uv+vec2(-t.x,-t.y)); float bc=unionSD(uv+vec2(0.0,-t.y)); float br=unionSD(uv+vec2(t.x,-t.y)); float gx=(tr+2.0*mr+br)-(tl+2.0*ml+bl); float gy=(tl+2.0*tc+tr)-(bl+2.0*bc+br); return vec2(gx,gy)*0.16667; }\n"
+    + "vec2 getGrad(vec2 uv, int layer){ vec2 t=1.5/u_resolution; float tl=layerSD(uv+vec2(-t.x,t.y),layer); float tc=layerSD(uv+vec2(0.0,t.y),layer); float tr=layerSD(uv+vec2(t.x,t.y),layer); float ml=layerSD(uv+vec2(-t.x,0.0),layer); float mr=layerSD(uv+vec2(t.x,0.0),layer); float bl=layerSD(uv+vec2(-t.x,-t.y),layer); float bc=layerSD(uv+vec2(0.0,-t.y),layer); float br=layerSD(uv+vec2(t.x,-t.y),layer); float gx=(tr+2.0*mr+br)-(tl+2.0*ml+bl); float gy=(tl+2.0*tc+tr)-(bl+2.0*bc+br); return vec2(gx,gy)*0.16667; }\n"
     + "float a2(vec2 v){ float a=atan(v.y,v.x); if(a<0.0)a+=2.0*PI; return a; }\n"
     + "vec4 disp(vec2 base, float mr, vec2 off, float fa){ vec4 p=vec4(1.0); float ar=texture(u_bg,base+off*(1.0-(N_R-1.0)*fa)).r; float ag=texture(u_bg,base+off*(1.0-(N_G-1.0)*fa)).g; float ab=texture(u_bg,base+off*(1.0-(N_B-1.0)*fa)).b; float br=texture(u_blurredBg,base+off*(1.0-(N_R-1.0)*fa)).r; float bg=texture(u_blurredBg,base+off*(1.0-(N_G-1.0)*fa)).g; float bb=texture(u_blurredBg,base+off*(1.0-(N_B-1.0)*fa)).b; p.r=mix(ar,br,mr); p.g=mix(ag,bg,mr); p.b=mix(ab,bb,mr); return p; }\n"
-    + "float hash21(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123); }\n"
-    + "vec2 hash22(vec2 p){ return fract(sin(vec2(dot(p, vec2(269.5, 183.3)), dot(p, vec2(113.5, 271.9)))) * 43758.5453123); }\n"
-    + "vec4 glassDrop(vec4 base, vec2 center, vec2 radii, float alpha, vec3 tint, float refractScale){\n"
-    + "  vec2 aspect = vec2(u_resolution.x/u_resolution.y, 1.0); vec2 d = (v_uv - center) * aspect; vec2 q = d / max(radii, vec2(0.0001)); float dist = length(q);\n"
-    + "  float mask = (1.0 - smoothstep(0.985, 1.045, dist)) * alpha; if (mask <= 0.0001) return base;\n"
-    + "  vec2 n = dist > 0.00001 ? normalize(d) : vec2(0.0, 1.0); vec2 uvOff = n * min(radii.x, radii.y) * refractScale / aspect;\n"
-    + "  vec3 refr = texture(u_bg, clamp(v_uv - uvOff * 1.18, vec2(0.0), vec2(1.0))).rgb;\n"
-    + "  vec3 blur = texture(u_blurredBg, clamp(v_uv + uvOff * 0.42, vec2(0.0), vec2(1.0))).rgb;\n"
-    + "  float rim = smoothstep(0.66, 1.0, dist) * mask; float edge = (1.0 - smoothstep(0.94, 1.035, abs(dist - 0.985))) * mask;\n"
-    + "  float shade = smoothstep(-0.25, 0.92, dot(n, normalize(vec2(0.42, -0.90)))) * mask;\n"
-    + "  vec2 hi = (v_uv - (center + vec2(-radii.x * 0.24 / aspect.x, radii.y * 0.32))) * aspect / max(radii * 0.24, vec2(0.0001));\n"
-    + "  float spec = pow(1.0 - smoothstep(0.0, 1.0, length(hi)), 1.7) * mask;\n"
-    + "  vec3 col = mix(blur, refr, 0.70); col = mix(col, tint, 0.07); col *= 1.0 - shade * 0.34; col = mix(col, vec3(1.0), clamp(edge * 0.92 + rim * 0.30 + spec, 0.0, 1.0));\n"
-    + "  return vec4(mix(base.rgb, col, clamp(mask * 0.94, 0.0, 1.0)), 1.0);\n"
-    + "}\n"
-    + "vec4 glassBead(vec4 base, vec2 center, float radius, float alpha, vec3 tint){ return glassDrop(base, center, vec2(radius), alpha, tint, 0.90); }\n"
-    + "vec4 glassBubble(vec4 base, vec2 center, float radius, float alpha, vec3 tint){\n"
-    + "  vec2 aspect = vec2(u_resolution.x/u_resolution.y, 1.0); vec2 d = (v_uv - center) * aspect; float angle = atan(d.y, d.x); float wobble = 1.0 + 0.020 * sin(angle * 3.0 + center.x * 31.0) + 0.016 * sin(angle * 7.0 + center.y * 47.0); float dist = length(d / max(radius, 0.0001)) * wobble;\n"
-    + "  float body = (1.0 - smoothstep(0.985, 1.045, dist)) * alpha; if (body <= 0.0001) return base;\n"
-    + "  vec2 n = dist > 0.00001 ? normalize(d) : vec2(0.0, 1.0); vec3 refr = texture(u_bg, clamp(v_uv - n * radius * 1.05 / aspect, vec2(0.0), vec2(1.0))).rgb;\n"
-    + "  vec3 blur = texture(u_blurredBg, clamp(v_uv + n * radius * 0.25 / aspect, vec2(0.0), vec2(1.0))).rgb;\n"
-    + "  float rim = smoothstep(0.72, 1.0, dist) * body; float hard = (1.0 - smoothstep(0.0, 0.050, abs(dist - 0.98))) * body;\n"
-    + "  float cavity = (1.0 - smoothstep(0.0, 0.58, dist)) * body; float shade = smoothstep(-0.25, 0.85, dot(n, normalize(vec2(0.50, -0.86)))) * body;\n"
-    + "  vec2 hiA = (v_uv - (center + vec2(-radius * 0.25 / aspect.x, radius * 0.36))) * aspect / max(radius * 0.20, 0.0001);\n"
-    + "  vec2 hiB = (v_uv - (center + vec2(radius * 0.28 / aspect.x, -radius * 0.26))) * aspect / max(radius * 0.13, 0.0001);\n"
-    + "  float spec = (pow(1.0 - smoothstep(0.0, 1.0, length(hiA)), 1.4) + pow(1.0 - smoothstep(0.0, 1.0, length(hiB)), 1.6) * 0.50) * body;\n"
-    + "  vec3 col = mix(blur, refr, 0.72); col = mix(col, tint, body * 0.05); col *= 1.0 - shade * 0.36 - cavity * 0.12; col = mix(col, vec3(1.0), clamp(hard * 0.86 + rim * 0.28 + spec, 0.0, 1.0));\n"
-    + "  return vec4(mix(base.rgb, col, clamp(body * 0.96, 0.0, 1.0)), 1.0);\n"
-    + "}\n"
-    + "vec4 stagedBackground(vec4 rawBg){\n"
-    + "  if (u_liquidOverlayMode == 3) { vec3 blur = texture(u_blurredBg, v_uv).rgb; vec2 p = v_uv - 0.5; float vignette = smoothstep(0.18, 0.82, length(p * vec2(1.25, 1.0))); float top = smoothstep(0.36, 1.0, v_uv.y); vec3 warmA = vec3(1.0, 0.42, 0.18) * pow(max(0.0, 1.0 - length((v_uv - vec2(0.76, 0.76)) * vec2(2.0, 1.7))), 5.0); vec3 warmB = vec3(1.0, 0.68, 0.48) * pow(max(0.0, 1.0 - length((v_uv - vec2(0.45, 0.44)) * vec2(2.4, 2.0))), 6.0); float bokeh = pow(max(0.0, 1.0 - length((v_uv - vec2(0.84, 0.58)) * vec2(11.0, 11.0))), 2.5) + pow(max(0.0, 1.0 - length((v_uv - vec2(0.18, 0.72)) * vec2(13.0, 13.0))), 2.0); vec3 col = mix(blur, rawBg.rgb, 0.10); col *= 0.19 - 0.07 * vignette; col += warmA * 0.22 + warmB * 0.10 + vec3(1.0, 0.60, 0.30) * bokeh * 0.10 + vec3(0.025, 0.022, 0.020) * top; return vec4(col, 1.0); }\n"
-    + "  if (u_liquidOverlayMode == 2) { vec3 blur = texture(u_blurredBg, v_uv).rgb; float band = smoothstep(0.14, 0.36, v_uv.y) * (1.0 - smoothstep(0.74, 0.96, v_uv.y)); float vignette = smoothstep(0.24, 0.95, length((v_uv - 0.5) * vec2(1.2, 1.0))); vec3 surfaceTint = vec3(1.0, 0.72, 0.78); vec3 col = mix(rawBg.rgb, blur, 0.30 * band); col = mix(col, surfaceTint, 0.13 * band); col *= 1.0 - band * 0.22 - vignette * 0.12; return vec4(col, 1.0); }\n"
-    + "  return rawBg;\n"
-    + "}\n"
-    + "vec4 extrudedGlyph(vec4 base, float sd, float amount, int style){\n"
-    + "  float sdCss = sd / u_dpr; float front = 1.0 - smoothstep(-0.7, 1.5, sdCss); vec4 outc = base;\n"
-    + "  vec2 dir = (style == 2 ? vec2(-0.018, 0.030) : (style == 3 ? vec2(-0.014, 0.026) : vec2(-0.010, 0.020))) * amount;\n"
-    + "  float side = 0.0; float sideRim = 0.0; float sideCore = 0.0;\n"
-    + "  for (int i = 1; i <= 24; i++) { float f = float(i) / 24.0; float s = unionSD(v_uv + dir * f) / u_dpr; float wall = (1.0 - smoothstep(1.5, 18.0, abs(s))) * (1.0 - front * 0.92); float rim = (1.0 - smoothstep(0.0, 2.4, abs(s))) * (1.0 - front * 0.82); float fade = 1.0 - f * 0.34; side = max(side, wall * fade); sideCore = max(sideCore, wall * f); sideRim = max(sideRim, rim * (1.0 - f * 0.10)); }\n"
-    + "  vec2 G = getGrad(v_uv); float glen = length(G); vec2 N = glen > 1e-5 ? G / glen : vec2(0.0, 1.0); float nlen = clamp(glen * 0.5, 0.0, 1.0);\n"
-    + "  vec3 cleanBg = texture(u_bg, v_uv).rgb; outc.rgb = mix(outc.rgb, cleanBg, front * amount * (style == 2 ? 0.84 : 0.72));\n"
-    + "  vec3 sideRefr = texture(u_bg, clamp(v_uv + dir * 0.68 - N * 0.017 * amount, vec2(0.0), vec2(1.0))).rgb;\n"
-    + "  vec3 sideBlur = texture(u_blurredBg, clamp(v_uv + dir * 0.30, vec2(0.0), vec2(1.0))).rgb;\n"
-    + "  vec3 sideTint = style == 2 ? vec3(1.0, 0.62, 0.72) : (style == 3 ? vec3(1.0, 0.48, 0.26) : vec3(0.58, 0.78, 1.0));\n"
-    + "  vec3 sideCol = mix(sideBlur, sideRefr, 0.70); sideCol = mix(sideCol, sideTint, style == 2 ? 0.18 : 0.12); sideCol *= 0.46 + sideCore * 0.42;\n"
-    + "  outc.rgb = mix(outc.rgb, sideCol, side * amount * (style == 2 ? 0.34 : 0.30));\n"
-    + "  outc.rgb = mix(outc.rgb, vec3(1.0), sideRim * amount * (style == 2 ? 0.28 : 0.34));\n"
-    + "  float edge = 1.0 - smoothstep(0.0, 2.1, abs(sdCss)); float shoulder = 1.0 - smoothstep(2.0, 8.5, abs(sdCss)); float inner = front * smoothstep(2.0, 26.0, -sdCss);\n"
-    + "  vec3 faceRefr = texture(u_bg, clamp(v_uv - N * 0.023 * amount + dir * 0.08, vec2(0.0), vec2(1.0))).rgb;\n"
-    + "  vec3 faceBlur = texture(u_blurredBg, clamp(v_uv + dir * 0.10, vec2(0.0), vec2(1.0))).rgb;\n"
-    + "  float topLight = pow(clamp(dot(N, normalize(vec2(-0.24, 0.97))), 0.0, 1.0), 1.15) * front * nlen;\n"
-    + "  float bandA = pow(max(0.0, sin((v_uv.x * 7.6 - v_uv.y * 2.8) * PI + 0.9)), 18.0);\n"
-    + "  float bandB = pow(max(0.0, sin((v_uv.x * -5.4 + v_uv.y * 5.8) * PI + 2.2)), 16.0);\n"
-    + "  float bandC = pow(max(0.0, sin((v_uv.x * 14.0 + v_uv.y * 1.8) * PI + 0.2)), 26.0);\n"
-    + "  vec3 envA = style == 2 ? vec3(1.0, 0.66, 0.74) : (style == 3 ? vec3(1.0, 0.52, 0.30) : vec3(0.62, 0.82, 1.0));\n"
-    + "  vec3 envB = style == 3 ? vec3(0.16, 0.26, 0.48) : vec3(0.14, 0.22, 0.30);\n"
-    + "  vec3 faceCol = mix(faceBlur, faceRefr, 0.60); faceCol *= style == 3 ? 0.54 : (style == 2 ? 0.66 : 0.76); faceCol = mix(faceCol, envA, bandA * inner * 0.48); faceCol = mix(faceCol, envB, bandB * inner * 0.56);\n"
-    + "  outc.rgb = mix(outc.rgb, faceCol, inner * amount * (style == 2 ? 0.58 : 0.66));\n"
-    + "  outc.rgb *= 1.0 - inner * amount * (style == 3 ? 0.36 : 0.24) * (1.0 - edge * 0.48);\n"
-    + "  float tube = (1.0 - smoothstep(0.0, 2.6, abs((-sdCss) - 8.0))) * inner + (1.0 - smoothstep(0.0, 3.4, abs((-sdCss) - 18.0))) * inner * 0.45;\n"
-    + "  float spec = edge * (0.32 + topLight * 0.34) + shoulder * topLight * 0.13 + tube * 0.18 + bandC * inner * 0.16;\n"
-    + "  outc.rgb = mix(outc.rgb, vec3(1.0), clamp(spec * amount, 0.0, style == 2 ? 0.78 : 0.86));\n"
-    + "  if (style == 2 || style == 3) { float refl = 0.0; float reflRim = 0.0; for (int i = 0; i < 10; i++) { float f = float(i) / 9.0; float s = unionSD(v_uv + vec2(0.0, 0.046 + f * 0.066)) / u_dpr; float shifted = 1.0 - smoothstep(-0.5, 3.8, s); float fade = (1.0 - f) * (1.0 - front * 0.96); refl = max(refl, shifted * fade); reflRim = max(reflRim, (1.0 - smoothstep(0.0, 4.8, abs(s))) * fade); } vec3 reflCol = style == 2 ? vec3(0.86, 0.58, 0.66) : vec3(0.42, 0.62, 0.86); outc.rgb = mix(outc.rgb, reflCol, refl * amount * (style == 2 ? 0.18 : 0.14)); outc.rgb = mix(outc.rgb, vec3(1.0), reflRim * amount * (style == 2 ? 0.16 : 0.20)); }\n"
-    + "  return outc;\n"
-    + "}\n"
-    + "vec4 liquidOverlay(vec4 base, float sd){\n"
-    + "  float amount = clamp(u_liquidOverlayAmount, 0.0, 1.0); if (u_liquidOverlayMode == 0 || amount <= 0.001) return base;\n"
-    + "  float sdCss = sd / u_dpr; float depth = max(-sdCss, 0.0); float edge = 1.0 - smoothstep(0.0, 5.0, abs(sdCss)); float nearGlyph = 1.0 - smoothstep(12.0, 120.0, abs(sdCss)); float inside = 1.0 - smoothstep(-2.0, 8.0, sdCss); vec4 outc = extrudedGlyph(base, sd, amount, u_liquidOverlayMode);\n"
-    + "  if (u_liquidOverlayMode == 1) {\n"
-    + "    float tubeA = (1.0 - smoothstep(0.0, 3.4, abs(depth - 7.0))) * inside; float tubeB = (1.0 - smoothstep(0.0, 7.0, abs(depth - 21.0))) * inside;\n"
-    + "    float wetBody = nearGlyph * amount; outc.rgb = mix(outc.rgb, u_liquidOverlayTint, wetBody * 0.025); outc.rgb *= 1.0 - inside * amount * 0.10; outc.rgb = mix(outc.rgb, vec3(1.0), clamp(edge * 0.13 + tubeA * 0.16 + tubeB * 0.06, 0.0, 1.0) * amount);\n"
-    + "    for (int i = 0; i < 6; i++) { vec2 r = hash22(vec2(float(i), 4.7)); vec2 c = vec2(0.13 + r.x * 0.74, 0.17 + r.y * 0.64 + u_liquidOverlayPhase * (0.050 + r.x * 0.035)); float inFrame = 1.0 - smoothstep(0.91, 0.98, c.y); float close = 1.0 - smoothstep(14.0, 76.0, abs(unionSD(c) / u_dpr)); float fall = smoothstep(0.0, 0.22, u_liquidOverlayPhase + r.y * 0.20); outc = glassDrop(outc, c, vec2(0.005 + r.x * 0.006, 0.020 + r.y * 0.038), amount * close * fall * inFrame * 0.95, u_liquidOverlayTint, 1.05); }\n"
-    + "    for (int i = 0; i < 7; i++) { vec2 r = hash22(vec2(float(i), 17.4)); vec2 c = vec2(0.16 + r.x * 0.68, 0.24 + r.y * 0.52 + u_liquidOverlayPhase * (0.025 + r.x * 0.018)); float inFrame = 1.0 - smoothstep(0.90, 0.98, c.y); float close = 1.0 - smoothstep(16.0, 86.0, abs(unionSD(c) / u_dpr)); outc = glassBead(outc, c, 0.008 + r.y * 0.014, amount * close * inFrame * 0.85, u_liquidOverlayTint); }\n"
-    + "  } else if (u_liquidOverlayMode == 2) {\n"
-    + "    float floorShadow = (1.0 - smoothstep(8.0, 54.0, abs(unionSD(v_uv + vec2(0.0, 0.034)) / u_dpr))) * (1.0 - inside * 0.72);\n"
-    + "    float sideExtrude = (1.0 - smoothstep(5.0, 30.0, abs(unionSD(v_uv + vec2(-0.014, 0.020)) / u_dpr))) * (1.0 - inside * 0.45);\n"
-    + "    float contactGlow = (1.0 - smoothstep(4.0, 16.0, abs(unionSD(v_uv + vec2(0.0, 0.010)) / u_dpr))) * (1.0 - inside * 0.20);\n"
-    + "    outc.rgb *= 1.0 - floorShadow * amount * 0.34; outc.rgb = mix(outc.rgb, vec3(0.80, 0.48, 0.56), sideExtrude * amount * 0.14);\n"
-    + "    outc.rgb = mix(outc.rgb, vec3(1.0, 0.92, 0.95), clamp(edge * 0.12 + contactGlow * 0.05, 0.0, 1.0) * amount);\n"
-    + "  } else if (u_liquidOverlayMode == 3) {\n"
-    + "    float title = max(edge, inside * 0.36); outc.rgb *= 1.0 - amount * (0.34 - title * 0.12); outc.rgb = mix(outc.rgb, vec3(1.0), clamp(edge * 0.12 + inside * 0.006, 0.0, 1.0) * amount);\n"
-    + "    for (int i = 0; i < 12; i++) { vec2 r = hash22(vec2(float(i), 13.3)); float lane = float(i % 3); vec2 c = vec2(0.07 + r.x * 0.86, 0.18 + lane * 0.22 + r.y * 0.13 + u_liquidOverlayPhase * (0.020 + r.x * 0.020)); float inFrame = (1.0 - smoothstep(0.86, 0.98, c.y)) * smoothstep(0.04, 0.12, c.y); float big = i < 5 ? 1.0 : 0.0; float radius = mix(0.012 + r.y * 0.018, 0.040 + r.y * 0.036, big); float awayFromCenter = smoothstep(18.0, 84.0, abs(unionSD(c) / u_dpr)); float alpha = amount * inFrame * mix(0.80, 0.62, big) * (0.72 + 0.28 * awayFromCenter); outc = glassBubble(outc, c, radius, alpha, u_liquidOverlayTint); }\n"
-    + "    float flare = pow(max(0.0, sin(v_uv.x * 10.0 - u_liquidOverlayPhase * 3.0)), 22.0) * nearGlyph * amount; outc.rgb = mix(outc.rgb, vec3(1.0, 0.78, 0.55), flare * 0.16);\n"
-    + "  }\n"
-    + "  return outc;\n"
-    + "}\n"
     // Faithful port of liquid-glass-studio STEP9 (the same code MB Liquid Glass is
     // built on). The earlier invented edge treatments (a metallic inner sheen, a
     // global veil, a luminance-driven boost) are gone — they are exactly what
@@ -296,8 +228,8 @@ window.AISystem6LiquidCoverLoaded = true;
     // (LCH lightness lift) + glare; the 9to5Mac preset can add a controlled SDF
     // milky body and rim while regular recipes keep those controls at zero.
     + "void main(){\n"
-    + "  int layer; float sd = unionSDIdx(v_uv, layer);\n"
-    + "  vec4 bg = stagedBackground(texture(u_bg, v_uv));\n"
+    + "  int layer; float sd = stackSDIdx(v_uv, layer);\n"
+    + "  vec4 bg = texture(u_bg, v_uv);\n"
     + "  float aa = 1.0;\n"
     + "  vec4 tint = u_tint[layer]; float thick = u_refThickness[layer];\n"
     + "  vec4 result;\n"
@@ -306,7 +238,7 @@ window.AISystem6LiquidCoverLoaded = true;
     + "    result = vec4(mix(bg.rgb, tint.rgb, mask), 1.0);\n"
     + "  } else {\n"
     + "    float sdCss = sd/u_dpr; float depth = -sdCss;\n"
-    + "    vec2 G = getGrad(v_uv); float glen = length(G); vec2 N = glen>1e-5 ? G/glen : vec2(0.0); float nlen = clamp(glen*0.5, 0.0, 1.0);\n"
+    + "    vec2 G = getGrad(v_uv, layer); float glen = length(G); vec2 N = glen>1e-5 ? G/glen : vec2(0.0); float nlen = clamp(glen*0.5, 0.0, 1.0);\n"
     + "    float xr = clamp(1.0 - depth/thick, 0.0, 1.0);\n"
     + "    float thetaI = asin(clamp(pow(xr,2.0),0.0,1.0));\n"  /* STEP9 exponent: refraction concentrates at the edge, clear centre */
     + "    float thetaT = asin(clamp(sin(thetaI)/u_refFactor,-1.0,1.0));\n"
@@ -372,56 +304,9 @@ window.AISystem6LiquidCoverLoaded = true;
     + "    vec2 fuv = (v_uv - u_fgPos)/vec2(sw,sh) + 0.5;\n"
     + "    if (all(greaterThanEqual(fuv,vec2(0.0))) && all(lessThanEqual(fuv,vec2(1.0)))) { vec4 fg = texture(u_fg, fuv); result = vec4(mix(result.rgb, fg.rgb, fg.a), 1.0); }\n"
     + "  }\n"
-    + "  result = liquidOverlay(result, sd);\n"
+
     + "  fragColor = result;\n"
     + "}";
-
-  const REF_FRAG = "#version 300 es\nprecision highp float;\n#define PI 3.14159265359\nin vec2 v_uv;\nout vec4 fragColor;\nuniform sampler2D u_bg;\nuniform sampler2D u_blurredBg;\nuniform sampler2D u_fg;\nuniform vec2 u_resolution;\nuniform float u_dpr;\nuniform int u_hasFg;\nuniform vec2 u_fgPos;\nuniform float u_fgScale;\nuniform float u_fgAspect;\nuniform int u_liquidOverlayMode;\nuniform float u_liquidOverlayAmount;\nuniform float u_liquidOverlayPhase;\nuniform vec3 u_liquidOverlayTint;\n" + UNION_SD + "\n"
-    + "vec2 getGrad(vec2 uv){ vec2 t=1.45/u_resolution; float l=unionSD(uv-vec2(t.x,0.0)); float r=unionSD(uv+vec2(t.x,0.0)); float b=unionSD(uv-vec2(0.0,t.y)); float a=unionSD(uv+vec2(0.0,t.y)); return vec2(r-l,a-b)*0.5; }\n"
-    + "vec2 hash22(vec2 p){ return fract(sin(vec2(dot(p, vec2(269.5,183.3)), dot(p, vec2(113.5,271.9)))) * 43758.5453123); }\n"
-    + "vec3 refStage(vec2 uv){ vec3 raw=texture(u_bg,uv).rgb; vec3 blur=texture(u_blurredBg,uv).rgb; if(u_liquidOverlayMode==3){ vec2 p=uv-0.5; float vign=smoothstep(0.22,0.86,length(p*vec2(1.25,1.0))); vec3 warm=vec3(1.0,0.38,0.13)*pow(max(0.0,1.0-length((uv-vec2(0.76,0.70))*vec2(2.0,1.7))),4.5); vec3 lamp=vec3(1.0,0.62,0.38)*pow(max(0.0,1.0-length((uv-vec2(0.45,0.45))*vec2(2.6,2.1))),5.8); vec3 c=mix(blur,raw,0.08); c*=0.18-0.075*vign; c+=warm*0.22+lamp*0.12; return c; } if(u_liquidOverlayMode==2){ float band=smoothstep(0.16,0.42,uv.y)*(1.0-smoothstep(0.76,0.98,uv.y)); vec3 c=mix(raw,blur,0.34*band); c=mix(c,vec3(1.0,0.74,0.79),0.12*band); c*=1.0-0.18*band; return c; } return raw; }\n"
-    + "vec4 refDrop(vec4 base, vec2 center, vec2 radii, float alpha, vec3 tint){ vec2 aspect=vec2(u_resolution.x/u_resolution.y,1.0); vec2 d=(v_uv-center)*aspect; vec2 q=d/max(radii,vec2(0.0001)); float dist=length(q); float mask=(1.0-smoothstep(0.985,1.045,dist))*alpha; if(mask<=0.0001)return base; vec2 n=dist>0.00001?normalize(d):vec2(0.0,1.0); vec3 refr=refStage(clamp(v_uv-n*min(radii.x,radii.y)*1.08/aspect,vec2(0.0),vec2(1.0))); vec3 blur=texture(u_blurredBg,clamp(v_uv+n*min(radii.x,radii.y)*0.32/aspect,vec2(0.0),vec2(1.0))).rgb; float hard=(1.0-smoothstep(0.0,0.052,abs(dist-0.985)))*mask; float rim=smoothstep(0.70,1.0,dist)*mask; vec2 hi=(v_uv-(center+vec2(-radii.x*0.25/aspect.x,radii.y*0.34)))*aspect/max(radii*0.24,vec2(0.0001)); float spec=pow(1.0-smoothstep(0.0,1.0,length(hi)),1.5)*mask; vec3 col=mix(blur,refr,0.72); col=mix(col,tint,0.055); col*=1.0-smoothstep(-0.20,0.86,dot(n,normalize(vec2(0.42,-0.90))))*mask*0.30; col=mix(col,vec3(1.0),clamp(hard*0.92+rim*0.32+spec,0.0,1.0)); return vec4(mix(base.rgb,col,clamp(mask*0.96,0.0,1.0)),1.0); }\n"
-    + "vec4 refBubble(vec4 base, vec2 center, float radius, float alpha, vec3 tint){ vec2 aspect=vec2(u_resolution.x/u_resolution.y,1.0); vec2 d=(v_uv-center)*aspect; float angle=atan(d.y,d.x); float dist=length(d/max(radius,0.0001))*(1.0+0.026*sin(angle*3.0+center.x*31.0)+0.018*sin(angle*7.0+center.y*47.0)); float mask=(1.0-smoothstep(0.985,1.045,dist))*alpha; if(mask<=0.0001)return base; vec2 n=dist>0.00001?normalize(d):vec2(0.0,1.0); vec3 refr=refStage(clamp(v_uv-n*radius*1.06/aspect,vec2(0.0),vec2(1.0))); vec3 blur=texture(u_blurredBg,clamp(v_uv+n*radius*0.25/aspect,vec2(0.0),vec2(1.0))).rgb; float hard=(1.0-smoothstep(0.0,0.046,abs(dist-0.98)))*mask; float rim=smoothstep(0.70,1.0,dist)*mask; float cup=(1.0-smoothstep(0.0,0.62,dist))*mask; vec2 hiA=(v_uv-(center+vec2(-radius*0.24/aspect.x,radius*0.36)))*aspect/max(radius*0.19,0.0001); vec2 hiB=(v_uv-(center+vec2(radius*0.29/aspect.x,-radius*0.25)))*aspect/max(radius*0.13,0.0001); float spec=(pow(1.0-smoothstep(0.0,1.0,length(hiA)),1.35)+0.55*pow(1.0-smoothstep(0.0,1.0,length(hiB)),1.6))*mask; vec3 col=mix(blur,refr,0.74); col=mix(col,tint,0.045); col*=1.0-cup*0.12-smoothstep(-0.22,0.86,dot(n,normalize(vec2(0.50,-0.86))))*mask*0.32; col=mix(col,vec3(1.0),clamp(hard*0.90+rim*0.28+spec,0.0,1.0)); return vec4(mix(base.rgb,col,clamp(mask*0.96,0.0,1.0)),1.0); }\n"
-    + "vec4 refGlyph(vec4 base, float sd){ float amount=clamp(u_liquidOverlayAmount,0.0,1.0); int style=u_liquidOverlayMode; float sdCss=sd/u_dpr; float front=1.0-smoothstep(-0.8,1.25,sdCss); float depth=max(-sdCss,0.0); vec2 G=getGrad(v_uv); float glen=length(G); vec2 N=glen>0.00001?G/glen:vec2(0.0,1.0); float nlen=clamp(glen*0.58,0.0,1.0); vec2 dir=(style==2?vec2(-0.020,0.034):(style==3?vec2(-0.015,0.028):vec2(-0.010,0.021)))*amount; float side=0.0; float sideRim=0.0; for(int i=1;i<=28;i++){ float f=float(i)/28.0; float s=unionSD(v_uv+dir*f)/u_dpr; float wall=(1.0-smoothstep(1.2,16.0,abs(s)))*(1.0-front*0.92); float rim=(1.0-smoothstep(0.0,2.2,abs(s)))*(1.0-front*0.80); side=max(side,wall*(1.0-f*0.28)); sideRim=max(sideRim,rim*(1.0-f*0.08)); } vec3 tint=style==1?vec3(0.66,0.86,1.0):(style==2?vec3(1.0,0.64,0.74):vec3(1.0,0.52,0.30)); vec3 darkTint=style==3?vec3(0.07,0.13,0.22):(style==2?vec3(0.42,0.28,0.34):vec3(0.08,0.18,0.26)); vec3 sideRefr=refStage(clamp(v_uv+dir*0.62-N*0.014*amount,vec2(0.0),vec2(1.0))); vec3 sideCol=mix(texture(u_blurredBg,clamp(v_uv+dir*0.22,vec2(0.0),vec2(1.0))).rgb,sideRefr,0.68); sideCol=mix(sideCol,tint,style==2?0.15:0.10); sideCol*=0.42+0.28*side; vec4 outc=base; outc.rgb=mix(outc.rgb,sideCol,side*amount*0.44); outc.rgb=mix(outc.rgb,vec3(1.0),sideRim*amount*0.46); float inner=front*smoothstep(1.2,24.0,depth); float edge=1.0-smoothstep(0.0,2.2,abs(sdCss)); float shoulder=1.0-smoothstep(2.0,8.0,abs(sdCss)); vec3 refr=refStage(clamp(v_uv-N*(0.022+0.010*amount)+dir*0.08,vec2(0.0),vec2(1.0))); vec3 blur=texture(u_blurredBg,clamp(v_uv+dir*0.08,vec2(0.0),vec2(1.0))).rgb; float bandA=pow(max(0.0,sin((v_uv.x*7.5-v_uv.y*2.6)*PI+0.7)),16.0); float bandB=pow(max(0.0,sin((v_uv.x*-5.2+v_uv.y*5.6)*PI+2.1)),14.0); float bandC=pow(max(0.0,sin((v_uv.x*14.0+v_uv.y*1.8)*PI+0.1)),24.0); float top=pow(clamp(dot(N,normalize(vec2(-0.22,0.98))),0.0,1.0),1.05)*nlen; vec3 face=mix(blur,refr,style==2?0.64:0.70); face=mix(face,tint,bandA*inner*(style==3?0.34:0.26)); face=mix(face,darkTint,bandB*inner*(style==3?0.54:0.42)); face*=style==3?0.62:(style==2?0.74:0.82); outc.rgb=mix(outc.rgb,face,front*amount*(style==2?0.78:0.82)); outc.rgb*=1.0-inner*amount*(style==3?0.28:0.16); float tube=(1.0-smoothstep(0.0,2.7,abs(depth-7.5)))*inner+(1.0-smoothstep(0.0,3.8,abs(depth-18.0)))*inner*0.48; float spec=edge*(0.70+top*0.35)+shoulder*top*0.18+tube*0.22+bandC*inner*0.15; outc.rgb=mix(outc.rgb,vec3(1.0),clamp(spec*amount,0.0,0.90)); if(style==2||style==3){ float refl=0.0; float reflRim=0.0; for(int i=0;i<12;i++){ float f=float(i)/11.0; float s=unionSD(v_uv+vec2(0.0,0.042+f*0.078))/u_dpr; float m=(1.0-smoothstep(-0.6,3.4,s))*(1.0-f)*(1.0-front*0.96); refl=max(refl,m); reflRim=max(reflRim,(1.0-smoothstep(0.0,4.6,abs(s)))*(1.0-f)); } vec3 rc=style==2?vec3(0.92,0.58,0.68):vec3(0.28,0.48,0.78); outc.rgb=mix(outc.rgb,rc,refl*amount*0.18); outc.rgb=mix(outc.rgb,vec3(1.0),reflRim*amount*0.14); } return outc; }\n"
-    + "void main(){ float sd=unionSD(v_uv); vec4 result=vec4(refStage(v_uv),1.0); if(u_hasFg==1){ float A=u_resolution.x/u_resolution.y; float sh=u_fgScale; float sw=u_fgScale*u_fgAspect/A; vec2 fuv=(v_uv-u_fgPos)/vec2(sw,sh)+0.5; if(all(greaterThanEqual(fuv,vec2(0.0)))&&all(lessThanEqual(fuv,vec2(1.0)))){ vec4 fg=texture(u_fg,fuv); result=vec4(mix(result.rgb,fg.rgb,fg.a),1.0); } } result=refGlyph(result,sd); if(u_liquidOverlayMode==1){ for(int i=0;i<7;i++){ vec2 r=hash22(vec2(float(i),4.7)); vec2 c=vec2(0.14+r.x*0.72,0.16+r.y*0.58+u_liquidOverlayPhase*(0.045+r.x*0.034)); float close=1.0-smoothstep(16.0,76.0,abs(unionSD(c)/u_dpr)); result=refDrop(result,c,vec2(0.005+r.x*0.006,0.020+r.y*0.040),u_liquidOverlayAmount*close*0.92,u_liquidOverlayTint); } } else if(u_liquidOverlayMode==3){ for(int i=0;i<14;i++){ vec2 r=hash22(vec2(float(i),13.3)); float big=i<5?1.0:0.0; float lane=float(i%3); vec2 c=vec2(0.06+r.x*0.88,0.14+lane*0.24+r.y*0.12+u_liquidOverlayPhase*(0.018+r.x*0.018)); float radius=mix(0.012+r.y*0.018,0.038+r.y*0.040,big); result=refBubble(result,c,radius,u_liquidOverlayAmount*mix(0.74,0.58,big),u_liquidOverlayTint); } } fragColor=result; }";
-
-  const REF_FRAG_POLISHED = REF_FRAG
-    .replace("sideCol*=0.42+0.28*side; vec4 outc=base; outc.rgb=mix(outc.rgb,sideCol,side*amount*0.44); outc.rgb=mix(outc.rgb,vec3(1.0),sideRim*amount*0.46);", "sideCol*=0.28+0.18*side; vec4 outc=base; outc.rgb=mix(outc.rgb,sideCol,side*amount*(style==3?0.20:0.16)); outc.rgb=mix(outc.rgb,vec3(1.0),sideRim*amount*0.26);")
-    .replace("outc.rgb=mix(outc.rgb,face,front*amount*(style==2?0.78:0.82)); outc.rgb*=1.0-inner*amount*(style==3?0.28:0.16);", "float glassAlpha=front*amount*(style==3?0.46:(style==2?0.38:0.42)); outc.rgb=mix(outc.rgb,face,glassAlpha); outc.rgb*=1.0-inner*amount*(style==3?0.34:0.20);")
-    .replace("float spec=edge*(0.70+top*0.35)+shoulder*top*0.18+tube*0.22+bandC*inner*0.15; outc.rgb=mix(outc.rgb,vec3(1.0),clamp(spec*amount,0.0,0.90));", "float spec=edge*(0.52+top*0.30)+shoulder*top*0.14+tube*0.18+bandC*inner*0.12; outc.rgb=mix(outc.rgb,vec3(1.0),clamp(spec*amount,0.0,0.76));")
-    .replace("outc.rgb=mix(outc.rgb,rc,refl*amount*0.18); outc.rgb=mix(outc.rgb,vec3(1.0),reflRim*amount*0.14);", "outc.rgb=mix(outc.rgb,rc,refl*amount*0.08); outc.rgb=mix(outc.rgb,vec3(1.0),reflRim*amount*0.06);")
-    .replace("sideCol*=0.28+0.18*side; vec4 outc=base; outc.rgb=mix(outc.rgb,sideCol,side*amount*(style==3?0.20:0.16)); outc.rgb=mix(outc.rgb,vec3(1.0),sideRim*amount*0.26);", "sideCol*=0.22+0.12*side; vec4 outc=base; outc.rgb=mix(outc.rgb,sideCol,side*amount*(style==3?0.075:0.055)); outc.rgb=mix(outc.rgb,vec3(1.0),sideRim*amount*0.14);")
-    .replace("float glassAlpha=front*amount*(style==3?0.46:(style==2?0.38:0.42)); outc.rgb=mix(outc.rgb,face,glassAlpha); outc.rgb*=1.0-inner*amount*(style==3?0.34:0.20);", "float shell=edge*0.46+shoulder*0.14+inner*0.18; float glassAlpha=clamp(shell*amount*(style==3?0.78:(style==2?0.62:0.66)),0.0,0.72); outc.rgb=mix(outc.rgb,face,glassAlpha); outc.rgb*=1.0-inner*amount*(style==3?0.30:0.16);")
-    .replace("float spec=edge*(0.52+top*0.30)+shoulder*top*0.14+tube*0.18+bandC*inner*0.12; outc.rgb=mix(outc.rgb,vec3(1.0),clamp(spec*amount,0.0,0.76));", "float spec=edge*(0.78+top*0.30)+shoulder*top*0.12+tube*0.28+bandC*inner*0.10; outc.rgb=mix(outc.rgb,vec3(1.0),clamp(spec*amount,0.0,0.88));");
-
-  const REF_FRAG_RAY = "#version 300 es\nprecision highp float;\n#define PI 3.14159265359\nin vec2 v_uv;\nout vec4 fragColor;\nuniform sampler2D u_bg;\nuniform sampler2D u_blurredBg;\nuniform sampler2D u_fg;\nuniform vec2 u_resolution;\nuniform float u_dpr;\nuniform float u_refThickness[4];\nuniform int u_hasFg;\nuniform vec2 u_fgPos;\nuniform float u_fgScale;\nuniform float u_fgAspect;\nuniform int u_liquidOverlayMode;\nuniform float u_liquidOverlayAmount;\nuniform float u_liquidOverlayPhase;\nuniform vec3 u_liquidOverlayTint;\n" + UNION_SD + "\n"
-    + "float sat(float x){return clamp(x,0.0,1.0);} vec2 sat2(vec2 v){return clamp(v,vec2(0.0),vec2(1.0));}\n"
-    + "vec2 hash22(vec2 p){return fract(sin(vec2(dot(p,vec2(269.5,183.3)),dot(p,vec2(113.5,271.9))))*43758.5453123);}\n"
-    + "vec2 grad(vec2 uv){vec2 t=1.35/u_resolution; float l=unionSD(uv-vec2(t.x,0.0)); float r=unionSD(uv+vec2(t.x,0.0)); float b=unionSD(uv-vec2(0.0,t.y)); float a=unionSD(uv+vec2(0.0,t.y)); return vec2(r-l,a-b)*0.5;}\n"
-    + "float refThick(int i){if(i==0)return u_refThickness[0]; if(i==1)return u_refThickness[1]; if(i==2)return u_refThickness[2]; return u_refThickness[3];}\n"
-    + "float tubeHeightAt(vec2 uv,float radius){float d=max(-unionSD(uv)/u_dpr,0.0); float p=sat(d/max(radius,0.001)); return sqrt(max(0.0,1.0-(1.0-p)*(1.0-p)));}\n"
-    + "vec3 meshNormal(vec2 uv,float radius){vec2 t=1.35/u_resolution; float hx=tubeHeightAt(uv+vec2(t.x,0.0),radius)-tubeHeightAt(uv-vec2(t.x,0.0),radius); float hy=tubeHeightAt(uv+vec2(0.0,t.y),radius)-tubeHeightAt(uv-vec2(0.0,t.y),radius); return normalize(vec3(-hx*radius*0.055,-hy*radius*0.055,1.0));}\n"
-    + "vec3 stage(vec2 uv){vec3 raw=texture(u_bg,sat2(uv)).rgb; vec3 blur=texture(u_blurredBg,sat2(uv)).rgb; if(u_liquidOverlayMode==3){vec2 p=uv-0.5; float vign=smoothstep(0.20,0.86,length(p*vec2(1.24,1.0))); vec3 c=mix(blur,raw,0.08); c*=0.17-0.075*vign; c+=vec3(1.0,0.38,0.14)*pow(max(0.0,1.0-length((uv-vec2(0.76,0.66))*vec2(2.1,1.75))),4.4)*0.22; c+=vec3(1.0,0.66,0.45)*pow(max(0.0,1.0-length((uv-vec2(0.46,0.45))*vec2(2.7,2.2))),5.8)*0.11; return c;} if(u_liquidOverlayMode==2){float band=smoothstep(0.12,0.40,uv.y)*(1.0-smoothstep(0.78,0.98,uv.y)); vec3 c=mix(raw,blur,0.38*band); c=mix(c,vec3(1.0,0.72,0.80),0.10*band); c*=1.0-0.17*band; return c;} return raw;}\n"
-    + "vec4 drop(vec4 base, vec2 c, vec2 r, float a, vec3 tint){vec2 asp=vec2(u_resolution.x/u_resolution.y,1.0); vec2 d=(v_uv-c)*asp; float q=length(d/max(r,vec2(0.0001))); float m=(1.0-smoothstep(0.985,1.045,q))*a; if(m<=0.0001)return base; vec2 n=q>0.00001?normalize(d):vec2(0.0,1.0); vec3 refr=stage(v_uv-n*min(r.x,r.y)*1.18/asp); vec3 blur=texture(u_blurredBg,sat2(v_uv+n*min(r.x,r.y)*0.24/asp)).rgb; float rim=smoothstep(0.72,1.0,q)*m; float hard=(1.0-smoothstep(0.0,0.050,abs(q-0.985)))*m; vec2 hp=(v_uv-(c+vec2(-r.x*0.24/asp.x,r.y*0.34)))*asp/max(r*0.23,vec2(0.0001)); float spec=pow(1.0-smoothstep(0.0,1.0,length(hp)),1.45)*m; vec3 col=mix(blur,refr,0.74); col=mix(col,tint,0.05); col*=1.0-smoothstep(-0.2,0.86,dot(n,normalize(vec2(0.45,-0.90))))*m*0.32; col=mix(col,vec3(1.0),sat(hard*0.92+rim*0.28+spec)); return vec4(mix(base.rgb,col,sat(m*0.96)),1.0);}\n"
-    + "vec4 bubble(vec4 base, vec2 c, float r, float a, vec3 tint){vec2 asp=vec2(u_resolution.x/u_resolution.y,1.0); vec2 d=(v_uv-c)*asp; float ang=atan(d.y,d.x); float q=length(d/max(r,0.0001))*(1.0+0.025*sin(ang*3.0+c.x*31.0)+0.018*sin(ang*7.0+c.y*47.0)); float m=(1.0-smoothstep(0.985,1.045,q))*a; if(m<=0.0001)return base; vec2 n=q>0.00001?normalize(d):vec2(0.0,1.0); vec3 refr=stage(v_uv-n*r*1.10/asp); vec3 blur=texture(u_blurredBg,sat2(v_uv+n*r*0.22/asp)).rgb; float hard=(1.0-smoothstep(0.0,0.046,abs(q-0.98)))*m; float rim=smoothstep(0.70,1.0,q)*m; float cup=(1.0-smoothstep(0.0,0.60,q))*m; vec2 h1=(v_uv-(c+vec2(-r*0.24/asp.x,r*0.36)))*asp/max(r*0.19,0.0001); vec2 h2=(v_uv-(c+vec2(r*0.30/asp.x,-r*0.25)))*asp/max(r*0.13,0.0001); float spec=(pow(1.0-smoothstep(0.0,1.0,length(h1)),1.35)+0.55*pow(1.0-smoothstep(0.0,1.0,length(h2)),1.6))*m; vec3 col=mix(blur,refr,0.74); col=mix(col,tint,0.04); col*=1.0-cup*0.12-smoothstep(-0.22,0.86,dot(n,normalize(vec2(0.50,-0.86))))*m*0.30; col=mix(col,vec3(1.0),sat(hard*0.90+rim*0.28+spec)); return vec4(mix(base.rgb,col,sat(m*0.96)),1.0);}\n"
-    + "vec4 glassGlyph(vec4 base,float sd,int layer){float amt=sat(u_liquidOverlayAmount); int style=u_liquidOverlayMode; float s=sd/u_dpr; float depth=max(-s,0.0); float radius=max(refThick(layer),3.0); float tubePos=sat(depth/radius); float tubeHeight=sqrt(max(0.0,1.0-(1.0-tubePos)*(1.0-tubePos))); vec3 N3=meshNormal(v_uv,radius); vec3 R3=reflect(vec3(0.0,0.0,-1.0),N3); float sideShade=sat((1.0-N3.z)*2.2); float contactOcclusion=sat((1.0-tubeHeight)*0.72+sideShade*0.48); vec3 meshEnv=stage(v_uv+R3.xy*(style==3?0.18:0.12)); float inside=1.0-smoothstep(-0.7,1.1,s); vec2 G=grad(v_uv); float gl=length(G); vec2 N=gl>0.00001?G/gl:vec2(0.0,1.0); float nlen=sat(gl*0.62); vec2 dir=(style==2?vec2(-0.014,0.024):(style==3?vec2(-0.010,0.018):vec2(-0.010,0.020)))*amt; float edge=1.0-smoothstep(0.0,1.75,abs(s)); float shoulder=1.0-smoothstep(1.0,8.5,abs(s)); float tube1=(1.0-smoothstep(0.0,radius*0.16,abs(depth-radius*0.34)))*inside; float tube2=(1.0-smoothstep(0.0,radius*0.24,abs(depth-radius*0.82)))*inside*0.42; float core=inside*smoothstep(0.08,0.58,tubePos); float body=inside*(0.28+0.72*tubeHeight)*(1.0-edge*0.24); float shell=sat(edge*0.76+shoulder*0.12+tube1*0.16+tube2*0.10+tubeHeight*inside*(style==3?0.76:(style==2?0.68:0.46))); vec3 refr=stage(v_uv-N*(0.022+0.018*amt*tubeHeight)+dir*0.05); vec3 blur=texture(u_blurredBg,sat2(v_uv+dir*0.05)).rgb; vec3 tint=style==1?vec3(0.62,0.84,1.0):(style==2?vec3(1.0,0.62,0.72):vec3(1.0,0.55,0.34)); vec3 dark=style==3?vec3(0.04,0.08,0.16):(style==2?vec3(0.42,0.25,0.32):vec3(0.06,0.14,0.24)); vec3 bodyTint=style==3?vec3(0.16,0.25,0.50):(style==2?vec3(1.0,0.70,0.82):vec3(0.70,0.90,1.0)); float envA=pow(max(0.0,sin((v_uv.x*7.4-v_uv.y*2.4)*PI+0.8)),16.0); float envB=pow(max(0.0,sin((v_uv.x*-5.0+v_uv.y*5.5)*PI+2.1)),14.0); float envC=pow(max(0.0,sin((v_uv.x*10.5+v_uv.y*3.2)*PI+1.35)),18.0); vec3 face=mix(mix(blur,refr,style==3?0.64:0.60),meshEnv,(0.22+sideShade*0.32)*inside); vec3 volume=mix(bodyTint,tint,style==3?0.18:0.22)+(style==3?vec3(0.025,0.035,0.060):vec3(0.10,0.12,0.16)); face=mix(face,volume,(core*0.54+body*0.46)*inside*(style==3?0.50:0.52)); face=mix(face,tint,(envA*0.48+envC*0.34+core*0.08)*inside*(style==3?0.18:0.20)); face=mix(face,dark,(envB+contactOcclusion*0.55)*inside*(style==3?0.24:0.18)); face*=style==3?1.04:(style==2?1.06:0.98); vec4 outc=base; outc.rgb=mix(outc.rgb,face,shell*amt*(style==3?0.92:0.88)); outc.rgb=mix(outc.rgb,volume,(core*0.42+body*0.44)*amt*(style==3?0.26:0.32)); outc.rgb*=1.0-inside*amt*(style==3?0.012:0.012); float side=0.0; for(int i=1;i<=18;i++){float f=float(i)/18.0; float ss=unionSD(v_uv+dir*f)/u_dpr; side=max(side,(1.0-smoothstep(0.0,2.4,abs(ss)))*(1.0-inside*0.96)*(1.0-f*0.42));} outc.rgb=mix(outc.rgb,stage(v_uv+dir*0.45-N*0.008),side*amt*(style==3?0.018:0.040)); outc.rgb*=1.0-contactOcclusion*inside*amt*(style==3?0.16:0.08); float top=pow(sat(dot(N,normalize(vec2(-0.24,0.97)))),1.1)*nlen; float meshRim=pow(sat(1.0-N3.z),1.6)*inside; float band=pow(max(0.0,sin((v_uv.x*13.5+v_uv.y*1.7)*PI+0.2)),24.0); float spec=edge*((style==3?0.88:0.68)+top*0.36)+meshRim*(style==3?0.42:0.30)+tubeHeight*top*inside*0.18+tube1*0.08+tube2*0.05+band*inside*0.07+side*0.02; outc.rgb=mix(outc.rgb,vec3(1.0),sat(spec*amt)); if(style==2||style==3){float refl=0.0; float rr=0.0; for(int i=0;i<10;i++){float f=float(i)/9.0; float ss=unionSD(v_uv+vec2(0.0,0.035+f*0.058))/u_dpr; float fade=(1.0-f)*(1.0-inside*0.96); refl=max(refl,(1.0-smoothstep(-0.4,2.8,ss))*fade); rr=max(rr,(1.0-smoothstep(0.0,3.5,abs(ss)))*fade);} vec3 rc=style==2?vec3(0.82,0.50,0.60):vec3(0.16,0.28,0.56); outc.rgb=mix(outc.rgb,rc,refl*amt*(style==3?0.010:0.050)); outc.rgb=mix(outc.rgb,vec3(1.0),rr*amt*(style==3?0.008:0.040));} return outc;}\n"
-    + "void main(){int layer=0; float sd=unionSDIdx(v_uv,layer); vec4 result=vec4(stage(v_uv),1.0); if(u_hasFg==1){float A=u_resolution.x/u_resolution.y; float sh=u_fgScale; float sw=u_fgScale*u_fgAspect/A; vec2 fuv=(v_uv-u_fgPos)/vec2(sw,sh)+0.5; if(all(greaterThanEqual(fuv,vec2(0.0)))&&all(lessThanEqual(fuv,vec2(1.0)))){vec4 fg=texture(u_fg,fuv); result=vec4(mix(result.rgb,fg.rgb,fg.a),1.0);}} result=glassGlyph(result,sd,layer); if(u_liquidOverlayMode==1){for(int i=0;i<7;i++){vec2 r=hash22(vec2(float(i),4.7)); vec2 c=vec2(0.14+r.x*0.72,0.16+r.y*0.58+u_liquidOverlayPhase*(0.045+r.x*0.034)); float close=1.0-smoothstep(16.0,76.0,abs(unionSD(c)/u_dpr)); result=drop(result,c,vec2(0.005+r.x*0.006,0.020+r.y*0.040),u_liquidOverlayAmount*close*0.92,u_liquidOverlayTint);}} else if(u_liquidOverlayMode==3){for(int i=0;i<14;i++){vec2 r=hash22(vec2(float(i),13.3)); float big=i<5?1.0:0.0; float lane=float(i%3); vec2 c=vec2(0.06+r.x*0.88,0.14+lane*0.24+r.y*0.12+u_liquidOverlayPhase*(0.018+r.x*0.018)); float rad=mix(0.012+r.y*0.018,0.038+r.y*0.040,big); result=bubble(result,c,rad,u_liquidOverlayAmount*mix(0.74,0.58,big),u_liquidOverlayTint);}} fragColor=result;}";
-
-  const REF_FRAG_RAY_MESH = REF_FRAG_RAY
-    .replace("float refThick(int i){if(i==0)return u_refThickness[0]; if(i==1)return u_refThickness[1]; if(i==2)return u_refThickness[2]; return u_refThickness[3];}\n", "float refThick(int i){if(i==0)return u_refThickness[0]; if(i==1)return u_refThickness[1]; if(i==2)return u_refThickness[2]; return u_refThickness[3];}\nvec2 surfaceProjectUv(vec2 uv){if(u_liquidOverlayMode!=2)return uv; vec2 p=uv-vec2(0.5); float surfaceArc=p.x*p.x*0.105; float lean=p.y*0.105; float squeeze=1.16+sat(p.y+0.38)*0.13; p.x=(p.x+lean)*(1.0-p.y*0.09); p.y=p.y*squeeze+0.020*p.x+surfaceArc; return p+vec2(0.5,0.32);}\nfloat refSDIdx(vec2 uv,out int idx){return unionSDIdx(surfaceProjectUv(uv),idx);} float refSD(vec2 uv){int i; return refSDIdx(uv,i);} vec2 refGrad(vec2 uv){vec2 t=1.35/u_resolution; float l=refSD(uv-vec2(t.x,0.0)); float r=refSD(uv+vec2(t.x,0.0)); float b=refSD(uv-vec2(0.0,t.y)); float a=refSD(uv+vec2(0.0,t.y)); return vec2(r-l,a-b)*0.5;}\n")
-    .replace("float tubeHeightAt(vec2 uv,float radius){float d=max(-unionSD(uv)/u_dpr,0.0);", "float tubeHeightAt(vec2 uv,float radius){float d=max(-refSD(uv)/u_dpr,0.0);")
-    .replace("return normalize(vec3(-hx*radius*0.055,-hy*radius*0.055,1.0));", "return normalize(vec3(-hx*radius*0.24,-hy*radius*0.24,1.0));")
-    .replace("float inside=1.0-smoothstep(-0.7,1.1,s); vec2 G=grad(v_uv);", "float inside=1.0-smoothstep(-0.7,1.1,s); float surfaceSideWall=0.0; float surfaceContact=0.0; if(style==2){for(int j=1;j<=18;j++){float jf=float(j)/18.0; float sw=refSD(v_uv+vec2(-0.007,0.013)*jf)/u_dpr; surfaceSideWall=max(surfaceSideWall,(1.0-smoothstep(0.0,3.2,abs(sw)))*(1.0-inside*0.84)*(1.0-jf*0.24)); float sc=refSD(v_uv+vec2(0.010,-0.020)*jf)/u_dpr; surfaceContact=max(surfaceContact,(1.0-smoothstep(-2.0,7.5,sc))*(1.0-inside*0.92)*(1.0-jf*0.36));} contactOcclusion=sat(contactOcclusion+surfaceSideWall*0.60+surfaceContact*0.38);} vec2 G=refGrad(v_uv);")
-    .replace("vec3 face=mix(mix(blur,refr,style==3?0.64:0.60),meshEnv,(0.22+sideShade*0.32)*inside);", "vec3 rayA=stage(sat2(v_uv+N3.xy*(0.055+0.055*tubeHeight)+dir*0.07)); vec3 rayB=stage(sat2(v_uv-N3.xy*(0.040+0.050*tubeHeight)-dir*0.03)); vec3 rayC=stage(sat2(v_uv+R3.xy*(style==3?0.24:0.18)-N*0.010)); float fresnelShell=pow(sat(1.0-N3.z),0.55); float chromeBand=pow(max(0.0,sin((R3.x*8.0+R3.y*5.5+v_uv.x*4.0-v_uv.y*3.0)*PI+0.35)),10.0)*inside; float darkBand=pow(max(0.0,sin((R3.x*-6.0+R3.y*7.5+v_uv.y*5.2)*PI+1.8)),8.0)*inside; vec3 face=mix(mix(rayB,rayA,0.56),rayC,0.28+fresnelShell*0.34);")
-    .replace("face=mix(face,dark,(envB+contactOcclusion*0.55)*inside*(style==3?0.24:0.18)); face*=style==3?1.04:(style==2?1.06:0.98);", "face=mix(face,dark,(envB+contactOcclusion*0.55+darkBand*0.70)*inside*(style==3?0.28:0.20)); face=mix(face,style==3?vec3(0.11,0.23,0.50):tint,chromeBand*(style==3?0.42:0.28)); face=mix(face,vec3(1.0),chromeBand*(style==3?0.16:0.10)+fresnelShell*edge*0.18); face*=style==3?1.08:(style==2?0.96:0.98);")
-    .replace("outc.rgb=mix(outc.rgb,face,shell*amt*(style==3?0.92:0.88));", "outc.rgb=mix(outc.rgb,face,shell*amt*(style==3?0.92:(style==2?0.66:0.84)));")
-    .replace("outc.rgb=mix(outc.rgb,volume,(core*0.42+body*0.44)*amt*(style==3?0.26:0.32));", "outc.rgb=mix(outc.rgb,volume,(core*0.56+body*0.60)*amt*(style==3?0.46:(style==2?0.22:0.32)));")
-    .replace("float spec=edge*((style==3?0.88:0.68)+top*0.36)+meshRim*(style==3?0.42:0.30)+tubeHeight*top*inside*0.18+tube1*0.08+tube2*0.05+band*inside*0.07+side*0.02; outc.rgb=mix(outc.rgb,vec3(1.0),sat(spec*amt));", "float spec=edge*((style==3?0.74:0.52)+top*0.28)+meshRim*(style==3?0.72:0.48)+tubeHeight*top*inside*0.20+tube1*0.06+tube2*0.04+band*inside*0.05+side*0.02; float bead=pow(tubeHeight,3.0)*inside*(0.12+0.18*chromeBand); outc.rgb=mix(outc.rgb,vec3(1.0),sat((spec+bead)*amt));")
-    .replace("outc.rgb*=1.0-contactOcclusion*inside*amt*(style==3?0.16:0.08); float top=", "outc.rgb*=1.0-contactOcclusion*inside*amt*(style==3?0.16:(style==2?0.12:0.08)); outc.rgb=mix(outc.rgb,dark,surfaceSideWall*amt*0.34); outc.rgb*=1.0-surfaceContact*amt*0.18; outc.rgb=mix(outc.rgb,vec3(1.0),surfaceSideWall*edge*amt*0.18); float top=")
-    .replace("int layer=0; float sd=unionSDIdx(v_uv,layer);", "int layer=0; float sd=refSDIdx(v_uv,layer);")
-    .replace("unionSD(v_uv+dir*f)", "refSD(v_uv+dir*f)")
-    .replace("unionSD(v_uv+vec2(0.0,0.035+f*0.058))", "refSD(v_uv+vec2(0.0,0.035+f*0.058))")
-    .replace("unionSD(c)", "refSD(c)");
 
   function compile(gl, type, src) {
     const sh = gl.createShader(type);
@@ -474,7 +359,6 @@ window.AISystem6LiquidCoverLoaded = true;
     this.progBg = program(gl, VERT, BG_FRAG);
     this.progBlur = program(gl, VERT, BLUR_FRAG);
     this.progMain = program(gl, VERT, MAIN_FRAG);
-    this.progRef = program(gl, VERT, REF_FRAG_RAY_MESH);
     this.vao = gl.createVertexArray();
     gl.bindVertexArray(this.vao);
     const buf = gl.createBuffer();
@@ -613,13 +497,11 @@ window.AISystem6LiquidCoverLoaded = true;
     this.updateBackgroundVideoFrame();
     const count = Math.max(1, Math.min(MAX_LAYERS, params.layerCount || 1));
     const offsets = new Float32Array(MAX_LAYERS * 2);
-    const scales = new Float32Array(MAX_LAYERS).fill(1);
     const tints = new Float32Array(MAX_LAYERS * 4);
     const thick = new Float32Array(MAX_LAYERS).fill(20);
     const layerModes = new Int32Array(MAX_LAYERS);
     for (let i = 0; i < count; i++) {
       offsets[i * 2] = params.offsets[i][0]; offsets[i * 2 + 1] = params.offsets[i][1];
-      scales[i] = params.layerScales && params.layerScales[i] ? params.layerScales[i] : 1;
       const t = params.tints[i]; tints[i * 4] = t[0]; tints[i * 4 + 1] = t[1]; tints[i * 4 + 2] = t[2]; tints[i * 4 + 3] = t[3];
       thick[i] = params.thicknesses[i];
       layerModes[i] = params.layerModes && params.layerModes[i] ? 1 : 0;
@@ -633,7 +515,6 @@ window.AISystem6LiquidCoverLoaded = true;
     gl.uniform1i(this._u(this.progBg, "u_image"), 0);
     this._bindLayers(this.progBg, count, 1);
     gl.uniform2fv(this._u(this.progBg, "u_sdfOffset"), offsets);
-    gl.uniform1fv(this._u(this.progBg, "u_sdfScale"), scales);
     gl.uniform2f(this._u(this.progBg, "u_resolution"), w, h);
     gl.uniform1f(this._u(this.progBg, "u_dpr"), dpr);
     gl.uniform1f(this._u(this.progBg, "u_imageAspect"), this.bgAspect);
@@ -660,46 +541,19 @@ window.AISystem6LiquidCoverLoaded = true;
     drawBlur(this.fboA.tex, this.fboB.fbo, [0, 1]);
     drawBlur(this.fboB.tex, this.fboC.fbo, [1, 0]);
 
-    if (params.reference3DMode) {
-      gl.useProgram(this.progRef);
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-      this._bindLayers(this.progRef, count, 0);
-      gl.uniform2fv(this._u(this.progRef, "u_sdfOffset"), offsets);
-      gl.uniform1fv(this._u(this.progRef, "u_sdfScale"), scales);
-      gl.uniform1fv(this._u(this.progRef, "u_refThickness"), thick);
-      gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, this.fboA.tex);
-      gl.uniform1i(this._u(this.progRef, "u_bg"), 4);
-      gl.activeTexture(gl.TEXTURE5); gl.bindTexture(gl.TEXTURE_2D, this.fboC.tex);
-      gl.uniform1i(this._u(this.progRef, "u_blurredBg"), 5);
-      gl.activeTexture(gl.TEXTURE6); gl.bindTexture(gl.TEXTURE_2D, this.fgTex || this.bgTex);
-      gl.uniform1i(this._u(this.progRef, "u_fg"), 6);
-      gl.uniform2f(this._u(this.progRef, "u_resolution"), w, h);
-      gl.uniform1f(this._u(this.progRef, "u_dpr"), dpr);
-      gl.uniform1i(this._u(this.progRef, "u_hasFg"), this.fgTex ? 1 : 0);
-      gl.uniform2f(this._u(this.progRef, "u_fgPos"), params.fgPos[0], params.fgPos[1]);
-      gl.uniform1f(this._u(this.progRef, "u_fgScale"), params.fgScale);
-      gl.uniform1f(this._u(this.progRef, "u_fgAspect"), this.fgAspect);
-      gl.uniform1i(this._u(this.progRef, "u_liquidOverlayMode"), params.liquidOverlayMode || 0);
-      gl.uniform1f(this._u(this.progRef, "u_liquidOverlayAmount"), params.liquidOverlayAmount || 0);
-      gl.uniform1f(this._u(this.progRef, "u_liquidOverlayPhase"), params.liquidOverlayPhase || 0);
-      const refTint = params.liquidOverlayTint || [1, 1, 1];
-      gl.uniform3f(this._u(this.progRef, "u_liquidOverlayTint"), refTint[0], refTint[1], refTint[2]);
-      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-      gl.bindVertexArray(null);
-      return;
-    }
-
     gl.useProgram(this.progMain);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     this._bindLayers(this.progMain, count, 0);
     gl.uniform2fv(this._u(this.progMain, "u_sdfOffset"), offsets);
-    gl.uniform1fv(this._u(this.progMain, "u_sdfScale"), scales);
-    gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, this.fboA.tex);
-    gl.uniform1i(this._u(this.progMain, "u_bg"), 4);
-    gl.activeTexture(gl.TEXTURE5); gl.bindTexture(gl.TEXTURE_2D, this.fboC.tex);
-    gl.uniform1i(this._u(this.progMain, "u_blurredBg"), 5);
-    gl.activeTexture(gl.TEXTURE6); gl.bindTexture(gl.TEXTURE_2D, this.fgTex || this.bgTex);
-    gl.uniform1i(this._u(this.progMain, "u_fg"), 6);
+    const bgUnit = MAX_LAYERS;
+    const blurUnit = MAX_LAYERS + 1;
+    const fgUnit = MAX_LAYERS + 2;
+    gl.activeTexture(gl.TEXTURE0 + bgUnit); gl.bindTexture(gl.TEXTURE_2D, this.fboA.tex);
+    gl.uniform1i(this._u(this.progMain, "u_bg"), bgUnit);
+    gl.activeTexture(gl.TEXTURE0 + blurUnit); gl.bindTexture(gl.TEXTURE_2D, this.fboC.tex);
+    gl.uniform1i(this._u(this.progMain, "u_blurredBg"), blurUnit);
+    gl.activeTexture(gl.TEXTURE0 + fgUnit); gl.bindTexture(gl.TEXTURE_2D, this.fgTex || this.bgTex);
+    gl.uniform1i(this._u(this.progMain, "u_fg"), fgUnit);
     gl.uniform1f(this._u(this.progMain, "u_fgAspect"), this.fgAspect);
     gl.uniform1i(this._u(this.progMain, "u_hasFg"), this.fgTex ? 1 : 0);
     gl.uniform2f(this._u(this.progMain, "u_fgPos"), params.fgPos[0], params.fgPos[1]);
@@ -725,11 +579,6 @@ window.AISystem6LiquidCoverLoaded = true;
     gl.uniform1f(this._u(this.progMain, "u_rimWidth"), params.rimWidth || 1);
     gl.uniform1f(this._u(this.progMain, "u_bevelFactor"), params.bevelFactor || 0);
     gl.uniform1f(this._u(this.progMain, "u_saturationFactor"), params.saturationFactor == null ? 1 : params.saturationFactor);
-    gl.uniform1i(this._u(this.progMain, "u_liquidOverlayMode"), params.liquidOverlayMode || 0);
-    gl.uniform1f(this._u(this.progMain, "u_liquidOverlayAmount"), params.liquidOverlayAmount || 0);
-    gl.uniform1f(this._u(this.progMain, "u_liquidOverlayPhase"), params.liquidOverlayPhase || 0);
-    const overlayTint = params.liquidOverlayTint || [1, 1, 1];
-    gl.uniform3f(this._u(this.progMain, "u_liquidOverlayTint"), overlayTint[0], overlayTint[1], overlayTint[2]);
     gl.uniform4fv(this._u(this.progMain, "u_tint"), tints);
     gl.uniform1iv(this._u(this.progMain, "u_layerMode"), layerModes);
     gl.uniform1i(this._u(this.progMain, "u_blurEdge"), params.blurEdge ? 1 : 0);
@@ -751,13 +600,14 @@ window.AISystem6LiquidCoverLoaded = true;
   // the look is identical, just at full pixel resolution.
   let renderScale = 1;
   function currentDPR() { return DPR * renderScale; }
-  const FONT_DEFAULT = 'Inter, "PingFang SC", system-ui, sans-serif';
+  const FONT_DEFAULT = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", system-ui, sans-serif';
 
   let renderer = null;
   let inited = false;
   let EXPORT_W = 1280, EXPORT_H = 720;
   const layers = [];
   let sel = 0;
+  const selectedLayerIds = new Set();
   const fg = { x: 0.5, y: 0.5, scale: 1.0 };
   const glassFx = { bodyFactor: 0, rimFactor: 0, rimWidth: 1, bevelFactor: 0, saturationFactor: 100 };
   let dragFgMode = false;
@@ -775,21 +625,177 @@ window.AISystem6LiquidCoverLoaded = true;
   let motionPreviewLastRender = 0;
   let motionExporting = false;
   let motionExportProgress = 0;
+  let nextLayerId = 1;
+  let layerDragState = null;
+  let suppressLayerClick = false;
+  const undoStack = [];
+  const redoStack = [];
+  let pendingHistory = null;
+  let historyRestoring = false;
+  const HISTORY_LIMIT = 50;
   const MOTION_PREVIEW_FPS = 30;
 
   const $ = (id) => document.getElementById(id);
   function isSolidLayer(L) { return L && L.renderMode === "solid"; }
   function layerColor(L) { return isSolidLayer(L) ? (L.solidColor || "#ffffff") : L.tintColor; }
+  function setBusy(control, busy, label) {
+    if (typeof setControlLoading === "function") {
+      setControlLoading(control, busy, label);
+      return;
+    }
+    if (!control) return;
+    control.disabled = !!busy;
+    control.toggleAttribute("aria-busy", !!busy);
+  }
+
+  const MAX_FONT_FILE_BYTES = 20 * 1024 * 1024;
+  let fontProbeCanvas = null;
+  function systemFontAvailable(family) {
+    if (!family) return true;
+    fontProbeCanvas ||= document.createElement("canvas");
+    const ctx = fontProbeCanvas.getContext("2d");
+    if (!ctx) return true;
+    const sample = "mmmmmmmmmmWWWWWiiiil";
+    return ["monospace", "serif", "sans-serif"].some((fallback) => {
+      ctx.font = "72px " + fallback;
+      const baseWidth = ctx.measureText(sample).width;
+      const safeFamily = String(family).replace(/["\\]/g, "");
+      ctx.font = '72px "' + safeFamily + '", ' + fallback;
+      return Math.abs(ctx.measureText(sample).width - baseWidth) > 0.1;
+    });
+  }
+
+  function prepareFontOptions() {
+    const select = $("lc-font");
+    if (!select) return;
+    select.querySelectorAll("option[data-font-family]").forEach((option) => {
+      const available = systemFontAvailable(option.dataset.fontFamily);
+      option.dataset.fontAvailable = available ? "true" : "false";
+      option.dataset.baseLabel ||= option.textContent;
+      option.textContent = option.dataset.baseLabel + (available ? "" : " · " + tr("liquid_cover_font_not_installed_short", "Not installed"));
+    });
+    select.querySelectorAll("option[data-font-system], option[data-font-bundled]").forEach((option) => {
+      option.dataset.fontAvailable = "true";
+    });
+    if (typeof refreshSystemSelectControls === "function") refreshSystemSelectControls();
+  }
+
+  function applyFontSelection() {
+    const select = $("lc-font");
+    const L = layers[sel];
+    if (!select || !L) return false;
+    const option = select.options[select.selectedIndex];
+    if (option?.dataset.fontAvailable === "false") {
+      select.value = L.font;
+      setFontStatus(
+        "liquid_cover_font_not_installed",
+        "This font is not installed. Install it from Apple Fonts or import a font file."
+      );
+      if (typeof refreshSystemSelectControls === "function") refreshSystemSelectControls();
+      return false;
+    }
+    L.font = select.value;
+    setFontStatus("liquid_cover_font_active", "Using {0}.", option?.dataset.baseLabel || option?.textContent || "");
+    return true;
+  }
+
+  function fontFamilyFromFileName(name) {
+    return String(name || "")
+      .replace(/\.(?:ttf|otf|woff2?|ttc)$/i, "")
+      .replace(/[_]+/g, " ")
+      .replace(/["'\\<>;{}]/g, "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 80);
+  }
+
+  function importedFontStack(family) {
+    return '"' + String(family).replace(/["\\]/g, "") + '", ' + FONT_DEFAULT;
+  }
+
+  function setFontStatus(key, fallback, ...args) {
+    const status = $("lc-font-status");
+    if (!status) return;
+    status.removeAttribute("data-i18n");
+    status.textContent = tr(key, fallback, ...args);
+  }
+
+  async function importFontFile(file) {
+    const button = $("lc-font-import");
+    const input = $("lc-font-file");
+    const targetLayer = layers[sel];
+    if (!file || !targetLayer) return;
+    if (!/\.(?:ttf|otf|woff2?)$/i.test(file.name || "") || typeof FontFace !== "function") {
+      setFontStatus("liquid_cover_font_import_error", "This font file could not be used.");
+      if (input) input.value = "";
+      return;
+    }
+    if (file.size > MAX_FONT_FILE_BYTES) {
+      setFontStatus("liquid_cover_font_import_large", "Choose a font file smaller than 20 MB.");
+      if (input) input.value = "";
+      return;
+    }
+    const family = fontFamilyFromFileName(file.name) || "Imported Font";
+    setBusy(button, true, tr("liquid_cover_font_importing", "Loading font…"));
+    setFontStatus("liquid_cover_font_importing", "Loading font…");
+    try {
+      const face = new FontFace(family, await file.arrayBuffer());
+      await face.load();
+      document.fonts.add(face);
+      const stack = importedFontStack(family);
+      const select = $("lc-font");
+      let option = [...select.options].find((item) => item.value === stack);
+      if (!option) {
+        option = document.createElement("option");
+        option.value = stack;
+        option.textContent = family;
+        option.dataset.importedFont = "true";
+        select.appendChild(option);
+      }
+      const targetIndex = layers.indexOf(targetLayer);
+      if (targetIndex >= 0) {
+        targetLayer.font = stack;
+        selectOnly(targetIndex);
+        select.value = stack;
+        rebuildLayerSDF(targetIndex);
+        loadLayerIntoPanel();
+        scheduleRender();
+      }
+      setFontStatus("liquid_cover_font_imported", family + " imported and applied.", family);
+    } catch (error) {
+      setFontStatus("liquid_cover_font_import_error", "This font file could not be used.");
+    } finally {
+      setBusy(button, false);
+      if (input) input.value = "";
+    }
+  }
+
+  function wireFontControls() {
+    const button = $("lc-font-import");
+    const input = $("lc-font-file");
+    prepareFontOptions();
+    document.fonts?.load('72px "Smiley Sans"').then(() => {
+      if (layers.some((L) => String(L.font).includes("Smiley Sans"))) {
+        rebuildAllSDF();
+        scheduleRender();
+      }
+    }).catch(() => {});
+    if (!button || !input) return;
+    button.addEventListener("click", () => input.click());
+    input.addEventListener("change", () => importFontFile(input.files?.[0]));
+  }
 
   function makeLayer(over) {
     // The tool is CALLED Cover Glass: a fresh layer must show glass, or the
     // first open shows no glass anywhere. Solid (the 9to5Mac/B站 readable
     // title) is one checkbox away and is what the ninefive guard protects.
     return Object.assign({
-      text: "Liquid\nGlass", font: FONT_DEFAULT, shape: null, shapeKind: null,
+      id: "lc-layer-" + nextLayerId++, parentId: null,
+      name: "", text: "Liquid\nGlass", font: FONT_DEFAULT, shape: null, shapeKind: null,
       fontSize: 170, fontWeight: 800, letterSpacing: 0, rotation: 0,
       cx: 0.5, cy: 0.5, renderMode: "glass", solidColor: "#ffffff",
       refThickness: 20, tintColor: "#ffffff", tintAlpha: 0,
+      hidden: false, locked: false,
     }, over || {});
   }
 
@@ -874,6 +880,7 @@ window.AISystem6LiquidCoverLoaded = true;
   const RECIPE_KEYS = PRESETS.map((r) => r.key);
   function recipeByKey(k) { return PRESETS.find((r) => r.key === String(k).toLowerCase()) || null; }
   function recipeLabel(k) { return (typeof t === "function" && t("liquid_cover_preset_" + k)) || k; }
+  function recipeSummary(k) { return tr("liquid_cover_preset_" + k + "_summary", ""); }
   // The Glass Mix slider is the clear→tinted MATERIAL continuum only. Editorial
   // presets (ios27, ninefive) carry bevel/layerMode/saturation and are NOT
   // points on this axis — dragging through them would silently flip those on.
@@ -1054,7 +1061,26 @@ window.AISystem6LiquidCoverLoaded = true;
       b.type = "button"; b.className = "btn";
       b.dataset.presetKey = pr.key;
       b.setAttribute("aria-pressed", "false");
-      b.textContent = (typeof t === "function" && t("liquid_cover_preset_" + pr.key)) || pr.key;
+      const label = recipeLabel(pr.key);
+      const summary = recipeSummary(pr.key);
+      b.setAttribute("aria-label", summary ? label + " — " + summary : label);
+      const preview = document.createElement("span");
+      preview.className = "lc-preset-preview";
+      preview.setAttribute("aria-hidden", "true");
+      const sample = document.createElement("span");
+      sample.className = "lc-preset-sample";
+      sample.textContent = pr.key === "ninefive" ? "9" : pr.key === "ios27" ? "27" : "Aa";
+      preview.appendChild(sample);
+      const copy = document.createElement("span");
+      copy.className = "lc-preset-copy";
+      const name = document.createElement("strong");
+      name.textContent = label;
+      const detail = document.createElement("span");
+      detail.textContent = summary;
+      copy.appendChild(name);
+      copy.appendChild(detail);
+      b.appendChild(preview);
+      b.appendChild(copy);
       b.addEventListener("click", () => onPresetClick(pr));
       row.appendChild(b);
     });
@@ -1077,10 +1103,12 @@ window.AISystem6LiquidCoverLoaded = true;
   // adaptation belongs to the bottom mood/config bar, otherwise the button label
   // stops matching the final rendered result.
   function onPresetClick(pr) {
-    syncMaterialMixToRecipe(pr.key);
-    applyPreset(pr.p);
-    setActivePreset(pr.key);
-    aiStatusText("");
+    runHistoryAction("liquid_cover_style_action", "Change style", () => {
+      syncMaterialMixToRecipe(pr.key);
+      applyPreset(pr.p);
+      setActivePreset(pr.key);
+      aiStatusText("");
+    });
   }
 
   // A short, human-readable account of what the model decided — so the result is
@@ -1122,6 +1150,238 @@ window.AISystem6LiquidCoverLoaded = true;
     canvas.width = EXPORT_W; canvas.height = EXPORT_H;
     canvas.style.aspectRatio = w + " / " + h;
     updateExportDimNote();
+    syncWorkbenchReadout();
+  }
+
+  function selectedLayersInStack() {
+    return layers.filter((L) => selectedLayerIds.has(L.id));
+  }
+
+  function ensureSelection() {
+    selectedLayerIds.forEach((id) => {
+      if (!layers.some((L) => L.id === id)) selectedLayerIds.delete(id);
+    });
+    if (!layers[sel]) sel = Math.max(0, layers.length - 1);
+    if (layers[sel] && !selectedLayerIds.size) selectedLayerIds.add(layers[sel].id);
+    if (layers[sel] && !selectedLayerIds.has(layers[sel].id)) {
+      const selected = selectedLayersInStack();
+      sel = selected.length ? layers.indexOf(selected[selected.length - 1]) : sel;
+    }
+  }
+
+  function selectOnly(index) {
+    if (!layers[index]) return;
+    sel = index;
+    selectedLayerIds.clear();
+    selectedLayerIds.add(layers[index].id);
+  }
+
+  function toggleLayerSelection(index) {
+    const L = layers[index];
+    if (!L) return;
+    if (selectedLayerIds.has(L.id) && selectedLayerIds.size > 1) {
+      selectedLayerIds.delete(L.id);
+      if (sel === index) {
+        const selected = selectedLayersInStack();
+        sel = layers.indexOf(selected[selected.length - 1]);
+      }
+      return;
+    }
+    selectedLayerIds.add(L.id);
+    sel = index;
+  }
+
+  function selectAllLayers() {
+    layers.forEach((L) => selectedLayerIds.add(L.id));
+    if (layers.length) sel = layers.length - 1;
+  }
+
+  const HISTORY_CONTROL_IDS = [
+    "lc-ref-factor", "lc-lens", "lc-dispersion", "lc-blur-edge",
+    "lc-fresnel-range", "lc-fresnel-factor", "lc-glare-factor",
+    "lc-glare-range", "lc-glare-convergence", "lc-glare-angle",
+    "lc-blur-radius", "lc-shadow-factor", "lc-shadow-expand",
+    "lc-material-mix", "lc-motion-preset", "lc-motion-duration",
+    "lc-motion-audio", "lc-fg-scale",
+  ];
+
+  function cloneLayerForHistory(L) {
+    const copy = { ...L };
+    if (L._localBounds) copy._localBounds = { ...L._localBounds };
+    return copy;
+  }
+
+  function historyControlValues() {
+    const values = {};
+    HISTORY_CONTROL_IDS.forEach((id) => {
+      const el = $(id);
+      if (!el) return;
+      values[id] = el.type === "checkbox" ? !!el.checked : el.value;
+    });
+    return values;
+  }
+
+  function captureHistoryState() {
+    return {
+      layers: layers.map(cloneLayerForHistory),
+      selectedIds: [...selectedLayerIds],
+      selectedId: layers[sel]?.id || null,
+      fg: { ...fg },
+      glassFx: { ...glassFx },
+      controls: historyControlValues(),
+      aspect: activeAspectKey(),
+      activePresetKey,
+      activeBg,
+      currentBgUrl,
+    };
+  }
+
+  function historySignature() {
+    return JSON.stringify({
+      layers: layers.map((L) => ({
+        id: L.id, parentId: L.parentId, name: L.name, text: L.text,
+        font: L.font, fontSize: L.fontSize, fontWeight: L.fontWeight,
+        letterSpacing: L.letterSpacing, rotation: L.rotation,
+        cx: L.cx, cy: L.cy, renderMode: L.renderMode,
+        solidColor: L.solidColor, refThickness: L.refThickness,
+        tintColor: L.tintColor, tintAlpha: L.tintAlpha,
+        shapeKind: L.shapeKind, hasShape: !!L.shape,
+        hidden: !!L.hidden, locked: !!L.locked,
+      })),
+      fg, glassFx, controls: historyControlValues(),
+      aspect: activeAspectKey(), activePresetKey, activeBg, currentBgUrl,
+    });
+  }
+
+  function updateHistoryButtons() {
+    const undo = $("lc-undo");
+    const redo = $("lc-redo");
+    if (undo) undo.disabled = !undoStack.length;
+    if (redo) redo.disabled = !redoStack.length;
+  }
+
+  function beginHistory(labelKey, fallback) {
+    if (historyRestoring || pendingHistory) return;
+    pendingHistory = {
+      labelKey,
+      fallback,
+      state: captureHistoryState(),
+      signature: historySignature(),
+    };
+  }
+
+  function cancelHistory() {
+    pendingHistory = null;
+  }
+
+  function commitHistory() {
+    if (!pendingHistory || historyRestoring) return;
+    const entry = pendingHistory;
+    pendingHistory = null;
+    if (entry.signature === historySignature()) return;
+    undoStack.push(entry);
+    if (undoStack.length > HISTORY_LIMIT) undoStack.shift();
+    redoStack.length = 0;
+    updateHistoryButtons();
+  }
+
+  function runHistoryAction(labelKey, fallback, action) {
+    beginHistory(labelKey, fallback);
+    action();
+    commitHistory();
+  }
+
+  function restoreHistoryState(state) {
+    historyRestoring = true;
+    pendingHistory = null;
+    layers.length = 0;
+    state.layers.forEach((L) => layers.push(cloneLayerForHistory(L)));
+    selectedLayerIds.clear();
+    state.selectedIds.forEach((id) => {
+      if (layers.some((L) => L.id === id)) selectedLayerIds.add(id);
+    });
+    sel = Math.max(0, layers.findIndex((L) => L.id === state.selectedId));
+    if (!selectedLayerIds.size && layers[sel]) selectedLayerIds.add(layers[sel].id);
+    Object.assign(fg, state.fg);
+    Object.assign(glassFx, state.glassFx);
+    Object.entries(state.controls || {}).forEach(([id, value]) => {
+      const el = $(id);
+      if (!el) return;
+      if (el.type === "checkbox") el.checked = !!value;
+      else el.value = value;
+    });
+    const aspect = ASPECTS[state.aspect] || ASPECTS["16:9"];
+    applyAspect(aspect[0], aspect[1]);
+    document.querySelectorAll(".liquid-cover-window .lc-aspect button").forEach((button) => {
+      const active = button.dataset.k === state.aspect;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", active ? "true" : "false");
+    });
+    activePresetKey = state.activePresetKey || "";
+    activeBg = Number.isInteger(state.activeBg) ? state.activeBg : activeBg;
+    if (state.currentBgUrl && state.currentBgUrl !== currentBgUrl) setBgFromUrl(state.currentBgUrl);
+    nextLayerId = layers.reduce((max, L) => {
+      const value = Number(String(L.id || "").replace(/^lc-layer-/, ""));
+      return Number.isFinite(value) ? Math.max(max, value + 1) : max;
+    }, nextLayerId);
+    rebuildAllSDF();
+    renderLayerList();
+    loadLayerIntoPanel();
+    setInspectorPanel(isShapeLayer(layers[sel]) ? "glass" : "layers");
+    syncValueLabels();
+    setActivePreset(activePresetKey);
+    scheduleRender();
+    historyRestoring = false;
+  }
+
+  function undoEditor() {
+    const entry = undoStack.pop();
+    if (!entry) return;
+    redoStack.push({
+      labelKey: entry.labelKey,
+      fallback: entry.fallback,
+      state: captureHistoryState(),
+      signature: historySignature(),
+    });
+    restoreHistoryState(entry.state);
+    aiStatusText(tr("liquid_cover_undo_status", "Change undone.", tr(entry.labelKey, entry.fallback)));
+    updateHistoryButtons();
+  }
+
+  function redoEditor() {
+    const entry = redoStack.pop();
+    if (!entry) return;
+    undoStack.push({
+      labelKey: entry.labelKey,
+      fallback: entry.fallback,
+      state: captureHistoryState(),
+      signature: historySignature(),
+    });
+    restoreHistoryState(entry.state);
+    aiStatusText(tr("liquid_cover_redo_status", "Change redone.", tr(entry.labelKey, entry.fallback)));
+    updateHistoryButtons();
+  }
+
+  function syncWorkbenchReadout() {
+    const aspect = activeAspectKey();
+    const layer = layers[sel];
+    const selectionCount = selectedLayersInStack().length;
+    const layerName = selectionCount > 1
+      ? tr("liquid_cover_layers_selected", "{0} layers selected", selectionCount)
+      : (layer ? (layer.name || (layer.text || "Layer").split("\n")[0] || "Layer").slice(0, 32) : "Layer");
+    const format = $("lc-stage-format");
+    if (format) format.textContent = aspect + " · " + DESIGN_W + " × " + DESIGN_H;
+    const selection = $("lc-stage-selection");
+    if (selection) selection.textContent = layerName;
+    const help = $("lc-selection-help");
+    if (help) {
+      help.removeAttribute("data-i18n");
+      help.textContent = selectionCount > 1
+        ? tr("liquid_cover_selection_count_help", "{0} layers selected · drag together · align to selection", selectionCount)
+        : tr("liquid_cover_selection_help", "Shift-click or drag a box to select multiple layers. Drag layers to reorder.");
+    }
+    const meta = $("lc-status-meta");
+    if (meta) meta.textContent = aspect + " · " + layers.length + "/" + MAX_LAYERS;
   }
   function sourceWidth(src) { return src ? (src.videoWidth || src.naturalWidth || src.width || 0) : 0; }
   function sourceHeight(src) { return src ? (src.videoHeight || src.naturalHeight || src.height || 0) : 0; }
@@ -1155,6 +1415,7 @@ window.AISystem6LiquidCoverLoaded = true;
     motionPreviewActive = false;
     motionPreviewStart = 0;
     motionPreviewLastRender = 0;
+    $("lc-motion-preview")?.setAttribute("aria-pressed", "false");
     if (motionVideo) {
       try { motionVideo.pause(); } catch (e) { /* noop */ }
     }
@@ -1204,6 +1465,7 @@ window.AISystem6LiquidCoverLoaded = true;
       await motionVideo.play().catch(() => {});
     }
     motionPreviewActive = true;
+    $("lc-motion-preview")?.setAttribute("aria-pressed", "true");
     motionPreviewStart = performance.now();
     motionPreviewLastRender = 0;
     aiStatusText(tr("liquid_cover_ai_motion_previewing", "Previewing animation…"));
@@ -1320,10 +1582,13 @@ window.AISystem6LiquidCoverLoaded = true;
   function exportPng() {
     if (!renderer) return;
     const d = exportTargetDims();
+    const exportButton = $("lc-export");
     const restore = () => {
       applyAspect(DESIGN_W, DESIGN_H);
       rebuildAllSDF(); renderNow();
+      setBusy(exportButton, false);
     };
+    setBusy(exportButton, true, tr("liquid_cover_ai_exporting", "Rendering…"));
     try {
       aiStatusText(tr("liquid_cover_ai_exporting", "Rendering") + " " + d.w + "×" + d.h + "…");
       // Export supersampling: render 2x the target and downsample once at the
@@ -1413,9 +1678,11 @@ window.AISystem6LiquidCoverLoaded = true;
     const prevMuted = motionVideo ? motionVideo.muted : true;
     const prevPlaybackRate = motionVideo ? motionVideo.playbackRate : 1;
     const prevExportW = EXPORT_W, prevExportH = EXPORT_H, prevScale = renderScale;
+    const exportButton = $("lc-motion-export");
     stopMotionPreview();
     motionExporting = true;
     motionExportProgress = 0;
+    setBusy(exportButton, true, tr("liquid_cover_ai_motion_exporting", "Recording video…"));
     try {
       renderScale = 1;
       EXPORT_W = DESIGN_W;
@@ -1486,6 +1753,7 @@ window.AISystem6LiquidCoverLoaded = true;
       canvas.height = EXPORT_H;
       rebuildAllSDF();
       renderNow();
+      setBusy(exportButton, false);
     }
   }
 
@@ -1532,12 +1800,34 @@ window.AISystem6LiquidCoverLoaded = true;
     }
     return f;
   }
+  function measureAlphaBounds(alpha, width, height) {
+    let minX = width, minY = height, maxX = -1, maxY = -1;
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        if (alpha[y * width + x] < 8) continue;
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+    }
+    if (maxX < minX || maxY < minY) {
+      return { left: -0.05, right: 0.05, bottom: -0.05, top: 0.05 };
+    }
+    return {
+      left: minX / width - 0.5,
+      right: (maxX + 1) / width - 0.5,
+      bottom: 0.5 - (maxY + 1) / height,
+      top: 0.5 - minY / height,
+    };
+  }
   function rebuildLayerSDF(i) {
     if (!renderer) return;
     const L = layers[i];
     const r = (L.shape || L.shapeKind)
       ? rasterizeShape({ image: L.shape, kind: L.shapeKind, width: EXPORT_W, height: EXPORT_H, sizePx: L.fontSize * 2 * renderScale, rotationDeg: L.rotation })
       : rasterizeText({ text: L.text || " ", width: EXPORT_W, height: EXPORT_H, fontFamily: L.font, fontWeight: L.fontWeight, fontSize: L.fontSize * renderScale, letterSpacing: L.letterSpacing * renderScale, rotationDeg: L.rotation });
+    L._localBounds = measureAlphaBounds(r.alpha, r.width, r.height);
     const sdf = alphaToSignedDistance(r.alpha, r.width, r.height, true);
     smoothSDF(sdf, r.width, r.height); // remove EDT facets → smooth, rounded glass edge
     let mn = 0; for (let k = 0; k < sdf.length; k++) { if (sdf[k] < mn) mn = sdf[k]; }
@@ -1578,8 +1868,7 @@ window.AISystem6LiquidCoverLoaded = true;
       baseDpr: DPR, // refraction offset uses this so it doesn't grow with export scale
       lensMag: (+($("lc-lens") && $("lc-lens").value) || 0) / 1000, // slider 0..30 → 0..0.03 UV pull
       layerCount: layers.length,
-      offsets: layers.map((L) => [L.cx - 0.5, L.cy - 0.5]),
-      layerScales: layers.map(() => 1),
+      offsets: layers.map((L) => L.hidden ? [10, 10] : [L.cx - 0.5, L.cy - 0.5]),
       layerModes: layers.map((L) => isSolidLayer(L) ? 1 : 0),
       tints: layers.map((L) => { const c = hexToRgb(layerColor(L)); return [c[0], c[1], c[2], L.tintAlpha / 100]; }),
       thicknesses: layers.map((L) => effectiveThickness(L)),
@@ -1607,11 +1896,6 @@ window.AISystem6LiquidCoverLoaded = true;
       shadowOffset: [0, -10],
       bgZoom: 1,
       bgPan: [0, 0],
-      liquidOverlayMode: 0,
-      liquidOverlayAmount: 0,
-      liquidOverlayPhase: 0,
-      liquidOverlayTint: [1, 1, 1],
-      reference3DMode: false,
     };
   }
 
@@ -1622,7 +1906,6 @@ window.AISystem6LiquidCoverLoaded = true;
     if (preset === "none") return p;
     const t = clampNum(progress, 0, 1, 0);
     const reveal = easeOutCubic(t);
-    const pulse = Math.sin(t * Math.PI);
     if (preset === "condense") {
       p.thicknesses = p.thicknesses.map((v) => v * (0.08 + 0.92 * reveal));
       p.refFresnelFactor *= reveal;
@@ -1638,57 +1921,6 @@ window.AISystem6LiquidCoverLoaded = true;
       p.bgPan = [-0.012 * z, 0.006 * z];
       p.lensMag *= 0.55 + 0.45 * reveal;
       p.glareAngle += (12 * Math.sin(t * Math.PI * 2)) * Math.PI / 180;
-    } else if (preset === "watertext") {
-      p.reference3DMode = true;
-      p.liquidOverlayMode = 1;
-      p.liquidOverlayAmount = reveal;
-      p.liquidOverlayPhase = t;
-      p.liquidOverlayTint = [0.92, 0.98, 1.0];
-      p.thicknesses = p.thicknesses.map((v) => v * (0.35 + 0.75 * reveal));
-      p.layerScales = p.layerScales.map((v) => v * 0.84);
-      p.refDispersion *= 1.15 + 0.55 * pulse;
-      p.refFresnelFactor = Math.max(p.refFresnelFactor * (0.08 + 0.12 * reveal), 0.05 * reveal);
-      p.glareFactor = Math.max(p.glareFactor * (0.10 + 0.16 * pulse), 0.06 * pulse);
-      p.rimFactor = Math.max(p.rimFactor * 0.08, 0.025 * reveal);
-      p.bodyFactor = 0;
-      p.lensMag = Math.max(p.lensMag, 0.020 * reveal);
-      p.blurWeights = gaussianWeights(Math.max(4, Math.min(16, Math.round(scaledBlurRadius() * 0.8))));
-    } else if (preset === "surface") {
-      const settle = easeOutCubic(t);
-      p.reference3DMode = true;
-      p.liquidOverlayMode = 2;
-      p.liquidOverlayAmount = settle;
-      p.liquidOverlayPhase = t;
-      p.liquidOverlayTint = [1.0, 0.94, 0.96];
-      p.thicknesses = p.thicknesses.map((v) => v * (0.6 + 0.35 * settle));
-      p.layerScales = p.layerScales.map((v) => v * 0.86);
-      p.refFresnelFactor = Math.max(p.refFresnelFactor * (0.08 + 0.10 * settle), 0.04 * settle);
-      p.glareFactor = Math.max(p.glareFactor * (0.08 + 0.12 * pulse), 0.04 + 0.05 * pulse);
-      p.rimFactor = Math.max(p.rimFactor * 0.08, 0.025 * settle);
-      p.bodyFactor = 0;
-      p.shadowFactor = Math.max(p.shadowFactor * 0.70, 0.18 * settle);
-      p.lensMag = Math.max(p.lensMag, 0.016 * settle);
-      p.blurWeights = gaussianWeights(Math.max(18, Math.min(42, Math.round(scaledBlurRadius() * 1.3))));
-      p.bgZoom = 1.34 + 0.10 * (1 - settle);
-      p.bgPan = [0.0, -0.018 * settle];
-    } else if (preset === "bubbletitle") {
-      p.reference3DMode = true;
-      p.liquidOverlayMode = 3;
-      p.liquidOverlayAmount = reveal;
-      p.liquidOverlayPhase = t;
-      p.liquidOverlayTint = [1.0, 0.88, 0.92];
-      p.thicknesses = p.thicknesses.map((v) => v * (0.2 + 0.95 * reveal));
-      p.layerScales = p.layerScales.map((v) => v * 0.74);
-      p.refDispersion *= 1.2 + 0.9 * pulse;
-      p.lensMag = Math.max(p.lensMag * (0.4 + 0.5 * reveal), 0.022 * reveal);
-      p.refFresnelFactor = Math.max(p.refFresnelFactor * (0.06 + 0.12 * reveal), 0.05 * reveal);
-      p.glareFactor = Math.max(p.glareFactor * (0.08 + 0.16 * pulse), 0.05 * pulse);
-      p.rimFactor = Math.max(p.rimFactor * 0.06, 0.025 * reveal);
-      p.bodyFactor = 0;
-      p.shadowFactor *= 0.35 + 0.55 * reveal;
-      p.blurWeights = gaussianWeights(Math.max(30, Math.min(58, Math.round(scaledBlurRadius() * 1.8))));
-      p.bgZoom = 1.28 + 0.08 * pulse;
-      p.bgPan = [0.0, -0.035 * reveal];
     }
     return p;
   }
@@ -1698,7 +1930,11 @@ window.AISystem6LiquidCoverLoaded = true;
   function scheduleRender() {
     if (rafPending) return;
     rafPending = true;
-    requestAnimationFrame(() => { rafPending = false; renderNow(); });
+    requestAnimationFrame(() => {
+      rafPending = false;
+      renderNow();
+      updateSelectionOverlay();
+    });
   }
 
   // Theme CSS draws each range as a filled track (Classic uses black-white
@@ -1727,31 +1963,533 @@ window.AISystem6LiquidCoverLoaded = true;
     $("lc-rotation").value = L.rotation;
     $("lc-thickness").value = L.refThickness;
     $("lc-layer-solid").checked = isSolidLayer(L);
-    $("lc-thickness").disabled = isSolidLayer(L);
+    $("lc-thickness").disabled = isSolidLayer(L) || L.locked;
     $("lc-tint-color").value = layerColor(L);
     $("lc-tint-alpha").value = L.tintAlpha;
-    $("lc-tint-alpha").disabled = isSolidLayer(L);
+    $("lc-tint-alpha").disabled = isSolidLayer(L) || L.locked;
+    [
+      "lc-text", "lc-font", "lc-font-size", "lc-font-weight", "lc-letter-spacing",
+      "lc-rotation", "lc-layer-solid", "lc-tint-color",
+    ].forEach((id) => { $(id).disabled = !!L.locked; });
     // keep the custom System 6 dropdown's visible label in sync with the value
     if (typeof refreshSystemSelectControls === "function") refreshSystemSelectControls();
     syncValueLabels();
+    syncWorkbenchReadout();
+  }
+
+  function isShapeLayer(L) {
+    return !!(L && (L.shape || L.shapeKind));
+  }
+
+  function worldBounds(L, cx, cy) {
+    const b = L?._localBounds || { left: -0.08, right: 0.08, bottom: -0.08, top: 0.08 };
+    const x = cx == null ? L.cx : cx;
+    const y = cy == null ? L.cy : cy;
+    return {
+      left: x + b.left,
+      right: x + b.right,
+      bottom: y + b.bottom,
+      top: y + b.top,
+    };
+  }
+
+  function linkedChildren(L) {
+    if (!L || !isShapeLayer(L)) return [];
+    return layers.filter((item) => item.parentId === L.id);
+  }
+
+  function linkedFamily(L) {
+    if (!L) return [];
+    const parent = L.parentId ? layers.find((item) => item.id === L.parentId) : L;
+    if (!parent) return [L];
+    return [parent, ...linkedChildren(parent)];
+  }
+
+  function uniqueLayers(items) {
+    return [...new Set(items.filter(Boolean))];
+  }
+
+  function selectedPositionRoots() {
+    const selected = selectedLayersInStack();
+    return selected.filter((L) => !L.hidden && !L.locked && (!L.parentId || !selectedLayerIds.has(L.parentId)));
+  }
+
+  function selectedPositionMembers() {
+    return uniqueLayers(selectedPositionRoots().flatMap((L) => [L, ...linkedChildren(L).filter((child) => !child.hidden)]));
+  }
+
+  function selectedReorderUnit(seed) {
+    const selected = selectedLayerIds.has(seed?.id) ? selectedLayersInStack() : [seed];
+    return uniqueLayers(selected.flatMap((L) => linkedFamily(L))).sort((a, b) => layers.indexOf(a) - layers.indexOf(b));
+  }
+
+  function boundsUnion(items) {
+    if (!items.length) return null;
+    return items.reduce((acc, item) => {
+      const b = item.left == null ? worldBounds(item) : item;
+      if (!acc) return { ...b };
+      acc.left = Math.min(acc.left, b.left);
+      acc.right = Math.max(acc.right, b.right);
+      acc.bottom = Math.min(acc.bottom, b.bottom);
+      acc.top = Math.max(acc.top, b.top);
+      return acc;
+    }, null);
+  }
+
+  function unitBoundsForLayer(L) {
+    return boundsUnion([L, ...linkedChildren(L).filter((child) => !child.hidden)]);
+  }
+
+  function updateSelectionOverlay() {
+    const box = $("lc-selection-box");
+    if (!box || !canvas) return;
+    const selected = selectedPositionMembers();
+    const bounds = boundsUnion(selected);
+    if (!bounds || !selected.length) {
+      box.classList.remove("is-visible", "has-single-transform");
+      return;
+    }
+    const rect = canvas.getBoundingClientRect();
+    const shellRect = box.parentElement.getBoundingClientRect();
+    const left = rect.left - shellRect.left + bounds.left * rect.width;
+    const top = rect.top - shellRect.top + (1 - bounds.top) * rect.height;
+    box.style.setProperty("--lc-selection-left", left + "px");
+    box.style.setProperty("--lc-selection-top", top + "px");
+    box.style.setProperty("--lc-selection-width", Math.max(1, (bounds.right - bounds.left) * rect.width) + "px");
+    box.style.setProperty("--lc-selection-height", Math.max(1, (bounds.top - bounds.bottom) * rect.height) + "px");
+    box.classList.add("is-visible");
+    box.classList.toggle("has-single-transform", selectedPositionRoots().length === 1);
+  }
+
+  function setLayerPosition(L, x, y, moveChildren) {
+    if (!L) return;
+    const nx = clampNum(x, -0.5, 1.5, L.cx);
+    const ny = clampNum(y, -0.5, 1.5, L.cy);
+    const dx = nx - L.cx;
+    const dy = ny - L.cy;
+    L.cx = nx;
+    L.cy = ny;
+    if (moveChildren && (dx || dy)) {
+      linkedChildren(L).forEach((child) => {
+        child.cx = clampNum(child.cx + dx, -0.5, 1.5, child.cx);
+        child.cy = clampNum(child.cy + dy, -0.5, 1.5, child.cy);
+      });
+    }
+  }
+
+  function selectedMoveUnit() {
+    return selectedReorderUnit(layers[sel]);
+  }
+
+  function canMoveSelected(direction) {
+    const unit = selectedMoveUnit();
+    const indices = unit.map((L) => layers.indexOf(L));
+    if (direction === "up") return Math.max(...indices) < layers.length - 1;
+    return Math.min(...indices) > 0;
+  }
+
+  function moveSelectedLayer(where) {
+    const selected = layers[sel];
+    if (!selected || selected.locked || layers.length < 2) return;
+    const unit = selectedMoveUnit();
+    const indices = unit.map((L) => layers.indexOf(L)).sort((a, b) => a - b);
+    if (where === "up" && Math.max(...indices) >= layers.length - 1) return;
+    if (where === "down" && Math.min(...indices) <= 0) return;
+    beginHistory("liquid_cover_reorder_action", "Reorder layers");
+    const first = Math.min(...indices);
+    const rest = layers.filter((L) => !unit.includes(L));
+    let insertAt = first;
+    if (where === "top") insertAt = rest.length;
+    if (where === "bottom") insertAt = 0;
+    if (where === "up") insertAt = Math.min(rest.length, first + 1);
+    if (where === "down") insertAt = Math.max(0, first - 1);
+    layers.length = 0;
+    rest.slice(0, insertAt).forEach((L) => layers.push(L));
+    unit.forEach((L) => layers.push(L));
+    rest.slice(insertAt).forEach((L) => layers.push(L));
+    sel = layers.indexOf(selected);
+    rebuildAllSDF();
+    renderLayerList();
+    loadLayerIntoPanel();
+    scheduleRender();
+    commitHistory();
+  }
+
+  function alignSelectedToArtboard(where) {
+    const roots = selectedPositionRoots();
+    if (!roots.length) return;
+    beginHistory("liquid_cover_align_action", "Align layers");
+    const multi = roots.length > 1;
+    const selectionBounds = boundsUnion(roots.map(unitBoundsForLayer));
+    roots.forEach((L) => {
+      const b = unitBoundsForLayer(L);
+      let dx = 0, dy = 0;
+      if (where === "left") dx = (multi ? selectionBounds.left : 0) - b.left;
+      if (where === "center") dx = (multi ? (selectionBounds.left + selectionBounds.right) / 2 : 0.5) - (b.left + b.right) / 2;
+      if (where === "right") dx = (multi ? selectionBounds.right : 1) - b.right;
+      if (where === "top") dy = (multi ? selectionBounds.top : 1) - b.top;
+      if (where === "middle") dy = (multi ? (selectionBounds.bottom + selectionBounds.top) / 2 : 0.5) - (b.bottom + b.top) / 2;
+      if (where === "bottom") dy = (multi ? selectionBounds.bottom : 0) - b.bottom;
+      setLayerPosition(L, L.cx + dx, L.cy + dy, true);
+    });
+    syncWorkbenchReadout();
+    updateSelectionOverlay();
+    scheduleRender();
+    commitHistory();
+  }
+
+  function addTextInsideSelectedShape() {
+    const shape = layers[sel];
+    if (!isShapeLayer(shape) || layers.length >= MAX_LAYERS) return;
+    beginHistory("liquid_cover_add_action", "Add layer");
+    const textLayer = makeLayer({
+      parentId: shape.id,
+      text: tr("liquid_cover_inside_text_default", "Text"),
+      fontSize: clampNum(shape.fontSize * 0.42, 48, 150, 72),
+      cx: shape.cx,
+      cy: shape.cy,
+      renderMode: "solid",
+      solidColor: "#ffffff",
+      refThickness: shape.refThickness,
+    });
+    layers.splice(sel + 1, 0, textLayer);
+    selectOnly(layers.indexOf(textLayer));
+    rebuildAllSDF();
+    loadLayerIntoPanel();
+    renderLayerList();
+    setInspectorPanel("layers");
+    scheduleRender();
+    commitHistory();
+  }
+
+  function removeSelectedLayer() {
+    const removed = selectedLayersInStack().filter((L) => !L.locked);
+    if (!removed.length || layers.length - removed.length < 1) return;
+    beginHistory("liquid_cover_delete_action", "Delete layer");
+    const removedIds = new Set(removed.map((L) => L.id));
+    const remaining = layers.filter((L) => !removedIds.has(L.id));
+    remaining.forEach((L) => {
+      if (removedIds.has(L.parentId)) L.parentId = null;
+    });
+    layers.length = 0;
+    remaining.forEach((L) => layers.push(L));
+    selectedLayerIds.clear();
+    sel = Math.min(sel, layers.length - 1);
+    selectedLayerIds.add(layers[sel].id);
+    rebuildAllSDF();
+    loadLayerIntoPanel();
+    renderLayerList();
+    setInspectorPanel(isShapeLayer(layers[sel]) ? "glass" : "layers");
+    scheduleRender();
+    commitHistory();
+  }
+
+  function clearLayerDropIndicators(clearDragging) {
+    document.querySelectorAll("#lc-layer-list .lc-layer-item").forEach((item) => {
+      item.classList.remove("is-drop-before", "is-drop-after");
+      if (clearDragging) {
+        item.classList.remove("is-dragging");
+        item.setAttribute("aria-grabbed", "false");
+      }
+    });
+  }
+
+  function reorderLayerUnit(unitIds, targetId, edge) {
+    const moving = layers.filter((L) => unitIds.has(L.id));
+    if (!moving.length || unitIds.has(targetId)) return;
+    const rest = layers.filter((L) => !unitIds.has(L.id));
+    const targetIndex = rest.findIndex((L) => L.id === targetId);
+    if (targetIndex < 0) return;
+    const insertAt = targetIndex + (edge === "above" ? 1 : 0);
+    layers.length = 0;
+    rest.slice(0, insertAt).forEach((L) => layers.push(L));
+    moving.forEach((L) => layers.push(L));
+    rest.slice(insertAt).forEach((L) => layers.push(L));
+    sel = layers.findIndex((L) => selectedLayerIds.has(L.id));
+    if (sel < 0) sel = layers.indexOf(moving[moving.length - 1]);
+    rebuildAllSDF();
+    renderLayerList();
+    loadLayerIntoPanel();
+    scheduleRender();
+  }
+
+  function layerDisplayName(L) {
+    const fallback = isShapeLayer(L)
+      ? tr("liquid_cover_layer_shape", "Shape")
+      : tr("liquid_cover_layer_text", "Text");
+    return (L.name || (L.text || "").split("\n")[0] || fallback).slice(0, 40);
+  }
+
+  function duplicateSelectedLayers() {
+    if (layers.length >= MAX_LAYERS) return;
+    const source = selectedReorderUnit(layers[sel]);
+    const capacity = MAX_LAYERS - layers.length;
+    const copiesFrom = source.length <= capacity ? source : [layers[sel]];
+    if (!copiesFrom.length) return;
+    beginHistory("liquid_cover_duplicate_action", "Duplicate layer");
+    const idMap = new Map();
+    const copies = copiesFrom.map((L) => {
+      const sourceCopy = cloneLayerForHistory(L);
+      delete sourceCopy.id;
+      const copy = makeLayer({
+        ...sourceCopy,
+        name: L.name,
+        cx: clampNum(L.cx + 16 / DESIGN_W, -0.5, 1.5, L.cx),
+        cy: clampNum(L.cy - 16 / DESIGN_H, -0.5, 1.5, L.cy),
+        hidden: false,
+        locked: false,
+      });
+      idMap.set(L.id, copy.id);
+      return copy;
+    });
+    copies.forEach((copy, index) => {
+      const originalParent = copiesFrom[index].parentId;
+      copy.parentId = idMap.get(originalParent) || null;
+    });
+    copies.forEach((copy) => layers.push(copy));
+    selectedLayerIds.clear();
+    copies.forEach((copy) => selectedLayerIds.add(copy.id));
+    sel = layers.indexOf(copies[copies.length - 1]);
+    rebuildAllSDF();
+    renderLayerList();
+    loadLayerIntoPanel();
+    setInspectorPanel(isShapeLayer(layers[sel]) ? "glass" : "layers");
+    scheduleRender();
+    commitHistory();
+  }
+
+  function toggleLayerHidden(L) {
+    if (!L) return;
+    runHistoryAction("liquid_cover_edit_action", "Edit layer", () => {
+      L.hidden = !L.hidden;
+      renderLayerList();
+      scheduleRender();
+    });
+  }
+
+  function toggleLayerLocked(L) {
+    if (!L) return;
+    runHistoryAction("liquid_cover_edit_action", "Edit layer", () => {
+      L.locked = !L.locked;
+      renderLayerList();
+      loadLayerIntoPanel();
+      scheduleRender();
+    });
+  }
+
+  function beginLayerRename(L, row, item) {
+    if (!L || L.locked || row.querySelector(".lc-layer-name-input")) return;
+    const name = item.querySelector(".lc-layer-name");
+    if (!name) return;
+    beginHistory("liquid_cover_rename_action", "Rename layer");
+    const input = document.createElement("input");
+    input.className = "lc-layer-name-input";
+    input.type = "text";
+    input.maxLength = 40;
+    input.value = L.name || layerDisplayName(L);
+    input.setAttribute("aria-label", tr("liquid_cover_layer_name", "Layer name"));
+    name.replaceWith(input);
+    input.focus();
+    input.select();
+    let finished = false;
+    const finish = (save) => {
+      if (finished) return;
+      finished = true;
+      if (save) {
+        L.name = input.value.trim().slice(0, 40);
+        commitHistory();
+      } else {
+        cancelHistory();
+      }
+      renderLayerList();
+      loadLayerIntoPanel();
+    };
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") { event.preventDefault(); finish(true); }
+      if (event.key === "Escape") { event.preventDefault(); finish(false); }
+    });
+    input.addEventListener("blur", () => finish(true));
+  }
+
+  function layerStateGlyph(kind, active) {
+    const icon = document.createElement("span");
+    icon.className = "lc-control-icon";
+    icon.setAttribute("aria-hidden", "true");
+    if (kind === "visibility") {
+      icon.innerHTML = '<svg viewBox="0 0 20 20" focusable="false"><path d="M2.4 10s2.8-5 7.6-5 7.6 5 7.6 5-2.8 5-7.6 5-7.6-5-7.6-5Z"></path>'
+        + (active ? '<path d="m3.8 3.8 12.4 12.4"></path>' : '<circle cx="10" cy="10" r="2.25"></circle>')
+        + "</svg>";
+    } else {
+      const shackle = active
+        ? '<path d="M6.4 9V6.9a3.6 3.6 0 0 1 7.2 0V9"></path>'
+        : '<path d="M7.3 9V7.1a3.5 3.5 0 0 1 6.8-1.2"></path>';
+      icon.innerHTML = '<svg viewBox="0 0 20 20" focusable="false">' + shackle
+        + '<rect x="4.4" y="8.7" width="11.2" height="8" rx="1.8"></rect><path d="M10 12v1.8"></path></svg>';
+    }
+    return icon;
   }
 
   function renderLayerList() {
     const list = $("lc-layer-list");
     list.innerHTML = "";
-    layers.forEach((L, i) => {
+    ensureSelection();
+    for (let i = layers.length - 1; i >= 0; i--) {
+      const L = layers[i];
+      const row = document.createElement("div");
+      row.className = "lc-layer-row" + (L.hidden ? " has-hidden-layer" : "") + (L.locked ? " has-locked-layer" : "");
       const item = document.createElement("button");
       item.type = "button";
-      item.className = "lc-layer-item" + (i === sel ? " is-active" : "");
-      item.textContent = (L.text.split("\n")[0] || "Text").slice(0, 18) || "Text";
-      item.addEventListener("click", () => { sel = i; loadLayerIntoPanel(); renderLayerList(); });
-      list.appendChild(item);
-    });
-    $("lc-del-layer").disabled = layers.length <= 1;
+      const active = selectedLayerIds.has(L.id);
+      item.className = "lc-layer-item" + (active ? " is-active" : "") + (i === sel ? " is-primary" : "");
+      item.dataset.layerId = L.id;
+      item.dataset.reorderable = "true";
+      item.title = tr("liquid_cover_layer_drag_hint", "Drag to reorder · Shift-click to multi-select");
+      const type = document.createElement("span");
+      type.className = "lc-layer-type";
+      type.textContent = isShapeLayer(L) ? tr("liquid_cover_layer_shape", "Shape") : tr("liquid_cover_layer_text", "Text");
+      const name = document.createElement("span");
+      name.className = "lc-layer-name";
+      name.textContent = layerDisplayName(L);
+      item.appendChild(type);
+      item.appendChild(name);
+      if (L.parentId) item.dataset.embedded = "true";
+      item.setAttribute("aria-pressed", active ? "true" : "false");
+      item.setAttribute("aria-grabbed", "false");
+      item.addEventListener("click", (event) => {
+        if (suppressLayerClick) return;
+        if (!event.shiftKey && event.detail >= 2) {
+          beginLayerRename(L, row, item);
+          return;
+        }
+        const alreadyOnlySelected = selectedLayerIds.size === 1 && selectedLayerIds.has(L.id);
+        if (!event.shiftKey && alreadyOnlySelected) {
+          loadLayerIntoPanel();
+          setInspectorPanel(isShapeLayer(L) ? "glass" : "layers");
+          return;
+        }
+        if (event.shiftKey) toggleLayerSelection(layers.indexOf(L));
+        else selectOnly(layers.indexOf(L));
+        loadLayerIntoPanel();
+        renderLayerList();
+        setInspectorPanel(isShapeLayer(L) ? "glass" : "layers");
+      });
+      item.addEventListener("dblclick", () => beginLayerRename(L, row, item));
+      item.addEventListener("keydown", (event) => {
+        if (event.key === "F2") {
+          event.preventDefault();
+          beginLayerRename(L, row, item);
+        }
+      });
+      item.addEventListener("pointerdown", (event) => {
+        if (event.button !== 0 || L.locked) return;
+        if (!event.shiftKey && !selectedLayerIds.has(L.id)) selectOnly(layers.indexOf(L));
+        layerDragState = {
+          seed: L,
+          startX: event.clientX,
+          startY: event.clientY,
+          dragging: false,
+          unitIds: null,
+          targetId: null,
+          edge: null,
+        };
+      });
+      const visibility = document.createElement("button");
+      visibility.type = "button";
+      visibility.className = "btn lc-layer-state" + (L.hidden ? " is-active" : "");
+      visibility.appendChild(layerStateGlyph("visibility", L.hidden));
+      visibility.setAttribute("aria-label", tr(L.hidden ? "liquid_cover_show_layer" : "liquid_cover_hide_layer", L.hidden ? "Show layer" : "Hide layer"));
+      visibility.setAttribute("aria-pressed", L.hidden ? "true" : "false");
+      visibility.title = visibility.getAttribute("aria-label");
+      visibility.addEventListener("click", () => toggleLayerHidden(L));
+      const lock = document.createElement("button");
+      lock.type = "button";
+      lock.className = "btn lc-layer-state" + (L.locked ? " is-active" : "");
+      lock.appendChild(layerStateGlyph("lock", L.locked));
+      lock.setAttribute("aria-label", tr(L.locked ? "liquid_cover_unlock_layer" : "liquid_cover_lock_layer", L.locked ? "Unlock layer" : "Lock layer"));
+      lock.setAttribute("aria-pressed", L.locked ? "true" : "false");
+      lock.title = lock.getAttribute("aria-label");
+      lock.addEventListener("click", () => toggleLayerLocked(L));
+      row.appendChild(item);
+      row.appendChild(visibility);
+      row.appendChild(lock);
+      list.appendChild(row);
+    }
+    list.onpointermove = (event) => {
+      if (!layerDragState) return;
+      const distance = Math.hypot(event.clientX - layerDragState.startX, event.clientY - layerDragState.startY);
+      if (!layerDragState.dragging && distance < 5) return;
+      event.preventDefault();
+      if (!layerDragState.dragging) {
+        layerDragState.dragging = true;
+        beginHistory("liquid_cover_reorder_action", "Reorder layers");
+        layerDragState.unitIds = new Set(selectedReorderUnit(layerDragState.seed).map((entry) => entry.id));
+        const source = list.querySelector('[data-layer-id="' + layerDragState.seed.id + '"]');
+        source?.classList.add("is-dragging");
+        source?.setAttribute("aria-grabbed", "true");
+      }
+      const target = document.elementFromPoint(event.clientX, event.clientY)?.closest(".lc-layer-item");
+      clearLayerDropIndicators();
+      if (!target || !list.contains(target) || layerDragState.unitIds.has(target.dataset.layerId)) {
+        layerDragState.targetId = null;
+        return;
+      }
+      const rect = target.getBoundingClientRect();
+      const edge = event.clientY < rect.top + rect.height / 2 ? "above" : "below";
+      target.classList.add(edge === "above" ? "is-drop-before" : "is-drop-after");
+      layerDragState.targetId = target.dataset.layerId;
+      layerDragState.edge = edge;
+    };
+    list.onpointerup = () => {
+      if (!layerDragState) return;
+      const state = layerDragState;
+      layerDragState = null;
+      if (state.dragging && state.targetId) {
+        suppressLayerClick = true;
+        reorderLayerUnit(state.unitIds, state.targetId, state.edge);
+        commitHistory();
+        setTimeout(() => { suppressLayerClick = false; }, 0);
+      } else if (state.dragging) cancelHistory();
+      clearLayerDropIndicators(true);
+    };
+    list.onpointercancel = () => {
+      layerDragState = null;
+      cancelHistory();
+      clearLayerDropIndicators(true);
+    };
+    const removable = selectedLayersInStack().filter((L) => !L.locked).length;
+    $("lc-del-layer").disabled = !removable || layers.length - removable < 1;
+    $("lc-duplicate-layer").disabled = layers.length >= MAX_LAYERS;
     $("lc-add-layer").disabled = layers.length >= MAX_LAYERS;
     ["lc-add-shape", "lc-shape-circle", "lc-shape-squircle", "lc-shape-capsule"].forEach((id) => {
       const b = $(id); if (b) b.disabled = layers.length >= MAX_LAYERS;
     });
+    $("lc-add-inside-text").disabled = !isShapeLayer(layers[sel]) || layers.length >= MAX_LAYERS;
+    const primaryLocked = !!layers[sel]?.locked;
+    $("lc-layer-bottom").disabled = primaryLocked || !canMoveSelected("down");
+    $("lc-layer-down").disabled = primaryLocked || !canMoveSelected("down");
+    $("lc-layer-up").disabled = primaryLocked || !canMoveSelected("up");
+    $("lc-layer-top").disabled = primaryLocked || !canMoveSelected("up");
+    syncWorkbenchReadout();
+    updateSelectionOverlay();
+  }
+
+  function addBuiltinShape(kind, labelKey, fallback) {
+    if (layers.length >= MAX_LAYERS) return;
+    beginHistory("liquid_cover_add_action", "Add layer");
+    layers.push(makeLayer({
+      shapeKind: kind,
+      renderMode: "glass",
+      text: tr(labelKey, fallback),
+      cx: 0.5,
+      cy: Math.max(0.15, 0.5 - (layers.length - 1) * 0.18),
+    }));
+    selectOnly(layers.length - 1);
+    rebuildLayerSDF(sel);
+    loadLayerIntoPanel();
+    renderLayerList();
+    setInspectorPanel("glass");
+    scheduleRender();
+    commitHistory();
   }
 
   function buildBgRow() {
@@ -1761,13 +2499,19 @@ window.AISystem6LiquidCoverLoaded = true;
       b.type = "button";
       b.className = "lc-bg-item" + (i === activeBg ? " is-active" : "");
       b.style.backgroundImage = "url(" + url + ")";
+      b.setAttribute("aria-label", tr("liquid_cover_background", "Background") + " " + (i + 1));
+      b.setAttribute("aria-pressed", i === activeBg ? "true" : "false");
       // hide the swatch if that photo isn't present on disk
       const probe = new Image();
       probe.onerror = () => { b.style.display = "none"; };
       probe.src = url;
       b.addEventListener("click", () => {
         activeBg = i;
-        Array.prototype.forEach.call(row.children, (x, j) => x.classList.toggle("is-active", j === i));
+        Array.prototype.forEach.call(row.children, (x, j) => {
+          const active = j === i;
+          x.classList.toggle("is-active", active);
+          x.setAttribute("aria-pressed", active ? "true" : "false");
+        });
         setBgFromUrl(url);
       });
       row.appendChild(b);
@@ -1781,11 +2525,122 @@ window.AISystem6LiquidCoverLoaded = true;
     return { x: (e.clientX - r.left) / r.width, y: 1 - (e.clientY - r.top) / r.height };
   }
 
+  function layerAtPoint(point) {
+    for (let i = layers.length - 1; i >= 0; i--) {
+      if (layers[i].hidden || layers[i].locked) continue;
+      const b = worldBounds(layers[i]);
+      if (point.x >= b.left && point.x <= b.right && point.y >= b.bottom && point.y <= b.top) return i;
+    }
+    return -1;
+  }
+
+  function alignmentCandidates(excluded) {
+    const excludedSet = excluded instanceof Set ? excluded : new Set(excluded ? [excluded] : []);
+    const x = [0, 0.5, 1];
+    const y = [0, 0.5, 1];
+    layers.forEach((L) => {
+      if (L.hidden || excludedSet.has(L) || excludedSet.has(layers.find((item) => item.id === L.parentId))) return;
+      const b = worldBounds(L);
+      x.push(b.left, (b.left + b.right) / 2, b.right);
+      y.push(b.bottom, (b.bottom + b.top) / 2, b.top);
+    });
+    return { x, y };
+  }
+
+  function nearestSnap(anchors, candidates, threshold) {
+    let best = null;
+    anchors.forEach((anchor) => {
+      candidates.forEach((target) => {
+        const delta = target - anchor;
+        const distance = Math.abs(delta);
+        if (distance <= threshold && (!best || distance < best.distance)) {
+          best = { delta, target, distance };
+        }
+      });
+    });
+    return best;
+  }
+
+  function snapBoundsDelta(bounds, rawDx, rawDy, rect, excluded, disableSnap) {
+    if (disableSnap) return { dx: rawDx, dy: rawDy, guideX: null, guideY: null };
+    const moved = {
+      left: bounds.left + rawDx,
+      right: bounds.right + rawDx,
+      bottom: bounds.bottom + rawDy,
+      top: bounds.top + rawDy,
+    };
+    const candidates = alignmentCandidates(excluded);
+    const snapX = nearestSnap([moved.left, (moved.left + moved.right) / 2, moved.right], candidates.x, 6 / Math.max(1, rect.width));
+    const snapY = nearestSnap([moved.bottom, (moved.bottom + moved.top) / 2, moved.top], candidates.y, 6 / Math.max(1, rect.height));
+    return {
+      dx: rawDx + (snapX ? snapX.delta : 0),
+      dy: rawDy + (snapY ? snapY.delta : 0),
+      guideX: snapX ? snapX.target : null,
+      guideY: snapY ? snapY.target : null,
+    };
+  }
+
+  function snapLayerPosition(L, rawX, rawY, rect, disableSnap) {
+    const snapped = snapBoundsDelta(worldBounds(L), rawX - L.cx, rawY - L.cy, rect, new Set([L]), disableSnap);
+    return {
+      x: L.cx + snapped.dx,
+      y: L.cy + snapped.dy,
+      guideX: snapped.guideX,
+      guideY: snapped.guideY,
+    };
+  }
+
+  function marqueeBounds(start, end) {
+    return {
+      left: Math.min(start.x, end.x),
+      right: Math.max(start.x, end.x),
+      bottom: Math.min(start.y, end.y),
+      top: Math.max(start.y, end.y),
+    };
+  }
+
+  function boundsIntersect(a, b) {
+    return a.left <= b.right && a.right >= b.left && a.bottom <= b.top && a.top >= b.bottom;
+  }
+
+  function showSelectionMarquee(bounds) {
+    const marquee = $("lc-selection-marquee");
+    if (!marquee || !canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const shellRect = marquee.parentElement.getBoundingClientRect();
+    marquee.style.setProperty("--lc-marquee-left", (rect.left - shellRect.left + bounds.left * rect.width) + "px");
+    marquee.style.setProperty("--lc-marquee-top", (rect.top - shellRect.top + (1 - bounds.top) * rect.height) + "px");
+    marquee.style.setProperty("--lc-marquee-width", ((bounds.right - bounds.left) * rect.width) + "px");
+    marquee.style.setProperty("--lc-marquee-height", ((bounds.top - bounds.bottom) * rect.height) + "px");
+    marquee.classList.add("is-visible");
+  }
+
+  function clearSelectionMarquee() {
+    $("lc-selection-marquee")?.classList.remove("is-visible");
+  }
+
+  function showAlignmentGuides(guideX, guideY) {
+    const guides = $("lc-alignment-guides");
+    if (!guides || !canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const shellRect = guides.getBoundingClientRect();
+    guides.classList.toggle("has-x", guideX != null);
+    guides.classList.toggle("has-y", guideY != null);
+    if (guideX != null) guides.style.setProperty("--lc-guide-x", (rect.left - shellRect.left + guideX * rect.width) + "px");
+    if (guideY != null) guides.style.setProperty("--lc-guide-y", (rect.top - shellRect.top + (1 - guideY) * rect.height) + "px");
+  }
+
+  function clearAlignmentGuides() {
+    const guides = $("lc-alignment-guides");
+    if (!guides) return;
+    guides.classList.remove("has-x", "has-y");
+  }
+
   // ---- AI auto-style (reuses the app's local/cloud model plumbing) ----
   // t() echoes the key back when a string is missing, so a truthy result is not
   // proof of a real translation — compare against the key to fall back correctly.
-  function tr(key, fallback) {
-    const v = typeof t === "function" ? t(key) : null;
+  function tr(key, fallback, ...args) {
+    const v = typeof t === "function" ? t(key, ...args) : null;
     return v && v !== key ? v : (fallback || "");
   }
   function aiStatus(key, fallback) {
@@ -1813,6 +2668,16 @@ window.AISystem6LiquidCoverLoaded = true;
     try { return JSON.parse(s.slice(a, b + 1)); } catch (e) { return null; }
   }
 
+  function coverPromptBody(id) {
+    const projectId = typeof activeProjectId === "undefined" ? null : activeProjectId;
+    const resolved = window.AISystem6PromptFilesRuntime?.resolvePromptFile?.(id, projectId, "en");
+    const record = window.AISystem6PromptFiles?.find?.((item) => item.id === id);
+    const body = resolved?.status === "ready" ? resolved.body : record?.en;
+    if (!body) throw new Error(`Liquid Cover prompt file unavailable: ${id}`);
+    if (resolved?.status === "ready") window.AISystem6PromptFilesRuntime?.recordPromptRun?.(projectId, id, resolved);
+    return body;
+  }
+
   function activeAspectKey() {
     const b = document.querySelector("#liquid-cover-app .lc-aspect button.is-active");
     return (b && b.dataset.k) || "16:9";
@@ -1830,7 +2695,7 @@ window.AISystem6LiquidCoverLoaded = true;
     // tag-soup), no separate negative prompt — exclusions go in a Constraints
     // clause. Lead with purpose, then subject, composition (with deliberate
     // negative space for the overlaid title), lighting/color, medium, aspect.
-    const sys = "You are a prompt engineer for OpenAI's GPT Image (GPT Image 2). Write ONE natural-language image prompt as a short, rich paragraph — flowing prose, not comma-separated tag soup, and NO separate 'Negative:' line (GPT Image has no negative-prompt parameter; put exclusions in a 'Constraints:' clause). Output ONLY the prompt.";
+    const sys = coverPromptBody("other-apps.liquid-cover-background");
     const titleText = layers.map((l) => l.text.replace(/\n/g, " ")).join(" / ");
     const ask = "Write a prompt for a BACKGROUND image of a video-cover / title card. A glass title is overlaid later, so the composition MUST keep generous, clean, low-contrast NEGATIVE SPACE where the title sits, pushing richer detail toward the edges."
       + "\nPurpose & subject: derive an evocative background scene from this brief — " + brief + "."
@@ -1866,14 +2731,15 @@ window.AISystem6LiquidCoverLoaded = true;
 
   async function writeBgPrompt() {
     aiStatus("thinking", "Thinking…");
-    $("lc-t2i-go").disabled = true;
+    const button = $("lc-t2i-go");
+    setBusy(button, true, tr("liquid_cover_ai_thinking", "Thinking…"));
     try {
       showBgPrompt(await requestBgPromptText());
       aiStatus("t2i_done", "Prompt ready — copy it");
     } catch (e) {
       aiStatus(e.code || "error", "Model request failed");
     } finally {
-      $("lc-t2i-go").disabled = false;
+      setBusy(button, false);
     }
   }
 
@@ -1909,7 +2775,8 @@ window.AISystem6LiquidCoverLoaded = true;
   async function generateBg() {
     const cfg = imageCfg();
     if (!cfg.apiKey) { aiStatus("img_need_key", "Add an image API key first"); return; }
-    $("lc-img-go").disabled = true;
+    const button = $("lc-img-go");
+    setBusy(button, true, tr("liquid_cover_ai_img_generating", "Generating image…"));
     try {
       let prompt = ($("lc-t2i-out").value || "").trim();
       if (!prompt) {
@@ -1932,7 +2799,10 @@ window.AISystem6LiquidCoverLoaded = true;
         img.onload = () => {
           clearMotionVideo(false);
           activeBg = -1;
-          Array.prototype.forEach.call($("lc-bg-row").children, (x) => x.classList.remove("is-active"));
+          Array.prototype.forEach.call($("lc-bg-row").children, (x) => {
+            x.classList.remove("is-active");
+            x.setAttribute("aria-pressed", "false");
+          });
           setBg(img);
           res();
         };
@@ -1944,7 +2814,7 @@ window.AISystem6LiquidCoverLoaded = true;
     } catch (e) {
       aiStatus((e && e.code) || "img_error", "Image generation failed");
     } finally {
-      $("lc-img-go").disabled = false;
+      setBusy(button, false);
     }
   }
 
@@ -2031,14 +2901,18 @@ window.AISystem6LiquidCoverLoaded = true;
     const brief = aiBrief();
     if (!brief) { aiStatus("empty", "Describe the cover first"); return; }
     // Try deterministic adjustments first — instant and predictable, no model.
+    beginHistory("liquid_cover_style_action", "Change style");
     const nudged = applyNudges(brief);
     if (nudged) {
+      commitHistory();
       aiStatusText(nudged.length ? nudged.join(" · ") : tr("liquid_cover_ai_nudge_limit", "Already at the limit — values unchanged."));
       return;
     }
+    cancelHistory();
     if (typeof fetchModelPayload !== "function") { aiStatus("unavailable", "No model available"); return; }
     aiStatus("thinking", "Thinking…");
-    $("lc-ask-go").disabled = true;
+    const button = $("lc-ask-go");
+    setBusy(button, true, tr("liquid_cover_ai_thinking", "Thinking…"));
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 30000);
     try {
@@ -2046,7 +2920,7 @@ window.AISystem6LiquidCoverLoaded = true;
       // The model is an ART DIRECTOR, not a shader. It never emits optics — it
       // picks ONE named material from the catalog and makes color/light calls a
       // person could make. The numbers are owned by the recipe table on our side.
-      const sys = "You are an art director choosing a Liquid Glass treatment for a title cover. You do NOT set numeric optics — you pick one named glass material from a catalog and make tasteful colour and light choices. Reply with ONLY one minified JSON object, no markdown, no commentary.";
+      const sys = coverPromptBody("other-apps.liquid-cover-style");
       const catalog = "Glass materials (choose exactly one as \"recipe\"):\n"
         + PRESETS.map((r) => "- " + r.key + ": " + r.desc).join("\n");
       const decide = 'Return exactly: {"recipe":"' + RECIPE_KEYS.join("|") + '",'
@@ -2073,6 +2947,7 @@ window.AISystem6LiquidCoverLoaded = true;
       const spec = parseJsonLoose(content);
       if (!spec || !spec.recipe) { aiStatus("parse", "Model returned no usable choice"); return; }
       // Map the model's semantic choice → physics, all on our side.
+      beginHistory("liquid_cover_style_action", "Change style");
       if (!applyRecipeByName(spec.recipe)) applyRecipeByName("clear");
       const tintApplied = applyVisionTint(spec, recipeByKey(spec.recipe) || recipeByKey("clear"));
       const ang = lightToAngle(spec.light);
@@ -2081,35 +2956,290 @@ window.AISystem6LiquidCoverLoaded = true;
       const busy = imgUrl ? applyBusyness(spec.busyness) : null; // background-adaptive thickness/frost
       const tone = imgUrl ? applyBackdrop(spec.backdrop) : null; // background-adaptive shadow
       loadLayerIntoPanel(); syncValueLabels(); renderNow(); scheduleRender();
+      commitHistory();
       aiStatusText(describeChoice({ recipe: recipeByKey(spec.recipe) ? spec.recipe : "clear", tintColor: spec.tintColor, tintStrength: tintApplied || "none", light: spec.light, busyness: busy, backdrop: tone, modifiers: applied }));
     } catch (e) {
+      cancelHistory();
       aiStatus(ctrl.signal.aborted ? "timeout" : "error", "Model request failed");
     } finally {
       clearTimeout(timer);
-      $("lc-ask-go").disabled = false;
+      setBusy(button, false);
     }
   }
 
   function setInspectorPanel(name) {
     const target = String(name || "layers");
-    document.querySelectorAll("#liquid-cover-app [data-lc-inspector-tab]").forEach((button) => {
+    const inspectorCopy = {
+      layers: ["liquid_cover_type_properties", "Type properties", "liquid_cover_type_hint", "Select a layer, then change only what matters to it."],
+      media: ["liquid_cover_background_properties", "Background", "liquid_cover_background_hint", "Use a built-in scene or bring in your own image."],
+      glass: ["liquid_cover_glass_properties", "Glass material", "liquid_cover_glass_hint", "Start with a proven look; open fine-tune only when you need it."],
+      export: ["liquid_cover_export_properties", "Export", "liquid_cover_export_hint", "Choose the output once the composition is ready."],
+    };
+    document.querySelectorAll(".liquid-cover-window [data-lc-inspector-tab]").forEach((button) => {
       const active = button.dataset.lcInspectorTab === target;
       button.classList.toggle("is-active", active);
-      button.setAttribute("aria-selected", active ? "true" : "false");
+      if (button.getAttribute("role") === "tab") {
+        button.setAttribute("aria-selected", active ? "true" : "false");
+      } else {
+        button.setAttribute("aria-pressed", active ? "true" : "false");
+      }
     });
     document.querySelectorAll("#liquid-cover-app [data-lc-inspector-panel]").forEach((panel) => {
       const active = panel.dataset.lcInspectorPanel === target;
       panel.classList.toggle("is-active", active);
       panel.hidden = !active;
     });
+    const copy = inspectorCopy[target] || inspectorCopy.layers;
+    const title = $("lc-inspector-title");
+    const hint = $("lc-inspector-hint");
+    if (title) {
+      title.dataset.i18n = copy[0];
+      title.textContent = tr(copy[0], copy[1]);
+    }
+    if (hint) {
+      hint.dataset.i18n = copy[2];
+      hint.textContent = tr(copy[2], copy[3]);
+    }
     if (typeof refreshSystemSelectControls === "function") refreshSystemSelectControls();
+    if (typeof syncRovingTabStops === "function") {
+      const tablist = document.querySelector(".liquid-cover-window .lc-toolbar-modes");
+      if (tablist) syncRovingTabStops(tablist);
+    }
   }
 
   function wireInspectorTabs() {
-    document.querySelectorAll("#liquid-cover-app [data-lc-inspector-tab]").forEach((button) => {
+    document.querySelectorAll(".liquid-cover-window [data-lc-inspector-tab]").forEach((button) => {
       button.addEventListener("click", () => setInspectorPanel(button.dataset.lcInspectorTab));
     });
     setInspectorPanel("layers");
+  }
+
+  function wireStageExpand() {
+    const btn = $("lc-stage-expand");
+    const win = document.querySelector(".liquid-cover-window");
+    if (!btn || !win) return;
+    btn.addEventListener("click", () => {
+      const focused = win.classList.toggle("is-stage-focused");
+      btn.setAttribute("aria-pressed", focused ? "true" : "false");
+    });
+  }
+
+  function wrapDegrees(value) {
+    let result = value % 360;
+    if (result > 180) result -= 360;
+    if (result < -180) result += 360;
+    return result;
+  }
+
+  function wireTransformHandles() {
+    const scaleHandle = $("lc-transform-scale");
+    const rotateHandle = $("lc-transform-rotate");
+    if (!scaleHandle || !rotateHandle || !canvas) return;
+
+    const startTransform = (event, kind) => {
+      if (event.button !== 0) return;
+      const root = selectedPositionRoots()[0];
+      if (!root || selectedPositionRoots().length !== 1) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const members = uniqueLayers([root, ...linkedChildren(root).filter((child) => !child.hidden && !child.locked)]);
+      const rect = canvas.getBoundingClientRect();
+      const center = {
+        x: rect.left + root.cx * rect.width,
+        y: rect.top + (1 - root.cy) * rect.height,
+      };
+      const startDx = event.clientX - center.x;
+      const startDy = event.clientY - center.y;
+      const state = {
+        kind,
+        root,
+        members,
+        center,
+        startX: event.clientX,
+        startY: event.clientY,
+        startDistance: Math.max(8, Math.hypot(startDx, startDy)),
+        startAngle: Math.atan2(startDy, startDx),
+        moved: false,
+        originals: members.map((L) => ({
+          L,
+          fontSize: L.fontSize,
+          rotation: L.rotation,
+          cx: L.cx,
+          cy: L.cy,
+        })),
+      };
+      beginHistory("liquid_cover_transform_action", "Transform layer");
+      const handle = event.currentTarget;
+      handle.setPointerCapture(event.pointerId);
+
+      const move = (moveEvent) => {
+        if (!state.moved && Math.hypot(moveEvent.clientX - state.startX, moveEvent.clientY - state.startY) < 2) return;
+        state.moved = true;
+        const dx = moveEvent.clientX - state.center.x;
+        const dy = moveEvent.clientY - state.center.y;
+        if (state.kind === "scale") {
+          const ratio = clampNum(Math.hypot(dx, dy) / state.startDistance, 0.2, 5, 1);
+          state.originals.forEach((origin) => {
+            origin.L.fontSize = clampNum(origin.fontSize * ratio, 20, 600, origin.fontSize);
+            if (origin.L !== state.root) {
+              origin.L.cx = state.root.cx + (origin.cx - state.root.cx) * ratio;
+              origin.L.cy = state.root.cy + (origin.cy - state.root.cy) * ratio;
+            }
+          });
+        } else {
+          const delta = Math.atan2(dy, dx) - state.startAngle;
+          const cosine = Math.cos(-delta);
+          const sine = Math.sin(-delta);
+          state.originals.forEach((origin) => {
+            origin.L.rotation = wrapDegrees(origin.rotation + delta * 180 / Math.PI);
+            if (origin.L !== state.root) {
+              const ox = origin.cx - state.root.cx;
+              const oy = origin.cy - state.root.cy;
+              origin.L.cx = state.root.cx + ox * cosine - oy * sine;
+              origin.L.cy = state.root.cy + ox * sine + oy * cosine;
+            }
+          });
+        }
+        rebuildAllSDF();
+        loadLayerIntoPanel();
+        updateSelectionOverlay();
+        scheduleRender();
+      };
+      const end = (endEvent) => {
+        handle.removeEventListener("pointermove", move);
+        handle.removeEventListener("pointerup", end);
+        handle.removeEventListener("pointercancel", cancel);
+        try { handle.releasePointerCapture(endEvent.pointerId); } catch (error) { /* noop */ }
+        if (state.moved) commitHistory();
+        else cancelHistory();
+      };
+      const cancel = (cancelEvent) => {
+        state.originals.forEach((origin) => {
+          origin.L.fontSize = origin.fontSize;
+          origin.L.rotation = origin.rotation;
+          origin.L.cx = origin.cx;
+          origin.L.cy = origin.cy;
+        });
+        handle.removeEventListener("pointermove", move);
+        handle.removeEventListener("pointerup", end);
+        handle.removeEventListener("pointercancel", cancel);
+        try { handle.releasePointerCapture(cancelEvent.pointerId); } catch (error) { /* noop */ }
+        cancelHistory();
+        rebuildAllSDF();
+        loadLayerIntoPanel();
+        scheduleRender();
+      };
+      handle.addEventListener("pointermove", move);
+      handle.addEventListener("pointerup", end);
+      handle.addEventListener("pointercancel", cancel);
+    };
+
+    scaleHandle.addEventListener("pointerdown", (event) => startTransform(event, "scale"));
+    rotateHandle.addEventListener("pointerdown", (event) => startTransform(event, "rotate"));
+  }
+
+  function wireHistoryControls() {
+    const ids = [
+      "lc-text", "lc-font", "lc-font-size", "lc-font-weight", "lc-letter-spacing", "lc-rotation",
+      "lc-thickness", "lc-tint-color", "lc-tint-alpha", "lc-layer-solid",
+      ...HISTORY_CONTROL_IDS,
+    ];
+    ids.forEach((id) => {
+      const control = $(id);
+      if (!control) return;
+      const begin = () => beginHistory("liquid_cover_edit_action", "Edit layer");
+      control.addEventListener("pointerdown", begin);
+      control.addEventListener("focusin", begin);
+      control.addEventListener("change", commitHistory);
+      control.addEventListener("blur", commitHistory);
+      if (control.matches('input[type="range"]')) {
+        control.addEventListener("pointerup", commitHistory);
+        control.addEventListener("pointercancel", cancelHistory);
+      }
+    });
+  }
+
+  function wireStageKeyboard() {
+    if (!canvas) return;
+    canvas.addEventListener("keydown", (event) => {
+      const command = event.metaKey || event.ctrlKey;
+      if (command && event.key.toLowerCase() === "z") {
+        event.preventDefault();
+        if (event.shiftKey) redoEditor();
+        else undoEditor();
+        return;
+      }
+      if (command && event.key.toLowerCase() === "y") {
+        event.preventDefault();
+        redoEditor();
+        return;
+      }
+      if (command && event.key.toLowerCase() === "d") {
+        event.preventDefault();
+        duplicateSelectedLayers();
+        return;
+      }
+      if (command && event.key.toLowerCase() === "a") {
+        event.preventDefault();
+        selectAllLayers();
+        renderLayerList();
+        loadLayerIntoPanel();
+        return;
+      }
+      if (command && (event.key === "[" || event.key === "]")) {
+        event.preventDefault();
+        const forward = event.key === "]";
+        moveSelectedLayer(event.shiftKey ? (forward ? "top" : "bottom") : (forward ? "up" : "down"));
+        return;
+      }
+      if (event.key === "Escape") {
+        event.preventDefault();
+        selectOnly(sel);
+        renderLayerList();
+        return;
+      }
+      if (event.key === "Backspace" || event.key === "Delete") {
+        event.preventDefault();
+        removeSelectedLayer();
+        return;
+      }
+      if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) return;
+      event.preventDefault();
+      const stepPx = event.shiftKey ? 10 : 1;
+      const dx = (event.key === "ArrowLeft" ? -stepPx : event.key === "ArrowRight" ? stepPx : 0) / DESIGN_W;
+      const dy = (event.key === "ArrowDown" ? -stepPx : event.key === "ArrowUp" ? stepPx : 0) / DESIGN_H;
+      beginHistory("liquid_cover_move_action", "Move layer");
+      if (dragFgMode) {
+        fg.x = clampNum(fg.x + dx, -0.5, 1.5, 0.5);
+        fg.y = clampNum(fg.y + dy, -0.5, 1.5, 0.5);
+      } else {
+        selectedPositionRoots().forEach((L) => setLayerPosition(L, L.cx + dx, L.cy + dy, true));
+      }
+      syncWorkbenchReadout();
+      updateSelectionOverlay();
+      scheduleRender();
+      commitHistory();
+    });
+  }
+
+  function wireHistoryKeyboard() {
+    document.addEventListener("keydown", (event) => {
+      if (event.target === canvas || !event.target.closest?.(".liquid-cover-window")) return;
+      const command = event.metaKey || event.ctrlKey;
+      if (!command) return;
+      const key = event.key.toLowerCase();
+      if (key === "z") {
+        event.preventDefault();
+        if (event.shiftKey) redoEditor();
+        else undoEditor();
+      } else if (key === "y") {
+        event.preventDefault();
+        redoEditor();
+      } else if (key === "d" && !event.target.matches("input, textarea, select")) {
+        event.preventDefault();
+        duplicateSelectedLayers();
+      }
+    });
   }
 
   function wireFineTuneGroups() {
@@ -2125,7 +3255,15 @@ window.AISystem6LiquidCoverLoaded = true;
 
   function wire() {
     wireInspectorTabs();
+    wireStageExpand();
+    wireStageKeyboard();
+    wireHistoryKeyboard();
+    wireTransformHandles();
     wireFineTuneGroups();
+    wireFontControls();
+    wireHistoryControls();
+    $("lc-undo").addEventListener("click", undoEditor);
+    $("lc-redo").addEventListener("click", redoEditor);
 
     // keep the blue track fill in sync while any slider is dragged
     const app = $("liquid-cover-app");
@@ -2135,13 +3273,20 @@ window.AISystem6LiquidCoverLoaded = true;
     });
 
     // aspect buttons
-    document.querySelectorAll("#liquid-cover-app .lc-aspect button").forEach((b) => {
+    document.querySelectorAll(".liquid-cover-window .lc-aspect button").forEach((b) => {
       b.addEventListener("click", () => {
         const a = ASPECTS[b.dataset.k]; if (!a) return;
-        applyAspect(a[0], a[1]);
-        document.querySelectorAll("#liquid-cover-app .lc-aspect button").forEach((x) => x.classList.toggle("is-active", x === b));
-        rebuildAllSDF();
-        scheduleRender(); // background is cover-fit in the shader, no reload needed on aspect change
+        runHistoryAction("liquid_cover_edit_action", "Edit layer", () => {
+          applyAspect(a[0], a[1]);
+          document.querySelectorAll(".liquid-cover-window .lc-aspect button").forEach((x) => {
+            const active = x === b;
+            x.classList.toggle("is-active", active);
+            x.setAttribute("aria-pressed", active ? "true" : "false");
+          });
+          syncWorkbenchReadout();
+          rebuildAllSDF();
+          scheduleRender(); // background is cover-fit in the shader, no reload needed on aspect change
+        });
       });
     });
 
@@ -2150,7 +3295,9 @@ window.AISystem6LiquidCoverLoaded = true;
       $(id).addEventListener("input", () => {
         const L = layers[sel];
         if (id === "lc-text") L.text = $("lc-text").value;
-        else if (id === "lc-font") L.font = $("lc-font").value;
+        else if (id === "lc-font") {
+          if (!applyFontSelection()) return;
+        }
         else L[{ "lc-font-size": "fontSize", "lc-font-weight": "fontWeight", "lc-letter-spacing": "letterSpacing", "lc-rotation": "rotation" }[id]] = +$(id).value;
         syncValueLabels();
         rebuildLayerSDF(sel);
@@ -2158,7 +3305,12 @@ window.AISystem6LiquidCoverLoaded = true;
         scheduleRender();
       });
       // <select> also fires "change"
-      $(id).addEventListener("change", () => { if (id === "lc-font") { layers[sel].font = $("lc-font").value; rebuildLayerSDF(sel); scheduleRender(); } });
+      $(id).addEventListener("change", () => {
+        if (id === "lc-font" && applyFontSelection()) {
+          rebuildLayerSDF(sel);
+          scheduleRender();
+        }
+      });
     });
 
     // per-layer optics → re-render only
@@ -2190,31 +3342,34 @@ window.AISystem6LiquidCoverLoaded = true;
       applyMaterialMix(+$("lc-material-mix").value);
     });
 
+    [
+      ["lc-layer-bottom", "bottom"],
+      ["lc-layer-down", "down"],
+      ["lc-layer-up", "up"],
+      ["lc-layer-top", "top"],
+    ].forEach(([id, where]) => $(id).addEventListener("click", () => moveSelectedLayer(where)));
+    [
+      ["lc-align-left", "left"],
+      ["lc-align-center", "center"],
+      ["lc-align-right", "right"],
+      ["lc-align-top", "top"],
+      ["lc-align-middle", "middle"],
+      ["lc-align-bottom", "bottom"],
+    ].forEach(([id, where]) => $(id).addEventListener("click", () => alignSelectedToArtboard(where)));
+    $("lc-add-inside-text").addEventListener("click", addTextInsideSelectedShape);
+    $("lc-duplicate-layer").addEventListener("click", duplicateSelectedLayers);
+
     // layers add/remove
     $("lc-add-layer").addEventListener("click", () => {
       if (layers.length >= MAX_LAYERS) return;
+      beginHistory("liquid_cover_add_action", "Add layer");
       layers.push(makeLayer({ text: "Text", cx: 0.5, cy: Math.max(0.15, 0.5 - layers.length * 0.18) }));
-      sel = layers.length - 1;
-      rebuildLayerSDF(sel); loadLayerIntoPanel(); renderLayerList(); scheduleRender();
+      selectOnly(layers.length - 1);
+      rebuildLayerSDF(sel); loadLayerIntoPanel(); renderLayerList(); setInspectorPanel("layers"); scheduleRender();
+      commitHistory();
     });
-    $("lc-del-layer").addEventListener("click", () => {
-      if (layers.length <= 1) return;
-      layers.splice(sel, 1); if (renderer) renderer.removeLayer(sel);
-      sel = Math.min(sel, layers.length - 1);
-      rebuildAllSDF(); loadLayerIntoPanel(); renderLayerList(); scheduleRender();
-    });
+    $("lc-del-layer").addEventListener("click", removeSelectedLayer);
     // built-in preset shapes (circle / squircle / capsule) — one click, no upload
-    const addBuiltinShape = (kind, labelKey, fallback) => {
-      if (layers.length >= MAX_LAYERS) return;
-      layers.push(makeLayer({
-        shapeKind: kind,
-        renderMode: "glass",
-        text: tr(labelKey, fallback),
-        cx: 0.5, cy: Math.max(0.15, 0.5 - (layers.length - 1) * 0.18),
-      }));
-      sel = layers.length - 1;
-      rebuildLayerSDF(sel); loadLayerIntoPanel(); renderLayerList(); scheduleRender();
-    };
     $("lc-shape-circle").addEventListener("click", () => addBuiltinShape("circle", "liquid_cover_shape_circle", "Circle"));
     $("lc-shape-squircle").addEventListener("click", () => addBuiltinShape("squircle", "liquid_cover_shape_squircle", "Rounded Rect"));
     $("lc-shape-capsule").addEventListener("click", () => addBuiltinShape("capsule", "liquid_cover_shape_capsule", "Capsule"));
@@ -2229,14 +3384,16 @@ window.AISystem6LiquidCoverLoaded = true;
       if (!f) return;
       loadImageFile(f, (img) => {
         if (layers.length >= MAX_LAYERS) return;
+        beginHistory("liquid_cover_add_action", "Add layer");
         layers.push(makeLayer({
           shape: img,
           renderMode: "glass",
           text: (f.name || "Shape").replace(/\.[^.]+$/, ""),
           cx: 0.5, cy: Math.max(0.15, 0.5 - (layers.length - 1) * 0.18),
         }));
-        sel = layers.length - 1;
-        rebuildLayerSDF(sel); loadLayerIntoPanel(); renderLayerList(); scheduleRender();
+        selectOnly(layers.length - 1);
+        rebuildLayerSDF(sel); loadLayerIntoPanel(); renderLayerList(); setInspectorPanel("glass"); scheduleRender();
+        commitHistory();
       });
     });
 
@@ -2246,7 +3403,14 @@ window.AISystem6LiquidCoverLoaded = true;
       const f = e.target.files && e.target.files[0]; if (!f) return;
       const bgName = $("lc-bg-name"); bgName.removeAttribute("data-i18n"); bgName.textContent = f.name;
       clearMotionVideo(false);
-      loadImageFile(f, (img) => { activeBg = -1; Array.prototype.forEach.call($("lc-bg-row").children, (x) => x.classList.remove("is-active")); setBg(img); });
+      loadImageFile(f, (img) => {
+        activeBg = -1;
+        Array.prototype.forEach.call($("lc-bg-row").children, (x) => {
+          x.classList.remove("is-active");
+          x.setAttribute("aria-pressed", "false");
+        });
+        setBg(img);
+      });
     });
 
     // motion video background / animation export
@@ -2301,19 +3465,100 @@ window.AISystem6LiquidCoverLoaded = true;
     let drag = null;
     canvas.addEventListener("pointerdown", (e) => {
       const p = pointerToUV(e);
-      const obj = dragFgMode ? { gx: "x", gy: "y", t: fg } : { gx: "cx", gy: "cy", t: layers[sel] };
-      drag = { start: p, x0: obj.t[obj.gx], y0: obj.t[obj.gy], obj };
+      canvas.focus({ preventScroll: true });
+      if (dragFgMode) {
+        beginHistory("liquid_cover_move_action", "Move layer");
+        drag = { kind: "foreground", start: p, x0: fg.x, y0: fg.y };
+      } else {
+        const hit = layerAtPoint(p);
+        if (hit < 0) {
+          drag = {
+            kind: "marquee",
+            start: p,
+            additive: e.shiftKey,
+            baseIds: new Set(selectedLayerIds),
+            moved: false,
+          };
+          showSelectionMarquee(marqueeBounds(p, p));
+        } else {
+          if (e.shiftKey) toggleLayerSelection(hit);
+          else if (!selectedLayerIds.has(layers[hit].id)) selectOnly(hit);
+          renderLayerList();
+          loadLayerIntoPanel();
+          setInspectorPanel(isShapeLayer(layers[sel]) ? "glass" : "layers");
+          if (!selectedLayerIds.has(layers[hit].id)) return;
+          const roots = selectedPositionRoots();
+          const members = selectedPositionMembers();
+          beginHistory("liquid_cover_move_action", "Move layer");
+          drag = {
+            kind: "layers",
+            start: p,
+            roots,
+            originals: roots.map((L) => ({ L, x: L.cx, y: L.cy })),
+            bounds: boundsUnion(members),
+            excluded: new Set(members),
+          };
+        }
+      }
       canvas.setPointerCapture(e.pointerId);
-      canvas.classList.add("is-grabbing");
+      if (drag.kind !== "marquee") {
+        canvas.classList.add("is-grabbing");
+        canvas.dataset.dragging = "true";
+      }
     });
     canvas.addEventListener("pointermove", (e) => {
       if (!drag) return;
-      const p = pointerToUV(e); const o = drag.obj;
-      o.t[o.gx] = Math.min(1.5, Math.max(-0.5, drag.x0 + (p.x - drag.start.x)));
-      o.t[o.gy] = Math.min(1.5, Math.max(-0.5, drag.y0 + (p.y - drag.start.y)));
+      const p = pointerToUV(e);
+      const rawDx = p.x - drag.start.x;
+      const rawDy = p.y - drag.start.y;
+      if (drag.kind === "marquee") {
+        const bounds = marqueeBounds(drag.start, p);
+        drag.moved ||= Math.abs(rawDx * DESIGN_W) > 3 || Math.abs(rawDy * DESIGN_H) > 3;
+        showSelectionMarquee(bounds);
+        if (drag.moved) {
+          const hitIds = layers.filter((L) => boundsIntersect(bounds, worldBounds(L))).map((L) => L.id);
+          const next = drag.additive ? new Set(drag.baseIds) : new Set();
+          hitIds.forEach((id) => next.add(id));
+          if (next.size) {
+            selectedLayerIds.clear();
+            next.forEach((id) => selectedLayerIds.add(id));
+            for (let i = layers.length - 1; i >= 0; i--) {
+              if (selectedLayerIds.has(layers[i].id)) {
+                sel = i;
+                break;
+              }
+            }
+            renderLayerList();
+            loadLayerIntoPanel();
+          }
+        }
+        return;
+      }
+      if (drag.kind === "foreground") {
+        fg.x = clampNum(drag.x0 + rawDx, -0.5, 1.5, fg.x);
+        fg.y = clampNum(drag.y0 + rawDy, -0.5, 1.5, fg.y);
+        clearAlignmentGuides();
+      } else {
+        const snapped = snapBoundsDelta(drag.bounds, rawDx, rawDy, canvas.getBoundingClientRect(), drag.excluded, e.altKey);
+        drag.originals.forEach((origin) => {
+          setLayerPosition(origin.L, origin.x + snapped.dx, origin.y + snapped.dy, true);
+        });
+        showAlignmentGuides(snapped.guideX, snapped.guideY);
+      }
+      syncWorkbenchReadout();
+      updateSelectionOverlay();
       scheduleRender();
     });
-    const endDrag = (e) => { drag = null; canvas.classList.remove("is-grabbing"); try { canvas.releasePointerCapture(e.pointerId); } catch (err) { /* noop */ } };
+    const endDrag = (e) => {
+      const movedObject = drag && drag.kind !== "marquee";
+      if (drag?.kind === "marquee") clearSelectionMarquee();
+      drag = null;
+      clearAlignmentGuides();
+      canvas.classList.remove("is-grabbing");
+      delete canvas.dataset.dragging;
+      try { canvas.releasePointerCapture(e.pointerId); } catch (err) { /* noop */ }
+      if (movedObject) commitHistory();
+    };
     canvas.addEventListener("pointerup", endDrag);
     canvas.addEventListener("pointercancel", endDrag);
 
@@ -2348,10 +3593,14 @@ window.AISystem6LiquidCoverLoaded = true;
   function init() {
     canvas = $("lc-canvas");
     layers.length = 0; layers.push(makeLayer());
-    sel = 0;
+    selectOnly(0);
     applyAspect(DESIGN_W, DESIGN_H);
     // mark the default aspect button active
-    document.querySelectorAll("#liquid-cover-app .lc-aspect button").forEach((b) => b.classList.toggle("is-active", b.dataset.k === "16:9"));
+    document.querySelectorAll(".liquid-cover-window .lc-aspect button").forEach((b) => {
+      const active = b.dataset.k === "16:9";
+      b.classList.toggle("is-active", active);
+      b.setAttribute("aria-pressed", active ? "true" : "false");
+    });
     // UI first — these must exist even if WebGL is unavailable right now
     wire();
     loadImgCfgIntoPanel();
@@ -2360,6 +3609,7 @@ window.AISystem6LiquidCoverLoaded = true;
     renderLayerList();
     loadLayerIntoPanel();
     applyMaterialMix(0); // open water-clear (the Apple Liquid Glass reference), not frosted
+    updateHistoryButtons();
     startRendering();
   }
 
@@ -2371,5 +3621,56 @@ window.AISystem6LiquidCoverLoaded = true;
     if (motionVideo) renderNow();
   }
 
-  window.AISystem6LiquidCover = { open };
+  function runMenuCommand(command) {
+    if (!inited) { init(); inited = true; }
+    const commands = {
+      "choose-background": () => $("lc-bg-input")?.click(),
+      "choose-video": () => $("lc-motion-input")?.click(),
+      "choose-subject": () => $("lc-fg-input")?.click(),
+      "export-png": exportPng,
+      "export-video": exportVideo,
+      "undo": undoEditor,
+      "redo": redoEditor,
+      "add-layer": () => {
+        if (layers.length >= MAX_LAYERS) return;
+        beginHistory("liquid_cover_add_action", "Add layer");
+        layers.push(makeLayer({ text: "Text", cx: 0.5, cy: Math.max(0.15, 0.5 - layers.length * 0.18) }));
+        selectOnly(layers.length - 1);
+        rebuildLayerSDF(sel);
+        renderLayerList();
+        loadLayerIntoPanel();
+        setInspectorPanel("layers");
+        scheduleRender();
+        commitHistory();
+      },
+      "duplicate-layer": duplicateSelectedLayers,
+      "delete-layer": removeSelectedLayer,
+      "text-in-shape": addTextInsideSelectedShape,
+      "layer-up": () => moveSelectedLayer("up"),
+      "layer-down": () => moveSelectedLayer("down"),
+      "layer-top": () => moveSelectedLayer("top"),
+      "layer-bottom": () => moveSelectedLayer("bottom"),
+      "align-left": () => alignSelectedToArtboard("left"),
+      "align-center": () => alignSelectedToArtboard("center"),
+      "align-right": () => alignSelectedToArtboard("right"),
+      "align-top": () => alignSelectedToArtboard("top"),
+      "align-middle": () => alignSelectedToArtboard("middle"),
+      "align-bottom": () => alignSelectedToArtboard("bottom"),
+      "shape-circle": () => addBuiltinShape("circle", "liquid_cover_shape_circle", "Circle"),
+      "shape-squircle": () => addBuiltinShape("squircle", "liquid_cover_shape_squircle", "Rounded Rect"),
+      "shape-capsule": () => addBuiltinShape("capsule", "liquid_cover_shape_capsule", "Capsule"),
+      "toggle-focus": () => {
+        const win = typeof getWindow === "function"
+          ? getWindow("liquidCover")
+          : document.querySelector('.window[data-window="liquidCover"]');
+        const focused = win?.classList.toggle("is-stage-focused");
+        $("lc-stage-expand")?.setAttribute("aria-pressed", focused ? "true" : "false");
+      },
+      "preview-motion": previewMotionOnce,
+      "ai-compose": aiSuggestStyle,
+    };
+    return commands[command]?.();
+  }
+
+  window.AISystem6LiquidCover = { open, runMenuCommand };
 })();

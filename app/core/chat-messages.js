@@ -33,7 +33,7 @@ function appendMessageTranslation(actions, item, role, content) {
       translation.className = "message-translation";
       translation.innerHTML = `<b>${escapeHtml(formatTranslationMeta(targetLanguage, new Date().toISOString(), role === "user" ? t("you") : t("assistant"), currentTranslationModel()))}</b><div>${markdownToSystemHtml(translated)}</div>`;
       item.querySelector(".message-content")?.append(translation);
-      messagesEl.scrollTop = messagesEl.scrollHeight;
+      scrollMessagesToLatest();
       setStatus(t("ready"));
     } catch (error) {
       setStatus(t("translation_failed", error.message));
@@ -83,19 +83,495 @@ function clioTalkAttachedClipSources() {
 let sideAskClioTalkSession = null;
 let sideAskClioTalkAnchor = "";
 let quickDraftClioTalkSession = null;
+let clioTalkAutoFollow = true;
+let clioTalkTemporaryMode = false;
+let clioTalkFindQuery = "";
+let clioTalkFindMatchIndex = -1;
+const clioTalkUseResultUndoByMessageId = new Map();
+
+function clioTalkIsNearLatest() {
+  if (!messagesEl) return true;
+  return messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight <= 56;
+}
+
+function syncClioTalkScrollAffordance() {
+  if (!clioScrollLatestButton) return;
+  clioScrollLatestButton.classList.toggle("is-hidden", clioTalkAutoFollow || clioTalkIsNearLatest());
+}
+
+function handleClioTalkMessagesScroll() {
+  clioTalkAutoFollow = clioTalkIsNearLatest();
+  syncClioTalkScrollAffordance();
+}
+
+function scrollMessagesToLatest({ force = false } = {}) {
+  if (!messagesEl) return;
+  if (!force && !clioTalkAutoFollow) {
+    syncClioTalkScrollAffordance();
+    return;
+  }
+  clioTalkAutoFollow = true;
+  const scroll = () => {
+    if (!force && !clioTalkAutoFollow) {
+      syncClioTalkScrollAffordance();
+      return;
+    }
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+    syncClioTalkScrollAffordance();
+  };
+  scroll();
+  requestAnimationFrame(scroll);
+}
+
+function findInClioTalkConversation(query = "", options = {}) {
+  let requested = String(query || "").trim();
+  if (!requested && options.prompt !== false) {
+    requested = String(window.prompt(t("clio_find_prompt"), clioTalkFindQuery) || "").trim();
+  }
+  if (!requested) {
+    setStatus(t("clio_find_empty"));
+    return null;
+  }
+
+  const normalized = requested.toLocaleLowerCase();
+  const matches = conversation.filter((message) => (
+    String(message?.content || "").toLocaleLowerCase().includes(normalized)
+  ));
+  if (!matches.length) {
+    clioTalkFindQuery = requested;
+    clioTalkFindMatchIndex = -1;
+    setStatus(t("clio_find_no_match", requested));
+    return null;
+  }
+
+  if (clioTalkFindQuery.toLocaleLowerCase() !== normalized) {
+    clioTalkFindQuery = requested;
+    clioTalkFindMatchIndex = 0;
+  } else {
+    clioTalkFindMatchIndex = options.advance === false
+      ? Math.max(0, clioTalkFindMatchIndex)
+      : (clioTalkFindMatchIndex + 1) % matches.length;
+  }
+
+  const record = matches[clioTalkFindMatchIndex];
+  const item = record?.id
+    ? messagesEl?.querySelector(`[data-message-id="${record.id}"]`)
+    : null;
+  if (item) {
+    item.tabIndex = -1;
+    item.scrollIntoView({ behavior: "smooth", block: "center" });
+    item.focus({ preventScroll: true });
+  }
+  setStatus(t("clio_find_result", clioTalkFindMatchIndex + 1, matches.length));
+  return record;
+}
+
+function findNextInClioTalkConversation() {
+  return findInClioTalkConversation(clioTalkFindQuery, {
+    prompt: !clioTalkFindQuery,
+    advance: true,
+  });
+}
+
+function renderClioTalkWelcome() {
+  if (!messagesEl || messagesEl.children.length) return;
+  const item = document.createElement("article");
+  item.className = "message assistant clio-welcome";
+  item.setAttribute("aria-label", clioTalkAssistantDisplayName());
+
+  const speaker = document.createElement("div");
+  speaker.className = "speaker";
+  speaker.textContent = clioTalkAssistantDisplayName();
+
+  const body = document.createElement("div");
+  body.className = "message-content";
+  const welcomeKey = sideAskEnabled && !isMultiFinderMode()
+    ? "sideask_welcome_message"
+    : (clioTalkTemporaryMode ? "temporary_welcome_message" : "welcome_message");
+  body.innerHTML = `<p>${t(welcomeKey)}</p>`;
+
+  item.append(speaker, body);
+  messagesEl.append(item);
+}
+
+function formatClioTalkContextTokens(tokens) {
+  const value = Math.max(0, Number(tokens) || 0);
+  if (value >= 1000) return `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}K`;
+  return String(Math.round(value));
+}
+
+function renderClioTalkContextSpace() {
+  const contextSpaceEl = document.querySelector("#assistant-context-space");
+  if (!contextSpaceEl) return;
+  const total = Number(lastContextBudget?.contextTokens || (
+    typeof getEffectiveContextTokens === "function" ? getEffectiveContextTokens() : 0
+  ));
+  if (!total) {
+    contextSpaceEl.textContent = t("clio_context_space_empty");
+    contextSpaceEl.title = t("clio_context_space_help");
+    return;
+  }
+  const prompt = Math.max(0, Number(window.lastContextLoadout?.promptTokens || lastContextBudget?.promptTokens || 0));
+  const available = Math.max(0, total - prompt);
+  const percent = Math.round((available / total) * 100);
+  contextSpaceEl.textContent = t(
+    "clio_context_space",
+    formatClioTalkContextTokens(available),
+    formatClioTalkContextTokens(total),
+    percent
+  );
+  contextSpaceEl.title = t(
+    "clio_context_space_detail",
+    formatClioTalkContextTokens(available),
+    formatClioTalkContextTokens(total),
+    percent
+  );
+}
+
+function clioRunHash(body = "") {
+  return window.AISystem6PromptFilesRuntime?.hashPromptBody(String(body || ""))
+    || `length-${String(body || "").length}`;
+}
+
+function clioTalkProjectObjectPath(file, fallback = "") {
+  if (!file) return fallback;
+  if (file.path) return String(file.path);
+  const folderPath = file.folderId && typeof getFolderPath === "function"
+    ? getFolderPath(file.folderId).join(" / ")
+    : "";
+  return [getActiveProject()?.name, folderPath, file.name].filter(Boolean).join(" / ") || fallback || file.name;
+}
+
+function clioTalkFileDescriptor(file, overrides = {}) {
+  const body = String(overrides.body ?? file?.body ?? "");
+  return {
+    id: String(overrides.id || file?.id || ""),
+    name: String(overrides.name || file?.name || overrides.id || ""),
+    kind: String(overrides.kind || file?.artifactKind || file?.type || "file"),
+    path: String(overrides.path || clioTalkProjectObjectPath(file, overrides.name || "")),
+    source: String(overrides.source || ""),
+    version: String(overrides.version || file?.skillManifest?.version || ""),
+    reason: String(overrides.reason || ""),
+    body,
+    hash: String(overrides.hash || clioRunHash(body)),
+  };
+}
+
+function getClioTalkPromptFileDescriptors() {
+  const runtime = window.AISystem6PromptFilesRuntime;
+  if (!runtime) return [];
+  return [
+    ["cliotalk.main", "prompt"],
+    ["system.model-boundaries", "policy"],
+  ].map(([id, kind]) => {
+    const resolved = runtime.resolvePromptFile(id, kind === "prompt" ? activeProjectId : null, currentLanguage);
+    const system = (window.AISystem6PromptFiles || []).find((item) => item.id === id);
+    return resolved?.status === "ready"
+      ? clioTalkFileDescriptor(null, {
+          id,
+          name: system?.name || id,
+          kind,
+          path: resolved.path,
+          source: resolved.source,
+          body: resolved.body,
+          hash: resolved.hash,
+        })
+      : null;
+  }).filter(Boolean);
+}
+
+function getClioTalkPendingSkillDescriptors(userText = "", options = {}) {
+  const temporaryChat = options.temporaryChat === true || clioTalkTemporaryMode;
+  const manual = [...(window.nextTaskSkillIds || [])]
+    .map((id) => getProjectFiles().find((file) => file.id === id && file.artifactKind === "ai-skill"))
+    .map((file) => ({ file, parsed: file && typeof parseProjectSkillFile === "function" ? parseProjectSkillFile(file) : null, reason: "user order" }))
+    .filter((entry) => entry.file && entry.parsed?.valid);
+  const automatic = !temporaryChat && typeof getAutoCallableProjectSkills === "function"
+    ? getAutoCallableProjectSkills(String(userText || ""))
+        .filter((entry) => !manual.some((selected) => selected.file.id === entry.file.id))
+        .map((entry) => ({ ...entry, reason: "project opt-in auto call" }))
+    : [];
+  return [...manual, ...automatic].map(({ file, parsed, reason }) => clioTalkFileDescriptor(file, {
+    kind: "skill",
+    name: parsed?.manifest?.name || file.name,
+    version: parsed?.manifest?.version || "",
+    reason,
+  }));
+}
+
+function getClioTalkPendingHarnessDescriptor() {
+  const id = String(window.nextTaskHarnessFileId || "");
+  if (!id) return null;
+  const file = getProjectFiles().find((item) => item.id === id && item.artifactKind === "task-config");
+  return file ? clioTalkFileDescriptor(file, { kind: "harness" }) : null;
+}
+
+function getClioTalkPendingInputDescriptors(options = {}) {
+  const temporaryChat = options.temporaryChat === true || clioTalkTemporaryMode;
+  const inputs = [];
+  const activeChat = typeof getActiveConversationFile === "function" ? getActiveConversationFile() : null;
+  if (!temporaryChat && activeChat) inputs.push(clioTalkFileDescriptor(activeChat, {
+    kind: "chat",
+    body: typeof formatChatFileMarkdown === "function" ? formatChatFileMarkdown(activeChat) : formatChatFile(activeChat),
+  }));
+  [...(window.nextTaskInputFileIds || [])].forEach((id) => {
+    const file = getProjectFiles().find((item) => item.id === id);
+    if (file) inputs.push(clioTalkFileDescriptor(file, {
+      kind: "input",
+      body: file.type === "chat" && typeof formatChatFileMarkdown === "function"
+        ? formatChatFileMarkdown(file)
+        : String(file.body || ""),
+    }));
+  });
+  [...(attachedClipIds || [])].forEach((id) => {
+    const scrap = scraps.find((item) => item.id === id && isInActiveProject(item));
+    if (scrap) inputs.push(clioTalkFileDescriptor(scrap, {
+      kind: "scrap",
+      name: scrap.title,
+      path: `${getActiveProject()?.name || ""} / Scrapbook / ${scrap.title}`,
+      body: scrap.body,
+    }));
+  });
+  if (!temporaryChat && typeof hasMountedFileDiskContext === "function" && hasMountedFileDiskContext()) {
+    mountedTextDisk.files.forEach((name) => inputs.push(clioTalkFileDescriptor(null, {
+      id: `file-floppy:${name}`,
+      kind: "file-floppy",
+      name,
+      path: `${t("file_floppy")} / ${name}`,
+      body: mountedTextDisk.fileBodies?.[name] || "",
+    })));
+  }
+  if (!temporaryChat && typeof getProjectMemoryFiles === "function") {
+    getProjectMemoryFiles({ activeOnly: true }).forEach((file) => inputs.push(clioTalkFileDescriptor(file, { kind: "project-memory" })));
+  }
+  [...(window.nextTaskRetrospectiveIds || [])].forEach((id) => {
+    const file = getProjectFiles().find((item) => item.id === id && item.artifactKind === "retrospective");
+    if (file) inputs.push(clioTalkFileDescriptor(file, { kind: "retrospective" }));
+  });
+  const seen = new Set();
+  return inputs.filter((input) => {
+    const key = input.id || `${input.kind}:${input.name}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function appendClioRunAssemblyFile(section, descriptor) {
+  const details = document.createElement("details");
+  details.className = "clio-run-file";
+  const summary = document.createElement("summary");
+  const name = document.createElement("span");
+  name.className = "clio-run-file-name";
+  name.textContent = descriptor.version ? `${descriptor.name} v${descriptor.version}` : descriptor.name;
+  const hash = document.createElement("span");
+  hash.className = "clio-run-file-hash";
+  hash.textContent = descriptor.hash;
+  const path = document.createElement("small");
+  path.className = "clio-run-file-path";
+  path.textContent = [descriptor.path, descriptor.source, descriptor.reason].filter(Boolean).join(" · ");
+  summary.append(name, hash, path);
+  const body = document.createElement("pre");
+  body.textContent = descriptor.body || t("clio_run_body_empty");
+  details.append(summary, body);
+  section.append(details);
+}
+
+function appendClioRunAssemblySection(panel, titleKey, descriptors, emptyKey = "") {
+  const section = document.createElement("section");
+  section.className = "clio-run-section";
+  const title = document.createElement("h3");
+  title.textContent = t(titleKey);
+  section.append(title);
+  if (descriptors.length) {
+    descriptors.forEach((descriptor) => appendClioRunAssemblyFile(section, descriptor));
+  } else if (emptyKey) {
+    const empty = document.createElement("div");
+    empty.className = "clio-run-direct";
+    empty.textContent = t(emptyKey);
+    section.append(empty);
+  }
+  panel.append(section);
+}
+
+function renderClioTalkFileBar() {
+  const button = document.querySelector("#clio-chat-file-link");
+  const name = document.querySelector("#clio-chat-file-name");
+  const path = document.querySelector("#clio-chat-file-path");
+  if (!button || !name || !path) return;
+  const file = typeof getActiveConversationFile === "function" ? getActiveConversationFile() : null;
+  const project = getActiveProject();
+  if (clioTalkTemporaryMode) {
+    button.hidden = false;
+    button.disabled = true;
+    name.textContent = t("clio_temporary_chat");
+    path.textContent = t("clio_temporary_chat_path");
+    button.title = path.textContent;
+    return;
+  }
+  button.hidden = false;
+  button.disabled = !file;
+  name.textContent = file?.name || t(project ? "clio_chat_file_waiting" : "clio_chat_file_no_project");
+  path.textContent = file ? clioTalkProjectObjectPath(file) : (project ? t("clio_chat_file_path_pending") : "");
+  button.title = path.textContent || name.textContent;
+}
+
+function syncClioTalkSendButton() {
+  const sendButton = form?.querySelector("#send");
+  if (!sendButton) return;
+  const isBusy = !!activeAbortController || form.classList.contains("is-generating");
+  sendButton.disabled = isBusy || !String(promptInput?.value || "").trim();
+}
+
+function renderClioTalkRunAssembly() {
+  syncClioTalkSendButton();
+  const panel = document.querySelector("#clio-run-panel");
+  const summary = document.querySelector("#clio-run-summary");
+  if (!panel || !summary) return;
+  const prompts = getClioTalkPromptFileDescriptors();
+  const skills = getClioTalkPendingSkillDescriptors(promptInput?.value || "", { temporaryChat: clioTalkTemporaryMode });
+  const harness = getClioTalkPendingHarnessDescriptor();
+  const inputs = getClioTalkPendingInputDescriptors({ temporaryChat: clioTalkTemporaryMode });
+  const assemblySummary = t(
+    "clio_run_assembly_summary",
+    prompts.length,
+    skills.length,
+    harness ? "H1" : t("clio_run_direct"),
+    inputs.length
+  );
+  summary.textContent = t("clio_run_details");
+  summary.title = assemblySummary;
+  summary.setAttribute("aria-label", `${t("clio_run_details")}: ${assemblySummary}`);
+  panel.replaceChildren();
+  const header = document.createElement("div");
+  header.className = "clio-run-panel-header";
+  const title = document.createElement("strong");
+  title.textContent = t("clio_run_assembly");
+  const scope = document.createElement("small");
+  scope.textContent = "APP-SUPPLIED";
+  header.append(title, scope);
+  panel.append(header);
+  appendClioRunAssemblySection(panel, "clio_run_prompt", prompts);
+  appendClioRunAssemblySection(panel, "clio_run_skill", skills, "clio_run_no_skills");
+  if (harness) {
+    appendClioRunAssemblySection(panel, "clio_run_harness", [harness]);
+  } else {
+    appendClioRunAssemblySection(panel, "clio_run_harness", [], "clio_run_direct_help");
+  }
+  appendClioRunAssemblySection(panel, "clio_run_inputs", inputs, "clio_run_no_inputs");
+  const note = document.createElement("p");
+  note.className = "clio-run-note";
+  note.textContent = t("clio_run_runtime_note");
+  panel.append(note);
+  const footer = document.createElement("div");
+  footer.className = "clio-run-panel-footer";
+  const memory = document.createElement("button");
+  memory.type = "button";
+  memory.className = "clio-context-link";
+  memory.textContent = t("clio_run_memory_inspector");
+  memory.addEventListener("click", () => openWindow("contextPanel"));
+  footer.append(memory);
+  panel.append(footer);
+  renderClioTalkFileBar();
+}
+
+function recordContextLoadout(payload) {
+  const messages = Array.isArray(payload?.messages) ? payload.messages : [];
+  const entries = messages.map((message, index) => {
+    const content = String(message?.content || "");
+    const kind = /Project Memory|项目长期记忆/.test(content) ? "project-memory"
+      : /retrospective files|复盘文件/.test(content) ? "retrospective"
+      : /^# Conversation Memory/.test(content) ? "compressed-memory"
+        : /small, curated local context|小而精选的本地上下文|主要依据/.test(content) ? "retrieved-context"
+          : message?.role === "user" ? "current-conversation"
+            : index < 2 ? "system" : "conversation";
+    return { id: `${kind}:${index}`, kind, label: kind, estimatedTokens: estimateTokenCount(content) + 6, content };
+  });
+  const skipped = (lastRetrievedContextItems || [])
+    .filter((item) => item.included === false || item.excluded)
+    .map((item) => ({ id: item.id || getContextSourceKey(item), kind: "skipped", label: contextSourceLabel(item), estimatedTokens: 0, reason: item.excluded ? "disabled by user" : "budget or ranking" }));
+  window.lastContextLoadout = {
+    capturedAt: new Date().toISOString(),
+    entries,
+    skipped,
+    promptTokens: entries.reduce((sum, entry) => sum + entry.estimatedTokens, 0),
+    contextTokens: Number(lastContextBudget?.contextTokens || (typeof getEffectiveContextTokens === "function" ? getEffectiveContextTokens() : 0)),
+  };
+  const promptFiles = (window.lastTaskPromptFiles || []).map((file) => ({ ...file }));
+  const labelPromptMessage = (message, index) => {
+    const content = String(message?.content || "");
+    const matchedFile = promptFiles.find((file) => file.hash === clioRunHash(content));
+    if (matchedFile) return matchedFile.name;
+    if (content.includes(window.AISystem6SystemIntegrity?.marker || "\u0000")) return "System Integrity · runtime";
+    if (content.includes(window.AISystem6Humanizer?.marker || "\u0000")) return "Humanizer · runtime";
+    if (content === clioTalkLanguageInstruction()) return "Interface Language · runtime";
+    if (/\[skill:[^\]]+\]/.test(content)) return "Skill Envelope · runtime";
+    if (/Project Memory|项目长期记忆/.test(content)) return "Project Memory Envelope · runtime";
+    if (/retrospective files|复盘文件/.test(content)) return "Retrospective Envelope · runtime";
+    return `Application message ${index + 1}`;
+  };
+  const messageStack = messages.map((message, index) => ({
+    index,
+    role: String(message?.role || ""),
+    label: labelPromptMessage(message, index),
+    body: String(message?.content || ""),
+    hash: clioRunHash(message?.content || ""),
+  }));
+  window.lastTaskRunManifest = {
+    schemaVersion: 1,
+    scope: "application-supplied",
+    scopeNote: t("clio_run_runtime_note"),
+    capturedAt: new Date().toISOString(),
+    taskKind: String(payload?.ai_system6_task_kind || "chat"),
+    model: String(payload?.model || ""),
+    parameters: {
+      temperature: Number(payload?.temperature),
+      maxTokens: Number(payload?.max_tokens || 0),
+      stream: !!payload?.stream,
+    },
+    promptFiles,
+    policyFiles: promptFiles.filter((file) => file.kind === "policy"),
+    promptStack: messageStack.filter((message) => message.role === "system"),
+    messageStack,
+    skillFiles: (window.lastTaskSkillFiles || []).map((file) => ({ ...file })),
+    harnessFile: window.lastTaskHarnessFile ? { ...window.lastTaskHarnessFile } : null,
+    inputFiles: (window.lastTaskInputFiles || []).map((file) => ({ ...file })),
+  };
+  renderClioTalkContextSpace();
+  renderClioTalkRunAssembly();
+  scheduleRenderTasks("contextPanel");
+}
 
 function resetClioTalkRuntimeState(options = {}) {
   conversation.length = 0;
+  activeChatFileId = null;
   compressedConversationMemory = { text: "", sourceMessages: 0, updatedAt: "" };
   attachedClipIds.clear();
   lastAssistantText = "";
   lastUserText = "";
+  clioTalkFindQuery = "";
+  clioTalkFindMatchIndex = -1;
+  clioTalkUseResultUndoByMessageId.clear();
+  clioTalkAutoFollow = true;
   if (messagesEl) messagesEl.replaceChildren();
+  renderClioTalkWelcome();
   if (options.clearPrompt !== false && promptInput) promptInput.value = "";
   lastContextBudget = null;
+  window.lastContextLoadout = null;
+  window.lastTaskRunManifest = null;
+  window.lastTaskPromptFiles = [];
+  window.lastTaskSkillFiles = [];
+  window.lastTaskHarnessFile = null;
+  window.lastTaskInputFiles = [];
+  window.lastTaskExplicitInputFiles = [];
+  window.nextTaskInputFileIds = new Set();
+  renderClioTalkContextSpace();
   lastRetrievedContextItems = [];
   if (typeof ragRankCache !== "undefined" && typeof ragRankCache.clear === "function") ragRankCache.clear();
   renderAttachedClips();
+  syncClioTalkScrollAffordance();
+  renderClioTalkFileBar();
+  renderClioTalkRunAssembly();
   scheduleRenderTasks("contextPanel");
   updateMenuState();
 }
@@ -103,8 +579,10 @@ function resetClioTalkRuntimeState(options = {}) {
 function snapshotClioTalkRuntimeState() {
   return {
     conversation: conversation.map((item) => ({ ...item })),
+    activeChatFileId,
     compressedConversationMemory: { ...compressedConversationMemory },
     attachedClipIds: [...attachedClipIds],
+    nextTaskInputFileIds: [...(window.nextTaskInputFileIds || [])],
     lastAssistantText,
     lastUserText,
     prompt: promptInput?.value || "",
@@ -113,25 +591,41 @@ function snapshotClioTalkRuntimeState() {
 }
 
 function restoreClioTalkRuntimeState(state = null) {
+  clioTalkTemporaryMode = false;
   resetClioTalkRuntimeState({ clearPrompt: true });
   if (!state) return false;
   conversation.push(...(Array.isArray(state.conversation) ? state.conversation : []).map((item) => ({
+    ...item,
+    id: String(item.id || crypto.randomUUID()),
     role: item.role === "assistant" ? "assistant" : "user",
     content: String(item.content || ""),
+    deliveryState: item.deliveryState === "sending" ? "failed" : String(item.deliveryState || ""),
   })));
+  activeChatFileId = String(state.activeChatFileId || "") || null;
   compressedConversationMemory = {
     text: String(state.compressedConversationMemory?.text || ""),
     sourceMessages: Number(state.compressedConversationMemory?.sourceMessages || 0),
     updatedAt: String(state.compressedConversationMemory?.updatedAt || ""),
   };
   (Array.isArray(state.attachedClipIds) ? state.attachedClipIds : []).forEach((id) => attachedClipIds.add(id));
+  window.nextTaskInputFileIds = new Set(
+    Array.isArray(state.nextTaskInputFileIds) ? state.nextTaskInputFileIds : []
+  );
   lastAssistantText = String(state.lastAssistantText || "");
   lastUserText = String(state.lastUserText || "");
   if (promptInput) promptInput.value = String(state.prompt || "");
   messagesEl?.replaceChildren();
-  conversation.forEach((item) => addMessage(item.role, item.content));
+  conversation.forEach((item, index) => addMessage(item.role, item.content, {
+    messageRecord: item,
+    messageIndex: index,
+    grounding: item.grounding || null,
+  }));
+  renderClioTalkWelcome();
   requestAnimationFrame(() => {
-    if (messagesEl) messagesEl.scrollTop = Number(state.scrollTop) || messagesEl.scrollHeight;
+    if (messagesEl) {
+      messagesEl.scrollTop = Number(state.scrollTop) || messagesEl.scrollHeight;
+      handleClioTalkMessagesScroll();
+    }
   });
   renderAttachedClips();
   updateMenuState();
@@ -148,7 +642,7 @@ function isSideAskClioTalkActive() {
 
 function clioTalkAssistantDisplayName() {
   return sideAskEnabled && !isMultiFinderMode()
-    ? t("quick_draft_copilot_title")
+    ? t("sideask")
     : t("assistant");
 }
 
@@ -321,7 +815,7 @@ function clioTalkSideAskGroundingSource() {
   if (!sideAskEnabled || isMultiFinderMode()) return null;
   const anchor = sideAskAnchorAppId || "teachText";
   if (anchor === "quickDraft") {
-    return { key: "sideask:quickDraft", citation: "", label: t("quick_draft_copilot_title"), kind: "sideask" };
+    return { key: "sideask:quickDraft", citation: "", label: t("quick_draft_label"), kind: "sideask" };
   }
   if (anchor === "teachText") {
     const title = typeof getTeachTextDocumentName === "function"
@@ -361,6 +855,7 @@ function isClioTalkAnswerContractTask(taskKind = "chat", options = {}) {
 
 function captureClioTalkGroundingSnapshot(options = {}) {
   if (!isClioTalkAnswerContractTask(options.taskKind || "chat", options)) return null;
+  const temporaryChat = options.temporaryChat === true || clioTalkTemporaryMode;
   const usedContextItems = Array.isArray(lastRetrievedContextItems)
     ? lastRetrievedContextItems.filter((contextItem) => contextItem.included !== false && !contextItem.excluded)
     : [];
@@ -369,6 +864,19 @@ function captureClioTalkGroundingSnapshot(options = {}) {
     sideAskSource,
     ...clioTalkAttachedClipSources(),
     ...usedContextItems.map(formatClioTalkGroundingSource),
+    ...[...(window.lastTaskRetrospectiveIds || [])].map((id) => {
+      const file = getProjectFiles().find((item) => item.id === id && item.artifactKind === "retrospective");
+      return file ? { key: `retrospective:${file.id}`, label: file.name, kind: "retrospective" } : null;
+    }).filter(Boolean),
+    ...[...(window.lastTaskSkillIds || [])].map((id) => {
+      const file = getProjectFiles().find((item) => item.id === id && item.artifactKind === "ai-skill");
+      return file ? { key: `skill:${file.id}`, label: `${file.skillManifest?.name || file.name} v${file.skillManifest?.version || ""}`, kind: "skill" } : null;
+    }).filter(Boolean),
+    ...(window.lastTaskExplicitInputFiles || []).map((file) => ({
+      key: `input:${file.id || file.name}`,
+      label: file.name,
+      kind: file.kind || "input",
+    })),
   ]);
   const contextWasRequested = !!(
     sideAskSource
@@ -387,6 +895,9 @@ function captureClioTalkGroundingSnapshot(options = {}) {
     missing,
     contextPanelAvailable: !!(sources.length || lastRetrievedContextItems?.length || lastContextBudget),
     usedContext: !!sources.length,
+    projectMemoryIds: !temporaryChat && typeof getProjectMemoryFiles === "function"
+      ? getProjectMemoryFiles({ activeOnly: true }).map((file) => file.id)
+      : [],
   };
 }
 
@@ -426,8 +937,8 @@ function appendMessageGrounding(item, grounding) {
   if (grounding.contextPanelAvailable && typeof openWindow === "function") {
     const openBtn = document.createElement("button");
     openBtn.type = "button";
-    openBtn.className = "btn mini-btn";
-    openBtn.textContent = t("clio_grounding_open_context_panel");
+    openBtn.className = "clio-context-link";
+    openBtn.textContent = `${t("clio_grounding_open_context_panel")} ›`;
     openBtn.onclick = () => openWindow("contextPanel");
     strip.append(" ", openBtn);
   }
@@ -435,41 +946,845 @@ function appendMessageGrounding(item, grounding) {
   body.append(strip);
 }
 
-function appendMessageActions(item, role, content) {
+function clioTalkHasChartableTable(content = "") {
+  const text = String(content || "");
+  return /(?:^|\n)\s*\|?.+\|.+\r?\n\s*\|?\s*:?-{3,}.*\|.*\r?\n(?:\s*\|?.*\d.*\|.*(?:\n|$)){2,}/m.test(text);
+}
+
+function clioTalkReplayOptions(options = {}, taskKind = "chat") {
+  const replay = {
+    taskKind: String(options.taskKind || taskKind || "chat"),
+  };
+  if (options.skipContext === true) replay.skipContext = true;
+  if (options.temporaryChat === true) replay.temporaryChat = true;
+  if (options.fileNative === false) replay.fileNative = false;
+  if (options.skipQuickDraftVent === true) replay.skipQuickDraftVent = true;
+  if (Number.isFinite(options.temperature)) replay.temperature = Number(options.temperature);
+  if (Number.isFinite(options.maxTokens)) replay.maxTokens = Number(options.maxTokens);
+  if (String(options.displayText || "").trim()) replay.displayText = String(options.displayText);
+  if (String(options.branchChatId || "").trim()) replay.branchChatId = String(options.branchChatId);
+  if (String(options.continuationMessageId || "").trim()) {
+    replay.continuationMessageId = String(options.continuationMessageId);
+  }
+  return replay;
+}
+
+function clioTalkContinuationMessages(options = {}) {
+  const messageId = String(options.continuationMessageId || "");
+  if (!messageId) return [];
+  const assistantIndex = conversation.findIndex((message) => (
+    message.id === messageId
+    && message.role === "assistant"
+    && String(message.content || "").trim()
+  ));
+  if (assistantIndex < 0) return [];
+  const assistant = conversation[assistantIndex];
+  const request = assistant.requestMessageId
+    ? conversation.find((message) => message.id === assistant.requestMessageId && message.role === "user")
+    : [...conversation.slice(0, assistantIndex)].reverse().find((message) => message.role === "user");
+  if (!request?.content) return [];
+  return [
+    { role: "user", content: request.content },
+    { role: "assistant", content: assistant.content },
+  ];
+}
+
+function persistClioTalkConversationMutation() {
+  if (clioTalkTemporaryMode) return true;
+  let persisted = true;
+  try {
+    if (typeof persistActiveChatFile === "function") persistActiveChatFile();
+  } catch (error) {
+    persisted = false;
+    console.warn("ClioTalk Chat file persistence failed.", error);
+  }
+  try {
+    if (typeof scheduleWorkingSessionSave === "function") scheduleWorkingSessionSave();
+  } catch (error) {
+    persisted = false;
+    console.warn("ClioTalk Working Session persistence failed.", error);
+  }
+  return persisted;
+}
+
+function updateClioTalkMessageRecord(messageId, updates = {}) {
+  if (!messageId) return null;
+  const record = conversation.find((candidate) => candidate.id === messageId);
+  if (!record) return null;
+  Object.assign(record, updates);
+  persistClioTalkConversationMutation();
+  return record;
+}
+
+function removeClioTalkMessageRecord(messageId) {
+  if (!messageId) return false;
+  const index = conversation.findIndex((candidate) => candidate.id === messageId);
+  if (index < 0) return false;
+  conversation.splice(index, 1);
+  lastAssistantText = [...conversation].reverse().find((candidate) => candidate.role === "assistant")?.content || "";
+  lastUserText = [...conversation].reverse().find((candidate) => candidate.role === "user")?.content || "";
+  persistClioTalkConversationMutation();
+  return true;
+}
+
+function clioTalkReplyReceiptState(record) {
+  const state = String(record?.replyReceipt?.state || "temporary");
+  return ["inserted", "clipped", "saved", "undone"].includes(state) ? state : "temporary";
+}
+
+function clioTalkReplyReceiptKey(state) {
+  return {
+    inserted: "clio_reply_inserted",
+    clipped: "clio_reply_clipped",
+    saved: "clio_reply_saved_document",
+    undone: "clio_reply_undone",
+  }[state] || "clio_reply_temporary";
+}
+
+function clioTalkReplyReceiptLabel(record) {
+  const state = clioTalkReplyReceiptState(record);
+  const targetName = String(record?.replyReceipt?.destinationName || "").trim();
+  if (targetName && ["inserted", "clipped", "saved"].includes(state)) {
+    return t("clio_reply_written_to", targetName);
+  }
+  return t(clioTalkReplyReceiptKey(state));
+}
+
+function appendClioTalkRunState(item, record) {
+  item.querySelector(".message-run-state")?.remove();
+  const isPartialReply = record?.role === "assistant" && (record?.stopped || record?.incomplete);
+  const isFailedMessage = record?.role === "user" && record?.deliveryState === "failed";
+  if (!isPartialReply && !isFailedMessage) return;
+  const body = item.querySelector(".message-content");
+  if (!body) return;
+  const state = document.createElement("div");
+  state.className = "message-run-state";
+  const label = document.createElement("span");
+  const partialStateKey = record?.finishReason === "length"
+    ? "clio_reply_output_limit"
+    : ["content_filter", "insufficient_system_resource"].includes(record?.finishReason)
+      ? "clio_reply_provider_stopped"
+      : record?.finishReason === "interrupted"
+        ? "clio_reply_interrupted"
+        : "clio_reply_stopped";
+  label.textContent = t(isPartialReply ? partialStateKey : "clio_message_not_sent");
+  const actionButton = document.createElement("button");
+  actionButton.type = "button";
+  actionButton.className = "btn mini-btn";
+  actionButton.textContent = t(isPartialReply ? "clio_continue_reply" : "retry");
+  actionButton.onclick = () => {
+    if (isPartialReply) {
+      const replayOptions = clioTalkReplayOptions(record.requestOptions || {}, record.taskKind || "chat");
+      submitUserText(t("clio_continue_message"), {
+        ...replayOptions,
+        displayText: t("clio_continue_reply"),
+        taskKind: record.taskKind || "chat",
+        continuationMessageId: record.id,
+      });
+      return;
+    }
+    const retryText = String(record.content || "").trim();
+    if (!retryText) return;
+    removeClioTalkMessageRecord(record.id);
+    item.remove();
+    submitUserText(retryText, clioTalkReplayOptions(record.requestOptions || {}, record.taskKind || "chat"));
+  };
+  state.append(label, actionButton);
+  body.append(state);
+}
+
+function appendClioTalkRunReceipt(item, record) {
+  item.querySelector(".message-run-receipt")?.remove();
+  if (!record?.runManifest || (!record.runRecordId && !record.temporaryChat)) return;
+  const body = item.querySelector(".message-content");
+  if (!body) return;
+  const receipt = document.createElement("div");
+  receipt.className = "message-run-receipt";
+  const manifest = record.runManifest;
+  const summary = t(
+    record.temporaryChat ? "clio_temporary_run_summary" : "clio_run_record_summary",
+    manifest.promptStack?.length || 0,
+    manifest.skillFiles?.length || 0,
+    manifest.harnessFile?.name || t("clio_run_direct")
+  );
+  if (record.temporaryChat) {
+    const label = document.createElement("span");
+    label.textContent = summary;
+    label.title = t("clio_temporary_chat_path");
+    receipt.append(label);
+  } else {
+    const link = document.createElement("button");
+    link.type = "button";
+    link.className = "clio-context-link";
+    link.textContent = summary;
+    link.title = t("reveal_in_project_disk");
+    link.addEventListener("click", () => revealChatFileInFinder(record.runRecordId));
+    receipt.append(link);
+  }
+  body.append(receipt);
+}
+
+function installClioTalkDetailsMenu(details, summary, menu) {
+  menu.setAttribute("role", "menu");
+  details.addEventListener("keydown", (event) => {
+    const items = [...menu.querySelectorAll("button:not(:disabled):not([hidden])")];
+    if (event.key === "Escape") {
+      event.preventDefault();
+      details.open = false;
+      summary.focus();
+      return;
+    }
+    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key) || !items.length) return;
+    event.preventDefault();
+    if (!details.open) details.open = true;
+    const activeIndex = items.indexOf(document.activeElement);
+    const nextIndex = event.key === "Home" ? 0
+      : event.key === "End" ? items.length - 1
+        : event.key === "ArrowUp"
+          ? (activeIndex < 0 ? items.length - 1 : (activeIndex - 1 + items.length) % items.length)
+          : (activeIndex + 1) % items.length;
+    items[nextIndex].focus();
+  });
+}
+
+function createClioTalkActionMenu(item, className = "message-more-actions") {
+  const details = document.createElement("details");
+  details.className = className;
+  const summary = document.createElement("summary");
+  summary.className = "btn mini-btn message-more-summary";
+  summary.setAttribute("aria-label", t("clio_more_actions"));
+  summary.title = t("clio_more_actions");
+  summary.textContent = "•••";
+  const menu = document.createElement("div");
+  menu.className = "message-action-menu";
+  details.append(summary, menu);
+  details.addEventListener("toggle", () => {
+    if (!details.open) return;
+    item.querySelectorAll(".message-actions details[open]").forEach((other) => {
+      if (other !== details) other.open = false;
+    });
+  });
+  installClioTalkDetailsMenu(details, summary, menu);
+  menu.addEventListener("click", (event) => {
+    if (!event.target.closest("button:not(:disabled)")) return;
+    requestAnimationFrame(() => {
+      details.open = false;
+    });
+  });
+  return { details, menu };
+}
+
+function compactClioTalkUseResultPreview(value, { fromEnd = false } = {}) {
+  const normalized = String(value || "").replace(/\r\n?/g, "\n").trim();
+  if (!normalized) return t("clio_preview_empty");
+  const limit = 360;
+  if (normalized.length <= limit) return normalized;
+  return fromEnd ? `…${normalized.slice(-limit)}` : `${normalized.slice(0, limit)}…`;
+}
+
+function clioTalkUseResultSelection(input) {
+  if (!input || !("selectionStart" in input) || !("selectionEnd" in input)) {
+    return { start: 0, end: 0, text: "" };
+  }
+  const start = Number(input.selectionStart || 0);
+  const end = Number(input.selectionEnd || 0);
+  return {
+    start,
+    end,
+    text: start === end ? "" : String(input.value || "").slice(start, end),
+  };
+}
+
+function appendClioTalkUseResultText(current, addition) {
+  const before = String(current || "");
+  const next = String(addition || "").trim();
+  if (!before.trim()) return next;
+  if (!next) return before;
+  const separator = before.endsWith("\n\n") ? "" : before.endsWith("\n") ? "\n" : "\n\n";
+  return `${before}${separator}${next}`;
+}
+
+function replaceClioTalkUseResultSelection(current, addition, selection) {
+  const before = String(current || "");
+  const start = Math.max(0, Math.min(before.length, Number(selection?.start || 0)));
+  const end = Math.max(start, Math.min(before.length, Number(selection?.end || start)));
+  return `${before.slice(0, start)}${String(addition || "").trim()}${before.slice(end)}`;
+}
+
+function clioTalkUseResultNextText(target, content, mode) {
+  return mode === "replace-selection"
+    ? replaceClioTalkUseResultSelection(target.before, content, target.selection)
+    : appendClioTalkUseResultText(target.before, content);
+}
+
+function clioTalkUseResultTextTarget({
+  id,
+  labelKey,
+  helpKey,
+  input,
+  before,
+  available = true,
+  unavailableReason = "",
+  write,
+} = {}) {
+  return {
+    id,
+    kind: "text",
+    label: t(labelKey),
+    help: t(helpKey),
+    input,
+    before: String(before || ""),
+    selection: clioTalkUseResultSelection(input),
+    available,
+    unavailableReason,
+    write,
+  };
+}
+
+function getClioTalkUseResultTargets() {
+  const project = getActiveProject();
+  const block = typeof selectedOutlineDraftBlock === "function" ? selectedOutlineDraftBlock(project) : null;
+  const selectedDraft = Number.isInteger(selectedDraftIndex) && selectedDraftIndex >= 0
+    ? project?.drafts?.[selectedDraftIndex] || null
+    : null;
+  const draftBefore = selectedDraft?.body || block?.body || "";
+  const teachTextIsRouteManuscript = typeof isTeachTextManuscriptRole === "function" && isTeachTextManuscriptRole();
+  const teachTextLocked = teachTextIsRouteManuscript
+    && typeof manuscriptPhase === "function"
+    && manuscriptPhase() === "drafting";
+  const hasTeachTextTarget = !!(activeTextFileId || teachTextIsRouteManuscript || String(teachTextBodyInput?.value || "").trim());
+
+  return [
+    clioTalkUseResultTextTarget({
+      id: "question-sheet",
+      labelKey: "clio_target_question_sheet",
+      helpKey: "clio_target_question_sheet_help",
+      input: questionSheetBodyInput,
+      before: project?.questionSheet || questionSheetBodyInput?.value || "",
+      write: (value) => {
+        questionSheetBodyInput.value = value;
+        if (typeof noteWritingSurfaceEdit === "function") noteWritingSurfaceEdit("questionSheet");
+        savePipelineData();
+        refreshTeachTextSurfacePreview("questionSheet");
+        return true;
+      },
+    }),
+    clioTalkUseResultTextTarget({
+      id: "outline",
+      labelKey: "clio_target_outline",
+      helpKey: "clio_target_outline_help",
+      input: outlineContentEl,
+      before: project?.outline || outlineContentEl?.value || "",
+      write: (value) => {
+        outlineContentEl.value = value;
+        if (typeof noteWritingSurfaceEdit === "function") noteWritingSurfaceEdit("outline");
+        savePipelineData();
+        refreshTeachTextSurfacePreview("outline");
+        return true;
+      },
+    }),
+    clioTalkUseResultTextTarget({
+      id: "section-draft",
+      labelKey: "clio_target_section_draft",
+      helpKey: "clio_target_section_draft_help",
+      input: draftBodyInput,
+      before: draftBefore,
+      available: !!block,
+      unavailableReason: t("clio_target_section_missing"),
+      write: (value) => {
+        const draft = ensureDraftForOutlineBlock(block, { seedBody: true });
+        if (!draft) return false;
+        draftBodyInput.value = value;
+        if (typeof noteWritingSurfaceEdit === "function") noteWritingSurfaceEdit("draft");
+        savePipelineData();
+        updateDraftVoiceStats(value);
+        refreshTeachTextSurfacePreview("sectionDrafts");
+        return true;
+      },
+    }),
+    clioTalkUseResultTextTarget({
+      id: "teachtext",
+      labelKey: "clio_target_teachtext",
+      helpKey: "clio_target_teachtext_help",
+      input: teachTextBodyInput,
+      before: teachTextBodyInput?.value || "",
+      available: hasTeachTextTarget && !teachTextLocked,
+      unavailableReason: teachTextLocked ? t("clio_target_teachtext_locked") : t("clio_target_unavailable"),
+      write: (value) => {
+        teachTextBodyInput.value = value;
+        const cursor = value.length;
+        teachTextBodyInput.setSelectionRange(cursor, cursor);
+        if (teachTextIsRouteManuscript && typeof noteWritingSurfaceEdit === "function") {
+          noteWritingSurfaceEdit("manuscript");
+          savePipelineData();
+        }
+        markTeachTextModified();
+        updateTeachTextBoundaries();
+        updateTeachTextTranslateButton();
+        updateTeachTextBilingualExportButton();
+        syncTeachTextPreview({ force: true });
+        return true;
+      },
+    }),
+    {
+      id: "scrapbook",
+      kind: "create",
+      label: t("clio_target_scrapbook"),
+      help: t("clio_target_scrapbook_help"),
+      before: "",
+      selection: { start: 0, end: 0, text: "" },
+      available: true,
+    },
+    {
+      id: "project-document",
+      kind: "create",
+      label: t("clio_target_project_document"),
+      help: t("clio_target_project_document_help"),
+      before: "",
+      selection: { start: 0, end: 0, text: "" },
+      available: true,
+    },
+  ];
+}
+
+function createClioTalkUseResultChoice(name, value, label, help, { checked = false, disabled = false } = {}) {
+  const row = document.createElement("label");
+  row.className = "finder-operation-item";
+  const input = document.createElement("input");
+  input.type = "radio";
+  input.name = name;
+  input.value = value;
+  input.checked = checked;
+  input.disabled = disabled;
+  const copy = document.createElement("span");
+  copy.className = "finder-operation-item-copy";
+  const title = document.createElement("b");
+  title.textContent = label;
+  const detail = document.createElement("small");
+  detail.textContent = help;
+  copy.append(title, detail);
+  row.append(input, copy);
+  return { row, input };
+}
+
+function clioTalkUseResultDefaultTarget(targets) {
+  const stageTarget = {
+    questionSheet: "question-sheet",
+    outline: "outline",
+    sectionDrafts: "section-draft",
+    teachText: "teachtext",
+    reviewDesk: "teachtext",
+    scrapbook: "scrapbook",
+  }[inferClioTalkWritingStage()];
+  return targets.find((target) => target.available && target.selection?.text)
+    || targets.find((target) => target.available && target.id === stageTarget)
+    || targets.find((target) => target.available);
+}
+
+async function chooseClioTalkUseResult(content, messageRecord) {
+  if (!getActiveProject()) {
+    setStatus(t("no_project_mounted"));
+    openWindow("projects");
+    return null;
+  }
+  if (typeof ensureWritingFlowModule === "function") await ensureWritingFlowModule();
+
+  const dialog = document.querySelector("#clio-use-result-modal");
+  const targetsEl = document.querySelector("#clio-use-result-targets");
+  const modesEl = document.querySelector("#clio-use-result-modes");
+  const beforeEl = document.querySelector("#clio-use-result-before");
+  const afterEl = document.querySelector("#clio-use-result-after");
+  const recordEl = document.querySelector("#clio-use-result-record");
+  const subjectEl = document.querySelector("#clio-use-result-subject");
+  const confirmButton = document.querySelector("#clio-use-result-confirm");
+  if (!dialog || !targetsEl || !modesEl || !beforeEl || !afterEl || !recordEl || !confirmButton) return null;
+
+  const targets = getClioTalkUseResultTargets();
+  let selectedTarget = clioTalkUseResultDefaultTarget(targets);
+  let selectedMode = selectedTarget?.kind === "create"
+    ? "create"
+    : selectedTarget?.selection?.text ? "replace-selection" : "append";
+
+  if (subjectEl) subjectEl.textContent = compactClioTalkUseResultPreview(content);
+
+  const updatePreview = () => {
+    if (!selectedTarget) {
+      confirmButton.disabled = true;
+      return;
+    }
+    const next = selectedTarget.kind === "create"
+      ? String(content || "").trim()
+      : clioTalkUseResultNextText(selectedTarget, content, selectedMode);
+    beforeEl.textContent = selectedTarget.kind === "create"
+      ? t("clio_preview_created")
+      : compactClioTalkUseResultPreview(
+          selectedMode === "replace-selection" ? selectedTarget.selection.text : selectedTarget.before,
+          { fromEnd: selectedMode === "append" }
+        );
+    afterEl.textContent = compactClioTalkUseResultPreview(
+      selectedMode === "replace-selection"
+        ? String(content || "").trim()
+        : next,
+      { fromEnd: selectedMode === "append" }
+    );
+    recordEl.textContent = messageRecord?.temporaryChat
+      ? t("clio_temporary_delivery_record")
+      : t("clio_run_record_delivery");
+    confirmButton.disabled = !selectedTarget.available
+      || (selectedMode === "replace-selection" && !selectedTarget.selection.text);
+  };
+
+  const renderModes = () => {
+    modesEl.replaceChildren();
+    const modes = selectedTarget?.kind === "create"
+      ? [{ id: "create", label: t("clio_mode_create"), help: t("clio_mode_create_help"), available: true }]
+      : [
+          { id: "append", label: t("clio_mode_append"), help: t("clio_mode_append_help"), available: true },
+          {
+            id: "replace-selection",
+            label: t("clio_mode_replace_selection"),
+            help: selectedTarget?.selection?.text ? t("clio_mode_replace_selection_help") : t("clio_no_selection"),
+            available: !!selectedTarget?.selection?.text,
+          },
+        ];
+    if (!modes.some((mode) => mode.id === selectedMode && mode.available)) {
+      selectedMode = modes.find((mode) => mode.available)?.id || "";
+    }
+    modes.forEach((mode) => {
+      const choice = createClioTalkUseResultChoice(
+        "clio-use-result-mode",
+        mode.id,
+        mode.label,
+        mode.help,
+        { checked: mode.id === selectedMode, disabled: !mode.available }
+      );
+      choice.input.addEventListener("change", () => {
+        selectedMode = mode.id;
+        updatePreview();
+      });
+      modesEl.append(choice.row);
+    });
+    updatePreview();
+  };
+
+  targetsEl.replaceChildren();
+  targets.forEach((target) => {
+    const choice = createClioTalkUseResultChoice(
+      "clio-use-result-target",
+      target.id,
+      target.label,
+      target.available ? target.help : target.unavailableReason,
+      { checked: target.id === selectedTarget?.id, disabled: !target.available }
+    );
+    choice.input.addEventListener("change", () => {
+      selectedTarget = target;
+      selectedMode = target.kind === "create"
+        ? "create"
+        : target.selection?.text ? "replace-selection" : "append";
+      renderModes();
+    });
+    targetsEl.append(choice.row);
+  });
+  renderModes();
+
+  return new Promise((resolve) => {
+    if (typeof closeMenus === "function") closeMenus();
+    document.body.classList.add("has-system-modal");
+    modalScrim.classList.remove("is-hidden");
+    dialog.onclose = () => {
+      modalScrim.classList.add("is-hidden");
+      document.body.classList.remove("has-system-modal");
+      resolve(dialog.returnValue === "apply" && selectedTarget
+        ? { target: selectedTarget, mode: selectedMode }
+        : null);
+    };
+    if (dialog.open) dialog.close("cancel");
+    dialog.showModal();
+  });
+}
+
+function persistClioTalkUseResultRunReceipt(messageRecord, delivery) {
+  const recordFile = messageRecord?.runRecordId
+    ? chatFiles.find((file) => file.id === messageRecord.runRecordId && file.artifactKind === "clio-run-record")
+    : null;
+  if (!recordFile?.runRecord || typeof formatClioTalkRunRecordBody !== "function") return false;
+  recordFile.runRecord.resultUse = structuredClone(delivery);
+  recordFile.body = formatClioTalkRunRecordBody(recordFile.runRecord);
+  recordFile.hash = contentHash(recordFile.body);
+  recordFile.updatedAt = new Date().toISOString();
+  saveDeskState();
+  renderDocuments();
+  return true;
+}
+
+function refreshClioTalkMessageActions(messageId) {
+  const item = messagesEl?.querySelector(`[data-message-id="${messageId}"]`);
+  const record = conversation.find((candidate) => candidate.id === messageId);
+  if (!item || !record) return;
+  appendMessageActions(item, record.role, record.content, { messageRecord: record });
+}
+
+function finishClioTalkUseResult(messageRecord, state, destination, delivery) {
+  const updated = updateClioTalkMessageRecord(messageRecord.id, {
+    replyReceipt: {
+      state,
+      destinationType: String(destination.type || ""),
+      destinationId: String(destination.id || ""),
+      destinationName: String(destination.name || ""),
+      updatedAt: new Date().toISOString(),
+      delivery: structuredClone(delivery),
+    },
+  });
+  if (updated) persistClioTalkUseResultRunReceipt(updated, delivery);
+  refreshClioTalkMessageActions(messageRecord.id);
+}
+
+function removeClioTalkCreatedResult(undo) {
+  if (undo.kind === "scrapbook") {
+    const index = scraps.findIndex((scrap) => scrap.id === undo.createdId && isInActiveProject(scrap));
+    if (index < 0) return false;
+    scraps.splice(index, 1);
+    if (selectedScrapId === undo.createdId) selectedScrapId = getProjectScraps()[0]?.id || null;
+    renderScraps();
+    return true;
+  }
+  if (undo.kind === "project-document") {
+    const index = chatFiles.findIndex((file) => file.id === undo.createdId && isInActiveProject(file));
+    if (index < 0) return false;
+    chatFiles.splice(index, 1);
+    if (selectedChatFileId === undo.createdId) selectedChatFileId = null;
+    renderDocuments();
+    renderProjectDisks();
+    return true;
+  }
+  return false;
+}
+
+async function applyClioTalkUseResult(content, messageRecord, choice) {
+  const target = choice?.target;
+  if (!target || !messageRecord) return false;
+  const now = new Date().toISOString();
+  let destination = { type: target.id, id: "", name: target.label };
+  let state = "inserted";
+  let undo = null;
+  let beforeHash = contentHash(target.before || "");
+  let afterHash = "";
+
+  if (target.kind === "text") {
+    const currentTargets = getClioTalkUseResultTargets();
+    const currentTarget = currentTargets.find((candidate) => candidate.id === target.id);
+    if (!currentTarget?.available || contentHash(currentTarget.before) !== beforeHash) {
+      setStatus(t("clio_result_write_failed"));
+      return false;
+    }
+    const next = clioTalkUseResultNextText(target, content, choice.mode);
+    if (!target.write(next)) return false;
+    afterHash = contentHash(next);
+    destination.id = target.id === "teachtext" ? String(activeTextFileId || "") : target.id;
+    undo = {
+      kind: "text",
+      targetId: target.id,
+      before: target.before,
+      after: next,
+      destination,
+    };
+  } else if (target.id === "scrapbook") {
+    const scrap = createScrap(null, content, {
+      reveal: false,
+      source: {
+        type: "clio-talk-reply",
+        sourceId: messageRecord.id,
+        sourceTitle: t("assistant"),
+      },
+    });
+    if (!scrap) return false;
+    state = "clipped";
+    destination = { type: "scrap", id: scrap.id, name: target.label };
+    afterHash = contentHash(scrap.body);
+    undo = { kind: "scrapbook", createdId: scrap.id, destination };
+  } else {
+    const file = saveMessageAsDocument(content);
+    if (!file) return false;
+    state = "saved";
+    destination = { type: "project-document", id: file.id, name: target.label };
+    afterHash = contentHash(file.body);
+    undo = { kind: "project-document", createdId: file.id, destination };
+  }
+
+  const delivery = {
+    schemaVersion: 1,
+    status: "applied",
+    targetType: destination.type,
+    targetId: destination.id,
+    targetName: destination.name,
+    operation: choice.mode,
+    appliedAt: now,
+    beforeHash,
+    afterHash,
+  };
+  clioTalkUseResultUndoByMessageId.set(messageRecord.id, { ...undo, delivery });
+  finishClioTalkUseResult(messageRecord, state, destination, delivery);
+  saveDeskState();
+  setStatus(t("clio_result_written", destination.name));
+  return true;
+}
+
+async function undoClioTalkUseResult(messageId) {
+  const undo = clioTalkUseResultUndoByMessageId.get(messageId);
+  const messageRecord = conversation.find((candidate) => candidate.id === messageId);
+  if (!undo || !messageRecord) return false;
+  let restored = false;
+
+  if (undo.kind === "text") {
+    if (typeof ensureWritingFlowModule === "function") await ensureWritingFlowModule();
+    const target = getClioTalkUseResultTargets().find((candidate) => candidate.id === undo.targetId);
+    if (target?.available && contentHash(target.before) === contentHash(undo.after)) {
+      restored = !!target.write(undo.before);
+    }
+  } else {
+    restored = removeClioTalkCreatedResult(undo);
+  }
+
+  if (!restored) {
+    setStatus(t("clio_result_undo_unavailable"));
+    return false;
+  }
+  const delivery = {
+    ...undo.delivery,
+    status: "undone",
+    undoneAt: new Date().toISOString(),
+  };
+  clioTalkUseResultUndoByMessageId.delete(messageId);
+  finishClioTalkUseResult(messageRecord, "undone", undo.destination, delivery);
+  saveDeskState();
+  setStatus(t("clio_result_undone"));
+  return true;
+}
+
+function appendMessageActions(item, role, content, options = {}) {
   item.querySelector(".message-actions")?.remove();
   const actions = document.createElement("div");
   actions.className = "message-actions";
+  const messageId = options.messageRecord?.id || item.dataset.messageId || "";
 
-  if (role === "assistant") {
-    const insertBtn = document.createElement("button");
-    insertBtn.className = "btn mini-btn";
-    insertBtn.textContent = t("insert");
-    insertBtn.onclick = () => insertAssistantText(content);
+  if (role === "user") {
+    const { details: moreDetails, menu: moreMenu } = createClioTalkActionMenu(item);
+    if (!options.messageRecord?.temporaryChat) {
+      const editBtn = document.createElement("button");
+      editBtn.className = "btn mini-btn";
+      editBtn.textContent = t("clio_edit_and_branch");
+      editBtn.onclick = () => editAndResendConversationMessage({
+        messageId: options.messageRecord?.id || item.dataset.messageId || "",
+        messageIndex: Number.isInteger(options.messageIndex) ? options.messageIndex : -1,
+        content,
+      });
+      moreMenu.append(editBtn);
+    }
+    appendMessageTranslation(moreMenu, item, role, content);
+    moreMenu.querySelectorAll("button").forEach((button) => button.setAttribute("role", "menuitem"));
+    actions.append(moreDetails);
+  } else if (role === "assistant") {
+    const disposition = document.createElement("strong");
+    disposition.className = "message-disposition";
+    const initialReceiptState = clioTalkReplyReceiptState(options.messageRecord);
+    disposition.dataset.replyState = initialReceiptState;
+    disposition.textContent = clioTalkReplyReceiptLabel(options.messageRecord);
+    disposition.hidden = initialReceiptState === "temporary";
 
-    const clipBtn = document.createElement("button");
-    clipBtn.className = "btn mini-btn";
-    clipBtn.textContent = t("clip");
-    clipBtn.onclick = () => {
-      createScrap(`Clip: ${content.slice(0, 30)}...`, content);
+    const { details: moreDetails, menu: moreMenu } = createClioTalkActionMenu(item);
+    const copyBtn = document.createElement("button");
+    copyBtn.className = "btn mini-btn";
+    copyBtn.textContent = t("copy");
+    copyBtn.onclick = async () => {
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(content);
+        } else {
+          const copyTarget = document.createElement("textarea");
+          copyTarget.className = "visually-hidden";
+          copyTarget.value = content;
+          document.body.append(copyTarget);
+          try {
+            copyTarget.select();
+            if (!document.execCommand("copy")) throw new Error("copy failed");
+          } finally {
+            copyTarget.remove();
+          }
+        }
+        setStatus(t("selection_copied"));
+      } catch {
+        setStatus(t("copy_failed"));
+      }
+    };
+    moreMenu.append(copyBtn);
+    if (options.messageRecord?.runRecordId || options.messageRecord?.temporaryChat) {
+      const runRecordBtn = document.createElement("button");
+      runRecordBtn.className = "btn mini-btn";
+      runRecordBtn.textContent = t(options.messageRecord.runRecordId ? "clio_view_run_record" : "clio_view_run_details");
+      runRecordBtn.onclick = () => {
+        if (options.messageRecord.runRecordId) {
+          revealChatFileInFinder(options.messageRecord.runRecordId);
+          return;
+        }
+        const assembly = document.querySelector("#clio-run-assembly");
+        if (assembly) assembly.open = true;
+      };
+      moreMenu.append(runRecordBtn);
+    }
+    appendMessageTranslation(moreMenu, item, role, content);
+    moreMenu.querySelectorAll("button").forEach((button) => button.setAttribute("role", "menuitem"));
+
+    const useDetails = document.createElement("details");
+    useDetails.className = "message-use-actions";
+    const useSummary = document.createElement("summary");
+    useSummary.className = "btn mini-btn";
+    useSummary.textContent = t("clio_use_reply");
+    const useMenu = document.createElement("div");
+    useMenu.className = "message-use-menu";
+    installClioTalkDetailsMenu(useDetails, useSummary, useMenu);
+
+    const useResultBtn = document.createElement("button");
+    useResultBtn.className = "btn mini-btn";
+    useResultBtn.textContent = t("clio_choose_destination");
+    useResultBtn.hidden = !options.messageRecord;
+    useResultBtn.onclick = async () => {
+      useDetails.open = false;
+      const choice = await chooseClioTalkUseResult(content, options.messageRecord);
+      if (choice) await applyClioTalkUseResult(content, options.messageRecord, choice);
     };
 
-    const saveBtn = document.createElement("button");
-    saveBtn.className = "btn mini-btn";
-    saveBtn.textContent = t("save");
-    saveBtn.onclick = () => saveMessageAsDocument(content);
+    const chartBtn = document.createElement("button");
+    chartBtn.className = "btn mini-btn";
+    chartBtn.textContent = t("clio_chart_make_chart");
+    chartBtn.hidden = !clioTalkHasChartableTable(content);
+    chartBtn.onclick = async () => {
+      if (typeof ensureClioChartModule === "function") await ensureClioChartModule();
+      window.AISystem6ClioChart?.open?.({ markdown: content, title: t("clio_chart_title") });
+      useDetails.open = false;
+    };
 
     const ignoreBtn = document.createElement("button");
     ignoreBtn.className = "btn mini-btn";
-    ignoreBtn.textContent = t("ignore");
+    ignoreBtn.textContent = t("clio_discard_reply");
     ignoreBtn.onclick = () => {
+      removeClioTalkMessageRecord(messageId);
       item.remove();
       updateMenuState();
     };
 
-    actions.append(insertBtn, clipBtn, saveBtn, ignoreBtn);
+    const undoBtn = document.createElement("button");
+    undoBtn.className = "btn mini-btn";
+    undoBtn.textContent = t("clio_result_undo");
+    undoBtn.hidden = !clioTalkUseResultUndoByMessageId.has(messageId);
+    undoBtn.onclick = () => undoClioTalkUseResult(messageId);
+
+    useMenu.append(useResultBtn, chartBtn, undoBtn);
+    useMenu.querySelectorAll("button").forEach((button) => button.setAttribute("role", "menuitem"));
+    useDetails.append(useSummary, useMenu);
+    moreMenu.append(ignoreBtn);
+    actions.append(disposition, useDetails, moreDetails);
   }
 
-  appendMessageTranslation(actions, item, role, content);
   if (actions.children.length) {
     item.querySelector(".message-content")?.append(actions);
   }
@@ -480,14 +1795,17 @@ function refreshMessageTranslationButtons() {
     const content = item.dataset.rawContent;
     if (!content) return;
     const role = item.classList.contains("user") ? "user" : "assistant";
-    appendMessageActions(item, role, content);
+    const messageRecord = conversation.find((candidate) => candidate.id === item.dataset.messageId) || null;
+    appendMessageActions(item, role, content, { messageRecord });
   });
 }
 
 function addMessage(role, content, options = {}) {
   const item = document.createElement("article");
   item.className = `message ${role}`;
+  item.setAttribute("aria-label", role === "user" ? t("you") : clioTalkAssistantDisplayName());
   item.dataset.rawContent = content;
+  if (options.messageRecord?.id) item.dataset.messageId = options.messageRecord.id;
 
   const speaker = document.createElement("div");
   speaker.className = "speaker";
@@ -495,28 +1813,35 @@ function addMessage(role, content, options = {}) {
 
   const body = document.createElement("div");
   body.className = "message-content";
-  body.innerHTML = markdownToSystemHtml(content);
+  body.innerHTML = markdownToSystemHtml(options.messageRecord?.displayContent || content);
 
   item.append(speaker, body);
   messagesEl.append(item);
-  messagesEl.scrollTop = messagesEl.scrollHeight;
 
   if (role === "assistant") {
     lastAssistantText = content;
     appendMessageGrounding(item, options.grounding || null);
   }
-  appendMessageActions(item, role, content);
+  appendClioTalkRunState(item, options.messageRecord);
+  appendClioTalkRunReceipt(item, options.messageRecord);
+  appendMessageActions(item, role, content, options);
   updateMenuState();
+  scrollMessagesToLatest();
 }
 
 function insertAssistantText(content) {
-  insertIntoTeachText(content, {
+  return insertIntoTeachText(content, {
     source: t("assistant"),
     title: t("assistant"),
   });
 }
 
 function saveMessageAsDocument(content) {
+  if (!getActiveProject()) {
+    setStatus(t("no_project_mounted"));
+    openWindow("projects");
+    return null;
+  }
   const folder = ensureFolder(t("default_folder"));
   const name = `Response ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
   const file = {
@@ -533,6 +1858,7 @@ function saveMessageAsDocument(content) {
   renderDocuments();
   saveDeskState();
   setStatus(t("saved"));
+  return file;
 }
 
 function isCloudModelActive() {
@@ -546,18 +1872,20 @@ function modelRouteText(localKey, cloudKey) {
 function createPendingMessage() {
   const item = document.createElement("article");
   item.className = "message assistant pending";
+  item.setAttribute("aria-label", clioTalkAssistantDisplayName());
+  item.setAttribute("aria-live", "polite");
 
   const speaker = document.createElement("div");
   speaker.className = "speaker";
-  speaker.textContent = t("assistant");
+  speaker.textContent = clioTalkAssistantDisplayName();
 
   const body = document.createElement("div");
   body.className = "message-content system-wait";
   body.innerHTML = `
     <div class="wait-title">${escapeHtml(modelRouteText("working_locally", "working_cloud"))}</div>
-    <div class="progress-track" aria-label="Progress"><div class="progress-bar"></div></div>
+    <div class="progress-track" role="progressbar" aria-label="${escapeHtml(t("clio_progress"))}" aria-valuetext="${escapeHtml(modelRouteText("wait_opening", "wait_opening_cloud"))}"><div class="progress-bar"></div></div>
     <div class="wait-copy">${escapeHtml(modelRouteText("wait_opening", "wait_opening_cloud"))}</div>
-    <div class="wait-steps" aria-label="Working steps">
+    <div class="wait-steps" aria-label="${escapeHtml(t("clio_working_steps"))}">
       <div class="wait-step is-active" data-step="0">${escapeHtml(t("checking_context"))}</div>
       <div class="wait-step" data-step="1">${escapeHtml(modelRouteText("consulting_model", "consulting_cloud_model"))}</div>
       <div class="wait-step" data-step="2">${escapeHtml(t("typesetting_reply"))}</div>
@@ -566,7 +1894,7 @@ function createPendingMessage() {
 
   item.append(speaker, body);
   messagesEl.append(item);
-  messagesEl.scrollTop = messagesEl.scrollHeight;
+  scrollMessagesToLatest();
 
   return item;
 }
@@ -577,8 +1905,11 @@ function updatePendingMessage(item, step, copy) {
   const copyEl = item.querySelector(".wait-copy");
   if (!copyEl) return;
   copyEl.textContent = copy;
+  item.querySelector(".progress-track")?.setAttribute("aria-valuetext", copy);
   item.querySelectorAll(".wait-step").forEach((node, index) => {
     node.classList.toggle("is-active", index === step);
+    if (index === step) node.setAttribute("aria-current", "step");
+    else node.removeAttribute("aria-current");
   });
 }
 
@@ -612,36 +1943,69 @@ function resolvePendingMessage(item, role, content, options = {}) {
   }
 
   item.className = `message ${role}`;
+  item.setAttribute("aria-label", role === "user" ? t("you") : clioTalkAssistantDisplayName());
   item.dataset.rawContent = content;
-  item.querySelector(".speaker").textContent = role === "user" ? t("you") : t("assistant");
+  if (options.messageRecord?.id) item.dataset.messageId = options.messageRecord.id;
+  item.querySelector(".speaker").textContent = role === "user" ? t("you") : clioTalkAssistantDisplayName();
   const body = item.querySelector(".message-content");
   body.className = "message-content";
-  body.innerHTML = markdownToSystemHtml(content);
-  messagesEl.scrollTop = messagesEl.scrollHeight;
+  body.innerHTML = markdownToSystemHtml(options.messageRecord?.displayContent || content);
 
   if (role === "assistant") {
     lastAssistantText = content;
     appendMessageGrounding(item, options.grounding || null);
   }
-  appendMessageActions(item, role, content);
+  appendClioTalkRunState(item, options.messageRecord);
+  appendClioTalkRunReceipt(item, options.messageRecord);
+  appendMessageActions(item, role, content, options);
+  scrollMessagesToLatest();
 }
 
 function updatePendingStreamContent(item, content) {
   if (!item) return;
   stopWaitCycle();
   item.className = "message assistant pending streaming";
+  item.setAttribute("aria-label", clioTalkAssistantDisplayName());
   item.dataset.rawContent = content;
-  item.querySelector(".speaker").textContent = t("assistant");
+  item.querySelector(".speaker").textContent = clioTalkAssistantDisplayName();
   const body = item.querySelector(".message-content");
   body.className = "message-content";
   body.innerHTML = renderStreamingMarkdownHtml(content || "...");
-  messagesEl.scrollTop = messagesEl.scrollHeight;
+  scrollMessagesToLatest();
 }
 
-function resolvePendingStatus(item, content) {
+function resolvePendingStatus(item, content, options = {}) {
   stopWaitCycle();
-  item?.remove();
-  setStatus(content);
+  if (item && options.retryText) {
+    item.className = "message assistant is-error";
+    item.setAttribute("role", "alert");
+    item.setAttribute("aria-label", `${clioTalkAssistantDisplayName()}: ${content}`);
+    item.querySelector(".speaker").textContent = clioTalkAssistantDisplayName();
+    const body = item.querySelector(".message-content");
+    body.className = "message-content message-error";
+    body.replaceChildren();
+    const copy = document.createElement("p");
+    copy.textContent = content;
+    const retry = document.createElement("button");
+    retry.type = "button";
+    retry.className = "btn mini-btn message-retry-button";
+    retry.textContent = t("retry");
+    retry.onclick = () => {
+      removeClioTalkMessageRecord(options.userRecordId);
+      const failedUserItem = item.previousElementSibling;
+      if (failedUserItem?.classList.contains("user")) {
+        failedUserItem.remove();
+      }
+      item.remove();
+      submitUserText(options.retryText, options.retryOptions || {});
+    };
+    body.append(copy, retry);
+    scrollMessagesToLatest();
+    setStatus(t("clio_message_not_sent"));
+  } else {
+    item?.remove();
+    setStatus(content);
+  }
   updateMenuState();
 }
 
@@ -684,6 +2048,21 @@ function clioTalkLanguageInstruction() {
   return currentLanguage === "zh"
     ? "界面语言是简体中文。默认用简体中文回答；只有用户明确要求英文、翻译成其他语言，或要求保留原文时才切换。不要因为系统上下文或术语名是英文而改用英文。"
     : "Interface language is English. Answer in English by default unless the user clearly asks for another language, translation, or preserved source wording.";
+}
+
+function clioTalkPromptMessages(options = {}) {
+  const runtime = window.AISystem6PromptFilesRuntime;
+  const resolved = runtime?.resolvePromptFile("cliotalk.main", activeProjectId, currentLanguage);
+  if (!resolved || resolved.status !== "ready") {
+    throw new Error(currentLanguage === "zh" ? "ClioTalk 主提示词文件不可用。" : "The ClioTalk main prompt file is unavailable.");
+  }
+  const boundary = runtime.resolvePromptFile("system.model-boundaries", null, currentLanguage);
+  if (options.temporaryChat !== true) {
+    runtime.recordPromptRun?.(activeProjectId, "cliotalk.main", resolved);
+    if (boundary.status === "ready") runtime.recordPromptRun?.(activeProjectId, "system.model-boundaries", boundary);
+  }
+  window.lastTaskPromptFiles = getClioTalkPromptFileDescriptors();
+  return [{ role: "system", content: resolved.body }];
 }
 
 function aiSystem6IdentityContext() {
@@ -997,9 +2376,17 @@ function buildPayload(userText, options = {}) {
   compactConversationMemoryIfNeeded(options);
   const contextSections = [];
   const skipContext = options.skipContext === true;
+  const temporaryChat = options.temporaryChat === true || clioTalkTemporaryMode;
   const isSideAskChat = !skipContext && sideAskEnabled && !isMultiFinderMode();
   const isScopedSideAskChat = isSideAskChat;
   const taskKind = options.taskKind || (isSideAskChat ? "sideask" : "chat");
+  window.lastTaskHarnessFile = getClioTalkPendingHarnessDescriptor();
+  const explicitInputIds = new Set(window.nextTaskInputFileIds || []);
+  window.lastTaskInputFiles = getClioTalkPendingInputDescriptors({ temporaryChat });
+  window.lastTaskExplicitInputFiles = window.lastTaskInputFiles.filter((file) => explicitInputIds.has(file.id));
+  window.nextTaskHarnessFileId = "";
+  window.nextTaskInputFileIds = new Set();
+  renderAttachedClips();
 
   contextSections.push(aiSystem6IdentityContext());
   if (isSideAskChat) contextSections.push(sideAskAnswerStyleInstruction());
@@ -1018,7 +2405,7 @@ function buildPayload(userText, options = {}) {
     ].join("\n"));
   }
 
-  const projectTermsContext = (skipContext || isScopedSideAskChat) ? "" : formatProjectDictionaryTermsForContext();
+  const projectTermsContext = (skipContext || isScopedSideAskChat || temporaryChat) ? "" : formatProjectDictionaryTermsForContext();
   if (projectTermsContext) {
     contextSections.push([
       currentLanguage === "zh"
@@ -1063,10 +2450,15 @@ function buildPayload(userText, options = {}) {
     }
   }
 
-  const hasMountedFileDisk = !skipContext && !isScopedSideAskChat && hasMountedFileDiskContext();
-  const useBroadContext = !skipContext && !isScopedSideAskChat && (rememberInput.checked || attachedClipIds.size > 0);
+  const hasMountedFileDisk = !temporaryChat && !skipContext && !isScopedSideAskChat && hasMountedFileDiskContext();
+  const useBroadContext = !temporaryChat && !skipContext && !isScopedSideAskChat && (rememberInput.checked || attachedClipIds.size > 0);
   const useContext = useBroadContext || hasMountedFileDisk;
-  const recentMessages = !skipContext && (rememberInput.checked || isScopedSideAskChat) ? conversation.slice(-6) : [];
+  const continuationMessages = clioTalkContinuationMessages(options);
+  const recentMessages = !continuationMessages.length && !skipContext && (temporaryChat || rememberInput.checked || isScopedSideAskChat)
+    ? conversation
+        .filter((message) => !["failed", "sending"].includes(message?.deliveryState))
+        .slice(-6)
+    : [];
   const budgetInfo = getRagContextBudget(userText, recentMessages);
   const retrievedContext = useContext
     ? retrieveContext(userText, {
@@ -1096,25 +2488,105 @@ function buildPayload(userText, options = {}) {
         content: `${contextIntro}\n\n${contextSections.join("\n\n")}`,
       }
     : null;
+  const projectMemoryFiles = !temporaryChat && typeof getProjectMemoryFiles === "function"
+    ? getProjectMemoryFiles({ activeOnly: true })
+    : [];
+  const retrospectiveFiles = [...(window.nextTaskRetrospectiveIds || [])]
+    .map((id) => getProjectFiles().find((file) => file.id === id && file.artifactKind === "retrospective"))
+    .filter(Boolean);
+  window.lastTaskRetrospectiveIds = retrospectiveFiles.map((file) => file.id);
+  window.nextTaskRetrospectiveIds = new Set();
+  const retrospectiveMessage = retrospectiveFiles.length
+    ? {
+        role: "system",
+        content: [
+          currentLanguage === "zh" ? "以下是用户明确附加给本次任务的复盘文件。把它当作可见项目来源，而非自动安装的技能。" : "These are retrospective files explicitly attached to this task. Treat them as visible project sources, not automatically installed Skills.",
+          ...retrospectiveFiles.map((file) => `## ${file.name} [retrospective:${file.id}]\n${String(file.body || "").trim()}`),
+        ].join("\n\n"),
+      }
+    : null;
+  const manuallySelectedSkills = [...(window.nextTaskSkillIds || [])]
+    .map((id) => getProjectFiles().find((file) => file.id === id && file.artifactKind === "ai-skill"))
+    .map((file) => ({ file, parsed: typeof parseProjectSkillFile === "function" ? parseProjectSkillFile(file) : { valid: false } }))
+    .filter((entry) => entry.parsed.valid);
+  const autoCalledSkills = !temporaryChat && typeof getAutoCallableProjectSkills === "function"
+    ? getAutoCallableProjectSkills(userText)
+    : [];
+  const selectedSkills = [...manuallySelectedSkills, ...autoCalledSkills.filter((entry) => !manuallySelectedSkills.some((selected) => selected.file.id === entry.file.id))];
+  const skillConflicts = selectedSkills.flatMap((entry, index) => selectedSkills.slice(index + 1).flatMap((other) => (
+    /\b(always|must)\b/i.test(entry.file.body) && /\b(never|must not)\b/i.test(other.file.body)
+      ? [`${entry.parsed.manifest.id} ↔ ${other.parsed.manifest.id}`] : []
+  )));
+  window.lastTaskSkillReceipt = selectedSkills.map((entry) => ({ id: entry.file.id, version: entry.parsed.manifest.version, adopted: true, reason: autoCalledSkills.some((auto) => auto.file.id === entry.file.id) ? "project opt-in auto call" : "user order" }));
+  if (window.lastSkillSuggestion) window.lastTaskSkillReceipt.push({ id: window.lastSkillSuggestion.selected || "suggestion-declined", version: "", adopted: !!window.lastSkillSuggestion.selected, reason: `${window.lastSkillSuggestion.reason}; candidates: ${window.lastSkillSuggestion.candidates.join(", ")}` });
+  window.lastTaskSkillIds = selectedSkills.map((entry) => entry.file.id);
+  window.lastTaskSkillFiles = selectedSkills.map(({ file, parsed }) => clioTalkFileDescriptor(file, {
+    kind: "skill",
+    name: parsed.manifest.name,
+    version: parsed.manifest.version,
+    reason: autoCalledSkills.some((auto) => auto.file.id === file.id) ? "project opt-in auto call" : "user order",
+  }));
+  window.lastAutoSkillCall = autoCalledSkills;
+  window.nextTaskSkillIds = new Set();
+  const skillMessage = selectedSkills.length
+    ? {
+        role: "system",
+        content: [
+          currentLanguage === "zh" ? "以下是本次任务选择或经项目主动开启的只读自动调用的 Skill。仅执行其中的提示词和参考资料，不获得写入或脚本能力。" : "These Skills were selected for this task or auto-called through the project's explicit read-only opt-in. Use only their prompts and references; they grant no write or script capability.",
+          skillConflicts.length ? `Potential conflicts: ${skillConflicts.join(", ")}. Follow user-selected order; later Skills do not override safety boundaries.` : "",
+          ...selectedSkills.map(({ file, parsed }) => [`## ${parsed.manifest.name} v${parsed.manifest.version} [skill:${file.id}]`, file.body, ...(parsed.references || [])].join("\n\n")),
+        ].join("\n\n"),
+      }
+    : null;
+  const projectMemoryMessage = projectMemoryFiles.length
+    ? {
+        role: "system",
+        content: [
+          currentLanguage === "zh" ? "以下是用户明确保存的项目长期记忆。它们可在项目硬盘中编辑或停用；仅在相关时使用。" : "These are explicitly saved project memories. They are editable or disableable on the Project Hard Disk; use them only when relevant.",
+          ...projectMemoryFiles.map((file) => `## ${file.name} [memory:${file.id}]\n${String(file.body || "").trim()}`),
+        ].join("\n\n"),
+      }
+    : null;
+  const explicitInputMessage = window.lastTaskExplicitInputFiles?.length
+    ? {
+        role: "system",
+        content: [
+          currentLanguage === "zh"
+            ? "以下是用户明确附加给本次消息的项目文件。只在相关时使用，并把文件内容与推断分开。"
+            : "These project files were explicitly attached to this message. Use them when relevant and keep file content separate from inference.",
+          ...window.lastTaskExplicitInputFiles.slice(0, 6).map((file, index) => [
+            `## I${index + 1} · ${file.name} [input:${file.id || index + 1}]`,
+            clipContextContent(file.body || "", 12000),
+          ].join("\n")),
+        ].join("\n\n"),
+      }
+    : null;
   const memoryMessage = conversationMemorySystemMessage(options);
 
   const payload = {
     model: getLocalModelRequestName(),
     ...(typeof currentContextRouteConfig === "function" ? currentContextRouteConfig() : {}),
     messages: withMarkdownModelMessages([
-      { role: "system", content: systemInput.value.trim() },
+      ...clioTalkPromptMessages({ temporaryChat }),
       { role: "system", content: clioTalkLanguageInstruction() },
+      ...(projectMemoryMessage ? [projectMemoryMessage] : []),
+      ...(retrospectiveMessage ? [retrospectiveMessage] : []),
+      ...(skillMessage ? [skillMessage] : []),
+      ...(explicitInputMessage ? [explicitInputMessage] : []),
       ...(contextMessage ? [contextMessage] : []),
       ...(memoryMessage ? [memoryMessage] : []),
-      ...recentMessages.filter((_, index) => {
-        const messageIndex = conversation.length - recentMessages.length + index;
-        return messageIndex >= Number(compressedConversationMemory?.sourceMessages || 0);
-      }),
+      ...continuationMessages,
+      ...recentMessages
+        .filter((message) => (
+          conversation.indexOf(message) >= Number(compressedConversationMemory?.sourceMessages || 0)
+        ))
+        .map((message) => ({ role: message.role, content: message.content })),
       { role: "user", content: userText },
     ]),
     temperature: Number.isFinite(options.temperature) ? options.temperature : 0.7,
     stream: false,
     ai_system6_task_kind: taskKind,
+    ai_system6_record_loadout: true,
   };
   const localDefaults = localChatDefaults(payload.model, options);
   Object.assign(payload, localDefaults);
@@ -1169,6 +2641,9 @@ function gemma4ChatDefaults(modelName, options = {}) {
 }
 
 function scrubVisibleModelOutput(text = "") {
+  if (window.AISystem6ModelTaskRuntime?.scrubVisibleModelOutput) {
+    return window.AISystem6ModelTaskRuntime.scrubVisibleModelOutput(text);
+  }
   return String(text || "")
     .replace(/<\|channel\>thought[\s\S]*?<channel\|>/gi, "")
     .replace(/<\|channel\>(?:final|answer)\s*/gi, "")
@@ -1199,6 +2674,9 @@ function localNoThinkingDefaults(taskKind = "chat") {
 }
 
 function localChatDefaults(modelName, options = {}) {
+  if (window.AISystem6ModelTaskRuntime?.localChatDefaults) {
+    return window.AISystem6ModelTaskRuntime.localChatDefaults(modelName, options);
+  }
   const taskKind = String(options.taskKind || "chat").toLowerCase();
   return {
     ...localNoThinkingDefaults(taskKind),
@@ -1299,7 +2777,10 @@ function compactMessageForMemory(message, index) {
 }
 
 function buildConversationMemoryText(messages, previousMemory = "") {
-  const usable = messages.filter((message) => String(message?.content || "").trim());
+  const usable = messages.filter((message) => (
+    !["failed", "sending"].includes(message?.deliveryState)
+      && String(message?.content || "").trim()
+  ));
   const firstUser = usable.find((message) => message.role === "user");
   const memoryTurns = uniqueMessages([firstUser, ...usable.slice(-14)])
     .map((message, index) => compactMessageForMemory(message, index))
@@ -1315,7 +2796,8 @@ function buildConversationMemoryText(messages, previousMemory = "") {
 
 function compactConversationMemoryIfNeeded(options = {}) {
   if (sideAskEnabled && !isMultiFinderMode()) return false;
-  if (!rememberInput?.checked || options.skipContext === true) return false;
+  const temporaryChat = options.temporaryChat === true || clioTalkTemporaryMode;
+  if ((!temporaryChat && !rememberInput?.checked) || options.skipContext === true) return false;
   const keepMessages = Number.isFinite(options.keepMessages) ? options.keepMessages : 6;
   const cutoff = Math.max(0, conversation.length - keepMessages);
   if (cutoff < 4) return false;
@@ -1336,7 +2818,8 @@ function compactConversationMemoryIfNeeded(options = {}) {
 
 function conversationMemorySystemMessage(options = {}) {
   if (sideAskEnabled && !isMultiFinderMode()) return null;
-  if (!rememberInput?.checked || options.skipContext === true) return null;
+  const temporaryChat = options.temporaryChat === true || clioTalkTemporaryMode;
+  if ((!temporaryChat && !rememberInput?.checked) || options.skipContext === true) return null;
   const text = String(compressedConversationMemory?.text || "").trim();
   if (!text) return null;
   return {
@@ -1449,27 +2932,28 @@ function defaultRequestedOutputTokens(options = {}) {
 
 async function readModelBudget(payload, options = {}, signal = null) {
   const endPerf = window.AISystem6Perf?.start("budget_preflight", { taskKind: options.taskKind || "chat" });
-  try {
-    const response = await fetch("/api/model-budget", {
-      method: "POST",
-      signal,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: payload.model,
-        messages: payload.messages,
-        task_kind: options.taskKind || "chat",
-        requested_output_tokens: defaultRequestedOutputTokens(options),
-        context_length: contextLengthInput?.value,
-      }),
-    });
-    if (!response.ok) throw new Error("model_budget_unavailable");
-    const budget = await response.json();
-    endPerf?.({ source: budget.budget_source, fits: budget.fits });
-    return budget;
-  } catch (error) {
-    endPerf?.({ error: true });
-    throw error;
-  }
+  if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+  const contextLength = Math.max(1024, Number(
+    typeof getEffectiveContextTokens === "function"
+      ? getEffectiveContextTokens()
+      : contextLengthInput?.value || 8192
+  ) || 8192);
+  const promptTokens = (payload.messages || []).reduce(
+    (sum, message) => sum + estimateTokenCount(message?.content || "") + 6,
+    0
+  );
+  const requestedOutputTokens = defaultRequestedOutputTokens(options);
+  const availableOutputTokens = Math.max(0, contextLength - promptTokens - reservedSafetyTokens);
+  const budget = {
+    context_length: contextLength,
+    prompt_tokens: promptTokens,
+    requested_output_tokens: requestedOutputTokens,
+    available_output_tokens: availableOutputTokens,
+    fits: availableOutputTokens >= requestedOutputTokens,
+    budget_source: "browser_estimate",
+  };
+  endPerf?.({ source: budget.budget_source, fits: budget.fits });
+  return budget;
 }
 
 function recordModelBudget(budget) {
@@ -1593,13 +3077,25 @@ function normalizeMountedChunkText(text) {
 
 function setComposerBusy(isBusy) {
   document.body.classList.toggle("is-busy", isBusy);
-  promptInput.disabled = isBusy;
+  form.classList.toggle("is-generating", isBusy);
+  form.setAttribute("aria-busy", String(isBusy));
+  messagesEl?.setAttribute("aria-busy", String(isBusy));
+  promptInput.disabled = false;
+  composeToolsToggleButton.disabled = false;
   clipSelectionButton.disabled = isBusy;
   clearButton.disabled = isBusy;
   retryButton.disabled = isBusy;
-  retryButton.hidden = isBusy || !lastUserText;
+  retryButton.hidden = true;
   stopButton.hidden = !isBusy;
-  form.querySelector("button[type='submit']").disabled = isBusy;
+  const sendButton = form.querySelector("button[type='submit']");
+  sendButton.hidden = isBusy;
+  if (isBusy) sendButton.disabled = true;
+  else syncClioTalkSendButton();
+  if (composerKeyHintEl) {
+    const hintKey = isBusy ? "clio_composer_draft_hint" : "clio_composer_key_hint";
+    composerKeyHintEl.dataset.i18n = hintKey;
+    composerKeyHintEl.textContent = t(hintKey);
+  }
 }
 
 function stopGeneration() {
@@ -1607,7 +3103,7 @@ function stopGeneration() {
 }
 
 function estimateTokenCount(text) {
-  const normalized = (text || "").trim();
+  const normalized = typeof text === "string" ? text.trim() : JSON.stringify(text || "");
   if (!normalized) return 0;
   return Math.max(1, Math.round(normalized.length / 4));
 }
@@ -1716,7 +3212,22 @@ function refreshCloudUsageDisplay() {
   var hasCloudConfig = typeof cloudConfig !== "undefined" && cloudConfig && cloudConfig.provider && cloudConfig.apiKey;
   var isCloudActive = !!(hasCloudConfig && cloudConfig.active);
   if (!hasCloudConfig) {
-    indicator.classList.add("is-hidden");
+    var localReady = typeof localModelState !== "undefined"
+      && (localModelState?.ready || localModelState?.loaded);
+    var disconnectedText = typeof t === "function" ? t("model_not_connected") : "Model not connected";
+    var localName = localReady ? getLocalModelDisplayName() : disconnectedText;
+    if (labelEl) labelEl.textContent = localName;
+    if (iconEl) {
+      iconEl.dataset.systemIcon = "cloudModelOff";
+      iconEl.innerHTML = systemIconSvg("cloudModelOff");
+    }
+    indicator.classList.add("is-local-model");
+    indicator.title = localReady
+      ? `${typeof t === "function" ? t("local_model") : "Local Model"}: ${localName}`
+      : disconnectedText;
+    indicator.setAttribute("aria-label", indicator.title);
+    indicator.classList.remove("is-hidden");
+    if (typeof renderCloudModelPopover === "function") renderCloudModelPopover();
     return;
   }
   var modelName = isCloudActive ? (cloudConfig.model || "cloud") : getLocalModelDisplayName();
@@ -1808,15 +3319,31 @@ function modelMetricsFromStream(content, elapsedMs, stopReason = "stop") {
 
 async function readChatCompletionStream(response, onToken, signal) {
   let streamUsage = null;
-  const content = await readModelTextStream(response, {
-    signal,
-    throttleMs: 60,
-    onSnapshot: onToken,
-    onUsage: (usage) => {
-      streamUsage = usage;
-    },
-  });
-  return { content, usage: streamUsage };
+  let finishReason = "";
+  let latestContent = "";
+  try {
+    const content = await readModelTextStream(response, {
+      signal,
+      throttleMs: 60,
+      onSnapshot: (snapshot) => {
+        latestContent = String(snapshot || "");
+        onToken?.(latestContent);
+      },
+      onUsage: (usage) => {
+        streamUsage = usage;
+      },
+      onFinishReason: (reason) => {
+        finishReason = String(reason || "");
+      },
+    });
+    return { content, usage: streamUsage, finishReason };
+  } catch (error) {
+    if (latestContent.trim()) {
+      error.partialContent = latestContent.trim();
+      error.finishReason = "interrupted";
+    }
+    throw error;
+  }
 }
 
 async function readJsonModelResult(response, startedAt, endPerf, streamFallback = false) {
@@ -1832,9 +3359,49 @@ async function readJsonModelResult(response, startedAt, endPerf, streamFallback 
   return { text: trimmed, metrics, budget: lastContextBudget };
 }
 
+function withBrowserLocalSafetyMessages(messages = [], taskKind = "") {
+  const normalized = Array.isArray(messages) ? messages : [];
+  const integrity = window.AISystem6SystemIntegrity;
+  const humanizer = window.AISystem6Humanizer;
+  const additions = [];
+  if (integrity && !integrity.hasIntegrityInstruction(normalized)) {
+    additions.push({ role: "system", content: integrity.instruction() });
+  }
+  if (!/(?:extract|ocr|embedding)/i.test(taskKind)
+      && humanizer && !humanizer.hasHumanizerInstruction(normalized)) {
+    additions.push({ role: "system", content: humanizer.instruction() });
+  }
+  return [...additions, ...normalized];
+}
+
+async function maybeRepairBrowserLocalResult(result, requestPayload, taskKind, streamPreference, signal) {
+  const isCloud = typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudConfig?.apiKey;
+  const runtime = window.AISystem6ModelTaskRuntime;
+  if (isCloud || streamPreference === "json" || !runtime?.shouldRepairHumanizerOutput?.(taskKind)) return result;
+  const originalHits = runtime.findHumanizerOutputHits(result?.text);
+  if (!originalHits.length) return result;
+
+  const repairResponse = await fetchModelPayload({
+    model: requestPayload.model,
+    messages: runtime.buildHumanizerRepairMessages(result.text),
+    temperature: 0.2,
+    max_tokens: Math.max(320, Number(requestPayload.max_tokens || 0)),
+    stream: false,
+    ai_system6_task_kind: "humanizer-repair",
+  }, signal);
+  if (!repairResponse.ok) return result;
+  const data = await repairResponse.json().catch(() => null);
+  const repaired = scrubVisibleModelOutput(data?.choices?.[0]?.message?.content || "");
+  if (!repaired) return result;
+  return runtime.findHumanizerOutputHits(repaired).length < originalHits.length
+    ? { ...result, text: repaired }
+    : result;
+}
+
 function fetchModelPayload(payload, signal) {
   const isCloud = typeof cloudConfig !== "undefined" && cloudConfig && cloudConfig.active && cloudConfig.provider && cloudConfig.apiKey;
   let nextPayload = { ...payload };
+  const shouldRecordLoadout = nextPayload.ai_system6_record_loadout === true;
 
   if (isCloud) {
     const cloudModel = cloudConfig.model || nextPayload.model;
@@ -1851,12 +3418,28 @@ function fetchModelPayload(payload, signal) {
     nextPayload._cloud_base_url = cloudConfig.baseUrl;
     nextPayload._cloud_model = cloudModel;
     if (nextPayload.stream) nextPayload.stream_options = { include_usage: true };
+    delete nextPayload.ai_system6_record_loadout;
+    if (shouldRecordLoadout) recordContextLoadout(nextPayload);
   } else {
-    const localProviderEl = document.getElementById("local-provider");
-    const localProvider = localProviderEl ? localProviderEl.value : "lm-studio";
-    const endpoint = endpointInput?.value?.trim() || "";
-    nextPayload._local_provider = localProvider;
-    nextPayload._local_endpoint = endpoint;
+    if (!localLmStudioConnectionEnabled) {
+      throw new Error("lmstudio_server_offline: Connect to LM Studio in Control Panel first.");
+    }
+    const taskKind = nextPayload.ai_system6_task_kind || "chat";
+    nextPayload = {
+      ...localChatDefaults(nextPayload.model, {
+        taskKind,
+        temperature: Number(nextPayload.temperature),
+      }),
+      ...nextPayload,
+      messages: withBrowserLocalSafetyMessages(nextPayload.messages, taskKind),
+    };
+    delete nextPayload.ai_system6_record_loadout;
+    if (shouldRecordLoadout) recordContextLoadout(nextPayload);
+    return window.AISystem6LocalLMStudio.chat(nextPayload, {
+      signal,
+      contextLength: Number(contextLengthInput?.value || 0),
+      autoLoad: true,
+    });
   }
 
   return fetch(getChatCompletionsEndpoint(), {
@@ -1869,9 +3452,13 @@ function fetchModelPayload(payload, signal) {
 
 async function throwModelResponseError(response, endPerf) {
   const detail = await response.text();
-  const code = typeof classifyLmStudioError === "function" ? classifyLmStudioError(detail, response) : "";
+  const routeLabel = typeof cloudConfig !== "undefined" && cloudConfig && cloudConfig.active
+    ? "Cloud API"
+    : "LM Studio";
+  const message = `${routeLabel} returned ${response.status}: ${detail}`;
+  const code = typeof classifyLmStudioError === "function" ? classifyLmStudioError(message, response) : "";
   endPerf?.({ error: true, status: response.status });
-  throw new Error([code, `${typeof cloudConfig !== "undefined" && cloudConfig && cloudConfig.active ? "Cloud API" : "LM Studio"} returned ${response.status}: ${detail}`].filter(Boolean).join(": "));
+  throw new Error([code, message].filter(Boolean).join(": "));
 }
 
 async function sendLocalModelTask(options = {}) {
@@ -1886,6 +3473,7 @@ async function sendLocalModelTask(options = {}) {
   const startedAt = performance.now();
   const endPerf = window.AISystem6Perf?.start("model_request", { taskKind, streamPreference });
   const requestPayload = payload || buildPayload(userText, { ...options, taskKind });
+  if (window.lastAutoSkillCall?.length) options.onAutoSkillCall?.(window.lastAutoSkillCall);
   const budgetedPayload = await fitPayloadWithModelBudget(requestPayload, { ...options, taskKind }, signal);
   const normalizedTaskKind = String(taskKind || "").toLowerCase();
   const qwenNeedsHumanizerRepair = normalizedTaskKind === "chat" && isQwen35ModelName(budgetedPayload.model);
@@ -1901,7 +3489,11 @@ async function sendLocalModelTask(options = {}) {
   const isCloud = typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudConfig?.apiKey;
   if (shouldStream && response.body && /event-stream|text\/plain|octet-stream/i.test(contentType)) {
     try {
-      const { content: streamedText, usage: streamUsage } = await readChatCompletionStream(response, onToken, signal);
+      const {
+        content: streamedText,
+        usage: streamUsage,
+        finishReason,
+      } = await readChatCompletionStream(response, onToken, signal);
       const text = streamedText.trim();
       if (!text) throw new Error("LM Studio stream did not include content.");
       if (isCloud && streamUsage?.prompt_tokens) {
@@ -1910,27 +3502,30 @@ async function sendLocalModelTask(options = {}) {
       if (isCloud && typeof window.fetchCloudBalanceSilent === "function") {
         window.fetchCloudBalanceSilent().catch(() => {});
       }
-      const metrics = modelMetricsFromStream(text, performance.now() - startedAt);
+      const metrics = modelMetricsFromStream(text, performance.now() - startedAt, finishReason || "stop");
       updateModelMeter(metrics);
       endPerf?.({ streamed: true, tokens: metrics.tokens });
       return { text, metrics, budget: lastContextBudget };
     } catch (streamError) {
       if (signal?.aborted) throw streamError;
+      if (String(streamError?.partialContent || "").trim()) throw streamError;
       window.AISystem6Perf?.record("model_request", performance.now() - startedAt, { streamFallback: true });
       const retryResponse = await fetchModelPayload({ ...budgetedPayload, stream: false }, signal);
       if (!retryResponse.ok) await throwModelResponseError(retryResponse);
-      return readJsonModelResult(retryResponse, startedAt, endPerf, true);
+      const fallbackResult = await readJsonModelResult(retryResponse, startedAt, endPerf, true);
+      return maybeRepairBrowserLocalResult(fallbackResult, budgetedPayload, taskKind, streamPreference, signal);
     }
   }
 
   if (isCloud && typeof window.fetchCloudBalanceSilent === "function") {
     window.fetchCloudBalanceSilent().catch(() => {});
   }
-  return readJsonModelResult(response, startedAt, endPerf);
+  const jsonResult = await readJsonModelResult(response, startedAt, endPerf);
+  return maybeRepairBrowserLocalResult(jsonResult, budgetedPayload, taskKind, streamPreference, signal);
 }
 
 async function sendToLmStudio(userText, signal, options = {}) {
-  const skipContextRanking = options.skipContext === true;
+  const skipContextRanking = options.skipContext === true || options.temporaryChat === true;
   const sideAskChat = sideAskEnabled && !isMultiFinderMode();
   if (!sideAskChat && !skipContextRanking && (rememberInput.checked || attachedClipIds.size > 0 || hasMountedFileDiskContext())) {
     await rankChunksForQuery(userText, signal);
@@ -1962,10 +3557,178 @@ function quickDraftActionFromText(text = "") {
   if (/^(钩子|加钩子|hook)$/.test(value)) return "hook";
   if (/^(补边界|标边界|边界|boundary|boundaries)$/.test(value)) return "boundary";
   if (/^(铭铭快审|铭铭|mingming|mingming pass)$/.test(value)) return "mingming";
-  if (/^(接收者接收|接收者会怎么接|若是接收者会怎么接|接收者|recipient|recipient receive)$/.test(value)) return "recipient";
+  if (/^(落落接收|落落会怎么接|若是落落会怎么接|落落|luoluo|luoluo receive)$/.test(value)) return "luoluo";
   if (/^(hkrr|hkrr 提亮|提亮|快速提亮|lift)$/.test(value)) return "hkrr";
   if (/^(夸夸我|夸我|praise|encourage me)$/.test(value)) return "praise";
   return "";
+}
+
+function createClioTalkPreflightRunManifest(taskKind = "chat", error = "", options = {}) {
+  const temporaryChat = options.temporaryChat === true || clioTalkTemporaryMode;
+  const promptFiles = (window.lastTaskPromptFiles?.length ? window.lastTaskPromptFiles : getClioTalkPromptFileDescriptors())
+    .map((file) => ({ ...file }));
+  return {
+    schemaVersion: 1,
+    scope: "application-supplied-preflight",
+    scopeNote: error
+      ? `${t("clio_run_runtime_note")} Error before or during transport: ${error}`
+      : t("clio_run_runtime_note"),
+    capturedAt: new Date().toISOString(),
+    taskKind,
+    model: getLocalModelRequestName(),
+    parameters: {},
+    promptFiles,
+    policyFiles: promptFiles.filter((file) => file.kind === "policy"),
+    promptStack: [],
+    messageStack: [],
+    skillFiles: (window.lastTaskSkillFiles?.length ? window.lastTaskSkillFiles : getClioTalkPendingSkillDescriptors(promptInput?.value || "", { temporaryChat }))
+      .map((file) => ({ ...file })),
+    harnessFile: window.lastTaskHarnessFile
+      ? { ...window.lastTaskHarnessFile }
+      : getClioTalkPendingHarnessDescriptor(),
+    inputFiles: (window.lastTaskInputFiles?.length ? window.lastTaskInputFiles : getClioTalkPendingInputDescriptors({ temporaryChat }))
+      .map((file) => ({ ...file })),
+  };
+}
+
+function captureClioTalkGroundingSafely(options = {}) {
+  try {
+    return captureClioTalkGroundingSnapshot(options);
+  } catch (error) {
+    console.warn("ClioTalk grounding receipt failed; preserving the reply without it.", error);
+    return null;
+  }
+}
+
+function isIncompleteModelFinishReason(reason = "") {
+  return ["length", "content_filter", "insufficient_system_resource", "interrupted"].includes(String(reason));
+}
+
+function createClioTalkAssistantRecord({
+  content,
+  taskKind,
+  requestRecord,
+  requestOptions,
+  grounding,
+  finishReason = "stop",
+  stopped = false,
+  temporaryChat = false,
+} = {}) {
+  return {
+    id: crypto.randomUUID(),
+    role: "assistant",
+    content: String(content || ""),
+    taskKind: String(taskKind || "chat"),
+    createdAt: new Date().toISOString(),
+    requestMessageId: requestRecord?.id || "",
+    requestOptions: clioTalkReplayOptions(requestOptions, taskKind),
+    stopped: !!stopped,
+    incomplete: !stopped && isIncompleteModelFinishReason(finishReason),
+    finishReason: String(finishReason || (stopped ? "stopped" : "stop")),
+    temporaryChat: !!temporaryChat,
+    grounding: grounding || null,
+    harness: {
+      taskKind: String(taskKind || "chat"),
+      model: currentTranslationModel(),
+      contextSources: grounding?.sources || [],
+      projectMemoryIds: grounding?.projectMemoryIds || [],
+    },
+    runManifest: cloneClioRunManifest(
+      window.lastTaskRunManifest || createClioTalkPreflightRunManifest(taskKind)
+    ),
+  };
+}
+
+function resolveClioTalkReplySafely(pendingMessage, content, options = {}) {
+  try {
+    resolvePendingMessage(pendingMessage, "assistant", content, options);
+    return true;
+  } catch (error) {
+    console.error("ClioTalk rich reply rendering failed; using plain text.", error);
+    stopWaitCycle();
+    if (!pendingMessage) return false;
+    pendingMessage.className = "message assistant";
+    pendingMessage.setAttribute("aria-label", clioTalkAssistantDisplayName());
+    pendingMessage.dataset.rawContent = String(content || "");
+    if (options.messageRecord?.id) pendingMessage.dataset.messageId = options.messageRecord.id;
+    const speaker = pendingMessage.querySelector(".speaker");
+    if (speaker) speaker.textContent = clioTalkAssistantDisplayName();
+    const body = pendingMessage.querySelector(".message-content");
+    if (body) {
+      body.className = "message-content";
+      body.replaceChildren();
+      String(content || "").split("\n").forEach((line, index) => {
+        if (index) body.append(document.createElement("br"));
+        body.append(document.createTextNode(line));
+      });
+    }
+    lastAssistantText = String(content || "");
+    try { appendClioTalkRunState(pendingMessage, options.messageRecord); } catch {}
+    try { appendMessageActions(pendingMessage, "assistant", content, options); } catch {}
+    scrollMessagesToLatest();
+    return false;
+  }
+}
+
+function saveClioTalkRunRecordSafely(options = {}) {
+  if (options.messageRecord?.temporaryChat || clioTalkTemporaryMode) return { file: null, error: null };
+  if (typeof saveClioTalkRunRecord !== "function") return { file: null, error: null };
+  try {
+    return { file: saveClioTalkRunRecord(options), error: null };
+  } catch (error) {
+    console.warn("ClioTalk Run Record persistence failed; preserving the reply.", error);
+    return { file: null, error };
+  }
+}
+
+function finalizeClioTalkAssistantReply({
+  pendingMessage,
+  activeConversationFile,
+  submittedUserRecord,
+  assistantRecord,
+  runStatus = "completed",
+} = {}) {
+  submittedUserRecord.deliveryState = "sent";
+  if (!conversation.some((record) => record.id === submittedUserRecord.id)) {
+    conversation.push(submittedUserRecord);
+  }
+  if (!conversation.some((record) => record.id === assistantRecord.id)) {
+    conversation.push(assistantRecord);
+  }
+
+  const rendered = resolveClioTalkReplySafely(pendingMessage, assistantRecord.content, {
+    grounding: assistantRecord.grounding,
+    messageRecord: assistantRecord,
+  });
+  const persisted = persistClioTalkConversationMutation();
+  const runResult = saveClioTalkRunRecordSafely({
+    chatFile: activeConversationFile,
+    messageRecord: assistantRecord,
+    manifest: assistantRecord.runManifest,
+    status: runStatus,
+  });
+  assistantRecord.runRecordId = runResult.file?.id || "";
+  if (assistantRecord.runRecordId || assistantRecord.temporaryChat) {
+    const replyItem = messagesEl?.querySelector(`[data-message-id="${assistantRecord.id}"]`);
+    if (replyItem) appendClioTalkRunReceipt(replyItem, assistantRecord);
+    if (assistantRecord.runRecordId) persistClioTalkConversationMutation();
+  }
+  if (!assistantRecord.temporaryChat && window.lastAutoSkillCall?.length && typeof saveSkillAutoCallReceipt === "function") {
+    try {
+      saveSkillAutoCallReceipt(window.lastAutoSkillCall);
+    } catch (error) {
+      console.warn("ClioTalk Skill receipt persistence failed.", error);
+    }
+  }
+
+  const runRecordExpected = !!(getActiveProject() && activeConversationFile);
+  return {
+    warnings: [
+      ...(!rendered ? ["display"] : []),
+      ...(!persisted ? ["chat-file"] : []),
+      ...(runRecordExpected && runResult.error ? ["run-record"] : []),
+    ],
+  };
 }
 
 async function submitUserText(userText, options = {}) {
@@ -2001,49 +3764,233 @@ async function submitUserText(userText, options = {}) {
     return;
   }
 
+  const messageTaskKind = options.taskKind || (sideAskEnabled && !isMultiFinderMode() ? "sideask" : "chat");
+  const isTemporaryChat = options.temporaryChat === true || clioTalkTemporaryMode;
+  const runtimeOptions = { ...options, temporaryChat: isTemporaryChat };
+  const requiresDurableChatFile = !isTemporaryChat
+    && options.fileNative !== false
+    && !sideAskEnabled
+    && isClioTalkAnswerContractTask(messageTaskKind, runtimeOptions);
+  if (requiresDurableChatFile && !getActiveProject()) {
+    setStatus(t("clio_project_required_for_chat"));
+    openWindow("projects");
+    return;
+  }
+
   lastUserText = userText;
-  addMessage("user", options.displayText || userText);
+  window.lastTaskRunManifest = null;
+  window.lastTaskPromptFiles = [];
+  window.lastTaskSkillFiles = [];
+  window.lastTaskHarnessFile = null;
+  window.lastTaskInputFiles = [];
+  window.lastTaskExplicitInputFiles = [];
+  const replayOptions = clioTalkReplayOptions(runtimeOptions, messageTaskKind);
+  const submittedUserRecord = {
+    id: crypto.randomUUID(),
+    role: "user",
+    content: userText,
+    displayContent: options.displayText && options.displayText !== userText ? options.displayText : "",
+    taskKind: messageTaskKind,
+    requestOptions: replayOptions,
+    temporaryChat: isTemporaryChat,
+    deliveryState: "sending",
+    createdAt: new Date().toISOString(),
+  };
+  conversation.push(submittedUserRecord);
+  const activeConversationFile = requiresDurableChatFile
+    ? ensureCurrentConversationFile()
+    : (isTemporaryChat ? null : getActiveConversationFile());
+  if (requiresDurableChatFile && !activeConversationFile) {
+    conversation.pop();
+    setStatus(t("clio_project_required_for_chat"));
+    openWindow("projects");
+    return;
+  }
+  clioTalkAutoFollow = true;
+  addMessage("user", userText, { messageRecord: submittedUserRecord });
   const pendingMessage = createPendingMessage();
   startWaitCycle(pendingMessage);
   promptInput.value = "";
   promptInput.focus();
+  persistClioTalkConversationMutation();
 
   activeAbortController = new AbortController();
   setComposerBusy(true);
   setStatus(t("thinking"));
   updateLocalModelState({ running: true, task: modelRouteText("consulting_model", "consulting_cloud_model") });
+  let receivedAssistantText = "";
 
   try {
     const hasMountedProjectDisk = ragChunks.some((chunk) => chunk.projectId === activeProjectId);
     updatePendingMessage(pendingMessage, hasMountedProjectDisk ? 0 : 1, hasMountedProjectDisk ? t("searching_scraps") : `${modelRouteText("consulting_model", "consulting_cloud_model")}.`);
     await prepareStreamingMarkdownPreview();
-    const assistantText = await sendToLmStudio(userText, activeAbortController.signal, {
-      ...options,
+    receivedAssistantText = await sendToLmStudio(userText, activeAbortController.signal, {
+      ...runtimeOptions,
+      taskKind: messageTaskKind,
       streamPreference: "auto",
       onToken: (content) => updatePendingStreamContent(pendingMessage, content),
+      onAutoSkillCall: (skills) => updatePendingMessage(pendingMessage, 0, currentLanguage === "zh" ? `正在自动调用只读技能：${skills.map((entry) => entry.parsed.manifest.name).join("、")}` : `Auto-calling read-only Skill: ${skills.map((entry) => entry.parsed.manifest.name).join(", ")}`),
     });
-    const grounding = captureClioTalkGroundingSnapshot({
-      ...options,
-      taskKind: options.taskKind || (sideAskEnabled && !isMultiFinderMode() ? "sideask" : "chat"),
+    const grounding = captureClioTalkGroundingSafely({
+      ...runtimeOptions,
+      taskKind: messageTaskKind,
     });
     updatePendingMessage(pendingMessage, 2, `${t("typesetting_reply")}.`);
-    conversation.push({ role: "user", content: userText });
-    conversation.push({ role: "assistant", content: assistantText });
-    resolvePendingMessage(pendingMessage, "assistant", assistantText, { grounding });
+    const finishReason = String(lastModelMetrics?.stopReason || "stop");
+    const assistantRecord = createClioTalkAssistantRecord({
+      content: receivedAssistantText,
+      taskKind: messageTaskKind,
+      requestRecord: submittedUserRecord,
+      requestOptions: replayOptions,
+      grounding,
+      finishReason,
+      temporaryChat: isTemporaryChat,
+    });
+    const finalization = finalizeClioTalkAssistantReply({
+      pendingMessage,
+      activeConversationFile,
+      submittedUserRecord,
+      assistantRecord,
+      runStatus: assistantRecord.incomplete ? "incomplete" : "completed",
+    });
     updateLocalModelState({ server: true, selected: true, ready: true, running: false, task: "" });
-    setStatus(t("ready"));
+    setStatus(finalization.warnings.length ? t("clio_reply_preserved_record_warning") : t("ready"));
   } catch (error) {
-    if (error.name === "AbortError") {
-      resolvePendingStatus(pendingMessage, t("stopped"));
+    const interruptedPartial = error?.name !== "AbortError"
+      ? String(error?.partialContent || "").trim()
+      : "";
+    if (interruptedPartial) {
+      const grounding = captureClioTalkGroundingSafely({
+        ...runtimeOptions,
+        taskKind: messageTaskKind,
+      });
+      const assistantRecord = createClioTalkAssistantRecord({
+        content: interruptedPartial,
+        taskKind: messageTaskKind,
+        requestRecord: submittedUserRecord,
+        requestOptions: replayOptions,
+        grounding,
+        finishReason: "interrupted",
+        temporaryChat: isTemporaryChat,
+      });
+      const finalization = finalizeClioTalkAssistantReply({
+        pendingMessage,
+        activeConversationFile,
+        submittedUserRecord,
+        assistantRecord,
+        runStatus: "interrupted",
+      });
+      updateLocalModelState({ server: true, selected: true, ready: true, running: false, task: "" });
+      setStatus(finalization.warnings.length
+        ? t("clio_reply_preserved_record_warning")
+        : t("clio_reply_interrupted"));
+    } else if (error?.name === "AbortError") {
+      const partialContent = String(error?.partialContent || pendingMessage?.dataset.rawContent || "").trim();
+      if (partialContent) {
+        const grounding = captureClioTalkGroundingSafely({
+          ...runtimeOptions,
+          taskKind: messageTaskKind,
+        });
+        const assistantRecord = createClioTalkAssistantRecord({
+          content: partialContent,
+          taskKind: messageTaskKind,
+          requestRecord: submittedUserRecord,
+          requestOptions: replayOptions,
+          grounding,
+          stopped: true,
+          finishReason: "stopped",
+          temporaryChat: isTemporaryChat,
+        });
+        finalizeClioTalkAssistantReply({
+          pendingMessage,
+          activeConversationFile,
+          submittedUserRecord,
+          assistantRecord,
+          runStatus: "stopped",
+        });
+      } else {
+        submittedUserRecord.deliveryState = "sent";
+        submittedUserRecord.runManifest = cloneClioRunManifest(
+          window.lastTaskRunManifest || createClioTalkPreflightRunManifest(messageTaskKind)
+        );
+        const runResult = saveClioTalkRunRecordSafely({
+          chatFile: activeConversationFile,
+          messageRecord: submittedUserRecord,
+          manifest: submittedUserRecord.runManifest,
+          status: "stopped",
+        });
+        submittedUserRecord.runRecordId = runResult.file?.id || "";
+        const stoppedUserItem = messagesEl?.querySelector(`[data-message-id="${submittedUserRecord.id}"]`);
+        if (stoppedUserItem) appendClioTalkRunReceipt(stoppedUserItem, submittedUserRecord);
+        resolvePendingStatus(pendingMessage, t("stopped"));
+        persistClioTalkConversationMutation();
+      }
+      setStatus(t("stopped"));
+    } else if (receivedAssistantText) {
+      const grounding = captureClioTalkGroundingSafely({
+        ...runtimeOptions,
+        taskKind: messageTaskKind,
+      });
+      const assistantRecord = createClioTalkAssistantRecord({
+        content: receivedAssistantText,
+        taskKind: messageTaskKind,
+        requestRecord: submittedUserRecord,
+        requestOptions: replayOptions,
+        grounding,
+        finishReason: String(lastModelMetrics?.stopReason || "stop"),
+        temporaryChat: isTemporaryChat,
+      });
+      assistantRecord.localCommitWarning = String(error?.message || error || "");
+      finalizeClioTalkAssistantReply({
+        pendingMessage,
+        activeConversationFile,
+        submittedUserRecord,
+        assistantRecord,
+        runStatus: "completed-with-warning",
+      });
+      console.error("ClioTalk received a model reply but could not complete local bookkeeping.", error);
+      updateLocalModelState({ server: true, selected: true, ready: true, running: false, task: "" });
+      setStatus(t("clio_reply_preserved_record_warning"));
     } else {
       const code = typeof classifyLmStudioError === "function" ? classifyLmStudioError(error) : "";
       const isCloudActive = typeof cloudConfig !== "undefined" && cloudConfig && cloudConfig.active;
-      const cloudErrorKey = { cloud_invalid_key: "cloud_invalid_key", cloud_insufficient_balance: "cloud_insufficient_balance", cloud_rate_limit: "cloud_rate_limit" }[code];
+      const cloudErrorKey = {
+        cloud_invalid_key: "cloud_invalid_key",
+        cloud_insufficient_balance: "cloud_insufficient_balance",
+        cloud_rate_limit: "cloud_rate_limit",
+        cloud_invalid_request: "cloud_invalid_request",
+        cloud_service_unavailable: "cloud_service_unavailable",
+      }[code];
       const prefix = cloudErrorKey ? t(cloudErrorKey)
         : code === "lmstudio_context_length" ? t("lm_context_error")
         : isCloudActive ? t("cloud_api_error")
         : t("connection_error");
-      resolvePendingStatus(pendingMessage, `${prefix} ${error.message}`);
+      submittedUserRecord.deliveryState = "failed";
+      if (!conversation.some((record) => record.id === submittedUserRecord.id)) {
+        conversation.push(submittedUserRecord);
+      }
+      submittedUserRecord.runManifest = cloneClioRunManifest(
+        window.lastTaskRunManifest || createClioTalkPreflightRunManifest(messageTaskKind, error.message)
+      );
+      const runResult = saveClioTalkRunRecordSafely({
+        chatFile: activeConversationFile,
+        messageRecord: submittedUserRecord,
+        manifest: submittedUserRecord.runManifest,
+        status: "failed",
+        error: error.message,
+      });
+      submittedUserRecord.runRecordId = runResult.file?.id || "";
+      persistClioTalkConversationMutation();
+      const failedUserItem = messagesEl?.querySelector(`[data-message-id="${submittedUserRecord.id}"]`);
+      if (failedUserItem) {
+        appendClioTalkRunState(failedUserItem, submittedUserRecord);
+        appendClioTalkRunReceipt(failedUserItem, submittedUserRecord);
+      }
+      resolvePendingStatus(pendingMessage, `${prefix} ${error.message}`, {
+        retryText: userText,
+        retryOptions: replayOptions,
+        userRecordId: submittedUserRecord.id,
+      });
       updateLocalModelState({
         server: code !== "lmstudio_server_offline",
         ready: code === "lmstudio_context_length" ? localModelState.ready : false,

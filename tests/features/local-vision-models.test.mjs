@@ -41,7 +41,9 @@ test.assertIncludes(setupRoute, "No default download model is bundled", "empty-m
 test.assertNotIncludes(persistence, "download_model: \"qwen/qwen3-vl-4b\"", "client setup request no longer sends a fixed Qwen download model");
 test.assertNotIncludes(persistence, "|| \"qwen/qwen3-vl-4b\"", "client setup display does not fall back to a fixed Qwen label");
 
-test.assertIncludes(teachText, "fetch(\"/api/vision/analyze\"", "TeachText Picture Album can call the local vision route");
+test.assertIncludes(teachText, "AISystem6ModelTaskRuntime.buildVisionMessages", "TeachText Picture Album builds the shared browser vision request");
+test.assertIncludes(teachText, "sendLocalModelTask", "TeachText Picture Album calls the selected local model directly");
+test.assertNotIncludes(teachText, "fetch(\"/api/vision/analyze\"", "TeachText Picture Album never sends local vision content through the VPS");
 test.assertIncludes(teachText, "analyzeTeachTextImageAttachment(attachment, \"writing-context\")", "TeachText exposes grounded image-note reading");
 test.assertIncludes(teachText, "analyzeTeachTextImageAttachment(attachment, \"ocr\")", "TeachText exposes image OCR");
 test.assertIncludes(teachText, "getTeachTextVisionModelRequestName", "TeachText uses the current local model selection when reading images");

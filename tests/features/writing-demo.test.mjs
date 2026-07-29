@@ -19,6 +19,8 @@ const outlineClaim = read("app/features/outline-claim.js");
 const persistenceStatus = read("app/core/persistence-status.js");
 const slidesExport = read("app/features/slides-export.js");
 const writingFlow = read("app/features/writing-flow.js");
+const outlinePrompt = read("app/content/ai-prompts/writing-route/outline-generate.md");
+const sectionDraftPrompt = read("app/content/ai-prompts/writing-route/section-draft.md");
 const windowManager = read("app/core/window-manager.js");
 const appsCss = read("styles/50-apps.css");
 const liquidCss = read("styles/70-liquid-glass.css");
@@ -37,7 +39,7 @@ test.assertIncludes(manifest, '"app/features/writing-demo.js"', "demo is tracked
 test.assertIncludes(manifest, '"app/data/iphone-17e-demo-corpus.js"', "shared iPhone 17e demo corpus is tracked as lazy runtime");
 test.assertIncludes(config, 'loadClassicScriptOnce("app/data/iphone-17e-demo-corpus.js")', "demo loader loads the shared iPhone 17e corpus before the director");
 test.assertIncludes(actions, '"play-writing-demo": playWritingDemoFromGuide', "play-writing-demo action is registered");
-test.assertIncludes(iphone17eCorpus, "creatorBulletInput", "shared 17e corpus carries Creator-style sample input");
+test.assertIncludes(iphone17eCorpus, "aaronBulletInput", "shared 17e corpus carries Aaron-style sample input");
 test.assertIncludes(iphone17eCorpus, "mingmingReferenceOutput", "shared 17e corpus carries the Mingming reference output");
 test.assertIncludes(iphone17eCorpus, "appleNewsroomUrl", "shared 17e corpus carries the Reader source URL");
 
@@ -251,10 +253,10 @@ test.assertIncludes(outlineClaim, "function validateGeneratedWritingOutline", "Q
 test.assertIncludes(outlineClaim, "生成的大纲包含工作清单章节", "Question Sheet -> Outline rejects work-list sections before Section Drafts");
 test.assertIncludes(outlineClaim, "maxTokens = Number.isFinite(options.maxTokens) ? options.maxTokens : 900", "Question Sheet -> Outline uses a short drafting-outline token budget");
 test.assertIncludes(outlineClaim, "生成大纲失败", "ordinary Question Sheet -> Outline generation surfaces model failures");
-test.assertIncludes(outlineClaim, "第一眼反差、颜色/手感、日常体验、相机限制、购买建议", "generated outlines favor video-viewer sections over launch-summary sections");
+test.assertIncludes(outlinePrompt, "第一眼反差、颜色/手感、日常体验、相机限制、购买建议", "generated outlines favor video-viewer sections over launch-summary sections");
 test.assertIncludes(writingFlow, "function validateSectionDraftContent", "section drafting validates that model output is spoken copy");
 test.assertIncludes(writingFlow, "章节草稿像大纲/卖点清单", "section drafting rejects outline-like selling-point lists");
-test.assertIncludes(writingFlow, "核心卖点、事实支撑、观众在意点", "section drafting prompt forbids template headings that caused demo failures");
+test.assertIncludes(sectionDraftPrompt, "核心卖点、事实支撑、观众在意点", "section drafting prompt forbids template headings that caused demo failures");
 test.assertIncludes(readerDocmapCss, ".dictation-window .dictation-transcripts textarea", "Dictation Pad textareas consume available DA window space");
 test.assertIncludes(readerDocmapCss, "flex: 1 1 0", "Dictation Pad avoids large unused blank space in tall windows");
 

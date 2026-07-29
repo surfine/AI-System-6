@@ -112,7 +112,7 @@ ${badSummary || "No failed output captured."}`;
   return withMarkdownModelMessages([
     {
       role: "system",
-      content: "你是中文视频稿大纲编辑。只输出可起草的 Markdown 大纲，不输出元说明、工作流、核验清单或提示词规则。",
+      content: resolveWritingRoutePrompt("writing-route.outline-retry"),
     },
     { role: "user", content: prompt },
   ]);
@@ -154,17 +154,7 @@ async function generateOutlineFromQuestionSheetCore(options = {}) {
       itemLimit: Number.isFinite(options.contextItemLimit) ? options.contextItemLimit : 800,
       taskKind: "generate-outline",
     });
-    const prompt = `你是 AI System 6 的中文视频稿大纲编辑。请根据用户的问题、已有大纲和资料摘录，生成一份能直接进入“章节草稿”的 Markdown 大纲。
-
-    大纲目标：
-    - 只规划最终视频口播会出现的章节，不写研究计划、核验清单、资料补充、下一步行动或风险提示章节。
-    - 每个 ## 章节都必须能立刻交给“AI 起草”写成口播段落。
-    - 4-6 个 ## 章节即可；每节 2-4 条要点，每条写“要讲什么/观众为什么在意/可用事实或画面”。
-    - 保留用户真正想解决的问题、口吻和事实边界；资料摘录只作为支撑线索，不编造摘录中没有的事实。
-    - 标题要自然、具体，像视频分段，不要写成报告目录、发布会摘要、研究备忘录或工作流说明。
-    - 避免 AI 腔标题和套话：不要写“深入探讨、关键作用、未来展望、不断演变的格局、作为……的证明、彰显”等空泛表达。
-    - 不要出现“核验、确认、待补充、下一步、资料补充、风险、备注、输出规则、写作准备、读者导向、结构逻辑、数据准确性校验”等工作清单栏目。
-    - 对消费电子视频，优先使用“第一眼反差、颜色/手感、日常体验、相机限制、购买建议”这类观众视角，不要按发布会参数分成价格、芯片、营销政策、发售时间线。
+    const prompt = `${resolveWritingRoutePrompt("writing-route.outline-generate")}
 
     READER CLIPS:
     ${readerClipContext || "No Reader clips saved yet."}
@@ -178,7 +168,7 @@ async function generateOutlineFromQuestionSheetCore(options = {}) {
     EXISTING OUTLINE:
     ${existingOutline || "No existing outline yet."}
 
-    只返回 Markdown 大纲。使用 ## 作为可写作章节；不要使用 ###；不要输出解释、操作过程、核验事项或后续工作。`;
+    `;
 
     const maxAttempts = Number.isFinite(options.maxAttempts) ? Math.max(1, options.maxAttempts) : 2;
     let content = "";
@@ -394,9 +384,7 @@ function buildQuestionSheetRetryMessages(options = {}) {
   return [
     {
       role: "system",
-      content: language === "zh"
-        ? "你是 AI System 6 的中文写作规划助手。只整理问题单正文，不输出提示词说明。"
-        : "You are an AI System 6 writing planner. Output only the Question Sheet body, not prompt notes.",
+      content: resolveWritingRoutePrompt("writing-route.question-sheet-retry", language),
     },
     { role: "user", content: retryPrompt },
   ];
@@ -624,10 +612,7 @@ async function expandOutline() {
     const questionSheet = (project.questionSheet || "").trim();
     const contextQuery = [questionSheet, outline].filter(Boolean).join("\n");
     const projectContext = await buildBudgetedProjectContext(contextQuery, { taskKind: "rewrite-outline" });
-    const prompt = `你是 AI System 6 的中文写作编辑。请改进当前 Markdown 大纲，补强薄弱处、断裂处和缺少读者问题的地方。
-
-规则：问题单只作为约束和方向参考；保留用户原本的问题意识、关键反对意见和有价值章节；可以合并重复章节、补过渡、补证据位置、补读者追问；不要新增没有资料或问题单支持的事实结论；不要追加第二份大纲。
-只返回一份完整替换用 Markdown 大纲。使用 ## 作为可写作章节，### 只用于章节内部。
+    const prompt = `${resolveWritingRoutePrompt("writing-route.outline-expand")}
 
 QUESTION SHEET:
 ${questionSheet || "No Question Sheet provided."}
@@ -708,15 +693,14 @@ async function runOutlineOperation(mode) {
     const questionSheet = (project.questionSheet || "").trim();
     const contextQuery = [questionSheet, outline].filter(Boolean).join("\n");
     const projectContext = await buildBudgetedProjectContext(contextQuery, { taskKind: "review-outline" });
-    const instructions = {
-      critique: `你是 AI System 6 的中文写作编辑。请批评这份大纲，指出最值得先改的问题。关注：原始问题是否被磨平、章节是否断裂、是否有空泛标题或概念空转、是否缺少证据/例子/场景/反对意见、是否重复、是否能支撑中文读者读下去。不要重写大纲，不要打分，不要泛泛教学。只返回 3-6 条 Markdown 项目符号。`,
-      mingming: null,
-      reduce: `你是 AI System 6 的中文写作编辑。请精简这份 Markdown 大纲：删除重复，合并重叠章节，保留用户原始问题和尖锐反对意见。只返回更干净的一份完整 Markdown 大纲。`,
-      structure: `你是 AI System 6 的中文写作编辑。请把当前 Markdown 大纲重构成更清楚、更有推进感的顺序。保留有价值的章节、问题、反对意见和资料线索；合并重复内容，调整章节顺序和层级；不要编造新事实，不要追加第二份大纲。只返回一份完整替换用 Markdown 大纲，使用 ## 作为可写作章节，### 只用于章节内部。`,
+    const instructionIds = {
+      critique: "writing-route.outline-critique",
+      reduce: "writing-route.outline-reduce",
+      structure: "writing-route.outline-structure",
     };
     const prompt = mode === "mingming"
       ? buildMingmingRewritePrompt({ questionSheet, readerClipContext, projectContext, outline })
-      : `${instructions[mode]}
+      : `${resolveWritingRoutePrompt(instructionIds[mode])}
 
 QUESTION SHEET:
 ${questionSheet || "No Question Sheet provided."}
@@ -831,9 +815,7 @@ async function polishDraft() {
     await prepareStreamingMarkdownPreview();
     const questionSheet = (context.project.questionSheet || "").trim();
     const projectContext = await buildBudgetedProjectContext([questionSheet, context.outlineMarkdown, body].filter(Boolean).join("\n\n"), { taskKind: "polish-section" });
-    const prompt = `你是 AI System 6 的中文文字编辑。请润色当前章节草稿，让它更清楚、更顺、更像自然中文。
-
-规则：保留核心意思、论点顺序、段落结构和 Markdown 格式；不新增事实、例子、人物、数字或结论；不改变作者基本口吻；优先处理句子过长、转折生硬、重复、翻译腔、抽象空话、节奏堵塞。源文里的 AI 套话不要忠实保留，要换成具体平实的说法；如果源文没有具体信息，不要用另一组抽象词代替，宁可写得短一点。输出不得包含“此外、至关重要、深入探讨、不断演变、格局、作为、证明、彰显、赋能、无缝、直观、强大、关键作用、重要性、奠定基础、打下基础、体现、不仅、而且”等词或结构。不要改成公文腔、论文腔或营销腔。只返回完整润色后的章节草稿，不要解释。
+    const prompt = `${resolveWritingRoutePrompt("writing-route.section-polish")}
 
 QUESTION SHEET:
 ${questionSheet || "No Question Sheet provided."}
@@ -894,10 +876,7 @@ async function suggestDraft() {
     const questionSheet = (context.project.questionSheet || "").trim();
     const currentDraft = String(draftBodyInput.value || context.body || "").trim();
     const projectContext = await buildBudgetedProjectContext([questionSheet, context.outlineMarkdown, currentDraft].filter(Boolean).join("\n\n"), { taskKind: "review-section" });
-    const prompt = `你是 AI System 6 的中文写作编辑。请给当前章节提供下一步修改建议，不要重写草稿。
-
-规则：建议必须具体、可执行；每条说明该改哪里、为什么改、怎么改；优先指出影响理解、节奏、证据、转折、读者兴趣和 AI 腔的问题；不要泛泛说“加强逻辑”“丰富内容”“提升表达”。如果草稿已经成立，也指出最值得保留的地方。
-只返回 3-6 条 Markdown 项目符号，标题使用：### AI 建议
+    const prompt = `${resolveWritingRoutePrompt("writing-route.section-suggest")}
 
 QUESTION SHEET:
 ${questionSheet || "No Question Sheet provided."}

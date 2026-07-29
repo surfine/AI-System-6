@@ -71,8 +71,10 @@ export const SNAPSHOT_TARGETS = [
   { sel: ".btn", props: ["border-radius", "padding-top", "padding-right", "padding-bottom", "padding-left", "background-color", "color"] },
 
   // --- Desktop ---
-  { sel: ".desktop-app-icon", props: ["width", "height"] },
-  { sel: ".desktop-app-icon span:last-child", props: ["font-size", "color"] },
+  // Pin the generic desktop-icon probe to a stable app. Profile switchers may
+  // appear before it and intentionally use longer, dynamic labels.
+  { sel: '.desktop-app-icon[data-action="open-find-path"]', props: ["width", "height"] },
+  { sel: '.desktop-app-icon[data-action="open-find-path"] span:last-child', props: ["font-size", "color"] },
 ];
 
 // Build the expression once so both the eval-printer and the diff helper agree

@@ -6,6 +6,7 @@ import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 const test = createFeatureTest("dictation");
 
 const dictation = read("app/features/dictation.js");
+const dictationPrompt = read("app/content/ai-prompts/other-apps/dictation-clean.md");
 const windowManager = read("app/core/window-manager.js");
 const chatMessages = read("app/core/chat-messages.js");
 const serverChat = read("src/server/chat.js");
@@ -24,8 +25,8 @@ test.assertIncludes(dictation, "not required headings", "English Question Sheet 
 test.assertIncludes(dictation, "teachtext", "cleanup understands TeachText as a manuscript insertion target");
 test.assertIncludes(dictation, "scrapbook", "cleanup understands Scrapbook as a source-note target");
 test.assertIncludes(dictation, "notepad", "cleanup understands Note Pad as a rough private note target");
-test.assertIncludes(dictation, "do not ghostwrite", "cleanup refuses to turn dictation into model-written prose");
-test.assertIncludes(dictation, "不要新增事实、来源、例子、动机或结论", "cleanup does not invent source facts or conclusions");
+test.assertIncludes(dictationPrompt, "do not ghostwrite", "cleanup refuses to turn dictation into model-written prose");
+test.assertIncludes(dictationPrompt, "不要新增事实、来源、例子、动机或结论", "cleanup does not invent source facts or conclusions");
 test.assertIncludes(dictation, "withMarkdownModelMessages(buildDictationCleanMessages", "cleanup still receives shared Markdown/model guardrails");
 test.assertIncludes(dictation, "ai_system6_task_kind: \"dictation-clean\"", "cleanup identifies itself to local model tuning");
 test.assertIncludes(dictation, "temperature: 0.25", "cleanup uses a restrained local-model temperature");

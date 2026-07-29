@@ -387,14 +387,7 @@ function openTemporarySlidesDocument(markdown, name) {
 function buildAiSlidesPrompt(source) {
   const title = source.name || markdownDocumentTitle(source.markdown) || t("untitled");
   return [
-    "你是 AI System 6 的中文演示文稿转换器。请把下面的 Markdown 转成 Marp-style slides.md。",
-    "Return only Marp-style Markdown. Do not wrap it in a code fence. Do not add explanations.",
-    "不要编造来源中没有的事实、观点、数字、名字、例子或结论。",
-    "The output must start with frontmatter containing exactly these required keys: marp: true, theme: default, paginate: true, size: 16:9.",
-    "Use a line containing only --- to separate slides.",
-    "Do not put slide separators inside code blocks.",
-    "每页放 1 个主要意思，最多 3 到 5 个短项目符号。中文要短、清楚、有节奏，避免长句堆叠。",
-    "只在代码对内容重要时保留代码块。适合时使用来源标题作为封面页。",
+    resolveWritingRoutePrompt("other-apps.marp-convert"),
     "",
     `SOURCE TITLE:\n${title}`,
     "",
@@ -604,8 +597,7 @@ function buildMarpSkillPrompt(source) {
   const title = source.name || markdownDocumentTitle(source.markdown) || t("untitled");
   if (source.demoBrief) {
     return [
-      "你是 AI System 6 的中文演示文稿转换器。请把来源 Markdown 快速改成 3-5 页 Marp-compatible Markdown，用于录屏演示成稿复用。",
-      "Return only Markdown. Do not wrap the answer in a code fence. Do not add explanations.",
+      resolveWritingRoutePrompt("other-apps.marp-demo-deck"),
       "",
       "---",
       "marp: true",
@@ -629,11 +621,7 @@ function buildMarpSkillPrompt(source) {
   }
   const plan = buildMarpDeckPlanSummary(source);
   return [
-    "你是 AI System 6 的中文演示文稿编辑。请基于来源 Markdown 创建一份专业的 Marp-compatible Markdown 演示文稿。",
-    "这不是机械切分 Markdown。请先理解材料叙事，再写成一套有推进感的 deck。",
-    "The process must be effortless for the user: do not interview, ask questions, request confirmation, or add a visible planning form.",
-    "Follow Marp syntax exactly.",
-    "Return only Markdown. Do not wrap the answer in a code fence. Do not add explanations.",
+    resolveWritingRoutePrompt("other-apps.marp-deck"),
     "",
     "Required frontmatter. Include this exact style block unless you have a strong reason to add only more CSS:",
     "---",
@@ -643,35 +631,6 @@ function buildMarpSkillPrompt(source) {
     "size: 16:9",
     clioMarpStyleBlock(),
     "---",
-    "",
-    "Deck planning rules:",
-    "- 使用下方 deck plan 作为脚手架，但如果来源明显需要更好的叙事结构，可以调整。",
-    "- 第一页要是钩子、承诺或问题，不要只是文件名。",
-    "- 形成清楚推进：钩子/承诺 -> 张力 -> 解释 -> 证据/例子 -> takeaway/callback。",
-    "- 自动安排视觉节奏，不要让每一页都长得一样；根据内容混用 lead, divider, quote, contrast, evidence, takeaway 等 Marp class。",
-    "- Use <!-- _class: lead --> for the opening hook, <!-- _class: divider --> for section turns, <!-- _class: quote --> for a memorable line, <!-- _class: evidence --> for proof/detail, and <!-- _class: takeaway --> for the final callback.",
-    "- Use <!-- header: Section / Topic --> sparingly to give the deck a breadcrumb when sections change.",
-    "- 如果是 B 站或视频脚本材料，前 3 到 4 页要像视频前 20 秒：快速给兴趣点、问题、反差或承诺。",
-    "- 优先使用面向观众的问题和具体利害关系，不要用泛泛章节名。",
-    "- 细节太密时，把它放进 speaker notes 注释，不要堆在页面上。",
-    "- Make a first draft the user can react to immediately; prioritize a coherent story over preserving the source order.",
-    "- Include concise speaker notes when useful with <!-- notes: ... -->, especially for evidence, caveats, transitions, and details that would crowd the slide.",
-    "",
-    "Marp writing rules:",
-    "- Use a line containing only --- to separate slides.",
-    "- Use # for the title slide and ## for regular slides.",
-    "- Use <!-- _paginate: false --> before the title slide and before section divider slides.",
-    "- Put one main idea on each slide.",
-    "- Keep each slide concise: one strong sentence, or 2 to 4 short bullets.",
-    "- Use slide patterns such as hook, question, contrast, sequence, example, quote, recap, and closing callback.",
-    "- Use **bold** sparingly to create one visual focal point per slide.",
-    "- Avoid long lists; split dense material into several slides.",
-    "- Preserve code blocks only when essential, and never put slide separators inside code blocks.",
-    "- Do not invent facts, claims, names, numbers, examples, images, sources, or conclusions not present in the source.",
-    "- Do not output literal instructions, placeholder labels, or commentary about Marp.",
-    "- Do not show deck-planning notes as visible slide text.",
-    "- If you add speaker notes, use HTML comments like <!-- notes: ... --> so the slide stays clean.",
-    "- Use the same language as the source unless the source clearly asks otherwise.",
     "",
     "DECK PLAN:",
     plan,
@@ -685,10 +644,7 @@ function buildMarpSkillPrompt(source) {
 function buildMarpRepairPrompt(source, draft, validation, { aiSlides = false } = {}) {
   const details = (validation?.errors || []).join(", ") || "invalid_marp";
   return [
-    "你是 AI System 6 的 Marp Markdown 修复器。请只修复下面这份 slides.md 的格式和分页错误。",
-    "Return only corrected Marp Markdown. Do not wrap it in a code fence. Do not explain.",
-    "必须保留 frontmatter，并保留 marp: true, theme, paginate, size。",
-    "每一页必须有真实可见内容；不要输出空白 slide；不要连续输出 ---；不要在末尾多放一个 ---。",
+    resolveWritingRoutePrompt("other-apps.marp-repair"),
     aiSlides
       ? "如果某一页为空，请根据来源材料补成有内容的一页，或合并到相邻页；不要只删除到少于合理页数。"
       : "如果某一页为空，请根据来源材料补成有内容的一页，或合并到相邻页；演示简版保持 3-5 页。",

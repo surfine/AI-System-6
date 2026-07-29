@@ -1060,10 +1060,9 @@ async function askReaderQuestion(event) {
   const subject = selection || currentReaderPage.text || "";
   const prompt = currentLanguage === "zh"
     ? [
-        "你是 AI System 6 的 Reader 来源问答员。优先根据下面的 Reader 来源回答用户问题。",
+        resolveWritingRoutePrompt("other-apps.reader-source-question", "zh"),
         typeof sideAskAnswerStyleInstruction === "function" ? sideAskAnswerStyleInstruction() : "回答要短、自然，不要写审稿报告。",
         typeof ragGroundingInstruction === "function" ? ragGroundingInstruction("Reader 来源") : "来源是主要依据，不是回答边界；请区分原文、推断和需要核对的部分。",
-        "有选区时优先回答选区；没有选区时按整篇 Reader 来源回答。不要复述整份来源，不要输出无关背景。使用自然简体中文，避免翻译腔。",
         "",
         `用户问题：\n${question}`,
         "",
@@ -1074,7 +1073,7 @@ async function askReaderQuestion(event) {
         clipContextContent(subject, selection ? 6000 : 12000),
       ].join("\n")
     : [
-        "You are the Reader source question clerk. Use the Reader source below as primary grounding.",
+        resolveWritingRoutePrompt("other-apps.reader-source-question", "en"),
         typeof sideAskAnswerStyleInstruction === "function" ? sideAskAnswerStyleInstruction() : "Be brief and natural; do not write a review report.",
         typeof ragGroundingInstruction === "function" ? ragGroundingInstruction("The Reader source") : "The source is primary grounding, not the answer boundary; distinguish source text, inference, and points to check.",
         "",
@@ -1087,9 +1086,11 @@ async function askReaderQuestion(event) {
         clipContextContent(subject, selection ? 6000 : 12000),
       ].join("\n");
 
+  const paired = typeof arrangeReaderAssistantSplit === "function"
+    ? await arrangeReaderAssistantSplit()
+    : (await openWindow("assistant"), true);
+  if (!paired) return;
   if (readerQuestionInput) readerQuestionInput.value = "";
-  if (typeof arrangeReaderAssistantSplit === "function") await arrangeReaderAssistantSplit();
-  else await openWindow("assistant");
   setStatus(t("reader_question_sent"));
   await submitUserText(prompt, {
     displayText: `${t("reader")}: ${question}`,
@@ -1190,6 +1191,40 @@ function createReaderTranslationTeachTextDocument(body, name) {
   return file;
 }
 
+function buildReaderTranslatedSrt(blocks, translations) {
+  return blocks.map((block, index) => [
+    String(block.index || index + 1),
+    `${block.start} --> ${block.end}`,
+    String(translations[index] || block.text || "").trim(),
+  ].join("\n")).join("\n\n");
+}
+
+async function translateReaderSubtitleLocally(blocks, mode, signal) {
+  const translations = [];
+  const batchSize = 24;
+  for (let start = 0; start < blocks.length; start += batchSize) {
+    const batch = blocks.slice(start, start + batchSize);
+    const result = await sendLocalModelTask({
+      payload: {
+        model: getLocalModelRequestName(),
+        messages: window.AISystem6ModelTaskRuntime.buildSubtitleMessages(batch, mode),
+        temperature: 0.2,
+        max_tokens: 2600,
+        stream: false,
+        ai_system6_task_kind: "subtitle-translation",
+      },
+      signal,
+      taskKind: "subtitle-translation",
+      streamPreference: "json",
+    });
+    const parsed = window.AISystem6LocalLMStudio.parseJsonText(result.text);
+    const items = Array.isArray(parsed?.translations) ? parsed.translations : [];
+    if (items.length !== batch.length) throw new Error("Subtitle model returned an incomplete translation batch.");
+    translations.push(...items.map((item) => String(item || "").trim()));
+  }
+  return buildReaderTranslatedSrt(blocks, translations);
+}
+
 async function translateCurrentReaderSubtitleFromQuestion(question) {
   const blocks = readerSubtitleBlocksForTranslation();
   const mode = readerSubtitleTranslationModeFromQuestion(question);
@@ -1198,26 +1233,32 @@ async function translateCurrentReaderSubtitleFromQuestion(question) {
   if (readerQuestionInput) readerQuestionInput.value = "";
   if (!beginLongTask("reader-subtitle-translation", t("translating_document"))) return true;
   try {
-    const payload = { mode, blocks };
+    let translatedSrt = "";
     if (typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudConfig.apiKey) {
-      payload._cloud_active = true;
-      payload._cloud_api_key = cloudConfig.apiKey;
-      payload._cloud_base_url = cloudConfig.baseUrl;
-      payload._cloud_model = cloudConfig.model;
+      const response = await fetch(apiUrl("/api/subtitles/translate"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode,
+          blocks,
+          _cloud_active: true,
+          _cloud_api_key: cloudConfig.apiKey,
+          _cloud_base_url: cloudConfig.baseUrl,
+          _cloud_model: cloudConfig.model,
+        }),
+        signal: getLongTaskSignal(),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.detail || data.error || "Subtitle translation failed");
+      translatedSrt = String(data.srt || "");
+    } else {
+      translatedSrt = await translateReaderSubtitleLocally(blocks, mode, getLongTaskSignal());
     }
-    const response = await fetch(apiUrl("/api/subtitles/translate"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-      signal: getLongTaskSignal(),
-    });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.detail || data.error || "Subtitle translation failed");
     const documentBody = [
       `# ${mode === "tw" ? "台湾繁中字幕" : "English Subtitles"}: ${title}`,
       "",
       "```srt",
-      String(data.srt || "").trim(),
+      translatedSrt.trim(),
       "```",
     ].join("\n");
     const file = createReaderTranslationTeachTextDocument(documentBody, readerSubtitleTranslationName(title, mode));
@@ -1334,34 +1375,11 @@ async function polishReaderTranscriptForManuscript(text, title = "") {
   if (!beginLongTask("reader-manuscript-polish", currentLanguage === "zh" ? "正在润色转写稿..." : "Polishing transcript...")) return text;
   let result = text;
   try {
-    const prompt = currentLanguage === "zh"
-      ? `你是 AI System 6 的中文视频脚本文字编辑。请把下面的语音转写稿整理成可以进入正文的草稿。
+    const prompt = `${resolveWritingRoutePrompt("source-apps.reader-transcript-polish", currentLanguage)}
 
-要求：
-- 补全中文标点，按自然语气分段。
-- 去掉时间轴、字幕编号、重复口癖和明显识别错误。
-- 保留作者口吻、信息顺序、产品名和具体细节。
-- 不要新增事实，不要写标题，不要总结，不要解释。
-- 如果是 B 站/口播内容，保留适度口语感，但让句子更适合阅读。
-- 不要改成论文腔、公文腔或营销稿。
-- 只返回整理后的正文。
+${currentLanguage === "zh" ? `标题线索：${title || "无"}` : `Title hint: ${title || "None"}`}
 
-标题线索：${title || "无"}
-
-转写稿：
-${text}`
-      : `You are an editor preparing a video transcript for a manuscript draft.
-
-Requirements:
-- Add punctuation and natural paragraph breaks.
-- Remove timestamps, subtitle numbers, filler, and obvious speech-to-text glitches.
-- Preserve voice, order, product names, and concrete details.
-- Do not add facts, do not write a title, do not summarize, do not explain.
-- Return only the cleaned draft body.
-
-Title hint: ${title || "None"}
-
-TRANSCRIPT:
+${currentLanguage === "zh" ? "转写稿：" : "TRANSCRIPT:"}
 ${text}`;
     const response = await fetchModelPayload({
       model: getLocalModelRequestName(),

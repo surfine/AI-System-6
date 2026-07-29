@@ -77,11 +77,13 @@ function getCapabilities() {
     checkCommand("sips", ["-h"]),
   ];
   const byName = Object.fromEntries(commands.map((item) => [item.name, item]));
+  const canExport = Boolean(byName.unzip.available && byName.usdcat.available && byName.usdzip.available);
   return {
     model: MODEL_ID,
     palette: paletteMeta,
-    canExport: Boolean(byName.unzip.available && byName.usdcat.available && byName.usdzip.available),
-    canRenderViews: Boolean(byName.unzip.available && byName.usdcat.available && byName.usdzip.available && byName.swift.available),
+    canExport,
+    canRenderViews: canExport,
+    renderBackend: byName.swift.available ? "scenekit+software" : "software",
     commands: byName,
   };
 }

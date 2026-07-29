@@ -14,9 +14,18 @@ const html = read("index.html");
 const desktopRuntime = read("app/core/desktop-runtime.js");
 const modal = read("app/core/modal.js");
 const windowManager = read("app/core/window-manager.js");
+const wireup = read("app/core/wireup.js");
+const app = read("app.js");
+const boot = read("app/core/boot.js");
+const persistenceStatus = read("app/core/persistence-status.js");
+const cloudModel = read("app/features/cloud-model.js");
 
 test.assertIncludes(foundation, "--btn-active-bg:", "Buttons expose a shared active-state token");
 test.assertIncludes(foundation, "--btn-hover-bg:", "Buttons expose a shared hover-state token");
+test.assertIncludes(foundation, "--control-motion-fast-in: 80ms", "Controls share named fast feedback motion");
+test.assertIncludes(foundation, "--control-motion-medium-out: 120ms", "Control exits are shorter than entrances");
+test.assertIncludes(foundation, "@media (prefers-reduced-motion: reduce)", "Shared controls remove spatial motion when reduced motion is requested");
+test.assertIncludes(foundation, "--control-focus-outline:", "Keyboard focus has an independent shared token");
 test.assertIncludes(foundation, "--z-system-menu: 40000", "System menu is the highest named desktop layer");
 test.assertIncludes(foundation, "--z-demo-overlay: 39900", "Demo overlays stay below the system menu layer");
 test.assertIncludes(foundation, "--z-demo-highlight: 39910", "Demo highlights stay below the system menu layer");
@@ -30,6 +39,12 @@ test.assertIncludes(foundation, "body.is-booting .menu-bar", "boot lifecycle hid
 test.assertIncludes(foundation, "body.is-shutting-down .menu-bar", "shutdown lifecycle hides the menu bar instead of layering over it");
 test.assertIncludes(desktopRuntime, 'document.body.classList.remove("is-booting")', "boot completion restores the normal menu-bearing desktop");
 test.assertIncludes(windowManager, 'document.body.classList.add("is-shutting-down")', "shutdown/restart enter a menu-less lifecycle state");
+test.assertIncludes(windowManager, "function resetDesktopScrollOffset()", "desktop window focus restores the fixed work area scroll origin");
+test.assertIncludes(windowManager, "function installDesktopScrollLock()", "desktop installs one shared scroll lock instead of relying on individual windows");
+test.assertIncludes(windowManager, 'desktop.addEventListener("scroll", resetDesktopScrollOffset, { passive: true })', "all desktop scroll drift is corrected at the container boundary");
+test.assertIncludes(wireup, "installDesktopScrollLock()", "desktop scroll locking starts before session restore and startup windows open");
+test.assertMatches(windowManager, /function focusWindow[\s\S]*reveal && isPortraitDocumentFlow\(\)[\s\S]*revealWindowTitleInPortraitFlow\(win\)[\s\S]*resetDesktopScrollOffset\(\)/, "window reveal scrolls only the portrait document flow and keeps desktop gaps fixed");
+test.assertNotIncludes(windowManager, "win.scrollIntoView();scrollBy(0,-36)", "desktop window focus no longer scrolls the hidden desktop container");
 test.assertIncludes(foundation, "body.has-system-modal .menu-bar", "system modal state disables menu interactions without redefining window z-index");
 test.assertIncludes(modal, 'if (typeof closeMenus === "function") closeMenus()', "system modals close any open menu popovers before appearing");
 test.assertIncludes(modal, 'document.body.classList.add("has-system-modal")', "system modals mark the menu as inactive while open");
@@ -46,6 +61,10 @@ test.assertIncludes(
 test.assertIncludes(windows, ".btn.is-active:hover", "Classic active buttons keep their active state on hover");
 test.assertIncludes(windows, ".btn.is-selected:hover", "Classic selected buttons keep their selected state on hover");
 test.assertIncludes(windows, "--btn-bg: var(--btn-active-bg)", "Classic active buttons preserve active background through tokens");
+test.assertIncludes(windows, '.btn[data-loading="true"]::after', "Busy buttons preserve their original label box and paint status in a separate layer");
+test.assertIncludes(windows, ".btn:focus-visible", "Button focus remains visible independently of hover and selection");
+test.assertIncludes(windows, ".system-select-option:not(.is-selected):hover", "System Select hover cannot erase its committed selection");
+test.assertIncludes(windows, ".system-select-option:focus-visible", "System Select option focus is an independent layer");
 test.assertIncludes(windows, ".view-btn:hover:not(.is-active)", "Classic view button hover does not override the active view");
 test.assertIncludes(windows, ".view-btn.is-active:hover", "Classic active view button keeps active styling on hover");
 
@@ -73,23 +92,42 @@ test.assertIncludes(
   "Liquid Glass button hover excludes active and selected states"
 );
 test.assertIncludes(liquid, "--btn-active-bg:", "Liquid Glass overrides the shared active-state token");
+test.assertIncludes(liquid, "--btn-radius: 10px", "Liquid Glass keeps role-specific button geometry instead of universal pills");
+test.assertNotIncludes(liquid, "body.use-liquid-glass .btn {\n  border: 1px solid var(--btn-border-color);\n  border-radius: 999px", "Liquid Glass shared buttons are not generic pills");
 test.assertIncludes(liquid, "background: var(--btn-bg)", "Liquid Glass buttons consume shared state tokens");
 test.assertIncludes(liquid, "body.use-liquid-glass .btn:active:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected)", "Liquid Glass pressed state does not override selected controls");
 test.assertIncludes(liquid, "button:hover:not(.menu-bar button)", "Liquid Glass generic button hover does not override menu bar open/hover states");
 test.assertIncludes(liquid, "--menu-item-active-bg: var(--liquid-menu-active)", "Liquid Glass menu hover uses the shared guarded menu-item active token");
 test.assertIncludes(liquid, "background: var(--menu-item-bg)", "Liquid Glass menu items consume the guarded base hover token instead of duplicating the selector");
 test.assertIncludes(foundation, "color: var(--menu-shortcut-color)", "Menu shortcuts consume the shared shortcut color token instead of hard-coding opacity only");
-test.assertIncludes(liquid, "--liquid-menu-chip:", "Liquid Glass exposes a shared menu-chip material for the system status controls");
+test.assertIncludes(foundation, "--menu-chip-bg: transparent", "Menu bar status controls stay unframed until interaction");
 test.assertIncludes(liquid, "rgba(248, 251, 252, 0.88)", "Liquid Glass menu panels use an opaque-enough frosted fill so background text cannot read through");
-test.assertIncludes(liquid, "body.use-liquid-glass .menu-bar > :is(.cloud-switcher-menu, .project-switcher-menu, .multifinder-menu) > button", "Liquid Glass right-side menu controls share the same glass-chip material");
+test.assert(!liquid.includes("body.use-liquid-glass .menu-bar > :is(.cloud-switcher-menu, .project-switcher-menu, .multifinder-menu) > button"), "Liquid Glass does not add an idle capsule around right-side menu controls");
 test.assertIncludes(liquid, "backdrop-filter: blur(18px) saturate(155%) brightness(1.02)", "Liquid Glass menu bar is a real frosted system strip, not an opaque classic white slab");
 test.assertIncludes(liquid, "backdrop-filter: blur(34px) saturate(160%) brightness(1.04)", "Liquid Glass menu popovers blur the desktop strongly enough to protect menu readability");
 test.assertIncludes(liquid, "inset 0 2px 5px rgba(0, 0, 0, 0.22)", "Liquid Glass top-level menu buttons keep a visible pressed state without changing their hit model");
 test.assertIncludes(liquid, "body.use-liquid-glass .view-btn:hover:not(.is-active)", "Liquid Glass view button hover does not override active view");
-test.assertIncludes(liquid, "--writing-bell-preset-hover-bg:", "Liquid Glass mini button hover has an inactive preset token");
-test.assertIncludes(liquid, "--writing-bell-preset-active-bg:", "Liquid Glass mini button active presets keep a separate token");
-test.assertIncludes(liquid, "--writing-bell-preset-active-pressed-bg:", "Liquid Glass mini button pressed active presets do not fall back to hover");
+test.assertIncludes(
+  liquid,
+  "button:hover:not(.menu-bar button):not(:disabled):not(.is-disabled):not(.is-active)",
+  "Liquid Glass generic button hover excludes active mini presets"
+);
 test.assertIncludes(liquid, "body.use-liquid-glass .docmap-drop-zone.is-dragging::after", "Liquid Glass DocMap import overlay has its own glass treatment instead of inheriting the classic striped paper layer");
 test.assertIncludes(liquid, "-webkit-backdrop-filter: blur(8px) saturate(140%)", "Liquid Glass DocMap import overlay blurs the empty state behind it so old paper text does not ghost through");
+
+test.assertIncludes(app, 'button.setAttribute("aria-expanded", "false")', "System Select exposes reliable open state");
+test.assertIncludes(app, 'item.setAttribute("role", "option")', "System Select options use the listbox option contract");
+test.assertIncludes(app, 'item.setAttribute("aria-label", option.textContent.trim())', "The visual check slot does not pollute the announced option name");
+test.assertIncludes(app, 'item.setAttribute("aria-selected", String(selected))', "System Select announces committed selection");
+test.assertIncludes(app, "systemSelectAccessibleName", "System Select names its trigger and listbox from the owning field instead of the current value");
+test.assertIncludes(app, 'event.key === "ArrowDown"', "System Select and tab controls support directional keyboard navigation");
+test.assertIncludes(app, 'event.key === "Escape"', "System Select returns from an open listbox with Escape");
+test.assertIncludes(app, "handleSystemSelectTypeahead", "System Select supports typeahead");
+test.assertIncludes(app, "syncRovingTabStops", "Related tabs share roving focus");
+test.assertIncludes(app, 'control.setAttribute("aria-busy", "true")', "Busy controls expose their live state");
+test.assertIncludes(boot, "initSharedControlBehaviors()", "Shared keyboard behavior is installed during boot");
+test.assertIncludes(persistenceStatus, "setControlLoading(loadModelButton, true", "Control Panel model loading uses the shared stable-width busy state");
+test.assertIncludes(cloudModel, "setControlLoading(cloudCheckBtn, true", "Cloud connection uses the shared busy state");
+test.assertIncludes(html, 'id="search-provider" aria-labelledby="chooser-search-title"', "Chooser System Select is labelled by its field heading");
 
 test.finish();

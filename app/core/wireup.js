@@ -1,6 +1,8 @@
 // Event binding for app.js.
 
 function wireAppEvents() {
+  installDesktopScrollLock();
+
   findPathResultsEl.addEventListener("click", (event) => {
     const translateButton = event.target.closest("[data-find-path-translate]");
     if (!translateButton) return;
@@ -25,6 +27,16 @@ function wireAppEvents() {
       form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
     }
   });
+  promptInput.addEventListener("input", () => {
+    requestAnimationFrame(renderClioTalkRunAssembly);
+  });
+  promptInput.addEventListener("focus", syncClioTalkSendButton);
+
+  messagesEl?.addEventListener("scroll", handleClioTalkMessagesScroll, { passive: true });
+  clioScrollLatestButton?.addEventListener("click", () => {
+    scrollMessagesToLatest({ force: true });
+    promptInput.focus();
+  });
 
   document.getElementById("compose-tools-menu")?.addEventListener("click", async (event) => {
     const button = event.target.closest("[data-quick-draft-chat-action]");
@@ -35,8 +47,29 @@ function wireAppEvents() {
     await submitUserText(button.textContent.trim(), { quickDraftAction: action, skipQuickDraftVent: true });
   });
 
+  document.getElementById("compose-tools-menu")?.addEventListener("keydown", (event) => {
+    const items = [...event.currentTarget.querySelectorAll('button[role="menuitem"]:not(.is-hidden):not([hidden]):not(:disabled)')];
+    if (!items.length) return;
+    const current = Math.max(0, items.indexOf(document.activeElement));
+    let next = current;
+    if (event.key === "ArrowDown") next = (current + 1) % items.length;
+    else if (event.key === "ArrowUp") next = (current - 1 + items.length) % items.length;
+    else if (event.key === "Home") next = 0;
+    else if (event.key === "End") next = items.length - 1;
+    else if (event.key === "Escape") {
+      event.preventDefault();
+      closeComposeToolsMenu();
+      composeToolsToggleButton?.focus();
+      return;
+    } else {
+      return;
+    }
+    event.preventDefault();
+    items[next].focus();
+  });
+
   clearButton.addEventListener("click", () => {
-    clearChatToTrash();
+    startNewClioTalkConversation();
     promptInput.focus();
   });
 
@@ -53,21 +86,7 @@ function wireAppEvents() {
 
   clipSelectionButton.addEventListener("click", clipAssistantSelection);
 
-  insertScrapButton.addEventListener("click", insertScrapIntoPrompt);
-
-  deleteScrapButton.addEventListener("click", deleteSelectedScrap);
-
-  attachScrapButton.addEventListener("click", toggleClipAttachment);
-
-  sendScrapsToQuestionButton?.addEventListener("click", sendSelectedScrapsToQuestionSheet);
-
-  outlineScrapsButton?.addEventListener("click", outlineSelectedScraps);
-
   scrapbookAskForm?.addEventListener("submit", askScrapbookQuestion);
-
-  downloadScrapsBilingualButton?.addEventListener("click", downloadSelectedScrapsBilingualMarkdown);
-
-  openScrapSourceButton?.addEventListener("click", openSelectedScrapSourceInReader);
 
   toggleScrapTranslationButton?.addEventListener("click", toggleScrapTranslationView);
 
@@ -305,8 +324,6 @@ function wireAppEvents() {
 
   printDirectoryDownloadButton?.addEventListener("click", downloadPrintedDirectoryMarkdown);
 
-  synthesizeFindPathButton.addEventListener("click", synthesizeFindPath);
-
   findFileForm?.addEventListener("submit", (event) => {
     event.preventDefault();
     runFindFileSearch();
@@ -345,22 +362,6 @@ function wireAppEvents() {
       setStatus(t("find_path_error", message));
     }
   });
-
-  copyFindPathButton.addEventListener("click", copySelectedFindPath);
-
-  insertFindPathButton.addEventListener("click", insertFindPathIntoTeachText);
-
-  readerFetchButton.addEventListener("click", handleReaderOpenButton);
-
-  readerClipButton.addEventListener("click", clipReaderSelection);
-
-  readerClipTranslateButton?.addEventListener("click", clipReaderSelectionWithTranslation);
-
-  readerDocMapButton?.addEventListener("click", () => makeDocMapFromCurrentSource());
-
-  readerOpenClioStageButton?.addEventListener("click", openCurrentReaderInClioStage);
-
-  readerSendManuscriptButton?.addEventListener("click", sendReaderCopyToManuscript);
 
   readerAskForm?.addEventListener("submit", askReaderQuestion);
 
@@ -549,11 +550,50 @@ function wireAppEvents() {
     }
     document.querySelectorAll(".window.about-window:not(.is-hidden)")
       .forEach((win) => requestAnimationFrame(() => placeCenteredSystemWindow(win)));
+    // Entering/leaving the phone portrait breakpoint flips the full-screen app
+    // shell on or off.
+    syncMobileAppForeground();
+    renderMultiFinderMenu();
   });
 
-  dictionaryForm?.addEventListener("submit", lookupDictionaryInput);
+  // Track how much the on-screen keyboard covers, exposed as a CSS custom
+  // property (not an inline layout style) that the full-screen app shell reads
+  // to keep its composer above the keyboard. visualViewport reports the visible
+  // area; the layout viewport (window.innerHeight) does not shrink on iOS.
+  function updateKeyboardInset() {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const covered = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+    document.documentElement.style.setProperty("--keyboard-inset", `${covered}px`);
+  }
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", updateKeyboardInset);
+    window.visualViewport.addEventListener("scroll", updateKeyboardInset);
+    updateKeyboardInset();
+  }
 
-  systemHelpQueryInput?.addEventListener("input", renderSystemHelp);
+  // iOS still nudges the page to reveal a focused field even when the shell has
+  // already made room for it. The app is fixed and fills the screen, so any
+  // scroll here is displacement, not navigation: undo it.
+  document.addEventListener("focusin", () => {
+    if (!document.body.classList.contains("mobile-app-foreground")) return;
+    requestAnimationFrame(() => {
+      if (window.scrollY !== 0 || window.scrollX !== 0) window.scrollTo(0, 0);
+    });
+  });
+
+  dictionaryForm?.addEventListener("submit", async (event) => {
+    // This behavior lives in the lazy Dictionary/Help module. Cancel the form
+    // synchronously, then load it before resolving the global entrypoint.
+    event.preventDefault();
+    await ensureDictionaryHelpModule();
+    window.lookupDictionaryInput?.(event);
+  });
+
+  systemHelpQueryInput?.addEventListener("input", async () => {
+    await ensureDictionaryHelpModule();
+    window.renderSystemHelp?.();
+  });
 
   calculatorKeys.addEventListener("click", (event) => {
     const key = event.target.closest("[data-calc]")?.dataset.calc;
@@ -575,11 +615,6 @@ function wireAppEvents() {
   writingBellPauseButton?.addEventListener("click", pauseWritingBell);
 
   writingBellResetButton?.addEventListener("click", resetWritingBell);
-
-  memoryCardsBoardEl?.addEventListener("click", (event) => {
-    const cardId = event.target.closest("[data-memory-card]")?.dataset.memoryCard;
-    if (cardId) flipMemoryCard(cardId);
-  });
 
   puzzleBoardEl?.addEventListener("click", (event) => {
     const index = Number(event.target.closest("[data-puzzle-index]")?.dataset.puzzleIndex);
@@ -633,9 +668,17 @@ function wireAppEvents() {
 
   window.addEventListener("scroll", () => positionDictationFieldButton(), true);
 
-  [endpointInput, modelInput, searchProviderInput, importerModeInput, ocrEngineInput, contextLengthInput, systemInput, embeddingModelInput].filter(Boolean).forEach((input) => {
+  [endpointInput, localApiTokenInput, modelInput, searchProviderInput, importerModeInput, ocrEngineInput, contextLengthInput, systemInput, embeddingModelInput].filter(Boolean).forEach((input) => {
     input.addEventListener("input", scheduleSettingsSave);
     input.addEventListener("change", scheduleSettingsSave);
+  });
+
+  // The legacy Control Panel field is a project-local editor for the visible
+  // ClioTalk prompt file; it no longer mutates a hidden global prompt.
+  systemInput?.addEventListener("change", () => {
+    if (!activeProjectId) return;
+    window.AISystem6PromptFilesRuntime?.upsertProjectPromptOverride(activeProjectId, "cliotalk.main", systemInput.value);
+    saveDeskState?.();
   });
 
   searchProviderInput?.addEventListener("change", () => {
@@ -671,7 +714,14 @@ function wireAppEvents() {
   modelInput?.addEventListener("input", handleModelNameChanged);
   modelInput?.addEventListener("change", handleModelNameChanged);
 
-  endpointInput?.addEventListener("input", () => updateLocalModelState({ server: false, models: false, loaded: false, ready: false }));
+  const invalidateLocalConnection = () => {
+    localLmStudioConnectionEnabled = false;
+    renderLocalConnectionStatus("local_connection_waiting");
+    updateLocalModelState({ server: false, models: false, loaded: false, ready: false });
+  };
+  endpointInput?.addEventListener("input", invalidateLocalConnection);
+  localApiTokenInput?.addEventListener("input", invalidateLocalConnection);
+  connectLocalModelButton?.addEventListener("click", () => connectLocalLmStudio({ toggle: true }));
 
   contextLengthInput?.addEventListener("input", () => {
     rememberContextLengthForCurrentModel(true);
@@ -705,7 +755,9 @@ function wireAppEvents() {
   localProviderEl?.addEventListener("change", () => {
     const p = localProviderEl.value;
     const localHttp = `http:${String.fromCharCode(47, 47)}127.0.0.1:`;
-    endpointInput.value = p === "lm-studio" ? "/api/chat" : p === "ollama" ? `${localHttp}11434` : `${localHttp}1234`;
+    endpointInput.value = p === "lm-studio" ? `${localHttp}1234` : p === "ollama" ? `${localHttp}11434` : `${localHttp}1234`;
+    localLmStudioConnectionEnabled = false;
+    renderLocalConnectionStatus("local_connection_waiting");
     loadModelButton.disabled = p !== "lm-studio";
     loadModelStatusEl.textContent = t(p === "lm-studio" ? "load_model_hint" : p === "ollama" ? "ollama_auto_load_hint" : "custom_auto_load_hint");
     scheduleSettingsSave();
@@ -713,16 +765,6 @@ function wireAppEvents() {
   });
 
   rememberInput.addEventListener("change", saveDeskState);
-
-  document.querySelectorAll(".menu-item-with-sub > button").forEach((button) => {
-    button.addEventListener("click", (event) => {
-      const item = button.closest(".menu-item-with-sub");
-      if (!item?.closest(".menu.is-open")) return;
-      event.preventDefault();
-      event.stopPropagation();
-      toggleMenuSubItem(item);
-    });
-  });
 
   document.addEventListener("click", (event) => {
     if (!event.target.closest(".select-wrap.has-system-select")) {
@@ -758,6 +800,12 @@ function wireAppEvents() {
       return;
     }
   
+    const guideSourceTarget = event.target.closest("[data-guide-source]");
+    if (guideSourceTarget) {
+      selectGuideModelSource(guideSourceTarget.dataset.guideSource);
+      return;
+    }
+
     const projectSwitchTarget = event.target.closest("[data-switch-project]");
     if (projectSwitchTarget) {
       const projectId = projectSwitchTarget.dataset.switchProject;
@@ -773,7 +821,8 @@ function wireAppEvents() {
     if (appSwitchTarget) {
       const appId = appSwitchTarget.dataset.switchApp;
       if (!appSwitchTarget.disabled && appId) {
-        switchToApp(appId);
+        if (isPortraitDocumentFlow()) foregroundMobileApp(appId);
+        else switchToApp(appId);
       }
       appSwitchTarget.blur();
       closeMenus();
@@ -856,9 +905,11 @@ function wireAppEvents() {
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
+      const composeMenuWasOpen = composeToolsMenuEl && !composeToolsMenuEl.classList.contains("is-hidden");
       closeMenus();
       closeTeachTextCommandMenus();
       closeComposeToolsMenu();
+      if (composeMenuWasOpen) composeToolsToggleButton?.focus();
       return;
     }
   
@@ -905,7 +956,8 @@ function wireAppEvents() {
   });
 
   installGrowBoxes();
-
+  installWindowFrameBars();
+  wireControlTabs();
   document.querySelectorAll(".title-bar").forEach((bar) => {
     bar.addEventListener("dblclick", (event) => {
       if (event.target.closest("button")) return;
@@ -934,23 +986,50 @@ function wireAppEvents() {
       const offsetY = event.clientY - rect.top;
   
       bar.setPointerCapture(event.pointerId);
-  
-      function moveWindow(moveEvent) {
-        const maxLeft = window.innerWidth - 80;
-        const maxTop = window.innerHeight - 50;
-        const left = Math.min(Math.max(0, moveEvent.clientX - offsetX), maxLeft);
-        const top = Math.min(Math.max(0, moveEvent.clientY - offsetY), maxTop);
-  
+
+      // Classic drags the dotted outline and moves the window on release — the
+      // same primitive the grow box and the selection marquee use. Liquid Glass
+      // follows the pointer live.
+      const outline = compactViewport || document.body.classList.contains("use-liquid-glass")
+        ? null
+        : createWindowOutline(rect);
+      let pendingLeft = rect.left;
+      let pendingTop = rect.top;
+
+      function applyWindowPosition(left, top) {
         win.style.left = `${left}px`;
         win.style.top = `${top}px`;
         win.style.right = "auto";
         win.style.transform = "none";
       }
-  
-      function stopMove() {
+
+      function moveWindow(moveEvent) {
+        const maxLeft = window.innerWidth - 80;
+        const maxTop = window.innerHeight - 50;
+        const left = Math.min(Math.max(0, moveEvent.clientX - offsetX), maxLeft);
+        const top = Math.min(Math.max(0, moveEvent.clientY - offsetY), maxTop);
+
+        pendingLeft = left;
+        pendingTop = top;
+        if (outline) {
+          positionWindowOutline(outline, left, top);
+          return;
+        }
+        applyWindowPosition(left, top);
+      }
+
+      function stopMove(stopEvent) {
         bar.removeEventListener("pointermove", moveWindow);
         bar.removeEventListener("pointerup", stopMove);
         bar.removeEventListener("pointercancel", stopMove);
+        // A drag that emitted no move event still lands where it was released.
+        if (stopEvent?.type === "pointerup" && typeof stopEvent.clientX === "number") {
+          moveWindow(stopEvent);
+        }
+        if (outline) {
+          outline.remove();
+          applyWindowPosition(pendingLeft, pendingTop);
+        }
         markWindowUserPositioned?.(win);
         scheduleWorkingSessionSave?.();
       }
@@ -1046,6 +1125,8 @@ function wireAppEvents() {
     const item = getSelectedProjectCdItem();
     if (item) downloadProjectCdItem(item);
   });
+
+  burnProjectAuditCapsuleButton?.addEventListener("click", burnProjectAuditCapsule);
 
   printProjectCdPdfButton?.addEventListener("click", printSelectedProjectCdPdf);
 

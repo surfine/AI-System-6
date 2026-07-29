@@ -109,7 +109,7 @@
 
 .system-help-card h3 {
   margin: 0;
-  font-size: 18px;
+  font-size: 21px;
 }
 
 .system-help-card p {
@@ -400,7 +400,7 @@
 
 .review-result-column th {
   border-bottom: 2px solid var(--ink);
-  font-family: var(--title-font);
+  font-family: Chicago_12, Chicago, Charcoal, "Songti SC", "SimSun", serif;
   font-weight: var(--system-strong-weight);
   background: var(--paper);
 }
@@ -415,7 +415,7 @@
 
 .review-result-column td:first-child {
   min-width: 5.5em;
-  font-family: var(--title-font);
+  font-family: Chicago_12, Chicago, Charcoal, "Songti SC", "SimSun", serif;
   font-weight: var(--system-strong-weight);
 }
 
@@ -932,36 +932,138 @@
   padding: var(--guide-start-card-padding);
 }
 
-.guide-mode-card {
-  width: 100%;
-  border: var(--guide-mode-card-border);
-  border-radius: var(--guide-mode-card-radius);
-  background: var(--guide-mode-card-bg);
-  box-shadow: var(--guide-mode-card-shadow);
+/* The route shown as named objects rather than sentences. Left-aligned so the
+   numbers form one scannable column instead of a ragged centered block. */
+.guide-route {
+  justify-items: start;
+  gap: 3px;
+  margin: 0;
+  padding: var(--guide-start-card-padding);
+  padding-left: calc(var(--guide-start-card-padding) + 18px);
+  text-align: left;
+  line-height: 1.35;
+}
+
+/* First-run steps: the guide shows exactly one of these at a time. The explicit
+   [hidden] rules are required — a `display` declaration outranks the user-agent
+   style for the hidden attribute. */
+.guide-step {
   display: grid;
   justify-items: center;
-  gap: 7px;
-  padding: var(--guide-mode-card-padding);
-}
-
-.guide-mode-card b {
-  font-weight: var(--system-emphasis-weight);
-}
-
-.guide-mode-options {
-  width: 100%;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.guide-mode-options .btn {
+  gap: var(--guide-pane-gap);
   width: 100%;
 }
 
-.guide-mode-card small {
+.guide-step[hidden],
+.system-tab-panel[hidden],
+.system-tabs [hidden] {
+  display: none;
+}
+
+/* A tab panel may be any element (a .control-section already sets its own
+   display: grid), so this needs the [hidden] attribute selector itself to win
+   on specificity rather than relying on the plain class alone. */
+[data-control-panel][hidden] {
+  display: none;
+}
+
+.guide-step small {
+  max-width: 34ch;
   line-height: 1.35;
   color: var(--card-caption-color);
+}
+
+/* A view switch, not two actions. The tabs sit on a rail and the selected one
+   merges into the panel below, so the pair reads as one sheet with two faces
+   instead of two buttons competing for a tap. The sheet wrapper keeps the rail
+   and the panel touching — the step's own gap would otherwise split them. */
+.system-tabs-sheet {
+  display: grid;
+  gap: 0;
+  width: 100%;
+}
+
+.system-tabs {
+  display: flex;
+  gap: 3px;
+  width: 100%;
+  margin-bottom: 0;
+  border-bottom: var(--system-border);
+}
+
+.system-tab {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 28px;
+  position: relative;
+  bottom: calc(0px - var(--tab-overlap));
+  padding: 4px 10px;
+  border: var(--system-border);
+  border-bottom: none;
+  border-radius: var(--tab-radius) var(--tab-radius) 0 0;
+  background: var(--tab-bg);
+  color: var(--ink);
+  font: inherit;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition:
+    background var(--control-motion-medium-in) var(--control-motion-ease),
+    box-shadow var(--control-motion-medium-in) var(--control-motion-ease);
+}
+
+.system-tab:not(.is-active):hover {
+  background: var(--tab-hover-bg);
+}
+
+.system-tab:focus-visible {
+  outline: var(--control-focus-outline);
+  outline-offset: var(--control-focus-offset);
+}
+
+.system-tab.is-active {
+  background: var(--tab-active-bg);
+  font-weight: var(--system-strong-weight);
+}
+
+.system-tab:disabled {
+  cursor: default;
+  opacity: var(--control-disabled-opacity);
+}
+
+.system-tab-panel {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  padding: var(--guide-start-card-padding);
+  border: var(--system-border);
+  border-top: none;
+  background: var(--tab-active-bg);
+  text-align: left;
+}
+
+.system-tab-panel .btn {
+  width: 100%;
+}
+
+.guide-setup-status {
+  margin: 0;
+  max-width: 40ch;
+  line-height: 1.35;
+}
+
+/* Two ways in once a model answers: open the route, or talk it over first. */
+.guide-ways {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+
+.guide-ways .btn {
+  width: 100%;
 }
 
 .guide-start-card .btn {
@@ -1007,6 +1109,291 @@
   resize: none;
   font-family: var(--text-font);
   line-height: 1.5;
+}
+
+.window.alarm-clock-window {
+  border: var(--alarm-clock-frame-border);
+  border-radius: var(--alarm-clock-frame-radius);
+  background: var(--alarm-clock-surface-bg);
+  box-shadow: var(--alarm-clock-frame-shadow);
+}
+
+.alarm-clock-window > .alarm-clock-title-bar {
+  position: relative;
+  grid-template-columns: 28px minmax(0, 1fr) 28px;
+  height: var(--alarm-clock-title-height);
+  min-height: var(--alarm-clock-title-height);
+  margin: 0;
+  padding: 0 6px;
+  border-bottom: var(--alarm-clock-divider);
+  background-color: var(--alarm-clock-title-bg);
+  background-image: none;
+}
+
+.alarm-clock-window .close-box {
+  align-self: center;
+  justify-self: center;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  background: var(--alarm-clock-title-bg);
+  box-shadow: 1px 1px 0 var(--shade-dark);
+}
+
+.alarm-clock-window .close-box::before,
+.alarm-clock-window .close-box::after {
+  display: none;
+}
+
+.alarm-clock-current-time {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+  justify-self: center;
+  min-width: 0;
+  padding: 0;
+  background: var(--alarm-clock-title-bg);
+  color: var(--ink);
+  font-family: var(--title-font);
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 24px;
+  letter-spacing: 0.2px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.alarm-clock-lever {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: center;
+  width: 24px;
+  height: 26px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.alarm-clock-lever:hover,
+.alarm-clock-lever:active {
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+}
+
+.alarm-clock-lever:focus-visible {
+  outline: 1px dotted var(--ink);
+  outline-offset: -2px;
+}
+
+.alarm-clock-lever-glyph {
+  display: block;
+  width: 14px;
+  height: 20px;
+  margin: 2px auto 0;
+  overflow: visible;
+  fill: currentColor;
+  stroke: none;
+  shape-rendering: crispEdges;
+  transform: rotate(0deg);
+  transform-origin: center;
+}
+
+.alarm-clock-window.is-compact .alarm-clock-lever-glyph {
+  transform: rotate(-90deg);
+}
+
+.alarm-clock-expanded {
+  background: var(--alarm-clock-surface-bg);
+}
+
+.alarm-clock-readout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  height: var(--alarm-clock-readout-height);
+  min-height: var(--alarm-clock-readout-height);
+  border-bottom: var(--alarm-clock-divider);
+  background: var(--alarm-clock-readout-bg);
+}
+
+.alarm-clock-readout.is-alarm-mode {
+  grid-template-columns: 31px minmax(0, 1fr) 23px;
+}
+
+.alarm-clock-switch {
+  position: relative;
+  display: none;
+  width: 31px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-right: var(--alarm-clock-divider);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+}
+
+.alarm-clock-switch.is-available {
+  display: block;
+}
+
+.alarm-clock-switch > span {
+  position: absolute;
+  left: 8px;
+  top: 5px;
+  width: 12px;
+  height: 21px;
+  border: 2px solid currentColor;
+  background: var(--alarm-clock-readout-bg);
+}
+
+.alarm-clock-switch > span::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 11px;
+  width: 4px;
+  height: 4px;
+  border: 1px solid currentColor;
+  background: currentColor;
+}
+
+.alarm-clock-switch.is-on > span::after {
+  top: 2px;
+}
+
+.alarm-clock-value {
+  width: 100%;
+  min-width: 0;
+  height: calc(var(--alarm-clock-readout-height) - 2px);
+  min-height: 0;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 0;
+  outline-offset: -3px;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--title-font);
+  font-size: 28px;
+  font-weight: 700;
+  line-height: calc(var(--alarm-clock-readout-height) - 2px);
+  letter-spacing: 0.2px;
+  text-align: center;
+}
+
+.alarm-clock-value[readonly] {
+  cursor: default;
+}
+
+.alarm-clock-steppers {
+  display: none;
+  grid-template-rows: 1fr 1fr;
+  border-left: var(--alarm-clock-divider);
+}
+
+.alarm-clock-readout.is-alarm-mode:focus-within .alarm-clock-steppers.is-available {
+  display: grid;
+}
+
+.alarm-clock-steppers button {
+  width: 21px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font-size: 8px;
+  line-height: 1;
+}
+
+.alarm-clock-steppers button + button {
+  border-top: 1px solid var(--ink);
+}
+
+.alarm-clock-modes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  height: var(--alarm-clock-modes-height);
+  min-height: var(--alarm-clock-modes-height);
+}
+
+.alarm-clock-mode {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+  padding: 2px;
+  border: 0;
+  border-right: var(--alarm-clock-divider);
+  border-radius: 0;
+  background: var(--alarm-clock-surface-bg);
+  color: var(--ink);
+}
+
+.alarm-clock-mode:last-child {
+  border-right: 0;
+}
+
+.alarm-clock-mode:hover,
+.alarm-clock-mode:focus-visible {
+  background: var(--alarm-clock-surface-bg);
+  color: var(--ink);
+}
+
+.alarm-clock-mode:focus-visible {
+  outline: 1px dotted var(--ink);
+  outline-offset: -4px;
+}
+
+.alarm-clock-mode.is-active,
+.alarm-clock-mode.is-active:hover,
+.alarm-clock-mode.is-active:focus-visible {
+  background: var(--alarm-clock-active-bg);
+  box-shadow: inset 0 0 0 3px var(--alarm-clock-active-fg);
+  color: var(--alarm-clock-active-fg);
+}
+
+.alarm-clock-mode-icon {
+  display: block;
+  overflow: visible;
+  fill: currentColor;
+  stroke: none;
+  shape-rendering: crispEdges;
+}
+
+.alarm-clock-analog-icon {
+  width: 46px;
+  height: 46px;
+}
+
+.alarm-clock-calendar-icon {
+  width: 48px;
+  height: 44px;
+}
+
+.alarm-clock-bell-icon {
+  width: 28px;
+  height: 34px;
+}
+
+.alarm-clock-window.is-ringing .alarm-clock-bell-icon {
+  transform: rotate(-6deg);
+}
+
+body.alarm-clock-flash .menu-bar > .menu > .apple {
+  background: var(--menu-button-active-bg);
+  color: var(--menu-button-active-fg);
 }
 
 .calculator-window .calculator-pane {
@@ -1331,71 +1718,184 @@
 
 .memory-cards-pane {
   gap: 9px;
-  background:
-    radial-gradient(rgba(0, 0, 0, 0.08) 1px, transparent 1px) 0 0 / 9px 9px,
-    #f7f7f7;
+  background: var(--memory-cards-pane-bg);
 }
 
 .memory-cards-details-bar {
+  justify-content: space-between;
   gap: 24px;
   min-height: 38px;
   padding: 6px 10px;
-  background: var(--shade);
+  border-bottom: var(--memory-cards-details-border);
+  background: var(--memory-cards-details-bg);
 }
 
-.memory-cards-details-bar span {
+.memory-cards-details-bar output {
   min-width: 118px;
   font-family: var(--mono-font);
   font-size: 18px;
   line-height: 1.2;
+  white-space: nowrap;
 }
 
-.memory-cards-details-bar .mini-btn {
-  margin-left: auto;
+.memory-cards-details-bar output:last-child {
+  text-align: right;
 }
 
 .memory-cards-board {
+  --memory-cards-columns: 6;
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(var(--memory-cards-columns), 1fr);
   gap: 8px 9px;
   align-items: center;
   padding: 5px;
-  perspective: 700px;
+  border: var(--memory-cards-board-border);
+  border-radius: var(--memory-cards-board-radius);
+  background: var(--memory-cards-board-bg);
+  box-shadow: var(--memory-cards-board-shadow);
 }
 
 .memory-card {
-  --card-color: #2f5fb8;
+  --card-color: #0b8ed8;
+  --card-ink: #ffffff;
   --card-tilt: 0deg;
   --card-shift: 0px;
   aspect-ratio: 2 / 3;
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(0, 0, 0, 0.45);
-  border-radius: 8px;
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.34), transparent 45%),
-    linear-gradient(#fdfdfd, #eeeeee);
-  color: #fff;
-  box-shadow:
-    1px 1px 0 rgba(0, 0, 0, 0.75),
-    3px 3px 0 rgba(0, 0, 0, 0.2),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.55);
-  display: grid;
-  place-items: center;
-  font-family: var(--mono-font);
-  line-height: 1;
+  min-width: 0;
+  padding: 0;
+  border: var(--memory-card-border);
+  border-radius: var(--memory-card-radius);
+  background: var(--memory-card-bg);
+  box-shadow: var(--memory-card-shadow);
   transform: translateY(var(--card-shift)) rotate(var(--card-tilt));
   transform-origin: center;
-  transition: transform 0.12s ease-out, box-shadow 0.12s ease-out;
+  transition:
+    transform var(--control-motion-fast-out) var(--control-motion-ease),
+    box-shadow var(--control-motion-fast-out) var(--control-motion-ease);
 }
 
-.memory-card::after {
-  content: "";
+.memory-card:nth-child(odd) {
+  --card-shift: -1px;
+}
+
+.memory-card:nth-child(even) {
+  --card-shift: 1px;
+}
+
+.memory-card:nth-child(12n + 1) {
+  --card-tilt: -2.3deg;
+}
+
+.memory-card:nth-child(12n + 2) {
+  --card-tilt: 1.4deg;
+}
+
+.memory-card:nth-child(12n + 3) {
+  --card-tilt: -0.8deg;
+}
+
+.memory-card:nth-child(12n + 4) {
+  --card-tilt: 2deg;
+}
+
+.memory-card:nth-child(12n + 5) {
+  --card-tilt: -1.5deg;
+}
+
+.memory-card:nth-child(12n + 6) {
+  --card-tilt: 0.7deg;
+}
+
+.memory-card:nth-child(12n + 7) {
+  --card-tilt: 1.9deg;
+}
+
+.memory-card:nth-child(12n + 8) {
+  --card-tilt: -2deg;
+}
+
+.memory-card:nth-child(12n + 9) {
+  --card-tilt: 0.8deg;
+}
+
+.memory-card:nth-child(12n + 10) {
+  --card-tilt: -1.2deg;
+}
+
+.memory-card:nth-child(12n + 11) {
+  --card-tilt: 2.4deg;
+}
+
+.memory-card:nth-child(12n + 12) {
+  --card-tilt: -0.5deg;
+}
+
+.memory-card:hover:not([aria-disabled="true"]) {
+  transform: translateY(calc(var(--card-shift) - 1px)) rotate(var(--card-tilt));
+  box-shadow: var(--memory-card-hover-shadow);
+}
+
+.memory-card:focus-visible {
+  outline: var(--control-focus-outline);
+  outline-offset: var(--control-focus-offset);
+}
+
+.memory-card:active:not(:disabled):not([aria-disabled="true"]) {
+  transform: translate(1px, calc(var(--card-shift) + 1px)) rotate(var(--card-tilt));
+  box-shadow: none;
+}
+
+.memory-card-inner,
+.memory-card-back,
+.memory-card-face {
   position: absolute;
-  inset: 4px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.32);
-  pointer-events: none;
+  inset: 0;
+}
+
+.memory-card-inner {
+  inset: 0;
+}
+
+.memory-card-back,
+.memory-card-face {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: max(0px, calc(var(--memory-card-radius) - 3px));
+  transition:
+    opacity var(--control-motion-medium-out) var(--control-motion-ease),
+    transform var(--control-motion-medium-out) var(--control-motion-ease);
+}
+
+.memory-card-back {
+  background: var(--memory-card-back-bg);
+  opacity: 1;
+  transform: scale(1);
+}
+
+.memory-card-back-mark {
+  width: 62%;
+  height: 62%;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  border-radius: 7px;
+  background:
+    linear-gradient(var(--memory-card-back-mark-bg), var(--memory-card-back-mark-bg)) center 25% / 46% 2px no-repeat,
+    linear-gradient(var(--memory-card-back-mark-bg), var(--memory-card-back-mark-bg)) center 50% / 58% 2px no-repeat,
+    linear-gradient(var(--memory-card-back-mark-bg), var(--memory-card-back-mark-bg)) center 75% / 36% 2px no-repeat,
+    var(--memory-card-back-bg);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.8),
+    1px 1px 0 rgba(0, 0, 0, 0.18);
+}
+
+.memory-card-face {
+  background: var(--card-color);
+  color: var(--card-ink);
+  box-shadow: var(--memory-card-face-shadow);
+  opacity: 0;
+  transform: scale(0.94);
 }
 
 .memory-card.is-blue {
@@ -1404,600 +1904,56 @@
 
 .memory-card.is-green {
   --card-color: #02b900;
+  --card-ink: #052805;
 }
 
 .memory-card.is-yellow {
   --card-color: #f5ea00;
-}
-
-.memory-card.is-orange {
-  --card-color: #ff8a00;
+  --card-ink: #262300;
 }
 
 .memory-card.is-red {
   --card-color: #e90000;
 }
 
-.memory-card.is-purple {
-  --card-color: #b20078;
+.memory-card.is-face-up .memory-card-back,
+.memory-card.is-matched .memory-card-back {
+  opacity: 0;
+  transform: scale(1.04);
 }
 
-.memory-card.is-face-up,
-.memory-card.is-matched {
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.28), transparent 44%),
-    var(--card-color);
+.memory-card.is-face-up .memory-card-face,
+.memory-card.is-matched .memory-card-face {
+  opacity: 1;
+  transform: scale(1);
 }
 
-.memory-card.is-matched {
-  transform: translate(1px, 2px) rotate(var(--card-tilt)) scale(0.97);
-  box-shadow:
-    inset 0 0 0 3px rgba(255, 255, 255, 0.42),
-    1px 1px 0 rgba(0, 0, 0, 0.65);
+.memory-card.is-matched .memory-card-face {
+  box-shadow: var(--memory-card-match-ring);
 }
 
-.memory-card-back {
-  position: relative;
-  width: 62%;
-  height: 62%;
-  border: 1px solid rgba(0, 0, 0, 0.18);
-  border-radius: 7px;
-  background:
-    linear-gradient(rgba(0, 0, 0, 0.16), rgba(0, 0, 0, 0.16)) center 25% / 46% 2px no-repeat,
-    linear-gradient(rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.12)) center 50% / 58% 2px no-repeat,
-    linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1)) center 75% / 36% 2px no-repeat,
-    linear-gradient(#ffffff, #f1f1f1);
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.8),
-    1px 1px 0 rgba(0, 0, 0, 0.18);
-}
-
-.memory-card-back::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  color: rgba(0, 0, 0, 0.1);
-  font-family: var(--title-font);
-  font-size: 18px;
+.memory-cards-board.is-locked .memory-card:not(.is-face-up):not(.is-matched) {
+  opacity: 0.58;
 }
 
 .memory-card-art {
-  position: relative;
-  width: 82%;
-  height: 82%;
-  display: block;
-}
-
-.memory-card-part {
-  position: absolute;
-  box-sizing: border-box;
-  border-color: currentColor;
-  background: currentColor;
-}
-
-.memory-card-sf-symbol {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  font-family: "SF Symbols", "SF Pro", -apple-system, BlinkMacSystemFont, sans-serif;
-}
-
-.memory-card-art .memory-card-part {
-  background: currentColor;
-  border-color: currentColor;
-}
-
-.memory-card-art .mark {
-  background: transparent;
-}
-
-.memory-card-art .mark::after {
-  content: "";
-  position: absolute;
-  inset: 0;
   display: grid;
+  width: 72%;
+  height: 72%;
   place-items: center;
-  color: currentColor;
-  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.memory-card-art.is-newton .body {
-  left: 24%;
-  top: 5%;
-  width: 45%;
-  height: 86%;
-  border: 4px solid currentColor;
-  border-radius: 9px;
-  background: transparent;
-}
-
-.memory-card-art.is-newton .screen {
-  left: 31%;
-  top: 16%;
-  width: 32%;
-  height: 50%;
-  border: 2px solid currentColor;
-  background: rgba(255, 255, 255, 0.25);
-}
-
-.memory-card-art.is-newton .speaker {
-  left: 38%;
-  top: 73%;
-  width: 3px;
-  height: 3px;
-  border-radius: 50%;
-  box-shadow: 6px 0 0 currentColor, 12px 0 0 currentColor, 18px 0 0 currentColor;
-}
-
-.memory-card-art.is-newton .stylus {
-  right: 13%;
-  top: 14%;
-  width: 5px;
-  height: 66%;
-  border-radius: 999px;
-  transform: rotate(13deg);
-}
-
-.memory-card-art.is-quicktake .body {
-  left: 14%;
-  top: 26%;
-  width: 72%;
-  height: 44%;
-  border-radius: 18px 12px 12px 18px;
-}
-
-.memory-card-art.is-quicktake .lens {
-  left: 47%;
-  top: 35%;
-  width: 25%;
-  height: 25%;
-  border: 4px solid var(--card-color);
-  border-radius: 50%;
-  background: transparent;
-}
-
-.memory-card-art.is-quicktake .viewfinder {
-  left: 23%;
-  top: 31%;
-  width: 14%;
-  height: 8%;
-  border-radius: 3px;
-  background: var(--card-color);
-}
-
-.memory-card-art.is-quicktake .grip {
-  left: 13%;
-  top: 34%;
-  width: 16%;
-  height: 28%;
-  border-radius: 13px 6px 6px 13px;
-  background: var(--card-color);
-}
-
-.memory-card-art.is-pippin .body {
-  left: 13%;
-  top: 42%;
-  width: 74%;
-  height: 30%;
-  border-radius: 7px 7px 9px 9px;
-}
-
-.memory-card-art.is-pippin .disc {
-  left: 37%;
-  top: 17%;
-  width: 26%;
-  height: 26%;
-  border: 3px solid currentColor;
-  border-radius: 50%;
-  background: var(--card-color);
-}
-
-.memory-card-art.is-pippin .disc::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 5px;
-  height: 5px;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  background: currentColor;
-}
-
-.memory-card-art.is-pippin .button {
-  right: 22%;
-  top: 51%;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--card-color);
-}
-
-.memory-card-art.is-pippin .feet {
-  left: 22%;
-  bottom: 22%;
-  width: 56%;
-  height: 3px;
-  border-radius: 3px;
-}
-
-.memory-card-art.is-keyboard .body {
-  left: 9%;
-  top: 38%;
-  width: 82%;
-  height: 24%;
-  border: 3px solid currentColor;
-  border-radius: 8px;
-  background: transparent;
-}
-
-.memory-card-art.is-keyboard .keys {
-  left: 18%;
-  top: 44%;
-  width: 5px;
-  height: 3px;
-  box-shadow:
-    8px 0 0 currentColor,
-    16px 0 0 currentColor,
-    24px 0 0 currentColor,
-    32px 0 0 currentColor,
-    40px 0 0 currentColor,
-    48px 0 0 currentColor,
-    56px 0 0 currentColor,
-    0 7px 0 currentColor,
-    8px 7px 0 currentColor,
-    16px 7px 0 currentColor,
-    24px 7px 0 currentColor,
-    32px 7px 0 currentColor,
-    40px 7px 0 currentColor,
-    48px 7px 0 currentColor,
-    56px 7px 0 currentColor;
-}
-
-.memory-card-art.is-keyboard .spacebar {
-  left: 35%;
-  top: 55%;
-  width: 30%;
-  height: 3px;
-  border-radius: 4px;
-}
-
-.memory-card-art.is-keyboard .cable {
-  left: 48%;
-  top: 20%;
-  width: 4px;
-  height: 20%;
-  border-radius: 4px;
-}
-
-.memory-card-art.is-mac-128k .body {
-  left: 17%;
-  top: 7%;
-  width: 66%;
-  height: 80%;
-  border: 4px solid currentColor;
-  border-radius: 5px 5px 8px 8px;
-  background: transparent;
-}
-
-.memory-card-art.is-mac-128k .screen {
-  left: 24%;
-  top: 14%;
-  width: 52%;
-  height: 30%;
-  border: 3px solid currentColor;
-  border-radius: 2px;
-  background: rgba(255, 255, 255, 0.26);
-}
-
-.memory-card-art.is-mac-128k .drive {
-  right: 23%;
-  top: 58%;
-  width: 28%;
-  height: 4px;
-  border-radius: 2px;
-}
-
-.memory-card-art.is-mac-128k .chin {
-  left: 31%;
-  bottom: 13%;
-  width: 38%;
-  height: 5px;
-  border-radius: 3px;
-}
-
-.memory-card-art.is-apple-ii .monitor {
-  left: 21%;
-  top: 8%;
-  width: 58%;
-  height: 38%;
-  border: 4px solid currentColor;
-  border-radius: 5px;
-  background: transparent;
-}
-
-.memory-card-art.is-apple-ii .screen {
-  left: 33%;
-  top: 18%;
-  width: 34%;
-  height: 17%;
-  border: 2px solid currentColor;
-  background: rgba(255, 255, 255, 0.22);
-}
-
-.memory-card-art.is-apple-ii .case {
-  left: 15%;
-  top: 53%;
-  width: 70%;
-  height: 19%;
-  border-radius: 5px;
-}
-
-.memory-card-art.is-apple-ii .keyboard {
-  left: 24%;
-  top: 58%;
-  width: 46%;
-  height: 2px;
-  background: var(--card-color);
-  box-shadow: 0 5px 0 var(--card-color), 0 10px 0 var(--card-color);
-}
-
-.memory-card-art.is-apple-ii .badge {
-  right: 22%;
-  top: 58%;
-  width: 7px;
-  height: 7px;
-  border-radius: 1px;
-  background: var(--card-color);
-}
-
-.memory-card-art.is-lisa .body {
-  left: 17%;
-  top: 9%;
-  width: 66%;
-  height: 58%;
-  border: 4px solid currentColor;
-  border-radius: 6px;
-  background: transparent;
-}
-
-.memory-card-art.is-lisa .screen {
-  left: 29%;
-  top: 20%;
-  width: 35%;
-  height: 27%;
-  border: 3px solid currentColor;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.24);
-}
-
-.memory-card-art.is-lisa .drive {
-  right: 22%;
-  top: 25%;
-  width: 9%;
-  height: 28%;
-  border: 2px solid currentColor;
-  border-radius: 3px;
-  background: transparent;
-}
-
-.memory-card-art.is-lisa .keyboard {
-  left: 20%;
-  bottom: 13%;
-  width: 60%;
-  height: 11%;
-  border-radius: 4px;
-  transform: skewX(-14deg);
-}
-
-.memory-card-art.is-mac-portable .screen {
-  left: 15%;
-  top: 11%;
-  width: 70%;
-  height: 38%;
-  border: 4px solid currentColor;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.22);
-}
-
-.memory-card-art.is-mac-portable .base {
-  left: 9%;
-  top: 52%;
-  width: 82%;
-  height: 33%;
-  border-radius: 3px 3px 6px 6px;
-}
-
-.memory-card-art.is-mac-portable .keyboard {
-  left: 19%;
-  top: 59%;
-  width: 4px;
-  height: 3px;
-  background: var(--card-color);
-  box-shadow:
-    9px 0 0 var(--card-color), 18px 0 0 var(--card-color),
-    27px 0 0 var(--card-color), 36px 0 0 var(--card-color),
-    0 7px 0 var(--card-color), 9px 7px 0 var(--card-color),
-    18px 7px 0 var(--card-color), 27px 7px 0 var(--card-color),
-    36px 7px 0 var(--card-color);
-}
-
-.memory-card-art.is-mac-portable .trackball {
-  left: 50%;
-  bottom: 9%;
-  width: 11px;
-  height: 11px;
-  transform: translateX(-50%);
-  border-radius: 50%;
-  background: var(--card-color);
-}
-
-.memory-card-art.is-mac-portable .handle {
-  left: 33%;
-  top: 2%;
-  width: 34%;
-  height: 8%;
-  border: 3px solid currentColor;
-  border-bottom: 0;
-  border-radius: 10px 10px 0 0;
-  background: transparent;
-}
-
-.memory-card-art.is-powerbook-100 .screen {
-  left: 16%;
-  top: 8%;
-  width: 68%;
-  height: 38%;
-  border: 4px solid currentColor;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.22);
-}
-
-.memory-card-art.is-powerbook-100 .base {
-  left: 10%;
-  top: 50%;
-  width: 80%;
-  height: 35%;
-  border-radius: 3px 3px 6px 6px;
-}
-
-.memory-card-art.is-powerbook-100 .keyboard {
-  left: 23%;
-  top: 56%;
-  width: 4px;
-  height: 3px;
-  background: var(--card-color);
-  box-shadow:
-    9px 0 0 var(--card-color), 18px 0 0 var(--card-color),
-    27px 0 0 var(--card-color), 36px 0 0 var(--card-color),
-    0 6px 0 var(--card-color), 9px 6px 0 var(--card-color),
-    18px 6px 0 var(--card-color), 27px 6px 0 var(--card-color),
-    36px 6px 0 var(--card-color);
-}
-
-.memory-card-art.is-powerbook-100 .trackball {
-  left: 50%;
-  bottom: 9%;
-  width: 10px;
-  height: 10px;
-  transform: translateX(-50%);
-  border-radius: 50%;
-  background: var(--card-color);
-}
-
-.memory-card-art.is-laserwriter .body {
-  left: 14%;
-  top: 34%;
-  width: 72%;
-  height: 36%;
-  border: 4px solid currentColor;
-  border-radius: 6px;
-  background: transparent;
-}
-
-.memory-card-art.is-laserwriter .paper {
-  left: 31%;
-  top: 13%;
-  width: 38%;
-  height: 30%;
-  border: 3px solid currentColor;
-  background: transparent;
-}
-
-.memory-card-art.is-laserwriter .slot {
-  left: 25%;
-  top: 48%;
-  width: 50%;
-  height: 4px;
-  border-radius: 4px;
-}
-
-.memory-card-art.is-laserwriter .panel {
-  right: 22%;
-  top: 55%;
-  width: 14%;
-  height: 7%;
-  border: 2px solid currentColor;
-  background: transparent;
-}
-
-.memory-card-art.is-applecd-sc .case {
-  left: 16%;
-  top: 34%;
-  width: 68%;
-  height: 32%;
-  border: 4px solid currentColor;
-  border-radius: 5px;
-  background: transparent;
-}
-
-.memory-card-art.is-applecd-sc .slot {
-  left: 27%;
-  top: 48%;
-  width: 46%;
-  height: 4px;
-  border-radius: 4px;
-}
-
-.memory-card-art.is-applecd-sc .disc {
-  left: 39%;
-  top: 16%;
-  width: 22%;
-  height: 22%;
-  border: 3px solid currentColor;
-  border-radius: 50%;
-  background: transparent;
-}
-
-.memory-card-art.is-applecd-sc .light {
-  right: 25%;
-  top: 55%;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-}
-
-.memory-card-art.is-adb-mouse .body {
-  left: 23%;
-  top: 18%;
-  width: 54%;
-  height: 66%;
-  border: 4px solid currentColor;
-  border-radius: 48% 48% 42% 42%;
-  background: transparent;
-}
-
-.memory-card-art.is-adb-mouse .button {
-  left: 39%;
-  top: 23%;
-  width: 22%;
-  height: 24%;
-  border-radius: 10px 10px 5px 5px;
-}
-
-.memory-card-art.is-adb-mouse .cable {
-  left: 48%;
-  top: 0;
-  width: 4px;
-  height: 21%;
-  border-radius: 4px;
 }
 
 .memory-card:disabled {
-  color: #fff;
   opacity: 1;
 }
 
 .memory-card:active:not(:disabled) {
-  transform: translate(1px, 2px) rotate(var(--card-tilt));
-  box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.65);
+  transform: translate(1px, calc(var(--card-shift) + 1px)) rotate(var(--card-tilt));
+  box-shadow: none;
+}
+
+#memory-cards-status {
+  margin: 0;
 }
 
 .key-caps-window .key-caps-pane {

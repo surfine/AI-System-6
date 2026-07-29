@@ -4,6 +4,7 @@
 // classic-script modules and app.js have initialized.
 
 var activeAppId = "finder";
+var menuOwnerAppId = "finder";
 const runningApps = new Map();
 const hiddenAppIds = new Set();
 const nonQuittableAppIds = new Set(["finder", "system"]);
@@ -11,24 +12,29 @@ const finderModeForegroundAppIds = new Set(["finder", "system", "accessories"]);
 
 const multiFinderAppLabels = {
   finder: "Finder",
+  writingStudio: "Writing Studio",
   teachText: "TeachText",
   clioTalk: "ClioTalk",
-  quickDraft: "Quick Draft",
   searcher: "Searcher",
   reader: "Reader",
+  timeMachine: "Time Machine",
   endfield: "Endfield Terminal",
   docMap: "DocMap",
   clioStage: "ClioStage",
+  clioChart: "ClioChart",
   liquidCover: "Cover Glass",
   cmfStudio: "CMF Studio",
+  soundscape: "Soundscape",
   scrapbook: "Scrapbook",
+  bureaucracyMeme: "Bureaucracy Meme",
   accessories: "Accessories",
   system: "System",
 };
 
 const windowAppMap = {
   assistant: "clioTalk",
-  quickDraft: "quickDraft",
+  quickDraft: "writingStudio",
+  bureaucracyMeme: "bureaucracyMeme",
   chooser: "accessories",
   control: "accessories",
   rag: "finder",
@@ -50,6 +56,7 @@ const windowAppMap = {
   scrapbook: "scrapbook",
   trash: "finder",
   reader: "reader",
+  timeMachine: "timeMachine",
   endfieldTerminal: "endfield",
   questionSheet: "teachText",
   outline: "teachText",
@@ -62,8 +69,10 @@ const windowAppMap = {
   rebuildFlow: "teachText",
   docMap: "docMap",
   clioStage: "clioStage",
+  clioChart: "clioChart",
   liquidCover: "liquidCover",
   cmfStudio: "cmfStudio",
+  soundscape: "soundscape",
   dictionary: "accessories",
   imageManager: "teachText",
   systemHelp: "system",
@@ -72,6 +81,7 @@ const windowAppMap = {
   writingBell: "accessories",
   notePad: "accessories",
   clipboard: "accessories",
+  alarmClock: "accessories",
   calculator: "accessories",
   puzzle: "accessories",
   memoryCards: "accessories",
@@ -84,10 +94,40 @@ const windowAppMap = {
   about: "system",
 };
 
+function resolvedWindowAppId(name) {
+  if (
+    workspaceProfile === workspaceProfileWriting
+    && (
+      writingStudioOwnedWindowNames.has(name)
+      || (
+        name === "teachText"
+        && typeof isTeachTextManuscriptRole === "function"
+        && isTeachTextManuscriptRole()
+      )
+    )
+  ) {
+    return "writingStudio";
+  }
+  return windowAppMap[name] || "finder";
+}
+
 function getWindowAppId(winOrName) {
   const win = typeof winOrName === "string" ? getWindow(winOrName) : winOrName;
   const name = typeof winOrName === "string" ? winOrName : win?.dataset.window;
-  return win?.dataset.app || windowAppMap[name] || "finder";
+  const resolved = resolvedWindowAppId(name);
+  if (resolved === "writingStudio" || win?.dataset.app === "writingStudio") return resolved;
+  return win?.dataset.app || resolved;
+}
+
+function syncWorkspaceAppOwnership() {
+  document.querySelectorAll(".window").forEach((win) => {
+    const name = win.dataset.window || "";
+    const nextAppId = resolvedWindowAppId(name);
+    if (win.dataset.app === nextAppId) return;
+    forgetWindowFromRunningApps(name);
+    win.dataset.app = nextAppId;
+    if (!win.classList.contains("is-hidden")) ensureRunningApp(nextAppId, name);
+  });
 }
 
 function isMultiFinderMode() {
@@ -99,7 +139,7 @@ function isFinderModeSingleTaskApp(appId) {
 }
 
 function isSideAskPairApp(appId) {
-  return appId === "clioTalk" || appId === sideAskAnchorAppId;
+  return appId === "clioTalk" || appId === sideAskAnchorOwnerAppId;
 }
 
 function canUseSideAsk() {
@@ -146,6 +186,7 @@ function windowsForApp(appId) {
 function getRunningApps() {
   ensureRunningApp("finder");
   return Array.from(runningApps.values())
+    .filter((app) => app.id !== "accessories" && app.id !== "system")
     .map((app) => ({
       ...app,
       windowCount: app.windows.size,
@@ -159,8 +200,16 @@ function activeAppLabel() {
 }
 
 function renderMultiFinderMenu() {
-  document.querySelector(".multifinder-menu")?.classList.toggle("is-hidden", !isMultiFinderMode());
-  if (!isMultiFinderMode()) return;
+  if (activeAppId !== "accessories" && activeAppId !== "system") menuOwnerAppId = activeAppId;
+  if (typeof renderAppMenuBar === "function") renderAppMenuBar(menuOwnerAppId);
+  // MultiFinder-only, on every screen size. A phone presents apps full-screen
+  // in both modes — that is a screen-size consequence, not a task model — so it
+  // must not conjure a switcher in Finder mode, where one app runs at a time and
+  // the close box is the way back to the desktop.
+  const showSwitcher = isMultiFinderMode();
+  document.querySelector(".multifinder-menu")?.classList.toggle("is-hidden", !showSwitcher);
+  syncWorkspaceDesktopIcon();
+  if (!showSwitcher) return;
 
   const labelEl = document.querySelector("#multifinder-label");
   const popover = document.querySelector("#multifinder-popover");

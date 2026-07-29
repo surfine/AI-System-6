@@ -1,0 +1,784 @@
+/* ClioChart — the data comparison bench.
+   Two panes in one window: the grid on the left owns the data, the projection
+   on the right is a read-only view of it. Object identity is carried by 1-bit
+   fill patterns rather than hue, so the same chart reads on screen and on a
+   dot-matrix printer. */
+
+.clio-chart-window {
+  width: min(1040px, calc(100vw - 72px));
+  height: min(620px, calc(100vh - 88px));
+}
+
+.clio-chart-pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.clio-chart-owner {
+  font-family: var(--clio-chart-typeface);
+  font-size: var(--clio-chart-type-size);
+  color: var(--clio-chart-ink);
+}
+
+/* Layout is the shared TDI shell: .tdi-shell stacks on a narrow window and goes
+   side-by-side past the 760px container query, .tdi-rail takes --tdi-rail-width,
+   and .tdi-grabber is the same handle Reader / TeachText / DocMap use. Reusing
+   it buys the drag, the keyboard step, aria-valuenow and the saved width — all
+   from setupTdiRailResize() — instead of a second, worse splitter. */
+.clio-chart-split {
+  --tdi-rail-width: 380px;
+  align-items: stretch;
+}
+
+.clio-chart-grid-pane {
+  min-width: 0;
+  margin: var(--clio-chart-pane-margin);
+  padding: var(--clio-chart-grid-pane-padding);
+  overflow: auto;
+  box-sizing: border-box;
+  border: var(--clio-chart-pane-border);
+  border-radius: calc(var(--clio-chart-radius) + 4px);
+  background: var(--clio-chart-pane-bg);
+  box-shadow: var(--clio-chart-pane-shadow);
+  backdrop-filter: var(--clio-chart-pane-filter);
+  -webkit-backdrop-filter: var(--clio-chart-pane-filter);
+}
+
+body.is-resizing-tdi .clio-chart-grid-pane,
+body.is-resizing-tdi .clio-chart-view-pane {
+  pointer-events: none;
+}
+
+.clio-chart-view-pane {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  margin: var(--clio-chart-pane-margin);
+  padding: var(--clio-chart-pane-padding);
+  box-sizing: border-box;
+  border: var(--clio-chart-pane-border);
+  border-radius: calc(var(--clio-chart-radius) + 4px);
+  background: var(--clio-chart-pane-bg);
+  box-shadow: var(--clio-chart-pane-shadow);
+  backdrop-filter: var(--clio-chart-pane-filter);
+  -webkit-backdrop-filter: var(--clio-chart-pane-filter);
+}
+
+/* --- the grid: Excel 1.5, not a web form --- */
+
+.clio-chart-grid {
+  border-collapse: var(--clio-chart-grid-collapse);
+  border-spacing: var(--clio-chart-grid-spacing);
+  font-family: var(--clio-chart-typeface);
+  font-size: var(--clio-chart-type-size);
+  background: var(--clio-chart-surface);
+  color: var(--clio-chart-ink);
+}
+
+.clio-chart-grid th,
+.clio-chart-grid td {
+  height: var(--clio-chart-cell-height);
+  padding: var(--clio-chart-cell-padding);
+  border: 1px solid var(--clio-chart-rule);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.clio-chart-grid th:first-child,
+.clio-chart-grid td:first-child {
+  border-radius: var(--clio-chart-radius) 0 0 var(--clio-chart-radius);
+}
+
+.clio-chart-grid th:last-child,
+.clio-chart-grid td:last-child {
+  border-radius: 0 var(--clio-chart-radius) var(--clio-chart-radius) 0;
+}
+
+.clio-chart-grid th {
+  background: var(--clio-chart-panel);
+  font-weight: 700;
+  cursor: pointer;
+  user-select: none;
+}
+
+.clio-chart-grid th:hover {
+  background: var(--clio-chart-reference);
+}
+
+.clio-chart-grid th.is-charted {
+  background: var(--clio-chart-accent);
+  color: #ffffff;
+}
+
+.clio-chart-grid th.is-label-column {
+  cursor: default;
+  text-align: left;
+}
+
+.clio-chart-grid td.is-label {
+  background: var(--clio-chart-panel-quiet);
+  text-align: left;
+  cursor: pointer;
+}
+
+.clio-chart-grid td.is-label:hover {
+  background: var(--clio-chart-reference);
+}
+
+.clio-chart-grid tr.is-reference td {
+  background: var(--clio-chart-reference);
+  font-weight: 700;
+}
+
+.clio-chart-grid tr.is-aggregate td.is-label {
+  font-style: italic;
+  color: var(--clio-chart-muted);
+}
+
+.clio-chart-grid td.is-selected {
+  outline: 2px solid var(--clio-chart-accent);
+  outline-offset: -2px;
+  box-shadow: var(--clio-chart-focus-shadow);
+}
+
+/* A cell we could not read keeps its text and admits it, rather than being
+   silently dropped or turned into a zero. */
+.clio-chart-grid td.is-unreadable {
+  position: relative;
+}
+
+.clio-chart-grid td.is-unreadable::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 7px;
+  height: 7px;
+  background: linear-gradient(to bottom left, var(--clio-chart-accent) 0 50%, transparent 50%);
+}
+
+.clio-chart-cell-input {
+  width: 100%;
+  border: 0;
+  padding: 0;
+  background: var(--clio-chart-surface);
+  color: var(--clio-chart-ink);
+  font-family: var(--clio-chart-typeface);
+  font-size: var(--clio-chart-type-size);
+  text-align: right;
+}
+
+.clio-chart-hint,
+.clio-chart-missing {
+  margin: 6px 0 0;
+  font-family: var(--ui-font);
+  font-size: 10px;
+  color: var(--clio-chart-muted);
+}
+
+/* --- the projection --- */
+
+.clio-chart-view-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  flex: none;
+  padding-bottom: 4px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--clio-chart-rule);
+  font-family: var(--clio-chart-typeface);
+}
+
+.clio-chart-view-head b {
+  font-size: 12px;
+}
+
+.clio-chart-view-head span {
+  flex: 1 1 40px;
+  min-width: 0;
+  font-size: 10px;
+  color: var(--clio-chart-muted);
+}
+
+.clio-chart-projection-switcher .btn {
+  padding-left: 8px;
+  padding-right: 8px;
+  white-space: nowrap;
+}
+
+.clio-chart-projection-switcher {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: var(--clio-chart-switcher-justify);
+  gap: 4px;
+  flex: none;
+  width: var(--clio-chart-switcher-width);
+  max-width: 100%;
+}
+
+.clio-chart-view {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  font-family: var(--clio-chart-typeface);
+}
+
+.clio-chart-row {
+  display: grid;
+  grid-template-columns: minmax(80px, 148px) minmax(0, 1fr) max-content;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: var(--clio-chart-row-gap);
+  font-size: 10px;
+}
+
+.clio-chart-row-name {
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clio-chart-row.is-reference .clio-chart-row-name {
+  font-weight: 700;
+}
+
+.clio-chart-row.is-aggregate .clio-chart-row-name {
+  font-style: italic;
+  color: var(--clio-chart-muted);
+}
+
+.clio-chart-track {
+  position: relative;
+  height: var(--clio-chart-track-height);
+  border-bottom: 1px solid var(--clio-chart-track);
+  border-radius: var(--clio-chart-radius);
+  background: var(--clio-chart-panel-quiet);
+}
+
+/* Bars fill by tick, like a machine drawing a chart, not like a web page
+   easing into place. */
+.clio-chart-bar,
+.clio-chart-extension {
+  position: absolute;
+  top: 0;
+  height: var(--clio-chart-track-height);
+  box-sizing: border-box;
+  border: 1px solid var(--clio-chart-accent);
+  box-shadow: var(--clio-chart-material-shadow);
+  backdrop-filter: var(--clio-chart-material-filter);
+  -webkit-backdrop-filter: var(--clio-chart-material-filter);
+  border-radius: var(--clio-chart-radius);
+}
+
+/* The resting state is the finished bar, and the reveal is an animation on top
+   of it. If animations never run — reduced motion, an unpainted window, an old
+   engine — the chart is still correct rather than blank. Revealing by clip-path
+   keeps the dither anchored; scaling would smear the pattern. */
+.clio-chart-bar.is-drawn,
+.clio-chart-extension.is-drawn {
+  animation: clio-chart-fill 380ms steps(14) backwards;
+}
+
+@keyframes clio-chart-fill {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+
+.clio-chart-extension {
+  border-left: 0;
+}
+
+.clio-chart-value {
+  height: var(--clio-chart-track-height);
+  padding-left: 6px;
+  line-height: var(--clio-chart-track-height);
+  white-space: nowrap;
+}
+
+.clio-chart-value em {
+  font-style: normal;
+  color: var(--clio-chart-muted);
+}
+
+/* 1-bit object identity. Pattern 0 is reserved for the reference object. */
+.clio-chart-bar[data-pattern="0"] {
+  background: var(--clio-chart-solid-fill);
+}
+
+.clio-chart-bar[data-pattern="1"] {
+  background: var(--clio-chart-pattern-1);
+}
+
+.clio-chart-bar[data-pattern="2"] {
+  background: var(--clio-chart-pattern-2);
+}
+
+.clio-chart-bar[data-pattern="3"] {
+  background: var(--clio-chart-pattern-3);
+}
+
+.clio-chart-bar[data-pattern="4"] {
+  background: var(--clio-chart-pattern-4);
+}
+
+.clio-chart-bar[data-pattern="5"] {
+  background: var(--clio-chart-pattern-5);
+}
+
+/* An aggregate row is not a real machine, and must never look like one. */
+.clio-chart-bar[data-pattern="aggregate"] {
+  border-style: dashed;
+  background: var(--clio-chart-surface);
+}
+
+.clio-chart-extension {
+  background: var(--clio-chart-pattern-3);
+}
+
+/* An uncertain value gets a ragged end instead of a clean one. */
+.clio-chart-bar.is-uncertain {
+  border-right-style: dotted;
+}
+
+.clio-chart-legend {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 9px;
+  padding-top: 6px;
+  border-top: 1px solid var(--clio-chart-track);
+  font-size: 9px;
+  color: var(--clio-chart-muted);
+}
+
+.clio-chart-legend i {
+  display: inline-block;
+  width: 16px;
+  height: 9px;
+  margin-right: 4px;
+  border: 1px solid var(--clio-chart-accent);
+  vertical-align: -1px;
+}
+
+.clio-chart-legend i[data-pattern="0"] {
+  background: var(--clio-chart-solid-fill);
+}
+
+.clio-chart-legend i[data-pattern="aggregate"] {
+  border-style: dashed;
+  background: var(--clio-chart-surface);
+}
+
+.clio-chart-legend i[data-pattern="extension"] {
+  background: var(--clio-chart-pattern-3);
+}
+
+/* --- P2 comparison matrix --- */
+
+.clio-chart-matrix-scroller {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.clio-chart-matrix {
+  border-collapse: collapse;
+  font-size: 10px;
+}
+
+.clio-chart-matrix th,
+.clio-chart-matrix td {
+  padding: 2px 6px;
+  border: 1px solid var(--clio-chart-rule);
+  text-align: right;
+  white-space: nowrap;
+  vertical-align: top;
+}
+
+.clio-chart-matrix th {
+  background: var(--clio-chart-panel);
+  font-weight: 700;
+}
+
+.clio-chart-matrix th.is-metric {
+  text-align: left;
+}
+
+.clio-chart-matrix td.is-reference-column {
+  background: var(--clio-chart-reference);
+  font-weight: 700;
+}
+
+.clio-chart-matrix .clio-chart-delta {
+  margin-left: 4px;
+  color: var(--clio-chart-muted);
+}
+
+/* A rollup is arithmetic on top of measurements, and says so. */
+.clio-chart-matrix tr.is-rollup th,
+.clio-chart-matrix tr.is-rollup td {
+  background: var(--clio-chart-panel);
+  font-style: italic;
+}
+
+.clio-chart-matrix-note {
+  margin: 6px 0 0;
+  font-size: 9px;
+  color: var(--clio-chart-muted);
+}
+
+/* --- P3 trace: plotter lines, differentiated by stroke rather than hue --- */
+
+.clio-chart-trace svg {
+  display: block;
+  width: 100%;
+  max-height: 320px;
+  color: var(--clio-chart-ink);
+}
+
+.clio-chart-trace text {
+  fill: var(--clio-chart-muted);
+  font-family: var(--ui-font);
+  font-size: 9px;
+}
+
+.clio-chart-axis {
+  stroke: var(--clio-chart-rule);
+  stroke-width: 1;
+}
+
+.clio-chart-trace-line {
+  fill: none;
+  stroke: var(--clio-chart-accent);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.clio-chart-trace-line[data-pattern="1"] {
+  stroke-dasharray: 8 4;
+}
+
+.clio-chart-trace-line[data-pattern="2"] {
+  stroke-dasharray: 2 3;
+}
+
+.clio-chart-trace-line[data-pattern="3"] {
+  stroke-dasharray: 9 3 2 3;
+}
+
+.clio-chart-trace-line.is-drawn {
+  animation: clio-chart-plot 600ms linear backwards;
+}
+
+@keyframes clio-chart-plot {
+  from { stroke-dashoffset: 100; opacity: 0.25; }
+  to { stroke-dashoffset: 0; opacity: 1; }
+}
+
+.clio-chart-trace-legend {
+  display: grid;
+  gap: 4px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--clio-chart-track);
+  font-size: 9px;
+}
+
+.clio-chart-trace-legend i {
+  display: inline-block;
+  width: 24px;
+  margin-right: 5px;
+  border-top: 2px solid var(--clio-chart-accent);
+  vertical-align: 3px;
+}
+
+.clio-chart-trace-legend i[data-pattern="1"] {
+  border-top-style: dashed;
+}
+
+.clio-chart-trace-legend i[data-pattern="2"] {
+  border-top-style: dotted;
+}
+
+.clio-chart-trace-legend i[data-pattern="3"] {
+  border-top: 3px double var(--clio-chart-accent);
+}
+
+/* --- P4 spatial grid: density helps, but every cell keeps its number --- */
+
+.clio-chart-spatial-grid {
+  display: grid;
+  gap: 2px;
+}
+
+.clio-chart-spatial-grid.columns-1 { grid-template-columns: 1fr; }
+.clio-chart-spatial-grid.columns-2 { grid-template-columns: repeat(2, 1fr); }
+.clio-chart-spatial-grid.columns-3 { grid-template-columns: repeat(3, 1fr); }
+.clio-chart-spatial-grid.columns-4 { grid-template-columns: repeat(4, 1fr); }
+.clio-chart-spatial-grid.columns-5 { grid-template-columns: repeat(5, 1fr); }
+.clio-chart-spatial-grid.columns-6 { grid-template-columns: repeat(6, 1fr); }
+
+.clio-chart-spatial-cell {
+  min-height: var(--clio-chart-spatial-cell-height);
+  padding: 5px;
+  border: 1px solid var(--clio-chart-accent);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-sizing: border-box;
+  box-shadow: var(--clio-chart-material-shadow);
+  backdrop-filter: var(--clio-chart-material-filter);
+  -webkit-backdrop-filter: var(--clio-chart-material-filter);
+}
+
+.clio-chart-spatial-cell span {
+  align-self: flex-start;
+  padding: var(--clio-chart-label-padding);
+  border-radius: calc(var(--clio-chart-radius) / 2);
+  background: var(--clio-chart-label-bg);
+  color: var(--clio-chart-ink);
+  font-size: var(--clio-chart-spatial-label-size);
+  line-height: var(--clio-chart-label-leading);
+}
+
+.clio-chart-spatial-cell b {
+  align-self: center;
+  padding: 2px 4px;
+  border-radius: calc(var(--clio-chart-radius) / 2);
+  background: var(--clio-chart-value-bg);
+  color: var(--clio-chart-ink);
+  box-shadow: var(--clio-chart-material-shadow);
+  font-size: var(--clio-chart-spatial-value-size);
+}
+
+.clio-chart-spatial-cell[data-density="12"] {
+  background: var(--clio-chart-density-12);
+}
+
+.clio-chart-spatial-cell[data-density="25"] {
+  background: var(--clio-chart-density-25);
+}
+
+.clio-chart-spatial-cell[data-density="50"] {
+  background: var(--clio-chart-density-50);
+}
+
+.clio-chart-spatial-cell[data-density="75"] {
+  background: var(--clio-chart-density-75);
+}
+
+.clio-chart-spatial-cell[data-density="100"] {
+  background: var(--clio-chart-solid-fill);
+}
+
+.clio-chart-spatial-cell[data-density="missing"] {
+  border-style: dashed;
+}
+
+.clio-chart-spatial-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid var(--clio-chart-track);
+  font-size: 10px;
+}
+
+/* --- P5 normalized score bars --- */
+
+.clio-chart-score-row {
+  display: grid;
+  grid-template-columns: minmax(80px, 140px) minmax(80px, 1fr) max-content;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 6px;
+  font-size: 10px;
+}
+
+.clio-chart-score-row > span {
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clio-chart-score-track {
+  height: var(--clio-chart-track-height);
+  border: 1px solid var(--clio-chart-accent);
+  background: var(--clio-chart-panel-quiet);
+  border-radius: var(--clio-chart-radius);
+  overflow: hidden;
+}
+
+.clio-chart-score-track i {
+  display: block;
+  height: 100%;
+  background: var(--clio-chart-pattern-1);
+  box-shadow: var(--clio-chart-material-shadow);
+  backdrop-filter: var(--clio-chart-material-filter);
+  -webkit-backdrop-filter: var(--clio-chart-material-filter);
+}
+
+.clio-chart-score-note,
+.clio-chart-empty-projection {
+  margin: 8px 0 0;
+  font-size: 10px;
+  color: var(--clio-chart-muted);
+}
+
+/* The ClioStage handoff is a frozen clone of the current read-only projection.
+   It reuses the same object grammar and never opens a second data editor. */
+.clio-stage-chart-slide {
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+.clio-chart-stage-snapshot {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 4%;
+  background: var(--clio-chart-surface);
+  color: var(--clio-chart-ink);
+}
+
+.clio-chart-stage-snapshot > h1 {
+  margin: 0 0 4%;
+  font-family: var(--ui-font);
+  font-size: clamp(22px, 3.4cqi, 42px);
+}
+
+.clio-chart-stage-snapshot > .clio-chart-view {
+  overflow: visible;
+  font-size: clamp(12px, 1.5cqi, 20px);
+}
+
+/* Presentation mode keeps every item visible as a faint 12.5% bench mark;
+   Space reveals the next one without changing any measurement. */
+.clio-chart-view .is-presentation-muted {
+  opacity: 0.28;
+}
+
+.clio-chart-view .is-presentation-muted .clio-chart-track,
+.clio-chart-view .is-presentation-muted .clio-chart-score-track {
+  background: conic-gradient(var(--clio-chart-accent) 0 12.5%, var(--clio-chart-pattern-paper) 0) 0 0 / 4px 4px;
+}
+
+.clio-chart-window:not(.is-active) .clio-chart-bar,
+.clio-chart-window:not(.is-active) .clio-chart-extension,
+.clio-chart-window:not(.is-active) .clio-chart-trace-line {
+  animation-play-state: paused;
+}
+
+/* The source view is an editable surface, not a listing. Ownership moves by
+   mode: while it is showing it owns the text, and leaving it parses back. */
+.clio-chart-source {
+  width: 100%;
+  height: 100%;
+  min-height: 160px;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 6px;
+  border: 1px solid var(--clio-chart-rule);
+  background: var(--clio-chart-surface);
+  color: var(--clio-chart-ink);
+  font-family: var(--mono-font);
+  font-size: 11px;
+  line-height: 1.45;
+  white-space: pre;
+  resize: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clio-chart-bar.is-drawn,
+  .clio-chart-extension.is-drawn,
+  .clio-chart-trace-line.is-drawn {
+    animation: none;
+  }
+}
+
+/* Stacked layout (narrow window). The shared figure hides the grabber below the
+   760px container query — a 4px drag target is the wrong control on a phone —
+   so the split is a fixed band here rather than a draggable one. */
+.clio-chart-split > .clio-chart-grid-pane {
+  max-height: 45%;
+}
+
+@container (min-width: 760px) {
+  .clio-chart-split > .clio-chart-grid-pane {
+    max-height: none;
+  }
+}
+
+@container (max-width: 759px) {
+  .clio-chart-grid {
+    display: block;
+    width: 100%;
+    background: transparent;
+  }
+
+  .clio-chart-grid thead {
+    display: none;
+  }
+
+  .clio-chart-grid tbody,
+  .clio-chart-grid tr,
+  .clio-chart-grid td {
+    display: block;
+  }
+
+  .clio-chart-grid tr {
+    margin-bottom: 8px;
+    border: 1px solid var(--clio-chart-accent);
+    background: var(--clio-chart-surface);
+  }
+
+  .clio-chart-grid td {
+    min-height: 28px;
+    height: auto;
+    padding: 4px 6px;
+    border: 0;
+    border-top: 1px solid var(--clio-chart-rule);
+    white-space: normal;
+  }
+
+  .clio-chart-grid td::before {
+    content: attr(data-label);
+    display: inline-block;
+    min-width: 42%;
+    padding-right: 8px;
+    box-sizing: border-box;
+    color: var(--clio-chart-muted);
+    font-size: 10px;
+    text-align: left;
+  }
+
+  .clio-chart-grid td.is-label {
+    border-top: 0;
+    font-weight: 700;
+  }
+
+  .clio-chart-cell-input {
+    width: 55%;
+    font-size: 16px;
+  }
+
+  .clio-chart-projection-switcher {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 860px) {
+  .clio-chart-row {
+    grid-template-columns: minmax(64px, 96px) minmax(0, 1fr) max-content;
+  }
+}

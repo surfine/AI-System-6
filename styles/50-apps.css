@@ -1433,6 +1433,12 @@
   margin-left: var(--teachtext-action-primary-gap);
 }
 
+.teachtext-actions > .sideask-launch-button {
+  flex: 0 0 auto;
+  min-width: 96px;
+  margin-left: var(--teachtext-action-primary-gap);
+}
+
 .teachtext-command-group > .teachtext-command-menu > summary {
   display: flex;
   align-items: center;
@@ -1620,12 +1626,13 @@
   overflow: auto;
 }
 
-.project-cd-pane {
+.window-pane.project-cd-pane {
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
-  gap: 16px;
-  min-height: 292px;
-  padding: 12px;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 0;
+  min-height: 0;
+  flex-basis: 292px;
+  padding: 0;
   background: var(--project-cd-pane-bg);
 }
 
@@ -1647,7 +1654,9 @@
 
 .project-cd-pane > .button-row {
   gap: 10px;
-  padding-top: 4px;
+  /* Above the framed content area, with its hairline as that area's top edge. */
+  padding: 10px;
+  border-bottom: 1px solid var(--ink);
 }
 
 .image-manager-pane {
@@ -2388,9 +2397,16 @@ body:not(.use-liquid-glass) .scrap-list button.is-multi-selected:not(.is-selecte
   font-size: 12px;
 }
 
-.trash-pane {
+.window-pane.trash-pane {
   display: grid;
-  gap: 10px;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 0;
+  padding: 0;
+}
+
+.trash-pane > .button-row {
+  padding: 10px;
+  border-bottom: 1px solid var(--ink);
 }
 
 .about-pane {
@@ -2549,6 +2565,15 @@ input[type="checkbox"] {
   background-repeat: no-repeat;
   background-size: 12px 12px;
   box-shadow: none;
+  transition:
+    background-color var(--control-motion-fast-in) var(--control-motion-ease),
+    border-color var(--control-motion-fast-in) var(--control-motion-ease),
+    box-shadow var(--control-motion-fast-in) var(--control-motion-ease);
+}
+
+input[type="checkbox"]:hover:not(:disabled),
+input[type="checkbox"]:focus-visible {
+  box-shadow: var(--control-choice-hover-shadow);
 }
 
 input[type="checkbox"]:checked {
@@ -2572,11 +2597,15 @@ input[type="radio"] {
   background-repeat: no-repeat;
   background-size: var(--system-radio-size) var(--system-radio-size);
   box-shadow: none;
+  transition:
+    background-color var(--control-motion-fast-in) var(--control-motion-ease),
+    box-shadow var(--control-motion-fast-in) var(--control-motion-ease);
 }
 
 input[type="radio"]:hover,
 input[type="radio"]:focus-visible {
   background-image: url("./system.css-reference/icon/radio-border-focused.svg");
+  box-shadow: var(--control-choice-hover-shadow);
 }
 
 input[type="radio"]:checked {
@@ -2596,6 +2625,18 @@ input[type="radio"]:checked:focus-visible {
   background-size:
     7px 7px,
     var(--system-radio-size) var(--system-radio-size);
+}
+
+input[type="checkbox"]:focus-visible,
+input[type="radio"]:focus-visible {
+  outline: var(--control-focus-outline);
+  outline-offset: var(--control-focus-offset);
+}
+
+input[type="checkbox"]:disabled,
+input[type="radio"]:disabled {
+  cursor: default;
+  opacity: var(--control-disabled-opacity);
 }
 
 .hint {
@@ -2646,11 +2687,50 @@ input[type="radio"]:checked:focus-visible {
   color: var(--paper);
 }
 
-.finder-marquee {
+/* One dotted primitive for both System 6 drag outlines: the selection marquee
+   and the frame a window will take when the grow box or title bar is released.
+   Four gray-pattern hairlines, not a CSS `dotted` border — the browser draws
+   that as spaced round dots, System 6 alternates single pixels. */
+.finder-marquee,
+.window-outline {
   position: fixed;
   z-index: var(--z-selection-marquee);
   pointer-events: none;
-  border: 1px dotted var(--ink);
+  mix-blend-mode: var(--drag-outline-blend);
+  background:
+    var(--drag-outline-dashes-x) left top / 100% var(--drag-outline-unit) no-repeat,
+    var(--drag-outline-dashes-x) left bottom / 100% var(--drag-outline-unit) no-repeat,
+    var(--drag-outline-dashes-y) left top / var(--drag-outline-unit) 100% no-repeat,
+    var(--drag-outline-dashes-y) right top / var(--drag-outline-unit) 100% no-repeat;
+}
+
+/* Sizing a window previews the whole frame, not just how much desk it will
+   cover: System 6's grow image carries the seam under the title bar and both
+   scroll bar lanes, so the corner cell you are dragging is visible in the
+   ghost. The two lanes cross at that bottom-right cell and nowhere else — the
+   vertical lane starts below the title bar seam, because that is where a real
+   scroll bar starts. A window with no lanes leaves those layers on top of the
+   outer hairlines, where they disappear. */
+.window-outline.is-frame {
+  /* Same lane the real frame uses; a window without one gets 0 inline. */
+  --outline-lane: var(--window-frame-lane);
+  background:
+    var(--drag-outline-dashes-x) left var(--outline-titlebar, 0) / 100% var(--drag-outline-unit) no-repeat,
+    var(--drag-outline-dashes-x) left calc(100% - var(--outline-lane, 0px)) /
+      100% var(--drag-outline-unit) no-repeat,
+    var(--drag-outline-dashes-y) calc(100% - var(--outline-lane, 0px)) bottom /
+      var(--drag-outline-unit) calc(100% - var(--outline-titlebar, 0px)) no-repeat,
+    var(--drag-outline-dashes-x) left top / 100% var(--drag-outline-unit) no-repeat,
+    var(--drag-outline-dashes-x) left bottom / 100% var(--drag-outline-unit) no-repeat,
+    var(--drag-outline-dashes-y) left top / var(--drag-outline-unit) 100% no-repeat,
+    var(--drag-outline-dashes-y) right top / var(--drag-outline-unit) 100% no-repeat;
+}
+
+.window-outline {
+  left: var(--outline-left, 0);
+  top: var(--outline-top, 0);
+  width: var(--outline-width, 0);
+  height: var(--outline-height, 0);
 }
 
 .desktop-icon span:last-child {

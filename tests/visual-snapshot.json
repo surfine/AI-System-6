@@ -65,7 +65,7 @@
       "outline-width": "0px",
       "outline-color": "rgb(0, 0, 0)",
       "_w": 430,
-      "_h": 726
+      "_h": 397
     },
     ".window.is-active > .title-bar": {
       "height": "23px",
@@ -78,15 +78,15 @@
       "color": "rgb(0, 0, 0)",
       "font-weight": "600",
       "_w": 65,
-      "_h": 20
+      "_h": 13
     },
     ".window.is-active > .title-bar .close-box": {
       "width": "40px",
       "height": "40px",
       "border-radius": "0px",
-      "background-color": "rgb(255, 255, 255)",
-      "_w": 12,
-      "_h": 12
+      "background-color": "rgba(0, 0, 0, 0)",
+      "_w": 40,
+      "_h": 40
     },
     ".window .title-bar .resize-box:not(.hidden):not([disabled])": {
       "width": "40px",
@@ -103,7 +103,7 @@
       "padding-left": "8px",
       "background-color": "rgba(0, 0, 0, 0)",
       "_w": 426,
-      "_h": 697
+      "_h": 368
     },
     ".btn": {
       "border-radius": "7px",
@@ -113,20 +113,20 @@
       "padding-left": "12px",
       "background-color": "rgb(255, 255, 255)",
       "color": "rgb(0, 0, 0)",
-      "_w": 220,
+      "_w": 386,
       "_h": 26
     },
-    ".desktop-app-icon": {
+    ".desktop-app-icon[data-action=\"open-find-path\"]": {
       "width": "82px",
-      "height": "67.8594px",
+      "height": "81.0938px",
       "_w": 82,
-      "_h": 68
+      "_h": 81
     },
-    ".desktop-app-icon span:last-child": {
-      "font-size": "13px",
+    ".desktop-app-icon[data-action=\"open-find-path\"] span:last-child": {
+      "font-size": "0px",
       "color": "rgb(0, 0, 0)",
-      "_w": 47,
-      "_h": 20
+      "_w": 54,
+      "_h": 33
     }
   },
   "liquid-glass": {
@@ -195,7 +195,7 @@
       "outline-width": "0px",
       "outline-color": "rgb(16, 17, 20)",
       "_w": 430,
-      "_h": 768
+      "_h": 419
     },
     ".window.is-active > .title-bar": {
       "height": "34px",
@@ -208,7 +208,7 @@
       "color": "rgba(16, 17, 20, 0.82)",
       "font-weight": "700",
       "_w": 72,
-      "_h": 20
+      "_h": 18
     },
     ".window.is-active > .title-bar .close-box": {
       "width": "15px",
@@ -233,30 +233,30 @@
       "padding-left": "8px",
       "background-color": "rgba(255, 255, 255, 0.12)",
       "_w": 430,
-      "_h": 731
+      "_h": 382
     },
     ".btn": {
-      "border-radius": "999px",
+      "border-radius": "10px",
       "padding-top": "2px",
       "padding-right": "12px",
       "padding-bottom": "2px",
       "padding-left": "12px",
       "background-color": "rgb(255, 255, 255)",
       "color": "rgb(255, 255, 255)",
-      "_w": 220,
+      "_w": 380,
       "_h": 26
     },
-    ".desktop-app-icon": {
+    ".desktop-app-icon[data-action=\"open-find-path\"]": {
       "width": "84px",
-      "height": "66.5469px",
+      "height": "65px",
       "_w": 84,
-      "_h": 67
+      "_h": 65
     },
-    ".desktop-app-icon span:last-child": {
+    ".desktop-app-icon[data-action=\"open-find-path\"] span:last-child": {
       "font-size": "0px",
       "color": "rgb(16, 17, 20)",
-      "_w": 47,
-      "_h": 19
+      "_w": 54,
+      "_h": 17
     }
   }
 }

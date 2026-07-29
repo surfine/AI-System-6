@@ -1631,7 +1631,7 @@ ${zh ? "请保持具体，不要写空泛模板。中文要自然，避免翻译
   const requestPayload = (stream) => ({
     model: getLocalModelRequestName(),
     messages: withMarkdownModelMessages([
-      { role: "system", content: "只返回 Markdown writing object pack。不要返回 JSON。" },
+      { role: "system", content: resolveWritingRoutePrompt("writing-route.rebuild-pack") },
       { role: "user", content: prompt },
     ]),
     temperature: 0.18,
@@ -1835,7 +1835,7 @@ async function callRebuildModelMarkdown(prompt, timeoutMs = 14000) {
       messages: withMarkdownModelMessages([
         {
           role: "system",
-          content: "You return concise Markdown for a local writing reconstruction tool. Do not return JSON. Do not invent facts.",
+          content: resolveWritingRoutePrompt("writing-route.rebuild-section", "en"),
         },
         { role: "user", content: prompt },
       ]),
@@ -2608,16 +2608,7 @@ async function draftOutlineSection(sectionTitle) {
     const questionSheet = (project.questionSheet || "").trim();
     const query = [questionSheet, context.outlineMarkdown || context.outlineBody || cleanSectionTitle].filter(Boolean).join("\n\n");
     const projectContext = await buildBudgetedProjectContext(query, { taskKind: "draft-section" });
-    const prompt = `你是 AI System 6 的中文视频口播写作助手。请只起草当前章节，以章节大纲作为主要意图来源；如果有问题单，只把它作为辅助约束。
-
-只返回当前章节草稿的 Markdown。必须使用自然简体中文写正文，即使来源或上下文里有英文，也要转成中文口播表达；不要输出英文段落。
-输出必须是观众听得懂的口播段落，不要写成大纲、报告、卖点表、核验清单或分析模板。
-禁止出现这些栏目词：核心卖点、事实支撑、观众在意点、营销政策、购买门槛、数据准确性、下一步、资料补充。
-不要新增不属于本章节的标题；如果保留标题，正文必须紧跟着自然展开。
-保留中文自然节奏，避免论文腔、公文腔、营销腔和 AI 腔；不要用“此外、至关重要、深入探讨、不断演变的格局、作为……的证明、彰显”等套话。
-不要用“不仅……而且……”和机械三段式撑场面；优先写具体画面、具体判断和真实转折。
-不要编造项目上下文没有支持的事实，也不要为了显得有人味而编造个人经历或感受。
-如果章节用于视频口播，请充分展开成可直接念的段落，除非大纲明确要求极短，否则至少写 250 个中文字符。
+    const prompt = `${resolveWritingRoutePrompt("writing-route.section-draft")}
 
 QUESTION SHEET:
 ${questionSheet || "No Question Sheet provided."}

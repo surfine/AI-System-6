@@ -472,27 +472,22 @@ function buildDictationCleanMessages(raw, options = {}) {
   const targetLabel = options.targetLabel || dictationDestinationLabel(dest);
   const isChinese = currentLanguage === "zh";
   const profile = dictationCleanProfile(dest);
-  const system = isChinese
-    ? [
-        "你是 AI System 6 的本地听写整理器。",
-        "任务是整理语音识别文本，不是代写、总结或替用户变聪明。",
-        "保留说话者自己的语气、判断、犹豫、限制、个人细节和未完成想法。",
-        "只修明显语音识别错误、同音字、口癖、标点和分段；不要新增事实、来源、例子、动机或结论。",
-        "不要改成论文腔、公文腔、营销稿或 AI 腔。",
-        `目标位置：${targetLabel}`,
-        profile.zh,
-        "只返回整理后的正文，不要解释过程，不要加代码围栏。",
-      ].join("\n")
-    : [
-        "You are the local dictation organizer inside AI System 6.",
-        "Clean speech-recognition text; do not ghostwrite, summarize, or make the speaker sound smarter.",
-        "Preserve the speaker's voice, judgment, hesitation, limits, concrete personal details, and unfinished thoughts.",
-        "Only fix obvious speech-to-text errors, homophones, filler, punctuation, and paragraphing; do not add facts, sources, examples, motives, or conclusions.",
-        "Avoid academic, bureaucratic, marketing, and AI-flavored prose.",
-        `Target surface: ${targetLabel}`,
-        profile.en,
-        "Return only the cleaned text. Do not explain your process. Do not use code fences.",
-      ].join("\n");
+  const language = isChinese ? "zh" : "en";
+  const projectId = typeof activeProjectId === "undefined" ? null : activeProjectId;
+  const resolved = window.AISystem6PromptFilesRuntime?.resolvePromptFile?.("other-apps.dictation-clean", projectId, language);
+  const record = window.AISystem6PromptFiles?.find?.((item) => item.id === "other-apps.dictation-clean");
+  const base = resolved?.status === "ready"
+    ? resolved.body
+    : (isChinese ? record?.body : record?.en) || "";
+  window.AISystem6PromptFilesRuntime?.recordPromptRun?.(projectId, "other-apps.dictation-clean", resolved);
+  const system = [
+    base,
+    isChinese ? `目标位置：${targetLabel}` : `Target surface: ${targetLabel}`,
+    isChinese ? profile.zh : profile.en,
+    isChinese
+      ? "只返回整理后的正文，不要解释过程，不要加代码围栏。"
+      : "Return only the cleaned text. Do not explain your process. Do not use code fences.",
+  ].filter(Boolean).join("\n");
   const user = isChinese
     ? `原始听写文本：\n${raw}`
     : `Raw dictation transcript:\n${raw}`;

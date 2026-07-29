@@ -1,14 +1,14 @@
-// Feature module: Recipient receiving-mode handoff review.
+// Feature module: Luoluo receiving-mode handoff review.
 //
 // Loaded lazily from Review Desk. Keeps the external handoff card separate from
 // the backstage review so the recipient sees less while the creator keeps the
 // factual and structural guardrails.
 
 const MINGMING_HANDOFF_CARD_HEADINGS = new Set([
-  "给接收者看的 30 秒版",
+  "给落落看的 30 秒版",
   "一句话交稿",
   "必须守住",
-  "30-Second Version for Recipient",
+  "30-Second Version for Luoluo",
   "One-Line Handoff",
   "Must Preserve",
 ]);
@@ -30,35 +30,36 @@ function buildMingmingHandoffReviewPrompt({
   const normalizedMode = normalizeMingmingHandoffMode(mode);
   const isBackstage = normalizedMode === "backstage";
   const titleLine = sectionTitle ? `${isZh ? "当前章节：" : "Current section:"} ${sectionTitle}` : "";
-  const modeInstructions = isBackstage
+  const promptContract = resolveWritingRoutePrompt("other-apps.mingming-handoff", language);
+  const modeInstructions = [promptContract, isBackstage
     ? (isZh
       ? [
           "输出模式：交付后台审校。",
-          "这是给 Creator/创作者自己看的后台备忘，不是外发给接收者的短卡；不要自动复制，也不要写成给对方看的说明。",
-          "可以使用 HKRR、接收者接收视角、可删地图和事实护栏，但所有判断都必须服务于降低交付摩擦，不评判对方。",
+          "这是给 Aaron/创作者自己看的后台备忘，不是外发给接收者的短卡；不要自动复制，也不要写成给对方看的说明。",
+          "可以使用 HKRR、落落接收视角、可删地图和事实护栏，但所有判断都必须服务于降低交付摩擦，不评判对方。",
           "后台模式可以指出不能删、容易被顺手删、可以退让的部分，但语气要保护创作信心。"
         ]
       : [
           "Output mode: backstage handoff review.",
-          "This is a backstage note for Creator/the creator, not the external card for the recipient; do not make it sound like a message to send.",
-          "You may use HKRR, Recipient's receiving mode, deletion mapping, and factual guardrails, but every judgment must reduce handoff friction rather than judge the other person.",
+          "This is a backstage note for Aaron/the creator, not the external card for the recipient; do not make it sound like a message to send.",
+          "You may use HKRR, Luoluo's receiving mode, deletion mapping, and factual guardrails, but every judgment must reduce handoff friction rather than judge the other person.",
           "The backstage mode may identify what cannot be deleted, what may be casually deleted, and what can be conceded, while protecting creative confidence."
         ])
     : (isZh
       ? [
           "输出模式：外发短卡（默认）。",
-          "你可以在内部使用接收者接收视角、HKRR、事实护栏和可删地图做判断，但不要把推理过程写出来。",
+          "你可以在内部使用落落接收视角、HKRR、事实护栏和可删地图做判断，但不要把推理过程写出来。",
           "短卡模式禁止输出长报告、大表格、完整 HKRR 分析、forensic fact-check 表格、可删地图或后台审校。",
           "不要出现“AI 认为”“HKRR 显示”“我替你审了”“系统判断”“事实护栏”“后台审校”“可删地图”等工具感或后台术语。",
           "默认短卡会被复制给接收者；只能写轻、短、顺、低压力、可以直接发的内容。"
         ]
       : [
           "Output mode: external short card (default).",
-          "You may internally use Recipient's receiving mode, HKRR, factual guardrails, and deletion mapping, but do not show that reasoning process.",
+          "You may internally use Luoluo's receiving mode, HKRR, factual guardrails, and deletion mapping, but do not show that reasoning process.",
           "Short-card mode must not output long reports, large tables, full HKRR analysis, forensic fact-check tables, deletion maps, or backstage review.",
           "Do not use tool-ish or backstage language such as 'the AI thinks', 'HKRR shows', 'I reviewed this for you', 'the system judges', 'fact guardrail', 'backstage review', or 'deletion map'.",
           "The default card will be copied for the recipient; write only light, short, smooth, low-pressure content that can be sent directly."
-        ]);
+        ])].join("\n\n");
   const outputContract = isBackstage
     ? (isZh
       ? [
@@ -113,7 +114,7 @@ function buildMingmingHandoffReviewPrompt({
       ? [
           "必须只按以下三个 Markdown 标题输出，标题一字不改；不要增加任何其他标题：",
           "",
-          "## 给接收者看的 30 秒版",
+          "## 给落落看的 30 秒版",
           "120-220 字，像真实交稿说明：先看见这段稿子的价值，再把主轴说清楚，语气轻、顺、少压力，不要像审稿报告。",
           "",
           "## 一句话交稿",
@@ -125,7 +126,7 @@ function buildMingmingHandoffReviewPrompt({
       : [
           "Return only these three Markdown headings exactly; do not add any other headings:",
           "",
-          "## 30-Second Version for Recipient",
+          "## 30-Second Version for Luoluo",
           "120-220 Chinese characters or 70-120 English words. Write like a real handoff note: first notice the value, then clarify the spine. Keep it light, smooth, low-pressure, and unlike a review report.",
           "",
           "## One-Line Handoff",
@@ -137,13 +138,13 @@ function buildMingmingHandoffReviewPrompt({
 
   return [
     isZh
-      ? "你是 AI System 6 的「若是接收者会怎么接」顾问。你的任务不是重写全文，而是在作品交给真实接收者前，生成低压力、可接收、事实不翻车的交稿支持。"
-      : "You are AI System 6's How Recipient Would Receive It adviser. Your job is not to rewrite the full text, but to prepare low-pressure handoff support a real recipient can receive without losing factual guardrails.",
+      ? "你是 AI System 6 的「若是落落会怎么接」顾问。你的任务不是重写全文，而是在作品交给真实接收者前，生成低压力、可接收、事实不翻车的交稿支持。"
+      : "You are AI System 6's How Luoluo Would Receive It adviser. Your job is not to rewrite the full text, but to prepare low-pressure handoff support a real recipient can receive without losing factual guardrails.",
     "",
     isZh ? "双用户约束：" : "Dual-user constraint:",
     isZh
-      ? "- 用户可能是 Creator，也可能是接收者本人；不要假设使用者身份。"
-      : "- The user may be Creator or Recipient; do not assume who is using this.",
+      ? "- 用户可能是 Aaron，也可能是落落本人；不要假设使用者身份。"
+      : "- The user may be Aaron or Luoluo; do not assume who is using this.",
     isZh
       ? "- 不要输出私人合作判断、表白、道德审判、站队、第三方裁判或“你应该如何对待他”。"
       : "- Do not output private relationship judgments, confession-like language, moral judgment, faction framing, third-party refereeing, or advice about how one person should treat another.",
@@ -154,10 +155,10 @@ function buildMingmingHandoffReviewPrompt({
       ? "- 先给足情绪价值，再给事实护栏；不要把输出写成冷冰冰的审稿意见。"
       : "- Lead with emotional value before factual guardrails; do not make the output feel like cold copyediting notes.",
     "",
-    isZh ? "接收者接收视角与 HKRR：" : "Recipient receiving lens and HKRR:",
+    isZh ? "落落接收视角与 HKRR：" : "Luoluo receiving lens and HKRR:",
     isZh
-      ? "- 代入接收者的接收方式：他可能优先看读起来顺不顺、能不能拍、前两句有没有重点、会不会太像论文。"
-      : "- Simulate Recipient's receiving mode: he may first judge whether it reads smoothly, can be filmed, shows the point in the first two sentences, and avoids sounding like an essay.",
+      ? "- 代入落落的接收方式：他可能优先看读起来顺不顺、能不能拍、前两句有没有重点、会不会太像论文。"
+      : "- Simulate Luoluo's receiving mode: he may first judge whether it reads smoothly, can be filmed, shows the point in the first two sentences, and avoids sounding like an essay.",
     isZh
       ? "- 用 HKRR 审视：Happiness=发现感/趣味/反直觉；Knowledge=信息增量/人话解释；Resonance=共鸣/人的感受；Rhythm=节奏/呼吸/停顿/转场。"
       : "- Use HKRR: Happiness=discovery/interest/counterintuition; Knowledge=information gain/plain explanation; Resonance=human feeling; Rhythm=breathing/pauses/transitions.",
@@ -240,7 +241,7 @@ async function runMingmingHandoffReview(options = {}) {
 
   const runningLabel = isBackstage
     ? (currentLanguage === "zh" ? "正在生成交付后台审校..." : "Generating backstage handoff review...")
-    : (currentLanguage === "zh" ? "正在生成若是接收者会怎么接..." : "Generating How Recipient Would Receive It...");
+    : (currentLanguage === "zh" ? "正在生成若是落落会怎么接..." : "Generating How Luoluo Would Receive It...");
   const taskId = isBackstage ? "mingming-handoff-backstage-review" : "mingming-handoff-review";
   if (!beginLongTask(taskId, runningLabel)) return;
   setReviewDeskMode("facts");
@@ -292,7 +293,7 @@ async function runMingmingHandoffReview(options = {}) {
     const visibleContent = isBackstage ? content : (extractMingmingHandoffCard(content) || content);
     appendReviewFeedbackToBody(visibleContent || (isBackstage
       ? (currentLanguage === "zh" ? "没有生成交付后台审校结果。" : "No backstage handoff review was generated.")
-      : (currentLanguage === "zh" ? "没有生成若是接收者会怎么接结果。" : "No How Recipient Would Receive It result was generated.")));
+      : (currentLanguage === "zh" ? "没有生成若是落落会怎么接结果。" : "No How Luoluo Would Receive It result was generated.")));
 
     if (isBackstage) {
       setStatus(currentLanguage === "zh" ? "交付后台审校完成。" : "Backstage handoff review ready.");

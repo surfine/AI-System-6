@@ -1,5 +1,5 @@
-// Mingming Outline protects the dual-user Recipient style assistant: the command
-// turns source material, outlines, or half-drafts into Recipient-shaped spoken copy.
+// Mingming Outline protects the dual-user Luoluo style assistant: the command
+// turns source material, outlines, or half-drafts into Luoluo-shaped spoken copy.
 
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
@@ -29,16 +29,16 @@ test.assertIncludes(manifest, '"app/features/mingming-lens.js"', "shared Mingmin
 test.assertIncludes(manifest, '"app/features/outline-claim.js"', "Outline module still loads");
 test.assertIncludes(mingmingLens, "const MINGMING_STYLE_CONTRACT", "shared style contract centralizes Mingming rules");
 test.assertIncludes(mingmingLens, "function buildMingmingRewritePrompt", "shared rewrite prompt builder exists");
-test.assertIncludes(mingmingLens, "你是接收者体创作助手", "prompt frames the feature as a Recipient style assistant");
+test.assertIncludes(mingmingLens, "你是落落体创作助手", "prompt frames the feature as a Luoluo style assistant");
 test.assertIncludes(mingmingLens, "双用户、单体验", "prompt preserves the dual-user product model");
-test.assertIncludes(mingmingLens, "用户可能是 Creator，也可能是接收者本人", "prompt does not assume which person is using it");
+test.assertIncludes(mingmingLens, "用户可能是 Aaron，也可能是落落本人", "prompt does not assume which person is using it");
 test.assertIncludes(mingmingLens, "不要假设使用者身份", "prompt explicitly avoids identity assumptions");
 test.assertIncludes(mingmingLens, "创作判断归使用者", "prompt keeps creative authority with the user");
 test.assertIncludes(mingmingLens, "不要追加多版本、交接压力或关系建议", "prompt prevents extra pressure and relationship guidance");
-test.assertIncludes(mingmingLens, "只内化《接收者体_系统提示词.md》《接收者体_改写规范.md》《接收者_角色档案.md》", "prompt limits productized source documents to style materials");
+test.assertIncludes(mingmingLens, "只内化《落落体_系统提示词.md》《落落体_改写规范.md》《落落_角色档案.md》", "prompt limits productized source documents to style materials");
 test.assertIncludes(mingmingLens, "不要引入私人关系或合作判断", "prompt keeps relationship framing out of product behavior");
 test.assertIncludes(mingmingLens, "出厂设置", "prompt internalizes the role profile before writing");
-test.assertIncludes(mingmingLens, "苹果收藏家、旧数码赛博文玩、广东人、周杰伦和 EVA 粉", "prompt carries the Recipient role profile anchors");
+test.assertIncludes(mingmingLens, "苹果收藏家、旧数码赛博文玩、广东人、周杰伦和 EVA 粉", "prompt carries the Luoluo role profile anchors");
 test.assertIncludes(mingmingLens, "万能转换 SOP（改什么像什么）", "prompt productizes the rewrite-spec SOP");
 test.assertIncludes(mingmingLens, "先识别输入类型", "prompt can route any draft shape before rewriting");
 test.assertIncludes(mingmingLens, "先提取，不急着改写", "prompt follows the extraction step from the rewrite spec");
@@ -46,27 +46,27 @@ test.assertIncludes(mingmingLens, "扔掉原文结构，保留内容功能", "pr
 test.assertIncludes(mingmingLens, "重建开场", "prompt keeps the rewrite spec's opening reconstruction step");
 test.assertIncludes(mingmingLens, "短句化后在脑子里大声念一遍", "prompt keeps the ear-check from the rewrite spec");
 test.assertIncludes(mingmingLens, "标题公式", "prompt productizes the title formula");
-test.assertIncludes(mingmingLens, "「接收者」+ 情绪/反差钩子 + 核心对象 + 副题", "prompt carries the title shape from the rewrite spec");
+test.assertIncludes(mingmingLens, "「落落」+ 情绪/反差钩子 + 核心对象 + 副题", "prompt carries the title shape from the rewrite spec");
 test.assertIncludes(mingmingLens, "灵魂母题只能从材料自然浮现", "prompt carries the role profile's recurring themes");
 test.assertIncludes(mingmingLens, "实体掌握 vs 流媒体", "prompt carries the role profile's ownership theme");
 test.assertIncludes(mingmingLens, "比喻系统要具体、通感、接地气", "prompt carries the role profile's metaphor system");
 test.assertIncludes(mingmingLens, "糖浆、高架桥俯视车道音轨、肠粉、奶茶", "prompt carries concrete metaphor anchors");
 test.assertIncludes(mingmingLens, "连接词和口头纹理优先用", "prompt carries the rewrite spec's high-frequency spoken texture");
 test.assertIncludes(mingmingLens, "旅行 / 回忆 / 生活片", "prompt broadens topic routing beyond product reviews");
-test.assertIncludes(mingmingLens, "把输入材料转换成接收者频道里能拍、能念、能成立的口播稿", "prompt targets usable spoken-video copy");
+test.assertIncludes(mingmingLens, "把输入材料转换成落落频道里能拍、能念、能成立的口播稿", "prompt targets usable spoken-video copy");
 test.assertIncludes(mingmingLens, "只输出改写后的完整文案", "prompt forbids analysis or handoff tables");
 test.assertIncludes(mingmingLens, "提示词禁令只能辅助", "prompt internalizes that style bans cannot replace real user input");
 test.assertIncludes(mingmingLens, "反 AI 嘴替检查", "prompt guards against the model replacing the creator's language");
 test.assertIncludes(mingmingLens, "Qwen 3.5 / Qwen 3.6 / DeepSeek v4", "prompt names the intended model families");
-test.assertIncludes(mingmingLens, "视频口播稿，不是文章", "prompt applies the Recipient spoken-video register");
+test.assertIncludes(mingmingLens, "视频口播稿，不是文章", "prompt applies the Luoluo spoken-video register");
 test.assertIncludes(mingmingLens, "前两句要看到重点", "prompt preserves the two-sentence focus rule");
 test.assertIncludes(mingmingLens, "优先 5-12 字一个想法", "prompt preserves the short spoken sentence grain");
-test.assertIncludes(mingmingLens, "碎碎念着往前滚", "prompt preserves Recipient's rolling spoken texture");
+test.assertIncludes(mingmingLens, "碎碎念着往前滚", "prompt preserves Luoluo's rolling spoken texture");
 test.assertIncludes(mingmingLens, "前 20 秒必须有意思", "prompt preserves retention guidance");
-test.assertIncludes(mingmingLens, "我发现了什么", "prompt preserves Recipient's discovery-mode perspective");
+test.assertIncludes(mingmingLens, "我发现了什么", "prompt preserves Luoluo's discovery-mode perspective");
 test.assertIncludes(mingmingLens, "不要写给媒体老师", "prompt keeps the output aimed at real viewers instead of insiders");
 test.assertIncludes(mingmingLens, "题材适配", "prompt routes new products, old devices, engineering units, sponsorship, and controversy differently");
-test.assertIncludes(mingmingLens, "观察 → 原因/考据 → 判断 → 然后下一个", "prompt preserves Recipient's real spoken structure");
+test.assertIncludes(mingmingLens, "观察 → 原因/考据 → 判断 → 然后下一个", "prompt preserves Luoluo's real spoken structure");
 test.assertIncludes(mingmingLens, "声画互补", "prompt includes show-don't-repeat guidance");
 test.assertIncludes(mingmingLens, "不要被夺舍", "prompt guards against performative imitation");
 test.assertIncludes(mingmingLens, "〔待核：...〕", "prompt refuses invented uncertain facts");
@@ -80,14 +80,14 @@ test.assertIncludes(mingmingLens, "链接放评论区 / 这个来源我放简介
 test.assertIncludes(mingmingLens, "参数 -> 体验后果 -> 适合/不适合谁", "prompt keeps parameters in spoken form for any topic");
 test.assertIncludes(mingmingLens, "好了，这次节目就到这里了，喜欢的话关注一下也是可以的，我们下次见", "prompt locks the requested ending");
 test.assertIncludes(mingmingLens, "〔画面：", "prompt supports shootable visual beats");
-test.assertNotIncludes(mingmingLens, "交稿前给自己用的镜子", "shared prompt no longer frames the tool as Creator-only");
-test.assertNotIncludes(mingmingLens, "交得更少、零压力", "shared prompt avoids Creator-to-Recipient handoff framing");
-test.assertNotIncludes(mingmingLens, "这会给接收者增加压力吗", "shared prompt avoids relationship-specific preflight language");
-test.assertNotIncludes(mingmingLens, "Creator 的 1-2 句核心句", "shared prompt does not privilege Creator-only inputs");
+test.assertNotIncludes(mingmingLens, "交稿前给自己用的镜子", "shared prompt no longer frames the tool as Aaron-only");
+test.assertNotIncludes(mingmingLens, "交得更少、零压力", "shared prompt avoids Aaron-to-Luoluo handoff framing");
+test.assertNotIncludes(mingmingLens, "这会给落落增加压力吗", "shared prompt avoids relationship-specific preflight language");
+test.assertNotIncludes(mingmingLens, "Aaron 的 1-2 句核心句", "shared prompt does not privilege Aaron-only inputs");
 
 test.assertIncludes(outlineClaim, 'mingming: "mingming_outline_running"', "long task status has a dedicated Mingming label");
 test.assertIncludes(outlineClaim, "buildMingmingRewritePrompt", "Outline command uses the shared Mingming rewrite prompt");
-test.assertNotIncludes(outlineClaim, "Creator 写给接收者的创作转换顾问", "old Creator-only prompt was removed from Outline");
+test.assertNotIncludes(outlineClaim, "Aaron 写给落落的创作转换顾问", "old Aaron-only prompt was removed from Outline");
 test.assertIncludes(persistenceStatus, '"outline-mingming": { label: t("outline"), windowName: "outline" }', "long task receipt opens the Outline window");
 test.assertIncludes(outlineClaim, 'max_tokens: mode === "mingming" ? 5200 : undefined', "Mingming rewrite requests enough output budget for full spoken copy");
 test.assertIncludes(outlineClaim, 'ai_system6_task_kind: mode === "mingming" ? "mingming_rewrite"', "Mingming rewrite identifies its task kind for model-specific tuning");
@@ -118,7 +118,7 @@ test.assertIncludes(evalScript, "noPolishedMaxims", "practice script rejects ove
 test.assertIncludes(evalScript, 'ai_system6_task_kind: "mingming_rewrite"', "practice script uses the same Mingming task kind");
 test.assertIncludes(evalScript, "enable_thinking: false", "practice script disables Qwen thinking for visible-copy evaluation");
 test.assertIncludes(evalScript, "max_tokens: 5200", "practice script requests full-script output budget");
-test.assertIncludes(evalScript, "exactEnding", "practice script locks the requested Recipient ending");
+test.assertIncludes(evalScript, "exactEnding", "practice script locks the requested Luoluo ending");
 test.assertIncludes(evalScript, "LM Studio is not reachable", "practice script explains when the local model server is unavailable");
 test.assertIncludes(packageJson, '"eval:mingming-outline": "node scripts/eval-mingming-outline.mjs"', "practice script is exposed as an npm command");
 test.assertIncludes(iphone17eCorpus, "主摄 IMX982", "shared corpus uses the newest reference input camera details");

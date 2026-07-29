@@ -564,8 +564,8 @@
       addEditorial("作者边界", "设计类只说可观察变化，不下大结论");
       addRow("设计类不好乱说", "改成可观察变化和画面描述", "待检查");
     }
-    if (/(自己表述|我自己说|自己的语言|别替我|不要替我|Creator.*语言|接收者.*语言)/i.test(value)) {
-      addEditorial("作者边界", "最终用 Creator/接收者自己的语言，ClioTalk 只做编辑建议");
+    if (/(自己表述|我自己说|自己的语言|别替我|不要替我|Aaron.*语言|落落.*语言)/i.test(value)) {
+      addEditorial("作者边界", "最终用 Aaron/落落自己的语言，ClioTalk 只做编辑建议");
       addRow("作者自己的语言", "只建议改法，不默认替换正文", "待检查");
     }
     if (/(官方|发布会|官网|资料)/.test(value)) addMaterial("官方资料", "适合放入快速扫功能段，不能替代亲测");
@@ -1261,15 +1261,15 @@
       mingming: zh
         ? "代入铭铭视角做首发快审：检查当前稿是否能拍、能念、能成立。输出到 ClioTalk：前两句重点、视频感、可拍画面、废话密度、AI 嘴替痕迹，以及最轻量的修改建议。不要直接重写正文，务必保留用户原始判断和已写出的口气。"
         : "Run a Mingming-perspective launch-day pass. Output ClioTalk notes: whether it is shootable, speakable, and defensible; first-two-sentence focus, video feel, shootable moments, filler density, AI-mouthpiece residue, and light edits. Do not rewrite the body; preserve the user's judgment and voice.",
-      recipient: zh
-        ? "用“若是接收者会怎么接”的接收视角做快稿交付检查：输出到 ClioTalk。先给情绪价值，再守事实底线；指出哪里更容易接、哪里有压力、哪里需要更顺口。不要直接重写正文，不要输出私人关系建议或后台审校术语。"
-        : "Use a 'how Recipient would receive it' lens and output ClioTalk notes. Give emotional value first, then protect factual guardrails; note what is easy to receive, what creates pressure, and what should sound smoother. Do not rewrite the body or output private relationship advice.",
+      luoluo: zh
+        ? "用“若是落落会怎么接”的接收视角做快稿交付检查：输出到 ClioTalk。先给情绪价值，再守事实底线；指出哪里更容易接、哪里有压力、哪里需要更顺口。不要直接重写正文，不要输出私人关系建议或后台审校术语。"
+        : "Use a 'how Luoluo would receive it' lens and output ClioTalk notes. Give emotional value first, then protect factual guardrails; note what is easy to receive, what creates pressure, and what should sound smoother. Do not rewrite the body or output private relationship advice.",
       hkrr: zh
         ? "用 HKRR 快速提亮首发稿，输出到 ClioTalk：Happiness=发现感/趣味/反直觉，Knowledge=信息增量/人话解释，Resonance=人的感受，Rhythm=节奏/呼吸/转场。给具体可采用建议，不直接改正文，不做长篇 HKRR 分析。"
         : "Use HKRR to lift this launch draft and output ClioTalk notes: Happiness=discovery/interest/counterintuition, Knowledge=plain information gain, Resonance=human feeling, Rhythm=breathing and transitions. Give concrete adoptable suggestions; do not rewrite the body or write a long HKRR analysis.",
       praise: zh
-        ? "夸夸 Creator，也夸接收者，而且要真的让 Creator 开心：接收者是男生，只能用“他/他的”，禁止用“她/她的”。具体看见 Creator 已经做成的判断、心意、给接收者的认真交付，以及稿子里已经成立的地方；也要具体看见接收者值得被这样认真对待的表达、审美、频道和观众感。再给 3 个最轻量的下一步。输出到 ClioTalk，不要重写正文，不要泛泛鸡汤，不要说教。"
-        : "Encourage Creator and Recipient in a way that genuinely lifts Creator: specifically notice Creator's judgment, care, serious handoff to Recipient, and what is already working in the draft; also notice why Recipient is worth this serious care: expression, taste, channel, and audience sense. Then give 3 light next steps. Output to ClioTalk, do not rewrite the body, do not give generic pep talk, and do not lecture.",
+        ? "夸夸 Aaron，也夸落落，而且要真的让 Aaron 开心：落落是男生，只能用“他/他的”，禁止用“她/她的”。具体看见 Aaron 已经做成的判断、心意、给落落的认真交付，以及稿子里已经成立的地方；也要具体看见落落值得被这样认真对待的表达、审美、频道和观众感。再给 3 个最轻量的下一步。输出到 ClioTalk，不要重写正文，不要泛泛鸡汤，不要说教。"
+        : "Encourage Aaron and Luoluo in a way that genuinely lifts Aaron: specifically notice Aaron's judgment, care, serious handoff to Luoluo, and what is already working in the draft; also notice why Luoluo is worth this serious care: expression, taste, channel, and audience sense. Then give 3 light next steps. Output to ClioTalk, do not rewrite the body, do not give generic pep talk, and do not lecture.",
       "strategy-check": zh
         ? "只做内容 diff，不重写正文：检查当前稿是否接住出稿取舍、素材池、可拍画面和未测边界，并更新稿里怎么处理。"
         : "Content diff only; do not rewrite the body. Check whether the draft follows the editorial strategy, material pool, shootable moments, and untested boundaries, then update the strategy adoption table.",
@@ -1341,7 +1341,7 @@
         launchDaySubtype: launchDayMode ? launchDaySubtype(targetFormat) : "",
         targetDuration,
         targetWordCount: targetDuration.endsWith("w") ? Number(targetDuration.replace(/\D/g, "")) || 0 : 0,
-        styleLens: launchDayMode ? "recipient-spoken" : "",
+        styleLens: launchDayMode ? "luoluo-spoken" : "",
         title: meaningfulFirstDayTitle(firstDay.title),
         subject: firstDay.subject,
         handsOnNotes: firstDay.handsOnNotes,
@@ -1362,14 +1362,33 @@
         sources: sourceRecords,
       };
 
-      const response = await fetch("/api/draft/thesis", {
-        method: "POST",
-        signal: requestController.signal,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.detail || data.error || response.statusText);
+      let data;
+      if (typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudConfig.apiKey) {
+        const response = await fetch("/api/draft/thesis", {
+          method: "POST",
+          signal: requestController.signal,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.detail || data.error || response.statusText);
+      } else {
+        const result = await sendLocalModelTask({
+          payload: {
+            model: payload.model || getLocalModelRequestName(),
+            messages: window.AISystem6ModelTaskRuntime.buildQuickDraftMessages(payload),
+            temperature: 0.35,
+            max_tokens: 5200,
+            stream: false,
+            ai_system6_task_kind: taskKind || "quick-draft",
+          },
+          signal: requestController.signal,
+          taskKind: taskKind || "quick-draft",
+          streamPreference: "json",
+        });
+        data = window.AISystem6LocalLMStudio.parseJsonText(result.text);
+        if (!data || typeof data !== "object") throw new Error("Quick Draft model returned invalid JSON.");
+      }
 
       const annotations = {
         firsthand: String(data.brief?.support || ""),
@@ -1497,7 +1516,7 @@
       "- 这是钟点稿主写作入口：目标是尽快得到一版可发布/可录的正文，不要输出研究流程、建议卡、交接清单或多版本。",
       "- 事实只来自素材区、聊天记录、树洞、当前正文和已挂载材料；不确定的技术机制、地区可用性、Beta 限制必须标成待核或干脆不写。",
       "- 发布会速记要做结构转换：发布会顺序 -> 可展示内容 -> 观众关心点 -> 还没法展示/没亲测的边界 -> 发布会快速过 -> 个人感受 -> 口播稿。",
-      "- 接收者是男生；涉及接收者时只能用“他/他的”，禁止用“她/她的”。",
+      "- 落落是男生；涉及落落时只能用“他/他的”，禁止用“她/她的”。",
       "- 钟点稿正文区不分章节：第一行可以用一个 Markdown H1 标题，正文不要输出 ## 二级标题、表格、项目符号或后台标签，只写自然段口播。",
       currentBody ? "- 本次是基于当前正文的迭代打磨：至少改善开头钩子、视频顺序、口播节奏或素材取舍；不能只返回旧正文。" : "",
       humanAnchor ? "- 人的原稿锚点优先：保留用户原始判断、犹豫、吐槽和已经写出的口气；不能只沿着上一版 AI 稿自我复制。" : "",
@@ -1811,7 +1830,7 @@ ${projectContext}`;
     runtimeEnvironment = "multifinder";
     startupEnvironment = "multifinder";
     startupOpenMode = normalizeStartupOpenMode(startupOpenMode, startupEnvironment);
-    ensureRunningApp("quickDraft", "quickDraft");
+    ensureRunningApp("writingStudio", "quickDraft");
     if (typeof updateQuickDraftFocusChrome === "function") updateQuickDraftFocusChrome();
     renderMultiFinderMenu();
     updateMenuState();
@@ -2043,7 +2062,7 @@ ${projectContext}`;
       "generate-first-body": zh ? "出稿" : "Draft",
       praise: zh ? "夸夸我" : "Encourage Me",
       mingming: zh ? "铭铭快审" : "Mingming Pass",
-      recipient: zh ? "接收者接收" : "Recipient Receive",
+      luoluo: zh ? "落落接收" : "Luoluo Receive",
       hkrr: zh ? "HKRR 提亮" : "HKRR Lift",
       boundary: zh ? "补边界" : "Boundary Notes",
       "strategy-check": zh ? "出稿检查" : "Draft Check",
@@ -2332,7 +2351,7 @@ ${projectContext}`;
   }
 
   function runNextAction(kind) {
-    const materialOnlyKinds = new Set(["strategy-check", "mingming", "recipient", "hkrr", "boundary"]);
+    const materialOnlyKinds = new Set(["strategy-check", "mingming", "luoluo", "hkrr", "boundary"]);
     return requestQuickDraft(materialOnlyKinds.has(kind) ? "brief" : "draft", {
       taskKind: kind,
       userNotes: nextActionNote(kind),
@@ -2358,7 +2377,7 @@ ${projectContext}`;
     if (action === "vent-summary") return collectVentOutline();
     if (action === "draft") return requestMingmingQuickDraft();
     if (action === "mingming") return runNextAction("mingming");
-    if (action === "recipient") return runNextAction("recipient");
+    if (action === "luoluo") return runNextAction("luoluo");
     if (action === "hkrr") return runNextAction("hkrr");
     if (action === "praise") return requestQuickDraft("brief", {
       taskKind: "praise",
@@ -2519,6 +2538,8 @@ ${projectContext}`;
     ventEntryCount,
     isVentIntakeActive,
     importChatScreenshots,
+    togglePreview: toggleQuickDraftPreview,
+    copyMarkdown: copyQuickDraftMarkdown,
     collectVentOutline,
     adoptFirstImpression,
     startWritingNow,

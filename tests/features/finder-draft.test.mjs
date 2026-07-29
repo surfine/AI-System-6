@@ -17,7 +17,7 @@ const windowManager = read("app/core/window-manager.js");
 const workingSession = read("app/core/working-session.js");
 const wireup = read("app/core/wireup.js");
 const chatMessages = read("app/core/chat-messages.js");
-const teachTextWriting = read("app/features/teachtext-writing.js");
+const documentsChat = read("app/features/documents-chat.js");
 const systemIcons = read("app/core/system-icons.js");
 const manifest = read("scripts/runtime-manifest.mjs");
 const feature = read("app/features/finder-draft.js");
@@ -38,19 +38,24 @@ const chatImportIndex = html.indexOf('data-action="quick-draft-import-chat"');
 
 test.assertIncludes(html, 'data-window="quickDraft"', "Quick Draft has a named System 6 window");
 test.assertIncludes(html, 'data-action="open-quick-draft"', "Quick Draft keeps the existing Finder entry");
-test.assertIncludes(html, 'name="startup-open" value="quick-draft"', "Startup settings can open Quick Draft");
-test.assertIncludes(app, 'let startupOpenMode = "quick-draft"', "Finder startup defaults to Quick Draft");
+test.assert(!html.includes('name="startup-open" value="quick-draft"'), "Startup settings keep Quick Draft user-opened");
+test.assertIncludes(app, 'let startupOpenMode = "cliotalk"', "Finder startup defaults to ClioTalk");
 test.assertIncludes(actions, "async function openQuickDraft()", "Action loader opens Quick Draft lazily");
 test.assertIncludes(actions, '"open-quick-draft": openQuickDraft', "Action table routes Quick Draft");
 test.assertMatches(manifest, /lazyRuntimePaths[\s\S]*"app\/features\/finder-draft\.js"/, "Quick Draft module is lazy");
 test.assertNotIncludes(manifest.match(/appModulePaths[\s\S]*?];/)?.[0] || "", "app/features/finder-draft.js", "Quick Draft is not in the startup bundle");
 test.assertMatches(config, /tileableWindowNames[\s\S]*"quickDraft"/, "Quick Draft participates in window tiling");
 test.assertMatches(config, /resizableWindowNames[\s\S]*"quickDraft"/, "Quick Draft is resizable");
-test.assertIncludes(desktopRuntime, 'mode === "quick-draft"', "Startup open mode normalizes Quick Draft");
-test.assertIncludes(desktopRuntime, 'handleAction("open-quick-draft")', "Startup opens Quick Draft");
-test.assertIncludes(boot, 'runtimeEnvironment === "finder" && startupOpenMode === "quick-draft"', "Finder restore still opens Quick Draft");
+test.assertIncludes(desktopRuntime, 'return "cliotalk";', "Legacy Quick Draft startup preferences fall back to ClioTalk");
+const openStartupItemsSource = desktopRuntime.slice(
+  desktopRuntime.indexOf("function openStartupItems()"),
+  desktopRuntime.indexOf("function normalizeStartupOpenedWindowNames()")
+);
+test.assert(!openStartupItemsSource.includes('handleAction("open-quick-draft")'), "Startup never opens Quick Draft directly");
+test.assert(!boot.includes('runtimeEnvironment === "finder" && startupOpenMode === "quick-draft"'), "Finder restore does not reopen Quick Draft");
 test.assertIncludes(workingSession, 'entry.name === "quickDraft"', "Working Session repairs unusable Quick Draft frames");
-test.assertIncludes(multiFinder, 'quickDraft: "Quick Draft"', "MultiFinder labels the Quick Draft application");
+test.assertIncludes(multiFinder, 'quickDraft: "writingStudio"', "MultiFinder groups Quick Draft under Writing Studio");
+test.assertNotIncludes(multiFinder, 'quickDraft: "Quick Draft"', "MultiFinder does not present Quick Draft as a separate application");
 
 test.assert(editorIndex > 0 && sidebarIndex < 0, "Quick Draft reboot removes the visible background-check sidebar");
 test.assert(rebootIndex > 0, "Quick Draft uses the rebooted TeachText fast-draft shell");
@@ -87,7 +92,7 @@ test.assertIncludes(html, 'id="quick-draft-editorial-strategy"', "Strategy card 
 test.assertIncludes(html, 'id="quick-draft-material-ledger"', "Strategy card renders material ledger");
 test.assertIncludes(html, 'id="quick-draft-adoption-table"', "Strategy card renders adoption table");
 
-test.assertIncludes(html, 'class="teachtext-editor-container quick-draft-editor-container"', "Quick Draft editor reuses TeachText editor container");
+test.assertIncludes(html, 'class="teachtext-editor-container quick-draft-editor-container', "Quick Draft editor reuses TeachText editor container");
 test.assertIncludes(html, 'id="quick-draft-preview" class="teachtext-preview is-hidden"', "Quick Draft has TeachText-style preview");
 test.assertIncludes(html, 'data-mde-focus-cycle data-mde-target="#quick-draft-draft"', "Quick Draft reuses markdown focus mode");
 test.assertIncludes(html, 'id="quick-draft-toggle-preview"', "Quick Draft exposes Preview");
@@ -101,7 +106,7 @@ test.assertIncludes(quickWindowHtml, 'data-i18n="quick_draft_command_delivery"',
 test.assertIncludes(quickWindowHtml, 'data-quick-draft-chat-action="organize"', "Main command menu owns Organize");
 test.assertNotIncludes(quickWindowHtml, 'data-quick-draft-chat-action="draft"', "Main command menu no longer duplicates the primary Draft button");
 test.assertIncludes(quickWindowHtml, 'data-quick-draft-chat-action="mingming"', "Main command menu owns Mingming fast review");
-test.assertIncludes(quickWindowHtml, 'data-quick-draft-chat-action="recipient"', "Main command menu owns Recipient receiving review");
+test.assertIncludes(quickWindowHtml, 'data-quick-draft-chat-action="luoluo"', "Main command menu owns Luoluo receiving review");
 test.assertIncludes(quickWindowHtml, 'data-quick-draft-chat-action="hkrr"', "Main command menu owns HKRR lift");
 test.assertIncludes(quickWindowHtml, 'data-quick-draft-chat-action="praise"', "Main command menu owns encouragement");
 test.assertIncludes(quickWindowHtml, 'data-quick-draft-delivery="teachtext"', "Main command menu can send the draft to TeachText");
@@ -145,7 +150,7 @@ test.assertIncludes(feature, "appendCommandResultToClioTalk(data, taskKind)", "Q
 test.assertIncludes(feature, 'taskKind === "praise"', "Quick Draft gives encouragement its own status and result handling");
 test.assertIncludes(feature, "quick_draft_command_empty", "Quick Draft does not claim completion when a command cannot produce a displayable card");
 test.assertIncludes(feature, "data.raw", "Quick Draft command cards can fall back to raw model output");
-test.assertIncludes(feature, 'new Set(["strategy-check", "mingming", "recipient", "hkrr", "boundary"])', "Quick Draft fast-review commands produce ClioTalk notes instead of rewriting the body");
+test.assertIncludes(feature, 'new Set(["strategy-check", "mingming", "luoluo", "hkrr", "boundary"])', "Quick Draft fast-review commands produce ClioTalk notes instead of rewriting the body");
 test.assertNotIncludes(feature, "appendCommandResultToSources", "Quick Draft command feedback no longer pollutes the left material pane");
 test.assertIncludes(feature, 'action === "mingming"', "Mingming fast review is wired from the command menu");
 test.assertIncludes(feature, "renderClassifySummaries", "Boundary cards render summaries instead of default form fields");
@@ -201,8 +206,8 @@ test.assertIncludes(feature, "ventLogMaterialBlock", "Treehole notes become a la
 test.assertIncludes(feature, "ventLog: enabled === true ? intake.ventLog : dumpEntries(intake)", "Ending treehole mode clears captured notes after handoff");
 test.assertIncludes(feature, "function clearVentLog", "Quick Draft can clear treehole notes without drafting");
 test.assertIncludes(feature, "ventEntryCount", "Quick Draft exposes captured treehole count for ClioTalk feedback");
-test.assertIncludes(teachTextWriting, "window.AISystem6QuickDraft?.clearVentLog?.({ silent: true })", "Clearing ClioTalk also clears Quick Draft treehole notes");
-test.assertIncludes(teachTextWriting, "isQuickDraftClioTalkActive", "Clearing Quick Draft Copilot stays inside the isolated copilot session");
+test.assertIncludes(documentsChat, "window.AISystem6QuickDraft?.clearVentLog?.({ silent: true })", "Clearing ClioTalk also clears Quick Draft treehole notes");
+test.assertIncludes(chatMessages, "function isQuickDraftClioTalkActive()", "Clearing Quick Draft Copilot stays inside the isolated copilot session");
 test.assertNotIncludes(feature, "draftFromChatRecords", "Quick Draft no longer keeps a hidden chat-draft path");
 test.assertNotIncludes(feature, 'taskKind: "draft-from-chat-records"', "Quick Draft client no longer sends a dedicated chat-draft task kind");
 test.assertIncludes(feature, 'label: currentLanguage === "zh" ? "素材" : "Material"', "Launch-day source records include the left material pane");
@@ -228,7 +233,7 @@ test.assertIncludes(windowManager, 'sideAskAnchorAppId === "quickDraft"', "Windo
 test.assertIncludes(windowManager, "enterSideAskClioTalkSession", "Opening any SideAsk starts an isolated ClioTalk Copilot session");
 test.assertIncludes(windowManager, "exitSideAskClioTalkSession", "Closing any SideAsk restores the normal ClioTalk session");
 test.assertIncludes(windowManager, "closingQuickDraftAssistantPair", "Quick Draft and ClioTalk Copilot close as a paired window without recursion");
-test.assertIncludes(windowManager, "sideAskEnabled && !isMultiFinderMode() ? t(\"quick_draft_copilot_title\")", "SideAsk assistant title is ClioTalk Copilot for every paired window");
+test.assertIncludes(windowManager, 'assistantTitle.textContent = sideAskActive ? t("sideask_title") : t("assistant_title")', "Every paired window uses the same explicit SideAsk title");
 test.assertNotIncludes(windowManager, 'classList.toggle("is-quick-draft-sideask"', "Quick Draft no longer gives ClioTalk special chrome");
 test.assertIncludes(app, 'sideAskAnchorAppId === "quickDraft"', "Prompt placeholder switches in Quick Draft SideAsk");
 test.assertIncludes(html, 'data-window="assistant"', "ClioTalk remains the shared assistant window outside Quick Draft");
@@ -262,7 +267,7 @@ test.assertIncludes(chatMessages, "汇总树洞", "ClioTalk typed commands can s
 test.assertNotIncludes(chatMessages, "聊天出稿", "ClioTalk typed commands no longer expose chat drafting as a second entrance");
 test.assertIncludes(chatMessages, 'addMessage("assistant", feedback)', "Captured treehole notes get lightweight ClioTalk feedback");
 test.assertIncludes(chatMessages, "夸夸我", "ClioTalk typed commands can trigger encouragement");
-test.assertIncludes(chatMessages, "接收者接收", "ClioTalk typed commands can trigger Recipient receiving review");
+test.assertIncludes(chatMessages, "落落接收", "ClioTalk typed commands can trigger Luoluo receiving review");
 test.assertIncludes(chatMessages, "hkrr", "ClioTalk typed commands can trigger HKRR lift");
 test.assertIncludes(chatMessages, "runClioTalkAction", "ClioTalk actions call the Quick Draft module");
 test.assertIncludes(chatMessages, "do not generate or replace the user's personal judgment", "ClioTalk preserves the user's feeling");
@@ -315,7 +320,7 @@ test.assertIncludes(zh, 'quick_draft_format_hands_on_review: "开箱评测"', "C
 test.assertIncludes(zh, 'quick_draft_start_writing: "出稿"', "Chinese copy exposes one main drafting action");
 test.assertIncludes(zh, 'quick_draft_no_revision: "这次没有推进正文', "Chinese copy tells the user when Draft did not improve the body");
 test.assertIncludes(zh, 'quick_draft_parse_failed: "模型有返回', "Chinese copy tells the user when cloud output could not be parsed into a body");
-test.assertIncludes(zh, 'quick_draft_praising: "正在认真夸 Creator 和接收者', "Chinese copy gives encouragement a dedicated in-progress state");
+test.assertIncludes(zh, 'quick_draft_praising: "正在认真夸 Aaron 和落落', "Chinese copy gives encouragement a dedicated in-progress state");
 test.assertIncludes(zh, 'quick_draft_command_empty: "模型有返回', "Chinese copy reports an empty command card instead of claiming completion");
 test.assertIncludes(zh, 'quick_draft_untitled: "先写正文，标题会自动带上"', "Chinese copy explains auto title behavior");
 test.assertIncludes(zh, 'quick_draft_boundary_title: "边界・能不能给观众看"', "Chinese copy keeps boundary language for ClioTalk/background logic");
@@ -345,7 +350,7 @@ test.assertIncludes(zh, 'quick_draft_cliotalk_placeholder: "问 ClioTalk，或�
 test.assertIncludes(zh, 'quick_draft_copilot_title: "ClioTalk Copilot"', "Chinese copy names the Quick Draft paired assistant ClioTalk Copilot");
 test.assertIncludes(zh, 'quick_draft_chip_first_draft: "首发出稿"', "Chinese copy exposes the launch drafting command");
 test.assertIncludes(zh, 'quick_draft_chip_mingming: "铭铭快审"', "Chinese copy exposes the Mingming fast review command");
-test.assertIncludes(zh, 'quick_draft_chip_recipient: "接收者接收"', "Chinese copy exposes the Recipient receiving command");
+test.assertIncludes(zh, 'quick_draft_chip_luoluo: "落落接收"', "Chinese copy exposes the Luoluo receiving command");
 test.assertIncludes(zh, 'quick_draft_chip_hkrr: "HKRR 提亮"', "Chinese copy exposes the HKRR lift command");
 test.assertIncludes(zh, 'quick_draft_chip_praise: "夸夸我"', "Chinese copy exposes encouragement in Quick Draft");
 test.assertIncludes(zh, 'quick_draft_command_delivery: "交付"', "Chinese copy exposes delivery commands");
@@ -364,17 +369,17 @@ test.assertIncludes(draftRoute, "本次是基于“当前正文草稿”的迭�
 test.assertIncludes(draftRoute, "至少改善开头钩子、视频顺序、口播节奏", "Repeated Draft runs must move the script forward instead of returning the old body");
 test.assertIncludes(draftRoute, "人的原稿锚点", "Repeated Draft runs protect the user's original human voice");
 test.assertIncludes(draftRoute, "不能只沿着上一版 AI 稿自我复制", "Draft route blocks AI-over-AI drift");
-test.assertIncludes(draftRoute, "能拍 / 只能嘴过 / 不能下结论 / 这一期想说", "Draft route triages Recipient launch material into four practical bins");
-test.assertIncludes(draftRoute, "接收者接收标准前置", "Draft route makes Recipient receiving the default drafting standard");
-test.assertIncludes(draftRoute, "不能要求他重新拆资料或重新找主线", "Draft route keeps scripts easy for Recipient to receive");
-test.assertIncludes(draftRoute, "候选/已采用/待 Creator 确认", "Draft route keeps first impressions as candidates until Creator confirms them");
+test.assertIncludes(draftRoute, "能拍 / 只能嘴过 / 不能下结论 / 这一期想说", "Draft route triages Luoluo launch material into four practical bins");
+test.assertIncludes(draftRoute, "落落接收标准前置", "Draft route makes Luoluo receiving the default drafting standard");
+test.assertIncludes(draftRoute, "不能要求他重新拆资料或重新找主线", "Draft route keeps scripts easy for Luoluo to receive");
+test.assertIncludes(draftRoute, "候选/已采用/待 Aaron 确认", "Draft route keeps first impressions as candidates until Aaron confirms them");
 test.assertIncludes(draftRoute, "只写自然段正文，不要在正文里放三级标题", "Draft route keeps backend judgment out of the recordable body");
 test.assertIncludes(draftRoute, "发布日失败模式检查", "Draft route checks launch-day failure modes before output");
-test.assertIncludes(draftRoute, "趋近接收者频道、当天能录、接地气的口播稿", "Primary Draft route targets grounded Recipient-style spoken copy");
-test.assertIncludes(draftRoute, "唠嗑感、考据癖、设计情怀、真诚不端着", "Primary Draft route carries the Recipient style pillars");
-test.assertIncludes(draftRoute, "不要把接收者招牌当填空题", "Primary Draft route avoids mechanical catchphrase imitation");
+test.assertIncludes(draftRoute, "趋近落落频道、当天能录、接地气的口播稿", "Primary Draft route targets grounded Luoluo-style spoken copy");
+test.assertIncludes(draftRoute, "唠嗑感、考据癖、设计情怀、真诚不端着", "Primary Draft route carries the Luoluo style pillars");
+test.assertIncludes(draftRoute, "不要把落落招牌当填空题", "Primary Draft route avoids mechanical catchphrase imitation");
 test.assertIncludes(draftRoute, "铭铭快审（首发快稿版）", "Draft route has a Mingming fast-review lens");
-test.assertIncludes(draftRoute, "像媒体通稿、按发布会顺序平铺、把没亲测写成体验", "Mingming fast review catches Recipient launch-day failure modes");
+test.assertIncludes(draftRoute, "像媒体通稿、按发布会顺序平铺、把没亲测写成体验", "Mingming fast review catches Luoluo launch-day failure modes");
 test.assertIncludes(draftRoute, "function isQuickDraftAdviceOnlyTask", "Draft route separates ClioTalk advice commands from body drafting");
 test.assertIncludes(draftRoute, "本次是 ClioTalk 建议卡，不是出稿", "Mingming-style advice commands cannot produce a full spoken script");
 test.assertIncludes(draftRoute, "不要输出“可讲点”“边界・能不能给观众看”或完整成片段落", "Advice commands cannot leak body prose into ClioTalk buckets");
@@ -382,16 +387,16 @@ test.assertIncludes(draftRoute, "normalizeQuickDraftAdviceResult", "Advice-only 
 test.assertIncludes(draftRoute, "根据聊天记录出稿工作流", "Draft route has a dedicated chat-record-to-draft lens");
 test.assertIncludes(draftRoute, "hasChat", "Draft route accepts imported chat records as a launch-day draft seed");
 test.assertIncludes(draftRoute, "hasMaterialPane", "Draft route accepts pasted material as a launch-day draft seed");
-test.assertIncludes(draftRoute, "若是接收者会怎么接（首发快稿版）", "Draft route has a Recipient receiving lens");
-test.assertIncludes(draftRoute, "接收者是男生。涉及接收者时只能使用“他/他的”，禁止使用“她/她的”。", "Recipient-related Quick Draft prompts lock Recipient to male pronouns");
-test.assertIncludes(draftRoute, "好接的一点、会卡的一点、需要补拍/补核的一点", "Recipient receiving card focuses on handoff readiness");
+test.assertIncludes(draftRoute, "若是落落会怎么接（首发快稿版）", "Draft route has a Luoluo receiving lens");
+test.assertIncludes(draftRoute, "落落是男生。涉及落落时只能使用“他/他的”，禁止使用“她/她的”。", "Luoluo-related Quick Draft prompts lock Luoluo to male pronouns");
+test.assertIncludes(draftRoute, "好接的一点、会卡的一点、需要补拍/补核的一点", "Luoluo receiving card focuses on handoff readiness");
 test.assertIncludes(draftRoute, "HKRR 快速提亮（首发快稿版）", "Draft route has an HKRR launch-day lift lens");
 test.assertIncludes(draftRoute, "夸夸我（情绪价值・出稿支持版）", "Draft route treats encouragement as emotional-value support");
 test.assertIncludes(draftRoute, "这是一级命令，不是附属功能", "Encouragement is a first-class Quick Draft command");
-test.assertIncludes(draftRoute, "给接收者的认真交付", "Encouragement praises Creator's care for Recipient");
-test.assertIncludes(draftRoute, "接收者值得被认真对待", "Encouragement also sees Recipient");
-test.assertIncludes(draftRoute, "enforceRecipientMalePronouns", "Recipient-related advice cards correct model pronoun drift before display");
-test.assertIncludes(feature, "接收者是男生，只能用“他/他的”，禁止用“她/她的”", "Client-side encouragement command reminds the model that Recipient is male");
+test.assertIncludes(draftRoute, "给落落的认真交付", "Encouragement praises Aaron's care for Luoluo");
+test.assertIncludes(draftRoute, "落落值得被认真对待", "Encouragement also sees Luoluo");
+test.assertIncludes(draftRoute, "enforceLuoluoMalePronouns", "Luoluo-related advice cards correct model pronoun drift before display");
+test.assertIncludes(feature, "落落是男生，只能用“他/他的”，禁止用“她/她的”", "Client-side encouragement command reminds the model that Luoluo is male");
 test.assertIncludes(draftRoute, "输出到 ClioTalk，像一张短卡", "Encouragement outputs to ClioTalk");
 test.assertIncludes(draftRoute, "structural conversion", "Draft route treats launch notes as structural conversion, not summary");
 test.assertIncludes(draftRoute, "showable content -> audience concerns", "Draft route reorders launch notes into video order");

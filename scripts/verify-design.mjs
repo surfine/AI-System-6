@@ -110,6 +110,21 @@ const pxWidth = (raw) => {
   return Number.isFinite(value) ? value : 0;
 };
 
+function isCardComponentClass(name) {
+  return /(?:^|[-_])card(?:$|[-_])/i.test(name);
+}
+
+function hasIndependentNestedCardSelector(selector) {
+  const descendantPair = /\.([-_a-z0-9]+)\b[^,{]*\s+\.([-_a-z0-9]+)\b/gi;
+  for (const match of selector.matchAll(descendantPair)) {
+    const [, parent, child] = match;
+    if (!isCardComponentClass(parent) || !isCardComponentClass(child)) continue;
+    if (child.startsWith(`${parent}-`) || child.startsWith(`${parent}_`)) continue;
+    return true;
+  }
+  return false;
+}
+
 const checks = [
   {
     key: "thickSideAccentDeclarations",
@@ -141,9 +156,7 @@ const checks = [
     key: "nestedCardSelectors",
     label: "nested card selectors",
     reason: "Cards inside cards are banned; use pane structure, rows, dividers, or spacing.",
-    findings: () => cssRuleFindings((selector) =>
-      /\.[-_a-z0-9]*card[-_a-z0-9]*\b[^,{]*\s+\.[-_a-z0-9]*card[-_a-z0-9]*\b/i.test(selector)
-    ),
+    findings: () => cssRuleFindings((selector) => hasIndependentNestedCardSelector(selector)),
   },
   {
     key: "marketingHeroClassUses",

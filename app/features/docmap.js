@@ -1497,7 +1497,7 @@ async function repairDocMapHierarchyWithModel(source, map) {
   const response = await fetchModelPayload({
     model: getLocalModelRequestName(),
     messages: withMarkdownModelMessages([
-      { role: "system", content: "你只输出可解析的 DocMap Markdown。不要返回 JSON、代码围栏、解释或建议。" },
+      { role: "system", content: resolveWritingRoutePrompt("source-apps.docmap-markdown") },
       { role: "user", content: prompt },
     ]),
     temperature: 0.15,
@@ -1515,7 +1515,7 @@ async function buildDocMapWithModel(source) {
   const response = await fetchModelPayload({
     model: getLocalModelRequestName(),
     messages: withMarkdownModelMessages([
-      { role: "system", content: "你只输出可解析的 DocMap Markdown。不要返回 JSON、代码围栏、解释或建议。" },
+      { role: "system", content: resolveWritingRoutePrompt("source-apps.docmap-markdown") },
       { role: "user", content: prompt },
     ]),
     temperature: 0.2,
@@ -2943,10 +2943,9 @@ async function askDocMapQuestion(event) {
   const node = selectedDocMapNode();
   const zh=currentLanguage==="zh";
   const prompt = [
-    zh?"你是 AI System 6 的 DocMap 问答员。优先根据下面这张 DocMap 回答用户问题。":"You are the DocMap question clerk. Use this DocMap as primary grounding.",
+    resolveWritingRoutePrompt("other-apps.docmap-source-question", zh ? "zh" : "en"),
     typeof sideAskAnswerStyleInstruction === "function" ? sideAskAnswerStyleInstruction() : (zh ? "回答要短、自然，不要写审稿报告。" : "Be brief and natural; do not write a review report."),
     typeof ragGroundingInstruction === "function" ? ragGroundingInstruction(zh ? "DocMap" : "The DocMap") : (zh ? "DocMap 是主要依据，不是回答边界；请区分原文、推断和需要核对的部分。" : "The DocMap is primary grounding, not the answer boundary; distinguish source text, inference, and points to check."),
-    zh?"不要复述整张图，不要把节点之间没有明确表达的关系补成事实。当前聚焦节点只作为优先参考，回答边界是整张 DocMap。使用自然简体中文。":"Do not repeat the map or invent relationships between nodes.",
     "",
     `${zh?"用户问题":"Question"}:\n${question}`,
     "",
@@ -2962,8 +2961,9 @@ async function askDocMapQuestion(event) {
     clipContextContent(formatDocMapMarkdown(currentDocMap), 9000),
   ].filter(Boolean).join("\n");
 
+  const paired = await arrangeDocMapAssistantSplit();
+  if (!paired) return;
   docMapQuestionInput.value = "";
-  await arrangeDocMapAssistantSplit();
   setStatus(t("docmap_question_sent"));
   await submitUserText(prompt, { displayText: `${t("docmap")}: ${question}`, skipContext: true, taskKind: "docmap-question" });
 }
@@ -3019,7 +3019,8 @@ async function askDocMapHkrrTheoryReview() {
     return;
   }
   const prompt = docMapHkrrTheoryReviewPrompt(currentDocMap);
-  await arrangeDocMapAssistantSplit();
+  const paired = await arrangeDocMapAssistantSplit();
+  if (!paired) return;
   setStatus(currentLanguage === "zh" ? "正在让 ClioTalk 用 HKRR 理论审视这张图..." : "Asking ClioTalk to review this map with HKRR theory...");
   await submitUserText(prompt, {
     displayText: currentLanguage === "zh" ? "用 HKRR 理论审视这张图" : "Review this map with HKRR theory",

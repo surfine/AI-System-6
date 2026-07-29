@@ -190,9 +190,11 @@
       if (hasConfig) {
         if (typeof refreshCloudUsageDisplay === "function") refreshCloudUsageDisplay();
       } else {
-        cloudIndicatorEl.classList.add("is-hidden");
+        if (typeof refreshCloudUsageDisplay === "function") refreshCloudUsageDisplay();
       }
-      cloudStatusHint.textContent = typeof t === "function" ? t("cloud_status_hint") : "Enter API key and check connectivity.";
+      cloudStatusHint.textContent = typeof t === "function"
+        ? t("cloud_status_hint")
+        : "Connect once. This device remembers the key; project files and exports never include it.";
     }
     if (typeof renderCloudModelPopover === "function") renderCloudModelPopover();
   }
@@ -209,7 +211,21 @@
 
   window.renderCloudModelPopover = function () {
     const popover = document.querySelector("#cloud-model-popover");
-    if (!popover || !cloudConfig) return;
+    if (!popover) return;
+    if (!cloudConfig) {
+      const disconnectedText = typeof t === "function" ? t("model_not_connected") : "Model not connected";
+      popover.innerHTML = [
+        '<div class="cl-hdr">' + disconnectedText + '</div>',
+        '<button type="button" data-action="open-model-settings"><span class="cl-mrk"></span><span class="cl-txt">'
+          + (typeof t === "function" ? t("control_panel") : "Control Panel") + '</span></button>',
+      ].join("");
+      popover.querySelector('[data-action="open-model-settings"]')?.addEventListener("click", function (event) {
+        event.stopPropagation();
+        if (typeof closeMenus === "function") closeMenus();
+        if (typeof openWindow === "function") openWindow("control");
+      });
+      return;
+    }
 
     const latestText = typeof cloudUsageText === "function" ? cloudUsageText(latestCloudUsage) : "-";
     const sessionText = typeof cloudUsageText === "function" ? cloudUsageText(sessionCloudUsage) : "-";
@@ -356,7 +372,7 @@
 
   // Check status button
   cloudCheckBtn.addEventListener("click", async function () {
-    cloudCheckBtn.disabled = true;
+    setControlLoading(cloudCheckBtn, true, typeof t === "function" ? t("cloud_checking") : "Checking…");
     try {
       await checkCloudStatus();
       if (cloudStatusDot.classList.contains("is-connected")) {
@@ -370,6 +386,7 @@
         applyCloudActiveState();
       }
     } finally {
+      setControlLoading(cloudCheckBtn, false);
       updateCheckButtonState();
     }
   });

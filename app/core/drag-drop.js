@@ -60,7 +60,7 @@ function initDragAndDrop() {
     const dragPayload = JSON.stringify(dragData);
     event.dataTransfer.setData("application/json", dragPayload);
     event.dataTransfer.setData("text/plain", dragPayload);
-    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.effectAllowed = dragData.type === "file" ? "copyMove" : "move";
     setTimeout(() => target.classList.add("is-dragging"), 0);
   });
 
@@ -74,7 +74,7 @@ function initDragAndDrop() {
     const dropTarget = event.target.closest("[data-drop-target]");
     if (dropTarget) {
       event.preventDefault();
-      event.dataTransfer.dropEffect = "move";
+      event.dataTransfer.dropEffect = dropTarget.dataset.dropTarget === "clio-attachment" ? "copy" : "move";
       dropTarget.classList.add("is-drag-over");
     }
   });
@@ -110,6 +110,11 @@ function initDragAndDrop() {
             ? activeProjectId
             : dropTarget.dataset.projectId;
           handleDropToProject(dragData, targetId);
+        } else if (dropTargetType === "clio-attachment") {
+          const fileIds = Array.isArray(dragData.items)
+            ? dragData.items.filter((item) => item.type === "file").map((item) => item.id)
+            : (dragData.type === "file" && dragData.id ? [dragData.id] : []);
+          fileIds.slice(0, 6).forEach((fileId) => attachProjectFileToNextClioTalkRun(fileId));
         }
       } catch (e) {
         console.error("Drop failed", e);
@@ -148,6 +153,8 @@ function handleDropToTrash(data) {
     moveItemsToTrash((Array.isArray(data.ids) && data.ids.length ? data.ids : [data.id]).map((id) => ({ type: "projectReference", id })));
   } else if (data.type === "mounted-file") {
     removeMountedFilesToTrash(Array.isArray(data.ids) && data.ids.length ? data.ids : [data.id]);
+  } else if (data.type === "mounted-disk") {
+    ejectTextDisk();
   }
 }
 

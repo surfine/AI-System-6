@@ -20,11 +20,19 @@ function startupTaskWithTimeout(promise, label, ms = 1600) {
 async function boot() {
   try {
     updateClock();
+    await Promise.all([
+      ensureAlarmClockModule(),
+      ensureProjectCdPrintModule(),
+    ]);
+    initializeAlarmClock();
     loadAppVersion();
     await startupTaskWithTimeout(loadDeskState(), "loadDeskState", 3500);
+    await startupTaskWithTimeout(applyDeploymentWorkspaceDefault(), "deploymentWorkspaceDefault", 3500);
+    configurePublicLmStudioControls();
     syncDocMapLayoutControls();
     applyLanguage();
     initSystemSelectControls();
+    initSharedControlBehaviors();
     hydrateSystemIcons();
     renderProjectDisks();
     renderProjectReferences();
@@ -38,7 +46,11 @@ async function boot() {
     renderPipeline();
     applyWritingToolsViewMode();
     updateLocalModelState({ selected: !!modelInput.value.trim() });
-    startupTaskWithTimeout(refreshLocalModelReadiness(), "refreshLocalModelReadiness");
+    if (localLmStudioConnectionEnabled) {
+      startupTaskWithTimeout(connectLocalLmStudio({ toggle: false, silent: true }), "connectLocalLmStudio");
+    } else {
+      renderLocalConnectionStatus("local_connection_waiting");
+    }
     refreshImporterStatus();
     initDragAndDrop();
 
@@ -47,8 +59,6 @@ async function boot() {
       await enterWriterMode();
     } else if (!resumedWorkingSession) {
       openStartupItems();
-    } else if (runtimeEnvironment === "finder" && startupOpenMode === "quick-draft") {
-      handleAction("open-quick-draft");
     }
 
     updateMenuState();

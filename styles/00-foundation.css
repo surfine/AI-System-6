@@ -15,6 +15,110 @@
   --quiet-panel: #f8f8f8;
   --rule: #777777;
 
+  /* ClioTalk keeps one conversational layout across themes. Theme-specific
+     material swaps happen here rather than through duplicate selectors. */
+  --clio-assistant-message-bg: transparent;
+  --clio-assistant-message-border: var(--shade-dark);
+  --clio-assistant-message-radius: 0;
+  --clio-assistant-message-shadow: none;
+  --clio-user-message-bg: var(--quiet-panel);
+  --clio-user-message-border: 1px solid var(--ink);
+  --clio-user-message-radius: 0;
+  --clio-user-message-shadow: none;
+  --clio-welcome-bg: transparent;
+  --clio-welcome-shadow: none;
+  --clio-welcome-object-bg: var(--paper);
+  --clio-welcome-object-border: 2px solid var(--ink);
+  --clio-welcome-object-shadow: 2px 2px 0 var(--shade-dark);
+  --clio-muted-copy: var(--shade-dark);
+  --clio-transcript-width: 820px;
+  --clio-speaker-gutter: 72px;
+  --clio-grounding-rule: var(--shade);
+  --clio-use-active-border: var(--ink);
+  --clio-use-active-bg: var(--ink);
+  --clio-use-active-fg: var(--paper);
+  --clio-use-menu-border: 1px solid var(--ink);
+  --clio-use-menu-radius: 0;
+  --clio-use-menu-bg: var(--paper);
+  --clio-use-menu-shadow: 2px 2px 0 var(--shade-dark);
+  --clio-composer-bg: var(--paper);
+  --clio-composer-border: 2px solid var(--ink);
+  --clio-composer-radius: 0;
+  --clio-composer-shadow: 2px 2px 0 var(--shade-dark);
+  --clio-composer-focus-shadow: 2px 2px 0 var(--shade-dark), 0 0 0 2px var(--shade);
+  --clio-composer-control-radius: 0;
+  --clio-composer-tool-border: var(--ink);
+  --clio-action-surface: var(--paper);
+  --clio-action-border: 1px solid var(--ink);
+  --clio-action-radius: 0;
+  --clio-action-item-radius: 0;
+  --clio-action-shadow: 2px 2px 0 var(--shade-dark);
+  --clio-context-control-bg: var(--quiet-panel);
+  --clio-context-control-border: 1px solid var(--shade-dark);
+  --clio-context-control-radius: 0;
+  --clio-context-control-shadow: none;
+  --clio-assembly-bg: var(--paper);
+  --clio-assembly-border: 1px solid var(--ink);
+  --clio-assembly-radius: 0;
+  --clio-assembly-row-radius: 0;
+  --clio-assembly-shadow: 2px 2px 0 var(--shade-dark);
+  --clio-assembly-row-bg: var(--quiet-panel);
+  --clio-assembly-divider: 1px dotted var(--shade-dark);
+  --clio-file-chip-bg: transparent;
+  --clio-file-chip-border: 1px solid transparent;
+  --clio-file-chip-radius: 0;
+
+  /* ClioChart keeps a strict 1-bit default theme. Liquid Glass overrides only
+     these component tokens, so both themes share the same data and geometry. */
+  --clio-chart-surface: var(--paper);
+  --clio-chart-ink: var(--ink);
+  --clio-chart-rule: var(--rule);
+  --clio-chart-muted: var(--shade-dark);
+  --clio-chart-panel: var(--panel);
+  --clio-chart-panel-quiet: var(--quiet-panel);
+  --clio-chart-accent: var(--ink);
+  --clio-chart-track: var(--shade);
+  --clio-chart-pattern-paper: var(--paper);
+  --clio-chart-reference: var(--shade);
+  --clio-chart-focus-shadow: none;
+  --clio-chart-solid-fill: var(--ink);
+  --clio-chart-pattern-1: repeating-conic-gradient(var(--ink) 0 25%, var(--paper) 0 50%) 0 0 / 3px 3px;
+  --clio-chart-pattern-2: repeating-linear-gradient(45deg, var(--ink) 0 1px, var(--paper) 1px 4px);
+  --clio-chart-pattern-3: conic-gradient(var(--ink) 0 25%, var(--paper) 0) 0 0 / 4px 4px;
+  --clio-chart-pattern-4: repeating-linear-gradient(90deg, var(--ink) 0 1px, var(--paper) 1px 4px);
+  --clio-chart-pattern-5: repeating-linear-gradient(-45deg, var(--ink) 0 1px, var(--paper) 1px 5px);
+  --clio-chart-material-shadow: none;
+  --clio-chart-material-filter: none;
+  --clio-chart-typeface: var(--ui-font);
+  --clio-chart-type-size: 11px;
+  --clio-chart-radius: 0;
+  --clio-chart-pane-bg: transparent;
+  --clio-chart-pane-border: 0;
+  --clio-chart-pane-shadow: none;
+  --clio-chart-pane-filter: none;
+  --clio-chart-pane-margin: 0;
+  --clio-chart-pane-padding: 8px 10px;
+  --clio-chart-grid-pane-padding: 8px;
+  --clio-chart-grid-collapse: collapse;
+  --clio-chart-grid-spacing: 0;
+  --clio-chart-cell-height: 20px;
+  --clio-chart-cell-padding: 2px 6px;
+  --clio-chart-row-gap: 5px;
+  --clio-chart-track-height: 16px;
+  --clio-chart-switcher-width: auto;
+  --clio-chart-switcher-justify: flex-end;
+  --clio-chart-label-bg: transparent;
+  --clio-chart-label-padding: 0;
+  --clio-chart-label-leading: normal;
+  --clio-chart-value-bg: var(--paper);
+  --clio-chart-density-12: conic-gradient(var(--ink) 0 12.5%, var(--paper) 0) 0 0 / 4px 4px;
+  --clio-chart-density-25: conic-gradient(var(--ink) 0 25%, var(--paper) 0) 0 0 / 4px 4px;
+  --clio-chart-density-50: repeating-conic-gradient(var(--ink) 0 25%, var(--paper) 0 50%) 0 0 / 4px 4px;
+  --clio-chart-density-75: conic-gradient(var(--paper) 0 25%, var(--ink) 0) 0 0 / 4px 4px;
+  --clio-chart-spatial-cell-height: 62px;
+  --clio-chart-spatial-label-size: 9px;
+  --clio-chart-spatial-value-size: 13px;
+
   /* Fonts */
   --ui-font: Chicago_12, Chicago, Charcoal, "Songti SC", "SimSun", "STSong", serif;
   --title-font: Chicago_12, Chicago, Charcoal, "Songti SC", "SimSun", "STSong", serif;
@@ -71,6 +175,49 @@
   --system-button-min-height: 26px;
   --system-button-padding-y: 2px;
   --system-button-padding-x: 12px;
+  --control-hit-target: 28px;
+  --control-icon-slot: 20px;
+  --control-motion-fast-in: 80ms;
+  --control-motion-fast-out: 60ms;
+  --control-motion-medium-in: 160ms;
+  --control-motion-medium-out: 120ms;
+  --control-motion-slow-in: 240ms;
+  --control-motion-slow-out: 160ms;
+  --control-motion-ease: cubic-bezier(0.2, 0, 0, 1);
+  --control-focus-outline: 2px solid var(--ink);
+  --control-focus-offset: 2px;
+  --control-disabled-opacity: 0.56;
+  --control-choice-hover-shadow: 0 0 0 1px var(--ink);
+  /* Memory Cards uses color + object silhouette as the paired information.
+     Both themes keep the same board geometry and state model. */
+  --memory-cards-window-width: 520px;
+  --memory-cards-pane-bg:
+    radial-gradient(rgba(0, 0, 0, 0.09) 1px, transparent 1px) 0 0 / 9px 9px,
+    var(--quiet-panel);
+  --memory-cards-details-bg: var(--shade);
+  --memory-cards-details-border: 2px solid var(--ink);
+  --memory-cards-board-bg: transparent;
+  --memory-cards-board-border: 0;
+  --memory-cards-board-radius: 0;
+  --memory-cards-board-shadow: none;
+  --memory-card-bg:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.34), transparent 45%),
+    linear-gradient(var(--paper), var(--panel));
+  --memory-card-border: 1px solid rgba(0, 0, 0, 0.45);
+  --memory-card-radius: 8px;
+  --memory-card-shadow:
+    1px 1px 0 rgba(0, 0, 0, 0.75),
+    3px 3px 0 rgba(0, 0, 0, 0.2),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.55);
+  --memory-card-hover-shadow:
+    1px 2px 0 rgba(0, 0, 0, 0.7),
+    3px 4px 0 rgba(0, 0, 0, 0.18),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.7);
+  --memory-card-back-bg: linear-gradient(var(--paper), var(--quiet-panel));
+  --memory-card-back-mark-bg: rgba(0, 0, 0, 0.14);
+  --memory-card-face-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.42);
+  --memory-card-match-ring: inset 0 0 0 4px var(--paper), inset 0 0 0 6px var(--ink);
+  --memory-cards-muted: var(--shade-dark);
   --system-select-radius: 6px;
   --system-select-option-margin: 0;
   --system-select-option-min-height: 28px;
@@ -248,24 +395,27 @@
   --z-floating-field-control: 8995;
   --z-window-pinned: 9000;
   --z-window-priority: 9200;
-  --z-system-modal-scrim: 9500;
-  --z-system-modal: 9510;
-  --z-boot-screen: 12000;
-  --z-shutdown-screen: 20000;
   --z-selection-marquee: 30000;
   --z-demo-overlay: 39900;
   --z-demo-highlight: 39910;
   --z-system-menu: 40000;
   --z-system-menu-popover: 40010;
   --z-system-menu-subpopover: 40020;
+  --z-system-modal-scrim: 40100;
+  --z-system-modal: 40110;
+  --z-boot-screen: 41000;
+  --z-shutdown-screen: 42000;
   --system-titlebar-height: 23px;
   --system-titlebar-control-slot: 40px;
   --system-titlebar-control-size: 40px;
-  --system-titlebar-control-scale: 0.31;
-  --system-titlebar-control-stroke: 3px;
-  --system-titlebar-control-mark-stroke: 3px;
-  --system-titlebar-control-isolation: 4px;
-  --system-titlebar-control-margin-x: 0.2rem;
+  --system-titlebar-control-art-size: 13px;
+  --system-titlebar-control-art-offset-x: 13px;
+  --system-titlebar-control-art-ink: var(--ink);
+  --system-titlebar-title-height: 13px;
+  --system-titlebar-control-stroke: 1px;
+  --system-titlebar-control-mark-stroke: 1px;
+  --system-titlebar-control-isolation: 3px;
+  --system-titlebar-control-margin-x: 4px;
   --system-titlebar-margin-y: 1px;
   --system-titlebar-padding-y: 3px;
   --system-titlebar-padding-x: 1px;
@@ -287,6 +437,12 @@
   --system-titlebar-resize-attention-mark-opacity: 1;
   --system-titlebar-inactive-control-filter: none;
   --system-titlebar-inactive-control-opacity: 1;
+  /* System 6 draws a window's controls only while it is in front: an inactive
+     window's title bar is a plain white strip with its name, no stripes, no
+     close box and no zoom box — the same rule that empties its scroll bars and
+     removes its grow box. */
+  --system-titlebar-inactive-control-visibility: hidden;
+  --system-titlebar-inactive-title-color: var(--ink);
   --tdi-rail-width: 200px;
   --tdi-tab-close-size: 18px;
   --tdi-tab-close-gutter: 10px;
@@ -328,6 +484,26 @@
     #000000 2px
   );
 
+  /* System 6 draws every drag outline — selection marquee, window move, window
+     grow — with the 50% gray pattern: a one-pixel hairline, one pixel on, one
+     off. Not the browser's `dotted` rendering, which spaces round dots out. */
+  --drag-outline-unit: 1px;
+  /* QuickDraw drew these outlines by inverting the pixels underneath, which is
+     why one outline stays readable over the gray desk, a white window and black
+     art alike. White dashes + difference blending is that same invert. */
+  --drag-outline-ink: #ffffff;
+  --drag-outline-blend: difference;
+  --drag-outline-dashes-x: repeating-linear-gradient(
+    to right,
+    var(--drag-outline-ink) 0 var(--drag-outline-unit),
+    transparent var(--drag-outline-unit) calc(2 * var(--drag-outline-unit))
+  );
+  --drag-outline-dashes-y: repeating-linear-gradient(
+    to bottom,
+    var(--drag-outline-ink) 0 var(--drag-outline-unit),
+    transparent var(--drag-outline-unit) calc(2 * var(--drag-outline-unit))
+  );
+
   /* Theme-overridable component tokens.
      Each pairs with an override in body.use-liquid-glass {} at the top of
      styles/70-liquid-glass.css. Add new tokens here as twins get migrated. */
@@ -353,19 +529,48 @@
   --menu-item-active-fg: var(--paper);
   --menu-item-active-shadow: none;
   --scrollbar-corner-bg: var(--paper);
+  /* Document-window frame: the two scroll bar lanes and the grow box are one
+     16px chrome band, so the corner where they meet is exactly one cell wide
+     and the grow box can never drift onto content. */
+  --window-frame-lane: 16px;
+  --window-frame-bar-display: flex;
+  --window-frame-reserve: var(--window-frame-lane);
+  --window-frame-scrollbar-width: none;
+  /* The lane's 50% gray, drawn the way the vendored system.css reference does:
+     two 45-degree checkers offset by half a tile, so the cell is 2px — a 1px
+     checker reads as flat gray instead of a dither. */
+  --window-frame-track-bg:
+    linear-gradient(45deg, var(--shade) 25%, transparent 25% 75%, var(--shade) 75%) 0 0 / 4px 4px,
+    linear-gradient(45deg, var(--shade) 25%, transparent 25% 75%, var(--shade) 75%) 2px 2px / 4px 4px,
+    var(--paper);
+  --window-frame-track-border: 2px solid var(--ink);
+  --window-frame-thumb-bg: var(--paper);
+  --window-frame-thumb-border: 2px solid var(--ink);
+  --window-frame-thumb-radius: 0;
+  --window-frame-arrow-bg: var(--paper);
+  --window-frame-arrow-ink: var(--ink);
   --active-window-shadow: 3px 3px 0 var(--ink);
   --card-caption-color: var(--shade-dark);
+  /* Zero in a browser tab; real insets once the desk runs standalone from the
+     iOS home screen, where nothing else protects the notch or home indicator. */
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  /* The menu bar's own height, so each theme sets the value in one place and
+     the portrait rule can add the status-bar inset on top of it. */
+  --menu-bar-height: var(--system-menu-height);
+  /* Where a menu-bar popover hangs from: the bar's real bottom, inset included. */
+  --menu-popover-top: calc(var(--menu-bar-height) + var(--safe-area-top));
   --guide-pane-gap: 10px;
+  --tab-radius: 0;
+  --tab-overlap: 0px;
+  --tab-bg: var(--shade);
+  --tab-hover-bg: var(--paper);
+  --tab-active-bg: var(--paper);
   --guide-start-card-border: 2px solid var(--ink);
   --guide-start-card-radius: 0;
   --guide-start-card-bg: var(--paper);
   --guide-start-card-shadow: inset 1px 1px 0 var(--shade);
   --guide-start-card-padding: 10px;
-  --guide-mode-card-border: 1px dotted var(--shade-dark);
-  --guide-mode-card-radius: 0;
-  --guide-mode-card-bg: transparent;
-  --guide-mode-card-shadow: none;
-  --guide-mode-card-padding: 9px 10px;
   --guide-start-card-small-color: inherit;
   --startup-settings-modal-padding: 22px 28px 18px;
   --startup-settings-form-gap: 14px;
@@ -650,6 +855,29 @@
   --reader-transcript-button-shadow: none;
   --reader-transcript-blocks-border: 1px dashed #9a9a9a;
   --reader-transcript-summary-border: 0;
+  --time-machine-window-width: 820px;
+  --time-machine-window-height: 620px;
+  --time-machine-toolbar-bg: var(--paper);
+  --time-machine-toolbar-border: 1px solid var(--shade-dark);
+  --time-machine-popover-bg: var(--paper);
+  --time-machine-popover-border: var(--time-machine-toolbar-border);
+  --time-machine-popover-shadow: var(--system-shadow);
+  --time-machine-popover-backdrop-filter: none;
+  --time-machine-popover-fg: var(--ink);
+  --time-machine-popover-muted: var(--shade-dark);
+  --time-machine-popover-divider: var(--shade);
+  --time-machine-calendar-day-bg: var(--shade);
+  --time-machine-calendar-day-border: var(--shade-dark);
+  --time-machine-time-bg: repeating-linear-gradient(135deg, var(--paper) 0 6px, #e8e8e8 6px 7px);
+  --time-machine-time-active-bg: repeating-linear-gradient(135deg, #d8d8d8 0 5px, var(--paper) 5px 7px);
+  --time-machine-time-border: 2px solid var(--ink);
+  --time-machine-frame-border: var(--system-border);
+  --time-machine-frame-radius: 0;
+  --time-machine-frame-bg: var(--paper);
+  --time-machine-frame-shadow: var(--system-inset);
+  --time-machine-live-color: var(--shade-dark);
+  --time-machine-archive-color: var(--ink);
+  --time-machine-loading-bg: rgba(255, 255, 255, 0.9);
   --scrap-selection-actions-border: 1px dotted var(--shade-dark);
   --notification-item-divider: 1px dotted var(--shade-dark);
   --docmap-drop-zone-border: 2px dashed var(--ink);
@@ -722,6 +950,19 @@
   --character-map-button-hover-fg: var(--character-map-button-fg);
   --character-map-button-active-bg: var(--ink);
   --character-map-button-active-fg: var(--paper);
+  --alarm-clock-window-width: 236px;
+  --alarm-clock-frame-border: 2px solid var(--ink);
+  --alarm-clock-frame-radius: 0;
+  --alarm-clock-frame-shadow: 3px 3px 0 var(--ink);
+  --alarm-clock-title-bg: var(--paper);
+  --alarm-clock-surface-bg: var(--paper);
+  --alarm-clock-readout-bg: var(--paper);
+  --alarm-clock-divider: 2px solid var(--ink);
+  --alarm-clock-active-bg: var(--ink);
+  --alarm-clock-active-fg: var(--paper);
+  --alarm-clock-title-height: 34px;
+  --alarm-clock-readout-height: 36px;
+  --alarm-clock-modes-height: 56px;
   --calculator-pane-gap: 5px;
   --calculator-pane-padding: var(--system-window-padding);
   --calculator-pane-bg: var(--shade);
@@ -753,7 +994,7 @@
   --puzzle-window-width: 188px;
   --puzzle-window-height: auto;
   --puzzle-pane-flex: 1 1 auto;
-  --puzzle-pane-align-items: stretch;
+  --puzzle-pane-align-items: center;
   --puzzle-pane-gap: 5px;
   --puzzle-pane-padding: var(--system-window-padding);
   --puzzle-pane-bg: var(--shade);
@@ -795,6 +1036,7 @@
   --puzzle-footer-badge-bg: transparent;
   --puzzle-footer-badge-fg: inherit;
   --btn-border-color: var(--ink);
+  --btn-radius: 8px;
   --btn-bg: var(--paper);
   --btn-fg: var(--ink);
   --btn-shadow: inset -1px -1px 0 var(--shade-dark);
@@ -899,6 +1141,20 @@
   --cmf-panel-bg: var(--paper);
   --cmf-panel-radius: 0;
   --cmf-panel-shadow: var(--inset-shadow);
+  --cmf-window-width: 1120px;
+  --cmf-window-height: 720px;
+  --cmf-inspector-width: 286px;
+  --cmf-toolbar-bg: var(--panel);
+  --cmf-toolbar-border: 1px solid var(--ink);
+  --cmf-toolbar-radius: 0;
+  --cmf-toolbar-shadow: none;
+  --cmf-preview-head-bg: var(--panel);
+  --cmf-muted: var(--shade-dark);
+  --cmf-hover-bg: var(--quiet-panel);
+  --cmf-selected-bg: var(--ink);
+  --cmf-selected-fg: var(--paper);
+  --cmf-live-bg: var(--paper);
+  --cmf-live-border: 1px solid var(--ink);
   --cmf-stage-bg:
     linear-gradient(45deg, rgba(0, 0, 0, 0.06) 25%, transparent 25%),
     linear-gradient(-45deg, rgba(0, 0, 0, 0.06) 25%, transparent 25%),
@@ -916,6 +1172,31 @@
   --cmf-chip-bg: var(--paper);
   --cmf-chip-selected-shadow: inset 0 0 0 2px var(--ink);
   --cmf-chip-focus-outline: 2px solid var(--ink);
+  --bureaucracy-pane-bg: var(--paper);
+  --bureaucracy-surface-bg: var(--paper);
+  --bureaucracy-surface-border: 1px solid var(--ink);
+  --bureaucracy-surface-radius: 0;
+  --bureaucracy-surface-shadow: none;
+  --bureaucracy-muted: var(--shade-dark);
+  --bureaucracy-hover-bg: var(--quiet-panel);
+  --bureaucracy-selected-bg: var(--ink);
+  --bureaucracy-selected-fg: var(--paper);
+  --bureaucracy-preview-bg: var(--shade);
+  --bureaucracy-error: var(--ink);
+  --endfield-pane-bg:
+    linear-gradient(rgba(0, 0, 0, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.035) 1px, transparent 1px),
+    var(--paper);
+  --endfield-sidebar-bg: var(--panel);
+  --endfield-surface-bg: var(--paper);
+  --endfield-surface-border: 1px solid var(--ink);
+  --endfield-surface-radius: 0;
+  --endfield-surface-shadow: none;
+  --endfield-muted: var(--shade-dark);
+  --endfield-hover-bg: var(--quiet-panel);
+  --endfield-selected-bg: var(--ink);
+  --endfield-selected-fg: var(--paper);
+  --endfield-evidence-divider: 1px solid var(--ink);
   --quick-draft-panel-bg: var(--quiet-panel);
   --quick-draft-panel-border: 1px dotted var(--shade-dark);
   --quick-draft-panel-radius: 0;
@@ -1382,7 +1663,6 @@ body.has-system-modal .menu-bar {
   align-items: center;
   gap: 5px;
   max-width: min(270px, 34vw);
-  --liquid-menu-chip-radius: 8px;
 }
 
 .project-switcher-icon {
@@ -2215,4 +2495,27 @@ body.has-system-modal .menu-bar {
 
 .is-hidden {
   display: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .system-tab,
+  .system-select-button,
+  .system-select-menu,
+  .system-select-option,
+  .memory-card,
+  .memory-card-back,
+  .memory-card-face,
+  input[type="checkbox"],
+  input[type="radio"] {
+    transition-duration: 0s;
+  }
+
+  .message.pending.streaming .message-content::after {
+    animation: none;
+  }
+
+  .system-select-menu {
+    transform: none;
+  }
 }

@@ -1,6 +1,6 @@
-// Feature module: translation-pad.
+// Lazy feature module: translation-pad.
 
-// Loaded before app.js as a classic script; shares the AI System 6 global scope.
+// Loaded on demand as a classic script; shares the AI System 6 global scope.
 
 
 

@@ -8,7 +8,7 @@ const writingDemoCorpus = window.AISystem6Iphone17eDemoCorpus || {};
 const writingDemoAppleUrl = writingDemoCorpus.appleNewsroomUrl || "https://www.apple.com.cn/cn/newsroom/2026/03/apple-introduces-iphone-17e/";
 const writingDemoSearchKeyword = writingDemoCorpus.searchKeyword || "iPhone 17e";
 const writingDemoQuestionSeed = writingDemoCorpus.questionSheet || "";
-const writingDemoOutlineSeed = writingDemoCorpus.creatorBulletInput || "";
+const writingDemoOutlineSeed = writingDemoCorpus.aaronBulletInput || "";
 const writingDemoManuscriptTitle = writingDemoCorpus.manuscriptTitle || "iPhone 17e 视频口播稿";
 const writingDemoFinalExportTitle = writingDemoCorpus.finalExportTitle || "iPhone 17e 视频口播稿 - Final";
 const writingDemoShortIntent = "我要写一条 iPhone 17e 的 B 站口播稿：有来源、有判断，别变成发布会复读。";
@@ -66,7 +66,7 @@ const writingDemoScriptSteps = [
     title: "手工结构进入大纲",
     userVisiblePurpose: "问题单提供写作边界；大纲使用作者已经给定的章节顺序，不把问题单当作唯一上游。",
     windows: [{ name: "outline", slot: "wide" }],
-    expectedVisibleChange: "Creator 给定的大纲进入 Outline，并同步为可起草章节。",
+    expectedVisibleChange: "Aaron 给定的大纲进入 Outline，并同步为可起草章节。",
     failureMessage: "给定大纲没有形成可起草结构。",
   },
   {

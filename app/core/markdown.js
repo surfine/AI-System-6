@@ -40,16 +40,24 @@ function createSystemMarkdownRenderer() {
   const markedApi = markdownMarkedApi();
   const renderer = new markedApi.Renderer();
 
-  renderer.html = ({ text }) => escapeHtml(text).replace(/&lt;br\s*\/?&gt;/gi, "<br>");
-  renderer.link = function ({ href, title, tokens }) {
-    const text = this.parser.parseInline(tokens);
+  renderer.html = function (input) {
+    const text = typeof input === "object" ? input.text : input;
+    return escapeHtml(text).replace(/&lt;br\s*\/?&gt;/gi, "<br>");
+  };
+  renderer.link = function (input, legacyTitle, legacyText) {
+    const href = typeof input === "object" ? input.href : input;
+    const title = typeof input === "object" ? input.title : legacyTitle;
+    const text = typeof input === "object" ? this.parser.parseInline(input.tokens) : legacyText;
     if (!isSafeMarkdownHref(href)) return text;
 
     const escapedHref = escapeHtml(href);
     const titleAttribute = title ? ` title="${escapeHtml(title)}"` : "";
     return `<a href="${escapedHref}"${titleAttribute} target="_blank" rel="noreferrer">${text}</a>`;
   };
-  renderer.image = function ({ href, title, text }) {
+  renderer.image = function (input, legacyTitle, legacyText) {
+    const href = typeof input === "object" ? input.href : input;
+    const title = typeof input === "object" ? input.title : legacyTitle;
+    const text = typeof input === "object" ? input.text : legacyText;
     if (!isSafeMarkdownImageSrc(href)) return escapeHtml(text || "");
 
     const escapedSrc = escapeHtml(href);

@@ -5,6 +5,9 @@ const documentRolePolicies = {
     source_view: ["copy", "clip", "discuss", "makeDocMap", "sendCopyToManuscript"],
     export_preview: ["copy", "clip", "discuss", "makeDocMap", "sendCopyToManuscript"],
   },
+  timeMachine: {
+    web_navigation: ["browse", "copy", "clip", "discuss", "makeDocMap", "sendCopyToManuscript"],
+  },
   teachText: {
     manuscript: ["edit", "save", "writingFlow", "review", "projectCdExport", "slidesExport", "makeDocMap", "clip"],
     scratch_file: ["edit", "save", "saveCopy", "makeDocMap", "clip"],

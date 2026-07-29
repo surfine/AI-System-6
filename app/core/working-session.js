@@ -324,7 +324,7 @@ async function restoreWindowWorkingSession(state = {}) {
   quietStartup();
 
   const visibleWindows = windows
-    .filter((entry) => entry?.visible && getWindow(entry.name))
+    .filter((entry) => entry?.visible && getWindow(entry.name) && isWorkspaceWindowAllowed(entry.name))
     .sort((a, b) => workingSessionNumber(a.zIndex, 0) - workingSessionNumber(b.zIndex, 0));
 
   for (const entry of visibleWindows) {
@@ -425,11 +425,25 @@ function restoreSelectionWorkingSession(state = {}) {
 }
 
 function captureAssistantWorkingSession() {
+  if (clioTalkTemporaryMode) {
+    return {
+      projectId: activeProjectId,
+      activeChatFileId: null,
+      prompt: "",
+      conversation: [],
+      compressedConversationMemory: { text: "", sourceMessages: 0, updatedAt: "" },
+      nextTaskInputFileIds: [],
+      lastAssistantText: "",
+      lastUserText: "",
+      messagesScrollTop: 0,
+    };
+  }
   const suspendedState = (typeof isSideAskClioTalkActive === "function" && isSideAskClioTalkActive() && sideAskClioTalkSession)
     ? sideAskClioTalkSession
     : null;
   return {
     projectId: activeProjectId,
+    activeChatFileId: suspendedState ? String(suspendedState.activeChatFileId || "") : activeChatFileId,
     prompt: suspendedState ? String(suspendedState.prompt || "") : promptInput?.value || "",
     conversation: suspendedState
       ? (Array.isArray(suspendedState.conversation) ? suspendedState.conversation : []).map((item) => ({ ...item }))
@@ -437,6 +451,9 @@ function captureAssistantWorkingSession() {
     compressedConversationMemory: suspendedState
       ? { ...suspendedState.compressedConversationMemory }
       : { ...compressedConversationMemory },
+    nextTaskInputFileIds: suspendedState
+      ? [...(suspendedState.nextTaskInputFileIds || [])]
+      : [...(window.nextTaskInputFileIds || [])],
     lastAssistantText: suspendedState ? String(suspendedState.lastAssistantText || "") : lastAssistantText,
     lastUserText: suspendedState ? String(suspendedState.lastUserText || "") : lastUserText,
     messagesScrollTop: suspendedState ? Number(suspendedState.scrollTop) || 0 : messagesEl?.scrollTop || 0,
@@ -445,10 +462,13 @@ function captureAssistantWorkingSession() {
 
 function restoreAssistantWorkingSession(state = {}) {
   if (state.projectId && state.projectId !== activeProjectId) return false;
+  clioTalkTemporaryMode = false;
   promptInput.value = String(state.prompt || "");
   conversation.length = 0;
+  activeChatFileId = String(state.activeChatFileId || "") || null;
   if (Array.isArray(state.conversation)) {
     conversation.push(...state.conversation.map((item) => ({
+      ...item,
       role: item.role === "assistant" ? "assistant" : "user",
       content: String(item.content || ""),
     })));
@@ -458,10 +478,20 @@ function restoreAssistantWorkingSession(state = {}) {
     sourceMessages: Number(state.compressedConversationMemory?.sourceMessages || 0),
     updatedAt: String(state.compressedConversationMemory?.updatedAt || ""),
   };
+  window.nextTaskInputFileIds = new Set(
+    Array.isArray(state.nextTaskInputFileIds) ? state.nextTaskInputFileIds : []
+  );
   lastAssistantText = String(state.lastAssistantText || "");
   lastUserText = String(state.lastUserText || "");
   messagesEl.replaceChildren();
-  conversation.forEach((item) => addMessage(item.role, item.content));
+  conversation.forEach((item, index) => addMessage(item.role, item.content, {
+    messageRecord: item,
+    messageIndex: index,
+    grounding: item.grounding || null,
+  }));
+  renderClioTalkWelcome();
+  renderAttachedClips();
+  renderClioTalkRunAssembly();
   requestAnimationFrame(() => {
     messagesEl.scrollTop = Number(state.messagesScrollTop) || messagesEl.scrollHeight;
   });
@@ -580,6 +610,19 @@ async function restoreReaderWorkingSession(state = {}) {
   return true;
 }
 
+function captureTimeMachineWorkingSession() {
+  return window.AISystem6TimeMachine?.captureSession?.() || {
+    projectId: activeProjectId,
+    activeTabId: "",
+  };
+}
+
+async function restoreTimeMachineWorkingSession(state = {}) {
+  if (state.projectId && state.projectId !== activeProjectId) return false;
+  await ensureTimeMachineModule();
+  return !!window.AISystem6TimeMachine?.restoreSession?.(state);
+}
+
 function captureWritingFlowWorkingSession() {
   return {
     projectId: activeProjectId,
@@ -651,6 +694,7 @@ function registerDefaultWorkingSessionAdapters() {
     clear: clearFileFloppyWorkingSession,
   });
   registerWorkingSessionAdapter({ id: "reader", capture: captureReaderWorkingSession, restore: restoreReaderWorkingSession });
+  registerWorkingSessionAdapter({ id: "timeMachine", capture: captureTimeMachineWorkingSession, restore: restoreTimeMachineWorkingSession });
   registerWorkingSessionAdapter({ id: "writingFlow", capture: captureWritingFlowWorkingSession, restore: restoreWritingFlowWorkingSession });
   registerWorkingSessionAdapter({ id: "reviewDesk", capture: captureReviewDeskWorkingSession, restore: restoreReviewDeskWorkingSession });
 }

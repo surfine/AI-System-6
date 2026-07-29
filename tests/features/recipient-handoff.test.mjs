@@ -1,12 +1,13 @@
 // Recipient Handoff is the generic product layer beneath the Mingming preset:
 // AI System 6 helps people prepare work for real recipients with less friction,
-// while keeping private Creator/Mingming behavior in dedicated lenses.
+// while keeping private Aaron/Mingming behavior in dedicated lenses.
 
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("recipient-handoff");
 
 const index = read("index.html");
+const clioTalkPrompt = read("app/content/ai-prompts/cliotalk/main.md");
 const claude = read("CLAUDE.md");
 const questionSheet = read("app/core/question-sheet.js");
 const chatMessages = read("app/core/chat-messages.js");
@@ -36,11 +37,11 @@ test.assertIncludes(claude, "must not become the writer's mouthpiece", "Product 
 test.assertIncludes(claude, "Question Sheet must welcome messy human input", "Product charter makes rough input part of the route");
 test.assertIncludes(claude, "Review Desk must check for AI-mouthpiece drift", "Product charter makes AI-mouthpiece drift a review concern");
 
-test.assertIncludes(index, "real recipient can receive", "ClioTalk default system prompt names real recipient handoff");
-test.assertIncludes(index, "the writer's own language", "ClioTalk default system prompt protects the writer's language");
-test.assertIncludes(index, "model mouthpiece", "ClioTalk default system prompt rejects model-mouthpiece behavior");
-test.assertIncludes(index, "low-pressure", "ClioTalk default system prompt avoids creating pressure by default");
-test.assertNotIncludes(index.match(/<textarea id="system"[\s\S]*?<\/textarea>/)?.[0] || "", "Mingming", "Default ClioTalk system prompt stays generic");
+test.assertIncludes(clioTalkPrompt, "real recipient can receive", "ClioTalk default system prompt names real recipient handoff");
+test.assertIncludes(clioTalkPrompt, "the writer's own language", "ClioTalk default system prompt protects the writer's language");
+test.assertIncludes(clioTalkPrompt, "model mouthpiece", "ClioTalk default system prompt rejects model-mouthpiece behavior");
+test.assertIncludes(clioTalkPrompt, "low-pressure", "ClioTalk default system prompt avoids creating pressure by default");
+test.assertNotIncludes(clioTalkPrompt, "Mingming", "Default ClioTalk system prompt stays generic");
 
 test.assertIncludes(chatMessages, "real recipient can receive", "Runtime product identity includes real recipient handoff");
 test.assertIncludes(chatMessages, "their own language", "Runtime product identity protects the writer's language");

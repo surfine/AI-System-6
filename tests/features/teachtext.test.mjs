@@ -43,7 +43,9 @@ test.assertIncludes(writingCommands, 'data-action="generate-marp-open-clio-stage
 test.assertNotIncludes(writingCommands, 'id="teachtext-translate"', "TeachText command menu does not re-add the old translate item");
 test.assertNotIncludes(writingCommands, 'data-action="ai-proofread"', "TeachText command menu does not re-add the old Writing Tools submenu");
 test.assertNotIncludes(writingCommands, 'id="teachtext-download-markdown"', "TeachText command menu does not re-add the old markdown export item");
-test.assertIncludes(teachText, "fetch(\"/api/vision/analyze\"", "Project Picture Album can ask the local vision model to read an image");
+test.assertIncludes(teachText, "AISystem6ModelTaskRuntime.buildVisionMessages", "Project Picture Album builds a browser-local vision request");
+test.assertIncludes(teachText, "sendLocalModelTask", "Project Picture Album can ask the selected local vision model directly");
+test.assertNotIncludes(teachText, "fetch(\"/api/vision/analyze\"", "Project Picture Album does not upload local vision prompts to the VPS");
 test.assertIncludes(teachText, "textContent = t(\"image_read\")", "Project Picture Album exposes a Read image action");
 test.assertIncludes(teachText, "textContent = t(\"image_ocr\")", "Project Picture Album exposes an OCR action");
 

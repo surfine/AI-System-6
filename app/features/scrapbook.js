@@ -280,9 +280,14 @@ function clipTeachTextSelectionToScrapbook() {
 
 function renderAttachedClips() {
   attachedClipsShelfEl.replaceChildren();
-  if (attachedClipIds.size === 0) {
+  attachedClipsShelfEl.setAttribute("aria-label", t("attached_context"));
+  const projectInputIds = window.nextTaskInputFileIds instanceof Set
+    ? [...window.nextTaskInputFileIds]
+    : [];
+  if (attachedClipIds.size === 0 && projectInputIds.length === 0) {
     attachedClipsShelfEl.classList.add("is-hidden");
     attachedClipsToolbarEl?.classList.add("is-hidden");
+    if (typeof renderClioTalkRunAssembly === "function") renderClioTalkRunAssembly();
     return;
   }
 
@@ -293,18 +298,50 @@ function renderAttachedClips() {
   attachedClipsShelfEl.append(label);
 
   attachedClipIds.forEach(id => {
-    const scrap = scraps.find(s => s.id === id);
-    if (!scrap) return;
+    const scrap = scraps.find(s => s.id === id && isInActiveProject(s));
+    if (!scrap) {
+      attachedClipIds.delete(id);
+      return;
+    }
 
     const btn = document.createElement("button");
+    btn.type = "button";
     btn.className = "btn mini-btn";
-    btn.innerHTML = `<span class="mini-icon text-file-icon"></span><span>${escapeHtml(scrap.title)}</span> <small>×</small>`;
+    btn.setAttribute("aria-label", t("clio_remove_attachment", scrap.title));
+    btn.title = t("clio_remove_attachment", scrap.title);
+    btn.innerHTML = `<span class="mini-icon text-file-icon" aria-hidden="true"></span><span>${escapeHtml(scrap.title)}</span> <small aria-hidden="true">×</small>`;
     btn.addEventListener("click", () => {
       attachedClipIds.delete(id);
       renderAttachedClips();
+      scheduleRenderTasks("contextPanel");
+      if (typeof scheduleWorkingSessionSave === "function") scheduleWorkingSessionSave();
     });
     attachedClipsShelfEl.append(btn);
   });
+
+  projectInputIds.forEach((id) => {
+    const file = getProjectFiles().find((item) => item.id === id);
+    if (!file) {
+      window.nextTaskInputFileIds.delete(id);
+      return;
+    }
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "btn mini-btn";
+    btn.setAttribute("aria-label", t("clio_remove_attachment", file.name));
+    btn.title = t("clio_remove_attachment", file.name);
+    btn.innerHTML = `<span class="mini-icon text-file-icon" aria-hidden="true"></span><span>${escapeHtml(file.name)}</span> <small aria-hidden="true">×</small>`;
+    btn.addEventListener("click", () => {
+      window.nextTaskInputFileIds.delete(id);
+      renderAttachedClips();
+      scheduleRenderTasks("contextPanel");
+      if (typeof scheduleWorkingSessionSave === "function") scheduleWorkingSessionSave();
+    });
+    attachedClipsShelfEl.append(btn);
+  });
+
+  if (attachedClipIds.size === 0 && window.nextTaskInputFileIds?.size === 0) renderAttachedClips();
+  else if (typeof renderClioTalkRunAssembly === "function") renderClioTalkRunAssembly();
 }
 
 function toggleClipAttachment() {
@@ -323,6 +360,8 @@ function toggleClipAttachment() {
     openWindow("assistant");
   }
   renderAttachedClips();
+  scheduleRenderTasks("contextPanel");
+  if (typeof scheduleWorkingSessionSave === "function") scheduleWorkingSessionSave();
 }
 
 function syncScrapSelection(visibleScraps) {
@@ -821,12 +860,18 @@ function renderContextPanel() {
   const countEl = document.querySelector("#context-panel-count");
   const budgetEl = document.querySelector("#context-panel-budget");
   if (!listEl || !countEl) return;
+  renderClioTalkContextSpace();
 
+  const loadout = window.lastContextLoadout || null;
   const usedContextItems = lastRetrievedContextItems.filter((contextItem) => contextItem.included !== false && !contextItem.excluded);
   const droppedContextItems = lastRetrievedContextItems.length - usedContextItems.length;
   countEl.textContent = t("context_items_count", usedContextItems.length);
   if (budgetEl) {
-    const budgetText = lastContextBudget
+    const budgetText = loadout?.promptTokens
+      ? (currentLanguage === "zh"
+        ? `估算装入 ${loadout.promptTokens}/${loadout.contextTokens || "—"} tokens`
+        : `Estimated load ${loadout.promptTokens}/${loadout.contextTokens || "—"} tokens`)
+      : lastContextBudget
       ? (lastContextBudget.promptTokens
         ? t("context_budget_token_summary", lastContextBudget.promptTokens, lastContextBudget.contextTokens, lastContextBudget.availableOutputTokens, lastContextBudget.budgetSource, droppedContextItems)
         : t("context_budget_summary", lastContextBudget.usedChars, lastContextBudget.budgetChars, droppedContextItems))
@@ -846,6 +891,56 @@ function renderContextPanel() {
   ].join("::");
   if (shouldSkipRender("contextPanel", signature)) return;
   listEl.replaceChildren();
+
+  if (loadout?.entries?.length) {
+    const title = document.createElement("div");
+    title.className = "context-section-title";
+    title.textContent = currentLanguage === "zh" ? "本次实际装载（估算）" : "Actual request loadout (estimate)";
+    listEl.append(title);
+    loadout.entries.forEach((entry) => {
+      const item = document.createElement("div");
+      item.className = "context-item";
+      const labels = {
+        system: currentLanguage === "zh" ? "系统提示词与安全边界" : "System prompt and safety boundary",
+        "current-conversation": currentLanguage === "zh" ? "当前对话" : "Current conversation",
+        conversation: currentLanguage === "zh" ? "当前对话" : "Current conversation",
+        "compressed-memory": currentLanguage === "zh" ? "压缩连续性记忆" : "Compressed continuity memory",
+        "project-memory": currentLanguage === "zh" ? "项目记忆" : "Project Memory",
+        retrospective: currentLanguage === "zh" ? "本次附加复盘" : "Attached retrospective",
+        "retrieved-context": currentLanguage === "zh" ? "来源与项目文件" : "Sources and project files",
+      };
+      item.innerHTML = `<div class="context-header"><strong>${escapeHtml(labels[entry.kind] || entry.kind)}</strong><span>${entry.estimatedTokens} ${currentLanguage === "zh" ? "估算 tokens" : "estimated tokens"}</span></div>`;
+      const body = document.createElement("div");
+      body.className = "context-body";
+      body.textContent = entry.content.slice(0, 900);
+      item.append(body);
+      if (entry.kind === "project-memory") {
+        const disable = document.createElement("button");
+        disable.className = "btn";
+        disable.textContent = currentLanguage === "zh" ? "停用项目记忆" : "Disable Project Memory";
+        disable.onclick = () => {
+          const ids = [...entry.content.matchAll(/\[memory:([^\]]+)\]/g)].map((match) => match[1]);
+          getProjectFiles().filter((file) => ids.includes(file.id)).forEach((file) => { file.memoryStatus = "disabled"; file.updatedAt = new Date().toISOString(); });
+          saveDeskState();
+          renderContextPanel();
+        };
+        item.append(disable);
+      }
+      listEl.append(item);
+    });
+    loadout.skipped?.forEach((entry) => {
+      const item = document.createElement("div");
+      item.className = "context-item is-dropped";
+      item.textContent = `${entry.label} — ${currentLanguage === "zh" ? "未装入：" : "Not loaded: "}${entry.reason}`;
+      listEl.append(item);
+    });
+  }
+  if (window.lastTaskSkillReceipt?.length) {
+    const receipt = document.createElement("div");
+    receipt.className = "context-item";
+    receipt.textContent = `${currentLanguage === "zh" ? "技能采用顺序：" : "Skill adoption order: "}${window.lastTaskSkillReceipt.map((item) => `${item.id} v${item.version}`).join(" → ")}`;
+    listEl.append(receipt);
+  }
 
   if (!lastRetrievedContextItems.length) {
     const empty = document.createElement("div");
@@ -1138,10 +1233,9 @@ async function askScrapbookQuestion(event) {
   const sourceText = formatScrapsForTransfer(sourceScraps);
   const zh = currentLanguage === "zh";
   const prompt = [
-    zh ? "你是 AI System 6 的 Scrapbook 摘录问答员。优先根据下面这些摘录回答用户问题。" : "You are the Scrapbook clip question clerk. Use the Scrapbook clips below as primary grounding.",
+    resolveWritingRoutePrompt("other-apps.scrapbook-source-question", zh ? "zh" : "en"),
     typeof sideAskAnswerStyleInstruction === "function" ? sideAskAnswerStyleInstruction() : (zh ? "回答要短、自然，不要写审稿报告。" : "Be brief and natural; do not write a review report."),
     typeof ragGroundingInstruction === "function" ? ragGroundingInstruction(zh ? "Scrapbook 摘录" : "The Scrapbook clips") : (zh ? "摘录是主要依据，不是回答边界；请区分原文、推断和需要核对的部分。" : "The clips are primary grounding, not the answer boundary; distinguish source text, inference, and points to check."),
-    zh ? "不要把摘录之间没有明说的关系说成事实。没有选中摘录时，下面是当前项目的全部摘录；有选中摘录时，优先回答选中摘录。使用自然简体中文。" : "Do not turn unstated relationships between clips into facts.",
     "",
     `${zh ? "用户问题" : "Question"}:\n${question}`,
     "",
@@ -1149,9 +1243,11 @@ async function askScrapbookQuestion(event) {
     clipContextContent(sourceText, selected.length ? 7000 : 12000),
   ].join("\n");
 
+  const paired = typeof arrangeScrapbookAssistantSplit === "function"
+    ? await arrangeScrapbookAssistantSplit()
+    : (await openWindow("assistant"), true);
+  if (!paired) return;
   if (scrapbookQuestionInput) scrapbookQuestionInput.value = "";
-  if (typeof arrangeScrapbookAssistantSplit === "function") await arrangeScrapbookAssistantSplit();
-  else await openWindow("assistant");
   setStatus(t("scrapbook_question_sent"));
   await submitUserText(prompt, {
     displayText: `${t("scrapbook")}: ${question}`,
@@ -1172,10 +1268,18 @@ function sendSelectedScrapsToQuestionSheet() {
   setStatus(t("scraps_sent_to_question", selected.length));
 }
 
-function openSelectedScrapSourceInReader() {
+async function openSelectedScrapSourceInReader() {
   const selected = getSelectedScraps()[0];
   if (!selected) {
     setStatus(t("no_source_to_open"));
+    return;
+  }
+  if (
+    selected.source?.readerKind === "archiveSnapshot"
+    && selected.source?.originalUrl
+  ) {
+    await ensureTimeMachineModule();
+    await window.AISystem6TimeMachine?.openSnapshot?.(selected.source);
     return;
   }
   const contract = sourceContractForScrap(selected);
@@ -1210,12 +1314,11 @@ async function outlineSelectedScraps() {
   const sourceText = formatScrapsForTransfer(selected);
   setStatus(t("making_outline"));
   try {
-    const prompt = `You are an expert editor. Turn these Scrapbook notes into a clear writing outline.
+    const prompt = `${resolveWritingRoutePrompt("source-apps.scrapbook-outline", "en")}
 
 SCRAPBOOK NOTES:
 ${sourceText}
-
-Return ONLY the Markdown outline. Use ## headings for draftable sections, with bullets beneath them for details.`;
+`;
     const response = await fetchModelPayload({
       model: getLocalModelRequestName(),
       messages: withMarkdownModelMessages([{ role: "user", content: prompt }]),

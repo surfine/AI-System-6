@@ -8,6 +8,7 @@ const endfieldMatchListEl = document.querySelector("#endfield-match-list");
 const endfieldCountEl = document.querySelector("#endfield-terminal-count");
 const endfieldRouteEl = document.querySelector("#endfield-terminal-route");
 const endfieldNewSessionBtn = document.querySelector("#endfield-new-session");
+const endfieldSubmitBtn = document.querySelector("#endfield-submit");
 const ENDFIELD_RECENT_KEY = "ai-system6-endfield-recent";
 
 const defaultEndfieldQueries = [
@@ -28,6 +29,9 @@ const legacyDefaultEndfieldQueries = [
 
 let endfieldLastQuery = "";
 let endfieldMetaLoaded = false;
+let endfieldRequestId = 0;
+let endfieldAbortController = null;
+let endfieldBusy = false;
 
 function endfieldRecentQueries() {
   try {
@@ -69,18 +73,17 @@ function endfieldRoutePayload() {
 }
 
 function endfieldRouteLabel() {
-  if (typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudConfig?.model) return `Cloud / ${cloudConfig.model}`;
+  if (typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudConfig?.model) return `${t("endfield_route_cloud")} / ${cloudConfig.model}`;
   const model = typeof getLocalModelDisplayName === "function" ? getLocalModelDisplayName() : (modelInput?.value || "local model");
-  return `Local / ${model}`;
+  return `${t("endfield_route_local")} / ${model}`;
 }
 
 function renderEndfieldRecent(items = endfieldRecentQueries()) {
   if (!endfieldRecentListEl) return;
   endfieldRecentListEl.innerHTML = items.map((query, index) => `
-    <button type="button" class="endfield-recent-item${query === endfieldLastQuery ? " is-active" : ""}" data-query="${escapeHtml(query)}">
+    <button type="button" class="endfield-recent-item${query === endfieldLastQuery ? " is-selected" : ""}" data-query="${escapeHtml(query)}" aria-pressed="${query === endfieldLastQuery ? "true" : "false"}">
       <span>${index + 1}</span>
       <b>${escapeHtml(query.replace(/[？?].*$/, ""))}</b>
-      <small>${escapeHtml(query)}</small>
     </button>
   `).join("");
 }
@@ -91,11 +94,12 @@ function renderEndfieldMatches(matches = []) {
     endfieldMatchListEl.innerHTML = `<p class="endfield-empty">${escapeHtml(t("endfield_empty"))}</p>`;
     return;
   }
-  endfieldMatchListEl.innerHTML = matches.slice(0, 8).map((item) => `
-    <article class="endfield-match">
-      <b>${escapeHtml(item.title || item.id || "Untitled")}</b>
+  endfieldMatchListEl.innerHTML = matches.slice(0, 14).map((item, index) => `
+    <button type="button" class="endfield-match" data-evidence-index="${index + 1}">
+      <span>${index + 1}</span>
+      <b>${escapeHtml(item.missionTitle || item.title || item.id || t("endfield_untitled"))}</b>
       <small>${escapeHtml([item.section, item.chapter, item.process].filter(Boolean).join(" / "))}</small>
-    </article>
+    </button>
   `).join("");
 }
 
@@ -103,83 +107,192 @@ function renderEndfieldWelcome() {
   if (!endfieldOutputEl) return;
   endfieldOutputEl.innerHTML = `
     <article class="endfield-answer endfield-welcome">
-      <h3>WELCOME_MESSAGE</h3>
-      <p><b>《明日方舟：终末地》本地剧情资料终端</b></p>
-      <p>资料库已装载 Warfarin Wiki 文本，覆盖主线剧情、干员档案、语音、教学记录、见闻辑录、中枢档案与调查报告。</p>
-      <p><b>先检索证据，再生成回答。</b> 模型调用沿用 AI System 6 当前的本地或云端模型设置；来源、章节和说话人会保留在证据卡中。</p>
+      <p class="endfield-kicker">${escapeHtml(t("endfield_archive_label"))}</p>
+      <h3>${escapeHtml(t("endfield_welcome_title"))}</h3>
+      <p>${escapeHtml(t("endfield_welcome_body"))}</p>
+      <div class="endfield-suggestions" role="group" aria-label="${escapeHtml(t("endfield_suggestions"))}">
+        ${defaultEndfieldQueries.slice(0, 3).map((query) => `
+          <button class="btn" type="button" data-query="${escapeHtml(query)}">${escapeHtml(query)}</button>
+        `).join("")}
+      </div>
     </article>
   `;
   renderEndfieldMatches([]);
 }
 
 function renderEndfieldResults(data) {
+  const results = Array.isArray(data.results) ? data.results.slice(0, 14) : [];
   const answerHtml = typeof markdownToSystemHtml === "function"
     ? markdownToSystemHtml(data.answer || "")
     : escapeHtml(data.answer || "").replace(/\n/g, "<br>");
-  const evidence = (data.results || []).map((item) => `
-    <article class="endfield-evidence">
-      <div class="endfield-evidence-meta">
-        <span>${escapeHtml(item.missionId || "")}</span>
-        <b>${escapeHtml([item.section, item.chapter, item.process, item.missionTitle].filter(Boolean).join(" / "))}</b>
-        <em>SCORE ${Math.round(item.score || 0)}</em>
+  const evidence = results.map((item, index) => `
+    <details class="endfield-evidence" id="endfield-evidence-${index + 1}" tabindex="-1">
+      <summary>
+        <span class="endfield-evidence-index">【${index + 1}】</span>
+        <span class="endfield-evidence-title">${escapeHtml([item.missionTitle, item.section, item.chapter, item.process].filter(Boolean).join(" / ") || item.missionId || t("endfield_untitled"))}</span>
+        <span class="endfield-evidence-speaker">${escapeHtml(item.speaker || t("endfield_unknown_speaker"))}</span>
+      </summary>
+      <div class="endfield-evidence-body">
+        <p>${escapeHtml(item.text || "")}</p>
+        ${(item.context || []).map((ctx) => `<blockquote>${escapeHtml(ctx.speaker || t("endfield_unknown_speaker"))}: ${escapeHtml(ctx.text || "")}</blockquote>`).join("")}
       </div>
-      <h4>${escapeHtml(item.speaker || "Unknown")}</h4>
-      <p>${escapeHtml(item.text || "")}</p>
-      ${(item.context || []).map((ctx) => `<blockquote>${escapeHtml(ctx.speaker || "")}: ${escapeHtml(ctx.text || "")}</blockquote>`).join("")}
-    </article>
+    </details>
   `).join("");
 
   endfieldOutputEl.innerHTML = `
     <article class="endfield-answer">
-      <h3>${escapeHtml((data.ai_system6_metrics?.provider || "model").toUpperCase())} MODEL ANSWER</h3>
-      <div class="markdown-body">${answerHtml || "<p>模型没有返回正文。</p>"}</div>
+      <p class="endfield-kicker">${escapeHtml(t("endfield_answer_label"))}</p>
+      <h3>${escapeHtml(data.query || endfieldLastQuery)}</h3>
+      <div class="markdown-body">${answerHtml || `<p>${escapeHtml(t("endfield_no_answer"))}</p>`}</div>
     </article>
-    ${evidence}
+    ${evidence ? `<section class="endfield-evidence-list" aria-labelledby="endfield-evidence-heading"><h3 id="endfield-evidence-heading">${escapeHtml(t("endfield_evidence_heading", results.length))}</h3>${evidence}</section>` : ""}
   `;
-  renderEndfieldMatches(data.missionMatches || []);
+  renderEndfieldMatches(results);
 }
 
 async function loadEndfieldMeta() {
   if (endfieldMetaLoaded || !endfieldCountEl) return;
   try {
     const response = await fetch("/api/endfield/search");
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
     const meta = data.meta || {};
-    endfieldCountEl.textContent = `${meta.transcriptLineCount || 0} lines`;
+    endfieldCountEl.textContent = t("endfield_line_count", meta.transcriptLineCount || 0);
     endfieldRouteEl.textContent = `${meta.gameVersion || "v?"} / ${endfieldRouteLabel()}`;
     endfieldMetaLoaded = true;
   } catch {
-    endfieldCountEl.textContent = "-- lines";
+    endfieldCountEl.textContent = t("endfield_archive_unavailable");
   }
 }
 
 async function askEndfield(query) {
   const normalized = String(query || "").trim();
-  if (!normalized || !endfieldOutputEl) return;
+  if (!normalized || !endfieldOutputEl) {
+    endfieldQueryInput?.focus();
+    return;
+  }
+  const requestId = ++endfieldRequestId;
+  endfieldAbortController?.abort();
+  endfieldAbortController = new AbortController();
   endfieldLastQuery = normalized;
   saveEndfieldRecentQuery(normalized);
   endfieldRouteEl.textContent = endfieldRouteLabel();
-  endfieldOutputEl.innerHTML = `<article class="endfield-answer"><h3>QUERY_${escapeHtml(normalized)}</h3><p>${escapeHtml(t("endfield_searching"))}</p></article>`;
+  setEndfieldBusy(true);
+  endfieldOutputEl.innerHTML = `<article class="endfield-answer endfield-loading"><p class="endfield-kicker">${escapeHtml(t("endfield_searching_label"))}</p><h3>${escapeHtml(normalized)}</h3><p>${escapeHtml(t("endfield_searching"))}</p></article>`;
   renderEndfieldMatches([]);
 
   try {
-    const response = await fetch("/api/endfield/ask", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        query: normalized,
-        limit: 18,
-        ...endfieldRoutePayload(),
-      }),
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.detail || data.error || `HTTP ${response.status}`);
+    let data;
+    const cloudActive = typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudConfig.apiKey;
+    if (cloudActive) {
+      const response = await fetch("/api/endfield/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: normalized,
+          limit: 18,
+          ...endfieldRoutePayload(),
+        }),
+        signal: endfieldAbortController.signal,
+      });
+      data = await response.json();
+      if (!response.ok) throw new Error(data.detail || data.error || `HTTP ${response.status}`);
+    } else {
+      const searchResponse = await fetch(`/api/endfield/search?q=${encodeURIComponent(normalized)}&limit=18`, {
+        signal: endfieldAbortController.signal,
+      });
+      const matches = await searchResponse.json().catch(() => ({}));
+      if (!searchResponse.ok) throw new Error(matches.detail || matches.error || `HTTP ${searchResponse.status}`);
+      const results = Array.isArray(matches.results) ? matches.results.slice(0, 14) : [];
+      if (!results.length) {
+        data = {
+          query: normalized,
+          answer: t("endfield_no_evidence"),
+          ...matches,
+          results,
+          ai_system6_metrics: { provider: "local", finish_reason: "no_evidence" },
+        };
+      } else {
+        const evidence = results.slice(0, 14).map((item, index) => [
+          `【${index + 1}】${[item.missionTitle, item.section, item.chapter, item.process].filter(Boolean).join(" / ")}`,
+          `${item.speaker || "Unknown"}：${item.text || ""}`,
+          ...(Array.isArray(item.context) ? item.context.slice(0, 2).map((ctx) => `${ctx.speaker || ""}：${ctx.text || ""}`) : []),
+        ].join("\n")).join("\n\n");
+        const result = await sendLocalModelTask({
+          payload: {
+            model: getLocalModelRequestName(),
+            messages: window.AISystem6ModelTaskRuntime.buildEndfieldMessages(normalized, evidence),
+            temperature: 0.25,
+            max_tokens: 1200,
+            stream: false,
+            ai_system6_task_kind: "endfield_rag",
+          },
+          taskKind: "endfield_rag",
+          streamPreference: "json",
+        });
+        data = {
+          query: normalized,
+          answer: result.text,
+          ...matches,
+          results,
+          ai_system6_metrics: {
+            provider: "lmstudio",
+            model: getLocalModelRequestName(),
+            finish_reason: result.metrics?.stopReason || "",
+          },
+        };
+      }
+    }
+    if (requestId !== endfieldRequestId) return;
+    data.results = Array.isArray(data.results) ? data.results.slice(0, 14) : [];
     renderEndfieldResults(data);
     setStatus(`Endfield: ${normalized}`);
   } catch (error) {
-    endfieldOutputEl.innerHTML = `<article class="endfield-answer"><h3>ERROR</h3><p>${escapeHtml(error.message || String(error))}</p></article>`;
-    setStatus(error.message || "Endfield request failed");
+    if (error?.name === "AbortError" || requestId !== endfieldRequestId) return;
+    endfieldOutputEl.innerHTML = `
+      <article class="endfield-answer endfield-error" role="alert">
+        <p class="endfield-kicker">${escapeHtml(t("endfield_error_label"))}</p>
+        <h3>${escapeHtml(t("endfield_error_title"))}</h3>
+        <p>${escapeHtml(t("endfield_error_body"))}</p>
+        <button class="btn" type="button" data-retry-query="${escapeHtml(normalized)}">${escapeHtml(t("endfield_retry"))}</button>
+      </article>
+    `;
+    setStatus(t("endfield_error_title"));
+  } finally {
+    if (requestId === endfieldRequestId) {
+      endfieldAbortController = null;
+      setEndfieldBusy(false);
+    }
   }
+}
+
+function setEndfieldBusy(busy) {
+  endfieldBusy = busy;
+  endfieldOutputEl?.setAttribute("aria-busy", String(busy));
+  endfieldForm?.setAttribute("aria-busy", String(busy));
+  endfieldRecentListEl?.querySelectorAll("button").forEach((button) => {
+    button.disabled = busy;
+  });
+  if (typeof setControlLoading === "function") {
+    if (busy && endfieldSubmitBtn?.dataset.loading !== "true") {
+      setControlLoading(endfieldSubmitBtn, true, t("endfield_searching_short"));
+    } else if (!busy && endfieldSubmitBtn?.dataset.loading === "true") {
+      setControlLoading(endfieldSubmitBtn, false);
+    }
+  } else if (endfieldSubmitBtn) {
+    endfieldSubmitBtn.disabled = busy;
+  }
+}
+
+function resetEndfieldQuery() {
+  endfieldRequestId += 1;
+  endfieldAbortController?.abort();
+  endfieldAbortController = null;
+  endfieldLastQuery = "";
+  if (endfieldQueryInput) endfieldQueryInput.value = "";
+  setEndfieldBusy(false);
+  renderEndfieldTerminal();
+  endfieldQueryInput?.focus();
 }
 
 function renderEndfieldTerminal() {
@@ -191,6 +304,7 @@ function renderEndfieldTerminal() {
 
 endfieldForm?.addEventListener("submit", (event) => {
   event.preventDefault();
+  if (endfieldBusy) return;
   askEndfield(endfieldQueryInput.value);
 });
 
@@ -201,9 +315,38 @@ endfieldRecentListEl?.addEventListener("click", (event) => {
   askEndfield(endfieldQueryInput.value);
 });
 
-endfieldNewSessionBtn?.addEventListener("click", () => {
-  endfieldLastQuery = "";
-  endfieldQueryInput.value = "";
-  renderEndfieldTerminal();
-  endfieldQueryInput.focus();
+endfieldMatchListEl?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-evidence-index]");
+  if (!button) return;
+  const evidence = document.querySelector(`#endfield-evidence-${button.dataset.evidenceIndex}`);
+  if (!evidence) return;
+  evidence.open = true;
+  evidence.scrollIntoView({ block: "nearest" });
+  evidence.focus({ preventScroll: true });
 });
+
+endfieldOutputEl?.addEventListener("click", (event) => {
+  const queryButton = event.target.closest("[data-query]");
+  if (queryButton) {
+    if (endfieldQueryInput) endfieldQueryInput.value = queryButton.dataset.query || "";
+    askEndfield(queryButton.dataset.query || "");
+    return;
+  }
+  const retryButton = event.target.closest("[data-retry-query]");
+  if (retryButton) askEndfield(retryButton.dataset.retryQuery || "");
+});
+
+endfieldNewSessionBtn?.addEventListener("click", resetEndfieldQuery);
+
+function runEndfieldMenuCommand(command) {
+  if (command === "new-session") {
+    return resetEndfieldQuery();
+  }
+  if (command === "run-query") return askEndfield(endfieldQueryInput.value);
+}
+
+window.AISystem6EndfieldTerminal = Object.freeze({
+  attach: renderEndfieldTerminal,
+  runMenuCommand: runEndfieldMenuCommand,
+});
+window.AISystem6EndfieldTerminalLoaded = true;

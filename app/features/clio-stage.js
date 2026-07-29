@@ -272,7 +272,12 @@ function renderClioStageSlide() {
   frame.classList.add(...clioStageSlideClasses(clioStageState.index));
   const body = document.createElement("div");
   body.className = "clio-stage-slide-body";
-  body.innerHTML = markdownToSystemHtml(clioStageRenderableSlideMarkdown(clioStageState.parsed.slides[clioStageState.index] || ""));
+  if (clioStageState.source?.sourceKind === "clioChart" && clioStageState.source.chartSnapshot?.cloneNode) {
+    body.classList.add("clio-stage-chart-slide");
+    body.replaceChildren(clioStageState.source.chartSnapshot.cloneNode(true));
+  } else {
+    body.innerHTML = markdownToSystemHtml(clioStageRenderableSlideMarkdown(clioStageState.parsed.slides[clioStageState.index] || ""));
+  }
   frame.append(body);
   els.viewport.append(frame);
   syncClioStageControls();
@@ -396,10 +401,9 @@ async function askClioStageQuestion(event) {
   const zh = currentLanguage === "zh";
   const currentSlide = clioStageRenderableSlideMarkdown(clioStageState.parsed.slides[clioStageState.index] || "");
   const prompt = [
-    zh ? "你是 AI System 6 的 ClioStage 幻灯片问答员。优先根据下面这份 Marp slides.md 回答用户问题。" : "You are the ClioStage slide deck question clerk. Use the Marp slides.md below as primary grounding.",
+    resolveWritingRoutePrompt("other-apps.clio-stage-source-question", zh ? "zh" : "en"),
     typeof sideAskAnswerStyleInstruction === "function" ? sideAskAnswerStyleInstruction() : (zh ? "回答要短、自然，不要写审稿报告。" : "Be brief and natural; do not write a review report."),
     typeof ragGroundingInstruction === "function" ? ragGroundingInstruction(zh ? "幻灯片" : "The slide deck") : (zh ? "幻灯片是主要依据，不是回答边界；请区分原文、推断和需要核对的部分。" : "The deck is primary grounding, not the answer boundary; distinguish source text, inference, and points to check."),
-    zh ? "当前页只作为优先参考，回答边界是整份 slides.md。不要复述整套幻灯片，不要把标题或演讲备注推断成没有写明的事实。使用自然简体中文。" : "Use the current slide first, but keep the full slides.md as the boundary.",
     "",
     `${zh ? "用户问题" : "Question"}:\n${question}`,
     "",
@@ -411,9 +415,11 @@ async function askClioStageQuestion(event) {
     clipContextContent(clioStageState.source.markdown, 12000),
   ].filter(Boolean).join("\n");
 
+  const paired = typeof arrangeClioStageAssistantSplit === "function"
+    ? await arrangeClioStageAssistantSplit()
+    : (await openWindow("assistant"), true);
+  if (!paired) return;
   if (els.question) els.question.value = "";
-  if (typeof arrangeClioStageAssistantSplit === "function") await arrangeClioStageAssistantSplit();
-  else await openWindow("assistant");
   setStatus(t("clio_stage_question_sent"));
   await submitUserText(prompt, {
     displayText: `${t("clio_stage_label")}: ${question}`,
@@ -439,11 +445,22 @@ function bindClioStageControls() {
 
 bindClioStageControls();
 
+// Called by openWindow for every path that reveals the window, including
+// session restore. Without it a restored ClioStage shows an empty viewport with
+// no controls synced.
+function attachClioStage() {
+  if (clioStageState.parsed) renderClioStage();
+  else renderClioStageEmpty();
+}
+
 window.AISystem6ClioStage = {
   open: openClioStage,
+  attach: attachClioStage,
   load: loadClioStageSource,
   setMode: setClioStageMode,
   showSlide: showClioStageSlide,
+  previous: () => showClioStageSlide(clioStageState.index - 1),
+  next: () => showClioStageSlide(clioStageState.index + 1),
   parse: parseClioStageMarpDocument,
   splitSlides: splitClioStageSlides,
   handleKeydown: handleClioStageKeydown,

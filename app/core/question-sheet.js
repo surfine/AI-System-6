@@ -121,6 +121,22 @@ function questionSheetFieldList(language = currentLanguage) {
   return QUESTION_SHEET_SECTION_KEYS.map((key) => `- ${questionSheetSectionLabel(key, language)}`).join("\n");
 }
 
+function resolveWritingRoutePrompt(id, language = currentLanguage) {
+  const projectId = typeof activeProjectId === "undefined" ? null : activeProjectId;
+  const resolved = window.AISystem6PromptFilesRuntime?.resolvePromptFile(id, projectId, language);
+  const record = window.AISystem6PromptFiles?.find?.((item) => item.id === id);
+  const body = resolved?.status === "ready"
+    ? resolved.body
+    : (language === "zh" ? record?.body : record?.en);
+  if (!body) {
+    throw new Error(language === "zh" ? "写作路线提示词文件不可用。" : "The Writing Route prompt file is unavailable.");
+  }
+  if (resolved?.status === "ready") {
+    window.AISystem6PromptFilesRuntime?.recordPromptRun?.(projectId, id, resolved);
+  }
+  return body;
+}
+
 function questionSheetPromptContract(language = currentLanguage) {
   const spec = questionSheetSpec(language);
   return [
@@ -195,19 +211,7 @@ function buildQuestionSheetRewriteMessages({
     .filter((key) => key !== "outputRules")
     .map((key) => questionSheetSectionHeading(key, language))
     .join("\n");
-  const system = language === "zh"
-    ? [
-        "你是 AI System 6 的中文写作规划助手。",
-        "任务：把材料整理成正文上游的问题单。",
-        "约束标签：意图纸；非摘要；非大纲；非正文；保留人话；不编新事实；面向真实接收者；降低交付摩擦；短行；少栏目。",
-        "禁止：复述本系统消息、解释任务、解释格式、写提示词说明。",
-      ].join("\n")
-    : [
-        "You are an AI System 6 writing planner.",
-        "Task: organize material into an upstream Question Sheet.",
-        "Constraint labels: intent sheet; not summary; not outline; not draft; keep human wording; no new facts; real recipient; lower handoff friction; short lines; fewer sections.",
-        "Forbidden: repeating this system message, explaining the task, explaining the format, or writing prompt notes.",
-      ].join("\n");
+  const system = resolveWritingRoutePrompt("writing-route.question-sheet-organize", language);
   const user = [
     language === "zh"
       ? "请生成一份可保存的问题单 Markdown。"

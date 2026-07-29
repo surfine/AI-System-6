@@ -1,10 +1,103 @@
 body.use-liquid-glass {
   --resize-affordance-clearance: 10px;
+  /* The frame lane is a System 6 idea; glass keeps the same structure but its
+     own material, so no checkerboard and no hard hairlines. */
+  --window-frame-lane: 12px;
+  --window-frame-bar-display: none;
+  --window-frame-reserve: 0px;
+  --window-frame-scrollbar-width: thin;
+  /* Glass has no pixel invert to imitate; the marquee is just a soft ink line. */
+  --drag-outline-ink: rgba(16, 17, 20, 0.5);
+  --drag-outline-blend: normal;
+  --window-frame-track-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.1));
+  --window-frame-track-border: 0;
+  --window-frame-thumb-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.56), rgba(16, 17, 20, 0.24)),
+    rgba(16, 17, 20, 0.22);
+  --window-frame-thumb-border: 2px solid rgba(255, 255, 255, 0.28);
+  --window-frame-thumb-radius: 999px;
   --ink: #101114;
   --paper: rgba(255, 255, 255, 0.5);
   --shade: rgba(255, 255, 255, 0.46);
   --shade-dark: rgba(16, 17, 20, 0.42);
   --desktop: #dce2e6;
+  --alarm-clock-title-bg: transparent;
+  --alarm-clock-surface-bg: rgba(247, 250, 255, 0.58);
+  --alarm-clock-readout-bg: rgba(255, 255, 255, 0.28);
+  --alarm-clock-divider: 1px solid rgba(16, 17, 20, 0.24);
+  --alarm-clock-active-bg: rgba(16, 17, 20, 0.86);
+  --alarm-clock-active-fg: #ffffff;
+  --alarm-clock-frame-border: 1px solid rgba(16, 17, 20, 0.36);
+  --alarm-clock-frame-radius: 6px;
+  --alarm-clock-frame-shadow:
+    0 10px 28px rgba(30, 43, 62, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  --clio-assistant-message-bg: transparent;
+  --clio-assistant-message-border: rgba(16, 17, 20, 0.1);
+  --clio-assistant-message-radius: 0;
+  --clio-assistant-message-shadow: none;
+  --clio-user-message-bg: rgba(255, 255, 255, 0.48);
+  --clio-user-message-border: 1px solid rgba(16, 17, 20, 0.1);
+  --clio-user-message-radius: 18px;
+  --clio-user-message-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 6px 18px rgba(30, 43, 62, 0.06);
+  --clio-welcome-bg: transparent;
+  --clio-welcome-shadow: none;
+  --clio-welcome-object-bg: rgba(255, 255, 255, 0.44);
+  --clio-welcome-object-border: 1px solid rgba(255, 255, 255, 0.8);
+  --clio-welcome-object-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 10px 24px rgba(30, 43, 62, 0.12);
+  --clio-muted-copy: rgba(16, 17, 20, 0.58);
+  --clio-grounding-rule: rgba(16, 17, 20, 0.16);
+  --clio-use-active-border: rgba(16, 17, 20, 0.28);
+  --clio-use-active-bg: rgba(16, 17, 20, 0.92);
+  --clio-use-active-fg: #ffffff;
+  --clio-use-menu-border: 1px solid rgba(255, 255, 255, 0.48);
+  --clio-use-menu-radius: 12px;
+  --clio-use-menu-bg: rgba(247, 250, 255, 0.88);
+  --clio-use-menu-shadow:
+    0 8px 24px rgba(30, 43, 62, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.76);
+  --clio-composer-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(247, 251, 255, 0.46)),
+    rgba(246, 250, 255, 0.52);
+  --clio-composer-border: 1px solid rgba(255, 255, 255, 0.76);
+  --clio-composer-radius: 14px;
+  --clio-composer-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.88),
+    0 12px 34px rgba(30, 43, 62, 0.12);
+  --clio-composer-focus-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 2px rgba(16, 17, 20, 0.12),
+    0 14px 38px rgba(30, 43, 62, 0.14);
+  --clio-composer-control-radius: 50%;
+  --clio-composer-tool-border: transparent;
+  --clio-action-surface: rgba(247, 250, 255, 0.94);
+  --clio-action-border: 1px solid rgba(255, 255, 255, 0.74);
+  --clio-action-radius: 13px;
+  --clio-action-item-radius: 9px;
+  --clio-action-shadow:
+    0 14px 36px rgba(30, 43, 62, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.86);
+  --clio-context-control-bg: rgba(255, 255, 255, 0.34);
+  --clio-context-control-border: 1px solid rgba(16, 17, 20, 0.08);
+  --clio-context-control-radius: 10px;
+  --clio-context-control-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68);
+  --clio-assembly-bg: rgba(247, 250, 255, 0.94);
+  --clio-assembly-border: 1px solid rgba(255, 255, 255, 0.74);
+  --clio-assembly-radius: 18px;
+  --clio-assembly-row-radius: 10px;
+  --clio-assembly-shadow:
+    0 18px 46px rgba(30, 43, 62, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.86);
+  --clio-assembly-row-bg: rgba(255, 255, 255, 0.38);
+  --clio-assembly-divider: 1px solid rgba(16, 17, 20, 0.08);
+  --clio-file-chip-bg: rgba(255, 255, 255, 0.2);
+  --clio-file-chip-border: 1px solid rgba(16, 17, 20, 0.06);
+  --clio-file-chip-radius: 8px;
   --system-border: 1px solid rgba(255, 255, 255, 0.72);
   --system-shadow: 0 8px 15px rgba(0, 0, 0, 0.04), 0 24px 58px rgba(18, 28, 38, 0.08);
   --system-inset: inset 1px 1px 0 rgba(255, 255, 255, 0.78);
@@ -114,15 +207,6 @@ body.use-liquid-glass {
   --glass-border: rgba(255, 255, 255, 0.72);
   --glass-edge: rgba(16, 17, 20, 0.14);
   --glass-highlight: rgba(255, 255, 255, 0.82);
-  --liquid-menu-chip:
-    radial-gradient(92% 160% at 12% 0%, rgba(255, 255, 255, 0.52), transparent 46%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.36), rgba(255, 255, 255, 0.12)),
-    rgba(255, 255, 255, 0.18);
-  --liquid-menu-chip-border: rgba(255, 255, 255, 0.46);
-  --liquid-menu-chip-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.68),
-    inset 0 -1px 0 rgba(16, 17, 20, 0.06),
-    0 6px 18px rgba(18, 28, 38, 0.08);
   --liquid-menu-active:
     linear-gradient(180deg, rgba(16, 17, 20, 0.82), rgba(16, 17, 20, 0.64)),
     rgba(16, 17, 20, 0.68);
@@ -181,14 +265,104 @@ body.use-liquid-glass {
     0 6px 14px rgba(18, 28, 38, 0.16);
   --system-titlebar-close-attention-mark-opacity: 0.88;
   --system-titlebar-resize-attention-mark-opacity: 0.88;
-  --system-titlebar-inactive-control-filter: saturate(0.72);
-  --system-titlebar-inactive-control-opacity: 0.82;
+  --system-titlebar-inactive-control-filter: none;
+  --system-titlebar-inactive-control-opacity: 1;
+  /* Glass keeps its traffic lights on background windows, but macOS turns them
+     one flat gray rather than dimming the colours — the colour is what says
+     "this window is in front", the same job the System 6 stripes do. */
+  --system-titlebar-inactive-control-visibility: visible;
+  --system-titlebar-inactive-title-color: rgba(16, 17, 20, 0.72);
+  --glass-lamp-close: #ff5f57;
+  --glass-lamp-zoom: #28c840;
+  --glass-lamp-inactive: #d4d5d7;
+  --glass-lamp-mark-opacity: 0.62;
   --glass-accent: #0a84ff;
   --glass-blue: #64d2ff;
   --glass-progress-blue: #0a84ff;
   --glass-progress-accent: #5ac8fa;
   --glass-progress-blue-soft: #64d2ff;
   --glass-progress-accent-soft: #a6e3ff;
+  /* ClioChart's second visual language: cool translucent plotting paper and a
+     luminous blue signal. Geometry and mark identity remain shared with the
+     Classic 1-bit theme. */
+  --clio-chart-surface:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.74), rgba(241, 246, 248, 0.46)),
+    rgba(247, 250, 251, 0.56);
+  --clio-chart-ink: #20272c;
+  --clio-chart-rule: rgba(32, 45, 54, 0.18);
+  --clio-chart-muted: rgba(32, 39, 44, 0.56);
+  --clio-chart-panel:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.66), rgba(232, 239, 243, 0.34)),
+    rgba(243, 247, 249, 0.46);
+  --clio-chart-panel-quiet: rgba(255, 255, 255, 0.38);
+  --clio-chart-accent: rgba(31, 57, 74, 0.82);
+  --clio-chart-track: rgba(31, 57, 74, 0.14);
+  --clio-chart-pattern-paper: rgba(250, 252, 253, 0.82);
+  --clio-chart-reference: rgba(42, 69, 86, 0.08);
+  --clio-chart-focus-shadow:
+    0 0 0 3px rgba(10, 132, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  --clio-chart-solid-fill:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.48), rgba(255, 255, 255, 0.08) 48%, rgba(31, 57, 74, 0.12) 49%),
+    rgba(92, 130, 154, 0.42);
+  --clio-chart-pattern-1:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.44), transparent 48%, rgba(31, 57, 74, 0.08)),
+    repeating-conic-gradient(rgba(31, 57, 74, 0.42) 0 25%, rgba(255, 255, 255, 0.32) 0 50%) 0 0 / 3px 3px;
+  --clio-chart-pattern-2:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.44), transparent 48%, rgba(31, 57, 74, 0.08)),
+    repeating-linear-gradient(45deg, rgba(31, 57, 74, 0.42) 0 1px, rgba(255, 255, 255, 0.3) 1px 4px);
+  --clio-chart-pattern-3:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.44), transparent 48%, rgba(31, 57, 74, 0.08)),
+    conic-gradient(rgba(31, 57, 74, 0.4) 0 25%, rgba(255, 255, 255, 0.3) 0) 0 0 / 4px 4px;
+  --clio-chart-pattern-4:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.44), transparent 48%, rgba(31, 57, 74, 0.08)),
+    repeating-linear-gradient(90deg, rgba(31, 57, 74, 0.4) 0 1px, rgba(255, 255, 255, 0.3) 1px 4px);
+  --clio-chart-pattern-5:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.44), transparent 48%, rgba(31, 57, 74, 0.08)),
+    repeating-linear-gradient(-45deg, rgba(31, 57, 74, 0.4) 0 1px, rgba(255, 255, 255, 0.3) 1px 5px);
+  --clio-chart-material-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.76),
+    inset 0 -1px 0 rgba(31, 57, 74, 0.14),
+    0 3px 9px rgba(31, 57, 74, 0.1);
+  --clio-chart-material-filter: blur(7px) saturate(125%);
+  --clio-chart-typeface: var(--preview-font);
+  --clio-chart-type-size: 12px;
+  --clio-chart-radius: 10px;
+  --clio-chart-pane-bg:
+    radial-gradient(110% 130% at 10% 0%, rgba(255, 255, 255, 0.52), transparent 44%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.1)),
+    rgba(255, 255, 255, 0.14);
+  --clio-chart-pane-border: 1px solid rgba(255, 255, 255, 0.64);
+  --clio-chart-pane-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.76),
+    0 12px 30px rgba(31, 57, 74, 0.07);
+  --clio-chart-pane-filter: blur(14px) saturate(135%);
+  --clio-chart-pane-margin: 6px;
+  --clio-chart-pane-padding: 14px 16px;
+  --clio-chart-grid-pane-padding: 14px 16px;
+  --clio-chart-grid-collapse: separate;
+  --clio-chart-grid-spacing: 0 5px;
+  --clio-chart-cell-height: 30px;
+  --clio-chart-cell-padding: 5px 10px;
+  --clio-chart-row-gap: 9px;
+  --clio-chart-track-height: 18px;
+  --clio-chart-switcher-width: 100%;
+  --clio-chart-switcher-justify: flex-start;
+  --clio-chart-label-bg: rgba(250, 252, 253, 0.9);
+  --clio-chart-label-padding: 2px 4px;
+  --clio-chart-label-leading: 1.35;
+  --clio-chart-value-bg: rgba(250, 252, 253, 0.94);
+  --clio-chart-density-12:
+    conic-gradient(rgba(31, 57, 74, 0.16) 0 12.5%, rgba(255, 255, 255, 0.34) 0) 0 0 / 5px 5px;
+  --clio-chart-density-25:
+    conic-gradient(rgba(31, 57, 74, 0.2) 0 25%, rgba(255, 255, 255, 0.34) 0) 0 0 / 5px 5px;
+  --clio-chart-density-50:
+    repeating-conic-gradient(rgba(31, 57, 74, 0.24) 0 25%, rgba(255, 255, 255, 0.4) 0 50%) 0 0 / 5px 5px;
+  --clio-chart-density-75:
+    conic-gradient(rgba(255, 255, 255, 0.38) 0 25%, rgba(31, 57, 74, 0.3) 0) 0 0 / 5px 5px;
+  --clio-chart-spatial-cell-height: 76px;
+  --clio-chart-spatial-label-size: 11px;
+  --clio-chart-spatial-value-size: 16px;
   --stripe: linear-gradient(90deg, rgba(255, 255, 255, 0.48), rgba(255, 255, 255, 0.06));
   --mde-scrollbar-offset: 16px;
   --system-scrollbar-button-display: none;
@@ -204,15 +378,12 @@ body.use-liquid-glass {
      styles/00-foundation.css. Deleting the corresponding body.use-liquid-glass
      <selector> rule below dropped liquidGlassTwinCount accordingly. */
   --menu-divider-color: rgba(16, 17, 20, 0.12);
-  --menu-shortcut-color: rgba(16, 17, 20, 0.58);
-  --menu-shortcut-opacity: 1;
+  --menu-shortcut-color: currentColor;
+  --menu-shortcut-opacity: 0.78;
   --menu-button-fg: rgba(16, 17, 20, 0.82);
   --menu-button-active-bg: var(--liquid-menu-active);
   --menu-button-active-fg: #ffffff;
   --menu-button-active-shadow: var(--liquid-menu-active-shadow);
-  --menu-chip-bg: var(--liquid-menu-chip);
-  --menu-chip-fg: rgba(16, 17, 20, 0.82);
-  --menu-chip-shadow: var(--liquid-menu-chip-shadow);
   --menu-chip-active-bg: var(--liquid-menu-active);
   --menu-chip-active-fg: #ffffff;
   --menu-chip-active-shadow: var(--liquid-menu-active-shadow);
@@ -220,6 +391,12 @@ body.use-liquid-glass {
   --menu-item-active-bg: var(--liquid-menu-active);
   --menu-item-active-fg: #ffffff;
   --menu-item-active-shadow: var(--liquid-menu-active-shadow);
+  --liquid-disabled-control-border: rgba(16, 17, 20, 0.22);
+  --liquid-disabled-control-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.54), rgba(255, 255, 255, 0.2)),
+    rgba(255, 255, 255, 0.2);
+  --liquid-disabled-control-fg: rgba(16, 17, 20, 0.42);
+  --liquid-disabled-control-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62);
   --tdi-tab-wrap-dragging-opacity: 1;
   --reader-tab-dragging-opacity: 1;
   --reader-tab-active-open-border-color: rgba(16, 17, 20, 0.74);
@@ -315,7 +492,46 @@ body.use-liquid-glass {
   --scrollbar-corner-bg: rgba(255, 255, 255, 0.16);
   --active-window-shadow: 0 8px 15px rgba(0, 0, 0, 0.045), 0 28px 68px rgba(18, 28, 38, 0.1);
   --card-caption-color: rgba(16, 17, 20, 0.58);
+  --menu-bar-height: 30px;
+  /* Glass popovers tuck 3px under the bar's lip. */
+  --menu-popover-top: calc(var(--menu-bar-height) + var(--safe-area-top) - 3px);
   --guide-pane-gap: 12px;
+  --tab-radius: 10px;
+  --tab-overlap: 0px;
+  --tab-bg: rgba(16, 17, 20, 0.06);
+  --tab-hover-bg: rgba(255, 255, 255, 0.42);
+  --tab-active-bg: rgba(255, 255, 255, 0.72);
+  --control-focus-outline: 2px solid rgba(0, 122, 255, 0.92);
+  --control-choice-hover-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.86),
+    0 7px 16px rgba(18, 28, 38, 0.12);
+  --memory-cards-pane-bg: rgba(255, 255, 255, 0.16);
+  --memory-cards-details-bg: rgba(255, 255, 255, 0.28);
+  --memory-cards-details-border: 1px solid rgba(16, 17, 20, 0.1);
+  --memory-cards-board-bg: rgba(255, 255, 255, 0.12);
+  --memory-cards-board-border: 1px solid rgba(255, 255, 255, 0.38);
+  --memory-cards-board-radius: 18px;
+  --memory-cards-board-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58);
+  --memory-card-bg:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.42)),
+    rgba(255, 255, 255, 0.4);
+  --memory-card-border: 1px solid rgba(16, 17, 20, 0.18);
+  --memory-card-radius: 14px;
+  --memory-card-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.82),
+    0 7px 16px rgba(18, 28, 38, 0.13);
+  --memory-card-hover-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    0 11px 22px rgba(18, 28, 38, 0.18);
+  --memory-card-back-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.74), rgba(255, 255, 255, 0.24));
+  --memory-card-back-mark-bg: rgba(16, 17, 20, 0.12);
+  --memory-card-face-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.44),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.24);
+  --memory-card-match-ring:
+    inset 0 0 0 3px rgba(255, 255, 255, 0.86),
+    inset 0 0 0 5px rgba(16, 17, 20, 0.62);
+  --memory-cards-muted: rgba(16, 17, 20, 0.62);
   --guide-start-card-border: 1px solid rgba(16, 17, 20, 0.14);
   --guide-start-card-radius: 16px;
   --guide-start-card-bg:
@@ -325,11 +541,6 @@ body.use-liquid-glass {
     inset 0 1px 0 rgba(255, 255, 255, 0.72),
     0 10px 24px rgba(18, 28, 38, 0.08);
   --guide-start-card-padding: 14px 16px;
-  --guide-mode-card-border: var(--guide-start-card-border);
-  --guide-mode-card-radius: var(--guide-start-card-radius);
-  --guide-mode-card-bg: var(--guide-start-card-bg);
-  --guide-mode-card-shadow: var(--guide-start-card-shadow);
-  --guide-mode-card-padding: 14px 16px;
   --guide-start-card-small-color: rgba(16, 17, 20, 0.58);
   --startup-settings-modal-padding: 28px 32px 24px;
   --startup-settings-form-gap: 18px;
@@ -689,6 +900,36 @@ body.use-liquid-glass {
     0 6px 16px rgba(18, 28, 38, 0.08);
   --reader-transcript-blocks-border: 1px solid rgba(16, 17, 20, 0.16);
   --reader-transcript-summary-border: 0;
+  --time-machine-toolbar-bg: rgba(255, 255, 255, 0.22);
+  --time-machine-toolbar-border: 1px solid rgba(255, 255, 255, 0.52);
+  --time-machine-popover-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(240, 245, 249, 0.94)),
+    rgba(244, 248, 251, 0.96);
+  --time-machine-popover-border: 1px solid rgba(255, 255, 255, 0.9);
+  --time-machine-popover-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.94),
+    inset 0 0 0 1px rgba(16, 17, 20, 0.08),
+    0 22px 54px rgba(18, 28, 38, 0.24);
+  --time-machine-popover-backdrop-filter: blur(28px) saturate(125%) brightness(1.04);
+  --time-machine-popover-fg: rgba(16, 17, 20, 0.94);
+  --time-machine-popover-muted: rgba(16, 17, 20, 0.68);
+  --time-machine-popover-divider: rgba(16, 17, 20, 0.14);
+  --time-machine-calendar-day-bg: rgba(255, 255, 255, 0.74);
+  --time-machine-calendar-day-border: rgba(16, 17, 20, 0.26);
+  --time-machine-time-bg: rgba(255, 255, 255, 0.18);
+  --time-machine-time-active-bg:
+    linear-gradient(135deg, rgba(0, 122, 255, 0.16), rgba(122, 92, 255, 0.1)),
+    rgba(255, 255, 255, 0.28);
+  --time-machine-time-border: 1px solid rgba(0, 122, 255, 0.42);
+  --time-machine-frame-border: 1px solid rgba(16, 17, 20, 0.14);
+  --time-machine-frame-radius: 16px;
+  --time-machine-frame-bg: rgba(255, 255, 255, 0.16);
+  --time-machine-frame-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.74),
+    0 12px 32px rgba(18, 28, 38, 0.08);
+  --time-machine-live-color: rgba(16, 17, 20, 0.58);
+  --time-machine-archive-color: rgba(0, 92, 210, 0.94);
+  --time-machine-loading-bg: rgba(240, 246, 252, 0.78);
   --scrap-selection-actions-border: 1px solid rgba(16, 17, 20, 0.1);
   --notification-item-divider: 1px solid rgba(16, 17, 20, 0.08);
   --docmap-drop-zone-border: 1px solid rgba(0, 122, 255, 0.46);
@@ -867,6 +1108,7 @@ body.use-liquid-glass {
   --puzzle-footer-badge-bg: rgba(255, 255, 255, 0.34);
   --puzzle-footer-badge-fg: rgba(16, 17, 20, 0.82);
   --btn-border-color: rgba(255, 255, 255, 0.66);
+  --btn-radius: 10px;
   --btn-bg: rgba(255, 255, 255, 0.3);
   --btn-fg: rgba(16, 17, 20, 0.94);
   --btn-shadow:
@@ -999,6 +1241,17 @@ body.use-liquid-glass {
     rgba(255, 255, 255, 0.14);
   --cmf-panel-radius: 16px;
   --cmf-panel-shadow: inset 0 1px 0 var(--glass-highlight), 0 12px 32px rgba(18, 28, 38, 0.08);
+  --cmf-toolbar-bg: rgba(255, 255, 255, 0.2);
+  --cmf-toolbar-border: 1px solid rgba(255, 255, 255, 0.5);
+  --cmf-toolbar-radius: 14px;
+  --cmf-toolbar-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62);
+  --cmf-preview-head-bg: rgba(255, 255, 255, 0.18);
+  --cmf-muted: rgba(16, 17, 20, 0.62);
+  --cmf-hover-bg: rgba(255, 255, 255, 0.3);
+  --cmf-selected-bg: rgba(16, 17, 20, 0.82);
+  --cmf-selected-fg: rgba(255, 255, 255, 0.96);
+  --cmf-live-bg: rgba(255, 255, 255, 0.28);
+  --cmf-live-border: 1px solid rgba(255, 255, 255, 0.54);
   --cmf-stage-bg:
     linear-gradient(45deg, rgba(255, 255, 255, 0.22) 25%, transparent 25%),
     linear-gradient(-45deg, rgba(255, 255, 255, 0.22) 25%, transparent 25%),
@@ -1017,6 +1270,31 @@ body.use-liquid-glass {
   --cmf-chip-bg: rgba(255, 255, 255, 0.22);
   --cmf-chip-selected-shadow: inset 0 0 0 2px rgba(16, 17, 20, 0.72), 0 6px 14px rgba(18, 28, 38, 0.1);
   --cmf-chip-focus-outline: 2px solid rgba(0, 122, 255, 0.56);
+  --bureaucracy-pane-bg: rgba(255, 255, 255, 0.08);
+  --bureaucracy-surface-bg: rgba(255, 255, 255, 0.22);
+  --bureaucracy-surface-border: 1px solid rgba(255, 255, 255, 0.52);
+  --bureaucracy-surface-radius: 14px;
+  --bureaucracy-surface-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58), 0 12px 28px rgba(18, 28, 38, 0.08);
+  --bureaucracy-muted: rgba(16, 17, 20, 0.62);
+  --bureaucracy-hover-bg: rgba(255, 255, 255, 0.3);
+  --bureaucracy-selected-bg: rgba(16, 17, 20, 0.82);
+  --bureaucracy-selected-fg: rgba(255, 255, 255, 0.96);
+  --bureaucracy-preview-bg: rgba(10, 12, 14, 0.82);
+  --bureaucracy-error: #8b1f17;
+  --endfield-pane-bg:
+    linear-gradient(rgba(16, 17, 20, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(16, 17, 20, 0.035) 1px, transparent 1px),
+    rgba(255, 255, 255, 0.1);
+  --endfield-sidebar-bg: rgba(255, 255, 255, 0.18);
+  --endfield-surface-bg: rgba(255, 255, 255, 0.34);
+  --endfield-surface-border: 1px solid rgba(255, 255, 255, 0.58);
+  --endfield-surface-radius: 14px;
+  --endfield-surface-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.66), 0 12px 28px rgba(18, 28, 38, 0.08);
+  --endfield-muted: rgba(16, 17, 20, 0.62);
+  --endfield-hover-bg: rgba(255, 255, 255, 0.34);
+  --endfield-selected-bg: rgba(16, 17, 20, 0.82);
+  --endfield-selected-fg: rgba(255, 255, 255, 0.96);
+  --endfield-evidence-divider: 1px solid rgba(16, 17, 20, 0.14);
   --demo-caption-bg:
     linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(232, 238, 242, 0.42)),
     rgba(255, 255, 255, 0.58);
@@ -1062,7 +1340,6 @@ body.use-liquid-glass #liquid-glass-overlay {
 }
 
 body.use-liquid-glass .menu-bar {
-  height: 30px;
   border-bottom: 1px solid rgba(16, 17, 20, 0.1);
   background:
     radial-gradient(120% 170% at 8% 0%, rgba(255, 255, 255, 0.42), transparent 44%),
@@ -1083,18 +1360,6 @@ body.use-liquid-glass .menu-bar > .menu > button {
   border-radius: 999px;
   color: var(--menu-button-fg);
   transition: background 0.18s ease, box-shadow 0.18s ease, color 0.18s ease;
-}
-
-body.use-liquid-glass .menu-bar > :is(.cloud-switcher-menu, .project-switcher-menu, .multifinder-menu) > button,
-body.use-liquid-glass .menu-bar > :is(.notification-center-button, #clock:not(.is-hidden)) {
-  min-height: 24px;
-  border: 1px solid var(--liquid-menu-chip-border);
-  border-radius: var(--liquid-menu-chip-radius, 999px);
-  background: var(--menu-chip-bg);
-  box-shadow: var(--menu-chip-shadow);
-  color: var(--menu-chip-fg);
-  backdrop-filter: blur(10px) saturate(145%);
-  -webkit-backdrop-filter: blur(10px) saturate(145%);
 }
 
 body.use-liquid-glass #clock:not(.is-hidden) {
@@ -1119,7 +1384,7 @@ body.use-liquid-glass .system-select-menu {
 
 body.use-liquid-glass .menu-bar > .menu > .menu-popover,
 body.use-liquid-glass .menu-bar > .project-switcher-menu > .menu-popover {
-  top: 27px;
+  top: var(--menu-popover-top);
 }
 
 body.use-liquid-glass .project-switcher-menu .menu-popover {
@@ -1136,6 +1401,10 @@ body.use-liquid-glass .project-switcher-copy small {
 body.use-liquid-glass .menu-popover button,
 body.use-liquid-glass .menu-submenu-trigger,
 body.use-liquid-glass .menu-sub-popover button {
+  --liquid-disabled-control-border: transparent;
+  --liquid-disabled-control-bg: transparent;
+  --liquid-disabled-control-fg: rgba(16, 17, 20, 0.38);
+  --liquid-disabled-control-shadow: none;
   width: calc(100% - 10px);
   min-height: 30px;
   margin: 1px 5px;
@@ -1439,7 +1708,10 @@ body.use-liquid-glass .title-bar {
 
 body.use-liquid-glass .title-bar h1,
 body.use-liquid-glass .title-bar h2 {
+  align-self: center;
   justify-self: center;
+  min-height: 0;
+  height: auto;
   margin: 0;
   padding: 0 10px;
   background: transparent;
@@ -1481,14 +1753,14 @@ body.use-liquid-glass .close-box {
   justify-self: start;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.02)),
-    #ff5f57;
+    var(--glass-lamp-close);
 }
 
 body.use-liquid-glass .resize-box {
   justify-self: end;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.02)),
-    #28c840;
+    var(--glass-lamp-zoom);
 }
 
 body.use-liquid-glass .close-box::before,
@@ -1504,7 +1776,7 @@ body.use-liquid-glass .resize-box::after {
   border: 0;
   border-radius: 999px;
   background: rgba(16, 17, 20, 0.58);
-  opacity: 0.62;
+  opacity: var(--glass-lamp-mark-opacity);
   transform: translate(-50%, -50%);
 }
 
@@ -1518,6 +1790,49 @@ body.use-liquid-glass .close-box::after {
 
 body.use-liquid-glass .resize-box::after {
   transform: translate(-50%, -50%) rotate(90deg);
+}
+
+body.use-liquid-glass .window.alarm-clock-window {
+  border: var(--alarm-clock-frame-border);
+  border-radius: var(--alarm-clock-frame-radius);
+  background: var(--alarm-clock-surface-bg);
+  box-shadow: var(--alarm-clock-frame-shadow);
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+}
+
+body.use-liquid-glass .alarm-clock-window > .alarm-clock-title-bar {
+  grid-template-columns: 28px minmax(0, 1fr) 28px;
+  gap: 0;
+  height: var(--alarm-clock-title-height);
+  min-height: var(--alarm-clock-title-height);
+  margin: 0;
+  padding: 0 6px;
+  border-bottom: var(--alarm-clock-divider);
+  background-color: var(--alarm-clock-title-bg);
+  background-image: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+body.use-liquid-glass .alarm-clock-window .close-box {
+  align-self: center;
+  justify-self: center;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  border: 1px solid rgba(16, 17, 20, 0.56);
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.3);
+  box-shadow:
+    1px 1px 0 rgba(16, 17, 20, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.56);
+}
+
+body.use-liquid-glass .alarm-clock-window .close-box::before,
+body.use-liquid-glass .alarm-clock-window .close-box::after {
+  display: none;
 }
 
 body.use-liquid-glass .grow-box {
@@ -1575,6 +1890,7 @@ body.use-liquid-glass input[type="url"],
 body.use-liquid-glass input[type="text"],
 body.use-liquid-glass input[type="password"],
 body.use-liquid-glass input[type="number"],
+body.use-liquid-glass input[type="date"],
 body.use-liquid-glass select,
 body.use-liquid-glass .system-select-button {
   border: 1px solid rgba(255, 255, 255, 0.62);
@@ -1664,11 +1980,14 @@ body.use-liquid-glass input[type="radio"]:checked::before {
 
 body.use-liquid-glass .btn {
   border: 1px solid var(--btn-border-color);
-  border-radius: 999px;
+  border-radius: var(--btn-radius);
   background: var(--btn-bg);
   color: var(--btn-fg);
   box-shadow: var(--btn-shadow);
-  transition: transform 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
+  transition:
+    transform var(--control-motion-medium-in) var(--control-motion-ease),
+    background var(--control-motion-medium-in) var(--control-motion-ease),
+    box-shadow var(--control-motion-medium-in) var(--control-motion-ease);
 }
 
 body.use-liquid-glass .btn:hover:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected) {
@@ -1745,10 +2064,16 @@ body.use-liquid-glass .btn.default.is-disabled:active {
 }
 
 body.use-liquid-glass .composer {
-  border-top: 1px solid rgba(16, 17, 20, 0.1);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.18)),
-    rgba(255, 255, 255, 0.2);
+  border: var(--clio-composer-border);
+  border-radius: var(--clio-composer-radius);
+  background: var(--clio-composer-bg);
+  box-shadow: var(--clio-composer-shadow);
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+}
+
+body.use-liquid-glass .composer:focus-within {
+  box-shadow: var(--clio-composer-focus-shadow);
 }
 
 body.use-liquid-glass .assistant-window .composer-action-row {
@@ -1778,15 +2103,14 @@ body.use-liquid-glass .assistant-window .composer label {
 }
 
 body.use-liquid-glass .assistant-window .composer textarea {
-  border: 1px solid rgba(16, 17, 20, 0.12);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.34);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
 body.use-liquid-glass .assistant-window .composer textarea:focus {
-  border-color: rgba(0, 122, 255, 0.6);
   outline: 0;
-  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  box-shadow: none;
 }
 
 body.use-liquid-glass .teachtext-editor-container {
@@ -2010,119 +2334,37 @@ body.use-liquid-glass .control-panel .control-advanced summary {
   color: rgba(16, 17, 20, 0.92);
 }
 
-body.use-liquid-glass .memory-cards-details-bar {
-  gap: 14px;
-  min-height: 48px;
-  padding: 8px 14px;
-  border-bottom: 1px solid rgba(16, 17, 20, 0.1);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.2)),
-    rgba(255, 255, 255, 0.28);
-}
-
-body.use-liquid-glass .memory-cards-details-bar span {
-  min-width: 112px;
-  padding: 2px 10px;
-  border: 1px solid rgba(255, 255, 255, 0.42);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.24);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62);
-}
-
-body.use-liquid-glass .memory-cards-pane {
-  gap: 12px;
-  padding: 14px 16px;
-  background:
-    linear-gradient(135deg, rgba(232, 238, 242, 0.2), rgba(235, 241, 247, 0.2)),
-    rgba(255, 255, 255, 0.16);
-}
-
-body.use-liquid-glass .memory-cards-board {
-  gap: 10px;
-  padding: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.42);
-  border-radius: 18px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.38), rgba(255, 255, 255, 0.14)),
-    rgba(255, 255, 255, 0.16);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.68),
-    0 14px 38px rgba(18, 28, 38, 0.1);
-}
-
 body.use-liquid-glass .memory-card {
-  border: 1px solid rgba(16, 17, 20, 0.16);
-  border-radius: 14px;
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.42)),
-    rgba(255, 255, 255, 0.4);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    inset 0 -1px 0 rgba(16, 17, 20, 0.04),
-    0 9px 18px rgba(18, 28, 38, 0.14);
-  transition:
-    transform 0.16s ease-out,
-    box-shadow 0.16s ease-out,
-    border-color 0.16s ease-out,
-    background 0.16s ease-out;
+  border: var(--memory-card-border);
+  border-radius: var(--memory-card-radius);
+  background: var(--memory-card-bg);
+  box-shadow: var(--memory-card-shadow);
 }
 
-body.use-liquid-glass .memory-card:hover,
-body.use-liquid-glass .memory-card:focus-visible {
+body.use-liquid-glass .memory-card:hover:not([aria-disabled="true"]) {
   border-color: rgba(16, 17, 20, 0.28);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    0 13px 24px rgba(18, 28, 38, 0.16);
+  box-shadow: var(--memory-card-hover-shadow);
 }
 
 body.use-liquid-glass .memory-card::after {
-  inset: 5px;
-  border-color: rgba(255, 255, 255, 0.56);
-  border-radius: 11px;
-  box-shadow: inset 0 0 0 1px rgba(16, 17, 20, 0.04);
+  content: none;
 }
 
 body.use-liquid-glass .memory-card-back {
-  width: 58%;
-  height: 58%;
-  border-color: rgba(16, 17, 20, 0.14);
-  border-radius: 10px;
-  background:
-    linear-gradient(rgba(16, 17, 20, 0.16), rgba(16, 17, 20, 0.16)) center 25% / 46% 2px no-repeat,
-    linear-gradient(rgba(16, 17, 20, 0.1), rgba(16, 17, 20, 0.1)) center 50% / 58% 2px no-repeat,
-    linear-gradient(rgba(16, 17, 20, 0.08), rgba(16, 17, 20, 0.08)) center 75% / 36% 2px no-repeat,
-    linear-gradient(180deg, rgba(255, 255, 255, 0.74), rgba(255, 255, 255, 0.24)),
-    rgba(255, 255, 255, 0.3);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.8),
-    0 1px 4px rgba(18, 28, 38, 0.08);
+  background: var(--memory-card-back-bg);
 }
 
 body.use-liquid-glass .memory-card-back::after {
-  color: rgba(16, 17, 20, 0.12);
+  content: none;
 }
 
 body.use-liquid-glass .memory-card.is-face-up,
 body.use-liquid-glass .memory-card.is-matched {
-  border-color: rgba(255, 255, 255, 0.62);
-  color: rgba(255, 255, 255, 0.96);
-  background-color: var(--card-color);
-  background-image:
-    linear-gradient(155deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.05)),
-    linear-gradient(0deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.08));
-  filter: saturate(1.18) contrast(1.04);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.48),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.22),
-    0 12px 26px rgba(18, 28, 38, 0.18);
+  border-color: rgba(16, 17, 20, 0.28);
 }
 
 body.use-liquid-glass .memory-card.is-matched {
-  transform: translateY(1px) rotate(var(--card-tilt)) scale(0.97);
-  filter: saturate(1.14) contrast(1.03);
-  box-shadow:
-    inset 0 0 0 2px rgba(255, 255, 255, 0.62),
-    0 8px 18px rgba(18, 28, 38, 0.12);
+  box-shadow: var(--memory-card-shadow);
 }
 
 body.use-liquid-glass #memory-cards-status {
@@ -2136,11 +2378,11 @@ body.use-liquid-glass #memory-cards-status {
 }
 
 body.use-liquid-glass .compose-tools-menu {
-  min-width: 306px;
-  padding: 8px;
-  gap: 7px;
+  min-width: 286px;
+  padding: 6px;
+  gap: 3px;
   border: 1px solid var(--glass-border);
-  border-radius: 18px;
+  border-radius: 14px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(246, 251, 253, 0.84)),
     rgba(246, 251, 253, 0.92);
@@ -2157,16 +2399,14 @@ body.use-liquid-glass .composer-file-button[aria-expanded="true"] {
 }
 
 body.use-liquid-glass .compose-tools-menu button {
-  min-height: 62px;
-  grid-template-columns: 42px minmax(0, 1fr);
-  gap: 12px;
-  padding: 9px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.52);
-  border-radius: 16px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.68), rgba(255, 255, 255, 0.28)),
-    rgba(255, 255, 255, 0.28);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  min-height: 48px;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 9px;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  box-shadow: none;
 }
 
 body.use-liquid-glass .compose-tools-menu button:hover,
@@ -2191,7 +2431,7 @@ body.use-liquid-glass .compose-tool-copy b {
 
 body.use-liquid-glass .compose-tool-copy small {
   color: rgba(16, 17, 20, 0.56);
-  font-size: 12px;
+  font-size: 11px;
 }
 
 body.use-liquid-glass .compose-tools-menu button:hover .compose-tool-copy b,
@@ -2700,11 +2940,11 @@ body.use-liquid-glass .finder-list-row {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
-body.use-liquid-glass .message.user {
+body.use-liquid-glass .assistant-window.is-quick-draft-sideask .message.user {
   background: rgba(90, 200, 250, 0.22);
 }
 
-body.use-liquid-glass .message.assistant {
+body.use-liquid-glass .assistant-window.is-quick-draft-sideask .message.assistant {
   background: rgba(0, 122, 255, 0.16);
 }
 
@@ -2712,7 +2952,7 @@ body.use-liquid-glass .message {
   border-radius: 6px;
 }
 
-body.use-liquid-glass .assistant-window .message {
+body.use-liquid-glass .assistant-window.is-quick-draft-sideask .message {
   border-radius: 0;
   padding-left: 11px;
   padding-right: 11px;
@@ -2757,7 +2997,7 @@ body.use-liquid-glass .message-content :not(pre) > code {
 }
 
 body.use-liquid-glass .message-actions {
-  border-top: 1px solid rgba(16, 17, 20, 0.12);
+  border-top: 0;
 }
 
 body.use-liquid-glass .finder-list-header {
@@ -3645,12 +3885,11 @@ body.use-liquid-glass .btn:disabled:active,
 body.use-liquid-glass .btn.is-disabled:active,
 body.use-liquid-glass .btn.default:disabled:active,
 body.use-liquid-glass .btn.default.is-disabled:active {
-  border-color: rgba(16, 17, 20, 0.22) !important;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.54), rgba(255, 255, 255, 0.2)),
-    rgba(255, 255, 255, 0.2) !important;
-  color: rgba(16, 17, 20, 0.42) !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62) !important;
+  --menu-shortcut-color: var(--liquid-disabled-control-fg);
+  border-color: var(--liquid-disabled-control-border) !important;
+  background: var(--liquid-disabled-control-bg) !important;
+  color: var(--liquid-disabled-control-fg) !important;
+  box-shadow: var(--liquid-disabled-control-shadow) !important;
   cursor: default;
   opacity: 1;
   transform: none;
@@ -3766,8 +4005,8 @@ body.use-liquid-glass .btn:disabled:active,
 body.use-liquid-glass .btn.is-disabled:active,
 body.use-liquid-glass .btn.default:disabled:active,
 body.use-liquid-glass .btn.default.is-disabled:active {
-  color: rgba(16, 17, 20, 0.42) !important;
-  -webkit-text-fill-color: rgba(16, 17, 20, 0.42) !important;
+  color: var(--liquid-disabled-control-fg) !important;
+  -webkit-text-fill-color: var(--liquid-disabled-control-fg) !important;
   text-shadow: none !important;
 }
 

@@ -264,7 +264,7 @@ ${text}`;
   const response = await fetchModelPayload({
     model: getLocalModelRequestName(),
     messages: withMarkdownModelMessages([
-      { role: "system", content: "You are a precise literary and technical translator. Preserve formatting while translating natural language." },
+      { role: "system", content: resolveWritingRoutePrompt("other-apps.translation", "en") },
       { role: "user", content: prompt },
     ]),
     temperature: 0.2,
@@ -494,23 +494,10 @@ async function runTeachTextStyleCheck(options = {}) {
   renderStyleSheet([], checkingMessage);
   try {
     const outputLanguage = currentLanguage === "zh" ? "Chinese" : "English";
-    const prompt = `You are a concise style proofreader.
-Review the ${sectionOnly ? `selected TeachText section "${section.title}"` : "text"} for style issues that meaningfully affect reading.
-Check filler words, clichés, redundancies, long tangled sentences, tone drift, abstract/vague phrasing, unclear turns, and rhythm congestion.
-Do not rewrite the full text. Do not critique factual claims. Do not flatten the author's voice just to sound standardized.
-Only flag issues worth the author's attention; avoid perfectionist nitpicks.
-Write in ${outputLanguage}, except quoted passages, which must preserve the exact original text.
-Return Markdown only. Do not return JSON.
-Use at most 8 findings. Return a Markdown table with exactly these columns:
-
-| Location | Type | Quote | Problem | Impact | Suggestion | Priority |
-|---|---|---|---|---|---|---|
-
-Type must be one of: redundancy, repetition, long sentence, tone drift, abstract/vague, unclear turn, rhythm congestion, other.
-Priority must be one of: must fix, suggested, can keep.
-Quote must be an exact short passage from the text.
-
-If there are no meaningful issues, return: No style issues found.
+    const scope = sectionOnly ? `selected TeachText section "${section.title}"` : "text";
+    const prompt = `${resolveWritingRoutePrompt("other-apps.style-proofread", "en")
+      .replace("{{scope}}", scope)
+      .replace("{{language}}", outputLanguage)}
 
 TEXT:
 ${body}`;
@@ -735,15 +722,6 @@ function writingToolsPromptRegistry() {
   return window.AISystem6WritingToolsPrompts || null;
 }
 
-function writingToolPromptOptions(instruction = "", { directWrite = false } = {}) {
-  return {
-    directWrite,
-    fallbackDescribeChange: t("describe_change_default"),
-    instruction,
-    language: currentLanguage,
-  };
-}
-
 function writingToolTextServiceContract({ directWrite = false } = {}) {
   const registry = writingToolsPromptRegistry();
   if (registry?.textServiceContract) {
@@ -762,33 +740,35 @@ function writingToolChangeRoutingNote(instruction = "") {
   return "";
 }
 
-function printToAiTaskInstructions(instruction = "", options = {}) {
-  const registry = writingToolsPromptRegistry();
-  if (registry?.taskInstructions) {
-    return registry.taskInstructions(writingToolPromptOptions(instruction, options));
-  }
-  const directWrite = options.directWrite === true;
-  return {
-    critique: "给出简洁的编辑批评，聚焦结构、清晰度、薄弱论断、缺少证据和下一步可执行修改。不要重写全文。",
-    praise: "写一段温暖、具体、懂创作者心理的夸奖。指出真实有效的创作选择：用词、节奏、意象、句式、结构、转折、克制、诚实、幽默或语气控制。可以引用一两个打动人的短语。只夸具体做得好的地方，不批评，不教学，不用“但是”转折。2 到 4 句。",
-    digest: "生成紧凑摘要，包含：核心判断、关键点、可用表达、开放问题和可能的下一步。",
-    continue: "从目标文本结尾继续写。只返回延续草稿，并保持现有声音和方向。",
-    describeChange: `按这个要求修改：${instruction || t("describe_change_default")}。只返回修改后的文本。`,
-    proofread: directWrite
-      ? "校对目标文本，修正语法、错字、标点和明显措辞问题，同时保留作者意思和声音；不要为了规范而抹平粗糙但有判断的表达。只返回校对后的完整文本，不要说明、不要列问题。"
-      : "校对目标文本，修正语法、错字、标点和明显措辞问题，同时保留作者意思和声音；不要为了规范而抹平粗糙但有判断的表达。先简短说明主要修改，再给出校对后的文本。",
-    rewrite: "改写目标文本，让它更清楚、更顺，降低 AI 腔，同时保留意思和声音；源文里的套话不要忠实保留，要换成具体平实的说法；如果源文没有具体信息，不要用另一组抽象词代替，宁可写得短一点；不要编造新事实或个人细节。只返回改写后的文本。",
-    friendly: "把目标文本改成更友好的语气，同时保留意思和事实。只返回改写后的文本。",
-    professional: "把目标文本改成更专业、克制的语气，同时保留意思和事实。只返回改写后的文本，不要公文腔。",
-    concise: "压缩目标文本，保留重要意思、事实和判断。只返回精简后的文本。",
-    summary: "用不超过 3 句总结目标文本。不要回答原文里的问题，只总结文本本身。只返回摘要。",
-    keyPoints: "把目标文本提炼成简洁 Markdown 要点。只写原文能支持的要点。",
-    list: "把目标文本整理成清楚的 Markdown 列表，保留重要细节，不补新信息。",
-    table: "把目标文本整理成有用的 Markdown 表格。如果不适合表格，在不编造事实的前提下给出最接近的结构表。",
-  };
+function writingToolPromptId(mode) {
+  const ids = { describeChange: "describe-change", keyPoints: "key-points", reviewPraise: "review-praise" };
+  return `writing-tools.${ids[mode] || mode}`;
 }
 
-function buildPrintToAiPrompt(mode, instruction = "") {
+function resolveWritingToolPrompt(mode) {
+  return window.AISystem6PromptFilesRuntime?.resolvePromptFile(writingToolPromptId(mode), activeProjectId, currentLanguage)
+    || { status: "missing", source: null, path: "", body: "", hash: "" };
+}
+
+function writingToolTaskBody(mode, instruction = "", resolvedPrompt = null) {
+  const prompt = resolvedPrompt || resolveWritingToolPrompt(mode);
+  const replacement = instruction || t("describe_change_default");
+  return String(prompt.body || "").replace("{{instruction}}", replacement);
+}
+
+function writingToolPromptUnavailable(resolvedPrompt) {
+  if (resolvedPrompt?.status === "disabled") {
+    setStatus(currentLanguage === "zh" ? "此写作工具提示词已停用。" : "This Writing Tools prompt is disabled for this project.");
+    return true;
+  }
+  if (resolvedPrompt?.status === "missing") {
+    setStatus(currentLanguage === "zh" ? "找不到此写作工具提示词文件，无法运行。" : "This Writing Tools prompt file is missing, so it cannot run.");
+    return true;
+  }
+  return false;
+}
+
+function buildPrintToAiPrompt(mode, instruction = "", resolvedPrompt = null) {
   const title = getTeachTextDocumentName();
   const rawBody = teachTextBodyInput.value.trim();
   const selection = teachTextBodyInput.value
@@ -802,7 +782,6 @@ function buildPrintToAiPrompt(mode, instruction = "") {
     ? "Use SELECTED PASSAGE as the target text. Use DOCUMENT only for context."
     : "Use DOCUMENT as the target text.";
 
-  const tasks = printToAiTaskInstructions(instruction, { directWrite: false });
   const changeRouting = mode === "describeChange" ? writingToolChangeRoutingNote(instruction) : "";
 
   const systemIntro = mode === "praise"
@@ -820,7 +799,7 @@ function buildPrintToAiPrompt(mode, instruction = "") {
     targetRule,
     changeRouting,
     "",
-    `TASK:\n${tasks[mode] || tasks.proofread}`,
+    `TASK:\n${writingToolTaskBody(mode, instruction, resolvedPrompt)}`,
     "",
     sourceText,
   ].join("\n");
@@ -899,8 +878,7 @@ function applyWritingToolResult(control, target, result) {
   return true;
 }
 
-function buildDirectWritingToolPrompt(mode, sourceText, instruction = "") {
-  const tasks = printToAiTaskInstructions(instruction, { directWrite: true });
+function buildDirectWritingToolPrompt(mode, sourceText, instruction = "", resolvedPrompt = null) {
   const changeRouting = mode === "describeChange" ? writingToolChangeRoutingNote(instruction) : "";
   const writeBackRule = ["summary", "keyPoints"].includes(mode)
     ? "只返回要插入的文本，不要解释。"
@@ -913,7 +891,7 @@ function buildDirectWritingToolPrompt(mode, sourceText, instruction = "") {
     changeRouting,
     writeBackRule,
     "",
-    `TASK:\n${tasks[mode] || tasks.proofread}`,
+    `TASK:\n${writingToolTaskBody(mode, instruction, resolvedPrompt)}`,
     "",
     `TARGET TEXT:\n${clampPrintToAiText(sourceText, printToAiTargetLimit(mode, false))}`,
   ].join("\n");
@@ -933,6 +911,9 @@ async function runDirectWritingTool(mode) {
     return;
   }
 
+  const resolvedPrompt = resolveWritingToolPrompt(mode);
+  if (writingToolPromptUnavailable(resolvedPrompt)) return;
+
   let instruction = "";
   if (mode === "describeChange" || mode === "transform") {
     instruction = window.prompt(t("describe_change_prompt"), t("describe_change_default")) || "";
@@ -942,7 +923,9 @@ async function runDirectWritingTool(mode) {
   if (!beginLongTask("writing-tool", t("writing_tool_running"))) return;
   let result = "";
   try {
-    const prompt = buildDirectWritingToolPrompt(mode, target.target, instruction.trim());
+    const prompt = buildDirectWritingToolPrompt(mode, target.target, instruction.trim(), resolvedPrompt);
+    window.AISystem6PromptFilesRuntime?.recordPromptRun(activeProjectId, writingToolPromptId(mode), resolvedPrompt);
+    saveDeskState?.();
     const response = await fetchModelPayload({
       model: getLocalModelRequestName(),
       messages: withMarkdownModelMessages([{ role: "user", content: prompt }]),
@@ -976,11 +959,10 @@ async function runDirectWritingTool(mode) {
   }
 }
 
-function buildSelectionToAiPrompt(mode, context, instruction = "") {
+function buildSelectionToAiPrompt(mode, context, instruction = "", resolvedPrompt = null) {
   const label = selectionLabelForContext(context) || t("selection_services");
   const selectedText = clampPrintToAiText(context.text, printToAiTargetLimit(mode, true));
   const contextText = sourceContextText(context);
-  const tasks = printToAiTaskInstructions(instruction, { directWrite: false });
   const changeRouting = mode === "describeChange" ? writingToolChangeRoutingNote(instruction) : "";
   return [
     "你是 AI System 6 的 Ask ClioTalk 选区服务。",
@@ -990,7 +972,7 @@ function buildSelectionToAiPrompt(mode, context, instruction = "") {
     "把 SELECTED PASSAGE 作为目标文本，CONTEXT 只作背景参考。",
     changeRouting,
     "",
-    `TASK:\n${tasks[mode] || tasks.proofread}`,
+    `TASK:\n${writingToolTaskBody(mode, instruction, resolvedPrompt)}`,
     "",
     `SOURCE:\n${label}`,
     "",
@@ -999,7 +981,7 @@ function buildSelectionToAiPrompt(mode, context, instruction = "") {
   ].filter(Boolean).join("\n");
 }
 
-async function sendPrintToAiRequest(mode, publicRequest, hiddenPrompt, sourceWindowName) {
+async function sendPrintToAiRequest(mode, publicRequest, hiddenPrompt, sourceWindowName, resolvedPrompt = null) {
   if (activeAbortController) return;
   await openAssistantAvoidingWindow(sourceWindowName);
   addMessage("user", publicRequest);
@@ -1011,6 +993,8 @@ async function sendPrintToAiRequest(mode, publicRequest, hiddenPrompt, sourceWin
   setStatus(t("thinking"));
 
   try {
+    window.AISystem6PromptFilesRuntime?.recordPromptRun(activeProjectId, writingToolPromptId(mode), resolvedPrompt);
+    saveDeskState?.();
     updatePendingMessage(pendingMessage, 1, `${t("consulting_model")}.`);
     const assistantText = await sendToLmStudio(hiddenPrompt, activeAbortController.signal, printToAiRequestOptions(mode));
     updatePendingMessage(pendingMessage, 2, `${t("typesetting_reply")}.`);
@@ -1031,7 +1015,7 @@ async function sendPrintToAiRequest(mode, publicRequest, hiddenPrompt, sourceWin
   }
 }
 
-async function printSelectionToAi(mode, context) {
+async function printSelectionToAi(mode, context, resolvedPrompt = null) {
   if (!context?.text) return false;
   let instruction = "";
   if (mode === "describeChange" || mode === "transform") {
@@ -1042,8 +1026,8 @@ async function printSelectionToAi(mode, context) {
   const taskLabel = t(mode === "keyPoints" ? "key_points" : mode);
   const sourceLabel = selectionLabelForContext(context) || t("selection_services");
   const publicRequest = t("print_selection_to_ai_request", taskLabel, sourceLabel);
-  const hiddenPrompt = buildSelectionToAiPrompt(mode, context, instruction.trim());
-  await sendPrintToAiRequest(mode, publicRequest, hiddenPrompt, sourceWindowForAssistantContext(context));
+  const hiddenPrompt = buildSelectionToAiPrompt(mode, context, instruction.trim(), resolvedPrompt);
+  await sendPrintToAiRequest(mode, publicRequest, hiddenPrompt, sourceWindowForAssistantContext(context), resolvedPrompt);
   return true;
 }
 
@@ -1053,8 +1037,11 @@ async function printTeachTextToAi(mode) {
     return;
   }
 
+  const resolvedPrompt = resolveWritingToolPrompt(mode);
+  if (writingToolPromptUnavailable(resolvedPrompt)) return;
+
   const selectionContext = getSelectionServiceContext() || lastSelectionServiceContext;
-  if (selectionContext?.text && await printSelectionToAi(mode, selectionContext)) return;
+  if (selectionContext?.text && await printSelectionToAi(mode, selectionContext, resolvedPrompt)) return;
 
   const body = teachTextBodyInput.value.trim();
   if (!body) {
@@ -1072,8 +1059,8 @@ async function printTeachTextToAi(mode) {
   const title = getTeachTextDocumentName();
   const taskLabel = t(mode === "keyPoints" ? "key_points" : mode);
   const publicRequest = t("print_to_ai_request", taskLabel, title);
-  const hiddenPrompt = buildPrintToAiPrompt(mode, instruction.trim());
-  await sendPrintToAiRequest(mode, publicRequest, hiddenPrompt, "teachText");
+  const hiddenPrompt = buildPrintToAiPrompt(mode, instruction.trim(), resolvedPrompt);
+  await sendPrintToAiRequest(mode, publicRequest, hiddenPrompt, "teachText", resolvedPrompt);
 }
 
 async function praiseReviewDeskText() {
@@ -1086,21 +1073,15 @@ async function praiseReviewDeskText() {
     return;
   }
   if (activeAbortController) return;
+  const resolvedPrompt = resolveWritingToolPrompt("reviewPraise");
+  if (writingToolPromptUnavailable(resolvedPrompt)) return;
   setReviewDeskMode("facts");
   clearReviewFeedbackSlot("facts", currentLanguage === "zh" ? "正在写夸夸我..." : "Writing encouragement...");
   activeAbortController = new AbortController();
   setStatus(currentLanguage === "zh" ? "正在给创作者加一点信心..." : "Writing encouragement...");
   try {
     const prompt = [
-      currentLanguage === "zh"
-        ? "你是一个温暖、具体、懂创作者心理的读者。"
-        : "You are a warm, specific reader who understands the emotional side of making things.",
-      currentLanguage === "zh"
-        ? "请针对当前章节写一段给创作者的真诚鼓励，同时结合全文语境判断它承担了什么功能。重点是对冲审校意见可能造成的挫败感，保护作者继续修改的信心。"
-        : "Write sincere encouragement for the current section while using the whole manuscript as context for what this section is trying to do. Balance the emotional weight of critique and help the creator keep confidence to revise.",
-      currentLanguage === "zh"
-        ? "只夸具体做得好的地方：判断、取舍、节奏、清晰度、诚实、结构或努力。不要批评，不要转折式夸奖，不要说“但是”。2-4 句。"
-        : "Praise concrete strengths only: judgment, choices, rhythm, clarity, honesty, structure, or effort. No critique, no backhanded praise, no 'but'. 2-4 sentences.",
+      writingToolTaskBody("reviewPraise", "", resolvedPrompt),
       "",
       `CURRENT SECTION${currentSection?.title ? `: ${currentSection.title}` : ""}:`,
       clampPrintToAiText(sectionText, 4200),
@@ -1108,6 +1089,8 @@ async function praiseReviewDeskText() {
       "WHOLE MANUSCRIPT CONTEXT:",
       clampPrintToAiText(fullContext, 9000),
     ].join("\n");
+    window.AISystem6PromptFilesRuntime?.recordPromptRun(activeProjectId, writingToolPromptId("reviewPraise"), resolvedPrompt);
+    saveDeskState?.();
     const praise = await sendToLmStudio(prompt, activeAbortController.signal, printToAiRequestOptions("praise"));
     appendReviewFeedbackToBody([
       currentLanguage === "zh" ? "## 夸夸我" : "## Encouragement",

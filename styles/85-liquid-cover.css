@@ -1,52 +1,154 @@
-/* Liquid Cover — glass-text cover generator window.
-   Scoped under .liquid-cover-window / .lc-*. Override-free and stacking-free:
-   layout is pure flexbox so it cooperates with the base .window cascade. */
+/* Liquid Cover — a canvas-first editor with persistent scene structure and a
+   contextual inspector.
+   Scoped under .liquid-cover-window / .lc-* and deliberately free of global
+   stacking values: the window manager remains the sole owner of layering. */
+
+@font-face {
+  font-family: "Smiley Sans";
+  src: url("../assets/fonts/smiley-sans/SmileySans-Oblique.ttf.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
 
 /* Default frame so the tool is usable in every layout regime. Desktop
    maximize sets inline width/height (which win); portrait-flow override
    rules also win. This is only the fallback when neither runs, and the
    max-height keeps the tall control panel scrolling on-screen. */
 .liquid-cover-window {
-  width: min(1040px, calc(100vw - 36px));
+  width: min(1380px, calc(100vw - 36px));
   height: calc(100vh - var(--system-menu-height, 26px) - 36px);
   max-height: calc(100vh - var(--system-menu-height, 26px) - 36px);
 }
 
 .liquid-cover-body {
   flex: 1 1 auto;
-  display: flex;
+  display: grid;
+  grid-template-columns: clamp(150px, 14vw, 190px) minmax(0, 1fr) clamp(300px, 26vw, 360px);
   min-height: 0;
   min-width: 0;
 }
 
-/* Bottom mood form — the primary control. DocMap-style: a label, then an
-   input + button row (describe a vibe / adjustment, AI or rules configure all). */
-.lc-ask-bar {
+/* A fixed creation toolbar keeps object creation and inspector modes available
+   without turning the editor into a linear wizard. */
+.lc-toolbar {
   flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 8px 12px;
-  border-top: 2px solid var(--ink);
+  display: grid;
+  grid-template-columns: auto auto auto minmax(290px, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 6px 9px;
+  border-bottom: 2px solid var(--ink);
   background: var(--paper);
 }
 
-.lc-ask-label {
+.lc-toolbar-create,
+.lc-toolbar-history,
+.lc-toolbar-modes,
+.lc-toolbar-aspect {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.lc-toolbar-create,
+.lc-toolbar-history,
+.lc-toolbar-modes {
+  gap: 5px;
+}
+
+.window.liquid-cover-window .lc-history-button {
+  width: 30px;
+  min-width: 30px;
+  padding-inline: 0;
+}
+
+.lc-control-icon {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  color: currentColor;
+}
+
+.lc-control-icon svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.65;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.lc-history-button .lc-control-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.lc-history-button.is-redo .lc-control-icon {
+  transform: scaleX(-1);
+}
+
+.lc-toolbar-modes {
+  gap: 0;
+  padding: 2px;
+  border: 1px solid var(--ink);
+  background: var(--shade);
+}
+
+.lc-toolbar-aspect {
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.lc-toolbar-aspect .lc-aspect {
+  width: min(240px, 24vw);
+}
+
+.lc-toolbar-aspect > span {
+  flex: 0 0 auto;
+  font-size: 10px;
   font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+
+.lc-toolbar-export {
+  min-width: 76px;
+}
+
+/* The AI material assistant is optional and lives inside Glass. */
+.lc-ask-bar {
+  display: grid;
+  gap: 6px;
+  padding: 9px 0 0;
+  border: 0;
+  background: transparent;
+}
+
+.lc-ask-label {
+  min-width: 0;
+  font-weight: 600;
   font-size: 12px;
+  line-height: 1.2;
+  text-wrap: balance;
 }
 
 .lc-ask-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
 }
 
 .lc-ask-bar input[type="text"] {
   flex: 1 1 auto;
   min-width: 0;
   font: inherit;
-  padding: 6px 9px;
+  padding: 7px 10px;
   border: 1px solid var(--ink);
   border-radius: var(--control-radius, 4px);
   background: var(--paper);
@@ -70,64 +172,574 @@
   flex: 1 1 auto;
 }
 
+.lc-status-meta {
+  flex: 0 0 auto;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.62;
+}
+
 .lc-stage {
-  flex: 1 1 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: relative;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 12px;
   min-width: 0;
   min-height: 0;
-  padding: 16px;
+  padding: 16px 18px 14px;
   overflow: hidden;
-  background: var(--shade, #c8c8c8);
+  color: #eef1f3;
+  background-color: #171a1e;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.028) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.lc-stage-head,
+.lc-stage-foot {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  color: rgba(238, 241, 243, 0.7);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+.lc-stage-head {
+  justify-content: space-between;
+  padding-right: 34px;
+}
+
+.lc-stage-kicker {
+  color: #ffffff;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.lc-stage-format {
+  font-variant-numeric: tabular-nums;
+}
+
+.lc-canvas-shell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+  padding: clamp(4px, 1.4vw, 20px);
 }
 
 .lc-canvas {
+  display: block;
   max-width: 100%;
   max-height: 100%;
-  border: 2px solid var(--ink);
-  box-shadow: 2px 2px 0 var(--ink);
-  background: var(--paper);
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  outline: 1px solid rgba(0, 0, 0, 0.78);
+  box-shadow:
+    0 26px 70px rgba(0, 0, 0, 0.46),
+    0 0 0 7px rgba(255, 255, 255, 0.035);
+  background: #0f1114;
   cursor: grab;
   touch-action: none;
+}
+
+.lc-canvas:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 5px;
 }
 
 .lc-canvas.is-grabbing {
   cursor: grabbing;
 }
 
-.lc-panel {
-  flex: 0 0 clamp(360px, 24vw, 420px);
-  display: grid;
-  grid-template-rows: auto auto auto minmax(0, 1fr);
-  gap: 7px;
-  padding: 9px;
-  min-height: 0;
-  overflow: hidden;
-  border-left: 2px solid var(--ink);
-  background: var(--paper);
+.lc-selection-box,
+.lc-selection-marquee {
+  position: absolute;
+  display: none;
+  pointer-events: none;
 }
 
-.lc-panel-head {
+.lc-selection-box {
+  left: var(--lc-selection-left, 0);
+  top: var(--lc-selection-top, 0);
+  width: var(--lc-selection-width, 0);
+  height: var(--lc-selection-height, 0);
+  border: 1px solid #52a8ff;
+  box-shadow:
+    0 0 0 1px rgba(7, 22, 34, 0.6),
+    0 0 0 3px rgba(82, 168, 255, 0.12);
+}
+
+.lc-selection-box.is-visible,
+.lc-selection-marquee.is-visible {
+  display: block;
+}
+
+.lc-selection-box::before,
+.lc-selection-box::after {
+  content: "";
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border: 1px solid rgba(7, 22, 34, 0.72);
+  background: #ffffff;
+}
+
+.lc-selection-box::before {
+  left: -4px;
+  top: -4px;
+}
+
+.lc-selection-box::after {
+  right: -4px;
+  bottom: -4px;
+}
+
+.lc-transform-handle {
+  position: absolute;
+  display: none;
+  pointer-events: auto;
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  min-height: 16px;
+  padding: 0;
+  border: 1px solid rgba(7, 22, 34, 0.78);
+  border-radius: 50%;
+  background: #ffffff;
+  color: #102132;
+  box-shadow: 0 0 0 2px rgba(82, 168, 255, 0.32);
+  cursor: grab;
+  touch-action: none;
+}
+
+.lc-selection-box.has-single-transform .lc-transform-handle {
   display: grid;
-  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
-  gap: 8px;
+  place-items: center;
+}
+
+.lc-transform-handle.is-scale {
+  right: -8px;
+  bottom: -8px;
+  cursor: nwse-resize;
+}
+
+.lc-transform-handle.is-rotate {
+  left: 50%;
+  top: -29px;
+  transform: translateX(-50%);
+  font: 700 12px/1 sans-serif;
+}
+
+.lc-transform-handle.is-rotate::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 15px;
+  width: 1px;
+  height: 13px;
+  background: #52a8ff;
+}
+
+.lc-selection-marquee {
+  left: var(--lc-marquee-left, 0);
+  top: var(--lc-marquee-top, 0);
+  width: var(--lc-marquee-width, 0);
+  height: var(--lc-marquee-height, 0);
+  border: 1px solid #52a8ff;
+  background: rgba(82, 168, 255, 0.16);
+}
+
+.lc-alignment-guides {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.lc-alignment-guide {
+  position: absolute;
+  display: none;
+  background: #52a8ff;
+  box-shadow:
+    0 0 0 1px rgba(7, 22, 34, 0.72),
+    0 0 8px rgba(82, 168, 255, 0.52);
+}
+
+.lc-alignment-guides.has-x .lc-alignment-guide.is-vertical {
+  top: 0;
+  bottom: 0;
+  left: var(--lc-guide-x, 50%);
+  display: block;
+  width: 1px;
+}
+
+.lc-alignment-guides.has-y .lc-alignment-guide.is-horizontal {
+  right: 0;
+  left: 0;
+  top: var(--lc-guide-y, 50%);
+  display: block;
+  height: 1px;
+}
+
+.lc-stage-foot {
+  gap: 10px;
+  padding-right: 38px;
+  overflow: hidden;
+}
+
+.lc-stage-selection {
+  max-width: min(38%, 260px);
+  overflow: hidden;
+  color: #ffffff;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lc-stage-selection::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 7px;
+  border: 1px solid currentColor;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.lc-stage-hint {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lc-stage-expand {
+  position: absolute;
+  top: auto;
+  right: 12px;
+  bottom: 9px;
+  min-width: 28px;
+  padding-inline: 7px;
+}
+
+.liquid-cover-window.is-stage-focused .lc-panel,
+.liquid-cover-window.is-stage-focused .lc-sidebar {
+  display: none;
+}
+
+.liquid-cover-window.is-stage-focused .lc-stage,
+.liquid-cover-window.is-stage-focused .lc-canvas {
+  max-height: none;
+}
+
+.liquid-cover-window.is-stage-focused .lc-stage {
+  grid-column: 1 / -1;
+}
+
+.lc-sidebar {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto auto;
+  gap: 9px;
+  min-width: 0;
+  min-height: 0;
+  padding: 14px 11px 12px;
+  overflow: hidden;
+  border-right: 1px solid rgba(0, 0, 0, 0.24);
+  background: var(--shade);
+}
+
+.lc-sidebar-head {
+  display: grid;
+  gap: 2px;
+  padding: 0 2px 9px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.22);
+}
+
+.lc-sidebar-head strong {
+  font-size: 15px;
+}
+
+.lc-sidebar .lc-layer-list {
+  align-content: start;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 5px;
+  margin: 0;
+  overflow-y: auto;
+}
+
+.lc-sidebar-actions .btn {
+  width: 100%;
+}
+
+.lc-sidebar-actions {
+  display: grid;
+  gap: 5px;
+}
+
+.lc-arrange-panel {
+  display: grid;
+  gap: 5px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.lc-arrange-panel > summary {
+  list-style: none;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.lc-arrange-panel > summary::-webkit-details-marker {
+  display: none;
+}
+
+.lc-arrange-panel > summary::before {
+  content: "\25B8";
+  display: inline-block;
+  width: 13px;
+}
+
+.lc-arrange-panel[open] > summary::before {
+  content: "\25BE";
+}
+
+.lc-selection-help {
+  margin: 0;
+  padding: 7px 2px;
+  color: var(--ink);
+  font-size: 10px;
+  line-height: 1.35;
+  opacity: 0.62;
+}
+
+.lc-order-row,
+.lc-align-grid {
+  display: grid;
+  gap: 4px;
+}
+
+.lc-order-row {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.lc-align-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.lc-order-row .btn,
+.lc-align-grid .btn {
+  min-width: 0;
+  min-height: 24px;
+  padding: 3px 4px;
+  font-size: 10px;
+  line-height: 1.1;
+}
+
+.lc-shape-library,
+.lc-object-advanced,
+.lc-media-ai,
+.lc-media-extras,
+.lc-look-assistant {
   min-width: 0;
 }
 
-.lc-group {
-  border: 1px solid var(--ink);
-  border-radius: var(--control-radius, 4px);
-  padding: 6px 7px;
+.lc-shape-library > summary,
+.lc-object-advanced > summary,
+.lc-media-ai > summary,
+.lc-media-extras > summary,
+.lc-look-assistant > summary {
+  list-style: none;
+  padding: 7px 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.2);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.lc-shape-library > summary::-webkit-details-marker,
+.lc-object-advanced > summary::-webkit-details-marker,
+.lc-media-ai > summary::-webkit-details-marker,
+.lc-media-extras > summary::-webkit-details-marker,
+.lc-look-assistant > summary::-webkit-details-marker {
+  display: none;
+}
+
+.lc-shape-library > summary::before,
+.lc-object-advanced > summary::before,
+.lc-media-ai > summary::before,
+.lc-media-extras > summary::before,
+.lc-look-assistant > summary::before {
+  content: "\25B8  ";
+}
+
+.lc-shape-library[open] > summary::before,
+.lc-object-advanced[open] > summary::before,
+.lc-media-ai[open] > summary::before,
+.lc-media-extras[open] > summary::before,
+.lc-look-assistant[open] > summary::before {
+  content: "\25BE  ";
+}
+
+.lc-shape-tray {
+  display: grid;
+  gap: 5px;
+}
+
+.lc-shape-tray .btn {
+  width: 100%;
+  min-width: 0;
+}
+
+.lc-panel {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 0;
+  padding: 14px 14px 16px;
+  min-height: 0;
+  overflow: hidden;
+  border-left: 1px solid rgba(0, 0, 0, 0.3);
   background: var(--paper);
 }
 
-.lc-group-title {
+.lc-panel-intro {
+  display: grid;
+  gap: 3px;
+  padding: 1px 1px 13px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.22);
+}
+
+.lc-panel-kicker {
+  font-size: 9px;
   font-weight: 700;
-  font-size: 11px;
+  letter-spacing: 0.13em;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-bottom: 4px;
+  opacity: 0.58;
+}
+
+.lc-panel-intro strong {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+
+.lc-panel-intro > span:last-child {
+  max-width: 34ch;
+  font-size: 11px;
+  line-height: 1.35;
+  opacity: 0.62;
+}
+
+/* Wide window -> canvas beside a fixed-width panel (the rule above). Narrow
+   window (a phone full-screen shell, or the same window dragged narrow on
+   desktop — canvas collapse is a container-width problem, not a device one) ->
+   stack canvas above a full-width panel. Direction is driven by the window
+   @container, not JS; see 20-reader-docmap.css for the same idiom. */
+@container (max-width: 760px) {
+  .lc-toolbar {
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    gap: 6px;
+  }
+
+  .lc-toolbar-aspect {
+    display: none;
+  }
+
+  .lc-toolbar-create .btn,
+  .lc-toolbar-modes .lc-inspector-tab {
+    min-width: 0;
+    padding-inline: 7px;
+  }
+
+  .lc-toolbar-modes {
+    justify-content: center;
+    padding-left: 6px;
+  }
+
+  .liquid-cover-body {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(200px, 34vh) minmax(0, 1fr);
+  }
+
+  .lc-sidebar {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-rows: auto;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 9px;
+    border-right: 0;
+    border-bottom: 1px solid var(--ink);
+  }
+
+  .lc-sidebar-head {
+    padding: 0;
+    border: 0;
+  }
+
+  .lc-sidebar-head strong {
+    display: none;
+  }
+
+  .lc-sidebar .lc-layer-list {
+    display: flex;
+    gap: 5px;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .lc-sidebar .lc-layer-item {
+    min-width: 96px;
+  }
+
+  .lc-sidebar .lc-layer-row {
+    flex: 0 0 auto;
+    min-width: 148px;
+  }
+
+  .lc-sidebar-actions .btn {
+    width: auto;
+  }
+
+  .lc-shape-library {
+    display: none;
+  }
+
+  .lc-panel {
+    width: 100%;
+    max-width: 100%;
+    border-left: none;
+    border-top: 2px solid var(--ink);
+  }
+
+  .lc-stage {
+    width: 100%;
+    /* Canvas height budget for one phone screen: title bar + status bar +
+       this + the tab rail + the composer must all fit above the fold, with
+       enough left for the active tab's controls to still be usable. */
+    max-height: 34vh;
+  }
+
+  .lc-canvas {
+    max-height: 34vh;
+  }
+}
+
+.lc-group {
+  padding: 11px 1px 12px;
+  border: 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.18);
+  border-radius: 0;
+  background: transparent;
+}
+
+.lc-group-title {
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.01em;
+  margin-bottom: 7px;
 }
 
 .lc-subtitle {
@@ -135,10 +747,12 @@
 }
 
 .lc-note {
-  display: none;
+  display: block;
   margin: 4px 0 0;
-  font-size: 11px;
-  opacity: 0.7;
+  max-width: 48ch;
+  font-size: 10px;
+  line-height: 1.4;
+  opacity: 0.58;
 }
 
 .lc-export-group .lc-note {
@@ -147,10 +761,10 @@
 
 .lc-row {
   display: grid;
-  grid-template-columns: 76px minmax(0, 1fr) 32px;
+  grid-template-columns: 82px minmax(0, 1fr) 34px;
   align-items: center;
-  gap: 6px;
-  margin: 3px 0;
+  gap: 8px;
+  margin: 5px 0;
 }
 
 .lc-row > span:first-child {
@@ -289,27 +903,49 @@
 
 .lc-inspector-tabs {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 5px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
   min-width: 0;
+  margin: 12px 0 4px;
+  padding: 2px;
+  border: 1px solid var(--ink);
+  background: var(--shade);
 }
 
 .lc-inspector-tab {
+  width: 78px;
   min-width: 0;
-  min-height: 26px;
-  padding: 3px 4px;
-  border: 1px solid var(--ink);
-  border-radius: var(--control-radius, 4px);
-  background: var(--paper);
+  min-height: var(--control-hit-target, 28px);
+  padding: 4px 5px;
+  border: 0;
+  border-right: 1px solid var(--ink);
+  border-radius: 0;
+  background: transparent;
   color: var(--ink);
   font: inherit;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.15;
   text-align: center;
   cursor: pointer;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  transition:
+    background var(--control-motion-medium-in) var(--control-motion-ease),
+    color var(--control-motion-medium-in) var(--control-motion-ease);
+}
+
+.lc-inspector-tab:last-child {
+  border-right: 0;
+}
+
+.lc-inspector-tab:hover:not(.is-active) {
+  background: var(--paper);
+}
+
+.lc-inspector-tab:focus-visible {
+  outline: var(--control-focus-outline);
+  outline-offset: var(--control-focus-offset);
 }
 
 .lc-inspector-tab.is-active {
@@ -319,30 +955,70 @@
 
 .lc-inspector-panel {
   min-height: 0;
+  padding-right: 5px;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .lc-inspector-panel.is-active {
   display: grid;
   align-content: start;
-  gap: 6px;
+  gap: 0;
+}
+
+#lc-panel-media.is-active {
+  display: flex;
+  flex-direction: column;
+}
+
+#lc-panel-media .lc-bg-group {
+  order: 1;
+}
+
+#lc-panel-media .lc-media-extras {
+  order: 2;
+}
+
+#lc-panel-media .lc-media-ai {
+  order: 3;
 }
 
 .lc-aspect {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 5px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  padding: 2px;
+  border: 1px solid var(--ink);
+  background: var(--shade);
 }
 
 .lc-aspect button {
   font: inherit;
-  font-weight: 700;
-  padding: 5px 0;
-  border: 2px solid var(--ink);
-  border-radius: var(--control-radius, 4px);
-  background: var(--paper);
+  font-weight: 600;
+  min-height: var(--control-hit-target, 28px);
+  padding: 4px 0;
+  border: 0;
+  border-right: 1px solid var(--ink);
+  border-radius: 0;
+  background: transparent;
   color: var(--ink);
   cursor: pointer;
+  transition:
+    background var(--control-motion-medium-in) var(--control-motion-ease),
+    color var(--control-motion-medium-in) var(--control-motion-ease);
+}
+
+.lc-aspect button:last-child {
+  border-right: 0;
+}
+
+.lc-aspect button:hover:not(.is-active) {
+  background: var(--paper);
+}
+
+.lc-aspect button:focus-visible {
+  outline: var(--control-focus-outline);
+  outline-offset: var(--control-focus-offset);
 }
 
 .lc-aspect button.is-active {
@@ -352,28 +1028,128 @@
 
 .lc-layer-list {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 4px;
-  margin-bottom: 5px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.lc-layer-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 26px 26px;
+  gap: 3px;
+  min-width: 0;
 }
 
 .lc-layer-item {
   font: inherit;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
   text-align: left;
-  padding: 5px 6px;
+  min-height: 34px;
+  padding: 7px 9px;
   border: 1px solid var(--ink);
-  border-radius: var(--control-radius, 4px);
+  border-radius: 0;
   background: var(--paper);
   color: var(--ink);
   cursor: pointer;
+  user-select: none;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  transition:
+    background var(--control-motion-medium-in) var(--control-motion-ease),
+    color var(--control-motion-medium-in) var(--control-motion-ease),
+    box-shadow var(--control-motion-medium-in) var(--control-motion-ease);
+}
+
+.window.liquid-cover-window .lc-layer-state {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  min-width: 26px;
+  height: 26px;
+  min-height: 26px;
+  align-self: center;
+  padding: 0;
+  cursor: pointer;
+}
+
+.lc-layer-row.has-hidden-layer .lc-layer-item {
+  opacity: 0.48;
+}
+
+.lc-layer-row.has-locked-layer .lc-layer-item {
+  cursor: default;
+}
+
+.lc-layer-item[data-reorderable="true"] {
+  cursor: grab;
+  touch-action: none;
+}
+
+.lc-layer-item.is-dragging {
+  opacity: 0.42;
+}
+
+.lc-layer-item.is-drop-before {
+  box-shadow: inset 0 2px 0 #2388ff;
+}
+
+.lc-layer-item.is-drop-after {
+  box-shadow: inset 0 -2px 0 #2388ff;
+}
+
+.lc-layer-type {
+  min-width: 34px;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  opacity: 0.58;
+  text-transform: uppercase;
+}
+
+.lc-layer-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lc-layer-name-input {
+  min-width: 0;
+  width: 100%;
+  height: 22px;
+  padding: 2px 4px;
+  border: 1px solid currentColor;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+}
+
+.lc-layer-item[data-embedded="true"] .lc-layer-name::before {
+  content: "\21B3  ";
+  opacity: 0.64;
+}
+
+.lc-layer-item:hover:not(.is-active) {
+  box-shadow: var(--control-choice-hover-shadow);
+}
+
+.lc-layer-item:focus-visible {
+  outline: var(--control-focus-outline);
+  outline-offset: var(--control-focus-offset);
 }
 
 .lc-layer-item.is-active {
   background: var(--ink);
   color: var(--paper);
+}
+
+.lc-layer-item.is-primary .lc-layer-type::after {
+  content: "\00B7";
+  margin-left: 3px;
 }
 
 .lc-button-row {
@@ -402,9 +1178,8 @@
 }
 
 .lc-layers-group .lc-layer-item {
-  min-height: 24px;
-  padding-top: 3px;
-  padding-bottom: 3px;
+  padding-top: 6px;
+  padding-bottom: 6px;
 }
 
 #liquid-cover-app .lc-button-row:has(#lc-add-layer) {
@@ -421,16 +1196,39 @@
   grid-column: 1 / -1;
 }
 
+.lc-object-advanced {
+  grid-column: 1 / -1;
+  margin-top: 3px;
+}
+
+.lc-object-advanced .lc-layer-advanced {
+  padding-top: 4px;
+}
+
+.lc-media-ai,
+.lc-media-extras,
+.lc-look-assistant {
+  padding: 5px 1px 7px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.18);
+}
+
+.lc-media-ai[open],
+.lc-media-extras[open],
+.lc-look-assistant[open] {
+  display: grid;
+  gap: 5px;
+}
+
+.lc-media-ai > .lc-group,
+.lc-media-extras > .lc-group {
+  padding-inline: 0;
+}
+
 .lc-layer-advanced {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   column-gap: 8px;
   row-gap: 4px;
-}
-
-.lc-layer-advanced .lc-row:has(#lc-tint-alpha) {
-  grid-column: 1 / -1;
-  grid-template-columns: 72px minmax(0, 1fr) 30px;
 }
 
 .lc-text-group {
@@ -453,8 +1251,9 @@
 }
 
 .lc-text-group > .lc-textarea {
-  height: 54px;
-  min-height: 54px;
+  height: 68px;
+  min-height: 68px;
+  padding: 9px 10px;
   line-height: 1.18;
   resize: none;
 }
@@ -464,23 +1263,45 @@
 }
 
 .lc-text-group .lc-row {
-  grid-template-columns: 48px minmax(0, 1fr) 30px;
-  gap: 5px;
-  margin: 0;
+  grid-template-columns: 54px minmax(0, 1fr) 32px;
+  gap: 6px;
+  margin: 2px 0;
 }
 
 .lc-text-group > .lc-row:has(#lc-font) {
   min-height: 26px;
 }
 
-.lc-text-group .lc-row:has(#lc-layer-solid),
-.lc-text-group .lc-row:has(#lc-tint-color) {
-  grid-template-columns: 72px minmax(0, 1fr);
+.lc-font-import-row {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
 }
 
-.lc-text-group .lc-row:has(#lc-layer-solid) .lc-check,
-.lc-text-group .lc-row:has(#lc-tint-color) .lc-color {
-  grid-column: 2;
+.lc-font-import-row .btn {
+  min-height: 24px;
+  padding: 3px 8px;
+}
+
+.lc-font-status {
+  min-width: 0;
+  font-size: 9px;
+  line-height: 1.25;
+  opacity: 0.62;
+}
+
+.lc-font-source-link {
+  color: var(--ink);
+  font-size: 9px;
+  text-underline-offset: 2px;
+  opacity: 0.72;
+}
+
+.lc-font-source-link:hover {
+  opacity: 1;
 }
 
 .lc-export-group {
@@ -518,12 +1339,19 @@
   margin: 0;
 }
 
+.lc-layer-glass-group {
+  display: grid;
+  gap: 2px;
+}
+
 .lc-control-strip {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: 74px minmax(0, 1fr);
   align-items: center;
-  column-gap: 8px;
+  column-gap: 10px;
   row-gap: 0;
+  padding-block: 10px;
+  border-bottom: 0;
 }
 
 .lc-control-strip .lc-group-title {
@@ -548,9 +1376,9 @@
 
 .lc-bg-row {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 4px;
-  margin-bottom: 5px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  margin-bottom: 9px;
 }
 
 .liquid-cover-window .file-picker {
@@ -558,6 +1386,11 @@
   grid-template-columns: minmax(0, auto) minmax(0, 1fr);
   align-items: center;
   gap: 5px;
+}
+
+.lc-motion-group .file-picker,
+.lc-fg-group .file-picker {
+  grid-template-columns: minmax(0, auto) minmax(0, auto) minmax(0, 1fr);
 }
 
 .liquid-cover-window .file-picker .btn {
@@ -610,12 +1443,175 @@
 
 .lc-preset-row {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 5px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
 }
 
 .lc-preset-row .btn {
-  min-height: 32px;
+  position: relative;
+  display: grid;
+  grid-template-rows: 58px auto;
+  gap: 7px;
+  min-height: 102px;
+  padding: 7px;
+  overflow: hidden;
+  text-align: left;
+  transition:
+    background var(--control-motion-medium-in) var(--control-motion-ease),
+    color var(--control-motion-medium-in) var(--control-motion-ease),
+    border-color var(--control-motion-fast-in) var(--control-motion-ease),
+    box-shadow var(--control-motion-fast-in) var(--control-motion-ease),
+    transform var(--control-motion-fast-in) var(--control-motion-ease);
+}
+
+.lc-preset-row .btn:hover:not(.is-active) {
+  transform: translateY(-1px);
+}
+
+.lc-preset-row .btn.is-active::after {
+  content: "\2713";
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid currentColor;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.32);
+}
+
+.lc-preset-preview {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.56);
+  background:
+    radial-gradient(circle at 78% 28%, rgba(240, 167, 120, 0.92) 0 13%, transparent 14%),
+    radial-gradient(circle at 16% 72%, rgba(87, 142, 146, 0.88) 0 22%, transparent 23%),
+    linear-gradient(118deg, #172d35 0 35%, #76929a 36% 64%, #d6a58d 65% 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.58),
+    inset 0 -18px 34px rgba(7, 20, 26, 0.18);
+}
+
+.lc-preset-preview::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(112deg, transparent 0 43%, rgba(255, 255, 255, 0.26) 44% 46%, transparent 47%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.06) 0 1px, transparent 1px 12px);
+  pointer-events: none;
+}
+
+.lc-preset-sample {
+  position: relative;
+  color: rgba(255, 255, 255, 0.16);
+  font-family: "SF Mono", ui-monospace, monospace;
+  font-size: 31px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.08em;
+  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.88);
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.9),
+    0 4px 12px rgba(2, 13, 20, 0.18);
+}
+
+.lc-preset-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.lc-preset-copy strong {
+  overflow: hidden;
+  font-size: 11px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lc-preset-copy span {
+  color: currentColor;
+  font-size: 9px;
+  font-weight: 500;
+  line-height: 1.25;
+  opacity: 0.62;
+  text-wrap: balance;
+}
+
+.lc-preset-row .btn[data-preset-key="frosted"] .lc-preset-sample {
+  color: rgba(255, 255, 255, 0.28);
+  -webkit-text-stroke-color: rgba(255, 255, 255, 0.96);
+  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.48));
+}
+
+.lc-preset-row .btn[data-preset-key="milky"] .lc-preset-sample {
+  color: rgba(255, 255, 255, 0.72);
+  -webkit-text-stroke-color: #ffffff;
+  text-shadow: 0 5px 12px rgba(10, 24, 32, 0.2);
+}
+
+.lc-preset-row .btn[data-preset-key="thinfrost"] .lc-preset-sample {
+  color: rgba(235, 244, 246, 0.36);
+  -webkit-text-stroke-color: rgba(255, 255, 255, 0.62);
+  filter: blur(0.2px);
+}
+
+.lc-preset-row .btn[data-preset-key="thick"] .lc-preset-sample {
+  color: rgba(255, 255, 255, 0.14);
+  -webkit-text-stroke: 2px rgba(255, 255, 255, 0.86);
+  transform: scale(1.08);
+  text-shadow:
+    2px 3px 0 rgba(12, 38, 47, 0.28),
+    0 8px 14px rgba(4, 14, 20, 0.34);
+}
+
+.lc-preset-row .btn[data-preset-key="tinted"] .lc-preset-preview {
+  background:
+    radial-gradient(circle at 78% 28%, rgba(242, 162, 127, 0.92) 0 13%, transparent 14%),
+    radial-gradient(circle at 16% 72%, rgba(72, 135, 176, 0.94) 0 22%, transparent 23%),
+    linear-gradient(118deg, #183651, #6d8db3 52%, #d29a98);
+}
+
+.lc-preset-row .btn[data-preset-key="tinted"] .lc-preset-sample {
+  color: rgba(83, 184, 246, 0.42);
+  -webkit-text-stroke-color: rgba(211, 240, 255, 0.92);
+}
+
+.lc-preset-row .btn[data-preset-key="ninefive"] .lc-preset-sample {
+  color: rgba(255, 255, 255, 0.56);
+  font-size: 38px;
+  -webkit-text-stroke: 2px #ffffff;
+  text-shadow: 0 7px 15px rgba(8, 18, 24, 0.28);
+}
+
+.lc-preset-row .btn[data-preset-key="ios27"] .lc-preset-sample {
+  display: grid;
+  place-items: center;
+  min-width: 50px;
+  min-height: 34px;
+  border: 1px solid rgba(255, 255, 255, 0.76);
+  border-radius: 13px;
+  color: rgba(255, 255, 255, 0.54);
+  font-size: 18px;
+  letter-spacing: -0.06em;
+  -webkit-text-stroke: 0;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset 1px 0 0 rgba(255, 255, 255, 0.44),
+    0 5px 12px rgba(7, 20, 29, 0.18);
+  backdrop-filter: blur(2px) saturate(0.5);
 }
 
 /* Manual fine-tune stays collapsed by default. Once opened, all subgroups open
@@ -629,8 +1625,7 @@
   cursor: pointer;
   font-weight: 700;
   font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.01em;
   color: var(--ink);
   padding: 6px 8px;
   border: 1px solid var(--ink);
@@ -652,10 +1647,6 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 5px;
-}
-
-.lc-inspector-panel:has(.lc-finetune[open]) .lc-presets-group {
-  display: none;
 }
 
 .lc-finetune[open] > summary {
@@ -695,31 +1686,39 @@
 
 .lc-bg-item {
   aspect-ratio: 16 / 10;
-  border: 2px solid transparent;
-  border-radius: var(--control-radius, 4px);
+  border: 1px solid transparent;
+  border-radius: 0;
   padding: 0;
   cursor: pointer;
   background-size: cover;
   background-position: center;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+  transition:
+    border-color var(--control-motion-medium-in) var(--control-motion-ease),
+    box-shadow var(--control-motion-medium-in) var(--control-motion-ease),
+    transform var(--control-motion-medium-in) var(--control-motion-ease);
+}
+
+.lc-bg-item:hover:not(.is-active) {
+  border-color: var(--ink);
+  transform: translateY(-1px);
+}
+
+.lc-bg-item:focus-visible {
+  outline: var(--control-focus-outline);
+  outline-offset: var(--control-focus-offset);
 }
 
 .lc-bg-item.is-active {
   border-color: var(--ink);
+  box-shadow:
+    inset 0 0 0 2px var(--paper),
+    0 0 0 1px var(--ink);
 }
 
 .liquid-cover-window button[disabled] {
-  opacity: 0.45;
+  opacity: var(--control-disabled-opacity);
   cursor: not-allowed;
-}
-
-#liquid-cover-app .lc-button-row:has(#lc-add-layer) .btn:disabled,
-#liquid-cover-app .lc-button-row:has(#lc-shape-circle) .btn:disabled {
-  background: var(--paper);
-  box-shadow:
-    inset 1px 1px 0 var(--paper),
-    inset -1px -1px 0 var(--shade-dark),
-    1px 1px 0 var(--ink);
-  opacity: 1;
 }
 
 /* GPT Image background generation is gated behind a Control Panel advanced
@@ -732,15 +1731,9 @@ body.image-gen-enabled .lc-img-group {
   display: block;
 }
 
-/* ============================================================================
-   Strict System 6 buttons (scoped to this window per system.css-reference):
-   square (no radius) + raised 2-tone bevel (light top-left, dark bottom-right,
-   hard outer drop); pressed/active = sunken inset bevel.
-   ========================================================================== */
-.liquid-cover-window .btn,
-.liquid-cover-window .lc-aspect button,
+/* Feature-specific choice controls keep Classic's mechanical depth. Generic
+   actions stay owned by the shared .btn painter. */
 .liquid-cover-window .lc-layer-item,
-.liquid-cover-window .lc-inspector-tab,
 .liquid-cover-window .lc-finetune > summary {
   border-radius: 0;
   box-shadow:
@@ -749,125 +1742,110 @@ body.image-gen-enabled .lc-img-group {
     1px 1px 0 var(--ink);
 }
 
-.liquid-cover-window .btn:active,
-.liquid-cover-window .lc-aspect button.is-active,
 .liquid-cover-window .lc-layer-item.is-active,
-.liquid-cover-window .lc-inspector-tab.is-active,
 .liquid-cover-window .lc-finetune[open] > summary {
   box-shadow: inset 1px 1px 0 var(--shade-dark);
 }
 
-/* ============================================================================
-   Liquid Glass theme: same Liquid Cover tool, different material. The default
-   theme keeps hard System 6 chrome; here the stage, panel, groups, controls and
-   canvas use one frosted material language so the window stops looking like a
-   classic form pasted over a glass desktop.
-   ========================================================================== */
-body.use-liquid-glass .liquid-cover-window {
-  background:
-    radial-gradient(120% 120% at 14% 0%, rgba(255, 255, 255, 0.36), transparent 44%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.08)),
-    rgba(255, 255, 255, 0.18);
-}
-
-body.use-liquid-glass .liquid-cover-window .title-bar {
-  border-bottom-color: rgba(16, 17, 20, 0.08);
-}
-
-body.use-liquid-glass .liquid-cover-body {
-  background: transparent;
-}
+/* Liquid Glass keeps one primary inspector material beside the matte artboard.
+   Groups are separators inside that material, never blur-on-blur cards. */
 
 body.use-liquid-glass .lc-stage {
-  background:
-    radial-gradient(92% 82% at 42% 34%, rgba(255, 255, 255, 0.62), transparent 56%),
-    radial-gradient(80% 84% at 82% 80%, rgba(166, 186, 194, 0.08), transparent 54%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.12)),
-    rgba(255, 255, 255, 0.12);
+  background-color: #11151a;
+  background-image:
+    radial-gradient(circle at 48% 42%, rgba(91, 112, 123, 0.16), transparent 48%),
+    linear-gradient(rgba(255, 255, 255, 0.026) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.026) 1px, transparent 1px);
+  background-size: auto, 24px 24px, 24px 24px;
 }
 
 body.use-liquid-glass .lc-canvas {
-  border: 1px solid rgba(16, 17, 20, 0.56);
-  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 8px;
+  outline-color: rgba(0, 0, 0, 0.72);
   box-shadow:
-    0 16px 42px rgba(18, 28, 38, 0.14),
-    0 1px 0 rgba(255, 255, 255, 0.74),
-    0 0 0 1px rgba(255, 255, 255, 0.48);
+    0 30px 82px rgba(0, 7, 14, 0.54),
+    0 0 0 7px rgba(255, 255, 255, 0.045);
 }
 
 body.use-liquid-glass .lc-panel {
   border-left: 1px solid rgba(255, 255, 255, 0.42);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.12)),
-    rgba(255, 255, 255, 0.14);
-  box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.58);
-  backdrop-filter: blur(18px) saturate(128%);
-  -webkit-backdrop-filter: blur(18px) saturate(128%);
+  background: rgba(246, 249, 251, 0.88);
+  box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.7);
 }
 
-body.use-liquid-glass .lc-group,
-body.use-liquid-glass .lc-finetune > summary {
-  border: 1px solid rgba(255, 255, 255, 0.56);
-  border-radius: 10px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.54), rgba(255, 255, 255, 0.2)),
-    rgba(255, 255, 255, 0.2);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.76),
-    0 10px 24px rgba(18, 28, 38, 0.08);
+body.use-liquid-glass .lc-toolbar {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+  background: rgba(246, 249, 251, 0.64);
+  box-shadow: inset 0 -1px 0 rgba(38, 52, 64, 0.08);
 }
 
-body.use-liquid-glass .lc-group-title {
-  color: rgba(16, 17, 20, 0.9);
+body.use-liquid-glass .lc-sidebar {
+  border-color: rgba(255, 255, 255, 0.38);
+  background: rgba(226, 234, 239, 0.54);
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.52);
 }
 
-body.use-liquid-glass .lc-note,
-body.use-liquid-glass .lc-row .lc-val {
+/* Same narrow-window switch as the .lc-panel rule near the top of this file;
+   this one has to live after the rule directly above so the cascade (equal
+   specificity, later source order wins) picks the reoriented border. */
+@container (max-width: 760px) {
+  body.use-liquid-glass .lc-panel {
+    border-left: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.42);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58);
+  }
+}
+
+body.use-liquid-glass :is(.lc-panel-intro, .lc-sidebar-head) {
+  border-bottom-color: rgba(16, 17, 20, 0.12);
+}
+
+body.use-liquid-glass .lc-group {
+  border-bottom: 1px solid rgba(16, 17, 20, 0.11);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+body.use-liquid-glass :is(.lc-note, .lc-row .lc-val) {
   color: rgba(16, 17, 20, 0.62);
   opacity: 1;
 }
 
 body.use-liquid-glass .lc-ask-bar {
-  border-top: 1px solid rgba(16, 17, 20, 0.18);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.36), rgba(255, 255, 255, 0.18)),
-    rgba(255, 255, 255, 0.16);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.64);
-  backdrop-filter: blur(18px) saturate(128%);
-  -webkit-backdrop-filter: blur(18px) saturate(128%);
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
-body.use-liquid-glass .lc-ask-bar input[type="text"],
-body.use-liquid-glass .lc-row input[type="text"],
-body.use-liquid-glass .lc-row input[type="password"],
-body.use-liquid-glass .lc-textarea {
-  border: 1px solid rgba(255, 255, 255, 0.58);
-  border-radius: 10px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.3)),
-    rgba(255, 255, 255, 0.24);
-  color: rgba(16, 17, 20, 0.94);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.72),
-    0 6px 16px rgba(18, 28, 38, 0.06);
+body.use-liquid-glass :is(.lc-inspector-tabs, .lc-toolbar-modes, .lc-aspect) {
+  border-color: rgba(255, 255, 255, 0.52);
+  border-radius: 11px;
+  background: rgba(120, 132, 142, 0.1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68);
 }
 
-body.use-liquid-glass .liquid-cover-window .btn,
 body.use-liquid-glass .liquid-cover-window .lc-aspect button,
 body.use-liquid-glass .liquid-cover-window .lc-layer-item,
 body.use-liquid-glass .liquid-cover-window .lc-inspector-tab,
-body.use-liquid-glass .liquid-cover-window .lc-finetune > summary,
+body.use-liquid-glass .liquid-cover-window :is(.lc-finetune, .lc-object-advanced, .lc-media-ai, .lc-media-extras, .lc-look-assistant) > summary,
 body.use-liquid-glass .liquid-cover-window input[type="checkbox"],
 body.use-liquid-glass .liquid-cover-window .lc-color {
-  border-color: rgba(255, 255, 255, 0.62);
-  border-radius: 10px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.48), rgba(255, 255, 255, 0.18)),
-    rgba(255, 255, 255, 0.2);
+  border-color: rgba(16, 17, 20, 0.1);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.34);
   color: rgba(16, 17, 20, 0.9);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.78),
-    0 6px 16px rgba(18, 28, 38, 0.07);
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 4px 12px rgba(18, 28, 38, 0.05);
+}
+
+body.use-liquid-glass .liquid-cover-window .lc-aspect button,
+body.use-liquid-glass .liquid-cover-window .lc-inspector-tab {
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
 }
 
 body.use-liquid-glass .liquid-cover-window .lc-layer-item {
@@ -909,9 +1887,9 @@ body.use-liquid-glass .liquid-cover-window input[type="checkbox"].lc-check::befo
     0 2px 6px rgba(18, 28, 38, 0.16);
   transform: translateX(0);
   transition:
-    transform 0.16s ease,
-    background 0.16s ease,
-    box-shadow 0.16s ease;
+    transform var(--control-motion-medium-in) var(--control-motion-ease),
+    background var(--control-motion-medium-in) var(--control-motion-ease),
+    box-shadow var(--control-motion-medium-in) var(--control-motion-ease);
 }
 
 body.use-liquid-glass .liquid-cover-window input[type="checkbox"].lc-check:checked {
@@ -1011,9 +1989,16 @@ body.use-liquid-glass .liquid-cover-window input[type="range"]:disabled {
 body.use-liquid-glass .liquid-cover-window input[type="range"]:disabled::-webkit-slider-thumb { background: #e6e6e8; }
 body.use-liquid-glass .liquid-cover-window input[type="range"]:disabled::-moz-range-thumb { background: #e6e6e8; }
 
-body.use-liquid-glass .liquid-cover-window .btn.default,
 body.use-liquid-glass .liquid-cover-window .lc-aspect button.is-active,
-body.use-liquid-glass .liquid-cover-window .lc-inspector-tab.is-active,
+body.use-liquid-glass .liquid-cover-window .lc-inspector-tab.is-active {
+  border-color: rgba(0, 113, 227, 0.18);
+  background: rgba(255, 255, 255, 0.72);
+  color: #0068d1;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 3px 9px rgba(24, 54, 78, 0.08);
+}
+
 body.use-liquid-glass .liquid-cover-window .lc-layer-item.is-active {
   border-color: rgba(255, 255, 255, 0.68);
   background:
@@ -1024,4 +2009,25 @@ body.use-liquid-glass .liquid-cover-window .lc-layer-item.is-active {
     inset 0 1px 0 rgba(255, 255, 255, 0.34),
     0 8px 20px rgba(0, 64, 128, 0.18);
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.18);
+}
+
+body.use-liquid-glass .liquid-cover-window .lc-aspect button:hover:not(.is-active),
+body.use-liquid-glass .liquid-cover-window .lc-inspector-tab:hover:not(.is-active),
+body.use-liquid-glass .liquid-cover-window .lc-layer-item:hover:not(.is-active) {
+  background: rgba(255, 255, 255, 0.52);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liquid-cover-window .lc-inspector-tab,
+  .liquid-cover-window .lc-aspect button,
+  .liquid-cover-window .lc-layer-item,
+  .liquid-cover-window .lc-bg-item,
+  body.use-liquid-glass .liquid-cover-window input[type="checkbox"].lc-check::before {
+    transition: none;
+  }
+
+  .liquid-cover-window .lc-bg-item:hover:not(.is-active) {
+    transform: none;
+  }
 }

@@ -5,30 +5,7 @@
 
 
 function clearChatToTrash() {
-  const hadConversation = conversation.length > 0;
-  window.AISystem6QuickDraft?.clearVentLog?.({ silent: true });
-  if (typeof isQuickDraftClioTalkActive === "function" && isQuickDraftClioTalkActive()) {
-    resetClioTalkRuntimeState?.({ clearPrompt: true });
-    setStatus(t("chat_moved"));
-    return;
-  }
-  if (conversation.length) {
-    trashItems.unshift({
-      projectId: activeProjectId,
-      title: `Digest ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`,
-      body: compressConversation(),
-    });
-  }
-
-  conversation.length = 0;
-  compressedConversationMemory = { text: "", sourceMessages: 0, updatedAt: "" };
-  attachedClipIds.clear();
-  renderAttachedClips();
-  messagesEl.replaceChildren();
-  setStatus(t("chat_moved"));
-  renderTrash();
-  saveDeskState();
-  if (hadConversation) playSystemSound("trash");
+  return startNewClioTalkConversation();
 }
 
 function saveLastReply() {
