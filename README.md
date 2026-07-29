@@ -1,47 +1,55 @@
+<h1 align="center">AI System 6</h1>
+
 <p align="center">
-  <strong>AI System 6</strong><br>
-  A local-first writing desktop for source-based work.<br>
-  <span lang="zh-CN">把资料、摘录、草稿、审校和导出放回可见对象里。</span>
+  A local-first writing desktop for work that begins with sources.<br>
+  <span lang="zh-CN">把资料、摘录、草稿、审校和导出，放回看得见的对象里。</span>
 </p>
 
 <p align="center">
-  <a href="README.zh-CN.md">简体中文</a> · <a href="README.md">English</a>
+  <a href="https://system6.aaronlau.me"><strong>Open the live desktop</strong></a>
+  ·
+  <a href="https://www.bilibili.com/video/BV1Bw726uE9g/">Watch the demo</a>
+  ·
+  <a href="README.zh-CN.md">简体中文</a>
+  ·
+  <a href="README.md">English</a>
+</p>
+
+<p align="center">
+  <a href="https://system6.aaronlau.me"><img alt="Live demo" src="https://img.shields.io/badge/live-system6.aaronlau.me-1f883d?style=flat-square"></a>
+  <img alt="Local first" src="https://img.shields.io/badge/data-local--first-555?style=flat-square">
+  <img alt="Node 18 or newer" src="https://img.shields.io/badge/Node.js-18%2B-339933?style=flat-square&logo=nodedotjs&logoColor=white">
 </p>
 
 <p align="center">
   <a href="https://www.bilibili.com/video/BV1Bw726uE9g/">
-    <img src="assets/readme/ai-system-6-desktop.png" alt="AI System 6 desktop screenshot" width="900">
+    <img src="assets/readme/ai-system-6-desktop.png" alt="AI System 6 desktop with ClioTalk open" width="960">
   </a><br>
-  <sub>Click the screenshot to watch the demo on Bilibili.</sub>
+  <sub>The screenshot opens the Bilibili demo.</sub>
 </p>
 
----
+AI System 6 gives source-based writing the shape of a desktop. Research,
+notes, drafts, review, and export live in separate, visible places instead of
+collapsing into one long chat transcript.
 
-AI System 6 is a local-first writing desktop for people who work from sources.
-Research, notes, drafts, review, and export each get their own place, so the
-writing job does not collapse into a single chat transcript.
+It borrows the restraint of Macintosh System 6: small windows, named objects,
+deliberate saving, and one task at a time. The retro language is a constraint,
+not the destination. The real aim is to protect the writer's voice, sources,
+judgment, and handoff intent.
 
-The project borrows the restraint of Macintosh System 6: small windows, named
-objects, deliberate saving, and one writing task at a time. The point is not a
-retro skin. The point is to protect the writer's language, sources, judgment,
-and handoff intent from being flattened into generic model prose.
+## 中文简介
 
-## Chinese intro
+AI System 6 是一个本地优先的写作桌面，适合那些要围着资料做事的人。查资料、摘句子、搭结构、改稿和导出各有位置，不必全挤进一个聊天框。
 
-AI System 6 是一个本地优先的写作桌面，适合需要围绕资料工作的写作者。研究、摘录、草稿、审校和导出都有自己的位置，不必全挤进一个聊天框。
-
-它借用 Macintosh System 6 的克制感：小窗口、清楚的对象、主动保存，一次只处理一件写作任务。重点不在复古皮肤；它要保护写作者自己的语言、来源、判断和交付意图。
+它借用了 Macintosh System 6 的克制感：小窗口、清楚的对象、主动保存，一次只处理一件事。复古只是约束，真正想守住的是写作者自己的语气、来源、判断和交付意图。
 
 完整中文说明见 [README.zh-CN.md](README.zh-CN.md)。
 
-## What is here
+## Why a desktop?
 
-This is a public-safe source snapshot. It includes the app source, server
-routes, tests, and the small runtime assets needed for local development.
-
-It does not include private drafts, local browser data, API keys, generated
-bundles, build output, package caches, large scraped corpora, or the original
-private Git history.
+- **Work stays visible.** Sources, clips, drafts, conversations, and exports are objects you can return to.
+- **AI stays provisional.** A model can read, organize, draft, and review, but nothing becomes part of the project until you act on it.
+- **The writer keeps the final say.** The system is built around evidence, revision, and handoff rather than frictionless text generation.
 
 ## Writing flow
 
@@ -50,66 +58,44 @@ Project Hard Disk -> File Floppy -> Question Sheet -> Outline
 -> Section Drafts -> Manuscript -> Review Desk -> Project CD
 ```
 
-Each stop has a job. AI can help read, organize, draft, rewrite, and review,
-but its output stays temporary until the writer saves, clips, inserts, or
-exports it.
+Each stop has one job. ClioTalk and SideAsk can help along the way, while
+Reader, Scrapbook, TeachText, Review Desk, and Project CD keep the work
+grounded in visible files.
 
-## Run it
+## Try it
+
+The quickest way in is the [live desktop](https://system6.aaronlau.me).
+
+To run the public source snapshot locally:
 
 ```sh
+git clone https://github.com/surfine/AI-System-6.git
+cd AI-System-6
 npm install
 npm start
 ```
 
 Then open `http://localhost:4173`.
 
-For frontend-only edits, rebuild the browser bundle:
+## Models and data
 
-```sh
-npm run build:app
-```
+AI System 6 supports LM Studio-compatible local endpoints and user-configured
+cloud providers. Keys are supplied at runtime and are not stored in this
+repository. Local-first is the default direction, not a claim that every
+optional provider runs offline.
 
-## Models
+## Public snapshot
 
-AI System 6 can talk to local LM Studio-compatible endpoints and to configured
-cloud providers. Keys are supplied by the user at runtime or through environment
-variables; no keys are stored in this repository.
+This repository contains a public-safe source snapshot: app code, server
+routes, tests, and the small assets needed for local development. It excludes
+private drafts, browser data, credentials, generated bundles, build output,
+package caches, large scraped corpora, and the original private Git history.
 
-Common local settings:
-
-```sh
-PORT=4173
-LM_STUDIO_BASE_URL=http://127.0.0.1:1234
-LM_STUDIO_URL=http://127.0.0.1:1234/v1/chat/completions
-DEEPSEEK_API_KEY=...
-```
-
-## Useful checks
-
-```sh
-npm run build:app
-npm run verify:features
-npm run verify:css
-npm run verify:docs
-```
-
-`npm run verify:release` is the heavier local gate. It is useful before a
-packaged build, but it may require release assets and a valid build stamp.
-
-## Maintaining both READMEs
-
-`README.md` is the canonical source. `README.zh-CN.md` is the Simplified
-Chinese mirror for readers, not a separate product spec.
-
-When changing this page:
-
-1. Update `README.md`.
-2. Update `README.zh-CN.md` in the same change.
-3. Run `npm run verify:docs`; it checks the Chinese mirror's source marker and
-   hash.
+The project is under active development. Some surfaces are experiments, and
+behavior may change between snapshots.
 
 ## License
 
-No open-source license has been selected yet. Until a license is added, the code
-is published for review and collaboration, but no reuse rights are granted by
+No open-source license has been selected yet. Until one is added, the code is
+available for review and collaboration, but no reuse rights are granted by
 default.
