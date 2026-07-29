@@ -419,8 +419,32 @@ function renderClioTalkFileBar() {
 function syncClioTalkSendButton() {
   const sendButton = form?.querySelector("#send");
   if (!sendButton) return;
+  if (sendButton.dataset.mode === "stop") {
+    sendButton.disabled = false;
+    return;
+  }
   const isBusy = !!activeAbortController || form.classList.contains("is-generating");
   sendButton.disabled = isBusy || !String(promptInput?.value || "").trim();
+}
+
+function setComposerSubmitMode(isBusy) {
+  const button = form?.querySelector("#send");
+  if (!button) return;
+  const mode = isBusy ? "stop" : "send";
+  button.dataset.mode = mode;
+  button.type = isBusy ? "button" : "submit";
+  button.classList.toggle("is-stop", isBusy);
+  button.dataset.i18nAriaLabel = mode;
+  button.dataset.i18nTitle = mode;
+  button.setAttribute("aria-label", t(mode));
+  button.title = t(mode);
+  const label = button.querySelector(".composer-submit-label");
+  if (label) {
+    label.dataset.i18n = mode;
+    label.textContent = t(mode);
+  }
+  if (isBusy) button.disabled = false;
+  else syncClioTalkSendButton();
 }
 
 function renderClioTalkRunAssembly() {
@@ -3086,11 +3110,7 @@ function setComposerBusy(isBusy) {
   clearButton.disabled = isBusy;
   retryButton.disabled = isBusy;
   retryButton.hidden = true;
-  stopButton.hidden = !isBusy;
-  const sendButton = form.querySelector("button[type='submit']");
-  sendButton.hidden = isBusy;
-  if (isBusy) sendButton.disabled = true;
-  else syncClioTalkSendButton();
+  setComposerSubmitMode(isBusy);
   if (composerKeyHintEl) {
     const hintKey = isBusy ? "clio_composer_draft_hint" : "clio_composer_key_hint";
     composerKeyHintEl.dataset.i18n = hintKey;

@@ -43,7 +43,7 @@ function getElements() {
   const clearButton = document.querySelector("#clear");
   const clipSelectionButton = document.querySelector("#clip-selection");
   const retryButton = document.querySelector("#retry");
-  const stopButton = document.querySelector("#stop");
+  const composerSubmitButton = document.querySelector("#send");
   const clockEl = document.querySelector("#clock");
   const filesInput = document.querySelector("#files");
   const filesSelectionEl = document.querySelector("#files-selection");
@@ -426,7 +426,7 @@ function getElements() {
     clearButton,
     clipSelectionButton,
     retryButton,
-    stopButton,
+    composerSubmitButton,
     clockEl,
     filesInput,
     filesSelectionEl,

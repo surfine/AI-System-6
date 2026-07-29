@@ -106,7 +106,7 @@ const {
   clearButton,
   clipSelectionButton,
   retryButton,
-  stopButton,
+  composerSubmitButton,
   clockEl,
   filesInput,
   filesSelectionEl,

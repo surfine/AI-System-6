@@ -288,7 +288,7 @@ test.assertIncludes(dictionary, "不删除之后产生的文件", "Help document
 test.assertIncludes(dictionary, "拒绝不会改变任务", "Help documents safe suggestion rejection");
 
 test.assertMatches(indexHtml, /id="clio-run-assembly"[\s\S]*id="clio-run-summary"[\s\S]*id="clio-run-panel"/, "Prompt, Skill, Harness, and Inputs share one progressive Run Assembly control");
-test.assertMatches(indexHtml, /class="composer-action-row"[\s\S]*id="compose-tools-toggle"[\s\S]*id="clio-run-assembly"[\s\S]*class="composer-submit-slot"/, "Add, Run Assembly, and Send live on the single composer surface");
+test.assertMatches(indexHtml, /class="composer-action-row"[\s\S]*id="compose-tools-toggle"[\s\S]*id="clio-run-assembly"[\s\S]*id="send"/, "Add, Run Assembly, and the single Send/Stop control live on one composer surface");
 test.assertMatches(indexHtml, /id="clio-chat-file-link"[^>]*data-action="reveal-active-chat-file"/, "The current Chat file is visible and revealable without a history sidebar");
 test.assertMatches(indexHtml, /id="status"[^>]*hidden/, "The idle Ready status does not occupy ClioTalk's everyday chrome");
 test.assertIncludes(styles, ".clio-chat-file-link[hidden]", "A Chat file that does not exist yet cannot be revealed by component display styles");
@@ -308,18 +308,17 @@ test.assertNotIncludes(clioRunMarkup, "Web search", "Run Assembly does not inven
 test.assertNotIncludes(clioRunMarkup, "Research", "Run Assembly does not invent research capabilities");
 test.assertMatches(indexHtml, /id="prompt" rows="1"/, "The composer starts as one calm line and grows with its content");
 test.assertMatches(indexHtml, /class="messages-stage"[\s\S]*id="messages"[^>]*aria-busy="false"[\s\S]*id="clio-scroll-latest"/, "ClioTalk owns a scroll stage with a live-region busy state and a latest-message affordance");
-test.assertIncludes(indexHtml, 'class="composer-submit-slot"', "Send and Stop share one stable composer slot");
 test.assertMatches(indexHtml, /class="[^"]*composer-submit-button composer-icon-button"[^>]*id="send"[^>]*disabled/, "Send is a compact icon action and starts inactive when the composer is empty");
 test.assertIncludes(indexHtml, '<path d="M10 16V4M4.5 9.5 10 4l5.5 5.5"></path>', "Send uses a clean line arrow with one stem and one open chevron");
 test.assertIncludes(indexHtml, '<span class="composer-stop-glyph" aria-hidden="true"></span>', "Stop uses its own compact state glyph in the same control");
 test.assertIncludes(chatMessages, "function syncClioTalkSendButton", "Send availability follows the actual composer state");
 test.assertIncludes(chatMessages, 'sendButton.disabled = isBusy || !String(promptInput?.value || "").trim()', "Empty input cannot advertise an action that does nothing");
 test.assertIncludes(wireup, 'promptInput.addEventListener("focus", syncClioTalkSendButton)', "Programmatically inserted prompts refresh Send when ClioTalk receives focus");
-test.assertMatches(styles, /\.composer-submit-slot \{[\s\S]*width: 36px;[\s\S]*height: 36px;/, "Send and Stop reserve one stable 36-pixel slot");
-test.assertMatches(styles, /\.composer-submit-button,[\s\S]*\.composer-stop-button \{[\s\S]*width: 36px;[\s\S]*height: 36px;[\s\S]*place-items: center;[\s\S]*background: var\(--ink\);[\s\S]*color: var\(--paper\);/, "Send and Stop keep identical high-emphasis geometry across state changes");
+test.assertMatches(styles, /\.composer-submit-button \{[\s\S]*width: 36px;[\s\S]*height: 36px;[\s\S]*place-items: center;[\s\S]*background: var\(--ink\);[\s\S]*color: var\(--paper\);/, "One stable 36-pixel high-emphasis button owns both Send and Stop");
 test.assertMatches(styles, /\.composer-send-glyph \{[\s\S]*fill: none;[\s\S]*stroke: currentColor;[\s\S]*stroke-width: 1\.75;[\s\S]*stroke-linecap: round;[\s\S]*stroke-linejoin: round;/, "The upward arrow stays open, crisp, and theme-independent in Classic and Liquid Glass");
 test.assertNotIncludes(styles, 'content: "↑"', "Send does not depend on the retro UI font's malformed arrow glyph");
-test.assertMatches(indexHtml, /class="[^"]*composer-stop-button composer-icon-button"[^>]*id="stop"[^>]*hidden/, "Stop replaces Send in the same compact slot only while generating");
+test.assertNotIncludes(indexHtml, 'id="stop"', "Stop is a state of the Send button, not a second overlapping control");
+test.assertMatches(styles, /\.composer-submit-button\.is-stop \.composer-send-glyph \{[\s\S]*display: none;[\s\S]*\.composer-submit-button\.is-stop \.composer-stop-glyph \{[\s\S]*display: block;/, "The single button swaps only its internal glyph in Stop mode");
 test.assertMatches(indexHtml, /id="retry"[^>]*hidden/, "A global Retry button does not occupy the everyday composer");
 test.assertIncludes(indexHtml, 'class="composer-key-hint"', "Desktop users get a quiet Enter and Shift+Enter affordance");
 test.assertIncludes(chatMessages, "function createClioTalkActionMenu", "Secondary message actions share one accessible progressive menu");
@@ -389,7 +388,7 @@ test.assertIncludes(chatMessages, "requestMessageId", "Assistant records retain 
 test.assertIncludes(chatMessages, 'runStatus: assistantRecord.incomplete ? "incomplete" : "completed"', "Provider-truncated replies remain visibly continuable");
 test.assertIncludes(chatMessages, "clio_reply_preserved_record_warning", "A local archive failure never masquerades as a cloud transport failure");
 test.assertMatches(contextRetrieval, /function isImplicitProjectSourceFile[\s\S]*!String\(file\.artifactKind \|\| ""\)\.trim\(\)[\s\S]*\.filter\(isImplicitProjectSourceFile\)/, "Prompt, Skill, Harness, Memory, and Run Record files never leak into ordinary source retrieval");
-test.assertMatches(chatMessages, /function setComposerBusy\(isBusy\)[\s\S]*promptInput\.disabled = false[\s\S]*retryButton\.hidden = true[\s\S]*stopButton\.hidden = !isBusy[\s\S]*sendButton\.hidden = isBusy/, "Generation keeps drafting available and morphs Send into Stop without exposing global Retry");
+test.assertMatches(chatMessages, /function setComposerSubmitMode\(isBusy\)[\s\S]*button\.type = isBusy \? "button" : "submit"[\s\S]*button\.classList\.toggle\("is-stop", isBusy\)[\s\S]*function setComposerBusy\(isBusy\)[\s\S]*setComposerSubmitMode\(isBusy\)/, "Generation morphs one Send element into Stop instead of swapping overlapping buttons");
 test.assertMatches(chatMessages, /function setComposerBusy\(isBusy\)[\s\S]*composeToolsToggleButton\.disabled = false[\s\S]*clio_composer_draft_hint/, "Attachments and next-message drafting remain available while ClioTalk works");
 test.assertIncludes(chatMessages, "function handleClioTalkMessagesScroll", "ClioTalk tracks whether the reader is following the latest message");
 test.assertMatches(chatMessages, /function scrollMessagesToLatest\(\{ force = false \} = \{\}\)[\s\S]*if \(!force && !clioTalkAutoFollow\)[\s\S]*return;/, "Streaming does not yank the reader away from older messages");

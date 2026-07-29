@@ -1703,7 +1703,7 @@ function updateLongTaskControls() {
   document.querySelectorAll("[data-long-task='draft-section']").forEach((control) => {
     control.disabled = busy;
   });
-  stopButton.hidden = !busy;
+  setComposerSubmitMode(busy || !!activeAbortController || form.classList.contains("is-generating"));
 }
 
 function longTaskReceiptInfo(key, statusText = "") {

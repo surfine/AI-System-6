@@ -14,12 +14,17 @@ function wireAppEvents() {
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
+    if (composerSubmitButton.dataset.mode === "stop") {
+      stopGeneration();
+      return;
+    }
     await submitUserText(promptInput.value.trim());
   });
 
   promptInput.addEventListener("keydown", (event) => {
     if (event.key !== "Enter" || event.isComposing) return;
     if (event.shiftKey) return;
+    if (composerSubmitButton.dataset.mode === "stop") return;
     event.preventDefault();
     if (form.requestSubmit) {
       form.requestSubmit();
@@ -73,7 +78,11 @@ function wireAppEvents() {
     promptInput.focus();
   });
 
-  stopButton.addEventListener("click", stopGeneration);
+  composerSubmitButton.addEventListener("click", (event) => {
+    if (composerSubmitButton.dataset.mode !== "stop") return;
+    event.preventDefault();
+    stopGeneration();
+  });
 
   retryButton.addEventListener("click", () => {
     if (!lastUserText) {

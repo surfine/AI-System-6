@@ -2639,23 +2639,7 @@ html:lang(zh-Hans) .title-bar h2 {
   display: none;
 }
 
-.composer-submit-slot {
-  display: grid;
-  width: 36px;
-  height: 36px;
-}
-
-.composer-submit-slot > button {
-  grid-area: 1 / 1;
-  width: 36px;
-}
-
-.composer-submit-slot:has(.composer-stop-button:not([hidden])) .composer-submit-button {
-  display: none;
-}
-
-.assistant-window:not(.is-quick-draft-sideask) .composer .composer-submit-button,
-.assistant-window:not(.is-quick-draft-sideask) .composer .composer-stop-button {
+.assistant-window:not(.is-quick-draft-sideask) .composer .composer-submit-button {
   display: inline-grid;
   width: 36px;
   min-width: 36px;
@@ -2698,11 +2682,19 @@ html:lang(zh-Hans) .title-bar h2 {
 }
 
 .composer-stop-glyph {
-  display: block;
+  display: none;
   width: 10px;
   height: 10px;
   flex: 0 0 10px;
   background: currentColor;
+}
+
+.composer-submit-button.is-stop .composer-send-glyph {
+  display: none;
+}
+
+.composer-submit-button.is-stop .composer-stop-glyph {
+  display: block;
 }
 
 .assistant-window:not(.is-quick-draft-sideask) .composer-file-button[aria-expanded="true"] {
