@@ -70,6 +70,12 @@ function createFolderFromMenu() {
 
   const active = document.querySelector(".window.is-active:not(.is-hidden)");
   const activeName = active?.dataset.window;
+  const canCreateHere = activeName === "documents"
+    || getFinderVolumeCapabilities(activeName)?.canCreateFolder;
+  if (!canCreateHere) {
+    setStatus(t("new_folder_project_disk_only"));
+    return;
+  }
   const parentId = (activeName === "projects" || activeName === "documents")
     ? (selectedFolderId === "all" ? null : selectedFolderId)
     : null;
@@ -90,8 +96,21 @@ function createFolderFromMenu() {
 function openFinderMenuSelection() {
   const active = document.querySelector(".window.is-active:not(.is-hidden)");
   const activeName = active?.dataset.window;
+  const volume = typeof getFinderVolumeDefinition === "function"
+    ? getFinderVolumeDefinition(activeName)
+    : null;
 
-  if (finderContainerWindowNames.includes(activeName)) {
+  if (volume) {
+    const item = getFinderVolumeSelectedItem(activeName);
+    if (typeof item?.open === "function") {
+      item.open();
+      return;
+    }
+    if (item?.action) {
+      handleAction(item.action);
+      return;
+    }
+  } else if (finderContainerWindowNames.includes(activeName)) {
     const item = getSelectedStaticFinderItem(activeName);
     if (item) {
       handleAction(item.action);
@@ -1362,7 +1381,7 @@ function getApplicationActionHandlers() {
     "cmf-export-usdz": () => runCmfMenuCommand("export"),
     "cmf-shuffle": () => runCmfMenuCommand("shuffle"),
     "cmf-reset": () => runCmfMenuCommand("reset"),
-    "cmf-render": () => runCmfMenuCommand("render"),
+    "cmf-reset-view": () => runCmfMenuCommand("reset-view"),
     "cmf-view-front": () => runCmfMenuCommand("view-front"),
     "cmf-view-back": () => runCmfMenuCommand("view-back"),
     "cmf-view-side": () => runCmfMenuCommand("view-side"),
@@ -1472,7 +1491,7 @@ function getApplicationActionHandlers() {
     "clear-edit": () => runEditCommand("delete"),
     "select-all": () => runEditCommand("select-all"),
     "insert-text-disk": insertFileFloppyFromWindow,
-    "eject-text-disk": ejectSelectedMountedFile,
+    "eject-text-disk": ejectTextDisk,
     "add-text-disk-project": addMountedTextDiskToProject,
     "switch-language": switchLanguage,
     "view-small-icons": () => setActiveViewMode("small-icon"),

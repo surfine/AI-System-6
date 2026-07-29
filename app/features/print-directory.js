@@ -112,6 +112,41 @@ function buildPrintDirectorySnapshot() {
     };
   }
 
+  if (activeName === "textDisk") {
+    const title = t("mounted_text_disk");
+    const items = mountedTextDisk.files.map((name) => {
+      const report = mountedFileDiagnostic(name);
+      return {
+        name,
+        kindLabel: fileDiskKindLabel(report.kind),
+        sizeValue: Number(report.bytes || String(mountedTextDisk.fileBodies?.[name] || "").length),
+        modifiedAt: mountedTextDisk.fileSources?.[name]?.lastModified || "",
+      };
+    });
+    return {
+      title,
+      source: title,
+      viewMode: "name",
+      items: items.map(printDirectoryItemRow),
+    };
+  }
+
+  if (activeName === "projectCd") {
+    const title = t("project_cd");
+    const items = getProjectCdItems().map((item) => ({
+      name: item.title,
+      kindLabel: t("project_cd"),
+      sizeValue: String(item.body || "").length,
+      modifiedAt: item.updatedAt || item.burnedAt || item.createdAt || "",
+    }));
+    return {
+      title,
+      source: title,
+      viewMode: "name",
+      items: items.map(printDirectoryItemRow),
+    };
+  }
+
   if (activeName === "trash") {
     const title = t("trash");
     return {

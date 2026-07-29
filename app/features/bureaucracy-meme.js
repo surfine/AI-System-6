@@ -223,7 +223,7 @@
       && cloudConfig
       && cloudConfig.active
       && cloudConfig.provider
-      && cloudConfig.apiKey
+      && cloudCredentialReady()
       && cloudConfig.model;
 
     if (cloudReady) {
@@ -231,7 +231,8 @@
         cloud: {
           active: true,
           provider: cloudConfig.provider,
-          apiKey: cloudConfig.apiKey,
+          credentialId: cloudConfig.credentialId || "",
+          apiKey: isPublicCloudCredentialMode() ? cloudRuntimeApiKey : "",
           baseUrl: cloudConfig.baseUrl || "https://api.deepseek.com",
           model: cloudConfig.model,
         },
@@ -433,7 +434,7 @@
 
     try {
       let data;
-      const cloudActive = typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudConfig.apiKey;
+      const cloudActive = typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudCredentialReady();
       if (cloudActive) {
         const response = await fetch("/api/bureaucracy/captions", {
           method: "POST",

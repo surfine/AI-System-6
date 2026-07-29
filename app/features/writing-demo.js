@@ -409,7 +409,7 @@ function writingDemoIsCloudActive() {
     && cloudConfig
     && cloudConfig.active
     && cloudConfig.provider
-    && cloudConfig.apiKey
+    && cloudCredentialReady()
     && cloudConfig.model;
 }
 

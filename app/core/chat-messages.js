@@ -1111,7 +1111,10 @@ function appendClioTalkRunState(item, record) {
     if (!retryText) return;
     removeClioTalkMessageRecord(record.id);
     item.remove();
-    submitUserText(retryText, clioTalkReplayOptions(record.requestOptions || {}, record.taskKind || "chat"));
+    submitUserText(retryText, {
+      ...clioTalkReplayOptions(record.requestOptions || {}, record.taskKind || "chat"),
+      retryOf: record.id,
+    });
   };
   state.append(label, actionButton);
   body.append(state);
@@ -1886,7 +1889,7 @@ function saveMessageAsDocument(content) {
 }
 
 function isCloudModelActive() {
-  return typeof cloudConfig !== "undefined" && cloudConfig && cloudConfig.active && cloudConfig.provider && cloudConfig.apiKey;
+  return typeof cloudConfig !== "undefined" && cloudConfig && cloudConfig.active && cloudConfig.provider && cloudCredentialReady();
 }
 
 function modelRouteText(localKey, cloudKey) {
@@ -2021,7 +2024,10 @@ function resolvePendingStatus(item, content, options = {}) {
         failedUserItem.remove();
       }
       item.remove();
-      submitUserText(options.retryText, options.retryOptions || {});
+      submitUserText(options.retryText, {
+        ...(options.retryOptions || {}),
+        retryOf: options.userRecordId || options.retryOptions?.retryOf || "",
+      });
     };
     body.append(copy, retry);
     scrollMessagesToLatest();
@@ -3068,7 +3074,7 @@ function fitChatPayloadToContext(payload, options = {}) {
 }
 
 function getChatCompletionsEndpoint() {
-  if (typeof cloudConfig !== "undefined" && cloudConfig && cloudConfig.active && cloudConfig.provider && cloudConfig.apiKey) {
+  if (typeof cloudConfig !== "undefined" && cloudConfig && cloudConfig.active && cloudConfig.provider && cloudCredentialReady()) {
     return "/api/cloud/chat";
   }
 
@@ -3229,7 +3235,7 @@ function refreshCloudUsageDisplay() {
   if (!indicator) return;
   var labelEl = document.querySelector("#cloud-model-label");
   var iconEl = indicator.querySelector("[data-system-icon]");
-  var hasCloudConfig = typeof cloudConfig !== "undefined" && cloudConfig && cloudConfig.provider && cloudConfig.apiKey;
+  var hasCloudConfig = typeof cloudConfig !== "undefined" && cloudConfig && cloudConfig.provider && cloudCredentialReady();
   var isCloudActive = !!(hasCloudConfig && cloudConfig.active);
   if (!hasCloudConfig) {
     var localReady = typeof localModelState !== "undefined"
@@ -3368,26 +3374,29 @@ async function readChatCompletionStream(response, onToken, signal) {
 
 async function readJsonModelResult(response, startedAt, endPerf, streamFallback = false) {
   const data = await response.json();
-  const content = data?.choices?.[0]?.message?.content;
-  if (!content) {
-    throw new Error("LM Studio response did not include choices[0].message.content.");
+  const message = data?.choices?.[0]?.message;
+  const toolCalls = Array.isArray(message?.tool_calls) ? message.tool_calls : [];
+  const content = typeof message?.content === "string" ? message.content : "";
+  if (!content && !toolCalls.length) {
+    throw new Error("LM Studio response did not include assistant content or tool calls.");
   }
   const trimmed = scrubVisibleModelOutput(content);
   const metrics = modelMetricsFromResponse(data, trimmed, performance.now() - startedAt);
   updateModelMeter(metrics);
   endPerf?.({ streamed: false, streamFallback, tokens: metrics.tokens });
-  return { text: trimmed, metrics, budget: lastContextBudget };
+  return { text: trimmed, metrics, budget: lastContextBudget, message, toolCalls };
 }
 
 function withBrowserLocalSafetyMessages(messages = [], taskKind = "") {
   const normalized = Array.isArray(messages) ? messages : [];
   const integrity = window.AISystem6SystemIntegrity;
   const humanizer = window.AISystem6Humanizer;
+  const taskContract = window.AISystem6ModelTaskRuntime?.taskContractRegistry?.require(taskKind);
   const additions = [];
   if (integrity && !integrity.hasIntegrityInstruction(normalized)) {
     additions.push({ role: "system", content: integrity.instruction() });
   }
-  if (!/(?:extract|ocr|embedding)/i.test(taskKind)
+  if (taskContract?.humanizer !== "off"
       && humanizer && !humanizer.hasHumanizerInstruction(normalized)) {
     additions.push({ role: "system", content: humanizer.instruction() });
   }
@@ -3395,7 +3404,7 @@ function withBrowserLocalSafetyMessages(messages = [], taskKind = "") {
 }
 
 async function maybeRepairBrowserLocalResult(result, requestPayload, taskKind, streamPreference, signal) {
-  const isCloud = typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudConfig?.apiKey;
+  const isCloud = typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudCredentialReady();
   const runtime = window.AISystem6ModelTaskRuntime;
   if (isCloud || streamPreference === "json" || !runtime?.shouldRepairHumanizerOutput?.(taskKind)) return result;
   const originalHits = runtime.findHumanizerOutputHits(result?.text);
@@ -3419,7 +3428,7 @@ async function maybeRepairBrowserLocalResult(result, requestPayload, taskKind, s
 }
 
 function fetchModelPayload(payload, signal) {
-  const isCloud = typeof cloudConfig !== "undefined" && cloudConfig && cloudConfig.active && cloudConfig.provider && cloudConfig.apiKey;
+  const isCloud = typeof cloudConfig !== "undefined" && cloudConfig && cloudConfig.active && cloudConfig.provider && cloudCredentialReady();
   let nextPayload = { ...payload };
   const shouldRecordLoadout = nextPayload.ai_system6_record_loadout === true;
 
@@ -3434,7 +3443,7 @@ function fetchModelPayload(payload, signal) {
       nextPayload = sanitizeDeepSeekV4CloudPayload(nextPayload);
     }
     nextPayload = sanitizeCloudChatPayload(nextPayload);
-    nextPayload._cloud_api_key = cloudConfig.apiKey;
+    Object.assign(nextPayload, cloudCredentialTransportFields());
     nextPayload._cloud_base_url = cloudConfig.baseUrl;
     nextPayload._cloud_model = cloudModel;
     if (nextPayload.stream) nextPayload.stream_options = { include_usage: true };
@@ -3496,9 +3505,10 @@ async function sendLocalModelTask(options = {}) {
   if (window.lastAutoSkillCall?.length) options.onAutoSkillCall?.(window.lastAutoSkillCall);
   const budgetedPayload = await fitPayloadWithModelBudget(requestPayload, { ...options, taskKind }, signal);
   const normalizedTaskKind = String(taskKind || "").toLowerCase();
-  const qwenNeedsHumanizerRepair = normalizedTaskKind === "chat" && isQwen35ModelName(budgetedPayload.model);
+  const explicitHumanizerRewrite = window.AISystem6ModelTaskRuntime
+    ?.shouldRepairHumanizerOutput?.(normalizedTaskKind) === true;
   const gemma4NeedsVisibleRepair = normalizedTaskKind === "chat" && isGemma4ModelName(budgetedPayload.model);
-  const localNeedsVisibleRepair = qwenNeedsHumanizerRepair || gemma4NeedsVisibleRepair;
+  const localNeedsVisibleRepair = explicitHumanizerRewrite || gemma4NeedsVisibleRepair;
   const shouldStream = streamPreference === "stream" || (streamPreference === "auto" && normalizedTaskKind === "chat" && !localNeedsVisibleRepair);
   const finalPayload = { ...budgetedPayload, stream: shouldStream };
 
@@ -3506,7 +3516,7 @@ async function sendLocalModelTask(options = {}) {
   if (!response.ok) await throwModelResponseError(response, endPerf);
 
   const contentType = response.headers.get("content-type") || "";
-  const isCloud = typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudConfig?.apiKey;
+  const isCloud = typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudCredentialReady();
   if (shouldStream && response.body && /event-stream|text\/plain|octet-stream/i.test(contentType)) {
     try {
       const {
@@ -3545,13 +3555,12 @@ async function sendLocalModelTask(options = {}) {
 }
 
 async function sendToLmStudio(userText, signal, options = {}) {
-  const skipContextRanking = options.skipContext === true || options.temporaryChat === true;
-  const sideAskChat = sideAskEnabled && !isMultiFinderMode();
-  if (!sideAskChat && !skipContextRanking && (rememberInput.checked || attachedClipIds.size > 0 || hasMountedFileDiskContext())) {
-    await rankChunksForQuery(userText, signal);
-  }
-  const result = await sendLocalModelTask({ ...options, userText, signal, taskKind: options.taskKind || "chat" });
-  return result.text;
+  return runWritingTask({
+    ...options,
+    userInput: userText,
+    signal,
+    taskKind: options.taskKind || "chat",
+  });
 }
 
 function shouldCaptureQuickDraftVentInput(options = {}) {
@@ -3608,6 +3617,9 @@ function createClioTalkPreflightRunManifest(taskKind = "chat", error = "", optio
       : getClioTalkPendingHarnessDescriptor(),
     inputFiles: (window.lastTaskInputFiles?.length ? window.lastTaskInputFiles : getClioTalkPendingInputDescriptors({ temporaryChat }))
       .map((file) => ({ ...file })),
+    agentRun: window.lastWritingAgentRun
+      ? window.AISystem6WritingAgentRuntime.snapshotAgentRun(window.lastWritingAgentRun)
+      : null,
   };
 }
 
@@ -3804,6 +3816,7 @@ async function submitUserText(userText, options = {}) {
   window.lastTaskHarnessFile = null;
   window.lastTaskInputFiles = [];
   window.lastTaskExplicitInputFiles = [];
+  window.lastWritingAgentRun = null;
   const replayOptions = clioTalkReplayOptions(runtimeOptions, messageTaskKind);
   const submittedUserRecord = {
     id: crypto.randomUUID(),

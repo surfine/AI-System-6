@@ -37,6 +37,7 @@
   border: var(--bureaucracy-surface-border);
   border-radius: var(--bureaucracy-surface-radius);
   background: var(--bureaucracy-surface-bg);
+  color: var(--bureaucracy-ink);
   box-shadow: var(--bureaucracy-surface-shadow);
   line-height: 1.4;
   white-space: normal;
@@ -51,7 +52,7 @@
   padding: 10px;
   overflow: hidden;
   background: var(--bureaucracy-pane-bg);
-  color: var(--ink);
+  color: var(--bureaucracy-ink);
   box-sizing: border-box;
 }
 
@@ -89,13 +90,18 @@
 .bureaucracy-topic-field input,
 .bureaucracy-caption-editor textarea {
   min-width: 0;
-  border: var(--bureaucracy-surface-border);
+  border: var(--bureaucracy-control-border);
   border-radius: var(--control-radius);
   padding: 6px 8px;
-  background: var(--paper);
-  color: var(--ink);
+  background: var(--bureaucracy-control-bg);
+  color: var(--bureaucracy-control-fg);
   font: inherit;
   box-sizing: border-box;
+}
+
+.bureaucracy-topic-field input::placeholder,
+.bureaucracy-caption-editor textarea::placeholder {
+  color: var(--bureaucracy-muted);
 }
 
 .bureaucracy-topic-field input:focus-visible,
@@ -125,7 +131,7 @@
   border-right: 0;
   border-radius: 0;
   background: transparent;
-  color: var(--ink);
+  color: var(--bureaucracy-ink);
   font: inherit;
   cursor: pointer;
   transition:
@@ -249,7 +255,7 @@
   border: var(--bureaucracy-surface-border);
   border-radius: var(--control-radius);
   background: transparent;
-  color: var(--ink);
+  color: var(--bureaucracy-ink);
   font: inherit;
   text-align: left;
   cursor: pointer;
@@ -260,8 +266,9 @@
   width: 64px;
   aspect-ratio: 4 / 3;
   object-fit: cover;
-  border: 1px solid var(--ink);
+  border: var(--bureaucracy-thumbnail-border);
   background: var(--bureaucracy-preview-bg);
+  filter: var(--bureaucracy-thumbnail-filter);
 }
 
 .bureaucracy-template b,
@@ -294,6 +301,7 @@
 .bureaucracy-language button.is-active {
   background: var(--bureaucracy-selected-bg);
   color: var(--bureaucracy-selected-fg);
+  box-shadow: var(--bureaucracy-selected-shadow);
 }
 
 .bureaucracy-template.is-active small,
@@ -385,7 +393,7 @@
   border-bottom: var(--bureaucracy-surface-border);
   border-radius: 0;
   background: transparent;
-  color: var(--ink);
+  color: var(--bureaucracy-ink);
   font: inherit;
   text-align: left;
   cursor: pointer;
@@ -433,7 +441,7 @@
   border-right: 0;
   border-radius: 0;
   background: transparent;
-  color: var(--ink);
+  color: var(--bureaucracy-ink);
   font: inherit;
   font-size: 10px;
 }

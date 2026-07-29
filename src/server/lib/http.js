@@ -4,6 +4,20 @@
 
 "use strict";
 
+const DEFAULT_JSON_LIMIT_BYTES = Math.max(
+  64 * 1024,
+  Number(process.env.AI_SYSTEM6_JSON_MAX_BYTES || 1024 * 1024)
+);
+
+function httpError(message, statusCode, code) {
+  const error = /** @type {Error & { statusCode?: number, code?: string }} */ (
+    new Error(message)
+  );
+  error.statusCode = statusCode;
+  if (code) error.code = code;
+  return error;
+}
+
 /**
  * Send a response if the socket is still open. Mirrors `send` from the
  * root server.js byte for byte.
@@ -85,14 +99,30 @@ function withTimeoutSignal(signal, timeoutMs) {
  * @returns {Promise<any>}
  */
 async function readJsonBody(req, options = {}) {
-  const limitBytes = Number.isFinite(options.limitBytes) ? options.limitBytes : Infinity;
-  const contentLength = Number(req.headers["content-length"] || 0);
-  if (contentLength > limitBytes) {
-    const error = /** @type {Error & { statusCode?: number }} */ (
-      new Error(`Request body is too large. Limit is ${limitBytes} bytes.`)
+  const method = String(req.method || "").toUpperCase();
+  if (
+    ["POST", "PUT", "PATCH", "DELETE"].includes(method)
+    && !String(req.headers["content-type"] || "").toLowerCase().startsWith("application/json")
+  ) {
+    throw httpError(
+      "Expected application/json.",
+      415,
+      "unsupported_media_type"
     );
-    error.statusCode = 413;
-    throw error;
+  }
+  const limitBytes = Number.isFinite(options.limitBytes)
+    ? Math.max(0, Number(options.limitBytes))
+    : DEFAULT_JSON_LIMIT_BYTES;
+  const contentLength = Number(req.headers["content-length"] || 0);
+  if (!Number.isFinite(contentLength) || contentLength < 0) {
+    throw httpError("Invalid Content-Length header.", 400, "invalid_content_length");
+  }
+  if (contentLength > limitBytes) {
+    throw httpError(
+      `Request body is too large. Limit is ${limitBytes} bytes.`,
+      413,
+      "request_body_too_large"
+    );
   }
 
   const chunks = [];
@@ -101,11 +131,11 @@ async function readJsonBody(req, options = {}) {
   for await (const chunk of req) {
     totalBytes += chunk.length;
     if (totalBytes > limitBytes) {
-      const error = /** @type {Error & { statusCode?: number }} */ (
-        new Error(`Request body is too large. Limit is ${limitBytes} bytes.`)
+      throw httpError(
+        `Request body is too large. Limit is ${limitBytes} bytes.`,
+        413,
+        "request_body_too_large"
       );
-      error.statusCode = 413;
-      throw error;
     }
     chunks.push(chunk);
   }
@@ -113,7 +143,11 @@ async function readJsonBody(req, options = {}) {
   const raw = Buffer.concat(chunks).toString("utf8");
   if (!raw.trim()) return {};
 
-  return JSON.parse(raw);
+  try {
+    return JSON.parse(raw);
+  } catch {
+    throw httpError("Request body must be valid JSON.", 400, "invalid_json");
+  }
 }
 
 /**
@@ -139,4 +173,5 @@ module.exports = {
   requestSignal,
   withTimeoutSignal,
   readJsonBody,
+  DEFAULT_JSON_LIMIT_BYTES,
 };

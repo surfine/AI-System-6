@@ -177,10 +177,10 @@
 
 @media (max-width: 860px) {
   .system-help-window {
-    left: 24px !important;
-    right: auto !important;
-    width: calc(100vw - 48px) !important;
-    height: min(620px, calc(100vh - 90px)) !important;
+    left: 24px;
+    right: auto;
+    width: calc(100vw - 48px);
+    height: min(620px, calc(100vh - 90px));
     max-width: calc(100vw - 48px);
     max-height: calc(100vh - 90px);
   }
@@ -206,10 +206,10 @@
 
 @media (max-width: 520px) {
   .system-help-window {
-    left: 12px !important;
-    top: 48px !important;
-    width: calc(100vw - 24px) !important;
-    height: calc(100vh - 64px) !important;
+    left: 12px;
+    top: 48px;
+    width: calc(100vw - 24px);
+    height: calc(100vh - 64px);
     max-width: calc(100vw - 24px);
     max-height: calc(100vh - 64px);
   }

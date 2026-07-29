@@ -23,7 +23,7 @@ test.assertIncludes(app, 'count.textContent = t("items_count", items.length)', "
 test.assertIncludes(app, "item.updatedAt ? new Date(item.updatedAt).toLocaleDateString()", "list view renders modified dates");
 test.assertMatches(runtime, /finderContainerWindowNames\.includes\(name\)[\s\S]*getSelectedStaticFinderItem/, "static Finder selections reach the existing Get Info window");
 test.assertMatches(runtime, /item\.virtual[\s\S]*kindLabel = item\.kind/, "File Info renders virtual system objects");
-test.assertIncludes(windows, '"open-file-info": !!activeItem || isProjectMounted', "Get Info availability follows the selected static item");
+test.assertIncludes(windows, '"open-file-info": !!activeItem', "Get Info availability follows the selected static item or real volume root");
 test.assertIncludes(actions, '"open-system-file-system"', "opening a non-app system object uses the existing alert path");
 
 test.finish();

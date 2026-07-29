@@ -10,8 +10,8 @@
 // Behavior parity with root server.js:
 // - Strips _local_provider / _local_endpoint from the payload after
 //   pulling them into locals. Default provider "lm-studio".
-// - Markdown-only normalization is applied before LM-Studio tuning,
-//   so the prepended system instruction is also visible to the tuner.
+// - A registered task contract is applied before LM-Studio tuning,
+//   so Markdown and structured-output tasks keep distinct envelopes.
 // - tuneLmStudioChatPayload disables local thinking/reasoning by
 //   default and applies known family-specific tuning.
 // - Stream branch never sees autoload — root behaves the same.
@@ -37,15 +37,16 @@ const { send, readJsonBody, requestSignal } = require("../lib/http.js");
 const { proxyJsonStream } = require("../lib/fetch.js");
 const { getLocalUrls } = require("../lib/local-urls.js");
 const {
-  enforceMarkdownOnlyChatPayload,
+  applyChatTaskContract,
   modelContentFromChatData,
   scrubVisibleModelOutput,
   tuneLmStudioChatPayload,
 } = require("../chat.js");
 const {
   findHumanizerOutputHits,
+  findHumanizerStyleDiagnostics,
   isHumanizerRepairMetaResponse,
-  scrubHumanizerOutput,
+  shouldLintHumanizerOutput,
   shouldRepairHumanizerOutput,
 } = require("../humanizer.js");
 const {
@@ -88,14 +89,15 @@ function setModelContent(data, content) {
  */
 async function repairHumanizerOutputIfNeeded(options) {
   const { payload, taskKind, chatUrl, provider, model, signal } = options;
-  if (!shouldRepairHumanizerOutput(taskKind)) return options.data;
   let data = options.data;
   let content = modelContentFromChatData(data).trim();
+  if (!content || !shouldLintHumanizerOutput(taskKind)) return data;
   let hits = findHumanizerOutputHits(content);
-  if (!content || !hits.length) return data;
+  const explicitRewrite = shouldRepairHumanizerOutput(taskKind);
 
   let attempts = 0;
-  for (; attempts < 2 && hits.length; attempts += 1) {
+  let repaired = false;
+  for (; explicitRewrite && attempts < 2 && hits.length; attempts += 1) {
     const repairPayload = tuneLmStudioChatPayload({
       ...payload,
       stream: false,
@@ -136,26 +138,16 @@ async function repairHumanizerOutputIfNeeded(options) {
     if (isHumanizerRepairMetaResponse(nextContent)) break;
     data = repairData;
     content = nextContent;
+    repaired = true;
     hits = findHumanizerOutputHits(content);
   }
 
-  let scrubbed = false;
-  if (hits.length) {
-    const clean = scrubHumanizerOutput(content);
-    const cleanHits = findHumanizerOutputHits(clean);
-    if (clean !== content && cleanHits.length <= hits.length) {
-      scrubbed = true;
-      content = clean;
-      hits = cleanHits;
-      setModelContent(data, content);
-    }
-  }
-
   data.ai_system6_humanizer = {
-    repaired: attempts > 0,
+    mode: explicitRewrite ? "explicit-rewrite" : "lint",
+    repaired,
     repair_attempts: attempts,
-    scrubbed,
     remaining_hits: hits,
+    diagnostics: findHumanizerStyleDiagnostics(content),
   };
   return data;
 }
@@ -188,7 +180,7 @@ async function handleChat(req, res) {
     delete rawPayload._local_provider;
     delete rawPayload._local_endpoint;
 
-    const payload = tuneLmStudioChatPayload(enforceMarkdownOnlyChatPayload(rawPayload));
+    const payload = tuneLmStudioChatPayload(applyChatTaskContract(rawPayload));
     const { chatUrl } = getLocalUrls(provider, endpoint);
 
     console.log("[local-chat] model:", payload.model, "provider:", provider, "url:", chatUrl);

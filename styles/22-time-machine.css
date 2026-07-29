@@ -49,6 +49,15 @@
   flex: 1;
 }
 
+#time-machine-stop:disabled,
+#time-machine-source-switch:disabled {
+  display: none;
+}
+
+#time-machine-stop:not(:disabled) + [data-action="time-machine-refresh"] {
+  display: none;
+}
+
 .time-machine-view-switch {
   display: flex;
   gap: 4px;
@@ -414,6 +423,10 @@
   gap: 5px;
 }
 
+.time-machine-reader-actions:has(#time-machine-docmap:disabled):has(#time-machine-question:disabled) {
+  display: none;
+}
+
 .time-machine-ask-form {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -490,16 +503,112 @@
 }
 
 @container (max-width: 470px) {
+  .time-machine-pane {
+    gap: 5px;
+    padding: 5px;
+  }
+
   .time-machine-view-switch {
-    width: 100%;
+    display: contents;
   }
 
   .time-machine-navigation {
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(44px, 1fr));
+  }
+
+  .time-machine-navigation .btn,
+  .time-machine-view-switch .btn {
+    min-height: 44px;
+    padding-inline: 6px;
   }
 
   .time-machine-navigation-spacer {
     display: none;
   }
 
+  .time-machine-view-switch .mobile-control-long {
+    display: none;
+  }
+
+  .time-machine-view-switch .mobile-control-short {
+    display: inline;
+  }
+
+  .time-machine-address-form,
+  .time-machine-address-form.is-active {
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+    gap: 5px;
+  }
+
+  .time-machine-toggle {
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .time-machine-toggle > span {
+    display: none;
+  }
+
+  .time-machine-address-form > #time-machine-address {
+    min-height: 44px;
+  }
+
+  .time-machine-address-form > .btn {
+    min-height: 44px;
+  }
+
+  .time-machine-address-form.is-active .time-machine-time-controls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .time-machine-date-control > #time-machine-date {
+    min-height: 44px;
+  }
+
+  .time-machine-tabs {
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+  }
+
+  .time-machine-tabs .tdi-tab-wrap,
+  .time-machine-tabs .tdi-tab {
+    height: 44px;
+    min-height: 44px;
+  }
+
+  .time-machine-tabs .tdi-tab {
+    padding-block: 3px;
+  }
+
+  .time-machine-tabs .tdi-tab-close {
+    top: 6px;
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    min-height: 32px;
+  }
+
+  .time-machine-stage {
+    overscroll-behavior: contain;
+  }
+
+  .time-machine-reader {
+    padding: 18px 16px;
+    overflow-wrap: anywhere;
+  }
+
+  .time-machine-reader-actions {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .time-machine-ask-form {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .time-machine-reader-actions :is(.btn, input) {
+    min-height: 44px;
+  }
 }

@@ -36,14 +36,14 @@ test.assertIncludes(guide, '#cloud-api-key', "the guide writes into the Control 
 test.assertIncludes(guide, '#cloud-check-status', "the guide triggers the Control Panel's own check");
 test.assertIncludes(guide, "connectLocalLmStudio({ toggle: false })", "the local path awaits the Control Panel's own connect");
 
-// A verified cloud key is a device setting, not a per-session chore and not a
-// project artifact.
-test.assertIncludes(appEntry, "persistedConfig.apiKey", "the cloud key is restored from durable device settings");
+// A verified cloud credential is a device reference, not a project artifact.
+test.assertIncludes(appEntry, "persistedConfig.apiKey", "legacy browser keys are detected for one-time migration");
 test.assertIncludes(appEntry, "localStorage.setItem(CLOUD_STORAGE_KEY", "cloud configuration is persisted on this device");
-test.assertNotIncludes(appEntry, "delete persistedConfig.apiKey", "saving cloud configuration does not strip the key back to session-only storage");
-test.assertIncludes(appEntry, "sessionStorage.removeItem(CLOUD_SESSION_KEY)", "older session-only keys migrate out of session storage");
-test.assertIncludes(cloudModel, "cloudApiKeyEl.value = cloudConfig.apiKey || \"\"", "the Control Panel restores the remembered key");
-test.assertIncludes(guide, "guideCloudKey.value = cloudConfig.apiKey", "first-use setup restores a remembered key instead of asking again");
+test.assertIncludes(appEntry, "delete persistedConfig.apiKey", "browser persistence strips raw cloud keys");
+test.assertIncludes(appEntry, "sessionStorage.removeItem(CLOUD_SESSION_KEY)", "older session-only keys migrate to the local service");
+test.assertIncludes(cloudModel, 'cloudApiKeyEl.value = ""', "the Control Panel never restores a raw key into the page");
+test.assertNotIncludes(guide, "guideCloudKey.value = cloudConfig.apiKey", "first-use setup never copies a stored key back into the page");
+test.assertIncludes(cloudModel, "credentialId", "the Control Panel retains only a local-service credential reference");
 test.assertNotIncludes(exportImport, "CLOUD_STORAGE_KEY", "project export never reads the device credential store");
 test.assertIncludes(dictionary, "remembers that credential as a setting on this device", "System Help explains device-level credential persistence");
 test.assertIncludes(dictionary, "密钥绝不会进入项目硬盘文件", "Chinese System Help explains the credential boundary");
@@ -58,7 +58,7 @@ test.assertIncludes(guide, 't(ready ? "guide_later" : "guide_without_model")', "
 test.assertIncludes(en, 'guide_without_model: "Continue without AI"', "the English model-free exit is unambiguous");
 test.assertIncludes(zh, 'guide_without_model: "暂不使用 AI"', "the Chinese model-free exit is unambiguous");
 test.assertIncludes(html, 'id="cloud-model-indicator"', "the existing menu-bar model indicator remains the status surface");
-test.assertIncludes(cloudModel, 'data-action="open-model-settings"', "the disconnected indicator leads back to the existing model settings");
+test.assertIncludes(cloudModel, 'cloudPopoverButton(\n          "open-model-settings"', "the disconnected indicator leads back to the existing model settings");
 for (const key of ["guide_setup_still_checking", "guide_setup_needs_cloud_model", "guide_setup_failed"]) {
   test.assertIncludes(en, `${key}:`, `English copy exists for ${key}`);
   test.assertIncludes(zh, `${key}:`, `Chinese copy exists for ${key}`);

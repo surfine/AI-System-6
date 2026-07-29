@@ -8,15 +8,47 @@
 //     (env-derived defaults; route handlers fall back to these when
 //     the request body does not supply an explicit value)
 //
-// DeepSeek is the first-class cloud QA target. The protocol stays
-// OpenAI-compatible so operators can still point the app at another
-// compatible endpoint as a best-effort escape hatch.
+// DeepSeek is the first-class cloud QA target. Browser requests cannot select
+// another origin. Operators may configure one trusted HTTPS origin through
+// DEEPSEEK_BASE_URL; arbitrary request-provided origins require an explicit
+// developer-only flag, preserving a compatible endpoint as a best-effort escape hatch.
 
 "use strict";
 
 const DEEPSEEK_API_KEY_DEFAULT = process.env.DEEPSEEK_API_KEY || "";
 const DEEPSEEK_BASE_URL_DEFAULT =
   process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com";
+const DEEPSEEK_PUBLIC_BASE_URL = "https://api.deepseek.com";
+const allowCustomCloudEndpoints =
+  process.env.AI_SYSTEM6_ALLOW_CUSTOM_CLOUD_ENDPOINTS === "1";
+
+function normalizeCloudBaseUrl(value) {
+  const candidate = String(value || "").trim().replace(/\/+$/, "");
+  let parsed;
+  try {
+    parsed = new URL(candidate);
+  } catch {
+    throw new Error("Cloud model endpoint is not a valid URL.");
+  }
+  if (parsed.protocol !== "https:") {
+    throw new Error("Cloud model endpoint must use HTTPS.");
+  }
+  if (parsed.username || parsed.password || parsed.search || parsed.hash) {
+    throw new Error("Cloud model endpoint cannot contain credentials, query text, or a fragment.");
+  }
+  return `${parsed.origin}${parsed.pathname === "/" ? "" : parsed.pathname.replace(/\/+$/, "")}`;
+}
+
+const trustedCloudBaseUrl = normalizeCloudBaseUrl(DEEPSEEK_BASE_URL_DEFAULT);
+
+function resolveCloudBaseUrl(requestedBaseUrl) {
+  const requested = String(requestedBaseUrl || "").trim();
+  if (!requested) return trustedCloudBaseUrl;
+  const normalized = normalizeCloudBaseUrl(requested);
+  if (normalized === trustedCloudBaseUrl) return normalized;
+  if (!allowCustomCloudEndpoints) return trustedCloudBaseUrl;
+  return normalized;
+}
 
 /**
  * @typedef {Object} CloudModelDescriptor
@@ -56,4 +88,7 @@ module.exports = {
   cloudAuthHeaders,
   DEEPSEEK_API_KEY_DEFAULT,
   DEEPSEEK_BASE_URL_DEFAULT,
+  DEEPSEEK_PUBLIC_BASE_URL,
+  normalizeCloudBaseUrl,
+  resolveCloudBaseUrl,
 };

@@ -6,7 +6,8 @@
 //   - stream=false: buffer, parse, decorate with ai_system6_metrics
 //
 // Behavior parity with root server-cloud.js, including:
-// - Markdown-only normalization via enforceMarkdownOnlyChatPayload.
+// - Registered task-contract normalization keeps Markdown and structured
+//   output requests separate.
 // - Strips client-only underscore-prefixed fields (_cloud_*) from the
 //   payload after pulling them into locals.
 // - Strips deepseek-v4 sampling/local-thinking fields (temperature, top_p,
@@ -26,20 +27,26 @@
 
 "use strict";
 
-const { send, readJsonBody, requestSignal } = require("../lib/http.js");
+const { send, readJsonBody, requestSignal, withTimeoutSignal } = require("../lib/http.js");
 const { postJsonWithFallback, proxyJsonStream } = require("../lib/fetch.js");
-const { enforceMarkdownOnlyChatPayload, modelContentFromChatData } = require("../chat.js");
+const { applyChatTaskContract, modelContentFromChatData } = require("../chat.js");
 const {
   findHumanizerOutputHits,
+  findHumanizerStyleDiagnostics,
   isHumanizerRepairMetaResponse,
-  scrubHumanizerOutput,
+  shouldLintHumanizerOutput,
   shouldRepairHumanizerOutput,
 } = require("../humanizer.js");
 const {
   cloudAuthHeaders,
+  DEEPSEEK_CLOUD_MODELS,
   DEEPSEEK_API_KEY_DEFAULT,
   DEEPSEEK_BASE_URL_DEFAULT,
+  DEEPSEEK_PUBLIC_BASE_URL,
+  resolveCloudBaseUrl,
 } = require("../cloud.js");
+const { isPublicDeployment } = require("../runtime-profile.js");
+const { resolveCloudCredential } = require("../credential-vault.js");
 
 const DEEPSEEK_V4_MODELS = new Set(["deepseek-v4-pro", "deepseek-v4-flash", "v4-pro", "v4-flash"]);
 
@@ -77,18 +84,6 @@ function stripCloudLocalOnlyFields(payload) {
 }
 
 /**
- * @param {any} data
- * @param {string} content
- */
-function setModelContent(data, content) {
-  if (data?.choices?.[0]?.message) {
-    data.choices[0].message.content = content;
-  } else if (data?.choices?.[0]) {
-    data.choices[0].text = content;
-  }
-}
-
-/**
  * @param {{
  *   data: any,
  *   payload: any,
@@ -100,14 +95,15 @@ function setModelContent(data, content) {
  */
 async function repairCloudHumanizerOutputIfNeeded(options) {
   const { payload, taskKind, targetUrl, signal, authHeaders } = options;
-  if (!shouldRepairHumanizerOutput(taskKind)) return options.data;
   let data = options.data;
   let content = modelContentFromChatData(data).trim();
+  if (!content || !shouldLintHumanizerOutput(taskKind)) return data;
   let hits = findHumanizerOutputHits(content);
-  if (!content || !hits.length) return data;
+  const explicitRewrite = shouldRepairHumanizerOutput(taskKind);
 
   let attempts = 0;
-  for (; attempts < 2 && hits.length; attempts += 1) {
+  let repaired = false;
+  for (; explicitRewrite && attempts < 2 && hits.length; attempts += 1) {
     const repairPayload = {
       ...payload,
       stream: false,
@@ -127,7 +123,13 @@ async function repairCloudHumanizerOutputIfNeeded(options) {
         },
       ],
     };
-    const { response } = await postJsonWithFallback(targetUrl, repairPayload, signal, authHeaders);
+    const { response } = await postJsonWithFallback(
+      targetUrl,
+      repairPayload,
+      signal,
+      authHeaders,
+      { maxBytes: 16 * 1024 * 1024 }
+    );
     const text = await response.text();
     if (!response.ok) break;
     let repairData = {};
@@ -141,26 +143,16 @@ async function repairCloudHumanizerOutputIfNeeded(options) {
     if (isHumanizerRepairMetaResponse(nextContent)) break;
     data = repairData;
     content = nextContent;
+    repaired = true;
     hits = findHumanizerOutputHits(content);
   }
 
-  let scrubbed = false;
-  if (hits.length) {
-    const clean = scrubHumanizerOutput(content);
-    const cleanHits = findHumanizerOutputHits(clean);
-    if (clean !== content && cleanHits.length <= hits.length) {
-      scrubbed = true;
-      content = clean;
-      hits = cleanHits;
-      setModelContent(data, content);
-    }
-  }
-
   data.ai_system6_humanizer = {
-    repaired: attempts > 0,
+    mode: explicitRewrite ? "explicit-rewrite" : "lint",
+    repaired,
     repair_attempts: attempts,
-    scrubbed,
     remaining_hits: hits,
+    diagnostics: findHumanizerStyleDiagnostics(content),
   };
   return data;
 }
@@ -170,17 +162,33 @@ async function repairCloudHumanizerOutputIfNeeded(options) {
  * @param {import("node:http").ServerResponse} res
  */
 async function handleCloudChat(req, res) {
-  const signal = requestSignal(req, res);
+  const requestAbortSignal = requestSignal(req, res);
+  let timeoutHandle = null;
   const startedAt = Date.now();
 
   try {
-    const raw = /** @type {any} */ (enforceMarkdownOnlyChatPayload(await readJsonBody(req)));
-    const apiKey = raw._cloud_api_key || DEEPSEEK_API_KEY_DEFAULT;
-    const baseUrl = (raw._cloud_base_url || DEEPSEEK_BASE_URL_DEFAULT).replace(/\/$/, "");
-    const targetUrl = `${baseUrl}/v1/chat/completions`;
+    const raw = /** @type {any} */ (
+      applyChatTaskContract(await readJsonBody(req, { limitBytes: 512 * 1024 }))
+    );
+    timeoutHandle = withTimeoutSignal(
+      requestAbortSignal,
+      raw.stream === true ? 600000 : 120000
+    );
+    const signal = timeoutHandle.signal;
+    const apiKey = await resolveCloudCredential({
+      credentialId: raw._cloud_credential_id,
+      provider: "deepseek",
+      suppliedApiKey: raw._cloud_api_key || DEEPSEEK_API_KEY_DEFAULT,
+      allowSupplied: isPublicDeployment,
+    });
+    const targetBaseUrl = isPublicDeployment
+      ? DEEPSEEK_PUBLIC_BASE_URL
+      : resolveCloudBaseUrl(raw._cloud_base_url || DEEPSEEK_BASE_URL_DEFAULT);
+    const targetUrl = `${targetBaseUrl}/v1/chat/completions`;
 
     if (raw._cloud_model) raw.model = raw._cloud_model;
     delete raw._cloud_api_key;
+    delete raw._cloud_credential_id;
     delete raw._cloud_model;
     delete raw._cloud_base_url;
     const taskKind = raw.ai_system6_task_kind || "chat";
@@ -188,6 +196,29 @@ async function handleCloudChat(req, res) {
     delete raw.ai_system6_enable_thinking;
 
     const payload = raw;
+    if (!apiKey) {
+      send(res, 400, JSON.stringify({
+        error: "Missing API key",
+        code: "missing_byok_key",
+      }), { "Content-Type": "application/json" });
+      return;
+    }
+    if (
+      isPublicDeployment
+      && !new Set(DEEPSEEK_CLOUD_MODELS.map((item) => item.id)).has(payload.model)
+    ) {
+      send(res, 400, JSON.stringify({
+        error: "Unsupported public cloud model",
+        code: "unsupported_model",
+      }), { "Content-Type": "application/json" });
+      return;
+    }
+    if (isPublicDeployment) {
+      const requestedMaxTokens = Number(payload.max_tokens);
+      payload.max_tokens = Number.isFinite(requestedMaxTokens)
+        ? Math.min(8192, Math.max(1, Math.floor(requestedMaxTokens)))
+        : 1800;
+    }
     stripCloudLocalOnlyFields(payload);
     if (DEEPSEEK_V4_MODELS.has(payload.model)) {
       payload.thinking = { type: "disabled" };
@@ -207,11 +238,19 @@ async function handleCloudChat(req, res) {
     const authHeaders = cloudAuthHeaders(apiKey);
 
     if (payload.stream === true) {
-      await proxyJsonStream(targetUrl, payload, signal, res, authHeaders);
+      await proxyJsonStream(targetUrl, payload, signal, res, authHeaders, {
+        maxBytes: isPublicDeployment ? 32 * 1024 * 1024 : undefined,
+      });
       return;
     }
 
-    const { response: upstream } = await postJsonWithFallback(targetUrl, payload, signal, authHeaders);
+    const { response: upstream } = await postJsonWithFallback(
+      targetUrl,
+      payload,
+      signal,
+      authHeaders,
+      { maxBytes: 16 * 1024 * 1024 }
+    );
     const text = await upstream.text();
     const contentType = upstream.headers.get("content-type") || "application/json";
 
@@ -265,6 +304,8 @@ async function handleCloudChat(req, res) {
       error: "Cloud proxy failed",
       detail: /** @type {Error} */ (error).message,
     }), { "Content-Type": "application/json" });
+  } finally {
+    timeoutHandle?.cleanup();
   }
 }
 

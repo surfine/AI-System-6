@@ -180,10 +180,17 @@ function shouldApplyHumanizer(taskKind = "") {
  * @returns {boolean}
  */
 function shouldRepairHumanizerOutput(taskKind = "") {
-  const kind = String(taskKind || "chat").toLowerCase();
-  if (!shouldApplyHumanizer(kind)) return false;
-  if (/(?:translate|translation|dictionary|claim|fact|evidence|extract|ocr|reader|search|docmap|hkrr|review)/.test(kind)) return false;
-  return /(?:chat|draft|rewrite|polish|continue|outline|question-sheet|summary|keypoints|bureaucracy|meme|caption|slides|marp)/.test(kind);
+  const kind = String(taskKind || "").trim().toLowerCase();
+  return /^(?:writing[.-])?humanize-selection$/.test(kind)
+    || /^(?:humanizer|de-ai|reduce-ai-voice)[._-]rewrite$/.test(kind);
+}
+
+/**
+ * @param {string} [taskKind]
+ * @returns {boolean}
+ */
+function shouldLintHumanizerOutput(taskKind = "") {
+  return shouldApplyHumanizer(taskKind);
 }
 
 /**
@@ -223,6 +230,63 @@ function findHumanizerOutputHits(text = "") {
 }
 
 /**
+ * Return non-mutating style diagnostics. These locations are advisory: a
+ * common word in a product name, quotation, fact, code block, or source
+ * excerpt must never be rewritten by a regex.
+ *
+ * @param {string} text
+ * @returns {Array<{
+ *   start: number,
+ *   end: number,
+ *   ruleId: string,
+ *   severity: "hint" | "warning",
+ *   message: string,
+ * }>}
+ */
+function findHumanizerStyleDiagnostics(text = "") {
+  const value = String(text || "");
+  if (!value) return [];
+  /** @type {Array<{
+   *   start: number,
+   *   end: number,
+   *   ruleId: string,
+   *   severity: "hint" | "warning",
+   *   message: string,
+   * }>} */
+  const diagnostics = [];
+  for (const item of HUMANIZER_OUTPUT_BANNED_SUBSTRINGS) {
+    let start = value.indexOf(item);
+    while (start >= 0) {
+      diagnostics.push({
+        start,
+        end: start + item.length,
+        ruleId: `phrase:${item}`,
+        severity: "hint",
+        message: `可能是模板化表达：“${item}”。请结合原意决定是否修改。`,
+      });
+      start = value.indexOf(item, start + Math.max(1, item.length));
+    }
+  }
+  for (const [label, pattern] of HUMANIZER_OUTPUT_BANNED_PATTERNS) {
+    const flags = pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`;
+    const matcher = new RegExp(pattern.source, flags);
+    let match = matcher.exec(value);
+    while (match) {
+      diagnostics.push({
+        start: match.index,
+        end: match.index + match[0].length,
+        ruleId: `pattern:${label}`,
+        severity: "warning",
+        message: `可能存在“${label}”式模板结构。请核对事实和作者语气后再决定是否改写。`,
+      });
+      if (!match[0]) matcher.lastIndex += 1;
+      match = matcher.exec(value);
+    }
+  }
+  return diagnostics.sort((left, right) => left.start - right.start || left.end - right.end);
+}
+
+/**
  * Some small local models answer the repair prompt itself instead of rewriting
  * the prior assistant text. Treat that as a failed repair so internal cleanup
  * instructions never replace the user-facing answer.
@@ -242,126 +306,15 @@ function isHumanizerRepairMetaResponse(text = "") {
     || /please provide.{0,80}(?:previous|text).{0,80}(?:rewrite|revise)/i.test(value);
 }
 
-/**
- * Last-line cleanup for tiny residues after model repair. Keep this
- * conservative: replace stock phrases with plainer words, never add content.
- *
- * @param {string} text
- * @returns {string}
- */
-function scrubHumanizerOutput(text = "") {
-  return String(text || "")
-    .replace(/此外/g, "另外")
-    .replace(/真正的/g, "")
-    .replace(/真正让人/g, "让人")
-    .replace(/至关重要/g, "重要")
-    .replace(/深入探讨/g, "说明")
-    .replace(/不断演变/g, "变化")
-    .replace(/格局/g, "环境")
-    .replace(/作为/g, "是")
-    .replace(/证明/g, "说明")
-    .replace(/彰显/g, "说明")
-    .replace(/赋能/g, "帮忙")
-    .replace(/无缝/g, "顺")
-    .replace(/直观/g, "好懂")
-    .replace(/强大/g, "有用")
-    .replace(/关键作用/g, "作用")
-    .replace(/重要性/g, "用处")
-    .replace(/奠定基础|打下基础/g, "做准备")
-    .replace(/体现了/g, "说明了")
-    .replace(/体现/g, "说明")
-    .replace(/不仅/g, "")
-    .replace(/而且/g, "也")
-    .replace(/专家认为/g, "有人认为")
-    .replace(/行业报告/g, "报告")
-    .replace(/未来看起来光明/g, "后续还不清楚")
-    .replace(/迈出重要一步/g, "有了一个动作")
-    .replace(/重要一步/g, "一步")
-    .replace(/继续追求卓越/g, "继续改")
-    .replace(/重要的一步/g, "一步")
-    .replace(/后背发凉/g, "不舒服")
-    .replace(/过度抛光|抛光/g, "磨平")
-    .replace(/玻璃/g, "隔层")
-    .replace(/砂纸/g, "工具")
-    .replace(/外壳/g, "表面")
-    .replace(/重塑/g, "改变")
-    .replace(/革命/g, "变化")
-    .replace(/标志着/g, "说明")
-    .replace(/标志性趋势/g, "趋势")
-    .replace(/持续创新/g, "继续做产品")
-    .replace(/例证/g, "例子")
-    .replace(/智能系统(?:框架|架构)/g, "本地写作桌面")
-    .replace(/高级认知过程|高级认知/g, "写作流程")
-    .replace(/自主学习和决策能力/g, "整理和改写能力")
-    .replace(/自主学习|决策能力/g, "整理能力")
-    .replace(/自我优化/g, "可调整")
-    .replace(/内部反馈机制/g, "保存和回看")
-    .replace(/任务适应性/g, "任务切换")
-    .replace(/问题解决能力/g, "写作处理能力")
-    .replace(/光滑的壳/g, "平整的表面")
-    .replace(/光鲜亮丽/g, "好看")
-    .replace(/别急[，,]?/g, "")
-    .replace(/当然啦[，,]?/g, "")
-    .replace(/所以啊[，,]?/g, "")
-    .replace(/那叫一个/g, "")
-    .replace(/天下没有白吃的午餐/g, "也有代价")
-    .replace(/缺乏灵魂/g, "没有具体经验")
-    .replace(/生命底色/g, "具体经历")
-    .replace(/生命体验/g, "具体经历")
-    .replace(/生命质感/g, "具体经历")
-    .replace(/生活摩擦感/g, "具体场景")
-    .replace(/颗粒度/g, "细节")
-    .replace(/精密的空壳/g, "空泛的样子")
-    .replace(/虚构本质/g, "不真实")
-    .replace(/真实生命质感/g, "具体经历")
-    .replace(/概率预测/g, "套常见句子")
-    .replace(/概率拼接/g, "套常见句子")
-    .replace(/概率拼凑/g, "套常见句子")
-    .replace(/概率最高/g, "常见")
-    .replace(/白开水/g, "太顺")
-    .replace(/没杂质也没味道/g, "太顺")
-    .replace(/逻辑完美却空洞/g, "看起来顺但没有具体经历")
-    .replace(/逻辑平滑却空洞/g, "看起来顺但没有具体经历")
-    .replace(/精准却空洞/g, "顺但空")
-    .replace(/结构完美却无魂/g, "结构整齐但没有具体细节")
-    .replace(/过度平滑/g, "太顺")
-    .replace(/非人本质/g, "机器痕迹")
-    .replace(/轻飘飘/g, "不落地")
-    .replace(/机器拼凑/g, "套出来")
-    .replace(/标准件组装的产品|标准件组装/g, "套出来的东西")
-    .replace(/塑料做的假花/g, "摆出来的样子")
-    .replace(/没有重量/g, "没落到具体事上")
-    .replace(/空洞且廉价/g, "空")
-    .replace(/通用的情绪标签/g, "套话")
-    .replace(/印证/g, "说明")
-    .replace(/维持创新/g, "继续做产品")
-    .replace(/(?:确立|找到|形成)了?[^，。；\n]{0,12}立足点/g, "找到了位置")
-    .replace(/完美闭环/g, "走完流程")
-    .replace(/闭环/g, "流程")
-    .replace(/铺平了道路|铺平道路/g, "留了空间")
-    // English deterministic cleanup: delete only unambiguous chatbot artifacts and
-    // filler openers. Restructuring tells (significance, rule-of-three) go to the
-    // model repair pass, not this regex, so prose is never left mangled.
-    .replace(/\bGreat question[!.]?\s*/gi, "")
-    .replace(/\bI hope this helps[!.]?\s*/gi, "")
-    .replace(/\bYou'?re absolutely right(?:\s+that)?[,!.]?\s*/gi, "")
-    .replace(/\bThe future looks bright[.!]?\s*/gi, "")
-    .replace(/\bIt is important to note that\s*/gi, "")
-    .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/[（(]注[:：][^)）]{2,120}[)）]/g, "")
-    .replace(/\*\*([^*\n]{1,24})[:：]\*\*/g, "$1：")
-    .replace(/\*\*([^*\n]{1,24})\*\*([:：])/g, "$1$2")
-    .replace(/\*\*([^*\n]{1,40})\*\*/g, "$1");
-}
-
 module.exports = {
   HUMANIZER_MARKER,
   HUMANIZER_OUTPUT_BANNED_SUBSTRINGS,
   HUMANIZER_OUTPUT_BANNED_PATTERNS,
   findHumanizerOutputHits,
+  findHumanizerStyleDiagnostics,
   humanizerModelInstruction,
   isHumanizerRepairMetaResponse,
   shouldApplyHumanizer,
+  shouldLintHumanizerOutput,
   shouldRepairHumanizerOutput,
-  scrubHumanizerOutput,
 };

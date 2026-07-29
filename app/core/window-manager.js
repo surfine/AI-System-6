@@ -592,6 +592,14 @@ function focusWindow(win, reveal=false) {
     return;
   }
 
+  if (isPortraitDocumentFlow() && mobileWindowPresentation(win) === "system-page") {
+    win.style.zIndex = windowPinnedZ;
+    updateMenuState();
+    renderMultiFinderMenu();
+    scheduleWorkingSessionSave?.();
+    return;
+  }
+
   setWindowLayerZ(win, nextWindowLayerZ());
   if (isDeskAccessorySidecar(win)) {
     raiseVisibleDeskAccessorySidecars(win);
@@ -609,21 +617,18 @@ function isPortraitDocumentFlow() {
   return window.matchMedia("(max-width:860px) and (orientation:portrait)").matches;
 }
 
-// Mobile full-screen app shell (pilot: ClioTalk). On a phone a foregrounded
-// "real" app fills the screen below the menu bar and the desktop icon column
-// becomes the launcher. The CSS figure keys off .window.is-mobile-fullscreen +
-// body.mobile-app-foreground; here we only toggle those classes — no inline
-// layout styles. App-agnostic by design: roll the pattern out to another app by
-// adding its id to mobileFullScreenAppIds.
-// Deliberately excludes "accessories" (desk accessories float over the app, as
-// on AD98), "system" (About / Guide / System Help are overlays), and "finder"
-// (the desktop itself is the launcher you return to).
+// Mobile is a presentation system, not a collection of one-off app patches.
+// Every window is assigned one semantic role. Application and Finder pages can
+// own the phone work area; dialogs, system pages, and Desk Accessories retain a
+// separate overlay vocabulary. Keeping this taxonomy declarative makes a new
+// production window fail the mobile coverage test until its role is deliberate.
 const mobileFullScreenAppIds = new Set([
   "clioTalk",
   "teachText",
-  "quickDraft",
+  "writingStudio",
   "searcher",
   "reader",
+  "timeMachine",
   "endfield",
   "docMap",
   "clioStage",
@@ -632,24 +637,502 @@ const mobileFullScreenAppIds = new Set([
   "cmfStudio",
   "soundscape",
   "scrapbook",
+  "bureaucracyMeme",
 ]);
+
+const mobileFinderPageWindowNames = new Set([
+  "rag",
+  "textDisk",
+  "finder",
+  "helpFolder",
+  "applications",
+  "disk",
+  "projectCd",
+  "importUtility",
+  "projects",
+  "documents",
+  "trash",
+  "printDirectory",
+]);
+
+// Finder volumes share one navigation and command model. Their storage
+// implementations remain deliberately different (durable project data,
+// temporary mounted sources, and handoff media), but Finder should not need
+// three parallel ideas of selection, Get Info, Open, or Eject.
+const finderVolumeDefinitions = new Map([
+  ["disk", {
+    kind: "startup",
+    labelKey: "startup_disk",
+    parentWindowName: "",
+    writable: false,
+    removable: false,
+    supportsFolders: false,
+  }],
+  ["projects", {
+    kind: "hard-disk",
+    labelKey: "project_disk",
+    parentWindowName: "disk",
+    writable: true,
+    removable: true,
+    supportsFolders: true,
+  }],
+  ["textDisk", {
+    kind: "floppy",
+    labelKey: "mounted_text_disk",
+    parentWindowName: "disk",
+    writable: false,
+    removable: true,
+    supportsFolders: false,
+  }],
+  ["projectCd", {
+    kind: "optical",
+    labelKey: "project_cd",
+    parentWindowName: "disk",
+    writable: false,
+    removable: true,
+    supportsFolders: false,
+  }],
+]);
+
+function getFinderVolumeDefinition(windowName) {
+  return finderVolumeDefinitions.get(windowName) || null;
+}
+
+function getFinderVolumeRootItem(windowName) {
+  const volume = getFinderVolumeDefinition(windowName);
+  if (!volume) return null;
+  const project = typeof getActiveProject === "function" ? getActiveProject() : null;
+  const itemCount = windowName === "projects"
+    ? ((typeof getProjectFiles === "function" ? getProjectFiles().length : 0)
+      + (typeof getProjectFolders === "function" ? getProjectFolders().length : 0))
+    : windowName === "textDisk"
+      ? (mountedTextDisk?.files?.length || 0)
+      : windowName === "projectCd"
+        ? (typeof getProjectCdItems === "function" ? getProjectCdItems().length : 0)
+        : (typeof getStaticFinderItems === "function" ? getStaticFinderItems("disk").length : 0);
+  const label = windowName === "projects" && project
+    ? projectDisplayName(project)
+    : t(volume.labelKey);
+  return {
+    id: `finder-volume:${windowName}`,
+    type: "finder-volume",
+    name: label,
+    title: label,
+    kindLabel: t(volume.labelKey),
+    iconClass: {
+      startup: "hard-disk-icon",
+      "hard-disk": "project-disk-icon",
+      floppy: "text-disk-icon",
+      optical: "hard-disk-icon",
+    }[volume.kind] || "hard-disk-icon",
+    iconId: {
+      startup: "startupDisk",
+      "hard-disk": "projectDisk",
+      floppy: "fileFloppy",
+      optical: "projectDisc",
+    }[volume.kind] || "startupDisk",
+    itemCount,
+    sizeValue: itemCount,
+    sizeLabel: t("items_count", itemCount),
+    location: t("finder_location"),
+    projectId: windowName === "disk" ? "" : activeProjectId,
+    virtual: false,
+    readOnly: !volume.writable,
+    canOpen: false,
+    canDuplicate: false,
+    canRename: false,
+    canTrash: false,
+  };
+}
+
+function getFinderVolumeSelectedItem(windowName) {
+  if (windowName === "projects") {
+    return typeof getSelectedProjectFinderItem === "function" ? getSelectedProjectFinderItem() : null;
+  }
+  if (windowName === "textDisk") {
+    const name = selectedMountedFileNames?.values?.().next?.().value || selectedMountedFile;
+    if (!name || !mountedTextDisk?.files?.includes(name)) return null;
+    const report = typeof mountedFileDiagnostic === "function" ? mountedFileDiagnostic(name) : null;
+    const body = mountedTextDisk.fileBodies?.[name] || "";
+    return {
+      id: name,
+      type: "mountedFile",
+      name,
+      title: name,
+      body,
+      kindLabel: report && typeof fileDiskKindLabel === "function"
+        ? fileDiskKindLabel(report.kind)
+        : t("mounted_text_disk"),
+      iconClass: "doc-icon",
+      iconId: "document",
+      sizeValue: Number(report?.bytes || body.length || 0),
+      sizeLabel: `${Number(report?.bytes || body.length || 0)} bytes`,
+      location: t("mounted_text_disk"),
+      projectId: activeProjectId,
+      readOnly: true,
+      canOpen: true,
+      canDuplicate: false,
+      canRename: false,
+      canTrash: true,
+      open: () => openMountedTextFile(name),
+    };
+  }
+  if (windowName === "projectCd") {
+    const item = typeof getSelectedProjectCdItem === "function" ? getSelectedProjectCdItem() : null;
+    if (!item) return null;
+    return {
+      ...item,
+      type: "projectCdItem",
+      name: item.title,
+      kindLabel: t("project_cd"),
+      iconClass: "doc-icon",
+      iconId: "document",
+      sizeValue: String(item.body || "").length,
+      sizeLabel: `${String(item.body || "").length} bytes`,
+      location: t("project_cd"),
+      readOnly: true,
+      canOpen: true,
+      canDuplicate: false,
+      canRename: false,
+      canTrash: true,
+      open: () => openProjectCdItemInReader(item),
+    };
+  }
+  if (windowName === "disk") {
+    return typeof getSelectedStaticFinderItem === "function"
+      ? getSelectedStaticFinderItem("disk")
+      : null;
+  }
+  return null;
+}
+
+function getFinderVolumeCapabilities(windowName) {
+  const volume = getFinderVolumeDefinition(windowName);
+  if (!volume) return null;
+  const selectedItem = getFinderVolumeSelectedItem(windowName);
+  return {
+    canCreateFolder: volume.supportsFolders && volume.writable && isProjectMounted,
+    canOpen: selectedItem?.canOpen !== false && !!selectedItem,
+    canGetInfo: true,
+    canDuplicate: selectedItem?.canDuplicate !== false && !selectedItem?.virtual && !!selectedItem,
+    canRename: selectedItem?.canRename !== false && !selectedItem?.virtual && !!selectedItem,
+    canTrash: selectedItem?.canTrash !== false && !selectedItem?.virtual && !!selectedItem,
+    canEject: volume.removable && (
+      windowName === "projects"
+        ? isProjectMounted
+        : windowName === "textDisk"
+          ? getMountedTextDiskChunks().length > 0
+          : true
+    ),
+    canPrintDirectory: true,
+  };
+}
+
+function syncFinderVolumeSemantics(winOrName) {
+  const win = typeof winOrName === "string" ? getWindow(winOrName) : winOrName;
+  const volume = getFinderVolumeDefinition(win?.dataset.window || "");
+  if (!win || !volume) return;
+  win.classList.add("finder-volume-window");
+  win.dataset.finderVolume = volume.kind;
+  win.dataset.finderWritable = String(volume.writable);
+  win.dataset.finderRemovable = String(volume.removable);
+}
+
+function replaceVisibleFinderLocation(targetWindowName) {
+  if (!mobileFinderPageWindowNames.has(targetWindowName)) return null;
+  const source = Array.from(document.querySelectorAll(".window.is-active:not(.is-hidden):not(.is-app-hidden)"))
+    .find((win) => mobileFinderPageWindowNames.has(win.dataset.window) && win.dataset.window !== targetWindowName)
+    || Array.from(document.querySelectorAll(".window:not(.is-hidden):not(.is-app-hidden)"))
+      .find((win) => mobileFinderPageWindowNames.has(win.dataset.window) && win.dataset.window !== targetWindowName);
+  const frame = source && !isPortraitDocumentFlow()
+    ? windowFrame(source)
+    : null;
+
+  document.querySelectorAll(".window").forEach((win) => {
+    if (!mobileFinderPageWindowNames.has(win.dataset.window) || win.dataset.window === targetWindowName) return;
+    win.classList.add("is-hidden");
+    win.classList.remove("is-active");
+  });
+
+  return frame;
+}
+
+const finderParentWindowNames = new Map([
+  ["finder", "disk"],
+  ["helpFolder", "disk"],
+  ["applications", "disk"],
+  ["documents", "disk"],
+  ["importUtility", "disk"],
+  ["rag", "disk"],
+  ["trash", "disk"],
+  ["printDirectory", "disk"],
+  ...Array.from(finderVolumeDefinitions.entries())
+    .filter(([, volume]) => volume.parentWindowName)
+    .map(([windowName, volume]) => [windowName, volume.parentWindowName]),
+]);
+
+const finderLocationLabelKeys = new Map([
+  ["finder", "system_folder"],
+  ["helpFolder", "help_folder"],
+  ["applications", "applications"],
+  ["documents", "documents"],
+  ["importUtility", "import_utility"],
+  ["rag", "mount_text_disk"],
+  ["trash", "trash"],
+  ["printDirectory", "print_directory"],
+  ...Array.from(finderVolumeDefinitions.entries())
+    .map(([windowName, volume]) => [windowName, volume.labelKey]),
+]);
+
+const mobileDialogWindowNames = new Set([
+  "pageSetup",
+  "saveChat",
+  "fileInfo",
+  "projectInfo",
+  "about",
+]);
+
+const mobileSystemPageWindowNames = new Set([
+  "guide",
+  "systemHelp",
+]);
+
+const mobilePresentationClassNames = [
+  "is-mobile-app-page",
+  "is-mobile-finder-page",
+  "is-mobile-dialog",
+  "is-mobile-system-page",
+  "is-mobile-accessory",
+];
+
+let mobileFinderDesktopPreferred = false;
+
+function finderFolderTrail(folderId) {
+  if (!folderId || typeof getProjectFolders !== "function") return [];
+  const folders = getProjectFolders();
+  const byId = new Map(folders.map((folder) => [folder.id, folder]));
+  const trail = [];
+  const seen = new Set();
+  let folder = byId.get(folderId);
+  while (folder && !seen.has(folder.id)) {
+    seen.add(folder.id);
+    trail.unshift({
+      folderId: folder.id,
+      label: typeof displayFolderName === "function"
+        ? displayFolderName(folder.name)
+        : folder.name,
+    });
+    folder = folder.parentId ? byId.get(folder.parentId) : null;
+  }
+  return trail;
+}
+
+function finderNavigationSegments(windowName) {
+  const labelKey = finderLocationLabelKeys.get(windowName);
+  const currentLabel = labelKey ? t(labelKey) : (
+    getWindow(windowName)?.querySelector(":scope > .title-bar h1, :scope > .title-bar h2")?.textContent
+    || windowName
+  );
+  if (windowName === "disk") {
+    return [{ windowName, folderId: "", label: currentLabel }];
+  }
+
+  const segments = [{ windowName: "disk", folderId: "", label: t("startup_disk") }];
+  if (windowName === "projects" || windowName === "documents") {
+    segments.push({ windowName, folderId: "", label: currentLabel });
+    const folderId = selectedFolderId === "all" ? "" : selectedFolderId;
+    finderFolderTrail(folderId).forEach((entry) => {
+      segments.push({ windowName, ...entry });
+    });
+    return segments;
+  }
+
+  segments.push({ windowName, folderId: "", label: currentLabel });
+  return segments;
+}
+
+function resetFinderSelectionForNavigation() {
+  selectedChatFileId = null;
+  selectedDocumentFolderId = null;
+  selectedProjectRootItemId = null;
+  if (typeof clearDocumentSelection === "function") clearDocumentSelection();
+}
+
+function navigateFinderFolderLocation(windowName, folderId = "") {
+  selectedFolderId = folderId || "all";
+  resetFinderSelectionForNavigation();
+  if (windowName === "projects") renderProjectDisks();
+  if (windowName === "documents") renderDocuments();
+  const win = getWindow(windowName);
+  if (win) {
+    renderFinderNavigationBar(win);
+    focusWindow(win);
+  }
+}
+
+async function navigateFinderLocation(sourceWindowName, targetWindowName, folderId = "") {
+  if (sourceWindowName === targetWindowName && ["projects", "documents"].includes(targetWindowName)) {
+    navigateFinderFolderLocation(targetWindowName, folderId);
+    return;
+  }
+
+  if (["projects", "documents"].includes(targetWindowName)) {
+    selectedFolderId = folderId || "all";
+    resetFinderSelectionForNavigation();
+  }
+  mobileFinderDesktopPreferred = false;
+  await openWindow(targetWindowName);
+  if (targetWindowName === "projects") renderProjectDisks();
+  if (targetWindowName === "documents") renderDocuments();
+}
+
+async function navigateFinderUp(windowName) {
+  if (["projects", "documents"].includes(windowName)) {
+    const folder = typeof getSelectedFolder === "function" ? getSelectedFolder() : null;
+    if (folder) {
+      navigateFinderFolderLocation(windowName, folder.parentId || "");
+      return;
+    }
+  }
+
+  const parentWindowName = finderParentWindowNames.get(windowName);
+  if (parentWindowName) {
+    await navigateFinderLocation(windowName, parentWindowName);
+    return;
+  }
+
+  await closeWindow(windowName);
+  if (isPortraitDocumentFlow()) {
+    mobileFinderDesktopPreferred = true;
+    activeAppId = "finder";
+    syncMobileAppForeground();
+    renderMultiFinderMenu();
+  }
+}
+
+function renderFinderNavigationBar(winOrName) {
+  const win = typeof winOrName === "string" ? getWindow(winOrName) : winOrName;
+  const windowName = win?.dataset.window || "";
+  if (!win || !mobileFinderPageWindowNames.has(windowName)) return;
+  syncFinderVolumeSemantics(win);
+
+  let nav = win.querySelector(":scope > .finder-navigation-bar");
+  if (!nav) {
+    nav = document.createElement("nav");
+    nav.className = "finder-navigation-bar";
+    const back = document.createElement("button");
+    back.type = "button";
+    back.className = "btn finder-navigation-back";
+    back.addEventListener("click", (event) => {
+      event.stopPropagation();
+      navigateFinderUp(windowName);
+    });
+    const breadcrumbs = document.createElement("div");
+    breadcrumbs.className = "finder-breadcrumbs";
+    nav.append(back, breadcrumbs);
+    const details = win.querySelector(":scope > .details-bar");
+    const title = win.querySelector(":scope > .title-bar");
+    (details || title)?.after(nav);
+  }
+
+  nav.setAttribute("aria-label", t("finder_location"));
+  const back = nav.querySelector(".finder-navigation-back");
+  if (back) {
+    back.textContent = "‹";
+    back.setAttribute("aria-label", t("up_one_level"));
+    back.title = t("up_one_level");
+  }
+
+  const breadcrumbs = nav.querySelector(".finder-breadcrumbs");
+  if (!breadcrumbs) return;
+  breadcrumbs.replaceChildren();
+  const segments = finderNavigationSegments(windowName);
+  segments.forEach((segment, index) => {
+    if (index > 0) {
+      const separator = document.createElement("span");
+      separator.className = "finder-breadcrumb-separator";
+      separator.textContent = "›";
+      separator.setAttribute("aria-hidden", "true");
+      breadcrumbs.append(separator);
+    }
+
+    const isCurrent = index === segments.length - 1;
+    if (isCurrent) {
+      const current = document.createElement("span");
+      current.className = "finder-breadcrumb-current";
+      current.textContent = segment.label;
+      current.setAttribute("aria-current", "page");
+      breadcrumbs.append(current);
+      return;
+    }
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "finder-breadcrumb";
+    button.textContent = segment.label;
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      navigateFinderLocation(windowName, segment.windowName, segment.folderId);
+    });
+    breadcrumbs.append(button);
+  });
+}
+
+function renderAllFinderNavigationBars() {
+  mobileFinderPageWindowNames.forEach((name) => renderFinderNavigationBar(name));
+}
+
+function mobileWindowPresentation(win) {
+  const name = win?.dataset.window || "";
+  if (mobileDialogWindowNames.has(name)) return "dialog";
+  if (mobileSystemPageWindowNames.has(name)) return "system-page";
+  if (getWindowAppId(win) === "accessories") return "accessory";
+  if (mobileFinderPageWindowNames.has(name)) return "finder-page";
+  if (mobileFullScreenAppIds.has(getWindowAppId(win))) return "app-page";
+  return "";
+}
+
+function syncMobileWindowPresentationClasses() {
+  const portrait = isPortraitDocumentFlow();
+  document.querySelectorAll(".window").forEach((win) => {
+    mobilePresentationClassNames.forEach((className) => win.classList.remove(className));
+    if (!portrait) return;
+    const role = mobileWindowPresentation(win);
+    if (role) win.classList.add(`is-mobile-${role}`);
+  });
+  document.body.classList.toggle(
+    "mobile-finder-desktop",
+    portrait && mobileFinderDesktopPreferred
+  );
+}
+
+function mobileWindowCanFillScreen(win) {
+  const role = mobileWindowPresentation(win);
+  return role === "app-page" || (
+    role === "finder-page"
+    && !mobileFinderDesktopPreferred
+  );
+}
 
 function mobileFullScreenTarget() {
   if (!isPortraitDocumentFlow()) return null;
   const wins = Array.from(
     document.querySelectorAll(".window:not(.is-hidden):not(.is-app-hidden):not(.is-collapsed)")
   ).filter((win) => (
-    mobileFullScreenAppIds.has(getWindowAppId(win))
+    mobileWindowCanFillScreen(win)
     // Zooming or dragging the grow box restores a window down; it then stays a
     // normal floating window (so several can share the screen) until the zoom
     // box maximizes it again.
     && win.dataset.mobileRestored !== "true"
   ));
   if (!wins.length) return null;
-  return wins.sort((a, b) => Number(b.style.zIndex || 0) - Number(a.style.zIndex || 0))[0];
+  const activeAppWins = wins.filter((win) => getWindowAppId(win) === activeAppId);
+  const candidates = activeAppWins.length ? activeAppWins : wins;
+  return candidates.sort((a, b) => Number(b.style.zIndex || 0) - Number(a.style.zIndex || 0))[0];
 }
 
 function syncMobileAppForeground() {
+  syncMobileWindowPresentationClasses();
   const target = mobileFullScreenTarget();
   document.querySelectorAll(".window.is-mobile-fullscreen").forEach((win) => {
     if (win !== target) win.classList.remove("is-mobile-fullscreen");
@@ -663,6 +1146,20 @@ function syncMobileAppForeground() {
       .forEach((prop) => { target.style[prop] = ""; });
   }
   document.body.classList.toggle("mobile-app-foreground", !!target);
+  repairPortraitDeskAccessoryGeometry();
+}
+
+// A phone has one stable Desk Accessory axis. Reflow every visible accessory
+// together so a newly opened DA cannot cover an older one; leaving portrait
+// clears that temporary arrangement and restores normal desktop ownership.
+function repairPortraitDeskAccessoryGeometry() {
+  if (!isPortraitDocumentFlow()) {
+    document.querySelectorAll(".window.is-mobile-da-arranged")
+      .forEach(clearPortraitDeskAccessoryPlacement);
+    return;
+  }
+  if (!visiblePortraitDeskAccessories().length) return;
+  arrangeDeskAccessories();
 }
 
 // The Finder entry in the switcher, so this is a MultiFinder-only path: bring
@@ -676,8 +1173,8 @@ function mobileHomeToDesktop() {
     const appId = getWindowAppId(win);
     if (mobileFullScreenAppIds.has(appId)) appIds.add(appId);
   });
-  if (!appIds.size) return;
   appIds.forEach((appId) => hideApp(appId, { preserveActive: true }));
+  mobileFinderDesktopPreferred = true;
   activeAppId = "finder";
   syncMobileAppForeground();
   renderMultiFinderMenu();
@@ -817,20 +1314,20 @@ function placeCenteredSystemWindow(win) {
   win.style.right = "auto";
   win.style.height = "";
 
-  if (win.dataset.window === "about") {
-    win.style.left = "50%";
-    win.style.top = "calc(var(--system-menu-height, 25px) + (100vh - var(--system-menu-height, 25px)) / 2)";
-    win.style.width = "";
-    win.style.transform = "translate(-50%, -50%)";
-    return;
-  }
-
   if (isPortraitDocumentFlow()) {
     win.style.left = "";
     win.style.top = "";
     win.style.width = "";
     win.style.transform = "";
     revealWindowTitleInPortraitFlow(win);
+    return;
+  }
+
+  if (win.dataset.window === "about") {
+    win.style.left = "50%";
+    win.style.top = "calc(var(--system-menu-height, 25px) + (100vh - var(--system-menu-height, 25px)) / 2)";
+    win.style.width = "";
+    win.style.transform = "translate(-50%, -50%)";
     return;
   }
 
@@ -859,6 +1356,13 @@ function placeCenteredSystemWindow(win) {
 function placeSaveChatWindow() {
   const win = getWindow("saveChat");
   if (!win) return;
+  if (isPortraitDocumentFlow()) {
+    ["left", "top", "right", "width", "height", "max-height", "transform"]
+      .forEach((property) => win.style.removeProperty(property));
+    win.scrollTop = 0;
+    win.querySelector(".save-chat-pane")?.scrollTo?.({ top: 0 });
+    return;
+  }
   win.style.left = "50%";
   win.style.top = "calc(25px + (100vh - 25px) / 2)";
   win.style.right = "auto";
@@ -959,6 +1463,7 @@ function getActionAvailability() {
   const hasDocumentFolderSelection = winName === "documents" && !!selectedDocumentFolderId;
   const projectFinderItem = winName === "projects" ? getSelectedProjectFinderItem() : null;
   const currentFinderSelection = getCurrentFinderSelection();
+  const finderVolumeCapabilities = getFinderVolumeCapabilities(winName);
   const isFinderWindow = ["projects", "documents"].includes(winName);
   const hasFinderTextFileSelection = isFinderWindow && currentFinderSelection?.type === "text" && !!(currentFinderSelection.body || "").trim();
   const hasProjectFinderRename = !!projectFinderItem && projectFinderItem.canRename !== false && projectFinderItem.virtual !== true;
@@ -1005,7 +1510,9 @@ function getActionAvailability() {
   const hasEditableFocus = !!activeEditable;
   const selectedProject = getSelectedProject();
   const activeItem = getActiveItem();
-  const canDuplicateFinderSelection = hasOpenFile || (!!activeItem && activeItem.canDuplicate !== false && activeItem.virtual !== true);
+  const canDuplicateFinderSelection = hasOpenFile
+    || finderVolumeCapabilities?.canDuplicate
+    || (!!activeItem && activeItem.canDuplicate !== false && activeItem.virtual !== true);
   const hasClaimSections = !!teachTextBodyInput.value.trim() && getClaimCheckSectionBlocks().length > 0;
   const hasStyleSections = !!teachTextBodyInput.value.trim() && getTeachTextSectionBlocks().length > 0;
   const hasReviewDeskBody = !!reviewDeskBodyInput?.value?.trim();
@@ -1014,12 +1521,25 @@ function getActionAvailability() {
     const control = document.querySelector(selector);
     return !!control && !control.disabled && !control.classList.contains("is-disabled") && !control.hidden;
   };
+  // Reader's visible toolbar actions own their real availability through the
+  // native disabled/hidden state. updateMenuState() mirrors that availability
+  // onto the shared `is-disabled` class, so reading the mirrored class back
+  // here would make an initially empty Reader permanently disable itself even
+  // after a document finishes loading.
+  const activeReaderControlEnabled = (selector) => {
+    const control = document.querySelector(selector);
+    return !!control && !control.disabled && !control.hidden;
+  };
 
   const availability = {
     "new-document": true,
     "open-text-document": true,
-    "new-folder": isProjectMounted,
-    "open-menu-selection": true,
+    "new-folder": winName === "documents"
+      ? isProjectMounted
+      : !!finderVolumeCapabilities?.canCreateFolder,
+    "open-menu-selection": finderVolumeCapabilities
+      ? finderVolumeCapabilities.canOpen
+      : !!activeItem,
     "duplicate-selection": canDuplicateFinderSelection,
     "new-project-disk": true,
     "open-project-disks": true,
@@ -1028,10 +1548,12 @@ function getActionAvailability() {
     "duplicate-project-disk": !!selectedProject,
     "archive-project-disk": !!selectedProject,
     "eject-project": isProjectMounted,
-    "eject-menu-selection": isProjectMounted || getMountedTextDiskChunks().length > 0 || winName === "projectCd",
+    "eject-menu-selection": finderVolumeCapabilities
+      ? finderVolumeCapabilities.canEject
+      : isProjectMounted || getMountedTextDiskChunks().length > 0,
     "set-startup-project": true,
     "open-project-info": isProjectMounted,
-    "open-file-info": !!activeItem || isProjectMounted,
+    "open-file-info": !!activeItem,
     "new-text-document": isProjectMounted,
     "save-current": isTeachText || teachTextVisible || (isAssistant && hasConversation),
     "save-chat": isAssistant && hasConversation,
@@ -1106,8 +1628,13 @@ function getActionAvailability() {
     "ai-table": canUseWritingTools && writingToolPromptReady("table"),
     "print-to-ai": canUseWritingTools,
     "duplicate-file": hasOpenFile,
-    "rename-file": hasOpenFile || hasDocumentFolderSelection || hasProjectFinderRename,
-    "move-file-trash": hasOpenFile || hasDocumentFolderSelection || hasProjectFinderTrash || hasProjectCdSelection || hasMountedFileSelection,
+    "rename-file": hasOpenFile || hasDocumentFolderSelection || hasProjectFinderRename || !!finderVolumeCapabilities?.canRename,
+    "move-file-trash": hasOpenFile
+      || hasDocumentFolderSelection
+      || hasProjectFinderTrash
+      || hasProjectCdSelection
+      || hasMountedFileSelection
+      || !!finderVolumeCapabilities?.canTrash,
     "put-away": !!selectedTrashItem,
     "page-setup": canUsePageSetup,
     "print-current": isTeachText && hasTeachTextBody,
@@ -1174,11 +1701,11 @@ function getActionAvailability() {
     "copy-search-result-markdown": winName === "findPath" && selectedFindPathIndex !== null,
     "insert-search-result": winName === "findPath" && selectedFindPathIndex !== null,
     "reader-open-source": winName === "reader",
-    "reader-clip": winName === "reader" && activeControlEnabled("#reader-clip-button"),
-    "reader-clip-translate": winName === "reader" && activeControlEnabled("#reader-clip-translate-button"),
-    "reader-send-manuscript": winName === "reader" && activeControlEnabled("#reader-send-manuscript"),
-    "reader-make-docmap": winName === "reader" && activeControlEnabled("#reader-docmap-button"),
-    "reader-open-clio-stage": winName === "reader" && activeControlEnabled("#reader-open-clio-stage"),
+    "reader-clip": winName === "reader" && activeReaderControlEnabled("#reader-clip-button"),
+    "reader-clip-translate": winName === "reader" && activeReaderControlEnabled("#reader-clip-translate-button"),
+    "reader-send-manuscript": winName === "reader" && activeReaderControlEnabled("#reader-send-manuscript"),
+    "reader-make-docmap": winName === "reader" && activeReaderControlEnabled("#reader-docmap-button"),
+    "reader-open-clio-stage": winName === "reader" && activeReaderControlEnabled("#reader-open-clio-stage"),
     "focus-reader-question": winName === "reader" && !!currentReaderPage?.text,
     "docmap-save": winName === "docMap" && !!currentDocMap,
     "docmap-print-pdf": winName === "docMap" && !!currentDocMap,
@@ -1251,7 +1778,7 @@ function getActionAvailability() {
     "cmf-export-usdz": winName === "cmfStudio",
     "cmf-shuffle": winName === "cmfStudio",
     "cmf-reset": winName === "cmfStudio",
-    "cmf-render": winName === "cmfStudio",
+    "cmf-reset-view": winName === "cmfStudio",
     "cmf-view-front": winName === "cmfStudio" && !!document.querySelector('[data-cmf-view="01-front"]'),
     "cmf-view-back": winName === "cmfStudio" && !!document.querySelector('[data-cmf-view="02-back"]'),
     "cmf-view-side": winName === "cmfStudio" && !!document.querySelector('[data-cmf-view="05-buttons-side"]'),
@@ -1495,6 +2022,7 @@ async function openWindow(name, options = {}) {
   const targetAppId = getWindowAppId(name);
   const canOpen = skipFinderMode ? true : await prepareFinderModeForApp(targetAppId);
   if (!canOpen) return;
+  const finderReplacementFrame = replaceVisibleFinderLocation(name);
   if (sourceWindowForSingleTask && sourceWindowForSingleTask !== win) {
     win.dataset.returnWindowName = sourceWindowForSingleTask.dataset.window || "";
   } else {
@@ -1590,6 +2118,12 @@ async function openWindow(name, options = {}) {
   }
 
   win.classList.remove("is-hidden", "is-collapsed");
+  if (isPortraitDocumentFlow() && mobileFinderPageWindowNames.has(name)) {
+    mobileFinderDesktopPreferred = false;
+  }
+  if (mobileFinderPageWindowNames.has(name)) {
+    renderFinderNavigationBar(win);
+  }
   if (centeredSystemWindowNames.has(name)) {
     placeCenteredSystemWindow(win);
   }
@@ -1607,7 +2141,14 @@ async function openWindow(name, options = {}) {
   }
   updateQuickDraftFocusChrome();
 
-  const shouldPlaceWindow = !skipPlacement && !wasAlreadyOpen && win.dataset.userPositioned !== "true";
+  const reusedFinderFrame = !!finderReplacementFrame && !isPortraitDocumentFlow();
+  if (reusedFinderFrame) {
+    placeWindowForExplicitLayout(win, finderReplacementFrame);
+  }
+  const shouldPlaceWindow = !skipPlacement
+    && !wasAlreadyOpen
+    && !reusedFinderFrame
+    && win.dataset.userPositioned !== "true";
 
   if (shouldPlaceWindow && !centeredSystemWindowNames.has(name) && !["about", "saveChat"].includes(name)) {
     if (!usePortraitWindowFlow(win)) {
@@ -1881,6 +2422,86 @@ function visibleDeskAccessories() {
     .filter(isDeskAccessoryPlacementWindow);
 }
 
+function visiblePortraitDeskAccessories() {
+  return Array.from(document.querySelectorAll(".window:not(.is-hidden):not(.is-app-hidden):not(.is-collapsed)"))
+    .filter((win) => getWindowAppId(win) === "accessories");
+}
+
+function clearPortraitDeskAccessoryPlacement(win) {
+  if (!win) return;
+  win.classList.remove("is-mobile-da-arranged");
+  [
+    "--mobile-da-top",
+    "--mobile-da-max-height",
+    "--mobile-da-transform",
+  ].forEach((property) => win.style.removeProperty(property));
+}
+
+function mobileSafeAreaBottom() {
+  const value = window.getComputedStyle(document.documentElement)
+    .getPropertyValue("--safe-area-bottom");
+  return Math.max(0, Number.parseFloat(value) || 0);
+}
+
+function arrangePortraitDeskAccessories(frontWin = null) {
+  const margin = 12;
+  const gap = 10;
+  const menuBottom = document.querySelector(".menu-bar")?.getBoundingClientRect().bottom || 0;
+  const viewportHeight = Math.round(window.visualViewport?.height || window.innerHeight);
+  const safeAreaBottom = mobileSafeAreaBottom();
+  const topMin = Math.round(menuBottom + margin);
+  const bottomMax = Math.max(topMin + 1, viewportHeight - safeAreaBottom - margin);
+  const availableHeight = Math.max(1, bottomMax - topMin);
+  const ordered = visiblePortraitDeskAccessories()
+    .sort((a, b) => Number(a.style.zIndex || 0) - Number(b.style.zIndex || 0))
+    .filter((candidate) => candidate !== frontWin);
+  if (frontWin && visibleWindowOrNull(frontWin) && getWindowAppId(frontWin) === "accessories") {
+    ordered.push(frontWin);
+  }
+  if (!ordered.length) return;
+
+  ordered.forEach((candidate) => {
+    clearPortraitWindowSize(candidate);
+    [
+      "left",
+      "top",
+      "right",
+      "width",
+      "height",
+      "max-height",
+      "transform",
+    ].forEach((property) => candidate.style.removeProperty(property));
+    candidate.classList.add("is-mobile-da-arranged");
+    candidate.style.setProperty("--mobile-da-transform", "translateX(-50%)");
+    candidate.style.setProperty("--mobile-da-max-height", `${availableHeight}px`);
+  });
+
+  const naturalHeights = ordered.map((candidate) => candidate.getBoundingClientRect().height);
+  const naturalTotal = naturalHeights.reduce((sum, height) => sum + height, 0)
+    + gap * Math.max(0, ordered.length - 1);
+  if (naturalTotal > availableHeight) {
+    const sharedHeight = Math.max(
+      1,
+      Math.floor((availableHeight - gap * Math.max(0, ordered.length - 1)) / ordered.length)
+    );
+    ordered.forEach((candidate) => {
+      candidate.style.setProperty("--mobile-da-max-height", `${sharedHeight}px`);
+    });
+  }
+
+  const heights = ordered.map((candidate) => candidate.getBoundingClientRect().height);
+  const stackHeight = heights.reduce((sum, height) => sum + height, 0)
+    + gap * Math.max(0, ordered.length - 1);
+  const visualLift = Math.min(60, Math.round(availableHeight * 0.08));
+  let top = topMin + Math.max(0, Math.round((availableHeight - stackHeight) / 2) - visualLift);
+
+  ordered.forEach((candidate, index) => {
+    candidate.style.setProperty("--mobile-da-top", `${Math.round(top)}px`);
+    top += heights[index] + gap;
+    setWindowLayerZ(candidate, nextWindowLayerZ(8100 + index));
+  });
+}
+
 function getTileCandidateWindows() {
   if (writerMode) return [];
   if (window.matchMedia("(max-width: 860px)").matches) return [];
@@ -1952,6 +2573,11 @@ function ensureWritingSpineCollapsedForPortraitDA() {
 }
 
 function arrangeDeskAccessories(frontWin = null) {
+  if (isPortraitDocumentFlow()) {
+    arrangePortraitDeskAccessories(frontWin);
+    return;
+  }
+  visiblePortraitDeskAccessories().forEach(clearPortraitDeskAccessoryPlacement);
   const desktop = document.querySelector(".desktop");
   const desktopRect = desktop?.getBoundingClientRect();
   const spine = document.querySelector(".writing-spine-panel") || document.querySelector(".spine-flow-toolbox");
@@ -2058,16 +2684,7 @@ function arrangeDeskAccessories(frontWin = null) {
 
 function placeDA(win) {
   ensureWritingSpineCollapsedForPortraitDA();
-  if (win?.dataset.userPositioned === "true") {
-    setWindowLayerZ(win, nextWindowLayerZ());
-    return;
-  }
-  // Control Panel and Chooser have their own centered-dialog rule in the
-  // portrait stylesheet (fixed, transform: translateX(-50%)), but inline
-  // styles always beat it — the desktop cascade below was landing them at an
-  // arbitrary carried-over position instead of that designed spot.
-  if (isPortraitDocumentFlow() && (win?.classList.contains("control-panel") || win?.classList.contains("chooser-panel"))) {
-    ["left", "top", "right", "width", "transform"].forEach((prop) => { win.style[prop] = ""; });
+  if (win?.dataset.userPositioned === "true" && !isPortraitDocumentFlow()) {
     setWindowLayerZ(win, nextWindowLayerZ());
     return;
   }
@@ -2185,6 +2802,10 @@ function placeAssistantSidecarWindow(name, win) {
   win.style.transform = "none";
 
   if (mobile || !sourceWindow || sourceWindow.classList.contains("is-hidden")) {
+    if (isPortraitDocumentFlow() && getWindowAppId(win) === "accessories") {
+      arrangeDeskAccessories(win);
+      return;
+    }
     win.style.left = `${workLeft}px`;
     win.style.top = `${workTop}px`;
     return;
@@ -2623,7 +3244,7 @@ async function closeWindow(name, force = false) {
     restoreAssistantAfterSidecar();
   }
   if (getWindowAppId(win) === "accessories" && !writerMode) {
-    if (!isDeskAccessorySidecar(win)) arrangeDeskAccessories();
+    if (isPortraitDocumentFlow() || !isDeskAccessorySidecar(win)) arrangeDeskAccessories();
     raiseVisibleDeskAccessorySidecars();
   }
   if (name === "assistant") {
@@ -2676,7 +3297,11 @@ async function closeWindow(name, force = false) {
     const next = document.querySelector(".window.is-active:not(.is-hidden):not(.is-app-hidden)")
       || Array.from(document.querySelectorAll(".window:not(.is-hidden):not(.is-app-hidden)"))
         .sort((a, b) => Number(b.style.zIndex || 0) - Number(a.style.zIndex || 0))[0];
-    activeAppId = next ? getWindowAppId(next) : "finder";
+    if (next) {
+      focusWindow(next);
+    } else {
+      activeAppId = "finder";
+    }
   }
   syncMobileAppForeground();
   renderMultiFinderMenu();
@@ -2781,7 +3406,7 @@ function zoomWindow(win) {
     // For an app that can take the full-screen shell, the zoom box is the
     // maximize/restore control: it toggles between filling the screen and
     // floating alongside the other windows.
-    if (mobileFullScreenAppIds.has(getWindowAppId(win))) {
+    if (mobileWindowCanFillScreen(win)) {
       win.dataset.mobileRestored = win.dataset.mobileRestored === "true" ? "false" : "true";
       syncMobileAppForeground();
       focusWindow(win, 1);

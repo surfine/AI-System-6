@@ -646,6 +646,89 @@
   padding: 10px 10px 6px;
 }
 
+.finder-navigation-bar {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 3px 8px;
+  border-bottom: var(--finder-navigation-border);
+  background: var(--finder-navigation-bg);
+}
+
+.finder-navigation-back {
+  width: 30px;
+  min-width: 30px;
+  min-height: 28px;
+  padding: 0;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.finder-breadcrumbs {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: none;
+}
+
+.finder-breadcrumbs::-webkit-scrollbar {
+  display: none;
+}
+
+.finder-breadcrumb,
+.finder-breadcrumb-current {
+  flex: 0 0 auto;
+  min-width: 0;
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 4px;
+  color: var(--ink);
+  font: inherit;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.finder-breadcrumb {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  border-radius: var(--finder-breadcrumb-radius);
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+  text-decoration: var(--finder-breadcrumb-text-decoration);
+  text-decoration-color: var(--shade-dark);
+  text-underline-offset: 2px;
+}
+
+.finder-breadcrumb:hover,
+.finder-breadcrumb:focus-visible {
+  background: var(--finder-breadcrumb-hover-bg);
+  color: var(--finder-breadcrumb-hover-fg);
+  text-decoration-color: currentColor;
+}
+
+.finder-breadcrumb-current {
+  max-width: min(42vw, 34ch);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--finder-breadcrumb-current-color);
+  font-weight: 700;
+}
+
+.finder-breadcrumb-separator {
+  flex: 0 0 auto;
+  color: var(--shade-dark);
+}
+
 .project-finder-pathbar:has(#project-disk-up:not([hidden])) {
   grid-template-columns: auto minmax(0, 1fr) auto;
 }
@@ -805,7 +888,7 @@
 }
 
 @media (max-width: 860px) {
-  body:not(.is-writer-mode) .project-disk-window {
+  body:not(.is-writer-mode) .project-disk-window:not(.is-mobile-fullscreen) {
     width: calc(100vw - 32px) !important;
     max-width: calc(100vw - 32px);
   }

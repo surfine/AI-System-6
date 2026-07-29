@@ -20,7 +20,7 @@ const translationPad = read("app/features/translation-pad.js");
 const reader = read("app/features/reader.js");
 
 test.assertIncludes(packageJson, "\"stream-markdown-parser\"", "stream-markdown-parser is an explicit npm dependency");
-test.assertMatches(packageJson, /"prebuild:app": "npm run build:stream-markdown-vendor(?: && npm run build:ai-prompt-files)?"/, "vendor bundle is rebuilt before the app bundle");
+test.assertMatches(packageJson, /"prebuild:app": "[^"]*npm run build:stream-markdown-vendor[^"]*npm run build:ai-prompt-files"/, "vendor bundle is rebuilt before the app bundle");
 test.assertIncludes(manifest, "\"app/core/model-stream.js\"", "shared stream reader is in the core runtime");
 test.assertIncludes(manifest, "\"app/core/streaming-markdown.js\"", "streaming Markdown adapter is in the core runtime");
 test.assertIncludes(manifest, "\"app/vendor/stream-markdown-parser.global.js\"", "third-party parser is a lazy runtime file");
@@ -64,6 +64,34 @@ const streamedDeepSeekText = await readModelTextStreamForTest(deepSeekLikeRespon
 });
 test.assert(streamedDeepSeekText === "你好", "DeepSeek keep-alive comments are excluded from the visible reply");
 test.assert(streamedFinishReason === "length", "DeepSeek finish reasons survive streaming");
+
+const fragmentedResponse = new Response(new ReadableStream({
+  start(controller) {
+    [
+      'data: {"choices":[{"del',
+      'ta":{"content":"分"}}]}\r\n\r\n',
+      'data: {"choices":[{"delta":{"content":"片"}}]}\n\n',
+      'data: {"choices":[{"delta":{"content":"尾"}}]}',
+    ].forEach((chunk) => controller.enqueue(streamEncoder.encode(chunk)));
+    controller.close();
+  },
+}), { headers: { "content-type": "text/event-stream" } });
+const fragmentedText = await readModelTextStreamForTest(fragmentedResponse, { throttleMs: 0 });
+test.assert(fragmentedText === "分片尾", "fragmented SSE JSON and a trailing unterminated event are both preserved");
+
+const multiDataEventResponse = new Response(new ReadableStream({
+  start(controller) {
+    controller.enqueue(streamEncoder.encode([
+      'data: {"choices":[{"delta":{"content":"多"}}]}',
+      'data: {"choices":[{"delta":{"content":"行"}}]}',
+      "",
+      "",
+    ].join("\n")));
+    controller.close();
+  },
+}), { headers: { "content-type": "text/event-stream" } });
+const multiDataText = await readModelTextStreamForTest(multiDataEventResponse, { throttleMs: 0 });
+test.assert(multiDataText === "多行", "multiple data lines in one SSE event are consumed in order");
 
 test.assertIncludes(streamingMarkdown, "async function ensureStreamMarkdownParser()", "parser is loaded through a narrow ensure function");
 test.assertIncludes(streamingMarkdown, "loadClassicScriptOnce(\"app/vendor/stream-markdown-parser.global.js\")", "parser loads lazily as a classic script");

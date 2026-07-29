@@ -50,9 +50,11 @@ test.assertIncludes(runtime, "ensureProjectPromptOverrideForEditing", "Opening a
 test.assertIncludes(runtime, "file.artifactKind === artifactKind && file.promptId === id", "Prompt files use stable IDs instead of display names");
 test.assertIncludes(runtime, "file.folderId !== disabledFolder?.id", "A moved override cannot remain active while it is in Disabled Prompts");
 test.assertIncludes(runtime, "实际提示词", "Run receipts include the effective prompt path without document content");
-test.assertIncludes(projectDisk, "提示词覆盖", "Project Finder exposes Prompt Overrides");
-test.assertIncludes(projectDisk, "已停用提示词", "Project Finder exposes Disabled Prompts");
-test.assertIncludes(projectDisk, "运行记录", "Project Finder exposes Run Receipts");
+test.assertIncludes(runtime, 'ensureProjectPromptFolder(projectId, "提示词覆盖")', "Prompt Overrides are production Project Hard Disk records");
+test.assertIncludes(runtime, 'ensureProjectPromptFolder(projectId, "已停用提示词")', "Disabled Prompts are production Project Hard Disk records");
+test.assertIncludes(runtime, 'ensureProjectPromptFolder(projectId, "运行记录")', "Run Receipts are production Project Hard Disk records");
+test.assertIncludes(projectDisk, "return [...folders, ...files, ...references];", "Project Finder lists the production records without a parallel prompt exhibition");
+test.assertNotIncludes(projectDisk, "getProjectSystemFinderItems", "Project Finder does not maintain a second display-only prompt tree");
 test.assertIncludes(exportImport, "files: chatFiles.filter((file) => file.projectId === projectId)", "Prompt files and receipts are included in project export");
 test.assertIncludes(exportImport, "chatFiles.unshift(...imported.files)", "Prompt files and receipts survive project import");
 test.assertIncludes(app, "(window.AISystem6PromptFiles || []).map", "Finder lists the generated prompt records instead of a display-only copy");

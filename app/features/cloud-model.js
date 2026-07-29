@@ -74,14 +74,89 @@
     if (typeof refreshSystemSelectControls === "function") refreshSystemSelectControls();
   };
 
+  async function changeLocalCredential(action, payload = {}) {
+    if (isPublicCloudCredentialMode()) return null;
+    const response = await fetch("/api/cloud/credentials", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, ...payload }),
+    });
+    if (!response.ok) throw new Error(await response.text() || `HTTP ${response.status}`);
+    return response.json();
+  }
+
+  async function stageCloudCredentialIfNeeded() {
+    const apiKey = cloudApiKeyEl.value.trim() || cloudRuntimeApiKey;
+    if (isPublicCloudCredentialMode()) {
+      if (apiKey) setCloudRuntimeApiKey(apiKey);
+      return { credentialId: "", staged: false };
+    }
+    if (!apiKey) {
+      return { credentialId: cloudConfig?.credentialId || "", staged: false };
+    }
+    const baseUrl = PROVIDER_BASE_URLS[cloudConfig?.provider] || DEEPSEEK_BASE_URL;
+    const data = await changeLocalCredential("stage", {
+      provider: cloudConfig?.provider || "deepseek",
+      base_url: baseUrl,
+      api_key: apiKey,
+    });
+    if (!cloudConfig) cloudConfig = {};
+    cloudConfig.credentialId = String(data?.credential_id || "");
+    cloudConfig.credentialPersistence = String(data?.persistence || "service-session");
+    setCloudRuntimeApiKey("");
+    cloudApiKeyEl.value = "";
+    saveCloudConfig();
+    return { credentialId: cloudConfig.credentialId, staged: true };
+  }
+
+  async function persistVerifiedCloudCredential() {
+    if (isPublicCloudCredentialMode() || !cloudConfig?.credentialId) return;
+    const data = await changeLocalCredential("persist", {
+      credential_id: cloudConfig.credentialId,
+    });
+    cloudConfig.credentialPersistence = String(data?.persistence || "service-session");
+    saveCloudConfig();
+  }
+
+  async function discardStagedCloudCredential(credentialId) {
+    if (isPublicCloudCredentialMode() || !credentialId) return;
+    try {
+      await changeLocalCredential("discard", { credential_id: credentialId });
+    } catch {}
+  }
+
+  async function verifyRestoredCloudCredential() {
+    if (isPublicCloudCredentialMode() || !cloudConfig?.credentialId) return;
+    try {
+      const data = await changeLocalCredential("available", {
+        credential_id: cloudConfig.credentialId,
+        provider: cloudConfig.provider || "deepseek",
+      });
+      if (data?.available) return;
+      cloudConfig.credentialId = "";
+      cloudConfig.credentialPersistence = "";
+      cloudConfig.active = false;
+      saveCloudConfig();
+      applyCloudActiveState();
+      updateCheckButtonState();
+    } catch {
+      // A temporarily unavailable local service must not erase a valid
+      // Keychain reference. The next status check will surface the failure.
+    }
+  }
+
   async function fetchBalanceOnly() {
-    if (!cloudConfig || !cloudConfig.provider || !cloudConfig.apiKey) return null;
+    if (!cloudConfig || !cloudConfig.provider || !cloudCredentialReady()) return null;
     try {
       const baseUrl = PROVIDER_BASE_URLS[cloudConfig.provider] || DEEPSEEK_BASE_URL;
       const res = await fetch("/api/cloud/status", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ api_key: cloudConfig.apiKey, base_url: baseUrl }),
+        body: JSON.stringify({
+          ...cloudCredentialTransportFields("status"),
+          provider: cloudConfig.provider,
+          base_url: baseUrl,
+        }),
       });
       if (!res.ok) return null;
       const data = await res.json();
@@ -113,7 +188,7 @@
   }
 
   async function checkCloudStatus() {
-    if (!cloudConfig || !cloudConfig.provider || !cloudConfig.apiKey) return;
+    if (!cloudConfig || !cloudConfig.provider || !cloudCredentialReady()) return;
     const baseUrl = PROVIDER_BASE_URLS[cloudConfig.provider] || DEEPSEEK_BASE_URL;
     cloudStatusEl.hidden = false;
     cloudStatusDot.className = "cloud-status-dot";
@@ -123,7 +198,11 @@
       const response = await fetch("/api/cloud/status", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ api_key: cloudConfig.apiKey, base_url: baseUrl }),
+        body: JSON.stringify({
+          ...cloudCredentialTransportFields("status"),
+          provider: cloudConfig.provider,
+          base_url: baseUrl,
+        }),
       });
       if (!response.ok) throw new Error("HTTP " + response.status);
       const data = await response.json();
@@ -163,7 +242,7 @@
   }
 
   function applyCloudActiveState() {
-    const active = !!(cloudConfig && cloudConfig.active && cloudConfig.provider && cloudConfig.apiKey);
+    const active = !!(cloudConfig && cloudConfig.active && cloudConfig.provider && cloudCredentialReady());
     document.body.classList.toggle("is-cloud-active", active);
     const labelEl = document.querySelector("#cloud-model-label");
     if (active) {
@@ -186,7 +265,7 @@
           if (typeof renderCloudStatePanel === "function") renderCloudStatePanel();
         });
       }
-      const hasConfig = cloudConfig && cloudConfig.provider && cloudConfig.apiKey;
+      const hasConfig = cloudConfig && cloudConfig.provider && cloudCredentialReady();
       if (hasConfig) {
         if (typeof refreshCloudUsageDisplay === "function") refreshCloudUsageDisplay();
       } else {
@@ -194,13 +273,13 @@
       }
       cloudStatusHint.textContent = typeof t === "function"
         ? t("cloud_status_hint")
-        : "Connect once. This device remembers the key; project files and exports never include it.";
+        : "The key is kept for this tab session only; project files and exports never include it.";
     }
     if (typeof renderCloudModelPopover === "function") renderCloudModelPopover();
   }
 
   function toggleCloud() {
-    if (!cloudConfig || !cloudConfig.provider || !cloudConfig.apiKey) return;
+    if (!cloudConfig || !cloudConfig.provider || !cloudCredentialReady()) return;
     cloudConfig.active = !cloudConfig.active;
     if (cloudConfig.active) {
       cloudConfig.baseUrl = PROVIDER_BASE_URLS[cloudConfig.provider] || DEEPSEEK_BASE_URL;
@@ -209,33 +288,104 @@
     applyCloudActiveState();
   }
 
+  function cloudPopoverElement(tag, className = "", text = "") {
+    const element = document.createElement(tag);
+    if (className) element.className = className;
+    element.textContent = String(text);
+    return element;
+  }
+
+  function cloudPopoverButton(action, mark, label, sublabel = "") {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.dataset.action = action;
+    const markElement = cloudPopoverElement("span", "cl-mrk", mark);
+    const textElement = cloudPopoverElement("span", "cl-txt", label);
+    if (sublabel) {
+      textElement.append(cloudPopoverElement("small", "cl-subtxt", sublabel));
+    }
+    button.append(markElement, textElement);
+    return button;
+  }
+
+  function cloudPopoverRow(label, value, supplementary = "") {
+    const row = cloudPopoverElement("div", "cl-row");
+    const labelElement = cloudPopoverElement("span", "", `${label}:`);
+    const valueElement = cloudPopoverElement("b", "", value);
+    if (supplementary) {
+      const detail = cloudPopoverElement("small", "", supplementary);
+      detail.style.opacity = ".65";
+      valueElement.append(" ", detail);
+    }
+    row.append(labelElement, valueElement);
+    return row;
+  }
+
+  function cloudPopoverStaticRow(mark, label, sublabel = "") {
+    const row = cloudPopoverElement("div", "cl-static-row");
+    const markElement = cloudPopoverElement("span", "cl-mrk", mark);
+    const textElement = cloudPopoverElement("span", "cl-txt", label);
+    if (sublabel) {
+      textElement.append(cloudPopoverElement("small", "cl-subtxt", sublabel));
+    }
+    row.append(markElement, textElement);
+    return row;
+  }
+
+  function wireCloudPopoverButtons(popover) {
+    popover.querySelectorAll("button").forEach(function (button) {
+      button.addEventListener("click", function (event) {
+        event.stopPropagation();
+        if (typeof closeMenus === "function") closeMenus();
+        const action = button.dataset.action;
+        if (action === "toggle-cloud" && !cloudConfig?.active) {
+          toggleCloud();
+        } else if (action === "toggle-local" && cloudConfig?.active) {
+          toggleCloud();
+        } else if (action === "refresh-balance") {
+          checkCloudStatus();
+        } else if (action === "open-model-settings" || action === "open-cloud-settings") {
+          if (typeof openWindow === "function") {
+            openWindow("control");
+            if (action === "open-cloud-settings") {
+              const keyElement = document.querySelector("#cloud-api-key");
+              if (keyElement) {
+                keyElement.focus();
+                keyElement.select();
+              }
+            }
+          }
+        }
+      });
+    });
+  }
+
   window.renderCloudModelPopover = function () {
     const popover = document.querySelector("#cloud-model-popover");
     if (!popover) return;
     if (!cloudConfig) {
       const disconnectedText = typeof t === "function" ? t("model_not_connected") : "Model not connected";
-      popover.innerHTML = [
-        '<div class="cl-hdr">' + disconnectedText + '</div>',
-        '<button type="button" data-action="open-model-settings"><span class="cl-mrk"></span><span class="cl-txt">'
-          + (typeof t === "function" ? t("control_panel") : "Control Panel") + '</span></button>',
-      ].join("");
-      popover.querySelector('[data-action="open-model-settings"]')?.addEventListener("click", function (event) {
-        event.stopPropagation();
-        if (typeof closeMenus === "function") closeMenus();
-        if (typeof openWindow === "function") openWindow("control");
-      });
+      popover.replaceChildren(
+        cloudPopoverElement("div", "cl-hdr", disconnectedText),
+        cloudPopoverButton(
+          "open-model-settings",
+          "",
+          typeof t === "function" ? t("control_panel") : "Control Panel"
+        )
+      );
+      wireCloudPopoverButtons(popover);
       return;
     }
 
     const latestText = typeof cloudUsageText === "function" ? cloudUsageText(latestCloudUsage) : "-";
     const sessionText = typeof cloudUsageText === "function" ? cloudUsageText(sessionCloudUsage) : "-";
     const balText = typeof cloudBalanceText === "function" ? cloudBalanceText(cloudConfig) : "-";
-    let balSpent = "";
+    let balanceSpentText = "";
     if (cloudConfig.balance && balText !== "-") {
       const cur = cloudConfig.balance.currency || "CNY";
       if (cloudBalanceAtActivation !== null) {
         const spent = cloudBalanceAtActivation - Number(cloudConfig.balance.total);
-        if (spent > 0.000001) balSpent = ' <small style="opacity:.65">(-' + cur + spent.toFixed(4) + ')</small>';
+        if (spent > 0.000001) balanceSpentText = `(-${cur}${spent.toFixed(4)})`;
       }
     }
 
@@ -250,56 +400,47 @@
     const localSummary = localModelText || localProviderText || (typeof t === "function" ? t("local_lm_studio") : "LM Studio");
     const contextText = typeof currentContextWindowText === "function" ? currentContextWindowText(cloudConfig) : (document.querySelector("#context-length")?.value || "-");
     const localStateText = typeof modelStateCurrentStep === "function" ? modelStateCurrentStep() : "-";
-    const estNote = '<div class="cl-est-note">' + (typeof t === "function" ? t("cl_est_note") : "Costs estimated from published prices. See provider dashboard for actual billing.") + '</div>';
+    const divider = () => document.createElement("hr");
+    const nodes = cloudConfig.active
+      ? [
+          cloudPopoverElement("div", "cl-hdr", t("cloud_model")),
+          cloudPopoverElement("div", "cl-model-name", cloudRouteText),
+          cloudPopoverRow(t("context_length"), contextText),
+          cloudPopoverRow(t("cl_lat"), latestText),
+          cloudPopoverRow(t("cl_ses"), sessionText),
+          cloudPopoverRow(t("cl_bal"), balText, balanceSpentText),
+          cloudPopoverElement(
+            "div",
+            "cl-est-note",
+            typeof t === "function"
+              ? t("cl_est_note")
+              : "Costs estimated from published prices. See provider dashboard for actual billing."
+          ),
+          divider(),
+          cloudPopoverButton("toggle-cloud", activeText, cloudModeText, cloudRouteText),
+          cloudPopoverButton("toggle-local", localText, localModeText, localModelText),
+          divider(),
+          cloudPopoverButton("refresh-balance", "", t("cl_act_ref")),
+          cloudPopoverButton("open-cloud-settings", "", t("cl_act_set")),
+        ]
+      : [
+          cloudPopoverStaticRow(localText, localModeText, localSummary),
+          cloudPopoverRow(t("context_length"), contextText),
+          cloudPopoverRow(t("model_state"), localStateText),
+          divider(),
+          cloudPopoverButton(
+            "toggle-cloud",
+            activeText,
+            typeof t === "function" ? t("cl_act_cld") : cloudModeText
+          ),
+        ];
 
-    const lines = cloudConfig.active ? [
-      '<div class="cl-hdr">' + t("cloud_model") + '</div>',
-      '<div class="cl-model-name">' + cloudRouteText + '</div>',
-      '<div class="cl-row"><span>' + t("context_length") + ':</span><b>' + contextText + '</b></div>',
-      '<div class="cl-row"><span>' + t("cl_lat") + ':</span><b>' + latestText + '</b></div>',
-      '<div class="cl-row"><span>' + t("cl_ses") + ':</span><b>' + sessionText + '</b></div>',
-      '<div class="cl-row"><span>' + t("cl_bal") + ':</span><b>' + balText + balSpent + '</b></div>',
-      estNote,
-      '<hr />',
-      '<button type="button" data-action="toggle-cloud"><span class="cl-mrk">' + activeText + '</span><span class="cl-txt">' + cloudModeText + '<small class="cl-subtxt">' + cloudRouteText + '</small></span></button>',
-      '<button type="button" data-action="toggle-local"><span class="cl-mrk">' + localText + '</span><span class="cl-txt">' + localModeText + (localModelText ? '<small class="cl-subtxt">' + localModelText + '</small>' : '') + '</span></button>',
-      '<hr />',
-      '<button type="button" data-action="refresh-balance"><span class="cl-mrk"></span><span class="cl-txt">' + t("cl_act_ref") + '</span></button>',
-      '<button type="button" data-action="open-cloud-settings"><span class="cl-mrk"></span><span class="cl-txt">' + t("cl_act_set") + '</span></button>'
-    ] : [
-      '<div class="cl-static-row"><span class="cl-mrk">' + localText + '</span><span class="cl-txt">' + localModeText + (localSummary ? '<small class="cl-subtxt">' + localSummary + '</small>' : '') + '</span></div>',
-      '<div class="cl-row"><span>' + t("context_length") + ':</span><b>' + contextText + '</b></div>',
-      '<div class="cl-row"><span>' + t("model_state") + ':</span><b>' + localStateText + '</b></div>',
-      '<hr />',
-      '<button type="button" data-action="toggle-cloud"><span class="cl-mrk">' + activeText + '</span><span class="cl-txt">' + (typeof t === "function" ? t("cl_act_cld") : cloudModeText) + '</span></button>'
-    ];
-
-    popover.innerHTML = lines.join("");
-
-    popover.querySelectorAll("button").forEach(function (btn) {
-      btn.addEventListener("click", function (e) {
-        e.stopPropagation();
-        if (typeof closeMenus === "function") closeMenus();
-        const act = btn.dataset.action;
-        if (act === "toggle-cloud" && !cloudConfig.active) {
-          toggleCloud();
-        } else if (act === "toggle-local" && cloudConfig.active) {
-          toggleCloud();
-        } else if (act === "refresh-balance") {
-          checkCloudStatus();
-        } else if (act === "open-cloud-settings") {
-          if (typeof openWindow === "function") {
-            openWindow("control");
-            const keyEl = document.querySelector("#cloud-api-key");
-            if (keyEl) { keyEl.focus(); keyEl.select(); }
-          }
-        }
-      });
-    });
+    popover.replaceChildren(...nodes);
+    wireCloudPopoverButtons(popover);
   };
 
   function updateCheckButtonState() {
-    const hasKey = !!cloudApiKeyEl.value.trim();
+    const hasKey = !!cloudApiKeyEl.value.trim() || cloudCredentialReady();
     const hasProvider = !!cloudProviderEl.value;
     cloudCheckBtn.disabled = !(hasKey && hasProvider);
   }
@@ -308,8 +449,13 @@
   cloudProviderEl.addEventListener("change", async function () {
     const provider = cloudProviderEl.value;
     if (!provider) {
+      const credentialId = cloudConfig?.credentialId || "";
       cloudConfig = null;
       saveCloudConfig();
+      setCloudRuntimeApiKey("");
+      if (credentialId && !isPublicCloudCredentialMode()) {
+        changeLocalCredential("delete", { credential_id: credentialId }).catch(function () {});
+      }
       cloudModelSelectEl?.replaceChildren();
       cloudModelEl.value = "";
       window.syncCloudModelControls();
@@ -362,7 +508,7 @@
   // API key change
   cloudApiKeyEl.addEventListener("input", function () {
     if (!cloudConfig) cloudConfig = {};
-    cloudConfig.apiKey = cloudApiKeyEl.value.trim();
+    setCloudRuntimeApiKey(cloudApiKeyEl.value.trim());
     cloudConfig.active = false;
     saveCloudConfig();
     updateCheckButtonState();
@@ -373,18 +519,39 @@
   // Check status button
   cloudCheckBtn.addEventListener("click", async function () {
     setControlLoading(cloudCheckBtn, true, typeof t === "function" ? t("cloud_checking") : "Checking…");
+    let stagedCredentialId = "";
     try {
+      const staged = await stageCloudCredentialIfNeeded();
+      stagedCredentialId = staged.staged ? staged.credentialId : "";
       await checkCloudStatus();
       if (cloudStatusDot.classList.contains("is-connected")) {
+        await persistVerifiedCloudCredential();
         cloudConfig.active = true;
         cloudConfig.baseUrl = PROVIDER_BASE_URLS[cloudConfig.provider] || DEEPSEEK_BASE_URL;
         saveCloudConfig();
         applyCloudActiveState();
       } else {
+        await discardStagedCloudCredential(stagedCredentialId);
+        if (stagedCredentialId && cloudConfig?.credentialId === stagedCredentialId) {
+          cloudConfig.credentialId = "";
+          cloudConfig.credentialPersistence = "";
+        }
         cloudConfig.active = false;
         saveCloudConfig();
         applyCloudActiveState();
       }
+    } catch (error) {
+      await discardStagedCloudCredential(stagedCredentialId);
+      if (stagedCredentialId && cloudConfig?.credentialId === stagedCredentialId) {
+        cloudConfig.credentialId = "";
+        cloudConfig.credentialPersistence = "";
+      }
+      if (cloudConfig) cloudConfig.active = false;
+      saveCloudConfig();
+      cloudStatusEl.hidden = false;
+      cloudStatusDot.className = "cloud-status-dot is-error";
+      cloudStatusText.textContent = String(error?.message || error || (typeof t === "function" ? t("cloud_error") : "Error"));
+      applyCloudActiveState();
     } finally {
       setControlLoading(cloudCheckBtn, false);
       updateCheckButtonState();
@@ -395,7 +562,7 @@
   loadCloudConfig();
   if (cloudConfig && cloudConfig.provider) {
     cloudProviderEl.value = cloudConfig.provider;
-    cloudApiKeyEl.value = cloudConfig.apiKey || "";
+    cloudApiKeyEl.value = "";
     populateCloudModelDropdown(BUILTIN_PROVIDER_MODELS[cloudConfig.provider] || []);
     fetchCloudModels().then(function (models) {
       if (models.length) populateCloudModelDropdown(models);
@@ -403,6 +570,17 @@
       window.syncCloudModelControls();
     });
     applyCloudActiveState();
+    if (cloudRuntimeApiKey && !isPublicCloudCredentialMode()) {
+      stageCloudCredentialIfNeeded()
+        .then(updateCheckButtonState)
+        .catch(function () {
+          cloudApiKeyEl.value = "";
+          setCloudRuntimeApiKey("");
+          updateCheckButtonState();
+        });
+    } else {
+      verifyRestoredCloudCredential();
+    }
   } else {
     window.syncCloudModelControls();
   }

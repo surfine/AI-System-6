@@ -665,8 +665,8 @@
   }
 
   .lc-sidebar {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    grid-template-rows: auto;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
     align-items: center;
     gap: 8px;
     padding: 7px 9px;
@@ -684,6 +684,7 @@
   }
 
   .lc-sidebar .lc-layer-list {
+    min-width: 0;
     display: flex;
     gap: 5px;
     overflow-x: auto;
@@ -699,8 +700,24 @@
     min-width: 148px;
   }
 
+  .lc-selection-help {
+    display: none;
+  }
+
+  .lc-arrange-panel {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .lc-sidebar-actions {
+    grid-column: 2;
+    grid-row: 2;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .lc-sidebar-actions .btn {
     width: auto;
+    min-width: 0;
   }
 
   .lc-shape-library {
@@ -724,6 +741,142 @@
 
   .lc-canvas {
     max-height: 34vh;
+  }
+}
+
+/* Phone editor: keep one artboard and one contextual control surface on the
+   same screen. The desktop scene rail becomes a compact layer strip; the
+   existing inspector becomes a bounded bottom drawer whose own contents
+   scroll. No second mobile-only panel or duplicate controls are introduced. */
+@container (max-width: 430px) {
+  .liquid-cover-body {
+    grid-template-rows: 46px minmax(238px, 1fr) minmax(224px, 38vh);
+    overflow: hidden;
+  }
+
+  .lc-toolbar {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 4px;
+    min-height: 38px;
+    padding: 4px 6px;
+  }
+
+  .lc-toolbar-create {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .lc-toolbar-create .btn {
+    width: 100%;
+    padding-inline: 5px;
+  }
+
+  .lc-toolbar-create .mobile-control-long,
+  .lc-toolbar-modes .mobile-control-long,
+  .lc-toolbar-export .mobile-control-long {
+    display: none;
+  }
+
+  .lc-toolbar-create .mobile-control-short,
+  .lc-toolbar-modes .mobile-control-short,
+  .lc-toolbar-export .mobile-control-short {
+    display: inline;
+  }
+
+  .lc-toolbar-history {
+    display: none;
+  }
+
+  .lc-toolbar-modes {
+    padding-left: 2px;
+  }
+
+  .lc-toolbar-modes .lc-inspector-tab {
+    min-width: 38px;
+    padding-inline: 6px;
+  }
+
+  .lc-toolbar-export {
+    min-width: 64px;
+    padding-inline: 7px;
+  }
+
+  .lc-sidebar {
+    display: block;
+    min-height: 0;
+    padding: 5px 7px;
+    overflow: hidden;
+  }
+
+  .lc-sidebar-head,
+  .lc-arrange-panel,
+  .lc-sidebar-actions {
+    display: none;
+  }
+
+  .lc-sidebar .lc-layer-list {
+    height: 100%;
+    align-items: stretch;
+    scrollbar-width: none;
+  }
+
+  .lc-sidebar .lc-layer-list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .lc-sidebar .lc-layer-row {
+    min-width: min(260px, 76vw);
+  }
+
+  .lc-stage {
+    max-height: none;
+    gap: 7px;
+    padding: 9px 10px 8px;
+  }
+
+  .lc-canvas {
+    max-height: 100%;
+  }
+
+  .lc-stage-hint {
+    display: none;
+  }
+
+  .lc-stage-selection {
+    max-width: calc(100% - 34px);
+  }
+
+  .lc-panel {
+    grid-template-rows: auto minmax(0, 1fr);
+    padding: 8px 10px 10px;
+    overflow: hidden;
+  }
+
+  .lc-panel-intro {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: baseline;
+    gap: 4px 9px;
+    padding: 0 1px 7px;
+  }
+
+  .lc-panel-intro strong {
+    font-size: 15px;
+  }
+
+  .lc-panel-intro > span:last-child {
+    display: none;
+  }
+
+  .lc-inspector-panel {
+    padding-right: 3px;
+  }
+
+  .lc-group {
+    padding-block: 8px;
+  }
+
+  #lc-panel-glass .lc-material-group {
+    padding-top: 9px;
   }
 }
 

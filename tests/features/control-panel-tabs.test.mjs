@@ -47,15 +47,14 @@ test.assertIncludes(html, 'data-control-panel="cloud">', "Cloud starts as the vi
 test.assertIncludes(html, 'data-control-panel="local" hidden', "Local starts hidden");
 test.assertIncludes(persistence, "localInUse ? \"local\" : \"cloud\"", "the default prefers whichever model is actually in use");
 
-// A window-level accessory-cascade path (meant for the desktop) was stamping
-// inline left/top/width on Control Panel and Chooser even in portrait, where a
-// dedicated centered-dialog rule already positions them — inline always wins,
-// so the CSS never had a chance.
+// A window-level accessory cascade must never stamp desktop left/top/width
+// frames in portrait. The shared phone arranger now owns every Desk Accessory,
+// including Control Panel and Chooser, before desktop cascade code can run.
 const windowManager = read("app/core/window-manager.js");
 test.assertIncludes(
   windowManager,
-  'isPortraitDocumentFlow() && (win?.classList.contains("control-panel") || win?.classList.contains("chooser-panel"))',
-  "the desktop cascade steps aside for these two windows in portrait"
+  "if (isPortraitDocumentFlow()) {\n    arrangePortraitDeskAccessories(frontWin);\n    return;",
+  "the desktop cascade steps aside for all Desk Accessories in portrait"
 );
 
 // The Local tab's connect half is one status line by default; the auth/CORS/

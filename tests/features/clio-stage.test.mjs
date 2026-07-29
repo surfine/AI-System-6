@@ -12,6 +12,9 @@ const marpConvertPrompt = read("app/content/ai-prompts/other-apps/marp-convert.m
 const marpRepairPrompt = read("app/content/ai-prompts/other-apps/marp-repair.md");
 const clioStageStyles = read("styles/20-reader-docmap.css");
 const index = read("index.html");
+const dictionary = read("app/data/system-dictionary.js");
+const en = read("app/data/translations-en.js");
+const zh = read("app/data/translations-zh.js");
 const app = readAppSurface(["app/features/slides-export.js", "app/features/clio-stage.js", "app/features/export-import.js"]);
 
 test.assertIncludes(clioStage, "function parseClioStageMarpDocument(markdown)", "ClioStage keeps a parser for Marp slides.md");
@@ -63,5 +66,13 @@ test.assertIncludes(app, "openCurrentReaderInClioStage", "Reader can still hand 
 test.assertIncludes(app, "generateMarpMarkdownAndOpenClioStage", "TeachText can still generate and open Marp slides");
 test.assertIncludes(app, "openSelectedProjectCdInClioStage", "Project CD can still hand Marp slides to ClioStage");
 test.assertNotIncludes(index, "clio-stage-story-pass-form", "Story Pass does not add a blocking form");
+test.assertIncludes(dictionary, 'id: "clio-stage"', "System Help exposes the production ClioStage workflow");
+test.assertIncludes(dictionary, "Build evidence in ClioChart, send the chosen projection to ClioStage", "System Help documents the Chart-to-Stage handoff");
+test.assertIncludes(clioStage, 't("clio_stage_slides_count"', "slide counts use localized copy");
+test.assertIncludes(clioStage, 't("clio_stage_notes")', "Cue View notes use localized copy");
+for (const key of ["clio_stage_slides_count", "clio_stage_notes"]) {
+  test.assertIncludes(en, `${key}:`, `English includes ${key}`);
+  test.assertIncludes(zh, `${key}:`, `Chinese includes ${key}`);
+}
 
 test.finish();

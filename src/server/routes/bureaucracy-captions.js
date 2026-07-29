@@ -30,7 +30,10 @@
 
 const { send, readJsonBody, requestSignal, withTimeoutSignal } = require("../lib/http.js");
 const { isQwen35ModelName, modelContentFromChatData } = require("../chat.js");
-const { findHumanizerOutputHits, scrubHumanizerOutput } = require("../humanizer.js");
+const {
+  findHumanizerOutputHits,
+  findHumanizerStyleDiagnostics,
+} = require("../humanizer.js");
 const { getLoadedLmStudioModelInfo } = require("../lmstudio.js");
 const {
   normalizeBureaucracyTone,
@@ -94,9 +97,7 @@ async function handleBureaucracyCaptions(req, res) {
       }
       const data = JSON.parse(text);
       const rawContent = modelContentFromChatData(data).trim();
-      const content = findHumanizerOutputHits(rawContent).length
-        ? scrubHumanizerOutput(rawContent).trim()
-        : rawContent;
+      const content = rawContent;
       if (!content) throw new Error("Model response was empty.");
       const parsedCaptions = parseBureaucracyMarkdownCaptions(content, tone);
       const captions = validateBureaucracyCaptions(parsedCaptions, tone);
@@ -105,6 +106,12 @@ async function handleBureaucracyCaptions(req, res) {
       send(res, 200, JSON.stringify({
         provider: "llm",
         captions,
+        humanizer: {
+          mode: "lint",
+          repaired: false,
+          remaining_hits: findHumanizerOutputHits(content),
+          diagnostics: findHumanizerStyleDiagnostics(content),
+        },
       }), { "Content-Type": "application/json" });
     } catch (modelError) {
       send(res, 503, JSON.stringify({

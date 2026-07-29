@@ -1234,7 +1234,7 @@ async function translateCurrentReaderSubtitleFromQuestion(question) {
   if (!beginLongTask("reader-subtitle-translation", t("translating_document"))) return true;
   try {
     let translatedSrt = "";
-    if (typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudConfig.apiKey) {
+    if (typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudCredentialReady()) {
       const response = await fetch(apiUrl("/api/subtitles/translate"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1242,7 +1242,7 @@ async function translateCurrentReaderSubtitleFromQuestion(question) {
           mode,
           blocks,
           _cloud_active: true,
-          _cloud_api_key: cloudConfig.apiKey,
+          ...cloudCredentialTransportFields(),
           _cloud_base_url: cloudConfig.baseUrl,
           _cloud_model: cloudConfig.model,
         }),

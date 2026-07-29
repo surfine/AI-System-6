@@ -1,7 +1,8 @@
 "use strict";
 
 const { readJsonBody, requestSignal, send } = require("../lib/http.js");
-const { DEEPSEEK_BASE_URL_DEFAULT } = require("../cloud.js");
+const { DEEPSEEK_BASE_URL_DEFAULT, resolveCloudBaseUrl } = require("../cloud.js");
+const { resolveCloudCredential } = require("../credential-vault.js");
 const {
   buildSrtFromBlocks,
   translateSubtitleBlocks,
@@ -56,10 +57,18 @@ async function handleSubtitlesTranslate(req, res) {
       return;
     }
 
+    const cloudApiKey = body._cloud_active
+      ? await resolveCloudCredential({
+          credentialId: body._cloud_credential_id,
+          provider: "deepseek",
+          suppliedApiKey: body._cloud_api_key,
+          allowSupplied: false,
+        })
+      : "";
     const options = {
       cloudActive: !!body._cloud_active,
-      cloudApiKey: body._cloud_api_key,
-      cloudBaseUrl: body._cloud_base_url || DEEPSEEK_BASE_URL_DEFAULT,
+      cloudApiKey,
+      cloudBaseUrl: resolveCloudBaseUrl(body._cloud_base_url || DEEPSEEK_BASE_URL_DEFAULT),
       cloudModel: body._cloud_model,
       signal,
     };

@@ -9,6 +9,138 @@
   const serverPromptFiles = typeof require === "function"
     ? (() => { try { return require("../generated/ai-prompt-files.json"); } catch { return []; } })()
     : [];
+  const protectedWritingSpans = Object.freeze([
+    "number",
+    "date",
+    "person-name",
+    "proper-noun",
+    "quote",
+    "citation",
+    "code",
+    "table-cell",
+  ]);
+  const taskContracts = Object.freeze({
+    chat: Object.freeze({
+      id: "chat",
+      output: Object.freeze({ kind: "markdown" }),
+      sourcePolicy: "registered-only",
+      writeTarget: "none",
+      humanizer: "lint",
+      protectedSpans: protectedWritingSpans,
+      requiresUserCommit: false,
+    }),
+    "source.extract-facts": Object.freeze({
+      id: "source.extract-facts",
+      output: Object.freeze({ kind: "json", schemaId: "fact-extraction-v1" }),
+      sourcePolicy: "selected-only",
+      writeTarget: "none",
+      humanizer: "off",
+      protectedSpans: protectedWritingSpans,
+      requiresUserCommit: false,
+    }),
+    "source.verify-claims": Object.freeze({
+      id: "source.verify-claims",
+      output: Object.freeze({ kind: "json", schemaId: "claim-verification-v1" }),
+      sourcePolicy: "registered-only",
+      writeTarget: "none",
+      humanizer: "off",
+      protectedSpans: protectedWritingSpans,
+      requiresUserCommit: false,
+    }),
+    "source.translate": Object.freeze({
+      id: "source.translate",
+      output: Object.freeze({ kind: "plainText" }),
+      sourcePolicy: "selected-only",
+      writeTarget: "none",
+      humanizer: "off",
+      protectedSpans: protectedWritingSpans,
+      requiresUserCommit: false,
+    }),
+    "writing.rewrite-selection": Object.freeze({
+      id: "writing.rewrite-selection",
+      output: Object.freeze({ kind: "patch", schemaId: "text-patch-v1" }),
+      sourcePolicy: "registered-only",
+      writeTarget: "manuscript",
+      humanizer: "lint",
+      protectedSpans: protectedWritingSpans,
+      requiresUserCommit: true,
+    }),
+    "writing.humanize-selection": Object.freeze({
+      id: "writing.humanize-selection",
+      output: Object.freeze({ kind: "patch", schemaId: "text-patch-v1" }),
+      sourcePolicy: "selected-only",
+      writeTarget: "manuscript",
+      humanizer: "explicit-rewrite",
+      protectedSpans: protectedWritingSpans,
+      requiresUserCommit: true,
+    }),
+    "system.json-repair": Object.freeze({
+      id: "system.json-repair",
+      output: Object.freeze({ kind: "json" }),
+      sourcePolicy: "none",
+      writeTarget: "none",
+      humanizer: "off",
+      protectedSpans: protectedWritingSpans,
+      requiresUserCommit: false,
+    }),
+  });
+  const taskContractAliases = Object.freeze({
+    "extract-facts": "source.extract-facts",
+    "source-extract-facts": "source.extract-facts",
+    "verify-claims": "source.verify-claims",
+    "source-verify-claims": "source.verify-claims",
+    translate: "source.translate",
+    translation: "source.translate",
+    "rewrite-selection": "writing.rewrite-selection",
+    "humanize-selection": "writing.humanize-selection",
+    "humanizer-rewrite": "writing.humanize-selection",
+    "json-repair": "system.json-repair",
+  });
+  const taskOutputKinds = new Set(["markdown", "plainText", "json", "patch"]);
+
+  function taskContractId(taskKind = "") {
+    const requested = String(taskKind || "chat").trim().toLowerCase();
+    if (Object.prototype.hasOwnProperty.call(taskContracts, requested)) return requested;
+    if (Object.prototype.hasOwnProperty.call(taskContractAliases, requested)) return taskContractAliases[requested];
+    return "chat";
+  }
+
+  function taskContractForPayload(payload = {}) {
+    /** @type {Record<string, any>} */
+    const source = payload && typeof payload === "object" ? payload : {};
+    const base = taskContracts[taskContractId(source.ai_system6_task_kind)];
+    const explicitKind = taskOutputKinds.has(source.ai_system6_output_kind)
+      ? source.ai_system6_output_kind
+      : "";
+    const structuredKind = source.response_format || source.json_schema ? "json" : "";
+    const outputKind = explicitKind
+      || (base.id === "chat" && structuredKind)
+      || base.output.kind;
+    const schemaId = String(
+      source.ai_system6_output_schema_id
+        || source.ai_system6_output_schema?.$id
+        || base.output.schemaId
+        || ""
+    ).trim();
+    const output = schemaId && (outputKind === "json" || outputKind === "patch")
+      ? { kind: outputKind, schemaId }
+      : { kind: outputKind };
+    const structuredOverride = outputKind === "json" && base.output.kind !== "json";
+    return Object.freeze({
+      ...base,
+      output: Object.freeze(output),
+      humanizer: structuredOverride ? "off" : base.humanizer,
+    });
+  }
+
+  const taskContractRegistry = Object.freeze({
+    require(taskKind = "chat") {
+      return taskContracts[taskContractId(taskKind)];
+    },
+    forPayload(payload = {}) {
+      return taskContractForPayload(payload);
+    },
+  });
 
   function systemPromptBody(id, language = "en") {
     const browserRecord = globalThis?.window?.AISystem6PromptFilesRuntime?.resolvePromptFile(id, null, language);
@@ -207,9 +339,7 @@
   ]);
 
   function shouldRepairHumanizerOutput(taskKind = "") {
-    const kind = String(taskKind || "chat").toLowerCase();
-    if (/(?:translate|translation|dictionary|claim|fact|evidence|extract|ocr|reader|search|docmap|review|humanizer-repair)/.test(kind)) return false;
-    return /(?:chat|draft|rewrite|polish|continue|outline|summary|bureaucracy|meme|caption)/.test(kind);
+    return taskContractRegistry.require(taskKind).humanizer === "explicit-rewrite";
   }
 
   function findHumanizerOutputHits(text = "") {
@@ -242,6 +372,8 @@
     buildEndfieldMessages,
     buildBureaucracyMessages,
     buildQuickDraftMessages,
+    taskContractForPayload,
+    taskContractRegistry,
     localTaskMaxTokens,
     localChatDefaults,
     scrubVisibleModelOutput,

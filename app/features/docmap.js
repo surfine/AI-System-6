@@ -400,7 +400,26 @@ function syncDocMapLayoutControls(map = currentDocMap) {
   });
 }
 
-function queueDocMapFitToView(attempts = 6) {
+function docMapUsesCompactViewport() {
+  return (docMapTreeEl?.getBoundingClientRect().width || window.innerWidth) <= 520;
+}
+
+async function focusDocMapRootForCompactView() {
+  const inst = docMapMarkmapInstance;
+  const root = inst?.state?.data;
+  const svg = inst?.svg?.node?.();
+  if (!inst || !root || !svg) return;
+  if (docMapLayoutFor() === "balanced" && docMapBalancedPending) return;
+
+  await inst.fit();
+  await inst.rescale(docMapLayoutFor() === "balanced" ? 1.5 : 1.75);
+
+  const padding = { left: 18, right: 18, top: 36, bottom: 36 };
+  await inst.centerNode(root, padding);
+  docMapZoomMode = "focus";
+}
+
+function queueDocMapFitToView(attempts = 6, { focusCompact = false } = {}) {
   docMapZoomMode = "fit";
   if (docMapFitFrame) cancelAnimationFrame(docMapFitFrame);
   if (docMapFitTimer) clearTimeout(docMapFitTimer);
@@ -414,9 +433,12 @@ function queueDocMapFitToView(attempts = 6) {
   };
 
   fitNextFrame(Math.max(1, attempts));
-  docMapFitTimer = setTimeout(() => {
+  docMapFitTimer = setTimeout(async () => {
     docMapFitTimer = 0;
     fitDocMapCanvasToView();
+    if (focusCompact && docMapUsesCompactViewport()) {
+      await focusDocMapRootForCompactView();
+    }
   }, 180);
 }
 
@@ -2188,7 +2210,7 @@ function fitDocMapCanvasToView() {
 
 function restoreDocMapCanvasView() {
   if (renderDocMapMarkmap()) {
-    queueDocMapFitToView(8);
+    queueDocMapFitToView(8, { focusCompact: true });
   }
 }
 

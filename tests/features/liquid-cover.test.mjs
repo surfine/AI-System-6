@@ -15,6 +15,7 @@ const manifest = read("scripts/runtime-manifest.mjs");
 const styleManifest = read("scripts/style-manifest.mjs");
 const en = read("app/data/translations-en.js");
 const zh = read("app/data/translations-zh.js");
+const dictionary = read("app/data/system-dictionary.js");
 const app = readAppSurface([
   "app/core/config.js",
   "app/core/actions.js",
@@ -465,6 +466,17 @@ test.assertIncludes(index, 'id="lc-stage-expand"', "a stage-expand control exist
 test.assertIncludes(liquidCover, "function wireStageExpand", "it is wired");
 test.assertIncludes(index, 'id="lc-stage-expand" aria-label="Fullscreen preview" aria-pressed="false"', "the stage-expand choice exposes its current state");
 test.assertIncludes(stylesCss, ".liquid-cover-window.is-stage-focused .lc-panel,\n.liquid-cover-window.is-stage-focused .lc-sidebar {\n  display: none;", "expanding it hides both side panes rather than resizing the window");
+test.assertIncludes(stylesCss, "grid-template-columns: auto minmax(0, 1fr);\n    grid-template-rows: auto auto;", "the narrow Cover Glass scene rail reserves real width for its layer list");
+test.assertIncludes(stylesCss, ".lc-selection-help {\n    display: none;", "phone Cover Glass removes the verbose selection hint before sacrificing controls");
+test.assertIncludes(stylesCss, "grid-template-columns: repeat(3, minmax(0, 1fr));", "phone Cover Glass keeps layer actions in one compact row");
+test.assertIncludes(stylesCss, "@container (max-width: 430px) {\n  .liquid-cover-body {\n    grid-template-rows: 46px minmax(238px, 1fr) minmax(224px, 38vh);", "phone Cover Glass fits a layer strip, artboard, and bounded inspector into one screen");
+test.assertIncludes(stylesCss, ".lc-sidebar-head,\n  .lc-arrange-panel,\n  .lc-sidebar-actions {\n    display: none;", "phone Cover Glass reduces the desktop scene rail to its real layer strip");
+test.assertIncludes(stylesCss, ".lc-panel {\n    grid-template-rows: auto minmax(0, 1fr);\n    padding: 8px 10px 10px;\n    overflow: hidden;", "phone Cover Glass makes the existing inspector a bounded bottom drawer");
+test.assertIncludes(index, '<div class="lc-inspector-panel" id="lc-panel-glass"', "the Glass inspector exists");
+test.assert(
+  index.indexOf('<div class="lc-group lc-material-group">') < index.indexOf('<div class="lc-group lc-layer-glass-group">'),
+  "Glass Mix is the first Glass control instead of being buried below per-layer controls and presets"
+);
 
 // Shared control states: the feature requests loading semantics but does not
 // repaint generic buttons or mutate their labels directly.
@@ -483,5 +495,7 @@ for (const file of ["app/data/translations-en.js", "app/data/translations-zh.js"
 test.assertIncludes(en, "liquid_cover_title:", "English strings exist");
 test.assertIncludes(zh, "liquid_cover_title:", "Chinese strings exist");
 test.assertIncludes(zh, '玻璃封面', "Chinese name follows the naming table");
+test.assertIncludes(dictionary, 'id: "cover-glass"', "System Help exposes Cover Glass as a production editor");
+test.assertIncludes(dictionary, "Glass Mix is the first global material control", "System Help documents the Glass Mix global control and mobile hierarchy");
 
 test.finish();

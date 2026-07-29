@@ -8,34 +8,7 @@
 
 "use strict";
 
-const { handleVersion } = require("./routes/version.js");
-const { handleImporterStatus } = require("./routes/importer-status.js");
-const { handleCloudModels } = require("./routes/cloud-models.js");
-const { handleCloudStatus } = require("./routes/cloud-status.js");
-const { handleCloudEmbeddings } = require("./routes/cloud-embeddings.js");
-const { handleCloudChat } = require("./routes/cloud-chat.js");
-const { handleEmbeddings } = require("./routes/embeddings.js");
-const { handleModelBudget } = require("./routes/model-budget.js");
-const { handleModels } = require("./routes/models.js");
-const { handleModelsLoadEmbedding } = require("./routes/models-load-embedding.js");
-const { handleModelsLoad } = require("./routes/models-load.js");
-const { handleLmStudioSetup } = require("./routes/lmstudio-setup.js");
-const { handleChat } = require("./routes/chat.js");
-const { handleDraftThesis } = require("./routes/draft-thesis.js");
-const { handleBureaucracyCaptions } = require("./routes/bureaucracy-captions.js");
-const { handleImageGenerate } = require("./routes/image-generate.js");
-const { handleVisionAnalyze } = require("./routes/vision-analyze.js");
-const { handleSearch } = require("./routes/search.js");
-const { handleReader } = require("./routes/reader.js");
-const { handleEndfieldSearch } = require("./routes/endfield-search.js");
-const { handleEndfieldAsk } = require("./routes/endfield-ask.js");
-const { handleImportText } = require("./routes/import-text.js");
-const { handleImportOcrPages } = require("./routes/import-ocr-pages.js");
-const { handleSubtitlesTranslate } = require("./routes/subtitles-translate.js");
-const { handleCmfCapabilities } = require("./routes/cmf-capabilities.js");
-const { handleCmfExportUsdz } = require("./routes/cmf-export-usdz.js");
-const { handleCmfRenderViews } = require("./routes/cmf-render-views.js");
-const { handleCmfRenderPreview } = require("./routes/cmf-render-preview.js");
+const { isPublicDeployment } = require("./runtime-profile.js");
 
 /**
  * @typedef {(
@@ -45,14 +18,81 @@ const { handleCmfRenderPreview } = require("./routes/cmf-render-preview.js");
  */
 
 /**
- * Routes matched by exact `METHOD PATH`.
+ * Create a stable route handler without loading its implementation until the
+ * first matching request. The resolved function is cached for all later calls.
+ *
+ * @param {() => Record<string, unknown>} loadModule
+ * @param {string} modulePath
+ * @param {string} exportName
+ * @returns {RouteHandler}
+ */
+function lazyHandler(loadModule, modulePath, exportName) {
+  /** @type {RouteHandler | null} */
+  let loaded = null;
+  return async function handleLazyRoute(req, res) {
+    if (!loaded) {
+      const routeModule = loadModule();
+      const candidate = routeModule && routeModule[exportName];
+      if (typeof candidate !== "function") {
+        throw new TypeError(`${modulePath} does not export ${exportName}.`);
+      }
+      loaded = /** @type {RouteHandler} */ (candidate);
+    }
+    return loaded(req, res);
+  };
+}
+
+const handleHealth = lazyHandler(() => require("./routes/health.js"), "./routes/health.js", "handleHealth");
+const handleReady = lazyHandler(() => require("./routes/health.js"), "./routes/health.js", "handleReady");
+const handleCapabilities = lazyHandler(() => require("./routes/capabilities.js"), "./routes/capabilities.js", "handleCapabilities");
+const handleTurnstileSession = lazyHandler(() => require("./routes/public-session.js"), "./routes/public-session.js", "handleTurnstileSession");
+const handleVersion = lazyHandler(() => require("./routes/version.js"), "./routes/version.js", "handleVersion");
+const handleImporterStatus = lazyHandler(() => require("./routes/importer-status.js"), "./routes/importer-status.js", "handleImporterStatus");
+const handleCloudModels = lazyHandler(() => require("./routes/cloud-models.js"), "./routes/cloud-models.js", "handleCloudModels");
+const handleCloudStatus = lazyHandler(() => require("./routes/cloud-status.js"), "./routes/cloud-status.js", "handleCloudStatus");
+const handleCloudCredentials = lazyHandler(() => require("./routes/cloud-credentials.js"), "./routes/cloud-credentials.js", "handleCloudCredentials");
+const handleCloudEmbeddings = lazyHandler(() => require("./routes/cloud-embeddings.js"), "./routes/cloud-embeddings.js", "handleCloudEmbeddings");
+const handleCloudChat = lazyHandler(() => require("./routes/cloud-chat.js"), "./routes/cloud-chat.js", "handleCloudChat");
+const handleEmbeddings = lazyHandler(() => require("./routes/embeddings.js"), "./routes/embeddings.js", "handleEmbeddings");
+const handleModelBudget = lazyHandler(() => require("./routes/model-budget.js"), "./routes/model-budget.js", "handleModelBudget");
+const handleModels = lazyHandler(() => require("./routes/models.js"), "./routes/models.js", "handleModels");
+const handleModelsLoadEmbedding = lazyHandler(() => require("./routes/models-load-embedding.js"), "./routes/models-load-embedding.js", "handleModelsLoadEmbedding");
+const handleModelsLoad = lazyHandler(() => require("./routes/models-load.js"), "./routes/models-load.js", "handleModelsLoad");
+const handleLmStudioSetup = lazyHandler(() => require("./routes/lmstudio-setup.js"), "./routes/lmstudio-setup.js", "handleLmStudioSetup");
+const handleChat = lazyHandler(() => require("./routes/chat.js"), "./routes/chat.js", "handleChat");
+const handleDraftThesis = lazyHandler(() => require("./routes/draft-thesis.js"), "./routes/draft-thesis.js", "handleDraftThesis");
+const handleBureaucracyCaptions = lazyHandler(() => require("./routes/bureaucracy-captions.js"), "./routes/bureaucracy-captions.js", "handleBureaucracyCaptions");
+const handleImageGenerate = lazyHandler(() => require("./routes/image-generate.js"), "./routes/image-generate.js", "handleImageGenerate");
+const handleVisionAnalyze = lazyHandler(() => require("./routes/vision-analyze.js"), "./routes/vision-analyze.js", "handleVisionAnalyze");
+const handleSearch = lazyHandler(() => require("./routes/search.js"), "./routes/search.js", "handleSearch");
+const handleReader = lazyHandler(() => require("./routes/reader.js"), "./routes/reader.js", "handleReader");
+const handleTimeMachine = lazyHandler(() => require("./routes/time-machine.js"), "./routes/time-machine.js", "handleTimeMachine");
+const handleEndfieldSearch = lazyHandler(() => require("./routes/endfield-search.js"), "./routes/endfield-search.js", "handleEndfieldSearch");
+const handleEndfieldAsk = lazyHandler(() => require("./routes/endfield-ask.js"), "./routes/endfield-ask.js", "handleEndfieldAsk");
+const handleImportText = lazyHandler(() => require("./routes/import-text.js"), "./routes/import-text.js", "handleImportText");
+const handleImportOcrPages = lazyHandler(() => require("./routes/import-ocr-pages.js"), "./routes/import-ocr-pages.js", "handleImportOcrPages");
+const handleSubtitlesTranslate = lazyHandler(() => require("./routes/subtitles-translate.js"), "./routes/subtitles-translate.js", "handleSubtitlesTranslate");
+const handleCmfCapabilities = lazyHandler(() => require("./routes/cmf-capabilities.js"), "./routes/cmf-capabilities.js", "handleCmfCapabilities");
+const handleCmfExportUsdz = lazyHandler(() => require("./routes/cmf-export-usdz.js"), "./routes/cmf-export-usdz.js", "handleCmfExportUsdz");
+const handleCmfRenderViews = lazyHandler(() => require("./routes/cmf-render-views.js"), "./routes/cmf-render-views.js", "handleCmfRenderViews");
+const handleCmfRenderPreview = lazyHandler(() => require("./routes/cmf-render-preview.js"), "./routes/cmf-render-preview.js", "handleCmfRenderPreview");
+const handleSystemMusic = lazyHandler(() => require("./routes/system-music.js"), "./routes/system-music.js", "handleSystemMusic");
+
+/**
+ * Full local route table. Keep the literal registration pairs intact: feature
+ * verification checks this file as the source of truth for desktop support.
  * @type {Map<string, RouteHandler>}
  */
-const exactRoutes = new Map([
+const localExactRoutes = new Map([
+  ["GET /healthz", handleHealth],
+  ["GET /readyz", handleReady],
+  ["GET /api/capabilities", handleCapabilities],
+  ["POST /api/session/turnstile", handleTurnstileSession],
   ["GET /api/version", handleVersion],
   ["GET /api/importer-status", handleImporterStatus],
   ["GET /api/cloud/models", handleCloudModels],
   ["POST /api/cloud/status", handleCloudStatus],
+  ["POST /api/cloud/credentials", handleCloudCredentials],
   ["POST /api/cloud/embeddings", handleCloudEmbeddings],
   ["POST /api/cloud/chat", handleCloudChat],
   ["POST /api/embeddings", handleEmbeddings],
@@ -73,7 +113,24 @@ const exactRoutes = new Map([
   ["POST /api/cmf/export-usdz", handleCmfExportUsdz],
   ["POST /api/cmf/render-views", handleCmfRenderViews],
   ["POST /api/cmf/render-preview", handleCmfRenderPreview],
+  ["GET /api/music/system", handleSystemMusic],
+  ["POST /api/music/system", handleSystemMusic],
 ]);
+
+const publicExactRouteKeys = new Set([
+  "GET /healthz",
+  "GET /readyz",
+  "GET /api/capabilities",
+  "POST /api/session/turnstile",
+  "GET /api/version",
+  "GET /api/cloud/models",
+  "POST /api/cloud/status",
+  "POST /api/cloud/chat",
+]);
+
+const exactRoutes = isPublicDeployment
+  ? new Map([...localExactRoutes].filter(([key]) => publicExactRouteKeys.has(key)))
+  : localExactRoutes;
 
 /**
  * Routes matched by `METHOD PATH_PREFIX`. The handler is responsible
@@ -81,13 +138,27 @@ const exactRoutes = new Map([
  * match wins.
  * @type {Array<{ method: string, prefix: string, handler: RouteHandler }>}
  */
-const prefixRoutes = [
+const localPrefixRoutes = [
   { method: "GET", prefix: "/api/search", handler: handleSearch },
   { method: "GET", prefix: "/api/reader", handler: handleReader },
+  { method: "GET", prefix: "/api/time-machine", handler: handleTimeMachine },
   { method: "GET", prefix: "/api/endfield/search", handler: handleEndfieldSearch },
   { method: "POST", prefix: "/api/endfield/search", handler: handleEndfieldSearch },
   { method: "POST", prefix: "/api/endfield/ask", handler: handleEndfieldAsk },
 ];
+
+const publicPrefixRouteKeys = new Set([
+  "GET /api/search",
+  "GET /api/reader",
+  "GET /api/time-machine",
+  "GET /api/endfield/search",
+  "POST /api/endfield/search",
+]);
+
+const prefixRoutes = isPublicDeployment
+  ? localPrefixRoutes.filter((route) =>
+      publicPrefixRouteKeys.has(`${route.method} ${route.prefix}`))
+  : localPrefixRoutes;
 
 /**
  * Routes that exist in the root server.js but have not been migrated
@@ -122,7 +193,10 @@ function resolveRoute(req) {
   if (exact) return exact;
 
   for (const route of prefixRoutes) {
-    if (route.method === method && pathname.startsWith(route.prefix)) {
+    if (
+      route.method === method
+      && (pathname === route.prefix || pathname.startsWith(`${route.prefix}/`))
+    ) {
       return route.handler;
     }
   }

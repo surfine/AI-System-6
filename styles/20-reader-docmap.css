@@ -68,6 +68,15 @@
   gap: 7px;
 }
 
+.reader-pane:not(:has(#reader-docmap-button:not(:disabled))) .reader-actions .btn:disabled:not(#reader-fetch-button) {
+  display: none;
+}
+
+.reader-pane:has(#reader-docmap-button:not(:disabled)) .reader-url-row,
+.reader-pane:has(#reader-docmap-button:not(:disabled)) #reader-fetch-button {
+  display: none;
+}
+
 .reader-ask-form {
   display: grid;
   gap: 5px;
@@ -1602,6 +1611,15 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
   padding: 3px 9px;
 }
 
+.docmap-control-short {
+  display: none;
+}
+
+.docmap-mobile-focus,
+.docmap-mobile-hint {
+  display: none;
+}
+
 .docmap-tree {
   position: relative;
   min-height: 0;
@@ -1918,6 +1936,119 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
 .docmap-ask-row input {
   min-width: 0;
   width: 100%;
+}
+
+@container (max-width: 520px) {
+  .docmap-pane {
+    gap: 6px;
+    padding: 6px;
+  }
+
+  .docmap-layout {
+    gap: 8px;
+  }
+
+  .docmap-map-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .docmap-toolbar-group {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+    width: 100%;
+  }
+
+  .docmap-toolbar-group:first-child {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .docmap-layout-picker {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+  }
+
+  .docmap-layout-picker > span {
+    display: none;
+  }
+
+  .docmap-layout-switch {
+    width: 100%;
+  }
+
+  .docmap-map-toolbar .btn,
+  .docmap-map-toolbar .docmap-layout-switch .docmap-layout-option {
+    min-width: 0;
+    min-height: 44px;
+    padding: 6px 8px;
+    justify-content: center;
+    text-align: center;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .docmap-control-long {
+    display: none;
+  }
+
+  .docmap-control-short {
+    display: inline;
+  }
+
+  .docmap-mobile-focus {
+    display: inline-flex;
+  }
+
+  .docmap-drop-zone {
+    overflow: hidden;
+  }
+
+  .docmap-tree {
+    padding: 0;
+    border-width: 1px;
+    overflow: hidden;
+    overscroll-behavior: contain;
+    scrollbar-gutter: auto;
+  }
+
+  .docmap-markmap-frame,
+  .docmap-markmap-svg {
+    min-height: 100%;
+    touch-action: none;
+  }
+
+  .docmap-mobile-hint {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    left: 8px;
+    display: block;
+    width: fit-content;
+    max-width: calc(100% - 16px);
+    margin: 0 auto;
+    padding: 4px 8px;
+    border: 1px solid var(--ink);
+    border-radius: var(--control-radius);
+    background: var(--paper);
+    box-shadow: var(--system-shadow);
+    font-family: var(--ui-font);
+    font-size: 11px;
+    line-height: 1.25;
+    text-align: center;
+    pointer-events: none;
+  }
+
+  .docmap-ask-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .docmap-ask-row :is(input, .btn) {
+    min-height: 44px;
+  }
 }
 
 .dictionary-window .window-pane.dictionary-pane {

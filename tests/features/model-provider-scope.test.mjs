@@ -44,7 +44,7 @@ test.assertIncludes(serverCloud, "DeepSeek is the first-class cloud QA target", 
 test.assertIncludes(serverCloud, "compatible endpoint as a best-effort escape hatch", "server cloud helpers retain OpenAI-compatible provider openness");
 test.assertIncludes(serverCloud, "deepseek-v4-flash", "server cloud registry includes DeepSeek v4 Flash");
 test.assertIncludes(serverCloud, "deepseek-v4-pro", "server cloud registry includes DeepSeek v4 Pro");
-test.assertIncludes(cloudRoute, "const baseUrl = (raw._cloud_base_url || DEEPSEEK_BASE_URL_DEFAULT).replace", "cloud route can still target an explicitly configured compatible endpoint");
+test.assertIncludes(cloudRoute, "resolveCloudBaseUrl(raw._cloud_base_url || DEEPSEEK_BASE_URL_DEFAULT)", "cloud route applies the trusted endpoint policy before provider access");
 test.assertIncludes(cloudRoute, "DEEPSEEK_V4_MODELS", "cloud chat route has DeepSeek v4-specific compatibility handling");
 test.assertIncludes(cloudRoute, 'payload.thinking = { type: "disabled" }', "DeepSeek v4 cloud route disables thinking for product tasks");
 

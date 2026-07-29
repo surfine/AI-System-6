@@ -492,6 +492,13 @@ body.use-liquid-glass {
   --scrollbar-corner-bg: rgba(255, 255, 255, 0.16);
   --active-window-shadow: 0 8px 15px rgba(0, 0, 0, 0.045), 0 28px 68px rgba(18, 28, 38, 0.1);
   --card-caption-color: rgba(16, 17, 20, 0.58);
+  --finder-navigation-border: 1px solid rgba(16, 17, 20, 0.1);
+  --finder-navigation-bg: rgba(255, 255, 255, 0.24);
+  --finder-breadcrumb-radius: 9px;
+  --finder-breadcrumb-text-decoration: none;
+  --finder-breadcrumb-hover-bg: rgba(16, 17, 20, 0.84);
+  --finder-breadcrumb-hover-fg: #ffffff;
+  --finder-breadcrumb-current-color: rgba(16, 17, 20, 0.82);
   --menu-bar-height: 30px;
   /* Glass popovers tuck 3px under the bar's lip. */
   --menu-popover-top: calc(var(--menu-bar-height) + var(--safe-area-top) - 3px);
@@ -1270,31 +1277,50 @@ body.use-liquid-glass {
   --cmf-chip-bg: rgba(255, 255, 255, 0.22);
   --cmf-chip-selected-shadow: inset 0 0 0 2px rgba(16, 17, 20, 0.72), 0 6px 14px rgba(18, 28, 38, 0.1);
   --cmf-chip-focus-outline: 2px solid rgba(0, 122, 255, 0.56);
-  --bureaucracy-pane-bg: rgba(255, 255, 255, 0.08);
-  --bureaucracy-surface-bg: rgba(255, 255, 255, 0.22);
-  --bureaucracy-surface-border: 1px solid rgba(255, 255, 255, 0.52);
-  --bureaucracy-surface-radius: 14px;
-  --bureaucracy-surface-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58), 0 12px 28px rgba(18, 28, 38, 0.08);
-  --bureaucracy-muted: rgba(16, 17, 20, 0.62);
-  --bureaucracy-hover-bg: rgba(255, 255, 255, 0.3);
-  --bureaucracy-selected-bg: rgba(16, 17, 20, 0.82);
-  --bureaucracy-selected-fg: rgba(255, 255, 255, 0.96);
-  --bureaucracy-preview-bg: rgba(10, 12, 14, 0.82);
-  --bureaucracy-error: #8b1f17;
+  --bureaucracy-pane-bg:
+    linear-gradient(rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.22)),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.035) 0 1px, rgba(0, 0, 0, 0.035) 1px 3px),
+    #242523;
+  --bureaucracy-surface-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.07) 42%, rgba(0, 0, 0, 0.24)),
+    rgba(28, 30, 29, 0.86);
+  --bureaucracy-surface-border: 1px solid rgba(255, 255, 255, 0.26);
+  --bureaucracy-surface-radius: 9px;
+  --bureaucracy-surface-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.34), 0 14px 28px rgba(0, 0, 0, 0.24);
+  --bureaucracy-ink: #f5f2e8;
+  --bureaucracy-muted: rgba(245, 242, 232, 0.68);
+  --bureaucracy-hover-bg: rgba(255, 255, 255, 0.09);
+  --bureaucracy-selected-bg: rgba(12, 13, 13, 0.72);
+  --bureaucracy-selected-fg: #f7f3e7;
+  --bureaucracy-selected-shadow: inset 0 0 0 1px rgba(160, 65, 48, 0.95);
+  --bureaucracy-control-bg: rgba(12, 13, 13, 0.72);
+  --bureaucracy-control-fg: #f7f3e7;
+  --bureaucracy-control-border: 1px solid rgba(255, 255, 255, 0.26);
+  --bureaucracy-thumbnail-border: 1px solid rgba(0, 0, 0, 0.65);
+  --bureaucracy-thumbnail-filter: none;
+  --bureaucracy-preview-bg: #080908;
+  --bureaucracy-error: #ffd0c5;
   --endfield-pane-bg:
-    linear-gradient(rgba(16, 17, 20, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(16, 17, 20, 0.035) 1px, transparent 1px),
-    rgba(255, 255, 255, 0.1);
-  --endfield-sidebar-bg: rgba(255, 255, 255, 0.18);
-  --endfield-surface-bg: rgba(255, 255, 255, 0.34);
-  --endfield-surface-border: 1px solid rgba(255, 255, 255, 0.58);
+    linear-gradient(rgba(0, 0, 0, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.045) 1px, transparent 1px),
+    url("assets/endfield-background.svg"),
+    radial-gradient(circle at 88% 8%, rgba(234, 253, 79, 0.32), transparent 34%),
+    rgba(255, 255, 255, 0.28);
+  --endfield-pane-bg-size: 34px 34px, 34px 34px, max(1200px, 118vw) auto, auto, auto;
+  --endfield-pane-bg-position: center, center, 45% 20%, center, center;
+  --endfield-pane-bg-repeat: repeat, repeat, no-repeat, no-repeat, no-repeat;
+  --endfield-sidebar-bg: rgba(249, 250, 244, 0.76);
+  --endfield-surface-bg: rgba(250, 251, 245, 0.82);
+  --endfield-surface-border: 1px solid rgba(255, 255, 255, 0.62);
   --endfield-surface-radius: 14px;
-  --endfield-surface-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.66), 0 12px 28px rgba(18, 28, 38, 0.08);
+  --endfield-surface-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 14px 30px rgba(18, 28, 38, 0.12);
   --endfield-muted: rgba(16, 17, 20, 0.62);
-  --endfield-hover-bg: rgba(255, 255, 255, 0.34);
+  --endfield-hover-bg: rgba(255, 255, 255, 0.46);
   --endfield-selected-bg: rgba(16, 17, 20, 0.82);
   --endfield-selected-fg: rgba(255, 255, 255, 0.96);
   --endfield-evidence-divider: 1px solid rgba(16, 17, 20, 0.14);
+  --endfield-index-bg: rgba(255, 255, 255, 0.48);
+  --endfield-index-border: 2px solid rgba(16, 17, 20, 0.82);
   --demo-caption-bg:
     linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(232, 238, 242, 0.42)),
     rgba(255, 255, 255, 0.58);

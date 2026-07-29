@@ -22,6 +22,8 @@
 
 const http = require("node:http");
 const https = require("node:https");
+const net = require("node:net");
+const zlib = require("node:zlib");
 
 const {
   isLoopbackUrl,
@@ -30,8 +32,103 @@ const {
   httpProxyAgentFor,
 } = require("./proxy.js");
 
-const httpAgent = new http.Agent({ keepAlive: true });
-const httpsAgent = new https.Agent({ keepAlive: true });
+const sharedAgentOptions = {
+  keepAlive: true,
+  maxSockets: 16,
+  maxFreeSockets: 4,
+  timeout: 120000,
+};
+const httpAgent = new http.Agent(sharedAgentOptions);
+const httpsAgent = new https.Agent(sharedAgentOptions);
+
+/**
+ * @typedef {Object} TextFetchOptions
+ * @property {boolean} [followRedirects]
+ * @property {number} [maxBytes]
+ * @property {string} [pinnedAddress]
+ * @property {number} [pinnedFamily]
+ */
+
+/**
+ * @param {number | undefined} maxBytes
+ * @returns {number | undefined}
+ */
+function normalizedMaxBytes(maxBytes) {
+  if (maxBytes === undefined) return undefined;
+  if (!Number.isFinite(maxBytes) || maxBytes < 0) {
+    throw new TypeError("maxBytes must be a non-negative finite number.");
+  }
+  return Math.floor(maxBytes);
+}
+
+/**
+ * @param {number} maxBytes
+ * @returns {Error & { code: string, statusCode: number, maxBytes: number }}
+ */
+function responseTooLargeError(maxBytes) {
+  const error = /** @type {Error & { code: string, statusCode: number, maxBytes: number }} */ (
+    new Error(`Upstream response exceeded the ${maxBytes} byte limit.`)
+  );
+  error.code = "ERR_RESPONSE_TOO_LARGE";
+  error.statusCode = 413;
+  error.maxBytes = maxBytes;
+  return error;
+}
+
+/**
+ * @param {unknown} error
+ * @returns {boolean}
+ */
+function isResponseTooLargeError(error) {
+  return /** @type {any} */ (error)?.code === "ERR_RESPONSE_TOO_LARGE";
+}
+
+/**
+ * Consume a fetch Response body while enforcing a byte limit during
+ * download. The byte count is over the wire-decoded body bytes, before
+ * UTF-8 decoding into a JavaScript string.
+ *
+ * @param {Response} response
+ * @param {number | undefined} maxBytes
+ * @returns {Promise<string>}
+ */
+async function readFetchText(response, maxBytes) {
+  const limit = normalizedMaxBytes(maxBytes);
+  if (limit === undefined) return await response.text();
+
+  const contentLength = Number(response.headers.get("content-length") || 0);
+  if (Number.isFinite(contentLength) && contentLength > limit) {
+    await response.body?.cancel().catch(() => {});
+    throw responseTooLargeError(limit);
+  }
+
+  if (!response.body) return "";
+  const reader = response.body.getReader();
+  const chunks = [];
+  let totalBytes = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      totalBytes += value.byteLength;
+      if (totalBytes > limit) {
+        await reader.cancel().catch(() => {});
+        throw responseTooLargeError(limit);
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  const body = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(body);
+}
 
 /**
  * @typedef {Object} FetchLikeResponse
@@ -57,6 +154,42 @@ function headerValue(headers, name) {
 }
 
 /**
+ * Decode response bytes from the direct Node HTTP path. Some old archive
+ * snapshots contain a gzip body even when the replay response has lost its
+ * Content-Encoding header, so the gzip magic bytes are also recognized.
+ *
+ * @param {Buffer} buffer
+ * @param {any} headers
+ * @param {number | undefined} maxBytes
+ * @returns {string}
+ */
+function decodeTextBuffer(buffer, headers, maxBytes) {
+  const encoding = String(headerValue(headers, "content-encoding") || "").toLowerCase();
+  const decodeOptions = maxBytes === undefined
+    ? undefined
+    : { maxOutputLength: Math.max(1, maxBytes) };
+  let decoded = buffer;
+  try {
+    if (encoding.includes("br")) {
+      decoded = zlib.brotliDecompressSync(buffer, decodeOptions);
+    } else if (encoding.includes("gzip") || (buffer[0] === 0x1f && buffer[1] === 0x8b)) {
+      decoded = zlib.gunzipSync(buffer, decodeOptions);
+    } else if (encoding.includes("deflate")) {
+      decoded = zlib.inflateSync(buffer, decodeOptions);
+    }
+  } catch (error) {
+    if (/** @type {any} */ (error)?.code === "ERR_BUFFER_TOO_LARGE") {
+      throw responseTooLargeError(maxBytes);
+    }
+    throw error;
+  }
+  if (maxBytes !== undefined && decoded.byteLength > maxBytes) {
+    throw responseTooLargeError(maxBytes);
+  }
+  return decoded.toString("utf8");
+}
+
+/**
  * Direct POST via the node http/https client. Resolves to a
  * fetch-like response with a `.headers.get(name)` accessor and an
  * async `.text()`. Mirrors `nodePostJson`.
@@ -72,7 +205,8 @@ function headerValue(headers, name) {
  *   text: () => Promise<string>,
  * }>}
  */
-function nodePostJson(targetUrl, payload, signal, extraHeaders = {}) {
+function nodePostJson(targetUrl, payload, signal, extraHeaders = {}, options = {}) {
+  const maxBytes = normalizedMaxBytes(options.maxBytes);
   return new Promise((resolve, reject) => {
     const parsed = new URL(targetUrl);
     const body = JSON.stringify(payload);
@@ -94,8 +228,29 @@ function nodePostJson(targetUrl, payload, signal, extraHeaders = {}) {
       },
       (response) => {
         const chunks = [];
-        response.on("data", (chunk) => chunks.push(chunk));
+        let totalBytes = 0;
+        let settled = false;
+        response.on("data", (chunk) => {
+          if (settled) return;
+          const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+          totalBytes += buffer.length;
+          if (maxBytes !== undefined && totalBytes > maxBytes) {
+            settled = true;
+            const error = responseTooLargeError(maxBytes);
+            response.destroy(error);
+            reject(error);
+            return;
+          }
+          chunks.push(buffer);
+        });
+        response.on("error", (error) => {
+          if (settled) return;
+          settled = true;
+          reject(error);
+        });
         response.on("end", () => {
+          if (settled) return;
+          settled = true;
           const text = Buffer.concat(chunks).toString("utf8");
           const status = response.statusCode || 0;
           resolve({
@@ -120,6 +275,24 @@ function nodePostJson(targetUrl, payload, signal, extraHeaders = {}) {
   });
 }
 
+function boundedFetchResponse(response, maxBytes) {
+  const limit = normalizedMaxBytes(maxBytes);
+  if (limit === undefined) return response;
+  let textPromise = null;
+  const text = () => {
+    textPromise ||= readFetchText(response, limit);
+    return textPromise;
+  };
+  const wrapped = {
+    ok: response.ok,
+    status: response.status,
+    headers: response.headers,
+    text,
+  };
+  wrapped.clone = () => wrapped;
+  return wrapped;
+}
+
 /**
  * POST to `targetUrl` and pipe the upstream response into `res`.
  * Used for streaming chat / SSE proxies. Mirrors `proxyJsonStream`.
@@ -129,9 +302,11 @@ function nodePostJson(targetUrl, payload, signal, extraHeaders = {}) {
  * @param {AbortSignal | null | undefined} signal
  * @param {import("node:http").ServerResponse} res
  * @param {Record<string, string>} [extraHeaders]
- * @returns {Promise<true>}
+ * @param {{ maxBytes?: number }} [options]
+ * @returns {Promise<boolean>}
  */
-function proxyJsonStream(targetUrl, payload, signal, res, extraHeaders = {}) {
+function proxyJsonStream(targetUrl, payload, signal, res, extraHeaders = {}, options = {}) {
+  const maxBytes = normalizedMaxBytes(options.maxBytes);
   return new Promise((resolve, reject) => {
     const parsed = new URL(targetUrl);
     const body = JSON.stringify(payload);
@@ -152,15 +327,35 @@ function proxyJsonStream(targetUrl, payload, signal, res, extraHeaders = {}) {
         },
       },
       (upstream) => {
+        let totalBytes = 0;
+        let settled = false;
         const contentType = upstream.headers["content-type"] || "text/event-stream";
         res.writeHead(upstream.statusCode || 200, {
           "Content-Type": contentType,
           "Cache-Control": "no-cache",
           "Connection": "keep-alive",
         });
+        upstream.on("data", (chunk) => {
+          if (settled) return;
+          totalBytes += Buffer.isBuffer(chunk) ? chunk.byteLength : Buffer.byteLength(chunk);
+          if (maxBytes !== undefined && totalBytes > maxBytes) {
+            settled = true;
+            upstream.destroy();
+            res.destroy();
+            resolve(false);
+          }
+        });
         upstream.pipe(res);
-        upstream.on("end", () => resolve(true));
-        upstream.on("error", reject);
+        upstream.on("end", () => {
+          if (settled) return;
+          settled = true;
+          resolve(true);
+        });
+        upstream.on("error", (error) => {
+          if (settled) return;
+          settled = true;
+          reject(error);
+        });
       }
     );
 
@@ -179,10 +374,11 @@ function proxyJsonStream(targetUrl, payload, signal, res, extraHeaders = {}) {
  * @param {AbortSignal | null | undefined} signal
  * @param {Record<string, string>} [headers]
  * @param {number} [redirectCount]
- * @param {{ followRedirects?: boolean }} [options]
+ * @param {TextFetchOptions} [options]
  * @returns {Promise<{ ok: boolean, status: number, headers: import("node:http").IncomingHttpHeaders, text: string }>}
  */
 function nodeGetText(targetUrl, signal, headers = { "Accept": "application/json" }, redirectCount = 0, options = {}) {
+  const maxBytes = normalizedMaxBytes(options.maxBytes);
   return new Promise((resolve, reject) => {
     if (signal?.aborted) {
       reject(new Error("Request aborted"));
@@ -200,11 +396,51 @@ function nodeGetText(targetUrl, signal, headers = { "Accept": "application/json"
         method: "GET",
         agent: isHttps ? httpsAgent : httpAgent,
         headers,
+        servername: isHttps ? parsed.hostname : undefined,
+        lookup: options.pinnedAddress
+          ? (_hostname, lookupOptions, callback) => {
+              const family = Number(options.pinnedFamily) || net.isIP(options.pinnedAddress);
+              if (lookupOptions?.all) {
+                callback(null, [{ address: options.pinnedAddress, family }]);
+              } else {
+                callback(null, options.pinnedAddress, family);
+              }
+            }
+          : undefined,
       },
       (response) => {
         const chunks = [];
-        response.on("data", (chunk) => chunks.push(chunk));
+        let totalBytes = 0;
+        let settled = false;
+        const contentLength = Number(response.headers["content-length"] || 0);
+        if (maxBytes !== undefined && Number.isFinite(contentLength) && contentLength > maxBytes) {
+          settled = true;
+          const error = responseTooLargeError(maxBytes);
+          response.destroy();
+          reject(error);
+          return;
+        }
+        response.on("data", (chunk) => {
+          if (settled) return;
+          const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+          totalBytes += buffer.byteLength;
+          if (maxBytes !== undefined && totalBytes > maxBytes) {
+            settled = true;
+            const error = responseTooLargeError(maxBytes);
+            response.destroy(error);
+            reject(error);
+            return;
+          }
+          chunks.push(buffer);
+        });
+        response.on("error", (error) => {
+          if (settled) return;
+          settled = true;
+          reject(error);
+        });
         response.on("end", () => {
+          if (settled) return;
+          settled = true;
           const location = response.headers.location;
           const status = response.statusCode || 0;
           if (
@@ -216,7 +452,13 @@ function nodeGetText(targetUrl, signal, headers = { "Accept": "application/json"
             resolve(nodeGetText(new URL(location, targetUrl).href, signal, headers, redirectCount + 1, options));
             return;
           }
-          const text = Buffer.concat(chunks).toString("utf8");
+          let text;
+          try {
+            text = decodeTextBuffer(Buffer.concat(chunks), response.headers, maxBytes);
+          } catch (error) {
+            reject(error);
+            return;
+          }
           resolve({
             ok: status >= 200 && status < 300,
             status,
@@ -241,11 +483,12 @@ function nodeGetText(targetUrl, signal, headers = { "Accept": "application/json"
  * @param {AbortSignal | null | undefined} signal
  * @param {Record<string, string>} [headers]
  * @param {number} [redirectCount]
- * @param {{ followRedirects?: boolean }} [options]
+ * @param {TextFetchOptions} [options]
  * @returns {Promise<{ ok: boolean, status: number, headers: import("node:http").IncomingHttpHeaders, text: string }>}
  */
 function nodeGetTextViaProxy(targetUrl, signal, headers = { "Accept": "application/json" }, redirectCount = 0, options = {}) {
   if (signal?.aborted) return Promise.reject(new Error("Request aborted"));
+  const maxBytes = normalizedMaxBytes(options.maxBytes);
   const proxy = proxyUrlForTarget(targetUrl);
   if (!proxy) return Promise.reject(new Error("No HTTP proxy configured."));
   const target = new URL(targetUrl);
@@ -264,8 +507,37 @@ function nodeGetTextViaProxy(targetUrl, signal, headers = { "Accept": "applicati
       }),
       (response) => {
         const chunks = [];
-        response.on("data", (chunk) => chunks.push(chunk));
+        let totalBytes = 0;
+        let settled = false;
+        const contentLength = Number(response.headers["content-length"] || 0);
+        if (maxBytes !== undefined && Number.isFinite(contentLength) && contentLength > maxBytes) {
+          settled = true;
+          const error = responseTooLargeError(maxBytes);
+          response.destroy();
+          reject(error);
+          return;
+        }
+        response.on("data", (chunk) => {
+          if (settled) return;
+          const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+          totalBytes += buffer.byteLength;
+          if (maxBytes !== undefined && totalBytes > maxBytes) {
+            settled = true;
+            const error = responseTooLargeError(maxBytes);
+            response.destroy(error);
+            reject(error);
+            return;
+          }
+          chunks.push(buffer);
+        });
+        response.on("error", (error) => {
+          if (settled) return;
+          settled = true;
+          reject(error);
+        });
         response.on("end", () => {
+          if (settled) return;
+          settled = true;
           const location = response.headers.location;
           const status = response.statusCode || 0;
           if (
@@ -277,11 +549,18 @@ function nodeGetTextViaProxy(targetUrl, signal, headers = { "Accept": "applicati
             resolve(nodeGetTextViaProxy(new URL(location, targetUrl).href, signal, headers, redirectCount + 1, options));
             return;
           }
+          let text;
+          try {
+            text = decodeTextBuffer(Buffer.concat(chunks), response.headers, maxBytes);
+          } catch (error) {
+            reject(error);
+            return;
+          }
           resolve({
             ok: status >= 200 && status < 300,
             status,
             headers: response.headers,
-            text: Buffer.concat(chunks).toString("utf8"),
+            text,
           });
         });
       }
@@ -294,44 +573,49 @@ function nodeGetTextViaProxy(targetUrl, signal, headers = { "Accept": "applicati
 }
 
 /**
- * POST JSON with a fetch-first / node-http fallback. Loopback targets
- * always use nodePostJson directly. Mirrors `postJsonWithFallback`.
+ * POST JSON with one transport selected before bytes are written. A failed
+ * POST is never replayed through a second transport because the first server
+ * may already have processed it.
  *
  * @param {string} targetUrl
  * @param {unknown} payload
  * @param {AbortSignal | null | undefined} signal
  * @param {Record<string, string>} [extraHeaders]
- * @returns {Promise<{ response: any, fallback: boolean, directLoopback?: boolean, fetchError?: unknown }>}
+ * @returns {Promise<{
+ *   response: any,
+ *   fallback: boolean,
+ *   directLoopback?: boolean,
+ *   transport: "fetch" | "node",
+ * }>}
  */
-async function postJsonWithFallback(targetUrl, payload, signal, extraHeaders = {}) {
-  if (isLoopbackUrl(targetUrl)) {
+async function postJsonWithFallback(targetUrl, payload, signal, extraHeaders = {}, options = {}) {
+  const forceNodeTransport =
+    process.env.AI_SYSTEM6_HTTP_TRANSPORT === "node"
+    || isLoopbackUrl(targetUrl)
+    || shouldAvoidNodeFetchForTarget(targetUrl);
+  if (forceNodeTransport) {
     return {
-      response: await nodePostJson(targetUrl, payload, signal, extraHeaders),
-      fallback: true,
-      directLoopback: true,
+      response: await nodePostJson(targetUrl, payload, signal, extraHeaders, options),
+      fallback: false,
+      directLoopback: isLoopbackUrl(targetUrl),
+      transport: "node",
     };
   }
 
-  try {
-    return {
-      response: await fetch(targetUrl, {
-        method: "POST",
-        signal: signal ?? undefined,
-        headers: {
-          "Content-Type": "application/json",
-          ...extraHeaders,
-        },
-        body: JSON.stringify(payload),
-      }),
-      fallback: false,
-    };
-  } catch (error) {
-    return {
-      response: await nodePostJson(targetUrl, payload, signal, extraHeaders),
-      fallback: true,
-      fetchError: error,
-    };
-  }
+  return {
+    response: boundedFetchResponse(await fetch(targetUrl, {
+      method: "POST",
+      redirect: "error",
+      signal: signal ?? undefined,
+      headers: {
+        "Content-Type": "application/json",
+        ...extraHeaders,
+      },
+      body: JSON.stringify(payload),
+    }), options.maxBytes),
+    fallback: false,
+    transport: "fetch",
+  };
 }
 
 /**
@@ -341,19 +625,28 @@ async function postJsonWithFallback(targetUrl, payload, signal, extraHeaders = {
  * @param {string} targetUrl
  * @param {AbortSignal | null | undefined} signal
  * @param {Record<string, string>} [headers]
+ * @param {{ maxBytes?: number, pinnedAddress?: string, pinnedFamily?: number }} [options]
  * @returns {Promise<{ ok: boolean, status: number, headers: any, text: string }>}
  */
-async function getTextWithFallback(targetUrl, signal, headers = { "Accept": "application/json" }) {
+async function getTextWithFallback(targetUrl, signal, headers = { "Accept": "application/json" }, options = {}) {
+  const fetchOptions = {
+    maxBytes: normalizedMaxBytes(options.maxBytes),
+    pinnedAddress: options.pinnedAddress,
+    pinnedFamily: options.pinnedFamily,
+  };
+  if (fetchOptions.pinnedAddress) {
+    return await nodeGetText(targetUrl, signal, headers, 0, fetchOptions);
+  }
   if (proxyUrlForTarget(targetUrl)) {
     try {
-      return await nodeGetTextViaProxy(targetUrl, signal, headers);
+      return await nodeGetTextViaProxy(targetUrl, signal, headers, 0, fetchOptions);
     } catch (proxyError) {
-      if (signal?.aborted) throw proxyError;
+      if (signal?.aborted || isResponseTooLargeError(proxyError)) throw proxyError;
     }
   }
 
   if (shouldAvoidNodeFetchForTarget(targetUrl)) {
-    return await nodeGetText(targetUrl, signal, headers);
+    return await nodeGetText(targetUrl, signal, headers, 0, fetchOptions);
   }
 
   try {
@@ -366,12 +659,12 @@ async function getTextWithFallback(targetUrl, signal, headers = { "Accept": "app
       ok: response.ok,
       status: response.status,
       headers: response.headers,
-      text: await response.text(),
+      text: await readFetchText(response, fetchOptions.maxBytes),
     };
   } catch (fetchError) {
-    if (signal?.aborted) throw fetchError;
+    if (signal?.aborted || isResponseTooLargeError(fetchError)) throw fetchError;
     try {
-      return await nodeGetText(targetUrl, signal, headers);
+      return await nodeGetText(targetUrl, signal, headers, 0, fetchOptions);
     } catch (nodeError) {
       /** @type {any} */ (nodeError).cause =
         /** @type {any} */ (nodeError).cause || fetchError;
@@ -388,20 +681,29 @@ async function getTextWithFallback(targetUrl, signal, headers = { "Accept": "app
  * @param {string} targetUrl
  * @param {AbortSignal | null | undefined} signal
  * @param {Record<string, string>} [headers]
+ * @param {{ maxBytes?: number, pinnedAddress?: string, pinnedFamily?: number }} [options]
  * @returns {Promise<{ ok: boolean, status: number, headers: any, text: string }>}
  */
-async function getTextOnceWithFallback(targetUrl, signal, headers = { "Accept": "application/json" }) {
-  const options = { followRedirects: false };
+async function getTextOnceWithFallback(targetUrl, signal, headers = { "Accept": "application/json" }, options = {}) {
+  const fetchOptions = {
+    followRedirects: false,
+    maxBytes: normalizedMaxBytes(options.maxBytes),
+    pinnedAddress: options.pinnedAddress,
+    pinnedFamily: options.pinnedFamily,
+  };
+  if (fetchOptions.pinnedAddress) {
+    return await nodeGetText(targetUrl, signal, headers, 0, fetchOptions);
+  }
   if (proxyUrlForTarget(targetUrl)) {
     try {
-      return await nodeGetTextViaProxy(targetUrl, signal, headers, 0, options);
+      return await nodeGetTextViaProxy(targetUrl, signal, headers, 0, fetchOptions);
     } catch (proxyError) {
-      if (signal?.aborted) throw proxyError;
+      if (signal?.aborted || isResponseTooLargeError(proxyError)) throw proxyError;
     }
   }
 
   if (shouldAvoidNodeFetchForTarget(targetUrl)) {
-    return await nodeGetText(targetUrl, signal, headers, 0, options);
+    return await nodeGetText(targetUrl, signal, headers, 0, fetchOptions);
   }
 
   try {
@@ -415,12 +717,12 @@ async function getTextOnceWithFallback(targetUrl, signal, headers = { "Accept": 
       ok: response.ok,
       status: response.status,
       headers: response.headers,
-      text: await response.text(),
+      text: await readFetchText(response, fetchOptions.maxBytes),
     };
   } catch (fetchError) {
-    if (signal?.aborted) throw fetchError;
+    if (signal?.aborted || isResponseTooLargeError(fetchError)) throw fetchError;
     try {
-      return await nodeGetText(targetUrl, signal, headers, 0, options);
+      return await nodeGetText(targetUrl, signal, headers, 0, fetchOptions);
     } catch (nodeError) {
       /** @type {any} */ (nodeError).cause =
         /** @type {any} */ (nodeError).cause || fetchError;
@@ -431,6 +733,7 @@ async function getTextOnceWithFallback(targetUrl, signal, headers = { "Accept": 
 
 module.exports = {
   headerValue,
+  decodeTextBuffer,
   nodePostJson,
   nodeGetText,
   nodeGetTextViaProxy,
@@ -438,4 +741,6 @@ module.exports = {
   postJsonWithFallback,
   getTextWithFallback,
   getTextOnceWithFallback,
+  responseTooLargeError,
+  isResponseTooLargeError,
 };

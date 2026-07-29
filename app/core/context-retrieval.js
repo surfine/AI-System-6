@@ -5,11 +5,16 @@ const ragRankCacheLimit = 24;
 let hasShownDeepseekEmbeddingNotice = false;
 
 function ragRankContextVersion(chunks = []) {
-  return [
-    activeProjectId,
-    chunks.length,
-    chunks.map((chunk) => `${chunk.id || chunk.source || chunk.referenceName || ""}:${chunk.chunkIndex || chunk.referenceChunkIndex || ""}:${chunk.updatedAt || ""}`).join("|"),
-  ].join(";");
+  const isCloud = typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudConfig?.provider !== "deepseek";
+  return window.AISystem6RetrievalRuntime.buildRetrievalCacheVersion({
+    projectId: activeProjectId,
+    chunks,
+    embeddingProvider: isCloud ? cloudConfig.provider : "local",
+    embeddingModel: isCloud
+      ? String(cloudConfig?.model || "")
+      : String(embeddingModelInput?.value || ""),
+    embeddingDimensions: chunks.find((chunk) => Array.isArray(chunk.embedding))?.embedding?.length || 0,
+  });
 }
 
 function rememberRagRankCache(key, scores) {
@@ -20,49 +25,14 @@ function rememberRagRankCache(key, scores) {
 }
 
 
-function preferredChunkEnd(text, start, hardEnd, minSize) {
-  if (hardEnd >= text.length) return text.length;
-  const slice = text.slice(start, hardEnd);
-  const breakpoints = ["\n\n", "\n", "。", "！", "？", "；", "; ", ". "]
-    .map((marker) => {
-      const index = slice.lastIndexOf(marker);
-      return index >= minSize ? index + marker.length : -1;
-    })
-    .filter((index) => index > 0);
-  if (breakpoints.length) return start + Math.max(...breakpoints);
-  return hardEnd;
-}
-
 function chunkText(text, source) {
-  const normalized = normalizeMountedChunkText(text);
-  const chunks = [];
-  const chunkSize = 900;
-  const overlap = 160;
-  const minBreakSize = Math.floor(chunkSize * 0.55);
-  let start = 0;
-
-  while (start < normalized.length) {
-    const hardEnd = Math.min(start + chunkSize, normalized.length);
-    const end = preferredChunkEnd(normalized, start, hardEnd, minBreakSize);
-    const content = normalized.slice(start, end).trim();
-    if (content.length > 80) {
-      chunks.push({
-        source,
-        content,
-        chunkIndex: chunks.length + 1,
-        start,
-        end,
-      });
-    }
-    if (end >= normalized.length) break;
-    start = Math.max(end - overlap, start + 1);
-  }
-
-  return chunks;
+  return window.AISystem6RetrievalRuntime.chunkText(text, source, {
+    normalize: normalizeMountedChunkText,
+  });
 }
 
 async function embedTexts(texts, signal) {
-  const isCloud = typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudConfig.apiKey;
+  const isCloud = typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudCredentialReady();
   const useCloudEmbeddings = isCloud && cloudConfig?.provider && cloudConfig.provider !== "deepseek";
   const modelForCloudEmbeddings = String(cloudConfig?.model || "").trim();
   const localModel = String(embeddingModelInput?.value?.trim() || "");
@@ -74,7 +44,7 @@ async function embedTexts(texts, signal) {
     bodyObj = {
       model: modelForCloudEmbeddings,
       input: texts,
-      _cloud_api_key: cloudConfig.apiKey,
+      ...cloudCredentialTransportFields(),
       _cloud_base_url: cloudConfig.baseUrl,
     };
   } else {
@@ -120,60 +90,19 @@ async function embedTexts(texts, signal) {
 }
 
 function cosineSimilarity(a, b) {
-  let dot = 0;
-  let aSize = 0;
-  let bSize = 0;
-
-  for (let index = 0; index < a.length; index += 1) {
-    dot += a[index] * b[index];
-    aSize += a[index] * a[index];
-    bSize += b[index] * b[index];
-  }
-
-  return dot / (Math.sqrt(aSize) * Math.sqrt(bSize));
+  return window.AISystem6RetrievalRuntime.cosineSimilarity(a, b);
 }
 
 function normalizeSearchText(value) {
-  return String(value || "").normalize("NFKC").toLowerCase();
+  return window.AISystem6RetrievalRuntime.normalizeSearchText(value);
 }
 
 function getQueryWords(userText) {
-  const text = normalizeSearchText(userText);
-  const terms = new Set();
-  const cjkPattern = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]+/gu;
-  let match;
-
-  while ((match = cjkPattern.exec(text))) {
-    const runes = Array.from(match[0]);
-    if (runes.length <= 4) {
-      terms.add(runes.join(""));
-      continue;
-    }
-    terms.add(runes.join(""));
-    for (const size of [2, 3]) {
-      for (let index = 0; index <= runes.length - size; index += 1) {
-        terms.add(runes.slice(index, index + size).join(""));
-      }
-    }
-  }
-
-  const nonCjkText = text.replace(cjkPattern, " ");
-  for (const word of nonCjkText.match(/[\p{L}\p{N}][\p{L}\p{N}_-]*/gu) || []) {
-    if (word.length > 1) terms.add(word);
-  }
-
-  return terms;
+  return window.AISystem6RetrievalRuntime.getQueryWords(userText);
 }
 
 function keywordScore(text, queryWords) {
-  const lower = normalizeSearchText(text);
-  let score = 0;
-
-  queryWords.forEach((word) => {
-    if (lower.includes(word)) score += word.length >= 4 ? 2 : 1;
-  });
-
-  return score;
+  return window.AISystem6RetrievalRuntime.keywordScore(text, queryWords);
 }
 
 function chunkSourceName(chunk) {

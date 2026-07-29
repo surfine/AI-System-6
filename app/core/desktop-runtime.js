@@ -148,7 +148,7 @@ function setBootLedgerItem(el, label, value = "", state = "pending") {
 function updateBootLedger(stage = "startup") {
   const project = getActiveProject?.();
   const projectMounted = !!(project && isProjectMounted);
-  const cloudModelReady = !!(typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudConfig?.provider && cloudConfig?.apiKey && cloudConfig?.model);
+  const cloudModelReady = !!(typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudConfig?.provider && cloudCredentialReady() && cloudConfig?.model);
   const modelName = modelInput?.value.trim();
   const modelReady = cloudModelReady || localModelState.ready || localModelState.loaded || !!modelName;
   const modelDisplayName = cloudModelReady ? cloudConfig.model : (modelName || modelInput?.placeholder || "LM Studio");
@@ -630,7 +630,7 @@ function ejectMenuSelection() {
 
   if (["textDisk", "rag"].includes(activeName)) {
     if (hasMountedFileFloppy) {
-      ejectSelectedMountedFile();
+      ejectTextDisk();
     } else {
       closeWindow(activeName, true);
       setStatus(t("no_text_disk_mounted"));
@@ -731,6 +731,21 @@ function openFileInfo() {
     iconClass = item.iconClass || "folder-icon";
     iconId = item.iconId || iconClass;
     sizeBytes = item.itemCount || 0;
+  } else if (item.type === "finder-volume") {
+    kindLabel = item.kindLabel || t("project_disk");
+    iconClass = item.iconClass || "hard-disk-icon";
+    iconId = item.iconId || "startupDisk";
+    sizeBytes = item.itemCount || 0;
+  } else if (item.type === "mountedFile") {
+    kindLabel = item.kindLabel || t("mounted_text_disk");
+    iconClass = item.iconClass || "doc-icon";
+    iconId = item.iconId || "document";
+    sizeBytes = item.sizeValue ?? String(item.body || "").length;
+  } else if (item.type === "projectCdItem") {
+    kindLabel = item.kindLabel || t("project_cd");
+    iconClass = item.iconClass || "doc-icon";
+    iconId = item.iconId || "document";
+    sizeBytes = item.sizeValue ?? String(item.body || "").length;
   } else if (projects.includes(item)) {
     kindLabel = t("project_disk");
     iconClass = "project-disk-icon";
@@ -750,21 +765,28 @@ function openFileInfo() {
 
   fileInfoKindEl.textContent = `${t("kind")}: ${kindLabel}`;
   fileInfoSizeEl.textContent = item.sizeLabel
-    || (projects.includes(item) || item.type === "finder-root" || item.type === "folder" ? t("items_count", sizeBytes) : `${sizeBytes} bytes`);
+    || (projects.includes(item) || item.type === "finder-volume" || item.type === "finder-root" || item.type === "folder" ? t("items_count", sizeBytes) : `${sizeBytes} bytes`);
   const project = item.projectId ? projects.find((entry) => entry.id === item.projectId) : getActiveProject();
   fileInfoLocationEl.textContent = item.location || (project ? projectDisplayName(project) : t("project_disk"));
   const folder = item.folderId ? chatFolders.find((entry) => entry.id === item.folderId) : null;
   const sourceMatch = (item.body || "").match(/URL:\s*(https?:\/\/\S+)/i);
-  fileInfoFolderEl.textContent = item.type === "finder-root"
+  fileInfoFolderEl.textContent = item.type === "finder-volume"
+    ? item.name
+    : item.type === "finder-root"
     ? getFinderItemPathLabel(item)
     : item.type === "folder"
       ? getFinderItemPathLabel(item)
-    : folder ? getProjectFolderPathLabel(folder.id, item.projectId || activeProjectId) : getProjectFolderPathLabel(null, item.projectId || activeProjectId);
+    : item.type === "mountedFile" || item.type === "projectCdItem"
+      ? item.location
+      : folder ? getProjectFolderPathLabel(folder.id, item.projectId || activeProjectId) : getProjectFolderPathLabel(null, item.projectId || activeProjectId);
   fileInfoSourceEl.textContent = sourceMatch?.[1] || t("local_source");
   fileInfoContextEl.textContent = item.virtual
     ? t("local_desktop")
-    : item.projectId || projects.includes(item) || item.type === "finder-root" || item.type === "folder" ? t("durable_yes") : t("durable_no");
+    : item.type === "mountedFile"
+      ? t("durable_no")
+      : item.projectId || projects.includes(item) || item.type === "finder-volume" || item.type === "finder-root" || item.type === "folder" ? t("durable_yes") : t("durable_no");
   fileInfoCommentsEl.value = item.comments || "";
+  fileInfoCommentsEl.disabled = item.readOnly === true;
 
   fileInfoIconEl.className = `large-mini-icon sys-icon ${iconClass}`;
   fileInfoIconEl.dataset.systemIcon = normalizeSystemIconId(iconId);
@@ -778,7 +800,9 @@ function getActiveItem() {
   if (!activeWin) return null;
 
   const name = activeWin.dataset.window;
-  if (finderContainerWindowNames.includes(name)) {
+  if (typeof getFinderVolumeDefinition === "function" && getFinderVolumeDefinition(name)) {
+    return getFinderVolumeSelectedItem(name) || getFinderVolumeRootItem(name);
+  } else if (finderContainerWindowNames.includes(name)) {
     return getSelectedStaticFinderItem(name);
   } else if (name === "documents") {
     return getSelectedDocumentItem();

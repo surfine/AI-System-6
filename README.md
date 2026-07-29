@@ -96,6 +96,4 @@ behavior may change between snapshots.
 
 ## License
 
-No open-source license has been selected yet. Until one is added, the code is
-available for review and collaboration, but no reuse rights are granted by
-default.
+AI System 6 is available under the [MIT License](LICENSE).

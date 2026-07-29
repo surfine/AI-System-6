@@ -1058,7 +1058,7 @@ select:focus {
     padding: 4px 8px 6px;
   }
 
-  body:not(.is-writer-mode) .window:not(.about-window):not(.save-chat-window):not(.guide-window):not(.control-panel):not(.chooser-panel):not(.find-file-window):not(.note-pad-window):not(.clipboard-window):not(.dictation-window):not(.translation-pad-window):not(.dictionary-window):not(.key-caps-window):not(.system-status-window):not(.notification-center-window):not(.writing-bell-window):not(.alarm-clock-window):not(.calculator-window):not(.puzzle-window):not(.memory-cards-window):not(.model-meter-window):not(.is-mobile-fullscreen) {
+  body:not(.is-writer-mode) .window:not(.about-window):not(.save-chat-window):not(.guide-window):not(.control-panel):not(.chooser-panel):not(.find-file-window):not(.note-pad-window):not(.clipboard-window):not(.dictation-window):not(.translation-pad-window):not(.dictionary-window):not(.key-caps-window):not(.system-status-window):not(.notification-center-window):not(.writing-bell-window):not(.alarm-clock-window):not(.calculator-window):not(.puzzle-window):not(.memory-cards-window):not(.model-meter-window):not(.is-mobile-fullscreen):not(.is-mobile-dialog):not(.is-mobile-system-page) {
     position: absolute !important;
     left: var(--mobile-work-left) !important;
     right: auto !important;
@@ -1073,14 +1073,13 @@ select:focus {
     min-width: 0 !important;
     max-width: calc(100vw - 28px) !important;
     height: auto !important;
-    transform: none !important;
+    transform: var(--mobile-da-transform, none) !important;
     /* Desktop base rules pin these accessories with right:<N>px; on a narrow
        screen that makes the used left negative (viewport - right - width < 0),
-       clipping them off the left edge. Neutralise the stray right and anchor
-       left to the work inset. Non-important on purpose: JS cascade placement
-       sets an inline left that must still win. */
+       clipping them off the left edge. Neutralise the stray right and use one
+       shared horizontal axis; the portrait arranger owns only vertical slots. */
     right: auto;
-    left: var(--mobile-work-left, 0px);
+    left: 50%;
   }
 
   body:not(.is-writer-mode) .window:is(.find-file-window, .memory-cards-window):not(.is-hidden):not(.is-collapsed) {
@@ -1330,6 +1329,20 @@ select:focus {
   }
 
   #clock {
+    display: none;
+  }
+
+  /* Keep the two disk/switcher affordances on-screen after an app contributes
+     its full System 6 menu set. The cloud route remains available through its
+     icon and accessible name; only the redundant provider label collapses. */
+  .cloud-model-indicator {
+    min-width: 30px;
+    max-width: 38px;
+    padding-inline: 4px;
+    justify-content: center;
+  }
+
+  #cloud-model-label {
     display: none;
   }
 
@@ -1617,7 +1630,7 @@ body.is-writer-mode .system-help-window .system-help-pane {
     left: calc(50% - 31px);
   }
 
-  body:not(.is-writer-mode) .window:not(.about-window):not(.save-chat-window):not(.guide-window):not(.control-panel):not(.chooser-panel):not(.find-file-window):not(.note-pad-window):not(.clipboard-window):not(.dictation-window):not(.translation-pad-window):not(.dictionary-window):not(.key-caps-window):not(.system-status-window):not(.notification-center-window):not(.writing-bell-window):not(.alarm-clock-window):not(.calculator-window):not(.puzzle-window):not(.memory-cards-window):not(.model-meter-window):not(.is-mobile-fullscreen),
+  body:not(.is-writer-mode) .window:not(.about-window):not(.save-chat-window):not(.guide-window):not(.control-panel):not(.chooser-panel):not(.find-file-window):not(.note-pad-window):not(.clipboard-window):not(.dictation-window):not(.translation-pad-window):not(.dictionary-window):not(.key-caps-window):not(.system-status-window):not(.notification-center-window):not(.writing-bell-window):not(.alarm-clock-window):not(.calculator-window):not(.puzzle-window):not(.memory-cards-window):not(.model-meter-window):not(.is-mobile-fullscreen):not(.is-mobile-dialog):not(.is-mobile-system-page),
   body:not(.is-writer-mode) .assistant-window:not(.is-mobile-fullscreen),
   body:not(.is-writer-mode) .assistant-window.is-desklet:not(.is-mobile-fullscreen) {
     position: relative !important;
@@ -1633,7 +1646,7 @@ body.is-writer-mode .system-help-window .system-help-pane {
     transform: none !important;
   }
 
-  body:not(.is-writer-mode) .window:is(.about-window, .guide-window):not(.is-hidden) {
+  body:not(.is-writer-mode) .window:is(.about-window, .guide-window):not(.is-hidden):not(.is-mobile-dialog):not(.is-mobile-system-page) {
     position: relative !important;
     order: 2;
     left: auto !important;
@@ -1652,17 +1665,14 @@ body.is-writer-mode .system-help-window .system-help-pane {
     order: 3 !important;
   }
 
-  /* Mobile full-screen app shell (ClioTalk pilot). A foregrounded real app fills
-     the screen below the fixed menu bar. App-agnostic class so later apps reuse
-     it. The flow rules above are scoped away with :not(.is-mobile-fullscreen),
-     so these win by specificity without adding a forced override. */
+  /* Mobile page shell. Application pages and Finder folders share one work
+     area below the fixed menu bar; dialogs, system pages, and Desk Accessories
+     use their own overlay roles instead of competing for the same frame. */
   body.mobile-app-foreground:not(.is-writer-mode) .window.is-mobile-fullscreen {
     position: fixed;
-    /* The window fills to the true bottom edge — iOS no longer expects content
-       to stop short of the home indicator, it floats over the app instead (only
-       the composer keeps a comfortable inner inset below). Bottom still lifts
-       by --keyboard-inset so the composer clears the keyboard when it is up;
-       top clears the status bar when the desk runs standalone. */
+    /* The window material fills to the true bottom edge. Bottom still lifts by
+       --keyboard-inset when the keyboard is up; an inner safe-area rule below
+       protects each app's interactive content at rest. */
     inset:
       calc(var(--menu-bar-height) + var(--safe-area-top))
       0
@@ -1686,6 +1696,16 @@ body.is-writer-mode .system-help-window .system-help-pane {
     overflow: hidden;
   }
 
+  /* ClioTalk owns its bottom inset at the composer, because the transcript
+     should continue behind it. Every other full-screen app gets the same
+     protection at the shell, so its lowest toolbar or content control cannot
+     land under the home indicator. System Help has a separate system-page
+     role and keeps its existing scroll-safe treatment. */
+  body.mobile-app-foreground:not(.is-writer-mode)
+    .window.is-mobile-fullscreen:not(.assistant-window) {
+    padding-bottom: var(--safe-area-bottom);
+  }
+
   /* Inside the full-screen shell the pane between title bar and composer takes
      the slack and scrolls; the composer stays pinned at the bottom. */
   body.mobile-app-foreground:not(.is-writer-mode) .window.is-mobile-fullscreen .window-pane,
@@ -1704,11 +1724,91 @@ body.is-writer-mode .system-help-window .system-help-pane {
     padding-bottom: var(--safe-area-bottom);
   }
 
+  /* Finder has one phone browser: changing folders or volumes replaces its
+     visible location. Choosing Finder from the MultiFinder switcher returns
+     to the desktop launcher without discarding the browser's current path. */
+  body.mobile-finder-desktop:not(.is-writer-mode) .window.is-mobile-finder-page {
+    display: none;
+  }
+
+  /* Dialogs belong to the page beneath them. They remain compact, centered,
+     and independently scrollable so Save Chat, Page Setup, and Get Info never
+     replace the content the user is acting on. Their normal window layer from
+     the manager remains the owner; no parallel mobile z-index is introduced. */
+  body:not(.is-writer-mode) .window.is-mobile-dialog:not(.is-hidden):not(.is-collapsed) {
+    position: fixed;
+    left: 50%;
+    right: auto;
+    top: calc(var(--menu-bar-height) + var(--safe-area-top) + 12px);
+    width: min(430px, calc(100vw - 24px));
+    height: auto;
+    max-width: calc(100vw - 24px);
+    max-height: calc(
+      100vh
+      - var(--menu-bar-height)
+      - var(--safe-area-top)
+      - var(--safe-area-bottom)
+      - var(--keyboard-inset, 0px)
+      - 24px
+    );
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  body:not(.is-writer-mode) .window.is-mobile-dialog:not(.is-hidden):not(.is-collapsed) > .window-pane {
+    min-height: 0;
+    overflow: auto;
+  }
+
+  /* Help and the first-run Guide are system-owned pages, not Finder content
+     and not Desk Accessories. They use the named pinned-window layer and keep
+     their own internal panes scrollable above any foreground application. */
+  body:not(.is-writer-mode) .window.is-mobile-system-page:not(.is-hidden):not(.is-collapsed) {
+    position: fixed;
+    inset:
+      calc(var(--menu-bar-height) + var(--safe-area-top))
+      0
+      var(--keyboard-inset, 0px)
+      0;
+    width: 100%;
+    height: auto;
+    min-width: 0;
+    max-width: none;
+    max-height: none;
+    border-width: 0;
+    border-radius: 0;
+    transform: none;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  body:not(.is-writer-mode) .window.is-mobile-system-page:not(.is-hidden):not(.is-collapsed) > .window-pane {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    scroll-padding-bottom: var(--safe-area-bottom);
+  }
+
+  body:not(.is-writer-mode) .system-help-window.is-mobile-system-page > .system-help-pane {
+    overflow: hidden;
+  }
+
   /* Home = clear this state; the desktop launcher underneath returns. While an
      app is foregrounded, the launcher column and writing spine stay out of the
      way behind it. */
   body.mobile-app-foreground:not(.is-writer-mode) .icon-column,
   body.mobile-app-foreground:not(.is-writer-mode) .writing-spine-panel {
+    display: none;
+  }
+
+  /* MultiFinder keeps background applications running, but a phone presents
+     only the frontmost real app. Remove the other app windows from portrait
+     layout without marking their MultiFinder processes hidden; Desk
+     Accessories and system overlays still float above the foreground app. */
+  body.mobile-app-foreground:not(.is-writer-mode) .window:not(.is-mobile-fullscreen):not(.is-mobile-dialog):not(.is-mobile-system-page):not([data-app="accessories"]):not([data-app="system"]) {
     display: none;
   }
 
@@ -1770,7 +1870,7 @@ body.is-writer-mode .system-help-window .system-help-pane {
   }
 
   body:not(.is-writer-mode) .window.puzzle-window:not(.is-hidden):not(.is-collapsed) {
-    width: min(188px, 100%) !important;
+    width: min(244px, 100%) !important;
   }
 
   body:not(.is-writer-mode) .window.model-meter-window:not(.is-hidden):not(.is-collapsed) {
@@ -1787,10 +1887,37 @@ body.is-writer-mode .system-help-window .system-help-pane {
     min-height: 0;
   }
 
+  body:not(.is-writer-mode) .finder-navigation-bar {
+    min-height: 44px;
+    gap: 4px;
+    padding: 3px 6px;
+  }
+
+  body:not(.is-writer-mode) .finder-navigation-back {
+    width: 40px;
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  body:not(.is-writer-mode) :is(.finder-breadcrumb, .finder-breadcrumb-current) {
+    min-height: 40px;
+    padding-inline: 5px;
+  }
+
+  body:not(.is-writer-mode) .finder-breadcrumb-current {
+    max-width: min(58vw, 30ch);
+  }
+
   body:not(.is-writer-mode) :is(.project-disk-grid, .project-cd-grid, .document-icon-grid, .disk-grid, .finder-grid) {
     min-height: 180px;
     max-height: 42vh;
     overflow: auto;
+  }
+
+  body:not(.is-writer-mode) .window.is-mobile-fullscreen.is-mobile-finder-page :is(.project-disk-grid, .project-cd-grid, .document-icon-grid, .disk-grid, .finder-grid) {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
   }
 
   /* A fixed height here (rather than a cap) forced this dialog to a fraction of
@@ -1813,6 +1940,27 @@ body.is-writer-mode .system-help-window .system-help-pane {
   body:not(.is-writer-mode) .window:is(.control-panel, .chooser-panel):not(.is-hidden):not(.is-collapsed) .window-pane {
     min-height: 0;
     overflow-y: auto;
+  }
+
+  body:not(.is-writer-mode) .window.is-mobile-da-arranged:not(.is-hidden):not(.is-collapsed) {
+    --mobile-da-transform: translateX(-50%);
+
+    position: fixed;
+    left: 50%;
+    top: var(--mobile-da-top, calc(var(--system-menu-height, 26px) + 12px));
+    right: auto;
+    min-height: 0;
+    max-height: var(
+      --mobile-da-max-height,
+      calc(100vh - var(--system-menu-height, 26px) - var(--safe-area-bottom) - 24px)
+    );
+    transform: var(--mobile-da-transform);
+    overflow: hidden;
+  }
+
+  body:not(.is-writer-mode) .window.is-mobile-da-arranged:not(.is-hidden):not(.is-collapsed) > .window-pane {
+    min-height: 0;
+    overflow: auto;
   }
 
   body:not(.is-writer-mode) .assistant-window:not(.is-collapsed):not(.is-mobile-fullscreen) {
@@ -2480,6 +2628,10 @@ input[type="radio"] {
   font-size: var(--system-readable-min);
 }
 
+.mobile-control-short {
+  display: none;
+}
+
 @media (max-width: 860px) and (orientation: portrait) {
   body:not(.is-writer-mode) .window.scrapbook-window:not(.is-hidden):not(.is-collapsed):not(.is-mobile-fullscreen) {
     left: 18px !important;
@@ -2515,11 +2667,9 @@ input[type="radio"] {
 }
 
 @media (max-width: 640px) {
-  .clio-stage-toolbar,
-  .clio-stage-view-switcher,
-  .clio-stage-ask-row {
+  .clio-stage-toolbar {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: auto minmax(0, 1fr);
   }
 
   .clio-stage-toolbar,
@@ -2535,14 +2685,264 @@ input[type="radio"] {
   }
 
   .clio-stage-view-switcher {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     width: 100%;
     margin-left: 0;
+  }
+
+  .clio-stage-ask-row {
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 }
 
 @media (max-width: 430px) and (orientation: portrait) {
   body:not(.is-writer-mode) .scrapbook-window .scrapbook-pane {
     grid-template-columns: 1fr !important;
-    overflow: auto;
+    grid-template-rows: minmax(132px, 156px) minmax(0, 1fr) auto;
+    overflow: hidden;
+  }
+
+  /* Phone apps keep one content column and move secondary controls into
+     wrapped, finger-sized rows. Text must survive both English compounds and
+     longer Chinese labels without making the app wider than the viewport. */
+  .quick-draft-editor-actions {
+    gap: 6px;
+  }
+
+  .quick-draft-editor-actions .teachtext-command-group {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .quick-draft-editor-actions .teachtext-command-group > .btn,
+  .quick-draft-editor-actions .teachtext-command-group > .teachtext-command-menu > summary,
+  .quick-draft-editor-actions > .btn.default {
+    min-height: 44px;
+    padding-inline: 5px;
+  }
+
+  .quick-draft-editor-actions > .btn.default {
+    flex-basis: auto;
+    min-width: 72px;
+  }
+
+  .quick-draft-editor-actions .mobile-control-long {
+    display: none;
+  }
+
+  .quick-draft-editor-actions .mobile-control-short {
+    display: inline;
+  }
+
+  body.mobile-app-foreground:not(.is-writer-mode) .assistant-window.is-mobile-fullscreen .messages {
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+  }
+
+  body.mobile-app-foreground:not(.is-writer-mode) .assistant-window.is-mobile-fullscreen .message-content {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  body.mobile-app-foreground:not(.is-writer-mode) .assistant-window.is-mobile-fullscreen .message-content :is(pre, table, img, video, iframe) {
+    max-width: 100%;
+  }
+
+  body.mobile-app-foreground:not(.is-writer-mode) .assistant-window.is-mobile-fullscreen .message-content :is(pre, table) {
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+  }
+
+  body.mobile-app-foreground:not(.is-writer-mode) .assistant-window.is-mobile-fullscreen .composer {
+    margin: 6px 7px 7px;
+    padding: 6px;
+  }
+
+  body.mobile-app-foreground:not(.is-writer-mode) .assistant-window.is-mobile-fullscreen .composer textarea {
+    min-height: 42px;
+    max-height: min(108px, 20vh);
+  }
+
+  .find-path-pane > label {
+    display: none;
+  }
+
+  .find-path-query-row input,
+  .find-path-query-row .btn {
+    min-height: 44px;
+  }
+
+  .find-path-pane > .button-row:last-child {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .find-path-pane > .button-row:last-child .btn {
+    min-width: 0;
+    min-height: 44px;
+    padding-inline: 5px;
+  }
+
+  .find-path-pane > .button-row:last-child .mobile-control-long {
+    display: none;
+  }
+
+  .find-path-pane > .button-row:last-child .mobile-control-short {
+    display: inline;
+  }
+
+  .reader-pane {
+    gap: 6px;
+    padding: 6px;
+  }
+
+  .reader-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px;
+  }
+
+  .reader-url-row input {
+    min-height: 44px;
+  }
+
+  .reader-actions {
+    display: flex;
+    gap: 6px;
+  }
+
+  .reader-actions .btn {
+    min-width: 0;
+    min-height: 44px;
+    padding: 6px 8px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .reader-pane:has(#reader-docmap-button:not(:disabled)) .reader-toolbar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .reader-pane:has(#reader-docmap-button:not(:disabled)) .reader-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+  }
+
+  .reader-actions .mobile-control-long,
+  .reader-ask-row .mobile-control-long {
+    display: none;
+  }
+
+  .reader-actions .mobile-control-short,
+  .reader-ask-row .mobile-control-short {
+    display: inline;
+  }
+
+  .reader-content {
+    padding: 18px 16px;
+    overflow-x: hidden;
+    line-height: 1.65;
+    overflow-wrap: anywhere;
+  }
+
+  .reader-content h1 {
+    margin-bottom: 18px;
+    font-size: 20px;
+    overflow-wrap: anywhere;
+  }
+
+  .reader-body-content p {
+    margin: 1em 0;
+    text-align: start;
+    text-indent: 0;
+  }
+
+  .reader-body-content :is(table, pre, img, video, iframe) {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .reader-ask-form > label {
+    display: none;
+  }
+
+  .reader-ask-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  body:not(.is-writer-mode) .scrapbook-window .scrap-list:has(.scrap-empty-card) {
+    min-height: 132px;
+    max-height: 156px;
+  }
+
+  body:not(.is-writer-mode) .scrapbook-window .scrapbook-ask-row input,
+  body:not(.is-writer-mode) .scrapbook-window .scrapbook-ask-row .btn {
+    min-height: 44px;
+  }
+
+  .reader-ask-row :is(input, .btn) {
+    min-height: 44px;
+  }
+
+  .clio-stage-window .window-pane.clio-stage-pane {
+    gap: 6px;
+    padding: 6px;
+  }
+
+  .clio-stage-toolbar {
+    gap: 6px;
+  }
+
+  .clio-stage-controls {
+    grid-template-columns: 44px auto 44px;
+    gap: 4px;
+  }
+
+  .clio-stage-view-switcher {
+    gap: 4px;
+  }
+
+  .clio-stage-pane .clio-stage-view-switcher .btn,
+  .clio-stage-pane .clio-stage-nav-button,
+  .clio-stage-ask-row :is(input, .btn) {
+    min-width: 0;
+    min-height: 44px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .clio-stage-pane .clio-stage-view-switcher .btn {
+    padding-inline: 4px;
+  }
+
+  .clio-stage-view-switcher .mobile-control-long,
+  .clio-stage-ask-row .mobile-control-long {
+    display: none;
+  }
+
+  .clio-stage-view-switcher .mobile-control-short,
+  .clio-stage-ask-row .mobile-control-short {
+    display: inline;
+  }
+
+  .clio-stage-ask-form {
+    gap: 0;
+    padding-bottom: 0;
+  }
+
+  .clio-stage-ask-form > label {
+    display: none;
+  }
+
+  body:not(.is-writer-mode) .window.puzzle-window:not(.is-hidden):not(.is-collapsed) {
+    --puzzle-board-width: 220px;
+    --puzzle-board-height: 220px;
+    --puzzle-tile-width: auto;
+    --puzzle-tile-height: auto;
+    --puzzle-footer-width: 220px;
   }
 }

@@ -102,7 +102,7 @@ function renderFindPathResults() {
     item.className = `find-path-result${index === selectedFindPathIndex ? " is-selected" : ""}`;
     item.tabIndex = 0;
     item.role = "button";
-    item.title = "Double-click to open link";
+    item.title = t("searcher_open_link_hint");
     item.innerHTML = `
       <strong>${escapeHtml(result.title)}</strong>
       <span>${escapeHtml(result.site || result.url)}</span>
@@ -132,11 +132,11 @@ function renderFindPathResults() {
     findPathResultsEl.append(item);
   });
 
-  // Add "More..." button at the end of the list
+  // Add the localized pagination button at the end of the list.
   const moreButton = document.createElement("button");
   moreButton.type = "button";
   moreButton.className = "find-path-more-btn";
-  moreButton.textContent = "More...";
+  moreButton.textContent = t("searcher_more_results");
   moreButton.addEventListener("click", fetchMoreResults);
   findPathResultsEl.append(moreButton);
 

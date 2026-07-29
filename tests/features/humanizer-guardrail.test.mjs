@@ -2,8 +2,11 @@
 // before Review Desk ever sees the text.
 
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
+import { createRequire } from "node:module";
 
 const test = createFeatureTest("humanizer-guardrail");
+const require = createRequire(import.meta.url);
+const serverHumanizerRuntime = require("../../src/server/humanizer.js");
 
 const manifest = read("scripts/runtime-manifest.mjs");
 const appHumanizer = read("app/core/humanizer-guidance.js");
@@ -71,31 +74,33 @@ test.assertIncludes(serverHumanizer, "立足点套话", "Server repair catches a
 test.assertIncludes(serverHumanizer, "闭环套话", "Server repair catches office-jargon closure phrasing from qwen3.6");
 test.assertIncludes(serverHumanizer, "括号注释尾巴", "Server repair catches parenthetical editor-note tails from qwen3.6");
 test.assertIncludes(serverHumanizer, "HTML换行", "Server repair catches mini-report table formatting from qwen3.6");
-test.assertIncludes(serverHumanizer, "体现了", "Deterministic cleanup keeps 体现了 grammatical instead of turning it into 例子了");
 test.assertIncludes(serverHumanizer, "English mirror of the Chinese ban", "Server guardrail mirrors the English AI-voice ban block from blader/humanizer");
 test.assertIncludes(serverHumanizer, "constrains model-written prose only", "Server English em-dash rule never strips the writer's own punctuation");
 test.assertIncludes(serverHumanizer, "en-vague-authority", "Server repair catches English vague-authority attributions (experts believe / observers note)");
 test.assertIncludes(serverHumanizer, "en-positive-conclusion", "Server repair catches English generic positive conclusions");
-test.assertIncludes(serverHumanizer, "I hope this helps", "Server scrub deletes English chatbot correspondence artifacts");
+test.assertIncludes(serverHumanizer, "I hope this helps", "Server diagnostics recognize English chatbot correspondence artifacts");
 test.assertIncludes(serverChat, 'require("./humanizer.js")', "Local and cloud proxy normalization can load the Humanizer guardrail");
-test.assertIncludes(serverChat, "humanizerModelInstruction(anyPayload.ai_system6_task_kind, messages)", "Server injects based on task kind before tuning strips internal fields");
+test.assertIncludes(serverChat, 'contract.humanizer === "off"', "Server contract can disable Humanizer for source-preserving tasks");
 test.assertIncludes(serverChat, "...(humanizerInstruction ? [{ role: \"system\", content: humanizerInstruction }] : [])", "Server prepends the guardrail as a system message");
 test.assertIncludes(serverChat, "temperature: 0.55", "Server qwen profile defaults to a restrained prose temperature");
 test.assertIncludes(draftRoute, 'require("../humanizer.js")', "Quick Draft route can load the Humanizer guardrail");
-test.assertIncludes(draftRoute, "humanizerModelInstruction(`quick-draft-${taskKind(body) || stage}`", "Quick Draft de-slops every command output, not only final draft prose");
-test.assertIncludes(chatRoute, "function repairHumanizerOutputIfNeeded", "Local non-stream chat responses get a Humanizer repair pass");
-test.assertIncludes(chatRoute, "findHumanizerOutputHits(content)", "Repair pass checks generated output for AI-flavored residue");
+test.assertIncludes(draftRoute, "humanizerModelInstruction(`quick-draft-${taskKind(body) || stage}`", "Quick Draft generation receives style guidance");
+test.assertIncludes(draftRoute, 'mode: "lint"', "Quick Draft reports style diagnostics without changing draft content");
+test.assertIncludes(chatRoute, "function repairHumanizerOutputIfNeeded", "Local non-stream chat responses have a task-aware lint/rewrite gate");
+test.assertIncludes(chatRoute, "findHumanizerStyleDiagnostics(content)", "Local responses expose exact style-diagnostic spans");
 test.assertIncludes(chatRoute, "isHumanizerRepairMetaResponse(nextContent)", "Local repair pass rejects meta-responses instead of exposing repair prompts");
-test.assertIncludes(chatRoute, "scrubHumanizerOutput(content)", "Repair pass has a deterministic final cleanup for stubborn residues");
+test.assertNotIncludes(chatRoute, "scrubHumanizerOutput", "Local responses never run deterministic Humanizer replacements");
 test.assertIncludes(chatRoute, "片段或结构", "Local repair prompt can explain structural hits as well as literal substrings");
-test.assertIncludes(cloudChatRoute, "function repairCloudHumanizerOutputIfNeeded", "Cloud non-stream chat responses get the same Humanizer repair pass");
+test.assertIncludes(cloudChatRoute, "function repairCloudHumanizerOutputIfNeeded", "Cloud non-stream chat responses get the same task-aware lint/rewrite gate");
 test.assertIncludes(cloudChatRoute, "isHumanizerRepairMetaResponse(nextContent)", "Cloud repair pass rejects meta-responses instead of exposing repair prompts");
 test.assertIncludes(cloudChatRoute, "不要逐字引用源文里的套话", "Cloud repair handles editing suggestions without quoting AI-flavored source phrases");
+test.assertNotIncludes(cloudChatRoute, "scrubHumanizerOutput", "Cloud responses never run deterministic Humanizer replacements");
 test.assertIncludes(cloudChatRoute, "delete raw.ai_system6_task_kind", "Cloud route keeps internal task kind out of provider payloads");
 test.assertIncludes(chatMessages, "function qwen35TaskTemperature", "Client qwen defaults are task-aware instead of always hot");
 test.assertIncludes(chatMessages, "qwen35TaskTemperature(taskKind)", "Client qwen defaults use the restrained task temperature");
-test.assertIncludes(chatMessages, "qwenNeedsHumanizerRepair", "Client qwen chat uses non-stream output so the repair pass can run");
-test.assertIncludes(chatMessages, "isQwen35ModelName(budgetedPayload.model)", "Client qwen stream gating reads the budgeted payload before final payload creation");
+test.assertIncludes(chatMessages, "explicitHumanizerRewrite", "Client only reserves a rewrite pass for an explicit Humanizer task");
+test.assertNotIncludes(chatMessages, "qwenNeedsHumanizerRepair", "Ordinary qwen chat is no longer silently rewritten");
+test.assertIncludes(chatMessages, "isGemma4ModelName(budgetedPayload.model)", "Client visible-output stream gating reads the budgeted payload before final payload creation");
 
 test.assertIncludes(sectionDraftPrompt, "避免论文腔、公文腔、营销腔和 AI 腔", "Section Draft generation explicitly rejects AI voice");
 test.assertIncludes(sectionDraftPrompt, "不要用“不仅……而且……”和机械三段式撑场面", "Section Draft generation bans common formula structures");
@@ -114,6 +119,23 @@ test.assertIncludes(bureaucracy, "^:?-{2,}:?$", "Bureaucracy captions reject Mar
 test.assertIncludes(bureaucracyRoute, "qwen35Local ? 0.45 : 0.78", "Bureaucracy captions lower qwen temperature for short local outputs");
 test.assertIncludes(bureaucracyRoute, "qwen35Local ? 90000 : 30000", "Bureaucracy captions give larger local qwen models enough time without slowing cloud models");
 test.assertIncludes(bureaucracyRoute, "qwen35Local ? 420 : 1200", "Bureaucracy captions cap local qwen output for faster table parsing");
-test.assertIncludes(bureaucracyRoute, "scrubHumanizerOutput(rawContent)", "Bureaucracy captions scrub AI-voice residue before parsing");
+test.assertIncludes(bureaucracyRoute, "findHumanizerStyleDiagnostics(content)", "Bureaucracy captions report style diagnostics without changing model text");
+test.assertNotIncludes(bureaucracyRoute, "scrubHumanizerOutput", "Bureaucracy captions never regex-rewrite factual text");
+
+test.assert(!serverHumanizerRuntime.shouldRepairHumanizerOutput("chat"), "Ordinary chat is lint-only");
+test.assert(serverHumanizerRuntime.shouldRepairHumanizerOutput("humanize-selection"), "Explicit Humanizer action can request a model rewrite");
+const factualPhrase = "工业革命的实验结果证明，Power Mac G5 使用玻璃外壳。";
+const factualDiagnostics = serverHumanizerRuntime.findHumanizerStyleDiagnostics(factualPhrase);
+test.assert(factualDiagnostics.length > 0, "Potential style matches are returned as diagnostics");
+test.assert(
+  factualDiagnostics.every((item) => (
+    Number.isInteger(item.start)
+      && item.start >= 0
+      && item.end > item.start
+      && factualPhrase.slice(item.start, item.end)
+  )),
+  "Style diagnostics point to source spans without mutating the sentence"
+);
+test.assert(!("scrubHumanizerOutput" in serverHumanizerRuntime), "Server exposes no deterministic Humanizer scrubber");
 
 test.finish();

@@ -62,7 +62,7 @@ function dismissGuide() {
 function guideModelReady() {
   const cloudReady = !!(
     typeof cloudConfig !== "undefined"
-    && cloudConfig?.active && cloudConfig?.provider && cloudConfig?.apiKey && cloudConfig?.model
+    && cloudConfig?.active && cloudConfig?.provider && cloudCredentialReady() && cloudConfig?.model
   );
   const localReady = typeof localModelState !== "undefined"
     && (localModelState?.ready || localModelState?.loaded);
@@ -139,12 +139,8 @@ function renderGuideStep() {
   }
   if (guideProvider && panelProvider?.value) guideProvider.value = panelProvider.value;
   const guideCloudKey = document.querySelector("#guide-cloud-key");
-  if (guideCloudKey && !guideCloudKey.value && cloudConfig?.apiKey) {
-    guideCloudKey.value = cloudConfig.apiKey;
-  }
-
   const active = document.querySelector("[data-guide-source].is-active:not([hidden])");
-  const preferredSource = cloudConfig?.apiKey
+  const preferredSource = cloudCredentialReady()
     ? "cloud"
     : (active?.dataset.guideSource || (localAllowed ? "local" : "cloud"));
   selectGuideModelSource(preferredSource);
@@ -203,6 +199,8 @@ async function guideConnectCloud() {
   }
   panelKey.value = key;
   panelKey.dispatchEvent(new Event("input", { bubbles: true }));
+  const guideCloudKey = document.querySelector("#guide-cloud-key");
+  if (guideCloudKey) guideCloudKey.value = "";
 
   setGuideSetupStatus("guide_setup_connecting");
   setControlLoading(guideButton, true, t("guide_setup_connecting"));

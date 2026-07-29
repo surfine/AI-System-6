@@ -7,6 +7,8 @@ const scheduledRenderTasks = new Set();
 let scheduledRenderFrame = 0;
 const renderSignatureCache = new Map();
 const storageSnapshotCache = new Map();
+const localApiTokenSessionKey = "ai-system6-local-api-token";
+let deskPersistenceWritable = true;
 
 const renderTasks = [
   ["projectLabels", "updateProjectLabels"],
@@ -85,7 +87,6 @@ function settingsSnapshotPayload() {
   return {
     endpoint: endpointInput.value,
     localProvider: document.getElementById("local-provider")?.value || "lm-studio",
-    localApiToken: typeof localApiTokenInput !== "undefined" ? localApiTokenInput?.value || "" : "",
     localLmStudioConnectionEnabled,
     model: modelInput.value === "ai-system-main" ? "" : modelInput.value,
     modelFieldInputMode: document.getElementById("manual-model-fields")?.checked ? "manual" : "select",
@@ -147,9 +148,16 @@ function settingsSnapshotPayload() {
 
 function storageSnapshotChanged(key, payload) {
   const snapshot = JSON.stringify(payload);
-  if (storageSnapshotCache.get(key) === snapshot) return false;
-  storageSnapshotCache.set(key, snapshot);
-  return true;
+  return storageSnapshotCache.get(key) !== snapshot;
+}
+
+function saveLocalApiTokenForSession() {
+  if (typeof localApiTokenInput === "undefined" || !localApiTokenInput) return;
+  const token = localApiTokenInput.value.trim();
+  try {
+    if (token) sessionStorage.setItem(localApiTokenSessionKey, token);
+    else sessionStorage.removeItem(localApiTokenSessionKey);
+  } catch {}
 }
 
 function collectionVersion(items = []) {
@@ -188,10 +196,15 @@ function switchLanguage() {
 }
 
 function saveDeskState() {
+  if (!deskPersistenceWritable) return Promise.resolve(false);
   if (typeof scheduleWorkingSessionSave === "function") scheduleWorkingSessionSave();
   saveDeskStatePromise = saveDeskStatePromise
     .catch(() => {})
-    .then(() => persistDeskState());
+    .then(() => persistDeskState())
+    .then((saved) => {
+      if (saved) window.AISystem6DerivedIndexQueue?.afterProjectCommit();
+      return saved;
+    });
   return saveDeskStatePromise;
 }
 
@@ -993,7 +1006,13 @@ async function setupLocalLmStudioModel() {
 async function persistDeskState() {
   const endPerf = window.AISystem6Perf?.start("state_save");
   let db;
+  let tx;
+  let transactionCompletion = null;
   try {
+    if (!deskPersistenceWritable) {
+      endPerf?.({ blocked: true });
+      return false;
+    }
     ensureActiveProject();
     syncCurrentNotePadPage();
     const stores = [
@@ -1002,38 +1021,56 @@ async function persistDeskState() {
       { key: "trash", storeName: trashStoreName, items: trashItems },
       { key: "chatFolders", storeName: chatFoldersStoreName, items: chatFolders },
       { key: "chatFiles", storeName: chatFilesStoreName, items: chatFiles },
-    ].filter((entry) => storageSnapshotChanged(entry.key, entry.items));
+    ].map((entry) => ({
+      ...entry,
+      snapshot: JSON.stringify(entry.items),
+    })).filter((entry) => storageSnapshotCache.get(entry.key) !== entry.snapshot);
     const settingsPayload = settingsSnapshotPayload();
-    const shouldWriteSettings = storageSnapshotChanged("settings", settingsPayload);
+    const settingsSnapshot = JSON.stringify(settingsPayload);
+    const shouldWriteSettings = storageSnapshotCache.get("settings") !== settingsSnapshot;
     if (!stores.length && !shouldWriteSettings) {
       endPerf?.({ skipped: true });
       return true;
     }
 
     db = await openAppDb();
-    const tx = db.transaction([
-      projectsStoreName, scrapsStoreName, trashStoreName,
-      chatFoldersStoreName, chatFilesStoreName, keyvalStoreName
-    ], "readwrite");
+    tx = window.AISystem6StorageTransactions.readwriteTransaction(
+      db,
+      [
+        projectsStoreName, scrapsStoreName, trashStoreName,
+        chatFoldersStoreName, chatFilesStoreName, keyvalStoreName
+      ]
+    );
+    transactionCompletion = window.AISystem6StorageTransactions.transactionDone(tx);
 
-    const clearAndPutAll = async (storeName, items) => {
+    const clearAndPutAll = async (storeName, snapshot) => {
       const store = tx.objectStore(storeName);
       await idbRequest(store.clear());
+      const items = JSON.parse(snapshot);
       for (const item of items) {
         await idbRequest(store.put(item));
       }
     };
 
-    await Promise.all(stores.map((entry) => clearAndPutAll(entry.storeName, entry.items)));
+    await Promise.all(stores.map((entry) =>
+      clearAndPutAll(entry.storeName, entry.snapshot)
+    ));
 
     if (shouldWriteSettings) {
       const settingsStore = tx.objectStore(keyvalStoreName);
-      await idbRequest(settingsStore.put(settingsPayload, "settings"));
+      await idbRequest(settingsStore.put(JSON.parse(settingsSnapshot), "settings"));
       await idbRequest(settingsStore.put(storageVersion, "storageVersion"));
     }
+    await transactionCompletion;
+    stores.forEach((entry) => storageSnapshotCache.set(entry.key, entry.snapshot));
+    if (shouldWriteSettings) storageSnapshotCache.set("settings", settingsSnapshot);
     endPerf?.({ stores: stores.map((entry) => entry.key).join(","), settings: shouldWriteSettings });
     return true;
   } catch (error) {
+    try {
+      tx?.abort();
+    } catch {}
+    await transactionCompletion?.catch(() => {});
     console.error("Failed to save state to IDB:", error);
     storageSnapshotCache.clear();
     endPerf?.({ error: true });
@@ -1045,40 +1082,66 @@ async function persistDeskState() {
 
 async function loadDeskState() {
   lastMigrationNote = t("migration_clean");
+  let db;
+  let tx;
+  let transactionCompletion = null;
+  let shouldRewriteSanitizedSettings = false;
   try {
-    const db = await openAppDb();
-    const tx = db.transaction([
+    db = await openAppDb();
+    tx = db.transaction([
       projectsStoreName, scrapsStoreName, trashStoreName,
       chatFoldersStoreName, chatFilesStoreName, keyvalStoreName
     ], "readonly");
+    transactionCompletion = window.AISystem6StorageTransactions.transactionDone(tx);
 
-    const getAll = async (storeName, targetArray) => {
-      const items = await idbRequest(tx.objectStore(storeName).getAll());
-      targetArray.push(...items);
-    };
-
-    await Promise.all([
-      getAll(projectsStoreName, projects),
-      getAll(scrapsStoreName, scraps),
-      getAll(trashStoreName, trashItems),
-      getAll(chatFoldersStoreName, chatFolders),
-      getAll(chatFilesStoreName, chatFiles)
+    const [
+      storedProjects,
+      storedScraps,
+      storedTrashItems,
+      storedChatFolders,
+      storedChatFiles,
+      settings,
+    ] = await Promise.all([
+      idbRequest(tx.objectStore(projectsStoreName).getAll()),
+      idbRequest(tx.objectStore(scrapsStoreName).getAll()),
+      idbRequest(tx.objectStore(trashStoreName).getAll()),
+      idbRequest(tx.objectStore(chatFoldersStoreName).getAll()),
+      idbRequest(tx.objectStore(chatFilesStoreName).getAll()),
+      idbRequest(tx.objectStore(keyvalStoreName).get("settings")),
     ]);
+    await transactionCompletion;
 
-    const settings = await idbRequest(tx.objectStore(keyvalStoreName).get("settings")) || {};
-    applySettings(settings);
+    applySettings(settings || {});
+    shouldRewriteSanitizedSettings = Object.prototype.hasOwnProperty.call(
+      settings || {},
+      "localApiToken"
+    );
+    projects.splice(0, projects.length, ...storedProjects);
+    scraps.splice(0, scraps.length, ...storedScraps);
+    trashItems.splice(0, trashItems.length, ...storedTrashItems);
+    chatFolders.splice(0, chatFolders.length, ...storedChatFolders);
+    chatFiles.splice(0, chatFiles.length, ...storedChatFiles);
+    deskPersistenceWritable = true;
+    storageSnapshotCache.clear();
+    storageSnapshotCache.set("projects", JSON.stringify(projects));
+    storageSnapshotCache.set("scraps", JSON.stringify(scraps));
+    storageSnapshotCache.set("trash", JSON.stringify(trashItems));
+    storageSnapshotCache.set("chatFolders", JSON.stringify(chatFolders));
+    storageSnapshotCache.set("chatFiles", JSON.stringify(chatFiles));
+    if (!shouldRewriteSanitizedSettings) {
+      storageSnapshotCache.set("settings", JSON.stringify(settingsSnapshotPayload()));
+    }
 
-    db.close();
   } catch (error) {
+    try {
+      tx?.abort();
+    } catch {}
+    await transactionCompletion?.catch(() => {});
     console.error("Failed to load state from IDB:", error);
-    projects.length = 0;
-    scraps.length = 0;
-    trashItems.length = 0;
-    chatFolders.length = 0;
-    chatFiles.length = 0;
-    activeProjectId = null;
-    selectedProjectId = null;
-    isProjectMounted = true;
+    deskPersistenceWritable = false;
+    throw error;
+  } finally {
+    db?.close();
   }
 
   const projectStateChanged = ensureActiveProject();
@@ -1088,7 +1151,15 @@ async function loadDeskState() {
   }
   assignProjectScope(activeProjectId);
   selectedProjectId = activeProjectId;
-  if (projectStateChanged) saveDeskState();
+  if (projectStateChanged || shouldRewriteSanitizedSettings) {
+    if (shouldRewriteSanitizedSettings) markDeskDirty("settings");
+    const saved = await saveDeskState();
+    if (!saved) throw new Error("The initial Project Hard Disk could not be saved.");
+  }
+  return {
+    status: projects.length ? "ready" : "empty",
+    projectId: activeProjectId,
+  };
 }
 
 function applySettings(settings) {
@@ -1097,7 +1168,18 @@ function applySettings(settings) {
     ? window.AISystem6LocalLMStudio.DEFAULT_BASE_URL
     : savedEndpoint;
   if (typeof localApiTokenInput !== "undefined" && localApiTokenInput) {
-    localApiTokenInput.value = String(settings.localApiToken || "");
+    const legacyToken = String(settings.localApiToken || "").trim();
+    let sessionToken = "";
+    try {
+      sessionToken = String(sessionStorage.getItem(localApiTokenSessionKey) || "").trim();
+      if (!sessionToken && legacyToken) {
+        sessionToken = legacyToken;
+        sessionStorage.setItem(localApiTokenSessionKey, legacyToken);
+      }
+    } catch {
+      sessionToken = legacyToken;
+    }
+    localApiTokenInput.value = sessionToken;
   }
   localLmStudioConnectionEnabled = settings.localLmStudioConnectionEnabled === true;
   if (settings.model && settings.model !== "ai-system-main") {
@@ -1352,7 +1434,7 @@ async function loadAppVersion() {
 
 function renderAboutMacintosh() {
   if (aboutVersionEl) aboutVersionEl.textContent = formatAppVersionCompact();
-  const cloudActive = typeof cloudConfig !== "undefined" && cloudConfig && cloudConfig.active && cloudConfig.provider && cloudConfig.apiKey;
+  const cloudActive = typeof cloudConfig !== "undefined" && cloudConfig && cloudConfig.active && cloudConfig.provider && cloudCredentialReady();
   const aboutModelLabelEl = document.getElementById("about-model-label");
   if (aboutModelLabelEl) aboutModelLabelEl.textContent = cloudActive ? t("about_cloud_model") : t("about_model");
   if (aboutModelEl) {
@@ -1420,7 +1502,7 @@ function renderSystemStatus() {
     && mountedTextDisk.projectId === activeProjectId
     && mountedChunks.length > 0;
 
-  const isCloud = (typeof cloudConfig !== "undefined") && cloudConfig?.active && cloudConfig?.apiKey;
+  const isCloud = (typeof cloudConfig !== "undefined") && cloudConfig?.active && cloudCredentialReady();
 
   renderSystemClock(now);
   if (statusModelEl) statusModelEl.textContent = getLocalModelDisplayName();

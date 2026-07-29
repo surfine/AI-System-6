@@ -294,6 +294,7 @@ function getElements() {
   const docMapTabsEl = document.querySelector("#docmap-tabs");
   const docMapTreeEl = document.querySelector("#docmap-tree");
   const docMapFitViewButton = document.querySelector("#docmap-fit-view");
+  const docMapFocusRootButton = document.querySelector("#docmap-focus-root");
   const docMapZoomOutButton = document.querySelector("#docmap-zoom-out");
   const docMapZoomInButton = document.querySelector("#docmap-zoom-in");
   const docMapCommandMenu = document.querySelector("#docmap-command-menu");
@@ -677,6 +678,7 @@ function getElements() {
     docMapTabsEl,
     docMapTreeEl,
     docMapFitViewButton,
+    docMapFocusRootButton,
     docMapZoomOutButton,
     docMapZoomInButton,
     docMapCommandMenu,

@@ -25,26 +25,39 @@
 
 "use strict";
 
-const { send, readJsonBody, requestSignal } = require("../lib/http.js");
+const { send, readJsonBody, requestSignal, withTimeoutSignal } = require("../lib/http.js");
 const { postJsonWithFallback } = require("../lib/fetch.js");
 const { getLocalUrls } = require("../lib/local-urls.js");
 const {
   cloudAuthHeaders,
+  DEEPSEEK_CLOUD_MODELS,
   DEEPSEEK_API_KEY_DEFAULT,
   DEEPSEEK_BASE_URL_DEFAULT,
+  DEEPSEEK_PUBLIC_BASE_URL,
+  resolveCloudBaseUrl,
 } = require("../cloud.js");
+const { isPublicDeployment } = require("../runtime-profile.js");
+const { resolveCloudCredential } = require("../credential-vault.js");
 
 /**
  * @param {import("node:http").IncomingMessage} req
  * @param {import("node:http").ServerResponse} res
  */
 async function handleCloudEmbeddings(req, res) {
-  const signal = requestSignal(req, res);
+  const timeoutHandle = withTimeoutSignal(requestSignal(req, res), 120000);
+  const signal = timeoutHandle.signal;
 
   try {
-    const raw = await readJsonBody(req);
-    const apiKey = raw._cloud_api_key || DEEPSEEK_API_KEY_DEFAULT;
-    const baseUrl = (raw._cloud_base_url || DEEPSEEK_BASE_URL_DEFAULT).replace(/\/$/, "");
+    const raw = await readJsonBody(req, { limitBytes: 512 * 1024 });
+    const apiKey = await resolveCloudCredential({
+      credentialId: raw._cloud_credential_id,
+      provider: "deepseek",
+      suppliedApiKey: raw._cloud_api_key || DEEPSEEK_API_KEY_DEFAULT,
+      allowSupplied: isPublicDeployment,
+    });
+    const baseUrl = isPublicDeployment
+      ? DEEPSEEK_PUBLIC_BASE_URL
+      : resolveCloudBaseUrl(raw._cloud_base_url || DEEPSEEK_BASE_URL_DEFAULT);
     const targetUrl = `${baseUrl}/v1/embeddings`;
 
     const localProvider = raw._local_provider;
@@ -53,6 +66,7 @@ async function handleCloudEmbeddings(req, res) {
 
     if (raw._cloud_model) raw.model = raw._cloud_model;
     delete raw._cloud_api_key;
+    delete raw._cloud_credential_id;
     delete raw._cloud_model;
     delete raw._cloud_base_url;
     delete raw._local_provider;
@@ -60,6 +74,23 @@ async function handleCloudEmbeddings(req, res) {
     delete raw._local_model;
 
     const payload = raw;
+    if (!apiKey) {
+      send(res, 400, JSON.stringify({
+        error: "Missing API key",
+        code: "missing_byok_key",
+      }), { "Content-Type": "application/json" });
+      return;
+    }
+    if (
+      isPublicDeployment
+      && !new Set(DEEPSEEK_CLOUD_MODELS.map((item) => item.id)).has(payload.model)
+    ) {
+      send(res, 400, JSON.stringify({
+        error: "Unsupported public cloud model",
+        code: "unsupported_model",
+      }), { "Content-Type": "application/json" });
+      return;
+    }
     console.log("[cloud-embeddings] model:", payload.model, "has_key:", !!apiKey);
 
     let useFallback = false;
@@ -68,7 +99,13 @@ async function handleCloudEmbeddings(req, res) {
 
     try {
       const authHeaders = cloudAuthHeaders(apiKey);
-      const { response: upstream } = await postJsonWithFallback(targetUrl, payload, signal, authHeaders);
+      const { response: upstream } = await postJsonWithFallback(
+        targetUrl,
+        payload,
+        signal,
+        authHeaders,
+        { maxBytes: 16 * 1024 * 1024 }
+      );
       const text = await upstream.text();
       const contentType = upstream.headers.get("content-type") || "application/json";
 
@@ -124,6 +161,8 @@ async function handleCloudEmbeddings(req, res) {
       error: "Cloud embeddings proxy failed",
       detail: /** @type {Error} */ (error).message,
     }), { "Content-Type": "application/json" });
+  } finally {
+    timeoutHandle.cleanup();
   }
 }
 

@@ -141,8 +141,16 @@ function wireAppEvents() {
       paragraph: "teachtext_focus_paragraph",
     };
     const key = keys[mode] || keys.off;
-    button.dataset.i18n = key;
-    button.textContent = t(key);
+    const longLabel = button.querySelector(".mobile-control-long");
+    if (longLabel) {
+      longLabel.dataset.i18n = key;
+      longLabel.textContent = t(key);
+      button.dataset.i18nAriaLabel = key;
+      button.setAttribute("aria-label", t(key));
+    } else {
+      button.dataset.i18n = key;
+      button.textContent = t(key);
+    }
     button.classList.toggle("is-active", mode !== "off");
   };
 
@@ -517,6 +525,8 @@ function wireAppEvents() {
 
   docMapFitViewButton?.addEventListener("click",()=>{maximizeWindow(getWindow("docMap"));requestAnimationFrame(fitDocMapCanvasToView);});
 
+  docMapFocusRootButton?.addEventListener("click", focusDocMapRootForCompactView);
+
   docMapZoomOutButton?.addEventListener("click", zoomDocMapOut);
 
   docMapZoomInButton?.addEventListener("click", zoomDocMapIn);
@@ -644,7 +654,7 @@ function wireAppEvents() {
   });
 
   fileInfoCommentsEl.addEventListener("input", () => {
-    if (!fileInfoItem) return;
+    if (!fileInfoItem || fileInfoItem.readOnly === true) return;
     fileInfoItem.comments = fileInfoCommentsEl.value;
     fileInfoItem.updatedAt = new Date().toISOString();
     saveDeskState();
@@ -730,6 +740,7 @@ function wireAppEvents() {
   };
   endpointInput?.addEventListener("input", invalidateLocalConnection);
   localApiTokenInput?.addEventListener("input", invalidateLocalConnection);
+  localApiTokenInput?.addEventListener("input", saveLocalApiTokenForSession);
   connectLocalModelButton?.addEventListener("click", () => connectLocalLmStudio({ toggle: true }));
 
   contextLengthInput?.addEventListener("input", () => {

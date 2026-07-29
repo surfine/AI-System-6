@@ -1,23 +1,30 @@
-// Mobile full-screen app shell (ClioTalk pilot). On a phone a foregrounded real
-// app fills the screen below the menu bar and the desktop icon column becomes
-// the launcher. Full-screen presentation is a screen-size consequence, not a
-// task model — the Finder / MultiFinder choice still governs how many apps run
-// and whether there is a switcher at all. This contract pins the reusable figure
-// so a later rollout (or a "polish" pass) can't quietly unwire it.
+// Mobile presentation contract. On a phone, every production window has one
+// deliberate role: application page, Finder page, dialog, system page, or Desk
+// Accessory. Full-screen presentation is a screen-size consequence, not a task
+// model — Finder / MultiFinder still governs how many apps run.
 // See .claude/plans and app/core/window-manager.js.
 
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("mobile-app-shell");
+const foundation = read("styles/00-foundation.css");
 const responsive = read("styles/60-responsive.css");
 const windows = read("styles/10-windows.css");
+const readerStyles = read("styles/20-reader-docmap.css");
 const windowManager = read("app/core/window-manager.js");
 const multiFinder = read("app/core/multi-finder.js");
+const workingSession = read("app/core/working-session.js");
 const wireup = read("app/core/wireup.js");
 const actions = read("app/core/actions.js");
 const html = read("index.html");
 const en = read("app/data/translations-en.js");
 const zh = read("app/data/translations-zh.js");
+const dictionary = read("app/data/system-dictionary.js");
+
+function declaredStringSet(source, setName) {
+  const body = source.match(new RegExp(`const ${setName} = new Set\\(\\[([\\s\\S]*?)\\]\\);`))?.[1] || "";
+  return new Set(Array.from(body.matchAll(/"([^"]+)"/g), (match) => match[1]));
+}
 
 // The full-screen shell figure keys off two classes the JS toggles.
 test.assertIncludes(
@@ -29,6 +36,21 @@ test.assertIncludes(
   responsive,
   "calc(var(--menu-bar-height) + var(--safe-area-top))",
   "full-screen shell starts below the menu bar, clearing the status bar when standalone"
+);
+test.assertIncludes(
+  foundation,
+  "--safe-area-bottom: env(safe-area-inset-bottom, 0px);",
+  "the home-indicator inset has one foundation token"
+);
+test.assertIncludes(
+  responsive,
+  ".window.is-mobile-fullscreen:not(.assistant-window) {\n    padding-bottom: var(--safe-area-bottom);",
+  "the shared shell protects every non-ClioTalk app's bottom interaction area"
+);
+test.assertIncludes(
+  windowManager,
+  "if (next) {\n      focusWindow(next);\n    } else {\n      activeAppId = \"finder\";",
+  "closing a mobile overlay reactivates the full-screen app so its title controls and menus keep working"
 );
 // The flow rules must be scoped away so the shell wins without a forced override.
 test.assertIncludes(
@@ -47,12 +69,91 @@ test.assertIncludes(
   "body.mobile-app-foreground:not(.is-writer-mode) .icon-column",
   "the desktop launcher hides behind a foregrounded app"
 );
+test.assertIncludes(
+  responsive,
+  '.window:not(.is-mobile-fullscreen):not(.is-mobile-dialog):not(.is-mobile-system-page):not([data-app="accessories"]):not([data-app="system"])',
+  "background MultiFinder apps leave portrait layout without being marked hidden"
+);
+test.assertIncludes(
+  responsive,
+  "#cloud-model-label {\n    display: none;",
+  "the narrow menu bar collapses the redundant model label before clipping MultiFinder"
+);
+test.assertIncludes(
+  responsive,
+  ".clio-stage-view-switcher {\n    grid-template-columns: repeat(4, minmax(0, 1fr));",
+  "ClioStage keeps its four mobile views in one compact control row"
+);
+test.assertIncludes(
+  responsive,
+  ".assistant-window.is-mobile-fullscreen .message-content",
+  "ClioTalk constrains generated content to the phone viewport"
+);
+test.assertIncludes(
+  responsive,
+  ".find-path-pane > .button-row:last-child {\n    display: grid;\n    grid-template-columns: repeat(4, minmax(0, 1fr));",
+  "Searcher keeps handoff actions on one row so results remain the main surface"
+);
+test.assertIncludes(
+  readerStyles,
+  ".reader-pane:has(#reader-docmap-button:not(:disabled)) .reader-url-row,",
+  "Reader removes source-entry chrome after a document is open on phone and desktop"
+);
+test.assertIncludes(
+  responsive,
+  ".clio-stage-ask-form > label {\n    display: none;",
+  "ClioStage keeps the phone question control to one compact row"
+);
+test.assertIncludes(
+  responsive,
+  "grid-template-rows: minmax(132px, 156px) minmax(0, 1fr) auto;",
+  "Scrapbook gives its phone editor the space an empty list no longer needs"
+);
+test.assertIncludes(
+  windows,
+  "#clio-chat-file-link:not([hidden]):not(:disabled)",
+  "ClioTalk omits the empty chat-file placeholder on phone and desktop"
+);
+test.assertIncludes(
+  dictionary,
+  "Across phone and desktop, controls that have no current action collapse",
+  "System Help documents the content-first mobile control hierarchy"
+);
+test.assertIncludes(
+  html,
+  '<label class="visually-hidden" for="find-path-query"',
+  "Searcher keeps its accessible query name without spending desktop or phone content space on it"
+);
+test.assertIncludes(
+  responsive,
+  "--puzzle-board-width: 220px",
+  "Puzzle enlarges its board for touch instead of preserving desktop accessory dimensions"
+);
+test.assertIncludes(
+  dictionary,
+  "On a phone, Focus Root opens a readable branch-level view",
+  "System Help describes the live DocMap phone interaction"
+);
 
-// State toggles are class-based, not inline layout styles.
-// The shell covers the real apps. Desk accessories, system overlays (About /
-// Guide / System Help) and Finder itself stay out: they float over the app, or
-// they are the desktop you return to.
-for (const appId of ["clioTalk", "teachText", "reader", "scrapbook", "docMap", "quickDraft"]) {
+// State toggles are class-based, not inline layout styles. Every real app uses
+// the page shell; Finder folders join it through an explicit window-name set.
+for (const appId of [
+  "clioTalk",
+  "teachText",
+  "writingStudio",
+  "searcher",
+  "reader",
+  "timeMachine",
+  "endfield",
+  "docMap",
+  "clioStage",
+  "clioChart",
+  "liquidCover",
+  "cmfStudio",
+  "soundscape",
+  "scrapbook",
+  "bureaucracyMeme",
+]) {
   test.assertIncludes(windowManager, `"${appId}",`, `the shell covers the ${appId} app`);
 }
 test.assertMatches(
@@ -60,9 +161,51 @@ test.assertMatches(
   /mobileFullScreenAppIds = new Set\(\[(?:(?!\]\))[\s\S])*\]\)/,
   "the rolled-out app list is a single declared set"
 );
+test.assertIncludes(
+  windowManager,
+  "const activeAppWins = wins.filter((win) => getWindowAppId(win) === activeAppId);",
+  "restored phone sessions choose the MultiFinder foreground app before stale desktop z-order"
+);
+test.assertIncludes(
+  workingSession,
+  'if (typeof syncMobileAppForeground === "function") syncMobileAppForeground();',
+  "working-session restore reconciles the portrait shell after restoring the actual foreground app"
+);
 test.assert(
   !/mobileFullScreenAppIds = new Set\(\[(?:(?!\]\))[\s\S])*"(accessories|system|finder)"/.test(windowManager),
-  "desk accessories, system overlays and Finder are excluded from the shell"
+  "accessories, system windows, and Finder do not masquerade as application ids"
+);
+test.assertIncludes(windowManager, "const mobileFinderPageWindowNames = new Set([", "Finder pages have a declared mobile navigation role");
+test.assertIncludes(windowManager, "const mobileDialogWindowNames = new Set([", "dialogs have a declared mobile overlay role");
+test.assertIncludes(windowManager, "const mobileSystemPageWindowNames = new Set([", "system pages have a declared mobile overlay role");
+test.assertIncludes(windowManager, 'role === "finder-page"', "Finder pages can own the phone work area");
+test.assertIncludes(windowManager, "mobileFinderDesktopPreferred = true;", "the Finder switcher entry returns to the desktop launcher");
+test.assertIncludes(responsive, "body.mobile-finder-desktop:not(.is-writer-mode) .window.is-mobile-finder-page", "the desktop launcher backgrounds Finder's single current location");
+test.assertIncludes(responsive, ".window.is-mobile-dialog:not(.is-hidden):not(.is-collapsed)", "dialogs remain compact overlays on phone");
+test.assertIncludes(responsive, ".window.is-mobile-system-page:not(.is-hidden):not(.is-collapsed)", "system-owned pages use one phone presentation");
+
+// Inventory gate: a new window cannot ship without acquiring exactly one of
+// the system roles above (directly, through its app id, or as an accessory).
+const fullScreenApps = declaredStringSet(windowManager, "mobileFullScreenAppIds");
+const finderPages = declaredStringSet(windowManager, "mobileFinderPageWindowNames");
+const dialogs = declaredStringSet(windowManager, "mobileDialogWindowNames");
+const systemPages = declaredStringSet(windowManager, "mobileSystemPageWindowNames");
+const appMapBody = multiFinder.match(/const windowAppMap = \{([\s\S]*?)\n\};/)?.[1] || "";
+const appMap = Object.fromEntries(
+  Array.from(appMapBody.matchAll(/^\s*([A-Za-z0-9]+): "([^"]+)",?$/gm), (match) => [match[1], match[2]])
+);
+const productionWindows = Array.from(html.matchAll(/\bdata-window="([^"]+)"/g), (match) => match[1]);
+const uncoveredWindows = productionWindows.filter((name) => {
+  const appId = appMap[name] || "finder";
+  return !dialogs.has(name)
+    && !systemPages.has(name)
+    && !finderPages.has(name)
+    && appId !== "accessories"
+    && !fullScreenApps.has(appId);
+});
+test.assert(
+  uncoveredWindows.length === 0,
+  `all ${productionWindows.length} production windows have a mobile presentation role${uncoveredWindows.length ? `; missing: ${uncoveredWindows.join(", ")}` : ""}`
 );
 
 // Layout code that writes inline frames must stand down on the phone, or those
@@ -83,6 +226,27 @@ test.assertIncludes(
   "stale inline desktop geometry is cleared when a window is maximized"
 );
 test.assertIncludes(windowManager, "function syncMobileAppForeground()", "a single sync point owns the foreground state");
+test.assertIncludes(windowManager, "function repairPortraitDeskAccessoryGeometry()", "portrait sync repairs stale desktop accessory coordinates");
+test.assertIncludes(windowManager, "function arrangePortraitDeskAccessories(", "one portrait arranger owns every visible Desk Accessory");
+test.assertIncludes(windowManager, "visiblePortraitDeskAccessories()", "the portrait arranger considers the complete open DA set");
+test.assertIncludes(windowManager, 'candidate.style.setProperty("--mobile-da-top"', "the portrait arranger assigns non-overlapping vertical slots");
+test.assertIncludes(responsive, "left: 50%;", "portrait Desk Accessories share one centered horizontal axis");
+test.assertIncludes(
+  windowManager,
+  'getPropertyValue("--safe-area-bottom")',
+  "the Desk Accessory arranger reads the shared home-indicator inset"
+);
+test.assertIncludes(
+  windowManager,
+  "viewportHeight - safeAreaBottom - margin",
+  "the complete Desk Accessory group stays above the home indicator"
+);
+test.assertIncludes(
+  responsive,
+  "calc(100vh - var(--system-menu-height, 26px) - var(--safe-area-bottom) - 24px)",
+  "the Desk Accessory CSS fallback also reserves the bottom safe area"
+);
+test.assertIncludes(dictionary, "opening or closing another DA reflows the whole stack", "System Help documents mobile DA reflow and overlap prevention");
 test.assertIncludes(windowManager, "function foregroundMobileApp(", "the switcher re-foregrounds a running app");
 test.assertIncludes(windowManager, 'classList.toggle("mobile-app-foreground"', "the body foreground state is a class toggle");
 
@@ -172,9 +336,8 @@ test.assertIncludes(
   "0\n      var(--keyboard-inset, 0px)\n      0;",
   "the shell bottom lifts by the keyboard only; the window itself fills to the true edge at rest"
 );
-// iOS 26 no longer expects app content to stop short of the home indicator —
-// it floats over the app. The window fills edge-to-edge; only the composer's
-// own content gets a comfortable inset, via padding rather than a window margin.
+// Window material remains edge-to-edge. ClioTalk protects its own composer;
+// the shared non-assistant shell protects every other app's lowest controls.
 test.assertIncludes(
   responsive,
   "padding-bottom: var(--safe-area-bottom);",
@@ -217,5 +380,14 @@ test.assertIncludes(
   'if (event.pointerType === "touch") return null;',
   "a touch drag never starts a selection marquee"
 );
+
+test.assertIncludes(dictionary, 'id: "mobile-workspace"', "System Help exposes the current portrait workspace behavior");
+test.assertIncludes(dictionary, "Finder remains the launcher", "English help explains mobile navigation without inventing a second launcher");
+test.assertIncludes(dictionary, "新开或关闭 DA 时整组都会重新排布", "Chinese help explains centered Desk Accessory reflow");
+for (const helpId of ["multifinder", "desk-accessories", "puzzle", "shutdown-restart"]) {
+  test.assertIncludes(dictionary, `id: "${helpId}"`, `System Help exposes ${helpId}`);
+}
+test.assertIncludes(dictionary, "one horizontally centered column", "Desk Accessory help pins the non-overlapping mobile stack");
+test.assertIncludes(dictionary, "shows the safe-to-shut-down screen", "System Help matches the real shutdown ending");
 
 test.finish();

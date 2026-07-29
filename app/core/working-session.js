@@ -54,8 +54,12 @@ async function readWorkingSessionSnapshot() {
   let db;
   try {
     db = await openAppDb();
-    const tx = db.transaction(keyvalStoreName, "readonly");
-    return await idbRequest(tx.objectStore(keyvalStoreName).get(workingSessionStorageKey));
+    return await window.AISystem6StorageTransactions.runTransaction(
+      db,
+      keyvalStoreName,
+      "readonly",
+      (tx) => idbRequest(tx.objectStore(keyvalStoreName).get(workingSessionStorageKey))
+    );
   } catch (error) {
     console.warn("Failed to read Working Session.", error);
     return null;
@@ -68,8 +72,14 @@ async function writeWorkingSessionSnapshot(snapshot) {
   let db;
   try {
     db = await openAppDb();
-    const tx = db.transaction(keyvalStoreName, "readwrite");
-    await idbRequest(tx.objectStore(keyvalStoreName).put(snapshot, workingSessionStorageKey));
+    await window.AISystem6StorageTransactions.runTransaction(
+      db,
+      keyvalStoreName,
+      "readwrite",
+      (tx) => idbRequest(
+        tx.objectStore(keyvalStoreName).put(snapshot, workingSessionStorageKey)
+      )
+    );
     return true;
   } catch (error) {
     console.warn("Failed to save Working Session.", error);
@@ -83,8 +93,14 @@ async function deleteWorkingSessionSnapshot() {
   let db;
   try {
     db = await openAppDb();
-    const tx = db.transaction(keyvalStoreName, "readwrite");
-    await idbRequest(tx.objectStore(keyvalStoreName).delete(workingSessionStorageKey));
+    await window.AISystem6StorageTransactions.runTransaction(
+      db,
+      keyvalStoreName,
+      "readwrite",
+      (tx) => idbRequest(
+        tx.objectStore(keyvalStoreName).delete(workingSessionStorageKey)
+      )
+    );
     return true;
   } catch (error) {
     console.warn("Failed to clear Working Session.", error);
@@ -367,6 +383,10 @@ async function restoreWindowWorkingSession(state = {}) {
   } else {
     activeAppId = "finder";
   }
+  // Every restored window was opened without focus, so the portrait shell may
+  // still reflect whichever saved frame happened to be visited last. Reconcile
+  // it once, after the real foreground application has been restored.
+  if (typeof syncMobileAppForeground === "function") syncMobileAppForeground();
   return true;
 }
 

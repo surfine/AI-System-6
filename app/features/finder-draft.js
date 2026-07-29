@@ -1234,10 +1234,10 @@
   }
 
   function activeModelPayload() {
-    if (typeof cloudConfig !== "undefined" && cloudConfig && cloudConfig.active && cloudConfig.provider && cloudConfig.apiKey) {
+    if (typeof cloudConfig !== "undefined" && cloudConfig && cloudConfig.active && cloudConfig.provider && cloudCredentialReady()) {
       return {
         provider: "cloud",
-        _cloud_api_key: cloudConfig.apiKey,
+        ...cloudCredentialTransportFields(),
         _cloud_base_url: cloudConfig.baseUrl,
         _cloud_model: cloudConfig.model || "",
       };
@@ -1363,7 +1363,7 @@
       };
 
       let data;
-      if (typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudConfig.apiKey) {
+      if (typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudCredentialReady()) {
         const response = await fetch("/api/draft/thesis", {
           method: "POST",
           signal: requestController.signal,

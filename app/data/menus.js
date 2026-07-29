@@ -462,7 +462,7 @@ const cmfStudioMenus = [
   menu("recipe", "menu_recipe", [
     menuItem("cmf-shuffle", "cmf_shuffle"),
     menuItem("cmf-reset", "reset"),
-    menuItem("cmf-render", "cmf_render"),
+    menuItem("cmf-reset-view", "cmf_reset_view"),
   ]),
   menu("view", "menu_view", [
     menuItem("cmf-view-front", "cmf_view_front"),

@@ -326,7 +326,7 @@ test.assertMatches(chatMessages, /role === "user"[\s\S]*moreMenu\.append\(editBt
 test.assertMatches(chatMessages, /moreMenu\.append\(copyBtn\)[\s\S]*appendMessageTranslation\(moreMenu, item, role, content\)[\s\S]*useMenu\.append\(useResultBtn, chartBtn, undoBtn\)[\s\S]*moreMenu\.append\(ignoreBtn\)/, "Assistant destinations and undo stay in Use Reply while Copy, Translation, and Discard stay in overflow");
 test.assertIncludes(chatMessages, 'body.className = "message-content message-error"', "Generation failures render inside the failed assistant turn");
 test.assertIncludes(chatMessages, 'retry.className = "btn mini-btn message-retry-button"', "A failed turn owns its contextual Retry action");
-test.assertMatches(chatMessages, /retry\.onclick = \(\) => \{[\s\S]*failedUserItem\.remove\(\)[\s\S]*item\.remove\(\)[\s\S]*submitUserText\(options\.retryText, options\.retryOptions \|\| \{\}\)/, "Retry replaces the failed visual turn instead of duplicating the user message");
+test.assertMatches(chatMessages, /retry\.onclick = \(\) => \{[\s\S]*failedUserItem\.remove\(\)[\s\S]*item\.remove\(\)[\s\S]*submitUserText\(options\.retryText, \{[\s\S]*\.\.\.\(options\.retryOptions \|\| \{\}\),[\s\S]*retryOf: options\.userRecordId/, "Retry replaces the failed visual turn and preserves its source-run lineage");
 test.assertIncludes(chatMessages, 'submittedUserRecord.deliveryState = "failed"', "A failed request remains visible with an explicit undelivered state");
 test.assertMatches(chatMessages, /conversation\.push\(submittedUserRecord\);[\s\S]*ensureCurrentConversationFile\(\)/, "The first durable ClioTalk message creates its Chat file before model transport");
 test.assertMatches(chatMessages, /const requiresDurableChatFile = !isTemporaryChat\s*&& options\.fileNative !== false\s*&& !sideAskEnabled\s*&& isClioTalkAnswerContractTask/, "Full ClioTalk remains file-native in both Finder and MultiFinder, with Temporary Chat as the explicit exception");
@@ -428,6 +428,10 @@ for (const scenario of ['id: "ready-to-send"', 'id: "stopped"', 'id: "streaming"
 for (const key of ["clio_scroll_latest", "clio_progress", "clio_working_steps", "clio_reply_stopped", "clio_reply_output_limit", "clio_reply_provider_stopped", "clio_reply_interrupted", "clio_reply_preserved_record_warning", "clio_message_not_sent", "clio_continue_reply"]) {
   test.assertIncludes(translationsEn, key, `English ClioTalk state copy includes ${key}`);
   test.assertIncludes(translationsZh, key, `Chinese ClioTalk state copy includes ${key}`);
+}
+for (const key of ["file_floppy", "local_model"]) {
+  test.assertIncludes(translationsEn, `${key}:`, `English includes the ClioTalk ${key} label`);
+  test.assertIncludes(translationsZh, `${key}:`, `Chinese includes the ClioTalk ${key} label`);
 }
 
 test.finish();

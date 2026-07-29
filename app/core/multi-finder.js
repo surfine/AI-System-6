@@ -55,6 +55,7 @@ const windowAppMap = {
   saveChat: "clioTalk",
   scrapbook: "scrapbook",
   trash: "finder",
+  printDirectory: "finder",
   reader: "reader",
   timeMachine: "timeMachine",
   endfieldTerminal: "endfield",

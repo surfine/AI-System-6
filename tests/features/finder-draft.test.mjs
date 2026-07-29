@@ -17,6 +17,7 @@ const windowManager = read("app/core/window-manager.js");
 const workingSession = read("app/core/working-session.js");
 const wireup = read("app/core/wireup.js");
 const chatMessages = read("app/core/chat-messages.js");
+const writingAgentCoordinator = read("app/core/writing-agent-coordinator.js");
 const documentsChat = read("app/features/documents-chat.js");
 const systemIcons = read("app/core/system-icons.js");
 const manifest = read("scripts/runtime-manifest.mjs");
@@ -96,6 +97,8 @@ test.assertIncludes(html, 'class="teachtext-editor-container quick-draft-editor-
 test.assertIncludes(html, 'id="quick-draft-preview" class="teachtext-preview is-hidden"', "Quick Draft has TeachText-style preview");
 test.assertIncludes(html, 'data-mde-focus-cycle data-mde-target="#quick-draft-draft"', "Quick Draft reuses markdown focus mode");
 test.assertIncludes(html, 'id="quick-draft-toggle-preview"', "Quick Draft exposes Preview");
+test.assertIncludes(html, 'data-mde-target="#quick-draft-draft" data-i18n-aria-label="teachtext_focus_off"', "Quick Draft keeps a complete accessible focus-state label beside its short phone label");
+test.assertIncludes(html, 'class="mobile-control-short" data-i18n="more"', "Quick Draft uses a compact localized Commands label on phone");
 test.assertIncludes(quickWindowHtml, 'id="quick-draft-save" data-i18n="quick_draft_start_writing"', "Visible editor makes Draft the primary button");
 test.assertIncludes(html, 'id="quick-draft-tools" class="teachtext-command-menu quick-draft-command-menu"', "Commands palette is per-window");
 test.assertIncludes(quickWindowHtml, 'data-i18n="quick_draft_command_intake"', "Main command menu groups material intake first");
@@ -259,7 +262,11 @@ test.assertIncludes(chatMessages, "resetClioTalkRuntimeState", "SideAsk Copilot 
 test.assertIncludes(workingSession, "isSideAskClioTalkActive", "Working Session preserves normal ClioTalk instead of saving temporary Copilot messages");
 test.assertIncludes(chatMessages, "isScopedSideAskChat", "SideAsk Copilot can disable broad project context while keeping the paired-window context");
 test.assertIncludes(chatMessages, "!isScopedSideAskChat && (rememberInput.checked || attachedClipIds.size > 0)", "SideAsk Copilot does not use remembered broad context");
-test.assertIncludes(chatMessages, "!sideAskChat && !skipContextRanking", "SideAsk Copilot bypasses project RAG ranking");
+test.assertIncludes(
+  writingAgentCoordinator,
+  "const shouldRank = !sideAskChat",
+  "SideAsk Copilot bypasses project RAG ranking through the shared writing coordinator"
+);
 test.assertIncludes(chatMessages, "clioTalkAssistantDisplayName", "SideAsk Copilot uses a distinct assistant display name");
 test.assertIncludes(chatMessages, "quickDraftActionFromText", "ClioTalk typed commands can trigger Quick Draft actions");
 test.assertIncludes(chatMessages, "进入树洞", "ClioTalk typed commands can enter treehole mode");

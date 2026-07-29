@@ -1,5 +1,5 @@
 <!-- canonical-source: README.md -->
-<!-- source-sha256: c2beacd5f6a52f7398227d7ee26c6de5b7a6601d2492c51d70ca122619083549 -->
+<!-- source-sha256: 0b71e70e98f525a737faf5e8a4dbe953a078eb40536e99f5ba7f2bfe584b5f39 -->
 
 <h1 align="center">AI System 6</h1>
 
@@ -81,4 +81,4 @@ AI System 6 可以连接 LM Studio 兼容的本地端点，也支持用户自行
 
 ## License
 
-目前还没有选择开源许可证。在正式加入 license 之前，代码可以用于查看和协作，但默认不授予复用权利。
+AI System 6 采用 [MIT License](LICENSE)。

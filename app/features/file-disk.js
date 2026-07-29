@@ -188,6 +188,9 @@ function renderMountedTextDisk() {
   if (!getWindow("projects")?.classList.contains("is-hidden")) {
     renderProjectDisks();
   }
+  if (!getWindow("disk")?.classList.contains("is-hidden") && typeof renderStaticFinderWindow === "function") {
+    renderStaticFinderWindow("disk");
+  }
   updateProjectLabels();
   updateDocMapEntryButtons();
   if (typeof renderVideoDocMapSwitchers === "function") renderVideoDocMapSwitchers();
@@ -357,7 +360,7 @@ async function addMountedTextDiskToProject() {
 
       if (!chunks.length) continue;
 
-      const isCloud = typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudConfig.apiKey;
+      const isCloud = typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudCredentialReady();
       const localEmbeddingModel = String((embeddingModelInput?.value || "")).trim();
       const cloudEmbeddingModel = String((cloudConfig?.model || "")).trim();
       const isDeepSeekCloud = isCloud && String(cloudConfig?.provider || "").toLowerCase() === "deepseek";

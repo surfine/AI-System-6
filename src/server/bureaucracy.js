@@ -19,6 +19,7 @@ const { getLocalUrls } = require("./lib/local-urls.js");
 const {
   DEEPSEEK_API_KEY_DEFAULT,
   DEEPSEEK_BASE_URL_DEFAULT,
+  resolveCloudBaseUrl,
 } = require("./cloud.js");
 const { tuneLmStudioChatPayload } = require("./chat.js");
 const { humanizerModelInstruction } = require("./humanizer.js");
@@ -26,6 +27,7 @@ const {
   getLoadedLmStudioModelInfo,
   postLocalChatWithModelAutoload,
 } = require("./lmstudio.js");
+const { resolveCloudCredential } = require("./credential-vault.js");
 
 /**
  * Permitted tone values for the caption generator. Mirrors
@@ -342,12 +344,17 @@ function buildBureaucracyCaptionMessages({ topic, tone, template, imageDataUrl }
 async function postBureaucracyChatPayload(payload, route, signal) {
   const cloudRoute = route?.cloud || {};
   const localRoute = route?.local || {};
-  const cloudApiKey = String(cloudRoute.apiKey || cloudRoute.api_key || DEEPSEEK_API_KEY_DEFAULT || "").trim();
+  const cloudApiKey = String(await resolveCloudCredential({
+    credentialId: cloudRoute.credentialId || cloudRoute.credential_id,
+    provider: "deepseek",
+    suppliedApiKey: cloudRoute.apiKey || cloudRoute.api_key || DEEPSEEK_API_KEY_DEFAULT,
+    allowSupplied: false,
+  })).trim();
   const canUseCloud = !!(cloudApiKey && (cloudRoute.active || (!localRoute.model && !localRoute.provider)));
 
   if (canUseCloud) {
     const model = String(cloudRoute.model || "deepseek-v4-flash").trim();
-    const baseUrl = String(cloudRoute.baseUrl || DEEPSEEK_BASE_URL_DEFAULT).replace(/\/$/, "");
+    const baseUrl = resolveCloudBaseUrl(cloudRoute.baseUrl || DEEPSEEK_BASE_URL_DEFAULT);
     const cloudPayload = { ...payload, model };
     if (/^(?:deepseek-)?v4-(?:pro|flash)$/i.test(model)
         && (!cloudPayload.thinking || cloudPayload.thinking.type !== "disabled")) {

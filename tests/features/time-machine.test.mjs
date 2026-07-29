@@ -17,6 +17,7 @@ const persistence = read("app/core/persistence-status.js");
 const menus = read("app/data/menus.js");
 const styles = read("styles/22-time-machine.css");
 const router = read("src/server/router.js");
+const dictionary = read("app/data/system-dictionary.js");
 const {
   parseWaybackCdx,
   parseWaybackAvailability,
@@ -105,7 +106,15 @@ test.assertNotIncludes(feature, "window.prompt(", "source questions use visible 
 test.assertNotIncludes(styles, "!important", "new Time Machine CSS does not add priority debt");
 test.assertIncludes(styles, "border-radius: var(--control-radius)", "Time Machine inputs follow the active theme radius token");
 test.assertIncludes(styles, "grid-template-columns: repeat(7", "the popover renders a seven-day calendar");
+test.assertIncludes(styles, "grid-template-columns: repeat(auto-fit, minmax(44px, 1fr))", "phone navigation and view choices share one adaptive control row");
+test.assertIncludes(styles, ".time-machine-view-switch {\n    display: contents;", "phone view choices join the navigation row without a second toolbar");
+test.assertIncludes(styles, ".time-machine-reader-actions:has(#time-machine-docmap:disabled):has(#time-machine-question:disabled)", "empty Time Machine pages do not reserve space for unusable bottom controls");
+test.assertIncludes(styles, ".time-machine-ask-form {\n    grid-template-columns: minmax(0, 1fr) auto;", "loaded pages keep DocMap and Ask in one compact bottom row");
+test.assertIncludes(styles, ".time-machine-toggle > span {\n    display: none;", "phone address bar hides the redundant mode label without removing its accessible label");
+test.assertIncludes(styles, "min-height: 44px", "phone Time Machine controls meet the touch target floor");
 test.assertNotIncludes(`${index}\n${feature}\n${styles}`, "1996—Today", "the UI never invents a universal archive range");
+test.assertIncludes(dictionary, 'id: "time-machine"', "System Help exposes Time Machine as a restricted historical browser");
+test.assertIncludes(dictionary, "choose a 1990s capture", "System Help documents the historical Apple-site demonstration path");
 
 const cdx = JSON.stringify([
   ["timestamp", "original", "mimetype", "statuscode", "digest"],

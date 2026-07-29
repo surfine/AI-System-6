@@ -51,7 +51,7 @@ function requireSource(name, needle) {
   ["Project Disk backup preview UI", "id=\"project-backup-preview\""],
   ["Project Disk import-as-new UI", "id=\"import-project-backup\""],
   ["Project Disk import remaps records", "function remapProjectDiskBackup(bundle)"],
-  ["Project Disk import creates new project id", "const newProjectId = crypto.randomUUID()"],
+  ["Project Disk import creates new project id", "const newProjectId = suppliedUuid ? suppliedUuid() : crypto.randomUUID()"],
   ["Project Disk import stores original provenance", "importedFrom:"],
   ["Project Disk import never overwrites old project", "projects.unshift(imported.project)"],
   ["Trash data is excluded from context sources", "function isContextSourceLive(contextItem)"],

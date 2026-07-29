@@ -16,6 +16,7 @@ const menuContext = { document: {}, activeAppId: "finder" };
 vm.runInNewContext(`${menus}\nglobalThis.__menuSets = applicationMenuSets;`, menuContext);
 const menuSets = menuContext.__menuSets;
 const menuActions = [...menus.matchAll(/menuItem\("([^"]+)"/g)].map((match) => match[1]);
+const menuBarRules = [...responsive.matchAll(/\.menu-bar\s*\{([^}]*)\}/g)].map((match) => match[1]);
 
 test.assertIncludes(manifest, '"app/data/menus.js"', "menu data loads before the application runtime");
 test.assertIncludes(html, 'id="app-menu-slot"', "system chrome keeps a stable application-menu insertion point");
@@ -51,7 +52,10 @@ test.assertIncludes(menus, "bureaucracyMeme: bureaucracyMemeMenus", "Bureaucracy
 test.assertNotIncludes(menus, "isPortraitDocumentFlow", "menu semantics do not branch on screen size");
 test.assertNotIncludes(menus, "isMultiFinderMode", "menu semantics do not branch on task model");
 test.assertIncludes(responsive, "overflow: visible", "mobile menu popovers are not clipped by the menu bar");
-test.assertNotIncludes(responsive, "overflow-x: auto", "the mobile menu bar does not turn into a clipping scroll container");
+test.assert(
+  menuBarRules.length > 0 && menuBarRules.every((rule) => !rule.includes("overflow-x: auto")),
+  "the mobile menu bar does not turn into a clipping scroll container"
+);
 test.assertIncludes(responsive, "border-left: 1px solid var(--menu-divider-color)", "mobile third-level menus expose an indented hierarchy line");
 test.assertIncludes(responsive, "--menu-item-fg: var(--menu-item-active-fg)", "open and hovered mobile submenu items use the active foreground");
 test.assertIncludes(foundation, "left: 100%", "desktop third-level menus fly out to the right");

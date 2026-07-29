@@ -14,6 +14,7 @@
 "use strict";
 
 const http = require("node:http");
+const crypto = require("node:crypto");
 const { sendJson } = require("./server/lib/http.js");
 const {
   resolveRoute,
@@ -22,14 +23,41 @@ const {
 } = require("./server/router.js");
 const { appName, appVersion, appBuild } = require("./server/lib/build-info.js");
 const { handleStatic } = require("./server/static.js");
+const { deploymentProfile } = require("./server/runtime-profile.js");
+const { runWithPublicGuard } = require("./server/security/public-session.js");
+const {
+  applySecurityHeaders,
+  configuredLocalRequestPolicy,
+  runWithLocalRequestGuard,
+} = require("./server/security/local-request.js");
 
 const port = Number(process.env.PORT || 4173);
+const localRequestPolicy = configuredLocalRequestPolicy(port);
+const host = localRequestPolicy.host;
 
 const server = http.createServer(async (req, res) => {
+  const requestId = crypto.randomUUID();
+  res.setHeader("X-Request-ID", requestId);
+  applySecurityHeaders(res);
+  if (
+    deploymentProfile === "public"
+    && String(req.url || "").split("?")[0].startsWith("/api/")
+  ) {
+    res.setHeader("Cache-Control", "no-store");
+  }
   try {
     const handler = resolveRoute(req);
     if (handler) {
-      await handler(req, res);
+      if (deploymentProfile === "public") {
+        await runWithPublicGuard(req, res, () => handler(req, res));
+      } else {
+        await runWithLocalRequestGuard(
+          req,
+          res,
+          localRequestPolicy,
+          () => handler(req, res)
+        );
+      }
       return;
     }
 
@@ -38,13 +66,15 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    sendJson(res, 404, {
-      error: "Not migrated yet",
-      detail: `${req.method || "GET"} ${req.url || "/"} is not handled by src/. ` +
-        `Use the root server on its own port for production routes.`,
-      migrated: listMigratedRoutes(),
-      unmigrated: unmigratedRoutes,
-    });
+    sendJson(res, 404, deploymentProfile === "public"
+      ? { error: "Not found", request_id: requestId }
+      : {
+          error: "Not migrated yet",
+          detail: `${req.method || "GET"} ${req.url || "/"} is not handled by src/. ` +
+            `Use the root server on its own port for production routes.`,
+          migrated: listMigratedRoutes(),
+          unmigrated: unmigratedRoutes,
+        });
   } catch (error) {
     const message =
       error && typeof error === "object" && "message" in error
@@ -54,15 +84,45 @@ const server = http.createServer(async (req, res) => {
       error && typeof error === "object" && "statusCode" in error
         ? Number(/** @type {any} */ (error).statusCode) || 500
         : 500;
+    console.error(JSON.stringify({
+      level: "error",
+      request_id: requestId,
+      method: req.method || "GET",
+      path: String(req.url || "/").split("?")[0],
+      status,
+      error: message,
+    }));
     sendJson(res, status, {
-      error: "Unhandled server error",
-      detail: message,
+      error: status < 500 ? message : "Unhandled server error",
+      request_id: requestId,
     });
   }
 });
 
-server.listen(port, () => {
-  console.log(`AI System 6 (src/ rewrite) running at http://localhost:${port}`);
+server.headersTimeout = 10000;
+server.requestTimeout = 120000;
+server.keepAliveTimeout = 5000;
+server.maxRequestsPerSocket = 100;
+
+server.listen(port, host, () => {
+  console.log(`AI System 6 (src/ rewrite) running at http://${host}:${port}`);
   console.log(`${appName} ${appVersion} build ${appBuild}`);
+  console.log(`Deployment profile: ${deploymentProfile}`);
+  console.log(`LAN access: ${localRequestPolicy.allowLan ? "enabled with token" : "disabled"}`);
   console.log(`Migrated routes: ${listMigratedRoutes().join(", ") || "(none)"}`);
 });
+
+let shuttingDown = false;
+function shutdown(signal) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  console.log(`Received ${signal}; draining HTTP connections.`);
+  server.close(() => process.exit(0));
+  setTimeout(() => {
+    console.error("Graceful shutdown timed out.");
+    process.exit(1);
+  }, 20000).unref();
+}
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));

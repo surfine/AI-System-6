@@ -357,6 +357,7 @@ const {
   docMapTabsEl,
   docMapTreeEl,
   docMapFitViewButton,
+  docMapFocusRootButton,
   docMapZoomOutButton,
   docMapZoomInButton,
   docMapCommandMenu,
@@ -480,7 +481,14 @@ let writingToolsViewMode = "icon";
 let systemFinderPath = "";
 const finderContainerWindowNames = ["finder", "helpFolder", "applications", "disk"];
 const viewWindowNames = [...finderContainerWindowNames, "projects", "documents", "imageManager"];
-const printableDirectoryWindowNames = new Set([...finderContainerWindowNames, "projects", "documents", "trash"]);
+const printableDirectoryWindowNames = new Set([
+  ...finderContainerWindowNames,
+  "projects",
+  "documents",
+  "textDisk",
+  "projectCd",
+  "trash",
+]);
 
 function staticFinderBuildDate() {
   const match = String(appVersionInfo.build || "").match(/^(\d{4})(\d{2})(\d{2})/);
@@ -599,15 +607,24 @@ function getApplicationsItems() {
 }
 
 function getStartupDiskItems() {
+  const fileFloppyMounted = typeof getMountedTextDiskChunks === "function"
+    && getMountedTextDiskChunks().length > 0;
   return withStaticFinderMetadata([
     { name: t("system_folder"), iconId: "systemFolder", icon: "system-icon", action: "open-finder", kind: t("folder_kind") },
     { name: t("help_folder"), iconId: "helpFolder", icon: "folder-icon", action: "open-help-folder", kind: t("folder_kind") },
     { name: t("applications"), iconId: "applications", icon: "applications-icon", action: "open-applications", kind: t("folder_kind") },
-    { name: t("project_disk"), iconId: "projectDisk", icon: "project-disk-icon", action: "open-project-disks", kind: t("project_disk") },
-    { name: t("documents"), iconId: "documents", icon: "folder-icon", action: "open-documents", kind: t("folder_kind") },
-    { name: t("project_cd"), iconId: "projectDisc", icon: "hard-disk-icon", action: "open-project-cd", kind: t("project_cd"), workspaceCapability: workspaceCapabilityStudio },
-    { name: t("import_utility"), iconId: "importUtility", icon: "tools-icon", action: "open-import-utility", type: "application", kind: t("application") },
-    { name: t("mount_text_disk"), iconId: "fileFloppy", icon: "tools-icon", action: "open-rag", type: "application", kind: t("application"), workspaceCapability: workspaceCapabilityStudio },
+    { name: t("project_disk"), iconId: "projectDisk", icon: "project-disk-icon", action: "open-project-disks", type: "volume", kind: t("project_disk"), virtual: false },
+    { name: t("project_cd"), iconId: "projectDisc", icon: "hard-disk-icon", action: "open-project-cd", type: "volume", kind: t("project_cd"), virtual: false, workspaceCapability: workspaceCapabilityStudio },
+    {
+      name: t(fileFloppyMounted ? "mounted_text_disk" : "mount_text_disk"),
+      iconId: "fileFloppy",
+      icon: "text-disk-icon",
+      action: fileFloppyMounted ? "open-text-disk" : "open-rag",
+      type: "volume",
+      kind: t("mounted_text_disk"),
+      virtual: !fileFloppyMounted,
+      workspaceCapability: workspaceCapabilityStudio,
+    },
     { name: t("trash"), iconId: "trash", icon: "trash-icon", action: "open-trash", kind: t("folder_kind") },
   ], t("startup_disk"));
 }
@@ -1060,48 +1077,75 @@ let localModelState = {
 }
 
 let cloudConfig = null;
+let cloudRuntimeApiKey = "";
 const CLOUD_STORAGE_KEY = "ai-system6-cloud-config";
 const CLOUD_SESSION_KEY = "ai-system6-cloud-api-key";
 
+function isPublicCloudCredentialMode() {
+  return document.documentElement.dataset.deploymentProfile === "public";
+}
+
+function cloudCredentialReady(config = cloudConfig) {
+  return !!(config?.credentialId || cloudRuntimeApiKey);
+}
+
+function setCloudRuntimeApiKey(value = "") {
+  cloudRuntimeApiKey = String(value || "").trim();
+}
+
+function cloudCredentialTransportFields(style = "model") {
+  if (cloudConfig?.credentialId && !isPublicCloudCredentialMode()) {
+    return style === "status"
+      ? { credential_id: cloudConfig.credentialId }
+      : { _cloud_credential_id: cloudConfig.credentialId };
+  }
+  if (!cloudRuntimeApiKey) return {};
+  return style === "status"
+    ? { api_key: cloudRuntimeApiKey }
+    : { _cloud_api_key: cloudRuntimeApiKey };
+}
+
 function loadCloudConfig() {
   let persistedConfig = null;
+  let legacyApiKey = "";
 
   try {
     const raw = localStorage.getItem(CLOUD_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-        persistedConfig = parsed;
-        persistedConfig.apiKey = typeof parsed.apiKey === "string" ? parsed.apiKey.trim() : "";
+        persistedConfig = { ...parsed };
+        legacyApiKey = typeof persistedConfig.apiKey === "string"
+          ? persistedConfig.apiKey.trim()
+          : "";
+        delete persistedConfig.apiKey;
       }
     }
   } catch {
     persistedConfig = null;
   }
 
-  // Migrate keys saved by the older session-only implementation. Cloud
-  // credentials remain device settings: they never enter a Project Hard Disk,
-  // project backup, chat file, or export.
   let sessionApiKey = "";
   try {
     sessionApiKey = (sessionStorage.getItem(CLOUD_SESSION_KEY) || "").trim();
     sessionStorage.removeItem(CLOUD_SESSION_KEY);
   } catch {
-    // Persistent config can still load if sessionStorage is unavailable.
+    sessionApiKey = "";
   }
 
-  if (!persistedConfig && sessionApiKey) persistedConfig = { apiKey: sessionApiKey };
-  if (persistedConfig && !persistedConfig.apiKey && sessionApiKey) {
-    persistedConfig.apiKey = sessionApiKey;
-  }
-  if (persistedConfig && persistedConfig.active && !persistedConfig.apiKey) {
+  setCloudRuntimeApiKey(sessionApiKey || legacyApiKey);
+  if (!persistedConfig && cloudRuntimeApiKey) persistedConfig = {};
+  if (persistedConfig && persistedConfig.active && !cloudCredentialReady(persistedConfig)) {
     persistedConfig.active = false;
   }
 
-  // Rewrite migrated session credentials into this device's cloud settings.
+  // Remove credentials written by older builds. Only a local-service
+  // credential ID and non-secret provider preferences remain in browser state.
   try {
     if (persistedConfig && Object.keys(persistedConfig).length) {
-      localStorage.setItem(CLOUD_STORAGE_KEY, JSON.stringify(persistedConfig));
+      const safeConfig = { ...persistedConfig };
+      delete safeConfig.apiKey;
+      localStorage.setItem(CLOUD_STORAGE_KEY, JSON.stringify(safeConfig));
     } else {
       localStorage.removeItem(CLOUD_STORAGE_KEY);
     }
@@ -1117,9 +1161,7 @@ function saveCloudConfig() {
   try {
     if (cloudConfig) {
       const persistedConfig = { ...cloudConfig };
-      persistedConfig.apiKey = typeof persistedConfig.apiKey === "string"
-        ? persistedConfig.apiKey.trim()
-        : "";
+      delete persistedConfig.apiKey;
       if (Object.keys(persistedConfig).length) {
         localStorage.setItem(CLOUD_STORAGE_KEY, JSON.stringify(persistedConfig));
       } else {
@@ -1132,9 +1174,7 @@ function saveCloudConfig() {
     // Runtime cloud use can continue even when browser persistence is blocked.
   }
 
-  try {
-    sessionStorage.removeItem(CLOUD_SESSION_KEY);
-  } catch {}
+  try { sessionStorage.removeItem(CLOUD_SESSION_KEY); } catch {}
 }
 
 function getLocalModelRequestName() {
@@ -1398,6 +1438,7 @@ function applyLanguage() {
   });
 
   updateProjectLabels();
+  if (typeof renderAllFinderNavigationBars === "function") renderAllFinderNavigationBars();
   updateFilePickerLabels();
   updateReviewDeskStats?.();
   if (typeof refreshSystemSelectControls === "function") refreshSystemSelectControls();

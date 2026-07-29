@@ -2745,20 +2745,39 @@ window.AISystem6LiquidCoverLoaded = true;
 
   // ---- GPT Image (OpenAI-compatible) background generation, via server proxy ----
   const IMG_CFG_KEY = "aiSystem6.liquidCover.imageGen";
+  const IMG_KEY_SESSION_KEY = "aiSystem6.liquidCover.imageGen.apiKey";
   function loadImgCfgIntoPanel() {
     let cfg = {};
     try { cfg = JSON.parse(localStorage.getItem(IMG_CFG_KEY) || "{}") || {}; } catch (e) { cfg = {}; }
     if (cfg.baseUrl) $("lc-img-base").value = cfg.baseUrl;
-    if (cfg.apiKey) $("lc-img-key").value = cfg.apiKey;
     if (cfg.model) $("lc-img-model").value = cfg.model;
+    let apiKey = "";
+    try {
+      apiKey = sessionStorage.getItem(IMG_KEY_SESSION_KEY) || "";
+      if (!apiKey && cfg.apiKey) {
+        apiKey = String(cfg.apiKey);
+        sessionStorage.setItem(IMG_KEY_SESSION_KEY, apiKey);
+      }
+      if (Object.prototype.hasOwnProperty.call(cfg, "apiKey")) {
+        delete cfg.apiKey;
+        localStorage.setItem(IMG_CFG_KEY, JSON.stringify(cfg));
+      }
+    } catch (e) {
+      apiKey = String(cfg.apiKey || "");
+    }
+    $("lc-img-key").value = apiKey;
   }
   function saveImgCfg() {
     try {
       localStorage.setItem(IMG_CFG_KEY, JSON.stringify({
         baseUrl: $("lc-img-base").value.trim(),
-        apiKey: $("lc-img-key").value,
         model: $("lc-img-model").value.trim(),
       }));
+    } catch (e) { /* noop */ }
+    try {
+      const apiKey = $("lc-img-key").value.trim();
+      if (apiKey) sessionStorage.setItem(IMG_KEY_SESSION_KEY, apiKey);
+      else sessionStorage.removeItem(IMG_KEY_SESSION_KEY);
     } catch (e) { /* noop */ }
   }
   function imageCfg() {

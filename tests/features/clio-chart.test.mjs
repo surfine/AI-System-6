@@ -207,9 +207,17 @@ const chatMessages = read("app/core/chat-messages.js");
 const clioStage = read("app/features/clio-stage.js");
 const en = read("app/data/translations-en.js");
 const zh = read("app/data/translations-zh.js");
+const dictionary = read("app/data/system-dictionary.js");
 const css = read("styles/87-clio-chart.css");
 const foundationCss = read("styles/00-foundation.css");
 const liquidCss = read("styles/70-liquid-glass.css");
+
+test.assertIncludes(css, ".clio-chart-view-pane {\n    order: 1;", "phone ClioChart puts the chart before the editable source grid");
+test.assertIncludes(css, "grid-template-columns: repeat(6, minmax(0, 1fr))", "phone projections stay in one compact row");
+test.assertIncludes(css, "max-height: 22%", "phone source data remains available without displacing the chart");
+test.assertIncludes(html, 'data-i18n="clio_chart_bars_short"', "ClioChart supplies short phone projection labels");
+test.assertIncludes(en, 'clio_chart_matrix_short: "Compare"', "English provides a compact comparison label");
+test.assertIncludes(zh, 'clio_chart_source_short: "数据"', "Chinese identifies the compact source view as data");
 
 test.assertIncludes(manifest, '"app/features/clio-chart.js"', "the module is registered as a lazy runtime path");
 test.assertNotIncludes(html, "app/features/clio-chart.js", "a lazy module is never added to the startup script tags");
@@ -433,6 +441,9 @@ test.assertMatches(
   "a draft that will not parse keeps the user in the source view instead of discarding their text"
 );
 test.assertIncludes(chartSource, "renderClioChartGrid();", "applying a source edit redraws the grid, not only the projection");
+test.assertIncludes(css, "@container (max-width: 430px)", "ClioChart owns a phone-specific figure");
+test.assertIncludes(css, "grid-template-columns: repeat(6, minmax(0, 1fr))", "projection choices stay in one row without assuming English label widths");
+test.assertIncludes(css, "min-height: 44px", "phone projection controls use touch-sized targets");
 
 [
   "clio_chart_template_folder",
@@ -447,5 +458,7 @@ test.assertIncludes(chartSource, "renderClioChartGrid();", "applying a source ed
 ].forEach((key) => {
   test.assert(en.includes(`${key}:`) && zh.includes(`${key}:`), `${key} exists in both languages`);
 });
+test.assertIncludes(dictionary, 'id: "clio-chart"', "System Help exposes ClioChart as a file-grounded comparison bench");
+test.assertIncludes(dictionary, "A visible projection can be frozen and sent directly to ClioStage", "System Help documents the real Chart-to-Stage handoff");
 
 test.finish();

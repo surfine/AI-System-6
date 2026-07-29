@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { transformSync } from "esbuild";
 import { appRuntimePaths } from "./runtime-manifest.mjs";
 import { styleRuntimePaths } from "./style-manifest.mjs";
 
@@ -149,7 +150,19 @@ const body = appRuntimePaths
   .join("\n");
 
 const appBundlePath = join(root, "app.bundle.js");
-writeFileSync(appBundlePath, `${compactJsLeadingWhitespace(`${banner}${body}`)}\n`, "utf8");
+const minifiedBody = transformSync(compactJsLeadingWhitespace(body), {
+  charset: "utf8",
+  legalComments: "none",
+  loader: "js",
+  minifyIdentifiers: false,
+  minifySyntax: false,
+  minifyWhitespace: true,
+  target: "esnext",
+}).code.trim();
+const sourceSectionManifest = appRuntimePaths
+  .map((path) => `// Source section: ${path}`)
+  .join("\n");
+writeFileSync(appBundlePath, `${banner}${sourceSectionManifest}\n${minifiedBody}\n`, "utf8");
 
 const syntaxCheck = spawnSync(process.execPath, ["--check", appBundlePath], {
   cwd: root,

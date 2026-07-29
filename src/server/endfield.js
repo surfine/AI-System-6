@@ -22,6 +22,7 @@ const { positiveInteger } = require("./lib/numbers.js");
 const {
   DEEPSEEK_CLOUD_MODELS,
   DEEPSEEK_BASE_URL_DEFAULT,
+  resolveCloudBaseUrl,
 } = require("./cloud.js");
 const {
   enforceMarkdownOnlyChatPayload,
@@ -34,6 +35,7 @@ const {
   getLoadedLmStudioModelInfo,
   postLocalChatWithModelAutoload,
 } = require("./lmstudio.js");
+const { resolveCloudCredential } = require("./credential-vault.js");
 
 // =============================================================================
 // Data loaders (lazy, cached per-process)
@@ -777,9 +779,17 @@ function endfieldEvidenceBudget(body = {}, model = "", outputTokens = 1200) {
  * }>}
  */
 async function postEndfieldChatPayload(payload, body, signal) {
-  if (body._cloud_active && body._cloud_api_key) {
+  const cloudApiKey = body._cloud_active
+    ? await resolveCloudCredential({
+        credentialId: body._cloud_credential_id,
+        provider: "deepseek",
+        suppliedApiKey: body._cloud_api_key,
+        allowSupplied: false,
+      })
+    : "";
+  if (body._cloud_active && cloudApiKey) {
     const model = String(body._cloud_model || payload.model || "deepseek-v4-flash").trim();
-    const baseUrl = String(body._cloud_base_url || DEEPSEEK_BASE_URL_DEFAULT).replace(/\/$/, "");
+    const baseUrl = resolveCloudBaseUrl(body._cloud_base_url || DEEPSEEK_BASE_URL_DEFAULT);
     const cloudPayload = enforceMarkdownOnlyChatPayload({ ...payload, model });
     if (/^(?:deepseek-)?v4-(?:pro|flash)$/i.test(model)
         && (!cloudPayload.thinking || cloudPayload.thinking.type !== "disabled")) {
@@ -791,7 +801,7 @@ async function postEndfieldChatPayload(payload, body, signal) {
       delete cloudPayload.top_logprobs;
     }
     const { response } = await postJsonWithFallback(`${baseUrl}/v1/chat/completions`, cloudPayload, signal, {
-      Authorization: `Bearer ${body._cloud_api_key}`,
+      Authorization: `Bearer ${cloudApiKey}`,
     });
     return { response, source: "cloud", model };
   }

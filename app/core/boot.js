@@ -26,8 +26,11 @@ async function boot() {
     ]);
     initializeAlarmClock();
     loadAppVersion();
-    await startupTaskWithTimeout(loadDeskState(), "loadDeskState", 3500);
+    await loadDeskState();
     await startupTaskWithTimeout(applyDeploymentWorkspaceDefault(), "deploymentWorkspaceDefault", 3500);
+    if (window.AISystem6DerivedIndexQueue) {
+      await startupTaskWithTimeout(window.AISystem6DerivedIndexQueue.restore(), "derivedIndexQueue", 3500);
+    }
     configurePublicLmStudioControls();
     syncDocMapLayoutControls();
     applyLanguage();

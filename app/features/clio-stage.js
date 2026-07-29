@@ -222,7 +222,7 @@ function syncClioStageControls() {
       : t("clio_stage_empty");
   }
   if (els.meta && hasSlides && clioStageState.mode !== "cue") {
-    els.meta.textContent = `${clioStageState.parsed.size} · ${clioStageState.parsed.theme} · ${clioStageState.parsed.slides.length} slides`;
+    els.meta.textContent = `${clioStageState.parsed.size} · ${clioStageState.parsed.theme} · ${t("clio_stage_slides_count", clioStageState.parsed.slides.length)}`;
   }
 }
 
@@ -304,7 +304,7 @@ function renderClioStageCue() {
   if (notesText) {
     const notes = document.createElement("aside");
     notes.className = "clio-stage-cue-next clio-stage-cue-notes";
-    notes.innerHTML = `<span>${currentLanguage === "zh" ? "备注" : "Notes"}</span><p>${escapeHtml(notesText)}</p>`;
+    notes.innerHTML = `<span>${escapeHtml(t("clio_stage_notes"))}</span><p>${escapeHtml(notesText)}</p>`;
     els.viewport.append(current, notes, next);
   } else {
     els.viewport.append(current, next);

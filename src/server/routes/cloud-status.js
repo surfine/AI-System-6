@@ -19,40 +19,57 @@
 
 "use strict";
 
-const { send, sendJson, readJsonBody, requestSignal } = require("../lib/http.js");
+const { send, sendJson, readJsonBody, requestSignal, withTimeoutSignal } = require("../lib/http.js");
 const { getTextWithFallback } = require("../lib/fetch.js");
 const {
   cloudAuthHeaders,
   DEEPSEEK_API_KEY_DEFAULT,
   DEEPSEEK_BASE_URL_DEFAULT,
+  DEEPSEEK_PUBLIC_BASE_URL,
+  resolveCloudBaseUrl,
 } = require("../cloud.js");
+const { isPublicDeployment } = require("../runtime-profile.js");
+const { resolveCloudCredential } = require("../credential-vault.js");
 
 /**
  * @param {import("node:http").IncomingMessage} req
  * @param {import("node:http").ServerResponse} res
  */
 async function handleCloudStatus(req, res) {
-  const signal = requestSignal(req, res);
+  const timeoutHandle = withTimeoutSignal(requestSignal(req, res), 30000);
+  const signal = timeoutHandle.signal;
 
   try {
-    const body = await readJsonBody(req);
-    const apiKey = String(body.api_key || DEEPSEEK_API_KEY_DEFAULT).trim();
+    const body = await readJsonBody(req, { limitBytes: 16 * 1024 });
+    const apiKey = String(await resolveCloudCredential({
+      credentialId: body.credential_id,
+      provider: body.provider || "deepseek",
+      suppliedApiKey: body.api_key || DEEPSEEK_API_KEY_DEFAULT,
+      allowSupplied: isPublicDeployment,
+    })).trim();
     if (!apiKey) {
       sendJson(res, 400, { error: "Missing API key", connected: false });
       return;
     }
 
     const authHeaders = cloudAuthHeaders(apiKey);
-    const baseUrl = String(body.base_url || DEEPSEEK_BASE_URL_DEFAULT).replace(/\/$/, "");
+    const baseUrl = isPublicDeployment
+      ? DEEPSEEK_PUBLIC_BASE_URL
+      : resolveCloudBaseUrl(body.base_url || DEEPSEEK_BASE_URL_DEFAULT);
 
     let connected = false;
     /** @type {string | null} */
     let modelError = null;
     try {
-      const modelResult = await getTextWithFallback(`${baseUrl}/v1/models`, signal, {
-        "Accept": "application/json",
-        ...authHeaders,
-      });
+      const modelResult = await getTextWithFallback(
+        `${baseUrl}/v1/models`,
+        signal,
+        {
+          "Accept": "application/json",
+          ...authHeaders,
+        },
+        { maxBytes: 4 * 1024 * 1024 }
+      );
       connected = modelResult.ok;
       if (!modelResult.ok) {
         try {
@@ -78,15 +95,25 @@ async function handleCloudStatus(req, res) {
     let balanceError = null;
     if (connected) {
       try {
-        let balanceResult = await getTextWithFallback(`${baseUrl}/v1/user/balance`, signal, {
-          "Accept": "application/json",
-          ...authHeaders,
-        });
-        if (!balanceResult.ok && balanceResult.status === 404) {
-          balanceResult = await getTextWithFallback(`${baseUrl}/user/balance`, signal, {
+        let balanceResult = await getTextWithFallback(
+          `${baseUrl}/v1/user/balance`,
+          signal,
+          {
             "Accept": "application/json",
             ...authHeaders,
-          });
+          },
+          { maxBytes: 4 * 1024 * 1024 }
+        );
+        if (!balanceResult.ok && balanceResult.status === 404) {
+          balanceResult = await getTextWithFallback(
+            `${baseUrl}/user/balance`,
+            signal,
+            {
+              "Accept": "application/json",
+              ...authHeaders,
+            },
+            { maxBytes: 4 * 1024 * 1024 }
+          );
         }
         if (balanceResult.ok) {
           try {
@@ -125,6 +152,8 @@ async function handleCloudStatus(req, res) {
       detail: /** @type {Error} */ (error).message,
       connected: false,
     }), { "Content-Type": "application/json" });
+  } finally {
+    timeoutHandle.cleanup();
   }
 }
 

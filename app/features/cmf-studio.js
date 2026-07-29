@@ -3,6 +3,7 @@
 
 (() => {
   const STORAGE_KEY = "ai-system-6-cmf-studio-recipe";
+  const RENDERER_VENDOR_URL = "/app/vendor/cmf-renderer.js?v=three-0.184.0-uv-channel-cache";
   const COLORS = [
     { id: "black17", hex: "#353839", labelKey: "cmf_color_black17" },
     { id: "lavender17", hex: "#dfceea", labelKey: "cmf_color_lavender17" },
@@ -22,17 +23,62 @@
     { id: "usbC", labelKey: "cmf_part_usb_c" },
     { id: "cameraPlate", labelKey: "cmf_part_camera_plate" },
   ];
-  const VIEW_LABELS = {
-    "01-front": "front",
-    "02-back": "back",
-    "03-rear-hero": "rear hero",
-    "04-front-hero": "front hero",
-    "05-buttons-side": "buttons",
-    "06-control-side": "control",
-    "07-camera-close": "camera",
-    "08-bottom-usb": "USB-C",
-    "09-top-edge": "top edge",
-  };
+  const MATERIAL_PART_ALIASES = Object.freeze({
+    frame: "frame",
+    frameSide: "frame",
+    backGlass: "backGlass",
+    volumeUp: "volumeUp",
+    volumeDown: "volumeDown",
+    actionOrSim: "actionButton",
+    cameraControl: "cameraControl",
+    sideButton: "sideButton",
+    simTray: "simTray",
+    usbC: "usbC",
+    screwOrSpeaker: "usbC",
+    cameraPlate: "cameraPlate",
+  });
+  const EXACT_PART_BY_MESH_NAME = Object.freeze({
+    psstnNZmWlkGpGJ: "actionButton",
+    aabQdFuOayXiOAy: "volumeUp",
+    fQDGdPVinVFkDgA: "volumeDown",
+    DRSYKrXjlbGZrGD: "sideButton",
+    SdLaeCAiKFeDCSz: "cameraControl",
+    ohRsmdOpfcWOasQ: "cameraControl",
+    kQtKvBruXjVcFqZ: "cameraControl",
+    tXyqmuCYyFmMJhw: "simTray",
+  });
+  const VIEW_DEFINITIONS = [
+    { name: "01-front", labelKey: "cmf_view_front", direction: [0, 0.04, 1], up: [0, 1, 0], frame: 1.08 },
+    { name: "02-back", labelKey: "cmf_view_back", direction: [0, 0.04, -1], up: [0, 1, 0], frame: 1.08 },
+    { name: "03-rear-hero", labelKey: "cmf_view_rear_hero", direction: [-0.72, 0.42, -1], up: [0, 1, 0], frame: 0.92 },
+    { name: "04-front-hero", labelKey: "cmf_view_front_hero", direction: [-0.72, 0.32, 1], up: [0, 1, 0], frame: 0.92 },
+    { name: "05-buttons-side", labelKey: "cmf_view_buttons", direction: [-1, 0.02, 0.12], up: [0, 1, 0], frame: 1.02 },
+    { name: "06-control-side", labelKey: "cmf_view_control", direction: [1, 0.06, 0.22], up: [0, 1, 0], frame: 1.02 },
+    {
+      name: "07-camera-close",
+      labelKey: "cmf_view_camera",
+      direction: [-0.58, 0.38, -1],
+      up: [0, 1, 0],
+      targetOffset: [0.22, 0.3, -0.28],
+      frame: 0.46,
+    },
+    {
+      name: "08-bottom-usb",
+      labelKey: "cmf_view_bottom_usb",
+      direction: [0.08, -1, -0.35],
+      up: [0, 0, 1],
+      targetOffset: [0, -0.46, -0.08],
+      frame: 0.36,
+    },
+    {
+      name: "09-top-edge",
+      labelKey: "cmf_view_top_edge",
+      direction: [0.14, 1, -0.38],
+      up: [0, 0, -1],
+      targetOffset: [0, 0.46, -0.08],
+      frame: 0.38,
+    },
+  ];
 
   const PRESETS = {
     porcelainCircuit: {
@@ -75,13 +121,15 @@
 
   let initialized = false;
   let recipe = defaultRecipe();
-  let currentViews = [];
   let selectedView = "02-back";
   let selectedPartId = "frame";
-  let previewRefreshTimer = 0;
-  let previewRequestId = 0;
-  let previewAbortController = null;
-  let canRenderViews = null;
+  let modelRefreshTimer = 0;
+  let modelRequestId = 0;
+  let modelAbortController = null;
+  let canRenderModel = null;
+  let rendererModulesPromise = null;
+  let rendererState = null;
+  let cameraAnimationFrame = 0;
 
   function defaultRecipe() {
     return {
@@ -104,6 +152,7 @@
     initialized = true;
     recipe = loadRecipe();
     buildPartControls();
+    buildViewControls();
     bindCmfStudioEvents();
     syncCmfForm();
     refreshCapabilities();
@@ -123,13 +172,12 @@
       syncCmfForm();
       refreshCmfPresetControl();
       saveRecipe({ quiet: true });
-      invalidateRenderedViews();
-      schedulePreviewRender();
+      updateInteractiveModel();
       setCmfStatus(t("cmf_preset_applied"));
     });
     cmfEl("cmf-shuffle")?.addEventListener("click", shuffleRecipe);
     cmfEl("cmf-reset")?.addEventListener("click", resetRecipe);
-    cmfEl("cmf-render")?.addEventListener("click", renderViews);
+    cmfEl("cmf-reset-view")?.addEventListener("click", resetCmfView);
     cmfEl("cmf-export")?.addEventListener("click", exportUsdz);
     cmfEl("cmf-view-strip")?.addEventListener("click", (event) => {
       const button = event.target.closest("[data-cmf-view]");
@@ -150,11 +198,11 @@
       syncCmfForm();
       refreshCmfPresetControl();
       saveRecipe({ quiet: true });
-      invalidateRenderedViews();
-      schedulePreviewRender();
+      updateInteractiveModel();
     });
     bindRovingGroup(cmfEl("cmf-parts"), "[data-cmf-part-row]", "vertical");
     bindRovingGroup(cmfEl("cmf-palette"), "[data-cmf-color-option]", "horizontal");
+    bindRovingGroup(cmfEl("cmf-view-strip"), "[data-cmf-view]", "horizontal");
   }
 
   function buildPartControls() {
@@ -229,9 +277,22 @@
     if (summary) summary.textContent = `${t(selectedPart.labelKey)} · ${t(selectedColor.labelKey)}`;
   }
 
-  function invalidateRenderedViews() {
-    currentViews = currentViews.filter((view) => view.name === selectedView);
-    renderPreviewImage();
+  function buildViewControls() {
+    const strip = cmfEl("cmf-view-strip");
+    if (!strip || strip.dataset.ready === "true") return;
+    strip.dataset.ready = "true";
+    strip.replaceChildren(...VIEW_DEFINITIONS.map((view) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "cmf-view-thumb cmf-view-control";
+      button.dataset.cmfView = view.name;
+      button.setAttribute("aria-pressed", String(view.name === selectedView));
+      button.tabIndex = view.name === selectedView ? 0 : -1;
+      const label = document.createElement("span");
+      label.textContent = t(view.labelKey);
+      button.append(label);
+      return button;
+    }));
   }
 
   function matchingPresetId() {
@@ -272,9 +333,6 @@
       const label = document.querySelector(`[data-cmf-current-name="${part}"]`);
       if (label) label.textContent = t(color.labelKey);
     });
-    document.querySelectorAll("[data-cmf-schematic]").forEach((surface) => {
-      surface.dataset.cmfColor = recipe.parts[surface.dataset.cmfSchematic] || COLORS[0].id;
-    });
   }
 
   function loadRecipe() {
@@ -299,13 +357,12 @@
   function resetRecipe() {
     recipe = defaultRecipe();
     localStorage.removeItem(STORAGE_KEY);
-    currentViews = [];
     selectedView = "02-back";
     selectedPartId = "frame";
     syncCmfForm();
-    renderPreviewImage();
     refreshCmfPresetControl();
-    schedulePreviewRender(0);
+    syncViewControls();
+    updateInteractiveModel();
     setCmfStatus(t("cmf_reset_done"));
   }
 
@@ -323,8 +380,7 @@
     recipe.parts.cameraPlate = colors[3];
     syncCmfForm();
     saveRecipe({ quiet: true });
-    invalidateRenderedViews();
-    schedulePreviewRender();
+    updateInteractiveModel();
     setCmfStatus(t("cmf_shuffle_done"));
   }
 
@@ -341,172 +397,475 @@
     try {
       const response = await fetch("/api/cmf/capabilities", { cache: "no-store" });
       const data = await response.json();
-      canRenderViews = Boolean(data.canRenderViews || data.canExport);
-      const label = canRenderViews ? t("cmf_cap_ready") : t("cmf_cap_missing");
+      canRenderModel = Boolean(data.canExport);
+      const label = canRenderModel ? t("cmf_cap_ready") : t("cmf_cap_missing");
       const el = cmfEl("cmf-capabilities");
       if (el) el.textContent = label;
-      if (cmfEl("cmf-render")) {
-        cmfEl("cmf-render").dataset.capabilityDisabled = String(!canRenderViews);
-        cmfEl("cmf-render").disabled = !canRenderViews;
+      if (cmfEl("cmf-reset-view")) {
+        cmfEl("cmf-reset-view").dataset.capabilityDisabled = String(!canRenderModel);
+        cmfEl("cmf-reset-view").disabled = !canRenderModel;
       }
       if (cmfEl("cmf-export")) {
         cmfEl("cmf-export").dataset.capabilityDisabled = String(!data.canExport);
         cmfEl("cmf-export").disabled = !data.canExport;
       }
       const empty = cmfEl("cmf-preview-empty");
-      if (empty && !currentViews.length) {
-        empty.textContent = canRenderViews ? t("cmf_preview_empty") : t("cmf_preview_unavailable");
-      }
-      if (canRenderViews && !currentViews.length) schedulePreviewRender(0);
+      if (empty) empty.textContent = canRenderModel ? t("cmf_model_loading") : t("cmf_preview_unavailable");
+      if (canRenderModel) scheduleModelRender(0);
     } catch {
-      canRenderViews = false;
+      canRenderModel = false;
       const el = cmfEl("cmf-capabilities");
       if (el) el.textContent = t("cmf_cap_missing");
-      ["cmf-render", "cmf-export"].forEach((id) => {
+      ["cmf-reset-view", "cmf-export"].forEach((id) => {
         const control = cmfEl(id);
         if (!control) return;
         control.dataset.capabilityDisabled = "true";
         control.disabled = true;
       });
       const empty = cmfEl("cmf-preview-empty");
-      if (empty && !currentViews.length) empty.textContent = t("cmf_preview_unavailable");
+      if (empty) empty.textContent = t("cmf_preview_unavailable");
     }
   }
 
-  async function renderViews() {
-    cancelPreviewRender();
-    setBusy(true, t("cmf_rendering"));
-    setCmfControlLoading("cmf-render", true, t("cmf_rendering"));
-    try {
-      const response = await fetch("/api/cmf/render-views", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ recipe }),
+  function loadRendererModules() {
+    if (!rendererModulesPromise) {
+      rendererModulesPromise = import(RENDERER_VENDOR_URL);
+    }
+    return rendererModulesPromise;
+  }
+
+  async function ensureRenderer() {
+    if (rendererState) return rendererState;
+    const modules = await loadRendererModules();
+    const canvas = cmfEl("cmf-model-canvas");
+    const viewport = cmfEl("cmf-model-viewport");
+    if (!canvas || !viewport) throw new Error(t("cmf_model_surface_missing"));
+
+    const renderer = new modules.WebGLRenderer({
+      canvas,
+      antialias: true,
+      alpha: true,
+      powerPreference: "high-performance",
+    });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.outputColorSpace = modules.SRGBColorSpace;
+    renderer.toneMapping = modules.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.04;
+    renderer.setClearColor(0x000000, 0);
+
+    const scene = new modules.Scene();
+    const camera = new modules.OrthographicCamera(-1, 1, 1, -1, 0.001, 1000);
+    scene.add(new modules.AmbientLight(0xffffff, 1.5));
+    const keyLight = new modules.DirectionalLight(0xffffff, 3.1);
+    keyLight.position.set(-3, -4, -5);
+    scene.add(keyLight);
+    const fillLight = new modules.DirectionalLight(0xb9c9ff, 1.7);
+    fillLight.position.set(4, 2, 5);
+    scene.add(fillLight);
+
+    const controls = new modules.OrbitControls(camera, canvas);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.09;
+    controls.screenSpacePanning = true;
+    controls.zoomToCursor = true;
+    controls.minZoom = 0.35;
+    controls.maxZoom = 8;
+    controls.listenToKeyEvents(canvas);
+
+    rendererState = {
+      modules,
+      renderer,
+      scene,
+      camera,
+      controls,
+      viewport,
+      canvas,
+      model: null,
+      bounds: null,
+      viewHalfHeight: 1,
+      viewIsCustom: false,
+    };
+
+    controls.addEventListener("start", () => {
+      window.cancelAnimationFrame(cameraAnimationFrame);
+      rendererState.viewIsCustom = true;
+      syncViewControls();
+    });
+    controls.addEventListener("change", renderModelFrame);
+    const resizeObserver = new ResizeObserver(resizeModelViewport);
+    resizeObserver.observe(viewport);
+    rendererState.resizeObserver = resizeObserver;
+    resizeModelViewport();
+    renderer.setAnimationLoop(() => {
+      if (canvas.closest(".window")?.classList.contains("is-hidden")) return;
+      if (controls.update()) renderModelFrame();
+    });
+    return rendererState;
+  }
+
+  function resizeModelViewport() {
+    const state = rendererState;
+    if (!state) return;
+    const rect = state.viewport.getBoundingClientRect();
+    const width = Math.max(1, Math.round(rect.width));
+    const height = Math.max(1, Math.round(rect.height));
+    state.renderer.setSize(width, height, false);
+    updateCameraFrustum(state.viewHalfHeight);
+    renderModelFrame();
+  }
+
+  function updateCameraFrustum(halfHeight) {
+    const state = rendererState;
+    if (!state) return;
+    const rect = state.viewport.getBoundingClientRect();
+    const aspect = Math.max(rect.width, 1) / Math.max(rect.height, 1);
+    state.viewHalfHeight = Math.max(halfHeight || state.viewHalfHeight, 0.001);
+    state.camera.left = -state.viewHalfHeight * aspect;
+    state.camera.right = state.viewHalfHeight * aspect;
+    state.camera.top = state.viewHalfHeight;
+    state.camera.bottom = -state.viewHalfHeight;
+    state.camera.updateProjectionMatrix();
+  }
+
+  function renderModelFrame() {
+    const state = rendererState;
+    if (!state) return;
+    state.renderer.render(state.scene, state.camera);
+  }
+
+  function updateInteractiveModel() {
+    if (applyLiveRecipe()) {
+      setModelRefreshing(false);
+      setCmfStatus(t("cmf_model_live"));
+      return;
+    }
+    scheduleModelRender(0);
+  }
+
+  function applyLiveRecipe(model = rendererState?.model) {
+    if (!model) return 0;
+    let changedMaterials = 0;
+    model.traverse((object) => {
+      const materials = Array.isArray(object.material) ? object.material : [object.material];
+      materials.filter(Boolean).forEach((material) => {
+        const match = String(material.name || "").match(
+          /__(frameSide|frame|backGlass|volumeUp|volumeDown|actionOrSim|cameraControl|sideButton|simTray|usbC|screwOrSpeaker|cameraPlate)_[^/]+$/,
+        );
+        const partId = material.userData?.cmfPart || (match ? MATERIAL_PART_ALIASES[match[1]] : "");
+        const color = partId ? colorMeta(recipe.parts[partId]) : null;
+        if (!color || !material.color?.set) return;
+        material.color.set(color.hex);
+        material.needsUpdate = true;
+        changedMaterials += 1;
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.detail || data.error || response.statusText);
-      currentViews = Array.isArray(data.views) ? data.views : [];
-      selectedView = currentViews.find((view) => view.name === selectedView)?.name || currentViews[0]?.name || "";
-      renderPreviewImage();
-      setCmfStatus(t("cmf_render_done"));
-    } catch (error) {
-      setCmfStatus(`${t("cmf_render_failed")} ${error.message}`);
-      playSystemSound?.("alert");
-    } finally {
-      setCmfControlLoading("cmf-render", false);
-      setBusy(false);
-    }
+    });
+    if (changedMaterials) renderModelFrame();
+    return changedMaterials;
   }
 
-  function renderPreviewImage() {
-    const preview = cmfEl("cmf-preview-image");
-    const empty = cmfEl("cmf-preview-empty");
-    const fallback = cmfEl("cmf-preview-fallback");
-    const strip = cmfEl("cmf-view-strip");
-    const active = currentViews.find((view) => view.name === selectedView) || currentViews[0];
+  function prepareLiveMaterials(model, globalBounds) {
+    const state = rendererState;
+    if (!state || !model || !globalBounds) return;
+    model.traverse((object) => {
+      if (!object.isMesh || !object.material) return;
+      const sourceMaterials = Array.isArray(object.material) ? object.material : [object.material];
+      sourceMaterials.filter(Boolean).forEach((material) => {
+        // Three r184 can expand indexed USD st1 coordinates incorrectly. The
+        // affected maps are baked occlusion atlases, so letting WebGL sample
+        // them paints unrelated component silhouettes across the enclosure.
+        // Keep the real mesh and its color/normal/roughness maps, but omit the
+        // invalid supplemental AO instead of displaying corrupt surface data.
+        if (material.aoMap && (material.aoMap.channel > 0 || object.geometry?.getAttribute("uv1"))) {
+          material.aoMap = null;
+          material.aoMapIntensity = 0;
+        }
+        if (material.transparent) material.depthWrite = false;
+        material.needsUpdate = true;
+      });
+      const namedPart = sourceMaterials
+        .map((material) => String(material?.name || "").match(
+          /__(frameSide|frame|backGlass|volumeUp|volumeDown|actionOrSim|cameraControl|sideButton|simTray|usbC|screwOrSpeaker|cameraPlate)_[^/]+$/,
+        ))
+        .find(Boolean);
+      const partId = (namedPart ? MATERIAL_PART_ALIASES[namedPart[1]] : "")
+        || EXACT_PART_BY_MESH_NAME[object.name]
+        || classifyLiveMesh(object, globalBounds);
+      if (!partId) return;
 
-    if (preview) {
-      preview.hidden = !active;
-      if (active) preview.src = active.dataUrl;
-    }
-    if (empty) empty.hidden = !!active;
-    if (fallback) fallback.hidden = !!active;
-    if (strip) {
-      strip.replaceChildren(...currentViews.map((view) => {
-        const button = document.createElement("button");
-        button.className = `cmf-view-thumb${view.name === active?.name ? " is-active" : ""}`;
-        button.type = "button";
-        button.dataset.cmfView = view.name;
-        button.title = viewLabel(view.name);
-        button.setAttribute("aria-pressed", String(view.name === active?.name));
-
-        const image = document.createElement("img");
-        image.src = view.dataUrl;
-        image.alt = "";
-
-        const label = document.createElement("span");
-        label.textContent = viewLabel(view.name);
-        button.append(image, label);
-        return button;
-      }));
-    }
+      const ownedMaterials = sourceMaterials.map((material) => {
+        const owned = material.clone();
+        owned.userData = { ...material.userData, cmfPart: partId };
+        if (owned.aoMap) {
+          owned.aoMap = null;
+          owned.aoMapIntensity = 0;
+        }
+        if (owned.transparent) owned.depthWrite = false;
+        return owned;
+      });
+      object.material = Array.isArray(object.material) ? ownedMaterials : ownedMaterials[0];
+    });
   }
 
-  function selectCmfView(name) {
-    selectedView = name;
-    renderPreviewImage();
-    schedulePreviewRender(0);
+  function classifyLiveMesh(object, globalBounds) {
+    const state = rendererState;
+    if (!state) return "";
+    const bounds = new state.modules.Box3().setFromObject(object);
+    if (bounds.isEmpty()) return "";
+    const size = bounds.getSize(new state.modules.Vector3());
+    const center = bounds.getCenter(new state.modules.Vector3());
+    const globalSize = globalBounds.getSize(new state.modules.Vector3());
+    const leftEdge = globalBounds.min.x + globalSize.x * 0.08;
+    const rightEdge = globalBounds.max.x - globalSize.x * 0.08;
+    const topEdge = globalBounds.max.y - globalSize.y * 0.22;
+    const bottomEdge = globalBounds.min.y + globalSize.y * 0.08;
+    const nearSide = center.x < leftEdge || center.x > rightEdge;
+    const sideControl = nearSide
+      && size.x < globalSize.x * 0.08
+      && size.z < globalSize.z * 0.35
+      && size.y > globalSize.y * 0.035
+      && size.y < globalSize.y * 0.18;
+    if (sideControl) return "";
+
+    const bottomPart = center.y < bottomEdge
+      && size.z < globalSize.z * 0.35
+      && size.y < globalSize.y * 0.06;
+    if (bottomPart && size.x > globalSize.x * 0.25) return "usbC";
+    if (bottomPart && size.x > globalSize.x * 0.05) return "usbC";
+
+    const backGlass = Math.abs(center.x) < globalSize.x * 0.12
+      && center.z < globalBounds.min.z + globalSize.z * 0.38
+      && size.x > globalSize.x * 0.72
+      && size.y > globalSize.y * 0.75;
+    if (backGlass) return "backGlass";
+
+    const sideFrame = nearSide
+      && size.y > globalSize.y * 0.45
+      && size.z > globalSize.z * 0.45;
+    if (sideFrame) return "frame";
+
+    const mainFrame = Math.abs(center.x) < globalSize.x * 0.12
+      && size.x > globalSize.x * 0.88
+      && size.y > globalSize.y * 0.85
+      && size.z > globalSize.z * 0.18;
+    if (mainFrame) return "frame";
+
+    const cameraArea = center.y > topEdge
+      && center.x > globalBounds.min.x + globalSize.x * 0.45
+      && size.x > globalSize.x * 0.12
+      && size.y > globalSize.y * 0.08;
+    return cameraArea ? "cameraPlate" : "";
   }
 
-  function viewLabel(name) {
-    return VIEW_LABELS[name] || name.replace(/^\d+-/, "").replace(/-/g, " ");
-  }
-
-  function schedulePreviewRender(delay = 420) {
-    window.clearTimeout(previewRefreshTimer);
-    if (canRenderViews === false) {
-      setPreviewRefreshing(false);
+  function scheduleModelRender(delay = 0) {
+    window.clearTimeout(modelRefreshTimer);
+    if (canRenderModel === false) {
+      setModelRefreshing(false);
       setCmfStatus(t("cmf_ready"));
       return;
     }
-    setPreviewRefreshing(true);
-    setCmfStatus(t("cmf_preview_rendering"));
-    previewRefreshTimer = window.setTimeout(renderLivePreview, delay);
+    const requestId = modelRequestId + 1;
+    modelRequestId = requestId;
+    modelAbortController?.abort();
+    modelAbortController = null;
+    setModelRefreshing(true);
+    setCmfStatus(t("cmf_model_rendering"));
+    modelRefreshTimer = window.setTimeout(() => renderInteractiveModel(requestId), delay);
   }
 
-  function cancelPreviewRender() {
-    window.clearTimeout(previewRefreshTimer);
-    previewRefreshTimer = 0;
-    previewRequestId += 1;
-    if (previewAbortController) previewAbortController.abort();
-    previewAbortController = null;
-    setPreviewRefreshing(false);
+  function cancelModelRender() {
+    window.clearTimeout(modelRefreshTimer);
+    modelRefreshTimer = 0;
+    modelRequestId += 1;
+    modelAbortController?.abort();
+    modelAbortController = null;
+    setModelRefreshing(false);
   }
 
-  async function renderLivePreview() {
-    const requestId = previewRequestId + 1;
-    previewRequestId = requestId;
-    if (previewAbortController) previewAbortController.abort();
-    previewAbortController = new AbortController();
+  async function renderInteractiveModel(requestId) {
+    if (requestId !== modelRequestId) return;
+    modelAbortController = new AbortController();
+    const requestedRecipe = JSON.parse(JSON.stringify(recipe));
     try {
-      const response = await fetch("/api/cmf/render-preview", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ recipe, viewName: selectedView || "02-back" }),
-        signal: previewAbortController.signal,
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.detail || data.error || response.statusText);
-      if (requestId !== previewRequestId || !data.view) return;
-      upsertCurrentView(data.view);
-      selectedView = data.view.name;
-      renderPreviewImage();
-      setCmfStatus(t("cmf_preview_done"));
+      const [state, response] = await Promise.all([
+        ensureRenderer(),
+        fetch("/api/cmf/export-usdz", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ recipe: requestedRecipe }),
+          signal: modelAbortController.signal,
+        }),
+      ]);
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.detail || data.error || response.statusText);
+      }
+      const buffer = await response.arrayBuffer();
+      if (requestId !== modelRequestId) return;
+
+      const nextModel = new state.modules.USDLoader().parse(buffer);
+      nextModel.updateMatrixWorld(true);
+      const nextBounds = new state.modules.Box3().setFromObject(nextModel);
+      if (nextBounds.isEmpty()) {
+        disposeModel(nextModel);
+        throw new Error(t("cmf_model_empty"));
+      }
+      if (requestId !== modelRequestId) {
+        disposeModel(nextModel);
+        return;
+      }
+
+      const previousModel = state.model;
+      prepareLiveMaterials(nextModel, nextBounds);
+      state.scene.add(nextModel);
+      state.model = nextModel;
+      state.bounds = nextBounds;
+      applyLiveRecipe(nextModel);
+      if (previousModel) {
+        state.scene.remove(previousModel);
+        disposeModel(previousModel);
+      }
+      state.canvas.hidden = false;
+      const empty = cmfEl("cmf-preview-empty");
+      if (empty) empty.hidden = true;
+      if (!previousModel) {
+        state.viewIsCustom = false;
+        syncViewControls();
+        applyCmfView(selectedView, { animate: false });
+      } else {
+        renderModelFrame();
+      }
+      setCmfStatus(t("cmf_model_done"));
     } catch (error) {
       if (error?.name === "AbortError") return;
-      if (requestId === previewRequestId) setCmfStatus(`${t("cmf_preview_failed")} ${error.message}`);
+      if (requestId === modelRequestId) {
+        setCmfStatus(`${t("cmf_model_failed")} ${error.message}`);
+        if (!rendererState?.model) {
+          const empty = cmfEl("cmf-preview-empty");
+          if (empty) {
+            empty.hidden = false;
+            empty.textContent = t("cmf_model_failed");
+          }
+        }
+        playSystemSound?.("alert");
+      }
     } finally {
-      if (requestId === previewRequestId) {
-        previewAbortController = null;
-        setPreviewRefreshing(false);
+      if (requestId === modelRequestId) {
+        modelAbortController = null;
+        setModelRefreshing(false);
       }
     }
   }
 
-  function upsertCurrentView(view) {
-    const index = currentViews.findIndex((item) => item.name === view.name);
-    if (index >= 0) currentViews[index] = view;
-    else currentViews = [...currentViews, view].sort((a, b) => a.name.localeCompare(b.name));
+  function disposeModel(model) {
+    model?.traverse((object) => {
+      object.geometry?.dispose?.();
+      const materials = Array.isArray(object.material) ? object.material : [object.material];
+      materials.filter(Boolean).forEach((material) => {
+        Object.values(material).forEach((value) => value?.isTexture && value.dispose());
+        material.dispose?.();
+      });
+    });
   }
 
-  function setPreviewRefreshing(refreshing) {
+  function selectCmfView(name) {
+    if (!VIEW_DEFINITIONS.some((view) => view.name === name)) return;
+    selectedView = name;
+    if (rendererState) rendererState.viewIsCustom = false;
+    syncViewControls();
+    applyCmfView(name, { animate: true });
+  }
+
+  function resetCmfView() {
+    if (!selectedView) selectedView = "02-back";
+    if (rendererState) rendererState.viewIsCustom = false;
+    syncViewControls();
+    applyCmfView(selectedView, { animate: true });
+  }
+
+  function syncViewControls() {
+    document.querySelectorAll("[data-cmf-view]").forEach((button) => {
+      const selected = !rendererState?.viewIsCustom && button.dataset.cmfView === selectedView;
+      button.classList.toggle("is-active", selected);
+      button.setAttribute("aria-pressed", String(selected));
+      button.tabIndex = button.dataset.cmfView === selectedView ? 0 : -1;
+    });
+  }
+
+  function applyCmfView(name, options = {}) {
+    const state = rendererState;
+    const view = VIEW_DEFINITIONS.find((item) => item.name === name);
+    if (!state?.model || !state.bounds || !view) return;
+
+    const { Vector3 } = state.modules;
+    const center = state.bounds.getCenter(new Vector3());
+    const size = state.bounds.getSize(new Vector3());
+    const targetOffset = view.targetOffset || [0, 0, 0];
+    const target = center.clone().add(new Vector3(
+      targetOffset[0] * size.x,
+      targetOffset[1] * size.y,
+      targetOffset[2] * size.z,
+    ));
+    const direction = new Vector3(...view.direction).normalize();
+    const up = new Vector3(...view.up).normalize();
+    const right = new Vector3().crossVectors(up, direction).normalize();
+    const trueUp = new Vector3().crossVectors(direction, right).normalize();
+    const rect = state.viewport.getBoundingClientRect();
+    const aspect = Math.max(rect.width, 1) / Math.max(rect.height, 1);
+    let halfWidth = 0;
+    let halfHeight = 0;
+    for (const x of [state.bounds.min.x, state.bounds.max.x]) {
+      for (const y of [state.bounds.min.y, state.bounds.max.y]) {
+        for (const z of [state.bounds.min.z, state.bounds.max.z]) {
+          const local = new Vector3(x, y, z).sub(target);
+          halfWidth = Math.max(halfWidth, Math.abs(local.dot(right)));
+          halfHeight = Math.max(halfHeight, Math.abs(local.dot(trueUp)));
+        }
+      }
+    }
+    const nextHalfHeight = Math.max(halfHeight, halfWidth / aspect) * 1.14 * view.frame;
+    const distance = Math.max(size.length() * 2.6, 1);
+    const position = target.clone().add(direction.multiplyScalar(distance));
+    const animate = options.animate !== false && !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    animateCameraTo(position, target, up, nextHalfHeight, animate);
+  }
+
+  function animateCameraTo(position, target, up, halfHeight, animate) {
+    const state = rendererState;
+    if (!state) return;
+    window.cancelAnimationFrame(cameraAnimationFrame);
+    const startPosition = state.camera.position.clone();
+    const startTarget = state.controls.target.clone();
+    const startUp = state.camera.up.clone();
+    const startHalfHeight = state.viewHalfHeight;
+    const startZoom = state.camera.zoom;
+    const startedAt = performance.now();
+    const duration = animate ? 360 : 0;
+
+    const step = (now) => {
+      const progress = duration ? Math.min((now - startedAt) / duration, 1) : 1;
+      const eased = 1 - Math.pow(1 - progress, 3);
+      state.camera.position.lerpVectors(startPosition, position, eased);
+      state.controls.target.lerpVectors(startTarget, target, eased);
+      state.camera.up.lerpVectors(startUp, up, eased).normalize();
+      state.camera.zoom = startZoom + (1 - startZoom) * eased;
+      updateCameraFrustum(startHalfHeight + (halfHeight - startHalfHeight) * eased);
+      state.camera.lookAt(state.controls.target);
+      state.camera.updateMatrixWorld();
+      state.controls.update();
+      renderModelFrame();
+      if (progress < 1) cameraAnimationFrame = window.requestAnimationFrame(step);
+    };
+    cameraAnimationFrame = window.requestAnimationFrame(step);
+  }
+
+  function setModelRefreshing(refreshing) {
     const panel = document.querySelector(".cmf-preview-panel");
     panel?.classList.toggle("is-refreshing", refreshing);
     panel?.setAttribute("aria-busy", String(refreshing));
     const indicator = cmfEl("cmf-live-indicator");
     if (indicator) {
       indicator.dataset.state = refreshing ? "loading" : "ready";
-      indicator.textContent = t(refreshing ? "cmf_live_updating" : "cmf_live_preview");
+      indicator.textContent = t(refreshing ? "cmf_model_updating" : "cmf_model_interactive");
     }
   }
 
@@ -555,7 +914,7 @@
   }
 
   function setBusy(busy, message = "") {
-    ["cmf-shuffle", "cmf-reset", "cmf-render", "cmf-export"].forEach((id) => {
+    ["cmf-shuffle", "cmf-reset", "cmf-reset-view", "cmf-export"].forEach((id) => {
       const button = cmfEl(id);
       if (button) button.disabled = busy || button.dataset.capabilityDisabled === "true";
     });
@@ -579,7 +938,7 @@
         export: exportUsdz,
         shuffle: shuffleRecipe,
         reset: resetRecipe,
-        render: renderViews,
+        "reset-view": resetCmfView,
         "view-front": () => selectCmfView("01-front"),
         "view-back": () => selectCmfView("02-back"),
         "view-side": () => selectCmfView("05-buttons-side"),

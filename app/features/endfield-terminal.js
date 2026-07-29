@@ -55,11 +55,11 @@ function saveEndfieldRecentQuery(query) {
 }
 
 function endfieldRoutePayload() {
-  if (typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudConfig?.provider && cloudConfig?.apiKey) {
+  if (typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudConfig?.provider && cloudCredentialReady()) {
     return {
       model: cloudConfig.model || "deepseek-v4-flash",
       _cloud_active: true,
-      _cloud_api_key: cloudConfig.apiKey,
+      ...cloudCredentialTransportFields(),
       _cloud_base_url: cloudConfig.baseUrl || "https://api.deepseek.com",
       _cloud_model: cloudConfig.model || "deepseek-v4-flash",
     };
@@ -183,7 +183,7 @@ async function askEndfield(query) {
 
   try {
     let data;
-    const cloudActive = typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudConfig.apiKey;
+    const cloudActive = typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudCredentialReady();
     if (cloudActive) {
       const response = await fetch("/api/endfield/ask", {
         method: "POST",

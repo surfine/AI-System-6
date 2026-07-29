@@ -16,7 +16,7 @@
     <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png" />
     <link rel="manifest" href="assets/app-icon/manifest.json" />
-    <link rel="stylesheet" href="styles.bundle.css?v=20260729.15" />
+    <link rel="stylesheet" href="styles.bundle.css?v=20260730.13" />
   </head>
   <body class="is-booting">
     <header class="menu-bar" aria-label="System menu">
@@ -489,7 +489,7 @@
             </div>
 
             <button class="btn default control-wide-button" type="button" id="cloud-check-status" data-i18n="cloud_check_status">Check Status</button>
-            <p class="hint control-status" id="cloud-status-hint" data-i18n="cloud_status_hint">Connect once. This device remembers the key; project files and exports never include it.</p>
+            <p class="hint control-status" id="cloud-status-hint" data-i18n="cloud_status_hint">The key is kept for this tab session only; project files and exports never include it.</p>
           </section>
           <div id="control-panel-general" role="tabpanel" aria-labelledby="control-tab-general" data-control-panel="general" hidden>
           <section class="control-section">
@@ -861,9 +861,15 @@
               <div class="teachtext-actions quick-draft-editor-actions">
                 <div class="teachtext-command-group" aria-label="Quick Draft commands">
                   <button class="btn" type="button" id="quick-draft-toggle-preview" data-i18n="preview">Preview</button>
-                  <button class="btn" type="button" data-mde-focus-cycle data-mde-target="#quick-draft-draft" data-i18n="teachtext_focus_off">Focus: Off</button>
+                  <button class="btn" type="button" data-mde-focus-cycle data-mde-target="#quick-draft-draft" data-i18n-aria-label="teachtext_focus_off" aria-label="Focus: Off">
+                    <span class="mobile-control-long" data-i18n="teachtext_focus_off">Focus: Off</span>
+                    <span class="mobile-control-short" data-i18n="focus">Focus</span>
+                  </button>
                   <details id="quick-draft-tools" class="teachtext-command-menu quick-draft-command-menu">
-                    <summary class="btn" data-i18n="teachtext_commands">Commands</summary>
+                    <summary class="btn">
+                      <span class="mobile-control-long" data-i18n="teachtext_commands">Commands</span>
+                      <span class="mobile-control-short" data-i18n="more">More</span>
+                    </summary>
                     <div class="teachtext-command-popover quick-draft-command-popover">
                       <section class="quick-draft-command-section" aria-label="Quick Draft intake">
                         <b data-i18n="quick_draft_command_intake">Material</b>
@@ -967,8 +973,14 @@
             </div>
             <p class="cmf-autosave-note" data-i18n="cmf_autosave">Changes are saved on this Mac.</p>
             <div class="cmf-button-stack">
-              <button class="btn default" type="button" id="cmf-render" data-i18n="cmf_render_views">Render Views</button>
-              <button class="btn" type="button" id="cmf-export" data-i18n="cmf_export_usdz">Export USDZ</button>
+              <button class="btn default" type="button" id="cmf-reset-view" data-i18n-aria-label="cmf_reset_view" aria-label="Reset View">
+                <span class="mobile-control-long" data-i18n="cmf_reset_view">Reset View</span>
+                <span class="mobile-control-short" data-i18n="cmf_reset_view_short">View</span>
+              </button>
+              <button class="btn" type="button" id="cmf-export" data-i18n-aria-label="cmf_export_usdz" aria-label="Export USDZ">
+                <span class="mobile-control-long" data-i18n="cmf_export_usdz">Export USDZ</span>
+                <span class="mobile-control-short" data-i18n="cmf_export_short">Export</span>
+              </button>
             </div>
           </aside>
           <section class="cmf-preview-panel" aria-labelledby="cmf-preview-title">
@@ -977,24 +989,13 @@
                 <h3 id="cmf-preview-title" data-i18n="preview">Preview</h3>
                 <p id="cmf-selection-summary"></p>
               </div>
-              <span class="cmf-live-indicator" id="cmf-live-indicator" data-i18n="cmf_live_preview">Live preview</span>
+              <span class="cmf-live-indicator" id="cmf-live-indicator" data-i18n="cmf_model_interactive">Interactive USDZ</span>
             </header>
-            <div class="cmf-preview-stage">
-              <div id="cmf-preview-fallback" class="cmf-preview-fallback">
-                <div class="cmf-device-schematic" aria-hidden="true">
-                  <span class="cmf-device-frame" data-cmf-schematic="frame">
-                    <span class="cmf-device-back" data-cmf-schematic="backGlass">
-                      <span class="cmf-device-camera" data-cmf-schematic="cameraPlate">
-                        <i></i><i></i><i></i>
-                      </span>
-                    </span>
-                  </span>
-                </div>
-                <p id="cmf-preview-empty" class="cmf-preview-empty" data-i18n="cmf_preview_empty">No preview rendered.</p>
-              </div>
-              <img id="cmf-preview-image" alt="CMF preview" hidden />
+            <div class="cmf-preview-stage" id="cmf-model-viewport">
+              <canvas id="cmf-model-canvas" tabindex="0" aria-label="Interactive CMF model" data-i18n-aria-label="cmf_model_canvas" hidden></canvas>
+              <p id="cmf-preview-empty" class="cmf-preview-empty" data-i18n="cmf_model_loading">Loading interactive model…</p>
             </div>
-            <div class="cmf-view-strip" id="cmf-view-strip" aria-label="CMF rendered views"></div>
+            <div class="cmf-view-strip" id="cmf-view-strip" role="toolbar" aria-label="Model views" data-i18n-aria-label="cmf_model_views"></div>
           </section>
           <aside class="cmf-panel cmf-parts-panel">
             <header class="cmf-parts-head">
@@ -1282,7 +1283,7 @@
           <button class="resize-box" aria-label="Resize"></button>
         </div>
         <div class="details-bar">
-          <span data-i18n="nine_items">9 items</span>
+          <span data-i18n="seven_items">7 items</span>
           <div class="view-controls" data-view-window="disk" aria-label="View">
             <button class="view-btn is-active" type="button" data-view="icon" aria-label="Icon view"></button>
             <button class="view-btn" type="button" data-view="list" aria-label="List view"></button>
@@ -1306,17 +1307,9 @@
             <span class="sys-icon" data-system-icon="projectDisk" aria-hidden="true"></span>
             <span data-i18n="project_disk">Project Hard Disk</span>
           </button>
-          <button class="finder-item" data-action="open-documents">
-            <span class="sys-icon" data-system-icon="documents" aria-hidden="true"></span>
-            <span data-i18n="documents">Documents</span>
-          </button>
           <button class="finder-item" data-action="open-project-cd">
             <span class="sys-icon" data-system-icon="projectDisc" aria-hidden="true"></span>
             <span data-i18n="project_cd">Project CD</span>
-          </button>
-          <button class="finder-item" data-action="open-import-utility">
-            <span class="sys-icon" data-system-icon="importUtility" aria-hidden="true"></span>
-            <span data-i18n="import_utility">Write to Project Hard Disk</span>
           </button>
           <button class="finder-item" data-action="open-rag">
             <span class="sys-icon" data-system-icon="fileFloppy" aria-hidden="true"></span>
@@ -1448,7 +1441,6 @@
             <div class="project-finder-actions">
               <button class="btn" type="button" data-action="open-import-utility" data-i18n="add_ellipsis">Add…</button>
               <button class="btn" type="button" data-action="open-project-backup" data-i18n="project_backup_action" data-i18n-aria-label="open_project_backup">Backup…</button>
-              <button class="btn" type="button" data-action="new-folder" data-i18n="new_folder">New Folder</button>
             </div>
           </div>
           <div class="project-disk-content-grid">
@@ -1473,8 +1465,8 @@
         </div>
         <div class="window-pane documents-pane">
           <div class="documents-toolbar">
-            <button class="btn" type="button" id="documents-up" data-i18n="all_documents">All Documents</button>
-            <span id="documents-folder-label" data-i18n="all_folders">All folders</span>
+            <button class="btn" type="button" id="documents-up" data-i18n="all_documents" hidden>All Documents</button>
+            <span id="documents-folder-label" class="visually-hidden" data-i18n="all_folders">All folders</span>
             <input id="new-folder-name" type="text" value="Project Notes" />
             <button class="btn" type="button" id="new-folder" data-i18n="new_folder">New Folder</button>
           </div>
@@ -1712,7 +1704,7 @@
             </div>
           </form>
           <form id="scrapbook-ask-form" class="scrapbook-ask-form">
-            <label for="scrapbook-question" data-i18n="scrapbook_ask_label">Ask these scraps</label>
+            <label class="visually-hidden" for="scrapbook-question" data-i18n="scrapbook_ask_label">Ask these scraps</label>
             <div class="scrapbook-ask-row">
               <input id="scrapbook-question" type="text" data-i18n-placeholder="scrapbook_ask_hint" placeholder="Ask selected Scrapbook clips..." />
               <button class="btn default" type="submit" id="scrapbook-ask-button" data-i18n="scrapbook_ask_button">Ask Scraps</button>
@@ -1779,7 +1771,10 @@
               <button class="btn" type="button" id="reader-clip-translate-button" data-action="reader-clip-translate" data-i18n="clip_translate" disabled hidden>Clip + Translate</button>
               <button class="btn" type="button" id="reader-docmap-button" data-action="reader-make-docmap" data-i18n="docmap" disabled>DocMap</button>
               <button class="btn" type="button" id="reader-open-clio-stage" data-action="reader-open-clio-stage" data-i18n="open_in_clio_stage" disabled hidden>Open in ClioStage</button>
-              <button class="btn" type="button" id="reader-send-manuscript" data-action="reader-send-manuscript" data-i18n="send_copy_to_manuscript" disabled>Send Copy to Manuscript</button>
+              <button class="btn" type="button" id="reader-send-manuscript" data-action="reader-send-manuscript" data-i18n-aria-label="send_copy_to_manuscript" disabled>
+                <span class="mobile-control-long" data-i18n="send_copy_to_manuscript">Send Copy to Manuscript</span>
+                <span class="mobile-control-short" data-i18n="manuscript">Manuscript</span>
+              </button>
             </div>
           </div>
           <div class="reader-workspace" id="reader-workspace" data-i18n-drop-label="reader_drop_files">
@@ -1792,10 +1787,13 @@
             </div>
           </div>
           <form id="reader-ask-form" class="reader-ask-form">
-            <label for="reader-question" data-i18n="reader_ask_label">Ask this source</label>
+            <label class="visually-hidden" for="reader-question" data-i18n="reader_ask_label">Ask this source</label>
             <div class="reader-ask-row">
               <input id="reader-question" type="text" data-i18n-placeholder="reader_ask_hint" placeholder="Ask this Reader source..." />
-              <button class="btn default" type="submit" id="reader-ask-button" data-i18n="reader_ask_button">Ask Source</button>
+              <button class="btn default" type="submit" id="reader-ask-button" data-i18n-aria-label="reader_ask_button">
+                <span class="mobile-control-long" data-i18n="reader_ask_button">Ask Source</span>
+                <span class="mobile-control-short" data-i18n="ask">Ask</span>
+              </button>
             </div>
           </form>
         </div>
@@ -1832,8 +1830,14 @@
               </button>
               <span class="time-machine-navigation-spacer"></span>
               <div class="time-machine-view-switch">
-                <button class="btn default" type="button" id="time-machine-web-view" data-action="time-machine-web-view" data-i18n="web_view">Web View</button>
-                <button class="btn" type="button" id="time-machine-reader-view" data-action="time-machine-reader-view" data-i18n="reading_view" disabled>Reading View</button>
+                <button class="btn default" type="button" id="time-machine-web-view" data-action="time-machine-web-view" data-i18n-aria-label="web_view">
+                  <span class="mobile-control-long" data-i18n="web_view">Web View</span>
+                  <span class="mobile-control-short" data-i18n="web_view_short">Web</span>
+                </button>
+                <button class="btn" type="button" id="time-machine-reader-view" data-action="time-machine-reader-view" data-i18n-aria-label="reading_view" disabled>
+                  <span class="mobile-control-long" data-i18n="reading_view">Reading View</span>
+                  <span class="mobile-control-short" data-i18n="reading_view_short">Read</span>
+                </button>
               </div>
             </div>
             <form class="time-machine-address-form" id="time-machine-address-form">
@@ -2031,7 +2035,7 @@
           <span id="find-path-count">0 results</span>
         </div>
         <form id="find-path-form" class="window-pane find-path-pane">
-          <label for="find-path-query" data-i18n="query">Query</label>
+          <label class="visually-hidden" for="find-path-query" data-i18n="query">Query</label>
           <div class="find-path-query-row">
             <input id="find-path-query" type="text" data-i18n-placeholder="searcher_web_placeholder" placeholder="Search the web..." />
             <button class="btn default" type="submit" data-i18n="search">Search</button>
@@ -2044,9 +2048,15 @@
           <div id="find-path-results" class="find-path-results"></div>
 
           <div class="button-row">
-            <button class="btn" type="button" data-action="open-selected-in-reader" data-i18n="open_in_reader">Open in Reader</button>
+            <button class="btn" type="button" data-action="open-selected-in-reader" data-i18n-aria-label="open_in_reader">
+              <span class="mobile-control-long" data-i18n="open_in_reader">Open in Reader</span>
+              <span class="mobile-control-short" data-i18n="searcher_open_reader_short">Reader</span>
+            </button>
             <button class="btn" type="button" data-action="clip-selected-find-path" data-i18n="clip">Clip</button>
-            <button class="btn" type="button" id="copy-find-path" data-action="copy-search-result-markdown" data-i18n="copy_markdown">Copy Markdown</button>
+            <button class="btn" type="button" id="copy-find-path" data-action="copy-search-result-markdown" data-i18n-aria-label="copy_markdown">
+              <span class="mobile-control-long" data-i18n="copy_markdown">Copy Markdown</span>
+              <span class="mobile-control-short" data-i18n="copy">Copy</span>
+            </button>
             <button class="btn" type="button" id="insert-find-path" data-action="insert-search-result" data-i18n="insert">Insert</button>
           </div>
         </form>
@@ -2221,15 +2231,29 @@
                 </div>
               </div>
               <div class="docmap-toolbar-group">
-                <button class="btn" type="button" id="docmap-fit-view" data-i18n="docmap_fit_view">适应窗口</button>
-                <button class="btn" type="button" id="docmap-zoom-out" data-i18n="docmap_zoom_out">缩小</button>
-                <button class="btn" type="button" id="docmap-zoom-in" data-i18n="docmap_zoom_in">放大</button>
+                <button class="btn" type="button" id="docmap-fit-view" data-i18n-aria-label="docmap_fit_view">
+                  <span class="docmap-control-long" data-i18n="docmap_fit_view">适应窗口</span>
+                  <span class="docmap-control-short" data-i18n="docmap_fit_short">适应</span>
+                </button>
+                <button class="btn docmap-mobile-focus" type="button" id="docmap-focus-root" data-i18n-aria-label="docmap_focus_root">
+                  <span class="docmap-control-long" data-i18n="docmap_focus_root">聚焦根节点</span>
+                  <span class="docmap-control-short" data-i18n="docmap_focus_short">根节点</span>
+                </button>
+                <button class="btn" type="button" id="docmap-zoom-out" data-i18n-aria-label="docmap_zoom_out">
+                  <span class="docmap-control-long" data-i18n="docmap_zoom_out">缩小</span>
+                  <span class="docmap-control-short" aria-hidden="true">−</span>
+                </button>
+                <button class="btn" type="button" id="docmap-zoom-in" data-i18n-aria-label="docmap_zoom_in">
+                  <span class="docmap-control-long" data-i18n="docmap_zoom_in">放大</span>
+                  <span class="docmap-control-short" aria-hidden="true">+</span>
+                </button>
               </div>
             </div>
             <div id="docmap-drop-zone" class="docmap-drop-zone" data-i18n-drop-label="docmap_drop_files">
               <div id="docmap-tree" class="docmap-tree window-frame-scroller">
                 <div class="empty-folder-note docmap-empty-note" data-i18n="docmap_empty">Make a DocMap from Reader, TeachText, Clipboard, or saved Markdown.</div>
               </div>
+              <p class="docmap-mobile-hint" data-i18n="docmap_mobile_hint">Drag to explore · pinch to zoom · tap a branch to fold it</p>
             </div>
           </div>
           <form id="docmap-ask-form" class="docmap-ask-form">
@@ -2262,10 +2286,22 @@
               <button class="btn clio-stage-nav-button" type="button" id="clio-stage-next" data-i18n-aria-label="next_page" aria-label="Next slide">→</button>
             </div>
             <div class="clio-stage-view-switcher" aria-label="ClioStage views">
-              <button class="btn" type="button" id="clio-stage-source-view" data-i18n="source_view">Source</button>
-              <button class="btn default" type="button" id="clio-stage-document-view" data-i18n="document_view">Document View</button>
-              <button class="btn" type="button" id="clio-stage-slide-view" data-i18n="slide_view">Slide View</button>
-              <button class="btn" type="button" id="clio-stage-cue-view" data-i18n="cue_view">Cue View</button>
+              <button class="btn" type="button" id="clio-stage-source-view" data-i18n-aria-label="source_view">
+                <span class="mobile-control-long" data-i18n="source_view">Source</span>
+                <span class="mobile-control-short" data-i18n="source_view_short">Source</span>
+              </button>
+              <button class="btn default" type="button" id="clio-stage-document-view" data-i18n-aria-label="document_view">
+                <span class="mobile-control-long" data-i18n="document_view">Document View</span>
+                <span class="mobile-control-short" data-i18n="document_view_short">Doc</span>
+              </button>
+              <button class="btn" type="button" id="clio-stage-slide-view" data-i18n-aria-label="slide_view">
+                <span class="mobile-control-long" data-i18n="slide_view">Slide View</span>
+                <span class="mobile-control-short" data-i18n="slide_view_short">Slide</span>
+              </button>
+              <button class="btn" type="button" id="clio-stage-cue-view" data-i18n-aria-label="cue_view">
+                <span class="mobile-control-long" data-i18n="cue_view">Cue View</span>
+                <span class="mobile-control-short" data-i18n="cue_view_short">Cue</span>
+              </button>
             </div>
           </div>
           <div id="clio-stage-viewport" class="clio-stage-viewport window-frame-scroller" tabindex="0">
@@ -2273,10 +2309,13 @@
           </div>
           <input id="clio-stage-file-input" class="visually-hidden" type="file" multiple />
           <form id="clio-stage-ask-form" class="clio-stage-ask-form">
-            <label for="clio-stage-question" data-i18n="clio_stage_ask_label">Ask this deck</label>
+            <label class="visually-hidden" for="clio-stage-question" data-i18n="clio_stage_ask_label">Ask this deck</label>
             <div class="clio-stage-ask-row">
               <input id="clio-stage-question" type="text" data-i18n-placeholder="clio_stage_ask_hint" placeholder="Ask this slide deck..." />
-              <button class="btn default" type="submit" id="clio-stage-ask-button" data-i18n="clio_stage_ask_button">Ask Deck</button>
+              <button class="btn default" type="submit" id="clio-stage-ask-button" data-i18n-aria-label="clio_stage_ask_button">
+                <span class="mobile-control-long" data-i18n="clio_stage_ask_button">Ask Deck</span>
+                <span class="mobile-control-short" data-i18n="ask">Ask</span>
+              </button>
             </div>
           </form>
         </div>
@@ -2289,7 +2328,10 @@
           <button class="resize-box" aria-label="Resize"></button>
         </div>
         <div class="details-bar clio-chart-details-bar">
-          <button class="btn details-bar-button" type="button" id="clio-chart-import-file" data-i18n="clio_chart_import_file">Open Data File...</button>
+          <button class="btn details-bar-button" type="button" id="clio-chart-import-file" data-i18n-aria-label="clio_chart_import_file">
+            <span class="mobile-control-long" data-i18n="clio_chart_import_file">Open Data File...</span>
+            <span class="mobile-control-short" data-i18n="open">Open...</span>
+          </button>
           <span id="clio-chart-status" data-i18n="clio_chart_empty">Paste a table to draw it.</span>
           <span id="clio-chart-owner" class="clio-chart-owner" hidden></span>
         </div>
@@ -2305,12 +2347,30 @@
                 <b id="clio-chart-metric"></b>
                 <span id="clio-chart-unit"></span>
                 <div class="clio-chart-projection-switcher" aria-label="ClioChart projections">
-                  <button class="btn default" type="button" id="clio-chart-bars-view" data-i18n="clio_chart_bars">Ranked Bars</button>
-                  <button class="btn" type="button" id="clio-chart-matrix-view" data-i18n="clio_chart_matrix">Comparison</button>
-                  <button class="btn" type="button" id="clio-chart-trace-view" data-i18n="clio_chart_trace">Trace</button>
-                  <button class="btn" type="button" id="clio-chart-grid-view" data-i18n="clio_chart_grid">Grid</button>
-                  <button class="btn" type="button" id="clio-chart-score-view" data-i18n="clio_chart_score">Score</button>
-                  <button class="btn" type="button" id="clio-chart-source-view" data-i18n="source_view">Source</button>
+                  <button class="btn default" type="button" id="clio-chart-bars-view" data-i18n-aria-label="clio_chart_bars">
+                    <span class="mobile-control-long" data-i18n="clio_chart_bars">Ranked Bars</span>
+                    <span class="mobile-control-short" data-i18n="clio_chart_bars_short">Bars</span>
+                  </button>
+                  <button class="btn" type="button" id="clio-chart-matrix-view" data-i18n-aria-label="clio_chart_matrix">
+                    <span class="mobile-control-long" data-i18n="clio_chart_matrix">Comparison</span>
+                    <span class="mobile-control-short" data-i18n="clio_chart_matrix_short">Compare</span>
+                  </button>
+                  <button class="btn" type="button" id="clio-chart-trace-view" data-i18n-aria-label="clio_chart_trace">
+                    <span class="mobile-control-long" data-i18n="clio_chart_trace">Trace</span>
+                    <span class="mobile-control-short" data-i18n="clio_chart_trace_short">Trace</span>
+                  </button>
+                  <button class="btn" type="button" id="clio-chart-grid-view" data-i18n-aria-label="clio_chart_grid">
+                    <span class="mobile-control-long" data-i18n="clio_chart_grid">Grid</span>
+                    <span class="mobile-control-short" data-i18n="clio_chart_grid_short">Grid</span>
+                  </button>
+                  <button class="btn" type="button" id="clio-chart-score-view" data-i18n-aria-label="clio_chart_score">
+                    <span class="mobile-control-long" data-i18n="clio_chart_score">Score</span>
+                    <span class="mobile-control-short" data-i18n="clio_chart_score_short">Score</span>
+                  </button>
+                  <button class="btn" type="button" id="clio-chart-source-view" data-i18n-aria-label="source_view">
+                    <span class="mobile-control-long" data-i18n="source_view">Source</span>
+                    <span class="mobile-control-short" data-i18n="clio_chart_source_short">Source</span>
+                  </button>
                 </div>
               </div>
               <div id="clio-chart-view" class="clio-chart-view window-frame-scroller">
@@ -2334,8 +2394,14 @@
         </div>
         <div class="lc-toolbar" role="toolbar" aria-label="Cover tools" data-i18n-aria-label="liquid_cover_tools">
           <div class="lc-toolbar-create">
-            <button class="btn" type="button" id="lc-add-layer" data-i18n="liquid_cover_add">Add Text</button>
-            <button class="btn" type="button" id="lc-add-shape" data-i18n="liquid_cover_add_shape">Add Shape</button>
+            <button class="btn" type="button" id="lc-add-layer" data-i18n-aria-label="liquid_cover_add">
+              <span class="mobile-control-long" data-i18n="liquid_cover_add">Add Text</span>
+              <span class="mobile-control-short" data-i18n="liquid_cover_add_short">+ Text</span>
+            </button>
+            <button class="btn" type="button" id="lc-add-shape" data-i18n-aria-label="liquid_cover_add_shape">
+              <span class="mobile-control-long" data-i18n="liquid_cover_add_shape">Add Shape</span>
+              <span class="mobile-control-short" data-i18n="liquid_cover_add_shape_short">+ Shape</span>
+            </button>
             <input type="file" id="lc-shape-file" accept="image/png,image/webp,image/svg+xml,image/jpeg" hidden>
           </div>
           <div class="lc-toolbar-history" role="group" aria-label="Edit history" data-i18n-aria-label="liquid_cover_history">
@@ -2347,9 +2413,18 @@
             </button>
           </div>
           <div class="lc-toolbar-modes" role="tablist" aria-label="Inspector" data-i18n-aria-label="liquid_cover_inspector">
-            <button class="lc-inspector-tab" type="button" id="lc-tab-media" data-lc-inspector-tab="media" role="tab" aria-selected="false" aria-controls="lc-panel-media" data-i18n="liquid_cover_media">Background</button>
-            <button class="lc-inspector-tab is-active" type="button" id="lc-tab-layers" data-lc-inspector-tab="layers" role="tab" aria-selected="true" aria-controls="lc-panel-layers" data-i18n="liquid_cover_text">Type</button>
-            <button class="lc-inspector-tab" type="button" id="lc-tab-glass" data-lc-inspector-tab="glass" role="tab" aria-selected="false" aria-controls="lc-panel-glass" data-i18n="liquid_cover_tab_glass">Glass</button>
+            <button class="lc-inspector-tab" type="button" id="lc-tab-media" data-lc-inspector-tab="media" role="tab" aria-selected="false" aria-controls="lc-panel-media" data-i18n-aria-label="liquid_cover_media">
+              <span class="mobile-control-long" data-i18n="liquid_cover_media">Background</span>
+              <span class="mobile-control-short" data-i18n="liquid_cover_media_short">BG</span>
+            </button>
+            <button class="lc-inspector-tab is-active" type="button" id="lc-tab-layers" data-lc-inspector-tab="layers" role="tab" aria-selected="true" aria-controls="lc-panel-layers" data-i18n-aria-label="liquid_cover_text">
+              <span class="mobile-control-long" data-i18n="liquid_cover_text">Type</span>
+              <span class="mobile-control-short" data-i18n="liquid_cover_text_short">Type</span>
+            </button>
+            <button class="lc-inspector-tab" type="button" id="lc-tab-glass" data-lc-inspector-tab="glass" role="tab" aria-selected="false" aria-controls="lc-panel-glass" data-i18n-aria-label="liquid_cover_tab_glass">
+              <span class="mobile-control-long" data-i18n="liquid_cover_tab_glass">Glass</span>
+              <span class="mobile-control-short" data-i18n="liquid_cover_glass_short">Glass</span>
+            </button>
           </div>
           <div class="lc-toolbar-aspect">
             <span data-i18n="liquid_cover_aspect">Aspect</span>
@@ -2360,7 +2435,10 @@
               <button type="button" data-k="3:4" aria-pressed="false">3:4</button>
             </div>
           </div>
-          <button class="btn default lc-toolbar-export" type="button" id="lc-tab-export" data-lc-inspector-tab="export" aria-pressed="false" aria-controls="lc-panel-export" data-i18n="liquid_cover_tab_export">Export</button>
+          <button class="btn default lc-toolbar-export" type="button" id="lc-tab-export" data-lc-inspector-tab="export" aria-pressed="false" aria-controls="lc-panel-export" data-i18n-aria-label="liquid_cover_tab_export">
+            <span class="mobile-control-long" data-i18n="liquid_cover_tab_export">Export</span>
+            <span class="mobile-control-short" data-i18n="liquid_cover_export_short">Export</span>
+          </button>
         </div>
         <div class="liquid-cover-body">
           <aside class="lc-sidebar" aria-label="Scene layers" data-i18n-aria-label="liquid_cover_scene">
@@ -2538,6 +2616,10 @@ Glass</textarea>
             </div>
 
             <div class="lc-inspector-panel" id="lc-panel-glass" data-lc-inspector-panel="glass" role="tabpanel" aria-labelledby="lc-tab-glass" hidden>
+            <div class="lc-group lc-material-group">
+              <div class="lc-group-title" data-i18n="liquid_cover_material">Glass Mix</div>
+              <label class="lc-row"><span data-i18n="liquid_cover_material_scale">Clear / Tinted</span><input type="range" id="lc-material-mix" min="0" max="100" step="1" value="0"><span class="lc-val" id="lc-material-mix-v"></span></label>
+            </div>
             <div class="lc-group lc-layer-glass-group">
               <div class="lc-group-title" data-i18n="liquid_cover_selected_layer">Selected layer</div>
               <label class="lc-row"><span data-i18n="liquid_cover_layer_solid">Solid Layer</span><input type="checkbox" id="lc-layer-solid" class="lc-check"></label>
@@ -2549,11 +2631,6 @@ Glass</textarea>
               <div class="lc-group-title" data-i18n="liquid_cover_presets">Glass Presets</div>
               <div class="lc-preset-row" id="lc-preset-row"></div>
               <p class="lc-note" data-i18n="liquid_cover_presets_hint">Choose a proven material; the cover updates immediately.</p>
-            </div>
-
-            <div class="lc-group lc-material-group">
-              <div class="lc-group-title" data-i18n="liquid_cover_material">Glass Mix</div>
-              <label class="lc-row"><span data-i18n="liquid_cover_material_scale">Clear / Tinted</span><input type="range" id="lc-material-mix" min="0" max="100" step="1" value="0"><span class="lc-val" id="lc-material-mix-v"></span></label>
             </div>
 
             <details class="lc-look-assistant">
@@ -3197,6 +3274,6 @@ Glass</textarea>
       </section>
     </main>
 
-    <script src="app.bundle.js?v=20260729.7"></script>
+    <script src="app.bundle.js?v=20260730.14"></script>
   </body>
 </html>

@@ -490,6 +490,22 @@ function idbRequest(request) {
 function openAppDb() {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(indexedDbName, indexedDbVersion);
+    let settled = false;
+    const timeout = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      reject(new Error("Opening the project database timed out."));
+    }, 15000);
+
+    const finish = (callback, value) => {
+      if (settled) {
+        if (value && typeof value.close === "function") value.close();
+        return;
+      }
+      settled = true;
+      clearTimeout(timeout);
+      callback(value);
+    };
 
     request.onupgradeneeded = () => {
       const db = request.result;
@@ -520,18 +536,30 @@ function openAppDb() {
       }
     };
 
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
+    request.onblocked = () => finish(
+      reject,
+      new Error("The project database is blocked by another open AI System 6 window.")
+    );
+    request.onsuccess = () => {
+      request.result.onversionchange = () => request.result.close();
+      finish(resolve, request.result);
+    };
+    request.onerror = () => finish(
+      reject,
+      request.error || new Error("Could not open the project database.")
+    );
   });
 }
 
 async function getStoredProjectReferences(projectId) {
   const db = await openAppDb();
   try {
-    const tx = db.transaction(referenceStoreName, "readonly");
-    const store = tx.objectStore(referenceStoreName);
-    const index = store.index("projectId");
-    const references = await idbRequest(index.getAll(projectId));
+    const references = await window.AISystem6StorageTransactions.runTransaction(
+      db,
+      referenceStoreName,
+      "readonly",
+      (tx) => idbRequest(tx.objectStore(referenceStoreName).index("projectId").getAll(projectId))
+    );
     const normalized = references.map((reference) => normalizeProjectReferenceForStorage(reference));
     const needsMigration = normalized.filter((item, index) => item !== references[index]);
     if (needsMigration.length) {
@@ -546,9 +574,14 @@ async function getStoredProjectReferences(projectId) {
 async function putStoredProjectReference(reference) {
   const db = await openAppDb();
   try {
-    const tx = db.transaction(referenceStoreName, "readwrite");
-    const store = tx.objectStore(referenceStoreName);
-    await idbRequest(store.put(normalizeProjectReferenceForStorage(reference)));
+    await window.AISystem6StorageTransactions.runTransaction(
+      db,
+      referenceStoreName,
+      "readwrite",
+      (tx) => idbRequest(
+        tx.objectStore(referenceStoreName).put(normalizeProjectReferenceForStorage(reference))
+      )
+    );
   } finally {
     db.close();
   }
@@ -566,9 +599,12 @@ function normalizeProjectReferenceForStorage(reference) {
 async function deleteStoredProjectReference(referenceId) {
   const db = await openAppDb();
   try {
-    const tx = db.transaction(referenceStoreName, "readwrite");
-    const store = tx.objectStore(referenceStoreName);
-    await idbRequest(store.delete(referenceId));
+    await window.AISystem6StorageTransactions.runTransaction(
+      db,
+      referenceStoreName,
+      "readwrite",
+      (tx) => idbRequest(tx.objectStore(referenceStoreName).delete(referenceId))
+    );
   } finally {
     db.close();
   }
@@ -1353,127 +1389,6 @@ function getProjectFileFinderItem(file) {
   };
 }
 
-function getProjectSystemFinderItems() {
-  const project = getActiveProject();
-  if (!project) return [];
-
-  const scrapCount = getProjectScraps().length;
-  const exportCount = getProjectCdItems(activeProjectId).length;
-  const trashCount = getProjectTrashItems().length;
-  const mountedFileCount = hasMountedFileDiskContext() ? mountedTextDisk.files.length : 0;
-  const updatedAt = project.updatedAt || project.createdAt || new Date().toISOString();
-  const items = [
-    ...["提示词覆盖", "已停用提示词", "运行记录"].map((name) => ({
-      id: `cliotalk-${name}`,
-      type: "finder-root",
-      name,
-      kindLabel: t("folder_kind"),
-      iconClass: "folder-icon",
-      iconId: "folder",
-      itemCount: getProjectFolders().find((folder) => folder.name === name)?.id
-        ? getProjectFiles().filter((file) => file.folderId === getProjectFolders().find((folder) => folder.name === name)?.id).length : 0,
-      sizeValue: 0,
-      meta: "ClioTalk",
-      updatedAt,
-      modifiedAt: updatedAt,
-      virtual: true,
-      canDuplicate: false,
-      canRename: false,
-      canTrash: false,
-      open: () => {
-        const folder = window.AISystem6PromptFilesRuntime?.ensureProjectPromptFolder(activeProjectId, name);
-        if (folder) openProjectFinderFolder(folder.id);
-      },
-    })),
-    {
-      id: "scrapbook",
-      type: "finder-root",
-      name: t("scrapbook_label"),
-      kindLabel: t("scrapbook_label"),
-      iconClass: "scrapbook-desk-icon",
-      iconId: "scrapbook",
-      itemCount: scrapCount,
-      sizeValue: scrapCount,
-      meta: t("scraps_count", scrapCount),
-      updatedAt,
-      modifiedAt: updatedAt,
-      virtual: true,
-      canDuplicate: false,
-      canRename: false,
-      canTrash: false,
-      open: () => {
-        renderScraps();
-        openWindow("scrapbook");
-      },
-    },
-    {
-      id: "project-cd",
-      type: "finder-root",
-      name: t("project_cd"),
-      kindLabel: t("project_cd"),
-      iconClass: "hard-disk-icon",
-      iconId: "projectDisc",
-      itemCount: exportCount,
-      sizeValue: exportCount,
-      meta: t("project_cd_items_count", exportCount),
-      updatedAt,
-      modifiedAt: updatedAt,
-      virtual: true,
-      canDuplicate: false,
-      canRename: false,
-      canTrash: false,
-      open: () => {
-        renderProjectCd();
-        openWindow("projectCd");
-      },
-    },
-    {
-      id: "trash",
-      type: "finder-root",
-      name: t("trash"),
-      kindLabel: t("trash"),
-      iconClass: "trash-icon",
-      iconId: trashCount > 0 ? "trashFull" : "trash",
-      itemCount: trashCount,
-      sizeValue: trashCount,
-      meta: t("items_count", trashCount),
-      updatedAt,
-      modifiedAt: updatedAt,
-      virtual: true,
-      canDuplicate: false,
-      canRename: false,
-      canTrash: false,
-      open: () => openWindow("trash"),
-    },
-  ];
-
-  if (mountedFileCount > 0) {
-    items.splice(2, 0, {
-      id: "file-floppy",
-      type: "finder-root",
-      name: t("mounted_text_disk"),
-      kindLabel: t("mounted_text_disk"),
-      iconClass: "text-disk-icon",
-      iconId: "fileFloppy",
-      itemCount: mountedFileCount,
-      sizeValue: mountedFileCount,
-      meta: t("files_count", mountedFileCount),
-      updatedAt,
-      modifiedAt: updatedAt,
-      virtual: true,
-      canDuplicate: false,
-      canRename: false,
-      canTrash: false,
-      open: () => {
-        renderMountedTextDisk();
-        openWindow("textDisk");
-      },
-    });
-  }
-
-  return items;
-}
-
 function getProjectRootFinderItems() {
   const currentParentId = getProjectFinderCurrentParentId();
   const folders = getProjectFolders()
@@ -1486,7 +1401,7 @@ function getProjectRootFinderItems() {
   const references = projectReferences
     .filter((reference) => reference.projectId === activeProjectId)
     .map(getProjectReferenceFinderItem);
-  return [...folders, ...files, ...references, ...getProjectSystemFinderItems()];
+  return [...folders, ...files, ...references];
 }
 
 function getSelectedProjectRootItem() {
@@ -1508,8 +1423,11 @@ function getSelectedProjectFinderItem() {
 function getCurrentFinderSelection() {
   const activeWin = document.querySelector(".window.is-active:not(.is-hidden)");
   const activeName = activeWin?.dataset.window || "";
-  if (activeName === "projects") return getSelectedProjectFinderItem();
+  if (typeof getFinderVolumeDefinition === "function" && getFinderVolumeDefinition(activeName)) {
+    return getFinderVolumeSelectedItem(activeName);
+  }
   if (activeName === "documents") return getSelectedDocumentItem();
+  if (finderContainerWindowNames.includes(activeName)) return getSelectedStaticFinderItem(activeName);
   return null;
 }
 
@@ -1776,9 +1694,10 @@ function renderProjectDisks() {
   titleEl?.setAttribute("title", path);
   if (projectDiskPathEl) projectDiskPathEl.textContent = path;
   if (projectDiskUpButton) {
-    projectDiskUpButton.hidden = !currentFolder;
+    projectDiskUpButton.hidden = true;
     projectDiskUpButton.textContent = currentFolder ? t("up_one_level") : t("all_documents");
   }
+  renderFinderNavigationBar(getWindow("projects"));
 
   projectDiskGridEl.dataset.dropTarget = "document-current-folder";
   projectDiskGridEl.dataset.folderId = currentFolder?.id || "";

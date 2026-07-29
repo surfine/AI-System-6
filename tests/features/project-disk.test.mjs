@@ -13,6 +13,7 @@ const app = readAppSurface([
   "app/features/scrapbook.js",
 ]);
 const projectDisk = read("app/features/project-disk.js");
+const projectBackup = read("app/core/project-disk-backup.js");
 const desktopRuntime = read("app/core/desktop-runtime.js");
 
 test.assertIncludes(app, "item?.projectId === activeProjectId", "keeps active project guard as the default data boundary");
@@ -36,7 +37,7 @@ test.assertMatches(desktopRuntime, /async function eraseSelectedProjectDisk\(\)[
 
 test.assertIncludes(app, 'format: "ai-system-6-project-disk"', "Project Disk export uses the documented bundle format");
 test.assertIncludes(app, "function remapProjectDiskBackup(bundle)", "Project Disk import remaps IDs instead of overwriting existing projects");
-test.assertIncludes(app, "const newProjectId = crypto.randomUUID()", "Project Disk import creates a fresh project identity");
+test.assertIncludes(projectBackup, "const newProjectId = suppliedUuid ? suppliedUuid() : crypto.randomUUID()", "Project Disk import creates a fresh project identity");
 test.assertIncludes(app, "projects.unshift(imported.project)", "Project Disk import adds a new project rather than mutating an old one");
 
 test.finish();

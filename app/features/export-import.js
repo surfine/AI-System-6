@@ -305,16 +305,18 @@ function exportNativeHandoff() {
   setStatus(t("native_handoff_exported"));
 }
 
-function buildProjectDiskExport(project = getActiveProject()) {
+async function buildProjectDiskExport(project = getActiveProject()) {
   if (!project) return null;
   const projectId = project.id;
-  return {
+  const bundle = {
     format: "ai-system-6-project-disk",
-    formatVersion: 1,
+    formatVersion: window.AISystem6ProjectDiskBackup.currentFormatVersion,
+    schemaVersion: indexedDbVersion,
     appVersion: appVersionInfo.version,
     appBuild: appVersionInfo.build,
     storageVersion,
     exportedAt: new Date().toISOString(),
+    projectRevision: project.updatedAt || "",
     project,
     folders: chatFolders.filter((folder) => folder.projectId === projectId),
     files: chatFiles.filter((file) => file.projectId === projectId),
@@ -323,16 +325,17 @@ function buildProjectDiskExport(project = getActiveProject()) {
     projectCdItems: projectCdItems.filter((item) => item.projectId === projectId),
     references: projectReferences.filter((reference) => reference.projectId === projectId),
   };
+  return window.AISystem6ProjectDiskBackup.attachIntegrity(bundle);
 }
 
-function exportActiveProjectDisk() {
+async function exportActiveProjectDisk() {
   const project = getActiveProject();
   if (!project) {
     setStatus(t("no_project_mounted"));
     openWindow("projects");
     return;
   }
-  const bundle = buildProjectDiskExport(project);
+  const bundle = await buildProjectDiskExport(project);
   const name = `${project.name} Project Hard Disk Backup`;
   downloadJsonFile(bundle, name);
   setStatus(t("project_disk_exported", project.name));
@@ -1276,10 +1279,10 @@ async function extractFileText(file, options = {}) {
   }
 
   const payload = await buildImportFilePayload(file, { signal });
-  const isCloud = typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudConfig.apiKey;
+  const isCloud = typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudCredentialReady();
   if (isCloud) {
     payload._cloud_active = true;
-    payload._cloud_api_key = cloudConfig.apiKey;
+    Object.assign(payload, cloudCredentialTransportFields());
     payload._cloud_base_url = cloudConfig.baseUrl;
     payload._cloud_model = cloudConfig.model;
   }
@@ -1386,13 +1389,17 @@ function backupArrayCount(bundle, key) {
   return Array.isArray(bundle?.[key]) ? bundle[key].length : 0;
 }
 
-function renderBackupPreview(bundle, fileName = "") {
+function renderBackupPreview(bundle, fileName = "", validation = null) {
   if (!projectBackupPreviewEl) return;
   projectBackupPreviewEl.replaceChildren();
   previewedProjectBackup = null;
   if (importProjectBackupButton) importProjectBackupButton.disabled = true;
 
-  if (!bundle || bundle.format !== "ai-system-6-project-disk") {
+  if (
+    !bundle
+    || bundle.format !== "ai-system-6-project-disk"
+    || validation?.valid === false
+  ) {
     const empty = document.createElement("div");
     empty.className = "empty-folder-note";
     empty.textContent = bundle ? t("backup_preview_invalid") : t("backup_preview_empty");
@@ -1429,122 +1436,106 @@ function renderBackupPreview(bundle, fileName = "") {
   if (importProjectBackupButton) importProjectBackupButton.disabled = false;
 }
 
-function remapBackupRecord(record, projectId, extra = {}) {
-  return {
-    ...structuredClone(record || {}),
-    ...extra,
-    id: crypto.randomUUID(),
-    projectId,
-  };
+function remapProjectDiskBackup(bundle) {
+  return window.AISystem6ProjectDiskBackup.remapBackup(bundle, {
+    projectName(name) {
+      return uniqueProjectName(`${name || t("untitled_project")} Restored`);
+    },
+  });
 }
 
-function remapProjectDiskBackup(bundle) {
-  const now = new Date().toISOString();
-  const originalProject = bundle.project || {};
-  const newProjectId = crypto.randomUUID();
-  const folderIdMap = new Map();
-  const folders = Array.isArray(bundle.folders) ? bundle.folders : [];
-  let defaultFolderId = null;
-
-  folders.forEach((folder) => {
-    if (folder?.id) folderIdMap.set(folder.id, crypto.randomUUID());
-  });
-
-  const importedFolders = folders.map((folder) => {
-    const newId = folderIdMap.get(folder.id) || crypto.randomUUID();
-    return {
-      ...structuredClone(folder),
-      id: newId,
-      projectId: newProjectId,
-      parentId: folder.parentId ? folderIdMap.get(folder.parentId) || null : null,
+async function commitImportedProjectAtomically(imported) {
+  const db = await openAppDb();
+  try {
+    const importedProjectCdItems = [
+      ...imported.projectCdItems,
+      ...projectCdItems,
+    ];
+    const importedSettings = {
+      ...settingsSnapshotPayload(),
+      activeProjectId: imported.project.id,
+      projectMounted: true,
+      projectCdItems: importedProjectCdItems,
     };
-  });
-
-  function fallbackFolderId() {
-    if (defaultFolderId) return defaultFolderId;
-    defaultFolderId = crypto.randomUUID();
-    importedFolders.unshift({
-      id: defaultFolderId,
-      projectId: newProjectId,
-      name: "General",
-      parentId: null,
-      createdAt: now,
-      updatedAt: now,
-    });
-    return defaultFolderId;
+    const storeNames = [
+      projectsStoreName,
+      scrapsStoreName,
+      trashStoreName,
+      chatFoldersStoreName,
+      chatFilesStoreName,
+      referenceStoreName,
+      keyvalStoreName,
+    ];
+    await window.AISystem6StorageTransactions.runTransaction(
+      db,
+      storeNames,
+      "readwrite",
+      async (tx) => {
+        const writes = [];
+        const putAll = (storeName, items, normalize = (item) => item) => {
+          const store = tx.objectStore(storeName);
+          items.forEach((item) => writes.push(idbRequest(store.put(normalize(item)))));
+        };
+        putAll(projectsStoreName, [imported.project]);
+        putAll(scrapsStoreName, imported.scraps);
+        putAll(trashStoreName, imported.trash);
+        putAll(chatFoldersStoreName, imported.folders);
+        putAll(chatFilesStoreName, imported.files);
+        putAll(referenceStoreName, imported.references, normalizeProjectReferenceForStorage);
+        const settingsStore = tx.objectStore(keyvalStoreName);
+        writes.push(idbRequest(settingsStore.put(importedSettings, "settings")));
+        writes.push(idbRequest(settingsStore.put(storageVersion, "storageVersion")));
+        await Promise.all(writes);
+      }
+    );
+  } finally {
+    db.close();
   }
-
-  const importedFiles = (Array.isArray(bundle.files) ? bundle.files : []).map((file) =>
-    remapBackupRecord(file, newProjectId, {
-      folderId: file.folderId ? folderIdMap.get(file.folderId) || fallbackFolderId() : fallbackFolderId(),
-    })
-  );
-
-  const importedReferences = (Array.isArray(bundle.references) ? bundle.references : []).map((reference) => {
-    const copy = remapBackupRecord(reference, newProjectId);
-    copy.chunks = Array.isArray(copy.chunks)
-      ? copy.chunks.map((chunk) => ({ ...chunk, projectId: newProjectId, referenceId: copy.id }))
-      : [];
-    return copy;
-  });
-
-  const projectName = uniqueProjectName(`${originalProject.name || t("untitled_project")} Restored`);
-  const importedProject = {
-    ...structuredClone(originalProject),
-    id: newProjectId,
-    name: projectName,
-    createdAt: now,
-    updatedAt: now,
-    archived: false,
-    importedFrom: {
-      format: bundle.format,
-      formatVersion: bundle.formatVersion || 1,
-      exportedAt: bundle.exportedAt || "",
-      originalProjectId: originalProject.id || "",
-      importedAt: now,
-    },
-  };
-
-  return {
-    project: importedProject,
-    folders: importedFolders,
-    files: importedFiles,
-    scraps: (Array.isArray(bundle.scraps) ? bundle.scraps : []).map((scrap) => remapBackupRecord(scrap, newProjectId)),
-    trash: (Array.isArray(bundle.trash) ? bundle.trash : []).map((item) => remapBackupRecord(item, newProjectId)),
-    projectCdItems: (Array.isArray(bundle.projectCdItems) ? bundle.projectCdItems : []).map((item) => remapBackupRecord(item, newProjectId)),
-    references: importedReferences,
-  };
 }
 
 async function importProjectBackupAsNewProject() {
-  if (!previewedProjectBackup || previewedProjectBackup.format !== "ai-system-6-project-disk") {
+  const backupTools = window.AISystem6ProjectDiskBackup;
+  const validation = backupTools.validateBackup(previewedProjectBackup);
+  const integrity = validation.valid
+    ? await backupTools.verifyIntegrity(previewedProjectBackup)
+    : { valid: false };
+  if (!previewedProjectBackup || !validation.valid || !integrity.valid) {
     setStatus(t("backup_import_invalid"));
     return;
   }
 
-  const imported = remapProjectDiskBackup(previewedProjectBackup);
-  parkConversationInProject(activeProjectId);
-  projects.unshift(imported.project);
-  chatFolders.unshift(...imported.folders);
-  chatFiles.unshift(...imported.files);
-  scraps.unshift(...imported.scraps);
-  trashItems.unshift(...imported.trash);
-  projectCdItems.unshift(...imported.projectCdItems);
+  setControlLoading(importProjectBackupButton, true, t("backup_importing"));
+  try {
+    const imported = remapProjectDiskBackup(previewedProjectBackup);
+    await commitImportedProjectAtomically(imported);
 
-  await Promise.all(imported.references.map((reference) => putStoredProjectReference(reference)));
+    projects.unshift(imported.project);
+    chatFolders.unshift(...imported.folders);
+    chatFiles.unshift(...imported.files);
+    scraps.unshift(...imported.scraps);
+    trashItems.unshift(...imported.trash);
+    projectCdItems.unshift(...imported.projectCdItems);
 
-  isProjectMounted = true;
-  activeProjectId = imported.project.id;
-  selectedProjectId = imported.project.id;
-  selectedFolderId = "all";
-  clearProjectTransientState();
-  closeProjectScopedWindows();
-  scheduleWorkspaceRender({ projectReferences: true, mountedTextDisk: true, menuState: true });
-  openWindow("projects");
-  resetAssistantForProject(imported.project.name);
-  await loadActiveProjectReferences();
-  saveDeskState();
-  setStatus(t("backup_imported_project", imported.project.name));
+    isProjectMounted = true;
+    activeProjectId = imported.project.id;
+    selectedProjectId = imported.project.id;
+    selectedFolderId = "all";
+    clearProjectTransientState();
+    closeProjectScopedWindows();
+    scheduleWorkspaceRender({ projectReferences: true, mountedTextDisk: true, menuState: true });
+    openWindow("projects");
+    resetAssistantForProject(imported.project.name);
+    await loadActiveProjectReferences();
+    storageSnapshotCache.clear();
+    const saved = await saveDeskState();
+    if (!saved) throw new Error("Imported project committed, but the active workspace state could not be saved.");
+    setStatus(t("backup_imported_project", imported.project.name));
+  } catch (error) {
+    console.error("Project Hard Disk import failed:", error);
+    setStatus(t("backup_import_invalid"));
+  } finally {
+    setControlLoading(importProjectBackupButton, false);
+  }
 }
 
 async function previewProjectBackupFile() {
@@ -1555,9 +1546,19 @@ async function previewProjectBackupFile() {
   }
 
   try {
+    if (file.size > window.AISystem6ProjectDiskBackup.maxBackupBytes) {
+      renderBackupPreview({});
+      importStatusEl.textContent = t("backup_preview_too_large");
+      return;
+    }
     const bundle = JSON.parse(await file.text());
-    renderBackupPreview(bundle, file.name);
-    importStatusEl.textContent = bundle?.format === "ai-system-6-project-disk"
+    const validation = window.AISystem6ProjectDiskBackup.validateBackup(bundle);
+    const integrity = validation.valid
+      ? await window.AISystem6ProjectDiskBackup.verifyIntegrity(bundle)
+      : { valid: false, errors: [] };
+    const accepted = validation.valid && integrity.valid;
+    renderBackupPreview(bundle, file.name, { valid: accepted });
+    importStatusEl.textContent = accepted
       ? t("backup_preview_status", bundle.project?.name || file.name)
       : t("backup_preview_invalid");
   } catch (error) {

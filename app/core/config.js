@@ -535,7 +535,7 @@ async function ensureQuickDraftModule() {
 
 async function ensureCmfStudioModule() {
   if (window.AISystem6CMFStudioLoaded) return true;
-  cmfStudioLoadPromise ||= loadClassicScriptOnce("app/features/cmf-studio.js")
+  cmfStudioLoadPromise ||= loadClassicScriptOnce("app/features/cmf-studio.js?cmf=exterior-ao-sanitized")
     .catch((error) => {
       cmfStudioLoadPromise = null;
       throw error;

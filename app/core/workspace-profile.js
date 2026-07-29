@@ -29,7 +29,6 @@ const studioWindowNames = new Set([
 
 const writingStudioOwnedWindowNames = new Set([
   "guide",
-  "projects",
   "quickDraft",
   "questionSheet",
   "outline",
@@ -37,7 +36,6 @@ const writingStudioOwnedWindowNames = new Set([
   "reviewDesk",
   "styleSheet",
   "claimCheck",
-  "projectCd",
   "rebuildFlow",
   "imageManager",
 ]);

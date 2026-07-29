@@ -20,6 +20,29 @@ const { postJsonWithFallback } = require("../lib/fetch.js");
 const DEFAULT_BASE_URL = "https://api.openai.com/v1";
 const DEFAULT_MODEL = "gpt-image-1";
 const ALLOWED_SIZES = new Set(["1024x1024", "1536x1024", "1024x1536", "auto"]);
+const allowCustomImageEndpoints =
+  process.env.AI_SYSTEM6_ALLOW_CUSTOM_IMAGE_ENDPOINTS === "1";
+
+function imageProviderBaseUrl(requested) {
+  const candidate = String(requested || DEFAULT_BASE_URL).trim().replace(/\/+$/, "");
+  let parsed;
+  try {
+    parsed = new URL(candidate);
+  } catch {
+    throw new Error("Image API endpoint is not a valid URL.");
+  }
+  if (parsed.protocol !== "https:") {
+    throw new Error("Image API endpoint must use HTTPS.");
+  }
+  if (parsed.username || parsed.password || parsed.search || parsed.hash) {
+    throw new Error("Image API endpoint cannot contain credentials, query text, or a fragment.");
+  }
+  const normalized = `${parsed.origin}${parsed.pathname === "/" ? "" : parsed.pathname.replace(/\/+$/, "")}`;
+  if (normalized !== DEFAULT_BASE_URL && !allowCustomImageEndpoints) {
+    return DEFAULT_BASE_URL;
+  }
+  return normalized;
+}
 
 /**
  * @param {import("node:http").IncomingMessage} req
@@ -34,7 +57,7 @@ async function handleImageGenerate(req, res) {
     const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
     const apiKey = typeof body.apiKey === "string" ? body.apiKey.trim() : "";
     const model = (typeof body.model === "string" && body.model.trim()) || DEFAULT_MODEL;
-    const baseUrl = ((typeof body.baseUrl === "string" && body.baseUrl.trim()) || DEFAULT_BASE_URL).replace(/\/$/, "");
+    const baseUrl = imageProviderBaseUrl(body.baseUrl);
     const size = ALLOWED_SIZES.has(body.size) ? body.size : "auto";
 
     if (!prompt) {
@@ -84,4 +107,4 @@ async function handleImageGenerate(req, res) {
   }
 }
 
-module.exports = { handleImageGenerate };
+module.exports = { handleImageGenerate, imageProviderBaseUrl };

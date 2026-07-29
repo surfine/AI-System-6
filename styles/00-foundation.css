@@ -551,6 +551,13 @@
   --window-frame-arrow-ink: var(--ink);
   --active-window-shadow: 3px 3px 0 var(--ink);
   --card-caption-color: var(--shade-dark);
+  --finder-navigation-border: 1px solid var(--ink);
+  --finder-navigation-bg: var(--paper);
+  --finder-breadcrumb-radius: 0;
+  --finder-breadcrumb-text-decoration: underline;
+  --finder-breadcrumb-hover-bg: var(--ink);
+  --finder-breadcrumb-hover-fg: var(--paper);
+  --finder-breadcrumb-current-color: var(--ink);
   /* Zero in a browser tab; real insets once the desk runs standalone from the
      iOS home screen, where nothing else protects the notch or home indicator. */
   --safe-area-top: env(safe-area-inset-top, 0px);
@@ -1177,16 +1184,27 @@
   --bureaucracy-surface-border: 1px solid var(--ink);
   --bureaucracy-surface-radius: 0;
   --bureaucracy-surface-shadow: none;
+  --bureaucracy-ink: var(--ink);
   --bureaucracy-muted: var(--shade-dark);
   --bureaucracy-hover-bg: var(--quiet-panel);
   --bureaucracy-selected-bg: var(--ink);
   --bureaucracy-selected-fg: var(--paper);
+  --bureaucracy-selected-shadow: none;
+  --bureaucracy-control-bg: var(--paper);
+  --bureaucracy-control-fg: var(--ink);
+  --bureaucracy-control-border: 1px solid var(--ink);
+  --bureaucracy-thumbnail-border: 1px solid var(--ink);
+  --bureaucracy-thumbnail-filter: grayscale(1) contrast(1.2);
   --bureaucracy-preview-bg: var(--shade);
   --bureaucracy-error: var(--ink);
   --endfield-pane-bg:
-    linear-gradient(rgba(0, 0, 0, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 0, 0, 0.035) 1px, transparent 1px),
+    linear-gradient(rgba(0, 0, 0, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.045) 1px, transparent 1px),
+    url("assets/endfield-background.svg"),
     var(--paper);
+  --endfield-pane-bg-size: 34px 34px, 34px 34px, max(1200px, 118vw) auto, auto;
+  --endfield-pane-bg-position: center, center, 45% 20%, center;
+  --endfield-pane-bg-repeat: repeat, repeat, no-repeat, no-repeat;
   --endfield-sidebar-bg: var(--panel);
   --endfield-surface-bg: var(--paper);
   --endfield-surface-border: 1px solid var(--ink);
@@ -1197,6 +1215,8 @@
   --endfield-selected-bg: var(--ink);
   --endfield-selected-fg: var(--paper);
   --endfield-evidence-divider: 1px solid var(--ink);
+  --endfield-index-bg: var(--paper);
+  --endfield-index-border: 1px solid var(--ink);
   --quick-draft-panel-bg: var(--quiet-panel);
   --quick-draft-panel-border: 1px dotted var(--shade-dark);
   --quick-draft-panel-radius: 0;

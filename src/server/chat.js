@@ -12,44 +12,81 @@
 
 const { humanizerModelInstruction } = require("./humanizer.js");
 const { systemIntegrityInstruction } = require("./system-integrity.js");
+const {
+  localChatDefaults: sharedLocalChatDefaults,
+  scrubVisibleModelOutput: sharedScrubVisibleModelOutput,
+  taskContractForPayload,
+} = require("../../app/shared/model-task-runtime.js");
 
 /**
- * Rewrite an OpenAI-compatible chat payload so the model treats input
- * as Markdown and responds with Markdown only. Prepends a system
- * instruction to the message list, adds the system-wide Humanizer
- * guardrail when the task can safely use it, and strips any structured
- * output request fields. Returns the input unchanged if it is not an object.
+ * Apply the registered output and write-boundary contract to an
+ * OpenAI-compatible payload. Structured output fields survive JSON and
+ * patch tasks; Markdown tasks deliberately remove them.
  *
- * Keep the Markdown wording stable: changes to these system instructions
- * alter model behavior across local and cloud providers.
- *
- * @template T
- * @param {T} payload
- * @returns {T | { messages: any[], [k: string]: any }}
+ * @param {any} payload
+ * @returns {any}
  */
-function enforceMarkdownOnlyChatPayload(payload) {
+function applyChatTaskContract(payload) {
   if (!payload || typeof payload !== "object") return payload;
   const anyPayload = /** @type {any} */ (payload);
   const messages = Array.isArray(anyPayload.messages) ? anyPayload.messages : [];
-  const markdownInstruction = [
-    "Treat every model-facing input as Markdown.",
-    "Return Markdown only.",
-    "Never return JSON, JSON code fences, schemas, or machine-readable object literals.",
+  const contract = taskContractForPayload(anyPayload);
+  const outputKind = contract.output.kind;
+  const outputInstruction = outputKind === "json"
+    ? "Return exactly one valid JSON value. Do not wrap it in Markdown or add explanatory text."
+    : outputKind === "patch"
+      ? "Return exactly one valid JSON patch object matching the requested schema. Do not wrap it in Markdown or add explanatory text."
+      : outputKind === "plainText"
+        ? "Return plain text only. Do not add Markdown fences, JSON wrappers, or explanatory prefaces."
+        : [
+          "Treat every model-facing input as Markdown.",
+          "Return Markdown only.",
+          "Never return JSON, JSON code fences, schemas, or machine-readable object literals.",
+        ].join(" ");
+  const boundaryInstruction = [
+    `AI System 6 task contract: ${contract.id}.`,
+    `Source policy: ${contract.sourcePolicy}. Write target: ${contract.writeTarget}.`,
+    contract.requiresUserCommit
+      ? "Your response is a proposal only; never claim it was written or saved. A user commit is required."
+      : "Never claim that a save, insert, export, or external action occurred unless the application confirms it.",
+    `Preserve protected spans: ${contract.protectedSpans.join(", ")}.`,
   ].join(" ");
   const integrityInstruction = systemIntegrityInstruction(messages);
-  const humanizerInstruction = humanizerModelInstruction(anyPayload.ai_system6_task_kind, messages);
+  const humanizerInstruction = contract.humanizer === "off"
+    ? ""
+    : humanizerModelInstruction(anyPayload.ai_system6_task_kind, messages);
   const nextPayload = {
     ...anyPayload,
     messages: [
-      { role: "system", content: markdownInstruction },
+      { role: "system", content: outputInstruction },
+      { role: "system", content: boundaryInstruction },
       ...(integrityInstruction ? [{ role: "system", content: integrityInstruction }] : []),
       ...(humanizerInstruction ? [{ role: "system", content: humanizerInstruction }] : []),
       ...messages,
     ],
   };
-  delete nextPayload.response_format;
-  delete nextPayload.json_schema;
+  if (outputKind === "markdown" || outputKind === "plainText") {
+    delete nextPayload.response_format;
+    delete nextPayload.json_schema;
+  }
+  delete nextPayload.ai_system6_output_kind;
+  delete nextPayload.ai_system6_output_schema;
+  delete nextPayload.ai_system6_output_schema_id;
   return nextPayload;
+}
+
+/**
+ * Force Markdown for routes whose UI and parser are explicitly Markdown-only.
+ *
+ * @param {any} payload
+ * @returns {any}
+ */
+function enforceMarkdownOnlyChatPayload(payload) {
+  if (!payload || typeof payload !== "object") return payload;
+  return applyChatTaskContract({
+    ...payload,
+    ai_system6_output_kind: "markdown",
+  });
 }
 
 /**
@@ -441,7 +478,11 @@ function tuneLocalNoThinkingPayload(payload, options = {}) {
  * @returns {any}
  */
 function tuneLmStudioChatPayload(payload) {
-  const basePayload = tuneLocalNoThinkingPayload(payload, {
+  const sharedDefaults = sharedLocalChatDefaults(payload?.model, {
+    taskKind: payload?.ai_system6_task_kind,
+    temperature: Number(payload?.temperature),
+  });
+  const basePayload = tuneLocalNoThinkingPayload({ ...sharedDefaults, ...payload }, {
     stripInternalFields: !isQwen35ModelName(payload?.model) && !isGemma4ModelName(payload?.model),
   });
   return tuneGemma4ChatPayload(tuneQwen35ChatPayload(basePayload));
@@ -457,11 +498,7 @@ function tuneLmStudioChatPayload(payload) {
  * @returns {string}
  */
 function scrubVisibleModelOutput(text = "") {
-  return String(text || "")
-    .replace(/<\|channel\>thought[\s\S]*?<channel\|>/gi, "")
-    .replace(/<\|channel\>(?:final|answer)\s*/gi, "")
-    .replace(/<channel\|>/gi, "")
-    .trim();
+  return sharedScrubVisibleModelOutput(text);
 }
 
 /**
@@ -477,6 +514,7 @@ function modelContentFromChatData(data) {
 }
 
 module.exports = {
+  applyChatTaskContract,
   enforceMarkdownOnlyChatPayload,
   isGemma4E4BModelName,
   isGemma4ModelName,

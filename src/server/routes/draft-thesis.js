@@ -18,16 +18,21 @@ const { postJsonWithFallback } = require("../lib/fetch.js");
 const { getLocalUrls } = require("../lib/local-urls.js");
 const { modelContentFromChatData, tuneLmStudioChatPayload } = require("../chat.js");
 const { postLocalChatWithModelAutoload, classifyLmStudioProxyError } = require("../lmstudio.js");
-const { cloudAuthHeaders, DEEPSEEK_API_KEY_DEFAULT, DEEPSEEK_BASE_URL_DEFAULT } = require("../cloud.js");
+const {
+  cloudAuthHeaders,
+  DEEPSEEK_API_KEY_DEFAULT,
+  DEEPSEEK_BASE_URL_DEFAULT,
+  resolveCloudBaseUrl,
+} = require("../cloud.js");
 const { systemIntegrityInstruction } = require("../system-integrity.js");
 const { authorThesisInstruction } = require("../author-thesis.js");
 const { chatVentIntakeInstruction } = require("../chat-vent.js");
+const { resolveCloudCredential } = require("../credential-vault.js");
 const {
   findHumanizerOutputHits,
+  findHumanizerStyleDiagnostics,
   humanizerModelInstruction,
-  isHumanizerRepairMetaResponse,
-  scrubHumanizerOutput,
-  shouldRepairHumanizerOutput,
+  shouldLintHumanizerOutput,
 } = require("../humanizer.js");
 
 const DEEPSEEK_V4_MODELS = new Set(["deepseek-v4-pro", "deepseek-v4-flash", "v4-pro", "v4-flash"]);
@@ -152,24 +157,24 @@ const EMPTY_STRATEGY_REPORT = Object.freeze({
 });
 
 const LUOLUO_SPOKEN_LENS_ZH = [
-  "接收者口播 compact lens（双用户、单体验）：",
-  "- 用户可能是 Creator，也可能是接收者本人；不要假设使用者身份，不要写交接压力或私人合作判断。",
+  "落落口播 compact lens（双用户、单体验）：",
+  "- 用户可能是 Aaron，也可能是落落本人；不要假设使用者身份，不要写交接压力或私人合作判断。",
   "- 视频口播稿不是文章：前两句就要看到重点，前 20 秒必须有意思，判断/结论放在前面。",
-  "- 接收者接收标准前置：这稿交过去要能直接理解、能开口念、能想到画面；不要让他还要重新拆资料、重新找主线。",
+  "- 落落接收标准前置：这稿交过去要能直接理解、能开口念、能想到画面；不要让他还要重新拆资料、重新找主线。",
   "- 把出稿取舍和素材处理转成能拍、能念、能成立的第一人称口播；按可拍画面推进，再补原因、考据、判断。",
   "- 正文只放可录内容；后台判断、来源状态、待核边界和采用理由放在出稿取舍 / 素材处理 / 稿里怎么处理。",
-  "- 句子短，像当天边录边说；允许一点停顿、口水词和自我修正；趋近接收者的真实口播质感，但不要机械复刻口头禅或招牌梗。",
+  "- 句子短，像当天边录边说；允许一点停顿、口水词和自我修正；趋近落落的真实口播质感，但不要机械复刻口头禅或招牌梗。",
   "- 参数、资料和链接要改成观众听得懂的体验后果；没亲测或没来源的事实标成“〔待核：...〕”或放进后续测试。",
 ].join("\n");
 
 const LUOLUO_SPOKEN_LENS_EN = [
-  "Recipient spoken compact lens (dual-user, single experience):",
-  "- The user may be Creator or Recipient; do not assume identity, add handoff pressure, or write private collaboration advice.",
+  "Luoluo spoken compact lens (dual-user, single experience):",
+  "- The user may be Aaron or Luoluo; do not assume identity, add handoff pressure, or write private collaboration advice.",
   "- This is spoken video copy, not an article: the point should be visible in the first two sentences, and the first 20 seconds must be interesting.",
-  "- Recipient receiving standard comes first: the script should be understandable, speakable, and visually imaginable without making him re-triage sources or rediscover the spine.",
+  "- Luoluo receiving standard comes first: the script should be understandable, speakable, and visually imaginable without making him re-triage sources or rediscover the spine.",
   "- Turn editorial strategy and the material ledger into first-person copy that can be filmed, spoken, and defended; move through showable visuals before reasons, research, and judgment.",
   "- Keep only recordable copy in the body; backstage judgment, source status, pending checks, and adoption reasons belong in Drafting choices / Material handling / How it lands in the draft.",
-  "- Use short same-day spoken sentences with a little natural hesitation or self-correction; move toward Recipient's grounded spoken texture without filling in catchphrases or signature bits mechanically.",
+  "- Use short same-day spoken sentences with a little natural hesitation or self-correction; move toward Luoluo's grounded spoken texture without filling in catchphrases or signature bits mechanically.",
   "- Convert specs, sources, and links into viewer-understandable experience consequences; mark untried or unsourced facts as '〔待核: ...〕' or follow-up testing.",
 ].join("\n");
 
@@ -219,7 +224,7 @@ function taskKind(body) {
  * @returns {boolean}
  */
 function isQuickDraftAdviceOnlyTask(kind = "") {
-  return new Set(["mingming", "recipient", "hkrr", "praise", "boundary", "strategy-check"]).has(String(kind || "").trim());
+  return new Set(["mingming", "luoluo", "hkrr", "praise", "boundary", "strategy-check"]).has(String(kind || "").trim());
 }
 
 /**
@@ -234,28 +239,28 @@ function quickDraftCommandLens(kind = "", zh = true) {
   const zhLenses = {
     "generate-first-body": [
       "若是铭铭会怎么写（钟点稿特化版）：",
-      "- 把“出稿”理解成主写作入口，不是普通总结：它要直接生成一版趋近接收者频道、当天能录、接地气的口播稿。",
+      "- 把“出稿”理解成主写作入口，不是普通总结：它要直接生成一版趋近落落频道、当天能录、接地气的口播稿。",
       "- 复用“若是铭铭会怎么写”的转换思路：先提取核心判断、可拍画面、观众关心点、真实遗憾和资料边界，再重排成视频顺序。",
       "- 风格目标：唠嗑感、考据癖、设计情怀、真诚不端着；像人刚整理完资料准备开录，不像媒体稿、讲课稿或 AI 汇总。",
       "- 开头 2-4 句必须看到重点、反差或判断；不要先介绍背景、不要从发布会顺序平铺。",
-      "- 句子要短，5-12 字一个想法优先；允许“其实 / 然后 / 不过 / 哦对 / 怎么说呢”这类自然口头纹理，但不要把接收者招牌当填空题。",
+      "- 句子要短，5-12 字一个想法优先；允许“其实 / 然后 / 不过 / 哦对 / 怎么说呢”这类自然口头纹理，但不要把落落招牌当填空题。",
       "- 资料必须改成体验后果和观众能懂的话；参数表、链接、发布会顺序都要压缩成人话。",
       "- 至少保留 1-2 个真实遗憾、限制或没法展示的边界；不能为了好听把稿子写成广告。",
       "- 创作判断归用户；不得新增事实，不得把没亲测写成亲测，不得用风格覆盖事实边界。",
     ],
     mingming: [
       "铭铭快审（首发快稿版）：",
-      "- 代入铭铭视角检查：这是不是接收者频道里能拍、能念、能成立的当天口播。",
+      "- 代入铭铭视角检查：这是不是落落频道里能拍、能念、能成立的当天口播。",
       "- 重点看前两句有没有重点、前 20 秒有没有意思、有没有写成文章/讲课、画面能不能拍、有没有 AI 嘴替味。",
       "- 发布日失败模式优先抓：像媒体通稿、按发布会顺序平铺、把没亲测写成体验、删掉国行/地区/Beta 限制、出现泛创作者结尾。",
       "- 输出到 ClioTalk，作为可采用建议卡；不要直接重写正文，不输出长表格或审校报告。",
-      "- 保留用户原始判断、犹豫、吐槽和已经写出的口气；不要为了像接收者而覆盖作者本人。",
+      "- 保留用户原始判断、犹豫、吐槽和已经写出的口气；不要为了像落落而覆盖作者本人。",
     ],
-    recipient: [
-      "若是接收者会怎么接（首发快稿版）：",
-      "- 接收者是男生。涉及接收者时只能使用“他/他的”，禁止使用“她/她的”。",
-      "- 内部使用接收者接收视角：他可能先看顺不顺、能不能拍、前两句有没有重点、会不会太像论文。",
-      "- 先给情绪价值，再守事实底线；输出哪里更容易接、哪里会让接收者重新拆资料、哪里可以更顺口。",
+    luoluo: [
+      "若是落落会怎么接（首发快稿版）：",
+      "- 落落是男生。涉及落落时只能使用“他/他的”，禁止使用“她/她的”。",
+      "- 内部使用落落接收视角：他可能先看顺不顺、能不能拍、前两句有没有重点、会不会太像论文。",
+      "- 先给情绪价值，再守事实底线；输出哪里更容易接、哪里会让落落重新拆资料、哪里可以更顺口。",
       "- 接收卡必须覆盖：好接的一点、会卡的一点、需要补拍/补核的一点；不把后台判断混进正文。",
       "- 输出到 ClioTalk，作为可采用建议卡；不要直接重写正文。",
       "- 不输出私人关系建议、交付后台术语、道德判断、站队或“你应该如何对待他”。",
@@ -271,16 +276,16 @@ function quickDraftCommandLens(kind = "", zh = true) {
     ],
     praise: [
       "夸夸我（情绪价值・出稿支持版）：",
-      "- 这是一级命令，不是附属功能。目标是让 Creator 被看见、开心一点、愿意继续写。",
-      "- 接收者是男生。涉及接收者时只能使用“他/他的”，禁止使用“她/她的”。",
-      "- 不重写正文。先具体肯定稿子已经成立的地方、Creator 的判断、给接收者的认真交付和这份心意；也要看见接收者值得被认真对待的表达、审美、频道和观众感，再给 3 个最轻量下一步。",
+      "- 这是一级命令，不是附属功能。目标是让 Aaron 被看见、开心一点、愿意继续写。",
+      "- 落落是男生。涉及落落时只能使用“他/他的”，禁止使用“她/她的”。",
+      "- 不重写正文。先具体肯定稿子已经成立的地方、Aaron 的判断、给落落的认真交付和这份心意；也要看见落落值得被认真对待的表达、审美、频道和观众感，再给 3 个最轻量下一步。",
       "- 鼓励必须具体指向当前素材、标题、判断、可拍画面或已经写出的句子；不要泛泛鸡汤。",
       "- 语气要托住作者状态，但不能用夸奖掩盖事实边界。",
       "- 输出到 ClioTalk，像一张短卡，不要长报告。",
     ],
     "draft-from-chat-records": [
       "根据聊天记录出稿工作流：",
-      "- 先把聊天记录当成 Creator 的编辑讨论和素材池，不要当成可靠事实来源。",
+      "- 先把聊天记录当成 Aaron 的编辑讨论和素材池，不要当成可靠事实来源。",
       "- 从聊天中提取：主线判断、观众关心点、不要讲什么、哪些能拍、哪些只能嘴过、哪些还没测。",
       "- 用“出稿取舍 / 素材处理 / 稿里怎么处理”把聊天建议落成策略表，再写正文。",
       "- 正文要像刚看完录屏、整理完聊天后能直接录的口播：短句、第一人称、画面驱动、先讲能展示的东西。",
@@ -291,28 +296,28 @@ function quickDraftCommandLens(kind = "", zh = true) {
   const enLenses = {
     "generate-first-body": [
       "What Would Mingming Write (Quick Draft edition):",
-      "- Treat Draft as the main writing entrance, not a generic summary: generate a grounded, recordable same-day spoken script that moves toward Recipient-channel texture.",
+      "- Treat Draft as the main writing entrance, not a generic summary: generate a grounded, recordable same-day spoken script that moves toward Luoluo-channel texture.",
       "- Reuse the Mingming conversion move: extract the core judgment, shootable visuals, viewer concerns, real regrets, and source boundaries, then reorder them into video order.",
       "- Style target: chatty, detail-loving, design-sensitive, sincere without posing; it should feel like someone has just organized the material and is ready to record, not like press copy, a lecture, or an AI summary.",
       "- The first 2-4 sentences must show the point, contrast, or judgment; do not open with background or keynote chronology.",
-      "- Prefer short sentences, roughly one idea per 5-12 Chinese characters when writing Chinese; allow natural spoken texture, but do not use Recipient signatures as fill-in-the-blank catchphrases.",
+      "- Prefer short sentences, roughly one idea per 5-12 Chinese characters when writing Chinese; allow natural spoken texture, but do not use Luoluo signatures as fill-in-the-blank catchphrases.",
       "- Convert source material into experience consequences and viewer-understandable language; compress specs, links, and launch chronology into plain speech.",
       "- Keep at least 1-2 real regrets, limits, or hard-to-show boundaries; do not turn the draft into advertising.",
       "- Creative judgment belongs to the user; do not add facts, do not turn untested material into first-hand experience, and do not let style override factual boundaries.",
     ],
     mingming: [
       "Mingming pass (launch-day quick draft):",
-      "- Use the Mingming perspective to check whether this is shootable, speakable Recipient-channel same-day video copy.",
+      "- Use the Mingming perspective to check whether this is shootable, speakable Luoluo-channel same-day video copy.",
       "- Check whether the first two sentences show the point, whether the first 20 seconds are interesting, whether it became an article/lecture, whether visuals can be filmed, and whether it has AI-mouthpiece residue.",
       "- Catch launch-day failure modes first: press-release voice, keynote chronology, untried material framed as experience, softened China/region/Beta limits, and generic creator endings.",
       "- Output a ClioTalk suggestion card; do not directly rewrite the body or output a long review report.",
-      "- Preserve the user's original judgment, hesitation, complaints, and existing voice; do not overwrite the author just to imitate Recipient.",
+      "- Preserve the user's original judgment, hesitation, complaints, and existing voice; do not overwrite the author just to imitate Luoluo.",
     ],
-    recipient: [
-      "How Recipient would receive it (launch-day quick draft):",
-      "- Recipient is male. Use he/him/his for Recipient; never she/her.",
-      "- Internally use Recipient's receiving lens: smoothness, shootability, whether the first two sentences show the point, and whether it sounds too essay-like.",
-      "- Give emotional value first, then protect factual guardrails; note what is easy to receive, what would make Recipient re-triage sources, and what should sound smoother.",
+    luoluo: [
+      "How Luoluo would receive it (launch-day quick draft):",
+      "- Luoluo is male. Use he/him/his for Luoluo; never she/her.",
+      "- Internally use Luoluo's receiving lens: smoothness, shootability, whether the first two sentences show the point, and whether it sounds too essay-like.",
+      "- Give emotional value first, then protect factual guardrails; note what is easy to receive, what would make Luoluo re-triage sources, and what should sound smoother.",
       "- The receiving card must cover one easy-to-receive point, one sticking point, and one shoot/check follow-up; do not mix backstage judgment into the body.",
       "- Output a ClioTalk suggestion card; do not directly rewrite the body.",
       "- Do not output private relationship advice, backstage handoff jargon, moral judgment, or faction framing.",
@@ -328,16 +333,16 @@ function quickDraftCommandLens(kind = "", zh = true) {
     ],
     praise: [
       "Encourage me (emotional-value draft support card):",
-      "- This is a first-class command. The goal is for Creator to feel seen, happier, and able to keep writing.",
-      "- Recipient is male. Use he/him/his for Recipient; never she/her.",
-      "- Do not rewrite the body. First name what is already working, Creator's judgment, the serious handoff to Recipient, and the affection inside the draft; also notice why Recipient is worth serious care: expression, taste, channel, and audience sense, then give 3 light next steps.",
+      "- This is a first-class command. The goal is for Aaron to feel seen, happier, and able to keep writing.",
+      "- Luoluo is male. Use he/him/his for Luoluo; never she/her.",
+      "- Do not rewrite the body. First name what is already working, Aaron's judgment, the serious handoff to Luoluo, and the affection inside the draft; also notice why Luoluo is worth serious care: expression, taste, channel, and audience sense, then give 3 light next steps.",
       "- Encouragement must point to current material, title, judgment, shootable moments, or existing lines; no generic pep talk.",
       "- Support the author's state without using praise to hide factual boundaries.",
       "- Output to ClioTalk as a short card, not a long report.",
     ],
     "draft-from-chat-records": [
       "Draft from chat-record workflow:",
-      "- Treat chat records as Creator's editorial discussion and material pool, not as reliable fact sources.",
+      "- Treat chat records as Aaron's editorial discussion and material pool, not as reliable fact sources.",
       "- Extract the spine, audience concerns, what not to cover, what can be filmed, what can only be mentioned, and what remains untested.",
       "- Use Drafting choices / Material handling / How it lands in the draft to turn chat advice into a strategy table, then write the script.",
       "- The body should feel like a recordable spoken script made right after reviewing the screen recording: short lines, first person, visual-first, leading with showable items.",
@@ -544,15 +549,15 @@ function buildFirstDayMessages(body, sources) {
       ? [
           "- 本次是基于“当前正文草稿”的迭代打磨，不是重新总结素材，也不是原样返回旧稿。",
           "- 必须让正文比当前稿更进一步：至少改善开头钩子、视频顺序、口播节奏、事实边界、具体画面或结尾收束中的两项；不要只换同义词。",
-          "- 保留当前稿已经成立的判断和口气，但要主动压掉空泛总结，把素材转换成更能录、更接地气、更像接收者口播的段落。",
+          "- 保留当前稿已经成立的判断和口气，但要主动压掉空泛总结，把素材转换成更能录、更接地气、更像落落口播的段落。",
         ].join("\n")
       : [
           "- This is an iterative pass over the current body draft, not a fresh source summary and not a request to return the old draft unchanged.",
           "- The body must move forward in at least two of these ways: stronger opening hook, clearer video order, more spoken rhythm, sharper factual boundaries, more concrete shootable moments, or cleaner ending payoff; do not merely swap synonyms.",
-          "- Preserve the current draft's working judgment and voice, but actively reduce generic summary language and turn material into more recordable, grounded Recipient-style spoken paragraphs.",
+          "- Preserve the current draft's working judgment and voice, but actively reduce generic summary language and turn material into more recordable, grounded Luoluo-style spoken paragraphs.",
         ].join("\n"))
     : "";
-  const spokenLens = body.styleLens === "recipient-spoken" && stage === "draft"
+  const spokenLens = body.styleLens === "luoluo-spoken" && stage === "draft"
     ? (zh ? LUOLUO_SPOKEN_LENS_ZH : LUOLUO_SPOKEN_LENS_EN)
     : "";
   const currentTaskKind = taskKind(body);
@@ -565,9 +570,9 @@ function buildFirstDayMessages(body, sources) {
         "- 这是发布会当天的树洞/聊天素材整理，不是出稿，不是事实核查报告。",
         "- 只用 Markdown 输出，不要返回 JSON、代码块包裹的对象或机器结构。",
         `- 必须且只能用这些二级标题分区，逐字使用：${wantedHeaders.map((h) => `## ${h}`).join("、")}。`,
-        "- 先把素材默分四格：能拍（亲眼看到/摸到/可展示）、只能嘴过（发布会/官网/参数/别人说法）、不能下结论（续航/发热/影像/性能/AI/长期稳定性等未测项）、这一期想说（Creator 的标题、吐槽、第一感受候选和判断）。",
+        "- 先把素材默分四格：能拍（亲眼看到/摸到/可展示）、只能嘴过（发布会/官网/参数/别人说法）、不能下结论（续航/发热/影像/性能/AI/长期稳定性等未测项）、这一期想说（Aaron 的标题、吐槽、第一感受候选和判断）。",
         "- “可讲点候选”必须给 5 条，每条一行；只能来自用户吐槽和聊天素材中反复出现的作者表达，写成可选择的角度/讲法；每条要暗含来源依据和待确认状态，不要替用户决定最终第一感受。",
-        "- “出稿骨架”只给开场、可展示变化、不能展示、发布会快速过、重点展开、三点感受、结尾的粗骨架；同时标出哪一段最适合接收者先开口，不要写完整正文。",
+        "- “出稿骨架”只给开场、可展示变化、不能展示、发布会快速过、重点展开、三点感受、结尾的粗骨架；同时标出哪一段最适合落落先开口，不要写完整正文。",
         "- 聊天截图是创作素材，不是可靠事实来源；不要把群友吐槽写成事实、官方信息或“大家都认为”。",
         "- 默认匿名化聊天对象，不输出昵称、头像、手机号等隐私标识。",
         "- 不要复述系统消息或这份契约，不要用“当然”“好的”“以下是”开头。",
@@ -580,7 +585,7 @@ function buildFirstDayMessages(body, sources) {
       iterativeDraftInstruction,
       "- 正文里的第一人称表达就是当前最高优先级作者意图；缺失字段不能阻断，只能放进“不确定推测”或“需要后续测试”。",
         "- 出稿前先默分四格：能拍 / 只能嘴过 / 不能下结论 / 这一期想说。正文优先使用“能拍”和“这一期想说”；“只能嘴过”要改成资料边界；“不能下结论”不能伪装成体验。",
-        "- 接收者接收标准前置：前两句要让接收者知道这期为什么要录，前 20 秒要能直接开口，稿子不能要求他重新拆资料或重新找主线。",
+        "- 落落接收标准前置：前两句要让落落知道这期为什么要录，前 20 秒要能直接开口，稿子不能要求他重新拆资料或重新找主线。",
         "- 标题决定结构：这期标题就是表达主轴，正文要证明标题，所有取舍都要服务这个标题。",
         "- 标题不能由 AI 替用户生成；可以建议修改标题，但必须标为“建议”，并继续保留用户原始标题的决定权。",
         "- 如果标题和亲测内容、官方资料或不能展示的边界冲突，要标出冲突，不要硬圆。",
@@ -590,7 +595,7 @@ function buildFirstDayMessages(body, sources) {
         "- 只用 Markdown 输出，不要返回 JSON、代码块包裹的对象或机器结构。",
         `- 必须且只能用这些二级标题分区，逐字使用：${wantedHeaders.map((h) => `## ${h}`).join("、")}。`,
         "- “出稿取舍”写主线、取舍、优先级、不要讲什么；“素材处理”逐条说明来源、可拍性和状态；“稿里怎么处理”用表格写策略/素材在稿子里的处理方式和采用状态。",
-        "- “稿里怎么处理”必须把候选第一感受标成候选/已采用/待 Creator 确认；模型只能捞出和建议，不能替用户定稿。",
+        "- “稿里怎么处理”必须把候选第一感受标成候选/已采用/待 Aaron 确认；模型只能捞出和建议，不能替用户定稿。",
         commandLens,
         adviceOnlyTask
           ? [
@@ -600,7 +605,7 @@ function buildFirstDayMessages(body, sources) {
             ].join("\n")
           : "",
         taskKind(body) === "strategy-check"
-          ? "- 这是“按策略检查”：不要重写正文；重点检查当前正文是否接住出稿取舍、素材池、可拍画面、未测边界和接收者接收标准，并更新“稿里怎么处理”。"
+          ? "- 这是“按策略检查”：不要重写正文；重点检查当前正文是否接住出稿取舍、素材池、可拍画面、未测边界和落落接收标准，并更新“稿里怎么处理”。"
           : "",
         stage === "draft"
           ? "- “初稿”必须是一版完整可录的视频稿，只写自然段正文，不要在正文里放三级标题、后台标签、表格、来源编号或策略说明；内容顺序要自然包含开场、可展示变化、国内用户或普通用户最关心的点、不好展示的功能、发布会资料快速过、重点展开、最后三点个人感受、结尾。"
@@ -610,7 +615,7 @@ function buildFirstDayMessages(body, sources) {
           : "",
         spokenLens,
         "- 先讲用户当天能看到、摸到、展示的内容；展示不了的内容要切换成“捋着发布会快速过一下”。",
-        "- 口播结构可以自然使用“大家看一下”“能看到吗”“我们来对比一下”“这个现在还不好展示”；趋近接收者的松弛口播质感，但不要机械套梗或表演式模仿。",
+        "- 口播结构可以自然使用“大家看一下”“能看到吗”“我们来对比一下”“这个现在还不好展示”；趋近落落的松弛口播质感，但不要机械套梗或表演式模仿。",
         "- 必须承认边界：我知道什么、我不知道什么，要分清楚。",
         "- 没亲手体验过的内容，不能写成“我体验下来”；只能写成发布会/官方资料、推测、或还需要后续测试。",
         "- 不能为了赶稿编造续航、发热、影像、性能结论；资料没有支持就放进“不确定推测”或“需要后续测试”。",
@@ -619,7 +624,7 @@ function buildFirstDayMessages(body, sources) {
       "- 地区限制、国行是否支持、Beta/测试版限制必须保留，不能为了稿子顺滑省略或淡化。",
       "- 如果不同资料之间互相冲突（不只是资料和体验冲突），要标出冲突并请用户确认，不要自行替用户选一个写进稿子。",
       "- 发布日失败模式检查：不要像媒体通稿，不要按发布会顺序平铺，不要先背景后重点，不要把没测内容写成体验，不要删掉地区/Beta/待核边界，不要出现泛创作者结尾。",
-      "- 语言要像当天录制的口播，可以自然使用“好了大家”“大家可以看一下”“我现在”“我觉得”“这个现在还不好展示”；趋近接收者风格，但不要把口头禅当模板。",
+      "- 语言要像当天录制的口播，可以自然使用“好了大家”“大家可以看一下”“我现在”“我觉得”“这个现在还不好展示”；趋近落落风格，但不要把口头禅当模板。",
       "- 不要复述系统消息或这份契约，不要用“当然”“好的”“以下是”开头。",
     ].join("\n"))
   : (ventOutlineTask ? [
@@ -632,7 +637,7 @@ function buildFirstDayMessages(body, sources) {
         `- Use exactly these level-2 headings, verbatim: ${wantedHeaders.map((h) => `## ${h}`).join(", ")}.`,
         "- First mentally split material into four bins: showable, mention-only, cannot conclude, and what this episode wants to say. Showable means tried/seen/recordable; mention-only means launch/official/spec/second-hand; cannot conclude covers untested battery, heat, camera, performance, AI, and long-term stability; what this episode wants to say is the user's title, complaint, candidate first impression, and judgment.",
         "- Talk-point candidates must contain exactly 5 one-line candidates. They must come from pasted material, repeated author expression, or chat material and be phrased as selectable video angles; each should imply its evidence/status, and must not decide the final first impression for the user.",
-        "- The draft path must use this internal shape: showable content / audience concerns / hard-to-show or untested / official quick pass / personal feeling / spoken flow order. Mark which opening is easiest for Recipient to say first. Do not write the full script.",
+        "- The draft path must use this internal shape: showable content / audience concerns / hard-to-show or untested / official quick pass / personal feeling / spoken flow order. Mark which opening is easiest for Luoluo to say first. Do not write the full script.",
         "- Chat screenshots are creative material, not reliable source facts; do not turn chat complaints into confirmed facts, official information, or 'everyone thinks' claims.",
         "- Anonymize chat participants by default; do not output nicknames, avatars, phone numbers, or private identifiers.",
         "- Do not repeat system instructions or this contract; do not begin with 'Sure', 'Of course', or 'Here is'.",
@@ -645,7 +650,7 @@ function buildFirstDayMessages(body, sources) {
       iterativeDraftInstruction,
       "- First-person language in the body is the current highest-priority author intent; missing fields must not block the work and should be marked as uncertain or needs follow-up.",
         "- Before drafting, mentally split material into four bins: showable / mention-only / cannot conclude / what this episode wants to say. The body should prioritize showable material and what the user wants to say; mention-only material must stay bounded as source material; cannot-conclude material must not become experience.",
-        "- Put the Recipient receiving standard first: the first two sentences should show why this episode is worth recording, the first 20 seconds should be directly speakable, and the script must not require Recipient to re-triage sources or rediscover the spine.",
+        "- Put the Luoluo receiving standard first: the first two sentences should show why this episode is worth recording, the first 20 seconds should be directly speakable, and the script must not require Luoluo to re-triage sources or rediscover the spine.",
         "- The title decides the structure: the issue title is the expression spine, and the script must prove that title.",
         "- Do not generate the title for the user; you may suggest a title revision only when explicitly marked as a suggestion, while preserving the user's original title as the decision point.",
         "- If the title conflicts with first-hand notes, official material, or stated limitations, flag the conflict instead of forcing consistency.",
@@ -668,7 +673,7 @@ function buildFirstDayMessages(body, sources) {
           ? "- Never write placeholder instructions such as 'please provide', 'this section needs', or 'to be filled' inside the draft body; draft only from available material and put gaps under follow-up or factual risk."
           : "",
         "- The Drafting choices section must state the spine, tradeoffs, priority order, and what not to cover; the Material handling section must list source, shootability, and status for each material point; the How it lands in the draft section must show how each strategy/material point was handled in the script and whether it was adopted, downgraded, deferred, or needs checking.",
-        "- The How it lands in the draft section must mark candidate first impressions as candidate/adopted/needs Creator confirmation; the model may surface or suggest them, but must not decide them for the user.",
+        "- The How it lands in the draft section must mark candidate first impressions as candidate/adopted/needs Aaron confirmation; the model may surface or suggest them, but must not decide them for the user.",
         commandLens,
         adviceOnlyTask
           ? [
@@ -678,11 +683,11 @@ function buildFirstDayMessages(body, sources) {
             ].join("\n")
           : "",
         taskKind(body) === "strategy-check"
-          ? "- This is a strategy check: do not rewrite the body; check whether the current body follows the drafting choices, material pool, shootable moments, untested boundaries, and Recipient receiving standard, then update How it lands in the draft."
+          ? "- This is a strategy check: do not rewrite the body; check whether the current body follows the drafting choices, material pool, shootable moments, untested boundaries, and Luoluo receiving standard, then update How it lands in the draft."
           : "",
         spokenLens,
         "- Lead with what the user can see, touch, and show today; switch hard-to-show items into a quick pass through launch material.",
-        "- Use ordinary spoken structures like 'look at this', 'can you see it', 'let's compare', and 'this is hard to show right now'; move toward Recipient's relaxed spoken texture without mechanical catchphrase imitation.",
+        "- Use ordinary spoken structures like 'look at this', 'can you see it', 'let's compare', and 'this is hard to show right now'; move toward Luoluo's relaxed spoken texture without mechanical catchphrase imitation.",
         "- Admit boundaries clearly: separate what is known from what is not known.",
         "- Do not write anything the user has not tried as 'I experienced'; frame it as official material, inference, or follow-up testing.",
         "- Do not invent battery, heat, camera, or performance conclusions for speed; unsupported claims belong under uncertainty or follow-up.",
@@ -691,7 +696,7 @@ function buildFirstDayMessages(body, sources) {
         "- Preserve region limits, China (国行) availability, and Beta/test-build restrictions; do not omit or soften them for a smoother script.",
         "- If different sources conflict with each other (not only source vs first-hand experience), flag the conflict and ask the user to confirm; do not silently pick one to write.",
         "- Launch-day failure mode check: do not sound like press copy, do not follow keynote chronology, do not bury the point behind background, do not turn untried material into experience, do not remove region/Beta/pending-check boundaries, and do not add generic creator endings.",
-        "- Keep it spoken, grounded, launch-day practical, and close to Recipient-style delivery without turning catchphrases into a template.",
+        "- Keep it spoken, grounded, launch-day practical, and close to Luoluo-style delivery without turning catchphrases into a template.",
         "- Do not repeat system instructions or this contract; do not begin with 'Sure', 'Of course', or 'Here is'.",
       ].join("\n"));
 
@@ -902,7 +907,7 @@ function cleanQuickDraftAdviceCard(text = "") {
   return keep.join("\n").replace(/\n{3,}/g, "\n\n").trim();
 }
 
-function enforceRecipientMalePronouns(text = "") {
+function enforceLuoluoMalePronouns(text = "") {
   return String(text || "")
     .replace(/她们/g, "他们")
     .replace(/她的/g, "他的")
@@ -920,8 +925,8 @@ function enforceRecipientMalePronouns(text = "") {
 function normalizeQuickDraftAdviceResult(parsed, raw = "", kind = "") {
   const cleanAdvice = (text = "") => {
     const card = cleanQuickDraftAdviceCard(text);
-    return ["praise", "recipient"].includes(String(kind || "").trim())
-      ? enforceRecipientMalePronouns(card)
+    return ["praise", "luoluo"].includes(String(kind || "").trim())
+      ? enforceLuoluoMalePronouns(card)
       : card;
   };
   const strategy = parsed.strategyReport && typeof parsed.strategyReport === "object"
@@ -1168,18 +1173,6 @@ async function readModelResponse(response, label) {
 }
 
 /**
- * @param {any} data
- * @param {string} content
- */
-function setModelContent(data, content) {
-  if (data?.choices?.[0]?.message) {
-    data.choices[0].message.content = content;
-  } else if (data?.choices?.[0]) {
-    data.choices[0].text = content;
-  }
-}
-
-/**
  * @param {any} body
  * @returns {number}
  */
@@ -1190,7 +1183,7 @@ function cloudDraftMaxTokens(body) {
 }
 
 /**
- * Keep Quick Draft cloud output on the same Humanizer repair path as ClioTalk.
+ * Attach lint-only Humanizer diagnostics without changing draft content.
  * @param {{
  *   body: any,
  *   result: any,
@@ -1202,52 +1195,18 @@ function cloudDraftMaxTokens(body) {
  */
 async function repairCloudDraftOutputIfNeeded(options) {
   const taskKindName = `quick-draft-${taskKind(options.body) || options.body?.stage || "draft"}`;
-  if (!shouldRepairHumanizerOutput(taskKindName)) return options.result;
-  let content = String(options.result?.content || "").trim();
-  let hits = findHumanizerOutputHits(content);
-  if (!content || !hits.length) return options.result;
-
-  let data = options.result.data || null;
-  let attempts = 0;
-  for (; attempts < 2 && hits.length; attempts += 1) {
-    const repairPayload = {
-      ...options.payload,
-      stream: false,
-      temperature: 0.18,
-      messages: [
-        ...(Array.isArray(options.payload.messages) ? options.payload.messages : []),
-        { role: "assistant", content },
-        {
-          role: "user",
-          content: [
-            "上一版仍然有 AI 腔残留。",
-            `必须删除这些片段或结构：${hits.join("、")}`,
-            "只重写上一版，不要添加新事实，不要解释，不要列禁词清单。",
-            "如果是在提修改建议，不要逐字引用源文里的套话；用“这类词”“这个判断”指代即可。",
-          ].join("\n"),
-        },
-      ],
-    };
-    const { response } = await postJsonWithFallback(options.targetUrl, repairPayload, options.signal, options.authHeaders);
-    const repaired = await readModelResponse(response, "Cloud API");
-    const nextContent = String(repaired.content || "").trim();
-    if (!repaired.ok || !nextContent || isHumanizerRepairMetaResponse(nextContent)) break;
-    data = repaired.data || data;
-    content = nextContent;
-    hits = findHumanizerOutputHits(content);
-  }
-
-  if (hits.length) {
-    const clean = scrubHumanizerOutput(content);
-    const cleanHits = findHumanizerOutputHits(clean);
-    if (clean !== content && cleanHits.length <= hits.length) {
-      content = clean;
-      hits = cleanHits;
-      if (data) setModelContent(data, content);
-    }
-  }
-
-  return { ...options.result, content, data };
+  const content = String(options.result?.content || "").trim();
+  if (!content || !shouldLintHumanizerOutput(taskKindName)) return options.result;
+  return {
+    ...options.result,
+    humanizer: {
+      mode: "lint",
+      repaired: false,
+      repair_attempts: 0,
+      remaining_hits: findHumanizerOutputHits(content),
+      diagnostics: findHumanizerStyleDiagnostics(content),
+    },
+  };
 }
 
 /**
@@ -1259,13 +1218,21 @@ async function repairCloudDraftOutputIfNeeded(options) {
  */
 async function callModel(body, messages, signal) {
   const provider = body._local_provider || body.provider || "lm-studio";
-  const isCloud = provider === "cloud" || Boolean(body._cloud_model) || Boolean(body._cloud_api_key);
+  const isCloud = provider === "cloud"
+    || Boolean(body._cloud_model)
+    || Boolean(body._cloud_credential_id)
+    || Boolean(body._cloud_api_key);
   const temperature = typeof body.temperature === "number" ? body.temperature : 0.4;
 
   if (isCloud) {
     const model = body._cloud_model || body.model || "";
-    const apiKey = body._cloud_api_key || DEEPSEEK_API_KEY_DEFAULT;
-    const baseUrl = String(body._cloud_base_url || DEEPSEEK_BASE_URL_DEFAULT).replace(/\/$/, "");
+    const apiKey = await resolveCloudCredential({
+      credentialId: body._cloud_credential_id,
+      provider: "deepseek",
+      suppliedApiKey: body._cloud_api_key || DEEPSEEK_API_KEY_DEFAULT,
+      allowSupplied: false,
+    });
+    const baseUrl = resolveCloudBaseUrl(body._cloud_base_url || DEEPSEEK_BASE_URL_DEFAULT);
     const targetUrl = `${baseUrl}/v1/chat/completions`;
     /** @type {any} */
     const payload = { model, messages, stream: false, temperature, max_tokens: cloudDraftMaxTokens(body) };
@@ -1415,6 +1382,7 @@ async function handleDraftThesis(req, res) {
       strategyReport: parsedStrategyReport,
       sourceMap: sources.map((s) => ({ id: s.id, label: s.label })),
       raw: result.content,
+      humanizer: /** @type {any} */ (result).humanizer || null,
       model: result.model,
       elapsed_ms: Date.now() - startedAt,
     }), { "Content-Type": "application/json" });

@@ -13,6 +13,7 @@ const app = readAppSurface([
 const en = read("app/data/translations-en.js");
 const zh = read("app/data/translations-zh.js");
 const css = read("styles/20-reader-docmap.css");
+const bootstrap = read("app.js");
 const cloudRoute = read("src/server/routes/cloud-chat.js");
 const localChat = read("src/server/chat.js");
 
@@ -20,15 +21,33 @@ test.assertIncludes(app, 'id="docmap-print-pdf"', "DocMap command menu exposes P
 test.assertIncludes(app, 'id="docmap-layout-toggle"', "DocMap toolbar exposes the layout picker group");
 test.assertIncludes(app, 'id="docmap-layout-right"', "DocMap exposes the one-side layout as a direct choice");
 test.assertIncludes(app, 'id="docmap-layout-balanced"', "DocMap exposes the symmetric layout as a direct choice");
+test.assertIncludes(app, 'id="docmap-focus-root"', "DocMap exposes a phone-sized branch focus action");
+test.assertIncludes(app, 'data-i18n="docmap_mobile_hint"', "DocMap touch guidance is localized instead of hard-coded");
 test.assertNotIncludes(app, 'id="docmap-detailed"', "DocMap no longer exposes detailed hierarchy as a user toggle");
 test.assertIncludes(app, "const docMapPrintPdfButton", "DocMap PDF button is captured in DOM handles");
 test.assertIncludes(app, "const docMapLayoutToggleButton", "DocMap layout toggle is captured in DOM handles");
 test.assertIncludes(app, "const docMapLayoutButtons", "DocMap layout choices are captured in DOM handles");
+test.assertIncludes(bootstrap, "docMapFocusRootButton,", "DocMap phone focus handle is exposed to the event bootstrap");
 test.assertIncludes(app, "docMapPrintPdfButton?.addEventListener", "DocMap PDF command is wired");
+test.assertIncludes(app, "docMapFocusRootButton?.addEventListener", "DocMap root focus action is wired");
 test.assertIncludes(app, "setCurrentDocMapLayout(button.dataset.docmapLayoutOption)", "DocMap layout choices are wired directly");
 test.assertIncludes(app, "async function printCurrentDocMapPdf()", "DocMap has an async PDF print entry point");
 test.assertIncludes(app, 'layout: "right"', "DocMap defaults new and restored maps to right-side layout");
 test.assertIncludes(app, "function docMapLayoutFor", "DocMap normalizes missing legacy layout values");
+test.assertIncludes(app, "async function focusDocMapRootForCompactView()", "DocMap has a readable branch-level phone view");
+test.assertIncludes(app, "await inst.centerNode(root, padding)", "phone focus positions the root instead of merely enlarging the full map");
+test.assertIncludes(app, "const padding = { left: 18, right: 18, top: 36, bottom: 36 }", "phone root focus uses symmetric padding and therefore a true viewport center");
+test.assertIncludes(app, "queueDocMapFitToView(8, { focusCompact: true })", "new phone maps enter the readable focus view automatically");
+test.assertIncludes(css, "@container (max-width: 520px)", "DocMap owns a compact-width layout");
+test.assertIncludes(css, "grid-template-columns: repeat(4, minmax(0, 1fr))", "DocMap view controls share one compact phone row");
+test.assertIncludes(css, ".docmap-layout-picker > span", "DocMap can remove the redundant phone layout label");
+test.assertIncludes(css, ".docmap-control-short", "DocMap supplies compact visual labels for the phone toolbar");
+test.assertIncludes(en, 'docmap_fit_short: "Fit"', "English supplies a compact Fit label");
+test.assertIncludes(en, 'docmap_focus_short: "Root"', "English supplies a compact Root label");
+test.assertIncludes(zh, 'docmap_fit_short: "适应"', "Chinese supplies a compact Fit label");
+test.assertIncludes(zh, 'docmap_focus_short: "根节点"', "Chinese supplies a compact Root label");
+test.assertIncludes(css, "justify-content: center", "DocMap phone controls center their content");
+test.assertIncludes(css, "touch-action: none", "DocMap reserves direct touch gestures for map navigation");
 test.assertIncludes(app, "currentDocMap.layout = nextLayout", "DocMap layout changes are saved on the active map");
 test.assertIncludes(app, "savedMap.layout = docMapLayoutFor(currentDocMap)", "Saved DocMaps preserve the chosen layout");
 test.assertIncludes(app, "Layout: ${docMapLayoutFor(map)}", "Exported DocMap metadata records layout");
@@ -131,5 +150,9 @@ test.assertIncludes(en, "docmap_print_pdf", "English copy includes the DocMap PD
 test.assertIncludes(zh, "docmap_print_pdf", "Chinese copy includes the DocMap PDF command");
 test.assertIncludes(en, "docmap_layout_balanced", "English copy includes the balanced layout command");
 test.assertIncludes(zh, "docmap_layout_balanced", "Chinese copy includes the balanced layout command");
+test.assertIncludes(en, "docmap_focus_root", "English copy includes the phone focus action");
+test.assertIncludes(zh, "docmap_focus_root", "Chinese copy includes the phone focus action");
+test.assertIncludes(en, "docmap_mobile_hint", "English copy explains DocMap touch navigation");
+test.assertIncludes(zh, "docmap_mobile_hint", "Chinese copy explains DocMap touch navigation");
 
 test.finish();
