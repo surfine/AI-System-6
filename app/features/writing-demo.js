@@ -608,7 +608,7 @@ async function writingDemoProbeReader() {
   const timer = setTimeout(() => controller.abort(), 8000);
   try {
     const response = await fetch(`/api/reader?url=${encodeURIComponent(writingDemoAppleUrl)}`, { signal: controller.signal });
-    if (!response.ok) throw new Error(await response.text() || response.statusText);
+    if (!response.ok) throw new Error(serviceErrorDetail(response.status, await response.text()));
     const data = await response.json();
     return { label, ok: !!String(data?.text || "").trim(), error: data?.text ? null : "Reader 正文为空" };
   } catch (error) {
@@ -1124,7 +1124,7 @@ async function writingDemoReaderFetchWithTimeout(url, ms = 7000) {
   const timer = setTimeout(() => controller.abort(), ms);
   try {
     const response = await fetch(`/api/reader?url=${encodeURIComponent(url)}`, { signal: controller.signal });
-    if (!response.ok) throw new Error(await response.text() || response.statusText);
+    if (!response.ok) throw new Error(serviceErrorDetail(response.status, await response.text()));
     const data = await response.json();
     const readerDoc = { ...data, kind: "web", source: data.url };
     createReaderWebDocumentTab(readerDoc, { forceNew: true });

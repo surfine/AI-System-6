@@ -434,15 +434,7 @@ async function fetchReaderPage(urlArg = null) {
   try {
     const response = await fetch(`/api/reader?url=${encodeURIComponent(url)}`);
     if (!response.ok) {
-      const detail = await response.text();
-      let message = detail || response.statusText;
-      try {
-        const parsed = JSON.parse(detail);
-        message = parsed.detail || parsed.error || message;
-      } catch {
-        // Keep plain-text errors as-is.
-      }
-      throw new Error(message);
+      throw new Error(serviceErrorDetail(response.status, await response.text()));
     }
 
     const data = await response.json();

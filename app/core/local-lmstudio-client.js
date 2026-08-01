@@ -117,7 +117,12 @@ window.AISystem6LocalLMStudio = (() => {
     } catch {
       data = null;
     }
-    const detail = String(errorDetail(data, text || response.statusText || `HTTP ${response.status}`)).slice(0, 1200);
+    // This module also runs outside the app bundle (its own test harness), so
+    // the shared body-is-not-a-message rule is used when it is present.
+    const fallback = typeof serviceErrorDetail === "function"
+      ? serviceErrorDetail(response.status, text)
+      : (text || response.statusText || `HTTP ${response.status}`);
+    const detail = String(errorDetail(data, fallback)).slice(0, 1200);
     if (response.status === 401 || response.status === 403) {
       throw new Error(`lmstudio_auth_failed: ${detail}`);
     }

@@ -18,6 +18,9 @@ const menus = read("app/data/menus.js");
 const styles = read("styles/22-time-machine.css");
 const router = read("src/server/router.js");
 const dictionary = read("app/data/system-dictionary.js");
+const strings = read("app/core/strings.js");
+const en = read("app/data/translations-en.js");
+const zh = read("app/data/translations-zh.js");
 const {
   parseWaybackCdx,
   parseWaybackAvailability,
@@ -29,6 +32,7 @@ const {
   sanitizeBrowserHtml,
 } = require("../../src/server/time-machine.js");
 const { decodeTextBuffer } = require("../../src/server/lib/fetch.js");
+const { charsetFromMetaPrescan } = require("../../src/server/lib/charset.js");
 
 test.assertIncludes(index, 'data-window="timeMachine"', "Time Machine owns an independent application window");
 test.assertIncludes(index, 'id="time-machine-back"', "restricted browser exposes Back navigation");
@@ -196,5 +200,35 @@ test.assert(
   decodeTextBuffer(zlib.gzipSync(Buffer.from(archivedMarkup)), {}, 1024) === archivedMarkup,
   "headerless gzip snapshots are decoded before archive rendering"
 );
+
+const legacyPage = Buffer.concat([
+  Buffer.from('<html><head><script src="/wombat.js" charset="utf-8"></script>'),
+  Buffer.from('<meta http-equiv="Content-Type" content="text/html; charset=gb2312"><title>'),
+  Buffer.from([0xc6, 0xbb, 0xb9, 0xfb]),
+  Buffer.from("</title></head><body></body></html>"),
+]);
+test.assert(
+  decodeTextBuffer(legacyPage, { "content-type": "text/html" }, 65536).includes("<title>苹果</title>"),
+  "an archived page declaring a legacy charset is decoded with that charset, not as UTF-8"
+);
+test.assert(
+  decodeTextBuffer(legacyPage, { "content-type": "text/html; charset=utf-8" }, 65536).includes("<title>苹果</title>"),
+  "the page's own declaration wins when a replay header claims UTF-8 over bytes that are not UTF-8"
+);
+test.assert(
+  charsetFromMetaPrescan(legacyPage) === "gb2312",
+  "the charset prescan reads <meta> declarations only, not the archive's injected script tags"
+);
+test.assertIncludes(server, '<meta charset="utf-8">', "the replay frame states the encoding of the transcoded page it renders");
+test.assertIncludes(feature, "docMapSource: timeMachineDocMapSource,", "the loaded page is published as a DocMap source, not only as a button handler");
+test.assertIncludes(feature, "function timeMachineDocMapSource()", "one accessor answers both the window's DocMap button and DocMap's own entry points");
+test.assertIncludes(feature, "throw new Error(serviceErrorDetail(response.status, text));", "a failed archive request reports a status, never the upstream error page it received");
+test.assertNotIncludes(feature, "payload?.error || text", "a gateway's HTML body is never used as the message shown to the writer");
+test.assertIncludes(strings, "function serviceErrorDetail(status, body)", "one shared helper decides what a failed response is allowed to say");
+test.assertIncludes(strings, "looksLikeMarkup", "the helper recognizes an HTML error page and refuses to quote it");
+for (const key of ["service_http_error"]) {
+  test.assertIncludes(en, `${key}:`, `English includes ${key}`);
+  test.assertIncludes(zh, `${key}:`, `Chinese includes ${key}`);
+}
 
 test.finish();

@@ -327,14 +327,7 @@ async function searchFindPath(query, start = 0) {
   const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&limit=${limit}&start=${start}&provider=${encodeURIComponent(provider)}`);
 
   if (!response.ok) {
-    const detail = await response.text();
-    try {
-      const payload = JSON.parse(detail);
-      throw new Error(payload.detail || payload.error || response.statusText);
-    } catch (error) {
-      if (error instanceof SyntaxError) throw new Error(detail || response.statusText);
-      throw error;
-    }
+    throw new Error(serviceErrorDetail(response.status, await response.text()));
   }
 
   const data = await response.json();

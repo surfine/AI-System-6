@@ -95,10 +95,28 @@ function requestOriginIsTrusted(req, policy) {
   if (host.port && host.port !== policy.port) return false;
 
   const fetchSite = String(req.headers["sec-fetch-site"] || "").toLowerCase();
-  if (fetchSite === "cross-site") return false;
+  const fetchDest = String(req.headers["sec-fetch-dest"] || "").toLowerCase();
+  // #time-machine-frame loads archived pages via sandbox="allow-scripts"
+  // (no allow-same-origin) so its content stays isolated from the app's
+  // real origin. That opaqueness makes the browser report the frame's own
+  // *navigation* to our same-server render route as Sec-Fetch-Site:
+  // cross-site — indistinguishable, by that header alone, from a foreign
+  // site embedding us. Sec-Fetch-Dest: iframe narrows the exception to
+  // exactly that navigation, not to script-initiated fetch/XHR calls
+  // against this or any other /api/* route.
+  const isSandboxedRenderFrame =
+    fetchSite === "cross-site"
+    && fetchDest === "iframe"
+    && requestPath(req) === "/api/time-machine/render";
+  if (fetchSite === "cross-site" && !isSandboxedRenderFrame) return false;
 
   const origin = String(req.headers.origin || "").trim();
-  if (!origin) {
+  // A request from a sandboxed iframe without allow-same-origin (the Time
+  // Machine content frame) carries the literal header value "null", not an
+  // absent header — new URL("null") throws, so without this check every
+  // such request fell through to the catch below and was rejected as
+  // untrusted. Treat it the same as no Origin header at all.
+  if (!origin || origin === "null") {
     return isLoopbackHostname(req.socket?.remoteAddress || "")
       || (policy.allowLan && !!policy.authToken);
   }
@@ -138,7 +156,9 @@ function applySecurityHeaders(res) {
       "font-src 'self' data:",
       "connect-src 'self' http://127.0.0.1:* http://localhost:* http://[::1]:*",
       "worker-src 'self' blob:",
-      "frame-src https://challenges.cloudflare.com",
+      // 'self' is for #time-machine-frame, which embeds our own
+      // /api/time-machine/render endpoint (see routes/time-machine.js).
+      "frame-src 'self' https://challenges.cloudflare.com",
       "object-src 'none'",
       "base-uri 'none'",
       "frame-ancestors 'none'",

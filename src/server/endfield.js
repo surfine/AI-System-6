@@ -791,8 +791,11 @@ async function postEndfieldChatPayload(payload, body, signal) {
     const model = String(body._cloud_model || payload.model || "deepseek-v4-flash").trim();
     const baseUrl = resolveCloudBaseUrl(body._cloud_base_url || DEEPSEEK_BASE_URL_DEFAULT);
     const cloudPayload = enforceMarkdownOnlyChatPayload({ ...payload, model });
-    if (/^(?:deepseek-)?v4-(?:pro|flash)$/i.test(model)
-        && (!cloudPayload.thinking || cloudPayload.thinking.type !== "disabled")) {
+    if (/^(?:deepseek-)?v4-(?:pro|flash)$/i.test(model)) {
+      // Matches cloud-chat.js: leaving thinking enabled on a long,
+      // strict-citation RAG prompt lets the model spend the whole
+      // max_tokens budget on hidden reasoning and return an empty answer.
+      cloudPayload.thinking = { type: "disabled" };
       delete cloudPayload.temperature;
       delete cloudPayload.top_p;
       delete cloudPayload.presence_penalty;

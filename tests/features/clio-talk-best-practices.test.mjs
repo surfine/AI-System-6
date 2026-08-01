@@ -434,4 +434,17 @@ for (const key of ["file_floppy", "local_model"]) {
   test.assertIncludes(translationsZh, `${key}:`, `Chinese includes the ClioTalk ${key} label`);
 }
 
+// A reply carries two menus on one row. They must behave like System 6 menus:
+// one open at a time, dismissed by a click elsewhere, never cut off by the
+// transcript's edge.
+test.assertIncludes(chatMessages, "function closeOtherClioTalkMessageMenus(except = null)", "opening one message menu closes every other one");
+test.assertIncludes(chatMessages, 'document.querySelectorAll(".message-actions details[open]")', "menu exclusion spans the whole transcript, not one message");
+test.assertIncludes(chatMessages, "function bindClioTalkMenuDismiss()", "a pointer landing outside the menu closes it, the only exit a phone has");
+test.assertIncludes(chatMessages, "function placeClioTalkMenu(details, menu)", "a menu with no room above it opens downward instead of being clipped");
+test.assertIncludes(styles, ".message-action-menu.is-below {", "the flipped menu has an owned anchor rule");
+test.assertIncludes(chatMessages, "if (actions.children.length) item.append(actions);", "the action row is a grid child of the message, not content inside the reply bubble");
+test.assertNotIncludes(chatMessages, 'item.querySelector(".message-content")?.append(actions)', "the user's own actions never sit inside the message bubble");
+test.assertIncludes(chatMessages, "function syncClioTalkMenuAvailability(details, menu)", "a menu with no available item steps aside instead of opening empty");
+test.assertIncludes(chatMessages, "syncClioTalkMenuAvailability(useDetails, useMenu)", "a reply with no saved record offers no destination menu");
+
 test.finish();

@@ -1151,8 +1151,69 @@ function appendClioTalkRunReceipt(item, record) {
   body.append(receipt);
 }
 
+// Only one message menu may stand open. The two menus on an assistant reply
+// ("使用结果" and "•••") anchor to the same row, so a second open menu lands on
+// top of the first and hides the choices underneath it.
+function closeOtherClioTalkMessageMenus(except = null) {
+  document.querySelectorAll(".message-actions details[open]").forEach((other) => {
+    if (other !== except) other.open = false;
+  });
+}
+
+// The menu opens above its row, which is where a reply's actions sit. For the
+// message at the top of the transcript there is no room up there, so it opens
+// downward instead of being cut off by the scroller's edge.
+function placeClioTalkMenu(details, menu) {
+  menu.classList.remove("is-below");
+  const scroller = details.closest(".messages");
+  if (!scroller) return;
+  if (menu.getBoundingClientRect().top < scroller.getBoundingClientRect().top) {
+    menu.classList.add("is-below");
+  }
+}
+
+// Every item in a menu can be conditional — a reply with no saved record has
+// no destination to choose, nothing to undo, and no table to chart. A summary
+// that opens an empty box promises actions this message does not have, so the
+// whole control steps aside instead.
+function syncClioTalkMenuAvailability(details, menu) {
+  const available = menu.querySelector("button:not([hidden]):not(:disabled)");
+  details.hidden = !available;
+  if (details.hidden) details.open = false;
+}
+
+let clioTalkMenuDismissBound = false;
+
+function bindClioTalkMenuDismiss() {
+  if (clioTalkMenuDismissBound) return;
+  clioTalkMenuDismissBound = true;
+  // A System 6 menu closes as soon as the pointer lands somewhere else. On a
+  // phone there is no Escape key, so without this the summary is the only exit.
+  document.addEventListener("pointerdown", (event) => {
+    document.querySelectorAll(".message-actions details[open]").forEach((details) => {
+      if (!details.contains(event.target)) details.open = false;
+    });
+  }, true);
+}
+
 function installClioTalkDetailsMenu(details, summary, menu) {
   menu.setAttribute("role", "menu");
+  summary.setAttribute("aria-haspopup", "menu");
+  bindClioTalkMenuDismiss();
+  details.addEventListener("toggle", () => {
+    if (!details.open) return;
+    syncClioTalkMenuAvailability(details, menu);
+    if (!details.open) return;
+    closeOtherClioTalkMessageMenus(details);
+    placeClioTalkMenu(details, menu);
+  });
+  // Choosing a menu item closes the menu, the same way every menu here does.
+  menu.addEventListener("click", (event) => {
+    if (!event.target.closest("button:not(:disabled)")) return;
+    requestAnimationFrame(() => {
+      details.open = false;
+    });
+  });
   details.addEventListener("keydown", (event) => {
     const items = [...menu.querySelectorAll("button:not(:disabled):not([hidden])")];
     if (event.key === "Escape") {
@@ -1174,7 +1235,7 @@ function installClioTalkDetailsMenu(details, summary, menu) {
   });
 }
 
-function createClioTalkActionMenu(item, className = "message-more-actions") {
+function createClioTalkActionMenu(className = "message-more-actions") {
   const details = document.createElement("details");
   details.className = className;
   const summary = document.createElement("summary");
@@ -1185,19 +1246,7 @@ function createClioTalkActionMenu(item, className = "message-more-actions") {
   const menu = document.createElement("div");
   menu.className = "message-action-menu";
   details.append(summary, menu);
-  details.addEventListener("toggle", () => {
-    if (!details.open) return;
-    item.querySelectorAll(".message-actions details[open]").forEach((other) => {
-      if (other !== details) other.open = false;
-    });
-  });
   installClioTalkDetailsMenu(details, summary, menu);
-  menu.addEventListener("click", (event) => {
-    if (!event.target.closest("button:not(:disabled)")) return;
-    requestAnimationFrame(() => {
-      details.open = false;
-    });
-  });
   return { details, menu };
 }
 
@@ -1695,7 +1744,7 @@ function appendMessageActions(item, role, content, options = {}) {
   const messageId = options.messageRecord?.id || item.dataset.messageId || "";
 
   if (role === "user") {
-    const { details: moreDetails, menu: moreMenu } = createClioTalkActionMenu(item);
+    const { details: moreDetails, menu: moreMenu } = createClioTalkActionMenu();
     if (!options.messageRecord?.temporaryChat) {
       const editBtn = document.createElement("button");
       editBtn.className = "btn mini-btn";
@@ -1709,6 +1758,7 @@ function appendMessageActions(item, role, content, options = {}) {
     }
     appendMessageTranslation(moreMenu, item, role, content);
     moreMenu.querySelectorAll("button").forEach((button) => button.setAttribute("role", "menuitem"));
+    syncClioTalkMenuAvailability(moreDetails, moreMenu);
     actions.append(moreDetails);
   } else if (role === "assistant") {
     const disposition = document.createElement("strong");
@@ -1718,7 +1768,7 @@ function appendMessageActions(item, role, content, options = {}) {
     disposition.textContent = clioTalkReplyReceiptLabel(options.messageRecord);
     disposition.hidden = initialReceiptState === "temporary";
 
-    const { details: moreDetails, menu: moreMenu } = createClioTalkActionMenu(item);
+    const { details: moreDetails, menu: moreMenu } = createClioTalkActionMenu();
     const copyBtn = document.createElement("button");
     copyBtn.className = "btn mini-btn";
     copyBtn.textContent = t("copy");
@@ -1809,12 +1859,17 @@ function appendMessageActions(item, role, content, options = {}) {
     useMenu.querySelectorAll("button").forEach((button) => button.setAttribute("role", "menuitem"));
     useDetails.append(useSummary, useMenu);
     moreMenu.append(ignoreBtn);
+    syncClioTalkMenuAvailability(useDetails, useMenu);
+    syncClioTalkMenuAvailability(moreDetails, moreMenu);
     actions.append(disposition, useDetails, moreDetails);
   }
 
-  if (actions.children.length) {
-    item.querySelector(".message-content")?.append(actions);
-  }
+  // The action row belongs to the message, not to the reply text: it is a grid
+  // child beside the speaker column, which is what `grid-column` and
+  // `justify-self` on `.message-actions` have always described. Inside
+  // `.message-content` those rules are inert, which is how the user's "•••"
+  // ended up sitting inside the message bubble.
+  if (actions.children.length) item.append(actions);
 }
 
 function refreshMessageTranslationButtons() {
@@ -3484,7 +3539,7 @@ async function throwModelResponseError(response, endPerf) {
   const routeLabel = typeof cloudConfig !== "undefined" && cloudConfig && cloudConfig.active
     ? "Cloud API"
     : "LM Studio";
-  const message = `${routeLabel} returned ${response.status}: ${detail}`;
+  const message = `${routeLabel} returned ${response.status}: ${serviceErrorDetail(response.status, detail)}`;
   const code = typeof classifyLmStudioError === "function" ? classifyLmStudioError(message, response) : "";
   endPerf?.({ error: true, status: response.status });
   throw new Error([code, message].filter(Boolean).join(": "));

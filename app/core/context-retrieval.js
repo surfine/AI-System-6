@@ -83,7 +83,7 @@ async function embedTexts(texts, signal) {
   }
 
   if (!response.ok) {
-    throw new Error(`Embedding request failed: ${response.status} ${await response.text()}`);
+    throw new Error(`Embedding request failed: ${response.status} ${serviceErrorDetail(response.status, await response.text())}`);
   }
   const data = await response.json();
   return data.data.map((item) => item.embedding);

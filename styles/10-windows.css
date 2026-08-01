@@ -1730,6 +1730,7 @@ html:lang(zh-Hans) .title-bar h2 {
   font-family: var(--ui-font);
   font-size: 11px;
   font-weight: 700;
+  line-height: 1.35;
 }
 
 .message-actions .btn {
@@ -1900,8 +1901,7 @@ html:lang(zh-Hans) .title-bar h2 {
   grid-column: 2;
   align-items: flex-start;
   gap: 6px;
-  min-height: 30px;
-  margin-top: 8px;
+  margin-top: 4px;
   padding-top: 0;
   border-top: 0;
   opacity: 0;
@@ -1918,7 +1918,6 @@ html:lang(zh-Hans) .title-bar h2 {
 .assistant-window:not(.is-quick-draft-sideask) .message.user .message-actions {
   position: relative;
   justify-self: end;
-  min-height: 26px;
   margin-top: 4px;
 }
 
@@ -2033,6 +2032,12 @@ html:lang(zh-Hans) .title-bar h2 {
 .message.user .message-action-menu {
   left: auto;
   right: 0;
+}
+
+.message-use-menu.is-below,
+.message-action-menu.is-below {
+  top: calc(100% + 6px);
+  bottom: auto;
 }
 
 .message-use-menu .btn,

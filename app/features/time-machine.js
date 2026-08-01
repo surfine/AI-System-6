@@ -44,6 +44,16 @@ const timeMachineAddressForm = document.querySelector("#time-machine-address-for
 const timeMachineAddressInput = document.querySelector("#time-machine-address");
 const timeMachineTabsEl = document.querySelector("#time-machine-tabs");
 const timeMachineFrameEl = document.querySelector("#time-machine-frame");
+// #time-machine-frame is sandboxed to an opaque origin, so the parent can't
+// read its contentDocument to know when a navigation actually finished
+// painting — /api/time-machine/render does its own archive.org fetch
+// independent of the /browse call that populates the address bar, and that
+// fetch alone can take several seconds. data-frame-ready is the only
+// externally observable "is the page actually up yet" signal (used by the
+// promo recording script).
+timeMachineFrameEl?.addEventListener("load", () => {
+  timeMachineFrameEl.dataset.frameReady = "true";
+});
 const timeMachineReaderEl = document.querySelector("#time-machine-reader");
 const timeMachineHomeEl = document.querySelector("#time-machine-home");
 const timeMachineLoadingEl = document.querySelector("#time-machine-loading");
@@ -725,7 +735,9 @@ function timeMachineShowHome() {
     }
   }
   if (timeMachineFrameEl) {
+    timeMachineFrameEl.removeAttribute("src");
     timeMachineFrameEl.srcdoc = "";
+    delete timeMachineFrameEl.dataset.frameReady;
     timeMachineFrameEl.classList.remove("is-hidden");
   }
   timeMachineReaderEl?.classList.add("is-hidden");
@@ -737,58 +749,20 @@ function timeMachineShowHome() {
   timeMachineUpdateNavigationButtons();
 }
 
-function timeMachineFrameDocument(page) {
-  const baseUrl = page?.fetchedUrl || page?.url || "about:blank";
-  const bridge = `
-    <script>
-      (() => {
-        const send = (type, detail = {}) => parent.postMessage({ channel: "ai-system-6-time-machine", type, ...detail }, "*");
-        document.addEventListener("click", (event) => {
-          const anchor = event.target.closest("a[href]");
-          if (!anchor) return;
-          const href = anchor.href;
-          if (!/^https?:/i.test(href)) return;
-          event.preventDefault();
-          send("navigate", { url: href });
-        }, true);
-        document.addEventListener("submit", (event) => {
-          const form = event.target;
-          if (!(form instanceof HTMLFormElement)) return;
-          event.preventDefault();
-          const method = String(form.method || "get").toLowerCase();
-          if (method !== "get") {
-            send("blocked", { reason: "form" });
-            return;
-          }
-          const target = new URL(form.action || location.href, location.href);
-          new FormData(form).forEach((value, key) => {
-            if (typeof value === "string") target.searchParams.append(key, value);
-          });
-          send("navigate", { url: target.href });
-        }, true);
-      })();
-    </script>
-  `;
-  const shell = `
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src http: https: data: blob:; style-src 'unsafe-inline' http: https:; font-src http: https: data:; media-src http: https:; script-src 'unsafe-inline'; connect-src 'none'; frame-src 'none'; object-src 'none'; form-action 'none';">
-    <base href="${escapeHtml(baseUrl)}">
-    <style>
-      html, body { min-height: 100%; }
-      body { margin: 0; overflow-wrap: anywhere; }
-      img, video, svg, canvas { max-width: 100%; height: auto; }
-      #wm-ipp-base, #wm-ipp-print, .archive-header, [id^="archive-banner"] { display: none; }
-    </style>
-  `;
-  let html = String(page?.html || "");
-  if (/<head\b[^>]*>/i.test(html)) {
-    html = html.replace(/<head\b([^>]*)>/i, `<head$1>${shell}`);
-  } else if (/<html\b[^>]*>/i.test(html)) {
-    html = html.replace(/<html\b([^>]*)>/i, `<html$1><head>${shell}</head>`);
-  } else {
-    html = `<!doctype html><html><head>${shell}</head><body>${html}</body></html>`;
-  }
-  if (/<\/body\s*>/i.test(html)) return html.replace(/<\/body\s*>/i, `${bridge}</body>`);
-  return `${html}${bridge}`;
+/**
+ * The frame loads through /api/time-machine/render rather than being handed
+ * an assembled srcdoc string, because a srcdoc document inherits the app's
+ * own (stricter) global CSP on top of any it declares, so an <img> allowance
+ * meant for archived pages never actually took effect — see
+ * src/server/time-machine.js's renderTimeMachineFrameDocument for the shell
+ * this endpoint wraps the page in.
+ */
+function timeMachineFrameRenderUrl(page) {
+  const params = new URLSearchParams({
+    url: page?.fetchedUrl || page?.url || "",
+    original: page?.url || "",
+  });
+  return `/api/time-machine/render?${params}`;
 }
 
 function timeMachineRenderReader() {
@@ -852,7 +826,12 @@ function timeMachineApplyPage(page, archive = null, restoreState = null) {
   timeMachineUpdateWindowTitle(page, archive);
   timeMachineAddressInput.value = page.url || timeMachineAddressInput.value;
   timeMachineHomeEl.hidden = true;
-  timeMachineFrameEl.srcdoc = timeMachineFrameDocument(currentTimeMachinePage);
+  // A present-but-empty srcdoc attribute still wins over src per spec, so
+  // the frame would keep rendering blank about:srcdoc — must fully remove
+  // the attribute, not just clear its value.
+  timeMachineFrameEl.removeAttribute("srcdoc");
+  delete timeMachineFrameEl.dataset.frameReady;
+  timeMachineFrameEl.src = timeMachineFrameRenderUrl(currentTimeMachinePage);
   timeMachineRenderReader();
   currentTimeMachineView = restoreState?.viewMode === "reader" && page.reader?.text ? "reader" : currentTimeMachineView;
   timeMachineSyncViewButtons();
@@ -882,7 +861,10 @@ async function timeMachineFetchJson(url, signal) {
   } catch {
     payload = null;
   }
-  if (!response.ok) throw new Error(payload?.detail || payload?.error || text || response.statusText);
+  if (!response.ok) throw new Error(serviceErrorDetail(response.status, text));
+  // A 200 carrying something other than JSON is a gateway page standing in for
+  // this app's API, not an answer from it.
+  if (!payload) throw new Error(serviceErrorDetail(response.status, text));
   return payload;
 }
 
@@ -994,7 +976,9 @@ async function timeMachineNavigate(value, options = {}) {
   } catch (error) {
     if (error?.name === "AbortError") return false;
     currentTimeMachinePage = null;
+    timeMachineFrameEl.removeAttribute("src");
     timeMachineFrameEl.srcdoc = "";
+    delete timeMachineFrameEl.dataset.frameReady;
     timeMachineReaderEl.replaceChildren();
     timeMachineReaderEl.classList.add("is-hidden");
     timeMachineFrameEl.classList.remove("is-hidden");
@@ -1009,8 +993,14 @@ async function timeMachineNavigate(value, options = {}) {
     setStatus(t("time_machine_error", error.message));
     return false;
   } finally {
-    if (currentTimeMachineRequest === controller) currentTimeMachineRequest = null;
-    timeMachineSetLoading(false);
+    // A superseded request (address/date/checkbox changes each fire their
+    // own navigate) must not clear the loading flag for the request that
+    // replaced it — otherwise the UI reports "done loading" while the real,
+    // still-in-flight navigation is the one actually filling the frame.
+    if (currentTimeMachineRequest === controller) {
+      currentTimeMachineRequest = null;
+      timeMachineSetLoading(false);
+    }
     timeMachineUpdateNavigationButtons();
   }
 }
@@ -1385,10 +1375,14 @@ async function clipTimeMachineSelectionWithTranslation() {
   }
 }
 
-function makeTimeMachineDocMap() {
+// The loaded page as a DocMap source. DocMap's own entry points (the desktop
+// icon, the Special menu, a keyboard shortcut) reach for this too, because by
+// the time they run the Time Machine window is no longer the active one.
+function timeMachineDocMapSource() {
   const selection = timeMachineReaderSelection().text;
   const text = selection || currentTimeMachinePage?.reader?.text || "";
-  return makeDocMapFromCurrentSource({
+  if (!text.trim()) return null;
+  return {
     text,
     label: currentTimeMachinePage?.reader?.title || currentTimeMachinePage?.title || t("time_machine"),
     scope: "timeMachine",
@@ -1398,7 +1392,11 @@ function makeTimeMachineDocMap() {
       archiveProvider: currentTimeMachinePage?.archive?.provider || "",
     },
     threshold: selection ? docMapMinSelectionChars : docMapMinDocumentChars,
-  });
+  };
+}
+
+function makeTimeMachineDocMap() {
+  return makeDocMapFromCurrentSource(timeMachineDocMapSource() || { text: "", scope: "timeMachine" });
 }
 
 async function askTimeMachineSource() {
@@ -1574,5 +1572,6 @@ window.AISystem6TimeMachine = Object.freeze({
   restoreSession: restoreTimeMachineSession,
   runMenuCommand: runTimeMachineMenuCommand,
   openSnapshot: openTimeMachineSnapshotSource,
+  docMapSource: timeMachineDocMapSource,
 });
 window.AISystem6TimeMachineLoaded = true;

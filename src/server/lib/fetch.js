@@ -25,6 +25,7 @@ const https = require("node:https");
 const net = require("node:net");
 const zlib = require("node:zlib");
 
+const { decodeResponseText } = require("./charset.js");
 const {
   isLoopbackUrl,
   shouldAvoidNodeFetchForTarget,
@@ -86,7 +87,9 @@ function isResponseTooLargeError(error) {
 /**
  * Consume a fetch Response body while enforcing a byte limit during
  * download. The byte count is over the wire-decoded body bytes, before
- * UTF-8 decoding into a JavaScript string.
+ * decoding into a JavaScript string. The bytes are read rather than taken
+ * from `response.text()` so the body can be decoded with the charset the
+ * response declares — `Response.text()` always assumes UTF-8.
  *
  * @param {Response} response
  * @param {number | undefined} maxBytes
@@ -94,7 +97,10 @@ function isResponseTooLargeError(error) {
  */
 async function readFetchText(response, maxBytes) {
   const limit = normalizedMaxBytes(maxBytes);
-  if (limit === undefined) return await response.text();
+  const contentType = headerValue(response.headers, "content-type");
+  if (limit === undefined) {
+    return decodeResponseText(Buffer.from(await response.arrayBuffer()), contentType);
+  }
 
   const contentLength = Number(response.headers.get("content-length") || 0);
   if (Number.isFinite(contentLength) && contentLength > limit) {
@@ -127,7 +133,7 @@ async function readFetchText(response, maxBytes) {
     body.set(chunk, offset);
     offset += chunk.byteLength;
   }
-  return new TextDecoder().decode(body);
+  return decodeResponseText(Buffer.from(body.buffer, body.byteOffset, body.byteLength), contentType);
 }
 
 /**
@@ -186,7 +192,7 @@ function decodeTextBuffer(buffer, headers, maxBytes) {
   if (maxBytes !== undefined && decoded.byteLength > maxBytes) {
     throw responseTooLargeError(maxBytes);
   }
-  return decoded.toString("utf8");
+  return decodeResponseText(decoded, headerValue(headers, "content-type"));
 }
 
 /**

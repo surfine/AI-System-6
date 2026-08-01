@@ -1593,8 +1593,7 @@ ${projectContext}`;
         stream: false,
       }, requestController.signal);
       if (!response.ok) {
-        const detail = await response.text();
-        throw new Error(detail || response.statusText);
+        throw new Error(serviceErrorDetail(response.status, await response.text()));
       }
       const result = await response.json().catch(() => ({}));
       const raw = String(result?.choices?.[0]?.message?.content || "").trim();

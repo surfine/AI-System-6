@@ -211,6 +211,13 @@ function docMapCanUseSelectionContext(context) {
   ].includes(context.surface);
 }
 
+// Time Machine ships as a lazy module, so its loaded page is reached through
+// the window's own accessor rather than a shared variable.
+function docMapSourceFromTimeMachine() {
+  const source = window.AISystem6TimeMachine?.docMapSource?.();
+  return source?.text?.trim() ? source : null;
+}
+
 function docMapSourceFromPreferredContext(preferredContext) {
   if (!preferredContext?.text) return null;
   const text = String(preferredContext.text || "").trim();
@@ -283,6 +290,10 @@ function resolveDocMapSource(preferredContext = null) {
       scope: "reader",
       threshold: docMapMinDocumentChars,
     };
+  }
+  if (activeName === "timeMachine") {
+    const source = docMapSourceFromTimeMachine();
+    if (source) return source;
   }
   if (activeName === "teachText" && teachTextBodyInput.value.trim()) {
     return {
@@ -371,6 +382,8 @@ function resolveDocMapSource(preferredContext = null) {
       threshold: docMapMinDocumentChars,
     };
   }
+  const timeMachineSource = docMapSourceFromTimeMachine();
+  if (timeMachineSource) return timeMachineSource;
   if (teachTextBodyInput.value.trim()) {
     return {
       text: teachTextBodyInput.value.trim(),
