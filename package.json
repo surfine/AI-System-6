@@ -138,6 +138,9 @@
     "verify:web-safety": "node scripts/verify-web-release-safety.mjs",
     "deploy:web": "node scripts/deploy-web.mjs"
   },
+  "overrides": {
+    "sanitize-html": "2.17.5"
+  },
   "devDependencies": {
     "@types/node": "^18.19.130",
     "esbuild": "^0.25.10",
