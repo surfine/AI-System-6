@@ -29,6 +29,10 @@ const appEntry = read("app.js");
 const contextRetrieval = read("app/core/context-retrieval.js");
 const dragDrop = read("app/core/drag-drop.js");
 
+test.assertIncludes(indexHtml, 'class="sys-icon sys-icon-mini clio-welcome-icon" data-system-icon="assistant"', "ClioTalk's first screen uses the registered conversation icon");
+test.assertIncludes(chatMessages, 'renderSystemIcon("assistant", {', "runtime welcome states reuse the same registered ClioTalk icon");
+test.assertNotIncludes(styles, ".clio-welcome::before", "ClioTalk no longer draws a generic document placeholder in CSS");
+
 test.assertIncludes(chatMessages, "function clioTalkResponseContractInstruction", "ClioTalk has an explicit response contract");
 test.assertIncludes(chatMessages, "Start with the useful answer", "Contract makes the first paragraph directly useful");
 test.assertIncludes(chatMessages, "Treat visible writing objects as native entities", "Contract treats AI System 6 objects as first-class entities");
@@ -414,7 +418,7 @@ test.assertMatches(styles, /\.composer \.composer-icon-button \{[\s\S]*width: 36
 test.assertMatches(styles, /\.assistant-window:not\(\.is-quick-draft-sideask\) \.message:not\(\.clio-welcome\) \{[\s\S]*grid-template-columns: var\(--clio-speaker-gutter\) minmax\(0, 1fr\)/, "ClioTalk reads as a file-native conversation ledger with a stable speaker gutter");
 test.assertMatches(styles, /\.assistant-window:not\(\.is-quick-draft-sideask\) \.speaker \{[\s\S]*display: block;[\s\S]*text-align: right;/, "Visible speaker labels make every Chat-file record attributable without adding more controls");
 test.assertIncludes(chatMessages, 'item.setAttribute("aria-label", role === "user" ? t("you") : clioTalkAssistantDisplayName())', "Visible speaker labels retain matching message ownership for assistive technology");
-test.assertMatches(styles, /\.clio-welcome::before \{[\s\S]*border: var\(--clio-welcome-object-border\)/, "The empty state introduces a real Chat-file object instead of a generic AI hero");
+test.assertMatches(styles, /\.clio-welcome \.clio-welcome-icon \{[\s\S]*justify-self: center;/, "The empty state centers the registered ClioTalk object instead of drawing a generic AI hero");
 test.assertIncludes(styles, ".messages-stage", "The message scroller and latest-message control share one window-local owner");
 test.assertIncludes(styles, ".clio-scroll-latest", "The latest-message affordance has a stable visual hook");
 test.assertIncludes(styles, ".message.pending.streaming .message-content::after", "Streaming uses a lightweight state caret instead of a second loading card");

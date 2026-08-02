@@ -133,6 +133,99 @@
     return window.crypto?.randomUUID?.() || `soundscape-${Date.now()}-${Math.random().toString(16).slice(2)}`;
   }
 
+  // System 6 has no slider. Position uses a dithered scroll-bar track and level
+  // uses the Sound control panel's segment cells, so both are drawn here rather
+  // than delegated to a browser-native range input. Both keep role="slider",
+  // aria-valuenow, and full keyboard control.
+
+  // Pointer capture throws when the id is no longer active; a dropped capture
+  // must not abort the drag handler.
+  function capturePointer(element, pointerId) {
+    try {
+      element.setPointerCapture?.(pointerId);
+    } catch {
+      /* the drag still works without capture */
+    }
+  }
+
+  function releasePointer(element, pointerId) {
+    try {
+      element.releasePointerCapture?.(pointerId);
+    } catch {
+      /* already released */
+    }
+  }
+
+  function isControlDisabled(element) {
+    return element.getAttribute("aria-disabled") === "true";
+  }
+
+  function pointerRatio(element, event) {
+    const rect = element.getBoundingClientRect();
+    if (!rect.width) return 0;
+    return clamp(((event.clientX - rect.left) / rect.width) * 100) / 100;
+  }
+
+  function bindDragControl(element, handlers) {
+    if (!element) return;
+    let dragging = false;
+    const apply = (event) => handlers.onInput(pointerRatio(element, event));
+    element.addEventListener("pointerdown", (event) => {
+      if (isControlDisabled(element)) return;
+      dragging = true;
+      capturePointer(element, event.pointerId);
+      apply(event);
+    });
+    element.addEventListener("pointermove", (event) => {
+      if (dragging) apply(event);
+    });
+    element.addEventListener("pointerup", (event) => {
+      if (!dragging) return;
+      dragging = false;
+      releasePointer(element, event.pointerId);
+      handlers.onCommit();
+    });
+    element.addEventListener("keydown", (event) => {
+      if (isControlDisabled(element)) return;
+      const step = event.shiftKey ? 0.1 : 0.02;
+      const delta = { ArrowLeft: -step, ArrowDown: -step, ArrowRight: step, ArrowUp: step }[event.key];
+      const jump = { Home: 0, End: 1 }[event.key];
+      if (delta === undefined && jump === undefined) return;
+      event.preventDefault();
+      handlers.onInput(jump === undefined ? clamp((handlers.ratio() + delta) * 100) / 100 : jump);
+      handlers.onCommit();
+    });
+  }
+
+  function renderTrack(element, ratio) {
+    if (!element) return;
+    element.style.setProperty("--system-track-position", `${clamp(ratio * 100)}%`);
+  }
+
+  function segmentCount(element) {
+    return Number(element.dataset.segments) || 12;
+  }
+
+  function renderSegments(element, value) {
+    if (!element) return;
+    const count = segmentCount(element);
+    if (element.childElementCount !== count) {
+      element.replaceChildren(...Array.from({ length: count }, () => document.createElement("span")));
+    }
+    const filled = Math.round((clamp(value) / 100) * count);
+    Array.from(element.children).forEach((cell, index) => {
+      cell.classList.toggle("is-on", index < filled);
+    });
+    element.setAttribute("aria-valuenow", String(Math.round(clamp(value))));
+    element.setAttribute("aria-valuetext", translate("soundscape_level_of", `${filled} of ${count}`, filled, count));
+  }
+
+  function segmentValueFromRatio(element, ratio) {
+    const count = segmentCount(element);
+    const index = Math.min(count, Math.max(0, Math.ceil(ratio * count)));
+    return clamp((index / count) * 100);
+  }
+
   function formatDuration(seconds) {
     const safeSeconds = Math.max(0, Math.floor(Number(seconds) || 0));
     const minutes = Math.floor(safeSeconds / 60);
@@ -241,29 +334,35 @@
     return [temperature, energy, depth];
   }
 
+  // The swatch walks the same cold -> paper -> warm ramp as the sensory field.
+  // Interpolating hue instead would pass through green and disagree with the
+  // field the user actually set the value in.
+  function mixChannels(from, to, ratio) {
+    return from.map((value, index) => Math.round(value + (to[index] - value) * ratio));
+  }
+
   function styleColor(style = state.style) {
-    const hue = Math.round(218 - (style.x / 100) * 184);
-    const saturation = Math.round(34 + style.intensity * 0.34);
-    const lightness = Math.round(50 + (100 - style.y) * 0.22);
-    return `hsl(${hue}deg ${saturation}% ${lightness}%)`;
+    const cold = [62, 130, 201];
+    const warm = [212, 138, 52];
+    const paper = [242, 242, 238];
+    const across = clamp(style.x) / 100;
+    const base = across < 0.5
+      ? mixChannels(cold, paper, across * 2)
+      : mixChannels(paper, warm, (across - 0.5) * 2);
+    // Calm is mistier, so it keeps less of the pure edge colour than tension.
+    const [red, green, blue] = mixChannels(base, paper, 0.22 * (clamp(style.y) / 100));
+    return `rgb(${red} ${green} ${blue})`;
   }
 
   function updateStyleVisuals() {
     const root = document.querySelector(".soundscape-window");
     if (!root) return;
-    const hue = Math.round(218 - (state.style.x / 100) * 184);
-    const companionHue = (hue + 43) % 360;
-    const saturation = Math.round(36 + state.style.intensity * 0.34);
-    const lightness = Math.round(52 + (100 - state.style.y) * 0.18);
     root.style.setProperty("--ss-field-x", `${state.style.x}%`);
     root.style.setProperty("--ss-field-y", `${state.style.y}%`);
-    root.style.setProperty("--ss-live-a", `hsl(${hue}deg ${saturation}% ${lightness}%)`);
-    root.style.setProperty("--ss-live-b", `hsl(${companionHue}deg ${Math.max(30, saturation - 8)}% ${Math.min(78, lightness + 8)}%)`);
 
-    const summary = ui("soundscape-style-summary");
-    if (summary) summary.textContent = styleWords().join(" / ");
-    const intensity = ui("soundscape-intensity");
-    if (intensity && Number(intensity.value) !== state.style.intensity) intensity.value = String(state.style.intensity);
+    const words = ui("soundscape-style-words");
+    if (words) words.textContent = styleWords().join(" / ");
+    renderSegments(ui("soundscape-intensity"), state.style.intensity);
     document.querySelectorAll("[data-soundscape-style]").forEach((button) => {
       button.classList.toggle("is-active", button.dataset.soundscapeStyle === state.style.preset);
     });
@@ -309,6 +408,11 @@
     document.querySelectorAll("[data-soundscape-panel]").forEach((panel) => {
       panel.hidden = panel.dataset.soundscapePanel !== nextPanel;
     });
+    // The switch strip carries the active drawer's own action, so each panel
+    // holds content only.
+    document.querySelectorAll("[data-soundscape-action-for]").forEach((button) => {
+      button.hidden = button.dataset.soundscapeActionFor !== nextPanel;
+    });
     if (persistNow) persist();
   }
 
@@ -319,10 +423,14 @@
     const position = currentPosition();
     const duration = currentDuration();
     state.position = position;
-    const range = ui("soundscape-progress");
-    if (range) {
-      range.disabled = !duration;
-      range.value = duration ? String(Math.round((position / duration) * 1000)) : "0";
+    const track = ui("soundscape-progress");
+    if (track) {
+      track.setAttribute("aria-disabled", String(!duration));
+      track.tabIndex = duration ? 0 : -1;
+      track.setAttribute("aria-valuemax", String(Math.round(duration)));
+      track.setAttribute("aria-valuenow", String(Math.round(position)));
+      track.setAttribute("aria-valuetext", `${formatDuration(position)} / ${formatDuration(duration)}`);
+      renderTrack(track, duration ? position / duration : 0);
     }
     if (ui("soundscape-current-time")) ui("soundscape-current-time").textContent = formatDuration(position);
     if (ui("soundscape-duration")) ui("soundscape-duration").textContent = formatDuration(duration);
@@ -342,7 +450,11 @@
     const available = hasQueue();
     const glyph = ui("soundscape-play-glyph");
     const toggle = ui("soundscape-toggle-play");
-    if (glyph) glyph.textContent = playing ? "Ⅱ" : "▶";
+    const nextGlyph = playing ? "pause" : "play";
+    if (glyph && glyph.dataset.systemIcon !== nextGlyph) {
+      glyph.dataset.systemIcon = nextGlyph;
+      if (typeof hydrateSystemIcons === "function") hydrateSystemIcons(glyph.parentElement || document);
+    }
     if (toggle) {
       toggle.setAttribute("aria-label", playing ? translate("pause", "Pause") : translate("play", "Play"));
       toggle.disabled = !available;
@@ -368,12 +480,19 @@
     const repeatBadge = ui("soundscape-repeat-badge");
     if (repeatBadge) repeatBadge.textContent = state.repeat === "one" ? "1" : state.repeat === "all" ? "∞" : "";
 
+    // Muted uses the native 1-bit inversion of the same speaker glyph rather
+    // than a second icon.
     const mute = ui("soundscape-mute");
     if (mute) {
       mute.disabled = state.source === "none";
       mute.classList.toggle("is-active", state.muted);
       mute.setAttribute("aria-pressed", String(state.muted));
-      mute.textContent = state.muted ? "×" : "◖";
+    }
+    const volume = ui("soundscape-volume");
+    if (volume) {
+      volume.setAttribute("aria-disabled", String(state.source === "none"));
+      volume.tabIndex = state.source === "none" ? -1 : 0;
+      renderSegments(volume, state.muted ? 0 : state.volume);
     }
     updateProgress(true);
   }
@@ -437,12 +556,16 @@
     const list = ui("soundscape-search-results");
     if (!list) return;
     list.replaceChildren();
+    list.hidden = !searchResults.length;
     searchResults.forEach((item, index) => {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "soundscape-search-result";
       button.dataset.searchIndex = String(index);
-      button.append(createTextPair(item.title, [item.artist, item.album].filter(Boolean).join(" — ")));
+      const marker = document.createElement("span");
+      marker.className = "soundscape-queue-index";
+      marker.textContent = String(index + 1).padStart(2, "0");
+      button.append(marker, createTextPair(item.title, [item.artist, item.album].filter(Boolean).join(" — ")));
       list.append(button);
     });
   }
@@ -468,7 +591,11 @@
       const row = document.createElement("div");
       row.className = "soundscape-queue-item";
       row.classList.toggle("is-current", index === state.currentIndex);
-      row.dataset.index = String(index + 1).padStart(2, "0");
+
+      const marker = document.createElement("span");
+      marker.className = "soundscape-queue-index";
+      marker.textContent = String(index + 1).padStart(2, "0");
+      row.append(marker);
 
       const select = document.createElement("button");
       select.type = "button";
@@ -477,7 +604,9 @@
       const title = document.createElement("span");
       const artist = document.createElement("small");
       title.textContent = item.title || translate("untitled", "Untitled");
-      artist.textContent = item.artist || sourceLabel();
+      artist.textContent = item.unavailable
+        ? translate("soundscape_track_unavailable", "Choose this file again to play it.")
+        : item.artist || sourceLabel();
       select.append(title, artist);
       row.append(select);
 
@@ -516,21 +645,57 @@
       button.className = "soundscape-saved-item";
       button.classList.toggle("is-selected", moment.id === state.selectedSavedId);
       button.dataset.savedId = moment.id;
-      button.style.setProperty("--soundscape-swatch", styleColor(moment.style));
-      button.style.setProperty("--soundscape-swatch-width", `${Math.max(18, moment.style?.intensity || 24)}%`);
+      const copy = document.createElement("span");
       const title = document.createElement("strong");
-      const detail = document.createElement("span");
+      const detail = document.createElement("small");
       title.textContent = momentTitle(moment);
       const momentSource = moment.source === "system"
         ? translate("soundscape_system_source", "Music on This Mac")
         : translate("soundscape_local_source", "Local Audio");
-      detail.textContent = `${momentSource} / ${styleWords(moment.style).join(" / ")}`;
-      button.append(title, detail);
+      detail.textContent = `${momentSource} · ${styleWords(moment.style).join(" / ")}`;
+      copy.append(title, detail);
+      // The swatch reports hue only; intensity is carried by the word summary,
+      // which stays legible in both themes.
+      const swatch = document.createElement("span");
+      swatch.className = "soundscape-saved-swatch";
+      swatch.style.setProperty("--soundscape-swatch", styleColor(moment.style));
+      button.append(copy, swatch);
       list.append(button);
     });
     const selected = selectedMoment();
     if (ui("soundscape-restore")) ui("soundscape-restore").disabled = !selected;
     if (ui("soundscape-link-project")) ui("soundscape-link-project").disabled = !selected;
+    updateRecoverAction();
+  }
+
+  // A saved moment can outlive its source: a local file is gone after reload,
+  // and a Music track can be removed from the library. Recovery hands the user
+  // back to the real source instead of substituting similar music.
+  function momentUnavailable(moment = selectedMoment()) {
+    if (!moment) return false;
+    if (moment.source === "system") return false;
+    return !moment.queue.some((item) => sessionLocalUrls.get(item.id));
+  }
+
+  function updateRecoverAction() {
+    const button = ui("soundscape-recover-moment");
+    if (!button) return;
+    const moment = selectedMoment();
+    const needed = momentUnavailable(moment);
+    button.disabled = !needed;
+    button.textContent = moment?.source === "system"
+      ? translate("soundscape_find_again_music", "Find It in Music")
+      : translate("soundscape_choose_local_again", "Choose the Files Again");
+  }
+
+  function recoverSelectedMoment() {
+    const moment = selectedMoment();
+    if (!moment) return;
+    if (moment.source === "system") {
+      openSystemMusic();
+      return;
+    }
+    ui("soundscape-local-input")?.click();
   }
 
   function renderAll() {
@@ -538,8 +703,6 @@
     renderNowPlaying();
     renderSaved();
     updateStyleVisuals();
-    const volume = ui("soundscape-volume");
-    if (volume) volume.value = String(state.volume);
     setActivePanel(state.activePanel, false, false);
   }
 
@@ -1113,38 +1276,58 @@
     ui("soundscape-repeat")?.addEventListener("click", cycleRepeat);
     ui("soundscape-mute")?.addEventListener("click", toggleMute);
     ui("soundscape-save-moment")?.addEventListener("click", saveMoment);
-    ui("soundscape-progress")?.addEventListener("input", (event) => {
-      const duration = currentDuration();
-      state.position = duration * (Number(event.target.value) / 1000);
-      if (state.source === "local") localAudio.currentTime = state.position;
-      if (ui("soundscape-current-time")) ui("soundscape-current-time").textContent = formatDuration(state.position);
+    const progress = ui("soundscape-progress");
+    bindDragControl(progress, {
+      ratio: () => {
+        const duration = currentDuration();
+        return duration ? currentPosition() / duration : 0;
+      },
+      onInput: (ratio) => {
+        const duration = currentDuration();
+        state.position = duration * ratio;
+        if (state.source === "local") localAudio.currentTime = state.position;
+        renderTrack(progress, ratio);
+        if (ui("soundscape-current-time")) ui("soundscape-current-time").textContent = formatDuration(state.position);
+      },
+      onCommit: async () => {
+        if (state.source === "system") await runSystemAction("set-position", { position: state.position });
+        persist();
+      },
     });
-    ui("soundscape-progress")?.addEventListener("change", async () => {
-      if (state.source === "system") await runSystemAction("set-position", { position: state.position });
-      persist();
-    });
-    ui("soundscape-volume")?.addEventListener("input", (event) => {
-      state.volume = clamp(event.target.value);
-      if (state.source === "local") localAudio.volume = state.muted ? 0 : state.volume / 100;
-    });
-    ui("soundscape-volume")?.addEventListener("change", async () => {
-      if (state.source === "system") await runSystemAction("set-volume", { volume: state.volume });
-      persist();
+
+    const volume = ui("soundscape-volume");
+    bindDragControl(volume, {
+      ratio: () => (state.muted ? 0 : state.volume) / 100,
+      onInput: (ratio) => {
+        state.volume = segmentValueFromRatio(volume, ratio);
+        state.muted = false;
+        if (state.source === "local") localAudio.volume = state.volume / 100;
+        renderSegments(volume, state.volume);
+        updateTransport();
+      },
+      onCommit: async () => {
+        if (state.source === "system") await runSystemAction("set-volume", { volume: state.volume });
+        persist();
+      },
     });
     ui("soundscape-style-strip")?.addEventListener("click", (event) => {
       const button = event.target.closest("[data-soundscape-style]");
       if (button) applyStylePreset(button.dataset.soundscapeStyle);
     });
     ui("soundscape-reset-style")?.addEventListener("click", resetStyle);
-    ui("soundscape-intensity")?.addEventListener("input", (event) => {
-      setStyle({ ...state.style, preset: "custom", intensity: event.target.value }, false);
+    const intensity = ui("soundscape-intensity");
+    bindDragControl(intensity, {
+      ratio: () => state.style.intensity / 100,
+      onInput: (ratio) => {
+        setStyle({ ...state.style, preset: "custom", intensity: segmentValueFromRatio(intensity, ratio) }, false);
+      },
+      onCommit: persist,
     });
-    ui("soundscape-intensity")?.addEventListener("change", persist);
 
     const field = ui("soundscape-style-field");
     field?.addEventListener("pointerdown", (event) => {
       styleDragging = true;
-      field.setPointerCapture?.(event.pointerId);
+      capturePointer(field, event.pointerId);
       styleFromPointer(event);
     });
     field?.addEventListener("pointermove", (event) => {
@@ -1152,7 +1335,7 @@
     });
     field?.addEventListener("pointerup", (event) => {
       styleDragging = false;
-      field.releasePointerCapture?.(event.pointerId);
+      releasePointer(field, event.pointerId);
       persist();
     });
     field?.addEventListener("keydown", (event) => {
@@ -1182,13 +1365,15 @@
     });
     ui("soundscape-restore")?.addEventListener("click", () => restoreMoment());
     ui("soundscape-link-project")?.addEventListener("click", linkSelectedToProject);
+    ui("soundscape-recover-moment")?.addEventListener("click", recoverSelectedMoment);
     ui("soundscape-restore-project")?.addEventListener("click", restoreProjectSoundscape);
 
-    ui("soundscape-panel-queue")?.closest(".soundscape-workbench")?.querySelector(".soundscape-mode-switch")?.addEventListener("click", (event) => {
+    const modeSwitch = document.querySelector(".soundscape-mode-switch");
+    modeSwitch?.addEventListener("click", (event) => {
       const button = event.target.closest("[data-soundscape-panel-target]");
       if (button) setActivePanel(button.dataset.soundscapePanelTarget);
     });
-    ui("soundscape-panel-queue")?.closest(".soundscape-workbench")?.querySelector(".soundscape-mode-switch")?.addEventListener("keydown", (event) => {
+    modeSwitch?.addEventListener("keydown", (event) => {
       if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
       event.preventDefault();
       const currentIndex = PANELS.indexOf(state.activePanel);

@@ -3,7 +3,7 @@ import Foundation
 import WebKit
 
 private struct ShellOptions {
-  var url = URL(string: "http://localhost:4173")!
+  var url = URL(string: "http://127.0.0.1:4173")!
   var root: URL?
   var startsServer = true
 }
@@ -105,7 +105,7 @@ private func shellLog(_ message: String) {
   }
 }
 
-final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDelegate {
   private var window: NSWindow!
   private var webView: WKWebView!
   private var statusLabel: NSTextField!
@@ -281,6 +281,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
   private func serverEnvironment() -> [String: String] {
     var environment = ProcessInfo.processInfo.environment
     environment["PORT"] = environment["PORT"] ?? String(options.url.port ?? 4173)
+    environment["AI_SYSTEM6_HOST"] = "127.0.0.1"
     environment["AI_SYSTEM6_SHELL"] = "macos"
     return environment
   }
@@ -327,13 +328,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
       timeoutInterval: 0.8
     )
 
-    URLSession.shared.dataTask(with: request) { _, response, _ in
+    URLSession.shared.dataTask(with: request) { _, response, error in
       let status = (response as? HTTPURLResponse)?.statusCode ?? 0
       DispatchQueue.main.async {
-        shellLog("probe status=\(status) attempt=\(self.loadAttempts)")
-        if status > 0 || self.loadAttempts >= 35 {
+        let errorMessage = error?.localizedDescription ?? "none"
+        shellLog("probe status=\(status) attempt=\(self.loadAttempts) error=\(errorMessage)")
+        if status > 0 {
           self.statusLabel?.stringValue = "Opening AI System 6..."
           self.webView.load(URLRequest(url: self.options.url))
+          return
+        }
+
+        if self.loadAttempts >= 35 {
+          self.statusLabel?.stringValue = "Could not reach the local server."
+          self.showStartupAlert("The bundled server did not answer at \(self.options.url.absoluteString). See ~/Library/Logs/AI System 6 Beta for the connection error.")
           return
         }
 
@@ -401,7 +409,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     decidePolicyFor navigationAction: WKNavigationAction,
     decisionHandler: @escaping @MainActor @Sendable (WKNavigationActionPolicy) -> Void
   ) {
-    if navigationAction.shouldPerformDownload {
+    if #available(macOS 11.3, *), navigationAction.shouldPerformDownload {
       decisionHandler(.download)
     } else {
       decisionHandler(.allow)
@@ -415,11 +423,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
   ) {
     if navigationResponse.canShowMIMEType {
       decisionHandler(.allow)
-    } else {
+    } else if #available(macOS 11.3, *) {
       decisionHandler(.download)
+    } else {
+      decisionHandler(.cancel)
+      showStartupAlert("This export needs macOS 11.3 or later. The rest of AI System 6 remains available on this Mac.")
     }
   }
 
+  func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+    guard loadAttempts < 35 else {
+      return
+    }
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+      self.loadLocalDesktopWhenReady()
+    }
+  }
+
+  func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+    window.makeKeyAndOrderFront(nil)
+    window.orderFrontRegardless()
+    NSApp.activate(ignoringOtherApps: true)
+    return true
+  }
+}
+
+@available(macOS 11.3, *)
+extension AppDelegate: WKDownloadDelegate {
   func webView(_ webView: WKWebView, navigationAction: WKNavigationAction, didBecome download: WKDownload) {
     download.delegate = self
   }
@@ -465,22 +495,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     alert.alertStyle = .warning
     alert.addButton(withTitle: "OK")
     alert.beginSheetModal(for: window)
-  }
-
-  func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
-    guard loadAttempts < 35 else {
-      return
-    }
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-      self.loadLocalDesktopWhenReady()
-    }
-  }
-
-  func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-    window.makeKeyAndOrderFront(nil)
-    window.orderFrontRegardless()
-    NSApp.activate(ignoringOtherApps: true)
-    return true
   }
 }
 

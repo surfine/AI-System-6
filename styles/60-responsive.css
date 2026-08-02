@@ -686,11 +686,6 @@ select:focus {
     padding: 34px 22px 24px;
   }
 
-  .assistant-window:not(.is-quick-draft-sideask) .clio-welcome::before {
-    width: 32px;
-    height: 39px;
-  }
-
   .assistant-window .composer textarea {
     height: auto;
     min-height: 42px;

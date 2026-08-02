@@ -120,6 +120,26 @@ if (dataBoundary.status === 0) {
   fail(`data boundary verification failed\n${dataBoundary.stderr || dataBoundary.stdout}`);
 }
 
+const nativeActionAudit = spawnSync(process.execPath, ["scripts/verify-native-action-audit.mjs"], {
+  cwd: root,
+  encoding: "utf8",
+});
+if (nativeActionAudit.status === 0) {
+  ok("native action audit verification");
+} else {
+  fail(`native action audit verification failed\n${nativeActionAudit.stderr || nativeActionAudit.stdout}`);
+}
+
+const nativeParityLedger = spawnSync(process.execPath, ["scripts/verify-native-parity-ledger.mjs"], {
+  cwd: root,
+  encoding: "utf8",
+});
+if (nativeParityLedger.status === 0) {
+  ok("native parity ledger verification");
+} else {
+  fail(`native parity ledger verification failed\n${nativeParityLedger.stderr || nativeParityLedger.stdout}`);
+}
+
 const floppyBudget = spawnSync(process.execPath, ["scripts/verify-floppy-budget.mjs"], {
   cwd: root,
   encoding: "utf8",

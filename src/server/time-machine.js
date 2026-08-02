@@ -12,6 +12,9 @@ const {
 const TIME_MACHINE_MAX_BYTES = 4 * 1024 * 1024;
 const TIME_MACHINE_CAPTURE_LIMIT = 120;
 const TIME_MACHINE_TIMEOUT_MS = 45000;
+const TIME_MACHINE_PAGE_CACHE_TTL_MS = 60 * 1000;
+const TIME_MACHINE_PAGE_CACHE_LIMIT = 8;
+const timeMachinePageCache = new Map();
 const ARCHIVE_TODAY_QUERY_HOSTS = [
   "archive.today",
   "archive.is",
@@ -434,13 +437,16 @@ async function queryArchiveIsCaptures(originalUrl, targetDate, signal) {
     const result = await Promise.any(ARCHIVE_TODAY_QUERY_HOSTS.map(async (hostname) => {
       const endpoint = `https://${hostname}/${encodeURIComponent(originalUrl)}`;
       const response = await fetchPinnedPage(endpoint, controller.signal, { maxBytes: 3 * 1024 * 1024 });
-      if (!response.ok) throw new Error(`${hostname} returned ${response.status}.`);
       const captures = sortCaptures(
         parseArchiveIsResults(response.text, originalUrl, response.finalUrl),
         targetDate
       ).slice(0, TIME_MACHINE_CAPTURE_LIMIT);
-      if (!captures.length) throw new Error(`${hostname} returned no snapshots.`);
-      return captures;
+      // Some archive.today edges attach a non-2xx status to an otherwise
+      // usable results document. Trust a validated snapshot list before the
+      // transport status, but never accept an unparseable challenge page.
+      if (captures.length) return captures;
+      if (!response.ok) throw new Error(`${hostname} returned ${response.status}.`);
+      throw new Error(`${hostname} returned no snapshots.`);
     }));
     controller.abort();
     return result;
@@ -516,6 +522,44 @@ function pageTitle(html, fallbackUrl) {
   }
 }
 
+function timeMachineReaderIntegrity(reader, html) {
+  const text = cleanText(reader?.text || "");
+  if (!text) return { status: "unavailable", reason: "" };
+  const source = String(html || "");
+  const accessWall = /\bregwall\b|to keep reading this (?:story|article)|create a free account|log in to continue reading/i.test(source);
+  const abruptEnding = /(?:…|\.{3})\s*$/.test(text);
+  if (accessWall && (abruptEnding || text.length < 2000)) return { status: "partial", reason: "access-wall" };
+  if (abruptEnding && text.length < 800) return { status: "partial", reason: "truncated" };
+  return { status: "complete", reason: "" };
+}
+
+function timeMachinePageCacheKey(targetUrl, originalUrl = "") {
+  return `${timeMachineUrl(targetUrl)}\n${originalUrl ? timeMachineUrl(originalUrl) : ""}`;
+}
+
+function cachedTimeMachinePage(key) {
+  const entry = timeMachinePageCache.get(key);
+  if (!entry) return null;
+  if (entry.expiresAt <= Date.now()) {
+    timeMachinePageCache.delete(key);
+    return null;
+  }
+  timeMachinePageCache.delete(key);
+  timeMachinePageCache.set(key, entry);
+  return entry.page;
+}
+
+function cacheTimeMachinePage(keys, page) {
+  const entry = { page, expiresAt: Date.now() + TIME_MACHINE_PAGE_CACHE_TTL_MS };
+  for (const key of new Set(keys)) {
+    timeMachinePageCache.delete(key);
+    timeMachinePageCache.set(key, entry);
+  }
+  while (timeMachinePageCache.size > TIME_MACHINE_PAGE_CACHE_LIMIT) {
+    timeMachinePageCache.delete(timeMachinePageCache.keys().next().value);
+  }
+}
+
 function unwrapArchiveOriginal(value) {
   const url = timeMachineUrl(value);
   const parsed = new URL(url);
@@ -527,6 +571,9 @@ function unwrapArchiveOriginal(value) {
 }
 
 async function browseTimeMachinePage(targetUrl, originalUrl, signal) {
+  const requestKey = timeMachinePageCacheKey(targetUrl, originalUrl);
+  const cached = cachedTimeMachinePage(requestKey);
+  if (cached) return cached;
   const response = await fetchPinnedPage(targetUrl, signal);
   if (!response.ok) throw new Error(`Page returned ${response.status}.`);
   const contentType = headerValue(response.headers, "content-type");
@@ -538,10 +585,12 @@ async function browseTimeMachinePage(targetUrl, originalUrl, signal) {
   let reader = null;
   try {
     reader = await cleanHtmlForReader(response.text, canonicalOriginal);
+    const integrity = timeMachineReaderIntegrity(reader, response.text);
+    reader = { ...reader, completeness: integrity.status, partialReason: integrity.reason };
   } catch {
     reader = null;
   }
-  return {
+  const page = {
     title: pageTitle(response.text, canonicalOriginal),
     url: canonicalOriginal,
     fetchedUrl: response.finalUrl,
@@ -549,6 +598,9 @@ async function browseTimeMachinePage(targetUrl, originalUrl, signal) {
     reader,
     retrievedAt: new Date().toISOString(),
   };
+  const finalKey = timeMachinePageCacheKey(response.finalUrl, canonicalOriginal);
+  cacheTimeMachinePage([requestKey, finalKey], page);
+  return page;
 }
 
 function escapeHtmlAttr(value) {
@@ -643,6 +695,7 @@ function timeMachineError(error) {
 module.exports = {
   TIME_MACHINE_MAX_BYTES,
   TIME_MACHINE_TIMEOUT_MS,
+  TIME_MACHINE_PAGE_CACHE_TTL_MS,
   READER_TIMEOUT_MS,
   timeMachineUrl,
   timeMachineTargetDate,
@@ -657,6 +710,7 @@ module.exports = {
   directWaybackCapture,
   parseArchiveIsResults,
   sanitizeBrowserHtml,
+  timeMachineReaderIntegrity,
   unwrapArchiveOriginal,
   queryWaybackCaptures,
   queryWaybackCalendar,

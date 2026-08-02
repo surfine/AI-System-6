@@ -1,13 +1,13 @@
 import { copyFileSync, existsSync, mkdirSync, readdirSync, rmSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { execFileSync } from "node:child_process";
 
 const repoRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const packagePath = join(repoRoot, "shell", "macos-webview");
 const packageManifestPath = join(repoRoot, "package.json");
 const buildInfoPath = join(repoRoot, "build-info.json");
-const appDisplayName = "AI System 6 Beta";
+const appDisplayName = process.env.AI_SYSTEM6_APP_DISPLAY_NAME || "AI System 6 Beta";
 const appName = `${appDisplayName}.app`;
 const legacyAppNames = ["AI System 6 Shell.app"];
 const distDir = join(repoRoot, "dist");
@@ -15,10 +15,13 @@ const appDir = join(distDir, appName);
 const contentsDir = join(appDir, "Contents");
 const macOsDir = join(contentsDir, "MacOS");
 const resourcesDir = join(contentsDir, "Resources");
+const frameworksDir = join(contentsDir, "Frameworks");
 const binaryName = "AISystem6Shell";
 const iconName = "AppIcon";
 const iconSource = join(repoRoot, "system.css-reference", "docs", "icon.png");
-const builtBinary = join(packagePath, ".build", "debug", binaryName);
+const builtBinary = process.env.AI_SYSTEM6_SHELL_BINARY
+  ? resolve(repoRoot, process.env.AI_SYSTEM6_SHELL_BINARY)
+  : join(packagePath, ".build", "debug", binaryName);
 const appBinary = join(macOsDir, binaryName);
 const args = process.argv.slice(2);
 const serverArgIndex = args.indexOf("--server");
@@ -29,6 +32,10 @@ const serverBinary = explicitServerBinary
   : defaultServerBinary;
 const skipSwiftBuild = process.env.AI_SYSTEM6_SKIP_SWIFT_BUILD === "1";
 const allowStaleShell = process.env.AI_SYSTEM6_ALLOW_STALE_SHELL === "1";
+const macosDeploymentTarget = process.env.AI_SYSTEM6_MACOS_DEPLOYMENT_TARGET || "13.0";
+const macosTargetTriple = process.env.AI_SYSTEM6_MACOS_TARGET_TRIPLE || "";
+const swiftCpu = process.env.AI_SYSTEM6_SWIFT_MCPU || "";
+const embedSwiftRuntime = process.env.AI_SYSTEM6_EMBED_SWIFT_RUNTIME === "1";
 const shellSourcesDir = join(packagePath, "Sources");
 let packageVersion = "0.1.0";
 let bundleBuild = "1";
@@ -104,9 +111,50 @@ function newestSourceMtimeMs(dir) {
   return newest;
 }
 
+function embedBackDeployedSwiftRuntime() {
+  if (!embedSwiftRuntime) return;
+
+  mkdirSync(frameworksDir, { recursive: true });
+  const swiftCompiler = execFileSync("/usr/bin/xcrun", ["--find", "swiftc"], { encoding: "utf8" }).trim();
+  const toolchainDir = dirname(dirname(dirname(swiftCompiler)));
+  const backDeploymentConcurrency = join(
+    toolchainDir,
+    "usr",
+    "lib",
+    "swift-5.5",
+    "macosx",
+    "libswift_Concurrency.dylib"
+  );
+  const swiftConcurrency = join(frameworksDir, "libswift_Concurrency.dylib");
+  if (!existsSync(backDeploymentConcurrency)) {
+    throw new Error(`Missing back-deployed Swift concurrency runtime: ${backDeploymentConcurrency}`);
+  }
+  copyFileSync(backDeploymentConcurrency, swiftConcurrency);
+  execFileSync("/usr/bin/lipo", [swiftConcurrency, "-verify_arch", "arm64"], { stdio: "inherit" });
+
+  execFileSync(
+    "/usr/bin/install_name_tool",
+    [
+      "-change",
+      "@rpath/libswift_Concurrency.dylib",
+      "@executable_path/../Frameworks/libswift_Concurrency.dylib",
+      appBinary,
+    ],
+    { stdio: "inherit" }
+  );
+  execFileSync("/usr/bin/codesign", ["--force", "--deep", "--sign", "-", appDir], { stdio: "inherit" });
+}
+
 if (!skipSwiftBuild) {
   try {
-    execFileSync("/usr/bin/xcrun", ["swift", "build", "--package-path", packagePath], {
+    const swiftBuildArgs = ["swift", "build", "--package-path", packagePath];
+    if (macosTargetTriple) {
+      swiftBuildArgs.push("--triple", macosTargetTriple);
+    }
+    if (swiftCpu) {
+      swiftBuildArgs.push("-Xswiftc", "-Xllvm", "-Xswiftc", `-mcpu=${swiftCpu}`);
+    }
+    execFileSync("/usr/bin/xcrun", swiftBuildArgs, {
       cwd: repoRoot,
       stdio: "inherit",
     });
@@ -177,7 +225,7 @@ writeFileSync(
   <key>CFBundleVersion</key>
   <string>${bundleBuild}</string>
   <key>LSMinimumSystemVersion</key>
-  <string>13.0</string>
+  <string>${macosDeploymentTarget}</string>
   <key>LSApplicationCategoryType</key>
   <string>public.app-category.productivity</string>
   <key>NSHighResolutionCapable</key>
@@ -200,6 +248,8 @@ writeFileSync(
     "It is a bridge, not the final Swift-native app.",
   ].join("\n")
 );
+
+embedBackDeployedSwiftRuntime();
 
 console.log(`Built ${appDir}`);
 console.log(`Run: open ${JSON.stringify(appDir)}`);

@@ -30,6 +30,7 @@ const {
   parseArchiveIsResults,
   normalizeTimeMachineProvider,
   sanitizeBrowserHtml,
+  timeMachineReaderIntegrity,
 } = require("../../src/server/time-machine.js");
 const { decodeTextBuffer } = require("../../src/server/lib/fetch.js");
 const { charsetFromMetaPrescan } = require("../../src/server/lib/charset.js");
@@ -72,6 +73,9 @@ test.assertIncludes(feature, "function prepareTimeMachineBlankLaunch()", "each s
 test.assertIncludes(feature, "function switchTimeMachineSource()", "the active historical page can retry through the other archive");
 test.assertIncludes(feature, "seenProviders", "historical browsing keeps one automatic browse fallback per archive family");
 test.assertIncludes(feature, "for (const candidate of browseCandidates)", "an unreadable snapshot automatically falls through to the other archive");
+test.assertIncludes(feature, "partialFallback", "a preview-only snapshot falls through to a more complete archive before being shown");
+test.assertIncludes(feature, "pageFallback", "a snapshot with no reader text also falls through before replacing a readable preview");
+test.assertIncludes(feature, 't("time_machine_reader_partial")', "preview-only reader text is disclosed in the reading surface");
 test.assertIncludes(feature, "timeMachineLoadArchiveCalendar", "opening the calendar queries the URL's real archive history");
 test.assertIncludes(feature, "timeline.firstCapturedAt.slice(0, 10)", "the input minimum comes from the site's actual first capture");
 test.assertIncludes(feature, "timeMachineChooseCalendarDate(date, dayData)", "calendar days open exact captures when available");
@@ -96,11 +100,13 @@ test.assertIncludes(server, "__wb/calendarcaptures", "the calendar reads Wayback
 test.assertIncludes(server, "headers: { Referer: referer }", "Wayback calendar requests include the page context required by the archive");
 test.assertIncludes(server, "queryArchiveIsCaptures", "archive.is queries are isolated behind a provider adapter");
 test.assertIncludes(server, "ARCHIVE_TODAY_QUERY_HOSTS", "archive.today aliases race as one resilient provider family");
+test.assertMatches(server, /parseArchiveIsResults\(response\.text[\s\S]*if \(captures\.length\) return captures;[\s\S]*if \(!response\.ok\)/, "archive.today keeps a validated snapshot list even when an edge reports a non-2xx status");
 test.assertIncludes(server, "removeDangerousMarkup", "remote active content is removed before rendering");
 test.assertIncludes(route, "Promise.allSettled", "one archive provider can fail without hiding the other");
 test.assertIncludes(route, 'pathname === "/api/time-machine/calendar"', "the server exposes a calendar query without leaking archive calls into the client");
 test.assertIncludes(route, "TIME_MACHINE_PROVIDER_TIMEOUT_MS", "a slow provider cannot consume the whole capture request");
 test.assertIncludes(server, "TIME_MACHINE_TIMEOUT_MS = 45000", "historical replay gets a practical timeout independent of Reader");
+test.assertIncludes(server, "TIME_MACHINE_PAGE_CACHE_TTL_MS", "browse and frame rendering can reuse one recent upstream snapshot");
 test.assertIncludes(route, '["archive-is", "wayback"]', "archive preference changes provider order without disabling fallback");
 test.assertIncludes(route, 'captures.filter((capture) => capture.provider === provider)', "preferred provider wins when it has a capture");
 test.assertIncludes(persistence, "timeMachineProvider:", "archive preference persists with other Chooser settings");
@@ -181,6 +187,19 @@ const sanitized = sanitizeBrowserHtml(
 test.assert(!/<script|onload|onclick|iframe/i.test(sanitized), "active remote markup is removed");
 test.assert(sanitized.includes('href="https://example.com/next"'), "relative navigation is rebased to the source page");
 
+const previewIntegrity = timeMachineReaderIntegrity(
+  { text: "A readable opening paragraph. The next sentence stops here…" },
+  '<div id="regwall-heading">To keep reading this story, create a free account.</div>'
+);
+test.assert(
+  previewIntegrity.status === "partial" && previewIntegrity.reason === "access-wall",
+  "access-wall captures are not presented as complete articles"
+);
+test.assert(
+  timeMachineReaderIntegrity({ text: "A complete article paragraph with a deliberate conclusion." }, "<article>Complete</article>").status === "complete",
+  "ordinary readable captures remain complete"
+);
+
 const replaySanitized = sanitizeBrowserHtml(
   '<link rel="stylesheet" href="/style.css"><a href="/next"><img src="/hero.png"></a>',
   "https://web.archive.org/web/20240102030405id_/https://example.com/",
@@ -226,7 +245,7 @@ test.assertIncludes(feature, "throw new Error(serviceErrorDetail(response.status
 test.assertNotIncludes(feature, "payload?.error || text", "a gateway's HTML body is never used as the message shown to the writer");
 test.assertIncludes(strings, "function serviceErrorDetail(status, body)", "one shared helper decides what a failed response is allowed to say");
 test.assertIncludes(strings, "looksLikeMarkup", "the helper recognizes an HTML error page and refuses to quote it");
-for (const key of ["service_http_error"]) {
+for (const key of ["service_http_error", "time_machine_reader_partial", "time_machine_reader_partial_status", "time_machine_reader_partial_source"]) {
   test.assertIncludes(en, `${key}:`, `English includes ${key}`);
   test.assertIncludes(zh, `${key}:`, `Chinese includes ${key}`);
 }

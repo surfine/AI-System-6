@@ -164,6 +164,23 @@
   --system-shadow: 2px 2px 0 var(--ink);
   --system-inset: inset 1px 1px 0 #777777, inset -1px -1px 0 #ffffff;
   --control-radius: 0;
+  /* Position/level controls: a dithered scroll-bar track with a bordered thumb,
+     and the Sound control panel's segmented cells. Shared so a second surface
+     does not reinvent them. */
+  --system-track-bg: repeating-conic-gradient(var(--ink) 0 25%, var(--paper) 0 50%) 0 0 / 2px 2px;
+  --system-track-border: 1px solid var(--ink);
+  --system-track-radius: 0;
+  --system-track-shadow: var(--system-inset);
+  --system-track-fill: transparent;
+  --system-track-thumb-bg: var(--paper);
+  --system-track-thumb-border: 1px solid var(--ink);
+  --system-track-thumb-radius: 0;
+  --system-track-thumb-shadow: none;
+  --system-segment-bg: var(--paper);
+  --system-segment-border: 1px solid var(--ink);
+  --system-segment-radius: 0;
+  --system-segment-on-bg: var(--ink);
+  --system-segment-on-shadow: none;
   /* System sizes (System.css replica completion layer) */
   --system-readable-min: 13px;
   --system-title-size: 13px;

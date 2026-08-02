@@ -2824,7 +2824,10 @@ body:not(.use-liquid-glass) .desktop-app-icon span[data-liquid-label="DAA Meme"]
   vector-effect: non-scaling-stroke;
 }
 
-.sys-icon-classic .classic-ink {
+/* Transport glyphs reuse .classic-ink in the Liquid group too, so the same
+   filled 1-bit path serves both themes. */
+.sys-icon-classic .classic-ink,
+.sys-icon-liquid .classic-ink {
   fill: currentColor;
   stroke: none;
 }

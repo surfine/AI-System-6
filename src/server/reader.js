@@ -30,6 +30,47 @@ const READER_MAX_BYTES = 2 * 1024 * 1024;
 const READER_TIMEOUT_MS = 15000;
 
 /**
+ * Baidu Baike rejects non-browser desktop fetches with 403, while its public
+ * mobile reading endpoint exposes the same entry as ordinary HTML. Keep the
+ * original URL as provenance; this only changes the retrieval representation.
+ *
+ * @param {string} value
+ * @returns {string}
+ */
+function readerFetchUrl(value) {
+  try {
+    const url = new URL(value);
+    if (url.hostname.toLowerCase() === "baike.baidu.com") {
+      url.hostname = "wapbaike.baidu.com";
+    }
+    return url.href;
+  } catch {
+    return value;
+  }
+}
+
+/**
+ * Convert Jina Reader's documented plain-text envelope into the same article
+ * shape returned by our local HTML extractor. The caller keeps the original
+ * source URL, rather than Jina's proxy URL, for provenance.
+ *
+ * @param {string} markdown
+ * @param {string} sourceUrl
+ * @returns {{ title: string, url: string, site: string, author: string, date: string, text: string }}
+ */
+function readerArticleFromJinaMarkdown(markdown, sourceUrl) {
+  const source = String(markdown || "");
+  const title = cleanText((source.match(/^Title:\s*(.+)$/m) || [])[1] || "Untitled Page");
+  const marker = "Markdown Content:";
+  const markerIndex = source.indexOf(marker);
+  const text = cleanText(markerIndex >= 0 ? source.slice(markerIndex + marker.length) : source);
+  if (!validReaderText(text)) {
+    throw new Error("Reader fallback could not extract readable article text.");
+  }
+  return { title, url: sourceUrl, site: siteFromUrl(sourceUrl), author: "", date: "", text };
+}
+
+/**
  * Substantial-text and meaningful-character regexes use the same CJK
  * code-point range as their search.js counterparts. Built from
  * string literals with explicit \u escapes so the source survives
@@ -90,12 +131,12 @@ function isPrivateAddress(address) {
 /**
  * Validate that `value` is an http(s) URL targeting a public host.
  * Rejects localhost / private IPs / private DNS results. Returns the
- * canonical URL string. Mirrors `validateReaderTarget`.
+ * canonical URL plus the public address that must be pinned for the request.
  *
  * @param {string} value
- * @returns {Promise<string>}
+ * @returns {Promise<{ url: string, address: string, family: number }>}
  */
-async function validateReaderTarget(value) {
+async function resolveReaderTarget(value) {
   /** @type {URL} */
   let parsed;
   try {
@@ -117,15 +158,31 @@ async function validateReaderTarget(value) {
     if (isPrivateAddress(hostname)) {
       throw new Error("Reader cannot open private network addresses.");
     }
-    return parsed.href;
+    return {
+      url: parsed.href,
+      address: hostname,
+      family: net.isIP(hostname),
+    };
   }
 
   const addresses = await dns.lookup(hostname, { all: true, verbatim: true });
-  if (!addresses.length || addresses.every((entry) => isPrivateAddress(entry.address))) {
+  if (!addresses.length || addresses.some((entry) => isPrivateAddress(entry.address))) {
     throw new Error("Reader cannot open private network addresses.");
   }
 
-  return parsed.href;
+  return {
+    url: parsed.href,
+    address: addresses[0].address,
+    family: addresses[0].family,
+  };
+}
+
+/**
+ * @param {string} value
+ * @returns {Promise<string>}
+ */
+async function validateReaderTarget(value) {
+  return (await resolveReaderTarget(value)).url;
 }
 
 // =============================================================================
@@ -689,7 +746,7 @@ function friendlyReaderError(error) {
   if (/fetch failed|ENOTFOUND|ECONNREFUSED|EHOSTUNREACH|ETIMEDOUT|network/i.test(message)) {
     return "Reader could not reach that page. Check the URL or try again later.";
   }
-  if (/abort/i.test(/** @type {any} */ (error)?.name || message)) {
+  if (/abort/i.test(/** @type {any} */ (error)?.name) || /abort/i.test(message)) {
     return "Reader timed out while opening that page.";
   }
   return message || "Reader could not open that page.";
@@ -698,7 +755,10 @@ function friendlyReaderError(error) {
 module.exports = {
   READER_MAX_BYTES,
   READER_TIMEOUT_MS,
+  readerFetchUrl,
+  readerArticleFromJinaMarkdown,
   isPrivateAddress,
+  resolveReaderTarget,
   validateReaderTarget,
   metaContent,
   normalizeReaderComparable,

@@ -5,7 +5,7 @@ import PackageDescription
 let package = Package(
   name: "AISystem6MacShell",
   platforms: [
-    .macOS(.v13),
+    .macOS(.v11),
   ],
   products: [
     .executable(name: "AISystem6Shell", targets: ["AISystem6Shell"]),

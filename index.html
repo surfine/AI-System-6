@@ -180,7 +180,7 @@
         <form method="dialog">
           <div class="finder-operation-layout">
             <aside class="finder-operation-subject">
-              <span class="sys-icon sys-icon-desktop" data-system-icon="clioTalk" aria-hidden="true"></span>
+              <span class="sys-icon sys-icon-desktop" data-system-icon="assistant" aria-hidden="true"></span>
               <b data-i18n="clio_use_result">Use Result</b>
               <small id="clio-use-result-subject" data-i18n="clio_reply_temporary">Not saved to project</small>
             </aside>
@@ -296,6 +296,7 @@
         <div class="messages-stage">
           <div id="messages" class="window-pane messages window-frame-scroller" aria-live="polite" aria-busy="false">
             <article class="message assistant clio-welcome" aria-label="ClioTalk">
+              <span class="sys-icon sys-icon-mini clio-welcome-icon" data-system-icon="assistant" aria-hidden="true"></span>
               <div class="speaker" data-i18n="assistant">ClioTalk</div>
               <div class="message-content">
                 <p data-i18n="welcome_message"><strong>What are you working on?</strong><span>Ask a question, start a draft, or attach a project file. Nothing is added to your project until you choose to keep it.</span></p>
@@ -1019,140 +1020,148 @@
           <span id="soundscape-source" data-i18n="soundscape_no_source">No source</span>
         </div>
         <div class="window-pane soundscape-pane">
-          <main class="soundscape-now" aria-labelledby="soundscape-now-title">
+          <main class="soundscape-deck" aria-labelledby="soundscape-now-title">
             <div id="soundscape-artwork" class="soundscape-artwork" aria-hidden="true">
               <img id="soundscape-artwork-image" alt="" hidden />
               <span class="sys-icon" data-system-icon="soundscape"></span>
             </div>
             <div class="soundscape-now-copy">
-              <p class="soundscape-eyebrow" data-i18n="soundscape_now_playing">Now Playing</p>
               <h3 id="soundscape-now-title" data-i18n="soundscape_waiting">Waiting for music</h3>
-              <p id="soundscape-now-artist" class="soundscape-now-artist" data-i18n="soundscape_pick_source">Choose Apple Music or a local audio file.</p>
+              <p id="soundscape-now-artist" class="soundscape-now-artist" data-i18n="soundscape_pick_source">Connect Music on this Mac or choose local audio.</p>
             </div>
-            <label class="soundscape-progress-control" for="soundscape-progress">
-              <span class="sr-only" data-i18n="soundscape_position">Position</span>
-              <input id="soundscape-progress" type="range" min="0" max="1000" value="0" disabled />
-            </label>
-            <div class="soundscape-time-row">
+            <div class="soundscape-position">
               <time id="soundscape-current-time">0:00</time>
+              <div id="soundscape-progress" class="system-track" role="slider" tabindex="0" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0" aria-disabled="true" data-i18n-aria-label="soundscape_position" aria-label="Position">
+                <span class="system-track-fill"></span>
+                <span class="system-track-thumb"></span>
+              </div>
               <time id="soundscape-duration">0:00</time>
             </div>
             <div class="soundscape-transport" data-i18n-aria-label="soundscape_playback" aria-label="Playback">
-              <button class="btn soundscape-mode-control" type="button" id="soundscape-shuffle" aria-pressed="false" data-i18n-aria-label="soundscape_shuffle" aria-label="Shuffle">
-                <span aria-hidden="true">⇄</span>
+              <button class="btn soundscape-key" type="button" id="soundscape-shuffle" aria-pressed="false" data-i18n-aria-label="soundscape_shuffle" aria-label="Shuffle">
+                <span class="sys-icon" data-system-icon="shuffleTracks" aria-hidden="true"></span>
               </button>
-              <button class="btn soundscape-round-control" type="button" id="soundscape-previous" data-i18n-aria-label="previous" aria-label="Previous">‹</button>
-              <button class="btn default soundscape-play-control" type="button" id="soundscape-toggle-play" data-i18n-aria-label="play" aria-label="Play">
-                <span id="soundscape-play-glyph" aria-hidden="true">▶</span>
+              <button class="btn soundscape-key" type="button" id="soundscape-previous" data-i18n-aria-label="previous" aria-label="Previous">
+                <span class="sys-icon" data-system-icon="previousTrack" aria-hidden="true"></span>
               </button>
-              <button class="btn soundscape-round-control" type="button" id="soundscape-next" data-i18n-aria-label="next" aria-label="Next">›</button>
-              <button class="btn soundscape-mode-control" type="button" id="soundscape-repeat" aria-pressed="false" data-repeat="off" data-i18n-aria-label="soundscape_repeat_off" aria-label="Repeat off">
-                <span aria-hidden="true">↻</span>
+              <button class="btn soundscape-key soundscape-key-wide" type="button" id="soundscape-toggle-play" data-i18n-aria-label="play" aria-label="Play">
+                <span class="sys-icon" id="soundscape-play-glyph" data-system-icon="play" aria-hidden="true"></span>
+              </button>
+              <button class="btn soundscape-key" type="button" id="soundscape-next" data-i18n-aria-label="next" aria-label="Next">
+                <span class="sys-icon" data-system-icon="nextTrack" aria-hidden="true"></span>
+              </button>
+              <button class="btn soundscape-key" type="button" id="soundscape-repeat" aria-pressed="false" data-repeat="off" data-i18n-aria-label="soundscape_repeat_off" aria-label="Repeat off">
+                <span class="sys-icon" data-system-icon="repeatTracks" aria-hidden="true"></span>
                 <small id="soundscape-repeat-badge" aria-hidden="true"></small>
               </button>
             </div>
-            <div class="soundscape-now-actions">
-              <label class="soundscape-volume-control" for="soundscape-volume">
-                <button class="btn soundscape-mute-control" type="button" id="soundscape-mute" aria-pressed="false" data-i18n-aria-label="soundscape_mute" aria-label="Mute">◖</button>
-                <span class="sr-only" data-i18n="soundscape_volume">Volume</span>
-                <input id="soundscape-volume" type="range" min="0" max="100" value="32" />
-              </label>
-              <button class="btn default soundscape-save-moment" type="button" id="soundscape-save-moment" data-i18n="soundscape_save_moment">Save This Moment</button>
+            <div class="soundscape-level">
+              <button class="btn soundscape-key" type="button" id="soundscape-mute" aria-pressed="false" data-i18n-aria-label="soundscape_mute" aria-label="Mute">
+                <span class="sys-icon" data-system-icon="speaker" aria-hidden="true"></span>
+              </button>
+              <span class="soundscape-control-label" data-i18n="soundscape_volume">Volume</span>
+              <div id="soundscape-volume" class="system-segments" role="slider" tabindex="0" data-segments="12" aria-valuemin="0" aria-valuemax="100" aria-valuenow="32" data-i18n-aria-label="soundscape_volume" aria-label="Volume"></div>
             </div>
+            <button class="btn default soundscape-save-moment" type="button" id="soundscape-save-moment" disabled data-i18n="soundscape_save_moment">Save This Moment</button>
           </main>
 
           <section class="soundscape-workbench" data-i18n-aria-label="soundscape_controls" aria-label="Soundscape controls">
-            <nav class="soundscape-mode-switch" role="tablist" data-i18n-aria-label="soundscape_controls" aria-label="Soundscape controls">
-              <button type="button" id="soundscape-tab-queue" role="tab" aria-controls="soundscape-panel-queue" aria-selected="true" data-soundscape-panel-target="queue">
-                <span data-i18n="soundscape_up_next">Up Next</span>
-                <small id="soundscape-queue-count">0</small>
-              </button>
-              <button type="button" id="soundscape-tab-style" role="tab" aria-controls="soundscape-panel-style" aria-selected="false" data-soundscape-panel-target="style" tabindex="-1">
-                <span data-i18n="soundscape_style">Style</span>
-              </button>
-              <button type="button" id="soundscape-tab-saved" role="tab" aria-controls="soundscape-panel-saved" aria-selected="false" data-soundscape-panel-target="saved" tabindex="-1">
-                <span data-i18n="soundscape_saved">Saved</span>
-                <small id="soundscape-saved-count">0</small>
-              </button>
-            </nav>
+            <div class="soundscape-switch">
+              <nav class="soundscape-mode-switch" role="tablist" data-i18n-aria-label="soundscape_controls" aria-label="Soundscape controls">
+                <button type="button" id="soundscape-tab-queue" role="tab" aria-controls="soundscape-panel-queue" aria-selected="true" data-soundscape-panel-target="queue">
+                  <span data-i18n="soundscape_up_next">Up Next</span>
+                  <small id="soundscape-queue-count">0</small>
+                </button>
+                <button type="button" id="soundscape-tab-style" role="tab" aria-controls="soundscape-panel-style" aria-selected="false" data-soundscape-panel-target="style" tabindex="-1">
+                  <span data-i18n="soundscape_style">Style</span>
+                </button>
+                <button type="button" id="soundscape-tab-saved" role="tab" aria-controls="soundscape-panel-saved" aria-selected="false" data-soundscape-panel-target="saved" tabindex="-1">
+                  <span data-i18n="soundscape_saved">Saved</span>
+                  <small id="soundscape-saved-count">0</small>
+                </button>
+              </nav>
+              <div class="soundscape-switch-action">
+                <button class="btn mini-btn" type="button" id="soundscape-clear-queue" data-soundscape-action-for="queue" data-i18n="soundscape_clear_queue">Clear Queue</button>
+                <button class="btn mini-btn" type="button" id="soundscape-reset-style" data-soundscape-action-for="style" hidden data-i18n="reset">Reset</button>
+                <button class="btn mini-btn" type="button" id="soundscape-restore-project" data-soundscape-action-for="saved" hidden data-i18n="soundscape_restore_project">Restore Project Soundscape</button>
+              </div>
+            </div>
 
-            <div class="soundscape-deck">
+            <div class="soundscape-drawer">
               <section class="soundscape-panel soundscape-queue-panel" id="soundscape-panel-queue" role="tabpanel" aria-labelledby="soundscape-tab-queue" data-soundscape-panel="queue">
-                <header class="soundscape-section-heading">
-                  <span class="soundscape-section-index">01</span>
-                  <h3 data-i18n="soundscape_listen">Listen</h3>
-                </header>
-                <p class="soundscape-source-note" data-i18n="soundscape_system_music_note">Apple Music keeps playing in the Music app; Soundscape becomes its quiet remote.</p>
+                <div class="soundscape-group-heading">
+                  <h3 data-i18n="soundscape_source_group">Source</h3>
+                  <p data-i18n="soundscape_system_music_note">Apple Music keeps playing in the Music app; Soundscape becomes its quiet remote.</p>
+                </div>
                 <div class="soundscape-source-actions">
                   <button class="btn default" type="button" id="soundscape-connect-apple" data-i18n="soundscape_connect_apple">Use Music on This Mac</button>
                   <button class="btn" type="button" id="soundscape-open-music" data-i18n="soundscape_open_music">Open Music</button>
                   <button class="btn" type="button" id="soundscape-choose-local" data-i18n="soundscape_choose_local">Choose Music</button>
                   <input id="soundscape-local-input" type="file" accept="audio/*" multiple hidden />
                 </div>
-                <form id="soundscape-search-form" class="soundscape-search-form">
-                  <label for="soundscape-search-input" data-i18n="soundscape_search_label">Find in your Music library</label>
-                  <div class="soundscape-search-row">
-                    <input id="soundscape-search-input" type="search" autocomplete="off" data-i18n-placeholder="soundscape_search_placeholder" placeholder="Song, artist, album" />
-                    <button class="btn" type="submit" data-i18n="search">Search</button>
-                  </div>
-                </form>
-                <div id="soundscape-search-results" class="soundscape-search-results" aria-live="polite"></div>
-                <div class="soundscape-queue-heading">
-                  <span data-i18n="soundscape_up_next">Up Next</span>
-                  <button class="mini-btn" type="button" id="soundscape-clear-queue" data-i18n="clear">Clear</button>
+                <div class="soundscape-group-heading">
+                  <h3 data-i18n="soundscape_tracks_group">Tracks</h3>
+                  <p data-i18n="soundscape_search_hint">Only what is already in your own Music library.</p>
                 </div>
-                <div id="soundscape-queue" class="soundscape-queue window-frame-scroller"></div>
+                <form id="soundscape-search-form" class="soundscape-search-form">
+                  <label class="sr-only" for="soundscape-search-input" data-i18n="soundscape_search_label">Find in your Music library</label>
+                  <input id="soundscape-search-input" type="search" autocomplete="off" data-i18n-placeholder="soundscape_search_placeholder" placeholder="Song, artist, album" />
+                  <button class="btn mini-btn" type="submit" data-i18n="search">Search</button>
+                </form>
+                <div id="soundscape-search-results" class="soundscape-list soundscape-search-results" aria-live="polite" hidden></div>
+                <div id="soundscape-queue" class="soundscape-list soundscape-queue window-frame-scroller"></div>
               </section>
 
               <section class="soundscape-panel soundscape-style-panel" id="soundscape-panel-style" role="tabpanel" aria-labelledby="soundscape-tab-style" data-soundscape-panel="style" hidden>
-              <header class="soundscape-style-heading">
-                <div>
-                  <p class="soundscape-section-index">02</p>
-                  <h3 id="soundscape-style-title" data-i18n="soundscape_style">Style</h3>
+                <div class="soundscape-field-shell">
+                  <span class="soundscape-axis soundscape-axis-top" data-i18n="soundscape_tension">Tension</span>
+                  <span class="soundscape-axis soundscape-axis-left" data-i18n="soundscape_cold">Cold</span>
+                  <div id="soundscape-style-field" class="soundscape-style-field" role="application" tabindex="0" aria-describedby="soundscape-style-summary">
+                    <span class="soundscape-style-grid" aria-hidden="true"></span>
+                    <span id="soundscape-style-puck" class="soundscape-style-puck" aria-hidden="true"></span>
+                  </div>
+                  <span class="soundscape-axis soundscape-axis-right" data-i18n="soundscape_warm">Warm</span>
+                  <span class="soundscape-axis soundscape-axis-bottom" data-i18n="soundscape_calm">Calm</span>
                 </div>
-                <button class="btn" type="button" id="soundscape-reset-style" data-i18n="reset">Reset</button>
-              </header>
-              <div id="soundscape-style-strip" class="soundscape-style-strip" role="group" data-i18n-aria-label="soundscape_style">
-                <button class="btn" type="button" data-soundscape-style="standard" data-i18n="soundscape_style_standard">Standard</button>
-                <button class="btn" type="button" data-soundscape-style="coldMist" data-i18n="soundscape_style_cold_mist">Cold Mist</button>
-                <button class="btn" type="button" data-soundscape-style="warmWood" data-i18n="soundscape_style_warm_wood">Warm Wood</button>
-                <button class="btn" type="button" data-soundscape-style="nightSail" data-i18n="soundscape_style_night_sail">Night Sail</button>
-                <button class="btn" type="button" data-soundscape-style="sunlight" data-i18n="soundscape_style_sunlight">Sunlight</button>
-                <button class="btn" type="button" data-soundscape-style="pulse" data-i18n="soundscape_style_pulse">Pulse</button>
-              </div>
-              <div class="soundscape-field-shell">
-                <span class="soundscape-axis soundscape-axis-top" data-i18n="soundscape_tension">Tension</span>
-                <span class="soundscape-axis soundscape-axis-left" data-i18n="soundscape_cold">Cold</span>
-                <div id="soundscape-style-field" class="soundscape-style-field" role="application" tabindex="0" aria-describedby="soundscape-style-summary">
-                  <span id="soundscape-style-puck" class="soundscape-style-puck" aria-hidden="true"></span>
+                <div class="soundscape-style-side">
+                  <div id="soundscape-style-strip" class="soundscape-style-strip" role="group" data-i18n-aria-label="soundscape_style" aria-label="Style">
+                    <button class="btn" type="button" data-soundscape-style="standard" data-i18n="soundscape_style_standard">Standard</button>
+                    <button class="btn" type="button" data-soundscape-style="coldMist" data-i18n="soundscape_style_cold_mist">Cold Mist</button>
+                    <button class="btn" type="button" data-soundscape-style="warmWood" data-i18n="soundscape_style_warm_wood">Warm Wood</button>
+                    <button class="btn" type="button" data-soundscape-style="nightSail" data-i18n="soundscape_style_night_sail">Night Sail</button>
+                    <button class="btn" type="button" data-soundscape-style="sunlight" data-i18n="soundscape_style_sunlight">Sunlight</button>
+                    <button class="btn" type="button" data-soundscape-style="pulse" data-i18n="soundscape_style_pulse">Pulse</button>
+                  </div>
+                  <div class="soundscape-intensity-control">
+                    <span class="soundscape-control-label" data-i18n="soundscape_enter_scene">Enter Scene</span>
+                    <div id="soundscape-intensity" class="system-segments" role="slider" tabindex="0" data-segments="12" aria-valuemin="0" aria-valuemax="100" aria-valuenow="24" data-i18n-aria-label="soundscape_enter_scene" aria-label="Enter Scene"></div>
+                  </div>
+                  <output id="soundscape-style-summary" class="soundscape-style-summary" aria-live="polite">
+                    <small data-i18n="soundscape_style_readout">This moment</small>
+                    <span id="soundscape-style-words">Neutral / Focused / Whisper</span>
+                  </output>
+                  <div class="soundscape-style-actions">
+                    <button class="btn mini-btn" type="button" id="soundscape-style-note-toggle" aria-expanded="false" aria-controls="soundscape-style-note" data-i18n="soundscape_add_sentence">Add one sentence</button>
+                    <button class="btn mini-btn" type="button" id="soundscape-apply-style" data-i18n="soundscape_use_style">Use This Style</button>
+                  </div>
+                  <div id="soundscape-style-note" class="soundscape-style-note" hidden>
+                    <input id="soundscape-style-name" type="text" data-i18n-placeholder="soundscape_style_name_placeholder" placeholder="Name this atmosphere" />
+                    <textarea id="soundscape-style-sentence" rows="2" data-i18n-placeholder="soundscape_style_sentence_placeholder" placeholder="What does it feel like?"></textarea>
+                  </div>
+                  <p class="soundscape-hint" data-i18n="soundscape_enter_scene_note">Enter Scene changes only how Soundscape looks and reads. It never changes the music, the volume, or the balance.</p>
                 </div>
-                <span class="soundscape-axis soundscape-axis-right" data-i18n="soundscape_warm">Warm</span>
-                <span class="soundscape-axis soundscape-axis-bottom" data-i18n="soundscape_calm">Calm</span>
-              </div>
-              <label class="soundscape-intensity-control" for="soundscape-intensity">
-                <span data-i18n="soundscape_enter_scene">Enter Scene</span>
-                <input id="soundscape-intensity" type="range" min="0" max="100" value="28" />
-              </label>
-              <output id="soundscape-style-summary" class="soundscape-style-summary" aria-live="polite">Standard / Neutral / Calm</output>
-              <button class="btn soundscape-style-note-toggle" type="button" id="soundscape-style-note-toggle" aria-expanded="false" data-i18n="soundscape_add_sentence">Add one sentence</button>
-              <div id="soundscape-style-note" class="soundscape-style-note" hidden>
-                <input id="soundscape-style-name" type="text" data-i18n-placeholder="soundscape_style_name_placeholder" placeholder="Name this atmosphere" />
-                <textarea id="soundscape-style-sentence" rows="2" data-i18n-placeholder="soundscape_style_sentence_placeholder" placeholder="What does it feel like?"></textarea>
-              </div>
-              <button class="btn soundscape-apply-style" type="button" id="soundscape-apply-style" data-i18n="soundscape_use_style">Use This Style</button>
               </section>
 
               <section class="soundscape-panel soundscape-saved-pane" id="soundscape-panel-saved" role="tabpanel" aria-labelledby="soundscape-tab-saved" data-soundscape-panel="saved" hidden>
-                <header class="soundscape-section-heading">
-                  <span class="soundscape-section-index">03</span>
+                <div class="soundscape-group-heading">
                   <h3 data-i18n="soundscape_saved">Saved</h3>
-                </header>
-                <p class="soundscape-saved-hint" data-i18n="soundscape_saved_hint">A moment is music, position, volume, and style.</p>
-                <div id="soundscape-saved-list" class="soundscape-saved-list window-frame-scroller"></div>
+                  <p data-i18n="soundscape_saved_hint">A moment is music, position, volume, playback mode, and style.</p>
+                </div>
+                <div id="soundscape-saved-list" class="soundscape-list soundscape-saved-list window-frame-scroller"></div>
                 <div class="soundscape-saved-actions">
                   <button class="btn default" type="button" id="soundscape-restore" disabled data-i18n="soundscape_restore">Return to Moment</button>
                   <button class="btn" type="button" id="soundscape-link-project" disabled data-i18n="soundscape_add_project">Add to Current Project</button>
-                  <button class="btn" type="button" id="soundscape-restore-project" data-i18n="soundscape_restore_project">Restore Project Soundscape</button>
+                  <button class="btn" type="button" id="soundscape-recover-moment" disabled data-i18n="soundscape_find_again">Find It Again</button>
                 </div>
               </section>
             </div>

@@ -1821,16 +1821,9 @@ html:lang(zh-Hans) .title-bar h2 {
   text-align: left;
 }
 
-.assistant-window:not(.is-quick-draft-sideask) .clio-welcome::before {
-  content: "";
-  box-sizing: border-box;
-  width: 38px;
-  height: 46px;
-  border: var(--clio-welcome-object-border);
-  background:
-    linear-gradient(135deg, transparent 0 10px, currentColor 10px 12px, transparent 12px),
-    var(--clio-welcome-object-bg);
-  box-shadow: var(--clio-welcome-object-shadow);
+.assistant-window:not(.is-quick-draft-sideask) .clio-welcome .clio-welcome-icon {
+  align-self: center;
+  justify-self: center;
 }
 
 .assistant-window:not(.is-quick-draft-sideask) .clio-welcome .speaker {
@@ -2864,7 +2857,7 @@ html:lang(zh-Hans) .title-bar h2 {
   padding: 32px 24px;
 }
 
-.assistant-window.is-sideask:not(.is-quick-draft-sideask) .clio-welcome::before {
+.assistant-window.is-sideask:not(.is-quick-draft-sideask) .clio-welcome .clio-welcome-icon {
   display: none;
 }
 

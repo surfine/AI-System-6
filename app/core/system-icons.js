@@ -13,7 +13,40 @@ function systemIconEscape(value) {
     .replace(/'/g, "&#039;");
 }
 
+// Transport glyphs are filled 1-bit art on a 32-unit grid using even
+// coordinates only, so they stay on the pixel grid when drawn at 16px.
+// Both themes share these exact paths; Liquid Glass changes the button
+// material around them, never the glyph.
+const transportIconPaths = {
+  play: `
+    <path class="classic-ink" d="M10 6l16 10-16 10z" />
+  `,
+  pause: `
+    <path class="classic-ink" d="M8 6h6v20H8zM18 6h6v20h-6z" />
+  `,
+  previousTrack: `
+    <path class="classic-ink" d="M6 6h4v20H6zM28 6L12 16l16 10z" />
+  `,
+  nextTrack: `
+    <path class="classic-ink" d="M22 6h4v20h-4zM4 6l16 10L4 26z" />
+  `,
+  shuffleTracks: `
+    <path class="classic-ink" d="M2 8h8v2H2zM10 10h2v2h-2zM12 12h2v2h-2zM14 14h2v2h-2zM16 16h2v2h-2zM18 18h2v2h-2zM20 20h4v2h-4z" />
+    <path class="classic-ink" d="M2 22h8v2H2zM10 20h2v2h-2zM12 18h2v2h-2zM14 16h2v2h-2zM16 14h2v2h-2zM18 12h2v2h-2zM20 10h4v2h-4z" />
+    <path class="classic-ink" d="M24 4l6 5-6 5zM24 18l6 5-6 5z" />
+  `,
+  repeatTracks: `
+    <path class="classic-ink" d="M8 8h14v2H8zM10 22h14v2H10z" />
+    <path class="classic-ink" d="M22 4l6 5-6 5zM10 18l-6 5 6 5z" />
+  `,
+  speaker: `
+    <path class="classic-ink" d="M4 12h6v8H4zM10 12l8-8v24l-8-8z" />
+    <path class="classic-ink" d="M22 12h2v8h-2zM26 8h2v16h-2z" />
+  `,
+};
+
 const systemIconPaths = {
+  ...transportIconPaths,
   startupDisk: `
     <path d="M5 9h22v17H5z" />
     <path d="M9 5h14v4H9z" />
@@ -289,6 +322,7 @@ const systemIconPaths = {
 };
 
 const liquidSystemIconPaths = {
+  ...transportIconPaths,
   startupDisk: `
     <rect class="icon-fill" x="5.5" y="8" width="21" height="18" rx="4" />
     <path d="M10 8V5.5h12V8M10 14h12M10 19h8" />

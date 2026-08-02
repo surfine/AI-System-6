@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 // Mingming Outline practice bench.
-// Scores whether an Creator-style bullet outline became Recipient/Mingming-shaped
+// Scores whether an Aaron-style bullet outline became Luoluo/Mingming-shaped
 // spoken copy while keeping generated ## anchors for AI System 6's draft flow.
 
 import { readFileSync } from "node:fs";
@@ -14,7 +14,7 @@ const require = createRequire(import.meta.url);
 const iphone17eDemoCorpus = require(join(root, "app/data/iphone-17e-demo-corpus.js"));
 const defaultLmStudioUrl = "http://127.0.0.1:1234/v1/chat/completions";
 
-export const SAMPLE_IPHONE_17E_INPUT = iphone17eDemoCorpus.creatorBulletInput;
+export const SAMPLE_IPHONE_17E_INPUT = iphone17eDemoCorpus.aaronBulletInput;
 export const REFERENCE_OUTPUT = iphone17eDemoCorpus.mingmingReferenceOutput;
 export const SAMPLE_OLD_DEVICE_INPUT = `# iPod nano 7 复盘素材
 
@@ -96,12 +96,12 @@ function extractMingmingInstructions() {
 }
 
 export function buildMingmingPracticePrompt(input = SAMPLE_IPHONE_17E_INPUT) {
-  return `你是 AI System 6 的「若是铭铭会怎么写」改写器。请根据下面材料，直接生成一篇接收者频道里能拍、能念、能成立的 B 站口播稿。
+  return `你是 AI System 6 的「若是铭铭会怎么写」改写器。请根据下面材料，直接生成一篇落落频道里能拍、能念、能成立的 B 站口播稿。
 
 ${extractMingmingInstructions()}
 
 输出格式：
-- 第一行用一个 Markdown H1 标题，标题可以有接收者式趣味和本期核心对象。
+- 第一行用一个 Markdown H1 标题，标题可以有落落式趣味和本期核心对象。
 - 正文必须按内容生成 Markdown 二级标题（##），给章节草稿和审校台作为章节锚点。
 - 即使参考样例或目标口播看起来是连续正文，实际返回也必须插入自生成的 ## 章节标题；没有 ## 就是失败输出。
 - 这些 ## 是软件里的章节锚点，不是口播里要念出来的标题；标题服务后续工作流，正文仍然像自然说话。
@@ -109,7 +109,7 @@ ${extractMingmingInstructions()}
 - 每个 ## 下面用自然段写口播，不要用条目清单。
 - 可以穿插少量画面提示，格式为〔画面：……〕。画面提示要服务于拍摄，不要泛泛说明。
 - 保留 4-7 个 ## 章节，让后续章节草稿、审校台和章节级检查能继续工作。
-- 结尾使用接收者式收束：“好了，这次节目就到这里了，喜欢的话关注一下也是可以的，我们下次见。”
+- 结尾使用落落式收束：“好了，这次节目就到这里了，喜欢的话关注一下也是可以的，我们下次见。”
 
 改写要求：
 - 只输出改写后的完整文案，不要输出大纲表、交接清单、分析报告、修改说明或多版本。
@@ -193,7 +193,7 @@ export function scoreMingmingOutput(markdown) {
     {
       key: "noBulletBody",
       ok: !/^\s*[-*]\s+/m.test(text),
-      detail: "body should be spoken paragraphs, not Creator bullet lists",
+      detail: "body should be spoken paragraphs, not Aaron bullet lists",
     },
     {
       key: "hasVisualBeats",
@@ -213,7 +213,7 @@ export function scoreMingmingOutput(markdown) {
     {
       key: "oralTexture",
       ok: oralCount >= 5,
-      detail: `${oralCount} Recipient oral texture markers; expected at least 5`,
+      detail: `${oralCount} Luoluo oral texture markers; expected at least 5`,
     },
     {
       key: "noPolishedMaxims",
@@ -243,7 +243,7 @@ export function scoreMingmingOutput(markdown) {
     {
       key: "exactEnding",
       ok: text.endsWith(exactEnding),
-      detail: "must end with the requested Recipient closing line",
+      detail: "must end with the requested Luoluo closing line",
     },
   ];
   const passed = checks.filter((check) => check.ok).length;

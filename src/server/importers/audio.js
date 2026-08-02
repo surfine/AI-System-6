@@ -629,6 +629,7 @@ async function runMacosSpeechTranscriber(inputPath, language, signal) {
  * @param {{
  *   language?: string,
  *   signal?: AbortSignal,
+ *   repairWithModel?: boolean,
  * }} [options]
  * @returns {Promise<string>}
  */
@@ -658,7 +659,11 @@ async function extractAudioTranscript(name, mimeType, buffer, options = {}) {
       try {
         const result = await provider(inputPath, language, options.signal);
         const text = cleanImportedText(result?.text || "");
-        if (text) return repairAudioTranscriptWithLocalModel(text, options.signal);
+        if (text) {
+          return options.repairWithModel === false
+            ? normalizeChineseTranscriptSpacing(text)
+            : repairAudioTranscriptWithLocalModel(text, options.signal);
+        }
         if (result) errors.push(`${result.provider}: no transcript text returned`);
       } catch (error) {
         if (/** @type {Error} */ (error).name === "AbortError") throw error;

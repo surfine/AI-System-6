@@ -179,6 +179,10 @@ function renderClioTalkWelcome() {
   item.className = "message assistant clio-welcome";
   item.setAttribute("aria-label", clioTalkAssistantDisplayName());
 
+  item.insertAdjacentHTML("beforeend", renderSystemIcon("assistant", {
+    className: "clio-welcome-icon",
+  }));
+
   const speaker = document.createElement("div");
   speaker.className = "speaker";
   speaker.textContent = clioTalkAssistantDisplayName();

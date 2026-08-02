@@ -2,7 +2,6 @@
 
 const { send, requestSignal, withTimeoutSignal } = require("../lib/http.js");
 const {
-  READER_TIMEOUT_MS,
   TIME_MACHINE_TIMEOUT_MS,
   timeMachineUrl,
   timeMachineTargetDate,
@@ -17,7 +16,7 @@ const {
   timeMachineError,
 } = require("../time-machine.js");
 
-const TIME_MACHINE_PROVIDER_TIMEOUT_MS = Math.min(9000, READER_TIMEOUT_MS - 3000);
+const TIME_MACHINE_PROVIDER_TIMEOUT_MS = TIME_MACHINE_TIMEOUT_MS - 3000;
 
 function sendJson(res, status, payload) {
   send(res, status, JSON.stringify(payload), {

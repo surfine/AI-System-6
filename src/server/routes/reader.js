@@ -25,8 +25,11 @@ const { getTextOnceWithFallback, headerValue } = require("../lib/fetch.js");
 const {
   READER_MAX_BYTES,
   READER_TIMEOUT_MS,
+  readerFetchUrl,
+  resolveReaderTarget,
   validateReaderTarget,
   cleanHtmlForReader,
+  readerArticleFromJinaMarkdown,
   friendlyReaderError,
 } = require("../reader.js");
 
@@ -59,18 +62,32 @@ async function handleReader(req, res) {
     const readerHeaders = {
       "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
       "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
     };
     /** @type {{ ok: boolean, status: number, headers: any, text: string }} */
     let upstream;
-    let finalReaderUrl = readerUrl;
+    let resolvedReaderTarget = await resolveReaderTarget(readerFetchUrl(readerUrl));
+    let finalReaderUrl = resolvedReaderTarget.url;
     for (let redirects = 0; redirects <= 3; redirects += 1) {
-      upstream = await getTextOnceWithFallback(finalReaderUrl, timeoutController.signal, readerHeaders);
+      upstream = await getTextOnceWithFallback(
+        finalReaderUrl,
+        timeoutController.signal,
+        readerHeaders,
+        {
+          maxBytes: READER_MAX_BYTES,
+          pinnedAddress: resolvedReaderTarget.address,
+          pinnedFamily: resolvedReaderTarget.family,
+        }
+      );
 
       if (![301, 302, 303, 307, 308].includes(upstream.status)) break;
 
       const location = headerValue(upstream.headers, "location");
       if (!location) throw new Error(`Upstream returned ${upstream.status}`);
-      finalReaderUrl = await validateReaderTarget(new URL(location, finalReaderUrl).href);
+      resolvedReaderTarget = await resolveReaderTarget(
+        new URL(location, finalReaderUrl).href
+      );
+      finalReaderUrl = resolvedReaderTarget.url;
     }
 
     if ([301, 302, 303, 307, 308].includes(/** @type {any} */ (upstream).status)) {
@@ -78,6 +95,25 @@ async function handleReader(req, res) {
     }
 
     if (!(/** @type {any} */ (upstream).ok)) {
+      const fallbackTarget = await resolveReaderTarget(
+        `https://r.jina.ai/http://${new URL(readerUrl).host}${new URL(readerUrl).pathname}${new URL(readerUrl).search}`
+      );
+      const fallback = await getTextOnceWithFallback(
+        fallbackTarget.url,
+        timeoutController.signal,
+        { "Accept": "text/plain,*/*;q=0.8", "User-Agent": "AI-System-6/1.0" },
+        {
+          maxBytes: READER_MAX_BYTES,
+          pinnedAddress: fallbackTarget.address,
+          pinnedFamily: fallbackTarget.family,
+        }
+      );
+      if (fallback.ok) {
+        send(res, 200, JSON.stringify(readerArticleFromJinaMarkdown(fallback.text, readerUrl)), {
+          "Content-Type": "application/json",
+        });
+        return;
+      }
       throw new Error(`Upstream returned ${/** @type {any} */ (upstream).status}`);
     }
 
@@ -95,13 +131,18 @@ async function handleReader(req, res) {
     if (html.length > READER_MAX_BYTES) {
       throw new Error("Reader page is too large.");
     }
-    const cleaned = await cleanHtmlForReader(html, finalReaderUrl);
+    // Keep the user-supplied canonical URL in saved source provenance even
+    // when a site-specific public reading representation was fetched.
+    const cleaned = await cleanHtmlForReader(html, readerUrl);
 
     send(res, 200, JSON.stringify(cleaned), {
       "Content-Type": "application/json",
     });
   } catch (error) {
     if (/** @type {any} */ (error)?.name === "AbortError") return;
+    if (/** @type {any} */ (error)?.code === "ERR_RESPONSE_TOO_LARGE") {
+      error = new Error("Reader page is too large.");
+    }
     send(res, 502, JSON.stringify({
       error: "Reader failed",
       detail: friendlyReaderError(error),

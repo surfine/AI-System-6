@@ -4,6 +4,7 @@
     "styles/00-foundation.css": 3,
     "styles/10-windows.css": 4,
     "styles/20-reader-docmap.css": 4,
+    "styles/22-time-machine.css": 0,
     "styles/30-surfaces.css": 9,
     "styles/40-icons.css": 2,
     "styles/50-apps.css": 8,
@@ -12,12 +13,16 @@
     "styles/80-bureaucracy-meme.css": 0,
     "styles/85-liquid-cover.css": 0,
     "styles/86-cmf-studio.css": 0,
-    "styles/90-endfield-terminal.css": 0
+    "styles/90-endfield-terminal.css": 0,
+    "styles/95-legacy-webkit.css": 0,
+    "styles/87-clio-chart.css": 0,
+    "styles/88-soundscape.css": 0
   },
   "zIndex": {
     "styles/00-foundation.css": 9,
     "styles/10-windows.css": 13,
     "styles/20-reader-docmap.css": 5,
+    "styles/22-time-machine.css": 1,
     "styles/30-surfaces.css": 0,
     "styles/40-icons.css": 0,
     "styles/50-apps.css": 6,
@@ -26,7 +31,10 @@
     "styles/80-bureaucracy-meme.css": 0,
     "styles/85-liquid-cover.css": 0,
     "styles/86-cmf-studio.css": 0,
-    "styles/90-endfield-terminal.css": 1
+    "styles/90-endfield-terminal.css": 1,
+    "styles/95-legacy-webkit.css": 0,
+    "styles/87-clio-chart.css": 0,
+    "styles/88-soundscape.css": 0
   },
   "inlineLayoutStyles": {
     "_pattern": "element.style.{top,left,right,bottom,width,height,padding,margin,maxWidth,maxHeight,minWidth,minHeight} = ...",
@@ -38,7 +46,7 @@
   "themeSelectorsOutsideLiquid": {
     "styles/50-apps.css": 12,
     "styles/80-bureaucracy-meme.css": 48,
-    "styles/85-liquid-cover.css": 44,
+    "styles/85-liquid-cover.css": 45,
     "styles/90-endfield-terminal.css": 11
   }
 }

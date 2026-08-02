@@ -67,6 +67,7 @@ function resolveOptionalPlaywright() {
   const candidates = [
     "playwright",
     process.env.PLAYWRIGHT_MODULE,
+    "/Users/aaron/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright",
   ].filter(Boolean);
   for (const candidate of candidates) {
     try {

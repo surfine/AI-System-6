@@ -24,6 +24,32 @@ import { fileURLToPath } from "node:url";
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const budget = JSON.parse(readFileSync(join(root, "scripts/css-budget.json"), "utf8"));
 const failures = [];
+const cliArgs = process.argv.slice(2);
+const requestedCssFiles = [];
+
+for (let index = 0; index < cliArgs.length; index += 1) {
+  const arg = cliArgs[index];
+  if (arg === "--file") {
+    const value = String(cliArgs[index + 1] || "").replaceAll("\\", "/");
+    if (!value || value.startsWith("--")) {
+      console.error("NO  --file requires a path under styles/.");
+      process.exit(1);
+    }
+    requestedCssFiles.push(value);
+    index += 1;
+  } else if (arg === "--help") {
+    console.log(`Usage:
+  node scripts/verify-css.mjs
+  node scripts/verify-css.mjs --file styles/10-windows.css [--file styles/00-foundation.css]
+
+Without --file the release-grade gate checks every stylesheet. Repeated --file
+arguments scope the normal edit loop to the styles owned by the current task.`);
+    process.exit(0);
+  } else {
+    console.error(`NO  unknown CSS verification option: ${arg}`);
+    process.exit(1);
+  }
+}
 
 function ok(msg) { console.log(`OK  ${msg}`); }
 function fail(msg) { failures.push(msg); console.error(`NO  ${msg}`); }
@@ -134,10 +160,21 @@ function checkCssBraceBalance(relPath) {
 }
 
 const stylesDir = join(root, "styles");
-const cssFiles = readdirSync(stylesDir)
+const allCssFiles = readdirSync(stylesDir)
   .filter((name) => name.endsWith(".css"))
   .map((name) => `styles/${name}`)
   .sort();
+const scopedCssCheck = requestedCssFiles.length > 0;
+const cssFiles = scopedCssCheck
+  ? [...new Set(requestedCssFiles)]
+  : allCssFiles;
+
+for (const relPath of cssFiles) {
+  if (!/^styles\/[^/]+\.css$/.test(relPath) || !allCssFiles.includes(relPath)) {
+    console.error(`NO  scoped CSS file must exist directly under styles/: ${relPath}`);
+    process.exit(1);
+  }
+}
 
 cssFiles.forEach((relPath) => checkCssFile(relPath, budget));
 cssFiles.forEach((relPath) => checkCssBraceBalance(relPath));
@@ -172,11 +209,13 @@ cssFiles
   });
 
 // Catch CSS files that exist on disk but were not added to the budget.
-Object.keys(budget.important).forEach((relPath) => {
-  if (!cssFiles.includes(relPath)) {
-    fail(`css-budget.json mentions ${relPath} but the file no longer exists; remove the stale entry`);
-  }
-});
+if (!scopedCssCheck) {
+  Object.keys(budget.important).forEach((relPath) => {
+    if (!allCssFiles.includes(relPath)) {
+      fail(`css-budget.json mentions ${relPath} but the file no longer exists; remove the stale entry`);
+    }
+  });
+}
 
 const INLINE_PATTERN = /\.style\.(top|left|right|bottom|width|height|padding|margin|maxWidth|maxHeight|minWidth|minHeight)\b/g;
 
@@ -193,17 +232,19 @@ function walk(dir, acc = []) {
   return acc;
 }
 
-let inlineTotal = 0;
-walk(join(root, "app")).forEach((path) => {
-  const text = readFileSync(path, "utf8");
-  inlineTotal += countMatches(text, INLINE_PATTERN);
-});
+if (!scopedCssCheck) {
+  let inlineTotal = 0;
+  walk(join(root, "app")).forEach((path) => {
+    const text = readFileSync(path, "utf8");
+    inlineTotal += countMatches(text, INLINE_PATTERN);
+  });
 
-const inlineBudget = budget.inlineLayoutStyles.total;
-if (inlineTotal > inlineBudget) {
-  fail(`app/: inline layout styles = ${inlineTotal}, budget = ${inlineBudget}. Use a class toggle or setProperty('--x', ...) instead of element.style.<layout> = ...`);
-} else {
-  ok(`app/: inline layout styles ${inlineTotal}/${inlineBudget}`);
+  const inlineBudget = budget.inlineLayoutStyles.total;
+  if (inlineTotal > inlineBudget) {
+    fail(`app/: inline layout styles = ${inlineTotal}, budget = ${inlineBudget}. Use a class toggle or setProperty('--x', ...) instead of element.style.<layout> = ...`);
+  } else {
+    ok(`app/: inline layout styles ${inlineTotal}/${inlineBudget}`);
+  }
 }
 
 // --- Token source check ------------------------------------------------------
@@ -382,7 +423,7 @@ for (const sel of liquidSelectors) {
 const twinCount = twinBaseSelectors.length;
 
 const baseClassIds = new Set();
-cssFiles
+allCssFiles
   .filter((path) => !THEME_FILES.has(path))
   .forEach((path) => {
     const text = readFileSync(join(root, path), "utf8");

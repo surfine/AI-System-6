@@ -31,6 +31,11 @@ test.assertIncludes(config, "async function ensureSoundscapeModule()", "the feat
 test.assertIncludes(windowManager, "attach: () => window.AISystem6Soundscape?.attach?.()", "session restore reattaches the feature");
 test.assertIncludes(icons, "soundscape:", "Soundscape has a system icon in both visual languages");
 test.assertIncludes(icons, 'M8 16h3l2-6 3 12 3-10 2 7h3', "the icon uses a sound-wave landscape instead of a decorative disc");
+test.assertIncludes(icons, "const transportIconPaths = {", "transport keys share one set of 1-bit paths across both themes");
+for (const glyph of ["play", "pause", "previousTrack", "nextTrack", "shuffleTracks", "repeatTracks", "speaker"]) {
+  test.assertIncludes(icons, `${glyph}: \``, `${glyph} is drawn art, not a Unicode character`);
+}
+test.assertNotIncludes(html, 'id="soundscape-play-glyph" aria-hidden="true">\u25b6', "the play key is not a font glyph");
 
 // Listen-only playback. Apple Music stays inside the signed-in macOS Music app;
 // local files stay as revocable session URLs. There is no token or download
@@ -57,6 +62,17 @@ test.assertNotIncludes(systemMusicRoute, "APPLE_MUSIC_DEVELOPER_TOKEN", "the bri
 
 // A real basic player has explicit playback modes and a local queue that can
 // be removed or cleared without pretending to control Music's hidden queue.
+test.assertNotIncludes(html, 'id="soundscape-progress" type="range"', "position is not a browser-native slider");
+test.assertNotIncludes(html, 'id="soundscape-volume" type="range"', "volume is not a browser-native slider");
+test.assertIncludes(html, 'id="soundscape-progress" class="system-track" role="slider"', "position is a System 6 track that still reports a slider role");
+test.assertIncludes(html, 'id="soundscape-volume" class="system-segments" role="slider"', "volume uses Sound control panel segment cells");
+test.assertIncludes(html, 'id="soundscape-intensity" class="system-segments" role="slider"', "Enter Scene uses the same level control as volume");
+test.assertIncludes(css, "--system-track-bg", "the dithered track is token-driven so both themes share one geometry");
+test.assertIncludes(css, "--system-segment-on-bg", "segment cells are token-driven so both themes share one cell count");
+test.assertIncludes(source, "function bindDragControl(element, handlers)", "the custom controls are pointer operable");
+test.assertIncludes(source, 'element.setAttribute("aria-valuenow"', "the custom controls report their value to assistive tech");
+test.assertIncludes(source, "const jump = { Home: 0, End: 1 }[event.key];", "the custom controls stay keyboard operable");
+
 for (const id of ["soundscape-shuffle", "soundscape-repeat", "soundscape-mute", "soundscape-clear-queue"]) {
   test.assertIncludes(html, `id="${id}"`, `${id} is a visible player control`);
 }
@@ -96,6 +112,11 @@ test.assertIncludes(css, "left: var(--ss-field-x)", "the field puck visibly refl
 test.assertIncludes(css, "top: var(--ss-field-y)", "the field puck visibly reflects its vertical value");
 test.assertIncludes(source, "const legacyStyleAxis", "saved styles migrate when the vertical meaning flips");
 test.assertIncludes(source, "invertLegacyY ? 100 - y : y", "legacy calm and tension do not silently reverse");
+test.assertIncludes(css, "--ss-field-grid", "the sensory field keeps the Endfield Terminal's paper-and-grid surface");
+test.assertIncludes(css, "--ss-field-cold", "cold owns the left edge of the field");
+test.assertIncludes(css, "--ss-field-warm", "warm owns the right edge of the field");
+test.assertIncludes(css, "repeating-linear-gradient(0deg, rgba(16, 17, 20, 0.34) 0 1px, transparent 1px 5px)", "tension reads as dense, sharp contour lines");
+test.assertNotIncludes(css, "rgba(31, 36, 47, 0.54)", "calm reads as low contrast without being darkened");
 test.assertIncludes(css, "@media (prefers-reduced-motion: reduce)", "motion respects reduced-motion preferences");
 test.assertNotIncludes(css, "!important", "the new surface adds no important overrides");
 test.assertNotIncludes(css, "body.use-liquid-glass", "Classic and Liquid Glass share one token-driven structure");
@@ -104,12 +125,18 @@ test.assertIncludes(styleManifest, '"styles/88-soundscape.css"', "the component 
 // Mini Player first: one persistent listening surface and one tabbed drawer at
 // every width, including the full-screen mobile app shell.
 test.assertIncludes(html, 'class="soundscape-mode-switch" role="tablist"', "queue, style, and saved moments share one drawer");
+test.assertIncludes(html, 'data-soundscape-action-for="queue"', "the switch strip carries the queue drawer's own action");
+test.assertIncludes(html, 'data-soundscape-action-for="style"', "the switch strip carries the style drawer's own action");
+test.assertIncludes(html, 'data-soundscape-action-for="saved"', "the switch strip carries the saved drawer's own action");
+test.assertIncludes(source, "[data-soundscape-action-for]", "only the active drawer's action is visible");
+test.assertNotIncludes(html, "soundscape-section-index", "the three drawers are peers, not numbered steps");
+test.assertNotIncludes(html, "soundscape-eyebrow", "the deck drops the landing-page eyebrow");
 test.assertIncludes(html, 'data-soundscape-panel="queue"', "the queue is one drawer panel");
 test.assertIncludes(html, 'data-soundscape-panel="style" hidden', "the sensory field is hidden until requested");
 test.assertIncludes(html, 'data-soundscape-panel="saved" hidden', "saved moments are hidden until requested");
-test.assertIncludes(css, "grid-template-rows: 154px minmax(0, 1fr)", "the independent app keeps a compact playback deck above one workspace");
-test.assertIncludes(css, "width: 86px", "placeholder artwork stays subordinate to the player controls");
-test.assertIncludes(css, "grid-template-rows: 244px minmax(240px, 1fr)", "phone-width Soundscape keeps the deck compact above one workspace");
+test.assertIncludes(css, "grid-template-rows: 110px minmax(0, 1fr)", "the independent app keeps a compact playback deck above one workspace");
+test.assertIncludes(css, "width: 64px", "placeholder artwork stays subordinate to the player controls");
+test.assertIncludes(css, "grid-template-rows: 186px minmax(240px, 1fr)", "phone-width Soundscape keeps the deck compact above one workspace");
 test.assertIncludes(css, "--portrait-window-height:", "portrait flow receives a bounded window height");
 test.assertIncludes(windowManager, '"soundscape",', "Soundscape participates in the mobile full-screen app shell");
 
@@ -119,12 +146,21 @@ test.assertIncludes(source, "function linkSelectedToProject()", "a saved moment 
 test.assertIncludes(source, "state.projectLinks[project.id] = moment.id", "the project link records a real saved object");
 test.assertIncludes(source, "typeof getActiveProject ===", "Soundscape resolves the mounted System 6 project");
 test.assertIncludes(source, "function restoreProjectSoundscape()", "a project can restore its linked atmosphere");
+test.assertIncludes(html, 'id="soundscape-recover-moment"', "a stale moment offers a way back to its real source");
+test.assertIncludes(source, "function momentUnavailable(moment = selectedMoment())", "staleness is detected, not assumed");
+test.assertIncludes(source, "function recoverSelectedMoment()", "recovery hands the user back to Music or the file picker");
+test.assertIncludes(css, ".soundscape-saved-swatch", "the saved swatch reports hue at a fixed width");
+test.assertNotIncludes(source, "--soundscape-swatch-width", "swatch width no longer pretends to encode intensity");
 
 // Bilingual and bootstrap-safe.
 test.assertIncludes(en, 'soundscape_save_moment: "Save This Moment"', "English product copy exists");
 test.assertIncludes(zh, 'soundscape_save_moment: "保存此刻"', "Chinese product copy exists");
 test.assertIncludes(zh, 'soundscape_style_cold_mist: "冷雾"', "the Chinese sensory palette is explicit");
 test.assertIncludes(zh, 'soundscape_repeat_one: "单曲循环"', "single-track repeat is explicit in Chinese");
+test.assertIncludes(en, "soundscape_level_of:", "segment levels have readable English value text");
+test.assertIncludes(zh, "soundscape_level_of:", "segment levels have readable Chinese value text");
+test.assertIncludes(en, 'soundscape_find_again_music: "Find It in Music"', "English recovery copy names the real source");
+test.assertIncludes(zh, "soundscape_find_again_music:", "Chinese recovery copy names the real source");
 test.assertIncludes(app, "var translations = window.AISystem6Data?.translations || {}", "early restored controls can translate without a lexical dead zone");
 
 test.finish();

@@ -12,6 +12,10 @@ const { getCanvas, extractImageText } = require("./image-ocr.js");
 
 const execFileAsync = promisify(execFile);
 const pdfOcrMaxBytes = 40 * 1024 * 1024;
+const pdfMaxInflatedStreamBytes = Math.max(
+  1024 * 1024,
+  Number(process.env.AI_SYSTEM6_PDF_MAX_STREAM_BYTES || 8 * 1024 * 1024)
+);
 const pdfOcrMaxPages = Math.max(1, Number(process.env.AI_SYSTEM6_PDF_OCR_MAX_PAGES || 12));
 const pdfOcrLongEdge = Math.max(1000, Number(process.env.AI_SYSTEM6_PDF_OCR_LONG_EDGE || 1800));
 const pdfImageOcrMode = String(process.env.AI_SYSTEM6_PDF_IMAGE_OCR || "auto").toLowerCase();
@@ -125,7 +129,9 @@ function decodePdfStreamObject(body) {
 
   const raw = Buffer.from(body.slice(dataStart, dataEnd), "latin1");
   try {
-    return zlib.inflateSync(raw).toString("latin1");
+    return zlib.inflateSync(raw, {
+      maxOutputLength: pdfMaxInflatedStreamBytes,
+    }).toString("latin1");
   } catch {
     return raw.toString("latin1");
   }
@@ -285,7 +291,9 @@ function extractPdfTextLayer(buffer) {
     const raw = buffer.subarray(start, start + match[1].length);
     let text = "";
     try {
-      text = zlib.inflateSync(raw).toString("latin1");
+      text = zlib.inflateSync(raw, {
+        maxOutputLength: pdfMaxInflatedStreamBytes,
+      }).toString("latin1");
     } catch {
       text = raw.toString("latin1");
     }
@@ -306,7 +314,7 @@ function extractPdfTextLayer(buffer) {
 
 async function getPdfJs() {
   if (!pdfJsPromise) {
-    pdfJsPromise = Promise.resolve().then(() => require("pdfjs-dist/legacy/build/pdf.js"));
+    pdfJsPromise = import("pdfjs-dist/legacy/build/pdf.mjs");
   }
   return pdfJsPromise;
 }

@@ -1,10 +1,10 @@
-// Search subsystem: DuckDuckGo (API) and Bing (RSS + HTML) providers,
+// Search subsystem: DuckDuckGo HTML and Bing (RSS + HTML) providers,
 // redirect unwrapping, result normalization, and the per-attempt /
 // per-provider race driver. Mirrors the search section of root
 // server.js (decodeBase64Url through fetchSearchResults).
 //
 // Behavior parity preserved exactly:
-// - Providers tried in order: DuckDuckGo (single attempt) -> Bing
+// - Providers tried in order: DuckDuckGo HTML -> Bing
 //   (RSS first, then HTML) when provider=auto OR =duckduckgo.
 // - Bing-only and DuckDuckGo-only modes skip the cross-provider
 //   fallback.
@@ -231,6 +231,69 @@ function parseDuckDuckGoApiResults(text, limit) {
 }
 
 /**
+ * Parse DuckDuckGo's HTML result page. Its Instant Answer API returns
+ * knowledge-card and related-topic data rather than normal web results, so it
+ * can be sparse or unrelated to the search query.
+ *
+ * @param {string} html
+ * @param {number} limit
+ * @returns {SearchResult[]}
+ */
+function parseDuckDuckGoHtmlResults(html, limit) {
+  /** @type {SearchResult[]} */
+  const results = [];
+  const seen = new Set();
+  const blocks = String(html || "").split("result__body");
+
+  for (const block of blocks.slice(1)) {
+    if (results.length >= limit) break;
+    const linkMatch = block.match(/<a\b[^>]*class=["'][^"']*\bresult__a\b[^"']*["'][^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/i);
+    if (!linkMatch) continue;
+    const snippetMatch = block.match(/<(?:a|div)\b[^>]*class=["'][^"']*\bresult__snippet\b[^"']*["'][^>]*>([\s\S]*?)<\/(?:a|div)>/i);
+    const url = cleanSearchUrl(linkMatch[1], "https://html.duckduckgo.com");
+    const title = stripTags(linkMatch[2]);
+    const snippet = snippetMatch ? stripTags(snippetMatch[1]).slice(0, 320) : "";
+    if (!/^https?:\/\//i.test(url) || !title || seen.has(url)) continue;
+    seen.add(url);
+    results.push({ title, url, site: siteFromUrl(url), snippet });
+  }
+
+  return results;
+}
+
+/**
+ * Parse Jina Reader's Markdown rendering of a DuckDuckGo result page. Jina is
+ * only tried after direct public providers fail, so normal traffic does not
+ * depend on it; it gives Searcher a browser-grade, no-key fallback when those
+ * providers start serving bot challenges or corrupt result sets.
+ *
+ * @param {string} markdown
+ * @param {number} limit
+ * @returns {SearchResult[]}
+ */
+function parseJinaSearchResults(markdown, limit) {
+  /** @type {SearchResult[]} */
+  const results = [];
+  const seen = new Set();
+  const sections = String(markdown || "").split(/\n##\s+/);
+  for (const section of sections.slice(1)) {
+    if (results.length >= limit) break;
+    const heading = section.match(/^\[([^\]]+)\]\(([^)]+)\)/);
+    if (!heading) continue;
+    const url = cleanSearchUrl(heading[2]);
+    const title = cleanText(heading[1]);
+    const links = [...section.matchAll(/\[([^\]]+)\]\((https?:[^)]+)\)/g)]
+      .map((match) => cleanText(match[1]))
+      .filter((text) => text.length >= 12 && text !== title && !/^image\s+\d+$/i.test(text) && !/^[\w.-]+(?:\/|$)/i.test(text));
+    const snippet = (links[0] || "").slice(0, 320);
+    if (!/^https?:\/\//i.test(url) || !title || seen.has(url)) continue;
+    seen.add(url);
+    results.push({ title, url, site: siteFromUrl(url), snippet });
+  }
+  return results;
+}
+
+/**
  * Parse a Bing HTML search response.
  *
  * @param {string} html
@@ -355,6 +418,38 @@ function normalizeSearchProvider(provider) {
   return normalized === "auto" || SEARCH_PROVIDERS.includes(normalized) ? normalized : "auto";
 }
 
+/**
+ * Reject an upstream result when it contains none of the user's query terms.
+ * This guards against provider/proxy responses that are syntactically valid
+ * search pages but contain an unrelated result set.
+ *
+ * @param {string} query
+ * @param {string} title
+ * @param {string} snippet
+ * @returns {boolean}
+ */
+function isSearchResultRelevant(query, title, snippet) {
+  const normalizedQuery = cleanText(query).toLowerCase();
+  if (!normalizedQuery) return true;
+  const haystack = `${title}\n${snippet}`.toLowerCase();
+  const compactQuery = normalizedQuery.replace(/\s+/g, "");
+  if (compactQuery.length >= 2 && haystack.replace(/\s+/g, "").includes(compactQuery)) return true;
+
+  const cjkChars = [...new Set(normalizedQuery.match(/[\u4e00-\u9fff]/g) || [])];
+  if (cjkChars.length) {
+    const hits = cjkChars.filter((character) => haystack.includes(character)).length;
+    if (hits >= Math.min(2, cjkChars.length)) return true;
+  }
+
+  const terms = [...new Set(normalizedQuery.match(/[a-z0-9][a-z0-9._-]{1,}/g) || [])];
+  if (terms.length) {
+    const hits = terms.filter((term) => haystack.includes(term)).length;
+    if (hits >= Math.max(1, Math.ceil(terms.length / 2))) return true;
+  }
+
+  return false;
+}
+
 // Title meaningfulness regex. Built from a string literal with an
 // explicit \u escape so editors do not silently re-encode the CJK
 // range in a regex literal. Mirrors the inline /[A-Za-z0-9一-鿿]/
@@ -370,7 +465,7 @@ const MEANINGFUL_TITLE_CHAR = new RegExp("[A-Za-z0-9\\u4e00-\\u9fff]", "g");
  * @param {number} limit
  * @returns {SearchResult[]}
  */
-function normalizeSearchResults(results, limit) {
+function normalizeSearchResults(results, limit, query = "") {
   /** @type {SearchResult[]} */
   const output = [];
   const seen = new Set();
@@ -382,6 +477,7 @@ function normalizeSearchResults(results, limit) {
     const meaningfulTitleChars = (title.match(MEANINGFUL_TITLE_CHAR) || []).length;
     if (!/^https?:\/\//i.test(url) || meaningfulTitleChars < 2 || seen.has(url)) continue;
     if (/^https?:\/\/(?:www\.)?(?:bing|duckduckgo)\.com\/(?:search|html|lite|ck\/a|l\/|y\.js|\?)/i.test(url)) continue;
+    if (!isSearchResultRelevant(query, title, snippet)) continue;
     seen.add(url);
     output.push({
       title,
@@ -423,12 +519,9 @@ function buildSearchAttempts(provider, query, limit, start) {
   const attemptsByProvider = {
     duckduckgo: [
       {
-        label: "DuckDuckGo API",
-        url: `https://api.duckduckgo.com/?q=${encodedQuery}&format=json&no_redirect=1&no_html=1&skip_disambig=1`,
-        parse: parseDuckDuckGoApiResults,
-        accept: "application/json,*/*;q=0.8",
-        acceptLanguage: "en-US,en;q=0.9",
-        userAgent: "curl/8.7.1",
+        label: "DuckDuckGo web search",
+        url: `https://html.duckduckgo.com/html/?q=${encodedQuery}&s=${start}`,
+        parse: parseDuckDuckGoHtmlResults,
       },
     ],
     bing: [
@@ -441,6 +534,15 @@ function buildSearchAttempts(provider, query, limit, start) {
         label: "Bing HTML",
         url: `https://www.bing.com/search?q=${encodedQuery}&first=${firstResult}`,
         parse: parseBingResults,
+      },
+    ],
+    jina: [
+      {
+        label: "Jina Reader search fallback",
+        url: `https://r.jina.ai/http://html.duckduckgo.com/html/?q=${encodedQuery}&s=${start}`,
+        parse: parseJinaSearchResults,
+        accept: "text/plain,*/*;q=0.8",
+        userAgent: "AI-System-6/1.0",
       },
     ],
   };
@@ -472,7 +574,7 @@ async function runSearchAttempt(attempt, limit, signal) {
   try {
     const upstream = await getTextWithFallback(attempt.url, attemptSignal.signal, headers);
     if (!upstream.ok) throw new Error(`${attempt.label} returned ${upstream.status}`);
-    const results = normalizeSearchResults(attempt.parse(upstream.text, limit), limit);
+    const results = normalizeSearchResults(attempt.parse(upstream.text, limit), limit, new URL(attempt.url).searchParams.get("q") || "");
     if (!results.length) throw new Error(`${attempt.label} returned no readable results`);
     return { provider: /** @type {string} */ (attempt.provider), results };
   } catch (error) {
@@ -530,7 +632,7 @@ async function runSearchProvider(provider, query, limit, start, signal) {
 async function fetchSearchResults(query, limit, start, provider, signal) {
   const normalizedProvider = normalizeSearchProvider(provider);
   const providers = normalizedProvider === "auto" || normalizedProvider === "duckduckgo"
-    ? ["duckduckgo", "bing"]
+    ? ["duckduckgo", "bing", "jina"]
     : [normalizedProvider];
   const errors = [];
 
@@ -554,12 +656,15 @@ module.exports = {
   unwrapDuckDuckGoRedirect,
   cleanSearchUrl,
   parseDuckDuckGoApiResults,
+  parseDuckDuckGoHtmlResults,
+  parseJinaSearchResults,
   parseBingResults,
   parseBingRssResults,
   readXmlTag,
   searchProviderDisplayName,
   describeSearchFetchError,
   normalizeSearchProvider,
+  isSearchResultRelevant,
   normalizeSearchResults,
   buildSearchAttempts,
   runSearchAttempt,

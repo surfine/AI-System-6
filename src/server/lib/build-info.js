@@ -7,6 +7,7 @@
 
 const path = require("node:path");
 const { execFileSync } = require("node:child_process");
+const { existsSync } = require("node:fs");
 
 const repoRoot = path.resolve(__dirname, "..", "..", "..");
 
@@ -45,6 +46,7 @@ const baseBuildStamp =
 function readGitBuildSuffix() {
   if (releaseBuildOverride) return "";
   if (Reflect.get(process, "pkg")) return "";
+  if (!existsSync(path.join(repoRoot, ".git"))) return "";
   try {
     const revision = execFileSync("git", ["rev-parse", "--short", "HEAD"], {
       cwd: repoRoot,

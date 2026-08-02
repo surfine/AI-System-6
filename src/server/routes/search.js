@@ -1,6 +1,6 @@
 // GET /api/search?q=...&limit=...&start=...&provider=auto|duckduckgo|bing
 //
-// Bounded web search proxy. Tries DuckDuckGo first (when auto or
+// Bounded web search proxy. Tries DuckDuckGo web results first (when auto or
 // duckduckgo) and falls back to Bing. Returns up to `limit` deduped
 // results.
 //

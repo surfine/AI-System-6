@@ -46,9 +46,9 @@ const timeMachineTabsEl = document.querySelector("#time-machine-tabs");
 const timeMachineFrameEl = document.querySelector("#time-machine-frame");
 // #time-machine-frame is sandboxed to an opaque origin, so the parent can't
 // read its contentDocument to know when a navigation actually finished
-// painting — /api/time-machine/render does its own archive.org fetch
-// independent of the /browse call that populates the address bar, and that
-// fetch alone can take several seconds. data-frame-ready is the only
+// painting — /api/time-machine/render owns an independent document response
+// (normally served from the server's short-lived /browse result cache).
+// data-frame-ready is the only
 // externally observable "is the page actually up yet" signal (used by the
 // promo recording script).
 timeMachineFrameEl?.addEventListener("load", () => {
@@ -786,6 +786,15 @@ function timeMachineRenderReader() {
   const body = document.createElement("div");
   body.className = "reader-body-content";
   body.innerHTML = markdownToSystemHtml(reader.text);
+  const partial = reader.completeness === "partial";
+  if (partial) {
+    const warning = document.createElement("p");
+    warning.className = "hint control-status";
+    warning.setAttribute("role", "status");
+    warning.textContent = t("time_machine_reader_partial");
+    timeMachineReaderEl.append(title, meta, warning, body);
+    return;
+  }
   timeMachineReaderEl.append(title, meta, body);
 }
 
@@ -948,28 +957,45 @@ async function timeMachineNavigate(value, options = {}) {
     }
     let page = null;
     let browseError = null;
+    let partialFallback = null;
+    let pageFallback = null;
     const browseCandidates = archiveEnabled ? captureCandidates : [null];
     for (const candidate of browseCandidates) {
       try {
         const browseTarget = candidate?.browseUrl || candidate?.snapshotUrl || originalUrl;
         const browseParams = new URLSearchParams({ url: browseTarget, original: originalUrl });
         page = await timeMachineFetchJson(`/api/time-machine/browse?${browseParams}`, controller.signal);
-        capture = candidate;
+        let resolvedCapture = candidate;
         const replayCapturedAt = timeMachineCanonicalProvider(candidate?.provider) === "wayback"
           ? timeMachineWaybackCapturedAt(page?.fetchedUrl)
           : "";
-        if (replayCapturedAt) capture = { ...candidate, capturedAt: replayCapturedAt };
+        if (replayCapturedAt) resolvedCapture = { ...candidate, capturedAt: replayCapturedAt };
+        if (archiveEnabled && page?.reader?.completeness !== "complete") {
+          const fallback = { page, capture: resolvedCapture };
+          if (page?.reader?.completeness === "partial") partialFallback ||= fallback;
+          else pageFallback ||= fallback;
+          page = null;
+          continue;
+        }
+        capture = resolvedCapture;
         break;
       } catch (error) {
         if (error?.name === "AbortError") throw error;
         browseError = error;
       }
     }
+    if (!page && (partialFallback || pageFallback)) {
+      const fallback = partialFallback || pageFallback;
+      page = fallback.page;
+      capture = fallback.capture;
+    }
     if (!page) throw browseError || new Error(t("time_machine_no_capture"));
     if (controller.signal.aborted) return false;
     timeMachineApplyPage(page, capture, options.restoreState || null);
     timeMachineSetStatus(
-      archiveEnabled ? t("time_machine_browsing_past") : t("time_machine_browsing_live"),
+      page.reader?.completeness === "partial"
+        ? t("time_machine_reader_partial_status")
+        : archiveEnabled ? t("time_machine_browsing_past") : t("time_machine_browsing_live"),
       providerStatus || (capture ? timeMachineProviderLabel(capture.provider) : "")
     );
     return true;
@@ -1183,6 +1209,7 @@ function timeMachineSourceContract(context, selectedText, capturedAt) {
     originalUrl: page?.url || "",
     snapshotUrl: archive?.snapshotUrl || "",
     archiveProvider: archive?.provider || "",
+    readerCompleteness: page?.reader?.completeness || "unavailable",
     targetDate: timeMachineDateInput.value || "",
     snapshotTimestamp: archive?.capturedAt || "",
     site: (() => {
@@ -1283,6 +1310,7 @@ function createTimeMachineClip(text, translatedText = "", translationMeta = {}) 
     `Snapshot: ${source.snapshotUrl}`,
     `Snapshot time: ${source.snapshotTimestamp || "unknown"}`,
     `Target date: ${source.targetDate || "unknown"}`,
+    source.readerCompleteness === "partial" ? "Readable text: preview only" : "",
   ] : [];
   const body = [
     "Selected passage:",
@@ -1390,6 +1418,7 @@ function timeMachineDocMapSource() {
       url: currentTimeMachinePage?.url || "",
       snapshotUrl: currentTimeMachinePage?.archive?.snapshotUrl || "",
       archiveProvider: currentTimeMachinePage?.archive?.provider || "",
+      readerCompleteness: currentTimeMachinePage?.reader?.completeness || "unavailable",
     },
     threshold: selection ? docMapMinSelectionChars : docMapMinDocumentChars,
   };
@@ -1412,12 +1441,16 @@ async function askTimeMachineSource() {
   const archiveLine = page.archive
     ? `${timeMachineProviderLabel(page.archive.provider)} · ${timeMachineCapturedLabel(page.archive.capturedAt)} · ${page.archive.snapshotUrl}`
     : t("time_machine_live");
+  const completenessLine = page.reader.completeness === "partial"
+    ? t("time_machine_reader_partial_source")
+    : "";
   const prompt = currentLanguage === "zh"
     ? [
       "你正在回答时光机中的网页来源。请区分网页原文、你的推断、以及仍需核对的事实。",
       `问题：${question.trim()}`,
       `网页：${page.reader.title || page.title}`,
       `来源：${archiveLine}`,
+      ...(completenessLine ? [completenessLine] : []),
       "",
       clipContextContent(source, selection ? 6000 : 12000),
     ].join("\n")
@@ -1426,6 +1459,7 @@ async function askTimeMachineSource() {
       `Question: ${question.trim()}`,
       `Page: ${page.reader.title || page.title}`,
       `Source: ${archiveLine}`,
+      ...(completenessLine ? [completenessLine] : []),
       "",
       clipContextContent(source, selection ? 6000 : 12000),
     ].join("\n");

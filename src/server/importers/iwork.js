@@ -8,6 +8,11 @@ const {
   stripXml,
 } = require("./shared.js");
 const { readZipEntries } = require("./zip.js");
+
+const iworkMaxInflatedXmlBytes = Math.max(
+  1024 * 1024,
+  Number(process.env.AI_SYSTEM6_IWORK_MAX_XML_BYTES || 8 * 1024 * 1024)
+);
 const { extractPdfText, renderPdfOcrImages } = require("./pdf.js");
 const { extractImageText } = require("./image-ocr.js");
 
@@ -417,7 +422,9 @@ function extractPagesXmlText(entries) {
 
   const gzippedXml = entries.get("index.xml.gz") || entries.get("Index/index.xml.gz");
   if (gzippedXml?.length) {
-    return cleanImportedText(stripXml(decodeTextBuffer(zlib.gunzipSync(gzippedXml))));
+    return cleanImportedText(stripXml(decodeTextBuffer(zlib.gunzipSync(gzippedXml, {
+      maxOutputLength: iworkMaxInflatedXmlBytes,
+    }))));
   }
 
   return "";

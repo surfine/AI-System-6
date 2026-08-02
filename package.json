@@ -136,7 +136,11 @@
     "shell:mac:no-server": "swift run --package-path shell/macos-webview AISystem6Shell --no-server",
     "shell:mac:app": "node scripts/build-mac-shell-app.mjs",
     "verify:web-safety": "node scripts/verify-web-release-safety.mjs",
-    "deploy:web": "node scripts/deploy-web.mjs"
+    "deploy:web": "node scripts/deploy-web.mjs",
+    "release": "node scripts/release.mjs",
+    "snapshot:build": "node scripts/build-public-snapshot.mjs",
+    "snapshot:verify": "node scripts/verify-public-snapshot-safety.mjs",
+    "snapshot:sync": "node scripts/sync-public-snapshot.mjs"
   },
   "overrides": {
     "sanitize-html": "2.17.5"

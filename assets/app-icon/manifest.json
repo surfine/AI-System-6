@@ -1,0 +1,16 @@
+{
+  "name": "AI System 6",
+  "short_name": "AI System 6",
+  "description": "A local-first writing desk: sources, clips, drafts, review, and the finished manuscript each have their own place.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#b6b6b6",
+  "theme_color": "#000000",
+  "icons": [
+    { "src": "/assets/app-icon/app-icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/assets/app-icon/app-icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/assets/app-icon/app-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

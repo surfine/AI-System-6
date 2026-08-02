@@ -1,16 +1,17 @@
 node_modules/
 .pkg-cache/
-.npm-cache/
 .DS_Store
-.env
-.env.*
 app.bundle.js
+app/legacy/
 styles.bundle.css
 *.traineddata
+ocr/tessdata/*.traineddata.gz
+app/vendor/markmap/*.js
 .venv-markitdown/
 .venv-markitdown-trim/
 marked/
 markitdown/
+markmap/
 readability/
 native/.build/
 native/.swiftpm/
@@ -22,13 +23,17 @@ ai-system-6-macos
 ai-system-6-win.exe
 dist/
 builds/
-drafts/
-codex-snapshots/
-.codex-video-work/
-.claude/
-.agents/
-.github/
-*.log
+
+# Secrets never enter the repo. Production values live only in
+# /etc/ai-system6/env on the server; deploy/ai-system6.env.example (committed)
+# carries placeholders. scripts/verify-web-release-safety.mjs is the gate that
+# stops a stray one from reaching the public site.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+!**/system.css-reference/**/*.key
 system.css-reference/fonts/modern/
 *.7z
 *.mp4
@@ -39,5 +44,12 @@ liquid-glass-studio/
 external/
 codex-snapshots/
 .codex-video-work/
+ai-desktop-6-promo/output/
+ai-desktop-6-promo/recordings/
+drafts/css-refactor-snapshots/
+drafts/ui-reform-before/
+drafts/ui-reform-after/
+drafts/ui-reform-after-pareto/
 # local 15MB test photo (bg-1..6 are the shipped backgrounds)
 assets/liquid-cover/test-shot.jpg
+native/nohup.out

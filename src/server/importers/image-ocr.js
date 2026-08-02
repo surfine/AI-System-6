@@ -309,6 +309,9 @@ async function extractImageText(buffer, mimeType, options = {}) {
         try {
           return await extractImageTextWithTesseract(image.buffer);
         } catch (tesseractError) {
+          if (options.allowVisionFallback === false) {
+            throw new Error(`${paddleError.message} Tesseract OCR also failed: ${tesseractError.message}`);
+          }
           try {
             return await extractImageTextWithVision(image.buffer, image.mimeType);
           } catch (visionError) {
@@ -333,6 +336,7 @@ async function extractImageText(buffer, mimeType, options = {}) {
       } catch {
         // Keep the first Tesseract error; it describes the original input.
       }
+      if (options.allowVisionFallback === false) throw tesseractError;
       try {
         return await extractImageTextWithVision(image.buffer, image.mimeType);
       } catch (visionError) {
