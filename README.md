@@ -1,118 +1,85 @@
-<div align="center">
-
 # AI System 6
 
-### The AI has a desktop now.
+**A live AI desktop — not another chatbot.**
 
-A Macintosh System 6-inspired workspace where AI can **search, read, map, write, review, chart, present, and make** — across real apps and visible files.
+[中文](README.zh-CN.md) · [Live demo](https://system6.aaronlau.me) · [Mac beta](https://github.com/surfine/AI-System-6/releases/latest) · [Video](https://www.bilibili.com/video/BV1ht3m6UEDb/)
 
-[![Open AI System 6](https://img.shields.io/badge/OPEN_THE_LIVE_DESKTOP-000?style=for-the-badge)](https://system6.aaronlau.me)
-[![Watch the demo](https://img.shields.io/badge/WATCH_THE_50S_DEMO-F9D71C?style=for-the-badge&logo=bilibili&logoColor=000)](https://www.bilibili.com/video/BV1ht3m6UEDb/)
+![AI System 6 live desktop](assets/readme/ai-system-6-live-desktop.png)
 
-[![GitHub stars](https://img.shields.io/github/stars/surfine/AI-System-6?style=flat-square&color=111)](https://github.com/surfine/AI-System-6/stargazers)
-[![MIT license](https://img.shields.io/badge/license-MIT-black?style=flat-square)](LICENSE)
-[![Local AI](https://img.shields.io/badge/local_AI-LM_Studio_%C2%B7_Ollama-black?style=flat-square)](#bring-your-own-model)
-[![English](https://img.shields.io/badge/lang-English-black?style=flat-square)](README.md)
-[![简体中文](https://img.shields.io/badge/lang-简体中文-black?style=flat-square)](README.zh-CN.md)
+AI System 6 is a local-first, file-native AI workspace inspired by Macintosh System 6. It turns research, writing, and making into visible desktop work: apps stay open together, sources remain inspectable, and AI output does not become part of a project until you choose to save, clip, insert, or export it.
 
-[![AI System 6 live desktop](assets/readme/ai-system-6-live-desktop.png)](https://system6.aaronlau.me)
+## What makes it different
 
-**This is a live system, not a concept render.** Click the image and use it in your browser.
+### A desktop, not a chat window
 
-</div>
+MultiFinder keeps Searcher, Reader, Scrapbook, DocMap, ClioChart, ClioStage, ClioTalk, and other tools visible at the same time. They exchange real project files instead of hiding the work inside one conversation.
 
-## Not another chatbot
-
-Most AI products put every task into one chat window. AI System 6 gives the work a place to live.
-
-| In a chatbot | In AI System 6 |
-| --- | --- |
-| Context disappears into a prompt | Sources, scraps, prompts, and outputs remain visible |
-| One conversation owns the workflow | MultiFinder keeps multiple working apps open together |
-| Generated text quietly becomes the document | AI output stays temporary until you save, clip, insert, or export it |
-| The model is the product | Use LM Studio, Ollama, DeepSeek, or another OpenAI-compatible provider |
-| The endpoint is another answer | The endpoint is a file, manuscript, chart, slide deck, cover, or 3D artifact |
-
-## One desktop. A complete route.
+### One source-to-artifact route
 
 ```text
-SEARCH → READ → CLIP → MAP → WRITE → REVIEW → PRESENT
+Search → Read → Clip → Map → Write → Review → Present
 ```
 
-1. **Searcher** finds sources; **Reader** opens the evidence.
-2. **Time Machine** revisits archived pages through the Wayback Machine.
-3. **Scrapbook** keeps only the material you deliberately clip.
-4. **DocMap** turns research into a visible map of ideas and relationships.
-5. **Question Sheet → Outline → Section Drafts → TeachText** carries one manuscript from messy intent to finished prose.
-6. **Review Desk** checks factual and structural risk — including generic AI-mouthpiece drift.
-7. **ClioChart, ClioStage, and Cover Glass** turn the same work into charts, slides, and a finished visual artifact.
+- **Searcher + Reader** find sources and open readable evidence.
+- **Time Machine** revisits archived web pages through the Wayback Machine.
+- **Scrapbook + DocMap** preserve selected material and expose its structure.
+- **Question Sheet → Outline → Section Drafts → TeachText** carries one manuscript through the writing process.
+- **Review Desk** checks factual and structural risk, including generic AI-mouthpiece drift.
+- **ClioChart + ClioStage + Cover Glass** turn the same work into charts, slides, and a finished visual artifact.
 
-No invisible agent maze. The sources, files, prompts, and handoffs stay on the desk.
+### Local AI is a first-class option
 
-## Things this 1988 computer should not be able to do
+Use chat and embedding models from **LM Studio**, connect **Ollama**, or configure **DeepSeek** or another **OpenAI-compatible** endpoint. The selected provider is interchangeable; AI System 6 is the working environment, not a model wrapper.
 
-- **Run modern AI locally** through LM Studio or Ollama.
-- **Search and read the web**, including historical snapshots.
-- **Transcribe audio and OCR images and documents** from a File Floppy.
-- **Turn Markdown data into editable visual projections** with ClioChart.
-- **Build and present Markdown slide decks** with ClioStage.
-- **Render refractive WebGL typography** in Cover Glass.
-- **Edit a 3D iPhone colorway and export USDZ for AR** in CMF Studio.
-- **Switch the entire live desktop from Classic to Liquid Glass** without moving the work.
+Projects, references, scraps, and settings live in browser-local storage. The server is stateless, and provider credentials stay outside project files, chats, backups, and exports.
 
-The classic interface is grounded in real System 6.0.8 resources and period Macintosh interaction patterns — not redrawn from memory.
+### Modern tools inside a 1988 machine
 
-## Bring your own model
+- **CMF Studio** edits a 3D iPhone colorway and exports USDZ for AR.
+- **Cover Glass** renders refractive WebGL typography and cover art.
+- **File Floppy** imports documents, images, and audio with OCR and transcription workflows.
+- **ClioChart** converts Markdown data into editable visual projections.
+- **ClioStage** presents Markdown slide decks with source, slide, and cue views.
+- **Classic / Liquid Glass** switches the same live desktop between two visual eras without losing the work in place.
 
-AI System 6 is model-agnostic. Pick the route that matches your privacy, hardware, and budget.
+The classic interface is grounded in real System 6.0.8 resources and period Macintosh interaction patterns rather than redrawn from memory.
 
-| Route | Use it for |
-| --- | --- |
-| **LM Studio** | Local chat and embedding models with model discovery and loading |
-| **Ollama** | Local OpenAI-compatible model serving |
-| **DeepSeek** | Built-in cloud provider configuration |
-| **Custom / OpenAI-compatible** | Your own compatible endpoint and model |
-| **No model** | Explore the desktop and non-AI tools without connecting a provider |
+## Try it
 
-Projects, references, scraps, and settings are stored in your browser. The server is stateless, and provider credentials stay outside project files, chats, backups, and exports.
+The quickest way in is the [live demo](https://system6.aaronlau.me).
 
-## Run it locally
+For a standalone desktop window, download the [Apple silicon Mac beta](https://github.com/surfine/AI-System-6/releases/latest). It supports M1 or later Macs running macOS 13 or newer. The beta is ad-hoc signed rather than notarized, so macOS may ask you to confirm the first launch with **Control-click → Open**.
 
-```bash
-git clone https://github.com/surfine/AI-System-6.git
-cd AI-System-6
+The Mac app is a lightweight shell around the same local-first workspace served by this repository. It starts and stops its bundled local server with the app; projects and model credentials remain on your Mac.
+
+To run from source instead:
+
+```sh
 npm install
 npm start
 ```
 
-Open [http://localhost:4173](http://localhost:4173).
+Then visit `http://localhost:4173`.
 
-For local AI, start LM Studio, load a chat model, then refresh models in **Control Panel**. Ollama and cloud/OpenAI-compatible routes can be configured there as well.
+For local AI, start LM Studio and load a chat model before refreshing models in Control Panel. Ollama and cloud/OpenAI-compatible routes can also be configured there.
 
-## Built differently
+## Principles
 
-- **Local-first:** durable project data lives in IndexedDB; the server has no application database.
-- **File-native:** Project Hard Disk, File Floppy, Scrapbook, TeachText, and Project CD are working objects, not decorative metaphors.
-- **Inspectable:** model inputs, selected skills, harnesses, prompts, and run records are designed to remain visible.
-- **Deliberate:** AI may help read, organize, draft, rewrite, and review, but it does not get to silently become the writer.
-- **Small by constraint:** the boot-critical browser payload is kept within two 1.44 MB floppy disks.
+- AI output is temporary until the user deliberately keeps it.
+- Sources, prompts, run inputs, and project files should remain visible and inspectable.
+- AI may help read, organize, draft, rewrite, and review; it should not flatten the writer's language into a generic model voice.
+- A finished artifact matters more than an endless conversation.
 
-The browser app is plain JavaScript with a small stateless Node.js server — no frontend framework and no transpiler. See [CLAUDE.md](CLAUDE.md) for architecture, verification, and product contracts.
+## Development
 
-## Why System 6?
+The browser application is plain JavaScript with a small stateless Node.js server. There is no frontend framework or transpiler. See [CLAUDE.md](CLAUDE.md) for architecture, build rules, verification, and product contracts.
 
-Because a desktop makes state visible. A disk tells you what lasts. A floppy tells you what is temporary. A Scrapbook contains only what you chose to keep. A Trash can makes deletion honest.
+```sh
+npm run verify:quick
+npm run verify:features
+npm run verify:release
+```
 
-The retro interface is not the product. It is the constraint that keeps AI work legible.
+## License
 
----
-
-<div align="center">
-
-If this is the kind of AI computer you want to exist, **star the repository**, try the [live desktop](https://system6.aaronlau.me), and tell us what you would build inside it.
-
-[Live desktop](https://system6.aaronlau.me) · [50-second demo](https://www.bilibili.com/video/BV1ht3m6UEDb/) · [Issues](https://github.com/surfine/AI-System-6/issues)
-
-MIT licensed. AI System 6 is an independent project and is not affiliated with or endorsed by Apple Inc.
-
-</div>
+[MIT](LICENSE)
