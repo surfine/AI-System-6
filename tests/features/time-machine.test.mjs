@@ -118,8 +118,10 @@ test.assertIncludes(styles, "border-radius: var(--control-radius)", "Time Machin
 test.assertIncludes(styles, "grid-template-columns: repeat(7", "the popover renders a seven-day calendar");
 test.assertIncludes(styles, "grid-template-columns: repeat(auto-fit, minmax(44px, 1fr))", "phone navigation and view choices share one adaptive control row");
 test.assertIncludes(styles, ".time-machine-view-switch {\n    display: contents;", "phone view choices join the navigation row without a second toolbar");
-test.assertIncludes(styles, ".time-machine-reader-actions:has(#time-machine-docmap:disabled):has(#time-machine-question:disabled)", "empty Time Machine pages do not reserve space for unusable bottom controls");
-test.assertIncludes(styles, ".time-machine-ask-form {\n    grid-template-columns: minmax(0, 1fr) auto;", "loaded pages keep DocMap and Ask in one compact bottom row");
+test.assertIncludes(feature, 'registerAskBarSource("timeMachine", describeTimeMachineAskScope)', "Time Machine uses the shared ask bar instead of its own question row");
+test.assertIncludes(feature, 'if (!page?.reader?.text) return { ready: false };', "an empty Time Machine gives the ask bar's space back instead of showing a dead control");
+test.assertIncludes(feature, 'arrangeWindowAssistantSplit("timeMachine")', "a Time Machine question pairs the page with ClioTalk in SideAsk like every other source window");
+test.assertIncludes(feature, 'range: selection ? t("ask_scope_selection") : t("ask_scope_whole_page")', "the ask bar states whether the question carries the selection or the whole page");
 test.assertIncludes(styles, ".time-machine-toggle > span {\n    display: none;", "phone address bar hides the redundant mode label without removing its accessible label");
 test.assertIncludes(styles, "min-height: 44px", "phone Time Machine controls meet the touch target floor");
 test.assertNotIncludes(`${index}\n${feature}\n${styles}`, "1996—Today", "the UI never invents a universal archive range");

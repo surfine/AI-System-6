@@ -130,4 +130,19 @@ test.assertIncludes(persistenceStatus, "setControlLoading(loadModelButton, true"
 test.assertIncludes(cloudModel, "setControlLoading(cloudCheckBtn, true", "Cloud connection uses the shared busy state");
 test.assertIncludes(html, 'id="search-provider" aria-labelledby="chooser-search-title"', "Chooser System Select is labelled by its field heading");
 
+// Desk furniture is not text: a drag or a touch long-press must not paint a
+// selection across controls, item names, labels or status strips, and that text
+// must never reach the clipboard. Documents and fields stay selectable.
+test.assertMatches(
+  foundation,
+  /button,\s*\[role="button"\],\s*label,\s*\.menu-bar,\s*\.writing-spine-panel,\s*\.desktop-icon,\s*\.details-bar,\s*\.finder-list-header\s*\{\s*user-select: none;/,
+  "Controls, labels, desk icons, the Writing Flow strip and status strips are not selectable text"
+);
+test.assertMatches(
+  foundation,
+  /input,\s*textarea,\s*\[contenteditable="true"\]\s*\{\s*user-select: text;/,
+  "Fields stay selectable even inside a non-selectable label"
+);
+test.assertNotIncludes(foundation, ".window-pane {\n  user-select: none", "Document and reading surfaces keep normal text selection");
+
 test.finish();

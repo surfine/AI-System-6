@@ -1392,6 +1392,8 @@ function applyLanguage() {
   });
 
   setDictationDestination(dictationIntentDestination);
+  // The ask-bar scope rows are rendered from live state, not data-i18n.
+  refreshAskBars();
   syncCurrentNotePadPage();
   renderNotePadPage();
   updateTeachTextBoundaries();

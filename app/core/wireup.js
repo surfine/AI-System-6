@@ -98,6 +98,7 @@ function wireAppEvents() {
   clipSelectionButton.addEventListener("click", clipAssistantSelection);
 
   scrapbookAskForm?.addEventListener("submit", askScrapbookQuestion);
+  registerAskBarSource("scrapbook", describeScrapbookAskScope);
 
   toggleScrapTranslationButton?.addEventListener("click", toggleScrapTranslationView);
 
@@ -383,6 +384,7 @@ function wireAppEvents() {
   });
 
   readerAskForm?.addEventListener("submit", askReaderQuestion);
+  registerAskBarSource("reader", describeReaderAskScope);
 
   initReaderSplitHandle();
 
@@ -390,6 +392,9 @@ function wireAppEvents() {
     updateReaderTranslationClipButton();
     rememberSelectionServiceContext(undefined, { clearMissing: false });
     updateMenuState();
+    // Reader and Time Machine narrow a question to the current selection, so
+    // the scope rows have to follow it.
+    refreshAskBars();
   });
 
   document.addEventListener("select", (event) => {
@@ -564,6 +569,7 @@ function wireAppEvents() {
   });
 
   docMapAskForm?.addEventListener("submit", askDocMapQuestion);
+  registerAskBarSource("docMap", describeDocMapAskScope);
 
   window.addEventListener("resize", () => {
     if (currentDocMap && !document.querySelector('[data-window="docMap"]')?.classList.contains("is-hidden")) {

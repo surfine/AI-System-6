@@ -1731,11 +1731,15 @@
               </div>
             </div>
           </form>
-          <form id="scrapbook-ask-form" class="scrapbook-ask-form">
+          <form id="scrapbook-ask-form" class="ask-bar" data-ask-source="scrapbook">
             <label class="visually-hidden" for="scrapbook-question" data-i18n="scrapbook_ask_label">Ask these scraps</label>
-            <div class="scrapbook-ask-row">
-              <input id="scrapbook-question" type="text" data-i18n-placeholder="scrapbook_ask_hint" placeholder="Ask selected Scrapbook clips..." />
-              <button class="btn default" type="submit" id="scrapbook-ask-button" data-i18n="scrapbook_ask_button">Ask Scraps</button>
+            <div class="ask-bar-scope">
+              <span class="ask-scope-object" id="scrapbook-ask-object"></span>
+              <span class="ask-scope-range" id="scrapbook-ask-range"></span>
+            </div>
+            <div class="ask-bar-row">
+              <input id="scrapbook-question" type="text" data-i18n-placeholder="scrapbook_ask_hint" placeholder="Ask selected Scrapbook clips..." disabled />
+              <button class="btn default" type="submit" id="scrapbook-ask-button" data-i18n="ask" data-i18n-aria-label="scrapbook_ask_label" disabled>Ask</button>
             </div>
           </form>
         </div>
@@ -1814,14 +1818,15 @@
               <div class="empty-folder-note" data-i18n="reader_empty_hint">Paste a URL or drop files to read and clip passages.</div>
             </div>
           </div>
-          <form id="reader-ask-form" class="reader-ask-form">
+          <form id="reader-ask-form" class="ask-bar" data-ask-source="reader">
             <label class="visually-hidden" for="reader-question" data-i18n="reader_ask_label">Ask this source</label>
-            <div class="reader-ask-row">
-              <input id="reader-question" type="text" data-i18n-placeholder="reader_ask_hint" placeholder="Ask this Reader source..." />
-              <button class="btn default" type="submit" id="reader-ask-button" data-i18n-aria-label="reader_ask_button">
-                <span class="mobile-control-long" data-i18n="reader_ask_button">Ask Source</span>
-                <span class="mobile-control-short" data-i18n="ask">Ask</span>
-              </button>
+            <div class="ask-bar-scope">
+              <span class="ask-scope-object" id="reader-ask-object"></span>
+              <span class="ask-scope-range" id="reader-ask-range"></span>
+            </div>
+            <div class="ask-bar-row">
+              <input id="reader-question" type="text" data-i18n-placeholder="reader_ask_hint" placeholder="Ask this Reader source..." disabled />
+              <button class="btn default" type="submit" id="reader-ask-button" data-i18n="ask" data-i18n-aria-label="reader_ask_label" disabled>Ask</button>
             </div>
           </form>
         </div>
@@ -1924,9 +1929,16 @@
           </div>
           <div class="time-machine-reader-actions">
             <button class="btn" type="button" id="time-machine-docmap" data-action="time-machine-docmap" data-i18n="docmap" disabled>DocMap</button>
-            <form id="time-machine-ask-form" class="time-machine-ask-form">
-              <input id="time-machine-question" type="text" data-i18n-placeholder="time_machine_ask_prompt" placeholder="Ask this page..." disabled />
-              <button class="btn" type="submit" id="time-machine-ask" data-i18n="ask" disabled>Ask</button>
+            <form id="time-machine-ask-form" class="ask-bar" data-ask-source="timeMachine">
+              <label class="visually-hidden" for="time-machine-question" data-i18n="time_machine_ask_label">Ask this page</label>
+              <div class="ask-bar-scope">
+                <span class="ask-scope-object" id="time-machine-ask-object"></span>
+                <span class="ask-scope-range" id="time-machine-ask-range"></span>
+              </div>
+              <div class="ask-bar-row">
+                <input id="time-machine-question" type="text" data-i18n-placeholder="time_machine_ask_prompt" placeholder="Ask this page..." disabled />
+                <button class="btn default" type="submit" id="time-machine-ask" data-i18n="ask" data-i18n-aria-label="time_machine_ask_label" disabled>Ask</button>
+              </div>
             </form>
           </div>
         </div>
@@ -2284,11 +2296,15 @@
               <p class="docmap-mobile-hint" data-i18n="docmap_mobile_hint">Drag to explore · pinch to zoom · tap a branch to fold it</p>
             </div>
           </div>
-          <form id="docmap-ask-form" class="docmap-ask-form">
-            <label for="docmap-question" data-i18n="docmap_ask_label">Ask this map</label>
-            <div class="docmap-ask-row">
-              <input id="docmap-question" type="text" data-i18n-placeholder="docmap_ask_hint" placeholder="Ask this DocMap..." />
-              <button class="btn default" type="submit" id="docmap-ask-button" data-i18n="docmap_ask_button">Ask Map</button>
+          <form id="docmap-ask-form" class="ask-bar" data-ask-source="docMap">
+            <label class="visually-hidden" for="docmap-question" data-i18n="docmap_ask_label">Ask this map</label>
+            <div class="ask-bar-scope">
+              <span class="ask-scope-object" id="docmap-ask-object"></span>
+              <span class="ask-scope-range" id="docmap-ask-range"></span>
+            </div>
+            <div class="ask-bar-row">
+              <input id="docmap-question" type="text" data-i18n-placeholder="docmap_ask_hint" placeholder="Ask this DocMap..." disabled />
+              <button class="btn default" type="submit" id="docmap-ask-button" data-i18n="ask" data-i18n-aria-label="docmap_ask_label" disabled>Ask</button>
             </div>
           </form>
         </div>
@@ -2336,14 +2352,15 @@
             <div class="empty-folder-note" data-i18n="clio_stage_empty_hint">Open a Marp-style slides.md file from Reader, TeachText, or Project CD.</div>
           </div>
           <input id="clio-stage-file-input" class="visually-hidden" type="file" multiple />
-          <form id="clio-stage-ask-form" class="clio-stage-ask-form">
+          <form id="clio-stage-ask-form" class="ask-bar" data-ask-source="clioStage">
             <label class="visually-hidden" for="clio-stage-question" data-i18n="clio_stage_ask_label">Ask this deck</label>
-            <div class="clio-stage-ask-row">
-              <input id="clio-stage-question" type="text" data-i18n-placeholder="clio_stage_ask_hint" placeholder="Ask this slide deck..." />
-              <button class="btn default" type="submit" id="clio-stage-ask-button" data-i18n-aria-label="clio_stage_ask_button">
-                <span class="mobile-control-long" data-i18n="clio_stage_ask_button">Ask Deck</span>
-                <span class="mobile-control-short" data-i18n="ask">Ask</span>
-              </button>
+            <div class="ask-bar-scope">
+              <span class="ask-scope-object" id="clio-stage-ask-object"></span>
+              <span class="ask-scope-range" id="clio-stage-ask-range"></span>
+            </div>
+            <div class="ask-bar-row">
+              <input id="clio-stage-question" type="text" data-i18n-placeholder="clio_stage_ask_hint" placeholder="Ask this slide deck..." disabled />
+              <button class="btn default" type="submit" id="clio-stage-ask-button" data-i18n="ask" data-i18n-aria-label="clio_stage_ask_label" disabled>Ask</button>
             </div>
           </form>
         </div>

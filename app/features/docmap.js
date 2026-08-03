@@ -1597,6 +1597,20 @@ function selectedDocMapNode() {
   return nodes.find((node) => node.id === selectedDocMapNodeId) || nodes[0] || null;
 }
 
+// The whole map always goes; a focused branch rides along when one is picked
+// (see askDocMapQuestion), so the scope row names it.
+function describeDocMapAskScope() {
+  if (!currentDocMap) return { ready: false };
+  const node = selectedDocMapNode();
+  return {
+    ready: true,
+    object: currentDocMap.central?.title || currentDocMap.sourceLabel || t("docmap"),
+    range: node?.title
+      ? `${t("ask_scope_whole_map")} · ${t("ask_scope_focus", node.title)}`
+      : t("ask_scope_whole_map"),
+  };
+}
+
 function docMapEdgesForNode(nodeId, map = currentDocMap) {
   if (!nodeId || !map?.edges) return [];
   return map.edges.filter((edge) => edge.from === nodeId || edge.to === nodeId);
@@ -2999,6 +3013,7 @@ async function askDocMapQuestion(event) {
   const paired = await arrangeDocMapAssistantSplit();
   if (!paired) return;
   docMapQuestionInput.value = "";
+  markAskBarSent("docMap");
   setStatus(t("docmap_question_sent"));
   await submitUserText(prompt, { displayText: `${t("docmap")}: ${question}`, skipContext: true, taskKind: "docmap-question" });
 }

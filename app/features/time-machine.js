@@ -62,7 +62,6 @@ const timeMachineClipTranslateButton = document.querySelector("#time-machine-cli
 const timeMachineDocMapButton = document.querySelector("#time-machine-docmap");
 const timeMachineAskForm = document.querySelector("#time-machine-ask-form");
 const timeMachineQuestionInput = document.querySelector("#time-machine-question");
-const timeMachineAskButton = document.querySelector("#time-machine-ask");
 const timeMachineSendManuscriptButton = document.querySelector("#time-machine-send-manuscript");
 const timeMachineSaveWaybackLink = document.querySelector("#time-machine-save-wayback");
 const timeMachineSaveArchiveIsLink = document.querySelector("#time-machine-save-archive-is");
@@ -714,12 +713,13 @@ function timeMachineSetReaderActions(enabled) {
     timeMachineClipButton,
     timeMachineClipTranslateButton,
     timeMachineDocMapButton,
-    timeMachineAskButton,
     timeMachineSendManuscriptButton,
   ].forEach((button) => {
     if (button) button.disabled = !enabled;
   });
-  if (timeMachineQuestionInput) timeMachineQuestionInput.disabled = !enabled;
+  // The ask bar's own input and button are owned by describeTimeMachineAskScope
+  // so all five ask bars gate on the same rule.
+  refreshAskBar("timeMachine");
 }
 
 function timeMachineShowHome() {
@@ -1174,6 +1174,19 @@ function timeMachineHandleDateChange() {
   }
 }
 
+// A selection inside the reader view narrows the question to that passage (see
+// askTimeMachineSource); otherwise the whole readable page goes.
+function describeTimeMachineAskScope() {
+  const page = currentTimeMachinePage;
+  if (!page?.reader?.text) return { ready: false };
+  const selection = timeMachineReaderSelection().text;
+  return {
+    ready: true,
+    object: page.reader.title || page.title || t("time_machine"),
+    range: selection ? t("ask_scope_selection") : t("ask_scope_whole_page"),
+  };
+}
+
 function timeMachineReaderSelection() {
   const selection = window.getSelection();
   if (!selection?.rangeCount || currentTimeMachineView !== "reader") return { selection: null, text: "" };
@@ -1463,8 +1476,14 @@ async function askTimeMachineSource() {
       "",
       clipContextContent(source, selection ? 6000 : 12000),
     ].join("\n");
-  await openWindow("assistant");
+  // Pair the page with ClioTalk the way Reader, Scrapbook, DocMap, and
+  // ClioStage do, so the answer arrives in a SideAsk session beside its source.
+  const paired = typeof arrangeWindowAssistantSplit === "function"
+    ? await arrangeWindowAssistantSplit("timeMachine")
+    : (await openWindow("assistant"), true);
+  if (!paired) return;
   if (timeMachineQuestionInput) timeMachineQuestionInput.value = "";
+  markAskBarSent("timeMachine");
   setStatus(t("time_machine_question_sent"));
   await submitUserText(prompt, {
     displayText: `${t("time_machine")}: ${question.trim()}`,
@@ -1521,6 +1540,7 @@ timeMachineAskForm?.addEventListener("submit", (event) => {
   event.preventDefault();
   askTimeMachineSource();
 });
+registerAskBarSource("timeMachine", describeTimeMachineAskScope);
 timeMachineEnabledInput?.addEventListener("change", timeMachineHandleModeChange);
 timeMachineDateInput?.addEventListener("change", timeMachineHandleDateChange);
 timeMachineCalendarButton?.addEventListener("click", (event) => {

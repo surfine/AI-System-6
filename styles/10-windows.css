@@ -1530,9 +1530,15 @@ html:lang(zh-Hans) .title-bar h2 {
   display: none;
 }
 
+/* Before the file exists this reads "where this conversation will be saved".
+   That is a status line, so it must not borrow the shared disabled-control
+   hatch — a dotted edge says "provisional" in the same vocabulary the
+   temporary reply slip uses. */
 .clio-chat-file-link:disabled {
   cursor: default;
-  opacity: 0.72;
+  border: 1px dotted var(--shade-dark);
+  background: transparent;
+  color: var(--clio-muted-copy);
 }
 
 .clio-chat-file-mark {
@@ -1552,8 +1558,8 @@ html:lang(zh-Hans) .title-bar h2 {
 }
 
 .clio-chat-file-link > small {
-  font-size: 8px;
-  opacity: 0.72;
+  font-size: 9px;
+  opacity: 0.8;
 }
 
 .sideask-mode-strip {
@@ -1703,13 +1709,19 @@ html:lang(zh-Hans) .title-bar h2 {
   font-weight: bold;
 }
 
+/* An info-bar readout, so it wears the same chip as the chat-file link.
+   It used to borrow --clio-composer-control-radius, which Liquid Glass sets to
+   50% for the round Add/Send buttons. A percentage radius is relative to the
+   box, so 50% is a circle only while the box is square: on a wide, short
+   readout it turns every corner into a quarter-ellipse and the chip renders as
+   an ellipse. Percentage radii do not survive being shared across shapes. */
 .assistant-meter {
   appearance: none;
   max-width: 24ch;
   overflow: hidden;
-  border: 1px dotted var(--shade-dark);
-  border-radius: var(--clio-composer-control-radius);
-  background: transparent;
+  border: var(--clio-file-chip-border);
+  border-radius: var(--clio-file-chip-radius);
+  background: var(--clio-file-chip-bg);
   color: var(--clio-muted-copy);
   font-family: var(--clio-control-font);
   font-size: 10px;
@@ -1782,7 +1794,7 @@ html:lang(zh-Hans) .title-bar h2 {
 }
 
 .assistant-window .messages {
-  padding: 0;
+  padding: 16px clamp(14px, 4vw, 40px) 22px;
 }
 
 /* One column, one left edge. The speaker gutter is gone: who is talking is
@@ -1792,8 +1804,9 @@ html:lang(zh-Hans) .title-bar h2 {
   box-sizing: border-box;
   display: block;
   width: min(100%, var(--clio-transcript-width));
-  margin-inline: auto;
-  padding: 14px clamp(18px, 4vw, 42px) 0;
+  margin: 0 auto 14px;
+  padding: 0;
+  border: 0;
 }
 
 .assistant-window .message:not(.clio-welcome) > .speaker {
@@ -1805,7 +1818,7 @@ html:lang(zh-Hans) .title-bar h2 {
    point — the rule that AI output is temporary reads at a glance instead of in
    nine-pixel grey. */
 .assistant-window .message.assistant:not(.clio-welcome) {
-  border-bottom: 0;
+  padding: 12px 14px 11px;
   border: var(--clio-slip-border);
   border-radius: var(--clio-slip-radius);
   background: var(--clio-slip-surface);
@@ -1822,7 +1835,8 @@ html:lang(zh-Hans) .title-bar h2 {
 .assistant-window .message.user {
   width: min(100%, var(--clio-transcript-width));
   max-width: none;
-  margin-inline: auto;
+  margin: 0 auto 14px;
+  padding: 2px 14px;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -2055,6 +2069,10 @@ html:lang(zh-Hans) .title-bar h2 {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  /* The base rule gives this its own full-width row. Here the reply's state
+     and the verbs that change it belong on one line — state left, controls
+     right — so the row reads as a single sentence about this slip. */
+  flex: 0 1 auto;
   min-width: 0;
   margin-right: auto;
   color: var(--ink);

@@ -102,8 +102,8 @@ test.assertIncludes(
 );
 test.assertIncludes(
   responsive,
-  ".clio-stage-ask-form > label {\n    display: none;",
-  "ClioStage keeps the phone question control to one compact row"
+  ".ask-bar-row input,\n  .ask-bar-row .btn {\n    min-height: 44px;",
+  "every ask bar keeps a phone-sized touch target in one shared rule"
 );
 test.assertIncludes(
   responsive,

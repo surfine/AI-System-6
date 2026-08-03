@@ -48,6 +48,8 @@ test.assertIncludes(windowManager, "reader: readerAskForm", "Reader Ask bar part
 test.assertIncludes(windowManager, "scrapbook: scrapbookAskForm", "Scrapbook Ask bar participates in SideAsk chrome");
 test.assertIncludes(windowManager, "docMap: docMapAskForm", "DocMap Ask bar participates in SideAsk chrome");
 test.assertIncludes(windowManager, "clioStage: clioStageAskForm", "ClioStage Ask bar participates in SideAsk chrome");
+test.assertIncludes(windowManager, 'timeMachine: document.querySelector("#time-machine-ask-form")', "Time Machine Ask bar participates in SideAsk chrome");
+test.assertIncludes(chatMessages, 'anchor === "timeMachine"', "a Time Machine SideAsk session is grounded on the loaded page");
 test.assertIncludes(windowManager, "form.hidden = !isMultiFinderMode() && sideAskEnabled && sideAskAnchorAppId === appId", "active SideAsk source hides its duplicate Ask bar");
 test.assertIncludes(windowManager, 'openWindow("assistant", { skipFinderMode: true, skipPlacement: true, skipFocus: true })', "Ask sidecars bypass Finder single-task hiding");
 test.assertNotIncludes(windowManager, "writerMode || !isMultiFinderMode()", "Finder mode still receives the document + ClioTalk split");

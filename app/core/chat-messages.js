@@ -886,6 +886,10 @@ function clioTalkSideAskGroundingSource() {
   if (anchor === "clioStage" && typeof clioStageState !== "undefined" && clioStageState?.source?.markdown) {
     return { key: "sideask:clioStage", citation: "", label: `${t("clio_stage_label")} / ${clioStageState.source.title || t("clio_stage_label")}`, kind: "sideask" };
   }
+  if (anchor === "timeMachine" && typeof currentTimeMachinePage !== "undefined" && currentTimeMachinePage?.reader?.text) {
+    const page = currentTimeMachinePage;
+    return { key: "sideask:timeMachine", citation: "", label: `${t("time_machine")} / ${page.reader.title || page.title || t("time_machine")}`, kind: "sideask" };
+  }
   return null;
 }
 
@@ -2406,6 +2410,7 @@ function inferClioTalkWritingStage() {
       scrapbook: "scrapbook",
       docMap: "docMap",
       clioStage: "clioStage",
+      timeMachine: "timeMachine",
     }[sideAskAnchorAppId] || "sideask";
   }
 
@@ -2603,6 +2608,10 @@ function formatSideAskAnchorContext() {
   }
   if (anchor === "clioStage" && typeof clioStageState !== "undefined" && clioStageState?.source?.markdown) {
     return section(`${t("clio_stage_label")} / ${clioStageState.source.title || t("clio_stage_label")}`, clioStageState.source.markdown, 14000);
+  }
+  if (anchor === "timeMachine" && typeof currentTimeMachinePage !== "undefined" && currentTimeMachinePage?.reader?.text) {
+    const page = currentTimeMachinePage;
+    return section(`${t("time_machine")} / ${page.reader.title || page.title || t("time_machine")}`, page.reader.text, 12000);
   }
   return "";
 }
@@ -3366,12 +3375,13 @@ function updateModelMeter(metrics) {
   const tokenText = `${metrics.tokens} tok`;
   const elapsedText = formatMetricDuration(metrics.elapsedMs);
   const stopText = normalizeStopReason(metrics.stopReason);
-  const modelDisplayName = String(getLocalModelDisplayName() || t("local_model"));
-  const modelText = modelDisplayName === t("local_lm_studio") ? t("local_model") : modelDisplayName;
   const slow = window.AISystem6Perf?.slowEvents?.().at(-1);
   const slowText = slow ? `${slow.name} ${formatMetricDuration(slow.duration)}` : "";
 
-  assistantMeterButton.textContent = `${modelText} · ${speedText}`;
+  // Throughput only. Which model is answering is already named in the menu
+  // bar's model indicator, and repeating it here spent the width that made
+  // this readout ellipsize.
+  assistantMeterButton.textContent = `${speedText} · ${elapsedText}`;
   assistantMeterButton.title = [`${tokenText} · ${elapsedText}`, slowText ? `Last slow operation: ${slowText}` : ""].filter(Boolean).join(" · ");
   meterSpeedEl.textContent = speedText;
   meterTokensEl.textContent = tokenText;

@@ -831,6 +831,15 @@
   min-width: 0;
 }
 
+.documents-toolbar > * {
+  flex: 0 0 auto;
+}
+
+.documents-toolbar #new-folder-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .project-disk-toolbar {
   display: grid;
   grid-template-columns: auto minmax(160px, 1fr) auto;

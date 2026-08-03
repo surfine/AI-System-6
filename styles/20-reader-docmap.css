@@ -77,23 +77,6 @@
   display: none;
 }
 
-.reader-ask-form {
-  display: grid;
-  gap: 5px;
-  min-width: 0;
-}
-
-.reader-ask-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
-}
-
-.reader-ask-row input {
-  min-width: 0;
-  width: 100%;
-}
-
 .reader-workspace {
   --reader-tabs-size: 190px;
   flex: 1;
@@ -1088,24 +1071,6 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
   background: var(--clio-stage-viewport-active-bg);
 }
 
-.clio-stage-ask-form {
-  display: grid;
-  gap: 5px;
-  min-width: 0;
-  padding-bottom: 8px;
-}
-
-.clio-stage-ask-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
-}
-
-.clio-stage-ask-row input {
-  min-width: 0;
-  width: 100%;
-}
-
 .clio-stage-document-body {
   max-width: 760px;
   margin: 0 auto;
@@ -1921,23 +1886,6 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
   min-width: 0;
 }
 
-.docmap-ask-form {
-  display: grid;
-  gap: 5px;
-  padding-top: 2px;
-}
-
-.docmap-ask-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
-}
-
-.docmap-ask-row input {
-  min-width: 0;
-  width: 100%;
-}
-
 @container (max-width: 520px) {
   .docmap-pane {
     gap: 6px;
@@ -2042,13 +1990,6 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
     pointer-events: none;
   }
 
-  .docmap-ask-row {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .docmap-ask-row :is(input, .btn) {
-    min-height: 44px;
-  }
 }
 
 .dictionary-window .window-pane.dictionary-pane {

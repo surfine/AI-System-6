@@ -75,4 +75,7 @@ for (const key of ["clio_stage_slides_count", "clio_stage_notes"]) {
   test.assertIncludes(zh, `${key}:`, `Chinese includes ${key}`);
 }
 
+test.assertIncludes(clioStage, 'registerAskBarSource("clioStage", describeClioStageAskScope)', "ClioStage asks through the shared ask bar");
+test.assertIncludes(clioStage, 'return { ready: false };', "ClioStage hides its ask bar until a deck is open");
+
 test.finish();

@@ -30,6 +30,7 @@ export const appModulePaths = [
   "app/core/document-role-policy.js",
   "app/vendor/marked.umd.js",
   "app/core/strings.js",
+  "app/core/ask-bar.js",
   "app/core/markdown.js",
   "app/core/model-stream.js",
   "app/core/streaming-markdown.js",

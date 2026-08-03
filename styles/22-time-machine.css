@@ -416,26 +416,23 @@
   font-size: 10px;
 }
 
+/* DocMap sits on its own row above the ask bar, so the ask bar reads as the
+   same window footer it is in Reader, Scrapbook, DocMap, and ClioStage. */
 .time-machine-reader-actions {
   display: grid;
   flex: 0 0 auto;
-  grid-template-columns: auto minmax(0, 1fr);
   gap: 5px;
 }
 
-.time-machine-reader-actions:has(#time-machine-docmap:disabled):has(#time-machine-question:disabled) {
+/* DocMap keeps its own width; only the ask bar spans the row. */
+.time-machine-reader-actions > .btn {
+  justify-self: start;
+}
+
+/* An empty ask bar means no page is loaded, so DocMap has nothing to work on
+   either: the whole strip gives its space back. */
+.time-machine-reader-actions:has(.ask-bar.is-empty) {
   display: none;
-}
-
-.time-machine-ask-form {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 5px;
-}
-
-.time-machine-ask-form input {
-  width: 100%;
-  min-width: 0;
 }
 
 .time-machine-loading,
@@ -598,14 +595,6 @@
   .time-machine-reader {
     padding: 18px 16px;
     overflow-wrap: anywhere;
-  }
-
-  .time-machine-reader-actions {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-
-  .time-machine-ask-form {
-    grid-template-columns: minmax(0, 1fr) auto;
   }
 
   .time-machine-reader-actions :is(.btn, input) {

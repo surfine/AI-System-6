@@ -158,5 +158,7 @@ test.assertIncludes(zh, "docmap_mobile_hint", "Chinese copy explains DocMap touc
 test.assertIncludes(app, 'window.AISystem6TimeMachine?.docMapSource?.()', "DocMap reaches the loaded Time Machine page through the lazy window's accessor");
 test.assertIncludes(app, 'if (activeName === "timeMachine") {', "a Time Machine page in front is a DocMap source like a Reader page");
 test.assertIncludes(app, "const timeMachineSource = docMapSourceFromTimeMachine();", "DocMap's own entry points still find the Time Machine page once its window is no longer active");
+test.assertIncludes(app, 'registerAskBarSource("docMap", describeDocMapAskScope)', "DocMap asks through the shared ask bar");
+test.assertIncludes(app, 't("ask_scope_focus", node.title)', "the DocMap ask bar names the focused branch that rides along with the whole map");
 
 test.finish();

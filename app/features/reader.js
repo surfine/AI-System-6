@@ -13,6 +13,18 @@ function readerHasMarpFrontmatter(markdown) {
   return end > 0 && /^marp\s*:\s*true\s*$/im.test(text.slice(4, end));
 }
 
+// The ask bar sends the current selection when there is one and the whole
+// source otherwise (see askReaderQuestion) — the scope row says which.
+function describeReaderAskScope() {
+  if (!currentReaderPage) return { ready: false };
+  const selection = (window.getSelection()?.toString() || "").trim();
+  return {
+    ready: true,
+    object: currentReaderPage.title || t("reader"),
+    range: selection ? t("ask_scope_selection") : t("ask_scope_whole_source"),
+  };
+}
+
 function updateReaderClioStageButton() {
   if (!readerOpenClioStageButton) return;
   const enabled = !!currentReaderPage?.text && readerHasMarpFrontmatter(currentReaderPage.text);
@@ -1083,6 +1095,7 @@ async function askReaderQuestion(event) {
     : (await openWindow("assistant"), true);
   if (!paired) return;
   if (readerQuestionInput) readerQuestionInput.value = "";
+  markAskBarSent("reader");
   setStatus(t("reader_question_sent"));
   await submitUserText(prompt, {
     displayText: `${t("reader")}: ${question}`,

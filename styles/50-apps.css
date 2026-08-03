@@ -2352,22 +2352,9 @@ body:not(.use-liquid-glass) .scrap-list button.is-multi-selected:not(.is-selecte
   padding-top: 7px;
 }
 
-.scrapbook-ask-form {
+/* The Scrapbook pane is a two-column grid; the ask bar spans it. */
+.scrapbook-pane > .ask-bar {
   grid-column: 1 / -1;
-  display: grid;
-  gap: 5px;
-  min-width: 0;
-}
-
-.scrapbook-ask-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
-}
-
-.scrapbook-ask-row input {
-  min-width: 0;
-  width: 100%;
 }
 
 #scrap-stack[hidden],

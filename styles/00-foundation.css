@@ -1384,6 +1384,31 @@ textarea {
   font: inherit;
 }
 
+/* Desk furniture is not text. A drag that starts on a control (the marquee
+   bows out of those, see finderMarqueeContext) or any touch long-press used to
+   paint a text selection across the menu bar, the Writing Flow strip, control
+   labels, item names and the status strip, and that furniture text then went to
+   the clipboard. A Mac never let you select the words on a button; what a
+   writer can carry away is documents, sources, model output and readouts such
+   as the build stamp — those all stay selectable. */
+button,
+[role="button"],
+label,
+.menu-bar,
+.writing-spine-panel,
+.desktop-icon,
+.details-bar,
+.finder-list-header {
+  user-select: none;
+}
+
+/* A field is where text lives, even when a non-selectable label wraps it. */
+input,
+textarea,
+[contenteditable="true"] {
+  user-select: text;
+}
+
 .menu-bar {
   height: 25px;
   flex-shrink: 0;

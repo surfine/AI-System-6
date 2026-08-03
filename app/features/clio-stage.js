@@ -420,12 +420,27 @@ async function askClioStageQuestion(event) {
     : (await openWindow("assistant"), true);
   if (!paired) return;
   if (els.question) els.question.value = "";
+  markAskBarSent("clioStage");
   setStatus(t("clio_stage_question_sent"));
   await submitUserText(prompt, {
     displayText: `${t("clio_stage_label")}: ${question}`,
     skipContext: true,
     taskKind: "clio-stage",
   });
+}
+
+// The whole slides.md goes with every question, with the current slide called
+// out (see askClioStageQuestion) — the scope row says both.
+function describeClioStageAskScope() {
+  const slides = clioStageState.parsed?.slides;
+  if (!slides?.length || !clioStageState.source?.markdown) {
+    return { ready: false };
+  }
+  return {
+    ready: true,
+    object: clioStageState.source.title || t("clio_stage_label"),
+    range: `${t("ask_scope_whole_deck")} · ${clioStageState.index + 1} / ${slides.length}`,
+  };
 }
 
 function bindClioStageControls() {
@@ -439,6 +454,7 @@ function bindClioStageControls() {
   els.prev?.addEventListener("click", () => showClioStageSlide(clioStageState.index - 1));
   els.next?.addEventListener("click", () => showClioStageSlide(clioStageState.index + 1));
   els.askForm?.addEventListener("submit", askClioStageQuestion);
+  registerAskBarSource("clioStage", describeClioStageAskScope);
   document.addEventListener("keydown", handleClioStageKeydown);
   syncClioStageControls();
 }

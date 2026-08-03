@@ -390,6 +390,18 @@ function getSelectedScraps() {
     .filter(Boolean);
 }
 
+// Selected clips when there are any, the whole project otherwise (see
+// askScrapbookQuestion) — the scope row says which, and how many.
+function describeScrapbookAskScope() {
+  const selected = getSelectedScraps();
+  const count = selected.length || scraps.filter((scrap) => isInActiveProject(scrap)).length;
+  return {
+    ready: count > 0,
+    object: t("scrapbook"),
+    range: selected.length ? t("ask_scope_scraps", selected.length) : t("ask_scope_all_scraps", count),
+  };
+}
+
 function formatScrapForQuestionSheet(scrap, index) {
   const sourceLines = scrap.source?.url
     ? [
@@ -1248,6 +1260,7 @@ async function askScrapbookQuestion(event) {
     : (await openWindow("assistant"), true);
   if (!paired) return;
   if (scrapbookQuestionInput) scrapbookQuestionInput.value = "";
+  markAskBarSent("scrapbook");
   setStatus(t("scrapbook_question_sent"));
   await submitUserText(prompt, {
     displayText: `${t("scrapbook")}: ${question}`,

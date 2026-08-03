@@ -475,6 +475,11 @@ function sideAskSourceDisplayLabel(appId = sideAskAnchorAppId) {
   if (appId === "clioStage") return typeof clioStageState !== "undefined" && clioStageState?.source?.title
     ? `${t("clio_stage_label")} / ${clioStageState.source.title}`
     : t("clio_stage_label");
+  if (appId === "timeMachine") {
+    const page = typeof currentTimeMachinePage !== "undefined" ? currentTimeMachinePage : null;
+    const title = page?.reader?.title || page?.title || "";
+    return title ? `${t("time_machine")} / ${title}` : t("time_machine");
+  }
   return t("sideask");
 }
 
@@ -487,6 +492,7 @@ function focusSideAskSource() {
     scrapbook: "scrapbook",
     docMap: "docMap",
     clioStage: "clioStage",
+    timeMachine: "timeMachine",
   }[sideAskAnchorAppId];
   const sourceWindow = windowName ? getWindow(windowName) : null;
   if (sourceWindow) focusWindow(sourceWindow);
@@ -498,6 +504,9 @@ function updateSideAskSourceChrome() {
     scrapbook: scrapbookAskForm,
     docMap: docMapAskForm,
     clioStage: clioStageAskForm,
+    // Time Machine is a lazy module, so its form is read from the document
+    // rather than the eager dom-handles bundle.
+    timeMachine: document.querySelector("#time-machine-ask-form"),
   };
   Object.entries(askForms).forEach(([appId, form]) => {
     if (!form) return;
@@ -2176,6 +2185,9 @@ function updateMenuState() {
     }
   });
   renderMultiFinderMenu();
+  // Whether a window has anything to ask about is action availability like any
+  // other, so the ask bars recompute on the same pass.
+  refreshAskBars();
 }
 
 // Windows whose behaviour lives in a lazily loaded module.
@@ -3272,6 +3284,7 @@ async function arrangeWindowAssistantSplit(sourceWindowName, options = {}) {
     scrapbook: "scrapbook",
     docMap: "docMap",
     clioStage: "clioStage",
+    timeMachine: "timeMachine",
   }[sourceWindowName] || sourceAppId;
   if (!isMultiFinderMode()) {
     const canOpenPair = await prepareFinderModeForApp(sourceAppId);

@@ -12,6 +12,7 @@ const index = read("index.html");
 const app = readAppSurface(["app/features/scrapbook.js", "app/features/writing-flow.js"]);
 const responsive = read("styles/60-responsive.css");
 const styles = read("styles/20-reader-docmap.css");
+const surfaces = read("styles/30-surfaces.css");
 const findPath = read("app/features/findpath.js");
 const dictionary = read("app/data/system-dictionary.js");
 const writingHelp = read("app/data/writing-flow-help.js");
@@ -36,7 +37,9 @@ test.assertIncludes(app, "openSelectedScrapSourceInReader", "Scrapbook sources c
 test.assertNotIncludes(reader, "window.open(", "Reader does not degrade into a raw browser window");
 test.assertIncludes(styles, ".reader-pane:has(#reader-docmap-button:not(:disabled)) .reader-url-row", "Reader switches to loaded-document actions without keeping the source-entry row on any screen");
 test.assertIncludes(responsive, "grid-template-columns: repeat(auto-fit, minmax(84px, 1fr))", "Reader handoffs share one compact phone row");
-test.assertIncludes(responsive, ".reader-ask-row {\n    grid-template-columns: minmax(0, 1fr) auto;", "Reader question input and action remain on one row");
+test.assertIncludes(index, '<form id="reader-ask-form" class="ask-bar" data-ask-source="reader">', "Reader uses the shared ask bar rather than a Reader-only question form");
+test.assertIncludes(reader, 'range: selection ? t("ask_scope_selection") : t("ask_scope_whole_source")', "the Reader ask bar states whether the question carries the selection or the whole source");
+test.assertIncludes(surfaces, ".ask-bar-row {\n  display: grid;\n  grid-template-columns: minmax(0, 1fr) auto;", "the shared ask bar keeps input and action on one row");
 test.assertIncludes(responsive, ".reader-body-content p {\n    margin: 1em 0;\n    text-align: start;", "Reader drops desktop justification on a narrow reading column");
 test.assertIncludes(responsive, "overflow-wrap: anywhere", "Reader can wrap long English URLs and translated terms");
 test.assertIncludes(dictionary, "Follow Searcher → Reader → DocMap", "System Help documents the source-to-reading-to-map chain");
