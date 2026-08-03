@@ -16,6 +16,32 @@
     pulse: Object.freeze({ x: 68, y: 14, intensity: 76 }),
   });
 
+  // The field draws a 34px grid over a 240px square, so seven bands per axis
+  // put every name change on a line the user can already see. Each cell is a
+  // real colour - hue from x, contour density from y - so it gets a real name
+  // instead of a coordinate. The six preset buttons are six landmarks on this
+  // chart, not a separate vocabulary: their coordinates land on their own
+  // cells, and they keep their existing translation keys.
+  const CHART_BANDS = 7;
+  const CHART_CELLS = Object.freeze([
+    // Row 1: densest contours, hardest colour.
+    ["cell_deep_sea", "cell_ink_blue", "cell_graphite", "cell_type_metal", "style_pulse", "cell_ochre", "cell_ember"],
+    ["cell_indigo", "cell_whetstone", "style_night_sail", "cell_charcoal", "cell_sealing_wax", "cell_brass", "cell_rust"],
+    ["cell_ice_lake", "cell_celadon", "cell_glass", "cell_inkstone", "cell_kraft", "cell_resin", "cell_amber"],
+    ["cell_steel", "cell_slate", "cell_lead", "style_standard", "cell_hemp", "cell_leather", "cell_honey"],
+    ["cell_snow_blue", "cell_washed_blue", "cell_thin_smoke", "cell_linen", "cell_bone", "style_warm_wood", "cell_hay"],
+    ["cell_thin_ice", "style_cold_mist", "cell_moonlight", "cell_xuan_paper", "cell_oat", "style_sunlight", "cell_dusk"],
+    // Row 7: sparsest contours, closest to paper.
+    ["cell_frost", "cell_breath", "cell_mica", "cell_chalk", "cell_eggshell", "cell_fine_sand", "cell_almond"],
+  ].map((row) => Object.freeze(row.map((key) => `soundscape_${key}`))));
+
+  const ENTER_SCENE_STEPS = Object.freeze([
+    Object.freeze({ key: "soundscape_style_whisper", fallback: "Touch" }),
+    Object.freeze({ key: "soundscape_style_present", fallback: "Present" }),
+    Object.freeze({ key: "soundscape_style_around", fallback: "Around" }),
+    Object.freeze({ key: "soundscape_style_immersive", fallback: "Immersed" }),
+  ]);
+
   const localAudio = new Audio();
   localAudio.preload = "metadata";
   const sessionLocalUrls = new Map();
@@ -315,6 +341,55 @@
     if (target) target.textContent = sourceLabel();
   }
 
+  // Names change on a grid line, so a pointer resting exactly on one would
+  // flicker between two names. A band is only left once the value is past the
+  // shared edge by 1.5%.
+  const lastBand = { col: null, row: null, step: null };
+
+  function bandIndex(value, bands, slot) {
+    const width = 100 / bands;
+    const at = clamp(value);
+    const raw = Math.min(bands - 1, Math.max(0, Math.floor(at / width)));
+    const prev = lastBand[slot];
+    // Only a drag can rest on an edge. A preset button or a restored moment is
+    // a jump, and must land on the band it actually names.
+    if (!styleDragging || prev === null || prev === raw) {
+      lastBand[slot] = raw;
+      return raw;
+    }
+    const edge = Math.max(prev, raw) * width;
+    if (Math.abs(at - edge) < 1.5) return prev;
+    lastBand[slot] = raw;
+    return raw;
+  }
+
+  // Read-only band lookup for styles that are not the live one (saved moments).
+  function staticBand(value, bands) {
+    return Math.min(bands - 1, Math.max(0, Math.floor(clamp(value) / (100 / bands))));
+  }
+
+  function cellName(style = state.style, live = false) {
+    const col = live ? bandIndex(style.x, CHART_BANDS, "col") : staticBand(style.x, CHART_BANDS);
+    const row = live ? bandIndex(style.y, CHART_BANDS, "row") : staticBand(style.y, CHART_BANDS);
+    const key = CHART_CELLS[row][col];
+    return translate(key, key);
+  }
+
+  function enterSceneWord(style = state.style, live = false) {
+    const steps = ENTER_SCENE_STEPS.length;
+    const index = live
+      ? bandIndex(style.intensity, steps, "step")
+      : staticBand(style.intensity, steps);
+    const step = ENTER_SCENE_STEPS[index];
+    return translate(step.key, step.fallback);
+  }
+
+  function styleSummary(style = state.style, live = false) {
+    return `${cellName(style, live)} · ${enterSceneWord(style, live)}`;
+  }
+
+  // The colour name carries no information for a screen reader or a colour
+  // blind reader, so the axis words stay alive as the accessible description.
   function styleWords(style = state.style) {
     const temperature = style.x < 38
       ? translate("soundscape_cold", "Cold")
@@ -326,12 +401,12 @@
       : style.y > 68
         ? translate("soundscape_calm", "Calm")
         : translate("soundscape_style_focus", "Focused");
-    const depth = style.intensity < 34
-      ? translate("soundscape_style_whisper", "Whisper")
-      : style.intensity > 68
-        ? translate("soundscape_style_immersive", "Immersive")
-        : translate("soundscape_style_present", "Present");
-    return [temperature, energy, depth];
+    return [temperature, energy, enterSceneWord(style)];
+  }
+
+  function styleDescription(style = state.style, live = false) {
+    const [temperature, energy] = styleWords(style);
+    return `${cellName(style, live)}（${temperature}、${energy}）· ${enterSceneWord(style, live)}`;
   }
 
   // The swatch walks the same cold -> paper -> warm ramp as the sensory field.
@@ -354,14 +429,53 @@
     return `rgb(${red} ${green} ${blue})`;
   }
 
+  // A flat colour can only report x, so the swatch used to look identical all
+  // the way down the neutral column. The swatch is instead a crop of the field
+  // at this point - the same hue wash, the same contour density, the same mist
+  // - which is what the icon's square viewfinder already promises.
+  function fieldCrop(style = state.style) {
+    const across = clamp(style.x) / 100;
+    const down = clamp(style.y) / 100;
+    const edge = across < 0.5
+      ? { channels: [62, 130, 201], alpha: 0.46 * (1 - across / 0.5) }
+      : { channels: [212, 138, 52], alpha: 0.44 * ((across - 0.5) / 0.5) };
+    const [red, green, blue] = edge.channels.map((value) => Math.round(255 - edge.alpha * (255 - value)));
+    const gap = (5 + 11 * down).toFixed(1);
+    const contour = (0.34 - 0.14 * down).toFixed(3);
+    const mist = (0.34 * down).toFixed(3);
+    return [
+      `linear-gradient(rgba(255, 255, 255, ${mist}), rgba(255, 255, 255, ${mist}))`,
+      `repeating-linear-gradient(0deg, rgba(16, 17, 20, ${contour}) 0 1px, transparent 1px ${gap}px)`,
+      `rgb(${red} ${green} ${blue})`,
+    ].join(", ");
+  }
+
+  // Enter Scene decides how far the sensory colour reaches into the window:
+  // deck fills, then the drawer paper, then the window shell. Each stage is
+  // one quarter of the control, so the surface lights up on the same cell the
+  // word changes on.
+  function reachAt(intensity, from) {
+    return Math.min(1, Math.max(0, (clamp(intensity) - from) / 25)).toFixed(3);
+  }
+
   function updateStyleVisuals() {
     const root = document.querySelector(".soundscape-window");
     if (!root) return;
     root.style.setProperty("--ss-field-x", `${state.style.x}%`);
     root.style.setProperty("--ss-field-y", `${state.style.y}%`);
+    root.style.setProperty("--ss-crop", fieldCrop());
+    root.style.setProperty("--ss-tint", styleColor());
+    root.style.setProperty("--ss-reach-deck", reachAt(state.style.intensity, 25));
+    root.style.setProperty("--ss-reach-drawer", reachAt(state.style.intensity, 50));
+    root.style.setProperty("--ss-reach-frame", reachAt(state.style.intensity, 75));
 
     const words = ui("soundscape-style-words");
-    if (words) words.textContent = styleWords().join(" / ");
+    if (words) {
+      words.textContent = styleSummary(state.style, true);
+      words.setAttribute("aria-label", styleDescription(state.style, true));
+    }
+    const field = ui("soundscape-style-field");
+    if (field) field.setAttribute("aria-valuetext", styleDescription(state.style, true));
     renderSegments(ui("soundscape-intensity"), state.style.intensity);
     document.querySelectorAll("[data-soundscape-style]").forEach((button) => {
       button.classList.toggle("is-active", button.dataset.soundscapeStyle === state.style.preset);
@@ -624,7 +738,10 @@
   }
 
   function momentTitle(moment) {
-    return moment.name || `${moment.queue[moment.currentIndex]?.title || translate("soundscape_saved", "Saved")} · ${formatMomentTime(moment.createdAt)}`;
+    // The writer's own name always wins; the cell name is only the default for
+    // a moment saved with nothing playing.
+    const track = moment.queue[moment.currentIndex]?.title || cellName(moment.style || {});
+    return moment.name || `${track} · ${formatMomentTime(moment.createdAt)}`;
   }
 
   function renderSaved() {
@@ -652,13 +769,15 @@
       const momentSource = moment.source === "system"
         ? translate("soundscape_system_source", "Music on This Mac")
         : translate("soundscape_local_source", "Local Audio");
-      detail.textContent = `${momentSource} · ${styleWords(moment.style).join(" / ")}`;
+      detail.textContent = `${momentSource} · ${styleSummary(moment.style)}`;
       copy.append(title, detail);
-      // The swatch reports hue only; intensity is carried by the word summary,
-      // which stays legible in both themes.
+      // Saved rows stay a list: the crop reports the moment's own cell, but the
+      // reach tint never runs behind a row, or neighbouring moments would
+      // fight each other for the same paper.
       const swatch = document.createElement("span");
       swatch.className = "soundscape-saved-swatch";
-      swatch.style.setProperty("--soundscape-swatch", styleColor(moment.style));
+      swatch.style.setProperty("--soundscape-swatch", fieldCrop(moment.style));
+      swatch.title = styleDescription(moment.style);
       button.append(copy, swatch);
       list.append(button);
     });
@@ -1316,6 +1435,10 @@
     });
     ui("soundscape-reset-style")?.addEventListener("click", resetStyle);
     const intensity = ui("soundscape-intensity");
+    // Registered before the drag binding so the flag is already correct when
+    // the binding's own handler renders: only a live drag gets edge hysteresis.
+    intensity?.addEventListener("pointerdown", () => { styleDragging = true; });
+    intensity?.addEventListener("pointerup", () => { styleDragging = false; });
     bindDragControl(intensity, {
       ratio: () => state.style.intensity / 100,
       onInput: (ratio) => {

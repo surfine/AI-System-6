@@ -503,7 +503,7 @@ function setComposerSubmitMode(isBusy) {
   else syncClioTalkSendButton();
 }
 
-// What this send will carry, in one line, in the entry pane.
+// What this send will carry that nothing else on screen already shows.
 //
 // This replaces the "Run details" disclosure that used to sit in the composer:
 // four sections of prompt-file / Skill / harness / input assembly plus a memory
@@ -512,17 +512,29 @@ function setComposerSubmitMode(isBusy) {
 // surface. The writer's question is narrower — "what goes with this message?"
 // — and it is one line. The assembly detail still exists, in the Context Panel,
 // reachable from the model readout in the info bar.
+//
+// Two kinds of thing are deliberately left out. Attached files and clips are
+// already removable chips above the text area, so repeating them here as dead
+// text listed the same attachment twice, once operable and once not. Standing
+// context — the Chat file itself, project memory, a mounted File Floppy — is
+// carried by every message in the conversation, so naming it per message turned
+// a "what did I add?" line into permanent furniture that was never empty again.
+// When there is nothing extra, this line says nothing.
+const CLIO_ENTRY_AMBIENT_INPUT_KINDS = new Set(["chat", "project-memory", "file-floppy"]);
+const CLIO_ENTRY_SHELF_INPUT_KINDS = new Set(["input", "scrap"]);
+
 function renderClioTalkRunAssembly() {
   syncClioTalkSendButton();
   const loadout = document.querySelector("#clio-entry-loadout");
   if (!loadout) return;
-  const inputs = getClioTalkPendingInputDescriptors({ temporaryChat: clioTalkTemporaryMode });
+  const inputs = getClioTalkPendingInputDescriptors({ temporaryChat: clioTalkTemporaryMode })
+    .filter((entry) => !CLIO_ENTRY_AMBIENT_INPUT_KINDS.has(entry.kind) && !CLIO_ENTRY_SHELF_INPUT_KINDS.has(entry.kind));
   const skills = getClioTalkPendingSkillDescriptors(promptInput?.value || "", { temporaryChat: clioTalkTemporaryMode });
-  const carried = [...inputs, ...skills].map((entry) => entry.label).filter(Boolean);
-  loadout.textContent = carried.length
-    ? t("clio_entry_carrying", carried.join(" · "))
-    : t("clio_entry_carrying_none");
-  loadout.title = loadout.textContent;
+  const carried = [...inputs, ...skills].map((entry) => entry.label || entry.name).filter(Boolean);
+  loadout.textContent = carried.length ? t("clio_entry_carrying", carried.join(" · ")) : "";
+  loadout.title = carried.length ? `${loadout.textContent}\n${t("clio_entry_carrying_help")}` : "";
+  loadout.setAttribute("aria-label", carried.length ? `${loadout.textContent} — ${t("clio_entry_carrying_help")}` : "");
+  loadout.disabled = !carried.length;
   renderClioTalkFileBar();
   renderClioTalkTally();
 }
@@ -1976,7 +1988,7 @@ function appendMessageActions(item, role, content, options = {}) {
     chartBtn.hidden = kept || !clioTalkHasChartableTable(content);
     chartBtn.onclick = async () => {
       if (typeof ensureClioChartModule === "function") await ensureClioChartModule();
-      window.AISystem6ClioChart?.open?.({ markdown: content, title: t("clio_chart_title") });
+      window.AISystem6ClioChart?.open?.({ markdown: content, title: t("clio_chart_label") });
     };
 
     const undoBtn = document.createElement("button");

@@ -821,7 +821,6 @@ select:focus {
   background-color: var(--paper);
 }
 
-.empty-folder-note,
 .finder-empty-object,
 .scrap-empty-card {
   background:
@@ -2439,14 +2438,14 @@ button.btn {
 /* .btn.default box-shadow merged into base (styles/10-windows.css);
    border-width was already in base. */
 
-.btn:hover:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected):not(.reader-saved-remove) {
+.btn:hover:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected) {
   background: var(--btn-hover-bg);
   color: var(--btn-hover-fg);
   transform: none;
   box-shadow: var(--btn-hover-shadow);
 }
 
-.btn:active:not(:disabled):not(.is-disabled):not(.reader-saved-remove) {
+.btn:active:not(:disabled):not(.is-disabled) {
   background: var(--btn-active-bg);
   color: var(--btn-active-fg);
   transform: none;
@@ -2604,8 +2603,23 @@ input[type="radio"] {
   font-size: var(--system-readable-min);
 }
 
+/* Adaptive control label. A control carries both a long and a short label and
+   the enclosing .window decides which fits — a container query, so a narrow
+   window on a wide screen shrinks its own labels. Opt-in per container is what
+   this replaces: four media pairs at three thresholds that only looked at the
+   viewport. */
 .mobile-control-short {
   display: none;
+}
+
+@container (max-width: 470px) {
+  .mobile-control-long {
+    display: none;
+  }
+
+  .mobile-control-short {
+    display: inline;
+  }
 }
 
 @media (max-width: 860px) and (orientation: portrait) {
@@ -2699,13 +2713,6 @@ input[type="radio"] {
     min-width: 72px;
   }
 
-  .quick-draft-editor-actions .mobile-control-long {
-    display: none;
-  }
-
-  .quick-draft-editor-actions .mobile-control-short {
-    display: inline;
-  }
 
   body.mobile-app-foreground:not(.is-writer-mode) .assistant-window.is-mobile-fullscreen .messages {
     overflow-x: hidden;
@@ -2759,13 +2766,6 @@ input[type="radio"] {
     padding-inline: 5px;
   }
 
-  .find-path-pane > .button-row:last-child .mobile-control-long {
-    display: none;
-  }
-
-  .find-path-pane > .button-row:last-child .mobile-control-short {
-    display: inline;
-  }
 
   .reader-pane {
     gap: 6px;
@@ -2804,13 +2804,6 @@ input[type="radio"] {
     grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
   }
 
-  .reader-actions .mobile-control-long {
-    display: none;
-  }
-
-  .reader-actions .mobile-control-short {
-    display: inline;
-  }
 
   .reader-content {
     padding: 18px 16px;
@@ -2842,6 +2835,10 @@ input[type="radio"] {
     max-height: 156px;
   }
 
+  .view-switch-option {
+    min-height: 44px;
+  }
+
   /* One touch-target rule for every ask bar. Written as two descendant
      selectors on purpose: minifyCss drops the space before a descendant
      `:is(...)`, which silently kills the rule in the bundle. */
@@ -2868,7 +2865,7 @@ input[type="radio"] {
     gap: 4px;
   }
 
-  .clio-stage-pane .clio-stage-view-switcher .btn,
+  .clio-stage-pane .clio-stage-view-switcher .view-switch-option,
   .clio-stage-pane .clio-stage-nav-button {
     min-width: 0;
     min-height: 44px;
@@ -2876,17 +2873,10 @@ input[type="radio"] {
     overflow-wrap: anywhere;
   }
 
-  .clio-stage-pane .clio-stage-view-switcher .btn {
+  .clio-stage-pane .clio-stage-view-switcher .view-switch-option {
     padding-inline: 4px;
   }
 
-  .clio-stage-view-switcher .mobile-control-long {
-    display: none;
-  }
-
-  .clio-stage-view-switcher .mobile-control-short {
-    display: inline;
-  }
 
   body:not(.is-writer-mode) .window.puzzle-window:not(.is-hidden):not(.is-collapsed) {
     --puzzle-board-width: 220px;

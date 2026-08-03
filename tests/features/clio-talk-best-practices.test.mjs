@@ -299,7 +299,9 @@ test.assertIncludes(styles, ".assistant-details-bar:not(:has(", "ClioTalk can st
 test.assertNotIncludes(indexHtml, 'id="clio-new-chat-button"', "New Chat no longer occupies the everyday ClioTalk chrome");
 test.assertIncludes(clioTalkMenuSource, 'menuItem("start-new-clio-chat", "new_conversation", "new-document")', "New Conversation is a File-menu command, because a conversation is a file");
 test.assertIncludes(chatMessages, "function renderClioTalkRunAssembly", "ClioTalk renders a pre-send transparent Run Assembly");
-test.assertIncludes(chatMessages, 't("clio_entry_carrying_none")', "The entry pane states plainly when a message carries nothing extra");
+test.assertNotIncludes(translationsEn, "clio_entry_carrying_none", "The entry pane says nothing when a message carries nothing extra");
+test.assertIncludes(chatMessages, "CLIO_ENTRY_AMBIENT_INPUT_KINDS", "The entry pane leaves standing context to the Context Panel instead of naming it every message");
+test.assertIncludes(chatMessages, "CLIO_ENTRY_SHELF_INPUT_KINDS", "The entry pane does not repeat attachments the removable chip shelf already shows");
 test.assertIncludes(chatMessages, 't("clio_entry_carrying", carried.join(" · "))', "The entry pane names the files a message will carry, by name rather than by count");
 test.assertIncludes(chatMessages, "getClioTalkPromptFileDescriptors", "Run Assembly resolves the real editable Prompt and policy files");
 test.assertIncludes(chatMessages, "getClioTalkPendingSkillDescriptors", "Run Assembly previews manual and project-opted-in Skills");

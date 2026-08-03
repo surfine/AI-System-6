@@ -27,6 +27,7 @@ function clioStageElements() {
     page: document.querySelector("#clio-stage-page"),
     next: document.querySelector("#clio-stage-next"),
     askForm: document.querySelector("#clio-stage-ask-form"),
+    docMap: document.querySelector("#clio-stage-docmap"),
     question: document.querySelector("#clio-stage-question"),
   };
 }
@@ -202,13 +203,11 @@ function updateClioStageTimer() {
 function syncClioStageControls() {
   const els = clioStageElements();
   const hasSlides = !!clioStageState.parsed;
-  [els.source, els.document, els.slide, els.cue, els.prev, els.next].forEach((button) => {
+  [els.source, els.document, els.slide, els.cue, els.prev, els.next, els.docMap].forEach((button) => {
     if (button) button.disabled = !hasSlides;
   });
-  els.source?.classList.toggle("default", clioStageState.mode === "source");
-  els.document?.classList.toggle("default", clioStageState.mode === "document");
-  els.slide?.classList.toggle("default", clioStageState.mode === "slide");
-  els.cue?.classList.toggle("default", clioStageState.mode === "cue");
+  [["source", els.source], ["document", els.document], ["slide", els.slide], ["cue", els.cue]]
+    .forEach(([mode, button]) => button?.setAttribute("aria-pressed", clioStageState.mode === mode ? "true" : "false"));
   if (els.prev) els.prev.disabled = !hasSlides || clioStageState.index <= 0 || ["document", "source"].includes(clioStageState.mode);
   if (els.next) els.next.disabled = !hasSlides || clioStageState.index >= (clioStageState.parsed?.slides.length || 1) - 1 || ["document", "source"].includes(clioStageState.mode);
   if (els.page) {
@@ -441,6 +440,24 @@ function describeClioStageAskScope() {
     object: clioStageState.source.title || t("clio_stage_label"),
     range: `${t("ask_scope_whole_deck")} · ${clioStageState.index + 1} / ${slides.length}`,
   };
+}
+
+// The deck as a DocMap source. slides.md is Markdown, so the map is the deck's
+// own structure — no conversion, and the handoff sits with the question the way
+// Reader's and Time Machine's do.
+function clioStageDocMapSource() {
+  const markdown = clioStageState.source?.markdown || "";
+  if (!markdown.trim()) return null;
+  return {
+    text: markdown,
+    label: clioStageState.source?.title || t("clio_stage_label"),
+    scope: "clioStage",
+    threshold: typeof docMapMinDocumentChars === "number" ? docMapMinDocumentChars : 0,
+  };
+}
+
+function makeClioStageDocMap() {
+  return makeDocMapFromCurrentSource(clioStageDocMapSource() || { text: "", scope: "clioStage" });
 }
 
 function bindClioStageControls() {

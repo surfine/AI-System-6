@@ -1274,6 +1274,10 @@ function getApplicationActionHandlers() {
     "reader-send-manuscript": sendReaderCopyToManuscript,
     "reader-make-docmap": makeDocMapFromCurrentSource,
     "reader-open-clio-stage": openCurrentReaderInClioStage,
+    "clio-stage-docmap": async () => {
+      await ensureClioStageModule();
+      if (typeof makeClioStageDocMap === "function") makeClioStageDocMap();
+    },
     "focus-reader-question": () => readerQuestionInput?.focus(),
     "open-time-machine": () => dispatchTimeMachineMenuCommand("open"),
     "time-machine-new-tab": () => dispatchTimeMachineMenuCommand("new-tab"),

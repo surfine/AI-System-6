@@ -184,7 +184,7 @@ async function activateWorkspaceProfile(value, options = {}) {
   }
   refreshWorkspaceProfileSurfaces();
   if (options.openDefault !== false) {
-    await openWindow(nextProfile === workspaceProfileDesktop ? "disk" : (guideSeen ? "projects" : "guide"));
+    await openWindow(nextProfile === workspaceProfileDesktop ? "disk" : (guideSeen ? "assistant" : "guide"));
   }
   if (options.persist !== false && typeof saveDeskState === "function") await saveDeskState();
   if (typeof scheduleWorkingSessionSave === "function") scheduleWorkingSessionSave();
@@ -193,7 +193,9 @@ async function activateWorkspaceProfile(value, options = {}) {
 
 async function openWritingStudio() {
   await activateWorkspaceProfile(workspaceProfileWriting, { openDefault: false });
-  await openWindow(guideSeen ? "projects" : "guide");
+  // ClioTalk is what the studio opens onto, the same window startup opens.
+  // Project Hard Disk is a place the writer goes, not a greeting.
+  await openWindow(guideSeen ? "assistant" : "guide");
 }
 
 async function exitWritingStudio() {

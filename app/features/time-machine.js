@@ -62,6 +62,8 @@ const timeMachineClipTranslateButton = document.querySelector("#time-machine-cli
 const timeMachineDocMapButton = document.querySelector("#time-machine-docmap");
 const timeMachineAskForm = document.querySelector("#time-machine-ask-form");
 const timeMachineQuestionInput = document.querySelector("#time-machine-question");
+const timeMachineProvenanceEl = document.querySelector("#time-machine-provenance");
+let timeMachineReceiptTimer = 0;
 const timeMachineSendManuscriptButton = document.querySelector("#time-machine-send-manuscript");
 const timeMachineSaveWaybackLink = document.querySelector("#time-machine-save-wayback");
 const timeMachineSaveArchiveIsLink = document.querySelector("#time-machine-save-archive-is");
@@ -506,6 +508,15 @@ function timeMachineSetDatePopover(open) {
   }
 }
 
+// The title bar carries the date next to the page title, so it wants the day,
+// not the snapshot's clock time — otherwise the time eats the title.
+function timeMachineCapturedDayLabel(value) {
+  if (!value) return t("time_machine_unknown_date");
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return t("time_machine_unknown_date");
+  return parsed.toLocaleDateString();
+}
+
 function timeMachineCapturedLabel(value) {
   if (!value) return t("time_machine_unknown_date");
   const parsed = new Date(value);
@@ -519,7 +530,7 @@ function timeMachineUpdateWindowTitle(page = null, archive = null, targetDate = 
   if (archive) {
     timeMachineTitleEl.textContent = t(
       "time_machine_title_archive",
-      timeMachineCapturedLabel(archive.capturedAt),
+      timeMachineCapturedDayLabel(archive.capturedAt),
       pageTitle || t("time_machine")
     );
     return;
@@ -703,8 +714,49 @@ function timeMachineSetLoading(active, message = "") {
   else document.body.classList.remove("is-busy");
 }
 
-function timeMachineSetStatus(message, providerStatus = "") {
-  if (message && typeof setStatus === "function") setStatus(message);
+// Time Machine's receipts belong in Time Machine. They still go through
+// setStatus so the desktop notification pipeline sees them, but the window
+// says them itself rather than relying on ClioTalk's details bar being open.
+function timeMachineSetStatus(message, options = {}) {
+  if (!message) return;
+  // "Ready" is the absence of news, the same reading the desktop status line
+  // takes: no receipt, just the provenance the slot normally shows.
+  const idle = String(message).trim() === String(t("ready") || "").trim();
+  if (timeMachineProvenanceEl) {
+    window.clearTimeout(timeMachineReceiptTimer);
+    if (idle) {
+      renderTimeMachineProvenance();
+    } else {
+      timeMachineProvenanceEl.textContent = message;
+      timeMachineProvenanceEl.classList.add("is-receipt");
+      timeMachineProvenanceEl.classList.toggle("is-error", options.error === true);
+      timeMachineReceiptTimer = window.setTimeout(renderTimeMachineProvenance, 6000);
+    }
+  }
+  // A failure is a notification, not just a line that scrolls past. Saying so
+  // explicitly beats setStatus sniffing the wording for "failed" / "无法".
+  if (typeof setStatus === "function") {
+    setStatus(message, options.error === true ? { notify: true } : {});
+  }
+}
+
+// Which snapshot is on screen. Lives in the navigation row's former spacer, so
+// the web view no longer hides what year it is showing.
+function renderTimeMachineProvenance() {
+  if (!timeMachineProvenanceEl) return;
+  window.clearTimeout(timeMachineReceiptTimer);
+  timeMachineProvenanceEl.classList.remove("is-receipt", "is-error");
+  const page = currentTimeMachinePage;
+  if (!page) {
+    timeMachineProvenanceEl.textContent = "";
+    return;
+  }
+  // Division of labour with the title bar, which already reads
+  // "<capture date> · <page title>": the title says when and what, this says
+  // which archive it came from — the one thing the title cannot carry.
+  timeMachineProvenanceEl.textContent = page.archive
+    ? timeMachineProviderLabel(page.archive.provider)
+    : t("time_machine_live");
 }
 
 function timeMachineSetReaderActions(enabled) {
@@ -720,6 +772,7 @@ function timeMachineSetReaderActions(enabled) {
   // The ask bar's own input and button are owned by describeTimeMachineAskScope
   // so all five ask bars gate on the same rule.
   refreshAskBar("timeMachine");
+  renderTimeMachineProvenance();
 }
 
 function timeMachineShowHome() {
@@ -802,8 +855,8 @@ function timeMachineSyncViewButtons() {
   const reading = currentTimeMachineView === "reader";
   timeMachineFrameEl?.classList.toggle("is-hidden", reading);
   timeMachineReaderEl?.classList.toggle("is-hidden", !reading);
-  timeMachineWebViewButton?.classList.toggle("default", !reading);
-  timeMachineReaderViewButton?.classList.toggle("default", reading);
+  timeMachineWebViewButton?.setAttribute("aria-pressed", reading ? "false" : "true");
+  timeMachineReaderViewButton?.setAttribute("aria-pressed", reading ? "true" : "false");
 }
 
 function showTimeMachineWebView() {
@@ -815,7 +868,7 @@ function showTimeMachineWebView() {
 
 function showTimeMachineReaderView() {
   if (!currentTimeMachinePage?.reader?.text) {
-    setStatus(t("time_machine_reader_unavailable"));
+    timeMachineSetStatus(t("time_machine_reader_unavailable"), { error: true });
     return;
   }
   currentTimeMachineView = "reader";
@@ -882,14 +935,13 @@ async function timeMachineNavigate(value, options = {}) {
   try {
     originalUrl = timeMachineNormalizeAddress(timeMachineUnwrapArchiveUrl(value));
   } catch {
-    setStatus(t("time_machine_invalid_url"));
-    timeMachineSetStatus(t("time_machine_invalid_url"));
+    timeMachineSetStatus(t("time_machine_invalid_url"), { error: true });
     return false;
   }
   let tab = activeTimeMachineTab();
   if (!tab) tab = createTimeMachineTab({ url: originalUrl });
   if (!tab) {
-    setStatus(t("no_project_mounted"));
+    timeMachineSetStatus(t("no_project_mounted"), { error: true });
     return false;
   }
 
@@ -1016,7 +1068,7 @@ async function timeMachineNavigate(value, options = {}) {
       copy.querySelector("p").textContent = error.message;
     }
     timeMachineSetStatus(t("time_machine_could_not_open"));
-    setStatus(t("time_machine_error", error.message));
+    timeMachineSetStatus(t("time_machine_error", error.message), { error: true });
     return false;
   } finally {
     // A superseded request (address/date/checkbox changes each fire their
@@ -1250,11 +1302,11 @@ function timeMachinePreservationDestination(provider, url) {
 function preserveCurrentTimeMachinePage(provider) {
   const page = currentTimeMachinePage;
   if (!page?.url) {
-    setStatus(t("time_machine_preserve_no_page"));
+    timeMachineSetStatus(t("time_machine_preserve_no_page"), { error: true });
     return false;
   }
   if (page.archive || timeMachineEnabledInput?.checked) {
-    setStatus(t("time_machine_preserve_live_only"));
+    timeMachineSetStatus(t("time_machine_preserve_live_only"), { error: true });
     return false;
   }
   const destination = timeMachinePreservationDestination(provider, page.url);
@@ -1309,7 +1361,7 @@ function preserveCurrentTimeMachinePage(provider) {
 
   link.href = destination;
   link.click();
-  setStatus(t("time_machine_preserve_opened", providerLabel));
+  timeMachineSetStatus(t("time_machine_preserve_opened", providerLabel));
   return true;
 }
 
@@ -1379,22 +1431,22 @@ function createTimeMachineClip(text, translatedText = "", translationMeta = {}) 
 function clipTimeMachineSelection() {
   const { text } = timeMachineReaderSelection();
   if (!text) {
-    setStatus(t("select_text_first"));
+    timeMachineSetStatus(t("select_text_first"));
     return;
   }
   createTimeMachineClip(text);
-  setStatus(t("reader_clipped"));
+  timeMachineSetStatus(t("reader_clipped"));
 }
 
 async function clipTimeMachineSelectionWithTranslation() {
   const { text } = timeMachineReaderSelection();
   if (!text) {
-    setStatus(t("select_text_first"));
+    timeMachineSetStatus(t("select_text_first"));
     return;
   }
   const language = getTranslationTargetForUi(text);
   if (!language) {
-    setStatus(t("reader_clip_no_translation_needed"));
+    timeMachineSetStatus(t("reader_clip_no_translation_needed"));
     return;
   }
   try {
@@ -1407,9 +1459,9 @@ async function clipTimeMachineSelectionWithTranslation() {
       title: currentTimeMachinePage?.title || t("time_machine"),
     });
     createTimeMachineClip(text, translatedText, { language, createdAt, model });
-    setStatus(t("reader_bilingual_clipped"));
+    timeMachineSetStatus(t("reader_bilingual_clipped"));
   } catch (error) {
-    setStatus(t("translation_failed", error.message));
+    timeMachineSetStatus(t("translation_failed", error.message), { error: true });
   } finally {
     document.body.classList.remove("is-busy");
     timeMachineClipTranslateButton.disabled = !currentTimeMachinePage?.reader?.text;
@@ -1484,7 +1536,7 @@ async function askTimeMachineSource() {
   if (!paired) return;
   if (timeMachineQuestionInput) timeMachineQuestionInput.value = "";
   markAskBarSent("timeMachine");
-  setStatus(t("time_machine_question_sent"));
+  timeMachineSetStatus(t("time_machine_question_sent"));
   await submitUserText(prompt, {
     displayText: `${t("time_machine")}: ${question.trim()}`,
     skipContext: true,
@@ -1500,7 +1552,7 @@ function sendTimeMachineCopyToManuscript() {
     title: currentTimeMachinePage?.reader?.title || currentTimeMachinePage?.title || t("time_machine"),
     plain: true,
   });
-  setStatus(t(selection ? "reader_selection_sent_manuscript" : "reader_copy_sent_manuscript"));
+  timeMachineSetStatus(t(selection ? "reader_selection_sent_manuscript" : "reader_copy_sent_manuscript"));
 }
 
 function openTimeMachineSnapshotSource(source = {}) {
@@ -1528,7 +1580,7 @@ function timeMachineHandleFrameMessage(event) {
     return;
   }
   if (message.type === "blocked") {
-    setStatus(t("time_machine_blocked_form"));
+    timeMachineSetStatus(t("time_machine_blocked_form"), { error: true });
   }
 }
 

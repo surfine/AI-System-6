@@ -21,9 +21,9 @@
   "zIndex": {
     "styles/00-foundation.css": 9,
     "styles/10-windows.css": 13,
-    "styles/20-reader-docmap.css": 5,
+    "styles/20-reader-docmap.css": 3,
     "styles/22-time-machine.css": 1,
-    "styles/30-surfaces.css": 0,
+    "styles/30-surfaces.css": 1,
     "styles/40-icons.css": 0,
     "styles/50-apps.css": 6,
     "styles/60-responsive.css": 7,
@@ -41,7 +41,7 @@
     "total": 172
   },
   "_liquidGlassNote": "Total twin selectors (body.use-liquid-glass <X>) in 70-liquid-glass.css; ratchet pushes the architecture toward token-based theming. Orphan count tracks twins whose base class/id no longer appears in any non-theme CSS file — a strong drift signal. Both numbers may only shrink; raising either requires explicit justification in the PR.",
-  "liquidGlassTwinCount": 588,
+  "liquidGlassTwinCount": 537,
   "liquidGlassOrphanCount": 32,
   "themeSelectorsOutsideLiquid": {
     "styles/50-apps.css": 12,

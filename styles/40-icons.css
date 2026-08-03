@@ -786,10 +786,6 @@
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
-.project-finder-pathbar .btn[hidden] {
-  display: none;
-}
-
 #project-disk-path {
   min-width: 0;
   overflow: hidden;
@@ -1027,17 +1023,22 @@
   }
 }
 
+/* Empty state note. Every surface that can be empty uses this one object; a
+   container that wants it placed differently overrides the --empty-note-*
+   tokens rather than restating the material. */
 .empty-folder-note {
   grid-column: 1 / -1;
   font-family: var(--text-font);
-  max-width: 62ch;
-  margin: 10px auto;
-  padding: 10px 12px;
-  color: #333333;
+  max-width: var(--empty-note-max-width);
+  margin: var(--empty-note-margin);
+  padding: var(--empty-note-padding);
+  color: var(--empty-note-fg);
   line-height: 1.45;
   text-align: center;
-  border: 1px dotted var(--shade-dark);
-  background: #f7f7f7;
+  border: var(--empty-note-border);
+  border-radius: var(--empty-note-radius);
+  background: var(--empty-note-bg);
+  box-shadow: var(--empty-note-shadow);
 }
 
 .sr-only {

@@ -361,7 +361,7 @@
                 </button>
               </div>
             </div>
-            <span class="clio-entry-loadout" id="clio-entry-loadout"></span>
+            <button class="clio-entry-loadout" id="clio-entry-loadout" type="button" data-action="open-context-panel" disabled></button>
             <span class="composer-key-hint" data-i18n="clio_composer_key_hint">Enter to send · Shift+Enter for a new line</span>
             <div class="button-row composer-hidden-actions">
               <button id="assistant-context-space" type="button" data-action="open-context-panel" data-i18n="clio_context_space_empty" hidden>Context available --</button>
@@ -808,7 +808,7 @@
           </button>
           <button class="finder-item" data-action="open-clio-chart">
             <span class="sys-icon" data-system-icon="clioChart" aria-hidden="true"></span>
-            <span data-i18n="clio_chart_title">ClioChart</span>
+            <span data-i18n="clio_chart_label">ClioChart</span>
           </button>
           <button class="finder-item" data-action="open-liquid-cover">
             <span class="sys-icon" data-system-icon="liquidCover" aria-hidden="true"></span>
@@ -1797,19 +1797,20 @@
             <div class="reader-url-row">
               <input id="reader-url-input" type="url" placeholder="Paste one URL or drop files..." data-i18n-placeholder="reader_url_hint" />
             </div>
-            <div class="reader-actions">
+            <div class="toolbar-group is-end reader-actions">
               <button class="btn default" type="button" id="reader-fetch-button" data-action="reader-open-source" data-i18n="open">Open</button>
               <button class="btn" type="button" id="reader-clip-button" data-action="reader-clip" data-i18n="clip" disabled hidden>Clip</button>
-              <button class="btn" type="button" id="reader-clip-translate-button" data-action="reader-clip-translate" data-i18n="clip_translate" disabled hidden>Clip + Translate</button>
-              <button class="btn" type="button" id="reader-docmap-button" data-action="reader-make-docmap" data-i18n="docmap" disabled>DocMap</button>
-              <button class="btn" type="button" id="reader-open-clio-stage" data-action="reader-open-clio-stage" data-i18n="open_in_clio_stage" disabled hidden>Open in ClioStage</button>
-              <button class="btn" type="button" id="reader-send-manuscript" data-action="reader-send-manuscript" data-i18n-aria-label="send_copy_to_manuscript" disabled>
-                <span class="mobile-control-long" data-i18n="send_copy_to_manuscript">Send Copy to Manuscript</span>
-                <span class="mobile-control-short" data-i18n="manuscript">Manuscript</span>
-              </button>
+              <details class="teachtext-command-menu reader-command-menu" id="reader-command-menu">
+                <summary class="btn" id="reader-command-summary" data-i18n="reader_commands">Commands...</summary>
+                <div class="teachtext-command-popover reader-command-popover">
+                  <button class="btn" type="button" id="reader-clip-translate-button" data-action="reader-clip-translate" data-i18n="clip_translate" disabled>Clip + Translate</button>
+                  <button class="btn" type="button" id="reader-open-clio-stage" data-action="reader-open-clio-stage" data-i18n="open_in_clio_stage" disabled>Open in ClioStage</button>
+                  <button class="btn" type="button" id="reader-send-manuscript" data-action="reader-send-manuscript" data-i18n="send_copy_to_manuscript" disabled>Send Copy to Manuscript</button>
+                </div>
+              </details>
             </div>
           </div>
-          <div class="reader-workspace" id="reader-workspace" data-i18n-drop-label="reader_drop_files">
+          <div class="reader-workspace drop-target" id="reader-workspace" data-i18n-drop-label="reader_drop_files">
             <div class="tdi-rail reader-rail">
               <div id="reader-tabs" class="tdi-tabs reader-tabs is-hidden"></div>
             </div>
@@ -1825,6 +1826,7 @@
               <span class="ask-scope-range" id="reader-ask-range"></span>
             </div>
             <div class="ask-bar-row">
+              <button class="btn ask-bar-lead" type="button" id="reader-docmap-button" data-action="reader-make-docmap" data-i18n="docmap" disabled>DocMap</button>
               <input id="reader-question" type="text" data-i18n-placeholder="reader_ask_hint" placeholder="Ask this Reader source..." disabled />
               <button class="btn default" type="submit" id="reader-ask-button" data-i18n="ask" data-i18n-aria-label="reader_ask_label" disabled>Ask</button>
             </div>
@@ -1861,13 +1863,13 @@
                 <span class="time-machine-nav-glyph" aria-hidden="true">↔</span>
                 <span class="time-machine-nav-label" id="time-machine-source-label">Source</span>
               </button>
-              <span class="time-machine-navigation-spacer"></span>
-              <div class="time-machine-view-switch">
-                <button class="btn default" type="button" id="time-machine-web-view" data-action="time-machine-web-view" data-i18n-aria-label="web_view">
+              <span class="time-machine-provenance" id="time-machine-provenance" role="status" aria-live="polite"></span>
+              <div class="view-switch time-machine-view-switch" role="group" data-i18n-aria-label="time_machine_view_group" aria-label="Time Machine views">
+                <button class="view-switch-option" type="button" id="time-machine-web-view" data-action="time-machine-web-view" aria-pressed="true" data-i18n-aria-label="web_view">
                   <span class="mobile-control-long" data-i18n="web_view">Web View</span>
                   <span class="mobile-control-short" data-i18n="web_view_short">Web</span>
                 </button>
-                <button class="btn" type="button" id="time-machine-reader-view" data-action="time-machine-reader-view" data-i18n-aria-label="reading_view" disabled>
+                <button class="view-switch-option" type="button" id="time-machine-reader-view" data-action="time-machine-reader-view" aria-pressed="false" data-i18n-aria-label="reading_view" disabled>
                   <span class="mobile-control-long" data-i18n="reading_view">Reading View</span>
                   <span class="mobile-control-short" data-i18n="reading_view_short">Read</span>
                 </button>
@@ -1928,7 +1930,6 @@
             <div id="time-machine-loading" class="time-machine-loading" hidden data-i18n="time_machine_loading">Turning the dial...</div>
           </div>
           <div class="time-machine-reader-actions">
-            <button class="btn" type="button" id="time-machine-docmap" data-action="time-machine-docmap" data-i18n="docmap" disabled>DocMap</button>
             <form id="time-machine-ask-form" class="ask-bar" data-ask-source="timeMachine">
               <label class="visually-hidden" for="time-machine-question" data-i18n="time_machine_ask_label">Ask this page</label>
               <div class="ask-bar-scope">
@@ -1936,6 +1937,7 @@
                 <span class="ask-scope-range" id="time-machine-ask-range"></span>
               </div>
               <div class="ask-bar-row">
+                <button class="btn ask-bar-lead" type="button" id="time-machine-docmap" data-action="time-machine-docmap" data-i18n="docmap" disabled>DocMap</button>
                 <input id="time-machine-question" type="text" data-i18n-placeholder="time_machine_ask_prompt" placeholder="Ask this page..." disabled />
                 <button class="btn default" type="submit" id="time-machine-ask" data-i18n="ask" data-i18n-aria-label="time_machine_ask_label" disabled>Ask</button>
               </div>
@@ -2260,36 +2262,36 @@
           <div class="tdi-grabber" role="separator" tabindex="0" aria-label="Resize tabs" aria-orientation="vertical"></div>
         <div class="window-pane docmap-pane">
           <div class="docmap-layout">
-            <div class="docmap-map-toolbar" aria-label="DocMap view controls">
-              <div class="docmap-toolbar-group">
+            <div class="window-toolbar docmap-map-toolbar" aria-label="DocMap view controls">
+              <div class="toolbar-group docmap-toolbar-group">
                 <div class="docmap-layout-picker" id="docmap-layout-toggle" role="group" aria-label="DocMap layout">
                   <span data-i18n="docmap_layout_label">Layout</span>
-                  <div class="docmap-layout-switch">
-                    <button class="docmap-layout-option" type="button" id="docmap-layout-right" data-docmap-layout-option="right" data-i18n="docmap_layout_right">One Side</button>
-                    <button class="docmap-layout-option" type="button" id="docmap-layout-balanced" data-docmap-layout-option="balanced" data-i18n="docmap_layout_balanced">Symmetric</button>
+                  <div class="view-switch">
+                    <button class="view-switch-option" type="button" id="docmap-layout-right" data-docmap-layout-option="right" data-i18n="docmap_layout_right">One Side</button>
+                    <button class="view-switch-option" type="button" id="docmap-layout-balanced" data-docmap-layout-option="balanced" data-i18n="docmap_layout_balanced">Symmetric</button>
                   </div>
                 </div>
               </div>
-              <div class="docmap-toolbar-group">
+              <div class="toolbar-group docmap-toolbar-group">
                 <button class="btn" type="button" id="docmap-fit-view" data-i18n-aria-label="docmap_fit_view">
-                  <span class="docmap-control-long" data-i18n="docmap_fit_view">适应窗口</span>
-                  <span class="docmap-control-short" data-i18n="docmap_fit_short">适应</span>
+                  <span class="mobile-control-long" data-i18n="docmap_fit_view">适应窗口</span>
+                  <span class="mobile-control-short" data-i18n="docmap_fit_short">适应</span>
                 </button>
                 <button class="btn docmap-mobile-focus" type="button" id="docmap-focus-root" data-i18n-aria-label="docmap_focus_root">
-                  <span class="docmap-control-long" data-i18n="docmap_focus_root">聚焦根节点</span>
-                  <span class="docmap-control-short" data-i18n="docmap_focus_short">根节点</span>
+                  <span class="mobile-control-long" data-i18n="docmap_focus_root">聚焦根节点</span>
+                  <span class="mobile-control-short" data-i18n="docmap_focus_short">根节点</span>
                 </button>
                 <button class="btn" type="button" id="docmap-zoom-out" data-i18n-aria-label="docmap_zoom_out">
-                  <span class="docmap-control-long" data-i18n="docmap_zoom_out">缩小</span>
-                  <span class="docmap-control-short" aria-hidden="true">−</span>
+                  <span class="mobile-control-long" data-i18n="docmap_zoom_out">缩小</span>
+                  <span class="mobile-control-short" aria-hidden="true">−</span>
                 </button>
                 <button class="btn" type="button" id="docmap-zoom-in" data-i18n-aria-label="docmap_zoom_in">
-                  <span class="docmap-control-long" data-i18n="docmap_zoom_in">放大</span>
-                  <span class="docmap-control-short" aria-hidden="true">+</span>
+                  <span class="mobile-control-long" data-i18n="docmap_zoom_in">放大</span>
+                  <span class="mobile-control-short" aria-hidden="true">+</span>
                 </button>
               </div>
             </div>
-            <div id="docmap-drop-zone" class="docmap-drop-zone" data-i18n-drop-label="docmap_drop_files">
+            <div id="docmap-drop-zone" class="docmap-drop-zone drop-target" data-i18n-drop-label="docmap_drop_files">
               <div id="docmap-tree" class="docmap-tree window-frame-scroller">
                 <div class="empty-folder-note docmap-empty-note" data-i18n="docmap_empty">Make a DocMap from Reader, TeachText, Clipboard, or saved Markdown.</div>
               </div>
@@ -2323,26 +2325,26 @@
           <span id="clio-stage-meta"></span>
         </div>
         <div class="window-pane clio-stage-pane">
-          <div class="clio-stage-toolbar">
+          <div class="window-toolbar clio-stage-toolbar">
             <div class="button-row clio-stage-controls">
               <button class="btn clio-stage-nav-button" type="button" id="clio-stage-prev" data-i18n-aria-label="previous_page" aria-label="Previous slide">←</button>
               <span id="clio-stage-page" class="clio-stage-page">0 / 0</span>
               <button class="btn clio-stage-nav-button" type="button" id="clio-stage-next" data-i18n-aria-label="next_page" aria-label="Next slide">→</button>
             </div>
-            <div class="clio-stage-view-switcher" aria-label="ClioStage views">
-              <button class="btn" type="button" id="clio-stage-source-view" data-i18n-aria-label="source_view">
+            <div class="view-switch clio-stage-view-switcher" role="group" aria-label="ClioStage views">
+              <button class="view-switch-option" type="button" id="clio-stage-source-view" aria-pressed="false" data-i18n-aria-label="source_view">
                 <span class="mobile-control-long" data-i18n="source_view">Source</span>
                 <span class="mobile-control-short" data-i18n="source_view_short">Source</span>
               </button>
-              <button class="btn default" type="button" id="clio-stage-document-view" data-i18n-aria-label="document_view">
+              <button class="view-switch-option" type="button" id="clio-stage-document-view" aria-pressed="true" data-i18n-aria-label="document_view">
                 <span class="mobile-control-long" data-i18n="document_view">Document View</span>
                 <span class="mobile-control-short" data-i18n="document_view_short">Doc</span>
               </button>
-              <button class="btn" type="button" id="clio-stage-slide-view" data-i18n-aria-label="slide_view">
+              <button class="view-switch-option" type="button" id="clio-stage-slide-view" aria-pressed="false" data-i18n-aria-label="slide_view">
                 <span class="mobile-control-long" data-i18n="slide_view">Slide View</span>
                 <span class="mobile-control-short" data-i18n="slide_view_short">Slide</span>
               </button>
-              <button class="btn" type="button" id="clio-stage-cue-view" data-i18n-aria-label="cue_view">
+              <button class="view-switch-option" type="button" id="clio-stage-cue-view" aria-pressed="false" data-i18n-aria-label="cue_view">
                 <span class="mobile-control-long" data-i18n="cue_view">Cue View</span>
                 <span class="mobile-control-short" data-i18n="cue_view_short">Cue</span>
               </button>
@@ -2359,6 +2361,7 @@
               <span class="ask-scope-range" id="clio-stage-ask-range"></span>
             </div>
             <div class="ask-bar-row">
+              <button class="btn ask-bar-lead" type="button" id="clio-stage-docmap" data-action="clio-stage-docmap" data-i18n="docmap" disabled>DocMap</button>
               <input id="clio-stage-question" type="text" data-i18n-placeholder="clio_stage_ask_hint" placeholder="Ask this slide deck..." disabled />
               <button class="btn default" type="submit" id="clio-stage-ask-button" data-i18n="ask" data-i18n-aria-label="clio_stage_ask_label" disabled>Ask</button>
             </div>

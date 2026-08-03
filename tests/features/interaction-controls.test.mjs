@@ -83,8 +83,9 @@ test.assertNotIncludes(
   "Responsive styles do not keep the old broad button hover selector"
 );
 
-test.assertIncludes(docmap, ".docmap-layout-option:not(.is-active):hover", "DocMap layout choices hover only affects the inactive state");
-test.assertIncludes(docmap, ".docmap-layout-option.is-active:hover", "DocMap layout choice active hover stays readable");
+test.assertIncludes(windows, ".btn[hidden] {\n  display: none;\n}", "a button hidden through the attribute is actually hidden");
+test.assertIncludes(surfaces, '.view-switch-option:not([aria-pressed="true"]):hover', "view-switch hover only affects the unselected option");
+test.assertIncludes(surfaces, '.view-switch-option[aria-pressed="true"]:hover', "the selected view-switch option stays readable on hover");
 
 test.assertIncludes(
   liquid,
@@ -112,7 +113,8 @@ test.assertIncludes(
   "button:hover:not(.menu-bar button):not(:disabled):not(.is-disabled):not(.is-active)",
   "Liquid Glass generic button hover excludes active mini presets"
 );
-test.assertIncludes(liquid, "body.use-liquid-glass .docmap-drop-zone.is-dragging::after", "Liquid Glass DocMap import overlay has its own glass treatment instead of inheriting the classic striped paper layer");
+test.assertIncludes(surfaces, ".drop-target.is-dragging::after", "one drop-target overlay serves every drop surface");
+test.assertNotIncludes(liquid, "body.use-liquid-glass .docmap-drop-zone.is-dragging::after", "the DocMap drop overlay is themed by token, not by a second glass rule");
 test.assertIncludes(liquid, "-webkit-backdrop-filter: blur(8px) saturate(140%)", "Liquid Glass DocMap import overlay blurs the empty state behind it so old paper text does not ghost through");
 
 test.assertIncludes(app, 'button.setAttribute("aria-expanded", "false")', "System Select exposes reliable open state");

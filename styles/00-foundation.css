@@ -198,6 +198,9 @@
   --system-track-radius: 0;
   --system-track-shadow: var(--system-inset);
   --system-track-fill: transparent;
+  /* How much of Soundscape's sensory colour a tinted surface may take. Classic
+     is bitmap paper, so it stays near the ceiling of "still paper". */
+  --ss-tint-ceiling: 6%;
   --system-track-thumb-bg: var(--paper);
   --system-track-thumb-border: 1px solid var(--ink);
   --system-track-thumb-radius: 0;
@@ -351,77 +354,48 @@
   --tdi-grabber-mark-active-bg: var(--ink);
   --tdi-grabber-mark-active-shadow: 4px 0 0 var(--ink);
   --tdi-grabber-mark-active-opacity: 0.9;
-  --reader-tab-dragging-opacity: 0.55;
   --reader-tab-active-open-border-color: var(--ink);
   --reader-tab-active-open-bg: var(--ink);
   --reader-tab-active-open-fg: var(--paper);
-  --reader-tab-active-open-shadow:
-    inset -1px -1px 0 var(--shade-dark),
-    inset 1px 1px 0 var(--paper);
-  --reader-tab-active-open-child-fg: var(--reader-tab-active-open-fg);
-  --reader-tab-active-small-color: currentColor;
-  --reader-tab-drop-border-color: var(--reader-tab-open-border-color);
-  --reader-tab-drop-bg: var(--reader-tab-open-bg);
-  --reader-tab-drop-shadow: var(--tdi-tab-drop-shadow);
-  --reader-tab-dragging-open-border-color: var(--reader-tab-open-border-color);
-  --reader-tab-dragging-open-bg: var(--reader-tab-open-bg);
-  --reader-tab-dragging-open-fg: var(--btn-fg);
-  --reader-tab-dragging-open-shadow: var(--reader-tab-open-shadow);
-  --reader-tab-dragging-open-transform: none;
-  --reader-tab-active-dragging-open-border-color: var(--reader-tab-active-open-border-color);
-  --reader-tab-active-dragging-open-bg: var(--reader-tab-active-open-bg);
-  --reader-tab-active-dragging-open-fg: var(--reader-tab-active-open-fg);
-  --reader-tab-active-remove-border-color: var(--ink);
   --reader-tab-active-remove-bg: var(--paper);
   --reader-tab-active-remove-fg: var(--ink);
-  --reader-tab-active-remove-shadow:
-    inset -1px -1px 0 var(--shade-dark),
-    inset 1px 1px 0 var(--paper);
-  --reader-tab-remove-hover-bg: var(--btn-hover-bg);
-  --reader-tab-remove-hover-fg: var(--btn-hover-fg);
-  --reader-tab-active-remove-hover-bg: var(--reader-tab-active-remove-bg);
-  --reader-tab-active-remove-hover-fg: var(--reader-tab-active-remove-fg);
-  --reader-tabs-label-padding: 0;
-  --reader-tabs-label-color: currentColor;
-  --reader-tabs-label-font-size: inherit;
-  --reader-tabs-label-font-weight: 700;
-  --reader-tab-open-min-height: 24px;
-  --reader-tab-open-columns: 18px minmax(0, 1fr);
-  --reader-tab-open-gap: 5px;
-  --reader-tab-open-padding: 3px 10px;
-  --reader-tab-open-max-width: none;
+  --docmap-node-circle-fill: var(--paper);
+  --docmap-node-circle-stroke-width: 1px;
+  --video-chip-border: 1px solid var(--ink);
+  --video-chip-radius: 0;
+  --video-chip-bg: var(--paper);
+  --video-chip-fg: inherit;
+  --video-timeline-min-height: 0;
+  --video-timeline-border: 1px solid #9a9a9a;
+  --video-timeline-radius: 0;
+  --video-timeline-bg: #f4f4f4;
+  --video-timeline-shadow: none;
+  --video-timeline-fg: var(--ink);
+  --video-timeline-selected-border-color: var(--ink);
+  --video-timeline-selected-bg: var(--ink);
+  --video-timeline-selected-fg: var(--paper);
+  --video-timeline-selected-shadow: none;
+  --video-timeline-selected-span-fg: inherit;
+  --window-toolbar-gap: 6px;
+  --window-toolbar-align: center;
+  --empty-note-max-width: 62ch;
+  --empty-note-margin: 10px auto;
+  --empty-note-padding: 10px 12px;
+  --empty-note-border: 1px dotted var(--shade-dark);
+  --empty-note-radius: 0;
+  --empty-note-bg:
+    repeating-linear-gradient(
+      -45deg,
+      var(--paper) 0,
+      var(--paper) 6px,
+      #f1f1f1 6px,
+      #f1f1f1 12px
+    );
+  --empty-note-shadow: none;
+  --empty-note-fg: var(--ink);
   --reader-tab-open-border-color: var(--btn-border-color);
-  --reader-tab-open-radius: 7px;
   --reader-tab-open-bg: var(--btn-bg);
   --reader-tab-open-shadow: var(--btn-shadow);
-  --reader-tab-icon-width: 16px;
-  --reader-tab-icon-height: 16px;
-  --reader-tab-icon-border-color: currentColor;
-  --reader-tab-icon-bg: transparent;
-  --reader-tab-icon-font-size: 10px;
-  --reader-tab-text-gap: 2px;
-  --reader-tab-title-font-size: inherit;
-  --reader-tab-title-font-weight: bolder;
-  --reader-tab-title-line-height: 1.2;
-  --reader-tab-small-color: currentColor;
-  --reader-tab-small-font-family: var(--mono-font);
-  --reader-tab-small-font-size: 10px;
-  --reader-tab-small-opacity: 0.72;
-  --reader-tab-remove-top: 50%;
-  --reader-tab-remove-right: 7px;
-  --reader-tab-remove-width: 24px;
-  --reader-tab-remove-max-width: none;
-  --reader-tab-remove-height: 24px;
-  --reader-tab-remove-min-height: 24px;
-  --reader-tab-remove-border: 2px solid var(--ink);
-  --reader-tab-remove-radius: 7px;
-  --reader-tab-remove-bg: var(--btn-bg);
-  --reader-tab-remove-fg: var(--btn-fg);
-  --reader-tab-remove-shadow: var(--btn-shadow);
-  --reader-tab-remove-font-size: 11px;
-  --reader-tab-remove-font-weight: var(--system-emphasis-weight);
-  --reader-tab-remove-line-height: 1.2;
-  --reader-tab-remove-backdrop-filter: none;
   --system-menu-height: 24px;
   --z-local-base: 0;
   --z-local-control: 1;
@@ -896,18 +870,18 @@
   --reader-content-radius: 0;
   --reader-content-bg: var(--paper);
   --reader-content-shadow: var(--system-inset);
-  --reader-workspace-overlay-inset: 8px;
-  --reader-workspace-overlay-border: 2px dashed var(--ink);
-  --reader-workspace-overlay-radius: 0;
-  --reader-workspace-overlay-bg: rgba(255, 255, 255, 0.88);
-  --reader-workspace-overlay-shadow: none;
-  --reader-workspace-overlay-fg: var(--ink);
-  --reader-workspace-overlay-font-family: var(--ui-font);
-  --reader-workspace-overlay-font-size: inherit;
-  --reader-workspace-overlay-font-weight: 700;
-  --reader-workspace-overlay-text-align: start;
-  --reader-workspace-overlay-text-shadow: none;
-  --reader-workspace-overlay-backdrop-filter: none;
+  --drop-target-inset: 8px;
+  --drop-target-border: 2px dashed var(--ink);
+  --drop-target-radius: 0;
+  --drop-target-bg: rgba(255, 255, 255, 0.88);
+  --drop-target-shadow: none;
+  --drop-target-fg: var(--ink);
+  --drop-target-font-family: var(--ui-font);
+  --drop-target-font-size: inherit;
+  --drop-target-font-weight: 700;
+  --drop-target-text-align: start;
+  --drop-target-text-shadow: none;
+  --drop-target-backdrop-filter: none;
   --reader-transcript-view-gap: 10px;
   --reader-transcript-list-gap: 8px;
   --reader-transcript-card-border: 1px solid #a8a8a8;
@@ -947,17 +921,16 @@
   --time-machine-loading-bg: rgba(255, 255, 255, 0.9);
   --scrap-selection-actions-border: 1px dotted var(--shade-dark);
   --notification-item-divider: 1px dotted var(--shade-dark);
-  --docmap-drop-zone-border: 2px dashed var(--ink);
-  --docmap-layout-switch-border: 2px solid var(--ink);
-  --docmap-layout-switch-radius: 8px;
-  --docmap-layout-switch-bg: var(--paper);
-  --docmap-layout-switch-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 var(--shade-dark);
-  --docmap-layout-switch-thumb-radius: 5px;
-  --docmap-layout-switch-thumb-bg: var(--ink);
-  --docmap-layout-switch-thumb-shadow: inset 1px 1px 0 var(--shade-dark), inset -1px -1px 0 #ffffff;
-  --docmap-layout-switch-fg: var(--ink);
-  --docmap-layout-switch-active-fg: var(--paper);
-  --docmap-layout-switch-focus-outline: 1px dotted var(--ink);
+  --view-switch-border: 2px solid var(--ink);
+  --view-switch-radius: 0;
+  --view-switch-bg: var(--paper);
+  --view-switch-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 var(--shade-dark);
+  --view-switch-thumb-radius: 0;
+  --view-switch-thumb-bg: var(--ink);
+  --view-switch-thumb-shadow: inset 1px 1px 0 var(--shade-dark), inset -1px -1px 0 #ffffff;
+  --view-switch-fg: var(--ink);
+  --view-switch-active-fg: var(--paper);
+  --view-switch-focus-outline: 1px dotted var(--ink);
   /* System Help / dictionary list row states. Defaults reproduce the classic
      System 6 look (hover, focus and selected are all the solid ink fill, sharp
      corners). Liquid glass overrides these to soften + distinguish the states. */

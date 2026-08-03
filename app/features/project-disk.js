@@ -863,7 +863,7 @@ function createProjectRecord(name) {
   const outlineSections = [defaultOutlineSection];
   return {
     id: crypto.randomUUID(),
-    name: (name || defaultProjectName).trim() || defaultProjectName,
+    name: (name || getDefaultProjectName()).trim() || getDefaultProjectName(),
     createdAt: now,
     updatedAt: now,
     archived: false,
@@ -891,7 +891,7 @@ function normalizeProjectDiskName(project) {
   if (!project) return false;
   const name = String(project.name || "").trim();
   if (!name) {
-    project.name = defaultProjectName;
+    project.name = getDefaultProjectName();
     project.updatedAt = project.updatedAt || new Date().toISOString();
     return true;
   }
@@ -913,7 +913,7 @@ function getSelectedProject() {
 function ensureActiveProject() {
   let changed = false;
   if (!projects.length) {
-    projects.push(createProjectRecord(defaultProjectName));
+    projects.push(createProjectRecord(getDefaultProjectName()));
     isProjectMounted = true;
     changed = true;
   }
@@ -1635,7 +1635,7 @@ function renderProjectDisks() {
   const project = getActiveProject();
   const titleEl = document.querySelector("#project-disk-title");
   const currentFolder = getSelectedFolder();
-  if (projectDiskNameInput) projectDiskNameInput.value = project?.name || defaultProjectName;
+  if (projectDiskNameInput) projectDiskNameInput.value = project?.name || getDefaultProjectName();
 
   if (!project) {
     projectDiskGridEl.replaceChildren();

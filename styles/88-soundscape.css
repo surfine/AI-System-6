@@ -16,6 +16,14 @@
   --ss-field-grid: 34px;
   --ss-field-cold: rgba(62, 130, 201, 0.46);
   --ss-field-warm: rgba(212, 138, 52, 0.44);
+  /* Set by the feature: --ss-crop is the field cut out at the current cell,
+     --ss-tint its flat colour, and the three reach values say how far Enter
+     Scene has pushed that colour into the window. */
+  --ss-crop: var(--paper);
+  --ss-tint: var(--paper);
+  --ss-reach-deck: 0;
+  --ss-reach-drawer: 0;
+  --ss-reach-frame: 0;
   --ss-radius: var(--control-radius, 0);
   --portrait-window-height: calc(100dvh - var(--system-menu-height, 26px) - var(--safe-area-top, 0px) - var(--safe-area-bottom, 0px));
   width: min(780px, calc(100vw - 48px));
@@ -66,7 +74,32 @@
   padding: 10px 12px;
   box-sizing: border-box;
   border-bottom: 1px solid var(--ss-rule-strong);
-  background: var(--ss-panel);
+  background: color-mix(in srgb, var(--ss-tint) calc(var(--ss-reach-deck) * var(--ss-tint-ceiling)), var(--ss-panel));
+}
+
+/* ---- Enter Scene reach: the colour arrives one surface at a time ----
+   Touch keeps it in the field and the swatches, Present fills the deck,
+   Around reaches the drawer paper, Immersed reaches the window shell. Ink is
+   never tinted, and the ceiling token stops any stage from leaving paper. */
+
+/* The deck's own rules take the colour, not the track fill or the level cells:
+   both of those are gradient tokens in Liquid Glass, and color-mix on a
+   gradient drops the whole declaration. */
+.soundscape-artwork::after {
+  border-color: color-mix(in srgb, var(--ss-tint) calc(var(--ss-reach-deck) * 100%), var(--ss-rule));
+}
+
+.soundscape-panel {
+  background: color-mix(in srgb, var(--ss-tint) calc(var(--ss-reach-drawer) * var(--ss-tint-ceiling)), var(--paper));
+}
+
+/* The last stage reaches the status bar, the one piece of window chrome
+   Soundscape owns outright. Not the title bar: an active one paints a striped
+   gradient through --system-titlebar-active-bg, so a colour underneath it would
+   never show. The selector carries three classes because Liquid Glass claims
+   every .details-bar for its pane material. */
+.soundscape-window .details-bar.soundscape-status-bar {
+  background: color-mix(in srgb, var(--ss-tint) calc(var(--ss-reach-frame) * var(--ss-tint-ceiling)), var(--paper));
 }
 
 .soundscape-artwork {
@@ -363,10 +396,6 @@
   min-height: 20px;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.soundscape-switch-action .btn[hidden] {
-  display: none;
 }
 
 .soundscape-drawer {
@@ -807,6 +836,9 @@
 
 /* Fixed width: the swatch reports hue, not amount. Intensity is carried by the
    word summary, which is legible in both themes. */
+/* The swatch is a crop of the field, not a flat colour: the neutral column is
+   one colour all the way down, and only the contour density tells those cells
+   apart. */
 .soundscape-saved-swatch {
   width: 44px;
   height: 12px;

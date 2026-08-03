@@ -17,7 +17,14 @@ function compactStatusDetail(detail) {
 function getChatFileTitle() {
   const firstUserMessage = conversation.find((item) => item.role === "user")?.content;
   if (!firstUserMessage) {
-    return `Chat ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+    // "Chat" is the object name and stays untranslated, as it does in "Chat
+    // file" everywhere else; the clock is not, and an empty locale list gave the
+    // Chinese desktop a browser-supplied "04:12 AM".
+    const clock = new Date().toLocaleTimeString(currentLanguage === "zh" ? "zh-CN" : "en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    return `Chat ${clock}`;
   }
 
   return firstUserMessage.replace(/\s+/g, " ").slice(0, 42);

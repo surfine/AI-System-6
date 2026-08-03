@@ -166,8 +166,8 @@ const systemIconPaths = {
   `,
   cmfStudio: `
     <path d="M9 5h14v22H9z" />
-    <path d="M11 8h10M11 24h10" />
-    <path d="M6 10h3M6 15h3M6 20h3M23 12h3M23 18h3" />
+    <path class="sys-icon-detail" d="M11 8h10M11 24h10" />
+    <path class="sys-icon-detail" d="M6 10h3M6 15h3M6 20h3M23 12h3M23 18h3" />
     <circle cx="14" cy="13" r="2" />
     <circle cx="18" cy="18" r="2" />
     <path d="M5 27l22-22" />

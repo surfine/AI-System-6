@@ -231,10 +231,13 @@ test.assertIncludes(menus, 'menuItem("see-as-chart", "clio_chart_see_as_chart")'
 test.assertIncludes(actions, '"open-clio-chart": openClioChartApp', "the open action is registered");
 test.assertIncludes(html, 'id="teachtext-chart-owner"', "TeachText shows who owns the table block");
 
-["clio_chart_title", "clio_chart_see_as_chart", "clio_chart_not_measured", "clio_chart_rollup_note"].forEach((key) => {
+["clio_chart_title", "clio_chart_label", "clio_chart_see_as_chart", "clio_chart_not_measured", "clio_chart_rollup_note"].forEach((key) => {
   test.assert(en.includes(`${key}:`) && zh.includes(`${key}:`), `${key} exists in both languages`);
 });
-test.assertIncludes(zh, 'clio_chart_title: "ClioChart 可视化"', "the Chinese name is ClioChart 可视化");
+// The title bar carries the brand alone, the way ClioStage established; the
+// Chinese name lives on the label key every other surface uses.
+test.assertIncludes(zh, 'clio_chart_title: "ClioChart"', "the title bar shows the brand, not a gloss");
+test.assertIncludes(zh, 'clio_chart_label: "ClioChart 可视化"', "the Chinese name is ClioChart 可视化");
 
 // The numeric guardrail is a product rule, not a prompt-time nicety.
 test.assertIncludes(integrity, "不得增补、外推、插值、四舍五入", "the Chinese guardrail forbids inventing numbers");

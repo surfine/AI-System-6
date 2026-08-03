@@ -259,21 +259,32 @@ body.use-liquid-glass {
   --tdi-tab-close-hover-transform: translateY(-50%);
   --control-radius: 12px;
   /* Same track and segment geometry as Classic; only the material changes.
-     The thumb keeps its square block shape and never becomes a round knob. */
-  --system-track-bg: rgba(16, 17, 20, 0.1);
+     The thumb keeps its square block shape and never becomes a round knob.
+     The travelled region is a lighter trough, not an accent bar: Classic fills
+     it with nothing at all because this is a scroll bar reporting position, and
+     a saturated fill would make the same object mean "percent complete" in one
+     theme only. */
+  /* Classic's trough is a 2px dither. Glass keeps the same read - a hatched
+     channel the box travels along - at a material weight instead of 1-bit. */
+  --system-track-bg:
+    repeating-linear-gradient(90deg, rgba(16, 17, 20, 0.13) 0 1px, transparent 1px 3px),
+    rgba(16, 17, 20, 0.07);
   --system-track-border: 0;
-  --system-track-radius: 7px;
+  --system-track-radius: 3px;
   --system-track-shadow: inset 0 1px 2px rgba(16, 17, 20, 0.14);
-  --system-track-fill: linear-gradient(180deg, #5ac8fa, #0a84ff);
-  --system-track-thumb-bg: #ffffff;
-  --system-track-thumb-border: 0;
-  --system-track-thumb-radius: 4px;
-  --system-track-thumb-shadow: 0 1px 4px rgba(18, 28, 38, 0.3);
+  --system-track-fill: transparent;
+  --system-track-thumb-bg: rgba(255, 255, 255, 0.94);
+  --system-track-thumb-border: 1px solid rgba(16, 17, 20, 0.22);
+  --system-track-thumb-radius: 2px;
+  --system-track-thumb-shadow: 0 1px 2px rgba(18, 28, 38, 0.18);
   --system-segment-bg: rgba(16, 17, 20, 0.14);
   --system-segment-border: 0;
   --system-segment-radius: 3px;
   --system-segment-on-bg: linear-gradient(180deg, #5ac8fa, #0a84ff);
   --system-segment-on-shadow: 0 1px 2px rgba(10, 132, 255, 0.32);
+  /* Glass carries colour better than bitmap paper, so the same reach is
+     allowed to go further before it stops reading as a material. */
+  --ss-tint-ceiling: 14%;
   --glass-tint: rgba(255, 255, 255, 0.12);
   --glass-tint-strong: rgba(255, 255, 255, 0.32);
   --glass-border: rgba(255, 255, 255, 0.72);
@@ -513,6 +524,42 @@ body.use-liquid-glass {
   --reader-tab-remove-hover-fg: rgba(16, 17, 20, 0.92);
   --reader-tab-active-remove-hover-bg: rgba(255, 255, 255, 0.12);
   --reader-tab-active-remove-hover-fg: #ffffff;
+  --docmap-node-circle-fill: rgba(255, 255, 255, 0.88);
+  --docmap-node-circle-stroke-width: 2.2px;
+  --video-chip-border: 1px solid rgba(47, 157, 179, 0.2);
+  --video-chip-radius: 999px;
+  --video-chip-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.24)),
+    rgba(0, 122, 255, 0.1);
+  --video-chip-fg: rgba(16, 17, 20, 0.72);
+  --video-timeline-min-height: 38px;
+  --video-timeline-border: 1px solid rgba(16, 17, 20, 0.11);
+  --video-timeline-radius: 12px;
+  --video-timeline-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.22)),
+    rgba(255, 255, 255, 0.22);
+  --video-timeline-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 5px 14px rgba(18, 28, 38, 0.035);
+  --video-timeline-fg: rgba(16, 17, 20, 0.88);
+  --video-timeline-selected-border-color: rgba(255, 255, 255, 0.26);
+  --video-timeline-selected-bg:
+    linear-gradient(180deg, rgba(16, 17, 20, 0.86), rgba(16, 17, 20, 0.66)),
+    rgba(16, 17, 20, 0.76);
+  --video-timeline-selected-fg: #ffffff;
+  --video-timeline-selected-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 8px 20px rgba(18, 28, 38, 0.12);
+  --video-timeline-selected-span-fg: rgba(255, 255, 255, 0.76);
+  --empty-note-border: 1px solid rgba(255, 255, 255, 0.42);
+  --empty-note-radius: 16px;
+  --empty-note-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.48), rgba(255, 255, 255, 0.18)),
+    rgba(255, 255, 255, 0.2);
+  --empty-note-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 10px 28px rgba(18, 28, 38, 0.07);
+  --empty-note-fg: rgba(16, 17, 20, 0.78);
   --reader-tabs-label-padding: 4px 2px 6px;
   --reader-tabs-label-color: rgba(16, 17, 20, 0.88);
   --reader-tabs-label-font-size: 18px;
@@ -953,23 +1000,23 @@ body.use-liquid-glass {
   --reader-content-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.72),
     0 12px 32px rgba(18, 28, 38, 0.07);
-  --reader-workspace-overlay-inset: 12px;
-  --reader-workspace-overlay-border: 1px solid rgba(0, 122, 255, 0.42);
-  --reader-workspace-overlay-radius: 16px;
-  --reader-workspace-overlay-bg:
+  --drop-target-inset: 12px;
+  --drop-target-border: 1px solid rgba(0, 122, 255, 0.42);
+  --drop-target-radius: 16px;
+  --drop-target-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.16)),
     rgba(0, 122, 255, 0.08);
-  --reader-workspace-overlay-shadow:
+  --drop-target-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.7),
     inset 0 0 0 1px rgba(255, 255, 255, 0.34),
     0 0 0 4px rgba(0, 122, 255, 0.1);
-  --reader-workspace-overlay-fg: rgba(16, 17, 20, 0.8);
-  --reader-workspace-overlay-font-family: var(--title-font);
-  --reader-workspace-overlay-font-size: 16px;
-  --reader-workspace-overlay-font-weight: 700;
-  --reader-workspace-overlay-text-align: center;
-  --reader-workspace-overlay-text-shadow: 0 1px 0 rgba(255, 255, 255, 0.72);
-  --reader-workspace-overlay-backdrop-filter: blur(6px) saturate(128%);
+  --drop-target-fg: rgba(16, 17, 20, 0.8);
+  --drop-target-font-family: var(--title-font);
+  --drop-target-font-size: 16px;
+  --drop-target-font-weight: 700;
+  --drop-target-text-align: center;
+  --drop-target-text-shadow: 0 1px 0 rgba(255, 255, 255, 0.72);
+  --drop-target-backdrop-filter: blur(6px) saturate(128%);
   --reader-transcript-view-gap: 14px;
   --reader-transcript-list-gap: 12px;
   --reader-transcript-card-border: 1px solid rgba(16, 17, 20, 0.12);
@@ -1022,17 +1069,16 @@ body.use-liquid-glass {
   --time-machine-loading-bg: rgba(240, 246, 252, 0.78);
   --scrap-selection-actions-border: 1px solid rgba(16, 17, 20, 0.1);
   --notification-item-divider: 1px solid rgba(16, 17, 20, 0.08);
-  --docmap-drop-zone-border: 1px solid rgba(0, 122, 255, 0.46);
-  --docmap-layout-switch-border: 1px solid rgba(255, 255, 255, 0.62);
-  --docmap-layout-switch-radius: 999px;
-  --docmap-layout-switch-bg: rgba(255, 255, 255, 0.36);
-  --docmap-layout-switch-shadow: inset 0 1px 0 var(--glass-highlight), 0 8px 22px rgba(18, 28, 38, 0.08);
-  --docmap-layout-switch-thumb-radius: 999px;
-  --docmap-layout-switch-thumb-bg: linear-gradient(180deg, rgba(16, 17, 20, 0.88), rgba(16, 17, 20, 0.68)), rgba(16, 17, 20, 0.82);
-  --docmap-layout-switch-thumb-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 8px 18px rgba(18, 28, 38, 0.14);
-  --docmap-layout-switch-fg: rgba(16, 17, 20, 0.68);
-  --docmap-layout-switch-active-fg: #ffffff;
-  --docmap-layout-switch-focus-outline: 0;
+  --view-switch-border: 1px solid rgba(255, 255, 255, 0.62);
+  --view-switch-radius: 999px;
+  --view-switch-bg: rgba(255, 255, 255, 0.36);
+  --view-switch-shadow: inset 0 1px 0 var(--glass-highlight), 0 8px 22px rgba(18, 28, 38, 0.08);
+  --view-switch-thumb-radius: 999px;
+  --view-switch-thumb-bg: linear-gradient(180deg, rgba(16, 17, 20, 0.88), rgba(16, 17, 20, 0.68)), rgba(16, 17, 20, 0.82);
+  --view-switch-thumb-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 8px 18px rgba(18, 28, 38, 0.14);
+  --view-switch-fg: rgba(16, 17, 20, 0.68);
+  --view-switch-active-fg: #ffffff;
+  --view-switch-focus-outline: 0;
   /* List rows: hover is a light translucent tint (dark text), selected is a
      soft rounded deep fill (white text) — distinct from hover, and rounded to
      fit the glass surface. */
@@ -1742,60 +1788,18 @@ body.use-liquid-glass .docmap-markmap-svg {
   --markmap-text-color: rgba(16, 17, 20, 0.88);
 }
 
-body.use-liquid-glass .docmap-markmap-svg .markmap-node > circle {
-  fill: rgba(255, 255, 255, 0.88);
-  stroke-width: 2.2px;
-}
-
 body.use-liquid-glass .docmap-markmap-svg .markmap-link {
   stroke-width: 3px;
   stroke-opacity: 0.9;
-}
-
-body.use-liquid-glass .reader-tabs .reader-saved-remove {
-  top: var(--reader-tab-remove-top);
-  right: var(--reader-tab-remove-right);
-  width: var(--reader-tab-remove-width);
-  min-width: var(--reader-tab-remove-width) !important;
-  max-width: var(--reader-tab-remove-max-width);
-  height: var(--reader-tab-remove-height);
-  min-height: var(--reader-tab-remove-min-height);
-  border: var(--reader-tab-remove-border);
-  border-radius: var(--reader-tab-remove-radius);
-  background: var(--reader-tab-remove-bg);
-  color: var(--reader-tab-remove-fg);
-  box-shadow: var(--reader-tab-remove-shadow);
-  font-size: var(--reader-tab-remove-font-size);
-  font-weight: var(--reader-tab-remove-font-weight);
-  line-height: var(--reader-tab-remove-line-height);
-  transform: translateY(-50%);
-  backdrop-filter: var(--reader-tab-remove-backdrop-filter);
-  -webkit-backdrop-filter: var(--reader-tab-remove-backdrop-filter);
-}
-
-body.use-liquid-glass .reader-tabs .reader-tabs-item.is-active .reader-saved-remove {
-  border-color: var(--reader-tab-active-remove-border-color);
-  border-radius: var(--reader-tab-remove-radius);
-  line-height: var(--reader-tab-remove-line-height);
-}
-
-body.use-liquid-glass .reader-content > .empty-folder-note {
+}body.use-liquid-glass .reader-content > .empty-folder-note {
+  --empty-note-max-width: 760px;
+  --empty-note-margin: 32px auto 0;
+  --empty-note-padding: 16px 22px;
+  --empty-note-radius: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
-  max-width: 760px;
   min-height: 64px;
-  margin: 32px auto 0;
-  padding: 16px 22px;
-  border: 1px solid rgba(16, 17, 20, 0.12);
-  border-radius: 18px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.66), rgba(255, 255, 255, 0.28)),
-    rgba(255, 255, 255, 0.28);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.78),
-    0 12px 30px rgba(18, 28, 38, 0.08);
-  color: rgba(16, 17, 20, 0.82);
   font-family: var(--title-font);
   font-size: 17px;
   line-height: 1.45;
@@ -2605,15 +2609,9 @@ body.use-liquid-glass .memory-transfer-footer .hint {
 
 body.use-liquid-glass .import-preview > .empty-folder-note,
 body.use-liquid-glass .backup-preview > .empty-folder-note {
-  max-width: none;
-  margin: 10px;
-  border: 1px solid rgba(16, 17, 20, 0.14);
-  border-radius: 14px;
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.24)),
-    rgba(255, 255, 255, 0.26);
-  color: rgba(16, 17, 20, 0.76);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68);
+  --empty-note-max-width: none;
+  --empty-note-margin: 10px;
+  --empty-note-radius: 14px;
 }
 
 body.use-liquid-glass .backup-preview-section {
@@ -2673,12 +2671,12 @@ body.use-liquid-glass .backup-preview:has(> .empty-folder-note) {
 }
 
 body.use-liquid-glass .backup-preview:has(> .empty-folder-note) > .empty-folder-note {
-  margin: 0;
-  border: 0;
-  background: transparent;
+  --empty-note-margin: 0;
+  --empty-note-border: 0;
+  --empty-note-bg: transparent;
+  --empty-note-shadow: none;
+  --empty-note-fg: rgba(16, 17, 20, 0.58);
   background-image: none;
-  box-shadow: none;
-  color: rgba(16, 17, 20, 0.58);
 }
 
 body.use-liquid-glass .backup-action-row #import-project-backup {
@@ -2793,15 +2791,8 @@ body.use-liquid-glass .review-desk-empty-note,
 body.use-liquid-glass .style-sheet-results > .empty-folder-note,
 body.use-liquid-glass .claim-results > .empty-folder-note,
 body.use-liquid-glass .claim-section-meta.empty-folder-note {
-  max-width: min(680px, calc(100% - 48px));
-  margin: 22px auto;
-  border: 1px solid rgba(16, 17, 20, 0.14);
-  border-radius: 16px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.24)),
-    rgba(255, 255, 255, 0.26);
-  color: rgba(16, 17, 20, 0.76);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --empty-note-max-width: min(680px, calc(100% - 48px));
+  --empty-note-margin: 22px auto;
 }
 
 body.use-liquid-glass .review-desk-window.is-review-locked .review-desk-pane {
@@ -3087,18 +3078,6 @@ body.use-liquid-glass .finder-list-group {
 body.use-liquid-glass .finder-list-row {
   margin-bottom: 4px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.28);
-}
-
-body.use-liquid-glass .empty-folder-note {
-  border: 1px solid rgba(255, 255, 255, 0.42);
-  border-radius: 16px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.48), rgba(255, 255, 255, 0.18)),
-    rgba(255, 255, 255, 0.2);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.72),
-    0 10px 28px rgba(18, 28, 38, 0.07);
-  color: rgba(16, 17, 20, 0.78);
 }
 
 body.use-liquid-glass .empty-folder-note .icon,
@@ -3483,36 +3462,6 @@ body.use-liquid-glass .docmap-drop-zone {
   box-shadow: none;
 }
 
-body.use-liquid-glass .docmap-drop-zone.is-dragging,
-body.use-liquid-glass .docmap-drop-zone.is-importing {
-  border-color: rgba(109, 124, 0, 0.7);
-  background:
-    linear-gradient(180deg, rgba(90, 200, 250, 0.3), rgba(255, 255, 255, 0.18)),
-    rgba(255, 255, 255, 0.32);
-}
-
-body.use-liquid-glass .docmap-drop-zone.is-dragging::after,
-body.use-liquid-glass .docmap-drop-zone.is-importing::after {
-  inset: 12px;
-  border: 1px solid rgba(0, 122, 255, 0.34);
-  border-radius: 16px;
-  background:
-    radial-gradient(circle at 18% 14%, rgba(255, 255, 255, 0.62), transparent 34%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.74), rgba(255, 255, 255, 0.42)),
-    rgba(232, 238, 242, 0.66);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.72),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.36),
-    0 0 0 4px rgba(0, 122, 255, 0.08);
-  color: rgba(16, 17, 20, 0.84);
-  font-family: var(--title-font);
-  font-size: 16px;
-  font-weight: 700;
-  text-align: center;
-  backdrop-filter: blur(8px) saturate(140%);
-  -webkit-backdrop-filter: blur(8px) saturate(140%);
-}
-
 body.use-liquid-glass .docmap-tree {
   padding: 14px;
   border-color: rgba(16, 17, 20, 0.1);
@@ -3570,40 +3519,12 @@ body.use-liquid-glass .video-docmap-timeline {
   padding: 2px 4px 2px 0;
 }
 
-body.use-liquid-glass .video-docmap-timeline button {
-  min-height: 38px;
-  border: 1px solid rgba(16, 17, 20, 0.11);
-  border-radius: 12px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.22)),
-    rgba(255, 255, 255, 0.22);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.72),
-    0 5px 14px rgba(18, 28, 38, 0.035);
-  color: rgba(16, 17, 20, 0.88);
-}
-
 body.use-liquid-glass .video-docmap-timeline button:hover,
 body.use-liquid-glass .video-docmap-timeline button:focus-visible {
   border-color: rgba(47, 157, 179, 0.34);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.66), rgba(255, 255, 255, 0.3)),
     rgba(0, 122, 255, 0.08);
-}
-
-body.use-liquid-glass .video-docmap-timeline button.is-selected {
-  border-color: rgba(255, 255, 255, 0.26);
-  background:
-    linear-gradient(180deg, rgba(16, 17, 20, 0.86), rgba(16, 17, 20, 0.66)),
-    rgba(16, 17, 20, 0.76);
-  color: #ffffff;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    0 8px 20px rgba(18, 28, 38, 0.12);
-}
-
-body.use-liquid-glass .video-docmap-timeline button.is-selected span {
-  color: rgba(255, 255, 255, 0.76);
 }
 
 body.use-liquid-glass .video-docmap-node {
@@ -3633,15 +3554,6 @@ body.use-liquid-glass .video-docmap-node .video-docmap-time {
 }
 
 body.use-liquid-glass .video-docmap-node header small,
-body.use-liquid-glass .video-docmap-chip-row span {
-  border: 1px solid rgba(47, 157, 179, 0.2);
-  border-radius: 999px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.24)),
-    rgba(0, 122, 255, 0.1);
-  color: rgba(16, 17, 20, 0.72);
-}
-
 body.use-liquid-glass .video-docmap-node blockquote {
   margin-top: 12px;
   border-left-color: rgba(47, 157, 179, 0.48);
@@ -3859,14 +3771,23 @@ body.use-liquid-glass .view-btn.is-active {
 }
 
 body.use-liquid-glass .view-btn[data-view="icon"]::before {
-  width: 10px;
-  height: 8px;
-  border: 2px solid rgba(16, 17, 20, 0.84);
+  width: 4px;
+  height: 4px;
+  border: 0;
   border-radius: 1px;
+  background: rgba(16, 17, 20, 0.84);
+  box-shadow:
+    6px 0 0 rgba(16, 17, 20, 0.84),
+    0 6px 0 rgba(16, 17, 20, 0.84),
+    6px 6px 0 rgba(16, 17, 20, 0.84);
 }
 
 body.use-liquid-glass .view-btn[data-view="icon"].is-active::before {
-  border-color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow:
+    6px 0 0 rgba(255, 255, 255, 0.9),
+    0 6px 0 rgba(255, 255, 255, 0.9),
+    6px 6px 0 rgba(255, 255, 255, 0.9);
 }
 
 body.use-liquid-glass .view-btn[data-view="list"]::before {
@@ -4014,12 +3935,12 @@ body.use-liquid-glass .teachtext-actions .btn:not(.default):not(:disabled):not(.
   text-shadow: none !important;
 }
 
-body.use-liquid-glass .btn:hover:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected):not(.tdi-tab-close):not(.reader-saved-remove):not(.docmap-layout-option):not(.system-help-related-link),
-body.use-liquid-glass button:hover:not(.menu-bar button):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected):not(.tdi-tab-close):not(.reader-saved-remove):not(.docmap-layout-option):not(.system-help-related-link),
-body.use-liquid-glass .btn:focus:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected):not(.tdi-tab-close):not(.reader-saved-remove):not(.docmap-layout-option):not(.system-help-related-link),
-body.use-liquid-glass button:focus:not(.menu-bar button):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected):not(.tdi-tab-close):not(.reader-saved-remove):not(.docmap-layout-option):not(.system-help-related-link),
-body.use-liquid-glass .btn:focus-visible:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected):not(.tdi-tab-close):not(.reader-saved-remove):not(.docmap-layout-option):not(.system-help-related-link),
-body.use-liquid-glass button:focus-visible:not(.menu-bar button):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected):not(.tdi-tab-close):not(.reader-saved-remove):not(.docmap-layout-option):not(.system-help-related-link) {
+body.use-liquid-glass .btn:hover:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected):not(.tdi-tab-close):not(.view-switch-option):not(.system-help-related-link),
+body.use-liquid-glass button:hover:not(.menu-bar button):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected):not(.tdi-tab-close):not(.view-switch-option):not(.system-help-related-link),
+body.use-liquid-glass .btn:focus:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected):not(.tdi-tab-close):not(.view-switch-option):not(.system-help-related-link),
+body.use-liquid-glass button:focus:not(.menu-bar button):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected):not(.tdi-tab-close):not(.view-switch-option):not(.system-help-related-link),
+body.use-liquid-glass .btn:focus-visible:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected):not(.tdi-tab-close):not(.view-switch-option):not(.system-help-related-link),
+body.use-liquid-glass button:focus-visible:not(.menu-bar button):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected):not(.tdi-tab-close):not(.view-switch-option):not(.system-help-related-link) {
   outline: 0 !important;
   border-color: rgba(0, 122, 255, 0.56) !important;
   box-shadow:
@@ -4028,8 +3949,8 @@ body.use-liquid-glass button:focus-visible:not(.menu-bar button):not(:disabled):
     0 0 0 3px rgba(0, 122, 255, 0.18) !important;
 }
 
-body.use-liquid-glass .btn:active:not(:disabled):not(.is-disabled):not(.tdi-tab-close):not(.reader-saved-remove):not(.docmap-layout-option):not(.system-help-related-link),
-body.use-liquid-glass button:active:not(.menu-bar button):not(:disabled):not(.tdi-tab-close):not(.reader-saved-remove):not(.docmap-layout-option):not(.system-help-related-link) {
+body.use-liquid-glass .btn:active:not(:disabled):not(.is-disabled):not(.tdi-tab-close):not(.view-switch-option):not(.system-help-related-link),
+body.use-liquid-glass button:active:not(.menu-bar button):not(:disabled):not(.tdi-tab-close):not(.view-switch-option):not(.system-help-related-link) {
   transform: none;
   border-color: rgba(0, 122, 255, 0.56) !important;
   box-shadow:
@@ -4105,84 +4026,7 @@ body.use-liquid-glass .btn.default.is-disabled:active {
   grid-column: 3 !important;
   justify-self: end !important;
   text-align: right !important;
-}
-
-body.use-liquid-glass .reader-tabs .reader-saved-remove,
-body.use-liquid-glass .docmap-tabs .tdi-tab-close,
-body.use-liquid-glass .teachtext-tabs .tdi-tab-close {
-  color: rgba(16, 17, 20, 0.78) !important;
-  -webkit-text-fill-color: currentColor !important;
-}
-
-body.use-liquid-glass .reader-tabs .reader-saved-open b {
-  border-radius: 7px;
-}
-
-body.use-liquid-glass .reader-tabs .reader-tabs-item.is-active .btn.reader-saved-open,
-body.use-liquid-glass .reader-tabs .reader-tabs-item.is-active .btn.reader-saved-open:not(:disabled):not(.is-disabled),
-body.use-liquid-glass .reader-tabs .reader-tabs-item.is-active .btn.reader-saved-open:not(:disabled):not(.is-disabled):hover,
-body.use-liquid-glass .reader-tabs .reader-tabs-item.is-active .btn.reader-saved-open:not(:disabled):not(.is-disabled):focus-visible,
-body.use-liquid-glass .reader-tabs .reader-tabs-item.is-active .btn.reader-saved-open:not(:disabled):not(.is-disabled):active {
-  border-color: rgba(16, 17, 20, 0.74) !important;
-  background:
-    linear-gradient(180deg, rgba(16, 17, 20, 0.84), rgba(16, 17, 20, 0.68)),
-    rgba(16, 17, 20, 0.76) !important;
-  color: #ffffff !important;
-  -webkit-text-fill-color: currentColor !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.16),
-    0 8px 18px rgba(18, 28, 38, 0.12) !important;
-}
-
-body.use-liquid-glass .reader-tabs .reader-tabs-item.is-active .btn.reader-saved-open strong,
-body.use-liquid-glass .reader-tabs .reader-tabs-item.is-active .btn.reader-saved-open b {
-  color: #ffffff !important;
-  -webkit-text-fill-color: currentColor !important;
-}
-
-body.use-liquid-glass .reader-tabs .reader-tabs-item.is-active .btn.reader-saved-open small {
-  color: rgba(255, 255, 255, 0.72) !important;
-  -webkit-text-fill-color: currentColor !important;
-}
-
-body.use-liquid-glass .reader-tabs .reader-tabs-item.is-active .btn.reader-saved-open b {
-  border-color: rgba(255, 255, 255, 0.9);
-  background: rgba(255, 255, 255, 0.12);
-}
-
-body.use-liquid-glass .reader-tabs-item.is-active .reader-saved-remove,
-body.use-liquid-glass .reader-tabs-item.is-active .reader-saved-remove:hover,
-body.use-liquid-glass .reader-tabs-item.is-active .reader-saved-remove:focus-visible,
-body.use-liquid-glass .reader-tabs .reader-tabs-item.is-active .btn.reader-saved-remove:not(:disabled):not(.is-disabled),
-body.use-liquid-glass .reader-tabs .reader-tabs-item.is-active .btn.reader-saved-remove:not(:disabled):not(.is-disabled):hover,
-body.use-liquid-glass .reader-tabs .reader-tabs-item.is-active .btn.reader-saved-remove:not(:disabled):not(.is-disabled):focus-visible,
-body.use-liquid-glass .reader-tabs .reader-tabs-item.is-active .btn.reader-saved-remove:not(:disabled):not(.is-disabled):active,
-body.use-liquid-glass .docmap-tabs .tdi-tab-wrap.is-active .tdi-tab-close,
-body.use-liquid-glass .docmap-tabs .tdi-tab-wrap.is-active .tdi-tab-close:hover,
-body.use-liquid-glass .docmap-tabs .tdi-tab-wrap.is-active .tdi-tab-close:focus-visible,
-body.use-liquid-glass .docmap-tabs .tdi-tab-wrap.is-active .btn.tdi-tab-close:not(:disabled):not(.is-disabled),
-body.use-liquid-glass .docmap-tabs .tdi-tab-wrap.is-active .btn.tdi-tab-close:not(:disabled):not(.is-disabled):hover,
-body.use-liquid-glass .docmap-tabs .tdi-tab-wrap.is-active .btn.tdi-tab-close:not(:disabled):not(.is-disabled):focus-visible,
-body.use-liquid-glass .docmap-tabs .tdi-tab-wrap.is-active .btn.tdi-tab-close:not(:disabled):not(.is-disabled):active,
-body.use-liquid-glass .teachtext-tabs .tdi-tab-wrap.is-active .tdi-tab-close,
-body.use-liquid-glass .teachtext-tabs .tdi-tab-wrap.is-active .tdi-tab-close:hover,
-body.use-liquid-glass .teachtext-tabs .tdi-tab-wrap.is-active .tdi-tab-close:focus-visible,
-body.use-liquid-glass .teachtext-tabs .tdi-tab-wrap.is-active .btn.tdi-tab-close:not(:disabled):not(.is-disabled),
-body.use-liquid-glass .teachtext-tabs .tdi-tab-wrap.is-active .btn.tdi-tab-close:not(:disabled):not(.is-disabled):hover,
-body.use-liquid-glass .teachtext-tabs .tdi-tab-wrap.is-active .btn.tdi-tab-close:not(:disabled):not(.is-disabled):focus-visible,
-body.use-liquid-glass .teachtext-tabs .tdi-tab-wrap.is-active .btn.tdi-tab-close:not(:disabled):not(.is-disabled):active {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.12)),
-    rgba(255, 255, 255, 0.18) !important;
-  color: rgba(255, 255, 255, 0.9) !important;
-  -webkit-text-fill-color: currentColor !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.44),
-    0 4px 12px rgba(18, 28, 38, 0.18) !important;
-  transform: translateY(-50%);
-}
-
-@supports (-apple-visual-effect: -apple-system-glass-material) {
+}@supports (-apple-visual-effect: -apple-system-glass-material) {
   body.use-liquid-glass .window,
   body.use-liquid-glass .menu-bar,
   body.use-liquid-glass .menu-popover,

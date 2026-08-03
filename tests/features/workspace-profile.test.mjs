@@ -26,7 +26,14 @@ test.assertIncludes(profile, "workspaceCapabilityStudio", "classifies studio-onl
 test.assertMatches(profile, /workspaceCapabilityForWindow[\s\S]*studioWindowNames/, "owns window classification");
 test.assertMatches(profile, /workspaceCapabilityForAction[\s\S]*studioActionNames/, "owns action classification");
 test.assertIncludes(profile, "filterWorkspaceItems", "filters existing Finder registries instead of duplicating them");
-test.assertNotIncludes(profile, '"assistant"', "does not classify ClioTalk as studio-only");
+// Scoped to the classification list: ClioTalk must stay a shared window.
+// The file may still name it as a window to open — that is the opposite
+// claim, and a whole-file string check could not tell them apart.
+test.assertNotMatches(
+  profile,
+  /const studioWindowNames = new Set\(\[[^\]]*"assistant"/,
+  "does not classify ClioTalk as studio-only"
+);
 test.assertIncludes(persistence, "workspaceProfile,", "stores the profile in the existing settings payload");
 test.assertIncludes(persistence, "normalizeWorkspaceProfile(settings.workspaceProfile)", "restores a validated profile");
 test.assertIncludes(persistence, 'hasOwnProperty.call(settings, "workspaceProfile")', "distinguishes an existing user choice from a first visit");
@@ -61,7 +68,7 @@ test.assertMatches(windows, /appId === "writingStudio"[\s\S]*exitWritingStudio/,
 test.assertMatches(app, /writing_studio[\s\S]*iconId: "writingStudio"/, "Applications uses a dedicated Writing Studio icon");
 test.assertMatches(systemIcons, /writingStudio:[\s\S]*M9 4h14v10/, "Writing Studio uses a dedicated typewriter silhouette");
 test.assertIncludes(actions, '"quit-active-app": () => quitApp(activeAppId)', "the existing right-side MultiFinder owns Writing Studio Quit");
-test.assertIncludes(profile, 'await openWindow(guideSeen ? "projects" : "guide")', "Writing Studio reuses the existing writing entry points");
+test.assertIncludes(profile, 'await openWindow(guideSeen ? "assistant" : "guide")', "Writing Studio opens onto ClioTalk, the window startup already opens");
 test.assertIncludes(actions, '"open-teachtext": openTeachTextForWorkspace', "TeachText entry follows the active profile");
 test.assertIncludes(actions, '"print-current": printCurrentTeachTextDocument', "TeachText printing reuses the existing print pipeline");
 test.assertIncludes(teachText, "function openDesktopTeachTextWindow()", "Desktop reuses TeachText through a role-aware entry");

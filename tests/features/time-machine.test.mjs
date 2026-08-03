@@ -15,6 +15,7 @@ const index = read("index.html");
 const projectDisk = read("app/features/project-disk.js");
 const persistence = read("app/core/persistence-status.js");
 const menus = read("app/data/menus.js");
+const html = read("index.html");
 const styles = read("styles/22-time-machine.css");
 const router = read("src/server/router.js");
 const dictionary = read("app/data/system-dictionary.js");
@@ -58,7 +59,12 @@ test.assertIncludes(index, 'id="time-machine-provider"', "Chooser exposes the ar
 test.assertNotIncludes(index, 'id="time-machine-time-band"', "time controls do not occupy a separate browser toolbar");
 test.assertNotIncludes(index, 'id="time-machine-resolution"', "title bar owns the live or historical time label");
 test.assertIncludes(index, 'id="time-machine-title"', "title bar owns the visible time context");
-test.assertNotIncludes(index, 'id="time-machine-status"', "Time Machine does not duplicate the system notification center");
+// Superseded 2026-08-04: the window may echo its own receipt, because the
+// desktop status line lives in ClioTalk's details bar and is invisible when
+// that window is closed. What stays forbidden is accumulating a second
+// notification feed: one transient line, gone again when the news is over.
+test.assertMatches(index, /id="time-machine-provenance"[^>]*role="status"/, "Time Machine echoes its own receipt in its own window");
+test.assertNotIncludes(index, 'id="time-machine-notifications"', "Time Machine does not duplicate the system notification center");
 test.assertIncludes(index, 'id="time-machine-docmap"', "bottom bar keeps DocMap");
 test.assertIncludes(index, 'id="time-machine-question"', "bottom bar keeps the visible question field");
 test.assertIncludes(index, 'id="time-machine-ask"', "bottom bar keeps the Ask action");
@@ -118,6 +124,15 @@ test.assertIncludes(styles, "border-radius: var(--control-radius)", "Time Machin
 test.assertIncludes(styles, "grid-template-columns: repeat(7", "the popover renders a seven-day calendar");
 test.assertIncludes(styles, "grid-template-columns: repeat(auto-fit, minmax(44px, 1fr))", "phone navigation and view choices share one adaptive control row");
 test.assertIncludes(styles, ".time-machine-view-switch {\n    display: contents;", "phone view choices join the navigation row without a second toolbar");
+test.assertIncludes(html, '<span class="time-machine-provenance" id="time-machine-provenance"', "which snapshot is on screen rides in the navigation row, costing the page no height");
+test.assertIncludes(feature, "? timeMachineProviderLabel(page.archive.provider)", "the toolbar names the archive; the title bar already carries the date and page");
+test.assertIncludes(feature, "setStatus(message, options.error === true ? { notify: true } : {})", "a Time Machine failure reaches the notification center by being marked, not by matching a keyword list");
+test.assertNotIncludes(html, "time-machine-details-bar", "a transient receipt never costs the page a row");
+test.assertIncludes(styles, ".time-machine-provenance.is-receipt", "the receipt borrows the toolbar slot the provenance already holds");
+test.assertIncludes(feature, "timeMachineReceiptTimer = window.setTimeout(renderTimeMachineProvenance", "and hands the slot back");
+test.assertIncludes(html, '<button class="btn ask-bar-lead" type="button" id="time-machine-docmap"', "DocMap keeps its place beside the question");
+test.assertIncludes(feature, "if (timeMachineProvenanceEl) {", "Time Machine reports its own receipts in its own window");
+test.assertNotIncludes(feature, "\n  setStatus(", "no Time Machine receipt is left reporting only into ClioTalk's details bar");
 test.assertIncludes(feature, 'registerAskBarSource("timeMachine", describeTimeMachineAskScope)', "Time Machine uses the shared ask bar instead of its own question row");
 test.assertIncludes(feature, 'if (!page?.reader?.text) return { ready: false };', "an empty Time Machine gives the ask bar's space back instead of showing a dead control");
 test.assertIncludes(feature, 'arrangeWindowAssistantSplit("timeMachine")', "a Time Machine question pairs the page with ClioTalk in SideAsk like every other source window");

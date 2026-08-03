@@ -51,6 +51,13 @@ const {
   defaultProjectName,
   displayNameRewrites,
 } = projectConfig;
+
+// The name a fresh disk is born with follows the interface language; the frozen
+// config value is the pre-translation fallback.
+function getDefaultProjectName() {
+  const localized = typeof t === "function" ? String(t("default_project_name") || "").trim() : "";
+  return localized || defaultProjectName;
+}
 const {
   stepOrder: flowStepOrder,
 } = flowConfig;
@@ -596,7 +603,7 @@ function getApplicationsItems() {
     { name: t("bureaucracy_meme_label"), iconId: "bureaucracyMeme", icon: "tools-icon", action: "open-bureaucracy-meme", type: "application", kind: t("application") },
     { name: t("endfield_terminal_label"), iconId: "endfieldTerminal", icon: "tools-icon", action: "open-endfield-terminal", type: "application", kind: t("application") },
     { name: t("clio_stage_label"), iconId: "clioStage", icon: "tools-icon", action: "open-clio-stage", type: "application", kind: t("application") },
-    { name: t("clio_chart_title"), iconId: "clioChart", icon: "tools-icon", action: "open-clio-chart", type: "application", kind: t("application") },
+    { name: t("clio_chart_label"), iconId: "clioChart", icon: "tools-icon", action: "open-clio-chart", type: "application", kind: t("application") },
     { name: t("liquid_cover_label"), iconId: "liquidCover", icon: "tools-icon", action: "open-liquid-cover", type: "application", kind: t("application") },
     { name: t("cmf_studio_label"), iconId: "cmfStudio", icon: "tools-icon", action: "open-cmf-studio", type: "application", kind: t("application") },
     { name: t("soundscape_label"), iconId: "soundscape", icon: "tools-icon", action: "open-soundscape", type: "application", kind: t("application") },

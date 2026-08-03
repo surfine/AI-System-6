@@ -1193,7 +1193,7 @@ async function sendClioChartToStage() {
   const snapshot = document.createElement("div");
   snapshot.className = "clio-chart-stage-snapshot";
   const heading = document.createElement("h1");
-  heading.textContent = table.columns[clioChartState.column]?.name || t("clio_chart_title");
+  heading.textContent = table.columns[clioChartState.column]?.name || t("clio_chart_label");
   const chart = view.cloneNode(true);
   chart.removeAttribute("id");
   chart.classList.remove("window-frame-scroller");
@@ -1206,7 +1206,7 @@ async function sendClioChartToStage() {
     setClioChartStatus(t("clio_chart_stage_failed"));
     return false;
   }
-  const title = `${t("clio_chart_title")} — ${heading.textContent}`;
+  const title = `${t("clio_chart_label")} — ${heading.textContent}`;
   window.AISystem6ClioStage.open({
     title,
     sourceKind: "clioChart",
@@ -1294,7 +1294,7 @@ function openClioChartFromTeachText() {
     return false;
   }
   openClioChart({
-    title: typeof getTeachTextDocumentName === "function" ? getTeachTextDocumentName({ fallback: t("clio_chart_title") }) : t("clio_chart_title"),
+    title: typeof getTeachTextDocumentName === "function" ? getTeachTextDocumentName({ fallback: t("clio_chart_label") }) : t("clio_chart_label"),
     markdown: block.text,
     owner: { kind: "teachText", text: block.text },
   });
@@ -1361,7 +1361,7 @@ async function askClioChart(command) {
     await arrangeWindowAssistantSplit("clioChart");
   }
   await submitUserText([zh ? prompt.zh : prompt.en, "", clioChartGroundingBlock()].join("\n"), {
-    displayText: `${t("clio_chart_title")}: ${label}`,
+    displayText: `${t("clio_chart_label")}: ${label}`,
     skipContext: true,
     taskKind: "clio-chart",
   });
@@ -1565,7 +1565,7 @@ function loadClioChartTable(table, meta = {}) {
   clioChartState.table = table;
   clioChartState.sourceDraft = null;
   clioChartState.templateFileId = meta.templateFileId || "";
-  clioChartState.title = meta.title || t("clio_chart_title");
+  clioChartState.title = meta.title || t("clio_chart_label");
   clioChartState.column = 0;
   clioChartState.descending = !table.columns[0]?.lower;
   clioChartState.projection = CLIO_CHART_PROJECTIONS.includes(table.config.projection)
@@ -1666,7 +1666,7 @@ function handleClioChartPaste(event) {
   const table = clioChartTextToTable(text);
   if (!table) return;
   event.preventDefault();
-  loadClioChartTable(table, { title: t("clio_chart_title") });
+  loadClioChartTable(table, { title: t("clio_chart_label") });
 }
 
 function handleClioChartWindowKeydown(event) {

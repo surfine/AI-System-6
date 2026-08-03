@@ -41,7 +41,7 @@ test.assertIncludes(app, "queueDocMapFitToView(8, { focusCompact: true })", "new
 test.assertIncludes(css, "@container (max-width: 520px)", "DocMap owns a compact-width layout");
 test.assertIncludes(css, "grid-template-columns: repeat(4, minmax(0, 1fr))", "DocMap view controls share one compact phone row");
 test.assertIncludes(css, ".docmap-layout-picker > span", "DocMap can remove the redundant phone layout label");
-test.assertIncludes(css, ".docmap-control-short", "DocMap supplies compact visual labels for the phone toolbar");
+test.assertIncludes(css, ".docmap-map-toolbar .btn,\n  .docmap-map-toolbar .view-switch-option", "DocMap toolbar controls keep a phone-sized touch target");
 test.assertIncludes(en, 'docmap_fit_short: "Fit"', "English supplies a compact Fit label");
 test.assertIncludes(en, 'docmap_focus_short: "Root"', "English supplies a compact Root label");
 test.assertIncludes(zh, 'docmap_fit_short: "适应"', "Chinese supplies a compact Fit label");

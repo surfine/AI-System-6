@@ -45,8 +45,31 @@
   line-height: 1;
 }
 
-.time-machine-navigation-spacer {
+/* The navigation row already reserved this space as an empty spacer. It now
+   carries which snapshot is on screen, so provenance costs no extra row and
+   the web view stops hiding what year it is showing. */
+.time-machine-provenance {
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-inline: 6px;
+  color: var(--shade-dark);
+  font-size: 11px;
+  text-align: center;
+}
+
+/* A receipt takes this same slot for a moment and then gives it back, so the
+   window never grows a row to say something temporary. Errors also go to the
+   notification center, which is where they persist. */
+.time-machine-provenance.is-receipt {
+  color: var(--ink);
+}
+
+.time-machine-provenance.is-error {
+  color: var(--ink);
+  font-weight: 700;
 }
 
 #time-machine-stop:disabled,
@@ -515,21 +538,13 @@
   }
 
   .time-machine-navigation .btn,
-  .time-machine-view-switch .btn {
+  .time-machine-view-switch .view-switch-option {
     min-height: 44px;
     padding-inline: 6px;
   }
 
-  .time-machine-navigation-spacer {
+  .time-machine-provenance {
     display: none;
-  }
-
-  .time-machine-view-switch .mobile-control-long {
-    display: none;
-  }
-
-  .time-machine-view-switch .mobile-control-short {
-    display: inline;
   }
 
   .time-machine-address-form,

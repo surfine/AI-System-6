@@ -1242,7 +1242,7 @@ function moveSelectedProjectToTrash() {
       || null;
 
     if (!fallbackProject) {
-      fallbackProject = createProjectRecord(nextAvailableProjectName(defaultProjectName));
+      fallbackProject = createProjectRecord(nextAvailableProjectName(getDefaultProjectName()));
       projects.push(fallbackProject);
     }
 

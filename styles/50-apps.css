@@ -2712,6 +2712,10 @@ input[type="radio"]:disabled {
   max-width: 100%;
   line-height: 1.18;
   text-align: center;
+  /* Break between words, not inside one: "退出 创作坊" wraps after 退出
+     rather than splitting the name into 创作 / 坊. anywhere stays as the
+     last resort for a single word too long for the icon. */
+  word-break: keep-all;
   overflow-wrap: anywhere;
   box-decoration-break: clone;
 }
@@ -2769,13 +2773,17 @@ body:not(.use-liquid-glass) .desktop-app-icon span[data-liquid-label="DAA Meme"]
   content: none !important;
 }
 
+/* The stroke does not scale with the icon (non-scaling-stroke keeps 1-bit
+   lines crisp), so a fixed width thickens as the box shrinks: 2.4px is ~1.8
+   viewBox units on a 42px desktop icon but ~3.5 on a 22px list icon, which is
+   what filled the small icons in. Small boxes take a proportionate width. */
 .sys-icon-svg {
   width: 100%;
   height: 100%;
   display: block;
   overflow: visible;
   stroke: currentColor;
-  stroke-width: 2.4;
+  stroke-width: var(--sys-icon-stroke, 2.4);
   stroke-linecap: square;
   stroke-linejoin: miter;
   shape-rendering: crispEdges;
@@ -2837,6 +2845,32 @@ body:not(.use-liquid-glass) .desktop-app-icon span[data-liquid-label="DAA Meme"]
 .finder-operation-item .sys-icon {
   width: 22px;
   height: 22px;
+}
+
+.sys-icon-mini,
+.finder-small-icons .sys-icon,
+.finder-list-name-cell .sys-icon,
+.finder-list-row > span:first-child .sys-icon,
+.finder-operation-item .sys-icon {
+  --sys-icon-stroke: 1.5;
+}
+
+/* Detail that only survives at full size. CMF Studio's tick marks sit 5 units
+   apart, which is under 2px in a 22px box: at that size they merge with the
+   strokes around them and the whole icon reads as a blot. The object still
+   reads — body, two colour dots, the diagonal. */
+.sys-icon-mini .sys-icon-detail,
+.finder-small-icons .sys-icon .sys-icon-detail,
+.finder-list-name-cell .sys-icon .sys-icon-detail,
+.finder-list-row > span:first-child .sys-icon .sys-icon-detail,
+.finder-operation-item .sys-icon .sys-icon-detail,
+.menu-bar .sys-icon .sys-icon-detail {
+  display: none;
+}
+
+.menu-bar .project-switcher-icon.sys-icon,
+.menu-bar .cloud-icon.sys-icon {
+  --sys-icon-stroke: 1.2;
 }
 
 .finder-list-row > span:first-child .sys-icon {

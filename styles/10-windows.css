@@ -1329,9 +1329,11 @@ html:lang(zh-Hans) .title-bar h2 {
   background: var(--ink);
 }
 
+/* Paper on paper is no feedback at all; the shade is what every other System 6
+   control uses to say the pointer is on it. */
 .view-btn:hover:not(.is-active),
 .view-btn:focus-visible:not(.is-active) {
-  background: var(--paper);
+  background: var(--shade);
 }
 
 .view-btn.is-active:hover,
@@ -1339,19 +1341,29 @@ html:lang(zh-Hans) .title-bar h2 {
   background: var(--ink);
 }
 
-/* Icon view button icon */
+/* Icon view: four blocks, the 1-bit way to say "icons". An empty rectangle —
+   what this drew before — says nothing at all next to the list glyph. Built
+   from box-shadow like its neighbour, so both stay on the pixel grid. */
 .view-btn[data-view="icon"]::before {
   content: "";
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 10px;
-  height: 8px;
-  border: 1px solid var(--ink);
-  transform: translate(-50%, -50%);
+  width: 4px;
+  height: 4px;
+  background: var(--ink);
+  box-shadow:
+    6px 0 0 var(--ink),
+    0 6px 0 var(--ink),
+    6px 6px 0 var(--ink);
+  transform: translate(-5px, -5px);
 }
 .view-btn[data-view="icon"].is-active::before {
-  border-color: var(--paper);
+  background: var(--paper);
+  box-shadow:
+    6px 0 0 var(--paper),
+    0 6px 0 var(--paper),
+    6px 6px 0 var(--paper);
 }
 
 /* List view button icon */
@@ -1366,9 +1378,11 @@ html:lang(zh-Hans) .title-bar h2 {
   box-shadow: 0 -4px 0 var(--ink), 0 4px 0 var(--ink);
   transform: translate(-50%, -50%);
 }
+/* Same offsets as the resting glyph — these used to be 0/+4/+8, which slid the
+   three bars 4px down the button the moment the view was selected. */
 .view-btn[data-view="list"].is-active::before {
   background: var(--paper);
-  box-shadow: 0 4px 0 var(--paper), 0 8px 0 var(--paper);
+  box-shadow: 0 -4px 0 var(--paper), 0 4px 0 var(--paper);
 }
 
 /* List View Container */
@@ -2571,14 +2585,27 @@ html:lang(zh-Hans) .title-bar h2 {
   box-shadow: var(--clio-entry-field-shadow);
 }
 
+/* Reads as the plain status line it was, but a message that carries something
+   is also the way into the Context Panel — a tooltip is not reachable on a
+   phone, where this window runs full screen. Empty means zero width, so the
+   composer action row keeps its five grid columns. */
 .clio-entry-loadout {
   min-width: 0;
+  padding: 0;
   overflow: hidden;
+  border: 0;
+  background: none;
   color: var(--clio-muted-copy);
   font-family: var(--clio-control-font);
   font-size: 11px;
+  text-align: left;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.clio-entry-loadout:not(:disabled) {
+  cursor: pointer;
+  text-decoration: underline dotted;
 }
 
 .clio-tally {
@@ -3013,7 +3040,22 @@ select:focus {
   min-width: 12px;
 }
 
+/* inline-flex, not block flow: a button taller than its own line box (min-height,
+   a stretching parent, a smaller-font label span) would otherwise leave the label
+   sitting off-centre. inline-flex keeps the inline-level box the layout expects;
+   the gap stands in for the source whitespace flex drops between glyph + label. */
+/* A button that declares display beats the user-agent's [hidden] rule, so
+   every .btn hidden through the attribute stayed on screen — most visibly the
+   system alert, which kept an untranslated Cancel and No beside its OK. */
+.btn[hidden] {
+  display: none;
+}
+
 .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
   min-width: 72px;
   min-height: var(--system-button-min-height);
   padding: var(--system-button-padding-y) var(--system-button-padding-x);

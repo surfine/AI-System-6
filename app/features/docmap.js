@@ -407,9 +407,7 @@ function syncDocMapLayoutControls(map = currentDocMap) {
   if (!docMapLayoutToggleButton) return;
   docMapLayoutToggleButton.dataset.docmapLayout = layout;
   docMapLayoutButtons?.forEach((button) => {
-    const active = button.dataset.docmapLayoutOption === layout;
-    button.classList.toggle("is-active", active);
-    button.setAttribute("aria-pressed", active ? "true" : "false");
+    button.setAttribute("aria-pressed", button.dataset.docmapLayoutOption === layout ? "true" : "false");
   });
 }
 

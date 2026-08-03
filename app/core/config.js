@@ -134,7 +134,11 @@ window.AISystem6Config = (() => {
   });
 
   const projectConfig = Object.freeze({
-    defaultProjectName: "Project Hard Disk",
+    // Fallback only. "Project Hard Disk" is the name of the object, not a good
+    // name for a disk sitting inside it, and it left an English literal in the
+    // Chinese desktop; getDefaultProjectName() localizes it once translations
+    // are loaded.
+    defaultProjectName: "New Project",
     displayNameRewrites: Object.freeze([
       Object.freeze({
         pattern: new RegExp(`^${["示范", "项目"].join("")}\\s*-\\s*本地\\s*AI\\s*写作(\\s+\\d+)?$`, "u"),

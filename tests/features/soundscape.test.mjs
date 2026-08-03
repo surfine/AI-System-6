@@ -4,6 +4,8 @@ const test = createFeatureTest("soundscape");
 const source = read("app/features/soundscape.js");
 const html = read("index.html");
 const css = read("styles/88-soundscape.css");
+const foundation = read("styles/00-foundation.css");
+const liquid = read("styles/70-liquid-glass.css");
 const styleManifest = read("scripts/style-manifest.mjs");
 const runtimeManifest = read("scripts/runtime-manifest.mjs");
 const config = read("app/core/config.js");
@@ -68,6 +70,7 @@ test.assertIncludes(html, 'id="soundscape-progress" class="system-track" role="s
 test.assertIncludes(html, 'id="soundscape-volume" class="system-segments" role="slider"', "volume uses Sound control panel segment cells");
 test.assertIncludes(html, 'id="soundscape-intensity" class="system-segments" role="slider"', "Enter Scene uses the same level control as volume");
 test.assertIncludes(css, "--system-track-bg", "the dithered track is token-driven so both themes share one geometry");
+test.assertNotIncludes(liquid, "--system-track-fill: linear-gradient", "the position track reports position in both themes, never percent complete");
 test.assertIncludes(css, "--system-segment-on-bg", "segment cells are token-driven so both themes share one cell count");
 test.assertIncludes(source, "function bindDragControl(element, handlers)", "the custom controls are pointer operable");
 test.assertIncludes(source, 'element.setAttribute("aria-valuenow"', "the custom controls report their value to assistive tech");
@@ -151,6 +154,34 @@ test.assertIncludes(source, "function momentUnavailable(moment = selectedMoment(
 test.assertIncludes(source, "function recoverSelectedMoment()", "recovery hands the user back to Music or the file picker");
 test.assertIncludes(css, ".soundscape-saved-swatch", "the saved swatch reports hue at a fixed width");
 test.assertNotIncludes(source, "--soundscape-swatch-width", "swatch width no longer pretends to encode intensity");
+
+// The palette is a chart of named colours, not three adjectives over a 240px
+// field. Every cell has a name, and the six preset buttons are six of them.
+const chartRows = source.match(/const CHART_CELLS = Object\.freeze\(\[([\s\S]*?)\]\.map/);
+test.assert(Boolean(chartRows), "the colour chart is declared as a table");
+const chartKeys = (chartRows?.[1] || "").match(/"[a-z_]+"/g) || [];
+test.assert(chartKeys.length === 49, `the chart names all 7 x 7 cells (found ${chartKeys.length})`);
+test.assert(new Set(chartKeys).size === 49, "no cell name is used twice");
+for (const preset of ["style_standard", "style_cold_mist", "style_warm_wood", "style_night_sail", "style_sunlight", "style_pulse"]) {
+  test.assertIncludes(chartRows?.[1] || "", `"${preset}"`, `the ${preset} preset is a landmark on the chart, not a separate word`);
+}
+test.assertIncludes(source, "function cellName(", "a point on the field resolves to a named colour");
+test.assertIncludes(source, "function fieldCrop(", "the swatch is a crop of the field, not a flat colour");
+test.assertIncludes(source, "repeating-linear-gradient(0deg", "the crop carries the contour density that encodes the second axis");
+test.assertIncludes(source, "function styleDescription(", "the axis words survive as the accessible description");
+test.assertIncludes(source, 'setAttribute("aria-valuetext"', "the field announces its cell to a screen reader");
+test.assertIncludes(source, "Math.abs(at - edge) < 1.5", "a name does not flicker while the pointer rests on a grid line");
+
+// Enter Scene decides how far the colour reaches, and the ceiling keeps every
+// tinted surface paper.
+test.assertIncludes(source, "function reachAt(", "Enter Scene resolves to a reach per surface");
+test.assertIncludes(css, "--ss-tint-ceiling", "tinted surfaces read a ceiling token");
+test.assertIncludes(foundation, "--ss-tint-ceiling: 6%", "Classic keeps the sensory tint inside bitmap paper");
+test.assertIncludes(liquid, "--ss-tint-ceiling: 14%", "Liquid Glass overrides the ceiling by token, not by a twin selector");
+test.assertIncludes(css, "var(--ss-reach-drawer) * var(--ss-tint-ceiling)", "the drawer paper is tinted through the ceiling");
+test.assertIncludes(css, ".soundscape-window .details-bar.soundscape-status-bar", "the last stage reaches the window chrome Soundscape owns");
+test.assertNotIncludes(css, ".soundscape-window .title-bar", "the title bar's shared striped background is left alone");
+test.assertNotIncludes(css, "var(--system-segment-on-bg))", "no color-mix runs over a Liquid Glass gradient token");
 
 // Bilingual and bootstrap-safe.
 test.assertIncludes(en, 'soundscape_save_moment: "Save This Moment"', "English product copy exists");

@@ -37,6 +37,7 @@ test.assertIncludes(app, "openSelectedScrapSourceInReader", "Scrapbook sources c
 test.assertNotIncludes(reader, "window.open(", "Reader does not degrade into a raw browser window");
 test.assertIncludes(styles, ".reader-pane:has(#reader-docmap-button:not(:disabled)) .reader-url-row", "Reader switches to loaded-document actions without keeping the source-entry row on any screen");
 test.assertIncludes(responsive, "grid-template-columns: repeat(auto-fit, minmax(84px, 1fr))", "Reader handoffs share one compact phone row");
+test.assertIncludes(index, '<button class="btn ask-bar-lead" type="button" id="reader-docmap-button"', "Reader hands off to DocMap from beside the question, like Time Machine");
 test.assertIncludes(index, '<form id="reader-ask-form" class="ask-bar" data-ask-source="reader">', "Reader uses the shared ask bar rather than a Reader-only question form");
 test.assertIncludes(reader, 'range: selection ? t("ask_scope_selection") : t("ask_scope_whole_source")', "the Reader ask bar states whether the question carries the selection or the whole source");
 test.assertIncludes(surfaces, ".ask-bar-row {\n  display: grid;\n  grid-template-columns: minmax(0, 1fr) auto;", "the shared ask bar keeps input and action on one row");

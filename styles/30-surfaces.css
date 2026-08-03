@@ -2175,13 +2175,152 @@ body.alarm-clock-ringing .alarm-clock-menu-icon {
   gap: 8px;
 }
 
+/* A window can put one handoff action in front of the question — DocMap next
+   to the ask box, the way Time Machine has always had it. */
+.ask-bar-row:has(> .ask-bar-lead) {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+/* A window can put one handoff action in front of the question — DocMap next
+   to the ask box, the way Time Machine has always had it. */
+.ask-bar-row:has(> .ask-bar-lead) {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
 .ask-bar-row input {
   min-width: 0;
   width: 100%;
 }
 
 @container (max-width: 420px) {
-  .ask-bar-row {
+  .ask-bar-row,
+  .ask-bar-row:has(> .ask-bar-lead) {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+/* Drop target — the drag/import overlay shared by Reader and DocMap. The label
+   is the element's own data-drop-label, so one rule serves every drop surface. */
+.drop-target {
+  position: relative;
+}
+
+.drop-target.is-dragging::after,
+.drop-target.is-importing::after {
+  content: attr(data-drop-label);
+  position: absolute;
+  inset: var(--drop-target-inset);
+  display: grid;
+  place-items: center;
+  z-index: var(--z-local-chrome);
+  border: var(--drop-target-border);
+  border-radius: var(--drop-target-radius);
+  background: var(--drop-target-bg);
+  box-shadow: var(--drop-target-shadow);
+  color: var(--drop-target-fg);
+  font-family: var(--drop-target-font-family);
+  font-size: var(--drop-target-font-size);
+  font-weight: var(--drop-target-font-weight);
+  text-align: var(--drop-target-text-align);
+  text-shadow: var(--drop-target-text-shadow);
+  backdrop-filter: var(--drop-target-backdrop-filter);
+  -webkit-backdrop-filter: var(--drop-target-backdrop-filter);
+  pointer-events: none;
+}
+
+/* View switch — pick one of N views of the same object (DocMap layout,
+   ClioStage view, Time Machine web/reading). One structure, two materials: in
+   Classic it is a square System 6 well with an inverted selected block, in
+   Liquid Glass the same markup becomes a pill with a thumb. Options size
+   themselves, so any label in any language fits. `aria-pressed` is the state —
+   there is no separate class to keep in sync. */
+.view-switch {
+  position: relative;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  min-width: 0;
+  min-height: 30px;
+  padding: 2px;
+  border: var(--view-switch-border);
+  border-radius: var(--view-switch-radius);
+  background: var(--view-switch-bg);
+  box-shadow: var(--view-switch-shadow);
+}
+
+.view-switch-option {
+  position: relative;
+  min-width: 0;
+  min-height: 24px;
+  padding: 1px 8px;
+  border: 0;
+  border-radius: var(--view-switch-thumb-radius);
+  background: transparent;
+  box-shadow: none;
+  color: var(--view-switch-fg);
+  font: inherit;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transform: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.view-switch-option[aria-pressed="true"] {
+  color: var(--view-switch-active-fg);
+  background: var(--view-switch-thumb-bg);
+  box-shadow: var(--view-switch-thumb-shadow);
+}
+
+.view-switch-option:not([aria-pressed="true"]):hover,
+.view-switch-option:not([aria-pressed="true"]):focus-visible {
+  color: var(--view-switch-fg);
+  background: transparent;
+  box-shadow: none;
+}
+
+.view-switch-option[aria-pressed="true"]:hover,
+.view-switch-option[aria-pressed="true"]:focus-visible {
+  color: var(--view-switch-active-fg);
+  background: var(--view-switch-thumb-bg);
+  box-shadow: var(--view-switch-thumb-shadow);
+}
+
+.view-switch-option:active {
+  transform: none;
+}
+
+.view-switch-option:disabled {
+  opacity: 0.5;
+}
+
+.view-switch:focus-within {
+  outline: var(--view-switch-focus-outline);
+  outline-offset: 2px;
+}
+
+/* Window toolbar — one row of controls above the content, left group against
+   right group, wrapping when the window is narrow. ClioStage and DocMap share
+   it. Reader and Time Machine stack two rows instead; that is a different
+   figure and keeps its own one-line rule. */
+.window-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: var(--window-toolbar-align);
+  gap: var(--window-toolbar-gap);
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+/* A cluster of controls inside a toolbar row. */
+.toolbar-group {
+  display: flex;
+  gap: var(--window-toolbar-gap);
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.toolbar-group.is-end {
+  justify-content: flex-end;
 }
