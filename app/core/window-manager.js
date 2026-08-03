@@ -516,7 +516,6 @@ function updateSideAskSourceChrome() {
   const sideAskActive = !isMultiFinderMode() && sideAskEnabled;
   if (!quickDraftSideAsk) restoreQuickDraftIntegratedAssistant();
   const assistant = getWindow("assistant");
-  assistant?.classList.remove("is-quick-draft-sideask");
   assistant?.classList.toggle("is-sideask", sideAskActive);
   if (assistant) assistant.dataset.sideaskAnchor = sideAskActive ? sideAskAnchorAppId : "";
   const modeStrip = document.getElementById("sideask-mode-strip");
