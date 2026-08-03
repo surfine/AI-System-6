@@ -491,6 +491,14 @@ body.quick-draft-focus .writing-spine-panel {
   width: 420px;
 }
 
+/* Content-fit is a first-open/zoom state, not permanent ownership of window
+   geometry. JS removes this class as soon as the user drags the grow box. */
+.window.is-finder-content-fit {
+  width: var(--finder-fit-width, 420px);
+  height: var(--finder-fit-height, auto);
+  max-height: var(--finder-fit-max-height, none);
+}
+
 .disk-window {
   left: 76px;
   top: 34px;
@@ -1168,6 +1176,15 @@ html:lang(zh-Hans) .title-bar h2 {
   text-align: right;
 }
 
+.teachtext-details-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+  white-space: nowrap;
+}
+
 .teachtext-window .teachtext-details-bar,
 .question-sheet-window .teachtext-details-bar,
 .outline-window .teachtext-details-bar,
@@ -1442,23 +1459,30 @@ html:lang(zh-Hans) .title-bar h2 {
   text-overflow: ellipsis;
 }
 
+/* The Finder header of this window: what is in the conversation on the left,
+   which file it lives in on the right. */
 .assistant-details-bar {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
   min-height: 22px;
   padding-inline: 14px;
+  border-bottom: 1px solid var(--shade);
   color: var(--clio-muted-copy);
   font-family: var(--clio-control-font);
-  font-size: 10px;
+  font-size: 11px;
+}
+
+.assistant-details-bar #clio-chat-file-link {
+  margin-left: auto;
 }
 
 .assistant-details-bar:not(:has(
+  #clio-tally:not([hidden]),
   #status:not([hidden]),
   #quick-draft-cliotalk-hint:not(.is-hidden),
   #sideask-mode-strip:not([hidden]),
-  #clio-chat-file-link:not([hidden]):not(:disabled),
-  #assistant-meter:not(.is-hidden)
+  #clio-chat-file-link:not([hidden])
 )) {
   display: none;
 }
@@ -1681,16 +1705,18 @@ html:lang(zh-Hans) .title-bar h2 {
 
 .assistant-meter {
   appearance: none;
-  border: 0;
-  border-left: 1px dotted var(--shade-dark);
-  border-right: 1px dotted var(--shade-dark);
+  max-width: 24ch;
+  overflow: hidden;
+  border: 1px dotted var(--shade-dark);
+  border-radius: var(--clio-composer-control-radius);
   background: transparent;
-  color: var(--ink);
-  font: inherit;
+  color: var(--clio-muted-copy);
+  font-family: var(--clio-control-font);
+  font-size: 10px;
   opacity: 0.72;
-  padding: 0 8px;
+  padding: 4px 7px;
   min-width: 0;
-  justify-self: center;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -1755,28 +1781,45 @@ html:lang(zh-Hans) .title-bar h2 {
   font-size: 11px;
 }
 
-.assistant-window:not(.is-quick-draft-sideask) .messages {
+.assistant-window .messages {
   padding: 0;
 }
 
-.assistant-window:not(.is-quick-draft-sideask) .message:not(.clio-welcome) {
+/* One column, one left edge. The speaker gutter is gone: who is talking is
+   already said by the form (an indented quotation vs a slip of paper), and a
+   turn number nothing addresses is just ink. */
+.assistant-window .message:not(.clio-welcome) {
   box-sizing: border-box;
+  display: block;
   width: min(100%, var(--clio-transcript-width));
   margin-inline: auto;
-  grid-template-columns: var(--clio-speaker-gutter) minmax(0, 1fr);
-  gap: 0 14px;
-  padding: 16px clamp(18px, 4vw, 42px);
+  padding: 14px clamp(18px, 4vw, 42px) 0;
 }
 
-.assistant-window:not(.is-quick-draft-sideask) .message.assistant:not(.clio-welcome) {
+.assistant-window .message:not(.clio-welcome) > .speaker {
+  display: none;
+}
+
+/* The slip. `data-reply-state` is set by syncClioTalkReplyState(); until a
+   reply has been written somewhere its edge stays broken, which is the whole
+   point — the rule that AI output is temporary reads at a glance instead of in
+   nine-pixel grey. */
+.assistant-window .message.assistant:not(.clio-welcome) {
   border-bottom: 0;
-  border-color: var(--clio-assistant-message-border);
-  border-radius: var(--clio-assistant-message-radius);
-  background: var(--clio-assistant-message-bg);
-  box-shadow: var(--clio-assistant-message-shadow);
+  border: var(--clio-slip-border);
+  border-radius: var(--clio-slip-radius);
+  background: var(--clio-slip-surface);
+  box-shadow: var(--clio-slip-shadow);
 }
 
-.assistant-window:not(.is-quick-draft-sideask) .message.user {
+.assistant-window
+  .message.assistant[data-reply-state="kept"]:not(.clio-welcome) {
+  border: var(--clio-slip-kept-border);
+  background: var(--clio-slip-kept-surface);
+  box-shadow: var(--clio-slip-kept-shadow);
+}
+
+.assistant-window .message.user {
   width: min(100%, var(--clio-transcript-width));
   max-width: none;
   margin-inline: auto;
@@ -1786,7 +1829,7 @@ html:lang(zh-Hans) .title-bar h2 {
   box-shadow: none;
 }
 
-.assistant-window:not(.is-quick-draft-sideask) .speaker {
+.assistant-window .speaker {
   display: block;
   align-self: start;
   padding-top: 5px;
@@ -1798,39 +1841,43 @@ html:lang(zh-Hans) .title-bar h2 {
   text-align: right;
 }
 
-.assistant-window:not(.is-quick-draft-sideask) .message.assistant:not(.clio-welcome) > .message-content {
+.assistant-window .message.assistant:not(.clio-welcome) > .message-content {
   width: min(100%, 72ch);
   margin: 0;
 }
 
-.assistant-window:not(.is-quick-draft-sideask) .message-content {
+.assistant-window .message-content {
   max-width: none;
   font-family: var(--clio-copy-font);
   font-size: 15px;
   line-height: 1.62;
 }
 
-.assistant-window:not(.is-quick-draft-sideask) .message.user .message-content {
-  justify-self: end;
-  width: fit-content;
-  max-width: min(100%, 58ch);
-  padding: 9px 12px;
-  border: var(--clio-user-message-border);
-  border-radius: var(--clio-user-message-radius);
-  background: var(--clio-user-message-bg);
-  box-shadow: var(--clio-user-message-shadow);
+/* What you typed reads as a quotation, not a chat bubble: an indent and a
+   rule, set slightly smaller because it is the part you already know. A
+   right-aligned bubble made the eye cross the full width of the window on
+   every turn, and it is not a shape System 6 has. */
+.assistant-window .message.user .message-content {
+  width: auto;
+  max-width: min(100%, 62ch);
+  padding: 1px 0 1px 11px;
+  border: 0;
+  border-left: var(--clio-said-rule);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
   font-size: 14px;
-  line-height: 1.52;
+  line-height: 1.55;
 }
 
-.assistant-window:not(.is-quick-draft-sideask) .clio-welcome {
+.assistant-window .clio-welcome {
   box-sizing: border-box;
   min-height: 100%;
   display: grid;
-  place-content: center;
-  grid-template-columns: 46px minmax(0, 54ch);
+  align-content: start;
+  grid-template-columns: 38px minmax(0, 54ch);
   gap: 16px;
-  padding: 48px clamp(28px, 8vw, 96px) 32px;
+  padding: 32px clamp(24px, 7vw, 72px);
   border: 0;
   border-radius: 0;
   background: var(--clio-welcome-bg);
@@ -1838,16 +1885,16 @@ html:lang(zh-Hans) .title-bar h2 {
   text-align: left;
 }
 
-.assistant-window:not(.is-quick-draft-sideask) .clio-welcome .clio-welcome-icon {
-  align-self: center;
+.assistant-window .clio-welcome .clio-welcome-icon {
+  align-self: start;
   justify-self: center;
 }
 
-.assistant-window:not(.is-quick-draft-sideask) .clio-welcome .speaker {
+.assistant-window .clio-welcome .speaker {
   display: none;
 }
 
-.assistant-window:not(.is-quick-draft-sideask) .clio-welcome .message-content {
+.assistant-window .clio-welcome .message-content {
   grid-column: 2;
   max-width: none;
   color: var(--clio-muted-copy);
@@ -1856,12 +1903,12 @@ html:lang(zh-Hans) .title-bar h2 {
   line-height: 1.6;
 }
 
-.assistant-window:not(.is-quick-draft-sideask) .clio-welcome .message-content strong,
-.assistant-window:not(.is-quick-draft-sideask) .clio-welcome .message-content span {
+.assistant-window .clio-welcome .message-content strong,
+.assistant-window .clio-welcome .message-content span {
   display: block;
 }
 
-.assistant-window:not(.is-quick-draft-sideask) .clio-welcome .message-content strong {
+.assistant-window .clio-welcome .message-content strong {
   margin-bottom: 10px;
   color: var(--ink);
   font-family: var(--clio-title-font);
@@ -1870,18 +1917,96 @@ html:lang(zh-Hans) .title-bar h2 {
   letter-spacing: -0.025em;
 }
 
-.assistant-window:not(.is-quick-draft-sideask) .message-grounding-strip {
-  grid-column: 2;
+.clio-welcome-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 18px;
+}
+
+/* Sources render as objects, at a size you can actually read and click. */
+.assistant-window .message-grounding-strip {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
-  margin-top: 14px;
-  padding-left: 8px;
-  border-left: 2px solid var(--clio-grounding-rule);
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--clio-grounding-rule);
   color: var(--clio-muted-copy);
   font-family: var(--ui-font);
-  font-size: 10px;
+  font-size: 11px;
+}
+
+.message-grounding-label {
+  color: var(--clio-muted-copy);
+}
+
+.message-grounding-none {
+  color: var(--clio-muted-copy);
+  font-style: italic;
+}
+
+.message-grounding-more {
+  color: var(--clio-muted-copy);
+}
+
+.clio-basis-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px 7px;
+  border: var(--clio-basis-chip-border);
+  border-radius: var(--clio-basis-chip-radius);
+  background: var(--clio-basis-chip-bg);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.clio-basis-chip-mark {
+  width: 7px;
+  height: 7px;
+  border: 1px solid currentColor;
+}
+
+.clio-basis-chip:hover,
+.clio-basis-chip:focus-visible {
+  border-color: var(--ink);
+}
+
+.clio-inline-citation {
+  appearance: none;
+  display: inline-grid;
+  min-width: 16px;
+  min-height: 16px;
+  margin-inline: 2px;
+  place-items: center;
+  padding: 0 3px;
+  border: 1px solid var(--clio-grounding-rule);
+  border-radius: var(--clio-basis-chip-radius);
+  background: var(--clio-basis-chip-bg);
+  color: var(--ink);
+  font-family: var(--clio-control-font);
+  font-size: 9px;
+  line-height: 1;
+  vertical-align: super;
+  cursor: pointer;
+}
+
+.clio-inline-citation:hover,
+.clio-inline-citation:focus-visible {
+  border-color: var(--ink);
+}
+
+.clio-inline-citation:focus-visible {
+  outline: 1px dotted var(--ink);
+  outline-offset: 2px;
+}
+
+.clio-basis-chip:focus-visible {
+  outline: 1px dotted var(--ink);
+  outline-offset: 2px;
 }
 
 .clio-context-link {
@@ -1907,37 +2032,54 @@ html:lang(zh-Hans) .title-bar h2 {
   outline-offset: 2px;
 }
 
-.assistant-window:not(.is-quick-draft-sideask) .message-actions {
-  grid-column: 2;
-  align-items: flex-start;
+/* Always visible. A System 6 control that cannot act goes grey; it does not
+   disappear on mouse-out, and a hover-only row has no touch equivalent at all. */
+.assistant-window .message-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
-  margin-top: 4px;
+  margin-top: 10px;
   padding-top: 0;
   border-top: 0;
-  opacity: 0;
-  transition: opacity 80ms ease-out;
 }
 
-.assistant-window:not(.is-quick-draft-sideask) .message:last-child .message-actions,
-.assistant-window:not(.is-quick-draft-sideask) .message:hover .message-actions,
-.assistant-window:not(.is-quick-draft-sideask) .message:focus-within .message-actions,
-.assistant-window:not(.is-quick-draft-sideask) .message-actions:has(details[open]) {
-  opacity: 1;
-}
-
-.assistant-window:not(.is-quick-draft-sideask) .message.user .message-actions {
+.assistant-window .message.user .message-actions {
   position: relative;
-  justify-self: end;
-  margin-top: 4px;
+  margin-top: 6px;
 }
 
-.assistant-window:not(.is-quick-draft-sideask) .message-disposition {
-  flex: 1 1 auto;
+/* The reply's own state, stated at control size beside the controls that
+   change it — not as a footnote under them. */
+.assistant-window .message-disposition {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   min-width: 0;
-  padding-top: 5px;
+  margin-right: auto;
+  color: var(--ink);
+  font-family: var(--ui-font);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.assistant-window .message-disposition::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
+  border: var(--clio-slip-mark-border);
+}
+
+.assistant-window
+  .message-disposition:not([data-reply-state="temporary"])::before {
+  border: 1px solid var(--clio-slip-mark-kept);
+  background: var(--clio-slip-mark-kept);
+}
+
+.assistant-window
+  .message-disposition[data-reply-state="temporary"] {
   color: var(--clio-muted-copy);
-  font-size: 9px;
-  font-weight: 400;
 }
 
 .message-run-state {
@@ -2173,9 +2315,9 @@ html:lang(zh-Hans) .title-bar h2 {
   margin: 9px 0;
 }
 
-.assistant-window:not(.is-quick-draft-sideask) .message-content h1,
-.assistant-window:not(.is-quick-draft-sideask) .message-content h2,
-.assistant-window:not(.is-quick-draft-sideask) .message-content h3 {
+.assistant-window .message-content h1,
+.assistant-window .message-content h2,
+.assistant-window .message-content h3 {
   padding: 0;
   border: 0;
   background: transparent;
@@ -2183,33 +2325,33 @@ html:lang(zh-Hans) .title-bar h2 {
   line-height: 1.3;
 }
 
-.assistant-window:not(.is-quick-draft-sideask) .message-content h1 {
+.assistant-window .message-content h1 {
   margin: 22px 0 10px;
   font-size: 22px;
 }
 
-.assistant-window:not(.is-quick-draft-sideask) .message-content h2 {
+.assistant-window .message-content h2 {
   margin: 20px 0 9px;
   font-size: 18px;
 }
 
-.assistant-window:not(.is-quick-draft-sideask) .message-content h3 {
+.assistant-window .message-content h3 {
   margin: 18px 0 8px;
   font-size: 16px;
 }
 
-.assistant-window:not(.is-quick-draft-sideask) .message-content p {
+.assistant-window .message-content p {
   margin-bottom: 12px;
 }
 
-.assistant-window:not(.is-quick-draft-sideask) .message-content blockquote {
+.assistant-window .message-content blockquote {
   padding: 1px 0 1px 14px;
   border-left-width: 2px;
   background: transparent;
   color: var(--clio-muted-copy);
 }
 
-.assistant-window:not(.is-quick-draft-sideask) .message-content pre {
+.assistant-window .message-content pre {
   padding: 12px 14px;
   border-width: 1px;
   border-radius: 8px;
@@ -2217,7 +2359,7 @@ html:lang(zh-Hans) .title-bar h2 {
   box-shadow: none;
 }
 
-.assistant-window:not(.is-quick-draft-sideask) .message-content :not(pre) > code {
+.assistant-window .message-content :not(pre) > code {
   padding: 2px 4px;
   border: 0;
   border-radius: 4px;
@@ -2389,6 +2531,63 @@ html:lang(zh-Hans) .title-bar h2 {
   box-shadow: var(--clio-composer-shadow);
 }
 
+/* Docked, not floating. The free-floating composer overlapped the last reply
+   in the transcript it sat on top of; an entry pane belongs to the window
+   frame the way a Finder header does. Liquid Glass changes its material, not
+   its attachment. */
+.assistant-window .composer {
+  margin: 0;
+  padding: 8px clamp(12px, 3vw, 24px) 10px;
+  border: 0;
+  border-top: var(--clio-entry-divider);
+  border-radius: 0;
+  background: var(--clio-entry-bg);
+  box-shadow: none;
+}
+
+.assistant-window .composer textarea {
+  padding: 6px 8px;
+  border: var(--clio-entry-field-border);
+  border-radius: var(--clio-entry-field-radius);
+  background: var(--clio-entry-field-bg);
+  box-shadow: var(--clio-entry-field-shadow);
+}
+
+.clio-entry-loadout {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--clio-muted-copy);
+  font-family: var(--clio-control-font);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clio-tally {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.clio-tally-unkept {
+  appearance: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.clio-tally-unkept:focus-visible {
+  outline: 1px dotted var(--ink);
+  outline-offset: 2px;
+}
+
 .composer:focus-within {
   box-shadow: var(--clio-composer-focus-shadow);
 }
@@ -2428,195 +2627,14 @@ html:lang(zh-Hans) .title-bar h2 {
 .composer-action-row {
   position: relative;
   display: grid;
-  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  grid-template-columns: auto auto minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 8px;
   min-height: 36px;
   margin-top: 2px;
 }
 
-.clio-run-assembly {
-  position: relative;
-  min-width: 0;
-  font-family: var(--clio-control-font);
-}
 
-.clio-run-assembly > summary {
-  box-sizing: border-box;
-  max-width: min(42ch, 38vw);
-  height: 36px;
-  min-height: 36px;
-  padding: 9px 23px 9px 10px;
-  overflow: hidden;
-  border: var(--clio-context-control-border);
-  border-radius: var(--clio-context-control-radius);
-  background: var(--clio-context-control-bg);
-  box-shadow: var(--clio-context-control-shadow);
-  color: var(--clio-muted-copy);
-  font-size: 11px;
-  line-height: 16px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  cursor: pointer;
-  list-style: none;
-}
-
-.clio-run-assembly > summary::-webkit-details-marker {
-  display: none;
-}
-
-.clio-run-assembly > summary::after {
-  content: "⌃";
-  position: absolute;
-  top: 9px;
-  right: 8px;
-  color: inherit;
-}
-
-.clio-run-assembly:not([open]) > summary::after {
-  content: "⌄";
-}
-
-.clio-run-assembly > summary:hover,
-.clio-run-assembly > summary:focus-visible,
-.clio-run-assembly[open] > summary {
-  color: var(--ink);
-  background: var(--panel);
-}
-
-.clio-run-assembly > summary:focus-visible {
-  outline: 1px dotted var(--ink);
-  outline-offset: 1px;
-}
-
-.clio-run-panel {
-  position: absolute;
-  left: 0;
-  bottom: calc(100% + 10px);
-  box-sizing: border-box;
-  width: min(560px, calc(100vw - 84px));
-  max-height: min(58vh, 520px);
-  padding: 14px;
-  overflow: auto;
-  border: var(--clio-assembly-border);
-  border-radius: var(--clio-assembly-radius);
-  background: var(--clio-assembly-bg);
-  box-shadow: var(--clio-assembly-shadow);
-  color: var(--ink);
-}
-
-.clio-run-panel-header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  padding-bottom: 10px;
-  border-bottom: var(--clio-assembly-divider);
-}
-
-.clio-run-panel-header strong {
-  font-size: 14px;
-  font-weight: 650;
-}
-
-.clio-run-panel-header small,
-.clio-run-note {
-  color: var(--clio-muted-copy);
-  font-size: 9px;
-  line-height: 1.45;
-}
-
-.clio-run-section {
-  padding: 10px 0;
-  border-bottom: var(--clio-assembly-divider);
-}
-
-.clio-run-section > h3 {
-  margin: 0 0 6px;
-  color: var(--clio-muted-copy);
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.clio-run-file {
-  margin-top: 5px;
-  border-radius: var(--clio-assembly-row-radius);
-  background: var(--clio-assembly-row-bg);
-}
-
-.clio-run-file > summary {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 3px 10px;
-  padding: 7px 9px;
-  cursor: pointer;
-}
-
-.clio-run-file > summary::marker {
-  color: var(--clio-muted-copy);
-}
-
-.clio-run-file-name,
-.clio-run-file-path {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.clio-run-file-name {
-  font-size: 11px;
-  font-weight: 650;
-}
-
-.clio-run-file-hash,
-.clio-run-file-path {
-  color: var(--clio-muted-copy);
-  font-family: var(--mono-font);
-  font-size: 8px;
-}
-
-.clio-run-file-path {
-  grid-column: 1 / -1;
-}
-
-.clio-run-file pre {
-  max-height: 220px;
-  margin: 0 8px 8px;
-  padding: 9px;
-  overflow: auto;
-  border-top: var(--clio-assembly-divider);
-  background: transparent;
-  font-family: var(--mono-font);
-  font-size: 9px;
-  line-height: 1.5;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
-.clio-run-direct {
-  padding: 8px 9px;
-  border-radius: var(--clio-assembly-row-radius);
-  background: var(--clio-assembly-row-bg);
-  color: var(--clio-muted-copy);
-  font-size: 10px;
-}
-
-.clio-run-note {
-  margin: 10px 0 0;
-}
-
-.clio-run-panel-footer {
-  display: flex;
-  justify-content: flex-end;
-  padding-top: 10px;
-}
-
-.clio-run-panel-footer .clio-context-link {
-  font-size: 10px;
-}
 
 .compose-tools-anchor {
   position: relative;
@@ -2625,7 +2643,7 @@ html:lang(zh-Hans) .title-bar h2 {
   min-width: 0;
 }
 
-.assistant-window:not(.is-quick-draft-sideask) .composer .composer-icon-button {
+.assistant-window .composer .composer-icon-button {
   display: inline-grid;
   width: 36px;
   min-width: 36px;
@@ -2679,7 +2697,7 @@ html:lang(zh-Hans) .title-bar h2 {
   display: none;
 }
 
-.assistant-window:not(.is-quick-draft-sideask) .composer .composer-submit-button {
+.assistant-window .composer .composer-submit-button {
   display: inline-grid;
   width: 36px;
   min-width: 36px;
@@ -2693,18 +2711,18 @@ html:lang(zh-Hans) .title-bar h2 {
   color: var(--paper);
 }
 
-.assistant-window:not(.is-quick-draft-sideask) .composer .composer-submit-button:disabled {
+.assistant-window .composer .composer-submit-button:disabled {
   opacity: 0.28;
   cursor: default;
 }
 
-.assistant-window:not(.is-quick-draft-sideask) .composer .composer-file-button {
+.assistant-window .composer .composer-file-button {
   border-color: var(--clio-composer-tool-border);
   background: transparent;
 }
 
-.assistant-window:not(.is-quick-draft-sideask) .composer .composer-file-button:hover,
-.assistant-window:not(.is-quick-draft-sideask) .composer .composer-file-button:focus-visible {
+.assistant-window .composer .composer-file-button:hover,
+.assistant-window .composer .composer-file-button:focus-visible {
   border-color: var(--clio-composer-tool-border);
   background: var(--panel);
   color: var(--ink);
@@ -2737,18 +2755,17 @@ html:lang(zh-Hans) .title-bar h2 {
   display: block;
 }
 
-.assistant-window:not(.is-quick-draft-sideask) .composer-file-button[aria-expanded="true"] {
+.assistant-window .composer-file-button[aria-expanded="true"] {
   background: var(--ink);
   color: var(--paper);
 }
 
-.assistant-window:not(.is-quick-draft-sideask) .composer-file-button[aria-expanded="true"] .composer-plus-glyph::before,
-.assistant-window:not(.is-quick-draft-sideask) .composer-file-button[aria-expanded="true"] .composer-plus-glyph::after {
+.assistant-window .composer-file-button[aria-expanded="true"] .composer-plus-glyph::before,
+.assistant-window .composer-file-button[aria-expanded="true"] .composer-plus-glyph::after {
   background: var(--paper);
 }
 
 .compose-tools-menu,
-.clio-run-panel,
 .message-use-menu,
 .message-action-menu,
 .clio-scroll-latest {
@@ -2871,39 +2888,39 @@ html:lang(zh-Hans) .title-bar h2 {
 }
 
 @media (hover: none) {
-  .assistant-window:not(.is-quick-draft-sideask) .message-actions {
+  .assistant-window .message-actions {
     opacity: 1;
   }
 }
 
-.assistant-window.is-sideask:not(.is-quick-draft-sideask) .message:not(.clio-welcome) {
+.assistant-window.is-sideask .message:not(.clio-welcome) {
   width: 100%;
   grid-template-columns: minmax(0, 1fr);
   gap: 4px;
   padding: 13px 16px;
 }
 
-.assistant-window.is-sideask:not(.is-quick-draft-sideask) .speaker {
+.assistant-window.is-sideask .speaker {
   padding-top: 0;
   text-align: left;
 }
 
-.assistant-window.is-sideask:not(.is-quick-draft-sideask) .message-grounding-strip,
-.assistant-window.is-sideask:not(.is-quick-draft-sideask) .message-actions {
+.assistant-window.is-sideask .message-grounding-strip,
+.assistant-window.is-sideask .message-actions {
   grid-column: 1;
 }
 
-.assistant-window.is-sideask:not(.is-quick-draft-sideask) .clio-welcome {
+.assistant-window.is-sideask .clio-welcome {
   grid-template-columns: minmax(0, 1fr);
   gap: 0;
   padding: 32px 24px;
 }
 
-.assistant-window.is-sideask:not(.is-quick-draft-sideask) .clio-welcome .clio-welcome-icon {
+.assistant-window.is-sideask .clio-welcome .clio-welcome-icon {
   display: none;
 }
 
-.assistant-window.is-sideask:not(.is-quick-draft-sideask) .clio-welcome .message-content {
+.assistant-window.is-sideask .clio-welcome .message-content {
   grid-column: 1;
 }
 

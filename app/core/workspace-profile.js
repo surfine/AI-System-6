@@ -130,6 +130,9 @@ function syncWorkspaceProfileDom(root = document) {
     aboutBody.textContent = t(bodyKey);
   }
   syncWorkspaceDesktopIcon();
+  if (typeof scheduleWritingSpineAvoidance === "function") {
+    scheduleWritingSpineAvoidance();
+  }
 }
 
 function syncWorkspaceDesktopIcon() {

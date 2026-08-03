@@ -21,6 +21,29 @@
   --clio-assistant-message-border: var(--shade-dark);
   --clio-assistant-message-radius: 0;
   --clio-assistant-message-shadow: none;
+  /* A reply is a slip of paper whose edge says whether it was kept. Classic
+     carries that in the border style; Liquid Glass carries it in whether the
+     slip has landed on the surface (see 70-liquid-glass.css). Same sentence,
+     two materials. */
+  --clio-said-rule: 3px solid var(--ink);
+  --clio-slip-radius: 0;
+  --clio-slip-surface: transparent;
+  --clio-slip-border: 1px dotted var(--shade-dark);
+  --clio-slip-shadow: none;
+  --clio-slip-kept-surface: var(--paper);
+  --clio-slip-kept-border: 1px solid var(--ink);
+  --clio-slip-kept-shadow: 2px 2px 0 var(--shade);
+  --clio-slip-mark-border: 1px dotted var(--shade-dark);
+  --clio-slip-mark-kept: var(--ink);
+  --clio-basis-chip-radius: 0;
+  --clio-basis-chip-border: 1px solid var(--shade-dark);
+  --clio-basis-chip-bg: var(--paper);
+  --clio-entry-bg: var(--quiet-panel);
+  --clio-entry-divider: 1px solid var(--ink);
+  --clio-entry-field-border: 1px solid var(--ink);
+  --clio-entry-field-radius: 0;
+  --clio-entry-field-bg: var(--paper);
+  --clio-entry-field-shadow: inset 1px 1px 0 var(--shade);
   --clio-user-message-bg: var(--quiet-panel);
   --clio-user-message-border: 1px solid var(--ink);
   --clio-user-message-radius: 0;
@@ -425,6 +448,13 @@
   --z-system-modal: 40110;
   --z-boot-screen: 41000;
   --z-shutdown-screen: 42000;
+  /* One placement rhythm for every floating desktop window. The manager uses
+     these values for clear-space search and its last-resort diagonal cascade;
+     portrait pages, dialogs, and Desk Accessories keep their owned flows. */
+  --window-placement-edge: 18px;
+  --window-placement-gap: 14px;
+  --window-placement-step-x: 28px;
+  --window-placement-step-y: 24px;
   --system-titlebar-height: 23px;
   --system-titlebar-control-slot: 40px;
   --system-titlebar-control-size: 40px;
@@ -578,6 +608,16 @@
   --finder-breadcrumb-hover-bg: var(--ink);
   --finder-breadcrumb-hover-fg: var(--paper);
   --finder-breadcrumb-current-color: var(--ink);
+  /* Classic already states overflow through its native frame bars. The same
+     semantic indicator stays in the DOM for both themes; Liquid Glass turns it
+     into a trackless edge lens through these material tokens. */
+  --finder-continuation-display: none;
+  --finder-continuation-border: 1px solid var(--ink);
+  --finder-continuation-radius: 0;
+  --finder-continuation-bg: var(--paper);
+  --finder-continuation-fg: var(--ink);
+  --finder-continuation-shadow: none;
+  --finder-continuation-backdrop: none;
   /* Zero in a browser tab; real insets once the desk runs standalone from the
      iOS home screen, where nothing else protects the notch or home indicator. */
   --safe-area-top: env(safe-area-inset-top, 0px);
@@ -2569,6 +2609,7 @@ body.has-system-modal .menu-bar {
   .system-select-button,
   .system-select-menu,
   .system-select-option,
+  .finder-continuation,
   .memory-card,
   .memory-card-back,
   .memory-card-face,

@@ -903,13 +903,14 @@ function ensureCurrentConversationFile() {
   if (existing) return existing;
   if (!conversation.length || !getActiveProject()) return null;
 
-  const folder = ensureFolder(preferredFolderName());
+  const folder = (typeof getPendingClioTalkFolder === "function" ? getPendingClioTalkFolder() : null)
+    || ensureFolder(preferredFolderName());
   const now = new Date().toISOString();
   const file = {
     id: crypto.randomUUID(),
     projectId: activeProjectId,
     type: "chat",
-    name: getChatFileTitle(),
+    name: typeof getPendingClioTalkFileName === "function" ? getPendingClioTalkFileName() : getChatFileTitle(),
     folderId: folder.id,
     messages: normalizeChatMessageRecords(conversation),
     compressedMemory: { ...compressedConversationMemory },
@@ -921,6 +922,7 @@ function ensureCurrentConversationFile() {
   };
   chatFiles.unshift(file);
   activeChatFileId = file.id;
+  if (typeof pendingClioTalkFileName !== "undefined") pendingClioTalkFileName = "";
   selectedChatFileId = file.id;
   saveDeskState();
   renderDocuments();
@@ -930,7 +932,11 @@ function ensureCurrentConversationFile() {
 
 async function confirmDiscardTemporaryClioTalkConversation() {
   if (!clioTalkTemporaryMode || !conversation.length) return true;
-  const result = await showSystemModal(t("clio_temporary_chat_discard_confirm"), "confirm");
+  const result = await showSystemModal(t("clio_temporary_chat_discard_confirm"), "confirm", {
+    confirmKey: "clio_discard_conversation",
+    defaultAction: "cancel",
+    danger: true,
+  });
   return result === "yes";
 }
 
@@ -2143,6 +2149,7 @@ async function openChatFile() {
   if (!await confirmDiscardTemporaryClioTalkConversation()) return;
   if (activeChatFileId && activeChatFileId !== file.id) persistActiveChatFile();
   clioTalkTemporaryMode = false;
+  if (typeof pendingClioTalkFileName !== "undefined") pendingClioTalkFileName = "";
   normalizeChatFileMetadata(file);
 
   conversation.length = 0;

@@ -838,7 +838,28 @@ function countTextWords(text) {
   return cjk + latin;
 }
 
+function teachTextHasChartableMarkdownTable(markdown) {
+  const lines = String(markdown || "").replace(/\r\n?/g, "\n").split("\n");
+  const isTableRow = (line) => /\|/.test(line || "");
+  const isDivider = (line) => /^\s*\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(line || "");
+  return lines.some((line, index) => (
+    index > 0
+    && index < lines.length - 1
+    && isDivider(line)
+    && isTableRow(lines[index - 1])
+    && isTableRow(lines[index + 1])
+  ));
+}
+
+function syncTeachTextChartAction() {
+  if (!teachTextSeeAsChartButton) return;
+  const visible = teachTextHasChartableMarkdownTable(teachTextBodyInput?.value || "");
+  teachTextSeeAsChartButton.hidden = !visible;
+  teachTextSeeAsChartButton.classList.toggle("is-hidden", !visible);
+}
+
 function updateTeachTextBoundaries() {
+  syncTeachTextChartAction();
   if (!teachTextBoundaryEl) return;
   const body = teachTextBodyInput.value.trim();
   if (!body) {

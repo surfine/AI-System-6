@@ -45,6 +45,10 @@ export function createFeatureTest(feature) {
     assert(pattern.test(String(source)), message);
   }
 
+  function assertNotMatches(source, pattern, message) {
+    assert(!pattern.test(String(source)), message);
+  }
+
   function finish() {
     if (failures.length) {
       console.error(`\n${feature} feature test failed: ${failures.length} issue(s).`);
@@ -59,6 +63,7 @@ export function createFeatureTest(feature) {
     assertIncludes,
     assertNotIncludes,
     assertMatches,
+    assertNotMatches,
     fail,
     finish,
     ok,

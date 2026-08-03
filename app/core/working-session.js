@@ -401,6 +401,7 @@ async function restoreWindowWorkingSession(state = {}) {
       win.dataset.restoreHeight = entry.restoreFrame.height || "";
     }
     applyWindowSessionFrame(win, entry.frame || {});
+    if (typeof avoidWritingSpineOverlap === "function") avoidWritingSpineOverlap(win);
     const quickDraftWidth = Number(String(entry.frame?.width || "").match(/^(-?\d+(?:\.\d+)?)px$/)?.[1] || 0);
     if (entry.name === "quickDraft" && (!entry.frame?.width || quickDraftWidth < 360)) {
       requestAnimationFrame(() => maximizeWindow(win));

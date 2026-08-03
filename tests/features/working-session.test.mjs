@@ -37,7 +37,7 @@ test.assertIncludes(windowManager, "function arrangeActiveWritingWorkspace()", "
 test.assertMatches(windowManager, /\["outline", "sectionDrafts", "reviewDesk", "teachText"\]\.includes\(name\)[\s\S]*arrangeActiveWritingWorkspace\(\)/, "opening any route writing window arranges the active phase workspace");
 test.assertMatches(windowManager, /const wasAlreadyOpen =[\s\S]*const shouldPlaceWindow = !skipPlacement\s*&& !wasAlreadyOpen[\s\S]*&& win\.dataset\.userPositioned !== "true"[\s\S]*shouldPlaceWindow && \["outline", "sectionDrafts", "reviewDesk", "teachText"\]\.includes\(name\)/, "re-opening an already visible or user-positioned writing window focuses it without moving the writing layout");
 test.assertIncludes(windowManager, "function markWindowUserPositioned(win)", "window manager records user-positioned windows as spatial memory");
-test.assertIncludes(windowManager, "function nudgeNewWindowAwayFromSameApp(win)", "new same-app windows try to avoid existing windows without moving the old ones");
+test.assertIncludes(windowManager, "function placeNewWindowAvoidingVisibleWindows(win)", "new floating windows avoid visible old windows without moving them");
 test.assertIncludes(windowManager, "if (outline.dataset.userPositioned === \"true\" || teachText.dataset.userPositioned === \"true\") return", "automatic Outline + TeachText split does not override user-positioned writing windows");
 test.assertMatches(windowManager, /applyFrame\(outline[\s\S]*applyFrame\(teachText/, "Outline is placed before TeachText in the split");
 test.assertMatches(desktopRuntime, /async function eraseSelectedProjectDisk\(\)[\s\S]*clearWorkingSession\(\{ projectId \}\)/, "Erase Disk clears only the erased project's Working Session scope");

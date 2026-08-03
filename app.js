@@ -208,6 +208,7 @@ const {
   teachTextLabelSelect,
   teachTextBodyInput,
   teachTextBoundaryEl,
+  teachTextSeeAsChartButton,
   teachTextModeStateEl,
   teachTextSourceCountEl,
   teachTextSelectionStateEl,
@@ -1348,6 +1349,7 @@ function applyMenuClock(options = {}) {
 function applyLanguage() {
   document.documentElement.lang = currentLanguage === "zh" ? "zh-Hans" : "en";
   if (typeof syncKeyboardShortcutLabels === "function") syncKeyboardShortcutLabels();
+  window.refreshFinderContinuationIndicators?.();
 
   document.querySelectorAll("[data-i18n]").forEach((el) => {
     const value = t(el.dataset.i18n);

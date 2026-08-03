@@ -10,6 +10,7 @@ const test = createFeatureTest("mobile-app-shell");
 const foundation = read("styles/00-foundation.css");
 const responsive = read("styles/60-responsive.css");
 const windows = read("styles/10-windows.css");
+const chatMessages = read("app/core/chat-messages.js");
 const readerStyles = read("styles/20-reader-docmap.css");
 const windowManager = read("app/core/window-manager.js");
 const multiFinder = read("app/core/multi-finder.js");
@@ -110,9 +111,9 @@ test.assertIncludes(
   "Scrapbook gives its phone editor the space an empty list no longer needs"
 );
 test.assertIncludes(
-  windows,
-  "#clio-chat-file-link:not([hidden]):not(:disabled)",
-  "ClioTalk omits the empty chat-file placeholder on phone and desktop"
+  chatMessages,
+  "name.textContent = file?.name || (project ? getPendingClioTalkFileName()",
+  "ClioTalk replaces the empty file placeholder with the pending Chat filename on phone and desktop"
 );
 test.assertIncludes(
   dictionary,

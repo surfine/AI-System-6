@@ -792,7 +792,54 @@ function openFileInfo() {
   fileInfoIconEl.dataset.systemIcon = normalizeSystemIconId(iconId);
   fileInfoIconEl.innerHTML = systemIconSvg(iconId, { size: 48, title: kindLabel });
 
+  renderFileInfoKindActions(item);
   openWindow("fileInfo");
+}
+
+// Verbs that only make sense for one kind of object.
+//
+// These used to sit in Finder's File menu, where they were permanently black
+// because they had no availability entry, and answered a click with "select an
+// item first". Here they exist only when their object does, which is both the
+// System 6 answer (Get Info is the object's own surface — contextual menus
+// arrived with Mac OS 8) and the honest one: an absent row cannot lie about
+// being available.
+const fileInfoKindActions = [
+  { kind: "ai-skill", action: "toggle-project-skill", labelKey: "enable_disable_project_skill" },
+  { kind: "project-memory", action: "toggle-project-memory", labelKey: "toggle_project_memory" },
+  { kind: "retrospective", action: "attach-retrospective-next-task", labelKey: "attach_retrospective_next_task" },
+  { kind: "retrospective", action: "create-skill-draft-from-retrospective", labelKey: "create_skill_draft_from_retrospective" },
+  { kind: "skill-draft", action: "create-project-skill-from-draft", labelKey: "create_project_skill_from_draft" },
+  { kind: "skill-auto-call-receipt", action: "disable-auto-called-skill", labelKey: "disable_auto_called_skill" },
+  { kind: "teachtext-modification-suggestion", action: "view-modification-suggestion-diff", labelKey: "view_modification_suggestion_diff" },
+  { kind: "teachtext-modification-suggestion", action: "accept-modification-suggestion", labelKey: "accept_modification_suggestion" },
+  { kind: "teachtext-modification-suggestion", action: "reject-modification-suggestion", labelKey: "reject_modification_suggestion" },
+  { kind: "task-config-draft", action: "create-task-config-from-draft", labelKey: "create_task_config_from_draft" },
+  { kind: "skill-auto-call-settings", action: "configure-skill-auto-call", labelKey: "configure_skill_auto_call" },
+];
+
+function renderFileInfoKindActions(item) {
+  const row = document.querySelector("#info-kind-actions");
+  if (!row) return;
+  row.replaceChildren();
+
+  const entries = item?.type === "mountedFile"
+    ? [
+      { action: "install-mounted-skill", labelKey: "install_skill" },
+      { action: "preview-mounted-skill", labelKey: "preview_skill" },
+    ].filter(() => typeof parseMountedSkillPackage === "function" && parseMountedSkillPackage(item.name).valid)
+    : fileInfoKindActions.filter((entry) => entry.kind === item?.artifactKind);
+
+  entries.forEach((entry) => {
+    const button = document.createElement("button");
+    button.className = "btn";
+    button.type = "button";
+    button.dataset.action = entry.action;
+    button.dataset.i18n = entry.labelKey;
+    button.textContent = t(entry.labelKey);
+    row.append(button);
+  });
+  row.hidden = entries.length === 0;
 }
 
 function getActiveItem() {

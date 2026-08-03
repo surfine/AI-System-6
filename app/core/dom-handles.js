@@ -145,6 +145,7 @@ function getElements() {
   const teachTextLabelSelect = document.querySelector("#teachtext-label");
   const teachTextBodyInput = document.querySelector("#teachtext-body");
   const teachTextBoundaryEl = document.querySelector("#teachtext-boundary");
+  const teachTextSeeAsChartButton = document.querySelector("#teachtext-see-as-chart");
   const teachTextModeStateEl = document.querySelector("#teachtext-mode-state");
   const teachTextSourceCountEl = document.querySelector("#teachtext-source-count");
   const teachTextSelectionStateEl = document.querySelector("#teachtext-selection-state");
@@ -526,6 +527,7 @@ function getElements() {
     teachTextLabelSelect,
     teachTextBodyInput,
     teachTextBoundaryEl,
+    teachTextSeeAsChartButton,
     teachTextModeStateEl,
     teachTextSourceCountEl,
     teachTextSelectionStateEl,

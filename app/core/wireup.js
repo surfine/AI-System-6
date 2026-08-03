@@ -35,7 +35,9 @@ function wireAppEvents() {
   promptInput.addEventListener("input", () => {
     requestAnimationFrame(renderClioTalkRunAssembly);
   });
-  promptInput.addEventListener("focus", syncClioTalkSendButton);
+  promptInput.addEventListener("focus", () => {
+    if (typeof syncClioTalkSendButton === "function") syncClioTalkSendButton();
+  });
 
   messagesEl?.addEventListener("scroll", handleClioTalkMessagesScroll, { passive: true });
   clioScrollLatestButton?.addEventListener("click", () => {
@@ -1050,6 +1052,7 @@ function wireAppEvents() {
           outline.remove();
           applyWindowPosition(pendingLeft, pendingTop);
         }
+        avoidWritingSpineOverlap?.(win);
         markWindowUserPositioned?.(win);
         scheduleWorkingSessionSave?.();
       }

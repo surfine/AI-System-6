@@ -14,7 +14,7 @@ const menuItem = (action, labelKey, shortcutId = "", extra = {}) => ({
 });
 const menuSeparator = Object.freeze({ type: "separator" });
 const submenu = (labelKey, items) => ({ type: "submenu", labelKey, items });
-const menuSectionLabel = (labelKey) => ({ type: "section-label", labelKey });
+const menuSectionLabel = (labelKey, menuCondition = "") => ({ type: "section-label", labelKey, menuCondition });
 
 const editBasics = [
   menuItem("undo", "undo", "undo"),
@@ -66,13 +66,24 @@ const systemSpecialItems = [
   menuItem("shut-down-system", "shut_down"),
 ];
 
-const menu = (id, labelKey, items) => ({ id, labelKey, items });
+const menu = (id, labelKey, items, extra = {}) => ({ id, labelKey, items, ...extra });
 const specialMenu = (appItems = []) => menu("special", "menu_special", [
   ...appItems,
   ...(appItems.length ? [menuSeparator] : []),
   ...systemSpecialItems,
 ]);
 
+// Finder's File menu holds only verbs that make sense for *any* selected
+// object. Two other kinds of verb used to live here and made it 32 rows long:
+//
+//   - kind-specific verbs (install a Skill, accept a suggestion, promote a
+//     draft). System 6 has no contextual menus — the native home for "what
+//     this particular object can do" is its Get Info window, which
+//     openFileInfo() already branches by kind. They moved there.
+//   - task lifecycle verbs. Those went to their own Task menu, which appears
+//     only when the project actually contains a Task Config, because their
+//     mutually exclusive grey/black pattern is what says which step a task is
+//     on — and that reads as information only when they sit together.
 const finderMenus = [
   menu("file", "menu_file", [
     menuItem("new-folder", "new_folder", "new-folder"),
@@ -80,29 +91,10 @@ const finderMenus = [
     menuItem("close-active-window", "close", "close-window"),
     menuSeparator,
     menuItem("open-file-info", "get_info", "get-info"),
-    menuItem("install-mounted-skill", "install_skill"),
-    menuItem("preview-mounted-skill", "preview_skill"),
     menuItem("duplicate-selection", "duplicate", "duplicate"),
     menuItem("rename-file", "rename"),
-    menuItem("toggle-project-memory", "toggle_project_memory"),
     menuItem("attach-selected-to-cliotalk", "attach_to_cliotalk"),
-    menuItem("attach-retrospective-next-task", "attach_retrospective_next_task"),
-    menuItem("create-skill-draft-from-retrospective", "create_skill_draft_from_retrospective"),
-    menuItem("create-project-skill-from-draft", "create_project_skill_from_draft"),
-    menuItem("toggle-project-skill", "enable_disable_project_skill"),
-    menuItem("configure-skill-auto-call", "configure_skill_auto_call"),
-    menuItem("disable-auto-called-skill", "disable_auto_called_skill"),
-    menuItem("view-modification-suggestion-diff", "view_modification_suggestion_diff"),
-    menuItem("accept-modification-suggestion", "accept_modification_suggestion"),
-    menuItem("reject-modification-suggestion", "reject_modification_suggestion"),
-    menuItem("create-task-config-from-draft", "create_task_config_from_draft"),
-    menuItem("run-task-config", "run_in_cliotalk"),
-    menuItem("pause-task-config", "pause_task"),
-    menuItem("complete-task-config", "complete_task"),
-    menuItem("resume-task-config", "resume_task"),
-    menuItem("cancel-task-config", "cancel_task"),
-    menuItem("create-task-checkpoint", "create_task_checkpoint"),
-    menuItem("restore-task-checkpoint", "restore_task_checkpoint"),
+    menuSeparator,
     menuItem("move-file-trash", "move_to_trash", "move-to-trash"),
     menuItem("put-away", "put_away"),
     menuSeparator,
@@ -120,6 +112,16 @@ const finderMenus = [
     menuItem("view-by-size", "view_by_size", "", { viewMode: "size" }),
     menuItem("view-by-kind", "view_by_kind", "", { viewMode: "kind" }),
   ]),
+  menu("task", "menu_task", [
+    menuItem("run-task-config", "run_in_cliotalk"),
+    menuItem("pause-task-config", "task_pause"),
+    menuItem("resume-task-config", "task_resume"),
+    menuItem("complete-task-config", "task_complete"),
+    menuItem("cancel-task-config", "task_cancel"),
+    menuSeparator,
+    menuItem("create-task-checkpoint", "task_checkpoint_create"),
+    menuItem("restore-task-checkpoint", "task_checkpoint_restore"),
+  ], { menuCondition: "task-menu" }),
   specialMenu([
     menuItem("empty-trash", "empty_trash"),
     menuItem("erase-disk", "erase_disk"),
@@ -216,10 +218,22 @@ const teachTextMenus = [
   specialMenu(),
 ];
 
+// A conversation is a file on a disk, so its verbs live in File. "Save
+// conversation" is gone: the transcript is written to its .talk file as it
+// goes, and the info bar says where — a Save row beside an autosaving file
+// only teaches the user to doubt that it saved.
 const clioTalkMenus = [
   menu("file", "menu_file", [
+    menuItem("start-new-clio-chat", "new_conversation", "new-document"),
+    submenu("recent_conversations", [{ type: "recent-chats" }]),
     menuItem("close-active-window", "close", "close-window"),
-    menuItem("save-conversation", "save_conversation"),
+    menuSeparator,
+    menuItem("rename-active-chat", "rename_conversation"),
+    menuItem("reveal-active-chat-file", "reveal_in_project_disk"),
+    // Only a temporary conversation has anything to save — an ordinary one is
+    // already on disk. Gated rather than removed so the capability survives.
+    menuItem("save-conversation", "save_as_conversation_file"),
+    menuSeparator,
     submenu("menu_export", [
       menuItem("copy-current-chat-markdown", "copy_markdown"),
       menuItem("download-current-chat-markdown", "download_markdown"),
@@ -232,17 +246,12 @@ const clioTalkMenus = [
     menuItem("find-next-in-cliotalk", "find_next"),
   ]),
   menu("conversation", "menu_conversation", [
-    menuItem("start-new-clio-chat", "new_conversation"),
-    menuItem("start-temporary-clio-chat", "temporary_conversation"),
-    submenu("recent_conversations", [{ type: "recent-chats" }]),
-    menuItem("rename-active-chat", "rename_conversation"),
-    menuItem("reveal-active-chat-file", "reveal_in_project_disk"),
+    menuItem("open-clio-attachment-picker", "compose_attach_project_file"),
+    menuItem("clear-attached-clips", "clear_context"),
     menuSeparator,
-    submenu("menu_context", [
-      menuItem("open-context-panel", "context_panel"),
-      menuItem("clear-attached-clips", "clear_context"),
-      menuItem("remember-chat-as-project-memory", "remember_project_memory"),
-    ]),
+    menuItem("start-temporary-clio-chat", "temporary_conversation"),
+    menuSeparator,
+    menuItem("remember-chat-as-project-memory", "remember_project_memory"),
   ]),
   specialMenu(),
 ];
@@ -609,6 +618,7 @@ function renderAppMenuBar(appId = activeAppId || "finder", { force = false } = {
     menuElement.className = "menu";
     menuElement.dataset.menuId = definition.id;
     menuElement.dataset.appMenu = "";
+    if (definition.menuCondition) menuElement.dataset.menuCondition = definition.menuCondition;
 
     const trigger = document.createElement("button");
     trigger.type = "button";

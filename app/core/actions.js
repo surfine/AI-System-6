@@ -1412,6 +1412,10 @@ function getApplicationActionHandlers() {
     "find-in-cliotalk": () => findInClioTalkConversation(),
     "find-next-in-cliotalk": findNextInClioTalkConversation,
     "open-clio-attachment-picker": beginClioTalkAttachmentPicker,
+    "paste-clio-interview": () => {
+      promptInput?.focus();
+      return runEditCommand("paste");
+    },
     "attach-selected-to-cliotalk": () => attachProjectFileToNextClioTalkRun(),
     "open-clio-genealogy": openClioTalkGenealogy,
     "compare-chat-branch": () => {

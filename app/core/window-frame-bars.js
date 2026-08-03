@@ -12,6 +12,17 @@ const frameBarLineStep = 24;
 const frameBarRepeatDelay = 300;
 const frameBarRepeatInterval = 60;
 const frameBarThumbMin = 16;
+const finderContinuationWindowNames = new Set([
+  "finder",
+  "helpFolder",
+  "applications",
+  "disk",
+  "projects",
+  "documents",
+  "projectCd",
+  "textDisk",
+  "trash",
+]);
 
 function createFrameArrow(direction) {
   const arrow = document.createElement("button");
@@ -215,7 +226,7 @@ function installFrameBar(win, selector, axis) {
 
 function frameContentRegion(win, host) {
   return [...win.children]
-    .filter((el) => !el.matches(".grow-box, .window-frame-bar"))
+    .filter((el) => !el.matches(".grow-box, .window-frame-bar, .finder-continuation"))
     .find((el) => el === host || el.contains(host)) || host;
 }
 
@@ -223,7 +234,8 @@ function frameContentRegion(win, host) {
 // above the content, so the lane's line joins that strip's line instead of
 // starting somewhere inside the content's padding.
 function frameBarTop(win, host) {
-  const strips = [...win.children].filter((el) => !el.matches(".grow-box, .window-frame-bar"));
+  const strips = [...win.children]
+    .filter((el) => !el.matches(".grow-box, .window-frame-bar, .finder-continuation"));
   const region = frameContentRegion(win, host);
   const above = strips[strips.indexOf(region) - 1];
   return Math.round(above ? above.offsetTop + above.offsetHeight : region.offsetTop);
@@ -234,7 +246,7 @@ function frameBarTop(win, host) {
 // below the content would run under the vertical lane.
 function markFrameReserve(scroller, win) {
   const content = [...win.children]
-    .filter((el) => !el.matches(".title-bar, .details-bar, .grow-box, .window-frame-bar"));
+    .filter((el) => !el.matches(".title-bar, .details-bar, .grow-box, .window-frame-bar, .finder-continuation"));
   const host = content.find((el) => el === scroller || el.contains(scroller));
   if (!host) return;
 
@@ -242,6 +254,81 @@ function markFrameReserve(scroller, win) {
   // composer, an ask row, an action row — all stop at the lane.
   content.slice(content.indexOf(host)).forEach((el) => el.classList.add("is-frame-margin"));
   content[content.length - 1].classList.add("is-frame-tail");
+}
+
+function createFinderContinuation(position) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = `finder-continuation is-${position}`;
+  button.textContent = position === "top" ? "⌃" : "⌄";
+  button.tabIndex = -1;
+  button.setAttribute("aria-hidden", "true");
+  return button;
+}
+
+function installFinderContinuation(win, selector) {
+  if (!finderContinuationWindowNames.has(win.dataset.window)) return null;
+
+  const top = createFinderContinuation("top");
+  const bottom = createFinderContinuation("bottom");
+  win.append(top, bottom);
+  let host = win.querySelector(selector);
+  let scroller = host ? resolveFrameScroller(host) : null;
+  let frame = 0;
+
+  const syncButton = (button, visible, labelKey) => {
+    const label = typeof t === "function" ? t(labelKey) : labelKey;
+    const painted = getComputedStyle(button).display !== "none";
+    button.classList.toggle("is-visible", visible);
+    button.tabIndex = visible && painted ? 0 : -1;
+    button.setAttribute("aria-hidden", String(!(visible && painted)));
+    button.setAttribute("aria-label", label);
+    button.title = label;
+  };
+
+  function measure() {
+    const nextHost = win.querySelector(selector);
+    if (!nextHost) {
+      syncButton(top, false, "finder_more_above");
+      syncButton(bottom, false, "finder_more_below");
+      return;
+    }
+    host = nextHost;
+    scroller = resolveFrameScroller(host);
+    win.style.setProperty("--finder-continuation-top", `${frameBarTop(win, host)}px`);
+    const remaining = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+    syncButton(top, remaining > 1 && scroller.scrollTop > 1, "finder_more_above");
+    syncButton(bottom, remaining > 1 && scroller.scrollTop < remaining - 1, "finder_more_below");
+  }
+
+  function sync() {
+    if (frame) return;
+    frame = requestAnimationFrame(() => {
+      frame = 0;
+      measure();
+    });
+  }
+
+  top.addEventListener("click", () => {
+    if (!scroller) return;
+    scroller.scrollTop -= scroller.clientHeight * 0.82;
+    sync();
+  });
+  bottom.addEventListener("click", () => {
+    if (!scroller) return;
+    scroller.scrollTop += scroller.clientHeight * 0.82;
+    sync();
+  });
+  win.addEventListener("scroll", sync, { passive: true, capture: true });
+  new ResizeObserver(sync).observe(win);
+  new MutationObserver(sync).observe(win, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ["class", "hidden"],
+  });
+  measure();
+  return sync;
 }
 
 // Surfaces the app rebuilds at runtime cannot carry the class in index.html —
@@ -267,10 +354,13 @@ function installWindowFrameBars() {
     const syncs = ["vertical", "horizontal"]
       .map((axis) => installFrameBar(win, selector, axis))
       .filter(Boolean);
+    const continuationSync = installFinderContinuation(win, selector);
+    if (continuationSync) syncs.push(continuationSync);
     allSyncs.push(...syncs);
   });
 
   // Switching themes changes the lane width and whether the bars show at all.
   new MutationObserver(() => allSyncs.forEach((sync) => sync()))
     .observe(document.body, { attributes: true, attributeFilter: ["class"] });
+  window.refreshFinderContinuationIndicators = () => allSyncs.forEach((sync) => sync());
 }

@@ -572,7 +572,7 @@ body.is-writer-mode .context-panel-window {
     var(--paper);
 }
 
-.assistant-window:not(.is-quick-draft-sideask) .messages {
+.assistant-window .messages {
   background: var(--paper);
 }
 
@@ -660,30 +660,30 @@ select:focus {
   }
 
   .assistant-window .composer {
-    margin: 7px 8px 8px;
-    padding: 7px;
+    margin: 0;
+    padding: 7px 10px 8px;
   }
 
-  .assistant-window:not(.is-quick-draft-sideask) .message:not(.clio-welcome) {
+  .assistant-window .message:not(.clio-welcome) {
     grid-template-columns: minmax(0, 1fr);
     gap: 4px;
     padding: 13px 14px;
   }
 
-  .assistant-window:not(.is-quick-draft-sideask) .message:not(.clio-welcome) .speaker {
+  .assistant-window .message:not(.clio-welcome) .speaker {
     padding-top: 0;
     text-align: left;
   }
 
-  .assistant-window:not(.is-quick-draft-sideask) .message-grounding-strip,
-  .assistant-window:not(.is-quick-draft-sideask) .message-actions {
+  .assistant-window .message-grounding-strip,
+  .assistant-window .message-actions {
     grid-column: 1;
   }
 
-  .assistant-window:not(.is-quick-draft-sideask) .clio-welcome {
+  .assistant-window .clio-welcome {
     grid-template-columns: 38px minmax(0, 1fr);
     gap: 12px;
-    padding: 34px 22px 24px;
+    padding: 24px 18px;
   }
 
   .assistant-window .composer textarea {
@@ -693,7 +693,7 @@ select:focus {
   }
 
   .assistant-window .composer-action-row {
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
     align-items: center;
   }
 
@@ -714,15 +714,6 @@ select:focus {
     max-width: none;
   }
 
-  .assistant-window .clio-run-assembly > summary {
-    max-width: none;
-  }
-
-  .assistant-window .clio-run-panel {
-    left: -40px;
-    width: calc(100vw - 34px);
-    max-height: min(62vh, 480px);
-  }
 
   .assistant-details-bar {
     padding-inline: 8px;
@@ -1889,9 +1880,18 @@ body.is-writer-mode .system-help-window .system-help-pane {
   }
 
   body:not(.is-writer-mode) .finder-navigation-back {
-    width: 40px;
-    min-width: 40px;
+    position: relative;
+    width: 36px;
+    min-width: 36px;
     min-height: 40px;
+    margin-inline: 2px;
+  }
+
+  /* Keep a 44px tap width while letting the painted glass button stay narrow. */
+  body:not(.is-writer-mode) .finder-navigation-back::after {
+    content: "";
+    position: absolute;
+    inset: -2px -4px;
   }
 
   body:not(.is-writer-mode) :is(.finder-breadcrumb, .finder-breadcrumb-current) {

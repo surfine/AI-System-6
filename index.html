@@ -272,7 +272,11 @@
           <h1 id="assistant-title" data-i18n="assistant_title">ClioTalk</h1>
           <button class="resize-box" aria-label="Resize"></button>
         </div>
+        <!-- Info bar: this window's Finder header. Counts on the left, the
+             file this conversation lives in on the right, visible before the
+             first message rather than after it. -->
         <div class="details-bar assistant-details-bar">
+          <span class="clio-tally" id="clio-tally" hidden></span>
           <span id="status" data-i18n="ready" hidden>Ready</span>
           <span id="quick-draft-cliotalk-hint" class="quick-draft-cliotalk-hint is-hidden"></span>
           <div class="sideask-mode-strip" id="sideask-mode-strip" hidden>
@@ -290,7 +294,11 @@
             <span id="clio-chat-file-name" data-i18n="clio_chat_file_waiting">Chat file on first message</span>
             <small id="clio-chat-file-path"></small>
           </button>
-          <button class="assistant-meter is-hidden" id="assistant-meter" type="button" data-action="open-model-meter">-- tok/s</button>
+          <!-- A temporary conversation is the one case where "save" means
+               something, so its escape hatch lives here rather than only in a
+               menu: the boundary is reversible, and the user does not have to
+               decide whether a conversation is worth keeping before starting it. -->
+          <button class="btn mini-btn clio-keep-temporary is-hidden" id="clio-keep-temporary" type="button" data-action="save-conversation" data-i18n="save_as_conversation_file">Save as Conversation File…</button>
         </div>
         <div class="messages-stage">
           <div id="messages" class="window-pane messages window-frame-scroller" aria-live="polite" aria-busy="false">
@@ -299,6 +307,11 @@
               <div class="speaker" data-i18n="assistant">ClioTalk</div>
               <div class="message-content">
                 <p data-i18n="welcome_message"><strong>What are you working on?</strong><span>Ask a question, start a draft, or attach a project file. Nothing is added to your project until you choose to keep it.</span></p>
+                <div class="clio-welcome-actions">
+                  <button class="btn" type="button" data-action="open-clio-attachment-picker" data-i18n="compose_attach_project_file">Attach project file</button>
+                  <button class="btn" type="button" data-action="open-question-sheet" data-i18n="clio_welcome_question_sheet">Start from Question Sheet</button>
+                  <button class="btn" type="button" data-action="paste-clio-interview" data-i18n="clio_welcome_paste_interview">Paste an interview</button>
+                </div>
               </div>
             </article>
           </div>
@@ -348,10 +361,7 @@
                 </button>
               </div>
             </div>
-            <details class="clio-run-assembly" id="clio-run-assembly">
-              <summary id="clio-run-summary" data-i18n="clio_run_details">Run details</summary>
-              <div class="clio-run-panel" id="clio-run-panel"></div>
-            </details>
+            <span class="clio-entry-loadout" id="clio-entry-loadout"></span>
             <span class="composer-key-hint" data-i18n="clio_composer_key_hint">Enter to send · Shift+Enter for a new line</span>
             <div class="button-row composer-hidden-actions">
               <button id="assistant-context-space" type="button" data-action="open-context-panel" data-i18n="clio_context_space_empty" hidden>Context available --</button>
@@ -359,6 +369,7 @@
               <button class="btn" type="button" id="clear" data-i18n="clear" hidden>Clear</button>
               <button class="btn" type="button" id="retry" data-i18n="retry" hidden>Retry</button>
             </div>
+            <button class="assistant-meter is-hidden" id="assistant-meter" type="button" data-action="open-model-meter">-- tok/s</button>
             <button class="btn default composer-submit-button composer-icon-button" id="send" type="submit" data-mode="send" data-i18n-aria-label="send" data-i18n-title="send" disabled>
               <svg class="composer-send-glyph" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
                 <path d="M10 16V4M4.5 9.5 10 4l5.5 5.5"></path>
@@ -1518,17 +1529,19 @@
         </div>
         <div class="details-bar teachtext-details-bar">
           <span id="teachtext-boundary">0 words</span>
-          <div class="select-wrap select-wrap-inline" data-workspace-capability="studio"><select id="teachtext-label" class="mini-select teachtext-status-select" data-i18n-aria-label="document_status" aria-label="Status">
-            <option value="draft" data-i18n="label_draft">Draft</option>
-            <option value="ai" data-i18n="label_ai">AI Assisted</option>
-            <option value="final" data-i18n="label_final">Final</option>
-          </select></div>
+          <div class="teachtext-details-controls">
+            <div class="select-wrap select-wrap-inline" data-workspace-capability="studio"><select id="teachtext-label" class="mini-select teachtext-status-select" data-i18n-aria-label="document_status" aria-label="Status">
+              <option value="draft" data-i18n="label_draft">Draft</option>
+              <option value="ai" data-i18n="label_ai">AI Assisted</option>
+              <option value="final" data-i18n="label_final">Final</option>
+            </select></div>
+            <button class="btn details-bar-button is-hidden" type="button" id="teachtext-see-as-chart" data-action="see-as-chart" data-i18n="clio_chart_see_as_chart" hidden>See as Chart</button>
+            <span id="teachtext-chart-owner" class="teachtext-chart-owner" hidden>
+              <span data-i18n="clio_chart_owned">Being edited in ClioChart</span>
+              <button class="btn details-bar-button" type="button" data-action="clio-chart-hand-back" data-i18n="clio_chart_hand_back">Hand Back</button>
+            </span>
+          </div>
           <span id="teachtext-status" data-status-key="unsaved">Unsaved</span>
-          <button class="btn details-bar-button" type="button" id="teachtext-see-as-chart" data-action="see-as-chart" data-i18n="clio_chart_see_as_chart">See as Chart</button>
-          <span id="teachtext-chart-owner" class="teachtext-chart-owner" hidden>
-            <span data-i18n="clio_chart_owned">Being edited in ClioChart</span>
-            <button class="btn details-bar-button" type="button" data-action="clio-chart-hand-back" data-i18n="clio_chart_hand_back">Hand Back</button>
-          </span>
         </div>
         <div class="tdi-shell teachtext-shell">
           <div class="tdi-rail"><div id="teachtext-tabs" class="tdi-tabs teachtext-tabs is-hidden" aria-label="TeachText tabs"></div></div>
@@ -3161,6 +3174,10 @@ Glass</textarea>
             <dt data-i18n="modified">Modified:</dt>
             <dd id="info-file-modified">--</dd>
           </dl>
+          <!-- What this particular object can do. System 6 has no contextual
+               menus, so kind-specific verbs belong to the object's Get Info
+               window, not to Finder's File menu. Populated by openFileInfo(). -->
+          <div class="button-row info-kind-actions" id="info-kind-actions" hidden></div>
           <div class="button-row">
             <button class="btn" type="button" id="info-download-markdown" data-i18n="download_md">Download .md</button>
           </div>

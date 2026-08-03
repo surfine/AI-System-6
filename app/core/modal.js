@@ -3,11 +3,14 @@
 // Loaded before app.js as a classic script; function bodies reference
 // DOM handles that app.js initializes before any modal is opened.
 
-function showSystemModal(message, type = "confirm") {
+function showSystemModal(message, type = "confirm", options = {}) {
   return new Promise((resolve) => {
     if (typeof closeMenus === "function") closeMenus();
     document.body.classList.add("has-system-modal");
     systemModalMessage.textContent = message;
+    systemModalCancel.classList.toggle("default", options.defaultAction === "cancel");
+    systemModalYes.classList.toggle("default", options.defaultAction !== "cancel");
+    systemModalYes.classList.toggle("danger", options.danger === true);
     playSystemSound(type === "save" ? "save" : "alert");
 
     systemModal.onclose = () => {
@@ -30,10 +33,11 @@ function showSystemModal(message, type = "confirm") {
       systemModalCancel.hidden = false;
       systemModalNo.hidden = true;
       systemModalCancel.textContent = t("cancel");
-      systemModalYes.textContent = t("ok");
+      systemModalYes.textContent = t(options.confirmKey || "ok");
     }
 
     modalScrim.classList.remove("is-hidden");
     systemModal.showModal();
+    if (type === "confirm" && options.defaultAction === "cancel") systemModalCancel.focus();
   });
 }

@@ -130,6 +130,8 @@ test.assertIncludes(menus, 'menuItem("move-file-trash", "move_to_trash"', "Finde
 test.assertIncludes(base, ".finder-navigation-bar {", "the path bar is shared by phone and desktop");
 test.assertIncludes(base, "overflow-x: auto;", "deep paths scroll instead of squeezing content");
 test.assertIncludes(responsive, ".finder-navigation-back {", "the phone Back control has a deliberate touch target");
+test.assertMatches(responsive, /\.finder-navigation-back \{[^}]*width: 36px;[^}]*margin-inline: 2px;/, "the phone Back control paints a narrower button");
+test.assertMatches(responsive, /\.finder-navigation-back::after \{[^}]*inset: -2px -4px;/, "the narrower Back control retains a 44px tap width");
 test.assertIncludes(liquid, "--finder-navigation-bg: rgba(255, 255, 255, 0.24)", "Liquid Glass supplies values to the same production path bar");
 test.assertIncludes(en, 'finder_location: "Finder location"', "English exposes the path bar to assistive technology");
 test.assertIncludes(zh, 'finder_location: "Finder 位置"', "Chinese exposes the path bar to assistive technology");

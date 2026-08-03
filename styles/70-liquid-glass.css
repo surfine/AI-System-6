@@ -63,6 +63,33 @@ body.use-liquid-glass {
   --clio-assistant-message-border: rgba(16, 17, 20, 0.1);
   --clio-assistant-message-radius: 0;
   --clio-assistant-message-shadow: none;
+  /* Kept vs temporary, said in glass. A dotted 1px rule is weak and dirty on
+     this material, so the distinction moves from border style to elevation:
+     a temporary reply has not landed (no fill, broken hairline, no shadow and
+     you can see through it); a kept one has (opaque reading surface, rim
+     light, a real shadow). Same semantics as Classic's paper edge. */
+  --clio-said-rule: 3px solid rgba(16, 17, 20, 0.42);
+  --clio-slip-radius: 12px;
+  --clio-slip-surface: transparent;
+  --clio-slip-border: 1px dashed rgba(16, 17, 20, 0.16);
+  --clio-slip-shadow: none;
+  --clio-slip-kept-surface: var(--glass-reading-surface);
+  --clio-slip-kept-border: 1px solid rgba(255, 255, 255, 0.8);
+  --clio-slip-kept-shadow:
+    0 8px 15px rgba(17, 17, 17, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --clio-slip-mark-border: 1px dashed rgba(16, 17, 20, 0.34);
+  --clio-slip-mark-kept: rgba(16, 17, 20, 0.7);
+  --clio-basis-chip-radius: 8px;
+  --clio-basis-chip-border: 1px solid rgba(16, 17, 20, 0.06);
+  --clio-basis-chip-bg: rgba(255, 255, 255, 0.6);
+  --clio-entry-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.28));
+  --clio-entry-divider: 1px solid rgba(16, 17, 20, 0.08);
+  --clio-entry-field-border: 1px solid rgba(255, 255, 255, 0.76);
+  --clio-entry-field-radius: 14px;
+  --clio-entry-field-bg: rgba(255, 255, 255, 0.55);
+  --clio-entry-field-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
   --clio-user-message-bg: rgba(255, 255, 255, 0.48);
   --clio-user-message-border: 1px solid rgba(16, 17, 20, 0.1);
   --clio-user-message-radius: 18px;
@@ -544,6 +571,17 @@ body.use-liquid-glass {
   --finder-breadcrumb-hover-bg: rgba(16, 17, 20, 0.84);
   --finder-breadcrumb-hover-fg: #ffffff;
   --finder-breadcrumb-current-color: rgba(16, 17, 20, 0.82);
+  --finder-continuation-display: inline-flex;
+  --finder-continuation-border: 1px solid rgba(255, 255, 255, 0.62);
+  --finder-continuation-radius: 999px;
+  --finder-continuation-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.2)),
+    rgba(255, 255, 255, 0.2);
+  --finder-continuation-fg: rgba(16, 17, 20, 0.72);
+  --finder-continuation-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.82),
+    0 6px 18px rgba(18, 28, 38, 0.14);
+  --finder-continuation-backdrop: blur(12px) saturate(150%);
   --menu-bar-height: 30px;
   /* Glass popovers tuck 3px under the bar's lip. */
   --menu-popover-top: calc(var(--menu-bar-height) + var(--safe-area-top) - 3px);
@@ -1695,6 +1733,9 @@ body.use-liquid-glass .review-result-column {
 
 body.use-liquid-glass .assistant-window .messages {
   padding: 0;
+  background: var(--glass-reading-surface);
+  backdrop-filter: var(--glass-reading-blur);
+  -webkit-backdrop-filter: var(--glass-reading-blur);
 }
 
 body.use-liquid-glass .docmap-markmap-svg {
@@ -2977,22 +3018,8 @@ body.use-liquid-glass .finder-list-row {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
-body.use-liquid-glass .assistant-window.is-quick-draft-sideask .message.user {
-  background: rgba(90, 200, 250, 0.22);
-}
-
-body.use-liquid-glass .assistant-window.is-quick-draft-sideask .message.assistant {
-  background: rgba(0, 122, 255, 0.16);
-}
-
 body.use-liquid-glass .message {
   border-radius: 6px;
-}
-
-body.use-liquid-glass .assistant-window.is-quick-draft-sideask .message {
-  border-radius: 0;
-  padding-left: 11px;
-  padding-right: 11px;
 }
 
 body.use-liquid-glass .message-content h1,
@@ -4163,5 +4190,17 @@ body.use-liquid-glass .teachtext-tabs .tdi-tab-wrap.is-active .btn.tdi-tab-close
   body.use-liquid-glass .startup-settings-modal {
     background: transparent;
     -apple-visual-effect: -apple-system-glass-material;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  body.use-liquid-glass .assistant-window .messages {
+    background: var(--paper);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  body.use-liquid-glass .assistant-window .message.assistant[data-reply-state="temporary"]:not(.clio-welcome) {
+    border-style: solid;
   }
 }

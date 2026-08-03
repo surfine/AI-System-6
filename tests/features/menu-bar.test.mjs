@@ -29,7 +29,7 @@ test.assertNotIncludes(menus, "quickDraft: teachTextMenus", "Quick Draft inherit
 test.assertIncludes(multiFinder, 'var menuOwnerAppId = "finder"', "desk accessories retain a separate host-menu owner");
 test.assertIncludes(menus, "const systemSpecialItems = [", "Special has one shared system section");
 test.assertIncludes(menus, 'menuItem("empty-trash", "empty_trash")', "Finder retains its trash command");
-test.assertIncludes(menus, 'menuItem("start-new-clio-chat", "new_conversation")', "ClioTalk owns its explicit new-conversation command");
+test.assertIncludes(menus, 'menuItem("start-new-clio-chat", "new_conversation", "new-document")', "ClioTalk owns its explicit new-conversation command");
 test.assertIncludes(windows, "renderAppMenuBar(menuOwnerAppId || activeAppId)", "menu state renders the host application menu");
 test.assertIncludes(multiFinder, "renderAppMenuBar(menuOwnerAppId)", "desktop and MultiFinder foreground changes share host-menu resolution");
 test.assertIncludes(menus, 'submenu("writing_tools", writingTools)', "Writing Tools lives inside Edit instead of taking a top-level menu");
@@ -66,8 +66,11 @@ test.assertIncludes(actions, "function getApplicationCommandRegistry()", "menu h
 test.assertIncludes(native, "nativeMenus(for app: MultiFinderApp", "native rebuilds menus from the same application ownership model");
 test.assertIncludes(native, "refreshForegroundApplicationMenu()", "native foreground activation refreshes the menu bar");
 test.assert(
-  Object.values(menuSets).every((definitions) => definitions.length <= 4),
-  "every application has at most four top-level menus beyond Apple"
+  Object.values(menuSets).every((definitions) => (
+    definitions.filter((definition) => !definition.menuCondition).length <= 4
+    && definitions.filter((definition) => definition.menuCondition).length <= 1
+  )),
+  "every application has at most four stable top-level menus plus one contextual workflow menu"
 );
 test.assert(
   Object.values(menuSets).every((definitions) => definitions

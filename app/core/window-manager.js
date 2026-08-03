@@ -161,6 +161,7 @@ function windowFrameValue(value, fallback = "") {
 
 function placeWindowForExplicitLayout(win, frame = {}, options = {}) {
   if (!win) return;
+  clearFinderContentFit(win);
   const height = windowFrameValue(frame.height);
   win.classList.remove("is-collapsed", "is-desklet");
   applyWindowFrame(win, {
@@ -228,56 +229,147 @@ function rectsOverlap(a, b, gap = 10) {
   );
 }
 
-function nudgeNewWindowAwayFromSameApp(win) {
-  if (!win || win.dataset.userPositioned === "true" || writerMode || isPortraitDocumentFlow()) return;
-  const group = windowLayoutGroup(win);
+function windowPlacementMetric(property, fallback) {
+  const value = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue(property));
+  return Number.isFinite(value) && value >= 0 ? value : fallback;
+}
+
+function windowPlacementOverlapArea(rect, obstacle, gap = 0) {
+  const width = Math.max(0, Math.min(rect.right, obstacle.right + gap) - Math.max(rect.left, obstacle.left - gap));
+  const height = Math.max(0, Math.min(rect.bottom, obstacle.bottom + gap) - Math.max(rect.top, obstacle.top - gap));
+  return width * height;
+}
+
+function windowPlacementRect(left, top, width, height, desktopRect) {
+  return {
+    left: desktopRect.left + left,
+    top: desktopRect.top + top,
+    right: desktopRect.left + left + width,
+    bottom: desktopRect.top + top + height,
+  };
+}
+
+function windowHasOwnedPlacement(win) {
+  const name = win?.dataset.window || "";
+  return !win
+    || writerMode
+    || isPortraitDocumentFlow()
+    || centeredSystemWindowNames.has(name)
+    || name === "saveChat"
+    || writingLayoutWindowNames.has(name)
+    || isAssistantSidecarWindow(name)
+    || isDeskAccessoryPlacementWindow(name);
+}
+
+// A new floating window never moves an old one. It first searches the usable
+// desk for a frame with a real air gap around every visible peer. Only when the
+// desk cannot hold another clear frame does it overlap, following a stable
+// down-right staircase from the frontmost old window so every title remains
+// reachable. Full-work-area surfaces keep their authored placement because no
+// alternative frame of the same size can reduce their overlap.
+function placeNewWindowAvoidingVisibleWindows(win) {
+  if (windowHasOwnedPlacement(win) || win.dataset.userPositioned === "true") return false;
   const desktop = document.querySelector(".desktop");
   const desktopRect = desktop?.getBoundingClientRect();
-  if (!desktopRect) return;
-  const peers = Array.from(document.querySelectorAll(".window:not(.is-hidden):not(.is-app-hidden):not(.is-collapsed)"))
-    .filter((peer) => peer !== win && windowLayoutGroup(peer) === group);
-  if (!peers.length) return;
+  if (!desktopRect) return false;
 
-  const margin = 18;
-  const step = 28;
+  const edge = windowPlacementMetric("--window-placement-edge", 18);
+  const gap = windowPlacementMetric("--window-placement-gap", 14);
+  const stepX = Math.max(1, windowPlacementMetric("--window-placement-step-x", 28));
+  const stepY = Math.max(1, windowPlacementMetric("--window-placement-step-y", 24));
+  const avoidance = getDesktopAvoidanceInsets({ margin: edge, spineGap: edge, iconGap: 48 });
   const rect = win.getBoundingClientRect();
   const width = rect.width || 360;
   const height = rect.height || 280;
-  const left0 = rect.left - desktopRect.left;
-  const top0 = rect.top - desktopRect.top;
-  const maxLeft = Math.max(margin, desktopRect.width - width - margin);
-  const maxTop = Math.max(margin, desktopRect.height - height - margin);
-  const peerRects = peers.map((peer) => peer.getBoundingClientRect());
+  const minLeft = Math.max(edge, avoidance.left);
+  const minTop = Math.max(edge, writingSpineAlignedTopForWindow(win, edge));
+  const maxLeft = Math.max(minLeft, desktopRect.width - avoidance.right - edge - width);
+  const maxTop = Math.max(minTop, desktopRect.height - edge - height);
+  const workWidth = maxLeft - minLeft + width;
+  const workHeight = maxTop - minTop + height;
+  if (width + gap >= workWidth || height + gap >= workHeight) return false;
 
-  for (let ring = 0; ring < 12; ring += 1) {
-    const candidates = [
-      { left: left0 + step * ring, top: top0 + step * ring },
-      { left: left0 + step * ring, top: top0 },
-      { left: left0, top: top0 + step * ring },
-      { left: left0 - step * ring, top: top0 + step * ring },
-    ];
-    const found = candidates
-      .map((candidate) => ({
-        left: Math.round(clampNumber(candidate.left, margin, maxLeft)),
-        top: Math.round(clampNumber(candidate.top, margin, maxTop)),
-      }))
-      .find((candidate) => {
-        const candidateRect = {
-          left: desktopRect.left + candidate.left,
-          top: desktopRect.top + candidate.top,
-          right: desktopRect.left + candidate.left + width,
-          bottom: desktopRect.top + candidate.top + height,
-        };
-        return !peerRects.some((peerRect) => rectsOverlap(candidateRect, peerRect));
-      });
-    if (found) {
-      setInlineStyleValue(win, "left", `${found.left}px`);
-      setInlineStyleValue(win, "top", `${found.top}px`);
-      setInlineStyleValue(win, "right", "auto");
-      setInlineStyleValue(win, "transform", "none");
-      return;
+  const peers = Array.from(document.querySelectorAll(".window:not(.is-hidden):not(.is-app-hidden):not(.is-collapsed)"))
+    .filter((peer) => peer !== win)
+    .map((peer) => ({ peer, rect: peer.getBoundingClientRect() }))
+    .filter(({ rect: peerRect }) => peerRect.width > 0 && peerRect.height > 0)
+    .sort((a, b) => Number(b.peer.style.zIndex || 0) - Number(a.peer.style.zIndex || 0));
+  if (!peers.length) return false;
+
+  const anchor = {
+    left: Math.round(clampNumber(rect.left - desktopRect.left, minLeft, maxLeft)),
+    top: Math.round(clampNumber(rect.top - desktopRect.top, minTop, maxTop)),
+  };
+  const candidates = [];
+  const candidateKeys = new Set();
+  const addCandidate = (left, top) => {
+    const candidate = {
+      left: Math.round(clampNumber(left, minLeft, maxLeft)),
+      top: Math.round(clampNumber(top, minTop, maxTop)),
+    };
+    const key = `${candidate.left}:${candidate.top}`;
+    if (!candidateKeys.has(key)) {
+      candidateKeys.add(key);
+      candidates.push(candidate);
     }
+  };
+
+  addCandidate(anchor.left, anchor.top);
+  peers.forEach(({ rect: peerRect }) => {
+    const peerLeft = peerRect.left - desktopRect.left;
+    const peerTop = peerRect.top - desktopRect.top;
+    addCandidate(peerRect.right - desktopRect.left + gap, peerTop);
+    addCandidate(peerLeft - width - gap, peerTop);
+    addCandidate(peerLeft, peerRect.bottom - desktopRect.top + gap);
+    addCandidate(peerLeft, peerTop - height - gap);
+  });
+  for (let top = minTop; top <= maxTop; top += stepY) {
+    for (let left = minLeft; left <= maxLeft; left += stepX) addCandidate(left, top);
   }
+  addCandidate(maxLeft, maxTop);
+
+  candidates.sort((a, b) => (
+    Math.abs(a.left - anchor.left) + Math.abs(a.top - anchor.top)
+    - Math.abs(b.left - anchor.left) - Math.abs(b.top - anchor.top)
+  ));
+  let placement = candidates.find((candidate) => {
+    const candidateRect = windowPlacementRect(candidate.left, candidate.top, width, height, desktopRect);
+    return peers.every(({ rect: peerRect }) => !rectsOverlap(candidateRect, peerRect, gap));
+  });
+
+  if (!placement) {
+    const frontRect = peers[0].rect;
+    const originLeft = clampNumber(frontRect.left - desktopRect.left, minLeft, maxLeft);
+    const originTop = clampNumber(frontRect.top - desktopRect.top, minTop, maxTop);
+    const columns = Math.max(1, Math.floor((maxLeft - minLeft) / stepX) + 1);
+    const rows = Math.max(1, Math.floor((maxTop - minTop) / stepY) + 1);
+    const originColumn = Math.round((originLeft - minLeft) / stepX);
+    const originRow = Math.round((originTop - minTop) / stepY);
+    const cascadeCandidates = [];
+    const rungCount = Math.min(48, Math.max(columns, rows) * 2);
+    for (let rung = 1; rung <= rungCount; rung += 1) {
+      const left = Math.min(maxLeft, minLeft + ((originColumn + rung) % columns) * stepX);
+      const top = Math.min(maxTop, minTop + ((originRow + rung) % rows) * stepY);
+      const candidateRect = windowPlacementRect(left, top, width, height, desktopRect);
+      const overlap = peers.reduce((total, { rect: peerRect }) => (
+        total + windowPlacementOverlapArea(candidateRect, peerRect, gap)
+      ), 0);
+      const conflicts = peers.reduce((total, { rect: peerRect }) => (
+        total + (rectsOverlap(candidateRect, peerRect, gap) ? 1 : 0)
+      ), 0);
+      cascadeCandidates.push({ left, top, overlap, conflicts, rung });
+    }
+    cascadeCandidates.sort((a, b) => (
+      a.conflicts - b.conflicts || a.overlap - b.overlap || a.rung - b.rung
+    ));
+    placement = cascadeCandidates[0] || anchor;
+  }
+
+  setInlineStyleValue(win, "left", `${Math.round(placement.left)}px`);
+  setInlineStyleValue(win, "top", `${Math.round(placement.top)}px`);
+  setInlineStyleValue(win, "right", "auto");
+  setInlineStyleValue(win, "transform", "none");
+  return true;
 }
 
 async function prepareFinderModeForApp(appId) {
@@ -1262,7 +1354,13 @@ function alignWindowTitleBottomToWritingSpine(win) {
 
 function scheduleWritingSpineTitleAlignment(win) {
   if (!win || writerMode || isPortraitDocumentFlow()) return;
-  const align = () => alignWindowTitleBottomToWritingSpine(win);
+  const align = () => {
+    alignWindowTitleBottomToWritingSpine(win);
+    // Alignment is delayed until content strips have their final height. Run
+    // collision placement after that shift as well, or a clear lower slot can
+    // be pulled back over an old window on the next animation frame.
+    if (win.dataset.systemPositioned === "true") placeNewWindowAvoidingVisibleWindows(win);
+  };
   requestAnimationFrame(() => {
     align();
     requestAnimationFrame(align);
@@ -1406,6 +1504,102 @@ function isFinderCascadeWindow(winOrName) {
   return finderCascadeWindowNames.has(name);
 }
 
+const finderContentFitWindowNames = new Set([
+  "finder",
+  "helpFolder",
+  "applications",
+  "disk",
+  "projects",
+  "documents",
+  "projectCd",
+  "textDisk",
+  "trash",
+]);
+
+function isFinderContentWindow(winOrName) {
+  const name = typeof winOrName === "string" ? winOrName : winOrName?.dataset.window;
+  return finderContentFitWindowNames.has(name);
+}
+
+function clearFinderContentFit(win, options = {}) {
+  if (!win?.classList.contains("is-finder-content-fit")) return false;
+  const rect = options.preserveSize ? win.getBoundingClientRect() : null;
+  win.classList.remove("is-finder-content-fit");
+  win.style.removeProperty("--finder-fit-width");
+  win.style.removeProperty("--finder-fit-height");
+  win.style.removeProperty("--finder-fit-max-height");
+  delete win.dataset.finderContentFit;
+  if (rect) {
+    setInlineStyleValue(win, "width", `${Math.round(rect.width)}px`);
+    setInlineStyleValue(win, "height", `${Math.round(rect.height)}px`);
+  }
+  return true;
+}
+
+// A fresh Finder window should reveal its objects before it asks the user to
+// scroll. Start at the authored width, then add one icon column at a time only
+// when the current desktop height cannot hold the full grid. The desktop bounds
+// remain the hard ceiling; oversized folders keep scrolling normally.
+function fitFinderWindowToContents(win, options = {}) {
+  if (
+    !win
+    || !isFinderContentWindow(win)
+    || isPortraitDocumentFlow()
+    || window.matchMedia("(max-width: 860px)").matches
+  ) return false;
+
+  const scroller = win.querySelector(".window-frame-scroller");
+  const desktop = document.querySelector(".desktop");
+  const desktopRect = desktop?.getBoundingClientRect();
+  if (!scroller || !desktopRect) return false;
+
+  const openingRect = win.getBoundingClientRect();
+  const margin = 18;
+  const avoidance = getDesktopAvoidanceInsets({ margin, spineGap: 18, iconGap: 48 });
+  const openingTop = options.force
+    ? Math.max(margin, openingRect.top - desktopRect.top)
+    : writingSpineAlignedTopForWindow(win, margin);
+  const maxWidth = Math.max(
+    320,
+    options.force
+      ? desktopRect.right - openingRect.left - margin
+      : desktopRect.width - avoidance.left - avoidance.right - margin,
+  );
+  const maxHeight = Math.max(220, desktopRect.height - openingTop - margin);
+  const minWidth = Math.min(maxWidth, Number.parseInt(getComputedStyle(win).minWidth, 10) || 320);
+  const initialWidth = Math.min(maxWidth, Math.max(minWidth, openingRect.width || 420));
+
+  setInlineStyleValue(win, "width", "");
+  setInlineStyleValue(win, "height", "");
+  setInlineStyleValue(win, "max-height", "");
+  win.classList.add("is-finder-content-fit");
+  win.style.removeProperty("--finder-fit-height");
+  win.style.setProperty("--finder-fit-max-height", `${Math.round(maxHeight)}px`);
+
+  const icon = scroller.querySelector(".finder-item");
+  const gridStyle = getComputedStyle(scroller);
+  const columnGap = Number.parseFloat(gridStyle.columnGap) || 0;
+  const iconWidth = icon?.getBoundingClientRect().width || 96;
+  const columnStep = Math.max(72, Math.round(iconWidth + columnGap));
+  const iconMode = scroller.classList.contains("finder-grid");
+  let width = initialWidth;
+  let desiredHeight = maxHeight;
+
+  while (true) {
+    win.style.setProperty("--finder-fit-width", `${Math.round(width)}px`);
+    const winRect = win.getBoundingClientRect();
+    const chromeHeight = Math.max(0, winRect.height - scroller.clientHeight);
+    desiredHeight = Math.ceil(chromeHeight + scroller.scrollHeight);
+    if (desiredHeight <= maxHeight + 1 || width >= maxWidth || !iconMode) break;
+    width = Math.min(maxWidth, width + columnStep);
+  }
+
+  win.style.setProperty("--finder-fit-width", `${Math.round(width)}px`);
+  win.style.setProperty("--finder-fit-height", `${Math.round(Math.min(maxHeight, desiredHeight))}px`);
+  win.dataset.finderContentFit = options.force ? "zoom" : "auto";
+  return true;
+}
+
 function placeFinderCascadeWindow(win, options = {}) {
   if (!win) return false;
   const desktop = document.querySelector(".desktop");
@@ -1537,6 +1731,22 @@ function getActionAvailability() {
     return !!control && !control.disabled && !control.hidden;
   };
 
+  // Skill / retrospective / task-config verbs all key off one thing: the kind
+  // of artifact currently selected in a Finder window. They used to be absent
+  // from this map entirely, which meant updateMenuState() left them enabled
+  // forever and clicking one only printed "select an item first" — a menu row
+  // that looks live and is not. Contract: tests/features/menu-availability.
+  const selectedArtifact = typeof getProjectFiles === "function" && selectedChatFileId
+    ? getProjectFiles().find((item) => item.id === selectedChatFileId)
+    : null;
+  const selectedArtifactIs = (kind) => selectedArtifact?.artifactKind === kind;
+  const hasMountedSkillPackage = typeof parseMountedSkillPackage === "function"
+    && !!selectedMountedFile
+    && parseMountedSkillPackage().valid === true;
+  const selectedTaskLifecycle = selectedArtifactIs("task-config")
+    ? String(selectedArtifact.taskLifecycle?.state || "")
+    : "";
+
   const availability = {
     "new-document": true,
     "open-text-document": true,
@@ -1563,14 +1773,49 @@ function getActionAvailability() {
     "new-text-document": isProjectMounted,
     "save-current": isTeachText || teachTextVisible || (isAssistant && hasConversation),
     "save-chat": isAssistant && hasConversation,
-    "save-conversation": isAssistant && hasConversation && isProjectMounted,
+    "save-conversation": isAssistant && hasConversation && isProjectMounted && clioTalkTemporaryMode,
     "rename-active-chat": isAssistant && !clioTalkTemporaryMode && !!activeChatFileId,
     "copy-current-chat-markdown": isAssistant && hasConversation,
     "download-current-chat-markdown": isAssistant && hasConversation,
     "find-in-cliotalk": isAssistant && hasConversation,
     "find-next-in-cliotalk": isAssistant && hasConversation && !!clioTalkFindQuery,
     "open-clio-attachment-picker": isAssistant && isProjectMounted,
+    "paste-clio-interview": isAssistant,
     "attach-selected-to-cliotalk": winName === "documents" && isClioTalkAttachableProjectFile(getSelectedDocumentItem()),
+    "install-mounted-skill": hasMountedSkillPackage && isProjectMounted,
+    "preview-mounted-skill": hasMountedSkillPackage,
+    "toggle-project-memory": selectedArtifactIs("project-memory"),
+    "toggle-project-skill": selectedArtifactIs("ai-skill"),
+    "configure-skill-auto-call": isProjectMounted,
+    "disable-auto-called-skill": selectedArtifactIs("skill-auto-call-receipt")
+      && !!selectedArtifact.autoSkillIds?.length,
+    "attach-retrospective-next-task": selectedArtifactIs("retrospective"),
+    "create-skill-draft-from-retrospective": selectedArtifactIs("retrospective"),
+    "create-project-skill-from-draft": selectedArtifactIs("skill-draft"),
+    "view-modification-suggestion-diff": selectedArtifactIs("teachtext-modification-suggestion")
+      && selectedArtifact.suggestion?.status === "pending",
+    "accept-modification-suggestion": selectedArtifactIs("teachtext-modification-suggestion")
+      && selectedArtifact.suggestion?.status === "pending",
+    "reject-modification-suggestion": selectedArtifactIs("teachtext-modification-suggestion")
+      && selectedArtifact.suggestion?.status === "pending",
+    "create-task-config-from-draft": selectedArtifactIs("task-config-draft"),
+    "run-task-config": selectedArtifactIs("task-config"),
+    // Lifecycle verbs are mutually exclusive on purpose: their grey/black
+    // pattern is what tells you which step the task is on.
+    "pause-task-config": selectedTaskLifecycle === "running",
+    "resume-task-config": selectedTaskLifecycle === "paused"
+      && !!selectedArtifact.taskLifecycle?.chatId,
+    "complete-task-config": ["running", "paused"].includes(selectedTaskLifecycle),
+    "cancel-task-config": ["running", "paused"].includes(selectedTaskLifecycle),
+    "create-task-checkpoint": selectedArtifactIs("task-config"),
+    "restore-task-checkpoint": selectedArtifactIs("task-checkpoint"),
+    // Whole-menu condition, not a row: the Task menu is absent until the
+    // project actually holds a Task Config.
+    "task-menu": typeof getProjectFiles === "function"
+      && getProjectFiles().some((item) => item.artifactKind === "task-config"),
+    "clear-attached-clips": attachedClipIds.size > 0,
+    "open-selected-in-reader": selectedFindPathIndex !== null,
+    "clip-selected-find-path": selectedFindPathIndex !== null,
     "open-clio-genealogy": isAssistant && hasConversation && isProjectMounted,
     "save-clio-harness": isAssistant && hasConversation && isProjectMounted,
     "save-clio-skill": isAssistant && hasConversation && isProjectMounted,
@@ -1758,7 +2003,7 @@ function getActionAvailability() {
     "clio-chart-outliers": winName === "clioChart",
     "clio-chart-gaps": winName === "clioChart",
     "clio-chart-write-up": winName === "clioChart",
-    "see-as-chart": winName === "teachText" && /\n[ \t]*\|?[-: |]*-{3,}[-: |]*\|?[ \t]*\n/.test(teachTextBodyInput?.value || ""),
+    "see-as-chart": winName === "teachText" && teachTextHasChartableMarkdownTable(teachTextBodyInput?.value || ""),
     "clio-stage-import": winName === "clioStage",
     "clio-stage-previous": winName === "clioStage" && activeControlEnabled("#clio-stage-prev"),
     "clio-stage-next": winName === "clioStage" && activeControlEnabled("#clio-stage-next"),
@@ -1878,13 +2123,19 @@ function updateMenuState() {
     : normalizeFinderViewMode(windowViewModes[activeViewWindow || "projects"]);
   document.querySelectorAll(".apple-multifinder-about-item, .apple-multifinder-about-separator")
     .forEach((item) => item.classList.toggle("is-hidden", !isMultiFinderMode()));
+  document.querySelectorAll("[data-menu-condition]").forEach((element) => {
+    element.classList.toggle("is-hidden", !state[element.dataset.menuCondition]);
+  });
 
   menuActionElements().forEach(btn => {
     const action = btn.dataset.action;
+    const isMenuButton = !!btn.closest(".menu-popover, .menu-submenu-popover, .menu-sub-popover");
     if (btn.closest("[data-action-availability='independent']")) {
       btn.classList.remove("is-disabled");
+      if (isMenuButton) btn.disabled = false;
     } else if (state[action] !== undefined) {
       btn.classList.toggle("is-disabled", !state[action]);
+      if (isMenuButton) btn.disabled = !state[action];
     }
     if (action === "toggle-sideask") {
       btn.classList.toggle("is-hidden", isMultiFinderMode());
@@ -2153,11 +2404,16 @@ async function openWindow(name, options = {}) {
   const reusedFinderFrame = !!finderReplacementFrame && !isPortraitDocumentFlow();
   if (reusedFinderFrame) {
     placeWindowForExplicitLayout(win, finderReplacementFrame);
+    avoidWritingSpineOverlap(win);
   }
   const shouldPlaceWindow = !skipPlacement
     && !wasAlreadyOpen
     && !reusedFinderFrame
     && win.dataset.userPositioned !== "true";
+
+  if (shouldPlaceWindow && isFinderContentWindow(win)) {
+    fitFinderWindowToContents(win);
+  }
 
   if (shouldPlaceWindow && !centeredSystemWindowNames.has(name) && !["about", "saveChat"].includes(name)) {
     if (!usePortraitWindowFlow(win)) {
@@ -2224,7 +2480,7 @@ async function openWindow(name, options = {}) {
       }
 
       if (cascadeOffset > maxOffset) cascadeOffset = 0;
-      nudgeNewWindowAwayFromSameApp(win);
+      placeNewWindowAvoidingVisibleWindows(win);
       markWindowSystemPositioned(win);
       scheduleWritingSpineTitleAlignment(win);
     }
@@ -3409,6 +3665,60 @@ function getDesktopAvoidanceInsets({ margin = 18, spineGap = 18, iconGap = 34 } 
   };
 }
 
+// The Writing Flow toolbox is part of the usable desk, not window chrome. New
+// windows already use getDesktopAvoidanceInsets(), but a Finder replacement,
+// restored session, or window dragged before Writing Studio opens can retain a
+// frame underneath it. Keep one collision rule for all of those entry paths.
+function avoidWritingSpineOverlap(win, { gap = 18 } = {}) {
+  if (
+    !win
+    || writerMode
+    || isPortraitDocumentFlow()
+    || win.classList.contains("is-hidden")
+    || win.classList.contains("is-app-hidden")
+    || ["about", "saveChat"].includes(win.dataset.window)
+  ) return false;
+
+  const desktop = document.querySelector(".desktop");
+  const spine = document.querySelector(".writing-spine-panel") || document.querySelector(".spine-flow-toolbox");
+  const desktopRect = desktop?.getBoundingClientRect();
+  const spineRect = spine?.getBoundingClientRect();
+  const winRect = win.getBoundingClientRect();
+  const spineStyle = spine ? getComputedStyle(spine) : null;
+  const winStyle = getComputedStyle(win);
+  if (
+    !desktopRect
+    || !spineRect
+    || spineRect.width <= 0
+    || spineRect.height <= 0
+    || spineStyle?.display === "none"
+    || spineStyle?.visibility === "hidden"
+    || spineStyle?.position === "static"
+    || winStyle.position !== "absolute"
+    || !rectsOverlap(winRect, spineRect, gap)
+  ) return false;
+
+  const nextLeft = Math.round(spineRect.right - desktopRect.left + gap);
+  setInlineStyleValue(win, "left", `${nextLeft}px`);
+  setInlineStyleValue(win, "right", "auto");
+  setInlineStyleValue(win, "transform", "none");
+  return true;
+}
+
+function reflowWindowsAroundWritingSpine() {
+  let changed = false;
+  document.querySelectorAll(".window:not(.is-hidden):not(.is-app-hidden)").forEach((win) => {
+    changed = avoidWritingSpineOverlap(win) || changed;
+  });
+  if (changed) scheduleWorkingSessionSave?.();
+  return changed;
+}
+
+function scheduleWritingSpineAvoidance() {
+  reflowWindowsAroundWritingSpine();
+  requestAnimationFrame(() => reflowWindowsAroundWritingSpine());
+}
+
 function zoomWindow(win) {
   if(matchMedia("(max-width:860px) and (orientation:portrait)").matches){
     win.classList.remove("is-collapsed");
@@ -3437,6 +3747,7 @@ function zoomWindow(win) {
   const avoidance = getDesktopAvoidanceInsets({ margin });
 
   if (win.dataset.zoomed === "true") {
+    clearFinderContentFit(win);
     win.style.left = win.dataset.restoreLeft || win.style.left;
     win.style.top = win.dataset.restoreTop || win.style.top;
     win.style.width = win.dataset.restoreWidth || win.style.width;
@@ -3457,9 +3768,20 @@ function zoomWindow(win) {
     win.style.right = "auto";
     win.style.transform = "none";
     win.dataset.zoomed = "false";
+    avoidWritingSpineOverlap(win);
     if(win.dataset.window==="docMap")requestAnimationFrame(restoreDocMapCanvasView);
     scheduleWorkingSessionSave?.();
     return;
+  }
+
+  if (isFinderContentWindow(win)) {
+    rememberWindowFrame(win);
+    win.classList.remove("is-collapsed", "is-desklet");
+    if (fitFinderWindowToContents(win, { force: true })) {
+      win.dataset.zoomed = "true";
+      scheduleWorkingSessionSave?.();
+      return;
+    }
   }
 
   rememberWindowFrame(win);
@@ -3557,6 +3879,7 @@ function startWindowResize(event, win) {
   event.preventDefault();
   event.stopPropagation();
   focusWindow(win);
+  clearFinderContentFit(win, { preserveSize: true });
   // The grow box and the zoom box are one control pair: dragging out of the
   // full-screen shell restores the window down first, so the drag sizes a real
   // floating window instead of fighting the maximized frame.

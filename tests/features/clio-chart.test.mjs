@@ -3,6 +3,7 @@ import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("clio-chart");
 const source = read("app/features/clio-chart.js");
+const bootstrap = read("app.js");
 
 const context = { window: {} };
 vm.runInNewContext(source, context);
@@ -331,6 +332,7 @@ test.assertNotIncludes(
 
 // --- No dead controls, no inert windows -----------------------------------
 const windows = read("app/core/window-manager.js");
+const teachTextAccessories = read("app/features/teachtext-accessories.js");
 const responsive = read("styles/60-responsive.css");
 
 // A window restored from the previous session must not come back inert. The
@@ -377,7 +379,51 @@ test.assertNotIncludes(
   '"see-as-chart": winName === "teachText" && !!window.AISystem6ClioChart?.hasChartableTable?.()',
   "see-as-chart availability does not depend on the lazy module being loaded"
 );
-test.assertIncludes(html, 'id="teachtext-see-as-chart"', "TeachText carries the button as well as the menu item");
+test.assertMatches(
+  html,
+  /class="btn details-bar-button is-hidden"[^>]*id="teachtext-see-as-chart"[^>]*hidden/,
+  "TeachText keeps the in-body chart button hidden until the document contains a chartable Markdown table"
+);
+test.assertIncludes(
+  teachTextAccessories,
+  "function teachTextHasChartableMarkdownTable(markdown)",
+  "TeachText owns a lightweight Markdown-table availability check without loading ClioChart"
+);
+const tableAvailabilitySource = teachTextAccessories.match(/function teachTextHasChartableMarkdownTable\(markdown\) \{[\s\S]*?\n\}/)?.[0] || "";
+const tableAvailabilityContext = {};
+vm.runInNewContext(tableAvailabilitySource, tableAvailabilityContext);
+test.assert(
+  !tableAvailabilityContext.teachTextHasChartableMarkdownTable("Ordinary prose\nwith no table."),
+  "ordinary Markdown does not expose the in-body chart action"
+);
+test.assert(
+  tableAvailabilityContext.teachTextHasChartableMarkdownTable(NO_CONFIG_TABLE),
+  "a Markdown table with a header, divider, and data row exposes the in-body chart action"
+);
+test.assert(
+  !tableAvailabilityContext.teachTextHasChartableMarkdownTable("A | B\n--- | ---\nordinary prose"),
+  "a divider-looking fragment without a data row does not expose the chart action"
+);
+test.assertIncludes(
+  teachTextAccessories,
+  'teachTextSeeAsChartButton.classList.toggle("is-hidden", !visible)',
+  "TeachText synchronizes the chart button whenever its document state refreshes"
+);
+test.assertIncludes(
+  bootstrap,
+  "teachTextSeeAsChartButton,",
+  "the startup bootstrap receives the chart button from the shared DOM handle registry"
+);
+test.assertIncludes(
+  windows,
+  '"see-as-chart": winName === "teachText" && teachTextHasChartableMarkdownTable',
+  "the menu and in-body button share the same table availability rule"
+);
+test.assertMatches(
+  html,
+  /class="teachtext-details-controls"[\s\S]*?id="teachtext-see-as-chart"[\s\S]*?id="teachtext-chart-owner"[\s\S]*?<\/div>[\s\S]*?id="teachtext-status"/,
+  "TeachText keeps chart controls grouped between the boundary and save status so the details bar stays on one row"
+);
 
 // A window the user can fill with a wide table has to be resizable. The grow
 // box is only built for windows in this list, and the frame lanes it sits in

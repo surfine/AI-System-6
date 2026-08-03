@@ -87,7 +87,28 @@ let clioTalkAutoFollow = true;
 let clioTalkTemporaryMode = false;
 let clioTalkFindQuery = "";
 let clioTalkFindMatchIndex = -1;
+let pendingClioTalkFileName = "";
 const clioTalkUseResultUndoByMessageId = new Map();
+
+function getPendingClioTalkFileName() {
+  if (!pendingClioTalkFileName) pendingClioTalkFileName = getChatFileTitle();
+  return pendingClioTalkFileName;
+}
+
+function getPendingClioTalkFolder() {
+  if (typeof getSelectedFolder !== "function" || typeof getProjectFolders !== "function") return null;
+  return getSelectedFolder() || getProjectFolders()[0] || null;
+}
+
+function clioTalkPendingObjectPath() {
+  const project = getActiveProject();
+  if (!project) return "";
+  const folder = getPendingClioTalkFolder();
+  const folderPath = folder && typeof getFolderPath === "function"
+    ? getFolderPath(folder.id).join(" / ")
+    : (typeof preferredFolderName === "function" ? preferredFolderName() : "");
+  return [project.name, folderPath, getPendingClioTalkFileName()].filter(Boolean).join(" / ");
+}
 
 function clioTalkIsNearLatest() {
   if (!messagesEl) return true;
@@ -193,6 +214,25 @@ function renderClioTalkWelcome() {
     ? "sideask_welcome_message"
     : (clioTalkTemporaryMode ? "temporary_welcome_message" : "welcome_message");
   body.innerHTML = `<p>${t(welcomeKey)}</p>`;
+
+  if (!sideAskEnabled && !clioTalkTemporaryMode) {
+    const actions = document.createElement("div");
+    actions.className = "clio-welcome-actions";
+    [
+      ["open-clio-attachment-picker", "compose_attach_project_file"],
+      ["open-question-sheet", "clio_welcome_question_sheet"],
+      ["paste-clio-interview", "clio_welcome_paste_interview"],
+    ].forEach(([action, labelKey]) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "btn";
+      button.dataset.action = action;
+      button.textContent = t(labelKey);
+      button.disabled = action === "open-clio-attachment-picker" && !getActiveProject();
+      actions.append(button);
+    });
+    body.append(actions);
+  }
 
   item.append(speaker, body);
   messagesEl.append(item);
@@ -361,41 +401,44 @@ function getClioTalkPendingInputDescriptors(options = {}) {
   });
 }
 
-function appendClioRunAssemblyFile(section, descriptor) {
-  const details = document.createElement("details");
-  details.className = "clio-run-file";
-  const summary = document.createElement("summary");
-  const name = document.createElement("span");
-  name.className = "clio-run-file-name";
-  name.textContent = descriptor.version ? `${descriptor.name} v${descriptor.version}` : descriptor.name;
-  const hash = document.createElement("span");
-  hash.className = "clio-run-file-hash";
-  hash.textContent = descriptor.hash;
-  const path = document.createElement("small");
-  path.className = "clio-run-file-path";
-  path.textContent = [descriptor.path, descriptor.source, descriptor.reason].filter(Boolean).join(" · ");
-  summary.append(name, hash, path);
-  const body = document.createElement("pre");
-  body.textContent = descriptor.body || t("clio_run_body_empty");
-  details.append(summary, body);
-  section.append(details);
-}
+// The info bar is this window's Finder header: it counts what is in the
+// conversation and names the file it lives in. "Unkept" is the number that
+// matters — it is the only place the product's central rule appears as a
+// running total rather than as a per-message state.
+function renderClioTalkTally() {
+  const tally = document.querySelector("#clio-tally");
+  if (!tally) return;
+  const turns = conversation.filter((message) => ["user", "assistant"].includes(message.role)).length;
+  const replies = conversation.filter((message) => message.role === "assistant");
+  const unkept = replies.filter((message) => (
+    !["inserted", "clipped", "saved"].includes(String(message?.replyReceipt?.state || "temporary"))
+  )).length;
+  const basis = new Set();
+  replies.forEach((message) => {
+    (message.grounding?.sources || []).forEach((source) => basis.add(source.key || source.label || ""));
+  });
+  basis.delete("");
 
-function appendClioRunAssemblySection(panel, titleKey, descriptors, emptyKey = "") {
-  const section = document.createElement("section");
-  section.className = "clio-run-section";
-  const title = document.createElement("h3");
-  title.textContent = t(titleKey);
-  section.append(title);
-  if (descriptors.length) {
-    descriptors.forEach((descriptor) => appendClioRunAssemblyFile(section, descriptor));
-  } else if (emptyKey) {
-    const empty = document.createElement("div");
-    empty.className = "clio-run-direct";
-    empty.textContent = t(emptyKey);
-    section.append(empty);
+  tally.replaceChildren();
+  if (!turns) {
+    tally.hidden = true;
+    return;
   }
-  panel.append(section);
+  tally.hidden = false;
+  const counts = document.createElement("span");
+  counts.textContent = t("clio_tally_counts", turns, basis.size);
+  tally.append(counts);
+  if (unkept > 0) {
+    const unkeptButton = document.createElement("button");
+    unkeptButton.type = "button";
+    unkeptButton.className = "clio-tally-unkept";
+    unkeptButton.textContent = t("clio_tally_unkept", unkept);
+    unkeptButton.onclick = () => {
+      const first = messagesEl?.querySelector('.message.assistant[data-reply-state="temporary"]');
+      first?.scrollIntoView({ block: "center", behavior: "smooth" });
+    };
+    tally.append(unkeptButton);
+  }
 }
 
 function renderClioTalkFileBar() {
@@ -405,18 +448,27 @@ function renderClioTalkFileBar() {
   if (!button || !name || !path) return;
   const file = typeof getActiveConversationFile === "function" ? getActiveConversationFile() : null;
   const project = getActiveProject();
+  const keepButton = document.querySelector("#clio-keep-temporary");
+  // SideAsk and "temporary conversation" were two names for one state. The
+  // info bar now carries the single fact that separates them — whether this
+  // conversation is bound to a window — and both render the same way.
+  keepButton?.classList.toggle("is-hidden", !(clioTalkTemporaryMode && !!project && conversation.length > 0));
   if (clioTalkTemporaryMode) {
     button.hidden = false;
     button.disabled = true;
     name.textContent = t("clio_temporary_chat");
-    path.textContent = t("clio_temporary_chat_path");
+    path.textContent = sideAskEnabled && !isMultiFinderMode()
+      ? t("clio_temporary_chat_bound", sideAskSourceDisplayLabel())
+      : t("clio_temporary_chat_path");
     button.title = path.textContent;
     return;
   }
   button.hidden = false;
   button.disabled = !file;
-  name.textContent = file?.name || t(project ? "clio_chat_file_waiting" : "clio_chat_file_no_project");
-  path.textContent = file ? clioTalkProjectObjectPath(file) : (project ? t("clio_chat_file_path_pending") : "");
+  name.textContent = file?.name || (project ? getPendingClioTalkFileName() : t("clio_chat_file_no_project"));
+  path.textContent = file
+    ? clioTalkProjectObjectPath(file)
+    : (project ? t("clio_chat_file_path_pending", clioTalkPendingObjectPath()) : "");
   button.title = path.textContent || name.textContent;
 }
 
@@ -451,56 +503,28 @@ function setComposerSubmitMode(isBusy) {
   else syncClioTalkSendButton();
 }
 
+// What this send will carry, in one line, in the entry pane.
+//
+// This replaces the "Run details" disclosure that used to sit in the composer:
+// four sections of prompt-file / Skill / harness / input assembly plus a memory
+// inspector link. That panel answered a debugging question ("what did the app
+// assemble?") and it answered it permanently, in the middle of the writing
+// surface. The writer's question is narrower — "what goes with this message?"
+// — and it is one line. The assembly detail still exists, in the Context Panel,
+// reachable from the model readout in the info bar.
 function renderClioTalkRunAssembly() {
   syncClioTalkSendButton();
-  const panel = document.querySelector("#clio-run-panel");
-  const summary = document.querySelector("#clio-run-summary");
-  if (!panel || !summary) return;
-  const prompts = getClioTalkPromptFileDescriptors();
-  const skills = getClioTalkPendingSkillDescriptors(promptInput?.value || "", { temporaryChat: clioTalkTemporaryMode });
-  const harness = getClioTalkPendingHarnessDescriptor();
+  const loadout = document.querySelector("#clio-entry-loadout");
+  if (!loadout) return;
   const inputs = getClioTalkPendingInputDescriptors({ temporaryChat: clioTalkTemporaryMode });
-  const assemblySummary = t(
-    "clio_run_assembly_summary",
-    prompts.length,
-    skills.length,
-    harness ? "H1" : t("clio_run_direct"),
-    inputs.length
-  );
-  summary.textContent = t("clio_run_details");
-  summary.title = assemblySummary;
-  summary.setAttribute("aria-label", `${t("clio_run_details")}: ${assemblySummary}`);
-  panel.replaceChildren();
-  const header = document.createElement("div");
-  header.className = "clio-run-panel-header";
-  const title = document.createElement("strong");
-  title.textContent = t("clio_run_assembly");
-  const scope = document.createElement("small");
-  scope.textContent = "APP-SUPPLIED";
-  header.append(title, scope);
-  panel.append(header);
-  appendClioRunAssemblySection(panel, "clio_run_prompt", prompts);
-  appendClioRunAssemblySection(panel, "clio_run_skill", skills, "clio_run_no_skills");
-  if (harness) {
-    appendClioRunAssemblySection(panel, "clio_run_harness", [harness]);
-  } else {
-    appendClioRunAssemblySection(panel, "clio_run_harness", [], "clio_run_direct_help");
-  }
-  appendClioRunAssemblySection(panel, "clio_run_inputs", inputs, "clio_run_no_inputs");
-  const note = document.createElement("p");
-  note.className = "clio-run-note";
-  note.textContent = t("clio_run_runtime_note");
-  panel.append(note);
-  const footer = document.createElement("div");
-  footer.className = "clio-run-panel-footer";
-  const memory = document.createElement("button");
-  memory.type = "button";
-  memory.className = "clio-context-link";
-  memory.textContent = t("clio_run_memory_inspector");
-  memory.addEventListener("click", () => openWindow("contextPanel"));
-  footer.append(memory);
-  panel.append(footer);
+  const skills = getClioTalkPendingSkillDescriptors(promptInput?.value || "", { temporaryChat: clioTalkTemporaryMode });
+  const carried = [...inputs, ...skills].map((entry) => entry.label).filter(Boolean);
+  loadout.textContent = carried.length
+    ? t("clio_entry_carrying", carried.join(" · "))
+    : t("clio_entry_carrying_none");
+  loadout.title = loadout.textContent;
   renderClioTalkFileBar();
+  renderClioTalkTally();
 }
 
 function recordContextLoadout(payload) {
@@ -579,6 +603,7 @@ function resetClioTalkRuntimeState(options = {}) {
   lastUserText = "";
   clioTalkFindQuery = "";
   clioTalkFindMatchIndex = -1;
+  pendingClioTalkFileName = "";
   clioTalkUseResultUndoByMessageId.clear();
   clioTalkAutoFollow = true;
   if (messagesEl) messagesEl.replaceChildren();
@@ -944,11 +969,13 @@ function formatClioTalkGrounding(snapshot) {
   return `${sourceText}${moreText}${missingText}`;
 }
 
+// Sources are the spine of this product, so they render as objects — one chip
+// per file, each openable — rather than as a run-on line of grey small print.
+// When nothing was used, that is stated outright: silence would let the reader
+// assume grounding that never happened.
 function appendMessageGrounding(item, grounding) {
   item.querySelector(".message-grounding-strip")?.remove();
   if (!grounding) return;
-  const summary = formatClioTalkGrounding(grounding);
-  if (!summary) return;
   const body = item.querySelector(".message-content");
   if (!body) return;
 
@@ -956,22 +983,138 @@ function appendMessageGrounding(item, grounding) {
   strip.className = "message-grounding-strip";
   strip.dataset.clioGrounding = "true";
 
-  const label = document.createElement("strong");
+  const label = document.createElement("span");
+  label.className = "message-grounding-label";
   label.textContent = t("clio_grounding_label");
-  const copy = document.createElement("span");
-  copy.textContent = `: ${summary}`;
-  strip.append(label, copy);
+  strip.append(label);
 
-  if (grounding.contextPanelAvailable && typeof openWindow === "function") {
-    const openBtn = document.createElement("button");
-    openBtn.type = "button";
-    openBtn.className = "clio-context-link";
-    openBtn.textContent = `${t("clio_grounding_open_context_panel")} ›`;
-    openBtn.onclick = () => openWindow("contextPanel");
-    strip.append(" ", openBtn);
+  const sources = Array.isArray(grounding.sources) ? grounding.sources : [];
+  if (sources.length) {
+    sources.forEach((source, index) => {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "clio-basis-chip";
+      chip.dataset.groundingKind = String(source.kind || "");
+      const mark = document.createElement("span");
+      mark.className = "clio-basis-chip-mark";
+      mark.setAttribute("aria-hidden", "true");
+      const text = document.createElement("span");
+      text.textContent = `${index + 1} · ${source.label || ""}`;
+      chip.append(mark, text);
+      chip.onclick = () => revealClioTalkGroundingSource(source);
+      strip.append(chip);
+    });
+    if (grounding.sourceCount > sources.length) {
+      const more = document.createElement("span");
+      more.className = "message-grounding-more";
+      more.textContent = t("clio_grounding_more_sources", grounding.sourceCount - sources.length);
+      strip.append(more);
+    }
+  } else {
+    const none = document.createElement("span");
+    none.className = "message-grounding-none";
+    none.textContent = t("clio_grounding_none_stated");
+    strip.append(none);
+  }
+
+  if (grounding.missing?.length) {
+    const missing = document.createElement("span");
+    missing.className = "message-grounding-more";
+    missing.textContent = `${t("clio_grounding_missing")}: ${grounding.missing.join(" · ")}`;
+    strip.append(missing);
   }
 
   body.append(strip);
+}
+
+// A basis chip has to land on the thing it names. Project files reveal in the
+// Finder; anything else falls back to the context panel, which is where the
+// retrieval detail actually lives.
+function revealClioTalkGroundingSource(source) {
+  const contextItem = lastRetrievedContextItems?.find((item) => (
+    typeof getContextSourceKey === "function" && getContextSourceKey(item) === source?.key
+  ));
+  if (contextItem && typeof openCitationContextItem === "function") {
+    openCitationContextItem(contextItem);
+    return;
+  }
+
+  const registrySource = typeof buildProjectSourceRegistry === "function"
+    ? buildProjectSourceRegistry().find((item) => item.key === source?.key)
+    : null;
+  if (registrySource && typeof openCitationContextItem === "function") {
+    const projectId = activeProjectId;
+    const registryContextItem = registrySource.kind === "file"
+      ? { ...registrySource.item, kind: "file", projectId }
+      : registrySource.key.startsWith("scrap:")
+        ? { ...registrySource.item, kind: "scrap", projectId }
+        : registrySource.key.startsWith("reference:")
+          ? { ...registrySource.item, kind: "reference", fromProjectReference: true, referenceId: registrySource.item?.id, projectId }
+          : { ...registrySource.item, kind: "chunk", projectId };
+    openCitationContextItem(registryContextItem);
+    return;
+  }
+
+  const key = String(source?.key || "");
+  const id = key.includes(":") ? key.slice(key.indexOf(":") + 1) : "";
+  const file = id && typeof getProjectFiles === "function"
+    ? getProjectFiles().find((item) => item.id === id)
+    : null;
+  if (file && typeof revealChatFileInFinder === "function") {
+    revealChatFileInFinder(file.id);
+    return;
+  }
+  if (typeof openWindow === "function") openWindow("contextPanel");
+}
+
+function decorateClioTalkInlineCitations(item, grounding) {
+  const body = item.querySelector(".message-content");
+  const sources = Array.isArray(grounding?.sources) ? grounding.sources : [];
+  if (!body || !sources.length) return;
+
+  const sourceById = new Map();
+  sources.forEach((source, index) => {
+    const sourceId = String(source?.citation || "").match(/\[(S\d+)(?::\d+)?\]/)?.[1];
+    if (sourceId && !sourceById.has(sourceId)) sourceById.set(sourceId, { source, index });
+  });
+  if (!sourceById.size) return;
+
+  const walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      return node.parentElement?.closest("code, pre, a, button, .message-grounding-strip")
+        ? NodeFilter.FILTER_REJECT
+        : NodeFilter.FILTER_ACCEPT;
+    },
+  });
+  const textNodes = [];
+  while (walker.nextNode()) textNodes.push(walker.currentNode);
+
+  textNodes.forEach((node) => {
+    const text = node.nodeValue || "";
+    const pattern = /\[(S\d+)(?::\d+)?\]/g;
+    let match;
+    let cursor = 0;
+    let changed = false;
+    const fragment = document.createDocumentFragment();
+    while ((match = pattern.exec(text))) {
+      const mapped = sourceById.get(match[1]);
+      if (!mapped) continue;
+      changed = true;
+      fragment.append(document.createTextNode(text.slice(cursor, match.index)));
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "clio-inline-citation";
+      button.dataset.citation = match[0];
+      button.textContent = String(mapped.index + 1);
+      button.setAttribute("aria-label", t("clio_inline_citation", mapped.index + 1, mapped.source.label || ""));
+      button.onclick = () => revealClioTalkGroundingSource(mapped.source);
+      fragment.append(button);
+      cursor = match.index + match[0].length;
+    }
+    if (!changed) return;
+    fragment.append(document.createTextNode(text.slice(cursor)));
+    node.replaceWith(fragment);
+  });
 }
 
 function clioTalkHasChartableTable(content = "") {
@@ -1605,6 +1748,7 @@ function refreshClioTalkMessageActions(messageId) {
   const record = conversation.find((candidate) => candidate.id === messageId);
   if (!item || !record) return;
   appendMessageActions(item, record.role, record.content, { messageRecord: record });
+  renderClioTalkTally();
 }
 
 function finishClioTalkUseResult(messageRecord, state, destination, delivery) {
@@ -1744,6 +1888,17 @@ async function undoClioTalkUseResult(messageId) {
   return true;
 }
 
+// Whether a reply has been written anywhere yet is the product's central rule,
+// so it is a state of the message element, not a line of small print inside it:
+// `data-reply-state` drives the slip's border in both themes.
+function syncClioTalkReplyState(item, messageRecord) {
+  if (!item?.classList.contains("assistant")) return "temporary";
+  const state = clioTalkReplyReceiptState(messageRecord);
+  const kept = ["inserted", "clipped", "saved"].includes(state);
+  item.dataset.replyState = kept ? "kept" : "temporary";
+  return state;
+}
+
 function appendMessageActions(item, role, content, options = {}) {
   item.querySelector(".message-actions")?.remove();
   const actions = document.createElement("div");
@@ -1751,7 +1906,8 @@ function appendMessageActions(item, role, content, options = {}) {
   const messageId = options.messageRecord?.id || item.dataset.messageId || "";
 
   if (role === "user") {
-    const { details: moreDetails, menu: moreMenu } = createClioTalkActionMenu();
+    // Visible, not hover-revealed: System 6 controls dim, they do not vanish,
+    // and a hover-only row is unreachable by touch.
     if (!options.messageRecord?.temporaryChat) {
       const editBtn = document.createElement("button");
       editBtn.className = "btn mini-btn";
@@ -1761,21 +1917,18 @@ function appendMessageActions(item, role, content, options = {}) {
         messageIndex: Number.isInteger(options.messageIndex) ? options.messageIndex : -1,
         content,
       });
-      moreMenu.append(editBtn);
+      actions.append(editBtn);
     }
-    appendMessageTranslation(moreMenu, item, role, content);
-    moreMenu.querySelectorAll("button").forEach((button) => button.setAttribute("role", "menuitem"));
-    syncClioTalkMenuAvailability(moreDetails, moreMenu);
-    actions.append(moreDetails);
+    appendMessageTranslation(actions, item, role, content);
   } else if (role === "assistant") {
     const disposition = document.createElement("strong");
     disposition.className = "message-disposition";
-    const initialReceiptState = clioTalkReplyReceiptState(options.messageRecord);
-    disposition.dataset.replyState = initialReceiptState;
+    syncClioTalkReplyState(item, options.messageRecord);
+    const kept = item.dataset.replyState === "kept";
+    disposition.dataset.replyState = item.dataset.replyState;
     disposition.textContent = clioTalkReplyReceiptLabel(options.messageRecord);
-    disposition.hidden = initialReceiptState === "temporary";
+    disposition.hidden = false;
 
-    const { details: moreDetails, menu: moreMenu } = createClioTalkActionMenu();
     const copyBtn = document.createElement("button");
     copyBtn.className = "btn mini-btn";
     copyBtn.textContent = t("copy");
@@ -1800,39 +1953,15 @@ function appendMessageActions(item, role, content, options = {}) {
         setStatus(t("copy_failed"));
       }
     };
-    moreMenu.append(copyBtn);
-    if (options.messageRecord?.runRecordId || options.messageRecord?.temporaryChat) {
-      const runRecordBtn = document.createElement("button");
-      runRecordBtn.className = "btn mini-btn";
-      runRecordBtn.textContent = t(options.messageRecord.runRecordId ? "clio_view_run_record" : "clio_view_run_details");
-      runRecordBtn.onclick = () => {
-        if (options.messageRecord.runRecordId) {
-          revealChatFileInFinder(options.messageRecord.runRecordId);
-          return;
-        }
-        const assembly = document.querySelector("#clio-run-assembly");
-        if (assembly) assembly.open = true;
-      };
-      moreMenu.append(runRecordBtn);
-    }
-    appendMessageTranslation(moreMenu, item, role, content);
-    moreMenu.querySelectorAll("button").forEach((button) => button.setAttribute("role", "menuitem"));
-
-    const useDetails = document.createElement("details");
-    useDetails.className = "message-use-actions";
-    const useSummary = document.createElement("summary");
-    useSummary.className = "btn mini-btn";
-    useSummary.textContent = t("clio_use_reply");
-    const useMenu = document.createElement("div");
-    useMenu.className = "message-use-menu";
-    installClioTalkDetailsMenu(useDetails, useSummary, useMenu);
-
+    // One flat row of real buttons, always visible. The old shape was two
+    // nested disclosure menus ("Use reply" and "•••") plus a hidden
+    // disposition line — three ways to hide the same four verbs.
     const useResultBtn = document.createElement("button");
-    useResultBtn.className = "btn mini-btn";
-    useResultBtn.textContent = t("clio_choose_destination");
-    useResultBtn.hidden = !options.messageRecord;
+    useResultBtn.className = "btn mini-btn default";
+    useResultBtn.textContent = t("clio_use_reply");
+    useResultBtn.disabled = !options.messageRecord;
+    useResultBtn.hidden = kept;
     useResultBtn.onclick = async () => {
-      useDetails.open = false;
       const choice = await chooseClioTalkUseResult(content, options.messageRecord);
       if (choice) await applyClioTalkUseResult(content, options.messageRecord, choice);
     };
@@ -1840,35 +1969,46 @@ function appendMessageActions(item, role, content, options = {}) {
     const chartBtn = document.createElement("button");
     chartBtn.className = "btn mini-btn";
     chartBtn.textContent = t("clio_chart_make_chart");
-    chartBtn.hidden = !clioTalkHasChartableTable(content);
+    chartBtn.hidden = kept || !clioTalkHasChartableTable(content);
     chartBtn.onclick = async () => {
       if (typeof ensureClioChartModule === "function") await ensureClioChartModule();
       window.AISystem6ClioChart?.open?.({ markdown: content, title: t("clio_chart_title") });
-      useDetails.open = false;
-    };
-
-    const ignoreBtn = document.createElement("button");
-    ignoreBtn.className = "btn mini-btn";
-    ignoreBtn.textContent = t("clio_discard_reply");
-    ignoreBtn.onclick = () => {
-      removeClioTalkMessageRecord(messageId);
-      item.remove();
-      updateMenuState();
     };
 
     const undoBtn = document.createElement("button");
     undoBtn.className = "btn mini-btn";
     undoBtn.textContent = t("clio_result_undo");
-    undoBtn.hidden = !clioTalkUseResultUndoByMessageId.has(messageId);
+    undoBtn.hidden = !kept;
+    undoBtn.disabled = kept && !clioTalkUseResultUndoByMessageId.has(messageId);
+    if (undoBtn.disabled) undoBtn.title = t("clio_result_undo_unavailable");
     undoBtn.onclick = () => undoClioTalkUseResult(messageId);
 
-    useMenu.append(useResultBtn, chartBtn, undoBtn);
-    useMenu.querySelectorAll("button").forEach((button) => button.setAttribute("role", "menuitem"));
-    useDetails.append(useSummary, useMenu);
-    moreMenu.append(ignoreBtn);
-    syncClioTalkMenuAvailability(useDetails, useMenu);
-    syncClioTalkMenuAvailability(moreDetails, moreMenu);
-    actions.append(disposition, useDetails, moreDetails);
+    // Discarding drops the turn from the .talk file, so it asks first.
+    const ignoreBtn = document.createElement("button");
+    ignoreBtn.className = "btn mini-btn";
+    ignoreBtn.textContent = t("clio_discard_reply");
+    ignoreBtn.hidden = kept;
+    ignoreBtn.onclick = async () => {
+      const confirmed = await showSystemModal(t("clio_discard_reply_confirm"), "confirm", {
+        confirmKey: "clio_discard_reply",
+        defaultAction: "cancel",
+        danger: true,
+      });
+      if (confirmed !== "yes") return;
+      removeClioTalkMessageRecord(messageId);
+      item.remove();
+      renderClioTalkTally();
+      updateMenuState();
+    };
+
+    const runRecordBtn = document.createElement("button");
+    runRecordBtn.className = "btn mini-btn";
+    runRecordBtn.textContent = t("clio_view_run_record");
+    runRecordBtn.hidden = !options.messageRecord?.runRecordId;
+    runRecordBtn.onclick = () => revealChatFileInFinder(options.messageRecord.runRecordId);
+
+    actions.append(disposition, useResultBtn, chartBtn, undoBtn, copyBtn, runRecordBtn, ignoreBtn);
+    appendMessageTranslation(actions, item, role, content);
   }
 
   // The action row belongs to the message, not to the reply text: it is a grid
@@ -1910,10 +2050,12 @@ function addMessage(role, content, options = {}) {
   if (role === "assistant") {
     lastAssistantText = content;
     appendMessageGrounding(item, options.grounding || null);
+    decorateClioTalkInlineCitations(item, options.grounding || null);
   }
   appendClioTalkRunState(item, options.messageRecord);
   appendClioTalkRunReceipt(item, options.messageRecord);
   appendMessageActions(item, role, content, options);
+  renderClioTalkTally();
   updateMenuState();
   scrollMessagesToLatest();
 }
@@ -2043,6 +2185,7 @@ function resolvePendingMessage(item, role, content, options = {}) {
   if (role === "assistant") {
     lastAssistantText = content;
     appendMessageGrounding(item, options.grounding || null);
+    decorateClioTalkInlineCitations(item, options.grounding || null);
   }
   appendClioTalkRunState(item, options.messageRecord);
   appendClioTalkRunReceipt(item, options.messageRecord);
@@ -3223,11 +3366,13 @@ function updateModelMeter(metrics) {
   const tokenText = `${metrics.tokens} tok`;
   const elapsedText = formatMetricDuration(metrics.elapsedMs);
   const stopText = normalizeStopReason(metrics.stopReason);
+  const modelDisplayName = String(getLocalModelDisplayName() || t("local_model"));
+  const modelText = modelDisplayName === t("local_lm_studio") ? t("local_model") : modelDisplayName;
   const slow = window.AISystem6Perf?.slowEvents?.().at(-1);
   const slowText = slow ? `${slow.name} ${formatMetricDuration(slow.duration)}` : "";
 
-  assistantMeterButton.textContent = `${speedText} · ${tokenText} · ${elapsedText}`;
-  assistantMeterButton.title = slowText ? `Last slow operation: ${slowText}` : "";
+  assistantMeterButton.textContent = `${modelText} · ${speedText}`;
+  assistantMeterButton.title = [`${tokenText} · ${elapsedText}`, slowText ? `Last slow operation: ${slowText}` : ""].filter(Boolean).join(" · ");
   meterSpeedEl.textContent = speedText;
   meterTokensEl.textContent = tokenText;
   meterElapsedEl.textContent = elapsedText;

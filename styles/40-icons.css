@@ -658,6 +658,55 @@
   background: var(--finder-navigation-bg);
 }
 
+/* Trackless continuation cue for Finder content. Classic suppresses it because
+   the System 6 frame bar already owns this state; Liquid Glass supplies the
+   material and turns it on without changing the Finder DOM or scroll model. */
+.finder-continuation {
+  display: var(--finder-continuation-display);
+  position: absolute;
+  left: 50%;
+  width: 38px;
+  min-width: 38px;
+  height: 20px;
+  min-height: 20px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: var(--finder-continuation-border);
+  border-radius: var(--finder-continuation-radius);
+  background: var(--finder-continuation-bg);
+  box-shadow: var(--finder-continuation-shadow);
+  color: var(--finder-continuation-fg);
+  font: 700 15px/1 var(--ui-font);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%);
+  transition: opacity 160ms ease-out, transform 160ms ease-out;
+  -webkit-backdrop-filter: var(--finder-continuation-backdrop);
+  backdrop-filter: var(--finder-continuation-backdrop);
+}
+
+.finder-continuation.is-top {
+  top: calc(var(--finder-continuation-top, 0px) + 7px);
+  transform: translate(-50%, -3px);
+}
+
+.finder-continuation.is-bottom {
+  bottom: calc(var(--window-frame-reserve) + 7px);
+  transform: translate(-50%, 3px);
+}
+
+.finder-continuation.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%);
+}
+
+.finder-continuation:focus-visible {
+  outline: var(--control-focus-outline);
+  outline-offset: 2px;
+}
+
 .finder-navigation-back {
   width: 30px;
   min-width: 30px;

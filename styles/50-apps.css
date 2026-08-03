@@ -928,21 +928,6 @@
   display: none;
 }
 
-.assistant-window.is-quick-draft-sideask .composer {
-  gap: 5px;
-  padding: 7px 10px 8px;
-}
-
-.assistant-window.is-quick-draft-sideask .composer textarea {
-  height: 58px;
-  min-height: 52px;
-  max-height: 72px;
-}
-
-.assistant-window.is-quick-draft-sideask .messages {
-  padding: 8px;
-}
-
 @container (max-width: 1120px) {
   .quick-draft-details {
     grid-template-columns: auto minmax(0, 1fr) auto;
