@@ -1,99 +1,79 @@
-<h1 align="center">AI System 6</h1>
+# AI System 6
 
-<p align="center">
-  A local-first writing desktop for work that begins with sources.<br>
-  <span lang="zh-CN">把资料、摘录、草稿、审校和导出，放回看得见的对象里。</span>
-</p>
+**A live AI desktop — not another chatbot.**
 
-<p align="center">
-  <a href="https://system6.aaronlau.me"><strong>Open the live desktop</strong></a>
-  ·
-  <a href="https://www.bilibili.com/video/BV1Bw726uE9g/">Watch the demo</a>
-  ·
-  <a href="README.zh-CN.md">简体中文</a>
-  ·
-  <a href="README.md">English</a>
-</p>
+[中文](README.zh-CN.md) · [Live demo](https://system6.aaronlau.me) · [Video](https://www.bilibili.com/video/BV1ht3m6UEDb/)
 
-<p align="center">
-  <a href="https://system6.aaronlau.me"><img alt="Live demo" src="https://img.shields.io/badge/live-system6.aaronlau.me-1f883d?style=flat-square"></a>
-  <img alt="Local first" src="https://img.shields.io/badge/data-local--first-555?style=flat-square">
-  <img alt="Node 18 or newer" src="https://img.shields.io/badge/Node.js-18%2B-339933?style=flat-square&logo=nodedotjs&logoColor=white">
-</p>
+![AI System 6 live desktop](assets/readme/ai-system-6-live-desktop.png)
 
-<p align="center">
-  <a href="https://www.bilibili.com/video/BV1Bw726uE9g/">
-    <img src="assets/readme/ai-system-6-desktop.png" alt="AI System 6 desktop with ClioTalk open" width="960">
-  </a><br>
-  <sub>The screenshot opens the Bilibili demo.</sub>
-</p>
+AI System 6 is a local-first, file-native AI workspace inspired by Macintosh System 6. It turns research, writing, and making into visible desktop work: apps stay open together, sources remain inspectable, and AI output does not become part of a project until you choose to save, clip, insert, or export it.
 
-AI System 6 gives source-based writing the shape of a desktop. Research,
-notes, drafts, review, and export live in separate, visible places instead of
-collapsing into one long chat transcript.
+## What makes it different
 
-It borrows the restraint of Macintosh System 6: small windows, named objects,
-deliberate saving, and one task at a time. The retro language is a constraint,
-not the destination. The real aim is to protect the writer's voice, sources,
-judgment, and handoff intent.
+### A desktop, not a chat window
 
-## 中文简介
+MultiFinder keeps Searcher, Reader, Scrapbook, DocMap, ClioChart, ClioStage, ClioTalk, and other tools visible at the same time. They exchange real project files instead of hiding the work inside one conversation.
 
-AI System 6 是一个本地优先的写作桌面，适合那些要围着资料做事的人。查资料、摘句子、搭结构、改稿和导出各有位置，不必全挤进一个聊天框。
-
-它借用了 Macintosh System 6 的克制感：小窗口、清楚的对象、主动保存，一次只处理一件事。复古只是约束，真正想守住的是写作者自己的语气、来源、判断和交付意图。
-
-完整中文说明见 [README.zh-CN.md](README.zh-CN.md)。
-
-## Why a desktop?
-
-- **Work stays visible.** Sources, clips, drafts, conversations, and exports are objects you can return to.
-- **AI stays provisional.** A model can read, organize, draft, and review, but nothing becomes part of the project until you act on it.
-- **The writer keeps the final say.** The system is built around evidence, revision, and handoff rather than frictionless text generation.
-
-## Writing flow
+### One source-to-artifact route
 
 ```text
-Project Hard Disk -> File Floppy -> Question Sheet -> Outline
--> Section Drafts -> Manuscript -> Review Desk -> Project CD
+Search → Read → Clip → Map → Write → Review → Present
 ```
 
-Each stop has one job. ClioTalk and SideAsk can help along the way, while
-Reader, Scrapbook, TeachText, Review Desk, and Project CD keep the work
-grounded in visible files.
+- **Searcher + Reader** find sources and open readable evidence.
+- **Time Machine** revisits archived web pages through the Wayback Machine.
+- **Scrapbook + DocMap** preserve selected material and expose its structure.
+- **Question Sheet → Outline → Section Drafts → TeachText** carries one manuscript through the writing process.
+- **Review Desk** checks factual and structural risk, including generic AI-mouthpiece drift.
+- **ClioChart + ClioStage + Cover Glass** turn the same work into charts, slides, and a finished visual artifact.
+
+### Local AI is a first-class option
+
+Use chat and embedding models from **LM Studio**, connect **Ollama**, or configure **DeepSeek** or another **OpenAI-compatible** endpoint. The selected provider is interchangeable; AI System 6 is the working environment, not a model wrapper.
+
+Projects, references, scraps, and settings live in browser-local storage. The server is stateless, and provider credentials stay outside project files, chats, backups, and exports.
+
+### Modern tools inside a 1988 machine
+
+- **CMF Studio** edits a 3D iPhone colorway and exports USDZ for AR.
+- **Cover Glass** renders refractive WebGL typography and cover art.
+- **File Floppy** imports documents, images, and audio with OCR and transcription workflows.
+- **ClioChart** converts Markdown data into editable visual projections.
+- **ClioStage** presents Markdown slide decks with source, slide, and cue views.
+- **Classic / Liquid Glass** switches the same live desktop between two visual eras without losing the work in place.
+
+The classic interface is grounded in real System 6.0.8 resources and period Macintosh interaction patterns rather than redrawn from memory.
 
 ## Try it
 
-The quickest way in is the [live desktop](https://system6.aaronlau.me).
-
-To run the public source snapshot locally:
+Open the [live demo](https://system6.aaronlau.me), or run it locally:
 
 ```sh
-git clone https://github.com/surfine/AI-System-6.git
-cd AI-System-6
 npm install
 npm start
 ```
 
-Then open `http://localhost:4173`.
+Then visit `http://localhost:4173`.
 
-## Models and data
+For local AI, start LM Studio and load a chat model before refreshing models in Control Panel. Ollama and cloud/OpenAI-compatible routes can also be configured there.
 
-AI System 6 supports LM Studio-compatible local endpoints and user-configured
-cloud providers. Keys are supplied at runtime and are not stored in this
-repository. Local-first is the default direction, not a claim that every
-optional provider runs offline.
+## Principles
 
-## Public snapshot
+- AI output is temporary until the user deliberately keeps it.
+- Sources, prompts, run inputs, and project files should remain visible and inspectable.
+- AI may help read, organize, draft, rewrite, and review; it should not flatten the writer's language into a generic model voice.
+- A finished artifact matters more than an endless conversation.
 
-This repository contains a public-safe source snapshot: app code, server
-routes, tests, and the small assets needed for local development. It excludes
-private drafts, browser data, credentials, generated bundles, build output,
-package caches, large scraped corpora, and the original private Git history.
+## Development
 
-The project is under active development. Some surfaces are experiments, and
-behavior may change between snapshots.
+The browser application is plain JavaScript with a small stateless Node.js server. There is no frontend framework or transpiler. See [CLAUDE.md](CLAUDE.md) for architecture, build rules, verification, and product contracts.
+
+```sh
+npm run verify:quick
+npm run verify:features
+npm run verify:release
+```
 
 ## License
 
-AI System 6 is available under the [MIT License](LICENSE).
+[MIT](LICENSE)
