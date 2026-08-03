@@ -2665,6 +2665,7 @@ input[type="radio"]:disabled {
   background: transparent;
   color: var(--ink);
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   justify-items: center;
   gap: 4px;
 }

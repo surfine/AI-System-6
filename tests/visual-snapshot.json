@@ -116,17 +116,17 @@
       "_w": 386,
       "_h": 26
     },
-    ".desktop-app-icon[data-action=\"open-find-path\"]": {
+    ".icon-column > .desktop-icon[data-open=\"applications\"]": {
       "width": "82px",
-      "height": "81.0938px",
+      "height": "67.8594px",
       "_w": 82,
-      "_h": 81
+      "_h": 68
     },
-    ".desktop-app-icon[data-action=\"open-find-path\"] span:last-child": {
-      "font-size": "0px",
+    ".icon-column > .desktop-icon[data-open=\"applications\"] span:last-child": {
+      "font-size": "13px",
       "color": "rgb(0, 0, 0)",
-      "_w": 54,
-      "_h": 33
+      "_w": 60,
+      "_h": 20
     }
   },
   "liquid-glass": {
@@ -246,17 +246,17 @@
       "_w": 380,
       "_h": 26
     },
-    ".desktop-app-icon[data-action=\"open-find-path\"]": {
+    ".icon-column > .desktop-icon[data-open=\"applications\"]": {
       "width": "84px",
-      "height": "65px",
+      "height": "67.8594px",
       "_w": 84,
-      "_h": 65
+      "_h": 68
     },
-    ".desktop-app-icon[data-action=\"open-find-path\"] span:last-child": {
-      "font-size": "0px",
+    ".icon-column > .desktop-icon[data-open=\"applications\"] span:last-child": {
+      "font-size": "13px",
       "color": "rgb(16, 17, 20)",
-      "_w": 54,
-      "_h": 17
+      "_w": 60,
+      "_h": 20
     }
   }
 }

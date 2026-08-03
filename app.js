@@ -116,6 +116,7 @@ const {
   textDiskCountEl,
   textDiskGridEl,
   currentProjectLabelEl,
+  desktopProjectCdEl,
   projectSwitcherButton,
   projectSwitcherLabelEl,
   projectSwitcherPopoverEl,
@@ -123,11 +124,8 @@ const {
   startupModeInputs,
   startupOpenOptionInputs,
   startupSelectedItemsLabelEl,
-  spineProjectNameEl,
-  spineProjectMetaEl,
-  spineProjectButtonEl,
   spineFileFloppyButtonEl,
-  spineFileFloppyLabelEl,
+  spineBurnProjectCdButtonEl,
   writingToolsPanelEl,
   writingToolsShadeToggleEl,
   assistantProjectStatusEl,
@@ -167,7 +165,6 @@ const {
   emptyTrashButton,
   projectCdCountEl,
   projectCdGridEl,
-  burnProjectAuditCapsuleButton,
   downloadProjectCdButton,
   printProjectCdPdfButton,
   clearProjectCdButton,
@@ -930,6 +927,7 @@ function setActiveViewMode(mode) {
     }
     writingToolsViewMode = normalized;
     applyWritingToolsViewMode();
+    scheduleWorkingSessionSave();
     updateMenuState();
     setStatus(t("view_mode_active", t(getFinderViewModeLabelKey(normalized))));
     return;
@@ -1438,6 +1436,7 @@ function applyLanguage() {
   });
 
   updateProjectLabels();
+  renderProjectCd();
   if (typeof renderAllFinderNavigationBars === "function") renderAllFinderNavigationBars();
   updateFilePickerLabels();
   updateReviewDeskStats?.();

@@ -22,17 +22,43 @@ body.use-liquid-glass {
   --shade: rgba(255, 255, 255, 0.46);
   --shade-dark: rgba(16, 17, 20, 0.42);
   --desktop: #dce2e6;
-  --alarm-clock-title-bg: transparent;
-  --alarm-clock-surface-bg: rgba(247, 250, 255, 0.58);
-  --alarm-clock-readout-bg: rgba(255, 255, 255, 0.28);
-  --alarm-clock-divider: 1px solid rgba(16, 17, 20, 0.24);
-  --alarm-clock-active-bg: rgba(16, 17, 20, 0.86);
+  --alarm-clock-title-bg: rgba(255, 255, 255, 0.18);
+  --alarm-clock-surface-bg:
+    linear-gradient(135deg, rgba(232, 238, 242, 0.12), rgba(235, 241, 247, 0.16)),
+    rgba(255, 255, 255, 0.14);
+  --alarm-clock-readout-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.46), rgba(255, 255, 255, 0.16)),
+    rgba(255, 255, 255, 0.2);
+  --alarm-clock-divider: 1px solid rgba(16, 17, 20, 0.12);
+  --alarm-clock-active-bg:
+    linear-gradient(180deg, rgba(16, 17, 20, 0.84), rgba(16, 17, 20, 0.68)),
+    rgba(16, 17, 20, 0.76);
   --alarm-clock-active-fg: #ffffff;
-  --alarm-clock-frame-border: 1px solid rgba(16, 17, 20, 0.36);
-  --alarm-clock-frame-radius: 6px;
+  --alarm-clock-frame-border: 1px solid rgba(16, 17, 20, 0.2);
+  --alarm-clock-frame-radius: 8px;
   --alarm-clock-frame-shadow:
-    0 10px 28px rgba(30, 43, 62, 0.18),
+    0 14px 34px rgba(30, 43, 62, 0.16),
     inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  --alarm-clock-close-border: 1px solid rgba(16, 17, 20, 0.48);
+  --alarm-clock-close-radius: 2px;
+  --alarm-clock-close-bg: rgba(255, 255, 255, 0.34);
+  --alarm-clock-close-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58);
+  --alarm-clock-lever-bg: transparent;
+  --alarm-clock-lever-hover-bg: rgba(255, 255, 255, 0.22);
+  --alarm-clock-lever-border: 0;
+  --alarm-clock-lever-radius: 3px;
+  --alarm-clock-lever-fg: rgba(16, 17, 20, 0.78);
+  --alarm-clock-lever-shadow: none;
+  --alarm-clock-lever-focus-outline: 1px solid rgba(16, 17, 20, 0.42);
+  --alarm-clock-lever-focus-shadow: none;
+  --alarm-clock-selection-bg: rgba(0, 122, 255, 0.82);
+  --alarm-clock-selection-fg: #ffffff;
+  --alarm-clock-mode-divider: 0;
+  --alarm-clock-mode-radius: 6px;
+  --alarm-clock-mode-bg: transparent;
+  --alarm-clock-mode-hover-bg: rgba(255, 255, 255, 0.22);
+  --alarm-clock-mode-active-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  --alarm-clock-section-gap: 2px;
   --clio-assistant-message-bg: transparent;
   --clio-assistant-message-border: rgba(16, 17, 20, 0.1);
   --clio-assistant-message-radius: 0;
@@ -51,6 +77,9 @@ body.use-liquid-glass {
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
     0 10px 24px rgba(30, 43, 62, 0.12);
   --clio-muted-copy: rgba(16, 17, 20, 0.58);
+  --clio-copy-font: var(--preview-font);
+  --clio-title-font: var(--preview-font);
+  --clio-control-font: var(--preview-font);
   --clio-grounding-rule: rgba(16, 17, 20, 0.16);
   --clio-use-active-border: rgba(16, 17, 20, 0.28);
   --clio-use-active-bg: rgba(16, 17, 20, 0.92);
@@ -1841,40 +1870,6 @@ body.use-liquid-glass .window.alarm-clock-window {
   box-shadow: var(--alarm-clock-frame-shadow);
   backdrop-filter: blur(12px) saturate(150%);
   -webkit-backdrop-filter: blur(12px) saturate(150%);
-}
-
-body.use-liquid-glass .alarm-clock-window > .alarm-clock-title-bar {
-  grid-template-columns: 28px minmax(0, 1fr) 28px;
-  gap: 0;
-  height: var(--alarm-clock-title-height);
-  min-height: var(--alarm-clock-title-height);
-  margin: 0;
-  padding: 0 6px;
-  border-bottom: var(--alarm-clock-divider);
-  background-color: var(--alarm-clock-title-bg);
-  background-image: none;
-  box-shadow: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
-
-body.use-liquid-glass .alarm-clock-window .close-box {
-  align-self: center;
-  justify-self: center;
-  width: 18px;
-  height: 18px;
-  margin: 0;
-  border: 1px solid rgba(16, 17, 20, 0.56);
-  border-radius: 0;
-  background: rgba(255, 255, 255, 0.3);
-  box-shadow:
-    1px 1px 0 rgba(16, 17, 20, 0.24),
-    inset 0 1px 0 rgba(255, 255, 255, 0.56);
-}
-
-body.use-liquid-glass .alarm-clock-window .close-box::before,
-body.use-liquid-glass .alarm-clock-window .close-box::after {
-  display: none;
 }
 
 body.use-liquid-glass .grow-box {

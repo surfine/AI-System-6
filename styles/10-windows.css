@@ -14,7 +14,8 @@
   display: none;
 }
 
-.desktop-icon.is-hidden {
+.desktop-icon.is-hidden,
+.desktop-icon[hidden] {
   display: none;
 }
 
@@ -106,6 +107,10 @@ body.quick-draft-focus .writing-spine-panel {
   background: transparent;
   border: 0;
   padding: 0;
+}
+
+.spine-actions button[hidden] {
+  display: none;
 }
 
 .spine-actions-split button {
@@ -884,6 +889,18 @@ html:lang(zh-Hans) .title-bar h2 {
   border-bottom: var(--window-frame-reserve) solid transparent;
 }
 
+/* ClioTalk's composer already clears the 16px Classic frame lanes with its
+   own right and bottom margins. Keep the marker classes for the shared frame
+   contract, but do not let their transparent reserve replace this component's
+   visible border (the unequal border widths otherwise create diagonal seams). */
+.window .composer.is-frame-margin {
+  border-right: var(--clio-composer-border);
+}
+
+.window .composer.is-frame-tail {
+  border-bottom: var(--clio-composer-border);
+}
+
 /* Deliberately unlayered: the bars are appended after the content area, so DOM
    order alone keeps them on top — the grow box owns the only local layer. */
 .window-frame-bar {
@@ -1432,7 +1449,7 @@ html:lang(zh-Hans) .title-bar h2 {
   min-height: 22px;
   padding-inline: 14px;
   color: var(--clio-muted-copy);
-  font-family: var(--preview-font);
+  font-family: var(--clio-control-font);
   font-size: 10px;
 }
 
@@ -1615,7 +1632,7 @@ html:lang(zh-Hans) .title-bar h2 {
   box-shadow: var(--clio-context-control-shadow);
   color: var(--clio-muted-copy);
   font: inherit;
-  font-family: var(--preview-font);
+  font-family: var(--clio-control-font);
   font-size: 11px;
   text-align: left;
   text-overflow: ellipsis;
@@ -1710,7 +1727,7 @@ html:lang(zh-Hans) .title-bar h2 {
 .message-content {
   min-width: 0;
   max-width: 74ch;
-  font-family: var(--text-font);
+  font-family: var(--clio-copy-font);
   line-height: 1.45;
 }
 
@@ -1788,7 +1805,7 @@ html:lang(zh-Hans) .title-bar h2 {
 
 .assistant-window:not(.is-quick-draft-sideask) .message-content {
   max-width: none;
-  font-family: var(--preview-font);
+  font-family: var(--clio-copy-font);
   font-size: 15px;
   line-height: 1.62;
 }
@@ -1834,7 +1851,7 @@ html:lang(zh-Hans) .title-bar h2 {
   grid-column: 2;
   max-width: none;
   color: var(--clio-muted-copy);
-  font-family: var(--preview-font);
+  font-family: var(--clio-copy-font);
   font-size: 15px;
   line-height: 1.6;
 }
@@ -1847,7 +1864,7 @@ html:lang(zh-Hans) .title-bar h2 {
 .assistant-window:not(.is-quick-draft-sideask) .clio-welcome .message-content strong {
   margin-bottom: 10px;
   color: var(--ink);
-  font-family: var(--preview-font);
+  font-family: var(--clio-title-font);
   font-size: clamp(24px, 4vw, 30px);
   font-weight: 500;
   letter-spacing: -0.025em;
@@ -1998,11 +2015,35 @@ html:lang(zh-Hans) .title-bar h2 {
   color: var(--clio-use-active-fg);
 }
 
-.message-more-summary {
-  width: 30px;
-  min-width: 30px;
-  padding-inline: 5px;
-  letter-spacing: 1px;
+.message-actions .message-use-actions > summary,
+.message-actions .message-more-actions > .message-more-summary {
+  box-sizing: border-box;
+  height: 24px;
+  min-height: 24px;
+}
+
+.message-actions .message-use-actions > summary {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  padding: 1px 7px;
+}
+
+.message-actions .message-more-actions > .message-more-summary {
+  display: inline-grid;
+  width: 24px;
+  min-width: 24px;
+  place-items: center;
+  padding: 0;
+}
+
+.message-more-glyph {
+  display: block;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: -5px 0 0 currentColor, 5px 0 0 currentColor;
 }
 
 .message-use-menu,
@@ -2059,7 +2100,7 @@ html:lang(zh-Hans) .title-bar h2 {
 .message-translation > b {
   display: block;
   margin-bottom: 6px;
-  font-family: var(--title-font);
+  font-family: var(--clio-title-font);
 }
 
 .message-content > *:first-child {
@@ -2138,7 +2179,7 @@ html:lang(zh-Hans) .title-bar h2 {
   padding: 0;
   border: 0;
   background: transparent;
-  font-family: var(--preview-font);
+  font-family: var(--clio-title-font);
   line-height: 1.3;
 }
 
@@ -2220,7 +2261,7 @@ html:lang(zh-Hans) .title-bar h2 {
 }
 
 .wait-copy {
-  font-family: var(--text-font);
+  font-family: var(--clio-copy-font);
 }
 
 .progress-track {
@@ -2276,7 +2317,7 @@ html:lang(zh-Hans) .title-bar h2 {
 }
 
 .speaker {
-  font-family: var(--ui-font);
+  font-family: var(--clio-control-font);
   font-weight: 700;
 }
 
@@ -2374,7 +2415,7 @@ html:lang(zh-Hans) .title-bar h2 {
   box-shadow: none;
   resize: none;
   field-sizing: content;
-  font-family: var(--preview-font);
+  font-family: var(--clio-copy-font);
   font-size: 16px;
   line-height: 1.5;
 }
@@ -2397,14 +2438,15 @@ html:lang(zh-Hans) .title-bar h2 {
 .clio-run-assembly {
   position: relative;
   min-width: 0;
-  font-family: var(--preview-font);
+  font-family: var(--clio-control-font);
 }
 
 .clio-run-assembly > summary {
   box-sizing: border-box;
   max-width: min(42ch, 38vw);
-  min-height: 30px;
-  padding: 6px 23px 6px 10px;
+  height: 36px;
+  min-height: 36px;
+  padding: 9px 23px 9px 10px;
   overflow: hidden;
   border: var(--clio-context-control-border);
   border-radius: var(--clio-context-control-radius);
@@ -2426,7 +2468,7 @@ html:lang(zh-Hans) .title-bar h2 {
 .clio-run-assembly > summary::after {
   content: "⌃";
   position: absolute;
-  top: 6px;
+  top: 9px;
   right: 8px;
   color: inherit;
 }
@@ -2626,7 +2668,7 @@ html:lang(zh-Hans) .title-bar h2 {
   min-width: 0;
   overflow: hidden;
   color: var(--clio-muted-copy);
-  font-family: var(--preview-font);
+  font-family: var(--clio-control-font);
   font-size: 10px;
   text-align: right;
   text-overflow: ellipsis;
@@ -2758,7 +2800,7 @@ html:lang(zh-Hans) .title-bar h2 {
   background: transparent;
   color: var(--ink);
   font: inherit;
-  font-family: var(--preview-font);
+  font-family: var(--clio-control-font);
   text-align: left;
   white-space: normal;
   display: grid;

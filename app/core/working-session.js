@@ -39,6 +39,30 @@ function clampWorkingSessionNumber(value, min, max, fallback = min) {
   return Math.max(min, Math.min(max, number));
 }
 
+function captureTextControlWorkingSession(control) {
+  return {
+    selectionStart: control?.selectionStart ?? 0,
+    selectionEnd: control?.selectionEnd ?? control?.selectionStart ?? 0,
+    selectionDirection: control?.selectionDirection || "none",
+    scrollTop: control?.scrollTop || 0,
+    focused: document.activeElement === control,
+  };
+}
+
+function restoreTextControlWorkingSession(control, state = {}, options = {}) {
+  if (!control) return;
+  const start = Math.min(Math.max(0, Number(state.selectionStart) || 0), control.value.length);
+  const end = Math.min(Math.max(start, Number(state.selectionEnd) || start), control.value.length);
+  control.setSelectionRange(start, end, ["forward", "backward"].includes(state.selectionDirection) ? state.selectionDirection : "none");
+  control.scrollTop = Math.max(0, Number(state.scrollTop) || 0);
+  if (state.focused && options.windowName) {
+    const win = getWindow(options.windowName);
+    if (win && !win.classList.contains("is-hidden") && !control.classList.contains("is-hidden")) {
+      control.focus({ preventScroll: true });
+    }
+  }
+}
+
 function inlineStyleValue(el, property) {
   return el?.style?.getPropertyValue(property) || "";
 }
@@ -305,6 +329,8 @@ function captureWindowWorkingSession() {
   };
 }
 
+const intrinsicSessionSizeWindowNames = new Set(["alarmClock"]);
+
 function applyWindowSessionFrame(win, frame = {}) {
   if (!win || (typeof isPortraitDocumentFlow === "function" && isPortraitDocumentFlow())) return;
   const desktop = document.querySelector(".desktop");
@@ -319,13 +345,26 @@ function applyWindowSessionFrame(win, frame = {}) {
   const height = parsePx(frame.height);
   const left = parsePx(frame.left);
   const top = parsePx(frame.top);
+  const restoresIntrinsicSize = intrinsicSessionSizeWindowNames.has(win.dataset.window);
 
-  setInlineStyleValue(win, "width", width !== null ? `${clampWorkingSessionNumber(width, 180, maxWidth, 360)}px` : frame.width || "");
-  setInlineStyleValue(win, "height", height !== null ? `${clampWorkingSessionNumber(height, 120, maxHeight, 320)}px` : frame.height || "");
+  setInlineStyleValue(
+    win,
+    "width",
+    restoresIntrinsicSize
+      ? ""
+      : (width !== null ? `${clampWorkingSessionNumber(width, 180, maxWidth, 360)}px` : frame.width || ""),
+  );
+  setInlineStyleValue(
+    win,
+    "height",
+    restoresIntrinsicSize
+      ? ""
+      : (height !== null ? `${clampWorkingSessionNumber(height, 120, maxHeight, 320)}px` : frame.height || ""),
+  );
   setInlineStyleValue(win, "left", left !== null ? `${clampWorkingSessionNumber(left, 0, Math.max(0, maxWidth - 80), 18)}px` : frame.left || "");
   setInlineStyleValue(win, "top", top !== null ? `${clampWorkingSessionNumber(top, 0, Math.max(0, maxHeight - 40), 18)}px` : frame.top || "");
   setInlineStyleValue(win, "right", frame.right || "auto");
-  setInlineStyleValue(win, "max-height", frame.maxHeight || "");
+  setInlineStyleValue(win, "max-height", restoresIntrinsicSize ? "" : frame.maxHeight || "");
   setInlineStyleValue(win, "transform", frame.transform || "none");
 }
 
@@ -530,9 +569,7 @@ function captureTeachTextWorkingSession() {
     fileLabel: teachTextFileLabel,
     workflowState: teachTextWorkflowState,
     documentRole: teachTextDocumentRole,
-    selectionStart: teachTextBodyInput?.selectionStart ?? 0,
-    selectionEnd: teachTextBodyInput?.selectionEnd ?? 0,
-    scrollTop: teachTextBodyInput?.scrollTop || 0,
+    editor: captureTextControlWorkingSession(teachTextBodyInput),
   };
 }
 
@@ -551,10 +588,7 @@ function restoreTeachTextWorkingSession(state = {}) {
   if (typeof updateTeachTextBoundaries === "function") updateTeachTextBoundaries();
   if (typeof updateTeachTextDeskState === "function") updateTeachTextDeskState();
   requestAnimationFrame(() => {
-    const start = Math.min(Number(state.selectionStart) || 0, teachTextBodyInput.value.length);
-    const end = Math.min(Number(state.selectionEnd) || start, teachTextBodyInput.value.length);
-    teachTextBodyInput.setSelectionRange(start, end);
-    teachTextBodyInput.scrollTop = Number(state.scrollTop) || 0;
+    restoreTextControlWorkingSession(teachTextBodyInput, state.editor || state, { windowName: "teachText" });
   });
   return true;
 }
@@ -646,20 +680,26 @@ async function restoreTimeMachineWorkingSession(state = {}) {
 function captureWritingFlowWorkingSession() {
   return {
     projectId: activeProjectId,
+    toolsShaded: writingToolsPanelEl?.classList.contains("is-shaded") || false,
+    toolsViewMode: writingToolsViewMode,
     selectedDraftIndex,
     questionSheet: questionSheetBodyInput?.value || "",
     outline: outlineContentEl?.value || "",
     draftTitle: draftTitleInput?.value || "",
     draftBody: draftBodyInput?.value || "",
     draftSection: draftSectionSelectEl?.value || "",
-    questionScrollTop: questionSheetBodyInput?.scrollTop || 0,
-    outlineScrollTop: outlineContentEl?.scrollTop || 0,
-    draftScrollTop: draftBodyInput?.scrollTop || 0,
+    questionEditor: captureTextControlWorkingSession(questionSheetBodyInput),
+    outlineEditor: captureTextControlWorkingSession(outlineContentEl),
+    draftEditor: captureTextControlWorkingSession(draftBodyInput),
   };
 }
 
 function restoreWritingFlowWorkingSession(state = {}) {
   if (state.projectId && state.projectId !== activeProjectId) return false;
+  writingToolsPanelEl?.classList.toggle("is-shaded", !!state.toolsShaded);
+  if (["small-icon", "icon"].includes(state.toolsViewMode)) writingToolsViewMode = state.toolsViewMode;
+  if (typeof applyWritingToolsViewMode === "function") applyWritingToolsViewMode();
+  if (typeof syncWritingToolsShadeToggle === "function") syncWritingToolsShadeToggle();
   selectedDraftIndex = Number.isInteger(state.selectedDraftIndex) ? state.selectedDraftIndex : selectedDraftIndex;
   if (questionSheetBodyInput) questionSheetBodyInput.value = String(state.questionSheet || questionSheetBodyInput.value || "");
   if (outlineContentEl) outlineContentEl.value = String(state.outline || outlineContentEl.value || "");
@@ -669,9 +709,10 @@ function restoreWritingFlowWorkingSession(state = {}) {
   if (typeof savePipelineData === "function") savePipelineData();
   if (typeof renderPipeline === "function") renderPipeline();
   requestAnimationFrame(() => {
-    questionSheetBodyInput.scrollTop = Number(state.questionScrollTop) || 0;
-    outlineContentEl.scrollTop = Number(state.outlineScrollTop) || 0;
-    draftBodyInput.scrollTop = Number(state.draftScrollTop) || 0;
+    if (draftSectionSelectEl && state.draftSection) draftSectionSelectEl.value = String(state.draftSection);
+    restoreTextControlWorkingSession(questionSheetBodyInput, state.questionEditor || { scrollTop: state.questionScrollTop }, { windowName: "questionSheet" });
+    restoreTextControlWorkingSession(outlineContentEl, state.outlineEditor || { scrollTop: state.outlineScrollTop }, { windowName: "outline" });
+    restoreTextControlWorkingSession(draftBodyInput, state.draftEditor || { scrollTop: state.draftScrollTop }, { windowName: "sectionDrafts" });
   });
   return true;
 }
@@ -682,7 +723,7 @@ function captureReviewDeskWorkingSession() {
     body: reviewDeskBodyInput?.value || "",
     dirty: !!reviewDeskDirty,
     section: reviewSectionSelectEl?.value || "",
-    scrollTop: reviewDeskBodyInput?.scrollTop || 0,
+    editor: captureTextControlWorkingSession(reviewDeskBodyInput),
     previewHidden: reviewDeskPreviewEl?.classList.contains("is-hidden") ?? true,
   };
 }
@@ -697,7 +738,13 @@ function restoreReviewDeskWorkingSession(state = {}) {
   reviewDeskBodyInput?.classList.toggle("is-hidden", state.previewHidden === false);
   if (typeof updateReviewDeskStats === "function") updateReviewDeskStats();
   requestAnimationFrame(() => {
-    if (reviewDeskBodyInput) reviewDeskBodyInput.scrollTop = Number(state.scrollTop) || 0;
+    if (reviewSectionSelectEl && state.section) {
+      reviewSectionSelectEl.value = String(state.section);
+      const index = Number(reviewSectionSelectEl.value || 0);
+      if (typeof selectStyleCheckSection === "function") selectStyleCheckSection(index);
+      if (typeof selectClaimCheckSection === "function") selectClaimCheckSection(index);
+    }
+    restoreTextControlWorkingSession(reviewDeskBodyInput, state.editor || { scrollTop: state.scrollTop }, { windowName: "reviewDesk" });
   });
   return true;
 }

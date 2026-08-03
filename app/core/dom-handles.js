@@ -53,6 +53,7 @@ function getElements() {
   const textDiskCountEl = document.querySelector("#text-disk-count");
   const textDiskGridEl = document.querySelector("#text-disk-grid");
   const currentProjectLabelEl = document.querySelector("#current-project-label");
+  const desktopProjectCdEl = document.querySelector("#desktop-project-cd");
   const projectSwitcherButton = document.querySelector("#project-switcher-button");
   const projectSwitcherLabelEl = document.querySelector("#project-switcher-label");
   const projectSwitcherPopoverEl = document.querySelector("#project-switcher-popover");
@@ -60,11 +61,8 @@ function getElements() {
   const startupModeInputs = document.querySelectorAll("input[name='startup-mode']");
   const startupOpenOptionInputs = document.querySelectorAll("input[name='startup-open']");
   const startupSelectedItemsLabelEl = document.querySelector("#startup-selected-items-label");
-  const spineProjectNameEl = document.querySelector("#spine-project-name");
-  const spineProjectMetaEl = document.querySelector("#spine-project-meta");
-  const spineProjectButtonEl = document.querySelector("#spine-project-button");
   const spineFileFloppyButtonEl = document.querySelector("#spine-file-floppy-button");
-  const spineFileFloppyLabelEl = document.querySelector("#spine-file-floppy-label");
+  const spineBurnProjectCdButtonEl = document.querySelector("#spine-burn-project-cd-button");
   const writingToolsPanelEl = document.querySelector(".writing-spine-panel");
   const writingToolsShadeToggleEl = document.querySelector(".spine-shade-toggle");
   const assistantProjectStatusEl = document.querySelector("#assistant-project-status");
@@ -104,7 +102,6 @@ function getElements() {
   const emptyTrashButton = document.querySelector("#empty-trash");
   const projectCdCountEl = document.querySelector("#project-cd-count");
   const projectCdGridEl = document.querySelector("#project-cd-grid");
-  const burnProjectAuditCapsuleButton = document.querySelector("#burn-project-audit-capsule");
   const downloadProjectCdButton = document.querySelector("#download-project-cd");
   const printProjectCdPdfButton = document.querySelector("#print-project-cd-pdf");
   const clearProjectCdButton = document.querySelector("#clear-project-cd");
@@ -437,6 +434,7 @@ function getElements() {
     textDiskCountEl,
     textDiskGridEl,
     currentProjectLabelEl,
+    desktopProjectCdEl,
     projectSwitcherButton,
     projectSwitcherLabelEl,
     projectSwitcherPopoverEl,
@@ -444,11 +442,8 @@ function getElements() {
     startupModeInputs,
     startupOpenOptionInputs,
     startupSelectedItemsLabelEl,
-    spineProjectNameEl,
-    spineProjectMetaEl,
-    spineProjectButtonEl,
     spineFileFloppyButtonEl,
-    spineFileFloppyLabelEl,
+    spineBurnProjectCdButtonEl,
     writingToolsPanelEl,
     writingToolsShadeToggleEl,
     assistantProjectStatusEl,
@@ -488,7 +483,6 @@ function getElements() {
     emptyTrashButton,
     projectCdCountEl,
     projectCdGridEl,
-    burnProjectAuditCapsuleButton,
     downloadProjectCdButton,
     printProjectCdPdfButton,
     clearProjectCdButton,

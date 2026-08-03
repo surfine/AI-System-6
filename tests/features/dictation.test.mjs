@@ -6,6 +6,7 @@ import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 const test = createFeatureTest("dictation");
 
 const dictation = read("app/features/dictation.js");
+const html = read("index.html");
 const dictationPrompt = read("app/content/ai-prompts/other-apps/dictation-clean.md");
 const windowManager = read("app/core/window-manager.js");
 const chatMessages = read("app/core/chat-messages.js");
@@ -31,6 +32,8 @@ test.assertIncludes(dictation, "withMarkdownModelMessages(buildDictationCleanMes
 test.assertIncludes(dictation, "ai_system6_task_kind: \"dictation-clean\"", "cleanup identifies itself to local model tuning");
 test.assertIncludes(dictation, "temperature: 0.25", "cleanup uses a restrained local-model temperature");
 test.assertIncludes(dictation, "max_tokens: 900", "cleanup is bounded for small local models");
+test.assertIncludes(dictation, "target.closest?.('[data-dictation=\"off\"]')", "technical fields can explicitly reject the floating dictation shortcut");
+test.assertIncludes(html, 'id="alarm-clock-value" type="text" value="--:--:-- --" autocomplete="off" spellcheck="false" inputmode="numeric" data-dictation="off"', "Alarm Clock time editing never summons Dictation over the desk accessory");
 test.assertIncludes(windowManager, "function raiseVisibleDeskAccessorySidecars", "Dictation Pad shares the floating sidecar layer manager");
 test.assertMatches(
   windowManager,

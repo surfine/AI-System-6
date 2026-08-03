@@ -5,8 +5,12 @@
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("finder-navigation");
+const index = read("index.html");
 const windowManager = read("app/core/window-manager.js");
 const projectDisk = read("app/features/project-disk.js");
+const exportImport = read("app/features/export-import.js");
+const workingSession = read("app/core/working-session.js");
+const domHandles = read("app/core/dom-handles.js");
 const documents = read("app/features/documents-chat.js");
 const desktopRuntime = read("app/core/desktop-runtime.js");
 const fileDisk = read("app/features/file-disk.js");
@@ -18,10 +22,14 @@ const startupDiskBlock = app.match(/function getStartupDiskItems\(\) \{[\s\S]*?\
 const actions = read("app/core/actions.js");
 const menus = read("app/data/menus.js");
 const base = read("styles/40-icons.css");
+const appsCss = read("styles/50-apps.css");
 const responsive = read("styles/60-responsive.css");
 const liquid = read("styles/70-liquid-glass.css");
 const en = read("app/data/translations-en.js");
 const zh = read("app/data/translations-zh.js");
+const desktopIconColumn = index.match(/<section class="icon-column"[\s\S]*?<\/section>/)?.[0] || "";
+const applicationsWindow = index.match(/<section class="window finder-window applications-window[\s\S]*?<\/section>/)?.[0] || "";
+const writingFlowPanel = index.match(/<section class="writing-spine-panel"[\s\S]*?<\/section>\s*<\/section>/)?.[0] || "";
 
 test.assertIncludes(windowManager, "const finderParentWindowNames = new Map([", "static Finder locations declare their real parents");
 test.assertIncludes(windowManager, "function finderFolderTrail(folderId)", "folder breadcrumbs retain real folder ids");
@@ -56,6 +64,57 @@ test.assertIncludes(desktopRuntime, "getFinderVolumeSelectedItem(name) || getFin
 test.assertMatches(desktopRuntime, /if \(\["textDisk", "rag"\]\.includes\(activeName\)\)[\s\S]*ejectTextDisk\(\)/, "Finder Eject removes the whole File Floppy volume");
 test.assertIncludes(printDirectory, 'if (activeName === "textDisk")', "Print Directory supports File Floppy");
 test.assertIncludes(printDirectory, 'if (activeName === "projectCd")', "Print Directory supports Project CD");
+
+test.assertIncludes(desktopIconColumn, 'data-open="applications"', "the desktop exposes the complete application catalogue through one folder");
+test.assertIncludes(appsCss, "grid-template-columns: minmax(0, 1fr);", "desktop icon labels cannot widen the shared icon column and shift an icon off center");
+[
+  "open-quick-draft",
+  "open-find-path",
+  "open-reader",
+  "open-time-machine",
+  "open-docmap",
+  "open-scrapbook",
+  "open-assistant",
+  "open-clio-stage",
+  "open-clio-chart",
+  "open-liquid-cover",
+].forEach((action) => {
+  test.assertNotIncludes(desktopIconColumn, `data-action="${action}"`, `${action} stays in Applications instead of duplicating onto the desktop`);
+  test.assertIncludes(applicationsWindow, `data-action="${action}"`, `${action} remains discoverable in the Applications folder`);
+});
+test.assertIncludes(desktopIconColumn, 'id="active-project-drop-target"', "the mounted Project Hard Disk is a real desktop drop target");
+test.assertIncludes(desktopIconColumn, 'id="desktop-project-cd"', "a burned Project CD can join the current desktop working set");
+test.assertIncludes(projectDisk, 'currentProjectIcon?.classList.toggle("is-hidden", !project);', "the Project Hard Disk icon follows mount state");
+test.assertIncludes(projectDisk, "scheduleWorkingSessionSave();", "shading Writing Flow updates the resumable session");
+test.assertIncludes(exportImport, "desktopProjectCdEl.hidden = !hasVisibleItems;", "Project CD media state remains independent from workspace visibility");
+test.assertIncludes(fileDisk, "mountedTextDiskEl.hidden = !mounted;", "File Floppy media state remains independent from workspace visibility");
+test.assertIncludes(read("styles/10-windows.css"), ".desktop-icon[hidden]", "unmounted desktop media stays hidden even when its workspace is visible");
+test.assertIncludes(domHandles, 'document.querySelector("#desktop-project-cd")', "the Project CD desktop volume uses a centralized DOM handle");
+test.assertIncludes(workingSession, 'toolsShaded: writingToolsPanelEl?.classList.contains("is-shaded") || false', "Working Session remembers the Writing Flow shade state");
+test.assertIncludes(workingSession, 'toolsViewMode: writingToolsViewMode', "Working Session remembers the Writing Flow icon density");
+test.assertIncludes(index, 'id="project-switcher-button"', "the menu bar remains the single current-project indicator");
+["open-project-disks", "open-project-cd"].forEach((action) => {
+  test.assertNotIncludes(writingFlowPanel, `data-action="${action}"`, `${action} remains a volume concern instead of duplicating into Writing Flow`);
+});
+test.assertIncludes(writingFlowPanel, 'id="spine-file-floppy-button"', "Writing Flow offers an Insert File Floppy action before media is mounted");
+test.assertIncludes(writingFlowPanel, 'data-action="open-rag"', "the insertion action opens the File Floppy mounting surface");
+test.assertNotIncludes(writingFlowPanel, 'data-action="open-text-disk"', "Writing Flow never duplicates the mounted File Floppy volume");
+test.assertIncludes(fileDisk, "spineFileFloppyButtonEl.hidden = mounted;", "mounting swaps the Writing Flow insertion action for the desktop volume");
+test.assertIncludes(writingFlowPanel, 'id="spine-burn-project-cd-button"', "Writing Flow offers a Burn Project CD action before delivery media exists");
+test.assertIncludes(writingFlowPanel, 'data-action="export-teachtext-project-cd"', "the burn action uses the production TeachText export path");
+test.assertIncludes(writingFlowPanel, 'data-action-availability="independent"', "Writing Flow owns route action availability instead of inheriting the active window menu state");
+test.assertIncludes(windowManager, "btn.closest(\"[data-action-availability='independent']\")", "menu availability clears stale disabled state from independent Writing Flow actions");
+test.assertIncludes(exportImport, "function projectCdBurnIsAvailable()", "Project CD owns one shared burn-availability decision");
+test.assertIncludes(exportImport, "if (!getActiveProject()) return false;", "burning stays hidden until a project is mounted");
+test.assertIncludes(exportImport, 'const body = String(teachTextBodyInput?.value || "").trim();', "burning stays hidden while the manuscript is empty");
+test.assertIncludes(exportImport, 'activeTeachTextAllows("projectCdExport")', "burning follows the active TeachText document role");
+test.assertIncludes(exportImport, "visibleItems.length > 0 || !projectCdBurnIsAvailable()", "the Writing Flow burn action appears only before media exists and while burning is available");
+test.assertIncludes(windowManager, "syncProjectCdBurnActionVisibility();", "Writing Flow burn visibility refreshes with shared menu and document state");
+test.assertIncludes(actions, '"export-teachtext-project-cd": exportTeachTextToProjectCd', "the Writing Flow burn action creates a real Project CD item");
+test.assertIncludes(en, 'burn_project_cd: "Burn Project CD"', "English names the pre-media action as a burn operation");
+test.assertIncludes(zh, 'burn_project_cd: "刻录项目光盘"', "Chinese names the pre-media action as a burn operation");
+test.assertNotIncludes(domHandles, "spineProjectNameEl", "removed project status controls leave no dead DOM plumbing");
+test.assertNotIncludes(projectDisk, "function updateWritingSpine()", "project updates no longer maintain duplicate Writing Flow volume status");
 
 test.assertIncludes(actions, "function createFolderFromMenu()", "Finder can create a folder in the current directory");
 test.assertIncludes(documents, "function renameActiveFile()", "Finder can rename selected files and folders");

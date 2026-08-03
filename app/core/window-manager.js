@@ -1479,10 +1479,16 @@ function getActionAvailability() {
   const teachTextCanExport = typeof activeTeachTextAllows === "function"
     ? activeTeachTextAllows("projectCdExport")
     : teachTextIsManuscript;
+  const teachTextIsSlides = hasTeachTextBody && typeof readerHasMarpFrontmatter === "function" && readerHasMarpFrontmatter(teachTextBodyInput.value || "");
+  const teachTextCanBurnProjectCd = typeof projectCdBurnIsAvailable === "function"
+    ? projectCdBurnIsAvailable()
+    : !!getActiveProject() && hasTeachTextBody && (
+      teachTextCanExport
+      || teachTextIsSlides
+    );
   const teachTextCanReview = typeof activeTeachTextAllows === "function"
     ? activeTeachTextAllows("review")
     : teachTextIsManuscript;
-  const teachTextIsSlides = hasTeachTextBody && typeof readerHasMarpFrontmatter === "function" && readerHasMarpFrontmatter(teachTextBodyInput.value || "");
   let selectionContext = null;
   try {
     selectionContext = getSelectionServiceContext() || lastSelectionServiceContext;
@@ -1573,7 +1579,7 @@ function getActionAvailability() {
     "copy-active-markdown": isTeachText || isChatFile,
     "download-active-markdown": isTeachText || isChatFile,
     "download-active-bilingual-markdown": hasTeachTextTranslation,
-    "export-teachtext-project-cd": hasTeachTextBody && (teachTextCanExport || teachTextIsSlides),
+    "export-teachtext-project-cd": teachTextCanBurnProjectCd,
     "print-to-slides": (hasTeachTextBody && teachTextCanExport) || hasOutlineBody,
     "ai-print-to-slides": (hasTeachTextBody && teachTextCanExport) || hasOutlineBody,
     "generate-marp-open-clio-stage": hasTeachTextBody && teachTextCanExport,
@@ -1863,6 +1869,7 @@ function invalidateMenuActionCache() {
 function updateMenuState() {
   if (typeof renderAppMenuBar === "function") renderAppMenuBar(menuOwnerAppId || activeAppId);
   const state = getActionAvailability();
+  if (typeof syncProjectCdBurnActionVisibility === "function") syncProjectCdBurnActionVisibility();
   const activeWin = document.querySelector(".window.is-active:not(.is-hidden)");
   const activeViewWindow = viewWindowNames.includes(activeWin?.dataset.window) ? activeWin.dataset.window : null;
   const viewTargetIsWritingTools = !activeViewWindow && writingToolsAreViewTarget();
@@ -1874,7 +1881,9 @@ function updateMenuState() {
 
   menuActionElements().forEach(btn => {
     const action = btn.dataset.action;
-    if (state[action] !== undefined) {
+    if (btn.closest("[data-action-availability='independent']")) {
+      btn.classList.remove("is-disabled");
+    } else if (state[action] !== undefined) {
       btn.classList.toggle("is-disabled", !state[action]);
     }
     if (action === "toggle-sideask") {

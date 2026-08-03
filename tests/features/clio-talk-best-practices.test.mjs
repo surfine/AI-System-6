@@ -24,8 +24,6 @@ const surfaceSnapshots = read("scripts/css-surface-snapshot.mjs");
 const dictionary = read("app/data/system-dictionary.js");
 const translationsEn = read("app/data/translations-en.js");
 const translationsZh = read("app/data/translations-zh.js");
-const exportImport = read("app/features/export-import.js");
-const appEntry = read("app.js");
 const contextRetrieval = read("app/core/context-retrieval.js");
 const dragDrop = read("app/core/drag-drop.js");
 
@@ -139,19 +137,6 @@ test.assertIncludes(dictionary, "Replies remain temporary writing material until
 test.assertIncludes(dictionary, "回复仍只是临时写作材料", "Chinese System Help keeps the reply destination boundary aligned with the UI");
 test.assertIncludes(dictionary, "it can be reopened in ClioTalk, continued, previewed, or downloaded as Markdown", "System Help reflects current saved-chat resume and export behavior");
 test.assertIncludes(dictionary, "首条消息会创建 Chat 文件", "Chinese System Help reflects the file-native Chat lifecycle");
-test.assertIncludes(exportImport, "function buildProjectAuditCapsule", "Project CD can build an auditable delivery snapshot");
-test.assertIncludes(exportImport, 'schemaVersion: projectAuditCapsuleSchemaVersion', "Audit capsules carry an explicit schema version");
-test.assertIncludes(exportImport, "actualPrompts:", "Audit capsules include actual prompt-run records and hashes");
-test.assertIncludes(exportImport, "conversationLineage:", "Audit capsules include conversation genealogy");
-test.assertIncludes(exportImport, "externalBodies: embedExternalBodies", "External bodies are opt-in rather than embedded by default");
-test.assertIncludes(exportImport, "reference.body || reference.text || reference.content || (reference.chunks", "Audit capsules hash the real indexed reference body or chunks");
-test.assertIncludes(exportImport, "Not included; content hashes, sources, and licenses are recorded instead.", "Audit capsules disclose omitted external bodies");
-test.assertIncludes(exportImport, "requires fresh confirmation of the model and external capabilities", "Audit capsules make rerun confirmation explicit");
-test.assertIncludes(exportImport, "function burnProjectAuditCapsule", "Project CD exposes a pre-burn audit capsule action");
-test.assertIncludes(appEntry, "burnProjectAuditCapsuleButton,", "The audit capsule button is bound into the app runtime");
-test.assertIncludes(translationsEn, "burn_audit_capsule", "English Project CD labels the audit capsule action");
-test.assertIncludes(translationsZh, "burn_audit_capsule", "Chinese Project CD labels the audit capsule action");
-test.assertIncludes(dictionary, "Project Audit Capsules", "System Help documents the audit capsule boundary");
 test.assertIncludes(chatMessages, 'editBtn.textContent = t("clio_edit_and_branch")', "User messages expose edit-and-branch without overwriting history");
 test.assertIncludes(translationsEn, 'clio_edit_and_branch: "Edit"', "English UI names the safe branch operation as a familiar Edit action");
 test.assertIncludes(translationsZh, 'clio_edit_and_branch: "编辑"', "Chinese UI names the safe branch operation as a familiar Edit action");
@@ -403,17 +388,35 @@ test.assertIncludes(chatMessages, 't("clio_working_steps")', "Streaming steps ha
 test.assertIncludes(chatMessages, "clioTalkAssistantDisplayName()", "Pending and resolved SideAsk replies preserve their visible assistant identity");
 test.assertMatches(wireup, /compose-tools-menu"\)\?\.addEventListener\("keydown"[\s\S]*ArrowDown[\s\S]*ArrowUp[\s\S]*Home[\s\S]*End[\s\S]*Escape[\s\S]*composeToolsToggleButton\?\.focus\(\)/, "The composer tool menu supports menu-key navigation and restores focus on Escape");
 test.assertMatches(chatMessages, /function installClioTalkDetailsMenu[\s\S]*Escape[\s\S]*summary\.focus\(\)[\s\S]*ArrowDown[\s\S]*ArrowUp[\s\S]*Home[\s\S]*End/, "Message action menus support full menu-key navigation and restore focus");
+test.assertIncludes(chatMessages, 'glyph.className = "message-more-glyph"', "The overflow action uses a stable icon hook instead of font-dependent punctuation");
+test.assertIncludes(chatMessages, 'glyph.setAttribute("aria-hidden", "true")', "The decorative overflow glyph stays out of the accessible name");
+test.assertNotIncludes(chatMessages, 'summary.textContent = "•••"', "The overflow action no longer relies on an off-center text glyph");
 test.assertIncludes(scrapbook, "scraps.find(s => s.id === id && isInActiveProject(s))", "Attached clips cannot leak across projects");
 test.assertIncludes(scrapbook, 'btn.setAttribute("aria-label", t("clio_remove_attachment", scrap.title))', "Each attached clip has an explicit accessible removal action");
 test.assertMatches(scrapbook, /function toggleClipAttachment[\s\S]*scheduleRenderTasks\("contextPanel"\)[\s\S]*scheduleWorkingSessionSave\(\)/, "Attachment changes immediately update context receipts and the working session");
 test.assertIncludes(styles, ".message-actions", "Progressive message actions retain a stable styling hook");
 test.assertMatches(styles, /\.message-actions \{[\s\S]*opacity: 0;[\s\S]*\.message:last-child \.message-actions,[\s\S]*\.message:focus-within \.message-actions,[\s\S]*\.message-actions:has\(details\[open\]\)/, "Message actions stay quiet until the latest turn, hover, focus, or an open menu needs them");
 test.assertMatches(styles, /\.message-use-menu,[\s\S]*\.message-action-menu \{[\s\S]*position: absolute;/, "Reply and overflow menus overlay the reading surface instead of expanding the message");
+test.assertMatches(styles, /\.message-actions \.message-use-actions > summary,\s*\.message-actions \.message-more-actions > \.message-more-summary \{[^}]*height: 24px;[^}]*min-height: 24px;/, "Use Result and overflow share one quiet 24-pixel reply-action height");
+test.assertMatches(styles, /\.message-actions \.message-use-actions > summary \{[^}]*display: inline-flex;[^}]*min-width: 0;[^}]*align-items: center;[^}]*padding: 1px 7px;/, "Use Result centers its label and sizes to its copy instead of inheriting the generic button width");
+test.assertMatches(styles, /\.message-actions \.message-more-actions > \.message-more-summary \{[^}]*display: inline-grid;[^}]*width: 24px;[^}]*min-width: 24px;[^}]*place-items: center;[^}]*padding: 0;/, "The overflow action stays a compact square icon target");
+test.assertMatches(styles, /\.message-more-glyph \{[^}]*width: 3px;[^}]*height: 3px;[^}]*box-shadow: -5px 0 0 currentColor, 5px 0 0 currentColor;/, "The overflow icon draws three crisp theme-colored dots without font metrics");
 test.assertMatches(styles, /\.compose-tools-menu,[\s\S]*\.message-use-menu,[\s\S]*\.message-action-menu,[\s\S]*\.clio-scroll-latest \{[\s\S]*z-index: var\(--z-local-popover\)/, "Composer, message menus, and the latest control share the named local popover layer");
 test.assertMatches(styles, /\.compose-tools-menu,[\s\S]*\.clio-run-panel,[\s\S]*z-index: var\(--z-local-popover\)/, "Run Assembly reuses the named window-local popover layer");
 test.assertIncludes(foundationStyles, "--clio-assembly-bg", "Classic Run Assembly material is tokenized");
 test.assertIncludes(liquidStyles, "--clio-assembly-bg", "Liquid Glass swaps Run Assembly material through shared tokens");
 test.assertMatches(styles, /\.composer textarea \{[\s\S]*border: 0;[\s\S]*background: transparent;[\s\S]*resize: none;/, "The composer is one semantic surface rather than a textarea nested inside another panel");
+test.assertIncludes(foundationStyles, "--clio-copy-font: var(--text-font)", "Classic ClioTalk conversation text inherits the readable period font");
+test.assertIncludes(foundationStyles, "--clio-title-font: var(--title-font)", "Classic ClioTalk headings inherit the shared window title typography");
+test.assertIncludes(foundationStyles, "--clio-control-font: var(--ui-font)", "Classic ClioTalk controls inherit the system control face");
+test.assertMatches(styles, /\.assistant-window:not\(\.is-quick-draft-sideask\) \.message-content \{[^}]*font-family: var\(--clio-copy-font\)/, "ClioTalk conversation text consumes the theme-owned copy font");
+test.assertMatches(styles, /\.clio-welcome \.message-content strong \{[^}]*font-family: var\(--clio-title-font\)/, "ClioTalk's welcome heading consumes the theme-owned title font");
+test.assertMatches(styles, /\.composer textarea \{[^}]*font-family: var\(--clio-copy-font\)/, "ClioTalk input uses the same theme-owned font family as the conversation");
+test.assertMatches(styles, /\.clio-run-assembly \{[^}]*font-family: var\(--clio-control-font\)/, "ClioTalk's Run details control consumes the theme-owned control font");
+test.assertMatches(styles, /\.clio-run-assembly > summary \{[^}]*height: 36px;[^}]*min-height: 36px;[^}]*padding: 9px 23px 9px 10px;/, "Run details shares the 36-pixel composer control height with Add and Send");
+test.assertIncludes(liquidStyles, "--clio-copy-font: var(--preview-font)", "Liquid Glass keeps ClioTalk conversation text in its modern reading face");
+test.assertIncludes(liquidStyles, "--clio-title-font: var(--preview-font)", "Liquid Glass keeps ClioTalk headings in its modern display face");
+test.assertIncludes(liquidStyles, "--clio-control-font: var(--preview-font)", "Liquid Glass keeps ClioTalk controls in its modern UI face");
 test.assertMatches(styles, /\.composer \.composer-icon-button \{[\s\S]*width: 36px;[\s\S]*min-width: 36px;[\s\S]*height: 36px;/, "Composer controls retain a compact stable target size in Classic");
 test.assertMatches(styles, /\.assistant-window:not\(\.is-quick-draft-sideask\) \.message:not\(\.clio-welcome\) \{[\s\S]*grid-template-columns: var\(--clio-speaker-gutter\) minmax\(0, 1fr\)/, "ClioTalk reads as a file-native conversation ledger with a stable speaker gutter");
 test.assertMatches(styles, /\.assistant-window:not\(\.is-quick-draft-sideask\) \.speaker \{[\s\S]*display: block;[\s\S]*text-align: right;/, "Visible speaker labels make every Chat-file record attributable without adding more controls");
@@ -429,6 +432,9 @@ test.assertMatches(liquidStyles, /body\.use-liquid-glass \.composer \{[\s\S]*bac
 for (const scenario of ['id: "ready-to-send"', 'id: "stopped"', 'id: "streaming"', 'id: "sideask"', 'id: "reading-history"', 'id: "run-assembly"', 'id: "run-record"']) {
   test.assertIncludes(surfaceSnapshots, scenario, `${scenario} is covered by the ClioTalk Classic/Liquid surface snapshot`);
 }
+test.assertIncludes(surfaceSnapshots, 'sel: ".assistant-window .message-more-summary"', "The ClioTalk snapshot records the overflow button's computed geometry");
+test.assertIncludes(surfaceSnapshots, 'sel: ".assistant-window .message-more-glyph"', "The ClioTalk snapshot records the overflow icon rendering");
+test.assertIncludes(surfaceSnapshots, 'sel: ".assistant-window .message-use-actions > summary"', "The ClioTalk snapshot compares the neighboring reply-action height");
 for (const key of ["clio_scroll_latest", "clio_progress", "clio_working_steps", "clio_reply_stopped", "clio_reply_output_limit", "clio_reply_provider_stopped", "clio_reply_interrupted", "clio_reply_preserved_record_warning", "clio_message_not_sent", "clio_continue_reply"]) {
   test.assertIncludes(translationsEn, key, `English ClioTalk state copy includes ${key}`);
   test.assertIncludes(translationsZh, key, `Chinese ClioTalk state copy includes ${key}`);

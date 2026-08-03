@@ -23,6 +23,7 @@ function isUsableTextInput(target) {
 
 function getEditableTextTarget(target) {
   if (!target) return null;
+  if (target.closest?.('[data-dictation="off"]')) return null;
 
   if (target instanceof HTMLTextAreaElement || target instanceof HTMLInputElement) {
     if (target.readOnly || target.disabled || target.closest(".dictation-window")) return null;

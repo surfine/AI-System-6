@@ -336,6 +336,16 @@ test.assertMatches(
   /\.window \.is-frame-tail \{\s*border-bottom: var\(--window-frame-reserve\) solid transparent/,
   "The bottom-most region stops at the horizontal lane"
 );
+test.assertMatches(
+  windows,
+  /\.window \.composer\.is-frame-margin \{\s*border-right: var\(--clio-composer-border\)/,
+  "ClioTalk's own framed composer keeps its visible right edge"
+);
+test.assertMatches(
+  windows,
+  /\.window \.composer\.is-frame-tail \{\s*border-bottom: var\(--clio-composer-border\)/,
+  "ClioTalk's own framed composer keeps its visible bottom edge"
+);
 test.assertIncludes(html, 'class="window-pane messages window-frame-scroller"', "ClioTalk's message list carries the window's lanes");
 
 // A split window's lanes belong to its bottom-right region, and some of those

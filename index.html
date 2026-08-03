@@ -16,12 +16,16 @@
     <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png" />
     <link rel="manifest" href="assets/app-icon/manifest.json" />
-    <link rel="stylesheet" href="styles.bundle.css?v=20260730.13" />
+    <link rel="stylesheet" href="styles.bundle.css?v=20260803.02" />
   </head>
   <body class="is-booting">
     <header class="menu-bar" aria-label="System menu">
       <div class="menu">
-        <button class="apple" aria-label="Apple menu"></button>
+        <button class="apple" aria-label="Apple menu">
+          <svg class="alarm-clock-menu-icon" viewBox="0 0 15 16" aria-hidden="true" focusable="false">
+            <path d="M2 0h1v1H2zM7 0h1v1H7zM12 0h1v1h-1zM3 1h1v1H3zM7 1h1v1H7zM11 1h1v1h-1zM4 3h1v1H4zM7 3h1v1H7zM10 3h1v1h-1zM0 4h1v1H0zM2 4h1v1H2zM12 4h1v1h-1zM14 4h1v1h-1zM4 5h7v1H4zM2 6h3v1H2zM10 6h3v1h-3zM2 7h1v7H2zM7 7h1v4H7zM12 7h1v7h-1zM6 11h1v1H6zM5 12h1v1H5zM2 13h2v1H2zM11 13h2v1h-2zM4 14h7v1H4zM3 15h9v1H3z"></path>
+          </svg>
+        </button>
         <div class="menu-popover apple-menu-popover">
           <button data-action="open-about" data-i18n="about_menu">About AI System 6...</button>
           <button data-action="switch-language" data-i18n="switch_language">简体中文</button>
@@ -119,16 +123,11 @@
             <span aria-hidden="true"></span>
           </div>
           <div class="spine-shade-body">
-          <div class="spine-actions" aria-label="Writing path">
+          <div class="spine-actions" aria-label="Writing path" data-action-availability="independent">
           <div class="spine-section spine-section-main" aria-label="Writing path">
-            <button id="spine-project-button" type="button" data-action="open-project-disks">
-              <span class="sys-icon sys-icon-desktop" data-system-icon="projectDisk" aria-hidden="true"></span>
-              <b id="spine-project-name" data-i18n="project_disk">Project Hard Disk</b>
-              <small id="spine-project-meta" class="spine-tool-note" data-i18n="spine_no_project">Create or mount a Project Hard Disk to begin.</small>
-            </button>
-            <button id="spine-file-floppy-button" type="button" data-action="open-rag">
+            <button id="spine-file-floppy-button" type="button" data-action="open-rag" hidden>
               <span class="sys-icon sys-icon-desktop" data-system-icon="fileFloppy" aria-hidden="true"></span>
-              <b id="spine-file-floppy-label" data-i18n="mount_text_disk">Insert File Floppy</b>
+              <b data-i18n="mount_text_disk">Insert File Floppy</b>
             </button>
             <button type="button" data-action="open-question-sheet">
               <span class="spine-step-number" aria-hidden="true">1</span>
@@ -155,9 +154,9 @@
               <span class="sys-icon sys-icon-mini" data-system-icon="reviewDesk" aria-hidden="true"></span>
               <b data-i18n="review_desk">Review Desk</b>
             </button>
-            <button class="spine-project-cd-button" type="button" data-action="open-project-cd">
+            <button id="spine-burn-project-cd-button" type="button" data-action="export-teachtext-project-cd" hidden>
               <span class="sys-icon sys-icon-desktop" data-system-icon="projectDisc" aria-hidden="true"></span>
-              <b data-i18n="project_cd">Project CD</b>
+              <b data-i18n="burn_project_cd">Burn Project CD</b>
             </button>
           </div>
           </div>
@@ -780,6 +779,10 @@
             <span class="sys-icon" data-system-icon="docMap" aria-hidden="true"></span>
             <span data-i18n="docmap_label">DocMap</span>
           </button>
+          <button class="finder-item" data-action="open-scrapbook">
+            <span class="sys-icon" data-system-icon="scrapbook" aria-hidden="true"></span>
+            <span data-i18n="scrapbook_label">Scrapbook</span>
+          </button>
           <button class="finder-item" data-action="open-bureaucracy-meme">
             <span class="sys-icon" data-system-icon="bureaucracyMeme" aria-hidden="true"></span>
             <span data-i18n="bureaucracy_meme_label">DAA Meme</span>
@@ -791,6 +794,10 @@
           <button class="finder-item" data-action="open-clio-stage">
             <span class="sys-icon" data-system-icon="clioStage" aria-hidden="true"></span>
             <span data-i18n="clio_stage_label">ClioStage</span>
+          </button>
+          <button class="finder-item" data-action="open-clio-chart">
+            <span class="sys-icon" data-system-icon="clioChart" aria-hidden="true"></span>
+            <span data-i18n="clio_chart_title">ClioChart</span>
           </button>
           <button class="finder-item" data-action="open-liquid-cover">
             <span class="sys-icon" data-system-icon="liquidCover" aria-hidden="true"></span>
@@ -1343,8 +1350,7 @@
         </div>
         <div class="window-pane project-cd-pane">
           <div class="button-row">
-            <button class="btn" type="button" id="burn-project-audit-capsule" data-i18n="burn_audit_capsule">Burn Audit Capsule</button>
-            <button class="btn" type="button" id="download-project-cd" data-i18n="download_md">Download .md</button>
+            <button class="btn" type="button" id="download-project-cd" data-i18n="download">Download</button>
             <button class="btn default" type="button" id="print-project-cd-pdf" data-i18n="print_to_pdf">Print to PDF</button>
             <button class="btn danger" type="button" id="clear-project-cd" data-i18n="clear">Clear</button>
           </div>
@@ -2878,12 +2884,19 @@ Glass</textarea>
         <div class="alarm-clock-expanded" id="alarm-clock-expanded">
           <div class="alarm-clock-readout">
             <button class="alarm-clock-switch" id="alarm-clock-toggle" type="button" aria-pressed="false" data-i18n-aria-label="alarm_clock_enable" aria-label="Turn alarm on">
-              <span aria-hidden="true"></span>
+              <svg class="alarm-clock-switch-glyph" viewBox="0 0 8 13" aria-hidden="true" focusable="false">
+                <path class="alarm-clock-switch-frame" d="M2 0h4v1H2zM1 1h1v1H1zM6 1h1v1H6zM0 2h1v9H0zM7 2h1v9H7zM1 11h1v1H1zM6 11h1v1H6zM2 12h4v1H2z"></path>
+                <path class="alarm-clock-switch-fill alarm-clock-switch-fill-off" d="M3 6h2v3H3zM2 9h4v2H2z"></path>
+                <path class="alarm-clock-switch-fill alarm-clock-switch-fill-on" d="M2 2h4v2H2zM3 4h2v3H3z"></path>
+              </svg>
             </button>
-            <input class="alarm-clock-value" id="alarm-clock-value" type="text" value="--:--:-- --" autocomplete="off" spellcheck="false" inputmode="numeric" />
+            <input class="alarm-clock-value" id="alarm-clock-value" type="text" value="--:--:-- --" autocomplete="off" spellcheck="false" inputmode="numeric" data-dictation="off" />
             <div class="alarm-clock-steppers" id="alarm-clock-steppers">
-              <button type="button" data-alarm-clock-adjust="1" data-i18n-aria-label="alarm_clock_later" aria-label="One minute later">▲</button>
-              <button type="button" data-alarm-clock-adjust="-1" data-i18n-aria-label="alarm_clock_earlier" aria-label="One minute earlier">▼</button>
+              <svg class="alarm-clock-stepper-glyph" viewBox="0 0 11 18" aria-hidden="true" focusable="false">
+                <path d="M2 0h7v1H2zM1 1h1v1H1zM9 1h1v1H9zM0 2h1v14H0zM10 2h1v14h-1zM1 16h1v1H1zM9 16h1v1H9zM2 17h7v1H2zM5 2h1v1H5zM4 3h3v1H4zM3 4h5v1H3zM2 5h7v1H2zM4 6h3v2H4zM4 10h3v2H4zM2 12h7v1H2zM3 13h5v1H3zM4 14h3v1H4zM5 15h1v1H5z"></path>
+              </svg>
+              <button type="button" data-alarm-clock-adjust="1" data-i18n-aria-label="alarm_clock_later" aria-label="Increase selected alarm field"></button>
+              <button type="button" data-alarm-clock-adjust="-1" data-i18n-aria-label="alarm_clock_earlier" aria-label="Decrease selected alarm field"></button>
             </div>
           </div>
           <div class="alarm-clock-modes" id="alarm-clock-modes" role="tablist" data-i18n-aria-label="alarm_clock_modes" aria-label="Alarm Clock modes">
@@ -2900,9 +2913,14 @@ Glass</textarea>
               <span class="visually-hidden" data-i18n="alarm_clock_date">Date</span>
             </button>
             <button class="alarm-clock-mode" type="button" role="tab" data-alarm-clock-mode="alarm" aria-selected="false" tabindex="-1">
-              <svg class="alarm-clock-mode-icon alarm-clock-bell-icon" viewBox="0 0 14 17" aria-hidden="true" focusable="false">
-                <path d="M5 0h3v1H5zM4 1h1v1H4zM8 1h1v1H8zM3 2h1v1H3zM9 2h1v1H9zM3 3h7v1H3zM2 4h2v1H2zM9 4h2v1H9zM1 5h2v1H1zM6 5h1v1H6zM10 5h2v1h-2zM1 6h1v1H1zM6 6h1v1H6zM11 6h1v1h-1zM0 7h1v1H0zM6 7h1v1H6zM12 7h1v1h-1zM0 8h1v1H0zM6 8h1v1H6zM12 8h1v1h-1zM0 9h1v1H0zM6 9h1v1H6zM12 9h1v1h-1zM0 10h1v1H0zM7 10h1v1H7zM12 10h1v1h-1zM0 11h1v1H0zM8 11h1v1H8zM12 11h1v1h-1zM1 12h1v1H1zM11 12h1v1h-1zM1 13h2v1H1zM10 13h2v1h-2zM2 14h2v1H2zM9 14h3v1H9zM1 15h2v1H1zM4 15h5v1H4zM11 15h2v1h-2zM0 16h2v1H0zM12 16h2v1h-2z"></path>
-              </svg>
+              <span class="alarm-clock-bell-state" aria-hidden="true">
+                <svg class="alarm-clock-bell-rays" viewBox="0 0 23 9" focusable="false">
+                  <path d="M11 0h1v1h-1zM6 1h1v1H6zM16 1h1v1h-1zM7 2h1v1H7zM11 2h1v1h-1zM15 2h1v1h-1zM2 3h1v1H2zM8 3h1v1H8zM14 3h1v1h-1zM20 3h1v1h-1zM4 4h1v1H4zM18 4h1v1h-1zM6 5h1v1H6zM16 5h1v1h-1zM0 8h1v1H0zM2 8h1v1H2zM4 8h1v1H4zM18 8h1v1h-1zM20 8h1v1h-1zM22 8h1v1h-1z"></path>
+                </svg>
+                <svg class="alarm-clock-mode-icon alarm-clock-bell-icon" viewBox="0 0 14 17" focusable="false">
+                  <path d="M5 0h3v1H5zM4 1h1v1H4zM8 1h1v1H8zM3 2h1v1H3zM9 2h1v1H9zM3 3h7v1H3zM2 4h2v1H2zM9 4h2v1H9zM1 5h2v1H1zM6 5h1v1H6zM10 5h2v1h-2zM1 6h1v1H1zM6 6h1v1H6zM11 6h1v1h-1zM0 7h1v1H0zM6 7h1v1H6zM12 7h1v1h-1zM0 8h1v1H0zM6 8h1v1H6zM12 8h1v1h-1zM0 9h1v1H0zM6 9h1v1H6zM12 9h1v1h-1zM0 10h1v1H0zM7 10h1v1H7zM12 10h1v1h-1zM0 11h1v1H0zM8 11h1v1H8zM12 11h1v1h-1zM1 12h1v1H1zM11 12h1v1h-1zM1 13h2v1H1zM10 13h2v1h-2zM2 14h2v1H2zM9 14h3v1H9zM1 15h2v1H1zM4 15h5v1H4zM11 15h2v1h-2zM0 16h2v1H0zM12 16h2v1h-2z"></path>
+                </svg>
+              </span>
               <span class="visually-hidden" data-i18n="alarm_clock_alarm">Alarm</span>
             </button>
           </div>
@@ -3217,64 +3235,27 @@ Glass</textarea>
           <span class="sys-icon sys-icon-desktop" data-system-icon="startupDisk" aria-hidden="true"></span>
           <span data-i18n="startup_disk">Startup Disk</span>
         </button>
+        <button class="desktop-icon" type="button" data-open="applications">
+          <span class="sys-icon sys-icon-desktop" data-system-icon="applications" aria-hidden="true"></span>
+          <span data-i18n="applications">Applications</span>
+        </button>
         <button class="desktop-icon desktop-app-icon" id="finder-writing-studio-toggle" type="button">
           <span class="sys-icon sys-icon-desktop" data-system-icon="writingStudio" aria-hidden="true"></span>
           <span id="finder-writing-studio-toggle-label">Writing Studio</span>
         </button>
-        <button class="desktop-icon desktop-app-icon" data-workspace-capability="studio" type="button" data-action="open-quick-draft">
-          <span class="sys-icon sys-icon-desktop" data-system-icon="teachText" aria-hidden="true"></span>
-          <span data-i18n="quick_draft_label" data-liquid-label="Quick Draft" data-liquid-label-zh-main="钟点稿">Quick Draft</span>
+        <!-- The desktop is the current working set. The complete application
+             catalogue remains in Applications and MultiFinder. -->
+        <button class="desktop-icon is-hidden" id="active-project-drop-target" type="button" data-action="open-project-disks" data-drop-target="project" aria-hidden="true">
+          <span class="sys-icon sys-icon-desktop" data-system-icon="projectDisk" aria-hidden="true"></span>
+          <span id="current-project-label" data-i18n="current_project_desktop">Project Hard Disk</span>
         </button>
-        <button class="desktop-icon desktop-app-icon" type="button" data-action="open-find-path">
-          <span class="sys-icon sys-icon-desktop" data-system-icon="searcher" aria-hidden="true"></span>
-          <span data-i18n="searcher_label" data-liquid-label="Searcher" data-retro-label-main="Searcher" data-retro-label-sub="寻源">Searcher</span>
-        </button>
-        <button class="desktop-icon desktop-app-icon" type="button" data-action="open-reader">
-          <span class="sys-icon sys-icon-desktop" data-system-icon="reader" aria-hidden="true"></span>
-          <span data-i18n="reader_label" data-liquid-label="Reader" data-retro-label-main="Reader" data-retro-label-sub="阅读器">Reader</span>
-        </button>
-        <button class="desktop-icon desktop-app-icon" type="button" data-action="open-time-machine">
-          <span class="sys-icon sys-icon-desktop" data-system-icon="timeMachine" aria-hidden="true"></span>
-          <span data-i18n="time_machine_label" data-liquid-label="Time Machine" data-retro-label-main="时光机" data-retro-label-sub="网页浏览">Time Machine</span>
-        </button>
-        <button class="desktop-icon desktop-app-icon" type="button" data-action="open-docmap">
-          <span class="sys-icon sys-icon-desktop" data-system-icon="docMap" aria-hidden="true"></span>
-          <span data-i18n="docmap_label" data-liquid-label="DocMap">DocMap</span>
-        </button>
-        <!-- DAA Meme and Endfield Terminal stay available from the Applications
-             folder; desktop shortcuts are intentionally retired.
-        <button class="desktop-icon desktop-app-icon" type="button" data-action="open-bureaucracy-meme">
-          <span class="sys-icon sys-icon-desktop" data-system-icon="bureaucracyMeme" aria-hidden="true"></span>
-          <span data-i18n="bureaucracy_meme_label" data-liquid-label="DAA Meme" data-liquid-label-zh="官僚梗图" data-liquid-label-mode="nowrap">DAA Meme</span>
-        </button>
-        <button class="desktop-icon desktop-app-icon" type="button" data-action="open-endfield-terminal">
-          <span class="sys-icon sys-icon-desktop" data-system-icon="endfieldTerminal" aria-hidden="true"></span>
-          <span data-i18n="endfield_terminal_label" data-liquid-label="Endfield Terminal" data-liquid-label-zh-main="终末地" data-liquid-label-zh-sub="剧情终端" data-liquid-label-mode="wrap" data-retro-label-main="终末地" data-retro-label-sub="剧情终端">Endfield Terminal</span>
-        </button>
-        -->
-        <button class="desktop-icon desktop-app-icon" type="button" data-action="open-scrapbook">
-          <span class="sys-icon sys-icon-desktop" data-system-icon="scrapbook" aria-hidden="true"></span>
-          <span data-i18n="scrapbook_label" data-liquid-label="Scrapbook">Scrapbook</span>
-        </button>
-        <button class="desktop-icon desktop-app-icon" type="button" data-action="open-assistant">
-          <span class="sys-icon sys-icon-desktop" data-system-icon="assistant" aria-hidden="true"></span>
-          <span data-liquid-label="ClioTalk">ClioTalk</span>
-        </button>
-        <button class="desktop-icon desktop-app-icon" type="button" data-action="open-clio-stage">
-          <span class="sys-icon sys-icon-desktop" data-system-icon="clioStage" aria-hidden="true"></span>
-          <span data-i18n="clio_stage_label" data-liquid-label="ClioStage">ClioStage</span>
-        </button>
-        <button class="desktop-icon desktop-app-icon" type="button" data-action="open-clio-chart">
-          <span class="sys-icon sys-icon-desktop" data-system-icon="clioChart" aria-hidden="true"></span>
-          <span data-i18n="clio_chart_title" data-liquid-label="ClioChart">ClioChart</span>
-        </button>
-        <button class="desktop-icon desktop-app-icon" type="button" data-action="open-liquid-cover">
-          <span class="sys-icon sys-icon-desktop" data-system-icon="liquidCover" aria-hidden="true"></span>
-          <span data-i18n="liquid_cover_label">Cover Glass</span>
-        </button>
-        <button class="desktop-icon is-mounted-disk is-hidden" data-workspace-capability="studio" data-drag-type="mounted-disk" draggable="true" type="button" data-open="textDisk" id="mounted-text-disk">
+        <button class="desktop-icon is-mounted-disk" data-workspace-capability="studio" data-drag-type="mounted-disk" draggable="true" type="button" data-open="textDisk" id="mounted-text-disk" hidden>
           <span class="sys-icon sys-icon-desktop" data-system-icon="fileFloppy" aria-hidden="true"></span>
           <span data-i18n="mounted_text_disk">File Floppy</span>
+        </button>
+        <button class="desktop-icon" id="desktop-project-cd" data-workspace-capability="studio" type="button" data-open="projectCd" aria-hidden="true" hidden>
+          <span class="sys-icon sys-icon-desktop" data-system-icon="projectDisc" aria-hidden="true"></span>
+          <span data-i18n="project_cd">Project CD</span>
         </button>
         <button class="desktop-icon" type="button" data-open="trash" data-drop-target="trash">
           <span class="sys-icon sys-icon-desktop" data-system-icon="trash" data-trash-status-icon id="desktop-trash-icon" aria-hidden="true"></span>
@@ -3283,6 +3264,6 @@ Glass</textarea>
       </section>
     </main>
 
-    <script src="app.bundle.js?v=20260730.14"></script>
+    <script src="app.bundle.js?v=20260803.02"></script>
   </body>
 </html>

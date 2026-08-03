@@ -1053,48 +1053,6 @@ function getProjectCdItems(projectId = activeProjectId) {
   return projectCdItems.filter((item) => item.projectId === projectId);
 }
 
-function updateWritingSpine() {
-  const project = getActiveProject();
-  const projectName = project ? projectDisplayName(project) : t("no_project_mounted");
-  const projectLabel = t("project_disk");
-  const projectMeta = project
-    ? t(
-      "spine_project_meta",
-      getProjectFiles().length,
-      getProjectScraps().length,
-      Array.isArray(project.drafts) ? project.drafts.length : 0,
-      getProjectCdItems().length
-    )
-    : t("spine_no_project");
-
-  if (spineProjectNameEl) {
-    spineProjectNameEl.textContent = projectLabel;
-  }
-  if (spineProjectMetaEl) {
-    spineProjectMetaEl.textContent = projectMeta;
-  }
-  if (spineProjectButtonEl) {
-    spineProjectButtonEl.title = project ? `${projectName}\n${projectMeta}` : projectMeta;
-    spineProjectButtonEl.setAttribute("aria-label", `${projectLabel}: ${projectName}. ${projectMeta}`);
-  }
-
-  const mountedFileCount = hasMountedFileDiskContext() ? mountedTextDisk.files.length : 0;
-  if (spineFileFloppyButtonEl) {
-    const action = mountedFileCount ? "open-text-disk" : "open-rag";
-    const label = mountedFileCount ? t("mounted_text_disk") : t("mount_text_disk");
-    const detail = mountedFileCount
-      ? [t("files_count", mountedFileCount), t("chunks_count", getMountedTextDiskChunks().length)].join(" · ")
-      : t("mount_text_disk");
-    spineFileFloppyButtonEl.dataset.action = action;
-    spineFileFloppyButtonEl.title = detail;
-    spineFileFloppyButtonEl.setAttribute("aria-label", `${label}: ${detail}`);
-  }
-  if (spineFileFloppyLabelEl) {
-    spineFileFloppyLabelEl.textContent = mountedFileCount ? t("mounted_text_disk") : t("mount_text_disk");
-    spineFileFloppyLabelEl.dataset.i18n = mountedFileCount ? "mounted_text_disk" : "mount_text_disk";
-  }
-}
-
 function syncWritingToolsShadeToggle() {
   if (!writingToolsPanelEl) return;
   const expanded = !writingToolsPanelEl.classList.contains("is-shaded");
@@ -1109,6 +1067,7 @@ function toggleWritingToolsShade() {
   if (!writingToolsPanelEl) return;
   writingToolsPanelEl.classList.toggle("is-shaded");
   syncWritingToolsShadeToggle();
+  scheduleWorkingSessionSave();
 }
 
 function setComposeToolsMenu(open) {
@@ -1279,7 +1238,12 @@ function updateProjectLabels() {
 
   if (currentProjectLabelEl) {
     currentProjectLabelEl.textContent = t("current_project_desktop");
-    currentProjectLabelEl.closest(".desktop-icon")?.setAttribute("title", name);
+    const currentProjectIcon = currentProjectLabelEl.closest(".desktop-icon");
+    currentProjectIcon?.classList.toggle("is-hidden", !project);
+    currentProjectIcon?.setAttribute("aria-hidden", String(!project));
+    currentProjectIcon?.setAttribute("title", name);
+    if (project && currentProjectIcon) currentProjectIcon.dataset.projectId = project.id;
+    else delete currentProjectIcon?.dataset.projectId;
   }
   if (assistantProjectStatusEl) assistantProjectStatusEl.textContent = activeText;
   if (activeProjectLabelEl) activeProjectLabelEl.textContent = activeText;
@@ -1288,7 +1252,6 @@ function updateProjectLabels() {
   if (scrapbookProjectLabelEl) scrapbookProjectLabelEl.textContent = activeText;
   if (trashProjectLabelEl) trashProjectLabelEl.textContent = activeText;
   renderProjectSwitcher();
-  updateWritingSpine();
   updateMenuStatus();
   updateProjectDiskActionVisibility();
   renderAboutMacintosh();

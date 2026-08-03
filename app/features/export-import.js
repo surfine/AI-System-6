@@ -348,6 +348,37 @@ function openProjectBackupPanel() {
   projectBackupFileButton?.focus();
 }
 
+function projectCdItemReviewRecorded(item) {
+  return item?.metadata?.reviewDeskComplete === true || item?.metadata?.workflowState === "final";
+}
+
+async function confirmProjectCdExportAfterReview(item) {
+  if (!item) return false;
+  if (item.sourceKind !== "markdown" || projectCdItemReviewRecorded(item)) return true;
+  return showSystemModal(t("project_cd_review_reminder", item.title), "confirm");
+}
+
+async function downloadSelectedProjectCdItem() {
+  const item = getSelectedProjectCdItem();
+  if (!item) {
+    setStatus(t("select_find_path_first"));
+    return false;
+  }
+  if (!await confirmProjectCdExportAfterReview(item)) return false;
+  downloadProjectCdItem(item);
+  return true;
+}
+
+async function printSelectedProjectCdItem() {
+  const item = getSelectedProjectCdItem();
+  if (!item) {
+    setStatus(t("select_find_path_first"));
+    return false;
+  }
+  if (!await confirmProjectCdExportAfterReview(item)) return false;
+  return printSelectedProjectCdPdf();
+}
+
 function addProjectCdItem(markdown, name) {
   if (!getActiveProject()) {
     setStatus(t("no_project_mounted"));
@@ -374,6 +405,8 @@ function addProjectCdItem(markdown, name) {
     metadata: {
       sourceName: name,
       wordCount: countMarkdownWords(markdown),
+      workflowState: typeof teachTextWorkflowState === "string" ? teachTextWorkflowState : "",
+      reviewDeskComplete: typeof teachTextWorkflowState === "string" && teachTextWorkflowState === "final",
     },
   };
 
@@ -389,100 +422,31 @@ function addProjectCdItem(markdown, name) {
   return item;
 }
 
-const projectAuditCapsuleSchemaVersion = "1.0";
-
-function projectAuditHash(value) {
-  const body = typeof value === "string" ? value : JSON.stringify(value);
-  return window.AISystem6PromptFilesRuntime?.hashPromptBody(body) || `length-${body.length}`;
+function projectCdBurnIsAvailable() {
+  if (!getActiveProject()) return false;
+  const body = String(teachTextBodyInput?.value || "").trim();
+  if (!body) return false;
+  const isSlidesMarkdown = typeof readerHasMarpFrontmatter === "function"
+    && readerHasMarpFrontmatter(body);
+  const isManuscript = typeof activeTeachTextAllows === "function"
+    ? activeTeachTextAllows("projectCdExport")
+    : (typeof isTeachTextManuscriptRole !== "function" || isTeachTextManuscriptRole());
+  return isManuscript || isSlidesMarkdown;
 }
 
-function projectAuditFileSummary(file, options = {}) {
-  const body = String(file?.body || "");
-  return {
-    id: file?.id || "",
-    name: file?.name || "Untitled",
-    kind: file?.artifactKind || file?.type || "unknown",
-    sourceChatId: file?.sourceChatId || "",
-    createdAt: file?.createdAt || "",
-    updatedAt: file?.updatedAt || "",
-    contentHash: projectAuditHash(body),
-    ...(options.includeStatus ? { status: file?.memoryStatus || file?.skillStatus || file?.taskConfig?.status || "" } : {}),
-  };
-}
-
-function buildProjectAuditCapsule({ embedExternalBodies = false } = {}) {
-  const project = getActiveProject();
-  if (!project) return null;
-  const files = getProjectFiles();
-  const chats = files.filter((file) => file.type === "chat");
-  const roots = chats.filter((file) => !file.parentChatId || !chats.some((parent) => parent.id === file.parentChatId));
-  const promptReceipts = files.filter((file) => file.artifactKind === "ai-prompt-receipt");
-  const skills = files.filter((file) => file.artifactKind === "ai-skill");
-  const externalReferences = projectReferences.filter((reference) => reference.projectId === project.id);
-  const generatedAt = new Date().toISOString();
-  const missing = [];
-  if (!chats.length) missing.push("No saved conversations were included.");
-  if (!files.some((file) => file.artifactKind === "task-config")) missing.push("No task configuration was included.");
-  if (!promptReceipts.length) missing.push("No actual prompt-run receipt was included.");
-  if (!skills.length) missing.push("No project Skill was included.");
-  if (!externalReferences.length) missing.push("No external reference was included.");
-  return {
-    schemaVersion: projectAuditCapsuleSchemaVersion,
-    kind: "project-audit-capsule",
-    readOnly: true,
-    frozenAt: generatedAt,
-    project: { id: project.id, name: project.name || "Untitled Project", createdAt: project.createdAt || "", updatedAt: project.updatedAt || "" },
-    conversationRoots: roots.map((file) => ({ ...projectAuditFileSummary(file), generation: Number(file.generation || 0), parentChatId: file.parentChatId || "", childChatIds: chats.filter((child) => child.parentChatId === file.id).map((child) => child.id) })),
-    conversationLineage: chats.map((file) => ({ id: file.id, name: file.name || "Untitled", parentChatId: file.parentChatId || "", generation: Number(file.generation || 0), childChatIds: chats.filter((child) => child.parentChatId === file.id).map((child) => child.id) })),
-    taskConfigurations: files.filter((file) => file.artifactKind === "task-config").map((file) => ({ ...projectAuditFileSummary(file, { includeStatus: true }), configId: file.taskConfig?.id || "", lifecycle: file.taskConfig?.status || "" })),
-    actualPrompts: promptReceipts.map((file) => ({ id: file.id, promptId: file.promptId || "", feature: file.receipt?.feature || file.name || "", path: file.receipt?.path || file.path || "", source: file.receipt?.source || "", hash: file.receipt?.hash || file.hash || "", recordedAt: file.receipt?.time || file.createdAt || "" })),
-    skills: skills.map((file) => ({ ...projectAuditFileSummary(file, { includeStatus: true }), skillId: file.skillManifest?.id || "", version: file.skillManifest?.version || "", source: file.skillManifest?.source || file.sourceDraftId || "", capabilities: file.skillManifest?.capabilities || [] })),
-    projectMemory: files.filter((file) => file.artifactKind === "project-memory").map((file) => projectAuditFileSummary(file, { includeStatus: true })),
-    contextInventory: files.filter((file) => ["retrospective", "task-checkpoint", "skill-auto-call-receipt"].includes(file.artifactKind)).map((file) => projectAuditFileSummary(file)),
-    artifacts: files.filter((file) => file.type !== "chat").map((file) => projectAuditFileSummary(file)),
-    runRecords: files.filter((file) => /receipt|harness|checkpoint/.test(file.artifactKind || "")).map((file) => projectAuditFileSummary(file)),
-    retrospectives: files.filter((file) => file.artifactKind === "retrospective").map((file) => projectAuditFileSummary(file)),
-    externalReferences: externalReferences.map((reference) => {
-      const body = String(reference.body || reference.text || reference.content || (reference.chunks || []).map((chunk) => chunk.content || "").join("\n\n---\n\n"));
-      return { id: reference.id || "", name: reference.name || reference.title || "External reference", source: reference.source || reference.url || reference.sourceUrl || "", license: reference.license || reference.licenseName || "", contentHash: projectAuditHash(body), bodyIncluded: embedExternalBodies, ...(embedExternalBodies ? { body } : {}) };
-    }),
-    exclusions: { secrets: "Not included. Project metadata is allowlisted.", externalBodies: embedExternalBodies ? "Included only after explicit confirmation." : "Not included; content hashes, sources, and licenses are recorded instead." },
-    missing,
-    inspection: { mode: "read-only", anotherSystem: "Open this JSON in Reader or any JSON viewer; inspection does not mutate the project.", rerun: "Re-running any recorded work requires fresh confirmation of the model and external capabilities." },
-  };
-}
-
-async function burnProjectAuditCapsule() {
-  const project = getActiveProject();
-  if (!project) { setStatus(t("no_project_mounted")); return null; }
-  const externalReferences = projectReferences.filter((reference) => reference.projectId === project.id);
-  const preview = buildProjectAuditCapsule({ embedExternalBodies: false });
-  const confirmed = await showSystemModal([
-    currentLanguage === "zh" ? "审计胶囊刻录前检查" : "Audit capsule pre-burn check",
-    currentLanguage === "zh" ? `项目：${project.name}` : `Project: ${project.name}`,
-    currentLanguage === "zh" ? `缺失项：${preview.missing.join("；") || "无"}` : `Missing: ${preview.missing.join("; ") || "none"}`,
-    currentLanguage === "zh" ? "将生成只读 JSON 快照，不包含密钥。" : "This creates a read-only JSON snapshot and excludes secrets.",
-  ].join("\n"), "confirm");
-  if (!confirmed) return null;
-  const embedExternalBodies = externalReferences.length
-    ? window.confirm(currentLanguage === "zh" ? "是否把外部引用正文嵌入胶囊？默认仅保存 hash、来源和许可信息。" : "Embed external reference bodies? By default, only hashes, sources, and licenses are saved.")
-    : false;
-  const capsule = buildProjectAuditCapsule({ embedExternalBodies });
-  const item = addProjectCdTextItem(JSON.stringify(capsule, null, 2), "Project Audit Capsule.json", {
-    format: "application/json", sourceKind: "project-audit-capsule", languageMode: "original",
-    metadata: { schemaVersion: projectAuditCapsuleSchemaVersion, readOnly: true, externalBodiesEmbedded: embedExternalBodies, frozenAt: capsule.frozenAt },
-  });
-  if (!item) return null;
-  item.readOnly = true;
-  renderProjectCd();
-  saveDeskState();
-  setStatus(currentLanguage === "zh" ? "项目审计胶囊已刻录到项目光盘。" : "Project audit capsule burned to Project CD.");
-  return item;
+function syncProjectCdBurnActionVisibility(visibleItems = getProjectCdItems()) {
+  if (!spineBurnProjectCdButtonEl) return;
+  spineBurnProjectCdButtonEl.hidden = visibleItems.length > 0 || !projectCdBurnIsAvailable();
 }
 
 function renderProjectCd() {
   if (!projectCdGridEl) return;
   const visibleItems = getProjectCdItems();
+  const hasVisibleItems = visibleItems.length > 0;
+  if (desktopProjectCdEl) desktopProjectCdEl.hidden = !hasVisibleItems;
+  syncProjectCdBurnActionVisibility(visibleItems);
+  desktopProjectCdEl?.setAttribute("aria-hidden", String(!hasVisibleItems));
+  desktopProjectCdEl?.setAttribute("title", t("project_cd_items_count", visibleItems.length));
   const visibleIds = new Set(visibleItems.map((item) => item.id));
   Array.from(selectedProjectCdItemIds).forEach((id) => {
     if (!visibleIds.has(id)) selectedProjectCdItemIds.delete(id);

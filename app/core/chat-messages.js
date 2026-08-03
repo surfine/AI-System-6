@@ -1246,7 +1246,10 @@ function createClioTalkActionMenu(className = "message-more-actions") {
   summary.className = "btn mini-btn message-more-summary";
   summary.setAttribute("aria-label", t("clio_more_actions"));
   summary.title = t("clio_more_actions");
-  summary.textContent = "•••";
+  const glyph = document.createElement("span");
+  glyph.className = "message-more-glyph";
+  glyph.setAttribute("aria-hidden", "true");
+  summary.append(glyph);
   const menu = document.createElement("div");
   menu.className = "message-action-menu";
   details.append(summary, menu);

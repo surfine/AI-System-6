@@ -49,5 +49,19 @@ test.assertIncludes(workingSession, "win.dataset.userPositioned = entry.userPosi
 test.assertIncludes(workingSession, "layoutGroup: win.dataset.layoutGroup || \"\"", "captures the app/layout group used by window placement");
 test.assertMatches(workingSession, /app\/: inline layout styles|setInlineStyleValue|style\.setProperty/, "uses a centralized style helper for restored runtime frames");
 test.assert(!/\.style\.(left|top|right|bottom|width|height|padding|margin)\s*=/.test(workingSession), "does not add direct inline layout assignments");
+test.assertIncludes(workingSession, "function captureTextControlWorkingSession(control)", "one route-wide contract captures caret, selection, direction, scroll, and focus");
+test.assertIncludes(workingSession, "function restoreTextControlWorkingSession(control, state = {}, options = {})", "one route-wide contract restores text-control working position");
+[
+  "questionEditor",
+  "outlineEditor",
+  "draftEditor",
+].forEach((key) => {
+  test.assertIncludes(workingSession, `${key}: captureTextControlWorkingSession`, `${key} protects in-progress writing position`);
+});
+test.assertIncludes(workingSession, "editor: captureTextControlWorkingSession(teachTextBodyInput)", "TeachText uses the same caret and focus contract as upstream writing surfaces");
+test.assertIncludes(workingSession, "editor: captureTextControlWorkingSession(reviewDeskBodyInput)", "Review Desk uses the same caret and focus contract as the manuscript");
+test.assertMatches(workingSession, /if \(draftSectionSelectEl && state\.draftSection\)[\s\S]*restoreTextControlWorkingSession\(draftBodyInput/, "Section Drafts restores its chapter before its caret and selection");
+test.assertMatches(workingSession, /if \(reviewSectionSelectEl && state\.section\)[\s\S]*selectStyleCheckSection\(index\)[\s\S]*selectClaimCheckSection\(index\)/, "Review Desk restores the selected chapter and both review projections");
+test.assertIncludes(workingSession, "activeWindowName: activeWin?.dataset.window", "the same snapshot preserves the foreground route window");
 
 test.finish();

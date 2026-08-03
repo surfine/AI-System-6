@@ -363,6 +363,7 @@ const indexSource = readFileSync(join(root, "index.html"), "utf8");
   "addProjectCdItem",
   "renderProjectCd",
   "getProjectCdItems",
+  "downloadSelectedProjectCdItem",
   "printSelectedProjectCdPdf",
 ].forEach((name) => {
   if (appSource.includes(`function ${name}`) || appSource.includes(`async function ${name}`)) {

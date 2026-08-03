@@ -1141,14 +1141,9 @@ function wireAppEvents() {
 
   dictationCleanedInput.addEventListener("input", updateDictationTranscriptButtons);
 
-  downloadProjectCdButton?.addEventListener("click", () => {
-    const item = getSelectedProjectCdItem();
-    if (item) downloadProjectCdItem(item);
-  });
+  downloadProjectCdButton?.addEventListener("click", downloadSelectedProjectCdItem);
 
-  burnProjectAuditCapsuleButton?.addEventListener("click", burnProjectAuditCapsule);
-
-  printProjectCdPdfButton?.addEventListener("click", printSelectedProjectCdPdf);
+  printProjectCdPdfButton?.addEventListener("click", printSelectedProjectCdItem);
 
   pageSetupInputs.forEach((input) => input.addEventListener("change", updatePageSetupFromControls));
 

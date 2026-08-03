@@ -31,6 +31,9 @@
   --clio-welcome-object-border: 2px solid var(--ink);
   --clio-welcome-object-shadow: 2px 2px 0 var(--shade-dark);
   --clio-muted-copy: var(--shade-dark);
+  --clio-copy-font: var(--text-font);
+  --clio-title-font: var(--title-font);
+  --clio-control-font: var(--ui-font);
   --clio-transcript-width: 820px;
   --clio-speaker-gutter: 72px;
   --clio-grounding-rule: var(--shade);
@@ -974,7 +977,9 @@
   --character-map-button-hover-fg: var(--character-map-button-fg);
   --character-map-button-active-bg: var(--ink);
   --character-map-button-active-fg: var(--paper);
-  --alarm-clock-window-width: 236px;
+  /* Native WIND -16000 is 129×18 in compact form and its PICT mode glyphs
+     are 23×23, 24×22, and 14×17. Preserve that 1× relationship. */
+  --alarm-clock-window-width: 130px;
   --alarm-clock-frame-border: 2px solid var(--ink);
   --alarm-clock-frame-radius: 0;
   --alarm-clock-frame-shadow: 3px 3px 0 var(--ink);
@@ -984,9 +989,33 @@
   --alarm-clock-divider: 2px solid var(--ink);
   --alarm-clock-active-bg: var(--ink);
   --alarm-clock-active-fg: var(--paper);
-  --alarm-clock-title-height: 34px;
-  --alarm-clock-readout-height: 36px;
-  --alarm-clock-modes-height: 56px;
+  --alarm-clock-title-control-width: 28px;
+  --alarm-clock-title-height: 18px;
+  --alarm-clock-close-size: 10px;
+  --alarm-clock-close-border: 1px solid var(--ink);
+  --alarm-clock-close-radius: 0;
+  --alarm-clock-close-bg: var(--paper);
+  --alarm-clock-close-shadow: none;
+  --alarm-clock-lever-size: 18px;
+  --alarm-clock-lever-margin: 0 4px;
+  --alarm-clock-lever-border: 0;
+  --alarm-clock-lever-radius: 0;
+  --alarm-clock-lever-bg: transparent;
+  --alarm-clock-lever-hover-bg: transparent;
+  --alarm-clock-lever-fg: var(--ink);
+  --alarm-clock-lever-shadow: none;
+  --alarm-clock-lever-focus-outline: 1px dotted var(--ink);
+  --alarm-clock-lever-focus-shadow: none;
+  --alarm-clock-selection-bg: var(--ink);
+  --alarm-clock-selection-fg: var(--paper);
+  --alarm-clock-mode-divider: var(--alarm-clock-divider);
+  --alarm-clock-mode-radius: 0;
+  --alarm-clock-mode-bg: var(--alarm-clock-surface-bg);
+  --alarm-clock-mode-hover-bg: var(--alarm-clock-surface-bg);
+  --alarm-clock-mode-active-shadow: inset 0 0 0 3px var(--alarm-clock-active-fg);
+  --alarm-clock-readout-height: 22px;
+  --alarm-clock-section-gap: 0px;
+  --alarm-clock-modes-height: 29px;
   --calculator-pane-gap: 5px;
   --calculator-pane-padding: var(--system-window-padding);
   --calculator-pane-bg: var(--shade);

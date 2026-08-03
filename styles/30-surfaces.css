@@ -1118,32 +1118,45 @@
   box-shadow: var(--alarm-clock-frame-shadow);
 }
 
-.alarm-clock-window > .alarm-clock-title-bar {
+.window.alarm-clock-window > .title-bar.alarm-clock-title-bar {
   position: relative;
-  grid-template-columns: 28px minmax(0, 1fr) 28px;
+  grid-template-columns:
+    var(--alarm-clock-title-control-width)
+    minmax(0, 1fr)
+    var(--alarm-clock-title-control-width);
+  gap: 0;
   height: var(--alarm-clock-title-height);
   min-height: var(--alarm-clock-title-height);
   margin: 0;
-  padding: 0 6px;
-  border-bottom: var(--alarm-clock-divider);
+  padding: 0;
+  border-bottom: 0;
   background-color: var(--alarm-clock-title-bg);
   background-image: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  cursor: move;
+  user-select: none;
 }
 
-.alarm-clock-window .close-box {
+.alarm-clock-window:not(.is-compact) > .alarm-clock-title-bar {
+  border-bottom: var(--alarm-clock-divider);
+}
+
+.window.alarm-clock-window > .alarm-clock-title-bar .close-box {
   align-self: center;
   justify-self: center;
-  width: 18px;
-  height: 18px;
+  width: var(--alarm-clock-close-size);
+  height: var(--alarm-clock-close-size);
   margin: 0;
-  border: 2px solid var(--ink);
-  border-radius: 0;
-  background: var(--alarm-clock-title-bg);
-  box-shadow: 1px 1px 0 var(--shade-dark);
+  border: var(--alarm-clock-close-border);
+  border-radius: var(--alarm-clock-close-radius);
+  background: var(--alarm-clock-close-bg);
+  box-shadow: var(--alarm-clock-close-shadow);
 }
 
-.alarm-clock-window .close-box::before,
-.alarm-clock-window .close-box::after {
+.window.alarm-clock-window > .alarm-clock-title-bar .close-box::before,
+.window.alarm-clock-window > .alarm-clock-title-bar .close-box::after {
   display: none;
 }
 
@@ -1153,14 +1166,14 @@
   align-self: center;
   justify-self: center;
   min-width: 0;
-  padding: 0;
+  padding: 0 0.35em;
   background: var(--alarm-clock-title-bg);
   color: var(--ink);
   font-family: var(--title-font);
-  font-size: 28px;
+  font-size: var(--system-title-size);
   font-weight: 700;
-  line-height: 24px;
-  letter-spacing: 0.2px;
+  line-height: var(--system-titlebar-title-height);
+  letter-spacing: 0;
   text-align: center;
   white-space: nowrap;
 }
@@ -1169,35 +1182,39 @@
   grid-column: 3;
   grid-row: 1;
   justify-self: center;
-  width: 24px;
-  height: 26px;
+  align-self: flex-start;
+  width: var(--alarm-clock-lever-size);
+  height: var(--alarm-clock-lever-size);
   min-width: 0;
   min-height: 0;
+  margin: var(--alarm-clock-lever-margin);
   padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: var(--ink);
+  border: var(--alarm-clock-lever-border);
+  border-radius: var(--alarm-clock-lever-radius);
+  background: var(--alarm-clock-lever-bg);
+  box-shadow: var(--alarm-clock-lever-shadow);
+  color: var(--alarm-clock-lever-fg);
   cursor: pointer;
 }
 
 .alarm-clock-lever:hover,
 .alarm-clock-lever:active {
-  border: 0;
-  background: transparent;
-  color: var(--ink);
+  border: var(--alarm-clock-lever-border);
+  background: var(--alarm-clock-lever-hover-bg);
+  color: var(--alarm-clock-lever-fg);
 }
 
 .alarm-clock-lever:focus-visible {
-  outline: 1px dotted var(--ink);
+  outline: var(--alarm-clock-lever-focus-outline);
   outline-offset: -2px;
+  box-shadow: var(--alarm-clock-lever-focus-shadow);
 }
 
 .alarm-clock-lever-glyph {
   display: block;
-  width: 14px;
-  height: 20px;
-  margin: 2px auto 0;
+  width: 7px;
+  height: 10px;
+  margin: 0 auto;
   overflow: visible;
   fill: currentColor;
   stroke: none;
@@ -1224,13 +1241,13 @@
 }
 
 .alarm-clock-readout.is-alarm-mode {
-  grid-template-columns: 31px minmax(0, 1fr) 23px;
+  grid-template-columns: 22px minmax(0, 1fr) 18px;
 }
 
 .alarm-clock-switch {
   position: relative;
   display: none;
-  width: 31px;
+  width: 22px;
   min-width: 0;
   min-height: 0;
   padding: 0;
@@ -1245,58 +1262,64 @@
   display: block;
 }
 
-.alarm-clock-switch > span {
+.alarm-clock-switch-glyph {
   position: absolute;
-  left: 8px;
-  top: 5px;
-  width: 12px;
-  height: 21px;
-  border: 2px solid currentColor;
-  background: var(--alarm-clock-readout-bg);
+  top: 3px;
+  left: 6px;
+  display: block;
+  width: 8px;
+  height: 13px;
+  overflow: visible;
+  fill: currentColor;
+  stroke: none;
+  shape-rendering: crispEdges;
 }
 
-.alarm-clock-switch > span::after {
-  content: "";
-  position: absolute;
-  left: 2px;
-  top: 11px;
-  width: 4px;
-  height: 4px;
-  border: 1px solid currentColor;
-  background: currentColor;
+.alarm-clock-switch-fill-on {
+  display: none;
 }
 
-.alarm-clock-switch.is-on > span::after {
-  top: 2px;
+.alarm-clock-switch.is-on .alarm-clock-switch-fill-off {
+  display: none;
 }
 
-.alarm-clock-value {
+.alarm-clock-switch.is-on .alarm-clock-switch-fill-on {
+  display: block;
+}
+
+.alarm-clock-readout > .alarm-clock-value {
   width: 100%;
   min-width: 0;
   height: calc(var(--alarm-clock-readout-height) - 2px);
   min-height: 0;
-  padding: 0 4px;
+  padding: 0 2px;
   border: 0;
   border-radius: 0;
   outline-offset: -3px;
   background: transparent;
   color: var(--ink);
   font-family: var(--title-font);
-  font-size: 28px;
+  font-size: var(--system-title-size);
   font-weight: 700;
   line-height: calc(var(--alarm-clock-readout-height) - 2px);
-  letter-spacing: 0.2px;
+  letter-spacing: 0;
   text-align: center;
 }
 
-.alarm-clock-value[readonly] {
+.alarm-clock-readout > .alarm-clock-value[readonly] {
   cursor: default;
 }
 
+.alarm-clock-readout > .alarm-clock-value::selection {
+  background: var(--alarm-clock-selection-bg);
+  color: var(--alarm-clock-selection-fg);
+}
+
 .alarm-clock-steppers {
+  position: relative;
   display: none;
-  grid-template-rows: 1fr 1fr;
-  border-left: var(--alarm-clock-divider);
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  min-height: 0;
 }
 
 .alarm-clock-readout.is-alarm-mode:focus-within .alarm-clock-steppers.is-available {
@@ -1304,20 +1327,30 @@
 }
 
 .alarm-clock-steppers button {
-  width: 21px;
+  position: relative;
+  width: 11px;
+  height: 100%;
   min-width: 0;
   min-height: 0;
+  margin-left: 3px;
   padding: 0;
   border: 0;
   border-radius: 0;
   background: transparent;
-  color: var(--ink);
-  font-size: 8px;
-  line-height: 1;
 }
 
-.alarm-clock-steppers button + button {
-  border-top: 1px solid var(--ink);
+.alarm-clock-stepper-glyph {
+  position: absolute;
+  top: 1px;
+  left: 3px;
+  display: block;
+  width: 11px;
+  height: 18px;
+  overflow: visible;
+  fill: currentColor;
+  stroke: none;
+  pointer-events: none;
+  shape-rendering: crispEdges;
 }
 
 .alarm-clock-modes {
@@ -1325,6 +1358,7 @@
   grid-template-columns: repeat(3, 1fr);
   height: var(--alarm-clock-modes-height);
   min-height: var(--alarm-clock-modes-height);
+  margin-top: var(--alarm-clock-section-gap);
 }
 
 .alarm-clock-mode {
@@ -1335,9 +1369,9 @@
   min-height: 0;
   padding: 2px;
   border: 0;
-  border-right: var(--alarm-clock-divider);
-  border-radius: 0;
-  background: var(--alarm-clock-surface-bg);
+  border-right: var(--alarm-clock-mode-divider);
+  border-radius: var(--alarm-clock-mode-radius);
+  background: var(--alarm-clock-mode-bg);
   color: var(--ink);
 }
 
@@ -1347,7 +1381,7 @@
 
 .alarm-clock-mode:hover,
 .alarm-clock-mode:focus-visible {
-  background: var(--alarm-clock-surface-bg);
+  background: var(--alarm-clock-mode-hover-bg);
   color: var(--ink);
 }
 
@@ -1360,7 +1394,7 @@
 .alarm-clock-mode.is-active:hover,
 .alarm-clock-mode.is-active:focus-visible {
   background: var(--alarm-clock-active-bg);
-  box-shadow: inset 0 0 0 3px var(--alarm-clock-active-fg);
+  box-shadow: var(--alarm-clock-mode-active-shadow);
   color: var(--alarm-clock-active-fg);
 }
 
@@ -1373,27 +1407,83 @@
 }
 
 .alarm-clock-analog-icon {
-  width: 46px;
-  height: 46px;
+  width: 23px;
+  height: 23px;
 }
 
 .alarm-clock-calendar-icon {
-  width: 48px;
-  height: 44px;
+  width: 24px;
+  height: 22px;
 }
 
 .alarm-clock-bell-icon {
-  width: 28px;
-  height: 34px;
+  width: 14px;
+  height: 17px;
 }
 
-.alarm-clock-window.is-ringing .alarm-clock-bell-icon {
-  transform: rotate(-6deg);
+.alarm-clock-bell-state {
+  position: relative;
+  display: block;
+  width: 14px;
+  height: 17px;
 }
 
-body.alarm-clock-flash .menu-bar > .menu > .apple {
-  background: var(--menu-button-active-bg);
-  color: var(--menu-button-active-fg);
+.alarm-clock-bell-rays {
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  display: none;
+  width: 23px;
+  height: 9px;
+  overflow: visible;
+  fill: currentColor;
+  stroke: none;
+  shape-rendering: crispEdges;
+  transform: translateX(-50%);
+}
+
+.alarm-clock-window.is-ringing .alarm-clock-bell-rays {
+  display: block;
+}
+
+.alarm-clock-menu-icon {
+  display: none;
+  width: 15px;
+  height: 16px;
+  overflow: visible;
+  fill: currentColor;
+  stroke: none;
+  shape-rendering: crispEdges;
+}
+
+body.alarm-clock-ringing .menu-bar > .menu > .apple::before,
+body.alarm-clock-ringing .menu-bar > .menu > .apple::after {
+  animation: alarm-clock-menu-apple-flash 2s step-end infinite;
+}
+
+body.alarm-clock-ringing .alarm-clock-menu-icon {
+  display: block;
+  animation: alarm-clock-menu-icon-flash 2s step-end infinite;
+}
+
+@keyframes alarm-clock-menu-apple-flash {
+  0%, 49.999% {
+    opacity: 0;
+  }
+
+  50%, 100% {
+    opacity: 1;
+  }
+}
+
+@keyframes alarm-clock-menu-icon-flash {
+  0%, 49.999% {
+    opacity: 1;
+  }
+
+  50%, 100% {
+    opacity: 0;
+  }
 }
 
 .calculator-window .calculator-pane {

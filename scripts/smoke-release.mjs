@@ -175,6 +175,7 @@ if (
   "status-model-state",
   "status-current-task",
   "project-cd-grid",
+  "download-project-cd",
   "print-project-cd-pdf",
   "page-setup-title",
 ].forEach((id) => {

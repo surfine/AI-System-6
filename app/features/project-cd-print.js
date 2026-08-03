@@ -108,12 +108,12 @@ function buildProjectCdPrintHtml(item) {
 
 function printSelectedProjectCdPdf() {
   const item = getSelectedProjectCdItem();
-  if (!item) return;
+  if (!item) return false;
 
   const printWindow = window.open("", "_blank", "width=960,height=720");
   if (!printWindow) {
     setStatus(t("project_cd_pdf_blocked"));
-    return;
+    return false;
   }
 
   printWindow.document.open();
@@ -128,6 +128,7 @@ function printSelectedProjectCdPdf() {
       setStatus(t("project_cd_pdf_blocked"));
     }
   }, 120);
+  return true;
 }
 
 function printCurrentTeachTextDocument() {

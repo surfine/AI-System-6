@@ -2181,21 +2181,6 @@ body.use-modern-fonts .mde-surface * {
   line-height: var(--system-titlebar-title-height);
 }
 
-/* Alarm Clock owns a plain instrument face instead of Finder title stripes.
-   Keep its period typography even when the desktop uses modern fonts. */
-body .window.alarm-clock-window > .title-bar.alarm-clock-title-bar {
-  background-color: var(--alarm-clock-title-bg);
-  background-image: none;
-}
-
-body .window.alarm-clock-window .alarm-clock-current-time {
-  font-size: 28px;
-}
-
-body .window.alarm-clock-window .alarm-clock-value {
-  font-size: 28px;
-}
-
 body.use-modern-fonts .alarm-clock-current-time,
 body.use-modern-fonts .alarm-clock-value {
   font-family: Chicago_12, Chicago, Charcoal, "Songti SC", "SimSun", serif;

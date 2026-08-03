@@ -6,8 +6,11 @@ let alarmClockEnabled = false;
 let alarmClockAlarmTime = "09:00:00";
 let alarmClockLastTriggered = "";
 let alarmClockRinging = false;
+let alarmClockEditSegment = "hour";
 let alarmClockTimer = null;
 let alarmClockInitialized = false;
+
+const alarmClockEditSegments = ["hour", "minute", "second", "meridiem"];
 
 function alarmClockPad(value) {
   return String(value).padStart(2, "0");
@@ -46,6 +49,41 @@ function parseAlarmClockAlarm(value) {
   return `${alarmClockPad(hours)}:${alarmClockPad(minutes)}:${alarmClockPad(seconds)}`;
 }
 
+function alarmClockSegmentRanges(value) {
+  const text = String(value || "");
+  const firstColon = text.indexOf(":");
+  const secondColon = text.indexOf(":", firstColon + 1);
+  const meridiemStart = text.lastIndexOf(" ") + 1;
+  if (firstColon < 1 || secondColon < firstColon || meridiemStart <= secondColon) return null;
+  return {
+    hour: [0, firstColon],
+    minute: [firstColon + 1, secondColon],
+    second: [secondColon + 1, meridiemStart - 1],
+    meridiem: [meridiemStart, text.length],
+  };
+}
+
+function selectAlarmClockSegment(input, segment = alarmClockEditSegment) {
+  if (!input || input.readOnly) return;
+  const ranges = alarmClockSegmentRanges(input.value);
+  const range = ranges?.[segment];
+  if (!range) return;
+  alarmClockEditSegment = segment;
+  input.setSelectionRange(range[0], range[1]);
+}
+
+function alarmClockSegmentAtPosition(input, position) {
+  const ranges = alarmClockSegmentRanges(input?.value);
+  if (!ranges) return alarmClockEditSegment;
+  return alarmClockEditSegments.find((segment) => position <= ranges[segment][1]) || "meridiem";
+}
+
+function moveAlarmClockSegment(input, direction) {
+  const currentIndex = alarmClockEditSegments.indexOf(alarmClockEditSegment);
+  const nextIndex = Math.max(0, Math.min(alarmClockEditSegments.length - 1, currentIndex + direction));
+  selectAlarmClockSegment(input, alarmClockEditSegments[nextIndex]);
+}
+
 function alarmClockElements() {
   return {
     win: document.querySelector('[data-window="alarmClock"]'),
@@ -62,7 +100,6 @@ function alarmClockElements() {
 
 function syncAlarmClockRingingState(now = new Date()) {
   document.body.classList.toggle("alarm-clock-ringing", alarmClockRinging);
-  document.body.classList.toggle("alarm-clock-flash", alarmClockRinging && now.getSeconds() % 2 === 0);
 }
 
 function renderAlarmClock(now = new Date()) {
@@ -116,6 +153,7 @@ function renderAlarmClock(now = new Date()) {
 
 function setAlarmClockMode(mode) {
   if (!["time", "date", "alarm"].includes(mode)) return;
+  if (mode === "alarm" && alarmClockRinging) alarmClockRinging = false;
   alarmClockMode = mode;
   renderAlarmClock();
   saveDeskState();
@@ -155,14 +193,21 @@ function commitAlarmClockValue() {
   saveDeskState();
 }
 
-function adjustAlarmClock(minutes) {
+function adjustAlarmClock(amount) {
   if (alarmClockMode !== "alarm") return;
   const [hours, currentMinutes, seconds] = alarmClockAlarmTime.split(":").map(Number);
-  const date = new Date(2000, 0, 1, hours, currentMinutes + minutes, seconds);
+  const date = new Date(2000, 0, 1, hours, currentMinutes, seconds);
+  if (alarmClockEditSegment === "hour") date.setHours(date.getHours() + amount);
+  if (alarmClockEditSegment === "minute") date.setMinutes(date.getMinutes() + amount);
+  if (alarmClockEditSegment === "second") date.setSeconds(date.getSeconds() + amount);
+  if (alarmClockEditSegment === "meridiem") date.setHours(date.getHours() + (amount * 12));
   alarmClockAlarmTime = `${alarmClockPad(date.getHours())}:${alarmClockPad(date.getMinutes())}:${alarmClockPad(date.getSeconds())}`;
   alarmClockLastTriggered = "";
+  const input = document.querySelector("#alarm-clock-value");
+  if (input) input.value = formatAlarmClockAlarm();
   playSystemSound("click");
   renderAlarmClock();
+  if (document.activeElement === input) selectAlarmClockSegment(input);
   saveDeskState();
 }
 
@@ -222,11 +267,24 @@ function initializeAlarmClock() {
     const amount = Number(event.target.closest("[data-alarm-clock-adjust]")?.dataset.alarmClockAdjust || 0);
     if (amount) adjustAlarmClock(amount);
   });
+  elements.steppers?.addEventListener("mousedown", (event) => {
+    if (event.target.closest("[data-alarm-clock-adjust]")) event.preventDefault();
+  });
   elements.value?.addEventListener("blur", commitAlarmClockValue);
+  elements.value?.addEventListener("focus", () => {
+    selectAlarmClockSegment(elements.value);
+  });
+  elements.value?.addEventListener("click", () => {
+    const position = elements.value.selectionStart ?? 0;
+    selectAlarmClockSegment(elements.value, alarmClockSegmentAtPosition(elements.value, position));
+  });
   elements.value?.addEventListener("keydown", (event) => {
     if (event.key === "Enter") {
       event.preventDefault();
       elements.value.blur();
+    } else if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+      event.preventDefault();
+      moveAlarmClockSegment(elements.value, event.key === "ArrowLeft" ? -1 : 1);
     } else if (event.key === "ArrowUp") {
       event.preventDefault();
       adjustAlarmClock(1);

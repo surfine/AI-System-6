@@ -111,7 +111,8 @@ function formatFileDiskFailureTitle(failures) {
 function renderMountedTextDisk() {
   const mountedChunkCount = getMountedTextDiskChunks().length;
   const mounted = isProjectMounted && mountedChunkCount > 0 && mountedTextDisk.projectId === activeProjectId;
-  mountedTextDiskEl.classList.toggle("is-hidden", !mounted);
+  mountedTextDiskEl.hidden = !mounted;
+  if (spineFileFloppyButtonEl) spineFileFloppyButtonEl.hidden = mounted;
   indexFilesButton.textContent = fileDiskImportController ? t("cancel") : mounted ? t("add_to_text_disk") : t("mount");
   const files = mounted ? mountedTextDisk.files : [];
   const visibleNames = new Set(files);
