@@ -1392,7 +1392,12 @@ function getApplicationActionHandlers() {
     "docmap-layout-radial": () => setCurrentDocMapLayout("radial"),
     "docmap-layout-fishbone": () => setCurrentDocMapLayout("fishbone"),
     "docmap-fit-view": () => {
-      maximizeWindow(getWindow("docMap"));
+      const docMapWindow = getWindow("docMap");
+      // In a SideAsk split the DocMap window already owns its pane; maximizing
+      // it would cover the paired assistant. Fit the canvas to the pane.
+      if (docMapWindow?.dataset.sideaskRestoreActive !== "true") {
+        maximizeWindow(docMapWindow);
+      }
       requestAnimationFrame(fitDocMapCanvasToView);
     },
     "docmap-zoom-out": zoomDocMapOut,

@@ -260,7 +260,12 @@ function createFinderContinuation(position) {
   const button = document.createElement("button");
   button.type = "button";
   button.className = `finder-continuation is-${position}`;
-  button.textContent = position === "top" ? "⌃" : "⌄";
+  // One arrowhead for both directions; the down arrow is the same glyph
+  // rotated by CSS, so the pair stays optically identical across fonts.
+  const arrow = document.createElement("span");
+  arrow.className = "finder-continuation-arrow";
+  arrow.textContent = "⌃";
+  button.append(arrow);
   button.tabIndex = -1;
   button.setAttribute("aria-hidden", "true");
   return button;
@@ -339,6 +344,9 @@ const frameHostSelectors = {
   scrapbook: "#scrap-form",
   systemHelp: "#system-help-detail",
   reviewDesk: ".review-desk-results",
+  // ClioStage rewrites its viewport className on every view switch, dropping
+  // the generic .window-frame-scroller class; the id survives the rewrite.
+  clioStage: "#clio-stage-viewport",
 };
 
 function installWindowFrameBars() {

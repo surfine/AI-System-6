@@ -1,5 +1,5 @@
 <!-- canonical-source: DESIGN.md -->
-<!-- source-sha256: b48b784d1d707dacc69a3481acb3ef4fed1f3c7ec2573fa0ce7e8c8e8b11f6a0 -->
+<!-- source-sha256: 0b8259a29c39c2183496dd5879bc5690530288042d6339bc80e53aef70d95cdd -->
 
 # AI System 6 设计合约
 
@@ -54,8 +54,9 @@ Classic Mac OS 思想，只要能改善产品，就可以被引进、消化和�
   可选，绝不变成设置向导。
 - MultiFinder 通过启动环境被发现：在用户作出选择的位置简短解释 Finder 与 MultiFinder，
   只有启用 MultiFinder 后，才教学真实出现的菜单栏应用切换器。
-- [Balloon Help](https://en.wikipedia.org/wiki/Balloon_help) 可以作为可选、由用户主动开启、能
-  感知状态的帮助模式。它用一两句可执行的文案回答「这是什么？」和「为什么现在不能用？」；
+- [Balloon Help](https://en.wikipedia.org/wiki/Balloon_help) 是能感知状态的帮助模式：
+  在支持悬停的设备上默认开启，让新用户先遇见它；用户可自行关闭且选择会被记住。
+  它用一两句可执行的文案回答「这是什么？」和「为什么现在不能用？」；
   不能变成自动 OOBE 导览，也不能取代面向任务的 System Help。
 - Balloon Help 只面向陌生图标、系统对象和禁用原因，不重复可见按钮文字。指针悬停或键盘
   聚焦可以显示它；触控则先显式进入帮助模式，再点击对象查看。

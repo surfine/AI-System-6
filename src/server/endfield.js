@@ -24,6 +24,8 @@ const {
   DEEPSEEK_BASE_URL_DEFAULT,
   resolveCloudBaseUrl,
 } = require("./cloud.js");
+const { preparePublicCloudCall } = require("./lib/cloud-route.js");
+const { isPublicDeployment } = require("./runtime-profile.js");
 const {
   enforceMarkdownOnlyChatPayload,
   tuneLmStudioChatPayload,
@@ -778,7 +780,35 @@ function endfieldEvidenceBudget(body = {}, model = "", outputTokens = 1200) {
  *   autoLoaded?: boolean, autoLoadedModel?: string, autoSelectedModel?: string,
  * }>}
  */
-async function postEndfieldChatPayload(payload, body, signal) {
+async function postEndfieldChatPayload(payload, body, signal, req) {
+  if (isPublicDeployment && body._cloud_active) {
+    const cloud = await preparePublicCloudCall({
+      credentialId: body._cloud_credential_id,
+      suppliedApiKey: body._cloud_api_key,
+      requestedBaseUrl: body._cloud_base_url,
+      model: String(body._cloud_model || payload.model || "deepseek-v4-flash"),
+      payload,
+      req,
+    });
+    const cloudPayload = enforceMarkdownOnlyChatPayload({ ...cloud.payload, model: cloud.model });
+    if (/^(?:deepseek-)?v4-(?:pro|flash)$/i.test(cloud.model)) {
+      cloudPayload.thinking = { type: "disabled" };
+      delete cloudPayload.temperature;
+      delete cloudPayload.top_p;
+      delete cloudPayload.presence_penalty;
+      delete cloudPayload.frequency_penalty;
+      delete cloudPayload.logprobs;
+      delete cloudPayload.top_logprobs;
+    }
+    const { response } = await postJsonWithFallback(
+      `${cloud.baseUrl}/v1/chat/completions`,
+      cloudPayload,
+      signal,
+      cloud.authHeaders
+    );
+    return { response, source: "cloud", model: cloud.model };
+  }
+
   const cloudApiKey = body._cloud_active
     ? await resolveCloudCredential({
         credentialId: body._cloud_credential_id,

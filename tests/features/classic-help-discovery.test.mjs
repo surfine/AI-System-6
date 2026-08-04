@@ -38,7 +38,9 @@ test.assertMatches(balloon, /showPopover[\s\S]*positionBalloonHelp/, "showing a 
 test.assertIncludes(balloon, 'matches?.(":popover-open")', "hiding a balloon also removes it from the browser top layer");
 test.assertIncludes(balloon, 'event.pointerType !== "touch"', "touch inspection is distinct from pointer hover");
 test.assertMatches(balloon, /if \(!target\.closest\("\.menu-bar"\)\)[\s\S]*preventDefault\(\)/, "touch help inspects desktop objects without activating them while keeping the menu available");
-test.assertNotIncludes(balloon, "localStorage", "Balloon Help stays quiet and session-scoped by default");
+test.assertIncludes(balloon, 'const BALLOON_HELP_STORAGE_KEY', "the user's Balloon Help choice persists across sessions");
+test.assertIncludes(balloon, 'window.matchMedia("(hover: hover)")', "the discoverable default applies to hover-capable devices only");
+test.assertIncludes(balloon, "balloonHelpTouchedInspect", "the hover default never arms touch inspect mode");
 
 test.assertIncludes(html, 'id="startup-environment-help"', "startup settings contain one concise environment explanation");
 test.assertIncludes(desktopRuntime, 't("startup_environment_explanation")', "the startup choice explains both environments before the user changes it");

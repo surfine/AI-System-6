@@ -31,6 +31,10 @@
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
+  /* The composer below the status bar is also positioned, so an unlayered
+     popover paints underneath it. Lift the source note onto the window-local
+     popover layer. */
+  z-index: var(--z-local-popover);
   width: min(360px, calc(100vw - 48px));
   margin: 0;
   padding: 9px 10px;
@@ -480,7 +484,10 @@
 
   .bureaucracy-layout {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto minmax(360px, 1fr) minmax(320px, auto);
+    /* `auto` collapses the assets track to 18px here (its grid rows resolve
+       against the nested scrollable list), which clips the template/upload
+       row. Size the track to its content so the templates stay visible. */
+    grid-template-rows: max-content minmax(360px, 1fr) minmax(320px, auto);
     grid-template-areas:
       "assets"
       "preview"

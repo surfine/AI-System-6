@@ -21,6 +21,8 @@ const {
   DEEPSEEK_BASE_URL_DEFAULT,
   resolveCloudBaseUrl,
 } = require("./cloud.js");
+const { preparePublicCloudCall } = require("./lib/cloud-route.js");
+const { isPublicDeployment } = require("./runtime-profile.js");
 const { tuneLmStudioChatPayload } = require("./chat.js");
 const { humanizerModelInstruction } = require("./humanizer.js");
 const {
@@ -341,9 +343,28 @@ function buildBureaucracyCaptionMessages({ topic, tone, template, imageDataUrl }
  *   autoSelectedModel?: string,
  * }>}
  */
-async function postBureaucracyChatPayload(payload, route, signal) {
+async function postBureaucracyChatPayload(payload, route, signal, req) {
   const cloudRoute = route?.cloud || {};
   const localRoute = route?.local || {};
+
+  if (isPublicDeployment) {
+    const cloud = await preparePublicCloudCall({
+      credentialId: cloudRoute.credentialId || cloudRoute.credential_id,
+      suppliedApiKey: cloudRoute.apiKey || cloudRoute.api_key,
+      requestedBaseUrl: cloudRoute.baseUrl,
+      model: String(cloudRoute.model || payload.model || "deepseek-v4-flash"),
+      payload,
+      req,
+    });
+    const { response } = await postJsonWithFallback(
+      `${cloud.baseUrl}/v1/chat/completions`,
+      cloud.payload,
+      signal,
+      cloud.authHeaders
+    );
+    return { response, source: "cloud" };
+  }
+
   const cloudApiKey = String(await resolveCloudCredential({
     credentialId: cloudRoute.credentialId || cloudRoute.credential_id,
     provider: "deepseek",

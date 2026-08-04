@@ -702,6 +702,20 @@
   transform: translateX(-50%);
 }
 
+.finder-continuation-arrow {
+  display: block;
+  line-height: 1;
+  /* The ink of ⌃ sits high inside its line box in the UI font; nudge it onto
+     the capsule's optical center so the arrow reads centered. */
+  transform: translateY(2px);
+}
+
+.finder-continuation.is-bottom .finder-continuation-arrow {
+  /* Same glyph as the top arrow, rotated around the capsule center; the nudge
+     mirrors so both arrows share one style and one center. */
+  transform: translateY(-2px) rotate(180deg);
+}
+
 .finder-continuation:focus-visible {
   outline: var(--control-focus-outline);
   outline-offset: 2px;

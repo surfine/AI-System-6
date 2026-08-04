@@ -129,7 +129,7 @@ async function handleEndfieldAsk(req, res) {
     };
 
     const { response: upstream, source, model, autoLoaded, autoLoadedModel, autoSelectedModel } =
-      await postEndfieldChatPayload(payload, body, signal);
+      await postEndfieldChatPayload(payload, body, signal, req);
     const text = await upstream.text();
     const contentType = upstream.headers.get("content-type") || "application/json";
 
@@ -175,11 +175,22 @@ async function handleEndfieldAsk(req, res) {
   } catch (error) {
     if (/** @type {any} */ (error)?.name === "AbortError") return;
     const message = /** @type {Error} */ (error).message;
-    send(res, 502, JSON.stringify({
-      error: "Endfield local answer failed",
-      code: classifyLmStudioProxyError(message, 502),
+    const status = /** @type {any} */ (error)?.statusCode || 502;
+    const headers = { "Content-Type": "application/json" };
+    if (/** @type {any} */ (error)?.retryAfter > 0) {
+      headers["Retry-After"] = String(/** @type {any} */ (error).retryAfter);
+    }
+    send(res, status, JSON.stringify({
+      error: /** @type {any} */ (error)?.statusCode
+        ? message
+        : "Endfield local answer failed",
+      code: /** @type {any} */ (error)?.code
+        || classifyLmStudioProxyError(message, 502),
       detail: message,
-    }), { "Content-Type": "application/json" });
+      ...(/** @type {any} */ (error)?.warning
+        ? { warning: /** @type {any} */ (error).warning }
+        : {}),
+    }), headers);
   }
 }
 

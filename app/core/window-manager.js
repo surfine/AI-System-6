@@ -217,6 +217,11 @@ function restoreSideAskFrame(win) {
   delete win.dataset.sideaskRestoreMaxHeight;
   delete win.dataset.sideaskRestoreTransform;
   delete win.dataset.sideaskRestoreZoomed;
+  // The DocMap window just changed size back from its SideAsk pane; refit the
+  // canvas so the map fills the restored window instead of the old pane.
+  if (win.dataset.window === "docMap" && typeof queueDocMapFitToView === "function") {
+    queueDocMapFitToView(8);
+  }
 }
 
 function restoreSideAskFrames() {
@@ -1416,7 +1421,7 @@ function usePortraitWindowFlow(win) {
   win.style.height = "";
   win.style.maxHeight = "";
   win.style.transform = "";
-  if ((win.dataset.window === "endfieldTerminal" || win.dataset.window === "liquidCover") && !win.style.getPropertyValue("--portrait-window-height")) {
+  if ((win.dataset.window === "endfieldTerminal" || win.dataset.window === "bureaucracyMeme" || win.dataset.window === "liquidCover") && !win.style.getPropertyValue("--portrait-window-height")) {
     win.style.setProperty("--portrait-window-height", "calc(100vh - var(--system-menu-height, 26px) - 72px)");
   }
   revealWindowTitleInPortraitFlow(win);

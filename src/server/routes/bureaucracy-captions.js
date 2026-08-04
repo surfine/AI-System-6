@@ -89,7 +89,7 @@ async function handleBureaucracyCaptions(req, res) {
     };
 
     try {
-      const { response } = await postBureaucracyChatPayload(payload, body.modelRoute || {}, timeout.signal);
+      const { response } = await postBureaucracyChatPayload(payload, body.modelRoute || {}, timeout.signal, req);
       const text = await response.text();
       const contentType = response.headers.get("content-type") || "application/json";
       if (!response.ok || !contentType.includes("application/json")) {
@@ -114,13 +114,24 @@ async function handleBureaucracyCaptions(req, res) {
         },
       }), { "Content-Type": "application/json" });
     } catch (modelError) {
-      send(res, 503, JSON.stringify({
+      const status = /** @type {any} */ (modelError)?.statusCode || 503;
+      const headers = { "Content-Type": "application/json" };
+      if (/** @type {any} */ (modelError)?.retryAfter > 0) {
+        headers["Retry-After"] = String(/** @type {any} */ (modelError).retryAfter);
+      }
+      send(res, status, JSON.stringify({
         provider: "llm",
         captions: [],
-        error: "LLM caption generation unavailable",
-        warning: "大模型暂时不可用，请先在 Control Panel 配置云端模型，或启动并加载本地模型。",
+        error: /** @type {any} */ (modelError)?.code
+          ? String(/** @type {Error} */ (modelError).message)
+          : "LLM caption generation unavailable",
+        ...(/** @type {any} */ (modelError)?.code
+          ? { code: /** @type {any} */ (modelError).code }
+          : {}),
+        warning: /** @type {any} */ (modelError)?.warning
+          || "大模型暂时不可用，请先在 Control Panel 配置云端模型，或启动并加载本地模型。",
         detail: /** @type {Error} */ (modelError).message,
-      }), { "Content-Type": "application/json" });
+      }), headers);
     }
   } catch (error) {
     if (/** @type {any} */ (error)?.name === "AbortError") return;

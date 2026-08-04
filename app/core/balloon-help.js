@@ -4,9 +4,13 @@
 // Help instead of becoming an automatic tour.
 
 let balloonHelpEnabled = false;
+let balloonHelpTouchedInspect = false;
+let balloonHelpExplicit = false;
 let balloonHelpTarget = null;
 let balloonHelpTextKey = "";
 let balloonHelpTimer = null;
+
+const BALLOON_HELP_STORAGE_KEY = "ai-system6-balloon-help";
 
 const balloonHelpSelectionRequiredActions = new Set([
   "open-menu-selection",
@@ -164,8 +168,34 @@ function syncBalloonHelpLanguage() {
   document.body.classList.toggle("is-balloon-help", balloonHelpEnabled);
 }
 
-function setBalloonHelpEnabled(enabled, { announce = true } = {}) {
+function loadBalloonHelpPreference() {
+  let stored = "";
+  try {
+    stored = String(localStorage.getItem(BALLOON_HELP_STORAGE_KEY) || "").trim();
+  } catch {}
+  if (stored === "on" || stored === "off") {
+    balloonHelpExplicit = true;
+    return stored === "on";
+  }
+  // First visit: hover-capable devices get the discoverable default so new
+  // users meet the help balloons. Touch-primary devices stay off so the
+  // explicit-inspect mode can never swallow a tap.
+  return window.matchMedia("(hover: hover)").matches;
+}
+
+function setBalloonHelpEnabled(enabled, { announce = true, persist = true } = {}) {
   balloonHelpEnabled = Boolean(enabled);
+  if (persist) {
+    balloonHelpExplicit = true;
+    balloonHelpTouchedInspect = balloonHelpEnabled;
+    try {
+      localStorage.setItem(BALLOON_HELP_STORAGE_KEY, balloonHelpEnabled ? "on" : "off");
+    } catch {}
+  } else {
+    // Initial application of a stored/default preference: only an explicit
+    // choice enables the touch inspect mode, never the hover default.
+    balloonHelpTouchedInspect = balloonHelpExplicit && balloonHelpEnabled;
+  }
   document.body.classList.toggle("is-balloon-help", balloonHelpEnabled);
   if (!balloonHelpEnabled) hideBalloonHelp();
   if (typeof updateMenuState === "function") updateMenuState();
@@ -190,6 +220,7 @@ function revealMultiFinderSwitcherHint() {
 
 function initializeBalloonHelp() {
   if (!balloonHelpElement()) return;
+  setBalloonHelpEnabled(loadBalloonHelpPreference(), { announce: false, persist: false });
 
   document.addEventListener("pointerover", (event) => {
     if (!balloonHelpEnabled || event.pointerType === "touch") return;
@@ -218,7 +249,7 @@ function initializeBalloonHelp() {
   // In explicit help mode, a touch inspects an object instead of activating
   // it. Menu-bar buttons remain usable so the user can hide Balloon Help.
   document.addEventListener("pointerdown", (event) => {
-    if (!balloonHelpEnabled || event.pointerType !== "touch") return;
+    if (!balloonHelpTouchedInspect || event.pointerType !== "touch") return;
     const target = event.target.closest?.("[data-balloon-help]");
     if (!target) return;
     showBalloonHelp(target);

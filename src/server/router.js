@@ -126,6 +126,7 @@ const publicExactRouteKeys = new Set([
   "GET /api/cloud/models",
   "POST /api/cloud/status",
   "POST /api/cloud/chat",
+  "POST /api/bureaucracy/captions",
 ]);
 
 const exactRoutes = isPublicDeployment
@@ -153,6 +154,7 @@ const publicPrefixRouteKeys = new Set([
   "GET /api/time-machine",
   "GET /api/endfield/search",
   "POST /api/endfield/search",
+  "POST /api/endfield/ask",
 ]);
 
 const prefixRoutes = isPublicDeployment

@@ -65,8 +65,9 @@ Progressive discovery divides responsibility instead of building one tutorial:
 - MultiFinder is discovered through the startup environment: briefly explain
   Finder versus MultiFinder where that choice is made, then teach the real
   menu-bar switcher only after MultiFinder is enabled.
-- [Balloon Help](https://en.wikipedia.org/wiki/Balloon_help) may be introduced as
-  an optional, user-activated, state-aware help mode. It answers “What is this?”
+- [Balloon Help](https://en.wikipedia.org/wiki/Balloon_help) is a state-aware
+  help mode, discoverable by default on hover-capable devices so new users meet
+  it, and user-toggleable with the choice persisted. It answers “What is this?”
   and “Why is this unavailable?” in one or two actionable sentences. It must not
   become an automatic OOBE tour or replace task-oriented System Help.
 - Balloon Help targets unfamiliar icons, system objects, and disabled-state
