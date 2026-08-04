@@ -245,6 +245,8 @@ test.assertNotIncludes(html, 'id="compose-tools-quick-draft"', "ClioTalk no long
 test.assertNotIncludes(html, 'id="quick-draft-cliotalk-chips"', "ClioTalk action chips are removed in favor of typed keywords + the command menu");
 test.assertIncludes(actions, "quick-draft-import-chat", "Add menu can trigger Quick Draft chat-record import");
 test.assertIncludes(html, 'data-system-icon="chatImport"', "Chat-record import has a dedicated System icon");
+test.assertIncludes(app, 'iconId: "quickDraft"', "Quick Draft has its own Applications icon, not TeachText's");
+test.assertIncludes(systemIcons, "quickDraft", "System icon set draws the Quick Draft clock icon");
 test.assertIncludes(html, "Choose screenshots or MP4 screen recordings", "Chat-record import help mentions screen recordings");
 test.assertIncludes(systemIcons, "chatImport", "System icon set draws the chat-record import icon");
 test.assertIncludes(html, 'id="quick-draft-cliotalk-hint"', "ClioTalk status bar hints which keywords can be typed");

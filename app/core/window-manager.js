@@ -27,7 +27,11 @@ function getWindow(name) {
   return document.querySelector(`[data-window="${name}"]`);
 }
 
-const centeredSystemWindowNames = new Set(["about"]);
+const centeredSystemWindowNames = new Set(["about", "guide"]);
+function isCenteredSystemWindow(winOrName) {
+  const name = typeof winOrName === "string" ? winOrName : winOrName?.dataset.window;
+  return centeredSystemWindowNames.has(name);
+}
 const deskAccessoryDefaultWidths = new Map([
   ["findFile", 520],
   ["dictionary", 390],
@@ -1038,6 +1042,13 @@ function finderNavigationSegments(windowName) {
   }
 
   const segments = [{ windowName: "disk", folderId: "", label: t("startup_disk") }];
+  if (windowName === "finder") {
+    segments.push({ windowName, folderId: "", systemFolderPath: "", label: t("system_folder") });
+    (typeof systemFolderPathTrail === "function" ? systemFolderPathTrail() : []).forEach((entry) => {
+      segments.push({ windowName, folderId: "", systemFolderPath: entry.path, label: entry.label });
+    });
+    return segments;
+  }
   if (windowName === "projects" || windowName === "documents") {
     segments.push({ windowName, folderId: "", label: currentLabel });
     const folderId = selectedFolderId === "all" ? "" : selectedFolderId;
@@ -1070,9 +1081,18 @@ function navigateFinderFolderLocation(windowName, folderId = "") {
   }
 }
 
-async function navigateFinderLocation(sourceWindowName, targetWindowName, folderId = "") {
+async function navigateFinderLocation(sourceWindowName, targetWindowName, folderId = "", systemFolderPath = "") {
   if (sourceWindowName === targetWindowName && ["projects", "documents"].includes(targetWindowName)) {
     navigateFinderFolderLocation(targetWindowName, folderId);
+    return;
+  }
+
+  if (targetWindowName === "finder") {
+    resetFinderSelectionForNavigation();
+    mobileFinderDesktopPreferred = false;
+    if (sourceWindowName !== "finder") await openWindow("finder");
+    navigateSystemFolderPath(systemFolderPath);
+    focusWindow(getWindow("finder"));
     return;
   }
 
@@ -1087,6 +1107,15 @@ async function navigateFinderLocation(sourceWindowName, targetWindowName, folder
 }
 
 async function navigateFinderUp(windowName) {
+  if (windowName === "finder" && typeof getSystemFolderPathDefinition === "function") {
+    const definition = getSystemFolderPathDefinition();
+    if (definition) {
+      navigateSystemFolderPath(definition.parentPath || "");
+      focusWindow(getWindow("finder"));
+      return;
+    }
+  }
+
   if (["projects", "documents"].includes(windowName)) {
     const folder = typeof getSelectedFolder === "function" ? getSelectedFolder() : null;
     if (folder) {
@@ -1172,7 +1201,7 @@ function renderFinderNavigationBar(winOrName) {
     button.textContent = segment.label;
     button.addEventListener("click", (event) => {
       event.stopPropagation();
-      navigateFinderLocation(windowName, segment.windowName, segment.folderId);
+      navigateFinderLocation(windowName, segment.windowName, segment.folderId, segment.systemFolderPath || "");
     });
     breadcrumbs.append(button);
   });
@@ -1453,10 +1482,28 @@ function placeCenteredSystemWindow(win) {
   const centerX = Math.min(Math.max(workLeft + (workRight - workLeft) / 2, workLeft + halfWidth), workRight - halfWidth);
   const centerY = Math.min(Math.max(workTop + (workBottom - workTop) / 2, workTop + halfHeight), workBottom - halfHeight);
 
-  win.style.left = `${Math.round(centerX)}px`;
-  win.style.top = `${Math.round(centerY)}px`;
+  const base = win.offsetParent?.getBoundingClientRect() || { left: 0, top: 0 };
+  win.style.left = `${Math.round(centerX - base.left)}px`;
+  win.style.top = `${Math.round(centerY - base.top)}px`;
   win.style.width = "";
   win.style.transform = "translate(-50%, -50%)";
+  pinWindowTransformToCorner(win);
+}
+
+// A centring translate is measured against the window's own size, so it
+// re-resolves the position every time that size changes. WindowShade changes
+// it on every roll-up: the title bar moved out from under the pointer, and the
+// second double-click that should have unrolled the shade landed on the desk.
+// Resolve the centred result to a plain corner once, then let the window be
+// positioned like every other one.
+function pinWindowTransformToCorner(win) {
+  if (!win || getComputedStyle(win).transform === "none") return;
+  const rect = win.getBoundingClientRect();
+  if (!rect.width && !rect.height) return;
+  const base = win.offsetParent?.getBoundingClientRect() || { left: 0, top: 0 };
+  win.style.left = `${Math.round(rect.left - base.left)}px`;
+  win.style.top = `${Math.round(rect.top - base.top)}px`;
+  win.style.transform = "none";
 }
 
 function placeSaveChatWindow() {
@@ -1824,7 +1871,6 @@ function getActionAvailability() {
     "clear-attached-clips": attachedClipIds.size > 0,
     "open-selected-in-reader": selectedFindPathIndex !== null,
     "clip-selected-find-path": selectedFindPathIndex !== null,
-    "open-clio-genealogy": isAssistant && hasConversation && isProjectMounted,
     "save-clio-harness": isAssistant && hasConversation && isProjectMounted,
     "save-clio-skill": isAssistant && hasConversation && isProjectMounted,
     "save-clio-retrospective": isAssistant && hasConversation && isProjectMounted,
@@ -1926,6 +1972,7 @@ function getActionAvailability() {
     "empty-trash": getProjectTrashItems().length > 0,
     "erase-disk": !!selectedProject,
     "reset-system": showResetSystemMenu,
+    "toggle-balloon-help": true,
     "open-system-help": true,
     "open-help-folder": true,
     "open-system-concepts-docmap": true,
@@ -2047,7 +2094,15 @@ function getActionAvailability() {
     "soundscape-previous": winName === "soundscape" && !!window.AISystem6Soundscape?.hasQueue?.(),
     "soundscape-next": winName === "soundscape" && !!window.AISystem6Soundscape?.hasQueue?.(),
     "soundscape-shuffle": winName === "soundscape" && !!window.AISystem6Soundscape?.hasQueue?.(),
+    "soundscape-shuffle-on": winName === "soundscape" && !!window.AISystem6Soundscape?.hasQueue?.(),
+    "soundscape-shuffle-off": winName === "soundscape" && !!window.AISystem6Soundscape?.hasQueue?.(),
+    "soundscape-shuffle-songs": winName === "soundscape" && !!window.AISystem6Soundscape?.hasQueue?.(),
+    "soundscape-shuffle-albums": winName === "soundscape" && !!window.AISystem6Soundscape?.hasQueue?.(),
+    "soundscape-shuffle-groupings": winName === "soundscape" && !!window.AISystem6Soundscape?.hasQueue?.(),
     "soundscape-repeat": winName === "soundscape" && !!window.AISystem6Soundscape?.hasQueue?.(),
+    "soundscape-repeat-off": winName === "soundscape" && !!window.AISystem6Soundscape?.hasQueue?.(),
+    "soundscape-repeat-all": winName === "soundscape" && !!window.AISystem6Soundscape?.hasQueue?.(),
+    "soundscape-repeat-one": winName === "soundscape" && !!window.AISystem6Soundscape?.hasQueue?.(),
     "soundscape-reset-style": winName === "soundscape",
     "soundscape-link-project": winName === "soundscape" && !!window.AISystem6Soundscape?.canLinkProject?.(),
     "endfield-new-session": winName === "endfieldTerminal",
@@ -2159,6 +2214,10 @@ function updateMenuState() {
       btn.textContent = t(useLiquidGlass ? "retro_interface" : "liquid_glass");
       btn.classList.remove("is-checked");
     }
+    if (action === "toggle-balloon-help") {
+      btn.textContent = t(balloonHelpEnabled ? "hide_balloon_help" : "show_balloon_help");
+      btn.classList.remove("is-checked");
+    }
     if (action === "reset-system") {
       btn.classList.toggle("is-hidden", !state[action]);
     }
@@ -2167,6 +2226,20 @@ function updateMenuState() {
     }
     if (btn.dataset.viewMode) {
       btn.classList.toggle("is-checked", normalizeFinderViewMode(btn.dataset.viewMode) === activeViewMode);
+    }
+    if (btn.dataset.shuffleMode) {
+      const shuffle = window.AISystem6Soundscape?.currentShuffleMode?.();
+      btn.classList.toggle("is-checked", Boolean(shuffle) && btn.dataset.shuffleMode === shuffle);
+    }
+    if (btn.dataset.shuffleKind) {
+      const kind = window.AISystem6Soundscape?.currentShuffleKind?.();
+      btn.classList.toggle("is-checked", Boolean(kind) && btn.dataset.shuffleKind === kind);
+    }
+    if (btn.dataset.repeatMode) {
+      // Only the loaded feature knows the real mode; an unloaded Soundscape
+      // leaves every row unchecked rather than guessing "off".
+      const mode = window.AISystem6Soundscape?.currentRepeatMode?.();
+      btn.classList.toggle("is-checked", Boolean(mode) && btn.dataset.repeatMode === mode);
     }
   });
   document.querySelectorAll(".menu-submenu").forEach((sub) => {
@@ -2184,6 +2257,7 @@ function updateMenuState() {
     }
   });
   renderMultiFinderMenu();
+  if (typeof syncDisabledMenuBalloonHelp === "function") syncDisabledMenuBalloonHelp();
   // Whether a window has anything to ask about is action availability like any
   // other, so the ask bars recompute on the same pass.
   refreshAskBars();
@@ -2504,6 +2578,10 @@ async function openWindow(name, options = {}) {
   if (!skipFocus) {
     focusWindow(win);
     if (!["assistant", "about"].includes(name)) playSystemSound("open");
+  }
+
+  if (name === "guide" && typeof syncGuideWelcomeState === "function") {
+    syncGuideWelcomeState({ focusDefault: !skipFocus });
   }
 
   if (name === "about") {
@@ -3586,12 +3664,53 @@ async function closeWindow(name, force = false) {
 }
 
 function toggleCollapsed(win) {
-  win.classList.toggle("is-collapsed");
+  const willCollapse = !win.classList.contains("is-collapsed");
+  const before = win.getBoundingClientRect();
+  if (willCollapse) {
+    const width = Math.round(before.width);
+    if (width > 0) setInlineStyleValue(win, "--window-shade-width", `${width}px`);
+    win.classList.add("is-collapsed");
+  } else {
+    win.classList.remove("is-collapsed");
+    setInlineStyleValue(win, "--window-shade-width", "");
+  }
+  keepWindowCornerAfterShade(win, before);
   scheduleWorkingSessionSave?.();
+}
+
+// WindowShade rolls up and down in place. Start Here is centred by a transform,
+// and compact layouts re-anchor a collapsed window from the viewport to the
+// desk, so hiding the pane moved the title bar out from under the pointer: the
+// second double-click landed on the desk instead, and the shade could never be
+// unrolled. Whatever the stylesheet did, put the corner back where it was.
+function keepWindowCornerAfterShade(win, before) {
+  if (!before.width && !before.height) return;
+  const after = win.getBoundingClientRect();
+  if (Math.abs(after.left - before.left) < 0.5 && Math.abs(after.top - before.top) < 0.5) return;
+  const base = win.offsetParent?.getBoundingClientRect() || { left: 0, top: 0 };
+  win.style.left = `${Math.round(before.left - base.left)}px`;
+  win.style.top = `${Math.round(before.top - base.top)}px`;
+  win.style.transform = "none";
+  // A portrait Desk Accessory is centred by a responsive
+  // `transform: var(--mobile-da-transform, none) !important`, which would win
+  // over the pinned corner above when the shade unrolls. Resolve the token to
+  // none as well so the window really stays where its title bar was.
+  if (win.classList.contains("is-mobile-da-arranged")) {
+    win.style.setProperty("--mobile-da-transform", "none");
+  }
 }
 
 function isResizableWindow(win) {
   if (!win || !resizableWindowNames.has(win.dataset.window)) return false;
+  const appId = getWindowAppId(win);
+  return !(writerMode && sideAskEnabled && isSideAskPairApp(appId));
+}
+
+// The System 6 Zoom box and grow box are separate actions even when a full app
+// exposes both. The title-bar control is authoritative: fixed system windows
+// and Desk Accessories omit it. `.resize-box` is the legacy DOM class name.
+function isZoomableWindow(win) {
+  if (!win?.querySelector(":scope > .title-bar > .resize-box:not([disabled])")) return false;
   const appId = getWindowAppId(win);
   return !(writerMode && sideAskEnabled && isSideAskPairApp(appId));
 }
@@ -3732,6 +3851,8 @@ function scheduleWritingSpineAvoidance() {
 }
 
 function zoomWindow(win) {
+  if (!isZoomableWindow(win)) return;
+
   if(matchMedia("(max-width:860px) and (orientation:portrait)").matches){
     win.classList.remove("is-collapsed");
     // For an app that can take the full-screen shell, the zoom box is the
@@ -3743,20 +3864,13 @@ function zoomWindow(win) {
       focusWindow(win, 1);
       return;
     }
-    win.dataset.zoomed=win.dataset.zoomed!="true";
-    focusWindow(win,1);
-    if(win.dataset.window==="docMap")requestAnimationFrame(restoreDocMapCanvasView);
-    return;
-  }
-  if (!isResizableWindow(win) || matchMedia("(max-width:860px)").matches) {
-    toggleCollapsed(win);
-    return;
   }
 
   const desktop = document.querySelector(".desktop");
   const desktopRect = desktop.getBoundingClientRect();
   const margin = 18;
   const avoidance = getDesktopAvoidanceInsets({ margin });
+  const fixedPosition = getComputedStyle(win).position === "fixed";
 
   if (win.dataset.zoomed === "true") {
     clearFinderContentFit(win);
@@ -3798,13 +3912,17 @@ function zoomWindow(win) {
 
   rememberWindowFrame(win);
   win.classList.remove("is-collapsed", "is-desklet");
-  win.style.left = `${avoidance.left}px`;
-  win.style.top = `${margin}px`;
-  const maxWidth = Math.max(320, desktopRect.width - avoidance.left - avoidance.right - margin);
-  const maxHeight = Math.max(260, desktopRect.height - margin * 2);
+  win.style.left = `${avoidance.left + (fixedPosition ? desktopRect.left : 0)}px`;
+  win.style.top = `${margin + (fixedPosition ? desktopRect.top : 0)}px`;
+  const availableWidth = Math.max(1, desktopRect.width - avoidance.left - avoidance.right - margin);
+  const availableHeight = Math.max(1, desktopRect.height - margin * 2);
+  const minWidth = Math.min(320, Math.max(240, availableWidth));
+  const minHeight = Math.min(180, Math.max(140, availableHeight));
+  const maxWidth = Math.max(minWidth, availableWidth);
+  const maxHeight = Math.max(minHeight, availableHeight);
   const zoomSize = lockedAspectSize(win, maxWidth, maxHeight, {
-    minWidth: 320,
-    minHeight: 180,
+    minWidth,
+    minHeight,
     maxWidth,
     maxHeight,
   });
@@ -3892,9 +4010,9 @@ function startWindowResize(event, win) {
   event.stopPropagation();
   focusWindow(win);
   clearFinderContentFit(win, { preserveSize: true });
-  // The grow box and the zoom box are one control pair: dragging out of the
-  // full-screen shell restores the window down first, so the drag sizes a real
-  // floating window instead of fighting the maximized frame.
+  // The grow box performs manual sizing, while the Zoom box chooses the
+  // standard size. Dragging out of the full-screen shell restores the window
+  // down first so the grow action sizes a real floating window.
   if (win.classList.contains("is-mobile-fullscreen")) {
     win.dataset.mobileRestored = "true";
     syncMobileAppForeground();
@@ -4009,6 +4127,7 @@ function installGrowBoxes() {
     growBox.className = "grow-box";
     growBox.type = "button";
     growBox.setAttribute("aria-label", "Resize window");
+    growBox.dataset.balloonHelp = "balloon_grow_box";
     growBox.addEventListener("pointerdown", (event) => startWindowResize(event, win));
     growBox.addEventListener("mousedown", (event) => startWindowResize(event, win));
     win.append(growBox);

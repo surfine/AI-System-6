@@ -155,6 +155,23 @@ body.use-liquid-glass {
   --clio-file-chip-border: 1px solid rgba(16, 17, 20, 0.06);
   --clio-file-chip-radius: 8px;
   --system-border: 1px solid rgba(255, 255, 255, 0.72);
+  --window-border: var(--system-border);
+  --menu-bar-border: 1px solid rgba(16, 17, 20, 0.1);
+  --system-icon-stroke-width: 1.8;
+  /* Liquid owns its line contract in both font modes: a hairline rule under
+     the rounded 1.8px icon stroke, and solid symbols that are never dilated. */
+  --system-control-line: 1px;
+  --system-icon-pixel-run-expansion: 0;
+  --menu-system-icon-pixel-run-expansion: 0;
+  --happy-mac-border-width: 2px;
+  --happy-mac-face-border-width: 2px;
+  --happy-mac-border-color: rgba(16, 17, 20, 0.88);
+  --happy-mac-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.82),
+    8px 8px 0 rgba(16, 17, 20, 0.22),
+    0 20px 52px rgba(18, 28, 38, 0.18);
+  --happy-mac-face-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82);
+  --happy-mac-backdrop: blur(8px) saturate(140%);
   --system-shadow: 0 8px 15px rgba(0, 0, 0, 0.04), 0 24px 58px rgba(18, 28, 38, 0.08);
   --system-inset: inset 1px 1px 0 rgba(255, 255, 255, 0.78);
   --liquid-window-radius: 18px;
@@ -301,8 +318,8 @@ body.use-liquid-glass {
     linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(243, 248, 251, 0.78)),
     rgba(248, 251, 252, 0.88);
   --liquid-menu-panel-shadow:
-    0 22px 58px rgba(18, 28, 38, 0.16),
-    0 3px 12px rgba(18, 28, 38, 0.08),
+    0 12px 30px rgba(18, 28, 38, 0.12),
+    0 2px 8px rgba(18, 28, 38, 0.06),
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
     inset 0 -1px 0 rgba(16, 17, 20, 0.06);
   /* Opaque-enough fill + blur for rendered-markdown reading surfaces (the
@@ -474,6 +491,7 @@ body.use-liquid-glass {
   --menu-item-active-bg: var(--liquid-menu-active);
   --menu-item-active-fg: #ffffff;
   --menu-item-active-shadow: var(--liquid-menu-active-shadow);
+  --menu-panel-shadow: var(--liquid-menu-panel-shadow);
   --liquid-disabled-control-border: rgba(16, 17, 20, 0.22);
   --liquid-disabled-control-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.54), rgba(255, 255, 255, 0.2)),
@@ -708,6 +726,16 @@ body.use-liquid-glass {
     0 0 0 3px rgba(0, 122, 255, 0.28),
     inset 0 1px 0 rgba(255, 255, 255, 0.78),
     0 6px 14px rgba(18, 28, 38, 0.08);
+  --balloon-help-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.54)),
+    rgba(238, 246, 252, 0.74);
+  --balloon-help-border: 1px solid rgba(255, 255, 255, 0.82);
+  --balloon-help-radius: 18px;
+  --balloon-help-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 12px 28px rgba(18, 28, 38, 0.18);
+  --balloon-help-padding: 11px 14px;
+  --balloon-help-backdrop: blur(18px) saturate(1.2);
   --status-panel-border: 1px solid rgba(255, 255, 255, 0.48);
   --status-panel-radius: 16px;
   --status-panel-bg:
@@ -1495,7 +1523,7 @@ body.use-liquid-glass #liquid-glass-overlay {
 }
 
 body.use-liquid-glass .menu-bar {
-  border-bottom: 1px solid rgba(16, 17, 20, 0.1);
+  border-bottom: var(--menu-bar-border);
   background:
     radial-gradient(120% 170% at 8% 0%, rgba(255, 255, 255, 0.42), transparent 44%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.12)),
@@ -1531,7 +1559,7 @@ body.use-liquid-glass .system-select-menu {
   border: 1px solid var(--glass-border);
   border-radius: var(--liquid-menu-radius);
   background: var(--liquid-menu-panel);
-  box-shadow: var(--liquid-menu-panel-shadow);
+  box-shadow: var(--menu-panel-shadow);
   backdrop-filter: blur(34px) saturate(160%) brightness(1.04);
   -webkit-backdrop-filter: blur(34px) saturate(160%) brightness(1.04);
   overflow: hidden;
@@ -1854,8 +1882,8 @@ body.use-liquid-glass .close-box,
 body.use-liquid-glass .resize-box {
   width: 15px;
   height: 15px;
-  align-self: start;
-  margin: 5px 0 0;
+  align-self: center;
+  margin: 0;
   padding: 0;
   border: 1px solid rgba(16, 17, 20, 0.28);
   border-radius: 50%;
@@ -2840,32 +2868,29 @@ body.use-liquid-glass .boot-screen {
 }
 
 body.use-liquid-glass .happy-mac {
-  border: 2px solid rgba(16, 17, 20, 0.78);
+  border: var(--happy-mac-border-width) solid var(--happy-mac-border-color);
   border-radius: 12px;
   background:
     linear-gradient(rgba(16, 17, 20, 0.92), rgba(16, 17, 20, 0.92)) 16px 84px / 11px 4px no-repeat,
     linear-gradient(rgba(16, 17, 20, 0.92), rgba(16, 17, 20, 0.92)) 57px 84px / 40px 4px no-repeat,
     linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.34)),
     rgba(255, 255, 255, 0.32);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.82),
-    8px 8px 0 rgba(16, 17, 20, 0.22),
-    0 20px 52px rgba(18, 28, 38, 0.18);
-  backdrop-filter: blur(8px) saturate(140%);
-  -webkit-backdrop-filter: blur(8px) saturate(140%);
+  box-shadow: var(--happy-mac-shadow);
+  backdrop-filter: var(--happy-mac-backdrop);
+  -webkit-backdrop-filter: var(--happy-mac-backdrop);
 }
 
 body.use-liquid-glass .happy-mac::after {
-  border: 2px solid rgba(16, 17, 20, 0.78);
+  border: var(--happy-mac-border-width) solid var(--happy-mac-border-color);
   border-radius: 0 0 4px 4px;
   background: rgba(255, 255, 255, 0.36);
 }
 
 body.use-liquid-glass .happy-mac-face {
-  border: 2px solid rgba(16, 17, 20, 0.78);
+  border: var(--happy-mac-face-border-width) solid var(--happy-mac-border-color);
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.62);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82);
+  box-shadow: var(--happy-mac-face-shadow);
 }
 
 body.use-liquid-glass .shutdown-ledger,
@@ -3369,11 +3394,13 @@ body.use-liquid-glass .details-bar .sys-icon {
   box-shadow: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
+  color: inherit;
+  filter: none;
   padding: 0;
 }
 
 body.use-liquid-glass .sys-icon-svg {
-  stroke-width: 1.8;
+  stroke-width: var(--system-icon-stroke-width);
   stroke-linecap: round;
   stroke-linejoin: round;
   shape-rendering: geometricPrecision;

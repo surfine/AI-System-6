@@ -201,6 +201,13 @@ Introduce); show visible feedback for model / import / OCR / search / save /
 delete / export; never imply something was saved, indexed, or networked unless
 it actually happened.
 
+Historical scope: **System 6 is the baseline, not the cutoff date.** Proven
+elements from the full Classic Mac OS lineage may be absorbed when their native
+semantics stay distinct and they are adapted for web, touch, keyboard, and
+accessibility. Never conflate Zoom, grow, and WindowShade. See “Historical
+Vocabulary” in [DESIGN.md](DESIGN.md) for MultiFinder, Balloon Help, OOBE, and
+later-System feature rules.
+
 ### Writing-route internals (load-bearing)
 
 Outline / Section Drafts / TeachText are linked views of one Markdown doc with

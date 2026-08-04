@@ -6,6 +6,31 @@ const runtime = read("app/core/desktop-runtime.js");
 const actions = read("app/core/actions.js");
 const windows = read("app/core/window-manager.js");
 const icons = read("app/core/system-icons.js");
+const windowStyles = read("styles/10-windows.css");
+const iconStyles = read("styles/50-apps.css");
+const liquidStyles = read("styles/70-liquid-glass.css");
+const foundationStyles = read("styles/00-foundation.css");
+
+test.assertIncludes(icons, "startup disk: Startup Device, ICN# -4064", "Startup Disk uses the native System 6 startup-device resource");
+test.assertIncludes(icons, "hard disk: Apple HD SC Setup, ICN# 16646", "Project Hard Disk uses the native System 6 hard-disk resource");
+test.assertIncludes(icons, "floppy: Finder, ICN# 129", "File Floppy uses the native Finder resource");
+test.assertIncludes(icons, "empty/full Trash: Finder, ICN# 130 / 134", "Trash preserves native empty and full resources");
+test.assertMatches(icons, /const nativeSystem6FinderIconPaths = \{[\s\S]*startupDisk: nativeSystem6StartupDiskPath,[\s\S]*projectDisk: nativeSystem6HardDiskPath,[\s\S]*fileFloppy:[\s\S]*trash:[\s\S]*trashFull:/, "Classic storage objects use distinct native resources through one registry");
+test.assert((icons.match(/\.\.\.nativeSystem6FinderIconPaths/g) || []).length === 2, "Classic and Classic Plus share native pixel geometry");
+test.assertMatches(icons, /const liquidSystemIconPaths = \{[\s\S]*startupDisk:[\s\S]*projectDisk:[\s\S]*fileFloppy:[\s\S]*trash:[\s\S]*trashFull:/, "Liquid Glass owns a complete, coherent storage icon family");
+test.assertNotIncludes(icons.slice(icons.indexOf("const liquidSystemIconPaths"), icons.indexOf("const classicPlusSystemIconPaths")), "...nativeSystem6FinderIconPaths", "Liquid Glass does not inherit Classic 1-bit storage art");
+test.assertMatches(icons, /startupDisk: `[\s\S]*M6\.5 4\.5h17L27\.5 8v19\.5h-21z[\s\S]*M13\.2 20c/, "Liquid Startup Disk preserves the native floppy silhouette and question-mark identity");
+test.assertMatches(icons, /projectDisk: `[\s\S]*M5 11\.5h22v13[\s\S]*cx="23" cy="22"/, "Liquid Project Hard Disk uses a distinct low horizontal drive with a status light");
+test.assertNotMatches(icons.slice(icons.indexOf("const liquidSystemIconPaths"), icons.indexOf("fileFloppy:", icons.indexOf("const liquidSystemIconPaths"))), /startupDisk:[\s\S]*projectDisk:[\s\S]*<rect class="icon-fill" x="5\.5" y="8"/, "Liquid storage objects do not reuse one vertical enclosure with different badges");
+test.assertIncludes(icons, "a 32×32 vector grid, a 2-unit safe edge, and one-unit outline strokes", "Custom Classic objects document one shared vector drawing grammar");
+test.assertMatches(icons, /questionSheet:[\s\S]*M4 2h19l5 5v23H4z[\s\S]*outline:[\s\S]*M4 2h24v28H4z[\s\S]*applications:[\s\S]*M3 3h26v26H3z/, "Core route and desktop companions occupy the shared Classic safe area");
+test.assertIncludes(foundationStyles, "--system-icon-stroke-width: 1", "Classic outlines default to one 32-grid unit");
+test.assertIncludes(foundationStyles, "--system-icon-pixel-run-expansion: 0", "Classic native pixel resources keep their exact one-bit geometry by default");
+test.assertMatches(iconStyles, /\.sys-icon-svg \{[\s\S]*stroke-width: var\(--system-icon-stroke-width\)/, "System icons consume the theme-owned stroke weight");
+test.assertNotIncludes(`${windowStyles}\n${iconStyles}`, "--sys-icon-stroke", "Classic icon size variants cannot reintroduce local stroke weights");
+test.assertNotMatches(iconStyles, /\.sys-icon-svg (?:path|rect|circle)[^{]*\{[^}]*vector-effect: non-scaling-stroke;/, "Classic strokes scale with their vector grid instead of mixing CSS pixel weights");
+test.assertIncludes(liquidStyles, "--system-icon-stroke-width: 1.8", "Liquid Glass retains its independent rounded stroke weight");
+test.assertMatches(liquidStyles, /body\.use-liquid-glass \.sys-icon-liquid path:not\(\.classic-ink\)[\s\S]*vector-effect: non-scaling-stroke;/, "Liquid Glass retains non-scaling outline rendering");
 
 test.assertIncludes(app, "function withStaticFinderMetadata(items, location)", "one helper owns static Finder metadata");
 for (const name of ["System", "Finder", "MultiFinder", "DA Handler"]) {

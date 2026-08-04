@@ -292,8 +292,9 @@ test.assertNotIncludes(
   "the zoom box is not force-hidden in the full-screen shell"
 );
 
-// Zoom box and grow box are one pair: either one restores a maximized window
-// down to a floating window, so several windows can share the phone screen.
+// The Zoom box owns maximize/restore. The grow box remains a separate manual
+// sizing control, but a grow drag first restores a maximized window down so it
+// has a real floating frame to resize.
 test.assertIncludes(
   windowManager,
   'win.dataset.mobileRestored !== "true"',

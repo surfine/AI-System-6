@@ -7,6 +7,7 @@
 
   const cloudProviderEl = document.querySelector("#cloud-provider");
   const cloudApiKeyEl = document.querySelector("#cloud-api-key");
+  const cloudApiKeyLabelEl = document.querySelector("#cloud-api-key-label");
   const cloudModelEl = document.querySelector("#cloud-model");
   const cloudModelSelectEl = document.querySelector("#cloud-model-select");
   const manualModelFieldsEl = document.querySelector("#manual-model-fields");
@@ -31,6 +32,23 @@
 
   let cloudModels = [];
   let cloudBalanceAtActivation = null;
+
+  window.syncCloudCredentialUi = function () {
+    const sharedAvailable = isPublicCloudCredentialMode() && publicSharedCloudAvailable;
+    const mode = typeof cloudCredentialMode === "function" ? cloudCredentialMode() : "none";
+    if (cloudApiKeyLabelEl) {
+      const labelKey = sharedAvailable ? "cloud_api_key_optional" : "cloud_api_key";
+      cloudApiKeyLabelEl.dataset.i18n = labelKey;
+      cloudApiKeyLabelEl.textContent = typeof t === "function" ? t(labelKey) : "API Key";
+    }
+    if (!cloudStatusHint || cloudConfig?.active) return;
+    const hintKey = mode === "byok"
+      ? "cloud_byok_hint"
+      : sharedAvailable
+        ? "cloud_shared_hint"
+        : "cloud_status_hint";
+    cloudStatusHint.textContent = typeof t === "function" ? t(hintKey) : "";
+  };
 
   function isManualModelMode() {
     return !!manualModelFieldsEl?.checked || cloudConfig?.modelInputMode === "manual";
@@ -147,6 +165,7 @@
 
   async function fetchBalanceOnly() {
     if (!cloudConfig || !cloudConfig.provider || !cloudCredentialReady()) return null;
+    if (cloudCredentialMode() === "shared") return null;
     try {
       const baseUrl = PROVIDER_BASE_URLS[cloudConfig.provider] || DEEPSEEK_BASE_URL;
       const res = await fetch("/api/cloud/status", {
@@ -207,8 +226,14 @@
       if (!response.ok) throw new Error("HTTP " + response.status);
       const data = await response.json();
       if (data.connected) {
+        cloudConfig.credentialMode = data.credential_mode || cloudCredentialMode();
         cloudStatusDot.classList.add("is-connected");
-        cloudStatusText.textContent = typeof t === "function" ? t("cloud_connected") : "Connected";
+        const connectedKey = data.credential_mode === "shared"
+          ? "cloud_connected_shared"
+          : data.credential_mode === "byok"
+            ? "cloud_connected_byok"
+            : "cloud_connected";
+        cloudStatusText.textContent = typeof t === "function" ? t(connectedKey) : "Connected";
         if (data.balance) {
           cloudBalanceEl.textContent = data.balance.currency + " " + Number(data.balance.total).toFixed(2);
         }
@@ -248,7 +273,12 @@
     if (active) {
       syncCloudModelContextLength();
       if (typeof refreshCloudUsageDisplay === "function") refreshCloudUsageDisplay();
-      cloudStatusHint.textContent = typeof t === "function" ? t("cloud_active_hint") : "Cloud model active.";
+      const activeHintKey = cloudCredentialMode() === "shared"
+        ? "cloud_shared_active_hint"
+        : cloudCredentialMode() === "byok"
+          ? "cloud_byok_active_hint"
+          : "cloud_active_hint";
+      cloudStatusHint.textContent = typeof t === "function" ? t(activeHintKey) : "Cloud model active.";
       fetchBalanceOnly().then(function (bal) {
         if (bal && cloudBalanceAtActivation === null) cloudBalanceAtActivation = bal.total;
       });
@@ -271,9 +301,7 @@
       } else {
         if (typeof refreshCloudUsageDisplay === "function") refreshCloudUsageDisplay();
       }
-      cloudStatusHint.textContent = typeof t === "function"
-        ? t("cloud_status_hint")
-        : "The key is kept for this tab session only; project files and exports never include it.";
+      window.syncCloudCredentialUi();
     }
     if (typeof renderCloudModelPopover === "function") renderCloudModelPopover();
   }
@@ -363,10 +391,42 @@
   window.renderCloudModelPopover = function () {
     const popover = document.querySelector("#cloud-model-popover");
     if (!popover) return;
-    if (!cloudConfig) {
+    const localReady = typeof isLocalModelIndicatorReady === "function"
+      && isLocalModelIndicatorReady();
+    const cloudReady = !!(cloudConfig?.active && cloudConfig?.provider && cloudCredentialReady());
+    if (!cloudReady && !localReady) {
       const disconnectedText = typeof t === "function" ? t("model_not_connected") : "Model not connected";
+      const nodes = [cloudPopoverElement("div", "cl-hdr", disconnectedText)];
+      if (cloudConfig?.provider && cloudCredentialReady()) {
+        nodes.push(cloudPopoverButton(
+          "toggle-cloud",
+          "",
+          typeof t === "function" ? t("cl_act_cld") : "Use Cloud Model"
+        ));
+      }
+      nodes.push(cloudPopoverButton(
+          "open-model-settings",
+          "",
+          typeof t === "function" ? t("control_panel") : "Control Panel"
+      ));
+      popover.replaceChildren(...nodes);
+      wireCloudPopoverButtons(popover);
+      return;
+    }
+
+    if (!cloudConfig) {
+      const localName = typeof getLocalModelDisplayName === "function"
+        ? getLocalModelDisplayName()
+        : (document.querySelector("#model")?.value || "").trim();
+      const contextText = typeof currentContextWindowText === "function"
+        ? currentContextWindowText()
+        : (document.querySelector("#context-length")?.value || "-");
+      const localStateText = typeof modelStateCurrentStep === "function" ? modelStateCurrentStep() : "-";
       popover.replaceChildren(
-        cloudPopoverElement("div", "cl-hdr", disconnectedText),
+        cloudPopoverElement("div", "cl-hdr", localName),
+        cloudPopoverRow(t("context_length"), contextText),
+        cloudPopoverRow(t("model_state"), localStateText),
+        document.createElement("hr"),
         cloudPopoverButton(
           "open-model-settings",
           "",
@@ -509,11 +569,17 @@
   cloudApiKeyEl.addEventListener("input", function () {
     if (!cloudConfig) cloudConfig = {};
     setCloudRuntimeApiKey(cloudApiKeyEl.value.trim());
+    cloudConfig.credentialMode = cloudRuntimeApiKey
+      ? "byok"
+      : publicSharedCloudAvailable
+        ? "shared"
+        : "";
     cloudConfig.active = false;
     saveCloudConfig();
     updateCheckButtonState();
     cloudStatusEl.hidden = true;
     applyCloudActiveState();
+    window.syncCloudCredentialUi();
   });
 
   // Check status button
@@ -527,6 +593,7 @@
       if (cloudStatusDot.classList.contains("is-connected")) {
         await persistVerifiedCloudCredential();
         cloudConfig.active = true;
+        cloudConfig.credentialMode = cloudCredentialMode();
         cloudConfig.baseUrl = PROVIDER_BASE_URLS[cloudConfig.provider] || DEEPSEEK_BASE_URL;
         saveCloudConfig();
         applyCloudActiveState();
@@ -584,7 +651,13 @@
   } else {
     window.syncCloudModelControls();
   }
+  window.AISystem6PublicAccess?.getCapabilities?.().then(function (capabilities) {
+    setPublicSharedCloudAvailable(capabilities?.features?.cloud_shared === true);
+    updateCheckButtonState();
+    window.syncCloudCredentialUi();
+  });
   updateCheckButtonState();
+  window.syncCloudCredentialUi();
 })();
 
 // Update boot screen

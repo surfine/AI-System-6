@@ -117,6 +117,7 @@ function settingsSnapshotPayload() {
     writerMode: false,
     projectMounted: isProjectMounted,
     guideSeen,
+    multiFinderSwitcherHintSeen,
     writingBell: getWritingBellState(),
     alarmClock: getAlarmClockState(),
     puzzle: getPuzzleState(),
@@ -242,6 +243,11 @@ function updateLocalModelState(patch = {}) {
     ...patch,
   };
   localModelState.next = modelStateNextKey(localModelState);
+  // The menu-bar model indicator is the global status surface for both cloud
+  // and local routes. Keep it in the same state transition as Control Panel so
+  // a successful load (or disconnect) cannot leave the two surfaces disagreeing
+  // until a later render frame or monitor poll.
+  if (typeof refreshCloudUsageDisplay === "function") refreshCloudUsageDisplay();
   scheduleRenderTasks("localModelState");
 }
 
@@ -484,7 +490,12 @@ function contextLengthPresetEl() {
 
 function localConnectionErrorKey(error) {
   const message = String(error?.message || error || "");
+  if (/ollama_api_incompatible/.test(message)) return "local_connection_ollama_incompatible";
+  if (/ollama_cors_or_offline|ollama_bad_response/.test(message)) return "local_connection_ollama_unavailable";
+  if (/ollama_model_missing/.test(message)) return "local_connection_ollama_no_models";
   if (/lmstudio_auth_failed/.test(message)) return "local_connection_auth_failed";
+  if (/lmstudio_safari_http_unavailable/.test(message)) return "local_connection_safari_http_unavailable";
+  if (/lmstudio_safari_unsupported/.test(message)) return "local_connection_safari_unsupported";
   if (/lmstudio_browser_permission_denied/.test(message)) return "local_connection_browser_permission_denied";
   if (/lmstudio_v1_required/.test(message)) return "local_connection_v1_required";
   if (/lmstudio_loopback_required|lmstudio_endpoint_invalid/.test(message)) return "local_connection_loopback_required";
@@ -506,15 +517,45 @@ function setLocalConnectionDetailStatus(element, key) {
 function configurePublicLmStudioControls() {
   if (!window.AISystem6LocalLMStudio?.isPublicWebMode?.()) return;
   if (localProviderEl) {
-    localProviderEl.value = "lm-studio";
     [...localProviderEl.options].forEach((option) => {
-      const unavailable = option.value !== "lm-studio";
+      const unavailable = option.value === "custom";
       option.hidden = unavailable;
       option.disabled = unavailable;
     });
-    localProviderEl.disabled = true;
+    localProviderEl.disabled = false;
   }
   endpointInput.value = window.AISystem6LocalLMStudio.normalizeBaseUrl(endpointInput.value);
+}
+
+function isOllamaLocalProvider() {
+  return window.AISystem6LocalLMStudio?.currentProvider?.() === "ollama";
+}
+
+function syncLocalProviderUi() {
+  const ollama = isOllamaLocalProvider();
+  const tokenField = document.getElementById("local-api-token")?.closest(".control-field");
+  if (tokenField) tokenField.hidden = ollama;
+  if (localAuthStatusEl) localAuthStatusEl.textContent = t(ollama ? "local_auth_status_ollama" : "local_auth_status_optional");
+}
+
+function openLocalModelApp() {
+  const slashes = String.fromCharCode(47, 47);
+  if (isOllamaLocalProvider()) {
+    window.open(`https:${slashes}ollama.com/download`, "_blank", "noopener,noreferrer");
+    return;
+  }
+  window.location.assign(`lmstudio:${slashes}`);
+}
+
+function connectOrLaunchLocalModel() {
+  const safariNeedsHttpEntry = window.AISystem6LocalLMStudio?.isSafariPublicWebUnsupported?.();
+  if (localLmStudioConnectionEnabled || isOllamaLocalProvider() || safariNeedsHttpEntry) {
+    connectLocalLmStudio({ toggle: true });
+    return;
+  }
+  renderLocalConnectionStatus("connecting");
+  openLocalModelApp();
+  setTimeout(() => connectLocalLmStudio({ toggle: false }), 1200);
 }
 
 // Local setup is two sequential steps, and showing both at once was most of
@@ -550,12 +591,25 @@ function renderLocalConnectionStatus(state, data = null) {
     ? connectLocalModelButton
     : document.getElementById("connect-local-model");
   if (!status || !button) return;
-  status.dataset.state = state === "ready" ? "ready" : state.startsWith("local_connection_") && state !== "local_connection_waiting" ? "unavailable" : "";
+  syncLocalProviderUi();
+  const ollama = isOllamaLocalProvider();
+  if (state === "local_connection_waiting" && ollama) state = "local_connection_ollama_waiting";
+  if (state === "local_connection_waiting" && window.AISystem6LocalLMStudio?.isSafariPublicWebUnsupported?.()) {
+    state = "local_connection_safari_unsupported";
+  } else if (state === "local_connection_waiting" && window.AISystem6LocalLMStudio?.isSafariHttpLocalMode?.()) {
+    state = "local_connection_safari_http_ready";
+  }
+  const safariUnsupported = [
+    "local_connection_safari_unsupported",
+    "local_connection_safari_http_unavailable",
+  ].includes(state);
+  const idleState = ["local_connection_waiting", "local_connection_ollama_waiting", "local_connection_safari_http_ready"].includes(state);
+  status.dataset.state = state === "ready" ? "ready" : state.startsWith("local_connection_") && !idleState ? "unavailable" : "";
   syncLocalModelPhase(state === "ready");
   const hasToken = !!(typeof localApiTokenInput !== "undefined" && localApiTokenInput?.value?.trim());
   if (state === "connecting") {
-    status.textContent = t("local_connection_connecting");
-    setLocalConnectionDetailStatus(localAuthStatusEl, hasToken ? "local_auth_status_token" : "local_auth_status_optional");
+    status.textContent = t(ollama ? "local_connection_ollama_connecting" : "local_connection_connecting");
+    setLocalConnectionDetailStatus(localAuthStatusEl, ollama ? "local_auth_status_ollama" : hasToken ? "local_auth_status_token" : "local_auth_status_optional");
     setLocalConnectionDetailStatus(localCorsStatusEl, "local_cors_status_waiting");
     setLocalConnectionDetailStatus(localBrowserPermissionStatusEl, "local_browser_permission_waiting");
     button.disabled = true;
@@ -564,36 +618,57 @@ function renderLocalConnectionStatus(state, data = null) {
   button.disabled = false;
   if (state === "ready") {
     status.textContent = t(
-      hasToken ? "local_connection_ready" : "local_connection_ready_no_token",
+      ollama ? "local_connection_ollama_ready" : hasToken ? "local_connection_ready" : "local_connection_ready_no_token",
       data?.chatModels?.length || 0,
       data?.embeddingModels?.length || 0
     );
-    setLocalConnectionDetailStatus(localAuthStatusEl, hasToken ? "local_auth_status_verified" : "local_auth_status_optional");
+    setLocalConnectionDetailStatus(localAuthStatusEl, ollama ? "local_auth_status_ollama" : hasToken ? "local_auth_status_verified" : "local_auth_status_optional");
     setLocalConnectionDetailStatus(localCorsStatusEl, "local_cors_status_verified");
     const permission = ["granted", "prompt", "denied"].includes(data?.browserPermission)
       ? data.browserPermission
       : "unsupported";
     setLocalConnectionDetailStatus(localBrowserPermissionStatusEl, `local_browser_permission_${permission}`);
-    button.textContent = t("disconnect_local_model");
+    button.textContent = t(ollama ? "disconnect_ollama" : "disconnect_local_model");
     return;
   }
-  button.textContent = t("connect_local_model");
-  status.textContent = t(state === "disconnected" ? "local_connection_disconnected" : state);
+  button.textContent = safariUnsupported
+    ? t("open_safari_http_local")
+    : t(ollama ? "connect_ollama" : "open_and_connect_lm_studio");
+  status.textContent = t(state === "disconnected"
+    ? (ollama ? "local_connection_ollama_disconnected" : "local_connection_disconnected")
+    : state);
   setLocalConnectionDetailStatus(localAuthStatusEl, state === "local_connection_auth_failed"
     ? "local_auth_status_failed"
     : hasToken ? "local_auth_status_token" : "local_auth_status_optional");
   setLocalConnectionDetailStatus(localCorsStatusEl, ["local_connection_auth_failed", "local_connection_v1_required"].includes(state)
     ? "local_cors_status_verified"
-    : state === "disconnected" || state === "local_connection_waiting"
+    : state === "disconnected" || idleState || safariUnsupported
       ? "local_cors_status_waiting"
       : "local_cors_status_failed");
   setLocalConnectionDetailStatus(localBrowserPermissionStatusEl, "local_browser_permission_waiting");
   if (state === "local_connection_browser_permission_denied") {
     setLocalConnectionDetailStatus(localBrowserPermissionStatusEl, "local_browser_permission_denied");
+  } else if (safariUnsupported) {
+    setLocalConnectionDetailStatus(localBrowserPermissionStatusEl, "local_browser_safari_unsupported");
   }
 }
 
 async function connectLocalLmStudio(options = {}) {
+  if (window.AISystem6LocalLMStudio?.isSafariPublicWebUnsupported?.()) {
+    if (options.toggle !== false) {
+      try {
+        const capabilities = await window.AISystem6PublicAccess?.getCapabilities?.();
+        const origin = capabilities?.public_access?.safari_http_local_origin || "";
+        window.location.assign(window.AISystem6LocalLMStudio.httpLocalEntryUrl(origin));
+      } catch (error) {
+        renderLocalConnectionStatus(localConnectionErrorKey(error));
+        if (!options.silent) setStatus(t(localConnectionErrorKey(error)), { notify: false });
+      }
+    } else {
+      renderLocalConnectionStatus("local_connection_safari_unsupported");
+    }
+    return null;
+  }
   if (localLmStudioConnectionEnabled && options.toggle !== false) {
     localLmStudioConnectionEnabled = false;
     setModelPickerOptions([], []);
@@ -606,6 +681,24 @@ async function connectLocalLmStudio(options = {}) {
   try {
     endpointInput.value = window.AISystem6LocalLMStudio.normalizeBaseUrl(endpointInput.value);
     const data = await window.AISystem6LocalLMStudio.listModels({ signal: options.signal });
+    const chatModels = Array.isArray(data.chatModels) ? data.chatModels : Array.isArray(data.models) ? data.models : [];
+    const embeddingModels = Array.isArray(data.embeddingModels) ? data.embeddingModels : [];
+    setModelPickerOptions(chatModels, embeddingModels);
+    const loadedModel = syncLoadedLocalModel(data, chatModels);
+    const selectedModel = findMatchingModel(chatModels, modelInput.value.trim());
+    const ready = !!(selectedModel && (data.autoLoad || loadedModel?.id === selectedModel.id));
+    if (modelPickerStatusEl) {
+      modelPickerStatusEl.textContent = t("models_found_split", chatModels.length, embeddingModels.length);
+    }
+    updateLocalModelState({
+      server: true,
+      models: chatModels.length > 0,
+      selected: !!selectedModel,
+      loaded: ready,
+      ready,
+      running: false,
+      task: "",
+    });
     localLmStudioConnectionEnabled = true;
     renderLocalConnectionStatus("ready", data);
     scheduleSettingsSave();
@@ -726,6 +819,9 @@ function setModelPickerOptions(chatModels, embeddingModels = []) {
 
 function friendlyLocalModelError(message = "") {
   const text = String(message || "");
+  if (/ollama_cors_or_offline|ollama_bad_response/i.test(text)) return t("local_connection_ollama_unavailable");
+  if (/ollama_api_incompatible/i.test(text)) return t("local_connection_ollama_incompatible");
+  if (/ollama_model_missing/i.test(text)) return t("local_connection_ollama_no_models");
   if (/ECONNREFUSED|Failed to fetch|fetch failed|NetworkError|ENOTFOUND|EHOSTUNREACH|ETIMEDOUT/i.test(text)) {
     return t("lm_studio_unavailable_short");
   }
@@ -790,13 +886,14 @@ async function refreshLocalModelReadiness() {
     setModelPickerOptions(chatModels, embeddingModels);
     const loadedModel = syncLoadedLocalModel(data, chatModels);
     const selectedModel = findMatchingModel(chatModels, modelInput.value.trim());
+    const autoLoadReady = !!(data.autoLoad && selectedModel);
     const loadedMatchesSelected = !!(loadedModel && selectedModel && (
       loadedModel.id === selectedModel.id || loadedModel.name === selectedModel.name
     ));
     const matched = selectedModel || loadedModel;
     if (matched) {
       updateContextMaxForCurrentModel();
-      updateLocalModelState({ server: true, models: true, selected: true, loaded: loadedMatchesSelected, ready: loadedMatchesSelected, running: false, task: "" });
+      updateLocalModelState({ server: true, models: true, selected: true, loaded: loadedMatchesSelected || autoLoadReady, ready: loadedMatchesSelected || autoLoadReady, running: false, task: "" });
     } else if (chatModels.length) {
       updateLocalModelState({ server: true, models: true, selected: true, loaded: false, ready: false, running: false, task: "" });
     }
@@ -843,13 +940,11 @@ function setControlTab(name) {
   });
   if (typeof refreshSystemSelectControls === "function") refreshSystemSelectControls();
 
-  // Each tab is a different length, so a height saved from a taller tab left a
-  // block of dead space under a shorter one. The window has no CSS height of
-  // its own — it only ever had whatever px this same code (or a prior saved
-  // desk state) put inline — so clearing that lets it shrink-wrap the tab
-  // that's actually showing, then the new height is what gets persisted.
+  // Control Panel has one stable desktop size. Clear any old session height
+  // left by the former content-sized behavior while preserving its user-chosen
+  // position; the portrait rule can still choose its own automatic height.
   const win = document.querySelector(".control-panel");
-  if (win && win.dataset.userPositioned !== "true") {
+  if (win) {
     win.style.height = "";
     win.style.maxHeight = "";
     scheduleWorkingSessionSave?.();
@@ -897,12 +992,13 @@ async function findLmStudioModels(options = {}) {
     const loadedMatchesSelected = !!(loadedModel && selectedModel && (
       loadedModel.id === selectedModel.id || loadedModel.name === selectedModel.name
     ));
+    const autoLoadReady = !!(data.autoLoad && selectedModel);
     updateLocalModelState({
       server: true,
       models: chatModels.length > 0,
       selected: !!modelInput.value.trim(),
-      loaded: loadedMatchesSelected,
-      ready: loadedMatchesSelected,
+      loaded: loadedMatchesSelected || autoLoadReady,
+      ready: loadedMatchesSelected || autoLoadReady,
       task: "",
     });
     renderLocalConnectionStatus("ready", data);
@@ -1163,9 +1259,11 @@ async function loadDeskState() {
 }
 
 function applySettings(settings) {
+  const localProviderEl = document.getElementById("local-provider");
+  if (localProviderEl && settings.localProvider) localProviderEl.value = settings.localProvider;
   const savedEndpoint = String(settings.endpoint || "").trim();
   endpointInput.value = !savedEndpoint || savedEndpoint.startsWith("/")
-    ? window.AISystem6LocalLMStudio.DEFAULT_BASE_URL
+    ? window.AISystem6LocalLMStudio.defaultBaseUrl(settings.localProvider)
     : savedEndpoint;
   if (typeof localApiTokenInput !== "undefined" && localApiTokenInput) {
     const legacyToken = String(settings.localApiToken || "").trim();
@@ -1310,6 +1408,9 @@ function applySettings(settings) {
   if (settings.language === "zh" || settings.language === "en") currentLanguage = settings.language;
   writerMode = false;
   if (typeof settings.guideSeen === "boolean") guideSeen = settings.guideSeen;
+  if (typeof settings.multiFinderSwitcherHintSeen === "boolean") {
+    multiFinderSwitcherHintSeen = settings.multiFinderSwitcherHintSeen;
+  }
   restoreWritingBellState(settings.writingBell);
   restoreAlarmClockState(settings.alarmClock);
   restorePuzzleState(settings.puzzle);
@@ -1362,9 +1463,7 @@ function applySettings(settings) {
       if (viewWindowNames.includes(name)) windowViewModes[name] = normalizeFinderViewMode(mode);
     });
   }
-  const localProviderEl = document.getElementById("local-provider");
   if (localProviderEl && settings.localProvider) {
-    localProviderEl.value = settings.localProvider;
     const btn = typeof loadModelButton !== "undefined" ? loadModelButton : document.getElementById("load-model");
     const status = typeof loadModelStatusEl !== "undefined" ? loadModelStatusEl : document.getElementById("load-model-status");
     if (settings.localProvider === "lm-studio") {
@@ -1976,7 +2075,10 @@ function explainStatusError(message) {
 function classifyLmStudioError(error, response = null) {
   const message = String(error?.message || error || response?.statusText || "");
   const lower = message.toLowerCase();
-  const isCloudError = /cloud api|deepseek|cloud proxy|cloud_invalid|cloud_insufficient|cloud_rate/.test(lower);
+  const isCloudError = /cloud api|deepseek|cloud proxy|cloud_invalid|cloud_insufficient|cloud_rate|shared_cloud/.test(lower);
+  if (/shared_cloud_(?:session_limit|daily_request_limit|daily_token_limit)/.test(lower)) {
+    return "cloud_shared_limit";
+  }
   if (
     /cloud_invalid_key/.test(lower)
     || (isCloudError && (response?.status === 401 || /authentication.*fail|unauthorized|invalid.*api key|api key.*invalid|missing api key/.test(lower)))
@@ -1996,6 +2098,7 @@ function classifyLmStudioError(error, response = null) {
       || /invalid (?:format|parameter|request)|unprocessable/.test(lower)
     ))
   ) return "cloud_invalid_request";
+  if (/shared_cloud_input_too_large/.test(lower)) return "lmstudio_context_length";
   if (
     /cloud_service_unavailable/.test(lower)
     || (isCloudError && (

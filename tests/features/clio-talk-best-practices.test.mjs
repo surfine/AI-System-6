@@ -17,6 +17,7 @@ const projectDisk = read("app/features/project-disk.js");
 const teachTextWriting = read("app/features/teachtext-writing.js");
 const wireup = read("app/core/wireup.js");
 const menus = read("app/data/menus.js");
+const actions = read("app/core/actions.js");
 const foundationStyles = read("styles/00-foundation.css");
 const styles = read("styles/10-windows.css");
 const responsiveStyles = read("styles/60-responsive.css");
@@ -31,6 +32,12 @@ const dragDrop = read("app/core/drag-drop.js");
 test.assertIncludes(indexHtml, 'class="sys-icon sys-icon-mini clio-welcome-icon" data-system-icon="assistant"', "ClioTalk's first screen uses the registered conversation icon");
 test.assertIncludes(chatMessages, 'renderSystemIcon("assistant", {', "runtime welcome states reuse the same registered ClioTalk icon");
 test.assertNotIncludes(styles, ".clio-welcome::before", "ClioTalk no longer draws a generic document placeholder in CSS");
+test.assertIncludes(chatMessages, "function clioTalkModelReady()", "ClioTalk distinguishes a usable model from a remembered name");
+test.assertIncludes(chatMessages, 'welcomeKey = !modelReady', "the empty state changes before the user attempts to send");
+test.assertIncludes(chatMessages, 'button.dataset.action = "open-clio-model-settings"', "the disconnected empty state opens the shared model settings");
+test.assertIncludes(actions, '"open-clio-model-settings": openModelSettings', "ClioTalk uses the central model-settings action");
+test.assertIncludes(translationsEn, 'clio_model_required_message:', "English disconnected copy exists");
+test.assertIncludes(translationsZh, 'clio_model_required_message:', "Chinese disconnected copy exists");
 
 test.assertIncludes(chatMessages, "function clioTalkResponseContractInstruction", "ClioTalk has an explicit response contract");
 test.assertIncludes(chatMessages, "Start with the useful answer", "Contract makes the first paragraph directly useful");
@@ -161,10 +168,12 @@ test.assertIncludes(documentsChat, "parentChatId: parent.id", "Conversation bran
 test.assertIncludes(documentsChat, "forkMessageId:", "Conversation branches retain the edited fork message");
 test.assertIncludes(documentsChat, "generation: Number(parent.generation || 0) + 1", "Conversation genealogy records generation depth");
 test.assertIncludes(documentsChat, "function renderChatLineage", "Saved chat previews expose parent and child navigation");
+for (const action of ["open-clio-genealogy", "compare-chat-branch", "merge-chat-branch"]) {
+  test.assertNotIncludes(actions, `"${action}"`, `${action} is removed rather than retained as a hidden command`);
+}
 test.assertIncludes(documentsChat, "function saveClioTalkHarness", "ClioTalk can save a file-based Harness record");
 test.assertIncludes(documentsChat, "function saveClioTalkSkillDraft", "ClioTalk can turn a conversation into an editable Skill draft");
 test.assertIncludes(documentsChat, "function saveClioTalkRetrospective", "ClioTalk can save an editable retrospective");
-test.assertIncludes(documentsChat, "function openClioTalkGenealogy", "ClioTalk can save a project-wide genealogy index");
 const clioTalkMenuSource = menus.match(/const clioTalkMenus = \[[\s\S]*?\n\];/)?.[0] || "";
 test.assertIncludes(clioTalkMenuSource, 'submenu("recent_conversations"', "Recent conversations remain one compact ClioTalk submenu");
 test.assertIncludes(clioTalkMenuSource, 'menuItem("reveal-active-chat-file"', "ClioTalk can reveal the real conversation file");
@@ -199,14 +208,13 @@ test.assertIncludes(clioTalkMenuSource, 'menuItem("remember-chat-as-project-memo
 test.assertIncludes(desktopRuntime, '{ kind: "project-memory", action: "toggle-project-memory"', "Project Memory status is reachable from the object's own Get Info window");
 test.assertIncludes(dictionary, "绝不会自动升级为项目记忆", "Help distinguishes conversation continuity from durable Project Memory");
 test.assertIncludes(dictionary, "对话全文、当前对话的临时压缩连续性、明确附带的来源，以及可编辑的项目记忆文件", "Help names the four memory-boundary layers");
-test.assertIncludes(documentsChat, "function saveBranchComparison", "Branches can be compared without automatic merge");
-test.assertIncludes(documentsChat, "function showBranchMergePicker", "Branch merge presents selectable items");
-test.assertIncludes(documentsChat, 'input.type = "checkbox"', "Branch merge uses checkboxes for user selection");
-test.assertIncludes(documentsChat, '"branch-merge-receipt"', "Branch merge writes a file-based receipt");
+test.assertNotIncludes(documentsChat, "function openClioTalkGenealogy", "the removed genealogy index prototype does not survive as hidden code");
+test.assertNotIncludes(documentsChat, "function saveBranchComparison", "the removed branch comparison prototype does not survive as hidden code");
+test.assertNotIncludes(documentsChat, "function mergeBranchIntoTarget", "the removed branch merge prototype does not survive as hidden code");
 test.assertIncludes(documentsChat, "missingParentId", "Missing parent chat files remain visible without breaking lineage");
 test.assertIncludes(documentsChat, "persistActiveChatFile();", "Lineage navigation persists the current conversation first");
-test.assertNotIncludes(clioTalkMenuSource, 'menuItem("compare-chat-branch"', "Branch comparison waits for the independent genealogy surface");
-test.assertNotIncludes(clioTalkMenuSource, 'menuItem("merge-chat-branch"', "Branch merging waits for the independent genealogy surface");
+test.assertNotIncludes(clioTalkMenuSource, 'menuItem("compare-chat-branch"', "removed branch comparison stays out of ClioTalk menus");
+test.assertNotIncludes(clioTalkMenuSource, 'menuItem("merge-chat-branch"', "removed branch merging stays out of ClioTalk menus");
 test.assertIncludes(dictionary, "对话文件仍可显示上代与后代入口", "Help limits lineage guidance to saved-file navigation while genealogy is shelved");
 test.assertIncludes(chatMessages, "function recordContextLoadout", "ClioTalk captures an actual request loadout snapshot");
 test.assertMatches(chatMessages, /function fetchModelPayload[\s\S]*messages: withBrowserLocalSafetyMessages[\s\S]*if \(shouldRecordLoadout\) recordContextLoadout\(nextPayload\)/, "Local loadout is captured after runtime guardrails join the final transport payload");
@@ -293,8 +301,8 @@ test.assertIncludes(styles, ".clio-chat-file-link[hidden]", "A Chat file that do
 test.assertMatches(chatMessages, /function renderClioTalkFileBar[\s\S]*button\.hidden = false;[\s\S]*button\.disabled = !file;/, "The pending Chat file remains visible as the conversation's object identity before it can be revealed");
 test.assertIncludes(chatMessages, "function getPendingClioTalkFileName", "The file bar gives a new conversation a stable name before its first message");
 test.assertIncludes(documentsChat, 'name: typeof getPendingClioTalkFileName === "function" ? getPendingClioTalkFileName() : getChatFileTitle()', "The first message creates the exact filename previewed in the file bar");
-test.assertIncludes(indexHtml, 'data-action="paste-clio-interview"', "The empty state offers a direct interview-paste path");
-test.assertIncludes(indexHtml, 'data-action="open-question-sheet" data-i18n="clio_welcome_question_sheet"', "The empty state can begin from the Question Sheet object");
+test.assertIncludes(chatMessages, '["paste-clio-interview", "clio_welcome_paste_interview"]', "The connected empty state offers a direct interview-paste path");
+test.assertIncludes(chatMessages, '["open-question-sheet", "clio_welcome_question_sheet"]', "The connected empty state can begin from the Question Sheet object");
 test.assertIncludes(styles, ".assistant-details-bar:not(:has(", "ClioTalk can still remove the whole details row when no meaningful status or file is present");
 test.assertNotIncludes(indexHtml, 'id="clio-new-chat-button"', "New Chat no longer occupies the everyday ClioTalk chrome");
 test.assertIncludes(clioTalkMenuSource, 'menuItem("start-new-clio-chat", "new_conversation", "new-document")', "New Conversation is a File-menu command, because a conversation is a file");
@@ -316,7 +324,9 @@ test.assertMatches(indexHtml, /class="[^"]*composer-submit-button composer-icon-
 test.assertIncludes(indexHtml, '<path d="M10 16V4M4.5 9.5 10 4l5.5 5.5"></path>', "Send uses a clean line arrow with one stem and one open chevron");
 test.assertIncludes(indexHtml, '<span class="composer-stop-glyph" aria-hidden="true"></span>', "Stop uses its own compact state glyph in the same control");
 test.assertIncludes(chatMessages, "function syncClioTalkSendButton", "Send availability follows the actual composer state");
-test.assertIncludes(chatMessages, 'sendButton.disabled = isBusy || !String(promptInput?.value || "").trim()', "Empty input cannot advertise an action that does nothing");
+test.assertIncludes(chatMessages, 'sendButton.disabled = !clioTalkModelReady() || isBusy || !String(promptInput?.value || "").trim()', "Send requires both a usable model and non-empty input");
+test.assertMatches(chatMessages, /async function submitUserText\(userText, options = \{\}\) \{[\s\S]*if \(!clioTalkModelReady\(\)\)[\s\S]*clio_model_required_status[\s\S]*return;[\s\S]*const quickDraftAction/, "the submit guard preserves unsent input before any conversation mutation");
+test.assertIncludes(chatMessages, "syncClioTalkModelAvailability();", "model state changes refresh the empty state and Send without reopening ClioTalk");
 test.assertMatches(
   wireup,
   /promptInput\.addEventListener\("focus", \(\) => \{[\s\S]*typeof syncClioTalkSendButton === "function"[\s\S]*syncClioTalkSendButton\(\)/,

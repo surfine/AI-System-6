@@ -26,6 +26,7 @@ test.assertIncludes(foundation, "--control-motion-fast-in: 80ms", "Controls shar
 test.assertIncludes(foundation, "--control-motion-medium-out: 120ms", "Control exits are shorter than entrances");
 test.assertIncludes(foundation, "@media (prefers-reduced-motion: reduce)", "Shared controls remove spatial motion when reduced motion is requested");
 test.assertIncludes(foundation, "--control-focus-outline:", "Keyboard focus has an independent shared token");
+test.assertIncludes(foundation, "--details-bar-optical-rise: 1px", "Status bars expose one shared optical-centering correction");
 test.assertIncludes(foundation, "--z-system-menu: 40000", "System menu is the highest named desktop layer");
 test.assertIncludes(foundation, "--z-demo-overlay: 39900", "Demo overlays stay below the system menu layer");
 test.assertIncludes(foundation, "--z-demo-highlight: 39910", "Demo highlights stay below the system menu layer");
@@ -67,6 +68,9 @@ test.assertIncludes(windows, ".system-select-option:not(.is-selected):hover", "S
 test.assertIncludes(windows, ".system-select-option:focus-visible", "System Select option focus is an independent layer");
 test.assertIncludes(windows, ".view-btn:hover:not(.is-active)", "Classic view button hover does not override the active view");
 test.assertIncludes(windows, ".view-btn.is-active:hover", "Classic active view button keeps active styling on hover");
+test.assertMatches(windows, /\.details-bar \{[\s\S]*calc\(4px - var\(--details-bar-optical-rise\)\)[\s\S]*calc\(4px \+ var\(--details-bar-optical-rise\)\)/, "Status-bar content is optically centered without changing the row height");
+test.assertIncludes(windows, "top: calc(50% - var(--details-bar-optical-rise))", "The centered Finder view switch shares the status-bar optical correction");
+test.assertMatches(responsive, /\.details-bar \{[^}]*calc\(4px - var\(--details-bar-optical-rise\)\)[^}]*calc\(4px \+ var\(--details-bar-optical-rise\)\)/, "Responsive styles preserve status-bar optical centering");
 
 test.assertIncludes(surfaces, ".writing-bell-mode button:hover:not(.is-active)", "Segmented controls keep hover off active choices");
 test.assertIncludes(surfaces, ".writing-bell-mode button.is-active:hover", "Active segmented controls keep active styling on hover");

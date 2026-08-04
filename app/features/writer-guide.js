@@ -41,217 +41,101 @@ function toggleWriterMode() {
   }
 }
 
-function dismissGuide() {
-  // "Start Here" strongly recommends a working model, but must not lock the
-  // desktop. The existing menu-bar model indicator remains the single visible
-  // source of truth when the user continues without AI.
-  guideSeen = true;
-  closeWindow("guide");
-  saveDeskState();
+function guideHasReadyModel() {
+  if (typeof clioTalkModelReady !== "function") return false;
+  return clioTalkModelReady();
 }
 
-// First-run gating. Nothing on the writing route works without a model, so the
-// guide shows the one thing that is actually blocking the user: connect a
-// model, or — once one is reachable — start the route.
-//
-// The setup here is a thin remote control over the Control Panel's own
-// controls. It writes into those elements and triggers their existing
-// handlers, so `cloudConfig`, persistence, validation and status stay in one
-// implementation instead of a second copy that can drift.
+function syncGuideWelcomeState({ focusDefault = false } = {}) {
+  const guide = getWindow("guide");
+  if (!guide) return;
 
-function guideModelReady() {
-  const cloudReady = !!(
-    typeof cloudConfig !== "undefined"
-    && cloudConfig?.active && cloudConfig?.provider && cloudCredentialReady() && cloudConfig?.model
-  );
-  const localReady = typeof localModelState !== "undefined"
-    && (localModelState?.ready || localModelState?.loaded);
-  return cloudReady || localReady;
-}
+  const connected = guideHasReadyModel();
+  const body = guide.querySelector("[data-i18n^='guide_welcome_body']");
+  const aiButton = guide.querySelector("[data-action='guide-open-model-settings']");
+  const defaultButton = guide.querySelector("[data-action='dismiss-guide']");
 
-function guideLocalModelsAllowed() {
-  // The public web build blocks local-model routes; only the cloud path exists.
-  return document.documentElement.dataset.deploymentProfile !== "public";
-}
-
-// Resolves true as soon as `condition` holds, false if it never does in time.
-async function waitFor(condition, timeoutMs) {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    if (condition()) return true;
-    await new Promise((resolve) => setTimeout(resolve, 120));
+  if (body) {
+    body.dataset.i18n = connected ? "guide_welcome_body_connected" : "guide_welcome_body";
+    body.textContent = t(body.dataset.i18n);
   }
-  return condition();
+  if (aiButton) {
+    aiButton.dataset.i18n = connected ? "guide_ai_settings" : "guide_connect_ai";
+    aiButton.textContent = t(aiButton.dataset.i18n);
+  }
+
+  if (focusDefault && defaultButton && !guide.classList.contains("is-hidden")) {
+    window.requestAnimationFrame(() => defaultButton.focus({ preventScroll: true }));
+  }
 }
 
-function setGuideSetupStatus(key, ...args) {
-  const el = document.querySelector("#guide-setup-status");
-  if (el) el.textContent = typeof t === "function" ? t(key, ...args) : key;
-}
+function initializeGuideOobe() {
+  const guide = getWindow("guide");
+  if (!guide || guide.dataset.oobeKeyboardReady === "true") return;
+  guide.dataset.oobeKeyboardReady = "true";
 
-function selectGuideModelSource(source) {
-  document.querySelectorAll("[data-guide-source]").forEach((button) => {
-    const selected = button.dataset.guideSource === source;
-    button.classList.toggle("is-active", selected);
-    button.setAttribute("aria-selected", String(selected));
+  guide.addEventListener("keydown", (event) => {
+    if (event.isComposing || guide.classList.contains("is-hidden")) return;
+
+    if (event.key === "Enter" && !event.metaKey && !event.ctrlKey && !event.altKey) {
+      event.preventDefault();
+      dismissGuide();
+      return;
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      dismissGuide();
+      return;
+    }
+
+    if (event.key !== "Tab") return;
+    const actions = [
+      guide.querySelector("[data-action='guide-open-model-settings']"),
+      guide.querySelector("[data-action='dismiss-guide']"),
+    ].filter((button) => button && !button.disabled);
+    if (!actions.length) return;
+
+    event.preventDefault();
+    const currentIndex = actions.indexOf(document.activeElement);
+    const nextIndex = currentIndex < 0
+      ? (event.shiftKey ? actions.length - 1 : 0)
+      : (currentIndex + (event.shiftKey ? -1 : 1) + actions.length) % actions.length;
+    actions[nextIndex].focus();
   });
-  document.querySelectorAll("[data-guide-panel]").forEach((panel) => {
-    panel.hidden = panel.dataset.guidePanel !== source;
-  });
 }
 
-// The second way in: some writers want to talk the piece over before they open
-// the route. ClioTalk is where conversation belongs, so the guide hands off
-// there instead of turning the first screen into a chat box.
-async function startGuidedClioTalk() {
+async function dismissGuide() {
+  // OOBE leaves the user on the desktop. AI remains optional until an action
+  // actually needs a model, and the menu-bar indicator preserves that state.
   guideSeen = true;
-  closeWindow("guide");
-  await openWindow("assistant");
+  await closeWindow("guide");
   saveDeskState();
+  window.requestAnimationFrame(() => revealMultiFinderSwitcherHint());
 }
 
-function renderGuideStep() {
-  const setupStep = document.querySelector("#guide-setup-step");
-  const routeStep = document.querySelector("#guide-route-step");
-  if (!setupStep || !routeStep) return;
-
-  const ready = guideModelReady();
-  setupStep.hidden = ready;
-  routeStep.hidden = !ready;
-  const dismissButton = document.querySelector('[data-action="dismiss-guide"]');
-  if (dismissButton) {
-    dismissButton.hidden = false;
-    dismissButton.textContent = t(ready ? "guide_later" : "guide_without_model");
-  }
-  if (ready) return;
-
-  const localAllowed = guideLocalModelsAllowed();
-  const localButton = document.querySelector('[data-guide-source="local"]');
-  if (localButton) localButton.hidden = !localAllowed;
-
-  // Mirror the Control Panel's provider list rather than hard-coding vendors.
-  const guideProvider = document.querySelector("#guide-cloud-provider");
-  const panelProvider = document.querySelector("#cloud-provider");
-  if (guideProvider && panelProvider && !guideProvider.options.length) {
-    guideProvider.replaceChildren(
-      ...Array.from(panelProvider.options).map((option) => new Option(option.text, option.value))
-    );
-  }
-  if (guideProvider && panelProvider?.value) guideProvider.value = panelProvider.value;
-  const guideCloudKey = document.querySelector("#guide-cloud-key");
-  const active = document.querySelector("[data-guide-source].is-active:not([hidden])");
-  const preferredSource = cloudCredentialReady()
-    ? "cloud"
-    : (active?.dataset.guideSource || (localAllowed ? "local" : "cloud"));
-  selectGuideModelSource(preferredSource);
+async function openModelSettings() {
+  await openWindow("control");
+  if (typeof setControlTab === "function") setControlTab();
 }
 
-async function guideConnectLocal() {
-  const endpointValue = document.querySelector("#guide-local-endpoint")?.value.trim();
-  const panelEndpoint = document.querySelector("#endpoint");
-  const connectButton = document.querySelector("#connect-local-model");
-  const guideButton = document.querySelector('[data-action="guide-connect-local"]');
-  if (!panelEndpoint || !connectButton) return;
-
-  if (endpointValue) {
-    panelEndpoint.value = endpointValue;
-    panelEndpoint.dispatchEvent(new Event("input", { bubbles: true }));
-    panelEndpoint.dispatchEvent(new Event("change", { bubbles: true }));
-  }
-  setGuideSetupStatus("guide_setup_connecting");
-  setControlLoading(guideButton, true, t("guide_setup_connecting"));
-  // Await the Control Panel's own connect instead of clicking and guessing when
-  // it finished; it owns the request, the retries and the saved state.
-  try {
-    await connectLocalLmStudio({ toggle: false });
-  } catch {
-    setGuideSetupStatus("guide_setup_failed");
-    return;
-  } finally {
-    setControlLoading(guideButton, false);
-  }
-  if (guideModelReady()) {
-    setGuideSetupStatus("guide_setup_ready");
-    renderGuideStep();
-    return;
-  }
-  // Connecting is not enough: LM Studio still needs a loaded model, and that
-  // picker legitimately lives in the Control Panel.
-  setGuideSetupStatus("guide_setup_needs_model");
-}
-
-async function guideConnectCloud() {
-  const key = document.querySelector("#guide-cloud-key")?.value.trim();
-  const provider = document.querySelector("#guide-cloud-provider")?.value;
-  const panelKey = document.querySelector("#cloud-api-key");
-  const panelProvider = document.querySelector("#cloud-provider");
-  const checkButton = document.querySelector("#cloud-check-status");
-  const guideButton = document.querySelector('[data-action="guide-connect-cloud"]');
-  if (!panelKey || !panelProvider || !checkButton) return;
-
-  if (!key) {
-    setGuideSetupStatus("guide_setup_needs_key");
-    return;
-  }
-  if (provider && panelProvider.value !== provider) {
-    panelProvider.value = provider;
-    panelProvider.dispatchEvent(new Event("change", { bubbles: true }));
-  }
-  panelKey.value = key;
-  panelKey.dispatchEvent(new Event("input", { bubbles: true }));
-  const guideCloudKey = document.querySelector("#guide-cloud-key");
-  if (guideCloudKey) guideCloudKey.value = "";
-
-  setGuideSetupStatus("guide_setup_connecting");
-  setControlLoading(guideButton, true, t("guide_setup_connecting"));
-  try {
-    checkButton.click();
-
-    // The Control Panel disables its button for the duration of the request and
-    // re-enables it in a finally, so that edge is the authoritative "the check
-    // finished" signal. Polling a derived flag instead used to leave the guide
-    // showing the Control Panel's transient "Checking..." forever.
-    const finished = await waitFor(() => checkButton.disabled === false, 30000);
-    if (!finished) {
-      setGuideSetupStatus("guide_setup_still_checking");
-      return;
-    }
-
-    const connected = document
-      .querySelector("#cloud-status-indicator")
-      ?.classList.contains("is-connected");
-    if (!connected) {
-      // Report the Control Panel's own settled message rather than inventing one.
-      const panelMessage = document.querySelector("#cloud-status-text")?.textContent?.trim();
-      const el = document.querySelector("#guide-setup-status");
-      if (el && panelMessage) el.textContent = panelMessage;
-      else setGuideSetupStatus("guide_setup_failed");
-      return;
-    }
-
-    // Connected, but the provider's model list may still be arriving; the key is
-    // only usable once a model is actually selected.
-    await waitFor(guideModelReady, 5000);
-    if (guideModelReady()) {
-      setGuideSetupStatus("guide_setup_ready");
-      renderGuideStep();
-      return;
-    }
-    setGuideSetupStatus("guide_setup_needs_cloud_model");
-  } finally {
-    setControlLoading(guideButton, false);
-  }
-}
-
-function openApiSetup() {
-  openWindow("control");
-  endpointInput.focus();
-  endpointInput.select();
+async function openGuideModelSettings() {
+  guideSeen = true;
+  await closeWindow("guide");
+  await openModelSettings();
+  saveDeskState();
 }
 
 async function startGuidedWritingRoute() {
   guideSeen = true;
   closeWindow("guide");
+
+  // Start Here is system OOBE, so it may be running while the Desktop profile
+  // is active. The chosen destination owns the transition into Writing Studio;
+  // the OOBE itself never becomes one of that application's windows.
+  if (typeof activateWorkspaceProfile === "function") {
+    await activateWorkspaceProfile(workspaceProfileWriting, { openDefault: false, persist: false });
+  }
 
   if (!getActiveProject()) {
     await openWindow("projects");

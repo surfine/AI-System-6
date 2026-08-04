@@ -13,9 +13,23 @@
   --ss-field-x: 50%;
   --ss-field-y: 54%;
   --ss-field-size: 240px;
-  --ss-field-grid: 34px;
-  --ss-field-cold: rgba(62, 130, 201, 0.46);
-  --ss-field-warm: rgba(212, 138, 52, 0.44);
+  /* Seven cells per axis, always - this is the same seven bands the colour
+     chart names, so the grid has to be a fraction of the field, not a fixed
+     34px that only happens to divide the 240px desktop size. */
+  --ss-field-grid: calc(100% / 7);
+  /* The field is a colour chart with 49 named cells, so both axes have to carry
+     real colour. The old wash left the middle three columns at paper white and
+     gave the vertical axis a measured 0.0 delta-E - twenty-odd names sat on
+     chips a reader could not tell apart. Cold and warm now run near full over
+     a real neutral mid, and tension-to-calm is a lightness wash rather than
+     contour density alone. The calm row still lands near paper: low contrast
+     must not read as darkened. Bright and chromatic at the same time comes from
+     anchors that are already light, not from dark ones diluted with white - the
+     darkest cell sits at L* 74 while chroma more than doubles. */
+  --ss-field-cold: rgba(88, 168, 236, 0.8);
+  --ss-field-mid: rgba(172, 170, 162, 0.85);
+  --ss-field-warm: rgba(244, 168, 62, 0.8);
+  --ss-field-wash: linear-gradient(to bottom, rgba(242, 242, 238, 0), rgba(242, 242, 238, 0.85));
   /* Set by the feature: --ss-crop is the field cut out at the current cell,
      --ss-tint its flat colour, and the three reach values say how far Enter
      Scene has pushed that colour into the window. */
@@ -674,9 +688,10 @@
   border: 1px solid var(--ss-rule-strong);
   border-radius: var(--ss-radius);
   background:
-    linear-gradient(rgba(0, 0, 0, 0.055) 1px, transparent 1px) center / var(--ss-field-grid) var(--ss-field-grid),
-    linear-gradient(90deg, rgba(0, 0, 0, 0.045) 1px, transparent 1px) center / var(--ss-field-grid) var(--ss-field-grid),
-    linear-gradient(to right, var(--ss-field-cold), rgba(255, 255, 255, 0) 50%, var(--ss-field-warm)),
+    linear-gradient(rgba(0, 0, 0, 0.055) 1px, transparent 1px) left top / var(--ss-field-grid) var(--ss-field-grid),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.045) 1px, transparent 1px) left top / var(--ss-field-grid) var(--ss-field-grid),
+    var(--ss-field-wash),
+    linear-gradient(to right, var(--ss-field-cold), var(--ss-field-mid) 50%, var(--ss-field-warm)),
     #ffffff;
   box-shadow: var(--system-inset);
   cursor: crosshair;
@@ -698,9 +713,9 @@
 }
 
 .soundscape-style-field::after {
-  background:
-    linear-gradient(to bottom, transparent 46%, rgba(255, 255, 255, 0.34)),
-    repeating-linear-gradient(0deg, rgba(16, 17, 20, 0.2) 0 1px, transparent 1px 16px);
+  /* The vertical lightness wash now lives in the field's own background, so the
+     calm half only contributes its sparse contours. */
+  background: repeating-linear-gradient(0deg, rgba(16, 17, 20, 0.2) 0 1px, transparent 1px 16px);
   -webkit-mask-image: linear-gradient(to bottom, transparent 42%, #000000);
   mask-image: linear-gradient(to bottom, transparent 42%, #000000);
 }
@@ -723,7 +738,7 @@
   place-items: center;
   width: 15px;
   height: 15px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   /* The cursor stays a viewfinder: a 15px box would read as a dot at the full
      Liquid Glass radius. */
   border-radius: min(var(--ss-radius), 4px);
@@ -916,6 +931,9 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
+    /* The two-column rule's align-items: start is a cross-axis rule once this
+       becomes a column, and it left-parks the field against the panel edge. */
+    align-items: stretch;
   }
 
   .soundscape-style-field {

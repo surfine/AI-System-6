@@ -47,6 +47,12 @@ const {
 } = require("../cloud.js");
 const { isPublicDeployment } = require("../runtime-profile.js");
 const { resolveCloudCredential } = require("../credential-vault.js");
+const { sessionFromRequest } = require("../security/public-session.js");
+const {
+  pseudonymousCloudUserId,
+  reserveSharedCloudRequest,
+  sharedCloudBudgetConfig,
+} = require("../shared-cloud-budget.js");
 
 const DEEPSEEK_V4_MODELS = new Set(["deepseek-v4-pro", "deepseek-v4-flash", "v4-pro", "v4-flash"]);
 
@@ -175,6 +181,10 @@ async function handleCloudChat(req, res) {
       raw.stream === true ? 600000 : 120000
     );
     const signal = timeoutHandle.signal;
+    const suppliedPublicApiKey = isPublicDeployment
+      ? String(raw._cloud_api_key || "").trim()
+      : "";
+    const usingSharedCloud = isPublicDeployment && !suppliedPublicApiKey;
     const apiKey = await resolveCloudCredential({
       credentialId: raw._cloud_credential_id,
       provider: "deepseek",
@@ -218,6 +228,42 @@ async function handleCloudChat(req, res) {
       payload.max_tokens = Number.isFinite(requestedMaxTokens)
         ? Math.min(8192, Math.max(1, Math.floor(requestedMaxTokens)))
         : 1800;
+      const publicSession = sessionFromRequest(req);
+      payload.user_id = pseudonymousCloudUserId(publicSession?.nonce || "");
+      if (usingSharedCloud) {
+        payload.max_tokens = Math.min(
+          payload.max_tokens,
+          sharedCloudBudgetConfig().maxOutputTokens
+        );
+        let reservation;
+        try {
+          reservation = reserveSharedCloudRequest({
+            sessionNonce: publicSession?.nonce || "",
+            payload,
+          });
+        } catch (error) {
+          console.error("[cloud-chat] shared budget unavailable:", /** @type {Error} */ (error).message);
+          send(res, 503, JSON.stringify({
+            error: "Shared cloud allowance is temporarily unavailable",
+            code: "shared_cloud_budget_unavailable",
+          }), { "Content-Type": "application/json", "Retry-After": "60" });
+          return;
+        }
+        if (!reservation.ok) {
+          const status = reservation.code === "shared_cloud_input_too_large" ? 413 : 429;
+          const headers = reservation.retryAfter > 0
+            ? {
+                "Content-Type": "application/json",
+                "Retry-After": String(reservation.retryAfter),
+              }
+            : { "Content-Type": "application/json" };
+          send(res, status, JSON.stringify({
+            error: reservation.detail,
+            code: reservation.code,
+          }), headers);
+          return;
+        }
+      }
     }
     stripCloudLocalOnlyFields(payload);
     if (DEEPSEEK_V4_MODELS.has(payload.model)) {

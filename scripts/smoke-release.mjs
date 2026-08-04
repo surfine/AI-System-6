@@ -184,15 +184,6 @@ if (
 });
 
 [
-  "product_track_value",
-  "native_target_value",
-  "prototype_boundary_value",
-].forEach((key) => {
-  if (appData.includes(`${key}:`)) ok(`system status copy ${key}`);
-  else fail(`system status copy missing: ${key}`);
-});
-
-[
   "guide_heading",
   "guide_body",
   "guide_start_hint",
@@ -207,7 +198,6 @@ if (
   "translateTextWithLocalModel",
   "splitTranslationChunks",
   "bilingualMarkdownSection",
-  "insertDraftToTeachText",
   "updateTeachTextDeskState",
   "markTeachTextExported",
   "renderProjectSwitcher",
@@ -215,9 +205,6 @@ if (
   "runRebuildFlow",
   "rebuildProjectDiskName",
   "useSampleArticleForRebuildFlow",
-  "buildNativeHandoff",
-  "copyNativeBrief",
-  "exportNativeHandoff",
   "clipTeachTextSelectionToScrapbook",
   "runClaimCheck",
   "sourceContractForContextItem",

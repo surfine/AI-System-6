@@ -57,9 +57,11 @@ vm.runInContext(
     loadCloudConfig,
     saveCloudConfig,
     cloudCredentialReady,
+    cloudCredentialMode,
     cloudCredentialTransportFields,
     getRuntimeKey: () => cloudRuntimeApiKey,
     setRuntimeKey: setCloudRuntimeApiKey,
+    setSharedAvailable: setPublicSharedCloudAvailable,
     getConfig: () => cloudConfig,
     setConfig: (value) => { cloudConfig = value; },
   };`,
@@ -107,6 +109,36 @@ test.assert(
   "model requests carry a credential ID instead of a key"
 );
 
+context.document.documentElement.dataset.deploymentProfile = "public";
+context.window.cloudCredentialTest.setConfig({
+  provider: "deepseek",
+  model: "deepseek-v4-flash",
+  active: false,
+});
+context.window.cloudCredentialTest.setRuntimeKey("");
+context.window.cloudCredentialTest.setSharedAvailable(true);
+test.assert(
+  context.window.cloudCredentialTest.cloudCredentialReady()
+    && context.window.cloudCredentialTest.cloudCredentialMode() === "shared",
+  "public cloud can use the server allowance without exposing its key"
+);
+test.assert(
+  Object.keys(context.window.cloudCredentialTest.cloudCredentialTransportFields()).length === 0,
+  "shared cloud requests send no credential to the browser transport"
+);
+context.window.cloudCredentialTest.setRuntimeKey("user-tab-secret");
+test.assert(
+  context.window.cloudCredentialTest.cloudCredentialMode() === "byok"
+    && context.window.cloudCredentialTest.cloudCredentialTransportFields()._cloud_api_key === "user-tab-secret",
+  "a user-supplied key takes explicit precedence for the current tab"
+);
+context.window.cloudCredentialTest.saveCloudConfig();
+test.assert(
+  !JSON.parse(localStorage.value("ai-system6-cloud-config")).apiKey
+    && !sessionStorage.value("ai-system6-cloud-api-key"),
+  "public BYOK remains out of persistent browser storage"
+);
+
 const stagedId = credentialVault.stageCloudCredential({
   provider: "test-provider",
   baseUrl: "https://example.invalid",
@@ -150,7 +182,9 @@ test.assertIncludes(cloudModel, 'cloudApiKeyEl.value = ""', "Control Panel clear
 test.assertIncludes(cloudModel, 'changeLocalCredential("available"', "Control Panel verifies restored credential references with the local service");
 test.assertIncludes(cloudModel, 'cloudConfig.credentialId = ""', "Control Panel clears a restored credential reference that no longer resolves");
 test.assertIncludes(cloudChat, "resolveCloudCredential", "cloud chat resolves credentials inside the local service");
+test.assertIncludes(cloudChat, "const usingSharedCloud = isPublicDeployment && !suppliedPublicApiKey", "public BYOK never silently falls back while a user key is present");
 test.assertIncludes(cloudChat, "delete raw._cloud_credential_id", "credential IDs never reach the provider payload");
+test.assertIncludes(cloudStatus, "if (connected && !usingSharedCloud)", "the public shared account balance is not exposed to visitors");
 test.assertIncludes(cloudStatus, "credentialId: body.credential_id", "status checks accept the local credential reference");
 test.assertIncludes(router, '["POST /api/cloud/credentials", handleCloudCredentials]', "credential registration is a guarded local API route");
 const publicRoutes = router.match(/const publicExactRouteKeys = new Set\(\[[\s\S]*?\]\);/)?.[0] || "";

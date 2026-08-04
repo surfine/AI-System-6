@@ -1193,102 +1193,6 @@ function renderChatLineage(file) {
   return lineage;
 }
 
-function relatedChatArtifacts(chatId) {
-  return getProjectFiles().filter((file) => file.sourceChatId === chatId && file.type === "text");
-}
-
-function saveBranchComparison(source, target) {
-  const sourceArtifacts = relatedChatArtifacts(source.id);
-  const targetArtifacts = relatedChatArtifacts(target.id);
-  const sourceMemories = sourceArtifacts.filter((file) => file.artifactKind === "project-memory");
-  const targetMemories = targetArtifacts.filter((file) => file.artifactKind === "project-memory");
-  const body = [
-    `# ${currentLanguage === "zh" ? "分支比较" : "Branch Comparison"}`,
-    "",
-    `- ${currentLanguage === "zh" ? "来源 Chat ID" : "Source Chat ID"}: ${source.id}`,
-    `- ${currentLanguage === "zh" ? "目标 Chat ID" : "Target Chat ID"}: ${target.id}`,
-    "",
-    `## ${currentLanguage === "zh" ? "消息" : "Messages"}`,
-    `- ${source.name}: ${source.messages.length}`,
-    `- ${target.name}: ${target.messages.length}`,
-    "",
-    `## ${currentLanguage === "zh" ? "关联文件" : "Related files"}`,
-    ...sourceArtifacts.map((file) => `- ${file.name} [${file.id}]`),
-    ...(!sourceArtifacts.length ? ["- —"] : []),
-    "",
-    `## ${currentLanguage === "zh" ? "明确项目记忆" : "Explicit Project Memory"}`,
-    ...sourceMemories.map((file) => `- ${file.name} (${file.memoryStatus || "active"}) [${file.id}]`),
-    ...(!sourceMemories.length ? ["- —"] : []),
-    "",
-    `> ${currentLanguage === "zh" ? "比较不会自动合并。" : "Comparison does not merge anything automatically."}`,
-    `> ${currentLanguage === "zh" ? `目标已有 ${targetArtifacts.length} 个关联文件和 ${targetMemories.length} 条明确项目记忆。` : `Target already has ${targetArtifacts.length} related files and ${targetMemories.length} explicit project memories.`}`,
-  ].join("\n");
-  return saveClioTalkArtifact("branch-comparison", `${source.name} ↔ ${target.name} ${currentLanguage === "zh" ? "比较" : "Comparison"}`, body);
-}
-
-function showBranchMergePicker(source, target) {
-  return new Promise((resolve) => {
-    const dialog = document.createElement("dialog");
-    dialog.className = "system-modal";
-    const sourceArtifacts = relatedChatArtifacts(source.id);
-    const choices = [
-      ...source.messages.map((message, index) => ({ key: `message:${message.id}`, label: `${currentLanguage === "zh" ? "消息" : "Message"} ${index + 1}: ${String(message.content || "").slice(0, 100)}`, kind: "message", item: message })),
-      ...sourceArtifacts.map((file) => ({ key: `file:${file.id}`, label: `${currentLanguage === "zh" ? "文件" : "File"}: ${file.name}`, kind: "file", item: file })),
-    ];
-    dialog.innerHTML = `<form method="dialog"><h2>${currentLanguage === "zh" ? "选择要合并的内容" : "Select items to merge"}</h2><p>${escapeHtml(source.name)} → ${escapeHtml(target.name)}</p><div class="branch-merge-choices"></div><menu><button value="cancel">${currentLanguage === "zh" ? "取消" : "Cancel"}</button><button value="merge">${currentLanguage === "zh" ? "确认合并" : "Confirm merge"}</button></menu></form>`;
-    const choicesEl = dialog.querySelector(".branch-merge-choices");
-    choices.forEach((choice) => {
-      const label = document.createElement("label");
-      label.style.display = "block";
-      const input = document.createElement("input");
-      input.type = "checkbox";
-      input.name = choice.key;
-      input.checked = choice.kind === "message";
-      label.append(input, ` ${choice.label}`);
-      choicesEl.append(label);
-    });
-    dialog.addEventListener("close", () => {
-      const selected = dialog.returnValue === "merge"
-        ? choices.filter((choice) => dialog.querySelector(`[name="${CSS.escape(choice.key)}"]`)?.checked)
-        : [];
-      dialog.remove();
-      resolve(selected);
-    }, { once: true });
-    document.body.append(dialog);
-    dialog.showModal();
-  });
-}
-
-async function mergeBranchIntoTarget(sourceId, targetId = "") {
-  const source = chatFiles.find((file) => file.id === sourceId && file.type === "chat" && isInActiveProject(file));
-  const target = chatFiles.find((file) => file.id === (targetId || source?.parentChatId) && file.type === "chat" && isInActiveProject(file));
-  if (!source || !target || source.id === target.id) return null;
-  const selected = await showBranchMergePicker(source, target);
-  if (!selected.length) return null;
-  const messages = selected.filter((entry) => entry.kind === "message").map((entry) => entry.item);
-  const files = selected.filter((entry) => entry.kind === "file").map((entry) => entry.item);
-  const existing = new Set(target.messages.map((message) => message.id));
-  messages.forEach((message) => {
-    if (!existing.has(message.id)) target.messages.push({ ...structuredClone(message), mergedFromChatId: source.id });
-  });
-  files.forEach((file) => {
-    file.mergedIntoChatIds = [...new Set([...(file.mergedIntoChatIds || []), target.id])];
-    file.updatedAt = new Date().toISOString();
-  });
-  target.updatedAt = new Date().toISOString();
-  const receipt = saveClioTalkArtifact("branch-merge-receipt", `${source.name} → ${target.name} ${currentLanguage === "zh" ? "合并收据" : "Merge Receipt"}`, [
-    `# ${currentLanguage === "zh" ? "分支合并运行记录" : "Branch Merge Run Receipt"}`,
-    "",
-    `- ${currentLanguage === "zh" ? "来源 Chat ID" : "Source Chat ID"}: ${source.id}`,
-    `- ${currentLanguage === "zh" ? "目标 Chat ID" : "Target Chat ID"}: ${target.id}`,
-    `- ${currentLanguage === "zh" ? "消息" : "Messages"}: ${messages.map((message) => message.id).join(", ") || "—"}`,
-    `- ${currentLanguage === "zh" ? "文件/记忆" : "Files / memories"}: ${files.map((file) => file.id).join(", ") || "—"}`,
-  ].join("\n"));
-  saveDeskState();
-  renderDocuments();
-  return receipt;
-}
-
 async function editAndResendConversationMessage({ messageId = "", messageIndex = -1, content = "" } = {}) {
   if (activeAbortController) {
     setStatus(t("task_already_running", localModelState.task || t("working_locally")));
@@ -1923,28 +1827,6 @@ async function createSkillDraftFromSelectedRetrospective() {
     saveDeskState();
   }
   return draft;
-}
-
-function openClioTalkGenealogy() {
-  const context = activeChatArtifactContext();
-  if (!context) return null;
-  const chats = chatFiles.filter((file) => file.type === "chat" && isInActiveProject(file));
-  const roots = chats.filter((file) => !file.parentChatId || !chats.some((candidate) => candidate.id === file.parentChatId));
-  const lines = [`# ${t("clio_genealogy")}`, ""];
-  const visited = new Set();
-  const appendBranch = (file, depth = 0) => {
-    if (visited.has(file.id)) {
-      lines.push(`${"  ".repeat(depth)}- ${file.name} [${file.id}] (${currentLanguage === "zh" ? "谱系环已阻止" : "lineage cycle blocked"})`);
-      return;
-    }
-    visited.add(file.id);
-    lines.push(`${"  ".repeat(depth)}- ${file.name} [${file.id}]`);
-    chats.filter((candidate) => candidate.parentChatId === file.id).forEach((child) => appendBranch(child, depth + 1));
-  };
-  roots.forEach((root) => appendBranch(root));
-  chats.filter((file) => !visited.has(file.id)).forEach((file) => appendBranch(file));
-  lines.push("", `> ${t("clio_genealogy_hint")}`);
-  return saveClioTalkArtifact("genealogy", t("clio_genealogy"), lines.join("\n"));
 }
 
 function configureSaveDialog(mode) {

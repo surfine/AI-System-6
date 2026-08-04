@@ -27,7 +27,7 @@
   right: 3px;
   bottom: 5px;
   height: 5px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   border-top: 0;
   background: var(--paper);
 }
@@ -43,7 +43,7 @@
   right: 4px;
   top: 5px;
   bottom: 5px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   border-left-width: 5px;
   background:
     linear-gradient(var(--ink), var(--ink)) 7px 5px / 17px 2px no-repeat,
@@ -60,8 +60,8 @@
   top: 5px;
   width: 9px;
   height: 9px;
-  border-left: 2px solid var(--ink);
-  border-bottom: 2px solid var(--ink);
+  border-left: var(--system-control-line) solid var(--ink);
+  border-bottom: var(--system-control-line) solid var(--ink);
   background: var(--paper);
 }
 
@@ -84,7 +84,7 @@
   right: 7px;
   bottom: -6px;
   height: 8px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   background:
     linear-gradient(var(--ink), var(--ink)) 6px 2px / 8px 2px no-repeat,
     var(--paper);
@@ -119,7 +119,7 @@
   right: 6px;
   bottom: 5px;
   height: 5px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   border-top: 0;
   background: var(--paper);
 }
@@ -158,7 +158,7 @@
 .finder-item.is-drag-over {
   background: transparent !important;
   color: var(--ink) !important;
-  outline: 2px solid var(--ink);
+  outline: var(--system-control-line) solid var(--ink);
   outline-offset: 3px;
 }
 
@@ -172,8 +172,8 @@
   content: "";
   position: absolute;
   inset: 6px 5px;
-  border-top: 2px solid var(--ink);
-  border-bottom: 2px solid var(--ink);
+  border-top: var(--system-control-line) solid var(--ink);
+  border-bottom: var(--system-control-line) solid var(--ink);
 }
 
 body.is-writer-mode .desktop {
@@ -253,8 +253,8 @@ body.is-writer-mode.has-find-path-open .find-path-window {
   box-shadow: none;
   border-bottom: 0;
   border-top: 0;
-  border-left: 2px solid var(--ink) !important;
-  border-right: 2px solid var(--ink) !important;
+  border-left: var(--system-control-line) solid var(--ink) !important;
+  border-right: var(--system-control-line) solid var(--ink) !important;
   z-index: var(--z-local-base) !important;
 }
 
@@ -351,7 +351,7 @@ body.is-writer-mode .context-panel-window {
   height: 24px;
   min-width: 0;
   padding: 0 7px;
-  border-bottom: 2px solid var(--ink);
+  border-bottom: var(--menu-bar-border);
   box-shadow: inset 0 -1px 0 var(--paper);
 }
 
@@ -424,9 +424,9 @@ body.is-writer-mode .context-panel-window {
 }
 
 .window {
-  border: var(--system-border);
+  border: var(--window-border);
   background: var(--paper);
-  box-shadow: var(--system-shadow);
+  box-shadow: var(--active-window-shadow);
 }
 
 .window:not(.is-active) {
@@ -443,7 +443,7 @@ body.is-writer-mode .context-panel-window {
     var(--system-titlebar-control-slot);
   margin: var(--system-titlebar-margin-y) 0;
   padding: var(--system-titlebar-padding-y) var(--system-titlebar-padding-x);
-  border-bottom: 2px solid var(--ink);
+  border-bottom: var(--window-frame-track-border);
   background-color: var(--paper);
   background-image:
     linear-gradient(
@@ -491,7 +491,9 @@ body.is-writer-mode .context-panel-window {
 
 .details-bar {
   min-height: 25px;
-  padding: 4px 8px;
+  padding:
+    calc(4px - var(--details-bar-optical-rise)) 8px
+    calc(4px + var(--details-bar-optical-rise));
   border-bottom: 1px solid var(--ink);
   background: var(--paper);
 }
@@ -548,7 +550,7 @@ body.is-writer-mode .context-panel-window {
 .finder-item:focus-visible,
 .scrap-list button:focus-visible,
 .trash-list button:focus-visible {
-  outline: 2px solid var(--ink);
+  outline: var(--system-control-line) solid var(--ink);
   outline-offset: 2px;
 }
 
@@ -731,7 +733,7 @@ select:focus {
 .btn,
 .file-picker .file-picker-button {
   min-height: 28px;
-  border: 2px solid var(--btn-border-color);
+  border: var(--system-control-line) solid var(--btn-border-color);
   border-radius: var(--control-radius);
   background: var(--btn-bg);
   box-shadow: var(--btn-shadow);
@@ -800,7 +802,7 @@ select:focus {
 }
 
 .finder-list-header {
-  border-bottom: 2px solid var(--ink);
+  border-bottom: var(--system-control-line) solid var(--ink);
   background:
     repeating-linear-gradient(
       to bottom,
@@ -837,7 +839,7 @@ select:focus {
 /* .teachtext-pane gap moved to base (styles/50-apps.css). */
 
 .teachtext-desk-strip {
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   background: var(--quiet-panel);
 }
 
@@ -1115,7 +1117,10 @@ select:focus {
   body:not(.is-writer-mode) .writing-spine-panel.is-shaded {
     align-self: start !important;
     position: absolute !important;
-    width: 116px !important;
+    /* A shaded window keeps the width it had before its body disappeared.
+       Writing Spine has no captured window width, so it retains its compact
+       116px tab without imposing that size on every application window. */
+    width: var(--window-shade-width, 116px) !important;
     height: auto !important;
     min-height: 0 !important;
     max-height: none !important;
@@ -1128,14 +1133,12 @@ select:focus {
     display: none !important;
   }
 
+  /* Compact widths only narrow the window; placement stays with the shared
+     centred pass (portrait keeps its own .is-mobile-system-page rule). */
   .guide-window {
-    position: fixed;
-    left: 50%;
-    top: 36px;
     width: min(430px, calc(100vw - 32px));
     max-height: calc(100vh - 48px);
     overflow: auto;
-    transform: translateX(-50%);
   }
 
   .spine-actions {
@@ -1631,7 +1634,7 @@ body.is-writer-mode .system-help-window .system-help-pane {
     transform: none !important;
   }
 
-  body:not(.is-writer-mode) .window:is(.about-window, .guide-window):not(.is-hidden):not(.is-mobile-dialog):not(.is-mobile-system-page) {
+  body:not(.is-writer-mode) .window.about-window:not(.is-hidden):not(.is-mobile-dialog):not(.is-mobile-system-page) {
     position: relative !important;
     order: 2;
     left: auto !important;
@@ -1781,6 +1784,25 @@ body.is-writer-mode .system-help-window .system-help-pane {
     overflow: hidden;
   }
 
+  /* Start Here stays a Macintosh window on phones so the desktop remains
+     visible around it; System Help keeps the full-page system presentation. */
+  body:not(.is-writer-mode) .guide-window.is-mobile-system-page:not(.is-hidden):not(.is-collapsed) {
+    inset: auto;
+    left: 50%;
+    top: 50%;
+    width: min(430px, calc(100vw - 32px));
+    height: auto;
+    max-width: calc(100vw - 32px);
+    max-height: calc(100vh - 48px);
+    border: var(--window-border);
+    border-radius: var(--liquid-window-radius, 0);
+    transform: translate(-50%, -50%);
+  }
+
+  body:not(.is-writer-mode) .guide-window.is-mobile-system-page > .window-pane {
+    flex: 0 1 auto;
+  }
+
   /* Home = clear this state; the desktop launcher underneath returns. While an
      app is foregrounded, the launcher column and writing spine stay out of the
      way behind it. */
@@ -1854,8 +1876,10 @@ body.is-writer-mode .system-help-window .system-help-pane {
     width: min(208px, 100%) !important;
   }
 
+  /* Board stays 160px in this band, so the window keeps the desktop width;
+     the wider 220px board (and its 244px window) starts at 430px portrait. */
   body:not(.is-writer-mode) .window.puzzle-window:not(.is-hidden):not(.is-collapsed) {
-    width: min(244px, 100%) !important;
+    width: min(var(--puzzle-window-width), 100%) !important;
   }
 
   body:not(.is-writer-mode) .window.model-meter-window:not(.is-hidden):not(.is-collapsed) {
@@ -2000,24 +2024,29 @@ body.is-writer-mode .system-help-window .system-help-pane {
    :root in 00-foundation.css; this block previously duplicated them. */
 
 body.use-modern-fonts {
-  --system-readable-min: 15px;
+  --system-readable-min: 14px;
   --system-title-size: 13px;
-  --system-control-size: 15px;
-  --system-text-size: 15px;
-  --system-leading: 1.42;
+  --system-control-size: 14px;
+  --system-text-size: 14px;
+  --system-caption-size: 12px;
+  --system-micro-size: 11px;
+  --system-leading: 1.45;
   --system-window-padding: 11px;
-  --system-control-min-height: 31px;
-  --system-button-min-height: 30px;
+  --system-control-min-height: 30px;
+  --system-button-min-height: 29px;
   --system-button-padding-y: 3px;
   --system-button-padding-x: 15px;
   --system-menu-height: 26px;
   --system-titlebar-height: 23px;
+  --system-titlebar-title-height: 14px;
+  --system-titlebar-font-size: 13px;
   --system-check-size: 14px;
   --system-title-weight: 500;
   --system-emphasis-weight: 500;
   --system-strong-weight: 600;
   --writing-editor-font-size: 15px;
   --writing-editor-line-height: 1.58;
+  font-synthesis-weight: none;
 }
 
 body {
@@ -2027,12 +2056,6 @@ body {
   font-weight: 400;
   line-height: var(--system-leading);
   letter-spacing: 0;
-}
-
-body.use-modern-fonts,
-body.use-modern-fonts * {
-  font-family: var(--ui-font);
-  font-synthesis-weight: none;
 }
 
 body.use-modern-fonts .mde-surface,
@@ -2065,7 +2088,7 @@ body.use-modern-fonts .mde-surface * {
 .menu-bar {
   height: var(--menu-bar-height);
   padding: 0 8px;
-  border-bottom: 2px solid var(--ink);
+  border-bottom: var(--menu-bar-border);
   box-shadow: inset 0 -1px 0 var(--paper);
 }
 
@@ -2087,7 +2110,7 @@ body.use-modern-fonts .mde-surface * {
   top: calc(var(--system-menu-height) - 2px);
   padding: 4px 0;
   border: var(--system-border);
-  box-shadow: var(--system-shadow);
+  box-shadow: var(--menu-panel-shadow);
 }
 
 .menu-popover button,
@@ -2100,11 +2123,19 @@ body.use-modern-fonts .mde-surface * {
   font-weight: 400;
 }
 
-.window,
-.writing-spine-panel,
+.writing-spine-panel {
+  border: 0;
+  box-shadow: none;
+}
+
 .spine-toolbox-panel {
-  border: var(--system-border);
-  box-shadow: var(--system-shadow);
+  border: var(--window-border);
+  box-shadow: var(--active-window-shadow);
+}
+
+.window {
+  border: var(--window-border);
+  box-shadow: var(--active-window-shadow);
 }
 
 .window:not(.is-active) {
@@ -2118,7 +2149,7 @@ body.use-modern-fonts .mde-surface * {
   display: grid;
   margin: var(--system-titlebar-margin-y) 0;
   padding: var(--system-titlebar-padding-y) var(--system-titlebar-padding-x);
-  border-bottom: 2px solid var(--ink);
+  border-bottom: var(--window-frame-track-border);
   background-color: var(--paper);
   background-image:
     linear-gradient(
@@ -2137,6 +2168,7 @@ body.use-modern-fonts .mde-surface * {
     var(--system-titlebar-control-slot)
     minmax(0, 1fr)
     var(--system-titlebar-control-slot);
+  border-bottom: var(--window-frame-track-border);
 }
 
 .window:not(.is-active) .title-bar {
@@ -2173,10 +2205,11 @@ body.use-modern-fonts .mde-surface * {
 
 .title-bar h1,
 .title-bar h2 {
-  align-self: flex-start;
+  align-self: center;
   min-height: var(--system-titlebar-title-height);
   height: var(--system-titlebar-title-height);
   margin: 0;
+  font-size: var(--system-titlebar-font-size);
   line-height: var(--system-titlebar-title-height);
 }
 
@@ -2209,7 +2242,7 @@ input[type="search"],
 input[type="number"] {
   min-height: var(--system-control-min-height);
   padding: 6px 9px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   border-radius: 0;
   background: var(--paper);
   box-shadow: var(--system-inset);
@@ -2227,7 +2260,7 @@ textarea {
 select {
   min-height: var(--system-control-min-height);
   padding: 6px 30px 6px 9px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   border-radius: var(--system-select-radius);
   background: var(--paper);
   box-shadow: var(--system-inset);
@@ -2282,7 +2315,7 @@ select:focus {
 }
 
 select:focus-visible {
-  outline: 2px solid var(--ink);
+  outline: var(--system-control-line) solid var(--ink);
   outline-offset: 2px;
 }
 
@@ -2300,7 +2333,7 @@ select:focus-visible {
   }
 
   select:open {
-    outline: 2px solid var(--ink);
+    outline: var(--system-control-line) solid var(--ink);
     outline-offset: 2px;
     box-shadow:
       var(--system-inset),
@@ -2311,7 +2344,7 @@ select:focus-visible {
   ::picker(select) {
     margin-top: 4px;
     padding: 3px;
-    border: 2px solid var(--ink);
+    border: var(--system-control-line) solid var(--ink);
     border-radius: 0;
     background: var(--paper);
     box-shadow:
@@ -2363,7 +2396,7 @@ button.btn {
   min-height: var(--system-button-min-height);
   min-width: 72px;
   padding: var(--system-button-padding-y) var(--system-button-padding-x);
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   border-radius: 7px;
   background: var(--paper);
   box-shadow:
@@ -2424,7 +2457,7 @@ button.btn {
   min-height: var(--system-button-min-height);
   padding: var(--system-button-padding-y) 10px;
   overflow: hidden;
-  border: 2px solid var(--btn-border-color);
+  border: var(--system-control-line) solid var(--btn-border-color);
   background: var(--btn-bg);
   color: var(--btn-fg);
   box-shadow: var(--btn-shadow);
@@ -2561,7 +2594,7 @@ html:lang(zh-Hans) .spine-title-row h2,
 
 html:lang(zh-Hans) .title-bar h1,
 html:lang(zh-Hans) .title-bar h2 {
-  font-size: var(--system-title-size);
+  font-size: var(--system-titlebar-font-size);
 }
 
 html:lang(zh-Hans) .spine-title-row h2 {
@@ -2879,6 +2912,7 @@ input[type="radio"] {
 
 
   body:not(.is-writer-mode) .window.puzzle-window:not(.is-hidden):not(.is-collapsed) {
+    --puzzle-window-width: 244px;
     --puzzle-board-width: 220px;
     --puzzle-board-height: 220px;
     --puzzle-tile-width: auto;

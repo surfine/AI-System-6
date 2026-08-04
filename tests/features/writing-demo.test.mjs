@@ -1,13 +1,14 @@
 // Writing Demo protects the recordable panoramic demo from becoming a loose
-// marketing tour. It must start from the Start Here CTA, run through the real
-// writing surfaces, and hand the final Project CD object to DocMap, ClioStage,
-// and ClioTalk context.
+// marketing tour. It starts from Applications rather than interrupting the
+// quiet Start Here welcome, then runs through the real writing surfaces and
+// hands the final Project CD object to DocMap, ClioStage, and ClioTalk context.
 
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("writing-demo");
 
 const html = read("index.html");
+const app = read("app.js");
 const actions = read("app/core/actions.js");
 const config = read("app/core/config.js");
 const manifest = read("scripts/runtime-manifest.mjs");
@@ -28,8 +29,10 @@ const responsiveCss = read("styles/60-responsive.css");
 const readerDocmapCss = read("styles/20-reader-docmap.css");
 const zh = read("app/data/translations-zh.js");
 const en = read("app/data/translations-en.js");
+const guideWindow = html.match(/data-window="guide"[\s\S]*?<\/section>/)?.[0] || "";
 
-test.assertIncludes(html, 'data-action="play-writing-demo"', "Start Here primary CTA plays the live demo");
+test.assertNotIncludes(guideWindow, 'data-action="play-writing-demo"', "Start Here stays quiet instead of launching the live demo");
+test.assertIncludes(app, 'action: "play-writing-demo"', "the rendered Applications registry exposes the live demo");
 test.assertIncludes(html, 'data-action="guide-start-route"', "original writing route remains available outside the primary CTA");
 test.assertIncludes(zh, 'guide_play_demo: "播放实战演示"', "Chinese CTA copy names the demo");
 test.assertIncludes(en, 'guide_play_demo: "Play Live Demo"', "English CTA copy names the demo");

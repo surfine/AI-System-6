@@ -7,6 +7,7 @@ import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("control-panel-tabs");
 const html = read("index.html");
+const foundation = read("styles/00-foundation.css");
 const windows = read("styles/10-windows.css");
 const responsive = read("styles/60-responsive.css");
 const persistence = read("app/core/persistence-status.js");
@@ -18,9 +19,29 @@ for (const name of ["local", "cloud", "general"]) {
 test.assertIncludes(persistence, "function setControlTab(", "one function owns tab switching");
 test.assertIncludes(persistence, "function wireControlTabs(", "tabs are wired at startup");
 
-// The window used to force a fixed portrait height regardless of content,
-// leaving a block of dead space under a short tab.
-test.assertIncludes(responsive, "height: auto;", "Control Panel/Chooser height follows content");
+// Checkbox rows share one grid per section so the first preference and the
+// disclosure's slotted details content cannot fall onto different gap rules.
+test.assertMatches(
+  html,
+  /class="control-checkbox-grid">[\s\S]*id="remember"[\s\S]*id="modern-fonts"[\s\S]*id="liquid-glass"[\s\S]*id="sound-effects"[\s\S]*id="menu-clock"/,
+  "all preference checkboxes share one spacing grid"
+);
+test.assertMatches(
+  html,
+  /class="control-section control-advanced">[\s\S]*class="control-stack"[\s\S]*class="control-checkbox-grid">[\s\S]*id="performance-meter"[\s\S]*id="manual-model-fields"[\s\S]*id="show-reset-system-menu"[\s\S]*id="enable-image-gen"/,
+  "all advanced checkboxes share one spacing grid"
+);
+
+// Desktop connection phases share one compact frame, so status and model
+// discovery cannot make the outer window jump. Portrait remains content-sized
+// and scrollable because its viewport is the tighter constraint.
+test.assertIncludes(foundation, "--control-panel-height: 440px;", "Control Panel has one desktop height token");
+test.assertIncludes(
+  windows,
+  "height: min(var(--control-panel-height), calc(100vh - 68px));",
+  "desktop Control Panel keeps a stable viewport-bounded height"
+);
+test.assertIncludes(responsive, "height: auto;", "portrait Control Panel/Chooser still follows content");
 test.assertNotIncludes(
   responsive,
   "height: min(82vh, calc(100vh - var(--system-menu-height, 26px) - 20px));\n    max-height:",
@@ -29,7 +50,7 @@ test.assertNotIncludes(
 test.assertIncludes(
   persistence,
   'win.style.height = "";',
-  "switching tabs clears a stale saved height so the window can shrink"
+  "switching tabs clears a stale saved height so CSS owns the stable frame"
 );
 
 // The grid-blowout bug that stretched the pane past the window (and, with it,

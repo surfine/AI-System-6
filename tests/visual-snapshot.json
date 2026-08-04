@@ -10,7 +10,7 @@
       "--control-radius": "0",
       "--system-menu-height": "24px",
       "--menu-divider-color": "#777777",
-      "--active-window-shadow": "3px 3px 0 #000000",
+      "--active-window-shadow": "none",
       "--card-caption-color": "#696969",
       "--finder-op-caption-color": "#696969",
       "--select-divider": "1px dotted #696969",
@@ -23,7 +23,7 @@
       "--shade": "#bfbfbf",
       "--desktop": "#b6b6b6",
       "--menu-divider-color": "#777777",
-      "--active-window-shadow": "3px 3px 0 #000000",
+      "--active-window-shadow": "none",
       "--glass-accent": "",
       "--glass-border": "",
       "--liquid-window-radius": "",
@@ -59,26 +59,26 @@
     ".window.is-active": {
       "border-radius": "0px",
       "background-color": "rgb(255, 255, 255)",
-      "box-shadow": "rgb(0, 0, 0) 3px 3px 0px 0px",
-      "border-top-width": "2px",
+      "box-shadow": "none",
+      "border-top-width": "1px",
       "border-top-color": "rgb(0, 0, 0)",
       "outline-width": "0px",
       "outline-color": "rgb(0, 0, 0)",
       "_w": 430,
-      "_h": 397
+      "_h": 194
     },
     ".window.is-active > .title-bar": {
-      "height": "23px",
+      "height": "17px",
       "background-color": "rgb(255, 255, 255)",
-      "_w": 426,
-      "_h": 23
+      "_w": 428,
+      "_h": 17
     },
     ".window.is-active > .title-bar :is(h1, h2)": {
-      "font-size": "13px",
+      "font-size": "12px",
       "color": "rgb(0, 0, 0)",
       "font-weight": "600",
-      "_w": 65,
-      "_h": 13
+      "_w": 60,
+      "_h": 12
     },
     ".window.is-active > .title-bar .close-box": {
       "width": "40px",
@@ -102,8 +102,8 @@
       "padding-bottom": "8px",
       "padding-left": "8px",
       "background-color": "rgba(0, 0, 0, 0)",
-      "_w": 426,
-      "_h": 368
+      "_w": 428,
+      "_h": 173
     },
     ".btn": {
       "border-radius": "7px",
@@ -113,7 +113,7 @@
       "padding-left": "12px",
       "background-color": "rgb(255, 255, 255)",
       "color": "rgb(0, 0, 0)",
-      "_w": 386,
+      "_w": 84,
       "_h": 26
     },
     ".icon-column > .desktop-icon[data-open=\"applications\"]": {
@@ -140,7 +140,7 @@
       "--control-radius": "0",
       "--system-menu-height": "24px",
       "--menu-divider-color": "#777777",
-      "--active-window-shadow": "3px 3px 0 #000000",
+      "--active-window-shadow": "none",
       "--card-caption-color": "#696969",
       "--finder-op-caption-color": "#696969",
       "--select-divider": "1px dotted #696969",
@@ -195,7 +195,7 @@
       "outline-width": "0px",
       "outline-color": "rgb(16, 17, 20)",
       "_w": 430,
-      "_h": 419
+      "_h": 216
     },
     ".window.is-active > .title-bar": {
       "height": "34px",
@@ -233,7 +233,7 @@
       "padding-left": "8px",
       "background-color": "rgba(255, 255, 255, 0.12)",
       "_w": 430,
-      "_h": 382
+      "_h": 179
     },
     ".btn": {
       "border-radius": "10px",
@@ -242,8 +242,8 @@
       "padding-bottom": "2px",
       "padding-left": "12px",
       "background-color": "rgb(255, 255, 255)",
-      "color": "rgb(255, 255, 255)",
-      "_w": 380,
+      "color": "rgba(16, 17, 20, 0.94)",
+      "_w": 82,
       "_h": 26
     },
     ".icon-column > .desktop-icon[data-open=\"applications\"]": {

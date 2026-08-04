@@ -16,6 +16,9 @@ const sharedSource = read("app/shared/model-task-runtime.js");
 const html = read("index.html");
 const manifest = read("scripts/runtime-manifest.mjs");
 const chat = read("app/core/chat-messages.js");
+const persistenceStatus = read("app/core/persistence-status.js");
+const cloudModel = read("app/features/cloud-model.js");
+const boot = read("app/core/boot.js");
 const context = read("app/core/context-retrieval.js");
 const imports = read("app/features/export-import.js");
 const importRoute = read("src/server/routes/import-text.js");
@@ -25,16 +28,51 @@ const endfield = read("app/features/endfield-terminal.js");
 const reader = read("app/features/reader.js");
 const vision = read("app/features/teachtext-accessories.js");
 
+const localStateUpdateSource = persistenceStatus.slice(
+  persistenceStatus.indexOf("function updateLocalModelState"),
+  persistenceStatus.indexOf("const contextMinLength")
+);
+ok(
+  localStateUpdateSource.includes('refreshCloudUsageDisplay === "function"'),
+  "refreshes the global model indicator in the same transition as local model state"
+);
+const indicatorSource = chat.slice(
+  chat.indexOf("function isLocalModelIndicatorReady"),
+  chat.indexOf("function formatTokenCount")
+);
+ok(
+  indicatorSource.includes('localReady ? "cloudModel" : "cloudModelOff"'),
+  "shows the available model glyph only when the local model is loaded"
+);
+ok(
+  indicatorSource.includes('isCloudActive || localReady ? "cloudModel" : "cloudModelOff"')
+    && indicatorSource.includes('localReady ? getLocalModelDisplayName() : disconnectedText'),
+  "an inactive saved cloud account cannot make an unloaded local model look connected"
+);
+const popoverSource = cloudModel.slice(
+  cloudModel.indexOf("window.renderCloudModelPopover"),
+  cloudModel.indexOf("function updateCheckButtonState")
+);
+ok(
+  popoverSource.includes("if (!cloudReady && !localReady)")
+    && popoverSource.includes('cloudPopoverElement("div", "cl-hdr", localName)'),
+  "shows local model details instead of a disconnected message when no cloud account exists"
+);
+
 function makeClient(fetchImpl, options = {}) {
+  const protocol = options.protocol || "https:";
+  const hostname = options.hostname || "system6.aaronlau.me";
   const values = {
     endpoint: options.endpoint || "http://127.0.0.1:1234",
+    "local-provider": options.provider || "lm-studio",
     "local-api-token": options.token || "",
   };
   const contextObject = {
     window: {
       location: {
-        protocol: options.protocol || "https:",
-        hostname: options.hostname || "system6.aaronlau.me",
+        protocol,
+        hostname,
+        href: options.href || `${protocol}//${hostname}/`,
       },
     },
     document: {
@@ -43,6 +81,8 @@ function makeClient(fetchImpl, options = {}) {
       },
     },
     navigator: {
+      userAgent: options.userAgent || "Mozilla/5.0 Chrome/140.0 Safari/537.36",
+      vendor: options.vendor || "Google Inc.",
       permissions: {
         async query() {
           return { state: options.permission || "granted" };
@@ -62,6 +102,35 @@ function makeClient(fetchImpl, options = {}) {
   vm.runInNewContext(sharedSource, contextObject, { filename: "model-task-runtime.js" });
   vm.runInNewContext(source, contextObject, { filename: "local-lmstudio-client.js" });
   return contextObject.window.AISystem6LocalLMStudio;
+}
+
+{
+  const requests = [];
+  const ollamaTags = {
+    models: [
+      { name: "qwen3:4b", model: "qwen3:4b" },
+      { name: "embeddinggemma:latest", model: "embeddinggemma:latest" },
+    ],
+  };
+  const client = makeClient(async (url, options) => {
+    requests.push({ url, options });
+    if (url.endsWith("/api/tags")) return Response.json(ollamaTags);
+    if (url.endsWith("/api/ps")) return Response.json({ models: [] });
+    if (url.endsWith("/api/show")) {
+      const model = JSON.parse(options.body).model;
+      return Response.json(model.startsWith("embeddinggemma")
+        ? { capabilities: ["embedding"], model_info: { "bert.context_length": 8192 } }
+        : { capabilities: ["completion", "tools"], model_info: { "qwen3.context_length": 32768 } });
+    }
+    if (url.endsWith("/v1/chat/completions")) return Response.json({ choices: [{ message: { content: "ollama ready" } }] });
+    return Response.json({});
+  }, { provider: "ollama", endpoint: "http://127.0.0.1:11434" });
+  const result = await client.listModels();
+  ok(requests[0].url === "http://127.0.0.1:11434/api/tags", "discovers Ollama through its native tags endpoint");
+  ok(result.autoLoad === true && result.chatModels.length === 1 && result.embeddingModels.length === 1, "classifies Ollama chat and embedding models");
+  ok(result.chatModels[0].max_context_length === 32768, "reads Ollama context metadata from the show endpoint");
+  const response = await client.chat({ model: "qwen3:4b", messages: [{ role: "user", content: "hello" }] });
+  ok((await response.json()).choices[0].message.content === "ollama ready", "uses Ollama's OpenAI-compatible chat endpoint");
 }
 
 const require = createRequire(import.meta.url);
@@ -100,7 +169,7 @@ const modelPayload = {
   const result = await client.listModels();
   ok(requests[0].url === "http://127.0.0.1:1234/api/v1/models", "discovers models through the native v1 endpoint");
   ok(requests[0].options.mode === "cors" && requests[0].options.credentials === "omit", "uses CORS without browser credentials");
-  ok(requests[0].options.targetAddressSpace === "loopback", "declares the loopback target address space for Safari/WebKit");
+  ok(requests[0].options.targetAddressSpace === "loopback", "declares the loopback target address space for Chromium Local Network Access");
   ok(requests[0].options.headers.get("Authorization") === "Bearer lm-secret", "sends the optional token only as a Bearer header");
   ok(result.chatModels.length === 1 && result.embeddingModels.length === 1, "classifies chat and embedding models");
   ok(result.loaded_context_length === 32768 && result.chatModels[0].max_context_length === 131072, "synchronizes loaded and maximum context lengths");
@@ -209,6 +278,51 @@ const modelPayload = {
 }
 
 {
+  let requestCount = 0;
+  const safariUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Safari/605.1.15";
+  const client = makeClient(async () => {
+    requestCount += 1;
+    return Response.json(modelPayload);
+  }, { userAgent: safariUserAgent, vendor: "Apple Computer, Inc." });
+  ok(client.isSafariPublicWebUnsupported() === true, "recognizes Safari on the public Web before attempting loopback access");
+  await client.listModels().then(
+    () => ok(false, "stops Safari before an unsupported loopback request"),
+    (error) => ok(String(error.message).includes("lmstudio_safari_unsupported") && requestCount === 0, "gives Safari a dedicated transport explanation")
+  );
+
+  const localClient = makeClient(async () => Response.json(modelPayload), {
+    hostname: "127.0.0.1",
+    userAgent: safariUserAgent,
+    vendor: "Apple Computer, Inc.",
+  });
+  ok(localClient.isSafariPublicWebUnsupported() === false, "keeps Safari available when the app itself runs locally");
+
+  const httpClient = makeClient(async () => Response.json(modelPayload), {
+    protocol: "http:",
+    hostname: "local.system6.aaronlau.me",
+    userAgent: safariUserAgent,
+    vendor: "Apple Computer, Inc.",
+  });
+  ok(httpClient.isSafariPublicWebUnsupported() === false && httpClient.isSafariHttpLocalMode() === true, "allows Safari from the dedicated HTTP local entry");
+  const safariRequests = [];
+  const safariFetchClient = makeClient(async (url, options) => {
+    safariRequests.push({ url, options });
+    return Response.json(modelPayload);
+  }, {
+    protocol: "http:",
+    hostname: "local.system6.aaronlau.me",
+    userAgent: safariUserAgent,
+    vendor: "Apple Computer, Inc.",
+  });
+  await safariFetchClient.listModels();
+  ok(!("targetAddressSpace" in safariRequests[0].options), "omits Chromium's loopback hint in Safari/WebKit");
+  ok(
+    client.httpLocalEntryUrl("http://local.system6.aaronlau.me") === "http://local.system6.aaronlau.me/",
+    "builds the configured Safari HTTP entry without weakening the HTTPS host"
+  );
+}
+
+{
   const encoder = new TextEncoder();
   const client = makeClient(async () => new Response(new ReadableStream({
     start(controller) {
@@ -254,8 +368,15 @@ const modelPayload = {
 
 ok(!source.includes("/api/v0/"), "never probes the legacy v0 API");
 ok(!source.includes('"/api/chat"') && !source.includes('"/api/models"'), "client contains no VPS local-model proxy fallback");
+ok(read("app/core/persistence-status.js").includes('local_connection_safari_unsupported'), "control panel maps Safari to a dedicated connection state");
+ok(/connectLocalLmStudio[\s\S]*?setModelPickerOptions\(chatModels, embeddingModels\)[\s\S]*?renderLocalConnectionStatus\("ready", data\)/.test(read("app/core/persistence-status.js")), "a successful connection fills the model pickers before showing ready");
+ok(read("app/core/persistence-status.js").includes('window.location.assign(`lmstudio:${slashes}`)'), "control panel can open the installed LM Studio app directly");
+ok(/function connectOrLaunchLocalModel\(\)[\s\S]*?openLocalModelApp\(\);[\s\S]*?connectLocalLmStudio\(\{ toggle: false \}\)/.test(read("app/core/persistence-status.js")), "one local-model button launches LM Studio and then attempts the connection");
+ok(boot.includes('isSafariHttpLocalMode') && boot.includes('setControlTab("local")'), "Safari HTTP entry opens directly on local-model setup");
+ok(read("app/data/translations-en.js").includes("open this site in Chrome or Edge, or use a cloud model"), "English guidance offers two supported next steps");
+ok(read("app/data/translations-zh.js").includes("Safari 本机入口、改用 Chrome/Edge，或切换到云端模型"), "Chinese guidance offers supported next steps without blaming LM Studio");
 ok(manifest.includes('"app/shared/model-task-runtime.js"') && manifest.includes('"app/core/local-lmstudio-client.js"'), "loads shared contracts before the browser adapter");
-ok(html.includes('id="local-api-token" type="password"') && html.includes('id="connect-local-model"'), "control panel exposes token and explicit user connection");
+ok(html.includes('id="local-api-token" type="password"') && html.includes('id="connect-local-model"') && !html.includes('id="open-local-model-app"'), "control panel exposes one launch/connect toggle instead of two competing buttons");
 ok(chat.includes("AISystem6LocalLMStudio.chat") && !chat.includes('fetch("/api/model-budget"'), "chat and context budgeting stay in the browser");
 ok(chat.includes("streamFallback: true") && chat.includes("stream: false"), "abnormal streams retry once as non-streaming JSON");
 ok(context.includes("AISystem6LocalLMStudio.embed"), "RAG embeddings can execute directly in the browser");

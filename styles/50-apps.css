@@ -1005,7 +1005,7 @@
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   background: var(--paper);
   box-shadow: inset 1px 1px 0 var(--shade);
 }
@@ -1038,7 +1038,7 @@
 .teachtext-preview h1 {
   font-size: 24px;
   font-family: var(--title-font);
-  border-bottom: 2px solid var(--ink);
+  border-bottom: var(--system-control-line) solid var(--ink);
   padding-bottom: 8px;
   margin-bottom: 24px;
   text-align: center;
@@ -1097,7 +1097,7 @@
   width: auto;
   height: auto;
   margin: 24px auto;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   image-rendering: auto;
   background: var(--paper);
 }
@@ -1185,7 +1185,7 @@
   gap: 8px;
   margin: 0;
   padding: 10px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   background: var(--paper);
 }
 
@@ -1457,7 +1457,7 @@
   min-width: 210px;
   gap: 3px;
   padding: 5px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   background: var(--paper);
   box-shadow: 3px 3px 0 var(--ink);
 }
@@ -1663,7 +1663,7 @@
   align-content: start;
   gap: 8px;
   padding: 6px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   box-shadow: var(--system-inset);
   background: var(--paper);
 }
@@ -1688,7 +1688,7 @@
   align-items: center;
   min-height: 24px;
   padding: 3px 8px;
-  border-bottom: 2px solid var(--ink);
+  border-bottom: var(--system-control-line) solid var(--ink);
   background: var(--shade);
   font-size: 11px;
   font-weight: 700;
@@ -1842,7 +1842,7 @@
   gap: 8px;
   min-height: 58px;
   padding: 8px 9px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   background:
     linear-gradient(90deg, transparent 0, transparent 33px, var(--ink) 33px, var(--ink) 35px, transparent 35px),
     #f7f7f7;
@@ -1897,7 +1897,7 @@
 
 .import-preview {
   min-height: 132px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   background: var(--paper);
   overflow: auto;
 }
@@ -1978,7 +1978,7 @@
 
 .scrap-list,
 .trash-list {
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   min-height: 0;
   overflow: auto;
   background: var(--paper);
@@ -2230,7 +2230,7 @@ body:not(.use-liquid-glass) .scrap-list button.is-multi-selected:not(.is-selecte
 
 .scrap-card-shell {
   margin-top: 7px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   background:
     linear-gradient(var(--shade) 0 1px, transparent 1px 100%) 0 0 / 100% 20px,
     var(--paper);
@@ -2750,7 +2750,7 @@ body:not(.use-liquid-glass) .desktop-app-icon span[data-liquid-label="DAA Meme"]
   height: 34px;
   display: block;
   background: var(--paper);
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   position: relative;
 }
 
@@ -2773,17 +2773,17 @@ body:not(.use-liquid-glass) .desktop-app-icon span[data-liquid-label="DAA Meme"]
   content: none !important;
 }
 
-/* The stroke does not scale with the icon (non-scaling-stroke keeps 1-bit
-   lines crisp), so a fixed width thickens as the box shrinks: 2.4px is ~1.8
-   viewBox units on a 42px desktop icon but ~3.5 on a 22px list icon, which is
-   what filled the small icons in. Small boxes take a proportionate width. */
+/* Classic icons share a 32×32 vector grid. One viewBox unit is the common
+   1-bit line: it scales with the icon instead of becoming disproportionately
+   heavy in the 22px and 42px renderings. Liquid owns its separate rounded,
+   non-scaling stroke contract in 70-liquid-glass.css. */
 .sys-icon-svg {
   width: 100%;
   height: 100%;
   display: block;
   overflow: visible;
   stroke: currentColor;
-  stroke-width: var(--sys-icon-stroke, 2.4);
+  stroke-width: var(--system-icon-stroke-width);
   stroke-linecap: square;
   stroke-linejoin: miter;
   shape-rendering: crispEdges;
@@ -2796,18 +2796,19 @@ body:not(.use-liquid-glass) .desktop-app-icon span[data-liquid-label="DAA Meme"]
 .sys-icon-svg rect,
 .sys-icon-svg circle {
   fill: var(--paper);
-  vector-effect: non-scaling-stroke;
 }
 
-.sys-icon-svg path,
-.sys-icon-svg rect,
-.sys-icon-svg circle {
-  vector-effect: non-scaling-stroke;
+/* Native Classic resources and the filled details in companion icons are
+   one-unit pixel runs. Classic keeps them exact; Modern Fonts expands each run
+   just enough to match its outlined companions through the mode-owned token. */
+.sys-icon-classic .classic-ink {
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-width: var(--system-icon-pixel-run-expansion);
 }
 
-/* Transport glyphs reuse .classic-ink in the Liquid group too, so the same
-   filled 1-bit path serves both themes. */
-.sys-icon-classic .classic-ink,
+/* Transport glyphs reuse .classic-ink in the Liquid group, where they stay
+   solid and opt out of the rounded non-scaling outline painter. */
 .sys-icon-liquid .classic-ink {
   fill: currentColor;
   stroke: none;
@@ -2835,6 +2836,26 @@ body:not(.use-liquid-glass) .desktop-app-icon span[data-liquid-label="DAA Meme"]
   height: 17px;
 }
 
+.menu-bar .sys-icon {
+  color: inherit;
+  background: transparent;
+}
+
+.menu-bar .sys-icon .sys-icon-liquid .icon-fill,
+.menu-bar .sys-icon .sys-icon-liquid .icon-fill-soft,
+.menu-bar .sys-icon .sys-icon-liquid .icon-accent {
+  fill: none;
+  stroke: currentColor;
+}
+
+.menu-bar .sys-icon-svg {
+  stroke-width: var(--menu-system-icon-stroke-width);
+}
+
+.menu-bar .sys-icon-classic .classic-ink {
+  stroke-width: var(--menu-system-icon-pixel-run-expansion);
+}
+
 .finder-small-icons .sys-icon {
   width: 22px;
   height: 22px;
@@ -2845,14 +2866,6 @@ body:not(.use-liquid-glass) .desktop-app-icon span[data-liquid-label="DAA Meme"]
 .finder-operation-item .sys-icon {
   width: 22px;
   height: 22px;
-}
-
-.sys-icon-mini,
-.finder-small-icons .sys-icon,
-.finder-list-name-cell .sys-icon,
-.finder-list-row > span:first-child .sys-icon,
-.finder-operation-item .sys-icon {
-  --sys-icon-stroke: 1.5;
 }
 
 /* Detail that only survives at full size. CMF Studio's tick marks sit 5 units
@@ -2868,11 +2881,6 @@ body:not(.use-liquid-glass) .desktop-app-icon span[data-liquid-label="DAA Meme"]
   display: none;
 }
 
-.menu-bar .project-switcher-icon.sys-icon,
-.menu-bar .cloud-icon.sys-icon {
-  --sys-icon-stroke: 1.2;
-}
-
 .finder-list-row > span:first-child .sys-icon {
   margin-right: 6px;
   vertical-align: middle;
@@ -2885,7 +2893,7 @@ body:not(.use-liquid-glass) .desktop-app-icon span[data-liquid-label="DAA Meme"]
   right: 6px;
   top: 5px;
   height: 8px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
 }
 
 .icon.hard-disk {
@@ -2906,7 +2914,7 @@ body:not(.use-liquid-glass) .desktop-app-icon span[data-liquid-label="DAA Meme"]
   right: 7px;
   top: -6px;
   height: 7px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   border-bottom: 0;
   background: var(--paper);
 }
@@ -2918,7 +2926,7 @@ body:not(.use-liquid-glass) .desktop-app-icon span[data-liquid-label="DAA Meme"]
   bottom: 5px;
   width: 13px;
   height: 7px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   background:
     linear-gradient(var(--ink), var(--ink)) 3px 2px / 7px 2px no-repeat,
     var(--paper);
@@ -2942,7 +2950,7 @@ body:not(.use-liquid-glass) .desktop-app-icon span[data-liquid-label="DAA Meme"]
   right: 7px;
   top: -6px;
   height: 7px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   border-bottom: 0;
   background: var(--paper);
 }
@@ -2954,7 +2962,7 @@ body:not(.use-liquid-glass) .desktop-app-icon span[data-liquid-label="DAA Meme"]
   bottom: 4px;
   width: 13px;
   height: 10px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   background: var(--paper);
   color: var(--ink);
   font-size: 8px;
@@ -2982,7 +2990,7 @@ body:not(.use-liquid-glass) .desktop-app-icon span[data-liquid-label="DAA Meme"]
   right: 7px;
   top: -6px;
   height: 7px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   border-bottom: 0;
   background: var(--paper);
 }
@@ -2994,7 +3002,7 @@ body:not(.use-liquid-glass) .desktop-app-icon span[data-liquid-label="DAA Meme"]
   bottom: 4px;
   width: 12px;
   height: 10px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   background: var(--paper);
   color: var(--ink);
   font-size: 8px;
@@ -3045,7 +3053,7 @@ body:not(.use-liquid-glass) .desktop-app-icon span[data-liquid-label="DAA Meme"]
   bottom: -5px;
   width: 16px;
   height: 16px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   background: var(--paper);
   font-size: 13px;
   line-height: 15px;
@@ -3068,7 +3076,7 @@ body:not(.use-liquid-glass) .desktop-app-icon span[data-liquid-label="DAA Meme"]
   bottom: -5px;
   width: 15px;
   height: 15px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   background: var(--paper);
   font-size: 12px;
   line-height: 14px;
@@ -3091,7 +3099,7 @@ body:not(.use-liquid-glass) .desktop-app-icon span[data-liquid-label="DAA Meme"]
   bottom: -5px;
   width: 15px;
   height: 15px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   background:
     linear-gradient(var(--ink), var(--ink)) 3px 6px / 8px 2px no-repeat,
     linear-gradient(var(--ink), var(--ink)) 7px 3px / 2px 8px no-repeat,

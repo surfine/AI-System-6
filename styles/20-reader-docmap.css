@@ -457,7 +457,7 @@ body.is-resizing-tdi {
 .reader-content h1 {
   font-size: 22px;
   font-family: var(--title-font);
-  border-bottom: 2px solid var(--ink);
+  border-bottom: var(--system-control-line) solid var(--ink);
   padding-bottom: 12px;
   margin-bottom: 24px;
   text-align: center;
@@ -602,7 +602,7 @@ body.is-resizing-tdi {
   min-width: 48px;
   height: 28px;
   padding: 2px 10px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   background: var(--paper);
   color: var(--ink);
   box-shadow: 2px 2px 0 var(--ink);
@@ -1183,13 +1183,13 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
   display: grid;
   gap: 7px;
   padding: 8px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   background: var(--paper);
 }
 
 .rebuild-progress-meter {
   height: 16px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   background:
     repeating-linear-gradient(
       90deg,
@@ -1249,7 +1249,7 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
   content: "";
   width: 12px;
   height: 12px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   background: var(--paper);
 }
 
@@ -1334,7 +1334,7 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
   min-height: 0;
   height: 100%;
   overflow: auto;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   background: var(--paper);
   padding: 10px;
   scrollbar-gutter: stable both-edges;
@@ -1385,7 +1385,7 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
 }
 
 .video-docmap-map {
-  border-right: 2px solid var(--ink);
+  border-right: var(--system-control-line) solid var(--ink);
   padding-right: 10px;
 }
 
@@ -1453,7 +1453,7 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
 
 .video-docmap-node {
   overflow: auto;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   padding: 8px;
   background: var(--paper);
 }
@@ -1480,7 +1480,7 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
 
 .video-docmap-node blockquote {
   margin: 8px 0;
-  border-left: 2px solid var(--ink);
+  border-left: var(--system-control-line) solid var(--ink);
   padding-left: 8px;
 }
 

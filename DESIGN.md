@@ -25,6 +25,56 @@ The Macintosh System 6 desktop metaphor is a constraint, not decoration:
 - Reader clips source material. Scrapbook holds curated user selections.
 - File Floppy is temporary context. Project Hard Disk is durable project state.
 
+## Historical Vocabulary: System 6 Baseline, Classic Mac OS Library
+
+System 6 is the product's visual and object-grammar baseline, not a historical
+cutoff date. The full Classic Mac OS lineage is an available vocabulary library.
+MultiFinder, Balloon Help, WindowShade, Apple Guide, and other later Classic Mac
+OS ideas may be introduced, digested, and adapted when they improve the product.
+Chronology is evidence to record, not a reason to reject a useful idea.
+
+Adopting a historical element requires all of the following:
+
+- Inspect the native resource or era-appropriate runtime behavior first. Record
+  which system version supplied the evidence; do not present a later feature as
+  native System 6 behavior.
+- Preserve its original role and state transitions. Similar-looking controls
+  are not interchangeable merely because they occupy the same chrome.
+- Adapt the idea for web, pointer, keyboard, touch, narrow screens, and
+  accessibility instead of reproducing an obsolete input limitation.
+- Keep the default experience quiet. Later-system features should appear on
+  demand or at the moment they become relevant, not as a feature inventory.
+- Keep one semantic DOM and state model across Classic and Liquid Glass. Classic
+  preserves the recognizable historical form; Liquid Glass changes material,
+  not the object's meaning.
+
+Control meanings are load-bearing:
+
+- The title-bar Zoom box chooses a window's standard size and position.
+- The bottom-right grow box manually changes a resizable window's dimensions.
+- WindowShade, a later Classic Mac OS behavior, collapses a window to its title
+  bar and remains a separate double-click action; Zoom must never fall back to it.
+- Full application and document windows may expose Zoom and grow. Fixed system
+  windows and Desk Accessories generally omit them unless native evidence or a
+  deliberate product contract says otherwise.
+
+Progressive discovery divides responsibility instead of building one tutorial:
+
+- OOBE stays a single, dismissible system welcome window. It points to the Apple
+  and Special menus, keeps AI setup optional, and never becomes a setup wizard.
+- MultiFinder is discovered through the startup environment: briefly explain
+  Finder versus MultiFinder where that choice is made, then teach the real
+  menu-bar switcher only after MultiFinder is enabled.
+- [Balloon Help](https://en.wikipedia.org/wiki/Balloon_help) may be introduced as
+  an optional, user-activated, state-aware help mode. It answers “What is this?”
+  and “Why is this unavailable?” in one or two actionable sentences. It must not
+  become an automatic OOBE tour or replace task-oriented System Help.
+- Balloon Help targets unfamiliar icons, system objects, and disabled-state
+  reasons. It does not repeat visible button labels. Pointer hover or keyboard
+  focus can reveal it; touch uses an explicit help mode followed by a tap.
+
+In short: **System 6 is the grammar; Classic Mac OS is the vocabulary library.**
+
 ## Design Dials
 
 Default design settings for this product:

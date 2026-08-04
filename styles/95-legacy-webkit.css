@@ -214,7 +214,7 @@
   width: 100%;
   max-width: 100%;
   border-left: none;
-  border-top: 2px solid var(--ink);
+  border-top: var(--system-control-line) solid var(--ink);
 }
 
 .is-legacy-webkit.is-legacy-liquid-glass .liquid-cover-window.is-legacy-under-760 .lc-panel {

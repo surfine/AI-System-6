@@ -17,6 +17,13 @@ const frameBars = read("app/core/window-frame-bars.js");
 const wireup = read("app/core/wireup.js");
 const manifest = read("scripts/runtime-manifest.mjs");
 const html = read("index.html");
+const zoomWindowContract = windowManager.match(/function zoomWindow\(win\) \{[\s\S]*?\n\}\n\nfunction maximizeWindow/)?.[0] || "";
+
+test.assertMatches(
+  windows,
+  /\.window\.is-collapsed > \.title-bar \{[^}]*margin-bottom: 0;[^}]*border-bottom: 0;/,
+  "WindowShade ends at the outer frame without a duplicate title-bar seam"
+);
 
 // One band, one token: the lanes and the grow box are the same 16px of chrome,
 // so the corner cell can never be a different size from the bars it terminates.
@@ -251,6 +258,42 @@ test.assertIncludes(
   "--system-titlebar-inactive-bg: var(--paper)",
   "An inactive title bar loses its stripes"
 );
+test.assertIncludes(foundation, "--system-titlebar-padding-y: 2px", "Classic title bars expose the native six-rule stripe field");
+test.assertIncludes(foundation, "--system-titlebar-height: 17px", "Classic title bars keep the native compact window-chrome height");
+test.assertIncludes(foundation, "--system-titlebar-stripe-size: 2px", "Classic title bars use the native two-pixel six-rule rhythm");
+test.assertIncludes(foundation, "--system-titlebar-control-art-size: 11px", "Classic close and zoom boxes keep the native 11-pixel outer art");
+test.assertMatches(windows, /\.resize-box::before \{[^}]*width: 6px;[^}]*height: 6px;/, "Classic zoom's stroked pseudo-element resolves to the native 7-by-7 inner square inside its 11-pixel frame");
+test.assertIncludes(foundation, "--system-titlebar-title-height: 12px", "Classic reserves the native twelve-pixel title field");
+test.assertIncludes(foundation, "--system-titlebar-font-size: 12px", "Classic titles use the Chicago 12-pixel face");
+test.assertIncludes(foundation, "--system-titlebar-control-art-offset-y: calc((var(--system-titlebar-control-size) - var(--system-titlebar-title-height)) / 2)", "Classic aligns the native control art with the title field inside its larger hit target");
+test.assertIncludes(windows, "grid-template-rows: var(--system-titlebar-title-height)", "The larger title-bar hit targets cannot enlarge the painted title row");
+test.assertIncludes(windows, "align-content: center", "The native title row stays centered inside the title-bar box");
+test.assertMatches(responsive, /\.title-bar h1,\n\.title-bar h2 \{[^}]*font-size: var\(--system-titlebar-font-size\)/, "The later responsive layer preserves Chicago 12 in Classic title bars");
+test.assertNotMatches(responsive, /html:lang\(zh-Hans\) \.title-bar h1,\nhtml:lang\(zh-Hans\) \.title-bar h2 \{\n  font-size: var\(--system-title-size\)/, "The final Chinese locale rule cannot enlarge Classic titles after native sizing");
+test.assertMatches(windows, /\.title-bar h1,\n\.title-bar h2 \{[^}]*align-self: center/, "Classic window titles share the title-bar vertical center");
+test.assertMatches(windows, /\.close-box,\n\.resize-box \{[^}]*align-self: center/, "Classic close and zoom hit targets share the title-bar vertical center");
+test.assertMatches(liquid, /body\.use-liquid-glass \.close-box,\nbody\.use-liquid-glass \.resize-box \{[^}]*align-self: center;[^}]*margin: 0;/, "Liquid close and zoom lamps use grid centering instead of a manual top offset");
+test.assertIncludes(foundation, "--system-titlebar-control-focus-outline: 0", "Classic title-bar controls do not expose a browser-coloured focus rectangle around the full hit target");
+test.assertIncludes(foundation, "--system-titlebar-control-focus-shadow: none", "Classic title-bar focus does not manufacture a second oversized frame");
+test.assertIncludes(windows, "--system-titlebar-control-art-offset-x: var(--system-titlebar-close-art-offset-x)", "The close box sits at the native leading inset while retaining its larger hit target");
+test.assertIncludes(windows, "--system-titlebar-control-art-offset-x: var(--system-titlebar-resize-art-offset-x)", "The zoom box sits at the native trailing inset while retaining its larger hit target");
+test.assertMatches(wireup, /bar\.addEventListener\("dblclick"[\s\S]*const win = bar\.closest\("\.window"\);\s*if \(win\) toggleCollapsed\(win\);/, "Double-clicking an ordinary title bar keeps the separate WindowShade action");
+test.assertMatches(wireup, /win\.querySelector\("\.resize-box"\)\?\.addEventListener\("click", \(\) => \{\s*zoomWindow\(win\);/, "The right-side title-bar box invokes Zoom, not WindowShade");
+test.assertNotIncludes(zoomWindowContract, "toggleCollapsed", "Zoom never falls back to WindowShade on a narrow or fixed-size window");
+test.assertMatches(windowManager, /function isZoomableWindow\(win\) \{[\s\S]*\.resize-box:not\(\[disabled\]\)/, "Zoom capability follows the title-bar Zoom box instead of the grow-box allowlist");
+test.assertIncludes(html, 'aria-label="Zoom"', "Title-bar Zoom boxes expose their actual semantic name");
+test.assertNotIncludes(html, 'aria-label="Resize"', "No Zoom box is announced as the separate grow/resize action");
+test.assertIncludes(foundation, "--window-border: 1px solid var(--ink)", "Classic window frames keep the native one-pixel outer hairline");
+test.assertIncludes(foundation, "--window-frame-track-border: 1px solid var(--ink)", "Classic scroll-bar lanes use one-pixel seams");
+test.assertMatches(responsive, /\.window \{[^}]*border: var\(--window-border\)/, "The later responsive layer cannot restore the old two-pixel window border");
+test.assertMatches(responsive, /\.title-bar \{[^}]*border-bottom: var\(--window-frame-track-border\)/, "The later responsive layer keeps the title-bar bottom seam at one native pixel");
+test.assertNotMatches(responsive, /\.window,\n\.writing-spine-panel,\n\.spine-toolbox-panel \{[^}]*border: var\(--system-border\)/, "The final responsive window rule no longer shares the two-pixel panel border");
+test.assertIncludes(foundation, "--active-window-shadow: none", "Classic windows do not invent a drop shadow absent from System 6");
+test.assertMatches(responsive, /\.window \{[^}]*box-shadow: var\(--active-window-shadow\)/, "Later window layers preserve the active-window shadow contract");
+test.assertMatches(responsive, /\.writing-spine-panel \{[^}]*border: 0;[^}]*box-shadow: none;/, "Writing Flow's transparent placement wrapper cannot double its panel frame or shadow");
+test.assertMatches(responsive, /\.spine-toolbox-panel \{[^}]*border: var\(--window-border\);[^}]*box-shadow: var\(--active-window-shadow\);/, "Writing Flow's visible panel shares Classic window frame weight");
+test.assertNotMatches(responsive, /\.title-bar,\n\.spine-title-row \{[^}]*border-bottom: 2px solid var\(--ink\)/, "The late title-bar layer cannot restore a two-pixel seam");
+test.assertMatches(windows, /\.window-frame-arrow\.is-up \{[^}]*background-size: 1px 1px, 3px 1px, 5px 1px, 7px 1px/, "Classic scroll arrows are stepped 1-bit pixels instead of smooth diagonals");
 // System 6 had no resize pointer at all: the arrow stays an arrow.
 test.assertMatches(
   windows,
@@ -423,6 +466,38 @@ test.assertMatches(
   icons,
   /\.window-pane\.project-disk-pane \{[^}]*min-height: 0;\s*flex-basis: 430px/,
   "Project Hard Disk's pane can shrink inside a smaller frame"
+);
+
+// WindowShade is a vertical state change. A narrow screen must not turn an
+// application window into Writing Spine's deliberately tiny 116px tab.
+test.assertIncludes(
+  responsive,
+  "width: var(--window-shade-width, 116px) !important",
+  "WindowShade uses the window's captured width while Writing Spine keeps the compact fallback"
+);
+test.assertMatches(
+  windowManager,
+  /function toggleCollapsed\(win\) \{[\s\S]*getBoundingClientRect\(\)[\s\S]*setInlineStyleValue\(win, "--window-shade-width", `\$\{width\}px`\)[\s\S]*classList\.add\("is-collapsed"\)/,
+  "WindowShade captures the rendered frame before hiding the window body"
+);
+// The shade rolls up and down in place. A centring transform, or a compact
+// layout that re-anchors a collapsed window from the viewport to the desk,
+// moved the title bar out from under the pointer — the second double-click
+// then missed it and the shade could not be unrolled.
+test.assertMatches(
+  windowManager,
+  /function toggleCollapsed\(win\) \{[\s\S]*keepWindowCornerAfterShade\(win, before\)/,
+  "WindowShade restores the window corner it was rolled from"
+);
+test.assertMatches(
+  windowManager,
+  /function keepWindowCornerAfterShade\(win, before\) \{[\s\S]*win\.style\.transform = "none"/,
+  "the shade corner is held in the window's own positioning context"
+);
+test.assertMatches(
+  windowManager,
+  /classList\.remove\("is-collapsed"\);\s*setInlineStyleValue\(win, "--window-shade-width", ""\)/,
+  "Unshading releases the captured width so responsive layout can resume"
 );
 
 test.finish();

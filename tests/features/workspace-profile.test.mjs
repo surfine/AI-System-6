@@ -20,6 +20,7 @@ const menus = read("app/data/menus.js");
 
 test.assertIncludes(manifest, '"app/core/workspace-profile.js"', "loads the central profile policy");
 test.assertIncludes(profile, 'let workspaceProfile = workspaceProfileWriting', "keeps the existing writing experience as the default");
+test.assertMatches(runtime, /if \(!guideSeen\) \{[\s\S]*setWorkspaceProfile\(workspaceProfileDesktop, \{ persist: false \}\)[\s\S]*openWindow\("guide"\)/, "places first-run OOBE on the Desktop without changing the legacy profile default");
 test.assertIncludes(profile, "applyDeploymentWorkspaceDefault", "derives the first-run public default from existing deployment capabilities");
 test.assertMatches(profile, /workspaceProfileWasRestored[\s\S]*public_deployment[\s\S]*workspaceProfileDesktop/, "preserves an explicit user profile before applying the public Desktop default");
 test.assertIncludes(profile, "workspaceCapabilityStudio", "classifies studio-only surfaces centrally");
@@ -66,16 +67,16 @@ test.assertIncludes(multiFinder, "syncWorkspaceDesktopIcon()", "MultiFinder mode
 test.assertMatches(profile, /finderSingleTask[\s\S]*exit-writing-studio[\s\S]*open-writing-studio/, "one Finder-only icon changes between enter and exit");
 test.assertMatches(windows, /appId === "writingStudio"[\s\S]*exitWritingStudio/, "Quit Writing Studio returns to Desktop instead of closing unrelated apps");
 test.assertMatches(app, /writing_studio[\s\S]*iconId: "writingStudio"/, "Applications uses a dedicated Writing Studio icon");
-test.assertMatches(systemIcons, /writingStudio:[\s\S]*M9 4h14v10/, "Writing Studio uses a dedicated typewriter silhouette");
+test.assertMatches(systemIcons, /writingStudio:[\s\S]*M7 2h18v10/, "Writing Studio uses a dedicated typewriter silhouette on the shared Classic grid");
 test.assertIncludes(actions, '"quit-active-app": () => quitApp(activeAppId)', "the existing right-side MultiFinder owns Writing Studio Quit");
-test.assertIncludes(profile, 'await openWindow(guideSeen ? "assistant" : "guide")', "Writing Studio opens onto ClioTalk, the window startup already opens");
+test.assertIncludes(profile, 'await openWindow("assistant")', "Writing Studio opens onto ClioTalk while system startup owns OOBE");
 test.assertIncludes(actions, '"open-teachtext": openTeachTextForWorkspace', "TeachText entry follows the active profile");
 test.assertIncludes(actions, '"print-current": printCurrentTeachTextDocument', "TeachText printing reuses the existing print pipeline");
 test.assertIncludes(teachText, "function openDesktopTeachTextWindow()", "Desktop reuses TeachText through a role-aware entry");
 test.assertMatches(teachText, /workspaceProfile !== workspaceProfileDesktop \|\| tab\.role === "scratch_file"/, "Desktop hides manuscript tabs without deleting them");
 test.assertIncludes(teachText, 'tab.role === "scratch_file"', "Desktop reuses existing scratch tabs");
 test.assertIncludes(rolePolicy, 'scratch_file: ["edit", "save", "saveCopy", "makeDocMap", "clip"]', "Desktop relies on the existing scratch-file capability policy");
-test.assertMatches(profile, /studioActionPrefixes = \["ai-", "guide-", "rebuild-", "review-"\]/, "Desktop blocks writing and review command families centrally");
+test.assertMatches(profile, /studioActionPrefixes = \["ai-", "rebuild-", "review-"\]/, "Desktop blocks writing and review command families without swallowing system OOBE");
 test.assertMatches(runtime, /desktopProfile \? \[[\s\S]*boot_ready/, "Desktop reuses the boot sequence without the writing/model ledger steps");
 test.assertIncludes(runtime, 'bootLocalModelEl?.classList.toggle("is-hidden", desktopProfile)', "Desktop hides the model boot ledger");
 test.assertNotIncludes(html, 'id="apple-running-apps"', "Apple menu does not duplicate the existing right-side MultiFinder");

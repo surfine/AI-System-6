@@ -195,7 +195,10 @@ function findNextInClioTalkConversation() {
 }
 
 function renderClioTalkWelcome() {
-  if (!messagesEl || messagesEl.children.length) return;
+  if (!messagesEl) return;
+  const existingWelcome = messagesEl.querySelector(":scope > .clio-welcome");
+  if (messagesEl.children.length && !(messagesEl.children.length === 1 && existingWelcome)) return;
+  if (existingWelcome) messagesEl.replaceChildren();
   const item = document.createElement("article");
   item.className = "message assistant clio-welcome";
   item.setAttribute("aria-label", clioTalkAssistantDisplayName());
@@ -210,12 +213,25 @@ function renderClioTalkWelcome() {
 
   const body = document.createElement("div");
   body.className = "message-content";
-  const welcomeKey = sideAskEnabled && !isMultiFinderMode()
-    ? "sideask_welcome_message"
-    : (clioTalkTemporaryMode ? "temporary_welcome_message" : "welcome_message");
+  const modelReady = clioTalkModelReady();
+  const welcomeKey = !modelReady
+    ? "clio_model_required_message"
+    : (sideAskEnabled && !isMultiFinderMode()
+      ? "sideask_welcome_message"
+      : (clioTalkTemporaryMode ? "temporary_welcome_message" : "welcome_message"));
   body.innerHTML = `<p>${t(welcomeKey)}</p>`;
 
-  if (!sideAskEnabled && !clioTalkTemporaryMode) {
+  if (!modelReady) {
+    const actions = document.createElement("div");
+    actions.className = "clio-welcome-actions";
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "btn default";
+    button.dataset.action = "open-clio-model-settings";
+    button.textContent = t("clio_connect_ai");
+    actions.append(button);
+    body.append(actions);
+  } else if (!sideAskEnabled && !clioTalkTemporaryMode) {
     const actions = document.createElement("div");
     actions.className = "clio-welcome-actions";
     [
@@ -236,6 +252,28 @@ function renderClioTalkWelcome() {
 
   item.append(speaker, body);
   messagesEl.append(item);
+}
+
+function clioTalkModelReady() {
+  const cloudReady = !!(
+    typeof cloudConfig !== "undefined"
+    && cloudConfig?.active
+    && cloudConfig?.provider
+    && cloudCredentialReady()
+    && cloudConfig?.model
+  );
+  const localReady = typeof localModelState !== "undefined"
+    && (localModelState?.ready || localModelState?.loaded);
+  return cloudReady || localReady;
+}
+
+function syncClioTalkModelAvailability() {
+  if (!conversation.length && messagesEl?.querySelector(":scope > .clio-welcome")) {
+    renderClioTalkWelcome();
+  }
+  syncClioTalkSendButton();
+  if (typeof syncPromptPlaceholder === "function") syncPromptPlaceholder();
+  if (typeof syncGuideWelcomeState === "function") syncGuideWelcomeState();
 }
 
 function formatClioTalkContextTokens(tokens) {
@@ -480,7 +518,7 @@ function syncClioTalkSendButton() {
     return;
   }
   const isBusy = !!activeAbortController || form.classList.contains("is-generating");
-  sendButton.disabled = isBusy || !String(promptInput?.value || "").trim();
+  sendButton.disabled = !clioTalkModelReady() || isBusy || !String(promptInput?.value || "").trim();
 }
 
 function setComposerSubmitMode(isBusy) {
@@ -3459,6 +3497,11 @@ function currentContextWindowText(config = cloudConfig) {
   return formatContextWindowSize(contextLengthInput?.value);
 }
 
+function isLocalModelIndicatorReady() {
+  return typeof localModelState !== "undefined"
+    && !!(localModelState?.ready || localModelState?.loaded);
+}
+
 function refreshCloudUsageDisplay() {
   var indicator = document.querySelector("#cloud-model-indicator");
   if (!indicator) return;
@@ -3466,15 +3509,14 @@ function refreshCloudUsageDisplay() {
   var iconEl = indicator.querySelector("[data-system-icon]");
   var hasCloudConfig = typeof cloudConfig !== "undefined" && cloudConfig && cloudConfig.provider && cloudCredentialReady();
   var isCloudActive = !!(hasCloudConfig && cloudConfig.active);
+  var localReady = isLocalModelIndicatorReady();
+  var disconnectedText = typeof t === "function" ? t("model_not_connected") : "Model not connected";
   if (!hasCloudConfig) {
-    var localReady = typeof localModelState !== "undefined"
-      && (localModelState?.ready || localModelState?.loaded);
-    var disconnectedText = typeof t === "function" ? t("model_not_connected") : "Model not connected";
     var localName = localReady ? getLocalModelDisplayName() : disconnectedText;
     if (labelEl) labelEl.textContent = localName;
     if (iconEl) {
-      iconEl.dataset.systemIcon = "cloudModelOff";
-      iconEl.innerHTML = systemIconSvg("cloudModelOff");
+      iconEl.dataset.systemIcon = localReady ? "cloudModel" : "cloudModelOff";
+      iconEl.innerHTML = systemIconSvg(iconEl.dataset.systemIcon);
     }
     indicator.classList.add("is-local-model");
     indicator.title = localReady
@@ -3483,20 +3525,25 @@ function refreshCloudUsageDisplay() {
     indicator.setAttribute("aria-label", indicator.title);
     indicator.classList.remove("is-hidden");
     if (typeof renderCloudModelPopover === "function") renderCloudModelPopover();
+    syncClioTalkModelAvailability();
     return;
   }
-  var modelName = isCloudActive ? (cloudConfig.model || "cloud") : getLocalModelDisplayName();
+  var modelName = isCloudActive
+    ? (cloudConfig.model || "cloud")
+    : localReady ? getLocalModelDisplayName() : disconnectedText;
   var displayName = isCloudActive ? cloudModelShortName(modelName) : modelName;
   if (labelEl) labelEl.textContent = displayName;
   if (iconEl) {
-    iconEl.dataset.systemIcon = isCloudActive ? "cloudModel" : "cloudModelOff";
+    iconEl.dataset.systemIcon = isCloudActive || localReady ? "cloudModel" : "cloudModelOff";
     iconEl.innerHTML = systemIconSvg(iconEl.dataset.systemIcon);
   }
   if (typeof syncPromptPlaceholder === "function") syncPromptPlaceholder();
   indicator.classList.toggle("is-local-model", !isCloudActive);
   indicator.title = isCloudActive
     ? `${typeof t === "function" ? t("cloud_model") : "Cloud Model"}: ${displayName}`
-    : `${currentLanguage === "zh" ? "云端关闭，使用本地模型：" : "Cloud off, using local model: "}${displayName}`;
+    : localReady
+      ? `${typeof t === "function" ? t("local_model") : "Local Model"}: ${displayName}`
+      : disconnectedText;
   indicator.setAttribute("aria-label", indicator.title);
   indicator.classList.remove("is-hidden");
   if (typeof renderCloudModelPopover === "function") {
@@ -3505,6 +3552,7 @@ function refreshCloudUsageDisplay() {
   if (typeof renderCloudStatePanel === "function") {
     renderCloudStatePanel();
   }
+  syncClioTalkModelAvailability();
 }
 
 function formatTokenCount(n) {
@@ -3994,6 +4042,11 @@ function finalizeClioTalkAssistantReply({
 
 async function submitUserText(userText, options = {}) {
   if (!userText) return;
+  if (!clioTalkModelReady()) {
+    setStatus(t("clio_model_required_status"));
+    syncClioTalkModelAvailability();
+    return;
+  }
 
   const quickDraftAction = options.quickDraftAction || quickDraftActionFromText(userText);
   if (quickDraftAction && typeof window !== "undefined" && typeof window.AISystem6QuickDraft?.runClioTalkAction === "function") {
@@ -4220,6 +4273,7 @@ async function submitUserText(userText, options = {}) {
         cloud_invalid_key: "cloud_invalid_key",
         cloud_insufficient_balance: "cloud_insufficient_balance",
         cloud_rate_limit: "cloud_rate_limit",
+        cloud_shared_limit: "cloud_shared_limit",
         cloud_invalid_request: "cloud_invalid_request",
         cloud_service_unavailable: "cloud_service_unavailable",
       }[code];

@@ -63,6 +63,7 @@
     volume: 32,
     muted: false,
     shuffle: false,
+    shuffleKind: "songs",
     repeat: "off",
     playerState: "stopped",
     activePanel: "queue",
@@ -74,6 +75,12 @@
 
   function clamp(value, min = 0, max = 100) {
     return Math.min(max, Math.max(min, Number(value) || 0));
+  }
+
+  const SHUFFLE_KINDS = Object.freeze(["songs", "albums", "groupings"]);
+
+  function normalizeShuffleKind(value) {
+    return SHUFFLE_KINDS.includes(value) ? value : "songs";
   }
 
   function normalizeRepeat(value) {
@@ -129,6 +136,7 @@
         repeat: normalizeRepeat(parsed.repeat),
         muted: Boolean(parsed.muted),
         shuffle: Boolean(parsed.shuffle),
+        shuffleKind: normalizeShuffleKind(parsed.shuffleKind),
         activePanel: PANELS.includes(parsed.activePanel) ? parsed.activePanel : "queue",
         style: normalizeStyle(parsed.style, legacyStyleAxis),
         projectLinks: parsed.projectLinks && typeof parsed.projectLinks === "object" ? parsed.projectLinks : {},
@@ -417,15 +425,7 @@
   }
 
   function styleColor(style = state.style) {
-    const cold = [62, 130, 201];
-    const warm = [212, 138, 52];
-    const paper = [242, 242, 238];
-    const across = clamp(style.x) / 100;
-    const base = across < 0.5
-      ? mixChannels(cold, paper, across * 2)
-      : mixChannels(paper, warm, (across - 0.5) * 2);
-    // Calm is mistier, so it keeps less of the pure edge colour than tension.
-    const [red, green, blue] = mixChannels(base, paper, 0.22 * (clamp(style.y) / 100));
+    const [red, green, blue] = cellChannels(style);
     return `rgb(${red} ${green} ${blue})`;
   }
 
@@ -433,18 +433,35 @@
   // the way down the neutral column. The swatch is instead a crop of the field
   // at this point - the same hue wash, the same contour density, the same mist
   // - which is what the icon's square viewfinder already promises.
-  function fieldCrop(style = state.style) {
+  // One place computes a cell's colour, mirroring the field's own background in
+  // styles/88-soundscape.css: cold -> neutral mid -> warm across x, then a
+  // lightness wash toward paper down y. If these drift apart, the swatch stops
+  // being a crop of the field.
+  const FIELD_COLD = Object.freeze([88, 168, 236]);
+  const FIELD_MID = Object.freeze([172, 170, 162]);
+  const FIELD_WARM = Object.freeze([244, 168, 62]);
+  const FIELD_PAPER = Object.freeze([242, 242, 238]);
+
+  function overPaper(channels, alpha) {
+    return channels.map((value) => Math.round(255 - alpha * (255 - value)));
+  }
+
+  function cellChannels(style = state.style) {
     const across = clamp(style.x) / 100;
     const down = clamp(style.y) / 100;
-    const edge = across < 0.5
-      ? { channels: [62, 130, 201], alpha: 0.46 * (1 - across / 0.5) }
-      : { channels: [212, 138, 52], alpha: 0.44 * ((across - 0.5) / 0.5) };
-    const [red, green, blue] = edge.channels.map((value) => Math.round(255 - edge.alpha * (255 - value)));
+    const mid = overPaper(FIELD_MID, 0.85);
+    const hue = across < 0.5
+      ? mixChannels(mid, overPaper(FIELD_COLD, 0.8), 1 - across / 0.5)
+      : mixChannels(mid, overPaper(FIELD_WARM, 0.8), (across - 0.5) / 0.5);
+    return mixChannels(hue, FIELD_PAPER, 0.85 * down);
+  }
+
+  function fieldCrop(style = state.style) {
+    const [red, green, blue] = cellChannels(style);
+    const down = clamp(style.y) / 100;
     const gap = (5 + 11 * down).toFixed(1);
     const contour = (0.34 - 0.14 * down).toFixed(3);
-    const mist = (0.34 * down).toFixed(3);
     return [
-      `linear-gradient(rgba(255, 255, 255, ${mist}), rgba(255, 255, 255, ${mist}))`,
       `repeating-linear-gradient(0deg, rgba(16, 17, 20, ${contour}) 0 1px, transparent 1px ${gap}px)`,
       `rgb(${red} ${green} ${blue})`,
     ].join(", ");
@@ -844,10 +861,23 @@
     if (code === "music_unavailable") {
       return translate("soundscape_system_unavailable", "Open the Music app, then try again.");
     }
+    if (code === "local_music_bridge_unavailable") {
+      return translate(
+        "soundscape_local_bridge_unavailable",
+        "Start AI System 6 on this Mac, then connect again."
+      );
+    }
     return translate("soundscape_system_failed", "Music on this Mac did not respond.");
   }
 
+  function systemMusicEndpoint() {
+    return window.AISystem6LocalLMStudio?.isPublicWebMode?.()
+      ? "http://127.0.0.1:4173/api/music/system"
+      : "/api/music/system";
+  }
+
   async function requestSystemMusic(action = "state", payload = {}) {
+    const publicWeb = window.AISystem6LocalLMStudio?.isPublicWebMode?.();
     const options = action === "state"
       ? { cache: "no-store" }
       : {
@@ -855,7 +885,22 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action, ...payload }),
       };
-    const response = await fetch("/api/music/system", options);
+    if (publicWeb) {
+      options.mode = "cors";
+      options.credentials = "omit";
+      if (!window.AISystem6LocalLMStudio?.isSafariPublicWebUnsupported?.()
+        && !window.AISystem6LocalLMStudio?.isSafariHttpLocalMode?.()) {
+        options.targetAddressSpace = "loopback";
+      }
+    }
+    let response;
+    try {
+      response = await fetch(systemMusicEndpoint(), options);
+    } catch {
+      const error = new Error("Local Music bridge unavailable.");
+      error.code = "local_music_bridge_unavailable";
+      throw error;
+    }
     const data = await response.json().catch(() => ({}));
     if (!response.ok || data.available === false) {
       const error = new Error(data.error || "Music command failed.");
@@ -888,6 +933,7 @@
     state.volume = clamp(snapshot.volume);
     state.muted = Boolean(snapshot.muted);
     state.shuffle = Boolean(snapshot.shuffle);
+    state.shuffleKind = normalizeShuffleKind(snapshot.shuffleMode);
     state.repeat = normalizeRepeat(snapshot.repeat);
     if (snapshot.track) {
       state.queue = [systemItem(snapshot.track)];
@@ -901,6 +947,12 @@
   }
 
   async function connectSystemMusic(options = {}) {
+    if (window.AISystem6LocalLMStudio?.isSafariPublicWebUnsupported?.()) {
+      const capabilities = await window.AISystem6PublicAccess?.getCapabilities?.();
+      const origin = capabilities?.public_access?.safari_http_local_origin || "";
+      window.location.assign(window.AISystem6LocalLMStudio.httpLocalEntryUrl(origin));
+      return false;
+    }
     if (!options.quiet) setStatus(translate("soundscape_system_connecting", "Connecting to Music on this Mac..."));
     try {
       const snapshot = await requestSystemMusic("state");
@@ -1115,7 +1167,23 @@
   }
 
   async function cycleRepeat() {
-    const next = REPEAT_MODES[(REPEAT_MODES.indexOf(state.repeat) + 1) % REPEAT_MODES.length];
+    await setRepeatMode(REPEAT_MODES[(REPEAT_MODES.indexOf(state.repeat) + 1) % REPEAT_MODES.length]);
+  }
+
+  // The deck key cycles; the menu names all three modes and picks one directly,
+  // the way a System 6 menu shows a closed set with the active row checked.
+  // The kind is Music's own setting. Choosing one never switches shuffle on:
+  // that is a separate row, exactly as Music separates the two groups.
+  async function setShuffleKind(kind) {
+    const next = normalizeShuffleKind(kind);
+    state.shuffleKind = next;
+    if (state.source === "system") await runSystemAction("set-shuffle-mode", { mode: next });
+    else persist();
+    setStatus(translate(`soundscape_shuffle_kind_${next}`, next));
+  }
+
+  async function setRepeatMode(mode) {
+    const next = normalizeRepeat(mode);
     state.repeat = next;
     if (state.source === "system") await runSystemAction("set-repeat", { mode: next });
     else {
@@ -1127,7 +1195,15 @@
   }
 
   async function toggleShuffle() {
-    const next = !state.shuffle;
+    await setShuffle(!state.shuffle);
+  }
+
+  // Music names shuffle as a closed set too, so the menu picks a state instead
+  // of flipping whatever it currently is. Music's shuffle *kind* (songs, album,
+  // grouping) is not exposed here: the bridge only reads a boolean, and naming
+  // a mode Soundscape cannot read would be a claim it can't back.
+  async function setShuffle(enabled) {
+    const next = Boolean(enabled);
     state.shuffle = next;
     if (state.source === "system") await runSystemAction("set-shuffle", { enabled: next });
     else {
@@ -1549,11 +1625,31 @@
       previous: () => moveTrack(-1),
       next: () => moveTrack(1),
       shuffle: toggleShuffle,
+      "shuffle-on": () => setShuffle(true),
+      "shuffle-off": () => setShuffle(false),
+      "shuffle-songs": () => setShuffleKind("songs"),
+      "shuffle-albums": () => setShuffleKind("albums"),
+      "shuffle-groupings": () => setShuffleKind("groupings"),
       repeat: cycleRepeat,
+      "repeat-off": () => setRepeatMode("off"),
+      "repeat-all": () => setRepeatMode("all"),
+      "repeat-one": () => setRepeatMode("one"),
       "reset-style": resetStyle,
       "link-project": linkSelectedToProject,
     };
     return commands[command]?.();
+  }
+
+  function currentRepeatMode() {
+    return state.repeat;
+  }
+
+  function currentShuffleMode() {
+    return state.shuffle ? "on" : "off";
+  }
+
+  function currentShuffleKind() {
+    return state.shuffleKind;
   }
 
   window.AISystem6Soundscape = {
@@ -1562,6 +1658,9 @@
     hasQueue,
     canSaveMoment,
     canLinkProject,
+    currentRepeatMode,
+    currentShuffleMode,
+    currentShuffleKind,
   };
   window.AISystem6SoundscapeLoaded = true;
 })();

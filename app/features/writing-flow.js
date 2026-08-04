@@ -262,29 +262,6 @@ function replaceOutlineSelection(nextMarkdown) {
   return project.outline;
 }
 
-function insertOutlineHkrrIntent() {
-  const project = ensureTeachTextSurfaceProject();
-  if (!project || !outlineContentEl) return;
-  const snippet = "HKRR intent: H + R\n说明：";
-  const value = outlineContentEl.value || "";
-  const cursor = outlineContentEl.selectionStart || 0;
-  const before = value.slice(0, cursor);
-  const after = value.slice(cursor);
-  const sectionStart = Math.max(0, before.lastIndexOf("\n## "));
-  const insertAt = sectionStart || /^##\s/m.test(value) ? cursor : value.length;
-  const prefix = value.slice(0, insertAt);
-  const suffix = value.slice(insertAt);
-  const separator = prefix.endsWith("\n") || !prefix ? "" : "\n";
-  outlineContentEl.value = `${prefix}${separator}${snippet}\n${suffix}`;
-  setProjectOutlineMarkdown(project, outlineContentEl.value);
-  savePipelineData();
-  refreshTeachTextSurfacePreview("outline");
-  outlineContentEl.focus();
-  const start = `${prefix}${separator}`.length + "HKRR intent: ".length;
-  outlineContentEl.setSelectionRange(start, start + "H + R".length);
-  setStatus(currentLanguage === "zh" ? "已插入 HKRR intent，可改成 H、K、R、Rhythm 或组合。" : "HKRR intent inserted. You can change it to H, K, R, Rhythm, or a combo.");
-}
-
 function nextOutlineSectionName(project) {
   const base = t("new_outline_section");
   const existing = new Set(getProjectOutlineSections(project).map((section) => section.toLowerCase()));
@@ -2477,12 +2454,6 @@ function addOutlineSection() {
   });
 }
 
-function saveOutline() {
-  savePipelineData();
-  renderPipeline();
-  setStatus(t("outline_saved"));
-}
-
 function selectedOutlineSectionTitle() {
   const project = getActiveProject();
   if (!project) return "";
@@ -2589,44 +2560,6 @@ function savePipelineData() {
   updateFlowGuideChecklist({ render: false });
 }
 
-function restoreQuestionsToOutline() {
-  const project = getActiveProject();
-  if (!project) {
-    setStatus(t("no_project_mounted"));
-    openWindow("projects");
-    return;
-  }
-
-  const questions = questionSheetBodyInput.value.trim() || project.questionSheet?.trim();
-  if (!questions) {
-    setStatus(t("question_sheet_hint"));
-    openWindow("questionSheet");
-    return;
-  }
-
-  project.questionSheet = questions;
-  const questionLines = questions
-    .split(/\n+/)
-    .map((line) => line.replace(/^\s*(?:[-*+]|\d+[.)])\s+/, "").trim())
-    .filter(Boolean)
-    .slice(0, 8);
-  const restored = [
-    questionSheetSectionHeading("originalQuestions"),
-    "",
-    ...questionLines.map((line) => `- ${line}`),
-  ].join("\n");
-  const existing = currentOutlineMarkdown(project)
-    .replace(/^##\s+(?:Original Questions|原始问题)\s*$[\s\S]*?(?=^##\s+|$)/m, "")
-    .trim();
-  setProjectOutlineMarkdown(project, [restored, existing].filter(Boolean).join("\n\n"));
-  project.flowState = { ...(project.flowState || {}), topic: true, outline: true };
-  project.updatedAt = new Date().toISOString();
-  saveDeskState();
-  renderPipeline();
-  openWindow("outline");
-  setStatus(t("questions_restored_to_outline"));
-}
-
 function getQuestionSheetTemplate() {
   return buildQuestionSheetTemplate();
 }
@@ -2650,51 +2583,6 @@ function insertQuestionTemplate() {
   openWindow("questionSheet");
   questionSheetBodyInput.focus();
   setStatus(t("question_template_inserted"));
-}
-
-function clearQuestionSheet() {
-  questionSheetBodyInput.value = "";
-  const project = getActiveProject();
-  if (project) {
-    project.questionSheet = "";
-    project.flowState = { ...(project.flowState || {}), topic: false };
-    project.updatedAt = new Date().toISOString();
-    saveDeskState();
-  }
-  refreshTeachTextSurfacePreview("questionSheet");
-  renderPipeline();
-  questionSheetBodyInput.focus();
-  setStatus(t("question_sheet_cleared"));
-}
-
-async function clearOutlineWithConfirmation() {
-  const result = await showSystemModal(t("clear_outline_confirm"), "confirm");
-  if (result !== "yes") return;
-
-  outlineContentEl.value = "";
-  const project = getActiveProject();
-  if (project) {
-    setProjectOutlineMarkdown(project, "");
-    project.outlineCritique = "";
-    project.manuscriptLinkedToOutline = false;
-    syncDraftsFromProjectOutline(project);
-    syncDraftDomFromProject(project);
-    project.flowState = {
-      ...(project.flowState || {}),
-      outline: false,
-      drafting: (project.drafts || []).some((draft) => (draft.body || draft.title || "").trim()),
-    };
-    project.updatedAt = new Date().toISOString();
-    saveDeskState();
-  }
-  if (outlineNotesEl) {
-    outlineNotesEl.classList.add("is-hidden");
-    outlineNotesEl.replaceChildren();
-  }
-  refreshTeachTextSurfacePreview("outline");
-  renderPipeline();
-  outlineContentEl.focus();
-  setStatus(t("outline_cleared"));
 }
 
 function updateFlowGuideChecklist({ render = true } = {}) {

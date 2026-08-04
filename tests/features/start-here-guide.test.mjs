@@ -1,71 +1,81 @@
-// Start Here is the first-run wizard. It shows the one thing blocking the user
-// — connect a model — and only then offers the ways in. The setup is a remote
-// control over the Control Panel's own inputs, so there is no second copy of the
-// model configuration to drift.
+// Start Here is a quiet system-owned welcome window. It points to the Apple and
+// Special menus, then gives the desktop back. AI setup remains optional and
+// delegates to the existing Control Panel.
 
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("start-here-guide");
-const appEntry = read("app.js");
+const actions = read("app/core/actions.js");
 const desktopRuntime = read("app/core/desktop-runtime.js");
-const cloudModel = read("app/features/cloud-model.js");
-const exportImport = read("app/features/export-import.js");
+const wireup = read("app/core/wireup.js");
+const chatMessages = read("app/core/chat-messages.js");
+const workspaceProfile = read("app/core/workspace-profile.js");
 const dictionary = read("app/data/system-dictionary.js");
 const guide = read("app/features/writer-guide.js");
 const html = read("index.html");
 const en = read("app/data/translations-en.js");
 const zh = read("app/data/translations-zh.js");
+const windowCss = read("styles/10-windows.css");
+const responsiveCss = read("styles/60-responsive.css");
+const boot = read("app/core/boot.js");
+const windowManager = read("app/core/window-manager.js");
+const workingSession = read("app/core/working-session.js");
 
-// State-aware: setup first, route second.
-test.assertIncludes(guide, "function guideModelReady()", "the guide knows whether a model can actually answer");
-test.assertNotIncludes(guide, "|| !!localName", "a remembered model name does not count as a usable API");
-test.assertIncludes(guide, "function renderGuideStep()", "the guide renders one step at a time");
-test.assertIncludes(html, 'id="guide-setup-step"', "there is a setup step");
-test.assertIncludes(html, 'id="guide-route-step"', "there is a route step");
+const guideMarkup = html.match(/<section class="window guide-window[\s\S]*?<section class="window rebuild-flow-window/)?.[0] || "";
 
-// The public web build blocks local-model routes, so only the cloud path exists.
-test.assertIncludes(guide, "function guideLocalModelsAllowed()", "the local path is hidden where local models are blocked");
+test.assertIncludes(desktopRuntime, "if (!guideSeen)", "first launch opens Start Here before normal startup items");
+test.assertMatches(desktopRuntime, /if \(!guideSeen\) \{[\s\S]*setWorkspaceProfile\(workspaceProfileDesktop, \{ persist: false \}\)[\s\S]*openWindow\("guide"\)/, "first launch places Start Here on the ordinary Desktop instead of Writing Studio");
+test.assertMatches(desktopRuntime, /if \(!guideSeen\) \{[\s\S]*getWindow\("assistant"\)[\s\S]*classList\.add\("is-hidden"\)[\s\S]*openWindow\("guide"\)/, "first launch does not leave ClioTalk open behind Start Here");
+test.assertMatches(boot, /const resumedWorkingSession = guideSeen[\s\S]*if \(!guideSeen\) \{[\s\S]*openStartupItems\(\)/, "unfinished OOBE skips stale working-session restoration");
+test.assertIncludes(guideMarkup, 'id="guide-welcome-step"', "OOBE has one welcome surface");
+test.assertMatches(guideMarkup, /<div class="title-bar">\s*<button class="close-box"[^>]*><\/button>\s*<h2 id="guide-title"[\s\S]*?<\/h2>\s*<\/div>/, "Start Here uses the ordinary close-title structure for a fixed system window");
+test.assertNotMatches(windowCss, /\.guide-window[^,{]*\.title-bar/, "Start Here does not redraw or override the shared title bar");
+test.assertNotIncludes(guideMarkup, "resize-box", "Start Here does not claim the Zoom control reserved for full application windows");
+test.assertMatches(guideMarkup, /class="close-box"[^>]*tabindex="-1"/, "the DA close box does not enter the two-action keyboard loop");
+test.assertIncludes(guideMarkup, 'data-i18n="guide_welcome_heading"', "the welcome states the time-travel premise");
+test.assertIncludes(guideMarkup, 'data-i18n="guide_welcome_body"', "the welcome leaves two lightweight menu clues");
+test.assertIncludes(guideMarkup, 'class="btn default" type="button" data-action="dismiss-guide" data-i18n="guide_start_exploring" aria-keyshortcuts="Enter"', "Start Exploring is the single Return-key default action");
+test.assertIncludes(guideMarkup, 'data-action="guide-open-model-settings"', "AI setup remains a secondary action");
+test.assertNotIncludes(guideMarkup, "guide_ai_later", "AI guidance is folded into the single short paragraph");
+test.assertNotIncludes(guideMarkup, "guide-cloud-key", "OOBE does not duplicate the cloud credential form");
+test.assertNotIncludes(guideMarkup, "data-guide-source", "OOBE does not ask the user to choose a model source");
+test.assertNotIncludes(guideMarkup, "guide-start-route", "OOBE does not teach the writing route");
+test.assertNotIncludes(guideMarkup, "play-writing-demo", "OOBE does not launch the live demo");
+test.assertNotIncludes(guideMarkup, "guide-open-cliotalk", "OOBE does not push the user into chat");
 
-// Two real tabs, not two buttons.
-test.assertIncludes(html, 'role="tablist"', "the model source is a tab list");
-test.assertIncludes(html, 'class="system-tab is-active"', "one tab starts selected");
-test.assertIncludes(guide, 'button.setAttribute("aria-selected"', "tab selection is exposed to assistive tech");
+test.assertMatches(guide, /async function dismissGuide\(\)[\s\S]*guideSeen = true;[\s\S]*await closeWindow\("guide"\);[\s\S]*saveDeskState\(\);/, "Start Exploring persists completion and closes OOBE");
+test.assertMatches(guide, /function openGuideModelSettings\(\)[\s\S]*guideSeen = true;[\s\S]*closeWindow\("guide"\);[\s\S]*openModelSettings\(\);[\s\S]*saveDeskState\(\);/, "Connect AI completes OOBE and delegates to model settings");
+test.assertMatches(guide, /function openModelSettings\(\)[\s\S]*openWindow\("control"\);[\s\S]*setControlTab\(\);/, "model setup reuses the existing Control Panel");
+test.assertMatches(guide, /function syncGuideWelcomeState[\s\S]*guide_welcome_body_connected[\s\S]*guide_ai_settings[\s\S]*defaultButton\.focus/, "reopened OOBE reflects model state and focuses its default action");
+test.assertMatches(guide, /function initializeGuideOobe[\s\S]*event\.key === "Enter"[\s\S]*dismissGuide\(\)[\s\S]*event\.key === "Escape"[\s\S]*dismissGuide\(\)[\s\S]*event\.key !== "Tab"/, "Return, Escape, and the two-button Tab loop have explicit OOBE behavior");
+test.assertMatches(wireup, /win\.dataset\.window === "guide"[\s\S]*await dismissGuide\(\)/, "the close box completes OOBE instead of leaving it pending");
+test.assertIncludes(chatMessages, 'typeof syncGuideWelcomeState === "function"', "model connection changes refresh an open Start Here window in place");
+test.assertIncludes(actions, '"guide-open-model-settings": openGuideModelSettings', "the welcome action is centrally registered");
+test.assertNotIncludes(guide, "localStorage", "OOBE does not introduce another persistence boundary");
+test.assertMatches(windowCss, /\.guide-window \{[\s\S]*left: 50%;[\s\S]*top: 50%;[\s\S]*transform: translate\(-50%, -50%\);/, "Start Here is centered on the desktop");
+test.assertIncludes(windowManager, 'const centeredSystemWindowNames = new Set(["about", "guide"])', "reopening Start Here discards stale saved coordinates and recenters it");
+test.assertMatches(workingSession, /applyWindowSessionFrame\(win, entry\.frame \|\| \{\}\);[\s\S]*isCenteredSystemWindow\(win\)[\s\S]*placeCenteredSystemWindow\(win\)/, "working-session restore cannot reapply stale coordinates after Start Here is centered");
+test.assertIncludes(workingSession, 'const workingSessionExcludedWindowNames = new Set(["about", "saveChat", "guide"])', "Start Here is a system OOBE, not recoverable work-session content");
+test.assertMatches(workingSession, /visibleWindows = windows[\s\S]*!workingSessionExcludedWindowNames\.has\(entry\.name\)/, "legacy snapshots cannot reopen Start Here after OOBE completion");
+test.assertMatches(responsiveCss, /\.guide-window\.is-mobile-system-page[\s\S]*inset: auto;[\s\S]*top: 50%;[\s\S]*transform: translate\(-50%, -50%\);/, "mobile keeps Start Here as a centered floating window so the desktop remains visible");
+test.assertMatches(responsiveCss, /\.guide-window\.is-mobile-system-page[\s\S]*border-radius: var\(--liquid-window-radius, 0\);/, "mobile restores Liquid Glass window corners while Classic remains square");
 
-// Remote control, not a second implementation.
-test.assertIncludes(guide, '#cloud-api-key', "the guide writes into the Control Panel's own key field");
-test.assertIncludes(guide, '#cloud-check-status', "the guide triggers the Control Panel's own check");
-test.assertIncludes(guide, "connectLocalLmStudio({ toggle: false })", "the local path awaits the Control Panel's own connect");
-
-// A verified cloud credential is a device reference, not a project artifact.
-test.assertIncludes(appEntry, "persistedConfig.apiKey", "legacy browser keys are detected for one-time migration");
-test.assertIncludes(appEntry, "localStorage.setItem(CLOUD_STORAGE_KEY", "cloud configuration is persisted on this device");
-test.assertIncludes(appEntry, "delete persistedConfig.apiKey", "browser persistence strips raw cloud keys");
-test.assertIncludes(appEntry, "sessionStorage.removeItem(CLOUD_SESSION_KEY)", "older session-only keys migrate to the local service");
-test.assertIncludes(cloudModel, 'cloudApiKeyEl.value = ""', "the Control Panel never restores a raw key into the page");
-test.assertNotIncludes(guide, "guideCloudKey.value = cloudConfig.apiKey", "first-use setup never copies a stored key back into the page");
-test.assertIncludes(cloudModel, "credentialId", "the Control Panel retains only a local-service credential reference");
-test.assertNotIncludes(exportImport, "CLOUD_STORAGE_KEY", "project export never reads the device credential store");
-test.assertIncludes(dictionary, "remembers that credential as a setting on this device", "System Help explains device-level credential persistence");
-test.assertIncludes(dictionary, "密钥绝不会进入项目硬盘文件", "Chinese System Help explains the credential boundary");
-
-// Never leave the user on a transient status. The Control Panel disables its
-// button while checking, so that edge is the authoritative completion signal.
-test.assertIncludes(guide, "checkButton.disabled === false", "the guide waits for the check to actually finish");
-test.assertIncludes(guide, "is-connected", "the guide reads the settled result, not a spinner");
-test.assertIncludes(desktopRuntime, "if (!guideSeen)", "first launch opens setup before the desktop");
-test.assertNotIncludes(desktopRuntime, "!guideSeen || !modelReady", "an explicit model-free choice is not overridden on the next launch");
-test.assertIncludes(guide, 't(ready ? "guide_later" : "guide_without_model")', "setup offers an explicit model-free exit");
-test.assertIncludes(en, 'guide_without_model: "Continue without AI"', "the English model-free exit is unambiguous");
-test.assertIncludes(zh, 'guide_without_model: "暂不使用 AI"', "the Chinese model-free exit is unambiguous");
-test.assertIncludes(html, 'id="cloud-model-indicator"', "the existing menu-bar model indicator remains the status surface");
-test.assertIncludes(cloudModel, 'cloudPopoverButton(\n          "open-model-settings"', "the disconnected indicator leads back to the existing model settings");
-for (const key of ["guide_setup_still_checking", "guide_setup_needs_cloud_model", "guide_setup_failed"]) {
+for (const key of ["guide_welcome_heading", "guide_welcome_body", "guide_welcome_body_connected", "guide_connect_ai", "guide_ai_settings", "guide_start_exploring"]) {
   test.assertIncludes(en, `${key}:`, `English copy exists for ${key}`);
   test.assertIncludes(zh, `${key}:`, `Chinese copy exists for ${key}`);
 }
+test.assertIncludes(en, "To keep several applications on the desktop or change the appearance, open Special.", "Special remains one quiet clue toward MultiFinder and appearance");
+test.assertIncludes(zh, "想让多个应用留在桌面上，或换一种外观，再打开「特别」菜单。AI 用到时再连接。", "Chinese OOBE uses the actual menu label and the approved compact copy");
+test.assertIncludes(dictionary, "Start Here leaves AI optional", "System Help matches the optional-AI first experience");
+test.assertIncludes(dictionary, "开始使用”不会强制连接 AI", "Chinese System Help matches the optional-AI first experience");
 
-// Two ways in once a model answers.
-test.assertIncludes(html, 'data-action="guide-start-route"', "one way in is the writing route");
-test.assertIncludes(html, 'data-action="guide-open-cliotalk"', "the other way in is ClioTalk");
+// OOBE is owned by the system, not Writing Studio. It remains reachable from
+// the Desktop while Writing Studio always opens its own default surface.
+test.assertNotMatches(workspaceProfile, /const studioWindowNames = new Set\(\[[^\]]*"guide"/, "Start Here is not a studio-only window");
+test.assertNotMatches(workspaceProfile, /const writingStudioOwnedWindowNames = new Set\(\[[^\]]*"guide"/, "Writing Studio does not own OOBE");
+test.assertNotIncludes(workspaceProfile, '"open-guide",', "Desktop profile does not block reopening OOBE");
+test.assertNotIncludes(workspaceProfile, '"guide-",', "OOBE actions are not classified as studio commands by prefix");
+test.assertIncludes(workspaceProfile, 'await openWindow("assistant")', "opening Writing Studio never re-enters OOBE");
+test.assertIncludes(html, '<button data-action="open-guide" data-i18n="start_here">', "Start Here stays available as a system menu item");
 
 test.finish();

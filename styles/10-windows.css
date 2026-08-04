@@ -1,7 +1,7 @@
 .window {
   background: var(--paper);
-  border: 2px solid var(--ink);
-  box-shadow: 2px 2px 0 var(--ink);
+  border: var(--window-border);
+  box-shadow: none;
   position: absolute;
   z-index: var(--z-local-control);
   display: flex;
@@ -45,8 +45,8 @@ body.quick-draft-focus .writing-spine-panel {
 .spine-toolbox-panel {
   min-width: 0;
   background: var(--paper);
-  border: 2px solid var(--ink);
-  box-shadow: 2px 2px 0 var(--ink);
+  border: var(--window-border);
+  box-shadow: var(--active-window-shadow);
   overflow: hidden;
 }
 
@@ -215,6 +215,15 @@ body.quick-draft-focus .writing-spine-panel {
   min-height: 0 !important;
 }
 
+/* WindowShade ends at the shared outer window frame. Once the content is
+   hidden, the title bar's pane separator and trailing margin would otherwise
+   draw a second seam above that frame. This is global window composition, not
+   a Start Here title-bar variant. */
+.window.is-collapsed > .title-bar {
+  margin-bottom: 0;
+  border-bottom: 0;
+}
+
 .window.is-collapsed .grow-box {
   display: none;
 }
@@ -289,7 +298,7 @@ body.quick-draft-focus .writing-spine-panel {
   top: 34px;
   right: 120px;
   width: min(410px, calc(100vw - 48px));
-  height: auto;
+  height: min(var(--control-panel-height), calc(100vh - 68px));
   max-height: min(var(--control-panel-max-height), calc(100vh - 68px));
 }
 
@@ -367,13 +376,14 @@ body.quick-draft-focus .writing-spine-panel {
   text-overflow: unset;
 }
 
+/* Start Here is an ordinary Macintosh window: the shared centred-placement
+   pass resolves its corner once, so it keeps the standard drag and WindowShade
+   behaviour. A standing translate(-50%, -50%) here would re-centre the window
+   on every height change, which is what rolled the shade to a new spot instead
+   of shading in place. */
 .guide-window {
-  position: fixed;
-  left: 50%;
-  top: 44px;
   width: min(430px, calc(100vw - 32px));
   max-height: calc(100vh - 48px);
-  transform: translateX(-50%);
   z-index: var(--z-window-pinned);
 }
 
@@ -604,10 +614,15 @@ body.quick-draft-focus .writing-spine-panel {
     var(--system-titlebar-control-slot)
     minmax(0, 1fr)
     var(--system-titlebar-control-slot);
+  /* The 40px controls are generous hit targets, not the row's painted height.
+     Constraining the implicit row keeps their 13px art on the same centerline
+     as the title instead of letting the hit target push both below the bars. */
+  grid-template-rows: var(--system-titlebar-title-height);
+  align-content: center;
   align-items: center;
   margin: var(--system-titlebar-margin-y) 0;
   padding: var(--system-titlebar-padding-y) var(--system-titlebar-padding-x);
-  border-bottom: 2px solid var(--ink);
+  border-bottom: var(--window-frame-track-border);
   background-color: var(--paper);
   background-image:
     linear-gradient(
@@ -628,7 +643,7 @@ body.quick-draft-focus .writing-spine-panel {
 .title-bar h2 {
   grid-column: 2;
   grid-row: 1;
-  align-self: flex-start;
+  align-self: center;
   justify-self: center;
   min-height: var(--system-titlebar-title-height);
   height: var(--system-titlebar-title-height);
@@ -637,7 +652,7 @@ body.quick-draft-focus .writing-spine-panel {
   max-width: min(100%, 52ch);
   background: var(--paper);
   font-family: var(--title-font);
-  font-size: var(--system-title-size);
+  font-size: var(--system-titlebar-font-size);
   font-weight: 700;
   line-height: var(--system-titlebar-title-height);
   text-align: center;
@@ -656,7 +671,7 @@ body.quick-draft-focus .writing-spine-panel {
 
 html:lang(zh-Hans) .title-bar h1,
 html:lang(zh-Hans) .title-bar h2 {
-  font-size: var(--system-title-size);
+  font-size: var(--system-titlebar-font-size);
   letter-spacing: 0;
 }
 
@@ -666,28 +681,28 @@ html:lang(zh-Hans) .title-bar h2 {
   height: var(--system-titlebar-control-size);
   display: block;
   box-sizing: border-box;
-  align-self: flex-start;
+  align-self: center;
   flex: none;
   margin: 0 var(--system-titlebar-control-margin-x);
   padding: 0;
   border: 0;
   background:
     linear-gradient(var(--system-titlebar-control-art-ink), var(--system-titlebar-control-art-ink))
-      var(--system-titlebar-control-art-offset-x) 0 /
+      var(--system-titlebar-control-art-offset-x) var(--system-titlebar-control-art-offset-y) /
       var(--system-titlebar-control-art-size) var(--system-titlebar-control-stroke) no-repeat,
     linear-gradient(var(--system-titlebar-control-art-ink), var(--system-titlebar-control-art-ink))
       var(--system-titlebar-control-art-offset-x)
-      calc(var(--system-titlebar-control-art-size) - var(--system-titlebar-control-stroke)) /
+      calc(var(--system-titlebar-control-art-offset-y) + var(--system-titlebar-control-art-size) - var(--system-titlebar-control-stroke)) /
       var(--system-titlebar-control-art-size) var(--system-titlebar-control-stroke) no-repeat,
     linear-gradient(var(--system-titlebar-control-art-ink), var(--system-titlebar-control-art-ink))
-      var(--system-titlebar-control-art-offset-x) 0 /
+      var(--system-titlebar-control-art-offset-x) var(--system-titlebar-control-art-offset-y) /
       var(--system-titlebar-control-stroke) var(--system-titlebar-control-art-size) no-repeat,
     linear-gradient(var(--system-titlebar-control-art-ink), var(--system-titlebar-control-art-ink))
-      calc(var(--system-titlebar-control-art-offset-x) + var(--system-titlebar-control-art-size) - var(--system-titlebar-control-stroke)) 0 /
+      calc(var(--system-titlebar-control-art-offset-x) + var(--system-titlebar-control-art-size) - var(--system-titlebar-control-stroke)) var(--system-titlebar-control-art-offset-y) /
       var(--system-titlebar-control-stroke) var(--system-titlebar-control-art-size) no-repeat,
     linear-gradient(var(--paper), var(--paper))
       calc(var(--system-titlebar-control-art-offset-x) - var(--system-titlebar-control-isolation))
-      calc(0px - var(--system-titlebar-control-isolation)) /
+      calc(var(--system-titlebar-control-art-offset-y) - var(--system-titlebar-control-isolation)) /
       calc(var(--system-titlebar-control-art-size) + 2 * var(--system-titlebar-control-isolation))
       calc(var(--system-titlebar-control-art-size) + 2 * var(--system-titlebar-control-isolation)) no-repeat;
   position: relative;
@@ -703,11 +718,13 @@ html:lang(zh-Hans) .title-bar h2 {
 .title-bar > .close-box {
   grid-column: 1;
   justify-self: start;
+  --system-titlebar-control-art-offset-x: var(--system-titlebar-close-art-offset-x);
 }
 
 .title-bar > .resize-box {
   grid-column: 3;
   justify-self: end;
+  --system-titlebar-control-art-offset-x: var(--system-titlebar-resize-art-offset-x);
 }
 
 .close-box::before,
@@ -715,7 +732,7 @@ html:lang(zh-Hans) .title-bar h2 {
   content: "";
   position: absolute;
   left: var(--system-titlebar-control-art-offset-x);
-  top: 0;
+  top: var(--system-titlebar-control-art-offset-y);
   width: var(--system-titlebar-control-art-size);
   height: var(--system-titlebar-control-art-size);
   opacity: 0;
@@ -773,9 +790,12 @@ html:lang(zh-Hans) .title-bar h2 {
   content: "";
   position: absolute;
   left: var(--system-titlebar-control-art-offset-x);
-  top: 0;
-  width: 8px;
-  height: 8px;
+  top: var(--system-titlebar-control-art-offset-y);
+  /* Native System 6 zoom ratio is 7:11. This pseudo-element draws only the
+     inner square's right/bottom strokes; 6px content + its 1px stroke closes
+     at pixel 7 while the outer frame supplies the shared top/left edges. */
+  width: 6px;
+  height: 6px;
   border-right: var(--system-titlebar-control-mark-stroke) solid var(--system-titlebar-control-art-ink);
   border-bottom: var(--system-titlebar-control-mark-stroke) solid var(--system-titlebar-control-art-ink);
 }
@@ -818,8 +838,8 @@ html:lang(zh-Hans) .title-bar h2 {
   height: var(--window-frame-lane);
   padding: 0;
   border: 0;
-  border-left: 2px solid var(--ink);
-  border-top: 2px solid var(--ink);
+  border-left: var(--window-frame-track-border);
+  border-top: var(--window-frame-track-border);
   /* System 6 grow icon: a small hollow square laid over a larger one's
      top-left corner. Layers run front to back — the small square's four
      hairlines, its opaque fill (which hides the big square underneath),
@@ -996,38 +1016,45 @@ html:lang(zh-Hans) .title-bar h2 {
   border-left: var(--window-frame-track-border);
 }
 
-/* The triangle is two half-boxes, each split on its own diagonal — the same
-   gradient-drawn bitmap idiom the title bar controls use. */
+/* Native arrows are stepped 1-bit pixels, not antialiased diagonals. */
 .window-frame-arrow.is-up {
   background-image:
-    linear-gradient(to bottom right, transparent 50%, var(--window-frame-arrow-ink) 50%),
-    linear-gradient(to bottom left, transparent 50%, var(--window-frame-arrow-ink) 50%);
-  background-size: 4.5px 5px;
-  background-position: left 3px top 5px, left 7.5px top 5px;
+    linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)),
+    linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)),
+    linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)),
+    linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink));
+  background-size: 1px 1px, 3px 1px, 5px 1px, 7px 1px;
+  background-position: left 7px top 5px, left 6px top 6px, left 5px top 7px, left 4px top 8px;
 }
 
 .window-frame-arrow.is-down {
   background-image:
-    linear-gradient(to top right, transparent 50%, var(--window-frame-arrow-ink) 50%),
-    linear-gradient(to top left, transparent 50%, var(--window-frame-arrow-ink) 50%);
-  background-size: 4.5px 5px;
-  background-position: left 3px top 6px, left 7.5px top 6px;
+    linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)),
+    linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)),
+    linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)),
+    linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink));
+  background-size: 7px 1px, 5px 1px, 3px 1px, 1px 1px;
+  background-position: left 4px top 5px, left 5px top 6px, left 6px top 7px, left 7px top 8px;
 }
 
 .window-frame-arrow.is-left {
   background-image:
-    linear-gradient(to bottom right, transparent 50%, var(--window-frame-arrow-ink) 50%),
-    linear-gradient(to top right, transparent 50%, var(--window-frame-arrow-ink) 50%);
-  background-size: 5px 4.5px;
-  background-position: left 5px top 3px, left 5px top 7.5px;
+    linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)),
+    linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)),
+    linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)),
+    linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink));
+  background-size: 1px 1px, 1px 3px, 1px 5px, 1px 7px;
+  background-position: left 5px top 7px, left 6px top 6px, left 7px top 5px, left 8px top 4px;
 }
 
 .window-frame-arrow.is-right {
   background-image:
-    linear-gradient(to bottom left, transparent 50%, var(--window-frame-arrow-ink) 50%),
-    linear-gradient(to top left, transparent 50%, var(--window-frame-arrow-ink) 50%);
-  background-size: 5px 4.5px;
-  background-position: left 6px top 3px, left 6px top 7.5px;
+    linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)),
+    linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)),
+    linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)),
+    linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink));
+  background-size: 1px 7px, 1px 5px, 1px 3px, 1px 1px;
+  background-position: left 5px top 4px, left 6px top 5px, left 7px top 6px, left 8px top 7px;
 }
 
 /* Pressed, a System 6 arrow box inverts: black box, white triangle. */
@@ -1097,7 +1124,11 @@ html:lang(zh-Hans) .title-bar h2 {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 4px 8px;
+  /* Chicago's visible ink sits below the center of its line box. Keep the
+     status row's total height while centering the text optically. */
+  padding:
+    calc(4px - var(--details-bar-optical-rise)) 8px
+    calc(4px + var(--details-bar-optical-rise));
   border-bottom: 1px solid var(--ink);
   background: var(--paper);
   flex-shrink: 0;
@@ -1305,7 +1336,7 @@ html:lang(zh-Hans) .title-bar h2 {
   align-items: center;
   position: absolute;
   left: 50%;
-  top: 50%;
+  top: calc(50% - var(--details-bar-optical-rise));
   transform: translate(-50%, -50%);
   gap: 2px;
   border: 1px solid var(--ink);
@@ -1484,7 +1515,7 @@ html:lang(zh-Hans) .title-bar h2 {
   border-bottom: 1px solid var(--shade);
   color: var(--clio-muted-copy);
   font-family: var(--clio-control-font);
-  font-size: 11px;
+  font-size: var(--system-caption-size);
 }
 
 .assistant-details-bar #clio-chat-file-link {
@@ -1940,9 +1971,10 @@ html:lang(zh-Hans) .title-bar h2 {
   margin-bottom: 10px;
   color: var(--ink);
   font-family: var(--clio-title-font);
-  font-size: clamp(24px, 4vw, 30px);
-  font-weight: 500;
-  letter-spacing: -0.025em;
+  font-size: var(--clio-title-size);
+  font-weight: var(--clio-title-weight);
+  line-height: var(--clio-title-leading);
+  letter-spacing: var(--clio-title-tracking);
 }
 
 .clio-welcome-actions {
@@ -2267,7 +2299,7 @@ html:lang(zh-Hans) .title-bar h2 {
 .message-translation {
   margin-top: 10px;
   padding: 8px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   background: #eeeeee;
 }
 
@@ -2290,7 +2322,7 @@ html:lang(zh-Hans) .title-bar h2 {
 .message-content h3 {
   margin: 8px 0 5px;
   padding: 2px 6px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   background: var(--paper);
   font-size: 13px;
   line-height: 1.25;
@@ -2312,7 +2344,7 @@ html:lang(zh-Hans) .title-bar h2 {
   margin: 8px 0;
   padding: 8px;
   overflow: auto;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   background: var(--paper);
   box-shadow: inset 2px 2px 0 var(--shade);
 }
@@ -2440,7 +2472,7 @@ html:lang(zh-Hans) .title-bar h2 {
 
 .progress-track {
   height: 18px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   overflow: hidden;
   background: var(--paper);
 }
@@ -2994,7 +3026,7 @@ input[type="text"],
 input[type="password"],
 input[type="number"] {
   width: 100%;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   border-radius: 0;
   background: var(--paper);
   color: var(--ink);
@@ -3004,7 +3036,7 @@ input[type="number"] {
 
 select {
   width: 100%;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   border-radius: var(--system-select-radius);
   background: var(--paper);
   color: var(--ink);
@@ -3059,7 +3091,7 @@ select:focus {
   min-width: 72px;
   min-height: var(--system-button-min-height);
   padding: var(--system-button-padding-y) var(--system-button-padding-x);
-  border: 2px solid var(--btn-border-color);
+  border: var(--system-control-line) solid var(--btn-border-color);
   border-radius: var(--btn-radius);
   background: var(--btn-bg);
   color: var(--btn-fg);
@@ -3150,11 +3182,15 @@ select:focus {
   color: var(--shade-dark);
 }
 
+/* The default button is emphasised by the outer ring, not by a fatter border:
+   one line of its own, one line of paper, two lines of ink. All three follow
+   --system-control-line so the emphasis scales with every other ink rule
+   instead of standing out as the one heavy control on the surface. */
 .btn.default {
-  border-width: 3px;
+  border-width: var(--system-control-line);
   box-shadow:
-    0 0 0 1px var(--paper),
-    0 0 0 3px var(--ink),
+    0 0 0 var(--system-control-line) var(--paper),
+    0 0 0 calc(var(--system-control-line) * 3) var(--ink),
     inset -1px -1px 0 var(--shade-dark);
 }
 
@@ -3221,12 +3257,12 @@ select:focus {
 .control-panel .settings::-webkit-scrollbar-track,
 .chooser-panel .settings::-webkit-scrollbar-track {
   background: var(--paper);
-  border-left: 2px solid var(--ink);
+  border-left: var(--system-control-line) solid var(--ink);
 }
 
 .control-panel .settings::-webkit-scrollbar-thumb,
 .chooser-panel .settings::-webkit-scrollbar-thumb {
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   border-radius: 0;
   background: var(--paper);
   box-shadow: inset 1px 1px 0 var(--shade);
@@ -3250,7 +3286,7 @@ select:focus {
   grid-template-columns: minmax(0, 1fr);
   gap: 8px;
   padding: 10px 12px 12px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   background: var(--paper);
 }
 
@@ -3385,7 +3421,7 @@ select:focus {
   width: 100%;
   min-height: 19px;
   padding: 0 24px 0 6px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   border-radius: var(--system-select-radius);
   background: var(--paper);
   color: var(--ink);
@@ -3450,7 +3486,7 @@ select:focus {
   width: max-content;
   max-width: min(420px, calc(100vw - 32px));
   padding: 3px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   background: var(--paper);
   box-shadow: 2px 2px 0 var(--paper), 4px 4px 0 var(--ink);
   transition:
@@ -3765,7 +3801,7 @@ body.is-cloud-active .cloud-state-panel {
 
 .control-footer {
   padding: 5px 7px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   background: #eeeeee;
 }
 
@@ -3994,7 +4030,7 @@ body.is-cloud-active .cloud-state-panel {
 .find-path-summary {
   margin-top: 4px;
   padding: 10px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   background: var(--paper);
   font-family: var(--text-font);
   line-height: 1.5;

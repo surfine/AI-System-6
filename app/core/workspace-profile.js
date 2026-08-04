@@ -13,7 +13,6 @@ let workspaceProfile = workspaceProfileWriting;
 let workspaceProfileWasRestored = false;
 
 const studioWindowNames = new Set([
-  "guide",
   "questionSheet",
   "outline",
   "sectionDrafts",
@@ -28,7 +27,6 @@ const studioWindowNames = new Set([
 ]);
 
 const writingStudioOwnedWindowNames = new Set([
-  "guide",
   "quickDraft",
   "questionSheet",
   "outline",
@@ -41,9 +39,6 @@ const writingStudioOwnedWindowNames = new Set([
 ]);
 
 const studioActionNames = new Set([
-  "open-guide",
-  "guide-start-route",
-  "play-writing-demo",
   "open-question-sheet",
   "open-outline",
   "open-section-drafts",
@@ -67,7 +62,7 @@ const studioActionNames = new Set([
   "run-claim-check-section",
 ]);
 
-const studioActionPrefixes = ["ai-", "guide-", "rebuild-", "review-"];
+const studioActionPrefixes = ["ai-", "rebuild-", "review-"];
 
 function normalizeWorkspaceProfile(value) {
   return value === workspaceProfileDesktop ? workspaceProfileDesktop : workspaceProfileWriting;
@@ -184,7 +179,7 @@ async function activateWorkspaceProfile(value, options = {}) {
   }
   refreshWorkspaceProfileSurfaces();
   if (options.openDefault !== false) {
-    await openWindow(nextProfile === workspaceProfileDesktop ? "disk" : (guideSeen ? "assistant" : "guide"));
+    await openWindow(nextProfile === workspaceProfileDesktop ? "disk" : "assistant");
   }
   if (options.persist !== false && typeof saveDeskState === "function") await saveDeskState();
   if (typeof scheduleWorkingSessionSave === "function") scheduleWorkingSessionSave();
@@ -193,9 +188,10 @@ async function activateWorkspaceProfile(value, options = {}) {
 
 async function openWritingStudio() {
   await activateWorkspaceProfile(workspaceProfileWriting, { openDefault: false });
-  // ClioTalk is what the studio opens onto, the same window startup opens.
-  // Project Hard Disk is a place the writer goes, not a greeting.
-  await openWindow(guideSeen ? "assistant" : "guide");
+  // OOBE is system-owned and startup opens it when needed. Entering Writing
+  // Studio itself always lands in ClioTalk; Project Hard Disk is a place the
+  // writer goes, not a greeting.
+  await openWindow("assistant");
 }
 
 async function exitWritingStudio() {

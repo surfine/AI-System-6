@@ -10,8 +10,10 @@ const windows = read("app/core/window-manager.js");
 const actions = read("app/core/actions.js");
 const responsive = read("styles/60-responsive.css");
 const foundation = read("styles/00-foundation.css");
+const apps = read("styles/50-apps.css");
 const liquid = read("styles/70-liquid-glass.css");
 const native = read("native/Sources/AISystemMacApp/main.swift");
+const nativeMenuBar = read("native/Sources/AISystemDesktop/MenuBarView.swift");
 const menuContext = { document: {}, activeAppId: "finder" };
 vm.runInNewContext(`${menus}\nglobalThis.__menuSets = applicationMenuSets;`, menuContext);
 const menuSets = menuContext.__menuSets;
@@ -61,6 +63,25 @@ test.assertIncludes(responsive, "--menu-item-fg: var(--menu-item-active-fg)", "o
 test.assertIncludes(foundation, "left: 100%", "desktop third-level menus fly out to the right");
 test.assertIncludes(liquid, "--menu-shortcut-color: currentColor", "Liquid Glass shortcut labels follow the hovered menu-item foreground");
 test.assertIncludes(liquid, "--menu-item-active-fg: #ffffff", "Liquid Glass hovered menu items use a clear light foreground");
+test.assertIncludes(foundation, "--menu-bar-border: 1px solid var(--ink)", "Classic menu chrome uses a one-pixel bottom rule");
+test.assertIncludes(foundation, "--menu-panel-shadow: 1px 1px 0 var(--ink)", "Classic menus use a restrained one-pixel hard shadow");
+test.assert(
+  menuBarRules.some((rule) => rule.includes("border-bottom: var(--menu-bar-border)"))
+    && menuBarRules.every((rule) => !rule.includes("border-bottom: 2px")),
+  "Late menu-bar layers preserve the shared one-pixel rule"
+);
+test.assertNotIncludes(html, "apple-menu-happy-mac", "The Apple menu no longer embeds the startup Happy Mac component");
+test.assertMatches(foundation, /\.apple::before,[\s\S]*\.apple::after \{[\s\S]*content: "";[\s\S]*position: absolute;/, "The Apple menu restores the original compact-computer painter");
+test.assertMatches(foundation, /\.apple::before \{[\s\S]*width: 2px;[\s\S]*height: 2px;[\s\S]*background: currentColor;[\s\S]*box-shadow:/, "The restored menu glyph keeps its clean 16-pixel currentColor grid");
+test.assertMatches(apps, /\.menu-bar \.sys-icon \{[\s\S]*color: inherit;[\s\S]*background: transparent;/, "Menu-bar system icons inherit the button colour so every open menu reverses its glyph");
+test.assertMatches(liquid, /body\.use-liquid-glass \.menu-bar \.sys-icon[\s\S]*color: inherit;[\s\S]*filter: none;/, "Liquid menu glyphs stay monochrome and clean while inheriting active colour");
+test.assertMatches(apps, /\.menu-bar \.sys-icon \.sys-icon-liquid \.icon-fill,[\s\S]*fill: none;[\s\S]*stroke: currentColor;/, "Liquid menu fills and accents reverse through the shared menu-icon rule");
+test.assertIncludes(foundation, ".multifinder-menu.is-open > .multifinder-button .multifinder-icon", "MultiFinder's glyph reverses even when the menu stays open without focus");
+test.assertNotIncludes(foundation, "--apple-menu-happy-mac-scale", "The menu no longer carries Happy Mac scaling state");
+test.assertIncludes(liquid, "--menu-panel-shadow: var(--liquid-menu-panel-shadow)", "Liquid Glass owns a softer menu-panel shadow twin");
+test.assertNotIncludes(responsive, "box-shadow: var(--system-shadow)", "Late responsive menu rules do not restore the heavier window shadow");
+test.assertIncludes(nativeMenuBar, "private static let appleGlyphDots", "The native menu restores the original compact-computer dot grid");
+test.assertNotIncludes(nativeMenuBar, "drawLiquidAppleGlyph", "The native Liquid menu no longer substitutes a separate Happy Mac painter");
 test.assertIncludes(actions, 'activeAppId === "writingStudio" ? "teachText"', "shortcut dispatch normalizes Writing Studio ownership");
 test.assertIncludes(actions, "function getApplicationCommandRegistry()", "menu handlers, availability and shortcuts resolve through one command registry");
 test.assertIncludes(native, "nativeMenus(for app: MultiFinderApp", "native rebuilds menus from the same application ownership model");

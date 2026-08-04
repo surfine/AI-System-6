@@ -6,7 +6,6 @@ const {
   flowConfig,
   longTaskControlSelectors,
   memoryCardPairs,
-  nativeProductDecision,
   projectConfig,
   storageConfig,
   windowManagementConfig,
@@ -518,7 +517,7 @@ function withStaticFinderMetadata(items, location) {
 
 function getSystemFolderItems() {
   return withStaticFinderMetadata([
-    { name: "AI 提示词", iconId: "folder", icon: "folder-icon", action: "open-system-ai-prompts", kind: t("folder_kind") },
+    { name: t("ai_prompts_folder"), iconId: "folder", icon: "folder-icon", action: "open-system-folder-path:ai-prompts", kind: t("folder_kind") },
     { name: "System", iconId: "systemFile", icon: "doc-icon", action: "open-system-file-system", kind: t("system_component"), canOpen: false },
     { name: "Finder", iconId: "finderApp", icon: "app-icon", action: "open-system-file-finder", kind: t("application"), canOpen: false },
     { name: "MultiFinder", iconId: "multiFinderApp", icon: "app-icon", action: "open-system-file-multifinder", kind: t("application"), canOpen: false },
@@ -530,52 +529,102 @@ function getSystemFolderItems() {
   ], t("system_folder"));
 }
 
+// The System Folder is a real directory tree, not a flat list behind a hidden
+// mode flag. Every subfolder declares its own parent and folder name so the
+// shared Finder path bar, the Back control, and Get Info all read the same
+// current directory the user actually walked into.
+const systemFolderPathDefinitions = new Map([
+  ["ai-prompts", {
+    // The only System Folder directory with a localized name; the folders below
+    // it are English product names in both languages.
+    labelKey: "ai_prompts_folder",
+    parentPath: "",
+    folders: [
+      { path: "writing-tools", name: "Writing Tools" },
+      { path: "writing-route", name: "Writing Route" },
+      { path: "source-apps", name: "Source Apps" },
+      { path: "other-apps", name: "Other Apps" },
+      { path: "cliotalk", name: "ClioTalk" },
+      { path: "boundaries", name: "System Boundaries" },
+    ],
+  }],
+  ["writing-tools", { label: "Writing Tools", parentPath: "ai-prompts", promptCategory: "Writing Tools" }],
+  ["writing-route", { label: "Writing Route", parentPath: "ai-prompts", promptCategory: "Writing Route" }],
+  ["source-apps", { label: "Source Apps", parentPath: "ai-prompts", promptCategory: "Source Apps" }],
+  ["other-apps", { label: "Other Apps", parentPath: "ai-prompts", promptCategory: "Other Apps" }],
+  ["cliotalk", { label: "ClioTalk", parentPath: "ai-prompts", promptCategory: "ClioTalk" }],
+  ["boundaries", { label: "System Boundaries", parentPath: "ai-prompts", promptCategory: "System Boundaries" }],
+]);
+
+function getSystemFolderPathDefinition(path = systemFinderPath) {
+  return systemFolderPathDefinitions.get(path) || null;
+}
+
+function systemFolderPathLabel(path) {
+  const definition = systemFolderPathDefinitions.get(path);
+  if (!definition) return "";
+  return definition.labelKey ? t(definition.labelKey) : definition.label;
+}
+
+function systemFolderPathTrail(path = systemFinderPath) {
+  const trail = [];
+  const seen = new Set();
+  let current = path;
+  while (current && systemFolderPathDefinitions.has(current) && !seen.has(current)) {
+    seen.add(current);
+    trail.unshift({ path: current, label: systemFolderPathLabel(current) });
+    current = systemFolderPathDefinitions.get(current).parentPath;
+  }
+  return trail;
+}
+
+function systemFolderCurrentLabel(path = systemFinderPath) {
+  return systemFolderPathLabel(path) || t("system_folder");
+}
+
+function systemFolderLocationPath(path = systemFinderPath) {
+  return ["System Folder", ...systemFolderPathTrail(path).map((entry) => entry.label)].join("/");
+}
+
+// One entry point for every System Folder directory change, so the contents,
+// the window title, and the shared path bar can never disagree about where the
+// user is.
+function navigateSystemFolderPath(path = "") {
+  systemFinderPath = systemFolderPathDefinitions.has(path) ? path : "";
+  selectedStaticFinderAction = "";
+  renderStaticFinderWindow("finder");
+  if (typeof renderFinderNavigationBar === "function") renderFinderNavigationBar("finder");
+}
+
 function getSystemPromptFinderItems() {
-  if (systemFinderPath === "ai-prompts") {
-    return withStaticFinderMetadata([
-      { name: "Writing Tools", iconId: "folder", icon: "folder-icon", action: "open-system-writing-tools-prompts", kind: t("folder_kind") },
-      { name: "Writing Route", iconId: "folder", icon: "folder-icon", action: "open-system-writing-route-prompts", kind: t("folder_kind") },
-      { name: "Source Apps", iconId: "folder", icon: "folder-icon", action: "open-system-source-app-prompts", kind: t("folder_kind") },
-      { name: "Other Apps", iconId: "folder", icon: "folder-icon", action: "open-system-other-app-prompts", kind: t("folder_kind") },
-      { name: "ClioTalk", iconId: "folder", icon: "folder-icon", action: "open-system-cliotalk-prompts", kind: t("folder_kind") },
-      { name: "System Boundaries", iconId: "folder", icon: "folder-icon", action: "open-system-boundary-prompts", kind: t("folder_kind") },
-    ], "System Folder/AI 提示词");
+  const definition = getSystemFolderPathDefinition();
+  if (!definition) return getSystemFolderItems();
+  const location = systemFolderLocationPath();
+
+  if (definition.folders) {
+    return withStaticFinderMetadata(definition.folders.map((folder) => ({
+      name: folder.name,
+      iconId: "folder",
+      icon: "folder-icon",
+      action: `open-system-folder-path:${folder.path}`,
+      kind: t("folder_kind"),
+    })), location);
   }
-  if (systemFinderPath === "writing-tools") {
-    return withStaticFinderMetadata((window.AISystem6PromptFiles || []).map((prompt) => ({
-      name: prompt.name,
-      iconId: "document",
-      icon: "doc-icon",
-      action: `open-system-prompt-file:${prompt.id}`,
-      kind: t("system_component"),
-    })).filter((item) => item.action.startsWith("open-system-prompt-file:writing-tools.")), "System Folder/AI 提示词/Writing Tools");
-  }
-  if (systemFinderPath === "writing-route") {
-    return withStaticFinderMetadata((window.AISystem6PromptFiles || []).filter((prompt) => prompt.category === "Writing Route").map((prompt) => ({
-      name: prompt.name, iconId: "document", icon: "doc-icon", action: `open-system-prompt-file:${prompt.id}`,
-      kind: t("system_component"),
-    })), "System Folder/AI 提示词/Writing Route");
-  }
-  if (systemFinderPath === "source-apps") {
-    return withStaticFinderMetadata((window.AISystem6PromptFiles || []).filter((prompt) => prompt.category === "Source Apps").map((prompt) => ({
-      name: prompt.name, iconId: "document", icon: "doc-icon", action: `open-system-prompt-file:${prompt.id}`,
-      kind: t("system_component"),
-    })), "System Folder/AI 提示词/Source Apps");
-  }
-  if (systemFinderPath === "other-apps") {
-    return withStaticFinderMetadata((window.AISystem6PromptFiles || []).filter((prompt) => prompt.category === "Other Apps").map((prompt) => ({
-      name: prompt.name, iconId: "document", icon: "doc-icon", action: `open-system-prompt-file:${prompt.id}`,
-      kind: prompt.editable === "project" ? t("system_component") : (currentLanguage === "zh" ? "系统只读" : "System read-only"),
-    })), "System Folder/AI 提示词/Other Apps");
-  }
-  if (systemFinderPath === "cliotalk" || systemFinderPath === "boundaries") {
-    const category = systemFinderPath === "cliotalk" ? "ClioTalk" : "System Boundaries";
-    return withStaticFinderMetadata((window.AISystem6PromptFiles || []).filter((prompt) => prompt.category === category).map((prompt) => ({
-      name: prompt.name, iconId: "document", icon: "doc-icon", action: `open-system-prompt-file:${prompt.id}`,
-      kind: prompt.editable === "project" ? t("system_component") : (currentLanguage === "zh" ? "系统只读" : "System read-only"),
-    })), `System Folder/AI 提示词/${category}`);
-  }
-  return getSystemFolderItems();
+
+  return withStaticFinderMetadata(
+    (window.AISystem6PromptFiles || [])
+      .filter((prompt) => prompt.category === definition.promptCategory)
+      .map((prompt) => ({
+        name: prompt.name,
+        iconId: "document",
+        icon: "doc-icon",
+        action: `open-system-prompt-file:${prompt.id}`,
+        kind: prompt.editable === "project"
+          ? t("system_component")
+          : (currentLanguage === "zh" ? "系统只读" : "System read-only"),
+      })),
+    location
+  );
 }
 
 function getHelpFolderItems() {
@@ -594,12 +643,13 @@ function getApplicationsItems() {
   return withStaticFinderMetadata([
     { name: t("assistant_label"), iconId: "assistant", icon: "app-icon", action: "open-assistant", type: "application", kind: t("application") },
     { name: t("writing_studio"), iconId: "writingStudio", icon: "writing-studio-icon", action: "open-writing-studio", type: "application", kind: t("application"), workspaceProfiles: [workspaceProfileDesktop] },
-    { name: t("quick_draft_label"), iconId: "teachText", icon: "teachtext-icon", action: "open-quick-draft", type: "application", kind: t("application"), workspaceCapability: workspaceCapabilityStudio },
+    { name: t("quick_draft_label"), iconId: "quickDraft", icon: "teachtext-icon", action: "open-quick-draft", type: "application", kind: t("application"), workspaceCapability: workspaceCapabilityStudio },
     { name: t("teachtext_label"), iconId: "teachText", icon: "teachtext-icon", action: "open-teachtext", type: "application", kind: t("application") },
-    { name: t("reader_label"), iconId: "reader", icon: "reader-desk-icon", iconBase: "icon", action: "open-reader", type: "application", kind: t("application") },
+    { name: t("reader_label"), iconId: "reader", icon: "reader-desk-icon", action: "open-reader", type: "application", kind: t("application") },
     { name: t("time_machine_label"), iconId: "timeMachine", icon: "tools-icon", action: "open-time-machine", type: "application", kind: t("application") },
     { name: t("searcher_label"), iconId: "searcher", icon: "tools-icon", action: "open-find-path", type: "application", kind: t("application") },
     { name: t("docmap_label"), iconId: "docMap", icon: "folder-icon", action: "open-docmap", type: "application", kind: t("application") },
+    { name: t("scrapbook_label"), iconId: "scrapbook", icon: "folder-icon", action: "open-scrapbook", type: "application", kind: t("application") },
     { name: t("bureaucracy_meme_label"), iconId: "bureaucracyMeme", icon: "tools-icon", action: "open-bureaucracy-meme", type: "application", kind: t("application") },
     { name: t("endfield_terminal_label"), iconId: "endfieldTerminal", icon: "tools-icon", action: "open-endfield-terminal", type: "application", kind: t("application") },
     { name: t("clio_stage_label"), iconId: "clioStage", icon: "tools-icon", action: "open-clio-stage", type: "application", kind: t("application") },
@@ -608,6 +658,7 @@ function getApplicationsItems() {
     { name: t("cmf_studio_label"), iconId: "cmfStudio", icon: "tools-icon", action: "open-cmf-studio", type: "application", kind: t("application") },
     { name: t("soundscape_label"), iconId: "soundscape", icon: "tools-icon", action: "open-soundscape", type: "application", kind: t("application") },
     { name: t("rebuild_article"), iconId: "rebuildArticle", icon: "tools-icon", action: "open-rebuild-flow", type: "application", kind: t("application"), workspaceCapability: workspaceCapabilityStudio },
+    { name: t("guide_play_demo"), iconId: "writingDemo", icon: "teachtext-icon", action: "play-writing-demo", type: "application", kind: t("application"), workspaceCapability: workspaceCapabilityStudio },
   ], t("applications"));
 }
 
@@ -863,6 +914,12 @@ function renderStaticFinderWindow(winName) {
   const selected = getSelectedStaticFinderItem(winName);
   const count = win.querySelector(".details-bar > span:first-child");
   if (count) count.textContent = t("items_count", items.length);
+  if (winName === "finder") {
+    // Browsing into a folder renames the window it reuses, the way a System 6
+    // Finder window does; the root name comes back from the translation table.
+    const title = win.querySelector(":scope > .title-bar h2");
+    if (title) title.textContent = systemFolderCurrentLabel();
+  }
 
   updateFinderViewButtons(win, mode);
 
@@ -1049,6 +1106,7 @@ let claimCitationContextItems = [];
 let currentReaderPage = null;
 let currentReaderClipCount = 0;
 let guideSeen = false;
+let multiFinderSwitcherHintSeen = false;
 let calculatorExpression = "0";
 let writingBellMode = "work";
 let writingBellDurations = { work: 25 * 60, break: 5 * 60 };
@@ -1084,6 +1142,7 @@ let localModelState = {
 
 let cloudConfig = null;
 let cloudRuntimeApiKey = "";
+let publicSharedCloudAvailable = false;
 const CLOUD_STORAGE_KEY = "ai-system6-cloud-config";
 const CLOUD_SESSION_KEY = "ai-system6-cloud-api-key";
 
@@ -1092,8 +1151,34 @@ function isPublicCloudCredentialMode() {
 }
 
 function cloudCredentialReady(config = cloudConfig) {
-  return !!(config?.credentialId || cloudRuntimeApiKey);
+  return !!(config?.credentialId || cloudRuntimeApiKey || (
+    isPublicCloudCredentialMode()
+    && publicSharedCloudAvailable
+    && config?.provider
+  ));
 }
+
+function cloudCredentialMode(config = cloudConfig) {
+  if (isPublicCloudCredentialMode()) {
+    if (cloudRuntimeApiKey) return "byok";
+    if (publicSharedCloudAvailable && config?.provider) return "shared";
+  }
+  return config?.credentialId ? "stored" : "none";
+}
+
+function setPublicSharedCloudAvailable(value = false) {
+  publicSharedCloudAvailable = value === true;
+  if (!publicSharedCloudAvailable && cloudConfig?.credentialMode === "shared") {
+    cloudConfig.active = false;
+  }
+  if (typeof window.syncCloudCredentialUi === "function") window.syncCloudCredentialUi();
+  if (typeof applyCloudActiveState === "function") applyCloudActiveState();
+}
+
+window.addEventListener?.("ai-system6:capabilities", (event) => {
+  const capabilities = /** @type {CustomEvent} */ (event).detail;
+  setPublicSharedCloudAvailable(capabilities?.features?.cloud_shared === true);
+});
 
 function setCloudRuntimeApiKey(value = "") {
   cloudRuntimeApiKey = String(value || "").trim();
@@ -1141,7 +1226,12 @@ function loadCloudConfig() {
 
   setCloudRuntimeApiKey(sessionApiKey || legacyApiKey);
   if (!persistedConfig && cloudRuntimeApiKey) persistedConfig = {};
-  if (persistedConfig && persistedConfig.active && !cloudCredentialReady(persistedConfig)) {
+  if (
+    persistedConfig
+    && persistedConfig.active
+    && !cloudCredentialReady(persistedConfig)
+    && persistedConfig.credentialMode !== "shared"
+  ) {
     persistedConfig.active = false;
   }
 
@@ -1394,6 +1484,9 @@ function applyLanguage() {
     el.dataset.dropLabel = t(el.dataset.i18nDropLabel);
   });
 
+  if (typeof syncBalloonHelpLanguage === "function") syncBalloonHelpLanguage();
+  if (typeof syncGuideWelcomeState === "function") syncGuideWelcomeState();
+
   document.querySelectorAll("[data-status-key]").forEach((el) => {
     el.textContent = t(el.dataset.statusKey);
   });
@@ -1419,6 +1512,7 @@ function applyLanguage() {
   refreshMessageTranslationButtons();
   renderLocalModelState();
   if (typeof refreshCloudUsageDisplay === "function") refreshCloudUsageDisplay();
+  if (typeof window.syncCloudCredentialUi === "function") window.syncCloudCredentialUi();
   renderWritingBell();
   renderAlarmClock();
   if (typeof refreshBureaucracyMemeLanguage === "function") refreshBureaucracyMemeLanguage();
@@ -1448,6 +1542,9 @@ function applyLanguage() {
 
   updateProjectLabels();
   renderProjectCd();
+  // Re-render after the [data-i18n] sweep: it resets the Finder window title to
+  // the root folder name, which is wrong while the user is inside a subfolder.
+  finderContainerWindowNames.forEach((name) => renderStaticFinderWindow(name));
   if (typeof renderAllFinderNavigationBars === "function") renderAllFinderNavigationBars();
   updateFilePickerLabels();
   updateReviewDeskStats?.();
@@ -1457,6 +1554,10 @@ function applyLanguage() {
 
 function syncPromptPlaceholder() {
   if (!promptInput) return;
+  if (typeof clioTalkModelReady === "function" && !clioTalkModelReady()) {
+    promptInput.placeholder = t("clio_model_required_placeholder");
+    return;
+  }
   if (typeof sideAskEnabled !== "undefined" && sideAskEnabled && typeof isMultiFinderMode === "function" && !isMultiFinderMode()) {
     promptInput.placeholder = t(
       sideAskAnchorAppId === "quickDraft"

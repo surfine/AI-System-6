@@ -96,6 +96,50 @@ test.assert(!localRequest.isLoopbackHostname("192.168.1.9"), "LAN addresses are 
 
 const defaultPolicy = localRequest.configuredLocalRequestPolicy(4173);
 test.assert(
+  defaultPolicy.browserBridgeOrigins.has("https://system6.aaronlau.me")
+    && defaultPolicy.browserBridgeOrigins.has("http://local.system6.aaronlau.me")
+    && !defaultPolicy.browserBridgeOrigins.has("https://attacker.example"),
+  "the Mac Music bridge has a narrow browser-origin allowlist"
+);
+const bridgeHeaders = {};
+let bridgePreflightStatus = 0;
+let bridgePreflightEnded = false;
+const bridgePreflightHandled = localRequest.handleBrowserBridgePreflight({
+  method: "OPTIONS",
+  url: "/api/music/system",
+  headers: {
+    host: "127.0.0.1:4173",
+    origin: "https://system6.aaronlau.me",
+  },
+}, {
+  setHeader(name, value) { bridgeHeaders[String(name).toLowerCase()] = value; },
+  writeHead(status) { bridgePreflightStatus = status; },
+  end() { bridgePreflightEnded = true; },
+}, defaultPolicy);
+test.assert(
+  bridgePreflightHandled
+    && bridgePreflightStatus === 204
+    && bridgePreflightEnded
+    && bridgeHeaders["access-control-allow-origin"] === "https://system6.aaronlau.me"
+    && bridgeHeaders["access-control-allow-private-network"] === "true",
+  "the trusted Web origin receives a loopback Music preflight response"
+);
+test.assert(
+  !localRequest.handleBrowserBridgePreflight({
+    method: "OPTIONS",
+    url: "/api/music/system",
+    headers: {
+      host: "127.0.0.1:4173",
+      origin: "https://attacker.example",
+    },
+  }, {
+    setHeader() {},
+    writeHead() {},
+    end() {},
+  }, defaultPolicy),
+  "an unlisted site receives no Music bridge preflight"
+);
+test.assert(
   localRequest.requestOriginIsTrusted({
     method: "POST",
     headers: {
@@ -244,6 +288,45 @@ if (port) {
       body: "{}",
     });
     test.assert(missingJsonType.status === 415, "modifying APIs require application/json");
+
+    const musicPreflight = await request(port, "/api/music/system", {
+      method: "OPTIONS",
+      headers: {
+        Origin: "https://system6.aaronlau.me",
+        "Access-Control-Request-Method": "POST",
+        "Access-Control-Request-Private-Network": "true",
+      },
+    });
+    test.assert(
+      musicPreflight.status === 204
+        && musicPreflight.headers["access-control-allow-origin"] === "https://system6.aaronlau.me"
+        && musicPreflight.headers["access-control-allow-private-network"] === "true",
+      "the trusted VPS site can preflight the Mac Music bridge"
+    );
+
+    const trustedMusicCommand = await request(port, "/api/music/system", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: "https://system6.aaronlau.me",
+      },
+      body: JSON.stringify({ action: "not-allowlisted" }),
+    });
+    test.assert(
+      trustedMusicCommand.status === 400
+        && trustedMusicCommand.headers["access-control-allow-origin"] === "https://system6.aaronlau.me",
+      "the trusted site reaches only the Music route's closed command vocabulary"
+    );
+
+    const attackerMusicCommand = await request(port, "/api/music/system", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: "https://attacker.example",
+      },
+      body: JSON.stringify({ action: "not-allowlisted" }),
+    });
+    test.assert(attackerMusicCommand.status === 403, "other sites cannot control Music through the local bridge");
   } finally {
     await stopServer(child);
   }

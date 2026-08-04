@@ -46,7 +46,10 @@ test.assertIncludes(source, "const localAudio = new Audio()", "local audio uses 
 test.assertIncludes(source, "URL.createObjectURL(file)", "local files play without being copied");
 test.assertIncludes(source, "URL.revokeObjectURL(url)", "temporary local playback URLs are released");
 test.assertIncludes(source, "const sessionLocalUrls = new Map()", "local files can be restored during the current session without being persisted");
-test.assertIncludes(source, 'fetch("/api/music/system"', "Soundscape talks only to the local Music bridge");
+test.assertIncludes(source, '"http://127.0.0.1:4173/api/music/system"', "the public Web app sends Music commands back to the host Mac");
+test.assertIncludes(source, 'options.targetAddressSpace = "loopback"', "Chromium declares the local Music bridge address space");
+test.assertIncludes(source, "isSafariPublicWebUnsupported", "Safari reuses the dedicated HTTP local entry");
+test.assertIncludes(source, 'error.code = "local_music_bridge_unavailable"', "an unavailable Mac bridge has a specific low-friction explanation");
 test.assertIncludes(source, 'requestSystemMusic("state")', "the player reads real Music app state");
 test.assertIncludes(source, 'runSystemAction("play-pause")', "the main transport controls the Music app");
 test.assertIncludes(source, 'runSystemAction("set-repeat"', "repeat mode is written to the active playback engine");
@@ -80,6 +83,28 @@ for (const id of ["soundscape-shuffle", "soundscape-repeat", "soundscape-mute", 
   test.assertIncludes(html, `id="${id}"`, `${id} is a visible player control`);
 }
 test.assertIncludes(source, 'const REPEAT_MODES = Object.freeze(["off", "all", "one"])', "repeat supports off, all, and one");
+// Repeat is a closed set, so the menu names all three modes and marks the
+// active one instead of hiding them behind a cycling row.
+test.assertIncludes(menus, 'submenu("soundscape_repeat", [', "the menu opens repeat as a named closed set");
+for (const mode of ["off", "all", "one"]) {
+  test.assertIncludes(menus, `repeatMode: "${mode}"`, `the ${mode} repeat mode is its own menu row`);
+  test.assertIncludes(source, `"repeat-${mode}": () => setRepeatMode("${mode}")`, `the ${mode} row sets the mode directly`);
+}
+test.assertIncludes(windowManager, "btn.dataset.repeatMode", "the active repeat row carries the System 6 check mark");
+test.assertIncludes(source, "currentRepeatMode,", "the menu reads the real mode from the loaded feature");
+
+// Shuffle is two closed sets, the way Music itself splits them: the switch and
+// the kind. Both are mirrored from the real player, never assumed.
+test.assertIncludes(menus, 'submenu("soundscape_shuffle", [', "shuffle is a named closed set too");
+for (const kind of ["songs", "albums", "groupings"]) {
+  test.assertIncludes(menus, `shuffleKind: "${kind}"`, `shuffle by ${kind} is its own menu row`);
+}
+test.assertIncludes(systemMusicRoute, '"set-shuffle-mode",', "the shuffle kind is an allowlisted bridge command");
+test.assertIncludes(systemMusicRoute, "shuffleMode: cleanText(readValue(() => music.shuffleMode()", "the shuffle kind is read from Music, not assumed");
+test.assertNotIncludes(systemMusicRoute, 'music.shuffleMode = "songs";', "turning shuffle on no longer rewrites the user's chosen kind");
+test.assertIncludes(source, "state.shuffleKind = normalizeShuffleKind(snapshot.shuffleMode)", "every poll mirrors Music's real shuffle kind");
+test.assertIncludes(windowManager, "btn.dataset.shuffleKind", "the active shuffle kind carries the check mark");
+test.assertIncludes(zh, 'soundscape_repeat_mode_off: "关闭"', "the menu row reads as an option, not as a status sentence");
 test.assertIncludes(source, 'if (state.repeat === "one")', "single-track repeat actually restarts local audio");
 test.assertIncludes(source, "function randomQueueIndex()", "local shuffle chooses a real queue item");
 test.assertIncludes(source, "function removeQueueIndex(index)", "local queue rows can be removed");

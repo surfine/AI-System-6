@@ -928,36 +928,6 @@ ${currentDraft || "No draft yet. Give planning suggestions for starting this sec
   applySectionDraftMarkdown(content, { append: true, ai: true, statusKey: "section_draft_suggested" });
 }
 
-async function insertDraftToTeachText() {
-  await ensureWritingFlowModule();
-  savePipelineData();
-  const project = getActiveProject();
-  const text = draftBodyInput.value.trim();
-  if (!project || !text) return;
-  const inserted = syncProjectOutlineToTeachText(project, { open: false, markModified: true });
-  if (!inserted) return;
-  await openWindow("teachText");
-  requestAnimationFrame(() => {
-    if (teachTextPipelineLabel()) {
-      showTeachTextPreview({ announce: false, focus: false, preserveScroll: false });
-      restoreLinkedManuscriptScroll();
-    } else {
-      teachTextBodyInput.focus();
-    }
-  });
-
-  if (selectedDraftIndex >= 0 && project?.drafts?.[selectedDraftIndex]) {
-    const insertedAt = new Date().toISOString();
-    project.drafts[selectedDraftIndex].insertedAt = insertedAt;
-    project.drafts[selectedDraftIndex].updatedAt = insertedAt;
-    project.drafts[selectedDraftIndex].insertedFileId = activeTextFileId || null;
-    project.drafts[selectedDraftIndex].insertedFileName = getTeachTextDocumentName();
-    saveDeskState();
-    renderPipeline();
-  }
-  setStatus(t("draft_inserted_status"));
-}
-
 function openCitationContextItem(contextItem) {
   if (!contextItem) {
     setStatus(t("citation_not_found"));

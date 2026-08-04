@@ -23,6 +23,7 @@ const ALLOWED_ACTIONS = new Set([
   "set-volume",
   "toggle-mute",
   "set-shuffle",
+  "set-shuffle-mode",
   "set-repeat",
   "search-library",
   "play-library-track",
@@ -61,6 +62,7 @@ function playerSnapshot(music) {
     playerState: cleanText(readValue(() => music.playerState(), "stopped")),
     repeat: cleanText(readValue(() => music.songRepeat(), "off")),
     shuffle: Boolean(readValue(() => music.shuffleEnabled(), false)),
+    shuffleMode: cleanText(readValue(() => music.shuffleMode(), "songs")),
     volume: Number(readValue(() => music.soundVolume(), 50)) || 0,
     muted: Boolean(readValue(() => music.mute(), false)),
     position: Number(readValue(() => music.playerPosition(), 0)) || 0,
@@ -102,8 +104,12 @@ function run(argv) {
   } else if (action === "toggle-mute") {
     music.mute = !Boolean(music.mute());
   } else if (action === "set-shuffle") {
+    // Only the switch. Forcing shuffleMode = "songs" here used to silently
+    // rewrite whatever kind the user had chosen inside Music.
     music.shuffleEnabled = Boolean(payload.enabled);
-    music.shuffleMode = "songs";
+  } else if (action === "set-shuffle-mode") {
+    const shuffleMode = ["songs", "albums", "groupings"].includes(payload.mode) ? payload.mode : "songs";
+    music.shuffleMode = shuffleMode;
   } else if (action === "set-repeat") {
     const repeatMode = ["off", "all", "one"].includes(payload.mode) ? payload.mode : "off";
     music.songRepeat = repeatMode;

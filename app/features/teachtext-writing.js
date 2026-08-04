@@ -8,16 +8,6 @@ function clearChatToTrash() {
   return startNewClioTalkConversation();
 }
 
-function saveLastReply() {
-  if (!lastAssistantText) {
-    openWindow("scrapbook");
-    scrapBodyInput.value = t("no_reply_saved");
-    return;
-  }
-
-  createScrap(null, lastAssistantText);
-}
-
 function clipLastReplyToScrapbook() {
   if (!lastAssistantText) {
     setStatus(t("no_reply_clip"));

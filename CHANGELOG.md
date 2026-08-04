@@ -1,8 +1,8 @@
 # AI System 6 Changelog
 
 This changelog is a product-level narrative, not a commit-by-commit ledger. It
-is reconstructed from the git history that starts on 2026-05-18 and from the
-current working tree as of build `20260613.1`.
+is reconstructed from the git history that starts on 2026-05-18. Entries are
+grouped around product changes rather than every internal commit.
 
 The repository only has two historical tags, `pre-refactor-baseline` and
 `src-pilot`, so entries are grouped by dated product phases rather than
@@ -86,7 +86,7 @@ quiet Macintosh-inspired desktop for source-based writing.
 - Writing Flow and TeachText received layout and focus refinements so Question
   Sheet, Outline, Section Drafts, Manuscript, and Review Desk feel connected.
 
-## Current Development Build - 1.0.10 / 2026-06-13
+## Trust And Local Model Foundations - 1.0.10 / 2026-06-13
 
 AI System 6 is now a local-first writing desktop with a much stronger trust
 layer around source use, model voice, and creative output.
@@ -143,6 +143,24 @@ than an accidental victim of the retro work.
   treatment into Liquid Glass.
 - The CSS work stayed inside the source files and continued to pass the CSS
   budget, floppy budget, smoke, and macOS app bundle gates.
+
+## Public Beta 1.0.12 - 2026-08-04
+
+This release makes the desktop quieter and more coherent while expanding the
+parts that benefit from visible, direct manipulation.
+
+- Finder navigation, menus, icons, dialogs, shared window controls, and
+  responsive layouts were tightened across Classic and Liquid Glass.
+- Soundscape became a fuller music workspace, with local audio, clearer queue
+  controls, repeat and shuffle modes, project links, saved moments, and a
+  synesthetic color view.
+- ClioTalk and the writing route shed redundant commands. Files, sources,
+  context, skills, checkpoints, and run receipts remain visible without asking
+  every surface to expose every possible action.
+- Public source publishing, website deployment, and the Apple silicon Mac beta
+  now share stronger version, privacy, asset, and release checks.
+
+Version `1.0.12`, build `20260804.2`.
 
 ## What Changed Most In One Month
 

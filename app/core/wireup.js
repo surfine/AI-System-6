@@ -2,6 +2,8 @@
 
 function wireAppEvents() {
   installDesktopScrollLock();
+  initializeBalloonHelp();
+  initializeGuideOobe();
 
   findPathResultsEl.addEventListener("click", (event) => {
     const translateButton = event.target.closest("[data-find-path-translate]");
@@ -749,7 +751,7 @@ function wireAppEvents() {
   endpointInput?.addEventListener("input", invalidateLocalConnection);
   localApiTokenInput?.addEventListener("input", invalidateLocalConnection);
   localApiTokenInput?.addEventListener("input", saveLocalApiTokenForSession);
-  connectLocalModelButton?.addEventListener("click", () => connectLocalLmStudio({ toggle: true }));
+  connectLocalModelButton?.addEventListener("click", connectOrLaunchLocalModel);
 
   contextLengthInput?.addEventListener("input", () => {
     rememberContextLengthForCurrentModel(true);
@@ -779,7 +781,6 @@ function wireAppEvents() {
   findModelsButton?.addEventListener("click", findLmStudioModels);
 
   loadModelButton.addEventListener("click", loadSelectedLmStudioModel);
-
   localProviderEl?.addEventListener("change", () => {
     const p = localProviderEl.value;
     const localHttp = `http:${String.fromCharCode(47, 47)}127.0.0.1:`;
@@ -788,8 +789,8 @@ function wireAppEvents() {
     renderLocalConnectionStatus("local_connection_waiting");
     loadModelButton.disabled = p !== "lm-studio";
     loadModelStatusEl.textContent = t(p === "lm-studio" ? "load_model_hint" : p === "ollama" ? "ollama_auto_load_hint" : "custom_auto_load_hint");
+    syncLocalProviderUi();
     scheduleSettingsSave();
-    findLmStudioModels();
   });
 
   rememberInput.addEventListener("change", saveDeskState);
@@ -828,12 +829,6 @@ function wireAppEvents() {
       return;
     }
   
-    const guideSourceTarget = event.target.closest("[data-guide-source]");
-    if (guideSourceTarget) {
-      selectGuideModelSource(guideSourceTarget.dataset.guideSource);
-      return;
-    }
-
     const projectSwitchTarget = event.target.closest("[data-switch-project]");
     if (projectSwitchTarget) {
       const projectId = projectSwitchTarget.dataset.switchProject;
@@ -969,6 +964,10 @@ function wireAppEvents() {
     win.addEventListener("pointerdown", () => focusWindow(win));
   
     win.querySelector(".close-box")?.addEventListener("click", async () => {
+      if (win.dataset.window === "guide") {
+        await dismissGuide();
+        return;
+      }
       await closeWindow(win.dataset.window);
     });
   
@@ -984,6 +983,7 @@ function wireAppEvents() {
   });
 
   installGrowBoxes();
+  syncWindowBalloonHelpTargets();
   installWindowFrameBars();
   wireControlTabs();
   document.querySelectorAll(".title-bar").forEach((bar) => {
@@ -993,6 +993,8 @@ function wireAppEvents() {
         toggleWritingToolsShade();
         return;
       }
+      // WindowShade is a later-Mac convenience kept as an enhancement. It is
+      // deliberately separate from System 6's right-side Zoom box.
       const win = bar.closest(".window");
       if (win) toggleCollapsed(win);
     });
@@ -1002,6 +1004,9 @@ function wireAppEvents() {
       const win = bar.closest(".window");
       if (["about", "saveChat"].includes(win?.dataset.window)) return;
       if (!win) return;
+      // Portrait is a presentation system: mobile roles own window placement
+      // and the phone screen has no room for free title-bar dragging.
+      if (isPortraitDocumentFlow()) return;
       const compactViewport = window.matchMedia("(max-width: 860px)").matches;
       const allowCompactDrag = typeof isDeskAccessoryPlacementWindow === "function"
         ? isDeskAccessoryPlacementWindow(win)
@@ -1012,6 +1017,12 @@ function wireAppEvents() {
       const rect = win.getBoundingClientRect();
       const offsetX = event.clientX - rect.left;
       const offsetY = event.clientY - rect.top;
+      // Drag math is viewport-based, but an absolutely positioned window is
+      // measured from its offset parent (the desktop, which starts below the
+      // menu bar). Resolve the offset once so a click or release never
+      // re-anchors the window by the desktop's position.
+      const base = win.offsetParent?.getBoundingClientRect() || { left: 0, top: 0 };
+      let didMove = false;
   
       bar.setPointerCapture(event.pointerId);
 
@@ -1025,8 +1036,8 @@ function wireAppEvents() {
       let pendingTop = rect.top;
 
       function applyWindowPosition(left, top) {
-        win.style.left = `${left}px`;
-        win.style.top = `${top}px`;
+        win.style.left = `${Math.round(left - base.left)}px`;
+        win.style.top = `${Math.round(top - base.top)}px`;
         win.style.right = "auto";
         win.style.transform = "none";
       }
@@ -1036,6 +1047,10 @@ function wireAppEvents() {
         const maxTop = window.innerHeight - 50;
         const left = Math.min(Math.max(0, moveEvent.clientX - offsetX), maxLeft);
         const top = Math.min(Math.max(0, moveEvent.clientY - offsetY), maxTop);
+        if (Math.abs(moveEvent.clientX - event.clientX) > 1
+          || Math.abs(moveEvent.clientY - event.clientY) > 1) {
+          didMove = true;
+        }
 
         pendingLeft = left;
         pendingTop = top;
@@ -1050,6 +1065,12 @@ function wireAppEvents() {
         bar.removeEventListener("pointermove", moveWindow);
         bar.removeEventListener("pointerup", stopMove);
         bar.removeEventListener("pointercancel", stopMove);
+        // A click that never moved is not a drag: leave the window exactly
+        // where it is and keep it system-positioned.
+        if (!didMove) {
+          if (outline) outline.remove();
+          return;
+        }
         // A drag that emitted no move event still lands where it was released.
         if (stopEvent?.type === "pointerup" && typeof stopEvent.clientX === "number") {
           moveWindow(stopEvent);

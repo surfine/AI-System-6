@@ -57,11 +57,21 @@ async function boot() {
     refreshImporterStatus();
     initDragAndDrop();
 
-    const resumedWorkingSession = !writerMode && await startupTaskWithTimeout(restoreWorkingSession(), "restoreWorkingSession", 3500);
-    if (writerMode) {
+    // An unfinished OOBE owns first launch. A stale working-session snapshot
+    // must not reopen applications behind the welcome window.
+    const resumedWorkingSession = guideSeen
+      && !writerMode
+      && await startupTaskWithTimeout(restoreWorkingSession(), "restoreWorkingSession", 3500);
+    if (!guideSeen) {
+      openStartupItems();
+    } else if (writerMode) {
       await enterWriterMode();
     } else if (!resumedWorkingSession) {
       openStartupItems();
+    }
+    if (window.AISystem6LocalLMStudio?.isSafariHttpLocalMode?.()) {
+      openWindow("control");
+      setControlTab("local");
     }
 
     updateMenuState();
@@ -69,6 +79,7 @@ async function boot() {
     installWorkingSessionAutosave();
     await runBootSequence();
     document.body.dataset.appReady = "ready";
+    if (typeof revealMultiFinderSwitcherHint === "function") revealMultiFinderSwitcherHint();
     setInterval(updateClock, 1000);
     startLocalModelMonitor();
   } catch (error) {

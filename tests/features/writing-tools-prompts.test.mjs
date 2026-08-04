@@ -57,7 +57,7 @@ test.assertIncludes(projectDisk, "return [...folders, ...files, ...references];"
 test.assertNotIncludes(projectDisk, "getProjectSystemFinderItems", "Project Finder does not maintain a second display-only prompt tree");
 test.assertIncludes(exportImport, "files: chatFiles.filter((file) => file.projectId === projectId)", "Prompt files and receipts are included in project export");
 test.assertIncludes(exportImport, "chatFiles.unshift(...imported.files)", "Prompt files and receipts survive project import");
-test.assertIncludes(app, "(window.AISystem6PromptFiles || []).map", "Finder lists the generated prompt records instead of a display-only copy");
+test.assertMatches(app, /\(window\.AISystem6PromptFiles \|\| \[\]\)\s*\.filter\(\(prompt\) => prompt\.category === definition\.promptCategory\)/, "Finder lists the generated prompt records instead of a display-only copy");
 test.assertIncludes(app, "open-system-prompt-file:${prompt.id}", "Each Finder prompt item carries its stable prompt ID into the open action");
 remainingModes.forEach((mode) => {
   test.assert(exists(`app/content/ai-prompts/writing-tools/${mode}.md`), `${mode} has its own system prompt Markdown file`);

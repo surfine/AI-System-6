@@ -13,6 +13,7 @@ const manifest = read("scripts/runtime-manifest.mjs");
 
 test.assertIncludes(workingSession, 'const workingSessionStorageKey = "workingSession:v1"', "stores resume snapshots under a versioned Working Session key");
 test.assertIncludes(workingSession, "function registerWorkingSessionAdapter(adapter)", "uses an adapter registry instead of one-off feature patches");
+test.assertIncludes(workingSession, 'workingSessionExcludedWindowNames = new Set(["about", "saveChat", "guide"])', "system welcome and modal windows are excluded from resumable work");
 [
   "windows",
   "selection",
@@ -63,5 +64,11 @@ test.assertIncludes(workingSession, "editor: captureTextControlWorkingSession(re
 test.assertMatches(workingSession, /if \(draftSectionSelectEl && state\.draftSection\)[\s\S]*restoreTextControlWorkingSession\(draftBodyInput/, "Section Drafts restores its chapter before its caret and selection");
 test.assertMatches(workingSession, /if \(reviewSectionSelectEl && state\.section\)[\s\S]*selectStyleCheckSection\(index\)[\s\S]*selectClaimCheckSection\(index\)/, "Review Desk restores the selected chapter and both review projections");
 test.assertIncludes(workingSession, "activeWindowName: activeWin?.dataset.window", "the same snapshot preserves the foreground route window");
+test.assertIncludes(workingSession, 'shadeWidth: inlineStyleValue(win, "--window-shade-width")', "captures a shaded window's horizontal size");
+test.assertMatches(
+  workingSession,
+  /const shadeWidth = entry\.shadeWidth[\s\S]*entry\.frame\?\.width[\s\S]*getBoundingClientRect\(\)\.width[\s\S]*setInlineStyleValue\(win, "--window-shade-width", entry\.collapsed \? shadeWidth : ""\)/,
+  "restores WindowShade width and repairs snapshots created before that field existed"
+);
 
 test.finish();

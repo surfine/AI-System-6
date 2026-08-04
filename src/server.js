@@ -28,6 +28,7 @@ const { runWithPublicGuard } = require("./server/security/public-session.js");
 const {
   applySecurityHeaders,
   configuredLocalRequestPolicy,
+  handleBrowserBridgePreflight,
   runWithLocalRequestGuard,
 } = require("./server/security/local-request.js");
 
@@ -46,6 +47,10 @@ const server = http.createServer(async (req, res) => {
     res.setHeader("Cache-Control", "no-store");
   }
   try {
+    if (
+      deploymentProfile !== "public"
+      && handleBrowserBridgePreflight(req, res, localRequestPolicy)
+    ) return;
     const handler = resolveRoute(req);
     if (handler) {
       if (deploymentProfile === "public") {

@@ -1,14 +1,24 @@
-// Browser-side LM Studio 0.4.x client.
+// Browser-side client for local LM Studio and Ollama servers.
 // Public Web builds must talk to the visitor's loopback server directly;
 // they must never fall back to the VPS-local proxy routes.
 
 window.AISystem6LocalLMStudio = (() => {
   const DEFAULT_BASE_URL = "http://127.0.0.1:1234";
+  const DEFAULT_OLLAMA_BASE_URL = "http://127.0.0.1:11434";
   const API_VERSION = "v1";
   const REQUEST_TIMEOUT_MS = 10000;
   const INFERENCE_TIMEOUT_MS = 180000;
   let connected = false;
   let lastModels = [];
+
+  function currentProvider() {
+    const value = document.getElementById("local-provider")?.value || "lm-studio";
+    return value === "ollama" ? "ollama" : "lm-studio";
+  }
+
+  function defaultBaseUrl(provider = currentProvider()) {
+    return provider === "ollama" ? DEFAULT_OLLAMA_BASE_URL : DEFAULT_BASE_URL;
+  }
 
   function normalizeBaseUrl(value = "") {
     const raw = String(value || DEFAULT_BASE_URL).trim().replace(/\/+$/, "");
@@ -29,11 +39,13 @@ window.AISystem6LocalLMStudio = (() => {
   }
 
   function currentConfig() {
-    const endpoint = document.getElementById("endpoint")?.value || DEFAULT_BASE_URL;
+    const provider = currentProvider();
+    const endpoint = document.getElementById("endpoint")?.value || defaultBaseUrl(provider);
     const token = document.getElementById("local-api-token")?.value?.trim() || "";
     return {
       baseUrl: normalizeBaseUrl(endpoint),
-      token,
+      provider,
+      token: provider === "lm-studio" ? token : "",
     };
   }
 
@@ -41,6 +53,47 @@ window.AISystem6LocalLMStudio = (() => {
     const hostname = String(window.location?.hostname || "").toLowerCase();
     return ["http:", "https:"].includes(window.location?.protocol)
       && !["127.0.0.1", "localhost", "::1", "[::1]"].includes(hostname);
+  }
+
+  function isSafariBrowser() {
+    const userAgent = String(navigator.userAgent || "");
+    const vendor = String(navigator.vendor || "");
+    return /AppleWebKit/i.test(userAgent)
+      && /Safari/i.test(userAgent)
+      && /Apple/i.test(vendor)
+      && !/(CriOS|FxiOS|EdgiOS|OPiOS|Chrome|Chromium|Edg|OPR)/i.test(userAgent);
+  }
+
+  function isSafariPublicWebUnsupported() {
+    return isPublicWebMode() && window.location?.protocol === "https:" && isSafariBrowser();
+  }
+
+  function isSafariHttpLocalMode() {
+    return isPublicWebMode() && window.location?.protocol === "http:" && isSafariBrowser();
+  }
+
+  function httpLocalEntryUrl(origin = "") {
+    let targetOrigin;
+    try {
+      targetOrigin = new URL(String(origin || ""));
+    } catch {
+      throw new Error("lmstudio_safari_http_unavailable");
+    }
+    if (
+      targetOrigin.protocol !== "http:"
+      || targetOrigin.username
+      || targetOrigin.password
+      || targetOrigin.pathname !== "/"
+      || targetOrigin.search
+      || targetOrigin.hash
+    ) {
+      throw new Error("lmstudio_safari_http_unavailable");
+    }
+    const current = new URL(window.location.href);
+    current.protocol = targetOrigin.protocol;
+    current.hostname = targetOrigin.hostname;
+    current.port = targetOrigin.port;
+    return current.href;
   }
 
   async function browserPermissionState() {
@@ -94,22 +147,24 @@ window.AISystem6LocalLMStudio = (() => {
     return data.detail || data.error?.message || data.error || data.message || fallback;
   }
 
-  async function lmStudioFetch(path, options = {}) {
+  async function localModelFetch(path, options = {}) {
     const { baseUrl } = currentConfig();
-    const response = await fetch(`${baseUrl}${path}`, {
+    const requestOptions = {
       ...options,
       mode: "cors",
       credentials: "omit",
       referrerPolicy: "no-referrer",
-      // Safari/WebKit requires the destination address space to be explicit
-      // when a secure public page calls a plain-HTTP loopback service.
-      targetAddressSpace: "loopback",
       headers: requestHeaders(options.headers),
-    });
+    };
+    // Chromium's Local Network Access flow needs this hint. WebKit rejects the
+    // non-standard option in affected Safari versions, including on the HTTP
+    // local entry where the request itself is otherwise allowed.
+    if (!isSafariBrowser()) requestOptions.targetAddressSpace = "loopback";
+    const response = await fetch(`${baseUrl}${path}`, requestOptions);
     return response;
   }
 
-  async function readErrorResponse(response) {
+  async function readErrorResponse(response, provider = currentProvider()) {
     const text = await response.text().catch(() => "");
     let data = null;
     try {
@@ -126,10 +181,92 @@ window.AISystem6LocalLMStudio = (() => {
     if (response.status === 401 || response.status === 403) {
       throw new Error(`lmstudio_auth_failed: ${detail}`);
     }
-    if (response.status === 404) {
+    if (provider === "ollama" && response.status === 404) {
+      throw new Error(`ollama_api_incompatible: ${detail}`);
+    }
+    if (provider === "lm-studio" && response.status === 404) {
       throw new Error(`lmstudio_v1_required: ${detail}`);
     }
-    throw new Error(`${classifyError(detail, response.status)}: ${detail}`);
+    throw new Error(`${classifyError(detail, response.status, provider)}: ${detail}`);
+  }
+
+  function ollamaContextLength(modelInfo = {}) {
+    return Object.entries(modelInfo).reduce((largest, [key, value]) => {
+      if (!/\.context_length$/.test(key)) return largest;
+      const length = Number(value || 0);
+      return Number.isFinite(length) ? Math.max(largest, length) : largest;
+    }, 0);
+  }
+
+  function normalizedOllamaModel(model = {}, detail = {}, running = null) {
+    const id = String(model.model || model.name || "");
+    const capabilities = Array.isArray(detail.capabilities) ? detail.capabilities : [];
+    const embedding = capabilities.includes("embedding")
+      || (!capabilities.includes("completion") && /(^|[-_:])(embed|embedding)|all-minilm|bge-|e5-/i.test(id));
+    return {
+      id,
+      name: String(model.name || id),
+      type: embedding ? "embedding" : "llm",
+      loaded: !!running,
+      instance_id: running ? id : "",
+      loaded_context_length: Number(running?.context_length || 0),
+      max_context_length: ollamaContextLength(detail.model_info),
+      max_context_source: "ollama-show",
+      vision: capabilities.includes("vision"),
+      raw: { ...model, detail, running },
+    };
+  }
+
+  async function fetchOllamaJson(path, options = {}) {
+    const response = await localModelFetch(path, options);
+    if (!response.ok) await readErrorResponse(response, "ollama");
+    return response.json().catch(() => {
+      throw new Error(`ollama_bad_response: ${path} did not return JSON`);
+    });
+  }
+
+  async function listOllamaModels(options = {}) {
+    const signal = requestSignal(options.signal, options.timeoutMs);
+    const tags = await fetchOllamaJson("/api/tags", {
+      method: "GET",
+      signal,
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+    });
+    if (!Array.isArray(tags.models)) throw new Error("ollama_api_incompatible: /api/tags response is incompatible");
+    const runningData = await fetchOllamaJson("/api/ps", {
+      method: "GET",
+      signal,
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+    }).catch(() => ({ models: [] }));
+    const runningModels = Array.isArray(runningData.models) ? runningData.models : [];
+    const details = await Promise.all(tags.models.map((model) => fetchOllamaJson("/api/show", {
+      method: "POST",
+      signal,
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ model: model.model || model.name }),
+    }).catch(() => ({}))));
+    lastModels = tags.models.map((model, index) => {
+      const id = String(model.model || model.name || "");
+      const running = runningModels.find((item) => String(item.model || item.name || "") === id) || null;
+      return normalizedOllamaModel(model, details[index], running);
+    }).filter((model) => model.id);
+    connected = true;
+    const chatModels = lastModels.filter((model) => model.type === "llm");
+    const embeddingModels = lastModels.filter((model) => model.type === "embedding");
+    const loadedChat = chatModels.find((model) => model.loaded);
+    return {
+      provider: "ollama",
+      autoLoad: true,
+      models: lastModels,
+      chatModels,
+      embeddingModels,
+      loaded: !!loadedChat,
+      loaded_model: loadedChat?.id || "",
+      loaded_context_length: loadedChat?.loaded_context_length || 0,
+      browserPermission: await browserPermissionState(),
+    };
   }
 
   function normalizedModel(model = {}) {
@@ -152,9 +289,15 @@ window.AISystem6LocalLMStudio = (() => {
   }
 
   async function listModels(options = {}) {
+    if (isSafariPublicWebUnsupported()) {
+      connected = false;
+      throw new Error("lmstudio_safari_unsupported");
+    }
+    const { provider } = currentConfig();
     let response;
     try {
-      response = await lmStudioFetch("/api/v1/models", {
+      if (provider === "ollama") return await listOllamaModels(options);
+      response = await localModelFetch("/api/v1/models", {
         method: "GET",
         signal: requestSignal(options.signal, options.timeoutMs),
         cache: "no-store",
@@ -164,6 +307,9 @@ window.AISystem6LocalLMStudio = (() => {
       connected = false;
       if (await browserPermissionState() === "denied") {
         throw new Error("lmstudio_browser_permission_denied");
+      }
+      if (provider === "ollama") {
+        throw new Error(`ollama_cors_or_offline: ${error?.message || error}`);
       }
       throw networkError(error);
     }
@@ -181,6 +327,8 @@ window.AISystem6LocalLMStudio = (() => {
     connected = true;
     lastModels = data.models.map(normalizedModel).filter((model) => model.id);
     return {
+      provider: "lm-studio",
+      autoLoad: false,
       models: lastModels,
       chatModels: lastModels.filter((model) => model.type === "llm"),
       embeddingModels: lastModels.filter((model) => model.type === "embedding"),
@@ -192,9 +340,10 @@ window.AISystem6LocalLMStudio = (() => {
   }
 
   async function unloadInstance(instanceId, signal) {
+    if (currentProvider() === "ollama") return null;
     const id = String(instanceId || "").trim();
     if (!id) return null;
-    const response = await lmStudioFetch("/api/v1/models/unload", {
+    const response = await localModelFetch("/api/v1/models/unload", {
       method: "POST",
       signal: requestSignal(signal, 60000),
       headers: {
@@ -210,10 +359,17 @@ window.AISystem6LocalLMStudio = (() => {
   async function loadModel(model, options = {}) {
     const modelId = String(model || "").trim();
     if (!modelId) throw new Error("lmstudio_model_missing");
+    if (currentProvider() === "ollama") {
+      const catalog = lastModels.length ? lastModels : (await listModels(options)).models;
+      if (!catalog.some((item) => item.id === modelId || item.name === modelId)) {
+        throw new Error(`ollama_model_missing: ${modelId}`);
+      }
+      return { loaded: false, autoLoad: true, model: modelId, context_length: 0 };
+    }
     const payload = { model: modelId };
     const contextLength = Number(options.contextLength || 0);
     if (Number.isFinite(contextLength) && contextLength > 0) payload.context_length = Math.round(contextLength);
-    const response = await lmStudioFetch("/api/v1/models/load", {
+    const response = await localModelFetch("/api/v1/models/load", {
       method: "POST",
       signal: requestSignal(options.signal, options.timeoutMs || 120000),
       headers: {
@@ -262,7 +418,7 @@ window.AISystem6LocalLMStudio = (() => {
 
   async function chat(payload, options = {}) {
     const requestPayload = stripClientOnlyFields(payload);
-    const post = () => lmStudioFetch("/v1/chat/completions", {
+    const post = () => localModelFetch("/v1/chat/completions", {
       method: "POST",
       signal: requestSignal(options.signal, options.timeoutMs || INFERENCE_TIMEOUT_MS),
       headers: {
@@ -278,7 +434,7 @@ window.AISystem6LocalLMStudio = (() => {
       connected = false;
       throw networkError(error);
     }
-    if (!response.ok && options.autoLoad !== false) {
+    if (!response.ok && currentProvider() === "lm-studio" && options.autoLoad !== false) {
       const probeText = await response.clone().text().catch(() => "");
       if (needsModelLoad(probeText, response.status) && requestPayload.model) {
         await loadModel(requestPayload.model, {
@@ -295,7 +451,7 @@ window.AISystem6LocalLMStudio = (() => {
 
   async function embed(payload, options = {}) {
     const requestPayload = stripClientOnlyFields(payload);
-    const post = () => lmStudioFetch("/v1/embeddings", {
+    const post = () => localModelFetch("/v1/embeddings", {
       method: "POST",
       signal: requestSignal(options.signal, options.timeoutMs || INFERENCE_TIMEOUT_MS),
       headers: {
@@ -311,7 +467,7 @@ window.AISystem6LocalLMStudio = (() => {
       connected = false;
       throw networkError(error);
     }
-    if (!response.ok && options.autoLoad !== false) {
+    if (!response.ok && currentProvider() === "lm-studio" && options.autoLoad !== false) {
       const probeText = await response.clone().text().catch(() => "");
       if (needsModelLoad(probeText, response.status) && requestPayload.model) {
         await loadModel(requestPayload.model, { signal: options.signal });
@@ -323,11 +479,11 @@ window.AISystem6LocalLMStudio = (() => {
     return response;
   }
 
-  function classifyError(message = "", status = 0) {
+  function classifyError(message = "", status = 0, provider = currentProvider()) {
     const value = String(message || "").toLowerCase();
     if (status === 401 || status === 403 || /unauthorized|forbidden|api token|authentication/.test(value)) return "lmstudio_auth_failed";
-    if (status === 404 || /api\/v1|not found/.test(value)) return "lmstudio_v1_required";
-    if (/cors|load failed|failed to fetch|networkerror|network request failed/.test(value)) return "lmstudio_cors_or_offline";
+    if (status === 404 || /api\/v1|not found/.test(value)) return provider === "ollama" ? "ollama_api_incompatible" : "lmstudio_v1_required";
+    if (/cors|load failed|failed to fetch|networkerror|network request failed/.test(value)) return provider === "ollama" ? "ollama_cors_or_offline" : "lmstudio_cors_or_offline";
     if (/context length|too many tokens|prompt.*too long/.test(value)) return "lmstudio_context_length";
     if (/no models loaded|model .*not loaded|please load a model/.test(value)) return "lmstudio_model_not_loaded";
     if (/timeout|timed out/.test(value)) return "lmstudio_timeout";
@@ -371,11 +527,17 @@ window.AISystem6LocalLMStudio = (() => {
   return Object.freeze({
     API_VERSION,
     DEFAULT_BASE_URL,
+    DEFAULT_OLLAMA_BASE_URL,
     REQUEST_TIMEOUT_MS,
     INFERENCE_TIMEOUT_MS,
     isPublicWebMode,
+    isSafariPublicWebUnsupported,
+    isSafariHttpLocalMode,
+    httpLocalEntryUrl,
     browserPermissionState,
     normalizeBaseUrl,
+    currentProvider,
+    defaultBaseUrl,
     currentConfig,
     listModels,
     loadModel,

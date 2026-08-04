@@ -60,6 +60,7 @@ const systemSpecialItems = [
   menuItem("tile-windows", "tile_windows"),
   menuSeparator,
   menuItem("toggle-liquid-glass", "liquid_glass"),
+  menuItem("toggle-balloon-help", "show_balloon_help"),
   menuItem("reset-system", "reset_system"),
   menuSeparator,
   menuItem("restart-system", "restart"),
@@ -489,10 +490,21 @@ const soundscapeMenus = [
   ]),
   menu("soundscape", "menu_soundscape", [
     menuItem("soundscape-toggle-play", "soundscape_play_pause"),
-    menuItem("soundscape-previous", "previous"),
-    menuItem("soundscape-next", "next"),
-    menuItem("soundscape-shuffle", "soundscape_shuffle"),
-    menuItem("soundscape-repeat", "soundscape_repeat"),
+    menuItem("soundscape-previous", "soundscape_previous_track"),
+    menuItem("soundscape-next", "soundscape_next_track"),
+    submenu("soundscape_shuffle", [
+      menuItem("soundscape-shuffle-on", "soundscape_shuffle_mode_on", "", { shuffleMode: "on" }),
+      menuItem("soundscape-shuffle-off", "soundscape_shuffle_mode_off", "", { shuffleMode: "off" }),
+      menuSeparator,
+      menuItem("soundscape-shuffle-songs", "soundscape_shuffle_kind_songs", "", { shuffleKind: "songs" }),
+      menuItem("soundscape-shuffle-albums", "soundscape_shuffle_kind_albums", "", { shuffleKind: "albums" }),
+      menuItem("soundscape-shuffle-groupings", "soundscape_shuffle_kind_groupings", "", { shuffleKind: "groupings" }),
+    ]),
+    submenu("soundscape_repeat", [
+      menuItem("soundscape-repeat-off", "soundscape_repeat_mode_off", "", { repeatMode: "off" }),
+      menuItem("soundscape-repeat-all", "soundscape_repeat_mode_all", "", { repeatMode: "all" }),
+      menuItem("soundscape-repeat-one", "soundscape_repeat_mode_one", "", { repeatMode: "one" }),
+    ]),
     menuItem("soundscape-reset-style", "soundscape_reset_style"),
     menuItem("soundscape-link-project", "soundscape_add_project"),
   ]),
@@ -600,6 +612,9 @@ function renderApplicationMenuItem(item) {
   button.dataset.i18n = item.labelKey;
   if (item.shortcutId) button.dataset.shortcutId = item.shortcutId;
   if (item.viewMode) button.dataset.viewMode = item.viewMode;
+  if (item.repeatMode) button.dataset.repeatMode = item.repeatMode;
+  if (item.shuffleMode) button.dataset.shuffleMode = item.shuffleMode;
+  if (item.shuffleKind) button.dataset.shuffleKind = item.shuffleKind;
   button.textContent = typeof t === "function" ? t(item.labelKey) : item.labelKey;
   return button;
 }

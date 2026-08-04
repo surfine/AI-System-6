@@ -41,6 +41,7 @@ async function handleCloudStatus(req, res) {
 
   try {
     const body = await readJsonBody(req, { limitBytes: 16 * 1024 });
+    const usingSharedCloud = isPublicDeployment && !String(body.api_key || "").trim();
     const apiKey = String(await resolveCloudCredential({
       credentialId: body.credential_id,
       provider: body.provider || "deepseek",
@@ -93,7 +94,7 @@ async function handleCloudStatus(req, res) {
     let balance = null;
     /** @type {string | null} */
     let balanceError = null;
-    if (connected) {
+    if (connected && !usingSharedCloud) {
       try {
         let balanceResult = await getTextWithFallback(
           `${baseUrl}/v1/user/balance`,
@@ -141,6 +142,7 @@ async function handleCloudStatus(req, res) {
 
     sendJson(res, 200, {
       connected,
+      credential_mode: usingSharedCloud ? "shared" : "byok",
       model_error: modelError,
       balance,
       balance_error: balanceError,

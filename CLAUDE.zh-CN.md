@@ -1,5 +1,5 @@
 <!-- canonical-source: CLAUDE.md -->
-<!-- source-sha256: fea6241517fa5baa6055698909d278dca7e9e7568f686baae62facc4749116c7 -->
+<!-- source-sha256: 960a2c550a5d950bbd5fbf2c43f0f44814d8029f25005ecc0ca293042562ec14 -->
 
 # AI System 6 — CLAUDE.md
 
@@ -171,6 +171,11 @@ liquid-glass 标志、云端配置/用量、Reader 分栏尺寸等）。服务�
 不要把它磨平为通用矢量图标。硬性规则：保持桌面安静（一条明显的路）；用具名对象而非抽象
 AI 控件；封闭集合下拉用 System 6 select 框架（见 Do Not Introduce）；对模型 / 导入 / OCR /
 搜索 / 保存 / 删除 / 导出给出可见反馈；除非真的发生，否则绝不暗示某物已被保存、索引或联网。
+
+历史范围：**System 6 是基线，不是截止日期。** 整个 Classic Mac OS 谱系中有原生证据的元素
+都可以被吸收，但必须保留彼此不同的原始语义，并针对网页、触控、键盘和无障碍重新消化。
+绝不能混淆 Zoom、grow 与 WindowShade。MultiFinder、Balloon Help、OOBE 和后续系统功能的
+规则见 [DESIGN.md](DESIGN.md) 的「历史词汇」章节。
 
 ### 写作路线内部机制（承重）
 

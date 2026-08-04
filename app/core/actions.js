@@ -876,6 +876,10 @@ async function openSystemConceptClioStage() {
 }
 
 async function playWritingDemoFromGuide() {
+  // The demo is offered by system OOBE, then runs inside Writing Studio.
+  if (typeof activateWorkspaceProfile === "function") {
+    await activateWorkspaceProfile(workspaceProfileWriting, { openDefault: false, persist: false });
+  }
   await ensureWritingDemoModule();
   await window.AISystem6WritingDemo?.play?.();
 }
@@ -897,41 +901,7 @@ function getApplicationActionHandlers() {
     "open-system-file-finder": () => showSystemModal(t("system_file_not_openable"), "alert"),
     "open-system-file-multifinder": () => showSystemModal(t("system_file_not_openable"), "alert"),
     "open-system-file-da-handler": () => showSystemModal(t("system_file_not_openable"), "alert"),
-    "open-system-ai-prompts": () => {
-      systemFinderPath = "ai-prompts";
-      selectedStaticFinderAction = "";
-      renderStaticFinderWindow("finder");
-    },
-    "open-system-writing-tools-prompts": () => {
-      systemFinderPath = "writing-tools";
-      selectedStaticFinderAction = "";
-      renderStaticFinderWindow("finder");
-    },
-    "open-system-writing-route-prompts": () => {
-      systemFinderPath = "writing-route";
-      selectedStaticFinderAction = "";
-      renderStaticFinderWindow("finder");
-    },
-    "open-system-source-app-prompts": () => {
-      systemFinderPath = "source-apps";
-      selectedStaticFinderAction = "";
-      renderStaticFinderWindow("finder");
-    },
-    "open-system-other-app-prompts": () => {
-      systemFinderPath = "other-apps";
-      selectedStaticFinderAction = "";
-      renderStaticFinderWindow("finder");
-    },
-    "open-system-cliotalk-prompts": () => {
-      systemFinderPath = "cliotalk";
-      selectedStaticFinderAction = "";
-      renderStaticFinderWindow("finder");
-    },
-    "open-system-boundary-prompts": () => {
-      systemFinderPath = "boundaries";
-      selectedStaticFinderAction = "";
-      renderStaticFinderWindow("finder");
-    },
+    "open-system-folder-path": ({ systemFolderPath = "" } = {}) => navigateSystemFolderPath(systemFolderPath),
     "open-system-prompt-file": ({ promptId = "writing-tools.proofread" } = {}) => {
       if (!activeProjectId) {
         setStatus(t("no_project_mounted"));
@@ -960,11 +930,6 @@ function getApplicationActionHandlers() {
     "start-new-clio-chat": startNewClioTalkConversation,
     "start-temporary-clio-chat": startTemporaryClioTalkConversation,
     "open-chat-file": ({ fileId = "" } = {}) => openChatFileWindow(fileId),
-    "resummarize-chat-title": async () => {
-      const file = activeChatFileId ? getActiveConversationFile() : null;
-      if (!file || file.titleMode === "manual") return;
-      await summarizeChatTitle(file, { force: true });
-    },
     "remember-chat-as-project-memory": () => {
       const file = createProjectMemoryDraft();
       if (file) setStatus(currentLanguage === "zh" ? "项目记忆已确认并保存。" : "Project memory confirmed and saved.");
@@ -1035,28 +1000,17 @@ function getApplicationActionHandlers() {
     "open-project-disk": openSelectedProject,
     "duplicate-project-disk": duplicateSelectedProjectDisk,
     "archive-project-disk": archiveSelectedProjectDisk,
-    "move-project-trash": moveSelectedProjectToTrash,
     "rename-project-disk": renameSelectedProject,
     "dismiss-guide": dismissGuide,
+    "guide-open-model-settings": openGuideModelSettings,
+    "open-clio-model-settings": openModelSettings,
     "guide-start-route": startGuidedWritingRoute,
-    "guide-connect-local": guideConnectLocal,
-    "guide-connect-cloud": guideConnectCloud,
-    "guide-open-cliotalk": startGuidedClioTalk,
     "play-writing-demo": playWritingDemoFromGuide,
-    "guide-use-finder": () => setStartupEnvironmentPreference("finder"),
-    "guide-use-multifinder": () => setStartupEnvironmentPreference("multifinder"),
-    "guide-open-control": () => {
-      dismissGuide();
-      openApiSetup();
-    },
-    "guide-learn-flow": openWritingFlowHelp,
     "open-read-me": () => openSystemFolderDocument("readMe"),
     "open-flow-readme": () => openSystemFolderDocument("flow"),
     "open-memory-readme": () => openSystemFolderDocument("memory"),
     "open-system-concepts-docmap": openSystemConceptDocMap,
     "open-system-concepts-clio-stage": openSystemConceptClioStage,
-    "copy-native-brief": copyNativeBrief,
-    "export-native-handoff": exportNativeHandoff,
     "new-document": newTextDocument,
     "open-text-document": openTextDocumentFromDisk,
     "new-folder": createFolderFromMenu,
@@ -1108,7 +1062,6 @@ function getApplicationActionHandlers() {
     "rebuild-use-sample": useSampleArticleForRebuildFlow,
     "run-rebuild-flow": runRebuildFlow,
     "close-rebuild-flow": () => closeWindow("rebuildFlow", true),
-    "toggle-tool-dock": toggleWritingToolsShade,
     "toggle-compose-tools": toggleComposeToolsMenu,
     "open-question-sheet": openQuestionSheetSurface,
     "open-teachtext-manuscript": openTeachTextManuscriptWindow,
@@ -1137,37 +1090,23 @@ function getApplicationActionHandlers() {
     "toggle-question-preview": () => toggleTeachTextSurfacePreview("questionSheet"),
     "toggle-writing-preview": toggleWritingPreviewForActiveWindow,
     "insert-question-template": insertQuestionTemplate,
-    "clear-question-sheet": clearQuestionSheet,
     "advance-question-to-outline": advanceQuestionSheetToOutline,
-    "save-questions": () => {
-      savePipelineData();
-      setStatus(t("saved"));
-    },
-    "restore-questions-to-outline": restoreQuestionsToOutline,
     "add-outline-section": addOutlineSection,
-    "insert-outline-hkrr-intent": insertOutlineHkrrIntent,
-    "clear-outline": clearOutlineWithConfirmation,
     "critique-outline": () => runOutlineOperation("critique"),
     "expand-outline": expandOutline,
     "mingming-outline": () => runOutlineOperation("mingming"),
     "reduce-outline": () => runOutlineOperation("reduce"),
     "structure-outline": () => runOutlineOperation("structure"),
     "advance-outline-to-drafts": advanceOutlineToSectionDrafts,
-    "save-outline": saveOutline,
     "toggle-outline-preview": () => toggleTeachTextSurfacePreview("outline"),
     "draft-selected-section": draftSelectedOutlineSection,
     "draft-current-section": draftSelectedOutlineSection,
     "toggle-draft-preview": () => toggleTeachTextSurfacePreview("sectionDrafts"),
     "previous-section-draft": () => showAdjacentSectionDraft(-1),
     "next-section-draft": () => showAdjacentSectionDraft(1),
-    "save-section-draft": () => {
-      savePipelineData();
-      setStatus(t("saved"));
-    },
     "revise-draft": polishDraft,
     "polish-draft": polishDraft,
     "suggest-draft": suggestDraft,
-    "insert-to-teachtext": insertDraftToTeachText,
     "advance-drafts-to-review": advanceDraftsToReview,
     "run-claim-check": runClaimCheckFromMenu,
     "run-claim-check-section": () => runClaimCheck({ sectionOnly: true }),
@@ -1236,7 +1175,6 @@ function getApplicationActionHandlers() {
       clipTeachTextSelectionToScrapbook();
     },
     "open-applications": () => openWindow("applications"),
-    "open-disk": () => openWindow("disk"),
     "open-help-folder": () => openWindow("helpFolder"),
     "open-project-cd": () => openWindow("projectCd"),
     "open-import-utility": () => openWindow("importUtility"),
@@ -1314,9 +1252,8 @@ function getApplicationActionHandlers() {
       openWindow("textDisk");
     },
     "open-finder": () => {
-      systemFinderPath = "";
       openWindow("finder");
-      renderStaticFinderWindow("finder");
+      navigateSystemFolderPath("");
     },
     "open-documents": () => {
       renderDocuments();
@@ -1396,6 +1333,14 @@ function getApplicationActionHandlers() {
     "soundscape-next": () => runSoundscapeMenuCommand("next"),
     "soundscape-shuffle": () => runSoundscapeMenuCommand("shuffle"),
     "soundscape-repeat": () => runSoundscapeMenuCommand("repeat"),
+    "soundscape-shuffle-on": () => runSoundscapeMenuCommand("shuffle-on"),
+    "soundscape-shuffle-off": () => runSoundscapeMenuCommand("shuffle-off"),
+    "soundscape-shuffle-songs": () => runSoundscapeMenuCommand("shuffle-songs"),
+    "soundscape-shuffle-albums": () => runSoundscapeMenuCommand("shuffle-albums"),
+    "soundscape-shuffle-groupings": () => runSoundscapeMenuCommand("shuffle-groupings"),
+    "soundscape-repeat-off": () => runSoundscapeMenuCommand("repeat-off"),
+    "soundscape-repeat-all": () => runSoundscapeMenuCommand("repeat-all"),
+    "soundscape-repeat-one": () => runSoundscapeMenuCommand("repeat-one"),
     "soundscape-reset-style": () => runSoundscapeMenuCommand("reset-style"),
     "soundscape-link-project": () => runSoundscapeMenuCommand("link-project"),
     "endfield-new-session": () => dispatchEndfieldMenuCommand("new-session"),
@@ -1421,18 +1366,6 @@ function getApplicationActionHandlers() {
       return runEditCommand("paste");
     },
     "attach-selected-to-cliotalk": () => attachProjectFileToNextClioTalkRun(),
-    "open-clio-genealogy": openClioTalkGenealogy,
-    "compare-chat-branch": () => {
-      const source = getActiveConversationFile();
-      const target = source?.parentChatId ? chatFiles.find((file) => file.id === source.parentChatId && isInActiveProject(file)) : null;
-      if (!source || !target) return;
-      saveBranchComparison(source, target);
-    },
-    "merge-chat-branch": async () => {
-      const source = getActiveConversationFile();
-      if (!source?.parentChatId) return;
-      await mergeBranchIntoTarget(source.id, source.parentChatId);
-    },
     "save-clio-harness": saveClioTalkHarness,
     "save-clio-skill": saveClioTalkSkillDraft,
     "use-project-skill-next-task": () => {
@@ -1441,7 +1374,6 @@ function getApplicationActionHandlers() {
     "suggest-project-skill": () => confirmSuggestedProjectSkill(promptInput?.value || lastUserText || ""),
     "save-clio-retrospective": saveClioTalkRetrospective,
     "new-note": () => createScrap(null, ""),
-    "save-last": saveLastReply,
     "clip-last-reply": clipLastReplyToScrapbook,
     "insert-last-reply": insertLastReplyIntoTeachText,
     "clear-chat": startNewClioTalkConversation,
@@ -1484,13 +1416,7 @@ function getApplicationActionHandlers() {
         if (next) focusWindow(next);
       }
     },
-    "save-copy": () => {
-      if (!getWindow("teachText").classList.contains("is-hidden")) {
-        saveTextDocument({ asCopy: true });
-      } else {
-        saveLastReply();
-      }
-    },
+    "save-copy": () => saveTextDocument({ asCopy: true }),
     "undo": () => runEditCommand("undo"),
     "redo": () => runEditCommand("redo"),
     "cut": () => runEditCommand("cut"),
@@ -1514,6 +1440,7 @@ function getApplicationActionHandlers() {
     "focus-sideask-source": focusSideAskSource,
     "toggle-sideask": toggleSideAsk,
     "toggle-liquid-glass": toggleLiquidGlassAppearance,
+    "toggle-balloon-help": toggleBalloonHelp,
     "toggle-writer-mode": toggleWriterMode,
     "restart-system": restartSystem,
     "shut-down-system": shutDownSystem,
@@ -1541,6 +1468,10 @@ function getApplicationCommandRegistry() {
 }
 
 function handleAction(action, commandContext = {}) {
+  if (String(action).startsWith("open-system-folder-path:")) {
+    commandContext = { ...commandContext, systemFolderPath: String(action).slice("open-system-folder-path:".length) };
+    action = "open-system-folder-path";
+  }
   if (String(action).startsWith("open-system-prompt-file:")) {
     commandContext = { ...commandContext, promptId: String(action).slice("open-system-prompt-file:".length) };
     action = "open-system-prompt-file";

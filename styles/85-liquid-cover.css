@@ -39,7 +39,7 @@
   gap: 10px;
   min-height: 42px;
   padding: 6px 9px;
-  border-bottom: 2px solid var(--ink);
+  border-bottom: var(--system-control-line) solid var(--ink);
   background: var(--paper);
 }
 
@@ -728,7 +728,7 @@
     width: 100%;
     max-width: 100%;
     border-left: none;
-    border-top: 2px solid var(--ink);
+    border-top: var(--system-control-line) solid var(--ink);
   }
 
   .lc-stage {
@@ -958,7 +958,7 @@
 
 .liquid-cover-window input[type="range"]::-webkit-slider-runnable-track {
   height: 7px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   border-radius: 0;
   background: linear-gradient(to right, var(--lc-accent) 0 var(--lc-fill), var(--lc-track) var(--lc-fill) 100%);
   box-shadow: inset 1px 1px 0 var(--shade-dark);
@@ -969,7 +969,7 @@
   width: 13px;
   height: 18px;
   margin-top: -7px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   border-radius: 0;
   background: var(--paper);
   box-shadow: 2px 2px 0 var(--ink);
@@ -977,7 +977,7 @@
 
 .liquid-cover-window input[type="range"]::-moz-range-track {
   height: 7px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   border-radius: 0;
   background: linear-gradient(to right, var(--lc-accent) 0 var(--lc-fill), var(--lc-track) var(--lc-fill) 100%);
   box-shadow: inset 1px 1px 0 var(--shade-dark);
@@ -986,7 +986,7 @@
 .liquid-cover-window input[type="range"]::-moz-range-thumb {
   width: 13px;
   height: 18px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   border-radius: 0;
   background: var(--paper);
   box-shadow: 2px 2px 0 var(--ink);

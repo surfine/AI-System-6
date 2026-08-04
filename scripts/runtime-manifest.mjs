@@ -44,6 +44,7 @@ export const appModulePaths = [
   "app/core/modal.js",
   "app/core/drag-drop.js",
   "app/core/multi-finder.js",
+  "app/core/balloon-help.js",
   "app/core/liquid-glass-overlay.js",
   "app/features/dictation.js",
   "app/features/mingming-lens.js",

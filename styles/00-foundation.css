@@ -51,12 +51,16 @@
   --clio-welcome-bg: transparent;
   --clio-welcome-shadow: none;
   --clio-welcome-object-bg: var(--paper);
-  --clio-welcome-object-border: 2px solid var(--ink);
+  --clio-welcome-object-border: var(--system-control-line) solid var(--ink);
   --clio-welcome-object-shadow: 2px 2px 0 var(--shade-dark);
   --clio-muted-copy: var(--shade-dark);
   --clio-copy-font: var(--text-font);
   --clio-title-font: var(--title-font);
   --clio-control-font: var(--ui-font);
+  --clio-title-size: clamp(24px, 4vw, 30px);
+  --clio-title-weight: 500;
+  --clio-title-leading: 1.45;
+  --clio-title-tracking: -0.025em;
   --clio-transcript-width: 820px;
   --clio-speaker-gutter: 72px;
   --clio-grounding-rule: var(--shade);
@@ -68,7 +72,7 @@
   --clio-use-menu-bg: var(--paper);
   --clio-use-menu-shadow: 2px 2px 0 var(--shade-dark);
   --clio-composer-bg: var(--paper);
-  --clio-composer-border: 2px solid var(--ink);
+  --clio-composer-border: var(--system-control-line) solid var(--ink);
   --clio-composer-radius: 0;
   --clio-composer-shadow: 2px 2px 0 var(--shade-dark);
   --clio-composer-focus-shadow: 2px 2px 0 var(--shade-dark), 0 0 0 2px var(--shade);
@@ -146,6 +150,8 @@
   --clio-chart-spatial-value-size: 13px;
 
   /* Fonts */
+  --modern-sans-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  --modern-mono-font: "SFMono-Regular", "Cascadia Mono", "Consolas", "Monaco", "Courier New", monospace;
   --ui-font: Chicago_12, Chicago, Charcoal, "Songti SC", "SimSun", "STSong", serif;
   --title-font: Chicago_12, Chicago, Charcoal, "Songti SC", "SimSun", "STSong", serif;
   --text-font: "Songti SC", "SimSun", "STSong", Geneva, serif;
@@ -185,8 +191,13 @@
   --writing-window-min-width: calc(var(--mde-page-width) + (2 * var(--writing-window-gutter)));
   --writing-window-default-width: var(--writing-window-min-width);
 
-  /* System chrome */
-  --system-border: 2px solid var(--ink);
+  /* System chrome. One line weight owns every ink rule the interface draws —
+     window chrome, control outlines, panel frames — so controls cannot read
+     heavier than the frame around them. Classic keeps the native one-pixel
+     line; Modern Fonts thickens it in step with the icon grid. Liquid pins its
+     own value. */
+  --system-control-line: 1px;
+  --system-border: var(--system-control-line) solid var(--ink);
   --system-shadow: 2px 2px 0 var(--ink);
   --system-inset: inset 1px 1px 0 #777777, inset -1px -1px 0 #ffffff;
   --control-radius: 0;
@@ -215,6 +226,12 @@
   --system-title-size: 13px;
   --system-control-size: 13px;
   --system-text-size: 13px;
+  --system-caption-size: 11px;
+  --system-micro-size: 10px;
+  --system-icon-stroke-width: 1;
+  --system-icon-pixel-run-expansion: 0;
+  --menu-system-icon-stroke-width: 1;
+  --menu-system-icon-pixel-run-expansion: 0;
   --system-leading: 1.28;
   --system-window-padding: 8px;
   --system-control-min-height: 26px;
@@ -230,7 +247,7 @@
   --control-motion-slow-in: 240ms;
   --control-motion-slow-out: 160ms;
   --control-motion-ease: cubic-bezier(0.2, 0, 0, 1);
-  --control-focus-outline: 2px solid var(--ink);
+  --control-focus-outline: var(--system-control-line) solid var(--ink);
   --control-focus-offset: 2px;
   --control-disabled-opacity: 0.56;
   --control-choice-hover-shadow: 0 0 0 1px var(--ink);
@@ -241,7 +258,7 @@
     radial-gradient(rgba(0, 0, 0, 0.09) 1px, transparent 1px) 0 0 / 9px 9px,
     var(--quiet-panel);
   --memory-cards-details-bg: var(--shade);
-  --memory-cards-details-border: 2px solid var(--ink);
+  --memory-cards-details-border: var(--system-control-line) solid var(--ink);
   --memory-cards-board-bg: transparent;
   --memory-cards-board-border: 0;
   --memory-cards-board-radius: 0;
@@ -281,7 +298,7 @@
   --tdi-tabs-min-height: 45px;
   --tdi-tabs-padding: 4px 6px 0;
   --tdi-tabs-bg: var(--shade);
-  --tdi-tabs-border-bottom: 2px solid var(--ink);
+  --tdi-tabs-border-bottom: var(--system-control-line) solid var(--ink);
   --tdi-tabs-after-content: none;
   --tdi-tabs-after-flex: 0 0 auto;
   --tdi-tabs-after-min-width: 0;
@@ -292,7 +309,7 @@
   --tdi-tab-height: 41px;
   --tdi-tab-min-height: 41px;
   --tdi-tab-padding: 4px calc(var(--tdi-tab-close-size) + (2 * var(--tdi-tab-close-gutter)) + 7px) 4px 8px;
-  --tdi-tab-border: 2px solid var(--ink);
+  --tdi-tab-border: var(--system-control-line) solid var(--ink);
   --tdi-tab-border-bottom: 0;
   --tdi-tab-radius: 0;
   --tdi-tab-bg: var(--paper);
@@ -323,7 +340,7 @@
   --tdi-tab-close-width: var(--tdi-tab-close-size);
   --tdi-tab-close-height: var(--tdi-tab-close-size);
   --tdi-tab-close-min-height: 0;
-  --tdi-tab-close-border: 2px solid var(--ink);
+  --tdi-tab-close-border: var(--system-control-line) solid var(--ink);
   --tdi-tab-close-radius: 0;
   --tdi-tab-close-bg: var(--paper);
   --tdi-tab-close-fg: var(--ink);
@@ -378,6 +395,7 @@
   --video-timeline-selected-span-fg: inherit;
   --window-toolbar-gap: 6px;
   --window-toolbar-align: center;
+  --details-bar-optical-rise: 1px;
   --empty-note-max-width: 62ch;
   --empty-note-margin: 10px auto;
   --empty-note-padding: 10px 12px;
@@ -429,21 +447,27 @@
   --window-placement-gap: 14px;
   --window-placement-step-x: 28px;
   --window-placement-step-y: 24px;
-  --system-titlebar-height: 23px;
+  /* System 6 native window chrome, measured at the emulator's exact 2×
+     pixels: 17px title-bar box + the window's 1px top border and 1px inset. */
+  --system-titlebar-height: 17px;
   --system-titlebar-control-slot: 40px;
   --system-titlebar-control-size: 40px;
-  --system-titlebar-control-art-size: 13px;
+  --system-titlebar-control-art-size: 11px;
   --system-titlebar-control-art-offset-x: 13px;
+  --system-titlebar-control-art-offset-y: calc((var(--system-titlebar-control-size) - var(--system-titlebar-title-height)) / 2);
+  --system-titlebar-close-art-offset-x: 7px;
+  --system-titlebar-resize-art-offset-x: 22px;
   --system-titlebar-control-art-ink: var(--ink);
-  --system-titlebar-title-height: 13px;
+  --system-titlebar-title-height: 12px;
+  --system-titlebar-font-size: 12px;
   --system-titlebar-control-stroke: 1px;
   --system-titlebar-control-mark-stroke: 1px;
   --system-titlebar-control-isolation: 3px;
   --system-titlebar-control-margin-x: 4px;
   --system-titlebar-margin-y: 1px;
-  --system-titlebar-padding-y: 3px;
+  --system-titlebar-padding-y: 2px;
   --system-titlebar-padding-x: 1px;
-  --system-titlebar-stripe-size: 3px;
+  --system-titlebar-stripe-size: 2px;
   --system-titlebar-stripe-line: 1px;
   --system-titlebar-striped-bg:
     var(--paper)
@@ -455,8 +479,8 @@
     repeat-y 0% 0% / 100% var(--system-titlebar-stripe-size) content-box content-box;
   --system-titlebar-active-bg: var(--system-titlebar-striped-bg);
   --system-titlebar-inactive-bg: var(--paper);
-  --system-titlebar-control-focus-outline: 1px auto -webkit-focus-ring-color;
-  --system-titlebar-control-focus-shadow: 0 0 0 var(--system-titlebar-control-isolation) var(--paper);
+  --system-titlebar-control-focus-outline: 0;
+  --system-titlebar-control-focus-shadow: none;
   --system-titlebar-close-attention-mark-opacity: 0;
   --system-titlebar-resize-attention-mark-opacity: 1;
   --system-titlebar-inactive-control-filter: none;
@@ -487,6 +511,7 @@
       var(--paper) calc(100% - 16px)
     );
   --settings-scrollbar-lane-padding-right: 28px;
+  --control-panel-height: 440px;
   --control-panel-max-height: 760px;
   --system-title-weight: 600;
   --system-emphasis-weight: 600;
@@ -552,7 +577,16 @@
   --menu-item-active-bg: var(--ink);
   --menu-item-active-fg: var(--paper);
   --menu-item-active-shadow: none;
+  --menu-bar-border: 1px solid var(--ink);
+  --menu-panel-shadow: 1px 1px 0 var(--ink);
+  --happy-mac-border-width: 4px;
+  --happy-mac-face-border-width: 2px;
+  --happy-mac-border-color: var(--ink);
+  --happy-mac-shadow: 4px 4px 0 rgba(0, 0, 0, 0.28);
+  --happy-mac-face-shadow: inset 3px 3px 0 var(--shade);
+  --happy-mac-backdrop: none;
   --scrollbar-corner-bg: var(--paper);
+  --window-border: 1px solid var(--ink);
   /* Document-window frame: the two scroll bar lanes and the grow box are one
      16px chrome band, so the corner where they meet is exactly one cell wide
      and the grow box can never drift onto content. */
@@ -567,13 +601,13 @@
     linear-gradient(45deg, var(--shade) 25%, transparent 25% 75%, var(--shade) 75%) 0 0 / 4px 4px,
     linear-gradient(45deg, var(--shade) 25%, transparent 25% 75%, var(--shade) 75%) 2px 2px / 4px 4px,
     var(--paper);
-  --window-frame-track-border: 2px solid var(--ink);
+  --window-frame-track-border: 1px solid var(--ink);
   --window-frame-thumb-bg: var(--paper);
-  --window-frame-thumb-border: 2px solid var(--ink);
+  --window-frame-thumb-border: 1px solid var(--ink);
   --window-frame-thumb-radius: 0;
   --window-frame-arrow-bg: var(--paper);
   --window-frame-arrow-ink: var(--ink);
-  --active-window-shadow: 3px 3px 0 var(--ink);
+  --active-window-shadow: none;
   --card-caption-color: var(--shade-dark);
   --finder-navigation-border: 1px solid var(--ink);
   --finder-navigation-bg: var(--paper);
@@ -607,7 +641,7 @@
   --tab-bg: var(--shade);
   --tab-hover-bg: var(--paper);
   --tab-active-bg: var(--paper);
-  --guide-start-card-border: 2px solid var(--ink);
+  --guide-start-card-border: var(--system-control-line) solid var(--ink);
   --guide-start-card-radius: 0;
   --guide-start-card-bg: var(--paper);
   --guide-start-card-shadow: inset 1px 1px 0 var(--shade);
@@ -618,7 +652,7 @@
   --startup-settings-header-gap: 14px;
   --startup-settings-disk-icon-width: 39px;
   --startup-settings-disk-icon-height: 45px;
-  --startup-settings-disk-icon-border: 2px solid var(--ink);
+  --startup-settings-disk-icon-border: var(--system-control-line) solid var(--ink);
   --startup-settings-disk-icon-radius: 0;
   --startup-settings-disk-icon-bg:
     linear-gradient(var(--paper), var(--paper)) 7px 4px / 22px 14px no-repeat,
@@ -638,7 +672,15 @@
   --startup-settings-radio-focus-visible-outline: var(--startup-settings-radio-focus-outline);
   --startup-settings-radio-focus-visible-outline-offset: var(--startup-settings-radio-focus-outline-offset);
   --startup-settings-radio-focus-visible-shadow: var(--system-inset);
-  --status-clock-border: 2px solid var(--ink);
+  /* Balloon Help is a later Classic Mac OS system surface. Its object role and
+     geometry stay shared; Liquid Glass only swaps the material tokens. */
+  --balloon-help-bg: var(--paper);
+  --balloon-help-border: var(--system-control-line) solid var(--ink);
+  --balloon-help-radius: 12px;
+  --balloon-help-shadow: 2px 2px 0 var(--shade-dark);
+  --balloon-help-padding: 9px 12px;
+  --balloon-help-backdrop: none;
+  --status-clock-border: var(--system-control-line) solid var(--ink);
   --status-clock-radius: 0;
   --status-clock-bg: transparent;
   --status-clock-shadow: none;
@@ -661,7 +703,7 @@
   --model-state-row-shadow: none;
   --model-state-row-current-bg: var(--shade);
   --model-state-row-done-bg: transparent;
-  --model-state-running-outline: 2px solid var(--ink);
+  --model-state-running-outline: var(--system-control-line) solid var(--ink);
   --model-state-running-shadow: var(--model-state-panel-shadow);
   --model-state-next-margin: 6px 0 0;
   --model-state-next-padding-top: 0;
@@ -686,7 +728,7 @@
   --system-status-pane-gap: 12px;
   --system-status-pane-padding: var(--system-window-padding);
   --system-status-pane-bg: transparent;
-  --writing-bell-time-border: 2px solid var(--ink);
+  --writing-bell-time-border: var(--system-control-line) solid var(--ink);
   --writing-bell-time-radius: 0;
   --writing-bell-time-bg: var(--paper);
   --writing-bell-time-shadow: inset 2px 2px 0 var(--shade);
@@ -695,7 +737,7 @@
   --writing-bell-pane-bg: transparent;
   --writing-bell-mode-gap: normal;
   --writing-bell-mode-padding: 0;
-  --writing-bell-mode-border: 2px solid var(--ink);
+  --writing-bell-mode-border: var(--system-control-line) solid var(--ink);
   --writing-bell-mode-radius: 0;
   --writing-bell-mode-bg: transparent;
   --writing-bell-mode-shadow: none;
@@ -732,7 +774,7 @@
   --writing-bell-preset-active-shadow: inset 1px 1px 0 #444444;
   --writing-bell-preset-active-pressed-bg: var(--writing-bell-preset-active-bg);
   --writing-bell-preset-active-pressed-fg: var(--writing-bell-preset-active-fg);
-  --dictionary-result-border: 2px solid var(--ink);
+  --dictionary-result-border: var(--system-control-line) solid var(--ink);
   --dictionary-result-radius: 0;
   --dictionary-result-bg: var(--paper);
   --dictionary-result-shadow: none;
@@ -762,7 +804,7 @@
   --dictionary-recent-min-height: 28px;
   --dictionary-recent-border-top: 1px dotted var(--shade-dark);
   --dictionary-recent-color: inherit;
-  --dictionary-recent-button-border: 2px solid var(--btn-border-color);
+  --dictionary-recent-button-border: var(--system-control-line) solid var(--btn-border-color);
   --dictionary-recent-button-radius: 7px;
   --dictionary-recent-button-bg: var(--btn-bg);
   --dictionary-recent-button-fg: var(--btn-fg);
@@ -772,7 +814,7 @@
   --find-file-search-row-gap: 8px;
   --find-file-label-color: inherit;
   --find-file-results-padding: 0;
-  --find-file-results-border: 2px solid var(--ink);
+  --find-file-results-border: var(--system-control-line) solid var(--ink);
   --find-file-results-radius: 0;
   --find-file-results-bg: var(--paper);
   --find-file-results-shadow: none;
@@ -807,7 +849,7 @@
   --find-path-pane-bg: transparent;
   --find-path-results-gap: 0;
   --find-path-results-padding: 0;
-  --find-path-results-border: 2px solid var(--ink);
+  --find-path-results-border: var(--system-control-line) solid var(--ink);
   --find-path-results-radius: 0;
   --find-path-results-bg: var(--paper);
   --find-path-results-shadow: none;
@@ -871,7 +913,7 @@
   --reader-content-bg: var(--paper);
   --reader-content-shadow: var(--system-inset);
   --drop-target-inset: 8px;
-  --drop-target-border: 2px dashed var(--ink);
+  --drop-target-border: var(--system-control-line) dashed var(--ink);
   --drop-target-radius: 0;
   --drop-target-bg: rgba(255, 255, 255, 0.88);
   --drop-target-shadow: none;
@@ -911,7 +953,7 @@
   --time-machine-calendar-day-border: var(--shade-dark);
   --time-machine-time-bg: repeating-linear-gradient(135deg, var(--paper) 0 6px, #e8e8e8 6px 7px);
   --time-machine-time-active-bg: repeating-linear-gradient(135deg, #d8d8d8 0 5px, var(--paper) 5px 7px);
-  --time-machine-time-border: 2px solid var(--ink);
+  --time-machine-time-border: var(--system-control-line) solid var(--ink);
   --time-machine-frame-border: var(--system-border);
   --time-machine-frame-radius: 0;
   --time-machine-frame-bg: var(--paper);
@@ -921,7 +963,7 @@
   --time-machine-loading-bg: rgba(255, 255, 255, 0.9);
   --scrap-selection-actions-border: 1px dotted var(--shade-dark);
   --notification-item-divider: 1px dotted var(--shade-dark);
-  --view-switch-border: 2px solid var(--ink);
+  --view-switch-border: var(--system-control-line) solid var(--ink);
   --view-switch-radius: 0;
   --view-switch-bg: var(--paper);
   --view-switch-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 var(--shade-dark);
@@ -939,11 +981,11 @@
   --help-row-selected-bg: var(--ink);
   --help-row-selected-fg: var(--paper);
   --help-row-active-radius: 0;
-  --system-help-panel-border: 2px solid var(--ink);
+  --system-help-panel-border: var(--system-control-line) solid var(--ink);
   --system-help-panel-radius: 0;
   --system-help-panel-bg: var(--paper);
   --system-help-panel-shadow: none;
-  --system-help-search-input-border: 2px solid var(--ink);
+  --system-help-search-input-border: var(--system-control-line) solid var(--ink);
   --system-help-search-input-radius: 0;
   --system-help-list-button-border-bottom: 1px dotted var(--shade-dark);
   --system-help-actions-border-top: 1px dotted var(--shade-dark);
@@ -958,7 +1000,7 @@
   --source-registry-item-border-style: dashed;
   --context-header-border-bottom: 1px solid var(--ink);
   --context-header-badge-border: 1px solid var(--ink);
-  --context-section-title-border-bottom: 2px solid var(--ink);
+  --context-section-title-border-bottom: var(--system-control-line) solid var(--ink);
   --context-item-actions-border-top: 1px solid var(--shade);
   --key-caps-pane-gap: 10px;
   --key-caps-pane-padding: var(--system-window-padding);
@@ -971,16 +1013,16 @@
   --key-caps-note-fg: inherit;
   --key-caps-note-shadow: none;
   --shortcut-grid-overflow: visible;
-  --shortcut-grid-border: 2px solid var(--ink);
+  --shortcut-grid-border: var(--system-control-line) solid var(--ink);
   --shortcut-grid-radius: 0;
   --shortcut-grid-bg: transparent;
   --shortcut-grid-shadow: none;
   --shortcut-grid-divider: 1px dotted var(--shade-dark);
-  --shortcut-grid-key-border-right: 2px solid var(--ink);
+  --shortcut-grid-key-border-right: var(--system-control-line) solid var(--ink);
   --shortcut-grid-key-bg: #eeeeee;
   --character-map-gap: 6px;
   --character-map-button-min-height: 28px;
-  --character-map-button-border: 2px solid var(--ink);
+  --character-map-button-border: var(--system-control-line) solid var(--ink);
   --character-map-button-radius: 0;
   --character-map-button-bg: var(--paper);
   --character-map-button-fg: var(--ink);
@@ -993,13 +1035,13 @@
   /* Native WIND -16000 is 129×18 in compact form and its PICT mode glyphs
      are 23×23, 24×22, and 14×17. Preserve that 1× relationship. */
   --alarm-clock-window-width: 130px;
-  --alarm-clock-frame-border: 2px solid var(--ink);
+  --alarm-clock-frame-border: var(--system-control-line) solid var(--ink);
   --alarm-clock-frame-radius: 0;
   --alarm-clock-frame-shadow: 3px 3px 0 var(--ink);
   --alarm-clock-title-bg: var(--paper);
   --alarm-clock-surface-bg: var(--paper);
   --alarm-clock-readout-bg: var(--paper);
-  --alarm-clock-divider: 2px solid var(--ink);
+  --alarm-clock-divider: var(--system-control-line) solid var(--ink);
   --alarm-clock-active-bg: var(--ink);
   --alarm-clock-active-fg: var(--paper);
   --alarm-clock-title-control-width: 28px;
@@ -1033,14 +1075,14 @@
   --calculator-pane-padding: var(--system-window-padding);
   --calculator-pane-bg: var(--shade);
   --calculator-pane-bg-color: var(--shade);
-  --calculator-display-border: 2px solid var(--ink);
+  --calculator-display-border: var(--system-control-line) solid var(--ink);
   --calculator-display-radius: 0;
   --calculator-display-bg: var(--paper);
   --calculator-display-shadow: inset 1px 1px 0 var(--shade-dark);
   --calculator-keys-gap: 5px;
   --calculator-keys-row-height: 30px;
   --calculator-key-height: 30px;
-  --calculator-key-border: 2px solid var(--ink);
+  --calculator-key-border: var(--system-control-line) solid var(--ink);
   --calculator-key-radius: 0;
   --calculator-key-bg: var(--paper);
   --calculator-key-fg: var(--ink);
@@ -1069,7 +1111,7 @@
   --puzzle-board-width: 160px;
   --puzzle-board-height: 160px;
   --puzzle-board-padding: 0;
-  --puzzle-board-border: 2px solid var(--ink);
+  --puzzle-board-border: var(--system-control-line) solid var(--ink);
   --puzzle-board-radius: 0;
   --puzzle-board-bg: var(--paper);
   --puzzle-board-shadow: none;
@@ -1139,7 +1181,7 @@
   --clio-stage-view-disabled-opacity: 1;
   --clio-stage-details-bar-gap: 8px;
   --clio-stage-viewport-min-height: 0;
-  --clio-stage-viewport-border: 2px solid var(--ink);
+  --clio-stage-viewport-border: var(--system-control-line) solid var(--ink);
   --clio-stage-viewport-radius: 0;
   --clio-stage-viewport-bg: var(--paper);
   --clio-stage-viewport-shadow: inset 1px 1px 0 var(--shade);
@@ -1149,7 +1191,7 @@
   --clio-stage-slide-mode-min-height: 0;
   --clio-stage-slide-mode-padding: 12px;
   --clio-stage-slide-mode-bg: var(--desktop);
-  --clio-stage-slide-frame-border: 2px solid var(--ink);
+  --clio-stage-slide-frame-border: var(--system-control-line) solid var(--ink);
   --clio-stage-slide-frame-radius: 0;
   --clio-stage-slide-frame-shadow: var(--system-shadow);
   --clio-stage-cue-mode-min-height: 0;
@@ -1162,28 +1204,28 @@
   --clio-stage-cue-next-border-top-color: var(--paper);
   --clio-stage-cue-next-fg: var(--paper);
   --attached-context-bg: var(--shade);
-  --attached-context-border: 2px solid var(--ink);
+  --attached-context-border: var(--system-control-line) solid var(--ink);
   --demo-caption-bg: rgba(255, 255, 255, 0.96);
-  --demo-caption-border: 2px solid var(--ink);
+  --demo-caption-border: var(--system-control-line) solid var(--ink);
   --demo-caption-radius: 12px;
   --demo-caption-shadow: 0 5px 18px rgba(0, 0, 0, 0.22);
   --demo-caption-fg: var(--ink);
   --demo-highlight-border: #ff2d2d;
   --demo-highlight-ring: 0 0 0 3px #ffffff, 0 0 0 6px var(--ink);
   --demo-highlight-label-bg: var(--paper);
-  --demo-highlight-label-border: 2px solid var(--ink);
+  --demo-highlight-label-border: var(--system-control-line) solid var(--ink);
   --demo-highlight-label-fg: var(--ink);
   --attached-context-label-color: var(--ink);
   --attached-context-pill-radius: var(--control-radius);
   --attached-context-shadow: none;
-  --print-directory-preview-border: 2px solid var(--ink);
+  --print-directory-preview-border: var(--system-control-line) solid var(--ink);
   --print-directory-preview-bg: var(--paper);
   --print-directory-preview-radius: 0;
   --print-directory-preview-shadow: none;
-  --print-directory-heading-border: 2px solid var(--ink);
+  --print-directory-heading-border: var(--system-control-line) solid var(--ink);
   --print-directory-table-border: 1px solid var(--ink);
   --print-directory-table-heading-bg: var(--shade);
-  --file-preview-border: 2px solid var(--ink);
+  --file-preview-border: var(--system-control-line) solid var(--ink);
   --file-preview-bg: var(--paper);
   --file-preview-radius: 0;
   --file-preview-shadow: none;
@@ -1237,7 +1279,7 @@
   --cmf-pill-bg: rgba(255, 255, 255, 0.55);
   --cmf-chip-bg: var(--paper);
   --cmf-chip-selected-shadow: inset 0 0 0 2px var(--ink);
-  --cmf-chip-focus-outline: 2px solid var(--ink);
+  --cmf-chip-focus-outline: var(--system-control-line) solid var(--ink);
   --bureaucracy-pane-bg: var(--paper);
   --bureaucracy-surface-bg: var(--paper);
   --bureaucracy-surface-border: 1px solid var(--ink);
@@ -1293,10 +1335,33 @@ html:lang(zh-Hans) {
 }
 
 body.use-modern-fonts {
-  --ui-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
-  --title-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
-  --text-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
-  --mono-font: "SFMono-Regular", "Cascadia Mono", "Consolas", "Monaco", "Courier New", monospace;
+  --ui-font: var(--modern-sans-font);
+  --title-font: var(--modern-sans-font);
+  --text-font: var(--modern-sans-font);
+  --mono-font: var(--modern-mono-font);
+  /* Semantic aliases declared on :root otherwise resolve against :root's
+     Classic font values before they inherit. Rebind them on the mode owner. */
+  --clio-copy-font: var(--text-font);
+  --clio-title-font: var(--title-font);
+  --clio-control-font: var(--ui-font);
+  --drop-target-font-family: var(--ui-font);
+  --clio-title-size: clamp(23px, 3.4vw, 28px);
+  --clio-title-weight: 600;
+  --clio-title-leading: 1.22;
+  --clio-title-tracking: 0;
+  /* Modern type needs more ink than the native one-unit bitmaps, but a full
+     two-unit outline overpowers 42px route icons. Outline paths use 1.5 units;
+     one-unit filled pixel runs expand by 0.5 so both families finish at the
+     same optical width on the shared 32×32 grid. */
+  --system-icon-stroke-width: 1.5;
+  --system-icon-pixel-run-expansion: 0.5;
+  /* Control and frame lines carry the same compensation: a one-pixel rule
+     beside 1.5-unit icon outlines reads as the lighter of the two families. */
+  --system-control-line: 1.5px;
+  /* Menu icons render at 17px rather than the desktop's 42px. Their grid
+     stroke therefore needs its own optical compensation to remain legible. */
+  --menu-system-icon-stroke-width: 2.25;
+  --menu-system-icon-pixel-run-expansion: 1.25;
 }
 
 body.use-modern-fonts .teachtext-preview,
@@ -1392,7 +1457,7 @@ textarea,
   gap: 2px;
   padding: 0 8px;
   background: var(--paper);
-  border-bottom: 2px solid var(--ink);
+  border-bottom: var(--menu-bar-border);
   z-index: var(--z-system-menu);
   overflow: visible;
 }
@@ -1439,8 +1504,8 @@ body.has-system-modal .menu-bar {
   min-width: 180px;
   padding: 2px 0;
   background: var(--paper);
-  border: 2px solid var(--ink);
-  box-shadow: 2px 2px 0 var(--ink);
+  border: var(--system-control-line) solid var(--ink);
+  box-shadow: var(--menu-panel-shadow);
   z-index: var(--z-system-menu-popover);
   scrollbar-gutter: stable;
 }
@@ -1471,7 +1536,7 @@ body.has-system-modal .menu-bar {
 .menu-section-label {
   padding: 3px 12px 1px 16px;
   color: var(--shade-dark);
-  font-size: 11px;
+  font-size: var(--system-caption-size);
   line-height: 1.25;
   white-space: nowrap;
 }
@@ -1516,8 +1581,8 @@ body.has-system-modal .menu-bar {
   min-width: 190px;
   padding: 2px 0;
   background: var(--paper);
-  border: 2px solid var(--ink);
-  box-shadow: 2px 2px 0 var(--ink);
+  border: var(--system-control-line) solid var(--ink);
+  box-shadow: var(--menu-panel-shadow);
 }
 
 .menu-submenu:not(.is-disabled):hover > .menu-submenu-popover,
@@ -1555,11 +1620,15 @@ body.has-system-modal .menu-bar {
   left: 100%;
   top: -2px;
   background: var(--paper);
-  border: 2px solid var(--ink);
-  box-shadow: 2px 2px 0 var(--ink);
+  border: var(--system-control-line) solid var(--ink);
+  box-shadow: var(--menu-panel-shadow);
   min-width: 120px;
-  z-index: var(--z-system-menu-subpopover);
   scrollbar-gutter: stable;
+}
+
+.menu-sub-popover,
+.balloon-help {
+  z-index: var(--z-system-menu-subpopover);
 }
 
 .menu-popover::-webkit-scrollbar,
@@ -1572,12 +1641,12 @@ body.has-system-modal .menu-bar {
 .menu-popover::-webkit-scrollbar-track,
 .menu-sub-popover::-webkit-scrollbar-track {
   background: var(--paper);
-  border-left: 2px solid var(--ink);
+  border-left: var(--system-control-line) solid var(--ink);
 }
 
 .menu-popover::-webkit-scrollbar-thumb,
 .menu-sub-popover::-webkit-scrollbar-thumb {
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   border-radius: 0;
   background: var(--paper);
   box-shadow: inset 1px 1px 0 var(--shade);
@@ -1729,7 +1798,7 @@ body.has-system-modal .menu-bar {
   width: 14px;
   height: 12px;
   flex: 0 0 auto;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   background:
     linear-gradient(var(--ink), var(--ink)) 2px 2px / 8px 2px no-repeat,
     var(--paper);
@@ -1746,7 +1815,8 @@ body.has-system-modal .menu-bar {
 }
 
 .multifinder-button:hover .multifinder-icon,
-.multifinder-menu:focus-within > .multifinder-button .multifinder-icon {
+.multifinder-menu:focus-within > .multifinder-button .multifinder-icon,
+.multifinder-menu.is-open > .multifinder-button .multifinder-icon {
   border-color: var(--paper);
   background:
     linear-gradient(var(--paper), var(--paper)) 2px 2px / 8px 2px no-repeat,
@@ -2022,7 +2092,7 @@ body.has-system-modal .menu-bar {
 .happy-mac {
   width: 112px;
   height: 108px;
-  border: 4px solid var(--ink);
+  border: var(--happy-mac-border-width) solid var(--happy-mac-border-color);
   border-radius: 2px;
   background:
     linear-gradient(var(--ink), var(--ink)) 16px 84px / 11px 4px no-repeat,
@@ -2030,7 +2100,9 @@ body.has-system-modal .menu-bar {
     var(--paper);
   position: relative;
   margin: 14px 0 58px;
-  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.28);
+  box-shadow: var(--happy-mac-shadow);
+  backdrop-filter: var(--happy-mac-backdrop);
+  -webkit-backdrop-filter: var(--happy-mac-backdrop);
   transform: scale(var(--boot-mac-scale));
   transform-origin: center center;
 }
@@ -2042,7 +2114,7 @@ body.has-system-modal .menu-bar {
   right: 8px;
   bottom: -22px;
   height: 14px;
-  border: 4px solid var(--ink);
+  border: var(--happy-mac-border-width) solid var(--happy-mac-border-color);
   background: var(--paper);
 }
 
@@ -2052,10 +2124,10 @@ body.has-system-modal .menu-bar {
   top: 18px;
   width: 84px;
   height: 56px;
-  border: 2px solid var(--ink);
+  border: var(--happy-mac-face-border-width) solid var(--happy-mac-border-color);
   border-radius: 2px;
   background: var(--paper);
-  box-shadow: inset 3px 3px 0 var(--shade);
+  box-shadow: var(--happy-mac-face-shadow);
   overflow: hidden;
 }
 
@@ -2173,7 +2245,7 @@ body.has-system-modal .menu-bar {
   gap: 12px;
   width: min(720px, calc(100vw - 64px));
   padding: 20px 26px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   background: var(--paper);
   box-shadow: inset 1px 1px 0 var(--shade);
   font-family: var(--ui-font);
@@ -2209,7 +2281,7 @@ body.has-system-modal .menu-bar {
   justify-items: center;
   width: min(720px, calc(100vw - 64px));
   padding: 20px 26px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   background: var(--paper);
   box-shadow: inset 1px 1px 0 var(--shade);
   font-family: var(--ui-font);
@@ -2317,7 +2389,7 @@ body.has-system-modal .menu-bar {
   left: 50%;
   transform: translate(-50%, -50%);
   background: var(--paper);
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--ink);
   padding: 18px 18px 16px;
   z-index: var(--z-system-modal);
@@ -2348,7 +2420,7 @@ body.has-system-modal .menu-bar {
   top: 0;
   width: 31px;
   height: 31px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   background: var(--paper);
   display: grid;
   place-items: center;
@@ -2364,7 +2436,7 @@ body.has-system-modal .menu-bar {
   transform: translate(-50%, -50%);
   width: min(540px, calc(100vw - 32px));
   background: var(--paper);
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--ink);
   padding: var(--startup-settings-modal-padding);
   z-index: var(--z-system-modal);
@@ -2418,6 +2490,16 @@ body.has-system-modal .menu-bar {
   min-height: 24px;
 }
 
+.startup-environment-help {
+  justify-self: center;
+  max-width: 420px;
+  min-height: 2.7em;
+  margin: 0;
+  color: var(--shade-dark);
+  line-height: 1.35;
+  text-align: center;
+}
+
 .startup-settings-subhead {
   margin: 0;
   color: var(--startup-settings-subhead-color);
@@ -2465,6 +2547,53 @@ body.has-system-modal .menu-bar {
 .startup-settings-actions {
   justify-content: flex-end;
   margin-top: 4px;
+}
+
+.balloon-help {
+  position: fixed;
+  inset: auto;
+  left: var(--balloon-help-left, 10px);
+  top: var(--balloon-help-top, 10px);
+  margin: 0;
+  width: max-content;
+  max-width: min(300px, calc(100vw - 20px));
+  padding: var(--balloon-help-padding);
+  border: var(--balloon-help-border);
+  border-radius: var(--balloon-help-radius);
+  background: var(--balloon-help-bg);
+  box-shadow: var(--balloon-help-shadow);
+  backdrop-filter: var(--balloon-help-backdrop);
+  color: var(--ink);
+  font-family: var(--ui-font);
+  font-size: 12px;
+  line-height: 1.35;
+  pointer-events: none;
+}
+
+.balloon-help::before {
+  content: "";
+  position: absolute;
+  left: calc(var(--balloon-help-tail-left, 24px) - 7px);
+  width: 12px;
+  height: 12px;
+  background: var(--balloon-help-bg);
+  transform: rotate(45deg);
+}
+
+.balloon-help[data-side="below"]::before {
+  top: -8px;
+  border-left: var(--balloon-help-border);
+  border-top: var(--balloon-help-border);
+}
+
+.balloon-help[data-side="above"]::before {
+  bottom: -8px;
+  border-bottom: var(--balloon-help-border);
+  border-right: var(--balloon-help-border);
+}
+
+body.is-balloon-help [data-balloon-help] {
+  cursor: help;
 }
 
 .finder-operation-modal {

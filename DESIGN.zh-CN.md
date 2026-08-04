@@ -1,5 +1,5 @@
 <!-- canonical-source: DESIGN.md -->
-<!-- source-sha256: d8f966fe81284805c8c1d1fd9c6891ad10aab6674c61e3cde63458e6f4fcfbd4 -->
+<!-- source-sha256: b48b784d1d707dacc69a3481acb3ef4fed1f3c7ec2573fa0ce7e8c8e8b11f6a0 -->
 
 # AI System 6 设计合约
 
@@ -21,6 +21,46 @@ Macintosh System 6 桌面隐喻是约束，不是装饰：
 - TeachText 是 Manuscript 写作面。ClioTalk 是对话面。
 - Reader 摘录来源材料。Scrapbook 保存用户主动挑选的材料。
 - File Floppy 是临时上下文。Project Hard Disk 是持久项目状态。
+
+## 历史词汇：System 6 是基线，Classic Mac OS 是词汇库
+
+System 6 是本产品的视觉与对象语法基线，不是历史截止日期。整个 Classic Mac OS 谱系都是
+可用的词汇库。MultiFinder、Balloon Help、WindowShade、Apple Guide 以及其他后来的
+Classic Mac OS 思想，只要能改善产品，就可以被引进、消化和改造。年代是需要记录的证据，
+不是拒绝有用设计的理由。
+
+引进历史元素必须同时满足以下条件：
+
+- 先检查原生资源或对应年代的真实运行行为，并记录证据来自哪个系统版本；不能把后来的功能
+  说成 System 6 的原生行为。
+- 保留原始角色和状态转换。外观相近或位于同一块窗口边框上的控件，并不因此可以互换。
+- 针对网页、指针、键盘、触控、窄屏和无障碍重新消化，而不是复刻过时的输入限制。
+- 默认体验保持安静。后续系统功能应按需出现，或在真正相关时出现，不能堆成功能清单。
+- Classic 与 Liquid Glass 使用同一套语义 DOM 和状态模型。Classic 保留可辨识的历史形态；
+  Liquid Glass 改变材质，不改变对象含义。
+
+控件语义是承重规则：
+
+- 标题栏 Zoom box 在窗口的当前尺寸/位置与标准尺寸/位置之间切换。
+- 右下角 grow box 用于手动改变可调整窗口的尺寸。
+- WindowShade 是后来的 Classic Mac OS 行为，只把窗口收成标题栏，并保留为独立的双击动作；
+  Zoom 绝不能退化成 WindowShade。
+- 完整应用和文档窗口可以提供 Zoom 与 grow。固定系统窗口和 Desk Accessory 通常不提供，
+  除非原生证据或明确的产品合约另有说明。
+
+渐进式发现应分工，而不是堆成一套教程：
+
+- OOBE 保持为单一、可关闭的系统欢迎窗口。它只指向苹果菜单和「特别」菜单，让 AI 设置保持
+  可选，绝不变成设置向导。
+- MultiFinder 通过启动环境被发现：在用户作出选择的位置简短解释 Finder 与 MultiFinder，
+  只有启用 MultiFinder 后，才教学真实出现的菜单栏应用切换器。
+- [Balloon Help](https://en.wikipedia.org/wiki/Balloon_help) 可以作为可选、由用户主动开启、能
+  感知状态的帮助模式。它用一两句可执行的文案回答「这是什么？」和「为什么现在不能用？」；
+  不能变成自动 OOBE 导览，也不能取代面向任务的 System Help。
+- Balloon Help 只面向陌生图标、系统对象和禁用原因，不重复可见按钮文字。指针悬停或键盘
+  聚焦可以显示它；触控则先显式进入帮助模式，再点击对象查看。
+
+一句话：**System 6 是语法，Classic Mac OS 是词汇库。**
 
 ## 设计旋钮
 

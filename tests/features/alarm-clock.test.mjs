@@ -67,6 +67,7 @@ test.assertIncludes(surfaces, ".alarm-clock-switch.is-on .alarm-clock-switch-fil
 test.assertIncludes(surfaces, ".alarm-clock-stepper-glyph", "the native stepper is painted as one 1-bit object without an invented middle divider");
 test.assertIncludes(surfaces, ".alarm-clock-window.is-ringing .alarm-clock-bell-rays", "ringing adds the observed asymmetric ray pixels without rotating the resource bell");
 test.assertIncludes(surfaces, "animation: alarm-clock-menu-apple-flash 2s step-end infinite", "the native Apple glyph owns the second half of the observed two-second flash cycle");
+test.assertIncludes(surfaces, "body.alarm-clock-ringing .menu-bar > .menu > .apple::before", "ringing fades the restored compact-computer menu glyph");
 test.assertIncludes(surfaces, "animation: alarm-clock-menu-icon-flash 2s step-end infinite", "the native menu alarm owns the first half of the observed two-second flash cycle");
 test.assertNotIncludes(surfaces, "transform: rotate(-6deg)", "the resource bell stays fixed while it rings");
 test.assertIncludes(surfaces, ".alarm-clock-readout > .alarm-clock-value", "the compact readout owns its height and padding instead of inheriting full-size form-control geometry");

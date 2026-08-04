@@ -249,7 +249,7 @@
   --review-source-ratio: 0.5;
   --review-splitter-size: 10px;
   min-height: 0;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   background: var(--paper);
   overflow: hidden;
   display: grid;
@@ -287,8 +287,8 @@
   height: var(--review-splitter-size);
   padding: 0;
   border: 0;
-  border-top: 2px solid var(--ink);
-  border-bottom: 2px solid var(--ink);
+  border-top: var(--system-control-line) solid var(--ink);
+  border-bottom: var(--system-control-line) solid var(--ink);
   border-radius: 0;
   background:
     repeating-linear-gradient(
@@ -338,7 +338,7 @@
   width: min(var(--mde-page-width), calc(100% - 48px));
   min-height: 156px;
   padding: 24px 28px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   background: var(--paper);
   text-align: center;
   line-height: 1.45;
@@ -399,8 +399,8 @@
 }
 
 .review-result-column th {
-  border-bottom: 2px solid var(--ink);
-  font-family: Chicago_12, Chicago, Charcoal, "Songti SC", "SimSun", serif;
+  border-bottom: var(--system-control-line) solid var(--ink);
+  font-family: var(--title-font);
   font-weight: var(--system-strong-weight);
   background: var(--paper);
 }
@@ -415,7 +415,7 @@
 
 .review-result-column td:first-child {
   min-width: 5.5em;
-  font-family: Chicago_12, Chicago, Charcoal, "Songti SC", "SimSun", serif;
+  font-family: var(--title-font);
   font-weight: var(--system-strong-weight);
 }
 
@@ -430,7 +430,7 @@
 }
 
 .review-result-column tr + tr td {
-  border-top: 2px solid var(--ink);
+  border-top: var(--system-control-line) solid var(--ink);
 }
 
 .review-desk-actions {
@@ -438,7 +438,7 @@
 }
 
 .style-note {
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   background: var(--paper);
   padding: 8px;
 }
@@ -530,7 +530,7 @@
 .large-mini-icon {
   width: 48px;
   height: 48px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   background: var(--paper);
   position: relative;
   flex-shrink: 0;
@@ -625,7 +625,7 @@
 }
 
 .outline-notes {
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   background: var(--paper);
   padding: 8px 10px;
   font-family: var(--text-font);
@@ -682,7 +682,7 @@
 
 .draft-list {
   height: 120px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   background: var(--paper);
   overflow-y: auto;
   margin-bottom: 8px;
@@ -730,7 +730,7 @@
 .draft-section-label {
   min-width: 0;
   padding: 4px 8px;
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   background: var(--paper);
   font-family: var(--title-font);
   font-size: 13px;
@@ -772,7 +772,7 @@
 }
 
 .claim-results {
-  border: 2px solid var(--ink);
+  border: var(--system-control-line) solid var(--ink);
   background: var(--paper);
   padding: 12px;
   overflow: visible;
@@ -1448,12 +1448,16 @@
 
 .alarm-clock-menu-icon {
   display: none;
+  position: absolute;
+  left: 50%;
+  top: 50%;
   width: 15px;
   height: 16px;
   overflow: visible;
   fill: currentColor;
   stroke: none;
   shape-rendering: crispEdges;
+  transform: translate(-50%, -50%);
 }
 
 body.alarm-clock-ringing .menu-bar > .menu > .apple::before,

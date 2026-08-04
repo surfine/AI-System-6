@@ -6,6 +6,10 @@ const { sendJson } = require("../lib/http.js");
 
 const modifyingMethods = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 const loopbackHostnames = new Set(["127.0.0.1", "::1", "localhost"]);
+const defaultBrowserBridgeOrigins = Object.freeze([
+  "https://system6.aaronlau.me",
+  "http://local.system6.aaronlau.me",
+]);
 
 function normalizedHostname(value) {
   const text = String(value || "").trim().toLowerCase();
@@ -54,6 +58,13 @@ function configuredLocalRequestPolicy(port) {
     ? configuredHost || "0.0.0.0"
     : "127.0.0.1";
   const authToken = String(process.env.AI_SYSTEM6_AUTH_TOKEN || "");
+  const browserBridgeOrigins = new Set([
+    ...defaultBrowserBridgeOrigins,
+    ...String(process.env.AI_SYSTEM6_BROWSER_BRIDGE_ORIGINS || "")
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean),
+  ]);
 
   if (!allowLan && configuredHost && !isLoopbackHostname(configuredHost)) {
     throw new Error(
@@ -75,9 +86,37 @@ function configuredLocalRequestPolicy(port) {
     allowLan,
     allowedHostnames,
     authToken,
+    browserBridgeOrigins,
     host,
     port: String(port),
   });
+}
+
+function trustedBrowserBridgeOrigin(req, policy) {
+  if (requestPath(req) !== "/api/music/system") return "";
+  const host = hostHeaderParts(req.headers.host);
+  if (!isLoopbackHostname(host.hostname) || (host.port && host.port !== policy.port)) return "";
+  const origin = String(req.headers.origin || "").trim();
+  return policy.browserBridgeOrigins.has(origin) ? origin : "";
+}
+
+function applyBrowserBridgeCors(req, res, policy) {
+  const origin = trustedBrowserBridgeOrigin(req, policy);
+  if (!origin) return false;
+  res.setHeader("Access-Control-Allow-Origin", origin);
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Allow-Private-Network", "true");
+  res.setHeader("Vary", "Origin, Access-Control-Request-Private-Network");
+  return true;
+}
+
+function handleBrowserBridgePreflight(req, res, policy) {
+  if (String(req.method || "").toUpperCase() !== "OPTIONS") return false;
+  if (!applyBrowserBridgeCors(req, res, policy)) return false;
+  res.writeHead(204);
+  res.end();
+  return true;
 }
 
 function requestOriginIsTrusted(req, policy) {
@@ -169,7 +208,8 @@ function applySecurityHeaders(res) {
 async function runWithLocalRequestGuard(req, res, policy, handler) {
   const pathname = requestPath(req);
   if (!pathname.startsWith("/api/")) return handler();
-  if (!requestOriginIsTrusted(req, policy)) {
+  const trustedBrowserBridge = applyBrowserBridgeCors(req, res, policy);
+  if (!requestOriginIsTrusted(req, policy) && !trustedBrowserBridge) {
     sendJson(res, 403, {
       error: "Untrusted local request",
       code: "untrusted_local_request",
@@ -202,6 +242,7 @@ async function runWithLocalRequestGuard(req, res, policy, handler) {
 module.exports = {
   applySecurityHeaders,
   configuredLocalRequestPolicy,
+  handleBrowserBridgePreflight,
   hostHeaderParts,
   isLoopbackHostname,
   requestOriginIsTrusted,

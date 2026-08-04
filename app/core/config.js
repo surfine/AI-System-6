@@ -59,14 +59,6 @@ window.AISystem6Config = (() => {
     build: "20260729.3",
   });
 
-  const nativeProductDecision = Object.freeze({
-    trackKey: "product_track_value",
-    targetKey: "native_target_value",
-    boundaryKey: "prototype_boundary_value",
-    nativeStatus: "native-first beta",
-    currentRuntime: "local web beta",
-  });
-
   const defaultWindowViewModes = Object.freeze({
     finder: "icon",
     helpFolder: "icon",
@@ -254,7 +246,6 @@ window.AISystem6Config = (() => {
 
   return {
     defaultAppVersionInfo,
-    nativeProductDecision,
     defaultWindowViewModes,
     memoryCardPairs,
     longTaskControlSelectors,
@@ -642,7 +633,6 @@ function installLazyWritingFlowStub(name) {
   "syncLinkedManuscriptScrollFrom",
   "updateFlowGuideChecklist",
   "insertQuestionTemplate",
-  "clearQuestionSheet",
   "advanceQuestionSheetToOutline",
   "advanceOutlineToSectionDrafts",
   "savePipelineData",
@@ -651,11 +641,7 @@ function installLazyWritingFlowStub(name) {
   "syncOutlineDomFromProject",
   "syncDraftDomFromProject",
   "syncLinkedTeachTextFromProject",
-  "restoreQuestionsToOutline",
   "addOutlineSection",
-  "insertOutlineHkrrIntent",
-  "clearOutlineWithConfirmation",
-  "saveOutline",
   "draftSelectedOutlineSection",
   "showAdjacentSectionDraft",
   "createManualSectionDraft",

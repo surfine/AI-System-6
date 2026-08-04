@@ -16,6 +16,31 @@ import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 const test = createFeatureTest("menu-availability");
 const menus = read("app/data/menus.js");
 const windowManager = read("app/core/window-manager.js");
+const actions = read("app/core/actions.js");
+
+for (const removedAction of [
+  "resummarize-chat-title",
+  "move-project-trash",
+  "guide-use-finder",
+  "guide-use-multifinder",
+  "guide-open-control",
+  "guide-learn-flow",
+  "copy-native-brief",
+  "export-native-handoff",
+  "toggle-tool-dock",
+  "clear-question-sheet",
+  "save-questions",
+  "restore-questions-to-outline",
+  "insert-outline-hkrr-intent",
+  "clear-outline",
+  "save-outline",
+  "save-section-draft",
+  "insert-to-teachtext",
+  "open-disk",
+  "save-last",
+]) {
+  test.assertNotIncludes(actions, `"${removedAction}"`, `${removedAction} does not survive as a hidden command handler`);
+}
 
 // --- every action a menu can dispatch ---------------------------------------
 const menuActions = [...new Set([...menus.matchAll(/menuItem\("([a-z0-9-]+)"/g)].map((m) => m[1]))];

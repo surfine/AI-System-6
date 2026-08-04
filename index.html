@@ -16,12 +16,12 @@
     <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png" />
     <link rel="manifest" href="assets/app-icon/manifest.json" />
-    <link rel="stylesheet" href="styles.bundle.css?v=20260803.02" />
+    <link rel="stylesheet" href="styles.bundle.css?v=20260804.03" />
   </head>
   <body class="is-booting">
     <header class="menu-bar" aria-label="System menu">
       <div class="menu">
-        <button class="apple" aria-label="Apple menu">
+        <button class="apple" aria-label="Apple menu" data-balloon-help="balloon_apple_menu">
           <svg class="alarm-clock-menu-icon" viewBox="0 0 15 16" aria-hidden="true" focusable="false">
             <path d="M2 0h1v1H2zM7 0h1v1H7zM12 0h1v1h-1zM3 1h1v1H3zM7 1h1v1H7zM11 1h1v1h-1zM4 3h1v1H4zM7 3h1v1H7zM10 3h1v1h-1zM0 4h1v1H0zM2 4h1v1H2zM12 4h1v1h-1zM14 4h1v1h-1zM4 5h7v1H4zM2 6h3v1H2zM10 6h3v1h-3zM2 7h1v7H2zM7 7h1v4H7zM12 7h1v7h-1zM6 11h1v1H6zM5 12h1v1H5zM2 13h2v1H2zM11 13h2v1h-2zM4 14h7v1H4zM3 15h9v1H3z"></path>
           </svg>
@@ -30,8 +30,8 @@
           <button data-action="open-about" data-i18n="about_menu">About AI System 6...</button>
           <button data-action="switch-language" data-i18n="switch_language">简体中文</button>
           <hr />
-          <div class="menu-section-label" data-workspace-capability="studio" data-i18n="apple_menu_start">Start</div>
-          <button data-workspace-capability="studio" data-action="open-guide" data-i18n="start_here">Start Here</button>
+          <div class="menu-section-label" data-i18n="apple_menu_start">Start</div>
+          <button data-action="open-guide" data-i18n="start_here">Start Here</button>
           <button data-workspace-capability="studio" data-action="guide-start-route" data-i18n="guide_start_route">Start Writing Route</button>
           <hr data-workspace-capability="studio" />
           <div class="menu-section-label" data-i18n="apple_menu_writing_da">Writing DA</div>
@@ -63,14 +63,14 @@
       <span id="app-menu-slot" hidden></span>
       <div class="menu-spacer"></div>
       <div class="menu cloud-switcher-menu">
-        <button id="cloud-model-indicator" class="cloud-model-indicator is-hidden" type="button" aria-haspopup="menu" aria-label="Cloud Model Status">
+        <button id="cloud-model-indicator" class="cloud-model-indicator is-hidden" type="button" aria-haspopup="menu" aria-label="Cloud Model Status" data-balloon-help="balloon_model_status">
           <span class="cloud-icon sys-icon" data-system-icon="cloudModel" aria-hidden="true"></span>
           <span id="cloud-model-label">None</span>
         </button>
         <div id="cloud-model-popover" class="menu-popover cloud-model-popover" role="menu"></div>
       </div>
       <div class="menu project-switcher-menu">
-        <button id="project-switcher-button" class="project-switcher-button" type="button" aria-haspopup="menu" aria-label="Switch Project Hard Disk">
+        <button id="project-switcher-button" class="project-switcher-button" type="button" aria-haspopup="menu" aria-label="Switch Project Hard Disk" data-balloon-help="balloon_project_switcher">
           <span class="project-switcher-icon sys-icon sys-icon-desktop" data-system-icon="projectDisk" aria-hidden="true"></span>
           <span id="project-switcher-label">Project Hard Disk</span>
         </button>
@@ -82,11 +82,14 @@
       </button>
       <span id="clock" class="is-hidden" aria-hidden="true"></span>
       <div class="menu multifinder-menu">
-        <button id="multifinder-button" class="multifinder-button" type="button" aria-haspopup="menu" aria-label="MultiFinder">
+        <button id="multifinder-button" class="multifinder-button" type="button" aria-haspopup="menu" aria-label="MultiFinder" data-balloon-help="balloon_multifinder_switcher">
           <span class="multifinder-icon" aria-hidden="true"></span>
           <span id="multifinder-label">Finder</span>
         </button>
         <div id="multifinder-popover" class="menu-popover multifinder-popover" role="menu"></div>
+      </div>
+      <div id="balloon-help" class="balloon-help is-hidden" role="tooltip" aria-live="polite" popover="manual">
+        <span id="balloon-help-text"></span>
       </div>
     </header>
 
@@ -131,17 +134,17 @@
             </button>
             <button type="button" data-action="open-question-sheet">
               <span class="spine-step-number" aria-hidden="true">1</span>
-              <span class="sys-icon sys-icon-mini" data-system-icon="questionSheet" aria-hidden="true"></span>
+              <span class="sys-icon sys-icon-desktop" data-system-icon="questionSheet" aria-hidden="true"></span>
               <b data-i18n="question_sheet">Question Sheet</b>
             </button>
             <button type="button" data-action="open-outline">
               <span class="spine-step-number" aria-hidden="true">2</span>
-              <span class="sys-icon sys-icon-mini" data-system-icon="outline" aria-hidden="true"></span>
+              <span class="sys-icon sys-icon-desktop" data-system-icon="outline" aria-hidden="true"></span>
               <b data-i18n="outline">Outline</b>
             </button>
             <button type="button" data-action="open-section-drafts">
               <span class="spine-step-number" aria-hidden="true">3</span>
-              <span class="sys-icon sys-icon-mini" data-system-icon="sectionDrafts" aria-hidden="true"></span>
+              <span class="sys-icon sys-icon-desktop" data-system-icon="sectionDrafts" aria-hidden="true"></span>
               <b data-i18n="section_drafts">Section Drafts</b>
             </button>
             <button type="button" data-action="open-teachtext">
@@ -151,7 +154,7 @@
             </button>
             <button type="button" data-action="open-review-desk">
               <span class="spine-step-number" aria-hidden="true">5</span>
-              <span class="sys-icon sys-icon-mini" data-system-icon="reviewDesk" aria-hidden="true"></span>
+              <span class="sys-icon sys-icon-desktop" data-system-icon="reviewDesk" aria-hidden="true"></span>
               <b data-i18n="review_desk">Review Desk</b>
             </button>
             <button id="spine-burn-project-cd-button" type="button" data-action="export-teachtext-project-cd" hidden>
@@ -216,6 +219,7 @@
             <label><input type="radio" name="startup-mode" value="finder" /> <span>Finder</span></label>
             <label><input type="radio" name="startup-mode" value="multifinder" /> <span>MultiFinder</span></label>
           </div>
+          <p id="startup-environment-help" class="startup-environment-help" aria-live="polite"></p>
           <hr />
           <p class="startup-settings-subhead" data-i18n="startup_automatically_open">Upon startup, automatically open:</p>
           <div class="startup-open-options" role="radiogroup" aria-label="Startup items">
@@ -270,7 +274,7 @@
         <div class="title-bar">
           <button class="close-box" aria-label="Close"></button>
           <h1 id="assistant-title" data-i18n="assistant_title">ClioTalk</h1>
-          <button class="resize-box" aria-label="Resize"></button>
+          <button class="resize-box" aria-label="Zoom"></button>
         </div>
         <!-- Info bar: this window's Finder header. Counts on the left, the
              file this conversation lives in on the right, visible before the
@@ -306,11 +310,9 @@
               <span class="sys-icon sys-icon-mini clio-welcome-icon" data-system-icon="assistant" aria-hidden="true"></span>
               <div class="speaker" data-i18n="assistant">ClioTalk</div>
               <div class="message-content">
-                <p data-i18n="welcome_message"><strong>What are you working on?</strong><span>Ask a question, start a draft, or attach a project file. Nothing is added to your project until you choose to keep it.</span></p>
+                <p data-i18n="clio_model_required_message"><strong>Connect AI to send a message</strong><span>ClioTalk needs a ready local or cloud model. You can keep exploring the desktop and connect one when you need it.</span></p>
                 <div class="clio-welcome-actions">
-                  <button class="btn" type="button" data-action="open-clio-attachment-picker" data-i18n="compose_attach_project_file">Attach project file</button>
-                  <button class="btn" type="button" data-action="open-question-sheet" data-i18n="clio_welcome_question_sheet">Start from Question Sheet</button>
-                  <button class="btn" type="button" data-action="paste-clio-interview" data-i18n="clio_welcome_paste_interview">Paste an interview</button>
+                  <button class="btn default" type="button" data-action="open-clio-model-settings" data-i18n="clio_connect_ai">Connect AI…</button>
                 </div>
               </div>
             </article>
@@ -370,7 +372,7 @@
               <button class="btn" type="button" id="retry" data-i18n="retry" hidden>Retry</button>
             </div>
             <button class="assistant-meter is-hidden" id="assistant-meter" type="button" data-action="open-model-meter">-- tok/s</button>
-            <button class="btn default composer-submit-button composer-icon-button" id="send" type="submit" data-mode="send" data-i18n-aria-label="send" data-i18n-title="send" disabled>
+            <button class="btn default composer-submit-button composer-icon-button" id="send" type="submit" data-mode="send" data-i18n-aria-label="send" data-i18n-title="send" data-balloon-help="balloon_clio_send" data-balloon-help-disabled="balloon_clio_send_disabled" disabled>
               <svg class="composer-send-glyph" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
                 <path d="M10 16V4M4.5 9.5 10 4l5.5 5.5"></path>
               </svg>
@@ -385,7 +387,7 @@
         <div class="title-bar">
           <button class="close-box" aria-label="Close"></button>
           <h2 id="control-title" data-i18n="control_panel">Control Panel</h2>
-          <button class="resize-box hidden" aria-label="Resize" disabled aria-hidden="true"></button>
+          <button class="resize-box hidden" aria-label="Zoom" disabled aria-hidden="true"></button>
         </div>
         <div class="window-pane settings control-settings">
           <div class="system-tabs" role="tablist" aria-label="Control Panel section">
@@ -415,7 +417,7 @@
               </label>
             </div>
 
-            <button class="btn default control-wide-button" type="button" id="connect-local-model" data-i18n="connect_local_model">Connect to LM Studio</button>
+            <button class="btn default control-wide-button" type="button" id="connect-local-model" data-i18n="open_and_connect_lm_studio">Open and Connect to LM Studio</button>
             <p class="hint control-status" id="local-connection-status" data-i18n="local_connection_waiting">Start the LM Studio server, enable CORS, then connect.</p>
 
             <details class="control-diagnostics" id="local-connection-details">
@@ -481,8 +483,8 @@
             </label>
 
             <label class="control-field" for="cloud-api-key">
-              <span data-i18n="cloud_api_key">API Key</span>
-              <input id="cloud-api-key" type="password" placeholder="sk-..." />
+              <span id="cloud-api-key-label" data-i18n="cloud_api_key">API Key</span>
+              <input id="cloud-api-key" type="password" placeholder="sk-..." autocomplete="off" spellcheck="false" />
             </label>
 
             <label class="control-field" for="cloud-model">
@@ -505,12 +507,12 @@
           <div id="control-panel-general" role="tabpanel" aria-labelledby="control-tab-general" data-control-panel="general" hidden>
           <section class="control-section">
             <h3 data-i18n="control_interface">Preferences</h3>
-            <div class="field-row">
-              <input id="remember" type="checkbox" />
-              <label for="remember" data-i18n="use_session_context">Use current session context</label>
-            </div>
-
             <div class="control-checkbox-grid">
+              <div class="field-row">
+                <input id="remember" type="checkbox" />
+                <label for="remember" data-i18n="use_session_context">Use current session context</label>
+              </div>
+
               <div class="field-row">
                 <input id="modern-fonts" type="checkbox" />
                 <label for="modern-fonts" data-i18n="modern_fonts">Modern UI Font</label>
@@ -539,21 +541,23 @@
               <span data-i18n="system_prompt">System Prompt</span>
               <textarea id="system" rows="4" data-prompt-file="cliotalk.main"></textarea>
             </label>
-            <div class="field-row">
-              <input id="performance-meter" type="checkbox" checked />
-              <label for="performance-meter" data-i18n="performance_meter">Performance Meter</label>
-            </div>
-            <div class="field-row">
-              <input id="manual-model-fields" type="checkbox" />
-              <label for="manual-model-fields" data-i18n="manual_model_fields">Allow manual model/API fields</label>
-            </div>
-            <div class="field-row">
-              <input id="show-reset-system-menu" type="checkbox" checked />
-              <label for="show-reset-system-menu" data-i18n="show_reset_system_menu">Show "Reset System" in Special menu</label>
-            </div>
-            <div class="field-row">
-              <input id="enable-image-gen" type="checkbox" />
-              <label for="enable-image-gen" data-i18n="enable_image_gen">AI background image generation (GPT Image) in Liquid Cover</label>
+            <div class="control-checkbox-grid">
+              <div class="field-row">
+                <input id="performance-meter" type="checkbox" checked />
+                <label for="performance-meter" data-i18n="performance_meter">Performance Meter</label>
+              </div>
+              <div class="field-row">
+                <input id="manual-model-fields" type="checkbox" />
+                <label for="manual-model-fields" data-i18n="manual_model_fields">Allow manual model/API fields</label>
+              </div>
+              <div class="field-row">
+                <input id="show-reset-system-menu" type="checkbox" checked />
+                <label for="show-reset-system-menu" data-i18n="show_reset_system_menu">Show "Reset System" in Special menu</label>
+              </div>
+              <div class="field-row">
+                <input id="enable-image-gen" type="checkbox" />
+                <label for="enable-image-gen" data-i18n="enable_image_gen">AI background image generation (GPT Image) in Liquid Cover</label>
+              </div>
             </div>
           </details>
           </div>
@@ -671,7 +675,7 @@
         <div class="title-bar">
           <button class="close-box" aria-label="Close"></button>
           <h2 id="finder-title" data-i18n="system_folder">System Folder</h2>
-          <button class="resize-box" aria-label="Resize"></button>
+          <button class="resize-box" aria-label="Zoom"></button>
         </div>
         <div class="details-bar">
           <span data-i18n="four_items">4 items</span>
@@ -705,7 +709,7 @@
         <div class="title-bar">
           <button class="close-box" aria-label="Close"></button>
           <h2 id="help-folder-title" data-i18n="help_folder">Help Folder</h2>
-          <button class="resize-box" aria-label="Resize"></button>
+          <button class="resize-box" aria-label="Zoom"></button>
         </div>
         <div class="details-bar">
           <span data-i18n="seven_items">7 items</span>
@@ -751,7 +755,7 @@
         <div class="title-bar">
           <button class="close-box" aria-label="Close"></button>
           <h2 id="applications-title" data-i18n="applications">Applications</h2>
-          <button class="resize-box" aria-label="Resize"></button>
+          <button class="resize-box" aria-label="Zoom"></button>
         </div>
         <div class="details-bar">
           <span data-i18n="twelve_items">12 items</span>
@@ -767,7 +771,7 @@
             <span data-i18n="assistant_label">ClioTalk</span>
           </button>
           <button class="finder-item" data-action="open-quick-draft">
-            <span class="sys-icon" data-system-icon="teachText" aria-hidden="true"></span>
+            <span class="sys-icon" data-system-icon="quickDraft" aria-hidden="true"></span>
             <span data-i18n="quick_draft_label">Quick Draft</span>
           </button>
           <button class="finder-item" data-action="open-teachtext">
@@ -827,7 +831,7 @@
             <span data-i18n="rebuild_article">Rebuild Article</span>
           </button>
           <button class="finder-item" data-action="play-writing-demo">
-            <span class="sys-icon" data-system-icon="teachText" aria-hidden="true"></span>
+            <span class="sys-icon" data-system-icon="writingDemo" aria-hidden="true"></span>
             <span data-i18n="guide_play_demo">Play Live Demo</span>
           </button>
         </div>
@@ -837,7 +841,7 @@
         <div class="title-bar">
           <button class="close-box" aria-label="Close"></button>
           <h2 id="quick-draft-title" data-i18n="quick_draft_title">Quick Draft</h2>
-          <button class="resize-box" aria-label="Resize"></button>
+          <button class="resize-box" aria-label="Zoom"></button>
         </div>
         <div class="details-bar quick-draft-details">
           <span id="quick-draft-stats">0 words · ~0 sec</span>
@@ -965,7 +969,7 @@
         <div class="title-bar">
           <button class="close-box" aria-label="Close"></button>
           <h2 id="cmf-studio-title" data-i18n="cmf_studio_title">CMF Studio</h2>
-          <button class="resize-box" aria-label="Resize"></button>
+          <button class="resize-box" aria-label="Zoom"></button>
         </div>
         <div class="details-bar cmf-status-bar">
           <span id="cmf-status" role="status" aria-live="polite" aria-atomic="true" data-i18n="cmf_ready">Ready.</span>
@@ -1031,7 +1035,7 @@
         <div class="title-bar">
           <button class="close-box" aria-label="Close"></button>
           <h2 id="soundscape-title" data-i18n="soundscape_title">Soundscape</h2>
-          <button class="resize-box" aria-label="Resize"></button>
+          <button class="resize-box" aria-label="Zoom"></button>
         </div>
         <div class="details-bar soundscape-status-bar">
           <span id="soundscape-status" data-i18n="soundscape_ready">Ready to listen.</span>
@@ -1059,13 +1063,13 @@
               <button class="btn soundscape-key" type="button" id="soundscape-shuffle" aria-pressed="false" data-i18n-aria-label="soundscape_shuffle" aria-label="Shuffle">
                 <span class="sys-icon" data-system-icon="shuffleTracks" aria-hidden="true"></span>
               </button>
-              <button class="btn soundscape-key" type="button" id="soundscape-previous" data-i18n-aria-label="previous" aria-label="Previous">
+              <button class="btn soundscape-key" type="button" id="soundscape-previous" data-i18n-aria-label="soundscape_previous_track" aria-label="Previous Track">
                 <span class="sys-icon" data-system-icon="previousTrack" aria-hidden="true"></span>
               </button>
               <button class="btn soundscape-key soundscape-key-wide" type="button" id="soundscape-toggle-play" data-i18n-aria-label="play" aria-label="Play">
                 <span class="sys-icon" id="soundscape-play-glyph" data-system-icon="play" aria-hidden="true"></span>
               </button>
-              <button class="btn soundscape-key" type="button" id="soundscape-next" data-i18n-aria-label="next" aria-label="Next">
+              <button class="btn soundscape-key" type="button" id="soundscape-next" data-i18n-aria-label="soundscape_next_track" aria-label="Next Track">
                 <span class="sys-icon" data-system-icon="nextTrack" aria-hidden="true"></span>
               </button>
               <button class="btn soundscape-key" type="button" id="soundscape-repeat" aria-pressed="false" data-repeat="off" data-i18n-aria-label="soundscape_repeat_off" aria-label="Repeat off">
@@ -1307,7 +1311,7 @@
         <div class="title-bar">
           <button class="close-box" aria-label="Close"></button>
           <h2 id="disk-title" data-i18n="startup_disk">Startup Disk</h2>
-          <button class="resize-box" aria-label="Resize"></button>
+          <button class="resize-box" aria-label="Zoom"></button>
         </div>
         <div class="details-bar">
           <span data-i18n="seven_items">7 items</span>
@@ -1353,7 +1357,7 @@
         <div class="title-bar">
           <button class="close-box" aria-label="Close"></button>
           <h2 id="project-cd-title" data-i18n="project_cd">Project CD</h2>
-          <button class="resize-box" aria-label="Resize"></button>
+          <button class="resize-box" aria-label="Zoom"></button>
         </div>
         <div class="details-bar">
           <span id="project-cd-count">0 Project CD items</span>
@@ -1453,7 +1457,7 @@
         <div class="title-bar">
           <button class="close-box" aria-label="Close"></button>
           <h2 id="project-disk-title" data-i18n="project_disk">Project Hard Disk</h2>
-          <button class="resize-box" aria-label="Resize"></button>
+          <button class="resize-box" aria-label="Zoom"></button>
         </div>
         <div class="window-pane project-disk-pane">
           <div class="project-disk-toolbar" hidden>
@@ -1479,7 +1483,7 @@
         <div class="title-bar">
           <button class="close-box" aria-label="Close"></button>
           <h2 id="documents-title" data-i18n="documents">Documents</h2>
-          <button class="resize-box" aria-label="Resize"></button>
+          <button class="resize-box" aria-label="Zoom"></button>
         </div>
         <div class="details-bar">
           <span id="documents-count">0 files</span>
@@ -1525,7 +1529,7 @@
         <div class="title-bar">
           <button class="close-box" aria-label="Close"></button>
           <h2 id="teachtext-title">Untitled</h2>
-          <button class="resize-box" aria-label="Resize"></button>
+          <button class="resize-box" aria-label="Zoom"></button>
         </div>
         <div class="details-bar teachtext-details-bar">
           <span id="teachtext-boundary">0 words</span>
@@ -1586,7 +1590,7 @@
         <div class="title-bar">
           <button class="close-box" aria-label="Close"></button>
           <h2 id="image-manager-title" data-i18n="image_manager">Image Manager</h2>
-          <button class="resize-box" aria-label="Resize"></button>
+          <button class="resize-box" aria-label="Zoom"></button>
         </div>
         <div class="details-bar">
           <span id="image-manager-status">0 / 48</span>
@@ -1610,7 +1614,7 @@
         <div class="title-bar">
           <button class="close-box" aria-label="Close"></button>
           <h2 id="review-desk-title" data-i18n="review_desk">Review Desk</h2>
-          <button class="resize-box" aria-label="Resize"></button>
+          <button class="resize-box" aria-label="Zoom"></button>
         </div>
         <div class="details-bar teachtext-details-bar">
           <span id="style-sheet-count" data-i18n="draft_voice_stats_empty">0 words · ~0 sec</span>
@@ -1688,7 +1692,7 @@
         <div class="title-bar">
           <button class="close-box" aria-label="Close"></button>
           <h2 id="scrapbook-title" data-i18n="scrapbook">Scrapbook</h2>
-          <button class="resize-box" aria-label="Resize"></button>
+          <button class="resize-box" aria-label="Zoom"></button>
         </div>
         <div class="details-bar scrapbook-details-bar">
           <span id="scrap-count">0 scraps</span>
@@ -1749,7 +1753,7 @@
         <div class="title-bar">
           <button class="close-box" aria-label="Close"></button>
           <h2 id="trash-title" data-i18n="trash">Trash</h2>
-          <button class="resize-box" aria-label="Resize"></button>
+          <button class="resize-box" aria-label="Zoom"></button>
         </div>
         <div class="details-bar">
           <span id="trash-count">0 items</span>
@@ -1786,7 +1790,7 @@
         <div class="title-bar">
           <button class="close-box" aria-label="Close"></button>
           <h2 id="reader-title" data-i18n="reader">Reader</h2>
-          <button class="resize-box" aria-label="Resize"></button>
+          <button class="resize-box" aria-label="Zoom"></button>
         </div>
         <div class="details-bar">
           <span id="reader-status" data-i18n="ready">Ready</span>
@@ -1838,7 +1842,7 @@
         <div class="title-bar">
           <button class="close-box" aria-label="Close"></button>
           <h2 id="time-machine-title" data-i18n="time_machine">Time Machine</h2>
-          <button class="resize-box" aria-label="Resize"></button>
+          <button class="resize-box" aria-label="Zoom"></button>
         </div>
         <div class="window-pane time-machine-pane">
           <div class="time-machine-browser-toolbar">
@@ -1950,7 +1954,7 @@
         <div class="title-bar">
           <button class="close-box" aria-label="Close"></button>
           <h2 id="question-sheet-title" data-i18n="question_sheet">Question Sheet</h2>
-          <button class="resize-box" aria-label="Resize"></button>
+          <button class="resize-box" aria-label="Zoom"></button>
         </div>
         <div class="details-bar teachtext-details-bar">
           <span id="question-count">0 questions</span>
@@ -1984,7 +1988,7 @@
         <div class="title-bar">
           <button class="close-box" aria-label="Close"></button>
           <h2 id="outline-title" data-i18n="outline">Outline</h2>
-          <button class="resize-box" aria-label="Resize"></button>
+          <button class="resize-box" aria-label="Zoom"></button>
         </div>
         <div class="details-bar teachtext-details-bar">
           <span id="outline-status" data-i18n="draft">Draft</span>
@@ -2023,7 +2027,7 @@
         <div class="title-bar">
           <button class="close-box" aria-label="Close"></button>
           <h2 id="section-drafts-title" data-i18n="section_drafts">Section Drafts</h2>
-          <button class="resize-box" aria-label="Resize"></button>
+          <button class="resize-box" aria-label="Zoom"></button>
         </div>
         <div class="details-bar teachtext-details-bar">
           <span id="draft-count" data-i18n="draft_voice_stats_empty">0 words · ~0 sec</span>
@@ -2144,61 +2148,18 @@
 
       <section class="window guide-window is-hidden" data-window="guide" aria-labelledby="guide-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" tabindex="-1"></button>
           <h2 id="guide-title" data-i18n="start_here">Start Here</h2>
         </div>
         <div class="window-pane guide-pane">
-          <div class="large-icon"></div>
-
-          <div class="guide-step" id="guide-setup-step" hidden>
-            <h3 data-i18n="guide_setup_heading">Connect a model first</h3>
-            <p data-i18n="guide_setup_body">Connect a working local model or cloud API. You can also continue without AI for debugging or non-AI work.</p>
-            <div class="system-tabs-sheet">
-            <div class="system-tabs" role="tablist" data-i18n-aria-label="guide_setup_choice_label" aria-label="Model source">
-              <button class="system-tab is-active" id="guide-tab-local" type="button" role="tab" aria-selected="true" aria-controls="guide-panel-local" data-guide-source="local" data-i18n="guide_setup_local">Local LM Studio</button>
-              <button class="system-tab" id="guide-tab-cloud" type="button" role="tab" aria-selected="false" aria-controls="guide-panel-cloud" data-guide-source="cloud" data-i18n="guide_setup_cloud">Cloud API key</button>
-            </div>
-            <div class="system-tab-panel" id="guide-panel-local" role="tabpanel" aria-labelledby="guide-tab-local" data-guide-panel="local">
-              <label class="control-field">
-                <span data-i18n="endpoint">Endpoint</span>
-                <input id="guide-local-endpoint" type="text" autocomplete="off" value="http://127.0.0.1:1234" />
-              </label>
-              <button class="btn default" type="button" data-action="guide-connect-local" data-i18n="guide_connect">Connect</button>
-            </div>
-            <div class="system-tab-panel" id="guide-panel-cloud" role="tabpanel" aria-labelledby="guide-tab-cloud" data-guide-panel="cloud" hidden>
-              <label class="control-field">
-                <span data-i18n="cloud_provider">Provider</span>
-                <div class="select-wrap"><select id="guide-cloud-provider"></select></div>
-              </label>
-              <label class="control-field">
-                <span data-i18n="cloud_api_key">API Key</span>
-                <input id="guide-cloud-key" type="password" autocomplete="off" placeholder="sk-..." />
-              </label>
-              <button class="btn default" type="button" data-action="guide-connect-cloud" data-i18n="guide_connect">Connect</button>
-            </div>
-            </div>
-            <p class="hint guide-setup-status" id="guide-setup-status" role="status" data-i18n="guide_setup_waiting">Not connected yet.</p>
-          </div>
-
-          <div class="guide-step" id="guide-route-step" hidden>
-            <h3 data-i18n="guide_heading">Write one small piece first</h3>
-            <p data-i18n="guide_body">A source-first writing desk. Sources, clips, drafts, review, and the finished manuscript each have their own place.</p>
-            <ol class="guide-start-card guide-route">
-              <li data-i18n="guide_route_disk">Project Hard Disk — this piece's material</li>
-              <li data-i18n="guide_route_sources">File Floppy — insert sources, keep only chosen clips</li>
-              <li data-i18n="guide_route_question">Question Sheet — state the real question</li>
-              <li data-i18n="guide_route_draft">Outline, Section Drafts, TeachText manuscript</li>
-              <li data-i18n="guide_route_handoff">Review Desk, then Project CD</li>
-            </ol>
-            <div class="guide-ways">
-              <button class="btn default" type="button" data-action="guide-start-route" data-i18n="guide_start_route">Start Writing Route</button>
-              <button class="btn" type="button" data-action="guide-open-cliotalk" data-i18n="guide_talk_first">Talk it over in ClioTalk</button>
-            </div>
-            <small data-i18n="guide_start_hint">Opens the main writing chain. If no project is mounted, start by creating a Project Hard Disk.</small>
+          <div class="guide-step" id="guide-welcome-step">
+            <h3 data-i18n="guide_welcome_heading">This Macintosh did not stop in 1988.</h3>
+            <p data-i18n="guide_welcome_body">Start with the Apple menu at the top left. To keep several applications on the desktop or change the appearance, open Special. Connect AI when you need it.</p>
           </div>
 
           <div class="button-row">
-            <button class="btn mini-btn" type="button" data-action="dismiss-guide" data-i18n="guide_later">Later</button>
+            <button class="btn" type="button" data-action="guide-open-model-settings" data-i18n="guide_connect_ai">Connect AI…</button>
+            <button class="btn default" type="button" data-action="dismiss-guide" data-i18n="guide_start_exploring" aria-keyshortcuts="Enter">Start Exploring</button>
           </div>
         </div>
       </section>
@@ -2240,7 +2201,7 @@
         <div class="title-bar">
           <button class="close-box" aria-label="Close"></button>
           <h2 id="docmap-title" data-i18n="docmap">DocMap</h2>
-          <button class="resize-box" aria-label="Resize"></button>
+          <button class="resize-box" aria-label="Zoom"></button>
         </div>
         <div class="details-bar docmap-details-bar">
           <span id="docmap-count">0 nodes</span>
@@ -2317,7 +2278,7 @@
         <div class="title-bar">
           <button class="close-box" aria-label="Close"></button>
           <h2 id="clio-stage-title" data-i18n="clio_stage_title">ClioStage</h2>
-          <button class="resize-box" aria-label="Resize"></button>
+          <button class="resize-box" aria-label="Zoom"></button>
         </div>
         <div class="details-bar clio-stage-details-bar">
           <button class="btn details-bar-button" type="button" id="clio-stage-import-files" data-i18n="docmap_import_files">Import Files...</button>
@@ -2373,7 +2334,7 @@
         <div class="title-bar">
           <button class="close-box" aria-label="Close"></button>
           <h2 id="clio-chart-title" data-i18n="clio_chart_title">ClioChart</h2>
-          <button class="resize-box" aria-label="Resize"></button>
+          <button class="resize-box" aria-label="Zoom"></button>
         </div>
         <div class="details-bar clio-chart-details-bar">
           <button class="btn details-bar-button" type="button" id="clio-chart-import-file" data-i18n-aria-label="clio_chart_import_file">
@@ -2434,7 +2395,7 @@
         <div class="title-bar">
           <button class="close-box" aria-label="Close"></button>
           <h2 id="liquid-cover-title" data-i18n="liquid_cover_title">Cover Glass</h2>
-          <button class="resize-box" aria-label="Resize"></button>
+          <button class="resize-box" aria-label="Zoom"></button>
         </div>
         <div class="details-bar lc-status-bar">
           <span class="lc-ask-status" id="lc-ai-status" role="status" aria-live="polite" data-i18n="ready">Ready</span>
@@ -2791,7 +2752,7 @@ Glass</textarea>
         <div class="title-bar">
           <button class="close-box" aria-label="Close"></button>
           <h2 id="system-help-title" data-i18n="system_help">System Help</h2>
-          <button class="resize-box" aria-label="Resize"></button>
+          <button class="resize-box" aria-label="Zoom"></button>
         </div>
         <div class="details-bar">
           <span data-i18n="system_help_terms">System Terms</span>
@@ -3268,21 +3229,21 @@ Glass</textarea>
       </section>
 
       <section class="icon-column" aria-label="Desktop icons">
-        <button class="desktop-icon" type="button" data-open="disk">
+        <button class="desktop-icon" type="button" data-open="disk" data-balloon-help="balloon_startup_disk">
           <span class="sys-icon sys-icon-desktop" data-system-icon="startupDisk" aria-hidden="true"></span>
           <span data-i18n="startup_disk">Startup Disk</span>
         </button>
-        <button class="desktop-icon" type="button" data-open="applications">
+        <button class="desktop-icon" type="button" data-open="applications" data-balloon-help="balloon_applications">
           <span class="sys-icon sys-icon-desktop" data-system-icon="applications" aria-hidden="true"></span>
           <span data-i18n="applications">Applications</span>
         </button>
-        <button class="desktop-icon desktop-app-icon" id="finder-writing-studio-toggle" type="button">
+        <button class="desktop-icon desktop-app-icon" id="finder-writing-studio-toggle" type="button" data-balloon-help="balloon_writing_studio">
           <span class="sys-icon sys-icon-desktop" data-system-icon="writingStudio" aria-hidden="true"></span>
           <span id="finder-writing-studio-toggle-label">Writing Studio</span>
         </button>
         <!-- The desktop is the current working set. The complete application
              catalogue remains in Applications and MultiFinder. -->
-        <button class="desktop-icon is-hidden" id="active-project-drop-target" type="button" data-action="open-project-disks" data-drop-target="project" aria-hidden="true">
+        <button class="desktop-icon is-hidden" id="active-project-drop-target" type="button" data-action="open-project-disks" data-drop-target="project" data-balloon-help="balloon_project_disk" aria-hidden="true">
           <span class="sys-icon sys-icon-desktop" data-system-icon="projectDisk" aria-hidden="true"></span>
           <span id="current-project-label" data-i18n="current_project_desktop">Project Hard Disk</span>
         </button>
@@ -3294,13 +3255,13 @@ Glass</textarea>
           <span class="sys-icon sys-icon-desktop" data-system-icon="projectDisc" aria-hidden="true"></span>
           <span data-i18n="project_cd">Project CD</span>
         </button>
-        <button class="desktop-icon" type="button" data-open="trash" data-drop-target="trash">
+        <button class="desktop-icon" type="button" data-open="trash" data-drop-target="trash" data-balloon-help="balloon_trash">
           <span class="sys-icon sys-icon-desktop" data-system-icon="trash" data-trash-status-icon id="desktop-trash-icon" aria-hidden="true"></span>
           <span data-i18n="trash">Trash</span>
         </button>
       </section>
     </main>
 
-    <script src="app.bundle.js?v=20260803.02"></script>
+    <script src="app.bundle.js?v=20260804.03"></script>
   </body>
 </html>

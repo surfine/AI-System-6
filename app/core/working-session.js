@@ -10,6 +10,7 @@ let workingSessionSaveTimer = null;
 let workingSessionSavePromise = Promise.resolve();
 let workingSessionRestoreInProgress = false;
 let workingSessionAutosaveInstalled = false;
+const workingSessionExcludedWindowNames = new Set(["about", "saveChat", "guide"]);
 
 function registerWorkingSessionAdapter(adapter) {
   if (!adapter || typeof adapter.id !== "string" || !adapter.id.trim()) return false;
@@ -287,7 +288,7 @@ function captureWindowWorkingSession() {
   const windows = Array.from(document.querySelectorAll(".window"))
     .filter((win) => {
       const name = win.dataset.window || "";
-      return name && !["about", "saveChat"].includes(name);
+      return name && !workingSessionExcludedWindowNames.has(name);
     })
     .map((win) => ({
       name: win.dataset.window,
@@ -296,6 +297,7 @@ function captureWindowWorkingSession() {
       appHidden: win.classList.contains("is-app-hidden"),
       active: win.classList.contains("is-active"),
       collapsed: win.classList.contains("is-collapsed"),
+      shadeWidth: inlineStyleValue(win, "--window-shade-width"),
       desklet: win.classList.contains("is-desklet"),
       zoomed: win.dataset.zoomed === "true",
       userPositioned: win.dataset.userPositioned === "true",
@@ -379,7 +381,12 @@ async function restoreWindowWorkingSession(state = {}) {
   quietStartup();
 
   const visibleWindows = windows
-    .filter((entry) => entry?.visible && getWindow(entry.name) && isWorkspaceWindowAllowed(entry.name))
+    .filter((entry) => (
+      entry?.visible
+      && !workingSessionExcludedWindowNames.has(entry.name)
+      && getWindow(entry.name)
+      && isWorkspaceWindowAllowed(entry.name)
+    ))
     .sort((a, b) => workingSessionNumber(a.zIndex, 0) - workingSessionNumber(b.zIndex, 0));
 
   for (const entry of visibleWindows) {
@@ -389,6 +396,10 @@ async function restoreWindowWorkingSession(state = {}) {
     win.dataset.app = entry.appId || getWindowAppId(win);
     ensureRunningApp(win.dataset.app, entry.name);
     win.classList.toggle("is-app-hidden", !!entry.appHidden);
+    const shadeWidth = entry.shadeWidth
+      || entry.frame?.width
+      || `${Math.round(win.getBoundingClientRect().width)}px`;
+    setInlineStyleValue(win, "--window-shade-width", entry.collapsed ? shadeWidth : "");
     win.classList.toggle("is-collapsed", !!entry.collapsed);
     win.classList.toggle("is-desklet", !!entry.desklet);
     win.dataset.zoomed = entry.zoomed ? "true" : "false";
@@ -401,7 +412,15 @@ async function restoreWindowWorkingSession(state = {}) {
       win.dataset.restoreHeight = entry.restoreFrame.height || "";
     }
     applyWindowSessionFrame(win, entry.frame || {});
-    if (typeof avoidWritingSpineOverlap === "function") avoidWritingSpineOverlap(win);
+    if (
+      typeof isCenteredSystemWindow === "function"
+      && isCenteredSystemWindow(win)
+      && typeof placeCenteredSystemWindow === "function"
+    ) {
+      placeCenteredSystemWindow(win);
+    } else if (typeof avoidWritingSpineOverlap === "function") {
+      avoidWritingSpineOverlap(win);
+    }
     const quickDraftWidth = Number(String(entry.frame?.width || "").match(/^(-?\d+(?:\.\d+)?)px$/)?.[1] || 0);
     if (entry.name === "quickDraft" && (!entry.frame?.width || quickDraftWidth < 360)) {
       requestAnimationFrame(() => maximizeWindow(win));

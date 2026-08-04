@@ -518,8 +518,18 @@ function syncStartupOpenOptions(environment = startupEnvironment) {
   syncStartupSelectedItemsLabel();
   const isMultiFinderStartup = environment === "multifinder";
   startupOpenOptionInputs.forEach((input) => {
-    const isMultiFinderOnly = input.closest("[data-multifinder-only]");
-    input.disabled = Boolean(isMultiFinderOnly && !isMultiFinderStartup);
+    const multiFinderOnlyOption = input.closest("[data-multifinder-only]");
+    const unavailable = Boolean(multiFinderOnlyOption && !isMultiFinderStartup);
+    input.disabled = unavailable;
+    if (multiFinderOnlyOption) {
+      if (unavailable) {
+        multiFinderOnlyOption.dataset.balloonHelp = "balloon_startup_multifinder_only";
+        multiFinderOnlyOption.setAttribute("aria-disabled", "true");
+      } else {
+        delete multiFinderOnlyOption.dataset.balloonHelp;
+        multiFinderOnlyOption.removeAttribute("aria-disabled");
+      }
+    }
   });
 
   const selectedInput = document.querySelector("input[name='startup-open']:checked");
@@ -527,12 +537,22 @@ function syncStartupOpenOptions(environment = startupEnvironment) {
   startupOpenOptionInputs.forEach((input) => {
     input.checked = input.value === nextOpenMode;
   });
+
+  const environmentHelp = document.querySelector("#startup-environment-help");
+  if (environmentHelp) {
+    // The choice must explain both environments before the user changes it;
+    // describing only the currently selected radio makes the other name opaque.
+    environmentHelp.textContent = t("startup_environment_explanation");
+  }
 }
 
 async function setStartupEnvironmentPreference(mode, { promptRestart = true } = {}) {
   const nextEnvironment = mode === "multifinder" ? "multifinder" : "finder";
   const previousEnvironment = runtimeEnvironment;
   startupEnvironment = nextEnvironment;
+  if (nextEnvironment === "multifinder" && previousEnvironment !== nextEnvironment) {
+    multiFinderSwitcherHintSeen = false;
+  }
   startupOpenMode = normalizeStartupOpenMode(startupOpenMode, startupEnvironment);
   syncStartupOpenOptions(startupEnvironment);
   renderProjectSwitcher();
@@ -557,8 +577,17 @@ async function handleStartupSettingsClose() {
 }
 
 function openStartupItems() {
+  if (!guideSeen) {
+    // Start Here is a Finder surface, not the Writing Studio entrance. Keep
+    // the legacy default for returning users, then persist Desktop when the
+    // welcome is dismissed.
+    setWorkspaceProfile(workspaceProfileDesktop, { persist: false });
+  }
   quietStartup();
   if (!guideSeen) {
+    const assistant = getWindow("assistant");
+    assistant?.classList.add("is-hidden");
+    if (assistant) forgetWindowFromRunningApps("assistant");
     openWindow("guide");
     return;
   }

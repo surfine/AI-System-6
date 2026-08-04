@@ -37,6 +37,13 @@ test.assertIncludes(windowManager, "function navigateFinderFolderLocation(window
 test.assertIncludes(windowManager, 'selectedFolderId = folderId || "all";', "the path bar shares Finder's canonical current-directory state");
 test.assertIncludes(windowManager, "folder.parentId || \"\"", "Back moves to the real parent folder before leaving the window");
 test.assertIncludes(windowManager, "async function navigateFinderUp(windowName)", "every Finder page has one parent-navigation path");
+test.assertIncludes(app, "const systemFolderPathDefinitions = new Map([", "System Folder subfolders are a declared tree, not a hidden mode flag");
+test.assertIncludes(app, 'parentPath: "ai-prompts"', "each System Folder subfolder names its real parent");
+test.assertIncludes(app, "function systemFolderPathTrail(path = systemFinderPath)", "the System Folder path bar walks the same tree the user walked in");
+test.assertIncludes(app, "function navigateSystemFolderPath(path", "one entry point owns every System Folder directory change");
+test.assertIncludes(app, "title.textContent = systemFolderCurrentLabel();", "the reused Finder window is renamed to the folder it is showing");
+test.assertIncludes(windowManager, "navigateSystemFolderPath(definition.parentPath", "Back leaves a System Folder subfolder before leaving the window");
+test.assertIncludes(windowManager, "systemFolderPath: entry.path", "System Folder path segments carry a real directory, not a label");
 test.assertIncludes(windowManager, "function renderFinderNavigationBar(winOrName)", "all Finder windows reuse one navigation component");
 test.assertIncludes(windowManager, 'current.setAttribute("aria-current", "page")', "the current path segment is exposed accessibly");
 test.assertIncludes(windowManager, "const finderVolumeDefinitions = new Map([", "Finder owns one capability registry for every mounted volume");
@@ -66,6 +73,7 @@ test.assertIncludes(printDirectory, 'if (activeName === "textDisk")', "Print Dir
 test.assertIncludes(printDirectory, 'if (activeName === "projectCd")', "Print Directory supports Project CD");
 
 test.assertIncludes(desktopIconColumn, 'data-open="applications"', "the desktop exposes the complete application catalogue through one folder");
+test.assertIncludes(app, 'action: "open-scrapbook"', "the rendered Applications registry exposes Scrapbook");
 test.assertIncludes(appsCss, "grid-template-columns: minmax(0, 1fr);", "desktop icon labels cannot widen the shared icon column and shift an icon off center");
 [
   "open-quick-draft",
