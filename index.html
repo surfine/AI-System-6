@@ -132,7 +132,7 @@
               <span class="sys-icon sys-icon-desktop" data-system-icon="fileFloppy" aria-hidden="true"></span>
               <b data-i18n="mount_text_disk">Insert File Floppy</b>
             </button>
-            <button type="button" data-action="open-question-sheet">
+            <button type="button" data-action="open-question-sheet" data-balloon-help="balloon_question_sheet">
               <span class="spine-step-number" aria-hidden="true">1</span>
               <span class="sys-icon sys-icon-desktop" data-system-icon="questionSheet" aria-hidden="true"></span>
               <b data-i18n="question_sheet">Question Sheet</b>
@@ -152,7 +152,7 @@
               <span class="sys-icon sys-icon-desktop" data-system-icon="manuscript" aria-hidden="true"></span>
               <b data-i18n="manuscript">Manuscript</b>
             </button>
-            <button type="button" data-action="open-review-desk">
+            <button type="button" data-action="open-review-desk" data-balloon-help="balloon_review_desk">
               <span class="spine-step-number" aria-hidden="true">5</span>
               <span class="sys-icon sys-icon-desktop" data-system-icon="reviewDesk" aria-hidden="true"></span>
               <b data-i18n="review_desk">Review Desk</b>
@@ -496,7 +496,7 @@
             </label>
 
             <div class="control-cloud-status" id="cloud-status" hidden>
-              <span id="cloud-status-indicator" class="cloud-status-dot"></span>
+              <span id="cloud-status-indicator" class="cloud-status-dot" data-balloon-help="balloon_cloud_status"></span>
               <span id="cloud-status-text"></span>
               <span id="cloud-balance" class="cloud-balance"></span>
             </div>
@@ -1273,7 +1273,7 @@
                     <h3 id="bureaucracy-preview-title" data-i18n="preview">Preview</h3>
                     <p class="bureaucracy-status" data-i18n="bureaucracy_meme_preview_help">Choose a caption on the right to apply it.</p>
                   </div>
-                  <button id="bureaucracy-download-link" class="btn bureaucracy-download" type="button" disabled data-i18n="bureaucracy_meme_download">Download PNG</button>
+                  <button id="bureaucracy-download-link" class="btn bureaucracy-download" type="button" disabled data-i18n="bureaucracy_meme_download" data-balloon-help-disabled="balloon_bureaucracy_download_disabled">Download PNG</button>
                 </div>
                 <div class="bureaucracy-canvas-wrap">
                   <canvas id="bureaucracy-preview-canvas" width="1200" height="900" role="img" aria-label="Meme preview" data-i18n-aria-label="bureaucracy_meme_canvas"></canvas>
@@ -1744,7 +1744,7 @@
               <span class="ask-scope-range" id="scrapbook-ask-range"></span>
             </div>
             <div class="ask-bar-row">
-              <input id="scrapbook-question" type="text" data-i18n-placeholder="scrapbook_ask_hint" placeholder="Ask selected Scrapbook clips..." disabled />
+              <input id="scrapbook-question" type="text" data-i18n-placeholder="scrapbook_ask_hint" placeholder="Ask selected Scrapbook clips..." disabled data-balloon-help="balloon_ask_bar" />
               <button class="btn default" type="submit" id="scrapbook-ask-button" data-i18n="ask" data-i18n-aria-label="scrapbook_ask_label" disabled>Ask</button>
             </div>
           </form>
@@ -1810,7 +1810,7 @@
                 <summary class="btn" id="reader-command-summary" data-i18n="reader_commands">Commands...</summary>
                 <div class="teachtext-command-popover reader-command-popover">
                   <button class="btn" type="button" id="reader-clip-translate-button" data-action="reader-clip-translate" data-i18n="clip_translate" disabled>Clip + Translate</button>
-                  <button class="btn" type="button" id="reader-open-clio-stage" data-action="reader-open-clio-stage" data-i18n="open_in_clio_stage" disabled>Open in ClioStage</button>
+                  <button class="btn" type="button" id="reader-open-clio-stage" data-action="reader-open-clio-stage" data-i18n="open_in_clio_stage" disabled data-balloon-help-disabled="balloon_reader_open_clio_stage_disabled">Open in ClioStage</button>
                   <button class="btn" type="button" id="reader-send-manuscript" data-action="reader-send-manuscript" data-i18n="send_copy_to_manuscript" disabled>Send Copy to Manuscript</button>
                 </div>
               </details>
@@ -1833,7 +1833,7 @@
             </div>
             <div class="ask-bar-row">
               <button class="btn ask-bar-lead" type="button" id="reader-docmap-button" data-action="reader-make-docmap" data-i18n="docmap" disabled>DocMap</button>
-              <input id="reader-question" type="text" data-i18n-placeholder="reader_ask_hint" placeholder="Ask this Reader source..." disabled />
+              <input id="reader-question" type="text" data-i18n-placeholder="reader_ask_hint" placeholder="Ask this Reader source..." disabled data-balloon-help="balloon_ask_bar" />
               <button class="btn default" type="submit" id="reader-ask-button" data-i18n="ask" data-i18n-aria-label="reader_ask_label" disabled>Ask</button>
             </div>
           </form>
@@ -1883,7 +1883,7 @@
             </div>
             <form class="time-machine-address-form" id="time-machine-address-form">
               <label class="time-machine-toggle" for="time-machine-enabled">
-                <input id="time-machine-enabled" type="checkbox" />
+                <input id="time-machine-enabled" type="checkbox" data-balloon-help="balloon_time_machine_archive" />
                 <span data-i18n="time_machine">Time Machine</span>
               </label>
               <label class="time-machine-address-label" for="time-machine-address" data-i18n="address">Address</label>
@@ -1944,7 +1944,7 @@
               </div>
               <div class="ask-bar-row">
                 <button class="btn ask-bar-lead" type="button" id="time-machine-docmap" data-action="time-machine-docmap" data-i18n="docmap" disabled>DocMap</button>
-                <input id="time-machine-question" type="text" data-i18n-placeholder="time_machine_ask_prompt" placeholder="Ask this page..." disabled />
+                <input id="time-machine-question" type="text" data-i18n-placeholder="time_machine_ask_prompt" placeholder="Ask this page..." disabled data-balloon-help="balloon_ask_bar" />
                 <button class="btn default" type="submit" id="time-machine-ask" data-i18n="ask" data-i18n-aria-label="time_machine_ask_label" disabled>Ask</button>
               </div>
             </form>
@@ -2215,7 +2215,7 @@
                 <button class="btn" type="button" id="docmap-send-question" data-i18n="send_to_question_sheet">Send to Question Sheet</button>
                 <button class="btn" type="button" id="docmap-ask-hkrr" data-i18n="docmap_hkrr_review_map">Review This Map with HKRR Theory</button>
                 <button class="btn" type="button" id="docmap-insert-outline" data-i18n="insert_as_outline">Replace Outline</button>
-                <button class="btn" type="button" id="docmap-save" data-i18n="save_docmap">Save DocMap</button>
+                <button class="btn" type="button" id="docmap-save" data-i18n="save_docmap" data-balloon-help-disabled="balloon_docmap_save_disabled">Save DocMap</button>
                 <button class="btn" type="button" id="docmap-print-pdf" data-i18n="docmap_print_pdf">Print Map to PDF</button>
               </div>
             </details>
@@ -2228,7 +2228,7 @@
           <div class="docmap-layout">
             <div class="window-toolbar docmap-map-toolbar" aria-label="DocMap view controls">
               <div class="toolbar-group docmap-toolbar-group">
-                <div class="docmap-layout-picker" id="docmap-layout-toggle" role="group" aria-label="DocMap layout">
+                <div class="docmap-layout-picker" id="docmap-layout-toggle" role="group" aria-label="DocMap layout" data-balloon-help="balloon_docmap_layout">
                   <span data-i18n="docmap_layout_label">Layout</span>
                   <div class="view-switch">
                     <button class="view-switch-option" type="button" id="docmap-layout-right" data-docmap-layout-option="right" data-i18n="docmap_layout_right">One Side</button>
@@ -2269,7 +2269,7 @@
               <span class="ask-scope-range" id="docmap-ask-range"></span>
             </div>
             <div class="ask-bar-row">
-              <input id="docmap-question" type="text" data-i18n-placeholder="docmap_ask_hint" placeholder="Ask this DocMap..." disabled />
+              <input id="docmap-question" type="text" data-i18n-placeholder="docmap_ask_hint" placeholder="Ask this DocMap..." disabled data-balloon-help="balloon_ask_bar" />
               <button class="btn default" type="submit" id="docmap-ask-button" data-i18n="ask" data-i18n-aria-label="docmap_ask_label" disabled>Ask</button>
             </div>
           </form>
@@ -2326,7 +2326,7 @@
             </div>
             <div class="ask-bar-row">
               <button class="btn ask-bar-lead" type="button" id="clio-stage-docmap" data-action="clio-stage-docmap" data-i18n="docmap" disabled>DocMap</button>
-              <input id="clio-stage-question" type="text" data-i18n-placeholder="clio_stage_ask_hint" placeholder="Ask this slide deck..." disabled />
+              <input id="clio-stage-question" type="text" data-i18n-placeholder="clio_stage_ask_hint" placeholder="Ask this slide deck..." disabled data-balloon-help="balloon_ask_bar" />
               <button class="btn default" type="submit" id="clio-stage-ask-button" data-i18n="ask" data-i18n-aria-label="clio_stage_ask_label" disabled>Ask</button>
             </div>
           </form>
@@ -3250,11 +3250,11 @@ Glass</textarea>
           <span class="sys-icon sys-icon-desktop" data-system-icon="projectDisk" aria-hidden="true"></span>
           <span id="current-project-label" data-i18n="current_project_desktop">Project Hard Disk</span>
         </button>
-        <button class="desktop-icon is-mounted-disk" data-workspace-capability="studio" data-drag-type="mounted-disk" draggable="true" type="button" data-open="textDisk" id="mounted-text-disk" hidden>
+        <button class="desktop-icon is-mounted-disk" data-workspace-capability="studio" data-drag-type="mounted-disk" draggable="true" type="button" data-open="textDisk" id="mounted-text-disk" hidden data-balloon-help="balloon_text_disk">
           <span class="sys-icon sys-icon-desktop" data-system-icon="fileFloppy" aria-hidden="true"></span>
           <span data-i18n="mounted_text_disk">File Floppy</span>
         </button>
-        <button class="desktop-icon" id="desktop-project-cd" data-workspace-capability="studio" type="button" data-open="projectCd" aria-hidden="true" hidden>
+        <button class="desktop-icon" id="desktop-project-cd" data-workspace-capability="studio" type="button" data-open="projectCd" aria-hidden="true" hidden data-balloon-help="balloon_project_cd">
           <span class="sys-icon sys-icon-desktop" data-system-icon="projectDisc" aria-hidden="true"></span>
           <span data-i18n="project_cd">Project CD</span>
         </button>

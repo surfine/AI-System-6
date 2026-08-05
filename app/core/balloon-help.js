@@ -224,7 +224,7 @@ function initializeBalloonHelp() {
 
   document.addEventListener("pointerover", (event) => {
     if (!balloonHelpEnabled || event.pointerType === "touch") return;
-    const target = event.target.closest?.("[data-balloon-help]");
+    const target = event.target.closest?.("[data-balloon-help], [data-balloon-help-disabled]");
     if (target && target !== balloonHelpTarget) showBalloonHelp(target);
   });
 
@@ -236,7 +236,7 @@ function initializeBalloonHelp() {
 
   document.addEventListener("focusin", (event) => {
     if (!balloonHelpEnabled) return;
-    const target = event.target.closest?.("[data-balloon-help]");
+    const target = event.target.closest?.("[data-balloon-help], [data-balloon-help-disabled]");
     if (target) showBalloonHelp(target);
   });
 
@@ -250,7 +250,7 @@ function initializeBalloonHelp() {
   // it. Menu-bar buttons remain usable so the user can hide Balloon Help.
   document.addEventListener("pointerdown", (event) => {
     if (!balloonHelpTouchedInspect || event.pointerType !== "touch") return;
-    const target = event.target.closest?.("[data-balloon-help]");
+    const target = event.target.closest?.("[data-balloon-help], [data-balloon-help-disabled]");
     if (!target) return;
     showBalloonHelp(target);
     if (!target.closest(".menu-bar")) {
