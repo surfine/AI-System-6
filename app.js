@@ -1414,6 +1414,10 @@ function applyLiquidGlass(options = {}) {
   const useLiquidGlass = !!liquidGlassInput?.checked;
   document.body.classList.toggle("use-liquid-glass", useLiquidGlass);
   document.body.classList.toggle("use-modern-fonts", useLiquidGlass || modernFontsInput.checked);
+  // The modern-font choice only affects the classic UI: Liquid Glass already
+  // forces the modern font, so the checkbox is meaningless while glass is on.
+  // The checked value is preserved so leaving glass restores the old choice.
+  if (modernFontsInput) modernFontsInput.disabled = useLiquidGlass;
   window.AISystem6LiquidGlassOverlay?.setEnabled(useLiquidGlass);
   updateAppearanceMenuLabel();
   try {

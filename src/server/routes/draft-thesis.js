@@ -28,6 +28,8 @@ const { systemIntegrityInstruction } = require("../system-integrity.js");
 const { authorThesisInstruction } = require("../author-thesis.js");
 const { chatVentIntakeInstruction } = require("../chat-vent.js");
 const { resolveCloudCredential } = require("../credential-vault.js");
+const { preparePublicCloudCall } = require("../lib/cloud-route.js");
+const { isPublicDeployment } = require("../runtime-profile.js");
 const {
   findHumanizerOutputHits,
   findHumanizerStyleDiagnostics,
@@ -1216,7 +1218,7 @@ async function repairCloudDraftOutputIfNeeded(options) {
  * @param {AbortSignal | null} signal
  * @returns {Promise<{ ok: boolean, content: string, status: number, detail: string, model: string }>}
  */
-async function callModel(body, messages, signal) {
+async function callModel(body, messages, signal, req) {
   const provider = body._local_provider || body.provider || "lm-studio";
   const isCloud = provider === "cloud"
     || Boolean(body._cloud_model)
@@ -1226,25 +1228,42 @@ async function callModel(body, messages, signal) {
 
   if (isCloud) {
     const model = body._cloud_model || body.model || "";
-    const apiKey = await resolveCloudCredential({
-      credentialId: body._cloud_credential_id,
-      provider: "deepseek",
-      suppliedApiKey: body._cloud_api_key || DEEPSEEK_API_KEY_DEFAULT,
-      allowSupplied: false,
-    });
-    const baseUrl = resolveCloudBaseUrl(body._cloud_base_url || DEEPSEEK_BASE_URL_DEFAULT);
-    const targetUrl = `${baseUrl}/v1/chat/completions`;
     /** @type {any} */
     const payload = { model, messages, stream: false, temperature, max_tokens: cloudDraftMaxTokens(body) };
+    let apiKey;
+    let baseUrl;
+    let finalPayload = payload;
+    if (isPublicDeployment) {
+      const cloud = await preparePublicCloudCall({
+        credentialId: body._cloud_credential_id,
+        suppliedApiKey: body._cloud_api_key,
+        requestedBaseUrl: body._cloud_base_url,
+        model: String(model || "deepseek-v4-flash"),
+        payload,
+        req,
+      });
+      apiKey = cloud.apiKey;
+      baseUrl = cloud.baseUrl;
+      finalPayload = cloud.payload;
+    } else {
+      apiKey = await resolveCloudCredential({
+        credentialId: body._cloud_credential_id,
+        provider: "deepseek",
+        suppliedApiKey: body._cloud_api_key || DEEPSEEK_API_KEY_DEFAULT,
+        allowSupplied: false,
+      });
+      baseUrl = resolveCloudBaseUrl(body._cloud_base_url || DEEPSEEK_BASE_URL_DEFAULT);
+    }
+    const targetUrl = `${baseUrl}/v1/chat/completions`;
     if (DEEPSEEK_V4_MODELS.has(model)) {
-      payload.thinking = { type: "disabled" };
-      delete payload.temperature;
+      finalPayload.thinking = { type: "disabled" };
+      delete finalPayload.temperature;
     }
     const authHeaders = cloudAuthHeaders(apiKey);
-    const { response } = await postJsonWithFallback(targetUrl, payload, signal, authHeaders);
+    const { response } = await postJsonWithFallback(targetUrl, finalPayload, signal, authHeaders);
     const result = await readModelResponse(response, "Cloud API");
     const repaired = result.ok
-      ? await repairCloudDraftOutputIfNeeded({ body, result, payload, targetUrl, signal, authHeaders })
+      ? await repairCloudDraftOutputIfNeeded({ body, result, payload: finalPayload, targetUrl, signal, authHeaders })
       : result;
     return { ...repaired, model: model || "cloud" };
   }
@@ -1345,7 +1364,7 @@ async function handleDraftThesis(req, res) {
 
     const sources = normalizeSources(body);
     const messages = buildMessages(body, sources);
-    const result = await callModel(body, messages, signal);
+    const result = await callModel(body, messages, signal, req);
 
     if (!result.ok || !result.content) {
       send(res, result.status || 502, JSON.stringify({
@@ -1389,11 +1408,22 @@ async function handleDraftThesis(req, res) {
   } catch (error) {
     if (/** @type {any} */ (error)?.name === "AbortError") return;
     const message = /** @type {Error} */ (error).message;
-    send(res, 502, JSON.stringify({
-      error: "Draft proxy failed",
-      code: classifyLmStudioProxyError(message, 502),
+    const status = /** @type {any} */ (error)?.statusCode || 502;
+    const headers = { "Content-Type": "application/json" };
+    if (/** @type {any} */ (error)?.retryAfter > 0) {
+      headers["Retry-After"] = String(/** @type {any} */ (error).retryAfter);
+    }
+    send(res, status, JSON.stringify({
+      error: /** @type {any} */ (error)?.statusCode
+        ? message
+        : "Draft proxy failed",
+      code: /** @type {any} */ (error)?.code
+        || classifyLmStudioProxyError(message, 502),
       detail: message,
-    }), { "Content-Type": "application/json" });
+      ...(/** @type {any} */ (error)?.warning
+        ? { warning: /** @type {any} */ (error).warning }
+        : {}),
+    }), headers);
   }
 }
 

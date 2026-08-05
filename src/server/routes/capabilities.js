@@ -75,7 +75,7 @@ function handleCapabilities(_req, res) {
       server_import: !isPublicDeployment,
       server_ocr: !isPublicDeployment,
       audio_transcription: !isPublicDeployment,
-      cmf_rendering: !isPublicDeployment,
+      cmf_rendering: true,
       image_generation: !isPublicDeployment,
     },
   }, {

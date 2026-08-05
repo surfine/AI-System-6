@@ -3,6 +3,8 @@
 const { readJsonBody, requestSignal, send } = require("../lib/http.js");
 const { DEEPSEEK_BASE_URL_DEFAULT, resolveCloudBaseUrl } = require("../cloud.js");
 const { resolveCloudCredential } = require("../credential-vault.js");
+const { preparePublicCloudCall } = require("../lib/cloud-route.js");
+const { isPublicDeployment } = require("../runtime-profile.js");
 const {
   buildSrtFromBlocks,
   translateSubtitleBlocks,
@@ -57,21 +59,48 @@ async function handleSubtitlesTranslate(req, res) {
       return;
     }
 
-    const cloudApiKey = body._cloud_active
-      ? await resolveCloudCredential({
+    const options = {
+      cloudActive: !!body._cloud_active,
+      cloudApiKey: "",
+      cloudBaseUrl: "",
+      cloudModel: "",
+      signal,
+    };
+    if (body._cloud_active) {
+      if (isPublicDeployment) {
+        // Representative payload so the shared allowance can meter the whole
+        // job; the per-batch calls reuse the resolved key / base URL / model.
+        const texts = blocks.map((block) => block.textLines.join("\n").trim()).filter(Boolean);
+        const payload = {
+          model: String(body._cloud_model || "deepseek-v4-flash"),
+          max_tokens: 1800,
+          messages: [
+            { role: "system", content: "subtitle" },
+            { role: "user", content: JSON.stringify(texts) },
+          ],
+        };
+        const cloud = await preparePublicCloudCall({
+          credentialId: body._cloud_credential_id,
+          suppliedApiKey: body._cloud_api_key,
+          requestedBaseUrl: body._cloud_base_url,
+          model: payload.model,
+          payload,
+          req,
+        });
+        options.cloudApiKey = cloud.apiKey;
+        options.cloudBaseUrl = cloud.baseUrl;
+        options.cloudModel = cloud.model;
+      } else {
+        options.cloudApiKey = String(await resolveCloudCredential({
           credentialId: body._cloud_credential_id,
           provider: "deepseek",
           suppliedApiKey: body._cloud_api_key,
           allowSupplied: false,
-        })
-      : "";
-    const options = {
-      cloudActive: !!body._cloud_active,
-      cloudApiKey,
-      cloudBaseUrl: resolveCloudBaseUrl(body._cloud_base_url || DEEPSEEK_BASE_URL_DEFAULT),
-      cloudModel: body._cloud_model,
-      signal,
-    };
+        })).trim();
+        options.cloudBaseUrl = resolveCloudBaseUrl(body._cloud_base_url || DEEPSEEK_BASE_URL_DEFAULT);
+        options.cloudModel = body._cloud_model;
+      }
+    }
     const translatedTexts = await translateSubtitleBlocks(blocks, mode, options);
     if (signal.aborted) return;
     send(res, 200, JSON.stringify({
@@ -81,10 +110,19 @@ async function handleSubtitlesTranslate(req, res) {
     }), { "Content-Type": "application/json" });
   } catch (error) {
     if (signal.aborted) return;
-    send(res, 422, JSON.stringify({
-      error: "Subtitle translation failed",
-      detail: error.message,
-    }), { "Content-Type": "application/json" });
+    const status = /** @type {any} */ (error)?.statusCode || 422;
+    const headers = { "Content-Type": "application/json" };
+    if (/** @type {any} */ (error)?.retryAfter > 0) {
+      headers["Retry-After"] = String(/** @type {any} */ (error).retryAfter);
+    }
+    send(res, status, JSON.stringify({
+      error: /** @type {any} */ (error)?.statusCode
+        ? String(/** @type {Error} */ (error).message)
+        : "Subtitle translation failed",
+      ...(/** @type {any} */ (error)?.code ? { code: /** @type {any} */ (error).code } : {}),
+      ...(/** @type {any} */ (error)?.warning ? { warning: /** @type {any} */ (error).warning } : {}),
+      detail: /** @type {Error} */ (error).message,
+    }), headers);
   }
 }
 

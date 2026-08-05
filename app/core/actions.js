@@ -897,6 +897,7 @@ function getApplicationActionHandlers() {
     "page-setup": openPageSetup,
     "print-current": printCurrentTeachTextDocument,
     "open-guide": () => openWindow("guide"),
+    "open-guide-promo": () => window.open("https://www.bilibili.com/video/BV1ht3m6UEDb/", "_blank", "noopener"),
     "open-system-file-system": () => showSystemModal(t("system_file_not_openable"), "alert"),
     "open-system-file-finder": () => showSystemModal(t("system_file_not_openable"), "alert"),
     "open-system-file-multifinder": () => showSystemModal(t("system_file_not_openable"), "alert"),

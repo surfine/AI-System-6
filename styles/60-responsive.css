@@ -2920,3 +2920,12 @@ input[type="radio"] {
     --puzzle-footer-width: 220px;
   }
 }
+
+/* Touch devices (iPad/iPhone, including landscape): stop the page-level
+   rubber-band / pull-to-refresh so dragging a window near an edge never
+   pulls the whole desk. Inner panes keep their own scroll behaviour. */
+@media (hover: none) {
+  body {
+    overscroll-behavior: none;
+  }
+}

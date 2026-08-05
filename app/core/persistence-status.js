@@ -653,13 +653,49 @@ function renderLocalConnectionStatus(state, data = null) {
   }
 }
 
+async function copyTextToClipboard(text) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  const copyTarget = document.createElement("textarea");
+  copyTarget.className = "visually-hidden";
+  copyTarget.value = text;
+  document.body.append(copyTarget);
+  try {
+    copyTarget.select();
+    if (!document.execCommand("copy")) throw new Error("copy failed");
+  } finally {
+    copyTarget.remove();
+  }
+}
+
+// Safari will not let an HTTPS page navigate straight to the plain-HTTP local
+// host (mixed-content navigation), so a `location.assign` to
+// local.system6.aaronlau.me silently fails. Hand the user the address on the
+// clipboard plus a fresh tab to paste it into instead of a dead redirect.
+async function openSafariHttpLocalEntry() {
+  const capabilities = await window.AISystem6PublicAccess?.getCapabilities?.();
+  const origin = capabilities?.public_access?.safari_http_local_origin || "";
+  const url = window.AISystem6LocalLMStudio.httpLocalEntryUrl(origin);
+  try {
+    await copyTextToClipboard(url);
+  } catch {
+    // Clipboard can be denied; the modal still shows the address to copy by hand.
+  }
+  window.open("about:blank", "_blank", "noopener");
+  await showSystemModal(
+    `${t("safari_http_local_copied", url)}\n\n${t("safari_http_local_paste_hint")}`,
+    "alert",
+    { confirmKey: "ok" }
+  );
+}
+
 async function connectLocalLmStudio(options = {}) {
   if (window.AISystem6LocalLMStudio?.isSafariPublicWebUnsupported?.()) {
     if (options.toggle !== false) {
       try {
-        const capabilities = await window.AISystem6PublicAccess?.getCapabilities?.();
-        const origin = capabilities?.public_access?.safari_http_local_origin || "";
-        window.location.assign(window.AISystem6LocalLMStudio.httpLocalEntryUrl(origin));
+        await openSafariHttpLocalEntry();
       } catch (error) {
         renderLocalConnectionStatus(localConnectionErrorKey(error));
         if (!options.silent) setStatus(t(localConnectionErrorKey(error)), { notify: false });

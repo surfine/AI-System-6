@@ -127,6 +127,12 @@ const publicExactRouteKeys = new Set([
   "POST /api/cloud/status",
   "POST /api/cloud/chat",
   "POST /api/bureaucracy/captions",
+  "POST /api/subtitles/translate",
+  "POST /api/draft/thesis",
+  "GET /api/cmf/capabilities",
+  "POST /api/cmf/export-usdz",
+  "POST /api/cmf/render-views",
+  "POST /api/cmf/render-preview",
 ]);
 
 const exactRoutes = isPublicDeployment

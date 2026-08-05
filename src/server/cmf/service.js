@@ -71,13 +71,17 @@ const exactPartByMeshName = new Map([
 function getCapabilities() {
   const commands = [
     checkCommand("unzip", ["-v"]),
+    checkCommand("zip", ["--version"]),
     checkCommand("usdcat", ["--help"]),
     checkCommand("usdzip", ["--help"]),
     checkCommand("swift", ["--version"]),
     checkCommand("sips", ["-h"]),
   ];
   const byName = Object.fromEntries(commands.map((item) => [item.name, item]));
-  const canExport = Boolean(byName.unzip.available && byName.usdcat.available && byName.usdzip.available);
+  // The shipped source layer is text (.usda), so the exporter only needs
+  // unzip + zip to recolor and repackage it — no USD CLI tools, which is what
+  // lets the same code run on a plain Linux VPS.
+  const canExport = Boolean(byName.unzip.available && byName.zip.available);
   return {
     model: MODEL_ID,
     palette: paletteMeta,
@@ -221,9 +225,24 @@ async function loadSoftwareScene(input) {
       .map((name) => path.join(workdir, name))
       .find((file) => /\.(usdc|usda|usd)$/i.test(file));
     if (!rootLayer) throw httpError(422, "No root USD layer found inside rendered USDZ.");
-    const textLayer = path.join(workdir, "model.usda");
-    await execFile("usdcat", [rootLayer, "-o", textLayer], { timeout: EXPORT_TIMEOUT_MS });
-    const source = await fs.readFile(textLayer, "utf8");
+    let source = "";
+    try {
+      source = await fs.readFile(rootLayer, "utf8");
+    } catch {
+      source = "";
+    }
+    if (!source.trimStart().startsWith("#usda")) {
+      // Defensive fallback for a binary (.usdc) root layer: convert with
+      // usdcat when the tool is available (macOS local), otherwise report a
+      // clear error instead of garbling the layer.
+      const textLayer = path.join(workdir, "model.usda");
+      try {
+        await execFile("usdcat", [rootLayer, "-o", textLayer], { timeout: EXPORT_TIMEOUT_MS });
+        source = await fs.readFile(textLayer, "utf8");
+      } catch {
+        throw httpError(422, "CMF preview needs a text USD layer (usdcat is unavailable).");
+      }
+    }
     return parseSoftwareScene(source);
   } finally {
     await fs.rm(workdir, { recursive: true, force: true });
@@ -506,17 +525,29 @@ async function makeUsdz(input, output, recipe) {
     if (!rootLayer) throw httpError(422, "No root USD layer found inside USDZ.");
 
     const rootName = path.basename(rootLayer);
-    const textLayer = path.join(workdir, "__cmf_source.usda");
-    const mixedTextLayer = path.join(workdir, "__cmf_output.usda");
-    const mixedBinaryLayer = path.join(workdir, rootName);
-
-    await execFile("usdcat", [rootLayer, "-o", textLayer], { timeout: EXPORT_TIMEOUT_MS });
-    const source = await fs.readFile(textLayer, "utf8");
+    let source = "";
+    try {
+      source = await fs.readFile(rootLayer, "utf8");
+    } catch {
+      source = "";
+    }
+    if (!source.trimStart().startsWith("#usda")) {
+      // Defensive fallback for a binary (.usdc) source layer: recolor through
+      // usdcat when available (macOS local); on a minimal host that only has
+      // unzip + zip, the text-layer source is used and this path never runs.
+      const textLayer = path.join(workdir, "__cmf_source.usda");
+      try {
+        await execFile("usdcat", [rootLayer, "-o", textLayer], { timeout: EXPORT_TIMEOUT_MS });
+        source = await fs.readFile(textLayer, "utf8");
+      } catch {
+        throw httpError(422, "CMF export needs a text USD layer (usdcat is unavailable).");
+      }
+    }
     const result = makeCmfUsda(source, recipe);
-    await fs.writeFile(mixedTextLayer, result.text);
-    await execFile("usdcat", [mixedTextLayer, "-o", mixedBinaryLayer], { timeout: EXPORT_TIMEOUT_MS });
-    await fs.rm(textLayer, { force: true });
-    await fs.rm(mixedTextLayer, { force: true });
+    // Keep the recolored layer as text and repackage with plain zip. USDZ is
+    // a zip with the USD layer at the archive root; both the in-app renderer
+    // and Quick Look read a .usda root layer.
+    await fs.writeFile(rootLayer, result.text, "utf8");
 
     await fs.rm(output, { force: true });
     const packageArgs = ["-r", output, rootName];
@@ -524,7 +555,7 @@ async function makeUsdz(input, output, recipe) {
     for (const entry of entries) {
       if (entry.isDirectory()) packageArgs.push(entry.name);
     }
-    await execFile("usdzip", packageArgs, { cwd: workdir, timeout: EXPORT_TIMEOUT_MS });
+    await execFile("zip", packageArgs, { cwd: workdir, timeout: EXPORT_TIMEOUT_MS });
     return result.stats;
   } finally {
     await fs.rm(workdir, { recursive: true, force: true });

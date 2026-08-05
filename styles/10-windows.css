@@ -610,6 +610,10 @@ body.quick-draft-focus .writing-spine-panel {
   height: var(--system-titlebar-height);
   min-height: var(--system-titlebar-height);
   display: grid;
+  /* A touch drag on the title bar moves the window, not the page: without
+     this, iPad/iPhone claim the gesture as scroll / pull-to-refresh and the
+     window fights the browser. */
+  touch-action: none;
   grid-template-columns:
     var(--system-titlebar-control-slot)
     minmax(0, 1fr)
@@ -3814,6 +3818,12 @@ body.is-cloud-active .cloud-state-panel {
   min-height: 20px;
   gap: 6px;
   margin: 0;
+}
+
+.control-panel .field-row:has(input:disabled) {
+  /* Liquid Glass already forces the modern font, so its checkbox is a no-op
+     while the glass theme is active — grey the whole row out. */
+  opacity: 0.55;
 }
 
 .chooser-section {
