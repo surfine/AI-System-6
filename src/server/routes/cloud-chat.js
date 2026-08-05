@@ -51,10 +51,25 @@ const { sessionFromRequest } = require("../security/public-session.js");
 const {
   pseudonymousCloudUserId,
   reserveSharedCloudRequest,
+  settleSharedCloudRequest,
   sharedCloudBudgetConfig,
 } = require("../shared-cloud-budget.js");
+const { cloudUpstreamWarning, responsesEffortForTask } = require("../responses.js");
 
 const DEEPSEEK_V4_MODELS = new Set(["deepseek-v4-pro", "deepseek-v4-flash", "v4-pro", "v4-flash"]);
+
+// Cloud-chat task kinds that may run with chain-of-thought enabled. The
+// reasoning effort still comes from the shared task-type policy; everything
+// outside this whitelist stays thinking-off so instant surfaces never slow
+// down or spend hidden reasoning tokens.
+const CLOUD_THINKING_TASKS = new Set([
+  "docmap",
+  "outline",
+  "draft",
+  "review",
+  "thesis",
+  "hkrr",
+]);
 
 /**
  * @param {any} payload
@@ -206,6 +221,8 @@ async function handleCloudChat(req, res) {
     delete raw.ai_system6_enable_thinking;
 
     const payload = raw;
+    /** @type {{ inputTokens: number, outputTokens: number, reservedTokens: number, remainingSessionRequests: number } | null} */
+    let sharedReservation = null;
     if (!apiKey) {
       send(res, 400, JSON.stringify({
         error: "Missing API key",
@@ -230,6 +247,7 @@ async function handleCloudChat(req, res) {
         : 1800;
       const publicSession = sessionFromRequest(req);
       payload.user_id = pseudonymousCloudUserId(publicSession?.nonce || "");
+      let sharedReservation = null;
       if (usingSharedCloud) {
         payload.max_tokens = Math.min(
           payload.max_tokens,
@@ -263,12 +281,20 @@ async function handleCloudChat(req, res) {
           }), headers);
           return;
         }
+        sharedReservation = reservation;
       }
     }
     stripCloudLocalOnlyFields(payload);
     if (DEEPSEEK_V4_MODELS.has(payload.model)) {
-      payload.thinking = { type: "disabled" };
+      const taskKindName = String(taskKind || "chat").toLowerCase();
+      const thinkingEffort = CLOUD_THINKING_TASKS.has(taskKindName)
+        ? responsesEffortForTask(taskKindName)
+        : "none";
+      payload.thinking = thinkingEffort === "none"
+        ? { type: "disabled" }
+        : { type: "enabled" };
       stripDeepseekV4LocalOnlyFields(payload);
+      if (thinkingEffort !== "none") payload.reasoning_effort = thinkingEffort;
       if (!Number.isFinite(Number(payload.max_tokens))) payload.max_tokens = 1800;
     }
     if (shouldStripDeepseekV4Sampling(payload)) {
@@ -284,9 +310,31 @@ async function handleCloudChat(req, res) {
     const authHeaders = cloudAuthHeaders(apiKey);
 
     if (payload.stream === true) {
+      let streamUsageTokens = 0;
       await proxyJsonStream(targetUrl, payload, signal, res, authHeaders, {
         maxBytes: isPublicDeployment ? 32 * 1024 * 1024 : undefined,
+        onData: (chunk) => {
+          const text = Buffer.isBuffer(chunk) ? chunk.toString("utf8") : String(chunk || "");
+          for (const line of text.split(/\r?\n/)) {
+            const trimmed = String(line || "").trim();
+            if (!trimmed.startsWith("data:")) continue;
+            const raw = trimmed.slice(5).trim();
+            if (!raw || raw === "[DONE]") continue;
+            try {
+              const event = JSON.parse(raw);
+              if (Number(event?.usage?.total_tokens) > 0) {
+                streamUsageTokens = Number(event.usage.total_tokens);
+              }
+            } catch {}
+          }
+        },
       });
+      if (sharedReservation && streamUsageTokens > 0) {
+        settleSharedCloudRequest({
+          reservedTokens: sharedReservation.reservedTokens,
+          actualTokens: streamUsageTokens,
+        });
+      }
       return;
     }
 
@@ -317,9 +365,11 @@ async function handleCloudChat(req, res) {
         || (typeof errorObj === "string" ? errorObj : errorObj?.message)
         || text
         || `Cloud API returned ${upstream.status}`;
+      const warning = cloudUpstreamWarning(upstream.status);
       send(res, upstream.status, JSON.stringify({
         ...data,
         error: errorObj || "Cloud API request failed",
+        ...(warning ? { warning } : {}),
         detail,
       }), { "Content-Type": "application/json" });
       return;
@@ -333,6 +383,12 @@ async function handleCloudChat(req, res) {
       signal,
       authHeaders,
     });
+    if (sharedReservation) {
+      settleSharedCloudRequest({
+        reservedTokens: sharedReservation.reservedTokens,
+        actualTokens: Number(data?.usage?.total_tokens || 0),
+      });
+    }
     const choice = data && data.choices ? data.choices[0] : {};
     data.ai_system6_metrics = {
       elapsed_ms: Date.now() - startedAt,

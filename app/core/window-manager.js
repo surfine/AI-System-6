@@ -1992,6 +1992,8 @@ function getActionAvailability() {
     "review-view-manuscript": true,
     "review-style-section": reviewDeskReady && teachTextCanReview && hasStyleSections,
     "review-facts-section": reviewDeskReady && teachTextCanReview && hasClaimSections,
+    "review-facts-section-online": reviewDeskReady && teachTextCanReview && hasClaimSections,
+    "review-facts-online": reviewDeskReady && teachTextCanReview,
     "review-hkrr-section": reviewDeskReady && teachTextCanReview && hasStyleSections,
     "review-mingming-section": reviewDeskReady && teachTextCanReview && hasStyleSections,
     "review-mingming-handoff": reviewDeskReady && teachTextCanReview && hasStyleSections,

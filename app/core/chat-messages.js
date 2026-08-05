@@ -568,7 +568,8 @@ function renderClioTalkRunAssembly() {
   const inputs = getClioTalkPendingInputDescriptors({ temporaryChat: clioTalkTemporaryMode })
     .filter((entry) => !CLIO_ENTRY_AMBIENT_INPUT_KINDS.has(entry.kind) && !CLIO_ENTRY_SHELF_INPUT_KINDS.has(entry.kind));
   const skills = getClioTalkPendingSkillDescriptors(promptInput?.value || "", { temporaryChat: clioTalkTemporaryMode });
-  const carried = [...inputs, ...skills].map((entry) => entry.label || entry.name).filter(Boolean);
+  const webSearchEntry = clioWebSearchToggleActive() ? [{ name: t("clio_entry_web_search") }] : [];
+  const carried = [...webSearchEntry, ...inputs, ...skills].map((entry) => entry.label || entry.name).filter(Boolean);
   loadout.textContent = carried.length ? t("clio_entry_carrying", carried.join(" · ")) : "";
   loadout.title = carried.length ? `${loadout.textContent}\n${t("clio_entry_carrying_help")}` : "";
   loadout.setAttribute("aria-label", carried.length ? `${loadout.textContent} — ${t("clio_entry_carrying_help")}` : "");
@@ -647,6 +648,7 @@ function recordContextLoadout(payload) {
 function resetClioTalkRuntimeState(options = {}) {
   conversation.length = 0;
   activeChatFileId = null;
+  lastClioWebSearchCall = null;
   compressedConversationMemory = { text: "", sourceMessages: 0, updatedAt: "" };
   attachedClipIds.clear();
   lastAssistantText = "";
@@ -3451,8 +3453,8 @@ const CLOUD_PRICING_CNY_PER_1M = {
 };
 
 
-var latestCloudUsage = { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0, cost_cny: 0 };
-var sessionCloudUsage = { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0, cost_cny: 0 };
+var latestCloudUsage = { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0, cached_tokens: 0, reasoning_tokens: 0, cost_cny: 0 };
+var sessionCloudUsage = { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0, cached_tokens: 0, reasoning_tokens: 0, cost_cny: 0 };
 
 function cloudProviderDisplayName(provider) {
   if (provider === "deepseek") return "DeepSeek";
@@ -3471,8 +3473,11 @@ function cloudModelRouteLabel(config = cloudConfig) {
 
 function cloudUsageText(usage) {
   if (!usage?.total_tokens) return "-";
-  const tokens = formatTokenCount(usage.total_tokens);
-  return usage.cost_cny ? `${tokens} tok · ¥${usage.cost_cny.toFixed(4)}` : `${tokens} tok`;
+  const parts = [`${formatTokenCount(usage.total_tokens)} tok`];
+  if (usage.cached_tokens) parts.push(t("usage_cache_hit", formatTokenCount(usage.cached_tokens)));
+  if (usage.reasoning_tokens) parts.push(t("usage_reasoning_tokens", formatTokenCount(usage.reasoning_tokens)));
+  if (usage.cost_cny) parts.push(`¥${usage.cost_cny.toFixed(4)}`);
+  return parts.join(" · ");
 }
 
 function cloudBalanceText(config = cloudConfig) {
@@ -3576,14 +3581,20 @@ function estimateCloudCostCny(promptTokens, completionTokens, usage = {}) {
 function trackCloudTokenUsage(promptTokens, completionTokens, totalTokens, usage = {}) {
   if (typeof cloudConfig === "undefined" || !cloudConfig || !cloudConfig.active) return;
 
+  const cachedTokens = Number(usage?.input_tokens_details?.cached_tokens || usage?.prompt_tokens_details?.cached_tokens || 0);
+  const reasoningTokens = Number(usage?.output_tokens_details?.reasoning_tokens || usage?.completion_tokens_details?.reasoning_tokens || 0);
   latestCloudUsage.prompt_tokens = promptTokens;
   latestCloudUsage.completion_tokens = completionTokens;
   latestCloudUsage.total_tokens = totalTokens;
+  latestCloudUsage.cached_tokens = cachedTokens;
+  latestCloudUsage.reasoning_tokens = reasoningTokens;
   latestCloudUsage.cost_cny = estimateCloudCostCny(promptTokens, completionTokens, usage);
 
   sessionCloudUsage.prompt_tokens += promptTokens;
   sessionCloudUsage.completion_tokens += completionTokens;
   sessionCloudUsage.total_tokens += totalTokens;
+  sessionCloudUsage.cached_tokens += cachedTokens;
+  sessionCloudUsage.reasoning_tokens += reasoningTokens;
   sessionCloudUsage.cost_cny += latestCloudUsage.cost_cny;
 
   var key = "ai-system6-cloud-usage";
@@ -3595,6 +3606,8 @@ function trackCloudTokenUsage(promptTokens, completionTokens, totalTokens, usage
   storedUsage.prompt_tokens = (storedUsage.prompt_tokens || 0) + promptTokens;
   storedUsage.completion_tokens = (storedUsage.completion_tokens || 0) + completionTokens;
   storedUsage.total_tokens = (storedUsage.total_tokens || 0) + totalTokens;
+  storedUsage.cached_tokens = (storedUsage.cached_tokens || 0) + cachedTokens;
+  storedUsage.reasoning_tokens = (storedUsage.reasoning_tokens || 0) + reasoningTokens;
   storedUsage.cost_cny = (storedUsage.cost_cny || 0) + latestCloudUsage.cost_cny;
   try { localStorage.setItem(key, JSON.stringify(storedUsage)); } catch (ignore) {}
   refreshCloudUsageDisplay();
@@ -3922,6 +3935,7 @@ function createClioTalkAssistantRecord({
   finishReason = "stop",
   stopped = false,
   temporaryChat = false,
+  webSearch = null,
 } = {}) {
   return {
     id: crypto.randomUUID(),
@@ -3936,6 +3950,7 @@ function createClioTalkAssistantRecord({
     finishReason: String(finishReason || (stopped ? "stopped" : "stop")),
     temporaryChat: !!temporaryChat,
     grounding: grounding || null,
+    webSearch: webSearch || null,
     harness: {
       taskKind: String(taskKind || "chat"),
       model: currentTranslationModel(),
@@ -4040,11 +4055,122 @@ function finalizeClioTalkAssistantReply({
   };
 }
 
+function clioWebSearchSetting() {
+  const input = document.getElementById("clio-web-search");
+  return !!input?.checked;
+}
+
+// The most recent web_search_call item from a ClioTalk web-search reply.
+// Follow-up messages pass it back so the model reuses the prior search
+// results instead of searching again (verified against the live API).
+let lastClioWebSearchCall = null;
+
+function clioWebSearchToggleActive() {
+  if (!clioWebSearchSetting()) return false;
+  const toggle = document.getElementById("clio-web-search-toggle");
+  return toggle?.getAttribute("aria-expanded") === "true";
+}
+
+function clioTalkWebSearchReady() {
+  return typeof cloudConfig !== "undefined"
+    && cloudConfig?.active
+    && cloudConfig?.provider
+    && cloudCredentialReady();
+}
+
+/**
+ * Show or hide the per-message web-search switch beside the composer and
+ * clear its pressed state whenever the Control Panel setting is off.
+ */
+function refreshClioTalkWebSearchToggle() {
+  const toggle = document.getElementById("clio-web-search-toggle");
+  if (!toggle) return;
+  const enabled = clioWebSearchSetting();
+  toggle.hidden = !enabled;
+  if (!enabled) toggle.setAttribute("aria-expanded", "false");
+  renderClioTalkRunAssembly();
+}
+
+/**
+ * One web-search answer for ClioTalk: the server runs the Responses API
+ * web_search tool in companion mode and returns a cited answer.
+ *
+ * @param {string} query
+ * @param {AbortSignal} [signal]
+ * @param {{ onDelta?: (content: string) => void }} [options]
+ * @returns {Promise<{ answer: string, citations: Array<{ url: string, title: string }>, results?: Array<object>, searchCalls?: Array<object>, usage?: object }>}
+ */
+async function runClioTalkWebSearch(query, signal, options = {}) {
+  const response = await fetch("/api/search/answer", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      q: query,
+      mode: "clio",
+      stream: true,
+      search_calls: lastClioWebSearchCall ? [lastClioWebSearchCall] : [],
+      ...cloudCredentialTransportFields(),
+    }),
+    signal,
+  });
+  if (!response.ok) throw new Error(await response.text());
+  const result = await readWebSearchStream(response, {
+    onDelta: (content) => options.onDelta?.(content),
+  });
+  if (Array.isArray(result?.searchCalls) && result.searchCalls.length) {
+    lastClioWebSearchCall = result.searchCalls[result.searchCalls.length - 1];
+  }
+  return result;
+}
+
+function openClioWebCitationInReader(url) {
+  if (!url) return;
+  readerUrlInput.value = url;
+  openWindow("reader");
+  fetchReaderPage(url);
+  setStatus(t("claim_check_online_opened_source"));
+}
+
+/**
+ * Append the transient cited-sources block under a web-search reply. The
+ * sources stay temporary: each button opens Reader so the original can be
+ * checked before the answer is relied on.
+ *
+ * @param {HTMLElement} messageElement
+ * @param {Array<{ url: string, title: string }>} [citations]
+ */
+function appendClioTalkWebSearchCitations(messageElement, citations) {
+  if (!messageElement || !Array.isArray(citations) || !citations.length) return;
+  const wrap = document.createElement("div");
+  wrap.className = "clio-web-search-citations";
+  const label = document.createElement("b");
+  label.textContent = t("clio_web_search_citations");
+  wrap.append(label);
+  citations.forEach((citation) => {
+    if (!citation.url) return;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "btn mini-btn citation-btn";
+    button.textContent = citation.title || citation.url;
+    button.addEventListener("click", () => openClioWebCitationInReader(citation.url));
+    wrap.append(button);
+  });
+  const note = document.createElement("div");
+  note.className = "hint";
+  note.textContent = t("clio_web_search_note");
+  wrap.append(note);
+  messageElement.append(wrap);
+}
+
 async function submitUserText(userText, options = {}) {
   if (!userText) return;
   if (!clioTalkModelReady()) {
     setStatus(t("clio_model_required_status"));
     syncClioTalkModelAvailability();
+    return;
+  }
+  if (clioWebSearchToggleActive() && !clioTalkWebSearchReady()) {
+    setStatus(t("clio_web_search_cloud_required"));
     return;
   }
 
@@ -4139,6 +4265,45 @@ async function submitUserText(userText, options = {}) {
     const hasMountedProjectDisk = ragChunks.some((chunk) => chunk.projectId === activeProjectId);
     updatePendingMessage(pendingMessage, hasMountedProjectDisk ? 0 : 1, hasMountedProjectDisk ? t("searching_scraps") : `${modelRouteText("consulting_model", "consulting_cloud_model")}.`);
     await prepareStreamingMarkdownPreview();
+    if (clioWebSearchToggleActive()) {
+      updatePendingMessage(pendingMessage, 1, t("clio_web_search_running"));
+      const webResult = await runClioTalkWebSearch(userText, activeAbortController.signal, {
+        onDelta: (content) => updatePendingStreamContent(pendingMessage, content),
+      });
+      receivedAssistantText = String(webResult.answer || "").trim();
+      if (!receivedAssistantText) throw new Error(t("clio_web_search_empty"));
+      updatePendingMessage(pendingMessage, 2, `${t("typesetting_reply")}.`);
+      const grounding = captureClioTalkGroundingSafely({
+        ...runtimeOptions,
+        taskKind: messageTaskKind,
+      });
+      const assistantRecord = createClioTalkAssistantRecord({
+        content: receivedAssistantText,
+        taskKind: messageTaskKind,
+        requestRecord: submittedUserRecord,
+        requestOptions: replayOptions,
+        grounding,
+        finishReason: "stop",
+        temporaryChat: isTemporaryChat,
+        webSearch: {
+          citations: Array.isArray(webResult.citations) ? webResult.citations : [],
+          usage: webResult.usage || null,
+        },
+      });
+      const finalization = finalizeClioTalkAssistantReply({
+        pendingMessage,
+        activeConversationFile,
+        submittedUserRecord,
+        assistantRecord,
+        runStatus: "completed",
+      });
+      appendClioTalkWebSearchCitations(pendingMessage, webResult.citations);
+      updateLocalModelState({ server: true, selected: true, ready: true, running: false, task: "" });
+      setStatus(finalization.warnings.length
+        ? t("clio_reply_preserved_record_warning")
+        : t("ready"));
+      return;
+    }
     receivedAssistantText = await sendToLmStudio(userText, activeAbortController.signal, {
       ...runtimeOptions,
       taskKind: messageTaskKind,

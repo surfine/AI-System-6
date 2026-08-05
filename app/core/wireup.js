@@ -369,7 +369,9 @@ function wireAppEvents() {
     updateFindPathStatusBar();
   
     try {
-      const results = await searchFindPath(query);
+      const results = searchProviderInput?.value === "deepseek"
+        ? await runWebAnswerSearch(query)
+        : await searchFindPath(query);
       findPathResults.length = 0;
       findPathResults.push(...results);
       selectedFindPathIndex = results.length ? 0 : null;
@@ -747,6 +749,19 @@ function wireAppEvents() {
   document.getElementById("enable-image-gen")?.addEventListener("change", (event) => {
     document.body.classList.toggle("image-gen-enabled", event.target.checked);
     scheduleSettingsSave();
+  });
+  document.getElementById("clio-web-search")?.addEventListener("change", () => {
+    if (typeof refreshClioTalkWebSearchToggle === "function") {
+      refreshClioTalkWebSearchToggle();
+    }
+    scheduleSettingsSave();
+  });
+  document.getElementById("clio-web-search-toggle")?.addEventListener("click", (event) => {
+    const toggle = event.currentTarget;
+    const expanded = toggle.getAttribute("aria-expanded") === "true";
+    toggle.setAttribute("aria-expanded", String(!expanded));
+    if (typeof renderClioTalkRunAssembly === "function") renderClioTalkRunAssembly();
+    if (typeof syncClioTalkSendButton === "function") syncClioTalkSendButton();
   });
   modelInput?.addEventListener("input", handleModelNameChanged);
   modelInput?.addEventListener("change", handleModelNameChanged);

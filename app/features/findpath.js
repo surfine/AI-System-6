@@ -11,6 +11,7 @@ function getSearchProviderLabel() {
 function searchProviderLabel(provider) {
   if (provider === "bing") return t("search_bing");
   if (provider === "duckduckgo") return t("search_duckduckgo");
+  if (provider === "deepseek") return t("search_deepseek");
   return t("search_auto");
 }
 
@@ -31,6 +32,7 @@ function updateSearchProviderLabels() {
 async function fetchMoreResults() {
   const query = findPathQueryInput.value.trim();
   if (!query) return;
+  if (searchProviderInput?.value === "deepseek") return;
 
   const currentCount = findPathResults.length;
   const targetCount = getFindPathResultLimit();
@@ -83,16 +85,19 @@ function renderFindPathResults() {
   findPathResultsEl?.classList.remove("is-hidden");
   const scrollPos = findPathResultsEl.scrollTop;
   findPathResultsEl.replaceChildren();
+  const deepSeekProvider = searchProviderInput?.value === "deepseek";
+
+  renderWebAnswerSummary(deepSeekProvider);
 
   if (!findPathResults.length) {
-    renderFindPathNotice(t("no_find_path_results"));
+    if (!(deepSeekProvider && findPathWebAnswer?.answer)) {
+      renderFindPathNotice(t("no_find_path_results"));
+    }
     synthesizeFindPathButton.hidden = true;
-    findPathSummaryEl.classList.add("is-hidden");
-    findPathSummaryEl.textContent = "";
     return;
   }
 
-  synthesizeFindPathButton.hidden = false;
+  synthesizeFindPathButton.hidden = deepSeekProvider;
 
   findPathResults.forEach((result, index) => {
     const resultText = `${result.title || ""}\n${result.snippet || ""}`.trim();
@@ -132,15 +137,121 @@ function renderFindPathResults() {
     findPathResultsEl.append(item);
   });
 
-  // Add the localized pagination button at the end of the list.
-  const moreButton = document.createElement("button");
-  moreButton.type = "button";
-  moreButton.className = "find-path-more-btn";
-  moreButton.textContent = t("searcher_more_results");
-  moreButton.addEventListener("click", fetchMoreResults);
-  findPathResultsEl.append(moreButton);
+  if (!deepSeekProvider) {
+    // Add the localized pagination button at the end of the list.
+    const moreButton = document.createElement("button");
+    moreButton.type = "button";
+    moreButton.className = "find-path-more-btn";
+    moreButton.textContent = t("searcher_more_results");
+    moreButton.addEventListener("click", fetchMoreResults);
+    findPathResultsEl.append(moreButton);
+  }
 
   findPathResultsEl.scrollTop = scrollPos;
+}
+
+// DeepSeek provider state: one server-side Responses API call returns the
+// cited answer plus the raw search results; both stay temporary until the
+// user opens a source in Reader.
+let findPathWebAnswer = null;
+
+/**
+ * Show the synthesized online answer above the results list. Keeps the
+ * existing .find-path-summary surface so no new styling is needed; the
+ * disclaimer makes it explicit that the answer is model output, not evidence.
+ *
+ * @param {boolean} deepSeekProvider
+ */
+function renderWebAnswerSummary(deepSeekProvider) {
+  const answer = deepSeekProvider ? findPathWebAnswer?.answer : "";
+  if (!answer) {
+    findPathSummaryEl.classList.add("is-hidden");
+    findPathSummaryEl.replaceChildren();
+    return;
+  }
+  findPathSummaryEl.classList.remove("is-hidden");
+  findPathSummaryEl.replaceChildren();
+  const label = document.createElement("div");
+  label.className = "hint";
+  label.textContent = t("search_answer_label");
+  const body = document.createElement("div");
+  body.textContent = answer;
+  (findPathWebAnswer?.citations || []).forEach((citation) => {
+    if (!citation.url) return;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "btn mini-btn citation-btn";
+    button.textContent = citation.title || citation.url;
+    button.addEventListener("click", () => openFindPathWebCitation(citation.url));
+    findPathSummaryEl.append(button);
+  });
+  const note = document.createElement("div");
+  note.className = "hint";
+  note.textContent = t("search_answer_note");
+  findPathSummaryEl.append(label, body, note);
+  findPathSummaryEl.scrollTop = 0;
+}
+
+/**
+ * Live preview while the web-search answer streams: label plus accumulated
+ * text, replaced by the final summary (with citations) when the stream ends.
+ *
+ * @param {string} text
+ */
+function renderWebSearchStreamingText(text) {
+  findPathSummaryEl.classList.remove("is-hidden");
+  findPathSummaryEl.replaceChildren();
+  const label = document.createElement("div");
+  label.className = "hint";
+  label.textContent = t("search_answer_label");
+  const body = document.createElement("div");
+  body.textContent = text;
+  findPathSummaryEl.append(label, body);
+  findPathSummaryEl.scrollTop = 0;
+}
+
+function openFindPathWebCitation(url) {
+  if (!url) return;
+  readerUrlInput.value = url;
+  openWindow("reader");
+  fetchReaderPage(url);
+  setStatus(t("claim_check_online_opened_source"));
+}
+
+/**
+ * Run Searcher's DeepSeek online-answer provider. The server calls the
+ * Responses API web_search tool once and returns the cited answer plus the
+ * search results; this function keeps the answer in module state and returns
+ * the results so the ordinary result-list rendering can continue to own them.
+ *
+ * @param {string} query
+ * @returns {Promise<Array<{ title: string, url: string, snippet: string, site: string }>>}
+ */
+async function runWebAnswerSearch(query) {
+  findPathWebAnswer = null;
+  const response = await fetch("/api/search/answer", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      q: query,
+      mode: "answer",
+      stream: true,
+      ...cloudCredentialTransportFields(),
+    }),
+  });
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+  const result = await readWebSearchStream(response, {
+    onDelta: (text) => renderWebSearchStreamingText(text),
+  });
+  findPathWebAnswer = {
+    answer: String(result.answer || ""),
+    citations: Array.isArray(result.citations) ? result.citations : [],
+    results: Array.isArray(result.results) ? result.results : [],
+  };
+  renderWebAnswerSummary(true);
+  return findPathWebAnswer.results;
 }
 
 function renderFindPathNotice(message, tone = "") {

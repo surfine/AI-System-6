@@ -30,6 +30,7 @@
 
 const { send, readJsonBody, requestSignal } = require("../lib/http.js");
 const { modelContentFromChatData } = require("../chat.js");
+const { settleSharedCloudRequest } = require("../shared-cloud-budget.js");
 const {
   classifyLmStudioProxyError,
   getLoadedLmStudioModelInfo,
@@ -128,7 +129,7 @@ async function handleEndfieldAsk(req, res) {
       ],
     };
 
-    const { response: upstream, source, model, autoLoaded, autoLoadedModel, autoSelectedModel } =
+    const { response: upstream, source, model, autoLoaded, autoLoadedModel, autoSelectedModel, reservation } =
       await postEndfieldChatPayload(payload, body, signal, req);
     const text = await upstream.text();
     const contentType = upstream.headers.get("content-type") || "application/json";
@@ -153,6 +154,12 @@ async function handleEndfieldAsk(req, res) {
         ...matches,
       }), { "Content-Type": "application/json" });
       return;
+    }
+    if (reservation) {
+      settleSharedCloudRequest({
+        reservedTokens: reservation.reservedTokens,
+        actualTokens: Number(data?.usage?.total_tokens || 0),
+      });
     }
 
     const choice = data?.choices?.[0] || {};

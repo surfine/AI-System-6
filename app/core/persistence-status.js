@@ -112,6 +112,7 @@ function settingsSnapshotPayload() {
     menuClock: menuClockInput.checked,
     performanceMeter: performanceMeterInput.checked,
     imageGen: document.getElementById("enable-image-gen")?.checked || false,
+    clioWebSearch: document.getElementById("clio-web-search")?.checked || false,
     showResetSystemMenu: showResetSystemMenuInput ? showResetSystemMenuInput.checked : true,
     language: currentLanguage,
     writerMode: false,
@@ -1325,7 +1326,7 @@ function applySettings(settings) {
       || settings.localModelInputMode === "manual";
   }
   activeChatModelIdentifier = settings.chatModel || "";
-  if (searchProviderInput && ["auto", "duckduckgo", "bing"].includes(settings.searchProvider)) {
+  if (searchProviderInput && ["auto", "duckduckgo", "bing", "deepseek"].includes(settings.searchProvider)) {
     searchProviderInput.value = settings.searchProvider;
   } else if (searchProviderInput) {
     searchProviderInput.value = "auto";
@@ -1435,6 +1436,13 @@ function applySettings(settings) {
   if (imageGenInput) {
     imageGenInput.checked = settings.imageGen === true;
     document.body.classList.toggle("image-gen-enabled", settings.imageGen === true);
+  }
+  const clioWebSearchInput = document.getElementById("clio-web-search");
+  if (clioWebSearchInput) {
+    clioWebSearchInput.checked = settings.clioWebSearch === true;
+  }
+  if (typeof refreshClioTalkWebSearchToggle === "function") {
+    refreshClioTalkWebSearchToggle();
   }
   if (showResetSystemMenuInput) {
     showResetSystemMenuInput.checked = typeof settings.showResetSystemMenu === "boolean"

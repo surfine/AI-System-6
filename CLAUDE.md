@@ -155,7 +155,8 @@ All routes are stateless proxies/utilities; everything else falls through to
 static file serving from the project root. Key families: `/api/chat`,
 `/api/embeddings`, `/api/models*` (local LM Studio); `/api/cloud/*` (cloud
 chat/embeddings); `/api/import-text` + `/api/vision/analyze` (File Floppy
-import/OCR); `/api/search`, `/api/reader`; `/api/cmf/*`, `/api/endfield/*`,
+import/OCR); `/api/search` + `/api/search/answer` (bounded web search and
+DeepSeek online answer), `/api/reader`; `/api/cmf/*`, `/api/endfield/*`,
 `/api/image/generate`, `/api/subtitles/translate`, `/api/version`. **Full route
 table → [CLAUDE.full.md](CLAUDE.full.md).**
 

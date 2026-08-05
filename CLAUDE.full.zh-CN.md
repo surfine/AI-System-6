@@ -1,5 +1,5 @@
 <!-- canonical-source: CLAUDE.full.md -->
-<!-- source-sha256: 246e5b590634fc655157307cb4a70046a1e7e5027a5b264277e09f91c038d6cf -->
+<!-- source-sha256: f19b0d8080e8e87098ca21959d36931738fa61b2f08b6fbf4cdfa60d4d507fec -->
 
 # AI System 6 — CLAUDE.full.md（旧版完整参考）
 

@@ -30,6 +30,7 @@ const { chatVentIntakeInstruction } = require("../chat-vent.js");
 const { resolveCloudCredential } = require("../credential-vault.js");
 const { preparePublicCloudCall } = require("../lib/cloud-route.js");
 const { isPublicDeployment } = require("../runtime-profile.js");
+const { settleSharedCloudRequest } = require("../shared-cloud-budget.js");
 const {
   findHumanizerOutputHits,
   findHumanizerStyleDiagnostics,
@@ -1224,7 +1225,7 @@ async function callModel(body, messages, signal, req) {
     || Boolean(body._cloud_model)
     || Boolean(body._cloud_credential_id)
     || Boolean(body._cloud_api_key);
-  const temperature = typeof body.temperature === "number" ? body.temperature : 0.4;
+    const temperature = typeof body.temperature === "number" ? body.temperature : 0.4;
 
   if (isCloud) {
     const model = body._cloud_model || body.model || "";
@@ -1233,6 +1234,7 @@ async function callModel(body, messages, signal, req) {
     let apiKey;
     let baseUrl;
     let finalPayload = payload;
+    let sharedReservation = null;
     if (isPublicDeployment) {
       const cloud = await preparePublicCloudCall({
         credentialId: body._cloud_credential_id,
@@ -1245,6 +1247,7 @@ async function callModel(body, messages, signal, req) {
       apiKey = cloud.apiKey;
       baseUrl = cloud.baseUrl;
       finalPayload = cloud.payload;
+      sharedReservation = cloud.reservation;
     } else {
       apiKey = await resolveCloudCredential({
         credentialId: body._cloud_credential_id,
@@ -1265,6 +1268,12 @@ async function callModel(body, messages, signal, req) {
     const repaired = result.ok
       ? await repairCloudDraftOutputIfNeeded({ body, result, payload: finalPayload, targetUrl, signal, authHeaders })
       : result;
+    if (sharedReservation) {
+      settleSharedCloudRequest({
+        reservedTokens: sharedReservation.reservedTokens,
+        actualTokens: Number(repaired?.data?.usage?.total_tokens || 0),
+      });
+    }
     return { ...repaired, model: model || "cloud" };
   }
 

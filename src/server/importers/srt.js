@@ -6,12 +6,166 @@
 
 const { postJsonWithFallback } = require("../lib/fetch.js");
 const {
+  buildResponsesPayload,
+  callResponsesJson,
+  extractResponsesText,
+  isResponsesEligible,
+  responsesEffortForTask,
+} = require("../responses.js");
+const {
   cleanImportedText,
   decodePlainTextBuffer,
 } = require("./shared.js");
 
 const lmStudioUrl = process.env.LM_STUDIO_URL || "http://127.0.0.1:1234/v1/chat/completions";
 const visionOcrModel = process.env.AI_SYSTEM6_VISION_MODEL || "ai-system-main";
+
+// json_schema for subtitle translation output: an ordered {index, text} list
+// so count and order are guaranteed instead of parsed from Markdown lists.
+const SUBTITLE_SCHEMA_FORMAT = {
+  type: "json_schema",
+  name: "subtitle_translations",
+  schema: {
+    type: "object",
+    required: ["items"],
+    properties: {
+      items: {
+        type: "array",
+        items: {
+          type: "object",
+          required: ["index", "text"],
+          properties: {
+            index: { type: "integer" },
+            text: { type: "string" },
+          },
+        },
+      },
+    },
+  },
+};
+
+/**
+ * Parse schema-enforced subtitle JSON into an ordered string array. Returns
+ * null when the model ignored the schema, the count is short, or any item is
+ * missing its text, so callers fall back to the Markdown parsing path.
+ *
+ * @param {string} content
+ * @param {number} count
+ * @returns {string[] | null}
+ */
+function parseStructuredSubtitleTranslations(content, count) {
+  const trimmed = String(content || "").trim();
+  if (!trimmed) return null;
+  let parsed = null;
+  try {
+    parsed = JSON.parse(trimmed);
+  } catch {
+    try {
+      const match = trimmed.match(/\{[\s\S]*\}/);
+      if (match) parsed = JSON.parse(match[0]);
+    } catch {
+      return null;
+    }
+  }
+  const items = Array.isArray(parsed?.items) ? parsed.items : [];
+  if (!items.length || items.length < count) return null;
+  const ordered = [...items]
+    .sort((a, b) => Number(a?.index || 0) - Number(b?.index || 0))
+    .map((item) => String(item?.text || "").trim());
+  if (ordered.some((text) => !text)) return null;
+  return ordered.slice(0, count);
+}
+
+/**
+ * Dispatch one subtitle translation batch across the three transports:
+ * local LM Studio, official-endpoint Responses API with json_schema, and the
+ * existing cloud Chat Completions path. The Responses path degrades back to
+ * `parseContent` (the Markdown parser) when the model ignores the schema.
+ *
+ * @param {{
+ *   systemPrompt: string,
+ *   userPrompt: string,
+ *   count: number,
+ *   parseContent: (content: string) => string[] | null,
+ *   options: { cloudActive?: boolean, cloudApiKey?: string, cloudBaseUrl?: string, cloudModel?: string, signal?: AbortSignal, onUsage?: (totalTokens: number) => void },
+ *   model: string,
+ *   structured: boolean,
+ *   maxOutputTokens?: number,
+ *   errorLabel?: string,
+ * }} options
+ * @returns {Promise<string[] | null>}
+ */
+async function runSubtitleCloudTranslation({
+  systemPrompt,
+  userPrompt,
+  count,
+  parseContent,
+  options,
+  model,
+  structured = false,
+  maxOutputTokens = 4096,
+  errorLabel = "Subtitle translation failed",
+}) {
+  const cloudActive = !!(options.cloudActive && options.cloudApiKey);
+  const messages = [
+    { role: "system", content: systemPrompt },
+    { role: "user", content: userPrompt },
+  ];
+
+  if (!cloudActive) {
+    const { response } = await postJsonWithFallback(
+      lmStudioUrl,
+      { model, temperature: 0, messages },
+      options.signal
+    );
+    const raw = await response.text();
+    let data = {};
+    try { data = JSON.parse(raw); } catch { data = { raw }; }
+    if (!response.ok) {
+      throw new Error(data.detail || data.error?.message || raw || `${errorLabel} (${response.status}).`);
+    }
+    return parseContent(data?.choices?.[0]?.message?.content || "");
+  }
+
+  const apiKey = options.cloudApiKey;
+  if (structured) {
+    const payload = buildResponsesPayload({
+      model,
+      instructions: systemPrompt,
+      input: userPrompt,
+      textFormat: SUBTITLE_SCHEMA_FORMAT,
+      reasoningEffort: responsesEffortForTask("subtitle"),
+      maxOutputTokens,
+    });
+    const data = await callResponsesJson({ apiKey, payload, signal: options.signal });
+    const content = extractResponsesText(data);
+    if (typeof options.onUsage === "function") {
+      options.onUsage(Number(data?.usage?.total_tokens || 0));
+    }
+    const structuredTexts = parseStructuredSubtitleTranslations(content, count);
+    if (structuredTexts) return structuredTexts;
+    return parseContent(content);
+  }
+
+  const baseUrl = (options.cloudBaseUrl || "").replace(/\/$/, "");
+  const targetUrl = `${baseUrl}/v1/chat/completions`;
+  const { response } = await postJsonWithFallback(
+    targetUrl,
+    { model, temperature: 0, messages },
+    options.signal,
+    { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" }
+  );
+  const raw = await response.text();
+  let data = {};
+  try { data = JSON.parse(raw); } catch { data = { raw }; }
+  if (!response.ok) {
+    throw new Error(data.detail || data.error?.message || raw || `${errorLabel} (${response.status}).`);
+  }
+  if (typeof options.onUsage === "function") {
+    options.onUsage(Number(data?.usage?.total_tokens || 0));
+  }
+  return parseContent(data?.choices?.[0]?.message?.content || "");
+}
 
 /**
  * @param {Buffer} buffer
@@ -298,55 +452,44 @@ function buildSubtitleTranslationParagraphs(blocks) {
 async function requestParagraphBatchTranslation(paragraphs, mode, options) {
   const cloudActive = !!(options.cloudActive && options.cloudApiKey);
   const model = cloudActive ? (options.cloudModel || "deepseek-v4-flash") : visionOcrModel;
+  const structured = cloudActive && isResponsesEligible({ baseUrl: options.cloudBaseUrl, model });
   const systemPrompt = mode === "en"
     ? "你是 AI System 6 的字幕翻译助手。请把中文视频字幕段落翻译成自然、简洁的英文。"
     : "你是 AI System 6 的字幕本地化助手。请把简体中文视频字幕段落本地化为台湾使用的自然繁体中文。";
-  const userPrompt = [
-    mode === "en" ? "请翻译这些字幕段落。" : "请本地化这些字幕段落。",
-    "返回 Markdown，不要代码围栏。",
-    "每个输入段落必须对应一个输出段落，编号必须保持一致。",
-    "格式固定：",
-    "### P1",
-    "译文",
-    "### P2",
-    "译文",
-    "",
-    "规则：只返回译文段落，不要解释；不要增删段落；保留专有名词；英文要适合字幕阅读，台湾繁中要自然。",
-    "",
-    paragraphs.map((paragraph) => `### ${paragraph.id}\n${paragraph.text}`).join("\n\n"),
-  ].join("\n");
-  const payload = {
+  const userPrompt = structured
+    ? [
+        mode === "en" ? "请翻译这些字幕段落。" : "请本地化这些字幕段落。",
+        "输出 JSON，不要 Markdown、不要代码围栏。",
+        "输出必须符合给定 JSON Schema：{\"items\":[{\"index\":1,\"text\":\"...\"}]}。",
+        "items 数量必须与输入段落完全一致，index 从 1 开始递增。",
+        "规则：只输出译文；不要增删段落；保留专有名词；英文要适合字幕阅读，台湾繁中要自然。",
+        "",
+        paragraphs.map((paragraph) => `### ${paragraph.id}\n${paragraph.text}`).join("\n\n"),
+      ].join("\n")
+    : [
+        mode === "en" ? "请翻译这些字幕段落。" : "请本地化这些字幕段落。",
+        "返回 Markdown，不要代码围栏。",
+        "每个输入段落必须对应一个输出段落，编号必须保持一致。",
+        "格式固定：",
+        "### P1",
+        "译文",
+        "### P2",
+        "译文",
+        "",
+        "规则：只返回译文段落，不要解释；不要增删段落；保留专有名词；英文要适合字幕阅读，台湾繁中要自然。",
+        "",
+        paragraphs.map((paragraph) => `### ${paragraph.id}\n${paragraph.text}`).join("\n\n"),
+      ].join("\n");
+  return runSubtitleCloudTranslation({
+    systemPrompt,
+    userPrompt,
+    count: paragraphs.length,
+    parseContent: (content) => parseParagraphTranslationMarkdown(content, paragraphs.length),
+    options,
     model,
-    temperature: 0,
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt },
-    ],
-  };
-
-  let response;
-  if (cloudActive) {
-    const apiKey = options.cloudApiKey;
-    const baseUrl = (options.cloudBaseUrl || "").replace(/\/$/, "");
-    const targetUrl = `${baseUrl}/v1/chat/completions`;
-    ({ response } = await postJsonWithFallback(targetUrl, payload, options.signal, {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    }));
-  } else {
-    ({ response } = await postJsonWithFallback(lmStudioUrl, payload, options.signal));
-  }
-  const raw = await response.text();
-  let data = {};
-  try {
-    data = JSON.parse(raw);
-  } catch {
-    data = { raw };
-  }
-  if (!response.ok) {
-    throw new Error(data.detail || data.error?.message || raw || `Subtitle paragraph translation failed (${response.status}).`);
-  }
-  return parseParagraphTranslationMarkdown(data?.choices?.[0]?.message?.content || "", paragraphs.length);
+    structured,
+    errorLabel: "Subtitle paragraph translation failed",
+  });
 }
 
 /**
@@ -388,74 +531,61 @@ function englishSubtitleTooLong(sourceText, translatedText) {
 async function requestSubtitleBatchTranslation(texts, mode, options, attemptLabel = "") {
   const cloudActive = !!(options.cloudActive && options.cloudApiKey);
   const model = cloudActive ? (options.cloudModel || "deepseek-v4-flash") : visionOcrModel;
+  const structured = cloudActive && isResponsesEligible({ baseUrl: options.cloudBaseUrl, model });
   const systemPrompt = mode === "en"
     ? "你是 AI System 6 的字幕翻译助手。请把简体中文字幕行翻译成适合屏幕阅读的自然英文字幕。"
     : "你是 AI System 6 的字幕本地化助手。请把简体中文字幕行转换成台湾使用的自然繁体中文字幕。";
-  const userPrompt = mode === "en"
+  const baseRules = mode === "en"
     ? [
-      `请把 JSON 数组里的每条字幕翻译成英文。${attemptLabel}`.trim(),
-      "输出格式：",
-      "- 返回 Markdown 编号列表，不要代码围栏。",
-      "- 每条输入对应一条输出，数量必须完全一致。",
-      "- 格式固定为：1. translated subtitle",
-      "- 如果一条字幕需要换行，用 <br> 表示。",
-      "规则：",
-      "- 只翻译字幕正文，不添加解释。",
-      "- 保留每个 item 内必要换行。",
-      "- 英文要简洁、自然，适合字幕阅读速度。",
-      "- 不要过度扩写，专有名词保持一致。",
-      "",
-      JSON.stringify(texts),
-    ].join("\n")
+        "规则：",
+        "- 只翻译字幕正文，不添加解释。",
+        "- 保留每个 item 内必要换行。",
+        "- 英文要简洁、自然，适合字幕阅读速度。",
+        "- 不要过度扩写，专有名词保持一致。",
+      ]
     : [
-      `请把 JSON 数组里的每条字幕本地化为台湾繁体中文。${attemptLabel}`.trim(),
-      "输出格式：",
-      "- 返回 Markdown 编号列表，不要代码围栏。",
-      "- 每条输入对应一条输出，数量必须完全一致。",
-      "- 格式固定为：1. 本地化字幕",
-      "- 如果一条字幕需要换行，用 <br> 表示。",
-      "规则：",
-      "- 只处理字幕正文，不添加解释。",
-      "- 保持原意忠实。",
-      "- 使用台湾繁体中文和台湾常用词，不要只是简转繁。",
-      "- 优先使用台湾用语，例如：视频->影片，软件->軟體，芯片->晶片，默认->預設，信息->資訊。",
-      "- 字幕要短、自然，适合屏幕阅读。专有名词保持一致。",
-      "",
-      JSON.stringify(texts),
-    ].join("\n");
-  const payload = {
+        "规则：",
+        "- 只处理字幕正文，不添加解释。",
+        "- 保持原意忠实。",
+        "- 使用台湾繁体中文和台湾常用词，不要只是简转繁。",
+        "- 优先使用台湾用语，例如：视频->影片，软件->軟體，芯片->晶片，默认->預設，信息->資訊。",
+        "- 字幕要短、自然，适合屏幕阅读。专有名词保持一致。",
+      ];
+  const userPrompt = structured
+    ? [
+        mode === "en"
+          ? `请把 JSON 数组里的每条字幕翻译成英文。${attemptLabel}`.trim()
+          : `请把 JSON 数组里的每条字幕本地化为台湾繁体中文。${attemptLabel}`.trim(),
+        "输出 JSON，不要 Markdown、不要代码围栏。",
+        "输出必须符合给定 JSON Schema：{\"items\":[{\"index\":1,\"text\":\"...\"}]}。",
+        "items 数量必须与输入完全一致，index 从 1 开始递增。",
+        "如果一条字幕需要换行，用 <br> 表示。",
+        ...baseRules,
+        "",
+        JSON.stringify(texts),
+      ].join("\n")
+    : [
+        mode === "en"
+          ? `请把 JSON 数组里的每条字幕翻译成英文。${attemptLabel}`.trim()
+          : `请把 JSON 数组里的每条字幕本地化为台湾繁体中文。${attemptLabel}`.trim(),
+        "输出格式：",
+        "- 返回 Markdown 编号列表，不要代码围栏。",
+        "- 每条输入对应一条输出，数量必须完全一致。",
+        "- 格式固定为：" + (mode === "en" ? "1. translated subtitle" : "1. 本地化字幕"),
+        "- 如果一条字幕需要换行，用 <br> 表示。",
+        ...baseRules,
+        "",
+        JSON.stringify(texts),
+      ].join("\n");
+  const parsed = await runSubtitleCloudTranslation({
+    systemPrompt,
+    userPrompt,
+    count: texts.length,
+    parseContent: (content) => parseSubtitleModelTranslations(content, texts.length),
+    options,
     model,
-    temperature: 0,
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt },
-    ],
-  };
-
-  let response;
-  if (cloudActive) {
-    const apiKey = options.cloudApiKey;
-    const baseUrl = (options.cloudBaseUrl || "").replace(/\/$/, "");
-    const targetUrl = `${baseUrl}/v1/chat/completions`;
-    const headers = {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    };
-    ({ response } = await postJsonWithFallback(targetUrl, payload, options.signal, headers));
-  } else {
-    ({ response } = await postJsonWithFallback(lmStudioUrl, payload, options.signal));
-  }
-  const raw = await response.text();
-  let data = {};
-  try {
-    data = JSON.parse(raw);
-  } catch {
-    data = { raw };
-  }
-  if (!response.ok) {
-    throw new Error(data.detail || data.error?.message || raw || `Subtitle translation failed (${response.status}).`);
-  }
-  const parsed = parseSubtitleModelTranslations(data?.choices?.[0]?.message?.content || "", texts.length);
+    structured,
+  });
   if (parsed) return parsed;
 
   // Last-resort fallback: keep the import/export flow alive even when
@@ -585,7 +715,9 @@ async function translateSrtToEnglishAndTaiwanSrt(buffer, options) {
 }
 
 module.exports = {
+  SUBTITLE_SCHEMA_FORMAT,
   extractSrtText,
+  parseStructuredSubtitleTranslations,
   parseSrtBlocks,
   buildTranscriptParagraphsFromSrtBlocks,
   buildSrtFromBlocks,

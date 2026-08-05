@@ -206,6 +206,8 @@ const teachTextMenus = [
       menuItem("next-style-section", "next_section"),
       menuItem("review-style-section", "review_style_section"),
       menuItem("review-facts-section", "review_facts_section"),
+      menuItem("review-facts-section-online", "review_facts_section_online"),
+      menuItem("review-facts-online", "review_facts_online"),
       menuItem("review-hkrr-section", "review_hkrr_section"),
       menuItem("review-mingming-section", "review_mingming_section"),
       menuItem("review-mingming-handoff", "review_mingming_handoff"),

@@ -178,6 +178,7 @@ function resetReaderDocumentState() {
   if (readerDocMapButton) readerDocMapButton.disabled = true;
   updateReaderClioStageButton();
   if (readerSendManuscriptButton) readerSendManuscriptButton.disabled = true;
+  if (readerFindSourcesButton) readerFindSourcesButton.disabled = true;
   updateMenuState();
   if (typeof renderVideoDocMapSwitchers === "function") renderVideoDocMapSwitchers();
 }
@@ -281,6 +282,7 @@ function renderReaderUnavailableTab(tab) {
   if (readerDocMapButton) readerDocMapButton.disabled = true;
   updateReaderClioStageButton();
   if (readerSendManuscriptButton) readerSendManuscriptButton.disabled = true;
+  if (readerFindSourcesButton) readerFindSourcesButton.disabled = true;
   updateMenuState();
   if (typeof renderVideoDocMapSwitchers === "function") renderVideoDocMapSwitchers();
 }
@@ -297,6 +299,7 @@ function setReaderLoadingState(message) {
   if (readerDocMapButton) readerDocMapButton.disabled = true;
   updateReaderClioStageButton();
   if (readerSendManuscriptButton) readerSendManuscriptButton.disabled = true;
+  if (readerFindSourcesButton) readerFindSourcesButton.disabled = true;
   if (readerClipTranslateButton) {
     readerClipTranslateButton.disabled = true;
     readerClipTranslateButton.hidden = true;
@@ -372,6 +375,7 @@ async function openReaderDocument(readerDoc, options = {}) {
   readerUrlDisplayEl.textContent = readerDocumentDisplaySource(currentReaderPage);
   if (readerDocMapButton) readerDocMapButton.disabled = false;
   if (readerSendManuscriptButton) readerSendManuscriptButton.disabled = false;
+  if (readerFindSourcesButton) readerFindSourcesButton.disabled = false;
   updateReaderClioStageButton();
   updateReaderTranslationClipButton();
   updateMenuState();

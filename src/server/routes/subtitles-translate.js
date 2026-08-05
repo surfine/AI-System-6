@@ -5,6 +5,7 @@ const { DEEPSEEK_BASE_URL_DEFAULT, resolveCloudBaseUrl } = require("../cloud.js"
 const { resolveCloudCredential } = require("../credential-vault.js");
 const { preparePublicCloudCall } = require("../lib/cloud-route.js");
 const { isPublicDeployment } = require("../runtime-profile.js");
+const { settleSharedCloudRequest } = require("../shared-cloud-budget.js");
 const {
   buildSrtFromBlocks,
   translateSubtitleBlocks,
@@ -66,6 +67,8 @@ async function handleSubtitlesTranslate(req, res) {
       cloudModel: "",
       signal,
     };
+    let sharedReservation = null;
+    let actualTokens = 0;
     if (body._cloud_active) {
       if (isPublicDeployment) {
         // Representative payload so the shared allowance can meter the whole
@@ -90,6 +93,7 @@ async function handleSubtitlesTranslate(req, res) {
         options.cloudApiKey = cloud.apiKey;
         options.cloudBaseUrl = cloud.baseUrl;
         options.cloudModel = cloud.model;
+        sharedReservation = cloud.reservation;
       } else {
         options.cloudApiKey = String(await resolveCloudCredential({
           credentialId: body._cloud_credential_id,
@@ -101,8 +105,19 @@ async function handleSubtitlesTranslate(req, res) {
         options.cloudModel = body._cloud_model;
       }
     }
+    if (sharedReservation) {
+      options.onUsage = (total) => {
+        actualTokens += Number(total || 0);
+      };
+    }
     const translatedTexts = await translateSubtitleBlocks(blocks, mode, options);
     if (signal.aborted) return;
+    if (sharedReservation) {
+      settleSharedCloudRequest({
+        reservedTokens: sharedReservation.reservedTokens,
+        actualTokens,
+      });
+    }
     send(res, 200, JSON.stringify({
       mode,
       blockCount: blocks.length,

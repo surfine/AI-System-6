@@ -207,18 +207,19 @@ Server-side: stateless. No server-side database or file persistence.
 | `/api/models/load-embedding` | POST | Load a local embedding model |
 | `/api/cloud/status` | POST | Check cloud provider connectivity |
 | `/api/cloud/models` | GET | List cloud models |
-| `/api/cloud/chat` | POST | Proxy to cloud chat |
+| `/api/cloud/chat` | POST | Proxy to cloud chat; shared-allowance requests are reserved at an estimate first, then settled against the model's real token usage when the call completes; chain-of-thought is enabled by task type for whitelisted writing tasks (docmap/outline/draft/review/thesis/hkrr) while instant tasks stay thinking-off |
 | `/api/cloud/embeddings` | POST | Proxy to cloud embeddings |
 | `/api/import-text` | POST | Import and extract file content |
 | `/api/importer-status` | GET | Check MarkItDown availability |
 | `/api/model-budget` | POST | Compute context token budget |
 | `/api/lmstudio/setup` | POST | Automated LM Studio server/model setup |
 | `/api/search` | GET | Bounded web search |
+| `/api/search/answer` | POST | Searcher's DeepSeek provider, Review Desk's online claim check, and ClioTalk's opt-in web search: one server-side Responses API call with the `web_search` tool returns a cited answer (`mode=answer` for Searcher, `mode=clio` for ClioTalk; `mode=claim` returns a schema-enforced verdict through `text.format` json_schema; reasoning effort is decided automatically by task type; citations are extracted from the answer's inline markdown links; `stream=true` returns SSE with search status, answer text, and a final envelope; follow-up turns can pass back the previous `web_search_call` item to reuse search results; BYOK key or shared allowance) |
 | `/api/reader` | GET | Article extraction from URL |
 | `/api/bureaucracy/captions` | POST | Meme generator caption generation |
 | `/api/image/generate` | POST | Proxy to an OpenAI-compatible image API (Cover Glass backgrounds; key passes through the server) |
 | `/api/vision/analyze` | POST | Local VLM image OCR and writing-context analysis |
-| `/api/subtitles/translate` | POST | SRT subtitle block translation |
+| `/api/subtitles/translate` | POST | SRT subtitle block translation; on the official DeepSeek Responses endpoint with v4-flash the output is schema-enforced (`text.format` json_schema), with the Markdown parsing path kept as fallback |
 | `/api/cmf/capabilities` | GET | CMF Studio: report server render/export capability |
 | `/api/cmf/render-preview` | POST | CMF Studio: quick recolor preview render |
 | `/api/cmf/render-views` | POST | CMF Studio: Quick Look-style PNG views of a recolored USDZ |
@@ -270,6 +271,7 @@ All other requests fall through to static file serving from the project root. `e
 | `AI_SYSTEM6_TRANSCRIBE_REPAIR_MAX_CHARS` | `2200` | Max transcript length for synchronous local-model repair; longer recordings keep fast deterministic cleanup unless set to `0` |
 | `AI_SYSTEM6_ROOT` | — | App root override for locating `scripts/markitdown-adapter.py` in packaged builds |
 | `AI_SYSTEM6_SEARCH_TIMEOUT_MS` | `8000` | Web search timeout |
+| `AI_SYSTEM6_WEB_SEARCH_MAX_OUTPUT_TOKENS` | `800` | Max output tokens for a DeepSeek web-search answer; the shared-cloud cap still applies |
 | `AI_SYSTEM6_SKIP_SWIFT_BUILD` | — | Packaging: `1` skips the macOS shell Swift build |
 | `AI_SYSTEM6_ALLOW_STALE_SHELL` | — | Packaging: `1` allows packaging a stale shell binary when the Swift build fails |
 

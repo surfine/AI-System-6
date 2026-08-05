@@ -126,7 +126,8 @@ test.assertIncludes(app, "delete nextPayload.reasoning_effort", "DeepSeek v4 clo
 test.assertIncludes(app, "delete nextPayload.chat_template_kwargs", "DeepSeek v4 cloud requests do not leak local chat-template kwargs");
 test.assertIncludes(app, "delete nextPayload.top_k", "DeepSeek v4 cloud requests do not leak local top_k sampling");
 test.assertIncludes(app, 'nextPayload.thinking = { type: "disabled" }', "DeepSeek v4 product requests disable thinking client-side");
-test.assertIncludes(cloudRoute, 'payload.thinking = { type: "disabled" }', "DeepSeek v4 cloud proxy enforces thinking off server-side");
+test.assertIncludes(cloudRoute, 'payload.thinking = thinkingEffort === "none"', "DeepSeek v4 cloud proxy decides thinking server-side by task type");
+test.assertIncludes(cloudRoute, "CLOUD_THINKING_TASKS.has(taskKindName)", "only whitelisted writing tasks can run chain-of-thought");
 test.assertIncludes(cloudRoute, "function stripDeepseekV4LocalOnlyFields", "DeepSeek v4 cloud proxy strips local-only tuning fields server-side");
 test.assertIncludes(cloudRoute, "\"v4-flash\"", "DeepSeek v4 cloud proxy accepts short model names");
 test.assertIncludes(cloudRoute, "delete payload.reasoning_effort", "DeepSeek v4 cloud proxy removes invalid reasoning_effort=none");

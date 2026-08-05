@@ -239,6 +239,7 @@ function getElements() {
   const readerDocMapButton = document.querySelector("#reader-docmap-button");
   const readerOpenClioStageButton = document.querySelector("#reader-open-clio-stage");
   const readerSendManuscriptButton = document.querySelector("#reader-send-manuscript");
+  const readerFindSourcesButton = document.querySelector("#reader-find-sources");
   const readerAskForm = document.querySelector("#reader-ask-form");
   const readerQuestionInput = document.querySelector("#reader-question");
   const readerContentEl = document.querySelector("#reader-content");
@@ -621,6 +622,7 @@ function getElements() {
     readerDocMapButton,
     readerOpenClioStageButton,
     readerSendManuscriptButton,
+    readerFindSourcesButton,
     readerAskForm,
     readerQuestionInput,
     readerContentEl,

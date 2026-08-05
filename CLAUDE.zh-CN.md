@@ -1,5 +1,5 @@
 <!-- canonical-source: CLAUDE.md -->
-<!-- source-sha256: 960a2c550a5d950bbd5fbf2c43f0f44814d8029f25005ecc0ca293042562ec14 -->
+<!-- source-sha256: 27e77b77d947df0159ef7fdb3487e032b9fa95afe0ff7d8c38ede373dcfcf318 -->
 
 # AI System 6 — CLAUDE.md
 

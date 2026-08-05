@@ -341,6 +341,7 @@ function buildBureaucracyCaptionMessages({ topic, tone, template, imageDataUrl }
  *   autoLoaded?: boolean,
  *   autoLoadedModel?: string,
  *   autoSelectedModel?: string,
+ *   reservation?: { inputTokens: number, outputTokens: number, reservedTokens: number, remainingSessionRequests: number } | null,
  * }>}
  */
 async function postBureaucracyChatPayload(payload, route, signal, req) {
@@ -362,7 +363,7 @@ async function postBureaucracyChatPayload(payload, route, signal, req) {
       signal,
       cloud.authHeaders
     );
-    return { response, source: "cloud" };
+    return { response, source: "cloud", reservation: cloud.reservation };
   }
 
   const cloudApiKey = String(await resolveCloudCredential({

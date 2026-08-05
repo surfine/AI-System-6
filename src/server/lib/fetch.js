@@ -294,6 +294,7 @@ function boundedFetchResponse(response, maxBytes) {
     status: response.status,
     headers: response.headers,
     text,
+    body: response.body,
   };
   wrapped.clone = () => wrapped;
   return wrapped;
@@ -308,7 +309,7 @@ function boundedFetchResponse(response, maxBytes) {
  * @param {AbortSignal | null | undefined} signal
  * @param {import("node:http").ServerResponse} res
  * @param {Record<string, string>} [extraHeaders]
- * @param {{ maxBytes?: number }} [options]
+ * @param {{ maxBytes?: number, onData?: (chunk: Buffer | string) => void }} [options]
  * @returns {Promise<boolean>}
  */
 function proxyJsonStream(targetUrl, payload, signal, res, extraHeaders = {}, options = {}) {
@@ -343,6 +344,9 @@ function proxyJsonStream(targetUrl, payload, signal, res, extraHeaders = {}, opt
         });
         upstream.on("data", (chunk) => {
           if (settled) return;
+          if (typeof options.onData === "function") {
+            options.onData(chunk);
+          }
           totalBytes += Buffer.isBuffer(chunk) ? chunk.byteLength : Buffer.byteLength(chunk);
           if (maxBytes !== undefined && totalBytes > maxBytes) {
             settled = true;

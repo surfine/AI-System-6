@@ -363,6 +363,9 @@
                 </button>
               </div>
             </div>
+            <button class="btn composer-file-button composer-icon-button clio-web-search-toggle" id="clio-web-search-toggle" type="button" aria-expanded="false" hidden data-i18n-aria-label="clio_web_search_switch" data-i18n-title="clio_web_search_switch" data-balloon-help="balloon_clio_web_search">
+              <span data-i18n="clio_web_search_switch">Web</span>
+            </button>
             <button class="clio-entry-loadout" id="clio-entry-loadout" type="button" data-action="open-context-panel" disabled></button>
             <span class="composer-key-hint" data-i18n="clio_composer_key_hint">Enter to send · Shift+Enter for a new line</span>
             <div class="button-row composer-hidden-actions">
@@ -558,6 +561,10 @@
                 <input id="enable-image-gen" type="checkbox" />
                 <label for="enable-image-gen" data-i18n="enable_image_gen">AI background image generation (GPT Image) in Liquid Cover</label>
               </div>
+              <div class="field-row">
+                <input id="clio-web-search" type="checkbox" />
+                <label for="clio-web-search" data-i18n="clio_web_search_setting">Allow ClioTalk web search</label>
+              </div>
             </div>
           </details>
           </div>
@@ -580,6 +587,7 @@
                 <option value="auto" data-i18n="search_auto">Automatic</option>
                 <option value="duckduckgo" data-i18n="search_duckduckgo">DuckDuckGo</option>
                 <option value="bing" data-i18n="search_bing">Bing</option>
+                <option value="deepseek" data-i18n="search_deepseek">DeepSeek</option>
               </select></div>
             </label>
             <p class="hint control-status" data-i18n="chooser_scope_note">Chooser selects the search engine used by Searcher and the file importer used by File Floppy.</p>
@@ -1655,6 +1663,8 @@
                 <div class="teachtext-command-popover">
                   <button class="btn" type="button" data-action="review-style-section" data-i18n="review_style_section">Style Check This Section</button>
                   <button class="btn" type="button" data-action="review-facts-section" data-i18n="review_facts_section">Fact Check This Section</button>
+                  <button class="btn" type="button" data-action="review-facts-section-online" data-i18n="review_facts_section_online">Fact Check This Section Online</button>
+                  <button class="btn" type="button" data-action="review-facts-online" data-i18n="review_facts_online">Fact Check Manuscript Online</button>
                   <button class="btn" type="button" data-action="review-hkrr-section" data-i18n="review_hkrr_section">Review This Section with HKRR</button>
                   <button class="btn" type="button" data-action="review-mingming-section" data-i18n="review_mingming_section">Review as Mingming</button>
                   <button class="btn" type="button" data-action="review-mingming-handoff" data-i18n="review_mingming_handoff">How Luoluo Would Receive It</button>
@@ -1812,6 +1822,7 @@
                   <button class="btn" type="button" id="reader-clip-translate-button" data-action="reader-clip-translate" data-i18n="clip_translate" disabled>Clip + Translate</button>
                   <button class="btn" type="button" id="reader-open-clio-stage" data-action="reader-open-clio-stage" data-i18n="open_in_clio_stage" disabled data-balloon-help-disabled="balloon_reader_open_clio_stage_disabled">Open in ClioStage</button>
                   <button class="btn" type="button" id="reader-send-manuscript" data-action="reader-send-manuscript" data-i18n="send_copy_to_manuscript" disabled>Send Copy to Manuscript</button>
+                  <button class="btn" type="button" id="reader-find-sources" data-action="reader-find-sources" data-i18n="find_related_sources" disabled>Find Related Sources</button>
                 </div>
               </details>
             </div>

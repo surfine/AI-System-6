@@ -46,6 +46,6 @@ test.assertIncludes(serverCloud, "deepseek-v4-flash", "server cloud registry inc
 test.assertIncludes(serverCloud, "deepseek-v4-pro", "server cloud registry includes DeepSeek v4 Pro");
 test.assertIncludes(cloudRoute, "resolveCloudBaseUrl(raw._cloud_base_url || DEEPSEEK_BASE_URL_DEFAULT)", "cloud route applies the trusted endpoint policy before provider access");
 test.assertIncludes(cloudRoute, "DEEPSEEK_V4_MODELS", "cloud chat route has DeepSeek v4-specific compatibility handling");
-test.assertIncludes(cloudRoute, 'payload.thinking = { type: "disabled" }', "DeepSeek v4 cloud route disables thinking for product tasks");
+test.assertIncludes(cloudRoute, 'payload.thinking = thinkingEffort === "none"', "DeepSeek v4 cloud route decides thinking server-side by task type");
 
 test.finish();

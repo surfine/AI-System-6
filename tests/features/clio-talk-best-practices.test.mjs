@@ -316,8 +316,14 @@ test.assertIncludes(chatMessages, "getClioTalkPendingSkillDescriptors", "Run Ass
 test.assertIncludes(chatMessages, "getClioTalkPendingHarnessDescriptor", "Run Assembly previews the Task Config used as Harness");
 test.assertIncludes(chatMessages, "getClioTalkPendingInputDescriptors", "Run Assembly previews file-system inputs");
 const clioRunMarkup = indexHtml.match(/id="clio-run-assembly"[\s\S]*?<\/details>/)?.[0] || "";
-test.assertNotIncludes(clioRunMarkup, "Web search", "Run Assembly does not invent web capabilities");
-test.assertNotIncludes(clioRunMarkup, "Research", "Run Assembly does not invent research capabilities");
+test.assertNotIncludes(clioRunMarkup, "Web search", "Run Assembly static markup does not advertise web capabilities by default");
+test.assertNotIncludes(clioRunMarkup, "Research", "Run Assembly static markup does not advertise research capabilities");
+test.assertIncludes(chatMessages, "function clioWebSearchSetting", "the Control Panel Advanced toggle gates the composer switch");
+test.assertIncludes(chatMessages, "function runClioTalkWebSearch", "an explicit per-message web search routes through the server answer route");
+test.assertIncludes(chatMessages, 't("clio_entry_web_search")', "Run Assembly names a message that will use web search");
+test.assertIncludes(chatMessages, "function appendClioTalkWebSearchCitations", "web-search replies carry a cited-sources block");
+test.assertIncludes(indexHtml, 'id="clio-web-search-toggle"', "the per-message web-search switch lives beside the composer");
+test.assertIncludes(indexHtml, 'id="clio-web-search"', "Control Panel Advanced owns the ClioTalk web-search setting");
 test.assertMatches(indexHtml, /id="prompt" rows="1"/, "The composer starts as one calm line and grows with its content");
 test.assertMatches(indexHtml, /class="messages-stage"[\s\S]*id="messages"[^>]*aria-busy="false"[\s\S]*id="clio-scroll-latest"/, "ClioTalk owns a scroll stage with a live-region busy state and a latest-message affordance");
 test.assertMatches(indexHtml, /class="[^"]*composer-submit-button composer-icon-button"[^>]*id="send"[^>]*disabled/, "Send is a compact icon action and starts inactive when the composer is empty");

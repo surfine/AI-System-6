@@ -64,6 +64,7 @@ function cloudRouteError(status, code, retryAfter, detail, warning) {
  * @returns {Promise<{
  *   apiKey: string, baseUrl: string, model: string, payload: object,
  *   authHeaders: object, usingSharedCloud: boolean,
+ *   reservation: { ok: true, inputTokens: number, outputTokens: number, reservedTokens: number, remainingSessionRequests: number } | null,
  * }>}
  */
 async function preparePublicCloudCall({
@@ -102,13 +103,14 @@ async function preparePublicCloudCall({
   const sessionNonce = publicSession?.nonce || "";
   const sessionUserId = pseudonymousCloudUserId(sessionNonce);
 
+  /** @type {any} */
+  let reservation = null;
   if (usingSharedCloud) {
     payload.max_tokens = Math.min(
       Number.isFinite(Number(payload.max_tokens)) ? Number(payload.max_tokens) : 1800,
       sharedCloudBudgetConfig().maxOutputTokens
     );
     payload.user_id = sessionUserId;
-    let reservation;
     try {
       reservation = reserveSharedCloudRequest({ sessionNonce, payload });
     } catch (error) {
@@ -152,6 +154,7 @@ async function preparePublicCloudCall({
     payload,
     authHeaders: cloudAuthHeaders(apiKey),
     usingSharedCloud,
+    reservation: usingSharedCloud && reservation?.ok ? reservation : null,
   };
 }
 

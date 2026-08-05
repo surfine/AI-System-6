@@ -778,6 +778,7 @@ function endfieldEvidenceBudget(body = {}, model = "", outputTokens = 1200) {
  * @returns {Promise<{
  *   response: any, source: string, model: string,
  *   autoLoaded?: boolean, autoLoadedModel?: string, autoSelectedModel?: string,
+ *   reservation?: { inputTokens: number, outputTokens: number, reservedTokens: number, remainingSessionRequests: number } | null,
  * }>}
  */
 async function postEndfieldChatPayload(payload, body, signal, req) {
@@ -806,7 +807,7 @@ async function postEndfieldChatPayload(payload, body, signal, req) {
       signal,
       cloud.authHeaders
     );
-    return { response, source: "cloud", model: cloud.model };
+    return { response, source: "cloud", model: cloud.model, reservation: cloud.reservation };
   }
 
   const cloudApiKey = body._cloud_active

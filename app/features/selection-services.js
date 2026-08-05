@@ -421,6 +421,43 @@ function runSelectionFindSources(context = getSelectionServiceContext()) {
   findPathForm.requestSubmit();
 }
 
+/**
+ * Build the query for Reader's "Find Related Sources" handoff: prefer the
+ * current selection inside the Reader page, otherwise the source title.
+ *
+ * @returns {string}
+ */
+function readerFindSourcesQuery() {
+  const selection = window.getSelection?.()?.toString().trim();
+  if (selection) return selection.replace(/\s+/g, " ").slice(0, 200);
+  const title = String(currentReaderPage?.title || "").trim();
+  if (title) return title.slice(0, 200);
+  return "";
+}
+
+/**
+ * Reader -> Searcher handoff: fill the Searcher query from the loaded source
+ * and submit it, so the search surface (and its DeepSeek online-answer
+ * provider) stays the only place that searches.
+ */
+function runReaderFindSources() {
+  const query = readerFindSourcesQuery();
+  if (!query) {
+    setStatus(t("select_text_first"));
+    return;
+  }
+  findPathQueryInput.value = query;
+  findPathResults.length = 0;
+  selectedFindPathIndex = null;
+  findPathSummaryEl.classList.add("is-hidden");
+  findPathSummaryEl.textContent = "";
+  renderFindPathResults();
+  openWindow("findPath");
+  findPathQueryInput.focus();
+  findPathForm.requestSubmit();
+  setStatus(t("find_related_sources_running"));
+}
+
 function runSelectionNewNote(context = getSelectionServiceContext()) {
   if (!context?.text) {
     setStatus(t("select_text_first"));

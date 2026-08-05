@@ -209,6 +209,31 @@ function reserveSharedCloudRequest({ sessionNonce, payload, now = new Date() }) 
   };
 }
 
+/**
+ * Reconcile one reserved request against its actual token usage. The daily
+ * counter keeps the *reserved* amount so callers can estimate before the
+ * model runs; this function moves it toward the real total afterwards, so an
+ * over-estimated output reservation is credited back and a web-search input
+ * that grew server-side is charged. Only the global daily counter is touched;
+ * session and request limits were already committed by the reservation.
+ *
+ * @param {{
+ *   reservedTokens?: number,
+ *   actualTokens?: number,
+ *   now?: Date,
+ * }} options
+ * @returns {{ ok: boolean, delta: number, reservedTokens: number }}
+ */
+function settleSharedCloudRequest({ reservedTokens = 0, actualTokens = 0, now = new Date() }) {
+  const reserved = Math.max(0, Math.floor(Number(reservedTokens) || 0));
+  const actual = Math.max(0, Math.floor(Number(actualTokens) || 0));
+  const delta = actual - reserved;
+  const state = loadState(now);
+  state.reserved_tokens = Math.max(0, state.reserved_tokens + delta);
+  persistState(state);
+  return { ok: true, delta, reservedTokens: state.reserved_tokens };
+}
+
 function resetSharedCloudBudgetCacheForTests() {
   cachedStatePath = "";
   cachedState = null;
@@ -218,6 +243,7 @@ module.exports = {
   estimatedInputTokens,
   pseudonymousCloudUserId,
   reserveSharedCloudRequest,
+  settleSharedCloudRequest,
   resetSharedCloudBudgetCacheForTests,
   sharedCloudBudgetConfig,
   sharedCloudConfigured,

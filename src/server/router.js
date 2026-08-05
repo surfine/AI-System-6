@@ -65,6 +65,7 @@ const handleBureaucracyCaptions = lazyHandler(() => require("./routes/bureaucrac
 const handleImageGenerate = lazyHandler(() => require("./routes/image-generate.js"), "./routes/image-generate.js", "handleImageGenerate");
 const handleVisionAnalyze = lazyHandler(() => require("./routes/vision-analyze.js"), "./routes/vision-analyze.js", "handleVisionAnalyze");
 const handleSearch = lazyHandler(() => require("./routes/search.js"), "./routes/search.js", "handleSearch");
+const handleSearchAnswer = lazyHandler(() => require("./routes/search-answer.js"), "./routes/search-answer.js", "handleSearchAnswer");
 const handleReader = lazyHandler(() => require("./routes/reader.js"), "./routes/reader.js", "handleReader");
 const handleTimeMachine = lazyHandler(() => require("./routes/time-machine.js"), "./routes/time-machine.js", "handleTimeMachine");
 const handleEndfieldSearch = lazyHandler(() => require("./routes/endfield-search.js"), "./routes/endfield-search.js", "handleEndfieldSearch");
@@ -109,6 +110,7 @@ const localExactRoutes = new Map([
   ["POST /api/import-text", handleImportText],
   ["POST /api/import-ocr-pages", handleImportOcrPages],
   ["POST /api/subtitles/translate", handleSubtitlesTranslate],
+  ["POST /api/search/answer", handleSearchAnswer],
   ["GET /api/cmf/capabilities", handleCmfCapabilities],
   ["POST /api/cmf/export-usdz", handleCmfExportUsdz],
   ["POST /api/cmf/render-views", handleCmfRenderViews],
@@ -128,6 +130,7 @@ const publicExactRouteKeys = new Set([
   "POST /api/cloud/chat",
   "POST /api/bureaucracy/captions",
   "POST /api/subtitles/translate",
+  "POST /api/search/answer",
   "POST /api/draft/thesis",
   "GET /api/cmf/capabilities",
   "POST /api/cmf/export-usdz",

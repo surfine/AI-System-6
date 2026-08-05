@@ -1113,6 +1113,8 @@ function getApplicationActionHandlers() {
     "run-claim-check-section": () => runClaimCheck({ sectionOnly: true }),
     "review-style-section": runReviewDeskStyleSectionCheck,
     "review-facts-section": runReviewDeskFactSectionCheck,
+    "review-facts-section-online": () => runClaimCheck({ sectionOnly: true, online: true }),
+    "review-facts-online": () => runClaimCheck({ online: true }),
     "review-hkrr-section": runReviewDeskHkrrSectionCheck,
     "review-mingming-section": reviewSectionAsMingming,
     "review-mingming-handoff": runReviewDeskMingmingHandoffReview,
@@ -1212,6 +1214,7 @@ function getApplicationActionHandlers() {
     "reader-clip-translate": clipReaderSelectionWithTranslation,
     "reader-send-manuscript": sendReaderCopyToManuscript,
     "reader-make-docmap": makeDocMapFromCurrentSource,
+    "reader-find-sources": runReaderFindSources,
     "reader-open-clio-stage": openCurrentReaderInClioStage,
     "clio-stage-docmap": async () => {
       await ensureClioStageModule();

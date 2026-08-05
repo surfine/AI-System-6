@@ -6,6 +6,11 @@
 let selectedClaimSectionIndex = 0;
 let currentClaimCheckScope = { type: "manuscript", label: "" };
 
+// Shared heuristic for spotting checkable claims (numbers, years, percentages,
+// announcements, absolutes) used by both the local outline extraction and the
+// online claim check.
+const onlineClaimPattern = /(\d{4}|\d+%|\d+\s*(?:个|项|种|users?|features?)|宣布|推出|支持|更新|将|首次|available|announced|supports?|will|new\s+features?)/i;
+
 function stripRebuildMarkdownFence(markdown) {
   return String(markdown || "")
     .replace(/^```(?:markdown|md)?\s*/i, "")
@@ -28,9 +33,8 @@ function getRebuildParagraphs(text) {
 }
 
 function inferRebuildClaims(paragraphs) {
-  const claimPattern = /(\d{4}|\d+%|\d+\s*(?:个|项|种|users?|features?)|宣布|推出|支持|更新|将|首次|available|announced|supports?|will|new\s+features?)/i;
   return paragraphs
-    .filter((paragraph) => claimPattern.test(paragraph))
+    .filter((paragraph) => onlineClaimPattern.test(paragraph))
     .slice(0, 6)
     .map((paragraph) => shortClaimText(paragraph, currentLanguage === "zh" ? 96 : 140));
 }
@@ -1233,6 +1237,141 @@ function setClaimCheckWaiting(message) {
   setStatus(message);
 }
 
+/**
+ * Pull up to four checkable claims out of a manuscript/section body. Prefers
+ * paragraphs when the body has them, otherwise falls back to sentence splits.
+ *
+ * @param {string} body
+ * @returns {string[]}
+ */
+function extractOnlineCheckClaims(body) {
+  const paragraphs = String(body || "")
+    .split(/\n+/)
+    .map((item) => item.replace(/\s+/g, " ").trim())
+    .filter((item) => item.length > 20);
+  const candidates = paragraphs.length >= 3
+    ? paragraphs
+    : String(body || "")
+        .split(/(?<=[。！？.!?])\s+/)
+        .map((item) => item.replace(/\s+/g, " ").trim())
+        .filter((item) => item.length > 20);
+  return candidates
+    .filter((candidate) => onlineClaimPattern.test(candidate))
+    .slice(0, 4)
+    .map((candidate) => shortClaimText(candidate, currentLanguage === "zh" ? 120 : 160));
+}
+
+/**
+ * Parse the leading verdict line the claim-mode instructions require. Unknown
+ * or missing shapes fall back to "needs manual review" rather than inventing
+ * a verdict.
+ *
+ * @param {string} answer
+ * @returns {string}
+ */
+function onlineClaimVerdict(answer) {
+  const match = String(answer || "").match(/结论[：:]\s*(支持|可能矛盾|证据不足|需人工核实|部分支持)/);
+  const verdict = match ? match[1] : "";
+  if (verdict === "支持") return t("claim_verdict_supported");
+  if (verdict === "可能矛盾") return t("claim_verdict_contradiction");
+  if (verdict === "证据不足") return t("claim_verdict_insufficient");
+  if (verdict === "部分支持") return t("claim_verdict_partial");
+  return t("claim_verdict_manual");
+}
+
+/**
+ * Map the schema-enforced verdict enum from claim mode to the localized label.
+ * Unknown values fall back to manual review instead of inventing a verdict.
+ *
+ * @param {string} conclusion
+ * @returns {string}
+ */
+function onlineClaimVerdictFromEnum(conclusion) {
+  const labels = {
+    supported: "claim_verdict_supported",
+    possible_contradiction: "claim_verdict_contradiction",
+    evidence_insufficient: "claim_verdict_insufficient",
+    partially_supported: "claim_verdict_partial",
+    needs_manual_review: "claim_verdict_manual",
+  };
+  return t(labels[conclusion] || "claim_verdict_manual");
+}
+
+/**
+ * One claim -> one server-side web_search answer in claim mode.
+ *
+ * @param {string} claim
+ * @param {AbortSignal} [signal]
+ * @returns {Promise<{ answer: string, citations: Array<{ url: string, title: string }> }>}
+ */
+async function fetchOnlineClaimVerdict(claim, signal) {
+  const response = await fetch("/api/search/answer", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      q: claim,
+      mode: "claim",
+      ...cloudCredentialTransportFields(),
+    }),
+    signal,
+  });
+  if (!response.ok) throw new Error(await response.text());
+  return response.json();
+}
+
+/**
+ * Render per-claim online verification cards into the Review Desk facts pane.
+ * The report is temporary model output: each card carries the same
+ * "open the source in Reader before relying on it" boundary as Searcher.
+ *
+ * @param {Array<{ claim: string, verdict: string, answer: string, citations: Array<{ url: string, title: string }> }>} results
+ * @param {{ type?: string, label?: string }} [scope]
+ */
+function renderOnlineClaimResults(results, scope = {}) {
+  claimResultsEl.classList.remove("is-hidden");
+  claimResultsEl.replaceChildren();
+  const title = document.createElement("h3");
+  title.textContent = t("claim_check_online_title");
+  const meta = document.createElement("p");
+  meta.className = "empty-folder-note";
+  meta.textContent = `${t("claim_check_online_scope")}: ${scope.label || t("claim_scope_manuscript")}`;
+  const note = document.createElement("p");
+  note.className = "empty-folder-note";
+  note.textContent = t("claim_check_online_note");
+  claimResultsEl.append(title, meta, note);
+
+  results.forEach((entry) => {
+    const card = document.createElement("div");
+    card.className = "context-item";
+    const claim = document.createElement("strong");
+    claim.textContent = entry.claim;
+    const verdict = document.createElement("p");
+    verdict.textContent = `${t("claim_verdict_label")}: ${entry.verdict}`;
+    const answer = document.createElement("p");
+    answer.textContent = entry.answer;
+    card.append(claim, verdict, answer);
+    (entry.citations || []).forEach((citation) => {
+      if (!citation.url) return;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "btn mini-btn citation-btn";
+      button.textContent = citation.title || citation.url;
+      button.addEventListener("click", () => openOnlineCitationInReader(citation.url));
+      card.append(button);
+    });
+    claimResultsEl.append(card);
+  });
+  markClaimCheckComplete(results);
+}
+
+function openOnlineCitationInReader(url) {
+  if (!url) return;
+  readerUrlInput.value = url;
+  openWindow("reader");
+  fetchReaderPage(url);
+  setStatus(t("claim_check_online_opened_source"));
+}
+
 function renderClaimCheckDraft(markdown) {
   if (!claimResultsEl) return;
   const clean = stripRebuildMarkdownFence(markdown);
@@ -1269,6 +1408,38 @@ async function runClaimCheck(options = {}) {
   setClaimCheckWaiting(sectionOnly ? t("claim_check_scanning_section", section.title) : t("claim_check_scanning"));
 
   try {
+    if (options.online === true) {
+      const claims = extractOnlineCheckClaims(body);
+      if (!claims.length) {
+        claimResultsEl.innerHTML = `<div class="empty-folder-note">${escapeHtml(t("claim_check_online_none"))}</div>`;
+        setStatus(t("claim_check_online_none"));
+        return;
+      }
+      const results = [];
+      for (let index = 0; index < claims.length; index += 1) {
+        setClaimCheckWaiting(t("claim_check_online_checking", index + 1, claims.length));
+        const data = await fetchOnlineClaimVerdict(claims[index], getLongTaskSignal());
+        const verdict = data?.verdict?.conclusion
+          ? onlineClaimVerdictFromEnum(data.verdict.conclusion)
+          : onlineClaimVerdict(data.answer);
+        const citations = Array.isArray(data.citations) && data.citations.length
+          ? data.citations
+          : Array.isArray(data?.verdict?.sources)
+            ? data.verdict.sources.map((url) => ({ url, title: url }))
+            : [];
+        results.push({
+          claim: claims[index],
+          verdict,
+          answer: String(data.answer || ""),
+          citations,
+        });
+      }
+      setClaimCheckWaiting(t("claim_check_online_rendering"));
+      renderOnlineClaimResults(results, currentClaimCheckScope);
+      setStatus(t("claim_check_online_done"));
+      return;
+    }
+
     setClaimCheckWaiting(sectionOnly ? t("claim_check_retrieving_section", section.title) : t("claim_check_retrieving"));
     const queryText = claimCheckQueryText(body);
     const context = await buildBudgetedProjectContext(queryText, {
