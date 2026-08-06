@@ -130,7 +130,7 @@
     ZMGnWkiZEPXzRiw: "lid",
     iGKSuTNlIlEGpLp: "lid",
     LUMtYvTEVNmTHoQ: "lid",
-    rvnQqsVlUxgRHpf: "lid",
+    // The display panel stays unmapped so its emissive wallpaper survives.
     // top case (keyboard deck)
     RtqozqWvXTJHuDi: "topCase",
     RGLDQJKTekftnoB: "topCase",
@@ -155,10 +155,11 @@
     qQGZuUUMeRVQGEY: "topCase",
     ymYLIOEGFuqNeyB: "topCase",
     // USB-C boards (right cluster + left cluster)
-    UDjFocEFPMTxxzE: "usbC",
-    bkNkMexbhfuRgXd: "usbC",
-    uMvgvtrefotcxLA: "usbC",
-    vpFYGndskQCpAiL: "usbC",
+    // Touch ID is a key, not a port: it takes the keycap finish.
+    UDjFocEFPMTxxzE: "keycaps",
+    bkNkMexbhfuRgXd: "keycaps",
+    uMvgvtrefotcxLA: "keycaps",
+    vpFYGndskQCpAiL: "keycaps",
     KwFQtiwiPZcwELa: "usbC",
     MdEwZxJYnatsNEo: "usbC",
     cMzncBRnxGSiixF: "usbC",
@@ -1159,6 +1160,10 @@
         || activeModel().meshParts[object.name]
         || classifyLiveMesh(object, globalBounds);
       if (!partId || !Object.prototype.hasOwnProperty.call(recipe.parts, partId)) return;
+      // The server already refuses to recolor black trim (lens glass and rings,
+      // display bezels, antenna lines). Live recoloring has to agree, or the
+      // viewport would paint what the export leaves alone.
+      if (!namedPart && sourceMaterials.some(isBlackTrim)) return;
 
       const ownedMaterials = sourceMaterials.map((material) => {
         const owned = material.clone();
@@ -1172,6 +1177,14 @@
       });
       object.material = Array.isArray(object.material) ? ownedMaterials : ownedMaterials[0];
     });
+  }
+
+  /** Trim Apple authors as true black: never a finish surface. */
+  function isBlackTrim(material) {
+    if (!material?.color?.getHSL) return false;
+    if (material.map || material.emissiveMap) return false;
+    const { r, g, b } = material.color;
+    return (r * 0.299 + g * 0.587 + b * 0.114) < 0.035;
   }
 
   function classifyLiveMesh(object, globalBounds) {

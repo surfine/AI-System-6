@@ -144,6 +144,31 @@ than an accidental victim of the retro work.
 - The CSS work stayed inside the source files and continued to pass the CSS
   budget, floppy budget, smoke, and macOS app bundle gates.
 
+## First Public Beta 1.0.10 - 2026-07-29
+
+The first downloadable Apple silicon beta turned the product into something
+people could install and run.
+
+- Local-first writing route: Project Hard Disk, File Floppy, Question Sheet,
+  Outline, Section Drafts, TeachText, Review Desk, and Project CD as visible
+  desktop objects.
+- Bring your own model (LM Studio, Ollama, OpenAI-compatible); projects and
+  keys stay on the Mac.
+- Creative labs beside writing: Cover Glass, CMF Studio, DocMap, Soundscape,
+  and Time Machine.
+- Humanizer and System Integrity guardrails from the first public build.
+
+## Public Beta 1.0.11 - 2026-08-04
+
+- Source windows share one ask bar; ClioTalk rebuilt around clearer send/stop
+  controls.
+- Time Machine: complete captures over previews, reports in their own window,
+  named snapshots, DocMap beside the question.
+- One shared window-control family and System 6 polish: icon stroke weights,
+  hidden dialog buttons, brand naming, Finder icon view.
+- Soundscape player rebuilt in System 6 controls; beta packaging and web
+  deployment hardened.
+
 ## Public Beta 1.0.12 - 2026-08-04
 
 This release makes the desktop quieter and more coherent while expanding the
@@ -161,6 +186,71 @@ parts that benefit from visible, direct manipulation.
   now share stronger version, privacy, asset, and release checks.
 
 Version `1.0.12`, build `20260804.2`.
+
+## Public Beta 1.0.13 - 2026-08-05
+
+- Meme captions and Endfield asks work with BYOK or the shared allowance,
+  behind one cloud preflight with a model allowlist.
+- Time Machine accepts bare domains and unblocks its web view; DocMap fit-view
+  dodges SideAsk and auto-refits.
+- Finder continuation arrows unified and centered; meme generator
+  popover/zoom/narrow layouts fixed; ClioStage scrollbar no longer covers the
+  title bar.
+- Balloon Help discoverable by default on hover devices, with a persisted
+  opt-out.
+
+## Public Beta 1.0.14 - 2026-08-05
+
+- CMF Studio USDZ export and previews on the public VPS.
+- Touch title-bar drags no longer pull down the page on iPad/iPhone.
+- Safari local entry copies the HTTP address and shows paste instructions.
+- Liquid Glass greys out Modern Font; Start Here adds Watch Promo Video;
+  subtitle translation and thesis drafts on public cloud routes.
+
+## Public Beta 1.0.15 - 2026-08-05
+
+- Balloon Help coverage expanded (File Floppy, Project CD, Question Sheet,
+  Review Desk, ask bar, cloud status dot, DocMap switcher).
+- Disabled buttons now explain why (meme download, Reader-to-ClioStage, DocMap
+  save).
+
+## Public Beta 1.0.16 - 2026-08-05
+
+- DeepSeek web search: cited live answers in Searcher, Review Desk claim
+  checks, Reader Find Related Sources, opt-in per-message ClioTalk search.
+- Subtitle translation on the structured-output endpoint; reasoning effort
+  auto-chosen by task type.
+- Shared cloud allowance reserved up front and settled against real token
+  usage.
+
+## Public Beta 1.0.17 - 2026-08-06
+
+- Control Strip groundwork (optional, off by default).
+- Finder Objects: aliases, clippings, Stationery Pad, droplets, finder labels
+  via menus, Get Info, and selection services.
+- DocMap split into eager entry + lazy map module; composer web-search switch
+  appears only when Advanced is on; Searcher carries DeepSeek citations;
+  system-prompt editor moved to Startup Disk > AI Prompts.
+
+## Public Beta 1.0.18 - 2026-08-06
+
+- DocMap opens the real tabbed surface (desktop icon waits for the lazy
+  module).
+- Finder labels only via Get Info or Claim Check suggestions; folder labels
+  never cascade.
+- Aliases to Scrapbook entries and project references resolve and open.
+- Clipping drag-back inserts text at the drop point; no-direct-quote and
+  read-only rules enforced.
+
+## Public Beta 1.0.19 - 2026-08-07
+
+- Faster startup: Markdown renderer, prompt files, and both dictionaries moved
+  out of the bootstrap; lazy loading now times out and degrades gracefully.
+- Default language follows the host system; English-first prompt bodies for
+  English environments.
+- Mobile and touch polish: cleaner phone workspace, double-tap hint, Finder
+  droplets under "Drop Tools".
+- Classic and Liquid Glass converge after a large cascade cleanup.
 
 ## What Changed Most In One Month
 

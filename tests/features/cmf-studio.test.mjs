@@ -171,6 +171,21 @@ test.assertIncludes(service, "keycaps:", "the MacBook part map covers the keycap
 test.assertIncludes(service, "usbC:", "the MacBook part map covers the USB-C boards");
 test.assertIncludes(service, "`Unsupported CMF color '${rawColor}' for ${rawPart} on ${modelId}`", "a finish from another device is rejected, not silently swapped");
 test.assertIncludes(service, "targetFraction", "close-up views frame against each device's own size");
+// Apple authors the surfaces that are black on the real product — lens glass
+// and rings, display bezels, antenna lines — as true black. A colorway never
+// paints those, and both the export and the live viewport must agree.
+test.assertIncludes(service, "function isFinishSurface", "the engine refuses to recolor black trim");
+test.assertIncludes(service, "if (!isFinishSurface(materialBlocks, originalName)) continue;", "black trim is skipped before a part clone is bound");
+test.assertIncludes(cmfStudio, "function isBlackTrim", "the live viewport knows black trim is not a finish surface");
+test.assertIncludes(cmfStudio, "sourceMaterials.some(isBlackTrim)", "live recoloring skips black trim, matching the export");
+// The Neo's parts must own the surface their name promises: the key field is
+// the keycaps part, and the unibody shell that carries the palm rest is the
+// top case. Both were mapped to the wrong surface once already.
+test.assertIncludes(service, 'AqcQCwqkepkmIxJ: "keycaps"', "the key field itself is what the keycaps finish paints");
+test.assertIncludes(service, 'IYjUsjnVPLevabB: "topCase"', "the unibody shell carrying the palm rest is the top case");
+test.assertNotIncludes(service, 'ldFDBmejSXToUkP: "keycaps"', "the invisible hinge strips are not sold as keycaps");
+test.assertIncludes(service, 'UDjFocEFPMTxxzE: "keycaps"', "Touch ID is a key, so it wears the keycap finish, not the port finish");
+test.assertNotIncludes(service, 'UDjFocEFPMTxxzE: "usbC"', "Touch ID is not grouped with the USB-C boards");
 test.assertIncludes(service, "actionButton", "engine maps UI action button naming to USD part naming");
 test.assertIncludes(service, "usdcat", "engine rewrites USD layers, not CSS filters");
 test.assertIncludes(service, "usdzip", "engine repackages final USDZ");
@@ -194,6 +209,13 @@ test.assert(exists("assets/cmf/macbook-neo-closed.usdz"), "MacBook Neo closed-po
 test.assert(exists("assets/cmf/macbook-neo-open.usdz"), "MacBook Neo open-pose USDZ asset is bundled in assets/cmf");
 test.assert(exists("scripts/cmf-prepare-model.mjs"), "model assets are reproducible from a recorded source, not hand-made");
 test.assertIncludes(read("scripts/cmf-prepare-model.mjs"), "expectMm", "the prepare step proves each split asset against Apple's published dimensions");
+// 2026-era Apple assets author the display on a MaterialX branch that three.js
+// cannot read, which made those screens load as blank white slabs.
+const prepare = read("scripts/cmf-prepare-model.mjs");
+test.assertIncludes(prepare, "function dropMaterialXSurface", "the prepare step strips the MaterialX branch that blanks a display");
+test.assertIncludes(prepare, 'screenMaterial: "pSGTSQGfFSwWLdT"', "the 17e display material is named so its wallpaper survives");
+test.assertIncludes(prepare, 'screenMaterial: "hXtiMyeKExVbRFQ"', "the MacBook Neo display material is named so its wallpaper survives");
+test.assertIncludes(prepare, "function referencedTextures", "only textures the layer still points at are packaged");
 
 // --- interactive browser USDZ path ---
 test.assertIncludes(packageJson, '"three": "^0.184.0"', "the browser renderer uses the pinned Three.js USD implementation");

@@ -112,7 +112,9 @@ const MACBOOK_NEO_MESH_PARTS = Object.freeze({
   ZMGnWkiZEPXzRiw: "lid",
   iGKSuTNlIlEGpLp: "lid",
   LUMtYvTEVNmTHoQ: "lid",
-  rvnQqsVlUxgRHpf: "lid",
+  // rvnQqsVlUxgRHpf is the display panel itself: black diffuse plus an emissive
+  // wallpaper texture. It is deliberately left unmapped — Apple sells no
+  // coloured display, and painting it with the lid finish erases the wallpaper.
   // top case (keyboard deck)
   RtqozqWvXTJHuDi: "topCase",
   RGLDQJKTekftnoB: "topCase",
@@ -138,11 +140,14 @@ const MACBOOK_NEO_MESH_PARTS = Object.freeze({
   ldFDBmejSXToUkP: "topCase",
   qQGZuUUMeRVQGEY: "topCase",
   ymYLIOEGFuqNeyB: "topCase",
-  // USB-C boards (right cluster + left cluster)
-  UDjFocEFPMTxxzE: "usbC",
-  bkNkMexbhfuRgXd: "usbC",
-  uMvgvtrefotcxLA: "usbC",
-  vpFYGndskQCpAiL: "usbC",
+  // Touch ID sits in the key field's top-right corner, so it takes the keycap
+  // finish like every other key. It was grouped with the ports, which left one
+  // key wearing the USB-C colour.
+  UDjFocEFPMTxxzE: "keycaps",
+  bkNkMexbhfuRgXd: "keycaps",
+  uMvgvtrefotcxLA: "keycaps",
+  vpFYGndskQCpAiL: "keycaps",
+  // USB-C boards: both ports are on the left edge (x -14.5).
   KwFQtiwiPZcwELa: "usbC",
   MdEwZxJYnatsNEo: "usbC",
   cMzncBRnxGSiixF: "usbC",
@@ -938,6 +943,11 @@ function makeCmfUsda(source, recipe) {
 
     const originalPath = binding[1];
     const originalName = originalPath.split("/").pop();
+    // Apple authors the surfaces that are black on the real product — lens
+    // glass and rings, display bezels, antenna lines, gaskets — as true black.
+    // Those are not finish surfaces: no colorway paints them, so a recipe must
+    // leave them alone. This is the same test the shared pass already applies.
+    if (!isFinishSurface(materialBlocks, originalName)) continue;
     const colorName = colorForPart(part, recipe);
     const cloneName = `${originalName}__${part}_${colorName}`;
     const clonePath = originalPath.replace(new RegExp(`${escapeRegExp(originalName)}$`), cloneName);
@@ -1057,6 +1067,22 @@ function cloneMaterial(text, originalName, cloneName, target) {
   );
 
   return result;
+}
+
+/**
+ * Whether a bound material is one the product is actually finished in. A
+ * material authored as (near) black is trim the colorway never touches — lens
+ * glass and rings, the display bezel, antenna lines, gaskets. Materials with no
+ * constant diffuse (fully textured) stay recolorable.
+ */
+function isFinishSurface(materialBlocks, materialName) {
+  const material = materialBlocks.find((block) => block.name === materialName);
+  if (!material) return true;
+  const diffuse = material.body.match(/color3f inputs:diffuseColor = \(([^)]*)\)/);
+  if (!diffuse) return true;
+  const rgb = diffuse[1].split(",").map((value) => Number(value.trim()));
+  if (rgb.length !== 3 || rgb.some((value) => Number.isNaN(value))) return true;
+  return isProductColor(/** @type {[number, number, number]} */ (rgb));
 }
 
 function isProductColor([r, g, b]) {
