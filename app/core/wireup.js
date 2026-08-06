@@ -183,7 +183,7 @@ function wireAppEvents() {
 
   teachTextTranslateButton?.addEventListener("click", translateTeachTextDocument);
 
-  teachTextDocMapButton?.addEventListener("click", () => makeDocMapFromCurrentSource());
+  teachTextDocMapButton?.addEventListener("click", () => withDocMap(() => makeDocMapFromCurrentSource()));
 
   teachTextClipSelectionButton?.addEventListener("click", clipTeachTextSelectionToScrapbook);
 
@@ -499,7 +499,7 @@ function wireAppEvents() {
 
   clipboardTranslateButton?.addEventListener("click", translateClipboardText);
 
-  clipboardDocMapButton?.addEventListener("click", () => makeDocMapFromCurrentSource());
+  clipboardDocMapButton?.addEventListener("click", () => withDocMap(() => makeDocMapFromCurrentSource()));
 
   clipboardTranslationTeachTextButton?.addEventListener("click", () => sendClipboardTranslation("teachtext"));
 
@@ -541,14 +541,14 @@ function wireAppEvents() {
     if (docMapWindow?.dataset.sideaskRestoreActive !== "true") {
       maximizeWindow(docMapWindow);
     }
-    requestAnimationFrame(fitDocMapCanvasToView);
+    requestAnimationFrame(() => fitDocMapCanvasToView());
   });
 
-  docMapFocusRootButton?.addEventListener("click", focusDocMapRootForCompactView);
+  docMapFocusRootButton?.addEventListener("click", () => focusDocMapRootForCompactView());
 
-  docMapZoomOutButton?.addEventListener("click", zoomDocMapOut);
+  docMapZoomOutButton?.addEventListener("click", () => zoomDocMapOut());
 
-  docMapZoomInButton?.addEventListener("click", zoomDocMapIn);
+  docMapZoomInButton?.addEventListener("click", () => zoomDocMapIn());
 
   docMapCommandSummary?.addEventListener("click", (event) => {
     if (!docMapCommandMenu?.classList.contains("is-disabled")) return;
@@ -580,12 +580,12 @@ function wireAppEvents() {
     printCurrentDocMapPdf();
   });
 
-  docMapAskForm?.addEventListener("submit", askDocMapQuestion);
-  registerAskBarSource("docMap", describeDocMapAskScope);
+  docMapAskForm?.addEventListener("submit", (event) => askDocMapQuestion(event));
+  registerAskBarSource("docMap", (...args) => describeDocMapAskScope(...args));
 
   window.addEventListener("resize", () => {
     if (currentDocMap && !document.querySelector('[data-window="docMap"]')?.classList.contains("is-hidden")) {
-      requestAnimationFrame(restoreDocMapCanvasView);
+      requestAnimationFrame(() => restoreDocMapCanvasView());
     }
     document.querySelectorAll(".window.about-window:not(.is-hidden)")
       .forEach((win) => requestAnimationFrame(() => placeCenteredSystemWindow(win)));
@@ -680,6 +680,16 @@ function wireAppEvents() {
     saveDeskState();
   });
 
+  fileInfoStationeryEl.addEventListener("change", () => {
+    if (!fileInfoItem || fileInfoItem.readOnly === true || fileInfoStationeryEl.disabled) return;
+    fileInfoItem.stationery = fileInfoStationeryEl.checked;
+    fileInfoItem.updatedAt = new Date().toISOString();
+    saveDeskState();
+    setStatus(fileInfoStationeryEl.checked
+      ? t("stationery_enabled", fileInfoItem.name)
+      : t("stationery_disabled", fileInfoItem.name));
+  });
+
   fileInfoDownloadMarkdownButton.addEventListener("click", () => {
     if (fileInfoItem) downloadMarkdown(formatInfoItemMarkdown(fileInfoItem), fileInfoItem.name || fileInfoItem.title || t("untitled"));
   });
@@ -707,17 +717,17 @@ function wireAppEvents() {
 
   window.addEventListener("scroll", () => positionDictationFieldButton(), true);
 
-  [endpointInput, localApiTokenInput, modelInput, searchProviderInput, importerModeInput, ocrEngineInput, contextLengthInput, systemInput, embeddingModelInput].filter(Boolean).forEach((input) => {
+  [endpointInput, localApiTokenInput, modelInput, searchProviderInput, importerModeInput, ocrEngineInput, contextLengthInput, embeddingModelInput].filter(Boolean).forEach((input) => {
     input.addEventListener("input", scheduleSettingsSave);
     input.addEventListener("change", scheduleSettingsSave);
   });
 
-  // The legacy Control Panel field is a project-local editor for the visible
-  // ClioTalk prompt file; it no longer mutates a hidden global prompt.
-  systemInput?.addEventListener("change", () => {
-    if (!activeProjectId) return;
-    window.AISystem6PromptFilesRuntime?.upsertProjectPromptOverride(activeProjectId, "cliotalk.main", systemInput.value);
-    saveDeskState?.();
+  // Prompt editing lives in the visible files on the Startup Disk and Project
+  // Hard Disk; the Advanced panel points there instead of duplicating the
+  // editor (which used to silently scope to the active project).
+  document.getElementById("open-ai-prompts-folder")?.addEventListener("click", () => {
+    navigateSystemFolderPath("ai-prompts");
+    openWindow("finder");
   });
 
   searchProviderInput?.addEventListener("change", () => {
@@ -1241,8 +1251,10 @@ function wireAppEvents() {
 
   menuClockInput.addEventListener("change", applyMenuClock);
 
+  controlStripInput.addEventListener("change", () => { applyControlStripState(); saveDeskState(); });
+
   docMapLayoutButtons?.forEach((button) => {
-    button.addEventListener("click", () => setCurrentDocMapLayout(button.dataset.docmapLayoutOption));
+    button.addEventListener("click", () => withDocMap(() => setCurrentDocMapLayout(button.dataset.docmapLayoutOption)));
   });
 
   performanceMeterInput.addEventListener("change", () => {

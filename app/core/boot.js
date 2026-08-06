@@ -32,7 +32,7 @@ async function boot() {
       await startupTaskWithTimeout(window.AISystem6DerivedIndexQueue.restore(), "derivedIndexQueue", 3500);
     }
     configurePublicLmStudioControls();
-    syncDocMapLayoutControls();
+    if (window.AISystem6DocMapLoaded) syncDocMapLayoutControls();
     applyLanguage();
     initSystemSelectControls();
     initSharedControlBehaviors();
@@ -79,6 +79,11 @@ async function boot() {
     installWorkingSessionAutosave();
     await runBootSequence();
     document.body.dataset.appReady = "ready";
+    setTimeout(() => {
+      scheduleDesktopMaintenance("boot");
+      applyControlStripState();
+      ensureScriptingModule().then(() => { if (!getWindow("applications")?.classList.contains("is-hidden")) renderStaticFinderWindow("applications"); });
+    }, 8000);
     if (typeof revealMultiFinderSwitcherHint === "function") revealMultiFinderSwitcherHint();
     setInterval(updateClock, 1000);
     startLocalModelMonitor();

@@ -103,13 +103,13 @@ function settingsSnapshotPayload() {
     contextLengthUserOverrides,
     contextMaxByModel,
     compressedConversationMemory,
-    system: systemInput.value,
     embeddingModel: embeddingModelInput.value,
     remember: rememberInput.checked,
     modernFonts: modernFontsInput.checked,
     liquidGlass: !!liquidGlassInput?.checked,
     soundEffects: soundEffectsInput.checked,
     menuClock: menuClockInput.checked,
+    controlStrip: controlStripInput.checked,
     performanceMeter: performanceMeterInput.checked,
     imageGen: document.getElementById("enable-image-gen")?.checked || false,
     clioWebSearch: document.getElementById("clio-web-search")?.checked || false,
@@ -1380,16 +1380,6 @@ function applySettings(settings) {
       task: "",
     });
   }
-  if (settings.system) {
-    const legacyPrompt = window.AISystem6Config?.legacyDefaultClioTalkSystemPrompt || "";
-    const legacyPrompts = Array.isArray(window.AISystem6Config?.legacyClioTalkSystemPrompts)
-      ? window.AISystem6Config.legacyClioTalkSystemPrompts
-      : [legacyPrompt];
-    const configuredDefault = window.AISystem6Config?.defaultClioTalkSystemPrompt;
-    const defaultPrompt = typeof configuredDefault === "function" ? configuredDefault() : (configuredDefault || systemInput.value);
-    const savedSystemPrompt = String(settings.system || "").trim();
-    systemInput.value = legacyPrompts.includes(savedSystemPrompt) ? defaultPrompt : settings.system;
-  }
   if (settings.embeddingModel) {
     embeddingModelInput.value = settings.embeddingModel;
   }
@@ -1429,6 +1419,7 @@ function applySettings(settings) {
   } else {
     menuClockInput.checked = false;
   }
+  if (typeof settings.controlStrip === "boolean") controlStripInput.checked = settings.controlStrip;
   if (typeof settings.performanceMeter === "boolean") {
     performanceMeterInput.checked = settings.performanceMeter;
   }

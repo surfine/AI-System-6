@@ -464,6 +464,43 @@ async function ensureTimeMachineModule() {
   return timeMachineLoadPromise;
 }
 
+const lazySystemModulePromises = new Map();
+function ensureLazySystemModule(path, loadedFlag) {
+  if (window[loadedFlag]) return Promise.resolve(true);
+  let promise = lazySystemModulePromises.get(path);
+  if (!promise) { promise = loadClassicScriptOnce(path).catch(() => lazySystemModulePromises.delete(path)); lazySystemModulePromises.set(path, promise); }
+  return promise;
+}
+function ensureFinderObjectsModule() { return ensureLazySystemModule("app/features/finder-objects.js", "AISystem6FinderObjectsLoaded"); }
+function ensureDesktopMaintenanceModule() { return ensureLazySystemModule("app/core/desktop-maintenance.js", "AISystem6DesktopMaintenanceLoaded"); }
+function ensureDocMapModule() { return ensureLazySystemModule("app/features/docmap.js", "AISystem6DocMapLoaded"); }
+
+// DocMap has two kinds of caller. Commands that summon the tool go through
+// withDocMap(); paths that can only run with the window already open (render,
+// canvas restore, zoom) guard on the loaded flag and no-op otherwise, so they
+// never drag 115 KB in behind an ordinary window redraw.
+function withDocMap(callback) {
+  if (window.AISystem6DocMapLoaded) return callback();
+  return ensureDocMapModule().then(callback);
+}
+
+function ensureScriptingModule() { return ensureLazySystemModule("app/core/scripting.js", "AISystem6ScriptingLoaded"); }
+function ensureControlStripModule() { return ensureLazySystemModule("app/features/control-strip.js", "AISystem6ControlStripLoaded"); }
+function applyControlStripState() {
+  if (!controlStripInput?.checked) { window.AISystem6ControlStrip?.disable(); return; }
+  ensureControlStripModule().then(() => window.AISystem6ControlStrip?.enable());
+}
+
+function withScripting(callback) {
+  if (window.AISystem6ScriptingLoaded) return callback();
+  ensureScriptingModule().then(callback);
+  return null;
+}
+
+function scheduleDesktopMaintenance(reason = "event") {
+  ensureDesktopMaintenanceModule().then(() => window.AISystem6DesktopMaintenance?.schedule(reason));
+}
+
 async function ensureHkrrReviewModule() {
   hkrrReviewLoadPromise ||= loadClassicScriptOnce("app/features/hkrr-review.js").catch((error) => {
     hkrrReviewLoadPromise = null;

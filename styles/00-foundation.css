@@ -502,15 +502,8 @@
   --liquid-desktop-icon-padding: 6px 4px;
   --liquid-desktop-icon-size: 46px;
   --liquid-desktop-icon-label-line-height: 1.08;
-  --settings-scrollbar-lane-bg:
-    linear-gradient(
-      to right,
-      transparent calc(100% - 18px),
-      var(--ink) calc(100% - 18px),
-      var(--ink) calc(100% - 16px),
-      var(--paper) calc(100% - 16px)
-    );
-  --settings-scrollbar-lane-padding-right: 28px;
+  --settings-scrollbar-lane-bg: var(--paper);
+  --settings-scrollbar-lane-padding-right: 12px;
   --control-panel-height: 440px;
   --control-panel-max-height: 760px;
   --system-title-weight: 600;

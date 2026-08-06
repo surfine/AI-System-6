@@ -4086,7 +4086,7 @@ function refreshClioTalkWebSearchToggle() {
   const toggle = document.getElementById("clio-web-search-toggle");
   if (!toggle) return;
   const enabled = clioWebSearchSetting();
-  toggle.hidden = !enabled;
+  toggle.classList.toggle("is-hidden", !enabled);
   if (!enabled) toggle.setAttribute("aria-expanded", "false");
   renderClioTalkRunAssembly();
 }

@@ -107,7 +107,6 @@ const {
   contextRamStatusEl,
   loadModelButton,
   loadModelStatusEl,
-  systemInput,
   rememberInput,
   clearButton,
   clipSelectionButton,
@@ -308,6 +307,7 @@ const {
   readerDocMapButton,
   readerOpenClioStageButton,
   readerSendManuscriptButton,
+  readerFindSourcesButton,
   readerAskForm,
   readerQuestionInput,
   readerContentEl,
@@ -394,6 +394,7 @@ const {
   liquidGlassInput,
   soundEffectsInput,
   menuClockInput,
+  controlStripInput,
   docMapLayoutToggleButton,
   docMapLayoutButtons,
   performanceMeterInput,
@@ -444,6 +445,8 @@ const {
   fileInfoCreatedEl,
   fileInfoModifiedEl,
   fileInfoCommentsEl,
+  fileInfoStationeryEl,
+  infoFinderObjectsBlockEl,
   fileInfoIconEl,
   fileInfoDownloadMarkdownButton,
   printDirectorySourceEl,
@@ -659,6 +662,7 @@ function getApplicationsItems() {
     { name: t("soundscape_label"), iconId: "soundscape", icon: "tools-icon", action: "open-soundscape", type: "application", kind: t("application") },
     { name: t("rebuild_article"), iconId: "rebuildArticle", icon: "tools-icon", action: "open-rebuild-flow", type: "application", kind: t("application"), workspaceCapability: workspaceCapabilityStudio },
     { name: t("guide_play_demo"), iconId: "writingDemo", icon: "teachtext-icon", action: "play-writing-demo", type: "application", kind: t("application"), workspaceCapability: workspaceCapabilityStudio },
+    ...(typeof getDropletItems === "function" ? getDropletItems() : []),
   ], t("applications"));
 }
 
@@ -695,6 +699,10 @@ function getStaticFinderItems(winName) {
 function renderFinderItemIcon(item) {
   return renderSystemIcon(item.iconId || item.icon, {
     size: item.iconBase === "icon" ? "desktop" : "mini"});
+}
+
+function dropletDropAttributes(item) {
+  return item.dropletAction ? ` data-drop-target="droplet" data-droplet-action="${escapeHtml(item.dropletAction)}"` : "";
 }
 
 function getSelectedStaticFinderItem(winName = selectedStaticFinderWindowName) {
@@ -933,7 +941,7 @@ function renderStaticFinderWindow(winName) {
         <span>${escapeHtml(t("modified"))}</span>
       </div>
       ${items.map((item) => `
-        <button class="finder-list-row${selected?.action === item.action ? " is-selected" : ""}" data-static-finder-window="${escapeHtml(winName)}" data-static-finder-action="${escapeHtml(item.action)}">
+        <button class="finder-list-row${selected?.action === item.action ? " is-selected" : ""}" data-static-finder-window="${escapeHtml(winName)}" data-static-finder-action="${escapeHtml(item.action)}"${dropletDropAttributes(item)}>
           <span class="finder-list-name-cell">${renderFinderItemIcon(item)}<span>${escapeHtml(item.name)}</span></span>
           <span>${escapeHtml(item.kind)}</span>
           <span>${escapeHtml(item.sizeLabel || "--")}</span>
@@ -945,7 +953,7 @@ function renderStaticFinderWindow(winName) {
   }
 
   grid.innerHTML = items.map((item) => `
-    <button class="finder-item${selected?.action === item.action ? " is-selected" : ""}" data-static-finder-window="${escapeHtml(winName)}" data-static-finder-action="${escapeHtml(item.action)}">
+    <button class="finder-item${selected?.action === item.action ? " is-selected" : ""}" data-static-finder-window="${escapeHtml(winName)}" data-static-finder-action="${escapeHtml(item.action)}"${dropletDropAttributes(item)}>
       ${renderFinderItemIcon(item)}
       <span>${escapeHtml(item.name)}</span>
     </button>

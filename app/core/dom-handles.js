@@ -38,7 +38,6 @@ function getElements() {
   const contextRamStatusEl = document.querySelector("#context-ram-status");
   const loadModelButton = document.querySelector("#load-model");
   const loadModelStatusEl = document.querySelector("#load-model-status");
-  const systemInput = document.querySelector("#system");
   const rememberInput = document.querySelector("#remember");
   const clearButton = document.querySelector("#clear");
   const clipSelectionButton = document.querySelector("#clip-selection");
@@ -326,6 +325,7 @@ function getElements() {
   const liquidGlassInput = document.querySelector("#liquid-glass");
   const soundEffectsInput = document.querySelector("#sound-effects");
   const menuClockInput = document.querySelector("#menu-clock");
+  const controlStripInput = document.querySelector("#control-strip");
   const docMapLayoutToggleButton = document.querySelector("#docmap-layout-toggle");
   const docMapLayoutButtons = document.querySelectorAll("[data-docmap-layout-option]");
   const performanceMeterInput = document.querySelector("#performance-meter");
@@ -376,6 +376,8 @@ function getElements() {
   const fileInfoCreatedEl = document.querySelector("#info-file-created");
   const fileInfoModifiedEl = document.querySelector("#info-file-modified");
   const fileInfoCommentsEl = document.querySelector("#info-file-comments");
+  const fileInfoStationeryEl = document.querySelector("#info-file-stationery");
+  const infoFinderObjectsBlockEl = document.querySelector("#info-finder-objects-block");
   const fileInfoIconEl = document.querySelector("#info-file-icon");
   const fileInfoDownloadMarkdownButton = document.querySelector("#info-download-markdown");
   const printDirectorySourceEl = document.querySelector("#print-directory-source");
@@ -421,7 +423,6 @@ function getElements() {
     contextRamStatusEl,
     loadModelButton,
     loadModelStatusEl,
-    systemInput,
     rememberInput,
     clearButton,
     clipSelectionButton,
@@ -709,6 +710,7 @@ function getElements() {
     liquidGlassInput,
     soundEffectsInput,
     menuClockInput,
+    controlStripInput,
     docMapLayoutToggleButton,
     docMapLayoutButtons,
     performanceMeterInput,
@@ -759,6 +761,8 @@ function getElements() {
     fileInfoCreatedEl,
     fileInfoModifiedEl,
     fileInfoCommentsEl,
+    fileInfoStationeryEl,
+    infoFinderObjectsBlockEl,
     fileInfoIconEl,
     fileInfoDownloadMarkdownButton,
     printDirectorySourceEl,

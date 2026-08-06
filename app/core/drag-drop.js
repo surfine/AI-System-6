@@ -73,8 +73,10 @@ function initDragAndDrop() {
   document.addEventListener("dragover", (event) => {
     const dropTarget = event.target.closest("[data-drop-target]");
     if (dropTarget) {
+      // A drop inside a window belongs to that window, not the desktop behind it.
+      if (dropTarget.dataset.dropTarget === "desktop" && event.target.closest(".window")) return;
       event.preventDefault();
-      event.dataTransfer.dropEffect = dropTarget.dataset.dropTarget === "clio-attachment" ? "copy" : "move";
+      event.dataTransfer.dropEffect = ["clio-attachment", "droplet"].includes(dropTarget.dataset.dropTarget) ? "copy" : "move";
       dropTarget.classList.add("is-drag-over");
     }
   });
@@ -92,6 +94,7 @@ function initDragAndDrop() {
   document.addEventListener("drop", async (event) => {
     const dropTarget = event.target.closest("[data-drop-target]");
     if (dropTarget) {
+      if (dropTarget.dataset.dropTarget === "desktop" && event.target.closest(".window")) return;
       event.preventDefault();
       dropTarget.classList.remove("is-drag-over");
 
@@ -103,6 +106,10 @@ function initDragAndDrop() {
 
         if (dropTargetType === "trash") {
           handleDropToTrash(dragData);
+        } else if (dropTargetType === "droplet") {
+          withScripting(() => runDropletDrop(dropTarget.dataset.dropletAction || "", dragData));
+        } else if (dropTargetType === "desktop") {
+          withFinderObjects(() => createClippingFile({ ...dragData, folderId: null }));
         } else if (dropTargetType === "document-folder" || dropTargetType === "document-current-folder") {
           handleDropToDocumentFolder(dragData, dropTarget.dataset.folderId || null);
         } else if (dropTargetType === "project") {
@@ -111,10 +118,11 @@ function initDragAndDrop() {
             : dropTarget.dataset.projectId;
           handleDropToProject(dragData, targetId);
         } else if (dropTargetType === "clio-attachment") {
-          const fileIds = Array.isArray(dragData.items)
-            ? dragData.items.filter((item) => item.type === "file").map((item) => item.id)
-            : (dragData.type === "file" && dragData.id ? [dragData.id] : []);
-          fileIds.slice(0, 6).forEach((fileId) => attachProjectFileToNextClioTalkRun(fileId));
+          if (dragData.type === "clipping-selection") withFinderObjects(() => { const clipping = createClippingFile({ ...dragData, folderId: null }); if (clipping) attachProjectFileToNextClioTalkRun(clipping.id); });
+          else {
+            const fileIds = Array.isArray(dragData.items) ? dragData.items.filter((item) => item.type === "file").map((item) => item.id) : (dragData.type === "file" && dragData.id ? [dragData.id] : []);
+            fileIds.slice(0, 6).forEach((fileId) => attachProjectFileToNextClioTalkRun(fileId));
+          }
         }
       } catch (e) {
         console.error("Drop failed", e);

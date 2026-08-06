@@ -54,7 +54,8 @@ test.assertIncludes(config, "window.AISystem6Humanizer", "Markdown model message
 test.assertIncludes(config, "humanizer.hasHumanizerInstruction(normalized)", "Frontend injection avoids duplicate guardrails");
 test.assertIncludes(config, "humanizer.instruction()", "Frontend Markdown model calls receive the Humanizer instruction");
 test.assertIncludes(config, "AI-flavored filler, inflated significance, promotional polish", "Default ClioTalk prompt rejects AI voice");
-test.assertIncludes(index, 'data-prompt-file="cliotalk.main"', "Boot HTML delegates the default prompt to its visible file");
+test.assertNotIncludes(index, 'data-prompt-file="cliotalk.main"', "no inline ClioTalk prompt editor remains in the Control Panel");
+test.assertIncludes(index, 'id="open-ai-prompts-folder"', "the Advanced panel points to the visible AI Prompts folder");
 test.assertIncludes(clioTalkPrompt, "AI-flavored filler, inflated significance, promotional polish", "ClioTalk visible file rejects AI voice");
 
 test.assertIncludes(serverHumanizer, "function shouldApplyHumanizer", "Server proxy has a task-aware Humanizer gate");

@@ -198,6 +198,14 @@ window.AISystem6ProjectDiskBackup = (() => {
       requireRelation(file.sourceChatId, "file", `backup.files[${index}].sourceChatId`);
       requireRelation(file.sourceDocumentId, "file", `backup.files[${index}].sourceDocumentId`);
       requireRelation(file.referenceId, "reference", `backup.files[${index}].referenceId`);
+      if (file.type === "alias") {
+        const alias = file.aliasTarget;
+        if (!isPlainObject(alias) || !recordId(alias.id)) {
+          error(`backup.files[${index}].aliasTarget`, "alias requires a target id");
+        } else if (["file", "scrap", "reference"].includes(alias.kind)) {
+          requireRelation(alias.id, alias.kind, `backup.files[${index}].aliasTarget.id`);
+        }
+      }
     });
     bundle.scraps.forEach((scrap, index) => {
       requireRelation(scrap.sourceFileId, "file", `backup.scraps[${index}].sourceFileId`);
@@ -347,6 +355,10 @@ window.AISystem6ProjectDiskBackup = (() => {
     }
     if (!isPlainObject(value)) {
       return key === "sourceKey" ? sourceKeyWithRemappedId(value, idMaps) : value;
+    }
+    if (key === "aliasTarget" && recordId(value.id)) {
+      const relationType = String(value.kind || "");
+      return { ...value, id: idMaps[relationType]?.get(recordId(value.id)) || "" };
     }
     return Object.fromEntries(Object.entries(value).map(([field, item]) => {
       const relationType = relationFields[field];

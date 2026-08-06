@@ -93,7 +93,7 @@
       </div>
     </header>
 
-    <main class="desktop">
+    <main class="desktop" data-drop-target="desktop">
       <div class="modal-scrim is-hidden" data-modal-scrim></div>
       <section class="boot-screen" id="boot-screen" aria-live="polite">
         <div class="happy-mac is-sleeping" aria-hidden="true">
@@ -363,8 +363,14 @@
                 </button>
               </div>
             </div>
-            <button class="btn composer-file-button composer-icon-button clio-web-search-toggle" id="clio-web-search-toggle" type="button" aria-expanded="false" hidden data-i18n-aria-label="clio_web_search_switch" data-i18n-title="clio_web_search_switch" data-balloon-help="balloon_clio_web_search">
-              <span data-i18n="clio_web_search_switch">Web</span>
+            <button class="btn composer-file-button composer-icon-button clio-web-search-toggle is-hidden" id="clio-web-search-toggle" type="button" aria-expanded="false" data-i18n-aria-label="clio_web_search_switch" data-i18n-title="clio_web_search_switch" data-balloon-help="balloon_clio_web_search">
+              <svg class="composer-web-search-glyph" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+                <circle cx="8.5" cy="8.5" r="5"></circle>
+                <path d="M12.2 12.2l4.2 4.2"></path>
+                <path d="M4.5 8.5h8"></path>
+                <path d="M8.5 4c-1.5 1.2-1.5 8.8 0 10"></path>
+              </svg>
+              <span class="visually-hidden" data-i18n="clio_web_search_switch">Web search</span>
             </button>
             <button class="clio-entry-loadout" id="clio-entry-loadout" type="button" data-action="open-context-panel" disabled></button>
             <span class="composer-key-hint" data-i18n="clio_composer_key_hint">Enter to send · Shift+Enter for a new line</span>
@@ -535,15 +541,17 @@
                 <input id="menu-clock" type="checkbox" />
                 <label for="menu-clock" data-i18n="menu_bar_clock">SuperClock! Menu Clock</label>
               </div>
+
+              <div class="field-row"><input id="control-strip" type="checkbox" /><label for="control-strip">Control Strip</label></div>
             </div>
           </section>
 
           <details class="control-section control-advanced">
             <summary data-i18n="advanced_settings">Advanced</summary>
-            <label class="control-stack" for="system">
-              <span data-i18n="system_prompt">System Prompt</span>
-              <textarea id="system" rows="4" data-prompt-file="cliotalk.main"></textarea>
-            </label>
+            <div class="control-prompt-entry">
+              <p class="hint" data-i18n="ai_prompts_entry_hint">AI prompts (including ClioTalk's) are edited as files in the AI Prompts folder on the Startup Disk; project overrides and disabled prompts live on the Project Hard Disk.</p>
+              <button class="btn" type="button" id="open-ai-prompts-folder" data-i18n="open_ai_prompts_folder">Open AI Prompts Folder</button>
+            </div>
             <div class="control-checkbox-grid">
               <div class="field-row">
                 <input id="performance-meter" type="checkbox" checked />
@@ -3176,6 +3184,14 @@ Glass</textarea>
           <div class="button-row">
             <button class="btn" type="button" id="info-download-markdown" data-i18n="download_md">Download .md</button>
           </div>
+          <div class="info-comments">
+            <label for="info-file-stationery">
+              <input type="checkbox" id="info-file-stationery" />
+              <span data-i18n="stationery_pad">Stationery Pad</span>
+            </label>
+            <p class="hint" data-i18n="stationery_pad_hint">Opening this file creates an untitled copy instead of editing the original.</p>
+          </div>
+          <div class="info-comments" id="info-finder-objects-block" hidden></div>
           <hr />
           <div class="info-comments">
             <label for="info-file-comments" data-i18n="comments">Comments:</label>

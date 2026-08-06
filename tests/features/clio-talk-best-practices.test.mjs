@@ -462,7 +462,7 @@ test.assertIncludes(styles, ".messages-stage", "The message scroller and latest-
 test.assertIncludes(styles, ".clio-scroll-latest", "The latest-message affordance has a stable visual hook");
 test.assertIncludes(styles, ".message.pending.streaming .message-content::after", "Streaming uses a lightweight state caret instead of a second loading card");
 test.assertMatches(foundationStyles, /prefers-reduced-motion[\s\S]*\.message\.pending\.streaming \.message-content::after[\s\S]*animation: none;/, "Streaming feedback honors reduced motion");
-test.assertMatches(responsiveStyles, /\.assistant-window \.composer-action-row \{[\s\S]*grid-template-columns: auto minmax\(0, 1fr\) auto auto;/, "Mobile keeps Add, context, model status, and Send in one compact composer hierarchy");
+test.assertMatches(styles, /\.composer-action-row \{[\s\S]*flex-wrap: nowrap;/, "the composer action row never wraps, so Add, context, model status, and Send stay on one line even with the web-search switch visible");
 test.assertIncludes(liquidStyles, "--clio-composer-bg", "Liquid Glass uses the shared semantic composer tokens");
 test.assertMatches(liquidStyles, /body\.use-liquid-glass \.composer \{[\s\S]*backdrop-filter: blur/, "Liquid Glass upgrades the same composer structure with material treatment");
 test.assertMatches(liquidStyles, /body\.use-liquid-glass \.assistant-window \.messages \{[\s\S]*background: var\(--glass-reading-surface\);[\s\S]*backdrop-filter: var\(--glass-reading-blur\)/, "Liquid Glass gives the transcript an opaque reading surface");

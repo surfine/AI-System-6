@@ -18,6 +18,8 @@ for (const name of ["local", "cloud", "general"]) {
 }
 test.assertIncludes(persistence, "function setControlTab(", "one function owns tab switching");
 test.assertIncludes(persistence, "function wireControlTabs(", "tabs are wired at startup");
+test.assertIncludes(html, 'id="open-ai-prompts-folder"', "the Advanced panel keeps a discoverable entry to the file-based AI prompts");
+test.assertNotIncludes(html, 'data-prompt-file="cliotalk.main"', "the inline system-prompt editor is gone from Advanced settings");
 
 // Checkbox rows share one grid per section so the first preference and the
 // disclosure's slotted details content cannot fall onto different gap rules.
@@ -28,7 +30,7 @@ test.assertMatches(
 );
 test.assertMatches(
   html,
-  /class="control-section control-advanced">[\s\S]*class="control-stack"[\s\S]*class="control-checkbox-grid">[\s\S]*id="performance-meter"[\s\S]*id="manual-model-fields"[\s\S]*id="show-reset-system-menu"[\s\S]*id="enable-image-gen"/,
+  /class="control-section control-advanced">[\s\S]*class="control-prompt-entry"[\s\S]*class="control-checkbox-grid">[\s\S]*id="performance-meter"[\s\S]*id="manual-model-fields"[\s\S]*id="show-reset-system-menu"[\s\S]*id="enable-image-gen"/,
   "all advanced checkboxes share one spacing grid"
 );
 

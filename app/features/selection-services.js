@@ -401,6 +401,11 @@ function runSelectionClip(context = getSelectionServiceContext()) {
   }
 }
 
+function runSelectionClipFile(context = getSelectionServiceContext()) {
+  if (!context?.text) return setStatus(t("select_text_first"));
+  withFinderObjects(() => createClippingFromSelectionContext(context));
+}
+
 function runSelectionFindSources(context = getSelectionServiceContext()) {
   if (!context?.text) {
     setStatus(t("select_text_first"));
@@ -504,8 +509,9 @@ async function runSelectionServiceCommand(command) {
   if (command === "find") return runSelectionFindSources(context);
   if (command === "copy") return runSelectionCopy(context);
   if (command === "clip") return runSelectionClip(context);
+  if (command === "clip-file") return runSelectionClipFile(context);
   if (command === "translate") return openTranslationPadFromSelection(context);
   if (command === "note") return runSelectionNewNote(context);
   if (command === "ask") return runSelectionAskAssistant(context);
-  if (command === "docmap") return makeDocMapFromCurrentSource(context);
+  if (command === "docmap") return withDocMap(() => makeDocMapFromCurrentSource(context));
 }

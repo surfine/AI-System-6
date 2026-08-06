@@ -1324,14 +1324,20 @@ function getProjectFolderFinderItem(folder) {
 }
 
 function getProjectFileFinderItem(file) {
-  const kindLabel = file.artifactKind === "project-memory"
+  const isAlias = file.type === "alias";
+  const isClipping = file.artifactKind === "clipping";
+  const kindLabel = isAlias
+    ? t("kind_alias")
+    : isClipping
+      ? t("kind_clipping")
+      : file.artifactKind === "project-memory"
     ? (file.memoryStatus === "disabled"
       ? (currentLanguage === "zh" ? "项目记忆（已停用）" : "Project Memory (Disabled)")
       : (currentLanguage === "zh" ? "项目记忆" : "Project Memory"))
     : (file.type === "text" ? t("kind_teachtext") : t("kind_chat"));
-  const iconClass = file.type === "text" ? "teachtext-icon" : "doc-icon";
-  const iconId = file.type === "text" ? "teachText" : "chatFile";
-  const bodyText = file.type === "text" ? (file.body || "") : formatChatFile(file);
+  const iconClass = isAlias ? "alias-icon" : isClipping ? "scrap-icon" : file.type === "text" ? "teachtext-icon" : "doc-icon";
+  const iconId = isAlias ? "alias" : isClipping ? "scrap" : file.type === "text" ? "teachText" : "chatFile";
+  const bodyText = isAlias ? "" : file.type === "text" ? (file.body || "") : formatChatFile(file);
   return {
     ...file,
     kindLabel,
@@ -1342,12 +1348,16 @@ function getProjectFileFinderItem(file) {
     canDuplicate: true,
     canRename: true,
     canTrash: true,
-    canMakeDocMap: file.type === "text" && bodyText.trim().length >= docMapMinDocumentChars,
-    canRunChecks: file.type === "text" && bodyText.trim().length > 0,
+    canMakeDocMap: !isAlias && file.type === "text" && bodyText.trim().length >= docMapMinDocumentChars,
+    canRunChecks: !isAlias && file.type === "text" && bodyText.trim().length > 0,
     open: () => {
       selectedChatFileId = file.id;
-      if (file.type === "text") openTextFile(file.id);
-      else openChatFileWindow(file.id);
+      withFinderObjects(() => {
+        if (isAlias) return openAliasFile(file);
+        if (openProjectFileWithStationery(file)) return;
+        if (file.type === "text") openTextFile(file.id);
+        else openChatFileWindow(file.id);
+      });
     },
   };
 }
@@ -1529,7 +1539,7 @@ function renderProjectRootListItem(item, project, mode, orderedItems = []) {
         ? selectedDocumentItemKeys.has(documentSelectionKey("projectReference", item.id)) || item.id === selectedProjectReferenceId
         : selectedDocumentItemKeys.has(documentSelectionKey("file", item.id)) || item.id === selectedChatFileId;
   const isReference = item.type === "projectReference";
-  row.className = `finder-list-row${item.label ? ` label-${item.label}` : ""}${selected ? " is-selected" : ""}`;
+  row.className = `finder-list-row${item.label ? ` label-${item.label}` : ""} finder-label-${item.finderLabel || "none"}${selected ? " is-selected" : ""}`;
   if (isSystem) row.dataset.projectRootId = item.id;
   if (isFolder || isFile) {
     row.draggable = true;
@@ -1577,7 +1587,7 @@ function renderProjectRootIconItem(item, orderedItems = []) {
       : isReference
         ? selectedDocumentItemKeys.has(documentSelectionKey("projectReference", item.id)) || item.id === selectedProjectReferenceId
         : selectedDocumentItemKeys.has(documentSelectionKey("file", item.id)) || item.id === selectedChatFileId;
-  button.className = `finder-item${item.label ? ` label-${item.label}` : ""}${selected ? " is-selected" : ""}`;
+  button.className = `finder-item${item.label ? ` label-${item.label}` : ""} finder-label-${item.finderLabel || "none"}${selected ? " is-selected" : ""}`;
   if (isSystem) button.dataset.projectRootId = item.id;
   if (isFolder || isFile) {
     button.draggable = true;

@@ -1490,7 +1490,7 @@ function timeMachineDocMapSource() {
 }
 
 function makeTimeMachineDocMap() {
-  return makeDocMapFromCurrentSource(timeMachineDocMapSource() || { text: "", scope: "timeMachine" });
+  return withDocMap(() => makeDocMapFromCurrentSource(timeMachineDocMapSource() || { text: "", scope: "timeMachine" }));
 }
 
 async function askTimeMachineSource() {

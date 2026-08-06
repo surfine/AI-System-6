@@ -221,6 +221,16 @@
   opacity: 0.55;
 }
 
+/* Finder Labels (user-set status colors; Classic label hues, readable on both
+   paper and Liquid Glass because they ride currentColor through the name and
+   the 1-bit icon stroke). */
+.finder-label-cite { color: #2f5fbf; }
+.finder-label-verify { color: #a37812; }
+.finder-label-counter { color: #b23a2e; }
+.finder-label-judgment { color: #2f7d4f; }
+.finder-label-final { color: #7a4f9e; }
+.finder-label-blocked { color: #6f6f6f; }
+
 .mini-icon {
   width: 34px;
   height: 34px;

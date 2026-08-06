@@ -226,6 +226,7 @@ function switchProject(projectId) {
   resetAssistantForProject(project.name);
   loadActiveProjectReferences();
   saveDeskState();
+  scheduleDesktopMaintenance("project");
   setStatus(wasArchived ? t("project_unarchived", project.name) : t("project_opened", project.name));
 }
 
@@ -740,7 +741,17 @@ function openFileInfo() {
   let iconId = "scrap";
   let sizeBytes = 0;
 
-  if (item.type === "text") {
+  if (item.type === "alias") {
+    kindLabel = t("kind_alias");
+    iconClass = "alias-icon";
+    iconId = "alias";
+    sizeBytes = 0;
+  } else if (item.artifactKind === "clipping") {
+    kindLabel = t("kind_clipping");
+    iconClass = "scrap-icon";
+    iconId = "scrap";
+    sizeBytes = (item.body || "").length;
+  } else if (item.type === "text") {
     kindLabel = t("kind_teachtext");
     iconClass = "teachtext-icon";
     iconId = "teachText";
@@ -816,6 +827,14 @@ function openFileInfo() {
       : item.projectId || projects.includes(item) || item.type === "finder-volume" || item.type === "finder-root" || item.type === "folder" ? t("durable_yes") : t("durable_no");
   fileInfoCommentsEl.value = item.comments || "";
   fileInfoCommentsEl.disabled = item.readOnly === true;
+  // Stationery Pad applies to editable project files, not folders, system
+  // components, or derived artifacts whose identity is load-bearing.
+  const stationeryAvailable = (item.type === "text" || item.type === "chat") && item.readOnly !== true && !String(item.artifactKind || "").trim() && isInActiveProject(item);
+  fileInfoStationeryEl.checked = item.stationery === true;
+  fileInfoStationeryEl.disabled = !stationeryAvailable;
+  withFinderObjects(() => {
+    if (typeof renderFinderObjectInfo === "function" && fileInfoItem === item) renderFinderObjectInfo(item);
+  });
 
   fileInfoIconEl.className = `large-mini-icon sys-icon ${iconClass}`;
   fileInfoIconEl.dataset.systemIcon = normalizeSystemIconId(iconId);

@@ -90,7 +90,9 @@ function renderFindPathResults() {
   renderWebAnswerSummary(deepSeekProvider);
 
   if (!findPathResults.length) {
-    if (!(deepSeekProvider && findPathWebAnswer?.answer)) {
+    if (deepSeekProvider && findPathWebAnswer?.answer) {
+      renderFindPathNotice(t("search_answer_no_sources"));
+    } else {
       renderFindPathNotice(t("no_find_path_results"));
     }
     synthesizeFindPathButton.hidden = true;
@@ -176,15 +178,6 @@ function renderWebAnswerSummary(deepSeekProvider) {
   label.textContent = t("search_answer_label");
   const body = document.createElement("div");
   body.textContent = answer;
-  (findPathWebAnswer?.citations || []).forEach((citation) => {
-    if (!citation.url) return;
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "btn mini-btn citation-btn";
-    button.textContent = citation.title || citation.url;
-    button.addEventListener("click", () => openFindPathWebCitation(citation.url));
-    findPathSummaryEl.append(button);
-  });
   const note = document.createElement("div");
   note.className = "hint";
   note.textContent = t("search_answer_note");
@@ -208,14 +201,6 @@ function renderWebSearchStreamingText(text) {
   body.textContent = text;
   findPathSummaryEl.append(label, body);
   findPathSummaryEl.scrollTop = 0;
-}
-
-function openFindPathWebCitation(url) {
-  if (!url) return;
-  readerUrlInput.value = url;
-  openWindow("reader");
-  fetchReaderPage(url);
-  setStatus(t("claim_check_online_opened_source"));
 }
 
 /**
@@ -248,10 +233,43 @@ async function runWebAnswerSearch(query) {
   findPathWebAnswer = {
     answer: String(result.answer || ""),
     citations: Array.isArray(result.citations) ? result.citations : [],
-    results: Array.isArray(result.results) ? result.results : [],
+    results: webSearchCitationsToResults(result.citations),
   };
   renderWebAnswerSummary(true);
   return findPathWebAnswer.results;
+}
+
+/**
+ * Derive a bare site label from a citation URL for the results list.
+ *
+ * @param {string} url
+ * @returns {string}
+ */
+function webSearchSiteFromUrl(url) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Turn web-search citations into ordinary Searcher result items, so the
+ * existing selection / Open in Reader / Clip / Copy / Insert actions keep
+ * working in DeepSeek mode (the Responses API returns no raw result list).
+ *
+ * @param {Array<{ url?: string, title?: string }>} [citations]
+ * @returns {Array<{ title: string, url: string, snippet: string, site: string }>}
+ */
+function webSearchCitationsToResults(citations) {
+  return (Array.isArray(citations) ? citations : [])
+    .filter((citation) => citation && citation.url)
+    .map((citation) => ({
+      title: String(citation.title || citation.url),
+      url: String(citation.url),
+      snippet: "",
+      site: webSearchSiteFromUrl(citation.url),
+    }));
 }
 
 function renderFindPathNotice(message, tone = "") {
@@ -457,7 +475,9 @@ function updateFindPathStatusBar() {
     findPathProviderEl.textContent = getSearchProviderLabel();
   }
   if (findPathCountEl) {
-    findPathCountEl.textContent = t("search_result_count", findPathResults.length);
+    findPathCountEl.textContent = searchProviderInput?.value === "deepseek"
+      ? t("search_source_count", findPathResults.length)
+      : t("search_result_count", findPathResults.length);
   }
 }
 

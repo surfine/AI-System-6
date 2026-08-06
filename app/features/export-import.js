@@ -1336,6 +1336,7 @@ async function importProjectBackupAsNewProject() {
     storageSnapshotCache.clear();
     const saved = await saveDeskState();
     if (!saved) throw new Error("Imported project committed, but the active workspace state could not be saved.");
+    scheduleDesktopMaintenance("import");
     setStatus(t("backup_imported_project", imported.project.name));
   } catch (error) {
     console.error("Project Hard Disk import failed:", error);

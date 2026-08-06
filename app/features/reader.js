@@ -1540,6 +1540,27 @@ function initReaderDropZone() {
   const isReaderDropEvent = (event) =>
     !!event.target?.closest?.('[data-window="reader"]') || isPointInReaderWindow(event);
 
+  // Dragging a Reader selection out creates a Clipping File on drop.
+  readerContentEl.addEventListener("dragstart", (event) => {
+    const { selection, text } = getReaderSelection();
+    if (!text) return;
+    const context = getReaderSelectionContext(selection, text);
+    const payload = {
+      type: "clipping-selection",
+      text,
+      projectId: activeProjectId,
+      sourceType: currentReaderPage?.kind || "web",
+      sourceTitle: currentReaderPage?.title || "",
+      sourceUrl: currentReaderPage?.url || "",
+      capturedAt: new Date().toISOString(),
+      before: context?.before || "",
+      after: context?.after || "",
+    };
+    event.dataTransfer.setData("application/json", JSON.stringify(payload));
+    event.dataTransfer.setData("text/plain", text);
+    event.dataTransfer.effectAllowed = "copy";
+  });
+
   readerDropTargets.forEach((target) => {
     target.addEventListener("dragenter", (event) => {
       if (!readerCanAcceptDrop(event)) return;

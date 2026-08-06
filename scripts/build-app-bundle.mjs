@@ -36,112 +36,6 @@ function stripJsSourceMapComments(source) {
   return source.replace(/(?:^|\n)\/\/# sourceMappingURL=.*(?:\n|$)/g, "\n").trimEnd();
 }
 
-function compactJsLeadingWhitespace(source) {
-  let output = "";
-  let quote = "";
-  let escaped = false;
-  let lineStart = true;
-  let pendingBlankLine = false;
-  let inRegex = false;
-
-  for (let index = 0; index < source.length; index += 1) {
-    const char = source[index];
-    const next = source[index + 1];
-
-    if (quote) {
-      output += char;
-      if (escaped) {
-        escaped = false;
-      } else if (char === "\\") {
-        escaped = true;
-      } else if (char === quote) {
-        quote = "";
-      }
-      lineStart = char === "\n";
-      continue;
-    }
-
-    if (inRegex) {
-      output += char;
-      if (escaped) {
-        escaped = false;
-      } else if (char === "\\") {
-        escaped = true;
-      } else if (char === "/") {
-        inRegex = false;
-      }
-      lineStart = char === "\n";
-      continue;
-    }
-
-    if (char === "\"" || char === "'" || char === "`") {
-      if (pendingBlankLine && output && !output.endsWith("\n")) output += "\n";
-      pendingBlankLine = false;
-      quote = char;
-      output += char;
-      lineStart = false;
-      continue;
-    }
-
-    if (char === "/" && next === "/") {
-      if (source.startsWith("// =====", index)) {
-        let lineEnd = index;
-        while (lineEnd < source.length && source[lineEnd] !== "\n") {
-          lineEnd += 1;
-        }
-        output += source.slice(index, lineEnd);
-        index = lineEnd - 1;
-        lineStart = false;
-        continue;
-      }
-      index += 1;
-      while (index < source.length && source[index] !== "\n") {
-        index += 1;
-      }
-      index -= 1;
-      continue;
-    }
-
-    if (char === "/" && next === "*") {
-      index += 2;
-      while (index < source.length && !(source[index] === "*" && source[index + 1] === "/")) {
-        index += 1;
-      }
-      index += 1;
-      continue;
-    }
-
-    if (char === "/") {
-      const prevText = output.trimEnd();
-      const lastChar = prevText.at(-1);
-      const isRegexStart = !lastChar || "=,;:?&|!([{~^+-*/%<>".includes(lastChar) || 
-        /\b(return|yield|delete|typeof|void|throw|await|typeof|instanceof|in|do|else|case)$/.test(prevText);
-      if (isRegexStart) {
-        inRegex = true;
-        output += char;
-        lineStart = false;
-        continue;
-      }
-    }
-
-    if (char === "\n") {
-      if (!lineStart) output += "\n";
-      else pendingBlankLine = true;
-      lineStart = true;
-      continue;
-    }
-
-    if (lineStart && (char === " " || char === "\t")) continue;
-
-    if (pendingBlankLine && output && !output.endsWith("\n")) output += "\n";
-    pendingBlankLine = false;
-    output += char;
-    lineStart = false;
-  }
-
-  return output.trimEnd();
-}
-
 const body = appRuntimePaths
   .map((path) => [
     `// ===== ${path} =====`,
@@ -151,12 +45,25 @@ const body = appRuntimePaths
   .join("\n");
 
 const appBundlePath = join(root, "app.bundle.js");
-const minifiedBody = transformSync(compactJsLeadingWhitespace(body), {
+// esbuild's minifyWhitespace already strips leading whitespace, and
+// legalComments:"none" drops the inline section markers, so the bundle is fed
+// to it directly. A hand-rolled pre-pass used to compact leading whitespace
+// here; it was removed because it was not a real tokenizer — it misread some
+// `/` as regex starts and swallowed text up to the next `/`, which could land
+// inside a string such as "https://…" and corrupt the bundle. It contributed
+// nothing to the output, and the damage only stayed invisible while the
+// miscounts happened to cancel between files: moving one file out of the
+// bundle was enough to break the build.
+const minifiedBody = transformSync(body, {
   charset: "utf8",
   legalComments: "none",
   loader: "js",
+  // Identifier minification must stay off: the bundle is concatenated scripts
+  // whose top-level declarations are the shared global namespace, and lazy
+  // modules loaded later call those globals by name. Syntax minification is
+  // safe — it drops none of the 2,348 top-level declarations.
   minifyIdentifiers: false,
-  minifySyntax: false,
+  minifySyntax: true,
   minifyWhitespace: true,
   target: "esnext",
 }).code.trim();

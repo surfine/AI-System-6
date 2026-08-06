@@ -20,6 +20,7 @@ const menus = read("app/data/menus.js");
 const chatMessages = read("app/core/chat-messages.js");
 const modelStream = read("app/core/model-stream.js");
 const cloudChat = read("src/server/routes/cloud-chat.js");
+const windowsCss = read("styles/10-windows.css");
 const en = read("app/data/translations-en.js");
 const zh = read("app/data/translations-zh.js");
 
@@ -32,7 +33,9 @@ test.assertIncludes(findPath, 't("search_deepseek")', "Searcher labels the DeepS
 test.assertIncludes(findPath, 'fetch("/api/search/answer"', "Searcher calls the server-side online-answer route");
 test.assertIncludes(findPath, "cloudCredentialTransportFields()", "Searcher forwards BYOK or shared-cloud transport fields");
 test.assertIncludes(findPath, 't("search_answer_note")', "Searcher warns that online answers are model output, not evidence");
-test.assertIncludes(findPath, "openFindPathWebCitation", "Searcher citation buttons open the source in Reader");
+test.assertIncludes(findPath, "function webSearchCitationsToResults", "DeepSeek citations become the actionable results list");
+test.assertIncludes(findPath, 't("search_answer_no_sources")', "a citation-free answer gets a tailored notice instead of an empty list");
+test.assertIncludes(findPath, 't("search_source_count", findPathResults.length)', "DeepSeek mode counts sources instead of results");
 test.assertIncludes(wireup, 'searchProviderInput?.value === "deepseek"', "the Searcher submit flow branches into the DeepSeek provider");
 test.assertIncludes(webSearch, 'tool_choice: { type: "web_search" }', "the Responses payload forces a server-side web search");
 test.assertIncludes(webSearch, '"url_citation"', "cited sources are parsed from output_text annotations");
@@ -82,6 +85,10 @@ test.assertIncludes(chatMessages, "usage_reasoning_tokens", "the cloud usage met
 test.assertIncludes(chatMessages, "function refreshClioTalkWebSearchToggle", "the Control Panel setting shows or hides the composer switch");
 test.assertIncludes(index, 'id="clio-web-search"', "Control Panel Advanced offers the ClioTalk web-search setting");
 test.assertIncludes(index, 'id="clio-web-search-toggle"', "the composer offers a per-message web-search switch");
+test.assertIncludes(index, 'class="composer-web-search-glyph"', "the ClioTalk web-search switch uses a compact icon glyph");
+test.assertIncludes(windowsCss, ".composer-web-search-glyph", "the web-search glyph has an owned sizing rule");
+test.assertIncludes(index, 'clio-web-search-toggle is-hidden"', "the ClioTalk web-search switch starts hidden");
+test.assertIncludes(chatMessages, 'toggle.classList.toggle("is-hidden", !enabled)', "the Control Panel setting gates the switch's visibility");
 test.assertIncludes(persistence, "clioWebSearch:", "the ClioTalk web-search setting persists");
 test.assertIncludes(actions, '"reader-find-sources": runReaderFindSources', "the Reader handoff action is wired");
 test.assertIncludes(actions, '"review-facts-section-online"', "the section online claim check action is wired");
@@ -90,7 +97,7 @@ test.assertIncludes(menus, 'menuItem("review-facts-online"', "the Review Desk me
 test.assertIncludes(index, 'id="reader-find-sources" data-action="reader-find-sources"', "Reader offers Find Related Sources");
 test.assertIncludes(index, 'data-action="review-facts-section-online"', "Review Desk offers a section online check");
 test.assertIncludes(index, 'data-action="review-facts-online"', "Review Desk offers a manuscript online check");
-for (const key of ["search_deepseek", "search_answer_label", "search_answer_note", "review_facts_online", "review_facts_section_online", "find_related_sources", "claim_check_online_note", "claim_verdict_manual", "clio_web_search_setting", "clio_web_search_switch", "clio_web_search_note", "clio_web_search_citations", "usage_cache_hit", "usage_reasoning_tokens"]) {
+for (const key of ["search_deepseek", "search_answer_label", "search_answer_note", "search_answer_no_sources", "search_source_count", "review_facts_online", "review_facts_section_online", "find_related_sources", "claim_check_online_note", "claim_verdict_manual", "clio_web_search_setting", "clio_web_search_switch", "clio_web_search_note", "clio_web_search_citations", "usage_cache_hit", "usage_reasoning_tokens"]) {
   test.assertIncludes(en, `${key}:`, `English includes ${key}`);
   test.assertIncludes(zh, `${key}:`, `Chinese includes ${key}`);
 }

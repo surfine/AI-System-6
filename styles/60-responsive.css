@@ -695,7 +695,6 @@ select:focus {
   }
 
   .assistant-window .composer-action-row {
-    grid-template-columns: auto minmax(0, 1fr) auto auto;
     align-items: center;
   }
 

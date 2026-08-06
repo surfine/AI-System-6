@@ -135,7 +135,12 @@ export function minifyCss(source) {
     else if (pendingSpace && output && !suppressLeadingSpace(output.at(-1))) output += " ";
 
     if (char === "{") blockStack.push(nestedAtRule.test(output));
-    else if (char === "}") blockStack.pop();
+    else if (char === "}") {
+      // The last declaration's semicolon is optional; strings already took the
+      // quote branch above, so a `;` here always ends a declaration.
+      if (output.endsWith(";")) output = output.slice(0, -1);
+      blockStack.pop();
+    }
 
     output += char;
     pendingSpace = false;

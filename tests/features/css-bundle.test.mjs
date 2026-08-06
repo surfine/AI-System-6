@@ -13,54 +13,65 @@ const test = createFeatureTest("css-bundle");
 // Descendant `:is()` / `:not()` / `:where()` keeps its combinator.
 test.assert(
   minifyCss(".control-panel :is(h3, summary) { font-size: 13px; }") ===
-    ".control-panel :is(h3,summary){font-size:13px;}",
+    ".control-panel :is(h3,summary){font-size:13px}",
   "A descendant :is() keeps the space that makes it a descendant"
 );
 test.assert(
   minifyCss(".message-content :not(pre) > code { padding: 0 3px; }") ===
-    ".message-content :not(pre)>code{padding:0 3px;}",
+    ".message-content :not(pre)>code{padding:0 3px}",
   "A descendant :not() keeps the space that makes it a descendant"
 );
 test.assert(
-  minifyCss("body :where(.a, .b) { color: red; }") === "body :where(.a,.b){color:red;}",
+  minifyCss("body :where(.a, .b) { color: red; }") === "body :where(.a,.b){color:red}",
   "A descendant :where() keeps the space that makes it a descendant"
 );
 test.assert(
   minifyCss("@media (max-width: 860px) { body:not(.x) :is(.a, .b) { min-height: 0; } }") ===
-    "@media (max-width:860px){body:not(.x) :is(.a,.b){min-height:0;}}",
+    "@media (max-width:860px){body:not(.x) :is(.a,.b){min-height:0}}",
   "Descendant pseudo-classes survive inside a nested at-rule"
 );
 test.assert(
   minifyCss("@container (max-width: 470px) { .a :is(.btn, input) { min-height: 44px; } }") ===
-    "@container (max-width:470px){.a :is(.btn,input){min-height:44px;}}",
+    "@container (max-width:470px){.a :is(.btn,input){min-height:44px}}",
   "Descendant pseudo-classes survive inside a container query"
 );
 
 // The compound forms must stay compound: no space may be invented either.
 test.assert(
   minifyCss("body:not(.is-writer-mode) .window:is(.a, .b) { top: 0; }") ===
-    "body:not(.is-writer-mode) .window:is(.a,.b){top:0;}",
+    "body:not(.is-writer-mode) .window:is(.a,.b){top:0}",
   "A compound :is() stays attached to its subject"
 );
 test.assert(
   minifyCss(".window.is-collapsed > :not(.title-bar) { display: none; }") ===
-    ".window.is-collapsed>:not(.title-bar){display:none;}",
+    ".window.is-collapsed>:not(.title-bar){display:none}",
   "An explicit child combinator still absorbs the surrounding space"
 );
 
 // Declarations keep tightening — the space before `:` there is noise.
 test.assert(
-  minifyCss(".a { color : red; background : blue; }") === ".a{color:red;background:blue;}",
+  minifyCss(".a { color : red; background : blue; }") === ".a{color:red;background:blue}",
   "Declaration colons still tighten inside a rule body"
 );
 test.assert(
   minifyCss("@media (min-width : 100px) { .a { color: red; } }") ===
-    "@media (min-width:100px){.a{color:red;}}",
+    "@media (min-width:100px){.a{color:red}}",
   "Media feature colons still tighten"
 );
 test.assert(
-  minifyCss(":root { --x: calc(10px + 2px); }") === ":root{--x:calc(10px + 2px);}",
+  minifyCss(":root { --x: calc(10px + 2px); }") === ":root{--x:calc(10px + 2px)}",
   "A top-level rule body is still declaration context"
+);
+
+// The final declaration's semicolon is optional, so it is dropped — but only
+// when it really ends a declaration, never inside a quoted value.
+test.assert(
+  minifyCss(".a { color: red; }") === ".a{color:red}",
+  "The last declaration drops its optional semicolon"
+);
+test.assert(
+  minifyCss('.a::after { content: ";}"; color: red; }') === '.a::after{content:";}";color:red}',
+  "A semicolon inside a quoted value is never treated as a declaration end"
 );
 
 // The live bundle is the thing that ships: prove the real rules made it through.

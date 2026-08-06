@@ -61,7 +61,7 @@ export const appModulePaths = [
   "app/features/findpath.js",
   "app/features/translation.js",
   "app/features/selection-services.js",
-  "app/features/docmap.js",
+  "app/core/docmap-entry.js",
   "app/features/teachtext-writing.js",
   "app/features/writer-guide.js",
   "app/features/desktop-tools.js",
@@ -104,6 +104,11 @@ export const lazyRuntimePaths = [
   "app/features/video-transcript.js",
   "app/features/hkrr-review.js",
   "app/features/mingming-handoff-review.js",
+  "app/features/docmap.js",
+  "app/features/finder-objects.js",
+  "app/core/desktop-maintenance.js",
+  "app/core/scripting.js",
+  "app/features/control-strip.js",
   "app/features/writing-demo.js",
 ];
 

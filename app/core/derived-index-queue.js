@@ -8,6 +8,7 @@ let derivedIndexTimer = null;
 let derivedIndexRunning = false;
 let derivedIndexNeedsSync = false;
 let derivedIndexNotificationId = "";
+let derivedIndexSilent = false;
 
 function derivedIndexAddSource(target, source) {
   const content = String(source?.content || "").trim();
@@ -219,7 +220,7 @@ async function executeDerivedIndexJob(job) {
 }
 
 function updateDerivedIndexNotification(message, state) {
-  if (typeof pushSystemNotification !== "function") return;
+  if (derivedIndexSilent || typeof pushSystemNotification !== "function") return;
   derivedIndexNotificationId = pushSystemNotification(message, {
     replaceId: derivedIndexNotificationId,
     state,
@@ -307,12 +308,15 @@ async function synchronizeAndProcessDerivedIndex() {
   }
 }
 
-function scheduleDerivedIndexSync(delay = 120) {
+function scheduleDerivedIndexSync(delay = 120, silent = false) {
   derivedIndexNeedsSync = true;
+  if (silent) derivedIndexSilent = true;
   clearTimeout(derivedIndexTimer);
   derivedIndexTimer = setTimeout(() => {
     synchronizeAndProcessDerivedIndex().catch((error) => {
       console.warn("Derived index queue failed without affecting committed source state.", error);
+    }).finally(() => {
+      derivedIndexSilent = false;
     });
   }, delay);
 }
@@ -334,7 +338,7 @@ async function restoreDerivedIndexQueue() {
   return true;
 }
 
-async function rebuildDerivedIndexProject(projectId) {
+async function rebuildDerivedIndexProject(projectId, options = {}) {
   const target = String(projectId || "");
   if (!target) return false;
   const keys = Object.entries(derivedIndexState.sources)
@@ -344,13 +348,13 @@ async function rebuildDerivedIndexProject(projectId) {
   derivedIndexState.jobs = derivedIndexState.jobs.filter((job) => !keys.includes(job.sourceKey));
   removePublishedDerivedChunks(keys);
   await writeDerivedIndexState();
-  scheduleDerivedIndexSync(0);
+  scheduleDerivedIndexSync(0, options.silent === true);
   return true;
 }
 
 window.AISystem6DerivedIndexQueue = Object.freeze({
-  afterProjectCommit() {
-    scheduleDerivedIndexSync();
+  afterProjectCommit(options = {}) {
+    scheduleDerivedIndexSync(120, options.silent === true);
     return true;
   },
   restore: restoreDerivedIndexQueue,

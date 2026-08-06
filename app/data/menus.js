@@ -29,6 +29,7 @@ const editBasics = [
 const selectionTools = [
   menuItem("selection-look-up", "look_up"),
   menuItem("selection-find-sources", "find_sources"),
+  menuItem("selection-clip-file", "selection_clip_file"),
   menuItem("selection-translate", "translate_selection"),
   menuItem("make-docmap", "make_docmap"),
 ];
@@ -93,6 +94,7 @@ const finderMenus = [
     menuSeparator,
     menuItem("open-file-info", "get_info", "get-info"),
     menuItem("duplicate-selection", "duplicate", "duplicate"),
+    menuItem("make-alias", "make_alias"),
     menuItem("rename-file", "rename"),
     menuItem("attach-selected-to-cliotalk", "attach_to_cliotalk"),
     menuSeparator,

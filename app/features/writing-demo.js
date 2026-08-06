@@ -1646,6 +1646,7 @@ async function writingDemoProjectCdAndDocMap() {
     await writingDemoHighlightElement(projectCdGridEl?.querySelector(`[data-project-cd-item-id="${item.id}"]`) || projectCdGridEl, currentLanguage === "zh" ? "选中最终稿" : "Select Final Draft", { ms: 1200 });
     writingDemoShowCaption("演示：Project CD 选中成稿，现在让 DocMap 读取这份 Markdown 的结构。");
     setStatus(currentLanguage === "zh" ? "演示：正在从 Project CD 成稿生成 DocMap..." : "Demo: generating DocMap from Project CD...");
+    await ensureDocMapModule();
     await makeDocMapFromCurrentSource();
     await writingDemoWaitForAiResult({ timeoutMs: 140000, acceptModals: false });
     if (!currentDocMap) throw new Error(currentLanguage === "zh" ? "DocMap 没有生成，演示已停止。" : "DocMap was not generated; demo stopped.");

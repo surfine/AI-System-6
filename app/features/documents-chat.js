@@ -7,7 +7,7 @@ let clioTalkAttachmentPickerActive = false;
 function isClioTalkAttachableProjectFile(file) {
   if (!file || !isInActiveProject(file)) return false;
   if (file.type === "chat") return true;
-  return file.type === "text" && !String(file.artifactKind || "").trim();
+  return file.type === "text" && (!String(file.artifactKind || "").trim() || file.artifactKind === "clipping");
 }
 
 function attachProjectFileToNextClioTalkRun(fileId = selectedChatFileId) {
@@ -53,8 +53,13 @@ function openDocumentFileOrAttachToClioTalk(file) {
     attachProjectFileToNextClioTalkRun(file?.id || "");
     return;
   }
-  if (file?.type === "text") openTextFile(file.id);
-  else if (file) openChatFileWindow(file.id);
+  if (!file) return;
+  withFinderObjects(() => {
+    if (file.type === "alias") return openAliasFile(file);
+    if (openProjectFileWithStationery(file)) return;
+    if (file.type === "text") openTextFile(file.id);
+    else openChatFileWindow(file.id);
+  });
 }
 
 function renderFolderSuggestions() {
@@ -260,6 +265,14 @@ function duplicateSelectedDocumentFile() {
   saveDeskState();
   renderDocuments();
   setStatus(t("file_duplicated", copy.name));
+}
+
+// Clipping Files, Alias, and Stationery logic lives in the lazy finder-objects
+// module to stay inside the floppy budget.
+function withFinderObjects(callback) {
+  if (window.AISystem6FinderObjectsLoaded) return callback();
+  ensureFinderObjectsModule().then(callback);
+  return null;
 }
 
 function renameSelectedDocumentItem() {
@@ -530,6 +543,8 @@ function handleDropToDocumentFolder(data, targetFolderId = null) {
     moveDocumentFileToFolder(data.id, normalizedTargetId);
   } else if (data.type === "document-folder") {
     moveDocumentFolderToFolder(data.id, normalizedTargetId);
+  } else if (data.type === "clipping-selection") {
+    withFinderObjects(() => createClippingFile({ ...data, folderId: normalizedTargetId }));
   } else {
     setStatus(t("document_drop_unsupported"));
   }
@@ -634,15 +649,14 @@ function renderDocuments() {
       } else {
         const file = item;
         const selected = selectedDocumentItemKeys.has(documentSelectionKey("file", file.id)) || file.id === selectedChatFileId;
-        row.className = `finder-list-row label-${file.label || "none"}${selected ? " is-selected" : ""}`;
+        row.className = `finder-list-row label-${file.label || "none"} finder-label-${file.finderLabel || "none"}${selected ? " is-selected" : ""}`;
         row.dataset.dragType = "file";
         row.dataset.id = file.id;
         row.dataset.projectId = file.projectId;
         row.dataset.documentItemType = "file";
         row.dataset.documentItemId = file.id;
-        const fileKind = file.type === "text" ? t("kind_teachtext") : t("kind_chat");
-        const icon = file.type === "text" ? "teachText" : "chatFile";
-        const iconClass = file.type === "text" ? "teachtext-icon" : "doc-icon";
+        const fileKind = file.kindLabel || (file.type === "text" ? t("kind_teachtext") : t("kind_chat"));
+        const icon = file.iconId || (file.type === "text" ? "teachText" : "chatFile");
         row.innerHTML = `
           <span>${renderSystemIcon(icon, { size: "mini"})}${escapeHtml(file.name)}</span>
           <span>${fileKind}${file.label ? ` · ${escapeHtml(labelName(file.label))}` : ""}</span>
@@ -704,9 +718,8 @@ function renderDocuments() {
       button.dataset.documentItemType = "file";
       button.dataset.documentItemId = file.id;
       const selected = selectedDocumentItemKeys.has(documentSelectionKey("file", file.id)) || file.id === selectedChatFileId;
-      button.className = `finder-item label-${file.label || "none"}${selected ? " is-selected" : ""}`;
-      const iconClass = file.type === "text" ? "teachtext-icon" : "doc-icon";
-      const iconId = file.type === "text" ? "teachText" : "chatFile";
+      button.className = `finder-item label-${file.label || "none"} finder-label-${file.finderLabel || "none"}${selected ? " is-selected" : ""}`;
+      const iconId = file.iconId || (file.type === "text" ? "teachText" : "chatFile");
       button.innerHTML = `${renderSystemIcon(iconId, { size: "mini"})}<span>${escapeHtml(file.name)}</span>${file.label ? `<small>${escapeHtml(labelName(file.label))}</small>` : ""}`;
       button.addEventListener("click", (event) => {
         selectDocumentItemFromEvent("file", file.id, event, sortedItems);
@@ -2593,7 +2606,14 @@ function openTextFile(fileId) {
   const file = chatFiles.find((item) => item.id === fileId && item.type === "text" && isInActiveProject(item));
   if (!file) return;
 
-  if (openSavedDocMapFile(file)) {
+  // A saved DocMap opens in the tool rather than TeachText, but the tool is
+  // lazy: settle that with the eager predicate first, then re-enter once it
+  // is loaded so the "not actually a DocMap" fallback still works.
+  if (!window.AISystem6DocMapLoaded && (file.docMap || isExportedDocMapMarkdown(file.body || ""))) {
+    ensureDocMapModule().then(() => openTextFile(fileId));
+    return;
+  }
+  if (window.AISystem6DocMapLoaded && openSavedDocMapFile(file)) {
     return;
   }
 

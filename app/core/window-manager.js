@@ -1817,6 +1817,11 @@ function getActionAvailability() {
       ? finderVolumeCapabilities.canOpen
       : !!activeItem,
     "duplicate-selection": canDuplicateFinderSelection,
+    "make-alias": isFinderWindow
+      && !!currentFinderSelection
+      && (currentFinderSelection.type === "text" || currentFinderSelection.type === "chat")
+      && currentFinderSelection.canDuplicate !== false
+      && currentFinderSelection.virtual !== true,
     "new-project-disk": true,
     "open-project-disks": true,
     "open-project-disk": !!selectedProject,
@@ -1960,6 +1965,7 @@ function getActionAvailability() {
     "selection-find-sources": hasSelectionServiceText && selectedTextLength <= 420,
     "selection-copy": hasSelectionServiceText,
     "selection-clip": hasSelectionServiceText,
+    "selection-clip-file": hasSelectionServiceText,
     "selection-translate": hasSelectionServiceText,
     "selection-new-note": hasSelectionServiceText,
     "selection-ask-assistant": hasSelectionServiceText,
@@ -2358,6 +2364,10 @@ async function openWindow(name, options = {}) {
       return;
     }
   }
+  // Session restore opens windows before the user touches anything, so the tool
+  // has to be loaded here rather than only on the click path — otherwise a
+  // restored desk comes back with an empty DocMap window.
+  if (name === "docMap" && typeof ensureDocMapModule === "function") await ensureDocMapModule();
   if (name === "quickDraft" && !skipQuickDraftEntrypoint && typeof ensureQuickDraftModule === "function") {
     await ensureQuickDraftModule();
     if (typeof window.AISystem6QuickDraft?.open === "function") {
@@ -2456,7 +2466,7 @@ async function openWindow(name, options = {}) {
   if (name === "rebuildFlow") {
     renderRebuildFlow();
   }
-  if (name === "docMap") {
+  if (name === "docMap" && window.AISystem6DocMapLoaded) {
     renderDocMap();
   }
   if (name === "dictionary") {
@@ -2548,8 +2558,10 @@ async function openWindow(name, options = {}) {
         win.style.transform = "none";
         maximizeWindow(win, { top: baseTop });
         requestAnimationFrame(() => {
-          renderDocMap();
-          requestAnimationFrame(restoreDocMapCanvasView);
+          withDocMap(() => {
+            renderDocMap();
+            requestAnimationFrame(() => restoreDocMapCanvasView());
+          });
         });
       } else if (name === "systemHelp" && !writerMode) {
         win.style.left = `${avoidance.left}px`;
@@ -3344,8 +3356,10 @@ async function arrangeDocMapAssistantSplit() {
   return arrangeWindowAssistantSplit("docMap", {
     onSplitApplied() {
       requestAnimationFrame(() => {
-        renderDocMap();
-        requestAnimationFrame(restoreDocMapCanvasView);
+        withDocMap(() => {
+          renderDocMap();
+          requestAnimationFrame(() => restoreDocMapCanvasView());
+        });
       });
     },
   });
@@ -3902,7 +3916,7 @@ function zoomWindow(win) {
     win.style.transform = "none";
     win.dataset.zoomed = "false";
     avoidWritingSpineOverlap(win);
-    if(win.dataset.window==="docMap")requestAnimationFrame(restoreDocMapCanvasView);
+    if(win.dataset.window==="docMap")requestAnimationFrame(() => restoreDocMapCanvasView());
     scheduleWorkingSessionSave?.();
     return;
   }
@@ -3938,7 +3952,7 @@ function zoomWindow(win) {
   win.style.right = "auto";
   win.style.transform = "none";
   win.dataset.zoomed = "true";
-  if(win.dataset.window==="docMap")requestAnimationFrame(restoreDocMapCanvasView);
+  if(win.dataset.window==="docMap")requestAnimationFrame(() => restoreDocMapCanvasView());
   scheduleWorkingSessionSave?.();
 }
 
@@ -4115,7 +4129,7 @@ function startWindowResize(event, win) {
       applyWindowSize(pendingWidth, pendingHeight);
     }
     markWindowUserPositioned(win);
-    if(win.dataset.window==="docMap")requestAnimationFrame(restoreDocMapCanvasView);
+    if(win.dataset.window==="docMap")requestAnimationFrame(() => restoreDocMapCanvasView());
     scheduleWorkingSessionSave?.();
   }
 

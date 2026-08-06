@@ -457,7 +457,7 @@ function clioStageDocMapSource() {
 }
 
 function makeClioStageDocMap() {
-  return makeDocMapFromCurrentSource(clioStageDocMapSource() || { text: "", scope: "clioStage" });
+  return withDocMap(() => makeDocMapFromCurrentSource(clioStageDocMapSource() || { text: "", scope: "clioStage" }));
 }
 
 function bindClioStageControls() {

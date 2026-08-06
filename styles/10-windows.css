@@ -1777,6 +1777,7 @@ html:lang(zh-Hans) .title-bar h2 {
   opacity: 0.72;
   padding: 4px 7px;
   min-width: 0;
+  flex: 0 1 auto;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -2624,9 +2625,10 @@ html:lang(zh-Hans) .title-bar h2 {
 /* Reads as the plain status line it was, but a message that carries something
    is also the way into the Context Panel — a tooltip is not reachable on a
    phone, where this window runs full screen. Empty means zero width, so the
-   composer action row keeps its five grid columns. */
+   composer action row stays one line with the hint absorbing the spare space. */
 .clio-entry-loadout {
   min-width: 0;
+  flex: 0 1 auto;
   padding: 0;
   overflow: hidden;
   border: 0;
@@ -2707,8 +2709,8 @@ html:lang(zh-Hans) .title-bar h2 {
 
 .composer-action-row {
   position: relative;
-  display: grid;
-  grid-template-columns: auto auto minmax(0, 1fr) auto auto;
+  display: flex;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 8px;
   min-height: 36px;
@@ -2722,6 +2724,7 @@ html:lang(zh-Hans) .title-bar h2 {
   display: flex;
   align-items: center;
   min-width: 0;
+  flex: 0 0 auto;
 }
 
 .assistant-window .composer .composer-icon-button {
@@ -2735,6 +2738,7 @@ html:lang(zh-Hans) .title-bar h2 {
   border-width: 1px;
   border-radius: var(--clio-composer-control-radius);
   box-shadow: none;
+  flex: 0 0 auto;
 }
 
 .composer-plus-glyph {
@@ -2765,6 +2769,7 @@ html:lang(zh-Hans) .title-bar h2 {
 
 .composer-key-hint {
   min-width: 0;
+  flex: 1 1 auto;
   overflow: hidden;
   color: var(--clio-muted-copy);
   font-family: var(--clio-control-font);
@@ -2776,6 +2781,8 @@ html:lang(zh-Hans) .title-bar h2 {
 
 .composer .composer-hidden-actions {
   display: none;
+  flex: 0 1 auto;
+  min-width: 0;
 }
 
 .assistant-window .composer .composer-submit-button {
@@ -2818,6 +2825,18 @@ html:lang(zh-Hans) .title-bar h2 {
   stroke-width: 1.75;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+.composer-web-search-glyph {
+  display: block;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  shape-rendering: crispEdges;
 }
 
 .composer-stop-glyph {
@@ -3240,7 +3259,6 @@ select:focus {
   overflow-y: auto;
   padding: 10px var(--settings-scrollbar-lane-padding-right) 10px 12px;
   background: var(--settings-scrollbar-lane-bg);
-  scrollbar-gutter: stable;
 }
 
 .control-panel .settings > .control-section,

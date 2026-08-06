@@ -321,6 +321,11 @@ const systemIconPaths = {
     <path d="M6 10h3M6 15h3M6 20h3" />
     <path d="M13 12h8M13 17h7M13 22h8" />
   `,
+  alias: `
+    <path d="M6 4h16v24H6z" />
+    <path d="M10 9h8M10 14h8M10 19h6" />
+    <path d="M24 10l5 6-5 6" />
+  `,
   systemStatus: `
     <path d="M6 7h20v18H6z" />
     <path d="M10 21l4-7 4 5 4-9" />
@@ -582,6 +587,11 @@ const liquidSystemIconPaths = {
   scrap: `
     <rect class="icon-fill" x="9" y="7" width="16" height="20" rx="3" />
     <path d="M6 11h3M6 16h3M6 21h3M13 12h8M13 17h7M13 22h8" />
+  `,
+  alias: `
+    <rect class="icon-fill" x="6" y="4" width="16" height="24" rx="2.5" />
+    <path d="M10 9h8M10 14h8M10 19h6" />
+    <path class="icon-accent" d="M24 10l5 6-5 6" />
   `,
   systemStatus: `
     <rect class="icon-fill" x="6" y="7" width="20" height="18" rx="3" />

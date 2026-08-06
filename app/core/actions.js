@@ -158,15 +158,15 @@ function openFinderSelectedTeachTextFile() {
 function makeDocMapFromFinderOrCurrent() {
   const file = getFinderSelectedTeachTextFile();
   if (file?.body?.trim()) {
-    return makeDocMapFromCurrentSource({
+    return withDocMap(() => makeDocMapFromCurrentSource({
       text: file.body.trim(),
       label: file.name,
       scope: "documents",
       meta: { fileId: file.id, fileType: file.type },
       threshold: docMapMinDocumentChars,
-    });
+    }));
   }
-  return makeDocMapFromCurrentSource();
+  return withDocMap(() => makeDocMapFromCurrentSource());
 }
 
 function runStyleCheckFromMenu() {
@@ -845,6 +845,7 @@ async function openSystemConceptDocMap() {
   try {
     setStatus(currentLanguage === "zh" ? "正在用 AI 生成 AI System 6 基本概念 DocMap..." : "Generating AI System 6 Concepts DocMap with AI...");
     const concepts = await ensureSystemConceptsData();
+    await ensureDocMapModule();
     await ensureDocMapMarkmap();
     if (typeof concepts.buildDocMap !== "function") throw new Error("concept_docmap_generator_missing");
     const map = await concepts.buildDocMap(currentLanguage);
@@ -1164,9 +1165,11 @@ function getApplicationActionHandlers() {
     "selection-find-sources": () => runSelectionServiceCommand("find"),
     "selection-copy": () => runSelectionServiceCommand("copy"),
     "selection-clip": () => runSelectionServiceCommand("clip"),
+    "selection-clip-file": () => runSelectionServiceCommand("clip-file"),
     "selection-translate": () => runSelectionServiceCommand("translate"),
     "selection-new-note": () => runSelectionServiceCommand("note"),
     "selection-ask-assistant": () => runSelectionServiceCommand("ask"),
+    "make-alias": () => withFinderObjects(() => makeAliasForFinderSelection()),
     "make-docmap": makeDocMapFromFinderOrCurrent,
     "style-check-teachtext": runStyleCheckFromMenu,
     "style-check-section": () => runTeachTextStyleCheck({ sectionOnly: true }),
@@ -1213,7 +1216,7 @@ function getApplicationActionHandlers() {
     "reader-clip": clipReaderSelection,
     "reader-clip-translate": clipReaderSelectionWithTranslation,
     "reader-send-manuscript": sendReaderCopyToManuscript,
-    "reader-make-docmap": makeDocMapFromCurrentSource,
+    "reader-make-docmap": () => withDocMap(() => makeDocMapFromCurrentSource()),
     "reader-find-sources": runReaderFindSources,
     "reader-open-clio-stage": openCurrentReaderInClioStage,
     "clio-stage-docmap": async () => {
@@ -1386,15 +1389,18 @@ function getApplicationActionHandlers() {
       if (lastUserText) submitUserText(lastUserText);
     },
     "stop-generation": stopGeneration,
-    "docmap-save": saveCurrentDocMap,
-    "docmap-print-pdf": printCurrentDocMapPdf,
-    "docmap-send-question": sendDocMapNodeToQuestionSheet,
-    "docmap-insert-outline": insertDocMapNodeAsOutline,
-    "docmap-hkrr": askDocMapHkrrTheoryReview,
+    // DocMap is lazy, so these stay arrows: the registry is built once on the
+    // first action dispatch, and a bare reference would resolve the name before
+    // the module exists.
+    "docmap-save": () => withDocMap(() => saveCurrentDocMap()),
+    "docmap-print-pdf": () => withDocMap(() => printCurrentDocMapPdf()),
+    "docmap-send-question": () => withDocMap(() => sendDocMapNodeToQuestionSheet()),
+    "docmap-insert-outline": () => withDocMap(() => insertDocMapNodeAsOutline()),
+    "docmap-hkrr": () => withDocMap(() => askDocMapHkrrTheoryReview()),
     "focus-docmap-question": () => docMapQuestionInput?.focus(),
-    "docmap-layout-tree": () => setCurrentDocMapLayout("tree"),
-    "docmap-layout-radial": () => setCurrentDocMapLayout("radial"),
-    "docmap-layout-fishbone": () => setCurrentDocMapLayout("fishbone"),
+    "docmap-layout-tree": () => withDocMap(() => setCurrentDocMapLayout("tree")),
+    "docmap-layout-radial": () => withDocMap(() => setCurrentDocMapLayout("radial")),
+    "docmap-layout-fishbone": () => withDocMap(() => setCurrentDocMapLayout("fishbone")),
     "docmap-fit-view": () => {
       const docMapWindow = getWindow("docMap");
       // In a SideAsk split the DocMap window already owns its pane; maximizing
@@ -1402,10 +1408,10 @@ function getApplicationActionHandlers() {
       if (docMapWindow?.dataset.sideaskRestoreActive !== "true") {
         maximizeWindow(docMapWindow);
       }
-      requestAnimationFrame(fitDocMapCanvasToView);
+      requestAnimationFrame(() => withDocMap(() => fitDocMapCanvasToView()));
     },
-    "docmap-zoom-out": zoomDocMapOut,
-    "docmap-zoom-in": zoomDocMapIn,
+    "docmap-zoom-out": () => withDocMap(() => zoomDocMapOut()),
+    "docmap-zoom-in": () => withDocMap(() => zoomDocMapIn()),
     "clear-attached-clips": () => {
       attachedClipIds.clear();
       renderAttachedClips();

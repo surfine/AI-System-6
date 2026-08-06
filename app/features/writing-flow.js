@@ -2256,6 +2256,9 @@ async function runRebuildFlow() {
     setRebuildProgress("scan", "complete");
 
     setRebuildProgress("plan", "running", t("rebuild_planning"));
+    // The rebuild flow models, inspects and shows a DocMap, so the lazy tool
+    // has to be present before any of those three run.
+    await ensureDocMapModule();
     const sourceLabel = rebuildFlowSourceInput.dataset.sourceLabel || t("rebuild_pasted_source");
     sourceDocMap = await buildDocMapWithModel({
       text: sourceText,

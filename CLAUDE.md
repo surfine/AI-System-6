@@ -234,6 +234,15 @@ Living memory loop — when Claude repeatedly trips on something, add a line
   fail the gate.
 - **Ollama:** supported via `provider: "ollama"` → `:11434`; no env var, set the
   endpoint in Control Panel.
+- **Making an eager module lazy: bare function references bite first.** The
+  action registry (`getApplicationCommandRegistry()`, cached on the first
+  dispatch) and `wireup.js` listeners hold references like
+  `"docmap-save": saveCurrentDocMap` — those resolve the identifier at boot and
+  throw `ReferenceError` once the module is lazy, taking the whole registry with
+  them. Wrap them as arrows (`() => withX(() => f())`), ensure inside
+  `openWindow` (session restore opens windows before any click), and split out
+  any helper that render/menu-state paths call synchronously — otherwise an
+  ordinary redraw drags the module back in.
 
 ## Do Not Introduce
 
