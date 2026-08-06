@@ -1071,7 +1071,12 @@ function getApplicationActionHandlers() {
     "open-section-drafts": openSectionDrafts,
     "open-claim-check": () => openReviewDesk("facts"),
     "open-review-desk": () => openReviewDesk("style"),
-    "open-docmap": () => {
+    "open-docmap": async () => {
+      // The tabbed open path lives in the lazy DocMap module. Awaiting the
+      // load before choosing the path means the icon always opens the real
+      // tabbed surface instead of an empty window whose toolbar commands are
+      // all disabled (the pre-split fallback raced the lazy load and won).
+      await ensureDocMapModule();
       if (typeof openDocMapWindowWithTabs === "function") {
         openDocMapWindowWithTabs();
         return;

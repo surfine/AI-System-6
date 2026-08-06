@@ -1574,7 +1574,7 @@
 
           <label class="teachtext-body-label" for="teachtext-body" data-i18n="text">Text</label>
           <div class="teachtext-editor-container">
-            <textarea id="teachtext-body" rows="16" aria-label="Text" placeholder="Start writing..." data-i18n-placeholder="start_writing"></textarea>
+            <textarea id="teachtext-body" rows="16" aria-label="Text" placeholder="Start writing..." data-i18n-placeholder="start_writing" data-drop-target="editor-insert" data-editor-surface="teachtext"></textarea>
             <div id="teachtext-preview" class="teachtext-preview is-hidden"></div>
           </div>
 
@@ -1984,7 +1984,7 @@
         </div>
         <div class="window-pane teachtext-surface-pane question-sheet-pane">
           <div class="teachtext-editor-container specialized-teachtext-editor window-frame-scroller">
-            <textarea id="question-sheet-body" rows="12" placeholder="What are we trying to solve? List key terms and must-remember points." data-i18n-placeholder="question_sheet_hint"></textarea>
+            <textarea id="question-sheet-body" rows="12" placeholder="What are we trying to solve? List key terms and must-remember points." data-i18n-placeholder="question_sheet_hint" data-drop-target="editor-insert" data-editor-surface="questionSheet"></textarea>
             <div id="question-sheet-preview" class="specialized-teachtext-preview teachtext-preview is-hidden"></div>
           </div>
           <div class="teachtext-actions teachtext-surface-actions">
@@ -2333,7 +2333,7 @@
               </button>
             </div>
           </div>
-          <div id="clio-stage-viewport" class="clio-stage-viewport window-frame-scroller" tabindex="0">
+          <div id="clio-stage-viewport" class="clio-stage-viewport window-frame-scroller" tabindex="0" data-drop-target="editor-insert" data-editor-surface="clioStage">
             <div class="empty-folder-note" data-i18n="clio_stage_empty_hint">Open a Marp-style slides.md file from Reader, TeachText, or Project CD.</div>
           </div>
           <input id="clio-stage-file-input" class="visually-hidden" type="file" multiple />

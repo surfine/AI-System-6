@@ -22,15 +22,21 @@ test.assertIncludes(en, "make_alias:", "English File menu names Make Alias");
 test.assertIncludes(zh, "make_alias:", "Chinese File menu names Make Alias");
 test.assertIncludes(en, "alias_show_original:", "Get Info offers Show Original");
 test.assertIncludes(en, "alias_replace_original:", "Get Info offers Replace Original…");
+test.assertIncludes(en, "alias_replace_file_only:", "English explains why Replace stays gated for non-file targets");
+test.assertIncludes(zh, "alias_replace_file_only:", "Chinese explains why Replace stays gated for non-file targets");
 
 test.assertIncludes(finderObjects, "function createAliasFile", "aliases are created through a single factory");
 test.assertIncludes(finderObjects, 'aliasTarget: { kind: "file", id: source.id }', "aliases store their target kind and id");
 test.assertIncludes(finderObjects, "function resolveAliasTarget", "aliases resolve through a single policy function");
+test.assertIncludes(finderObjects, 'alias.kind === "scrap"', "aliases resolve Scrapbook entries");
+test.assertIncludes(finderObjects, 'alias.kind === "reference"', "aliases resolve project references");
+test.assertNotMatches(finderObjects, /kind === "docmapNode"/, "aliases never point at derived DocMap state");
 test.assertIncludes(finderObjects, "function openAliasFile", "opening an alias opens its original");
 test.assertIncludes(finderObjects, "function replaceAliasWithOriginal", "Replace Original materializes the target in place");
 test.assertIncludes(finderObjects, "copy.id = file.id", "Replace Original keeps the alias's own identity stable");
 test.assertIncludes(finderObjects, "function makeAliasForFinderSelection", "Make Alias works from a Finder selection");
 test.assertIncludes(finderObjects, "function renderAliasFileInfo", "Get Info renders alias status from the lazy module");
+test.assertIncludes(finderObjects, "only file aliases can be replaced", "Replace Original stays gated to file targets");
 
 test.assertIncludes(menus, 'menuItem("make-alias"', "the File menu declares Make Alias");
 test.assertIncludes(actions, '"make-alias":', "Make Alias has a command handler");

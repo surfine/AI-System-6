@@ -76,6 +76,15 @@ function initDragAndDrop() {
       // A drop inside a window belongs to that window, not the desktop behind it.
       if (dropTarget.dataset.dropTarget === "desktop" && event.target.closest(".window")) return;
       event.preventDefault();
+      if (dropTarget.dataset.dropTarget === "editor-insert") {
+        // Editable surfaces show a blinking insertion caret, not the dashed
+        // whole-object frame. Validation and caret positioning live in the lazy
+        // finder-objects module so the main bundle stays thin.
+        ensureFinderObjectsModule().then(() => {
+          window.AISystem6FinderObjects?.handleEditorInsertDragOver?.(dropTarget, event);
+        });
+        return;
+      }
       event.dataTransfer.dropEffect = ["clio-attachment", "droplet"].includes(dropTarget.dataset.dropTarget) ? "copy" : "move";
       dropTarget.classList.add("is-drag-over");
     }
@@ -87,6 +96,7 @@ function initDragAndDrop() {
       const rect = dropTarget.getBoundingClientRect();
       if (event.clientX <= rect.left || event.clientX >= rect.right || event.clientY <= rect.top || event.clientY >= rect.bottom) {
         dropTarget.classList.remove("is-drag-over");
+        window.AISystem6FinderObjects?.clearEditorInsertCaret?.(dropTarget);
       }
     }
   });
@@ -110,6 +120,8 @@ function initDragAndDrop() {
           withScripting(() => runDropletDrop(dropTarget.dataset.dropletAction || "", dragData));
         } else if (dropTargetType === "desktop") {
           withFinderObjects(() => createClippingFile({ ...dragData, folderId: null }));
+        } else if (dropTargetType === "editor-insert") {
+          withFinderObjects(() => insertClippingIntoEditor(dropTarget, dragData, event));
         } else if (dropTargetType === "document-folder" || dropTargetType === "document-current-folder") {
           handleDropToDocumentFolder(dragData, dropTarget.dataset.folderId || null);
         } else if (dropTargetType === "project") {

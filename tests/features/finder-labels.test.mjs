@@ -23,8 +23,13 @@ test.assertNotMatches(finderObjects, /id: "draft"/, "user labels never reuse the
 test.assertIncludes(finderObjects, "function renderFinderLabelInfo", "Get Info renders the label picker");
 test.assertIncludes(finderObjects, "fileInfoItem.finderLabel", "choosing a label writes the separate finderLabel field");
 test.assertIncludes(finderObjects, "never write them silently", "labels stay user-controlled");
+test.assertIncludes(finderObjects, "finderLabelSuggestion", "AI suggestions live in their own field");
+test.assertNotMatches(finderObjects, /finderLabelSuggestion[\s\S]{0,80}finderLabel\s*=/, "a suggestion never writes the user label directly");
+test.assertIncludes(finderObjects, "suggest", "the suggestion row is rendered in Get Info only");
+test.assertIncludes(finderObjects, "does not inherit", "folder labels never cascade to contained files");
 
 test.assertIncludes(documentsChat, 'finder-label-${file.finderLabel || "none"}', "Documents window rows carry the label class");
+test.assertIncludes(documentsChat, "folder.finderLabel", "folders carry their own label");
 test.assertIncludes(projectDisk, 'finder-label-${item.finderLabel || "none"}', "Project Disk rows carry the label class");
 test.assertIncludes(desktopRuntime, "renderFinderObjectInfo(item)", "Get Info renders labels for every file");
 test.assertIncludes(desktopRuntime, "withFinderObjects", "the label picker loads the lazy finder-objects module on first Get Info");

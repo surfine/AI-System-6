@@ -36,9 +36,16 @@ test.assertIncludes(selectionServices, 'command === "clip-file"', "Selection Ser
 test.assertIncludes(selectionServices, "withFinderObjects", "Clip as File loads the lazy finder-objects module");
 test.assertIncludes(reader, '"clipping-selection"', "Reader drags out selections as clipping payloads");
 test.assertIncludes(dragDrop, 'dropTargetType === "desktop"', "the desktop is a clipping drop target");
+test.assertIncludes(dragDrop, 'dropTargetType === "editor-insert"', "editable surfaces accept clipping insertion");
 test.assertIncludes(dragDrop, 'dragData.type === "clipping-selection"', "Clipping drops are recognized by type");
 test.assertIncludes(projectDisk, 't("kind_clipping")', "Project Disk renders the Clipping File kind label");
 test.assertIncludes(finderObjects, "function renderClippingFileInfo", "Get Info renders clipping metadata from the lazy module");
+test.assertIncludes(finderObjects, "function insertClippingIntoEditor", "insertion runs through one policy function");
+test.assertIncludes(finderObjects, "allowQuote === false", "no-direct-quote clippings are refused at the drop");
+test.assertIncludes(finderObjects, "drop point", "the insertion target follows the drop point, not activeElement");
 test.assertIncludes(html, 'id="info-finder-objects-block"', "Get Info hosts a shared finder-object detail block");
+test.assertIncludes(html, 'id="question-sheet-body"', "Question Sheet is one of the receiving surfaces");
+test.assertIncludes(en, "clipping_drop_no_quote:", "the no-quote refusal is translated in English");
+test.assertIncludes(zh, "clipping_drop_no_quote:", "the no-quote refusal is translated in Chinese");
 
 test.finish();

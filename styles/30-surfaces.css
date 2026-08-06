@@ -2328,3 +2328,37 @@ body.alarm-clock-ringing .alarm-clock-menu-icon {
 .toolbar-group.is-end {
   justify-content: flex-end;
 }
+
+/* Clipping drag-back: a 1px blinking caret marks where dropped text will land
+   on an editable surface. Position is transient drag state, set by JS as CSS
+   variables; the caret is opt-in and never appears outside a drag. */
+.drop-caret {
+  position: absolute;
+  width: 1px;
+  height: var(--drop-caret-height, 1em);
+  top: var(--drop-caret-top, 0);
+  left: var(--drop-caret-left, 0);
+  background: var(--ink);
+  pointer-events: none;
+}
+
+.drop-caret-mirror {
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
+  white-space: pre-wrap;
+  width: var(--drop-mirror-width, 0);
+  padding: var(--drop-mirror-padding, 0);
+}
+
+@keyframes caret-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .drop-caret {
+    animation: caret-blink 0.6s step-end infinite;
+  }
+}

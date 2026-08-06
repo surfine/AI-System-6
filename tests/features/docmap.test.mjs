@@ -19,9 +19,12 @@ const css = read("styles/20-reader-docmap.css");
 const bootstrap = read("app.js");
 const cloudRoute = read("src/server/routes/cloud-chat.js");
 const localChat = read("src/server/chat.js");
+const actions = read("app/core/actions.js");
 
 test.assertIncludes(app, 'id="docmap-print-pdf"', "DocMap command menu exposes Print Map to PDF");
 test.assertIncludes(app, 'id="docmap-layout-toggle"', "DocMap toolbar exposes the layout picker group");
+test.assertIncludes(actions, '"open-docmap": async () => {', "the DocMap open command awaits the lazy module");
+test.assertIncludes(actions, "await ensureDocMapModule();", "the DocMap open command loads the tool before choosing the tabbed open path");
 test.assertIncludes(app, 'id="docmap-layout-right"', "DocMap exposes the one-side layout as a direct choice");
 test.assertIncludes(app, 'id="docmap-layout-balanced"', "DocMap exposes the symmetric layout as a direct choice");
 test.assertIncludes(app, 'id="docmap-focus-root"', "DocMap exposes a phone-sized branch focus action");

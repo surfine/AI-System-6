@@ -626,7 +626,7 @@ function renderDocuments() {
       if (item.type === "folder") {
         const folder = item;
         const selected = selectedDocumentItemKeys.has(documentSelectionKey("folder", folder.id)) || folder.id === selectedDocumentFolderId;
-        row.className = `finder-list-row${selected ? " is-selected" : ""}`;
+        row.className = `finder-list-row finder-label-${folder.finderLabel || "none"}${selected ? " is-selected" : ""}`;
         row.dataset.dragType = "document-folder";
         row.dataset.id = folder.id;
         row.dataset.projectId = folder.projectId;
@@ -688,7 +688,7 @@ function renderDocuments() {
       button.type = "button";
       button.draggable = true;
       const selected = selectedDocumentItemKeys.has(documentSelectionKey("folder", folder.id)) || folder.id === selectedDocumentFolderId;
-      button.className = `finder-item${selected ? " is-selected" : ""}`;
+      button.className = `finder-item finder-label-${folder.finderLabel || "none"}${selected ? " is-selected" : ""}`;
       button.dataset.dragType = "document-folder";
       button.dataset.id = folder.id;
       button.dataset.projectId = folder.projectId;

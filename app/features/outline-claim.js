@@ -5,6 +5,7 @@
 
 let selectedClaimSectionIndex = 0;
 let currentClaimCheckScope = { type: "manuscript", label: "" };
+let currentClaimCheckFileId = "";
 
 // Shared heuristic for spotting checkable claims (numbers, years, percentages,
 // announcements, absolutes) used by both the local outline extraction and the
@@ -1402,6 +1403,7 @@ async function runClaimCheck(options = {}) {
   currentClaimCheckScope = scope;
   const taskKey = sectionOnly ? "claim-check-section" : "claim-check";
   const runningLabel = sectionOnly ? t("running_section_check", section.title) : t("running_check");
+  currentClaimCheckFileId = activeTextFileId || "";
 
   if (!beginLongTask(taskKey, runningLabel)) return;
   openReviewDesk("facts");
@@ -1545,6 +1547,15 @@ function markClaimCheckComplete(results = []) {
   };
   project.updatedAt = new Date().toISOString();
   saveDeskState();
+  // Review Desk / Claim Check is the one producer of Finder Label suggestions:
+  // it already read the whole manuscript and emitted structured risk. The
+  // suggestion is written to the separate finderLabelSuggestion field (lazy
+  // module, kept out of the boot bundle); the user adopts it in Get Info.
+  if (typeof ensureHkrrReviewModule === "function") {
+    ensureHkrrReviewModule().then(() => {
+      suggestFinderLabelForClaimCheck(results, claimResultsEl?.innerText || "", currentClaimCheckFileId);
+    });
+  }
   setStatus(scope.type === "section" ? t("claim_section_check_done", claimCheckScopeLabel(scope)) : t("claim_check_done"));
 }
 

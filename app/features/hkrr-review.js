@@ -36,3 +36,41 @@ async function saveHkrrReview() {
   const item = addProjectCdItem(markdown, `HKRR Review - ${teachTextNameInput.value || t("review_desk")}`);
   if (item) openWindow("projectCd");
 }
+
+// Finder Label suggestions: the Review Desk / Claim Check is the one producer
+// that may suggest a user label (counter / verify) — it reads the whole
+// manuscript and emits structured risk. It writes finderLabelSuggestion only;
+// finderLabel itself is written solely by the user in Get Info, so a
+// suggestion can never silently color a file. Suggestions are overwritten by
+// the next Claim Check; ignoring one costs nothing.
+function suggestFinderLabelForClaimCheck(results = [], reportText = "", fileId = "") {
+  if (!fileId) return;
+  const file = chatFiles.find((item) => item.id === fileId && isInActiveProject(item));
+  if (!file) return;
+  const verdicts = (Array.isArray(results) ? results : []).map((entry) => String(entry.verdict || "")).filter(Boolean);
+  const text = String(reportText || "");
+  const mentions = (markers) => markers.some((marker) => marker && text.includes(marker));
+  const contradiction = verdicts.includes(t("claim_verdict_contradiction"))
+    || mentions([t("claim_verdict_contradiction"), "Possible Contradiction", "可能矛盾"]);
+  const insufficient = verdicts.includes(t("claim_verdict_insufficient"))
+    || mentions([t("claim_verdict_insufficient"), "Evidence Insufficient", "证据不足"])
+    || verdicts.includes(t("claim_verdict_manual"))
+    || mentions([t("claim_verdict_manual"), "Needs Manual Review", "需人工核实"]);
+  let suggestion = null;
+  if (contradiction) {
+    suggestion = { id: "counter", reason: t("finder_label_suggestion_reason_contradiction") };
+  } else if (insufficient) {
+    suggestion = { id: "verify", reason: t("finder_label_suggestion_reason_insufficient") };
+  }
+  if (!suggestion) return;
+  file.finderLabelSuggestion = {
+    id: suggestion.id,
+    reason: suggestion.reason,
+    by: "claim-check",
+    at: new Date().toISOString(),
+  };
+  file.updatedAt = new Date().toISOString();
+  saveDeskState();
+  renderDocuments();
+  renderProjectDisks();
+}
