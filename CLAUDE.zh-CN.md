@@ -1,5 +1,5 @@
 <!-- canonical-source: CLAUDE.md -->
-<!-- source-sha256: 6a485430dfff4334cf2f4def2eb5abd3eefddb2f790a847d90cc3ba978609c11 -->
+<!-- source-sha256: afb0245edf07d6cc1258917d30f38a9cd3af8f91646e395db4e92d1b7a01da13 -->
 
 # AI System 6 — CLAUDE.md
 
@@ -43,6 +43,11 @@ Scrapbook、ClioTalk，以及创意实验室（Cover Glass、CMF Studio）。
   反对意见、使用细节、压力点、交付摩擦。稀薄的提示会产出嘴替式的文字。
 - **Review Desk 必须检查 AI 嘴替漂移**，同时检查事实与结构风险：过于规整的节奏、通用的
   概述措辞、缺失的个人细节、被抹平的味道、以及叠加压力的建议。
+- **移动端/触摸行为决策（不要漂移）：** 保留 System 6 的小触摸目标（不要放大）；
+  触屏菜单栏图标按钮不加文字标签；桌面图标单击选中、双击打开（首次单击显示一次性
+  “再点一次打开”气泡）；保留 Apple 菜单的 “English” 语言切换项；保留关机文案
+  “It is now safe to shut down AI System 6.”；控制面板是桌面附件（移动端为居中
+  悬浮列，不是全屏应用页）；Balloon Help 在触屏默认关闭（`hover: hover`）。
 
 ## Run
 
@@ -188,6 +193,9 @@ Outline / Section Drafts / TeachText 是同一份 Markdown 文档的联动视图
 
 活的记忆回路——当 Claude 反复栽在某处时，加一行（保持紧凑）：
 
+- **并行 agent 会在任务中途提交 / 切换分支。** 暂存前重新检查
+  `git branch --show-current` 和 `git status`。会话经验沉淀见
+  AGENT-LESSONS.zh-CN.md。
 - **改了源，忘了重建。** 浏览器加载的是 `app.bundle.js`。任何 `app/` 或 `app.js` 改动后跑
   `npm run build:app`。
 - **`verify:release` 构建戳失败。** `build-info.json` 需要 `YYYYMMDD.N`。

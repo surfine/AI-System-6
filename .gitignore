@@ -1,5 +1,6 @@
 node_modules/
 .pkg-cache/
+.cache/
 .DS_Store
 app.bundle.js
 app/legacy/

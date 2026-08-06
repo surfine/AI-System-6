@@ -16,11 +16,6 @@ let dictationFieldButton = null;
 let dictationFieldButtonTarget = null;
 let dictationFieldButtonHideTimer = null;
 
-function isUsableTextInput(target) {
-  const textTarget = getVisibleEditableTextTarget(target);
-  return !!textTarget;
-}
-
 function getEditableTextTarget(target) {
   if (!target) return null;
   if (target.closest?.('[data-dictation="off"]')) return null;
@@ -181,7 +176,11 @@ function hasAdjacentControlToRight(rect, buttonWidth) {
   return !!element?.closest?.("button, [role='button'], input[type='button'], input[type='submit']");
 }
 
-function rectsOverlap(a, b, inset = 0) {
+// Dictation positions a floating control against an editable field and needs
+// strict inset overlap semantics. The window manager owns the gap-based
+// rectsOverlap; the concatenated bundle keeps only one definition per name, so
+// this one must not share that name.
+function dictationRectsOverlap(a, b, inset = 0) {
   return a.left < b.right - inset
     && a.right > b.left + inset
     && a.top < b.bottom - inset
@@ -201,7 +200,7 @@ function dictationButtonWouldCoverControl(candidate, target) {
     if (control.closest?.(".is-hidden") || control.hidden || control.disabled) return false;
     const rect = control.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0) return false;
-    return rectsOverlap(candidateRect, rect, 2);
+    return dictationRectsOverlap(candidateRect, rect, 2);
   });
 }
 

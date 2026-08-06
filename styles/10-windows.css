@@ -211,8 +211,8 @@ body.quick-draft-focus .writing-spine-panel {
 }
 
 .window.is-collapsed {
-  height: auto !important;
-  min-height: 0 !important;
+  height: auto;
+  min-height: 0;
 }
 
 /* WindowShade ends at the shared outer window frame. Once the content is
@@ -239,6 +239,7 @@ body.quick-draft-focus .writing-spine-panel {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  background-color: var(--pane-bg);
 }
 .assistant-window {
   left: clamp(28px, 6vw, 96px);
@@ -317,6 +318,7 @@ body.quick-draft-focus .writing-spine-panel {
 
 .rag-panel .window-pane {
   overflow: auto;
+  background-color: var(--pane-bg);
 }
 
 .text-disk-window {
@@ -389,6 +391,7 @@ body.quick-draft-focus .writing-spine-panel {
 
 .guide-window .window-pane {
   overflow: auto;
+  background-color: var(--pane-bg);
 }
 
 .note-pad-window {
@@ -1133,8 +1136,8 @@ html:lang(zh-Hans) .title-bar h2 {
   padding:
     calc(4px - var(--details-bar-optical-rise)) 8px
     calc(4px + var(--details-bar-optical-rise));
-  border-bottom: 1px solid var(--ink);
-  background: var(--paper);
+  border-bottom: 1px solid var(--details-bar-border);
+  background: var(--details-bar-bg);
   flex-shrink: 0;
 }
 
@@ -1425,6 +1428,7 @@ html:lang(zh-Hans) .title-bar h2 {
   display: flex;
   flex-direction: column;
   width: 100%;
+  background-color: var(--pane-bg);
 }
 
 .finder-list-header {
@@ -1460,9 +1464,23 @@ html:lang(zh-Hans) .title-bar h2 {
   font-size: 11px;
 }
 
-.finder-list-row:hover, .finder-list-row.is-selected {
-  background: var(--ink) !important;
-  color: var(--paper) !important;
+.applications-window .finder-section-label {
+  grid-column: 1 / -1;
+  justify-self: stretch;
+  padding: 2px 0 0;
+  color: var(--shade-dark);
+  font-size: var(--system-caption-size);
+  line-height: 1.25;
+}
+
+.finder-list-row:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.finder-list-row.is-selected {
+  background: var(--ink);
+  color: var(--paper);
 }
 
 .finder-citation-jump {
@@ -1795,7 +1813,7 @@ html:lang(zh-Hans) .title-bar h2 {
 .messages {
   flex: 1;
   overflow-y: auto;
-  background: var(--paper);
+  background: var(--messages-bg);
 }
 
 .message {
@@ -2856,8 +2874,9 @@ html:lang(zh-Hans) .title-bar h2 {
 }
 
 .assistant-window .composer-file-button[aria-expanded="true"] {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--composer-file-active-bg);
+  color: var(--composer-file-active-fg);
+  border-color: var(--composer-file-active-border);
 }
 
 .assistant-window .composer-file-button[aria-expanded="true"] .composer-plus-glyph::before,
@@ -2928,8 +2947,8 @@ html:lang(zh-Hans) .title-bar h2 {
 
 .compose-tools-menu button:hover,
 .compose-tools-menu button:focus-visible {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--compose-menu-hover-bg);
+  color: var(--compose-menu-hover-fg);
 }
 
 .compose-tools-menu button:focus-visible {
@@ -2978,10 +2997,11 @@ html:lang(zh-Hans) .title-bar h2 {
 .compose-tool-copy b {
   font-weight: 700;
   line-height: 1.18;
+  color: var(--compose-tool-copy-b);
 }
 
 .compose-tool-copy small {
-  color: var(--shade-dark);
+  color: var(--compose-tool-copy-small);
   font-family: var(--text-font);
   font-size: 11px;
   line-height: 1.25;
@@ -3051,7 +3071,7 @@ input[type="number"] {
   width: 100%;
   border: var(--system-control-line) solid var(--ink);
   border-radius: 0;
-  background: var(--paper);
+  background: var(--field-bg);
   color: var(--ink);
   padding: 6px;
   outline: none;
@@ -3072,7 +3092,11 @@ input.is-derived-name {
   box-shadow: inset 1px 1px 0 var(--shade);
 }
 
-textarea:focus,
+textarea:focus {
+  box-shadow: 0 0 0 2px var(--shade-dark);
+  background: var(--field-focus-bg);
+}
+
 input:focus {
   box-shadow: 0 0 0 2px var(--shade-dark);
 }
@@ -3211,10 +3235,15 @@ select:focus {
    instead of standing out as the one heavy control on the surface. */
 .btn.default {
   border-width: var(--system-control-line);
-  box-shadow:
-    0 0 0 var(--system-control-line) var(--paper),
-    0 0 0 calc(var(--system-control-line) * 3) var(--ink),
-    inset -1px -1px 0 var(--shade-dark);
+  background: var(--btn-default-bg);
+  color: var(--btn-default-fg);
+  text-shadow: var(--btn-default-text-shadow);
+  box-shadow: var(--btn-default-shadow);
+}
+
+.btn.default:active:not(:disabled):not(.is-disabled) {
+  background: var(--btn-default-active-bg);
+  color: var(--btn-default-active-fg);
 }
 
 .btn.danger {
@@ -3308,8 +3337,10 @@ select:focus {
   grid-template-columns: minmax(0, 1fr);
   gap: 8px;
   padding: 10px 12px 12px;
-  border: var(--system-control-line) solid var(--ink);
+  border: var(--system-border);
   background: var(--paper);
+  background-color: var(--control-section-bg);
+  box-shadow: var(--system-inset);
 }
 
 .control-section h3 {
@@ -3595,7 +3626,7 @@ select:focus {
 .control-status,
 .control-footer {
   padding-top: 4px;
-  border-top: 1px dotted var(--shade-dark);
+  border-top: var(--control-status-border);
   font-size: 11px;
   line-height: 1.35;
   overflow-wrap: anywhere;
@@ -3873,6 +3904,7 @@ body.is-cloud-active .cloud-state-panel {
   cursor: pointer;
   font-family: var(--title-font);
   font-size: 13px;
+  color: var(--control-summary-fg);
   font-weight: 700;
   list-style-position: inside;
 }
@@ -3981,6 +4013,7 @@ body.is-cloud-active .cloud-state-panel {
   gap: 16px;
   align-items: start;
   justify-items: center;
+  background-color: var(--pane-bg);
 }
 
 .disk-grid {

@@ -496,10 +496,6 @@ function runSelectionAskAssistant(context = getSelectionServiceContext()) {
   setStatus(t("selection_sent_assistant"));
 }
 
-async function runSelectionTranslate(context = getSelectionServiceContext()) {
-  return openTranslationPadFromSelection(context);
-}
-
 async function runSelectionServiceCommand(command) {
   const context = getSelectionServiceContext() || lastSelectionServiceContext;
   if (command === "lookup") {

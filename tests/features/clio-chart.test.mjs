@@ -223,7 +223,7 @@ test.assertIncludes(zh, 'clio_chart_source_short: "数据"', "Chinese identifies
 test.assertIncludes(manifest, '"app/features/clio-chart.js"', "the module is registered as a lazy runtime path");
 test.assertNotIncludes(html, "app/features/clio-chart.js", "a lazy module is never added to the startup script tags");
 test.assertIncludes(styleManifest, '"styles/87-clio-chart.css"', "the stylesheet is in the style manifest");
-test.assertIncludes(config, "async function ensureClioChartModule()", "there is a lazy loader for the module");
+test.assertIncludes(config, 'createLazyModuleLoader("AISystem6ClioChartLoaded", ["app/features/clio-chart.js"])', "there is a lazy loader for the module");
 test.assertIncludes(html, 'data-window="clioChart"', "the window is declared in index.html");
 test.assertIncludes(multiFinder, 'clioChart: "clioChart"', "the window maps to its own application");
 test.assertIncludes(menus, "clioChart: clioChartMenus", "the application owns a menu set");

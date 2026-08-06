@@ -4,10 +4,6 @@
 
 
 
-function clearChatToTrash() {
-  return startNewClioTalkConversation();
-}
-
 function clipLastReplyToScrapbook() {
   if (!lastAssistantText) {
     setStatus(t("no_reply_clip"));

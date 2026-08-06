@@ -20,6 +20,10 @@ window.AISystem6PromptFilesRuntime = (() => {
     return (window.AISystem6PromptFiles || []).find((item) => item.id === id) || null;
   }
 
+  function systemPromptPath(system) {
+    return `System Folder/AI 提示词/${system.category}/${system.name}`;
+  }
+
   function projectPromptFile(projectId, id, artifactKind) {
     const folderName = artifactKind === overrideKind ? "提示词覆盖" : artifactKind === disabledKind ? "已停用提示词" : "运行记录";
     const folderKind = artifactKind === overrideKind ? "prompt-overrides" : artifactKind === disabledKind ? "disabled-prompts" : "run-records";
@@ -43,8 +47,8 @@ window.AISystem6PromptFilesRuntime = (() => {
     if (!system) return { status: "missing", source: null, path: "", body: "", hash: "" };
     // System-boundary records are auditable system files, never project policy.
     if (system.editable !== "project") {
-      const body = system.bodies?.[String(language).startsWith("en") ? "en" : "zh"] || system.body;
-      return body ? { status: "ready", source: "system-forced", path: system.path, body, hash: system.hash } : { status: "missing", source: null, path: system.path, body: "", hash: "" };
+      const body = system.bodies?.[String(language).startsWith("en") ? "en" : "zh"];
+      return body ? { status: "ready", source: "system-forced", path: systemPromptPath(system), body, hash: system.hash } : { status: "missing", source: null, path: systemPromptPath(system), body: "", hash: "" };
     }
     const disabled = projectId && projectPromptFile(projectId, id, disabledKind);
     if (disabled) return { status: "disabled", source: null, path: disabled.path || `ClioTalk/已停用提示词/${system.name}`, body: "", hash: disabled.hash || "" };
@@ -54,9 +58,9 @@ window.AISystem6PromptFilesRuntime = (() => {
       if (!body) return { status: "missing", source: null, path: override.path || `ClioTalk/提示词覆盖/${system.name}`, body: "", hash: "" };
       return { status: "ready", source: "project", path: override.path || `ClioTalk/提示词覆盖/${system.name}`, body, hash: hashPromptBody(body) };
     }
-    const body = system.bodies?.[String(language).startsWith("en") ? "en" : "zh"] || system.body;
-    if (!body) return { status: "missing", source: null, path: system.path, body: "", hash: "" };
-    return { status: "ready", source: "system", path: system.path, body, hash: system.hash };
+    const body = system.bodies?.[String(language).startsWith("en") ? "en" : "zh"];
+    if (!body) return { status: "missing", source: null, path: systemPromptPath(system), body: "", hash: "" };
+    return { status: "ready", source: "system", path: systemPromptPath(system), body, hash: system.hash };
   }
 
   function upsertProjectPromptOverride(projectId, id = defaultPromptId, body = "") {
@@ -84,13 +88,13 @@ window.AISystem6PromptFilesRuntime = (() => {
     const existing = projectPromptFile(projectId, id, overrideKind);
     if (existing) return existing;
     const system = systemPrompt(id);
-    if (!system?.body || system.editable !== "project" || !projectId || typeof chatFiles === "undefined") return null;
+    if (!system?.bodies?.zh || system.editable !== "project" || !projectId || typeof chatFiles === "undefined") return null;
     const folder = ensureProjectPromptFolder(projectId, "提示词覆盖");
     const now = new Date().toISOString();
     const record = {
       id: crypto.randomUUID(), projectId, folderId: folder?.id || null, type: "text",
       artifactKind: overrideKind, promptId: id, name: system.name, path: `ClioTalk/提示词覆盖/${system.name}`,
-      body: system.body, hash: hashPromptBody(system.body), createdAt: now, updatedAt: now,
+      body: system.bodies.zh, hash: hashPromptBody(system.bodies.zh), createdAt: now, updatedAt: now,
     };
     chatFiles.unshift(record);
     return record;

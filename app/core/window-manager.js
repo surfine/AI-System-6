@@ -28,6 +28,17 @@ function getWindow(name) {
 }
 
 const centeredSystemWindowNames = new Set(["about", "guide"]);
+const writerModeCssOwnedWindows = new Set(["teachText", "assistant", "findPath", "contextPanel"]);
+// Windows the narrow non-writer work-area CSS does NOT own: dialogs, system
+// pages, and Desk Accessories keep their own overlay vocabulary, so they keep
+// their inline geometry. Mirrors the :not(...) exclusion list in the
+// body:not(.is-writer-mode) .window work-area rule (60-responsive.css).
+const mobileWorkAreaExcludedWindowNames = new Set([
+  "about", "saveChat", "guide", "control", "chooser", "findFile", "notePad",
+  "clipboard", "dictation", "translationPad", "dictionary", "keyCaps",
+  "systemStatus", "notificationCenter", "writingBell", "alarmClock",
+  "calculator", "puzzle", "memoryCards", "modelMeter",
+]);
 function isCenteredSystemWindow(winOrName) {
   const name = typeof winOrName === "string" ? winOrName : winOrName?.dataset.window;
   return centeredSystemWindowNames.has(name);
@@ -83,11 +94,13 @@ function visibleLayeredWindows() {
 
 function compactWindowLayerStack() {
   visibleLayeredWindows()
+    .filter((win) => !(writerMode && (writerModeCssOwnedWindows.has(win.dataset.window) || win.dataset.window === "systemHelp")))
     .sort((a, b) => Number(a.style.zIndex || 0) - Number(b.style.zIndex || 0))
     .forEach((win, index) => {
       win.style.zIndex = windowLayerCompactBaseZ + index;
     });
-  topZ = windowLayerCompactBaseZ + visibleLayeredWindows().length;
+  topZ = windowLayerCompactBaseZ
+    + visibleLayeredWindows().filter((win) => !(writerMode && (writerModeCssOwnedWindows.has(win.dataset.window) || win.dataset.window === "systemHelp"))).length;
 }
 
 function nextWindowLayerZ(minimum = windowLayerBaseZ) {
@@ -98,6 +111,12 @@ function nextWindowLayerZ(minimum = windowLayerBaseZ) {
 
 function setWindowLayerZ(win, value) {
   if (!win) return windowLayerBaseZ;
+  // Writing-mode split panes are CSS-owned layers (--z-local-base /
+  // --z-local-popover): an inline z-index would override those tokens and
+  // stack the panes above menus and popovers.
+  if (writerMode && (writerModeCssOwnedWindows.has(win.dataset.window) || win.dataset.window === "systemHelp")) {
+    return windowLayerBaseZ;
+  }
   const numeric = Number(value);
   const z = Number.isFinite(numeric)
     ? Math.min(windowLayerMaxZ, Math.max(windowLayerBaseZ, numeric))
@@ -155,6 +174,90 @@ function applyWindowFrame(win, frame = {}) {
   setInlineStyleValue(win, "height", frame.height || "");
   setInlineStyleValue(win, "max-height", frame.maxHeight || "");
   setInlineStyleValue(win, "transform", frame.transform || "none");
+}
+
+// Writing-mode split windows are CSS-owned (60-responsive.css): any inline
+// frame left behind by an earlier placement, boot-time spine reflow, or a
+// previous non-writer session would override the non-!important CSS rules.
+// Drop the stale geometry so the stylesheet owns the layout again.
+function clearWindowInlineGeometry(win) {
+  if (!win?.style) return;
+  for (const property of [
+    "left", "right", "top", "bottom", "width", "height", "max-height", "transform",
+  ]) {
+    win.style.removeProperty(property);
+  }
+}
+
+function isMobileWorkAreaCssOwnedWindow(win) {
+  if (!win || writerMode) return false;
+  const name = win.dataset.window;
+  if (mobileWorkAreaExcludedWindowNames.has(name)) return false;
+  if (
+    win.classList.contains("is-mobile-fullscreen")
+    || win.classList.contains("is-mobile-dialog")
+    || win.classList.contains("is-mobile-system-page")
+  ) return false;
+  return true;
+}
+
+function isMobileWorkAreaCssOwned(win) {
+  return isMobileWorkAreaCssOwnedWindow(win) && isNarrowViewport();
+}
+
+function snapshotMobileWorkAreaFrame(win) {
+  if (!win) return;
+  // Only the inline frame matters here: computed fallbacks (e.g. a hidden or
+  // mid-resize rect of 0x0) would corrupt the restore. Empty inline values
+  // stay empty and the CSS-owned mobile layout keeps them empty.
+  win.dataset.mobileWorkAreaRestoreLeft = inlineStyleValue(win, "left");
+  win.dataset.mobileWorkAreaRestoreTop = inlineStyleValue(win, "top");
+  win.dataset.mobileWorkAreaRestoreRight = inlineStyleValue(win, "right");
+  win.dataset.mobileWorkAreaRestoreWidth = inlineStyleValue(win, "width");
+  win.dataset.mobileWorkAreaRestoreHeight = inlineStyleValue(win, "height");
+  win.dataset.mobileWorkAreaRestoreMaxHeight = inlineStyleValue(win, "max-height");
+  win.dataset.mobileWorkAreaRestoreTransform = inlineStyleValue(win, "transform");
+  win.dataset.mobileWorkAreaSnapshot = "true";
+}
+
+function restoreMobileWorkAreaFrame(win) {
+  if (!win) return;
+  setInlineStyleValue(win, "left", win.dataset.mobileWorkAreaRestoreLeft || "");
+  setInlineStyleValue(win, "top", win.dataset.mobileWorkAreaRestoreTop || "");
+  setInlineStyleValue(win, "right", win.dataset.mobileWorkAreaRestoreRight || "");
+  setInlineStyleValue(win, "width", win.dataset.mobileWorkAreaRestoreWidth || "");
+  setInlineStyleValue(win, "height", win.dataset.mobileWorkAreaRestoreHeight || "");
+  setInlineStyleValue(win, "max-height", win.dataset.mobileWorkAreaRestoreMaxHeight || "");
+  setInlineStyleValue(win, "transform", win.dataset.mobileWorkAreaRestoreTransform || "");
+  delete win.dataset.mobileWorkAreaRestoreLeft;
+  delete win.dataset.mobileWorkAreaRestoreTop;
+  delete win.dataset.mobileWorkAreaRestoreRight;
+  delete win.dataset.mobileWorkAreaRestoreWidth;
+  delete win.dataset.mobileWorkAreaRestoreHeight;
+  delete win.dataset.mobileWorkAreaRestoreMaxHeight;
+  delete win.dataset.mobileWorkAreaRestoreTransform;
+  delete win.dataset.mobileWorkAreaSnapshot;
+}
+
+// Narrow non-writer work-area windows are CSS-owned: snapshot + drop stale
+// desktop inline frames on the way in, restore them on the way back out so a
+// wide arrangement survives a phone detour. Mirrors the mobile
+// work-area rule in 60-responsive.css (no !important after the migration).
+function syncMobileWorkAreaFrames() {
+  if (writerMode) return;
+  const narrow = isNarrowViewport();
+  document.querySelectorAll(".window").forEach((win) => {
+    if (!isMobileWorkAreaCssOwnedWindow(win)) return;
+    if (win.classList.contains("is-hidden") || win.classList.contains("is-app-hidden")) return;
+    if (narrow) {
+      if (win.dataset.mobileWorkAreaSnapshot !== "true") {
+        snapshotMobileWorkAreaFrame(win);
+        clearWindowInlineGeometry(win);
+      }
+    } else if (win.dataset.mobileWorkAreaSnapshot === "true") {
+      restoreMobileWorkAreaFrame(win);
+    }
+  });
 }
 
 function windowFrameValue(value, fallback = "") {
@@ -243,6 +346,17 @@ function windowPlacementMetric(property, fallback) {
   return Number.isFinite(value) && value >= 0 ? value : fallback;
 }
 
+// The Control Strip floats at the bottom edge when expanded. Default window
+// placement subtracts its thickness so a freshly opened window does not land
+// under the strip; the user can still drag a window over it freely. The
+// reserve is a body class toggled by the strip module, not a measurement of
+// the strip itself.
+function controlStripPlacementReserve() {
+  return document.body.classList.contains("control-strip-expanded")
+    ? windowPlacementMetric("--control-strip-thickness", 26)
+    : 0;
+}
+
 function windowPlacementOverlapArea(rect, obstacle, gap = 0) {
   const width = Math.max(0, Math.min(rect.right, obstacle.right + gap) - Math.max(rect.left, obstacle.left - gap));
   const height = Math.max(0, Math.min(rect.bottom, obstacle.bottom + gap) - Math.max(rect.top, obstacle.top - gap));
@@ -278,6 +392,8 @@ function windowHasOwnedPlacement(win) {
 // alternative frame of the same size can reduce their overlap.
 function placeNewWindowAvoidingVisibleWindows(win) {
   if (windowHasOwnedPlacement(win) || win.dataset.userPositioned === "true") return false;
+  if (writerMode && writerModeCssOwnedWindows.has(win.dataset.window)) return false;
+  if (writerMode && win.dataset.window === "systemHelp") return false;
   const desktop = document.querySelector(".desktop");
   const desktopRect = desktop?.getBoundingClientRect();
   if (!desktopRect) return false;
@@ -290,10 +406,13 @@ function placeNewWindowAvoidingVisibleWindows(win) {
   const rect = win.getBoundingClientRect();
   const width = rect.width || 360;
   const height = rect.height || 280;
+  const stripReserve = (typeof document !== "undefined" && document.body?.classList.contains("control-strip-expanded"))
+    ? windowPlacementMetric("--control-strip-thickness", 26)
+    : 0;
   const minLeft = Math.max(edge, avoidance.left);
   const minTop = Math.max(edge, writingSpineAlignedTopForWindow(win, edge));
   const maxLeft = Math.max(minLeft, desktopRect.width - avoidance.right - edge - width);
-  const maxTop = Math.max(minTop, desktopRect.height - edge - height);
+  const maxTop = Math.max(minTop, desktopRect.height - edge - stripReserve - height);
   const workWidth = maxLeft - minLeft + width;
   const workHeight = maxTop - minTop + height;
   if (width + gap >= workWidth || height + gap >= workHeight) return false;
@@ -724,6 +843,10 @@ function focusWindow(win, reveal=false) {
 
 function isPortraitDocumentFlow() {
   return window.matchMedia("(max-width:860px) and (orientation:portrait)").matches;
+}
+
+function isNarrowViewport() {
+  return window.matchMedia("(max-width: 860px)").matches;
 }
 
 // Mobile is a presentation system, not a collection of one-off app patches.
@@ -1228,8 +1351,19 @@ function mobileWindowPresentation(win) {
 
 function syncMobileWindowPresentationClasses() {
   const portrait = isPortraitDocumentFlow();
+  const narrow = isNarrowViewport();
   document.querySelectorAll(".window").forEach((win) => {
     mobilePresentationClassNames.forEach((className) => win.classList.remove(className));
+    win.classList.remove("is-mobile-work-area");
+    // The mobile work-area CSS owns one shared frame for app pages and Finder
+    // pages in every narrow orientation. This replaces the giant :not(...)
+    // exclusion lists that used to enumerate every dialog / DA / system page.
+    if (narrow && !writerMode) {
+      const role = mobileWindowPresentation(win);
+      if (role === "app-page" || role === "finder-page") {
+        win.classList.add("is-mobile-work-area");
+      }
+    }
     if (!portrait) return;
     const role = mobileWindowPresentation(win);
     if (role) win.classList.add(`is-mobile-${role}`);
@@ -1411,8 +1545,8 @@ function scheduleWritingSpineTitleAlignment(win) {
   window.setTimeout(align, 220);
 }
 
-function usePortraitWindowFlow(win) {
-  if (!win || !isPortraitDocumentFlow() || writerMode) return false;
+function useNarrowWindowFlow(win) {
+  if (!win || !isNarrowViewport() || writerMode) return false;
   if (getWindowAppId(win) === "accessories") return false;
   win.style.left = "";
   win.style.top = "";
@@ -1454,7 +1588,7 @@ function placeCenteredSystemWindow(win) {
   win.style.right = "auto";
   win.style.height = "";
 
-  if (isPortraitDocumentFlow()) {
+  if (isNarrowViewport()) {
     win.style.left = "";
     win.style.top = "";
     win.style.width = "";
@@ -1479,7 +1613,7 @@ function placeCenteredSystemWindow(win) {
   const workLeft = (desktopRect?.left || 0) + avoidance.left;
   const workRight = (desktopRect?.right || viewportWidth) - avoidance.right;
   const workTop = desktopRect?.top || 25;
-  const workBottom = desktopRect?.bottom || viewportHeight;
+  const workBottom = (desktopRect?.bottom || viewportHeight) - controlStripPlacementReserve();
   const rect = win.getBoundingClientRect();
   const halfWidth = Math.min(rect.width || 360, Math.max(240, workRight - workLeft)) / 2;
 
@@ -2517,8 +2651,17 @@ async function openWindow(name, options = {}) {
     fitFinderWindowToContents(win);
   }
 
-  if (shouldPlaceWindow && !centeredSystemWindowNames.has(name) && !["about", "saveChat"].includes(name)) {
-    if (!usePortraitWindowFlow(win)) {
+  if (writerMode && writerModeCssOwnedWindows.has(name)) {
+    clearWindowInlineGeometry(win);
+  } else if (isMobileWorkAreaCssOwned(win)) {
+    // Narrow non-writer work-area windows are CSS-owned too: drop stale
+    // desktop inline frames so the mobile rule wins without !important.
+    clearWindowInlineGeometry(win);
+  }
+
+  if (shouldPlaceWindow && !centeredSystemWindowNames.has(name) && !["about", "saveChat"].includes(name)
+      && !(writerMode && writerModeCssOwnedWindows.has(name))) {
+    if (!useNarrowWindowFlow(win)) {
       const desktop = document.querySelector(".desktop");
       const desktopRect = desktop?.getBoundingClientRect();
       const avoidance = getDesktopAvoidanceInsets({ margin: 24, spineGap: 18, iconGap: 48 });
@@ -2563,11 +2706,13 @@ async function openWindow(name, options = {}) {
             requestAnimationFrame(() => restoreDocMapCanvasView());
           });
         });
-      } else if (name === "systemHelp" && !writerMode) {
-        win.style.left = `${avoidance.left}px`;
-        win.style.top = `${baseTop}px`;
-        win.style.right = "auto";
-        win.style.transform = "none";
+      } else if (name === "systemHelp") {
+        if (!writerMode) {
+          win.style.left = `${avoidance.left}px`;
+          win.style.top = `${baseTop}px`;
+          win.style.right = "auto";
+          win.style.transform = "none";
+        }
       } else if (["findPath", "contextPanel"].includes(name) && !writerMode) {
         placeUtilityWindow(name, win);
       } else if (assistantSidecarWindowNames.has(name) && !writerMode) {
@@ -2723,7 +2868,7 @@ function arrangeActiveWritingWorkspace() {
   // On a phone each writing phase is one full-screen app, so pairing two paper
   // widths side by side is meaningless — and these splits write inline frames
   // that would override the full-screen shell.
-  if (isPortraitDocumentFlow() && mobileFullScreenAppIds.has("teachText")) return;
+  if ((isPortraitDocumentFlow() && mobileFullScreenAppIds.has("teachText")) || isNarrowViewport()) return;
   const isOpen = (name) => {
     const win = getWindow(name);
     return win && !win.classList.contains("is-hidden");
@@ -3118,12 +3263,7 @@ function isAssistantSidecarWindow(winOrName) {
 }
 
 function visibleSidecarAnchor(candidate) {
-  return candidate
-    && !candidate.classList.contains("is-hidden")
-    && !candidate.classList.contains("is-app-hidden")
-    && !candidate.classList.contains("is-collapsed")
-    ? candidate
-    : null;
+  return visibleWindowOrNull(candidate);
 }
 
 function getPreferredAssistantSidecarSource(name) {
@@ -3285,6 +3425,7 @@ async function openAssistantAvoidingWindow(sourceName = "teachText") {
     setAssistantDesklet(true);
     return;
   }
+  if (isMobileWorkAreaCssOwned(assistant)) return;
   if (!sourceWindow || sourceWindow.classList.contains("is-hidden")) return;
 
   const margin = 16;
@@ -3406,7 +3547,7 @@ async function arrangeWindowAssistantSplit(sourceWindowName, options = {}) {
   // the frames below are inline styles that would override the full-screen
   // shell. The ClioTalk session is already wired above; the user reaches it
   // from the switcher.
-  if (isPortraitDocumentFlow()) {
+  if (isPortraitDocumentFlow() || isNarrowViewport()) {
     syncMobileAppForeground();
     return true;
   }
@@ -3516,6 +3657,10 @@ async function restartSystem() {
 }
 
 async function shutDownSystem() {
+  if (typeof showSystemModal === "function") {
+    const result = await showSystemModal(t("shutdown_confirm"), "confirm", { defaultAction: "cancel" });
+    if (result !== "yes") return;
+  }
   try {
     await saveDeskState();
     await clearWorkingSession();
@@ -3542,13 +3687,10 @@ function setAssistantDesklet(enabled) {
     ensureRunningApp(assistant.dataset.app, "assistant");
     hiddenAppIds.delete(assistant.dataset.app);
     assistant.classList.remove("is-hidden", "is-app-hidden", "is-collapsed");
-    assistant.style.left = "auto";
-    assistant.style.right = "0";
-    assistant.style.top = "0";
-    assistant.style.width = "420px";
-    assistant.style.height = "100%";
-    assistant.style.maxHeight = "";
-    assistant.style.transform = "none";
+    // The desklet's split geometry is CSS-owned in writer mode (60vw / 33vw);
+    // drop any stale inline frame (boot spine reflow, previous non-writer
+    // placement) so the non-!important CSS rules can win.
+    clearWindowInlineGeometry(assistant);
   } else {
     assistant.classList.remove("is-collapsed");
     assistant.style.right = "auto";
@@ -3690,10 +3832,21 @@ function toggleCollapsed(win) {
   if (willCollapse) {
     const width = Math.round(before.width);
     if (width > 0) setInlineStyleValue(win, "--window-shade-width", `${width}px`);
+    // The shade stub's height is CSS-owned (auto / title bar only). Drop any
+    // inline height from a previous maximize/placement and remember it so the
+    // window comes back at its exact size on expand.
+    win.dataset.shadeRestoreHeight = inlineStyleValue(win, "height");
+    win.dataset.shadeRestoreMaxHeight = inlineStyleValue(win, "max-height");
+    setInlineStyleValue(win, "height", "");
+    setInlineStyleValue(win, "max-height", "");
     win.classList.add("is-collapsed");
   } else {
     win.classList.remove("is-collapsed");
     setInlineStyleValue(win, "--window-shade-width", "");
+    setInlineStyleValue(win, "height", win.dataset.shadeRestoreHeight || "");
+    setInlineStyleValue(win, "max-height", win.dataset.shadeRestoreMaxHeight || "");
+    delete win.dataset.shadeRestoreHeight;
+    delete win.dataset.shadeRestoreMaxHeight;
   }
   keepWindowCornerAfterShade(win, before);
   scheduleWorkingSessionSave?.();
@@ -3874,7 +4027,7 @@ function scheduleWritingSpineAvoidance() {
 function zoomWindow(win) {
   if (!isZoomableWindow(win)) return;
 
-  if(matchMedia("(max-width:860px) and (orientation:portrait)").matches){
+  if(matchMedia("(max-width:860px)").matches){
     win.classList.remove("is-collapsed");
     // For an app that can take the full-screen shell, the zoom box is the
     // maximize/restore control: it toggles between filling the screen and
@@ -3886,6 +4039,10 @@ function zoomWindow(win) {
       return;
     }
   }
+  // Narrow non-writer work-area windows are CSS-owned; the desktop zoom frame
+  // below would write inline geometry the mobile rule no longer overrides.
+  if (isMobileWorkAreaCssOwned(win)) return;
+  if (writerMode && writerModeCssOwnedWindows.has(win.dataset.window)) return;
 
   const desktop = document.querySelector(".desktop");
   const desktopRect = desktop.getBoundingClientRect();
@@ -3916,7 +4073,7 @@ function zoomWindow(win) {
     win.style.transform = "none";
     win.dataset.zoomed = "false";
     avoidWritingSpineOverlap(win);
-    if(win.dataset.window==="docMap")requestAnimationFrame(() => restoreDocMapCanvasView());
+    if(win.dataset.window==="docMap"&&window.AISystem6DocMapLoaded)requestAnimationFrame(() => restoreDocMapCanvasView());
     scheduleWorkingSessionSave?.();
     return;
   }
@@ -3952,19 +4109,20 @@ function zoomWindow(win) {
   win.style.right = "auto";
   win.style.transform = "none";
   win.dataset.zoomed = "true";
-  if(win.dataset.window==="docMap")requestAnimationFrame(() => restoreDocMapCanvasView());
+  if(win.dataset.window==="docMap"&&window.AISystem6DocMapLoaded)requestAnimationFrame(() => restoreDocMapCanvasView());
   scheduleWorkingSessionSave?.();
 }
 
 function maximizeWindow(win, options = {}) {
   if (!isResizableWindow(win)) return;
-  if(matchMedia("(max-width:860px) and (orientation:portrait)").matches){
+  if(matchMedia("(max-width:860px)").matches){
     win.classList.remove("is-collapsed");
     win.dataset.zoomed="true";
     focusWindow(win,1);
     scheduleWorkingSessionSave?.();
     return;
   }
+  if (writerMode && writerModeCssOwnedWindows.has(win.dataset.window)) return;
   if (window.matchMedia("(max-width: 860px)").matches) return;
 
   const desktop = document.querySelector(".desktop");
@@ -4026,6 +4184,9 @@ function createWindowOutline(rect, win = null) {
 function startWindowResize(event, win) {
   const portraitFlow = isPortraitDocumentFlow() && !writerMode && getWindowAppId(win) !== "accessories";
   if (!isResizableWindow(win) || (!portraitFlow && window.matchMedia("(max-width: 860px)").matches)) return;
+  // Writing-mode split panes are CSS-owned fixed columns; a live resize would
+  // write inline width/height that beats the non-!important split rules.
+  if (writerMode && writerModeCssOwnedWindows.has(win.dataset.window)) return;
 
   event.preventDefault();
   event.stopPropagation();
@@ -4129,7 +4290,7 @@ function startWindowResize(event, win) {
       applyWindowSize(pendingWidth, pendingHeight);
     }
     markWindowUserPositioned(win);
-    if(win.dataset.window==="docMap")requestAnimationFrame(() => restoreDocMapCanvasView());
+    if(win.dataset.window==="docMap"&&window.AISystem6DocMapLoaded)requestAnimationFrame(() => restoreDocMapCanvasView());
     scheduleWorkingSessionSave?.();
   }
 
@@ -4147,7 +4308,8 @@ function installGrowBoxes() {
     const growBox = document.createElement("button");
     growBox.className = "grow-box";
     growBox.type = "button";
-    growBox.setAttribute("aria-label", "Resize window");
+    growBox.setAttribute("data-i18n-aria-label", "grow_box_aria");
+    growBox.setAttribute("aria-label", typeof t === "function" ? t("grow_box_aria") : "Resize window");
     growBox.dataset.balloonHelp = "balloon_grow_box";
     growBox.addEventListener("pointerdown", (event) => startWindowResize(event, win));
     growBox.addEventListener("mousedown", (event) => startWindowResize(event, win));

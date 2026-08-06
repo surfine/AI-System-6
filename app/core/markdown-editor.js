@@ -468,29 +468,6 @@ function attachMarkdownHighlight(textarea) {
   paint();
 }
 
-function mdeToggleTypewriterMode(textarea) {
-  const surface = textarea?.closest(".mde-surface");
-  if (!surface) return false;
-  const active = !surface.classList.contains("is-typewriter-mode");
-  surface.classList.toggle("is-typewriter-mode", active);
-  if (active) {
-    mdeUpdateTypewriterPadding(textarea);
-    requestAnimationFrame(() => mdeCenterCaret(textarea));
-  } else {
-    surface.style.removeProperty("--mde-typewriter-pad");
-  }
-  return active;
-}
-
-function mdeToggleFocusMode(textarea) {
-  const surface = textarea?.closest(".mde-surface");
-  if (!surface) return false;
-  const active = !surface.classList.contains("is-focus-mode");
-  surface.classList.toggle("is-focus-mode", active);
-  textarea.dispatchEvent(new Event("select"));
-  return active;
-}
-
 function mdeSetFocusMode(textarea, mode) {
   const surface = textarea?.closest(".mde-surface");
   if (!surface) return "off";

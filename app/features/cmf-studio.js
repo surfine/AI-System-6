@@ -4,14 +4,39 @@
 (() => {
   const STORAGE_KEY = "ai-system-6-cmf-studio-recipe";
   const RENDERER_VENDOR_URL = "/app/vendor/cmf-renderer.js?v=three-0.184.0-uv-channel-cache";
-  const COLORS = [
+  // Only finishes Apple actually shipped on the part. Hexes are sampled from
+  // Apple's own store swatches; the server keeps the same ids and values.
+  const IPHONE_17_COLORS = [
     { id: "black17", hex: "#353839", labelKey: "cmf_color_black17" },
     { id: "lavender17", hex: "#dfceea", labelKey: "cmf_color_lavender17" },
     { id: "mistBlue17", hex: "#96aed1", labelKey: "cmf_color_mist_blue17" },
     { id: "sage17", hex: "#a9b689", labelKey: "cmf_color_sage17" },
     { id: "white17", hex: "#f5f5f5", labelKey: "cmf_color_white17" },
   ];
-  const PARTS = [
+  const IPHONE_17_PRO_COLORS = [
+    { id: "cosmicOrange17Pro", hex: "#f78039", labelKey: "cmf_color_cosmic_orange17pro" },
+    { id: "deepBlue17Pro", hex: "#47547e", labelKey: "cmf_color_deep_blue17pro" },
+    { id: "silver17Pro", hex: "#e7e7e7", labelKey: "cmf_color_silver17pro" },
+  ];
+  const IPHONE_17E_COLORS = [
+    { id: "black17e", hex: "#4a4e51", labelKey: "cmf_color_black17e" },
+    { id: "white17e", hex: "#fafafa", labelKey: "cmf_color_white17e" },
+    { id: "softPink17e", hex: "#fce7e6", labelKey: "cmf_color_soft_pink17e" },
+  ];
+  const IPHONE_AIR_COLORS = [
+    { id: "spaceBlackAir", hex: "#131313", labelKey: "cmf_color_space_black_air" },
+    { id: "cloudWhiteAir", hex: "#fcfcfc", labelKey: "cmf_color_cloud_white_air" },
+    { id: "lightGoldAir", hex: "#faf3e5", labelKey: "cmf_color_light_gold_air" },
+    { id: "skyBlueAir", hex: "#e5f2fa", labelKey: "cmf_color_sky_blue_air" },
+  ];
+  // MacBook Neo official finishes (sampled from apple.com.cn store swatches).
+  const MACBOOK_NEO_COLORS = [
+    { id: "silverNeo", hex: "#e5e6e7", labelKey: "cmf_color_silver_neo" },
+    { id: "blushNeo", hex: "#ead5d4", labelKey: "cmf_color_blush_neo" },
+    { id: "citrusNeo", hex: "#dddc8c", labelKey: "cmf_color_citrus_neo" },
+    { id: "indigoNeo", hex: "#67738b", labelKey: "cmf_color_indigo_neo" },
+  ];
+  const IPHONE_17_PARTS = [
     { id: "frame", labelKey: "cmf_part_frame" },
     { id: "backGlass", labelKey: "cmf_part_back_glass" },
     { id: "volumeUp", labelKey: "cmf_part_volume_up" },
@@ -22,6 +47,29 @@
     { id: "simTray", labelKey: "cmf_part_sim_tray" },
     { id: "usbC", labelKey: "cmf_part_usb_c" },
     { id: "cameraPlate", labelKey: "cmf_part_camera_plate" },
+  ];
+  // The Pro line's Apple asset is the eSIM build, so it has no SIM tray, and
+  // its plateau is unibody with the frame — only the lens rings recolor here.
+  const IPHONE_17_PRO_PARTS = IPHONE_17_PARTS
+    .filter((part) => part.id !== "simTray")
+    .map((part) => (part.id === "cameraPlate" ? { id: part.id, labelKey: "cmf_part_camera_rings" } : part));
+  // The Air is eSIM too, but its camera bar is a real separate part, so it
+  // keeps the plain camera-area label.
+  const IPHONE_AIR_PARTS = IPHONE_17_PARTS.filter((part) => part.id !== "simTray");
+  // The 17e has neither a SIM tray nor Camera Control.
+  // The 17e has no SIM tray and no Camera Control, and its back is flush, so
+  // the "camera area" part only ever paints the lens ring — same as the Pro.
+  const IPHONE_17E_PARTS = IPHONE_17_PARTS
+    .filter((part) => part.id !== "simTray" && part.id !== "cameraControl")
+    .map((part) => (part.id === "cameraPlate" ? { id: part.id, labelKey: "cmf_part_camera_rings" } : part));
+  // Apple self-service parts that ship in every finish: lid (display
+  // assembly), keyboard deck (top case), bottom case, keycaps, USB-C boards.
+  const MACBOOK_NEO_PARTS = [
+    { id: "lid", labelKey: "cmf_part_lid" },
+    { id: "topCase", labelKey: "cmf_part_top_case" },
+    { id: "bottomCase", labelKey: "cmf_part_bottom_case" },
+    { id: "keycaps", labelKey: "cmf_part_keycaps" },
+    { id: "usbC", labelKey: "cmf_part_usb_c" },
   ];
   const MATERIAL_PART_ALIASES = Object.freeze({
     frame: "frame",
@@ -37,7 +85,9 @@
     screwOrSpeaker: "usbC",
     cameraPlate: "cameraPlate",
   });
-  const EXACT_PART_BY_MESH_NAME = Object.freeze({
+  // Fallback only: the served model already carries the part in its material
+  // name. These keep the live view honest if a material name ever goes missing.
+  const IPHONE_17_MESH_PARTS = Object.freeze({
     psstnNZmWlkGpGJ: "actionButton",
     aabQdFuOayXiOAy: "volumeUp",
     fQDGdPVinVFkDgA: "volumeDown",
@@ -46,6 +96,87 @@
     ohRsmdOpfcWOasQ: "cameraControl",
     kQtKvBruXjVcFqZ: "cameraControl",
     tXyqmuCYyFmMJhw: "simTray",
+  });
+  const IPHONE_17_PRO_MESH_PARTS = Object.freeze({
+    MurNHnRHsVHWaxp: "actionButton",
+    YMhcZuJreIkCuNy: "volumeUp",
+    VOwOyTIgUdFOGSH: "volumeDown",
+    oKryyXghVaYcnxt: "sideButton",
+    LXcFmsoszzDyTrR: "cameraControl",
+    VAAxcOWnKYsQZew: "cameraControl",
+    AepdVkPZeAmapGK: "cameraControl",
+    gCMlCSdRJrizepS: "backGlass",
+    vDwikmBvgqpSImF: "backGlass",
+  });
+  const IPHONE_17E_MESH_PARTS = Object.freeze({
+    MNFvcyIPvJHZGho: "actionButton",
+    wvehvZgKSiHShKe: "volumeUp",
+    grjpZqMAFshUbYL: "volumeDown",
+    bAdaiwDyPNSIOTz: "sideButton",
+  });
+  const IPHONE_AIR_MESH_PARTS = Object.freeze({
+    YkCTFFnfNRTcvhu: "actionButton",
+    gxvVEZnHDLTMeDu: "volumeUp",
+    ZozkCecQqsHKRdW: "volumeDown",
+    eFAjqNXqlosYdcs: "sideButton",
+    zvTKDcDzjwBqPXl: "cameraControl",
+    oeeuEHMiwxuyjiE: "cameraControl",
+    mKggmceRYtWVyLb: "cameraControl",
+  });
+  const MACBOOK_NEO_MESH_PARTS = Object.freeze({
+    // lid (display assembly)
+    LTxTFlhLWoHyhvo: "lid",
+    sGDniMbgLiwHqFw: "lid",
+    ZMGnWkiZEPXzRiw: "lid",
+    iGKSuTNlIlEGpLp: "lid",
+    LUMtYvTEVNmTHoQ: "lid",
+    rvnQqsVlUxgRHpf: "lid",
+    // top case (keyboard deck)
+    RtqozqWvXTJHuDi: "topCase",
+    RGLDQJKTekftnoB: "topCase",
+    fylMvyMYpOJcbku: "topCase",
+    KMIKFolgYmmmahm: "topCase",
+    TJrncXRMBNoKueV: "topCase",
+    RBmsNybhFEScfui: "topCase",
+    LhZMVgrGkfDhZnJ: "topCase",
+    TaNFpMmKHqePKML: "topCase",
+    EXRYTxHqZCxcjZx: "topCase",
+    // bottom case
+    // Unibody base: the outer shells are the top case (palm rest + sides);
+    // only the separate lower panel is the bottom case.
+    IYjUsjnVPLevabB: "topCase",
+    ubZKAAJmPSUZVHj: "topCase",
+    AHewMMzHKsIFykK: "bottomCase",
+    JcBLefbhAcSFtfV: "bottomCase",
+    // Keycaps: the raised key field only. The bed below and the legend plane
+    // above stay with the deck; the hinge-edge strips are never visible.
+    AqcQCwqkepkmIxJ: "keycaps",
+    ldFDBmejSXToUkP: "topCase",
+    qQGZuUUMeRVQGEY: "topCase",
+    ymYLIOEGFuqNeyB: "topCase",
+    // USB-C boards (right cluster + left cluster)
+    UDjFocEFPMTxxzE: "usbC",
+    bkNkMexbhfuRgXd: "usbC",
+    uMvgvtrefotcxLA: "usbC",
+    vpFYGndskQCpAiL: "usbC",
+    KwFQtiwiPZcwELa: "usbC",
+    MdEwZxJYnatsNEo: "usbC",
+    cMzncBRnxGSiixF: "usbC",
+    RxQwEeRZjARFsvN: "usbC",
+    WWvgVRnfZBeNwpP: "usbC",
+    jXEhAmPcGAkgmPq: "usbC",
+    WJWxyVsmuaogzKH: "usbC",
+    UdgYVXrcknzsfzU: "usbC",
+    UgnigMDmuhQEbNc: "usbC",
+    GDzFfJLYgiBMTFB: "usbC",
+    DrJauNLaRtCxyAy: "usbC",
+    bqcaMJZxVDeevNs: "usbC",
+    MHkxrMAWDVbaaeW: "usbC",
+    hgRUNThRBKzoawn: "usbC",
+    ckddmGzikslSSZi: "usbC",
+    VFFQHFXIwreyxOW: "usbC",
+    BNEVCQcWteGdere: "usbC",
+    gOxaRXQOCdmPKSH: "usbC",
   });
   const VIEW_DEFINITIONS = [
     { name: "01-front", labelKey: "cmf_view_front", direction: [0, 0.04, 1], up: [0, 1, 0], frame: 1.08 },
@@ -80,7 +211,35 @@
     },
   ];
 
-  const PRESETS = {
+  // MacBook Neo has two poses, each with its own camera set. The closed slab
+  // shows the lid/bottom/edges; the open L shows the screen and keyboard deck.
+  // Close-up targets are fractions of the loaded model's own bounds.
+  const MACBOOK_NEO_VIEWS = {
+    closed: [
+      { name: "01-lid-top", labelKey: "cmf_view_lid_top", direction: [0, 1, 0], up: [0, 0, -1], frame: 1.05 },
+      { name: "02-bottom", labelKey: "cmf_view_bottom", direction: [0, -1, 0], up: [0, 0, -1], frame: 1.05 },
+      { name: "03-hero-front", labelKey: "cmf_view_hero_front", direction: [-0.55, 0.62, 0.56], up: [0, 1, 0], frame: 1.12 },
+      { name: "04-hero-back", labelKey: "cmf_view_hero_back", direction: [0.55, 0.62, -0.56], up: [0, 1, 0], frame: 1.12 },
+      { name: "05-side-left", labelKey: "cmf_view_side_left", direction: [-1, 0.08, 0.1], up: [0, 1, 0], frame: 1.34 },
+      { name: "06-side-right", labelKey: "cmf_view_side_right", direction: [1, 0.08, 0.1], up: [0, 1, 0], frame: 1.34 },
+      { name: "07-front-edge", labelKey: "cmf_view_front_edge", direction: [0, 0.15, 1], up: [0, 1, 0], frame: 1.3 },
+      { name: "08-hinge-edge", labelKey: "cmf_view_hinge_edge", direction: [0, 0.15, -1], up: [0, 1, 0], frame: 1.3 },
+      { name: "09-ports-close", labelKey: "cmf_view_ports_close", direction: [-1, 0.02, 0.05], up: [0, 1, 0], targetOffset: [-0.486, 0.007, -0.355], frame: 0.42 },
+    ],
+    open: [
+      { name: "01-screen", labelKey: "cmf_view_screen", direction: [0, 0.05, 1], up: [0, 1, 0], frame: 1.1 },
+      { name: "02-deck-top", labelKey: "cmf_view_deck_top", direction: [0, 1, 0], up: [0, 0, -1], frame: 1.12 },
+      { name: "03-hero-open", labelKey: "cmf_view_hero_open", direction: [-0.6, 0.45, 0.66], up: [0, 1, 0], frame: 1.16 },
+      { name: "04-hero-back", labelKey: "cmf_view_hero_back", direction: [0.6, 0.4, -0.68], up: [0, 1, 0], frame: 1.16 },
+      { name: "05-side-left", labelKey: "cmf_view_side_left", direction: [-1, 0.12, 0.08], up: [0, 1, 0], frame: 1.3 },
+      { name: "06-side-right", labelKey: "cmf_view_side_right", direction: [1, 0.12, 0.08], up: [0, 1, 0], frame: 1.3 },
+      { name: "07-keyboard-close", labelKey: "cmf_view_keyboard_close", direction: [0, 0.55, 0.83], up: [0, 0, -1], targetOffset: [0, -0.45, 0.009], frame: 0.42 },
+      { name: "08-hinge-close", labelKey: "cmf_view_hinge_close", direction: [0, 0.2, 0.98], up: [0, 1, 0], targetOffset: [0, -0.44, -0.237], frame: 0.44 },
+      { name: "09-ports-close", labelKey: "cmf_view_ports_close", direction: [-1, 0.05, 0.08], up: [0, 1, 0], targetOffset: [-0.486, -0.459, -0.13], frame: 0.4 },
+    ],
+  };
+
+  const IPHONE_17_PRESETS = {
     porcelainCircuit: {
       frame: "black17",
       backGlass: "white17",
@@ -119,6 +278,263 @@
     },
   };
 
+  const IPHONE_17_PRO_PRESETS = {
+    orangeIndex: {
+      frame: "cosmicOrange17Pro",
+      backGlass: "silver17Pro",
+      volumeUp: "deepBlue17Pro",
+      volumeDown: "deepBlue17Pro",
+      actionButton: "deepBlue17Pro",
+      cameraControl: "deepBlue17Pro",
+      sideButton: "deepBlue17Pro",
+      usbC: "silver17Pro",
+      cameraPlate: "deepBlue17Pro",
+    },
+    deepBlueMargin: {
+      frame: "deepBlue17Pro",
+      backGlass: "deepBlue17Pro",
+      volumeUp: "silver17Pro",
+      volumeDown: "silver17Pro",
+      actionButton: "cosmicOrange17Pro",
+      cameraControl: "cosmicOrange17Pro",
+      sideButton: "silver17Pro",
+      usbC: "cosmicOrange17Pro",
+      cameraPlate: "cosmicOrange17Pro",
+    },
+    silverProof: {
+      frame: "silver17Pro",
+      backGlass: "cosmicOrange17Pro",
+      volumeUp: "deepBlue17Pro",
+      volumeDown: "deepBlue17Pro",
+      actionButton: "cosmicOrange17Pro",
+      cameraControl: "deepBlue17Pro",
+      sideButton: "cosmicOrange17Pro",
+      usbC: "deepBlue17Pro",
+      cameraPlate: "silver17Pro",
+    },
+  };
+
+  const IPHONE_AIR_PRESETS = {
+    cloudBinding: {
+      frame: "cloudWhiteAir",
+      backGlass: "cloudWhiteAir",
+      volumeUp: "spaceBlackAir",
+      volumeDown: "spaceBlackAir",
+      actionButton: "spaceBlackAir",
+      cameraControl: "spaceBlackAir",
+      sideButton: "spaceBlackAir",
+      usbC: "spaceBlackAir",
+      cameraPlate: "spaceBlackAir",
+    },
+    goldCaption: {
+      frame: "lightGoldAir",
+      backGlass: "cloudWhiteAir",
+      volumeUp: "lightGoldAir",
+      volumeDown: "lightGoldAir",
+      actionButton: "spaceBlackAir",
+      cameraControl: "spaceBlackAir",
+      sideButton: "lightGoldAir",
+      usbC: "cloudWhiteAir",
+      cameraPlate: "lightGoldAir",
+    },
+    skyTypeset: {
+      frame: "skyBlueAir",
+      backGlass: "skyBlueAir",
+      volumeUp: "cloudWhiteAir",
+      volumeDown: "cloudWhiteAir",
+      actionButton: "lightGoldAir",
+      cameraControl: "lightGoldAir",
+      sideButton: "cloudWhiteAir",
+      usbC: "spaceBlackAir",
+      cameraPlate: "cloudWhiteAir",
+    },
+  };
+
+  const IPHONE_17E_PRESETS = {
+    pinkSerif: {
+      frame: "softPink17e",
+      backGlass: "softPink17e",
+      volumeUp: "white17e",
+      volumeDown: "white17e",
+      actionButton: "black17e",
+      sideButton: "white17e",
+      usbC: "black17e",
+      cameraPlate: "white17e",
+    },
+    inkLetterpress: {
+      frame: "black17e",
+      backGlass: "black17e",
+      volumeUp: "softPink17e",
+      volumeDown: "softPink17e",
+      actionButton: "softPink17e",
+      sideButton: "white17e",
+      usbC: "white17e",
+      cameraPlate: "white17e",
+    },
+    whiteFolio: {
+      frame: "white17e",
+      backGlass: "white17e",
+      volumeUp: "black17e",
+      volumeDown: "black17e",
+      actionButton: "softPink17e",
+      sideButton: "black17e",
+      usbC: "softPink17e",
+      cameraPlate: "black17e",
+    },
+  };
+
+  const MACBOOK_NEO_PRESETS = {
+    blushLid: {
+      lid: "blushNeo",
+      topCase: "silverNeo",
+      bottomCase: "blushNeo",
+      keycaps: "citrusNeo",
+      usbC: "indigoNeo",
+    },
+    indigoDeck: {
+      lid: "indigoNeo",
+      topCase: "indigoNeo",
+      bottomCase: "silverNeo",
+      keycaps: "citrusNeo",
+      usbC: "silverNeo",
+    },
+    citrusKeys: {
+      lid: "silverNeo",
+      topCase: "silverNeo",
+      bottomCase: "silverNeo",
+      keycaps: "citrusNeo",
+      usbC: "blushNeo",
+    },
+  };
+
+  // One entry per model the server can recolor. Everything the UI needs to
+  // switch devices lives here: palette, parts, presets and preset labels.
+  const MODELS = [
+    {
+      id: "iphone-17-standard",
+      labelKey: "cmf_model_iphone_17",
+      colors: IPHONE_17_COLORS,
+      parts: IPHONE_17_PARTS,
+      presets: IPHONE_17_PRESETS,
+      presetLabelKeys: {
+        porcelainCircuit: "cmf_preset_porcelain",
+        sageTerminal: "cmf_preset_sage",
+        mistDraft: "cmf_preset_mist",
+      },
+      meshParts: IPHONE_17_MESH_PARTS,
+    },
+    {
+      id: "iphone-17-pro",
+      labelKey: "cmf_model_iphone_17_pro",
+      colors: IPHONE_17_PRO_COLORS,
+      parts: IPHONE_17_PRO_PARTS,
+      presets: IPHONE_17_PRO_PRESETS,
+      presetLabelKeys: {
+        orangeIndex: "cmf_preset_orange_index",
+        deepBlueMargin: "cmf_preset_deep_blue_margin",
+        silverProof: "cmf_preset_silver_proof",
+      },
+      meshParts: IPHONE_17_PRO_MESH_PARTS,
+    },
+    {
+      id: "iphone-17-pro-max",
+      labelKey: "cmf_model_iphone_17_pro_max",
+      colors: IPHONE_17_PRO_COLORS,
+      parts: IPHONE_17_PRO_PARTS,
+      presets: IPHONE_17_PRO_PRESETS,
+      presetLabelKeys: {
+        orangeIndex: "cmf_preset_orange_index",
+        deepBlueMargin: "cmf_preset_deep_blue_margin",
+        silverProof: "cmf_preset_silver_proof",
+      },
+      meshParts: IPHONE_17_PRO_MESH_PARTS,
+    },
+    {
+      id: "iphone-air",
+      labelKey: "cmf_model_iphone_air",
+      colors: IPHONE_AIR_COLORS,
+      parts: IPHONE_AIR_PARTS,
+      presets: IPHONE_AIR_PRESETS,
+      presetLabelKeys: {
+        cloudBinding: "cmf_preset_cloud_binding",
+        goldCaption: "cmf_preset_gold_caption",
+        skyTypeset: "cmf_preset_sky_typeset",
+      },
+      meshParts: IPHONE_AIR_MESH_PARTS,
+    },
+    {
+      id: "iphone-17e",
+      labelKey: "cmf_model_iphone_17e",
+      colors: IPHONE_17E_COLORS,
+      parts: IPHONE_17E_PARTS,
+      presets: IPHONE_17E_PRESETS,
+      presetLabelKeys: {
+        pinkSerif: "cmf_preset_pink_serif",
+        inkLetterpress: "cmf_preset_ink_letterpress",
+        whiteFolio: "cmf_preset_white_folio",
+      },
+      meshParts: IPHONE_17E_MESH_PARTS,
+    },
+    {
+      id: "macbook-neo",
+      labelKey: "cmf_model_macbook_neo",
+      poses: [
+        { id: "closed", labelKey: "cmf_pose_closed" },
+        { id: "open", labelKey: "cmf_pose_open" },
+      ],
+      colors: MACBOOK_NEO_COLORS,
+      parts: MACBOOK_NEO_PARTS,
+      presets: MACBOOK_NEO_PRESETS,
+      presetLabelKeys: {
+        blushLid: "cmf_preset_blush_lid",
+        indigoDeck: "cmf_preset_indigo_deck",
+        citrusKeys: "cmf_preset_citrus_keys",
+      },
+      meshParts: MACBOOK_NEO_MESH_PARTS,
+      views: MACBOOK_NEO_VIEWS,
+    },
+  ];
+  const DEFAULT_MODEL_ID = MODELS[0].id;
+
+  function modelSpec(id) {
+    return MODELS.find((model) => model.id === id) || MODELS[0];
+  }
+
+  function activeModel() {
+    return modelSpec(recipe?.model || DEFAULT_MODEL_ID);
+  }
+
+  function activeColors() {
+    return activeModel().colors;
+  }
+
+  function activeParts() {
+    return activeModel().parts;
+  }
+
+  function activePresets() {
+    return activeModel().presets;
+  }
+
+  function poseSpec(id) {
+    const poses = activeModel().poses || [];
+    return poses.find((pose) => pose.id === id) || poses[0] || null;
+  }
+
+  function activePose() {
+    return poseSpec(recipe?.pose)?.id || "closed";
+  }
+
+  function activeViews() {
+    const views = activeModel().views?.[activePose()];
+    return views || VIEW_DEFINITIONS;
+  }
+
+  function defaultPartsFor(modelId) {
+    const spec = modelSpec(modelId);
+    return { ...spec.presets[Object.keys(spec.presets)[0]] };
+  }
+
   let initialized = false;
   let recipe = defaultRecipe();
   let selectedView = "02-back";
@@ -130,12 +546,16 @@
   let rendererModulesPromise = null;
   let rendererState = null;
   let cameraAnimationFrame = 0;
+  let pendingModelSwitch = false;
 
-  function defaultRecipe() {
+  function defaultRecipe(modelId = DEFAULT_MODEL_ID, poseId) {
+    const spec = modelSpec(modelId);
+    const pose = spec.poses ? (poseId || spec.poses[0].id) : undefined;
     return {
-      model: "iphone-17-standard",
-      name: "iphone-17-standard-cmf-studio",
-      parts: { ...PRESETS.porcelainCircuit },
+      model: spec.id,
+      ...(pose ? { pose } : {}),
+      name: `${spec.id}-cmf-studio`,
+      parts: defaultPartsFor(spec.id),
     };
   }
 
@@ -144,13 +564,17 @@
   }
 
   function colorMeta(id) {
-    return COLORS.find((color) => color.id === id) || COLORS[0];
+    const colors = activeColors();
+    return colors.find((color) => color.id === id) || colors[0];
   }
 
   function initCmfStudio() {
     if (initialized) return;
     initialized = true;
     recipe = loadRecipe();
+    selectedPartId = activeParts()[0].id;
+    buildModelControls();
+    buildPoseControls();
     buildPartControls();
     buildViewControls();
     bindCmfStudioEvents();
@@ -165,8 +589,14 @@
   }
 
   function bindCmfStudioEvents() {
+    cmfEl("cmf-model")?.addEventListener("change", (event) => {
+      selectCmfModel(event.target.value);
+    });
+    cmfEl("cmf-pose")?.addEventListener("change", (event) => {
+      selectCmfPose(event.target.value);
+    });
     cmfEl("cmf-preset")?.addEventListener("change", (event) => {
-      const preset = PRESETS[event.target.value];
+      const preset = activePresets()[event.target.value];
       if (!preset) return;
       recipe.parts = { ...recipe.parts, ...preset };
       syncCmfForm();
@@ -208,9 +638,11 @@
   function buildPartControls() {
     const target = cmfEl("cmf-parts");
     const palette = cmfEl("cmf-palette");
-    if (!target || !palette || target.dataset.ready === "true") return;
-    target.dataset.ready = "true";
-    target.replaceChildren(...PARTS.map((part) => {
+    if (!target || !palette) return;
+    // Rebuilt on every model switch: parts and palette both change.
+    if (target.dataset.model === activeModel().id) return;
+    target.dataset.model = activeModel().id;
+    target.replaceChildren(...activeParts().map((part) => {
       const row = document.createElement("button");
       row.type = "button";
       row.className = "cmf-part-row";
@@ -236,7 +668,7 @@
       row.append(text, current, affordance);
       return row;
     }));
-    palette.replaceChildren(...COLORS.map((color) => {
+    palette.replaceChildren(...activeColors().map((color) => {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "cmf-color-chip";
@@ -255,7 +687,9 @@
   }
 
   function syncCmfForm() {
-    const selectedPart = PARTS.find((part) => part.id === selectedPartId) || PARTS[0];
+    const parts = activeParts();
+    const selectedPart = parts.find((part) => part.id === selectedPartId) || parts[0];
+    selectedPartId = selectedPart.id;
     const selectedColor = colorMeta(recipe.parts[selectedPart.id]);
     const preset = cmfEl("cmf-preset");
     if (preset && document.activeElement !== preset) preset.value = matchingPresetId() || "";
@@ -279,9 +713,11 @@
 
   function buildViewControls() {
     const strip = cmfEl("cmf-view-strip");
-    if (!strip || strip.dataset.ready === "true") return;
-    strip.dataset.ready = "true";
-    strip.replaceChildren(...VIEW_DEFINITIONS.map((view) => {
+    if (!strip) return;
+    const poseKey = `${activeModel().id}:${activePose()}`;
+    if (strip.dataset.pose === poseKey) return;
+    strip.dataset.pose = poseKey;
+    strip.replaceChildren(...activeViews().map((view) => {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "cmf-view-thumb cmf-view-control";
@@ -296,9 +732,104 @@
   }
 
   function matchingPresetId() {
-    return Object.entries(PRESETS).find(([, parts]) => (
-      PARTS.every((part) => recipe.parts[part.id] === parts[part.id])
+    const parts = activeParts();
+    return Object.entries(activePresets()).find(([, preset]) => (
+      parts.every((part) => recipe.parts[part.id] === preset[part.id])
     ))?.[0] || "";
+  }
+
+  /** Rebuild the model and preset dropdowns for the active model. */
+  function buildModelControls() {
+    const modelSelect = cmfEl("cmf-model");
+    if (modelSelect && modelSelect.dataset.ready !== "true") {
+      modelSelect.dataset.ready = "true";
+      modelSelect.replaceChildren(...MODELS.map((model) => {
+        const option = document.createElement("option");
+        option.value = model.id;
+        option.textContent = t(model.labelKey);
+        return option;
+      }));
+    }
+    if (modelSelect) modelSelect.value = activeModel().id;
+
+    const presetSelect = cmfEl("cmf-preset");
+    if (presetSelect && presetSelect.dataset.model !== activeModel().id) {
+      presetSelect.dataset.model = activeModel().id;
+      const custom = document.createElement("option");
+      custom.value = "";
+      custom.textContent = t("cmf_preset_custom");
+      presetSelect.replaceChildren(custom, ...Object.keys(activePresets()).map((id) => {
+        const option = document.createElement("option");
+        option.value = id;
+        option.textContent = t(activeModel().presetLabelKeys[id] || id);
+        return option;
+      }));
+    }
+    if (modelSelect && typeof refreshSystemSelectControl === "function") {
+      refreshSystemSelectControl(modelSelect);
+    }
+  }
+
+  /** Rebuild the pose dropdown for models with poses; hide it for phones. */
+  function buildPoseControls() {
+    const poseSelect = cmfEl("cmf-pose");
+    if (!poseSelect) return;
+    const poses = activeModel().poses || [];
+    const control = poseSelect.closest(".cmf-control");
+    if (control) control.hidden = poses.length === 0;
+    if (poseSelect.dataset.model !== activeModel().id) {
+      poseSelect.dataset.model = activeModel().id;
+      poseSelect.replaceChildren(...poses.map((pose) => {
+        const option = document.createElement("option");
+        option.value = pose.id;
+        option.textContent = t(pose.labelKey);
+        return option;
+      }));
+    }
+    poseSelect.value = activePose();
+    if (typeof refreshSystemSelectControl === "function") refreshSystemSelectControl(poseSelect);
+  }
+
+  function selectCmfModel(modelId) {
+    const spec = modelSpec(modelId);
+    if (spec.id === recipe.model) return;
+    recipe = loadRecipeFor(spec.id);
+    selectedPartId = activeParts()[0].id;
+    buildModelControls();
+    buildPoseControls();
+    buildPartControls();
+    buildViewControls();
+    syncCmfForm();
+    saveRecipe({ quiet: true });
+    // A different device means different geometry, so the model has to be
+    // rebuilt server-side — recoloring the materials in place is not enough.
+    pendingModelSwitch = true;
+    scheduleModelRender(0);
+    setCmfStatus(t("cmf_model_switched"));
+  }
+
+  function selectCmfPose(poseId) {
+    if (!poseSpec(poseId) || poseId === activePose()) return;
+    const spec = activeModel();
+    const saved = readStore().recipes[spec.id];
+    recipe = defaultRecipe(spec.id, poseId);
+    if (saved?.parts) {
+      const parts = { ...recipe.parts };
+      for (const part of spec.parts) {
+        const color = saved.parts[part.id];
+        if (spec.colors.some((entry) => entry.id === color)) parts[part.id] = color;
+      }
+      recipe.parts = parts;
+    }
+    selectedPartId = activeParts()[0].id;
+    buildPoseControls();
+    buildViewControls();
+    syncCmfForm();
+    saveRecipe({ quiet: true });
+    // A different pose is a different asset, so rebuild server-side too.
+    pendingModelSwitch = true;
+    scheduleModelRender(0);
+    setCmfStatus(t("cmf_model_switched"));
   }
 
   function refreshCmfPresetControl() {
@@ -335,18 +866,47 @@
     });
   }
 
-  function loadRecipe() {
+  /**
+   * Stored shape is { activeModel, recipes: { <modelId>: recipe } }. A recipe
+   * saved by the single-model version is migrated into the iPhone 17 slot.
+   */
+  function readStore() {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-      if (saved?.model === "iphone-17-standard" && saved.parts) {
-        return { ...defaultRecipe(), ...saved, parts: { ...defaultRecipe().parts, ...saved.parts } };
+      if (saved?.recipes && typeof saved.recipes === "object") return saved;
+      if (saved?.model && saved.parts) {
+        return { activeModel: saved.model, recipes: { [saved.model]: saved } };
       }
     } catch {}
-    return defaultRecipe();
+    return { activeModel: DEFAULT_MODEL_ID, recipes: {} };
+  }
+
+  function loadRecipeFor(modelId) {
+    const spec = modelSpec(modelId);
+    const fallback = defaultRecipe(spec.id);
+    const saved = readStore().recipes[spec.id];
+    if (!saved?.parts) return fallback;
+    // Colors from another model's palette can't apply here; drop them.
+    const parts = { ...fallback.parts };
+    for (const part of spec.parts) {
+      const color = saved.parts[part.id];
+      if (spec.colors.some((entry) => entry.id === color)) parts[part.id] = color;
+    }
+    const pose = spec.poses
+      ? (spec.poses.some((entry) => entry.id === saved.pose) ? saved.pose : spec.poses[0].id)
+      : undefined;
+    return { ...fallback, ...saved, model: spec.id, ...(pose ? { pose } : {}), parts };
+  }
+
+  function loadRecipe() {
+    return loadRecipeFor(readStore().activeModel || DEFAULT_MODEL_ID);
   }
 
   function saveRecipe(options = {}) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(recipe));
+    const store = readStore();
+    store.activeModel = recipe.model;
+    store.recipes[recipe.model] = recipe;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
     if (!options.quiet) {
       setCmfStatus(t("cmf_recipe_saved"));
       setStatus?.(t("cmf_recipe_saved"));
@@ -355,10 +915,13 @@
   }
 
   function resetRecipe() {
-    recipe = defaultRecipe();
-    localStorage.removeItem(STORAGE_KEY);
+    // Only the current model resets; other models keep their saved recipes.
+    const store = readStore();
+    delete store.recipes[recipe.model];
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+    recipe = defaultRecipe(recipe.model, activePose());
     selectedView = "02-back";
-    selectedPartId = "frame";
+    selectedPartId = activeParts()[0].id;
     syncCmfForm();
     refreshCmfPresetControl();
     syncViewControls();
@@ -367,17 +930,14 @@
   }
 
   function shuffleRecipe() {
-    const colors = shuffleArray(COLORS.map((color) => color.id));
-    recipe.parts.volumeUp = colors[0];
-    recipe.parts.volumeDown = colors[1];
-    recipe.parts.actionButton = colors[2];
-    recipe.parts.cameraControl = colors[3];
-    recipe.parts.sideButton = colors[4];
-    recipe.parts.frame = colors[1];
-    recipe.parts.backGlass = colors[4];
-    recipe.parts.simTray = colors[0];
-    recipe.parts.usbC = colors[2];
-    recipe.parts.cameraPlate = colors[3];
+    // Reshuffle each time the palette is exhausted, so a three-color palette
+    // still mixes instead of repeating one fixed stripe order.
+    const parts = activeParts();
+    let bag = [];
+    for (const part of parts) {
+      if (!bag.length) bag = shuffleArray(activeColors().map((color) => color.id));
+      recipe.parts[part.id] = bag.pop();
+    }
     syncCmfForm();
     saveRecipe({ quiet: true });
     updateInteractiveModel();
@@ -481,6 +1041,8 @@
       viewport,
       canvas,
       model: null,
+      modelId: "",
+      poseId: "",
       bounds: null,
       viewHalfHeight: 1,
       viewIsCustom: false,
@@ -544,14 +1106,20 @@
 
   function applyLiveRecipe(model = rendererState?.model) {
     if (!model) return 0;
+    // Never paint one device (or pose) in another's finishes: if the loaded
+    // model is not the recipe's model+pose (a switch that failed, or one still
+    // loading), report no live update so the caller rebuilds instead.
+    if (rendererState && rendererState.modelId && (
+      rendererState.modelId !== recipe.model || rendererState.poseId !== (recipe.pose || "closed")
+    )) return 0;
     let changedMaterials = 0;
     model.traverse((object) => {
       const materials = Array.isArray(object.material) ? object.material : [object.material];
       materials.filter(Boolean).forEach((material) => {
         const match = String(material.name || "").match(
-          /__(frameSide|frame|backGlass|volumeUp|volumeDown|actionOrSim|cameraControl|sideButton|simTray|usbC|screwOrSpeaker|cameraPlate)_[^/]+$/,
+          /__(frameSide|frame|backGlass|volumeUp|volumeDown|actionOrSim|cameraControl|sideButton|simTray|usbC|screwOrSpeaker|cameraPlate|lid|topCase|bottomCase|keycaps)_[^/]+$/,
         );
-        const partId = material.userData?.cmfPart || (match ? MATERIAL_PART_ALIASES[match[1]] : "");
+        const partId = material.userData?.cmfPart || (match ? (MATERIAL_PART_ALIASES[match[1]] || match[1]) : "");
         const color = partId ? colorMeta(recipe.parts[partId]) : null;
         if (!color || !material.color?.set) return;
         material.color.set(color.hex);
@@ -584,13 +1152,13 @@
       });
       const namedPart = sourceMaterials
         .map((material) => String(material?.name || "").match(
-          /__(frameSide|frame|backGlass|volumeUp|volumeDown|actionOrSim|cameraControl|sideButton|simTray|usbC|screwOrSpeaker|cameraPlate)_[^/]+$/,
+          /__(frameSide|frame|backGlass|volumeUp|volumeDown|actionOrSim|cameraControl|sideButton|simTray|usbC|screwOrSpeaker|cameraPlate|lid|topCase|bottomCase|keycaps)_[^/]+$/,
         ))
         .find(Boolean);
-      const partId = (namedPart ? MATERIAL_PART_ALIASES[namedPart[1]] : "")
-        || EXACT_PART_BY_MESH_NAME[object.name]
+      const partId = (namedPart ? (MATERIAL_PART_ALIASES[namedPart[1]] || namedPart[1]) : "")
+        || activeModel().meshParts[object.name]
         || classifyLiveMesh(object, globalBounds);
-      if (!partId) return;
+      if (!partId || !Object.prototype.hasOwnProperty.call(recipe.parts, partId)) return;
 
       const ownedMaterials = sourceMaterials.map((material) => {
         const owned = material.clone();
@@ -718,6 +1286,8 @@
       prepareLiveMaterials(nextModel, nextBounds);
       state.scene.add(nextModel);
       state.model = nextModel;
+      state.modelId = requestedRecipe.model;
+      state.poseId = requestedRecipe.pose || "closed";
       state.bounds = nextBounds;
       applyLiveRecipe(nextModel);
       if (previousModel) {
@@ -727,7 +1297,10 @@
       state.canvas.hidden = false;
       const empty = cmfEl("cmf-preview-empty");
       if (empty) empty.hidden = true;
-      if (!previousModel) {
+      // A different device is a different size, so re-frame it the way a first
+      // load would instead of keeping the previous device's camera distance.
+      if (!previousModel || pendingModelSwitch) {
+        pendingModelSwitch = false;
         state.viewIsCustom = false;
         syncViewControls();
         applyCmfView(selectedView, { animate: false });
@@ -768,7 +1341,7 @@
   }
 
   function selectCmfView(name) {
-    if (!VIEW_DEFINITIONS.some((view) => view.name === name)) return;
+    if (!activeViews().some((view) => view.name === name)) return;
     selectedView = name;
     if (rendererState) rendererState.viewIsCustom = false;
     syncViewControls();
@@ -793,7 +1366,7 @@
 
   function applyCmfView(name, options = {}) {
     const state = rendererState;
-    const view = VIEW_DEFINITIONS.find((item) => item.name === name);
+    const view = activeViews().find((item) => item.name === name);
     if (!state?.model || !state.bounds || !view) return;
 
     const { Vector3 } = state.modules;

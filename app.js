@@ -702,7 +702,16 @@ function renderFinderItemIcon(item) {
 }
 
 function dropletDropAttributes(item) {
-  return item.dropletAction ? ` data-drop-target="droplet" data-droplet-action="${escapeHtml(item.dropletAction)}"` : "";
+  return item.dropletAction
+    ? ` data-drop-target="droplet" data-droplet-action="${escapeHtml(item.dropletAction)}" data-balloon-help="balloon_droplet"`
+    : "";
+}
+
+function splitApplicationsSections(items = []) {
+  const apps = [];
+  const droplets = [];
+  items.forEach((item) => (item.dropletAction ? droplets : apps).push(item));
+  return droplets.length ? { apps, droplets } : null;
 }
 
 function getSelectedStaticFinderItem(winName = selectedStaticFinderWindowName) {
@@ -932,7 +941,24 @@ function renderStaticFinderWindow(winName) {
   updateFinderViewButtons(win, mode);
 
   setFinderViewClasses(grid, mode);
+  const sectioned = winName === "applications" ? splitApplicationsSections(items) : null;
+  const apps = sectioned ? sectioned.apps : items;
+  const droplets = sectioned ? sectioned.droplets : [];
+  const dropletSectionLabel = sectioned
+    ? `<div class="finder-section-label">${escapeHtml(t("droplets_section"))}</div>`
+    : "";
+  const dropletListLabel = sectioned
+    ? `<div class="finder-list-group">${escapeHtml(t("droplets_section"))}</div>`
+    : "";
   if (isFinderListMode(mode)) {
+    const renderListRow = (item) => `
+      <button class="finder-list-row${selected?.action === item.action ? " is-selected" : ""}" data-static-finder-window="${escapeHtml(winName)}" data-static-finder-action="${escapeHtml(item.action)}"${dropletDropAttributes(item)}>
+        <span class="finder-list-name-cell">${renderFinderItemIcon(item)}<span>${escapeHtml(item.name)}</span></span>
+        <span>${escapeHtml(item.kind)}</span>
+        <span>${escapeHtml(item.sizeLabel || "--")}</span>
+        <span>${escapeHtml(item.updatedAt ? new Date(item.updatedAt).toLocaleDateString() : "--")}</span>
+      </button>
+    `;
     grid.innerHTML = `
       <div class="finder-list-header">
         <span>${escapeHtml(t("file_name"))}</span>
@@ -940,24 +966,24 @@ function renderStaticFinderWindow(winName) {
         <span>${escapeHtml(t("size"))}</span>
         <span>${escapeHtml(t("modified"))}</span>
       </div>
-      ${items.map((item) => `
-        <button class="finder-list-row${selected?.action === item.action ? " is-selected" : ""}" data-static-finder-window="${escapeHtml(winName)}" data-static-finder-action="${escapeHtml(item.action)}"${dropletDropAttributes(item)}>
-          <span class="finder-list-name-cell">${renderFinderItemIcon(item)}<span>${escapeHtml(item.name)}</span></span>
-          <span>${escapeHtml(item.kind)}</span>
-          <span>${escapeHtml(item.sizeLabel || "--")}</span>
-          <span>${escapeHtml(item.updatedAt ? new Date(item.updatedAt).toLocaleDateString() : "--")}</span>
-        </button>
-      `).join("")}
+      ${apps.map(renderListRow).join("")}
+      ${dropletListLabel}
+      ${droplets.map(renderListRow).join("")}
     `;
     return;
   }
 
-  grid.innerHTML = items.map((item) => `
+  const renderIconItem = (item) => `
     <button class="finder-item${selected?.action === item.action ? " is-selected" : ""}" data-static-finder-window="${escapeHtml(winName)}" data-static-finder-action="${escapeHtml(item.action)}"${dropletDropAttributes(item)}>
       ${renderFinderItemIcon(item)}
       <span>${escapeHtml(item.name)}</span>
     </button>
-  `).join("");
+  `;
+  grid.innerHTML = [
+    ...apps.map(renderIconItem),
+    dropletSectionLabel,
+    ...droplets.map(renderIconItem),
+  ].filter(Boolean).join("");
 }
 
 function toggleViewMode(winName, mode) {
@@ -1106,7 +1132,10 @@ let selectedScrapStack = "all";
 let topZ = 10;
 let cascadeOffset = 0;
 let waitTimer = null;
-var currentLanguage = "zh";
+// The app follows the host system language: a Chinese system defaults to
+// Simplified Chinese, any other system defaults to English (international
+// first-run). Saved settings override this later; the Apple menu can switch.
+var currentLanguage = String(navigator.language || "").toLowerCase().startsWith("zh") ? "zh" : "en";
 let writerMode = false;
 let activeAbortController = null;
 let lastUserText = "";
@@ -1364,7 +1393,7 @@ async function ensureSystemDictionaryData() {
 
 function t(key, ...args) {
   const tables = translations || window.AISystem6Data?.translations || {};
-  const table = tables[currentLanguage || "zh"] || tables.en || {};
+  const table = tables[currentLanguage || "en"] || tables.zh || tables.en || {};
   const value = table[key] ?? tables.en?.[key] ?? key;
   return typeof value === "function" ? value(...args) : value;
 }

@@ -29,7 +29,7 @@ test.assertIncludes(menus, "soundscape: soundscapeMenus", "Soundscape owns its m
 test.assertIncludes(actions, '"open-soundscape": () => openWindow("soundscape")', "the launcher opens the System 6 window");
 test.assertIncludes(runtimeManifest, '"app/features/soundscape.js"', "the module is a lazy runtime path");
 test.assertNotIncludes(html, 'src="app/features/soundscape.js"', "the lazy feature does not inflate startup");
-test.assertIncludes(config, "async function ensureSoundscapeModule()", "the feature has one guarded lazy loader");
+test.assertIncludes(config, 'createLazyModuleLoader("AISystem6SoundscapeLoaded", ["app/features/soundscape.js"])', "the feature has one guarded lazy loader");
 test.assertIncludes(windowManager, "attach: () => window.AISystem6Soundscape?.attach?.()", "session restore reattaches the feature");
 test.assertIncludes(icons, "soundscape:", "Soundscape has a system icon in both visual languages");
 test.assertIncludes(icons, 'M8 16h3l2-6 3 12 3-10 2 7h3', "the icon uses a sound-wave landscape instead of a decorative disc");

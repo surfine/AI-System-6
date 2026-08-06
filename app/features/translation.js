@@ -330,7 +330,7 @@ async function translateTeachTextDocument() {
 
     const folder = ensureFolder(teachTextFolderInput.value);
     const now = new Date().toISOString();
-    const name = nextAvailableFileName(translatedDocumentName(title, targetLanguage), activeProjectId);
+    const name = nextAvailableProjectFileName(translatedDocumentName(title, targetLanguage), activeProjectId);
     const file = {
       id: crypto.randomUUID(),
       projectId: activeProjectId,
@@ -916,7 +916,10 @@ async function runDirectWritingTool(mode) {
 
   let instruction = "";
   if (mode === "describeChange" || mode === "transform") {
-    instruction = window.prompt(t("describe_change_prompt"), t("describe_change_default")) || "";
+    instruction = await showInputDialog({
+      message: t("describe_change_prompt"),
+      defaultValue: t("describe_change_default"),
+    }) || "";
     if (!instruction.trim()) return;
   }
 
@@ -1019,7 +1022,10 @@ async function printSelectionToAi(mode, context, resolvedPrompt = null) {
   if (!context?.text) return false;
   let instruction = "";
   if (mode === "describeChange" || mode === "transform") {
-    instruction = window.prompt(t("describe_change_prompt"), t("describe_change_default")) || "";
+    instruction = await showInputDialog({
+      message: t("describe_change_prompt"),
+      defaultValue: t("describe_change_default"),
+    }) || "";
     if (!instruction.trim()) return true;
   }
 
@@ -1052,7 +1058,10 @@ async function printTeachTextToAi(mode) {
 
   let instruction = "";
   if (mode === "describeChange" || mode === "transform") {
-    instruction = window.prompt(t("describe_change_prompt"), t("describe_change_default")) || "";
+    instruction = await showInputDialog({
+      message: t("describe_change_prompt"),
+      defaultValue: t("describe_change_default"),
+    }) || "";
     if (!instruction.trim()) return;
   }
 

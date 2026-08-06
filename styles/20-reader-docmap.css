@@ -323,7 +323,7 @@ body.is-resizing-tdi {
   border-radius: var(--tdi-tab-close-radius);
   background: var(--tdi-tab-close-bg);
   color: var(--tdi-tab-close-fg);
-  padding: 0 !important;
+  padding: 0;
   transform: var(--tdi-tab-close-transform);
   z-index: var(--z-local-control);
   font-family: var(--title-font);

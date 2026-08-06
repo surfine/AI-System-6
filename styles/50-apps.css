@@ -1005,9 +1005,10 @@
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
-  border: var(--system-control-line) solid var(--ink);
-  background: var(--paper);
-  box-shadow: inset 1px 1px 0 var(--shade);
+  border: var(--teachtext-editor-border);
+  border-radius: var(--teachtext-editor-radius);
+  background: var(--teachtext-editor-bg);
+  box-shadow: var(--teachtext-editor-shadow);
 }
 
 .teachtext-editor-container.is-previewing {
@@ -1618,7 +1619,7 @@
   min-height: 0;
   flex-basis: 292px;
   padding: 0;
-  background: var(--project-cd-pane-bg);
+  background: var(--pane-bg);
 }
 
 .project-cd-grid {
@@ -1897,8 +1898,10 @@
 
 .import-preview {
   min-height: 132px;
-  border: var(--system-control-line) solid var(--ink);
-  background: var(--paper);
+  border: var(--import-preview-border);
+  border-radius: var(--import-preview-radius);
+  background: var(--import-preview-bg);
+  box-shadow: var(--import-preview-shadow);
   overflow: auto;
 }
 
@@ -1923,6 +1926,10 @@
 
 .backup-preview {
   min-height: 96px;
+  border: var(--backup-preview-border);
+  border-radius: var(--backup-preview-radius);
+  background: var(--backup-preview-bg);
+  box-shadow: var(--backup-preview-shadow);
 }
 
 .backup-action-row {
@@ -1976,12 +1983,20 @@
   overflow: hidden;
 }
 
-.scrap-list,
 .trash-list {
   border: var(--system-control-line) solid var(--ink);
   min-height: 0;
   overflow: auto;
   background: var(--paper);
+}
+
+.scrap-list {
+  border: var(--scrap-list-border);
+  border-radius: var(--scrap-list-radius);
+  min-height: 0;
+  overflow: auto;
+  background: var(--scrap-list-bg);
+  box-shadow: var(--scrap-list-shadow);
 }
 
 .trash-list:has(.trash-empty-state) {
@@ -2135,7 +2150,7 @@ body:not(.use-liquid-glass) .scrap-list button.is-multi-selected:not(.is-selecte
 }
 
 .scrap-list button.is-source-searchResult .mini-icon {
-  border-radius: 50%;
+  border-radius: var(--radio-radius);
 }
 
 .scrap-editor {
@@ -2193,9 +2208,9 @@ body:not(.use-liquid-glass) .scrap-list button.is-multi-selected:not(.is-selecte
 
 .source-info-panel {
   min-height: 19px;
-  border: 0;
-  border-bottom: 1px dotted var(--shade-dark);
-  background: transparent;
+  border: var(--source-info-panel-border);
+  background: var(--paper);
+  box-shadow: var(--system-inset);
   padding: 5px 7px;
   color: var(--shade-dark);
   font-family: var(--text-font);
@@ -2361,7 +2376,7 @@ body:not(.use-liquid-glass) .scrap-list button.is-multi-selected:not(.is-selecte
 #scrap-tags[hidden],
 #attach-scrap-to-assistant[hidden],
 .scrap-selection-actions[hidden] {
-  display: none !important;
+  display: none;
 }
 
 .small-muted {
@@ -2522,6 +2537,7 @@ body:not(.use-liquid-glass) .scrap-list button.is-multi-selected:not(.is-selecte
 .field-row label {
   margin: 0;
   font-weight: 400;
+  color: var(--control-label-fg);
 }
 
 input[type="checkbox"] {
@@ -2770,7 +2786,7 @@ body:not(.use-liquid-glass) .desktop-app-icon span[data-liquid-label="DAA Meme"]
 
 .sys-icon::before,
 .sys-icon::after {
-  content: none !important;
+  content: none;
 }
 
 /* Classic icons share a 32×32 vector grid. One viewBox unit is the common

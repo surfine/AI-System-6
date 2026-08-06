@@ -25,11 +25,6 @@ function documentRoleAllows(app, role, action) {
   return getDocumentRolePolicy(app, role).includes(action);
 }
 
-function activeDocumentTabAllows(app, action) {
-  const tab = typeof getActiveDocumentTab === "function" ? getActiveDocumentTab(app) : null;
-  return !!tab && documentRoleAllows(app, tab.role, action);
-}
-
 function activeTeachTextAllows(action) {
   const role = typeof teachTextDocumentRole === "string" ? teachTextDocumentRole : getActiveDocumentTab("teachText")?.role;
   return documentRoleAllows("teachText", role, action);

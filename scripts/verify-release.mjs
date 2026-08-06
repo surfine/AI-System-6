@@ -286,6 +286,16 @@ if (escapeHtmlDefinitions.length === 1 && escapeHtmlDefinitions[0] === "app/core
   fail(`escapeHtml helper should only live in app/core/strings.js; found ${escapeHtmlDefinitions.join(", ") || "(none)"}`);
 }
 
+const lazyLoaderDefinitions = [...appSourceByPath.entries()]
+  .filter(([path]) => !thirdPartyRuntimePaths.has(path))
+  .filter(([, source]) => /\bfunction\s+loadClassicScriptOnce\s*\(/.test(source))
+  .map(([path]) => path);
+if (lazyLoaderDefinitions.length === 1 && lazyLoaderDefinitions[0] === "app/core/config.js") {
+  ok("shared lazy loader is canonical");
+} else {
+  fail(`loadClassicScriptOnce should only live in app/core/config.js; found ${lazyLoaderDefinitions.join(", ") || "(none)"}`);
+}
+
 const directMarkedParseCallers = [...appSourceByPath.entries()]
   .filter(([path]) => !thirdPartyRuntimePaths.has(path))
   .filter(([, source]) => /\bmarked\.parse\s*\(/.test(source))

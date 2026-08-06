@@ -32,6 +32,7 @@
           <hr />
           <div class="menu-section-label" data-i18n="apple_menu_start">Start</div>
           <button data-action="open-guide" data-i18n="start_here">Start Here</button>
+          <button data-action="open-system-help" data-i18n="system_help" data-balloon-help="balloon_system_help">System Help</button>
           <button data-workspace-capability="studio" data-action="guide-start-route" data-i18n="guide_start_route">Start Writing Route</button>
           <hr data-workspace-capability="studio" />
           <div class="menu-section-label" data-i18n="apple_menu_writing_da">Writing DA</div>
@@ -126,8 +127,8 @@
             <span aria-hidden="true"></span>
           </div>
           <div class="spine-shade-body">
-          <div class="spine-actions" aria-label="Writing path" data-action-availability="independent">
-          <div class="spine-section spine-section-main" aria-label="Writing path">
+          <div class="spine-actions" aria-label="Writing path" data-i18n-aria-label="writing_path" data-action-availability="independent">
+          <div class="spine-section spine-section-main" aria-label="Writing path" data-i18n-aria-label="writing_path">
             <button id="spine-file-floppy-button" type="button" data-action="open-rag" hidden>
               <span class="sys-icon sys-icon-desktop" data-system-icon="fileFloppy" aria-hidden="true"></span>
               <b data-i18n="mount_text_disk">Insert File Floppy</b>
@@ -270,11 +271,47 @@
         </form>
       </dialog>
 
+      <dialog id="new-project-disk-modal" class="finder-operation-modal new-project-disk-modal">
+        <form method="dialog">
+          <div class="finder-operation-layout">
+            <aside class="finder-operation-subject">
+              <span class="icon project-disk" aria-hidden="true"></span>
+              <b data-i18n="project_disk">Project Hard Disk</b>
+              <small data-i18n="new_project_disk">New Project Hard Disk...</small>
+            </aside>
+            <section class="finder-operation-body">
+              <h2 id="new-project-disk-title" data-i18n="new_project_disk_title">New Project Hard Disk</h2>
+              <p id="new-project-disk-lede" class="finder-operation-lede" data-i18n="new_project_disk_lede">Name the new Project Hard Disk. The name appears on the desktop and in the project switcher.</p>
+              <input id="new-project-disk-name" type="text" data-i18n-aria-label="new_project_prompt" autocomplete="off" spellcheck="false" />
+            </section>
+          </div>
+          <div class="button-row finder-operation-actions">
+            <button class="btn" value="cancel" id="new-project-disk-cancel" data-i18n="cancel">Cancel</button>
+            <button class="btn default" value="ok" id="new-project-disk-confirm" data-i18n="new_project_disk_create">Create</button>
+          </div>
+        </form>
+      </dialog>
+
+      <dialog id="app-input-modal" class="finder-operation-modal app-input-modal">
+        <form method="dialog">
+          <section class="finder-operation-body">
+            <h2 id="app-input-title" hidden></h2>
+            <p id="app-input-message" class="finder-operation-lede" hidden></p>
+            <input id="app-input-field" type="text" autocomplete="off" spellcheck="false" />
+            <textarea id="app-input-textarea" rows="8" hidden></textarea>
+          </section>
+          <div class="button-row finder-operation-actions">
+            <button class="btn" value="cancel" id="app-input-cancel" data-i18n="cancel">Cancel</button>
+            <button class="btn default" value="ok" id="app-input-confirm" data-i18n="ok">OK</button>
+          </div>
+        </form>
+      </dialog>
+
       <section class="window assistant-window" data-window="assistant" data-drop-target="clio-attachment" aria-labelledby="assistant-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h1 id="assistant-title" data-i18n="assistant_title">ClioTalk</h1>
-          <button class="resize-box" aria-label="Zoom"></button>
+          <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
         </div>
         <!-- Info bar: this window's Finder header. Counts on the left, the
              file this conversation lives in on the right, visible before the
@@ -394,9 +431,9 @@
 
       <aside class="window control-panel is-collapsed" data-window="control" aria-labelledby="control-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="control-title" data-i18n="control_panel">Control Panel</h2>
-          <button class="resize-box hidden" aria-label="Zoom" disabled aria-hidden="true"></button>
+          <button class="resize-box hidden" aria-label="Zoom" data-i18n-aria-label="zoom" disabled aria-hidden="true"></button>
         </div>
         <div class="window-pane settings control-settings">
           <div class="system-tabs" role="tablist" aria-label="Control Panel section">
@@ -583,7 +620,7 @@
 
       <aside class="window chooser-panel is-collapsed" data-window="chooser" aria-labelledby="chooser-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="chooser-title" data-i18n="chooser">Chooser</h2>
         </div>
         <div class="window-pane settings chooser-settings">
@@ -636,7 +673,7 @@
 
       <aside class="window rag-panel is-collapsed memory-transfer-window" data-window="rag" aria-labelledby="rag-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="rag-title" data-i18n="mount_text_disk">Insert File Floppy</h2>
         </div>
         <div class="details-bar">
@@ -670,7 +707,7 @@
 
       <section class="window text-disk-window is-hidden" data-window="textDisk" aria-labelledby="text-disk-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="text-disk-title" data-i18n="mounted_text_disk">File Floppy</h2>
         </div>
         <div class="details-bar">
@@ -689,15 +726,15 @@
 
       <section class="window finder-window is-hidden" data-window="finder" aria-labelledby="finder-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="finder-title" data-i18n="system_folder">System Folder</h2>
-          <button class="resize-box" aria-label="Zoom"></button>
+          <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
         </div>
         <div class="details-bar">
           <span data-i18n="four_items">4 items</span>
-          <div class="view-controls" data-view-window="finder" aria-label="View">
-            <button class="view-btn is-active" type="button" data-view="icon" aria-label="Icon view"></button>
-            <button class="view-btn" type="button" data-view="list" aria-label="List view"></button>
+          <div class="view-controls" data-view-window="finder" aria-label="View" data-i18n-aria-label="view_controls">
+            <button class="view-btn is-active" type="button" data-view="icon" aria-label="Icon view" data-i18n-aria-label="view_icon"></button>
+            <button class="view-btn" type="button" data-view="list" aria-label="List view" data-i18n-aria-label="view_list"></button>
           </div>
           <span data-i18n="local_disk">Desktop</span>
         </div>
@@ -723,15 +760,15 @@
 
       <section class="window finder-window is-hidden" data-window="helpFolder" aria-labelledby="help-folder-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="help-folder-title" data-i18n="help_folder">Help Folder</h2>
-          <button class="resize-box" aria-label="Zoom"></button>
+          <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
         </div>
         <div class="details-bar">
           <span data-i18n="seven_items">7 items</span>
-          <div class="view-controls" data-view-window="helpFolder" aria-label="View">
-            <button class="view-btn is-active" type="button" data-view="icon" aria-label="Icon view"></button>
-            <button class="view-btn" type="button" data-view="list" aria-label="List view"></button>
+          <div class="view-controls" data-view-window="helpFolder" aria-label="View" data-i18n-aria-label="view_controls">
+            <button class="view-btn is-active" type="button" data-view="icon" aria-label="Icon view" data-i18n-aria-label="view_icon"></button>
+            <button class="view-btn" type="button" data-view="list" aria-label="List view" data-i18n-aria-label="view_list"></button>
           </div>
           <span data-i18n="startup_disk">Startup Disk</span>
         </div>
@@ -769,15 +806,15 @@
 
       <section class="window finder-window applications-window is-hidden" data-window="applications" aria-labelledby="applications-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="applications-title" data-i18n="applications">Applications</h2>
-          <button class="resize-box" aria-label="Zoom"></button>
+          <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
         </div>
         <div class="details-bar">
           <span data-i18n="twelve_items">12 items</span>
-          <div class="view-controls" data-view-window="applications" aria-label="View">
-            <button class="view-btn is-active" type="button" data-view="icon" aria-label="Icon view"></button>
-            <button class="view-btn" type="button" data-view="list" aria-label="List view"></button>
+          <div class="view-controls" data-view-window="applications" aria-label="View" data-i18n-aria-label="view_controls">
+            <button class="view-btn is-active" type="button" data-view="icon" aria-label="Icon view" data-i18n-aria-label="view_icon"></button>
+            <button class="view-btn" type="button" data-view="list" aria-label="List view" data-i18n-aria-label="view_list"></button>
           </div>
           <span data-i18n="startup_disk">Startup Disk</span>
         </div>
@@ -855,9 +892,9 @@
 
       <section class="window quick-draft-window is-hidden" data-window="quickDraft" aria-labelledby="quick-draft-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="quick-draft-title" data-i18n="quick_draft_title">Quick Draft</h2>
-          <button class="resize-box" aria-label="Zoom"></button>
+          <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
         </div>
         <div class="details-bar quick-draft-details">
           <span id="quick-draft-stats">0 words · ~0 sec</span>
@@ -983,9 +1020,9 @@
 
       <section class="window cmf-studio-window is-hidden" data-window="cmfStudio" aria-labelledby="cmf-studio-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="cmf-studio-title" data-i18n="cmf_studio_title">CMF Studio</h2>
-          <button class="resize-box" aria-label="Zoom"></button>
+          <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
         </div>
         <div class="details-bar cmf-status-bar">
           <span id="cmf-status" role="status" aria-live="polite" aria-atomic="true" data-i18n="cmf_ready">Ready.</span>
@@ -993,17 +1030,20 @@
         </div>
         <div class="window-pane cmf-studio-pane">
           <aside class="cmf-panel cmf-setup-panel">
-            <div class="cmf-model-readout">
+            <label class="cmf-control">
               <span data-i18n="cmf_model">Model</span>
-              <strong>iPhone 17</strong>
-            </div>
+              <span class="select-wrap"><select id="cmf-model">
+                <option value="iphone-17-standard" data-i18n="cmf_model_iphone_17">iPhone 17</option>
+              </select></span>
+            </label>
+            <label class="cmf-control" id="cmf-pose-control" hidden>
+              <span data-i18n="cmf_pose">Pose</span>
+              <span class="select-wrap"><select id="cmf-pose"></select></span>
+            </label>
             <label class="cmf-control">
               <span data-i18n="cmf_preset">Preset</span>
               <span class="select-wrap"><select id="cmf-preset">
                 <option value="" data-i18n="cmf_preset_custom">Custom</option>
-                <option value="porcelainCircuit" data-i18n="cmf_preset_porcelain">Porcelain Circuit</option>
-                <option value="sageTerminal" data-i18n="cmf_preset_sage">Sage Terminal</option>
-                <option value="mistDraft" data-i18n="cmf_preset_mist">Mist Draft</option>
               </select></span>
             </label>
             <div class="cmf-setup-actions">
@@ -1049,9 +1089,9 @@
 
       <section class="window soundscape-window is-hidden" data-window="soundscape" aria-labelledby="soundscape-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="soundscape-title" data-i18n="soundscape_title">Soundscape</h2>
-          <button class="resize-box" aria-label="Zoom"></button>
+          <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
         </div>
         <div class="details-bar soundscape-status-bar">
           <span id="soundscape-status" data-i18n="soundscape_ready">Ready to listen.</span>
@@ -1209,8 +1249,8 @@
 
       <section class="window endfield-terminal-window is-hidden" data-window="endfieldTerminal" aria-labelledby="endfield-terminal-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
-          <button class="resize-box" aria-label="Zoom"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
+          <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
           <h2 id="endfield-terminal-title" data-i18n="endfield_terminal_title">Endfield Terminal</h2>
         </div>
         <div class="details-bar endfield-status-bar">
@@ -1246,8 +1286,8 @@
 
       <section class="window bureaucracy-meme-window is-hidden" data-window="bureaucracyMeme" aria-labelledby="bureaucracy-meme-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
-          <button class="resize-box" aria-label="Zoom"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
+          <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
           <h2 id="bureaucracy-meme-title" data-i18n="bureaucracy_meme_title">British Bureaucracy Meme Generator</h2>
         </div>
         <div class="details-bar bureaucracy-status-bar">
@@ -1327,15 +1367,15 @@
 
       <section class="window disk-window is-hidden" data-window="disk" aria-labelledby="disk-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="disk-title" data-i18n="startup_disk">Startup Disk</h2>
-          <button class="resize-box" aria-label="Zoom"></button>
+          <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
         </div>
         <div class="details-bar">
           <span data-i18n="seven_items">7 items</span>
-          <div class="view-controls" data-view-window="disk" aria-label="View">
-            <button class="view-btn is-active" type="button" data-view="icon" aria-label="Icon view"></button>
-            <button class="view-btn" type="button" data-view="list" aria-label="List view"></button>
+          <div class="view-controls" data-view-window="disk" aria-label="View" data-i18n-aria-label="view_controls">
+            <button class="view-btn is-active" type="button" data-view="icon" aria-label="Icon view" data-i18n-aria-label="view_icon"></button>
+            <button class="view-btn" type="button" data-view="list" aria-label="List view" data-i18n-aria-label="view_list"></button>
           </div>
           <span data-i18n="startup_disk">Startup disk</span>
         </div>
@@ -1373,9 +1413,9 @@
 
       <section class="window project-cd-window is-hidden" data-window="projectCd" aria-labelledby="project-cd-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="project-cd-title" data-i18n="project_cd">Project CD</h2>
-          <button class="resize-box" aria-label="Zoom"></button>
+          <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
         </div>
         <div class="details-bar">
           <span id="project-cd-count">0 Project CD items</span>
@@ -1393,7 +1433,7 @@
 
       <section class="window page-setup-window is-hidden" data-window="pageSetup" aria-labelledby="page-setup-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="page-setup-title" data-i18n="page_setup_title">Page Setup</h2>
         </div>
         <div class="details-bar">
@@ -1424,7 +1464,7 @@
 
       <section class="window import-utility-window is-hidden memory-transfer-window" data-window="importUtility" aria-labelledby="import-utility-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="import-utility-title" data-i18n="import_utility">Write to Project Hard Disk</h2>
         </div>
         <div class="details-bar">
@@ -1473,9 +1513,9 @@
 
       <section class="window project-disk-window is-hidden" data-window="projects" aria-labelledby="project-disk-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="project-disk-title" data-i18n="project_disk">Project Hard Disk</h2>
-          <button class="resize-box" aria-label="Zoom"></button>
+          <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
         </div>
         <div class="window-pane project-disk-pane">
           <div class="project-disk-toolbar" hidden>
@@ -1499,15 +1539,15 @@
 
       <section class="window documents-window is-hidden" data-window="documents" aria-labelledby="documents-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="documents-title" data-i18n="documents">Documents</h2>
-          <button class="resize-box" aria-label="Zoom"></button>
+          <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
         </div>
         <div class="details-bar">
           <span id="documents-count">0 files</span>
-          <div class="view-controls" data-view-window="documents" aria-label="View">
-            <button class="view-btn is-active" type="button" data-view="icon" aria-label="Icon view"></button>
-            <button class="view-btn" type="button" data-view="list" aria-label="List view"></button>
+          <div class="view-controls" data-view-window="documents" aria-label="View" data-i18n-aria-label="view_controls">
+            <button class="view-btn is-active" type="button" data-view="icon" aria-label="Icon view" data-i18n-aria-label="view_icon"></button>
+            <button class="view-btn" type="button" data-view="list" aria-label="List view" data-i18n-aria-label="view_list"></button>
           </div>
           <span id="documents-project-label">Project Hard Disk</span>
         </div>
@@ -1524,7 +1564,7 @@
 
       <section class="window chat-file-window is-hidden" data-window="chatFile" aria-labelledby="chat-file-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="chat-file-title">Chat File</h2>
         </div>
         <div class="details-bar">
@@ -1545,9 +1585,9 @@
 
       <section class="window teachtext-window is-hidden" data-window="teachText" aria-labelledby="teachtext-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="teachtext-title">Untitled</h2>
-          <button class="resize-box" aria-label="Zoom"></button>
+          <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
         </div>
         <div class="details-bar teachtext-details-bar">
           <span id="teachtext-boundary">0 words</span>
@@ -1567,7 +1607,7 @@
         </div>
         <div class="tdi-shell teachtext-shell">
           <div class="tdi-rail"><div id="teachtext-tabs" class="tdi-tabs teachtext-tabs is-hidden" aria-label="TeachText tabs"></div></div>
-          <div class="tdi-grabber" role="separator" tabindex="0" aria-label="Resize tabs" aria-orientation="vertical"></div>
+          <div class="tdi-grabber" role="separator" tabindex="0" aria-label="Resize tabs" data-i18n-aria-label="resize_tabs" aria-orientation="vertical"></div>
         <form id="teachtext-form" class="window-pane teachtext-pane">
           <input id="teachtext-name" type="hidden" value="Untitled" />
           <input id="teachtext-folder" type="hidden" value="General" />
@@ -1606,15 +1646,15 @@
 
       <section class="window image-manager-window is-hidden" data-window="imageManager" aria-labelledby="image-manager-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="image-manager-title" data-i18n="image_manager">Image Manager</h2>
-          <button class="resize-box" aria-label="Zoom"></button>
+          <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
         </div>
         <div class="details-bar">
           <span id="image-manager-status">0 / 48</span>
-          <div class="view-controls" data-view-window="imageManager" aria-label="View">
+          <div class="view-controls" data-view-window="imageManager" aria-label="View" data-i18n-aria-label="view_controls">
             <button class="view-btn is-active" type="button" data-view="icon" aria-label="Grid view"></button>
-            <button class="view-btn" type="button" data-view="list" aria-label="List view"></button>
+            <button class="view-btn" type="button" data-view="list" aria-label="List view" data-i18n-aria-label="view_list"></button>
           </div>
           <span id="image-manager-document" data-i18n="teachtext">TeachText</span>
         </div>
@@ -1630,9 +1670,9 @@
 
       <section class="window review-desk-window is-hidden" data-window="reviewDesk" aria-labelledby="review-desk-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="review-desk-title" data-i18n="review_desk">Review Desk</h2>
-          <button class="resize-box" aria-label="Zoom"></button>
+          <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
         </div>
         <div class="details-bar teachtext-details-bar">
           <span id="style-sheet-count" data-i18n="draft_voice_stats_empty">0 words · ~0 sec</span>
@@ -1688,7 +1728,7 @@
 
       <section class="window save-chat-window is-hidden" data-window="saveChat" aria-labelledby="save-chat-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="save-chat-title" data-i18n="save_chat_title">Save Chat</h2>
         </div>
         <form id="save-chat-form" class="window-pane save-chat-pane">
@@ -1710,9 +1750,9 @@
 
       <section class="window scrapbook-window is-hidden" data-window="scrapbook" aria-labelledby="scrapbook-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="scrapbook-title" data-i18n="scrapbook">Scrapbook</h2>
-          <button class="resize-box" aria-label="Zoom"></button>
+          <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
         </div>
         <div class="details-bar scrapbook-details-bar">
           <span id="scrap-count">0 scraps</span>
@@ -1771,9 +1811,9 @@
 
       <section class="window trash-window is-hidden" data-window="trash" aria-labelledby="trash-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="trash-title" data-i18n="trash">Trash</h2>
-          <button class="resize-box" aria-label="Zoom"></button>
+          <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
         </div>
         <div class="details-bar">
           <span id="trash-count">0 items</span>
@@ -1790,7 +1830,7 @@
 
       <section class="window print-directory-window is-hidden" data-window="printDirectory" aria-labelledby="print-directory-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="print-directory-title" data-i18n="print_directory_title">Print Directory</h2>
         </div>
         <div class="details-bar">
@@ -1808,9 +1848,9 @@
 
       <section class="window reader-window is-hidden" data-window="reader" aria-labelledby="reader-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="reader-title" data-i18n="reader">Reader</h2>
-          <button class="resize-box" aria-label="Zoom"></button>
+          <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
         </div>
         <div class="details-bar">
           <span id="reader-status" data-i18n="ready">Ready</span>
@@ -1861,9 +1901,9 @@
 
       <section class="window time-machine-window is-hidden" data-window="timeMachine" aria-labelledby="time-machine-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="time-machine-title" data-i18n="time_machine">Time Machine</h2>
-          <button class="resize-box" aria-label="Zoom"></button>
+          <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
         </div>
         <div class="window-pane time-machine-pane">
           <div class="time-machine-browser-toolbar">
@@ -1973,9 +2013,9 @@
 
       <section class="window teachtext-surface-window question-sheet-window is-hidden" data-window="questionSheet" aria-labelledby="question-sheet-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="question-sheet-title" data-i18n="question_sheet">Question Sheet</h2>
-          <button class="resize-box" aria-label="Zoom"></button>
+          <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
         </div>
         <div class="details-bar teachtext-details-bar">
           <span id="question-count">0 questions</span>
@@ -2007,9 +2047,9 @@
 
       <section class="window teachtext-surface-window outline-window is-hidden" data-window="outline" aria-labelledby="outline-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="outline-title" data-i18n="outline">Outline</h2>
-          <button class="resize-box" aria-label="Zoom"></button>
+          <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
         </div>
         <div class="details-bar teachtext-details-bar">
           <span id="outline-status" data-i18n="draft">Draft</span>
@@ -2046,9 +2086,9 @@
 
       <section class="window teachtext-surface-window section-drafts-window is-hidden" data-window="sectionDrafts" aria-labelledby="section-drafts-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="section-drafts-title" data-i18n="section_drafts">Section Drafts</h2>
-          <button class="resize-box" aria-label="Zoom"></button>
+          <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
         </div>
         <div class="details-bar teachtext-details-bar">
           <span id="draft-count" data-i18n="draft_voice_stats_empty">0 words · ~0 sec</span>
@@ -2093,7 +2133,7 @@
 
       <section class="window find-path-window is-hidden" data-window="findPath" aria-labelledby="find-path-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="find-path-title" data-i18n="find_path">Searcher</h2>
         </div>
         <div class="details-bar find-path-details">
@@ -2131,7 +2171,7 @@
 
       <section class="window find-file-window is-hidden" data-window="findFile" aria-labelledby="find-file-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="find-file-title" data-i18n="find_file">Find File</h2>
         </div>
         <div class="details-bar">
@@ -2154,7 +2194,7 @@
 
       <section class="window context-panel-window is-hidden" data-window="contextPanel" aria-labelledby="context-panel-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="context-panel-title" data-i18n="context_panel">Context Panel</h2>
         </div>
         <div class="details-bar">
@@ -2169,17 +2209,18 @@
 
       <section class="window guide-window is-hidden" data-window="guide" aria-labelledby="guide-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close" tabindex="-1"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close" tabindex="-1"></button>
           <h2 id="guide-title" data-i18n="start_here">Start Here</h2>
         </div>
         <div class="window-pane guide-pane">
           <div class="guide-step" id="guide-welcome-step">
             <h3 data-i18n="guide_welcome_heading">This Macintosh did not stop in 1988.</h3>
-            <p data-i18n="guide_welcome_body">Start with the Apple menu at the top left. To keep several applications on the desktop or change the appearance, open Special. Connect AI when you need it.</p>
+            <p data-i18n="guide_welcome_body">Start with the Apple menu at the top left. To keep several applications on the desktop or change the appearance, open Special. To write, open Writing Studio on the desktop to enter the writing workspace. Connect AI when you need it.</p>
           </div>
 
           <div class="button-row">
-            <button class="btn" type="button" data-action="open-guide-promo" data-i18n="guide_watch_promo">Watch Promo Video</button>
+            <button class="btn" type="button" data-action="open-guide-promo" data-i18n="guide_watch_promo">Watch Promo</button>
+            <button class="btn" type="button" data-action="open-github-repo" data-i18n="github_repo">View GitHub</button>
             <button class="btn" type="button" data-action="guide-open-model-settings" data-i18n="guide_connect_ai">Connect AI…</button>
             <button class="btn default" type="button" data-action="dismiss-guide" data-i18n="guide_start_exploring" aria-keyshortcuts="Enter">Start Exploring</button>
           </div>
@@ -2188,7 +2229,7 @@
 
       <section class="window rebuild-flow-window is-hidden" data-window="rebuildFlow" aria-labelledby="rebuild-flow-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="rebuild-flow-title" data-i18n="rebuild_writing_flow_title">Rebuild Article</h2>
         </div>
         <div class="details-bar">
@@ -2221,9 +2262,9 @@
 
       <section class="window docmap-window is-hidden" data-window="docMap" aria-labelledby="docmap-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="docmap-title" data-i18n="docmap">DocMap</h2>
-          <button class="resize-box" aria-label="Zoom"></button>
+          <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
         </div>
         <div class="details-bar docmap-details-bar">
           <span id="docmap-count">0 nodes</span>
@@ -2242,7 +2283,7 @@
         </div>
         <div class="tdi-shell docmap-shell">
           <div class="tdi-rail"><div id="docmap-tabs" class="tdi-tabs docmap-tabs is-hidden" aria-label="DocMap tabs"></div></div>
-          <div class="tdi-grabber" role="separator" tabindex="0" aria-label="Resize tabs" aria-orientation="vertical"></div>
+          <div class="tdi-grabber" role="separator" tabindex="0" aria-label="Resize tabs" data-i18n-aria-label="resize_tabs" aria-orientation="vertical"></div>
         <div class="window-pane docmap-pane">
           <div class="docmap-layout">
             <div class="window-toolbar docmap-map-toolbar" aria-label="DocMap view controls">
@@ -2298,9 +2339,9 @@
 
       <section class="window clio-stage-window is-hidden" data-window="clioStage" aria-labelledby="clio-stage-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="clio-stage-title" data-i18n="clio_stage_title">ClioStage</h2>
-          <button class="resize-box" aria-label="Zoom"></button>
+          <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
         </div>
         <div class="details-bar clio-stage-details-bar">
           <button class="btn details-bar-button" type="button" id="clio-stage-import-files" data-i18n="docmap_import_files">Import Files...</button>
@@ -2354,9 +2395,9 @@
 
       <section class="window clio-chart-window is-hidden" data-window="clioChart" aria-labelledby="clio-chart-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="clio-chart-title" data-i18n="clio_chart_title">ClioChart</h2>
-          <button class="resize-box" aria-label="Zoom"></button>
+          <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
         </div>
         <div class="details-bar clio-chart-details-bar">
           <button class="btn details-bar-button" type="button" id="clio-chart-import-file" data-i18n-aria-label="clio_chart_import_file">
@@ -2415,9 +2456,9 @@
 
       <section class="window liquid-cover-window is-hidden" data-window="liquidCover" aria-labelledby="liquid-cover-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="liquid-cover-title" data-i18n="liquid_cover_title">Cover Glass</h2>
-          <button class="resize-box" aria-label="Zoom"></button>
+          <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
         </div>
         <div class="details-bar lc-status-bar">
           <span class="lc-ask-status" id="lc-ai-status" role="status" aria-live="polite" data-i18n="ready">Ready</span>
@@ -2748,7 +2789,7 @@ Glass</textarea>
 
       <section class="window dictionary-window is-hidden" data-window="dictionary" aria-labelledby="dictionary-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="dictionary-title" data-i18n="dictionary">Dictionary</h2>
         </div>
         <div class="details-bar">
@@ -2772,9 +2813,9 @@ Glass</textarea>
 
       <section class="window system-help-window is-hidden" data-window="systemHelp" aria-labelledby="system-help-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="system-help-title" data-i18n="system_help">System Help</h2>
-          <button class="resize-box" aria-label="Zoom"></button>
+          <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
         </div>
         <div class="details-bar">
           <span data-i18n="system_help_terms">System Terms</span>
@@ -2794,7 +2835,7 @@ Glass</textarea>
 
       <section class="window dictation-window is-hidden" data-window="dictation" aria-labelledby="dictation-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="dictation-title" data-i18n="dictation_pad">Dictation Pad</h2>
         </div>
         <div class="details-bar dictation-details-bar">
@@ -2824,7 +2865,7 @@ Glass</textarea>
 
       <section class="window translation-pad-window is-hidden" data-window="translationPad" aria-labelledby="translation-pad-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="translation-pad-title" data-i18n="translation_pad">Translation Pad</h2>
         </div>
         <div class="details-bar translation-pad-details-bar">
@@ -2848,7 +2889,7 @@ Glass</textarea>
 
       <section class="window note-pad-window is-hidden" data-window="notePad" aria-labelledby="note-pad-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="note-pad-title" data-i18n="note_pad">Note Pad</h2>
         </div>
         <div class="details-bar note-pad-details-bar">
@@ -2869,7 +2910,7 @@ Glass</textarea>
 
       <section class="window clipboard-window is-hidden" data-window="clipboard" aria-labelledby="clipboard-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="clipboard-title" data-i18n="clipboard">Clipboard</h2>
         </div>
         <div class="details-bar">
@@ -2888,7 +2929,7 @@ Glass</textarea>
 
       <section class="window alarm-clock-window is-hidden" data-window="alarmClock" aria-labelledby="alarm-clock-title">
         <div class="title-bar alarm-clock-title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 class="visually-hidden" id="alarm-clock-title" data-i18n="alarm_clock">Alarm Clock</h2>
           <output class="alarm-clock-current-time" id="alarm-clock-current-time" aria-live="off">--:--:-- --</output>
           <button class="alarm-clock-lever" id="alarm-clock-lever" type="button" aria-expanded="true" data-i18n-aria-label="alarm_clock_compact" aria-label="Make Alarm Clock smaller">
@@ -2945,7 +2986,7 @@ Glass</textarea>
 
       <section class="window calculator-window is-hidden" data-window="calculator" aria-labelledby="calculator-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="calculator-title" data-i18n="calculator">Calculator</h2>
         </div>
         <div class="window-pane calculator-pane">
@@ -2975,7 +3016,7 @@ Glass</textarea>
 
       <section class="window writing-bell-window is-hidden" data-window="writingBell" aria-labelledby="writing-bell-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="writing-bell-title" data-i18n="writing_bell">Writing Bell</h2>
         </div>
         <div class="window-pane writing-bell-pane">
@@ -3000,7 +3041,7 @@ Glass</textarea>
 
       <section class="window memory-cards-window is-hidden" data-window="memoryCards" aria-labelledby="memory-cards-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="memory-cards-title" data-i18n="memory_cards">Memory Cards</h2>
         </div>
         <div class="details-bar memory-cards-details-bar">
@@ -3015,7 +3056,7 @@ Glass</textarea>
 
       <section class="window puzzle-window is-hidden" data-window="puzzle" aria-labelledby="puzzle-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="puzzle-title" data-i18n="puzzle">Puzzle</h2>
         </div>
         <div class="window-pane puzzle-pane">
@@ -3028,7 +3069,7 @@ Glass</textarea>
 
       <section class="window model-meter-window is-hidden" data-window="modelMeter" aria-labelledby="model-meter-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="model-meter-title" data-i18n="model_meter">Model Meter</h2>
         </div>
         <div class="window-pane model-meter-pane">
@@ -3047,7 +3088,7 @@ Glass</textarea>
 
       <section class="window key-caps-window is-hidden" data-window="keyCaps" aria-labelledby="key-caps-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="key-caps-title" data-i18n="key_caps">Key Caps</h2>
         </div>
         <div class="window-pane key-caps-pane">
@@ -3077,7 +3118,7 @@ Glass</textarea>
 
       <section class="window system-status-window is-hidden" data-window="systemStatus" aria-labelledby="system-status-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="system-status-title" data-i18n="system_status">System Status</h2>
         </div>
         <div class="window-pane system-status-pane">
@@ -3135,7 +3176,7 @@ Glass</textarea>
 
       <section class="window notification-center-window is-hidden" data-window="notificationCenter" aria-labelledby="notification-center-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="notification-center-title" data-i18n="notification_center">System Messages</h2>
         </div>
         <div class="details-bar">
@@ -3149,7 +3190,7 @@ Glass</textarea>
 
       <section class="window info-window is-hidden" data-window="fileInfo" aria-labelledby="file-info-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="file-info-title" data-i18n="file_info">File Info</h2>
         </div>
         <div class="window-pane info-pane">
@@ -3202,7 +3243,7 @@ Glass</textarea>
 
       <section class="window info-window is-hidden" data-window="projectInfo" aria-labelledby="info-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="info-title" data-i18n="info_title">Info</h2>
         </div>
         <div class="window-pane info-pane">
@@ -3240,7 +3281,7 @@ Glass</textarea>
 
       <section class="window about-window is-hidden" data-window="about" aria-labelledby="about-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close"></button>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="about-title" data-i18n="about_menu">About AI System 6</h2>
         </div>
         <div class="window-pane about-pane">

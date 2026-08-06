@@ -285,184 +285,92 @@ function loadClassicScriptOnce(src) {
       return;
     }
     const script = existing || document.createElement("script");
+    let timer = null;
+    const fail = (message) => {
+      clearTimeout(timer);
+      // Drop the half-loaded element and the cached promise so a later retry
+      // fetches a fresh copy; an aborted/cancelled script can fire neither
+      // onload nor onerror, which would otherwise hang the caller forever.
+      lazyScriptPromises.delete(resolvedSrc);
+      script.remove();
+      reject(new Error(message));
+    };
     script.src = lazyScriptUrl(resolvedSrc);
     script.dataset.lazySrc = resolvedSrc;
     script.onload = () => {
+      clearTimeout(timer);
       script.dataset.loaded = "true";
       resolve(true);
     };
     script.onerror = () => {
-      lazyScriptPromises.delete(resolvedSrc);
-      reject(new Error(`Could not load ${resolvedSrc}`));
+      fail(`Could not load ${resolvedSrc}`);
     };
+    timer = setTimeout(() => fail(`Timed out loading ${resolvedSrc}`), 6000);
     if (!existing) document.head.append(script);
   });
   lazyScriptPromises.set(resolvedSrc, promise);
   return promise;
 }
 
-let writingFlowLoadPromise = null;
-let writingFlowHelpLoadPromise = null;
-let systemConceptsLoadPromise = null;
-let memoryCardsLoadPromise = null;
-let alarmClockLoadPromise = null;
-let bureaucracyMemeLoadPromise = null;
-let printDirectoryLoadPromise = null;
-let projectCdPrintLoadPromise = null;
-let translationPadLoadPromise = null;
-let dictionaryHelpLoadPromise = null;
-let videoTranscriptLoadPromise = null;
-let videoDocMapLoadPromise = null;
-let slidesExportLoadPromise = null;
-let clioStageLoadPromise = null;
-let clioChartLoadPromise = null;
-let liquidCoverLoadPromise = null;
-let quickDraftLoadPromise = null;
-let cmfStudioLoadPromise = null;
-let soundscapeLoadPromise = null;
-let endfieldTerminalLoadPromise = null;
-let timeMachineLoadPromise = null;
-let hkrrReviewLoadPromise = null;
-let mingmingHandoffReviewLoadPromise = null;
-let writingDemoLoadPromise = null;
-
-async function ensureWritingFlowModule() {
-  if (window.AISystem6WritingFlowLoaded) return true;
-  writingFlowLoadPromise ||= loadClassicScriptOnce("app/content/rebuild-samples.js")
-    .then(() => loadClassicScriptOnce("app/features/writing-flow.js"))
-    .catch((error) => {
-      writingFlowLoadPromise = null;
-      throw error;
-    });
-  return writingFlowLoadPromise;
+// Lazy modules load through one factory. Where a module installs a Loaded
+// flag (or its API object), the loader short-circuits on it; every loader
+// keeps a shared per-module promise so concurrent callers share one load, and
+// a failed load clears the promise so a later retry can succeed. Data loaders
+// resolve to the object they install. All loaders always return a Promise, so
+// both `await` and `.then()` callers behave identically.
+function createLazyModuleLoader(flag, sources, resolveData = false) {
+  let loadPromise = null;
+  return async function ensureLazyModuleLoaded() {
+    if (flag && window[flag]) return resolveData ? (window[flag] || {}) : true;
+    if (loadPromise) return loadPromise;
+    const chain = sources.reduce((pending, src) => pending.then(() => loadClassicScriptOnce(src)), Promise.resolve());
+    loadPromise = chain
+      .then(() => (resolveData ? (window[flag] || {}) : true))
+      .catch((error) => {
+        loadPromise = null;
+        throw error;
+      });
+    return loadPromise;
+  };
 }
 
-async function ensureWritingFlowHelpData() {
-  if (window.AISystem6WritingFlowHelpData) return window.AISystem6WritingFlowHelpData;
-  writingFlowHelpLoadPromise ||= loadClassicScriptOnce("app/data/writing-flow-help.js")
-    .then(() => window.AISystem6WritingFlowHelpData || {})
-    .catch((error) => {
-      writingFlowHelpLoadPromise = null;
-      throw error;
-    });
-  return writingFlowHelpLoadPromise;
+const ensureWritingFlowModule = createLazyModuleLoader("AISystem6WritingFlowLoaded", [
+  "app/content/rebuild-samples.js",
+  "app/features/writing-flow.js",
+]);
+const ensureMarkdownParser = createLazyModuleLoader("marked", ["app/vendor/marked.umd.js"]);
+const ensurePromptFilesData = createLazyModuleLoader("AISystem6PromptFiles", ["app/generated/ai-prompt-files.js"], true);
+const ensureTranslationZh = createLazyModuleLoader("AISystem6TranslationsZh", ["app/data/translations-zh.js"], true);
+const ensureTranslationEn = createLazyModuleLoader("AISystem6TranslationsEn", ["app/data/translations-en.js"], true);
+function ensureLanguageFor(language) {
+  return language === "zh" ? ensureTranslationZh() : ensureTranslationEn();
 }
-
-async function ensureSystemConceptsData() {
-  if (window.AISystem6SystemConceptsData) return window.AISystem6SystemConceptsData;
-  systemConceptsLoadPromise ||= loadClassicScriptOnce("app/data/system-concepts.js")
-    .then(() => window.AISystem6SystemConceptsData || {})
-    .catch((error) => {
-      systemConceptsLoadPromise = null;
-      throw error;
-    });
-  return systemConceptsLoadPromise;
-}
-
-async function ensureMemoryCardsModule() {
-  memoryCardsLoadPromise ||= loadClassicScriptOnce("app/features/memory-cards.js")
-    .catch((error) => {
-      memoryCardsLoadPromise = null;
-      throw error;
-    });
-  return memoryCardsLoadPromise;
-}
-
-async function ensureAlarmClockModule() {
-  alarmClockLoadPromise ||= loadClassicScriptOnce("app/features/alarm-clock.js")
-    .catch((error) => {
-      alarmClockLoadPromise = null;
-      throw error;
-    });
-  return alarmClockLoadPromise;
-}
-
-async function ensureBureaucracyMemeModule() {
-  if (window.AISystem6BureaucracyMeme) return true;
-  bureaucracyMemeLoadPromise ||= loadClassicScriptOnce("app/features/bureaucracy-meme.js")
-    .catch((error) => {
-      bureaucracyMemeLoadPromise = null;
-      throw error;
-    });
-  return bureaucracyMemeLoadPromise;
-}
-
-async function ensurePrintDirectoryModule() {
-  printDirectoryLoadPromise ||= loadClassicScriptOnce("app/features/print-directory.js")
-    .catch((error) => {
-      printDirectoryLoadPromise = null;
-      throw error;
-    });
-  return printDirectoryLoadPromise;
-}
-
-async function ensureProjectCdPrintModule() {
-  projectCdPrintLoadPromise ||= loadClassicScriptOnce("app/features/project-cd-print.js")
-    .catch((error) => {
-      projectCdPrintLoadPromise = null;
-      throw error;
-    });
-  return projectCdPrintLoadPromise;
-}
-
-async function ensureTranslationPadModule() {
-  translationPadLoadPromise ||= loadClassicScriptOnce("app/features/translation-pad.js")
-    .catch((error) => {
-      translationPadLoadPromise = null;
-      throw error;
-    });
-  return translationPadLoadPromise;
-}
-
-async function ensureDictionaryHelpModule() {
-  if (window.AISystem6DictionaryHelpLoaded) return true;
-  dictionaryHelpLoadPromise ||= loadClassicScriptOnce("app/features/dictionary-help.js")
-    .catch((error) => {
-      dictionaryHelpLoadPromise = null;
-      throw error;
-    });
-  return dictionaryHelpLoadPromise;
-}
-
-async function ensureVideoTranscriptModule() {
-  if (window.AISystem6VideoTranscriptLoaded) return true;
-  videoTranscriptLoadPromise ||= loadClassicScriptOnce("app/features/video-transcript.js")
-    .catch((error) => {
-      videoTranscriptLoadPromise = null;
-      throw error;
-    });
-  return videoTranscriptLoadPromise;
-}
-
-async function ensureVideoDocMapModule() {
-  if (window.AISystem6VideoDocMapLoaded) return true;
-  videoDocMapLoadPromise ||= loadClassicScriptOnce("app/features/video-docmap.js")
-    .catch((error) => {
-      videoDocMapLoadPromise = null;
-      throw error;
-    });
-  return videoDocMapLoadPromise;
-}
-
-async function ensureEndfieldTerminalModule() {
-  if (window.AISystem6EndfieldTerminalLoaded) return true;
-  endfieldTerminalLoadPromise ||= loadClassicScriptOnce("app/features/endfield-terminal.js")
-    .catch((error) => {
-      endfieldTerminalLoadPromise = null;
-      throw error;
-    });
-  return endfieldTerminalLoadPromise;
-}
-
-async function ensureTimeMachineModule() {
-  if (window.AISystem6TimeMachineLoaded) return true;
-  timeMachineLoadPromise ||= loadClassicScriptOnce("app/features/time-machine.js")
-    .catch((error) => {
-      timeMachineLoadPromise = null;
-      throw error;
-    });
-  return timeMachineLoadPromise;
-}
+const ensureWritingFlowHelpData = createLazyModuleLoader("AISystem6WritingFlowHelpData", ["app/data/writing-flow-help.js"], true);
+const ensureSystemConceptsData = createLazyModuleLoader("AISystem6SystemConceptsData", ["app/data/system-concepts.js"], true);
+const ensureMemoryCardsModule = createLazyModuleLoader("", ["app/features/memory-cards.js"]);
+const ensureAlarmClockModule = createLazyModuleLoader("", ["app/features/alarm-clock.js"]);
+const ensureBureaucracyMemeModule = createLazyModuleLoader("AISystem6BureaucracyMeme", ["app/features/bureaucracy-meme.js"]);
+const ensurePrintDirectoryModule = createLazyModuleLoader("", ["app/features/print-directory.js"]);
+const ensureProjectCdPrintModule = createLazyModuleLoader("", ["app/features/project-cd-print.js"]);
+const ensureTranslationPadModule = createLazyModuleLoader("", ["app/features/translation-pad.js"]);
+const ensureDictionaryHelpModule = createLazyModuleLoader("AISystem6DictionaryHelpLoaded", ["app/features/dictionary-help.js"]);
+const ensureVideoTranscriptModule = createLazyModuleLoader("AISystem6VideoTranscriptLoaded", ["app/features/video-transcript.js"]);
+const ensureVideoDocMapModule = createLazyModuleLoader("AISystem6VideoDocMapLoaded", ["app/features/video-docmap.js"]);
+const ensureEndfieldTerminalModule = createLazyModuleLoader("AISystem6EndfieldTerminalLoaded", ["app/features/endfield-terminal.js"]);
+const ensureTimeMachineModule = createLazyModuleLoader("AISystem6TimeMachineLoaded", ["app/features/time-machine.js"]);
+const ensureHkrrReviewModule = createLazyModuleLoader("", ["app/features/hkrr-review.js"]);
+const ensureMingmingHandoffReviewModule = createLazyModuleLoader("", ["app/features/mingming-handoff-review.js"]);
+const ensureSlidesExportModule = createLazyModuleLoader("AISystem6SlidesExportLoaded", ["app/features/slides-export.js"]);
+const ensureClioStageModule = createLazyModuleLoader("AISystem6ClioStageLoaded", ["app/features/clio-stage.js"]);
+const ensureClioChartModule = createLazyModuleLoader("AISystem6ClioChartLoaded", ["app/features/clio-chart.js"]);
+const ensureLiquidCoverModule = createLazyModuleLoader("AISystem6LiquidCoverLoaded", ["app/features/liquid-cover.js"]);
+const ensureQuickDraftModule = createLazyModuleLoader("AISystem6QuickDraftLoaded", ["app/features/finder-draft.js"]);
+const ensureCmfStudioModule = createLazyModuleLoader("AISystem6CMFStudioLoaded", ["app/features/cmf-studio.js?cmf=exterior-ao-sanitized"]);
+const ensureSoundscapeModule = createLazyModuleLoader("AISystem6SoundscapeLoaded", ["app/features/soundscape.js"]);
+const ensureWritingDemoModule = createLazyModuleLoader("AISystem6WritingDemoLoaded", [
+  "app/data/iphone-17e-demo-corpus.js",
+  "app/features/writing-demo.js",
+]);
 
 const lazySystemModulePromises = new Map();
 function ensureLazySystemModule(path, loadedFlag) {
@@ -499,103 +407,6 @@ function withScripting(callback) {
 
 function scheduleDesktopMaintenance(reason = "event") {
   ensureDesktopMaintenanceModule().then(() => window.AISystem6DesktopMaintenance?.schedule(reason));
-}
-
-async function ensureHkrrReviewModule() {
-  hkrrReviewLoadPromise ||= loadClassicScriptOnce("app/features/hkrr-review.js").catch((error) => {
-    hkrrReviewLoadPromise = null;
-    throw error;
-  });
-  return hkrrReviewLoadPromise;
-}
-
-async function ensureMingmingHandoffReviewModule() {
-  mingmingHandoffReviewLoadPromise ||= loadClassicScriptOnce("app/features/mingming-handoff-review.js").catch((error) => {
-    mingmingHandoffReviewLoadPromise = null;
-    throw error;
-  });
-  return mingmingHandoffReviewLoadPromise;
-}
-
-async function ensureSlidesExportModule() {
-  if (window.AISystem6SlidesExportLoaded) return true;
-  slidesExportLoadPromise ||= loadClassicScriptOnce("app/features/slides-export.js")
-    .catch((error) => {
-      slidesExportLoadPromise = null;
-      throw error;
-    });
-  return slidesExportLoadPromise;
-}
-
-async function ensureClioStageModule() {
-  if (window.AISystem6ClioStageLoaded) return true;
-  clioStageLoadPromise ||= loadClassicScriptOnce("app/features/clio-stage.js")
-    .catch((error) => {
-      clioStageLoadPromise = null;
-      throw error;
-    });
-  return clioStageLoadPromise;
-}
-
-async function ensureClioChartModule() {
-  if (window.AISystem6ClioChartLoaded) return true;
-  clioChartLoadPromise ||= loadClassicScriptOnce("app/features/clio-chart.js")
-    .catch((error) => {
-      clioChartLoadPromise = null;
-      throw error;
-    });
-  return clioChartLoadPromise;
-}
-
-async function ensureLiquidCoverModule() {
-  if (window.AISystem6LiquidCoverLoaded) return true;
-  liquidCoverLoadPromise ||= loadClassicScriptOnce("app/features/liquid-cover.js")
-    .catch((error) => {
-      liquidCoverLoadPromise = null;
-      throw error;
-    });
-  return liquidCoverLoadPromise;
-}
-
-async function ensureQuickDraftModule() {
-  if (window.AISystem6QuickDraftLoaded) return true;
-  quickDraftLoadPromise ||= loadClassicScriptOnce("app/features/finder-draft.js")
-    .catch((error) => {
-      quickDraftLoadPromise = null;
-      throw error;
-    });
-  return quickDraftLoadPromise;
-}
-
-async function ensureCmfStudioModule() {
-  if (window.AISystem6CMFStudioLoaded) return true;
-  cmfStudioLoadPromise ||= loadClassicScriptOnce("app/features/cmf-studio.js?cmf=exterior-ao-sanitized")
-    .catch((error) => {
-      cmfStudioLoadPromise = null;
-      throw error;
-    });
-  return cmfStudioLoadPromise;
-}
-
-async function ensureSoundscapeModule() {
-  if (window.AISystem6SoundscapeLoaded) return true;
-  soundscapeLoadPromise ||= loadClassicScriptOnce("app/features/soundscape.js")
-    .catch((error) => {
-      soundscapeLoadPromise = null;
-      throw error;
-    });
-  return soundscapeLoadPromise;
-}
-
-async function ensureWritingDemoModule() {
-  if (window.AISystem6WritingDemoLoaded) return true;
-  writingDemoLoadPromise ||= loadClassicScriptOnce("app/data/iphone-17e-demo-corpus.js")
-    .then(() => loadClassicScriptOnce("app/features/writing-demo.js"))
-    .catch((error) => {
-      writingDemoLoadPromise = null;
-      throw error;
-    });
-  return writingDemoLoadPromise;
 }
 
 const passiveWritingFlowStubs = new Set([

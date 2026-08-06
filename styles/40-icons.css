@@ -868,7 +868,7 @@
 }
 
 .project-disk-toolbar[hidden] {
-  display: none !important;
+  display: none;
 }
 
 .project-disk-toolbar label {

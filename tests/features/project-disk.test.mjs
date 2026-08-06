@@ -15,6 +15,7 @@ const app = readAppSurface([
 const projectDisk = read("app/features/project-disk.js");
 const projectBackup = read("app/core/project-disk-backup.js");
 const desktopRuntime = read("app/core/desktop-runtime.js");
+const indexHtml = read("index.html");
 
 test.assertIncludes(app, "item?.projectId === activeProjectId", "keeps active project guard as the default data boundary");
 test.assertIncludes(projectDisk, "function getProjectFiles()", "documents are scoped through Project Disk file helpers");
@@ -30,6 +31,13 @@ test.assertIncludes(app, "export_project_backup: \"Export Backup…\"", "Project
 test.assertIncludes(app, "export_project_backup: \"导出备份…\"", "Chinese Project Info export action is named as a backup");
 
 test.assertIncludes(projectDisk, "function createProjectRecord", "new Project Hard Disks are created through a single record factory");
+test.assertIncludes(projectDisk, "project_disk_empty_title", "an empty Project Hard Disk renders a visible empty-state object");
+test.assertIncludes(app, 'project_disk_empty_title: "Empty Project Hard Disk"', "English names the empty Project Hard Disk");
+test.assertIncludes(app, 'project_disk_empty_title: "空项目硬盘"', "Chinese names the empty Project Hard Disk");
+test.assertIncludes(indexHtml, 'id="new-project-disk-modal"', "New Project Hard Disk uses an in-app dialog instead of a native browser prompt");
+test.assertNotIncludes(desktopRuntime, "window.prompt(t(\"new_project_prompt\")", "new project naming never falls back to a native browser prompt");
+test.assertIncludes(app, 'new_project_disk_create: "Create"', "English UI names the create action");
+test.assertIncludes(app, 'new_project_disk_create: "创建"', "Chinese UI names the create action");
 test.assertMatches(desktopRuntime, /async function eraseSelectedProjectDisk\(\)[\s\S]*removeProjectItems\(chatFiles, projectId\)/, "Erase Disk removes project-owned files");
 test.assertMatches(desktopRuntime, /async function eraseSelectedProjectDisk\(\)[\s\S]*removeProjectItems\(scraps, projectId\)/, "Erase Disk removes project-owned scraps");
 test.assertMatches(desktopRuntime, /async function eraseSelectedProjectDisk\(\)[\s\S]*removeProjectItems\(projectReferences, projectId\)/, "Erase Disk removes project-owned references");

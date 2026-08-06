@@ -341,6 +341,12 @@ const systemIconPaths = {
     <path d="M12 11h8M12 16h6M12 21h8" />
     <path d="M24 10l4 4-4 4M8 22l-4-4 4-4" />
   `,
+  /* Writing Bell: Alarm Clock DA PICT -16000, third glyph, native pixels
+     x=79..92, y=7..23 (14×17) — kept at its native smaller-than-others size
+     relationship, never enlarged to fill the 32-grid. */
+  writingBell: `
+    <path class="classic-ink" d="M14 7h3v1h-3zM13 8h1v1h-1zM17 8h1v1h-1zM12 9h1v1h-1zM18 9h1v1h-1zM12 10h7v1h-7zM11 11h2v1h-2zM18 11h2v1h-2zM10 12h2v1h-2zM15 12h1v1h-1zM19 12h2v1h-2zM10 13h1v1h-1zM15 13h1v1h-1zM20 13h1v1h-1zM9 14h1v1h-1zM15 14h1v1h-1zM21 14h1v1h-1zM9 15h1v1h-1zM15 15h1v1h-1zM21 15h1v1h-1zM9 16h1v1h-1zM15 16h1v1h-1zM21 16h1v1h-1zM9 17h1v1h-1zM16 17h1v1h-1zM21 17h1v1h-1zM9 18h1v1h-1zM17 18h1v1h-1zM21 18h1v1h-1zM10 19h1v1h-1zM20 19h1v1h-1zM10 20h2v1h-2zM19 20h2v1h-2zM11 21h2v1h-2zM18 21h3v1h-3zM10 22h2v1h-2zM13 22h5v1h-5zM20 22h2v1h-2zM9 23h2v1h-2zM21 23h2v1h-2z" />
+  `,
 };
 
 const liquidSystemIconPaths = {
@@ -607,6 +613,9 @@ const liquidSystemIconPaths = {
     <path d="M12 11h8M12 16h6M12 21h8" />
     <path class="icon-accent" d="M24 11l4 4-4 4M8 21l-4-4 4-4" />
   `,
+  writingBell: `
+    <path class="classic-ink" d="M14 7h3v1h-3zM13 8h1v1h-1zM17 8h1v1h-1zM12 9h1v1h-1zM18 9h1v1h-1zM12 10h7v1h-7zM11 11h2v1h-2zM18 11h2v1h-2zM10 12h2v1h-2zM15 12h1v1h-1zM19 12h2v1h-2zM10 13h1v1h-1zM15 13h1v1h-1zM20 13h1v1h-1zM9 14h1v1h-1zM15 14h1v1h-1zM21 14h1v1h-1zM9 15h1v1h-1zM15 15h1v1h-1zM21 15h1v1h-1zM9 16h1v1h-1zM15 16h1v1h-1zM21 16h1v1h-1zM9 17h1v1h-1zM16 17h1v1h-1zM21 17h1v1h-1zM9 18h1v1h-1zM17 18h1v1h-1zM21 18h1v1h-1zM10 19h1v1h-1zM20 19h1v1h-1zM10 20h2v1h-2zM19 20h2v1h-2zM11 21h2v1h-2zM18 21h3v1h-3zM10 22h2v1h-2zM13 22h5v1h-5zM20 22h2v1h-2zM9 23h2v1h-2zM21 23h2v1h-2z" />
+  `,
 };
 
 const classicPlusSystemIconPaths = {
@@ -780,6 +789,9 @@ const classicPlusSystemIconPaths = {
   contextPanel: `
     <path d="M6 6h20v20H6z" />
     <path d="M10 11h12M10 16h8M10 21h10M23 8v16" />
+  `,
+  writingBell: `
+    <path class="classic-ink" d="M14 7h3v1h-3zM13 8h1v1h-1zM17 8h1v1h-1zM12 9h1v1h-1zM18 9h1v1h-1zM12 10h7v1h-7zM11 11h2v1h-2zM18 11h2v1h-2zM10 12h2v1h-2zM15 12h1v1h-1zM19 12h2v1h-2zM10 13h1v1h-1zM15 13h1v1h-1zM20 13h1v1h-1zM9 14h1v1h-1zM15 14h1v1h-1zM21 14h1v1h-1zM9 15h1v1h-1zM15 15h1v1h-1zM21 15h1v1h-1zM9 16h1v1h-1zM15 16h1v1h-1zM21 16h1v1h-1zM9 17h1v1h-1zM16 17h1v1h-1zM21 17h1v1h-1zM9 18h1v1h-1zM17 18h1v1h-1zM21 18h1v1h-1zM10 19h1v1h-1zM20 19h1v1h-1zM10 20h2v1h-2zM19 20h2v1h-2zM11 21h2v1h-2zM18 21h3v1h-3zM10 22h2v1h-2zM13 22h5v1h-5zM20 22h2v1h-2zM9 23h2v1h-2zM21 23h2v1h-2z" />
   `,
 };
 

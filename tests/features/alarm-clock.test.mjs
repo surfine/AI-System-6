@@ -40,7 +40,7 @@ test.assertIncludes(
   '"app/features/alarm-clock.js"',
   "Alarm Clock stays outside the two-floppy core",
 );
-test.assertIncludes(config, "async function ensureAlarmClockModule()", "Alarm Clock has one lazy loader");
+test.assertIncludes(config, 'createLazyModuleLoader("", ["app/features/alarm-clock.js"])', "Alarm Clock has one lazy loader");
 test.assertIncludes(boot, "ensureAlarmClockModule()", "boot loads the alarm timer before restoring its saved state");
 test.assertIncludes(actions, '"open-alarm-clock": () => openWindow("alarmClock")', "the Apple-menu command opens the real window");
 test.assertIncludes(feature, "function formatAlarmClockTime", "the compact title row shows live system time");
@@ -53,7 +53,7 @@ test.assertIncludes(feature, 'querySelector(".alarm-clock-title-bar")?.addEventL
 test.assertIncludes(feature, 'playSystemSound("alert")', "the alarm reproduces the original single alert sound");
 test.assertIncludes(feature, 'document.body.classList.toggle("alarm-clock-ringing"', "a fired alarm owns one shared ringing state across the window and menu bar");
 test.assertIncludes(feature, 'if (mode === "alarm" && alarmClockRinging) alarmClockRinging = false', "clicking the Alarm pane acknowledges the ringing state");
-test.assertIncludes(persistence, "alarmClock: getAlarmClockState()", "alarm settings persist with the existing desk settings");
+test.assertIncludes(persistence, 'alarmClock: typeof getAlarmClockState === "function" ? getAlarmClockState() : null', "alarm settings persist with the existing desk settings");
 test.assertIncludes(persistence, "restoreAlarmClockState(settings.alarmClock)", "saved alarm settings restore at startup");
 test.assertIncludes(workingSession, 'intrinsicSessionSizeWindowNames = new Set(["alarmClock"])', "session restore cannot revive an obsolete inline Alarm Clock size");
 test.assertIncludes(multiFinder, 'alarmClock: "accessories"', "MultiFinder keeps Alarm Clock owned by Accessories");
@@ -73,7 +73,7 @@ test.assertNotIncludes(surfaces, "transform: rotate(-6deg)", "the resource bell 
 test.assertIncludes(surfaces, ".alarm-clock-readout > .alarm-clock-value", "the compact readout owns its height and padding instead of inheriting full-size form-control geometry");
 test.assertIncludes(surfaces, "grid-template-rows: repeat(2, minmax(0, 1fr))", "both alarm stepper cells must shrink inside the fixed native readout row");
 test.assertIncludes(surfaces, "margin-top: var(--alarm-clock-section-gap)", "the theme owns optical space between the readout and mode strip through one token");
-test.assertIncludes(responsive, ":not(.alarm-clock-window)", "responsive layout preserves the small accessory role");
+test.assertIncludes(windows, 'role === "app-page" || role === "finder-page"', "responsive layout preserves the small accessory role");
 test.assertNotIncludes(responsive, "body .window.alarm-clock-window > .title-bar.alarm-clock-title-bar", "late responsive CSS cannot replace the native Alarm Clock top strip");
 test.assertIncludes(liquid, "--alarm-clock-surface-bg:", "Liquid Glass changes material through tokens without changing the object grammar");
 test.assertIncludes(liquid, "--alarm-clock-section-gap: 2px", "Liquid Glass leaves only a minimal optical separation below the rounded readout without resizing Classic");

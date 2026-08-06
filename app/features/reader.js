@@ -323,6 +323,16 @@ async function openReaderDocument(readerDoc, options = {}) {
   const isDocMap = (readerDoc.fileName && /^DocMap\b/i.test(readerDoc.fileName)) ||
                    (typeof isExportedDocMapMarkdown === "function" && isExportedDocMapMarkdown(readerDoc.text));
 
+  // DocMap files open in the tool, which is lazy. Load it up front so the map
+  // branch below actually runs; a load failure keeps the plain-text fallback.
+  if (isDocMap) {
+    try {
+      await ensureDocMapModule();
+    } catch {
+      // The text fallback below is the recovery path.
+    }
+  }
+
   if (isDocMap && typeof restoreDocMapFromMarkdown === "function" && typeof showDocMap === "function") {
     const restoredMap = restoreDocMapFromMarkdown(readerDoc.text, {
       label: readerDoc.fileName || readerDoc.title || t("docmap"),
@@ -724,13 +734,11 @@ function readerMountedFileNamesFromDrop(event) {
 }
 
 function readerCanAcceptDrop(event) {
-  const types = Array.from(event?.dataTransfer?.types || []);
-  return types.includes("Files") || types.includes("application/json") || types.includes("text/plain");
+  return dropHasFilesOrMountedFiles(event);
 }
 
 function readerDropEffect(event) {
-  const types = Array.from(event?.dataTransfer?.types || []);
-  return types.includes("application/json") || types.includes("text/plain") ? "move" : "copy";
+  return dropEffectForFilesOrMountedFiles(event);
 }
 
 function describeReaderDropEvent(event, stage) {
@@ -1183,7 +1191,7 @@ function createReaderTranslationTeachTextDocument(body, name) {
     id: crypto.randomUUID(),
     projectId: project.id,
     type: "text",
-    name: nextAvailableFileName(name, project.id),
+    name: nextAvailableProjectFileName(name, project.id),
     folderId: folder.id,
     body,
     source: "Reader",

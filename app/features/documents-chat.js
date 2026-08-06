@@ -275,10 +275,13 @@ function withFinderObjects(callback) {
   return null;
 }
 
-function renameSelectedDocumentItem() {
+async function renameSelectedDocumentItem() {
   const folder = getSelectedDocumentFolder();
   if (folder) {
-    const name = window.prompt(t("rename_folder_prompt"), displayFolderName(folder.name));
+    const name = await showInputDialog({
+      message: t("rename_folder_prompt"),
+      defaultValue: displayFolderName(folder.name),
+    });
     if (!name?.trim()) return;
     const normalized = name.trim();
     const siblingExists = getProjectFolders().some((item) => {
@@ -303,7 +306,10 @@ function renameSelectedDocumentItem() {
     setStatus(t("select_finder_item_first"));
     return;
   }
-  const name = window.prompt(t("rename_file_prompt"), file.name);
+  const name = await showInputDialog({
+    message: t("rename_file_prompt"),
+    defaultValue: file.name,
+  });
   if (!name?.trim()) return;
   file.name = name.trim();
   if (file.type === "chat") file.titleMode = "manual";
@@ -814,21 +820,29 @@ function getProjectMemoryFiles({ activeOnly = false } = {}) {
   ));
 }
 
-function createProjectMemoryDraft() {
+async function createProjectMemoryDraft() {
   const chat = getActiveConversationFile();
   if (!chat || !getActiveProject()) return null;
   const lastUser = [...chat.messages].reverse().find((message) => message.role === "user");
   const lastAssistant = [...chat.messages].reverse().find((message) => message.role === "assistant");
-  const title = window.prompt(currentLanguage === "zh" ? "项目记忆标题" : "Project memory title", chat.name);
+  const title = await showInputDialog({
+    title: currentLanguage === "zh" ? "项目记忆标题" : "Project memory title",
+    defaultValue: chat.name,
+  });
   if (!title?.trim()) return null;
-  const body = window.prompt(
-    currentLanguage === "zh" ? "确认要保存的项目记忆内容（可稍后在项目硬盘中编辑）：" : "Confirm the project memory to save (you can edit it later on the Project Hard Disk):",
-    [lastUser?.content, lastAssistant?.content].filter(Boolean).join("\n\n").slice(0, 4000)
-  );
+  const body = await showInputDialog({
+    title: currentLanguage === "zh" ? "项目记忆内容" : "Project memory content",
+    message: currentLanguage === "zh" ? "确认要保存的项目记忆内容（可稍后在项目硬盘中编辑）：" : "Confirm the project memory to save (you can edit it later on the Project Hard Disk):",
+    defaultValue: [lastUser?.content, lastAssistant?.content].filter(Boolean).join("\n\n").slice(0, 4000),
+    multiline: true,
+  });
   if (!body?.trim()) return null;
-  const confirmed = window.confirm(currentLanguage === "zh"
-    ? "确认将这份草稿保存为项目长期记忆？"
-    : "Save this draft as durable Project Memory?");
+  const confirmed = await showSystemModal(
+    currentLanguage === "zh"
+      ? "确认将这份草稿保存为项目长期记忆？"
+      : "Save this draft as durable Project Memory?",
+    "confirm"
+  ) === "yes";
   if (!confirmed) return null;
   const folder = ensureProjectMemoryFolder();
   const now = new Date().toISOString();
@@ -1226,7 +1240,11 @@ async function editAndResendConversationMessage({ messageId = "", messageIndex =
     : conversation.findIndex((item) => item.role === "user" && item.content === content);
   if (fallbackIndex < 0) return null;
 
-  const edited = window.prompt(t("clio_edit_and_resend_prompt"), content);
+  const edited = await showInputDialog({
+    message: t("clio_edit_and_resend_prompt"),
+    defaultValue: content,
+    multiline: true,
+  });
   if (!edited?.trim() || edited.trim() === content.trim()) return null;
 
   const parent = ensureCurrentConversationFile();
@@ -1490,7 +1508,10 @@ async function restoreSelectedTaskCheckpoint() {
   if (!checkpoint || !taskFile) return false;
   const currentChatId = taskFile.taskLifecycle?.chatId || "";
   await showSystemModal([currentLanguage === "zh" ? "恢复检查点将切换以下任务引用：" : "Restoring this checkpoint will switch these task references:", `Chat: ${currentChatId || "—"} → ${checkpoint.chatId || "—"}`, `Task Config hash: ${contentHash(JSON.stringify(parseTaskConfig(taskFile).config || {}))} → ${checkpoint.taskConfigHash}`, `${currentLanguage === "zh" ? "待处理修改建议" : "Pending modification suggestions"}: ${checkpoint.pendingSuggestionIds.join(", ") || "—"}`, currentLanguage === "zh" ? "不会删除检查点之后创建的文件。" : "No files created after the checkpoint will be removed."].join("\n"));
-  if (!window.confirm(currentLanguage === "zh" ? "确认恢复这些任务引用？" : "Restore these task references?")) return false;
+  if ((await showSystemModal(
+    currentLanguage === "zh" ? "确认恢复这些任务引用？" : "Restore these task references?",
+    "confirm"
+  )) !== "yes") return false;
   taskFile.taskLifecycle = { ...(taskFile.taskLifecycle || {}), state: "running", chatId: checkpoint.chatId, taskFolderId: taskFile.taskFolderId || "", restoredCheckpointId: file.id, updatedAt: new Date().toISOString() };
   selectedChatFileId = taskFile.id;
   if (checkpoint.chatId) openChatFileWindow(checkpoint.chatId);
@@ -1622,7 +1643,7 @@ function getAutoCallableProjectSkills(userText = "") {
   ));
 }
 
-function configureSkillAutoCall() {
+async function configureSkillAutoCall() {
   const file = getSkillAutoCallSettingsFile({ create: true });
   if (!file) return false;
   const eligible = getEnabledProjectSkills().filter(({ parsed }) => (
@@ -1632,10 +1653,19 @@ function configureSkillAutoCall() {
     && parsed.manifest.readScopes.every((scope) => scope === "project")
   ));
   const current = readSkillAutoCallSettings();
-  const enabled = window.confirm(currentLanguage === "zh" ? "开启项目的只读技能自动调用？仅已列入状态文件、且仅有 prompt/references 与 project 读取范围的技能可自动调用。" : "Enable project read-only Skill auto calls? Only Skills listed in this status file with prompt/references and project-only read scope can run automatically.");
+  const enabled = await showSystemModal(
+    currentLanguage === "zh" ? "开启项目的只读技能自动调用？仅已列入状态文件、且仅有 prompt/references 与 project 读取范围的技能可自动调用。" : "Enable project read-only Skill auto calls? Only Skills listed in this status file with prompt/references and project-only read scope can run automatically.",
+    "confirm"
+  ) === "yes";
   let allowedSkillIds = [];
   if (enabled && eligible.length) {
-    const choice = window.prompt(currentLanguage === "zh" ? "输入可自动调用的技能编号（例如 1,2）：\n" : "Enter Skill numbers allowed to auto-call (for example 1,2):\n", eligible.map((entry, index) => `${index + 1}. ${entry.parsed.manifest.name} v${entry.parsed.manifest.version}`).join("\n"));
+    const choice = await showInputDialog({
+      message: [
+        currentLanguage === "zh" ? "输入可自动调用的技能编号（例如 1,2）：" : "Enter Skill numbers allowed to auto-call (for example 1,2):",
+        eligible.map((entry, index) => `${index + 1}. ${entry.parsed.manifest.name} v${entry.parsed.manifest.version}`).join("\n"),
+      ].join("\n\n"),
+      placeholder: currentLanguage === "zh" ? "例如 1,2" : "e.g. 1,2",
+    });
     allowedSkillIds = String(choice || "").split(",").map((value) => eligible[Number(value.trim()) - 1]?.file.id).filter(Boolean);
   }
   const settings = { enabled: enabled && allowedSkillIds.length > 0, allowedSkillIds, readScopes: ["project"] };
@@ -1652,13 +1682,19 @@ function saveSkillAutoCallReceipt(skills) {
   chatFiles.unshift(file); saveDeskState(); renderDocuments(); renderProjectDisks(); return file;
 }
 
-function disableAutoCalledSkillFromSelectedReceipt() {
+async function disableAutoCalledSkillFromSelectedReceipt() {
   const receipt = getProjectFiles().find((item) => item.id === selectedChatFileId && item.artifactKind === "skill-auto-call-receipt");
   if (!receipt?.autoSkillIds?.length) return false;
   const settingsFile = getSkillAutoCallSettingsFile({ create: true });
   const settings = readSkillAutoCallSettings();
   const skills = receipt.autoSkillIds.map((id) => getProjectFiles().find((file) => file.id === id)).filter(Boolean);
-  const choice = window.prompt(currentLanguage === "zh" ? "输入要停用自动调用的技能编号：\n" : "Enter the auto-called Skill number to disable:\n", skills.map((skill, index) => `${index + 1}. ${skill.skillManifest?.name || skill.name}`).join("\n"));
+  const choice = await showInputDialog({
+    message: [
+      currentLanguage === "zh" ? "输入要停用自动调用的技能编号：" : "Enter the auto-called Skill number to disable:",
+      skills.map((skill, index) => `${index + 1}. ${skill.skillManifest?.name || skill.name}`).join("\n"),
+    ].join("\n\n"),
+    placeholder: currentLanguage === "zh" ? "例如 1" : "e.g. 1",
+  });
   const skill = skills[Number(choice) - 1];
   if (!skill) return false;
   const next = { ...settings, allowedSkillIds: settings.allowedSkillIds.filter((id) => id !== skill.id) };
@@ -1667,10 +1703,16 @@ function disableAutoCalledSkillFromSelectedReceipt() {
   saveDeskState(); renderDocuments(); renderProjectDisks(); return true;
 }
 
-function selectProjectSkillForNextTask() {
+async function selectProjectSkillForNextTask() {
   const skills = getEnabledProjectSkills();
   if (!skills.length) return false;
-  const choice = window.prompt(currentLanguage === "zh" ? "按顺序输入本次使用的技能编号（例如 1,2）：\n" : "Enter skill numbers in order for this task (for example 1,2):\n", skills.map((entry, index) => `${index + 1}. ${entry.parsed.manifest.name} v${entry.parsed.manifest.version}`).join("\n"));
+  const choice = await showInputDialog({
+    message: [
+      currentLanguage === "zh" ? "按顺序输入本次使用的技能编号（例如 1,2）：" : "Enter skill numbers in order for this task (for example 1,2):",
+      skills.map((entry, index) => `${index + 1}. ${entry.parsed.manifest.name} v${entry.parsed.manifest.version}`).join("\n"),
+    ].join("\n\n"),
+    placeholder: currentLanguage === "zh" ? "例如 1,2" : "e.g. 1,2",
+  });
   const selected = String(choice || "").split(",").map((value) => skills[Number(value.trim()) - 1]).filter(Boolean);
   if (!selected.length) return false;
   window.nextTaskSkillIds = new Set(selected.map((entry) => entry.file.id));
@@ -1686,21 +1728,27 @@ function suggestProjectSkillsForTask(text = "") {
   });
 }
 
-function confirmSuggestedProjectSkill(text = "") {
+async function confirmSuggestedProjectSkill(text = "") {
   const candidates = suggestProjectSkillsForTask(text);
   if (!candidates.length) return false;
   const first = candidates[0];
-  const accepted = window.confirm(currentLanguage === "zh" ? `建议使用：${first.parsed.manifest.name}。是否用于本次任务？` : `Suggested: ${first.parsed.manifest.name}. Use it for this task?`);
+  const accepted = await showSystemModal(
+    currentLanguage === "zh" ? `建议使用：${first.parsed.manifest.name}。是否用于本次任务？` : `Suggested: ${first.parsed.manifest.name}. Use it for this task?`,
+    "confirm"
+  ) === "yes";
   window.lastSkillSuggestion = { candidates: candidates.map((entry) => entry.file.id), selected: accepted ? first.file.id : "", reason: "manifest description and capabilities" };
   if (accepted) window.nextTaskSkillIds = new Set([first.file.id]);
   if (typeof renderClioTalkRunAssembly === "function") renderClioTalkRunAssembly();
   return accepted;
 }
 
-function createProjectSkillFromSelectedDraft() {
+async function createProjectSkillFromSelectedDraft() {
   const draft = getProjectFiles().find((file) => file.id === selectedChatFileId && file.artifactKind === "skill-draft");
   if (!draft) return null;
-  const name = window.prompt(currentLanguage === "zh" ? "技能名称" : "Skill name", draft.name.replace(/\s+SKILL$/i, ""));
+  const name = await showInputDialog({
+    title: currentLanguage === "zh" ? "技能名称" : "Skill name",
+    defaultValue: draft.name.replace(/\s+SKILL$/i, ""),
+  });
   if (!name?.trim()) return null;
   const id = String(name).trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   if (!id) return null;
@@ -1732,13 +1780,16 @@ function parseMountedSkillPackage(name = selectedMountedFile) {
   }
 }
 
-function installMountedSkillPackage() {
+async function installMountedSkillPackage() {
   const parsed = parseMountedSkillPackage();
   if (!parsed.valid || !activeProjectId) return null;
   const existing = getProjectFiles().filter((file) => file.artifactKind === "ai-skill" && file.skillManifest?.id === parsed.manifest.id);
   let mode = "install";
   if (existing.length) {
-    mode = window.prompt(currentLanguage === "zh" ? "发现相同技能 ID：输入 replace 替换、keep 保留两者，或 cancel 取消。" : "Duplicate Skill ID: enter replace, keep, or cancel.", "cancel") || "cancel";
+    mode = await showInputDialog({
+      message: currentLanguage === "zh" ? "发现相同技能 ID：输入 replace 替换、keep 保留两者，或 cancel 取消。" : "Duplicate Skill ID: enter replace, keep, or cancel.",
+      defaultValue: "cancel",
+    }) || "cancel";
     if (!/^(replace|keep)$/i.test(mode)) return null;
     if (/^replace$/i.test(mode)) existing.forEach((file) => chatFiles.splice(chatFiles.indexOf(file), 1));
   }
@@ -1998,10 +2049,13 @@ function saveCurrentChatAsFile(name, folderName) {
   return file;
 }
 
-function renameActiveClioTalkConversation() {
+async function renameActiveClioTalkConversation() {
   const file = getActiveConversationFile();
   if (!file || clioTalkTemporaryMode) return false;
-  const name = String(window.prompt(t("rename_file_prompt"), file.name) || "").trim();
+  const name = String(await showInputDialog({
+    message: t("rename_file_prompt"),
+    defaultValue: file.name,
+  }) || "").trim();
   if (!name || name === file.name) return false;
   file.name = name;
   file.titleMode = "manual";
@@ -2392,7 +2446,7 @@ function duplicateActiveFile() {
   openWindow("documents");
 }
 
-function renameActiveFile() {
+async function renameActiveFile() {
   const activeWin = document.querySelector(".window.is-active");
   if (activeWin?.dataset.window === "projects") {
     const item = getSelectedProjectFinderItem();
@@ -2400,13 +2454,13 @@ function renameActiveFile() {
       setStatus(t("select_finder_item_first"));
       return;
     }
-    renameSelectedDocumentItem();
+    await renameSelectedDocumentItem();
     renderProjectDisks();
     return;
   }
 
   if (activeWin?.dataset.window === "documents" && (selectedChatFileId || selectedDocumentFolderId)) {
-    renameSelectedDocumentItem();
+    await renameSelectedDocumentItem();
     return;
   }
 
@@ -2416,7 +2470,10 @@ function renameActiveFile() {
     return;
   }
 
-  const name = window.prompt(t("rename_file_prompt"), file.name);
+  const name = await showInputDialog({
+    message: t("rename_file_prompt"),
+    defaultValue: file.name,
+  });
   if (!name?.trim()) return;
 
   file.name = name.trim();

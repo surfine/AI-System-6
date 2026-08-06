@@ -41,3 +41,68 @@ function showSystemModal(message, type = "confirm", options = {}) {
     if (type === "confirm" && options.defaultAction === "cancel") systemModalCancel.focus();
   });
 }
+
+// Shared in-app text input dialog. Replaces native window.prompt so the same
+// control works in the browser and in the packaged WebKit shell (which cannot
+// show a native prompt). Resolves the field value on OK, or null on Cancel.
+function showInputDialog({
+  title = "",
+  message = "",
+  defaultValue = "",
+  placeholder = "",
+  multiline = false,
+} = {}) {
+  return new Promise((resolve) => {
+    if (typeof closeMenus === "function") closeMenus();
+    const dialog = document.querySelector("#app-input-modal");
+    const field = document.querySelector("#app-input-field");
+    const textarea = document.querySelector("#app-input-textarea");
+    const titleEl = document.querySelector("#app-input-title");
+    const messageEl = document.querySelector("#app-input-message");
+    const cancelButton = document.querySelector("#app-input-cancel");
+    const okButton = document.querySelector("#app-input-confirm");
+    if (!dialog || !field || !textarea || !titleEl || !messageEl || !cancelButton || !okButton) {
+      resolve(null);
+      return;
+    }
+
+    const input = multiline ? textarea : field;
+    field.hidden = multiline;
+    textarea.hidden = !multiline;
+    titleEl.textContent = title;
+    titleEl.hidden = !title;
+    messageEl.textContent = message;
+    messageEl.hidden = !message;
+    input.value = defaultValue;
+    input.placeholder = placeholder;
+    input.setAttribute("aria-label", title || message || t("ok"));
+    okButton.textContent = t("ok");
+    cancelButton.textContent = t("cancel");
+
+    if (!dialog.dataset.inputWired) {
+      dialog.dataset.inputWired = "true";
+      field.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          dialog.close("ok");
+        }
+      });
+    }
+
+    dialog.onclose = () => {
+      modalScrim.classList.add("is-hidden");
+      document.body.classList.remove("has-system-modal");
+      resolve(dialog.returnValue === "ok" ? input.value : null);
+    };
+
+    playSystemSound("alert");
+    modalScrim.classList.remove("is-hidden");
+    document.body.classList.add("has-system-modal");
+    if (dialog.open) dialog.close("cancel");
+    dialog.showModal();
+    window.requestAnimationFrame(() => {
+      input.focus();
+      input.select();
+    });
+  });
+}

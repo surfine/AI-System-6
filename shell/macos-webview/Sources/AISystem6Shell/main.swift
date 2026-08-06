@@ -406,6 +406,60 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
 
   func webView(
     _ webView: WKWebView,
+    runJavaScriptAlertPanelWithMessage message: String,
+    initiatedByFrame frame: WKFrameInfo,
+    completionHandler: @escaping @MainActor @Sendable () -> Void
+  ) {
+    let alert = NSAlert()
+    alert.messageText = "AI System 6"
+    alert.informativeText = message
+    alert.alertStyle = .warning
+    alert.addButton(withTitle: "OK")
+    alert.beginSheetModal(for: window) { _ in
+      completionHandler()
+    }
+  }
+
+  func webView(
+    _ webView: WKWebView,
+    runJavaScriptConfirmPanelWithMessage message: String,
+    initiatedByFrame frame: WKFrameInfo,
+    completionHandler: @escaping @MainActor @Sendable (Bool) -> Void
+  ) {
+    let alert = NSAlert()
+    alert.messageText = "AI System 6"
+    alert.informativeText = message
+    alert.alertStyle = .warning
+    alert.addButton(withTitle: "OK")
+    alert.addButton(withTitle: "Cancel")
+    alert.beginSheetModal(for: window) { response in
+      completionHandler(response == .alertFirstButtonReturn)
+    }
+  }
+
+  func webView(
+    _ webView: WKWebView,
+    runJavaScriptTextInputPanelWithPrompt prompt: String,
+    defaultText: String?,
+    initiatedByFrame frame: WKFrameInfo,
+    completionHandler: @escaping @MainActor @Sendable (String?) -> Void
+  ) {
+    let alert = NSAlert()
+    alert.messageText = prompt
+    alert.alertStyle = .informational
+    let input = NSTextField(frame: NSRect(x: 0, y: 0, width: 300, height: 24))
+    input.stringValue = defaultText ?? ""
+    alert.accessoryView = input
+    alert.window.initialFirstResponder = input
+    alert.addButton(withTitle: "OK")
+    alert.addButton(withTitle: "Cancel")
+    alert.beginSheetModal(for: window) { response in
+      completionHandler(response == .alertFirstButtonReturn ? input.stringValue : nil)
+    }
+  }
+
+  func webView(
+    _ webView: WKWebView,
     decidePolicyFor navigationAction: WKNavigationAction,
     decisionHandler: @escaping @MainActor @Sendable (WKNavigationActionPolicy) -> Void
   ) {

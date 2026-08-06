@@ -5,7 +5,6 @@
 
 const workspaceProfileWriting = "writing";
 const workspaceProfileDesktop = "desktop";
-const workspaceCapabilitySystem = "system";
 const workspaceCapabilityShared = "shared";
 const workspaceCapabilityStudio = "studio";
 

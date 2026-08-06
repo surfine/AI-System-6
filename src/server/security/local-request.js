@@ -193,7 +193,11 @@ function applySecurityHeaders(res) {
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob:",
       "font-src 'self' data:",
-      "connect-src 'self' http://127.0.0.1:* http://localhost:* http://[::1]:*",
+      // Chrome ignores IPv6 literals in CSP host sources (the entry is parsed
+      // as invalid and dropped), so http://[::1]:* only produced console noise
+      // and never actually allowed anything. localhost covers the local model
+      // endpoint for both address families.
+      "connect-src 'self' http://127.0.0.1:* http://localhost:*",
       "worker-src 'self' blob:",
       // 'self' is for #time-machine-frame, which embeds our own
       // /api/time-machine/render endpoint (see routes/time-machine.js).

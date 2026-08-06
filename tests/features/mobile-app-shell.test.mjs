@@ -30,7 +30,7 @@ function declaredStringSet(source, setName) {
 // The full-screen shell figure keys off two classes the JS toggles.
 test.assertIncludes(
   responsive,
-  "body.mobile-app-foreground:not(.is-writer-mode) .window.is-mobile-fullscreen {",
+  "body.mobile-app-foreground:not(.is-writer-mode) .window.is-mobile-fullscreen:not(.is-collapsed) {",
   "portrait shell pins a foregrounded app full-screen"
 );
 test.assertIncludes(
@@ -61,7 +61,7 @@ test.assertIncludes(
 );
 test.assertIncludes(
   responsive,
-  ":not(.model-meter-window):not(.is-mobile-fullscreen)",
+  ".window.is-mobile-work-area:not(.is-mobile-fullscreen)",
   "the absolute-positioning flow rule is scoped off the full-screen state"
 );
 // The desktop launcher hides behind the foregrounded app; home reveals it.
@@ -213,12 +213,12 @@ test.assert(
 // inline styles would outrank the shell.
 test.assertIncludes(
   windowManager,
-  "if (isPortraitDocumentFlow() && mobileFullScreenAppIds.has(\"teachText\")) return;",
+  "if ((isPortraitDocumentFlow() && mobileFullScreenAppIds.has(\"teachText\")) || isNarrowViewport()) return;",
   "the writing-route pair split stands down on a phone"
 );
 test.assertIncludes(
   windowManager,
-  "if (isPortraitDocumentFlow()) {\n    syncMobileAppForeground();\n    return true;\n  }",
+  "if (isPortraitDocumentFlow() || isNarrowViewport()) {\n    syncMobileAppForeground();\n    return true;\n  }",
   "the SideAsk pair layout stands down on a phone"
 );
 test.assertIncludes(
@@ -391,5 +391,8 @@ for (const helpId of ["multifinder", "desk-accessories", "puzzle", "shutdown-res
 }
 test.assertIncludes(dictionary, "one horizontally centered column", "Desk Accessory help pins the non-overlapping mobile stack");
 test.assertIncludes(dictionary, "shows the safe-to-shut-down screen", "System Help matches the real shutdown ending");
+test.assertIncludes(wireup, '"desktop_tap_hint"', "the first touch tap on a desktop icon teaches the double-tap gesture");
+test.assertIncludes(en, 'desktop_tap_hint: "Tap again to open."', "English names the touch hint");
+test.assertIncludes(zh, 'desktop_tap_hint: "再点一次打开。"', "Chinese names the touch hint");
 
 test.finish();

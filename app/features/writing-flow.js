@@ -1141,20 +1141,6 @@ function shortRebuildText(text, max = 80) {
   return `${clean.slice(0, Math.max(0, max - 1)).trim()}...`;
 }
 
-function getRebuildParagraphs(text) {
-  const blocks = (text || "")
-    .split(/\n\s*\n+/)
-    .map((item) => item.replace(/\s+/g, " ").trim())
-    .filter((item) => item.length > 30);
-
-  if (blocks.length >= 3) return blocks;
-
-  return (text || "")
-    .split(/(?<=[。！？.!?])\s+/)
-    .map((item) => item.replace(/\s+/g, " ").trim())
-    .filter((item) => item.length > 30);
-}
-
 function inferRebuildTitle(text) {
   const lines = (text || "").split(/\n+/).map(cleanRebuildLine).filter(Boolean);
   const title = lines.find((line) => line.length >= 4 && line.length <= 90) || lines[0] || t("untitled_project");
@@ -1196,14 +1182,6 @@ function inferRebuildTerms(text) {
   }
 
   return [...terms].slice(0, 8);
-}
-
-function inferRebuildClaims(paragraphs) {
-  const claimPattern = /(\d{4}|\d+%|\d+\s*(?:个|项|种|users?|features?)|宣布|推出|支持|更新|将|首次|available|announced|supports?|will|new\s+features?)/i;
-  return paragraphs
-    .filter((paragraph) => claimPattern.test(paragraph))
-    .slice(0, 6)
-    .map((paragraph) => shortRebuildText(paragraph, currentLanguage === "zh" ? 96 : 140));
 }
 
 function sectionRoleLabel(index, total) {
@@ -1394,17 +1372,10 @@ function createRebuildDocument(project, folder, name, body, label = "note") {
   return createTeachTextFile({
     project,
     folder,
-    name: nextAvailableFileName(name, project.id),
+    name: nextAvailableProjectFileName(name, project.id),
     body,
     label,
   });
-}
-
-function stripRebuildMarkdownFence(markdown) {
-  return String(markdown || "")
-    .replace(/^```(?:markdown|md)?\s*/i, "")
-    .replace(/```\s*$/i, "")
-    .trim();
 }
 
 function findRebuildPackSection(blocks, patterns) {
@@ -1636,16 +1607,6 @@ ${zh ? "请保持具体，不要写空泛模板。中文要自然，避免翻译
 
 function isEmptyWritingObjectPackError(error) {
   return /empty writing object pack stream/i.test(String(error?.message || error || ""));
-}
-
-async function readRebuildMarkdownPackStream(response, onProgress = null) {
-  const markdown = await readModelTextStream(response, {
-    signal: getLongTaskSignal(),
-    throttleMs: 80,
-    onSnapshot: onProgress,
-  });
-  if (!markdown.trim()) throw new Error("lmstudio_bad_response: empty writing object pack stream");
-  return markdown;
 }
 
 function normalizeRebuildString(value, fallback = "") {

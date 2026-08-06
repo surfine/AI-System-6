@@ -16,6 +16,8 @@ const boot = read("app/core/boot.js");
 const app = read("app.js");
 const actions = read("app/core/actions.js");
 const dragDrop = read("app/core/drag-drop.js");
+const en = read("app/data/translations-en.js");
+const zh = read("app/data/translations-zh.js");
 
 test.assertIncludes(scripting, "window.AISystem6Scripting", "the scripting layer exposes an internal API");
 test.assertIncludes(scripting, "inputType:", "scriptable commands declare their input type");
@@ -39,6 +41,17 @@ test.assertIncludes(scripting, "function getDropletItems", "droplets are declare
 test.assertIncludes(scripting, "dropletAction:", "each droplet carries its command id for drops");
 test.assertIncludes(app, "getDropletItems()", "the Applications catalogue includes droplets");
 test.assertIncludes(app, 'data-drop-target="droplet"', "droplet icons accept file drops");
+test.assertIncludes(app, 'data-balloon-help="balloon_droplet"', "droplet icons explain themselves through Balloon Help");
+test.assertIncludes(app, 't("droplets_section")', "the Applications folder groups droplets under a visible section label");
+test.assertIncludes(app, "function splitApplicationsSections", "applications split into apps and droplets for the section label");
+test.assertIncludes(actions, '"open-droplet"', "opening a droplet shows an explanation instead of doing nothing");
+test.assertIncludes(actions, 'startsWith("open-droplet:")', "droplet open actions reach the shared explainer");
+test.assertIncludes(en, "droplets_section:", "English names the droplet section");
+test.assertIncludes(zh, "droplets_section:", "Chinese names the droplet section");
+test.assertIncludes(en, "balloon_droplet:", "English explains droplet icons");
+test.assertIncludes(zh, "balloon_droplet:", "Chinese explains droplet icons");
+test.assertIncludes(en, "droplet_open_explainer:", "English explains double-clicking a droplet");
+test.assertIncludes(zh, "droplet_open_explainer:", "Chinese explains double-clicking a droplet");
 test.assertIncludes(dragDrop, 'dropTargetType === "droplet"', "drops are routed to droplets");
 test.assertIncludes(dragDrop, "runDropletDrop", "droplet drops run through the scripting executor");
 test.assertIncludes(config, "withScripting", "the scripting layer loads on first use");

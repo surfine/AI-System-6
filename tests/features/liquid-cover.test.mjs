@@ -374,7 +374,7 @@ test.assertIncludes(manifest, '"app/features/liquid-cover.js"', "module is regis
 const lazyBlock = manifest.slice(manifest.indexOf("lazyRuntimePaths"));
 test.assertIncludes(lazyBlock, "app/features/liquid-cover.js", "module sits in lazyRuntimePaths (not appModulePaths)");
 test.assertIncludes(app, "ensureLiquidCoverModule", "module is loaded on demand via an ensure helper");
-test.assertIncludes(app, 'loadClassicScriptOnce("app/features/liquid-cover.js")', "ensure helper loads the classic script once");
+test.assertIncludes(app, 'createLazyModuleLoader("AISystem6LiquidCoverLoaded", ["app/features/liquid-cover.js"])', "ensure helper loads the classic script once");
 
 // --- one-action open, registered everywhere an app belongs ---
 test.assertIncludes(app, '"open-liquid-cover": openLiquidCover', "open-liquid-cover action is registered");

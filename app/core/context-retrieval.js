@@ -594,13 +594,6 @@ function sourceTextForRegistryItem(source) {
   return source.item.body || source.item.selectedText || "";
 }
 
-function sourceQuoteForRegistryItem(source) {
-  if (!source?.item) return "";
-  if (["readerClip", "documentClip", "searchResult"].includes(source.kind)) return source.item.selectedText || source.item.body || "";
-  if (source.kind === "scrap") return source.item.body || "";
-  return "";
-}
-
 function getSourceRegistryItemForContextItem(contextItem) {
   const key = getContextSourceKey(contextItem);
   return buildProjectSourceRegistry().find((source) => source.key === key) || null;

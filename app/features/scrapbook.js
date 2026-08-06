@@ -4,23 +4,6 @@
 
 
 
-function compressConversation() {
-  const firstUser = conversation.find((item) => item.role === "user")?.content || "";
-  const lastAssistant = [...conversation].reverse().find((item) => item.role === "assistant")?.content || "";
-  const messages = conversation.length;
-
-  return [
-    "Compressed session digest",
-    "",
-    `Messages: ${messages}`,
-    compressedConversationMemory?.text ? `Rolling memory:\n${compressedConversationMemory.text}` : "",
-    firstUser ? `First user note: ${firstUser.slice(0, 220)}` : "First user note: [none]",
-    lastAssistant ? `Last ClioTalk note: ${lastAssistant.slice(0, 220)}` : "Last ClioTalk note: [none]",
-    "",
-    "Full raw chat was not retained. Save Chat before clearing when the full transcript matters.",
-  ].filter(Boolean).join("\n");
-}
-
 function getScrapTimestamp(scrap) {
   const createdAt = scrap?.createdAt ? new Date(scrap.createdAt) : new Date();
   return Number.isNaN(createdAt.getTime()) ? new Date() : createdAt;
@@ -517,38 +500,6 @@ function scrapListItemHtml(scrap) {
     <small class="scrap-card-list-meta">${escapeHtml([meta, date].filter(Boolean).join(" - "))}</small>
     <small class="scrap-card-list-stats">${escapeHtml(preview || "--")}</small>
   `;
-}
-
-function scrapCardFieldRows(scrap) {
-  if (!scrap) return [];
-  const source = scrap.source || {};
-  const rows = [
-    [t("scrap_card_stack"), scrapStackLabel(getScrapStack(scrap))],
-    [t("scrap_card_kind"), sourceContractForScrap(scrap).label],
-    [t("scrap_card_saved"), formatScrapCardDate(scrap.createdAt)],
-  ];
-  const contract = sourceContractForScrap(scrap);
-  if (source.title || contract.title) rows.push([t("scrap_card_source"), contract.title || source.title]);
-  if (contract.sourceKind === "video_transcript") rows.push(["Source kind", "video_transcript"]);
-  if (contract.timeRange) rows.push(["SRT time", contract.timeRange]);
-  if (contract.originalBlockIds?.length) rows.push(["SRT blocks", contract.originalBlockIds.join(", ")]);
-  if (source.site) rows.push([t("scrap_card_site"), source.site]);
-  if (source.url) rows.push([t("scrap_card_url"), source.url]);
-  if (scrap.translationLanguage) rows.push([t("scrap_card_translation"), scrap.translationLanguage]);
-  if (scrap.context?.before || scrap.context?.after) rows.push([t("scrap_card_context"), t("scrap_card_context_saved")]);
-  if (scrap.nearbyContext?.before || scrap.nearbyContext?.after) rows.push(["Nearby context", t("scrap_card_context_saved")]);
-  return rows.filter(([, value]) => String(value || "").trim());
-}
-
-function scrapCardLinkCount(scrap) {
-  if (!scrap) return 0;
-  const source = scrap.source || {};
-  return [
-    source.url,
-    source.fileId,
-    scrap.context?.before || scrap.context?.after,
-    scrap.translatedText,
-  ].filter((value) => String(value || "").trim()).length;
 }
 
 function formatScrapCardDate(value) {

@@ -23,10 +23,21 @@ async function boot() {
     await Promise.all([
       ensureAlarmClockModule(),
       ensureProjectCdPrintModule(),
+      ensurePromptFilesData().catch(() => {}),
+      ensureLanguageFor(currentLanguage).catch(() => {}),
     ]);
+    // Markdown parsing is not needed for first paint (welcome and guide are
+    // plain HTML); load it in the background and rely on the escaped-text
+    // fallback in markdown.js until it arrives.
+    ensureMarkdownParser().catch(() => {});
     initializeAlarmClock();
     loadAppVersion();
     await loadDeskState();
+    // A saved setting may have switched the active language away from the
+    // system default; make sure its table is present before the first paint.
+    // A failed fetch degrades to key fallbacks rather than stalling boot.
+    await ensureLanguageFor(currentLanguage).catch(() => {});
+    applyLanguage();
     await startupTaskWithTimeout(applyDeploymentWorkspaceDefault(), "deploymentWorkspaceDefault", 3500);
     if (window.AISystem6DerivedIndexQueue) {
       await startupTaskWithTimeout(window.AISystem6DerivedIndexQueue.restore(), "derivedIndexQueue", 3500);
@@ -59,6 +70,10 @@ async function boot() {
 
     // An unfinished OOBE owns first launch. A stale working-session snapshot
     // must not reopen applications behind the welcome window.
+    // Restored chat history re-renders Markdown messages, so the parser must
+    // be present before any restored message paints. If it cannot load, the
+    // escaped-text fallback still paints usable messages.
+    await ensureMarkdownParser().catch(() => {});
     const resumedWorkingSession = guideSeen
       && !writerMode
       && await startupTaskWithTimeout(restoreWorkingSession(), "restoreWorkingSession", 3500);

@@ -1,0 +1,138 @@
+/* Control Strip — floating status surface (approximation, see the module
+   comment in app/features/control-strip.js for the fidelity note).
+
+   Geometry and material come from tokens in 00-foundation.css, overridden for
+   Liquid Glass in 70-liquid-glass.css. No body.use-liquid-glass twins here.
+   The strip floats above windows (--z-control-strip) but below the selection
+   marquee, demo overlay, and system menu (see 00-foundation z ordering). */
+
+.control-strip {
+  position: fixed;
+  left: var(--desk-edge-gap);
+  bottom: var(--desk-edge-gap);
+  z-index: var(--z-control-strip);
+  display: flex;
+  align-items: stretch;
+  height: var(--control-strip-thickness);
+  background: var(--control-strip-bg);
+  border: var(--control-strip-border);
+  overflow: hidden;
+}
+
+.control-strip.is-collapsed {
+  width: calc(var(--control-strip-handle-width) + 2px);
+}
+
+.control-strip.is-collapsed .control-strip-modules {
+  display: none;
+}
+
+.control-strip-handle {
+  width: var(--control-strip-handle-width);
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  position: relative;
+  flex: 0 0 auto;
+}
+
+/* Handle grip: three short vertical ticks. Texture is approximation — the
+   native Control Strip handle is not in the bundled System 6 image. */
+.control-strip-handle::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 6px;
+  bottom: 6px;
+  width: 4px;
+  transform: translateX(-50%);
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--ink) 0 2px,
+    transparent 2px 4px
+  );
+}
+
+.control-strip-modules {
+  display: flex;
+  align-items: center;
+}
+
+.control-strip-module {
+  width: 24px;
+  height: 24px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.control-strip-module + .control-strip-module {
+  border-left: var(--control-strip-divider);
+}
+
+.control-strip-module .sys-icon {
+  width: 16px;
+  height: 16px;
+  background: transparent;
+}
+
+.control-strip-module.has-gauge {
+  width: auto;
+  padding: 0 5px;
+  gap: 2px;
+  grid-auto-flow: column;
+}
+
+.control-strip-module:hover,
+.control-strip-module:focus-visible,
+.control-strip-module.is-open {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.control-strip-module:focus-visible {
+  outline: var(--control-focus-outline);
+  outline-offset: -1px;
+}
+
+/* Volume-style gauges: 36 × 8 horizontal bar holding the native Battery DA
+   long:short ratio of 4.5 : 1. */
+.control-strip-gauge-wrap {
+  display: block;
+  line-height: 0;
+}
+
+.control-strip-gauge {
+  display: block;
+  width: 36px;
+  height: 8px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  position: relative;
+}
+
+.control-strip-gauge-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--gauge-fill, 0%);
+  background: var(--control-strip-gauge);
+}
+
+/* Module menus reuse the shared .menu-popover primitive; this modifier only
+   repositions it to pop upward from the bottom-anchored strip. */
+.menu-popover.control-strip-menu {
+  position: fixed;
+  top: auto;
+  left: var(--control-strip-menu-left, 8px);
+  bottom: calc(var(--control-strip-thickness) + var(--desk-edge-gap) + 2px);
+  z-index: var(--z-control-strip-menu);
+  max-height: 60vh;
+  overflow-y: auto;
+}

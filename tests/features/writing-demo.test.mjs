@@ -37,10 +37,13 @@ test.assertIncludes(html, 'data-action="guide-start-route"', "original writing r
 test.assertIncludes(zh, 'guide_play_demo: "播放实战演示"', "Chinese CTA copy names the demo");
 test.assertIncludes(en, 'guide_play_demo: "Play Live Demo"', "English CTA copy names the demo");
 
-test.assertIncludes(config, "function ensureWritingDemoModule()", "demo is lazy-loaded on demand");
+test.assertIncludes(config, 'createLazyModuleLoader("AISystem6WritingDemoLoaded", [', "demo is lazy-loaded on demand");
 test.assertIncludes(manifest, '"app/features/writing-demo.js"', "demo is tracked as lazy runtime");
 test.assertIncludes(manifest, '"app/data/iphone-17e-demo-corpus.js"', "shared iPhone 17e demo corpus is tracked as lazy runtime");
-test.assertIncludes(config, 'loadClassicScriptOnce("app/data/iphone-17e-demo-corpus.js")', "demo loader loads the shared iPhone 17e corpus before the director");
+test.assert(
+  config.indexOf('"app/data/iphone-17e-demo-corpus.js"') < config.indexOf('"app/features/writing-demo.js"'),
+  "demo loader loads the shared iPhone 17e corpus before the director"
+);
 test.assertIncludes(actions, '"play-writing-demo": playWritingDemoFromGuide', "play-writing-demo action is registered");
 test.assertIncludes(iphone17eCorpus, "aaronBulletInput", "shared 17e corpus carries Aaron-style sample input");
 test.assertIncludes(iphone17eCorpus, "mingmingReferenceOutput", "shared 17e corpus carries the Mingming reference output");

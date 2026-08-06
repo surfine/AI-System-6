@@ -144,10 +144,13 @@ function scrollMessagesToLatest({ force = false } = {}) {
   requestAnimationFrame(scroll);
 }
 
-function findInClioTalkConversation(query = "", options = {}) {
+async function findInClioTalkConversation(query = "", options = {}) {
   let requested = String(query || "").trim();
   if (!requested && options.prompt !== false) {
-    requested = String(window.prompt(t("clio_find_prompt"), clioTalkFindQuery) || "").trim();
+    requested = String(await showInputDialog({
+      message: t("clio_find_prompt"),
+      defaultValue: clioTalkFindQuery,
+    }) || "").trim();
   }
   if (!requested) {
     setStatus(t("clio_find_empty"));
@@ -187,7 +190,7 @@ function findInClioTalkConversation(query = "", options = {}) {
   return record;
 }
 
-function findNextInClioTalkConversation() {
+async function findNextInClioTalkConversation() {
   return findInClioTalkConversation(clioTalkFindQuery, {
     prompt: !clioTalkFindQuery,
     advance: true,
@@ -308,6 +311,7 @@ function renderClioTalkContextSpace() {
     formatClioTalkContextTokens(total),
     percent
   );
+  window.AISystem6ControlStrip?.refreshStrip?.();
 }
 
 function clioRunHash(body = "") {
@@ -1008,21 +1012,6 @@ function captureClioTalkGroundingSnapshot(options = {}) {
       ? getProjectMemoryFiles({ activeOnly: true }).map((file) => file.id)
       : [],
   };
-}
-
-function formatClioTalkGrounding(snapshot) {
-  if (!snapshot) return "";
-  const visibleSources = Array.isArray(snapshot.sources) ? snapshot.sources : [];
-  const sourceText = visibleSources.length
-    ? visibleSources.map((source) => source.label).join(" · ")
-    : t("clio_grounding_no_project_context");
-  const moreText = snapshot.sourceCount > visibleSources.length
-    ? ` · ${t("clio_grounding_more_sources", snapshot.sourceCount - visibleSources.length)}`
-    : "";
-  const missingText = snapshot.missing?.length
-    ? ` · ${t("clio_grounding_missing")}: ${snapshot.missing.join(" · ")}`
-    : "";
-  return `${sourceText}${moreText}${missingText}`;
 }
 
 // Sources are the spine of this product, so they render as objects — one chip
@@ -2114,13 +2103,6 @@ function addMessage(role, content, options = {}) {
   renderClioTalkTally();
   updateMenuState();
   scrollMessagesToLatest();
-}
-
-function insertAssistantText(content) {
-  return insertIntoTeachText(content, {
-    source: t("assistant"),
-    title: t("assistant"),
-  });
 }
 
 function saveMessageAsDocument(content) {
@@ -3781,6 +3763,9 @@ async function throwModelResponseError(response, endPerf) {
 }
 
 async function sendLocalModelTask(options = {}) {
+  // Prompt files are lazy-loaded; boot preloads them, and the task entry
+  // awaits them so no payload is ever assembled without its system prompts.
+  await ensurePromptFilesData();
   const {
     userText = "",
     payload,

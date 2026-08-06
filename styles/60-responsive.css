@@ -125,39 +125,51 @@
 }
 
 /* Drag and Drop visual feedback */
-.is-drag-over {
-  background: var(--ink) !important;
-  color: var(--paper) !important;
+/* JS only ever adds .is-drag-over to an element with [data-drop-target], so
+   the attribute is an exact scope. Repeating it raises specificity above
+   every Liquid Glass twin and descendant label rule (span:last-of-type etc.)
+   without relying on priority. */
+[data-drop-target][data-drop-target].is-drag-over {
+  background: var(--ink);
+  color: var(--paper);
 }
 
-.is-drag-over * {
-  color: var(--paper) !important;
+[data-drop-target][data-drop-target][data-drop-target].is-drag-over * {
+  color: var(--paper);
 }
 
-.finder-grid.is-drag-over,
-.document-icon-grid.is-drag-over,
-.project-disk-grid.is-drag-over {
-  background: var(--paper) !important;
-  color: var(--ink) !important;
+/* Liquid Glass headings carry their own dark color at (0,3,1); restore them
+   so an ink drop target reads fully inverted. */
+[data-drop-target][data-drop-target].is-drag-over .message-content h1,
+[data-drop-target][data-drop-target].is-drag-over .message-content h2,
+[data-drop-target][data-drop-target].is-drag-over .message-content h3 {
+  color: var(--paper);
+}
+
+.finder-grid[data-drop-target][data-drop-target].is-drag-over,
+.document-icon-grid[data-drop-target][data-drop-target].is-drag-over,
+.project-disk-grid[data-drop-target][data-drop-target].is-drag-over {
+  background: var(--paper);
+  color: var(--ink);
   outline: 2px dotted var(--ink);
   outline-offset: -7px;
 }
 
-.finder-grid.is-drag-over *,
-.document-icon-grid.is-drag-over *,
-.project-disk-grid.is-drag-over * {
-  color: var(--ink) !important;
+.finder-grid[data-drop-target][data-drop-target].is-drag-over *,
+.document-icon-grid[data-drop-target][data-drop-target].is-drag-over *,
+.project-disk-grid[data-drop-target][data-drop-target].is-drag-over * {
+  color: var(--ink);
 }
 
-.finder-grid.is-drag-over .finder-item.is-selected span:last-of-type,
-.document-icon-grid.is-drag-over .finder-item.is-selected span:last-of-type,
-.project-disk-grid.is-drag-over .finder-item.is-selected span:last-of-type {
-  color: var(--paper) !important;
+.finder-grid[data-drop-target][data-drop-target].is-drag-over .finder-item.is-selected span:last-of-type,
+.document-icon-grid[data-drop-target][data-drop-target].is-drag-over .finder-item.is-selected span:last-of-type,
+.project-disk-grid[data-drop-target][data-drop-target].is-drag-over .finder-item.is-selected span:last-of-type {
+  color: var(--paper);
 }
 
-.finder-item.is-drag-over {
-  background: transparent !important;
-  color: var(--ink) !important;
+.finder-item[data-drop-target][data-drop-target].is-drag-over {
+  background: transparent;
+  color: var(--ink);
   outline: var(--system-control-line) solid var(--ink);
   outline-offset: 3px;
 }
@@ -195,32 +207,32 @@ body.is-writer-mode .writing-spine-panel {
 }
 
 body.is-writer-mode .teachtext-window {
-  left: 60vw !important;
-  top: 0 !important;
-  width: 40vw !important;
-  height: 100% !important;
+  left: 60vw;
+  top: 0;
+  width: 40vw;
+  height: 100%;
   box-shadow: none;
   border-right: 0;
   border-bottom: 0;
   border-top: 0;
-  z-index: var(--z-local-base) !important;
+  z-index: var(--z-local-base);
 }
 
-body.is-writer-mode .assistant-window,
-body.is-writer-mode .assistant-window.is-desklet {
-  display: flex !important;
-  visibility: visible !important;
-  left: 0 !important;
-  right: auto !important;
-  top: 0 !important;
-  width: 60vw !important;
-  min-width: 300px !important;
-  height: 100% !important;
+body.is-writer-mode:not(.has-find-path-open) .assistant-window:not(.is-hidden):not(.is-app-hidden):not(.is-collapsed),
+body.is-writer-mode:not(.has-find-path-open) .assistant-window.is-desklet:not(.is-hidden):not(.is-app-hidden):not(.is-collapsed) {
+  display: flex;
+  visibility: visible;
+  left: 0;
+  right: auto;
+  top: 0;
+  width: 60vw;
+  min-width: 300px;
+  height: 100%;
   box-shadow: none;
   border-left: 0;
   border-bottom: 0;
   border-top: 0;
-  z-index: var(--z-local-base) !important;
+  z-index: var(--z-local-base);
 }
 
 body.is-writer-mode .assistant-window .messages,
@@ -239,44 +251,47 @@ body.is-writer-mode #teachtext-body {
 }
 
 body.is-writer-mode.has-find-path-open .teachtext-window {
-  width: calc(100vw / 3) !important;
-  left: 0 !important;
-  border-right: 0 !important;
+  width: calc(100vw / 3);
+  left: 0;
+  border-right: 0;
 }
 
 body.is-writer-mode.has-find-path-open .find-path-window {
-  display: flex !important;
-  left: calc(100vw / 3) !important;
-  top: 0 !important;
-  width: calc(100vw / 3) !important;
-  height: 100% !important;
+  display: flex;
+  left: calc(100vw / 3);
+  top: 0;
+  width: calc(100vw / 3);
+  height: 100%;
   box-shadow: none;
   border-bottom: 0;
   border-top: 0;
-  border-left: var(--system-control-line) solid var(--ink) !important;
-  border-right: var(--system-control-line) solid var(--ink) !important;
-  z-index: var(--z-local-base) !important;
+  border-left: var(--system-control-line) solid var(--ink);
+  border-right: var(--system-control-line) solid var(--ink);
+  z-index: var(--z-local-base);
 }
 
-body.is-writer-mode.has-find-path-open .assistant-window,
-body.is-writer-mode.has-find-path-open .assistant-window.is-desklet {
-  width: calc(100vw / 3) !important;
-  right: 0 !important;
-  left: auto !important;
-  border-left: 0 !important;
+body.is-writer-mode.has-find-path-open .assistant-window:not(.is-collapsed),
+body.is-writer-mode.has-find-path-open .assistant-window.is-desklet:not(.is-collapsed) {
+  width: calc(100vw / 3);
+  min-width: 300px;
+  right: 0;
+  left: auto;
+  top: 0;
+  height: 100%;
+  border-left: 0;
 }
 
 body.is-writer-mode .context-panel-window {
-  right: 0 !important;
-  top: 0 !important;
-  left: auto !important;
-  width: min(380px, calc(100vw - 32px)) !important;
-  height: 100% !important;
+  right: 0;
+  top: 0;
+  left: auto;
+  width: min(380px, calc(100vw - 32px));
+  height: 100%;
   border-top: 0;
   border-bottom: 0;
   border-right: 0;
   box-shadow: none;
-  z-index: var(--z-local-popover) !important;
+  z-index: var(--z-local-popover);
 }
 
 /* .info-window, .info-pane, .info-header, .info-main h3, .info-main p,
@@ -355,10 +370,19 @@ body.is-writer-mode .context-panel-window {
   box-shadow: inset 0 -1px 0 var(--paper);
 }
 
+/* The glass material (backdrop blur) is structural, so it lives next to its
+   base rule instead of in the theme file; values are single-sourced above. */
+body.use-liquid-glass .menu-bar {
+  backdrop-filter: blur(18px) saturate(155%) brightness(1.02);
+  -webkit-backdrop-filter: blur(18px) saturate(155%) brightness(1.02);
+}
+
 .menu-bar > .menu > button {
   height: 22px;
   padding: 0 8px;
   line-height: 22px;
+  border-radius: var(--menu-button-radius);
+  transition: var(--menu-button-transition);
 }
 
 .menu-popover,
@@ -494,8 +518,8 @@ body.is-writer-mode .context-panel-window {
   padding:
     calc(4px - var(--details-bar-optical-rise)) 8px
     calc(4px + var(--details-bar-optical-rise));
-  border-bottom: 1px solid var(--ink);
-  background: var(--paper);
+  border-bottom: 1px solid var(--details-bar-border);
+  background: var(--details-bar-bg);
 }
 
 .window-pane {
@@ -571,7 +595,7 @@ body.is-writer-mode .context-panel-window {
 .messages {
   background:
     linear-gradient(var(--quiet-panel), var(--quiet-panel)) 0 0 / 100% 22px no-repeat,
-    var(--paper);
+    var(--messages-bg);
 }
 
 .assistant-window .messages {
@@ -654,11 +678,11 @@ select:focus {
 
 @media (max-width: 520px), (max-height: 700px) {
   .file-picker {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: 1fr;
   }
 
   .file-picker .file-picker-button {
-    justify-self: stretch !important;
+    justify-self: stretch;
   }
 
   .assistant-window .composer {
@@ -764,15 +788,10 @@ select:focus {
     );
 }
 
-.control-section,
 .file-preview-body,
 .document-icon-grid,
 .project-disk-grid,
-.scrap-list,
-.trash-list,
-.source-info-panel,
-.teachtext-editor-container,
-.import-preview {
+.trash-list {
   background: var(--paper);
   border: var(--system-border);
   box-shadow: var(--system-inset);
@@ -856,8 +875,8 @@ select:focus {
   border: 0;
   box-shadow: none;
   padding: var(--writing-editor-padding-y) var(--writing-editor-padding-x);
-  background: var(--paper) !important;
-  background-image: none !important;
+  background: var(--paper);
+  background-image: none;
   font-family: var(--text-font);
   font-size: var(--writing-editor-font-size);
   line-height: var(--writing-editor-line-height);
@@ -1044,22 +1063,22 @@ select:focus {
     padding: 4px 8px 6px;
   }
 
-  body:not(.is-writer-mode) .window:not(.about-window):not(.save-chat-window):not(.guide-window):not(.control-panel):not(.chooser-panel):not(.find-file-window):not(.note-pad-window):not(.clipboard-window):not(.dictation-window):not(.translation-pad-window):not(.dictionary-window):not(.key-caps-window):not(.system-status-window):not(.notification-center-window):not(.writing-bell-window):not(.alarm-clock-window):not(.calculator-window):not(.puzzle-window):not(.memory-cards-window):not(.model-meter-window):not(.is-mobile-fullscreen):not(.is-mobile-dialog):not(.is-mobile-system-page) {
-    position: absolute !important;
-    left: var(--mobile-work-left) !important;
-    right: auto !important;
-    width: min(720px, calc(100vw - var(--mobile-work-left) - var(--mobile-work-right))) !important;
-    min-width: 0 !important;
-    max-width: calc(100vw - var(--mobile-work-left) - var(--mobile-work-right)) !important;
-    min-height: 0 !important;
-    transform: none !important;
+  body:not(.is-writer-mode) .desktop .window.is-mobile-work-area:not(.is-mobile-fullscreen):not(.is-collapsed) {
+    position: absolute;
+    left: var(--mobile-work-left);
+    right: auto;
+    width: min(720px, calc(100vw - var(--mobile-work-left) - var(--mobile-work-right)));
+    min-width: 0;
+    max-width: calc(100vw - var(--mobile-work-left) - var(--mobile-work-right));
+    min-height: 0;
+    transform: none;
   }
 
   body:not(.is-writer-mode) .window:is(.find-file-window, .note-pad-window, .clipboard-window, .dictation-window, .translation-pad-window, .dictionary-window, .key-caps-window, .system-status-window, .notification-center-window, .writing-bell-window, .alarm-clock-window, .calculator-window, .puzzle-window, .memory-cards-window, .model-meter-window):not(.is-hidden):not(.is-collapsed) {
-    min-width: 0 !important;
-    max-width: calc(100vw - 28px) !important;
-    height: auto !important;
-    transform: var(--mobile-da-transform, none) !important;
+    min-width: 0;
+    max-width: calc(100vw - 28px);
+    height: auto;
+    transform: var(--mobile-da-transform, none);
     /* Desktop base rules pin these accessories with right:<N>px; on a narrow
        screen that makes the used left negative (viewport - right - width < 0),
        clipping them off the left edge. Neutralise the stray right and use one
@@ -1069,67 +1088,67 @@ select:focus {
   }
 
   body:not(.is-writer-mode) .window:is(.find-file-window, .memory-cards-window):not(.is-hidden):not(.is-collapsed) {
-    width: min(520px, calc(100vw - 28px)) !important;
+    width: min(520px, calc(100vw - 28px));
   }
 
   body:not(.is-writer-mode) .window.note-pad-window:not(.is-hidden):not(.is-collapsed) {
-    width: min(320px, calc(100vw - 28px)) !important;
+    width: min(320px, calc(100vw - 28px));
   }
 
   body:not(.is-writer-mode) .window.clipboard-window:not(.is-hidden):not(.is-collapsed) {
-    width: min(340px, calc(100vw - 28px)) !important;
+    width: min(340px, calc(100vw - 28px));
   }
 
   body:not(.is-writer-mode) .window:is(.dictation-window, .translation-pad-window, .key-caps-window):not(.is-hidden):not(.is-collapsed) {
-    width: min(380px, calc(100vw - 28px)) !important;
+    width: min(380px, calc(100vw - 28px));
   }
 
   body:not(.is-writer-mode) .window.dictionary-window:not(.is-hidden):not(.is-collapsed) {
-    width: min(390px, calc(100vw - 28px)) !important;
+    width: min(390px, calc(100vw - 28px));
   }
 
   body:not(.is-writer-mode) .window.system-status-window:not(.is-hidden):not(.is-collapsed) {
-    width: min(430px, calc(100vw - 28px)) !important;
+    width: min(430px, calc(100vw - 28px));
   }
 
   body:not(.is-writer-mode) .window.notification-center-window:not(.is-hidden):not(.is-collapsed) {
-    width: min(360px, calc(100vw - 28px)) !important;
+    width: min(360px, calc(100vw - 28px));
   }
 
   body:not(.is-writer-mode) .window.writing-bell-window:not(.is-hidden):not(.is-collapsed) {
-    width: min(300px, calc(100vw - 28px)) !important;
+    width: min(300px, calc(100vw - 28px));
   }
 
   body:not(.is-writer-mode) .window.calculator-window:not(.is-hidden):not(.is-collapsed) {
-    width: min(208px, calc(100vw - 28px)) !important;
+    width: min(208px, calc(100vw - 28px));
   }
 
   body:not(.is-writer-mode) .window.puzzle-window:not(.is-hidden):not(.is-collapsed) {
-    width: min(188px, calc(100vw - 28px)) !important;
+    width: min(188px, calc(100vw - 28px));
   }
 
   body:not(.is-writer-mode) .window.model-meter-window:not(.is-hidden):not(.is-collapsed) {
-    width: min(230px, calc(100vw - 28px)) !important;
+    width: min(230px, calc(100vw - 28px));
   }
 
   body:not(.is-writer-mode) .window.is-collapsed,
   body:not(.is-writer-mode) .writing-spine-panel.is-shaded {
-    align-self: start !important;
-    position: absolute !important;
+    align-self: start;
+    position: absolute;
     /* A shaded window keeps the width it had before its body disappeared.
        Writing Spine has no captured window width, so it retains its compact
        116px tab without imposing that size on every application window. */
-    width: var(--window-shade-width, 116px) !important;
-    height: auto !important;
-    min-height: 0 !important;
-    max-height: none !important;
-    flex: 0 0 auto !important;
-    overflow: hidden !important;
+    width: var(--window-shade-width, 116px);
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    flex: 0 0 auto;
+    overflow: hidden;
   }
 
   body:not(.is-writer-mode) .window.is-collapsed > :not(.title-bar),
   body:not(.is-writer-mode) .writing-spine-panel.is-shaded .spine-shade-body {
-    display: none !important;
+    display: none;
   }
 
   /* Compact widths only narrow the window; placement stays with the shared
@@ -1391,21 +1410,21 @@ select:focus {
 
 /* WindowShade must win over writer-mode and responsive min-height rules. */
 .window.is-collapsed {
-  aspect-ratio: auto !important;
-  align-self: start !important;
-  flex: 0 0 auto !important;
-  height: auto !important;
-  min-height: 0 !important;
-  max-height: none !important;
-  overflow: hidden !important;
+  aspect-ratio: auto;
+  align-self: start;
+  flex: 0 0 auto;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  overflow: hidden;
 }
 
 .window.is-collapsed > :not(.title-bar):not(.grow-box) {
-  display: none !important;
+  display: none;
 }
 
 .window.is-collapsed .grow-box {
-  display: none !important;
+  display: none;
 }
 
 body.is-writer-mode .window.is-collapsed,
@@ -1414,22 +1433,22 @@ body.is-writer-mode .assistant-window.is-desklet.is-collapsed,
 body.is-writer-mode .teachtext-window.is-collapsed,
 body.is-writer-mode .find-path-window.is-collapsed,
 body.is-writer-mode .context-panel-window.is-collapsed {
-  height: auto !important;
-  min-height: 0 !important;
-  max-height: none !important;
+  height: auto;
+  min-height: 0;
+  max-height: none;
 }
 
 @media (min-width: 1101px) {
   body.is-writer-mode .assistant-window.is-collapsed,
   body.is-writer-mode .assistant-window.is-desklet.is-collapsed {
-    width: 60vw !important;
-    left: 0 !important;
-    top: 0 !important;
+    width: 60vw;
+    left: 0;
+    top: 0;
   }
 
   body.is-writer-mode.has-find-path-open .assistant-window.is-collapsed,
   body.is-writer-mode.has-find-path-open .assistant-window.is-desklet.is-collapsed {
-    width: calc(100vw / 3) !important;
+    width: calc(100vw / 3);
   }
 }
 
@@ -1457,23 +1476,23 @@ body.is-writer-mode .context-panel-window.is-collapsed {
   body.is-writer-mode .teachtext-window.is-collapsed,
   body.is-writer-mode .find-path-window.is-collapsed,
   body.is-writer-mode .context-panel-window.is-collapsed {
-    min-height: 0 !important;
-    height: auto !important;
+    min-height: 0;
+    height: auto;
   }
 }
 
 body.is-writer-mode .system-help-window {
-  position: fixed !important;
-  left: 50% !important;
-  right: auto !important;
-  top: calc(25px + (100vh - 25px) / 2) !important;
-  width: min(780px, calc(100vw - 32px)) !important;
-  height: min(620px, calc(100vh - 48px)) !important;
-  min-width: 0 !important;
-  max-width: calc(100vw - 32px) !important;
-  max-height: calc(100vh - 48px) !important;
-  transform: translate(-50%, -50%) !important;
-  z-index: var(--z-window-priority) !important;
+  position: fixed;
+  left: 50%;
+  right: auto;
+  top: calc(25px + (100vh - 25px) / 2);
+  width: min(780px, calc(100vw - 32px));
+  height: min(620px, calc(100vh - 48px));
+  min-width: 0;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 48px);
+  transform: translate(-50%, -50%);
+  z-index: var(--z-window-priority);
 }
 
 body.is-writer-mode .system-help-window .system-help-pane {
@@ -1483,19 +1502,19 @@ body.is-writer-mode .system-help-window .system-help-pane {
 
 @media (max-width: 860px) {
   body.is-writer-mode .system-help-window {
-    top: 36px !important;
-    left: 16px !important;
-    width: calc(100vw - 32px) !important;
-    height: calc(100vh - 52px) !important;
-    transform: none !important;
+    top: 36px;
+    left: 16px;
+    width: calc(100vw - 32px);
+    height: calc(100vh - 52px);
+    transform: none;
   }
 }
 
 @media (max-width: 1100px) {
   body.is-writer-mode .assistant-window .messages,
   body.is-writer-mode .assistant-window.is-desklet .messages {
-    flex: 1 1 auto !important;
-    max-height: none !important;
+    flex: 1 1 auto;
+    max-height: none;
     min-height: 120px;
   }
 
@@ -1508,7 +1527,7 @@ body.is-writer-mode .system-help-window .system-help-pane {
 @media (max-width: 860px) {
   body:not(.is-writer-mode) .window.assistant-window:not(.about-window):not(.save-chat-window):not(.guide-window):not(.is-collapsed):not(.is-mobile-fullscreen),
   body:not(.is-writer-mode) .window.assistant-window.is-desklet:not(.about-window):not(.save-chat-window):not(.guide-window):not(.is-collapsed):not(.is-mobile-fullscreen) {
-    min-height: 72vh !important;
+    min-height: 72vh;
   }
 
   body:not(.is-writer-mode) .assistant-window:not(.is-collapsed) .messages,
@@ -1520,7 +1539,7 @@ body.is-writer-mode .system-help-window .system-help-pane {
 @media (max-width: 1100px) {
   body.is-writer-mode .assistant-window:not(.is-collapsed),
   body.is-writer-mode .assistant-window.is-desklet:not(.is-collapsed) {
-    min-height: 66vh !important;
+    min-height: 66vh;
   }
 }
 
@@ -1537,6 +1556,11 @@ body.is-writer-mode .system-help-window .system-help-pane {
   body.mobile-app-foreground:not(.is-writer-mode) {
     overflow: hidden;
     overscroll-behavior: none;
+  }
+
+  /* A foregrounded app owns the screen; the floating Control Strip yields. */
+  body.mobile-app-foreground .control-strip {
+    display: none;
   }
 
   /* Standalone on iOS the menu bar is the topmost thing on screen, so it grows
@@ -1562,15 +1586,14 @@ body.is-writer-mode .system-help-window .system-help-pane {
     --mobile-work-right: 0px;
   }
 
-  body:not(.is-writer-mode) .writing-spine-panel,
-  body:not(.is-writer-mode) .writing-spine-panel.is-shaded {
-    position: static !important;
+  body:not(.is-writer-mode) .writing-spine-panel:not(.is-shaded) {
+    position: static;
     order: 1;
-    width: 100% !important;
-    max-width: none !important;
-    height: auto !important;
-    max-height: none !important;
-    overflow: hidden !important;
+    width: 100%;
+    max-width: none;
+    height: auto;
+    max-height: none;
+    overflow: hidden;
   }
 
   body:not(.is-writer-mode) .spine-shade-body {
@@ -1617,45 +1640,45 @@ body.is-writer-mode .system-help-window .system-help-pane {
     left: calc(50% - 31px);
   }
 
-  body:not(.is-writer-mode) .window:not(.about-window):not(.save-chat-window):not(.guide-window):not(.control-panel):not(.chooser-panel):not(.find-file-window):not(.note-pad-window):not(.clipboard-window):not(.dictation-window):not(.translation-pad-window):not(.dictionary-window):not(.key-caps-window):not(.system-status-window):not(.notification-center-window):not(.writing-bell-window):not(.alarm-clock-window):not(.calculator-window):not(.puzzle-window):not(.memory-cards-window):not(.model-meter-window):not(.is-mobile-fullscreen):not(.is-mobile-dialog):not(.is-mobile-system-page),
-  body:not(.is-writer-mode) .assistant-window:not(.is-mobile-fullscreen),
-  body:not(.is-writer-mode) .assistant-window.is-desklet:not(.is-mobile-fullscreen) {
-    position: relative !important;
+  body:not(.is-writer-mode) .window.is-mobile-work-area:not(.is-mobile-fullscreen):not(.is-collapsed),
+  body:not(.is-writer-mode) .window.is-mobile-work-area.assistant-window:not(.is-mobile-fullscreen):not(.is-collapsed),
+  body:not(.is-writer-mode) .window.is-mobile-work-area.assistant-window.is-desklet:not(.is-mobile-fullscreen):not(.is-collapsed) {
+    position: relative;
     order: 2;
-    left: auto !important;
-    right: auto !important;
-    top: auto !important;
+    left: auto;
+    right: auto;
+    top: auto;
     justify-self: center;
-    width: min(var(--portrait-window-width, 100%), 100%) !important;
-    height: var(--portrait-window-height, auto) !important;
-    min-width: 0 !important;
-    max-width: none !important;
-    transform: none !important;
+    width: min(var(--portrait-window-width, 100%), 100%);
+    height: var(--portrait-window-height, auto);
+    min-width: 0;
+    max-width: none;
+    transform: none;
   }
 
   body:not(.is-writer-mode) .window.about-window:not(.is-hidden):not(.is-mobile-dialog):not(.is-mobile-system-page) {
-    position: relative !important;
+    position: relative;
     order: 2;
-    left: auto !important;
-    right: auto !important;
-    top: auto !important;
+    left: auto;
+    right: auto;
+    top: auto;
     justify-self: center;
-    width: min(430px, 100%) !important;
-    height: auto !important;
-    max-width: none !important;
-    max-height: none !important;
-    transform: none !important;
+    width: min(430px, 100%);
+    height: auto;
+    max-width: none;
+    max-height: none;
+    transform: none;
   }
 
-  body:not(.is-writer-mode) .assistant-window:not(.is-mobile-fullscreen),
-  body:not(.is-writer-mode) .assistant-window.is-desklet:not(.is-mobile-fullscreen) {
-    order: 3 !important;
+  body:not(.is-writer-mode) .window.is-mobile-work-area.assistant-window:not(.is-mobile-fullscreen):not(.is-collapsed),
+  body:not(.is-writer-mode) .window.is-mobile-work-area.assistant-window.is-desklet:not(.is-mobile-fullscreen):not(.is-collapsed) {
+    order: 3;
   }
 
   /* Mobile page shell. Application pages and Finder folders share one work
      area below the fixed menu bar; dialogs, system pages, and Desk Accessories
      use their own overlay roles instead of competing for the same frame. */
-  body.mobile-app-foreground:not(.is-writer-mode) .window.is-mobile-fullscreen {
+  body.mobile-app-foreground:not(.is-writer-mode) .window.is-mobile-fullscreen:not(.is-collapsed) {
     position: fixed;
     /* The window material fills to the true bottom edge. Bottom still lifts by
        --keyboard-inset when the keyboard is up; an inner safe-area rule below
@@ -1802,6 +1825,15 @@ body.is-writer-mode .system-help-window .system-help-pane {
     flex: 0 1 auto;
   }
 
+  /* On phones Start Here's button group becomes two rows of two so the
+     wrapped layout stays stable across widths; the group stays centered. */
+  body:not(.is-writer-mode) .guide-window.is-mobile-system-page .button-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+    width: 100%;
+  }
+
   /* Home = clear this state; the desktop launcher underneath returns. While an
      app is foregrounded, the launcher column and writing spine stay out of the
      way behind it. */
@@ -1830,65 +1862,65 @@ body.is-writer-mode .system-help-window .system-help-pane {
 
   body:not(.is-writer-mode) .window:is(.rag-panel, .import-utility-window, .text-disk-window):not(.is-hidden):not(.is-collapsed) {
     justify-self: center;
-    max-width: 100% !important;
-    min-height: 0 !important;
+    max-width: 100%;
+    min-height: 0;
   }
 
   body:not(.is-writer-mode) .window:is(.rag-panel, .import-utility-window, .text-disk-window):not(.is-hidden):not(.is-collapsed) {
-    width: min(var(--portrait-window-width, 520px), 100%) !important;
-    height: var(--portrait-window-height, auto) !important;
+    width: min(var(--portrait-window-width, 520px), 100%);
+    height: var(--portrait-window-height, auto);
   }
 
   body:not(.is-writer-mode) .window:is(.find-file-window, .memory-cards-window):not(.is-hidden):not(.is-collapsed) {
-    width: min(520px, 100%) !important;
+    width: min(520px, 100%);
   }
 
   body:not(.is-writer-mode) .window:is(.note-pad-window):not(.is-hidden):not(.is-collapsed) {
-    width: min(320px, 100%) !important;
+    width: min(320px, 100%);
   }
 
   body:not(.is-writer-mode) .window:is(.clipboard-window):not(.is-hidden):not(.is-collapsed) {
-    width: min(340px, 100%) !important;
+    width: min(340px, 100%);
   }
 
   body:not(.is-writer-mode) .window:is(.dictation-window, .translation-pad-window, .key-caps-window):not(.is-hidden):not(.is-collapsed) {
-    width: min(380px, 100%) !important;
+    width: min(380px, 100%);
   }
 
   body:not(.is-writer-mode) .window.dictionary-window:not(.is-hidden):not(.is-collapsed) {
-    width: min(390px, 100%) !important;
+    width: min(390px, 100%);
   }
 
   body:not(.is-writer-mode) .window.system-status-window:not(.is-hidden):not(.is-collapsed) {
-    width: min(430px, 100%) !important;
+    width: min(430px, 100%);
   }
 
   body:not(.is-writer-mode) .window.notification-center-window:not(.is-hidden):not(.is-collapsed) {
-    width: min(360px, 100%) !important;
+    width: min(360px, 100%);
   }
 
   body:not(.is-writer-mode) .window.writing-bell-window:not(.is-hidden):not(.is-collapsed) {
-    width: min(300px, 100%) !important;
+    width: min(300px, 100%);
   }
 
   body:not(.is-writer-mode) .window.calculator-window:not(.is-hidden):not(.is-collapsed) {
-    width: min(208px, 100%) !important;
+    width: min(208px, 100%);
   }
 
   /* Board stays 160px in this band, so the window keeps the desktop width;
      the wider 220px board (and its 244px window) starts at 430px portrait. */
   body:not(.is-writer-mode) .window.puzzle-window:not(.is-hidden):not(.is-collapsed) {
-    width: min(var(--puzzle-window-width), 100%) !important;
+    width: min(var(--puzzle-window-width), 100%);
   }
 
   body:not(.is-writer-mode) .window.model-meter-window:not(.is-hidden):not(.is-collapsed) {
-    width: min(230px, 100%) !important;
+    width: min(230px, 100%);
   }
 
   body:not(.is-writer-mode) .window:is(.disk-window, .finder-window, .applications-window, .project-disk-window, .project-cd-window, .documents-window):not(.is-hidden):not(.is-collapsed) {
     justify-self: stretch;
-    height: var(--portrait-window-height, auto) !important;
-    min-height: 0 !important;
+    height: var(--portrait-window-height, auto);
+    min-height: 0;
   }
 
   body:not(.is-writer-mode) :is(.project-disk-pane, .project-cd-pane, .documents-pane) {
@@ -1981,18 +2013,18 @@ body.is-writer-mode .system-help-window .system-help-pane {
   }
 
   body:not(.is-writer-mode) .assistant-window:not(.is-collapsed):not(.is-mobile-fullscreen) {
-    height: min(78vh, calc(100vh - var(--system-menu-height, 26px) - 24px)) !important;
-    max-height: min(78vh, calc(100vh - var(--system-menu-height, 26px) - 24px)) !important;
-    min-height: 360px !important;
+    height: min(78vh, calc(100vh - var(--system-menu-height, 26px) - 24px));
+    max-height: min(78vh, calc(100vh - var(--system-menu-height, 26px) - 24px));
+    min-height: 360px;
   }
 
   body:not(.is-writer-mode) .endfield-terminal-window:not(.is-hidden):not(.is-collapsed):not(.is-mobile-fullscreen) {
-    height: var(--portrait-window-height, calc(100vh - var(--system-menu-height, 26px) - 72px)) !important;
-    min-height: min(560px, calc(100vh - var(--system-menu-height, 26px) - 72px)) !important;
+    height: var(--portrait-window-height, calc(100vh - var(--system-menu-height, 26px) - 72px));
+    min-height: min(560px, calc(100vh - var(--system-menu-height, 26px) - 72px));
   }
 
   .window[data-zoomed=true]:not(.is-mobile-fullscreen) {
-    height: calc(100vh - 60px) !important;
+    height: calc(100vh - 60px);
   }
 
   body:not(.is-writer-mode) .assistant-window:not(.is-collapsed) .messages {
@@ -2088,7 +2120,8 @@ body.use-modern-fonts .mde-surface * {
   height: var(--menu-bar-height);
   padding: 0 8px;
   border-bottom: var(--menu-bar-border);
-  box-shadow: inset 0 -1px 0 var(--paper);
+  background: var(--menu-bar-bg);
+  box-shadow: var(--menu-bar-shadow);
 }
 
 .menu-bar > .menu > button,
@@ -2270,10 +2303,10 @@ select {
   line-height: 1.35;
   padding-right: 30px;
   background-color: var(--paper);
-  background-image: url("./system.css-reference/icon/select-button.svg") !important;
-  background-position: right 6px center !important;
-  background-repeat: no-repeat !important;
-  background-size: 17px 17px !important;
+  background-image: url("./system.css-reference/icon/select-button.svg");
+  background-position: right 6px center;
+  background-repeat: no-repeat;
+  background-size: 17px 17px;
   color-scheme: light;
   appearance: none;
   -webkit-appearance: none;
@@ -2378,10 +2411,21 @@ select:focus-visible {
 textarea:focus:not(.mde-input) {
   outline: 1px dotted var(--ink);
   outline-offset: 2px;
-  background: var(--paper) !important;
-  background-image: none !important;
+  background: var(--field-focus-bg);
   color: var(--ink);
   box-shadow: var(--system-inset);
+}
+
+/* Writing editors keep their paper background while focused: the generic
+   field-focus fill above would otherwise win by file order. The fill is a
+   cross-theme token so Liquid Glass's transparent editor material wins
+   without a priority fight. */
+.teachtext-pane textarea:focus:not(.mde-input),
+.question-sheet-pane textarea:focus:not(.mde-input),
+.outline-content:focus:not(.mde-input),
+.draft-editor textarea:focus:not(.mde-input) {
+  background: var(--writing-editor-focus-bg);
+  background-image: none;
 }
 
 textarea::placeholder {
@@ -2406,65 +2450,6 @@ button.btn {
   font-size: var(--system-control-size);
   font-weight: var(--system-emphasis-weight);
   line-height: 1.2;
-}
-
-.file-picker {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-}
-
-.file-picker-input {
-  position: absolute;
-  width: 1px !important;
-  min-width: 0 !important;
-  max-width: 1px !important;
-  height: 1px !important;
-  max-height: 1px !important;
-  inline-size: 1px !important;
-  block-size: 1px !important;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  clip-path: inset(50%);
-  border: 0;
-  opacity: 0;
-  white-space: nowrap;
-}
-
-.file-picker .file-picker-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  justify-self: start;
-  min-width: 104px;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.file-picker-input:focus-visible + .file-picker-button {
-  outline: 1px dotted var(--ink);
-  outline-offset: 2px;
-}
-
-.file-picker-name {
-  display: block;
-  min-width: 0;
-  min-height: var(--system-button-min-height);
-  padding: var(--system-button-padding-y) 10px;
-  overflow: hidden;
-  border: var(--system-control-line) solid var(--btn-border-color);
-  background: var(--btn-bg);
-  color: var(--btn-fg);
-  box-shadow: var(--btn-shadow);
-  font-family: var(--text-font);
-  font-size: var(--system-control-size);
-  line-height: 1.2;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* .btn.default box-shadow merged into base (styles/10-windows.css);
@@ -2656,17 +2641,17 @@ input[type="radio"] {
 
 @media (max-width: 860px) and (orientation: portrait) {
   body:not(.is-writer-mode) .window.scrapbook-window:not(.is-hidden):not(.is-collapsed):not(.is-mobile-fullscreen) {
-    left: 18px !important;
-    top: 74px !important;
-    width: calc(100vw - 54px) !important;
-    max-width: calc(100vw - 54px) !important;
-    height: calc(100vh - 118px) !important;
-    min-height: 0 !important;
-    max-height: calc(100vh - 118px) !important;
+    left: 18px;
+    top: 74px;
+    width: calc(100vw - 54px);
+    max-width: calc(100vw - 54px);
+    height: calc(100vh - 118px);
+    min-height: 0;
+    max-height: calc(100vh - 118px);
   }
 
   body:not(.is-writer-mode) .scrapbook-window .scrapbook-pane {
-    grid-template-columns: minmax(170px, 0.72fr) minmax(0, 1fr) !important;
+    grid-template-columns: minmax(170px, 0.72fr) minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr);
     min-height: 0;
     overflow: hidden;
@@ -2716,7 +2701,7 @@ input[type="radio"] {
 
 @media (max-width: 430px) and (orientation: portrait) {
   body:not(.is-writer-mode) .scrapbook-window .scrapbook-pane {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: 1fr;
     grid-template-rows: minmax(132px, 156px) minmax(0, 1fr) auto;
     overflow: hidden;
   }
@@ -2917,6 +2902,48 @@ input[type="radio"] {
     --puzzle-tile-width: auto;
     --puzzle-tile-height: auto;
     --puzzle-footer-width: 220px;
+  }
+
+  /* Control Strip on phones: a thin bottom drawer with touch-sized modules
+     that scroll horizontally, never wraps, and never becomes a hamburger.
+     It stays a floating layer (default collapsed to the handle), and the
+     full-screen app shell hides it entirely. */
+  /* 89-control-strip.css loads after this file, so these drawer rules must
+     out-specify the base strip rules (body prefix), matching how the rest of
+     this file wins over later single-feature files. */
+  body .control-strip {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    height: 44px;
+    border-left: 0;
+    border-right: 0;
+    border-bottom: 0;
+  }
+
+  body .control-strip.is-collapsed {
+    width: 44px;
+    border-right: var(--control-strip-border);
+    border-bottom: var(--control-strip-border);
+  }
+
+  body .control-strip-modules {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+  }
+
+  body .control-strip-module {
+    width: 40px;
+    height: 40px;
+  }
+
+  body .control-strip-module.has-gauge {
+    padding: 0 8px;
+  }
+
+  body .control-strip-handle {
+    width: 44px;
   }
 }
 

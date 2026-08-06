@@ -45,9 +45,8 @@ test.assertIncludes(windowManager, '"review-mingming-handoff": reviewDeskReady &
 test.assertIncludes(windowManager, '"review-mingming-handoff-backstage": reviewDeskReady && teachTextCanReview && hasStyleSections', "Menu state enables the backstage command only for reviewable text");
 test.assertIncludes(config, '[data-action="review-mingming-handoff"]', "Long task controls disable the short-card command while running");
 test.assertIncludes(config, '[data-action="review-mingming-handoff-backstage"]', "Long task controls disable the backstage command while running");
-test.assertIncludes(config, "let mingmingHandoffReviewLoadPromise = null", "Config tracks a lazy load promise for the handoff module");
-test.assertIncludes(config, "function ensureMingmingHandoffReviewModule()", "Config exposes a lazy loader");
-test.assertIncludes(config, 'loadClassicScriptOnce("app/features/mingming-handoff-review.js")', "Lazy loader loads the handoff feature file");
+test.assertIncludes(config, 'createLazyModuleLoader("", ["app/features/mingming-handoff-review.js"])', "Config exposes one lazy loader for the handoff module");
+test.assertIncludes(config, '"app/features/mingming-handoff-review.js"', "Lazy loader loads the handoff feature file");
 test.assertIncludes(persistenceStatus, '"mingming-handoff-review": { label: t("review_desk"), windowName: "reviewDesk" }', "Short-card task receipt returns to Review Desk");
 test.assertIncludes(persistenceStatus, '"mingming-handoff-backstage-review": { label: t("review_desk"), windowName: "reviewDesk" }', "Backstage task receipt returns to Review Desk");
 

@@ -239,6 +239,7 @@
   min-height: 0;
   overflow: hidden;
   padding: 10px;
+  background: var(--review-desk-pane-bg);
 }
 
 .review-section-nav .btn {
@@ -249,8 +250,10 @@
   --review-source-ratio: 0.5;
   --review-splitter-size: 10px;
   min-height: 0;
-  border: var(--system-control-line) solid var(--ink);
-  background: var(--paper);
+  border: var(--review-desk-results-border);
+  border-radius: var(--review-desk-results-radius);
+  background: var(--review-desk-results-bg);
+  box-shadow: var(--review-desk-results-shadow);
   overflow: hidden;
   display: grid;
   grid-template-rows:
@@ -265,7 +268,7 @@
   min-height: 0;
   border: 0;
   padding: var(--writing-editor-padding-y) var(--writing-editor-padding-x);
-  background: var(--paper);
+  background: var(--review-surface-bg);
   font-family: var(--text-font);
   font-size: var(--writing-editor-font-size);
   line-height: var(--writing-editor-line-height);
@@ -304,7 +307,7 @@
 
 .review-desk-splitter:hover,
 .review-desk-splitter:focus-visible {
-  background: var(--ink);
+  background: var(--review-desk-splitter-hover-bg);
   outline: 0;
 }
 
@@ -322,6 +325,7 @@
 .review-desk-window.is-review-locked .review-desk-pane {
   grid-template-rows: minmax(0, 1fr);
   gap: 0;
+  background: var(--review-locked-pane-bg);
 }
 
 .review-desk-window.is-review-locked .review-section-nav,
@@ -333,7 +337,7 @@
 .review-desk-window.is-review-locked .review-desk-empty-note {
   align-self: center;
   justify-self: center;
-  display: grid !important;
+  display: grid;
   place-items: center;
   width: min(var(--mde-page-width), calc(100% - 48px));
   min-height: 156px;
@@ -349,7 +353,7 @@
   flex-direction: column;
   min-height: 0;
   border: 0;
-  background: var(--paper);
+  background: var(--review-surface-bg);
   overflow: hidden;
 }
 
@@ -367,7 +371,7 @@
 
 .style-sheet-results {
   border: 0;
-  background: var(--paper);
+  background: var(--review-surface-bg);
   padding: 12px;
   overflow: auto;
   display: flex;
@@ -399,10 +403,18 @@
 }
 
 .review-result-column th {
-  border-bottom: var(--system-control-line) solid var(--ink);
+  border-bottom: var(--review-th-border);
   font-family: var(--title-font);
   font-weight: var(--system-strong-weight);
-  background: var(--paper);
+  background: var(--review-th-bg);
+}
+
+.review-result-column td {
+  border-top: var(--review-td-border);
+}
+
+.review-result-column tr + tr td {
+  border-top: var(--review-td-alt-border);
 }
 
 .review-result-column td {
@@ -651,21 +663,24 @@
   align-items: center;
   gap: 6px;
   padding: 4px 0;
-  border-bottom: 1px dotted var(--shade);
+  border-bottom: var(--outline-item-border);
 }
 
 .outline-item span {
   flex: 1;
   min-height: 22px;
   padding: 3px 5px;
-  border: 1px solid transparent;
-  background: var(--paper);
+  border: var(--outline-item-span-border);
+  border-radius: var(--outline-item-span-radius);
+  background: var(--outline-item-span-bg);
 }
 
 .outline-section-text:focus {
-  border-color: var(--ink);
-  outline: 1px dotted var(--ink);
-  outline-offset: 1px;
+  border-color: var(--outline-focus-border);
+  outline: var(--outline-focus-outline);
+  outline-offset: var(--outline-focus-outline-offset);
+  background: var(--outline-focus-bg);
+  box-shadow: var(--outline-focus-shadow);
 }
 
 .mini-btn {
@@ -730,8 +745,11 @@
 .draft-section-label {
   min-width: 0;
   padding: 4px 8px;
-  border: var(--system-control-line) solid var(--ink);
-  background: var(--paper);
+  border: var(--draft-label-border);
+  border-radius: var(--section-label-radius);
+  background: var(--draft-label-bg);
+  box-shadow: var(--section-label-shadow);
+  color: var(--section-label-fg);
   font-family: var(--title-font);
   font-size: 13px;
   line-height: 1.25;
@@ -761,6 +779,11 @@
 .style-section-meta {
   margin: 0;
   max-width: none;
+  border: var(--meta-label-border);
+  border-radius: var(--section-label-radius);
+  background: var(--meta-label-bg);
+  box-shadow: var(--section-label-shadow);
+  color: var(--section-label-fg);
 }
 
 .review-section-nav {
@@ -773,7 +796,7 @@
 
 .claim-results {
   border: var(--system-control-line) solid var(--ink);
-  background: var(--paper);
+  background: var(--review-surface-bg);
   padding: 12px;
   overflow: visible;
 }
@@ -2361,4 +2384,66 @@ body.alarm-clock-ringing .alarm-clock-menu-icon {
   .drop-caret {
     animation: caret-blink 0.6s step-end infinite;
   }
+}
+
+/* File picker — hidden file input, visible button, and selected-file name.
+   Base layout lives here so the responsive single-column override in
+   60-responsive.css wins by file order without priority. */
+.file-picker {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.file-picker-input {
+  position: absolute;
+  width: 1px;
+  min-width: 0;
+  max-width: 1px;
+  height: 1px;
+  max-height: 1px;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  border: 0;
+  opacity: 0;
+  white-space: nowrap;
+}
+
+.file-picker .file-picker-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: start;
+  min-width: 104px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.file-picker-input:focus-visible + .file-picker-button {
+  outline: 1px dotted var(--ink);
+  outline-offset: 2px;
+}
+
+.file-picker-name {
+  display: block;
+  min-width: 0;
+  min-height: var(--system-button-min-height);
+  padding: var(--system-button-padding-y) 10px;
+  overflow: hidden;
+  border: var(--system-control-line) solid var(--btn-border-color);
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  box-shadow: var(--btn-shadow);
+  font-family: var(--text-font);
+  font-size: var(--system-control-size);
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

@@ -711,10 +711,6 @@ function throwIfAborted(signal) {
   if (signal?.aborted) throw fileDiskAbortError();
 }
 
-function isAbortError(error) {
-  return error?.name === "AbortError";
-}
-
 function canBrowserNormalizeImageFile(file) {
   return /\.(webp|heic|heif)$/i.test(file.name || "");
 }
@@ -771,7 +767,14 @@ async function convertImageFileToPngArrayBuffer(file) {
   return blob.arrayBuffer();
 }
 
-function loadClassicScriptOnce(src) {
+// Browser-vendor scripts (PaddleOCR, PDF.js) load through their own small
+// loader on purpose: they are node_modules copies served at app/vendor/*
+// URLs, so they must NOT go through the shared system lazy loader — that one
+// adds the build query and remaps to app/legacy/ on old WebKit, which vendor
+// files do not have a legacy twin for. The name deliberately differs from the
+// canonical loadClassicScriptOnce in app/core/config.js so the concatenated
+// bundle keeps exactly one definition of that shared loader.
+function loadBrowserVendorScriptOnce(src) {
   const existing = document.querySelector(`script[data-ai-system6-src="${CSS.escape(src)}"]`);
   if (existing) {
     return existing.dataset.loaded === "true"
@@ -798,7 +801,7 @@ function loadClassicScriptOnce(src) {
 
 async function getBrowserPaddleOcr() {
   if (!paddleOcrBrowserPromise) {
-    paddleOcrBrowserPromise = loadClassicScriptOnce("/app/vendor/paddle-ocr.js")
+    paddleOcrBrowserPromise = loadBrowserVendorScriptOnce("/app/vendor/paddle-ocr.js")
       .then(async () => {
         const ocr = window.paddlejs?.ocr;
         if (!ocr || typeof ocr.init !== "function" || typeof ocr.recognize !== "function") {
@@ -1375,7 +1378,7 @@ async function previewProjectBackupFile() {
   }
 }
 
-function importReadyFilesToDocuments() {
+async function importReadyFilesToDocuments() {
   if (!getActiveProject()) {
     setStatus(t("no_project_mounted"));
     openWindow("projects");
@@ -1392,9 +1395,23 @@ function importReadyFilesToDocuments() {
   const now = new Date().toISOString();
   let subtitleOutputs = 0;
   const sourceExtPattern = /\.(txt|text|srt|rtf|md|mdx|markdown|mdown|mkd|mkdn|csv|tsv|json|js|ts|htm|html|xhtml|webarchive|css|xml|log|pdf|docx|pages|numbers|key|epub|pptx|xlsx|bmp|jpe?g|png|webp|heic|heif|aac|aif|aiff|amr|caf|flac|m4a|mp3|oga|ogg|opus|wav|webm)$/i;
+  const looksLikeDocMap = (item) => /^DocMap\b/i.test(item.name.replace(sourceExtPattern, ""))
+    || /^DocMap\b/i.test(item.name)
+    || (typeof isExportedDocMapMarkdown === "function" && isExportedDocMapMarkdown(item.body || ""));
+  // DocMap parsing lives in the lazy docmap module. Load it only when a
+  // candidate actually looks like a DocMap, so ordinary imports never drag the
+  // tool in; on load failure the import still proceeds and the file re-parses
+  // the next time it is opened.
+  if (ready.some(looksLikeDocMap)) {
+    try {
+      await ensureDocMapModule();
+    } catch {
+      // Covered by the reopen path.
+    }
+  }
   ready.forEach((item) => {
     const name = item.name.replace(sourceExtPattern, "");
-    const docMap = typeof restoreDocMapFromMarkdown === "function"
+    const docMap = looksLikeDocMap(item) && typeof restoreDocMapFromMarkdown === "function"
       ? restoreDocMapFromMarkdown(item.body, {
         label: name,
         scope: "documents",

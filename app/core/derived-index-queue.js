@@ -225,6 +225,7 @@ function updateDerivedIndexNotification(message, state) {
     replaceId: derivedIndexNotificationId,
     state,
   });
+  window.AISystem6ControlStrip?.refreshStrip?.();
 }
 
 async function processDerivedIndexQueue() {

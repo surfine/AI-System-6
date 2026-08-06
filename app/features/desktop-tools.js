@@ -52,23 +52,6 @@ function pressCalculatorKey(key) {
   renderCalculator();
 }
 
-async function copyCalculatorResult() {
-  const result = calculatorExpression === "Error" ? "" : calculatorExpression;
-  if (!result) {
-    playSystemSound("alert");
-    return;
-  }
-
-  try {
-    await navigator.clipboard?.writeText(result);
-  } catch {
-    setClipboard(result, t("calculator"));
-  }
-  setClipboard(result, t("calculator"));
-  setStatus(t("result_copied"));
-  playSystemSound("save");
-}
-
 function normalizeWritingBellMode(mode) {
   return mode === "break" ? "break" : "work";
 }
@@ -169,6 +152,7 @@ function startWritingBell() {
   setStatus(t("bell_started", writingBellModeLabel(), formatWritingBellTime(writingBellRemaining)));
   renderWritingBell();
   saveDeskState();
+  window.AISystem6ControlStrip?.refreshStrip?.();
 }
 
 function pauseWritingBell() {
@@ -181,6 +165,7 @@ function pauseWritingBell() {
   setStatus(t("bell_paused", formatWritingBellTime(writingBellRemaining)));
   renderWritingBell();
   saveDeskState();
+  window.AISystem6ControlStrip?.refreshStrip?.();
 }
 
 function resetWritingBell() {
@@ -225,6 +210,7 @@ function completeWritingBell() {
   playSystemSound("alert");
   renderWritingBell();
   saveDeskState();
+  window.AISystem6ControlStrip?.refreshStrip?.();
   showSystemModal(message, "alert").then(() => {
     writingBellMode = nextMode;
     writingBellRemaining = writingBellDurations[writingBellMode];

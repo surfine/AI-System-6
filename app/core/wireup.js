@@ -1,5 +1,7 @@
 // Event binding for app.js.
 
+let desktopTapHintShown = false;
+
 function wireAppEvents() {
   installDesktopScrollLock();
   initializeBalloonHelp();
@@ -592,6 +594,7 @@ function wireAppEvents() {
     // Entering/leaving the phone portrait breakpoint flips the full-screen app
     // shell on or off.
     syncMobileAppForeground();
+    syncMobileWorkAreaFrames?.();
     renderMultiFinderMenu();
   });
 
@@ -890,6 +893,15 @@ function wireAppEvents() {
       event.preventDefault();
       closeMenus();
       selectDesktopIcon(desktopIconTarget);
+      if (
+        !desktopTapHintShown
+        && event.detail < 2
+        && typeof window.matchMedia === "function"
+        && !window.matchMedia("(hover: hover)").matches
+      ) {
+        desktopTapHintShown = true;
+        showBalloonHelp(desktopIconTarget, "desktop_tap_hint", { force: true, autoHideMs: 3200 });
+      }
       return;
     }
   
@@ -1018,6 +1030,7 @@ function wireAppEvents() {
   installGrowBoxes();
   syncWindowBalloonHelpTargets();
   installWindowFrameBars();
+  syncMobileWorkAreaFrames?.();
   wireControlTabs();
   document.querySelectorAll(".title-bar").forEach((bar) => {
     bar.addEventListener("dblclick", (event) => {
@@ -1037,6 +1050,12 @@ function wireAppEvents() {
       const win = bar.closest(".window");
       if (["about", "saveChat"].includes(win?.dataset.window)) return;
       if (!win) return;
+      // Writing-mode split panes are CSS-owned fixed columns (60vw / 33vw):
+      // a drag would leave inline left/top behind that beats the non-!important
+      // rules, so they stay pinned like they did under the old !important CSS.
+      if (typeof writerMode !== "undefined" && writerMode
+          && typeof writerModeCssOwnedWindows !== "undefined"
+          && writerModeCssOwnedWindows.has(win.dataset.window)) return;
       // Portrait is a presentation system: mobile roles own window placement
       // and the phone screen has no room for free title-bar dragging.
       if (isPortraitDocumentFlow()) return;

@@ -41,12 +41,12 @@ test.assertIncludes(manifest, '"app/features/cmf-studio.js"', "feature is regist
 const lazyBlock = manifest.slice(manifest.indexOf("lazyRuntimePaths"));
 test.assertIncludes(lazyBlock, "app/features/cmf-studio.js", "feature sits in lazyRuntimePaths");
 test.assertIncludes(app, "ensureCmfStudioModule", "openWindow loads CMF on demand");
-test.assertIncludes(app, 'loadClassicScriptOnce("app/features/cmf-studio.js?cmf=exterior-ao-sanitized")', "classic script is loaded once with the repaired material cache identity");
+test.assertIncludes(app, 'createLazyModuleLoader("AISystem6CMFStudioLoaded", ["app/features/cmf-studio.js?cmf=exterior-ao-sanitized"])', "classic script is loaded once with the repaired material cache identity");
 test.assertNotIncludes(cmfStudio, "\nimport ", "feature module is not an ES module");
 test.assertNotIncludes(cmfStudio, "\nexport ", "feature module is not an ES module");
 
 // --- recipe/state model ---
-test.assertIncludes(cmfStudio, 'model: "iphone-17-standard"', "v1 model is iPhone 17 standard");
+test.assertIncludes(cmfStudio, 'id: "iphone-17-standard"', "iPhone 17 standard is a registered model");
 test.assertIncludes(cmfStudio, "volumeUp", "recipe covers volume up");
 test.assertIncludes(cmfStudio, "volumeDown", "recipe covers volume down");
 test.assertIncludes(cmfStudio, "actionButton", "recipe covers action button");
@@ -60,12 +60,89 @@ test.assertIncludes(cmfStudio, "lavender17", "official lavender finish exists");
 test.assertIncludes(cmfStudio, "mistBlue17", "official mist blue finish exists");
 test.assertIncludes(cmfStudio, "sage17", "official sage finish exists");
 test.assertIncludes(cmfStudio, "white17", "official white finish exists");
-test.assertIncludes(cmfStudio, "recipe.parts.volumeUp = colors[0]", "shuffle assigns volume up from a unique color slot");
-test.assertIncludes(cmfStudio, "recipe.parts.volumeDown = colors[1]", "shuffle assigns volume down from a unique color slot");
-test.assertIncludes(cmfStudio, "recipe.parts.actionButton = colors[2]", "shuffle assigns action button from a unique color slot");
-test.assertIncludes(cmfStudio, "recipe.parts.cameraControl = colors[3]", "shuffle assigns camera control from a unique color slot");
-test.assertIncludes(cmfStudio, "recipe.parts.sideButton = colors[4]", "shuffle assigns side button from a unique color slot");
+test.assertIncludes(cmfStudio, "bag = shuffleArray(activeColors()", "shuffle draws from the active model's palette without repeating a color early");
 test.assertIncludes(cmfStudio, "localStorage.setItem(STORAGE_KEY", "recipe is saved locally");
+
+// --- multiple models, each with only that device's official finishes ---
+test.assertIncludes(cmfStudio, 'id: "iphone-17-pro"', "iPhone 17 Pro is a registered model");
+test.assertIncludes(cmfStudio, 'id: "iphone-17-pro-max"', "iPhone 17 Pro Max is a registered model");
+test.assertIncludes(cmfStudio, "cosmicOrange17Pro", "Pro line offers the official Cosmic Orange finish");
+test.assertIncludes(cmfStudio, "deepBlue17Pro", "Pro line offers the official Deep Blue finish");
+test.assertIncludes(cmfStudio, "silver17Pro", "Pro line offers the official Silver finish");
+test.assertNotIncludes(
+  cmfStudio.slice(cmfStudio.indexOf("IPHONE_17_PRO_COLORS"), cmfStudio.indexOf("IPHONE_17_PARTS")),
+  "sage17",
+  "the Pro palette never borrows a finish from another device",
+);
+test.assertIncludes(cmfStudio, 'id: "iphone-air"', "iPhone Air is a registered model");
+test.assertIncludes(cmfStudio, "spaceBlackAir", "Air offers the official Space Black finish");
+test.assertIncludes(cmfStudio, "cloudWhiteAir", "Air offers the official Cloud White finish");
+test.assertIncludes(cmfStudio, "lightGoldAir", "Air offers the official Light Gold finish");
+test.assertIncludes(cmfStudio, "skyBlueAir", "Air offers the official Sky Blue finish");
+test.assertNotIncludes(
+  cmfStudio.slice(cmfStudio.indexOf("IPHONE_AIR_COLORS"), cmfStudio.indexOf("IPHONE_17_PARTS")),
+  "17Pro",
+  "the Air palette never borrows a finish from another device",
+);
+test.assertIncludes(cmfStudio, 'id: "iphone-17e"', "iPhone 17e is a registered model");
+test.assertIncludes(cmfStudio, "black17e", "17e offers the official Black finish");
+test.assertIncludes(cmfStudio, "white17e", "17e offers the official White finish");
+test.assertIncludes(cmfStudio, "softPink17e", "17e offers the official Soft Pink finish");
+test.assertIncludes(
+  cmfStudio,
+  'part.id !== "simTray" && part.id !== "cameraControl"',
+  "the 17e exposes neither a SIM tray nor a Camera Control part, because it has neither",
+);
+test.assertIncludes(
+  cmfStudio,
+  "rendererState.modelId !== recipe.model || rendererState.poseId !== (recipe.pose || \"closed\")",
+  "a device (or pose) is never repainted in another device's finishes when its own model failed to load",
+);
+test.assertIncludes(cmfStudio, 'id: "macbook-neo"', "MacBook Neo is a registered model");
+test.assertIncludes(cmfStudio, "silverNeo", "MacBook Neo offers the official Silver finish");
+test.assertIncludes(cmfStudio, "blushNeo", "MacBook Neo offers the official Blush finish");
+test.assertIncludes(cmfStudio, "citrusNeo", "MacBook Neo offers the official Citrus finish");
+test.assertIncludes(cmfStudio, "indigoNeo", "MacBook Neo offers the official Indigo finish");
+test.assertIncludes(cmfStudio, '{ id: "closed", labelKey: "cmf_pose_closed" }', "MacBook Neo ships in a Closed pose");
+test.assertIncludes(cmfStudio, '{ id: "open", labelKey: "cmf_pose_open" }', "MacBook Neo ships in an Open pose");
+test.assertIncludes(cmfStudio, 'id: "lid"', "the lid is a MacBook Neo part (Apple self-service part)");
+test.assertIncludes(cmfStudio, 'id: "topCase"', "the keyboard deck is a MacBook Neo part");
+test.assertIncludes(cmfStudio, 'id: "bottomCase"', "the bottom case is a MacBook Neo part");
+test.assertIncludes(cmfStudio, 'id: "keycaps"', "the keycaps are a MacBook Neo part");
+test.assertIncludes(cmfStudio, "const MACBOOK_NEO_VIEWS = {", "the MacBook defines per-pose camera sets");
+test.assertIncludes(cmfStudio, 'views: MACBOOK_NEO_VIEWS', "the MacBook model registers both camera sets");
+test.assertIncludes(cmfStudio, "function selectCmfPose", "switching poses is an explicit command");
+test.assertIncludes(cmfStudio, "state.poseId = requestedRecipe.pose || \"closed\"", "the loaded pose is tracked for repaint guards");
+test.assertIncludes(cmfStudio, 'spec.poses.some((entry) => entry.id === saved.pose)', "a saved recipe cannot carry another pose's geometry across");
+test.assertIncludes(index, 'id="cmf-pose"', "a pose chooser exists for posed models");
+test.assertIncludes(index, '<label class="cmf-control" id="cmf-pose-control" hidden>', "the pose chooser is hidden until a posed model is selected");
+// Every finish the picker offers must be drawable, or the chips all fall back
+// to one colour and the user cannot tell the finishes apart.
+for (const color of [
+  "black17", "lavender17", "mistBlue17", "sage17", "white17",
+  "cosmicOrange17Pro", "deepBlue17Pro", "silver17Pro",
+  "spaceBlackAir", "cloudWhiteAir", "lightGoldAir", "skyBlueAir",
+  "black17e", "white17e", "softPink17e",
+  "silverNeo", "blushNeo", "citrusNeo", "indigoNeo",
+]) {
+  test.assertIncludes(styles, `[data-cmf-color="${color}"]`, `the ${color} chip has a swatch colour`);
+}
+test.assertIncludes(
+  styles,
+  ".cmf-control[hidden]",
+  "a hidden toolbar control gives up its column instead of leaving an orphan label",
+);
+test.assertIncludes(index, 'id="cmf-model"', "a model chooser exists");
+test.assertIncludes(index, '<span class="select-wrap"><select id="cmf-model">', "the model chooser uses the System 6 select harness");
+test.assertIncludes(cmfStudio, "function selectCmfModel", "switching models is an explicit command");
+test.assertIncludes(cmfStudio, "scheduleModelRender(0);\n    setCmfStatus(t(\"cmf_model_switched\"))", "switching models rebuilds the geometry instead of recoloring the old device");
+test.assertIncludes(cmfStudio, "if (spec.colors.some((entry) => entry.id === color)) parts[part.id] = color", "a saved recipe cannot carry another model's finish across");
+test.assertIncludes(cmfStudio, "store.recipes[recipe.model] = recipe", "each model keeps its own saved recipe");
+test.assertNotIncludes(
+  cmfStudio.slice(cmfStudio.indexOf("IPHONE_17_PRO_PARTS")),
+  'IPHONE_17_PRO_PARTS = [\n    { id: "simTray"',
+  "the eSIM Pro asset exposes no SIM tray part",
+);
 
 // --- server APIs and real USDZ path ---
 test.assertIncludes(router, '"GET /api/cmf/capabilities"', "capabilities route is registered");
@@ -77,7 +154,23 @@ test.assertIncludes(exportRoute, "model/vnd.usdz+zip", "export route returns a U
 test.assertIncludes(exportRoute, "Content-Disposition", "export route downloads a file");
 test.assertIncludes(renderRoute, "renderRecipeViews", "render route uses the CMF render service");
 test.assertIncludes(previewRoute, "renderRecipePreview", "preview route renders one current view");
-test.assertIncludes(service, "exactPartByMeshName", "engine keeps semantic mesh-to-part mapping");
+test.assertIncludes(service, "exactMeshParts", "engine keeps semantic mesh-to-part mapping");
+test.assertIncludes(service, "const MODELS = Object.freeze({", "engine drives every device from one model registry");
+test.assertIncludes(service, '"iphone-17-pro-max"', "engine can recolor the iPhone 17 Pro Max");
+test.assertIncludes(service, '"iphone-air"', "engine can recolor the iPhone Air");
+test.assertIncludes(service, '"macbook-neo"', "engine can recolor the MacBook Neo");
+test.assertIncludes(service, "poses:", "the MacBook Neo ships one asset per pose");
+test.assertIncludes(service, '"macbook-neo-closed.usdz"', "the closed pose asset is registered");
+test.assertIncludes(service, '"macbook-neo-open.usdz"', "the open pose asset is registered");
+test.assertIncludes(service, "MACBOOK_NEO_VIEWS[pose]", "per-pose camera sets exist for the MacBook");
+test.assertIncludes(service, "model.exactOnly ? \"\" : classifyPart", "the phone-tuned geometric classifier is disabled for exact-only models");
+test.assertIncludes(service, "lid:", "the MacBook part map covers the lid");
+test.assertIncludes(service, "topCase:", "the MacBook part map covers the keyboard deck");
+test.assertIncludes(service, "bottomCase:", "the MacBook part map covers the bottom case");
+test.assertIncludes(service, "keycaps:", "the MacBook part map covers the keycaps");
+test.assertIncludes(service, "usbC:", "the MacBook part map covers the USB-C boards");
+test.assertIncludes(service, "`Unsupported CMF color '${rawColor}' for ${rawPart} on ${modelId}`", "a finish from another device is rejected, not silently swapped");
+test.assertIncludes(service, "targetFraction", "close-up views frame against each device's own size");
 test.assertIncludes(service, "actionButton", "engine maps UI action button naming to USD part naming");
 test.assertIncludes(service, "usdcat", "engine rewrites USD layers, not CSS filters");
 test.assertIncludes(service, "usdzip", "engine repackages final USDZ");
@@ -93,6 +186,14 @@ test.assertIncludes(service, '"08-bottom-usb"', "view set includes a bottom USB-
 test.assertIncludes(service, "bottomUsbPosition = vector(center.x + distance * 0.08, center.y - distance * 0.28, center.z - distance)", "SceneKit USB-C detail camera looks from the back/bottom side");
 test.assertIncludes(service, '"09-top-edge"', "view set includes a top edge detail angle");
 test.assert(exists("assets/cmf/iphone-17-standard.usdz"), "source iPhone 17 USDZ asset is bundled in assets/cmf");
+test.assert(exists("assets/cmf/iphone-17-pro.usdz"), "source iPhone 17 Pro USDZ asset is bundled in assets/cmf");
+test.assert(exists("assets/cmf/iphone-17-pro-max.usdz"), "source iPhone 17 Pro Max USDZ asset is bundled in assets/cmf");
+test.assert(exists("assets/cmf/iphone-air.usdz"), "source iPhone Air USDZ asset is bundled in assets/cmf");
+test.assert(exists("assets/cmf/iphone-17e.usdz"), "source iPhone 17e USDZ asset is bundled in assets/cmf");
+test.assert(exists("assets/cmf/macbook-neo-closed.usdz"), "MacBook Neo closed-pose USDZ asset is bundled in assets/cmf");
+test.assert(exists("assets/cmf/macbook-neo-open.usdz"), "MacBook Neo open-pose USDZ asset is bundled in assets/cmf");
+test.assert(exists("scripts/cmf-prepare-model.mjs"), "model assets are reproducible from a recorded source, not hand-made");
+test.assertIncludes(read("scripts/cmf-prepare-model.mjs"), "expectMm", "the prepare step proves each split asset against Apple's published dimensions");
 
 // --- interactive browser USDZ path ---
 test.assertIncludes(packageJson, '"three": "^0.184.0"', "the browser renderer uses the pinned Three.js USD implementation");
@@ -149,5 +250,46 @@ test.assertIncludes(en, 'cmf_model_interactive: "Interactive USDZ"', "English in
 test.assertIncludes(zh, 'cmf_model_interactive: "交互式 USDZ"', "Chinese interactive-model label is present");
 test.assertIncludes(en, "cmf_model_live:", "English live-material status is present");
 test.assertIncludes(zh, "cmf_model_live:", "Chinese live-material status is present");
+for (const key of [
+  "cmf_model_iphone_17_pro",
+  "cmf_model_iphone_17_pro_max",
+  "cmf_model_switched",
+  "cmf_color_cosmic_orange17pro",
+  "cmf_color_deep_blue17pro",
+  "cmf_color_silver17pro",
+  "cmf_part_camera_rings",
+  "cmf_preset_orange_index",
+  "cmf_preset_deep_blue_margin",
+  "cmf_preset_silver_proof",
+  "cmf_model_iphone_air",
+  "cmf_color_space_black_air",
+  "cmf_color_cloud_white_air",
+  "cmf_color_light_gold_air",
+  "cmf_color_sky_blue_air",
+  "cmf_preset_cloud_binding",
+  "cmf_preset_gold_caption",
+  "cmf_preset_sky_typeset",
+  "cmf_model_macbook_neo",
+  "cmf_pose",
+  "cmf_pose_closed",
+  "cmf_pose_open",
+  "cmf_part_lid",
+  "cmf_part_top_case",
+  "cmf_part_bottom_case",
+  "cmf_part_keycaps",
+  "cmf_color_silver_neo",
+  "cmf_color_blush_neo",
+  "cmf_color_citrus_neo",
+  "cmf_color_indigo_neo",
+  "cmf_preset_blush_lid",
+  "cmf_preset_indigo_deck",
+  "cmf_preset_citrus_keys",
+  "cmf_view_lid_top",
+  "cmf_view_hero_open",
+  "cmf_view_keyboard_close",
+]) {
+  test.assertIncludes(en, `${key}:`, `English string exists for ${key}`);
+  test.assertIncludes(zh, `${key}:`, `Chinese string exists for ${key}`);
+}
 
 test.finish();

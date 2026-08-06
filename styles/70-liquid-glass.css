@@ -1,5 +1,115 @@
 body.use-liquid-glass {
   --resize-affordance-clearance: 10px;
+  --writing-editor-focus-bg: transparent;
+  --pane-bg: var(--liquid-pane-bg-color, rgba(255, 255, 255, 0.12));
+  --messages-bg: var(--liquid-pane-bg-color, rgba(255, 255, 255, 0.12));
+  --details-bar-bg: var(--liquid-pane-bg-color, rgba(255, 255, 255, 0.12));
+  --details-bar-border: rgba(16, 17, 20, 0.1);
+  --review-desk-pane-bg: rgba(255, 255, 255, 0.2);
+  --review-desk-results-border: 1px solid rgba(16, 17, 20, 0.16);
+  --review-desk-results-radius: 16px;
+  --review-desk-results-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.46), rgba(255, 255, 255, 0.2)),
+    rgba(255, 255, 255, 0.2);
+  --review-desk-results-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.74),
+    0 12px 32px rgba(18, 28, 38, 0.08);
+  --review-surface-bg: transparent;
+  --review-desk-splitter-hover-bg:
+    linear-gradient(90deg, transparent, rgba(16, 17, 20, 0.28), transparent) center / 88% 2px no-repeat,
+    rgba(255, 255, 255, 0.34);
+  --review-locked-pane-bg: rgba(255, 255, 255, 0.14);
+  --review-th-border: 1px solid rgba(16, 17, 20, 0.16);
+  --review-th-bg: rgba(255, 255, 255, 0.42);
+  --review-td-border: 1px solid rgba(16, 17, 20, 0.12);
+  --review-td-alt-border: 1px solid rgba(16, 17, 20, 0.16);
+  --composer-file-active-bg: rgba(16, 17, 20, 0.86);
+  --composer-file-active-fg: #ffffff;
+  --composer-file-active-border: rgba(16, 17, 20, 0.72);
+  --compose-menu-hover-bg: rgba(16, 17, 20, 0.86);
+  --compose-menu-hover-fg: #ffffff;
+  --compose-tool-copy-b: rgba(16, 17, 20, 0.96);
+  --compose-tool-copy-small: rgba(16, 17, 20, 0.56);
+  --menu-bar-bg:
+    radial-gradient(120% 170% at 8% 0%, rgba(255, 255, 255, 0.42), transparent 44%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.12)),
+    rgba(255, 255, 255, 0.2);
+  --menu-bar-shadow:
+    inset 1.25px 0 0 -0.75px rgba(230, 230, 230, 0.72),
+    inset -1.25px 0 0 -0.75px rgba(229, 229, 229, 0.72),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82),
+    inset 0 -1px 0 rgba(16, 17, 20, 0.08),
+    0 12px 34px rgba(18, 28, 38, 0.09);
+  --menu-button-height: 24px;
+  --menu-button-radius: 999px;
+  --menu-button-transition: background 0.18s ease, box-shadow 0.18s ease, color 0.18s ease;
+  --btn-default-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.04)),
+    linear-gradient(180deg, #0a84ff, #0071e3);
+  --btn-default-fg: #ffffff;
+  --btn-default-text-shadow: 0 1px 0 rgba(0, 0, 0, 0.18);
+  --btn-default-shadow: var(--btn-shadow);
+  --btn-default-active-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.02)),
+    linear-gradient(180deg, #0071e3, #005ecb);
+  --btn-default-active-fg: #ffffff;
+  --control-status-border: 1px solid rgba(16, 17, 20, 0.1);
+  --control-label-fg: rgba(16, 17, 20, 0.9);
+  --control-summary-fg: rgba(16, 17, 20, 0.92);
+  --outline-item-border: 1px solid rgba(16, 17, 20, 0.08);
+  --outline-item-span-bg: transparent;
+  --outline-item-span-border: 0;
+  --outline-item-span-radius: 8px;
+  --outline-focus-border: transparent;
+  --outline-focus-outline: 0;
+  --outline-focus-outline-offset: 0;
+  --outline-focus-bg: rgba(255, 255, 255, 0.34);
+  --outline-focus-shadow: inset 0 0 0 1px rgba(0, 122, 255, 0.28);
+  --radio-radius: 50%;
+  --section-label-fg: rgba(16, 17, 20, 0.92);
+  --section-label-radius: 999px;
+  --section-label-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78), 0 8px 24px rgba(18, 28, 38, 0.08);
+  --draft-label-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.28)),
+    rgba(255, 255, 255, 0.28);
+  --draft-label-border: 1px solid rgba(16, 17, 20, 0.16);
+  --meta-label-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.28)),
+    rgba(255, 255, 255, 0.28);
+  --meta-label-border: 1px solid rgba(16, 17, 20, 0.16);
+  --control-section-bg: var(--liquid-pane-bg-color, rgba(255, 255, 255, 0.12));
+  --source-info-panel-border: 0;
+  --teachtext-editor-bg: transparent;
+  --teachtext-editor-border: 1px solid transparent;
+  --teachtext-editor-radius: 18px;
+  --teachtext-editor-shadow: none;
+  --scrap-list-bg: rgba(255, 255, 255, 0.18);
+  --scrap-list-border: 1px solid rgba(255, 255, 255, 0.44);
+  --scrap-list-radius: 20px;
+  --scrap-list-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68);
+  --import-preview-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.26)),
+    rgba(255, 255, 255, 0.24);
+  --import-preview-border: 1px solid rgba(16, 17, 20, 0.16);
+  --import-preview-radius: 16px;
+  --import-preview-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    0 10px 30px rgba(18, 28, 38, 0.08);
+  --backup-preview-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.26)),
+    rgba(255, 255, 255, 0.24);
+  --backup-preview-border: 1px solid rgba(16, 17, 20, 0.16);
+  --backup-preview-radius: 16px;
+  --backup-preview-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    0 10px 30px rgba(18, 28, 38, 0.08);
+  --field-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.16)),
+    rgba(255, 255, 255, 0.16);
+  --field-focus-bg: var(--paper);
+  --control-strip-bg: rgba(255, 255, 255, 0.5);
+  --control-strip-border: 1px solid rgba(16, 17, 20, 0.2);
+  --control-strip-divider: 1px solid rgba(16, 17, 20, 0.12);
   /* The frame lane is a System 6 idea; glass keeps the same structure but its
      own material, so no checkerboard and no hard hairlines. */
   --window-frame-lane: 12px;
@@ -1381,7 +1491,6 @@ body.use-liquid-glass {
   --file-preview-bg: var(--glass-reading-surface);
   --file-preview-radius: 16px;
   --file-preview-shadow: inset 0 1px 0 var(--glass-highlight), 0 12px 32px rgba(18, 28, 38, 0.08);
-  --project-cd-pane-bg: rgba(255, 255, 255, 0.08);
   --project-cd-grid-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.12)),
     rgba(255, 255, 255, 0.14);
@@ -1428,6 +1537,7 @@ body.use-liquid-glass {
   --cmf-thumb-bg: rgba(255, 255, 255, 0.24);
   --cmf-thumb-active-border: rgba(16, 17, 20, 0.72);
   --cmf-thumb-active-bg: rgba(16, 17, 20, 0.78);
+  --cmf-thumb-active-fg: rgba(255, 255, 255, 0.96);
   --cmf-thumb-active-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 8px 18px rgba(18, 28, 38, 0.12);
   --cmf-row-divider: 1px solid rgba(16, 17, 20, 0.1);
   --cmf-pill-bg: rgba(255, 255, 255, 0.24);
@@ -1522,34 +1632,19 @@ body.use-liquid-glass #liquid-glass-overlay {
   pointer-events: none;
 }
 
-body.use-liquid-glass .menu-bar {
-  border-bottom: var(--menu-bar-border);
-  background:
-    radial-gradient(120% 170% at 8% 0%, rgba(255, 255, 255, 0.42), transparent 44%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.12)),
-    rgba(255, 255, 255, 0.2);
-  box-shadow:
-    inset 1.25px 0 0 -0.75px rgba(230, 230, 230, 0.72),
-    inset -1.25px 0 0 -0.75px rgba(229, 229, 229, 0.72),
-    inset 0 1px 0 rgba(255, 255, 255, 0.82),
-    inset 0 -1px 0 rgba(16, 17, 20, 0.08),
-    0 12px 34px rgba(18, 28, 38, 0.09);
-  backdrop-filter: blur(18px) saturate(155%) brightness(1.02);
-  -webkit-backdrop-filter: blur(18px) saturate(155%) brightness(1.02);
-}
-
-body.use-liquid-glass .menu-bar > .menu > button {
-  height: 24px;
-  border-radius: 999px;
-  color: var(--menu-button-fg);
-  transition: background 0.18s ease, box-shadow 0.18s ease, color 0.18s ease;
-}
-
 body.use-liquid-glass #clock:not(.is-hidden) {
   display: inline-flex;
   align-items: center;
   padding: 0 9px;
   line-height: 22px;
+}
+
+/* Specificity-only twin: 60-responsive's later grouped rule (.menu-bar >
+   .menu > button, .project-switcher-button, …) would otherwise set the classic
+   height on the menu buttons in glass. Value is single-sourced through the
+   token. */
+body.use-liquid-glass .menu-bar > .menu > button {
+  height: var(--menu-button-height);
 }
 
 body.use-liquid-glass .menu-popover,
@@ -1625,10 +1720,10 @@ body.use-liquid-glass .spine-toolbox-panel {
 }
 
 body.use-liquid-glass .writing-spine-panel {
-  border: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  overflow: visible !important;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
 }
 
 body.use-liquid-glass .window {
@@ -1691,15 +1786,15 @@ body.use-liquid-glass .system-modal p::before {
   flex: 0 0 54px;
   width: 54px;
   height: 54px;
-  border: 1px solid rgba(16, 17, 20, 0.16) !important;
-  border-radius: 16px !important;
+  border: 1px solid rgba(16, 17, 20, 0.16);
+  border-radius: 16px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.76), rgba(255, 255, 255, 0.28)),
-    rgba(255, 255, 255, 0.3) !important;
+    rgba(255, 255, 255, 0.3);
   color: rgba(16, 17, 20, 0.86);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.82),
-    0 10px 24px rgba(18, 28, 38, 0.12) !important;
+    0 10px 24px rgba(18, 28, 38, 0.12);
   font-family: var(--title-font);
   font-size: 28px;
 }
@@ -1792,17 +1887,6 @@ body.use-liquid-glass .finder-operation-result {
 body.use-liquid-glass .finder-operation-actions {
   gap: 10px;
   margin-top: 20px;
-}
-
-body.use-liquid-glass .window-pane,
-body.use-liquid-glass .messages,
-body.use-liquid-glass .composer,
-body.use-liquid-glass .details-bar,
-body.use-liquid-glass .control-section,
-body.use-liquid-glass .finder-grid,
-body.use-liquid-glass .finder-list,
-body.use-liquid-glass .review-result-column {
-  background-color: var(--liquid-pane-bg-color, rgba(255, 255, 255, 0.12));
 }
 
 body.use-liquid-glass .assistant-window .messages {
@@ -1986,27 +2070,36 @@ body.use-liquid-glass .grow-box:focus-visible::before {
   border-color: rgba(16, 17, 20, 0.62);
 }
 
-body.use-liquid-glass .details-bar {
-  border-bottom-color: rgba(16, 17, 20, 0.1);
-}
-
-body.use-liquid-glass .control-panel .control-status,
-body.use-liquid-glass .control-panel .control-footer {
-  border-top: 1px solid rgba(16, 17, 20, 0.1);
-}
-
-body.use-liquid-glass textarea,
+body.use-liquid-glass textarea:not(:focus),
 body.use-liquid-glass input[type="url"],
 body.use-liquid-glass input[type="text"],
 body.use-liquid-glass input[type="password"],
 body.use-liquid-glass input[type="number"],
 body.use-liquid-glass input[type="date"],
-body.use-liquid-glass select,
 body.use-liquid-glass .system-select-button {
   border: 1px solid rgba(255, 255, 255, 0.62);
   border-radius: 12px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.16)),
+    rgba(255, 255, 255, 0.16);
+  color: var(--ink);
+  box-shadow:
+    inset 1.5px -1.5px 1px -1px rgba(255, 255, 255, 0.82),
+    inset -1.5px 1.5px 1px -1px rgba(255, 255, 255, 0.68),
+    inset 0 0 3px rgba(15, 23, 42, 0.13),
+    0 6px 18px rgba(18, 28, 38, 0.06);
+  backdrop-filter: blur(5px) saturate(135%);
+  -webkit-backdrop-filter: blur(5px) saturate(135%);
+}
+
+/* The native select's arrow survives the glass background because the arrow is
+   part of the material (the responsive layer once re-added it with priority
+   after this shorthand; now it lives here and the override is gone). */
+body.use-liquid-glass select {
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  border-radius: 12px;
+  background:
+    url("./system.css-reference/icon/select-button.svg") right 6px center / 17px 17px no-repeat,
     rgba(255, 255, 255, 0.16);
   color: var(--ink);
   box-shadow:
@@ -2048,8 +2141,11 @@ body.use-liquid-glass input[type="radio"] {
     0 6px 14px rgba(18, 28, 38, 0.08);
 }
 
+/* Order-specific twin: the MIXED rule above paints the glass square with a 6px
+   radius, but the radio has always rendered as a circle — the base rule's 50%
+   must win here. Kept as a later same-selector rule with the value tokenized. */
 body.use-liquid-glass input[type="radio"] {
-  border-radius: 50%;
+  border-radius: var(--radio-radius);
 }
 
 body.use-liquid-glass input[type="checkbox"]::before,
@@ -2100,6 +2196,22 @@ body.use-liquid-glass .btn {
     box-shadow var(--control-motion-medium-in) var(--control-motion-ease);
 }
 
+/* Specificity-only twins: the generic .btn rule above and 60-responsive's
+   button.btn rule both outrank a plain .btn.default base rule, so the default
+   button material must keep its own glass rule. Values stay single-sourced
+   through the tokens. */
+body.use-liquid-glass .btn.default {
+  background: var(--btn-default-bg);
+  color: var(--btn-default-fg);
+  text-shadow: var(--btn-default-text-shadow);
+  box-shadow: var(--btn-default-shadow);
+}
+
+body.use-liquid-glass .btn.default:active:not(:disabled):not(.is-disabled) {
+  background: var(--btn-default-active-bg);
+  color: var(--btn-default-active-fg);
+}
+
 body.use-liquid-glass .btn:hover:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected) {
   background: var(--btn-hover-bg);
   box-shadow: var(--btn-hover-shadow);
@@ -2110,22 +2222,6 @@ body.use-liquid-glass .btn:active:not(:disabled):not(.is-disabled):not(.is-activ
   background: rgba(255, 255, 255, 0.64);
   color: rgba(16, 17, 20, 0.94);
   box-shadow: inset 0 2px 4px rgba(18, 28, 38, 0.12);
-}
-
-body.use-liquid-glass .btn.default {
-  border-width: 1px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.04)),
-    linear-gradient(180deg, #0a84ff, #0071e3);
-  color: #ffffff;
-  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.18);
-}
-
-body.use-liquid-glass .btn.default:active:not(:disabled):not(.is-disabled) {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.02)),
-    linear-gradient(180deg, #0071e3, #005ecb);
-  color: #ffffff;
 }
 
 body.use-liquid-glass .btn.danger:not(:disabled):not(.is-disabled) {
@@ -2182,10 +2278,6 @@ body.use-liquid-glass .composer {
   -webkit-backdrop-filter: blur(22px) saturate(150%);
 }
 
-body.use-liquid-glass .composer:focus-within {
-  box-shadow: var(--clio-composer-focus-shadow);
-}
-
 body.use-liquid-glass .assistant-window .composer-action-row {
   box-sizing: border-box;
   padding-right: 0;
@@ -2223,14 +2315,6 @@ body.use-liquid-glass .assistant-window .composer textarea:focus {
   box-shadow: none;
 }
 
-body.use-liquid-glass .teachtext-editor-container {
-  overflow: hidden;
-  border: 1px solid transparent;
-  border-radius: 18px;
-  background: transparent;
-  box-shadow: none;
-}
-
 body.use-liquid-glass .mde-surface::before {
   content: "";
   position: absolute;
@@ -2259,29 +2343,29 @@ body.use-liquid-glass .mde-surface > .mde-input {
 }
 
 body.use-liquid-glass .teachtext-pane textarea {
-  border: 0 !important;
+  border: 0;
   border-radius: 18px;
   /* Transparent so the highlight overlay shows; the container holds the glass. */
-  background: transparent !important;
-  background-image: none !important;
-  box-shadow: none !important;
-  outline: 0 !important;
+  background: transparent;
+  background-image: none;
+  box-shadow: none;
+  outline: 0;
 }
 
 body.use-liquid-glass .teachtext-pane textarea:focus {
-  border: 0 !important;
-  outline: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 body.use-liquid-glass .question-sheet-pane textarea,
 body.use-liquid-glass .outline-content,
 body.use-liquid-glass .draft-editor textarea {
-  border: 0 !important;
-  background: rgba(255, 255, 255, 0.16) !important;
-  box-shadow: none !important;
-  outline: 0 !important;
+  border: 0;
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: none;
+  outline: 0;
 }
 
 /* Rendered-markdown previews are reading surfaces, not editors. They can float
@@ -2300,33 +2384,16 @@ body.use-liquid-glass .review-desk-preview {
   -webkit-backdrop-filter: var(--glass-reading-blur);
 }
 
-body.use-liquid-glass .outline-item {
-  border-bottom: 1px solid rgba(16, 17, 20, 0.08);
-}
-
-body.use-liquid-glass .outline-item span {
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-}
-
-body.use-liquid-glass .outline-section-text:focus {
-  border-color: transparent;
-  outline: 0;
-  background: rgba(255, 255, 255, 0.34);
-  box-shadow: inset 0 0 0 1px rgba(0, 122, 255, 0.28);
-}
-
 body.use-liquid-glass .dictation-field-button {
   min-width: 52px;
   height: 30px;
-  border: 1px solid rgba(255, 255, 255, 0.56) !important;
+  border: 1px solid rgba(255, 255, 255, 0.56);
   border-radius: 999px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.3)),
-    rgba(255, 255, 255, 0.34) !important;
+    rgba(255, 255, 255, 0.34);
   color: rgba(16, 17, 20, 0.92);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78), 0 8px 20px rgba(18, 28, 38, 0.12) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78), 0 8px 20px rgba(18, 28, 38, 0.12);
   backdrop-filter: blur(10px) saturate(145%);
   -webkit-backdrop-filter: blur(10px) saturate(145%);
 }
@@ -2334,15 +2401,15 @@ body.use-liquid-glass .dictation-field-button {
 body.use-liquid-glass .dictation-field-button:hover,
 body.use-liquid-glass .dictation-field-button:focus {
   outline: 0;
-  border-color: rgba(0, 122, 255, 0.42) !important;
+  border-color: rgba(0, 122, 255, 0.42);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.38)),
-    rgba(255, 255, 255, 0.42) !important;
+    rgba(255, 255, 255, 0.42);
   color: rgba(16, 17, 20, 0.94);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.86),
     0 10px 24px rgba(18, 28, 38, 0.14),
-    0 0 0 2px rgba(0, 122, 255, 0.12) !important;
+    0 0 0 2px rgba(0, 122, 255, 0.12);
 }
 
 body.use-liquid-glass .chooser-panel .control-section {
@@ -2421,10 +2488,6 @@ body.use-liquid-glass .control-panel .field-row {
   gap: 10px;
 }
 
-body.use-liquid-glass .control-panel .field-row label {
-  color: rgba(16, 17, 20, 0.9);
-}
-
 body.use-liquid-glass .control-panel .control-footer {
   padding: 10px 12px;
   border: 1px solid rgba(255, 255, 255, 0.48);
@@ -2440,28 +2503,12 @@ body.use-liquid-glass .control-panel .control-footer {
   line-height: 1.35;
 }
 
-body.use-liquid-glass .control-panel .control-advanced summary {
-  color: rgba(16, 17, 20, 0.92);
-}
-
-body.use-liquid-glass .memory-card {
-  border: var(--memory-card-border);
-  border-radius: var(--memory-card-radius);
-  background: var(--memory-card-bg);
-  box-shadow: var(--memory-card-shadow);
-}
-
 body.use-liquid-glass .memory-card:hover:not([aria-disabled="true"]) {
   border-color: rgba(16, 17, 20, 0.28);
-  box-shadow: var(--memory-card-hover-shadow);
 }
 
 body.use-liquid-glass .memory-card::after {
   content: none;
-}
-
-body.use-liquid-glass .memory-card-back {
-  background: var(--memory-card-back-bg);
 }
 
 body.use-liquid-glass .memory-card-back::after {
@@ -2471,10 +2518,6 @@ body.use-liquid-glass .memory-card-back::after {
 body.use-liquid-glass .memory-card.is-face-up,
 body.use-liquid-glass .memory-card.is-matched {
   border-color: rgba(16, 17, 20, 0.28);
-}
-
-body.use-liquid-glass .memory-card.is-matched {
-  box-shadow: var(--memory-card-shadow);
 }
 
 body.use-liquid-glass #memory-cards-status {
@@ -2502,12 +2545,6 @@ body.use-liquid-glass .compose-tools-menu {
   overflow: hidden;
 }
 
-body.use-liquid-glass .composer-file-button[aria-expanded="true"] {
-  border-color: rgba(16, 17, 20, 0.72);
-  background: rgba(16, 17, 20, 0.86);
-  color: #ffffff;
-}
-
 body.use-liquid-glass .compose-tools-menu button {
   min-height: 48px;
   grid-template-columns: 34px minmax(0, 1fr);
@@ -2519,11 +2556,13 @@ body.use-liquid-glass .compose-tools-menu button {
   box-shadow: none;
 }
 
+/* Specificity-only twin: the generic liquid button rule above (0,3,1) would
+   otherwise beat the base hover rule (0,3,0) and the hover feedback would
+   disappear in glass. The values stay single-sourced through the tokens. */
 body.use-liquid-glass .compose-tools-menu button:hover,
 body.use-liquid-glass .compose-tools-menu button:focus-visible {
-  border-color: rgba(16, 17, 20, 0.72);
-  background: rgba(16, 17, 20, 0.86);
-  color: #ffffff;
+  background: var(--compose-menu-hover-bg);
+  color: var(--compose-menu-hover-fg);
 }
 
 body.use-liquid-glass .compose-tool-icon {
@@ -2533,15 +2572,6 @@ body.use-liquid-glass .compose-tool-icon {
   border-radius: 9px;
   background-color: rgba(255, 255, 255, 0.55);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.76), 0 5px 14px rgba(18, 28, 38, 0.1);
-}
-
-body.use-liquid-glass .compose-tool-copy b {
-  color: rgba(16, 17, 20, 0.96);
-}
-
-body.use-liquid-glass .compose-tool-copy small {
-  color: rgba(16, 17, 20, 0.56);
-  font-size: 11px;
 }
 
 body.use-liquid-glass .compose-tools-menu button:hover .compose-tool-copy b,
@@ -2556,14 +2586,6 @@ body.use-liquid-glass .memory-transfer-window .details-bar {
   background: rgba(255, 255, 255, 0.24);
 }
 
-body.use-liquid-glass .import-utility-window .details-bar,
-body.use-liquid-glass .rag-panel .details-bar {
-  border-top: 0 !important;
-  border-right: 0 !important;
-  border-left: 0 !important;
-  border-bottom: 1px solid rgba(16, 17, 20, 0.1) !important;
-}
-
 body.use-liquid-glass .memory-transfer-pane {
   gap: 16px;
   padding: 18px;
@@ -2573,19 +2595,6 @@ body.use-liquid-glass .memory-transfer-pane {
 }
 
 body.use-liquid-glass .memory-transfer-note,
-body.use-liquid-glass .import-preview,
-body.use-liquid-glass .backup-preview {
-  border: 1px solid rgba(16, 17, 20, 0.16) !important;
-  border-radius: 16px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.26)),
-    rgba(255, 255, 255, 0.24) !important;
-  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.26)) !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.78),
-    0 10px 30px rgba(18, 28, 38, 0.08) !important;
-}
-
 body.use-liquid-glass .memory-transfer-note {
   grid-template-columns: 48px minmax(0, 1fr);
   min-height: 68px;
@@ -2615,11 +2624,11 @@ body.use-liquid-glass .file-picker .file-picker-button {
 
 body.use-liquid-glass .file-picker-name {
   min-height: var(--system-button-min-height);
-  border: 1px solid rgba(16, 17, 20, 0.18) !important;
+  border: 1px solid rgba(16, 17, 20, 0.18);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.42) !important;
+  background: rgba(255, 255, 255, 0.42);
   color: rgba(16, 17, 20, 0.88);
-  box-shadow: inset 0 1px 0 var(--glass-highlight), 0 6px 18px rgba(18, 28, 38, 0.06) !important;
+  box-shadow: inset 0 1px 0 var(--glass-highlight), 0 6px 18px rgba(18, 28, 38, 0.06);
 }
 
 body.use-liquid-glass .file-picker-input:focus-visible + .file-picker-button {
@@ -2692,10 +2701,10 @@ body.use-liquid-glass .backup-preview > .empty-folder-note {
 
 body.use-liquid-glass .backup-preview:has(> .empty-folder-note) {
   min-height: 0;
-  border: 0 !important;
-  background: transparent !important;
-  background-image: none !important;
-  box-shadow: none !important;
+  border: 0;
+  background: transparent;
+  background-image: none;
+  box-shadow: none;
 }
 
 body.use-liquid-glass .backup-preview:has(> .empty-folder-note) > .empty-folder-note {
@@ -2710,18 +2719,6 @@ body.use-liquid-glass .backup-preview:has(> .empty-folder-note) > .empty-folder-
 body.use-liquid-glass .backup-action-row #import-project-backup {
   justify-self: end;
   max-width: 230px;
-}
-
-body.use-liquid-glass .draft-section-label,
-body.use-liquid-glass .style-section-meta,
-body.use-liquid-glass .claim-section-meta {
-  border: 1px solid rgba(16, 17, 20, 0.16);
-  border-radius: 999px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.28)),
-    rgba(255, 255, 255, 0.28);
-  color: rgba(16, 17, 20, 0.92);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78), 0 8px 24px rgba(18, 28, 38, 0.08);
 }
 
 body.use-liquid-glass .teachtext-desk-strip {
@@ -2744,15 +2741,15 @@ body.use-liquid-glass .teachtext-desk-strip span {
 }
 
 body.use-liquid-glass .spine-toolbox-panel {
-  border: 1px solid var(--glass-border) !important;
-  border-radius: 22px !important;
-  box-shadow: 0 18px 52px rgba(18, 28, 38, 0.18), 0 2px 8px rgba(18, 28, 38, 0.1) !important;
+  border: 1px solid var(--glass-border);
+  border-radius: 22px;
+  box-shadow: 0 18px 52px rgba(18, 28, 38, 0.18), 0 2px 8px rgba(18, 28, 38, 0.1);
 }
 
 body.use-liquid-glass .writing-spine-panel.is-shaded .spine-toolbox-panel {
-  border: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 body.use-liquid-glass .writing-spine-panel.is-shaded .spine-toolbox-panel::before {
@@ -2760,39 +2757,17 @@ body.use-liquid-glass .writing-spine-panel.is-shaded .spine-toolbox-panel::befor
 }
 
 body.use-liquid-glass .writing-spine-panel.is-shaded .spine-title-row {
-  border: 1px solid var(--glass-border) !important;
-  border-radius: 999px !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.76), 0 1px 3px rgba(18, 28, 38, 0.06) !important;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.76), 0 1px 3px rgba(18, 28, 38, 0.06);
 }
 
 body.use-liquid-glass .spine-title-row {
-  border-bottom: 1px solid rgba(16, 17, 20, 0.1) !important;
+  border-bottom: 1px solid rgba(16, 17, 20, 0.1);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.16)),
-    rgba(255, 255, 255, 0.24) !important;
-  background-clip: border-box !important;
-}
-
-body.use-liquid-glass .review-desk-pane {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-body.use-liquid-glass .review-desk-results {
-  border: 1px solid rgba(16, 17, 20, 0.16);
-  border-radius: 16px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.46), rgba(255, 255, 255, 0.2)),
-    rgba(255, 255, 255, 0.2);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.74),
-    0 12px 32px rgba(18, 28, 38, 0.08);
-}
-
-body.use-liquid-glass .review-desk-markdown,
-body.use-liquid-glass .review-result-column,
-body.use-liquid-glass .style-sheet-results,
-body.use-liquid-glass .claim-results {
-  background: transparent;
+    rgba(255, 255, 255, 0.24);
+  background-clip: border-box;
 }
 
 body.use-liquid-glass .review-desk-markdown:focus {
@@ -2808,23 +2783,12 @@ body.use-liquid-glass .review-desk-splitter {
     rgba(255, 255, 255, 0.2);
 }
 
-body.use-liquid-glass .review-desk-splitter:hover,
-body.use-liquid-glass .review-desk-splitter:focus-visible {
-  background:
-    linear-gradient(90deg, transparent, rgba(16, 17, 20, 0.28), transparent) center / 88% 2px no-repeat,
-    rgba(255, 255, 255, 0.34);
-}
-
 body.use-liquid-glass .review-desk-empty-note,
 body.use-liquid-glass .style-sheet-results > .empty-folder-note,
 body.use-liquid-glass .claim-results > .empty-folder-note,
 body.use-liquid-glass .claim-section-meta.empty-folder-note {
   --empty-note-max-width: min(680px, calc(100% - 48px));
   --empty-note-margin: 22px auto;
-}
-
-body.use-liquid-glass .review-desk-window.is-review-locked .review-desk-pane {
-  background: rgba(255, 255, 255, 0.14);
 }
 
 body.use-liquid-glass .review-desk-window.is-review-locked .review-desk-empty-note {
@@ -2841,19 +2805,6 @@ body.use-liquid-glass .review-desk-window.is-review-locked .review-desk-empty-no
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.72),
     0 14px 34px rgba(18, 28, 38, 0.08);
-}
-
-body.use-liquid-glass .review-result-column th {
-  border-bottom: 1px solid rgba(16, 17, 20, 0.16);
-  background: rgba(255, 255, 255, 0.42);
-}
-
-body.use-liquid-glass .review-result-column td {
-  border-top: 1px solid rgba(16, 17, 20, 0.12);
-}
-
-body.use-liquid-glass .review-result-column tr + tr td {
-  border-top: 1px solid rgba(16, 17, 20, 0.16);
 }
 
 body.use-liquid-glass .shutdown-screen,
@@ -2997,7 +2948,10 @@ body.use-liquid-glass .scrapbook-pane {
   overflow: hidden;
 }
 
-body.use-liquid-glass .scrap-list,
+body.use-liquid-glass .scrap-editor {
+  padding: 18px 20px;
+}
+
 body.use-liquid-glass .scrap-editor {
   border: 1px solid rgba(255, 255, 255, 0.44);
   border-radius: 20px;
@@ -3005,13 +2959,20 @@ body.use-liquid-glass .scrap-editor {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68);
 }
 
-body.use-liquid-glass .scrap-editor {
-  padding: 18px 20px;
+body.use-liquid-glass .scrap-title-display {
+  border: 0;
 }
 
-body.use-liquid-glass .scrap-title-display,
-body.use-liquid-glass .source-info-panel {
-  border: 0;
+/* Specificity-only twin: the editor container also carries the window frame
+   scroller class, whose rule would otherwise beat the base editor rule in
+   glass and strip the rounded transparent material. Values are single-sourced
+   through the tokens. */
+body.use-liquid-glass .teachtext-editor-container {
+  overflow: hidden;
+  border: var(--teachtext-editor-border);
+  border-radius: var(--teachtext-editor-radius);
+  background: var(--teachtext-editor-bg);
+  box-shadow: var(--teachtext-editor-shadow);
 }
 
 body.use-liquid-glass #scrap-body-input:focus {
@@ -3026,8 +2987,7 @@ body.use-liquid-glass #scrap-body-input:focus {
 body.use-liquid-glass .message,
 body.use-liquid-glass .scrap-list button,
 body.use-liquid-glass .trash-list button,
-body.use-liquid-glass .finder-list-row,
-body.use-liquid-glass .finder-list-row {
+body.use-liquid-glass .finder-list-row:not(:hover):not(.is-selected) {
   border-color: rgba(255, 255, 255, 0.48);
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.24);
@@ -3084,7 +3044,7 @@ body.use-liquid-glass .finder-list-header {
   margin: 2px 0 6px;
   padding: 7px 10px;
   border: 1px solid rgba(255, 255, 255, 0.36);
-  border-bottom: 1px solid rgba(16, 17, 20, 0.12) !important;
+  border-bottom: 1px solid rgba(16, 17, 20, 0.12);
   border-radius: 12px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.46), rgba(255, 255, 255, 0.16)),
@@ -3899,10 +3859,10 @@ body.use-liquid-glass .btn.is-disabled:active,
 body.use-liquid-glass .btn.default:disabled:active,
 body.use-liquid-glass .btn.default.is-disabled:active {
   --menu-shortcut-color: var(--liquid-disabled-control-fg);
-  border-color: var(--liquid-disabled-control-border) !important;
-  background: var(--liquid-disabled-control-bg) !important;
-  color: var(--liquid-disabled-control-fg) !important;
-  box-shadow: var(--liquid-disabled-control-shadow) !important;
+  border-color: var(--liquid-disabled-control-border);
+  background: var(--liquid-disabled-control-bg);
+  color: var(--liquid-disabled-control-fg);
+  box-shadow: var(--liquid-disabled-control-shadow);
   cursor: default;
   opacity: 1;
   transform: none;
@@ -3916,11 +3876,11 @@ body.use-liquid-glass .shutdown-ledger .btn.default:not(:disabled):not(.is-disab
 body.use-liquid-glass .shutdown-ledger .btn.default:not(:disabled):not(.is-disabled):hover,
 body.use-liquid-glass .shutdown-ledger .btn.default:not(:disabled):not(.is-disabled):focus-visible,
 body.use-liquid-glass .shutdown-ledger .btn.default:not(:disabled):not(.is-disabled):active {
-  color: #ffffff !important;
+  color: #ffffff;
 }
 
 body.use-liquid-glass .btn:not(.default):not(:disabled):not(.is-disabled):active {
-  color: rgba(16, 17, 20, 0.94) !important;
+  color: rgba(16, 17, 20, 0.94);
 }
 
 /* Final readability guard: non-default glass action buttons stay dark on light glass. */
@@ -3928,9 +3888,9 @@ body.use-liquid-glass .btn:not(.default):not(.is-active):not(.is-selected):not(.
 body.use-liquid-glass .btn:not(.default):not(.is-active):not(.is-selected):not(.is-multi-selected):not(:disabled):not(.is-disabled):hover,
 body.use-liquid-glass .btn:not(.default):not(.is-active):not(.is-selected):not(.is-multi-selected):not(:disabled):not(.is-disabled):focus-visible,
 body.use-liquid-glass .btn:not(.default):not(.is-active):not(.is-selected):not(.is-multi-selected):not(:disabled):not(.is-disabled):active {
-  color: rgba(16, 17, 20, 0.94) !important;
-  -webkit-text-fill-color: rgba(16, 17, 20, 0.94) !important;
-  text-shadow: none !important;
+  color: rgba(16, 17, 20, 0.94);
+  -webkit-text-fill-color: rgba(16, 17, 20, 0.94);
+  text-shadow: none;
 }
 
 body.use-liquid-glass .btn:not(.default):not(.is-active):not(.is-selected):not(.is-multi-selected):not(:disabled):not(.is-disabled):hover,
@@ -3938,18 +3898,18 @@ body.use-liquid-glass .btn:not(.default):not(.is-active):not(.is-selected):not(.
 body.use-liquid-glass .btn:not(.default):not(.is-active):not(.is-selected):not(.is-multi-selected):not(:disabled):not(.is-disabled):active {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.68), rgba(255, 255, 255, 0.28)),
-    rgba(255, 255, 255, 0.42) !important;
+    rgba(255, 255, 255, 0.42);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.78),
-    0 8px 22px rgba(18, 28, 38, 0.08) !important;
+    0 8px 22px rgba(18, 28, 38, 0.08);
 }
 
 body.use-liquid-glass .btn.danger:not(:disabled):not(.is-disabled),
 body.use-liquid-glass .btn.danger:not(:disabled):not(.is-disabled):hover,
 body.use-liquid-glass .btn.danger:not(:disabled):not(.is-disabled):focus-visible,
 body.use-liquid-glass .btn.danger:not(:disabled):not(.is-disabled):active {
-  color: rgb(185, 28, 28) !important;
-  -webkit-text-fill-color: rgb(185, 28, 28) !important;
+  color: rgb(185, 28, 28);
+  -webkit-text-fill-color: rgb(185, 28, 28);
 }
 
 body.use-liquid-glass .teachtext-actions .btn:not(.default):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected),
@@ -3957,9 +3917,9 @@ body.use-liquid-glass .teachtext-actions .btn:not(.default):not(:disabled):not(.
 body.use-liquid-glass .teachtext-actions .btn:not(.default):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):focus,
 body.use-liquid-glass .teachtext-actions .btn:not(.default):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):focus-visible,
 body.use-liquid-glass .teachtext-actions .btn:not(.default):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):active {
-  color: rgba(16, 17, 20, 0.94) !important;
-  -webkit-text-fill-color: rgba(16, 17, 20, 0.94) !important;
-  text-shadow: none !important;
+  color: rgba(16, 17, 20, 0.94);
+  -webkit-text-fill-color: rgba(16, 17, 20, 0.94);
+  text-shadow: none;
 }
 
 body.use-liquid-glass .btn:hover:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected):not(.tdi-tab-close):not(.view-switch-option):not(.system-help-related-link),
@@ -3968,22 +3928,22 @@ body.use-liquid-glass .btn:focus:not(:disabled):not(.is-disabled):not(.is-active
 body.use-liquid-glass button:focus:not(.menu-bar button):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected):not(.tdi-tab-close):not(.view-switch-option):not(.system-help-related-link),
 body.use-liquid-glass .btn:focus-visible:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected):not(.tdi-tab-close):not(.view-switch-option):not(.system-help-related-link),
 body.use-liquid-glass button:focus-visible:not(.menu-bar button):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected):not(.tdi-tab-close):not(.view-switch-option):not(.system-help-related-link) {
-  outline: 0 !important;
-  border-color: rgba(0, 122, 255, 0.56) !important;
+  outline: 0;
+  border-color: rgba(0, 122, 255, 0.56);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.82),
     0 8px 22px rgba(18, 28, 38, 0.1),
-    0 0 0 3px rgba(0, 122, 255, 0.18) !important;
+    0 0 0 3px rgba(0, 122, 255, 0.18);
 }
 
 body.use-liquid-glass .btn:active:not(:disabled):not(.is-disabled):not(.tdi-tab-close):not(.view-switch-option):not(.system-help-related-link),
 body.use-liquid-glass button:active:not(.menu-bar button):not(:disabled):not(.tdi-tab-close):not(.view-switch-option):not(.system-help-related-link) {
   transform: none;
-  border-color: rgba(0, 122, 255, 0.56) !important;
+  border-color: rgba(0, 122, 255, 0.56);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.82),
     0 8px 22px rgba(18, 28, 38, 0.1),
-    0 0 0 3px rgba(0, 122, 255, 0.18) !important;
+    0 0 0 3px rgba(0, 122, 255, 0.18);
 }
 
 body.use-liquid-glass .btn.default:hover:not(:disabled):not(.is-disabled),
@@ -3991,7 +3951,7 @@ body.use-liquid-glass .btn.default:focus:not(:disabled):not(.is-disabled),
 body.use-liquid-glass .btn.default:focus-visible:not(:disabled):not(.is-disabled) {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.06)),
-    linear-gradient(180deg, #178bff, #0071e3) !important;
+    linear-gradient(180deg, #178bff, #0071e3);
 }
 
 body.use-liquid-glass button:disabled:not(.memory-card),
@@ -4018,31 +3978,31 @@ body.use-liquid-glass .btn:disabled:active,
 body.use-liquid-glass .btn.is-disabled:active,
 body.use-liquid-glass .btn.default:disabled:active,
 body.use-liquid-glass .btn.default.is-disabled:active {
-  color: var(--liquid-disabled-control-fg) !important;
-  -webkit-text-fill-color: var(--liquid-disabled-control-fg) !important;
-  text-shadow: none !important;
+  color: var(--liquid-disabled-control-fg);
+  -webkit-text-fill-color: var(--liquid-disabled-control-fg);
+  text-shadow: none;
 }
 
 .multifinder-popover .multifinder-app {
-  display: grid !important;
-  grid-template-columns: 18px minmax(0, 1fr) auto !important;
-  align-items: center !important;
-  justify-items: stretch !important;
-  gap: 8px !important;
-  padding-left: 30px !important;
-  text-align: left !important;
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  align-items: center;
+  justify-items: stretch;
+  gap: 8px;
+  padding-left: 30px;
+  text-align: left;
 }
 
 .multifinder-popover .multifinder-app .multifinder-mark {
-  grid-column: 1 !important;
-  justify-self: center !important;
+  grid-column: 1;
+  justify-self: center;
   width: 18px;
 }
 
 .multifinder-popover .multifinder-app > span:not(.multifinder-mark) {
-  grid-column: 2 !important;
-  justify-self: start !important;
-  min-width: 0 !important;
+  grid-column: 2;
+  justify-self: start;
+  min-width: 0;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -4050,10 +4010,12 @@ body.use-liquid-glass .btn.default.is-disabled:active {
 }
 
 .multifinder-popover .multifinder-app small {
-  grid-column: 3 !important;
-  justify-self: end !important;
-  text-align: right !important;
-}@supports (-apple-visual-effect: -apple-system-glass-material) {
+  grid-column: 3;
+  justify-self: end;
+  text-align: right;
+}
+
+@supports (-apple-visual-effect: -apple-system-glass-material) {
   body.use-liquid-glass .window,
   body.use-liquid-glass .menu-bar,
   body.use-liquid-glass .menu-popover,

@@ -1693,7 +1693,7 @@ ${projectContext}`;
       id: crypto.randomUUID(),
       projectId: activeProjectId,
       type: "text",
-      name: typeof nextAvailableFileName === "function" ? nextAvailableFileName(title, activeProjectId) : title,
+      name: typeof nextAvailableProjectFileName === "function" ? nextAvailableProjectFileName(title, activeProjectId) : title,
       folderId: folder?.id || "",
       source: "Quick Draft",
       durable: true,

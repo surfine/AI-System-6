@@ -36,6 +36,9 @@ test.assertIncludes(guideMarkup, 'data-i18n="guide_welcome_heading"', "the welco
 test.assertIncludes(guideMarkup, 'data-i18n="guide_welcome_body"', "the welcome leaves two lightweight menu clues");
 test.assertIncludes(guideMarkup, 'class="btn default" type="button" data-action="dismiss-guide" data-i18n="guide_start_exploring" aria-keyshortcuts="Enter"', "Start Exploring is the single Return-key default action");
 test.assertIncludes(guideMarkup, 'data-action="guide-open-model-settings"', "AI setup remains a secondary action");
+test.assertIncludes(guideMarkup, 'data-action="open-github-repo"', "Start Here links out to the public GitHub source snapshot");
+test.assertIncludes(actions, '"open-github-repo": () => window.open("https://github.com/surfine/AI-System-6"', "Start Here GitHub action is centrally registered and opens the public source snapshot");
+test.assertMatches(responsiveCss, /\.guide-window\.is-mobile-system-page[\s\S]*\.button-row[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/, "mobile keeps the Start Here button group in two rows of two");
 test.assertNotIncludes(guideMarkup, "guide_ai_later", "AI guidance is folded into the single short paragraph");
 test.assertNotIncludes(guideMarkup, "guide-cloud-key", "OOBE does not duplicate the cloud credential form");
 test.assertNotIncludes(guideMarkup, "data-guide-source", "OOBE does not ask the user to choose a model source");
@@ -60,12 +63,12 @@ test.assertMatches(workingSession, /visibleWindows = windows[\s\S]*!workingSessi
 test.assertMatches(responsiveCss, /\.guide-window\.is-mobile-system-page[\s\S]*inset: auto;[\s\S]*top: 50%;[\s\S]*transform: translate\(-50%, -50%\);/, "mobile keeps Start Here as a centered floating window so the desktop remains visible");
 test.assertMatches(responsiveCss, /\.guide-window\.is-mobile-system-page[\s\S]*border-radius: var\(--liquid-window-radius, 0\);/, "mobile restores Liquid Glass window corners while Classic remains square");
 
-for (const key of ["guide_welcome_heading", "guide_welcome_body", "guide_welcome_body_connected", "guide_connect_ai", "guide_ai_settings", "guide_start_exploring"]) {
+for (const key of ["guide_welcome_heading", "guide_welcome_body", "guide_welcome_body_connected", "guide_connect_ai", "guide_ai_settings", "guide_start_exploring", "github_repo"]) {
   test.assertIncludes(en, `${key}:`, `English copy exists for ${key}`);
   test.assertIncludes(zh, `${key}:`, `Chinese copy exists for ${key}`);
 }
 test.assertIncludes(en, "To keep several applications on the desktop or change the appearance, open Special.", "Special remains one quiet clue toward MultiFinder and appearance");
-test.assertIncludes(zh, "想让多个应用留在桌面上，或换一种外观，再打开「特别」菜单。AI 用到时再连接。", "Chinese OOBE uses the actual menu label and the approved compact copy");
+test.assertIncludes(zh, "想让多个应用留在桌面，或换一种外观，再打开「特别」菜单。想写作时，打开桌面上的「创作坊」，进入写作工作区。需要 AI 时再连接。", "Chinese OOBE uses the actual menu label and the approved compact copy");
 test.assertIncludes(dictionary, "Start Here leaves AI optional", "System Help matches the optional-AI first experience");
 test.assertIncludes(dictionary, "开始使用”不会强制连接 AI", "Chinese System Help matches the optional-AI first experience");
 

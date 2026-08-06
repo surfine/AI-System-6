@@ -9,6 +9,16 @@ const renderSignatureCache = new Map();
 const storageSnapshotCache = new Map();
 const localApiTokenSessionKey = "ai-system6-local-api-token";
 let deskPersistenceWritable = true;
+let controlStripCollapsed = false;
+
+function getControlStripCollapsed() {
+  return controlStripCollapsed;
+}
+
+function setControlStripCollapsed(value) {
+  controlStripCollapsed = value === true;
+  saveDeskState();
+}
 
 const renderTasks = [
   ["projectLabels", "updateProjectLabels"],
@@ -110,6 +120,7 @@ function settingsSnapshotPayload() {
     soundEffects: soundEffectsInput.checked,
     menuClock: menuClockInput.checked,
     controlStrip: controlStripInput.checked,
+    controlStripCollapsed,
     performanceMeter: performanceMeterInput.checked,
     imageGen: document.getElementById("enable-image-gen")?.checked || false,
     clioWebSearch: document.getElementById("clio-web-search")?.checked || false,
@@ -120,7 +131,7 @@ function settingsSnapshotPayload() {
     guideSeen,
     multiFinderSwitcherHintSeen,
     writingBell: getWritingBellState(),
-    alarmClock: getAlarmClockState(),
+    alarmClock: typeof getAlarmClockState === "function" ? getAlarmClockState() : null,
     puzzle: getPuzzleState(),
     pageSetup: { ...pageSetupSettings },
     notePadText: notePadTextInput.value,
@@ -177,14 +188,12 @@ function shouldSkipRender(name, signature) {
   return false;
 }
 
-function resetRenderSignature(name) {
-  if (name) renderSignatureCache.delete(name);
-  else renderSignatureCache.clear();
-}
-
-
-function switchLanguage() {
-  currentLanguage = currentLanguage === "en" ? "zh" : "en";
+async function switchLanguage() {
+  const next = currentLanguage === "en" ? "zh" : "en";
+  // A failed table fetch still switches the language; missing strings fall
+  // back to keys instead of leaving the button dead.
+  await ensureLanguageFor(next).catch(() => {});
+  currentLanguage = next;
   applyLanguage();
   scheduleWorkspaceRender({
     readerTabs: true,
@@ -1420,6 +1429,7 @@ function applySettings(settings) {
     menuClockInput.checked = false;
   }
   if (typeof settings.controlStrip === "boolean") controlStripInput.checked = settings.controlStrip;
+  if (typeof settings.controlStripCollapsed === "boolean") controlStripCollapsed = settings.controlStripCollapsed;
   if (typeof settings.performanceMeter === "boolean") {
     performanceMeterInput.checked = settings.performanceMeter;
   }
@@ -1447,7 +1457,7 @@ function applySettings(settings) {
     multiFinderSwitcherHintSeen = settings.multiFinderSwitcherHintSeen;
   }
   restoreWritingBellState(settings.writingBell);
-  restoreAlarmClockState(settings.alarmClock);
+  if (typeof restoreAlarmClockState === "function") restoreAlarmClockState(settings.alarmClock);
   restorePuzzleState(settings.puzzle);
   restorePageSetupState(settings.pageSetup);
   if (Array.isArray(settings.notePadPages)) {
@@ -1920,6 +1930,7 @@ function updateLongTaskControls() {
     control.disabled = busy;
   });
   setComposerSubmitMode(busy || !!activeAbortController || form.classList.contains("is-generating"));
+  window.AISystem6ControlStrip?.refreshStrip?.();
 }
 
 function longTaskReceiptInfo(key, statusText = "") {

@@ -322,16 +322,86 @@ function nextAvailableProjectName(baseName) {
   return `${base} ${index}`;
 }
 
+function showNewProjectDiskModal() {
+  const dialog = document.querySelector("#new-project-disk-modal");
+  const input = dialog?.querySelector("#new-project-disk-name");
+  if (!dialog || !input) return null;
+
+  return new Promise((resolve) => {
+    const titleEl = dialog.querySelector("#new-project-disk-title");
+    const ledeEl = dialog.querySelector("#new-project-disk-lede");
+    const createButton = dialog.querySelector("#new-project-disk-confirm");
+    const cancelButton = dialog.querySelector("#new-project-disk-cancel");
+
+    titleEl.textContent = t("new_project_disk_title");
+    ledeEl.textContent = t("new_project_disk_lede");
+    createButton.textContent = t("new_project_disk_create");
+    cancelButton.textContent = t("cancel");
+    input.setAttribute("aria-label", t("new_project_prompt"));
+    input.value = nextProjectDiskName();
+
+    const commit = () => {
+      const name = String(input.value || "").trim();
+      if (!name) {
+        input.focus();
+        return;
+      }
+      if (getProjectNameConflict(name)) {
+        ledeEl.textContent = t("project_name_taken", name);
+        input.focus();
+        input.select();
+        return;
+      }
+      dialog.close("ok");
+    };
+
+    if (!dialog.dataset.inputWired) {
+      dialog.dataset.inputWired = "true";
+      input.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          commit();
+        }
+      });
+      createButton.addEventListener("click", (event) => {
+        event.preventDefault();
+        commit();
+      });
+    }
+
+    dialog.onclose = () => {
+      modalScrim.classList.add("is-hidden");
+      resolve({ result: dialog.returnValue || "cancel", value: input.value });
+    };
+
+    playSystemSound("save");
+    modalScrim.classList.remove("is-hidden");
+    if (dialog.open) dialog.close("cancel");
+    dialog.showModal();
+    window.requestAnimationFrame(() => {
+      input.focus();
+      input.select();
+    });
+  });
+}
+
 function prepareNewProjectDisk() {
   isPreparingProjectDisk = true;
   selectedProjectId = activeProjectId;
-  const name = window.prompt(t("new_project_prompt"), nextProjectDiskName());
-  if (!name?.trim()) {
+  const result = showNewProjectDiskModal();
+  if (!result) {
     isPreparingProjectDisk = false;
     return;
   }
-  projectDiskNameInput.value = name.trim();
-  createProjectFromInput();
+  result.then(({ result: action, value }) => {
+    const name = String(value || "").trim();
+    if (action !== "ok" || !name) {
+      isPreparingProjectDisk = false;
+      return;
+    }
+    projectDiskNameInput.value = name;
+    createProjectFromInput();
+  });
 }
 
 function openSelectedProject() {

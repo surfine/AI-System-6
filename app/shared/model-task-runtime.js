@@ -146,7 +146,7 @@
     const browserRecord = globalThis?.window?.AISystem6PromptFilesRuntime?.resolvePromptFile(id, null, language);
     if (browserRecord?.status === "ready") return browserRecord.body;
     const record = serverPromptFiles.find((item) => item.id === id);
-    return record?.bodies?.[String(language).startsWith("zh") ? "zh" : "en"] || record?.body || "";
+    return record?.bodies?.[String(language).startsWith("zh") ? "zh" : "en"] || "";
   }
   function cleanModelOutput(text = "") {
     return String(text || "")

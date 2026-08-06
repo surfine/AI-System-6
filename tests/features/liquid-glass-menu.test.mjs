@@ -22,7 +22,7 @@ test.assertIncludes(
 );
 test.assertIncludes(
   liquid,
-  "background: var(--liquid-disabled-control-bg) !important;",
+  "background: var(--liquid-disabled-control-bg);",
   "the shared disabled-control rule reads its surface from a scoped token",
 );
 test.assertIncludes(menus, 'menuItem("toggle-liquid-glass", "liquid_glass")', "Special menu keeps the manual appearance switch");

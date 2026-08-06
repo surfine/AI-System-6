@@ -47,6 +47,14 @@ ClioStage, Scrapbook, ClioTalk, plus creative labs (Cover Glass, CMF Studio).
 - **Review Desk must check for AI-mouthpiece drift** as well as factual and
   structural risk: over-regular rhythm, generic summary language, missing
   personal detail, flattened flavor, advice that multiplies pressure.
+- **Mobile/touch behavior decisions (do not drift):** keep the System 6 small
+  touch targets (do not enlarge); no text labels on touch menu-bar icon
+  buttons; desktop icons select on single tap and open on double tap (first tap
+  shows a one-time "Tap again to open." balloon); keep the Apple-menu "English"
+  language-switch item; keep the shutdown copy "It is now safe to shut down
+  AI System 6."; Control Panel is a Desk Accessory (centered floating column on
+  mobile, not a full-screen app page); Balloon Help defaults off on touch
+  (`hover: hover`).
 
 ## Run
 
@@ -223,6 +231,9 @@ full rule loads when you edit `app/features/` →
 Living memory loop — when Claude repeatedly trips on something, add a line
 (keep it tight):
 
+- **Parallel agents commit / switch branches mid-task.** Re-check
+  `git branch --show-current` and `git status` right before staging. Session
+  lessons live in AGENT-LESSONS.md.
 - **Edit source, forget to rebuild.** The browser loads `app.bundle.js`. Run
   `npm run build:app` after any `app/` or `app.js` edit.
 - **`verify:release` build-stamp failure.** `build-info.json` needs `YYYYMMDD.N`.

@@ -33,6 +33,7 @@ test.assertMatches(boot, /installWorkingSessionAutosave\(\)/, "installs autosave
 
 test.assertMatches(windowManager, /async function restartSystem\(\)[\s\S]*await clearWorkingSession\(\)/, "Special > Restart clears transient Working Session state");
 test.assertMatches(windowManager, /async function shutDownSystem\(\)[\s\S]*await clearWorkingSession\(\)/, "Special > Shut Down clears transient Working Session state");
+test.assertIncludes(windowManager, 't("shutdown_confirm")', "Special > Shut Down asks before leaving the desktop");
 test.assertIncludes(windowManager, "function arrangeOutlineTeachTextSplit()", "window manager has a dedicated Outline + TeachText split layout");
 test.assertIncludes(windowManager, "function arrangeActiveWritingWorkspace()", "window manager arranges whichever phase workspace is open as a manuscript pair");
 test.assertMatches(windowManager, /\["outline", "sectionDrafts", "reviewDesk", "teachText"\]\.includes\(name\)[\s\S]*arrangeActiveWritingWorkspace\(\)/, "opening any route writing window arranges the active phase workspace");

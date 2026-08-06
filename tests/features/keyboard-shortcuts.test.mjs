@@ -10,6 +10,9 @@ const translationsZh = read("app/data/translations-zh.js");
 
 test.assertIncludes(actions, "const keyboardShortcutRegistry = [", "shortcuts have one shared registry");
 test.assertIncludes(actions, "event.defaultPrevented || event.isComposing", "handled editor shortcuts are not dispatched twice");
+test.assertIncludes(actions, "function shortcutUsesCommandKey", "the platform decides Command vs Control");
+test.assertIncludes(actions, "shortcutModifierPressed(event)", "shortcut dispatch accepts the platform modifier");
+test.assertIncludes(actions, ".replace(/⌘/g, \"Ctrl\")", "non-Mac menus render Control instead of Command");
 test.assertIncludes(actions, "suppressInEditable && getActiveEditableElement()", "Finder-only shortcuts do not override text editing");
 test.assertIncludes(actions, 'id: "new-document", key: "n"', "Command-N creates a document");
 test.assertIncludes(actions, 'id: "new-folder", key: "n", shift: true', "Shift-Command-N creates a folder");

@@ -257,7 +257,7 @@ function docMapHasMinimumHierarchy(nodes, edges) {
 }
 
 
-function cleanRebuildLine(line) {
+function docMapCleanRebuildLine(line) {
   return (line || "")
     .replace(/^\s{0,3}#{1,6}\s+/, "")
     .replace(/^\s*(?:[-*]|\d+[.)]|[一二三四五六七八九十]+[、.])\s*/, "")
@@ -265,16 +265,16 @@ function cleanRebuildLine(line) {
     .trim();
 }
 
-function shortRebuildText(text, max = 80) {
+function docMapShortRebuildText(text, max = 80) {
   const clean = (text || "").replace(/\s+/g, " ").trim();
   if (clean.length <= max) return clean;
   return `${clean.slice(0, Math.max(0, max - 1)).trim()}...`;
 }
 
-function inferRebuildTitle(text) {
-  const lines = (text || "").split(/\n+/).map(cleanRebuildLine).filter(Boolean);
+function docMapInferRebuildTitle(text) {
+  const lines = (text || "").split(/\n+/).map(docMapCleanRebuildLine).filter(Boolean);
   const title = lines.find((line) => line.length >= 4 && line.length <= 90) || lines[0] || t("untitled_project");
-  return shortRebuildText(title, 72);
+  return docMapShortRebuildText(title, 72);
 }
 
 function isGenericDocMapTitle(title) {
@@ -307,23 +307,23 @@ function isGenericDocMapTitle(title) {
 function inferDocMapTitle(source, summary = "") {
   const sourceLabel = String(source?.label || "").trim();
   if (sourceLabel && !isGenericDocMapTitle(sourceLabel)) {
-    return shortRebuildText(sourceLabel, currentLanguage === "zh" ? 36 : 72);
+    return docMapShortRebuildText(sourceLabel, currentLanguage === "zh" ? 36 : 72);
   }
-  const inferred = inferRebuildTitle(source?.text || "");
+  const inferred = docMapInferRebuildTitle(source?.text || "");
   if (inferred && !isGenericDocMapTitle(inferred)) {
-    return shortRebuildText(inferred, currentLanguage === "zh" ? 36 : 72);
+    return docMapShortRebuildText(inferred, currentLanguage === "zh" ? 36 : 72);
   }
   const summaryTitle = firstSentence(summary || source?.text || "", currentLanguage === "zh" ? 36 : 72);
   if (summaryTitle && !isGenericDocMapTitle(summaryTitle)) return summaryTitle;
   return currentLanguage === "zh" ? "来源主题" : "Source Theme";
 }
 
-function inferRebuildSections(text, title) {
+function docMapInferRebuildSections(text, title) {
   const rawLines = String(text || "").split(/\n+/);
   const headingPattern = /^\s{0,3}(?:#{1,3}\s+|第.{1,12}[章节]|[一二三四五六七八九十]+[、.]\s+|\d+[.)]\s+)/;
   const headings = rawLines
     .filter((line) => headingPattern.test(line))
-    .map(cleanRebuildLine)
+    .map(docMapCleanRebuildLine)
     .filter((line) => line && line !== title && line.length <= 90);
 
   if (headings.length >= 3) return headings.slice(0, 7);
@@ -332,7 +332,7 @@ function inferRebuildSections(text, title) {
   const maxLabel = currentLanguage === "zh" ? 30 : 54;
   const sections = paragraphs.slice(0, 6).map((paragraph, index) => {
     const sentence = paragraph.split(/[。！？.!?]/)[0] || paragraph;
-    const label = shortRebuildText(sentence, maxLabel);
+    const label = docMapShortRebuildText(sentence, maxLabel);
     return label || (currentLanguage === "zh" ? `段落 ${index + 1}` : `Section ${index + 1}`);
   });
 
@@ -347,7 +347,7 @@ function cleanDocMapQuoteLine(line) {
 }
 
 function splitDocMapMarkdownLabel(raw, labelLimit = currentLanguage === "zh" ? 24 : 44) {
-  const clean = cleanRebuildLine(raw)
+  const clean = docMapCleanRebuildLine(raw)
     .replace(/^#+\s*/, "")
     .replace(/^\*\*(.+)\*\*$/, "$1")
     .replace(/\s+/g, " ")
@@ -356,32 +356,32 @@ function splitDocMapMarkdownLabel(raw, labelLimit = currentLanguage === "zh" ? 2
   const colon = /^(.{2,48}?)[：:]\s*(.+)$/.exec(clean);
   if (colon) {
     return {
-      title: shortRebuildText(colon[1], labelLimit),
-      summary: shortRebuildText(colon[2], currentLanguage === "zh" ? 120 : 180),
+      title: docMapShortRebuildText(colon[1], labelLimit),
+      summary: docMapShortRebuildText(colon[2], currentLanguage === "zh" ? 120 : 180),
     };
   }
   const dash = /^(.{2,48}?)\s+[—-]\s+(.+)$/.exec(clean);
   if (dash) {
     return {
-      title: shortRebuildText(dash[1], labelLimit),
-      summary: shortRebuildText(dash[2], currentLanguage === "zh" ? 120 : 180),
+      title: docMapShortRebuildText(dash[1], labelLimit),
+      summary: docMapShortRebuildText(dash[2], currentLanguage === "zh" ? 120 : 180),
     };
   }
   const sentence = firstSentence(clean, labelLimit);
   return {
     title: sentence,
-    summary: sentence === clean ? "" : shortRebuildText(clean, currentLanguage === "zh" ? 120 : 180),
+    summary: sentence === clean ? "" : docMapShortRebuildText(clean, currentLanguage === "zh" ? 120 : 180),
   };
 }
 
 function docMapNodeFromMarkdownItem(item, indexPath, sourceLabel) {
   return {
     id: makeDocMapNodeId(indexPath),
-    title: shortRebuildText(item.title, indexPath.length === 1 ? 70 : 58),
-    summary: shortRebuildText(item.summary || item.title, currentLanguage === "zh" ? 90 : 130),
+    title: docMapShortRebuildText(item.title, indexPath.length === 1 ? 70 : 58),
+    summary: docMapShortRebuildText(item.summary || item.title, currentLanguage === "zh" ? 90 : 130),
     kind: indexPath.length === 1 ? "branch" : "detail",
-    quote: shortRebuildText(item.quote || "", 700),
-    cluster: shortRebuildText(item.cluster || item.title, 40),
+    quote: docMapShortRebuildText(item.quote || "", 700),
+    cluster: docMapShortRebuildText(item.cluster || item.title, 40),
     importance: Math.max(1, 6 - indexPath.length),
     sourceLabel,
   };
@@ -480,14 +480,14 @@ function parseDocMapMarkdown(markdown, source) {
   root.children.forEach((child, index) => visit(child, "central", [index + 1]));
   const title = isGenericDocMapTitle(root.title)
     ? inferDocMapTitle(source, root.summary)
-    : shortRebuildText(root.title, currentLanguage === "zh" ? 36 : 72);
+    : docMapShortRebuildText(root.title, currentLanguage === "zh" ? 36 : 72);
   return {
     id: crypto.randomUUID(),
     title,
     central: {
       id: "central",
       title,
-      summary: shortRebuildText(root.summary || firstSentence(source.text, currentLanguage === "zh" ? 120 : 180), 1000),
+      summary: docMapShortRebuildText(root.summary || firstSentence(source.text, currentLanguage === "zh" ? 120 : 180), 1000),
       kind: "central",
       quote: "",
       cluster: "",
@@ -534,7 +534,7 @@ function parseExportedDocMapMarkdown(markdown, source) {
   const head = lines.slice(0, relationStart);
   const relationLines = lines.slice(relationStart + 1);
   const titleLine = head.find((line) => /^#\s+DocMap\s*[:：]/i.test(line.trim())) || "";
-  const title = shortRebuildText(
+  const title = docMapShortRebuildText(
     titleLine.replace(/^#\s+DocMap\s*[:：]\s*/i, "").trim() || source.label || t("docmap"),
     currentLanguage === "zh" ? 36 : 72
   );
@@ -623,7 +623,7 @@ function parseExportedDocMapMarkdown(markdown, source) {
     central: {
       id: "central",
       title,
-      summary: shortRebuildText(centralLine.replace(/^Central\s*[:：]\s*/i, "").trim() || title, 1000),
+      summary: docMapShortRebuildText(centralLine.replace(/^Central\s*[:：]\s*/i, "").trim() || title, 1000),
       kind: "central",
       quote: "",
       cluster: "",
@@ -674,7 +674,7 @@ function makeDocMapSupplementNode(parent, index, quote, sourceLabel, depth = 2) 
     title,
     summary: firstSentence(quote, depth <= 2 ? (currentLanguage === "zh" ? 72 : 110) : (currentLanguage === "zh" ? 48 : 84)),
     kind: "detail",
-    quote: shortRebuildText(quote, currentLanguage === "zh" ? 150 : 220),
+    quote: docMapShortRebuildText(quote, currentLanguage === "zh" ? 150 : 220),
     cluster: parent.cluster || parent.title,
     importance: Math.max(1, Math.min(4, Number(parent.importance || 3) - 1)),
     sourceLabel,
@@ -700,7 +700,7 @@ function docMapTemplateNode(id, title, summary, kind, cluster, quote, importance
     title,
     summary,
     kind,
-    quote: shortRebuildText(quote, currentLanguage === "zh" ? 170 : 240),
+    quote: docMapShortRebuildText(quote, currentLanguage === "zh" ? 170 : 240),
     cluster,
     importance,
     sourceLabel,
@@ -712,7 +712,7 @@ function buildProductNewsDocMap(source) {
     return buildReaderStructuredDocMap(source, "product");
   }
   const zh = currentLanguage === "zh";
-  const title = inferRebuildTitle(source.text);
+  const title = docMapInferRebuildTitle(source.text);
   const text = source.text || "";
   const lead = findDocMapQuote(text, [/apple intelligence/i, /accessibility/i]);
   const label = source.label;
@@ -921,9 +921,9 @@ function readerDocMapBranchLabels(kind) {
 function buildReaderStructuredDocMap(source, forcedKind = "") {
   const zh = currentLanguage === "zh";
   const kind = forcedKind || classifyReaderDocMapSource(source);
-  const title = inferRebuildTitle(source.text);
+  const title = docMapInferRebuildTitle(source.text);
   const paragraphs = getRebuildParagraphs(source.text);
-  const sections = inferRebuildSections(source.text, title);
+  const sections = docMapInferRebuildSections(source.text, title);
   const claims = inferRebuildClaims(paragraphs);
   const labels = readerDocMapBranchLabels(kind);
   const sourceLabel = source.label;
@@ -1094,7 +1094,7 @@ function normalizeDocMap(data, source) {
   const rawTitle = String(data?.central?.title || data?.title || "").trim();
   const title = isGenericDocMapTitle(rawTitle)
     ? inferDocMapTitle(source, data?.central?.summary || data?.summary || "")
-    : shortRebuildText(rawTitle, currentLanguage === "zh" ? 36 : 72);
+    : docMapShortRebuildText(rawTitle, currentLanguage === "zh" ? 36 : 72);
   const central = {
     id: "central",
     title,
@@ -1154,7 +1154,7 @@ function normalizeDocMap(data, source) {
 function firstSentence(text, limit = 160) {
   const value = String(text || "").replace(/\s+/g, " ").trim();
   const sentence = value.split(/(?<=[。！？.!?])\s+/)[0] || value;
-  return shortRebuildText(sentence, limit);
+  return docMapShortRebuildText(sentence, limit);
 }
 
 function docMapOutputLanguageInstruction() {
@@ -1437,7 +1437,7 @@ function formatDocMapMarkdown(map = currentDocMap) {
 }
 
 function cleanVideoDocMapMindMapText(value, fallback = "") {
-  return shortRebuildText(String(value || fallback || "")
+  return docMapShortRebuildText(String(value || fallback || "")
     .replace(/\[?\s*\d{1,2}:\d{2}(?::\d{2})?(?:[,.．]\d{1,3})?\s*(?:-->|->|→|—|–|-|至|到)\s*\d{1,2}:\d{2}(?::\d{2})?(?:[,.．]\d{1,3})?\s*\]?/g, "")
     .replace(/^\s*(?:hook|background|knowledge|experience|transition|callback|ending|other|钩子|开场|背景|知识|信息|体验|经验|转场|转折|过渡|呼应|回调|结尾|收束|其他)\s*[|｜·:：/-]\s*/i, "")
     .replace(/\s*[|｜·:：/-]\s*(?:hook|background|knowledge|experience|transition|callback|ending|other)\s*$/i, "")
@@ -2260,7 +2260,7 @@ function saveCurrentDocMap() {
     return;
   }
   const folder = ensureFolder("DocMaps", null);
-  const name = nextAvailableFileName(`DocMap - ${currentDocMap.title}.md`, activeProjectId);
+  const name = nextAvailableProjectFileName(`DocMap - ${currentDocMap.title}.md`, activeProjectId);
   const now = new Date().toISOString();
   const markdown = currentDocMap.kind === "videoDocMap"
     ? formatDocMapMarkdown(currentDocMap)

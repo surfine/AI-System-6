@@ -295,6 +295,7 @@
       queue: serializeQueue(),
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+    window.AISystem6ControlStrip?.refreshStrip?.();
   }
 
   function currentItem() {
@@ -1652,6 +1653,47 @@
     return state.shuffleKind;
   }
 
+  // The Control Strip's volume module reads and sets the same app volume this
+  // window edits. The strip menu offers eight levels (OS 9's Sound Volume
+  // module); 0 maps to muted, 7 to full.
+  function getVolumeSnapshot() {
+    return { volume: state.volume, muted: state.muted };
+  }
+
+  function setVolumeLevel(level) {
+    const next = Math.max(0, Math.min(7, Math.round(Number(level) || 0)));
+    state.volume = Math.round((next / 7) * 100);
+    state.muted = next === 0;
+    if (state.source === "local" && typeof localAudio !== "undefined") localAudio.volume = state.volume / 100;
+    renderSegments(ui("soundscape-volume"), state.volume);
+    if (state.source === "system") runSystemAction("set-volume", { volume: state.volume });
+    persist();
+  }
+
+  // The Control Strip's Soundscape module reads playback state and lets the
+  // user toggle play and pick a scene, without opening the Soundscape window.
+  function getPlayerSnapshot() {
+    const item = currentItem();
+    return {
+      playerState: state.playerState,
+      isPlaying: isPlaying(),
+      source: state.source,
+      currentIndex: state.currentIndex,
+      currentTitle: item?.title || item?.name || "",
+      queue: (state.queue || []).map((entry, index) => ({
+        id: entry.id,
+        title: entry.title || entry.name || String(index + 1),
+        current: index === state.currentIndex,
+      })),
+    };
+  }
+
+  async function playSceneIndex(index) {
+    if (!Array.isArray(state.queue) || !state.queue[Number(index)]) return false;
+    await playIndex(Number(index));
+    return true;
+  }
+
   window.AISystem6Soundscape = {
     attach,
     runMenuCommand,
@@ -1661,6 +1703,10 @@
     currentRepeatMode,
     currentShuffleMode,
     currentShuffleKind,
+    getVolumeSnapshot,
+    setVolumeLevel,
+    getPlayerSnapshot,
+    playSceneIndex,
   };
   window.AISystem6SoundscapeLoaded = true;
 })();

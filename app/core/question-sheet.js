@@ -127,7 +127,7 @@ function resolveWritingRoutePrompt(id, language = currentLanguage) {
   const record = window.AISystem6PromptFiles?.find?.((item) => item.id === id);
   const body = resolved?.status === "ready"
     ? resolved.body
-    : (language === "zh" ? record?.body : record?.en);
+    : (language === "zh" ? record?.bodies?.zh : record?.bodies?.en);
   if (!body) {
     throw new Error(language === "zh" ? "写作路线提示词文件不可用。" : "The Writing Route prompt file is unavailable.");
   }

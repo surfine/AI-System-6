@@ -39,10 +39,34 @@ function keyboardShortcutById(id) {
   return keyboardShortcutRegistry.find((shortcut) => shortcut.id === id) || null;
 }
 
+function shortcutUsesCommandKey() {
+  const platform = String(
+    (typeof navigator !== "undefined"
+      && (navigator.userAgentData?.platform || navigator.platform || ""))
+    || ""
+  ).toLowerCase();
+  return platform.includes("mac")
+    || platform.includes("iphone")
+    || platform.includes("ipad")
+    || platform.includes("ipod");
+}
+
+function shortcutModifierPressed(event) {
+  if (shortcutUsesCommandKey()) {
+    return event.metaKey && !event.ctrlKey;
+  }
+  return event.ctrlKey && !event.metaKey;
+}
+
+function shortcutDisplayLabel(shortcut) {
+  const label = shortcut.menuDisplay || shortcut.display || "";
+  return shortcutUsesCommandKey() ? label : label.replace(/⌘/g, "Ctrl");
+}
+
 function syncKeyboardShortcutLabels() {
   document.querySelectorAll("[data-shortcut-id]").forEach((element) => {
     const shortcut = keyboardShortcutById(element.dataset.shortcutId);
-    if (shortcut) element.dataset.shortcut = shortcut.menuDisplay || shortcut.display;
+    if (shortcut) element.dataset.shortcut = shortcutDisplayLabel(shortcut);
   });
 }
 
@@ -53,7 +77,7 @@ function renderKeyCapsShortcuts() {
   keyboardShortcutRegistry.filter((shortcut) => shortcut.keyCaps).forEach((shortcut) => {
     const key = document.createElement("span");
     const label = document.createElement("b");
-    key.textContent = shortcut.display;
+    key.textContent = shortcutDisplayLabel(shortcut);
     label.textContent = t(shortcut.labelKey);
     fragment.append(key, label);
   });
@@ -893,6 +917,7 @@ function getApplicationActionHandlers() {
     "open-about": () => openWindow("about"),
     "open-about-multifinder": showAboutMultiFinder,
     "close-about": () => closeWindow("about"),
+    "open-github-repo": () => window.open("https://github.com/surfine/AI-System-6", "_blank", "noopener"),
     "close-print-directory": () => closeWindow("printDirectory", true),
     "close-page-setup": () => closeWindow("pageSetup", true),
     "page-setup": openPageSetup,
@@ -932,8 +957,8 @@ function getApplicationActionHandlers() {
     "start-new-clio-chat": startNewClioTalkConversation,
     "start-temporary-clio-chat": startTemporaryClioTalkConversation,
     "open-chat-file": ({ fileId = "" } = {}) => openChatFileWindow(fileId),
-    "remember-chat-as-project-memory": () => {
-      const file = createProjectMemoryDraft();
+    "remember-chat-as-project-memory": async () => {
+      const file = await createProjectMemoryDraft();
       if (file) setStatus(currentLanguage === "zh" ? "项目记忆已确认并保存。" : "Project memory confirmed and saved.");
     },
     "toggle-project-memory": () => {
@@ -947,17 +972,17 @@ function getApplicationActionHandlers() {
       if (!selectedChatFileId) return setStatus(t("select_finder_item_first"));
       await createSkillDraftFromSelectedRetrospective();
     },
-    "create-project-skill-from-draft": () => {
-      if (!createProjectSkillFromSelectedDraft()) setStatus(t("select_finder_item_first"));
+    "create-project-skill-from-draft": async () => {
+      if (!await createProjectSkillFromSelectedDraft()) setStatus(t("select_finder_item_first"));
     },
     "toggle-project-skill": () => {
       if (!toggleSelectedProjectSkill()) setStatus(t("select_finder_item_first"));
     },
-    "configure-skill-auto-call": () => {
-      if (!configureSkillAutoCall()) setStatus(t("no_project_mounted"));
+    "configure-skill-auto-call": async () => {
+      if (!await configureSkillAutoCall()) setStatus(t("no_project_mounted"));
     },
-    "disable-auto-called-skill": () => {
-      if (!disableAutoCalledSkillFromSelectedReceipt()) setStatus(t("select_finder_item_first"));
+    "disable-auto-called-skill": async () => {
+      if (!await disableAutoCalledSkillFromSelectedReceipt()) setStatus(t("select_finder_item_first"));
     },
     "view-modification-suggestion-diff": async () => {
       if (!await viewSelectedTeachTextModificationSuggestionDiff()) setStatus(t("select_finder_item_first"));
@@ -983,8 +1008,8 @@ function getApplicationActionHandlers() {
     "cancel-task-config": () => { if (!setTaskConfigLifecycle("cancelled")) setStatus(t("select_finder_item_first")); },
     "create-task-checkpoint": () => { if (!createTaskCheckpoint()) setStatus(t("select_finder_item_first")); },
     "restore-task-checkpoint": async () => { if (!await restoreSelectedTaskCheckpoint()) setStatus(t("select_finder_item_first")); },
-    "install-mounted-skill": () => {
-      if (!installMountedSkillPackage()) setStatus(currentLanguage === "zh" ? "技能包无效或未选择。" : "Skill package is invalid or not selected.");
+    "install-mounted-skill": async () => {
+      if (!await installMountedSkillPackage()) setStatus(currentLanguage === "zh" ? "技能包无效或未选择。" : "Skill package is invalid or not selected.");
     },
     "preview-mounted-skill": async () => {
       if (!await previewMountedSkillPackage()) setStatus(currentLanguage === "zh" ? "技能包无效或未选择。" : "Skill package is invalid or not selected.");
@@ -992,6 +1017,13 @@ function getApplicationActionHandlers() {
     "open-project-disks": () => {
       openWindow("projects");
       if (!isProjectMounted) setStatus(t("no_project_mounted"));
+    },
+    "open-droplet": ({ dropletId = "" } = {}) => {
+      const command = typeof getScriptableCommand === "function" ? getScriptableCommand(dropletId) : null;
+      const name = command && typeof dropletName === "function"
+        ? dropletName(command)
+        : t("droplet");
+      showSystemModal(t("droplet_open_explainer", name), "alert");
     },
     "open-project-info": openProjectInfo,
     "open-file-info": openFileInfo,
@@ -1380,10 +1412,12 @@ function getApplicationActionHandlers() {
     "attach-selected-to-cliotalk": () => attachProjectFileToNextClioTalkRun(),
     "save-clio-harness": saveClioTalkHarness,
     "save-clio-skill": saveClioTalkSkillDraft,
-    "use-project-skill-next-task": () => {
-      if (!selectProjectSkillForNextTask()) setStatus(currentLanguage === "zh" ? "没有可用的已启用技能。" : "No enabled project Skill is available.");
+    "use-project-skill-next-task": async () => {
+      if (!await selectProjectSkillForNextTask()) setStatus(currentLanguage === "zh" ? "没有可用的已启用技能。" : "No enabled project Skill is available.");
     },
-    "suggest-project-skill": () => confirmSuggestedProjectSkill(promptInput?.value || lastUserText || ""),
+    "suggest-project-skill": async () => {
+      await confirmSuggestedProjectSkill(promptInput?.value || lastUserText || "");
+    },
     "save-clio-retrospective": saveClioTalkRetrospective,
     "new-note": () => createScrap(null, ""),
     "clip-last-reply": clipLastReplyToScrapbook,
@@ -1500,6 +1534,10 @@ function handleAction(action, commandContext = {}) {
     commandContext = { ...commandContext, fileId: String(action).slice("open-chat-file:".length) };
     action = "open-chat-file";
   }
+  if (String(action).startsWith("open-droplet:")) {
+    commandContext = { ...commandContext, dropletId: String(action).slice("open-droplet:".length) };
+    action = "open-droplet";
+  }
   const command = getApplicationCommandRegistry().get(action);
   if (!command?.isAvailable()) {
     updateMenuState();
@@ -1525,7 +1563,7 @@ function closeTeachTextCommandMenus() {
 }
 
 function runShortcut(event) {
-  if (event.defaultPrevented || event.isComposing || !event.metaKey || event.ctrlKey) return;
+  if (event.defaultPrevented || event.isComposing || !shortcutModifierPressed(event)) return;
 
   const key = event.key.toLowerCase();
   const shortcutAppId = activeAppId === "writingStudio" ? "teachText" : activeAppId;

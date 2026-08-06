@@ -8,6 +8,83 @@
   /* Colors */
   --ink: #000000;
   --paper: #ffffff;
+  --pane-bg: transparent;
+  --messages-bg: var(--paper);
+  --details-bar-bg: var(--paper);
+  --details-bar-border: var(--ink);
+  --review-desk-pane-bg: transparent;
+  --review-desk-results-border: var(--system-control-line) solid var(--ink);
+  --review-desk-results-radius: 0;
+  --review-desk-results-bg: var(--paper);
+  --review-desk-results-shadow: none;
+  --review-surface-bg: var(--paper);
+  --review-desk-splitter-hover-bg: var(--ink);
+  --review-locked-pane-bg: transparent;
+  --review-th-border: var(--system-control-line) solid var(--ink);
+  --review-th-bg: var(--paper);
+  --review-td-border: 0;
+  --review-td-alt-border: 0;
+  --composer-file-active-bg: var(--ink);
+  --composer-file-active-fg: var(--paper);
+  --composer-file-active-border: var(--clio-composer-tool-border);
+  --compose-menu-hover-bg: var(--ink);
+  --compose-menu-hover-fg: var(--paper);
+  --compose-tool-copy-b: inherit;
+  --compose-tool-copy-small: var(--shade-dark);
+  --menu-bar-bg: var(--paper);
+  --menu-bar-shadow: inset 0 -1px 0 var(--paper);
+  --menu-button-height: 22px;
+  --menu-button-radius: 0;
+  --menu-button-transition: none;
+  --btn-default-bg: var(--btn-bg);
+  --btn-default-fg: var(--btn-fg);
+  --btn-default-text-shadow: none;
+  --btn-default-shadow:
+    0 0 0 var(--system-control-line) var(--paper),
+    0 0 0 calc(var(--system-control-line) * 3) var(--ink),
+    inset -1px -1px 0 var(--shade-dark);
+  --btn-default-active-bg: var(--btn-active-bg);
+  --btn-default-active-fg: var(--btn-active-fg);
+  --control-status-border: 1px dotted var(--shade-dark);
+  --control-label-fg: inherit;
+  --control-summary-fg: inherit;
+  --outline-item-border: 1px dotted var(--shade);
+  --outline-item-span-bg: var(--paper);
+  --outline-item-span-border: 1px solid transparent;
+  --outline-item-span-radius: 0;
+  --outline-focus-border: var(--ink);
+  --outline-focus-outline: 1px dotted var(--ink);
+  --outline-focus-outline-offset: 1px;
+  --outline-focus-bg: transparent;
+  --outline-focus-shadow: none;
+  --radio-radius: 50%;
+  --section-label-fg: inherit;
+  --section-label-radius: 0;
+  --section-label-shadow: none;
+  --draft-label-bg: var(--paper);
+  --draft-label-border: var(--system-control-line) solid var(--ink);
+  --meta-label-bg: transparent;
+  --meta-label-border: 0;
+  --control-section-bg: var(--paper);
+  --source-info-panel-border: var(--system-border);
+  --teachtext-editor-bg: var(--paper);
+  --teachtext-editor-border: var(--system-border);
+  --teachtext-editor-radius: 0;
+  --teachtext-editor-shadow: var(--system-inset);
+  --scrap-list-bg: var(--paper);
+  --scrap-list-border: var(--system-border);
+  --scrap-list-radius: 0;
+  --scrap-list-shadow: var(--system-inset);
+  --import-preview-bg: var(--paper);
+  --import-preview-border: var(--system-border);
+  --import-preview-radius: 0;
+  --import-preview-shadow: var(--system-inset);
+  --backup-preview-bg: transparent;
+  --backup-preview-border: 0;
+  --backup-preview-radius: 0;
+  --backup-preview-shadow: none;
+  --field-bg: var(--paper);
+  --field-focus-bg: var(--paper);
   --shade: #bfbfbf;
   --shade-dark: #696969;
   --desktop: #b6b6b6;
@@ -430,6 +507,8 @@
   --z-floating-field-control: 8995;
   --z-window-pinned: 9000;
   --z-window-priority: 9200;
+  --z-control-strip: 9400;
+  --z-control-strip-menu: 9410;
   --z-selection-marquee: 30000;
   --z-demo-overlay: 39900;
   --z-demo-highlight: 39910;
@@ -438,6 +517,7 @@
   --z-system-menu-subpopover: 40020;
   --z-system-modal-scrim: 40100;
   --z-system-modal: 40110;
+  --z-balloon-help: 40120;
   --z-boot-screen: 41000;
   --z-shutdown-screen: 42000;
   /* One placement rhythm for every floating desktop window. The manager uses
@@ -447,6 +527,13 @@
   --window-placement-gap: 14px;
   --window-placement-step-x: 28px;
   --window-placement-step-y: 24px;
+  --desk-edge-gap: 8px;
+  --control-strip-thickness: 26px;
+  --control-strip-handle-width: 16px;
+  --control-strip-bg: var(--paper);
+  --control-strip-border: 1px solid var(--ink);
+  --control-strip-divider: 1px solid var(--ink);
+  --control-strip-gauge: var(--ink);
   /* System 6 native window chrome, measured at the emulator's exact 2×
      pixels: 17px title-bar box + the window's 1px top border and 1px inset. */
   --system-titlebar-height: 17px;
@@ -515,6 +602,7 @@
   --writing-editor-line-height: 1.5;
   --writing-editor-padding-y: 16px;
   --writing-editor-padding-x: 18px;
+  --writing-editor-focus-bg: var(--paper);
   --writing-preview-padding-y: clamp(24px, 5vw, 52px);
   --writing-preview-padding-x: clamp(22px, 6vw, 68px);
 
@@ -1222,7 +1310,6 @@
   --file-preview-bg: var(--paper);
   --file-preview-radius: 0;
   --file-preview-shadow: none;
-  --project-cd-pane-bg: transparent;
   --project-cd-grid-bg: transparent;
   --project-cd-grid-border: 0;
   --project-cd-grid-radius: 0;
@@ -1267,6 +1354,9 @@
   --cmf-thumb-bg: var(--btn-bg);
   --cmf-thumb-active-border: var(--ink);
   --cmf-thumb-active-bg: rgba(255, 255, 255, 0.72);
+  /* Classic marks the active view with a heavy inset frame on a light chip, so
+     its label stays ink. The glass theme darkens the chip and flips this. */
+  --cmf-thumb-active-fg: var(--ink);
   --cmf-thumb-active-shadow: inset 0 0 0 2px var(--ink);
   --cmf-row-divider: 1px solid rgba(0, 0, 0, 0.12);
   --cmf-pill-bg: rgba(255, 255, 255, 0.55);
@@ -1619,9 +1709,12 @@ body.has-system-modal .menu-bar {
   scrollbar-gutter: stable;
 }
 
-.menu-sub-popover,
-.balloon-help {
+.menu-sub-popover {
   z-index: var(--z-system-menu-subpopover);
+}
+
+.balloon-help {
+  z-index: var(--z-balloon-help);
 }
 
 .menu-popover::-webkit-scrollbar,
@@ -1953,7 +2046,7 @@ body.has-system-modal .menu-bar {
 }
 
 .multifinder-app {
-  display: grid !important;
+  display: grid;
   grid-template-columns: 18px minmax(0, 1fr) auto;
   align-items: center;
   justify-items: stretch;
@@ -2019,7 +2112,7 @@ body.has-system-modal .menu-bar {
 }
 
 .window.is-app-hidden {
-  display: none !important;
+  display: none;
 }
 
 .shutdown-screen {
@@ -2385,7 +2478,6 @@ body.has-system-modal .menu-bar {
   border: var(--system-control-line) solid var(--ink);
   box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--ink);
   padding: 18px 18px 16px;
-  z-index: var(--z-system-modal);
   width: 320px;
   max-width: 90vw;
   font-family: var(--ui-font);
@@ -2432,7 +2524,6 @@ body.has-system-modal .menu-bar {
   border: var(--system-control-line) solid var(--ink);
   box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--ink);
   padding: var(--startup-settings-modal-padding);
-  z-index: var(--z-system-modal);
   font-family: var(--ui-font);
   font-size: 13px;
   margin: 0;
@@ -2603,8 +2694,13 @@ body.is-balloon-help [data-balloon-help] {
   background: var(--paper);
   color: var(--ink);
   font-family: var(--ui-font);
-  z-index: var(--z-system-modal);
   overflow: auto;
+}
+
+.system-modal,
+.startup-settings-modal,
+.finder-operation-modal {
+  z-index: var(--z-system-modal);
 }
 
 .finder-operation-modal::backdrop {
@@ -2714,7 +2810,7 @@ body.is-balloon-help [data-balloon-help] {
   margin: 0;
 }
 
-.finder-operation-actions {
+.button-row.finder-operation-actions {
   justify-content: flex-end;
   margin-top: 18px;
 }

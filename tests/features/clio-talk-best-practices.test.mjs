@@ -270,7 +270,7 @@ test.assertIncludes(documentsChat, "function resumeSelectedTaskConfig", "Task re
 test.assertIncludes(dictionary, "而不会创建重复任务或产物", "Help documents duplicate-safe task resume");
 test.assertIncludes(documentsChat, "function suggestProjectSkillsForTask", "Skills are suggested from deterministic manifest filtering");
 test.assertIncludes(documentsChat, "getEnabledProjectSkills()", "Suggestions exclude disabled and uninstalled Skills");
-test.assertIncludes(documentsChat, "window.confirm", "Suggested Skills require user confirmation");
+test.assertMatches(documentsChat, /function confirmSuggestedProjectSkill[\s\S]*showSystemModal\([\s\S]*"confirm"[\s\S]*"yes"/, "Suggested Skills require user confirmation through the in-app modal");
 test.assertIncludes(chatMessages, "lastSkillSuggestion", "Suggestion choices enter the run receipt");
 test.assertIncludes(documentsChat, "function getSkillAutoCallSettingsFile", "Auto calls use a visible project status file");
 test.assertIncludes(documentsChat, 'artifactKind === "skill-auto-call-settings"', "Auto call settings are auditable Finder files");

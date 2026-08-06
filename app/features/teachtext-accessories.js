@@ -723,26 +723,6 @@ function updateTeachTextDeskState() {
   updateDocMapEntryButtons();
 }
 
-function updateDocMapEntryButtons() {
-  const readerSelection = getReaderSelection().text;
-  const readerText = readerSelection || currentReaderPage?.text || "";
-  if (readerDocMapButton) {
-    readerDocMapButton.disabled = readerSelection
-      ? readerSelection.trim().length < docMapMinSelectionChars
-      : readerText.trim().length < docMapMinDocumentChars;
-  }
-  if (teachTextDocMapButton) {
-    const selection = getTeachTextSelectionInfo();
-    const text = selection.text || teachTextBodyInput.value || "";
-    teachTextDocMapButton.disabled = selection.text
-      ? text.trim().length < docMapMinSelectionChars
-      : text.trim().length < docMapMinDocumentChars;
-  }
-  if (clipboardDocMapButton) {
-    clipboardDocMapButton.disabled = (clipboardTextInput?.value || clipboardText || "").trim().length < docMapMinDocumentChars;
-  }
-}
-
 function refreshTeachTextDocumentState() {
   if (typeof applyTeachTextRoleUi === "function") applyTeachTextRoleUi();
   updateTeachTextBoundaries();
@@ -773,25 +753,6 @@ function getTeachTextDocumentName({ fallback = "" } = {}) {
     || fallback.trim()
     || explicitName
     || t("untitled");
-}
-
-function captureTeachTextScratchState() {
-  const body = teachTextBodyInput?.value || "";
-  const selectionStart = teachTextBodyInput?.selectionStart ?? 0;
-  const selectionEnd = teachTextBodyInput?.selectionEnd ?? selectionStart;
-  return {
-    activeTextFileId,
-    name: getTeachTextDocumentName({ fallback: teachTextNameInput?.value?.trim() || t("untitled") }),
-    folder: teachTextFolderInput?.value?.trim() || preferredFolderName(),
-    label: normalizeFileLabel(teachTextFileLabel),
-    workflowState: normalizeTeachTextWorkflowState(teachTextWorkflowState),
-    statusKey: teachTextStatusEl?.dataset.statusKey || "unsaved",
-    body,
-    selectionStart,
-    selectionEnd,
-    scrollTop: teachTextBodyInput?.scrollTop || 0,
-    updatedAt: new Date().toISOString(),
-  };
 }
 
 function scheduleTeachTextTabSave() {

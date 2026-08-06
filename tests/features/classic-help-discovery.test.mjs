@@ -93,11 +93,15 @@ for (const key of [
 test.assertIncludes(dictionary, 'id: "balloon-help"', "System Help documents the optional Balloon Help mode");
 test.assertIncludes(dictionary, "adapted from System 7", "Help records Balloon Help's actual historical source");
 test.assertIncludes(dictionary, "points to the Apple and Special menus", "System Help matches the current minimal OOBE");
+test.assertMatches(html, /apple-menu-popover[\s\S]*data-action="open-system-help"/, "System Help is one click away from the Apple menu");
+test.assertIncludes(en, "balloon_system_help:", "English explains the System Help entry");
+test.assertIncludes(zh, "balloon_system_help:", "Chinese explains the System Help entry");
 
 test.assertMatches(html, /<header class="menu-bar"[\s\S]*id="balloon-help"[\s\S]*<\/header>/, "Balloon Help inherits the existing system menu layer instead of adding z-index debt");
 test.assertMatches(foundation, /\.balloon-help \{[\s\S]*var\(--balloon-help-bg\)/, "Classic uses the shared system balloon geometry");
 test.assertMatches(foundation, /\.balloon-help \{[\s\S]*inset: auto;[\s\S]*margin: 0;/, "the top-layer balloon keeps its measured viewport position instead of popover auto-centering");
-test.assertMatches(foundation, /\.menu-sub-popover,\s*\.balloon-help \{\s*z-index: var\(--z-system-menu-subpopover\)/, "balloons stay readable above open menus by sharing an existing system layer");
+test.assertMatches(foundation, /\.menu-sub-popover \{\s*z-index: var\(--z-system-menu-subpopover\)/, "menu sub-popovers keep their own system layer");
+test.assertMatches(foundation, /\.balloon-help \{\s*z-index: var\(--z-balloon-help\)/, "balloons use a dedicated layer above modal dialogs");
 test.assertIncludes(foundation, "body.is-balloon-help [data-balloon-help]", "help mode gives eligible objects a visible pointer affordance");
 test.assertIncludes(liquid, "--balloon-help-radius: 18px", "Liquid Glass changes balloon material through tokens");
 test.assertNotIncludes(liquid, "body.use-liquid-glass .balloon-help", "Liquid Glass does not fork the Balloon Help DOM or selector");

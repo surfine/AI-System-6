@@ -1366,11 +1366,7 @@ function renderOnlineClaimResults(results, scope = {}) {
 }
 
 function openOnlineCitationInReader(url) {
-  if (!url) return;
-  readerUrlInput.value = url;
-  openWindow("reader");
-  fetchReaderPage(url);
-  setStatus(t("claim_check_online_opened_source"));
+  return openClioWebCitationInReader(url);
 }
 
 function renderClaimCheckDraft(markdown) {
@@ -1557,10 +1553,6 @@ function markClaimCheckComplete(results = []) {
     });
   }
   setStatus(scope.type === "section" ? t("claim_section_check_done", claimCheckScopeLabel(scope)) : t("claim_check_done"));
-}
-
-function handleCitationIdClick(ref) {
-  openCitationContextItem(resolveCitationRef(ref));
 }
 
 function openSourceForContextItem(contextItem) {

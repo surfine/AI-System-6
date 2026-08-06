@@ -43,7 +43,10 @@
 .cmf-setup-panel {
   display: grid;
   grid-area: toolbar;
-  grid-template-columns: minmax(126px, auto) minmax(210px, 270px) auto minmax(150px, 1fr) auto;
+  /* First column holds the model chooser: 168px is what "iPhone 17 Pro Max"
+     measures in the select, arrow included. A browser will not size a select
+     to its longest option here, so the column has to reserve the room. */
+  grid-template-columns: minmax(168px, auto) minmax(210px, 270px) auto minmax(150px, 1fr) auto;
   align-items: end;
   gap: 10px;
   padding: 9px 10px;
@@ -54,21 +57,9 @@
   box-shadow: var(--cmf-toolbar-shadow);
 }
 
-.cmf-model-readout {
-  display: grid;
-  gap: 3px;
-  align-self: stretch;
-}
-
-.cmf-model-readout span,
 .cmf-control > span:first-child {
   color: var(--cmf-muted);
   font-size: 11px;
-}
-
-.cmf-model-readout strong {
-  align-self: end;
-  font-size: 13px;
 }
 
 .cmf-control {
@@ -76,6 +67,24 @@
   gap: 3px;
   min-width: 0;
   font-size: 12px;
+}
+
+/* An author `display` beats the user-agent rule for [hidden], so a control the
+   feature hides (the pose chooser on phones) would still hold its column. */
+.cmf-control[hidden] {
+  display: none;
+}
+
+/* A select is wider than its column on the narrowest toolbar; keep it inside
+   its own cell so a long model name clips instead of running under the next
+   control. */
+.cmf-setup-panel .select-wrap {
+  min-width: 0;
+}
+
+.cmf-setup-panel select {
+  width: 100%;
+  min-width: 0;
 }
 
 .cmf-setup-actions,
@@ -237,7 +246,7 @@
 .cmf-view-thumb.is-active {
   border-color: var(--cmf-thumb-active-border);
   background: var(--cmf-thumb-active-bg);
-  color: var(--cmf-selected-fg);
+  color: var(--cmf-thumb-active-fg);
   box-shadow: var(--cmf-thumb-active-shadow);
 }
 
@@ -431,8 +440,95 @@
   --cmf-swatch: #f5f5f5;
 }
 
+.cmf-part-swatch[data-cmf-color="cosmicOrange17Pro"],
+.cmf-color-chip-swatch[data-cmf-color="cosmicOrange17Pro"] {
+  --cmf-swatch: #f78039;
+}
+
+.cmf-part-swatch[data-cmf-color="deepBlue17Pro"],
+.cmf-color-chip-swatch[data-cmf-color="deepBlue17Pro"] {
+  --cmf-swatch: #47547e;
+}
+
+.cmf-part-swatch[data-cmf-color="silver17Pro"],
+.cmf-color-chip-swatch[data-cmf-color="silver17Pro"] {
+  --cmf-swatch: #e7e7e7;
+}
+
+.cmf-part-swatch[data-cmf-color="spaceBlackAir"],
+.cmf-color-chip-swatch[data-cmf-color="spaceBlackAir"] {
+  --cmf-swatch: #131313;
+}
+
+.cmf-part-swatch[data-cmf-color="cloudWhiteAir"],
+.cmf-color-chip-swatch[data-cmf-color="cloudWhiteAir"] {
+  --cmf-swatch: #fcfcfc;
+}
+
+.cmf-part-swatch[data-cmf-color="lightGoldAir"],
+.cmf-color-chip-swatch[data-cmf-color="lightGoldAir"] {
+  --cmf-swatch: #faf3e5;
+}
+
+.cmf-part-swatch[data-cmf-color="skyBlueAir"],
+.cmf-color-chip-swatch[data-cmf-color="skyBlueAir"] {
+  --cmf-swatch: #e5f2fa;
+}
+
+.cmf-part-swatch[data-cmf-color="silverNeo"],
+.cmf-color-chip-swatch[data-cmf-color="silverNeo"] {
+  --cmf-swatch: #e5e6e7;
+}
+
+.cmf-part-swatch[data-cmf-color="blushNeo"],
+.cmf-color-chip-swatch[data-cmf-color="blushNeo"] {
+  --cmf-swatch: #ead5d4;
+}
+
+.cmf-part-swatch[data-cmf-color="citrusNeo"],
+.cmf-color-chip-swatch[data-cmf-color="citrusNeo"] {
+  --cmf-swatch: #dddc8c;
+}
+
+.cmf-part-swatch[data-cmf-color="indigoNeo"],
+.cmf-color-chip-swatch[data-cmf-color="indigoNeo"] {
+  --cmf-swatch: #67738b;
+}
+
+.cmf-part-swatch[data-cmf-color="black17e"],
+.cmf-color-chip-swatch[data-cmf-color="black17e"] {
+  --cmf-swatch: #4a4e51;
+}
+
+.cmf-part-swatch[data-cmf-color="white17e"],
+.cmf-color-chip-swatch[data-cmf-color="white17e"] {
+  --cmf-swatch: #fafafa;
+}
+
+.cmf-part-swatch[data-cmf-color="softPink17e"],
+.cmf-color-chip-swatch[data-cmf-color="softPink17e"] {
+  --cmf-swatch: #fce7e6;
+}
+
+/* Pale finishes need an outline or they vanish against the panel. */
 .cmf-part-swatch[data-cmf-color="white17"],
-.cmf-color-chip-swatch[data-cmf-color="white17"] {
+.cmf-color-chip-swatch[data-cmf-color="white17"],
+.cmf-part-swatch[data-cmf-color="silver17Pro"],
+.cmf-color-chip-swatch[data-cmf-color="silver17Pro"],
+.cmf-part-swatch[data-cmf-color="cloudWhiteAir"],
+.cmf-color-chip-swatch[data-cmf-color="cloudWhiteAir"],
+.cmf-part-swatch[data-cmf-color="lightGoldAir"],
+.cmf-color-chip-swatch[data-cmf-color="lightGoldAir"],
+.cmf-part-swatch[data-cmf-color="skyBlueAir"],
+.cmf-color-chip-swatch[data-cmf-color="skyBlueAir"],
+.cmf-part-swatch[data-cmf-color="white17e"],
+.cmf-color-chip-swatch[data-cmf-color="white17e"],
+.cmf-part-swatch[data-cmf-color="softPink17e"],
+.cmf-color-chip-swatch[data-cmf-color="softPink17e"],
+.cmf-part-swatch[data-cmf-color="silverNeo"],
+.cmf-color-chip-swatch[data-cmf-color="silverNeo"],
+.cmf-part-swatch[data-cmf-color="blushNeo"],
+.cmf-color-chip-swatch[data-cmf-color="blushNeo"] {
   border-color: rgba(0, 0, 0, 0.42);
 }
 
@@ -448,7 +544,7 @@
   }
 
   .cmf-setup-panel {
-    grid-template-columns: minmax(110px, auto) minmax(180px, 1fr) auto auto;
+    grid-template-columns: minmax(168px, auto) minmax(180px, 1fr) auto auto;
   }
 
   .cmf-autosave-note {
@@ -469,7 +565,6 @@
     grid-template-columns: 1fr 1fr;
   }
 
-  .cmf-model-readout,
   .cmf-control {
     min-width: 0;
   }

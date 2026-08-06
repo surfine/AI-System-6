@@ -334,7 +334,11 @@ function captureWindowWorkingSession() {
 const intrinsicSessionSizeWindowNames = new Set(["alarmClock"]);
 
 function applyWindowSessionFrame(win, frame = {}) {
-  if (!win || (typeof isPortraitDocumentFlow === "function" && isPortraitDocumentFlow())) return;
+  if (!win || window.matchMedia("(max-width: 860px)").matches) return;
+  if (typeof writerMode !== "undefined" && writerMode && win.dataset.window === "systemHelp") return;
+  if (typeof writerMode !== "undefined" && writerMode
+      && typeof writerModeCssOwnedWindows !== "undefined"
+      && writerModeCssOwnedWindows.has(win.dataset.window)) return;
   const desktop = document.querySelector(".desktop");
   const desktopRect = desktop?.getBoundingClientRect();
   const maxWidth = Math.max(320, (desktopRect?.width || window.innerWidth) - 18);

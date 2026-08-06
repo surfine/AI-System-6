@@ -667,8 +667,6 @@ function serializeOutlineSections(sections) {
     .join("\n");
 }
 
-const hkrrIntentOptions = Object.freeze(["H", "K", "R", "Rhythm", "H + R", "K + R", "H + Rhythm", "K + Rhythm", "R + Rhythm"]);
-
 function normalizeHkrrIntent(value) {
   const raw = String(value || "").replace(/\s*\+\s*/g, " + ").replace(/\s+/g, " ").trim();
   const aliases = new Map([
@@ -1278,7 +1276,10 @@ function getProjectNameConflict(name, ignoreProjectId = null) {
   return projects.find((project) => project.id !== ignoreProjectId && project.name.trim().toLowerCase() === normalized);
 }
 
-function nextAvailableFileName(baseName, projectId = activeProjectId) {
+// Project-wide name dedupe. The folder-scoped twin lives in documents-chat.js
+// under the plain name; keeping these apart matters because the concatenated
+// bundle keeps only one definition per name, and the two scopes are different.
+function nextAvailableProjectFileName(baseName, projectId = activeProjectId) {
   const base = (baseName || t("untitled")).trim() || t("untitled");
   const names = new Set(
     chatFiles
@@ -1484,12 +1485,6 @@ function selectProjectRootItem(itemId) {
   clearDocumentSelection();
   updateProjectRootSelectionView();
   updateMenuState();
-}
-
-function selectProjectFinderDocumentItem(type, id) {
-  selectedProjectRootItemId = null;
-  selectDocumentItem(type, id);
-  updateProjectRootSelectionView();
 }
 
 function openProjectFinderFolder(folderId) {
@@ -1698,6 +1693,18 @@ function renderProjectDisks() {
     selectedProjectLabelEl.textContent = selectedRootItem
       ? t("finder_selected_item", selectedRootItem.name)
       : t("finder_no_selection");
+  }
+
+  if (!items.length) {
+    const empty = document.createElement("button");
+    empty.type = "button";
+    empty.className = "finder-empty-object project-empty-object";
+    empty.innerHTML = `${renderSystemIcon("projectDisk", { size: "mini" })}<b>${escapeHtml(t("project_disk_empty_title"))}</b><small>${escapeHtml(t("project_disk_empty_hint"))}</small>`;
+    empty.addEventListener("click", () => handleAction("open-import-utility"));
+    projectDiskGridEl.append(empty);
+    updateFinderViewButtons(getWindow("projects"), mode);
+    setFinderViewClasses(projectDiskGridEl, mode);
+    return;
   }
 
   updateFinderViewButtons(getWindow("projects"), mode);

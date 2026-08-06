@@ -13,20 +13,13 @@ const { promisify } = require("node:util");
 const { repoRoot } = require("../lib/build-info.js");
 
 const execFile = promisify(execFileCallback);
-const MODEL_ID = "iphone-17-standard";
-const MODEL_ASSET = path.join(repoRoot, "assets", "cmf", "iphone-17-standard.usdz");
 const EXPORT_TIMEOUT_MS = 180000;
 const RENDER_TIMEOUT_MS = 240000;
 
-const palette = Object.freeze({
-  black17: parseHex("#353839"),
-  lavender17: parseHex("#dfceea"),
-  mistBlue17: parseHex("#96aed1"),
-  sage17: parseHex("#a9b689"),
-  white17: parseHex("#f5f5f5"),
-});
-
-const paletteMeta = Object.freeze({
+// Colors are Apple's own finishes, sampled from the official store swatches
+// (store.storeimages.cdn-apple.com/.../iphone-17*-finish-<color>-2025*). CMF
+// Studio only ever offers colors that shipped on the real part.
+const IPHONE_17_PALETTE = Object.freeze({
   black17: { label: "Black", hex: "#353839" },
   lavender17: { label: "Lavender", hex: "#dfceea" },
   mistBlue17: { label: "Mist Blue", hex: "#96aed1" },
@@ -34,20 +27,33 @@ const paletteMeta = Object.freeze({
   white17: { label: "White", hex: "#f5f5f5" },
 });
 
-/** @type {Readonly<Record<string, string>>} */
-const defaultParts = Object.freeze({
-  frame: "black17",
-  frameSide: "black17",
-  backGlass: "white17",
-  volumeUp: "lavender17",
-  volumeDown: "mistBlue17",
-  actionOrSim: "sage17",
-  simTray: "lavender17",
-  sideButton: "white17",
-  cameraControl: "black17",
-  usbC: "mistBlue17",
-  screwOrSpeaker: "sage17",
-  cameraPlate: "sage17",
+const IPHONE_17_PRO_PALETTE = Object.freeze({
+  cosmicOrange17Pro: { label: "Cosmic Orange", hex: "#f78039" },
+  deepBlue17Pro: { label: "Deep Blue", hex: "#47547e" },
+  silver17Pro: { label: "Silver", hex: "#e7e7e7" },
+});
+
+const IPHONE_17E_PALETTE = Object.freeze({
+  black17e: { label: "Black", hex: "#4a4e51" },
+  white17e: { label: "White", hex: "#fafafa" },
+  softPink17e: { label: "Soft Pink", hex: "#fce7e6" },
+});
+
+const IPHONE_AIR_PALETTE = Object.freeze({
+  spaceBlackAir: { label: "Space Black", hex: "#131313" },
+  cloudWhiteAir: { label: "Cloud White", hex: "#fcfcfc" },
+  lightGoldAir: { label: "Light Gold", hex: "#faf3e5" },
+  skyBlueAir: { label: "Sky Blue", hex: "#e5f2fa" },
+});
+
+// MacBook Neo official finishes, sampled from apple.com.cn store swatches
+// (macbook-neo-<color>-cto-hero-202603_SW_COLOR). Every part is sold in every
+// finish, so one palette serves the whole machine.
+const MACBOOK_NEO_PALETTE = Object.freeze({
+  silverNeo: { label: "Silver", hex: "#e5e6e7" },
+  blushNeo: { label: "Blush", hex: "#ead5d4" },
+  citrusNeo: { label: "Citrus", hex: "#dddc8c" },
+  indigoNeo: { label: "Indigo", hex: "#67738b" },
 });
 
 const partAliases = Object.freeze({
@@ -57,16 +63,273 @@ const partAliases = Object.freeze({
   speakerScrews: "screwOrSpeaker",
 });
 
-const exactPartByMeshName = new Map([
-  ["psstnNZmWlkGpGJ", "actionOrSim"],
-  ["aabQdFuOayXiOAy", "volumeUp"],
-  ["fQDGdPVinVFkDgA", "volumeDown"],
-  ["DRSYKrXjlbGZrGD", "sideButton"],
-  ["SdLaeCAiKFeDCSz", "cameraControl"],
-  ["ohRsmdOpfcWOasQ", "cameraControl"],
-  ["kQtKvBruXjVcFqZ", "cameraControl"],
-  ["tXyqmuCYyFmMJhw", "simTray"],
-]);
+// The Pro and the Pro Max are split out of one Apple asset, so they share mesh
+// names. Side controls are skipped by the geometric classifier by design, and
+// the Pro's back glass is only an inlay (~2/3 of the body) rather than the whole
+// panel, so both need naming here.
+const IPHONE_17_PRO_MESH_PARTS = Object.freeze({
+  MurNHnRHsVHWaxp: "actionOrSim",
+  YMhcZuJreIkCuNy: "volumeUp",
+  VOwOyTIgUdFOGSH: "volumeDown",
+  oKryyXghVaYcnxt: "sideButton",
+  LXcFmsoszzDyTrR: "cameraControl",
+  VAAxcOWnKYsQZew: "cameraControl",
+  AepdVkPZeAmapGK: "cameraControl",
+  gCMlCSdRJrizepS: "backGlass",
+  vDwikmBvgqpSImF: "backGlass",
+});
+
+// The 17e has no Camera Control, so its right edge carries only the side
+// button; the rest of the layout matches the other models.
+const IPHONE_17E_MESH_PARTS = Object.freeze({
+  MNFvcyIPvJHZGho: "actionOrSim",
+  wvehvZgKSiHShKe: "volumeUp",
+  grjpZqMAFshUbYL: "volumeDown",
+  bAdaiwDyPNSIOTz: "sideButton",
+});
+
+// The Air is a separate Apple asset, but its side controls sit in the same
+// places and carry the same shapes, so they are identified the same way.
+const IPHONE_AIR_MESH_PARTS = Object.freeze({
+  YkCTFFnfNRTcvhu: "actionOrSim",
+  gxvVEZnHDLTMeDu: "volumeUp",
+  ZozkCecQqsHKRdW: "volumeDown",
+  eFAjqNXqlosYdcs: "sideButton",
+  zvTKDcDzjwBqPXl: "cameraControl",
+  oeeuEHMiwxuyjiE: "cameraControl",
+  mKggmceRYtWVyLb: "cameraControl",
+});
+
+// Official Apple self-service parts, mapped onto the MacBook Neo AR asset.
+// The lid is the display assembly (shell, screen, camera), the top case is the
+// keyboard deck, and the USB-C boards are the two port clusters. The keycap
+// strips are the keyboard's coloured rows; the trackpad is texture-baked into
+// the deck in this asset, so it is not a separate part here.
+const MACBOOK_NEO_MESH_PARTS = Object.freeze({
+  // lid (display assembly)
+  LTxTFlhLWoHyhvo: "lid",
+  sGDniMbgLiwHqFw: "lid",
+  ZMGnWkiZEPXzRiw: "lid",
+  iGKSuTNlIlEGpLp: "lid",
+  LUMtYvTEVNmTHoQ: "lid",
+  rvnQqsVlUxgRHpf: "lid",
+  // top case (keyboard deck)
+  RtqozqWvXTJHuDi: "topCase",
+  RGLDQJKTekftnoB: "topCase",
+  fylMvyMYpOJcbku: "topCase",
+  KMIKFolgYmmmahm: "topCase",
+  TJrncXRMBNoKueV: "topCase",
+  RBmsNybhFEScfui: "topCase",
+  LhZMVgrGkfDhZnJ: "topCase",
+  TaNFpMmKHqePKML: "topCase",
+  EXRYTxHqZCxcjZx: "topCase",
+  // The base is a unibody: the two outer shells carry the palm rest, the sides
+  // and the underside edge, which is what Apple calls the top case. Only the
+  // separate lower panel (and its liner) is the bottom case.
+  IYjUsjnVPLevabB: "topCase",
+  ubZKAAJmPSUZVHj: "topCase",
+  AHewMMzHKsIFykK: "bottomCase",
+  JcBLefbhAcSFtfV: "bottomCase",
+  // Keycaps: the key field proper. Three layers sit in the keyboard well —
+  // the recessed bed (y 0.12) and the legend plane (y 0.27) belong to the deck,
+  // and only the raised caps between them take the keycap finish. The strips
+  // that used to be named here live at the hinge edge and are never visible.
+  AqcQCwqkepkmIxJ: "keycaps",
+  ldFDBmejSXToUkP: "topCase",
+  qQGZuUUMeRVQGEY: "topCase",
+  ymYLIOEGFuqNeyB: "topCase",
+  // USB-C boards (right cluster + left cluster)
+  UDjFocEFPMTxxzE: "usbC",
+  bkNkMexbhfuRgXd: "usbC",
+  uMvgvtrefotcxLA: "usbC",
+  vpFYGndskQCpAiL: "usbC",
+  KwFQtiwiPZcwELa: "usbC",
+  MdEwZxJYnatsNEo: "usbC",
+  cMzncBRnxGSiixF: "usbC",
+  RxQwEeRZjARFsvN: "usbC",
+  WWvgVRnfZBeNwpP: "usbC",
+  jXEhAmPcGAkgmPq: "usbC",
+  WJWxyVsmuaogzKH: "usbC",
+  UdgYVXrcknzsfzU: "usbC",
+  UgnigMDmuhQEbNc: "usbC",
+  GDzFfJLYgiBMTFB: "usbC",
+  DrJauNLaRtCxyAy: "usbC",
+  bqcaMJZxVDeevNs: "usbC",
+  MHkxrMAWDVbaaeW: "usbC",
+  hgRUNThRBKzoawn: "usbC",
+  ckddmGzikslSSZi: "usbC",
+  VFFQHFXIwreyxOW: "usbC",
+  BNEVCQcWteGdere: "usbC",
+  gOxaRXQOCdmPKSH: "usbC",
+});
+
+/**
+ * One entry per shipped model. Assets are produced by
+ * scripts/cmf-prepare-model.mjs, which also records where they came from.
+ * `exactMeshParts` overrides the geometric classifier for parts too small or
+ * too oddly placed to recognise from their bounding box alone.
+ */
+const MODELS = Object.freeze({
+  "iphone-17-standard": {
+    id: "iphone-17-standard",
+    label: "iPhone 17",
+    asset: path.join(repoRoot, "assets", "cmf", "iphone-17-standard.usdz"),
+    paletteMeta: IPHONE_17_PALETTE,
+    defaultParts: {
+      frame: "black17",
+      frameSide: "black17",
+      backGlass: "white17",
+      volumeUp: "lavender17",
+      volumeDown: "mistBlue17",
+      actionOrSim: "sage17",
+      simTray: "lavender17",
+      sideButton: "white17",
+      cameraControl: "black17",
+      usbC: "mistBlue17",
+      screwOrSpeaker: "sage17",
+      cameraPlate: "sage17",
+    },
+    exactMeshParts: {
+      psstnNZmWlkGpGJ: "actionOrSim",
+      aabQdFuOayXiOAy: "volumeUp",
+      fQDGdPVinVFkDgA: "volumeDown",
+      DRSYKrXjlbGZrGD: "sideButton",
+      SdLaeCAiKFeDCSz: "cameraControl",
+      ohRsmdOpfcWOasQ: "cameraControl",
+      kQtKvBruXjVcFqZ: "cameraControl",
+      tXyqmuCYyFmMJhw: "simTray",
+    },
+  },
+  "iphone-17-pro": {
+    id: "iphone-17-pro",
+    label: "iPhone 17 Pro",
+    asset: path.join(repoRoot, "assets", "cmf", "iphone-17-pro.usdz"),
+    paletteMeta: IPHONE_17_PRO_PALETTE,
+    // Apple's AR asset is the eSIM build, so this model has no SIM tray.
+    defaultParts: {
+      frame: "cosmicOrange17Pro",
+      frameSide: "cosmicOrange17Pro",
+      backGlass: "cosmicOrange17Pro",
+      volumeUp: "cosmicOrange17Pro",
+      volumeDown: "cosmicOrange17Pro",
+      actionOrSim: "cosmicOrange17Pro",
+      sideButton: "cosmicOrange17Pro",
+      cameraControl: "cosmicOrange17Pro",
+      usbC: "silver17Pro",
+      screwOrSpeaker: "silver17Pro",
+      cameraPlate: "cosmicOrange17Pro",
+    },
+    exactMeshParts: IPHONE_17_PRO_MESH_PARTS,
+  },
+  "iphone-17-pro-max": {
+    id: "iphone-17-pro-max",
+    label: "iPhone 17 Pro Max",
+    asset: path.join(repoRoot, "assets", "cmf", "iphone-17-pro-max.usdz"),
+    paletteMeta: IPHONE_17_PRO_PALETTE,
+    defaultParts: {
+      frame: "cosmicOrange17Pro",
+      frameSide: "cosmicOrange17Pro",
+      backGlass: "cosmicOrange17Pro",
+      volumeUp: "cosmicOrange17Pro",
+      volumeDown: "cosmicOrange17Pro",
+      actionOrSim: "cosmicOrange17Pro",
+      sideButton: "cosmicOrange17Pro",
+      cameraControl: "cosmicOrange17Pro",
+      usbC: "silver17Pro",
+      screwOrSpeaker: "silver17Pro",
+      cameraPlate: "cosmicOrange17Pro",
+    },
+    exactMeshParts: IPHONE_17_PRO_MESH_PARTS,
+  },
+  "iphone-air": {
+    id: "iphone-air",
+    label: "iPhone Air",
+    asset: path.join(repoRoot, "assets", "cmf", "iphone-air.usdz"),
+    paletteMeta: IPHONE_AIR_PALETTE,
+    // eSIM build, so no SIM tray.
+    defaultParts: {
+      frame: "spaceBlackAir",
+      frameSide: "spaceBlackAir",
+      backGlass: "spaceBlackAir",
+      volumeUp: "spaceBlackAir",
+      volumeDown: "spaceBlackAir",
+      actionOrSim: "spaceBlackAir",
+      sideButton: "spaceBlackAir",
+      cameraControl: "spaceBlackAir",
+      usbC: "cloudWhiteAir",
+      screwOrSpeaker: "cloudWhiteAir",
+      cameraPlate: "spaceBlackAir",
+    },
+    exactMeshParts: IPHONE_AIR_MESH_PARTS,
+  },
+  "iphone-17e": {
+    id: "iphone-17e",
+    label: "iPhone 17e",
+    asset: path.join(repoRoot, "assets", "cmf", "iphone-17e.usdz"),
+    paletteMeta: IPHONE_17E_PALETTE,
+    // eSIM build, and this model has no Camera Control at all.
+    defaultParts: {
+      frame: "black17e",
+      frameSide: "black17e",
+      backGlass: "black17e",
+      volumeUp: "black17e",
+      volumeDown: "black17e",
+      actionOrSim: "black17e",
+      sideButton: "black17e",
+      usbC: "white17e",
+      screwOrSpeaker: "white17e",
+      cameraPlate: "black17e",
+    },
+    exactMeshParts: IPHONE_17E_MESH_PARTS,
+  },
+  "macbook-neo": {
+    id: "macbook-neo",
+    label: "MacBook Neo",
+    // One asset per pose: scripts/cmf-prepare-model.mjs flattens the Apple
+    // Color/Pose variant set and bakes every xform into the mesh points, so
+    // the text recolor pipeline sees a single world-space model per file.
+    poses: [
+      {
+        id: "closed",
+        label: "Closed",
+        asset: path.join(repoRoot, "assets", "cmf", "macbook-neo-closed.usdz"),
+      },
+      {
+        id: "open",
+        label: "Open",
+        asset: path.join(repoRoot, "assets", "cmf", "macbook-neo-open.usdz"),
+      },
+    ],
+    paletteMeta: MACBOOK_NEO_PALETTE,
+    // The MacBook's finish lives on the enclosure, not on phone-shaped parts;
+    // every recolorable surface is named explicitly and the geometric
+    // classifier (tuned for phones) is disabled for this model.
+    exactOnly: true,
+    defaultParts: {
+      lid: "silverNeo",
+      topCase: "silverNeo",
+      bottomCase: "silverNeo",
+      keycaps: "citrusNeo",
+      usbC: "silverNeo",
+    },
+    exactMeshParts: MACBOOK_NEO_MESH_PARTS,
+  },
+});
+
+const DEFAULT_MODEL_ID = "iphone-17-standard";
+
+function getModel(modelId) {
+  const model = MODELS[modelId];
+  if (!model) throw httpError(400, `Unsupported CMF model: ${modelId}`);
+  return model;
+}
+
+/** Palette as raw rgb triples, keyed by color id. */
+function modelPalette(model) {
+  const entries = Object.entries(model.paletteMeta)
+    .map(([id, meta]) => [id, parseHex(meta.hex)]);
+  return Object.fromEntries(entries);
+}
 
 function getCapabilities() {
   const commands = [
@@ -83,8 +346,29 @@ function getCapabilities() {
   // lets the same code run on a plain Linux VPS.
   const canExport = Boolean(byName.unzip.available && byName.zip.available);
   return {
-    model: MODEL_ID,
-    palette: paletteMeta,
+    model: DEFAULT_MODEL_ID,
+    palette: MODELS[DEFAULT_MODEL_ID].paletteMeta,
+    models: Object.values(MODELS).map((model) => {
+      const hasPoses = "poses" in model;
+      return {
+        id: model.id,
+        label: model.label,
+        palette: model.paletteMeta,
+        parts: Object.keys(model.defaultParts),
+        defaultParts: model.defaultParts,
+        poses: hasPoses
+          ? model.poses.map((pose) => ({
+              id: pose.id,
+              label: pose.label,
+              available: fsSync.existsSync(pose.asset),
+              views: softwareViewsFor(model.id, pose.id).map((view) => view.name),
+            }))
+          : [],
+        available: hasPoses
+          ? model.poses.some((pose) => fsSync.existsSync(pose.asset))
+          : fsSync.existsSync(model.asset),
+      };
+    }),
     canExport,
     canRenderViews: canExport,
     renderBackend: byName.swift.available ? "scenekit+software" : "software",
@@ -106,7 +390,7 @@ async function exportRecipeUsdz(inputRecipe) {
   const recipe = normalizeRecipe(inputRecipe);
   const workdir = await fs.mkdtemp(path.join(os.tmpdir(), "ai6-cmf-export-"));
   try {
-    const source = await materializeModelAsset(workdir);
+    const source = await materializeModelAsset(workdir, recipe.model, recipe.pose);
     const output = path.join(workdir, `${recipe.slug}.usdz`);
     const result = await makeUsdz(source, output, recipe);
     const buffer = await fs.readFile(output);
@@ -126,7 +410,7 @@ async function renderRecipeViews(inputRecipe) {
   const recipe = normalizeRecipe(inputRecipe);
   const workdir = await fs.mkdtemp(path.join(os.tmpdir(), "ai6-cmf-render-"));
   try {
-    const source = await materializeModelAsset(workdir);
+    const source = await materializeModelAsset(workdir, recipe.model, recipe.pose);
     const usdzPath = path.join(workdir, `${recipe.slug}.usdz`);
     await makeUsdz(source, usdzPath, recipe);
 
@@ -147,14 +431,14 @@ async function renderRecipeViews(inputRecipe) {
         },
       });
     } catch {
-      await renderSoftwareViews(usdzPath, viewsDir);
+      await renderSoftwareViews(usdzPath, viewsDir, null, recipe.model, recipe.pose);
     }
 
     let files = (await fs.readdir(viewsDir))
       .filter((name) => name.endsWith(".png"))
       .sort();
     if (!files.length) {
-      await renderSoftwareViews(usdzPath, viewsDir);
+      await renderSoftwareViews(usdzPath, viewsDir, null, recipe.model, recipe.pose);
       files = (await fs.readdir(viewsDir))
         .filter((name) => name.endsWith(".png"))
         .sort();
@@ -176,10 +460,10 @@ async function renderRecipeViews(inputRecipe) {
 
 async function renderRecipePreview(inputRecipe, viewName = "02-back") {
   const recipe = normalizeRecipe(inputRecipe);
-  const view = resolveSoftwareView(viewName);
+  const view = resolveSoftwareView(viewName, recipe.model, recipe.pose);
   const workdir = await fs.mkdtemp(path.join(os.tmpdir(), "ai6-cmf-preview-render-"));
   try {
-    const source = await materializeModelAsset(workdir);
+    const source = await materializeModelAsset(workdir, recipe.model, recipe.pose);
     const usdzPath = path.join(workdir, `${recipe.slug}.usdz`);
     await makeUsdz(source, usdzPath, recipe);
     const scene = await loadSoftwareScene(usdzPath);
@@ -197,24 +481,35 @@ async function renderRecipePreview(inputRecipe, viewName = "02-back") {
   }
 }
 
-async function renderSoftwareViews(input, outDir, viewNames) {
+async function renderSoftwareViews(input, outDir, viewNames, modelId, pose) {
   const scene = await loadSoftwareScene(input);
-  for (const view of resolveSoftwareViews(viewNames)) {
+  for (const view of resolveSoftwareViews(modelId, pose, viewNames)) {
     const png = await renderSoftwarePng(scene, view);
     await fs.writeFile(path.join(outDir, `${view.name}.png`), png);
   }
 }
 
-function resolveSoftwareView(viewName) {
-  return resolveSoftwareViews([viewName])[0];
+function resolveSoftwareView(viewName, modelId, pose) {
+  return resolveSoftwareViews(modelId, pose, [viewName])[0];
 }
 
-function resolveSoftwareViews(viewNames) {
-  if (!viewNames) return SOFTWARE_VIEWS;
+function resolveSoftwareViews(modelId, pose, viewNames) {
+  const model = modelId ? MODELS[modelId] : null;
+  const pool = model?.poses ? softwareViewsFor(modelId, pose) : SOFTWARE_VIEWS;
+  if (!viewNames) return pool;
   const wanted = new Set([].concat(viewNames).map((name) => String(name || "").trim()).filter(Boolean));
-  const views = SOFTWARE_VIEWS.filter((view) => wanted.has(view.name));
+  const views = pool.filter((view) => wanted.has(view.name));
   if (!views.length) throw httpError(400, `Unsupported CMF preview view: ${[...wanted].join(", ") || "none"}`);
   return views;
+}
+
+function softwareViewsFor(modelId, pose) {
+  const model = MODELS[modelId];
+  if (model?.poses) {
+    const poseViews = MACBOOK_NEO_VIEWS[pose] || MACBOOK_NEO_VIEWS.closed;
+    return poseViews;
+  }
+  return SOFTWARE_VIEWS;
 }
 
 async function loadSoftwareScene(input) {
@@ -318,7 +613,7 @@ async function renderSoftwarePng(scene, view) {
   const up = normalizeVector(view.up);
   const right = normalizeVector(crossVector(up, cam));
   const trueUp = normalizeVector(crossVector(cam, right));
-  const target = view.target || centerOf(scene.bounds);
+  const target = viewTarget(view, scene.bounds);
   const projected = projectBounds(scene.bounds, target, right, trueUp);
   const span = Math.max(projected.width, projected.height * (width / height));
   const scale = (Math.min(width, height) * 0.76 * (view.zoom || 1)) / span;
@@ -437,6 +732,13 @@ function centerOf(bounds) {
   return bounds.min.map((value, axis) => (value + bounds.max[axis]) / 2);
 }
 
+/** Absolute look-at point for a view, resolved against the model's own size. */
+function viewTarget(view, bounds) {
+  const center = centerOf(bounds);
+  if (!view.targetFraction) return center;
+  return center.map((value, axis) => value + view.targetFraction[axis] * (bounds.max[axis] - bounds.min[axis]));
+}
+
 function edge(a, b, c) {
   return (c.x - a.x) * (b.y - a.y) - (c.y - a.y) * (b.x - a.x);
 }
@@ -473,19 +775,60 @@ const SOFTWARE_VIEWS = [
   { name: "04-front-hero", cam: [-0.72, 1, 0.32], up: [0, 0, -1], zoom: 1.1 },
   { name: "05-buttons-side", cam: [-1, 0, 0.02], up: [0, 0, -1], zoom: 1.36 },
   { name: "06-control-side", cam: [1, -0.22, 0.06], up: [0, 0, -1], zoom: 1.32 },
-  { name: "07-camera-close", cam: [-0.58, -1, 0.38], up: [0, 0, -1], target: [1.9, -0.48, -5.25], zoom: 2.25 },
-  { name: "08-bottom-usb", cam: [0.08, -0.35, 1], up: [0, -1, 0], target: [0, -0.2, 5.2], zoom: 2.25 },
-  { name: "09-top-edge", cam: [0.14, -0.38, -1], up: [0, 1, 0], target: [0, -0.2, -5.2], zoom: 2.05 },
+  // Close-up targets are fractions of the model's own bounding box (offset from
+  // its center), so the same view framing holds for every device size. The
+  // fractions reproduce the original absolute targets on iPhone 17.
+  { name: "07-camera-close", cam: [-0.58, -1, 0.38], up: [0, 0, -1], targetFraction: [0.2624, -0.272, -0.35], zoom: 2.25 },
+  { name: "08-bottom-usb", cam: [0.08, -0.35, 1], up: [0, -1, 0], targetFraction: [0, -0.026, 0.3467], zoom: 2.25 },
+  { name: "09-top-edge", cam: [0.14, -0.38, -1], up: [0, 1, 0], targetFraction: [0, -0.026, -0.3467], zoom: 2.05 },
 ];
 
+// MacBook Neo view sets, one per pose. The closed machine is a slab: lid
+// exterior faces +y, bottom case -y, hinge at -z, camera notch at +z, ports on
+// the left edge. The open machine is an L: screen faces +z, keyboard deck +y.
+// targetFraction is relative to each pose's own bounding box, so the same
+// definitions hold for any laptop size.
+const MACBOOK_NEO_VIEWS = {
+  closed: [
+    { name: "01-lid-top", cam: [0, 1, 0], up: [0, 0, -1], zoom: 1.05 },
+    { name: "02-bottom", cam: [0, -1, 0], up: [0, 0, -1], zoom: 1.05 },
+    { name: "03-hero-front", cam: [-0.55, 0.62, 0.56], up: [0, 1, 0], zoom: 1.12 },
+    { name: "04-hero-back", cam: [0.55, 0.62, -0.56], up: [0, 1, 0], zoom: 1.12 },
+    { name: "05-side-left", cam: [-1, 0.08, 0.1], up: [0, 1, 0], zoom: 1.34 },
+    { name: "06-side-right", cam: [1, 0.08, 0.1], up: [0, 1, 0], zoom: 1.34 },
+    { name: "07-front-edge", cam: [0, 0.15, 1], up: [0, 1, 0], zoom: 1.3 },
+    { name: "08-hinge-edge", cam: [0, 0.15, -1], up: [0, 1, 0], zoom: 1.3 },
+    { name: "09-ports-close", cam: [-1, 0.02, 0.05], up: [0, 1, 0], targetFraction: [-0.486, 0.007, -0.355], zoom: 2.2 },
+  ],
+  open: [
+    { name: "01-screen", cam: [0, 0.05, 1], up: [0, 1, 0], zoom: 1.1 },
+    { name: "02-deck-top", cam: [0, 1, 0], up: [0, 0, -1], zoom: 1.12 },
+    { name: "03-hero-open", cam: [-0.6, 0.45, 0.66], up: [0, 1, 0], zoom: 1.16 },
+    { name: "04-hero-back", cam: [0.6, 0.4, -0.68], up: [0, 1, 0], zoom: 1.16 },
+    { name: "05-side-left", cam: [-1, 0.12, 0.08], up: [0, 1, 0], zoom: 1.3 },
+    { name: "06-side-right", cam: [1, 0.12, 0.08], up: [0, 1, 0], zoom: 1.3 },
+    { name: "07-keyboard-close", cam: [0, 0.55, 0.83], up: [0, 0, -1], targetFraction: [0, -0.45, 0.009], zoom: 2.2 },
+    { name: "08-hinge-close", cam: [0, 0.2, 0.98], up: [0, 1, 0], targetFraction: [0, -0.44, -0.237], zoom: 2.1 },
+    { name: "09-ports-close", cam: [-1, 0.05, 0.08], up: [0, 1, 0], targetFraction: [-0.486, -0.459, -0.13], zoom: 2.3 },
+  ],
+};
+
 function normalizeRecipe(inputRecipe = {}) {
-  const raw = /** @type {{ model?: string, name?: string, parts?: Record<string, unknown> }} */ (
+  const raw = /** @type {{ model?: string, name?: string, pose?: string, parts?: Record<string, unknown> }} */ (
     inputRecipe && typeof inputRecipe === "object" ? inputRecipe : {}
   );
-  const model = raw.model || MODEL_ID;
-  if (model !== MODEL_ID) throw httpError(400, `Unsupported CMF model: ${model}`);
+  const modelId = raw.model || DEFAULT_MODEL_ID;
+  const model = getModel(modelId);
+  const palette = model.paletteMeta;
+  let pose = null;
+  if (model.poses) {
+    pose = String(raw.pose || "closed");
+    if (!model.poses.some((entry) => entry.id === pose)) {
+      throw httpError(400, `Unsupported CMF pose '${raw.pose}' for ${modelId}`);
+    }
+  }
 
-  const parts = { ...defaultParts };
+  const parts = { ...model.defaultParts };
   const rawParts = raw.parts && typeof raw.parts === "object" ? raw.parts : {};
   const suppliedParts = new Set();
   for (const [rawPart, rawColor] of Object.entries(rawParts)) {
@@ -493,7 +836,7 @@ function normalizeRecipe(inputRecipe = {}) {
     if (!Object.prototype.hasOwnProperty.call(parts, part)) continue;
     const color = String(rawColor || "").trim();
     if (!Object.prototype.hasOwnProperty.call(palette, color)) {
-      throw httpError(400, `Unsupported CMF color '${rawColor}' for ${rawPart}`);
+      throw httpError(400, `Unsupported CMF color '${rawColor}' for ${rawPart} on ${modelId}`);
     }
     suppliedParts.add(part);
     parts[part] = color;
@@ -502,16 +845,20 @@ function normalizeRecipe(inputRecipe = {}) {
   if (!suppliedParts.has("frameSide")) parts.frameSide = parts.frame;
   if (!suppliedParts.has("screwOrSpeaker")) parts.screwOrSpeaker = parts.usbC;
 
-  const slug = safeSlug(raw.name || `iphone-17-standard-cmf-${Date.now().toString(36)}`);
-  return { model, parts, slug };
+  const slug = safeSlug(raw.name || `${modelId}-${pose || ""}-cmf-${Date.now().toString(36)}`);
+  return { model: modelId, pose, parts, slug };
 }
 
-async function materializeModelAsset(workdir) {
-  if (!fsSync.existsSync(MODEL_ASSET)) {
-    throw httpError(500, `CMF source model is missing: ${MODEL_ASSET}`);
+async function materializeModelAsset(workdir, modelId, pose) {
+  const model = getModel(modelId);
+  const asset = model.poses
+    ? model.poses.find((entry) => entry.id === pose)?.asset
+    : model.asset;
+  if (!asset || !fsSync.existsSync(asset)) {
+    throw httpError(500, `CMF source model is missing: ${asset}`);
   }
-  const output = path.join(workdir, "iphone-17-standard-source.usdz");
-  await fs.copyFile(MODEL_ASSET, output);
+  const output = path.join(workdir, `${model.id}-${pose || ""}-source.usdz`);
+  await fs.copyFile(asset, output);
   return output;
 }
 
@@ -563,7 +910,12 @@ async function makeUsdz(input, output, recipe) {
 }
 
 function makeCmfUsda(source, recipe) {
-  const baseName = recipe.parts.frame || "black17";
+  const model = getModel(recipe.model);
+  const palette = modelPalette(model);
+  const exactMeshParts = model.exactMeshParts || {};
+  // MacBook has no "frame" part; the base pass recolors shared product surfaces
+  // to the first finish so unmapped enclosure meshes stay coherent.
+  const baseName = recipe.parts.frame || Object.keys(model.paletteMeta)[0];
   const base = recolorSharedProductColors(source, palette[baseName]);
   const meshBlocks = blocksWithEnd(base.text, /def Mesh "([^"]+)"/g);
   const materialBlocks = blocksWithEnd(base.text, /def Material "([^"]+)"/g);
@@ -576,8 +928,10 @@ function makeCmfUsda(source, recipe) {
     if (!points.length) continue;
 
     const bounds = getBounds(points);
-    const part = exactPartByMeshName.get(mesh.name) || classifyPart(bounds, globalBounds);
-    if (!part) continue;
+    const named = exactMeshParts[mesh.name];
+    const part = (named && Object.prototype.hasOwnProperty.call(recipe.parts, named) ? named : "")
+      || (model.exactOnly ? "" : classifyPart(bounds, globalBounds));
+    if (!part || !Object.prototype.hasOwnProperty.call(recipe.parts, part)) continue;
 
     const binding = mesh.body.match(/rel material:binding\s*=\s*<([^>]+)>/);
     if (!binding) continue;
@@ -978,7 +1332,9 @@ for view in views {
 `;
 
 module.exports = {
-  MODEL_ID,
+  MODEL_ID: DEFAULT_MODEL_ID,
+  DEFAULT_MODEL_ID,
+  MODELS,
   getCapabilities,
   normalizeRecipe,
   exportRecipeUsdz,

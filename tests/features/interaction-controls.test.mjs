@@ -108,7 +108,8 @@ test.assertIncludes(foundation, "color: var(--menu-shortcut-color)", "Menu short
 test.assertIncludes(foundation, "--menu-chip-bg: transparent", "Menu bar status controls stay unframed until interaction");
 test.assertIncludes(liquid, "rgba(248, 251, 252, 0.88)", "Liquid Glass menu panels use an opaque-enough frosted fill so background text cannot read through");
 test.assert(!liquid.includes("body.use-liquid-glass .menu-bar > :is(.cloud-switcher-menu, .project-switcher-menu, .multifinder-menu) > button"), "Liquid Glass does not add an idle capsule around right-side menu controls");
-test.assertIncludes(liquid, "backdrop-filter: blur(18px) saturate(155%) brightness(1.02)", "Liquid Glass menu bar is a real frosted system strip, not an opaque classic white slab");
+test.assertIncludes(responsive, "body.use-liquid-glass .menu-bar", "the frosted menu bar rule is collocated with its base rule in the responsive layer");
+test.assertIncludes(responsive, "backdrop-filter: blur(18px) saturate(155%) brightness(1.02)", "Liquid Glass menu bar is a real frosted system strip, not an opaque classic white slab");
 test.assertIncludes(liquid, "backdrop-filter: blur(34px) saturate(160%) brightness(1.04)", "Liquid Glass menu popovers blur the desktop strongly enough to protect menu readability");
 test.assertIncludes(liquid, "inset 0 2px 5px rgba(0, 0, 0, 0.22)", "Liquid Glass top-level menu buttons keep a visible pressed state without changing their hit model");
 test.assertIncludes(liquid, "body.use-liquid-glass .view-btn:hover:not(.is-active)", "Liquid Glass view button hover does not override active view");
