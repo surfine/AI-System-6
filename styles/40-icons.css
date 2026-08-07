@@ -4,7 +4,9 @@
   height: 100%;
   overflow: visible;
   color: currentColor;
-  shape-rendering: crispEdges;
+  /* The memory-card glyphs are stroke line-art, not 1-bit pixel runs; smooth
+     anti-aliasing reads as a modern surface instead of a bitmapped one. */
+  shape-rendering: auto;
 }
 
 .scrapbook-icon::before {
@@ -910,6 +912,25 @@
 .finder-grid.finder-small-icons {
   grid-template-columns: repeat(auto-fit, minmax(62px, 1fr));
   gap: 10px 8px;
+}
+
+/* Desktop icons shrink with the Finder View > Small Icons command. The
+   .desktop.is-small-icons prefix out-specifies the liquid-glass desktop icon
+   sizing rule (which loads later), so one selector works in both themes. */
+.desktop.is-small-icons .desktop-icon {
+  width: 60px;
+  gap: 3px;
+}
+
+.desktop.is-small-icons .desktop-icon .icon,
+.desktop.is-small-icons .desktop-icon .sys-icon {
+  width: 28px;
+  height: 28px;
+}
+
+.desktop.is-small-icons .desktop-icon span:last-child {
+  font-size: 11px;
+  padding: 0 2px;
 }
 
 .finder-small-icons .finder-item {

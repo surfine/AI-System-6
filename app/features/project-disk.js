@@ -1327,17 +1327,23 @@ function getProjectFolderFinderItem(folder) {
 function getProjectFileFinderItem(file) {
   const isAlias = file.type === "alias";
   const isClipping = file.artifactKind === "clipping";
+  const isRunRecord = file.artifactKind === "clio-run-record";
   const kindLabel = isAlias
     ? t("kind_alias")
     : isClipping
       ? t("kind_clipping")
-      : file.artifactKind === "project-memory"
+      : isRunRecord
+        ? t("kind_run_record")
+        : file.artifactKind === "project-memory"
     ? (file.memoryStatus === "disabled"
       ? (currentLanguage === "zh" ? "项目记忆（已停用）" : "Project Memory (Disabled)")
       : (currentLanguage === "zh" ? "项目记忆" : "Project Memory"))
     : (file.type === "text" ? t("kind_teachtext") : t("kind_chat"));
-  const iconClass = isAlias ? "alias-icon" : isClipping ? "scrap-icon" : file.type === "text" ? "teachtext-icon" : "doc-icon";
-  const iconId = isAlias ? "alias" : isClipping ? "scrap" : file.type === "text" ? "teachText" : "chatFile";
+  // Run records are text receipts, not TeachText manuscripts: they get the
+  // generic document icon and their own kind label instead of the TeachText
+  // "T" glyph, which misrepresented what the folder holds.
+  const iconClass = isAlias ? "alias-icon" : isClipping ? "scrap-icon" : isRunRecord ? "doc-icon" : file.type === "text" ? "teachtext-icon" : "doc-icon";
+  const iconId = isAlias ? "alias" : isClipping ? "scrap" : isRunRecord ? "document" : file.type === "text" ? "teachText" : "chatFile";
   const bodyText = isAlias ? "" : file.type === "text" ? (file.body || "") : formatChatFile(file);
   return {
     ...file,
@@ -1661,6 +1667,11 @@ function renderProjectDisks() {
   if (titleEl) titleEl.textContent = path;
   titleEl?.setAttribute("title", path);
   if (projectDiskPathEl) projectDiskPathEl.textContent = path;
+  const projectDiskLocationEl = document.querySelector("#project-disk-location");
+  if (projectDiskLocationEl) {
+    projectDiskLocationEl.textContent = path;
+    projectDiskLocationEl.title = path;
+  }
   if (projectDiskUpButton) {
     projectDiskUpButton.hidden = true;
     projectDiskUpButton.textContent = currentFolder ? t("up_one_level") : t("all_documents");
@@ -1688,7 +1699,7 @@ function renderProjectDisks() {
   if (shouldSkipRender("projectDisks", signature)) return;
   const fragment = document.createDocumentFragment();
   projectDiskGridEl.replaceChildren();
-  if (projectDiskCountEl) projectDiskCountEl.textContent = "";
+  if (projectDiskCountEl) projectDiskCountEl.textContent = t("items_count", items.length);
   if (selectedProjectLabelEl) {
     selectedProjectLabelEl.textContent = selectedRootItem
       ? t("finder_selected_item", selectedRootItem.name)

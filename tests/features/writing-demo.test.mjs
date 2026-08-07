@@ -33,6 +33,7 @@ const guideWindow = html.match(/data-window="guide"[\s\S]*?<\/section>/)?.[0] ||
 
 test.assertNotIncludes(guideWindow, 'data-action="play-writing-demo"', "Start Here stays quiet instead of launching the live demo");
 test.assertIncludes(app, 'action: "play-writing-demo"', "the rendered Applications registry exposes the live demo");
+test.assertIncludes(demo, '[data-static-finder-action="play-writing-demo"]', "the rendered Applications icon also toggles to Stop during the recording");
 test.assertIncludes(html, 'data-action="guide-start-route"', "original writing route remains available outside the primary CTA");
 test.assertIncludes(zh, 'guide_play_demo: "播放实战演示"', "Chinese CTA copy names the demo");
 test.assertIncludes(en, 'guide_play_demo: "Play Live Demo"', "English CTA copy names the demo");

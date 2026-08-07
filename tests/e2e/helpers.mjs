@@ -40,6 +40,10 @@ export async function enterWritingStudio(page) {
     () => document.body.dataset.workspaceProfile === "writing",
     { timeout: 15_000 }
   );
+  // The writing-flow windows (Question Sheet first) settle after the profile
+  // flips; opening other windows before they settle lets the flow layer them
+  // over everything else.
+  await page.waitForSelector('[data-window="questionSheet"]:not(.is-hidden)', { timeout: 10_000 });
 }
 
 /** Dispatch one of the app's registered actions (same path as a menu click). */
@@ -57,6 +61,13 @@ export async function openWindow(page, name) {
       const win = document.querySelector(`[data-window="${windowName}"]`);
       return win && !win.classList.contains("is-hidden") && !win.classList.contains("is-app-hidden");
     }, name, { timeout: 15_000 });
+    // Raise the window the way a user does: click its title-bar so later
+    // controls are never intercepted by an overlapping window. The center of
+    // the title-bar is the title text, not a corner control.
+    await page
+      .locator(`[data-window="${name}"] .title-bar`)
+      .click({ position: { x: 80, y: 8 }, timeout: 5_000 })
+      .catch(() => {});
   } catch (error) {
     const state = await page.evaluate((windowName) => {
       const win = document.querySelector(`[data-window="${windowName}"]`);

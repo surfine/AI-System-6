@@ -109,12 +109,29 @@ async function focusDocMapRootForCompactView() {
   if (!inst || !root || !svg) return;
   if (docMapLayoutFor() === "balanced" && docMapBalancedPending) return;
 
+  syncDocMapSvgSizeAttributes(inst);
   await inst.fit();
   await inst.rescale(docMapLayoutFor() === "balanced" ? 1.5 : 1.75);
 
   const padding = { left: 18, right: 18, top: 36, bottom: 36 };
   await inst.centerNode(root, padding);
   docMapZoomMode = "focus";
+}
+
+// d3-zoom's default extent reads `svg.width.baseVal.value`; without explicit
+// width/height attributes an SVG root defaults to a relative 100% length, and
+// reading it throws "Could not resolve relative length" whenever the map is
+// fitted while its window has no resolved layout (e.g. a staged demo window).
+// Keep absolute pixel attributes in sync so fit/zoom never read a relative
+// length, while CSS still owns the visual size.
+function syncDocMapSvgSizeAttributes(inst) {
+  const svgNode = inst?.svg?.node?.();
+  if (!svgNode) return;
+  const rect = svgNode.getBoundingClientRect();
+  const width = Number.isFinite(rect.width) && rect.width > 0 ? rect.width : 800;
+  const height = Number.isFinite(rect.height) && rect.height > 0 ? rect.height : 600;
+  svgNode.setAttribute("width", String(Math.round(width)));
+  svgNode.setAttribute("height", String(Math.round(height)));
 }
 
 function queueDocMapFitToView(attempts = 6, { focusCompact = false } = {}) {
@@ -1648,6 +1665,7 @@ function mirrorMarkmapBalanced(inst) {
   if (!svg || !root) return;
   const firstLevel = root.children || [];
   if (firstLevel.length < 2) {
+    syncDocMapSvgSizeAttributes(inst);
     inst.fit();
     return;
   }
@@ -1841,6 +1859,7 @@ function mirrorMarkmapBalanced(inst) {
     y2 = Math.max(y2, rect.y + rect.height);
   });
   if (Number.isFinite(x1)) inst.state.rect = { x1, y1, x2, y2 };
+  syncDocMapSvgSizeAttributes(inst);
   inst.fit();
 }
 
@@ -1869,6 +1888,7 @@ function renderDocMapMarkmap(map = currentDocMap) {
     ...window.markmap.deriveOptions({ color: palette, colorFreezeLevel: 2 }),
   };
   if (!balanced) {
+    syncDocMapSvgSizeAttributes({ svg: { node: () => svg } });
     docMapMarkmapInstance = window.markmap.Markmap.create(svg, options, root);
     return true;
   }
@@ -1876,6 +1896,7 @@ function renderDocMapMarkmap(map = currentDocMap) {
   // Markmap re-runs renderData on its own (a debounced ResizeObserver, highlight,
   // refresh hook), each time resetting to a one-sided layout — so we re-apply the
   // mirror after every render, not just the first one.
+  syncDocMapSvgSizeAttributes({ svg: { node: () => svg } });
   const inst = window.markmap.Markmap.create(svg, options);
   docMapMarkmapInstance = inst;
   const baseRenderData = inst.renderData.bind(inst);
@@ -1907,6 +1928,7 @@ function fitDocMapCanvasToView() {
   const r = docMapMarkmapInstance?.state?.rect;
   if (!r || r.x2 <= r.x1 || r.y2 <= r.y1) return;
   docMapZoomMode = "fit";
+  syncDocMapSvgSizeAttributes(docMapMarkmapInstance);
   docMapMarkmapInstance.fit();
 }
 

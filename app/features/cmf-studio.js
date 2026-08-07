@@ -984,7 +984,10 @@
   }
 
   async function ensureRenderer() {
+    window.__cmfProbe = window.__cmfProbe || { enter: 0, build: 0, scenes: [] };
+    window.__cmfProbe.enter += 1;
     if (rendererState) return rendererState;
+    window.__cmfProbe.build += 1;
     const modules = await loadRendererModules();
     const canvas = cmfEl("cmf-model-canvas");
     const viewport = cmfEl("cmf-model-viewport");
@@ -1012,6 +1015,15 @@
     fillLight.position.set(4, 2, 5);
     scene.add(fillLight);
 
+    // Apple authors the enclosures as metal (the MacBook's lid is metalness
+    // 0.6, its deck 0.8). A metal has no diffuse term, so with lights alone
+    // there is nothing for it to reflect and every finish collapses to grey —
+    // only the low-metalness parts, like the keycaps, kept their colour. A
+    // neutral room gives the anodising something to pick up.
+    const environment = new modules.PMREMGenerator(renderer)
+      .fromScene(new modules.RoomEnvironment(), 0.04);
+    scene.environment = environment.texture;
+
     const controls = new modules.OrbitControls(camera, canvas);
     controls.enableDamping = true;
     controls.dampingFactor = 0.09;
@@ -1036,6 +1048,8 @@
       viewHalfHeight: 1,
       viewIsCustom: false,
     };
+    window.__cmfProbe.scenes.push(scene);
+    window.__cmfState = () => rendererState;
 
     controls.addEventListener("start", () => {
       window.cancelAnimationFrame(cameraAnimationFrame);

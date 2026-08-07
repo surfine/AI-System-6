@@ -1,5 +1,5 @@
 <!-- canonical-source: CLAUDE.full.md -->
-<!-- source-sha256: 13ee8de72f35a4a7642772f593e69982d7c3a8cf8d45db438a31b2a9f2fc905a -->
+<!-- source-sha256: faa906928c824e632c2e34addb914df2cc305c982ffc5262a30eff4f2a49bdae -->
 
 # AI System 6 — CLAUDE.full.md（旧版完整参考）
 
@@ -223,6 +223,9 @@ npm run verify:release
 | `/api/cmf/render-views` | POST | CMF Studio：渲染重上色 USDZ 的 Quick Look 风格 PNG 视图 |
 | `/api/cmf/export-usdz` | POST | CMF Studio：导出重上色后的 USDZ |
 | `/api/music/system` | GET/POST | 仅本地使用的 Soundscape macOS「音乐」App 白名单播放桥接 |
+| `/api/music/gamdl/jobs` | POST | Soundscape：把一条 Apple Music 链接交给本机 gamdl 下载到宿主资料库（仅本地；公共部署不注册） |
+| `/api/music/gamdl/jobs/:id` | GET | Soundscape：轮询 gamdl 下载任务 |
+| `/api/music/gamdl/files/:id/...` | GET | Soundscape：以字节区间流式返回已下载的音频文件 |
 | `/api/endfield/search` | GET/POST | Endfield 资料库关键词检索 |
 | `/api/endfield/ask` | POST | Endfield 资料库 RAG 问答 |
 | `/api/version` | GET | 版本和构建信息 |
@@ -269,6 +272,10 @@ npm run verify:release
 | `AI_SYSTEM6_TRANSCRIBE_REPAIR_MAX_CHARS` | `2200` | 同步本地模型修复的逐字稿长度上限；更长录音只做快速确定性清理，设为 `0` 可放开 |
 | `AI_SYSTEM6_ROOT` | — | 应用根目录覆盖，用于打包产物中定位 `scripts/markitdown-adapter.py` |
 | `AI_SYSTEM6_SEARCH_TIMEOUT_MS` | `8000` | 网络搜索超时 |
+| `AI_SYSTEM6_GAMDL_BIN` | `gamdl` | Soundscape Apple Music 链接下载用的 gamdl 可执行文件路径 |
+| `AI_SYSTEM6_GAMDL_COOKIES_PATH` | `~/.gamdl/cookies.txt` | gamdl 下载所用的 Netscape 格式 Apple Music cookies 文件（必填；不要把 cookies 放进仓库） |
+| `AI_SYSTEM6_GAMDL_LIBRARY` | `~/.ai-system6/soundscape-gamdl` | gamdl 下载文件的存放与提供位置 |
+| `AI_SYSTEM6_GAMDL_PYTHON` | 自动（gamdl shebang） | 用 mutagen 读取下载音频标签所用的 Python 解释器 |
 | `AI_SYSTEM6_SKIP_SWIFT_BUILD` | — | 打包：设为 `1` 跳过 macOS shell 的 Swift 构建 |
 | `AI_SYSTEM6_ALLOW_STALE_SHELL` | — | 打包：设为 `1` 允许在 Swift 构建失败时打包旧的 shell 二进制 |
 

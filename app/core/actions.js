@@ -1381,6 +1381,7 @@ function getApplicationActionHandlers() {
     "cmf-view-back": () => runCmfMenuCommand("view-back"),
     "cmf-view-side": () => runCmfMenuCommand("view-side"),
     "soundscape-choose-local": () => runSoundscapeMenuCommand("choose-local"),
+    "soundscape-gamdl-download": () => runSoundscapeMenuCommand("gamdl-download"),
     "soundscape-save-moment": () => runSoundscapeMenuCommand("save-moment"),
     "soundscape-toggle-play": () => runSoundscapeMenuCommand("toggle-play"),
     "soundscape-previous": () => runSoundscapeMenuCommand("previous"),

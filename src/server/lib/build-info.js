@@ -1,7 +1,15 @@
 // Version + build-stamp resolution. The generated identity written by
 // scripts/lib/build-info.mjs (app/generated/build-info.json) is the single
-// source; package.json + build-info.json + git are only a development
-// fallback for a server started without a prior build.
+// source; package.json + build-info.json are only a development fallback for
+// a server started without a prior build.
+//
+// Identity is split into stable and runtime halves. The generated file
+// carries version / build / sourceCommit only — never a self-referential
+// commit hash and never a generatedAt timestamp (ordinary builds would
+// otherwise churn tracked files). snapshotCommit is resolved at runtime from
+// the deployment environment (GITHUB_SHA / AI_SYSTEM6_SNAPSHOT_COMMIT) or a
+// read-only git read, and generatedAt is a runtime timestamp, so nothing is
+// baked into the published tree.
 
 "use strict";
 
@@ -81,14 +89,44 @@ const appBuild =
   (generatedBuildInfo && generatedBuildInfo.build) ||
   `${baseBuildStamp}${readGitBuildSuffix()}`;
 const appName = packageInfo.name || "ai-system-6";
-const appCommit = (generatedBuildInfo && generatedBuildInfo.commit) || "";
-const appGeneratedAt = (generatedBuildInfo && generatedBuildInfo.generatedAt) || "";
+const appSourceCommit = (generatedBuildInfo && generatedBuildInfo.sourceCommit) || "";
+const appGeneratedAt = new Date().toISOString();
+
+/**
+ * The commit of the tree currently being served, resolved at runtime. Never
+ * written into tracked generated files: the public snapshot's commit is
+ * already known by git, CI exposes it as GITHUB_SHA, and deployments may
+ * inject their own snapshot commit.
+ *
+ * @returns {string}
+ */
+function readRuntimeSnapshotCommit() {
+  const explicitCommit =
+    process.env.AI_SYSTEM6_SNAPSHOT_COMMIT
+    || process.env.GITHUB_SHA
+    || process.env.VERCEL_GIT_COMMIT_SHA
+    || "";
+  if (explicitCommit) return explicitCommit;
+  if (!existsSync(path.join(repoRoot, ".git"))) return "";
+  try {
+    return execFileSync("git", ["rev-parse", "--short", "HEAD"], {
+      cwd: repoRoot,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+  } catch {
+    return "";
+  }
+}
+
+const appSnapshotCommit = readRuntimeSnapshotCommit();
 
 module.exports = {
   appName,
   appVersion,
   appBuild,
-  appCommit,
+  appSourceCommit,
+  appSnapshotCommit,
   appGeneratedAt,
   repoRoot,
 };

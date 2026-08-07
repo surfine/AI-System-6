@@ -2811,6 +2811,10 @@ html:lang(zh-Hans) .title-bar h2 {
   min-height: 36px;
   place-items: center;
   padding: 0;
+  /* The composer key hint is the flex spacer that pins Send to the right on
+     the desk; phones hide that hint, so the button must carry the alignment
+     itself or it falls in next to the Add control. */
+  margin-left: auto;
   border-color: var(--ink);
   border-radius: var(--clio-composer-control-radius);
   background: var(--ink);
@@ -3329,6 +3333,15 @@ select:focus {
   margin: 0;
 }
 
+.control-prompt-entry {
+  display: grid;
+  gap: 8px;
+}
+
+.control-prompt-entry .btn {
+  justify-self: start;
+}
+
 .control-section {
   display: grid;
   /* The implicit column defaults to content-based sizing, so one unbreakable
@@ -3642,7 +3655,15 @@ body.is-cloud-active .model-state-panel {
   display: none;
 }
 
-body.is-cloud-active .cloud-state-panel {
+/* The user's chosen route (provider enabled) hides the local pipeline even
+   before the credential finishes validating; the cloud panel below still
+   shows the honest connection state. */
+body.is-cloud-configured .model-state-panel {
+  display: none;
+}
+
+body.is-cloud-active .cloud-state-panel,
+body.is-cloud-configured .cloud-state-panel {
   display: grid;
   gap: var(--cloud-state-panel-gap);
   border: var(--cloud-state-panel-border);
@@ -4056,7 +4077,7 @@ body.is-cloud-active .cloud-state-panel {
 
 .find-path-query-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 8px;
   width: 100%;
@@ -4086,7 +4107,7 @@ body.is-cloud-active .cloud-state-panel {
 .find-path-summary {
   margin-top: 4px;
   padding: 10px;
-  border: var(--system-control-line) solid var(--ink);
+  border: var(--find-path-summary-border);
   background: var(--paper);
   font-family: var(--text-font);
   line-height: 1.5;

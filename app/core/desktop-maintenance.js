@@ -6,15 +6,20 @@
 // Repairs follow a two-phase pipeline:
 //   1. planDesktopMaintenance() detects issues without mutating anything and
 //      returns a repair plan (dry run).
-//   2. applyMaintenancePlan() executes the plan, keeps an old-id -> new-id
-//      mapping and rewrites every relation that referenced the old ids, and
-//      records a bounded Repair Record with a pre-repair snapshot id.
+//   2. applyMaintenancePlan() executes the plan and records a bounded Repair
+//      Record with a pre-repair snapshot id.
+//
+// Every relation field is typed (folderId -> folder, parentChatId -> file,
+// referenceId -> reference, aliasTarget.kind -> its own kind). A duplicated
+// record id never triggers a guess-based remap: the first legal record keeps
+// the id, later duplicates are renumbered with a Repair Receipt, and relations
+// that only know the old id keep pointing at the first record. Only a
+// dangling relation (no object of the typed kind has that id) is repaired.
 //
 // Derived-index rebuilds are silent. Repairs that touch persistent project
-// data take a snapshot first, apply inside one storage transaction, and leave
-// a Notification Center message so the user can review the report or restore
-// the snapshot. A failure never leaves a partial write: the in-memory apply
-// is rolled back before anything is saved.
+// data persist the snapshot FIRST, then apply, then persist the desk state,
+// then record the repair — a failure never leaves a modified project without
+// a persisted recovery point.
 
 window.AISystem6DesktopMaintenanceLoaded = true;
 
@@ -34,19 +39,29 @@ const maxMaintenanceSnapshots = 8;
 const maintenanceSnapshotKey = "desktopMaintenanceSnapshots:v1";
 const maintenanceRepairKey = "desktopMaintenanceRepairs:v1";
 
-const relationFieldsByKind = {
-  aliasTarget: "aliasTarget",
-  folderId: "folderId",
-  parentId: "parentId",
-  sourceDocumentId: "sourceDocumentId",
-  sourceFileId: "sourceFileId",
-  sourceReferenceId: "sourceReferenceId",
-  referenceId: "referenceId",
-  sourceChatId: "sourceChatId",
-  parentChatId: "parentChatId",
-  claimCheckId: "claimCheckId",
-  sourceId: "sourceId",
-};
+// Typed relation schema: every relation field names the kind of record it may
+// point at. A relation id is only ever compared against objects of its own
+// kind — string equality across kinds is meaningless and is never remapped.
+const relationTargetKinds = Object.freeze({
+  folderId: "folder",
+  parentId: "folder",
+  parentChatId: "file",
+  sourceChatId: "file",
+  sourceFileId: "file",
+  sourceDocumentId: "file",
+  claimCheckId: "file",
+  referenceId: "reference",
+  sourceReferenceId: "reference",
+});
+
+// aliasTarget carries its own kind on the record ("file" | "scrap" |
+// "reference"); the target kind is read from the record, never guessed.
+const aliasTargetKinds = Object.freeze(["file", "scrap", "reference"]);
+
+function aliasTargetKind(record) {
+  const kind = String(record?.aliasTarget?.kind || "");
+  return aliasTargetKinds.includes(kind) ? kind : "";
+}
 
 function maintenanceCollectionEntries() {
   return [
@@ -64,20 +79,9 @@ function collectionForName(name) {
   return maintenanceCollectionEntries().find((entry) => entry.name === name)?.records || null;
 }
 
-// Every relation field that can point at a record id. Both directions are
-// covered: the id's own record and any record whose field references it.
-const relationFieldNames = [
-  "folderId",
-  "parentId",
-  "sourceDocumentId",
-  "sourceFileId",
-  "sourceReferenceId",
-  "referenceId",
-  "sourceChatId",
-  "parentChatId",
-  "claimCheckId",
-  "sourceId",
-];
+// Every typed relation field plus the aliasTarget envelope. Both directions
+// are covered: the id's own record and any record whose field references it.
+const relationFieldNames = Object.keys(relationTargetKinds);
 
 // A repair receipt records one bounded repair on the record it happened to.
 // previousValue uses a deliberately neutral field name: backup remapping
@@ -106,188 +110,6 @@ function appendRepairReceipt(record, receipt) {
   if (duplicate) return false;
   record.repairReceipts = existing.concat(normalized).slice(-maxRepairReceipts);
   return true;
-}
-
-// Remove a dangling relation id from the active field and keep the old value
-// in a receipt. Bodies, titles, and user notes are never touched.
-function quarantineRelation(record, field, kind) {
-  if (!record || typeof record !== "object") return false;
-  const previousValue = record[field];
-  if (previousValue === undefined || previousValue === null || previousValue === "") return false;
-  appendRepairReceipt(record, {
-    kind,
-    field,
-    previousValue: String(previousValue),
-    action: "quarantined",
-  });
-  delete record[field];
-  return true;
-}
-
-function repairRecordIds(collection, projectId, label) {
-  const fixed = [];
-  const seen = new Set();
-  collection.forEach((item) => {
-    if (item?.projectId !== projectId) return;
-    const id = String(item.id || "");
-    if (!id || seen.has(id)) {
-      appendRepairReceipt(item, {
-        kind: id ? "duplicate-id" : "missing-id",
-        field: "id",
-        previousValue: id,
-        action: "reassigned-id",
-      });
-      item.id = crypto.randomUUID();
-      fixed.push(`${label}:re-id`);
-    } else {
-      seen.add(id);
-    }
-  });
-  return fixed;
-}
-
-function repairFolderParents(projectId) {
-  const fixed = [];
-  const folders = chatFolders.filter((folder) => folder.projectId === projectId);
-  const byId = new Map(folders.map((folder) => [folder.id, folder]));
-  folders.forEach((folder) => {
-    const parent = folder.parentId;
-    if (!parent) return;
-    const parentFolder = byId.get(parent);
-    if (!parentFolder || parentFolder.projectId !== projectId) {
-      appendRepairReceipt(folder, {
-        kind: "orphan-parent",
-        field: "parentId",
-        previousValue: String(parent),
-        action: "moved-to-root",
-      });
-      folder.parentId = null;
-      fixed.push("folder:orphan-parent");
-      return;
-    }
-    const seen = new Set();
-    let cursor = parentFolder;
-    while (cursor && !seen.has(cursor.id)) {
-      if (cursor.id === folder.id) {
-        appendRepairReceipt(folder, {
-          kind: "folder-cycle",
-          field: "parentId",
-          previousValue: String(parent),
-          action: "moved-to-root",
-        });
-        folder.parentId = null;
-        fixed.push("folder:cycle");
-        return;
-      }
-      seen.add(cursor.id);
-      cursor = byId.get(cursor.parentId) || null;
-    }
-  });
-  return fixed;
-}
-
-function repairFolderReferences(projectId) {
-  const fixed = [];
-  const folderIds = new Set(chatFolders.filter((folder) => folder.projectId === projectId).map((folder) => folder.id));
-  [chatFiles, scraps, projectCdItems].forEach((collection) => {
-    collection.forEach((item) => {
-      if (item?.projectId !== projectId || !item.folderId) return;
-      if (!folderIds.has(item.folderId)) {
-        appendRepairReceipt(item, {
-          kind: "orphan-folder",
-          field: "folderId",
-          previousValue: String(item.folderId),
-          action: "moved-to-root",
-        });
-        item.folderId = null;
-        fixed.push("record:orphan-folder");
-      }
-    });
-  });
-  return fixed;
-}
-
-function repairDanglingLinks(projectId) {
-  const fixed = [];
-  const fileIds = new Set(chatFiles.filter((file) => file.projectId === projectId).map((file) => file.id));
-  const referenceIds = new Set(projectReferences.filter((ref) => ref.projectId === projectId).map((ref) => ref.id));
-  chatFiles.forEach((file) => {
-    if (file?.projectId !== projectId) return;
-    ["parentChatId", "sourceChatId", "sourceDocumentId"].forEach((field) => {
-      if (file[field] && !fileIds.has(file[field]) && quarantineRelation(file, field, "dangling-link")) {
-        fixed.push(`file:${field}`);
-      }
-    });
-    if (file.referenceId && !referenceIds.has(file.referenceId) && quarantineRelation(file, "referenceId", "dangling-link")) {
-      fixed.push("file:referenceId");
-    }
-  });
-  scraps.forEach((scrap) => {
-    if (scrap?.projectId !== projectId) return;
-    ["sourceFileId", "sourceDocumentId"].forEach((field) => {
-      if (scrap[field] && !fileIds.has(scrap[field]) && quarantineRelation(scrap, field, "dangling-link")) {
-        fixed.push(`scrap:${field}`);
-      }
-    });
-    ["sourceReferenceId", "referenceId"].forEach((field) => {
-      if (scrap[field] && !referenceIds.has(scrap[field]) && quarantineRelation(scrap, field, "dangling-link")) {
-        fixed.push(`scrap:${field}`);
-      }
-    });
-  });
-  projectCdItems.forEach((item) => {
-    if (item?.projectId !== projectId) return;
-    ["sourceDocumentId", "claimCheckId"].forEach((field) => {
-      if (item[field] && !fileIds.has(item[field]) && quarantineRelation(item, field, "dangling-link")) {
-        fixed.push(`projectCd:${field}`);
-      }
-    });
-  });
-  return fixed;
-}
-
-function repairLiveState() {
-  const fixed = [];
-  const projectIds = new Set(projects.map((project) => project.id));
-  projectIds.forEach((projectId) => {
-    fixed.push(
-      ...repairRecordIds(chatFolders, projectId, "folder"),
-      ...repairRecordIds(chatFiles, projectId, "file"),
-      ...repairRecordIds(scraps, projectId, "scrap"),
-      ...repairRecordIds(projectReferences, projectId, "reference"),
-      ...repairRecordIds(projectCdItems, projectId, "projectCd"),
-      ...repairFolderParents(projectId),
-      ...repairFolderReferences(projectId),
-      ...repairDanglingLinks(projectId)
-    );
-  });
-  // Project CD records are user deliverables and Trash records are recoverable
-  // data. Orphans (records whose project no longer exists) are never deleted:
-  // they are retained with a receipt so the missing ownership stays visible
-  // without guessing which project they belonged to.
-  projectCdItems.forEach((item) => {
-    if (!item || projectIds.has(item.projectId)) return;
-    if (appendRepairReceipt(item, {
-      kind: "orphan-project",
-      field: "projectId",
-      previousValue: String(item.projectId ?? ""),
-      action: "retained",
-    })) {
-      fixed.push("projectCd:orphan");
-    }
-  });
-  trashItems.forEach((item) => {
-    if (!item || projectIds.has(item.projectId)) return;
-    if (appendRepairReceipt(item, {
-      kind: "orphan-project",
-      field: "projectId",
-      previousValue: String(item.projectId ?? ""),
-      action: "retained",
-    })) {
-      fixed.push("trash:orphan");
-    }
-  });
-  return fixed;
 }
 
 // ---- Dry-run planning ------------------------------------------------------
@@ -360,7 +182,7 @@ function planFolderParentRepairs(projectId) {
 function planFolderReferenceRepairs(projectId) {
   const plan = [];
   const folderIds = new Set(chatFolders.filter((folder) => folder.projectId === projectId).map((folder) => folder.id));
-  [chatFiles, scraps, projectCdItems].forEach((collectionName) => {
+  ["chatFiles", "scraps", "projectCdItems"].forEach((collectionName) => {
     const records = collectionForName(collectionName);
     (records || []).forEach((item) => {
       if (item?.projectId !== projectId || !item.folderId) return;
@@ -383,61 +205,51 @@ function planFolderReferenceRepairs(projectId) {
 function planDanglingLinkRepairs(projectId) {
   const plan = [];
   const fileIds = new Set(chatFiles.filter((file) => file.projectId === projectId).map((file) => file.id));
+  const scrapIds = new Set(scraps.filter((scrap) => scrap.projectId === projectId).map((scrap) => scrap.id));
   const referenceIds = new Set(projectReferences.filter((ref) => ref.projectId === projectId).map((ref) => ref.id));
   const fileLinkFields = ["parentChatId", "sourceChatId", "sourceDocumentId"];
+  const planDangling = (record, collection, field, targetKind, previousValue, reason) => {
+    if (!previousValue) return;
+    plan.push({
+      kind: "dangling-link",
+      collection,
+      record,
+      field,
+      targetKind,
+      previousValue: String(previousValue),
+      nextValue: undefined,
+      reason,
+    });
+  };
   chatFiles.forEach((file) => {
     if (file?.projectId !== projectId) return;
     fileLinkFields.forEach((field) => {
       if (file[field] && !fileIds.has(file[field])) {
-        plan.push({
-          kind: "dangling-link",
-          collection: "chatFiles",
-          record: file,
-          field,
-          previousValue: String(file[field]),
-          nextValue: undefined,
-          reason: "file points at a missing project file",
-        });
+        planDangling(file, "chatFiles", field, "file", file[field], "file points at a missing project file");
       }
     });
     if (file.referenceId && !referenceIds.has(file.referenceId)) {
-      plan.push({
-        kind: "dangling-link",
-        collection: "chatFiles",
-        record: file,
-        field: "referenceId",
-        previousValue: String(file.referenceId),
-        nextValue: undefined,
-        reason: "file points at a missing project reference",
-      });
+      planDangling(file, "chatFiles", "referenceId", "reference", file.referenceId, "file points at a missing project reference");
+    }
+    const aliasKind = aliasTargetKind(file);
+    const alias = file.aliasTarget;
+    if (alias && typeof alias === "object" && aliasKind) {
+      const targetIds = aliasKind === "scrap" ? scrapIds : aliasKind === "reference" ? referenceIds : fileIds;
+      if (alias.id && !targetIds.has(alias.id)) {
+        planDangling(file, "chatFiles", "aliasTarget.id", aliasKind, alias.id, `alias points at a missing ${aliasKind}`);
+      }
     }
   });
   scraps.forEach((scrap) => {
     if (scrap?.projectId !== projectId) return;
     ["sourceFileId", "sourceDocumentId"].forEach((field) => {
       if (scrap[field] && !fileIds.has(scrap[field])) {
-        plan.push({
-          kind: "dangling-link",
-          collection: "scraps",
-          record: scrap,
-          field,
-          previousValue: String(scrap[field]),
-          nextValue: undefined,
-          reason: "scrap points at a missing project file",
-        });
+        planDangling(scrap, "scraps", field, "file", scrap[field], "scrap points at a missing project file");
       }
     });
     ["sourceReferenceId", "referenceId"].forEach((field) => {
       if (scrap[field] && !referenceIds.has(scrap[field])) {
-        plan.push({
-          kind: "dangling-link",
-          collection: "scraps",
-          record: scrap,
-          field,
-          previousValue: String(scrap[field]),
-          nextValue: undefined,
-          reason: "scrap points at a missing project reference",
-        });
+        planDangling(scrap, "scraps", field, "reference", scrap[field], "scrap points at a missing project reference");
       }
     });
   });
@@ -445,15 +257,7 @@ function planDanglingLinkRepairs(projectId) {
     if (item?.projectId !== projectId) return;
     ["sourceDocumentId", "claimCheckId"].forEach((field) => {
       if (item[field] && !fileIds.has(item[field])) {
-        plan.push({
-          kind: "dangling-link",
-          collection: "projectCdItems",
-          record: item,
-          field,
-          previousValue: String(item[field]),
-          nextValue: undefined,
-          reason: "Project CD item points at a missing project file",
-        });
+        planDangling(item, "projectCdItems", field, "file", item[field], "Project CD item points at a missing project file");
       }
     });
   });
@@ -465,6 +269,7 @@ function planOrphanRetention() {
   const projectIds = new Set(projects.map((project) => project.id));
   projectCdItems.forEach((item) => {
     if (!item || projectIds.has(item.projectId)) return;
+    if (hasRetentionReceipt(item, String(item.projectId ?? ""))) return;
     plan.push({
       kind: "orphan-project",
       collection: "projectCdItems",
@@ -477,6 +282,7 @@ function planOrphanRetention() {
   });
   trashItems.forEach((item) => {
     if (!item || projectIds.has(item.projectId)) return;
+    if (hasRetentionReceipt(item, String(item.projectId ?? ""))) return;
     plan.push({
       kind: "orphan-project",
       collection: "trashItems",
@@ -490,10 +296,30 @@ function planOrphanRetention() {
   return plan;
 }
 
+// An orphan that already carries a retained receipt for this exact project id
+// is a known, reported situation — re-planning it on every sweep would make
+// maintenance non-idempotent and trigger a pointless save each boot.
+function hasRetentionReceipt(record, projectIdValue) {
+  return (record.repairReceipts || []).some((receipt) =>
+    receipt
+      && receipt.kind === "orphan-project"
+      && receipt.field === "projectId"
+      && String(receipt.previousValue) === String(projectIdValue)
+      && receipt.action === "retained"
+  );
+}
+
 /**
  * Dry run: detect every repair that would touch project data without mutating
- * anything. Returns { items, touchesProjectData, idMapping } where idMapping
- * maps old record ids to the ids that would replace them.
+ * anything. Returns { items, touchesProjectData, relationSchema }.
+ *
+ * A duplicated or missing record id only ever renumbers the affected record
+ * (the first legal record keeps its id; later duplicates get a fresh id and a
+ * Repair Receipt). Relations are never rewritten by string equality: a field
+ * that still carries the old id resolves to the first record that kept it,
+ * which is exactly the conservative meaning the user asked to preserve. The
+ * typed relationSchema is returned so callers and future evidence-based
+ * repairs can reason about what each field may point at.
  */
 function planDesktopMaintenance(projectId) {
   const items = [
@@ -508,56 +334,12 @@ function planDesktopMaintenance(projectId) {
     ...planOrphanRetention(),
   ];
 
-  // Relation rewrites follow from reassigned ids: every record anywhere that
-  // references an old id must be re-pointed to the new id.
-  const idMapping = new Map();
-  items
-    .filter((item) => item.kind === "duplicate-id" || item.kind === "missing-id")
-    .forEach((item) => {
-      idMapping.set(String(item.previousValue || ""), item.nextValue);
-    });
-
-  const relationPlan = [];
-  if (idMapping.size) {
-    maintenanceCollectionEntries().forEach(({ name, records }) => {
-      records.forEach((record) => {
-        if (!record || typeof record !== "object") return;
-        if (record.aliasTarget && typeof record.aliasTarget === "object" && record.aliasTarget.id && idMapping.has(String(record.aliasTarget.id))) {
-          relationPlan.push({
-            kind: "relation-remap",
-            collection: name,
-            record,
-            field: "aliasTarget.id",
-            previousValue: String(record.aliasTarget.id),
-            nextValue: idMapping.get(String(record.aliasTarget.id)),
-            reason: "alias target id reassigned",
-          });
-        }
-        relationFieldNames.forEach((field) => {
-          const value = record[field];
-          if (value === undefined || value === null || value === "") return;
-          if (idMapping.has(String(value))) {
-            relationPlan.push({
-              kind: "relation-remap",
-              collection: name,
-              record,
-              field,
-              previousValue: String(value),
-              nextValue: idMapping.get(String(value)),
-              reason: "relation referenced a reassigned id",
-            });
-          }
-        });
-      });
-    });
-  }
-
   // Orphan retention is global (not project-scoped) and the planner runs per
   // project, so dedupe only those. Every other planned repair is per-record
   // and must survive intact — including two records that share one id.
   const merged = [];
   const orphanSeen = new Set();
-  [...items, ...relationPlan].forEach((item) => {
+  items.forEach((item) => {
     if (item.kind === "orphan-project") {
       const orphanKey = `${item.collection}:${item.previousValue}`;
       if (orphanSeen.has(orphanKey)) return;
@@ -568,7 +350,10 @@ function planDesktopMaintenance(projectId) {
   return {
     items: merged,
     touchesProjectData: merged.length > 0,
-    idMapping,
+    relationSchema: {
+      ...relationTargetKinds,
+      aliasTarget: "aliasTarget.kind",
+    },
   };
 }
 
@@ -686,7 +471,8 @@ async function restoreMaintenanceSnapshot(snapshotId) {
     if (!target) return;
     target.splice(0, target.length, ...records.map((record) => structuredClone(record)));
   });
-  saveDeskState();
+  const saved = await saveDeskState();
+  if (!saved) return false;
   renderDocuments?.();
   renderProjectDisks?.();
   renderScraps?.();
@@ -722,18 +508,6 @@ function applyMaintenancePlan(plan) {
       });
       record.id = item.nextValue;
       oldNewIds.push({ old: String(item.previousValue || ""), new: item.nextValue });
-    } else if (item.kind === "relation-remap") {
-      if (item.field === "aliasTarget.id") {
-        record.aliasTarget.id = item.nextValue;
-      } else {
-        record[item.field] = item.nextValue;
-      }
-      appendRepairReceipt(record, {
-        kind: "relation-remap",
-        field: item.field,
-        previousValue: item.previousValue,
-        action: "remapped",
-      });
     } else if (item.nextValue === undefined) {
       appendRepairReceipt(record, {
         kind: item.kind,
@@ -749,7 +523,11 @@ function applyMaintenancePlan(plan) {
           previousValue: item.previousValue,
         });
       }
-      delete record[item.field];
+      if (item.field === "aliasTarget.id") {
+        record.aliasTarget = null;
+      } else {
+        delete record[item.field];
+      }
     } else {
       record[item.field] = item.nextValue;
       appendRepairReceipt(record, {
@@ -807,7 +585,13 @@ async function runDesktopMaintenance(reason = "event") {
       return;
     }
 
-    // Project data changes: snapshot, apply, persist one transaction, notify.
+    // Project data changes follow a strict durability order:
+    //   plan -> snapshot -> PERSIST snapshot -> confirm -> apply -> persist
+    //   desk state -> save Repair Record -> notify.
+    // If the snapshot cannot be persisted, nothing is repaired. If the desk
+    // state cannot be persisted, the in-memory apply is rolled back. A Repair
+    // Record failure never undoes an already-saved project, but it leaves an
+    // error notification.
     const snapshot = maintenanceSnapshotForPlan(dataPlan, reason);
     if (typeof createDocumentRevision === "function") {
       dataPlan.items
@@ -822,6 +606,14 @@ async function runDesktopMaintenance(reason = "event") {
           });
         });
     }
+    const snapshotSaved = await appendMaintenanceSnapshot(snapshot);
+    if (!snapshotSaved) {
+      pushSystemNotification?.(t("maintenance_snapshot_failed"), {
+        windowName: "notificationCenter",
+        state: "failed",
+      });
+      throw new Error("Desktop maintenance could not persist its pre-repair snapshot; no repairs were applied.");
+    }
     const applied = applyMaintenancePlan(dataPlan);
     const saved = await saveDeskState();
     if (!saved) {
@@ -832,11 +624,31 @@ async function runDesktopMaintenance(reason = "event") {
         if (!target) return;
         target.splice(0, target.length, ...records.map((record) => structuredClone(record)));
       });
+      pushSystemNotification?.(t("maintenance_save_failed"), {
+        windowName: "notificationCenter",
+        state: "failed",
+      });
       throw new Error("Desktop maintenance could not persist its repair; in-memory changes were rolled back.");
     }
-    await appendMaintenanceSnapshot(snapshot);
     const record = buildRepairRecord(dataPlan, snapshot.id, applied);
-    await appendMaintenanceRepairRecord(record);
+    const recordSaved = await appendMaintenanceRepairRecord(record);
+    if (!recordSaved) {
+      // The project is already persisted correctly; only the audit record
+      // failed. Leave an error notification instead of rolling back.
+      renderDocuments?.();
+      renderProjectDisks?.();
+      renderScraps?.();
+      renderTrash?.();
+      renderProjectCd?.();
+      pushSystemNotification?.(t("maintenance_record_failed"), {
+        windowName: "notificationCenter",
+        state: "failed",
+      });
+      console.warn(
+        `[AI System 6] Desktop maintenance (${reason}): repairs persisted, but the Repair Record could not be saved.`
+      );
+      return;
+    }
     renderDocuments?.();
     renderProjectDisks?.();
     renderScraps?.();
@@ -860,57 +672,6 @@ function projectHasIndexableContent(projectId) {
   return chatFiles.some((file) => file.projectId === projectId)
     || scraps.some((scrap) => scrap.projectId === projectId)
     || projectReferences.some((reference) => reference.projectId === projectId);
-}
-
-async function repairDerivedIndexes() {
-  const fixed = [];
-  const queue = window.AISystem6DerivedIndexQueue;
-  if (!queue || typeof queue.getState !== "function") return fixed;
-  const state = queue.getState();
-  const schemaOk = state.schemaVersion === 1;
-  const indexedProjects = new Set(Object.values(state.sources || {}).map((source) => source.projectId));
-  const projectsNeedingBuild = projects
-    .map((project) => project.id)
-    .filter((projectId) => projectHasIndexableContent(projectId) && !indexedProjects.has(projectId));
-  const staleSources = Object.values(state.sources || {})
-    .filter((source) => Object.values(source.products || {}).some((product) => product.stale));
-  if (!schemaOk || projectsNeedingBuild.length) {
-    const rebuildIds = !schemaOk ? projects.map((project) => project.id) : projectsNeedingBuild;
-    rebuildIds.forEach((projectId) => {
-      queue.rebuildProject(projectId, { silent: true });
-      fixed.push("rebuild-index");
-    });
-  } else if (staleSources.length) {
-    queue.afterProjectCommit({ silent: true });
-    fixed.push("resync-index");
-  }
-  return fixed;
-}
-
-async function runDesktopMaintenance(reason = "event") {
-  if (maintenanceRunning) return;
-  maintenanceRunning = true;
-  try {
-    const fixed = [
-      ...repairLiveState(),
-      ...(await repairDerivedIndexes()),
-    ];
-    if (fixed.length) {
-      saveDeskState();
-      renderDocuments?.();
-      renderProjectDisks?.();
-      renderScraps?.();
-      renderTrash?.();
-      renderProjectCd?.();
-    }
-    console.info(
-      `[AI System 6] Desktop maintenance (${reason}): ${fixed.length ? fixed.join(", ") : "nothing needed"}`
-    );
-  } catch (error) {
-    console.warn("Desktop maintenance failed quietly; user data untouched.", error);
-  } finally {
-    maintenanceRunning = false;
-  }
 }
 
 window.AISystem6DesktopMaintenance = Object.freeze({

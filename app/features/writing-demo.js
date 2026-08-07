@@ -521,7 +521,7 @@ async function writingDemoPreflightModel() {
 }
 
 function writingDemoSetButtons(running) {
-  document.querySelectorAll('[data-action="play-writing-demo"]').forEach((button) => {
+  document.querySelectorAll('[data-action="play-writing-demo"], [data-static-finder-action="play-writing-demo"]').forEach((button) => {
     button.textContent = running
       ? (currentLanguage === "zh" ? "停止实战演示" : "Stop Live Demo")
       : t("guide_play_demo");

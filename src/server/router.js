@@ -78,6 +78,9 @@ const handleCmfExportUsdz = lazyHandler(() => require("./routes/cmf-export-usdz.
 const handleCmfRenderViews = lazyHandler(() => require("./routes/cmf-render-views.js"), "./routes/cmf-render-views.js", "handleCmfRenderViews");
 const handleCmfRenderPreview = lazyHandler(() => require("./routes/cmf-render-preview.js"), "./routes/cmf-render-preview.js", "handleCmfRenderPreview");
 const handleSystemMusic = lazyHandler(() => require("./routes/system-music.js"), "./routes/system-music.js", "handleSystemMusic");
+const handleGamdlJobs = lazyHandler(() => require("./routes/gamdl.js"), "./routes/gamdl.js", "handleGamdlJobs");
+const handleGamdlJob = lazyHandler(() => require("./routes/gamdl.js"), "./routes/gamdl.js", "handleGamdlJob");
+const handleGamdlFile = lazyHandler(() => require("./routes/gamdl.js"), "./routes/gamdl.js", "handleGamdlFile");
 
 /**
  * Full local route table. Keep the literal registration pairs intact: feature
@@ -117,6 +120,7 @@ const localExactRoutes = new Map([
   ["POST /api/cmf/render-preview", handleCmfRenderPreview],
   ["GET /api/music/system", handleSystemMusic],
   ["POST /api/music/system", handleSystemMusic],
+  ["POST /api/music/gamdl/jobs", handleGamdlJobs],
 ]);
 
 const publicExactRouteKeys = new Set([
@@ -155,6 +159,8 @@ const localPrefixRoutes = [
   { method: "GET", prefix: "/api/endfield/search", handler: handleEndfieldSearch },
   { method: "POST", prefix: "/api/endfield/search", handler: handleEndfieldSearch },
   { method: "POST", prefix: "/api/endfield/ask", handler: handleEndfieldAsk },
+  { method: "GET", prefix: "/api/music/gamdl/jobs", handler: handleGamdlJob },
+  { method: "GET", prefix: "/api/music/gamdl/files", handler: handleGamdlFile },
 ];
 
 const publicPrefixRouteKeys = new Set([

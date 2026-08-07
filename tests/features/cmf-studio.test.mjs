@@ -203,6 +203,14 @@ test.assertIncludes(cmfStudio, "function isBlackTrim", "the live viewport knows 
 // A lit display is emissive over a black dielectric; at grazing angles that
 // Fresnel term veils the picture in grey under studio lighting.
 test.assertIncludes(cmfStudio, "SCREEN_SPECULAR_INTENSITY", "a lit display damps its dielectric specular so the picture survives off-axis");
+// Apple authors the enclosures as metal, and a metal has no diffuse term: with
+// lights only, every anodised finish collapsed to grey and just the
+// low-metalness parts kept their colour.
+test.assertIncludes(cmfStudio, "scene.environment", "the viewport gives metal something to reflect");
+test.assertIncludes(rendererEntry, "RoomEnvironment", "the renderer bundle ships the environment the metals need");
+// One toolbar row, sized per control rather than per column position.
+test.assertIncludes(styles, "flex-wrap: nowrap", "the toolbar keeps its controls on one line at desktop width");
+test.assertIncludes(styles, ".cmf-control-model", "each chooser carries its own width, so hiding one cannot shift the rest");
 test.assertIncludes(cmfStudio, "material.emissiveMap && \"specularIntensity\" in material", "the damping targets the display, not every surface");
 test.assertIncludes(cmfStudio, "sourceMaterials.some(isBlackTrim)", "live recoloring skips black trim, matching the export");
 // The Neo's parts must own the surface their name promises: the key field is

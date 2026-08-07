@@ -7,7 +7,7 @@ on:
 
 jobs:
   verify:
-    name: npm ci · build · feature tests · public tree
+    name: npm ci · build · tests · identity · checkJs · public tree
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -22,5 +22,60 @@ jobs:
         run: npm run build
       - name: Feature tests
         run: npm test
+      - name: Version identity consistency
+        run: npm run verify:version
+      - name: Frontend checkJs
+        run: npm run verify:checkjs
       - name: Public tree verification
         run: npm run verify:public
+
+  e2e-chromium:
+    name: E2E · Chromium desktop
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: E2E · Chromium desktop
+        run: npx playwright test --config tests/e2e/playwright.config.mjs --project=chromium-desktop
+
+  e2e-webkit:
+    name: E2E · WebKit desktop
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Playwright WebKit
+        run: npx playwright install --with-deps webkit
+      - name: E2E · WebKit desktop
+        run: npx playwright test --config tests/e2e/playwright.config.mjs --project=webkit-desktop
+
+  e2e-iphone:
+    name: E2E · iPhone WebKit
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Playwright WebKit
+        run: npx playwright install --with-deps webkit
+      - name: E2E · iPhone WebKit
+        run: npx playwright test --config tests/e2e/playwright.config.mjs --project=iphone-webkit

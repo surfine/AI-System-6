@@ -528,7 +528,13 @@
     padding: 5px;
   }
 
-  .time-machine-view-switch {
+  /* `.view-switch` (30-surfaces.css) is a later same-specificity rule, so a
+     bare `.time-machine-view-switch` selector cannot override its grid display
+     here — container queries add no specificity. With the container left in
+     flow, its 44px options stretch the nav row to ~50px while the address
+     form's Go button stays 44px. Descendant-scoping the selector lets the
+     switch join the nav grid and the whole row share one 44px height. */
+  .time-machine-navigation .time-machine-view-switch {
     display: contents;
   }
 
@@ -601,6 +607,10 @@
     min-width: 32px;
     height: 32px;
     min-height: 32px;
+    /* Liquid centers the close via top:50% + translateY(-50%). The fixed
+       mobile placement above pairs top with an exact size, so the transform
+       would shove the button half its height out of the tab. */
+    transform: none;
   }
 
   .time-machine-stage {

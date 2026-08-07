@@ -87,6 +87,12 @@ test.assertNotIncludes(css, ".docmap-mm-left .markmap-foreign", "Removed the bro
 // fit + print must wait for the mirror + center pass, not frame the raw one-sided render.
 test.assertIncludes(app, 'docMapLayoutFor() === "balanced" && docMapBalancedPending', "fitDocMapCanvasToView waits for the balanced center pass");
 test.assertIncludes(app, "docMapBalancedReadyPromise", "Print waits for the balanced mirror + center pass before cloning");
+// d3-zoom's default extent reads svg.width.baseVal.value; a root <svg> without
+// width/height attributes defaults to a relative 100% length and throws while
+// a staged window has no resolved layout. Pin absolute pixel attributes.
+test.assertIncludes(app, "function syncDocMapSvgSizeAttributes", "DocMap pins absolute svg size attributes before any zoom fit");
+test.assertIncludes(app, "syncDocMapSvgSizeAttributes(docMapMarkmapInstance)", "fit refreshes the svg size attributes before zooming");
+test.assertIncludes(app, 'syncDocMapSvgSizeAttributes({ svg: { node: () => svg } })', "render pins svg size attributes before creating markmap");
 test.assertIncludes(app, "function buildDocMapPrintHtml", "DocMap builds a dedicated print document");
 test.assertIncludes(app, "function docMapPrintMarkmapCss", "DocMap PDF reuses Markmap CSS from the app");
 test.assertIncludes(app, "document.styleSheets", "DocMap PDF copies the active app stylesheet rules");

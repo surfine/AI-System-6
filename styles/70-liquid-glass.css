@@ -535,6 +535,12 @@ body.use-liquid-glass {
   --glass-lamp-inactive: #d4d5d7;
   --glass-lamp-mark-opacity: 0.62;
   --glass-accent: #0a84ff;
+  /* A focused field stays glass. Classic marks focus with a hard dark frame;
+     glass marks it by lighting the same material — brighter rim, denser fill,
+     one accent halo — so the field never drops back to a black rectangle. */
+  --glass-field-focus-rim: rgba(255, 255, 255, 0.94);
+  --glass-field-focus-fill: rgba(255, 255, 255, 0.42);
+  --glass-field-focus-ring: rgba(0, 122, 255, 0.3);
   --glass-blue: #64d2ff;
   --glass-progress-blue: #0a84ff;
   --glass-progress-accent: #5ac8fa;
@@ -560,6 +566,11 @@ body.use-liquid-glass {
   --clio-chart-focus-shadow:
     0 0 0 3px rgba(10, 132, 255, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  /* Liquid Glass marks the selected cell with the same luminous blue signal the
+     rest of the theme uses. The Classic 2px ink frame reads as a hard black box
+     against the translucent material. */
+  --clio-chart-selected-outline: 1.5px solid rgba(10, 132, 255, 0.62);
+  --clio-chart-selected-outline-offset: -1.5px;
   --clio-chart-solid-fill:
     linear-gradient(180deg, rgba(255, 255, 255, 0.48), rgba(255, 255, 255, 0.08) 48%, rgba(31, 57, 74, 0.12) 49%),
     rgba(92, 130, 154, 0.42);
@@ -1101,6 +1112,8 @@ body.use-liquid-glass {
   --find-path-pane-bg:
     linear-gradient(135deg, rgba(232, 238, 242, 0.12), rgba(235, 241, 247, 0.14)),
     rgba(255, 255, 255, 0.14);
+  --find-path-summary-border: 1px solid rgba(255, 255, 255, 0.52);
+  --docmap-mobile-hint-border: 1px solid rgba(255, 255, 255, 0.5);
   --find-path-results-gap: 8px;
   --find-path-results-padding: 10px;
   --find-path-results-border: 1px solid rgba(16, 17, 20, 0.16);
@@ -1469,6 +1482,10 @@ body.use-liquid-glass {
   --clio-stage-nav-padding-inline: 14px;
   --clio-stage-nav-font-size: 18px;
   --clio-stage-nav-line-height: 1.2;
+  --clio-stage-page-font-family: var(--preview-font);
+  --clio-stage-page-font-size: 14px;
+  --clio-stage-page-font-weight: 590;
+  --clio-stage-page-letter-spacing: 0.01em;
   --clio-stage-view-button-min-height: 36px;
   --clio-stage-view-button-border-color: rgba(255, 255, 255, 0.6);
   --clio-stage-view-button-bg:
@@ -2118,7 +2135,7 @@ body.use-liquid-glass .grow-box:focus-visible::before {
   border-color: rgba(16, 17, 20, 0.62);
 }
 
-body.use-liquid-glass textarea:not(:focus),
+body.use-liquid-glass textarea,
 body.use-liquid-glass input[type="url"],
 body.use-liquid-glass input[type="text"],
 body.use-liquid-glass input[type="password"],
@@ -2165,7 +2182,16 @@ body.use-liquid-glass select:focus,
 body.use-liquid-glass .system-select-button:focus-visible {
   outline: 0;
   outline-offset: 0;
-  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.28), inset 0 1px 0 var(--glass-highlight);
+  border-color: var(--glass-field-focus-rim);
+  /* background-color, not the background shorthand: the select keeps its arrow
+     image, which lives in the same shorthand as the fill. */
+  background-color: var(--glass-field-focus-fill);
+  box-shadow:
+    inset 1.5px -1.5px 1px -1px rgba(255, 255, 255, 0.9),
+    inset -1.5px 1.5px 1px -1px rgba(255, 255, 255, 0.76),
+    inset 0 1px 0 var(--glass-highlight),
+    0 0 0 3px var(--glass-field-focus-ring),
+    0 8px 22px rgba(18, 28, 38, 0.08);
 }
 
 body.use-liquid-glass input[type="checkbox"],

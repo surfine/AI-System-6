@@ -1165,7 +1165,7 @@ function saveClioTalkRunRecord({ chatFile, messageRecord, manifest, status = "co
   if (!project || !chat || !messageRecord) return null;
   const folder = ensureClioTalkRunRecordsFolder();
   const now = new Date().toISOString();
-  const shortTime = now.replace("T", " ").replace(/\.\d{3}Z$/, "Z");
+  const shortTime = now.replace("T", " ").replace(/\.\d{3}Z$/, "");
   const recordData = {
     schemaVersion: 1,
     name: `Run ${shortTime}`,

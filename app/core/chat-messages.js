@@ -1724,20 +1724,29 @@ async function chooseClioTalkUseResult(content, messageRecord) {
     if (!modes.some((mode) => mode.id === selectedMode && mode.available)) {
       selectedMode = modes.find((mode) => mode.available)?.id || "";
     }
+    // Write method as one segmented row + a single contextual help line:
+    // the previous per-mode radio rows with their own help text made the
+    // dialog read as two stacked choice lists.
+    const segmented = document.createElement("div");
+    segmented.className = "finder-operation-modes";
+    const activeMode = modes.find((mode) => mode.id === selectedMode);
     modes.forEach((mode) => {
-      const choice = createClioTalkUseResultChoice(
-        "clio-use-result-mode",
-        mode.id,
-        mode.label,
-        mode.help,
-        { checked: mode.id === selectedMode, disabled: !mode.available }
-      );
-      choice.input.addEventListener("change", () => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = `btn${mode.id === selectedMode ? " default" : ""}`;
+      button.disabled = !mode.available;
+      button.textContent = mode.label;
+      button.addEventListener("click", () => {
+        if (button.disabled) return;
         selectedMode = mode.id;
-        updatePreview();
+        renderModes();
       });
-      modesEl.append(choice.row);
+      segmented.append(button);
     });
+    const help = document.createElement("p");
+    help.className = "finder-operation-mode-help";
+    help.textContent = activeMode?.help || "";
+    modesEl.append(segmented, help);
     updatePreview();
   };
 

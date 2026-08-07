@@ -160,6 +160,12 @@ if (scripts["verify:public"] === "node scripts/verify-public-tree.mjs") {
   fail("verify:public must run scripts/verify-public-tree.mjs");
 }
 
+if (typeof scripts.build === "string" && scripts.build.trim()) {
+  ok(`package.json exposes the build script: ${scripts.build}`);
+} else {
+  fail('package.json must expose a real "build" script (README and CI both run npm run build)');
+}
+
 for (const required of [
   "scripts/verify-public-tree.mjs",
   "scripts/verify-version-consistency.mjs",

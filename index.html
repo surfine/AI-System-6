@@ -16,7 +16,7 @@
     <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png" />
     <link rel="manifest" href="assets/app-icon/manifest.json" />
-    <link rel="stylesheet" href="styles.bundle.css?v=20260807.4" />
+    <link rel="stylesheet" href="styles.bundle.css?v=20260808.1" />
   </head>
   <body class="is-booting">
     <header class="menu-bar" aria-label="System menu" data-i18n-aria-label="system_menu">
@@ -673,6 +673,9 @@
               </span>
             </label>
             <p class="hint" data-i18n="control_strip_hotkey_hint">Shows or hides the Control Strip without disabling it. A modifier plus a key is required; a bare letter is rejected.</p>
+          </section>
+          <section class="control-section">
+            <h3 data-i18n="control_strip_appearance">Appearance</h3>
             <div class="control-strip-field-row">
               <label class="control-field" for="control-strip-font">
                 <span data-i18n="control_strip_menu_font">Module menu font</span>
@@ -688,8 +691,10 @@
                 <div class="select-wrap"><select id="control-strip-font-size"></select></div>
               </label>
             </div>
-            <div class="control-field">
-              <span data-i18n="control_strip_modules">Modules</span>
+          </section>
+          <section class="control-section">
+            <h3 data-i18n="control_strip_modules">Modules</h3>
+            <div class="control-stack control-strip-modules-stack">
               <ol id="control-strip-module-list" class="control-strip-module-list"></ol>
               <div class="button-row control-strip-module-actions">
                 <button class="btn mini-btn" type="button" id="control-strip-move-up" data-i18n="control_strip_move_up">Move Up</button>
@@ -1331,6 +1336,15 @@
                   <input id="soundscape-local-input" type="file" accept="audio/*" multiple hidden />
                 </div>
                 <div class="soundscape-group-heading">
+                  <h3 data-i18n="soundscape_gamdl_group">Apple Music Link</h3>
+                  <p data-i18n="soundscape_gamdl_note">Paste a song, album, or playlist link. Soundscape asks the Mac's gamdl for a copy you can play offline.</p>
+                </div>
+                <form id="soundscape-gamdl-form" class="soundscape-search-form">
+                  <label class="sr-only" for="soundscape-gamdl-input" data-i18n="soundscape_gamdl_label">Apple Music link</label>
+                  <input id="soundscape-gamdl-input" type="url" autocomplete="off" data-i18n-placeholder="soundscape_gamdl_placeholder" placeholder="https://music.apple.com/..." />
+                  <button class="btn mini-btn" type="submit" id="soundscape-gamdl-submit" data-i18n="soundscape_gamdl_download">Download</button>
+                </form>
+                <div class="soundscape-group-heading">
                   <h3 data-i18n="soundscape_tracks_group">Tracks</h3>
                   <p data-i18n="soundscape_search_hint">Only what is already in your own Music library.</p>
                 </div>
@@ -1669,6 +1683,14 @@
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="project-disk-title" data-i18n="project_disk">Project Hard Disk</h2>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
+        </div>
+        <div class="details-bar">
+          <span id="project-disk-count">0 items</span>
+          <div class="view-controls" data-view-window="projects" aria-label="View" data-i18n-aria-label="view_controls">
+            <button class="view-btn is-active" type="button" data-view="icon" aria-label="Icon view" data-i18n-aria-label="view_icon"></button>
+            <button class="view-btn" type="button" data-view="list" aria-label="List view" data-i18n-aria-label="view_list"></button>
+          </div>
+          <span id="project-disk-location" data-i18n="project_disk">Project Hard Disk</span>
         </div>
         <div class="window-pane project-disk-pane">
           <div class="project-disk-toolbar" hidden>
@@ -2299,8 +2321,6 @@
           <div class="find-path-query-row">
             <input id="find-path-query" type="text" data-i18n-placeholder="searcher_web_placeholder" placeholder="Search the web..." />
             <button class="btn default" type="submit" data-i18n="search">Search</button>
-          </div>
-          <div class="button-row">
             <button class="btn" type="button" id="synthesize-find-path" data-action="synthesize-search-results" data-i18n="synthesize" hidden>Synthesize</button>
           </div>
 
@@ -3486,7 +3506,7 @@ Glass</textarea>
       </section>
     </main>
 
-    <script src="app/generated/build-info.js?v=20260807.4"></script>
-    <script src="app.bundle.js?v=20260807.4"></script>
+    <script src="app/generated/build-info.js?v=20260808.1"></script>
+    <script src="app.bundle.js?v=20260808.1"></script>
   </body>
 </html>

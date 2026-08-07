@@ -268,7 +268,16 @@
 
   function applyCloudActiveState() {
     const active = !!(cloudConfig && cloudConfig.active && cloudConfig.provider && cloudCredentialReady());
+    // "Cloud chosen" tracks the user's route intent (provider + enabled)
+    // even before the credential is validated, so status surfaces never
+    // fall back to presenting the local LM Studio pipeline as the active
+    // route. The cloud panel itself still shows the honest connection state.
+    document.body.classList.toggle("is-cloud-configured", !!(cloudConfig && cloudConfig.active && cloudConfig.provider));
     document.body.classList.toggle("is-cloud-active", active);
+    // The System Status window may already be open; re-render it so the
+    // local LM Studio pipeline panel is replaced by the cloud route the
+    // moment activation (or deactivation) happens, not on the next reopen.
+    if (typeof renderSystemStatus === "function") renderSystemStatus();
     const labelEl = document.querySelector("#cloud-model-label");
     if (active) {
       syncCloudModelContextLength();
@@ -675,7 +684,12 @@
   const btn = document.createElement("button");
   btn.className = "btn control-wide-button";
   btn.type = "button";
-  btn.textContent = typeof t === "function" ? t("cloud_reset_usage") : "Reset Usage";
+  // The bundle boots before the language table is ready, so t() can return
+  // the key itself here. Attach the key to data-i18n instead: the app's
+  // language sweep fills the label once translations load (and on every
+  // language switch), keeping zh/en in sync.
+  btn.dataset.i18n = "cloud_reset_usage";
+  btn.textContent = "";
   btn.style.marginTop = "4px";
   btn.addEventListener("click", function () {
     localStorage.removeItem("ai-system6-cloud-usage");

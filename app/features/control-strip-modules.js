@@ -108,6 +108,7 @@ const controlStripBuiltinModules = Object.freeze([
     labelKey: "control_strip_soundscape",
     icon: (state) => (state.isPlaying ? "pause" : "play"),
     finderIcon: "soundscape",
+    miniPlayer: true,
     defaultOrder: 0,
     defaultEnabled: true,
     openOwner: "soundscape",

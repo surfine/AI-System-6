@@ -968,9 +968,22 @@ async function openWritingFlowWindows() {
   const writingFlowWindows = flowWindowNames
     .map((windowName) => getWindow(windowName))
     .filter(Boolean);
-  tileWindows(writingFlowWindows);
-  requestAnimationFrame(() => tileWindows(writingFlowWindows));
+  // A phone presents one writing surface at a time through the mobile
+  // full-screen shell. Desktop tiling writes inline left/top/width/height
+  // frames that would override that shell (and leave a shaded window as an
+  // off-screen bar), so the route skips tiling in portrait and lets the
+  // focused surface own the screen.
+  if (typeof isPortraitDocumentFlow === "function" && !isPortraitDocumentFlow()) {
+    tileWindows(writingFlowWindows);
+    requestAnimationFrame(() => tileWindows(writingFlowWindows));
+  }
   focusWindow(getWindow("questionSheet"));
+  // focusWindow does not re-run the mobile foreground pass; without this the
+  // last window opened by the loop above keeps the phone screen and the
+  // focused Question Sheet stays hidden behind it.
+  if (typeof syncMobileAppForeground === "function") {
+    syncMobileAppForeground();
+  }
   previewLinkedTeachTextManuscript();
   setStatus(t("linked_writing_flow_opened"));
 }

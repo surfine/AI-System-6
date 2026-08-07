@@ -33,6 +33,9 @@ for (const action of [
 ]) {
   test.assertIncludes(rootBlock, `action: "${action}"`, `root keeps ${action}`);
 }
+for (const action of ["open-rebuild-flow", "play-writing-demo"]) {
+  test.assertNotIncludes(rootBlock, `action: "${action}"`, `${action} stays in Extras instead of the root Applications view`);
+}
 test.assertNotIncludes(rootBlock, "getDropletItems", "Droplets are drop tools, not top-level applications");
 
 const createBlock = app.slice(app.indexOf('applicationsFinderPath === "create"'), app.indexOf("], location);", app.indexOf('applicationsFinderPath === "create"')));
@@ -41,8 +44,13 @@ for (const action of ["open-clio-stage", "open-clio-chart", "open-liquid-cover",
 }
 
 const extrasBlock = app.slice(app.indexOf('applicationsFinderPath === "extras"'), app.indexOf("], location);", app.indexOf('applicationsFinderPath === "extras"')));
-for (const action of ["open-endfield-terminal", "open-bureaucracy-meme", "open-puzzle", "open-memory-cards", "open-time-machine"]) {
+for (const action of ["open-endfield-terminal", "open-bureaucracy-meme", "open-time-machine", "open-rebuild-flow", "play-writing-demo"]) {
   test.assertIncludes(extrasBlock, `action: "${action}"`, `Extras keeps ${action}`);
+}
+// Puzzle and Memory Cards are Desk Accessories: they live in the Apple menu
+// (Utility DA), not in the Applications folder's Extras lab.
+for (const action of ["open-puzzle", "open-memory-cards"]) {
+  test.assertNotIncludes(extrasBlock, `action: "${action}"`, `${action} is a desk accessory, not an Extras application`);
 }
 
 test.assertIncludes(translationsEn, "applications_create: \"Create\"", "EN Create folder label");

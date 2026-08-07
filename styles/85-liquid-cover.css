@@ -138,9 +138,11 @@
   text-wrap: balance;
 }
 
+/* Stretch, not center: the field and the Apply button must read as one control
+   pair, so the row height is shared instead of each control sizing itself. */
 .lc-ask-row {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: 6px;
 }
 
@@ -148,7 +150,7 @@
   flex: 1 1 auto;
   min-width: 0;
   font: inherit;
-  padding: 7px 10px;
+  padding: 4px 10px;
   border: 1px solid var(--ink);
   border-radius: var(--control-radius, 4px);
   background: var(--paper);

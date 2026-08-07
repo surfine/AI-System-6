@@ -1136,9 +1136,11 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
   display: inline-grid;
   place-items: center;
   text-align: center;
-  font-family: var(--mono-font);
-  font-size: var(--system-text-size);
-  font-weight: 700;
+  font-family: var(--clio-stage-page-font-family);
+  font-size: var(--clio-stage-page-font-size);
+  font-weight: var(--clio-stage-page-font-weight);
+  letter-spacing: var(--clio-stage-page-letter-spacing);
+  font-variant-numeric: tabular-nums;
   line-height: 1;
 }
 
@@ -1656,7 +1658,7 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
     max-width: calc(100% - 16px);
     margin: 0 auto;
     padding: 4px 8px;
-    border: 1px solid var(--ink);
+    border: var(--docmap-mobile-hint-border);
     border-radius: var(--control-radius);
     background: var(--paper);
     box-shadow: var(--system-shadow);

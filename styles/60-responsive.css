@@ -1107,6 +1107,16 @@ select:focus {
     width: min(390px, calc(100vw - 28px));
   }
 
+  /* Keep the dictionary window's frame stable across lookups: the result
+     pane scrolls internally while the form and the recent-term row stay
+     pinned, so a second search never resizes or re-centers the whole window
+     (and never clips the recent row when the phone keyboard shrinks the
+     viewport). The result box's grid row is minmax(0, 1fr), so it takes the
+     slack and the recent row always stays visible. */
+  body:not(.is-writer-mode) .window.dictionary-window:not(.is-hidden):not(.is-collapsed) {
+    height: min(440px, var(--mobile-da-max-height, calc(100vh - var(--system-menu-height, 26px) - var(--safe-area-bottom) - 24px)));
+  }
+
   body:not(.is-writer-mode) .window.system-status-window:not(.is-hidden):not(.is-collapsed) {
     width: min(430px, calc(100vw - 28px));
   }
@@ -1139,6 +1149,7 @@ select:focus {
        Writing Spine has no captured window width, so it retains its compact
        116px tab without imposing that size on every application window. */
     width: var(--window-shade-width, 116px);
+    max-width: calc(100vw - 8px);
     height: auto;
     min-height: 0;
     max-height: none;
@@ -1263,6 +1274,20 @@ select:focus {
     --memory-cards-columns: 4;
   }
 
+  /* The menu bar must fit the SuperClock! clock on phones: collapse the
+     cloud-model label to its icon so the full set of menus + model icon +
+     clock stays on screen. */
+  .cloud-model-indicator {
+    min-width: 30px;
+    max-width: 38px;
+    padding-inline: 4px;
+    justify-content: center;
+  }
+
+  #cloud-model-label {
+    display: none;
+  }
+
   .desktop {
     padding: 10px;
     --mobile-work-left: 144px;
@@ -1332,24 +1357,6 @@ select:focus {
   .menu-spacer {
     min-width: 2px;
     flex: 1 1 2px;
-  }
-
-  #clock {
-    display: none;
-  }
-
-  /* Keep the two disk/switcher affordances on-screen after an app contributes
-     its full System 6 menu set. The cloud route remains available through its
-     icon and accessible name; only the redundant provider label collapses. */
-  .cloud-model-indicator {
-    min-width: 30px;
-    max-width: 38px;
-    padding-inline: 4px;
-    justify-content: center;
-  }
-
-  #cloud-model-label {
-    display: none;
   }
 
   .writing-spine-panel {
@@ -1850,8 +1857,17 @@ body.is-writer-mode .system-help-window .system-help-pane {
      only the frontmost real app. Remove the other app windows from portrait
      layout without marking their MultiFinder processes hidden; Desk
      Accessories and system overlays still float above the foreground app. */
-  body.mobile-app-foreground:not(.is-writer-mode) .window:not(.is-mobile-fullscreen):not(.is-mobile-dialog):not(.is-mobile-system-page):not([data-app="accessories"]):not([data-app="system"]) {
+  body.mobile-app-foreground:not(.is-writer-mode) .window:not(.is-mobile-fullscreen):not(.is-mobile-dialog):not(.is-mobile-system-page):not([data-app="accessories"]):not([data-app="system"]):not(.is-collapsed) {
     display: none;
+  }
+
+  /* WindowShade on a phone: a shaded app page keeps its title-bar shade
+     visible and above the next full-screen window so the second double-click
+     can always find it again. Width/position come from the narrow collapse
+     rule above; the window-manager raises the inline z-index to the pinned
+     layer while the shade is up. */
+  body.mobile-app-foreground:not(.is-writer-mode) .window.is-collapsed {
+    display: flex;
   }
 
   /* The full-screen shell keeps the whole System 6 title bar: the close box

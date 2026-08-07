@@ -726,8 +726,6 @@ function getApplicationsItems() {
       { name: t("endfield_terminal_label"), iconId: "endfieldTerminal", icon: "tools-icon", action: "open-endfield-terminal", type: "application", kind: t("application") },
       { name: t("bureaucracy_meme_label"), iconId: "bureaucracyMeme", icon: "tools-icon", action: "open-bureaucracy-meme", type: "application", kind: t("application") },
       { name: t("time_machine_label"), iconId: "timeMachine", icon: "tools-icon", action: "open-time-machine", type: "application", kind: t("application") },
-      { name: t("puzzle"), iconId: "puzzle", icon: "tools-icon", action: "open-puzzle", type: "application", kind: t("application") },
-      { name: t("memory_cards"), iconId: "memoryCards", icon: "tools-icon", action: "open-memory-cards", type: "application", kind: t("application") },
       { name: t("quick_draft_label"), iconId: "quickDraft", icon: "teachtext-icon", action: "open-quick-draft", type: "application", kind: t("application"), workspaceCapability: workspaceCapabilityStudio },
       { name: t("rebuild_article"), iconId: "rebuildArticle", icon: "tools-icon", action: "open-rebuild-flow", type: "application", kind: t("application"), workspaceCapability: workspaceCapabilityStudio },
       { name: t("guide_play_demo"), iconId: "writingDemo", icon: "teachtext-icon", action: "play-writing-demo", type: "application", kind: t("application"), workspaceCapability: workspaceCapabilityStudio },
@@ -1130,6 +1128,14 @@ function applyWritingToolsViewMode() {
   panel.classList.toggle("is-icon-view", writingToolsViewMode !== "small-icon");
 }
 
+function applyDesktopViewMode(mode) {
+  const desktop = document.querySelector(".desktop");
+  if (!desktop) return;
+  const small = normalizeFinderViewMode(mode) === "small-icon";
+  desktop.classList.toggle("is-small-icons", small);
+  desktop.classList.toggle("is-icon-view", !small);
+}
+
 function setActiveViewMode(mode) {
   const active = document.querySelector(".window.is-active:not(.is-hidden)");
   let targetName = viewWindowNames.includes(active?.dataset.window) ? active.dataset.window : null;
@@ -1162,6 +1168,11 @@ function setActiveViewMode(mode) {
 
   if (finderContainerWindowNames.includes(targetName)) {
     finderContainerWindowNames.forEach((name) => toggleViewMode(name, mode));
+    // On the desktop profile the icons on the desk ARE the Finder surface;
+    // the View menu must resize them too, not only the finder windows.
+    if (targetName === "finder") {
+      applyDesktopViewMode(mode);
+    }
     setStatus(t("view_mode_active", t(getFinderViewModeLabelKey(mode))));
     return;
   }
@@ -1171,6 +1182,7 @@ function setActiveViewMode(mode) {
 }
 
 function renderFinder() {
+  applyDesktopViewMode(normalizeFinderViewMode(windowViewModes.finder));
   renderStaticFinderWindow("finder");
 }
 const attachedClipIds = new Set();

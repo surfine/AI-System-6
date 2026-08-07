@@ -47,7 +47,11 @@
      into the wrong track. A row lets each control size itself however many
      are on screen. */
   display: flex;
-  flex-wrap: wrap;
+  /* One line at desktop width; the controls shrink before anything wraps. A
+     wrapping flex box cannot be measured by the pane's auto grid row (its
+     max-content height is the unwrapped single line), so it would overflow
+     onto the preview. Narrow widths hand the job back to a grid below. */
+  flex-wrap: nowrap;
   grid-area: toolbar;
   align-items: end;
   gap: 10px;
@@ -556,6 +560,19 @@
 }
 
 @container cmf-studio (max-width: 820px) {
+  /* Too narrow for one line: a two-column grid wraps predictably and, unlike a
+     flex box, reports its real height to the pane. Equal columns keep it
+     role-agnostic, so hiding the pose chooser cannot shift the rest. */
+  .cmf-setup-panel {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cmf-setup-panel .cmf-autosave-note,
+  .cmf-setup-panel .cmf-button-stack {
+    margin-left: 0;
+  }
+
   .cmf-studio-pane {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto minmax(300px, 1fr) minmax(260px, auto);

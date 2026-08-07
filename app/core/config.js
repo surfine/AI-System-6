@@ -60,8 +60,7 @@ window.AISystem6Config = (() => {
   const devBuildInfoFallback = Object.freeze({
     version: "0.0.0-dev",
     build: "dev",
-    commit: "",
-    generatedAt: "",
+    sourceCommit: "",
   });
 
   function getAppBuildInfo() {

@@ -13,18 +13,21 @@ const e2ePort = Number(process.env.E2E_PORT || 4199);
  *
  * The suite boots the real app through `npm start` and drives the DOM, the
  * IndexedDB persistence layer, and the local HTTP server — not source
- * strings. Browser matrix:
+ * strings. Browser matrix — all three use Playwright's own managed browser
+ * builds (never a system Chrome channel), so local runs and CI runs are the
+ * same binaries:
  *
- *   - chromium-desktop: system Chrome (channel "chrome"), desktop viewport
- *   - webkit-desktop:   WebKit, desktop viewport (requires playwright install
- *                       webkit)
- *   - iphone:           WebKit with an iPhone viewport
+ *   - chromium-desktop: Playwright Chromium, desktop viewport
+ *   - webkit-desktop:   Playwright WebKit, desktop viewport
+ *   - iphone-webkit:    Playwright WebKit with an iPhone viewport (mobile
+ *                       spec only)
  *
  * Run locally with:
+ *   npx playwright install chromium webkit
  *   npx playwright test --config tests/e2e/playwright.config.mjs
  *
- * On machines without system Chrome, install the Playwright chromium build
- * first (`npx playwright install chromium`) and drop the channel override.
+ * CI runs each project as its own job with workers: 1 (kept here too) so a
+ * heavy browser never competes with another for memory.
  */
 
 export default defineConfig({
@@ -43,7 +46,18 @@ export default defineConfig({
   projects: [
     {
       name: "chromium-desktop",
-      use: { ...devices["Desktop Chrome"], channel: "chrome" },
+      use: { ...devices["Desktop Chromium"] },
+      testIgnore: /mobile\.spec\.mjs$/,
+    },
+    {
+      name: "webkit-desktop",
+      use: { ...devices["Desktop Safari"] },
+      testIgnore: /mobile\.spec\.mjs$/,
+    },
+    {
+      name: "iphone-webkit",
+      use: { ...devices["iPhone 13"] },
+      testMatch: /mobile\.spec\.mjs$/,
     },
   ],
   webServer: {

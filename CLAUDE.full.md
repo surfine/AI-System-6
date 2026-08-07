@@ -225,6 +225,9 @@ Server-side: stateless. No server-side database or file persistence.
 | `/api/cmf/render-views` | POST | CMF Studio: Quick Look-style PNG views of a recolored USDZ |
 | `/api/cmf/export-usdz` | POST | CMF Studio: export the recolored USDZ |
 | `/api/music/system` | GET/POST | Local-only allowlisted playback bridge to the macOS Music app for Soundscape |
+| `/api/music/gamdl/jobs` | POST | Soundscape: start a gamdl download of one Apple Music link into the host library (local-only, not registered in public deployments) |
+| `/api/music/gamdl/jobs/:id` | GET | Soundscape: poll a gamdl download job |
+| `/api/music/gamdl/files/:id/...` | GET | Soundscape: stream a downloaded audio file with byte ranges |
 | `/api/endfield/search` | GET/POST | Endfield archive keyword search |
 | `/api/endfield/ask` | POST | Endfield archive RAG query |
 | `/api/version` | GET | Version and build info |
@@ -271,6 +274,10 @@ All other requests fall through to static file serving from the project root. `e
 | `AI_SYSTEM6_TRANSCRIBE_REPAIR_MAX_CHARS` | `2200` | Max transcript length for synchronous local-model repair; longer recordings keep fast deterministic cleanup unless set to `0` |
 | `AI_SYSTEM6_ROOT` | — | App root override for locating `scripts/markitdown-adapter.py` in packaged builds |
 | `AI_SYSTEM6_SEARCH_TIMEOUT_MS` | `8000` | Web search timeout |
+| `AI_SYSTEM6_GAMDL_BIN` | `gamdl` | gamdl executable path for Soundscape Apple Music link downloads |
+| `AI_SYSTEM6_GAMDL_COOKIES_PATH` | `~/.gamdl/cookies.txt` | Netscape-format Apple Music cookies file gamdl uses to download (required; never place cookies in the repo) |
+| `AI_SYSTEM6_GAMDL_LIBRARY` | `~/.ai-system6/soundscape-gamdl` | Where gamdl downloads are stored and served from |
+| `AI_SYSTEM6_GAMDL_PYTHON` | auto (gamdl shebang) | Python interpreter for reading downloaded audio tags via mutagen |
 | `AI_SYSTEM6_WEB_SEARCH_MAX_OUTPUT_TOKENS` | `800` | Max output tokens for a DeepSeek web-search answer; the shared-cloud cap still applies |
 | `AI_SYSTEM6_SKIP_SWIFT_BUILD` | — | Packaging: `1` skips the macOS shell Swift build |
 | `AI_SYSTEM6_ALLOW_STALE_SHELL` | — | Packaging: `1` allows packaging a stale shell binary when the Swift build fails |

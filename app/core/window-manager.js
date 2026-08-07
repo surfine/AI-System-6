@@ -625,6 +625,11 @@ function focusSideAskSource() {
   }[sideAskAnchorAppId];
   const sourceWindow = windowName ? getWindow(windowName) : null;
   if (sourceWindow) focusWindow(sourceWindow);
+  // On a phone the pair cannot share a screen; returning to the source must
+  // also re-foreground it in the single full-screen app shell.
+  if (isPortraitDocumentFlow() || isNarrowViewport()) {
+    syncMobileAppForeground();
+  }
 }
 
 function updateSideAskSourceChrome() {
@@ -2283,6 +2288,7 @@ function getActionAvailability() {
     "cmf-view-back": winName === "cmfStudio" && !!document.querySelector('[data-cmf-view="02-back"]'),
     "cmf-view-side": winName === "cmfStudio" && !!document.querySelector('[data-cmf-view="05-buttons-side"]'),
     "soundscape-choose-local": winName === "soundscape",
+    "soundscape-gamdl-download": winName === "soundscape",
     "soundscape-save-moment": winName === "soundscape" && !!window.AISystem6Soundscape?.canSaveMoment?.(),
     "soundscape-toggle-play": winName === "soundscape" && !!window.AISystem6Soundscape?.hasQueue?.(),
     "soundscape-previous": winName === "soundscape" && !!window.AISystem6Soundscape?.hasQueue?.(),
@@ -2377,11 +2383,20 @@ function updateMenuState() {
   const viewTargetIsWritingTools = !activeViewWindow && writingToolsAreViewTarget();
   const activeViewMode = viewTargetIsWritingTools
     ? normalizeFinderViewMode(writingToolsViewMode)
-    : normalizeFinderViewMode(windowViewModes[activeViewWindow || "projects"]);
+    : normalizeFinderViewMode(windowViewModes[activeViewWindow || "finder"]);
   document.querySelectorAll(".apple-multifinder-about-item, .apple-multifinder-about-separator")
     .forEach((item) => item.classList.toggle("is-hidden", !isMultiFinderMode()));
   document.querySelectorAll("[data-menu-condition]").forEach((element) => {
     element.classList.toggle("is-hidden", !state[element.dataset.menuCondition]);
+  });
+  // Writing-route command submenus follow the active writing surface: the
+  // Writing menu shows only the commands that apply to the window in front,
+  // instead of stacking every route's commands (mostly disabled). When no
+  // route window is active (manuscript or a floating tool), the command
+  // submenus collapse and only "Go To" navigation remains.
+  const activeWritingSurface = document.querySelector(".window.is-active:not(.is-hidden)")?.dataset.window || "";
+  document.querySelectorAll("[data-menu-surface]").forEach((element) => {
+    element.classList.toggle("is-hidden", element.dataset.menuSurface !== activeWritingSurface);
   });
 
   menuActionElements().forEach(btn => {
@@ -3599,8 +3614,13 @@ async function arrangeWindowAssistantSplit(sourceWindowName, options = {}) {
 
   // On a phone one app fills the screen, so there is no pair to lay out — and
   // the frames below are inline styles that would override the full-screen
-  // shell. The ClioTalk session is already wired above; the user reaches it
-  // from the switcher.
+  // shell. The ClioTalk session is already wired above; land on the paired
+  // conversation so SideAsk is discoverable — the assistant's own
+  // sideask-mode-strip ("Paired with TeachText" + End SideAsk) is the bridge
+  // back to the writing surface.
+  if (isPortraitDocumentFlow() || isNarrowViewport()) {
+    focusWindow(refreshedAssistant);
+  }
   if (isPortraitDocumentFlow() || isNarrowViewport()) {
     syncMobileAppForeground();
     return true;
@@ -3894,6 +3914,11 @@ function toggleCollapsed(win) {
     setInlineStyleValue(win, "height", "");
     setInlineStyleValue(win, "max-height", "");
     win.classList.add("is-collapsed");
+    // On a phone the shade floats over the next full-screen app window; pin
+    // its stacking layer so the title bar stays reachable until expanded.
+    if (isPortraitDocumentFlow() || isNarrowViewport()) {
+      setWindowLayerZ(win, windowPinnedZ);
+    }
   } else {
     win.classList.remove("is-collapsed");
     setInlineStyleValue(win, "--window-shade-width", "");
@@ -3901,8 +3926,18 @@ function toggleCollapsed(win) {
     setInlineStyleValue(win, "max-height", win.dataset.shadeRestoreMaxHeight || "");
     delete win.dataset.shadeRestoreHeight;
     delete win.dataset.shadeRestoreMaxHeight;
+    // Expanding must reclaim the foreground: another window may have taken
+    // the phone's full-screen shell while this one was shaded. Focus raises
+    // the z-index so the following foreground sync picks this window again.
+    focusWindow(win);
   }
   keepWindowCornerAfterShade(win, before);
+  // A phone presents one app page at a time: a shaded window must leave the
+  // full-screen shell (it cannot stay "fullscreen" as a 20px title bar) and
+  // the expanded window must reclaim it, otherwise the shade is unreachable.
+  // The mobile CSS keeps the collapsed shade visible and above the foreground
+  // app (60-responsive.css), so the second double-click always finds it.
+  syncMobileAppForeground();
   scheduleWorkingSessionSave?.();
 }
 

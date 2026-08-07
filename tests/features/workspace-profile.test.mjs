@@ -40,6 +40,8 @@ test.assertIncludes(persistence, "normalizeWorkspaceProfile(settings.workspacePr
 test.assertIncludes(persistence, 'hasOwnProperty.call(settings, "workspaceProfile")', "distinguishes an existing user choice from a first visit");
 test.assertIncludes(actions, "isWorkspaceActionAllowed(action)", "blocks direct actions outside the active profile");
 test.assertIncludes(windows, "isWorkspaceWindowAllowed(name)", "blocks direct window opens outside the active profile");
+test.assertMatches(profile, /studioActionNames = new Set\(\[[^\]]*"open-rebuild-flow"/, "open-rebuild-flow stays a writing-studio action (Extras is its home)");
+test.assertIncludes(actions, '"open-rebuild-flow": openRebuildFlow', "the Extras entry opens the rebuild flow directly inside Writing Studio");
 test.assertMatches(windows, /Object\.keys\(availability\)[\s\S]*isWorkspaceActionAllowed/, "projects profile policy into menu availability");
 test.assertIncludes(session, "isWorkspaceWindowAllowed(entry.name)", "does not restore hidden-profile windows");
 test.assertNotIncludes(profile, "localStorage", "does not create a second settings boundary");

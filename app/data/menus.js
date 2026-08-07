@@ -13,7 +13,7 @@ const menuItem = (action, labelKey, shortcutId = "", extra = {}) => ({
   ...extra,
 });
 const menuSeparator = Object.freeze({ type: "separator" });
-const submenu = (labelKey, items) => ({ type: "submenu", labelKey, items });
+const submenu = (labelKey, items, extra = {}) => ({ type: "submenu", labelKey, items, ...extra });
 const menuSectionLabel = (labelKey, menuCondition = "") => ({ type: "section-label", labelKey, menuCondition });
 
 const editBasics = [
@@ -183,20 +183,20 @@ const teachTextMenus = [
       menuItem("quick-draft-copy-markdown", "copy_markdown"),
       menuItem("quick-draft-send-teachtext", "quick_draft_send_teachtext"),
       menuItem("quick-draft-send-review", "quick_draft_send_review"),
-    ]),
+    ], { surface: "quickDraft" }),
     submenu("question_sheet", [
       menuItem("insert-question-template", "insert_question_template"),
       menuItem("organize-question-sheet", "organize_question_sheet"),
       menuItem("generate-outline", "make_outline"),
       menuItem("advance-question-to-outline", "to_outline"),
-    ]),
+    ], { surface: "questionSheet" }),
     submenu("outline", [
       menuItem("add-outline-section", "add_outline_section"),
       menuItem("mingming-outline", "mingming_outline"),
       menuItem("structure-outline", "structure_outline"),
       menuItem("expand-outline", "expand_weak_topic"),
       menuItem("advance-outline-to-drafts", "to_section_drafts"),
-    ]),
+    ], { surface: "outline" }),
     submenu("section_drafts", [
       menuItem("previous-section-draft", "previous_section"),
       menuItem("next-section-draft", "next_section"),
@@ -204,7 +204,7 @@ const teachTextMenus = [
       menuItem("polish-draft", "polish_draft"),
       menuItem("suggest-draft", "suggest_draft"),
       menuItem("advance-drafts-to-review", "to_review"),
-    ]),
+    ], { surface: "sectionDrafts" }),
     submenu("review_desk", [
       menuItem("previous-style-section", "previous_section"),
       menuItem("next-style-section", "next_section"),
@@ -217,7 +217,7 @@ const teachTextMenus = [
       menuItem("review-mingming-handoff", "review_mingming_handoff"),
       menuItem("review-mingming-handoff-backstage", "review_mingming_handoff_backstage"),
       menuItem("review-export", "review_export"),
-    ]),
+    ], { surface: "reviewDesk" }),
     menuSeparator,
     menuItem("open-image-manager", "image_manager"),
     menuItem("generate-marp-open-clio-stage", "generate_marp_open_clio_stage"),
@@ -491,6 +491,7 @@ const cmfStudioMenus = [
 const soundscapeMenus = [
   menu("file", "menu_file", [
     menuItem("soundscape-choose-local", "soundscape_choose_local"),
+    menuItem("soundscape-gamdl-download", "soundscape_gamdl_download"),
     menuItem("soundscape-save-moment", "soundscape_save_moment"),
     menuItem("close-active-window", "close", "close-window"),
   ]),
@@ -601,6 +602,7 @@ function renderApplicationMenuItem(item) {
   if (item.type === "submenu") {
     const wrapper = document.createElement("div");
     wrapper.className = "menu-submenu menu-item-with-sub";
+    if (item.surface) wrapper.dataset.menuSurface = item.surface;
     const trigger = document.createElement("button");
     trigger.type = "button";
     trigger.className = "menu-submenu-trigger";

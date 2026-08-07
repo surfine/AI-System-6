@@ -1674,7 +1674,8 @@ async function loadAppVersion() {
     appVersionInfo = {
       version: String(info.version || getAppBuildInfo().version),
       build: String(info.build || getAppBuildInfo().build),
-      commit: String(info.commit || getAppBuildInfo().commit || ""),
+      sourceCommit: String(info.sourceCommit ?? getAppBuildInfo().sourceCommit ?? ""),
+      snapshotCommit: String(info.snapshotCommit || ""),
       generatedAt: String(info.generatedAt || getAppBuildInfo().generatedAt || ""),
     };
   } catch (error) {
@@ -1758,8 +1759,13 @@ function renderSystemStatus() {
     && mountedChunks.length > 0;
 
   const isCloud = (typeof cloudConfig !== "undefined") && cloudConfig?.active && cloudCredentialReady();
+  const cloudChosen = (typeof cloudConfig !== "undefined") && cloudConfig?.active && cloudConfig?.provider;
 
   renderSystemClock(now);
+  // The Model State panel narrates the local LM Studio pipeline. When a cloud
+  // model is active it is not the route in use, and showing "LM Studio
+  // server … Waiting" next to a working cloud model reads as a broken status.
+  if (modelStatePanelEl) modelStatePanelEl.hidden = cloudChosen;
   if (statusModelEl) statusModelEl.textContent = getLocalModelDisplayName();
   renderLocalModelState();
   renderCloudStatePanel();
@@ -1774,7 +1780,9 @@ function renderSystemStatus() {
     statusContextEl.textContent = t("about_context_summary", projectFiles.length, projectScraps.length, projectRefs.length);
   }
   if (statusModelStateEl) {
-    statusModelStateEl.textContent = isCloud ? t("cloud_model") : modelStateCurrentStep();
+    statusModelStateEl.textContent = isCloud
+      ? t("cloud_model")
+      : (cloudChosen ? t("cloud_model_pending") : modelStateCurrentStep());
   }
   if (statusCurrentTaskEl) {
     statusCurrentTaskEl.textContent = localModelState.running

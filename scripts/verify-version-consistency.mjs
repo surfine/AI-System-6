@@ -12,6 +12,12 @@
  *   - app/core/config.js fallback discipline (no invented release numbers)
  *   - /api/version served by the running server
  *
+ * Identity fields: version (package.json), build (build-info.json), and
+ * sourceCommit (AI_SYSTEM6_SOURCE_COMMIT, passed explicitly by the release
+ * pipeline). The gate deliberately never compares a generated commit against
+ * git HEAD: sourceCommit describes the private source, and the public
+ * snapshot commit is known by git itself, not by the generated files.
+ *
  * The gate intentionally fails on stale generated artifacts: after bumping
  * package.json or build-info.json, run `npm run build:app` so the generated
  * identity and cache-busters are regenerated before verification.
@@ -19,7 +25,7 @@
  *   node scripts/verify-version-consistency.mjs [--root DIR] [--no-server]
  */
 
-import { spawn, spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { dirname, join, resolve } from "node:path";
@@ -125,9 +131,9 @@ assertFile("app/core/config.js");
 assertFile("src/server/lib/build-info.js");
 assertFile("scripts/build-mac-shell-app.mjs");
 
-const requiredFields = ["version", "build", "commit", "generatedAt"];
+const requiredFields = ["version", "build", "sourceCommit"];
 for (const field of requiredFields) {
-  if (typeof generatedJson[field] === "string" && generatedJson[field]) {
+  if (typeof generatedJson[field] === "string") {
     ok(`generated build-info ${field}`);
   } else {
     fail(`generated build-info ${field} missing`);
@@ -152,7 +158,7 @@ if (
   generatedFromJs &&
   generatedFromJs.version === generatedJson.version &&
   generatedFromJs.build === generatedJson.build &&
-  generatedFromJs.commit === generatedJson.commit
+  generatedFromJs.sourceCommit === generatedJson.sourceCommit
 ) {
   ok("generated JS and JSON carry the same identity");
 } else {
@@ -175,21 +181,17 @@ if (!/^\d{8}\.\d+$/.test(String(buildInfo.build || ""))) {
   fail(`build-info build is not a YYYYMMDD.N stamp: ${buildInfo.build}`);
 }
 
-if (existsSync(join(root, ".git"))) {
-  const gitResult = spawnSync("git", ["rev-parse", "--short", "HEAD"], {
-    cwd: root,
-    encoding: "utf8",
-  });
-  const headCommit = String(gitResult.stdout || "").trim();
-  if (headCommit && generatedJson.commit === headCommit) {
-    ok(`generated commit ${generatedJson.commit} === HEAD`);
-  } else if (!headCommit) {
-    warn("could not read git HEAD; commit consistency not checked");
+const pipelineSourceCommit = String(process.env.AI_SYSTEM6_SOURCE_COMMIT || "").trim();
+if (pipelineSourceCommit) {
+  if (generatedJson.sourceCommit === pipelineSourceCommit) {
+    ok(`generated sourceCommit ${generatedJson.sourceCommit} === pipeline AI_SYSTEM6_SOURCE_COMMIT`);
   } else {
-    fail(`generated commit ${generatedJson.commit || "(missing)"} !== HEAD ${headCommit} (rerun npm run build:app)`);
+    fail(`generated sourceCommit ${generatedJson.sourceCommit || "(missing)"} !== pipeline sourceCommit ${pipelineSourceCommit} (rebuild with the same env)`);
   }
+} else if (generatedJson.sourceCommit) {
+  warn(`sourceCommit ${generatedJson.sourceCommit} present without AI_SYSTEM6_SOURCE_COMMIT; consistency with the pipeline is unchecked`);
 } else {
-  warn("no .git directory; commit consistency not checked");
+  ok("no pipeline sourceCommit; dev build carries an empty sourceCommit");
 }
 
 const indexSource = readText("index.html");
@@ -310,10 +312,11 @@ if (!skipServerCheck) {
     const mismatches = [];
     if (liveInfo.version !== generatedJson.version) mismatches.push(`version ${liveInfo.version} !== ${generatedJson.version}`);
     if (liveInfo.build !== generatedJson.build) mismatches.push(`build ${liveInfo.build} !== ${generatedJson.build}`);
+    if (liveInfo.sourceCommit !== generatedJson.sourceCommit) mismatches.push(`sourceCommit ${liveInfo.sourceCommit || ""} !== ${generatedJson.sourceCommit || ""}`);
     if (mismatches.length) {
       fail(`/api/version disagrees with generated identity: ${mismatches.join("; ")}`);
     } else {
-      ok(`/api/version serves ${liveInfo.version} build ${liveInfo.build}`);
+      ok(`/api/version serves ${liveInfo.version} build ${liveInfo.build} source ${liveInfo.sourceCommit || "(dev)"}`);
     }
   } else {
     fail(`server did not answer /api/version in time (${liveError || "no response"})`);

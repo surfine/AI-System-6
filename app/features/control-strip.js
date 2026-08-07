@@ -247,6 +247,12 @@ function enable() {
   stripEnabled = true;
   ensureStripMount();
   buildStripShell();
+  // A phone defaults to the collapsed bottom drawer: record that preference
+  // on enable so the toggle can open it later (collapse is no longer forced
+  // by the viewport in applyStripCollapsedClass).
+  if (isNarrowScreen() && stripPrefs().collapsed !== true) {
+    stripSavePrefs({ collapsed: true });
+  }
   ensureModulesLoaded()
     .then(() => {
       if (!stripEnabled) return;
@@ -397,6 +403,13 @@ function moveStripToolbarFocus(event) {
 function renderModuleButton(descriptor) {
   const state = readModuleState(descriptor);
   if (!state || state.state === "unknown") return null;
+  // The Soundscape mini player is the inline player segment on the desk:
+  // previous / play-pause / next sit directly in the strip, and the track
+  // title still opens the full module menu. Phones keep the plain 40px
+  // drawer button — the drawer's equal-width module row has no room.
+  if (descriptor.miniPlayer && !isNarrowScreen() && state.state === "ready") {
+    return renderMiniPlayer(descriptor, state);
+  }
   const button = document.createElement("button");
   button.type = "button";
   button.className = "control-strip-module";
@@ -416,6 +429,71 @@ function renderModuleButton(descriptor) {
   button.addEventListener("click", (event) => onModuleClick(descriptor, button, event));
   bindModulePointerDrag(button, descriptor.id);
   return button;
+}
+
+function renderMiniPlayer(descriptor, state) {
+  const player = document.createElement("div");
+  player.className = "control-strip-module control-strip-mini-player";
+  player.dataset.controlStripModule = descriptor.id;
+  player.dataset.state = state.state;
+  player.setAttribute("role", "group");
+  player.setAttribute("aria-label", t("control_strip_soundscape"));
+  const prev = document.createElement("button");
+  prev.type = "button";
+  prev.className = "control-strip-mini-control";
+  prev.dataset.miniPlayer = "previous";
+  prev.setAttribute("aria-label", t("control_strip_soundscape_previous"));
+  prev.title = t("control_strip_soundscape_previous");
+  prev.textContent = "‹";
+  const toggle = document.createElement("button");
+  toggle.type = "button";
+  toggle.className = "control-strip-mini-control control-strip-mini-toggle";
+  toggle.dataset.miniPlayer = "toggle-play";
+  toggle.setAttribute("aria-label", t(state.isPlaying ? "control_strip_soundscape_pause" : "control_strip_soundscape_play"));
+  toggle.title = toggle.getAttribute("aria-label");
+  toggle.innerHTML = renderSystemIcon(state.isPlaying ? "pause" : "play", { size: "mini" });
+  const next = document.createElement("button");
+  next.type = "button";
+  next.className = "control-strip-mini-control";
+  next.dataset.miniPlayer = "next";
+  next.setAttribute("aria-label", t("control_strip_soundscape_next"));
+  next.title = t("control_strip_soundscape_next");
+  next.textContent = "›";
+  const title = document.createElement("button");
+  title.type = "button";
+  title.className = "control-strip-mini-title";
+  title.textContent = state.detail || t("control_strip_soundscape_no_track");
+  title.title = title.textContent;
+  title.setAttribute("aria-haspopup", "menu");
+  title.addEventListener("click", (event) => onModuleClick(descriptor, player, event));
+  player.append(prev, toggle, next, title);
+  bindModulePointerDrag(player, descriptor.id);
+  player.addEventListener("click", (event) => {
+    const control = event.target.closest("[data-mini-player]");
+    if (!control) return;
+    event.preventDefault();
+    event.stopPropagation();
+    window.AISystem6Soundscape?.runMenuCommand?.(control.dataset.miniPlayer);
+  });
+  return player;
+}
+
+function updateMiniPlayer(button, descriptor, state) {
+  const toggle = button.querySelector('[data-mini-player="toggle-play"]');
+  if (toggle) {
+    toggle.setAttribute("aria-label", t(state.isPlaying ? "control_strip_soundscape_pause" : "control_strip_soundscape_play"));
+    toggle.title = toggle.getAttribute("aria-label");
+    const holder = toggle.querySelector(".sys-icon");
+    if (holder) {
+      holder.innerHTML = button.ownerDocument.createRange().createContextualFragment(renderSystemIcon(state.isPlaying ? "pause" : "play", { size: "mini" })).firstChild.innerHTML;
+    }
+  }
+  const title = button.querySelector(".control-strip-mini-title");
+  if (title && state.detail) {
+    title.textContent = state.detail;
+    title.title = state.detail;
+  }
+  button.dataset.state = state.state;
 }
 
 function renderModuleGauge(button, descriptor, state) {
@@ -439,6 +517,21 @@ function updateModuleButton(moduleId, button) {
   const state = readModuleState(descriptor);
   if (!state || state.state === "unknown") {
     removeModuleButton(moduleId);
+    return;
+  }
+  const wantsMini = !!descriptor.miniPlayer && !isNarrowScreen() && state.state === "ready";
+  const isMini = button.classList.contains("control-strip-mini-player");
+  if (wantsMini !== isMini) {
+    // Track state or the viewport switched the presentation (plain module
+    // button ↔ inline mini player); swap it in place.
+    const next = renderModuleButton(descriptor);
+    if (next) button.replaceWith(next);
+    syncStripScrollButtons();
+    return;
+  }
+  if (wantsMini) {
+    updateMiniPlayer(button, descriptor, state);
+    syncStripScrollButtons();
     return;
   }
   const iconId = typeof descriptor.icon === "function" ? descriptor.icon(state) : (descriptor.icon || "document");
@@ -571,7 +664,11 @@ function setStripCollapsed(value) {
 
 function applyStripCollapsedClass() {
   if (!stripMount) return;
-  const collapsed = stripPrefs().collapsed === true || isNarrowScreen();
+  // Narrow screens default to the collapsed drawer (onStripViewportChange
+  // writes collapsed: true when the viewport shrinks), but the toggle must
+  // still be able to open it — forcing collapse here made the handle a
+  // one-way switch on phones.
+  const collapsed = stripPrefs().collapsed === true;
   stripMount.classList.toggle("is-collapsed", collapsed);
   const handle = stripMount.querySelector(".control-strip-handle");
   if (handle) {
@@ -669,6 +766,9 @@ function onStripViewportChange() {
   clampStripScrollOffset();
   syncStripGeometry();
   applyStripCollapsedClass();
+  // Desktop ↔ phone resizes switch the Soundscape module between its inline
+  // mini player and the plain drawer button.
+  refreshStrip();
 }
 
 // --- Handle drag (resize / move) -------------------------------------------
@@ -1115,7 +1215,7 @@ function scrollModuleIntoView(moduleId) {
 
 function syncStripScrollButtons() {
   if (!stripMount) return;
-  const collapsed = stripPrefs().collapsed === true || isNarrowScreen();
+  const collapsed = stripPrefs().collapsed === true;
   const back = stripMount.querySelector(".control-strip-scroll-back");
   const forward = stripMount.querySelector(".control-strip-scroll-forward");
   if (!back || !forward) return;

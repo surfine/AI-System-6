@@ -35,6 +35,14 @@ test.assert(
   publicScripts["verify:public"] === "node scripts/verify-public-tree.mjs",
   "public verify:public verifies the tree it runs from"
 );
+test.assert(
+  typeof publicScripts.build === "string" && publicScripts.build.trim().length > 0,
+  "public package.json exposes a real build script (README + CI run npm run build)"
+);
+test.assert(
+  publicScripts.build === "npm run build:app",
+  "the public build script maps to build:app"
+);
 test.assert(!("pkg" in publicPkg), "public package.json drops the pkg packaging config");
 test.assert(
   publicPkg.dependencies && publicPkg.devDependencies && publicPkg.overrides,

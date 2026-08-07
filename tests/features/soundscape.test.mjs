@@ -17,6 +17,8 @@ const app = read("app.js");
 const icons = read("app/core/system-icons.js");
 const router = read("src/server/router.js");
 const systemMusicRoute = read("src/server/routes/system-music.js");
+const gamdlModule = read("src/server/gamdl.js");
+const gamdlRoute = read("src/server/routes/gamdl.js");
 const en = read("app/data/translations-en.js");
 const zh = read("app/data/translations-zh.js");
 
@@ -39,9 +41,10 @@ for (const glyph of ["play", "pause", "previousTrack", "nextTrack", "shuffleTrac
 }
 test.assertNotIncludes(html, 'id="soundscape-play-glyph" aria-hidden="true">\u25b6', "the play key is not a font glyph");
 
-// Listen-only playback. Apple Music stays inside the signed-in macOS Music app;
-// local files stay as revocable session URLs. There is no token or download
-// path.
+// Playback stays inside the browser engine. Apple Music keeps streaming in the
+// signed-in macOS Music app, and local files stay as revocable session URLs.
+// The one download path is the host gamdl bridge: the browser only sends a
+// link, never a cookie or a token.
 test.assertIncludes(source, "const localAudio = new Audio()", "local audio uses the browser playback engine");
 test.assertIncludes(source, "URL.createObjectURL(file)", "local files play without being copied");
 test.assertIncludes(source, "URL.revokeObjectURL(url)", "temporary local playback URLs are released");
@@ -54,9 +57,9 @@ test.assertIncludes(source, 'requestSystemMusic("state")', "the player reads rea
 test.assertIncludes(source, 'runSystemAction("play-pause")', "the main transport controls the Music app");
 test.assertIncludes(source, 'runSystemAction("set-repeat"', "repeat mode is written to the active playback engine");
 test.assertIncludes(source, 'runSystemAction("set-shuffle"', "shuffle is written to the active playback engine");
-test.assertNotIncludes(source, ".download", "Soundscape exposes no download control");
 test.assertNotIncludes(source, "mediaUserToken", "Soundscape does not persist Apple Music user tokens");
 test.assertNotIncludes(source, "developerToken", "the primary player has no developer-token dependency");
+test.assertNotIncludes(source, "cookies.txt", "the browser never names a cookie file");
 test.assertIncludes(router, '["GET /api/music/system", handleSystemMusic]', "the read-only Music state route is local");
 test.assertIncludes(router, '["POST /api/music/system", handleSystemMusic]', "the allowlisted Music command route is local");
 test.assertIncludes(systemMusicRoute, "const ALLOWED_ACTIONS = new Set([", "the system bridge has a closed command vocabulary");
@@ -64,6 +67,41 @@ test.assertIncludes(systemMusicRoute, 'process.platform !== "darwin"', "non-Mac 
 test.assertIncludes(systemMusicRoute, '"/usr/bin/osascript"', "the bridge uses the macOS Music scripting surface");
 test.assertIncludes(systemMusicRoute, '"Cache-Control": "no-store"', "Music state is never cached");
 test.assertNotIncludes(systemMusicRoute, "APPLE_MUSIC_DEVELOPER_TOKEN", "the bridge needs no Apple developer token");
+
+// Apple Music link downloads run on the host through gamdl. The server starts
+// a job, polls it to completion, and streams the finished audio; the queue
+// plays those files like local audio but their URLs survive a reload.
+test.assertIncludes(html, 'id="soundscape-gamdl-form"', "the queue drawer offers the Apple Music link download form");
+test.assertIncludes(html, 'id="soundscape-gamdl-input" type="url"', "the link field is a real URL input");
+test.assertIncludes(html, 'id="soundscape-gamdl-submit"', "the download action is a visible button");
+test.assertIncludes(menus, 'menuItem("soundscape-gamdl-download", "soundscape_gamdl_download")', "the File menu offers the download command");
+test.assertIncludes(source, "function downloadFromAppleMusic(url)", "the download is an explicit user command");
+test.assertIncludes(source, 'source: "gamdl"', "downloaded tracks carry their own queue source");
+test.assertIncludes(source, "state.source = item.source === \"gamdl\" ? \"gamdl\" : \"local\"", "downloaded tracks play through the local audio engine");
+test.assertIncludes(source, "gamdlJobTimer", "the bridge polls one download at a time");
+test.assertIncludes(source, "window.AISystem6LocalLMStudio?.isPublicWebMode?.()", "public-web Soundscape does not attempt host-only downloads");
+test.assertIncludes(source, "gamdl_cookies_missing", "missing host cookies have a specific low-friction message");
+test.assertNotIncludes(source, "cookies.txt", "the browser never holds a cookie file path");
+test.assertIncludes(router, '["POST /api/music/gamdl/jobs", handleGamdlJobs]', "the gamdl job route is registered");
+test.assertIncludes(router, 'prefix: "/api/music/gamdl/jobs"', "the poll route is registered");
+test.assertIncludes(router, 'prefix: "/api/music/gamdl/files"', "the file stream route is registered");
+const publicRouteKeys = router.match(/const publicExactRouteKeys = new Set\(\[([\s\S]*?)\]\);/);
+test.assert(Boolean(publicRouteKeys), "the public route allowlist is declared");
+test.assertNotIncludes(publicRouteKeys?.[1] || "", "gamdl", "gamdl downloads stay host-local, never public");
+test.assertIncludes(gamdlModule, "music.apple.com", "the URL allowlist names Apple Music");
+test.assertIncludes(gamdlModule, "randomUUID()", "each download job owns a unique id");
+test.assertIncludes(gamdlModule, '"--no-config-file"', "gamdl runs with deterministic flags");
+test.assertIncludes(gamdlModule, '"--cookies-path"', "the cookies path is passed explicitly");
+test.assertIncludes(gamdlModule, "AI_SYSTEM6_GAMDL_COOKIES_PATH", "the host cookie path comes from the server environment");
+test.assertIncludes(gamdlModule, "candidate.startsWith(`${base}${path.sep}`)", "downloaded file paths are traversal-guarded");
+test.assertIncludes(gamdlRoute, "createReadStream(filePath", "downloaded audio streams from disk");
+test.assertIncludes(gamdlRoute, '"Accept-Ranges": "bytes"', "downloaded audio serves byte ranges");
+test.assertIncludes(gamdlRoute, "decodeURIComponent(part)", "file paths are decoded one segment at a time");
+test.assertNotIncludes(gamdlRoute, "shell: true", "gamdl never runs through a shell");
+test.assertIncludes(en, 'soundscape_gamdl_download: "Download"', "English download copy exists");
+test.assertIncludes(zh, 'soundscape_gamdl_download: "下载"', "Chinese download copy exists");
+test.assertIncludes(zh, 'soundscape_gamdl_group: "Apple Music 链接"', "the Chinese download group is explicit");
+test.assertIncludes(zh, "soundscape_gamdl_done:", "the finished-download message is a countable status");
 
 // A real basic player has explicit playback modes and a local queue that can
 // be removed or cleared without pretending to control Music's hidden queue.

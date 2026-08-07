@@ -967,6 +967,12 @@
     display: none;
   }
 
+  /* With the row action gone, the tab group is the only object left in the
+     strip. Center it instead of leaving it pinned to the left edge. */
+  .soundscape-switch {
+    justify-content: center;
+  }
+
   .soundscape-panel {
     padding: 10px;
   }

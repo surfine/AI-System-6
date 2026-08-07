@@ -3,8 +3,10 @@
 // - app/generated/build-info.js (browser), app/generated/build-info.json
 //   (server + native shell) and index.html ?v= cache-busters are all stamped
 //   by scripts/lib/build-info.mjs during build:app.
-// - package.json / build-info.json are the inputs; the browser never carries
-//   a stale release fallback that pretends to be the current version.
+// - version comes from package.json, build from build-info.json, and
+//   sourceCommit from the explicit AI_SYSTEM6_SOURCE_COMMIT pipeline input.
+//   The generated files never carry a self-referential commit hash and never
+//   churn a generatedAt timestamp on ordinary dev builds.
 // - The consistency gate must fail when any two surfaces disagree, so this
 //   test builds a scratch tree, breaks one source on purpose, and asserts the
 //   gate exits nonzero (and zero when everything agrees).
@@ -44,9 +46,21 @@ test.assert(
 );
 
 const generated = JSON.parse(read("app/generated/build-info.json"));
-for (const field of ["version", "build", "commit", "generatedAt"]) {
+for (const field of ["version", "build"]) {
   test.assert(typeof generated[field] === "string" && generated[field], `generated build-info ${field}`);
 }
+test.assert(
+  typeof generated.sourceCommit === "string",
+  "generated build-info sourceCommit is a string (empty for un-stamped dev builds)"
+);
+test.assert(
+  read("scripts/lib/build-info.mjs").includes("AI_SYSTEM6_SOURCE_COMMIT"),
+  "sourceCommit is taken from the explicit AI_SYSTEM6_SOURCE_COMMIT pipeline input"
+);
+test.assert(
+  !read("scripts/lib/build-info.mjs").includes("rev-parse"),
+  "the identity generator never derives a commit from git HEAD"
+);
 
 test.assert(
   generated.version === pkg.version,
@@ -98,8 +112,12 @@ test.assert(
   "server build-info reads the generated identity"
 );
 test.assert(
-  versionRoute.includes("appCommit") && versionRoute.includes("appGeneratedAt"),
-  "/api/version serves commit + generatedAt"
+  versionRoute.includes("appSourceCommit") && versionRoute.includes("appSnapshotCommit"),
+  "/api/version serves sourceCommit + runtime snapshotCommit"
+);
+test.assert(
+  versionRoute.includes("generatedAt"),
+  "/api/version serves a runtime generatedAt"
 );
 test.assert(
   shellScript.includes("app/generated/build-info.json"),

@@ -5,6 +5,7 @@
   const SCHEMA_VERSION = 2;
   const MAX_SAVED_MOMENTS = 48;
   const SYSTEM_POLL_MS = 1500;
+  const GAMDL_POLL_MS = 1500;
   const REPEAT_MODES = Object.freeze(["off", "all", "one"]);
   const PANELS = Object.freeze(["queue", "style", "saved"]);
   const STYLE_PRESETS = Object.freeze({
@@ -54,6 +55,8 @@
   let styleDragging = false;
   let lastProgressRender = 0;
   let searchResults = [];
+  let gamdlJobTimer = 0;
+  let activeGamdlJobId = "";
   const playerListeners = new Set();
   let playerNotifyFrame = 0;
 
@@ -346,6 +349,7 @@
   function sourceLabel() {
     if (state.source === "system") return translate("soundscape_system_source", "Music on This Mac");
     if (state.source === "local") return translate("soundscape_local_source", "Local Audio");
+    if (state.source === "gamdl") return translate("soundscape_gamdl_source", "Apple Music");
     return translate("soundscape_no_source", "No source");
   }
 
@@ -649,7 +653,7 @@
   }
 
   function updateMediaSession(item) {
-    if (!("mediaSession" in navigator) || state.source !== "local") return;
+    if (!("mediaSession" in navigator) || !["local", "gamdl"].includes(state.source)) return;
     if (!item) {
       navigator.mediaSession.metadata = null;
       return;
@@ -746,7 +750,7 @@
       select.append(title, artist);
       row.append(select);
 
-      if (item.source === "local") {
+      if (item.source !== "system") {
         const remove = document.createElement("button");
         remove.type = "button";
         remove.className = "soundscape-queue-remove";
@@ -814,7 +818,7 @@
   // back to the real source instead of substituting similar music.
   function momentUnavailable(moment = selectedMoment()) {
     if (!moment) return false;
-    if (moment.source === "system") return false;
+    if (moment.source === "system" || moment.source === "gamdl") return false;
     return !moment.queue.some((item) => sessionLocalUrls.get(item.id));
   }
 
@@ -1036,6 +1040,131 @@
     }
   }
 
+  // Apple Music link downloads run on the host through gamdl; the browser
+  // only sends a link and receives finished audio URLs back. No cookies or
+  // tokens ever reach the browser.
+  function gamdlError(error) {
+    const code = error?.code || "";
+    if (code === "gamdl_cookies_missing") {
+      return translate("soundscape_gamdl_cookies_missing", "gamdl needs Apple Music cookies on this Mac.");
+    }
+    if (code === "gamdl_unavailable") {
+      return translate("soundscape_gamdl_unavailable", "gamdl is not installed on this Mac.");
+    }
+    if (code === "gamdl_busy") {
+      return translate("soundscape_gamdl_busy", "Another download is still running.");
+    }
+    if (code === "gamdl_invalid_url") {
+      return translate("soundscape_gamdl_invalid_url", "Only Apple Music links are allowed.");
+    }
+    return translate("soundscape_gamdl_failed", "gamdl could not download that link.");
+  }
+
+  function gamdlItem(item) {
+    return {
+      id: `gamdl-${item.file}`,
+      source: "gamdl",
+      title: item.title || translate("untitled", "Untitled"),
+      artist: item.artist || translate("soundscape_gamdl_source", "Apple Music"),
+      album: item.album || "",
+      artwork: "",
+      duration: Number(item.duration) || 0,
+      url: item.url,
+      unavailable: false,
+    };
+  }
+
+  function finishGamdlForm() {
+    if (gamdlJobTimer) {
+      window.clearInterval(gamdlJobTimer);
+      gamdlJobTimer = 0;
+    }
+    activeGamdlJobId = "";
+    const submit = ui("soundscape-gamdl-submit");
+    const input = ui("soundscape-gamdl-input");
+    if (submit) submit.disabled = false;
+    if (input) input.value = "";
+  }
+
+  async function pollGamdlJob() {
+    if (!activeGamdlJobId) {
+      finishGamdlForm();
+      return;
+    }
+    let data;
+    try {
+      const response = await fetch(`/api/music/gamdl/jobs/${activeGamdlJobId}`, { cache: "no-store" });
+      data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const error = new Error(data.error || "Download job failed.");
+        error.code = data.code || "gamdl_failed";
+        throw error;
+      }
+    } catch (error) {
+      finishGamdlForm();
+      setStatus(gamdlError(error));
+      return;
+    }
+    if (data.status === "running") {
+      setStatus(translate("soundscape_gamdl_started", "Downloading from Apple Music..."));
+      return;
+    }
+    finishGamdlForm();
+    if (data.status === "done" && Array.isArray(data.results) && data.results.length) {
+      if (systemMusicConnected) await requestSystemMusic("pause").catch(() => {});
+      localAudio.pause();
+      revokeLocalQueueUrls();
+      state.source = "gamdl";
+      state.playerState = "stopped";
+      state.queue = data.results.map(gamdlItem);
+      state.currentIndex = 0;
+      state.position = 0;
+      state.muted = false;
+      setActivePanel("queue");
+      setStatus(translate("soundscape_gamdl_done", `${data.results.length} track(s) downloaded to Soundscape.`, data.results.length));
+      await playIndex(0);
+      persist();
+      renderAll();
+      return;
+    }
+    setStatus(data.error || gamdlError({ code: data.code }));
+  }
+
+  async function downloadFromAppleMusic(url) {
+    const link = String(url || "").trim();
+    if (!link) return;
+    if (window.AISystem6LocalLMStudio?.isPublicWebMode?.()) {
+      setStatus(translate("soundscape_gamdl_host_only", "Apple Music link downloads are available on this Mac only."));
+      return;
+    }
+    const submit = ui("soundscape-gamdl-submit");
+    if (submit) submit.disabled = true;
+    setStatus(translate("soundscape_gamdl_started", "Downloading from Apple Music..."));
+    try {
+      const response = await fetch("/api/music/gamdl/jobs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: link }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const error = new Error(data.error || "gamdl could not start the download.");
+        error.code = data.code || "gamdl_failed";
+        throw error;
+      }
+      activeGamdlJobId = data.jobId || "";
+      if (activeGamdlJobId) {
+        if (!gamdlJobTimer) gamdlJobTimer = window.setInterval(pollGamdlJob, GAMDL_POLL_MS);
+        pollGamdlJob();
+      } else {
+        finishGamdlForm();
+      }
+    } catch (error) {
+      finishGamdlForm();
+      setStatus(gamdlError(error));
+    }
+  }
+
   async function chooseLocalFiles(files) {
     const audioFiles = Array.from(files || []).filter((file) => file.type.startsWith("audio/") || /\.(mp3|m4a|aac|wav|aiff|flac|ogg)$/i.test(file.name));
     if (!audioFiles.length) return;
@@ -1076,7 +1205,7 @@
       setStatus(translate("soundscape_local_missing", "Choose the local files again to resume this moment."));
       return false;
     }
-    state.source = "local";
+    state.source = item.source === "gamdl" ? "gamdl" : "local";
     state.currentIndex = index;
     state.playerState = "paused";
     if (localAudio.src !== item.url) localAudio.src = item.url;
@@ -1236,7 +1365,7 @@
   }
 
   async function removeQueueIndex(index) {
-    if (state.source !== "local" || !state.queue[index]) return;
+    if (!["local", "gamdl"].includes(state.source) || !state.queue[index]) return;
     const wasCurrent = index === state.currentIndex;
     const removed = state.queue.splice(index, 1)[0];
     const url = sessionLocalUrls.get(removed.id);
@@ -1260,7 +1389,7 @@
   }
 
   function clearLocalQueue() {
-    if (state.source !== "local") {
+    if (!["local", "gamdl"].includes(state.source)) {
       setStatus(translate("soundscape_system_queue_managed", "Manage the Apple Music queue in Music."));
       return;
     }
@@ -1454,6 +1583,10 @@
       event.preventDefault();
       searchSystemLibrary(ui("soundscape-search-input")?.value);
     });
+    ui("soundscape-gamdl-form")?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      downloadFromAppleMusic(ui("soundscape-gamdl-input")?.value);
+    });
     ui("soundscape-search-results")?.addEventListener("click", async (event) => {
       const button = event.target.closest("[data-search-index]");
       if (!button) return;
@@ -1643,6 +1776,7 @@
   function runMenuCommand(command) {
     const commands = {
       "choose-local": () => ui("soundscape-local-input")?.click(),
+      "gamdl-download": () => ui("soundscape-gamdl-input")?.focus(),
       "save-moment": saveMoment,
       "toggle-play": togglePlay,
       previous: () => moveTrack(-1),

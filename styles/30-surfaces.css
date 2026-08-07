@@ -1337,6 +1337,14 @@
   text-align: center;
 }
 
+/* The mobile 16px minimum-font rule (60-responsive.css, to stop iOS zooming)
+   would otherwise widen this 130px-wide desk accessory's readout and clip the
+   alarm time on the third page. The alarm clock is a fixed-size native
+   window; its readout keeps the title-size scale instead. */
+.alarm-clock-window .alarm-clock-readout > .alarm-clock-value {
+  font-size: var(--system-title-size);
+}
+
 .alarm-clock-readout > .alarm-clock-value[readonly] {
   cursor: default;
 }
@@ -1555,7 +1563,7 @@ body.alarm-clock-ringing .alarm-clock-menu-icon {
   box-shadow: var(--calculator-display-shadow);
   color: var(--ink);
   text-align: right;
-  font-family: var(--mono-font);
+  font-family: var(--modern-mono-font);
   font-size: 20px;
   line-height: 1;
 }
@@ -1577,7 +1585,7 @@ body.alarm-clock-ringing .alarm-clock-menu-icon {
   background: var(--calculator-key-bg);
   box-shadow: var(--calculator-key-shadow);
   color: var(--calculator-key-fg);
-  font-family: var(--mono-font);
+  font-family: var(--modern-mono-font);
   font-size: 18px;
   line-height: 1;
 }
@@ -1641,7 +1649,7 @@ body.alarm-clock-ringing .alarm-clock-menu-icon {
   border-radius: var(--puzzle-tile-radius);
   background: var(--puzzle-tile-bg);
   color: var(--puzzle-tile-fg);
-  font-family: var(--mono-font);
+  font-family: var(--modern-mono-font);
   font-size: 22px;
   line-height: 1;
   box-shadow: var(--puzzle-tile-shadow);

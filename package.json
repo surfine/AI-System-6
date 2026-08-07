@@ -1,6 +1,6 @@
 {
   "name": "ai-system-6",
-  "version": "1.0.22",
+  "version": "1.0.23",
   "description": "A quiet, intentional AI desktop environment inspired by Macintosh System 6.",
   "license": "MIT",
   "main": "src/server.js",
@@ -9,6 +9,7 @@
     "audit:duplicates": "node scripts/audit-css-duplicates.mjs",
     "audit:floppy": "node scripts/audit-floppy-residue.mjs",
     "audit:liquid-twins": "node scripts/audit-liquid-twins.mjs",
+    "build": "npm run build:app",
     "build:app": "node scripts/build-app-bundle.mjs",
     "build:cmf-renderer-vendor": "node scripts/build-cmf-renderer-vendor.mjs",
     "build:stream-markdown-vendor": "node scripts/build-stream-markdown-vendor.mjs",

@@ -348,8 +348,10 @@
 .endfield-evidence-index {
   display: grid;
   place-items: center;
-  width: 24px;
+  min-width: 24px;
+  width: auto;
   height: 24px;
+  padding-inline: 4px;
   border: var(--endfield-index-border);
   background: var(--endfield-index-bg);
   font-weight: 700;

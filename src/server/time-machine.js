@@ -635,6 +635,32 @@ const TIME_MACHINE_FRAME_CSP =
  */
 function renderTimeMachineFrameDocument(page) {
   const baseUrl = page?.fetchedUrl || page?.url || "about:blank";
+  // Archived and live pages commonly ship lazy images as `data-src` /
+  // `data-srcset` placeholders (a 1x1 gif in `src`) that their own scripts
+  // promote on scroll. This viewer's CSP deliberately blocks every external
+  // script, so those images would otherwise stay 1x1 forever — the "pictures
+  // missing" half of the Time Machine report. This passive sweeper does the
+  // promotion itself: it only copies the real URL into the attribute the
+  // browser already understands; it never executes page code.
+  const lazyMedia = `
+    <script>
+      (() => {
+        const promote = () => {
+          document.querySelectorAll("img[data-src], img[data-srcset], source[data-srcset], video[data-src], video[data-poster]").forEach((node) => {
+            if (node.dataset.srcset) node.setAttribute("srcset", node.dataset.srcset);
+            if (node.dataset.src && node.tagName !== "SOURCE") node.setAttribute("src", node.dataset.src);
+            if (node.tagName === "VIDEO" && node.dataset.poster) node.poster = node.dataset.poster;
+          });
+          // Apple-style lazy art pins a 1x1 gif in a <source data-empty>
+          // (or a gif-only srcset) that outranks the real img src inside
+          // <picture>, so the placeholder must go for the image to show.
+          document.querySelectorAll("picture source[data-empty], video source[data-empty], picture source[srcset^='data:image/gif'], video source[srcset^='data:image/gif']").forEach((source) => source.remove());
+        };
+        if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", promote);
+        else promote();
+      })();
+    </script>
+  `;
   const bridge = `
     <script>
       (() => {
@@ -683,8 +709,8 @@ function renderTimeMachineFrameDocument(page) {
   } else {
     html = `<!doctype html><html><head>${shell}</head><body>${html}</body></html>`;
   }
-  if (/<\/body\s*>/i.test(html)) return html.replace(/<\/body\s*>/i, `${bridge}</body>`);
-  return `${html}${bridge}`;
+  if (/<\/body\s*>/i.test(html)) return html.replace(/<\/body\s*>/i, `${lazyMedia}${bridge}</body>`);
+  return `${html}${lazyMedia}${bridge}`;
 }
 
 function timeMachineError(error) {

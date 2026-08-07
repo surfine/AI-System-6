@@ -1,7 +1,8 @@
 // GET /api/version
 //
-// Returns the same JSON shape as the root server.js so cross-port
-// version comparisons stay meaningful during the migration.
+// Returns version / build / sourceCommit from the generated identity plus the
+// runtime-resolved snapshotCommit and generatedAt. The runtime fields are
+// never baked into git-tracked generated files.
 
 "use strict";
 
@@ -10,7 +11,8 @@ const {
   appName,
   appVersion,
   appBuild,
-  appCommit,
+  appSourceCommit,
+  appSnapshotCommit,
   appGeneratedAt,
 } = require("../lib/build-info.js");
 
@@ -23,7 +25,8 @@ function handleVersion(_req, res) {
     name: appName,
     version: appVersion,
     build: appBuild,
-    commit: appCommit,
+    sourceCommit: appSourceCommit,
+    snapshotCommit: appSnapshotCommit,
     generatedAt: appGeneratedAt,
   });
 }

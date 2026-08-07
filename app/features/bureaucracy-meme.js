@@ -373,7 +373,13 @@
     const zhLineHeight = zhSize * 1.18;
     const enLineHeight = enSize * 1.25;
     const totalHeight = zhLines.length * zhLineHeight + enLines.length * enLineHeight + canvas.height * 0.012;
-    let y = boxY + Math.max(0, (boxH - totalHeight) / 2) + zhSize;
+    // The first baseline offset belongs to the block that actually comes
+    // first: Chinese-only and bilingual captions start at zhSize, but an
+    // English-only caption must start at enSize or the whole block sits a
+    // Chinese line-height too low — and a wrapping English line escapes the
+    // caption box entirely.
+    const firstBaseline = zhLines.length ? zhSize : enSize;
+    let y = boxY + Math.max(0, (boxH - totalHeight) / 2) + firstBaseline;
 
     ctx.textAlign = "center";
     ctx.textBaseline = "alphabetic";
@@ -392,7 +398,9 @@
       y += zhLineHeight;
     });
 
-    y += canvas.height * 0.008;
+    // The gap between the two blocks only exists when both are present; an
+    // English-only caption would otherwise start with an extra gap above it.
+    if (zhLines.length && enLines.length) y += canvas.height * 0.008;
     ctx.font = `700 ${enSize}px Arial, Helvetica, sans-serif`;
     ctx.lineWidth = Math.max(2, Math.round(enSize * 0.12));
     enLines.forEach((line) => {
