@@ -1,5 +1,5 @@
 <!-- canonical-source: CLAUDE.md -->
-<!-- source-sha256: 046b88dd99e6c55ec846bd3ae09d20d59d13a021f7ba36292997961f1c90ccbe -->
+<!-- source-sha256: e7869d42b5a57e6ead8972ecbb9569be1de74a0602c9492c8c546ee878efcf2c -->
 
 # AI System 6 — CLAUDE.md
 
@@ -198,6 +198,12 @@ Outline / Section Drafts / TeachText 是同一份 Markdown 文档的联动视图
   `git branch --show-current` 和 `git status`；没确认 HEAD 是自己那次提交前
   绝不要 `git commit --amend`（并行会话先落地就用 reflog 找回）。会话经验
   沉淀见
+  AGENT-LESSONS.zh-CN.md。
+- **带着过期的版本身份发版。** 每次发版都要升 `package.json` 版本 +
+  `build-info.json` 构建号（`YYYYMMDD.N`）+ RELEASE-NOTES 小节；`build:app`
+  会重写生成的 build-info，所以发版干净树检查前先把它提交并与 HEAD 对齐。
+  新增/删除文件后的首次发版，快照步骤需要 `--accept-new` /
+  `--accept-deletions`。细节见
   AGENT-LESSONS.zh-CN.md。
 - **改了源，忘了重建。** 浏览器加载的是 `app.bundle.js`。任何 `app/` 或 `app.js` 改动后跑
   `npm run build:app`。

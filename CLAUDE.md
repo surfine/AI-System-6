@@ -237,6 +237,12 @@ Living memory loop — when Claude repeatedly trips on something, add a line
   `git commit --amend` without verifying HEAD is your own commit (recover via
   reflog if a parallel session lands first). Session lessons live in
   AGENT-LESSONS.md.
+- **Releasing with a stale version identity.** Every release bumps
+  `package.json` version + `build-info.json` build (`YYYYMMDD.N`) + a
+  RELEASE-NOTES section; `build:app` rewrites generated build-info, so commit
+  it aligned with HEAD before the release clean-tree gate. First releases
+  after adding/removing files need `--accept-new` / `--accept-deletions` at
+  the snapshot step. Details in AGENT-LESSONS.md.
 - **Edit source, forget to rebuild.** The browser loads `app.bundle.js`. Run
   `npm run build:app` after any `app/` or `app.js` edit.
 - **`verify:release` build-stamp failure.** `build-info.json` needs `YYYYMMDD.N`.
