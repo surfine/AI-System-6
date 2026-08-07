@@ -45,19 +45,31 @@ async function openQuestionSheetCommands(page) {
 }
 
 async function waitForVisibleFailure(page) {
-  await page.waitForFunction(
-    () => {
-      const busy = document.body.classList.contains("is-busy");
-      const status = document.querySelector("#status")?.textContent || "";
-      const connection = document.querySelector("#local-connection-status")?.textContent || "";
-      const modal = document.querySelector("#system-modal")?.open ? document.querySelector("#system-modal-message")?.textContent || "" : "";
-      const errorVisible = /Outline generation failed|生成大纲失败|failed|could not|error|无法|失败|出错|rate|server/i.test(
-        `${status} ${connection} ${modal}`
-      );
-      return !busy && errorVisible;
-    },
-    { timeout: 60_000 }
-  );
+  try {
+    await page.waitForFunction(
+      () => {
+        const busy = document.body.classList.contains("is-busy");
+        const status = document.querySelector("#status")?.textContent || "";
+        const connection = document.querySelector("#local-connection-status")?.textContent || "";
+        const modal = document.querySelector("#system-modal")?.open ? document.querySelector("#system-modal-message")?.textContent || "" : "";
+        const errorVisible = /Outline generation failed|生成大纲失败|failed|could not|error|无法|失败|出错|rate|server/i.test(
+          `${status} ${connection} ${modal}`
+        );
+        return !busy && errorVisible;
+      },
+      { timeout: 60_000 }
+    );
+  } catch (error) {
+    const diag = await page.evaluate(() => ({
+      busy: document.body.classList.contains("is-busy"),
+      status: document.querySelector("#status")?.textContent || "",
+      connection: document.querySelector("#local-connection-status")?.textContent || "",
+      modal: document.querySelector("#system-modal")?.open ? document.querySelector("#system-modal-message")?.textContent || "" : "",
+      lang: typeof currentLanguage !== "undefined" ? currentLanguage : "(n/a)",
+    }));
+    console.log("FAILURE-DIAG", JSON.stringify(diag));
+    throw error;
+  }
 }
 
 async function acceptOutlineOverwriteModalIfPresent(page) {
@@ -90,6 +102,14 @@ async function assertRetrySucceeds(page, questions) {
     await page.click("#system-modal-yes");
     await page.waitForSelector("#system-modal", { state: "hidden", timeout: 10_000 });
   }
+  // A failed generation can leave the outline surface covering the Question
+  // Sheet (it was opened for the streaming preview). Raise the Question Sheet
+  // before clicking its command menu.
+  await page.evaluate(() => {
+    if (typeof focusWindow === "function") focusWindow(getWindow("questionSheet"));
+    const win = document.querySelector('[data-window="questionSheet"]');
+    if (win) win.style.zIndex = "9999";
+  });
   await openQuestionSheetCommands(page);
   await acceptOutlineOverwriteModalIfPresent(page);
   await page.click('[data-window="questionSheet"] [data-action="generate-outline"]');

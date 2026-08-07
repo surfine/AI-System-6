@@ -2754,6 +2754,8 @@ window.AISystem6TranslationsEn = {
     quick_draft_adjustment_mask_label: "Lines",
     quick_draft_adjustment_mask_placeholder: "all",
     quick_draft_adjustment_mask_aria: "Mask line ranges, e.g. 3-5",
+    quick_draft_adjustment_move_up: "Move up",
+    quick_draft_adjustment_move_down: "Move down",
     quick_draft_grain_mask: "Mask",
     // --- a11y: accessible-name keys for controls and landmarks ---
     play: "Play",

@@ -538,7 +538,16 @@
 
   function renderAdjustmentLayers(record = activeProjectQuickDraft({ create: false })?.record) {
     if (!refs.form) return;
-    adjustmentLayersSnapshot(record).forEach((layer) => {
+    const layers = adjustmentLayersSnapshot(record);
+    const section = refs.form.querySelector("[data-quick-draft-adjustment-layer]")?.parentElement;
+    if (section) {
+      // The visible stack follows the stored order.
+      layers.forEach((layer) => {
+        const wrapper = section.querySelector(`[data-quick-draft-adjustment-layer="${layer.kind}"]`);
+        if (wrapper) section.append(wrapper);
+      });
+    }
+    layers.forEach((layer, index) => {
       const checkbox = refs.form.querySelector(`[data-quick-draft-adjustment-enabled="${layer.kind}"]`);
       const select = refs.form.querySelector(`[data-quick-draft-adjustment-strength="${layer.kind}"]`);
       const maskInput = refs.form.querySelector(`[data-quick-draft-adjustment-mask="${layer.kind}"]`);
@@ -547,7 +556,28 @@
       if (maskInput) maskInput.value = adjustmentMaskSummary(layer.mask);
       const chip = refs.form.querySelector(`[data-quick-draft-chat-action="${layer.kind}"]`);
       if (chip) chip.disabled = !layer.enabled;
+      const wrapper = refs.form.querySelector(`[data-quick-draft-adjustment-layer="${layer.kind}"]`);
+      if (wrapper) {
+        const up = wrapper.querySelector('[data-quick-draft-adjustment-move][data-direction="-1"]');
+        const down = wrapper.querySelector('[data-quick-draft-adjustment-move][data-direction="1"]');
+        if (up) up.disabled = index === 0;
+        if (down) down.disabled = index === layers.length - 1;
+      }
     });
+  }
+
+  function moveAdjustmentLayer(kind = "", direction = -1) {
+    const layers = adjustmentLayersSnapshot();
+    const index = layers.findIndex((layer) => layer.kind === kind);
+    const target = index + (Number(direction) || -1);
+    if (index < 0 || target < 0 || target >= layers.length) return layers;
+    const next = [...layers];
+    const [layer] = next.splice(index, 1);
+    next.splice(target, 0, layer);
+    saveQuickDraft({ workspace: { adjustmentLayers: next } }, { debounce: false });
+    renderAdjustmentLayers(activeProjectQuickDraft({ create: false })?.record);
+    setQuickDraftStatus(t("quick_draft_adjustment_saved"));
+    return next;
   }
 
   function adjustmentLayerLabelKey(kind = "") {
@@ -557,6 +587,18 @@
       hkrr: "quick_draft_chip_hkrr",
     };
     return labels[kind] || "";
+  }
+
+  function grainMaskEntries(bodyText = "") {
+    const lineCount = String(bodyText || "").split("\n").length;
+    return adjustmentLayersSnapshot()
+      .filter((layer) => layer.enabled)
+      .map((layer) => ({
+        kind: layer.kind,
+        label: t(adjustmentLayerLabelKey(layer.kind)),
+        ranges: adjustmentLayerMaskRanges(layer, lineCount),
+      }))
+      .filter((entry) => entry.ranges.length);
   }
 
   function adjustmentStrengthPromptLine(strength = ADJUSTMENT_DEFAULT_STRENGTH, zh = true) {
@@ -1055,37 +1097,22 @@
     return grainRunsFromGenerations(model, mask.map((present) => (present ? 0 : 1)));
   }
 
-  // Every model pass stores the body it replaced, so the vent log is already a
-  // version chain: dump[0] is the negative, dump[k] is the state after rewrite
-  // k, and the current body is the state after the last one.
-  const GRAIN_MAX_VERSIONS = 12;
+  // Was a negative ever recorded? The timestamp answers it and the anchor text
+  // does not: an empty anchor is a real negative, recorded when the first model
+  // pass ran on a body the writer had not written yet. Testing the text instead
+  // lets a later pass overwrite the negative with the model's own output.
+  function hasRecordedNegative(record = activeProjectQuickDraft({ create: false })?.record) {
+    const workspace = normalizeQuickDraftWorkspace(record?.workspace, record);
+    return Boolean(workspace.humanAnchorUpdatedAt) || Boolean(humanAnchorSnapshot(record));
+  }
 
   function grainVersionChain(record) {
-    const dumps = dumpEntries(intakeSnapshot(record))
-      .map((entry) => String(entry.text || ""))
-      .filter((text) => text.trim());
-    if (!dumps.length) {
-      // An empty anchor with a recorded timestamp is still a real boundary:
-      // the writer had written nothing when the first model pass ran, so every
-      // word that came after belongs to pass 1. Check the timestamp, not the
-      // truthiness of the anchor text.
-      const workspace = normalizeQuickDraftWorkspace(record?.workspace, record);
-      return workspace.humanAnchorUpdatedAt
-        ? { versions: [""], indexes: [0], passes: 1 }
-        : { versions: [], indexes: [], passes: 0 };
-    }
-    const indexes = dumps.map((_, index) => index);
-    if (dumps.length <= GRAIN_MAX_VERSIONS) {
-      return { versions: dumps, indexes, passes: dumps.length };
-    }
-    // The negative is never dropped: the yours/model split depends only on it.
-    // Dropping middle versions can only make an old span's ×n read low.
-    const keep = dumps.length - (GRAIN_MAX_VERSIONS - 1);
-    return {
-      versions: [dumps[0], ...dumps.slice(keep)],
-      indexes: [0, ...indexes.slice(keep)],
-      passes: dumps.length,
-    };
+    const workspace = normalizeQuickDraftWorkspace(record?.workspace, record);
+    return grainChainFromRecordParts({
+      humanAnchor: workspace.humanAnchor,
+      humanAnchorUpdatedAt: workspace.humanAnchorUpdatedAt,
+      dumps: dumpEntries(intakeSnapshot(record)).map((entry) => entry.text),
+    });
   }
 
   function quickDraftGrainReport(record = activeProjectQuickDraft({ create: false })?.record) {
@@ -1099,17 +1126,7 @@
     if (!chain.versions.length) {
       return { ...empty, runs: [{ text: body, generation: 0, source: "author" }], totalChars: grainVisibleLength(body) };
     }
-    const masks = chain.versions.map((version) => grainPresenceMask(version, model));
-    // A span carries the number of model passes that emitted it: the pass that
-    // introduced it, plus every later pass that read it and wrote it out again.
-    // Text that was already in the negative belongs to the writer — generation 0.
-    const generations = model.tokens.map((token, index) => {
-      const found = masks.findIndex((mask) => mask[index]);
-      if (found === 0) return 0;
-      const introduced = found < 0 ? chain.passes : chain.indexes[found];
-      return chain.passes - introduced + 1;
-    });
-    const runs = grainRunsFromGenerations(model, generations);
+    const runs = grainRunsFromGenerations(model, grainGenerations(model, chain));
     let author = 0;
     let rewritten = 0;
     let deepest = 0;
@@ -1142,28 +1159,41 @@
       refs.preview.innerHTML = `<p class="empty-folder-note">${escapeHtml(t("quick_draft_grain_empty"))}</p>`;
       return;
     }
-    const body = report.runs
-      .map((run) => {
-        if (!run.generation) return `<span class="quick-draft-grain-author">${escapeHtml(run.text)}</span>`;
-        // The chip is for stacked passes only. Marking every rewritten span ×1
-        // would put a badge on half the article and say nothing.
-        const chip = run.generation > 1
-          ? `<i class="quick-draft-grain-generation">&times;${run.generation}</i>`
-          : "";
-        return `<span class="quick-draft-grain-model">${escapeHtml(run.text)}${chip}</span>`;
-      })
-      .join("");
+    // The body is rendered line by line so a masked line can carry the layer's
+    // margin marker. The provenance spans stay per token run; only their text
+    // is split at newlines, so the rendered characters are unchanged.
+    const maskEntries = grainMaskEntries(report.body);
+    const maskedLines = new Set();
+    maskEntries.forEach((entry) => entry.ranges.forEach((range) => {
+      for (let line = range.start; line <= range.end; line += 1) maskedLines.add(line);
+    }));
+    const bodyLines = [[]];
+    report.runs.forEach((run) => {
+      const className = run.generation ? "quick-draft-grain-model" : "quick-draft-grain-author";
+      // The chip is for stacked passes only. Marking every rewritten span ×1
+      // would put a badge on half the article and say nothing.
+      const chip = run.generation > 1
+        ? `<i class="quick-draft-grain-generation">&times;${run.generation}</i>`
+        : "";
+      const pieces = escapeHtml(run.text).split("\n");
+      pieces.forEach((piece, index) => {
+        const isLast = index === pieces.length - 1;
+        if (piece) {
+          bodyLines[bodyLines.length - 1].push(`<span class="${className}">${piece}${isLast ? chip : ""}</span>`);
+        } else if (isLast && chip) {
+          bodyLines[bodyLines.length - 1].push(chip);
+        }
+        if (!isLast) bodyLines.push([]);
+      });
+    });
+    const body = bodyLines
+      .map((pieces, lineIndex) => (
+        `<span class="quick-draft-grain-line${maskedLines.has(lineIndex + 1) ? " is-masked" : ""}">${pieces.join("")}</span>`
+      ))
+      .join("\n");
     const note = report.hasAnchor ? "" : `<p class="quick-draft-grain-note">${escapeHtml(t("quick_draft_grain_untouched"))}</p>`;
-    const bodyLineCount = report.body.split("\n").length;
-    const maskSummary = adjustmentLayersSnapshot()
-      .filter((layer) => layer.enabled)
-      .map((layer) => {
-        const ranges = adjustmentLayerMaskRanges(layer, bodyLineCount);
-        return ranges.length
-          ? `${escapeHtml(t(adjustmentLayerLabelKey(layer.kind)))} ${escapeHtml(adjustmentMaskSummary(ranges))}`
-          : "";
-      })
-      .filter(Boolean)
+    const maskSummary = maskEntries
+      .map((entry) => `${escapeHtml(entry.label)} ${escapeHtml(adjustmentMaskSummary(entry.ranges))}`)
       .join(" · ");
     const readout = [
       `<span><b>${Math.round(report.authorRatio * 100)}%</b> ${escapeHtml(t("quick_draft_grain_negative"))}</span>`,
@@ -1718,7 +1748,7 @@
             ventLog: [...(nextIntake.ventLog || []), dumpEntry],
           });
         }
-        if (!humanAnchorSnapshot()) {
+        if (!hasRecordedNegative()) {
           patch.workspace.humanAnchor = previousBody;
           patch.workspace.humanAnchorUpdatedAt = new Date().toISOString();
         }
@@ -1902,7 +1932,7 @@ ${projectContext}`;
           ventLog: [...(intake.ventLog || []), dumpEntry],
         });
       }
-      if (!humanAnchorSnapshot()) {
+      if (!hasRecordedNegative()) {
         patch.workspace.humanAnchor = previousBody;
         patch.workspace.humanAnchorUpdatedAt = new Date().toISOString();
       }
@@ -2763,6 +2793,11 @@ ${projectContext}`;
         const action = delivery.dataset.quickDraftDelivery || "";
         if (action === "teachtext") transferQuickDraftToTeachText();
         if (action === "copy-markdown") copyQuickDraftMarkdown();
+        return;
+      }
+      const move = event.target.closest("[data-quick-draft-adjustment-move]");
+      if (move) {
+        moveAdjustmentLayer(move.dataset.quickDraftAdjustmentMove, Number(move.dataset.direction) || -1);
         return;
       }
       const quickDraftAction = event.target.closest("[data-quick-draft-chat-action]");

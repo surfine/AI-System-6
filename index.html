@@ -16,7 +16,7 @@
     <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png" />
     <link rel="manifest" href="assets/app-icon/manifest.json" />
-    <link rel="stylesheet" href="styles.bundle.css?v=20260808.2" />
+    <link rel="stylesheet" href="styles.bundle.css?v=20260808.3" />
   </head>
   <body class="is-booting">
     <header class="menu-bar" aria-label="System menu" data-i18n-aria-label="system_menu">
@@ -1127,6 +1127,7 @@
                       </section>
                       <section class="quick-draft-command-section" aria-label="Adjustment Layers" data-i18n-aria-label="quick_draft_command_adjustment">
                         <b data-i18n="quick_draft_command_adjustment">Adjustment Layers</b>
+                        <div class="quick-draft-adjustment-layer" data-quick-draft-adjustment-layer="mingming">
                         <label class="quick-draft-adjustment-row">
                           <input type="checkbox" data-quick-draft-adjustment-enabled="mingming" checked />
                           <span data-i18n="quick_draft_chip_mingming">Mingming Pass</span>
@@ -1141,7 +1142,13 @@
                         <div class="quick-draft-adjustment-mask">
                           <span data-i18n="quick_draft_adjustment_mask_label">Lines</span>
                           <input type="text" inputmode="numeric" data-quick-draft-adjustment-mask="mingming" placeholder="all" data-i18n-placeholder="quick_draft_adjustment_mask_placeholder" aria-label="Mingming Pass mask lines" data-i18n-aria-label="quick_draft_adjustment_mask_aria" />
+                          <span class="quick-draft-adjustment-move">
+                            <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="mingming" data-direction="-1" aria-label="Move up" data-i18n-aria-label="quick_draft_adjustment_move_up">▲</button>
+                            <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="mingming" data-direction="1" aria-label="Move down" data-i18n-aria-label="quick_draft_adjustment_move_down">▼</button>
+                          </span>
                         </div>
+                        </div>
+                        <div class="quick-draft-adjustment-layer" data-quick-draft-adjustment-layer="luoluo">
                         <label class="quick-draft-adjustment-row">
                           <input type="checkbox" data-quick-draft-adjustment-enabled="luoluo" checked />
                           <span data-i18n="quick_draft_chip_luoluo">Luoluo Receive</span>
@@ -1156,7 +1163,13 @@
                         <div class="quick-draft-adjustment-mask">
                           <span data-i18n="quick_draft_adjustment_mask_label">Lines</span>
                           <input type="text" inputmode="numeric" data-quick-draft-adjustment-mask="luoluo" placeholder="all" data-i18n-placeholder="quick_draft_adjustment_mask_placeholder" aria-label="Luoluo Receive mask lines" data-i18n-aria-label="quick_draft_adjustment_mask_aria" />
+                          <span class="quick-draft-adjustment-move">
+                            <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="luoluo" data-direction="-1" aria-label="Move up" data-i18n-aria-label="quick_draft_adjustment_move_up">▲</button>
+                            <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="luoluo" data-direction="1" aria-label="Move down" data-i18n-aria-label="quick_draft_adjustment_move_down">▼</button>
+                          </span>
                         </div>
+                        </div>
+                        <div class="quick-draft-adjustment-layer" data-quick-draft-adjustment-layer="hkrr">
                         <label class="quick-draft-adjustment-row">
                           <input type="checkbox" data-quick-draft-adjustment-enabled="hkrr" checked />
                           <span data-i18n="quick_draft_chip_hkrr">HKRR Lift</span>
@@ -1171,6 +1184,11 @@
                         <div class="quick-draft-adjustment-mask">
                           <span data-i18n="quick_draft_adjustment_mask_label">Lines</span>
                           <input type="text" inputmode="numeric" data-quick-draft-adjustment-mask="hkrr" placeholder="all" data-i18n-placeholder="quick_draft_adjustment_mask_placeholder" aria-label="HKRR Lift mask lines" data-i18n-aria-label="quick_draft_adjustment_mask_aria" />
+                          <span class="quick-draft-adjustment-move">
+                            <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="hkrr" data-direction="-1" aria-label="Move up" data-i18n-aria-label="quick_draft_adjustment_move_up">▲</button>
+                            <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="hkrr" data-direction="1" aria-label="Move down" data-i18n-aria-label="quick_draft_adjustment_move_down">▼</button>
+                          </span>
+                        </div>
                         </div>
                       </section>
                       <section class="quick-draft-command-section" aria-label="Quick Draft delivery" data-i18n-aria-label="quick_draft_command_delivery">
@@ -3556,7 +3574,7 @@ Glass</textarea>
       </section>
     </main>
 
-    <script src="app/generated/build-info.js?v=20260808.2"></script>
-    <script src="app.bundle.js?v=20260808.2"></script>
+    <script src="app/generated/build-info.js?v=20260808.3"></script>
+    <script src="app.bundle.js?v=20260808.3"></script>
   </body>
 </html>

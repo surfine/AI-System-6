@@ -1477,6 +1477,7 @@
   --quick-draft-grain-author-fg: var(--ink);
   --quick-draft-grain-model-fg: var(--shade-dark);
   --quick-draft-grain-model-decoration: underline dotted var(--shade-dark);
+  --quick-draft-grain-mask-fg: var(--ink);
   --quick-draft-grain-border: var(--system-control-line) solid var(--ink);
   --quick-draft-grain-generation-border: var(--system-control-line) solid var(--shade-dark);
   --quick-draft-grain-swatch-author: var(--ink);

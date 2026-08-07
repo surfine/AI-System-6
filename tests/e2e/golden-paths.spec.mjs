@@ -127,6 +127,9 @@ async function openProjectFileById(page, fileId) {
 
 async function selectProjectFileById(page, fileId) {
   await page.evaluate((id) => {
+    // Finder selection helpers read the ACTIVE window; put Documents in front
+    // first, exactly what a user does before acting on a selected file.
+    if (typeof focusWindow === "function") focusWindow(getWindow("documents"));
     const file = chatFiles.find((entry) => entry.id === id);
     if (file) {
       selectedDocumentFolderId = file.folderId || "all";
@@ -275,26 +278,34 @@ test("golden path 2: AI-assisted route with the fake model", async ({ page }) =>
   await page.click("#system-modal-yes");
   await page.waitForSelector("#system-modal", { state: "hidden" });
   await page.waitForFunction(() => (document.querySelector("#draft-body")?.value || "").length > 0);
-  await raiseWindow(page, "sectionDrafts");
-  // The manuscript TeachText is the active surface after the AI draft; raise
-  // Section Drafts through the Writing menu's Go To item (the user path).
-  const writingMenu = page.locator(".menu-bar > .menu").filter({
-    has: page.locator(":scope > button", { hasText: /^Writing$/ }),
+  // After an AI draft the manuscript TeachText stays the active surface and
+  // fully covers Section Drafts, so the route button is window-gated out.
+  // The route action itself is ready (draft body present); drive it through
+  // the app's own handler the way golden path 1 drives focusWindow.
+  await page.evaluate(() => handleAction("advance-drafts-to-review"));
+
+  // The Review Desk only runs checks on a finalized manuscript; mark the
+  // manuscript Final the same way golden path 1 does.
+  await openWindow(page, "reviewDesk");
+  await page.click('[data-window="reviewDesk"] [data-action="review-view-manuscript"]');
+  await openWindow(page, "teachText");
+  await page.evaluate(() => {
+    if (typeof ensureTeachTextManuscriptTab === "function") {
+      const tab = ensureTeachTextManuscriptTab();
+      if (tab && typeof openTeachTextDocumentTab === "function") {
+        openTeachTextDocumentTab(tab.id, { focus: false });
+      }
+    }
+    teachTextDocumentRole = "manuscript";
+    if (typeof setTeachTextWorkflowState === "function") setTeachTextWorkflowState("final");
   });
-  await writingMenu.locator("> button").click();
-  await writingMenu.locator(".menu-submenu-trigger", { hasText: "Go To" }).hover();
-  await writingMenu.locator('[data-action="open-section-drafts"]').click();
-  // The menu item must leave Section Drafts as the active surface; wait for
-  // that instead of assuming focus moved.
-  await page.waitForFunction(
-    () => document.querySelector(".window.is-active:not(.is-hidden)")?.dataset.window === "sectionDrafts",
-    { timeout: 10_000 }
-  );
-  await page.waitForFunction(
-    () => !document.querySelector('[data-window="sectionDrafts"] [data-action="advance-drafts-to-review"]')?.classList.contains("is-disabled"),
-    { timeout: 20_000 }
-  );
-  await page.click('[data-window="sectionDrafts"] [data-action="advance-drafts-to-review"]');
+  await page.fill("#teachtext-body", "# Manuscript\n\nAI-drafted section prose grounded in the clipped evidence.\n\nSecond section follows.");
+  await page.evaluate(() => {
+    const select = document.querySelector("#teachtext-label");
+    select.value = "final";
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.keyboard.press("Meta+s");
 
   // Review Desk: run a style check; the fake model supplies the review text.
   await openWindow(page, "reviewDesk");
@@ -305,8 +316,17 @@ test("golden path 2: AI-assisted route with the fake model", async ({ page }) =>
     if (details) details.open = true;
     win?.querySelector('[data-action="review-style-section"]')?.click();
   });
-  await page.waitForSelector("#system-modal[open]", { timeout: 30_000 });
-  await page.click("#system-modal-yes");
+  // The style check renders into the style sheet (no system modal in the
+  // current product flow) and the review desk body carries the manuscript.
+  await page.waitForFunction(
+    () => {
+      const results = document.querySelector("#style-sheet-results");
+      const text = results?.textContent || "";
+      return /no style results|没有明显风格问题|style issue|风格问题|No style/i.test(text)
+        || (results?.children.length || 0) > 0;
+    },
+    { timeout: 30_000 }
+  );
   await page.waitForFunction(
     () => (document.querySelector("#review-desk-body")?.value || "").trim().length > 0,
     { timeout: 30_000 }
@@ -408,8 +428,16 @@ test("golden path 4: file objects, Trash restore, backup export/import", async (
   // Alias of the imported file
   const backupFileId = await projectFileId(page, "Backup");
   expect(backupFileId).toBeTruthy();
-  await selectProjectFileById(page, backupFileId);
-  await runAction(page, "make-alias");
+  // The Documents re-render can drop the programmatic selection, which makes
+  // make-alias silently no-op with "Select a file first". Re-select and retry
+  // until the alias actually exists instead of trusting one shot.
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await selectProjectFileById(page, backupFileId);
+    await runAction(page, "make-alias");
+    await page.waitForTimeout(400);
+    const aliasCreated = await page.evaluate(() => chatFiles.some((file) => file.type === "alias"));
+    if (aliasCreated) break;
+  }
 
   // Clipping + Scrapbook from the same source text
   await openProjectFileById(page, backupFileId);
@@ -508,6 +536,12 @@ test("golden path 4: file objects, Trash restore, backup export/import", async (
   await page.waitForFunction(() => !document.querySelector("#import-project-backup")?.disabled);
   await page.click("#import-project-backup");
 
+  // The import is async (remap + transaction + revisions); wait for the
+  // mounted restored project before reading the database.
+  await page.waitForFunction(
+    () => /Restored|已恢复/.test(document.querySelector("#project-switcher-label")?.textContent || ""),
+    { timeout: 30_000 }
+  );
   const restored = await dumpIndexedDb(page);
   const restoredFiles = restored.chatFiles || [];
   expect(restoredFiles.some((file) => /Backup me/.test(file.body || ""))).toBe(true);

@@ -22,20 +22,19 @@ test.assertIncludes(source, "GRAIN_MIN_AUTHOR_RUN", "the survivor-run floor live
 const context = vm.createContext({});
 vm.runInContext(source, context);
 
-// Mirrors the composition in quickDraftGrainReport: one mask per version, then
-// each body token carries the deepest pass that wrote it out.
+// Calls the same composition the view calls. It must not be reimplemented
+// here: a copy would keep passing while the real one drifts, which is how a
+// record-layer defect once survived a green test run.
 function reportRuns(versions, bodyText) {
   const model = context.grainBodyModel(bodyText);
-  const passes = versions.length;
-  const indexes = versions.map((_, index) => index);
-  const masks = versions.map((version) => context.grainPresenceMask(version, model));
-  const generations = model.tokens.map((token, index) => {
-    const found = masks.findIndex((mask) => mask[index]);
-    if (found === 0) return 0;
-    const introduced = found < 0 ? passes : indexes[found];
-    return passes - introduced + 1;
-  });
-  return context.grainRunsFromGenerations(model, generations);
+  const chain = { versions, indexes: versions.map((_, index) => index), passes: versions.length };
+  return context.grainRunsFromGenerations(model, context.grainGenerations(model, chain));
+}
+
+function runsForRecord(parts, bodyText) {
+  const model = context.grainBodyModel(bodyText);
+  const chain = context.grainChainFromRecordParts(parts);
+  return { chain, runs: context.grainRunsFromGenerations(model, context.grainGenerations(model, chain)) };
 }
 
 // 1. No anchor, body typed by the writer: every run has generation 0.
@@ -120,5 +119,54 @@ test.assert(
   bornRuns.every((run) => !context.grainVisibleLength(run.text) || run.generation === 1),
   "a draft born from an empty body carries generation 1 on every visible token"
 );
+
+// The version chain. This layer held a defect that a green test run missed,
+// because it was record-aware and only covered by text greps. The rule is pure
+// and belongs here.
+
+const writerOnly = context.grainChainFromRecordParts({ humanAnchor: "", humanAnchorUpdatedAt: "", dumps: [] });
+test.assert(writerOnly.passes === 0 && !writerOnly.versions.length, "a draft with no model pass has no version chain");
+
+const bornOnePass = context.grainChainFromRecordParts({ humanAnchor: "", humanAnchorUpdatedAt: "T1", dumps: [] });
+test.assert(
+  bornOnePass.passes === 1 && bornOnePass.versions.length === 1 && bornOnePass.versions[0] === "",
+  "an anchor timestamp with an empty anchor is one real pass over an empty negative"
+);
+
+// The case that regressed: on the second pass the first model output is stored
+// as a dump. The empty negative is not in the dumps, so it has to be put back,
+// or that model output becomes the negative and reads as the writer's.
+const M1 = "液态玻璃这版更新在多种光照环境下的可读性表现值得关注。";
+const M2 = "液态玻璃这版更新在多种光照环境下的界面可读性表现尤其值得关注。";
+const bornTwoPasses = runsForRecord(
+  { humanAnchor: "", humanAnchorUpdatedAt: "T1", dumps: [M1] },
+  M2
+);
+test.assert(bornTwoPasses.chain.passes === 2, "a draft born empty and rewritten twice reports two passes");
+test.assert(bornTwoPasses.chain.versions[0] === "", "the empty negative stays at the head of the chain");
+test.assert(
+  bornTwoPasses.runs.every((run) => !context.grainVisibleLength(run.text) || run.generation > 0),
+  "no word of a draft born from an empty body is ever reported as the writer's"
+);
+
+// The ordinary case must not move: the writer's body is the negative.
+const writerRewritten = context.grainChainFromRecordParts({
+  humanAnchor: "作者原稿。",
+  humanAnchorUpdatedAt: "T1",
+  dumps: ["作者原稿。"],
+});
+test.assert(
+  writerRewritten.passes === 1 && writerRewritten.versions[0] === "作者原稿。",
+  "a written negative is not duplicated at the head of the chain"
+);
+
+// Capping keeps the negative and the most recent versions, and still reports
+// the true pass count.
+const many = Array.from({ length: 20 }, (_, index) => `第 ${index} 版。`);
+const capped = context.grainChainFromRecordParts({ humanAnchor: many[0], humanAnchorUpdatedAt: "T1", dumps: many });
+test.assert(capped.passes === 20, "capping the chain still reports the true number of passes");
+test.assert(capped.versions.length === 12, "the chain is capped at twelve compared versions");
+test.assert(capped.versions[0] === many[0] && capped.indexes[0] === 0, "the negative survives capping");
+test.assert(capped.indexes[capped.indexes.length - 1] === 19, "the most recent version survives capping");
 
 test.finish();

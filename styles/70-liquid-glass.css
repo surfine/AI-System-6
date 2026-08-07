@@ -1678,6 +1678,7 @@ body.use-liquid-glass {
   --quick-draft-divider-border: 1px solid rgba(16, 17, 20, 0.1);
   --quick-draft-grain-model-fg: rgba(16, 17, 20, 0.44);
   --quick-draft-grain-model-decoration: underline dotted rgba(16, 17, 20, 0.36);
+  --quick-draft-grain-mask-fg: rgba(47, 157, 179, 0.55);
   --quick-draft-grain-border: 1px solid rgba(16, 17, 20, 0.1);
   --quick-draft-grain-generation-border: 1px solid rgba(16, 17, 20, 0.26);
   --quick-draft-grain-swatch-author: rgba(16, 17, 20, 0.88);

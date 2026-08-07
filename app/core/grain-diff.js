@@ -195,3 +195,54 @@ function grainRunsFromGenerations(model, generations) {
 function grainVisibleLength(text = "") {
   return String(text || "").replace(/\s+/g, "").length;
 }
+
+// Every model pass stores the body it replaced, so the stored dumps are a
+// version chain: entry 0 is the negative, entry k is the state after pass k,
+// and the current body is the state after the last pass.
+const GRAIN_MAX_VERSIONS = 12;
+
+// The chain is built from record fields, but the rule is pure, so it is
+// testable here rather than only through the draft record.
+//
+// One case has no dump to stand for it. When the first model pass runs on an
+// empty body there is nothing to replace, so nothing is dumped — a dump only
+// exists when there was a body. The negative is then the empty string, and it
+// is recorded by the anchor timestamp alone. It has to be put back at the head
+// of the chain, or the first model output takes its place and the whole of it
+// reads as the writer's own words.
+function grainChainFromRecordParts({ humanAnchor = "", humanAnchorUpdatedAt = "", dumps = [] } = {}) {
+  const stored = dumps.map((text) => String(text || "")).filter((text) => text.trim());
+  const anchor = String(humanAnchor || "");
+  const anchorRecorded = Boolean(humanAnchorUpdatedAt);
+  if (!anchorRecorded && !anchor.trim() && !stored.length) {
+    return { versions: [], indexes: [], passes: 0 };
+  }
+  const bornEmpty = anchorRecorded && !anchor.trim();
+  const versions = bornEmpty
+    ? ["", ...stored]
+    : (stored.length ? stored : [anchor]);
+  const passes = versions.length;
+  const indexes = versions.map((_, index) => index);
+  if (passes <= GRAIN_MAX_VERSIONS) return { versions, indexes, passes };
+  // The negative is never dropped: the yours/model split depends only on it.
+  // Dropping middle versions can only make an old span's depth read low.
+  const keep = passes - (GRAIN_MAX_VERSIONS - 1);
+  return {
+    versions: [versions[0], ...versions.slice(keep)],
+    indexes: [0, ...indexes.slice(keep)],
+    passes,
+  };
+}
+
+// A span carries the number of model passes that wrote it out: the pass that
+// introduced it, plus every later pass that read it and wrote it out again.
+// Text that was already in the negative belongs to the writer — generation 0.
+function grainGenerations(model, chain) {
+  const masks = chain.versions.map((version) => grainPresenceMask(version, model));
+  return model.tokens.map((token, index) => {
+    const found = masks.findIndex((mask) => mask[index]);
+    if (found === 0) return 0;
+    const introduced = found < 0 ? chain.passes : chain.indexes[found];
+    return chain.passes - introduced + 1;
+  });
+}

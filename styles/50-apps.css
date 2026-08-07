@@ -885,6 +885,13 @@
   text-underline-offset: 3px;
 }
 
+/* Masked lines carry the adjustment-layer margin marker. The mask lives as
+   line ranges (a textarea cannot paint spans); in this read-only preview the
+   bar is the honest equivalent of the layer's mask. */
+.quick-draft-grain-line.is-masked {
+  box-shadow: inset 3px 0 0 var(--quick-draft-grain-mask-fg);
+}
+
 .quick-draft-grain-generation {
   margin-left: 3px;
   padding: 0 3px;
@@ -992,6 +999,11 @@
   justify-self: end;
 }
 
+.quick-draft-adjustment-layer {
+  display: grid;
+  gap: 2px;
+}
+
 .quick-draft-adjustment-mask {
   display: flex;
   align-items: center;
@@ -1006,6 +1018,17 @@
   min-width: 0;
   padding: 2px 5px;
   font: inherit;
+}
+
+.quick-draft-adjustment-move {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.quick-draft-adjustment-move .mini-btn {
+  min-width: 20px;
+  padding: 2px 4px;
 }
 
 .quick-draft-command-section:last-child {

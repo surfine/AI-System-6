@@ -2722,6 +2722,8 @@ window.AISystem6TranslationsZh = {
     quick_draft_adjustment_mask_label: "行",
     quick_draft_adjustment_mask_placeholder: "全部",
     quick_draft_adjustment_mask_aria: "蒙版行号区间，如 3-5",
+    quick_draft_adjustment_move_up: "上移",
+    quick_draft_adjustment_move_down: "下移",
     quick_draft_grain_mask: "蒙版",
     // --- keys present in EN but missing in ZH (parity fix) ---
     about_version_value: (version, build) => `构建 ${build}`,

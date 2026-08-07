@@ -453,7 +453,9 @@ test.assertMatches(feature, /renderQuickDraftGrain[\s\S]*quick_draft_grain_passe
 // replaced, so the version chain is read from there rather than newly stored.
 test.assertIncludes(feature, "function grainVersionChain", "The grain view builds a version chain from the stored model-pass dumps");
 test.assertMatches(feature, /grainVersionChain[\s\S]*dumpEntries\(intakeSnapshot\(record\)\)/, "The version chain reuses the vent-log dumps instead of a new store");
-test.assertIncludes(feature, "chain.passes - introduced + 1", "A span counts the model passes that wrote it out");
+test.assertIncludes(grainDiff, "chain.passes - introduced + 1", "A span counts the model passes that wrote it out");
+test.assertNotIncludes(feature, "chain.passes - introduced + 1", "The generation composition lives in grain-diff.js, where it is executed by a test");
+test.assertIncludes(feature, "grainGenerations(model, chain)", "The view calls the shared composition instead of repeating it");
 test.assertIncludes(grainDiff, "function grainCollapseRewritten", "One contiguous rewritten stretch carries one generation badge");
 test.assertIncludes(grainDiff, "Math.max(last.generation, run.generation)", "The collapsed badge reports the deepest pass count, never the shallowest");
 test.assertNotIncludes(feature, "function grainSmoothMask", "The pure diff functions live in grain-diff.js, not the feature module");
@@ -461,25 +463,35 @@ test.assertNotIncludes(feature, "function grainCollapseRewritten", "The pure dif
 test.assertMatches(feature, /run\.generation > 1[\s\S]*quick-draft-grain-generation/, "Only stacked rewrites get a generation badge");
 test.assertNotIncludes(feature, "grainEditable", "The grain view stays read-only");
 
-// A draft written from an empty body must still record the negative boundary.
-// The anchor is set on the first model pass whether or not there was a
-// previous body; the version chain then checks the anchor timestamp rather
-// than the truthiness of the anchor text.
-test.assertMatches(feature, /humanAnchorUpdatedAt[\s\S]{0,120}versions: \[""\], indexes: \[0\], passes: 1/, "An empty anchor with a recorded timestamp still counts as one model pass");
-test.assertIncludes(
+// A draft written from an empty body must still record the negative boundary,
+// and must keep it. Both write paths set the anchor on the first model pass
+// whether or not there was a previous body, and both ask the timestamp — not
+// the anchor text — whether a negative already exists. Asking the text let the
+// second pass overwrite an empty negative with the model's own output, so the
+// model's words were then reported as the writer's.
+test.assertIncludes(feature, "function hasRecordedNegative", "One predicate answers whether a negative was recorded");
+test.assertMatches(feature, /hasRecordedNegative[\s\S]{0,320}workspace\.humanAnchorUpdatedAt/, "The predicate reads the anchor timestamp, not the anchor text");
+test.assertNotIncludes(feature, "if (!humanAnchorSnapshot()) {", "No write path decides the negative from the anchor text");
+test.assertMatches(
   feature,
-  "        }\n        if (!humanAnchorSnapshot()) {\n          patch.workspace.humanAnchor = previousBody;",
-  "The draft path records the anchor even when the previous body is empty"
+  /if \(!hasRecordedNegative\(\)\) \{\s*\n\s*patch\.workspace\.humanAnchor = previousBody;/g,
+  "The write paths record the anchor even when the previous body is empty"
 );
-test.assertIncludes(
-  feature,
-  "      }\n      if (!humanAnchorSnapshot()) {\n        patch.workspace.humanAnchor = previousBody;",
-  "The Mingming rewrite path records the anchor even when the previous body is empty"
+test.assert(
+  (feature.match(/if \(!hasRecordedNegative\(\)\)/g) || []).length === 2,
+  "Both model write paths record the negative"
 );
+test.assertIncludes(grainDiff, "function grainChainFromRecordParts", "The version-chain rule is pure, so a test can execute it");
+test.assertIncludes(grainDiff, 'bornEmpty\n    ? ["", ...stored]', "An empty negative is put back at the head of the chain");
 test.assertIncludes(appsCss, ".quick-draft-grain-model", "Quick Draft styles the model's share");
 test.assertIncludes(appsCss, "var(--quick-draft-grain-model-fg)", "The grain view takes its colours from tokens, not literals");
 test.assertIncludes(foundationCss, "--quick-draft-grain-author-fg", "Grain tokens have a single source in the foundation layer");
 test.assertIncludes(liquidCss, "--quick-draft-grain-model-fg", "Liquid Glass overrides the grain token values rather than the selectors");
+test.assertIncludes(feature, "quick-draft-grain-line", "The grain view renders the body line by line so masks can mark the margin");
+test.assertIncludes(appsCss, ".quick-draft-grain-line.is-masked", "Masked lines carry the adjustment-layer margin marker");
+test.assertIncludes(appsCss, "var(--quick-draft-grain-mask-fg)", "The mask marker takes its colour from a token, not a literal");
+test.assertIncludes(foundationCss, "--quick-draft-grain-mask-fg", "The mask-marker token has a single source in the foundation layer");
+test.assertIncludes(liquidCss, "--quick-draft-grain-mask-fg", "Liquid Glass overrides the mask-marker token value");
 test.assertIncludes(en, "quick_draft_grain_legend_model", "Grain copy exists in English");
 test.assertIncludes(zh, "quick_draft_grain_legend_model", "Grain copy exists in Chinese");
 
@@ -498,13 +510,18 @@ test.assertIncludes(feature, "quick_draft_grain_mask", "the grain readout report
 test.assertIncludes(html, 'data-quick-draft-adjustment-enabled="mingming"', "Mingming Pass has an on/off switch");
 test.assertIncludes(html, 'data-quick-draft-adjustment-strength="hkrr"', "HKRR Lift has a strength control");
 test.assertIncludes(html, 'data-quick-draft-adjustment-mask="mingming"', "Mingming Pass has a line-range mask");
+test.assertIncludes(html, 'data-quick-draft-adjustment-move="mingming"', "layers expose a move control");
 test.assertIncludes(html, "quick_draft_adjustment_light", "the strength control labels its levels");
+test.assertIncludes(feature, "function moveAdjustmentLayer", "the layer stack can be reordered");
+test.assertIncludes(feature, "section.append(wrapper)", "the visible stack follows the stored order");
 test.assertIncludes(en, "quick_draft_command_adjustment", "Adjustment-layer copy exists in English");
 test.assertIncludes(zh, "quick_draft_command_adjustment", "Adjustment-layer copy exists in Chinese");
 test.assertIncludes(en, "quick_draft_adjustment_heavy", "English strength copy exists");
 test.assertIncludes(zh, "quick_draft_adjustment_heavy", "Chinese strength copy exists");
 test.assertIncludes(en, "quick_draft_adjustment_mask_label", "English mask copy exists");
 test.assertIncludes(zh, "quick_draft_adjustment_mask_label", "Chinese mask copy exists");
+test.assertIncludes(en, "quick_draft_adjustment_move_up", "English move copy exists");
+test.assertIncludes(zh, "quick_draft_adjustment_move_up", "Chinese move copy exists");
 test.assertIncludes(draftRoute, "function adjustmentStrengthInstruction", "the draft route scales the adjustment lens by strength");
 test.assertIncludes(draftRoute, "body?.adjustmentLayers", "the route reads the layer stack from the request");
 test.assertIncludes(draftRoute, "never another layer", "adjustment layers never read another layer's output");

@@ -83,26 +83,31 @@ function adjustmentMaskSummary(ranges = []) {
   return ranges.map((range) => (range.start === range.end ? String(range.start) : `${range.start}-${range.end}`)).join(", ");
 }
 
-// The stack always contains every known layer in canonical order, so a record
+// The stack preserves the stored order (the user can reorder layers), fills in
+// any missing known layer at the end, and drops unknown kinds — so a record
 // that has never touched the layers still behaves as three standard layers,
-// and a record that disabled one keeps that switch. Unknown kinds are dropped.
+// and a record that disabled or moved one keeps that state.
 function normalizeAdjustmentLayers(value) {
   const source = Array.isArray(value) ? value : [];
-  const byKind = new Map();
+  const ordered = [];
+  const seen = new Set();
   source.forEach((item) => {
     if (!item || typeof item !== "object") return;
     const kind = String(item.kind || "");
-    if (!ADJUSTMENT_LAYER_KINDS.includes(kind) || byKind.has(kind)) return;
-    byKind.set(kind, {
+    if (!ADJUSTMENT_LAYER_KINDS.includes(kind) || seen.has(kind)) return;
+    seen.add(kind);
+    ordered.push({
       kind,
       enabled: item.enabled !== false,
       strength: normalizeAdjustmentStrength(item.strength),
       mask: normalizeAdjustmentLayerMask(item.mask),
     });
   });
-  return ADJUSTMENT_LAYER_KINDS.map((kind) => (
-    byKind.get(kind) || { kind, enabled: true, strength: ADJUSTMENT_DEFAULT_STRENGTH }
-  ));
+  ADJUSTMENT_LAYER_KINDS.forEach((kind) => {
+    if (seen.has(kind)) return;
+    ordered.push({ kind, enabled: true, strength: ADJUSTMENT_DEFAULT_STRENGTH, mask: [] });
+  });
+  return ordered;
 }
 
 function adjustmentLayer(kind = "", layers) {

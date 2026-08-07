@@ -37,16 +37,26 @@ const partial = context.normalizeAdjustmentLayers([
   { kind: "unknown" },
 ]);
 test.assert(
-  partial.length === 3 && partial[0].kind === "mingming" && partial[0].strength === 50,
-  "missing layers fill in with standard defaults"
+  partial.length === 3 && partial.map((layer) => layer.kind).join(",") === "luoluo,hkrr,mingming",
+  "the stored order is preserved and missing layers fill in at the end"
 );
-test.assert(partial[1].strength === 25, "an explicit strength is kept");
-test.assert(partial[2].enabled === false, "a disabled layer stays off");
+test.assert(partial[0].strength === 25, "an explicit strength is kept");
+test.assert(partial[1].enabled === false, "a disabled layer stays off");
+test.assert(partial[2].kind === "mingming" && partial[2].strength === 50, "a missing layer fills in with standard defaults");
 test.assert(partial.every((layer) => layer.kind !== "unknown"), "unknown kinds are dropped");
 const normalizedPartial = context.normalizeAdjustmentLayers(partial);
 test.assert(
   JSON.stringify(context.normalizeAdjustmentLayers(normalizedPartial)) === JSON.stringify(normalizedPartial),
   "normalization is idempotent"
+);
+const reordered = context.normalizeAdjustmentLayers([
+  { kind: "hkrr" },
+  { kind: "mingming" },
+  { kind: "luoluo" },
+]);
+test.assert(
+  reordered.map((layer) => layer.kind).join(",") === "hkrr,mingming,luoluo",
+  "a reordered stack keeps the user's order"
 );
 test.assert(
   defaults.every((layer) => Array.isArray(layer.mask) && layer.mask.length === 0),
@@ -94,7 +104,7 @@ test.assert(
 );
 const maskedLayer = context.normalizeAdjustmentLayers([{ kind: "luoluo", mask: "3-5" }]);
 test.assert(
-  JSON.stringify(maskedLayer[1].mask) === JSON.stringify([{ start: 3, end: 5 }]),
+  JSON.stringify(maskedLayer[0].mask) === JSON.stringify([{ start: 3, end: 5 }]),
   "layer normalization keeps the stored mask"
 );
 
