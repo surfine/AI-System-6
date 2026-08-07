@@ -87,13 +87,6 @@ test("failure storage: maintenance snapshot write failure aborts without repair"
   await createProject(page);
   await importMarkdown(page, "# Recovery source\n\nThis file carries the relation we will break.");
 
-  // Give maintenance something real to repair: a dangling relation on a file.
-  await page.evaluate(async () => {
-    const file = chatFiles.find((entry) => entry.projectId === activeProjectId);
-    file.sourceDocumentId = "missing-source-file";
-    await saveDeskState();
-  });
-
   // Block only the maintenance snapshot keyval writes.
   await page.evaluate(() => {
     const originalPut = IDBObjectStore.prototype.put;
@@ -108,14 +101,29 @@ test("failure storage: maintenance snapshot write failure aborts without repair"
     };
   });
 
-  await page.evaluate(async () => {
-    if (typeof ensureDesktopMaintenanceModule === "function") await ensureDesktopMaintenanceModule();
-    await window.AISystem6DesktopMaintenance.runNow("e2e-failure");
+  // Give maintenance something real to repair: a dangling relation on a file.
+  // The block is in place first so a background maintenance sweep cannot
+  // repair (and persist) the state before the failure is injected.
+  await page.evaluate(() => {
+    const file = chatFiles.find((entry) => entry.projectId === activeProjectId);
+    file.sourceDocumentId = "missing-source-file";
   });
 
-  const notifications = await page.evaluate(() =>
-    (window.systemNotifications || []).map((entry) => entry.message)
-  );
+  // A background sweep scheduled by boot/import may hold the maintenance
+  // lock when we call runNow, which makes the call a no-op. Retry until the
+  // injected snapshot failure actually runs and leaves its notification.
+  let notifications = [];
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    await page.evaluate(async () => {
+      if (typeof ensureDesktopMaintenanceModule === "function") await ensureDesktopMaintenanceModule();
+      await window.AISystem6DesktopMaintenance.runNow("e2e-failure");
+    });
+    await page.waitForTimeout(700);
+    notifications = await page.evaluate(() =>
+      (typeof systemNotifications !== "undefined" ? systemNotifications : []).map((entry) => entry.message)
+    );
+    if (notifications.some((message) => /pre-repair snapshot|无法保存修复前快照/i.test(message))) break;
+  }
   expect(notifications.some((message) => /pre-repair snapshot|无法保存修复前快照/i.test(message))).toBe(true);
 
   const stateAfter = await page.evaluate(() => {
@@ -129,14 +137,19 @@ test("failure storage: maintenance snapshot write failure aborts without repair"
   await page.evaluate(() => {
     window.__maintenancePutRestore();
   });
-  await page.evaluate(async () => {
-    if (typeof ensureDesktopMaintenanceModule === "function") await ensureDesktopMaintenanceModule();
-    await window.AISystem6DesktopMaintenance.runNow("e2e-recovery");
-  });
-  const stateAfterRecovery = await page.evaluate(() => {
-    const file = chatFiles.find((entry) => entry.projectId === activeProjectId);
-    return { sourceDocumentId: file.sourceDocumentId, receipt: (file.repairReceipts || []).length };
-  });
+  let stateAfterRecovery = null;
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    await page.evaluate(async () => {
+      if (typeof ensureDesktopMaintenanceModule === "function") await ensureDesktopMaintenanceModule();
+      await window.AISystem6DesktopMaintenance.runNow("e2e-recovery");
+    });
+    await page.waitForTimeout(700);
+    stateAfterRecovery = await page.evaluate(() => {
+      const file = chatFiles.find((entry) => entry.projectId === activeProjectId);
+      return { sourceDocumentId: file.sourceDocumentId, receipt: (file.repairReceipts || []).length };
+    });
+    if (stateAfterRecovery.sourceDocumentId === undefined && stateAfterRecovery.receipt > 0) break;
+  }
   expect(stateAfterRecovery.sourceDocumentId).toBeUndefined();
   expect(stateAfterRecovery.receipt).toBeGreaterThan(0);
 });

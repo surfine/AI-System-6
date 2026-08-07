@@ -73,7 +73,7 @@ async function scrapeAllLore() {
   const jsonPath = path.join(outDir, 'lore.json');
   const mdPath = path.join(outDir, 'lore.md');
   await writeFile(jsonPath, `${JSON.stringify(payload, null, 2)}\n`);
-  await writeFile(mdPath, renderLoreCollectionMarkdown(payload));
+  await writeFile(mdPath, renderLoreCollectionMarkdown(payload).replace(/[ \t]+$/gm, ''));
   console.log(`Wrote ${jsonPath}`);
   console.log(`Wrote ${mdPath}`);
 }
@@ -82,7 +82,7 @@ async function writeLoreFiles(targetSlug, payload) {
   const jsonPath = path.join(outDir, `${targetSlug}.json`);
   const mdPath = path.join(outDir, `${targetSlug}.md`);
   await writeFile(jsonPath, `${JSON.stringify(payload, null, 2)}\n`);
-  await writeFile(mdPath, renderMarkdown(payload));
+  await writeFile(mdPath, renderMarkdown(payload).replace(/[ \t]+$/gm, ''));
 }
 
 function parseLoreIndex(html) {

@@ -1,5 +1,5 @@
 <!-- canonical-source: README.md -->
-<!-- source-sha256: 90af987b552c112748a6ae66bc01fbb97c1a66c716fbd885af2a1343397aec4b -->
+<!-- source-sha256: 577fff3c98378c6528d38443cf03d5134a127b4258828ac95832ff80573dee59 -->
 
 <div align="center">
 
@@ -100,6 +100,20 @@ npm start
 打开 [http://localhost:4173](http://localhost:4173)。
 
 如需使用本地 AI，请先启动 LM Studio、加载聊天模型，再到**控制面板**刷新模型。Ollama、云端与 OpenAI 兼容通路也可以在那里配置。
+
+## 公开仓库实际支持的命令
+
+这个 GitHub 仓库是经过整理的公开安全源码快照，不是维护者工作区的镜像：内部部署、签名、打包与原生工具命令只留在私有源码中。全新克隆后，实际受支持的命令如下：
+
+```bash
+npm ci                 # 安装锁定的依赖
+npm start              # 构建浏览器包，然后启动 http://localhost:4173
+npm run build          # 构建浏览器包
+npm test               # 可执行的功能契约测试
+npm run verify:public  # 公开仓库自洽验证（命令、文件、CI、文档）
+```
+
+只要有任何公开命令引用了本仓库不存在的文件，或出现了仅限内部的工具，`npm run verify:public` 就会失败。`.github/workflows/ci.yml` 中的 CI 会在每次推送到 `main` 时依次运行 `npm ci`、构建、功能测试与公开仓库自洽验证。
 
 ## 不一样的构建方式
 

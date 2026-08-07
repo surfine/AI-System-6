@@ -597,6 +597,7 @@ body.use-liquid-glass {
   --clio-chart-typeface: var(--preview-font);
   --clio-chart-type-size: 12px;
   --clio-chart-radius: 10px;
+  --clio-chart-cell-radius: var(--clio-chart-radius);
   --clio-chart-pane-bg:
     radial-gradient(110% 130% at 10% 0%, rgba(255, 255, 255, 0.52), transparent 44%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.1)),
@@ -1675,6 +1676,12 @@ body.use-liquid-glass {
   --quick-draft-status-bg: rgba(255, 255, 255, 0.28);
   --quick-draft-status-border: 1px solid rgba(16, 17, 20, 0.1);
   --quick-draft-divider-border: 1px solid rgba(16, 17, 20, 0.1);
+  --quick-draft-grain-model-fg: rgba(16, 17, 20, 0.44);
+  --quick-draft-grain-model-decoration: underline dotted rgba(16, 17, 20, 0.36);
+  --quick-draft-grain-border: 1px solid rgba(16, 17, 20, 0.1);
+  --quick-draft-grain-generation-border: 1px solid rgba(16, 17, 20, 0.26);
+  --quick-draft-grain-swatch-author: rgba(16, 17, 20, 0.88);
+  --quick-draft-grain-swatch-model: rgba(16, 17, 20, 0.26);
 
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.56), rgba(212, 221, 228, 0.5)),

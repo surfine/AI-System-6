@@ -198,6 +198,8 @@ test.assertNotIncludes(
 );
 test.assertIncludes(cmfStudio, '{ id: "trackpad", labelKey: "cmf_part_trackpad" }', "the trackpad is its own MacBook Neo part");
 test.assertIncludes(service, 'TJrncXRMBNoKueV: "trackpad"', "the trackpad surface is mapped, not the black recess around it");
+test.assertIncludes(cmfStudio, 'TJrncXRMBNoKueV: "trackpad"', "the live view agrees with the export: the trackpad surface is its own finish");
+test.assertIncludes(cmfStudio, "keycaps|trackpad)_", "the client's material regex recognizes the trackpad part name");
 test.assertIncludes(service, "if (!isFinishSurface(materialBlocks, originalName)) continue;", "black trim is skipped before a part clone is bound");
 test.assertIncludes(cmfStudio, "function isBlackTrim", "the live viewport knows black trim is not a finish surface");
 // A lit display is emissive over a black dielectric; at grazing angles that

@@ -22,10 +22,17 @@ test.assertIncludes(retrieval, '"quotable-source"', "Cite sources are marked quo
 test.assertIncludes(retrieval, '"final-version"', "Final versions are marked as the current official version");
 test.assertIncludes(retrieval, "finderLabelContextPolicy(contextItem).include", "the retrieval path filters by label policy");
 test.assertIncludes(retrieval, "window.lastContextManifest", "every retrieval builds a Context Manifest");
-for (const field of ["taskKind", "documentId", "sources", "authorJudgments", "counterMaterials", "excluded", "rules", "contentHashes", "model", "tokenBudget"]) {
+for (const field of ["taskKind", "documentId", "sources", "authorJudgments", "counterMaterials", "excluded", "rules", "contentHashes", "requestedRole", "model", "tokenBudget"]) {
   test.assertIncludes(retrieval, field, `Context Manifest carries ${field}`);
 }
+test.assertIncludes(
+  retrieval,
+  "model: null",
+  "the retrieval-time manifest does not claim to know the final model"
+);
 test.assertIncludes(chatMessages, "contextManifest: window.lastContextManifest", "the Run Record links the Context Manifest");
+test.assertIncludes(chatMessages, "actualModel", "the run layer records the ACTUAL model on the Context Manifest");
+test.assertIncludes(chatMessages, "fallbackReason", "the run layer records the fallback reason on the Context Manifest");
 test.assertIncludes(finderObjects, "applyFinderLabel", "labels are only written through the user-confirmed apply path");
 test.assertIncludes(finderObjects, "AI may suggest but never write them silently", "the AI cannot silently write Finder Labels");
 

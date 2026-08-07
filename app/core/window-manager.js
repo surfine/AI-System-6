@@ -666,6 +666,13 @@ function updateSideAskSourceChrome() {
   if (quickDraftHint) {
     quickDraftHint.classList.add("is-hidden");
   }
+  // A phone has no app switcher in Finder mode, so once a Quick Draft
+  // side-ask session is running, the source page itself must offer the way
+  // back to the conversation.
+  const quickDraftReturnSideAsk = document.getElementById("quick-draft-return-sideask");
+  if (quickDraftReturnSideAsk) {
+    quickDraftReturnSideAsk.classList.toggle("is-hidden", !quickDraftSideAsk);
+  }
   const composeToolsToggle = document.getElementById("compose-tools-toggle");
   if (composeToolsToggle && typeof t === "function") {
     composeToolsToggle.setAttribute("aria-label", t("compose_tools"));
@@ -3079,7 +3086,12 @@ function arrangePortraitDeskAccessories(frontWin = null) {
   const heights = ordered.map((candidate) => candidate.getBoundingClientRect().height);
   const stackHeight = heights.reduce((sum, height) => sum + height, 0)
     + gap * Math.max(0, ordered.length - 1);
-  const visualLift = Math.min(60, Math.round(availableHeight * 0.08));
+  // The lift is desk slack for small accessories. A single DA that nearly
+  // fills the rail reads as "off-center" when lifted (the dictionary window
+  // is capped at 440px against a ~700px rail), so keep tall single windows
+  // truly centered instead.
+  const singleTallWindow = ordered.length === 1 && heights[0] > availableHeight * 0.6;
+  const visualLift = singleTallWindow ? 0 : Math.min(60, Math.round(availableHeight * 0.08));
   let top = topMin + Math.max(0, Math.round((availableHeight - stackHeight) / 2) - visualLift);
 
   ordered.forEach((candidate, index) => {

@@ -199,6 +199,7 @@ test.assertIncludes(foundation, "--z-control-strip", "the floating layer is a na
 test.assertIncludes(responsive, "mobile-app-foreground", "the strip yields to the full-screen app shell on phones");
 test.assertIncludes(responsive, "body .control-strip-scroll", "phones hide the desktop chevrons");
 test.assertIncludes(persistence, "controlStripCollapsed", "the collapsed state persists in the existing settings record");
+test.assertIncludes(module, "renderModuleSettingsList();", "the module list re-renders after the lazy registry populates");
 test.assert(zValue(foundation, "--z-control-strip") > zValue(foundation, "--z-window-priority"),
   "the strip floats above windows, as it does in Mac OS 9");
 test.assert(zValue(foundation, "--z-control-strip") < zValue(foundation, "--z-system-menu"),

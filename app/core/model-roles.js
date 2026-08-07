@@ -1,3 +1,4 @@
+// @ts-check
 // Model roles for Advanced (manual) mode.
 //
 // Normal mode keeps one default model and reports role "default". Advanced
@@ -9,21 +10,17 @@
 
 const modelRoleStorageKey = "ai-system6-role-models";
 
-const modelRolePatterns = [
-  { role: "critic", pattern: /review|claim|critique|check|hkrr|mingming|risk/i },
-  { role: "researcher", pattern: /search|reader|source|retrieve|research|find|clip|docmap|context/i },
-  { role: "writer", pattern: /draft|outline|rewrite|expand|compress|continue|proofread|style|praise|writing|polish|suggest/i },
-  { role: "utility", pattern: /translate|dictation|organize|ask|lookup|sideask|summarize|describe|utility|embed|chat|question/i },
-];
-
 const modelRoleNames = Object.freeze(["researcher", "writer", "critic", "utility", "fallback"]);
 
+/**
+ * Resolve a task's model role from its registered task contract. There is
+ * exactly one classification source: taskContractRegistry. Unknown tasks
+ * default to "default"; nothing is guessed from the task name's wording.
+ */
 function modelRoleForTaskKind(taskKind = "") {
-  const kind = String(taskKind || "").toLowerCase();
-  for (const entry of modelRolePatterns) {
-    if (entry.pattern.test(kind)) return entry.role;
-  }
-  return "default";
+  const contract = window.AISystem6ModelTaskRuntime?.taskContractRegistry?.require(taskKind);
+  const role = contract?.modelRole;
+  return typeof role === "string" && role ? role : "default";
 }
 
 function readModelRoleSettings() {
@@ -64,7 +61,7 @@ function resolveModelRoleForTask(taskKind, options = {}) {
 
 function syncModelRoleSelects(catalog = modelCatalog) {
   modelRoleNames.forEach((role) => {
-    const select = document.getElementById(`role-model-${role}`);
+    const select = /** @type {HTMLSelectElement | null} */ (document.getElementById(`role-model-${role}`));
     if (!select) return;
     const previous = select.dataset.previous || readModelRoleSettings()[role] || "";
     setSelectOptions(select, Array.isArray(catalog) ? catalog : [], previous);

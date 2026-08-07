@@ -86,6 +86,7 @@ body.is-resizing-tdi .clio-chart-view-pane {
   height: var(--clio-chart-cell-height);
   padding: var(--clio-chart-cell-padding);
   border: 1px solid var(--clio-chart-rule);
+  border-radius: var(--clio-chart-cell-radius);
   text-align: right;
   white-space: nowrap;
 }

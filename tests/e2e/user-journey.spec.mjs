@@ -102,6 +102,10 @@ async function acceptConfirmModalIfPresent(page) {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const open = await page.$("#system-modal[open]");
     if (!open) return;
+    const message = await page.textContent("#system-modal-message");
+    // Only accept the overwrite/final confirmation; a failure alert must stay
+    // open so the error stays visible.
+    if (!/already has content|将被覆盖|overwritten|overwrite|final|最终/i.test(message || "")) return;
     await page.click("#system-modal-yes");
     try {
       await page.waitForSelector("#system-modal", { state: "hidden", timeout: 5_000 });
@@ -148,11 +152,12 @@ test("journey A: a first-time user completes the whole route and downloads", asy
   }, { timeout: 10_000 });
   await page.waitForSelector('#teachtext-label:not([disabled])', { timeout: 10_000 });
   await page.selectOption("#teachtext-label", "final");
+  await acceptConfirmModalIfPresent(page);
   await page.fill("#teachtext-body", "# Manuscript\n\nSection one manual prose grounded in the clipped evidence.\n\nSection two follows.");
   await page.keyboard.press("Meta+s");
 
   // Project CD: export, open the CD, download.
-  await page.click('[data-action="export-teachtext-project-cd"]');
+  await page.locator('[data-action="export-teachtext-project-cd"]:visible').first().click();
   await page.waitForTimeout(1000);
   await page.dblclick("#desktop-project-cd");
   await page.waitForSelector('[data-window="projectCd"]:not(.is-hidden)', { timeout: 10_000 });
@@ -235,6 +240,8 @@ test("journey C: a failed model call never loses work and the retry succeeds", a
   await page.click("#connect-local-model");
   await page.waitForFunction(() => (document.querySelector("#model")?.value || "").trim() !== "", { timeout: 20_000 });
 
+  await page.click('[data-window="control"] .close-box');
+  await page.waitForFunction(() => document.querySelector('[data-window="control"]')?.classList.contains("is-hidden"), { timeout: 10_000 });
   await page.click('[data-window="questionSheet"] .title-bar');
   await page.click('[data-window="questionSheet"] .teachtext-command-menu summary');
   const draft = "Keep this exact draft text even when the model call fails.";
@@ -257,6 +264,11 @@ test("journey C: a failed model call never loses work and the retry succeeds", a
 
   // The user simply tries again; the server is healthy now.
   fakeModel.setScenario("json");
+  const failureAlert = await page.$("#system-modal[open]");
+  if (failureAlert) {
+    await page.click("#system-modal-yes");
+    await page.waitForSelector("#system-modal", { state: "hidden", timeout: 10_000 });
+  }
   await page.click('[data-window="questionSheet"] .title-bar');
   await page.click('[data-window="questionSheet"] .teachtext-command-menu summary');
   await page.click('[data-window="questionSheet"] [data-action="generate-outline"]');

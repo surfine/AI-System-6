@@ -27,6 +27,7 @@ test.assertIncludes(writingFlow, "AISystem6StateStores?.writing.commit", "phase 
 
 const context = vm.createContext({
   window: {},
+  structuredClone,
   console: { warn: () => {} },
   projects: [{ id: "p1", name: "P" }],
   chatFiles: [],
@@ -35,7 +36,7 @@ const context = vm.createContext({
   ragChunks: [],
   lastRetrievedContextItems: [],
   getActiveProject: () => context.projects[0],
-  saveDeskState: () => {},
+  saveDeskState: async () => true,
   renderPipeline: () => {},
   scheduleRenderTasks: () => {},
   updateMenuState: () => {},
@@ -45,18 +46,43 @@ const context = vm.createContext({
 vm.runInContext(stores, context);
 
 let notified = 0;
+let errorEvents = 0;
 const unsubscribe = context.window.AISystem6StateStores.projects.subscribe(() => {
   notified += 1;
 });
-context.window.AISystem6StateStores.projects.commit(({ projects: list }) => {
+context.window.AISystem6StateStores.projects.subscribe((change) => {
+  if (change?.type === "error") errorEvents += 1;
+});
+await context.window.AISystem6StateStores.projects.commit(({ projects: list }) => {
   list.push({ id: "p2", name: "P2" });
 });
 test.assert(notified === 1, "a commit notifies subscribers exactly once");
 test.assert(context.projects.length === 2, "a commit can update the backing state");
 test.assert(typeof unsubscribe === "function", "subscribe returns an unsubscribe function");
 unsubscribe();
-context.window.AISystem6StateStores.projects.commit(() => {});
+await context.window.AISystem6StateStores.projects.commit(() => {});
 test.assert(notified === 1, "unsubscribed listeners stop receiving notifications");
+
+// Failed persistence: the commit must reject, roll the backing state back,
+// and emit an error event instead of a success event.
+context.saveDeskState = async () => false;
+const beforeFailedCommit = context.projects.map((project) => ({ ...project }));
+const failure = await context.window.AISystem6StateStores.projects.commit(({ projects: list }) => {
+  list.push({ id: "p3", name: "P3" });
+}).then(
+  () => null,
+  (error) => error
+);
+test.assert(
+  !!failure && failure.code === "STORE_PERSIST_FAILED",
+  "a failed commit rejects with STORE_PERSIST_FAILED"
+);
+test.assert(
+  JSON.stringify(context.projects) === JSON.stringify(beforeFailedCommit),
+  "a failed commit rolls the backing state back"
+);
+test.assert(errorEvents === 1, "a failed commit emits an error event");
+test.assert(notified === 1, "a failed commit never emits a success event");
 
 test.assert(
   context.window.AISystem6StateStores.desktop.runtimeEnvironment() === "multifinder",

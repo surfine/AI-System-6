@@ -1,8 +1,10 @@
+// @ts-check
 // Project Hard Disk backup validation, integrity, and identity remapping.
 
 window.AISystem6ProjectDiskBackup = (() => {
   const format = "ai-system-6-project-disk";
-  const currentFormatVersion = 2;
+  // v3 adds document revisions to the backup schema and the integrity hash.
+  const currentFormatVersion = 3;
   const maxBackupBytes = 100 * 1024 * 1024;
   const maxArrayItems = 100000;
   const maxDepth = 40;
@@ -16,6 +18,7 @@ window.AISystem6ProjectDiskBackup = (() => {
     "trash",
     "projectCdItems",
     "references",
+    "documentRevisions",
   ]);
 
   const relationFields = Object.freeze({
@@ -134,6 +137,11 @@ window.AISystem6ProjectDiskBackup = (() => {
     if (!Number.isInteger(formatVersion) || ![1, currentFormatVersion].includes(formatVersion)) {
       error("backup.formatVersion", `unsupported version ${String(bundle.formatVersion)}`);
     }
+    if (formatVersion === 1 || formatVersion === 2) {
+      warnings.push(
+        `Legacy v${formatVersion} backup has no document revision history; an empty revision set is imported.`
+      );
+    }
     if (!isPlainObject(bundle.project)) {
       error("backup.project", "project must be an object");
     } else {
@@ -142,6 +150,7 @@ window.AISystem6ProjectDiskBackup = (() => {
     }
 
     arrayKeys.forEach((key) => {
+      if (key === "documentRevisions" && formatVersion < currentFormatVersion) return;
       if (!Array.isArray(bundle[key])) {
         error(`backup.${key}`, "field must be an array");
       }
@@ -237,6 +246,48 @@ window.AISystem6ProjectDiskBackup = (() => {
       });
     });
 
+    if (formatVersion === currentFormatVersion) {
+      const revisionIdsByDocument = new Map();
+      bundle.documentRevisions.forEach((revision, revisionIndex) => {
+        const path = `backup.documentRevisions[${revisionIndex}]`;
+        if (!isPlainObject(revision)) {
+          error(path, "revision must be an object");
+          return;
+        }
+        const revisionId = recordId(revision.id);
+        const documentId = recordId(revision.documentId);
+        if (!revisionId) error(`${path}.id`, "revision id is required");
+        if (!documentId) {
+          error(`${path}.documentId`, "revision documentId is required");
+        } else if (!ids.file?.has(documentId)) {
+          error(`${path}.documentId`, `revision references missing file ${documentId}`);
+        }
+        if (revisionId && documentId) {
+          const documentRevisions = revisionIdsByDocument.get(documentId) || new Set();
+          if (documentRevisions.has(revisionId)) {
+            error(`${path}.id`, `duplicate revision id ${revisionId}`);
+          }
+          documentRevisions.add(revisionId);
+          revisionIdsByDocument.set(documentId, documentRevisions);
+        }
+        for (const field of ["body", "contentHash", "operation", "origin"]) {
+          if (typeof revision[field] !== "string") error(`${path}.${field}`, "must be a string");
+        }
+      });
+      // Second pass: parents declared before their children are still valid.
+      bundle.documentRevisions.forEach((revision, revisionIndex) => {
+        const parentId = recordId(revision?.parentRevisionId);
+        if (!parentId) return;
+        const documentRevisions = revisionIdsByDocument.get(recordId(revision?.documentId));
+        if (documentRevisions && !documentRevisions.has(parentId)) {
+          error(
+            `backup.documentRevisions[${revisionIndex}].parentRevisionId`,
+            `revision parent ${parentId} is not part of the same document tree`
+          );
+        }
+      });
+    }
+
     const visiting = new Set();
     const visited = new Set();
     const foldersById = new Map(bundle.folders.map((folder) => [folder.id, folder]));
@@ -253,9 +304,9 @@ window.AISystem6ProjectDiskBackup = (() => {
     }
     bundle.folders.forEach((folder) => visitFolder(folder.id));
 
-    if (formatVersion === currentFormatVersion) {
+    if (formatVersion >= 2) {
       if (!isPlainObject(bundle.integrity)) {
-        error("backup.integrity", "v2 backup requires an integrity record");
+        error("backup.integrity", "v2+ backup requires an integrity record");
       } else {
         if (bundle.integrity.algorithm !== "SHA-256") {
           error("backup.integrity.algorithm", "must equal SHA-256");
@@ -265,7 +316,7 @@ window.AISystem6ProjectDiskBackup = (() => {
         }
       }
       if (!isPlainObject(bundle.counts)) {
-        error("backup.counts", "v2 backup requires counts");
+        error("backup.counts", "v2+ backup requires counts");
       } else {
         arrayKeys.forEach((key) => {
           if (Number(bundle.counts[key]) !== bundle[key].length) {
@@ -313,6 +364,9 @@ window.AISystem6ProjectDiskBackup = (() => {
     const copy = bundleWithoutIntegrity(bundle);
     copy.format = format;
     copy.formatVersion = currentFormatVersion;
+    // v3 always carries the revision array; legacy sources migrate to an
+    // explicit empty set rather than silently omitting the field.
+    if (!Array.isArray(copy.documentRevisions)) copy.documentRevisions = [];
     copy.counts = Object.fromEntries(arrayKeys.map((key) => [key, copy[key].length]));
     const contentHash = await sha256Hex(stableStringify(copy));
     return {
@@ -386,6 +440,7 @@ window.AISystem6ProjectDiskBackup = (() => {
       trash: new Map(),
       projectCdItem: new Map(),
       reference: new Map(),
+      revision: new Map(),
     };
     const definitions = [
       ["folder", bundle.folders],
@@ -400,6 +455,9 @@ window.AISystem6ProjectDiskBackup = (() => {
         const oldId = recordId(item.id) || `${type}:${index}`;
         idMaps[type].set(oldId, uuid());
       });
+    });
+    (bundle.documentRevisions || []).forEach((revision, index) => {
+      idMaps.revision.set(recordId(revision?.id) || `revision:${index}`, uuid());
     });
 
     function registerNestedRecord(type, record) {
@@ -533,6 +591,20 @@ window.AISystem6ProjectDiskBackup = (() => {
       },
     };
 
+    const importedDocumentRevisions = (bundle.documentRevisions || []).map((revision, index) => {
+      const oldId = recordId(revision?.id) || `revision:${index}`;
+      const copy = remapRelations(clone(revision), idMaps);
+      copy.id = idMaps.revision.get(oldId);
+      copy.projectId = newProjectId;
+      if (revision?.documentId) {
+        copy.documentId = idMaps.file.get(revision.documentId) || "";
+      }
+      if (revision?.parentRevisionId) {
+        copy.parentRevisionId = idMaps.revision.get(revision.parentRevisionId) || "";
+      }
+      return copy;
+    });
+
     return {
       project: importedProject,
       folders: importedFolders,
@@ -541,6 +613,7 @@ window.AISystem6ProjectDiskBackup = (() => {
       trash: bundle.trash.map(remapTrashRecord),
       projectCdItems: remapRecords("projectCdItem", bundle.projectCdItems),
       references: importedReferences,
+      documentRevisions: importedDocumentRevisions,
     };
   }
 

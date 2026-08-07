@@ -1423,7 +1423,9 @@ async function runSelectedTaskConfig() {
     receipt.taskFolderId = taskFolder.id;
     receipt.taskConfigId = config.id;
   }
-  if (teachTextTarget && lastAssistantText) createTeachTextModificationSuggestion(teachTextTarget, lastAssistantText, { taskConfigId: config.id, runRecordId: receipt?.id || "" });
+  if (teachTextTarget && lastAssistantText) {
+    await createTeachTextModificationSuggestion(teachTextTarget, lastAssistantText, { taskConfigId: config.id, runRecordId: receipt?.id || "" });
+  }
   saveDeskState();
   return file;
 }
@@ -1432,16 +1434,25 @@ function contentHash(body = "") {
   return window.AISystem6PromptFilesRuntime?.hashPromptBody(String(body || "")) || String(body || "").length.toString(16);
 }
 
-function createTeachTextModificationSuggestion(target, suggestedText, { taskConfigId = "", runRecordId = "" } = {}) {
+async function createTeachTextModificationSuggestion(target, suggestedText, { taskConfigId = "", runRecordId = "" } = {}) {
   if (!target || !String(suggestedText || "").trim()) return null;
   if (typeof createDocumentRevision === "function") {
-    createDocumentRevision({
-      documentId: target.id,
-      body: target.body,
-      origin: "model",
-      operation: "proposal-before",
-      runRecordId,
-    });
+    try {
+      await createDocumentRevision({
+        documentId: target.id,
+        body: target.body,
+        origin: "model",
+        operation: "proposal-before",
+        runRecordId,
+      });
+    } catch (error) {
+      // The pre-proposal revision is the recovery point for an AI overwrite;
+      // without it the suggestion must not proceed.
+      setStatus(currentLanguage === "zh"
+        ? "无法保存建议前的版本历史，AI 建议未生成。"
+        : "Could not save the pre-proposal version history; the suggestion was not created.");
+      return null;
+    }
   }
   const folder = ensureFolder("Modification Suggestions", null);
   const now = new Date().toISOString();
@@ -1471,7 +1482,7 @@ function rejectSelectedTeachTextModificationSuggestion() {
   saveDeskState(); renderDocuments(); renderProjectDisks(); return true;
 }
 
-function acceptSelectedTeachTextModificationSuggestion() {
+async function acceptSelectedTeachTextModificationSuggestion() {
   const file = selectedTeachTextModificationSuggestion();
   if (!file) return false;
   const suggestion = file.suggestion;
@@ -1481,16 +1492,23 @@ function acceptSelectedTeachTextModificationSuggestion() {
     return false;
   }
   const oldHash = contentHash(target.body);
-  target.body = suggestion.suggestedText; target.updatedAt = new Date().toISOString();
   if (typeof createDocumentRevision === "function") {
-    createDocumentRevision({
-      documentId: target.id,
-      body: target.body,
-      origin: "model",
-      operation: "accept-proposal",
-      runRecordId: suggestion.runRecordId || "",
-    });
+    try {
+      await createDocumentRevision({
+        documentId: target.id,
+        body: target.body,
+        origin: "model",
+        operation: "accept-proposal",
+        runRecordId: suggestion.runRecordId || "",
+      });
+    } catch (error) {
+      setStatus(currentLanguage === "zh"
+        ? "无法保存接受建议前的版本历史，正文未被覆盖。"
+        : "Could not save the pre-accept version history; the manuscript was not overwritten.");
+      return false;
+    }
   }
+  target.body = suggestion.suggestedText; target.updatedAt = new Date().toISOString();
   const newHash = contentHash(target.body);
   suggestion.status = "accepted"; suggestion.acceptedAt = target.updatedAt; suggestion.oldHash = oldHash; suggestion.newHash = newHash;
   if (target.id === activeTextFileId) { teachTextBodyInput.value = target.body; markTeachTextModified(); refreshTeachTextDocumentState(); }
@@ -2847,13 +2865,22 @@ async function saveTextDocument({ asCopy = false, revealInDocuments = false, pro
     file.label = normalizeFileLabel(teachTextFileLabel);
     file.updatedAt = new Date().toISOString();
     if (typeof createDocumentRevision === "function") {
-      createDocumentRevision({
-        projectId: file.projectId,
-        documentId: file.id,
-        body: file.body,
-        origin: "user",
-        operation: "save",
-      });
+      try {
+        await createDocumentRevision({
+          projectId: file.projectId,
+          documentId: file.id,
+          body: file.body,
+          origin: "user",
+          operation: "save",
+        });
+      } catch (error) {
+        // A plain manual save still persists the body; only the version
+        // history entry failed, and the user must know.
+        console.warn("Document body saved, but the version history entry could not be persisted.", error);
+        setStatus(currentLanguage === "zh"
+          ? "正文已保存，但版本历史未能写入。"
+          : "The document was saved, but the version history could not be written.");
+      }
     }
   }
 

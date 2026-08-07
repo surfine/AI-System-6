@@ -126,6 +126,7 @@ test.assertIncludes(styles, "grid-template-columns: repeat(auto-fit, minmax(44px
 test.assertIncludes(styles, ".time-machine-navigation .time-machine-view-switch {\n    display: contents;", "phone view choices join the navigation row (descendant-scoped so the shared .view-switch grid rule cannot win)");
 test.assertIncludes(styles, "transform: none;", "the phone tab close drops Liquid's 50% translate so a fixed top never shoves it out of the tab");
 test.assertIncludes(server, "data-srcset", "the replay frame promotes lazy media (data-src / data-srcset) without executing page scripts");
+test.assertIncludes(server, "visibleTextLength < 80", "tiny bot-check / JS-shell pages fail with a named error instead of a blank frame");
 test.assertIncludes(html, '<span class="time-machine-provenance" id="time-machine-provenance"', "which snapshot is on screen rides in the navigation row, costing the page no height");
 test.assertIncludes(feature, "? timeMachineProviderLabel(page.archive.provider)", "the toolbar names the archive; the title bar already carries the date and page");
 test.assertIncludes(feature, "setStatus(message, options.error === true ? { notify: true } : {})", "a Time Machine failure reaches the notification center by being marked, not by matching a keyword list");

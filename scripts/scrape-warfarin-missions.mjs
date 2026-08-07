@@ -58,7 +58,7 @@ async function main() {
   };
 
   await writeFile(path.join(outDir, 'missions.json'), `${JSON.stringify(payload, null, 2)}\n`);
-  await writeFile(path.join(outDir, 'missions.md'), renderMarkdown(payload));
+  await writeFile(path.join(outDir, 'missions.md'), renderMarkdown(payload).replace(/[ \t]+$/gm, ''));
 
   console.log(`Wrote ${path.join(outDir, 'missions.json')}`);
   console.log(`Wrote ${path.join(outDir, 'missions.md')}`);
@@ -165,7 +165,7 @@ function parseDialogueSection(section) {
     const nameNode = selectOne('.font-bold', card);
     const initialNode = selectOne('.font-semibold', card);
     const lineNodes = selectAll('p', card);
-    const speaker = cleanText(textContent(nameNode || '')) || getAttributeValue(portrait, 'title') || '';
+    const speaker = cleanText(textContent(nameNode || '')) || (portrait ? getAttributeValue(portrait, 'title') : '') || '';
     const initial = cleanText(textContent(initialNode || ''));
 
     return lineNodes

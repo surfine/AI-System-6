@@ -1751,7 +1751,8 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
 .dictionary-recent {
   min-height: var(--dictionary-recent-min-height);
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
   align-items: center;
   gap: 4px;
   border-top: var(--dictionary-recent-border-top);
@@ -1765,6 +1766,7 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
 }
 
 .dictionary-recent button.btn.mini-btn {
+  flex: 0 0 auto;
   max-width: 110px;
   overflow: hidden;
   text-overflow: ellipsis;

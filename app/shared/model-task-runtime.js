@@ -26,6 +26,7 @@
       sourcePolicy: "registered-only",
       writeTarget: "none",
       humanizer: "lint",
+      modelRole: "default",
       protectedSpans: protectedWritingSpans,
       requiresUserCommit: false,
     }),
@@ -35,6 +36,7 @@
       sourcePolicy: "selected-only",
       writeTarget: "none",
       humanizer: "off",
+      modelRole: "researcher",
       protectedSpans: protectedWritingSpans,
       requiresUserCommit: false,
     }),
@@ -44,6 +46,7 @@
       sourcePolicy: "registered-only",
       writeTarget: "none",
       humanizer: "off",
+      modelRole: "critic",
       protectedSpans: protectedWritingSpans,
       requiresUserCommit: false,
     }),
@@ -53,6 +56,7 @@
       sourcePolicy: "selected-only",
       writeTarget: "none",
       humanizer: "off",
+      modelRole: "utility",
       protectedSpans: protectedWritingSpans,
       requiresUserCommit: false,
     }),
@@ -62,6 +66,7 @@
       sourcePolicy: "registered-only",
       writeTarget: "manuscript",
       humanizer: "lint",
+      modelRole: "writer",
       protectedSpans: protectedWritingSpans,
       requiresUserCommit: true,
     }),
@@ -71,6 +76,7 @@
       sourcePolicy: "selected-only",
       writeTarget: "manuscript",
       humanizer: "explicit-rewrite",
+      modelRole: "writer",
       protectedSpans: protectedWritingSpans,
       requiresUserCommit: true,
     }),
@@ -80,6 +86,7 @@
       sourcePolicy: "none",
       writeTarget: "none",
       humanizer: "off",
+      modelRole: "utility",
       protectedSpans: protectedWritingSpans,
       requiresUserCommit: false,
     }),
@@ -96,6 +103,18 @@
     "humanizer-rewrite": "writing.humanize-selection",
     "json-repair": "system.json-repair",
   });
+  const modelRoleNames = new Set(["default", "researcher", "writer", "critic", "utility"]);
+
+  // Every registered task contract must declare its model role explicitly.
+  // This runs at module load, so adding a contract without a role (or with an
+  // invalid one) fails the gate immediately instead of silently defaulting.
+  for (const [id, contract] of Object.entries(taskContracts)) {
+    if (typeof contract.modelRole !== "string" || !modelRoleNames.has(contract.modelRole)) {
+      throw new Error(
+        `Task contract "${id}" must declare a valid modelRole (one of: ${[...modelRoleNames].join(", ")}).`
+      );
+    }
+  }
   const taskOutputKinds = new Set(["markdown", "plainText", "json", "patch"]);
 
   function taskContractId(taskKind = "") {

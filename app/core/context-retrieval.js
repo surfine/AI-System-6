@@ -1199,9 +1199,12 @@ function retrieveContext(userText, options = {}) {
     excluded: manifestExcluded,
     rules: finderLabelContextRulesSnapshot(),
     contentHashes: manifestSources.map((source) => source.contentHash),
-    model: typeof getLocalModelRequestName === "function"
-      ? getLocalModelRequestName()
-      : (typeof activeChatModelIdentifier !== "undefined" ? activeChatModelIdentifier || "" : ""),
+    // Retrieval happens before the task's model role is resolved, so the
+    // manifest must not claim to know the actual model here. The task/run
+    // layer fills requestedRole + actualModel + fallbackReason after the
+    // model is chosen (see recordContextLoadout in chat-messages.js).
+    requestedRole: "",
+    model: null,
     tokenBudget: {
       contextTokens: Number(budgetInfo.contextTokens || 0),
       budgetChars: Number(contextBudget || 0),

@@ -147,7 +147,44 @@ function renderEndfieldResults(data) {
     </article>
     ${evidence ? `<section class="endfield-evidence-list" aria-labelledby="endfield-evidence-heading"><h3 id="endfield-evidence-heading">${escapeHtml(t("endfield_evidence_heading", results.length))}</h3>${evidence}</section>` : ""}
   `;
+  linkEndfieldInlineCitations(endfieldOutputEl);
   renderEndfieldMatches(results);
+}
+
+// The model cites evidence as 【1】 inside the answer. Turn those markers into
+// tappable citation chips that open and scroll to the matching evidence item
+// below — the number means the same thing in the answer and in the list.
+function linkEndfieldInlineCitations(root) {
+  if (!root) return;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      return /【\d+】/.test(node.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+    },
+  });
+  const targets = [];
+  let current = walker.nextNode();
+  while (current) {
+    targets.push(current);
+    current = walker.nextNode();
+  }
+  targets.forEach((node) => {
+    const fragment = document.createDocumentFragment();
+    String(node.nodeValue).split(/(【\d+】)/g).forEach((part) => {
+      const match = part.match(/^【(\d+)】$/);
+      if (match) {
+        const citation = document.createElement("button");
+        citation.type = "button";
+        citation.className = "endfield-inline-citation";
+        citation.dataset.endfieldCitation = match[1];
+        citation.textContent = part;
+        citation.setAttribute("aria-label", `${t("endfield_evidence_heading", 1)} ${match[1]}`);
+        fragment.append(citation);
+      } else if (part) {
+        fragment.append(document.createTextNode(part));
+      }
+    });
+    node.replaceWith(fragment);
+  });
 }
 
 async function loadEndfieldMeta() {
@@ -326,6 +363,16 @@ endfieldMatchListEl?.addEventListener("click", (event) => {
 });
 
 endfieldOutputEl?.addEventListener("click", (event) => {
+  const citation = event.target.closest("[data-endfield-citation]");
+  if (citation) {
+    const evidence = document.querySelector(`#endfield-evidence-${citation.dataset.endfieldCitation}`);
+    if (evidence) {
+      evidence.open = true;
+      evidence.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      evidence.focus({ preventScroll: true });
+    }
+    return;
+  }
   const queryButton = event.target.closest("[data-query]");
   if (queryButton) {
     if (endfieldQueryInput) endfieldQueryInput.value = queryButton.dataset.query || "";

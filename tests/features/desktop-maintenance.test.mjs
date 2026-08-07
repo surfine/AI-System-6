@@ -471,6 +471,27 @@ test.assert(
   "the failed Repair Record is not stored"
 );
 
+// (c2) Pre-repair revision write failure: the repair must abort before any
+// repair is applied, and the user sees a failure notification.
+const revisionFailHarness = createMaintenanceHarness(brokenDeskState());
+revisionFailHarness.context.createDocumentRevision = async () => {
+  throw new Error("forced revision write failure");
+};
+await revisionFailHarness.runNow();
+const revisionFailedFile = revisionFailHarness.context.chatFiles.find((entry) => entry.id === "file-1");
+test.assert(
+  revisionFailedFile.sourceDocumentId === "file-gone" && revisionFailedFile.sourceChatId === "chat-gone",
+  "a failed pre-repair revision aborts maintenance before any repair is applied"
+);
+test.assert(
+  revisionFailHarness.calls.notifications.some((entry) => entry.message.startsWith("maintenance_revision_failed:")),
+  "a failed pre-repair revision leaves a user-visible failure notification"
+);
+test.assert(
+  !revisionFailHarness.keyval.has(repairKey),
+  "a failed pre-repair revision leaves no Repair Record behind"
+);
+
 // (d) Restore with a failed save: returns false and never notifies.
 const restoreFailHarness = createMaintenanceHarness(brokenDeskState());
 await restoreFailHarness.runNow();

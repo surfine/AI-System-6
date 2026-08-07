@@ -11,5 +11,12 @@
     "skipLibCheck": true,
     "types": []
   },
-  "include": ["core/state-stores.js", "core/state-stores.d.ts"]
+  "include": [
+    "core/state-stores.js",
+    "core/state-stores.d.ts",
+    "core/document-revisions.js",
+    "core/desktop-maintenance.js",
+    "core/model-roles.js",
+    "core/project-disk-backup.js"
+  ]
 }

@@ -288,7 +288,7 @@
   display: block;
   width: 36px;
   height: 8px;
-  border: 1px solid var(--ink);
+  border: var(--control-strip-border);
   background: var(--paper);
   position: relative;
 }
@@ -398,7 +398,7 @@
   list-style: none;
   margin: 6px 0;
   padding: 0;
-  border: 1px solid var(--ink);
+  border: var(--control-strip-border);
   background: var(--paper);
   max-height: 220px;
   min-height: 88px;

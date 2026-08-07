@@ -853,7 +853,7 @@ function openSectionDrafts() {
   requestAnimationFrame(() => draftBodyInput?.focus());
 }
 
-function advanceQuestionSheetToOutline() {
+async function advanceQuestionSheetToOutline() {
   const project = ensureTeachTextSurfaceProject();
   if (!project) {
     setStatus(t("no_project_mounted"));
@@ -861,17 +861,26 @@ function advanceQuestionSheetToOutline() {
     return;
   }
 
+  if (typeof createDocumentRevision === "function") {
+    try {
+      await createDocumentRevision({ origin: "system", operation: "phase-advance" });
+    } catch (error) {
+      // The phase transition overwrites the Question Sheet's meaning as the
+      // editable owner; without the revision it must not move forward.
+      setStatus(currentLanguage === "zh"
+        ? "无法保存阶段推进前的版本历史，未推进到大纲。"
+        : "Could not save the pre-advance version history; the outline was not opened.");
+      return;
+    }
+  }
   savePipelineData();
-  window.AISystem6StateStores?.writing.commit(() => {
+  await window.AISystem6StateStores?.writing.commit(() => {
     const project = getActiveProject();
     if (project) project.questionSheet = questionSheetBodyInput?.value || project.questionSheet || "";
   });
   renderPipeline();
   openWindow("outline");
   setStatus(t("question_sheet_autosaved_to_outline"));
-  if (typeof createDocumentRevision === "function") {
-    createDocumentRevision({ origin: "system", operation: "phase-advance" });
-  }
   requestAnimationFrame(() => outlineContentEl?.focus());
 }
 

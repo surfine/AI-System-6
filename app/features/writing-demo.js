@@ -522,9 +522,12 @@ async function writingDemoPreflightModel() {
 
 function writingDemoSetButtons(running) {
   document.querySelectorAll('[data-action="play-writing-demo"], [data-static-finder-action="play-writing-demo"]').forEach((button) => {
-    button.textContent = running
-      ? (currentLanguage === "zh" ? "停止实战演示" : "Stop Live Demo")
-      : t("guide_play_demo");
+    const label = running ? t("writing_demo_stop") : t("guide_play_demo");
+    // Finder items carry a leading icon span; replacing textContent wholesale
+    // would erase the icon, leaving "Stop Live Demo" without one while the
+    // play item keeps it. Swap only the label span when present.
+    const labelEl = button.querySelector("span[data-i18n]") || button;
+    labelEl.textContent = label;
     button.dataset.demoRunning = running ? "true" : "false";
   });
 }

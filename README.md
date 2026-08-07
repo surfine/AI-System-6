@@ -96,6 +96,26 @@ Open [http://localhost:4173](http://localhost:4173).
 
 For local AI, start LM Studio, load a chat model, then refresh models in **Control Panel**. Ollama and cloud/OpenAI-compatible routes can be configured there as well.
 
+## What the public repository supports
+
+This GitHub repository is a curated, public-safe source snapshot, not a mirror
+of the maintainer's working tree: internal deployment, signing, packaging, and
+native-tooling commands live only in the private source. From a fresh clone,
+the supported command surface is:
+
+```bash
+npm ci                 # install the exact locked dependencies
+npm start              # build the browser bundle, then serve http://localhost:4173
+npm run build          # build the browser bundle
+npm test               # executable feature contracts
+npm run verify:public  # public tree verification (commands, files, CI, docs)
+```
+
+`npm run verify:public` fails if any exposed command references a file that is
+not in this repository, or if internal-only tooling is present. The CI workflow
+in `.github/workflows/ci.yml` runs `npm ci`, the build, the feature tests, and
+the public tree verification on every push to `main`.
+
 ## Built differently
 
 - **Local-first:** durable project data lives in IndexedDB; the server has no application database.

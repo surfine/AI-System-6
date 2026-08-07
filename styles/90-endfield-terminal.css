@@ -265,6 +265,30 @@
   background: var(--endfield-hover-bg);
 }
 
+.endfield-inline-citation {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 18px;
+  margin-inline: 1px;
+  padding: 0 4px;
+  border: var(--endfield-index-border);
+  border-radius: 9px;
+  background: var(--endfield-index-bg);
+  color: var(--endfield-muted);
+  font-family: var(--mono-font);
+  font-size: 10px;
+  line-height: 1;
+  vertical-align: 1px;
+  cursor: pointer;
+}
+
+.endfield-inline-citation:hover,
+.endfield-inline-citation:focus-visible {
+  background: var(--endfield-hover-bg);
+  color: var(--endfield-ink, var(--ink));
+}
+
 .endfield-answer .markdown-body>:last-child {
   margin-bottom: 0;
 }

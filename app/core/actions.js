@@ -988,8 +988,8 @@ function getApplicationActionHandlers() {
     "view-modification-suggestion-diff": async () => {
       if (!await viewSelectedTeachTextModificationSuggestionDiff()) setStatus(t("select_finder_item_first"));
     },
-    "accept-modification-suggestion": () => {
-      if (!acceptSelectedTeachTextModificationSuggestion()) setStatus(t("select_finder_item_first"));
+    "accept-modification-suggestion": async () => {
+      if (!await acceptSelectedTeachTextModificationSuggestion()) setStatus(t("select_finder_item_first"));
     },
     "reject-modification-suggestion": () => {
       if (!rejectSelectedTeachTextModificationSuggestion()) setStatus(t("select_finder_item_first"));

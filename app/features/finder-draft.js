@@ -105,6 +105,7 @@
     refs.draft = $("quick-draft-draft");
     refs.preview = $("quick-draft-preview");
     refs.togglePreviewButton = $("quick-draft-toggle-preview");
+    refs.toggleGrainButton = $("quick-draft-toggle-grain");
     refs.saveButton = $("quick-draft-save");
     refs.saveProjectDocButton = $("quick-draft-save-project-doc");
     refs.sendTeachTextButton = $("quick-draft-send-teachtext");
@@ -148,6 +149,7 @@
       sourceMap: [],
       humanAnchor: "",
       humanAnchorUpdatedAt: "",
+      adjustmentLayers: [],
       updatedAt: "",
       savedStatus: "saved",
       projectDocId: "",
@@ -296,6 +298,7 @@
       sourceMap: Array.isArray(source.sourceMap) ? source.sourceMap : (Array.isArray(legacy.sourceMap) ? legacy.sourceMap : []),
       humanAnchor: String(source.humanAnchor || legacy.humanAnchor || ""),
       humanAnchorUpdatedAt: String(source.humanAnchorUpdatedAt || legacy.humanAnchorUpdatedAt || ""),
+      adjustmentLayers: normalizeAdjustmentLayers(source.adjustmentLayers || legacy.adjustmentLayers),
       updatedAt: String(source.updatedAt || legacy.updatedAt || ""),
       savedStatus: source.savedStatus === "modified" ? "modified" : "saved",
       projectDocId: String(source.projectDocId || legacy.projectDocId || ""),
@@ -513,6 +516,63 @@
   function humanAnchorSnapshot(record = activeProjectQuickDraft({ create: false })?.record) {
     const workspace = normalizeQuickDraftWorkspace(record?.workspace, record);
     return workspace.humanAnchor || dumpEntries(workspace.intake)[0]?.text || "";
+  }
+
+  function adjustmentLayersSnapshot(record = activeProjectQuickDraft({ create: false })?.record) {
+    return normalizeAdjustmentLayers(normalizeQuickDraftWorkspace(record?.workspace, record).adjustmentLayers);
+  }
+
+  function adjustmentLayerState(kind = "", record = activeProjectQuickDraft({ create: false })?.record) {
+    return adjustmentLayer(kind, adjustmentLayersSnapshot(record));
+  }
+
+  function updateAdjustmentLayer(kind = "", patch = {}) {
+    const next = normalizeAdjustmentLayers(adjustmentLayersSnapshot()).map((layer) => (
+      layer.kind === kind ? { ...layer, ...patch } : layer
+    ));
+    saveQuickDraft({ workspace: { adjustmentLayers: next } }, { debounce: false });
+    renderAdjustmentLayers(activeProjectQuickDraft({ create: false })?.record);
+    setQuickDraftStatus(t("quick_draft_adjustment_saved"));
+    return next;
+  }
+
+  function renderAdjustmentLayers(record = activeProjectQuickDraft({ create: false })?.record) {
+    if (!refs.form) return;
+    adjustmentLayersSnapshot(record).forEach((layer) => {
+      const checkbox = refs.form.querySelector(`[data-quick-draft-adjustment-enabled="${layer.kind}"]`);
+      const select = refs.form.querySelector(`[data-quick-draft-adjustment-strength="${layer.kind}"]`);
+      const maskInput = refs.form.querySelector(`[data-quick-draft-adjustment-mask="${layer.kind}"]`);
+      if (checkbox) checkbox.checked = layer.enabled;
+      if (select) select.value = String(layer.strength);
+      if (maskInput) maskInput.value = adjustmentMaskSummary(layer.mask);
+      const chip = refs.form.querySelector(`[data-quick-draft-chat-action="${layer.kind}"]`);
+      if (chip) chip.disabled = !layer.enabled;
+    });
+  }
+
+  function adjustmentLayerLabelKey(kind = "") {
+    const labels = {
+      mingming: "quick_draft_chip_mingming",
+      luoluo: "quick_draft_chip_luoluo",
+      hkrr: "quick_draft_chip_hkrr",
+    };
+    return labels[kind] || "";
+  }
+
+  function adjustmentStrengthPromptLine(strength = ADJUSTMENT_DEFAULT_STRENGTH, zh = true) {
+    if (strength === 25) {
+      return zh
+        ? "- 调整层强度：轻触。只修最影响“当天能录”的问题；当前正文的原句、顺序和口气尽量保留。"
+        : "- Adjustment strength: light touch. Fix only what most blocks same-day recording; keep the current body's sentences, order, and voice.";
+    }
+    if (strength === 75) {
+      return zh
+        ? "- 调整层强度：重写。可以合并、换序、换词来达到目标，但不新增事实、不丢未测边界、不用风格覆盖事实。"
+        : "- Adjustment strength: heavy. You may merge, reorder, and reword to hit the target; never add facts, drop untested boundaries, or let style override facts.";
+    }
+    return zh
+      ? "- 调整层强度：标准。可以合并或微调，但保留作者判断、犹豫和已写出的口气。"
+      : "- Adjustment strength: standard. You may merge or tune, but keep the author's judgment, hesitation, and written voice.";
   }
 
   function textExcerpt(text = "", limit = 240) {
@@ -971,6 +1031,166 @@
       : `<p class="empty-folder-note">${escapeHtml(t("teachtext_preview_empty"))}</p>`;
   }
 
+  // ---- Compression grain -------------------------------------------------
+  // A lossy rewrite leaves no visible seam: the model's replacement reads as
+  // smoothly as the sentence it replaced. This view puts the seam back by
+  // comparing the body against the human anchor (the writer's own text, kept
+  // in workspace.humanAnchor before the first model rewrite). It is read-only
+  // and lives in the preview pane — a textarea cannot paint one span darker
+  // than another, and this must never become an editing surface.
+  //
+  // The pure text diff (tokenizing, block matching, survivor masks, run
+  // collapsing) lives in app/core/grain-diff.js so the rounding rules are
+  // executable in a test. This module keeps only the record-aware and
+  // rendering layers.
+
+  function quickDraftGrainRuns(anchorText = "", bodyText = "") {
+    const body = String(bodyText || "");
+    if (!body) return [];
+    const model = grainBodyModel(body);
+    if (!String(anchorText || "").trim()) {
+      return [{ text: body, generation: 0, source: "author" }];
+    }
+    const mask = grainPresenceMask(anchorText, model);
+    return grainRunsFromGenerations(model, mask.map((present) => (present ? 0 : 1)));
+  }
+
+  // Every model pass stores the body it replaced, so the vent log is already a
+  // version chain: dump[0] is the negative, dump[k] is the state after rewrite
+  // k, and the current body is the state after the last one.
+  const GRAIN_MAX_VERSIONS = 12;
+
+  function grainVersionChain(record) {
+    const dumps = dumpEntries(intakeSnapshot(record))
+      .map((entry) => String(entry.text || ""))
+      .filter((text) => text.trim());
+    if (!dumps.length) {
+      // An empty anchor with a recorded timestamp is still a real boundary:
+      // the writer had written nothing when the first model pass ran, so every
+      // word that came after belongs to pass 1. Check the timestamp, not the
+      // truthiness of the anchor text.
+      const workspace = normalizeQuickDraftWorkspace(record?.workspace, record);
+      return workspace.humanAnchorUpdatedAt
+        ? { versions: [""], indexes: [0], passes: 1 }
+        : { versions: [], indexes: [], passes: 0 };
+    }
+    const indexes = dumps.map((_, index) => index);
+    if (dumps.length <= GRAIN_MAX_VERSIONS) {
+      return { versions: dumps, indexes, passes: dumps.length };
+    }
+    // The negative is never dropped: the yours/model split depends only on it.
+    // Dropping middle versions can only make an old span's ×n read low.
+    const keep = dumps.length - (GRAIN_MAX_VERSIONS - 1);
+    return {
+      versions: [dumps[0], ...dumps.slice(keep)],
+      indexes: [0, ...indexes.slice(keep)],
+      passes: dumps.length,
+    };
+  }
+
+  function quickDraftGrainReport(record = activeProjectQuickDraft({ create: false })?.record) {
+    const body = String(record ? normalizeQuickDraftWorkspace(record.workspace, record).body : refs.draft?.value || "");
+    const chain = grainVersionChain(record);
+    const model = grainBodyModel(body);
+    const empty = {
+      runs: [], body, hasAnchor: chain.passes > 0, authorRatio: 1, modelChars: 0, totalChars: 0, passes: chain.passes, deepest: 0,
+    };
+    if (!model.tokens.length) return empty;
+    if (!chain.versions.length) {
+      return { ...empty, runs: [{ text: body, generation: 0, source: "author" }], totalChars: grainVisibleLength(body) };
+    }
+    const masks = chain.versions.map((version) => grainPresenceMask(version, model));
+    // A span carries the number of model passes that emitted it: the pass that
+    // introduced it, plus every later pass that read it and wrote it out again.
+    // Text that was already in the negative belongs to the writer — generation 0.
+    const generations = model.tokens.map((token, index) => {
+      const found = masks.findIndex((mask) => mask[index]);
+      if (found === 0) return 0;
+      const introduced = found < 0 ? chain.passes : chain.indexes[found];
+      return chain.passes - introduced + 1;
+    });
+    const runs = grainRunsFromGenerations(model, generations);
+    let author = 0;
+    let rewritten = 0;
+    let deepest = 0;
+    for (const run of runs) {
+      const length = grainVisibleLength(run.text);
+      if (run.generation) {
+        rewritten += length;
+        if (length) deepest = Math.max(deepest, run.generation);
+      } else {
+        author += length;
+      }
+    }
+    const total = author + rewritten;
+    return {
+      runs,
+      body,
+      hasAnchor: true,
+      authorRatio: total ? author / total : 1,
+      modelChars: rewritten,
+      totalChars: total,
+      passes: chain.passes,
+      deepest,
+    };
+  }
+
+  function renderQuickDraftGrain() {
+    if (!refs.preview) return;
+    const report = quickDraftGrainReport();
+    if (!report.totalChars) {
+      refs.preview.innerHTML = `<p class="empty-folder-note">${escapeHtml(t("quick_draft_grain_empty"))}</p>`;
+      return;
+    }
+    const body = report.runs
+      .map((run) => {
+        if (!run.generation) return `<span class="quick-draft-grain-author">${escapeHtml(run.text)}</span>`;
+        // The chip is for stacked passes only. Marking every rewritten span ×1
+        // would put a badge on half the article and say nothing.
+        const chip = run.generation > 1
+          ? `<i class="quick-draft-grain-generation">&times;${run.generation}</i>`
+          : "";
+        return `<span class="quick-draft-grain-model">${escapeHtml(run.text)}${chip}</span>`;
+      })
+      .join("");
+    const note = report.hasAnchor ? "" : `<p class="quick-draft-grain-note">${escapeHtml(t("quick_draft_grain_untouched"))}</p>`;
+    const bodyLineCount = report.body.split("\n").length;
+    const maskSummary = adjustmentLayersSnapshot()
+      .filter((layer) => layer.enabled)
+      .map((layer) => {
+        const ranges = adjustmentLayerMaskRanges(layer, bodyLineCount);
+        return ranges.length
+          ? `${escapeHtml(t(adjustmentLayerLabelKey(layer.kind)))} ${escapeHtml(adjustmentMaskSummary(ranges))}`
+          : "";
+      })
+      .filter(Boolean)
+      .join(" · ");
+    const readout = [
+      `<span><b>${Math.round(report.authorRatio * 100)}%</b> ${escapeHtml(t("quick_draft_grain_negative"))}</span>`,
+      `<span><b>${report.modelChars}</b> ${escapeHtml(t("quick_draft_grain_interpolated"))}</span>`,
+      `<span><b>${report.passes}</b> ${escapeHtml(t("quick_draft_grain_passes"))}</span>`,
+      report.deepest > 1
+        ? `<span><b>&times;${report.deepest}</b> ${escapeHtml(t("quick_draft_grain_deepest"))}</span>`
+        : "",
+      maskSummary
+        ? `<span><b>${escapeHtml(t("quick_draft_grain_mask"))}</b> ${maskSummary}</span>`
+        : "",
+    ].join("");
+    const legend = [
+      `<span><i class="quick-draft-grain-swatch is-author"></i>${escapeHtml(t("quick_draft_grain_legend_author"))}</span>`,
+      `<span><i class="quick-draft-grain-swatch is-model"></i>${escapeHtml(t("quick_draft_grain_legend_model"))}</span>`,
+      report.deepest > 1
+        ? `<span><i class="quick-draft-grain-generation">&times;n</i>${escapeHtml(t("quick_draft_grain_legend_generation"))}</span>`
+        : "",
+    ].join("");
+    refs.preview.innerHTML = [
+      `<div class="quick-draft-grain-readout">${readout}</div>`,
+      note,
+      `<pre class="quick-draft-grain-body">${body}</pre>`,
+      `<div class="quick-draft-grain-legend">${legend}</div>`,
+    ].join("");
+  }
+
   function looksLikePlaceholderDraft(text = "") {
     const value = String(text || "");
     return /(?:请(?:您|你)?提供|此处需要|待填写|需要(?:您|你)?提供|placeholder)/i.test(value);
@@ -1018,18 +1238,48 @@
     return lines.join("\n").replace(/\n{3,}/g, "\n\n").trim();
   }
 
-  function toggleQuickDraftPreview() {
+  let quickDraftPreviewMode = "render";
+
+  function renderQuickDraftPreviewPane() {
+    if (quickDraftPreviewMode === "grain") renderQuickDraftGrain();
+    else renderQuickDraftPreview();
+  }
+
+  function syncQuickDraftPreviewButtons(active) {
+    const previewing = active && quickDraftPreviewMode === "render";
+    const graining = active && quickDraftPreviewMode === "grain";
+    refs.togglePreviewButton?.classList.toggle("is-active", previewing);
+    refs.togglePreviewButton?.setAttribute("aria-pressed", previewing ? "true" : "false");
+    refs.toggleGrainButton?.classList.toggle("is-active", graining);
+    refs.toggleGrainButton?.setAttribute("aria-pressed", graining ? "true" : "false");
+  }
+
+  function setQuickDraftPreviewMode(mode) {
     const container = refs.draft?.closest(".teachtext-editor-container");
     if (!container || !refs.preview || !refs.draft) return;
-    const active = !container.classList.contains("is-previewing");
+    const wasActive = container.classList.contains("is-previewing");
+    const active = !(wasActive && quickDraftPreviewMode === mode);
+    quickDraftPreviewMode = mode;
     container.classList.toggle("is-previewing", active);
+    container.classList.toggle("is-graining", active && mode === "grain");
     refs.preview.classList.toggle("is-hidden", !active);
+    refs.preview.classList.toggle("quick-draft-grain-pane", active && mode === "grain");
     refs.draft.classList.toggle("is-hidden", active);
+    syncQuickDraftPreviewButtons(active);
     if (active) {
-      renderQuickDraftPreview();
+      renderQuickDraftPreviewPane();
     } else {
+      quickDraftPreviewMode = "render";
       refs.draft.focus();
     }
+  }
+
+  function toggleQuickDraftPreview() {
+    setQuickDraftPreviewMode("render");
+  }
+
+  function toggleQuickDraftGrain() {
+    setQuickDraftPreviewMode("grain");
   }
 
   function mountedSourceRecords() {
@@ -1231,6 +1481,12 @@
     setSaveState(source.workspace.savedStatus);
     setQuickDraftStatus(t(source.workspace.savedStatus === "modified" ? "quick_draft_modified_state" : "quick_draft_saved_state"));
     refreshQuickDraftSelectControls();
+    renderAdjustmentLayers(source);
+    // A model pass rewrites the body under an open preview; the grain view is
+    // the one that must not go stale, since it reports on that very rewrite.
+    if (refs.draft?.closest(".teachtext-editor-container")?.classList.contains("is-previewing")) {
+      renderQuickDraftPreviewPane();
+    }
   }
 
   function activeModelPayload() {
@@ -1336,6 +1592,7 @@
         currentBody,
         authorDraft: currentBody,
         humanAnchor,
+        adjustmentLayers: adjustmentLayersSnapshot(),
         targetFormat: routeFormat,
         displayFormat: targetFormat,
         launchDaySubtype: launchDayMode ? launchDaySubtype(targetFormat) : "",
@@ -1444,6 +1701,11 @@
           setQuickDraftStatus(t("quick_draft_no_revision"));
           return false;
         }
+        // The dump stays guarded by previousBody — an empty dump entry would
+        // carry no version — but the anchor is the boundary the negative is
+        // measured from, so it is recorded on the first model pass even when
+        // the writer had written nothing yet. An empty anchor with a timestamp
+        // still means "one pass wrote all of this".
         if (previousBody) {
           const dumpEntry = normalizeVentEntry({
             id: stableId("dump"),
@@ -1455,10 +1717,10 @@
             ...nextIntake,
             ventLog: [...(nextIntake.ventLog || []), dumpEntry],
           });
-          if (!humanAnchorSnapshot()) {
-            patch.workspace.humanAnchor = previousBody;
-            patch.workspace.humanAnchorUpdatedAt = new Date().toISOString();
-          }
+        }
+        if (!humanAnchorSnapshot()) {
+          patch.workspace.humanAnchor = previousBody;
+          patch.workspace.humanAnchorUpdatedAt = new Date().toISOString();
         }
         refs.draft.value = nextBody;
         patch.draft = refs.draft.value;
@@ -1520,6 +1782,9 @@
       "- 钟点稿正文区不分章节：第一行可以用一个 Markdown H1 标题，正文不要输出 ## 二级标题、表格、项目符号或后台标签，只写自然段口播。",
       currentBody ? "- 本次是基于当前正文的迭代打磨：至少改善开头钩子、视频顺序、口播节奏或素材取舍；不能只返回旧正文。" : "",
       humanAnchor ? "- 人的原稿锚点优先：保留用户原始判断、犹豫、吐槽和已经写出的口气；不能只沿着上一版 AI 稿自我复制。" : "",
+      (adjustmentLayerState("mingming")?.enabled
+        ? adjustmentStrengthPromptLine(adjustmentLayerState("mingming").strength, currentLanguage === "zh")
+        : ""),
       strategy.editorial ? `出稿取舍：\n${strategy.editorial}` : "",
       strategy.materialLedger ? `素材处理：\n${strategy.materialLedger}` : "",
       strategy.adoptionTable ? `稿里怎么处理：\n${strategy.adoptionTable}` : "",
@@ -1621,6 +1886,10 @@ ${projectContext}`;
           sourceMap: sourceRecords.map((source) => ({ id: source.id, label: source.label })),
         },
       };
+      // The dump stays guarded by previousBody — an empty dump entry would
+      // carry no version — but the anchor is the boundary the negative is
+      // measured from, so it is recorded on the first model pass even when
+      // the writer had written nothing yet.
       if (previousBody) {
         const dumpEntry = normalizeVentEntry({
           id: stableId("dump"),
@@ -1632,10 +1901,10 @@ ${projectContext}`;
           ...intake,
           ventLog: [...(intake.ventLog || []), dumpEntry],
         });
-        if (!humanAnchorSnapshot()) {
-          patch.workspace.humanAnchor = previousBody;
-          patch.workspace.humanAnchorUpdatedAt = new Date().toISOString();
-        }
+      }
+      if (!humanAnchorSnapshot()) {
+        patch.workspace.humanAnchor = previousBody;
+        patch.workspace.humanAnchorUpdatedAt = new Date().toISOString();
       }
       refs.draft.value = nextBody;
       const saved = saveQuickDraft(patch, { debounce: false });
@@ -2375,6 +2644,13 @@ ${projectContext}`;
     if (action === "organize") return collectVentOutline();
     if (action === "vent-summary") return collectVentOutline();
     if (action === "draft") return requestMingmingQuickDraft();
+    if (action === "mingming" || action === "luoluo" || action === "hkrr") {
+      const layer = adjustmentLayerState(action);
+      if (layer && !layer.enabled) {
+        setQuickDraftStatus(t("quick_draft_adjustment_disabled"));
+        return false;
+      }
+    }
     if (action === "mingming") return runNextAction("mingming");
     if (action === "luoluo") return runNextAction("luoluo");
     if (action === "hkrr") return runNextAction("hkrr");
@@ -2392,6 +2668,15 @@ ${projectContext}`;
     return requestMingmingQuickDraft();
   }
 
+  function isAdjustmentLayerControl(target) {
+    const node = target && typeof target.closest === "function" ? target : null;
+    return Boolean(
+      node?.closest?.("[data-quick-draft-adjustment-enabled]")
+      || node?.closest?.("[data-quick-draft-adjustment-strength]")
+      || node?.closest?.("[data-quick-draft-adjustment-mask]")
+    );
+  }
+
   function bind() {
     if (bound) return;
     collectRefs();
@@ -2400,12 +2685,29 @@ ${projectContext}`;
     attachQuickDraftMarkdownEditor();
 
     ["input", "change"].forEach((eventName) => {
-      refs.form.addEventListener(eventName, () => {
+      refs.form.addEventListener(eventName, (event) => {
+        if (eventName === "change" && isAdjustmentLayerControl(event.target)) return;
         syncQuickDraftTemplateUi();
         updateDraftStats();
         updateSourceCount();
         renderDecisionStatuses(saveQuickDraft({}, { debounce: true }));
       });
+    });
+    refs.form.addEventListener("change", (event) => {
+      const enabledToggle = event.target?.closest?.("[data-quick-draft-adjustment-enabled]");
+      if (enabledToggle) {
+        updateAdjustmentLayer(enabledToggle.dataset.quickDraftAdjustmentEnabled, { enabled: enabledToggle.checked });
+        return;
+      }
+      const strengthSelect = event.target?.closest?.("[data-quick-draft-adjustment-strength]");
+      if (strengthSelect) {
+        updateAdjustmentLayer(strengthSelect.dataset.quickDraftAdjustmentStrength, { strength: Number(strengthSelect.value) || ADJUSTMENT_DEFAULT_STRENGTH });
+        return;
+      }
+      const maskInput = event.target?.closest?.("[data-quick-draft-adjustment-mask]");
+      if (maskInput) {
+        updateAdjustmentLayer(maskInput.dataset.quickDraftAdjustmentMask, { mask: maskInput.value });
+      }
     });
     refs.format?.addEventListener("change", () => {
       syncQuickDraftTemplateUi();
@@ -2416,6 +2718,11 @@ ${projectContext}`;
       refreshQuickDraftSelectControls();
     }, true);
     refs.togglePreviewButton?.addEventListener("click", toggleQuickDraftPreview);
+    refs.toggleGrainButton?.addEventListener("click", toggleQuickDraftGrain);
+    // Return to an active Quick Draft side-ask conversation from the source
+    // page; askClioTalk re-arranges (and focuses) the paired assistant when a
+    // session is already running instead of stacking a second one.
+    document.getElementById("quick-draft-return-sideask")?.addEventListener("click", askClioTalk);
     refs.saveButton?.addEventListener("click", startWritingNow);
     refs.saveProjectDocButton?.addEventListener("click", saveQuickDraftAsProjectDocument);
     refs.sendTeachTextButton?.addEventListener("click", transferQuickDraftToTeachText);

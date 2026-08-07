@@ -121,10 +121,14 @@ test.assert(
 );
 
 const v2Bundle = await backup.attachIntegrity(legacyBundle);
-test.assert(v2Bundle.formatVersion === 2, "new exports use format v2");
+test.assert(v2Bundle.formatVersion === 3, "new exports use format v3");
 test.assert(
   /^[a-f0-9]{64}$/.test(v2Bundle.integrity.contentHash),
   "new exports carry a SHA-256 content hash"
+);
+test.assert(
+  Array.isArray(v2Bundle.documentRevisions) && v2Bundle.documentRevisions.length === 0,
+  "v3 exports always carry the documentRevisions array (empty for legacy sources)"
 );
 const v2Validation = backup.validateBackup(v2Bundle);
 if (!v2Validation.valid) console.error(v2Validation.errors.join("\n"));
@@ -187,6 +191,80 @@ test.assert(
   imported.trash[0].originalData.id !== "file-deleted"
     && imported.trash[0].originalData.folderId === rootFolder.id,
   "recoverable Trash records receive fresh nested identities"
+);
+
+// ---- v3 document revisions -----------------------------------------------
+
+const v3WithRevisions = structuredClone(v2Bundle);
+v3WithRevisions.documentRevisions = [
+  {
+    id: "rev-1",
+    projectId: legacyBundle.project.id,
+    documentId: "file-child",
+    parentRevisionId: "",
+    body: "First version",
+    contentHash: "aaa",
+    phase: "draft",
+    origin: "user",
+    operation: "save",
+    createdAt: "2026-07-30T00:10:00.000Z",
+  },
+  {
+    id: "rev-2",
+    projectId: legacyBundle.project.id,
+    documentId: "file-child",
+    parentRevisionId: "rev-1",
+    body: "Second version",
+    contentHash: "bbb",
+    phase: "final",
+    origin: "user",
+    operation: "save",
+    createdAt: "2026-07-30T00:20:00.000Z",
+  },
+];
+const revisionsAttached = await backup.attachIntegrity(v3WithRevisions);
+const v3Validation = backup.validateBackup(revisionsAttached);
+if (!v3Validation.valid) console.error(v3Validation.errors.join("\n"));
+test.assert(v3Validation.valid, "a v3 backup with document revisions satisfies its schema");
+test.assert((await backup.verifyIntegrity(revisionsAttached)).valid, "v3 integrity covers document revisions");
+
+const badRevisionDocument = structuredClone(revisionsAttached);
+badRevisionDocument.documentRevisions[0].documentId = "missing-file";
+test.assert(
+  !backup.validateBackup(badRevisionDocument).valid,
+  "a revision pointing at a missing file is rejected"
+);
+
+const badRevisionParent = structuredClone(revisionsAttached);
+badRevisionParent.documentRevisions[1].parentRevisionId = "rev-other-doc";
+test.assert(
+  !backup.validateBackup(badRevisionParent).valid,
+  "a revision whose parent is not in the same document tree is rejected"
+);
+
+let revisionUuidCounter = 0;
+const importedWithRevisions = backup.remapBackup(revisionsAttached, {
+  now: "2026-07-30T02:00:00.000Z",
+  uuid: () => `rev-new-${++revisionUuidCounter}`,
+  projectName: (name) => `${name} Restored`,
+});
+const importedChildFile = importedWithRevisions.files.find((file) => file.name === "Child Chat");
+const importedRevisions = importedWithRevisions.documentRevisions;
+test.assert(
+  importedRevisions.length === 2
+    && importedRevisions.every((revision) => revision.projectId === importedWithRevisions.project.id),
+  "imported revisions join the restored project"
+);
+test.assert(
+  importedRevisions.every((revision) => revision.documentId === importedChildFile.id),
+  "imported revision documentIds follow the remapped file ids"
+);
+const importedRev1 = importedRevisions.find((revision) => revision.body === "First version");
+const importedRev2 = importedRevisions.find((revision) => revision.body === "Second version");
+test.assert(
+  importedRev1?.id !== "rev-1" && importedRev2?.id !== "rev-2"
+    && importedRev2?.parentRevisionId === importedRev1?.id,
+  "imported revision ids are re-keyed and the parent chain is preserved"
 );
 test.assert(
   childFile.sourceKey === `reference:${reference.id}`,

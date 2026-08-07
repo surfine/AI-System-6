@@ -582,6 +582,16 @@ async function browseTimeMachinePage(targetUrl, originalUrl, signal) {
   }
   const canonicalOriginal = originalUrl ? timeMachineUrl(originalUrl) : unwrapArchiveOriginal(response.finalUrl);
   const sanitizedHtml = sanitizeBrowserHtml(response.text, response.finalUrl, canonicalOriginal);
+  // A "page" that has almost no visible text after sanitization is a bot
+  // check, a meta-refresh redirect stub, or a JavaScript-only shell — the
+  // sandbox cannot execute the code that would materialize it, so show a
+  // named failure instead of a blank frame that reads as "broken". Large
+  // media-first pages are left alone: the raw-length guard keeps this to the
+  // small stub pages that are never browsable.
+  const visibleTextLength = cleanText(stripTags(sanitizedHtml)).length;
+  if (visibleTextLength < 80 && response.text.length < 128 * 1024) {
+    throw new Error("This page looks like a bot check or a JavaScript-only shell; Time Machine could not read it.");
+  }
   let reader = null;
   try {
     reader = await cleanHtmlForReader(response.text, canonicalOriginal);

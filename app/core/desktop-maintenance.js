@@ -1,3 +1,4 @@
+// @ts-check
 // Invisible background maintenance: "Rebuild Desktop" and "Project Disk First
 // Aid" as internal hygiene instead of user tools. It runs on boot idle, on
 // project mount/switch, and after backup imports. Document bodies and other
@@ -593,19 +594,6 @@ async function runDesktopMaintenance(reason = "event") {
     // Record failure never undoes an already-saved project, but it leaves an
     // error notification.
     const snapshot = maintenanceSnapshotForPlan(dataPlan, reason);
-    if (typeof createDocumentRevision === "function") {
-      dataPlan.items
-        .filter((item) => item.collection === "chatFiles" && item.record?.id && item.record?.body !== undefined)
-        .forEach((item) => {
-          createDocumentRevision({
-            projectId: item.record.projectId || activeProjectId,
-            documentId: item.record.id,
-            body: item.record.body,
-            origin: "system",
-            operation: "maintenance-before",
-          });
-        });
-    }
     const snapshotSaved = await appendMaintenanceSnapshot(snapshot);
     if (!snapshotSaved) {
       pushSystemNotification?.(t("maintenance_snapshot_failed"), {
@@ -613,6 +601,27 @@ async function runDesktopMaintenance(reason = "event") {
         state: "failed",
       });
       throw new Error("Desktop maintenance could not persist its pre-repair snapshot; no repairs were applied.");
+    }
+    if (typeof createDocumentRevision === "function") {
+      for (const item of dataPlan.items.filter(
+        (entry) => entry.collection === "chatFiles" && entry.record?.id && entry.record?.body !== undefined
+      )) {
+        try {
+          await createDocumentRevision({
+            projectId: item.record.projectId || activeProjectId,
+            documentId: item.record.id,
+            body: item.record.body,
+            origin: "system",
+            operation: "maintenance-before",
+          });
+        } catch (error) {
+          pushSystemNotification?.(t("maintenance_revision_failed"), {
+            windowName: "notificationCenter",
+            state: "failed",
+          });
+          throw new Error("Desktop maintenance could not persist a pre-repair revision; no repairs were applied.");
+        }
+      }
     }
     const applied = applyMaintenancePlan(dataPlan);
     const saved = await saveDeskState();

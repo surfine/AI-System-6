@@ -230,7 +230,7 @@ function switchProject(projectId) {
   setStatus(wasArchived ? t("project_unarchived", project.name) : t("project_opened", project.name));
 }
 
-function createProjectFromInput() {
+async function createProjectFromInput() {
   const name = projectDiskNameInput.value.trim() || t("untitled_project");
   if (getProjectNameConflict(name)) {
     setStatus(t("project_name_taken", name));
@@ -245,7 +245,7 @@ function createProjectFromInput() {
   const project = createProjectRecord(name);
   const previousProjectId = activeProjectId;
   parkConversationInProject(previousProjectId);
-  window.AISystem6StateStores?.projects.commit(() => {
+  await window.AISystem6StateStores?.projects.commit(() => {
     isProjectMounted = true;
     projects.unshift(project);
     activeProjectId = project.id;

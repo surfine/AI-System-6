@@ -22,6 +22,7 @@ const documentsChat = read("app/features/documents-chat.js");
 const systemIcons = read("app/core/system-icons.js");
 const manifest = read("scripts/runtime-manifest.mjs");
 const feature = read("app/features/finder-draft.js");
+const grainDiff = read("app/core/grain-diff.js");
 const draftRoute = read("src/server/routes/draft-thesis.js");
 const foundationCss = read("styles/00-foundation.css");
 const appsCss = read("styles/50-apps.css");
@@ -436,5 +437,79 @@ test.assertIncludes(draftRoute, "humanizerModelInstruction(`quick-draft-${taskKi
 test.assertIncludes(draftRoute, "国行是否支持", "Draft route preserves region / China-availability guardrails");
 test.assertIncludes(draftRoute, "不同资料之间互相冲突", "Draft route preserves source-vs-source conflict guardrails");
 test.assertIncludes(draftRoute, "不能替用户生成个人感受", "Draft route preserves the no-AI-feeling guardrail");
+
+// Compression grain: a read-only provenance view. A lossy rewrite leaves no
+// visible seam, so the body is compared against the human anchor and the
+// model's share is drawn differently from the writer's own words.
+test.assertIncludes(html, 'id="quick-draft-toggle-grain"', "Quick Draft has a compression-grain toggle next to Preview");
+test.assertIncludes(html, 'data-i18n="quick_draft_grain"', "The grain toggle takes its label from the translation tables");
+test.assertIncludes(feature, "function quickDraftGrainRuns", "Quick Draft diffs the body against the human anchor for the grain view");
+test.assertIncludes(manifest, '"app/core/grain-diff.js"', "The grain diff module is eager in the runtime manifest");
+test.assertIncludes(grainDiff, "function grainSmoothMask", "Accidental single-character matches are absorbed instead of read as preserved authorship");
+test.assertIncludes(feature, "function renderQuickDraftGrain", "The grain view renders into the preview pane");
+test.assertMatches(feature, /renderQuickDraftGrain[\s\S]*quick-draft-grain-model/, "The grain view marks the model's share with its own class");
+test.assertMatches(feature, /renderQuickDraftGrain[\s\S]*quick_draft_grain_passes/, "The grain view reports how many model rewrites the body carries");
+// Generation depth: the vent log already keeps the body each model pass
+// replaced, so the version chain is read from there rather than newly stored.
+test.assertIncludes(feature, "function grainVersionChain", "The grain view builds a version chain from the stored model-pass dumps");
+test.assertMatches(feature, /grainVersionChain[\s\S]*dumpEntries\(intakeSnapshot\(record\)\)/, "The version chain reuses the vent-log dumps instead of a new store");
+test.assertIncludes(feature, "chain.passes - introduced + 1", "A span counts the model passes that wrote it out");
+test.assertIncludes(grainDiff, "function grainCollapseRewritten", "One contiguous rewritten stretch carries one generation badge");
+test.assertIncludes(grainDiff, "Math.max(last.generation, run.generation)", "The collapsed badge reports the deepest pass count, never the shallowest");
+test.assertNotIncludes(feature, "function grainSmoothMask", "The pure diff functions live in grain-diff.js, not the feature module");
+test.assertNotIncludes(feature, "function grainCollapseRewritten", "The pure diff functions live in grain-diff.js, not the feature module");
+test.assertMatches(feature, /run\.generation > 1[\s\S]*quick-draft-grain-generation/, "Only stacked rewrites get a generation badge");
+test.assertNotIncludes(feature, "grainEditable", "The grain view stays read-only");
+
+// A draft written from an empty body must still record the negative boundary.
+// The anchor is set on the first model pass whether or not there was a
+// previous body; the version chain then checks the anchor timestamp rather
+// than the truthiness of the anchor text.
+test.assertMatches(feature, /humanAnchorUpdatedAt[\s\S]{0,120}versions: \[""\], indexes: \[0\], passes: 1/, "An empty anchor with a recorded timestamp still counts as one model pass");
+test.assertIncludes(
+  feature,
+  "        }\n        if (!humanAnchorSnapshot()) {\n          patch.workspace.humanAnchor = previousBody;",
+  "The draft path records the anchor even when the previous body is empty"
+);
+test.assertIncludes(
+  feature,
+  "      }\n      if (!humanAnchorSnapshot()) {\n        patch.workspace.humanAnchor = previousBody;",
+  "The Mingming rewrite path records the anchor even when the previous body is empty"
+);
+test.assertIncludes(appsCss, ".quick-draft-grain-model", "Quick Draft styles the model's share");
+test.assertIncludes(appsCss, "var(--quick-draft-grain-model-fg)", "The grain view takes its colours from tokens, not literals");
+test.assertIncludes(foundationCss, "--quick-draft-grain-author-fg", "Grain tokens have a single source in the foundation layer");
+test.assertIncludes(liquidCss, "--quick-draft-grain-model-fg", "Liquid Glass overrides the grain token values rather than the selectors");
+test.assertIncludes(en, "quick_draft_grain_legend_model", "Grain copy exists in English");
+test.assertIncludes(zh, "quick_draft_grain_legend_model", "Grain copy exists in Chinese");
+
+// Adjustment layers: 明明传球 / 洛洛接球 / HKRR 抬升 carry a switch and a
+// strength parameter, live in the existing workspace record (no new store),
+// and the strength travels with the request to scale that one pass — a layer
+// reads the negative, never another layer's output.
+test.assertIncludes(manifest, '"app/core/adjustment-layers.js"', "The adjustment-layer module is eager in the runtime manifest");
+test.assertIncludes(feature, "adjustmentLayers: normalizeAdjustmentLayers(source.adjustmentLayers", "the workspace record normalizes the layer stack");
+test.assertIncludes(feature, "adjustmentLayers: adjustmentLayersSnapshot()", "the request payload carries the layer stack");
+test.assertIncludes(feature, "adjustmentLayerState(action)", "a disabled layer blocks its command");
+test.assertIncludes(feature, "quick_draft_adjustment_disabled", "a disabled layer reports why the command is off");
+test.assertIncludes(feature, "adjustmentMaskSummary(layer.mask)", "the layer editor restores the stored mask");
+test.assertIncludes(feature, "data-quick-draft-adjustment-mask]", "the mask input is part of the layer controls");
+test.assertIncludes(feature, "quick_draft_grain_mask", "the grain readout reports the effective masks");
+test.assertIncludes(html, 'data-quick-draft-adjustment-enabled="mingming"', "Mingming Pass has an on/off switch");
+test.assertIncludes(html, 'data-quick-draft-adjustment-strength="hkrr"', "HKRR Lift has a strength control");
+test.assertIncludes(html, 'data-quick-draft-adjustment-mask="mingming"', "Mingming Pass has a line-range mask");
+test.assertIncludes(html, "quick_draft_adjustment_light", "the strength control labels its levels");
+test.assertIncludes(en, "quick_draft_command_adjustment", "Adjustment-layer copy exists in English");
+test.assertIncludes(zh, "quick_draft_command_adjustment", "Adjustment-layer copy exists in Chinese");
+test.assertIncludes(en, "quick_draft_adjustment_heavy", "English strength copy exists");
+test.assertIncludes(zh, "quick_draft_adjustment_heavy", "Chinese strength copy exists");
+test.assertIncludes(en, "quick_draft_adjustment_mask_label", "English mask copy exists");
+test.assertIncludes(zh, "quick_draft_adjustment_mask_label", "Chinese mask copy exists");
+test.assertIncludes(draftRoute, "function adjustmentStrengthInstruction", "the draft route scales the adjustment lens by strength");
+test.assertIncludes(draftRoute, "body?.adjustmentLayers", "the route reads the layer stack from the request");
+test.assertIncludes(draftRoute, "never another layer", "adjustment layers never read another layer's output");
+test.assertIncludes(draftRoute, "只针对第", "the route scopes advice to the masked lines");
+test.assertIncludes(draftRoute, "review only lines", "the English route copy scopes advice to the masked lines");
+test.assertIncludes(appsCss, ".quick-draft-adjustment-row", "the adjustment-layer rows are styled in the Quick Draft app file");
 
 test.finish();

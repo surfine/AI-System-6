@@ -38,6 +38,8 @@ export const appModulePaths = [
   "app/core/project-disk-backup.js",
   "app/features/project-disk.js",
   "app/core/desktop-runtime.js",
+  "app/core/grain-diff.js",
+  "app/core/adjustment-layers.js",
   "app/core/document-revisions.js",
   "app/core/modal.js",
   "app/core/drag-drop.js",

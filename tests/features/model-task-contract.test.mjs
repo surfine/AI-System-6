@@ -75,6 +75,42 @@ test.assert(patchContract.output.kind === "patch", "Explicit selection rewrite u
 test.assert(patchContract.humanizer === "explicit-rewrite", "Only the explicit selection action authorizes Humanizer rewrite");
 test.assert(patchContract.requiresUserCommit, "Selection patches remain proposals until user commit");
 
+// Every registered contract carries an explicit model role; the module itself
+// throws at load time if one is missing or invalid.
+const registeredKinds = [
+  "chat",
+  "source.extract-facts",
+  "source.verify-claims",
+  "source.translate",
+  "writing.rewrite-selection",
+  "writing.humanize-selection",
+  "system.json-repair",
+];
+const validRoles = new Set(["default", "researcher", "writer", "critic", "utility"]);
+for (const kind of registeredKinds) {
+  const contract = runtime.taskContractRegistry.require(kind);
+  test.assert(
+    validRoles.has(contract.modelRole),
+    `${kind} declares a valid modelRole (${contract.modelRole})`
+  );
+}
+test.assert(
+  runtime.taskContractRegistry.require("source.extract-facts").modelRole === "researcher",
+  "fact extraction resolves to the Researcher role"
+);
+test.assert(
+  runtime.taskContractRegistry.require("source.verify-claims").modelRole === "critic",
+  "claim verification resolves to the Critic role"
+);
+test.assert(
+  runtime.taskContractRegistry.require("source.translate").modelRole === "utility",
+  "translation resolves to the Utility role"
+);
+test.assert(
+  runtime.taskContractRegistry.require("writing.rewrite-selection").modelRole === "writer",
+  "selection rewrites resolve to the Writer role"
+);
+
 const forcedMarkdown = enforceMarkdownOnlyChatPayload({
   messages: [],
   response_format: { type: "json_object" },

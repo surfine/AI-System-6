@@ -167,8 +167,34 @@ async function buildProjectDiskExport(project = getActiveProject()) {
     trash: trashItems.filter((item) => item.projectId === projectId),
     projectCdItems: projectCdItems.filter((item) => item.projectId === projectId),
     references: projectReferences.filter((reference) => reference.projectId === projectId),
+    documentRevisions: await collectProjectDocumentRevisions(projectId),
   };
   return window.AISystem6ProjectDiskBackup.attachIntegrity(bundle);
+}
+
+/**
+ * Read every stored document revision of a project out of the keyval store.
+ * Revisions are keyed "documentRevisions:<projectId>:<documentId>".
+ */
+async function collectProjectDocumentRevisions(projectId) {
+  const revisions = [];
+  let db;
+  try {
+    db = await openAppDb();
+    const store = db.transaction(keyvalStoreName, "readonly").objectStore(keyvalStoreName);
+    const keys = await idbRequest(store.getAllKeys());
+    const prefix = `documentRevisions:${String(projectId || "")}:`;
+    for (const key of keys) {
+      if (typeof key !== "string" || !key.startsWith(prefix)) continue;
+      const value = await idbRequest(store.get(key));
+      if (Array.isArray(value)) revisions.push(...value);
+    }
+  } catch (error) {
+    console.warn("Could not read document revisions for the Project Hard Disk backup.", error);
+  } finally {
+    db?.close();
+  }
+  return revisions;
 }
 
 async function exportActiveProjectDisk() {
@@ -222,7 +248,7 @@ async function printSelectedProjectCdItem() {
   return printSelectedProjectCdPdf();
 }
 
-function addProjectCdItem(markdown, name) {
+async function addProjectCdItem(markdown, name) {
   if (!getActiveProject()) {
     setStatus(t("no_project_mounted"));
     return null;
@@ -253,24 +279,33 @@ function addProjectCdItem(markdown, name) {
     },
   };
 
+  // The burn overwrites the CD deliverable; protect the source first. If the
+  // revision cannot be persisted, nothing is burned.
+  if (typeof createDocumentRevision === "function") {
+    try {
+      await createDocumentRevision({
+        projectId: activeProjectId,
+        documentId: item.sourceDocumentId || activeTextFileId || "",
+        body: markdown,
+        origin: "system",
+        operation: "project-cd",
+      });
+    } catch (error) {
+      setStatus(currentLanguage === "zh"
+        ? "无法保存烧录前的版本历史，未写入项目光盘。"
+        : "Could not save the pre-burn version history; nothing was written to the Project CD.");
+      return null;
+    }
+  }
   if (existingIndex >= 0) {
     projectCdItems.splice(existingIndex, 1);
   }
-  window.AISystem6StateStores?.projects.commit(() => {
+  await window.AISystem6StateStores?.projects.commit(() => {
     projectCdItems.unshift(item);
     selectedProjectCdItemId = item.id;
     selectedProjectCdItemIds.clear();
     selectedProjectCdItemIds.add(item.id);
   });
-  if (typeof createDocumentRevision === "function") {
-    createDocumentRevision({
-      projectId: activeProjectId,
-      documentId: item.sourceDocumentId || activeTextFileId || "",
-      body: markdown,
-      origin: "system",
-      operation: "project-cd",
-    });
-  }
   renderProjectCd();
   return item;
 }
@@ -1304,6 +1339,22 @@ async function commitImportedProjectAtomically(imported) {
         const settingsStore = tx.objectStore(keyvalStoreName);
         writes.push(idbRequest(settingsStore.put(importedSettings, "settings")));
         writes.push(idbRequest(settingsStore.put(storageVersion, "storageVersion")));
+        const revisionsByDocument = new Map();
+        (imported.documentRevisions || []).forEach((revision) => {
+          if (!revision?.id || !revision.documentId) return;
+          const key = `documentRevisions:${String(revision.projectId || imported.project.id)}:${String(revision.documentId)}`;
+          if (!revisionsByDocument.has(key)) revisionsByDocument.set(key, []);
+          revisionsByDocument.get(key).push(revision);
+        });
+        for (const [key, items] of revisionsByDocument) {
+          writes.push((async () => {
+            // Merge with any revisions the import already created (e.g. the
+            // backup-import markers) instead of replacing them.
+            const existing = await idbRequest(settingsStore.get(key));
+            const merged = Array.isArray(existing) ? [...existing, ...items] : items;
+            return idbRequest(settingsStore.put(merged, key));
+          })());
+        }
         await Promise.all(writes);
       }
     );
@@ -1326,24 +1377,25 @@ async function importProjectBackupAsNewProject() {
   setControlLoading(importProjectBackupButton, true, t("backup_importing"));
   try {
     const imported = remapProjectDiskBackup(previewedProjectBackup);
+    // Protect the imported documents' version history BEFORE any mutation:
+    // if a revision cannot be persisted, the import aborts cleanly instead
+    // of importing content with no recovery point.
+    if (typeof createDocumentRevision === "function") {
+      for (const file of imported.files.filter((entry) => entry?.type === "text")) {
+        await createDocumentRevision({
+          projectId: imported.project.id,
+          documentId: file.id,
+          body: file.body,
+          origin: "system",
+          operation: "backup-import",
+        });
+      }
+    }
     await commitImportedProjectAtomically(imported);
 
     projects.unshift(imported.project);
     chatFolders.unshift(...imported.folders);
     chatFiles.unshift(...imported.files);
-    if (typeof createDocumentRevision === "function") {
-      imported.files
-        .filter((file) => file?.type === "text")
-        .forEach((file) => {
-          createDocumentRevision({
-            projectId: imported.project.id,
-            documentId: file.id,
-            body: file.body,
-            origin: "system",
-            operation: "backup-import",
-          });
-        });
-    }
     scraps.unshift(...imported.scraps);
     trashItems.unshift(...imported.trash);
     projectCdItems.unshift(...imported.projectCdItems);

@@ -81,6 +81,7 @@
     simTray: "simTray",
     usbC: "usbC",
     screwOrSpeaker: "usbC",
+    trackpad: "trackpad",
   });
   // Fallback only: the served model already carries the part in its material
   // name. These keep the live view honest if a material name ever goes missing.
@@ -133,7 +134,10 @@
     RGLDQJKTekftnoB: "topCase",
     fylMvyMYpOJcbku: "topCase",
     KMIKFolgYmmmahm: "topCase",
-    TJrncXRMBNoKueV: "topCase",
+    // Trackpad surface: a separate component that carries its own finish
+    // (mirrors the server's exactMeshParts map — the client must agree or the
+    // live view can never paint the trackpad color the export honors).
+    TJrncXRMBNoKueV: "trackpad",
     RBmsNybhFEScfui: "topCase",
     LhZMVgrGkfDhZnJ: "topCase",
     TaNFpMmKHqePKML: "topCase",
@@ -534,6 +538,7 @@
   let canRenderModel = null;
   let rendererModulesPromise = null;
   let rendererState = null;
+  let rendererBuildPromise = null;
   let cameraAnimationFrame = 0;
   let pendingModelSwitch = false;
 
@@ -984,10 +989,20 @@
   }
 
   async function ensureRenderer() {
-    window.__cmfProbe = window.__cmfProbe || { enter: 0, build: 0, scenes: [] };
-    window.__cmfProbe.enter += 1;
     if (rendererState) return rendererState;
-    window.__cmfProbe.build += 1;
+    // Three.js loads lazily, so the guard above and the assignment below sit on
+    // either side of an await. Two calls that arrive during that window both
+    // get past it and build a second renderer, OrbitControls and animation
+    // loop on the same canvas. Share the one build in flight instead.
+    if (!rendererBuildPromise) {
+      rendererBuildPromise = buildRenderer().finally(() => {
+        rendererBuildPromise = null;
+      });
+    }
+    return rendererBuildPromise;
+  }
+
+  async function buildRenderer() {
     const modules = await loadRendererModules();
     const canvas = cmfEl("cmf-model-canvas");
     const viewport = cmfEl("cmf-model-viewport");
@@ -1048,8 +1063,6 @@
       viewHalfHeight: 1,
       viewIsCustom: false,
     };
-    window.__cmfProbe.scenes.push(scene);
-    window.__cmfState = () => rendererState;
 
     controls.addEventListener("start", () => {
       window.cancelAnimationFrame(cameraAnimationFrame);
@@ -1120,7 +1133,7 @@
       const materials = Array.isArray(object.material) ? object.material : [object.material];
       materials.filter(Boolean).forEach((material) => {
         const match = String(material.name || "").match(
-          /__(frameSide|frame|backGlass|volumeUp|volumeDown|actionOrSim|cameraControl|sideButton|simTray|usbC|screwOrSpeaker|cameraPlate|lid|topCase|bottomCase|keycaps)_[^/]+$/,
+          /__(frameSide|frame|backGlass|volumeUp|volumeDown|actionOrSim|cameraControl|sideButton|simTray|usbC|screwOrSpeaker|cameraPlate|lid|topCase|bottomCase|keycaps|trackpad)_[^/]+$/,
         );
         const partId = material.userData?.cmfPart || (match ? (MATERIAL_PART_ALIASES[match[1]] || match[1]) : "");
         const color = partId ? colorMeta(recipe.parts[partId]) : null;
@@ -1164,7 +1177,7 @@
       });
       const namedPart = sourceMaterials
         .map((material) => String(material?.name || "").match(
-          /__(frameSide|frame|backGlass|volumeUp|volumeDown|actionOrSim|cameraControl|sideButton|simTray|usbC|screwOrSpeaker|cameraPlate|lid|topCase|bottomCase|keycaps)_[^/]+$/,
+          /__(frameSide|frame|backGlass|volumeUp|volumeDown|actionOrSim|cameraControl|sideButton|simTray|usbC|screwOrSpeaker|cameraPlate|lid|topCase|bottomCase|keycaps|trackpad)_[^/]+$/,
         ))
         .find(Boolean);
       const partId = (namedPart ? (MATERIAL_PART_ALIASES[namedPart[1]] || namedPart[1]) : "")

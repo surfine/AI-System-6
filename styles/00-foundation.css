@@ -234,6 +234,7 @@
   --clio-chart-typeface: var(--ui-font);
   --clio-chart-type-size: 11px;
   --clio-chart-radius: 0;
+  --clio-chart-cell-radius: 0;
   --clio-chart-pane-bg: transparent;
   --clio-chart-pane-border: 0;
   --clio-chart-pane-shadow: none;
@@ -1470,6 +1471,19 @@
   --quick-draft-status-bg: var(--panel);
   --quick-draft-status-border: 1px dotted var(--shade-dark);
   --quick-draft-divider-border: 1px dotted var(--shade-dark);
+  /* Compression grain. A 1-bit screen would draw the model's share as a 50%
+     dither; the web cannot dither a glyph, so running text uses the grey plus
+     a dotted rule and only the legend swatch carries the real pattern. */
+  --quick-draft-grain-author-fg: var(--ink);
+  --quick-draft-grain-model-fg: var(--shade-dark);
+  --quick-draft-grain-model-decoration: underline dotted var(--shade-dark);
+  --quick-draft-grain-border: var(--system-control-line) solid var(--ink);
+  --quick-draft-grain-generation-border: var(--system-control-line) solid var(--shade-dark);
+  --quick-draft-grain-swatch-author: var(--ink);
+  --quick-draft-grain-swatch-model:
+    linear-gradient(45deg, var(--ink) 25%, transparent 25%, transparent 75%, var(--ink) 75%) 0 0 / 2px 2px,
+    linear-gradient(45deg, var(--ink) 25%, transparent 25%, transparent 75%, var(--ink) 75%) 1px 1px / 2px 2px,
+    var(--paper);
 }
 
 html:lang(zh-Hans) {

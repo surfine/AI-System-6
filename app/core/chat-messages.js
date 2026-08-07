@@ -647,6 +647,17 @@ function recordContextLoadout(payload) {
     inputFiles: (window.lastTaskInputFiles || []).map((file) => ({ ...file })),
     contextManifest: window.lastContextManifest || null,
   };
+  // The Context Manifest is written at retrieval time with model: null; now
+  // that the task's role and model are resolved, record the ACTUAL model and
+  // any fallback reason so the manifest and the Run Record always agree.
+  if (window.lastContextManifest && typeof window.lastContextManifest === "object") {
+    window.lastContextManifest = {
+      ...window.lastContextManifest,
+      requestedRole: String(payload?.ai_system6_model_role || "default"),
+      actualModel: String(payload?.model || ""),
+      fallbackReason: String(payload?.ai_system6_model_fallback_reason || ""),
+    };
+  }
   renderClioTalkContextSpace();
   renderClioTalkRunAssembly();
   scheduleRenderTasks("contextPanel");

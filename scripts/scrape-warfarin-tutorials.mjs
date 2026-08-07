@@ -72,7 +72,7 @@ async function scrapeAllTutorials() {
   const jsonPath = path.join(outDir, 'tutorials.json');
   const mdPath = path.join(outDir, 'tutorials.md');
   await writeFile(jsonPath, `${JSON.stringify(payload, null, 2)}\n`);
-  await writeFile(mdPath, renderTutorialsMarkdown(payload));
+  await writeFile(mdPath, renderTutorialsMarkdown(payload).replace(/[ \t]+$/gm, ''));
   console.log(`Wrote ${jsonPath}`);
   console.log(`Wrote ${mdPath}`);
 }
@@ -81,7 +81,7 @@ async function writeTutorialFiles(targetSlug, payload) {
   const jsonPath = path.join(outDir, `${targetSlug}.json`);
   const mdPath = path.join(outDir, `${targetSlug}.md`);
   await writeFile(jsonPath, `${JSON.stringify(payload, null, 2)}\n`);
-  await writeFile(mdPath, renderMarkdown(payload));
+  await writeFile(mdPath, renderMarkdown(payload).replace(/[ \t]+$/gm, ''));
   console.log(`Wrote ${jsonPath}`);
   console.log(`Wrote ${mdPath}`);
 }

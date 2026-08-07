@@ -35,6 +35,8 @@ async function bootForFailure(page, scenario) {
   await enterWritingStudio(page);
   fakeModel.setScenario(scenario);
   await connectFakeModel(page, { port: fakeModelPort });
+  await page.click('[data-window="control"] .close-box');
+  await page.waitForFunction(() => document.querySelector('[data-window="control"]')?.classList.contains("is-hidden"), { timeout: 10_000 });
   await openWindow(page, "questionSheet");
 }
 
@@ -59,9 +61,18 @@ async function waitForVisibleFailure(page) {
 }
 
 async function acceptOutlineOverwriteModalIfPresent(page) {
+  try {
+    await page.waitForSelector("#system-modal[open]", { timeout: 3_000 });
+  } catch {
+    return; // no confirmation appeared
+  }
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const open = await page.$("#system-modal[open]");
     if (!open) return;
+    const message = await page.textContent("#system-modal-message");
+    // Only the overwrite confirmation belongs to this step; an alert that
+    // reports a failure must stay open so the test can assert the error.
+    if (!/already has content|将被覆盖|overwritten|overwrite/i.test(message || "")) return;
     await page.click("#system-modal-yes");
     try {
       await page.waitForSelector("#system-modal", { state: "hidden", timeout: 5_000 });
@@ -73,6 +84,13 @@ async function acceptOutlineOverwriteModalIfPresent(page) {
 
 async function assertRetrySucceeds(page, questions) {
   fakeModel.setScenario("json");
+  // Dismiss the failure alert from the first attempt before retrying.
+  const failureAlert = await page.$("#system-modal[open]");
+  if (failureAlert) {
+    await page.click("#system-modal-yes");
+    await page.waitForSelector("#system-modal", { state: "hidden", timeout: 10_000 });
+  }
+  await openQuestionSheetCommands(page);
   await acceptOutlineOverwriteModalIfPresent(page);
   await page.click('[data-window="questionSheet"] [data-action="generate-outline"]');
   await acceptOutlineOverwriteModalIfPresent(page);
@@ -99,7 +117,20 @@ for (const [scenario, label] of failureModes) {
     await page.fill("#question-sheet-body", questions);
 
     await openQuestionSheetCommands(page);
-    await page.click('[data-window="questionSheet"] [data-action="generate-outline"]');
+    try {
+      await page.click('[data-window="questionSheet"] [data-action="generate-outline"]');
+    } catch (error) {
+      const diag = await page.evaluate(() => ({
+        visible: [...document.querySelectorAll(".window:not(.is-hidden)")].map((w) => w.dataset.window),
+        active: document.querySelector(".window.is-active:not(.is-hidden)")?.dataset.window || "",
+        summaryOpen: document.querySelector('[data-window="questionSheet"] .teachtext-command-menu')?.open,
+        btnRect: (() => { const r = document.querySelector('[data-window="questionSheet"] [data-action="generate-outline"]')?.getBoundingClientRect(); return r ? [r.x, r.y, r.width, r.height] : null; })(),
+        qsRect: (() => { const r = document.querySelector('[data-window="questionSheet"]')?.getBoundingClientRect(); return r ? [r.x, r.y, r.width, r.height] : null; })(),
+        model: document.querySelector("#model")?.value || "",
+      }));
+      console.log(`GENERATE-DIAG ${scenario}`, JSON.stringify(diag));
+      throw error;
+    }
     await acceptOutlineOverwriteModalIfPresent(page);
     await waitForVisibleFailure(page);
 

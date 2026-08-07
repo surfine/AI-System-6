@@ -365,6 +365,88 @@ function isVentOutlineTask(body) {
 }
 
 /**
+ * Mask parser mirroring app/core/adjustment-layers.js: "3-5, 8" or
+ * [{ start, end }] into sorted, merged, 1-based inclusive ranges, clamped to
+ * the current body's line count.
+ * @param {any} value
+ * @param {number} lineCount
+ * @returns {Array<{ start: number, end: number }>}
+ */
+function adjustmentMaskRanges(value, lineCount) {
+  const lines = Math.max(0, Math.floor(Number(lineCount) || 0));
+  const ranges = [];
+  const push = (start, end) => {
+    const from = Math.max(1, Math.floor(Number(start) || 0));
+    const to = Math.max(from, Math.floor(Number(end) || from));
+    ranges.push({ start: from, end: to });
+  };
+  if (Array.isArray(value)) {
+    value.forEach((item) => {
+      if (item && typeof item === "object") push(item.start, item.end);
+    });
+  } else {
+    asText(value).split(/[,，;；\s]+/).forEach((part) => {
+      const match = String(part).match(/^(\d+)(?:\s*[-–—]\s*(\d+))?$/);
+      if (match) push(match[1], match[2] || match[1]);
+    });
+  }
+  const sorted = ranges.sort((a, b) => a.start - b.start || a.end - b.end);
+  const merged = [];
+  for (const range of sorted) {
+    const last = merged[merged.length - 1];
+    if (last && range.start <= last.end + 1) last.end = Math.max(last.end, range.end);
+    else merged.push({ ...range });
+  }
+  return merged
+    .map((range) => ({ start: Math.min(range.start, lines), end: Math.min(range.end, lines) }))
+    .filter((range) => lines > 0 && range.start <= lines);
+}
+
+/**
+ * @param {Array<{ start: number, end: number }>} ranges
+ * @returns {string}
+ */
+function adjustmentMaskSummary(ranges = []) {
+  return ranges.map((range) => (range.start === range.end ? String(range.start) : `${range.start}-${range.end}`)).join(", ");
+}
+
+/**
+ * Quick Draft adjustment-layer strength. 明明传球 / 洛洛接球 / HKRR 抬升 are
+ * adjustment layers with a switch and a strength parameter; the strength only
+ * scales this one pass (each layer reads the negative, never another layer's
+ * output), so it must never weaken the guardrail messages around it.
+ * @param {any} body
+ * @param {boolean} zh
+ * @returns {string}
+ */
+function adjustmentStrengthInstruction(body, zh) {
+  const kind = taskKind(body);
+  if (!new Set(["mingming", "luoluo", "hkrr"]).has(kind)) return "";
+  const layers = Array.isArray(body?.adjustmentLayers) ? body.adjustmentLayers : [];
+  const layer = layers.find((item) => item && item.kind === kind);
+  if (layer && layer.enabled === false) return "";
+  const strength = Number(layer?.strength) || 50;
+  const strengthLine = strength === 25
+    ? (zh
+      ? "- 调整层强度：轻触。只挑最关键的 1-2 处，其余原句和顺序尽量保留；不要大改。"
+      : "- Adjustment strength: light touch. Name only the 1-2 most essential changes; keep everything else as written.")
+    : strength === 75
+    ? (zh
+      ? "- 调整层强度：重写。可以合并、重排、换词来达到该镜头目标，但不新增事实、不丢未测边界、不用风格覆盖事实。"
+      : "- Adjustment strength: heavy. You may merge, reorder, and reword to hit the lens goal; never add facts, drop untested boundaries, or let style override facts.")
+    : (zh
+      ? "- 调整层强度：标准。按当前镜头完整过一遍，可以合并或微调，但保留作者原句、判断和口气。"
+      : "- Adjustment strength: standard. Pass the whole piece; you may merge or tune, but keep the author's sentences, judgment, and voice.");
+  const currentBody = asText(body.currentBody || body.authorDraft || body.draft || body.bodyText);
+  const maskSummary = adjustmentMaskSummary(adjustmentMaskRanges(layer?.mask, currentBody.split("\n").length));
+  return maskSummary
+    ? (zh
+      ? `${strengthLine}\n- 蒙版：只针对第 ${maskSummary} 行给建议；其余行保持不动，不要给建议。`
+      : `${strengthLine}\n- Mask: review only lines ${maskSummary}; leave every other line alone.`)
+    : strengthLine;
+}
+
+/**
  * @param {any} body
  * @returns {number}
  */
@@ -434,6 +516,7 @@ function buildMessages(body, sources) {
         `- 只用 Markdown 输出，不要返回 JSON、代码块包裹的对象或机器结构。`,
         `- 必须且只能用这些二级标题分区，逐字使用：${wantedHeaders.map((h) => `## ${h}`).join("、")}。`,
         commandLens,
+        adjustmentStrengthInstruction(body, zh),
         "- 每个分区的内容必须能由提供的资料支持；缺资料就写进“不确定或缺来源的信息”，不要编造。",
         "- 支持/反方材料请用资料标签（如 [S1]）标注来源；没有来源的判断不要伪装成有来源。",
         stage === "draft"
@@ -447,6 +530,7 @@ function buildMessages(body, sources) {
         "- Output Markdown only. Do not return JSON, fenced object literals, or machine structures.",
         `- Use exactly these level-2 headings, verbatim: ${wantedHeaders.map((h) => `## ${h}`).join(", ")}.`,
         commandLens,
+        adjustmentStrengthInstruction(body, zh),
         "- Every section must be supported by the supplied sources; put anything unsupported under the uncertainty section instead of inventing it.",
         "- Tag supporting/counter material with source labels (e.g. [S1]); do not fake sourcing for unsourced judgments.",
         stage === "draft"
@@ -600,6 +684,7 @@ function buildFirstDayMessages(body, sources) {
         "- “出稿取舍”写主线、取舍、优先级、不要讲什么；“素材处理”逐条说明来源、可拍性和状态；“稿里怎么处理”用表格写策略/素材在稿子里的处理方式和采用状态。",
         "- “稿里怎么处理”必须把候选第一感受标成候选/已采用/待 Aaron 确认；模型只能捞出和建议，不能替用户定稿。",
         commandLens,
+        adjustmentStrengthInstruction(body, zh),
         adviceOnlyTask
           ? [
               "- 本次是 ClioTalk 建议卡，不是出稿：只输出短建议，不写“初稿 / 正文 / 口播稿 / 完整视频稿”。",
@@ -678,6 +763,7 @@ function buildFirstDayMessages(body, sources) {
         "- The Drafting choices section must state the spine, tradeoffs, priority order, and what not to cover; the Material handling section must list source, shootability, and status for each material point; the How it lands in the draft section must show how each strategy/material point was handled in the script and whether it was adopted, downgraded, deferred, or needs checking.",
         "- The How it lands in the draft section must mark candidate first impressions as candidate/adopted/needs Aaron confirmation; the model may surface or suggest them, but must not decide them for the user.",
         commandLens,
+        adjustmentStrengthInstruction(body, zh),
         adviceOnlyTask
           ? [
               "- This is a ClioTalk suggestion card, not drafting: output short advice only. Do not write a Draft, Body, Script, or full video script.",

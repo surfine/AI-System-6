@@ -258,6 +258,10 @@ function enable() {
       if (!stripEnabled) return;
       registerBuiltinModules();
       renderAllModules();
+      // The settings list renders when the Control Panel opens, which can
+      // happen before the lazy module runtime arrives. Re-render once the
+      // registry is populated so the module rows (and their icons) appear.
+      renderModuleSettingsList();
       syncStripScrollButtons();
       ensureModuleRuntimes();
       syncStripGeometry();

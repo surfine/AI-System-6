@@ -1,3 +1,4 @@
+// @ts-check
 // Document revisions: durable version history for key writing nodes.
 //
 // The rule that each writing phase has exactly one editable owner is
@@ -71,13 +72,17 @@ async function persistRevisions(projectId, documentId) {
       )
     );
   } catch (error) {
+    // Version history is user data: a failed write must reach the caller so
+    // the destructive operation it protects can be aborted instead of
+    // silently losing the recovery point.
     console.warn("Could not persist document revisions.", error);
+    throw error;
   } finally {
     db?.close();
   }
 }
 
-function createDocumentRevision({
+async function createDocumentRevision({
   projectId = activeProjectId,
   documentId = activeTextFileId || "",
   phase = typeof teachTextWorkflowState === "string" ? teachTextWorkflowState : "",
@@ -109,8 +114,16 @@ function createDocumentRevision({
   };
   revisions.unshift(revision);
   if (revisions.length > maxDocumentRevisions) revisions.length = maxDocumentRevisions;
-  persistRevisions(projectId, documentId);
-  return revision;
+  try {
+    await persistRevisions(projectId, documentId);
+    return revision;
+  } catch (error) {
+    // Roll the in-memory entry back so a failed write never leaves a
+    // revision that claims to be durable.
+    const index = revisions.indexOf(revision);
+    if (index >= 0) revisions.splice(index, 1);
+    throw error;
+  }
 }
 
 async function listDocumentRevisions(documentId = activeTextFileId || "", projectId = activeProjectId) {
@@ -119,21 +132,92 @@ async function listDocumentRevisions(documentId = activeTextFileId || "", projec
   return cachedRevisions(projectId, documentId);
 }
 
+/**
+ * Longest-common-subsequence line diff. Correctly handles repeated lines and
+ * moved paragraphs, which a set-based comparison cannot. For pathological
+ * sizes the LCS table is capped and a prefix/suffix-trimmed set diff is used.
+ * @param {string[]} older
+ * @param {string[]} newer
+ */
+function lcsLineDiff(older, newer) {
+  const m = older.length;
+  const n = newer.length;
+  const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+  for (let i = m - 1; i >= 0; i -= 1) {
+    for (let j = n - 1; j >= 0; j -= 1) {
+      dp[i][j] = older[i] === newer[j]
+        ? dp[i + 1][j + 1] + 1
+        : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    }
+  }
+  const addedLines = [];
+  const removedLines = [];
+  const unchangedLines = [];
+  let i = 0;
+  let j = 0;
+  while (i < m && j < n) {
+    if (older[i] === newer[j]) {
+      unchangedLines.push(newer[j]);
+      i += 1;
+      j += 1;
+    } else if (dp[i + 1][j] >= dp[i][j + 1]) {
+      removedLines.push(older[i]);
+      i += 1;
+    } else {
+      addedLines.push(newer[j]);
+      j += 1;
+    }
+  }
+  while (i < m) removedLines.push(older[i++]);
+  while (j < n) addedLines.push(newer[j++]);
+  return { addedLines, removedLines, unchangedLines };
+}
+
 function compareDocumentRevisions(olderRevision, newerRevision) {
   const older = String(olderRevision?.body || "").split("\n");
   const newer = String(newerRevision?.body || "").split("\n");
-  const olderSet = new Set(older);
-  const newerSet = new Set(newer);
-  const addedLines = newer.filter((line) => !olderSet.has(line));
-  const removedLines = older.filter((line) => !newerSet.has(line));
+
+  // Trim the common prefix and suffix first: the LCS table then only covers
+  // the genuinely changed middle, which is both faster and keeps the diff
+  // anchored for documents that mostly grew or shrank at the ends.
+  let start = 0;
+  while (start < older.length && start < newer.length && older[start] === newer[start]) start += 1;
+  let olderEnd = older.length;
+  let newerEnd = newer.length;
+  while (olderEnd > start && newerEnd > start && older[olderEnd - 1] === newer[newerEnd - 1]) {
+    olderEnd -= 1;
+    newerEnd -= 1;
+  }
+  const olderCore = older.slice(start, olderEnd);
+  const newerCore = newer.slice(start, newerEnd);
+
+  const maxLcsCells = 1_000_000;
+  let coreDiff;
+  if (olderCore.length * newerCore.length <= maxLcsCells) {
+    coreDiff = lcsLineDiff(olderCore, newerCore);
+  } else {
+    const olderSet = new Set(olderCore);
+    const newerSet = new Set(newerCore);
+    coreDiff = {
+      addedLines: newerCore.filter((line) => !olderSet.has(line)),
+      removedLines: olderCore.filter((line) => !newerSet.has(line)),
+      unchangedLines: [],
+    };
+  }
+  const unchangedLines = [
+    ...older.slice(0, start),
+    ...coreDiff.unchangedLines,
+    ...older.slice(olderEnd),
+  ];
   return {
     olderId: olderRevision?.id || "",
     newerId: newerRevision?.id || "",
     olderLines: older.length,
     newerLines: newer.length,
-    addedLines,
-    removedLines,
-    unchanged: older.length + newer.length - addedLines.length - removedLines.length,
+    addedLines: coreDiff.addedLines,
+    removedLines: coreDiff.removedLines,
+    unchangedLines,
+    unchanged: unchangedLines.length,
   };
 }
 
@@ -141,15 +225,21 @@ async function restoreDocumentRevision(revision) {
   if (!revision?.id || !revision.projectId || !revision.documentId) return false;
   const target = chatFiles.find((file) => file.id === revision.documentId && file.projectId === revision.projectId && file.type === "text");
   if (!target) return false;
-  createDocumentRevision({
-    projectId: revision.projectId,
-    documentId: revision.documentId,
-    phase: revision.phase,
-    body: target.body,
-    origin: "system",
-    operation: "restore-before",
-    parentRevisionId: revision.id,
-  });
+  try {
+    await createDocumentRevision({
+      projectId: revision.projectId,
+      documentId: revision.documentId,
+      phase: revision.phase,
+      body: target.body,
+      origin: "system",
+      operation: "restore-before",
+      parentRevisionId: revision.id,
+    });
+  } catch (error) {
+    // The old state could not be protected; do not overwrite it.
+    setStatus?.(t?.("versions_restore_failed") || "Could not save the pre-restore revision; the document was not changed.");
+    return false;
+  }
   target.body = String(revision.body || "");
   target.updatedAt = new Date().toISOString();
   if (target.id === activeTextFileId) {
@@ -157,16 +247,21 @@ async function restoreDocumentRevision(revision) {
     markTeachTextModified();
     refreshTeachTextDocumentState();
   }
-  createDocumentRevision({
-    projectId: revision.projectId,
-    documentId: revision.documentId,
-    phase: revision.phase,
-    body: target.body,
-    origin: "system",
-    operation: "restore",
-    parentRevisionId: revision.id,
-  });
-  saveDeskState();
+  try {
+    await createDocumentRevision({
+      projectId: revision.projectId,
+      documentId: revision.documentId,
+      phase: revision.phase,
+      body: target.body,
+      origin: "system",
+      operation: "restore",
+      parentRevisionId: revision.id,
+    });
+  } catch (error) {
+    console.warn("Restore applied, but the restore revision could not be persisted.", error);
+    setStatus?.(t?.("versions_restore_revision_failed") || "The document was restored, but the restore revision could not be saved.");
+  }
+  await saveDeskState();
   renderDocuments?.();
   renderProjectDisks?.();
   return true;
@@ -228,7 +323,10 @@ async function compareSelectedDocumentVersions() {
     const latest = revisions.slice(0, 2);
     checked = latest.map((revision) => ({ value: revision.id }));
   }
-  const selected = checked.map((input) => revisions.find((revision) => revision.id === input.value)).filter(Boolean).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  const selected = checked
+    .map((input) => revisions.find((revision) => revision.id === /** @type {HTMLInputElement} */ (input).value))
+    .filter(Boolean)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   if (selected.length !== 2) {
     setStatus(t("versions_compare_need_two"));
     return;
@@ -237,20 +335,22 @@ async function compareSelectedDocumentVersions() {
   const lines = [
     t("versions_compare_title"),
     `${selected[0].createdAt} → ${selected[1].createdAt}`,
-    `+ ${diff.addedLines.length} / - ${diff.removedLines.length}`,
+    `+ ${diff.addedLines.length} / - ${diff.removedLines.length} / = ${diff.unchanged}`,
     ...(selected[1].runRecordId ? [`Run record: ${selected[1].runRecordId}`] : []),
     "",
     "--- added ---",
     ...diff.addedLines.slice(0, 40),
     "--- removed ---",
     ...diff.removedLines.slice(0, 40),
+    "--- unchanged ---",
+    ...diff.unchangedLines.slice(0, 20),
   ];
   const body = document.querySelector("#document-versions-diff");
   if (body) body.textContent = lines.join("\n");
 }
 
 async function restoreSelectedDocumentVersion() {
-  const checked = document.querySelector("#document-versions-list input:checked");
+  const checked = /** @type {HTMLInputElement | null} */ (document.querySelector("#document-versions-list input:checked"));
   if (!checked) {
     setStatus(t("versions_restore_none"));
     return;
@@ -272,7 +372,7 @@ async function openDocumentVersions() {
   if (diffEl) diffEl.textContent = "";
   renderDocumentVersionsList();
   modalScrim.classList.remove("is-hidden");
-  dialog.showModal();
+  /** @type {HTMLDialogElement} */ (dialog).showModal();
 }
 
 window.AISystem6DocumentRevisions = Object.freeze({

@@ -276,6 +276,24 @@ test("golden path 2: AI-assisted route with the fake model", async ({ page }) =>
   await page.waitForSelector("#system-modal", { state: "hidden" });
   await page.waitForFunction(() => (document.querySelector("#draft-body")?.value || "").length > 0);
   await raiseWindow(page, "sectionDrafts");
+  // The manuscript TeachText is the active surface after the AI draft; raise
+  // Section Drafts through the Writing menu's Go To item (the user path).
+  const writingMenu = page.locator(".menu-bar > .menu").filter({
+    has: page.locator(":scope > button", { hasText: /^Writing$/ }),
+  });
+  await writingMenu.locator("> button").click();
+  await writingMenu.locator(".menu-submenu-trigger", { hasText: "Go To" }).hover();
+  await writingMenu.locator('[data-action="open-section-drafts"]').click();
+  // The menu item must leave Section Drafts as the active surface; wait for
+  // that instead of assuming focus moved.
+  await page.waitForFunction(
+    () => document.querySelector(".window.is-active:not(.is-hidden)")?.dataset.window === "sectionDrafts",
+    { timeout: 10_000 }
+  );
+  await page.waitForFunction(
+    () => !document.querySelector('[data-window="sectionDrafts"] [data-action="advance-drafts-to-review"]')?.classList.contains("is-disabled"),
+    { timeout: 20_000 }
+  );
   await page.click('[data-window="sectionDrafts"] [data-action="advance-drafts-to-review"]');
 
   // Review Desk: run a style check; the fake model supplies the review text.
@@ -395,6 +413,10 @@ test("golden path 4: file objects, Trash restore, backup export/import", async (
 
   // Clipping + Scrapbook from the same source text
   await openProjectFileById(page, backupFileId);
+  await page.waitForFunction(
+    () => (document.querySelector("#teachtext-body")?.value || "").includes("Backup me before"),
+    { timeout: 15_000 }
+  );
   await selectTextInTeachText(page, "Backup me before");
   await page.evaluate(() => runSelectionClipFile());
   await selectTextInTeachText(page, "Backup me before");
