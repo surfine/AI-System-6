@@ -1,5 +1,5 @@
 <!-- canonical-source: CLAUDE.full.md -->
-<!-- source-sha256: f19b0d8080e8e87098ca21959d36931738fa61b2f08b6fbf4cdfa60d4d507fec -->
+<!-- source-sha256: 13ee8de72f35a4a7642772f593e69982d7c3a8cf8d45db438a31b2a9f2fc905a -->
 
 # AI System 6 — CLAUDE.full.md（旧版完整参考）
 
@@ -459,10 +459,8 @@ npm run verify:docs
 ## 打包
 
 ```sh
-npm run bundle          # 全部三个目标 + macOS shell .app
+npm run bundle          # Apple silicon 二进制 + macOS shell .app
 npm run bundle:mac-arm64   # arm64 二进制 + macOS shell .app
-npm run bundle:mac-x64
-npm run bundle:win-x64
 ```
 
 使用 `pkg`，输出到 `dist/`。打包前运行 `npm run verify:release`。

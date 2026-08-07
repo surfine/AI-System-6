@@ -862,9 +862,16 @@ function advanceQuestionSheetToOutline() {
   }
 
   savePipelineData();
+  window.AISystem6StateStores?.writing.commit(() => {
+    const project = getActiveProject();
+    if (project) project.questionSheet = questionSheetBodyInput?.value || project.questionSheet || "";
+  });
   renderPipeline();
   openWindow("outline");
   setStatus(t("question_sheet_autosaved_to_outline"));
+  if (typeof createDocumentRevision === "function") {
+    createDocumentRevision({ origin: "system", operation: "phase-advance" });
+  }
   requestAnimationFrame(() => outlineContentEl?.focus());
 }
 
@@ -896,6 +903,9 @@ async function advanceOutlineToSectionDrafts() {
     await openWindow("teachText");
   }
   setStatus(t("outline_autosaved_to_drafts"));
+  if (typeof createDocumentRevision === "function") {
+    createDocumentRevision({ origin: "system", operation: "phase-advance" });
+  }
   requestAnimationFrame(() => draftBodyInput?.focus());
 }
 
@@ -921,6 +931,9 @@ async function advanceDraftsToReview() {
   }
 
   syncLinkedTeachTextFromProject(project);
+  if (typeof createDocumentRevision === "function") {
+    createDocumentRevision({ origin: "system", operation: "phase-advance" });
+  }
   if (typeof activateTeachTextManuscriptTab === "function") {
     activateTeachTextManuscriptTab({ focus: false });
   }

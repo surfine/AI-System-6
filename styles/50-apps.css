@@ -1,8 +1,8 @@
 .scrap-empty-card {
   grid-column: 1 / -1;
   min-height: 120px;
-  border: 1px dotted var(--shade-dark);
-  background: #f7f7f7;
+  border: var(--scrap-empty-card-border);
+  background: var(--scrap-empty-card-bg);
   color: var(--ink);
   display: grid;
   place-items: center;
@@ -1480,7 +1480,7 @@
   width: 100%;
   margin: 3px 0;
   border: 0;
-  border-top: 1px dotted var(--ink);
+  border-top: var(--teachtext-popover-hr-border);
 }
 
 .teachtext-command-submenu {
@@ -1515,7 +1515,7 @@
   gap: 3px;
   margin: 4px 0 0 12px;
   padding: 3px 0 0 7px;
-  border-left: 1px dotted var(--ink);
+  border-left: var(--teachtext-subpopover-border-left);
 }
 
 .docmap-command-menu .docmap-command-popover {
@@ -1598,7 +1598,7 @@
   display: grid;
   grid-template-columns: 72px 1fr;
   gap: 8px;
-  border-bottom: 1px dotted var(--shade-dark);
+  border-bottom: var(--chat-transcript-article-border);
   padding-bottom: 7px;
 }
 
@@ -1642,7 +1642,7 @@
   gap: 10px;
   /* Above the framed content area, with its hairline as that area's top edge. */
   padding: 10px;
-  border-bottom: 1px solid var(--ink);
+  border-bottom: var(--pane-actions-border-bottom);
 }
 
 .image-manager-pane {
@@ -1699,8 +1699,8 @@
   display: grid;
   gap: 6px;
   padding: 6px;
-  border: 1px solid var(--ink);
-  background: #fff;
+  border: var(--image-manager-item-border);
+  background: var(--image-manager-item-bg);
 }
 
 .image-manager-list.is-list-view .image-manager-item {
@@ -1716,7 +1716,7 @@
   width: 100%;
   aspect-ratio: 4 / 3;
   object-fit: contain;
-  border: 1px solid var(--ink);
+  border: var(--image-manager-thumb-border);
   background:
     linear-gradient(45deg, #f4f4f4 25%, transparent 25% 75%, #f4f4f4 75%) 0 0 / 8px 8px,
     linear-gradient(45deg, #f4f4f4 25%, transparent 25% 75%, #f4f4f4 75%) 4px 4px / 8px 8px,
@@ -1945,7 +1945,7 @@
   align-items: center;
   gap: 8px;
   padding: 6px 8px;
-  border-bottom: 1px dotted var(--shade-dark);
+  border-bottom: var(--import-row-border-bottom);
 }
 
 .import-row span:nth-child(2) {
@@ -2020,7 +2020,7 @@
   width: 100%;
   min-height: 28px;
   border: 0;
-  border-bottom: 1px dotted var(--shade-dark);
+  border-bottom: var(--scrap-list-item-divider);
   background: transparent;
   color: var(--ink);
   padding: 8px 9px;
@@ -2082,7 +2082,7 @@
   min-width: 18px;
   height: 16px;
   padding: 0 3px;
-  border: 1px solid currentColor;
+  border: var(--scrap-translation-badge-border);
   font-family: var(--mono-font);
   font-size: 10px;
   line-height: 1;
@@ -2095,7 +2095,7 @@
   align-self: start;
   width: 18px;
   height: 18px;
-  border: 1px solid currentColor;
+  border: var(--scrap-list-mini-icon-border);
   flex-shrink: 0;
 }
 
@@ -2393,7 +2393,7 @@ body:not(.use-liquid-glass) .scrap-list button.is-multi-selected:not(.is-selecte
 
 .trash-pane > .button-row {
   padding: 10px;
-  border-bottom: 1px solid var(--ink);
+  border-bottom: var(--pane-actions-border-bottom);
 }
 
 .about-pane {
@@ -2521,7 +2521,7 @@ body:not(.use-liquid-glass) .scrap-list button.is-multi-selected:not(.is-selecte
 .large-icon {
   width: 56px;
   height: 56px;
-  border: 3px solid var(--ink);
+  border: var(--large-icon-border);
   background:
     linear-gradient(var(--ink), var(--ink)) 12px 16px / 32px 4px no-repeat,
     linear-gradient(var(--ink), var(--ink)) 12px 28px / 32px 4px no-repeat,

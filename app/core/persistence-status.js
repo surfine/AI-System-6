@@ -11,13 +11,109 @@ const localApiTokenSessionKey = "ai-system6-local-api-token";
 let deskPersistenceWritable = true;
 let controlStripCollapsed = false;
 
+// Control Strip preferences live in one record inside the desk settings, so
+// they save and restore through the existing saveDeskState() path instead of
+// a second localStorage system. `enabled` mirrors settings.controlStrip (the
+// master switch in Control Panel); the rest of the record owns geometry,
+// order, and appearance. Legacy users only ever wrote controlStrip /
+// controlStripCollapsed; restoreControlStripState() below migrates them.
+const CONTROL_STRIP_STATE_VERSION = 1;
+
+function defaultControlStripState() {
+  return {
+    version: CONTROL_STRIP_STATE_VERSION,
+    enabled: false,
+    visible: true,
+    collapsed: false,
+    edge: "left",
+    offsetRatio: 0.9,
+    expandedLength: 0,
+    moduleOrder: [],
+    disabledModules: [],
+    scrollOffset: 0,
+    hotkey: "",
+    menuFont: "",
+    menuFontSize: 12,
+  };
+}
+
+function clampControlStripNumber(value, min, max, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.min(max, Math.max(min, number)) : fallback;
+}
+
+// Structural normalization only: id-level cleaning (unknown ids, duplicates,
+// default insertion) needs the registry, so control-strip.js does that when
+// it loads. This keeps malformed persisted data from ever reaching the shell.
+function normalizeControlStripState(raw) {
+  const fallback = defaultControlStripState();
+  const source = raw && typeof raw === "object" ? raw : {};
+  return {
+    version: CONTROL_STRIP_STATE_VERSION,
+    enabled: source.enabled !== undefined ? source.enabled === true : fallback.enabled,
+    visible: source.visible !== undefined ? source.visible !== false : fallback.visible,
+    collapsed: source.collapsed === true,
+    edge: source.edge === "right" ? "right" : "left",
+    offsetRatio: clampControlStripNumber(source.offsetRatio, 0, 1, fallback.offsetRatio),
+    expandedLength: Math.max(0, Math.round(clampControlStripNumber(source.expandedLength, 0, Number.MAX_SAFE_INTEGER, fallback.expandedLength))),
+    moduleOrder: Array.isArray(source.moduleOrder)
+      ? source.moduleOrder.filter((id) => typeof id === "string" && id)
+      : [],
+    disabledModules: Array.isArray(source.disabledModules)
+      ? source.disabledModules.filter((id) => typeof id === "string" && id)
+      : [],
+    scrollOffset: Math.max(0, Math.round(clampControlStripNumber(source.scrollOffset, 0, Number.MAX_SAFE_INTEGER, fallback.scrollOffset))),
+    hotkey: typeof source.hotkey === "string" ? source.hotkey : "",
+    menuFont: typeof source.menuFont === "string" ? source.menuFont : "",
+    menuFontSize: Math.round(clampControlStripNumber(source.menuFontSize, 9, 24, fallback.menuFontSize)),
+  };
+}
+
+let controlStripState = defaultControlStripState();
+
+function getControlStripState() {
+  return controlStripState;
+}
+
+function setControlStripState(patch = {}) {
+  controlStripState = normalizeControlStripState({ ...controlStripState, ...patch });
+  controlStripCollapsed = controlStripState.collapsed;
+  if (typeof controlStripInput !== "undefined" && controlStripInput) {
+    controlStripInput.checked = controlStripState.enabled;
+  }
+  saveDeskState();
+  return controlStripState;
+}
+
+function restoreControlStripState(settings) {
+  const legacyEnabled = typeof settings.controlStrip === "boolean" ? settings.controlStrip : null;
+  if (settings.controlStripState && typeof settings.controlStripState === "object") {
+    controlStripState = normalizeControlStripState({
+      ...settings.controlStripState,
+      // A newer record can still arrive from a build that only wrote the
+      // legacy boolean; the master switch always wins when it is present.
+      ...(legacyEnabled !== null ? { enabled: legacyEnabled } : {}),
+    });
+  } else {
+    controlStripState = {
+      ...defaultControlStripState(),
+      enabled: legacyEnabled === true,
+      collapsed: settings.controlStripCollapsed === true,
+    };
+  }
+  controlStripCollapsed = controlStripState.collapsed;
+  if (typeof controlStripInput !== "undefined" && controlStripInput) {
+    controlStripInput.checked = controlStripState.enabled;
+  }
+  return controlStripState;
+}
+
 function getControlStripCollapsed() {
   return controlStripCollapsed;
 }
 
 function setControlStripCollapsed(value) {
-  controlStripCollapsed = value === true;
-  saveDeskState();
+  setControlStripState({ collapsed: value === true });
 }
 
 const renderTasks = [
@@ -119,7 +215,8 @@ function settingsSnapshotPayload() {
     liquidGlass: !!liquidGlassInput?.checked,
     soundEffects: soundEffectsInput.checked,
     menuClock: menuClockInput.checked,
-    controlStrip: controlStripInput.checked,
+    controlStrip: controlStripState.enabled,
+    controlStripState,
     controlStripCollapsed,
     performanceMeter: performanceMeterInput.checked,
     imageGen: document.getElementById("enable-image-gen")?.checked || false,
@@ -203,6 +300,7 @@ async function switchLanguage() {
   });
   scheduleStatusRender();
   renderClioTalkRunAssembly();
+  window.AISystem6ControlStrip?.refreshLanguage?.();
   saveDeskState();
 }
 
@@ -867,6 +965,7 @@ function setModelPickerOptions(chatModels, embeddingModels = []) {
     if (selectedEmbedding) embeddingModelInput.value = selectedEmbedding.id;
   }
   setSelectOptions(embeddingSelect, embeddingModelCatalog, embeddingModelInput?.value || previousEmbeddingModel);
+  window.AISystem6ModelRoles?.syncSelects?.(modelCatalog);
   syncLocalModelControls();
   updateContextMaxForCurrentModel();
   renderContextLengthPresets();
@@ -1437,8 +1536,7 @@ function applySettings(settings) {
   } else {
     menuClockInput.checked = false;
   }
-  if (typeof settings.controlStrip === "boolean") controlStripInput.checked = settings.controlStrip;
-  if (typeof settings.controlStripCollapsed === "boolean") controlStripCollapsed = settings.controlStripCollapsed;
+  restoreControlStripState(settings);
   if (typeof settings.performanceMeter === "boolean") {
     performanceMeterInput.checked = settings.performanceMeter;
   }
@@ -1574,12 +1672,16 @@ async function loadAppVersion() {
     if (!response.ok) throw new Error(response.statusText);
     const info = await response.json();
     appVersionInfo = {
-      version: String(info.version || defaultAppVersionInfo.version),
-      build: String(info.build || defaultAppVersionInfo.build),
+      version: String(info.version || getAppBuildInfo().version),
+      build: String(info.build || getAppBuildInfo().build),
+      commit: String(info.commit || getAppBuildInfo().commit || ""),
+      generatedAt: String(info.generatedAt || getAppBuildInfo().generatedAt || ""),
     };
   } catch (error) {
     console.warn("Could not read app version", error);
-    appVersionInfo = { ...defaultAppVersionInfo };
+    // Keep the generated identity; it was stamped at build time and is the
+    // same source /api/version reads from, so no release number is invented.
+    appVersionInfo = { ...getAppBuildInfo() };
   } finally {
     renderAboutMacintosh();
   }

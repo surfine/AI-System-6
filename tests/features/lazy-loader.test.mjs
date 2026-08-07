@@ -5,7 +5,7 @@
 // loadClassicScriptOnce for browser-vendor scripts (PaddleOCR / PDF.js). In a
 // concatenated classic bundle the last declaration wins, so every lazy system
 // module silently loaded through the vendor loader — losing the ?v=<build>
-// cache-buster and the app/legacy/ remap for old WebKit, and deduplicating
+// cache-buster, and deduplicating
 // under a different script attribute. Nothing threw; you just got stale or
 // missing lazy modules after a release.
 //
@@ -27,7 +27,40 @@ test.assertIncludes(config, "function loadClassicScriptOnce", "the shared lazy l
 test.assertNotMatches(exportImport, /function\s+loadClassicScriptOnce\s*\(/, "no second top-level loader overrides the shared one");
 test.assertIncludes(exportImport, "function loadBrowserVendorScriptOnce", "vendor scripts use their own distinctly named loader");
 test.assertIncludes(config, "lazyScriptUrl", "the shared loader appends the build cache-buster");
-test.assertIncludes(config, "resolveClassicScriptSource", "the shared loader keeps the legacy-WebKit remap");
+test.assertIncludes(config, "function resolveClassicScriptSource", "the shared loader resolves lazy script sources");
+test.assertIncludes(config, "removeLazyScriptNode", "failed script nodes are removable for retry");
+test.assertIncludes(config, "ensureLazyModuleForUserAction", "user actions surface retryable lazy-load errors");
+test.assertIncludes(config, "did not install after loading", "loaders verify the module API actually installed");
+test.assertNotMatches(
+  config,
+  /\.catch\(\(\) => lazySystemModulePromises\.delete\(path\)\)/,
+  "ensureLazySystemModule no longer swallows errors"
+);
+test.assertIncludes(
+  config,
+  "lazySystemModulePromises.delete(path);\n        throw error;",
+  "ensureLazySystemModule clears the cache then rethrows the original error"
+);
+test.assertIncludes(config, "lazyScriptTimeoutMs", "lazy script timeout is configurable for tests");
+
+const bootSource = read("app/core/boot.js");
+test.assertIncludes(
+  bootSource,
+  "applyControlStripState({ silent: true })",
+  "boot enables Control Strip silently (no modal on passive path)"
+);
+
+const documentsChat = read("app/features/documents-chat.js");
+test.assertIncludes(
+  documentsChat,
+  "ensureLazyModuleForUserAction(t(\"finder_objects\"), ensureFinderObjectsModule)",
+  "Finder Objects user actions surface retryable errors"
+);
+
+const translationsEn = read("app/data/translations-en.js");
+const translationsZh = read("app/data/translations-zh.js");
+test.assertIncludes(translationsEn, "lazy_load_failed", "EN lazy-load error message key");
+test.assertIncludes(translationsZh, "lazy_load_failed", "zh lazy-load error message key");
 
 // Registry completeness: every app/ source the shared loader can reach is
 // declared, so verify:release syntax-checks it and audits see it.

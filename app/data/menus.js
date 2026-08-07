@@ -148,6 +148,8 @@ const teachTextMenus = [
       menuItem("export-teachtext-project-cd", "export_project_cd"),
     ]),
     menuSeparator,
+    menuItem("open-document-versions", "versions_menu"),
+    menuSeparator,
     menuItem("page-setup", "page_setup"),
     menuItem("print-current", "print"),
   ]),

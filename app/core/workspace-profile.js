@@ -155,7 +155,7 @@ function hideWorkspaceDisallowedWindows() {
 }
 
 function refreshWorkspaceProfileSurfaces() {
-  ["finder", "helpFolder", "applications", "disk"].forEach((name) => {
+  ["finder", "helpFolder", "applications", "disk", "controlStripModules"].forEach((name) => {
     if (typeof renderStaticFinderWindow === "function") renderStaticFinderWindow(name);
   });
   if (typeof updateMenuState === "function") updateMenuState();
@@ -187,10 +187,62 @@ async function activateWorkspaceProfile(value, options = {}) {
 
 async function openWritingStudio() {
   await activateWorkspaceProfile(workspaceProfileWriting, { openDefault: false });
-  // OOBE is system-owned and startup opens it when needed. Entering Writing
-  // Studio itself always lands in ClioTalk; Project Hard Disk is a place the
-  // writer goes, not a greeting.
-  await openWindow("assistant");
+  await openWritingStudioDefaultSurface();
+}
+
+/**
+ * Central decision for what Writing Studio opens on entry. One function owns
+ * the project-state -> surface mapping so buttons, menus, and the desktop
+ * toggle never re-derive it:
+ *
+ *   no project          -> Project Hard Disk (create/choose)
+ *   no Question Sheet   -> Question Sheet
+ *   outline exists      -> Outline
+ *   any draft body      -> Section Drafts
+ *   review in progress  -> Review Desk + Manuscript
+ *   completed           -> Manuscript (Project CD stays one click away)
+ *
+ * ClioTalk stays summonable but is never the Writing Studio home. Session
+ * restore is untouched: a restored desk keeps the user's last position.
+ */
+function writingStudioDefaultEntry(project = typeof getActiveProject === "function" ? getActiveProject() : null) {
+  if (!project || !isProjectMounted) return "projects";
+  const questionSheet = String(project.questionSheet || "").trim();
+  if (!questionSheet) return "questionSheet";
+  const hasOutline = (project.outlineSections || []).length > 1
+    || /^##\s+/m.test(String(project.outline || ""));
+  const hasDraftBody = (project.drafts || []).some((draft) => String(draft.body || "").trim());
+  const reviewing = project.flowState?.check === true;
+  const workflowFinal = typeof teachTextWorkflowState === "string"
+    ? teachTextWorkflowState === "final"
+    : false;
+  if (reviewing && workflowFinal) return "teachText";
+  if (reviewing) return "reviewDesk";
+  if (hasDraftBody) return "sectionDrafts";
+  if (hasOutline) return "outline";
+  return "questionSheet";
+}
+
+async function openWritingStudioDefaultSurface() {
+  const entry = writingStudioDefaultEntry();
+  if (entry === "projects") {
+    openWindow("projects");
+    return;
+  }
+  if (entry === "reviewDesk") {
+    openReviewDesk("style");
+    openWindow("teachText");
+    return;
+  }
+  if (entry === "teachText") {
+    if (typeof openTeachTextManuscriptWindow === "function") {
+      openTeachTextManuscriptWindow();
+    } else {
+      openWindow("teachText");
+    }
+    return;
+  }
+  openWindow(entry);
 }
 
 async function exitWritingStudio() {

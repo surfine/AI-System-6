@@ -256,12 +256,22 @@ function addProjectCdItem(markdown, name) {
   if (existingIndex >= 0) {
     projectCdItems.splice(existingIndex, 1);
   }
-  projectCdItems.unshift(item);
-  selectedProjectCdItemId = item.id;
-  selectedProjectCdItemIds.clear();
-  selectedProjectCdItemIds.add(item.id);
+  window.AISystem6StateStores?.projects.commit(() => {
+    projectCdItems.unshift(item);
+    selectedProjectCdItemId = item.id;
+    selectedProjectCdItemIds.clear();
+    selectedProjectCdItemIds.add(item.id);
+  });
+  if (typeof createDocumentRevision === "function") {
+    createDocumentRevision({
+      projectId: activeProjectId,
+      documentId: item.sourceDocumentId || activeTextFileId || "",
+      body: markdown,
+      origin: "system",
+      operation: "project-cd",
+    });
+  }
   renderProjectCd();
-  saveDeskState();
   return item;
 }
 
@@ -769,11 +779,10 @@ async function convertImageFileToPngArrayBuffer(file) {
 
 // Browser-vendor scripts (PaddleOCR, PDF.js) load through their own small
 // loader on purpose: they are node_modules copies served at app/vendor/*
-// URLs, so they must NOT go through the shared system lazy loader — that one
-// adds the build query and remaps to app/legacy/ on old WebKit, which vendor
-// files do not have a legacy twin for. The name deliberately differs from the
-// canonical loadClassicScriptOnce in app/core/config.js so the concatenated
-// bundle keeps exactly one definition of that shared loader.
+// URLs, so they must NOT go through the shared system lazy loader (which adds
+// the build cache-buster). The name deliberately differs from the canonical
+// loadClassicScriptOnce in app/core/config.js so the concatenated bundle keeps
+// exactly one definition of that shared loader.
 function loadBrowserVendorScriptOnce(src) {
   const existing = document.querySelector(`script[data-ai-system6-src="${CSS.escape(src)}"]`);
   if (existing) {
@@ -1322,6 +1331,19 @@ async function importProjectBackupAsNewProject() {
     projects.unshift(imported.project);
     chatFolders.unshift(...imported.folders);
     chatFiles.unshift(...imported.files);
+    if (typeof createDocumentRevision === "function") {
+      imported.files
+        .filter((file) => file?.type === "text")
+        .forEach((file) => {
+          createDocumentRevision({
+            projectId: imported.project.id,
+            documentId: file.id,
+            body: file.body,
+            origin: "system",
+            operation: "backup-import",
+          });
+        });
+    }
     scraps.unshift(...imported.scraps);
     trashItems.unshift(...imported.trash);
     projectCdItems.unshift(...imported.projectCdItems);

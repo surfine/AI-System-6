@@ -54,7 +54,12 @@ test.assertIncludes(cmfStudio, "cameraControl", "recipe covers camera control");
 test.assertIncludes(cmfStudio, "sideButton", "recipe covers side button");
 test.assertIncludes(cmfStudio, "simTray", "recipe covers SIM tray");
 test.assertIncludes(cmfStudio, "usbC", "recipe covers USB-C / bottom hardware");
-test.assertIncludes(cmfStudio, "cameraPlate", "recipe covers camera area");
+// No camera-area part on any iPhone: Apple's own product shots show the
+// plateau and the lens rings in the body anodising, and no colorway parts them
+// out, so those meshes follow the frame through the shared pass instead.
+test.assertNotIncludes(cmfStudio, 'labelKey: "cmf_part_camera_plate"', "no phone offers a separately coloured camera area");
+test.assertNotIncludes(cmfStudio, 'labelKey: "cmf_part_camera_rings"', "no phone offers separately coloured lens rings");
+test.assertNotIncludes(service, "cameraPlate:", "no model defaults a camera-area finish");
 test.assertIncludes(cmfStudio, "black17", "official black finish exists");
 test.assertIncludes(cmfStudio, "lavender17", "official lavender finish exists");
 test.assertIncludes(cmfStudio, "mistBlue17", "official mist blue finish exists");
@@ -115,7 +120,7 @@ test.assertIncludes(cmfStudio, "function selectCmfPose", "switching poses is an 
 test.assertIncludes(cmfStudio, "state.poseId = requestedRecipe.pose || \"closed\"", "the loaded pose is tracked for repaint guards");
 test.assertIncludes(cmfStudio, 'spec.poses.some((entry) => entry.id === saved.pose)', "a saved recipe cannot carry another pose's geometry across");
 test.assertIncludes(index, 'id="cmf-pose"', "a pose chooser exists for posed models");
-test.assertIncludes(index, '<label class="cmf-control" id="cmf-pose-control" hidden>', "the pose chooser is hidden until a posed model is selected");
+test.assertIncludes(index, '<label class="cmf-control cmf-control-pose" id="cmf-pose-control" hidden>', "the pose chooser is hidden until a posed model is selected");
 // Every finish the picker offers must be drawable, or the chips all fall back
 // to one colour and the user cannot tell the finishes apart.
 for (const color of [
@@ -131,6 +136,16 @@ test.assertIncludes(
   styles,
   ".cmf-control[hidden]",
   "a hidden toolbar control gives up its column instead of leaving an orphan label",
+);
+test.assertIncludes(
+  styles,
+  ".cmf-setup-panel {\n    min-height: auto;",
+  "narrow containers keep the toolbar row tall enough for wrapped controls",
+);
+test.assertIncludes(
+  styles,
+  "flex: 1 1 31%;",
+  "phone toolbars share one chooser line that never wraps mid-group",
 );
 test.assertIncludes(index, 'id="cmf-model"', "a model chooser exists");
 test.assertIncludes(index, '<span class="select-wrap"><select id="cmf-model">', "the model chooser uses the System 6 select harness");
@@ -175,8 +190,20 @@ test.assertIncludes(service, "targetFraction", "close-up views frame against eac
 // and rings, display bezels, antenna lines — as true black. A colorway never
 // paints those, and both the export and the live viewport must agree.
 test.assertIncludes(service, "function isFinishSurface", "the engine refuses to recolor black trim");
+test.assertIncludes(service, "BLACK_TRIM_LUMINANCE", "only the dark end is excluded, so bright finishes are still recolorable");
+test.assertNotIncludes(
+  service.slice(service.indexOf("function isFinishSurface"), service.indexOf("function isProductColor")),
+  "isProductColor(",
+  "the trim test does not reuse the shared pass's upper bound, which dropped the Neo's keycaps",
+);
+test.assertIncludes(cmfStudio, '{ id: "trackpad", labelKey: "cmf_part_trackpad" }', "the trackpad is its own MacBook Neo part");
+test.assertIncludes(service, 'TJrncXRMBNoKueV: "trackpad"', "the trackpad surface is mapped, not the black recess around it");
 test.assertIncludes(service, "if (!isFinishSurface(materialBlocks, originalName)) continue;", "black trim is skipped before a part clone is bound");
 test.assertIncludes(cmfStudio, "function isBlackTrim", "the live viewport knows black trim is not a finish surface");
+// A lit display is emissive over a black dielectric; at grazing angles that
+// Fresnel term veils the picture in grey under studio lighting.
+test.assertIncludes(cmfStudio, "SCREEN_SPECULAR_INTENSITY", "a lit display damps its dielectric specular so the picture survives off-axis");
+test.assertIncludes(cmfStudio, "material.emissiveMap && \"specularIntensity\" in material", "the damping targets the display, not every surface");
 test.assertIncludes(cmfStudio, "sourceMaterials.some(isBlackTrim)", "live recoloring skips black trim, matching the export");
 // The Neo's parts must own the surface their name promises: the key field is
 // the keycaps part, and the unibody shell that carries the palm rest is the
@@ -279,7 +306,6 @@ for (const key of [
   "cmf_color_cosmic_orange17pro",
   "cmf_color_deep_blue17pro",
   "cmf_color_silver17pro",
-  "cmf_part_camera_rings",
   "cmf_preset_orange_index",
   "cmf_preset_deep_blue_margin",
   "cmf_preset_silver_proof",

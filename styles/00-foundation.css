@@ -50,6 +50,30 @@
   --memory-transfer-note-line: var(--ink);
   --memory-transfer-note-border: var(--ink);
   --info-divider-border: 1px solid var(--shade-dark);
+  /* Bottom action rows (Dictation / Translation Pad) keep their System 6
+     dotted divider in Classic; Liquid swaps it for a hairline. */
+  --action-row-divider: 1px dotted var(--ink);
+  /* The shared Ask-bar scope chip names the object being asked. */
+  --ask-scope-object-border: 1px solid var(--ink);
+  /* Dotted separators are a System 6 idiom; Liquid swaps each for a hairline
+     (values overridden in the body.use-liquid-glass token block). */
+  --message-divider: 1px dotted var(--rule);
+  --context-panel-budget-border-top: 1px dotted var(--shade);
+  --clio-file-chip-disabled-border: 1px dotted var(--shade-dark);
+  --empty-object-hatch-alt: #f1f1f1;
+  --soundscape-count-badge-border: 1px solid currentColor;
+  --teachtext-popover-hr-border: 1px dotted var(--ink);
+  --teachtext-subpopover-border-left: 1px dotted var(--ink);
+  --chat-transcript-article-border: 1px dotted var(--shade-dark);
+  --import-row-border-bottom: 1px dotted var(--shade-dark);
+  /* Pane action rows (Project CD / File Floppy / Trash) and toolbar rows sit
+     above a framed content area; their ink hairline is that area's top edge. */
+  --pane-actions-border-bottom: 1px solid var(--ink);
+  --documents-toolbar-border: 1px solid var(--ink);
+  --large-icon-border: 3px solid var(--ink);
+  --image-manager-item-border: 1px solid var(--ink);
+  --image-manager-item-bg: #ffffff;
+  --image-manager-thumb-border: 1px solid var(--ink);
   --control-label-fg: inherit;
   --control-summary-fg: inherit;
   --outline-item-border: 1px dotted var(--shade);
@@ -79,6 +103,11 @@
   --scrap-list-border: var(--system-border);
   --scrap-list-radius: 0;
   --scrap-list-shadow: var(--system-inset);
+  --scrap-empty-card-border: 1px dotted var(--shade-dark);
+  --scrap-empty-card-bg: #f7f7f7;
+  --scrap-list-item-divider: 1px dotted var(--shade-dark);
+  --scrap-list-mini-icon-border: 1px solid currentColor;
+  --scrap-translation-badge-border: 1px solid currentColor;
   --import-preview-bg: var(--paper);
   --import-preview-border: var(--system-border);
   --import-preview-radius: 0;
@@ -549,10 +578,15 @@
   --desk-edge-gap: 8px;
   --control-strip-thickness: 26px;
   --control-strip-handle-width: 16px;
+  --control-strip-scroll-button-width: 14px;
   --control-strip-bg: var(--paper);
   --control-strip-border: 1px solid var(--ink);
   --control-strip-divider: 1px solid var(--ink);
   --control-strip-gauge: var(--ink);
+  --control-strip-radius: 0;
+  --control-strip-shadow: none;
+  --control-strip-backdrop: none;
+  --control-strip-collapse-duration: 180ms;
   /* System 6 native window chrome, measured at the emulator's exact 2×
      pixels: 17px title-bar box + the window's 1px top border and 1px inset. */
   --system-titlebar-height: 17px;

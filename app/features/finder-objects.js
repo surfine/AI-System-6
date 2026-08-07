@@ -181,6 +181,30 @@ function resolveAliasTarget(file, depth = 0) {
   return target.type === "alias" ? resolveAliasTarget(target, depth + 1) : target;
 }
 
+// Content-consumption resolution: Droplets, ClioTalk attachments, and other
+// surfaces that read a document's body resolve an Alias to its original
+// before consuming it. Finder operations (Rename, Get Info, Trash, moves)
+// keep operating on the Alias record itself. Scrapbook and Project Reference
+// aliases are still valid aliases, but they never masquerade as project
+// documents, so content consumers get target === null with a
+// "non-file-alias" reason. Stationery Pad files are read as templates here —
+// no copy is created at this boundary.
+function resolveProjectFileForUse(file) {
+  if (!file) return { selected: null, target: null, reason: "missing" };
+  if (file.type !== "alias") {
+    return { selected: file, target: file, reason: "" };
+  }
+  const target = resolveAliasTarget(file);
+  if (!target) {
+    return { selected: file, target: null, reason: "broken-alias" };
+  }
+  const targetKind = file.aliasTarget?.kind || "file";
+  if (targetKind === "scrap" || targetKind === "reference" || (target.type !== "text" && target.type !== "chat")) {
+    return { selected: file, target: null, reason: "non-file-alias" };
+  }
+  return { selected: file, target, reason: "" };
+}
+
 function openAliasFile(file) {
   const target = resolveAliasTarget(file);
   if (!target) {
@@ -661,4 +685,5 @@ window.AISystem6FinderObjects = {
   insertClippingIntoEditor,
   handleEditorInsertDragOver,
   clearEditorInsertCaret,
+  resolveProjectFileForUse,
 };

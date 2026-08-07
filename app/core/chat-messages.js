@@ -631,6 +631,8 @@ function recordContextLoadout(payload) {
     capturedAt: new Date().toISOString(),
     taskKind: String(payload?.ai_system6_task_kind || "chat"),
     model: String(payload?.model || ""),
+    modelRole: String(payload?.ai_system6_model_role || "default"),
+    modelFallbackReason: String(payload?.ai_system6_model_fallback_reason || ""),
     parameters: {
       temperature: Number(payload?.temperature),
       maxTokens: Number(payload?.max_tokens || 0),
@@ -643,6 +645,7 @@ function recordContextLoadout(payload) {
     skillFiles: (window.lastTaskSkillFiles || []).map((file) => ({ ...file })),
     harnessFile: window.lastTaskHarnessFile ? { ...window.lastTaskHarnessFile } : null,
     inputFiles: (window.lastTaskInputFiles || []).map((file) => ({ ...file })),
+    contextManifest: window.lastContextManifest || null,
   };
   renderClioTalkContextSpace();
   renderClioTalkRunAssembly();
@@ -3726,6 +3729,14 @@ function fetchModelPayload(payload, signal) {
       throw new Error("lmstudio_server_offline: Connect to LM Studio in Control Panel first.");
     }
     const taskKind = nextPayload.ai_system6_task_kind || "chat";
+    const roleResolution = window.AISystem6ModelRoles?.resolveForTask
+      ? window.AISystem6ModelRoles.resolveForTask(taskKind)
+      : { model: nextPayload.model, role: "default", fallbackReason: "" };
+    nextPayload.model = roleResolution.model;
+    nextPayload.ai_system6_model_role = roleResolution.role;
+    if (roleResolution.fallbackReason) {
+      nextPayload.ai_system6_model_fallback_reason = roleResolution.fallbackReason;
+    }
     nextPayload = {
       ...localChatDefaults(nextPayload.model, {
         taskKind,

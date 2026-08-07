@@ -100,6 +100,19 @@ const legacyBundle = {
   ],
 };
 
+// Repair receipts are ordinary extra JSON fields on a record. The remap layer
+// must carry them verbatim: previousValue is not a current relation, so it is
+// never re-mapped, while real relation fields keep their original mapping.
+legacyBundle.files.find((file) => file.id === "file-child").repairReceipts = [
+  {
+    kind: "dangling-link",
+    field: "sourceDocumentId",
+    previousValue: "file-gone",
+    action: "quarantined",
+    detectedAt: "2026-07-30T00:30:00.000Z",
+  },
+];
+
 const legacyValidation = backup.validateBackup(legacyBundle);
 test.assert(legacyValidation.valid, "valid v1 backups remain importable");
 test.assert(
@@ -119,6 +132,14 @@ test.assert(v2Validation.valid, "the generated v2 bundle satisfies its schema");
 const v2Integrity = await backup.verifyIntegrity(v2Bundle);
 if (!v2Integrity.valid) console.error(v2Integrity.errors.join("\n"));
 test.assert(v2Integrity.valid, "an unchanged v2 backup passes integrity verification");
+test.assert(
+  v2Bundle.files.some((file) =>
+    Array.isArray(file.repairReceipts)
+    && file.repairReceipts[0]?.previousValue === "file-gone"
+    && file.repairReceipts[0]?.field === "sourceDocumentId"
+  ),
+  "attachIntegrity keeps repair receipts on the records"
+);
 
 const tampered = structuredClone(v2Bundle);
 tampered.files[0].body = "tampered";
@@ -170,6 +191,18 @@ test.assert(
 test.assert(
   childFile.sourceKey === `reference:${reference.id}`,
   "stable source keys are remapped with their referenced objects"
+);
+const importedReceiptFile = imported.files.find((file) =>
+  Array.isArray(file.repairReceipts) && file.repairReceipts.some((receipt) => receipt.field === "sourceDocumentId")
+);
+test.assert(
+  importedReceiptFile?.repairReceipts?.[0]?.previousValue === "file-gone",
+  "remapBackup keeps repair receipts and never remaps previousValue"
+);
+test.assert(
+  importedReceiptFile?.repairReceipts?.[0]?.field === "sourceDocumentId"
+    && importedReceiptFile?.repairReceipts?.[0]?.action === "quarantined",
+  "remapBackup keeps the receipt kind, field, and action intact"
 );
 
 test.assertIncludes(

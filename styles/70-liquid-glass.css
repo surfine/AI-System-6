@@ -5,6 +5,23 @@ body.use-liquid-glass {
   --messages-bg: var(--liquid-pane-bg-color, rgba(255, 255, 255, 0.12));
   --details-bar-bg: var(--liquid-pane-bg-color, rgba(255, 255, 255, 0.12));
   --details-bar-border: rgba(16, 17, 20, 0.1);
+  --action-row-divider: 1px solid rgba(16, 17, 20, 0.1);
+  --ask-scope-object-border: 1px solid rgba(16, 17, 20, 0.14);
+  --message-divider: 1px solid rgba(255, 255, 255, 0.16);
+  --context-panel-budget-border-top: 1px solid rgba(16, 17, 20, 0.1);
+  --clio-file-chip-disabled-border: 1px solid rgba(16, 17, 20, 0.14);
+  --empty-object-hatch-alt: rgba(255, 255, 255, 0.16);
+  --soundscape-count-badge-border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+  --teachtext-popover-hr-border: 1px solid rgba(16, 17, 20, 0.12);
+  --teachtext-subpopover-border-left: 1px solid rgba(16, 17, 20, 0.12);
+  --chat-transcript-article-border: 1px solid rgba(16, 17, 20, 0.12);
+  --import-row-border-bottom: 1px solid rgba(16, 17, 20, 0.12);
+  --pane-actions-border-bottom: 1px solid rgba(16, 17, 20, 0.1);
+  --documents-toolbar-border: 1px solid rgba(16, 17, 20, 0.1);
+  --large-icon-border: 1px solid rgba(255, 255, 255, 0.5);
+  --image-manager-item-border: 1px solid rgba(255, 255, 255, 0.42);
+  --image-manager-item-bg: rgba(255, 255, 255, 0.18);
+  --image-manager-thumb-border: 1px solid rgba(255, 255, 255, 0.42);
   --review-desk-pane-bg: rgba(255, 255, 255, 0.2);
   --review-desk-results-border: 1px solid rgba(16, 17, 20, 0.16);
   --review-desk-results-radius: 16px;
@@ -87,6 +104,11 @@ body.use-liquid-glass {
   --scrap-list-border: 1px solid rgba(255, 255, 255, 0.44);
   --scrap-list-radius: 20px;
   --scrap-list-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68);
+  --scrap-empty-card-border: 1px solid rgba(255, 255, 255, 0.42);
+  --scrap-empty-card-bg: rgba(255, 255, 255, 0.18);
+  --scrap-list-item-divider: 0;
+  --scrap-list-mini-icon-border: 1px solid rgba(255, 255, 255, 0.5);
+  --scrap-translation-badge-border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
   --import-preview-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.26)),
     rgba(255, 255, 255, 0.24);
@@ -107,9 +129,14 @@ body.use-liquid-glass {
     linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.16)),
     rgba(255, 255, 255, 0.16);
   --field-focus-bg: var(--paper);
-  --control-strip-bg: rgba(255, 255, 255, 0.5);
-  --control-strip-border: 1px solid rgba(16, 17, 20, 0.2);
-  --control-strip-divider: 1px solid rgba(16, 17, 20, 0.12);
+  /* The strip is floating chrome that holds menus, so it takes the menu
+     panel's material rather than a flat wash of --paper. */
+  --control-strip-bg: var(--liquid-menu-panel);
+  --control-strip-border: 1px solid var(--glass-border);
+  --control-strip-divider: 1px solid var(--glass-edge);
+  --control-strip-radius: var(--liquid-menu-radius);
+  --control-strip-shadow: var(--liquid-menu-panel-shadow);
+  --control-strip-backdrop: blur(34px) saturate(160%) brightness(1.04);
   --memory-transfer-note-bg: rgba(255, 255, 255, 0.26);
   --memory-transfer-note-line: rgba(16, 17, 20, 0.28);
   --memory-transfer-note-border: rgba(255, 255, 255, 0.48);
@@ -3015,6 +3042,15 @@ body.use-liquid-glass .finder-list-row:not(:hover):not(.is-selected) {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
+/* Specificity-only twin: `.scrap-list button { border: 0; background:
+   transparent }` would otherwise strip the empty card's frame and material.
+   The values are single-sourced through the scrap tokens in :root + the
+   body.use-liquid-glass token block. */
+body.use-liquid-glass .scrap-empty-card {
+  border: var(--scrap-empty-card-border);
+  background: var(--scrap-empty-card-bg);
+}
+
 body.use-liquid-glass .message {
   border-radius: 6px;
 }
@@ -3101,10 +3137,6 @@ body.use-liquid-glass .empty-folder-note .export-empty-icon {
     linear-gradient(rgba(16, 17, 20, 0.78), rgba(16, 17, 20, 0.78)) 7px 15px / 22px 2px no-repeat,
     linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.28)),
     rgba(255, 255, 255, 0.3);
-}
-
-body.use-liquid-glass .scrap-empty-card {
-  border: 1px solid rgba(255, 255, 255, 0.42);
 }
 
 body.use-liquid-glass .finder-grid {

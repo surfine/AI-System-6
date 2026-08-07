@@ -427,19 +427,8 @@ test.assertNotIncludes(stylesCss, "!important", "stylesheet adds no overrides");
 // shell, which is just the narrow end of the same curve). The fix is a single
 // @container switch, not a phone-only special case, matching the direction
 // TDI already uses in styles/20-reader-docmap.css.
-const legacyCss = read("styles/95-legacy-webkit.css");
 test.assertIncludes(stylesCss, "@container (max-width: 760px)", "layout direction switches on the window's own measured width");
 test.assertIncludes(stylesCss, "grid-template-columns: clamp(150px, 14vw, 190px) minmax(0, 1fr) clamp(300px, 26vw, 360px)", "scene, flexible artboard, and contextual inspector form a real three-pane editor");
-test.assertIncludes(
-  legacyCss,
-  ".is-legacy-webkit .liquid-cover-window.is-legacy-under-760 .liquid-cover-body",
-  "Safari 14 gets the same narrow-arrangement switch via the measured-width class mirror"
-);
-test.assertIncludes(
-  legacyCss,
-  "grid-template-rows: auto minmax(200px, 34vh) minmax(0, 1fr)",
-  "the Safari 14 mirror preserves the compact scene rail, artboard, and inspector rows"
-);
 
 // Aspect ratio is a high-frequency canvas property, so it stays in the toolbar;
 // material mixing belongs to the Glass context.

@@ -3,6 +3,8 @@
 
 (() => {
   const STORAGE_KEY = "ai-system-6-cmf-studio-recipe";
+  // How much dielectric specular a lit display keeps (see prepareLiveMaterials).
+  const SCREEN_SPECULAR_INTENSITY = 0.15;
   const RENDERER_VENDOR_URL = "/app/vendor/cmf-renderer.js?v=three-0.184.0-uv-channel-cache";
   // Only finishes Apple actually shipped on the part. Hexes are sampled from
   // Apple's own store swatches; the server keeps the same ids and values.
@@ -46,22 +48,17 @@
     { id: "sideButton", labelKey: "cmf_part_side_button" },
     { id: "simTray", labelKey: "cmf_part_sim_tray" },
     { id: "usbC", labelKey: "cmf_part_usb_c" },
-    { id: "cameraPlate", labelKey: "cmf_part_camera_plate" },
+    // No camera-area part: on every one of these phones the plateau and the
+    // lens rings are the same anodised body, and Apple sells no contrasting
+    // ring. Those meshes follow the frame finish through the shared pass.
   ];
-  // The Pro line's Apple asset is the eSIM build, so it has no SIM tray, and
-  // its plateau is unibody with the frame — only the lens rings recolor here.
-  const IPHONE_17_PRO_PARTS = IPHONE_17_PARTS
-    .filter((part) => part.id !== "simTray")
-    .map((part) => (part.id === "cameraPlate" ? { id: part.id, labelKey: "cmf_part_camera_rings" } : part));
-  // The Air is eSIM too, but its camera bar is a real separate part, so it
-  // keeps the plain camera-area label.
+  // The Pro line and the Air ship as Apple's eSIM AR build: no SIM tray.
+  const IPHONE_17_PRO_PARTS = IPHONE_17_PARTS.filter((part) => part.id !== "simTray");
   const IPHONE_AIR_PARTS = IPHONE_17_PARTS.filter((part) => part.id !== "simTray");
   // The 17e has neither a SIM tray nor Camera Control.
-  // The 17e has no SIM tray and no Camera Control, and its back is flush, so
-  // the "camera area" part only ever paints the lens ring — same as the Pro.
   const IPHONE_17E_PARTS = IPHONE_17_PARTS
-    .filter((part) => part.id !== "simTray" && part.id !== "cameraControl")
-    .map((part) => (part.id === "cameraPlate" ? { id: part.id, labelKey: "cmf_part_camera_rings" } : part));
+    .filter((part) => part.id !== "simTray" && part.id !== "cameraControl");
+
   // Apple self-service parts that ship in every finish: lid (display
   // assembly), keyboard deck (top case), bottom case, keycaps, USB-C boards.
   const MACBOOK_NEO_PARTS = [
@@ -69,6 +66,7 @@
     { id: "topCase", labelKey: "cmf_part_top_case" },
     { id: "bottomCase", labelKey: "cmf_part_bottom_case" },
     { id: "keycaps", labelKey: "cmf_part_keycaps" },
+    { id: "trackpad", labelKey: "cmf_part_trackpad" },
     { id: "usbC", labelKey: "cmf_part_usb_c" },
   ];
   const MATERIAL_PART_ALIASES = Object.freeze({
@@ -83,7 +81,6 @@
     simTray: "simTray",
     usbC: "usbC",
     screwOrSpeaker: "usbC",
-    cameraPlate: "cameraPlate",
   });
   // Fallback only: the served model already carries the part in its material
   // name. These keep the live view honest if a material name ever goes missing.
@@ -251,7 +248,6 @@
       sideButton: "white17",
       simTray: "lavender17",
       usbC: "mistBlue17",
-      cameraPlate: "sage17",
     },
     sageTerminal: {
       frame: "black17",
@@ -263,7 +259,6 @@
       sideButton: "sage17",
       simTray: "black17",
       usbC: "black17",
-      cameraPlate: "black17",
     },
     mistDraft: {
       frame: "white17",
@@ -275,7 +270,6 @@
       sideButton: "mistBlue17",
       simTray: "white17",
       usbC: "black17",
-      cameraPlate: "black17",
     },
   };
 
@@ -289,7 +283,6 @@
       cameraControl: "deepBlue17Pro",
       sideButton: "deepBlue17Pro",
       usbC: "silver17Pro",
-      cameraPlate: "deepBlue17Pro",
     },
     deepBlueMargin: {
       frame: "deepBlue17Pro",
@@ -300,7 +293,6 @@
       cameraControl: "cosmicOrange17Pro",
       sideButton: "silver17Pro",
       usbC: "cosmicOrange17Pro",
-      cameraPlate: "cosmicOrange17Pro",
     },
     silverProof: {
       frame: "silver17Pro",
@@ -311,7 +303,6 @@
       cameraControl: "deepBlue17Pro",
       sideButton: "cosmicOrange17Pro",
       usbC: "deepBlue17Pro",
-      cameraPlate: "silver17Pro",
     },
   };
 
@@ -325,7 +316,6 @@
       cameraControl: "spaceBlackAir",
       sideButton: "spaceBlackAir",
       usbC: "spaceBlackAir",
-      cameraPlate: "spaceBlackAir",
     },
     goldCaption: {
       frame: "lightGoldAir",
@@ -336,7 +326,6 @@
       cameraControl: "spaceBlackAir",
       sideButton: "lightGoldAir",
       usbC: "cloudWhiteAir",
-      cameraPlate: "lightGoldAir",
     },
     skyTypeset: {
       frame: "skyBlueAir",
@@ -347,7 +336,6 @@
       cameraControl: "lightGoldAir",
       sideButton: "cloudWhiteAir",
       usbC: "spaceBlackAir",
-      cameraPlate: "cloudWhiteAir",
     },
   };
 
@@ -360,7 +348,6 @@
       actionButton: "black17e",
       sideButton: "white17e",
       usbC: "black17e",
-      cameraPlate: "white17e",
     },
     inkLetterpress: {
       frame: "black17e",
@@ -370,7 +357,6 @@
       actionButton: "softPink17e",
       sideButton: "white17e",
       usbC: "white17e",
-      cameraPlate: "white17e",
     },
     whiteFolio: {
       frame: "white17e",
@@ -380,7 +366,6 @@
       actionButton: "softPink17e",
       sideButton: "black17e",
       usbC: "softPink17e",
-      cameraPlate: "black17e",
     },
   };
 
@@ -390,6 +375,7 @@
       topCase: "silverNeo",
       bottomCase: "blushNeo",
       keycaps: "citrusNeo",
+      trackpad: "silverNeo",
       usbC: "indigoNeo",
     },
     indigoDeck: {
@@ -397,6 +383,7 @@
       topCase: "indigoNeo",
       bottomCase: "silverNeo",
       keycaps: "citrusNeo",
+      trackpad: "indigoNeo",
       usbC: "silverNeo",
     },
     citrusKeys: {
@@ -404,6 +391,7 @@
       topCase: "silverNeo",
       bottomCase: "silverNeo",
       keycaps: "citrusNeo",
+      trackpad: "blushNeo",
       usbC: "blushNeo",
     },
   };
@@ -1149,6 +1137,15 @@
           material.aoMapIntensity = 0;
         }
         if (material.transparent) material.depthWrite = false;
+        // A lit display is emissive over a black dielectric. At grazing angles
+        // that dielectric's Fresnel term climbs toward 1 and, under this
+        // viewport's plain studio lighting, lays a flat grey veil over the
+        // wallpaper (measured: colour saturation 0.43 head-on, 0.27 off-axis).
+        // Damp the specular so the screen keeps its picture; a trace is left so
+        // it does not read as matte paper.
+        if (material.emissiveMap && "specularIntensity" in material) {
+          material.specularIntensity = SCREEN_SPECULAR_INTENSITY;
+        }
         material.needsUpdate = true;
       });
       const namedPart = sourceMaterials

@@ -7,6 +7,7 @@ const repoRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const packagePath = join(repoRoot, "shell", "macos-webview");
 const packageManifestPath = join(repoRoot, "package.json");
 const buildInfoPath = join(repoRoot, "build-info.json");
+const generatedBuildInfoPath = join(repoRoot, "app/generated/build-info.json");
 const appDisplayName = process.env.AI_SYSTEM6_APP_DISPLAY_NAME || "AI System 6 Beta";
 const appName = `${appDisplayName}.app`;
 const legacyAppNames = ["AI System 6 Shell.app"];
@@ -40,9 +41,18 @@ const shellSourcesDir = join(packagePath, "Sources");
 let packageVersion = "0.1.0";
 let bundleBuild = "1";
 
+// The generated identity (app/generated/build-info.json) is the single
+// source; package.json / build-info.json only backstop an unbuilt checkout.
+let generatedBuildInfo = null;
+try {
+  generatedBuildInfo = JSON.parse(readFileSync(generatedBuildInfoPath, "utf8"));
+} catch {
+  generatedBuildInfo = null;
+}
+
 try {
   const manifest = JSON.parse(readFileSync(packageManifestPath, "utf8"));
-  if (typeof manifest.version === "string") {
+  if (!generatedBuildInfo && typeof manifest.version === "string") {
     packageVersion = manifest.version;
   }
 } catch {
@@ -51,11 +61,18 @@ try {
 
 try {
   const buildInfo = JSON.parse(readFileSync(buildInfoPath, "utf8"));
-  if (typeof buildInfo.build === "string") {
+  if (!generatedBuildInfo && typeof buildInfo.build === "string") {
     bundleBuild = buildInfo.build;
   }
 } catch {
   // keep default build marker if build-info.json is temporarily unavailable
+}
+
+if (generatedBuildInfo && typeof generatedBuildInfo.version === "string") {
+  packageVersion = generatedBuildInfo.version;
+}
+if (generatedBuildInfo && typeof generatedBuildInfo.build === "string") {
+  bundleBuild = generatedBuildInfo.build;
 }
 
 function buildIcon(resourcesDir) {

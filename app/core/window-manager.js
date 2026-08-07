@@ -84,6 +84,7 @@ const finderCascadeWindowNames = new Set([
   "projectCd",
   "trash",
   "textDisk",
+  "controlStripModules",
 ]);
 let quickDraftAssistantHome = null;
 let closingQuickDraftAssistantPair = false;
@@ -885,6 +886,7 @@ const mobileFinderPageWindowNames = new Set([
   "documents",
   "trash",
   "printDirectory",
+  "controlStripModules",
 ]);
 
 // Finder volumes share one navigation and command model. Their storage
@@ -1098,6 +1100,7 @@ const finderParentWindowNames = new Map([
   ["rag", "disk"],
   ["trash", "disk"],
   ["printDirectory", "disk"],
+  ["controlStripModules", "finder"],
   ...Array.from(finderVolumeDefinitions.entries())
     .filter(([, volume]) => volume.parentWindowName)
     .map(([windowName, volume]) => [windowName, volume.parentWindowName]),
@@ -1112,6 +1115,7 @@ const finderLocationLabelKeys = new Map([
   ["rag", "mount_text_disk"],
   ["trash", "trash"],
   ["printDirectory", "print_directory"],
+  ["controlStripModules", "control_strip_modules_folder"],
   ...Array.from(finderVolumeDefinitions.entries())
     .map(([windowName, volume]) => [windowName, volume.labelKey]),
 ]);
@@ -1177,6 +1181,13 @@ function finderNavigationSegments(windowName) {
     });
     return segments;
   }
+  if (windowName === "applications") {
+    segments.push({ windowName, folderId: "", applicationsFolderPath: "", label: currentLabel });
+    (typeof applicationsFolderPathTrail === "function" ? applicationsFolderPathTrail() : []).forEach((entry) => {
+      segments.push({ windowName, folderId: "", applicationsFolderPath: entry.path, label: entry.label });
+    });
+    return segments;
+  }
   if (windowName === "projects" || windowName === "documents") {
     segments.push({ windowName, folderId: "", label: currentLabel });
     const folderId = selectedFolderId === "all" ? "" : selectedFolderId;
@@ -1209,7 +1220,13 @@ function navigateFinderFolderLocation(windowName, folderId = "") {
   }
 }
 
-async function navigateFinderLocation(sourceWindowName, targetWindowName, folderId = "", systemFolderPath = "") {
+async function navigateFinderLocation(
+  sourceWindowName,
+  targetWindowName,
+  folderId = "",
+  systemFolderPath = "",
+  applicationsFolderPath = "",
+) {
   if (sourceWindowName === targetWindowName && ["projects", "documents"].includes(targetWindowName)) {
     navigateFinderFolderLocation(targetWindowName, folderId);
     return;
@@ -1221,6 +1238,15 @@ async function navigateFinderLocation(sourceWindowName, targetWindowName, folder
     if (sourceWindowName !== "finder") await openWindow("finder");
     navigateSystemFolderPath(systemFolderPath);
     focusWindow(getWindow("finder"));
+    return;
+  }
+
+  if (targetWindowName === "applications") {
+    resetFinderSelectionForNavigation();
+    mobileFinderDesktopPreferred = false;
+    if (sourceWindowName !== "applications") await openWindow("applications");
+    if (typeof navigateApplicationsFolderPath === "function") navigateApplicationsFolderPath(applicationsFolderPath);
+    focusWindow(getWindow("applications"));
     return;
   }
 
@@ -1248,6 +1274,17 @@ async function navigateFinderUp(windowName) {
     const folder = typeof getSelectedFolder === "function" ? getSelectedFolder() : null;
     if (folder) {
       navigateFinderFolderLocation(windowName, folder.parentId || "");
+      return;
+    }
+  }
+
+  if (windowName === "applications" && typeof getApplicationsFolderPathDefinition === "function") {
+    const definition = getApplicationsFolderPathDefinition();
+    // Only a subfolder has a parentPath; at the root the button leaves the
+    // window, the way it does everywhere else.
+    if (definition && "parentPath" in definition) {
+      navigateApplicationsFolderPath(definition.parentPath || "");
+      focusWindow(getWindow("applications"));
       return;
     }
   }
@@ -1329,7 +1366,13 @@ function renderFinderNavigationBar(winOrName) {
     button.textContent = segment.label;
     button.addEventListener("click", (event) => {
       event.stopPropagation();
-      navigateFinderLocation(windowName, segment.windowName, segment.folderId, segment.systemFolderPath || "");
+      navigateFinderLocation(
+        windowName,
+        segment.windowName,
+        segment.folderId,
+        segment.systemFolderPath || "",
+        segment.applicationsFolderPath || "",
+      );
     });
     breadcrumbs.append(button);
   });
@@ -1708,6 +1751,7 @@ const finderContentFitWindowNames = new Set([
   "projectCd",
   "textDisk",
   "trash",
+  "controlStripModules",
 ]);
 
 function isFinderContentWindow(winOrName) {
@@ -2023,6 +2067,9 @@ function getActionAvailability() {
     "download-active-markdown": isTeachText || isChatFile,
     "download-active-bilingual-markdown": hasTeachTextTranslation,
     "export-teachtext-project-cd": teachTextCanBurnProjectCd,
+    "open-document-versions": isTeachText && hasTeachTextBody,
+    "versions-compare": isTeachText && hasTeachTextBody,
+    "versions-restore": isTeachText && hasTeachTextBody,
     "print-to-slides": (hasTeachTextBody && teachTextCanExport) || hasOutlineBody,
     "ai-print-to-slides": (hasTeachTextBody && teachTextCanExport) || hasOutlineBody,
     "generate-marp-open-clio-stage": hasTeachTextBody && teachTextCanExport,
@@ -2465,6 +2512,13 @@ const lazyWindowModules = {
     ensure: () => ensureClioChartModule(),
     attach: () => window.AISystem6ClioChart?.attach?.(),
   },
+  controlStripModules: {
+    ensure: () => ensureControlStripModulesFolderModule(),
+    attach: () => {
+      if (typeof renderStaticFinderWindow === "function") renderStaticFinderWindow("controlStripModules");
+      window.AISystem6ControlStripModulesFolder?.attach?.();
+    },
+  },
 };
 
 async function loadLazyWindowModule(name) {
@@ -2538,7 +2592,7 @@ async function openWindow(name, options = {}) {
   if (name === "finder") {
     renderFinder();
   }
-  if (["helpFolder", "applications", "disk"].includes(name)) {
+  if (["helpFolder", "applications", "disk", "controlStripModules"].includes(name)) {
     renderStaticFinderWindow(name);
   }
   if (name === "projectCd") {
@@ -4455,6 +4509,7 @@ function hideSidebars() {
     "docMap",
     "cmfStudio",
     "soundscape",
+    "controlStripModules",
     "dictionary",
     "imageManager",
     "guide",

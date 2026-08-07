@@ -2,6 +2,8 @@ node_modules/
 .pkg-cache/
 .cache/
 .DS_Store
+test-results/
+playwright-report/
 app.bundle.js
 app/legacy/
 styles.bundle.css

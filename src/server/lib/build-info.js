@@ -1,7 +1,7 @@
-// Version + build-stamp resolution. Mirrors the logic in the root
-// server.js so /api/version returns the same shape on this port. The
-// repository root, package.json, and build-info.json all live one
-// directory above src/.
+// Version + build-stamp resolution. The generated identity written by
+// scripts/lib/build-info.mjs (app/generated/build-info.json) is the single
+// source; package.json + build-info.json + git are only a development
+// fallback for a server started without a prior build.
 
 "use strict";
 
@@ -24,6 +24,14 @@ const buildInfo = (() => {
     return require(path.join(repoRoot, "build-info.json"));
   } catch {
     return /** @type {Record<string, any>} */ ({});
+  }
+})();
+
+const generatedBuildInfo = (() => {
+  try {
+    return require(path.join(repoRoot, "app/generated/build-info.json"));
+  } catch {
+    return null;
   }
 })();
 
@@ -65,13 +73,22 @@ function readGitBuildSuffix() {
   }
 }
 
-const appVersion = packageInfo.version || "0.0.0";
-const appBuild = `${baseBuildStamp}${readGitBuildSuffix()}`;
+const appVersion =
+  (generatedBuildInfo && generatedBuildInfo.version) ||
+  packageInfo.version ||
+  "0.0.0";
+const appBuild =
+  (generatedBuildInfo && generatedBuildInfo.build) ||
+  `${baseBuildStamp}${readGitBuildSuffix()}`;
 const appName = packageInfo.name || "ai-system-6";
+const appCommit = (generatedBuildInfo && generatedBuildInfo.commit) || "";
+const appGeneratedAt = (generatedBuildInfo && generatedBuildInfo.generatedAt) || "";
 
 module.exports = {
   appName,
   appVersion,
   appBuild,
+  appCommit,
+  appGeneratedAt,
   repoRoot,
 };

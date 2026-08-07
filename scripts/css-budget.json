@@ -14,7 +14,6 @@
     "styles/85-liquid-cover.css": 0,
     "styles/86-cmf-studio.css": 0,
     "styles/90-endfield-terminal.css": 0,
-    "styles/95-legacy-webkit.css": 0,
     "styles/87-clio-chart.css": 0,
     "styles/88-soundscape.css": 0,
     "styles/89-control-strip.css": 0
@@ -33,7 +32,6 @@
     "styles/85-liquid-cover.css": 0,
     "styles/86-cmf-studio.css": 0,
     "styles/90-endfield-terminal.css": 1,
-    "styles/95-legacy-webkit.css": 0,
     "styles/87-clio-chart.css": 0,
     "styles/88-soundscape.css": 0,
     "styles/89-control-strip.css": 2
@@ -43,7 +41,7 @@
     "total": 172
   },
   "_liquidGlassNote": "Total twin selectors (body.use-liquid-glass <X>) in 70-liquid-glass.css; ratchet pushes the architecture toward token-based theming. Orphan count tracks twins whose base class/id no longer appears in any non-theme CSS file — a strong drift signal. Both numbers may only shrink; raising either requires explicit justification in the PR.",
-  "liquidGlassTwinCount": 491,
+  "liquidGlassTwinCount": 490,
   "liquidGlassOrphanCount": 32,
   "themeSelectorsOutsideLiquid": {
     "styles/50-apps.css": 12,

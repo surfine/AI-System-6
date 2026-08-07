@@ -1,9 +1,9 @@
 const {
   contextBudgetConfig,
-  defaultAppVersionInfo,
   defaultWindowViewModes,
   docToolConfig,
   flowConfig,
+  getAppBuildInfo,
   longTaskControlSelectors,
   memoryCardPairs,
   projectConfig,
@@ -11,7 +11,7 @@ const {
   windowManagementConfig,
 } = window.AISystem6Config || {};
 
-if (!defaultAppVersionInfo) {
+if (!getAppBuildInfo) {
   throw new Error("app/core/config.js must load before app.js");
 }
 
@@ -395,6 +395,18 @@ const {
   soundEffectsInput,
   menuClockInput,
   controlStripInput,
+  controlStripShowInput,
+  controlStripHotkeyInput,
+  controlStripHotkeyRecordButton,
+  controlStripHotkeyClearButton,
+  controlStripFontSelect,
+  controlStripFontSizeSelect,
+  controlStripModuleList,
+  controlStripMoveUpButton,
+  controlStripMoveDownButton,
+  controlStripEnableButton,
+  controlStripDisableButton,
+  controlStripResetButton,
   docMapLayoutToggleButton,
   docMapLayoutButtons,
   performanceMeterInput,
@@ -464,7 +476,7 @@ try {
 } catch (error) {
   console.warn("Could not read cached appearance preference.", error);
 }
-let appVersionInfo = { ...defaultAppVersionInfo };
+let appVersionInfo = { ...getAppBuildInfo() };
 if (rememberInput) rememberInput.checked = true;
 
 const conversation = [];
@@ -486,7 +498,8 @@ let fileInfoItem = null;
 const windowViewModes = { ...defaultWindowViewModes };
 let writingToolsViewMode = "icon";
 let systemFinderPath = "";
-const finderContainerWindowNames = ["finder", "helpFolder", "applications", "disk"];
+let applicationsFinderPath = "";
+const finderContainerWindowNames = ["finder", "helpFolder", "applications", "disk", "controlStripModules"];
 const viewWindowNames = [...finderContainerWindowNames, "projects", "documents", "imageManager"];
 const printableDirectoryWindowNames = new Set([
   ...finderContainerWindowNames,
@@ -529,6 +542,7 @@ function getSystemFolderItems() {
     { name: t("control_panel"), iconId: "controlPanel", icon: "panel-icon", action: "open-control", kind: t("system_component") },
     { name: t("system_status"), iconId: "systemStatus", icon: "panel-icon", action: "open-system-status", kind: t("system_component") },
     { name: t("context_panel"), iconId: "contextPanel", icon: "panel-icon", action: "open-context-panel", kind: t("system_component") },
+    { name: t("control_strip_modules_folder"), iconId: "systemFolder", icon: "folder-icon", action: "open-control-strip-modules", kind: t("folder_kind") },
   ], t("system_folder"));
 }
 
@@ -558,6 +572,60 @@ const systemFolderPathDefinitions = new Map([
   ["cliotalk", { label: "ClioTalk", parentPath: "ai-prompts", promptCategory: "ClioTalk" }],
   ["boundaries", { label: "System Boundaries", parentPath: "ai-prompts", promptCategory: "System Boundaries" }],
 ]);
+
+// Applications window hierarchy. The root keeps only the high-frequency apps
+// that explain the product line; the rest live in two folders. Everything
+// below is one source of truth: the rendered items, the folder labels, the
+// path bar, and the action handlers all read this map.
+const applicationsFolderPathDefinitions = new Map([
+  ["", { labelKey: "applications" }],
+  ["create", { labelKey: "applications_create", parentPath: "" }],
+  ["extras", { labelKey: "applications_extras", parentPath: "" }],
+]);
+
+function applicationsFolderPathLabel(path = applicationsFinderPath) {
+  const definition = applicationsFolderPathDefinitions.get(path);
+  return definition ? (definition.labelKey ? t(definition.labelKey) : definition.label || t("applications")) : t("applications");
+}
+
+function applicationsFolderLocationPath(path = applicationsFinderPath) {
+  const trail = [];
+  const seen = new Set();
+  let current = path;
+  while (current && applicationsFolderPathDefinitions.has(current) && !seen.has(current)) {
+    seen.add(current);
+    trail.unshift(applicationsFolderPathLabel(current));
+    current = applicationsFolderPathDefinitions.get(current).parentPath;
+  }
+  return [t("applications"), ...trail].join("/");
+}
+
+function getApplicationsFolderPathDefinition(path = applicationsFinderPath) {
+  return applicationsFolderPathDefinitions.get(path) || null;
+}
+
+function applicationsFolderPathTrail(path = applicationsFinderPath) {
+  const trail = [];
+  const seen = new Set();
+  let current = path;
+  while (current && applicationsFolderPathDefinitions.has(current) && !seen.has(current)) {
+    seen.add(current);
+    trail.unshift({ path: current, label: applicationsFolderPathLabel(current) });
+    current = applicationsFolderPathDefinitions.get(current).parentPath;
+  }
+  return trail;
+}
+
+function applicationsFolderCurrentLabel(path = applicationsFinderPath) {
+  return applicationsFolderPathLabel(path) || t("applications");
+}
+
+function navigateApplicationsFolderPath(path = "") {
+  applicationsFinderPath = applicationsFolderPathDefinitions.has(path) ? path : "";
+  selectedStaticFinderAction = "";
+  renderStaticFinderWindow("applications");
+  if (typeof renderFinderNavigationBar === "function") renderFinderNavigationBar("applications");
+}
 
 function getSystemFolderPathDefinition(path = systemFinderPath) {
   return systemFolderPathDefinitions.get(path) || null;
@@ -643,27 +711,42 @@ function getHelpFolderItems() {
 }
 
 function getApplicationsItems() {
+  const location = applicationsFolderLocationPath();
+  if (applicationsFinderPath === "create") {
+    return withStaticFinderMetadata([
+      { name: t("clio_stage_label"), iconId: "clioStage", icon: "tools-icon", action: "open-clio-stage", type: "application", kind: t("application") },
+      { name: t("clio_chart_label"), iconId: "clioChart", icon: "tools-icon", action: "open-clio-chart", type: "application", kind: t("application") },
+      { name: t("liquid_cover_label"), iconId: "liquidCover", icon: "tools-icon", action: "open-liquid-cover", type: "application", kind: t("application") },
+      { name: t("cmf_studio_label"), iconId: "cmfStudio", icon: "tools-icon", action: "open-cmf-studio", type: "application", kind: t("application") },
+      { name: t("soundscape_label"), iconId: "soundscape", icon: "tools-icon", action: "open-soundscape", type: "application", kind: t("application") },
+    ], location);
+  }
+  if (applicationsFinderPath === "extras") {
+    return withStaticFinderMetadata([
+      { name: t("endfield_terminal_label"), iconId: "endfieldTerminal", icon: "tools-icon", action: "open-endfield-terminal", type: "application", kind: t("application") },
+      { name: t("bureaucracy_meme_label"), iconId: "bureaucracyMeme", icon: "tools-icon", action: "open-bureaucracy-meme", type: "application", kind: t("application") },
+      { name: t("time_machine_label"), iconId: "timeMachine", icon: "tools-icon", action: "open-time-machine", type: "application", kind: t("application") },
+      { name: t("puzzle"), iconId: "puzzle", icon: "tools-icon", action: "open-puzzle", type: "application", kind: t("application") },
+      { name: t("memory_cards"), iconId: "memoryCards", icon: "tools-icon", action: "open-memory-cards", type: "application", kind: t("application") },
+      { name: t("quick_draft_label"), iconId: "quickDraft", icon: "teachtext-icon", action: "open-quick-draft", type: "application", kind: t("application"), workspaceCapability: workspaceCapabilityStudio },
+      { name: t("rebuild_article"), iconId: "rebuildArticle", icon: "tools-icon", action: "open-rebuild-flow", type: "application", kind: t("application"), workspaceCapability: workspaceCapabilityStudio },
+      { name: t("guide_play_demo"), iconId: "writingDemo", icon: "teachtext-icon", action: "play-writing-demo", type: "application", kind: t("application"), workspaceCapability: workspaceCapabilityStudio },
+    ], location);
+  }
+  // Root: high-frequency apps that explain the product line. Alias, Clipping,
+  // Stationery Pad, Finder Label and Droplet stay file/menu/drop behaviors and
+  // are not listed as top-level applications.
   return withStaticFinderMetadata([
-    { name: t("assistant_label"), iconId: "assistant", icon: "app-icon", action: "open-assistant", type: "application", kind: t("application") },
     { name: t("writing_studio"), iconId: "writingStudio", icon: "writing-studio-icon", action: "open-writing-studio", type: "application", kind: t("application"), workspaceProfiles: [workspaceProfileDesktop] },
-    { name: t("quick_draft_label"), iconId: "quickDraft", icon: "teachtext-icon", action: "open-quick-draft", type: "application", kind: t("application"), workspaceCapability: workspaceCapabilityStudio },
-    { name: t("teachtext_label"), iconId: "teachText", icon: "teachtext-icon", action: "open-teachtext", type: "application", kind: t("application") },
+    { name: t("assistant_label"), iconId: "assistant", icon: "app-icon", action: "open-assistant", type: "application", kind: t("application") },
     { name: t("reader_label"), iconId: "reader", icon: "reader-desk-icon", action: "open-reader", type: "application", kind: t("application") },
-    { name: t("time_machine_label"), iconId: "timeMachine", icon: "tools-icon", action: "open-time-machine", type: "application", kind: t("application") },
     { name: t("searcher_label"), iconId: "searcher", icon: "tools-icon", action: "open-find-path", type: "application", kind: t("application") },
-    { name: t("docmap_label"), iconId: "docMap", icon: "folder-icon", action: "open-docmap", type: "application", kind: t("application") },
+    { name: t("teachtext_label"), iconId: "teachText", icon: "teachtext-icon", action: "open-teachtext", type: "application", kind: t("application") },
     { name: t("scrapbook_label"), iconId: "scrapbook", icon: "folder-icon", action: "open-scrapbook", type: "application", kind: t("application") },
-    { name: t("bureaucracy_meme_label"), iconId: "bureaucracyMeme", icon: "tools-icon", action: "open-bureaucracy-meme", type: "application", kind: t("application") },
-    { name: t("endfield_terminal_label"), iconId: "endfieldTerminal", icon: "tools-icon", action: "open-endfield-terminal", type: "application", kind: t("application") },
-    { name: t("clio_stage_label"), iconId: "clioStage", icon: "tools-icon", action: "open-clio-stage", type: "application", kind: t("application") },
-    { name: t("clio_chart_label"), iconId: "clioChart", icon: "tools-icon", action: "open-clio-chart", type: "application", kind: t("application") },
-    { name: t("liquid_cover_label"), iconId: "liquidCover", icon: "tools-icon", action: "open-liquid-cover", type: "application", kind: t("application") },
-    { name: t("cmf_studio_label"), iconId: "cmfStudio", icon: "tools-icon", action: "open-cmf-studio", type: "application", kind: t("application") },
-    { name: t("soundscape_label"), iconId: "soundscape", icon: "tools-icon", action: "open-soundscape", type: "application", kind: t("application") },
-    { name: t("rebuild_article"), iconId: "rebuildArticle", icon: "tools-icon", action: "open-rebuild-flow", type: "application", kind: t("application"), workspaceCapability: workspaceCapabilityStudio },
-    { name: t("guide_play_demo"), iconId: "writingDemo", icon: "teachtext-icon", action: "play-writing-demo", type: "application", kind: t("application"), workspaceCapability: workspaceCapabilityStudio },
-    ...(typeof getDropletItems === "function" ? getDropletItems() : []),
-  ], t("applications"));
+    { name: t("docmap_label"), iconId: "docMap", icon: "folder-icon", action: "open-docmap", type: "application", kind: t("application") },
+    { name: t("applications_create"), iconId: "folder", icon: "folder-icon", action: "open-applications-folder-path:create", type: "folder", kind: t("folder_kind") },
+    { name: t("applications_extras"), iconId: "folder", icon: "folder-icon", action: "open-applications-folder-path:extras", type: "folder", kind: t("folder_kind") },
+  ], location);
 }
 
 function getStartupDiskItems() {
@@ -693,12 +776,42 @@ function getStaticFinderItems(winName) {
   if (winName === "helpFolder") return filterWorkspaceItems(getHelpFolderItems());
   if (winName === "applications") return filterWorkspaceItems(getApplicationsItems());
   if (winName === "disk") return filterWorkspaceItems(getStartupDiskItems());
+  if (winName === "controlStripModules") return filterWorkspaceItems(getControlStripModuleFinderItems());
   return filterWorkspaceItems(getSystemPromptFinderItems());
+}
+
+// The Control Strip Modules folder is a visible System Folder object, not a
+// JavaScript array hiding behind the scenes. Its file items come from the
+// first-party module descriptors; each file is draggable onto the strip. The
+// descriptors are lazy, so the window's lazy loader renders this after the
+// modules file is present (empty until then is fine — the window is hidden).
+function getControlStripModuleFinderItems() {
+  const modules = Array.isArray(window.AISystem6ControlStripModules)
+    ? window.AISystem6ControlStripModules
+    : [];
+  return withStaticFinderMetadata(
+    modules.map((descriptor) => ({
+      name: typeof descriptor.labelKey === "string" ? t(descriptor.labelKey) : descriptor.id,
+      iconId: descriptor.finderIcon
+        || (typeof descriptor.icon === "function" ? descriptor.icon({ state: "ready" }) : descriptor.icon)
+        || "document",
+      action: `open-control-strip-module:${descriptor.id}`,
+      moduleId: descriptor.id,
+      kind: t("control_strip_module_kind"),
+    })),
+    t("control_strip_modules_folder")
+  );
 }
 
 function renderFinderItemIcon(item) {
   return renderSystemIcon(item.iconId || item.icon, {
     size: item.iconBase === "icon" ? "desktop" : "mini"});
+}
+
+function controlStripModuleDragAttributes(item) {
+  return item.moduleId
+    ? ` draggable="true" data-drag-type="control-strip-module" data-module-id="${escapeHtml(item.moduleId)}"`
+    : "";
 }
 
 function dropletDropAttributes(item) {
@@ -937,6 +1050,10 @@ function renderStaticFinderWindow(winName) {
     const title = win.querySelector(":scope > .title-bar h2");
     if (title) title.textContent = systemFolderCurrentLabel();
   }
+  if (winName === "applications") {
+    const title = win.querySelector(":scope > .title-bar h2");
+    if (title) title.textContent = applicationsFolderCurrentLabel();
+  }
 
   updateFinderViewButtons(win, mode);
 
@@ -952,7 +1069,7 @@ function renderStaticFinderWindow(winName) {
     : "";
   if (isFinderListMode(mode)) {
     const renderListRow = (item) => `
-      <button class="finder-list-row${selected?.action === item.action ? " is-selected" : ""}" data-static-finder-window="${escapeHtml(winName)}" data-static-finder-action="${escapeHtml(item.action)}"${dropletDropAttributes(item)}>
+      <button class="finder-list-row${selected?.action === item.action ? " is-selected" : ""}" data-static-finder-window="${escapeHtml(winName)}" data-static-finder-action="${escapeHtml(item.action)}"${controlStripModuleDragAttributes(item)}${dropletDropAttributes(item)}>
         <span class="finder-list-name-cell">${renderFinderItemIcon(item)}<span>${escapeHtml(item.name)}</span></span>
         <span>${escapeHtml(item.kind)}</span>
         <span>${escapeHtml(item.sizeLabel || "--")}</span>
@@ -974,7 +1091,7 @@ function renderStaticFinderWindow(winName) {
   }
 
   const renderIconItem = (item) => `
-    <button class="finder-item${selected?.action === item.action ? " is-selected" : ""}" data-static-finder-window="${escapeHtml(winName)}" data-static-finder-action="${escapeHtml(item.action)}"${dropletDropAttributes(item)}>
+    <button class="finder-item${selected?.action === item.action ? " is-selected" : ""}" data-static-finder-window="${escapeHtml(winName)}" data-static-finder-action="${escapeHtml(item.action)}"${controlStripModuleDragAttributes(item)}${dropletDropAttributes(item)}>
       ${renderFinderItemIcon(item)}
       <span>${escapeHtml(item.name)}</span>
     </button>

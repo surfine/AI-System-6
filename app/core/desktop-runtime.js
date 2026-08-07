@@ -245,17 +245,18 @@ function createProjectFromInput() {
   const project = createProjectRecord(name);
   const previousProjectId = activeProjectId;
   parkConversationInProject(previousProjectId);
-  isProjectMounted = true;
-  projects.unshift(project);
-  activeProjectId = project.id;
-  selectedProjectId = project.id;
-  selectedFolderId = "all";
-  clearProjectTransientState();
+  window.AISystem6StateStores?.projects.commit(() => {
+    isProjectMounted = true;
+    projects.unshift(project);
+    activeProjectId = project.id;
+    selectedProjectId = project.id;
+    selectedFolderId = "all";
+    clearProjectTransientState();
+  });
   closeProjectScopedWindows();
   scheduleWorkspaceRender({ projectReferences: true, mountedTextDisk: true, menuState: true });
   resetAssistantForProject(project.name);
   loadActiveProjectReferences();
-  saveDeskState();
   openWindow("projects");
   setStatus(t("project_created", project.name));
 }

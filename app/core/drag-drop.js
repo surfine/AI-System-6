@@ -14,6 +14,10 @@ function initDragAndDrop() {
       projectId: target.dataset.projectId
     };
 
+    if (target.dataset.dragType === "control-strip-module" && target.dataset.moduleId) {
+      dragData.moduleId = target.dataset.moduleId;
+    }
+
     if (target.dataset.dragType === "project-cd-item" && target.dataset.id) {
       if (!selectedProjectCdItemIds.has(target.dataset.id)) {
         selectedProjectCdItemId = target.dataset.id;
@@ -57,6 +61,17 @@ function initDragAndDrop() {
       selectDocumentItem(target.dataset.documentItemType, target.dataset.documentItemId);
     }
 
+    if (dragData.type === "control-strip-module") {
+      const payload = JSON.stringify(dragData);
+      event.dataTransfer.setData("application/json", payload);
+      event.dataTransfer.setData("text/plain", payload);
+      event.dataTransfer.effectAllowed = "copy";
+      setTimeout(() => target.classList.add("is-dragging"), 0);
+      return;
+    }
+
+    beginSpringFolderSession(dragData);
+
     const dragPayload = JSON.stringify(dragData);
     event.dataTransfer.setData("application/json", dragPayload);
     event.dataTransfer.setData("text/plain", dragPayload);
@@ -68,6 +83,18 @@ function initDragAndDrop() {
     const target = event.target.closest("[data-drag-type]");
     if (target) target.classList.remove("is-dragging");
     document.querySelectorAll(".is-drag-over").forEach(el => el.classList.remove("is-drag-over"));
+    endSpringFolderSession();
+  });
+
+  // dragenter is the reliable "the pointer reached this folder" signal: some
+  // browsers only repeat dragover while the pointer keeps moving, so arming
+  // the spring timer here (and again on dragover) makes a stationary hover
+  // open the folder after the delay.
+  document.addEventListener("dragenter", (event) => {
+    const dropTarget = event.target.closest("[data-drop-target]");
+    if (dropTarget && dropTarget.dataset.dropTarget === "document-folder") {
+      maybeSpringFolder(dropTarget);
+    }
   });
 
   document.addEventListener("dragover", (event) => {
@@ -80,12 +107,17 @@ function initDragAndDrop() {
         // Editable surfaces show a blinking insertion caret, not the dashed
         // whole-object frame. Validation and caret positioning live in the lazy
         // finder-objects module so the main bundle stays thin.
-        ensureFinderObjectsModule().then(() => {
-          window.AISystem6FinderObjects?.handleEditorInsertDragOver?.(dropTarget, event);
-        });
+        ensureFinderObjectsModule()
+          .then(() => {
+            window.AISystem6FinderObjects?.handleEditorInsertDragOver?.(dropTarget, event);
+          })
+          .catch((error) => console.warn("Finder Objects failed to load.", error));
         return;
       }
-      event.dataTransfer.dropEffect = ["clio-attachment", "droplet"].includes(dropTarget.dataset.dropTarget) ? "copy" : "move";
+      if (dropTarget.dataset.dropTarget === "document-folder") {
+        maybeSpringFolder(dropTarget);
+      }
+      event.dataTransfer.dropEffect = ["clio-attachment", "droplet", "control-strip"].includes(dropTarget.dataset.dropTarget) ? "copy" : "move";
       dropTarget.classList.add("is-drag-over");
     }
   });
@@ -97,6 +129,9 @@ function initDragAndDrop() {
       if (event.clientX <= rect.left || event.clientX >= rect.right || event.clientY <= rect.top || event.clientY >= rect.bottom) {
         dropTarget.classList.remove("is-drag-over");
         window.AISystem6FinderObjects?.clearEditorInsertCaret?.(dropTarget);
+        if (dropTarget.dataset.dropTarget === "document-folder" && dropTarget.dataset.folderId === springTimerFolderId) {
+          cancelSpringFolderTimer();
+        }
       }
     }
   });
@@ -113,17 +148,26 @@ function initDragAndDrop() {
         if (!rawData) return;
         const dragData = JSON.parse(rawData);
         const dropTargetType = dropTarget.dataset.dropTarget;
+        const springTargetFolderId = (dropTargetType === "document-folder" || dropTargetType === "document-current-folder")
+          ? dropTarget.dataset.folderId || null
+          : null;
+        endSpringFolderSession();
 
         if (dropTargetType === "trash") {
           handleDropToTrash(dragData);
         } else if (dropTargetType === "droplet") {
           withScripting(() => runDropletDrop(dropTarget.dataset.dropletAction || "", dragData));
         } else if (dropTargetType === "desktop") {
+          if (dragData.type === "control-strip-module") return;
           withFinderObjects(() => createClippingFile({ ...dragData, folderId: null }));
+        } else if (dropTargetType === "control-strip") {
+          if (dragData.type === "control-strip-module" && typeof window.AISystem6ControlStrip?.handleModuleDrop === "function") {
+            window.AISystem6ControlStrip.handleModuleDrop(dragData, event);
+          }
         } else if (dropTargetType === "editor-insert") {
           withFinderObjects(() => insertClippingIntoEditor(dropTarget, dragData, event));
         } else if (dropTargetType === "document-folder" || dropTargetType === "document-current-folder") {
-          handleDropToDocumentFolder(dragData, dropTarget.dataset.folderId || null);
+          handleDropToDocumentFolder(dragData, springTargetFolderId);
         } else if (dropTargetType === "project") {
           const targetId = dropTarget.id === "active-project-drop-target"
             ? activeProjectId
@@ -203,3 +247,149 @@ function handleDropToProject(data, targetProjectId) {
     }
   }
 }
+
+// ---- Spring-loaded Folders ------------------------------------------------
+//
+// Hovering a Finder folder for ~650ms while dragging a project file, folder,
+// or Reader selection temporarily opens that folder so the drag can continue
+// into the next level. This is an in-memory navigation aid: it never calls
+// saveDeskState(), never touches Working Session or storage, and the Finder
+// path snaps back to the origin when the drop or drag ends. It only activates
+// on precise pointers; touch keeps the existing behavior (no long-press, no
+// folder opening on tap-and-hold).
+
+const springFolderDelayMs = 650;
+let activeInternalDragData = null;
+let springFolderTimer = null;
+let springTimerFolderId = null;
+let springFolderSession = null;
+
+function isPrecisePointerAvailable() {
+  return typeof window.matchMedia === "function"
+    && window.matchMedia("(hover: hover) and (pointer: fine)").matches === true;
+}
+
+function isSpringAllowedDrag(dragData) {
+  return !!dragData
+    && (dragData.type === "file"
+      || dragData.type === "document-folder"
+      || dragData.type === "clipping-selection");
+}
+
+// Finder dragstart and Reader clipping dragstart both route through here. The
+// session only remembers the origin path; every navigation is transient.
+function beginSpringFolderSession(dragData) {
+  if (!isPrecisePointerAvailable()) return false;
+  if (!isSpringAllowedDrag(dragData)) return false;
+  if (!dragData.projectId || dragData.projectId !== activeProjectId) return false;
+  cancelSpringFolderTimer();
+  springFolderSession = {
+    originFolderId: selectedFolderId || "all",
+    currentTargetId: null,
+    opened: false,
+  };
+  activeInternalDragData = dragData;
+  return true;
+}
+
+function cancelSpringFolderTimer() {
+  if (springFolderTimer !== null) {
+    clearTimeout(springFolderTimer);
+    springFolderTimer = null;
+  }
+  springTimerFolderId = null;
+}
+
+function armSpringFolderTimer(folderId) {
+  if (springTimerFolderId === folderId && springFolderTimer !== null) return;
+  cancelSpringFolderTimer();
+  springTimerFolderId = folderId;
+  springFolderTimer = setTimeout(() => {
+    springFolderTimer = null;
+    springTimerFolderId = null;
+    if (!springFolderSession) return;
+    springFolderSession.opened = true;
+    springFolderSession.currentTargetId = folderId;
+    springNavigateToFolder(folderId);
+  }, springFolderDelayMs);
+}
+
+function springFolderTargetValid(folderId) {
+  if (!springFolderSession || !activeInternalDragData) return false;
+  const dragData = activeInternalDragData;
+  if (dragData.projectId !== activeProjectId) return false;
+  if (!folderId || !getProjectFolders().some((folder) => folder.id === folderId)) return false;
+  if (dragData.type === "document-folder") {
+    if (dragData.id === folderId) return false;
+    if (typeof isDocumentFolderDescendant === "function" && isDocumentFolderDescendant(folderId, dragData.id)) return false;
+  }
+  return true;
+}
+
+function maybeSpringFolder(dropTarget) {
+  if (!springFolderSession) return;
+  if (!isPrecisePointerAvailable()) return;
+  const folderId = dropTarget.dataset.folderId || "";
+  if (!springFolderTargetValid(folderId)) return;
+  if (springFolderSession.opened && springFolderSession.currentTargetId === folderId) return;
+  springFolderSession.currentTargetId = folderId;
+  armSpringFolderTimer(folderId);
+}
+
+// Temporary navigation: both Finder surfaces follow the same path. The shared
+// helpers clear stale selections and render, and they never save desk state,
+// show status text, or play sounds.
+function springNavigateToFolder(folderId) {
+  if (typeof openDocumentFolder === "function") openDocumentFolder(folderId);
+  else {
+    selectedFolderId = folderId;
+    if (typeof renderDocuments === "function") renderDocuments();
+  }
+  if (typeof openProjectFinderFolder === "function") openProjectFinderFolder(folderId);
+  else {
+    selectedProjectRootItemId = null;
+    if (typeof renderProjectDisks === "function") renderProjectDisks();
+  }
+}
+
+function springRestoreOrigin() {
+  const origin = springFolderSession ? springFolderSession.originFolderId : selectedFolderId || "all";
+  if (origin === "all" || !origin) {
+    selectedFolderId = "all";
+    selectedChatFileId = null;
+    selectedDocumentFolderId = null;
+    selectedProjectRootItemId = null;
+    if (typeof clearDocumentSelection === "function") clearDocumentSelection();
+    if (typeof renderDocuments === "function") renderDocuments();
+    if (typeof renderProjectDisks === "function") renderProjectDisks();
+    return;
+  }
+  springNavigateToFolder(origin);
+}
+
+// Idempotent: drop and dragend both call this; only the first call restores
+// the origin path, so the two events can never double-navigate.
+function endSpringFolderSession() {
+  cancelSpringFolderTimer();
+  if (!springFolderSession) return false;
+  springRestoreOrigin();
+  springFolderSession = null;
+  activeInternalDragData = null;
+  return true;
+}
+
+function getSpringFolderState() {
+  return springFolderSession
+    ? {
+        originFolderId: springFolderSession.originFolderId,
+        currentTargetId: springFolderSession.currentTargetId,
+        opened: springFolderSession.opened,
+      }
+    : null;
+}
+
+window.AISystem6DragDrop = {
+  beginSpringFolderSession,
+  endSpringFolderSession,
+  getSpringFolderState,
+};

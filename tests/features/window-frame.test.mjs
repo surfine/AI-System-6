@@ -459,7 +459,7 @@ for (const [source, selector, label] of [
 ]) {
   test.assertMatches(
     source,
-    new RegExp(`${selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} \\{[^}]*border-bottom: 1px solid var\\(--ink\\)`),
+    new RegExp(`${selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} \\{[^}]*border-bottom: var\\(--pane-actions-border-bottom\\)`),
     `${label}'s action row is the seam above its content area`
   );
 }

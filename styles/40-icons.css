@@ -839,7 +839,7 @@
   /* The row sits above the framed content area, and its hairline is that
      area's top edge. */
   padding: 10px;
-  border-bottom: 1px solid var(--ink);
+  border-bottom: var(--documents-toolbar-border);
 }
 
 .documents-toolbar > * {

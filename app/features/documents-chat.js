@@ -10,8 +10,11 @@ function isClioTalkAttachableProjectFile(file) {
   return file.type === "text" && (!String(file.artifactKind || "").trim() || file.artifactKind === "clipping");
 }
 
-function attachProjectFileToNextClioTalkRun(fileId = selectedChatFileId) {
-  const file = getProjectFiles().find((item) => item.id === fileId);
+// The write half of a ClioTalk attachment: records the resolved document in
+// nextTaskInputFileIds, refreshes the run assembly, opens the assistant, and
+// reports the attachment. Callers pass the final target — for an Alias that
+// is the original document, so nextTaskInputFileIds never stores an Alias id.
+function attachResolvedProjectFileToNextClioTalkRun(file) {
   if (!isClioTalkAttachableProjectFile(file)) {
     setStatus(t("clio_attachment_not_supported"));
     return false;
@@ -30,6 +33,33 @@ function attachProjectFileToNextClioTalkRun(fileId = selectedChatFileId) {
   promptInput?.focus();
   setStatus(t("clio_attachment_added", file.name));
   return true;
+}
+
+// Attach a selected Finder object. Ordinary documents go straight through;
+// Aliases resolve to their original via the lazy finder-objects module, with
+// the existing broken-alias and unsupported-object status messages.
+function attachProjectFileToNextClioTalkRun(fileId = selectedChatFileId) {
+  const file = getProjectFiles().find((item) => item.id === fileId);
+  if (!file) {
+    setStatus(t("clio_attachment_not_supported"));
+    return false;
+  }
+  if (file.type !== "alias") {
+    return attachResolvedProjectFileToNextClioTalkRun(file);
+  }
+  const pending = withFinderObjects(() => {
+    const resolution = window.AISystem6FinderObjects?.resolveProjectFileForUse?.(file);
+    if (!resolution || resolution.reason === "broken-alias") {
+      setStatus(t("alias_broken", file.name));
+      return false;
+    }
+    if (!resolution.target) {
+      setStatus(t("clio_attachment_not_supported"));
+      return false;
+    }
+    return attachResolvedProjectFileToNextClioTalkRun(resolution.target);
+  });
+  return pending === null ? true : pending;
 }
 
 function beginClioTalkAttachmentPicker() {
@@ -271,8 +301,7 @@ function duplicateSelectedDocumentFile() {
 // module to stay inside the floppy budget.
 function withFinderObjects(callback) {
   if (window.AISystem6FinderObjectsLoaded) return callback();
-  ensureFinderObjectsModule().then(callback);
-  return null;
+  return ensureLazyModuleForUserAction(t("finder_objects"), ensureFinderObjectsModule).then(callback);
 }
 
 async function renameSelectedDocumentItem() {
@@ -1405,6 +1434,15 @@ function contentHash(body = "") {
 
 function createTeachTextModificationSuggestion(target, suggestedText, { taskConfigId = "", runRecordId = "" } = {}) {
   if (!target || !String(suggestedText || "").trim()) return null;
+  if (typeof createDocumentRevision === "function") {
+    createDocumentRevision({
+      documentId: target.id,
+      body: target.body,
+      origin: "model",
+      operation: "proposal-before",
+      runRecordId,
+    });
+  }
   const folder = ensureFolder("Modification Suggestions", null);
   const now = new Date().toISOString();
   const originalHash = contentHash(target.body);
@@ -1444,6 +1482,15 @@ function acceptSelectedTeachTextModificationSuggestion() {
   }
   const oldHash = contentHash(target.body);
   target.body = suggestion.suggestedText; target.updatedAt = new Date().toISOString();
+  if (typeof createDocumentRevision === "function") {
+    createDocumentRevision({
+      documentId: target.id,
+      body: target.body,
+      origin: "model",
+      operation: "accept-proposal",
+      runRecordId: suggestion.runRecordId || "",
+    });
+  }
   const newHash = contentHash(target.body);
   suggestion.status = "accepted"; suggestion.acceptedAt = target.updatedAt; suggestion.oldHash = oldHash; suggestion.newHash = newHash;
   if (target.id === activeTextFileId) { teachTextBodyInput.value = target.body; markTeachTextModified(); refreshTeachTextDocumentState(); }
@@ -2799,6 +2846,15 @@ async function saveTextDocument({ asCopy = false, revealInDocuments = false, pro
     file.body = teachTextBodyInput.value;
     file.label = normalizeFileLabel(teachTextFileLabel);
     file.updatedAt = new Date().toISOString();
+    if (typeof createDocumentRevision === "function") {
+      createDocumentRevision({
+        projectId: file.projectId,
+        documentId: file.id,
+        body: file.body,
+        origin: "user",
+        operation: "save",
+      });
+    }
   }
 
   selectedFolderId = folder.id;

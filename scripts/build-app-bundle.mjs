@@ -5,9 +5,15 @@ import { fileURLToPath } from "node:url";
 import { transformSync } from "esbuild";
 import { appRuntimePaths } from "./runtime-manifest.mjs";
 import { styleRuntimePaths } from "./style-manifest.mjs";
+import { generateBuildInfo } from "./lib/build-info.mjs";
 import { minifyCss } from "./lib/minify-css.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
+
+// Regenerate the single source of version/build/commit and stamp the
+// index.html cache-busters before the bundle is assembled, so every build
+// path (dev, verify:release, web release, packaging) reports one identity.
+generateBuildInfo();
 
 // Canonical tesseract.js worker patch. tesseract.js@7's worker file
 // uses `require('..')` which trips Node's CJS resolver in certain

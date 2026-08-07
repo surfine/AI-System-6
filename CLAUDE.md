@@ -233,8 +233,10 @@ Living memory loop — when Claude repeatedly trips on something, add a line
 (keep it tight):
 
 - **Parallel agents commit / switch branches mid-task.** Re-check
-  `git branch --show-current` and `git status` right before staging. Session
-  lessons live in AGENT-LESSONS.md.
+  `git branch --show-current` and `git status` right before staging, and never
+  `git commit --amend` without verifying HEAD is your own commit (recover via
+  reflog if a parallel session lands first). Session lessons live in
+  AGENT-LESSONS.md.
 - **Edit source, forget to rebuild.** The browser loads `app.bundle.js`. Run
   `npm run build:app` after any `app/` or `app.js` edit.
 - **`verify:release` build-stamp failure.** `build-info.json` needs `YYYYMMDD.N`.

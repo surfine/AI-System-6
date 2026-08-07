@@ -606,7 +606,7 @@ body.use-liquid-glass .menu-bar {
   grid-template-columns: 86px minmax(0, 1fr);
   gap: 11px;
   padding: 9px 0;
-  border-bottom: 1px dotted var(--rule);
+  border-bottom: var(--message-divider);
 }
 
 /* .speaker font-family moved to base (styles/10-windows.css);
@@ -848,8 +848,8 @@ select:focus {
       -45deg,
       var(--paper) 0,
       var(--paper) 6px,
-      #f1f1f1 6px,
-      #f1f1f1 12px
+      var(--empty-object-hatch-alt) 6px,
+      var(--empty-object-hatch-alt) 12px
     );
   color: var(--ink);
 }
@@ -1586,6 +1586,11 @@ body.is-writer-mode .system-help-window .system-help-pane {
     --mobile-work-right: 0px;
   }
 
+  /* No overflow clip here: this rule already drops the base max-height, so
+     there is nothing to scroll, and the wrapper is square while the toolbox
+     inside it is rounded — clipping cut the toolbox's drop shadow into four
+     hard corner blocks. Base and Liquid Glass both declare overflow: visible;
+     this selector outranks them (0,3,1 vs 0,2,1), so it has to agree. */
   body:not(.is-writer-mode) .writing-spine-panel:not(.is-shaded) {
     position: static;
     order: 1;
@@ -1593,7 +1598,6 @@ body.is-writer-mode .system-help-window .system-help-pane {
     max-width: none;
     height: auto;
     max-height: none;
-    overflow: hidden;
   }
 
   body:not(.is-writer-mode) .spine-shade-body {
@@ -2907,25 +2911,53 @@ input[type="radio"] {
      out-specify the base strip rules (body prefix), matching how the rest of
      this file wins over later single-feature files. */
   body .control-strip {
+    --control-strip-handle-width: 44px;
+    top: auto;
     left: 0;
     right: 0;
     bottom: 0;
     width: auto;
+    max-width: none;
     height: 44px;
     border-left: 0;
     border-right: 0;
     border-bottom: 0;
+    flex-direction: row;
   }
 
-  body .control-strip.is-collapsed {
-    width: 44px;
+  /* Collapsing uses the same slide as the desk; the wider touch tab is the
+     only phone difference, so it rides on the token above. */
+  body .control-strip.is-collapsed,
+  body .control-strip[data-edge="right"].is-collapsed {
+    transform: translateX(calc(var(--control-strip-handle-width) - 100%));
     border-right: var(--control-strip-border);
     border-bottom: var(--control-strip-border);
+  }
+
+  body .control-strip[data-edge="right"] {
+    left: 0;
+    right: 0;
+    flex-direction: row;
+  }
+
+  body .control-strip.is-fixed-length {
+    width: auto;
+  }
+
+  /* Phones scroll the drawer with the native track; the desktop chevrons and
+     handle drags are Control Panel business on this width. */
+  body .control-strip-scroll {
+    display: none;
   }
 
   body .control-strip-modules {
     overflow-x: auto;
     flex-wrap: nowrap;
+  }
+
+  body .control-strip-module-track {
+    transform: none;
+    direction: ltr;
   }
 
   body .control-strip-module {
@@ -2937,9 +2969,6 @@ input[type="radio"] {
     padding: 0 8px;
   }
 
-  body .control-strip-handle {
-    width: 44px;
-  }
 }
 
 /* Touch devices (iPad/iPhone, including landscape): stop the page-level

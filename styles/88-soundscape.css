@@ -387,7 +387,7 @@
   place-items: center;
   min-width: 12px;
   height: 12px;
-  border: 1px solid currentColor;
+  border: var(--soundscape-count-badge-border);
   border-radius: var(--ss-radius);
   font-family: var(--mono-font, monospace);
   font-size: 8px;

@@ -4,59 +4,142 @@
    Geometry and material come from tokens in 00-foundation.css, overridden for
    Liquid Glass in 70-liquid-glass.css. No body.use-liquid-glass twins here.
    The strip floats above windows (--z-control-strip) but below the selection
-   marquee, demo overlay, and system menu (see 00-foundation z ordering). */
+   marquee, demo overlay, and system menu (see 00-foundation z ordering).
+
+   The DOM stays logical (user module order, back/forward/handle in one fixed
+   order); [data-edge] mirrors it with flex-direction so switching edges never
+   reverses the saved order. The module track scrolls with a transform — only
+   the track moves; the end controls and handle stay put. */
 
 .control-strip {
   position: fixed;
-  left: var(--desk-edge-gap);
-  bottom: var(--desk-edge-gap);
+  top: var(--control-strip-top, 0px);
+  left: 0;
   z-index: var(--z-control-strip);
   display: flex;
   align-items: stretch;
   height: var(--control-strip-thickness);
+  width: max-content;
+  max-width: calc(100vw - 8px);
   background: var(--control-strip-bg);
   border: var(--control-strip-border);
+  border-radius: var(--control-strip-radius);
+  box-shadow: var(--control-strip-shadow);
+  backdrop-filter: var(--control-strip-backdrop);
+  -webkit-backdrop-filter: var(--control-strip-backdrop);
   overflow: hidden;
+  transition: transform var(--control-strip-collapse-duration) ease-out;
 }
 
+.control-strip[data-edge="right"] {
+  left: auto;
+  right: 0;
+  flex-direction: row-reverse;
+}
+
+/* A user-chosen length caps the strip; 0 (the default) means fit all modules. */
+.control-strip.is-fixed-length {
+  width: var(--control-strip-length, max-content);
+}
+
+/* Collapse is a slide, not a resize: the strip keeps its width and travels
+   toward the anchored edge until only the tab is on screen. Animating width
+   would be a layout animation, which DESIGN.md forbids. */
 .control-strip.is-collapsed {
-  width: calc(var(--control-strip-handle-width) + 2px);
+  transform: translateX(calc(var(--control-strip-handle-width) - 100%));
 }
 
-.control-strip.is-collapsed .control-strip-modules {
-  display: none;
+.control-strip[data-edge="right"].is-collapsed {
+  transform: translateX(calc(100% - var(--control-strip-handle-width)));
 }
 
-.control-strip-handle {
-  width: var(--control-strip-handle-width);
+/* Hiding the modules keeps them out of the tab order once they are off the
+   edge; the delay lets the slide finish first, and expanding shows them at
+   once because that transition carries no delay. */
+.control-strip.is-collapsed .control-strip-modules,
+.control-strip.is-collapsed .control-strip-scroll {
+  visibility: hidden;
+  transition: visibility 0s linear var(--control-strip-collapse-duration);
+}
+
+.control-strip-scroll {
+  width: var(--control-strip-scroll-button-width);
+  flex: 0 0 auto;
   border: 0;
   background: transparent;
   color: var(--ink);
   cursor: pointer;
   position: relative;
-  flex: 0 0 auto;
 }
 
-/* Handle grip: three short vertical ticks. Texture is approximation — the
-   native Control Strip handle is not in the bundled System 6 image. */
-.control-strip-handle::after {
+.control-strip-scroll:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+/* Classic strip scroll chevrons are solid triangles, drawn with borders. */
+.control-strip-scroll::after {
   content: "";
   position: absolute;
+  top: 50%;
   left: 50%;
-  top: 6px;
-  bottom: 6px;
-  width: 4px;
-  transform: translateX(-50%);
-  background: repeating-linear-gradient(
-    to bottom,
-    var(--ink) 0 2px,
-    transparent 2px 4px
-  );
+  border: 4px solid transparent;
+  transform: translate(-50%, -50%);
 }
 
+.control-strip-scroll-back::after {
+  border-right-color: currentColor;
+  transform: translate(calc(-50% - 2px), -50%);
+}
+
+.control-strip-scroll-forward::after {
+  border-left-color: currentColor;
+  transform: translate(calc(-50% + 2px), -50%);
+}
+
+/* Mirrored edge: the "back" chevron points toward the screen edge, so both
+   buttons keep the same meaning on either side of the screen. */
+.control-strip[data-edge="right"] .control-strip-scroll-back::after {
+  border-right-color: transparent;
+  border-left-color: currentColor;
+  transform: translate(calc(-50% + 2px), -50%);
+}
+
+.control-strip[data-edge="right"] .control-strip-scroll-forward::after {
+  border-left-color: transparent;
+  border-right-color: currentColor;
+  transform: translate(calc(-50% - 2px), -50%);
+}
+
+.control-strip-scroll-back {
+  border-right: var(--control-strip-divider);
+}
+
+.control-strip-scroll-forward {
+  border-left: var(--control-strip-divider);
+}
+
+/* The modules take any slack so the tab always ends up at the outer end. */
 .control-strip-modules {
   display: flex;
+  align-items: stretch;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  visibility: visible;
+}
+
+.control-strip-module-track {
+  display: flex;
   align-items: center;
+  height: 100%;
+  transform: translateX(calc(-1 * var(--control-strip-scroll, 0px)));
+}
+
+/* Right edge mirrors the track: first module at the screen edge, and the
+   transform scroll keeps the same sign, so only the visual direction flips. */
+.control-strip[data-edge="right"] .control-strip-module-track {
+  direction: rtl;
 }
 
 .control-strip-module {
@@ -75,10 +158,26 @@
   border-left: var(--control-strip-divider);
 }
 
+.control-strip-module.is-dragging {
+  opacity: 0.55;
+}
+
+.control-strip-module.is-drop-before {
+  box-shadow: inset 2px 0 0 var(--ink);
+}
+
+.control-strip[data-edge="right"] .control-strip-module.is-drop-before {
+  box-shadow: inset -2px 0 0 var(--ink);
+}
+
 .control-strip-module .sys-icon {
   width: 16px;
   height: 16px;
   background: transparent;
+  /* The module inverts to a black block on hover / focus / open, and the icon
+     must follow the button's currentColor or it disappears into the block
+     (the base .sys-icon rule pins its own color to var(--ink)). */
+  color: inherit;
 }
 
 .control-strip-module.has-gauge {
@@ -96,6 +195,17 @@
 }
 
 .control-strip-module:focus-visible {
+  outline: var(--control-focus-outline);
+  outline-offset: -1px;
+}
+
+.control-strip-scroll:hover,
+.control-strip-scroll:focus-visible {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.control-strip-scroll:focus-visible {
   outline: var(--control-focus-outline);
   outline-offset: -1px;
 }
@@ -125,9 +235,57 @@
   background: var(--control-strip-gauge);
 }
 
+/* The tab sits at the outer end, away from the screen edge — that is the end
+   the native strip textures, and it is what stays on screen once the strip
+   slides away. */
+.control-strip-handle {
+  width: var(--control-strip-handle-width);
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  position: relative;
+  flex: 0 0 auto;
+}
+
+/* Handle grip: short vertical ticks. Texture is approximation — the native
+   Control Strip tab is not in the bundled System 6 image. */
+.control-strip-handle::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 6px;
+  bottom: 6px;
+  width: 4px;
+  transform: translateX(-50%);
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--ink) 0 2px,
+    transparent 2px 4px
+  );
+}
+
+.control-strip-handle:hover,
+.control-strip-handle:focus-visible,
+.control-strip-handle.is-dragging {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.control-strip-handle:focus-visible {
+  outline: var(--control-focus-outline);
+  outline-offset: -1px;
+}
+
 /* Module menus reuse the shared .menu-popover primitive; this modifier only
-   repositions it to pop upward from the bottom-anchored strip. */
+   shows and repositions it to pop upward from the bottom-anchored strip.
+   The base primitive is hidden until a .menu ancestor opens it, and a strip
+   menu has no such ancestor — it is appended to <body> — so the modifier owns
+   its visibility. The strip module removes the element to close the menu.
+   The menu font comes from the Control Strip control panel and only reaches
+   this popover, never the rest of the desk. */
 .menu-popover.control-strip-menu {
+  display: block;
   position: fixed;
   top: auto;
   left: var(--control-strip-menu-left, 8px);
@@ -135,4 +293,91 @@
   z-index: var(--z-control-strip-menu);
   max-height: 60vh;
   overflow-y: auto;
+  font-family: var(--control-strip-menu-font, var(--ui-font));
+  font-size: var(--control-strip-menu-font-size, 12px);
+}
+
+/* --- Control Panel -> Control Strip tab ---------------------------------- */
+
+.control-strip-hotkey-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+}
+
+.control-strip-hotkey-row input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.control-strip-field-row {
+  display: flex;
+  gap: 12px;
+  align-items: end;
+}
+
+.control-strip-field-row .control-field {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.control-strip-module-list {
+  list-style: none;
+  margin: 6px 0;
+  padding: 0;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.control-strip-module-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.control-strip-module-row + .control-strip-module-row {
+  border-top: 1px solid var(--shade, #aaaaaa);
+}
+
+.control-strip-module-row.is-selected {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.control-strip-module-row.is-disabled .control-strip-settings-name {
+  opacity: 0.55;
+}
+
+.control-strip-settings-icon .sys-icon {
+  width: 16px;
+  height: 16px;
+  background: transparent;
+  color: inherit;
+  display: block;
+}
+
+.control-strip-settings-state {
+  margin-left: auto;
+  opacity: 0.8;
+}
+
+.control-strip-module-actions {
+  margin-top: 6px;
+}
+
+/* Reduced motion keeps the same two states, reached instantly. */
+@media (prefers-reduced-motion: reduce) {
+  .control-strip,
+  .control-strip.is-collapsed .control-strip-modules,
+  .control-strip.is-collapsed .control-strip-scroll {
+    transition-duration: 0s;
+    transition-delay: 0s;
+  }
 }

@@ -6,7 +6,13 @@
 "use strict";
 
 const { sendJson } = require("../lib/http.js");
-const { appName, appVersion, appBuild } = require("../lib/build-info.js");
+const {
+  appName,
+  appVersion,
+  appBuild,
+  appCommit,
+  appGeneratedAt,
+} = require("../lib/build-info.js");
 
 /**
  * @param {import("node:http").IncomingMessage} _req
@@ -17,6 +23,8 @@ function handleVersion(_req, res) {
     name: appName,
     version: appVersion,
     build: appBuild,
+    commit: appCommit,
+    generatedAt: appGeneratedAt,
   });
 }
 

@@ -16,7 +16,7 @@
     <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png" />
     <link rel="manifest" href="assets/app-icon/manifest.json" />
-    <link rel="stylesheet" href="styles.bundle.css?v=20260804.03" />
+    <link rel="stylesheet" href="styles.bundle.css?v=20260807.3" />
   </head>
   <body class="is-booting">
     <header class="menu-bar" aria-label="System menu" data-i18n-aria-label="system_menu">
@@ -307,6 +307,22 @@
         </form>
       </dialog>
 
+      <dialog id="document-versions-modal" class="finder-operation-modal document-versions-modal">
+        <form method="dialog">
+          <section class="finder-operation-body">
+            <h2 data-i18n="versions_title">Versions</h2>
+            <p class="hint" data-i18n="versions_hint">Check two revisions to compare, or check one to restore as a new revision. Run records open the originating model run.</p>
+            <div id="document-versions-list" class="versions-list"></div>
+            <pre id="document-versions-diff" class="versions-diff" tabindex="0"></pre>
+          </section>
+          <div class="button-row finder-operation-actions">
+            <button class="btn" type="button" id="versions-compare" data-i18n="versions_compare">Compare</button>
+            <button class="btn" type="button" id="versions-restore" data-i18n="versions_restore">Restore</button>
+            <button class="btn default" value="ok" data-i18n="close">Close</button>
+          </div>
+        </form>
+      </dialog>
+
       <section class="window assistant-window" data-window="assistant" data-drop-target="clio-attachment" aria-labelledby="assistant-title">
         <div class="title-bar">
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
@@ -440,6 +456,7 @@
             <button class="system-tab" id="control-tab-local" type="button" role="tab" aria-selected="false" aria-controls="control-panel-local" data-control-tab="local" data-i18n="control_connection">Local Model</button>
             <button class="system-tab is-active" id="control-tab-cloud" type="button" role="tab" aria-selected="true" aria-controls="control-panel-cloud" data-control-tab="cloud" data-i18n="cloud_model">Cloud Model</button>
             <button class="system-tab" id="control-tab-general" type="button" role="tab" aria-selected="false" aria-controls="control-panel-general" data-control-tab="general" data-i18n="control_tab_general">General</button>
+            <button class="system-tab" id="control-tab-strip" type="button" role="tab" aria-selected="false" aria-controls="control-panel-strip" data-control-tab="strip" data-i18n="control_strip_tab">Control Strip</button>
           </div>
 
           <section class="control-section control-model-section" id="control-panel-local" role="tabpanel" aria-labelledby="control-tab-local" data-control-panel="local" hidden>
@@ -487,6 +504,30 @@
                   <input id="model" type="text" autocomplete="off" placeholder="qwen3.5-4b-mlx" hidden />
                 </div>
               </label>
+
+              <div class="model-role-fields" data-role-models hidden>
+                <p class="hint" data-i18n="model_roles_hint">Advanced: assign a separate model per role. Tasks fall back to the chat model when a role has none.</p>
+                <label class="control-field" for="role-model-researcher">
+                  <span data-i18n="model_role_researcher">Researcher</span>
+                  <div class="select-wrap"><select id="role-model-researcher"></select></div>
+                </label>
+                <label class="control-field" for="role-model-writer">
+                  <span data-i18n="model_role_writer">Writer</span>
+                  <div class="select-wrap"><select id="role-model-writer"></select></div>
+                </label>
+                <label class="control-field" for="role-model-critic">
+                  <span data-i18n="model_role_critic">Critic</span>
+                  <div class="select-wrap"><select id="role-model-critic"></select></div>
+                </label>
+                <label class="control-field" for="role-model-utility">
+                  <span data-i18n="model_role_utility">Utility</span>
+                  <div class="select-wrap"><select id="role-model-utility"></select></div>
+                </label>
+                <label class="control-field" for="role-model-fallback">
+                  <span data-i18n="model_role_fallback">Fallback</span>
+                  <div class="select-wrap"><select id="role-model-fallback"></select></div>
+                </label>
+              </div>
 
               <label class="control-field" for="context-length">
                 <span data-i18n="context_length">Context Length</span>
@@ -579,7 +620,7 @@
                 <label for="menu-clock" data-i18n="menu_bar_clock">SuperClock! Menu Clock</label>
               </div>
 
-              <div class="field-row"><input id="control-strip" type="checkbox" /><label for="control-strip">Control Strip</label></div>
+              <div class="field-row"><input id="control-strip" type="checkbox" /><label for="control-strip" data-i18n="control_strip_label" data-balloon-help="balloon_control_strip_settings">Control Strip</label></div>
             </div>
           </section>
 
@@ -612,6 +653,56 @@
               </div>
             </div>
           </details>
+          </div>
+
+          <div id="control-panel-strip" role="tabpanel" aria-labelledby="control-tab-strip" data-control-panel="strip" hidden>
+          <section class="control-section">
+            <h3 data-i18n="control_strip">Control Strip</h3>
+            <div class="control-checkbox-grid">
+              <div class="field-row">
+                <input id="control-strip-show" type="checkbox" />
+                <label for="control-strip-show" data-i18n="control_strip_show">Show Control Strip</label>
+              </div>
+            </div>
+            <label class="control-field" for="control-strip-hotkey">
+              <span data-i18n="control_strip_hotkey">Show / Hide hot key</span>
+              <span class="control-strip-hotkey-row">
+                <input id="control-strip-hotkey" type="text" readonly autocomplete="off" placeholder="None" data-i18n-placeholder="control_strip_hotkey_none" />
+                <button class="btn mini-btn" type="button" id="control-strip-hotkey-record" data-i18n="control_strip_hotkey_record">Record</button>
+                <button class="btn mini-btn" type="button" id="control-strip-hotkey-clear" data-i18n="control_strip_hotkey_clear">Clear</button>
+              </span>
+            </label>
+            <p class="hint" data-i18n="control_strip_hotkey_hint">Shows or hides the Control Strip without disabling it. A modifier plus a key is required; a bare letter is rejected.</p>
+            <div class="control-strip-field-row">
+              <label class="control-field" for="control-strip-font">
+                <span data-i18n="control_strip_menu_font">Module menu font</span>
+                <div class="select-wrap"><select id="control-strip-font">
+                  <option value="" data-i18n="control_strip_font_system">System</option>
+                  <option value="Chicago">Chicago</option>
+                  <option value="Monaco">Monaco</option>
+                  <option value="modern" data-i18n="control_strip_font_modern">Modern UI</option>
+                </select></div>
+              </label>
+              <label class="control-field" for="control-strip-font-size">
+                <span data-i18n="control_strip_menu_font_size">Module menu font size</span>
+                <div class="select-wrap"><select id="control-strip-font-size"></select></div>
+              </label>
+            </div>
+            <div class="control-field">
+              <span data-i18n="control_strip_modules">Modules</span>
+              <ol id="control-strip-module-list" class="control-strip-module-list"></ol>
+              <div class="button-row control-strip-module-actions">
+                <button class="btn mini-btn" type="button" id="control-strip-move-up" data-i18n="control_strip_move_up">Move Up</button>
+                <button class="btn mini-btn" type="button" id="control-strip-move-down" data-i18n="control_strip_move_down">Move Down</button>
+                <button class="btn mini-btn" type="button" id="control-strip-enable" data-i18n="control_strip_enable">Enable</button>
+                <button class="btn mini-btn" type="button" id="control-strip-disable" data-i18n="control_strip_disable">Disable</button>
+              </div>
+              <p class="hint" data-i18n="control_strip_modules_hint">Reorder with Move Up / Move Down, or hold Option while dragging a module inside the Control Strip.</p>
+            </div>
+            <div class="button-row">
+              <button class="btn" type="button" id="control-strip-reset" data-i18n="control_strip_reset">Reset to Defaults</button>
+            </div>
+          </section>
           </div>
 
           <p class="hint control-footer" data-i18n="control_setup_note">Start LM Studio or configure a cloud model. Project context lives on the Project Hard Disk.</p>
@@ -731,7 +822,7 @@
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
         </div>
         <div class="details-bar">
-          <span data-i18n="four_items">4 items</span>
+          <span data-i18n="five_items">5 items</span>
           <div class="view-controls" data-view-window="finder" aria-label="View" data-i18n-aria-label="view_controls">
             <button class="view-btn is-active" type="button" data-view="icon" aria-label="Icon view" data-i18n-aria-label="view_icon" data-balloon-help="balloon_finder_view_switch"></button>
             <button class="view-btn" type="button" data-view="list" aria-label="List view" data-i18n-aria-label="view_list" data-balloon-help="balloon_finder_view_switch"></button>
@@ -754,6 +845,68 @@
           <button class="finder-item" data-action="open-context-panel">
             <span class="sys-icon" data-system-icon="contextPanel" aria-hidden="true"></span>
             <span data-i18n="context_panel">Context Panel</span>
+          </button>
+          <button class="finder-item" data-action="open-control-strip-modules">
+            <span class="sys-icon" data-system-icon="systemFolder" aria-hidden="true"></span>
+            <span data-i18n="control_strip_modules_folder">Control Strip Modules</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="window finder-window is-hidden" data-window="controlStripModules" aria-labelledby="control-strip-modules-title">
+        <div class="title-bar">
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
+          <h2 id="control-strip-modules-title" data-i18n="control_strip_modules_folder">Control Strip Modules</h2>
+          <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
+        </div>
+        <div class="details-bar">
+          <span id="control-strip-modules-count" data-i18n="ten_items">10 items</span>
+          <div class="view-controls" data-view-window="controlStripModules" aria-label="View" data-i18n-aria-label="view_controls">
+            <button class="view-btn is-active" type="button" data-view="icon" aria-label="Icon view" data-i18n-aria-label="view_icon"></button>
+            <button class="view-btn" type="button" data-view="list" aria-label="List view" data-i18n-aria-label="view_list"></button>
+          </div>
+          <span data-i18n="system_folder">System Folder</span>
+        </div>
+        <div class="window-pane finder-grid control-strip-modules-grid window-frame-scroller">
+          <button class="finder-item" data-control-strip-module="soundscape" draggable="true">
+            <span class="sys-icon" data-system-icon="soundscape" aria-hidden="true"></span>
+            <span data-i18n="control_strip_soundscape">Soundscape</span>
+          </button>
+          <button class="finder-item" data-control-strip-module="projectDisk" draggable="true">
+            <span class="sys-icon" data-system-icon="projectDisk" aria-hidden="true"></span>
+            <span data-i18n="control_strip_project_disk">Project Hard Disk</span>
+          </button>
+          <button class="finder-item" data-control-strip-module="model" draggable="true">
+            <span class="sys-icon" data-system-icon="cloudModel" aria-hidden="true"></span>
+            <span data-i18n="control_strip_model">Model</span>
+          </button>
+          <button class="finder-item" data-control-strip-module="network" draggable="true">
+            <span class="sys-icon" data-system-icon="chooser" aria-hidden="true"></span>
+            <span data-i18n="control_strip_network">Network</span>
+          </button>
+          <button class="finder-item" data-control-strip-module="context" draggable="true">
+            <span class="sys-icon" data-system-icon="contextPanel" aria-hidden="true"></span>
+            <span data-i18n="control_strip_context">Context</span>
+          </button>
+          <button class="finder-item" data-control-strip-module="indexing" draggable="true">
+            <span class="sys-icon" data-system-icon="searcher" aria-hidden="true"></span>
+            <span data-i18n="control_strip_indexing">Indexing</span>
+          </button>
+          <button class="finder-item" data-control-strip-module="longTasks" draggable="true">
+            <span class="sys-icon" data-system-icon="systemStatus" aria-hidden="true"></span>
+            <span data-i18n="control_strip_long_tasks">Long Tasks</span>
+          </button>
+          <button class="finder-item" data-control-strip-module="writingBell" draggable="true">
+            <span class="sys-icon" data-system-icon="writingBell" aria-hidden="true"></span>
+            <span data-i18n="control_strip_writing_bell">Writing Bell</span>
+          </button>
+          <button class="finder-item" data-control-strip-module="outputQueue" draggable="true">
+            <span class="sys-icon" data-system-icon="documents" aria-hidden="true"></span>
+            <span data-i18n="control_strip_output_queue">Output Queue</span>
+          </button>
+          <button class="finder-item" data-control-strip-module="volume" draggable="true">
+            <span class="sys-icon" data-system-icon="speaker" aria-hidden="true"></span>
+            <span data-i18n="control_strip_volume">App Volume</span>
           </button>
         </div>
       </section>
@@ -1030,17 +1183,17 @@
         </div>
         <div class="window-pane cmf-studio-pane">
           <aside class="cmf-panel cmf-setup-panel">
-            <label class="cmf-control">
+            <label class="cmf-control cmf-control-model">
               <span data-i18n="cmf_model">Model</span>
               <span class="select-wrap"><select id="cmf-model">
                 <option value="iphone-17-standard" data-i18n="cmf_model_iphone_17">iPhone 17</option>
               </select></span>
             </label>
-            <label class="cmf-control" id="cmf-pose-control" hidden>
+            <label class="cmf-control cmf-control-pose" id="cmf-pose-control" hidden>
               <span data-i18n="cmf_pose">Pose</span>
               <span class="select-wrap"><select id="cmf-pose"></select></span>
             </label>
-            <label class="cmf-control">
+            <label class="cmf-control cmf-control-preset">
               <span data-i18n="cmf_preset">Preset</span>
               <span class="select-wrap"><select id="cmf-preset">
                 <option value="" data-i18n="cmf_preset_custom">Custom</option>
@@ -3333,6 +3486,7 @@ Glass</textarea>
       </section>
     </main>
 
-    <script src="app.bundle.js?v=20260804.03"></script>
+    <script src="app/generated/build-info.js?v=20260807.3"></script>
+    <script src="app.bundle.js?v=20260807.3"></script>
   </body>
 </html>

@@ -96,8 +96,12 @@ async function boot() {
     document.body.dataset.appReady = "ready";
     setTimeout(() => {
       scheduleDesktopMaintenance("boot");
-      applyControlStripState();
-      ensureScriptingModule().then(() => { if (!getWindow("applications")?.classList.contains("is-hidden")) renderStaticFinderWindow("applications"); });
+      applyControlStripState({ silent: true });
+      ensureScriptingModule()
+        .then(() => {
+          if (!getWindow("applications")?.classList.contains("is-hidden")) renderStaticFinderWindow("applications");
+        })
+        .catch(() => {});
     }, 8000);
     if (typeof revealMultiFinderSwitcherHint === "function") revealMultiFinderSwitcherHint();
     setInterval(updateClock, 1000);

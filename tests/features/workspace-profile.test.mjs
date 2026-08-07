@@ -48,7 +48,7 @@ test.assertNotIncludes(html, 'data-action="quit-writing-studio"', "Writing Flow 
 test.assertIncludes(html, 'id="finder-writing-studio-toggle"', "Finder single-task desktop has one Writing Studio toggle icon");
 test.assertIncludes(menus, 'menuItem("print-current", "print")', "TeachText File menu exposes the shared print action");
 test.assertIncludes(html, 'data-workspace-capability="studio"', "studio-only DOM surfaces use the shared visibility marker");
-test.assertMatches(app, /assistant_label[\s\S]*open-assistant[\s\S]*writing_studio[\s\S]*open-writing-studio/, "Applications keeps ClioTalk and adds the Writing Studio bridge");
+test.assertMatches(app, /writing_studio[\s\S]*open-writing-studio[\s\S]*assistant_label[\s\S]*open-assistant/, "Applications keeps Writing Studio first, then ClioTalk, on the desktop bridge");
 test.assertMatches(app, /open-writing-studio[\s\S]*workspaceProfiles: \[workspaceProfileDesktop\]/, "Writing Studio launcher appears only on the desktop");
 test.assertMatches(app, /quick_draft_label[\s\S]*workspaceCapability: workspaceCapabilityStudio/, "Quick Draft remains inside the studio");
 test.assertMatches(app, /function getStaticFinderItems[\s\S]*filterWorkspaceItems/, "existing Finder registries are profile-filtered");
@@ -69,7 +69,7 @@ test.assertMatches(windows, /appId === "writingStudio"[\s\S]*exitWritingStudio/,
 test.assertMatches(app, /writing_studio[\s\S]*iconId: "writingStudio"/, "Applications uses a dedicated Writing Studio icon");
 test.assertMatches(systemIcons, /writingStudio:[\s\S]*M7 2h18v10/, "Writing Studio uses a dedicated typewriter silhouette on the shared Classic grid");
 test.assertIncludes(actions, '"quit-active-app": () => quitApp(activeAppId)', "the existing right-side MultiFinder owns Writing Studio Quit");
-test.assertIncludes(profile, 'await openWindow("assistant")', "Writing Studio opens onto ClioTalk while system startup owns OOBE");
+test.assertIncludes(profile, "await openWritingStudioDefaultSurface()", "Writing Studio opens onto the route's current state, never OOBE or ClioTalk");
 test.assertIncludes(actions, '"open-teachtext": openTeachTextForWorkspace', "TeachText entry follows the active profile");
 test.assertIncludes(actions, '"print-current": printCurrentTeachTextDocument', "TeachText printing reuses the existing print pipeline");
 test.assertIncludes(teachText, "function openDesktopTeachTextWindow()", "Desktop reuses TeachText through a role-aware entry");

@@ -54,10 +54,22 @@ window.AISystem6Config = (() => {
     previousDefaultClioTalkSystemPrompt,
   ]);
 
-  const defaultAppVersionInfo = Object.freeze({
-    version: "1.0.2",
-    build: "20260729.3",
+  // Release identity comes from app/generated/build-info.js (written at build
+  // time). The only fallback here is an explicit dev marker: an unbuilt or
+  // unpackaged checkout must never masquerade as a current release.
+  const devBuildInfoFallback = Object.freeze({
+    version: "0.0.0-dev",
+    build: "dev",
+    commit: "",
+    generatedAt: "",
   });
+
+  function getAppBuildInfo() {
+    const info = window.AISystem6BuildInfo;
+    return info && typeof info.version === "string" && info.version
+      ? info
+      : devBuildInfoFallback;
+  }
 
   const defaultWindowViewModes = Object.freeze({
     finder: "icon",
@@ -247,7 +259,8 @@ window.AISystem6Config = (() => {
   });
 
   return {
-    defaultAppVersionInfo,
+    devBuildInfoFallback,
+    getAppBuildInfo,
     defaultWindowViewModes,
     memoryCardPairs,
     longTaskControlSelectors,
@@ -264,15 +277,36 @@ window.AISystem6Config = (() => {
 })();
 
 const lazyScriptPromises = new Map();
+const lazyRetryNonces = new Map();
+
+function lazyScriptTimeoutMs() {
+  const configured = Number(window.AISystem6LazyScriptTimeoutMs);
+  return Number.isFinite(configured) && configured > 0 ? configured : 6000;
+}
 
 function lazyScriptUrl(src) {
-  const build = window.AISystem6Config?.defaultAppVersionInfo?.build || "dev";
+  const build = window.AISystem6Config?.getAppBuildInfo?.().build || "dev";
   return `${src}${src.includes("?") ? "&" : "?"}v=${encodeURIComponent(build)}`;
 }
 
 function resolveClassicScriptSource(src) {
-  if (!window.AISystem6LegacyWebKit || !src.startsWith("app/")) return src;
-  return `app/legacy/${src.slice("app/".length)}`;
+  return src;
+}
+
+function removeLazyScriptNode(src) {
+  const resolvedSrc = resolveClassicScriptSource(src);
+  document
+    .querySelectorAll(`script[data-lazy-src="${CSS.escape(resolvedSrc)}"]`)
+    .forEach((node) => node.remove());
+}
+
+// A failed script can be cached (especially 404 responses), so a retry must
+// re-fetch a fresh URL. The ?r= nonce changes only after a failure; the
+// canonical ?v=<build> cache-buster stays untouched.
+function lazyScriptUrlWithRetryNonce(resolvedSrc) {
+  const base = lazyScriptUrl(resolvedSrc);
+  const nonce = lazyRetryNonces.get(resolvedSrc) || 0;
+  return nonce > 0 ? `${base}${base.includes("?") ? "&" : "?"}r=${nonce}` : base;
 }
 
 function loadClassicScriptOnce(src) {
@@ -291,11 +325,12 @@ function loadClassicScriptOnce(src) {
       // Drop the half-loaded element and the cached promise so a later retry
       // fetches a fresh copy; an aborted/cancelled script can fire neither
       // onload nor onerror, which would otherwise hang the caller forever.
+      lazyRetryNonces.set(resolvedSrc, (lazyRetryNonces.get(resolvedSrc) || 0) + 1);
       lazyScriptPromises.delete(resolvedSrc);
       script.remove();
       reject(new Error(message));
     };
-    script.src = lazyScriptUrl(resolvedSrc);
+    script.src = lazyScriptUrlWithRetryNonce(resolvedSrc);
     script.dataset.lazySrc = resolvedSrc;
     script.onload = () => {
       clearTimeout(timer);
@@ -305,7 +340,7 @@ function loadClassicScriptOnce(src) {
     script.onerror = () => {
       fail(`Could not load ${resolvedSrc}`);
     };
-    timer = setTimeout(() => fail(`Timed out loading ${resolvedSrc}`), 6000);
+    timer = setTimeout(() => fail(`Timed out loading ${resolvedSrc}`), lazyScriptTimeoutMs());
     if (!existing) document.head.append(script);
   });
   lazyScriptPromises.set(resolvedSrc, promise);
@@ -325,7 +360,17 @@ function createLazyModuleLoader(flag, sources, resolveData = false) {
     if (loadPromise) return loadPromise;
     const chain = sources.reduce((pending, src) => pending.then(() => loadClassicScriptOnce(src)), Promise.resolve());
     loadPromise = chain
-      .then(() => (resolveData ? (window[flag] || {}) : true))
+      .then(() => {
+        // A script can fire onload without executing (syntax error) or a
+        // module can fail to install its API. Loading "succeeded" must mean
+        // the module is actually present, otherwise callers would proceed
+        // against an uninstalled module.
+        if (flag && !window[flag]) {
+          sources.forEach(removeLazyScriptNode);
+          throw new Error(`${flag} did not install after loading ${sources.join(", ")}`);
+        }
+        return resolveData ? (window[flag] || {}) : true;
+      })
       .catch((error) => {
         loadPromise = null;
         throw error;
@@ -376,12 +421,47 @@ const lazySystemModulePromises = new Map();
 function ensureLazySystemModule(path, loadedFlag) {
   if (window[loadedFlag]) return Promise.resolve(true);
   let promise = lazySystemModulePromises.get(path);
-  if (!promise) { promise = loadClassicScriptOnce(path).catch(() => lazySystemModulePromises.delete(path)); lazySystemModulePromises.set(path, promise); }
+  if (!promise) {
+    promise = loadClassicScriptOnce(path)
+      .then(() => {
+        if (!window[loadedFlag]) {
+          removeLazyScriptNode(path);
+          throw new Error(`${loadedFlag} did not install after loading ${path}`);
+        }
+        return true;
+      })
+      .catch((error) => {
+        // Forget the shared promise so a later retry re-fetches, and rethrow
+        // the original error: swallowing it made failures look successful.
+        lazySystemModulePromises.delete(path);
+        throw error;
+      });
+    lazySystemModulePromises.set(path, promise);
+  }
   return promise;
 }
 function ensureFinderObjectsModule() { return ensureLazySystemModule("app/features/finder-objects.js", "AISystem6FinderObjectsLoaded"); }
 function ensureDesktopMaintenanceModule() { return ensureLazySystemModule("app/core/desktop-maintenance.js", "AISystem6DesktopMaintenanceLoaded"); }
 function ensureDocMapModule() { return ensureLazySystemModule("app/features/docmap.js", "AISystem6DocMapLoaded"); }
+
+// User-initiated lazy action: on load/install failure, show an understandable,
+// retryable error in the current window instead of writing only to the
+// console. Retrying re-runs the loader (its cache was cleared), so a later
+// fix can succeed without a reload. Cancelling rethrows the original error.
+async function ensureLazyModuleForUserAction(label, ensureModule) {
+  try {
+    return await ensureModule();
+  } catch (error) {
+    const detail = error && error.message ? error.message : String(error);
+    const choice = await showSystemModal(
+      t("lazy_load_failed", label, detail),
+      "confirm",
+      { defaultAction: "cancel", confirmKey: "retry" }
+    );
+    if (choice === "yes") return ensureLazyModuleForUserAction(label, ensureModule);
+    throw error;
+  }
+}
 
 // DocMap has two kinds of caller. Commands that summon the tool go through
 // withDocMap(); paths that can only run with the window already open (render,
@@ -389,24 +469,40 @@ function ensureDocMapModule() { return ensureLazySystemModule("app/features/docm
 // never drag 115 KB in behind an ordinary window redraw.
 function withDocMap(callback) {
   if (window.AISystem6DocMapLoaded) return callback();
-  return ensureDocMapModule().then(callback);
+  return ensureLazyModuleForUserAction(t("docmap"), ensureDocMapModule).then(callback);
 }
 
 function ensureScriptingModule() { return ensureLazySystemModule("app/core/scripting.js", "AISystem6ScriptingLoaded"); }
 function ensureControlStripModule() { return ensureLazySystemModule("app/features/control-strip.js", "AISystem6ControlStripLoaded"); }
-function applyControlStripState() {
+function ensureControlStripModulesModule() {
+  return ensureLazySystemModule("app/features/control-strip-modules.js", "AISystem6ControlStripModulesLoaded");
+}
+function ensureControlStripModulesFolderModule() {
+  return ensureLazySystemModule("app/features/control-strip-modules-folder.js", "AISystem6ControlStripModulesFolderLoaded");
+}
+function applyControlStripState(options = {}) {
   if (!controlStripInput?.checked) { window.AISystem6ControlStrip?.disable(); return; }
-  ensureControlStripModule().then(() => window.AISystem6ControlStrip?.enable());
+  const enable = () => ensureControlStripModule().then(() => window.AISystem6ControlStrip?.enable());
+  if (options.silent) {
+    enable().catch((error) => console.warn("Control Strip failed to load.", error));
+    return;
+  }
+  return ensureLazyModuleForUserAction(t("control_strip"), enable);
 }
 
 function withScripting(callback) {
   if (window.AISystem6ScriptingLoaded) return callback();
-  ensureScriptingModule().then(callback);
-  return null;
+  return ensureLazyModuleForUserAction(t("droplet"), ensureScriptingModule).then(callback);
 }
 
 function scheduleDesktopMaintenance(reason = "event") {
-  ensureDesktopMaintenanceModule().then(() => window.AISystem6DesktopMaintenance?.schedule(reason));
+  ensureDesktopMaintenanceModule()
+    .then(() => window.AISystem6DesktopMaintenance?.schedule(reason))
+    .catch((error) => {
+      // Passive maintenance path degrades silently; it must not leave a Busy
+      // state or surface a modal at boot.
+      console.warn("Desktop maintenance unavailable.", error);
+    });
 }
 
 const passiveWritingFlowStubs = new Set([
@@ -454,7 +550,7 @@ function installLazyWritingFlowStub(name) {
   if (typeof window[name] === "function") return;
   window[name] = async function lazyWritingFlowStub(...args) {
     if (passiveWritingFlowStubs.has(name)) return undefined;
-    await ensureWritingFlowModule();
+    await ensureLazyModuleForUserAction("Writing Flow", ensureWritingFlowModule);
     const fn = window[name];
     if (fn === lazyWritingFlowStub) throw new Error(`Writing Flow did not install ${name}`);
     return fn(...args);
@@ -501,7 +597,7 @@ function installLazyWritingFlowStub(name) {
 function installLazyMemoryCardsStub(name) {
   if (typeof window[name] === "function") return;
   window[name] = async function lazyMemoryCardsStub(...args) {
-    await ensureMemoryCardsModule();
+    await ensureLazyModuleForUserAction("Memory Cards", ensureMemoryCardsModule);
     const fn = window[name];
     if (fn === lazyMemoryCardsStub) throw new Error(`Memory Cards did not install ${name}`);
     return fn(...args);
@@ -519,7 +615,7 @@ function installLazyMemoryCardsStub(name) {
 function installLazyFunctionStub(name, ensureModule) {
   if (typeof window[name] === "function") return;
   window[name] = async function lazyFunctionStub(...args) {
-    await ensureModule();
+    await ensureLazyModuleForUserAction(name, ensureModule);
     const fn = window[name];
     if (fn === lazyFunctionStub) throw new Error(`Lazy module did not install ${name}`);
     return fn(...args);

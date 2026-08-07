@@ -1021,6 +1021,28 @@ function wireAppEvents() {
     });
   });
 
+  const documentVersionsDialog = document.querySelector("#document-versions-modal");
+  documentVersionsDialog?.addEventListener("close", () => {
+    modalScrim.classList.add("is-hidden");
+    document.body.classList.remove("has-system-modal");
+  });
+  document.querySelector("#versions-compare")?.addEventListener("click", () => compareSelectedDocumentVersions());
+  document.querySelector("#versions-restore")?.addEventListener("click", () => restoreSelectedDocumentVersion());
+
+  const roleModelFields = document.querySelector("[data-role-models]");
+  const manualModelFieldsInput = document.getElementById("manual-model-fields");
+  const syncRoleModelVisibility = () => {
+    if (roleModelFields) roleModelFields.hidden = !manualModelFieldsInput?.checked;
+    window.AISystem6ModelRoles?.syncSelects?.();
+  };
+  manualModelFieldsInput?.addEventListener("change", syncRoleModelVisibility);
+  ["researcher", "writer", "critic", "utility", "fallback"].forEach((role) => {
+    document.getElementById(`role-model-${role}`)?.addEventListener("change", (event) => {
+      window.AISystem6ModelRoles?.setRoleModel(role, event.target.value);
+    });
+  });
+  syncRoleModelVisibility();
+
   startupSettingsModal?.addEventListener("close", handleStartupSettingsClose);
 
   startupModeInputs.forEach((input) => {
@@ -1270,7 +1292,58 @@ function wireAppEvents() {
 
   menuClockInput.addEventListener("change", applyMenuClock);
 
-  controlStripInput.addEventListener("change", () => { applyControlStripState(); saveDeskState(); });
+  controlStripInput.addEventListener("change", () => {
+    setControlStripState({ enabled: controlStripInput.checked });
+    applyControlStripState();
+  });
+
+  // The Control Strip tab mirrors the master switch in General; the bridge
+  // keeps both checkboxes in sync through setControlStripState().
+  controlStripShowInput?.addEventListener("change", () => {
+    setControlStripState({ enabled: controlStripShowInput.checked });
+    applyControlStripState();
+  });
+
+  // The Control Strip settings panel is lazy-owned: opening the tab loads the
+  // feature (registry + module descriptors) so the module list and controls
+  // render, without enabling the strip itself.
+  document.querySelector("#control-tab-strip")?.addEventListener("click", () => {
+    ensureControlStripModule()
+      .then(() => window.AISystem6ControlStrip?.renderSettings?.())
+      .catch((error) => console.warn("Control Strip settings unavailable.", error));
+  });
+
+  [
+    [controlStripHotkeyRecordButton, () => window.AISystem6ControlStrip?.beginHotkeyRecording?.()],
+    [controlStripHotkeyClearButton, () => window.AISystem6ControlStrip?.clearHotkey?.()],
+    [controlStripFontSelect, () => window.AISystem6ControlStrip?.setMenuFont?.(controlStripFontSelect.value)],
+    [controlStripFontSizeSelect, () => window.AISystem6ControlStrip?.setMenuFontSize?.(Number(controlStripFontSizeSelect.value))],
+    [controlStripMoveUpButton, () => window.AISystem6ControlStrip?.moveModuleInSettings?.(-1)],
+    [controlStripMoveDownButton, () => window.AISystem6ControlStrip?.moveModuleInSettings?.(1)],
+    [controlStripEnableButton, () => window.AISystem6ControlStrip?.setModuleEnabledFromSettings?.(true)],
+    [controlStripDisableButton, () => window.AISystem6ControlStrip?.setModuleEnabledFromSettings?.(false)],
+    [controlStripResetButton, () => window.AISystem6ControlStrip?.resetToDefaults?.()],
+  ].forEach(([handle, invoke]) => {
+    handle?.addEventListener("click", () => {
+      ensureControlStripModule()
+        .then(() => invoke())
+        .catch((error) => console.warn("Control Strip settings unavailable.", error));
+    });
+  });
+
+  controlStripModuleList?.addEventListener("click", (event) => {
+    const row = event.target.closest("[data-control-strip-settings-module]");
+    if (!row) return;
+    ensureControlStripModule()
+      .then(() => window.AISystem6ControlStrip?.selectModuleInSettings?.(row.dataset.controlStripSettingsModule))
+      .catch((error) => console.warn("Control Strip settings unavailable.", error));
+  });
+
+  controlStripHotkeyInput?.addEventListener("keydown", (event) => {
+    ensureControlStripModule()
+      .then(() => window.AISystem6ControlStrip?.captureHotkey?.(event))
+      .catch(() => {});
+  });
 
   docMapLayoutButtons?.forEach((button) => {
     button.addEventListener("click", () => withDocMap(() => setCurrentDocMapLayout(button.dataset.docmapLayoutOption)));

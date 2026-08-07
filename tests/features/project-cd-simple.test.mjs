@@ -14,7 +14,6 @@ const domHandles = read("app/core/dom-handles.js");
 const en = read("app/data/translations-en.js");
 const zh = read("app/data/translations-zh.js");
 const dictionary = read("app/data/system-dictionary.js");
-const legacyDictionary = read("app/legacy/data/system-dictionary.js");
 const css = read("styles/50-apps.css");
 
 const projectCdWindow = html.match(/<section class="window project-cd-window[\s\S]*?<section class="window page-setup-window/)?.[0] || "";
@@ -54,7 +53,7 @@ test.assertNotIncludes(en, "project_cd_delivery_", "English no longer exposes de
 test.assertNotIncludes(zh, "project_cd_delivery_", "Chinese no longer exposes delivery-ticket terminology");
 test.assertNotIncludes(dictionary, "Audit Capsule", "System Help no longer defines the cancelled object");
 test.assertNotIncludes(dictionary, "审计胶囊", "Chinese System Help no longer defines the cancelled object");
-test.assertNotIncludes(legacyDictionary, "Audit Capsule", "legacy Help cannot resurrect the cancelled object");
-test.assertNotIncludes(legacyDictionary, "审计胶囊", "legacy Chinese Help cannot resurrect the cancelled object");
+test.assertNotIncludes(dictionary, "Audit Capsule", "Help cannot resurrect the cancelled object");
+test.assertNotIncludes(dictionary, "审计胶囊", "Chinese Help cannot resurrect the cancelled object");
 
 test.finish();

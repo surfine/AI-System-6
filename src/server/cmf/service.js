@@ -120,7 +120,10 @@ const MACBOOK_NEO_MESH_PARTS = Object.freeze({
   RGLDQJKTekftnoB: "topCase",
   fylMvyMYpOJcbku: "topCase",
   KMIKFolgYmmmahm: "topCase",
-  TJrncXRMBNoKueV: "topCase",
+  // Trackpad surface: a separate component, unlike the camera plateau, so it
+  // can carry its own finish. The black recess around it is trim and is left
+  // alone by the finish-surface rule.
+  TJrncXRMBNoKueV: "trackpad",
   RBmsNybhFEScfui: "topCase",
   LhZMVgrGkfDhZnJ: "topCase",
   TaNFpMmKHqePKML: "topCase",
@@ -192,7 +195,6 @@ const MODELS = Object.freeze({
       cameraControl: "black17",
       usbC: "mistBlue17",
       screwOrSpeaker: "sage17",
-      cameraPlate: "sage17",
     },
     exactMeshParts: {
       psstnNZmWlkGpGJ: "actionOrSim",
@@ -222,7 +224,6 @@ const MODELS = Object.freeze({
       cameraControl: "cosmicOrange17Pro",
       usbC: "silver17Pro",
       screwOrSpeaker: "silver17Pro",
-      cameraPlate: "cosmicOrange17Pro",
     },
     exactMeshParts: IPHONE_17_PRO_MESH_PARTS,
   },
@@ -242,7 +243,6 @@ const MODELS = Object.freeze({
       cameraControl: "cosmicOrange17Pro",
       usbC: "silver17Pro",
       screwOrSpeaker: "silver17Pro",
-      cameraPlate: "cosmicOrange17Pro",
     },
     exactMeshParts: IPHONE_17_PRO_MESH_PARTS,
   },
@@ -263,7 +263,6 @@ const MODELS = Object.freeze({
       cameraControl: "spaceBlackAir",
       usbC: "cloudWhiteAir",
       screwOrSpeaker: "cloudWhiteAir",
-      cameraPlate: "spaceBlackAir",
     },
     exactMeshParts: IPHONE_AIR_MESH_PARTS,
   },
@@ -283,7 +282,6 @@ const MODELS = Object.freeze({
       sideButton: "black17e",
       usbC: "white17e",
       screwOrSpeaker: "white17e",
-      cameraPlate: "black17e",
     },
     exactMeshParts: IPHONE_17E_MESH_PARTS,
   },
@@ -315,6 +313,7 @@ const MODELS = Object.freeze({
       topCase: "silverNeo",
       bottomCase: "silverNeo",
       keycaps: "citrusNeo",
+      trackpad: "silverNeo",
       usbC: "silverNeo",
     },
     exactMeshParts: MACBOOK_NEO_MESH_PARTS,
@@ -1082,8 +1081,15 @@ function isFinishSurface(materialBlocks, materialName) {
   if (!diffuse) return true;
   const rgb = diffuse[1].split(",").map((value) => Number(value.trim()));
   if (rgb.length !== 3 || rgb.some((value) => Number.isNaN(value))) return true;
-  return isProductColor(/** @type {[number, number, number]} */ (rgb));
+  // Only the dark end is excluded. isProductColor also rejects very bright
+  // materials, which would drop real finish surfaces: the Neo's keycaps sit at
+  // luminance 0.93 and were skipped when this reused that whole test.
+  const [r, g, b] = rgb;
+  return (r * 0.299 + g * 0.587 + b * 0.114) >= BLACK_TRIM_LUMINANCE;
 }
+
+/** Below this, Apple authored the surface as trim, not as a finish. */
+const BLACK_TRIM_LUMINANCE = 0.035;
 
 function isProductColor([r, g, b]) {
   const max = Math.max(r, g, b);

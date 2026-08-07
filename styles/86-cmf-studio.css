@@ -41,12 +41,14 @@
 }
 
 .cmf-setup-panel {
-  display: grid;
+  /* One row of controls, not a fixed set of columns. Sizing each track by
+     position broke twice: adding the pose chooser pushed the buttons onto a
+     second row, and hiding that same chooser on phones shifted every control
+     into the wrong track. A row lets each control size itself however many
+     are on screen. */
+  display: flex;
+  flex-wrap: wrap;
   grid-area: toolbar;
-  /* First column holds the model chooser: 168px is what "iPhone 17 Pro Max"
-     measures in the select, arrow included. A browser will not size a select
-     to its longest option here, so the column has to reserve the room. */
-  grid-template-columns: minmax(168px, auto) minmax(210px, 270px) auto minmax(150px, 1fr) auto;
   align-items: end;
   gap: 10px;
   padding: 9px 10px;
@@ -65,8 +67,24 @@
 .cmf-control {
   display: grid;
   gap: 3px;
+  /* A select will not size itself to its longest option, so each chooser asks
+     for the room its own list needs and may shrink from there. */
+  flex: 0 1 auto;
   min-width: 0;
   font-size: 12px;
+}
+
+.cmf-control-model {
+  /* "iPhone 17 Pro Max" measures 165px in the select, arrow included. */
+  flex-basis: 168px;
+}
+
+.cmf-control-pose {
+  flex-basis: 130px;
+}
+
+.cmf-control-preset {
+  flex-basis: 190px;
 }
 
 /* An author `display` beats the user-agent rule for [hidden], so a control the
@@ -90,10 +108,14 @@
 .cmf-setup-actions,
 .cmf-button-stack {
   display: flex;
+  flex: 0 0 auto;
   gap: 6px;
 }
 
+/* The note is the only elastic item, so it takes the slack and keeps the two
+   command groups apart; when it is hidden the buttons still sit at the end. */
 .cmf-autosave-note {
+  flex: 1 1 60px;
   align-self: center;
   margin: 0;
   color: var(--cmf-muted);
@@ -104,6 +126,7 @@
 
 .cmf-button-stack {
   justify-content: flex-end;
+  margin-left: auto;
 }
 
 .cmf-preview-panel {
@@ -543,8 +566,12 @@
     overflow: auto;
   }
 
+  /* The pane is a fixed-height grid; the preview and parts rows keep their
+     minimums, so a plain `auto` toolbar row gets crushed and the wrapped
+     controls spill over the preview. The setup panel must keep the height its
+     own rows need. */
   .cmf-setup-panel {
-    grid-template-columns: minmax(168px, auto) minmax(180px, 1fr) auto auto;
+    min-height: auto;
   }
 
   .cmf-autosave-note {
@@ -561,18 +588,16 @@
     padding: 7px;
   }
 
-  .cmf-setup-panel {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .cmf-control {
+  /* Phones get two deliberate rows instead of a ragged wrap: the choosers
+     share the first line (each shrinks to its third), the actions the second.
+     The named choosers override their desktop flex-basis so the row always
+     fits one line. */
+  .cmf-control,
+  .cmf-control-model,
+  .cmf-control-pose,
+  .cmf-control-preset {
+    flex: 1 1 31%;
     min-width: 0;
-  }
-
-  .cmf-setup-actions,
-  .cmf-button-stack {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
   }
 
   .cmf-button-stack .mobile-control-long {
@@ -583,6 +608,7 @@
     display: inline;
   }
 
+  .cmf-setup-actions .btn,
   .cmf-button-stack .btn {
     min-width: 0;
     min-height: 44px;

@@ -7,12 +7,13 @@ export const coreFiles = [
 ];
 
 export const appModulePaths = [
-  "app/core/legacy-browser-compat.js",
   "app/core/config.js",
   "app/core/humanizer-guidance.js",
   "app/core/system-integrity-guidance.js",
   "app/core/writing-tools-prompts.js",
   "app/core/author-thesis-guidance.js",
+  "app/core/model-roles.js",
+  "app/core/state-stores.js",
   "app/core/chat-vent-guidance.js",
   "app/core/prompt-file-runtime.js",
   "app/core/workspace-profile.js",
@@ -37,6 +38,7 @@ export const appModulePaths = [
   "app/core/project-disk-backup.js",
   "app/features/project-disk.js",
   "app/core/desktop-runtime.js",
+  "app/core/document-revisions.js",
   "app/core/modal.js",
   "app/core/drag-drop.js",
   "app/core/multi-finder.js",
@@ -110,6 +112,8 @@ export const lazyRuntimePaths = [
   "app/core/desktop-maintenance.js",
   "app/core/scripting.js",
   "app/features/control-strip.js",
+  "app/features/control-strip-modules.js",
+  "app/features/control-strip-modules-folder.js",
   "app/features/writing-demo.js",
 ];
 

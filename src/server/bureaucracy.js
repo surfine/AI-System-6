@@ -357,6 +357,16 @@ async function postBureaucracyChatPayload(payload, route, signal, req) {
       payload,
       req,
     });
+    if (/^(?:deepseek-)?v4-(?:pro|flash)$/i.test(cloud.model)) {
+      // Same v4 hidden-reasoning fix as the non-public path below.
+      cloud.payload.thinking = { type: "disabled" };
+      delete cloud.payload.temperature;
+      delete cloud.payload.top_p;
+      delete cloud.payload.presence_penalty;
+      delete cloud.payload.frequency_penalty;
+      delete cloud.payload.logprobs;
+      delete cloud.payload.top_logprobs;
+    }
     const { response } = await postJsonWithFallback(
       `${cloud.baseUrl}/v1/chat/completions`,
       cloud.payload,
@@ -378,8 +388,11 @@ async function postBureaucracyChatPayload(payload, route, signal, req) {
     const model = String(cloudRoute.model || "deepseek-v4-flash").trim();
     const baseUrl = resolveCloudBaseUrl(cloudRoute.baseUrl || DEEPSEEK_BASE_URL_DEFAULT);
     const cloudPayload = { ...payload, model };
-    if (/^(?:deepseek-)?v4-(?:pro|flash)$/i.test(model)
-        && (!cloudPayload.thinking || cloudPayload.thinking.type !== "disabled")) {
+    if (/^(?:deepseek-)?v4-(?:pro|flash)$/i.test(model)) {
+      // v4 defaults to hidden reasoning, which consumes the output budget and
+      // returns empty content for caption generation. Force it off, matching
+      // endfield.js and the cloud-chat route.
+      cloudPayload.thinking = { type: "disabled" };
       delete cloudPayload.temperature;
       delete cloudPayload.top_p;
       delete cloudPayload.presence_penalty;

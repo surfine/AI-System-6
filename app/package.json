@@ -1,0 +1,7 @@
+{
+  "name": "ai-system-6-frontend-typecheck",
+  "private": true,
+  "scripts": {
+    "typecheck:frontend": "tsc --noEmit -p tsconfig.check.json"
+  }
+}

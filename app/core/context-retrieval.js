@@ -24,6 +24,84 @@ function rememberRagRankCache(key, scores) {
   }
 }
 
+// ---- Finder Label context policy -------------------------------------------
+//
+// Labels are user-owned and never written by the model (applyFinderLabel is
+// the only write path). This policy decides what the model may see:
+//   blocked   -> excluded by default; a user may lift the block for the
+//                current session per object;
+//   verify    -> usable for analysis, never asserted as verified fact;
+//   counter   -> kept as counter-material for research and Review Desk;
+//   judgment  -> author judgment, not external fact;
+//   cite      -> quotable source, kept with provenance;
+//   final     -> current official version, ranked first.
+
+const contextBlockedLiftKeys = new Set();
+
+function liftBlockedContextKey(key) {
+  contextBlockedLiftKeys.add(String(key || ""));
+}
+
+function isBlockedContextKeyLifted(key) {
+  return contextBlockedLiftKeys.has(String(key || ""));
+}
+
+function finderLabelForContextItem(item) {
+  if (!item) return "";
+  if (item.finderLabel) return String(item.finderLabel);
+  const candidateIds = [item.id, item.sourceKey, item.sourceId, item.fileId, item.chatFileId, item.referenceId, item.projectFileId];
+  for (const id of candidateIds) {
+    if (!id) continue;
+    const file = chatFiles.find((candidate) => candidate.id === id && isInActiveProject(candidate));
+    if (file?.finderLabel) return String(file.finderLabel);
+  }
+  return "";
+}
+
+function finderLabelContextPolicy(item) {
+  const label = finderLabelForContextItem(item);
+  const key = String(item?.id || item?.sourceKey || "");
+  if (label === "blocked") {
+    if (isBlockedContextKeyLifted(key)) {
+      return { include: true, tag: "blocked-lifted", reason: "blocked label temporarily lifted by the user for this session" };
+    }
+    return { include: false, tag: "blocked", reason: "excluded by Finder Label (Blocked)" };
+  }
+  const policyByLabel = {
+    verify: { tag: "unverified-material", reason: "" },
+    counter: { tag: "counter-material", reason: "" },
+    judgment: { tag: "author-judgment", reason: "" },
+    cite: { tag: "quotable-source", reason: "" },
+    final: { tag: "final-version", reason: "" },
+  };
+  const policy = policyByLabel[label];
+  if (!policy) return { include: true, tag: "", reason: "" };
+  return { include: true, tag: policy.tag, reason: policy.reason };
+}
+
+function contextContentHash(text = "") {
+  // FNV-1a, browser-safe; stable per string, not cryptographic.
+  let hash = 0x811c9dc5;
+  const value = String(text || "");
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(16);
+}
+
+function finderLabelContextRulesSnapshot() {
+  return [
+    "blocked: excluded from model input unless the user lifts the block for the session",
+    "verify: usable for analysis only, never asserted as verified fact",
+    "counter: kept as counter-material for research and Review Desk",
+    "judgment: author judgment, not external fact",
+    "cite: quotable source with provenance",
+    "final: current official version, ranked first",
+    "labels are user-owned; the model can suggest but never writes a label",
+  ];
+}
+
 
 function chunkText(text, source) {
   return window.AISystem6RetrievalRuntime.chunkText(text, source, {
@@ -769,10 +847,11 @@ function getRagContextBudget(userText, recentMessages = [], options = {}) {
   const modelMaxTokens = Number(options.maxContextTokens || currentModelMaxContextTokens() || 0);
   const contextTokens = getEffectiveContextTokens({ ...options, maxContextTokens: modelMaxTokens });
   const recentTokens = recentMessages.reduce((sum, message) => sum + estimateTokens(message.content), 0);
+  const systemPromptTokens = estimateSystemPromptTokens();
   const fixedTokens =
     reservedOutputTokens +
     reservedSafetyTokens +
-    estimateTokens(systemInput.value) +
+    systemPromptTokens +
     estimateTokens(userText) +
     recentTokens;
   const availableTokens = Math.max(0, contextTokens - fixedTokens);
@@ -789,6 +868,30 @@ function getRagContextBudget(userText, recentMessages = [], options = {}) {
     budgetChars,
     usedChars: 0,
   };
+}
+
+/**
+ * Token overhead of the system prompts the app actually attaches to model
+ * requests. The old editable systemInput DOM handle no longer exists; the
+ * runtime system prompts are the integrity guidance, the humanizer guardrail,
+ * and the shared markdown-only instruction.
+ */
+function estimateSystemPromptTokens() {
+  const parts = [];
+  const integrity = window.AISystem6SystemIntegrity;
+  const humanizer = window.AISystem6Humanizer;
+  if (integrity && typeof integrity.instruction === "function") {
+    parts.push(integrity.instruction());
+  }
+  if (humanizer && typeof humanizer.instruction === "function") {
+    parts.push(humanizer.instruction());
+  }
+  parts.push(
+    "Treat every model-facing input as Markdown. "
+    + "Return Markdown only. "
+    + "Never return JSON, JSON code fences, schemas, or machine-readable object literals."
+  );
+  return estimateTokens(parts.filter(Boolean).join("\n"));
 }
 
 function getSystemRagTopK(budgetInfo, options = {}) {
@@ -899,8 +1002,18 @@ function retrieveContext(userText, options = {}) {
   const curatedCandidates = includeCurated
     ? getCuratedContextItems(userText, options.maxCuratedContextItems || maxCuratedContextItems)
     : [];
-  const curated = curatedCandidates.filter(isContextSourceEnabled);
-  const excludedCurated = curatedCandidates.filter((contextItem) => !isContextSourceEnabled(contextItem));
+  const curated = curatedCandidates.filter((contextItem) => isContextSourceEnabled(contextItem) && finderLabelContextPolicy(contextItem).include);
+  const excludedCurated = curatedCandidates
+    .filter((contextItem) => !isContextSourceEnabled(contextItem) || !finderLabelContextPolicy(contextItem).include)
+    .map((contextItem) => {
+      const policy = finderLabelContextPolicy(contextItem);
+      return {
+        ...contextItem,
+        excludedReason: isContextSourceEnabled(contextItem)
+          ? policy.reason
+          : (contextItem.excluded ? contextItem.excluded : "disabled by user"),
+      };
+    });
 
   const rankedCandidates = ragChunks
     .filter((chunk) => chunk.projectId === activeProjectId)
@@ -911,18 +1024,32 @@ function retrieveContext(userText, options = {}) {
     .map((chunk) => {
       const keywordHits = keywordScore(chunkRagSearchText(chunk), queryWords);
       const sourceHits = keywordScore(chunkSourceName(chunk), queryWords);
+      const labelPolicy = finderLabelContextPolicy(chunk);
 
       return {
         ...chunk,
         kind: chunk.fromProjectReference ? "reference" : "chunk",
-        score: (chunk.lastQueryScore ?? 0) + (keywordHits * 0.03) + (sourceHits * 0.08) + contextPriority(chunk),
+        score: (chunk.lastQueryScore ?? 0)
+          + (keywordHits * 0.03)
+          + (sourceHits * 0.08)
+          + contextPriority(chunk)
+          + (labelPolicy.tag === "quotable-source" || labelPolicy.tag === "final-version" ? 0.5 : 0),
+        labelPolicy,
       };
     })
+    .filter((chunk) => chunk.labelPolicy.include)
     .filter(isContextSourceLive)
     .sort((a, b) => b.score - a.score)
     .slice(0, candidatePoolSize);
   const ranked = selectDiverseRankedChunks(rankedCandidates.filter(isContextSourceEnabled), topK, userText);
-  const excludedRanked = rankedCandidates.filter((contextItem) => !isContextSourceEnabled(contextItem));
+  const excludedRanked = rankedCandidates
+    .filter((contextItem) => !isContextSourceEnabled(contextItem) || !contextItem.labelPolicy.include)
+    .map((contextItem) => ({
+      ...contextItem,
+      excludedReason: isContextSourceEnabled(contextItem)
+        ? (contextItem.labelPolicy?.reason || "excluded")
+        : "disabled by user",
+    }));
 
   const sections = [];
   const rawSections = [];
@@ -1043,6 +1170,44 @@ function retrieveContext(userText, options = {}) {
   };
   lastRetrievedContextItems = contextPanelItems;
   scheduleRenderTasks("contextPanel");
+
+  const manifestSources = contextPanelItems
+    .filter((item) => item.included === true && !item.excluded)
+    .map((item) => {
+      const policy = finderLabelContextPolicy(item);
+      return {
+        id: item.id || item.sourceKey || "",
+        label: typeof contextSourceLabel === "function" ? contextSourceLabel(item) : "",
+        tag: policy.tag || item.gistRole || "",
+        contentHash: contextContentHash(item.content || item.text || ""),
+      };
+    });
+  const manifestExcluded = contextPanelItems
+    .filter((item) => item.included === false || item.excluded)
+    .map((item) => ({
+      id: item.id || item.sourceKey || "",
+      reason: item.excludedReason || (item.excluded ? "disabled by user" : "budget or ranking"),
+    }));
+  window.lastContextManifest = {
+    schemaVersion: 1,
+    capturedAt: new Date().toISOString(),
+    taskKind: String(options.taskKind || "chat"),
+    documentId: typeof activeTextFileId !== "undefined" ? String(activeTextFileId || "") : "",
+    sources: manifestSources,
+    authorJudgments: manifestSources.filter((source) => source.tag === "author-judgment"),
+    counterMaterials: manifestSources.filter((source) => source.tag === "counter-material"),
+    excluded: manifestExcluded,
+    rules: finderLabelContextRulesSnapshot(),
+    contentHashes: manifestSources.map((source) => source.contentHash),
+    model: typeof getLocalModelRequestName === "function"
+      ? getLocalModelRequestName()
+      : (typeof activeChatModelIdentifier !== "undefined" ? activeChatModelIdentifier || "" : ""),
+    tokenBudget: {
+      contextTokens: Number(budgetInfo.contextTokens || 0),
+      budgetChars: Number(contextBudget || 0),
+      usedChars: Number(lastContextBudget?.usedChars || 0),
+    },
+  };
 
   return sections.join("\n\n");
 }

@@ -78,7 +78,7 @@ test.assertNotMatches(workspaceProfile, /const studioWindowNames = new Set\(\[[^
 test.assertNotMatches(workspaceProfile, /const writingStudioOwnedWindowNames = new Set\(\[[^\]]*"guide"/, "Writing Studio does not own OOBE");
 test.assertNotIncludes(workspaceProfile, '"open-guide",', "Desktop profile does not block reopening OOBE");
 test.assertNotIncludes(workspaceProfile, '"guide-",', "OOBE actions are not classified as studio commands by prefix");
-test.assertIncludes(workspaceProfile, 'await openWindow("assistant")', "opening Writing Studio never re-enters OOBE");
+test.assertIncludes(workspaceProfile, "await openWritingStudioDefaultSurface()", "opening Writing Studio never re-enters OOBE");
 test.assertIncludes(html, '<button data-action="open-guide" data-i18n="start_here">', "Start Here stays available as a system menu item");
 
 test.finish();

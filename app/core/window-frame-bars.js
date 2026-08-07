@@ -122,8 +122,26 @@ function installFrameBar(win, selector, axis) {
   // Coalesced: every write below can itself trigger the observers watching this
   // window, so a synchronous re-entrant sync would never settle.
   let frame = 0;
+  let syncStallCount = 0;
+  let syncStallWindowStart = performance.now();
   function sync() {
     if (frame) return;
+    const now = performance.now();
+    if (now - syncStallWindowStart > 1000) {
+      syncStallWindowStart = now;
+      syncStallCount = 0;
+    }
+    syncStallCount += 1;
+    if (syncStallCount > 250) {
+      // Safety valve: a layout ping-pong (observed after streaming preview
+      // renders toggle editor classes) can make the class/hidden observers
+      // feed each other forever, which would freeze the whole app. Once the
+      // window demands more than a quarter-thousand syncs a second, drop the
+      // class observer: the bars still track scroll and resize, and the
+      // streaming preview that triggered the storm is transient.
+      classObserver?.disconnect();
+      return;
+    }
     frame = requestAnimationFrame(() => {
       frame = 0;
       measure();
@@ -146,7 +164,12 @@ function installFrameBar(win, selector, axis) {
       scroller = nextScroller;
     }
     // Whatever is actually scrolling hands its bar over to the frame.
-    scroller.classList.add("is-frame-scroll-surface");
+    // Only write when the state changes: a no-op classList.add can still emit
+    // a class mutation record, which this window's own MutationObserver turns
+    // into a sync -> rAF -> measure cycle that never settles.
+    if (!scroller.classList.contains("is-frame-scroll-surface")) {
+      scroller.classList.add("is-frame-scroll-surface");
+    }
     // The vertical lane starts on the seam below the strip above it — not at
     // the content's own top edge, which any inner padding would push down and
     // leave a broken T-junction. The horizontal lane spans the whole width of
@@ -154,7 +177,8 @@ function installFrameBar(win, selector, axis) {
     bar.style.setProperty("--frame-bar-start", vertical ? `${frameBarTop(win, host)}px` : "0px");
     const { offset, view, total } = metrics();
     const scrollable = total - view > 1;
-    bar.classList.toggle("is-empty", !scrollable);
+    const isEmpty = bar.classList.contains("is-empty");
+    if (isEmpty === scrollable) bar.classList.toggle("is-empty", !scrollable);
     if (!scrollable) return;
     const trackLength = vertical ? track.clientHeight : track.clientWidth;
     const size = Math.max(frameBarThumbMin, Math.round((view / total) * trackLength));
@@ -219,7 +243,8 @@ function installFrameBar(win, selector, axis) {
   markFrameReserve(host || win, win);
   // Finder grids re-render their items in place, split windows swap which
   // surface is showing, and some rebuild the surface itself: watch for all three.
-  new MutationObserver(sync).observe(win, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "hidden"] });
+  const classObserver = new MutationObserver(sync);
+  classObserver.observe(win, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "hidden"] });
   measure();
   return sync;
 }
@@ -284,7 +309,11 @@ function installFinderContinuation(win, selector) {
   const syncButton = (button, visible, labelKey) => {
     const label = typeof t === "function" ? t(labelKey) : labelKey;
     const painted = getComputedStyle(button).display !== "none";
-    button.classList.toggle("is-visible", visible);
+    // Guard against no-op writes: they still fire class mutations and can
+    // feed the same observer loop as the frame bars above.
+    if (button.classList.contains("is-visible") !== visible) {
+      button.classList.toggle("is-visible", visible);
+    }
     button.tabIndex = visible && painted ? 0 : -1;
     button.setAttribute("aria-hidden", String(!(visible && painted)));
     button.setAttribute("aria-label", label);

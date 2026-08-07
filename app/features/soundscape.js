@@ -47,12 +47,15 @@
   const sessionLocalUrls = new Map();
 
   let initialized = false;
+  let runtimeInitialized = false;
   let systemMusicConnected = false;
   let systemRequestInFlight = false;
   let systemPollTimer = 0;
   let styleDragging = false;
   let lastProgressRender = 0;
   let searchResults = [];
+  const playerListeners = new Set();
+  let playerNotifyFrame = 0;
 
   const defaultState = () => ({
     schemaVersion: SCHEMA_VERSION,
@@ -296,6 +299,7 @@
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
     window.AISystem6ControlStrip?.refreshStrip?.();
+    notifyPlayerListeners();
   }
 
   function currentItem() {
@@ -945,6 +949,7 @@
     }
     renderAll();
     if (persistNow) persist();
+    else notifyPlayerListeners();
   }
 
   async function connectSystemMusic(options = {}) {
@@ -969,8 +974,11 @@
   }
 
   async function syncSystemMusic() {
-    const root = document.querySelector(".soundscape-window");
-    if (!systemMusicConnected || state.source !== "system" || root?.classList.contains("is-hidden") || systemRequestInFlight) return;
+    // The strip keeps playing status live after the window closes: the sync
+    // only requires a real system source, never a visible Soundscape window.
+    // (The old `is-hidden` check stopped polling as soon as the window was
+    // collapsed, so a closed window froze the strip's Play/Pause button.)
+    if (!systemMusicConnected || state.source !== "system" || systemRequestInFlight) return;
     systemRequestInFlight = true;
     try {
       const snapshot = await requestSystemMusic("state");
@@ -1606,16 +1614,30 @@
     window.addEventListener("beforeunload", revokeLocalQueueUrls, { once: true });
   }
 
-  function attach() {
-    if (!initialized) {
-      initialized = true;
-      bindDomEvents();
+  // Runtime (audio element defaults, the system-music poll) is separable from
+  // window DOM so the Control Strip can track and control playback without
+  // binding the Soundscape window's controls. attach() stays the full-window
+  // entry; ensureRuntime() is the light adapter the strip calls.
+  function ensureRuntime() {
+    if (!runtimeInitialized) {
+      runtimeInitialized = true;
       localAudio.volume = state.muted ? 0 : state.volume / 100;
       localAudio.loop = state.repeat === "one";
       systemPollTimer = window.setInterval(syncSystemMusic, SYSTEM_POLL_MS);
     }
+    if (state.source === "system" && !systemMusicConnected) {
+      connectSystemMusic({ quiet: true }).catch(() => {});
+    }
+    return Promise.resolve(true);
+  }
+
+  function attach() {
+    if (!initialized) {
+      initialized = true;
+      bindDomEvents();
+    }
+    ensureRuntime();
     renderAll();
-    if (state.source === "system" && !systemMusicConnected) connectSystemMusic();
   }
 
   function runMenuCommand(command) {
@@ -1688,6 +1710,51 @@
     };
   }
 
+  function playerSnapshotForSubscribers() {
+    return {
+      ...getPlayerSnapshot(),
+      volume: state.volume,
+      muted: state.muted,
+      shuffle: state.shuffle,
+      repeat: state.repeat,
+    };
+  }
+
+  // One subscription surface for the Control Strip's Soundscape and Volume
+  // modules. The listener gets the current snapshot immediately, and later
+  // updates are coalesced into one frame so a burst of state changes repaints
+  // once. A throwing listener never blocks the others.
+  function subscribePlayer(listener) {
+    if (typeof listener !== "function") return () => {};
+    playerListeners.add(listener);
+    try {
+      listener(playerSnapshotForSubscribers());
+    } catch (error) {
+      console.error("Soundscape subscriber failed on initial snapshot.", error);
+    }
+    return () => {
+      playerListeners.delete(listener);
+    };
+  }
+
+  function notifyPlayerListeners() {
+    if (playerNotifyFrame) return;
+    const scheduleFrame = typeof requestAnimationFrame === "function"
+      ? requestAnimationFrame
+      : (callback) => setTimeout(callback, 0);
+    playerNotifyFrame = scheduleFrame(() => {
+      playerNotifyFrame = 0;
+      const snapshot = playerSnapshotForSubscribers();
+      playerListeners.forEach((listener) => {
+        try {
+          listener(snapshot);
+        } catch (error) {
+          console.error("Soundscape subscriber failed.", error);
+        }
+      });
+    });
+  }
+
   async function playSceneIndex(index) {
     if (!Array.isArray(state.queue) || !state.queue[Number(index)]) return false;
     await playIndex(Number(index));
@@ -1696,6 +1763,7 @@
 
   window.AISystem6Soundscape = {
     attach,
+    ensureRuntime,
     runMenuCommand,
     hasQueue,
     canSaveMoment,
@@ -1706,6 +1774,7 @@
     getVolumeSnapshot,
     setVolumeLevel,
     getPlayerSnapshot,
+    subscribePlayer,
     playSceneIndex,
   };
   window.AISystem6SoundscapeLoaded = true;

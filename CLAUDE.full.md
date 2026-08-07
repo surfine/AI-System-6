@@ -462,10 +462,8 @@ Ask first:
 ## Packaging
 
 ```sh
-npm run bundle          # all three targets + macOS shell .app
+npm run bundle          # Apple silicon binary + macOS shell .app
 npm run bundle:mac-arm64   # arm64 binary + macOS shell .app
-npm run bundle:mac-x64
-npm run bundle:win-x64
 ```
 
 Uses `pkg`. Output goes to `dist/`. Run `npm run verify:release` before packaging.

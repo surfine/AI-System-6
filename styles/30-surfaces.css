@@ -2190,7 +2190,7 @@ body.alarm-clock-ringing .alarm-clock-menu-icon {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  border: 1px solid var(--ink);
+  border: var(--ask-scope-object-border);
   padding: 0 5px;
 }
 

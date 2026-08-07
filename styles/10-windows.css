@@ -371,7 +371,7 @@ body.quick-draft-focus .writing-spine-panel {
   font-size: 10px;
   color: var(--shade-dark);
   white-space: normal;
-  border-top: 1px dotted var(--shade);
+  border-top: var(--context-panel-budget-border-top);
   padding-top: 3px;
   line-height: 1.25;
   overflow: visible;
@@ -1603,7 +1603,7 @@ html:lang(zh-Hans) .title-bar h2 {
    temporary reply slip uses. */
 .clio-chat-file-link:disabled {
   cursor: default;
-  border: 1px dotted var(--shade-dark);
+  border: var(--clio-file-chip-disabled-border);
   background: transparent;
   color: var(--clio-muted-copy);
 }
@@ -1821,7 +1821,7 @@ html:lang(zh-Hans) .title-bar h2 {
   grid-template-columns: 88px 1fr;
   gap: 10px;
   padding: 8px 0;
-  border-bottom: 1px dotted var(--shade-dark);
+  border-bottom: var(--message-divider);
 }
 
 .message p {
@@ -4025,7 +4025,7 @@ body.is-cloud-active .cloud-state-panel {
 
 .text-disk-pane > .button-row {
   padding: 10px;
-  border-bottom: 1px solid var(--ink);
+  border-bottom: var(--pane-actions-border-bottom);
 }
 
 .text-disk-grid.window-frame-scroller,

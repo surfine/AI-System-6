@@ -671,7 +671,7 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
   justify-content: flex-end;
   gap: 8px;
   flex-wrap: wrap;
-  border-top: 1px dotted var(--ink);
+  border-top: var(--action-row-divider);
   padding-top: 8px;
 }
 

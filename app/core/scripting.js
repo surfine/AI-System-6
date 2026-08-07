@@ -116,10 +116,34 @@ function getDropletItems() {
   }));
 }
 
-function resolveDropletFiles(fileIds = []) {
-  return fileIds
-    .map((fileId) => chatFiles.find((file) => file.id === fileId && isInActiveProject(file)))
-    .filter(Boolean);
+// Droplet input resolution. Aliases are consumed as their original document
+// (Project Hard Disk content semantics), while a broken alias or an alias to
+// Scrapbook / Project Reference blocks the run: those objects are valid
+// Finder objects but cannot masquerade as project documents. Dragging an
+// original together with its alias collapses to one target by id, so a
+// droplet never runs twice for the same document.
+async function resolveDropletFiles(fileIds = []) {
+  if (typeof ensureFinderObjectsModule === "function") await ensureFinderObjectsModule();
+  const resolver = window.AISystem6FinderObjects?.resolveProjectFileForUse;
+  const files = [];
+  const seenTargetIds = new Set();
+  for (const fileId of fileIds) {
+    const selected = chatFiles.find((file) => file.id === fileId && isInActiveProject(file));
+    if (!selected) continue;
+    const resolution = typeof resolver === "function" ? resolver(selected) : null;
+    if (!resolution || resolution.reason === "broken-alias") {
+      return { blocked: true, reason: "broken-alias", file: selected, files: [] };
+    }
+    if (resolution.reason === "non-file-alias") {
+      return { blocked: true, reason: "non-file-alias", file: selected, files: [] };
+    }
+    const target = resolution.target || selected;
+    if (target && !seenTargetIds.has(target.id)) {
+      seenTargetIds.add(target.id);
+      files.push(target);
+    }
+  }
+  return { blocked: false, reason: "", files };
 }
 
 async function runScriptableCommand(id, context = {}) {
@@ -133,7 +157,16 @@ async function runScriptableCommand(id, context = {}) {
     setStatus(t("no_project_mounted"));
     return false;
   }
-  const files = resolveDropletFiles(context.fileIds || []);
+  const resolved = await resolveDropletFiles(context.fileIds || []);
+  if (resolved.blocked) {
+    if (resolved.reason === "broken-alias") {
+      setStatus(t("alias_broken", resolved.file?.name || ""));
+    } else {
+      setStatus(currentLanguage === "zh" ? "这个 Droplet 只接受文稿" : "This droplet accepts documents only");
+    }
+    return false;
+  }
+  const files = resolved.files;
   if (!files.length) {
     setStatus(currentLanguage === "zh" ? "请先把项目硬盘里的文稿拖到 Droplet 上" : "Drag a Project Hard Disk document onto the droplet");
     return false;

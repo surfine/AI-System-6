@@ -225,7 +225,7 @@ const pkgTargets = new Set(pkg.pkg?.targets || []);
   else fail(`pkg asset missing: ${asset}`);
 });
 
-["node18-macos-x64", "node18-macos-arm64", "node18-win-x64"].forEach((target) => {
+["node18-macos-arm64"].forEach((target) => {
   if (pkgTargets.has(target)) ok(`pkg target ${target}`);
   else fail(`pkg target missing: ${target}`);
 });
@@ -400,6 +400,26 @@ if (/^\d{8}\.\d+$/.test(String(releaseBuildStamp || ""))) {
   ok(`release build stamp ${releaseBuildStamp}`);
 } else {
   fail("release build stamp missing or malformed; set build-info.json build or AI_SYSTEM6_BUILD as YYYYMMDD.N");
+}
+
+const versionConsistency = spawnSync(process.execPath, ["scripts/verify-version-consistency.mjs"], {
+  cwd: root,
+  encoding: "utf8",
+});
+if (versionConsistency.status === 0) {
+  ok("single version source consistency");
+} else {
+  fail(`single version source consistency failed\n${versionConsistency.stderr || versionConsistency.stdout}`);
+}
+
+const frontendCheckJs = spawnSync(process.execPath, ["scripts/verify-frontend-jsdoc.mjs"], {
+  cwd: root,
+  encoding: "utf8",
+});
+if (frontendCheckJs.status === 0) {
+  ok("frontend checkJs");
+} else {
+  fail(`frontend checkJs failed\n${frontendCheckJs.stderr || frontendCheckJs.stdout}`);
 }
 
 if (pkg.scripts?.["smoke:release"]) ok("smoke release script present");

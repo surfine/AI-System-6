@@ -17,6 +17,8 @@ const ignoredDirs = new Set([
   "data",
   "node_modules",
   "dist",
+  "test-results",
+  "playwright-report",
   "external",
   "marked",
   "markitdown",

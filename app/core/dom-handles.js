@@ -326,6 +326,18 @@ function getElements() {
   const soundEffectsInput = document.querySelector("#sound-effects");
   const menuClockInput = document.querySelector("#menu-clock");
   const controlStripInput = document.querySelector("#control-strip");
+  const controlStripShowInput = document.querySelector("#control-strip-show");
+  const controlStripHotkeyInput = document.querySelector("#control-strip-hotkey");
+  const controlStripHotkeyRecordButton = document.querySelector("#control-strip-hotkey-record");
+  const controlStripHotkeyClearButton = document.querySelector("#control-strip-hotkey-clear");
+  const controlStripFontSelect = document.querySelector("#control-strip-font");
+  const controlStripFontSizeSelect = document.querySelector("#control-strip-font-size");
+  const controlStripModuleList = document.querySelector("#control-strip-module-list");
+  const controlStripMoveUpButton = document.querySelector("#control-strip-move-up");
+  const controlStripMoveDownButton = document.querySelector("#control-strip-move-down");
+  const controlStripEnableButton = document.querySelector("#control-strip-enable");
+  const controlStripDisableButton = document.querySelector("#control-strip-disable");
+  const controlStripResetButton = document.querySelector("#control-strip-reset");
   const docMapLayoutToggleButton = document.querySelector("#docmap-layout-toggle");
   const docMapLayoutButtons = document.querySelectorAll("[data-docmap-layout-option]");
   const performanceMeterInput = document.querySelector("#performance-meter");
@@ -711,6 +723,18 @@ function getElements() {
     soundEffectsInput,
     menuClockInput,
     controlStripInput,
+    controlStripShowInput,
+    controlStripHotkeyInput,
+    controlStripHotkeyRecordButton,
+    controlStripHotkeyClearButton,
+    controlStripFontSelect,
+    controlStripFontSizeSelect,
+    controlStripModuleList,
+    controlStripMoveUpButton,
+    controlStripMoveDownButton,
+    controlStripEnableButton,
+    controlStripDisableButton,
+    controlStripResetButton,
     docMapLayoutToggleButton,
     docMapLayoutButtons,
     performanceMeterInput,

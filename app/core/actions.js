@@ -929,6 +929,7 @@ function getApplicationActionHandlers() {
     "open-system-file-multifinder": () => showSystemModal(t("system_file_not_openable"), "alert"),
     "open-system-file-da-handler": () => showSystemModal(t("system_file_not_openable"), "alert"),
     "open-system-folder-path": ({ systemFolderPath = "" } = {}) => navigateSystemFolderPath(systemFolderPath),
+    "open-applications-folder-path": ({ applicationsFolderPath = "" } = {}) => navigateApplicationsFolderPath(applicationsFolderPath),
     "open-system-prompt-file": ({ promptId = "writing-tools.proofread" } = {}) => {
       if (!activeProjectId) {
         setStatus(t("no_project_mounted"));
@@ -1099,6 +1100,9 @@ function getApplicationActionHandlers() {
     "toggle-compose-tools": toggleComposeToolsMenu,
     "open-question-sheet": openQuestionSheetSurface,
     "open-teachtext-manuscript": openTeachTextManuscriptWindow,
+    "open-document-versions": () => openDocumentVersions(),
+    "versions-compare": () => compareSelectedDocumentVersions(),
+    "versions-restore": () => restoreSelectedDocumentVersion(),
     "open-outline": openOutlineSurface,
     "open-section-drafts": openSectionDrafts,
     "open-claim-check": () => openReviewDesk("facts"),
@@ -1219,6 +1223,12 @@ function getApplicationActionHandlers() {
     },
     "open-applications": () => openWindow("applications"),
     "open-help-folder": () => openWindow("helpFolder"),
+    "open-control-strip-modules": () => openWindow("controlStripModules"),
+    "open-control-strip-module": ({ controlStripModuleId }) => {
+      ensureControlStripModulesFolderModule()
+        .then(() => window.AISystem6ControlStripModulesFolder?.openModule?.(controlStripModuleId))
+        .catch((error) => console.warn("Control Strip Modules folder unavailable.", error));
+    },
     "open-project-cd": () => openWindow("projectCd"),
     "open-import-utility": () => openWindow("importUtility"),
     "open-project-backup": openProjectBackupPanel,
@@ -1526,6 +1536,10 @@ function handleAction(action, commandContext = {}) {
     commandContext = { ...commandContext, systemFolderPath: String(action).slice("open-system-folder-path:".length) };
     action = "open-system-folder-path";
   }
+  if (String(action).startsWith("open-applications-folder-path:")) {
+    commandContext = { ...commandContext, applicationsFolderPath: String(action).slice("open-applications-folder-path:".length) };
+    action = "open-applications-folder-path";
+  }
   if (String(action).startsWith("open-system-prompt-file:")) {
     commandContext = { ...commandContext, promptId: String(action).slice("open-system-prompt-file:".length) };
     action = "open-system-prompt-file";
@@ -1537,6 +1551,10 @@ function handleAction(action, commandContext = {}) {
   if (String(action).startsWith("open-droplet:")) {
     commandContext = { ...commandContext, dropletId: String(action).slice("open-droplet:".length) };
     action = "open-droplet";
+  }
+  if (String(action).startsWith("open-control-strip-module:")) {
+    commandContext = { ...commandContext, controlStripModuleId: String(action).slice("open-control-strip-module:".length) };
+    action = "open-control-strip-module";
   }
   const command = getApplicationCommandRegistry().get(action);
   if (!command?.isAvailable()) {

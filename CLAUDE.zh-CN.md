@@ -1,5 +1,5 @@
 <!-- canonical-source: CLAUDE.md -->
-<!-- source-sha256: 5fa508b74b6b8a2fe538011011a0a325a112a823a4c0060b6646a9b1809a3e8d -->
+<!-- source-sha256: 046b88dd99e6c55ec846bd3ae09d20d59d13a021f7ba36292997961f1c90ccbe -->
 
 # AI System 6 — CLAUDE.md
 
@@ -195,7 +195,9 @@ Outline / Section Drafts / TeachText 是同一份 Markdown 文档的联动视图
 活的记忆回路——当 Claude 反复栽在某处时，加一行（保持紧凑）：
 
 - **并行 agent 会在任务中途提交 / 切换分支。** 暂存前重新检查
-  `git branch --show-current` 和 `git status`。会话经验沉淀见
+  `git branch --show-current` 和 `git status`；没确认 HEAD 是自己那次提交前
+  绝不要 `git commit --amend`（并行会话先落地就用 reflog 找回）。会话经验
+  沉淀见
   AGENT-LESSONS.zh-CN.md。
 - **改了源，忘了重建。** 浏览器加载的是 `app.bundle.js`。任何 `app/` 或 `app.js` 改动后跑
   `npm run build:app`。

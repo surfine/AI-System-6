@@ -1567,6 +1567,7 @@ function initReaderDropZone() {
     event.dataTransfer.setData("application/json", JSON.stringify(payload));
     event.dataTransfer.setData("text/plain", text);
     event.dataTransfer.effectAllowed = "copy";
+    window.AISystem6DragDrop?.beginSpringFolderSession?.(payload);
   });
 
   readerDropTargets.forEach((target) => {
