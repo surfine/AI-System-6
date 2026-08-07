@@ -217,7 +217,7 @@ test.assertIncludes(demo, "总长控制在 220 字以内", "ClioTalk demo answer
 test.assertIncludes(demo, "右侧 Context Panel 显示 ClioTalk 引用了当前项目里的 Project CD 成稿", "ClioTalk stage proves the answer is grounded in the project manuscript context");
 test.assertNotIncludes(demo, 'cloudConfig.model = "deepseek-v4-flash"', "demo does not force a vendor-specific cloud model");
 test.assertNotIncludes(demo, "writingDemoIsDeepSeekReady", "demo is not gated on DeepSeek");
-test.assertIncludes(zh, "实战演示需要可用模型（本地或云端）", "Chinese demo copy points users to local-or-cloud readiness");
+test.assertIncludes(zh, "实战演示需要可用的模型（本地或云端）", "Chinese demo copy points users to local-or-cloud readiness");
 test.assertIncludes(en, "ready model (local or cloud)", "English demo copy points users to local-or-cloud readiness");
 test.assertIncludes(zh, "正在预检真实 LLM 连接", "Chinese demo copy explains the preflight");
 test.assertIncludes(en, "Checking the real LLM connection", "English demo copy explains the preflight");

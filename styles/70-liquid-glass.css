@@ -110,6 +110,10 @@ body.use-liquid-glass {
   --control-strip-bg: rgba(255, 255, 255, 0.5);
   --control-strip-border: 1px solid rgba(16, 17, 20, 0.2);
   --control-strip-divider: 1px solid rgba(16, 17, 20, 0.12);
+  --memory-transfer-note-bg: rgba(255, 255, 255, 0.26);
+  --memory-transfer-note-line: rgba(16, 17, 20, 0.28);
+  --memory-transfer-note-border: rgba(255, 255, 255, 0.48);
+  --info-divider-border: 1px solid rgba(16, 17, 20, 0.14);
   /* The frame lane is a System 6 idea; glass keeps the same structure but its
      own material, so no checkerboard and no hard hairlines. */
   --window-frame-lane: 12px;
@@ -412,6 +416,23 @@ body.use-liquid-glass {
   /* Glass carries colour better than bitmap paper, so the same reach is
      allowed to go further before it stops reading as a material. */
   --ss-tint-ceiling: 14%;
+  --ss-panel: rgba(255, 255, 255, 0.36);
+  --ss-rule: rgba(16, 17, 20, 0.12);
+  --ss-rule-strong: rgba(16, 17, 20, 0.18);
+  --soundscape-search-input-border: 1px solid rgba(255, 255, 255, 0.62);
+  --soundscape-search-input-radius: 12px;
+  --icon-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.24)),
+    rgba(255, 255, 255, 0.26);
+  --icon-border: 1px solid rgba(255, 255, 255, 0.5);
+  --mini-icon-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.24)),
+    rgba(255, 255, 255, 0.26);
+  --mini-icon-border: 1px solid rgba(255, 255, 255, 0.5);
+  --large-mini-icon-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.24)),
+    rgba(255, 255, 255, 0.26);
+  --large-mini-icon-border: 1px solid rgba(255, 255, 255, 0.58);
   --glass-tint: rgba(255, 255, 255, 0.12);
   --glass-tint-strong: rgba(255, 255, 255, 0.32);
   --glass-border: rgba(255, 255, 255, 0.72);
@@ -1587,7 +1608,7 @@ body.use-liquid-glass {
   --endfield-selected-fg: rgba(255, 255, 255, 0.96);
   --endfield-evidence-divider: 1px solid rgba(16, 17, 20, 0.14);
   --endfield-index-bg: rgba(255, 255, 255, 0.48);
-  --endfield-index-border: 2px solid rgba(16, 17, 20, 0.82);
+  --endfield-index-border: 1px solid rgba(16, 17, 20, 0.24);
   --demo-caption-bg:
     linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(232, 238, 242, 0.42)),
     rgba(255, 255, 255, 0.58);
@@ -3066,7 +3087,6 @@ body.use-liquid-glass .finder-list-row {
 }
 
 body.use-liquid-glass .empty-folder-note .icon,
-body.use-liquid-glass .empty-folder-note .mini-icon,
 body.use-liquid-glass .empty-folder-note .sys-icon {
   border-color: rgba(255, 255, 255, 0.5);
   background:

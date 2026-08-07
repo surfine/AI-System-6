@@ -32,6 +32,12 @@ test.assertMatches(windowManager, /action === "toggle-balloon-help"[\s\S]*hide_b
 test.assertMatches(html, /id="balloon-help"[^>]*popover="manual"/, "one system-owned tooltip can enter the browser top layer above modal dialogs");
 test.assertIncludes(html, 'data-balloon-help="balloon_multifinder_switcher"', "the MultiFinder application switcher can identify itself");
 test.assertIncludes(html, 'data-balloon-help-disabled="balloon_clio_send_disabled"', "disabled AI controls can explain why they are unavailable");
+test.assertIncludes(html, 'data-balloon-help="balloon_finder_view_switch"', "the Finder icon/list view switch can identify itself");
+test.assertIncludes(html, 'data-balloon-help="balloon_docmap_fit_view"', "the DocMap fit-view control can identify itself");
+test.assertIncludes(html, 'data-balloon-help="balloon_soundscape_repeat"', "the icon-only Soundscape repeat control can identify itself");
+test.assertIncludes(html, 'data-balloon-help="balloon_soundscape_shuffle"', "the icon-only Soundscape shuffle control can identify itself");
+test.assertIncludes(html, 'data-balloon-help="balloon_theme_switcher"', "the Liquid Glass appearance switch can identify itself");
+test.assertIncludes(html, 'data-balloon-help="balloon_reader_find_related" data-balloon-help-disabled="balloon_reader_find_related_disabled"', "Reader's Find Related Sources explains itself and its disabled state");
 test.assertMatches(balloon, /function balloonHelpKeyFor\(target\)[\s\S]*balloonHelpDisabled/, "balloon copy follows the target's live availability state");
 test.assertMatches(balloon, /pointerover[\s\S]*focusin[\s\S]*pointerdown/, "pointer, keyboard, and explicit touch help are supported");
 test.assertMatches(balloon, /showPopover[\s\S]*positionBalloonHelp/, "showing a balloon promotes it above dialog top layers before positioning it");
@@ -49,6 +55,7 @@ test.assertIncludes(zh, "Finder 一次使用一个应用。MultiFinder 让多个
 test.assertIncludes(zh, "MultiFinder 已开启。可从菜单栏右侧切换正在运行的应用。", "the one-time switcher clue uses the approved status feedback");
 test.assertMatches(desktopRuntime, /multiFinderOnlyOption\.dataset\.balloonHelp = "balloon_startup_multifinder_only"[\s\S]*aria-disabled[\s\S]*delete multiFinderOnlyOption\.dataset\.balloonHelp/, "Finder-only startup choices explain their MultiFinder requirement only while disabled");
 test.assertMatches(balloon, /function syncWindowBalloonHelpTargets[\s\S]*balloon_windowshade[\s\S]*balloon_zoom_box[\s\S]*balloon_grow_box/, "WindowShade, Zoom, and grow keep distinct help semantics");
+test.assertIncludes(balloon, 'closeBox.dataset.balloonHelp ||= "balloon_close_box"', "every window's close box can identify itself");
 test.assertMatches(balloon, /function disabledMenuBalloonHelpKey[\s\S]*balloon_disabled_menu_project[\s\S]*balloon_disabled_menu_selection[\s\S]*balloon_disabled_menu_context/, "disabled menu commands receive a concise reason instead of repeating their label");
 test.assertIncludes(windowManager, "syncDisabledMenuBalloonHelp()", "menu availability refreshes disabled-command help at the same time");
 test.assertIncludes(wireup, "syncWindowBalloonHelpTargets()", "window control help is installed after native grow boxes exist");
@@ -85,6 +92,14 @@ for (const key of [
   "balloon_disabled_menu_selection",
   "balloon_disabled_menu_project",
   "balloon_disabled_menu_context",
+  "balloon_close_box",
+  "balloon_finder_view_switch",
+  "balloon_docmap_fit_view",
+  "balloon_soundscape_repeat",
+  "balloon_soundscape_shuffle",
+  "balloon_theme_switcher",
+  "balloon_reader_find_related",
+  "balloon_reader_find_related_disabled",
 ]) {
   test.assertIncludes(en, `${key}:`, `English copy exists for ${key}`);
   test.assertIncludes(zh, `${key}:`, `Chinese copy exists for ${key}`);

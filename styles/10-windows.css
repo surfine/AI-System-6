@@ -3706,11 +3706,6 @@ body.is-cloud-active .cloud-state-panel {
   pointer-events: none;
 }
 
-/* Cloud Model section in Control Panel */
-.control-cloud-section {
-  border-color: var(--accent-blue);
-}
-
 .control-cloud-status {
   display: flex;
   align-items: center;

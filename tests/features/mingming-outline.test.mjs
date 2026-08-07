@@ -123,7 +123,7 @@ test.assertIncludes(evalScript, "LM Studio is not reachable", "practice script e
 test.assertIncludes(packageJson, '"eval:mingming-outline": "node scripts/eval-mingming-outline.mjs"', "practice script is exposed as an npm command");
 test.assertIncludes(iphone17eCorpus, "主摄 IMX982", "shared corpus uses the newest reference input camera details");
 
-test.assertIncludes(zh, 'mingming_outline: "若是铭铭会怎么写"', "Chinese copy keeps the existing command name");
+test.assertIncludes(zh, 'mingming_outline: "如果是铭铭会怎么写"', "Chinese copy keeps the existing command name");
 test.assertIncludes(en, 'mingming_outline: "What Would Mingming Write?"', "English copy is present");
 
 test.finish();

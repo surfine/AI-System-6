@@ -1843,10 +1843,10 @@
   gap: 8px;
   min-height: 58px;
   padding: 8px 9px;
-  border: var(--system-control-line) solid var(--ink);
+  border: var(--system-control-line) solid var(--memory-transfer-note-border);
   background:
-    linear-gradient(90deg, transparent 0, transparent 33px, var(--ink) 33px, var(--ink) 35px, transparent 35px),
-    #f7f7f7;
+    linear-gradient(90deg, transparent 0, transparent 33px, var(--memory-transfer-note-line) 33px, var(--memory-transfer-note-line) 35px, transparent 35px),
+    var(--memory-transfer-note-bg);
 }
 
 .memory-transfer-note .compose-tool-icon {
@@ -2089,7 +2089,7 @@
   flex-shrink: 0;
 }
 
-.scrap-list button .mini-icon {
+.scrap-list button:not(.scrap-empty-card) .mini-icon {
   grid-column: 1;
   grid-row: 1 / span 3;
   align-self: start;
@@ -2765,8 +2765,8 @@ body:not(.use-liquid-glass) .desktop-app-icon span[data-liquid-label="DAA Meme"]
   width: 34px;
   height: 34px;
   display: block;
-  background: var(--paper);
-  border: var(--system-control-line) solid var(--ink);
+  background: var(--icon-bg);
+  border: var(--icon-border);
   position: relative;
 }
 

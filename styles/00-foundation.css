@@ -46,6 +46,10 @@
   --btn-default-active-bg: var(--btn-active-bg);
   --btn-default-active-fg: var(--btn-active-fg);
   --control-status-border: 1px dotted var(--shade-dark);
+  --memory-transfer-note-bg: #f7f7f7;
+  --memory-transfer-note-line: var(--ink);
+  --memory-transfer-note-border: var(--ink);
+  --info-divider-border: 1px solid var(--shade-dark);
   --control-label-fg: inherit;
   --control-summary-fg: inherit;
   --outline-item-border: 1px dotted var(--shade);
@@ -293,6 +297,21 @@
   --system-track-thumb-border: 1px solid var(--ink);
   --system-track-thumb-radius: 0;
   --system-track-thumb-shadow: none;
+  /* Soundscape window materials: the deck and drawer sit on paper in Classic;
+     Liquid swaps the panel for glass and softens the hairline rules. */
+  --ss-panel: color-mix(in srgb, var(--panel) 92%, var(--paper));
+  --ss-rule: color-mix(in srgb, var(--ink) 36%, transparent);
+  --ss-rule-strong: color-mix(in srgb, var(--ink) 72%, transparent);
+  --soundscape-search-input-border: var(--system-control-line) solid var(--ink);
+  --soundscape-search-input-radius: 0;
+  /* Icon chips: paper tile + ink frame in Classic; Liquid swaps the tile to
+     translucent glass with a thin light rim (see .sys-icon liquid chip). */
+  --icon-bg: var(--paper);
+  --icon-border: var(--system-control-line) solid var(--ink);
+  --mini-icon-bg: var(--paper);
+  --mini-icon-border: 2px solid var(--ink);
+  --large-mini-icon-bg: var(--paper);
+  --large-mini-icon-border: var(--system-control-line) solid var(--ink);
   --system-segment-bg: var(--paper);
   --system-segment-border: 1px solid var(--ink);
   --system-segment-radius: 0;

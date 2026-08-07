@@ -30,7 +30,7 @@ test.assertIncludes(commandPopover, 'data-i18n="review_mingming_handoff"', "Hand
 test.assertIncludes(html.slice(reviewDeskActionsIndex), 'data-i18n="review_commands"', "Review Desk command menu uses its own name, not the generic Commands menu");
 test.assertIncludes(commandPopover, 'data-action="review-mingming-handoff-backstage"', "Command menu exposes the backstage handoff review");
 test.assertIncludes(commandPopover, 'data-i18n="review_mingming_handoff_backstage"', "Backstage handoff command is localized");
-test.assertIncludes(zh, 'review_mingming_handoff: "若是落落会怎么接"', "Chinese copy names the short-card handoff");
+test.assertIncludes(zh, 'review_mingming_handoff: "如果是落落会怎么接"', "Chinese copy names the short-card handoff");
 test.assertIncludes(zh, 'review_mingming_handoff_backstage: "交付后台审校"', "Chinese copy names the backstage review");
 test.assertIncludes(en, 'review_mingming_handoff: "How Luoluo Would Receive It"', "English copy names the short-card handoff");
 test.assertIncludes(en, 'review_mingming_handoff_backstage: "Backstage Handoff Review"', "English copy names the backstage review");
@@ -99,7 +99,7 @@ test.assertIncludes(handoff, "QUESTION SHEET", "Handoff review uses Question She
 test.assertIncludes(handoff, "buildBudgetedProjectContext", "Handoff review retrieves limited project context");
 
 test.assertIncludes(mingmingLens, "不要输出关系建议、交接压力或私人合作判断", "Existing Mingming review stays relationship-neutral");
-test.assertNotIncludes(mingmingLens, "若是落落会怎么接", "Existing Mingming lens is not polluted by handoff review behavior");
+test.assertNotIncludes(mingmingLens, "如果是落落会怎么接", "Existing Mingming lens is not polluted by handoff review behavior");
 test.assertNotIncludes(mingmingLens, "先给足情绪价值，再给事实护栏", "Existing Mingming lens does not absorb the new handoff ordering");
 
 test.finish();

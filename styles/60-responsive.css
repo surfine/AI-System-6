@@ -33,7 +33,7 @@
 }
 
 .scrapbook-desk-icon {
-  background: var(--paper);
+  background: var(--mini-icon-bg);
 }
 
 .scrapbook-desk-icon::before {
@@ -2243,11 +2243,6 @@ body.use-modern-fonts .mde-surface * {
   margin: 0;
   font-size: var(--system-titlebar-font-size);
   line-height: var(--system-titlebar-title-height);
-}
-
-body.use-modern-fonts .alarm-clock-current-time,
-body.use-modern-fonts .alarm-clock-value {
-  font-family: Chicago_12, Chicago, Charcoal, "Songti SC", "SimSun", serif;
 }
 
 .window:not(.is-active) .title-bar h1,

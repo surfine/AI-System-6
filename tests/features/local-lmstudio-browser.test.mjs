@@ -320,6 +320,14 @@ const modelPayload = {
     client.httpLocalEntryUrl("http://local.system6.aaronlau.me") === "http://local.system6.aaronlau.me/",
     "builds the configured Safari HTTP entry without weakening the HTTPS host"
   );
+  ok(
+    /function openSafariHttpLocalEntry\(\)[\s\S]*?const blankTab = window\.open\([\s\S]*?getCapabilities/.test(persistenceStatus),
+    "opens the Safari paste tab synchronously inside the click gesture, before any await"
+  );
+  ok(
+    /blankTab\?\.close\(\)[\s\S]*?throw error/.test(persistenceStatus),
+    "closes the paste tab again when the local HTTP origin is not configured"
+  );
 }
 
 {
@@ -374,7 +382,7 @@ ok(read("app/core/persistence-status.js").includes('window.location.assign(`lmst
 ok(/function connectOrLaunchLocalModel\(\)[\s\S]*?openLocalModelApp\(\);[\s\S]*?connectLocalLmStudio\(\{ toggle: false \}\)/.test(read("app/core/persistence-status.js")), "one local-model button launches LM Studio and then attempts the connection");
 ok(boot.includes('isSafariHttpLocalMode') && boot.includes('setControlTab("local")'), "Safari HTTP entry opens directly on local-model setup");
 ok(read("app/data/translations-en.js").includes("open this site in Chrome or Edge, or use a cloud model"), "English guidance offers two supported next steps");
-ok(read("app/data/translations-zh.js").includes("Safari 本机入口、改用 Chrome/Edge，或切换到云端模型"), "Chinese guidance offers supported next steps without blaming LM Studio");
+ok(read("app/data/translations-zh.js").includes("Safari 本机入口（HTTP）、改用 Chrome/Edge，或改用云端模型"), "Chinese guidance offers supported next steps without blaming LM Studio");
 ok(manifest.includes('"app/shared/model-task-runtime.js"') && manifest.includes('"app/core/local-lmstudio-client.js"'), "loads shared contracts before the browser adapter");
 ok(html.includes('id="local-api-token" type="password"') && html.includes('id="connect-local-model"') && !html.includes('id="open-local-model-app"'), "control panel exposes one launch/connect toggle instead of two competing buttons");
 ok(chat.includes("AISystem6LocalLMStudio.chat") && !chat.includes('fetch("/api/model-budget"'), "chat and context budgeting stay in the browser");

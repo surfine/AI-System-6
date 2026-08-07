@@ -19,9 +19,9 @@
     <link rel="stylesheet" href="styles.bundle.css?v=20260804.03" />
   </head>
   <body class="is-booting">
-    <header class="menu-bar" aria-label="System menu">
+    <header class="menu-bar" aria-label="System menu" data-i18n-aria-label="system_menu">
       <div class="menu">
-        <button class="apple" aria-label="Apple menu" data-balloon-help="balloon_apple_menu">
+        <button class="apple" aria-label="Apple menu" data-i18n-aria-label="apple_menu" data-balloon-help="balloon_apple_menu">
           <svg class="alarm-clock-menu-icon" viewBox="0 0 15 16" aria-hidden="true" focusable="false">
             <path d="M2 0h1v1H2zM7 0h1v1H7zM12 0h1v1h-1zM3 1h1v1H3zM7 1h1v1H7zM11 1h1v1h-1zM4 3h1v1H4zM7 3h1v1H7zM10 3h1v1h-1zM0 4h1v1H0zM2 4h1v1H2zM12 4h1v1h-1zM14 4h1v1h-1zM4 5h7v1H4zM2 6h3v1H2zM10 6h3v1h-3zM2 7h1v7H2zM7 7h1v4H7zM12 7h1v7h-1zM6 11h1v1H6zM5 12h1v1H5zM2 13h2v1H2zM11 13h2v1h-2zM4 14h7v1H4zM3 15h9v1H3z"></path>
           </svg>
@@ -64,14 +64,14 @@
       <span id="app-menu-slot" hidden></span>
       <div class="menu-spacer"></div>
       <div class="menu cloud-switcher-menu">
-        <button id="cloud-model-indicator" class="cloud-model-indicator is-hidden" type="button" aria-haspopup="menu" aria-label="Cloud Model Status" data-balloon-help="balloon_model_status">
+        <button id="cloud-model-indicator" class="cloud-model-indicator is-hidden" type="button" aria-haspopup="menu" aria-label="Cloud Model Status" data-i18n-aria-label="cloud_model_status" data-balloon-help="balloon_model_status">
           <span class="cloud-icon sys-icon" data-system-icon="cloudModel" aria-hidden="true"></span>
           <span id="cloud-model-label">None</span>
         </button>
         <div id="cloud-model-popover" class="menu-popover cloud-model-popover" role="menu"></div>
       </div>
       <div class="menu project-switcher-menu">
-        <button id="project-switcher-button" class="project-switcher-button" type="button" aria-haspopup="menu" aria-label="Switch Project Hard Disk" data-balloon-help="balloon_project_switcher">
+        <button id="project-switcher-button" class="project-switcher-button" type="button" aria-haspopup="menu" aria-label="Switch Project Hard Disk" data-i18n-aria-label="project_switcher" data-balloon-help="balloon_project_switcher">
           <span class="project-switcher-icon sys-icon sys-icon-desktop" data-system-icon="projectDisk" aria-hidden="true"></span>
           <span id="project-switcher-label">Project Hard Disk</span>
         </button>
@@ -102,7 +102,7 @@
         </div>
         <p id="boot-message" data-i18n="boot_starting">Starting AI System 6...</p>
         <div class="boot-progress" aria-hidden="true"><span id="boot-progress-fill"></span></div>
-        <div class="boot-ledger" aria-label="Startup checks">
+        <div class="boot-ledger" aria-label="Startup checks" data-i18n-aria-label="startup_checks">
           <span id="boot-startup-disk" data-i18n="boot_startup_pending">Startup Disk</span>
           <span id="boot-project-disk" data-i18n="boot_project_pending">Project Hard Disk</span>
           <span id="boot-local-model" data-i18n="boot_model_pending">LLM</span>
@@ -119,7 +119,7 @@
         </div>
       </section>
 
-      <section class="writing-spine-panel" data-workspace-capability="studio" aria-label="Writing tools" aria-expanded="true">
+      <section class="writing-spine-panel" data-workspace-capability="studio" aria-label="Writing tools" data-i18n-aria-label="writing_tools" aria-expanded="true">
         <section class="spine-toolbox-panel spine-flow-toolbox" aria-labelledby="writing-flow-title">
           <div class="title-bar spine-title-row">
             <span aria-hidden="true"></span>
@@ -216,14 +216,14 @@
             <span class="startup-settings-disk-icon" aria-hidden="true"></span>
             <b data-i18n="startup_settings_title">Start up "Startup Disk" with:</b>
           </div>
-          <div class="startup-settings-choice-row" role="radiogroup" aria-label="Startup environment">
+          <div class="startup-settings-choice-row" role="radiogroup" aria-label="Startup environment" data-i18n-aria-label="startup_environment">
             <label><input type="radio" name="startup-mode" value="finder" /> <span>Finder</span></label>
             <label><input type="radio" name="startup-mode" value="multifinder" /> <span>MultiFinder</span></label>
           </div>
           <p id="startup-environment-help" class="startup-environment-help" aria-live="polite"></p>
           <hr />
           <p class="startup-settings-subhead" data-i18n="startup_automatically_open">Upon startup, automatically open:</p>
-          <div class="startup-open-options" role="radiogroup" aria-label="Startup items">
+          <div class="startup-open-options" role="radiogroup" aria-label="Startup items" data-i18n-aria-label="startup_items">
             <label class="startup-open-option" data-multifinder-only>
               <input type="radio" name="startup-open" value="selected-items" />
               <span id="startup-selected-items-label" data-i18n="startup_selected_items">Selected Items</span>
@@ -255,7 +255,7 @@
             <section class="finder-operation-body">
               <h2 id="erase-disk-title">Erase Disk?</h2>
               <p id="erase-disk-lede" class="finder-operation-lede"></p>
-              <div id="erase-disk-preview-list" class="finder-operation-list" aria-label="Disk contents preview"></div>
+              <div id="erase-disk-preview-list" class="finder-operation-list" aria-label="Disk contents preview" data-i18n-aria-label="disk_contents_preview"></div>
               <dl class="finder-operation-result">
                 <dt id="erase-disk-remove-label">Will erase</dt>
                 <dd id="erase-disk-remove-text"></dd>
@@ -436,7 +436,7 @@
           <button class="resize-box hidden" aria-label="Zoom" data-i18n-aria-label="zoom" disabled aria-hidden="true"></button>
         </div>
         <div class="window-pane settings control-settings">
-          <div class="system-tabs" role="tablist" aria-label="Control Panel section">
+          <div class="system-tabs" role="tablist" aria-label="Control Panel section" data-i18n-aria-label="control_panel_sections">
             <button class="system-tab" id="control-tab-local" type="button" role="tab" aria-selected="false" aria-controls="control-panel-local" data-control-tab="local" data-i18n="control_connection">Local Model</button>
             <button class="system-tab is-active" id="control-tab-cloud" type="button" role="tab" aria-selected="true" aria-controls="control-panel-cloud" data-control-tab="cloud" data-i18n="cloud_model">Cloud Model</button>
             <button class="system-tab" id="control-tab-general" type="button" role="tab" aria-selected="false" aria-controls="control-panel-general" data-control-tab="general" data-i18n="control_tab_general">General</button>
@@ -565,8 +565,8 @@
               </div>
 
               <div class="field-row">
-                <input id="liquid-glass" type="checkbox" />
-                <label for="liquid-glass" data-i18n="liquid_glass">Liquid Glass Appearance</label>
+                <input id="liquid-glass" type="checkbox" data-balloon-help="balloon_theme_switcher" />
+                <label for="liquid-glass" data-i18n="liquid_glass" data-balloon-help="balloon_theme_switcher">Liquid Glass Appearance</label>
               </div>
 
               <div class="field-row">
@@ -733,8 +733,8 @@
         <div class="details-bar">
           <span data-i18n="four_items">4 items</span>
           <div class="view-controls" data-view-window="finder" aria-label="View" data-i18n-aria-label="view_controls">
-            <button class="view-btn is-active" type="button" data-view="icon" aria-label="Icon view" data-i18n-aria-label="view_icon"></button>
-            <button class="view-btn" type="button" data-view="list" aria-label="List view" data-i18n-aria-label="view_list"></button>
+            <button class="view-btn is-active" type="button" data-view="icon" aria-label="Icon view" data-i18n-aria-label="view_icon" data-balloon-help="balloon_finder_view_switch"></button>
+            <button class="view-btn" type="button" data-view="list" aria-label="List view" data-i18n-aria-label="view_list" data-balloon-help="balloon_finder_view_switch"></button>
           </div>
           <span data-i18n="local_disk">Desktop</span>
         </div>
@@ -898,9 +898,9 @@
         </div>
         <div class="details-bar quick-draft-details">
           <span id="quick-draft-stats">0 words · ~0 sec</span>
-          <div class="quick-draft-status-center" aria-label="Quick Draft setup">
+          <div class="quick-draft-status-center" aria-label="Quick Draft setup" data-i18n-aria-label="quick_draft_setup">
             <span class="select-wrap quick-draft-status-select">
-              <select id="quick-draft-format" aria-label="Quick Draft format">
+              <select id="quick-draft-format" aria-label="Quick Draft format" data-i18n-aria-label="quick_draft_format">
                 <option value="first-day-hands-on" data-i18n="quick_draft_format_first_day">First-Day Hands-on</option>
                 <option value="hands-on-review" data-i18n="quick_draft_format_hands_on_review">Hands-on Review</option>
                 <option value="bili-dynamic" data-i18n="quick_draft_format_bili_dynamic">Bilibili post</option>
@@ -935,7 +935,7 @@
                 </label>
               </div>
               <div class="teachtext-actions quick-draft-editor-actions">
-                <div class="teachtext-command-group" aria-label="Quick Draft commands">
+                <div class="teachtext-command-group" aria-label="Quick Draft commands" data-i18n-aria-label="quick_draft_commands">
                   <button class="btn" type="button" id="quick-draft-toggle-preview" data-i18n="preview">Preview</button>
                   <button class="btn" type="button" data-mde-focus-cycle data-mde-target="#quick-draft-draft" data-i18n-aria-label="teachtext_focus_off" aria-label="Focus: Off">
                     <span class="mobile-control-long" data-i18n="teachtext_focus_off">Focus: Off</span>
@@ -947,25 +947,25 @@
                       <span class="mobile-control-short" data-i18n="more">More</span>
                     </summary>
                     <div class="teachtext-command-popover quick-draft-command-popover">
-                      <section class="quick-draft-command-section" aria-label="Quick Draft intake">
+                      <section class="quick-draft-command-section" aria-label="Quick Draft intake" data-i18n-aria-label="quick_draft_intake">
                         <b data-i18n="quick_draft_command_intake">Material</b>
                         <button class="btn" type="button" data-action="quick-draft-import-chat" data-i18n="quick_draft_import_chat_records">Import Chat Records</button>
                         <button class="btn" type="button" data-quick-draft-chat-action="vent-on" data-i18n="quick_draft_vent_start">Start Vent Mode</button>
                         <button class="btn" type="button" data-quick-draft-chat-action="vent-off" data-i18n="quick_draft_vent_stop">End Vent Mode</button>
                         <button class="btn" type="button" data-quick-draft-chat-action="vent-summary" data-i18n="quick_draft_vent_summarize">Summarize Vents</button>
                       </section>
-                      <section class="quick-draft-command-section" aria-label="Quick Draft writing">
+                      <section class="quick-draft-command-section" aria-label="Quick Draft writing" data-i18n-aria-label="quick_draft_writing">
                         <b data-i18n="quick_draft_command_write">Write</b>
                         <button class="btn" type="button" data-quick-draft-chat-action="organize" data-i18n="quick_draft_chip_talk_points">Talk Points</button>
                       </section>
-                      <section class="quick-draft-command-section" aria-label="Quick Draft revision">
+                      <section class="quick-draft-command-section" aria-label="Quick Draft revision" data-i18n-aria-label="quick_draft_revision">
                         <b data-i18n="quick_draft_command_review">Fast Review</b>
                         <button class="btn" type="button" data-quick-draft-chat-action="mingming" data-i18n="quick_draft_chip_mingming">Mingming Pass</button>
                         <button class="btn" type="button" data-quick-draft-chat-action="luoluo" data-i18n="quick_draft_chip_luoluo">Luoluo Receive</button>
                         <button class="btn" type="button" data-quick-draft-chat-action="hkrr" data-i18n="quick_draft_chip_hkrr">HKRR Lift</button>
                         <button class="btn" type="button" data-quick-draft-chat-action="praise" data-i18n="quick_draft_chip_praise">Encourage Me</button>
                       </section>
-                      <section class="quick-draft-command-section" aria-label="Quick Draft delivery">
+                      <section class="quick-draft-command-section" aria-label="Quick Draft delivery" data-i18n-aria-label="quick_draft_command_delivery">
                         <b data-i18n="quick_draft_command_delivery">Delivery</b>
                         <button class="btn" type="button" data-quick-draft-delivery="teachtext" data-i18n="quick_draft_send_teachtext">Transfer to TeachText</button>
                         <button class="btn" type="button" data-quick-draft-delivery="copy-markdown" data-i18n="copy_markdown">Copy Markdown</button>
@@ -986,7 +986,7 @@
               <input id="quick-draft-must-include" type="text" />
               <input id="quick-draft-must-avoid" type="text" />
               <input id="quick-draft-first-day-subject" type="text" />
-              <input id="quick-draft-title-input" class="quick-draft-title-input" type="text" aria-label="Quick Draft title" />
+              <input id="quick-draft-title-input" class="quick-draft-title-input" type="text" aria-label="Quick Draft title" data-i18n-aria-label="quick_draft_title_field" />
               <span id="quick-draft-save-state"></span>
               <span id="quick-draft-source-count"></span>
               <span id="quick-draft-length-label" data-i18n="quick_draft_duration">Length</span>
@@ -1116,7 +1116,7 @@
               <time id="soundscape-duration">0:00</time>
             </div>
             <div class="soundscape-transport" data-i18n-aria-label="soundscape_playback" aria-label="Playback">
-              <button class="btn soundscape-key" type="button" id="soundscape-shuffle" aria-pressed="false" data-i18n-aria-label="soundscape_shuffle" aria-label="Shuffle">
+              <button class="btn soundscape-key" type="button" id="soundscape-shuffle" aria-pressed="false" data-i18n-aria-label="soundscape_shuffle" aria-label="Shuffle" data-balloon-help="balloon_soundscape_shuffle">
                 <span class="sys-icon" data-system-icon="shuffleTracks" aria-hidden="true"></span>
               </button>
               <button class="btn soundscape-key" type="button" id="soundscape-previous" data-i18n-aria-label="soundscape_previous_track" aria-label="Previous Track">
@@ -1128,7 +1128,7 @@
               <button class="btn soundscape-key" type="button" id="soundscape-next" data-i18n-aria-label="soundscape_next_track" aria-label="Next Track">
                 <span class="sys-icon" data-system-icon="nextTrack" aria-hidden="true"></span>
               </button>
-              <button class="btn soundscape-key" type="button" id="soundscape-repeat" aria-pressed="false" data-repeat="off" data-i18n-aria-label="soundscape_repeat_off" aria-label="Repeat off">
+              <button class="btn soundscape-key" type="button" id="soundscape-repeat" aria-pressed="false" data-repeat="off" data-i18n-aria-label="soundscape_repeat_off" aria-label="Repeat off" data-balloon-help="balloon_soundscape_repeat">
                 <span class="sys-icon" data-system-icon="repeatTracks" aria-hidden="true"></span>
                 <small id="soundscape-repeat-badge" aria-hidden="true"></small>
               </button>
@@ -1261,7 +1261,7 @@
           <aside class="endfield-sidebar">
             <div class="endfield-sidebar-head">
               <h3 data-i18n="endfield_recent_queries">Recent Queries</h3>
-              <button class="mini-btn endfield-new-session" type="button" id="endfield-new-session" data-i18n="endfield_new_query">New query</button>
+              <button class="btn mini-btn endfield-new-session" type="button" id="endfield-new-session" data-i18n="endfield_new_query">New query</button>
             </div>
             <section class="endfield-nav-section">
               <div id="endfield-recent-list" class="endfield-recent-list"></div>
@@ -1606,7 +1606,7 @@
           <span id="teachtext-status" data-status-key="unsaved">Unsaved</span>
         </div>
         <div class="tdi-shell teachtext-shell">
-          <div class="tdi-rail"><div id="teachtext-tabs" class="tdi-tabs teachtext-tabs is-hidden" aria-label="TeachText tabs"></div></div>
+          <div class="tdi-rail"><div id="teachtext-tabs" class="tdi-tabs teachtext-tabs is-hidden" aria-label="TeachText tabs" data-i18n-aria-label="teachtext_tabs"></div></div>
           <div class="tdi-grabber" role="separator" tabindex="0" aria-label="Resize tabs" data-i18n-aria-label="resize_tabs" aria-orientation="vertical"></div>
         <form id="teachtext-form" class="window-pane teachtext-pane">
           <input id="teachtext-name" type="hidden" value="Untitled" />
@@ -1614,11 +1614,11 @@
 
           <label class="teachtext-body-label" for="teachtext-body" data-i18n="text">Text</label>
           <div class="teachtext-editor-container">
-            <textarea id="teachtext-body" rows="16" aria-label="Text" placeholder="Start writing..." data-i18n-placeholder="start_writing" data-drop-target="editor-insert" data-editor-surface="teachtext"></textarea>
+            <textarea id="teachtext-body" rows="16" aria-label="Text" data-i18n-aria-label="teachtext_body" placeholder="Start writing..." data-i18n-placeholder="start_writing" data-drop-target="editor-insert" data-editor-surface="teachtext"></textarea>
             <div id="teachtext-preview" class="teachtext-preview is-hidden"></div>
           </div>
 
-          <div class="teachtext-desk-strip" aria-label="TeachText desk status">
+          <div class="teachtext-desk-strip" aria-label="TeachText desk status" data-i18n-aria-label="teachtext_desk_status">
             <span id="teachtext-mode-state" data-i18n="teachtext_mode_edit">Edit mode</span>
             <span id="teachtext-source-count" data-i18n="teachtext_source_empty">No text</span>
             <span id="teachtext-selection-state" data-i18n="teachtext_selection_empty">No selection</span>
@@ -1626,7 +1626,7 @@
           </div>
 
           <div class="teachtext-actions teachtext-surface-actions">
-            <div class="teachtext-command-group" data-workspace-capability="studio" aria-label="Writing commands">
+            <div class="teachtext-command-group" data-workspace-capability="studio" aria-label="Writing commands" data-i18n-aria-label="writing_commands">
               <button class="btn" type="button" id="teachtext-toggle-preview" data-i18n="preview">Preview</button>
               <button class="btn" type="button" data-mde-focus-cycle data-mde-target="#teachtext-body" data-i18n="teachtext_focus_off">Focus: Off</button>
               <details class="teachtext-command-menu">
@@ -1653,7 +1653,7 @@
         <div class="details-bar">
           <span id="image-manager-status">0 / 48</span>
           <div class="view-controls" data-view-window="imageManager" aria-label="View" data-i18n-aria-label="view_controls">
-            <button class="view-btn is-active" type="button" data-view="icon" aria-label="Grid view"></button>
+            <button class="view-btn is-active" type="button" data-view="icon" aria-label="Grid view" data-i18n-aria-label="grid_view"></button>
             <button class="view-btn" type="button" data-view="list" aria-label="List view" data-i18n-aria-label="view_list"></button>
           </div>
           <span id="image-manager-document" data-i18n="teachtext">TeachText</span>
@@ -1680,16 +1680,16 @@
           <button class="btn details-bar-button" type="button" data-action="review-view-manuscript" data-i18n="view_manuscript">View Manuscript</button>
         </div>
         <div class="window-pane review-desk-pane">
-          <select id="review-section-source" hidden aria-label="Review Section"></select>
+          <select id="review-section-source" hidden aria-label="Review Section" data-i18n-aria-label="review_section"></select>
           <div class="style-section-nav review-section-nav">
             <button class="btn" type="button" id="review-section-prev" data-action="previous-style-section" data-i18n="previous_section">Previous section</button>
             <div id="review-section-meta" class="draft-section-label style-section-meta" data-i18n="style_section_empty">No TeachText sections yet.</div>
             <button class="btn" type="button" id="review-section-next" data-action="next-style-section" data-i18n="next_section">Next section</button>
           </div>
-          <div class="review-desk-results" aria-label="Review reports">
+          <div class="review-desk-results" aria-label="Review reports" data-i18n-aria-label="review_reports">
             <textarea id="review-desk-body" class="review-desk-markdown" rows="12" spellcheck="true" data-i18n-placeholder="review_desk_markdown_hint" placeholder="Review the final manuscript in Markdown..."></textarea>
             <div id="review-desk-preview" class="review-desk-preview teachtext-preview is-hidden"></div>
-            <button id="review-desk-splitter" class="review-desk-splitter" type="button" aria-label="Resize review panes"></button>
+            <button id="review-desk-splitter" class="review-desk-splitter" type="button" aria-label="Resize review panes" data-i18n-aria-label="resize_review_panes"></button>
             <section class="review-result-column is-active" aria-labelledby="review-result-title">
               <h3 id="review-result-title" data-i18n="review_results">Review Results</h3>
               <div id="style-sheet-results" class="style-sheet-results" data-review-result="style">
@@ -1703,7 +1703,7 @@
           </div>
           <div id="review-desk-empty-note" class="empty-folder-note review-desk-empty-note is-hidden" data-i18n="review_desk_requires_final">Mark TeachText as Final before using Review Desk.</div>
           <div class="teachtext-actions teachtext-surface-actions review-desk-actions">
-            <div class="teachtext-command-group" aria-label="Review commands">
+            <div class="teachtext-command-group" aria-label="Review commands" data-i18n-aria-label="review_commands">
               <button class="btn" type="button" data-action="toggle-review-preview" data-i18n="preview">Preview</button>
               <button class="btn" type="button" data-mde-focus-cycle data-mde-target="#review-desk-body" data-i18n="teachtext_focus_off">Focus: Off</button>
               <details class="teachtext-command-menu specialized-command-menu">
@@ -1757,7 +1757,7 @@
         <div class="details-bar scrapbook-details-bar">
           <span id="scrap-count">0 scraps</span>
           <button class="btn mini-btn" type="button" data-action="new-note" data-i18n="new_scrap">New Scrap</button>
-          <select id="scrap-stack" class="mini-select" aria-label="Scrap stack" hidden>
+          <select id="scrap-stack" class="mini-select" aria-label="Scrap stack" data-i18n-aria-label="scrap_stack" hidden>
             <option value="all" data-i18n="stack_all">All Stacks</option>
             <option value="sources" data-i18n="stack_sources">Sources</option>
             <option value="assistant" data-i18n="stack_assistant">ClioTalk</option>
@@ -1870,7 +1870,7 @@
                   <button class="btn" type="button" id="reader-clip-translate-button" data-action="reader-clip-translate" data-i18n="clip_translate" disabled>Clip + Translate</button>
                   <button class="btn" type="button" id="reader-open-clio-stage" data-action="reader-open-clio-stage" data-i18n="open_in_clio_stage" disabled data-balloon-help-disabled="balloon_reader_open_clio_stage_disabled">Open in ClioStage</button>
                   <button class="btn" type="button" id="reader-send-manuscript" data-action="reader-send-manuscript" data-i18n="send_copy_to_manuscript" disabled>Send Copy to Manuscript</button>
-                  <button class="btn" type="button" id="reader-find-sources" data-action="reader-find-sources" data-i18n="find_related_sources" disabled>Find Related Sources</button>
+                  <button class="btn" type="button" id="reader-find-sources" data-action="reader-find-sources" data-i18n="find_related_sources" data-balloon-help="balloon_reader_find_related" data-balloon-help-disabled="balloon_reader_find_related_disabled" disabled>Find Related Sources</button>
                 </div>
               </details>
             </div>
@@ -1879,7 +1879,7 @@
             <div class="tdi-rail reader-rail">
               <div id="reader-tabs" class="tdi-tabs reader-tabs is-hidden"></div>
             </div>
-            <div id="reader-split-handle" class="tdi-grabber" role="separator" tabindex="0" aria-label="Resize Reader tabs"></div>
+            <div id="reader-split-handle" class="tdi-grabber" role="separator" tabindex="0" aria-label="Resize Reader tabs" data-i18n-aria-label="resize_reader_tabs"></div>
             <div id="reader-content" class="reader-content" tabindex="0">
               <div class="empty-folder-note" data-i18n="reader_empty_hint">Paste a URL or drop files to read and clip passages.</div>
             </div>
@@ -2028,7 +2028,7 @@
             <div id="question-sheet-preview" class="specialized-teachtext-preview teachtext-preview is-hidden"></div>
           </div>
           <div class="teachtext-actions teachtext-surface-actions">
-            <div class="teachtext-command-group" aria-label="Question Sheet commands">
+            <div class="teachtext-command-group" aria-label="Question Sheet commands" data-i18n-aria-label="question_sheet_commands">
               <button class="btn" type="button" data-action="toggle-question-preview" data-i18n="preview">Preview</button>
               <button class="btn" type="button" data-mde-focus-cycle data-mde-target="#question-sheet-body" data-i18n="teachtext_focus_off">Focus: Off</button>
               <details class="teachtext-command-menu specialized-command-menu">
@@ -2066,7 +2066,7 @@
             <div id="outline-preview" class="specialized-teachtext-preview teachtext-preview is-hidden"></div>
           </div>
           <div class="teachtext-actions teachtext-surface-actions">
-            <div class="teachtext-command-group" aria-label="Outline commands">
+            <div class="teachtext-command-group" aria-label="Outline commands" data-i18n-aria-label="outline_commands">
               <button class="btn" type="button" data-action="toggle-outline-preview" data-i18n="preview">Preview</button>
               <button class="btn" type="button" data-mde-focus-cycle data-mde-target="#outline-content" data-i18n="teachtext_focus_off">Focus: Off</button>
               <details class="teachtext-command-menu specialized-command-menu">
@@ -2099,7 +2099,7 @@
           <button class="btn details-bar-button" type="button" data-action="open-question-sheet" data-i18n="view_question_sheet">View Question Sheet</button>
         </div>
         <div class="window-pane teachtext-surface-pane section-drafts-pane">
-          <select id="draft-section-source" hidden aria-label="Outline Section"></select>
+          <select id="draft-section-source" hidden aria-label="Outline Section" data-i18n-aria-label="outline_section"></select>
           <input id="draft-title" type="hidden" />
           <div id="draft-list" class="draft-list is-hidden"></div>
           <div class="draft-editor">
@@ -2113,7 +2113,7 @@
               <div id="draft-preview" class="specialized-teachtext-preview teachtext-preview is-hidden"></div>
             </div>
             <div class="teachtext-actions teachtext-surface-actions">
-              <div class="teachtext-command-group" aria-label="Section Draft commands">
+              <div class="teachtext-command-group" aria-label="Section Draft commands" data-i18n-aria-label="section_draft_commands">
                 <button class="btn" type="button" data-action="toggle-draft-preview" data-i18n="preview">Preview</button>
                 <button class="btn" type="button" data-mde-focus-cycle data-mde-target="#draft-body" data-i18n="teachtext_focus_off">Focus: Off</button>
                 <details class="teachtext-command-menu specialized-command-menu">
@@ -2247,7 +2247,7 @@
           <label for="rebuild-flow-source" data-i18n="source_article">Source Article</label>
           <textarea id="rebuild-flow-source" rows="10" data-i18n-placeholder="rebuild_source_hint" placeholder="Paste a finished article here..."></textarea>
           <div class="rebuild-progress" aria-live="polite">
-            <div class="rebuild-progress-meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Rebuild progress">
+            <div class="rebuild-progress-meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Rebuild progress" data-i18n-aria-label="rebuild_progress">
               <span id="rebuild-flow-progress-bar"></span>
             </div>
             <ol id="rebuild-flow-steps" class="rebuild-progress-steps"></ol>
@@ -2282,13 +2282,13 @@
           </div>
         </div>
         <div class="tdi-shell docmap-shell">
-          <div class="tdi-rail"><div id="docmap-tabs" class="tdi-tabs docmap-tabs is-hidden" aria-label="DocMap tabs"></div></div>
+          <div class="tdi-rail"><div id="docmap-tabs" class="tdi-tabs docmap-tabs is-hidden" aria-label="DocMap tabs" data-i18n-aria-label="docmap_tabs"></div></div>
           <div class="tdi-grabber" role="separator" tabindex="0" aria-label="Resize tabs" data-i18n-aria-label="resize_tabs" aria-orientation="vertical"></div>
         <div class="window-pane docmap-pane">
           <div class="docmap-layout">
-            <div class="window-toolbar docmap-map-toolbar" aria-label="DocMap view controls">
+            <div class="window-toolbar docmap-map-toolbar" aria-label="DocMap view controls" data-i18n-aria-label="docmap_view_controls">
               <div class="toolbar-group docmap-toolbar-group">
-                <div class="docmap-layout-picker" id="docmap-layout-toggle" role="group" aria-label="DocMap layout" data-balloon-help="balloon_docmap_layout">
+                <div class="docmap-layout-picker" id="docmap-layout-toggle" role="group" aria-label="DocMap layout" data-i18n-aria-label="docmap_layout" data-balloon-help="balloon_docmap_layout">
                   <span data-i18n="docmap_layout_label">Layout</span>
                   <div class="view-switch">
                     <button class="view-switch-option" type="button" id="docmap-layout-right" data-docmap-layout-option="right" data-i18n="docmap_layout_right">One Side</button>
@@ -2297,7 +2297,7 @@
                 </div>
               </div>
               <div class="toolbar-group docmap-toolbar-group">
-                <button class="btn" type="button" id="docmap-fit-view" data-i18n-aria-label="docmap_fit_view">
+                <button class="btn" type="button" id="docmap-fit-view" data-i18n-aria-label="docmap_fit_view" data-balloon-help="balloon_docmap_fit_view">
                   <span class="mobile-control-long" data-i18n="docmap_fit_view">适应窗口</span>
                   <span class="mobile-control-short" data-i18n="docmap_fit_short">适应</span>
                 </button>
@@ -2355,7 +2355,7 @@
               <span id="clio-stage-page" class="clio-stage-page">0 / 0</span>
               <button class="btn clio-stage-nav-button" type="button" id="clio-stage-next" data-i18n-aria-label="next_page" aria-label="Next slide">→</button>
             </div>
-            <div class="view-switch clio-stage-view-switcher" role="group" aria-label="ClioStage views">
+            <div class="view-switch clio-stage-view-switcher" role="group" aria-label="ClioStage views" data-i18n-aria-label="clio_stage_views">
               <button class="view-switch-option" type="button" id="clio-stage-source-view" aria-pressed="false" data-i18n-aria-label="source_view">
                 <span class="mobile-control-long" data-i18n="source_view">Source</span>
                 <span class="mobile-control-short" data-i18n="source_view_short">Source</span>
@@ -2418,7 +2418,7 @@
               <div class="clio-chart-view-head">
                 <b id="clio-chart-metric"></b>
                 <span id="clio-chart-unit"></span>
-                <div class="clio-chart-projection-switcher" aria-label="ClioChart projections">
+                <div class="clio-chart-projection-switcher" aria-label="ClioChart projections" data-i18n-aria-label="clio_chart_projections">
                   <button class="btn default" type="button" id="clio-chart-bars-view" data-i18n-aria-label="clio_chart_bars">
                     <span class="mobile-control-long" data-i18n="clio_chart_bars">Ranked Bars</span>
                     <span class="mobile-control-short" data-i18n="clio_chart_bars_short">Bars</span>
@@ -2807,7 +2807,7 @@ Glass</textarea>
           <div id="dictionary-result" class="dictionary-result">
             <p class="empty-folder-note" data-i18n="dictionary_empty">Select a word or short phrase, then choose Look Up.</p>
           </div>
-          <div id="dictionary-recent" class="dictionary-recent" aria-label="Recent Dictionary lookups"></div>
+          <div id="dictionary-recent" class="dictionary-recent" aria-label="Recent Dictionary lookups" data-i18n-aria-label="dictionary_recent"></div>
         </div>
       </section>
 
@@ -2825,9 +2825,9 @@ Glass</textarea>
           <div class="system-help-search-row">
             <input id="system-help-query" type="search" data-i18n-placeholder="system_help_search" placeholder="Search system terms" />
           </div>
-          <div id="system-help-categories" class="system-help-categories" aria-label="System Help categories"></div>
+          <div id="system-help-categories" class="system-help-categories" aria-label="System Help categories" data-i18n-aria-label="system_help_categories"></div>
           <div class="system-help-layout">
-            <div id="system-help-list" class="system-help-list" role="listbox" aria-label="System Help terms"></div>
+            <div id="system-help-list" class="system-help-list" role="listbox" aria-label="System Help terms" data-i18n-aria-label="system_help_terms"></div>
             <div id="system-help-detail" class="system-help-detail"></div>
           </div>
         </div>
@@ -2990,7 +2990,7 @@ Glass</textarea>
           <h2 id="calculator-title" data-i18n="calculator">Calculator</h2>
         </div>
         <div class="window-pane calculator-pane">
-          <input id="calculator-display" type="text" value="0" aria-label="Calculator display" readonly />
+          <input id="calculator-display" type="text" value="0" aria-label="Calculator display" data-i18n-aria-label="calculator_display" readonly />
           <div class="calculator-keys" id="calculator-keys">
             <button type="button" data-calc="clear">C</button>
             <button type="button" data-calc="=">=</button>
@@ -3021,7 +3021,7 @@ Glass</textarea>
         </div>
         <div class="window-pane writing-bell-pane">
           <div class="writing-bell-time" id="writing-bell-time">25:00</div>
-          <div class="segmented-control writing-bell-mode" id="writing-bell-mode" aria-label="Writing Bell mode">
+          <div class="segmented-control writing-bell-mode" id="writing-bell-mode" aria-label="Writing Bell mode" data-i18n-aria-label="writing_bell_mode">
             <button class="is-active" type="button" data-bell-mode="work" data-i18n="bell_work">Work</button>
             <button type="button" data-bell-mode="break" data-i18n="bell_break">Break</button>
           </div>
@@ -3060,7 +3060,7 @@ Glass</textarea>
           <h2 id="puzzle-title" data-i18n="puzzle">Puzzle</h2>
         </div>
         <div class="window-pane puzzle-pane">
-          <div class="puzzle-board" id="puzzle-board" aria-label="Puzzle board"></div>
+          <div class="puzzle-board" id="puzzle-board" aria-label="Puzzle board" data-i18n-aria-label="puzzle_board"></div>
           <div class="puzzle-footer">
             <span id="puzzle-moves">0 moves</span>
           </div>
@@ -3095,7 +3095,7 @@ Glass</textarea>
           <p data-i18n="key_caps_hint">Hold Command with these keys.</p>
           <div class="shortcut-grid" id="shortcut-grid" data-i18n-aria-label="keyboard_shortcuts" aria-label="Keyboard shortcuts"></div>
           <p data-i18n="character_map">Character Map</p>
-          <div class="character-map" id="character-map" aria-label="Character Map">
+          <div class="character-map" id="character-map" aria-label="Character Map" data-i18n-aria-label="character_map">
             <button type="button" data-character="—">—</button>
             <button type="button" data-character="–">–</button>
             <button type="button" data-character="…">…</button>
@@ -3299,7 +3299,7 @@ Glass</textarea>
         </div>
       </section>
 
-      <section class="icon-column" aria-label="Desktop icons">
+      <section class="icon-column" aria-label="Desktop icons" data-i18n-aria-label="desktop_icons">
         <button class="desktop-icon" type="button" data-open="disk" data-balloon-help="balloon_startup_disk">
           <span class="sys-icon sys-icon-desktop" data-system-icon="startupDisk" aria-hidden="true"></span>
           <span data-i18n="startup_disk">Startup Disk</span>

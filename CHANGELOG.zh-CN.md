@@ -1,5 +1,5 @@
 <!-- canonical-source: CHANGELOG.md -->
-<!-- source-sha256: 5a787290ec25122537413509a77e78761ebe1cd0bea3d3514bdaed4c18e4b663 -->
+<!-- source-sha256: 9e6a2e2500be37c7845ab08015c2f2cc2cb90e8fc0649418ebd15f786cf95038 -->
 
 # AI System 6 中文更新日志
 
@@ -272,6 +272,21 @@ Liquid Glass 继续作为独立材质存在，而不是被复古修正误伤。
 - 移动端与触屏打磨：更干净的手机工作区、双击提示、Finder 液滴归入
   “Drop Tools”。
 - 大型级联清理后 Classic 与 Liquid Glass 外观收敛一致。
+
+## 公开测试版 1.0.20 — 2026-08-07
+
+- CMF Studio：iPhone 17e 与 MacBook Neo 的屏幕保留壁纸，不再渲染成白板；
+  真黑饰条不再被当作可改色表面；Touch ID 采用按键帽漆面。
+- MacBook Neo 的 USDZ 模型更轻——只打包实际引用的贴图（约 12.6 MB 降到
+  5.2–6.7 MB）。
+
+## 公开测试版 1.0.21 — 2026-08-07
+
+- 文案全面修润：帮助气泡、系统帮助与对话框说人话；技术术语保留并加括号
+  注解；长句拆分；中文风格统一。
+- 气泡帮助扩展、可访问名称本地化，并新增校验防止中英文案漂移。
+- Safari 本机入口端到端修复。
+- Classic 与 Liquid Glass 的图标、记忆条、声景表面与显示简介材质 token 化。
 
 ## 一个月里真正变大的东西
 

@@ -191,6 +191,7 @@ Keep product object names exact (renaming one is an "ask first"):
 | TeachText / Reader | TeachText / 阅读器 | TeachText untranslated |
 | Cover Glass | 玻璃封面 | file is still `liquid-cover.js` |
 | CMF Studio | 配色工作台 | |
+| Picture Album | 画片簿 | Brand name; not 图片册 |
 
 Keep System Help / Dictionary examples language-matched (no English examples in
 Chinese UI, and vice versa). **Full table → [CLAUDE.full.md](CLAUDE.full.md).**
@@ -240,6 +241,14 @@ Living memory loop — when Claude repeatedly trips on something, add a line
 - **New `.md` without a zh-CN mirror.** `verify:docs` fails; add the mirror with
   the right `canonical-source` + `source-sha256` header.
 - **Renaming Scrapbook in Chinese.** Brand name — keep it untranslated.
+- **"Normalizing" zh 「」 away.** Chinese prose quotes menu and object names
+  in corner brackets (`「特别」`, `「创作坊」`, `「AI 提示词」`); the
+  start-here-guide test pins this style. Do not rewrite them as double quotes.
+- **Replacing technical terms with plain words.** Keep the real term and add a
+  gloss in parentheses (`loopback address (your Mac's own address)`, `CORS
+  (cross-origin access)`, `embedding (text vectorization)`). Developers must
+  recognize the setting or error; beginners get the gloss. Do not remove the
+  term entirely.
 - **Polishing CSS with no behavior change.** The #1 documented churn source —
   read css-no-pingpong first; new `!important` / magic numbers / reformat diffs
   fail the gate.

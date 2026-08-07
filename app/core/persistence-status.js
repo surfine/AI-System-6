@@ -685,15 +685,24 @@ async function copyTextToClipboard(text) {
 // local.system6.aaronlau.me silently fails. Hand the user the address on the
 // clipboard plus a fresh tab to paste it into instead of a dead redirect.
 async function openSafariHttpLocalEntry() {
+  // Safari blocks window.open once the click gesture has been broken by an
+  // await, so the blank paste tab must open synchronously here. Keep the
+  // handle so a missing or invalid local origin can close it again.
+  const blankTab = window.open("", "_blank");
   const capabilities = await window.AISystem6PublicAccess?.getCapabilities?.();
   const origin = capabilities?.public_access?.safari_http_local_origin || "";
-  const url = window.AISystem6LocalLMStudio.httpLocalEntryUrl(origin);
+  let url;
+  try {
+    url = window.AISystem6LocalLMStudio.httpLocalEntryUrl(origin);
+  } catch (error) {
+    blankTab?.close();
+    throw error;
+  }
   try {
     await copyTextToClipboard(url);
   } catch {
     // Clipboard can be denied; the modal still shows the address to copy by hand.
   }
-  window.open("about:blank", "_blank", "noopener");
   await showSystemModal(
     `${t("safari_http_local_copied", url)}\n\n${t("safari_http_local_paste_hint")}`,
     "alert",

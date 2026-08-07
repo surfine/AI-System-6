@@ -1,5 +1,5 @@
 <!-- canonical-source: CLAUDE.md -->
-<!-- source-sha256: afb0245edf07d6cc1258917d30f38a9cd3af8f91646e395db4e92d1b7a01da13 -->
+<!-- source-sha256: 5fa508b74b6b8a2fe538011011a0a325a112a823a4c0060b6646a9b1809a3e8d -->
 
 # AI System 6 — CLAUDE.md
 
@@ -163,6 +163,7 @@ liquid-glass 标志、云端配置/用量、Reader 分栏尺寸等）。服务�
 | TeachText / Reader | TeachText / 阅读器 | TeachText 不翻译 |
 | Cover Glass | 玻璃封面 | 内部文件名仍是 `liquid-cover.js` |
 | CMF Studio | 配色工作台 | |
+| Picture Album | 画片簿 | 品牌名；不是图片册 |
 
 让 System Help / Dictionary 的示例语言一致（中文 UI 里不放英文示例，反之亦然）。**完整表格 →
 [CLAUDE.full.md](CLAUDE.full.md)。**
@@ -202,6 +203,13 @@ Outline / Section Drafts / TeachText 是同一份 Markdown 文档的联动视图
 - **新 `.md` 没有 zh-CN 镜像。** `verify:docs` 会失败；用正确的 `canonical-source` +
   `source-sha256` 头补上镜像。
 - **在中文里改 Scrapbook 的名。** 品牌名——保持不翻译。
+- **把中文菜单/对象名的直角引号改成双引号。** 中文文案里菜单与对象名用直角引号
+  （`「特别」`、`「创作坊」`、`「AI 提示词」`）；start-here-guide 测试钉住了这个
+  样式。不要“规范化”成双引号。
+- **把技术术语整个换成大白话。** 保留真实术语，并用括号附上通俗注解（如
+  “回环地址（也就是这台电脑的本机地址）”“CORS（跨域访问）”“embedding（文字
+  向量化）”）。开发者要能一眼认出设置项或报错所指；初学者读注解。不要把术语
+  整个删掉。
 - **没有行为改变还在抛光 CSS。** 头号已记录的 churn 来源——先读 css-no-pingpong；新增
   `!important` / 魔法数字 / 纯格式 diff 都会被门禁拦下。
 - **Ollama：** 通过 `provider: "ollama"` → `:11434` 支持；没有环境变量，在控制面板里设端点。

@@ -81,6 +81,9 @@ function syncDisabledMenuBalloonHelp() {
 }
 
 function syncWindowBalloonHelpTargets() {
+  document.querySelectorAll(".window > .title-bar > .close-box").forEach((closeBox) => {
+    closeBox.dataset.balloonHelp ||= "balloon_close_box";
+  });
   document.querySelectorAll(".window > .title-bar > h2").forEach((title) => {
     title.dataset.balloonHelp ||= "balloon_windowshade";
   });

@@ -235,8 +235,8 @@
   width: 34px;
   height: 34px;
   display: block;
-  background: var(--paper);
-  border: 2px solid var(--ink);
+  background: var(--mini-icon-bg);
+  border: var(--mini-icon-border);
   position: relative;
 }
 

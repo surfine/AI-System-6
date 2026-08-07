@@ -5,9 +5,6 @@
    window falls back to a browser-native slider. */
 
 .soundscape-window {
-  --ss-rule: color-mix(in srgb, var(--ink) 36%, transparent);
-  --ss-rule-strong: color-mix(in srgb, var(--ink) 72%, transparent);
-  --ss-panel: color-mix(in srgb, var(--panel) 92%, var(--paper));
   --ss-ink-quiet: color-mix(in srgb, var(--ink) 64%, transparent);
   --ss-key-size: 26px;
   --ss-field-x: 50%;
@@ -496,6 +493,8 @@
 
 .soundscape-search-form input {
   min-width: 0;
+  border: var(--soundscape-search-input-border);
+  border-radius: var(--soundscape-search-input-radius);
 }
 
 /* ---- Framed System 6 lists ---- */

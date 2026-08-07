@@ -117,7 +117,7 @@ test.assertIncludes(
 );
 test.assertIncludes(
   dictionary,
-  "Across phone and desktop, controls that have no current action collapse",
+  "Across phone and desktop, controls with no current action collapse",
   "System Help documents the content-first mobile control hierarchy"
 );
 test.assertIncludes(
@@ -247,7 +247,7 @@ test.assertIncludes(
   "calc(100vh - var(--system-menu-height, 26px) - var(--safe-area-bottom) - 24px)",
   "the Desk Accessory CSS fallback also reserves the bottom safe area"
 );
-test.assertIncludes(dictionary, "opening or closing another DA reflows the whole stack", "System Help documents mobile DA reflow and overlap prevention");
+test.assertIncludes(dictionary, "Opening or closing another DA reflows the whole stack", "System Help documents mobile DA reflow and overlap prevention");
 test.assertIncludes(windowManager, "function foregroundMobileApp(", "the switcher re-foregrounds a running app");
 test.assertIncludes(windowManager, 'classList.toggle("mobile-app-foreground"', "the body foreground state is a class toggle");
 

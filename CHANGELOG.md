@@ -252,6 +252,25 @@ Version `1.0.12`, build `20260804.2`.
   droplets under "Drop Tools".
 - Classic and Liquid Glass converge after a large cascade cleanup.
 
+## Public Beta 1.0.20 - 2026-08-07
+
+- CMF Studio: iPhone 17e and MacBook Neo screens keep their wallpaper instead
+  of blank white slabs; true-black trim is never a finish surface; Touch ID
+  wears the keycap finish.
+- MacBook Neo USDZ models are lighter — only referenced textures are packaged
+  (about 12.6 MB down to 5.2-6.7 MB).
+
+## Public Beta 1.0.21 - 2026-08-07
+
+- Copy overhaul: help balloons, System Help, and dialogs speak plainly;
+  technical terms are kept with parenthetical explanations; long sentences
+  were split; Chinese copy follows one consistent style.
+- Balloon Help extended and accessibility labels localized, with a new check
+  that keeps English and Chinese copy in sync.
+- The Safari local entry works end to end.
+- Classic and Liquid Glass materials were tokenized for icons, memory notes,
+  Soundscape surfaces, and Get Info.
+
 ## What Changed Most In One Month
 
 - The product moved from "an AI writing prototype" to a local-first writing

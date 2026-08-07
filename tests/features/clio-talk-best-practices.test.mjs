@@ -149,7 +149,7 @@ test.assertIncludes(chatMessages, 'if (!getActiveProject())', "Saving a reply re
 test.assertIncludes(styles, ".message-disposition", "Reply persistence receipts have a stable ClioTalk UI hook");
 test.assertIncludes(translationsEn, 'clio_use_result: "Use Result"', "English UI names the consolidated action layer");
 test.assertIncludes(translationsZh, 'clio_use_result: "使用结果"', "Chinese UI names the consolidated action layer");
-test.assertIncludes(dictionary, "Replies remain temporary writing material until the user opens Use Result", "System Help documents the compact reply-persistence boundary");
+test.assertIncludes(dictionary, "Replies remain temporary writing material. They enter the project only when the user opens Use Result", "System Help documents the compact reply-persistence boundary");
 test.assertIncludes(dictionary, "回复仍只是临时写作材料", "Chinese System Help keeps the reply destination boundary aligned with the UI");
 test.assertIncludes(dictionary, "it can be reopened in ClioTalk, continued, previewed, or downloaded as Markdown", "System Help reflects current saved-chat resume and export behavior");
 test.assertIncludes(dictionary, "首条消息会创建 Chat 文件", "Chinese System Help reflects the file-native Chat lifecycle");
