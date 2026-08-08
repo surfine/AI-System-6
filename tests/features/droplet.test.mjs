@@ -144,8 +144,13 @@ const context = vm.createContext({
   ensureSlidesExportModule: async () => {},
   generateMarpMarkdownAndOpenClioStage: async () => {},
   preferredFolderName: () => "",
-  addProjectCdItem: (body, name) => {
-    const item = { id: `cd-${cdItems.length + 1}`, name, body };
+  addProjectCdItem: async (body, name, options = {}) => {
+    const item = {
+      id: `cd-${cdItems.length + 1}`,
+      name,
+      body,
+      sourceDocumentId: String(options.sourceDocumentId || ""),
+    };
     cdItems.push(item);
     return item;
   },

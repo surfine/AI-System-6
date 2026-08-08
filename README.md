@@ -109,12 +109,15 @@ npm start              # build the browser bundle, then serve http://localhost:4
 npm run build          # build the browser bundle
 npm test               # executable feature contracts
 npm run verify:public  # public tree verification (commands, files, CI, docs)
+npm run verify:ship    # maintainer release gate (build, tests, all local gates, E2E)
 ```
 
 `npm run verify:public` fails if any exposed command references a file that is
 not in this repository, or if internal-only tooling is present. The CI workflow
-in `.github/workflows/ci.yml` runs `npm ci`, the build, the feature tests, and
-the public tree verification on every push to `main`.
+in `.github/workflows/ci.yml` runs the same commands the local gates use.
+Hosted execution depends on the GitHub account's Actions availability; the
+reproducible release condition is the local `npm run verify:ship` gate, which
+writes `dist/verification-report.json` with every check's exit code.
 
 ## Built differently
 

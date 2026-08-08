@@ -40,6 +40,7 @@ export const appModulePaths = [
   "app/core/desktop-runtime.js",
   "app/core/grain-diff.js",
   "app/core/adjustment-layers.js",
+  "app/core/text-compose.js",
   "app/core/document-revisions.js",
   "app/core/modal.js",
   "app/core/drag-drop.js",

@@ -128,13 +128,13 @@ function renderEndfieldResults(data) {
   const evidence = results.map((item, index) => `
     <details class="endfield-evidence" id="endfield-evidence-${index + 1}" tabindex="-1">
       <summary>
-        <span class="endfield-evidence-index">【${index + 1}】</span>
+        <span class="endfield-evidence-index">${index + 1}</span>
         <span class="endfield-evidence-title">${escapeHtml([item.missionTitle, item.section, item.chapter, item.process].filter(Boolean).join(" / ") || item.missionId || t("endfield_untitled"))}</span>
         <span class="endfield-evidence-speaker">${escapeHtml(item.speaker || t("endfield_unknown_speaker"))}</span>
       </summary>
       <div class="endfield-evidence-body">
         <p>${escapeHtml(item.text || "")}</p>
-        ${(item.context || []).map((ctx) => `<blockquote>${escapeHtml(ctx.speaker || t("endfield_unknown_speaker"))}: ${escapeHtml(ctx.text || "")}</blockquote>`).join("")}
+        ${(item.context || []).map((ctx) => `<blockquote class="endfield-context"><cite class="endfield-context-speaker">${escapeHtml(ctx.speaker || t("endfield_unknown_speaker"))}</cite><span class="endfield-context-line">${escapeHtml(ctx.text || "")}</span></blockquote>`).join("")}
       </div>
     </details>
   `).join("");
@@ -176,7 +176,9 @@ function linkEndfieldInlineCitations(root) {
         citation.type = "button";
         citation.className = "endfield-inline-citation";
         citation.dataset.endfieldCitation = match[1];
-        citation.textContent = part;
+        // The chip is already a container; keeping the 【】 inside it boxes the
+        // number twice. The brackets belong to the model's plain text, not here.
+        citation.textContent = match[1];
         citation.setAttribute("aria-label", `${t("endfield_evidence_heading", 1)} ${match[1]}`);
         fragment.append(citation);
       } else if (part) {

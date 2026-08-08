@@ -1598,12 +1598,21 @@ body.is-writer-mode .system-help-window .system-help-pane {
      inside it is rounded — clipping cut the toolbox's drop shadow into four
      hard corner blocks. Base and Liquid Glass both declare overflow: visible;
      this selector outranks them (0,3,1 vs 0,2,1), so it has to agree. */
-  body:not(.is-writer-mode) .writing-spine-panel:not(.is-shaded) {
+/* WindowShade rolls a window up in place. On a phone the Writing Flow panel is
+   a flowed full-width card, not a floating window, so the shared narrow
+   collapse rule's absolutely-placed 116px stub landed on top of the desktop
+   icons instead of over its own body. Both states keep the same flowed frame
+   here; only .spine-shade-body is hidden. The shaded selector is listed
+   separately so it ties that rule's specificity (0,3,1) and wins on order. */
+  body:not(.is-writer-mode) .writing-spine-panel:not(.is-shaded),
+  body:not(.is-writer-mode) .writing-spine-panel.is-shaded {
     position: static;
     order: 1;
+    align-self: auto;
     width: 100%;
     max-width: none;
     height: auto;
+    min-height: 0;
     max-height: none;
   }
 
@@ -2743,6 +2752,13 @@ input[type="radio"] {
   .quick-draft-editor-actions > .btn.default {
     flex-basis: auto;
     min-width: 72px;
+  }
+
+  /* 文字亮室: no canvas on a phone. The screen cannot hold it; phones get the
+     article and reading views, with material in the stacked drawer. */
+  .quick-draft-canvas,
+  .quick-draft-view-switch {
+    display: none;
   }
 
 

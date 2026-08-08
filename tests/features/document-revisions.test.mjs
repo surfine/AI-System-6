@@ -79,6 +79,8 @@ context.window.AISystem6StorageTransactions = {
 };
 context.__revisionStore = new Map();
 context.__failRevisionWrites = false;
+context.saveDeskState = async () => true;
+context.__saveResult = true;
 vm.runInContext(revisions, context);
 
 const first = await context.createDocumentRevision({
@@ -156,5 +158,61 @@ test.assert(
   "a failed revision write leaves no in-memory revision behind"
 );
 context.__failRevisionWrites = false;
+
+// ---- Restore persistence: a failed desk save rolls everything back --------
+
+context.chatFiles = [{
+  id: "doc-1",
+  projectId: "p1",
+  type: "text",
+  name: "Draft.md",
+  body: "Current body.",
+  updatedAt: "2026-08-08T00:00:00.000Z",
+}];
+context.activeTextFileId = "doc-1";
+const textarea = { value: "Current body." };
+context.teachTextBodyInput = textarea;
+context.setTeachTextStatus = (key) => { textarea.__status = key; };
+context.teachTextStatusEl = { dataset: { statusKey: "saved" } };
+context.markTeachTextModified = () => { textarea.__modified = true; };
+context.refreshTeachTextDocumentState = () => {};
+
+const oldRevision = await context.createDocumentRevision({
+  documentId: "doc-1",
+  body: "Old body.",
+  origin: "user",
+  operation: "save",
+});
+context.__failRevisionWrites = true;
+await context.createDocumentRevision({
+  documentId: "doc-1",
+  body: "Current body.",
+  origin: "user",
+  operation: "save",
+}).catch(() => {});
+context.__failRevisionWrites = false;
+
+context.saveDeskState = async () => false;
+const failedRestore = await context.restoreDocumentRevision(oldRevision);
+test.assert(failedRestore === false, "a failed desk save makes restore return false");
+test.assert(
+  context.chatFiles[0].body === "Current body." && textarea.value === "Current body.",
+  "a failed desk save restores the in-memory body and the textarea"
+);
+test.assert(
+  textarea.__status === "saved",
+  "a failed desk save restores the previous modified/status state"
+);
+
+context.saveDeskState = async () => true;
+const successfulRestore = await context.restoreDocumentRevision(oldRevision);
+test.assert(successfulRestore === true, "restore returns true once the desk save lands");
+test.assert(context.chatFiles[0].body === "Old body.", "the restored body is applied after a successful save");
+const restoreRevisions = await context.listDocumentRevisions("doc-1", "p1");
+test.assert(
+  restoreRevisions.some((entry) => entry.operation === "restore-before")
+    && restoreRevisions.some((entry) => entry.operation === "restore"),
+  "the revision tree keeps restore-before(A) and restore(B)"
+);
 
 test.finish();

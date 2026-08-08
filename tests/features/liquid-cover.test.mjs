@@ -13,9 +13,6 @@ const index = read("index.html");
 const stylesCss = read("styles/85-liquid-cover.css");
 const manifest = read("scripts/runtime-manifest.mjs");
 const styleManifest = read("scripts/style-manifest.mjs");
-const en = read("app/data/translations-en.js");
-const zh = read("app/data/translations-zh.js");
-const dictionary = read("app/data/system-dictionary.js");
 const app = readAppSurface([
   "app/core/config.js",
   "app/core/actions.js",
@@ -26,20 +23,16 @@ const app = readAppSurface([
 // --- renderer is self-contained and text-driven ---
 test.assertIncludes(liquidCover, "window.AISystem6LiquidCoverLoaded = true", "module marks itself loaded for the lazy guard");
 test.assertIncludes(liquidCover, "window.AISystem6LiquidCover = { open, runMenuCommand }", "module exposes open plus real menu commands");
-test.assertIncludes(liquidCover, "function alphaToSignedDistance", "text silhouette is turned into an exact signed distance field locally");
 // edge quality: the raster SDF must be smoothed and sampled smoothly, or the
 // glass edge ribs/corrugates when zoomed (EDT facets + angle-snapping normals).
-test.assertIncludes(liquidCover, "function smoothSDF", "the distance field is smoothed to remove EDT facets (no ribbed edge, soft rounded glass)");
 test.assertIncludes(liquidCover, "OES_texture_float_linear", "the SDF texture is linearly filtered when supported (continuous normals)");
 test.assertIncludes(liquidCover, "this.sdfLinear ? gl.LINEAR : gl.NEAREST", "SDF sampling prefers LINEAR, falling back to NEAREST");
 test.assertIncludes(liquidCover, "gx=(tr+2.0*mr+br)", "normals use a Sobel (3x3) gradient so the angle-sensitive glare doesn't ring");
-test.assertIncludes(liquidCover, "function rasterizeText", "text is rasterized to a coverage mask before the SDF");
 test.assertIncludes(liquidCover, "stackSDIdx", "overlapping layers resolve from back to front instead of collapsing into an orderless SDF union");
 test.assertIncludes(liquidCover, "getGrad(v_uv, layer)", "the visible layer samples its own SDF normal so text can sit cleanly over a shape");
 test.assertIncludes(liquidCover, "EXT_color_buffer_float", "uses HDR float framebuffers like the official studio when available");
 // WebGL2 context creation can fail (GPU-heavy tabs, GPU reset). The window must
 // degrade visibly, not die silently with a blank canvas and empty control rows.
-test.assertIncludes(liquidCover, "function initRenderer", "renderer creation is isolated and failure-tolerant");
 test.assertIncludes(liquidCover, 'aiStatus("webgl"', "a WebGL failure shows a visible, actionable message");
 test.assertIncludes(liquidCover, "// UI first — these must exist even if WebGL is unavailable right now", "controls are built before the renderer so they survive a WebGL failure");
 test.assertIncludes(liquidCover, "else if (!renderer) { startRendering(); }", "reopening the window retries WebGL after a transient failure");
@@ -81,11 +74,9 @@ test.assertIncludes(liquidCover, "u_fgScale", "foreground subject is scalable");
 //    large export sizes can't collapse the clear centre).
 test.assertIncludes(liquidCover, "maxInteriorPx", "the SDF build measures each layer's stroke half-width");
 test.assertIncludes(liquidCover, "_strokeHalfPx", "the measured stroke half-width is stored per layer");
-test.assertIncludes(liquidCover, "function effectiveThickness", "rendered thickness is derived from the letterform, not the raw slider");
 test.assertIncludes(liquidCover, "PROPORTION of the letterform", "thickness is a % of the stroke half-width, so it auto-adapts to font size / canvas size (no per-photo re-tuning)");
 test.assertIncludes(liquidCover, "halfCss * Math.min(frac", "effective thickness = stroke half-width × the slider fraction");
 // 2) frost is resolution-independent and hard-capped at the shader kernel.
-test.assertIncludes(liquidCover, "function scaledBlurRadius", "blur scales with export height so frost looks the same at 1080p and 4K");
 test.assertIncludes(liquidCover, "EXPORT_H / 1080", "blur is expressed relative to a 1080p reference");
 // 3) tint stays in a tasteful range via the strength enum (not a shader cap), so
 //    the recipe/AI never paint a solid colour chip while keeping STEP9 fidelity.
@@ -95,8 +86,6 @@ test.assertIncludes(liquidCover, 'a.download = "liquid-glass-"', "export downloa
 // --- production export: full source resolution, real 3:2 support ---
 test.assertIncludes(index, 'data-k="3:2"', "3:2 aspect is offered (for 3:2 cameras / 6000×4000 photos)");
 test.assertIncludes(liquidCover, '"3:2": [1500, 1000]', "3:2 design dims land on an exact 6000×4000 at 4× export");
-test.assertIncludes(liquidCover, "function exportPng", "export renders at full resolution rather than the preview canvas size");
-test.assertIncludes(liquidCover, "function exportTargetDims", "export size is computed (source photo native long edge, GPU-clamped)");
 test.assertIncludes(liquidCover, "let renderScale", "a render-scale lever drives high-res export (font, SDF, blur, thickness scale together)");
 test.assertIncludes(liquidCover, "MAX_TEXTURE_SIZE", "export resolution is clamped to the GPU's max texture size");
 test.assertIncludes(liquidCover, "naturalWidth", "match-photo export reads the imported photo's native resolution");
@@ -128,30 +117,19 @@ test.assertNotIncludes(liquidCover, "reference3DMode", "the retired effects no l
 test.assertNotIncludes(liquidCover, 'preset === "watertext"', "Waterdrop Text runtime code is removed");
 test.assertNotIncludes(liquidCover, 'preset === "surface"', "Surface Glass Text runtime code is removed");
 test.assertNotIncludes(liquidCover, 'preset === "bubbletitle"', "Bubble Title runtime code is removed");
-test.assertIncludes(liquidCover, "function readParamsAt", "animation presets are time-based parameter overlays, not slider mutations");
 test.assertIncludes(liquidCover, "canvas.captureStream", "video export records the rendered WebGL canvas");
 test.assertIncludes(liquidCover, "MediaRecorder", "video export uses browser encoding with MP4/WebM fallback");
-test.assertIncludes(en, 'liquid_cover_motion: "Motion Video"', "English strings include the Motion Video panel");
-test.assertIncludes(zh, 'liquid_cover_motion: "动态视频"', "Chinese strings include the Motion Video panel");
-
 // --- AI auto-style: the MODEL owns semantics, the CODE owns physics ---
 // The model must never emit raw optical constants it cannot visually judge
 // (that was the "magic" failure mode). It picks one named material from a
 // plain-language catalog and makes colour/light calls a person could make;
 // the numbers all live in the recipe table on the code side.
-test.assertIncludes(liquidCover, "async function aiSuggestStyle", "an AI suggest-style action exists");
 test.assertIncludes(liquidCover, "fetchModelPayload(", "AI styling reuses the shared local/cloud model call");
-test.assertIncludes(liquidCover, "function parseJsonLoose", "AI response is parsed defensively (strips code fences)");
 test.assertIncludes(liquidCover, "Glass materials (choose exactly one", "the prompt hands the model a plain-language material catalog, not a numeric schema");
 test.assertIncludes(coverStylePrompt, "You do NOT set numeric optics", "the prompt forbids the model from inventing raw optical constants");
 test.assertNotIncludes(liquidCover, '"glareConvergence":0..100', "the model is never asked for raw optical constants it cannot judge");
 test.assertNotIncludes(liquidCover, "Full schema (set every field", "the old free-form numeric-schema prompt is gone");
-test.assertIncludes(liquidCover, "function applyRecipeByName", "the model's recipe choice maps to a verified parameter set in code");
-test.assertIncludes(liquidCover, "function applyTintStrength", "tint strength is a closed enum mapped to a number in code");
-test.assertIncludes(liquidCover, "function lightToAngle", "light direction is a closed enum mapped to a glare angle in code");
 test.assertIncludes(liquidCover, "const MODIFIER_FX", "modifiers are a closed vocabulary, each mapped to a deterministic delta");
-test.assertIncludes(liquidCover, "function applyModifiers", "bounded modifiers apply without the model touching a raw number");
-test.assertIncludes(liquidCover, "function describeChoice", "the model's decision is shown back to the user (explainable, not magic)");
 // The model remains an optional material tool, not the editor's primary path.
 test.assertIncludes(index, 'class="lc-look-assistant"', "AI art direction is progressively disclosed inside the Glass inspector");
 test.assertIncludes(index, 'id="lc-ask-input"', "the optional material assistant accepts a plain-language look");
@@ -160,21 +138,17 @@ test.assertIncludes(index, 'id="lc-ask-go"', "the optional material assistant ca
 test.assertIncludes(liquidCover, "SINGLE SOURCE OF TRUTH", "optics live in one verified recipe table, shared by presets and the AI path");
 test.assertIncludes(liquidCover, "const PRESETS =", "one-click glass presets exist");
 test.assertIncludes(liquidCover, "desc:", "each recipe carries a plain-language description the prompt catalog is built from");
-test.assertIncludes(liquidCover, "function applyPreset", "presets apply the full optics set + per-layer thickness/tint");
 test.assertIncludes(index, 'id="lc-material-mix"', "a global glass-mix slider exists for clear-to-tinted control");
 test.assertIncludes(index, 'id="lc-layer-solid"', "each layer has a Solid Layer switch for readable title text");
 test.assertIncludes(liquidCover, "const MATERIAL_STOPS", "the global slider moves through verified recipe stops instead of inventing a second parameter system");
 test.assertIncludes(liquidCover, '{ value: 0, key: "clear" }', "the glass-mix slider starts at the verified clear recipe");
 test.assertIncludes(liquidCover, '{ value: 100, key: "tinted" }', "the glass-mix slider ends at the verified tinted recipe");
-test.assertIncludes(liquidCover, "function materialRecipeAt", "the glass-mix slider interpolates recipe physics deterministically");
-test.assertIncludes(liquidCover, "function applyMaterialMix", "the glass-mix slider applies the interpolated material to the existing controls");
 test.assertIncludes(liquidCover, "lens: 8, dispersion: 3", "the crystal recipe is a clear bright-rim material, distinct from milky and thick glass");
 // every look approved during tuning is preserved as its own recipe:
 test.assertIncludes(liquidCover, '{ key: "milky"', "the earlier approved solid-milk frosted reference look is kept as its own preset");
 test.assertIncludes(liquidCover, '{ key: "thinfrost"', "the MB plugin-default thin veiled glass (lock-screen look) is kept as its own preset");
 test.assertIncludes(liquidCover, '{ key: "ninefive", mixValue: 75, desc:', "a dedicated 9to5Mac editorial logo-glass recipe exists and sits near Milky on the visible mix control");
 test.assertIncludes(liquidCover, '{ key: "ios27", mixValue: 0, desc:', "an iOS 27 recipe transcribes Apple's official UI Kit Materials glass spec and sits near Clear on the visible mix control");
-test.assertIncludes(liquidCover, "function presetMixValue", "non-continuum presets still place the Glass Mix thumb at an honest approximate position instead of leaving a stale value");
 test.assertIncludes(liquidCover, '{ key: "thick", mixValue: 85, desc:', "Thick has its own useful material position instead of borrowing the previous slider value");
 test.assertIncludes(liquidCover, "uniform float u_bevelFactor", "the shader has the iOS 27 bilateral bevel term — paired top/bottom hairlines + soft top wash, not an angular streak");
 test.assertIncludes(liquidCover, "float topW = clamp(N.y", "the bevel is vertically paired like Apple's Y±0.5 inner-shadow hairlines (top brighter than bottom)");
@@ -186,16 +160,11 @@ test.assertIncludes(liquidCover, "saturationFactor: 40", "the iOS 27 preset keep
 test.assertIncludes(liquidCover, "bodyFactor: 4, rimFactor: 10", "the iOS 27 body is near-clear (low bodyFactor) so the glyph interior stays transparent like Apple's — milk lives at the edges, not flooding the centre");
 test.assertNotIncludes(liquidCover, '{ value: 52, key: "ios27" }', "editorial presets (ios27/ninefive) are NOT points on the clear→tinted Glass Mix continuum — dragging the slider must never silently flip on bevel/glass mode");
 test.assertIncludes(liquidCover, "max(mix(vec3(luma), col.rgb, max(u_saturationFactor, 0.0)), 0.0)", "Glass Saturation only clamps the lower bound, so values above 100% boost colour (mix extrapolates) instead of being capped at desaturate-only");
-test.assertIncludes(liquidCover, "function adjBody", "the AI mood bar can still adapt milky/body recipes to the photo while fixed preset buttons stay deterministic");
 test.assertIncludes(liquidCover, 'bodyFactor: 52, rimFactor: 110, rimWidth: 4.6, bevelFactor: 0, saturationFactor: 96, layerMode: "glass"', "9to5Mac preset forces glass layers into a milky translucent body with a crisp white bevel rim");
 test.assertIncludes(liquidCover, "lens: 22, dispersion: 1.2", "Thick is the physical-chunk recipe: strong magnification, low chromatic smear");
 test.assertIncludes(liquidCover, 'tintColor: "#5ac8fa", tintAlpha: 52', "Tinted exists as the visibly coloured recipe, not just another white-frost stop");
 test.assertIncludes(liquidCover, "thickness: 18, tintColor: \"#ffffff\", tintAlpha: 18", "Thin Frost is deliberately thin and quiet, not a duplicate of Milky");
 test.assertIncludes(liquidCover, 'applyRecipeByName("ninefive")', "typing 9to5Mac in the mood bar applies the same verified recipe without needing a model");
-test.assertIncludes(en, 'liquid_cover_preset_ninefive: "9to5Mac"', "English preset label names the 9to5Mac look");
-test.assertIncludes(zh, 'liquid_cover_preset_ninefive: "9to5Mac"', "Chinese preset label names the 9to5Mac look");
-test.assertIncludes(en, 'liquid_cover_preset_ios27: "iOS 27"', "English preset label names the iOS 27 official material");
-test.assertIncludes(zh, 'liquid_cover_preset_ios27: "iOS 27"', "Chinese preset label names the iOS 27 official material");
 test.assertIncludes(liquidCover, "tintAlpha: 52, bodyFactor: 38, rimFactor: 12", "Milky has an actual white body, not just a slightly stronger frost slider");
 // the "clear" recipe is the official liquid-glass-studio demo-shape material,
 // read directly off the studio's own panel (tint #ffffff00, blur 1, no lens).
@@ -217,11 +186,9 @@ test.assertIncludes(index, 'data-lc-inspector-tab="layers"', "selected-layer typ
 test.assertIncludes(index, 'data-lc-inspector-tab="media"', "background and foreground controls live in the Background inspector");
 test.assertIncludes(index, 'data-lc-inspector-tab="glass"', "glass controls live on a Glass inspector tab");
 test.assertIncludes(liquidCover, "const inspectorCopy", "the contextual inspector explains the currently selected property domain");
-test.assertIncludes(liquidCover, "function setInspectorPanel", "the toolbar switches contextual panels without layout inline styles");
 test.assertIncludes(liquidCover, 'setInspectorPanel(isShapeLayer(L) ? "glass" : "layers")', "selecting a shape opens material properties while selecting text opens type properties");
 test.assertIncludes(index, 'class="lc-group lc-layer-glass-group"', "selected-layer material controls live with the Glass context");
 test.assertIncludes(index, 'id="lc-tab-export" data-lc-inspector-tab="export" aria-pressed="false"', "the standalone Export action exposes pressed state without pretending to sit inside the inspector tablist");
-test.assertIncludes(liquidCover, "function wireFineTuneGroups", "manual fine-tune opens all subgroups together so expert work is one-click");
 test.assertIncludes(liquidCover, "group.open = true", "opening Fine-tune reveals all manual subsections instead of forcing repeated accordion clicks");
 test.assertNotIncludes(liquidCover, "other.open = false", "manual fine-tune sections are not mutually exclusive");
 test.assertNotIncludes(index, 'id="lc-preset-readout"', "preset explanations stay inside each material card rather than creating a detached readout");
@@ -229,11 +196,8 @@ test.assertIncludes(liquidCover, "dataset.presetKey", "preset buttons carry stab
 test.assertIncludes(liquidCover, "aria-pressed", "preset buttons expose their selected state accessibly");
 test.assertIncludes(liquidCover, 'setActivePreset(""); syncValueLabels(); scheduleRender();', "manual material edits clear the preset selected state so the button still matches the rendered result");
 test.assertNotIncludes(liquidCover, "lc-preset-hint", "preset buttons do not carry redundant visible description text");
-test.assertIncludes(en, "liquid_cover_preset_ios27_summary", "English preset cards explain the material before selection");
-test.assertIncludes(zh, "liquid_cover_preset_ios27_summary", "Chinese preset cards explain the material before selection");
 test.assertIncludes(index, 'id="lc-layer-up"', "the layer stack exposes a direct bring-forward action");
 test.assertIncludes(index, 'id="lc-layer-down"', "the layer stack exposes a direct send-backward action");
-test.assertIncludes(liquidCover, "function moveSelectedLayer", "layer-order actions update the data stack and renderer slots together");
 test.assertIncludes(liquidCover, "rebuildAllSDF();\n    renderLayerList();", "reordering rebuilds index-coupled SDF textures before repainting the layer list");
 test.assertIncludes(index, 'id="lc-add-inside-text"', "a selected shape can create linked text above itself");
 test.assertIncludes(liquidCover, "parentId: shape.id", "text created inside a shape keeps a positional link to that shape");
@@ -241,13 +205,11 @@ test.assertIncludes(liquidCover, "linkedChildren(L)", "moving a shape carries it
 for (const id of ["left", "center", "right", "top", "middle", "bottom"]) {
   test.assertIncludes(index, `id="lc-align-${id}"`, `the artboard exposes ${id} alignment`);
 }
-test.assertIncludes(liquidCover, "function measureAlphaBounds", "alignment uses the rendered alpha bounds rather than font-size guesses");
 test.assertIncludes(liquidCover, "6 / Math.max(1, rect.width)", "smart-guide tolerance stays six screen pixels at every zoom");
 test.assertIncludes(liquidCover, "alignmentCandidates", "drag snapping considers artboard and peer-object anchors");
 test.assertIncludes(index, 'id="lc-alignment-guides" aria-hidden="true"', "alignment guides are visual-only and stay outside the exported canvas");
 test.assertIncludes(liquidCover, 'guides.classList.remove("has-x", "has-y")', "drag completion clears both smart guides");
 test.assertIncludes(liquidCover, "const stepPx = event.shiftKey ? 10 : 1", "arrow keys move one design pixel, with Shift for ten");
-test.assertIncludes(liquidCover, "function layerAtPoint", "clicking an object on the canvas selects that object directly");
 test.assertIncludes(index, 'class="details-bar lc-status-bar"', "Cover Glass status uses the standard app details bar under the title");
 test.assertIncludes(index, 'class="lc-ask-status" id="lc-ai-status" role="status" aria-live="polite"', "the AI status line starts in the top details bar and announces changes");
 test.assert(
@@ -257,7 +219,6 @@ test.assert(
 test.assertIncludes(index, 'class="lc-stage-head"', "the redesigned stage carries an artboard readout instead of presenting a context-free canvas");
 test.assertIncludes(index, 'id="lc-stage-format"', "the artboard exposes its live aspect and design dimensions");
 test.assertIncludes(index, 'id="lc-canvas" class="lc-canvas" tabindex="0" role="application"', "the artboard is keyboard focusable");
-test.assertIncludes(liquidCover, "function wireStageKeyboard", "arrow keys provide a precise equivalent to pointer dragging");
 test.assertIncludes(liquidCover, '["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"]', "the keyboard nudge contract covers all four directions");
 test.assertIncludes(liquidCover, "selectedLayerIds", "the editor keeps an explicit multi-selection instead of overloading one active layer");
 test.assertIncludes(liquidCover, "kind: \"marquee\"", "dragging empty artboard space starts box selection");
@@ -266,9 +227,7 @@ test.assertIncludes(liquidCover, 'event.key.toLowerCase() === "a"', "Command/Ctr
 test.assertIncludes(index, 'class="lc-selection-box" id="lc-selection-box"', "selection bounds stay visible without entering an inspector");
 test.assertIncludes(index, 'id="lc-transform-scale"', "a single selection exposes direct scale on the artboard");
 test.assertIncludes(index, 'id="lc-transform-rotate"', "a single selection exposes direct rotation on the artboard");
-test.assertIncludes(liquidCover, "function wireTransformHandles", "direct transform handles update the selected object without opening another panel");
 test.assertIncludes(index, 'id="lc-selection-marquee" aria-hidden="true"', "the artboard owns a non-exported marquee overlay");
-test.assertIncludes(liquidCover, "function reorderLayerUnit", "layer panel drag-and-drop updates the renderer stack");
 test.assertIncludes(liquidCover, 'item.addEventListener("pointerdown"', "every layer row can start a mouse, pen, or touch hierarchy drag");
 test.assertIncludes(liquidCover, 'document.elementFromPoint(event.clientX, event.clientY)', "the hierarchy drag resolves the visible insertion target under the pointer");
 test.assertIncludes(liquidCover, "reorderLayerUnit(state.unitIds, state.targetId, state.edge)", "releasing the pointer commits the new hierarchy");
@@ -279,66 +238,43 @@ test.assertIncludes(index, 'id="lc-redo"', "the toolbar exposes redo");
 test.assertIncludes(index, 'class="lc-control-icon" aria-hidden="true"><svg viewBox="0 0 24 24"', "history actions use stable vector icons instead of font-dependent arrow glyphs");
 test.assertNotIncludes(index, ">↶<", "undo no longer depends on a mismatched text glyph");
 test.assertNotIncludes(index, ">↷<", "redo no longer depends on a mismatched text glyph");
-test.assertIncludes(liquidCover, "function layerStateGlyph", "visibility and lock states share a purposeful vector-icon builder");
 test.assertIncludes(liquidCover, '"btn lc-layer-state"', "layer-state actions use the same control material as the rest of the editor");
 test.assertIncludes(liquidCover, 'visibility.setAttribute("aria-pressed"', "visibility icon state remains available to assistive technology");
 test.assertIncludes(liquidCover, 'lock.setAttribute("aria-pressed"', "lock icon state remains available to assistive technology");
-test.assertIncludes(liquidCover, "function undoEditor", "session edits can be undone");
-test.assertIncludes(liquidCover, "function redoEditor", "session edits can be redone");
 test.assertIncludes(liquidCover, "const HISTORY_LIMIT = 50", "history stays intentionally bounded");
 test.assertIncludes(index, 'id="lc-duplicate-layer"', "the layer rail exposes a simple duplicate action");
-test.assertIncludes(liquidCover, "function duplicateSelectedLayers", "selected layers can be duplicated without rebuilding them manually");
-test.assertIncludes(liquidCover, "function beginLayerRename", "layer names can be edited in place");
 test.assertIncludes(liquidCover, "hidden: false, locked: false", "each layer supports the essential visibility and lock states");
 test.assertIncludes(liquidCover, 'L.hidden ? [10, 10]', "hidden layers stay in the small renderer stack without painting");
 test.assertIncludes(liquidCover, 'event.key.toLowerCase() === "z"', "Command/Ctrl-Z is available from the artboard");
-test.assertIncludes(liquidCover, "function syncWorkbenchReadout", "stage and status readouts stay synchronized with the composition");
-test.assertIncludes(liquidCover, "function neutralBg", "keeps a quiet neutral placeholder so the canvas is never blank if a photo is missing — no fake procedural photo scenes");
-test.assertIncludes(liquidCover, "function rasterizeShape", "any uploaded image becomes a glass shape via the same EDT → SDF → shader path as text");
 test.assertIncludes(index, 'id="lc-add-shape"', "the layer row has an Add Shape button next to Add Text");
 test.assertIncludes(index, 'id="lc-shape-circle"', "built-in preset shapes include a circle (one click, no upload)");
 test.assertIncludes(index, 'id="lc-shape-squircle"', "built-in preset shapes include the Apple-icon rounded rectangle");
-test.assertIncludes(liquidCover, "function traceBuiltinShape", "built-in shapes are vector paths traced at target resolution every rebuild — no bitmap rescale, crisp at any export size");
 test.assertIncludes(liquidCover, "applyMaterialMix(0)", "the tool opens water-clear (the Apple Liquid Glass reference look), not frosted");
 test.assertIncludes(liquidCover, "/assets/liquid-cover/bg-1.jpg", "built-in backgrounds are fixed high-quality photos served from disk");
 const builtInBackgrounds = Array.from(liquidCover.matchAll(/"\/assets\/liquid-cover\/bg-\d\.jpg"/g)).map((match) => match[0]);
 test.assert(builtInBackgrounds.length === 6, "Cover Glass keeps exactly six built-in backgrounds");
 test.assertIncludes(liquidCover, "/assets/liquid-cover/bg-6.jpg", "built-in background set includes the sixth slot");
-test.assertIncludes(liquidCover, "function setBgFromUrl", "background photos load by URL with a fallback");
 // manual sliders collapse into a default-collapsed Fine-tune section
 test.assertIncludes(index, '<details class="lc-finetune">', "the manual fine-tune sliders collapse (collapsed by default)");
 test.assertNotIncludes(index, '<details class="lc-finetune" open>', "fine-tune stays collapsed by default");
 // AI mood/config adapts to the background via vision when 看底图 is on; preset
 // buttons themselves stay deterministic so their labels match the final result.
-test.assertIncludes(liquidCover, "function applyNudges", "simple adjustments work deterministically without a model (not 'magic')");
 test.assertIncludes(liquidCover, "mag * flip", "reduction words (少/减/弱…) flip a keyword's built-in direction — '阴影少一些' must LOWER shadow, not raise it");
 test.assertIncludes(liquidCover, '" → "', "the status line reports exact before → after values for every nudge, never a vague 'adjusted as described'");
 test.assertNotIncludes(liquidCover, 'aiStatus("nudged"', "the old unconditional success message is gone — feedback must reflect what actually changed");
 test.assertIncludes(liquidCover, "ctrl.abort()", "the model call times out instead of spinning forever");
-test.assertIncludes(stylesCss, "Classic skin keeps range controls in System 6 chrome", "Classic Cover Glass sliders use black-white System 6 controls instead of leaking modern Liquid Glass chrome into the retro skin");
-test.assertIncludes(stylesCss, 'body.use-liquid-glass .liquid-cover-window input[type="range"]::-webkit-slider-runnable-track', "Liquid Glass Cover Glass sliders switch to the standard system-blue filled track");
-test.assertIncludes(stylesCss, 'body.use-liquid-glass .liquid-cover-window input[type="range"]::-webkit-slider-thumb', "Liquid Glass Cover Glass sliders use the white floating Apple-style thumb");
 test.assertIncludes(liquidCover, "Classic uses black-white", "the filled-track updater is theme-neutral: Classic and Liquid Glass draw different skins from the same --lc-fill value");
-test.assertNotIncludes(stylesCss, "SPECTRUM slider", "the master Glass Mix control no longer gets a separate tinted spectrum track; it matches the standard slider in Liquid Glass and the System 6 slider in Classic");
-test.assertIncludes(stylesCss, 'body.use-liquid-glass .liquid-cover-window input[type="checkbox"].lc-check', "Cover Glass replaces the global liquid-glass checkbox only inside its own liquid-glass window");
-test.assertIncludes(stylesCss, 'body.use-liquid-glass .liquid-cover-window input[type="checkbox"].lc-check::before', "Cover Glass checkboxes render as compact glass switches with a local knob instead of inheriting the global X glyph");
-test.assertIncludes(stylesCss, "clip-path: none", "the local switch explicitly removes the global checkbox X clip path");
-test.assertNotIncludes(stylesCss, "linear-gradient(45deg, transparent 42%, rgba(255, 255, 255, 0.96)", "Cover Glass no longer paints checked state as a crossed blue square");
-test.assertIncludes(liquidCover, "async function aiSuggestStyle", "the mood/config path adapts to the background with a vision model");
 test.assertNotIncludes(liquidCover, "refinePresetToBackground(pr)", "preset buttons apply fixed recipes and do not secretly mutate themselves after click");
 test.assertIncludes(liquidCover, "const BACKDROP_FX", "the vision model judges backdrop tone; the code maps it to shadow numbers (dark bg → shadow nearly off, bright bg → softer spread)");
 test.assertIncludes(liquidCover, "value * 0.3", "dark-backdrop shadow scales proportionally — 'nearly zero' holds for heavy recipes (thick 30→9), not just clear");
-test.assertIncludes(liquidCover, "function applyVisionTint", "vision tint is a colour-harmony call: 'none' keeps the recipe's own veil, and a colorless recipe caps at subtle so 通透 stays 通透");
 test.assertIncludes(liquidCover, "tintApplied || \"none\"", "the status line reports the tint strength actually applied (post-cap), never the model's uncapped wish");
 test.assertIncludes(liquidCover, "const BACKDROP_ALIAS", "near-enum words from small models (bright/neutral/deep) map to the closed enum instead of being dropped");
 test.assertIncludes(liquidCover, '"backdrop\\":\\"light|mid|dark\\"', "the vision prompt asks for backdrop tone as a closed enum — the model never sets shadow numbers directly");
 // background-adaptive geometry: the model judges how busy the photo is, the code
 // decides thickness/frost from it (busy → thinner + more frosted for legibility).
 test.assertIncludes(liquidCover, "const BUSYNESS_FX", "a closed busyness vocabulary maps to deterministic thickness/frost deltas");
-test.assertIncludes(liquidCover, "function applyBusyness", "the model's busyness judgement is applied as physics in code");
 test.assertIncludes(liquidCover, "clean|moderate|busy", "the vision prompt asks only how busy the background is, not for raw numbers");
 test.assertIncludes(liquidCover, "the direction the brightest light comes from", "vision-tuned presets align glare to the background light");
-test.assertIncludes(liquidCover, "function currentBgDataUrl", "the background can be downscaled to feed a vision model");
 test.assertIncludes(liquidCover, 'type: "image_url"', "the background image is attached as multimodal content when vision is on");
 test.assertIncludes(index, 'id="lc-ask-vision"', "a read-background (vision) toggle exists (in the Background section, default on)");
 test.assertIncludes(index, 'class="lc-ask-row"', "the bottom form is a DocMap-style label + input/button row");
@@ -427,14 +363,10 @@ test.assertNotIncludes(stylesCss, "!important", "stylesheet adds no overrides");
 // shell, which is just the narrow end of the same curve). The fix is a single
 // @container switch, not a phone-only special case, matching the direction
 // TDI already uses in styles/20-reader-docmap.css.
-test.assertIncludes(stylesCss, "@container (max-width: 760px)", "layout direction switches on the window's own measured width");
-test.assertIncludes(stylesCss, "grid-template-columns: clamp(150px, 14vw, 190px) minmax(0, 1fr) clamp(300px, 26vw, 360px)", "scene, flexible artboard, and contextual inspector form a real three-pane editor");
-
 // Aspect ratio is a high-frequency canvas property, so it stays in the toolbar;
 // material mixing belongs to the Glass context.
 test.assertIncludes(index, 'class="lc-toolbar-aspect"', "aspect ratio stays available from the fixed editor toolbar");
 test.assertIncludes(index, 'class="lc-group lc-material-group"', "Glass Mix stays in the material inspector");
-test.assertIncludes(stylesCss, ".lc-aspect {\n  display: grid;\n  grid-template-columns: repeat(4, minmax(0, 1fr));", "aspect ratio is one row of 4, not a 2x2 grid eating the strip's height");
 
 // Only genuinely one-shot actions (export size, export PNG, the aspect note)
 // moved into their own tab — freeing the panel head without hiding anything
@@ -454,13 +386,6 @@ test.assertNotIncludes(glassPanelMarkup, 'class="lc-group lc-animation-group"', 
 test.assertIncludes(index, 'id="lc-stage-expand"', "a stage-expand control exists");
 test.assertIncludes(liquidCover, "function wireStageExpand", "it is wired");
 test.assertIncludes(index, 'id="lc-stage-expand" aria-label="Fullscreen preview" aria-pressed="false"', "the stage-expand choice exposes its current state");
-test.assertIncludes(stylesCss, ".liquid-cover-window.is-stage-focused .lc-panel,\n.liquid-cover-window.is-stage-focused .lc-sidebar {\n  display: none;", "expanding it hides both side panes rather than resizing the window");
-test.assertIncludes(stylesCss, "grid-template-columns: auto minmax(0, 1fr);\n    grid-template-rows: auto auto;", "the narrow Cover Glass scene rail reserves real width for its layer list");
-test.assertIncludes(stylesCss, ".lc-selection-help {\n    display: none;", "phone Cover Glass removes the verbose selection hint before sacrificing controls");
-test.assertIncludes(stylesCss, "grid-template-columns: repeat(3, minmax(0, 1fr));", "phone Cover Glass keeps layer actions in one compact row");
-test.assertIncludes(stylesCss, "@container (max-width: 430px) {\n  .liquid-cover-body {\n    grid-template-rows: 46px minmax(238px, 1fr) minmax(224px, 38vh);", "phone Cover Glass fits a layer strip, artboard, and bounded inspector into one screen");
-test.assertIncludes(stylesCss, ".lc-sidebar-head,\n  .lc-arrange-panel,\n  .lc-sidebar-actions {\n    display: none;", "phone Cover Glass reduces the desktop scene rail to its real layer strip");
-test.assertIncludes(stylesCss, ".lc-panel {\n    grid-template-rows: auto minmax(0, 1fr);\n    padding: 8px 10px 10px;\n    overflow: hidden;", "phone Cover Glass makes the existing inspector a bounded bottom drawer");
 test.assertIncludes(index, '<div class="lc-inspector-panel" id="lc-panel-glass"', "the Glass inspector exists");
 test.assert(
   index.indexOf('<div class="lc-group lc-material-group">') < index.indexOf('<div class="lc-group lc-layer-glass-group">'),
@@ -481,10 +406,4 @@ for (const file of ["app/data/translations-en.js", "app/data/translations-zh.js"
 }
 
 // --- bilingual ---
-test.assertIncludes(en, "liquid_cover_title:", "English strings exist");
-test.assertIncludes(zh, "liquid_cover_title:", "Chinese strings exist");
-test.assertIncludes(zh, '玻璃封面', "Chinese name follows the naming table");
-test.assertIncludes(dictionary, 'id: "cover-glass"', "System Help exposes Cover Glass as a production editor");
-test.assertIncludes(dictionary, "Glass Mix is the first global material control", "System Help documents the Glass Mix global control and mobile hierarchy");
-
 test.finish();

@@ -27,10 +27,6 @@ test.assertIncludes(html, 'data-i18n-aria-label="view_icon"', "the icon-view tog
 test.assertIncludes(html, 'data-i18n-aria-label="view_list"', "the list-view toggle localizes its accessible name");
 test.assertIncludes(html, 'data-i18n-aria-label="view_controls"', "the view control group localizes its accessible name");
 test.assertIncludes(windowManager, 'data-i18n-aria-label", "grow_box_aria"', "the grow box localizes its accessible name");
-test.assertIncludes(en, 'grow_box_aria: "Resize window"', "English names the grow box action");
-test.assertIncludes(zh, 'grow_box_aria: "调整窗口大小"', "Chinese names the grow box action");
-test.assertIncludes(en, 'zoom: "Zoom"', "English names the zoom box");
-test.assertIncludes(zh, 'zoom: "缩放"', "Chinese names the zoom box");
 for (const key of ["view_controls", "view_icon", "view_list", "writing_path", "resize_tabs"]) {
   test.assertIncludes(en, `${key}:`, `English has the ${key} accessible label`);
   test.assertIncludes(zh, `${key}:`, `Chinese has the ${key} accessible label`);

@@ -33,7 +33,10 @@ async function saveHkrrReview() {
   if (!markdown) return setStatus("No HKRR Review to save.");
   const result = await showSystemModal(`Save Review report?\n\n${clipContextContent(markdown, 1000)}`, "confirm");
   if (result !== "yes") return;
-  const item = addProjectCdItem(markdown, `HKRR Review - ${teachTextNameInput.value || t("review_desk")}`);
+  const item = await addProjectCdItem(markdown, `HKRR Review - ${teachTextNameInput.value || t("review_desk")}`, {
+    sourceDocumentId: activeTextFileId || "",
+    sourceKind: "markdown",
+  });
   if (item) openWindow("projectCd");
 }
 

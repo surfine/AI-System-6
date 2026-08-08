@@ -25,30 +25,63 @@
 
 /** @typedef {(change: { store: string; detail?: any }) => void} StoreListener */
 
-/**
- * Snapshot the backing globals a store commit may touch.
- * @param {string[]} names
- */
-function snapshotStoreState(names) {
+// Explicit snapshots of the real lexical bindings. These arrays are
+// classic-script top-level consts — NOT window/globalThis properties — so a
+// name->globalThis reflection would silently capture undefined and rollback
+// would do nothing in the browser. The bindings are resolved INSIDE the
+// functions: some of these arrays are declared later in the bundle, so a
+// top-level reference would hit the temporal dead zone at load.
+function projectStateBindings() {
+  return [
+    ["projects", projects],
+    ["chatFiles", chatFiles],
+    ["chatFolders", chatFolders],
+    ["scraps", scraps],
+    ["projectCdItems", projectCdItems],
+    ["trashItems", trashItems],
+    ["projectReferences", projectReferences],
+  ];
+}
+
+function snapshotProjectState() {
   /** @type {Record<string, any[]>} */
   const snapshot = {};
-  names.forEach((name) => {
-    const source = globalThis[name];
-    snapshot[name] = Array.isArray(source) ? structuredClone(source) : source;
+  projectStateBindings().forEach(([name, value]) => {
+    snapshot[name] = structuredClone(value);
   });
   return snapshot;
 }
 
-/** Restore backing globals from a snapshot taken before the commit. */
-function restoreStoreState(snapshot) {
-  Object.entries(snapshot).forEach(([name, value]) => {
-    const target = globalThis[name];
+function restoreProjectState(snapshot) {
+  projectStateBindings().forEach(([name, target]) => {
+    const value = snapshot[name];
     if (Array.isArray(value) && Array.isArray(target)) {
       target.splice(0, target.length, ...value);
-    } else if (name in globalThis) {
-      globalThis[name] = value;
     }
   });
+}
+
+// The Writing updater is handed the project record; the smallest honest
+// snapshot is the project list it can mutate.
+function snapshotWritingState() {
+  return { projects: structuredClone(projects) };
+}
+
+function restoreWritingState(snapshot) {
+  if (Array.isArray(snapshot.projects)) {
+    projects.splice(0, projects.length, ...snapshot.projects);
+  }
+}
+
+// The Desktop updater is handed the runtime environment scalar.
+function snapshotDesktopState() {
+  return { runtimeEnvironment };
+}
+
+function restoreDesktopState(snapshot) {
+  if ("runtimeEnvironment" in snapshot) {
+    runtimeEnvironment = snapshot.runtimeEnvironment;
+  }
 }
 
 function storePersistError(message = "State store commit failed to persist.") {
@@ -121,7 +154,7 @@ window.AISystem6StateStores = Object.freeze({
     projectCdItems: () => projectCdItems,
     /** @param {(state: { projects: any[] }) => void} updater */
     async commit(updater) {
-      const snapshot = snapshotStoreState(["projects", "chatFiles", "chatFolders", "scraps", "projectCdItems", "trashItems", "projectReferences"]);
+      const snapshot = snapshotProjectState();
       try {
         updater({ projects });
         const saved = await saveDeskState();
@@ -129,7 +162,7 @@ window.AISystem6StateStores = Object.freeze({
         projectStoreBus.emit({ projects: projects.length });
         return { ok: true };
       } catch (error) {
-        restoreStoreState(snapshot);
+        restoreProjectState(snapshot);
         projectStoreBus.emitError(error);
         throw error;
       }
@@ -149,7 +182,7 @@ window.AISystem6StateStores = Object.freeze({
     workflowState: () => (typeof teachTextWorkflowState !== "undefined" ? teachTextWorkflowState : ""),
     /** @param {(state: { project: any | null }) => void} updater */
     async commit(updater) {
-      const snapshot = snapshotStoreState(["projects", "chatFiles", "chatFolders", "scraps", "projectCdItems", "trashItems", "projectReferences"]);
+      const snapshot = snapshotWritingState();
       try {
         const project = typeof getActiveProject === "function" ? getActiveProject() : null;
         updater({ project });
@@ -159,7 +192,7 @@ window.AISystem6StateStores = Object.freeze({
         writingStoreBus.emit({ projectId: project?.id || "" });
         return { ok: true };
       } catch (error) {
-        restoreStoreState(snapshot);
+        restoreWritingState(snapshot);
         writingStoreBus.emitError(error);
         throw error;
       }
@@ -198,7 +231,7 @@ window.AISystem6StateStores = Object.freeze({
     workspaceProfile: () => (typeof workspaceProfile !== "undefined" ? workspaceProfile : "writing"),
     /** @param {(state: { environment: string }) => void} updater */
     async commit(updater) {
-      const snapshot = snapshotStoreState(["projects", "chatFiles", "chatFolders", "scraps", "projectCdItems", "trashItems", "projectReferences"]);
+      const snapshot = snapshotDesktopState();
       try {
         updater({ environment: runtimeEnvironment });
         const saved = await saveDeskState();
@@ -207,7 +240,7 @@ window.AISystem6StateStores = Object.freeze({
         desktopStoreBus.emit({ environment: runtimeEnvironment });
         return { ok: true };
       } catch (error) {
-        restoreStoreState(snapshot);
+        restoreDesktopState(snapshot);
         desktopStoreBus.emitError(error);
         throw error;
       }

@@ -1,5 +1,5 @@
 <!-- canonical-source: CLAUDE.md -->
-<!-- source-sha256: e7869d42b5a57e6ead8972ecbb9569be1de74a0602c9492c8c546ee878efcf2c -->
+<!-- source-sha256: 6f05149f9971c78b27f39eed36a3d4ed4179697c689cc5f38ce01464fcd619a8 -->
 
 # AI System 6 — CLAUDE.md
 
@@ -200,11 +200,12 @@ Outline / Section Drafts / TeachText 是同一份 Markdown 文档的联动视图
   沉淀见
   AGENT-LESSONS.zh-CN.md。
 - **带着过期的版本身份发版。** 每次发版都要升 `package.json` 版本 +
-  `build-info.json` 构建号（`YYYYMMDD.N`）+ RELEASE-NOTES 小节；`build:app`
-  会重写生成的 build-info，所以发版干净树检查前先把它提交并与 HEAD 对齐。
-  新增/删除文件后的首次发版，快照步骤需要 `--accept-new` /
-  `--accept-deletions`。细节见
-  AGENT-LESSONS.zh-CN.md。
+  `build-info.json` 构建号（`YYYYMMDD.N`）+ RELEASE-NOTES 小节，然后重新生成
+  build-info（`npm run build:app`）并提交。管线通过
+  `AI_SYSTEM6_SOURCE_COMMIT` 注入 `sourceCommit`；`snapshotCommit` /
+  `generatedAt` 只在运行时解析。新增/删除文件后的首次发版，快照步骤需要
+  `--accept-new` / `--accept-deletions`。细节见
+  REPO-RUNBOOK.zh-CN.md。
 - **改了源，忘了重建。** 浏览器加载的是 `app.bundle.js`。任何 `app/` 或 `app.js` 改动后跑
   `npm run build:app`。
 - **`verify:release` 构建戳失败。** `build-info.json` 需要 `YYYYMMDD.N`。
@@ -285,8 +286,10 @@ CSS 历史上是单一最大的 churn 来源（「polish / refine layout」的�
 - **第 2 层——相关时再读：** [DESIGN.md](DESIGN.md)、
   `.claude/skills/system6-ui-review/SKILL.md`、
   `.claude/skills/css-no-pingpong/SKILL.md`、**[CLAUDE.full.md](CLAUDE.full.md)**（详尽的
-  环境变量 / 路由 / 打包 / CSS 历史 / 子项目细节）、`tests/features/*`（可执行契约）、子项目
-  README。
+  环境变量 / 路由 / 打包 / CSS 历史 / 子项目细节）、
+  **REPO-RUNBOOK.zh-CN.md**（仓库本地操作手册：
+  构建循环、门禁与预算、workspace profile、发布编排、E2E 环境）、
+  `tests/features/*`（可执行契约）、子项目 README。
 - **路径作用域规则（`.claude/rules/`）——打开匹配文件时自动加载：** `code-style.md`
   （`app/**`、`src/**`）、`writing-route-internals.md`（`app/features/**`）。区域专属规则加在
   这里，别加进这个常驻文件。

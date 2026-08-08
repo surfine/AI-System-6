@@ -239,10 +239,12 @@ Living memory loop — when Claude repeatedly trips on something, add a line
   AGENT-LESSONS.md.
 - **Releasing with a stale version identity.** Every release bumps
   `package.json` version + `build-info.json` build (`YYYYMMDD.N`) + a
-  RELEASE-NOTES section; `build:app` rewrites generated build-info, so commit
-  it aligned with HEAD before the release clean-tree gate. First releases
-  after adding/removing files need `--accept-new` / `--accept-deletions` at
-  the snapshot step. Details in AGENT-LESSONS.md.
+  RELEASE-NOTES section, then regenerates the generated build-info
+  (`npm run build:app`) and commits it. The pipeline injects `sourceCommit`
+  via `AI_SYSTEM6_SOURCE_COMMIT`; `snapshotCommit`/`generatedAt` are
+  runtime-only. First releases after adding/removing files need
+  `--accept-new` / `--accept-deletions` at the snapshot step. Details in
+  REPO-RUNBOOK.md.
 - **Edit source, forget to rebuild.** The browser loads `app.bundle.js`. Run
   `npm run build:app` after any `app/` or `app.js` edit.
 - **`verify:release` build-stamp failure.** `build-info.json` needs `YYYYMMDD.N`.
@@ -351,6 +353,9 @@ count, liquid-glass twin ratchets, single-token-source rule), wired into
   `.claude/skills/system6-ui-review/SKILL.md`,
   `.claude/skills/css-no-pingpong/SKILL.md`, **[CLAUDE.full.md](CLAUDE.full.md)**
   (exhaustive env-var / route / packaging / CSS-history / sub-project detail),
+  **REPO-RUNBOOK.md** (repo-local operational runbook:
+  build loop, gates and budgets, workspace profiles, release orchestration,
+  E2E environment),
   `tests/features/*` (executable contracts), sub-project READMEs.
 - **Path-scoped rules (`.claude/rules/`) — auto-load when you open matching
   files:** `code-style.md` (`app/**`, `src/**`), `writing-route-internals.md`

@@ -213,8 +213,8 @@ test.assert(
 // inline styles would outrank the shell.
 test.assertIncludes(
   windowManager,
-  "if ((isPortraitDocumentFlow() && mobileFullScreenAppIds.has(\"teachText\")) || isNarrowViewport()) return;",
-  "the writing-route pair split stands down on a phone"
+  "arrangeMobileWritingForeground();",
+  "the writing-route pair split stands down on a phone (single-foreground model instead)"
 );
 test.assertIncludes(
   windowManager,

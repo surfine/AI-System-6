@@ -83,8 +83,13 @@ async function copyMarkdown(markdown) {
   }
 }
 
-function downloadMarkdown(markdown, name, options = {}) {
-  const projectCdItem = options.addToProjectCd === false ? null : addProjectCdItem(markdown, name);
+/**
+ * Download Markdown only — this never writes to the Project CD. Burning is a
+ * separate, awaited operation (burnMarkdownToProjectCd / the Export to
+ * Project CD action) so a download can never claim a CD write that did not
+ * happen.
+ */
+function downloadMarkdown(markdown, name) {
   const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -94,7 +99,38 @@ function downloadMarkdown(markdown, name, options = {}) {
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
-  setStatus(projectCdItem ? t("downloaded_markdown_exported", projectCdItem.title) : t("downloaded_markdown_only"));
+  setStatus(t("downloaded_markdown_only"));
+}
+
+/**
+ * Burn Markdown to the Project CD. The pre-burn document revision is
+ * persisted first; a failed revision write aborts the burn and nothing is
+ * written. Returns the new Project CD item, or null when the burn failed.
+ */
+async function burnMarkdownToProjectCd(markdown, name, options = {}) {
+  return addProjectCdItem(markdown, name, options);
+}
+
+/**
+ * Compatibility helper for flows whose menu item historically meant both
+ * "download" and "write to Project CD". The burn happens FIRST and must
+ * succeed; only then is the file downloaded and the combined success status
+ * shown. A failed burn reports the failure and produces no download.
+ */
+async function downloadMarkdownAndBurnToProjectCd(markdown, name, options = {}) {
+  const item = await addProjectCdItem(markdown, name, options);
+  if (!item) return false;
+  const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${sanitizeFilename(name)}.md`;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  setStatus(t("downloaded_markdown_exported", item.title));
+  return true;
 }
 
 function downloadPlainMarkdown(markdown, name, statusKey = "downloaded_plain_markdown") {
@@ -172,9 +208,20 @@ async function buildProjectDiskExport(project = getActiveProject()) {
   return window.AISystem6ProjectDiskBackup.attachIntegrity(bundle);
 }
 
+/** Raised when a backup's required data cannot be read completely. */
+class ProjectBackupError extends Error {
+  constructor(message) {
+    super(message);
+    this.code = "BACKUP_READ_FAILED";
+    this.name = "ProjectBackupError";
+  }
+}
+
 /**
  * Read every stored document revision of a project out of the keyval store.
- * Revisions are keyed "documentRevisions:<projectId>:<documentId>".
+ * Revisions are keyed "documentRevisions:<projectId>:<documentId>". Version
+ * history is user data: a read failure must fail the whole export instead of
+ * silently producing a "valid but incomplete" backup.
  */
 async function collectProjectDocumentRevisions(projectId) {
   const revisions = [];
@@ -190,7 +237,10 @@ async function collectProjectDocumentRevisions(projectId) {
       if (Array.isArray(value)) revisions.push(...value);
     }
   } catch (error) {
-    console.warn("Could not read document revisions for the Project Hard Disk backup.", error);
+    console.error("Could not read document revisions for the Project Hard Disk backup.", error);
+    throw new ProjectBackupError(
+      `Could not read document revisions for the Project Hard Disk backup: ${error?.message || error}`
+    );
   } finally {
     db?.close();
   }
@@ -204,7 +254,19 @@ async function exportActiveProjectDisk() {
     openWindow("projects");
     return;
   }
-  const bundle = await buildProjectDiskExport(project);
+  let bundle;
+  try {
+    bundle = await buildProjectDiskExport(project);
+  } catch (error) {
+    if (error?.code === "BACKUP_READ_FAILED" || error instanceof ProjectBackupError) {
+      setStatus(t("project_disk_backup_read_failed"));
+    } else {
+      console.error("Project Hard Disk export failed.", error);
+      setStatus(t("project_disk_export_failed"));
+    }
+    return;
+  }
+  if (!bundle) return;
   const name = `${project.name} Project Hard Disk Backup`;
   downloadJsonFile(bundle, name);
   setStatus(t("project_disk_exported", project.name));
@@ -248,13 +310,17 @@ async function printSelectedProjectCdItem() {
   return printSelectedProjectCdPdf();
 }
 
-async function addProjectCdItem(markdown, name) {
+async function addProjectCdItem(markdown, name, options = {}) {
   if (!getActiveProject()) {
     setStatus(t("no_project_mounted"));
     return null;
   }
 
   const title = `${sanitizeFilename(name)}.md`;
+  // The full record is assembled ONCE from the explicit options; callers must
+  // not patch sourceDocumentId etc. onto the result afterwards.
+  const sourceDocumentId = String(options.sourceDocumentId ?? activeTextFileId ?? "");
+  const sourceKind = String(options.sourceKind || "markdown");
   const existingIndex = projectCdItems.findIndex((item) =>
     item.projectId === activeProjectId && item.title === title
   );
@@ -263,11 +329,11 @@ async function addProjectCdItem(markdown, name) {
     id: existingIndex >= 0 ? projectCdItems[existingIndex].id : crypto.randomUUID(),
     projectId: activeProjectId,
     title,
-    format: "text/markdown",
+    format: String(options.format || "text/markdown"),
     body: markdown,
-    sourceDocumentId: activeTextFileId || "",
-    sourceKind: "markdown",
-    claimCheckId: "",
+    sourceDocumentId,
+    sourceKind,
+    claimCheckId: String(options.claimCheckId || ""),
     burnedAt: existingIndex >= 0 ? projectCdItems[existingIndex].burnedAt : now,
     updatedAt: now,
     languageMode: /Bilingual/i.test(String(name || "")) ? "bilingual" : "original",
@@ -310,15 +376,24 @@ async function addProjectCdItem(markdown, name) {
   return item;
 }
 
+function activeTeachTextCanBurn() {
+  if (typeof activeTeachTextAllows === "function" && activeTeachTextAllows("projectCdExport")) return true;
+  // The drafts-to-review transition lands on the FINALIZED manuscript. On a
+  // phone the tab/role bookkeeping can lag behind the workflow state, so a
+  // Final workflow with a non-empty body is still the burn source — the
+  // export must not be locked out of the very surface the route just opened.
+  return typeof teachTextWorkflowState !== "undefined"
+    && teachTextWorkflowState === "final"
+    && String(teachTextBodyInput?.value || "").trim().length > 0;
+}
+
 function projectCdBurnIsAvailable() {
   if (!getActiveProject()) return false;
   const body = String(teachTextBodyInput?.value || "").trim();
   if (!body) return false;
   const isSlidesMarkdown = typeof readerHasMarpFrontmatter === "function"
     && readerHasMarpFrontmatter(body);
-  const isManuscript = typeof activeTeachTextAllows === "function"
-    ? activeTeachTextAllows("projectCdExport")
-    : (typeof isTeachTextManuscriptRole !== "function" || isTeachTextManuscriptRole());
+  const isManuscript = activeTeachTextCanBurn();
   return isManuscript || isSlidesMarkdown;
 }
 

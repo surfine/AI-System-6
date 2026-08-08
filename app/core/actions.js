@@ -627,7 +627,7 @@ function reviewDeskReportMarkdown() {
   return { markdown, name: `${baseName} Reviewed` };
 }
 
-function exportReviewDeskReport() {
+async function exportReviewDeskReport() {
   if (!ensureTeachTextReviewState({ promoteSavedFinal: true, openTeachText: false })) {
     if ((reviewDeskBodyInput?.value || teachTextBodyInput?.value || "").trim()) {
       setTeachTextWorkflowState("final");
@@ -644,16 +644,27 @@ function exportReviewDeskReport() {
     return;
   }
 
-  const item = addProjectCdItem(report.markdown, report.name);
+  const item = await addProjectCdItem(report.markdown, report.name, {
+    sourceDocumentId: activeTextFileId || "",
+    sourceKind: "markdown",
+  });
   if (!item) return;
   markTeachTextExported("markdown");
   openWindow("projectCd");
   setStatus(t("export_saved", item.title));
 }
 
-function exportTeachTextToProjectCd() {
+async function exportTeachTextToProjectCd() {
   const isSlidesMarkdown = typeof readerHasMarpFrontmatter === "function" && readerHasMarpFrontmatter(teachTextBodyInput?.value || "");
-  if (!isSlidesMarkdown && typeof isTeachTextManuscriptRole === "function" && !isTeachTextManuscriptRole()) {
+  const finalManuscript = typeof teachTextWorkflowState !== "undefined"
+    && teachTextWorkflowState === "final"
+    && String(teachTextBodyInput?.value || "").trim().length > 0;
+  if (
+    !isSlidesMarkdown
+    && typeof isTeachTextManuscriptRole === "function"
+    && !isTeachTextManuscriptRole()
+    && !finalManuscript
+  ) {
     setStatus(t("teachtext_manuscript_required"));
     return;
   }
@@ -662,7 +673,10 @@ function exportTeachTextToProjectCd() {
     setStatus(t("teachtext_empty"));
     return;
   }
-  const item = addProjectCdItem(markdown, name);
+  const item = await addProjectCdItem(markdown, name, {
+    sourceDocumentId: activeTextFileId || "",
+    sourceKind: "markdown",
+  });
   if (!item) return;
   markTeachTextExported("markdown");
   openWindow("projectCd");
@@ -1562,8 +1576,9 @@ function handleAction(action, commandContext = {}) {
     updateMenuState();
     return;
   }
-  command.handler(commandContext);
+  const result = command.handler(commandContext);
   updateMenuState();
+  return result;
 }
 
 function closeMenus() {

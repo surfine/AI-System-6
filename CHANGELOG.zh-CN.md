@@ -1,5 +1,5 @@
 <!-- canonical-source: CHANGELOG.md -->
-<!-- source-sha256: 9e6a2e2500be37c7845ab08015c2f2cc2cb90e8fc0649418ebd15f786cf95038 -->
+<!-- source-sha256: c96f142a1cb0754c49ecc62e211c6329cdbbb50ab64f711db8bf4094b7512799 -->
 
 # AI System 6 中文更新日志
 
@@ -287,6 +287,39 @@ Liquid Glass 继续作为独立材质存在，而不是被复古修正误伤。
 - 气泡帮助扩展、可访问名称本地化，并新增校验防止中英文案漂移。
 - Safari 本机入口端到端修复。
 - Classic 与 Liquid Glass 的图标、记忆条、声景表面与显示简介材质 token 化。
+
+## 公开测试版 1.0.22 — 2026-08-07
+
+- Control Strip 成为完整系统组件，拥有自己的模块注册表、持久化与桌面集成。
+
+## 公开测试版 1.0.23 — 2026-08-08
+
+- UI 批次：WindowShade、Control Strip、词典、字体与云端状态修复；Soundscape
+  通过 gamdl 桥获得可选的 Apple Music 链接下载。
+- 桌面维护去重为单一 plan 路径，修复变为带类型且保守，修复前快照先落盘；
+  发布身份拆分为 version / build / sourceCommit，运行时计算 snapshotCommit
+  与 generatedAt；沉淀可迁移经验文档。
+
+## 公开测试版 1.0.24 — 2026-08-08
+
+- Compression Grain 与 Quick Draft 调整层（mingming / luoluo / hkrr）落地，
+  伴随语料扩容与检索/状态核心重构。
+
+## 公开测试版 1.0.25 — 2026-08-08
+
+- Compression Grain 细化、Finder Draft 打磨与测试扩充。
+- 文档 revision 变为耐久（等待写入、失败回滚）；备份携带 revision 历史
+  （v3 schema）；store commit 获得失败语义；修复 WebKit 把中止超时误判为
+  用户取消、导致桌面一直 Busy 的缺陷。
+
+## 公开测试版 1.0.26 — 2026-08-08
+
+- 耐久与移动端补全：Project CD 烧录契约全面 async（显式 source 选项、
+  droplet 与下载语义拆分）；StateStore 回滚在真实浏览器生效；版本历史无法
+  完整读取时备份 fail closed；revision 恢复校验持久化并在保存失败时回滚。
+- 本地 `verify:ship` 门禁生成 `dist/verification-report.json`，作为发布条件
+  （托管 GitHub Actions 可用性属于账户问题）。浏览器失败矩阵覆盖耐久链路。
+- iPhone / WebKit 可走完整写作路线，并新增黑箱移动端用户旅程。
 
 ## 一个月里真正变大的东西
 

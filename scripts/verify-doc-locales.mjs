@@ -99,6 +99,40 @@ collectMarkdown(root).forEach((sourcePath) => {
   }
 });
 
+// Release identity + docs consistency:
+//   - package.json version must equal the latest Public Beta version in
+//     CHANGELOG.md (a version bump without release notes fails the gate);
+//   - every `npm run <name>` command documented in README.md must exist in
+//     the package scripts (README must not promise a command that is absent).
+try {
+  const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
+  const changelog = readFileSync(join(root, "CHANGELOG.md"), "utf8");
+  const latestBeta = [...changelog.matchAll(/^## Public Beta (\d+\.\d+\.\d+)/gm)]
+    .map((match) => match[1])
+    .pop();
+  if (latestBeta && latestBeta === pkg.version) {
+    ok(`CHANGELOG latest Public Beta ${latestBeta} === package version`);
+  } else {
+    fail(
+      `CHANGELOG latest Public Beta ${latestBeta || "(none)"} !== package version ${pkg.version}; add release notes before bumping the version`
+    );
+  }
+
+  const readme = readFileSync(join(root, "README.md"), "utf8");
+  const documentedCommands = [...readme.matchAll(/npm run ([A-Za-z0-9:_-]+)/g)]
+    .map((match) => match[1]);
+  const missing = [...new Set(documentedCommands)].filter(
+    (name) => typeof pkg.scripts?.[name] !== "string"
+  );
+  if (missing.length === 0) {
+    ok(`README documents only existing npm scripts (${new Set(documentedCommands).size} commands)`);
+  } else {
+    fail(`README documents scripts that do not exist: ${missing.join(", ")}`);
+  }
+} catch (error) {
+  fail(`release identity/docs consistency could not be checked: ${error.message}`);
+}
+
 if (failures.length) {
   console.error(`\nDoc locale verification failed: ${failures.length} issue(s).`);
   process.exit(1);

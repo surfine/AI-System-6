@@ -11,10 +11,42 @@ const {
 
 const TIME_MACHINE_MAX_BYTES = 4 * 1024 * 1024;
 const TIME_MACHINE_CAPTURE_LIMIT = 120;
-const TIME_MACHINE_TIMEOUT_MS = 45000;
+// The archive index endpoints answer in well under a second from a home
+// connection but take 17-40s from the public host, which is how a working
+// Time Machine turned into a bare HTTP 502: the old 45s budget aborted the
+// request mid-flight. 85s keeps the slow tail inside the budget and still
+// lands inside the CDN's ~100s proxy limit.
+const TIME_MACHINE_TIMEOUT_MS = 85000;
 const TIME_MACHINE_PAGE_CACHE_TTL_MS = 60 * 1000;
 const TIME_MACHINE_PAGE_CACHE_LIMIT = 8;
 const timeMachinePageCache = new Map();
+// Capture lists and calendars are the slow half of every navigation and they
+// change on the order of days, so the same lookup must not be re-paid for each
+// step through a site's history.
+const TIME_MACHINE_INDEX_CACHE_TTL_MS = 10 * 60 * 1000;
+const TIME_MACHINE_INDEX_CACHE_LIMIT = 32;
+const timeMachineIndexCache = new Map();
+
+function cachedTimeMachineIndex(key) {
+  const entry = timeMachineIndexCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.storedAt > TIME_MACHINE_INDEX_CACHE_TTL_MS) {
+    timeMachineIndexCache.delete(key);
+    return null;
+  }
+  // Refresh recency so a site being browsed stays cached.
+  timeMachineIndexCache.delete(key);
+  timeMachineIndexCache.set(key, entry);
+  return entry.value;
+}
+
+function cacheTimeMachineIndex(key, value) {
+  timeMachineIndexCache.delete(key);
+  timeMachineIndexCache.set(key, { storedAt: Date.now(), value });
+  while (timeMachineIndexCache.size > TIME_MACHINE_INDEX_CACHE_LIMIT) {
+    timeMachineIndexCache.delete(timeMachineIndexCache.keys().next().value);
+  }
+}
 const ARCHIVE_TODAY_QUERY_HOSTS = [
   "archive.today",
   "archive.is",
@@ -260,6 +292,17 @@ function timeMachineCalendarYear(value) {
 }
 
 async function queryWaybackCalendar(originalUrl, selectedYear, signal) {
+  const cacheKey = `calendar:${timeMachineUrl(originalUrl)}:${timeMachineCalendarYear(selectedYear)}`;
+  const cached = cachedTimeMachineIndex(cacheKey);
+  if (cached) return cached;
+  const calendar = await fetchWaybackCalendar(originalUrl, selectedYear, signal);
+  // A calendar that only half-loaded is a symptom of the archive being slow,
+  // not an answer worth keeping for ten minutes.
+  if (!calendar.timelineError && !calendar.calendarError) cacheTimeMachineIndex(cacheKey, calendar);
+  return calendar;
+}
+
+async function fetchWaybackCalendar(originalUrl, selectedYear, signal) {
   const canonicalUrl = timeMachineUrl(originalUrl);
   const year = timeMachineCalendarYear(selectedYear);
   const encodedUrl = encodeURIComponent(canonicalUrl);
@@ -318,6 +361,19 @@ function directWaybackCapture(originalUrl, targetDate) {
 }
 
 async function queryWaybackCaptures(originalUrl, targetDate, signal) {
+  const cacheKey = `wayback:${timeMachineUrl(originalUrl)}:${targetDate || ""}`;
+  const cached = cachedTimeMachineIndex(cacheKey);
+  if (cached) return cached;
+  const captures = await fetchWaybackCaptures(originalUrl, targetDate, signal);
+  // The direct replay entry is the stand-in for an index that did not answer.
+  // Caching it would pin the degraded result over the real capture list.
+  const isDirectFallback = captures.length === 1
+    && String(captures[0]?.id || "").startsWith("wayback-direct:");
+  if (!isDirectFallback) cacheTimeMachineIndex(cacheKey, captures);
+  return captures;
+}
+
+async function fetchWaybackCaptures(originalUrl, targetDate, signal) {
   if (targetDate) {
     const availabilityParams = new URLSearchParams({
       url: originalUrl,
@@ -429,6 +485,16 @@ function parseArchiveIsResults(html, originalUrl, finalUrl = "https://archive.is
 }
 
 async function queryArchiveIsCaptures(originalUrl, targetDate, signal) {
+  const cacheKey = `archive-is:${timeMachineUrl(originalUrl)}:${targetDate || ""}`;
+  const cached = cachedTimeMachineIndex(cacheKey);
+  if (cached) return cached;
+  // A rate-limited lookup rejects, so only an answered one reaches the cache.
+  const captures = await fetchArchiveIsCaptures(originalUrl, targetDate, signal);
+  cacheTimeMachineIndex(cacheKey, captures);
+  return captures;
+}
+
+async function fetchArchiveIsCaptures(originalUrl, targetDate, signal) {
   const controller = new AbortController();
   const abort = () => controller.abort(signal?.reason);
   if (signal?.aborted) abort();

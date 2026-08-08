@@ -560,6 +560,7 @@ body.use-liquid-glass {
     rgba(243, 247, 249, 0.46);
   --clio-chart-panel-quiet: rgba(255, 255, 255, 0.38);
   --clio-chart-accent: rgba(31, 57, 74, 0.82);
+  --clio-chart-mark-border: 1px solid var(--clio-chart-rule);
   --clio-chart-track: rgba(31, 57, 74, 0.14);
   --clio-chart-pattern-paper: rgba(250, 252, 253, 0.82);
   --clio-chart-reference: rgba(42, 69, 86, 0.08);
@@ -614,6 +615,13 @@ body.use-liquid-glass {
   --clio-chart-grid-spacing: 0 5px;
   --clio-chart-cell-height: 30px;
   --clio-chart-cell-padding: 5px 10px;
+  --clio-chart-matrix-size: 11px;
+  --clio-chart-matrix-cell-padding: 6px 10px;
+  --clio-chart-matrix-cell-border: 0;
+  --clio-chart-matrix-row-rule: 1px solid var(--clio-chart-rule);
+  --clio-chart-matrix-note-size: 10px;
+  --clio-chart-card-border: 1px solid var(--clio-chart-rule);
+  --clio-chart-card-radius: var(--clio-chart-radius);
   --clio-chart-row-gap: 9px;
   --clio-chart-track-height: 18px;
   --clio-chart-switcher-width: 100%;
@@ -1653,7 +1661,13 @@ body.use-liquid-glass {
   --endfield-selected-fg: rgba(255, 255, 255, 0.96);
   --endfield-evidence-divider: 1px solid rgba(16, 17, 20, 0.14);
   --endfield-index-bg: rgba(255, 255, 255, 0.48);
-  --endfield-index-border: 1px solid rgba(16, 17, 20, 0.24);
+  --endfield-index-border: 1px solid rgba(16, 17, 20, 0.34);
+  --endfield-index-radius: 6px;
+  --endfield-context-rule: 1px solid rgba(16, 17, 20, 0.16);
+  --endfield-context-bg: rgba(255, 255, 255, 0.4);
+  --endfield-context-radius: 0 8px 8px 0;
+  --endfield-quote-rule: 2px solid rgba(16, 17, 20, 0.3);
+  --endfield-quote-radius: 0 10px 10px 0;
   --demo-caption-bg:
     linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(232, 238, 242, 0.42)),
     rgba(255, 255, 255, 0.58);
@@ -1683,6 +1697,32 @@ body.use-liquid-glass {
   --quick-draft-grain-generation-border: 1px solid rgba(16, 17, 20, 0.26);
   --quick-draft-grain-swatch-author: rgba(16, 17, 20, 0.88);
   --quick-draft-grain-swatch-model: rgba(16, 17, 20, 0.26);
+  /* 文字亮室 state language overrides: Liquid selected keeps the same quiet
+     material as the input state and differs by thin outline + corner control
+     points; AI working is a slow travelling edge light, never a spinner. */
+  --quick-draft-state-selected-outline: 1px solid rgba(16, 17, 20, 0.4);
+  --quick-draft-state-control-points:
+    radial-gradient(circle 2.5px at 50% 50%, rgba(47, 157, 179, 0.9) 99%, transparent 100%) 0 0 / 7px 7px no-repeat,
+    radial-gradient(circle 2.5px at 50% 50%, rgba(47, 157, 179, 0.9) 99%, transparent 100%) 100% 0 / 7px 7px no-repeat,
+    radial-gradient(circle 2.5px at 50% 50%, rgba(47, 157, 179, 0.9) 99%, transparent 100%) 0 100% / 7px 7px no-repeat,
+    radial-gradient(circle 2.5px at 50% 50%, rgba(47, 157, 179, 0.9) 99%, transparent 100%) 100% 100% / 7px 7px no-repeat;
+  --quick-draft-state-selected-surface: none, var(--quick-draft-state-control-points);
+  --quick-draft-state-selected-animation: none;
+  --quick-draft-state-working-surface: linear-gradient(115deg, transparent 22%, rgba(255, 255, 255, 0.9) 42%, rgba(47, 157, 179, 0.42) 50%, rgba(255, 255, 255, 0.9) 58%, transparent 78%) 0 0 / 62% 100% no-repeat;
+  --quick-draft-state-working-animation: quickDraftWorkingSweep 2.6s ease-in-out infinite;
+  --quick-draft-protected-fg: rgba(47, 157, 179, 0.8);
+  /* 拼台 canvas overrides: quiet glass object on a faint dot grid; handles
+     and the rotation handle stay the same object grammar. */
+  --quick-draft-canvas-dot: rgba(16, 17, 20, 0.12);
+  --quick-draft-canvas-object-bg: rgba(255, 255, 255, 0.72);
+  --quick-draft-canvas-object-border: 1px solid rgba(255, 255, 255, 0.62);
+  --quick-draft-canvas-object-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 14px 34px rgba(18, 28, 38, 0.1);
+  --quick-draft-canvas-handle-bg: rgba(255, 255, 255, 0.92);
+  --quick-draft-canvas-handle-border: 1px solid rgba(47, 157, 179, 0.9);
+  --quick-draft-canvas-rotate-fg: rgba(47, 157, 179, 0.9);
+  --quick-draft-view-switch-border: 1px solid rgba(16, 17, 20, 0.22);
 
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.56), rgba(212, 221, 228, 0.5)),

@@ -206,9 +206,10 @@
 
 .quick-draft-editor {
   grid-area: editor;
-  grid-template-rows: auto minmax(20rem, 1fr) auto auto auto;
+  grid-template-rows: minmax(0, 1fr) auto;
   align-content: stretch;
   min-width: 0;
+  position: relative;
 }
 
 .quick-draft-task textarea,
@@ -514,6 +515,8 @@
   grid-template-rows: minmax(0, 1fr);
   gap: 8px;
   min-height: 0;
+  grid-row: 1;
+  grid-column: 1;
 }
 
 .quick-draft-material-pane,
@@ -844,6 +847,197 @@
   box-shadow: none;
 }
 
+/* 文字亮室 four-state language (tokens in 00-foundation, values overridden by
+   Liquid Glass): default no border; input material already ships; selected is
+   a bounding box with corner control points; AI working is a slow travelling
+   edge light (Liquid) or moving 50% dither (Classic), never a spinner on top
+   of the text. The overlays are window-local and never touch global layers. */
+.quick-draft-editor-container.is-selected {
+  outline: var(--quick-draft-state-selected-outline);
+  outline-offset: -1px;
+}
+
+.quick-draft-editor-container.is-selected::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--quick-draft-state-selected-surface);
+  animation: var(--quick-draft-state-selected-animation);
+  pointer-events: none;
+  z-index: var(--z-local-control);
+}
+
+.quick-draft-editor-container.is-working::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--quick-draft-state-working-surface);
+  animation: var(--quick-draft-state-working-animation);
+  pointer-events: none;
+  z-index: var(--z-local-control);
+}
+
+@keyframes quickDraftMarchingAnts {
+  to {
+    background-position:
+      20px 0, -20px 100%, 0 -20px, 100% 20px,
+      0 0, 100% 0, 0 100%, 100% 100%;
+  }
+}
+
+@keyframes quickDraftWorkingDither {
+  to {
+    background-position: 2px 2px, 3px 3px;
+  }
+}
+
+@keyframes quickDraftWorkingSweep {
+  to {
+    background-position: 165% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quick-draft-editor-container.is-selected::before,
+  .quick-draft-editor-container.is-working::after {
+    animation: none;
+  }
+}
+
+/* 拼台 — the single-object canvas (task 8). The object level carries only
+   the visual transform (position, size, angle), separate from the semantic
+   adjustment stack; the object's text is the same Markdown as the article
+   view. The stage is a dot grid with no page edge. */
+.quick-draft-canvas {
+  position: absolute;
+  inset: 0;
+  min-height: 0;
+}
+
+.quick-draft-canvas-stage {
+  position: relative;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  border: var(--quick-draft-sidebar-border);
+  background-image: radial-gradient(var(--quick-draft-canvas-dot) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+.quick-draft-canvas-object {
+  position: absolute;
+  left: var(--canvas-x, 120px);
+  top: var(--canvas-y, 72px);
+  width: var(--canvas-w, 560px);
+  min-height: var(--canvas-h, 0px);
+  transform: rotate(var(--canvas-angle, 0deg));
+  transform-origin: center center;
+  padding: 18px 22px;
+  background: var(--quick-draft-canvas-object-bg);
+  border: var(--quick-draft-canvas-object-border);
+  box-shadow: var(--quick-draft-canvas-object-shadow);
+  cursor: move;
+  user-select: none;
+}
+
+.quick-draft-canvas-object-text {
+  font-family: var(--text-font);
+  font-size: 15px;
+  line-height: 1.75;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+}
+
+.quick-draft-canvas-object-text.is-empty {
+  color: var(--shade-dark);
+}
+
+.quick-draft-canvas-handle,
+.quick-draft-canvas-rotate,
+.quick-draft-canvas-angle {
+  display: none;
+}
+
+.quick-draft-canvas-object.is-selected .quick-draft-canvas-handle,
+.quick-draft-canvas-object.is-selected .quick-draft-canvas-rotate,
+.quick-draft-canvas-object.is-selected .quick-draft-canvas-angle {
+  display: block;
+}
+
+.quick-draft-canvas-handle {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  background: var(--quick-draft-canvas-handle-bg);
+  border: var(--quick-draft-canvas-handle-border);
+}
+
+.quick-draft-canvas-handle.is-nw { left: -5px; top: -5px; cursor: nwse-resize; }
+.quick-draft-canvas-handle.is-n { left: calc(50% - 5px); top: -5px; cursor: ns-resize; }
+.quick-draft-canvas-handle.is-ne { right: -5px; top: -5px; cursor: nesw-resize; }
+.quick-draft-canvas-handle.is-e { right: -5px; top: calc(50% - 5px); cursor: ew-resize; }
+.quick-draft-canvas-handle.is-se { right: -5px; bottom: -5px; cursor: nwse-resize; }
+.quick-draft-canvas-handle.is-s { left: calc(50% - 5px); bottom: -5px; cursor: ns-resize; }
+.quick-draft-canvas-handle.is-sw { left: -5px; bottom: -5px; cursor: nesw-resize; }
+.quick-draft-canvas-handle.is-w { left: -5px; top: calc(50% - 5px); cursor: ew-resize; }
+
+.quick-draft-canvas-rotate {
+  position: absolute;
+  left: calc(50% - 7px);
+  top: -30px;
+  width: 14px;
+  height: 14px;
+  border: var(--quick-draft-canvas-handle-border);
+  border-radius: 50%;
+  background: var(--quick-draft-canvas-handle-bg);
+  cursor: grab;
+}
+
+.quick-draft-canvas-rotate::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  width: 1px;
+  height: 8px;
+  background: var(--quick-draft-canvas-rotate-fg);
+}
+
+.quick-draft-canvas-angle {
+  position: absolute;
+  left: calc(50% - 18px);
+  top: -52px;
+  min-width: 36px;
+  padding: 1px 5px;
+  border: var(--quick-draft-canvas-handle-border);
+  background: var(--quick-draft-canvas-handle-bg);
+  font-family: var(--mono-font);
+  font-size: 10px;
+  text-align: center;
+  color: var(--ink);
+}
+
+.quick-draft-view-switch {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border: var(--quick-draft-view-switch-border);
+}
+
+.quick-draft-view-switch .mini-btn {
+  min-height: 20px;
+  padding: 1px 7px;
+  font-size: 11px;
+}
+
+.quick-draft-view-switch .mini-btn.is-active {
+  background: var(--ink);
+  color: var(--paper);
+}
+
 .quick-draft-editor-container > .mde-surface {
   min-height: 0;
 }
@@ -892,6 +1086,18 @@
   box-shadow: inset 3px 0 0 var(--quick-draft-grain-mask-fg);
 }
 
+/* Protected lines are a property of the text, not a layer: they carry their
+   own margin bar, distinct from the per-layer mask and from provenance. */
+.quick-draft-grain-line.is-protected {
+  box-shadow: inset 6px 0 0 var(--quick-draft-protected-fg);
+}
+
+.quick-draft-grain-line.is-masked.is-protected {
+  box-shadow:
+    inset 3px 0 0 var(--quick-draft-grain-mask-fg),
+    inset 6px 0 0 var(--quick-draft-protected-fg);
+}
+
 .quick-draft-grain-generation {
   margin-left: 3px;
   padding: 0 3px;
@@ -936,10 +1142,38 @@
   background: var(--quick-draft-grain-swatch-model);
 }
 
+.quick-draft-grain-swatch.is-protected {
+  background: var(--quick-draft-protected-fg);
+}
+
+.quick-draft-protect,
+.quick-draft-adjustment-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 2px 4px;
+  font-size: 12px;
+  color: var(--shade-dark);
+}
+
+.quick-draft-protect input {
+  width: 84px;
+  min-width: 0;
+  padding: 2px 5px;
+  font: inherit;
+}
+
+.quick-draft-adjustment-actions .btn {
+  flex: 1 1 0;
+}
+
 .quick-draft-editor-actions {
   justify-content: space-between;
   gap: 8px;
   padding-top: 1px;
+  grid-row: 2;
+  grid-column: 1;
+  position: relative;
 }
 
 .quick-draft-editor-actions .teachtext-command-group {
@@ -959,7 +1193,7 @@
   gap: 6px;
   left: 50%;
   width: min(15rem, calc(100vw - 3rem));
-  max-height: min(34rem, calc(100vh - 9rem));
+  max-height: min(48rem, calc(100vh - 6rem));
   overflow: auto;
   transform: translateX(-50%);
 }
@@ -1155,6 +1389,27 @@
 
 .teachtext-editor-container.is-previewing .teachtext-preview {
   max-height: none;
+}
+
+/* 看片 — the composite reading mode: full window width, no controls, no
+   provenance colour. Hiding the material pane gives the paper the whole
+   window, so the writer can stop being an operator for a minute. */
+.quick-draft-window.is-reading .quick-draft-material-pane {
+  display: none;
+}
+
+.quick-draft-window.is-reading .quick-draft-two-pane {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* 拼台 canvas gets the whole article column: the material pane is the drawer
+   and steps aside so the one object has room. */
+.quick-draft-window.is-canvas .quick-draft-material-pane {
+  display: none;
+}
+
+.quick-draft-window.is-canvas .quick-draft-two-pane {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .teachtext-preview {

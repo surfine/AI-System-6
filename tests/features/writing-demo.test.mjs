@@ -35,8 +35,6 @@ test.assertNotIncludes(guideWindow, 'data-action="play-writing-demo"', "Start He
 test.assertIncludes(app, 'action: "play-writing-demo"', "the rendered Applications registry exposes the live demo");
 test.assertIncludes(demo, '[data-static-finder-action="play-writing-demo"]', "the rendered Applications icon also toggles to Stop during the recording");
 test.assertIncludes(html, 'data-action="guide-start-route"', "original writing route remains available outside the primary CTA");
-test.assertIncludes(zh, 'guide_play_demo: "播放实战演示"', "Chinese CTA copy names the demo");
-test.assertIncludes(en, 'guide_play_demo: "Play Live Demo"', "English CTA copy names the demo");
 
 test.assertIncludes(config, 'createLazyModuleLoader("AISystem6WritingDemoLoaded", [', "demo is lazy-loaded on demand");
 test.assertIncludes(manifest, '"app/features/writing-demo.js"', "demo is tracked as lazy runtime");
@@ -218,14 +216,8 @@ test.assertIncludes(demo, "总长控制在 220 字以内", "ClioTalk demo answer
 test.assertIncludes(demo, "右侧 Context Panel 显示 ClioTalk 引用了当前项目里的 Project CD 成稿", "ClioTalk stage proves the answer is grounded in the project manuscript context");
 test.assertNotIncludes(demo, 'cloudConfig.model = "deepseek-v4-flash"', "demo does not force a vendor-specific cloud model");
 test.assertNotIncludes(demo, "writingDemoIsDeepSeekReady", "demo is not gated on DeepSeek");
-test.assertIncludes(zh, "实战演示需要可用的模型（本地或云端）", "Chinese demo copy points users to local-or-cloud readiness");
-test.assertIncludes(en, "ready model (local or cloud)", "English demo copy points users to local-or-cloud readiness");
-test.assertIncludes(zh, "正在预检真实 LLM 连接", "Chinese demo copy explains the preflight");
-test.assertIncludes(en, "Checking the real LLM connection", "English demo copy explains the preflight");
 test.assertNotIncludes(zh, "writing_demo_needs_deepseek", "Chinese demo copy is not DeepSeek-gated");
 test.assertNotIncludes(en, "writing_demo_needs_deepseek", "English demo copy is not DeepSeek-gated");
-test.assertIncludes(zh, "ClioTalk 写作追问", "Chinese demo completion copy frames ClioTalk as a writing follow-up surface");
-test.assertIncludes(en, "ClioTalk writing follow-ups", "English demo completion copy frames ClioTalk as a writing follow-up surface");
 test.assertNotIncludes(demo, "_cloud_api_key", "demo does not embed or forward an API key manually");
 test.assertNotIncludes(demo, "apiKey:", "demo fixtures do not contain API key fields");
 

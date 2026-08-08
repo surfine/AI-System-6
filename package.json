@@ -1,6 +1,6 @@
 {
   "name": "ai-system-6",
-  "version": "1.0.25",
+  "version": "1.0.26",
   "description": "A quiet, intentional AI desktop environment inspired by Macintosh System 6.",
   "license": "MIT",
   "main": "src/server.js",
@@ -34,6 +34,8 @@
     "verify:public": "node scripts/verify-public-tree.mjs",
     "verify:quick": "node scripts/verify-quick.mjs",
     "verify:release": "node scripts/verify-release.mjs",
+    "verify:ship": "node scripts/verify-ship.mjs",
+    "verify:ship:fast": "node scripts/verify-ship.mjs --fast",
     "verify:src": "npm --prefix src run typecheck",
     "verify:version": "node scripts/verify-version-consistency.mjs"
   },

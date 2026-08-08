@@ -17,6 +17,10 @@ const {
 } = require("../time-machine.js");
 
 const TIME_MACHINE_PROVIDER_TIMEOUT_MS = TIME_MACHINE_TIMEOUT_MS - 3000;
+// Both providers are consulted, but only the preferred one may spend the whole
+// budget. Without this the slower archive holds the reply hostage even after
+// the requested archive has already answered.
+const TIME_MACHINE_SECONDARY_TIMEOUT_MS = 15000;
 
 function sendJson(res, status, payload) {
   send(res, status, JSON.stringify(payload), {
@@ -41,12 +45,15 @@ async function handleCaptures(res, params, signal) {
     wayback: queryWaybackCaptures,
     "archive-is": queryArchiveIsCaptures,
   };
-  const jobs = providerOrder.map((id) => {
+  const jobs = providerOrder.map((id, order) => {
     const controller = new AbortController();
     const abort = () => controller.abort(signal?.reason);
     if (signal?.aborted) abort();
     else signal?.addEventListener("abort", abort, { once: true });
-    const timer = setTimeout(() => controller.abort(new Error(`${id} timed out.`)), TIME_MACHINE_PROVIDER_TIMEOUT_MS);
+    const budget = order === 0
+      ? TIME_MACHINE_PROVIDER_TIMEOUT_MS
+      : Math.min(TIME_MACHINE_SECONDARY_TIMEOUT_MS, TIME_MACHINE_PROVIDER_TIMEOUT_MS);
+    const timer = setTimeout(() => controller.abort(new Error(`${id} timed out.`)), budget);
     const promise = providerQueries[id](originalUrl, targetDate, controller.signal)
       .finally(() => {
         clearTimeout(timer);

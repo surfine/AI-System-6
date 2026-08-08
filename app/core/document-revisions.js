@@ -240,12 +240,35 @@ async function restoreDocumentRevision(revision) {
     setStatus?.(t?.("versions_restore_failed") || "Could not save the pre-restore revision; the document was not changed.");
     return false;
   }
+  const previous = {
+    body: target.body,
+    updatedAt: target.updatedAt,
+    textareaBody: target.id === activeTextFileId && typeof teachTextBodyInput !== "undefined" ? teachTextBodyInput?.value : undefined,
+    statusKey: typeof teachTextStatusEl !== "undefined" ? teachTextStatusEl?.dataset?.statusKey || "" : "",
+  };
   target.body = String(revision.body || "");
   target.updatedAt = new Date().toISOString();
   if (target.id === activeTextFileId) {
     teachTextBodyInput.value = target.body;
     markTeachTextModified();
     refreshTeachTextDocumentState();
+  }
+  const saved = await saveDeskState();
+  if (!saved) {
+    // The new body never landed on disk: roll back the in-memory document,
+    // the textarea, and the modified/status state so a reload shows the
+    // pre-restore version.
+    target.body = previous.body;
+    target.updatedAt = previous.updatedAt;
+    if (target.id === activeTextFileId) {
+      if (previous.textareaBody !== undefined) teachTextBodyInput.value = previous.textareaBody;
+      if (previous.statusKey && typeof setTeachTextStatus === "function") setTeachTextStatus(previous.statusKey);
+      if (typeof refreshTeachTextDocumentState === "function") refreshTeachTextDocumentState();
+    }
+    renderDocuments?.();
+    renderProjectDisks?.();
+    setStatus?.(t?.("versions_restore_persist_failed") || "Could not save the restored document; nothing was changed.");
+    return false;
   }
   try {
     await createDocumentRevision({
@@ -261,7 +284,6 @@ async function restoreDocumentRevision(revision) {
     console.warn("Restore applied, but the restore revision could not be persisted.", error);
     setStatus?.(t?.("versions_restore_revision_failed") || "The document was restored, but the restore revision could not be saved.");
   }
-  await saveDeskState();
   renderDocuments?.();
   renderProjectDisks?.();
   return true;

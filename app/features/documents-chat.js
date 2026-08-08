@@ -2149,12 +2149,19 @@ function copyCurrentClioTalkMarkdown() {
   return copyMarkdown(formatChatFileMarkdown(currentClioTalkMarkdownFile()));
 }
 
-function downloadCurrentClioTalkMarkdown() {
+async function downloadCurrentClioTalkMarkdown() {
   if (!conversation.length) return setStatus(t("no_chat_to_save"));
   const file = currentClioTalkMarkdownFile();
-  return downloadMarkdown(formatChatFileMarkdown(file), file.name, {
-    addToProjectCd: !clioTalkTemporaryMode,
-  });
+  const markdown = formatChatFileMarkdown(file);
+  // Saved chats historically burned to the Project CD on download; keep that
+  // combined meaning, but burn FIRST and only claim success when both land.
+  if (!clioTalkTemporaryMode) {
+    return downloadMarkdownAndBurnToProjectCd(markdown, file.name, {
+      sourceDocumentId: file.id,
+      sourceKind: "markdown",
+    });
+  }
+  return downloadMarkdown(markdown, file.name);
 }
 
 async function openChatFile() {

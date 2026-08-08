@@ -447,6 +447,37 @@ function adjustmentStrengthInstruction(body, zh) {
 }
 
 /**
+ * Protected spans are a property of the text, not of a layer: a writer
+ * protects a quote from everything. The body arrives with the protected
+ * ranges already subtracted (the client does that with the same pure rule),
+ * and this instruction quotes the protected text verbatim and demands it come
+ * back unchanged. Enforcement — restore-if-changed after the pass — happens
+ * client-side so every model path reports the same result.
+ * @param {any} body
+ * @param {boolean} zh
+ * @returns {string}
+ */
+function protectedRangeInstruction(body, zh) {
+  const blocks = Array.isArray(body?.protectedBlocks) ? body.protectedBlocks : [];
+  const quotes = blocks
+    .map((block) => `「${asText(block?.text)}」`)
+    .filter(Boolean)
+    .join("\n\n");
+  if (!quotes) return "";
+  return zh
+    ? [
+        "- 以下是你必须逐字保留、不得改动的受保护文字（连标点和换行都必须一致）：",
+        quotes,
+        "- 受保护文字必须在输出中逐字原样出现；可以留在原位置，但不能改动、删减或改写。",
+      ].join("\n")
+    : [
+        "- The protected text below must be reproduced verbatim, punctuation and line breaks included:",
+        quotes,
+        "- Protected text must appear in the output exactly as stored; keep it at its original position and never reword, trim, or rewrite it.",
+      ].join("\n");
+}
+
+/**
  * @param {any} body
  * @returns {number}
  */
@@ -517,6 +548,7 @@ function buildMessages(body, sources) {
         `- 必须且只能用这些二级标题分区，逐字使用：${wantedHeaders.map((h) => `## ${h}`).join("、")}。`,
         commandLens,
         adjustmentStrengthInstruction(body, zh),
+        protectedRangeInstruction(body, zh),
         "- 每个分区的内容必须能由提供的资料支持；缺资料就写进“不确定或缺来源的信息”，不要编造。",
         "- 支持/反方材料请用资料标签（如 [S1]）标注来源；没有来源的判断不要伪装成有来源。",
         stage === "draft"
@@ -531,6 +563,7 @@ function buildMessages(body, sources) {
         `- Use exactly these level-2 headings, verbatim: ${wantedHeaders.map((h) => `## ${h}`).join(", ")}.`,
         commandLens,
         adjustmentStrengthInstruction(body, zh),
+        protectedRangeInstruction(body, zh),
         "- Every section must be supported by the supplied sources; put anything unsupported under the uncertainty section instead of inventing it.",
         "- Tag supporting/counter material with source labels (e.g. [S1]); do not fake sourcing for unsourced judgments.",
         stage === "draft"
@@ -685,6 +718,7 @@ function buildFirstDayMessages(body, sources) {
         "- “稿里怎么处理”必须把候选第一感受标成候选/已采用/待 Aaron 确认；模型只能捞出和建议，不能替用户定稿。",
         commandLens,
         adjustmentStrengthInstruction(body, zh),
+        protectedRangeInstruction(body, zh),
         adviceOnlyTask
           ? [
               "- 本次是 ClioTalk 建议卡，不是出稿：只输出短建议，不写“初稿 / 正文 / 口播稿 / 完整视频稿”。",
@@ -764,6 +798,7 @@ function buildFirstDayMessages(body, sources) {
         "- The How it lands in the draft section must mark candidate first impressions as candidate/adopted/needs Aaron confirmation; the model may surface or suggest them, but must not decide them for the user.",
         commandLens,
         adjustmentStrengthInstruction(body, zh),
+        protectedRangeInstruction(body, zh),
         adviceOnlyTask
           ? [
               "- This is a ClioTalk suggestion card, not drafting: output short advice only. Do not write a Draft, Body, Script, or full video script.",

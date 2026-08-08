@@ -1,5 +1,5 @@
 <!-- canonical-source: README.md -->
-<!-- source-sha256: 577fff3c98378c6528d38443cf03d5134a127b4258828ac95832ff80573dee59 -->
+<!-- source-sha256: 53a2b073c88883bd64f87cd8f68863ba8f7a487097ad7aec3e620c4e396265b9 -->
 
 <div align="center">
 
@@ -111,9 +111,10 @@ npm start              # 构建浏览器包，然后启动 http://localhost:4173
 npm run build          # 构建浏览器包
 npm test               # 可执行的功能契约测试
 npm run verify:public  # 公开仓库自洽验证（命令、文件、CI、文档）
+npm run verify:ship    # 维护者发布门禁（构建、测试、全部本地门禁、E2E）
 ```
 
-只要有任何公开命令引用了本仓库不存在的文件，或出现了仅限内部的工具，`npm run verify:public` 就会失败。`.github/workflows/ci.yml` 中的 CI 会在每次推送到 `main` 时依次运行 `npm ci`、构建、功能测试与公开仓库自洽验证。
+只要有任何公开命令引用了本仓库不存在的文件，或出现了仅限内部的工具，`npm run verify:public` 就会失败。`.github/workflows/ci.yml` 中的 CI 运行的是与本地门禁相同的命令。托管执行取决于 GitHub 账户的 Actions 可用性；可复现的发布条件是本地 `npm run verify:ship` 门禁，它会写出 `dist/verification-report.json`，记录每一项检查的退出码。
 
 ## 不一样的构建方式
 

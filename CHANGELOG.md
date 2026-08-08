@@ -271,6 +271,47 @@ Version `1.0.12`, build `20260804.2`.
 - Classic and Liquid Glass materials were tokenized for icons, memory notes,
   Soundscape surfaces, and Get Info.
 
+## Public Beta 1.0.22 - 2026-08-07
+
+- Control Strip became a full system part with its own module registry,
+  persistence, and desk integration.
+
+## Public Beta 1.0.23 - 2026-08-08
+
+- UI batch: WindowShade, Control Strip, dictionary, fonts, and cloud-status
+  fixes; Soundscape gained an optional Apple Music link via the gamdl bridge.
+- Desktop Maintenance was deduplicated (one plan-based path), repairs became
+  typed and conservative, and pre-repair snapshots now persist before any
+  change. Release identity was split into version / build / sourceCommit with
+  runtime snapshotCommit + generatedAt.
+- Transferable lessons were documented for future agents.
+
+## Public Beta 1.0.24 - 2026-08-08
+
+- Compression Grain and the Quick Draft Adjustment Layers (mingming / luoluo /
+  hkrr) landed with corpus expansion and a core retrieval/state refactor.
+
+## Public Beta 1.0.25 - 2026-08-08
+
+- Compression Grain refinement and Finder Draft polish with expanded tests.
+- Document revisions became durable (awaited writes, rollback on failure);
+  backups carry revision history (v3 schema); store commits gained failure
+  semantics; a WebKit abort-timeout misclassification that silently left the
+  desk Busy was fixed.
+
+## Public Beta 1.0.26 - 2026-08-08
+
+- Durability & Mobile Completion: the Project CD burn contract is fully async
+  (explicit source options, droplet + download semantics split); StateStore
+  rollback works in real browsers; Project Hard Disk backup fails closed when
+  version history cannot be read; revision restore verifies persistence and
+  rolls back on a failed save.
+- A local `verify:ship` gate generates `dist/verification-report.json` and is
+  the release condition (hosted GitHub Actions availability remains an account
+  matter). Browser failure tests now cover the durability matrix end to end.
+- iPhone / WebKit can complete the full writing route and a black-box mobile
+  user journey ships.
+
 ## What Changed Most In One Month
 
 - The product moved from "an AI writing prototype" to a local-first writing

@@ -272,7 +272,7 @@ body.is-resizing-tdi .clio-chart-view-pane {
   top: 0;
   height: var(--clio-chart-track-height);
   box-sizing: border-box;
-  border: 1px solid var(--clio-chart-accent);
+  border: var(--clio-chart-mark-border);
   box-shadow: var(--clio-chart-material-shadow);
   backdrop-filter: var(--clio-chart-material-filter);
   -webkit-backdrop-filter: var(--clio-chart-material-filter);
@@ -365,7 +365,7 @@ body.is-resizing-tdi .clio-chart-view-pane {
   width: 16px;
   height: 9px;
   margin-right: 4px;
-  border: 1px solid var(--clio-chart-accent);
+  border: var(--clio-chart-mark-border);
   vertical-align: -1px;
 }
 
@@ -391,13 +391,14 @@ body.is-resizing-tdi .clio-chart-view-pane {
 
 .clio-chart-matrix {
   border-collapse: collapse;
-  font-size: 10px;
+  font-size: var(--clio-chart-matrix-size);
 }
 
 .clio-chart-matrix th,
 .clio-chart-matrix td {
-  padding: 2px 6px;
-  border: 1px solid var(--clio-chart-rule);
+  padding: var(--clio-chart-matrix-cell-padding);
+  border: var(--clio-chart-matrix-cell-border);
+  border-bottom: var(--clio-chart-matrix-row-rule);
   text-align: right;
   white-space: nowrap;
   vertical-align: top;
@@ -431,7 +432,7 @@ body.is-resizing-tdi .clio-chart-view-pane {
 
 .clio-chart-matrix-note {
   margin: 6px 0 0;
-  font-size: 9px;
+  font-size: var(--clio-chart-matrix-note-size);
   color: var(--clio-chart-muted);
 }
 
@@ -529,7 +530,7 @@ body.is-resizing-tdi .clio-chart-view-pane {
 .clio-chart-spatial-cell {
   min-height: var(--clio-chart-spatial-cell-height);
   padding: 5px;
-  border: 1px solid var(--clio-chart-accent);
+  border: var(--clio-chart-mark-border);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -613,7 +614,7 @@ body.is-resizing-tdi .clio-chart-view-pane {
 
 .clio-chart-score-track {
   height: var(--clio-chart-track-height);
-  border: 1px solid var(--clio-chart-accent);
+  border: var(--clio-chart-mark-border);
   background: var(--clio-chart-panel-quiet);
   border-radius: var(--clio-chart-radius);
   overflow: hidden;
@@ -738,7 +739,8 @@ body.is-resizing-tdi .clio-chart-view-pane {
 
   .clio-chart-grid tr {
     margin-bottom: 8px;
-    border: 1px solid var(--clio-chart-accent);
+    border: var(--clio-chart-card-border);
+    border-radius: var(--clio-chart-card-radius);
     background: var(--clio-chart-surface);
   }
 

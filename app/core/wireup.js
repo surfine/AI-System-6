@@ -1139,6 +1139,9 @@ function wireAppEvents() {
         bar.removeEventListener("pointermove", moveWindow);
         bar.removeEventListener("pointerup", stopMove);
         bar.removeEventListener("pointercancel", stopMove);
+        bar.removeEventListener("lostpointercapture", stopMove);
+        window.removeEventListener("pointerup", stopMove);
+        window.removeEventListener("pointercancel", stopMove);
         // A click that never moved is not a drag: leave the window exactly
         // where it is and keep it system-positioned.
         if (!didMove) {
@@ -1161,6 +1164,13 @@ function wireAppEvents() {
       bar.addEventListener("pointermove", moveWindow);
       bar.addEventListener("pointerup", stopMove);
       bar.addEventListener("pointercancel", stopMove);
+      // The title bar only hears the release while it still holds the pointer.
+      // Losing capture mid-drag left the dotted ghost on the desk with nothing
+      // able to clear it, so end the drag on that too, and let the window hear
+      // a release that never came back to the bar. Resize already does this.
+      bar.addEventListener("lostpointercapture", stopMove);
+      window.addEventListener("pointerup", stopMove);
+      window.addEventListener("pointercancel", stopMove);
     });
   });
 

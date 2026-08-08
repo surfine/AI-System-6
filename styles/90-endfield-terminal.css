@@ -260,24 +260,28 @@
 }
 
 .endfield-answer .markdown-body blockquote {
-  padding: 0.2em 0 0.2em 0.8em;
-  border-left: 3px solid var(--ink);
+  padding: 0.35em 0.8em;
+  border-left: var(--endfield-quote-rule);
+  border-radius: var(--endfield-quote-radius);
   background: var(--endfield-hover-bg);
 }
 
+/* Same number, same mark: the inline chip is the evidence index scaled down to
+   sit in a line of prose, not a second visual idea for the same reference. */
 .endfield-inline-citation {
   display: inline-grid;
   place-items: center;
-  min-width: 22px;
-  height: 18px;
-  margin-inline: 1px;
-  padding: 0 4px;
+  min-width: 17px;
+  height: 17px;
+  margin-inline: 2px;
+  padding: 0 3px;
   border: var(--endfield-index-border);
-  border-radius: 9px;
+  border-radius: var(--endfield-index-radius);
   background: var(--endfield-index-bg);
-  color: var(--endfield-muted);
+  color: var(--endfield-ink, var(--ink));
   font-family: var(--mono-font);
   font-size: 10px;
+  font-weight: 700;
   line-height: 1;
   vertical-align: 1px;
   cursor: pointer;
@@ -372,13 +376,17 @@
 .endfield-evidence-index {
   display: grid;
   place-items: center;
-  min-width: 24px;
+  min-width: 22px;
   width: auto;
-  height: 24px;
+  height: 22px;
   padding-inline: 4px;
   border: var(--endfield-index-border);
+  border-radius: var(--endfield-index-radius);
   background: var(--endfield-index-bg);
+  font-family: var(--mono-font);
+  font-size: 11px;
   font-weight: 700;
+  line-height: 1;
 }
 
 .endfield-evidence-title {
@@ -407,11 +415,29 @@
   margin: 0;
 }
 
-.endfield-evidence-body blockquote {
-  margin: 8px 0 0;
-  padding-left: 9px;
-  border-left: 2px solid var(--endfield-muted);
+/* Context lines are the surrounding transcript, so they read as a transcript:
+   the speaker becomes its own small tag above the line instead of running into
+   it, and the line keeps full ink — it is the archive text the answer stands
+   on, not a footnote. */
+.endfield-evidence-body .endfield-context {
+  margin: 6px 0 0;
+  padding: 4px 8px 5px 9px;
+  border-left: var(--endfield-context-rule);
+  border-radius: var(--endfield-context-radius);
+  background: var(--endfield-context-bg);
+}
+
+.endfield-context-speaker {
+  display: block;
   color: var(--endfield-muted);
+  font-family: var(--mono-font);
+  font-size: 10px;
+  font-style: normal;
+  letter-spacing: 0.04em;
+}
+
+.endfield-context-line {
+  display: block;
 }
 
 .endfield-command-bar {

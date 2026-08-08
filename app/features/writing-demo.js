@@ -1638,7 +1638,10 @@ async function writingDemoReviewDesk() {
 }
 
 async function writingDemoProjectCdAndDocMap() {
-  const item = addProjectCdItem(writingDemoAssertDocMapReadyManuscript(teachTextBodyInput.value), writingDemoFinalExportTitle);
+  const item = await addProjectCdItem(writingDemoAssertDocMapReadyManuscript(teachTextBodyInput.value), writingDemoFinalExportTitle, {
+    sourceDocumentId: activeTextFileId || "",
+    sourceKind: "markdown",
+  });
   writingDemoRequireText(item?.body, "Project CD");
   await writingDemoStage([{ name: "projectCd", slot: "wide" }]);
   if (item) {

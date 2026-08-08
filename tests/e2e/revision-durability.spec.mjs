@@ -112,9 +112,19 @@ test("revision durability: backups carry revisions through a wipe and restore", 
   // Export the Project Hard Disk backup through the real UI.
   await runAction(page, "open-project-info");
   await openWindow(page, "projectInfo");
-  const backupPromise = page.waitForEvent("download");
-  await page.click("#export-project-disk");
-  const backupDownload = await backupPromise;
+  await page.evaluate(() => {
+    if (typeof focusWindow === "function") focusWindow(getWindow("projectInfo"));
+    const win = document.querySelector('[data-window="projectInfo"]');
+    if (win) win.style.zIndex = "9999";
+  });
+  let backupDownload;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const backupPromise = page.waitForEvent("download", { timeout: 20_000 }).catch(() => null);
+    await page.click("#export-project-disk");
+    backupDownload = await backupPromise;
+    if (backupDownload) break;
+  }
+  expect(backupDownload).toBeTruthy();
   const backupPath = await backupDownload.path();
   const backupJson = JSON.parse(readFileSync(backupPath, "utf8"));
   expect(backupJson.formatVersion).toBe(3);

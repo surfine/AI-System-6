@@ -217,6 +217,11 @@
   --clio-chart-panel: var(--panel);
   --clio-chart-panel-quiet: var(--quiet-panel);
   --clio-chart-accent: var(--ink);
+  /* Frame colour for marks and boxes (bars, legend swatches, spatial cells,
+     score tracks). Classic draws them in ink, keeping the 1-bit print look;
+     Liquid Glass swaps to the surface hairline so a 1px accent border never
+     reads as a hard black box on translucent material. */
+  --clio-chart-mark-border: 1px solid var(--clio-chart-accent);
   --clio-chart-track: var(--shade);
   --clio-chart-pattern-paper: var(--paper);
   --clio-chart-reference: var(--shade);
@@ -246,6 +251,20 @@
   --clio-chart-grid-spacing: 0;
   --clio-chart-cell-height: 20px;
   --clio-chart-cell-padding: 2px 6px;
+  /* P2 comparison matrix. Classic draws the full ruled grid a System 6 table
+     has; Liquid Glass keeps only the row rules, because a box around every
+     cell reads as a black wireframe laid over the translucent material. */
+  --clio-chart-matrix-size: 10px;
+  --clio-chart-matrix-cell-padding: 2px 6px;
+  --clio-chart-matrix-cell-border: 1px solid var(--clio-chart-rule);
+  --clio-chart-matrix-row-rule: 1px solid var(--clio-chart-rule);
+  --clio-chart-matrix-note-size: 9px;
+  /* Stacked grid card (narrow container). Classic frames each row the way a
+     System 6 table does; Liquid Glass uses the surface hairline, because the
+     accent ink is an emphasis colour for bars and marks and reads as a hard
+     black box when it is spent on a card frame. */
+  --clio-chart-card-border: 1px solid var(--clio-chart-accent);
+  --clio-chart-card-radius: 0;
   --clio-chart-row-gap: 5px;
   --clio-chart-track-height: 16px;
   --clio-chart-switcher-width: auto;
@@ -1463,6 +1482,14 @@
   --endfield-evidence-divider: 1px solid var(--ink);
   --endfield-index-bg: var(--paper);
   --endfield-index-border: 1px solid var(--ink);
+  --endfield-index-radius: 0;
+  /* Surrounding lines of the same transcript. The quoted line is the evidence,
+     so it keeps full ink; only the speaker tag steps back. */
+  --endfield-context-rule: 1px solid var(--ink);
+  --endfield-context-bg: transparent;
+  --endfield-context-radius: 0;
+  --endfield-quote-rule: 3px solid var(--ink);
+  --endfield-quote-radius: 0;
   --quick-draft-panel-bg: var(--quiet-panel);
   --quick-draft-panel-border: 1px dotted var(--shade-dark);
   --quick-draft-panel-radius: 0;
@@ -1485,6 +1512,37 @@
     linear-gradient(45deg, var(--ink) 25%, transparent 25%, transparent 75%, var(--ink) 75%) 0 0 / 2px 2px,
     linear-gradient(45deg, var(--ink) 25%, transparent 25%, transparent 75%, var(--ink) 75%) 1px 1px / 2px 2px,
     var(--paper);
+  /* 文字亮室 state language (Figure 01 in drafts/text-photoshop): four
+     states, one language, two themes. Default is no border; a line only
+     appears where a state must be told apart. Classic draws with line
+     qualities — none, dotted, marching ants, moving 50% dither — because it
+     has no glow; Liquid draws with material (control points, travelling edge
+     light). Values are theme tokens; the selectors live once in 50-apps.css. */
+  --quick-draft-state-selected-outline: none;
+  --quick-draft-state-selected-surface:
+    repeating-linear-gradient(90deg, var(--ink) 0 5px, transparent 5px 10px) 0 0 / 20px 1px repeat-x,
+    repeating-linear-gradient(90deg, var(--ink) 0 5px, transparent 5px 10px) 0 100% / 20px 1px repeat-x,
+    repeating-linear-gradient(0deg, var(--ink) 0 5px, transparent 5px 10px) 0 0 / 1px 20px repeat-y,
+    repeating-linear-gradient(0deg, var(--ink) 0 5px, transparent 5px 10px) 100% 0 / 1px 20px repeat-y;
+  --quick-draft-state-control-points: none;
+  --quick-draft-state-selected-animation: quickDraftMarchingAnts 0.9s linear infinite;
+  --quick-draft-state-working-surface:
+    linear-gradient(45deg, var(--ink) 25%, transparent 25%, transparent 75%, var(--ink) 75%) 0 0 / 2px 2px repeat,
+    linear-gradient(45deg, var(--ink) 25%, transparent 25%, transparent 75%, var(--ink) 75%) 1px 1px / 2px 2px repeat;
+  --quick-draft-state-working-animation: quickDraftWorkingDither 1.1s steps(2) infinite;
+  --quick-draft-protected-fg: var(--ink);
+  /* 拼台 (task 8): the single-object canvas. The object level carries only
+     the visual transform; the text is the same Markdown as the article view.
+     The canvas is an empty-state surface (more material than article), never
+     a required stop on the fast path, and it does not exist on a phone. */
+  --quick-draft-canvas-dot: var(--ink);
+  --quick-draft-canvas-object-bg: var(--paper);
+  --quick-draft-canvas-object-border: var(--system-border);
+  --quick-draft-canvas-object-shadow: var(--system-shadow);
+  --quick-draft-canvas-handle-bg: var(--paper);
+  --quick-draft-canvas-handle-border: var(--system-control-line) solid var(--ink);
+  --quick-draft-canvas-rotate-fg: var(--ink);
+  --quick-draft-view-switch-border: var(--system-control-line) solid var(--ink);
 }
 
 html:lang(zh-Hans) {

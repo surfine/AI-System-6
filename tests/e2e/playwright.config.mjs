@@ -47,17 +47,17 @@ export default defineConfig({
     {
       name: "chromium-desktop",
       use: { ...devices["Desktop Chromium"] },
-      testIgnore: /mobile\.spec\.mjs$/,
+      testIgnore: /mobile-user-journey\.spec\.mjs$/,
     },
     {
       name: "webkit-desktop",
       use: { ...devices["Desktop Safari"] },
-      testIgnore: /mobile\.spec\.mjs$/,
+      testIgnore: /mobile-user-journey\.spec\.mjs$/,
     },
     {
       name: "iphone-webkit",
       use: { ...devices["iPhone 13"] },
-      testMatch: /mobile\.spec\.mjs$/,
+      testMatch: /mobile-user-journey\.spec\.mjs$/,
     },
   ],
   webServer: {

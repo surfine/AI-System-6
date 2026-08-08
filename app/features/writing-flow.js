@@ -946,6 +946,9 @@ async function advanceDraftsToReview() {
   if (typeof activateTeachTextManuscriptTab === "function") {
     activateTeachTextManuscriptTab({ focus: false });
   }
+  // This transition's destination IS the finalized manuscript: it must own
+  // the phone screen, not stay a hidden preview behind Section Drafts.
+  mobileManuscriptForegroundRequested = true;
   await openWindow("teachText");
   if (typeof setTeachTextFileLabel === "function") {
     await setTeachTextFileLabel("final", { persist: true });

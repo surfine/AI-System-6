@@ -2,7 +2,10 @@
 // Quick Draft adjustment layers — pure data.
 //
 // The image-editor metaphor: the writer's own text is the negative, and
-// 明明传球 / 洛洛接球 / HKRR 抬升 are adjustment layers that sit on top of it.
+// 明明传球 / 洛洛接球 / HKRR 抬升 / 密度 are adjustment layers that sit on top
+// of it. The first three are also ClioTalk commands; density is an adjustment
+// only — it has no command button of its own, its three strengths mean
+// "less compression / standard / more compression", and it composes the body.
 // Each layer has a switch and a strength parameter; a layer reads the negative
 // and never the output of another layer, so no rewrite is ever a lossy
 // re-encode of a previous rewrite (the rule that keeps "×n" readings honest).
@@ -16,7 +19,7 @@
 // and the prompt copy that turns a strength into instructions lives beside the
 // prompts that consume it.
 
-const ADJUSTMENT_LAYER_KINDS = ["mingming", "luoluo", "hkrr"];
+const ADJUSTMENT_LAYER_KINDS = ["mingming", "luoluo", "hkrr", "density"];
 const ADJUSTMENT_STRENGTHS = [25, 50, 75];
 const ADJUSTMENT_DEFAULT_STRENGTH = 50;
 

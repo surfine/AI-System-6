@@ -44,6 +44,52 @@
     adoptionTable: "",
   });
 
+  // 文字亮室 canvas (task 8): the article is an ordered path through objects.
+  // Phase 1 has exactly one text object holding the draft; the object's visual
+  // transform (position, size, angle) is separate from the semantic
+  // adjustment stack and never needs a model. The text itself stays in
+  // workspace.body — the canvas object is a view of the same Markdown.
+  function blankQuickDraftCanvas() {
+    return {
+      objects: [{
+        id: "obj-1",
+        x: 120,
+        y: 72,
+        width: 560,
+        height: 0,
+        angle: 0,
+      }],
+      path: ["obj-1"],
+    };
+  }
+
+  function normalizeQuickDraftCanvas(value = {}) {
+    const source = value && typeof value === "object" ? value : {};
+    const defaults = blankQuickDraftCanvas();
+    let objectIndex = 0;
+    const objects = (Array.isArray(source.objects) ? source.objects : [])
+      .map((item) => {
+        const object = item && typeof item === "object" ? item : {};
+        objectIndex += 1;
+        return {
+          id: String(object.id || `obj-${objectIndex}`),
+          x: Number.isFinite(Number(object.x)) ? Math.round(Number(object.x)) : defaults.objects[0].x,
+          y: Number.isFinite(Number(object.y)) ? Math.round(Number(object.y)) : defaults.objects[0].y,
+          width: Number.isFinite(Number(object.width)) ? Math.max(160, Math.round(Number(object.width))) : defaults.objects[0].width,
+          height: Number.isFinite(Number(object.height)) ? Math.max(0, Math.round(Number(object.height))) : 0,
+          angle: Number.isFinite(Number(object.angle)) ? Math.round(Number(object.angle)) : 0,
+        };
+      })
+      .filter((object) => object.id);
+    if (!objects.length) return defaults;
+    const ids = new Set(objects.map((object) => object.id));
+    const path = (Array.isArray(source.path) ? source.path : defaults.path)
+      .map((id) => String(id || ""))
+      .filter((id) => ids.has(id));
+    if (!path.length) path.push(objects[0].id);
+    return { objects, path };
+  }
+
   const refs = {};
   let bound = false;
   let saveTimer = null;
@@ -106,6 +152,13 @@
     refs.preview = $("quick-draft-preview");
     refs.togglePreviewButton = $("quick-draft-toggle-preview");
     refs.toggleGrainButton = $("quick-draft-toggle-grain");
+    refs.toggleCompositeButton = $("quick-draft-toggle-composite");
+    refs.canvas = document.querySelector("[data-quick-draft-canvas]");
+    refs.canvasStage = document.querySelector("[data-quick-draft-canvas-stage]");
+    refs.canvasObject = document.querySelector("[data-quick-draft-canvas-object]");
+    refs.canvasAngle = document.querySelector("[data-quick-draft-canvas-angle]");
+    refs.articleViewButton = document.querySelector("[data-quick-draft-view='article']");
+    refs.canvasViewButton = document.querySelector("[data-quick-draft-view='canvas']");
     refs.saveButton = $("quick-draft-save");
     refs.saveProjectDocButton = $("quick-draft-save-project-doc");
     refs.sendTeachTextButton = $("quick-draft-send-teachtext");
@@ -150,6 +203,8 @@
       humanAnchor: "",
       humanAnchorUpdatedAt: "",
       adjustmentLayers: [],
+      protectedRanges: [],
+      canvas: blankQuickDraftCanvas(),
       updatedAt: "",
       savedStatus: "saved",
       projectDocId: "",
@@ -299,6 +354,8 @@
       humanAnchor: String(source.humanAnchor || legacy.humanAnchor || ""),
       humanAnchorUpdatedAt: String(source.humanAnchorUpdatedAt || legacy.humanAnchorUpdatedAt || ""),
       adjustmentLayers: normalizeAdjustmentLayers(source.adjustmentLayers || legacy.adjustmentLayers),
+      protectedRanges: normalizeAdjustmentLayerMask(source.protectedRanges || legacy.protectedRanges),
+      canvas: normalizeQuickDraftCanvas(source.canvas || legacy.canvas),
       updatedAt: String(source.updatedAt || legacy.updatedAt || ""),
       savedStatus: source.savedStatus === "modified" ? "modified" : "saved",
       projectDocId: String(source.projectDocId || legacy.projectDocId || ""),
@@ -409,6 +466,8 @@
       sourceMap: previous.workspace.sourceMap,
       humanAnchor: previous.workspace.humanAnchor,
       humanAnchorUpdatedAt: previous.workspace.humanAnchorUpdatedAt,
+      protectedRanges: previous.workspace.protectedRanges,
+      canvas: previous.workspace.canvas,
       projectDocId: previous.workspace.projectDocId,
     };
   }
@@ -532,6 +591,7 @@
     ));
     saveQuickDraft({ workspace: { adjustmentLayers: next } }, { debounce: false });
     renderAdjustmentLayers(activeProjectQuickDraft({ create: false })?.record);
+    refreshQuickDraftPreviewIfOpen();
     setQuickDraftStatus(t("quick_draft_adjustment_saved"));
     return next;
   }
@@ -554,8 +614,6 @@
       if (checkbox) checkbox.checked = layer.enabled;
       if (select) select.value = String(layer.strength);
       if (maskInput) maskInput.value = adjustmentMaskSummary(layer.mask);
-      const chip = refs.form.querySelector(`[data-quick-draft-chat-action="${layer.kind}"]`);
-      if (chip) chip.disabled = !layer.enabled;
       const wrapper = refs.form.querySelector(`[data-quick-draft-adjustment-layer="${layer.kind}"]`);
       if (wrapper) {
         const up = wrapper.querySelector('[data-quick-draft-adjustment-move][data-direction="-1"]');
@@ -576,8 +634,15 @@
     next.splice(target, 0, layer);
     saveQuickDraft({ workspace: { adjustmentLayers: next } }, { debounce: false });
     renderAdjustmentLayers(activeProjectQuickDraft({ create: false })?.record);
+    refreshQuickDraftPreviewIfOpen();
     setQuickDraftStatus(t("quick_draft_adjustment_saved"));
     return next;
+  }
+
+  function refreshQuickDraftPreviewIfOpen() {
+    if (refs.draft?.closest(".teachtext-editor-container")?.classList.contains("is-previewing")) {
+      renderQuickDraftPreviewPane();
+    }
   }
 
   function adjustmentLayerLabelKey(kind = "") {
@@ -585,8 +650,147 @@
       mingming: "quick_draft_chip_mingming",
       luoluo: "quick_draft_chip_luoluo",
       hkrr: "quick_draft_chip_hkrr",
+      density: "quick_draft_adjustment_density",
     };
     return labels[kind] || "";
+  }
+
+  // ---- Protected spans ---------------------------------------------------
+  // Protection is a property of the text, not of a layer: a writer protects a
+  // quote from everything. It lives beside the negative at the workspace
+  // level, in the same line-range shape the mask uses, and every model call
+  // subtracts it before sending the body. A textarea cannot paint spans, so
+  // the honest representation stays line ranges ("3-5, 8"), readable and
+  // correctable as text, and the visual mark lives in the read-only preview.
+
+  function protectedRangesSnapshot(record = activeProjectQuickDraft({ create: false })?.record) {
+    return normalizeAdjustmentLayerMask(normalizeQuickDraftWorkspace(record?.workspace, record).protectedRanges);
+  }
+
+  function renderProtectedRangeControls(record = activeProjectQuickDraft({ create: false })?.record) {
+    const input = refs.form?.querySelector("[data-quick-draft-protected-ranges]");
+    if (!input) return;
+    input.value = adjustmentMaskSummary(protectedRangesSnapshot(record));
+  }
+
+  // The textarea selection is converted to 1-based inclusive line ranges; a
+  // selection inside one line protects that whole line, because a line-range
+  // mask cannot split a line.
+  function selectionLineRanges() {
+    const el = refs.draft;
+    if (!el) return [];
+    const value = String(el.value || "");
+    if (!value) return [];
+    const start = Math.min(Number(el.selectionStart) || 0, value.length);
+    const end = Math.max(Number(el.selectionEnd) || start, start);
+    const before = value.slice(0, start);
+    const selected = value.slice(start, end).replace(/\n$/, "");
+    const startLine = before.split(/\n/).length;
+    const endLine = startLine + Math.max(0, selected.split(/\n/).length - 1);
+    return [{ start: startLine, end: endLine }];
+  }
+
+  function protectSelectionFromTextarea() {
+    const ranges = selectionLineRanges();
+    if (!ranges.length) {
+      setQuickDraftStatus(t("quick_draft_protect_no_selection"));
+      refs.draft?.focus();
+      return false;
+    }
+    const next = normalizeAdjustmentLayerMask([...protectedRangesSnapshot(), ...ranges]);
+    saveQuickDraft({ workspace: { protectedRanges: next } }, { debounce: false });
+    renderProtectedRangeControls(activeProjectQuickDraft({ create: false })?.record);
+    refreshQuickDraftPreviewIfOpen();
+    setQuickDraftStatus(t("quick_draft_protect_saved"));
+    return true;
+  }
+
+  function scopeSelectionToLayer(kind = "") {
+    const ranges = selectionLineRanges();
+    if (!ranges.length) {
+      setQuickDraftStatus(t("quick_draft_scope_no_selection"));
+      refs.draft?.focus();
+      return false;
+    }
+    const layers = adjustmentLayersSnapshot();
+    const layer = layers.find((item) => item.kind === kind);
+    if (!layer) return false;
+    const merged = normalizeAdjustmentLayerMask([...(layer.mask || []), ...ranges]);
+    const next = layers.map((item) => (item.kind === kind ? { ...item, mask: merged } : item));
+    saveQuickDraft({ workspace: { adjustmentLayers: next } }, { debounce: false });
+    renderAdjustmentLayers(activeProjectQuickDraft({ create: false })?.record);
+    refreshQuickDraftPreviewIfOpen();
+    setQuickDraftStatus(t("quick_draft_scope_saved"));
+    return true;
+  }
+
+  function densityStrengthPromptLine(strength = ADJUSTMENT_DEFAULT_STRENGTH, zh = true) {
+    if (strength === 25) {
+      return zh
+        ? "- 密度调整层：少压。几乎保留全部原句，只压掉最妨碍“当天能录”的啰嗦；顺序、口气和判断不动。"
+        : "- Density adjustment: less compression. Keep nearly every original sentence; cut only the redundancy that blocks same-day recording; keep order, voice, and judgment.";
+    }
+    if (strength === 75) {
+      return zh
+        ? "- 密度调整层：多压。明显压缩：合并冗余句、删空话、让段落更密；不新增事实、不丢未测边界、不用风格覆盖事实。"
+        : "- Density adjustment: more compression. Compress hard: merge redundant sentences, cut filler, make the passage denser; never add facts, drop untested boundaries, or let style override facts.";
+    }
+    return zh
+      ? "- 密度调整层：标准。适度压缩：合并可省的句子、压掉泛泛总结，但保留作者判断、具体细节和已写出的口气。"
+      : "- Density adjustment: standard. Compress moderately: merge what can be saved and trim generic summary, but keep the author's judgment, concrete detail, and written voice.";
+  }
+
+  // One instruction line per enabled layer, in stored order. The mask is
+  // remapped onto the subtracted text so the line numbers the model sees are
+  // the ones in the prompt; a fully protected mask means the layer changes
+  // nothing.
+  function adjustmentLayerCompositionInstruction(layer = {}, sourceText = "", zh = true) {
+    const kind = String(layer?.kind || "");
+    const strength = Number(layer?.strength) || ADJUSTMENT_DEFAULT_STRENGTH;
+    const lensLine = kind === "density"
+      ? densityStrengthPromptLine(strength, zh)
+      : kind === "mingming"
+      ? (zh
+        ? "- 铭铭视角调整：朝“能拍、能念、能成立的当天口播”收紧这一遍；保留作者判断、犹豫和已写出的口气。"
+        : "- Mingming-perspective adjustment: tighten this pass toward shootable, speakable, defensible same-day spoken copy; keep the author's judgment, hesitation, and written voice.")
+      : kind === "luoluo"
+      ? (zh
+        ? "- 落落接收视角调整：让段落更容易直接开口念、不要求他重新拆资料；保留判断和真实口气，不写私人建议。"
+        : "- Luoluo-receiving adjustment: make the passage easier to read aloud without re-triaging sources; keep judgment and real voice; no private advice.")
+      : kind === "hkrr"
+      ? (zh
+        ? "- HKRR 调整：加发现感、信息增量、人的感受和节奏；不编造，不抹平边界。"
+        : "- HKRR adjustment: add discovery, information gain, human feeling, and rhythm; never invent, never flatten boundaries.")
+      : "";
+    const strengthLine = kind === "density" ? "" : adjustmentStrengthPromptLine(strength, zh);
+    const maskRanges = remapRangesAfterSubtraction(layer?.mask || [], protectedRangesSnapshot());
+    const maskLine = maskRanges.length
+      ? (zh
+        ? `- 本层只作用于下面正文的第 ${adjustmentMaskSummary(maskRanges)} 行；其余行保持原样，不要给建议。`
+        : `- This layer applies only to lines ${adjustmentMaskSummary(maskRanges)} of the text below; leave every other line alone.`)
+      : (zh
+        ? "- 本层蒙版所在的行全部受保护，这一层不改任何内容。"
+        : "- Every line this layer masks is protected; this layer changes nothing.");
+    return [lensLine, strengthLine, maskLine].filter(Boolean).join("\n");
+  }
+
+  // The protected text is quoted verbatim in the prompt, and the instruction
+  // says it must come back unchanged. The restore after the pass is the
+  // enforcement; this block is the request.
+  function protectedPromptBlock(protectedBlocks = [], zh = true) {
+    if (!protectedBlocks.length) return "";
+    const quotes = protectedBlocks.map((block) => `「${block.text}」`).join("\n\n");
+    return zh
+      ? [
+          "- 以下是你必须逐字保留、不得改动的受保护文字（连标点和换行都必须一致）：",
+          quotes,
+          "- 受保护文字必须在输出中逐字原样出现；可以出现在原位置，也可以原样保留在正文中，但不能改动、删减或改写。",
+        ].join("\n")
+      : [
+          "- The protected text below must be reproduced verbatim, punctuation and line breaks included:",
+          quotes,
+          "- Protected text must appear in the output exactly as stored; keep it at its original position and never reword, trim, or rewrite it.",
+        ].join("\n");
   }
 
   function grainMaskEntries(bodyText = "") {
@@ -1025,6 +1229,9 @@
 
   function setBusy(isBusy) {
     refs.form?.classList.toggle("is-busy", !!isBusy);
+    // AI working state: a slow travelling edge light (Liquid) or moving dither
+    // (Classic) over the editor — never a spinner on top of the text.
+    refs.draft?.closest(".teachtext-editor-container")?.classList.toggle("is-working", !!isBusy);
     [
       refs.saveProjectDocButton,
       refs.sendTeachTextButton,
@@ -1167,6 +1374,12 @@
     maskEntries.forEach((entry) => entry.ranges.forEach((range) => {
       for (let line = range.start; line <= range.end; line += 1) maskedLines.add(line);
     }));
+    // Protection is a property of the text: protected lines carry their own
+    // margin mark, distinct from the per-layer mask and from provenance colour.
+    const protectedLines = new Set();
+    protectedRangesSnapshot().forEach((range) => {
+      for (let line = range.start; line <= Math.min(range.end, report.body.split(/\n/).length); line += 1) protectedLines.add(line);
+    });
     const bodyLines = [[]];
     report.runs.forEach((run) => {
       const className = run.generation ? "quick-draft-grain-model" : "quick-draft-grain-author";
@@ -1188,13 +1401,14 @@
     });
     const body = bodyLines
       .map((pieces, lineIndex) => (
-        `<span class="quick-draft-grain-line${maskedLines.has(lineIndex + 1) ? " is-masked" : ""}">${pieces.join("")}</span>`
+        `<span class="quick-draft-grain-line${maskedLines.has(lineIndex + 1) ? " is-masked" : ""}${protectedLines.has(lineIndex + 1) ? " is-protected" : ""}">${pieces.join("")}</span>`
       ))
       .join("\n");
     const note = report.hasAnchor ? "" : `<p class="quick-draft-grain-note">${escapeHtml(t("quick_draft_grain_untouched"))}</p>`;
     const maskSummary = maskEntries
       .map((entry) => `${escapeHtml(entry.label)} ${escapeHtml(adjustmentMaskSummary(entry.ranges))}`)
       .join(" · ");
+    const protectedSummary = adjustmentMaskSummary(protectedRangesSnapshot());
     const readout = [
       `<span><b>${Math.round(report.authorRatio * 100)}%</b> ${escapeHtml(t("quick_draft_grain_negative"))}</span>`,
       `<span><b>${report.modelChars}</b> ${escapeHtml(t("quick_draft_grain_interpolated"))}</span>`,
@@ -1205,12 +1419,18 @@
       maskSummary
         ? `<span><b>${escapeHtml(t("quick_draft_grain_mask"))}</b> ${maskSummary}</span>`
         : "",
+      protectedSummary
+        ? `<span><b>${escapeHtml(t("quick_draft_grain_protected"))}</b> ${protectedSummary}</span>`
+        : "",
     ].join("");
     const legend = [
       `<span><i class="quick-draft-grain-swatch is-author"></i>${escapeHtml(t("quick_draft_grain_legend_author"))}</span>`,
       `<span><i class="quick-draft-grain-swatch is-model"></i>${escapeHtml(t("quick_draft_grain_legend_model"))}</span>`,
       report.deepest > 1
         ? `<span><i class="quick-draft-grain-generation">&times;n</i>${escapeHtml(t("quick_draft_grain_legend_generation"))}</span>`
+        : "",
+      protectedSummary
+        ? `<span><i class="quick-draft-grain-swatch is-protected"></i>${escapeHtml(t("quick_draft_grain_legend_protected"))}</span>`
         : "",
     ].join("");
     refs.preview.innerHTML = [
@@ -1219,6 +1439,265 @@
       `<pre class="quick-draft-grain-body">${body}</pre>`,
       `<div class="quick-draft-grain-legend">${legend}</div>`,
     ].join("");
+  }
+
+  // ---- Non-destructive composition and develop ---------------------------
+  // Body = negative + enabled adjustments applied in stored order. Each layer
+  // reads the negative, never another layer's output, so every prefix of the
+  // stack is its own cache key: computing the full stack caches every shorter
+  // prefix, and switching the last layer off is a cache hit with no model
+  // call. The pure rule lives in app/core/text-compose.js; this module keeps
+  // the in-memory cache, the prompt, and the record writes.
+
+  const quickDraftCompositeCache = new Map();
+  let quickDraftLastComposite = "";
+  let quickDraftLastCompositeKey = "";
+
+  // The negative is the boundary composition reads from: the writer's own
+  // text until the first model pass records an anchor, the stored anchor
+  // after that. It is never rewritten.
+  function quickDraftCompositeSource(record = activeProjectQuickDraft({ create: false })?.record) {
+    const workspace = normalizeQuickDraftWorkspace(record?.workspace, record);
+    return hasRecordedNegative(record)
+      ? workspace.humanAnchor
+      : String(refs.draft?.value || workspace.body || "");
+  }
+
+  function enabledAdjustmentLayers(record = activeProjectQuickDraft({ create: false })?.record) {
+    return adjustmentLayersSnapshot(record).filter((layer) => layer.enabled);
+  }
+
+  // The composite the preview should show right now. With no enabled layers
+  // the current document body is the composite. With layers, the full-stack
+  // composite comes from the cache (or the last Apply); anything else means
+  // the stack changed and Apply must rerun — the view never shows a composite
+  // that does not match the stack.
+  function currentCompositeState(record = activeProjectQuickDraft({ create: false })?.record) {
+    const workspace = normalizeQuickDraftWorkspace(record?.workspace, record);
+    const body = String(refs.draft?.value || workspace.body || "");
+    const layers = enabledAdjustmentLayers(record);
+    if (!layers.length) return { text: body, ready: true, stale: false };
+    const source = quickDraftCompositeSource(record);
+    const key = composeCacheKey({ source, layers, protectedRanges: protectedRangesSnapshot(record) });
+    if (quickDraftCompositeCache.has(key)) {
+      return { text: quickDraftCompositeCache.get(key), ready: true, stale: false };
+    }
+    if (quickDraftLastCompositeKey === key && quickDraftLastComposite) {
+      return { text: quickDraftLastComposite, ready: true, stale: false };
+    }
+    // Nothing has ever been applied: the body is the honest composite — the
+    // stack is declared but no adjustment has warmed up or changed anything.
+    if (!quickDraftLastCompositeKey) {
+      return { text: body, ready: true, stale: false };
+    }
+    return { text: quickDraftLastComposite || body, ready: false, stale: true };
+  }
+
+  function quickDraftMarkdownHtml(text = "", record = activeProjectQuickDraft({ create: false })?.record) {
+    if (!refs.preview) return "";
+    const value = String(text || "").trim();
+    if (!value) return `<p class="empty-folder-note">${escapeHtml(t("teachtext_preview_empty"))}</p>`;
+    const source = normalizeQuickDraftRecord(record);
+    let markdown = value;
+    if (!/^#\s+/m.test(value)) {
+      const title = String(source.workspace.title || titleFromBody(value)).trim().replace(/\s+/g, " ").slice(0, 64) || t("quick_draft_title");
+      markdown = [`# ${title}`, "", value].join("\n");
+    }
+    return markdownToSystemHtml(markdown);
+  }
+
+  function quickDraftMarkdownPreview(text = "") {
+    if (!refs.preview) return;
+    const html = quickDraftMarkdownHtml(text);
+    refs.preview.innerHTML = html;
+  }
+
+  function renderQuickDraftCompositePreview() {
+    const state = currentCompositeState();
+    if (!state.ready) {
+      refs.preview.innerHTML = `<p class="empty-folder-note">${escapeHtml(t("quick_draft_composite_pending"))}</p>`;
+      return;
+    }
+    quickDraftMarkdownPreview(state.text);
+  }
+
+  // 看片 — the reading view. The composite with no controls, no provenance
+  // colour, full width; the one place where the writer can stop operating and
+  // just read. The window frame switches to full width via .is-reading.
+  function renderQuickDraftReadingView() {
+    if (!refs.preview) return;
+    const state = currentCompositeState();
+    if (!state.ready) {
+      refs.preview.innerHTML = `<p class="empty-folder-note">${escapeHtml(t("quick_draft_composite_pending"))}</p>`;
+      return;
+    }
+    refs.preview.innerHTML = `<div class="quick-draft-reading">${quickDraftMarkdownHtml(state.text)}</div>`;
+  }
+
+  function buildCompositionPrompt({ sourceText = "", protectedBlocks = [], layers = [] }) {
+    const zh = currentLanguage === "zh";
+    const firstDay = firstDaySnapshot();
+    const targetFormat = normalizeScenario(refs.format?.value || FIRST_DAY_FORMAT);
+    const targetDuration = normalizeDuration(refs.duration?.value, targetFormat);
+    const formatText = formatLabel(targetFormat);
+    const lengthText = durationLabel(targetDuration, targetFormat);
+    const context = [
+      `对象/标题：${meaningfulFirstDayTitle(firstDay.title) || firstDay.subject || titleFromBody(sourceText)}`,
+      `稿件类型：${formatText}`,
+      `目标长度：${lengthText}`,
+    ].filter(Boolean).join("\n");
+    const layerInstructions = layers
+      .map((layer) => adjustmentLayerCompositionInstruction(layer, sourceText, zh))
+      .filter(Boolean)
+      .join("\n\n");
+    return zh
+      ? [
+          "钟点稿非破坏调整合成：",
+          "这是把下面的原稿按顺序应用已启用的调整层。你的任务是一遍完成全部调整，输出合成后的整篇正文。",
+          context,
+          "原稿（必须基于它改写，只改应改的部分）：",
+          sourceText || "（原稿为空）",
+          protectedPromptBlock(protectedBlocks, zh),
+          "调整层（按此顺序应用）：",
+          layerInstructions,
+          "- 事实只来自素材区和原稿；不新增事实、不把没亲测写成体验、不丢地区/Beta/待核边界、不用风格覆盖事实。",
+          "- 保留作者判断、具体细节和已写出的口气；不要只沿着上一版 AI 稿自我复制。",
+          "- 只输出正文文本本身：不要 Markdown 标题、说明、列表、JSON 或后台标签；不要用“当然”“好的”“以下是”开头。",
+          "- 受保护文字必须逐字保留在输出中。",
+        ].filter(Boolean).join("\n\n")
+      : [
+          "Quick Draft non-destructive composition:",
+          "Apply the enabled adjustment layers below to the source text, in order, in one pass, and return the full composed body.",
+          context,
+          "Source (rewrite from this; change only what a layer asks for):",
+          sourceText || "(empty source)",
+          protectedPromptBlock(protectedBlocks, zh),
+          "Adjustment layers (apply in this order):",
+          layerInstructions,
+          "- Facts come only from the material pane and the source; do not add facts, do not turn untested material into experience, do not drop region/Beta/pending-check boundaries, and do not let style override facts.",
+          "- Preserve the author's judgment, concrete detail, and written voice; do not self-replicate from a previous AI draft.",
+          "- Output the body text only: no Markdown headings, notes, lists, JSON, or backstage labels; do not begin with 'Sure', 'Of course', or 'Here is'.",
+          "- Protected text must appear verbatim in the output.",
+        ].filter(Boolean).join("\n\n");
+  }
+
+  async function compositionModelCall({ key, source, sourceText, protectedBlocks, layers }) {
+    const prompt = buildCompositionPrompt({ sourceText, protectedBlocks, layers });
+    const response = await fetchModelPayload({
+      model: typeof getLocalModelRequestName === "function" ? getLocalModelRequestName() : (modelInput?.value?.trim() || ""),
+      messages: withMarkdownModelMessages([{ role: "user", content: prompt }]),
+      temperature: 0.4,
+      max_tokens: 5200,
+      ai_system6_task_kind: "mingming_rewrite",
+      stream: false,
+    }, requestController?.signal);
+    if (!response.ok) {
+      throw new Error(serviceErrorDetail(response.status, await response.text()));
+    }
+    const result = await response.json().catch(() => ({}));
+    const raw = String(result?.choices?.[0]?.message?.content || "").trim();
+    return cleanMingmingQuickDraftBody(raw);
+  }
+
+  // Apply the enabled stack: compute the composite for every prefix (caching
+  // each) and show it. The body textarea is untouched until Develop.
+  async function applyAdjustmentLayers() {
+    const slot = activeProjectQuickDraft();
+    if (!slot) {
+      setQuickDraftStatus(t("quick_draft_no_project"));
+      return false;
+    }
+    const layers = enabledAdjustmentLayers(slot.record);
+    if (!layers.length) {
+      setQuickDraftStatus(t("quick_draft_apply_none"));
+      return false;
+    }
+    const source = quickDraftCompositeSource(slot.record);
+    if (!String(source || "").trim()) {
+      setQuickDraftStatus(t("quick_draft_empty_body"));
+      refs.draft?.focus();
+      return false;
+    }
+    if (requestController) requestController.abort();
+    requestController = new AbortController();
+    setBusy(true);
+    setQuickDraftStatus(t("quick_draft_applying"));
+    try {
+      const composed = await composeDocument({
+        source,
+        layers,
+        protectedRanges: protectedRangesSnapshot(slot.record),
+        cache: quickDraftCompositeCache,
+        runModel: compositionModelCall,
+      });
+      quickDraftLastComposite = composed.text;
+      quickDraftLastCompositeKey = composeCacheKey({
+        source,
+        layers,
+        protectedRanges: composed.ranges,
+      });
+      saveQuickDraft({}, { debounce: false });
+      renderQuickDraft(activeProjectQuickDraft({ create: false })?.record);
+      const restored = composed.prefixes.some((prefix) => prefix.restored.length);
+      setQuickDraftStatus(t(restored ? "quick_draft_protect_restored" : "quick_draft_apply_done"));
+      return true;
+    } catch (error) {
+      if (error?.name !== "AbortError") setQuickDraftStatus(t("quick_draft_failed", quickDraftFailureMessage(error)));
+      return false;
+    } finally {
+      requestController = null;
+      setBusy(false);
+    }
+  }
+
+  // Develop is an explicit action, never a side effect of export: the current
+  // composite is written into the body, the replaced body is left as a
+  // version dump (rollback point), and the stack is cleared. The text stays.
+  function developAdjustmentLayers() {
+    const slot = activeProjectQuickDraft();
+    if (!slot) {
+      setQuickDraftStatus(t("quick_draft_no_project"));
+      return false;
+    }
+    const state = currentCompositeState(slot.record);
+    if (!state.ready || !String(state.text || "").trim()) {
+      setQuickDraftStatus(t("quick_draft_develop_none"));
+      return false;
+    }
+    const composite = state.text;
+    const previousBody = String(refs.draft?.value || slot.record.workspace.body || "").trim();
+    const intake = intakeSnapshot(slot.record);
+    const patch = { stage: "draft", workspace: {} };
+    if (previousBody) {
+      const dumpEntry = normalizeVentEntry({
+        id: stableId("dump"),
+        text: previousBody,
+        createdAt: new Date().toISOString(),
+        sourceKind: "quick-draft-dump",
+      }, intake.ventLog.length);
+      patch.workspace.intake = normalizeIntake({
+        ...intake,
+        ventLog: [...(intake.ventLog || []), dumpEntry],
+      });
+    }
+    if (!hasRecordedNegative(slot.record)) {
+      patch.workspace.humanAnchor = previousBody;
+      patch.workspace.humanAnchorUpdatedAt = new Date().toISOString();
+    }
+    // Clearing the stack keeps the four layer rows but turns every layer off:
+    // no enabled adjustment remains.
+    patch.workspace.adjustmentLayers = normalizeAdjustmentLayers(
+      adjustmentLayersSnapshot(slot.record).map((layer) => ({ ...layer, enabled: false }))
+    );
+    patch.workspace.body = composite;
+    patch.workspace.title = titleFromBody(composite);
+    refs.draft.value = composite;
+    quickDraftLastComposite = "";
+    quickDraftLastCompositeKey = "";
+    const saved = saveQuickDraft(patch, { debounce: false });
+    renderQuickDraft(saved);
+    setQuickDraftStatus(t("quick_draft_develop_done"));
+    return true;
   }
 
   function looksLikePlaceholderDraft(text = "") {
@@ -1272,16 +1751,21 @@
 
   function renderQuickDraftPreviewPane() {
     if (quickDraftPreviewMode === "grain") renderQuickDraftGrain();
-    else renderQuickDraftPreview();
+    else if (quickDraftPreviewMode === "composite") renderQuickDraftReadingView();
+    else renderQuickDraftCompositePreview();
   }
 
   function syncQuickDraftPreviewButtons(active) {
     const previewing = active && quickDraftPreviewMode === "render";
     const graining = active && quickDraftPreviewMode === "grain";
+    const reading = active && quickDraftPreviewMode === "composite";
     refs.togglePreviewButton?.classList.toggle("is-active", previewing);
     refs.togglePreviewButton?.setAttribute("aria-pressed", previewing ? "true" : "false");
     refs.toggleGrainButton?.classList.toggle("is-active", graining);
     refs.toggleGrainButton?.setAttribute("aria-pressed", graining ? "true" : "false");
+    refs.toggleCompositeButton?.classList.toggle("is-active", reading);
+    refs.toggleCompositeButton?.setAttribute("aria-pressed", reading ? "true" : "false");
+    getWindow("quickDraft")?.classList.toggle("is-reading", reading);
   }
 
   function setQuickDraftPreviewMode(mode) {
@@ -1310,6 +1794,225 @@
 
   function toggleQuickDraftGrain() {
     setQuickDraftPreviewMode("grain");
+  }
+
+  function toggleQuickDraftComposite() {
+    setQuickDraftPreviewMode("composite");
+  }
+
+  // One key out: Escape leaves any preview mode back to the editor. The
+  // toggle in setQuickDraftPreviewMode only exits when the pressed mode is
+  // the active one; Escape must leave regardless of which mode is showing.
+  function leaveQuickDraftPreview() {
+    const container = refs.draft?.closest(".teachtext-editor-container");
+    if (!container || !refs.preview || !refs.draft) return;
+    quickDraftPreviewMode = "render";
+    container.classList.remove("is-previewing", "is-graining");
+    refs.preview.classList.add("is-hidden");
+    refs.preview.classList.remove("quick-draft-grain-pane");
+    refs.draft.classList.remove("is-hidden");
+    syncQuickDraftPreviewButtons(false);
+    if (quickDraftSurfaceMode === "canvas") {
+      refs.canvas?.classList.remove("is-hidden");
+    } else {
+      refs.draft.focus();
+    }
+  }
+
+  // ---- 拼台 (task 8): the single-object canvas ---------------------------
+  // The article is an ordered path through objects; Phase 1 has exactly one
+  // text object holding the draft. The object level carries only the visual
+  // transform (position, size, angle) — separate from the semantic adjustment
+  // stack, with a separate history — and the text stays in workspace.body:
+  // the canvas object is a view of the same Markdown.
+  //
+  // Which view opens follows the state of the work, not a setting: no
+  // material and no draft means the intake surface (today's linear two-pane),
+  // a draft means the article view, more material than article means the
+  // canvas. This is an empty-state rule, never a mode switch, and a manual
+  // view choice is never yanked back. No canvas on a phone.
+
+  let quickDraftSurfaceMode = "linear";
+  let quickDraftSurfaceManual = false;
+  let quickDraftEditingCanvasObject = false;
+
+  function quickDraftMaterialChars(record = activeProjectQuickDraft({ create: false })?.record) {
+    const workspace = normalizeQuickDraftWorkspace(record?.workspace, record);
+    const pieces = [
+      workspace.toolInputs.pastedSources,
+      (workspace.intake?.ventLog || []).map((entry) => entry.text).join("\n"),
+      (workspace.intake?.chatMaterials || []).map((entry) => entry.text).join("\n"),
+      workspace.intake?.outlineSeed || "",
+      workspace.strategyReport?.editorial || "",
+      workspace.strategyReport?.materialLedger || "",
+      workspace.strategyReport?.adoptionTable || "",
+    ];
+    return pieces.join("\n").length;
+  }
+
+  function quickDraftCanvasSuggests(record = activeProjectQuickDraft({ create: false })?.record) {
+    const workspace = normalizeQuickDraftWorkspace(record?.workspace, record);
+    const body = String(workspace.body || "").trim();
+    if (!body) return false;
+    return quickDraftMaterialChars(record) > body.length;
+  }
+
+  function quickDraftCanvasAllowed() {
+    if (typeof isNarrowViewport === "function" && isNarrowViewport()) return false;
+    return !/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+  }
+
+  function setQuickDraftSurface(mode = "linear", { manual = false } = {}) {
+    const next = mode === "canvas" && quickDraftCanvasAllowed() ? "canvas" : "linear";
+    quickDraftSurfaceMode = next;
+    if (manual) {
+      quickDraftSurfaceManual = true;
+      quickDraftEditingCanvasObject = false;
+    }
+    if (next === "canvas") {
+      leaveQuickDraftPreview();
+      refs.canvas?.classList.remove("is-hidden");
+      document.querySelector("[data-quick-draft-linear]")?.classList.add("is-hidden");
+    } else {
+      refs.canvas?.classList.add("is-hidden");
+      document.querySelector("[data-quick-draft-linear]")?.classList.remove("is-hidden");
+    }
+    getWindow("quickDraft")?.classList.toggle("is-canvas", next === "canvas");
+    refs.articleViewButton?.classList.toggle("is-active", next === "linear");
+    refs.canvasViewButton?.classList.toggle("is-active", next === "canvas");
+    if (next === "canvas") renderQuickDraftCanvas();
+    return next;
+  }
+
+  function syncQuickDraftSurfaceFromState(record = activeProjectQuickDraft({ create: false })?.record) {
+    if (quickDraftSurfaceManual) return;
+    setQuickDraftSurface(quickDraftCanvasSuggests(record) ? "canvas" : "linear");
+  }
+
+  function renderQuickDraftCanvas(record = activeProjectQuickDraft({ create: false })?.record) {
+    if (!refs.canvasObject) return;
+    const workspace = normalizeQuickDraftWorkspace(record?.workspace, record);
+    const canvas = normalizeQuickDraftCanvas(workspace.canvas);
+    const object = canvas.objects[0];
+    if (!object) return;
+    refs.canvasObject.dataset.quickDraftCanvasObject = object.id;
+    refs.canvasObject.classList.toggle("is-selected", canvas.path[0] === object.id);
+    refs.canvasObject.style.setProperty("--canvas-x", `${object.x}px`);
+    refs.canvasObject.style.setProperty("--canvas-y", `${object.y}px`);
+    refs.canvasObject.style.setProperty("--canvas-w", `${object.width}px`);
+    refs.canvasObject.style.setProperty("--canvas-h", `${object.height || 0}px`);
+    refs.canvasObject.style.setProperty("--canvas-angle", `${object.angle}deg`);
+    const textEl = refs.canvasObject.querySelector("[data-quick-draft-canvas-object-text]");
+    if (textEl) {
+      const body = String(workspace.body || "").trim();
+      textEl.textContent = body || t("quick_draft_canvas_empty");
+      textEl.classList.toggle("is-empty", !body);
+    }
+    if (refs.canvasAngle) refs.canvasAngle.textContent = `${object.angle}°`;
+  }
+
+  function bindQuickDraftCanvasInteractions() {
+    const objectEl = refs.canvasObject;
+    if (!objectEl || objectEl.dataset.canvasBound) return;
+    objectEl.dataset.canvasBound = "true";
+
+    const beginDrag = (event, mode, handle = "") => {
+      if (event.button !== undefined && event.button !== 0) return;
+      event.preventDefault();
+      const slot = activeProjectQuickDraft();
+      if (!slot) return;
+      const canvas = normalizeQuickDraftCanvas(slot.record.workspace.canvas);
+      const object = canvas.objects[0];
+      if (!object) return;
+      objectEl.classList.add("is-selected");
+      const startX = event.clientX;
+      const startY = event.clientY;
+      const startLeft = object.x;
+      const startTop = object.y;
+      const startWidth = object.width;
+      const startHeight = object.height || 0;
+      const startAngle = object.angle;
+      const rect = objectEl.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      const grabAngle = Math.atan2(startY - centerY, startX - centerX) * 180 / Math.PI + 90;
+
+      const onMove = (moveEvent) => {
+        const dx = moveEvent.clientX - startX;
+        const dy = moveEvent.clientY - startY;
+        if (mode === "move") {
+          objectEl.style.setProperty("--canvas-x", `${Math.round(startLeft + dx)}px`);
+          objectEl.style.setProperty("--canvas-y", `${Math.round(startTop + dy)}px`);
+          return;
+        }
+        if (mode === "rotate") {
+          const currentAngle = Math.atan2(moveEvent.clientY - centerY, moveEvent.clientX - centerX) * 180 / Math.PI + 90;
+          const angle = Math.round((startAngle + currentAngle - grabAngle) * 10) / 10;
+          objectEl.style.setProperty("--canvas-angle", `${angle}deg`);
+          if (refs.canvasAngle) refs.canvasAngle.textContent = `${angle}°`;
+          return;
+        }
+        const hHandle = handle.includes("e") ? 1 : handle.includes("w") ? -1 : 0;
+        const vHandle = handle.includes("s") ? 1 : handle.includes("n") ? -1 : 0;
+        if (hHandle !== 0) {
+          const width = Math.max(160, Math.round(startWidth + hHandle * dx));
+          objectEl.style.setProperty("--canvas-w", `${width}px`);
+          if (hHandle < 0) objectEl.style.setProperty("--canvas-x", `${Math.round(startLeft + dx)}px`);
+        }
+        if (vHandle !== 0) {
+          const baseHeight = startHeight || Math.max(96, Math.round(rect.height));
+          const height = Math.max(96, Math.round(baseHeight + vHandle * dy));
+          objectEl.style.setProperty("--canvas-h", `${height}px`);
+        }
+      };
+      const onUp = () => {
+        document.removeEventListener("pointermove", onMove);
+        document.removeEventListener("pointerup", onUp);
+        const nextObject = {
+          ...object,
+          x: Math.round(parseFloat(objectEl.style.getPropertyValue("--canvas-x")) || object.x),
+          y: Math.round(parseFloat(objectEl.style.getPropertyValue("--canvas-y")) || object.y),
+          width: Math.round(parseFloat(objectEl.style.getPropertyValue("--canvas-w")) || object.width),
+          height: Math.round(parseFloat(objectEl.style.getPropertyValue("--canvas-h")) || object.height || 0),
+          angle: Math.round(parseFloat(objectEl.style.getPropertyValue("--canvas-angle")) || object.angle),
+        };
+        const next = normalizeQuickDraftCanvas({
+          ...normalizeQuickDraftCanvas(slot.record.workspace.canvas),
+          objects: [nextObject],
+        });
+        saveQuickDraft({ workspace: { canvas: next } }, { debounce: false });
+        renderQuickDraftCanvas(activeProjectQuickDraft({ create: false })?.record);
+      };
+      document.addEventListener("pointermove", onMove);
+      document.addEventListener("pointerup", onUp);
+    };
+
+    objectEl.addEventListener("pointerdown", (event) => {
+      if (event.target.closest("[data-quick-draft-canvas-handle]")) return;
+      if (event.target.closest("[data-quick-draft-canvas-rotate]")) return;
+      beginDrag(event, "move");
+    });
+    objectEl.querySelectorAll("[data-quick-draft-canvas-handle]").forEach((handle) => {
+      handle.addEventListener("pointerdown", (event) => {
+        event.stopPropagation();
+        beginDrag(event, "resize", handle.dataset.quickDraftCanvasHandle);
+      });
+    });
+    objectEl.querySelector("[data-quick-draft-canvas-rotate]")?.addEventListener("pointerdown", (event) => {
+      event.stopPropagation();
+      beginDrag(event, "rotate");
+    });
+    // Two-level editing: double click enters the object, which expands to a
+    // comfortable linear measure (the article view) and the writer types
+    // normally; Escape returns to object level.
+    objectEl.addEventListener("dblclick", () => {
+      quickDraftEditingCanvasObject = true;
+      setQuickDraftSurface("linear");
+      requestAnimationFrame(() => {
+        refs.draft?.focus();
+        if (refs.draft) refs.draft.scrollTop = 0;
+      });
+    });
   }
 
   function mountedSourceRecords() {
@@ -1512,6 +2215,10 @@
     setQuickDraftStatus(t(source.workspace.savedStatus === "modified" ? "quick_draft_modified_state" : "quick_draft_saved_state"));
     refreshQuickDraftSelectControls();
     renderAdjustmentLayers(source);
+    renderProtectedRangeControls(source);
+    if (quickDraftSurfaceMode === "canvas") renderQuickDraftCanvas(source);
+    refs.articleViewButton?.classList.toggle("is-active", quickDraftSurfaceMode !== "canvas");
+    refs.canvasViewButton?.classList.toggle("is-active", quickDraftSurfaceMode === "canvas");
     // A model pass rewrites the body under an open preview; the grain view is
     // the one that must not go stale, since it reports on that very rewrite.
     if (refs.draft?.closest(".teachtext-editor-container")?.classList.contains("is-previewing")) {
@@ -1613,15 +2320,19 @@
       const targetDuration = normalizeDuration(refs.duration?.value, targetFormat);
       const existingHumanAnchor = humanAnchorSnapshot();
       const humanAnchor = existingHumanAnchor || currentBody;
+      const protectedRanges = protectedRangesSnapshot();
+      const subtracted = subtractProtectedRanges(currentBody, protectedRanges);
       const payload = {
         ...activeModelPayload(),
         stage,
         language: currentLanguage,
         taskKind,
         thesis: launchDayMode ? (currentBody || thesis) : (thesis || currentBody),
-        currentBody,
-        authorDraft: currentBody,
+        currentBody: subtracted.sourceText,
+        authorDraft: subtracted.sourceText,
         humanAnchor,
+        protectedRanges,
+        protectedBlocks: subtracted.protectedBlocks,
         adjustmentLayers: adjustmentLayersSnapshot(),
         targetFormat: routeFormat,
         displayFormat: targetFormat,
@@ -1713,6 +2424,7 @@
           sourceMap: Array.isArray(data.sourceMap) ? data.sourceMap : [],
         },
       };
+      let protectedRestored = false;
       if (stage === "draft" && data.draft) {
         if (looksLikePlaceholderDraft(data.draft)) {
           setQuickDraftStatus(t("quick_draft_placeholder_draft_rejected"));
@@ -1726,7 +2438,10 @@
         }
         const previousBody = String(refs.draft?.value || "").trim();
         const nextBody = String(data.draft || "").trim();
-        if (previousBody && !hasMeaningfulDraftChange(previousBody, nextBody)) {
+        const enforced = restoreProtectedRanges(nextBody, previousBody, protectedRanges);
+        const finalBody = enforced.text;
+        protectedRestored = enforced.restored.length > 0;
+        if (previousBody && !hasMeaningfulDraftChange(previousBody, finalBody)) {
           saveQuickDraft(patch, { debounce: false });
           setQuickDraftStatus(t("quick_draft_no_revision"));
           return false;
@@ -1752,7 +2467,7 @@
           patch.workspace.humanAnchor = previousBody;
           patch.workspace.humanAnchorUpdatedAt = new Date().toISOString();
         }
-        refs.draft.value = nextBody;
+        refs.draft.value = finalBody;
         patch.draft = refs.draft.value;
         patch.workspace.body = refs.draft.value;
         patch.workspace.title = titleFromBody(refs.draft.value);
@@ -1772,7 +2487,7 @@
       }
       const saved = saveQuickDraft(patch, { debounce: false });
       renderQuickDraft(saved);
-      setQuickDraftStatus(t("quick_draft_done"));
+      setQuickDraftStatus(t(protectedRestored ? "quick_draft_protect_restored" : "quick_draft_done"));
       return true;
     } catch (error) {
       if (error?.name !== "AbortError") {
@@ -1785,7 +2500,7 @@
     }
   }
 
-  function buildQuickDraftMingmingPrompt({ firstDay, sources, targetFormat, targetDuration, currentBody, humanAnchor }) {
+  function buildQuickDraftMingmingPrompt({ firstDay, sources, targetFormat, targetDuration, currentBody, humanAnchor, protectedBlocks = [] }) {
     const sourceContext = formatQuickDraftSourcesForMingming(sources);
     const formatText = formatLabel(targetFormat);
     const lengthText = durationLabel(targetDuration, targetFormat);
@@ -1823,6 +2538,7 @@
     const outline = [
       currentBody ? `当前正文：\n${currentBody}` : "",
       humanAnchor && humanAnchor !== currentBody ? `人的原稿锚点：\n${humanAnchor}` : "",
+      protectedBlocks.length ? protectedPromptBlock(protectedBlocks, currentLanguage === "zh") : "",
       sourceContext ? `素材池：\n${sourceContext}` : "",
     ].filter(Boolean).join("\n\n");
     return `${buildMingmingRewritePrompt({
@@ -1871,13 +2587,16 @@ ${projectContext}`;
       const targetDuration = normalizeDuration(refs.duration?.value, targetFormat);
       const previousBody = currentBody;
       const humanAnchor = humanAnchorSnapshot() || previousBody;
+      const protectedRanges = protectedRangesSnapshot(slot.record);
+      const subtracted = subtractProtectedRanges(previousBody, protectedRanges);
       const prompt = buildQuickDraftMingmingPrompt({
         firstDay,
         sources: sourceRecords,
         targetFormat,
         targetDuration,
-        currentBody: previousBody,
+        currentBody: subtracted.sourceText,
         humanAnchor,
+        protectedBlocks: subtracted.protectedBlocks,
       });
       const response = await fetchModelPayload({
         model: typeof getLocalModelRequestName === "function" ? getLocalModelRequestName() : (modelInput?.value?.trim() || ""),
@@ -1893,15 +2612,18 @@ ${projectContext}`;
       const result = await response.json().catch(() => ({}));
       const raw = String(result?.choices?.[0]?.message?.content || "").trim();
       const nextBody = cleanMingmingQuickDraftBody(raw);
-      if (!nextBody) {
+      const enforced = restoreProtectedRanges(nextBody, previousBody, protectedRanges);
+      const finalBody = enforced.text;
+      const protectedRestored = enforced.restored.length > 0;
+      if (!finalBody) {
         setQuickDraftStatus(t("quick_draft_parse_failed"));
         return false;
       }
-      if (looksLikePlaceholderDraft(nextBody)) {
+      if (looksLikePlaceholderDraft(finalBody)) {
         setQuickDraftStatus(t("quick_draft_placeholder_draft_rejected"));
         return false;
       }
-      if (previousBody && !hasMeaningfulDraftChange(previousBody, nextBody)) {
+      if (previousBody && !hasMeaningfulDraftChange(previousBody, finalBody)) {
         setQuickDraftStatus(t("quick_draft_no_revision"));
         return false;
       }
@@ -1911,8 +2633,8 @@ ${projectContext}`;
         raw,
         sourceMap: sourceRecords.map((source) => ({ id: source.id, label: source.label })),
         workspace: {
-          body: nextBody,
-          title: titleFromBody(nextBody),
+          body: finalBody,
+          title: titleFromBody(finalBody),
           sourceMap: sourceRecords.map((source) => ({ id: source.id, label: source.label })),
         },
       };
@@ -1936,10 +2658,10 @@ ${projectContext}`;
         patch.workspace.humanAnchor = previousBody;
         patch.workspace.humanAnchorUpdatedAt = new Date().toISOString();
       }
-      refs.draft.value = nextBody;
+      refs.draft.value = finalBody;
       const saved = saveQuickDraft(patch, { debounce: false });
       renderQuickDraft(saved);
-      setQuickDraftStatus(t("quick_draft_done"));
+      setQuickDraftStatus(t(protectedRestored ? "quick_draft_protect_restored" : "quick_draft_done"));
       return true;
     } catch (error) {
       if (error?.name !== "AbortError") setQuickDraftStatus(t("quick_draft_failed", quickDraftFailureMessage(error)));
@@ -2659,9 +3381,19 @@ ${projectContext}`;
   async function runClioTalkAction(kind = "", options = {}) {
     const action = String(kind || "").trim();
     if (options.announceUser) {
-      await ensureQuickDraftClioTalk();
-      if (typeof addMessage === "function") {
-        addMessage("user", `${currentLanguage === "zh" ? "钟点稿命令" : "Quick Draft command"}：${quickDraftCommandLabel(action === "organize" ? "collect-vent-outline" : action)}`);
+      const announce = () => {
+        if (typeof addMessage === "function") {
+          addMessage("user", `${currentLanguage === "zh" ? "钟点稿命令" : "Quick Draft command"}：${quickDraftCommandLabel(action === "organize" ? "collect-vent-outline" : action)}`);
+        }
+      };
+      if (action === "mingming" || action === "luoluo" || action === "hkrr") {
+        // The adjustment command's result lives in the Quick Draft window;
+        // the transcript log line must not arrange and focus the assistant.
+        announce();
+      } else {
+        // Advice commands append their card to SideAsk; the pairing is
+        // re-ensured before they run, so the log line is never a gate.
+        ensureQuickDraftClioTalk().then(announce).catch(() => {});
       }
     }
     if (action === "vent-on" || action === "vent-off") {
@@ -2674,16 +3406,7 @@ ${projectContext}`;
     if (action === "organize") return collectVentOutline();
     if (action === "vent-summary") return collectVentOutline();
     if (action === "draft") return requestMingmingQuickDraft();
-    if (action === "mingming" || action === "luoluo" || action === "hkrr") {
-      const layer = adjustmentLayerState(action);
-      if (layer && !layer.enabled) {
-        setQuickDraftStatus(t("quick_draft_adjustment_disabled"));
-        return false;
-      }
-    }
-    if (action === "mingming") return runNextAction("mingming");
-    if (action === "luoluo") return runNextAction("luoluo");
-    if (action === "hkrr") return runNextAction("hkrr");
+    if (action === "mingming" || action === "luoluo" || action === "hkrr") return runAdjustmentCommand(action);
     if (action === "praise") return requestQuickDraft("brief", {
       taskKind: "praise",
       userNotes: nextActionNote("praise"),
@@ -2692,6 +3415,39 @@ ${projectContext}`;
     if (action === "hook") return runNextAction("hook");
     if (action === "boundary") return runNextAction("boundary");
     return false;
+  }
+
+  // Task 5: the named commands create or update their adjustment instead of
+  // overwriting the body. A body selection scopes the layer; the layer is
+  // enabled; then the stack composes non-destructively (every prefix cached),
+  // so the writer sees the composite and can switch the layer off and look
+  // again. The fast path's single Draft button and its one model call are
+  // untouched.
+  async function runAdjustmentCommand(kind = "") {
+    const slot = activeProjectQuickDraft();
+    if (!slot) {
+      setQuickDraftStatus(t("quick_draft_no_project"));
+      return false;
+    }
+    const layers = adjustmentLayersSnapshot(slot.record);
+    const layer = layers.find((item) => item.kind === kind);
+    if (!layer) return false;
+    const selection = selectionLineRanges();
+    const nextLayers = layers.map((item) => {
+      if (item.kind !== kind) return item;
+      const mask = selection.length
+        ? normalizeAdjustmentLayerMask([...(item.mask || []), ...selection])
+        : item.mask;
+      return { ...item, enabled: true, mask };
+    });
+    saveQuickDraft({ workspace: { adjustmentLayers: nextLayers } }, { debounce: false });
+    renderAdjustmentLayers(activeProjectQuickDraft({ create: false })?.record);
+    refreshQuickDraftPreviewIfOpen();
+    if (String(quickDraftCompositeSource(slot.record) || "").trim()) {
+      return applyAdjustmentLayers();
+    }
+    setQuickDraftStatus(t("quick_draft_adjustment_added"));
+    return true;
   }
 
   function startWritingNow() {
@@ -2737,6 +3493,15 @@ ${projectContext}`;
       const maskInput = event.target?.closest?.("[data-quick-draft-adjustment-mask]");
       if (maskInput) {
         updateAdjustmentLayer(maskInput.dataset.quickDraftAdjustmentMask, { mask: maskInput.value });
+        return;
+      }
+      const protectedInput = event.target?.closest?.("[data-quick-draft-protected-ranges]");
+      if (protectedInput) {
+        const next = normalizeAdjustmentLayerMask(protectedInput.value);
+        saveQuickDraft({ workspace: { protectedRanges: next } }, { debounce: false });
+        renderProtectedRangeControls(activeProjectQuickDraft({ create: false })?.record);
+        refreshQuickDraftPreviewIfOpen();
+        setQuickDraftStatus(t("quick_draft_protect_saved"));
       }
     });
     refs.format?.addEventListener("change", () => {
@@ -2749,6 +3514,27 @@ ${projectContext}`;
     }, true);
     refs.togglePreviewButton?.addEventListener("click", toggleQuickDraftPreview);
     refs.toggleGrainButton?.addEventListener("click", toggleQuickDraftGrain);
+    refs.toggleCompositeButton?.addEventListener("click", toggleQuickDraftComposite);
+    // Object selected: a real selection in the body raises the bounding box +
+    // control points state (Classic marching ants), the same box Protect and
+    // scope read from.
+    const syncQuickDraftSelectionState = () => {
+      const el = refs.draft;
+      const selected = Boolean(
+        el
+        && !el.classList.contains("is-hidden")
+        && el.selectionStart !== null
+        && el.selectionEnd !== null
+        && el.selectionStart !== el.selectionEnd
+      );
+      el?.closest(".teachtext-editor-container")?.classList.toggle("is-selected", selected);
+    };
+    ["select", "mouseup", "keyup"].forEach((eventName) => {
+      refs.draft?.addEventListener(eventName, syncQuickDraftSelectionState);
+    });
+    refs.draft?.addEventListener("blur", () => {
+      refs.draft?.closest(".teachtext-editor-container")?.classList.remove("is-selected");
+    });
     // Return to an active Quick Draft side-ask conversation from the source
     // page; askClioTalk re-arranges (and focuses) the paired assistant when a
     // session is already running instead of stacking a second one.
@@ -2800,12 +3586,62 @@ ${projectContext}`;
         moveAdjustmentLayer(move.dataset.quickDraftAdjustmentMove, Number(move.dataset.direction) || -1);
         return;
       }
+      const protectSelection = event.target.closest("[data-quick-draft-protect-selection]");
+      if (protectSelection) {
+        if (refs.tools) refs.tools.open = false;
+        protectSelectionFromTextarea();
+        return;
+      }
+      const scopeButton = event.target.closest("[data-quick-draft-adjustment-scope]");
+      if (scopeButton) {
+        scopeSelectionToLayer(scopeButton.dataset.quickDraftAdjustmentScope || "");
+        return;
+      }
+      const applyButton = event.target.closest("[data-quick-draft-adjustment-apply]");
+      if (applyButton) {
+        if (refs.tools) refs.tools.open = false;
+        applyAdjustmentLayers();
+        return;
+      }
+      const developButton = event.target.closest("[data-quick-draft-adjustment-develop]");
+      if (developButton) {
+        if (refs.tools) refs.tools.open = false;
+        developAdjustmentLayers();
+        return;
+      }
       const quickDraftAction = event.target.closest("[data-quick-draft-chat-action]");
       if (quickDraftAction) {
         if (refs.tools) refs.tools.open = false;
         runClioTalkAction(quickDraftAction.dataset.quickDraftChatAction || "", { announceUser: true });
       }
     });
+    // 看片: one key to enter (v), one key to leave (Escape). The writer can
+    // stop being an operator for a minute; typing in the body is never
+    // hijacked.
+    document.addEventListener("keydown", (event) => {
+      const quickDraftActive = !getWindow("quickDraft")?.classList.contains("is-hidden");
+      if (!quickDraftActive) return;
+      const target = event.target;
+      const typing = Boolean(target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable));
+      if (event.key === "Escape" && quickDraftEditingCanvasObject) {
+        event.preventDefault();
+        quickDraftEditingCanvasObject = false;
+        setQuickDraftSurface("canvas");
+        return;
+      }
+      if (event.key === "Escape" && quickDraftPreviewMode !== "render") {
+        event.preventDefault();
+        leaveQuickDraftPreview();
+        return;
+      }
+      if ((event.key === "v" || event.key === "V") && !typing && !event.metaKey && !event.ctrlKey && !event.altKey) {
+        event.preventDefault();
+        toggleQuickDraftComposite();
+      }
+    });
+    refs.articleViewButton?.addEventListener("click", () => setQuickDraftSurface("linear", { manual: true }));
+    refs.canvasViewButton?.addEventListener("click", () => setQuickDraftSurface("canvas", { manual: true }));
+    bindQuickDraftCanvasInteractions();
   }
 
   function captureWorkingSession() {
@@ -2845,6 +3681,7 @@ ${projectContext}`;
   async function open(options = {}) {
     bind();
     renderQuickDraft();
+    syncQuickDraftSurfaceFromState();
     await openWindow("quickDraft", { ...options, skipQuickDraftEntrypoint: true });
     const win = getWindow("quickDraft");
     if (!options.skipSideAsk && typeof arrangeWindowAssistantSplit === "function" && !isMultiFinderMode()) {
@@ -2880,6 +3717,13 @@ ${projectContext}`;
     isVentIntakeActive,
     importChatScreenshots,
     togglePreview: toggleQuickDraftPreview,
+    toggleComposite: toggleQuickDraftComposite,
+    previewMode: () => quickDraftPreviewMode,
+    surfaceMode: () => quickDraftSurfaceMode,
+    setView: (mode) => setQuickDraftSurface(mode === "canvas" ? "canvas" : "linear", { manual: true }),
+    protectSelection: protectSelectionFromTextarea,
+    applyAdjustments: applyAdjustmentLayers,
+    develop: developAdjustmentLayers,
     copyMarkdown: copyQuickDraftMarkdown,
     collectVentOutline,
     adoptFirstImpression,

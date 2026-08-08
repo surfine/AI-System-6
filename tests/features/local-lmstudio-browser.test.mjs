@@ -374,6 +374,27 @@ const modelPayload = {
   }
 }
 
+{
+  // WebKit presents a timed-out fetch as a plain AbortError ("Fetch is
+  // aborted") while the real reason lives on the signal. The client must
+  // still classify it as a timeout instead of swallowing it as a user
+  // cancellation (which left the desk Busy forever on WebKit).
+  const client = makeClient(async (_url, options) => new Promise((_resolve, reject) => {
+    options.signal.addEventListener("abort", () => {
+      reject(new DOMException("Fetch is aborted", "AbortError"));
+    }, { once: true });
+  }));
+  const keepProcessAlive = setTimeout(() => {}, 100);
+  try {
+    await client.chat({ model: "timeout-model", messages: [], stream: false }, { timeoutMs: 5 }).then(
+      () => ok(false, "classifies WebKit-shaped timeout aborts"),
+      (error) => ok(String(error.message).includes("lmstudio_timeout"), "classifies WebKit-shaped timeout aborts")
+    );
+  } finally {
+    clearTimeout(keepProcessAlive);
+  }
+}
+
 ok(!source.includes("/api/v0/"), "never probes the legacy v0 API");
 ok(!source.includes('"/api/chat"') && !source.includes('"/api/models"'), "client contains no VPS local-model proxy fallback");
 ok(read("app/core/persistence-status.js").includes('local_connection_safari_unsupported'), "control panel maps Safari to a dedicated connection state");

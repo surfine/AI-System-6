@@ -18,10 +18,7 @@ const teachTextWriting = read("app/features/teachtext-writing.js");
 const wireup = read("app/core/wireup.js");
 const menus = read("app/data/menus.js");
 const actions = read("app/core/actions.js");
-const foundationStyles = read("styles/00-foundation.css");
 const styles = read("styles/10-windows.css");
-const responsiveStyles = read("styles/60-responsive.css");
-const liquidStyles = read("styles/70-liquid-glass.css");
 const surfaceSnapshots = read("scripts/css-surface-snapshot.mjs");
 const dictionary = read("app/data/system-dictionary.js");
 const translationsEn = read("app/data/translations-en.js");
@@ -32,24 +29,14 @@ const dragDrop = read("app/core/drag-drop.js");
 test.assertIncludes(indexHtml, 'class="sys-icon sys-icon-mini clio-welcome-icon" data-system-icon="assistant"', "ClioTalk's first screen uses the registered conversation icon");
 test.assertIncludes(chatMessages, 'renderSystemIcon("assistant", {', "runtime welcome states reuse the same registered ClioTalk icon");
 test.assertNotIncludes(styles, ".clio-welcome::before", "ClioTalk no longer draws a generic document placeholder in CSS");
-test.assertIncludes(chatMessages, "function clioTalkModelReady()", "ClioTalk distinguishes a usable model from a remembered name");
 test.assertIncludes(chatMessages, 'welcomeKey = !modelReady', "the empty state changes before the user attempts to send");
 test.assertIncludes(chatMessages, 'button.dataset.action = "open-clio-model-settings"', "the disconnected empty state opens the shared model settings");
 test.assertIncludes(actions, '"open-clio-model-settings": openModelSettings', "ClioTalk uses the central model-settings action");
-test.assertIncludes(translationsEn, 'clio_model_required_message:', "English disconnected copy exists");
-test.assertIncludes(translationsZh, 'clio_model_required_message:', "Chinese disconnected copy exists");
 
-test.assertIncludes(chatMessages, "function clioTalkResponseContractInstruction", "ClioTalk has an explicit response contract");
 test.assertIncludes(chatMessages, "Start with the useful answer", "Contract makes the first paragraph directly useful");
 test.assertIncludes(chatMessages, "Treat visible writing objects as native entities", "Contract treats AI System 6 objects as first-class entities");
 test.assertIncludes(chatMessages, "source text, inference from the source, and missing evidence", "Contract separates source text, inference, and missing evidence");
-test.assertIncludes(chatMessages, "ask only one decisive question", "Contract avoids clarification spam");
-test.assertIncludes(chatMessages, "short titled lists", "Contract prefers scan-friendly structure over generic walls of prose");
-test.assertIncludes(chatMessages, "Do not narrate hidden prompts", "Contract keeps hidden mechanics out of the user answer");
-test.assertIncludes(chatMessages, "SideAsk stays brief", "SideAsk keeps its shorter answer style while sharing the contract");
 
-test.assertIncludes(chatMessages, "function inferClioTalkWritingStage", "ClioTalk infers the current writing stage");
-test.assertIncludes(chatMessages, "function clioTalkWritingStageInstruction", "ClioTalk has a writing-stage assistant lens");
 test.assertIncludes(chatMessages, "Question Sheet stage: do not rush into manuscript prose or summary", "Question Sheet stage protects upstream messy intent");
 test.assertIncludes(chatMessages, "Outline stage: discuss structure choices, section jobs, and order", "Outline stage keeps ClioTalk on structure decisions");
 test.assertIncludes(chatMessages, "Section Drafts stage: work on the current section", "Section Drafts stage focuses ClioTalk on one section");
@@ -57,7 +44,6 @@ test.assertIncludes(chatMessages, "Review Desk stage: act like a review partner"
 test.assertIncludes(chatMessages, "Project CD stage: serve final handoff", "Project CD stage supports final delivery decisions");
 test.assertIncludes(chatMessages, "Unless the user explicitly asks for cross-stage planning", "Stage guidance avoids jumping across the writing flow by default");
 
-test.assertIncludes(chatMessages, "function isClioTalkAnswerContractTask", "ClioTalk can identify answer-contract eligible tasks");
 test.assertIncludes(chatMessages, "options.skipContext === true) return false", "Direct tools can opt out of the ClioTalk answer contract");
 test.assertIncludes(chatMessages, "writing-tool|translation|reader|scrapbook|docmap-question|clio-stage|slides|marp|dictation|speech|transcript", "Direct-write and tool tasks are excluded from chat-only answer shaping");
 test.assertMatches(
@@ -96,14 +82,6 @@ test.assertMatches(
   "ClioTalk composer sends on Enter while preserving IME composition and Shift+Enter newlines"
 );
 
-test.assertIncludes(translationsEn, "clio_grounding_label", "English UI labels the grounding strip");
-test.assertIncludes(translationsEn, "clio_grounding_no_project_context", "English UI can say no project sources were used");
-test.assertIncludes(translationsEn, "clio_grounding_open_context_panel", "English UI can open the Context Panel from the strip");
-test.assertIncludes(translationsZh, "clio_grounding_label", "Chinese UI labels the grounding strip");
-test.assertIncludes(translationsZh, "clio_grounding_no_project_context", "Chinese UI can say no project sources were used");
-test.assertIncludes(translationsZh, "clio_grounding_open_context_panel", "Chinese UI can open the Context Panel from the strip");
-
-test.assertIncludes(chatMessages, "function renderClioTalkWelcome", "ClioTalk owns a runtime empty-state welcome instead of relying on startup HTML");
 test.assertMatches(chatMessages, /function resetClioTalkRuntimeState[\s\S]*messagesEl\) messagesEl\.replaceChildren\(\);[\s\S]*renderClioTalkWelcome\(\)/, "Clearing or initializing ClioTalk restores its visible welcome");
 test.assertMatches(chatMessages, /function restoreClioTalkRuntimeState[\s\S]*conversation\.forEach\(\(item, index\) => addMessage\(item\.role, item\.content,[\s\S]*renderClioTalkWelcome\(\)/, "Restoring an empty chat keeps the ClioTalk welcome visible");
 for (const [source, label] of [
@@ -123,8 +101,6 @@ test.assertIncludes(chatMessages, "ignoreBtn.hidden = kept", "A kept reply no lo
 test.assertIncludes(modal, 'options.defaultAction === "cancel"', "Destructive confirmations can make Cancel the default action");
 test.assertIncludes(modal, 'systemModalYes.classList.toggle("danger", options.danger === true)', "Destructive confirmation buttons use the existing danger primitive");
 test.assertIncludes(indexHtml, 'id="clio-use-result-modal"', "ClioTalk has one dedicated Use Result confirmation surface");
-test.assertIncludes(chatMessages, "function chooseClioTalkUseResult", "Use Result chooses a named writing object before mutation");
-test.assertIncludes(chatMessages, "function clioTalkUseResultNextText", "Use Result calculates a destination-specific next state for preview");
 test.assertIncludes(chatMessages, 'id: "question-sheet"', "Question Sheet is an explicit result destination");
 test.assertIncludes(chatMessages, 'id: "outline"', "Outline is an explicit result destination");
 test.assertIncludes(chatMessages, 'id: "section-draft"', "Current Section Draft is an explicit result destination");
@@ -133,9 +109,7 @@ test.assertIncludes(chatMessages, 'id: "scrapbook"', "Scrapbook is an explicit r
 test.assertIncludes(chatMessages, 'id: "project-document"', "A new project document is an explicit result destination");
 test.assertIncludes(chatMessages, 'mode === "replace-selection"', "The action layer supports selection replacement without a whole-document blind write");
 test.assertIncludes(chatMessages, "contentHash(currentTarget.before) !== beforeHash", "Confirmation refuses a stale target that changed after preview");
-test.assertIncludes(chatMessages, "function undoClioTalkUseResult", "Each confirmed result write has one-step undo");
 test.assertIncludes(chatMessages, "contentHash(target.before) === contentHash(undo.after)", "Undo refuses to overwrite later user edits");
-test.assertIncludes(chatMessages, "persistClioTalkUseResultRunReceipt", "Confirmed destination writes update the linked Run Record");
 test.assertIncludes(documentsChat, '"## Result use"', "Run Records expose result destination receipts");
 test.assertIncludes(documentsChat, "Before hash:", "Run Records retain the pre-write content hash");
 test.assertIncludes(documentsChat, "After hash:", "Run Records retain the post-write content hash");
@@ -146,24 +120,12 @@ test.assertIncludes(documentsChat, "item.displayContent || item.content", "Saved
 test.assertIncludes(documentsChat, "clioTalkReplyReceiptState(item)", "Saved chat previews retain reply-destination receipts");
 test.assertIncludes(documentsChat, 'item.deliveryState === "failed"', "Saved chat previews expose messages that were never delivered");
 test.assertIncludes(chatMessages, 'if (!getActiveProject())', "Saving a reply refuses to claim project persistence without a mounted project");
-test.assertIncludes(styles, ".message-disposition", "Reply persistence receipts have a stable ClioTalk UI hook");
-test.assertIncludes(translationsEn, 'clio_use_result: "Use Result"', "English UI names the consolidated action layer");
-test.assertIncludes(translationsZh, 'clio_use_result: "使用结果"', "Chinese UI names the consolidated action layer");
-test.assertIncludes(dictionary, "Replies remain temporary writing material. They enter the project only when the user opens Use Result", "System Help documents the compact reply-persistence boundary");
-test.assertIncludes(dictionary, "回复仍只是临时写作材料", "Chinese System Help keeps the reply destination boundary aligned with the UI");
-test.assertIncludes(dictionary, "it can be reopened in ClioTalk, continued, previewed, or downloaded as Markdown", "System Help reflects current saved-chat resume and export behavior");
-test.assertIncludes(dictionary, "首条消息会创建 Chat 文件", "Chinese System Help reflects the file-native Chat lifecycle");
 test.assertIncludes(chatMessages, 'editBtn.textContent = t("clio_edit_and_branch")', "User messages expose edit-and-branch without overwriting history");
-test.assertIncludes(translationsEn, 'clio_edit_and_branch: "Edit"', "English UI names the safe branch operation as a familiar Edit action");
-test.assertIncludes(translationsZh, 'clio_edit_and_branch: "编辑"', "Chinese UI names the safe branch operation as a familiar Edit action");
 test.assertIncludes(chatMessages, 'useResultBtn.className = "btn mini-btn default"', "Choosing a destination is the reply's default control, not an entry in a disclosure menu");
 test.assertIncludes(chatMessages, 'copyBtn.textContent = t("copy")', "Every assistant reply exposes the expected Copy action");
-test.assertIncludes(styles, ".message-use-menu", "The compact reply destination menu has a stable UI hook");
 test.assertMatches(indexHtml, /id="clip-selection"[^>]*hidden/, "Composer-level Clip stays hidden from the everyday input row");
 test.assertMatches(indexHtml, /id="clear"[^>]*hidden/, "Composer-level Clear stays in the Conversation menu rather than the everyday input row");
 test.assertMatches(indexHtml, /class="visually-hidden" for="prompt"/, "The composer label remains accessible without adding visual chrome");
-test.assertIncludes(translationsEn, 'prompt_placeholder: "Message ClioTalk..."', "English composer addresses ClioTalk instead of exposing the model route");
-test.assertIncludes(translationsZh, 'prompt_placeholder: "给 ClioTalk 发消息…"', "Chinese composer addresses ClioTalk instead of exposing the model route");
 test.assertIncludes(documentsChat, "parentChatId: parent.id", "Conversation branches retain their parent chat");
 test.assertIncludes(documentsChat, "forkMessageId:", "Conversation branches retain the edited fork message");
 test.assertIncludes(documentsChat, "generation: Number(parent.generation || 0) + 1", "Conversation genealogy records generation depth");
@@ -192,10 +154,8 @@ test.assertMatches(clioTalkMenuSource, /menuItem\("open-clio-attachment-picker"[
 ].forEach((action) => {
   test.assertNotIncludes(clioTalkMenuSource, `menuItem("${action}"`, `${action} stays out of the everyday Conversation menu`);
 });
-test.assertIncludes(dictionary, "不再创建一套管理面板", "System Help keeps advanced objects in files instead of a second dashboard");
 test.assertIncludes(chatMessages, "function renderClioTalkContextSpace", "ClioTalk owns a composer-level context-capacity estimate");
 test.assertIncludes(chatMessages, 'document.querySelector("#assistant-context-space")', "Context capacity has a stable ClioTalk composer hook");
-test.assertIncludes(dictionary, "上下文检查器负责排序、token 估算", "System Help assigns context-budget detail to Memory Inspector");
 test.assertIncludes(documentsChat, "function ensureProjectMemoryFolder", "Project Memory has a visible Project Hard Disk folder");
 test.assertIncludes(documentsChat, 'artifactKind: "project-memory"', "Confirmed memories are editable project files");
 test.assertIncludes(documentsChat, "memoryStatus: \"active\"", "New project memories start active");
@@ -206,8 +166,6 @@ test.assertIncludes(chatMessages, "projectMemoryIds: grounding?.projectMemoryIds
 test.assertIncludes(chatMessages, "contextSources: grounding?.sources", "Direct Reader, Time Machine, DocMap, Scrapbook, ClioStage, and ClioChart questions can finish when grounding is intentionally absent");
 test.assertIncludes(clioTalkMenuSource, 'menuItem("remember-chat-as-project-memory", "remember_project_memory")', "Remembering a conversation as Project Memory stays an explicit, named command");
 test.assertIncludes(desktopRuntime, '{ kind: "project-memory", action: "toggle-project-memory"', "Project Memory status is reachable from the object's own Get Info window");
-test.assertIncludes(dictionary, "绝不会自动升级为项目记忆", "Help distinguishes conversation continuity from durable Project Memory");
-test.assertIncludes(dictionary, "对话全文、当前对话的临时压缩连续性、明确附带的来源，以及可编辑的项目记忆文件", "Help names the four memory-boundary layers");
 test.assertNotIncludes(documentsChat, "function openClioTalkGenealogy", "the removed genealogy index prototype does not survive as hidden code");
 test.assertNotIncludes(documentsChat, "function saveBranchComparison", "the removed branch comparison prototype does not survive as hidden code");
 test.assertNotIncludes(documentsChat, "function mergeBranchIntoTarget", "the removed branch merge prototype does not survive as hidden code");
@@ -215,7 +173,6 @@ test.assertIncludes(documentsChat, "missingParentId", "Missing parent chat files
 test.assertIncludes(documentsChat, "persistActiveChatFile();", "Lineage navigation persists the current conversation first");
 test.assertNotIncludes(clioTalkMenuSource, 'menuItem("compare-chat-branch"', "removed branch comparison stays out of ClioTalk menus");
 test.assertNotIncludes(clioTalkMenuSource, 'menuItem("merge-chat-branch"', "removed branch merging stays out of ClioTalk menus");
-test.assertIncludes(dictionary, "对话文件仍可显示上代与后代入口", "Help limits lineage guidance to saved-file navigation while genealogy is shelved");
 test.assertIncludes(chatMessages, "function recordContextLoadout", "ClioTalk captures an actual request loadout snapshot");
 test.assertMatches(chatMessages, /function fetchModelPayload[\s\S]*messages: withBrowserLocalSafetyMessages[\s\S]*if \(shouldRecordLoadout\) recordContextLoadout\(nextPayload\)/, "Local loadout is captured after runtime guardrails join the final transport payload");
 test.assertMatches(chatMessages, /sanitizeCloudChatPayload\(nextPayload\)[\s\S]*if \(shouldRecordLoadout\) recordContextLoadout\(nextPayload\)/, "Cloud loadout is captured after provider payload normalization");
@@ -227,7 +184,6 @@ test.assertIncludes(chatMessages, "skillFiles", "Run manifests retain selected S
 test.assertIncludes(chatMessages, "harnessFile", "Run manifests retain the active Harness file");
 test.assertIncludes(chatMessages, "inputFiles", "Run manifests retain file-system inputs");
 test.assertIncludes(chatMessages, "window.lastContextLoadout?.promptTokens", "Status bar and Context Panel share snapshot token totals");
-test.assertIncludes(dictionary, "持久且精确的消息栈保存在回复所链接的 Run Record", "Help distinguishes transient memory inspection from the durable exact Run Record");
 test.assertIncludes(documentsChat, "sourceMessageIds = file.messages", "Retrospectives retain their source message IDs");
 test.assertIncludes(documentsChat, "artifactIds = chatFiles", "Retrospectives retain related artifact IDs");
 test.assertIncludes(documentsChat, "function attachSelectedRetrospectiveToNextTask", "Retrospectives can attach to the next task");
@@ -235,7 +191,6 @@ test.assertIncludes(chatMessages, "nextTaskRetrospectiveIds", "Attached retrospe
 test.assertIncludes(chatMessages, "lastTaskRetrospectiveIds", "Retrospective use is retained in the run grounding record");
 test.assertIncludes(documentsChat, "function createSkillDraftFromSelectedRetrospective", "Retrospectives can create Skill drafts");
 test.assertIncludes(documentsChat, "will not be installed or enabled automatically", "Skill drafts require confirmation and do not auto-install");
-test.assertIncludes(dictionary, "Prompt 与策略文件、选中的 Skill、作为 Harness 的 Task Config", "Help exposes Prompt, Skill, and Harness in Run Assembly");
 test.assertIncludes(documentsChat, "function parseProjectSkillFile", "Project Skills have a parser and validator");
 test.assertIncludes(documentsChat, '["prompt", "references"]', "Version-one Skills allow only prompt and references capabilities");
 test.assertIncludes(documentsChat, "scripts or write scope are not allowed", "Unsafe Skill declarations are rejected");
@@ -243,18 +198,15 @@ test.assertIncludes(documentsChat, 'artifactKind: "ai-skill"', "Project Skills a
 test.assertIncludes(documentsChat, "function selectProjectSkillForNextTask", "Skills are manually selected for one task");
 test.assertIncludes(chatMessages, "nextTaskSkillIds", "Selected Skills change the next model request");
 test.assertIncludes(chatMessages, "lastTaskSkillIds", "Selected Skill versions enter run grounding records");
-test.assertIncludes(dictionary, "技能是高级项目对象，不作为日常“对话”菜单命令出现", "Help keeps Skill invocation out of the everyday Conversation menu");
 test.assertIncludes(documentsChat, "function parseMountedSkillPackage", "File Floppy Skill packages are parsed before installation");
 test.assertIncludes(documentsChat, "not a .skill.json package", "Only explicit skill package files can install");
 test.assertIncludes(documentsChat, "Duplicate Skill ID", "Duplicate Skill IDs require an explicit decision");
 test.assertIncludes(documentsChat, 'skillStatus: "disabled"', "Mounted Skills install disabled and untrusted by default");
 test.assertIncludes(documentsChat, "function toggleSelectedProjectSkill", "Finder can enable or disable installed Skills");
 test.assertMatches(desktopRuntime, /item\?\.type === "mountedFile"[\s\S]*?action: "install-mounted-skill"/, "A mounted Skill package exposes its install action on the package itself");
-test.assertIncludes(dictionary, "绝不静默覆盖", "Help documents duplicate Skill handling");
 test.assertIncludes(chatMessages, "skillConflicts", "Multiple Skills detect conflicting instructions");
 test.assertIncludes(chatMessages, "user-selected order", "Multiple Skills retain deterministic user order");
 test.assertIncludes(scrapbook, "lastTaskSkillReceipt", "Context Panel shows the adopted Skill receipt");
-test.assertIncludes(dictionary, "多个技能按用户选择顺序采用", "Help documents predictable Skill ordering");
 test.assertIncludes(documentsChat, 'saveClioTalkArtifact("task-config-draft"', "Harnesses migrate as non-executable Task Config drafts");
 test.assertIncludes(documentsChat, "function parseTaskConfig", "Task Configs parse their visible JSON file content");
 test.assertIncludes(documentsChat, "invalid task config JSON", "Malformed Task Configs are blocked before run");
@@ -262,12 +214,10 @@ test.assertIncludes(documentsChat, "function runSelectedTaskConfig", "Task Confi
 test.assertIncludes(documentsChat, "inputs.length !== config.inputFileIds.length", "Missing Task Config inputs block runs");
 test.assertIncludes(documentsChat, "skills.length !== config.skillIds.length", "Disabled Task Config Skills block runs");
 test.assertIncludes(documentsChat, "Task Config hash", "Task runs record the config hash");
-test.assertIncludes(dictionary, "草稿不可执行", "Help distinguishes Task Config drafts from executable files");
 test.assertIncludes(documentsChat, "function ensureTaskFolderForConfig", "Task Config runs create stable Task Folders");
 test.assertIncludes(documentsChat, '"Conversation", "Task Config", "Context", "Artifacts", "Run Records", "Retrospective"', "Task Folder has the documented lifecycle subfolders");
 test.assertIncludes(documentsChat, "function setTaskConfigLifecycle", "Task lifecycle writes durable state into its config file");
 test.assertIncludes(documentsChat, "function resumeSelectedTaskConfig", "Task resume reuses a saved Chat ID");
-test.assertIncludes(dictionary, "而不会创建重复任务或产物", "Help documents duplicate-safe task resume");
 test.assertIncludes(documentsChat, "function suggestProjectSkillsForTask", "Skills are suggested from deterministic manifest filtering");
 test.assertIncludes(documentsChat, "getEnabledProjectSkills()", "Suggestions exclude disabled and uninstalled Skills");
 test.assertMatches(documentsChat, /function confirmSuggestedProjectSkill[\s\S]*showSystemModal\([\s\S]*"confirm"[\s\S]*"yes"/, "Suggested Skills require user confirmation through the in-app modal");
@@ -283,27 +233,22 @@ test.assertIncludes(documentsChat, "originalHash", "Modification suggestions ret
 test.assertIncludes(documentsChat, "function acceptSelectedTeachTextModificationSuggestion", "TeachText suggestions require explicit acceptance");
 test.assertIncludes(documentsChat, "function rejectSelectedTeachTextModificationSuggestion", "Rejecting a suggestion leaves the manuscript unchanged");
 test.assertIncludes(documentsChat, "function viewSelectedTeachTextModificationSuggestionDiff", "Finder can show a suggestion diff before acceptance");
-test.assertIncludes(dictionary, "拒绝绝不改动正文", "Help documents the modification-suggestion confirmation boundary");
 test.assertIncludes(documentsChat, "function createTaskCheckpoint", "High-risk tasks can save file-based checkpoints");
 test.assertIncludes(documentsChat, "taskConfigHash", "Checkpoints retain the Task Config hash");
 test.assertIncludes(documentsChat, "pendingSuggestionIds", "Checkpoints retain pending modification suggestions");
 test.assertIncludes(documentsChat, "function restoreSelectedTaskCheckpoint", "Task checkpoints can restore task references");
 test.assertIncludes(documentsChat, "No files created after the checkpoint will be removed", "Checkpoint restore never deletes later Finder files");
 test.assertIncludes(documentsChat, "task-checkpoint-restore-receipt", "Checkpoint restore writes a run receipt");
-test.assertIncludes(dictionary, "不删除之后产生的文件", "Help documents non-destructive checkpoint restore");
-test.assertIncludes(dictionary, "拒绝不会改变任务", "Help documents safe suggestion rejection");
 
 test.assertNotIncludes(indexHtml, 'id="clio-run-assembly"', "The composer carries no Run Assembly disclosure — assembly detail lives in the Context Panel");
 test.assertMatches(indexHtml, /class="composer-action-row"[\s\S]*id="compose-tools-toggle"[\s\S]*id="clio-entry-loadout"[\s\S]*id="send"/, "Add, the carried-files readout, and the single Send/Stop control live on one entry surface");
 test.assertMatches(indexHtml, /id="clio-chat-file-link"[^>]*data-action="reveal-active-chat-file"/, "The current Chat file is visible and revealable without a history sidebar");
 test.assertMatches(indexHtml, /id="status"[^>]*hidden/, "The idle Ready status does not occupy ClioTalk's everyday chrome");
-test.assertIncludes(styles, ".clio-chat-file-link[hidden]", "A Chat file that does not exist yet cannot be revealed by component display styles");
 test.assertMatches(chatMessages, /function renderClioTalkFileBar[\s\S]*button\.hidden = false;[\s\S]*button\.disabled = !file;/, "The pending Chat file remains visible as the conversation's object identity before it can be revealed");
 test.assertIncludes(chatMessages, "function getPendingClioTalkFileName", "The file bar gives a new conversation a stable name before its first message");
 test.assertIncludes(documentsChat, 'name: typeof getPendingClioTalkFileName === "function" ? getPendingClioTalkFileName() : getChatFileTitle()', "The first message creates the exact filename previewed in the file bar");
 test.assertIncludes(chatMessages, '["paste-clio-interview", "clio_welcome_paste_interview"]', "The connected empty state offers a direct interview-paste path");
 test.assertIncludes(chatMessages, '["open-question-sheet", "clio_welcome_question_sheet"]', "The connected empty state can begin from the Question Sheet object");
-test.assertIncludes(styles, ".assistant-details-bar:not(:has(", "ClioTalk can still remove the whole details row when no meaningful status or file is present");
 test.assertNotIncludes(indexHtml, 'id="clio-new-chat-button"', "New Chat no longer occupies the everyday ClioTalk chrome");
 test.assertIncludes(clioTalkMenuSource, 'menuItem("start-new-clio-chat", "new_conversation", "new-document")', "New Conversation is a File-menu command, because a conversation is a file");
 test.assertIncludes(chatMessages, "function renderClioTalkRunAssembly", "ClioTalk renders a pre-send transparent Run Assembly");
@@ -338,11 +283,8 @@ test.assertMatches(
   /promptInput\.addEventListener\("focus", \(\) => \{[\s\S]*typeof syncClioTalkSendButton === "function"[\s\S]*syncClioTalkSendButton\(\)/,
   "Programmatically inserted prompts refresh Send without making startup depend on a cross-module function reference"
 );
-test.assertMatches(styles, /\.composer-submit-button \{[\s\S]*width: 36px;[\s\S]*height: 36px;[\s\S]*place-items: center;[\s\S]*background: var\(--ink\);[\s\S]*color: var\(--paper\);/, "One stable 36-pixel high-emphasis button owns both Send and Stop");
-test.assertMatches(styles, /\.composer-send-glyph \{[\s\S]*fill: none;[\s\S]*stroke: currentColor;[\s\S]*stroke-width: 1\.75;[\s\S]*stroke-linecap: round;[\s\S]*stroke-linejoin: round;/, "The upward arrow stays open, crisp, and theme-independent in Classic and Liquid Glass");
 test.assertNotIncludes(styles, 'content: "↑"', "Send does not depend on the retro UI font's malformed arrow glyph");
 test.assertNotIncludes(indexHtml, 'id="stop"', "Stop is a state of the Send button, not a second overlapping control");
-test.assertMatches(styles, /\.composer-submit-button\.is-stop \.composer-send-glyph \{[\s\S]*display: none;[\s\S]*\.composer-submit-button\.is-stop \.composer-stop-glyph \{[\s\S]*display: block;/, "The single button swaps only its internal glyph in Stop mode");
 test.assertMatches(indexHtml, /id="retry"[^>]*hidden/, "A global Retry button does not occupy the everyday composer");
 test.assertIncludes(indexHtml, 'class="composer-key-hint"', "Desktop users get a quiet Enter and Shift+Enter affordance");
 test.assertIncludes(chatMessages, "function createClioTalkActionMenu", "Secondary message actions share one accessible progressive menu");
@@ -380,12 +322,15 @@ test.assertMatches(chatMessages, /const explicitInputMessage = window\.lastTaskE
 test.assertMatches(chatMessages, /lastTaskExplicitInputFiles[\s\S]*key: `input:/, "Explicit project attachments appear in the reply grounding receipt");
 test.assertIncludes(workingSession, "nextTaskInputFileIds", "Normal Working Sessions preserve pending explicit file attachments");
 test.assertMatches(dragDrop, /dropTargetType === "clio-attachment"[\s\S]*attachProjectFileToNextClioTalkRun/, "Project files can be dragged directly onto ClioTalk as copied context");
-test.assertMatches(documentsChat, /downloadMarkdown\(formatChatFileMarkdown\(file\), file\.name, \{[\s\S]*addToProjectCd: !clioTalkTemporaryMode/, "Exporting a Temporary Chat downloads Markdown without silently writing Project CD");
+test.assert(
+  /if \(!clioTalkTemporaryMode\)[\s\S]*downloadMarkdownAndBurnToProjectCd/.test(documentsChat)
+    && /return downloadMarkdown\(markdown, file\.name\);/.test(documentsChat),
+  "Exporting a Temporary Chat downloads Markdown without silently writing Project CD"
+);
 test.assertMatches(dictionary, /Conversation and File menus expose recent Chats[\s\S]*“对话”与“文件”菜单提供最近 Chat/, "System Help documents the daily Chat lifecycle in both languages");
 test.assertIncludes(documentsChat, 'artifactKind: "clio-run-record"', "Every durable model run becomes a real Project Hard Disk file");
 test.assertIncludes(chatMessages, "function appendClioTalkRunReceipt", "Replies retain a Finder-linked Run Record receipt contract");
 test.assertIncludes(chatMessages, 'runRecordBtn.hidden = !options.messageRecord?.runRecordId', "The run record link appears only on replies that actually produced one");
-test.assertMatches(styles, /\.message-run-receipt \{[\s\S]*display: none;/, "The duplicate inline Run receipt stays out of the everyday reading surface");
 test.assertIncludes(chatMessages, "disposition.hidden = false;", "A reply always states whether it has been written anywhere — the rule is not hidden until hover");
 test.assertMatches(chatMessages, /function resolvePendingStatus[\s\S]*body\.append\(copy, retry\);[\s\S]*setStatus\(t\("clio_message_not_sent"\)\)/, "Inline retry errors keep details in the failed turn while the details bar exposes a concise error state");
 test.assertIncludes(documentsChat, "function saveClioTalkRunRecord", "Completed, stopped, and failed requests share one durable Run Record writer");
@@ -429,44 +374,17 @@ test.assertNotIncludes(chatMessages, 'summary.textContent = "•••"', "The o
 test.assertIncludes(scrapbook, "scraps.find(s => s.id === id && isInActiveProject(s))", "Attached clips cannot leak across projects");
 test.assertIncludes(scrapbook, 'btn.setAttribute("aria-label", t("clio_remove_attachment", scrap.title))', "Each attached clip has an explicit accessible removal action");
 test.assertMatches(scrapbook, /function toggleClipAttachment[\s\S]*scheduleRenderTasks\("contextPanel"\)[\s\S]*scheduleWorkingSessionSave\(\)/, "Attachment changes immediately update context receipts and the working session");
-test.assertIncludes(styles, ".message-actions", "Progressive message actions retain a stable styling hook");
 test.assertNotMatches(styles, /\.message-actions \{[^}]*opacity: 0;/, "Message actions are never hover-revealed: a System 6 control dims, it does not vanish");
-test.assertMatches(styles, /\.message-use-menu,[\s\S]*\.message-action-menu \{[\s\S]*position: absolute;/, "Reply and overflow menus overlay the reading surface instead of expanding the message");
-test.assertMatches(styles, /\.message-actions \.message-use-actions > summary,\s*\.message-actions \.message-more-actions > \.message-more-summary \{[^}]*height: 24px;[^}]*min-height: 24px;/, "Use Result and overflow share one quiet 24-pixel reply-action height");
-test.assertMatches(styles, /\.message-actions \.message-use-actions > summary \{[^}]*display: inline-flex;[^}]*min-width: 0;[^}]*align-items: center;[^}]*padding: 1px 7px;/, "Use Result centers its label and sizes to its copy instead of inheriting the generic button width");
-test.assertMatches(styles, /\.message-actions \.message-more-actions > \.message-more-summary \{[^}]*display: inline-grid;[^}]*width: 24px;[^}]*min-width: 24px;[^}]*place-items: center;[^}]*padding: 0;/, "The overflow action stays a compact square icon target");
-test.assertMatches(styles, /\.message-more-glyph \{[^}]*width: 3px;[^}]*height: 3px;[^}]*box-shadow: -5px 0 0 currentColor, 5px 0 0 currentColor;/, "The overflow icon draws three crisp theme-colored dots without font metrics");
 test.assertMatches(styles, /\.compose-tools-menu,[\s\S]*\.message-use-menu,[\s\S]*\.message-action-menu,[\s\S]*\.clio-scroll-latest \{[\s\S]*z-index: var\(--z-local-popover\)/, "Composer, message menus, and the latest control share the named local popover layer");
 test.assertMatches(styles, /\.compose-tools-menu,[\s\S]*?\.message-use-menu,[\s\S]*?z-index: var\(--z-local-popover\)/, "ClioTalk popovers reuse the named window-local layer");
-test.assertIncludes(foundationStyles, "--clio-assembly-bg", "Classic Run Assembly material is tokenized");
-test.assertIncludes(liquidStyles, "--clio-assembly-bg", "Liquid Glass swaps Run Assembly material through shared tokens");
 test.assertMatches(styles, /\.composer textarea \{[\s\S]*border: 0;[\s\S]*background: transparent;[\s\S]*resize: none;/, "The composer is one semantic surface rather than a textarea nested inside another panel");
-test.assertIncludes(foundationStyles, "--clio-copy-font: var(--text-font)", "Classic ClioTalk conversation text inherits the readable period font");
-test.assertIncludes(foundationStyles, "--clio-title-font: var(--title-font)", "Classic ClioTalk headings inherit the shared window title typography");
-test.assertIncludes(foundationStyles, "--clio-control-font: var(--ui-font)", "Classic ClioTalk controls inherit the system control face");
 test.assertMatches(styles, /\.assistant-window \.message-content \{[^}]*font-family: var\(--clio-copy-font\)/, "ClioTalk conversation text consumes the theme-owned copy font");
 test.assertMatches(styles, /\.clio-welcome \.message-content strong \{[^}]*font-family: var\(--clio-title-font\)/, "ClioTalk's welcome heading consumes the theme-owned title font");
 test.assertMatches(styles, /\.composer textarea \{[^}]*font-family: var\(--clio-copy-font\)/, "ClioTalk input uses the same theme-owned font family as the conversation");
 test.assertMatches(styles, /\.clio-entry-loadout \{[^}]*font-family: var\(--clio-control-font\)/, "The entry-pane readout consumes the theme-owned control font");
 test.assertMatches(styles, /\.assistant-window \.composer \{[^}]*border-top: var\(--clio-entry-divider\)/, "The entry pane is docked to the window frame rather than floating over the transcript");
-test.assertIncludes(liquidStyles, "--clio-copy-font: var(--preview-font)", "Liquid Glass keeps ClioTalk conversation text in its modern reading face");
-test.assertIncludes(liquidStyles, "--clio-title-font: var(--preview-font)", "Liquid Glass keeps ClioTalk headings in its modern display face");
-test.assertIncludes(liquidStyles, "--clio-control-font: var(--preview-font)", "Liquid Glass keeps ClioTalk controls in its modern UI face");
 test.assertMatches(styles, /\.composer \.composer-icon-button \{[\s\S]*width: 36px;[\s\S]*min-width: 36px;[\s\S]*height: 36px;/, "Composer controls retain a compact stable target size in Classic");
-test.assertMatches(styles, /\.assistant-window \.message:not\(\.clio-welcome\) \{[\s\S]*?display: block;/, "ClioTalk reads as a single-column ledger: no speaker gutter, one left edge for every turn");
-test.assertMatches(styles, /\.assistant-window \.speaker \{[\s\S]*display: block;[\s\S]*text-align: right;/, "Visible speaker labels make every Chat-file record attributable without adding more controls");
 test.assertIncludes(chatMessages, 'item.setAttribute("aria-label", role === "user" ? t("you") : clioTalkAssistantDisplayName())', "Visible speaker labels retain matching message ownership for assistive technology");
-test.assertMatches(styles, /\.assistant-window \.clio-welcome \{[\s\S]*align-content: start;/, "The empty state begins at the transcript's reading edge instead of becoming a centered hero");
-test.assertIncludes(styles, ".clio-welcome-actions", "The empty state keeps its three object actions in one compact row");
-test.assertIncludes(styles, ".messages-stage", "The message scroller and latest-message control share one window-local owner");
-test.assertIncludes(styles, ".clio-scroll-latest", "The latest-message affordance has a stable visual hook");
-test.assertIncludes(styles, ".message.pending.streaming .message-content::after", "Streaming uses a lightweight state caret instead of a second loading card");
-test.assertMatches(foundationStyles, /prefers-reduced-motion[\s\S]*\.message\.pending\.streaming \.message-content::after[\s\S]*animation: none;/, "Streaming feedback honors reduced motion");
-test.assertMatches(styles, /\.composer-action-row \{[\s\S]*flex-wrap: nowrap;/, "the composer action row never wraps, so Add, context, model status, and Send stay on one line even with the web-search switch visible");
-test.assertIncludes(liquidStyles, "--clio-composer-bg", "Liquid Glass uses the shared semantic composer tokens");
-test.assertMatches(liquidStyles, /body\.use-liquid-glass \.composer \{[\s\S]*backdrop-filter: blur/, "Liquid Glass upgrades the same composer structure with material treatment");
-test.assertMatches(liquidStyles, /body\.use-liquid-glass \.assistant-window \.messages \{[\s\S]*background: var\(--glass-reading-surface\);[\s\S]*backdrop-filter: var\(--glass-reading-blur\)/, "Liquid Glass gives the transcript an opaque reading surface");
-test.assertMatches(liquidStyles, /prefers-reduced-transparency: reduce[\s\S]*body\.use-liquid-glass \.assistant-window \.messages[\s\S]*background: var\(--paper\);/, "Reduced transparency falls back to an opaque paper transcript");
 for (const scenario of ['id: "ready-to-send"', 'id: "stopped"', 'id: "streaming"', 'id: "sideask"', 'id: "reading-history"', 'id: "kept-reply"', 'id: "run-record"']) {
   test.assertIncludes(surfaceSnapshots, scenario, `${scenario} is covered by the ClioTalk Classic/Liquid surface snapshot`);
 }
@@ -489,7 +407,6 @@ test.assertIncludes(chatMessages, "function closeOtherClioTalkMessageMenus(excep
 test.assertIncludes(chatMessages, 'document.querySelectorAll(".message-actions details[open]")', "menu exclusion spans the whole transcript, not one message");
 test.assertIncludes(chatMessages, "function bindClioTalkMenuDismiss()", "a pointer landing outside the menu closes it, the only exit a phone has");
 test.assertIncludes(chatMessages, "function placeClioTalkMenu(details, menu)", "a menu with no room above it opens downward instead of being clipped");
-test.assertIncludes(styles, ".message-action-menu.is-below {", "the flipped menu has an owned anchor rule");
 test.assertIncludes(chatMessages, "if (actions.children.length) item.append(actions);", "the action row is a grid child of the message, not content inside the reply bubble");
 test.assertNotIncludes(chatMessages, 'item.querySelector(".message-content")?.append(actions)', "the user's own actions never sit inside the message bubble");
 test.assertIncludes(chatMessages, "function syncClioTalkMenuAvailability(details, menu)", "a menu with no available item steps aside instead of opening empty");

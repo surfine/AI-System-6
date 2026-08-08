@@ -16,7 +16,7 @@
     <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png" />
     <link rel="manifest" href="assets/app-icon/manifest.json" />
-    <link rel="stylesheet" href="styles.bundle.css?v=20260808.3" />
+    <link rel="stylesheet" href="styles.bundle.css?v=20260808.4" />
   </head>
   <body class="is-booting">
     <header class="menu-bar" aria-label="System menu" data-i18n-aria-label="system_menu">
@@ -34,7 +34,9 @@
           <button data-action="open-guide" data-i18n="start_here">Start Here</button>
           <button data-action="open-system-help" data-i18n="system_help" data-balloon-help="balloon_system_help">System Help</button>
           <button data-workspace-capability="studio" data-action="guide-start-route" data-i18n="guide_start_route">Start Writing Route</button>
-          <hr data-workspace-capability="studio" />
+          <!-- The Start section keeps items in every workspace profile, so its
+               closing rule is not the writing route's to hide. -->
+          <hr />
           <div class="menu-section-label" data-i18n="apple_menu_writing_da">Writing DA</div>
           <button data-action="open-writing-bell" data-i18n="writing_bell">Writing Bell</button>
           <button data-action="open-note-pad" data-i18n="note_pad">Note Pad</button>
@@ -1079,7 +1081,7 @@
         <div class="window-pane quick-draft-pane">
           <form id="quick-draft-form" class="quick-draft-layout quick-draft-reboot">
             <section class="quick-draft-editor">
-              <div class="quick-draft-two-pane">
+              <div class="quick-draft-two-pane" data-quick-draft-linear>
                 <label class="quick-draft-material-pane" for="quick-draft-sources">
                   <span data-i18n="quick_draft_sources_label">Sources</span>
                   <textarea id="quick-draft-sources" rows="24" data-i18n-placeholder="quick_draft_sources_placeholder"></textarea>
@@ -1092,11 +1094,29 @@
                   </div>
                 </label>
               </div>
+              <div class="quick-draft-canvas is-hidden" data-quick-draft-canvas>
+                <div class="quick-draft-canvas-stage" data-quick-draft-canvas-stage>
+                  <div class="quick-draft-canvas-object" data-quick-draft-canvas-object="obj-1">
+                    <div class="quick-draft-canvas-object-text" data-quick-draft-canvas-object-text></div>
+                    <span class="quick-draft-canvas-handle is-nw" data-quick-draft-canvas-handle="nw"></span>
+                    <span class="quick-draft-canvas-handle is-n" data-quick-draft-canvas-handle="n"></span>
+                    <span class="quick-draft-canvas-handle is-ne" data-quick-draft-canvas-handle="ne"></span>
+                    <span class="quick-draft-canvas-handle is-e" data-quick-draft-canvas-handle="e"></span>
+                    <span class="quick-draft-canvas-handle is-se" data-quick-draft-canvas-handle="se"></span>
+                    <span class="quick-draft-canvas-handle is-s" data-quick-draft-canvas-handle="s"></span>
+                    <span class="quick-draft-canvas-handle is-sw" data-quick-draft-canvas-handle="sw"></span>
+                    <span class="quick-draft-canvas-handle is-w" data-quick-draft-canvas-handle="w"></span>
+                    <span class="quick-draft-canvas-rotate" data-quick-draft-canvas-rotate></span>
+                    <span class="quick-draft-canvas-angle" data-quick-draft-canvas-angle>0°</span>
+                  </div>
+                </div>
+              </div>
               <div class="teachtext-actions quick-draft-editor-actions">
                 <div class="teachtext-command-group" aria-label="Quick Draft commands" data-i18n-aria-label="quick_draft_commands">
                   <button class="btn quick-draft-return-sideask is-hidden" type="button" id="quick-draft-return-sideask" data-i18n="quick_draft_return_sideask">Return to SideAsk</button>
                   <button class="btn" type="button" id="quick-draft-toggle-preview" aria-pressed="false" data-i18n="preview">Preview</button>
                   <button class="btn" type="button" id="quick-draft-toggle-grain" aria-pressed="false" data-i18n="quick_draft_grain" data-balloon-help="quick_draft_grain_balloon">Grain</button>
+                  <button class="btn" type="button" id="quick-draft-toggle-composite" aria-pressed="false" data-i18n="quick_draft_composite" data-balloon-help="quick_draft_composite_balloon">Read</button>
                   <button class="btn" type="button" data-mde-focus-cycle data-mde-target="#quick-draft-draft" data-i18n-aria-label="teachtext_focus_off" aria-label="Focus: Off">
                     <span class="mobile-control-long" data-i18n="teachtext_focus_off">Focus: Off</span>
                     <span class="mobile-control-short" data-i18n="focus">Focus</span>
@@ -1142,6 +1162,7 @@
                         <div class="quick-draft-adjustment-mask">
                           <span data-i18n="quick_draft_adjustment_mask_label">Lines</span>
                           <input type="text" inputmode="numeric" data-quick-draft-adjustment-mask="mingming" placeholder="all" data-i18n-placeholder="quick_draft_adjustment_mask_placeholder" aria-label="Mingming Pass mask lines" data-i18n-aria-label="quick_draft_adjustment_mask_aria" />
+                          <button type="button" class="btn mini-btn" data-quick-draft-adjustment-scope="mingming" data-i18n="quick_draft_scope_selection">Sel</button>
                           <span class="quick-draft-adjustment-move">
                             <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="mingming" data-direction="-1" aria-label="Move up" data-i18n-aria-label="quick_draft_adjustment_move_up">▲</button>
                             <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="mingming" data-direction="1" aria-label="Move down" data-i18n-aria-label="quick_draft_adjustment_move_down">▼</button>
@@ -1163,6 +1184,7 @@
                         <div class="quick-draft-adjustment-mask">
                           <span data-i18n="quick_draft_adjustment_mask_label">Lines</span>
                           <input type="text" inputmode="numeric" data-quick-draft-adjustment-mask="luoluo" placeholder="all" data-i18n-placeholder="quick_draft_adjustment_mask_placeholder" aria-label="Luoluo Receive mask lines" data-i18n-aria-label="quick_draft_adjustment_mask_aria" />
+                          <button type="button" class="btn mini-btn" data-quick-draft-adjustment-scope="luoluo" data-i18n="quick_draft_scope_selection">Sel</button>
                           <span class="quick-draft-adjustment-move">
                             <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="luoluo" data-direction="-1" aria-label="Move up" data-i18n-aria-label="quick_draft_adjustment_move_up">▲</button>
                             <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="luoluo" data-direction="1" aria-label="Move down" data-i18n-aria-label="quick_draft_adjustment_move_down">▼</button>
@@ -1184,11 +1206,43 @@
                         <div class="quick-draft-adjustment-mask">
                           <span data-i18n="quick_draft_adjustment_mask_label">Lines</span>
                           <input type="text" inputmode="numeric" data-quick-draft-adjustment-mask="hkrr" placeholder="all" data-i18n-placeholder="quick_draft_adjustment_mask_placeholder" aria-label="HKRR Lift mask lines" data-i18n-aria-label="quick_draft_adjustment_mask_aria" />
+                          <button type="button" class="btn mini-btn" data-quick-draft-adjustment-scope="hkrr" data-i18n="quick_draft_scope_selection">Sel</button>
                           <span class="quick-draft-adjustment-move">
                             <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="hkrr" data-direction="-1" aria-label="Move up" data-i18n-aria-label="quick_draft_adjustment_move_up">▲</button>
                             <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="hkrr" data-direction="1" aria-label="Move down" data-i18n-aria-label="quick_draft_adjustment_move_down">▼</button>
                           </span>
                         </div>
+                        </div>
+                        <div class="quick-draft-adjustment-layer" data-quick-draft-adjustment-layer="density">
+                        <label class="quick-draft-adjustment-row">
+                          <input type="checkbox" data-quick-draft-adjustment-enabled="density" checked />
+                          <span data-i18n="quick_draft_adjustment_density">Density</span>
+                          <span class="select-wrap-inline">
+                            <select data-quick-draft-adjustment-strength="density" aria-label="Density strength" data-i18n-aria-label="quick_draft_adjustment_strength">
+                              <option value="25" data-i18n="quick_draft_adjustment_density_light">Less compression</option>
+                              <option value="50" selected data-i18n="quick_draft_adjustment_density_standard">Standard</option>
+                              <option value="75" data-i18n="quick_draft_adjustment_density_heavy">More compression</option>
+                            </select>
+                          </span>
+                        </label>
+                        <div class="quick-draft-adjustment-mask">
+                          <span data-i18n="quick_draft_adjustment_mask_label">Lines</span>
+                          <input type="text" inputmode="numeric" data-quick-draft-adjustment-mask="density" placeholder="all" data-i18n-placeholder="quick_draft_adjustment_mask_placeholder" aria-label="Density mask lines" data-i18n-aria-label="quick_draft_adjustment_mask_aria" />
+                          <button type="button" class="btn mini-btn" data-quick-draft-adjustment-scope="density" data-i18n="quick_draft_scope_selection">Sel</button>
+                          <span class="quick-draft-adjustment-move">
+                            <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="density" data-direction="-1" aria-label="Move up" data-i18n-aria-label="quick_draft_adjustment_move_up">▲</button>
+                            <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="density" data-direction="1" aria-label="Move down" data-i18n-aria-label="quick_draft_adjustment_move_down">▼</button>
+                          </span>
+                        </div>
+                        </div>
+                        <div class="quick-draft-protect">
+                          <span data-i18n="quick_draft_protected_label">Protected</span>
+                          <button type="button" class="btn mini-btn" data-quick-draft-protect-selection data-i18n="quick_draft_protect_selection">Protect Selection</button>
+                          <input type="text" inputmode="numeric" data-quick-draft-protected-ranges placeholder="3-5, 8" data-i18n-placeholder="quick_draft_protected_placeholder" aria-label="Protected lines" data-i18n-aria-label="quick_draft_protected_aria" />
+                        </div>
+                        <div class="quick-draft-adjustment-actions">
+                          <button type="button" class="btn" data-quick-draft-adjustment-apply data-i18n="quick_draft_apply_adjustments">Apply</button>
+                          <button type="button" class="btn" data-quick-draft-adjustment-develop data-i18n="quick_draft_develop">Develop</button>
                         </div>
                       </section>
                       <section class="quick-draft-command-section" aria-label="Quick Draft delivery" data-i18n-aria-label="quick_draft_command_delivery">
@@ -1199,6 +1253,10 @@
                     </div>
                   </details>
                 </div>
+                <span class="quick-draft-view-switch" role="group" aria-label="View" data-i18n-aria-label="quick_draft_view_label">
+                  <button class="btn mini-btn is-active" type="button" data-quick-draft-view="article" data-i18n="quick_draft_view_article">Article</button>
+                  <button class="btn mini-btn" type="button" data-quick-draft-view="canvas" data-i18n="quick_draft_view_canvas">Canvas</button>
+                </span>
                 <button class="btn default" type="button" id="quick-draft-save" data-i18n="quick_draft_start_writing">Draft</button>
               </div>
             </section>
@@ -3574,7 +3632,7 @@ Glass</textarea>
       </section>
     </main>
 
-    <script src="app/generated/build-info.js?v=20260808.3"></script>
-    <script src="app.bundle.js?v=20260808.3"></script>
+    <script src="app/generated/build-info.js?v=20260808.4"></script>
+    <script src="app.bundle.js?v=20260808.4"></script>
   </body>
 </html>

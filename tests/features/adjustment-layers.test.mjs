@@ -21,12 +21,17 @@ vm.runInContext(source, context);
 // Defaults: every layer present, on, standard strength, in stack order.
 const defaults = context.defaultAdjustmentLayers();
 test.assert(
-  defaults.map((layer) => layer.kind).join(",") === "mingming,luoluo,hkrr",
-  "the stack keeps the three layers in canonical order"
+  defaults.map((layer) => layer.kind).join(",") === "mingming,luoluo,hkrr,density",
+  "the stack keeps the four layers in canonical order"
 );
 test.assert(
   defaults.every((layer) => layer.enabled && layer.strength === 50),
   "fresh layers default to on at standard strength"
+);
+test.assert(
+  context.adjustmentLayer("density", defaults)?.enabled === true
+    && context.adjustmentLayer("density", defaults)?.strength === 50,
+  "density is a fourth adjustment kind with standard defaults"
 );
 
 // Normalization: partial records fill defaults, unknown kinds drop, bad
@@ -37,7 +42,7 @@ const partial = context.normalizeAdjustmentLayers([
   { kind: "unknown" },
 ]);
 test.assert(
-  partial.length === 3 && partial.map((layer) => layer.kind).join(",") === "luoluo,hkrr,mingming",
+  partial.length === 4 && partial.map((layer) => layer.kind).join(",") === "luoluo,hkrr,mingming,density",
   "the stored order is preserved and missing layers fill in at the end"
 );
 test.assert(partial[0].strength === 25, "an explicit strength is kept");
@@ -55,7 +60,7 @@ const reordered = context.normalizeAdjustmentLayers([
   { kind: "luoluo" },
 ]);
 test.assert(
-  reordered.map((layer) => layer.kind).join(",") === "hkrr,mingming,luoluo",
+  reordered.map((layer) => layer.kind).join(",") === "hkrr,mingming,luoluo,density",
   "a reordered stack keeps the user's order"
 );
 test.assert(

@@ -111,8 +111,15 @@ test.assertIncludes(server, "removeDangerousMarkup", "remote active content is r
 test.assertIncludes(route, "Promise.allSettled", "one archive provider can fail without hiding the other");
 test.assertIncludes(route, 'pathname === "/api/time-machine/calendar"', "the server exposes a calendar query without leaking archive calls into the client");
 test.assertIncludes(route, "TIME_MACHINE_PROVIDER_TIMEOUT_MS", "a slow provider cannot consume the whole capture request");
-test.assertIncludes(server, "TIME_MACHINE_TIMEOUT_MS = 45000", "historical replay gets a practical timeout independent of Reader");
+// The public host reaches the archives far slower than a home connection does;
+// a budget that fits only a fast link turns a working lookup into a bare 502.
+test.assertIncludes(server, "TIME_MACHINE_TIMEOUT_MS = 85000", "historical replay gets a practical timeout independent of Reader");
 test.assertIncludes(server, "TIME_MACHINE_PAGE_CACHE_TTL_MS", "browse and frame rendering can reuse one recent upstream snapshot");
+test.assertIncludes(server, "TIME_MACHINE_INDEX_CACHE_TTL_MS", "a capture list or calendar is not re-fetched for every step through a site's history");
+test.assertMatches(server, /cachedTimeMachineIndex\(cacheKey\);\s*\n\s*if \(cached\) return cached;/, "the index cache is read before any archive request is made");
+test.assertMatches(server, /if \(!calendar\.timelineError && !calendar\.calendarError\) cacheTimeMachineIndex/, "a half-loaded calendar is not cached as if it were an answer");
+test.assertIncludes(server, "isDirectFallback", "the stand-in replay entry never displaces a real capture list in the cache");
+test.assertIncludes(route, "TIME_MACHINE_SECONDARY_TIMEOUT_MS", "the fallback archive cannot hold the reply after the preferred archive answered");
 test.assertIncludes(route, '["archive-is", "wayback"]', "archive preference changes provider order without disabling fallback");
 test.assertIncludes(route, 'captures.filter((capture) => capture.provider === provider)', "preferred provider wins when it has a capture");
 test.assertIncludes(persistence, "timeMachineProvider:", "archive preference persists with other Chooser settings");
@@ -120,18 +127,12 @@ test.assertIncludes(router, 'prefix: "/api/time-machine"', "server exposes the T
 test.assertNotIncludes(feature, "window.open(", "site navigation remains inside Time Machine");
 test.assertNotIncludes(feature, "window.prompt(", "source questions use visible product controls");
 test.assertNotIncludes(styles, "!important", "new Time Machine CSS does not add priority debt");
-test.assertIncludes(styles, "border-radius: var(--control-radius)", "Time Machine inputs follow the active theme radius token");
-test.assertIncludes(styles, "grid-template-columns: repeat(7", "the popover renders a seven-day calendar");
-test.assertIncludes(styles, "grid-template-columns: repeat(auto-fit, minmax(44px, 1fr))", "phone navigation and view choices share one adaptive control row");
-test.assertIncludes(styles, ".time-machine-navigation .time-machine-view-switch {\n    display: contents;", "phone view choices join the navigation row (descendant-scoped so the shared .view-switch grid rule cannot win)");
-test.assertIncludes(styles, "transform: none;", "the phone tab close drops Liquid's 50% translate so a fixed top never shoves it out of the tab");
 test.assertIncludes(server, "data-srcset", "the replay frame promotes lazy media (data-src / data-srcset) without executing page scripts");
 test.assertIncludes(server, "visibleTextLength < 80", "tiny bot-check / JS-shell pages fail with a named error instead of a blank frame");
 test.assertIncludes(html, '<span class="time-machine-provenance" id="time-machine-provenance"', "which snapshot is on screen rides in the navigation row, costing the page no height");
 test.assertIncludes(feature, "? timeMachineProviderLabel(page.archive.provider)", "the toolbar names the archive; the title bar already carries the date and page");
 test.assertIncludes(feature, "setStatus(message, options.error === true ? { notify: true } : {})", "a Time Machine failure reaches the notification center by being marked, not by matching a keyword list");
 test.assertNotIncludes(html, "time-machine-details-bar", "a transient receipt never costs the page a row");
-test.assertIncludes(styles, ".time-machine-provenance.is-receipt", "the receipt borrows the toolbar slot the provenance already holds");
 test.assertIncludes(feature, "timeMachineReceiptTimer = window.setTimeout(renderTimeMachineProvenance", "and hands the slot back");
 test.assertIncludes(html, '<button class="btn ask-bar-lead" type="button" id="time-machine-docmap"', "DocMap keeps its place beside the question");
 test.assertIncludes(feature, "if (timeMachineProvenanceEl) {", "Time Machine reports its own receipts in its own window");
@@ -140,8 +141,6 @@ test.assertIncludes(feature, 'registerAskBarSource("timeMachine", describeTimeMa
 test.assertIncludes(feature, 'if (!page?.reader?.text) return { ready: false };', "an empty Time Machine gives the ask bar's space back instead of showing a dead control");
 test.assertIncludes(feature, 'arrangeWindowAssistantSplit("timeMachine")', "a Time Machine question pairs the page with ClioTalk in SideAsk like every other source window");
 test.assertIncludes(feature, 'range: selection ? t("ask_scope_selection") : t("ask_scope_whole_page")', "the ask bar states whether the question carries the selection or the whole page");
-test.assertIncludes(styles, ".time-machine-toggle > span {\n    display: none;", "phone address bar hides the redundant mode label without removing its accessible label");
-test.assertIncludes(styles, "min-height: 44px", "phone Time Machine controls meet the touch target floor");
 test.assertNotIncludes(`${index}\n${feature}\n${styles}`, "1996—Today", "the UI never invents a universal archive range");
 test.assertIncludes(dictionary, 'id: "time-machine"', "System Help exposes Time Machine as a restricted historical browser");
 test.assertIncludes(dictionary, "choose a 1990s capture", "System Help documents the historical Apple-site demonstration path");

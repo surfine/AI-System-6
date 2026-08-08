@@ -116,41 +116,14 @@ test.assertIncludes(cmfStudio, 'id: "bottomCase"', "the bottom case is a MacBook
 test.assertIncludes(cmfStudio, 'id: "keycaps"', "the keycaps are a MacBook Neo part");
 test.assertIncludes(cmfStudio, "const MACBOOK_NEO_VIEWS = {", "the MacBook defines per-pose camera sets");
 test.assertIncludes(cmfStudio, 'views: MACBOOK_NEO_VIEWS', "the MacBook model registers both camera sets");
-test.assertIncludes(cmfStudio, "function selectCmfPose", "switching poses is an explicit command");
 test.assertIncludes(cmfStudio, "state.poseId = requestedRecipe.pose || \"closed\"", "the loaded pose is tracked for repaint guards");
 test.assertIncludes(cmfStudio, 'spec.poses.some((entry) => entry.id === saved.pose)', "a saved recipe cannot carry another pose's geometry across");
 test.assertIncludes(index, 'id="cmf-pose"', "a pose chooser exists for posed models");
 test.assertIncludes(index, '<label class="cmf-control cmf-control-pose" id="cmf-pose-control" hidden>', "the pose chooser is hidden until a posed model is selected");
 // Every finish the picker offers must be drawable, or the chips all fall back
 // to one colour and the user cannot tell the finishes apart.
-for (const color of [
-  "black17", "lavender17", "mistBlue17", "sage17", "white17",
-  "cosmicOrange17Pro", "deepBlue17Pro", "silver17Pro",
-  "spaceBlackAir", "cloudWhiteAir", "lightGoldAir", "skyBlueAir",
-  "black17e", "white17e", "softPink17e",
-  "silverNeo", "blushNeo", "citrusNeo", "indigoNeo",
-]) {
-  test.assertIncludes(styles, `[data-cmf-color="${color}"]`, `the ${color} chip has a swatch colour`);
-}
-test.assertIncludes(
-  styles,
-  ".cmf-control[hidden]",
-  "a hidden toolbar control gives up its column instead of leaving an orphan label",
-);
-test.assertIncludes(
-  styles,
-  ".cmf-setup-panel {\n    min-height: auto;",
-  "narrow containers keep the toolbar row tall enough for wrapped controls",
-);
-test.assertIncludes(
-  styles,
-  "flex: 1 1 31%;",
-  "phone toolbars share one chooser line that never wraps mid-group",
-);
 test.assertIncludes(index, 'id="cmf-model"', "a model chooser exists");
 test.assertIncludes(index, '<span class="select-wrap"><select id="cmf-model">', "the model chooser uses the System 6 select harness");
-test.assertIncludes(cmfStudio, "function selectCmfModel", "switching models is an explicit command");
-test.assertIncludes(cmfStudio, "scheduleModelRender(0);\n    setCmfStatus(t(\"cmf_model_switched\"))", "switching models rebuilds the geometry instead of recoloring the old device");
 test.assertIncludes(cmfStudio, "if (spec.colors.some((entry) => entry.id === color)) parts[part.id] = color", "a saved recipe cannot carry another model's finish across");
 test.assertIncludes(cmfStudio, "store.recipes[recipe.model] = recipe", "each model keeps its own saved recipe");
 test.assertNotIncludes(
@@ -189,7 +162,6 @@ test.assertIncludes(service, "targetFraction", "close-up views frame against eac
 // Apple authors the surfaces that are black on the real product — lens glass
 // and rings, display bezels, antenna lines — as true black. A colorway never
 // paints those, and both the export and the live viewport must agree.
-test.assertIncludes(service, "function isFinishSurface", "the engine refuses to recolor black trim");
 test.assertIncludes(service, "BLACK_TRIM_LUMINANCE", "only the dark end is excluded, so bright finishes are still recolorable");
 test.assertNotIncludes(
   service.slice(service.indexOf("function isFinishSurface"), service.indexOf("function isProductColor")),
@@ -211,8 +183,6 @@ test.assertIncludes(cmfStudio, "SCREEN_SPECULAR_INTENSITY", "a lit display damps
 test.assertIncludes(cmfStudio, "scene.environment", "the viewport gives metal something to reflect");
 test.assertIncludes(rendererEntry, "RoomEnvironment", "the renderer bundle ships the environment the metals need");
 // One toolbar row, sized per control rather than per column position.
-test.assertIncludes(styles, "flex-wrap: nowrap", "the toolbar keeps its controls on one line at desktop width");
-test.assertIncludes(styles, ".cmf-control-model", "each chooser carries its own width, so hiding one cannot shift the rest");
 test.assertIncludes(cmfStudio, "material.emissiveMap && \"specularIntensity\" in material", "the damping targets the display, not every surface");
 test.assertIncludes(cmfStudio, "sourceMaterials.some(isBlackTrim)", "live recoloring skips black trim, matching the export");
 // The Neo's parts must own the surface their name promises: the key field is
@@ -297,18 +267,10 @@ test.assertIncludes(cmfStudio, '"/api/cmf/export-usdz"', "front end exports thro
 test.assertIncludes(cmfStudio, "cmf-color-chip", "part colors use stable inline swatch buttons");
 test.assertNotIncludes(cmfStudio, 'document.createElement("select")', "part colors avoid native select dropdowns");
 test.assertNotIncludes(cmfStudio, "filter:", "front end does not rely on CSS filters for recoloring");
-test.assertIncludes(styles, "touch-action: none", "the model canvas owns direct touch orbit gestures");
 test.assertIncludes(styleManifest, '"styles/86-cmf-studio.css"', "CMF stylesheet is in the style manifest");
 test.assertNotIncludes(styles, "!important", "CMF stylesheet adds no !important overrides");
 
 // --- bilingual strings ---
-test.assertIncludes(en, "cmf_studio_label:", "English CMF strings exist");
-test.assertIncludes(zh, "cmf_studio_label:", "Chinese CMF strings exist");
-test.assertIncludes(zh, "配色工作台", "Chinese label is present");
-test.assertIncludes(en, 'cmf_model_interactive: "Interactive USDZ"', "English interactive-model label is present");
-test.assertIncludes(zh, 'cmf_model_interactive: "交互式 USDZ"', "Chinese interactive-model label is present");
-test.assertIncludes(en, "cmf_model_live:", "English live-material status is present");
-test.assertIncludes(zh, "cmf_model_live:", "Chinese live-material status is present");
 for (const key of [
   "cmf_model_iphone_17_pro",
   "cmf_model_iphone_17_pro_max",

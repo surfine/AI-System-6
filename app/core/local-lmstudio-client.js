@@ -133,11 +133,20 @@ window.AISystem6LocalLMStudio = (() => {
     return controller.signal;
   }
 
-  function networkError(error) {
+  function networkError(error, signal) {
     if (error?.name === "TimeoutError" || /timed out|timeout/i.test(String(error?.message || ""))) {
       return new Error(`lmstudio_timeout: ${error?.message || error}`);
     }
-    if (error?.name === "AbortError") return error;
+    if (error?.name === "AbortError") {
+      // WebKit reports a timed-out fetch as a plain AbortError; the actual
+      // reason lives on the signal. Without this, a server that hangs is
+      // silently treated as a user cancellation and no error is shown.
+      const reason = signal?.reason || error?.reason;
+      if (reason?.name === "TimeoutError" || /timed out|timeout/i.test(String(reason?.message || ""))) {
+        return new Error(`lmstudio_timeout: ${reason?.message || "request timed out"}`);
+      }
+      return error;
+    }
     return new Error(`lmstudio_cors_or_offline: ${error?.message || error}`);
   }
 
@@ -295,11 +304,13 @@ window.AISystem6LocalLMStudio = (() => {
     }
     const { provider } = currentConfig();
     let response;
+    let signal;
     try {
       if (provider === "ollama") return await listOllamaModels(options);
+      signal = requestSignal(options.signal, options.timeoutMs);
       response = await localModelFetch("/api/v1/models", {
         method: "GET",
-        signal: requestSignal(options.signal, options.timeoutMs),
+        signal,
         cache: "no-store",
         headers: { Accept: "application/json" },
       });
@@ -311,7 +322,7 @@ window.AISystem6LocalLMStudio = (() => {
       if (provider === "ollama") {
         throw new Error(`ollama_cors_or_offline: ${error?.message || error}`);
       }
-      throw networkError(error);
+      throw networkError(error, signal);
     }
     if (!response.ok) {
       connected = false;
@@ -418,9 +429,10 @@ window.AISystem6LocalLMStudio = (() => {
 
   async function chat(payload, options = {}) {
     const requestPayload = stripClientOnlyFields(payload);
+    const signal = requestSignal(options.signal, options.timeoutMs || INFERENCE_TIMEOUT_MS);
     const post = () => localModelFetch("/v1/chat/completions", {
       method: "POST",
-      signal: requestSignal(options.signal, options.timeoutMs || INFERENCE_TIMEOUT_MS),
+      signal,
       headers: {
         "Content-Type": "application/json",
         Accept: requestPayload.stream ? "text/event-stream, application/json" : "application/json",
@@ -432,7 +444,7 @@ window.AISystem6LocalLMStudio = (() => {
       response = await post();
     } catch (error) {
       connected = false;
-      throw networkError(error);
+      throw networkError(error, signal);
     }
     if (!response.ok && currentProvider() === "lm-studio" && options.autoLoad !== false) {
       const probeText = await response.clone().text().catch(() => "");
@@ -451,9 +463,10 @@ window.AISystem6LocalLMStudio = (() => {
 
   async function embed(payload, options = {}) {
     const requestPayload = stripClientOnlyFields(payload);
+    const signal = requestSignal(options.signal, options.timeoutMs || INFERENCE_TIMEOUT_MS);
     const post = () => localModelFetch("/v1/embeddings", {
       method: "POST",
-      signal: requestSignal(options.signal, options.timeoutMs || INFERENCE_TIMEOUT_MS),
+      signal,
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
@@ -465,7 +478,7 @@ window.AISystem6LocalLMStudio = (() => {
       response = await post();
     } catch (error) {
       connected = false;
-      throw networkError(error);
+      throw networkError(error, signal);
     }
     if (!response.ok && currentProvider() === "lm-studio" && options.autoLoad !== false) {
       const probeText = await response.clone().text().catch(() => "");

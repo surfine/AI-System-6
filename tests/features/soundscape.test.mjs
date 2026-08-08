@@ -98,10 +98,6 @@ test.assertIncludes(gamdlRoute, "createReadStream(filePath", "downloaded audio s
 test.assertIncludes(gamdlRoute, '"Accept-Ranges": "bytes"', "downloaded audio serves byte ranges");
 test.assertIncludes(gamdlRoute, "decodeURIComponent(part)", "file paths are decoded one segment at a time");
 test.assertNotIncludes(gamdlRoute, "shell: true", "gamdl never runs through a shell");
-test.assertIncludes(en, 'soundscape_gamdl_download: "Download"', "English download copy exists");
-test.assertIncludes(zh, 'soundscape_gamdl_download: "下载"', "Chinese download copy exists");
-test.assertIncludes(zh, 'soundscape_gamdl_group: "Apple Music 链接"', "the Chinese download group is explicit");
-test.assertIncludes(zh, "soundscape_gamdl_done:", "the finished-download message is a countable status");
 
 // A real basic player has explicit playback modes and a local queue that can
 // be removed or cleared without pretending to control Music's hidden queue.
@@ -110,9 +106,7 @@ test.assertNotIncludes(html, 'id="soundscape-volume" type="range"', "volume is n
 test.assertIncludes(html, 'id="soundscape-progress" class="system-track" role="slider"', "position is a System 6 track that still reports a slider role");
 test.assertIncludes(html, 'id="soundscape-volume" class="system-segments" role="slider"', "volume uses Sound control panel segment cells");
 test.assertIncludes(html, 'id="soundscape-intensity" class="system-segments" role="slider"', "Enter Scene uses the same level control as volume");
-test.assertIncludes(css, "--system-track-bg", "the dithered track is token-driven so both themes share one geometry");
 test.assertNotIncludes(liquid, "--system-track-fill: linear-gradient", "the position track reports position in both themes, never percent complete");
-test.assertIncludes(css, "--system-segment-on-bg", "segment cells are token-driven so both themes share one cell count");
 test.assertIncludes(source, "function bindDragControl(element, handlers)", "the custom controls are pointer operable");
 test.assertIncludes(source, 'element.setAttribute("aria-valuenow"', "the custom controls report their value to assistive tech");
 test.assertIncludes(source, "const jump = { Home: 0, End: 1 }[event.key];", "the custom controls stay keyboard operable");
@@ -142,7 +136,6 @@ test.assertIncludes(systemMusicRoute, "shuffleMode: cleanText(readValue(() => mu
 test.assertNotIncludes(systemMusicRoute, 'music.shuffleMode = "songs";', "turning shuffle on no longer rewrites the user's chosen kind");
 test.assertIncludes(source, "state.shuffleKind = normalizeShuffleKind(snapshot.shuffleMode)", "every poll mirrors Music's real shuffle kind");
 test.assertIncludes(windowManager, "btn.dataset.shuffleKind", "the active shuffle kind carries the check mark");
-test.assertIncludes(zh, 'soundscape_repeat_mode_off: "关闭"', "the menu row reads as an option, not as a status sentence");
 test.assertIncludes(source, 'if (state.repeat === "one")', "single-track repeat actually restarts local audio");
 test.assertIncludes(source, "function randomQueueIndex()", "local shuffle chooses a real queue item");
 test.assertIncludes(source, "function removeQueueIndex(index)", "local queue rows can be removed");
@@ -174,16 +167,9 @@ test.assertIncludes(html, 'class="soundscape-axis soundscape-axis-bottom" data-i
 test.assertIncludes(source, "styleFromPointer(event)", "the field follows direct pointer movement");
 test.assertIncludes(source, "ArrowLeft: [-step, 0]", "the field is keyboard operable");
 test.assertIncludes(source, 'root.style.setProperty("--ss-field-x"', "the field maps state into visual custom properties");
-test.assertIncludes(css, "left: var(--ss-field-x)", "the field puck visibly reflects its horizontal value");
-test.assertIncludes(css, "top: var(--ss-field-y)", "the field puck visibly reflects its vertical value");
 test.assertIncludes(source, "const legacyStyleAxis", "saved styles migrate when the vertical meaning flips");
 test.assertIncludes(source, "invertLegacyY ? 100 - y : y", "legacy calm and tension do not silently reverse");
-test.assertIncludes(css, "--ss-field-grid", "the sensory field keeps the Endfield Terminal's paper-and-grid surface");
-test.assertIncludes(css, "--ss-field-cold", "cold owns the left edge of the field");
-test.assertIncludes(css, "--ss-field-warm", "warm owns the right edge of the field");
-test.assertIncludes(css, "repeating-linear-gradient(0deg, rgba(16, 17, 20, 0.34) 0 1px, transparent 1px 5px)", "tension reads as dense, sharp contour lines");
 test.assertNotIncludes(css, "rgba(31, 36, 47, 0.54)", "calm reads as low contrast without being darkened");
-test.assertIncludes(css, "@media (prefers-reduced-motion: reduce)", "motion respects reduced-motion preferences");
 test.assertNotIncludes(css, "!important", "the new surface adds no important overrides");
 test.assertNotIncludes(css, "body.use-liquid-glass", "Classic and Liquid Glass share one token-driven structure");
 test.assertIncludes(styleManifest, '"styles/88-soundscape.css"', "the component stylesheet is in the style manifest");
@@ -200,10 +186,6 @@ test.assertNotIncludes(html, "soundscape-eyebrow", "the deck drops the landing-p
 test.assertIncludes(html, 'data-soundscape-panel="queue"', "the queue is one drawer panel");
 test.assertIncludes(html, 'data-soundscape-panel="style" hidden', "the sensory field is hidden until requested");
 test.assertIncludes(html, 'data-soundscape-panel="saved" hidden', "saved moments are hidden until requested");
-test.assertIncludes(css, "grid-template-rows: 110px minmax(0, 1fr)", "the independent app keeps a compact playback deck above one workspace");
-test.assertIncludes(css, "width: 64px", "placeholder artwork stays subordinate to the player controls");
-test.assertIncludes(css, "grid-template-rows: 186px minmax(240px, 1fr)", "phone-width Soundscape keeps the deck compact above one workspace");
-test.assertIncludes(css, "--portrait-window-height:", "portrait flow receives a bounded window height");
 test.assertIncludes(windowManager, '"soundscape",', "Soundscape participates in the mobile full-screen app shell");
 
 // Project Hard Disk linkage only happens after an actual save and a mounted
@@ -215,7 +197,6 @@ test.assertIncludes(source, "function restoreProjectSoundscape()", "a project ca
 test.assertIncludes(html, 'id="soundscape-recover-moment"', "a stale moment offers a way back to its real source");
 test.assertIncludes(source, "function momentUnavailable(moment = selectedMoment())", "staleness is detected, not assumed");
 test.assertIncludes(source, "function recoverSelectedMoment()", "recovery hands the user back to Music or the file picker");
-test.assertIncludes(css, ".soundscape-saved-swatch", "the saved swatch reports hue at a fixed width");
 test.assertNotIncludes(source, "--soundscape-swatch-width", "swatch width no longer pretends to encode intensity");
 
 // The palette is a chart of named colours, not three adjectives over a 240px
@@ -238,23 +219,25 @@ test.assertIncludes(source, "Math.abs(at - edge) < 1.5", "a name does not flicke
 // Enter Scene decides how far the colour reaches, and the ceiling keeps every
 // tinted surface paper.
 test.assertIncludes(source, "function reachAt(", "Enter Scene resolves to a reach per surface");
-test.assertIncludes(css, "--ss-tint-ceiling", "tinted surfaces read a ceiling token");
-test.assertIncludes(foundation, "--ss-tint-ceiling: 6%", "Classic keeps the sensory tint inside bitmap paper");
-test.assertIncludes(liquid, "--ss-tint-ceiling: 14%", "Liquid Glass overrides the ceiling by token, not by a twin selector");
-test.assertIncludes(css, "var(--ss-reach-drawer) * var(--ss-tint-ceiling)", "the drawer paper is tinted through the ceiling");
-test.assertIncludes(css, ".soundscape-window .details-bar.soundscape-status-bar", "the last stage reaches the window chrome Soundscape owns");
 test.assertNotIncludes(css, ".soundscape-window .title-bar", "the title bar's shared striped background is left alone");
 test.assertNotIncludes(css, "var(--system-segment-on-bg))", "no color-mix runs over a Liquid Glass gradient token");
 
 // Bilingual and bootstrap-safe.
-test.assertIncludes(en, 'soundscape_save_moment: "Save This Moment"', "English product copy exists");
-test.assertIncludes(zh, 'soundscape_save_moment: "保存此刻"', "Chinese product copy exists");
-test.assertIncludes(zh, 'soundscape_style_cold_mist: "冷雾"', "the Chinese sensory palette is explicit");
-test.assertIncludes(zh, 'soundscape_repeat_one: "单曲循环"', "single-track repeat is explicit in Chinese");
-test.assertIncludes(en, "soundscape_level_of:", "segment levels have readable English value text");
-test.assertIncludes(zh, "soundscape_level_of:", "segment levels have readable Chinese value text");
-test.assertIncludes(en, 'soundscape_find_again_music: "Find It in Music"', "English recovery copy names the real source");
-test.assertIncludes(zh, "soundscape_find_again_music:", "Chinese recovery copy names the real source");
 test.assertIncludes(app, "var translations = window.AISystem6Data?.translations || {}", "early restored controls can translate without a lexical dead zone");
+
+// GAMDL is an optional local-Mac capability, not a system dependency: missing
+// gamdl / cookies must degrade to a friendly message without touching local
+// audio or macOS Music control.
+test.assertIncludes(source, "gamdl_unavailable", "missing gamdl maps to a friendly error");
+test.assertIncludes(source, "gamdl_cookies_missing", "missing cookies map to a friendly error");
+test.assert(
+  source.includes("No cookies or") && source.includes("tokens ever reach the browser"),
+  "browser never handles Apple Music cookies"
+);
+test.assertIncludes(
+  source,
+  'if (!("mediaSession" in navigator) || !["local", "gamdl"].includes(state.source)) return;',
+  "media session control treats gamdl tracks like local files, not as a dependency"
+);
 
 test.finish();

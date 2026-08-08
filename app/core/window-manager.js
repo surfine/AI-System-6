@@ -2811,13 +2811,15 @@ async function openWindow(name, options = {}) {
     }
   }
 
-  if (shouldPlaceWindow && ["outline", "sectionDrafts", "reviewDesk", "teachText"].includes(name)) {
-    arrangeActiveWritingWorkspace();
-  }
-
   if (!skipFocus) {
     focusWindow(win);
     if (!["assistant", "about"].includes(name)) playSystemSound("open");
+  }
+  // Arrange the writing workspace AFTER focus raises the window: the mobile
+  // foreground pass picks the surface with the highest z-index, so it must
+  // run once the just-opened window actually has the top z.
+  if (shouldPlaceWindow && ["outline", "sectionDrafts", "reviewDesk", "teachText"].includes(name)) {
+    arrangeActiveWritingWorkspace();
   }
 
   if (name === "guide" && typeof syncGuideWelcomeState === "function") {
@@ -2943,8 +2945,13 @@ function arrangeReviewWorkspaceSplit() {
 function arrangeActiveWritingWorkspace() {
   // On a phone each writing phase is one full-screen app, so pairing two paper
   // widths side by side is meaningless — and these splits write inline frames
-  // that would override the full-screen shell.
-  if ((isPortraitDocumentFlow() && mobileFullScreenAppIds.has("teachText")) || isNarrowViewport()) return;
+  // that would override the full-screen shell. Phones use an explicit
+  // single-foreground model instead: the current phase owns the screen and the
+  // previous phases stay reachable (as backable surfaces) without stacking.
+  if ((isPortraitDocumentFlow() && mobileFullScreenAppIds.has("teachText")) || isNarrowViewport()) {
+    arrangeMobileWritingForeground();
+    return;
+  }
   const isOpen = (name) => {
     const win = getWindow(name);
     return win && !win.classList.contains("is-hidden");
@@ -2957,6 +2964,56 @@ function arrangeActiveWritingWorkspace() {
     arrangeDraftingWorkspaceSplit();
   } else if (isOpen("outline")) {
     arrangeOutlineTeachTextSplit();
+  }
+}
+
+// Set by openTeachTextManuscriptWindow: the user explicitly asked for the
+// manuscript (Review Desk -> View Manuscript), so it must own the phone
+// screen even before the workflow is marked Final.
+let mobileManuscriptForegroundRequested = false;
+
+/**
+ * Mobile single-foreground writing model. Only one route surface owns the
+ * screen per phase; the others are hidden (not closed), so the content and
+ * state stay intact and the Writing menu's Go To can bring them back.
+ *
+ * The foreground is the highest-z open route surface (the one the app last
+ * raised), except the manuscript: it only qualifies when the user explicitly
+ * opened it (View Manuscript) or the workflow is Final. A manuscript preview
+ * that the drafting flow raises must never cover Section Drafts.
+ */
+function arrangeMobileWritingForeground() {
+  const isOpen = (name) => {
+    const win = getWindow(name);
+    return win && !win.classList.contains("is-hidden");
+  };
+  const isManuscript = typeof isTeachTextManuscriptRole === "function"
+    ? isTeachTextManuscriptRole()
+    : false;
+  const surfaces = ["questionSheet", "outline", "sectionDrafts", "reviewDesk"];
+  const openSurfaces = surfaces.filter(isOpen);
+  const teachTextOpen = isManuscript && isOpen("teachText");
+
+  if (!openSurfaces.length && !teachTextOpen) return;
+
+  const reviewPhase = typeof teachTextReviewLabel === "function" && teachTextReviewLabel();
+  const manuscriptWanted = mobileManuscriptForegroundRequested;
+  mobileManuscriptForegroundRequested = false;
+  const teachTextEligible = teachTextOpen && (manuscriptWanted || reviewPhase);
+  const candidates = [...openSurfaces, ...(teachTextEligible ? ["teachText"] : [])];
+  if (!candidates.length) return;
+
+  const foreground = candidates
+    .map((name) => ({ name, z: Number(getComputedStyle(getWindow(name)).zIndex || 0) }))
+    .sort((a, b) => b.z - a.z)[0].name;
+
+  candidates.forEach((name) => {
+    const win = getWindow(name);
+    win.classList.toggle("is-hidden", name !== foreground);
+  });
+  if (foreground) {
+    const foregroundWin = getWindow(foreground);
+    if (foregroundWin) focusWindow(foregroundWin);
   }
 }
 

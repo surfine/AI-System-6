@@ -31,6 +31,14 @@ async function openCommands(page) {
   await page.waitForSelector("#quick-draft-tools[open]");
 }
 
+async function scrollCommandsToAdjustments(page) {
+  // The Commands popover scrolls on short viewports; a writer scrolls it to
+  // reach the adjustment rows, so the spec does the same before driving them.
+  await page.locator(".quick-draft-command-popover").evaluate((el) => {
+    el.scrollTop = el.scrollHeight;
+  });
+}
+
 async function layerOrder(page) {
   return page.evaluate(() =>
     [...document.querySelectorAll("[data-quick-draft-adjustment-layer]")]
@@ -53,20 +61,32 @@ test("adjustment layers: switch, strength, mask, order, and grain markers", asyn
   await ensureWritingProfile(page);
   await openQuickDraft(page);
   await openCommands(page);
+  await scrollCommandsToAdjustments(page);
 
-  // The three layers render in canonical order with mask and move controls.
-  expect(await layerOrder(page)).toEqual(["mingming", "luoluo", "hkrr"]);
-  await expect(page.locator("[data-quick-draft-adjustment-mask]")).toHaveCount(3);
-  await expect(page.locator("[data-quick-draft-adjustment-move]")).toHaveCount(6);
+  // The four layers render in canonical order with mask and move controls;
+  // density is the fourth kind and has no Fast Review chip of its own.
+  expect(await layerOrder(page)).toEqual(["mingming", "luoluo", "hkrr", "density"]);
+  await expect(page.locator("[data-quick-draft-adjustment-mask]")).toHaveCount(4);
+  await expect(page.locator("[data-quick-draft-adjustment-move]")).toHaveCount(8);
+  await expect(page.locator('[data-quick-draft-chat-action="density"]')).toHaveCount(0);
 
-  // Turning a layer off disables its Fast Review chip; back on re-enables it.
+  // Task 5: pressing a named command creates or updates its adjustment —
+  // the chip stays reachable and re-enables the layer instead of blocking.
   await page.setChecked('[data-quick-draft-adjustment-enabled="mingming"]', false);
-  await expect(page.locator('[data-quick-draft-chat-action="mingming"]')).toBeDisabled();
-  await page.setChecked('[data-quick-draft-adjustment-enabled="mingming"]', true);
-  await expect(page.locator('[data-quick-draft-chat-action="mingming"]')).toBeEnabled();
+  await expect.poll(() =>
+    page.evaluate(() => getActiveProject().quickDraft.workspace.adjustmentLayers.find((l) => l.kind === "mingming")?.enabled)
+  ).toBe(false);
+  await page.click('[data-quick-draft-chat-action="mingming"]');
+  await expect.poll(() =>
+    page.evaluate(() => getActiveProject().quickDraft.workspace.adjustmentLayers.find((l) => l.kind === "mingming")?.enabled)
+  ).toBe(true);
 
   // Strength and mask edits land in the workspace record, normalized.
+  // The command press closes the Commands popover, so open it again.
+  await openCommands(page);
+  await scrollCommandsToAdjustments(page);
   await page.selectOption('[data-quick-draft-adjustment-strength="luoluo"]', "75");
+  await scrollCommandsToAdjustments(page);
   await page.fill('[data-quick-draft-adjustment-mask="hkrr"]', "1-2");
   await page.locator('[data-quick-draft-adjustment-mask="hkrr"]').press("Tab");
   await expect.poll(async () => (await workspaceLayers(page)).find((l) => l.kind === "luoluo")?.strength).toBe(75);
@@ -75,8 +95,9 @@ test("adjustment layers: switch, strength, mask, order, and grain markers", asyn
   ).toBe(JSON.stringify([{ start: 1, end: 2 }]));
 
   // Reorder: HKRR moves above Luoluo and the visible stack follows.
+  await scrollCommandsToAdjustments(page);
   await page.click('[data-quick-draft-adjustment-move="hkrr"][data-direction="-1"]');
-  await expect.poll(() => layerOrder(page)).toEqual(["mingming", "hkrr", "luoluo"]);
+  await expect.poll(() => layerOrder(page)).toEqual(["mingming", "hkrr", "luoluo", "density"]);
 
   // The grain view reports the mask and marks the masked lines.
   await page.fill("#quick-draft-draft", "第一行。\n\n第二行。\n\n第三行。");
@@ -95,13 +116,14 @@ test("adjustment layers persist across a reload", async ({ page }) => {
   await ensureWritingProfile(page);
   await openQuickDraft(page);
   await openCommands(page);
+  await scrollCommandsToAdjustments(page);
 
   // Set the state the reload must restore.
   await page.selectOption('[data-quick-draft-adjustment-strength="luoluo"]', "75");
   await page.fill('[data-quick-draft-adjustment-mask="hkrr"]', "1-2");
   await page.locator('[data-quick-draft-adjustment-mask="hkrr"]').press("Tab");
   await page.click('[data-quick-draft-adjustment-move="hkrr"][data-direction="-1"]');
-  await expect.poll(() => layerOrder(page)).toEqual(["mingming", "hkrr", "luoluo"]);
+  await expect.poll(() => layerOrder(page)).toEqual(["mingming", "hkrr", "luoluo", "density"]);
 
   // Flush the async IndexedDB write before reloading: a reload that races the
   // persistence promise boots into a fresh project and loses the settings.
@@ -121,5 +143,5 @@ test("adjustment layers persist across a reload", async ({ page }) => {
 
   await expect(page.locator('[data-quick-draft-adjustment-strength="luoluo"]')).toHaveValue("75");
   await expect(page.locator('[data-quick-draft-adjustment-mask="hkrr"]')).toHaveValue("1-2");
-  await expect.poll(() => layerOrder(page)).toEqual(["mingming", "hkrr", "luoluo"]);
+  await expect.poll(() => layerOrder(page)).toEqual(["mingming", "hkrr", "luoluo", "density"]);
 });

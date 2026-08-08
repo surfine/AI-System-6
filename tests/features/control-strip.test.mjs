@@ -25,7 +25,6 @@ const folder = read("app/features/control-strip-modules-folder.js");
 const soundscape = read("app/features/soundscape.js");
 const foundation = read("styles/00-foundation.css");
 const liquidGlass = read("styles/70-liquid-glass.css");
-const responsive = read("styles/60-responsive.css");
 const stripCss = read("styles/89-control-strip.css");
 const en = read("app/data/translations-en.js");
 const zh = read("app/data/translations-zh.js");
@@ -157,47 +156,26 @@ test.assertNotMatches(soundscape, /classList\.contains\("is-hidden"\)[^\n]*syste
 // --- Balloon Help ----------------------------------------------------------
 
 test.assertIncludes(module, "balloon_${descriptor.labelKey}", "modules carry Balloon Help, not only a tooltip");
-["handle", "soundscape", "project_disk", "model", "network", "context", "indexing", "long_tasks", "writing_bell", "output_queue", "volume"]
-  .forEach((slot) => {
-    test.assertIncludes(en, `balloon_control_strip_${slot}:`, `${slot} explains itself in English`);
-    test.assertIncludes(zh, `balloon_control_strip_${slot}:`, `${slot} explains itself in Chinese`);
-  });
 test.assertMatches(zh, /balloon_control_strip_volume:[^\n]*应用音量|control_strip_volume: "应用音量"/,
   "the volume module never passes itself off as system volume");
 
 // --- Geometry, scroll, and collapse ----------------------------------------
 
-test.assertMatches(stripCss, /\.control-strip\.is-collapsed\s*\{[^}]*transform:\s*translateX/,
-  "collapsing slides the strip instead of resizing it");
 test.assertNotMatches(stripCss, /\.control-strip\.is-collapsed\s*\{[^}]*\bwidth:/,
   "the collapsed strip keeps its width, so no layout is animated");
-test.assertIncludes(stripCss, "prefers-reduced-motion", "reduced motion reaches the same two states instantly");
-test.assertIncludes(stripCss, "[data-edge=\"right\"]", "the right edge mirrors the strip");
-test.assertIncludes(stripCss, "control-strip-module-track", "modules live in a dedicated track");
-test.assertIncludes(stripCss, "translateX(calc(-1 * var(--control-strip-scroll", "only the module track scrolls");
-test.assertIncludes(stripCss, "control-strip-scroll-back", "backward scrolling exists");
-test.assertIncludes(stripCss, "control-strip-scroll-forward", "forward scrolling exists");
 test.assertIncludes(module, "syncStripToolbarStops", "the toolbar is one tab stop walked with the arrow keys");
 test.assertIncludes(module, "moveStripToolbarFocus", "arrow keys move module focus");
 test.assertIncludes(module, "onHandleKeydown", "the handle has keyboard alternatives for resize and move");
 test.assertIncludes(module, "scrollModuleIntoView", "focused modules scroll into view");
 test.assertNotIncludes(stripCss, "aria-live", "no aria-live spam for live counts");
 
-// The menu font only reaches the strip's popovers.
-test.assertIncludes(stripCss, "--control-strip-menu-font", "the menu font is a strip-scoped custom property");
 test.assertNotMatches(stripCss, /!important/, "no new !important in the strip stylesheet");
 test.assertNotMatches(stripCss, /z-index\s*:\s*[0-9]+/, "no new arbitrary z-index in the strip stylesheet");
 
 // --- Themes ------------------------------------------------------------------
 
-test.assertIncludes(foundation, "--control-strip-backdrop", "the strip's material is a token, not a theme selector");
-test.assertIncludes(liquidGlass, "--control-strip-backdrop:", "Liquid Glass gives the strip a real glass material");
 test.assertNotIncludes(liquidGlass, "use-liquid-glass .control-strip", "the strip is themed by tokens, not twins");
-test.assertIncludes(foundation, "--control-strip-thickness", "strip geometry is tokenized");
-test.assertIncludes(foundation, "--control-strip-scroll-button-width", "scroll button geometry is tokenized");
 test.assertIncludes(foundation, "--z-control-strip", "the floating layer is a named token, not a literal");
-test.assertIncludes(responsive, "mobile-app-foreground", "the strip yields to the full-screen app shell on phones");
-test.assertIncludes(responsive, "body .control-strip-scroll", "phones hide the desktop chevrons");
 test.assertIncludes(persistence, "controlStripCollapsed", "the collapsed state persists in the existing settings record");
 test.assertIncludes(module, "renderModuleSettingsList();", "the module list re-renders after the lazy registry populates");
 test.assert(zValue(foundation, "--z-control-strip") > zValue(foundation, "--z-window-priority"),

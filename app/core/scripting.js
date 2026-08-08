@@ -202,15 +202,18 @@ async function runSlidesDroplet(files) {
   });
 }
 
-function runProjectCdDroplet(files) {
+async function runProjectCdDroplet(files) {
   const file = files[0];
   if (!file?.body?.trim()) return;
-  const item = addProjectCdItem(file.body, file.name);
-  if (item) {
-    item.sourceDocumentId = file.id;
-    saveDeskState();
-    openWindow("projectCd");
-  }
+  // The burn assembles the record once (source document included) and awaits
+  // the pre-burn revision; a failure returns false and never opens the CD.
+  const item = await addProjectCdItem(file.body, file.name, {
+    sourceDocumentId: file.id,
+    sourceKind: "markdown",
+  });
+  if (!item) return false;
+  openWindow("projectCd");
+  return true;
 }
 
 async function runReviewDroplet(files) {
