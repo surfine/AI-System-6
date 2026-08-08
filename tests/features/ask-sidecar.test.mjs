@@ -60,6 +60,9 @@ test.assertIncludes(indexHtml, 'id="teachtext-sideask"', "TeachText exposes a vi
 test.assertIncludes(indexHtml, 'id="sideask-mode-strip"', "ClioTalk shows an explicit SideAsk mode strip");
 test.assertIncludes(indexHtml, 'data-action="focus-sideask-source"', "The SideAsk strip links back to its paired source");
 test.assertIncludes(indexHtml, 'data-i18n="sideask_end"', "The SideAsk strip exposes an explicit exit");
+test.assertNotIncludes(indexHtml, "ask-bar-scope", "SideAsk source apps keep one compact input row without a duplicate scope strip");
+test.assertNotIncludes(indexHtml, "ask-scope-object", "SideAsk object names do not consume a second row above the input");
+test.assertNotIncludes(indexHtml, "ask-scope-range", "SideAsk range labels do not consume a second row above the input");
 test.assertMatches(styles, /\.assistant-window\.is-sideask \.clio-chat-file-link \{[\s\S]*display: none;/, "Temporary SideAsk does not advertise the normal Chat-file lifecycle");
 test.assertMatches(styles, /\.sideask-source-link:focus-visible \{[\s\S]*outline:/, "The paired-source link preserves a visible keyboard focus state");
 test.assertIncludes(chatMessages, "function formatSideAskAnchorContext()", "SideAsk has a default context loader for the paired app");

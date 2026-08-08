@@ -16,7 +16,7 @@
     <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png" />
     <link rel="manifest" href="assets/app-icon/manifest.json" />
-    <link rel="stylesheet" href="styles.bundle.css?v=20260808.5" />
+    <link rel="stylesheet" href="styles.bundle.css?v=20260809.1" />
   </head>
   <body class="is-booting">
     <header class="menu-bar" aria-label="System menu" data-i18n-aria-label="system_menu">
@@ -65,26 +65,26 @@
       </div>
       <span id="app-menu-slot" hidden></span>
       <div class="menu-spacer"></div>
-      <div class="menu cloud-switcher-menu">
+      <div class="menu cloud-switcher-menu" data-control-strip-counterpart="model">
         <button id="cloud-model-indicator" class="cloud-model-indicator is-hidden" type="button" aria-haspopup="menu" aria-label="Cloud Model Status" data-i18n-aria-label="cloud_model_status" data-balloon-help="balloon_model_status">
           <span class="cloud-icon sys-icon" data-system-icon="cloudModel" aria-hidden="true"></span>
           <span id="cloud-model-label">None</span>
         </button>
         <div id="cloud-model-popover" class="menu-popover cloud-model-popover" role="menu"></div>
       </div>
-      <div class="menu project-switcher-menu">
+      <div class="menu project-switcher-menu" data-control-strip-counterpart="projectDisk">
         <button id="project-switcher-button" class="project-switcher-button" type="button" aria-haspopup="menu" aria-label="Switch Project Hard Disk" data-i18n-aria-label="project_switcher" data-balloon-help="balloon_project_switcher">
           <span class="project-switcher-icon sys-icon sys-icon-desktop" data-system-icon="projectDisk" aria-hidden="true"></span>
           <span id="project-switcher-label">Project Hard Disk</span>
         </button>
         <div id="project-switcher-popover" class="menu-popover project-switcher-popover" role="menu"></div>
       </div>
-      <button id="notification-center-button" class="notification-center-button is-hidden" type="button" data-action="open-notification-center" data-i18n-aria-label="notification_center" aria-haspopup="dialog">
+      <button id="notification-center-button" class="notification-center-button is-hidden" type="button" data-action="open-notification-center" data-i18n-aria-label="notification_center" aria-haspopup="dialog" data-control-strip-counterpart="notifications">
         <span class="notification-center-icon" aria-hidden="true">!</span>
         <span id="notification-center-count">0</span>
       </button>
-      <span id="clock" class="is-hidden" aria-hidden="true"></span>
-      <div class="menu multifinder-menu">
+      <span id="clock" class="is-hidden" aria-hidden="true" data-control-strip-counterpart="clock"></span>
+      <div class="menu multifinder-menu" data-control-strip-counterpart="finderEnvironment">
         <button id="multifinder-button" class="multifinder-button" type="button" aria-haspopup="menu" aria-label="MultiFinder" data-balloon-help="balloon_multifinder_switcher">
           <span class="multifinder-icon" aria-hidden="true"></span>
           <span id="multifinder-label">Finder</span>
@@ -181,31 +181,31 @@
         </form>
       </dialog>
 
-      <dialog id="clio-use-result-modal" class="finder-operation-modal">
+      <dialog id="clio-use-result-modal" class="finder-operation-modal clio-use-result-modal">
         <form method="dialog">
-          <div class="finder-operation-layout">
-            <aside class="finder-operation-subject">
-              <span class="sys-icon sys-icon-desktop" data-system-icon="assistant" aria-hidden="true"></span>
-              <b data-i18n="clio_use_result">Use Result</b>
-              <small id="clio-use-result-subject" data-i18n="clio_reply_temporary">Not saved to project</small>
-            </aside>
-            <section class="finder-operation-body">
-              <h2 data-i18n="clio_choose_destination">Choose a destination</h2>
+          <header class="clio-use-result-header">
+            <span class="sys-icon" data-system-icon="assistant" aria-hidden="true"></span>
+            <div class="clio-use-result-headings">
+              <h2 data-i18n="clio_use_result">Use Result</h2>
               <p class="finder-operation-lede" data-i18n="clio_use_result_help">Choose where this reply belongs. Nothing changes until you confirm.</p>
-              <div id="clio-use-result-targets" class="finder-operation-list" role="radiogroup" data-i18n-aria-label="clio_destination"></div>
-              <h3 data-i18n="clio_write_method">Write method</h3>
-              <div id="clio-use-result-modes" class="finder-operation-list" role="radiogroup" data-i18n-aria-label="clio_write_method"></div>
+            </div>
+          </header>
+          <p id="clio-use-result-subject" class="clio-use-result-quote"></p>
+          <div class="clio-use-result-panes">
+            <div id="clio-use-result-targets" class="finder-operation-list" role="radiogroup" data-i18n-aria-label="clio_destination"></div>
+            <section class="clio-use-result-detail" aria-live="polite">
+              <p id="clio-use-result-purpose" class="clio-use-result-purpose"></p>
+              <div id="clio-use-result-modes" role="group" data-i18n-aria-label="clio_write_method"></div>
               <dl class="finder-operation-result">
                 <dt data-i18n="clio_before">Before</dt>
                 <dd id="clio-use-result-before">—</dd>
                 <dt data-i18n="clio_after">After</dt>
                 <dd id="clio-use-result-after">—</dd>
-                <dt data-i18n="clio_record">Record</dt>
-                <dd id="clio-use-result-record">—</dd>
               </dl>
             </section>
           </div>
           <div class="button-row finder-operation-actions">
+            <p id="clio-use-result-record" class="clio-use-result-record"></p>
             <button class="btn" value="cancel" data-i18n="cancel">Cancel</button>
             <button class="btn default" value="apply" id="clio-use-result-confirm" data-i18n="clio_confirm_write">Write</button>
           </div>
@@ -774,9 +774,9 @@
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="rag-title" data-i18n="mount_text_disk">Insert File Floppy</h2>
         </div>
-        <div class="details-bar">
-          <span data-i18n="short_term_memory">Short-term memory</span>
-          <span data-i18n="retrieval_context">Retrieval context</span>
+        <div class="details-bar compact-status-bar">
+          <span class="status-bar-leading" data-i18n="short_term_memory">Short-term memory</span>
+          <span class="status-bar-trailing" data-i18n="retrieval_context">Retrieval context</span>
         </div>
         <div class="window-pane settings memory-transfer-pane memory-transfer-floppy-pane">
           <section class="memory-transfer-note is-short-term">
@@ -902,6 +902,18 @@
           <button class="finder-item" data-control-strip-module="volume" draggable="true">
             <span class="sys-icon" data-system-icon="speaker" aria-hidden="true"></span>
             <span data-i18n="control_strip_volume">App Volume</span>
+          </button>
+          <button class="finder-item" data-control-strip-module="finderEnvironment" draggable="true">
+            <span class="sys-icon" data-system-icon="systemStatus" aria-hidden="true"></span>
+            <span data-i18n="control_strip_finder_environment">Finder / MultiFinder</span>
+          </button>
+          <button class="finder-item" data-control-strip-module="notifications" draggable="true">
+            <span class="sys-icon" data-system-icon="systemStatus" aria-hidden="true"></span>
+            <span data-i18n="control_strip_notifications">System Messages</span>
+          </button>
+          <button class="finder-item" data-control-strip-module="clock" draggable="true">
+            <span class="sys-icon" data-system-icon="systemStatus" aria-hidden="true"></span>
+            <span data-i18n="control_strip_clock">Clock</span>
           </button>
         </div>
       </section>
@@ -1128,6 +1140,11 @@
                       </div>
                     </details>
                     <div class="quick-draft-well-actions">
+                      <button class="btn mini-btn" type="button" data-action="quick-draft-import-chat" data-i18n="quick_draft_import_chat_records">Import Chat Records</button>
+                      <button class="btn mini-btn" type="button" id="quick-draft-use-mounted" data-i18n="quick_draft_use_mounted">Use File Floppy</button>
+                      <button class="btn mini-btn" type="button" data-quick-draft-chat-action="vent-on" data-i18n="quick_draft_vent_start">Start Vent Mode</button>
+                      <button class="btn mini-btn" type="button" data-quick-draft-chat-action="organize" data-i18n="quick_draft_chip_talk_points">Talk Points</button>
+                      <span class="quick-draft-actions-gap"></span>
                       <button class="btn mini-btn" type="button" data-quick-draft-open-editor data-i18n="quick_draft_open_editor">Write the body</button>
                     </div>
                   </section>
@@ -1156,20 +1173,22 @@
               </section>
 
               <aside class="quick-draft-shelf" aria-label="Materials" data-i18n-aria-label="quick_draft_materials_label">
-                <b data-i18n="quick_draft_materials_label">Materials</b>
+                <div class="quick-draft-region-head">
+                  <b id="quick-draft-shelf-title" data-i18n="quick_draft_materials_label">Materials</b>
+                  <button class="btn mini-btn quick-draft-drawer-close" type="button" data-quick-draft-drawer-close="shelf" data-i18n="close">Close</button>
+                </div>
                 <div id="quick-draft-source-map" class="quick-draft-source-map"></div>
                 <div class="quick-draft-material-actions">
                   <button class="btn mini-btn" type="button" data-quick-draft-to-start data-i18n="quick_draft_add_material" data-balloon-help="balloon_qd_add_material">Add Material…</button>
-                  <button class="btn mini-btn" type="button" data-action="quick-draft-import-chat" data-i18n="quick_draft_import_chat_records">Import Chat Records</button>
-                  <button class="btn mini-btn" type="button" id="quick-draft-use-mounted" data-i18n="quick_draft_use_mounted">Use File Floppy</button>
-                  <button class="btn mini-btn" type="button" data-quick-draft-chat-action="vent-on" data-i18n="quick_draft_vent_start">Start Vent Mode</button>
-                  <button class="btn mini-btn" type="button" data-quick-draft-chat-action="organize" data-i18n="quick_draft_chip_talk_points">Talk Points</button>
                 </div>
               </aside>
 
               <aside class="quick-draft-inspector" aria-label="Adjustment Layers" data-i18n-aria-label="quick_draft_command_adjustment">
                 <section class="quick-draft-inspector-section" aria-label="Adjustment Layers" data-i18n-aria-label="quick_draft_command_adjustment">
-                  <b data-i18n="quick_draft_command_adjustment">Adjustment Layers</b>
+                  <div class="quick-draft-region-head">
+                    <b data-i18n="quick_draft_command_adjustment">Adjustment Layers</b>
+                    <button class="btn mini-btn quick-draft-drawer-close" type="button" data-quick-draft-drawer-close="inspector" data-i18n="close">Close</button>
+                  </div>
                   <!-- One layer, one row: switch, name, strength, then the
                        scope line. The plain-language description moved into
                        Balloon Help so the stack order stays readable. -->
@@ -1179,6 +1198,7 @@
                     <div class="quick-draft-adjustment-layer" data-quick-draft-adjustment-layer="mingming" data-balloon-help="quick_draft_layer_mingming_desc">
                       <label class="quick-draft-adjustment-row">
                         <input type="checkbox" data-quick-draft-adjustment-enabled="mingming" checked />
+                        <i class="quick-draft-layer-order" data-quick-draft-layer-order="mingming" aria-hidden="true"></i>
                         <span data-i18n="quick_draft_chip_mingming">Mingming Pass</span>
                       </label>
                       <span class="select-wrap-inline">
@@ -1188,19 +1208,25 @@
                           <option value="75" data-i18n="quick_draft_adjustment_heavy">Strong</option>
                         </select>
                       </span>
-                      <div class="quick-draft-adjustment-mask">
-                        <span data-i18n="quick_draft_adjustment_mask_label">Lines</span>
-                        <input type="text" inputmode="numeric" data-quick-draft-adjustment-mask="mingming" placeholder="all" data-i18n-placeholder="quick_draft_adjustment_mask_placeholder" aria-label="Mingming Pass mask lines" data-i18n-aria-label="quick_draft_adjustment_mask_aria" />
-                        <button type="button" class="btn mini-btn" data-quick-draft-adjustment-scope="mingming" data-i18n="quick_draft_scope_selection">Sel</button>
-                        <span class="quick-draft-adjustment-move">
-                          <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="mingming" data-direction="-1" aria-label="Move up" data-i18n-aria-label="quick_draft_adjustment_move_up">▲</button>
-                          <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="mingming" data-direction="1" aria-label="Move down" data-i18n-aria-label="quick_draft_adjustment_move_down">▼</button>
-                        </span>
+                      <button class="quick-draft-layer-detail-toggle" type="button" data-quick-draft-layer-toggle="mingming" aria-expanded="false" aria-controls="quick-draft-layer-detail-mingming" aria-label="Layer detail" data-i18n-aria-label="quick_draft_layer_detail">▸</button>
+                      <span class="quick-draft-layer-scope" data-quick-draft-layer-scope="mingming"></span>
+                      <div class="quick-draft-layer-detail" id="quick-draft-layer-detail-mingming" hidden>
+                        <p class="quick-draft-layer-description" data-quick-draft-layer-description="mingming"></p>
+                        <div class="quick-draft-adjustment-mask">
+                          <span data-i18n="quick_draft_adjustment_mask_label">Lines</span>
+                          <input type="text" inputmode="numeric" data-quick-draft-adjustment-mask="mingming" placeholder="all" data-i18n-placeholder="quick_draft_adjustment_mask_placeholder" aria-label="Mingming Pass mask lines" data-i18n-aria-label="quick_draft_adjustment_mask_aria" />
+                          <button type="button" class="btn mini-btn" data-quick-draft-adjustment-scope="mingming" data-i18n="quick_draft_scope_selection">Sel</button>
+                          <span class="quick-draft-adjustment-move">
+                            <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="mingming" data-direction="-1" aria-label="Move up" data-i18n-aria-label="quick_draft_adjustment_move_up">▲</button>
+                            <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="mingming" data-direction="1" aria-label="Move down" data-i18n-aria-label="quick_draft_adjustment_move_down">▼</button>
+                          </span>
+                        </div>
                       </div>
                     </div>
                     <div class="quick-draft-adjustment-layer" data-quick-draft-adjustment-layer="luoluo" data-balloon-help="quick_draft_layer_luoluo_desc">
                       <label class="quick-draft-adjustment-row">
                         <input type="checkbox" data-quick-draft-adjustment-enabled="luoluo" checked />
+                        <i class="quick-draft-layer-order" data-quick-draft-layer-order="luoluo" aria-hidden="true"></i>
                         <span data-i18n="quick_draft_chip_luoluo">Luoluo Receive</span>
                       </label>
                       <span class="select-wrap-inline">
@@ -1210,19 +1236,25 @@
                           <option value="75" data-i18n="quick_draft_adjustment_heavy">Strong</option>
                         </select>
                       </span>
-                      <div class="quick-draft-adjustment-mask">
-                        <span data-i18n="quick_draft_adjustment_mask_label">Lines</span>
-                        <input type="text" inputmode="numeric" data-quick-draft-adjustment-mask="luoluo" placeholder="all" data-i18n-placeholder="quick_draft_adjustment_mask_placeholder" aria-label="Luoluo Receive mask lines" data-i18n-aria-label="quick_draft_adjustment_mask_aria" />
-                        <button type="button" class="btn mini-btn" data-quick-draft-adjustment-scope="luoluo" data-i18n="quick_draft_scope_selection">Sel</button>
-                        <span class="quick-draft-adjustment-move">
-                          <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="luoluo" data-direction="-1" aria-label="Move up" data-i18n-aria-label="quick_draft_adjustment_move_up">▲</button>
-                          <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="luoluo" data-direction="1" aria-label="Move down" data-i18n-aria-label="quick_draft_adjustment_move_down">▼</button>
-                        </span>
+                      <button class="quick-draft-layer-detail-toggle" type="button" data-quick-draft-layer-toggle="luoluo" aria-expanded="false" aria-controls="quick-draft-layer-detail-luoluo" aria-label="Layer detail" data-i18n-aria-label="quick_draft_layer_detail">▸</button>
+                      <span class="quick-draft-layer-scope" data-quick-draft-layer-scope="luoluo"></span>
+                      <div class="quick-draft-layer-detail" id="quick-draft-layer-detail-luoluo" hidden>
+                        <p class="quick-draft-layer-description" data-quick-draft-layer-description="luoluo"></p>
+                        <div class="quick-draft-adjustment-mask">
+                          <span data-i18n="quick_draft_adjustment_mask_label">Lines</span>
+                          <input type="text" inputmode="numeric" data-quick-draft-adjustment-mask="luoluo" placeholder="all" data-i18n-placeholder="quick_draft_adjustment_mask_placeholder" aria-label="Luoluo Receive mask lines" data-i18n-aria-label="quick_draft_adjustment_mask_aria" />
+                          <button type="button" class="btn mini-btn" data-quick-draft-adjustment-scope="luoluo" data-i18n="quick_draft_scope_selection">Sel</button>
+                          <span class="quick-draft-adjustment-move">
+                            <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="luoluo" data-direction="-1" aria-label="Move up" data-i18n-aria-label="quick_draft_adjustment_move_up">▲</button>
+                            <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="luoluo" data-direction="1" aria-label="Move down" data-i18n-aria-label="quick_draft_adjustment_move_down">▼</button>
+                          </span>
+                        </div>
                       </div>
                     </div>
                     <div class="quick-draft-adjustment-layer" data-quick-draft-adjustment-layer="hkrr" data-balloon-help="quick_draft_layer_hkrr_desc">
                       <label class="quick-draft-adjustment-row">
                         <input type="checkbox" data-quick-draft-adjustment-enabled="hkrr" checked />
+                        <i class="quick-draft-layer-order" data-quick-draft-layer-order="hkrr" aria-hidden="true"></i>
                         <span data-i18n="quick_draft_chip_hkrr">HKRR Lift</span>
                       </label>
                       <span class="select-wrap-inline">
@@ -1232,19 +1264,25 @@
                           <option value="75" data-i18n="quick_draft_adjustment_heavy">Strong</option>
                         </select>
                       </span>
-                      <div class="quick-draft-adjustment-mask">
-                        <span data-i18n="quick_draft_adjustment_mask_label">Lines</span>
-                        <input type="text" inputmode="numeric" data-quick-draft-adjustment-mask="hkrr" placeholder="all" data-i18n-placeholder="quick_draft_adjustment_mask_placeholder" aria-label="HKRR Lift mask lines" data-i18n-aria-label="quick_draft_adjustment_mask_aria" />
-                        <button type="button" class="btn mini-btn" data-quick-draft-adjustment-scope="hkrr" data-i18n="quick_draft_scope_selection">Sel</button>
-                        <span class="quick-draft-adjustment-move">
-                          <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="hkrr" data-direction="-1" aria-label="Move up" data-i18n-aria-label="quick_draft_adjustment_move_up">▲</button>
-                          <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="hkrr" data-direction="1" aria-label="Move down" data-i18n-aria-label="quick_draft_adjustment_move_down">▼</button>
-                        </span>
+                      <button class="quick-draft-layer-detail-toggle" type="button" data-quick-draft-layer-toggle="hkrr" aria-expanded="false" aria-controls="quick-draft-layer-detail-hkrr" aria-label="Layer detail" data-i18n-aria-label="quick_draft_layer_detail">▸</button>
+                      <span class="quick-draft-layer-scope" data-quick-draft-layer-scope="hkrr"></span>
+                      <div class="quick-draft-layer-detail" id="quick-draft-layer-detail-hkrr" hidden>
+                        <p class="quick-draft-layer-description" data-quick-draft-layer-description="hkrr"></p>
+                        <div class="quick-draft-adjustment-mask">
+                          <span data-i18n="quick_draft_adjustment_mask_label">Lines</span>
+                          <input type="text" inputmode="numeric" data-quick-draft-adjustment-mask="hkrr" placeholder="all" data-i18n-placeholder="quick_draft_adjustment_mask_placeholder" aria-label="HKRR Lift mask lines" data-i18n-aria-label="quick_draft_adjustment_mask_aria" />
+                          <button type="button" class="btn mini-btn" data-quick-draft-adjustment-scope="hkrr" data-i18n="quick_draft_scope_selection">Sel</button>
+                          <span class="quick-draft-adjustment-move">
+                            <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="hkrr" data-direction="-1" aria-label="Move up" data-i18n-aria-label="quick_draft_adjustment_move_up">▲</button>
+                            <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="hkrr" data-direction="1" aria-label="Move down" data-i18n-aria-label="quick_draft_adjustment_move_down">▼</button>
+                          </span>
+                        </div>
                       </div>
                     </div>
                     <div class="quick-draft-adjustment-layer" data-quick-draft-adjustment-layer="density" data-balloon-help="quick_draft_layer_density_desc">
                       <label class="quick-draft-adjustment-row">
                         <input type="checkbox" data-quick-draft-adjustment-enabled="density" checked />
+                        <i class="quick-draft-layer-order" data-quick-draft-layer-order="density" aria-hidden="true"></i>
                         <span data-i18n="quick_draft_adjustment_density">Density</span>
                       </label>
                       <span class="select-wrap-inline">
@@ -1254,21 +1292,26 @@
                           <option value="75" data-i18n="quick_draft_adjustment_density_heavy">More</option>
                         </select>
                       </span>
-                      <div class="quick-draft-adjustment-mask">
-                        <span data-i18n="quick_draft_adjustment_mask_label">Lines</span>
-                        <input type="text" inputmode="numeric" data-quick-draft-adjustment-mask="density" placeholder="all" data-i18n-placeholder="quick_draft_adjustment_mask_placeholder" aria-label="Density mask lines" data-i18n-aria-label="quick_draft_adjustment_mask_aria" />
-                        <button type="button" class="btn mini-btn" data-quick-draft-adjustment-scope="density" data-i18n="quick_draft_scope_selection">Sel</button>
-                        <span class="quick-draft-adjustment-move">
-                          <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="density" data-direction="-1" aria-label="Move up" data-i18n-aria-label="quick_draft_adjustment_move_up">▲</button>
-                          <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="density" data-direction="1" aria-label="Move down" data-i18n-aria-label="quick_draft_adjustment_move_down">▼</button>
-                        </span>
+                      <button class="quick-draft-layer-detail-toggle" type="button" data-quick-draft-layer-toggle="density" aria-expanded="false" aria-controls="quick-draft-layer-detail-density" aria-label="Layer detail" data-i18n-aria-label="quick_draft_layer_detail">▸</button>
+                      <span class="quick-draft-layer-scope" data-quick-draft-layer-scope="density"></span>
+                      <div class="quick-draft-layer-detail" id="quick-draft-layer-detail-density" hidden>
+                        <p class="quick-draft-layer-description" data-quick-draft-layer-description="density"></p>
+                        <div class="quick-draft-adjustment-mask">
+                          <span data-i18n="quick_draft_adjustment_mask_label">Lines</span>
+                          <input type="text" inputmode="numeric" data-quick-draft-adjustment-mask="density" placeholder="all" data-i18n-placeholder="quick_draft_adjustment_mask_placeholder" aria-label="Density mask lines" data-i18n-aria-label="quick_draft_adjustment_mask_aria" />
+                          <button type="button" class="btn mini-btn" data-quick-draft-adjustment-scope="density" data-i18n="quick_draft_scope_selection">Sel</button>
+                          <span class="quick-draft-adjustment-move">
+                            <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="density" data-direction="-1" aria-label="Move up" data-i18n-aria-label="quick_draft_adjustment_move_up">▲</button>
+                            <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="density" data-direction="1" aria-label="Move down" data-i18n-aria-label="quick_draft_adjustment_move_down">▼</button>
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
                   <div class="quick-draft-protect">
                     <span data-i18n="quick_draft_protected_label">Protected</span>
-                    <button type="button" class="btn mini-btn" data-quick-draft-protect-selection data-i18n="quick_draft_protect_selection" data-balloon-help="balloon_qd_protect">Protect Selection</button>
                     <input type="text" inputmode="numeric" data-quick-draft-protected-ranges placeholder="3-5, 8" data-i18n-placeholder="quick_draft_protected_placeholder" aria-label="Protected lines" data-i18n-aria-label="quick_draft_protected_aria" />
+                    <button type="button" class="btn mini-btn" data-quick-draft-protect-selection data-i18n="quick_draft_protect_selection" data-balloon-help="balloon_qd_protect">Protect Selection</button>
                   </div>
                   <div class="quick-draft-adjustment-actions">
                     <button type="button" class="btn" data-quick-draft-adjustment-apply data-i18n="quick_draft_apply_adjustments" data-balloon-help="balloon_qd_apply">Preview</button>
@@ -1277,7 +1320,9 @@
                   <p class="quick-draft-adjust-note" data-i18n="quick_draft_adjust_note">Adjustments only preview until you Develop them into the draft.</p>
                 </section>
                 <section class="quick-draft-inspector-section quick-draft-versions-section" aria-label="Versions" data-i18n-aria-label="quick_draft_versions">
-                  <b data-i18n="quick_draft_versions">Versions</b>
+                  <div class="quick-draft-region-head">
+                    <b data-i18n="quick_draft_versions">Versions</b>
+                  </div>
                   <div id="quick-draft-versions-list" class="quick-draft-versions-list"></div>
                   <button class="btn mini-btn" type="button" id="quick-draft-restore-dump" data-i18n="quick_draft_restore_dump" data-balloon-help="balloon_qd_versions">Restore last version</button>
                 </section>
@@ -1297,10 +1342,9 @@
                 <button class="btn mini-btn" type="button" data-quick-draft-drawer="inspector" aria-pressed="false" data-i18n="quick_draft_drawer_adjust">Adjust</button>
               </span>
               <span class="quick-draft-actions-gap"></span>
-              <button class="btn quick-draft-return-sideask is-hidden" type="button" id="quick-draft-return-sideask" data-i18n="quick_draft_return_sideask">Return to SideAsk</button>
               <details id="quick-draft-tools" class="teachtext-command-menu quick-draft-command-menu">
                 <summary class="btn">
-                  <span class="mobile-control-long" data-i18n="teachtext_commands">Commands</span>
+                  <span class="mobile-control-long" data-i18n="quick_draft_tools">Tools…</span>
                   <span class="mobile-control-short" data-i18n="more">More</span>
                 </summary>
                 <div class="teachtext-command-popover quick-draft-command-popover">
@@ -1321,6 +1365,9 @@
                     <button class="btn" type="button" data-quick-draft-chat-action="luoluo" data-i18n="quick_draft_chip_luoluo">Luoluo Receive</button>
                     <button class="btn" type="button" data-quick-draft-chat-action="hkrr" data-i18n="quick_draft_chip_hkrr">HKRR Lift</button>
                     <button class="btn" type="button" data-quick-draft-chat-action="praise" data-i18n="quick_draft_chip_praise">Encourage Me</button>
+                  </section>
+                  <section class="quick-draft-command-section" aria-label="SideAsk" data-i18n-aria-label="quick_draft_return_sideask">
+                    <button class="btn quick-draft-return-sideask is-hidden" type="button" id="quick-draft-return-sideask" data-i18n="quick_draft_return_sideask">Return to SideAsk</button>
                   </section>
                   <section class="quick-draft-command-section" aria-label="View" data-i18n-aria-label="quick_draft_view_label">
                     <b data-i18n="quick_draft_view_label">View</b>
@@ -1788,9 +1835,9 @@
           <h2 id="project-cd-title" data-i18n="project_cd">Project CD</h2>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
         </div>
-        <div class="details-bar">
-          <span id="project-cd-count">0 Project CD items</span>
-          <span data-i18n="local_disk">Desktop</span>
+        <div class="details-bar compact-status-bar">
+          <span class="status-bar-leading" id="project-cd-count">0 Project CD items</span>
+          <span class="status-bar-trailing" data-i18n="local_disk">Desktop</span>
         </div>
         <div class="window-pane project-cd-pane">
           <div class="button-row">
@@ -1807,9 +1854,9 @@
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="page-setup-title" data-i18n="page_setup_title">Page Setup</h2>
         </div>
-        <div class="details-bar">
-          <span data-i18n="project_cd">Project CD</span>
-          <span data-i18n="pdf_output">PDF Output</span>
+        <div class="details-bar compact-status-bar">
+          <span class="status-bar-leading" data-i18n="project_cd">Project CD</span>
+          <span class="status-bar-trailing" data-i18n="pdf_output">PDF Output</span>
         </div>
         <div class="window-pane page-setup-pane">
           <fieldset class="page-setup-group">
@@ -1838,9 +1885,9 @@
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="import-utility-title" data-i18n="import_utility">Write to Project Hard Disk</h2>
         </div>
-        <div class="details-bar">
-          <span data-i18n="long_term_memory">Long-term memory</span>
-          <span data-i18n="project_documents">Project Documents</span>
+        <div class="details-bar compact-status-bar">
+          <span class="status-bar-leading" data-i18n="long_term_memory">Long-term memory</span>
+          <span class="status-bar-trailing" data-i18n="project_documents">Project Documents</span>
         </div>
         <div class="window-pane import-utility-pane memory-transfer-pane">
           <section class="memory-transfer-note is-long-term">
@@ -1946,9 +1993,9 @@
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="chat-file-title">Chat File</h2>
         </div>
-        <div class="details-bar">
-          <span id="chat-file-meta">0 messages</span>
-          <span data-i18n="saved_document">Saved document</span>
+        <div class="details-bar compact-status-bar">
+          <span class="status-bar-leading" id="chat-file-meta">0 messages</span>
+          <span class="status-bar-trailing" data-i18n="saved_document">Saved document</span>
         </div>
         <div class="window-pane chat-file-pane">
           <div id="chat-file-body" class="file-preview-body"></div>
@@ -1965,12 +2012,13 @@
       <section class="window teachtext-window is-hidden" data-window="teachText" aria-labelledby="teachtext-title">
         <div class="title-bar">
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
-          <h2 id="teachtext-title">Untitled</h2>
+          <h2 id="teachtext-title" data-i18n="teachtext">TeachText</h2>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
         </div>
-        <div class="details-bar teachtext-details-bar">
-          <span id="teachtext-boundary">0 words</span>
-          <div class="teachtext-details-controls">
+        <div class="details-bar app-status-bar teachtext-details-bar">
+          <span class="status-bar-leading" id="teachtext-boundary">0 words</span>
+          <div class="status-bar-context teachtext-details-controls">
+            <div class="tdi-stack-host" data-tdi-stack-for="teachtext-tabs"></div>
             <div class="select-wrap select-wrap-inline" data-workspace-capability="studio"><select id="teachtext-label" class="mini-select teachtext-status-select" data-i18n-aria-label="document_status" aria-label="Status">
               <option value="draft" data-i18n="label_draft">Draft</option>
               <option value="ai" data-i18n="label_ai">AI Assisted</option>
@@ -1982,7 +2030,7 @@
               <button class="btn details-bar-button" type="button" data-action="clio-chart-hand-back" data-i18n="clio_chart_hand_back">Hand Back</button>
             </span>
           </div>
-          <span id="teachtext-status" data-status-key="unsaved">Unsaved</span>
+          <span class="status-bar-trailing" id="teachtext-status" data-status-key="unsaved">Unsaved</span>
         </div>
         <div class="tdi-shell teachtext-shell">
           <div class="tdi-rail"><div id="teachtext-tabs" class="tdi-tabs teachtext-tabs is-hidden" aria-label="TeachText tabs" data-i18n-aria-label="teachtext_tabs"></div></div>
@@ -2011,7 +2059,9 @@
               <details class="teachtext-command-menu">
                 <summary class="btn" data-i18n="teachtext_commands">Commands</summary>
                 <div class="teachtext-command-popover">
-                  <button class="btn" type="button" id="teachtext-docmap" data-i18n="make_docmap">Open in DocMap</button>
+                  <button class="btn" type="button" id="teachtext-docmap" data-i18n="docmap">DocMap</button>
+                  <button class="btn" type="button" data-action="make-docmap-selection" data-i18n="docmap_from_selection">Map Selection</button>
+                  <button class="btn" type="button" data-action="make-docmap-source" data-i18n="docmap_from_source">Map Entire Source</button>
                   <button class="btn" type="button" data-action="open-image-manager" data-i18n="image_manager">Image Manager</button>
                   <button class="btn" type="button" data-action="generate-marp-open-clio-stage" data-i18n="generate_marp_open_clio_stage">Generate Marp and Open</button>
                 </div>
@@ -2053,10 +2103,10 @@
           <h2 id="review-desk-title" data-i18n="review_desk">Review Desk</h2>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
         </div>
-        <div class="details-bar teachtext-details-bar">
-          <span id="style-sheet-count" data-i18n="draft_voice_stats_empty">0 words · ~0 sec</span>
-          <span id="review-status-title" class="linked-manuscript-title" data-i18n="untitled">Untitled</span>
-          <button class="btn details-bar-button" type="button" data-action="review-view-manuscript" data-i18n="view_manuscript">View Manuscript</button>
+        <div class="details-bar app-status-bar teachtext-details-bar">
+          <span class="status-bar-leading" id="style-sheet-count" data-i18n="draft_voice_stats_empty">0 words · ~0 sec</span>
+          <span class="status-bar-context linked-manuscript-title" id="review-status-title" data-i18n="untitled">Untitled</span>
+          <button class="btn details-bar-button status-bar-trailing" type="button" data-action="review-view-manuscript" data-i18n="view_manuscript">View Manuscript</button>
         </div>
         <div class="window-pane review-desk-pane">
           <select id="review-section-source" hidden aria-label="Review Section" data-i18n-aria-label="review_section"></select>
@@ -2176,10 +2226,6 @@
           </form>
           <form id="scrapbook-ask-form" class="ask-bar" data-ask-source="scrapbook">
             <label class="visually-hidden" for="scrapbook-question" data-i18n="scrapbook_ask_label">Ask these scraps</label>
-            <div class="ask-bar-scope">
-              <span class="ask-scope-object" id="scrapbook-ask-object"></span>
-              <span class="ask-scope-range" id="scrapbook-ask-range"></span>
-            </div>
             <div class="ask-bar-row">
               <input id="scrapbook-question" type="text" data-i18n-placeholder="scrapbook_ask_hint" placeholder="Ask selected Scrapbook clips..." disabled data-balloon-help="balloon_ask_bar" />
               <button class="btn default" type="submit" id="scrapbook-ask-button" data-i18n="ask" data-i18n-aria-label="scrapbook_ask_label" disabled>Ask</button>
@@ -2212,9 +2258,9 @@
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="print-directory-title" data-i18n="print_directory_title">Print Directory</h2>
         </div>
-        <div class="details-bar">
-          <span id="print-directory-source">--</span>
-          <span id="print-directory-meta">--</span>
+        <div class="details-bar compact-status-bar">
+          <span class="status-bar-leading" id="print-directory-source">--</span>
+          <span class="status-bar-trailing" id="print-directory-meta">--</span>
         </div>
         <div class="window-pane print-directory-pane">
           <div id="print-directory-preview" class="print-directory-preview" tabindex="0"></div>
@@ -2231,9 +2277,25 @@
           <h2 id="reader-title" data-i18n="reader">Reader</h2>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
         </div>
-        <div class="details-bar">
-          <span id="reader-status" data-i18n="ready">Ready</span>
-          <span id="reader-url-display"></span>
+        <div class="details-bar app-status-bar reader-details-bar">
+          <span class="status-bar-leading" id="reader-status" data-i18n="ready" role="status" aria-live="polite">Ready</span>
+          <div class="status-bar-context reader-status-context">
+            <span id="reader-url-display"></span>
+            <div class="tdi-stack-host" data-tdi-stack-for="reader-tabs"></div>
+          </div>
+          <div class="status-bar-trailing reader-status-actions">
+            <details class="teachtext-command-menu command-menu-opens-down reader-command-menu" id="reader-command-menu">
+              <summary class="btn" id="reader-command-summary" data-i18n="reader_commands">Commands...</summary>
+              <div class="teachtext-command-popover reader-command-popover">
+                <button class="btn" type="button" id="reader-docmap-selection-command" data-action="reader-docmap-selection" data-i18n="docmap_from_selection" disabled>Map Selection</button>
+                <button class="btn" type="button" id="reader-docmap-source-command" data-action="reader-docmap-source" data-i18n="docmap_from_source" disabled>Map Entire Source</button>
+                <button class="btn" type="button" id="reader-clip-translate-button" data-action="reader-clip-translate" data-i18n="clip_translate" disabled>Clip + Translate</button>
+                <button class="btn" type="button" id="reader-open-clio-stage" data-action="reader-open-clio-stage" data-i18n="open_in_clio_stage" disabled data-balloon-help-disabled="balloon_reader_open_clio_stage_disabled">Open in ClioStage</button>
+                <button class="btn" type="button" id="reader-send-manuscript" data-action="reader-send-manuscript" data-i18n="send_copy_to_manuscript" disabled>Send Copy to Manuscript</button>
+                <button class="btn" type="button" id="reader-find-sources" data-action="reader-find-sources" data-i18n="find_related_sources" data-balloon-help="balloon_reader_find_related" data-balloon-help-disabled="balloon_reader_find_related_disabled" disabled>Find Related Sources</button>
+              </div>
+            </details>
+          </div>
         </div>
         <div class="window-pane reader-pane">
           <div class="reader-toolbar">
@@ -2243,15 +2305,6 @@
             <div class="toolbar-group is-end reader-actions">
               <button class="btn default" type="button" id="reader-fetch-button" data-action="reader-open-source" data-i18n="open">Open</button>
               <button class="btn" type="button" id="reader-clip-button" data-action="reader-clip" data-i18n="clip" disabled hidden>Clip</button>
-              <details class="teachtext-command-menu reader-command-menu" id="reader-command-menu">
-                <summary class="btn" id="reader-command-summary" data-i18n="reader_commands">Commands...</summary>
-                <div class="teachtext-command-popover reader-command-popover">
-                  <button class="btn" type="button" id="reader-clip-translate-button" data-action="reader-clip-translate" data-i18n="clip_translate" disabled>Clip + Translate</button>
-                  <button class="btn" type="button" id="reader-open-clio-stage" data-action="reader-open-clio-stage" data-i18n="open_in_clio_stage" disabled data-balloon-help-disabled="balloon_reader_open_clio_stage_disabled">Open in ClioStage</button>
-                  <button class="btn" type="button" id="reader-send-manuscript" data-action="reader-send-manuscript" data-i18n="send_copy_to_manuscript" disabled>Send Copy to Manuscript</button>
-                  <button class="btn" type="button" id="reader-find-sources" data-action="reader-find-sources" data-i18n="find_related_sources" data-balloon-help="balloon_reader_find_related" data-balloon-help-disabled="balloon_reader_find_related_disabled" disabled>Find Related Sources</button>
-                </div>
-              </details>
             </div>
           </div>
           <div class="reader-workspace drop-target" id="reader-workspace" data-i18n-drop-label="reader_drop_files">
@@ -2265,10 +2318,6 @@
           </div>
           <form id="reader-ask-form" class="ask-bar" data-ask-source="reader">
             <label class="visually-hidden" for="reader-question" data-i18n="reader_ask_label">Ask this source</label>
-            <div class="ask-bar-scope">
-              <span class="ask-scope-object" id="reader-ask-object"></span>
-              <span class="ask-scope-range" id="reader-ask-range"></span>
-            </div>
             <div class="ask-bar-row">
               <button class="btn ask-bar-lead" type="button" id="reader-docmap-button" data-action="reader-make-docmap" data-i18n="docmap" disabled>DocMap</button>
               <input id="reader-question" type="text" data-i18n-placeholder="reader_ask_hint" placeholder="Ask this Reader source..." disabled data-balloon-help="balloon_ask_bar" />
@@ -2307,6 +2356,7 @@
                 <span class="time-machine-nav-glyph" aria-hidden="true">↔</span>
                 <span class="time-machine-nav-label" id="time-machine-source-label">Source</span>
               </button>
+              <div class="tdi-stack-host" data-tdi-stack-for="time-machine-tabs"></div>
               <span class="time-machine-provenance" id="time-machine-provenance" role="status" aria-live="polite"></span>
               <div class="view-switch time-machine-view-switch" role="group" data-i18n-aria-label="time_machine_view_group" aria-label="Time Machine views">
                 <button class="view-switch-option" type="button" id="time-machine-web-view" data-action="time-machine-web-view" aria-pressed="true" data-i18n-aria-label="web_view">
@@ -2358,34 +2408,35 @@
               <button class="btn default" type="submit" data-i18n="go">Go</button>
             </form>
           </div>
-          <div id="time-machine-tabs" class="tdi-tabs time-machine-tabs is-hidden"></div>
-          <a id="time-machine-save-wayback" href="#" target="_blank" rel="noreferrer" hidden></a>
-          <a id="time-machine-save-archive-is" href="#" target="_blank" rel="noreferrer" hidden></a>
-          <div class="time-machine-stage window-frame-scroller" id="time-machine-stage">
-            <iframe id="time-machine-frame" class="time-machine-frame" title="Restricted web view" sandbox="allow-scripts"></iframe>
-            <article id="time-machine-reader" class="time-machine-reader is-hidden" tabindex="0"></article>
-            <div id="time-machine-home" class="time-machine-home">
-              <div class="time-machine-home-copy">
-                <span class="sys-icon sys-icon-desktop" data-system-icon="timeMachine" aria-hidden="true"></span>
-                <h3 data-i18n="time_machine_home_title">Browse the web in time.</h3>
-                <p data-i18n="time_machine_home_body">Enter a public web address. Leave Time Machine off for today, or choose a date to visit the past.</p>
+          <div class="tdi-shell time-machine-shell">
+            <div class="tdi-rail"><div id="time-machine-tabs" class="tdi-tabs time-machine-tabs is-hidden"></div></div>
+            <div class="tdi-grabber" role="separator" tabindex="0" aria-label="Resize tabs" data-i18n-aria-label="resize_tabs" aria-orientation="vertical"></div>
+            <div class="time-machine-document-pane">
+              <a id="time-machine-save-wayback" href="#" target="_blank" rel="noreferrer" hidden></a>
+              <a id="time-machine-save-archive-is" href="#" target="_blank" rel="noreferrer" hidden></a>
+              <div class="time-machine-stage window-frame-scroller" id="time-machine-stage">
+                <iframe id="time-machine-frame" class="time-machine-frame" title="Restricted web view" sandbox="allow-scripts"></iframe>
+                <article id="time-machine-reader" class="time-machine-reader is-hidden" tabindex="0"></article>
+                <div id="time-machine-home" class="time-machine-home">
+                  <div class="time-machine-home-copy">
+                    <span class="sys-icon sys-icon-desktop" data-system-icon="timeMachine" aria-hidden="true"></span>
+                    <h3 data-i18n="time_machine_home_title">Browse the web in time.</h3>
+                    <p data-i18n="time_machine_home_body">Enter a public web address. Leave Time Machine off for today, or choose a date to visit the past.</p>
+                  </div>
+                </div>
+                <div id="time-machine-loading" class="time-machine-loading" hidden data-i18n="time_machine_loading">Turning the dial...</div>
+              </div>
+              <div class="time-machine-reader-actions">
+                <form id="time-machine-ask-form" class="ask-bar" data-ask-source="timeMachine">
+                  <label class="visually-hidden" for="time-machine-question" data-i18n="time_machine_ask_label">Ask this page</label>
+                  <div class="ask-bar-row">
+                    <button class="btn ask-bar-lead" type="button" id="time-machine-docmap" data-action="time-machine-docmap" data-i18n="docmap" disabled>DocMap</button>
+                    <input id="time-machine-question" type="text" data-i18n-placeholder="time_machine_ask_prompt" placeholder="Ask this page..." disabled data-balloon-help="balloon_ask_bar" />
+                    <button class="btn default" type="submit" id="time-machine-ask" data-i18n="ask" data-i18n-aria-label="time_machine_ask_label" disabled>Ask</button>
+                  </div>
+                </form>
               </div>
             </div>
-            <div id="time-machine-loading" class="time-machine-loading" hidden data-i18n="time_machine_loading">Turning the dial...</div>
-          </div>
-          <div class="time-machine-reader-actions">
-            <form id="time-machine-ask-form" class="ask-bar" data-ask-source="timeMachine">
-              <label class="visually-hidden" for="time-machine-question" data-i18n="time_machine_ask_label">Ask this page</label>
-              <div class="ask-bar-scope">
-                <span class="ask-scope-object" id="time-machine-ask-object"></span>
-                <span class="ask-scope-range" id="time-machine-ask-range"></span>
-              </div>
-              <div class="ask-bar-row">
-                <button class="btn ask-bar-lead" type="button" id="time-machine-docmap" data-action="time-machine-docmap" data-i18n="docmap" disabled>DocMap</button>
-                <input id="time-machine-question" type="text" data-i18n-placeholder="time_machine_ask_prompt" placeholder="Ask this page..." disabled data-balloon-help="balloon_ask_bar" />
-                <button class="btn default" type="submit" id="time-machine-ask" data-i18n="ask" data-i18n-aria-label="time_machine_ask_label" disabled>Ask</button>
-              </div>
-            </form>
           </div>
         </div>
       </section>
@@ -2396,10 +2447,10 @@
           <h2 id="question-sheet-title" data-i18n="question_sheet">Question Sheet</h2>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
         </div>
-        <div class="details-bar teachtext-details-bar">
-          <span id="question-count">0 questions</span>
-          <span id="question-manuscript-title" class="linked-manuscript-title">Untitled</span>
-          <button class="btn details-bar-button" type="button" data-action="open-writing-flow-windows" data-i18n="open_writing_flow">Open Flow</button>
+        <div class="details-bar app-status-bar teachtext-details-bar">
+          <span class="status-bar-leading" id="question-count">0 questions</span>
+          <span class="status-bar-context linked-manuscript-title" id="question-manuscript-title">Untitled</span>
+          <button class="btn details-bar-button status-bar-trailing" type="button" data-action="open-writing-flow-windows" data-i18n="open_writing_flow">Open Flow</button>
         </div>
         <div class="window-pane teachtext-surface-pane question-sheet-pane">
           <div class="teachtext-editor-container specialized-teachtext-editor window-frame-scroller">
@@ -2430,13 +2481,13 @@
           <h2 id="outline-title" data-i18n="outline">Outline</h2>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
         </div>
-        <div class="details-bar teachtext-details-bar">
-          <span id="outline-status" data-i18n="draft">Draft</span>
-          <div class="select-wrap select-wrap-inline"><select id="outline-pipeline-label" class="mini-select pipeline-status-select" data-i18n-aria-label="document_status" aria-label="Writing status">
+        <div class="details-bar app-status-bar teachtext-details-bar">
+          <span class="status-bar-leading" id="outline-status" data-i18n="draft">Draft</span>
+          <div class="status-bar-context select-wrap select-wrap-inline"><select id="outline-pipeline-label" class="mini-select pipeline-status-select" data-i18n-aria-label="document_status" aria-label="Writing status">
             <option value="draft" data-i18n="label_draft">Draft</option>
             <option value="ai" data-i18n="label_ai">AI Assisted</option>
           </select></div>
-          <button class="btn details-bar-button" type="button" data-action="open-question-sheet" data-i18n="view_question_sheet">View Question Sheet</button>
+          <button class="btn details-bar-button status-bar-trailing" type="button" data-action="open-question-sheet" data-i18n="view_question_sheet">View Question Sheet</button>
         </div>
         <div class="window-pane teachtext-surface-pane outline-pane">
           <div id="outline-notes" class="outline-notes is-hidden"></div>
@@ -2469,13 +2520,13 @@
           <h2 id="section-drafts-title" data-i18n="section_drafts">Section Drafts</h2>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
         </div>
-        <div class="details-bar teachtext-details-bar">
-          <span id="draft-count" data-i18n="draft_voice_stats_empty">0 words · ~0 sec</span>
-          <div class="select-wrap select-wrap-inline"><select id="draft-pipeline-label" class="mini-select pipeline-status-select" data-i18n-aria-label="document_status" aria-label="Writing status">
+        <div class="details-bar app-status-bar teachtext-details-bar">
+          <span class="status-bar-leading" id="draft-count" data-i18n="draft_voice_stats_empty">0 words · ~0 sec</span>
+          <div class="status-bar-context select-wrap select-wrap-inline"><select id="draft-pipeline-label" class="mini-select pipeline-status-select" data-i18n-aria-label="document_status" aria-label="Writing status">
             <option value="draft" data-i18n="label_draft">Draft</option>
             <option value="ai" data-i18n="label_ai">AI Assisted</option>
           </select></div>
-          <button class="btn details-bar-button" type="button" data-action="open-question-sheet" data-i18n="view_question_sheet">View Question Sheet</button>
+          <button class="btn details-bar-button status-bar-trailing" type="button" data-action="open-question-sheet" data-i18n="view_question_sheet">View Question Sheet</button>
         </div>
         <div class="window-pane teachtext-surface-pane section-drafts-pane">
           <select id="draft-section-source" hidden aria-label="Outline Section" data-i18n-aria-label="outline_section"></select>
@@ -2515,10 +2566,10 @@
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="find-path-title" data-i18n="find_path">Searcher</h2>
         </div>
-        <div class="details-bar find-path-details">
-          <span data-i18n="limited_web_notes">Web Search</span>
-          <span id="find-path-provider">DuckDuckGo</span>
-          <span id="find-path-count">0 results</span>
+        <div class="details-bar app-status-bar">
+          <span class="status-bar-leading" data-i18n="limited_web_notes">Web Search</span>
+          <span class="status-bar-context" id="find-path-provider">DuckDuckGo</span>
+          <span class="status-bar-trailing" id="find-path-count">0 results</span>
         </div>
         <form id="find-path-form" class="window-pane find-path-pane">
           <label class="visually-hidden" for="find-path-query" data-i18n="query">Query</label>
@@ -2551,9 +2602,9 @@
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="find-file-title" data-i18n="find_file">Find File</h2>
         </div>
-        <div class="details-bar">
-          <span id="find-file-scope">Project Hard Disk</span>
-          <span id="find-file-count">0 items</span>
+        <div class="details-bar compact-status-bar">
+          <span class="status-bar-leading" id="find-file-scope">Project Hard Disk</span>
+          <span class="status-bar-trailing" id="find-file-count">0 items</span>
         </div>
         <form id="find-file-form" class="window-pane find-file-pane">
           <div class="find-file-search-row">
@@ -2609,9 +2660,9 @@
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="rebuild-flow-title" data-i18n="rebuild_writing_flow_title">Rebuild Article</h2>
         </div>
-        <div class="details-bar">
-          <span id="rebuild-flow-project">Project Hard Disk</span>
-          <span id="rebuild-flow-source-meta" data-i18n="rebuild_no_source">No source article</span>
+        <div class="details-bar compact-status-bar">
+          <span class="status-bar-leading" id="rebuild-flow-project">Project Hard Disk</span>
+          <span class="status-bar-trailing" id="rebuild-flow-source-meta" data-i18n="rebuild_no_source">No source article</span>
         </div>
         <div class="window-pane rebuild-flow-pane">
           <p class="hint" data-i18n="rebuild_flow_intro">Give AI System 6 a finished article. It will rebuild the normal writing objects behind it.</p>
@@ -2643,10 +2694,11 @@
           <h2 id="docmap-title" data-i18n="docmap">DocMap</h2>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
         </div>
-        <div class="details-bar docmap-details-bar">
-          <span id="docmap-count">0 nodes</span>
-          <div class="docmap-status-actions">
-            <details class="teachtext-command-menu docmap-command-menu is-disabled" id="docmap-command-menu">
+        <div class="details-bar app-status-bar docmap-details-bar">
+          <span class="status-bar-leading" id="docmap-count">0 nodes</span>
+          <div class="status-bar-context tdi-stack-host" data-tdi-stack-for="docmap-tabs"></div>
+          <div class="status-bar-trailing docmap-status-actions">
+            <details class="teachtext-command-menu command-menu-opens-down docmap-command-menu is-disabled" id="docmap-command-menu">
               <summary class="btn" id="docmap-command-summary" data-i18n="docmap_commands">Commands...</summary>
               <div class="teachtext-command-popover docmap-command-popover">
                 <button class="btn" type="button" id="docmap-send-question" data-i18n="send_to_question_sheet">Send to Question Sheet</button>
@@ -2701,10 +2753,6 @@
           </div>
           <form id="docmap-ask-form" class="ask-bar" data-ask-source="docMap">
             <label class="visually-hidden" for="docmap-question" data-i18n="docmap_ask_label">Ask this map</label>
-            <div class="ask-bar-scope">
-              <span class="ask-scope-object" id="docmap-ask-object"></span>
-              <span class="ask-scope-range" id="docmap-ask-range"></span>
-            </div>
             <div class="ask-bar-row">
               <input id="docmap-question" type="text" data-i18n-placeholder="docmap_ask_hint" placeholder="Ask this DocMap..." disabled data-balloon-help="balloon_ask_bar" />
               <button class="btn default" type="submit" id="docmap-ask-button" data-i18n="ask" data-i18n-aria-label="docmap_ask_label" disabled>Ask</button>
@@ -2757,10 +2805,6 @@
           <input id="clio-stage-file-input" class="visually-hidden" type="file" multiple />
           <form id="clio-stage-ask-form" class="ask-bar" data-ask-source="clioStage">
             <label class="visually-hidden" for="clio-stage-question" data-i18n="clio_stage_ask_label">Ask this deck</label>
-            <div class="ask-bar-scope">
-              <span class="ask-scope-object" id="clio-stage-ask-object"></span>
-              <span class="ask-scope-range" id="clio-stage-ask-range"></span>
-            </div>
             <div class="ask-bar-row">
               <button class="btn ask-bar-lead" type="button" id="clio-stage-docmap" data-action="clio-stage-docmap" data-i18n="docmap" disabled>DocMap</button>
               <input id="clio-stage-question" type="text" data-i18n-placeholder="clio_stage_ask_hint" placeholder="Ask this slide deck..." disabled data-balloon-help="balloon_ask_bar" />
@@ -3169,9 +3213,9 @@ Glass</textarea>
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="dictionary-title" data-i18n="dictionary">Dictionary</h2>
         </div>
-        <div class="details-bar">
-          <span id="dictionary-term" data-i18n="dictionary_no_term">No term</span>
-          <span id="dictionary-source" data-i18n="dictionary_no_source">No source</span>
+        <div class="details-bar compact-status-bar">
+          <span class="status-bar-leading" id="dictionary-term" data-i18n="dictionary_no_term">No term</span>
+          <span class="status-bar-trailing" id="dictionary-source" data-i18n="dictionary_no_source">No source</span>
         </div>
         <div class="window-pane dictionary-pane">
           <form id="dictionary-form" class="dictionary-form">
@@ -3194,9 +3238,9 @@ Glass</textarea>
           <h2 id="system-help-title" data-i18n="system_help">System Help</h2>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
         </div>
-        <div class="details-bar">
-          <span id="system-help-scope" data-i18n="system_help_terms">System Terms</span>
-          <span id="system-help-count">0</span>
+        <div class="details-bar compact-status-bar">
+          <span class="status-bar-leading" id="system-help-scope" data-i18n="system_help_terms">System Terms</span>
+          <span class="status-bar-trailing" id="system-help-count">0</span>
         </div>
         <div class="window-pane system-help-pane">
           <div class="system-help-control-row">
@@ -3218,9 +3262,9 @@ Glass</textarea>
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="dictation-title" data-i18n="dictation_pad">Dictation Pad</h2>
         </div>
-        <div class="details-bar dictation-details-bar">
-          <span id="dictation-status" data-i18n="ready">Ready</span>
-          <span id="dictation-intent-target">Target: ClioTalk</span>
+        <div class="details-bar compact-status-bar dictation-details-bar">
+          <span class="status-bar-leading" id="dictation-status" data-i18n="ready">Ready</span>
+          <span class="status-bar-trailing" id="dictation-intent-target">Target: ClioTalk</span>
         </div>
         <div class="window-pane dictation-pane">
           <div class="dictation-toolbar">
@@ -3248,9 +3292,9 @@ Glass</textarea>
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="translation-pad-title" data-i18n="translation_pad">Translation Pad</h2>
         </div>
-        <div class="details-bar translation-pad-details-bar">
-          <span id="translation-pad-target" data-i18n="to_english">To English</span>
-          <span id="translation-pad-status" data-i18n="ready">Ready</span>
+        <div class="details-bar compact-status-bar translation-pad-details-bar">
+          <span class="status-bar-leading" id="translation-pad-target" data-i18n="to_english">To English</span>
+          <span class="status-bar-trailing" id="translation-pad-status" data-i18n="ready">Ready</span>
         </div>
         <div class="window-pane translation-pad-pane">
           <div class="translation-pad-textareas">
@@ -3293,14 +3337,14 @@ Glass</textarea>
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="clipboard-title" data-i18n="clipboard">Clipboard</h2>
         </div>
-        <div class="details-bar">
-          <span id="clipboard-meta" data-i18n="clipboard_empty">Clipboard is empty.</span>
+        <div class="details-bar compact-status-bar">
+          <span class="status-bar-leading" id="clipboard-meta" data-i18n="clipboard_empty">Clipboard is empty.</span>
         </div>
         <div class="window-pane clipboard-pane">
           <textarea id="clipboard-text" rows="10" readonly></textarea>
           <div class="button-row">
             <button class="btn" type="button" id="clipboard-translate" data-i18n="translate_clipboard">Translate Clipboard</button>
-            <button class="btn" type="button" id="clipboard-docmap" data-i18n="make_docmap">Open in DocMap</button>
+            <button class="btn" type="button" id="clipboard-docmap" data-i18n="docmap">DocMap</button>
             <button class="btn" type="button" id="clipboard-insert" data-i18n="insert">Insert</button>
             <button class="btn" type="button" id="clipboard-clear" data-i18n="clear">Clear</button>
           </div>
@@ -3424,9 +3468,9 @@ Glass</textarea>
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="memory-cards-title" data-i18n="memory_cards">Memory Cards</h2>
         </div>
-        <div class="details-bar memory-cards-details-bar">
-          <output id="memory-cards-moves" aria-label="Moves" data-i18n-aria-label="memory_cards_moves">0 moves</output>
-          <output id="memory-cards-time" aria-label="Time" data-i18n-aria-label="memory_cards_time">00:00</output>
+        <div class="details-bar compact-status-bar memory-cards-details-bar">
+          <output class="status-bar-leading" id="memory-cards-moves" aria-label="Moves" data-i18n-aria-label="memory_cards_moves">0 moves</output>
+          <output class="status-bar-trailing" id="memory-cards-time" aria-label="Time" data-i18n-aria-label="memory_cards_time">00:00</output>
         </div>
         <div class="window-pane memory-cards-pane">
           <div class="memory-cards-board" id="memory-cards-board" role="grid" aria-label="Memory Cards board" data-i18n-aria-label="memory_cards_board" aria-describedby="memory-cards-status"></div>
@@ -3713,7 +3757,7 @@ Glass</textarea>
       </section>
     </main>
 
-    <script src="app/generated/build-info.js?v=20260808.5"></script>
-    <script src="app.bundle.js?v=20260808.5"></script>
+    <script src="app/generated/build-info.js?v=20260809.1"></script>
+    <script src="app.bundle.js?v=20260809.1"></script>
   </body>
 </html>

@@ -3,8 +3,7 @@
   height: 560px;
 }
 
-.reader-window > .details-bar {
-  display: grid;
+.reader-details-bar {
   grid-template-columns: minmax(0, 1fr) minmax(0, 50%) minmax(0, 1fr);
   justify-content: stretch;
 }
@@ -14,11 +13,29 @@
   max-width: 100%;
 }
 
-#reader-url-display {
-  grid-column: 2;
-  justify-self: center;
+.reader-status-context {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
   max-width: 100%;
+}
+
+#reader-url-display {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
   text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reader-status-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
 }
 
 .reader-pane {
@@ -66,12 +83,22 @@
 }
 
 /* The overflow menu is only worth showing when it holds an available action. */
-.reader-actions .reader-command-menu:not(:has(.reader-command-popover .btn:not(:disabled))) {
+.reader-status-actions .reader-command-menu:not(:has(.reader-command-popover .btn:not(:disabled))) {
   display: none;
 }
 
 .reader-pane:has(#reader-docmap-button:not(:disabled)) .reader-url-row,
 .reader-pane:has(#reader-docmap-button:not(:disabled)) #reader-fetch-button {
+  display: none;
+}
+
+/* Loaded documents put switching and overflow in the status bar, so the
+   source-entry toolbar gives its complete row back to the reading surface. */
+.reader-pane:has(#reader-docmap-button:not(:disabled)) .reader-toolbar {
+  display: none;
+}
+
+.reader-pane:has(#reader-docmap-button:not(:disabled)) .reader-actions {
   display: none;
 }
 
@@ -85,25 +112,32 @@
   position: relative;
 }
 
-/* Reader tab rail. Wide window -> vertical side column; narrow -> horizontal
-   strip on top. Direction is driven by the window @container, not JS. */
+/* Reader tab rail. Wide windows keep the spatially stable vertical list;
+   narrow windows use the shared document stack in an existing toolbar row. */
 .reader-rail {
   flex: 0 0 var(--reader-tabs-size);
   gap: 6px;
 }
 
-@container (max-width: 760px) {
+@container (max-width: 759px) {
   .reader-workspace {
     flex-direction: column;
   }
 
-  .reader-rail {
-    flex: 0 0 auto;
-    width: 100%;
-    max-width: 100%;
+  .tdi-shell > .tdi-rail,
+  .reader-workspace > .tdi-rail {
+    display: none;
   }
 
   .tdi-grabber {
+    display: none;
+  }
+
+  .tdi-stack-host:not(.is-hidden) {
+    display: block;
+  }
+
+  .reader-status-context:has(.tdi-stack-host:not(.is-hidden)) > #reader-url-display {
     display: none;
   }
 }
@@ -165,12 +199,16 @@ body.is-resizing-reader,
 body.is-resizing-tdi {
   cursor: col-resize;
   user-select: none;
-}.reader-tabs .btn {
+}
+
+.reader-tabs .btn {
   max-width: none;
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 11px;
-}.tdi-tabs {
+}
+
+.tdi-tabs {
   display: flex;
   align-items: var(--tdi-tabs-align-items);
   gap: var(--tdi-tabs-gap);
@@ -220,6 +258,204 @@ body.is-resizing-tdi {
   flex-direction: column;
   min-width: 0;
   min-height: 0;
+}
+
+/* Compact TDI document stack. The host sits in each app's existing chrome, so
+   document switching costs no additional vertical row on constrained windows. */
+.tdi-stack-host {
+  display: none;
+  width: fit-content;
+  min-width: 0;
+  max-width: min(280px, 42cqi);
+}
+
+.tdi-stack-host.is-hidden {
+  display: none;
+}
+
+.tdi-document-stack {
+  position: relative;
+  min-width: 0;
+  color: var(--ink);
+}
+
+.tdi-document-stack > summary {
+  list-style: none;
+}
+
+.tdi-document-stack > summary::-webkit-details-marker {
+  display: none;
+}
+
+.tdi-document-stack .tdi-stack-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  gap: 6px;
+  cursor: default;
+}
+
+.tdi-stack-active-copy {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tdi-stack-count {
+  display: inline-grid;
+  min-width: 18px;
+  min-height: 18px;
+  padding-inline: 4px;
+  border-radius: 999px;
+  background: var(--tdi-stack-count-bg);
+  color: var(--tdi-stack-count-fg);
+  font-family: var(--mono-font);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  place-items: center;
+}
+
+.tdi-stack-disclosure {
+  width: 0;
+  height: 0;
+  border-inline: 4px solid transparent;
+  border-top: 5px solid currentColor;
+  transform-origin: 50% 35%;
+  transition: transform 0.12s ease;
+}
+
+.tdi-document-stack[open] .tdi-stack-disclosure {
+  transform: rotate(180deg);
+}
+
+.tdi-stack-popover {
+  position: absolute;
+  z-index: var(--z-local-popover);
+  top: calc(100% + 5px);
+  right: 0;
+  width: min(340px, calc(100cqi - 48px));
+  max-height: min(360px, 60vh);
+  overflow: auto;
+  box-sizing: border-box;
+  padding: 4px;
+  border: var(--tdi-stack-popover-border);
+  border-radius: var(--tdi-stack-popover-radius);
+  background: var(--tdi-stack-popover-bg);
+  box-shadow: var(--tdi-stack-popover-shadow);
+  backdrop-filter: var(--tdi-stack-popover-backdrop-filter);
+  -webkit-backdrop-filter: var(--tdi-stack-popover-backdrop-filter);
+}
+
+.tdi-stack-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-width: 0;
+  border-bottom: var(--tdi-stack-item-border);
+  background: var(--tdi-stack-item-bg);
+  color: var(--tdi-stack-item-fg);
+}
+
+.tdi-stack-item:last-child {
+  border-bottom: 0;
+}
+
+.tdi-stack-item:hover,
+.tdi-stack-item:focus-within {
+  background: var(--tdi-stack-item-hover-bg);
+  color: var(--tdi-stack-item-hover-fg);
+}
+
+.tdi-stack-item.is-active {
+  background: var(--tdi-stack-item-active-bg);
+  color: var(--tdi-stack-item-active-fg);
+}
+
+.tdi-document-stack .tdi-stack-open {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.tdi-stack-open > span,
+.tdi-stack-open > small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tdi-stack-open > small {
+  color: inherit;
+  font-family: var(--mono-font);
+  font-size: 9px;
+  opacity: 0.64;
+}
+
+.tdi-document-stack .tdi-stack-close {
+  position: relative;
+  align-self: center;
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  min-height: 28px;
+  margin-inline-end: 3px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+}
+
+.tdi-stack-close::before,
+.tdi-stack-close::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 11px;
+  height: 1.5px;
+  background: currentColor;
+}
+
+.tdi-stack-close::before {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.tdi-stack-close::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+.tdi-stack-close:hover:not(:disabled),
+.tdi-stack-close:focus-visible:not(:disabled) {
+  background: color-mix(in srgb, currentColor 14%, transparent);
+}
+
+.tdi-stack-close:disabled,
+.tdi-stack-close.is-disabled {
+  opacity: 0.34;
+  cursor: default;
+}
+
+.tdi-stack-item.is-dragging {
+  opacity: 0.46;
+}
+
+.tdi-stack-item.is-drop-target {
+  box-shadow: inset 0 2px 0 currentColor;
 }
 
 @container (min-width: 760px) {
@@ -457,9 +693,9 @@ body.is-resizing-tdi {
 .reader-content h1 {
   font-size: 22px;
   font-family: var(--title-font);
-  border-bottom: var(--system-control-line) solid var(--ink);
-  padding-bottom: 12px;
-  margin-bottom: 24px;
+  border-bottom: var(--reader-title-divider);
+  padding-bottom: 8px;
+  margin-bottom: 16px;
   text-align: center;
 }
 
@@ -467,11 +703,11 @@ body.is-resizing-tdi {
   font-family: var(--mono-font);
   font-size: 11px;
   color: var(--shade-dark);
-  margin-bottom: 32px;
+  margin-bottom: 24px;
   word-break: break-all;
   text-align: center;
-  border-bottom: 1px dotted var(--ink);
-  padding-bottom: 8px;
+  border-bottom: var(--reader-meta-divider);
+  padding-bottom: 6px;
 }
 
 .reader-body-content p {
@@ -486,7 +722,7 @@ body.is-resizing-tdi {
   font-family: var(--title-font);
   margin-top: 1.8em;
   margin-bottom: 0.8em;
-  border-left: 6px solid var(--ink);
+  border-left: var(--reader-section-marker);
   padding-left: 10px;
 }
 
@@ -1545,10 +1781,7 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
 }
 
 .docmap-details-bar {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   gap: 8px;
-  align-items: center;
 }
 
 .docmap-source-label {
@@ -1562,18 +1795,12 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
 }
 
 .docmap-details-bar #docmap-count {
-  grid-column: 2;
-  justify-self: center;
   white-space: nowrap;
 }
 
 .docmap-status-actions {
-  grid-column: 3;
-  justify-self: end;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
   min-width: 0;
 }
 

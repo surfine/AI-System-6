@@ -8,6 +8,7 @@ const foundation = read("styles/00-foundation.css");
 const windows = read("styles/10-windows.css");
 const docmap = read("styles/20-reader-docmap.css");
 const surfaces = read("styles/30-surfaces.css");
+const apps = read("styles/50-apps.css");
 const responsive = read("styles/60-responsive.css");
 const liquid = read("styles/70-liquid-glass.css");
 const html = read("index.html");
@@ -27,6 +28,10 @@ test.assertIncludes(foundation, "--control-motion-medium-out: 120ms", "Control e
 test.assertIncludes(foundation, "@media (prefers-reduced-motion: reduce)", "Shared controls remove spatial motion when reduced motion is requested");
 test.assertIncludes(foundation, "--control-focus-outline:", "Keyboard focus has an independent shared token");
 test.assertIncludes(foundation, "--details-bar-optical-rise: 1px", "Status bars expose one shared optical-centering correction");
+test.assertIncludes(foundation, "--teachtext-preview-title-divider:", "rendered Markdown title dividers are theme-owned");
+test.assertIncludes(foundation, "--teachtext-preview-section-marker:", "rendered Markdown section markers are theme-owned");
+test.assertIncludes(apps, "border-bottom: var(--teachtext-preview-title-divider)", "all TeachText-style previews consume the shared title divider");
+test.assertIncludes(liquid, "--teachtext-preview-blockquote-bg: rgba(255, 255, 255, 0.22)", "Liquid Glass replaces Classic preview hatching with a quiet reading fill");
 test.assertIncludes(foundation, "--z-system-menu: 40000", "System menu is the highest named desktop layer");
 test.assertIncludes(foundation, "--z-demo-overlay: 39900", "Demo overlays stay below the system menu layer");
 test.assertIncludes(foundation, "--z-demo-highlight: 39910", "Demo highlights stay below the system menu layer");
@@ -69,7 +74,8 @@ test.assertIncludes(windows, ".system-select-option:focus-visible", "System Sele
 test.assertIncludes(windows, ".view-btn:hover:not(.is-active)", "Classic view button hover does not override the active view");
 test.assertIncludes(windows, ".view-btn.is-active:hover", "Classic active view button keeps active styling on hover");
 test.assertMatches(windows, /\.details-bar \{[\s\S]*calc\(4px - var\(--details-bar-optical-rise\)\)[\s\S]*calc\(4px \+ var\(--details-bar-optical-rise\)\)/, "Status-bar content is optically centered without changing the row height");
-test.assertIncludes(windows, "top: calc(50% - var(--details-bar-optical-rise))", "The centered Finder view switch shares the status-bar optical correction");
+test.assertIncludes(windows, ".view-controls {\n  display: flex;\n  align-items: center;\n  position: static;", "The centered Finder view switch shares the status-bar grid and its optical padding");
+test.assertNotIncludes(windows, "top: calc(50% - var(--details-bar-optical-rise))", "Finder view controls no longer overlap status labels from an absolute center");
 test.assertMatches(responsive, /\.details-bar \{[^}]*calc\(4px - var\(--details-bar-optical-rise\)\)[^}]*calc\(4px \+ var\(--details-bar-optical-rise\)\)/, "Responsive styles preserve status-bar optical centering");
 
 test.assertIncludes(surfaces, ".writing-bell-mode button:hover:not(.is-active)", "Segmented controls keep hover off active choices");

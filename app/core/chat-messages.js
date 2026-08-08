@@ -1459,12 +1459,21 @@ function createClioTalkActionMenu(className = "message-more-actions") {
   return { details, menu };
 }
 
-function compactClioTalkUseResultPreview(value, { fromEnd = false } = {}) {
+// Before/After are a confirmation, not a reading surface: a short excerpt keeps
+// the pinned outcome block a predictable height in both themes.
+function compactClioTalkUseResultPreview(value, { fromEnd = false, limit = 180 } = {}) {
   const normalized = String(value || "").replace(/\r\n?/g, "\n").trim();
   if (!normalized) return t("clio_preview_empty");
-  const limit = 360;
   if (normalized.length <= limit) return normalized;
   return fromEnd ? `…${normalized.slice(-limit)}` : `${normalized.slice(0, limit)}…`;
+}
+
+// The dialog subject is one ellipsized line, so the reply must collapse to a
+// single run of text before the browser truncates it.
+function clioTalkUseResultSubjectLine(content) {
+  const normalized = String(content || "").replace(/\s+/g, " ").trim();
+  if (!normalized) return t("clio_preview_empty");
+  return normalized.length <= 200 ? normalized : `${normalized.slice(0, 200)}…`;
 }
 
 function clioTalkUseResultSelection(input) {
@@ -1632,6 +1641,9 @@ function getClioTalkUseResultTargets() {
   ];
 }
 
+// A destination row says what it is; the detail pane beside it says what the
+// write will do. Only a destination the user cannot pick has to carry a second
+// line, because its reason is the difference between "broken" and "not yet".
 function createClioTalkUseResultChoice(name, value, label, help, { checked = false, disabled = false } = {}) {
   const row = document.createElement("label");
   row.className = "finder-operation-item";
@@ -1645,9 +1657,12 @@ function createClioTalkUseResultChoice(name, value, label, help, { checked = fal
   copy.className = "finder-operation-item-copy";
   const title = document.createElement("b");
   title.textContent = label;
-  const detail = document.createElement("small");
-  detail.textContent = help;
-  copy.append(title, detail);
+  copy.append(title);
+  if (help) {
+    const detail = document.createElement("small");
+    detail.textContent = help;
+    copy.append(detail);
+  }
   row.append(input, copy);
   return { row, input };
 }
@@ -1680,6 +1695,7 @@ async function chooseClioTalkUseResult(content, messageRecord) {
   const beforeEl = document.querySelector("#clio-use-result-before");
   const afterEl = document.querySelector("#clio-use-result-after");
   const recordEl = document.querySelector("#clio-use-result-record");
+  const purposeEl = document.querySelector("#clio-use-result-purpose");
   const subjectEl = document.querySelector("#clio-use-result-subject");
   const confirmButton = document.querySelector("#clio-use-result-confirm");
   if (!dialog || !targetsEl || !modesEl || !beforeEl || !afterEl || !recordEl || !confirmButton) return null;
@@ -1690,9 +1706,10 @@ async function chooseClioTalkUseResult(content, messageRecord) {
     ? "create"
     : selectedTarget?.selection?.text ? "replace-selection" : "append";
 
-  if (subjectEl) subjectEl.textContent = compactClioTalkUseResultPreview(content);
+  if (subjectEl) subjectEl.textContent = clioTalkUseResultSubjectLine(content);
 
   const updatePreview = () => {
+    if (purposeEl) purposeEl.textContent = selectedTarget?.help || "";
     if (!selectedTarget) {
       confirmButton.disabled = true;
       return;
@@ -1746,6 +1763,7 @@ async function chooseClioTalkUseResult(content, messageRecord) {
       button.type = "button";
       button.className = `btn${mode.id === selectedMode ? " default" : ""}`;
       button.disabled = !mode.available;
+      button.setAttribute("aria-pressed", mode.id === selectedMode ? "true" : "false");
       button.textContent = mode.label;
       button.addEventListener("click", () => {
         if (button.disabled) return;
@@ -1767,7 +1785,7 @@ async function chooseClioTalkUseResult(content, messageRecord) {
       "clio-use-result-target",
       target.id,
       target.label,
-      target.available ? target.help : target.unavailableReason,
+      target.available ? "" : target.unavailableReason,
       { checked: target.id === selectedTarget?.id, disabled: !target.available }
     );
     choice.input.addEventListener("change", () => {

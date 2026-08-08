@@ -18,6 +18,6 @@ test.assertIncludes(scrapbook, "source: options.source || null", "manual scraps 
 test.assertIncludes(html, 'class="visually-hidden" for="scrapbook-question"', "Scrapbook keeps its Ask label accessible without taking a content row");
 test.assertIncludes(responsive, ".scrap-list:has(.scrap-empty-card)", "an empty phone Scrapbook gives space back to the editor");
 test.assertIncludes(html, '<form id="scrapbook-ask-form" class="ask-bar" data-ask-source="scrapbook">', "Scrapbook asks through the shared ask bar");
-test.assertIncludes(scrapbook, 't("ask_scope_scraps", selected.length) : t("ask_scope_all_scraps", count)', "the Scrapbook ask bar counts the clips the question will actually carry");
+test.assertIncludes(scrapbook, 't("ask_scope_scraps", selected.length) : t("ask_scope_all_scraps", count)', "Scrapbook still derives the clips carried into SideAsk");
 
 test.finish();

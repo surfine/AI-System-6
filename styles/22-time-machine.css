@@ -39,6 +39,13 @@
   min-width: 0;
 }
 
+/* The shared document-stack summary has three semantic columns. Keep this
+   specificity twin after the navigation button rule so the count stays a
+   compact badge instead of wrapping into a stretched second row. */
+.time-machine-navigation .tdi-stack-summary {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
 .time-machine-nav-glyph {
   font-family: var(--mono-font);
   font-size: 17px;
@@ -398,6 +405,21 @@
   flex: 0 0 auto;
 }
 
+.time-machine-shell {
+  flex: 1 1 auto;
+  min-height: 0;
+  gap: 6px;
+}
+
+.time-machine-document-pane {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  gap: 6px;
+}
+
 .time-machine-stage {
   position: relative;
   flex: 1 1 auto;
@@ -499,6 +521,10 @@
     grid-template-columns: auto;
   }
 
+  .time-machine-navigation .tdi-stack-summary {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+  }
+
   .time-machine-address-form,
   .time-machine-address-form.is-active {
     grid-template-columns: auto minmax(0, 1fr) auto;
@@ -585,32 +611,14 @@
     min-height: 44px;
   }
 
-  .time-machine-tabs {
-    max-width: 100%;
-    overflow-x: auto;
-    overscroll-behavior-inline: contain;
+  .time-machine-navigation .tdi-stack-host {
+    min-width: 0;
+    max-width: none;
   }
 
-  .time-machine-tabs .tdi-tab-wrap,
-  .time-machine-tabs .tdi-tab {
-    height: 44px;
+  .time-machine-navigation .tdi-stack-summary {
     min-height: 44px;
-  }
-
-  .time-machine-tabs .tdi-tab {
-    padding-block: 3px;
-  }
-
-  .time-machine-tabs .tdi-tab-close {
-    top: 6px;
-    width: 32px;
-    min-width: 32px;
-    height: 32px;
-    min-height: 32px;
-    /* Liquid centers the close via top:50% + translateY(-50%). The fixed
-       mobile placement above pairs top with an exact size, so the transform
-       would shove the button half its height out of the tab. */
-    transform: none;
+    padding-inline: 7px;
   }
 
   .time-machine-stage {

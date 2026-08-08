@@ -92,6 +92,10 @@ test.assertIncludes(quickWindowHtml, 'id="quick-draft-stack-state"', "The status
 test.assertIncludes(quickWindowHtml, '<span id="quick-draft-stats">0 words · ~0 sec</span>', "Status bar puts draft size on the left");
 test.assertIncludes(quickWindowHtml, 'id="quick-draft-save-state"', "Save state is visible in the status bar (Saved / Modified / Saving…)");
 test.assertIncludes(quickWindowHtml, 'id="quick-draft-status"', "Command feedback appears in the status bar");
+test.assertIncludes(appsCss, "grid-template-columns: auto auto minmax(0, 1fr) auto auto;", "Quick Draft status receipts have explicit non-overlapping tracks");
+test.assertIncludes(appsCss, ".quick-draft-details > #quick-draft-status {\n  grid-column: 3;", "live command feedback owns the flexible center track");
+test.assertIncludes(appsCss, ".quick-draft-details > #quick-draft-stats {\n    display: none;", "phone width preserves live, save, and guardrail state by yielding word-count statistics first");
+test.assertIncludes(appsCss, ".quick-draft-details > #quick-draft-protect-state,\n  .quick-draft-details > #quick-draft-stack-state {", "phone width keeps protection and adjustment-stack evidence available");
 
 // One window, three regions: the material shelf, the paper, the inspector.
 // A tool may stand beside the text; it may never stand in front of it, so no
@@ -113,6 +117,42 @@ test.assertIncludes(quickWindowHtml, 'id="quick-draft-audience-concerns"', "audi
 test.assertIncludes(quickWindowHtml, 'id="quick-draft-must-avoid"', "must-avoid lives in advanced setup");
 test.assertIncludes(quickWindowHtml, 'data-quick-draft-to-start', "the shelf offers Add Material… back to the intake well");
 test.assertIncludes(quickWindowHtml, 'data-quick-draft-open-editor', "the intake well offers a way into the body without a model");
+
+// One rule decides the collapse: the paper's smallest readable measure. The
+// window is the container, so a narrow desk window collapses like a phone.
+test.assertIncludes(appsCss, "@container (max-width: 800px)", "the three-region collapse is a container query on the window");
+test.assertMatches(appsCss, /@container \(max-width: 800px\)[\s\S]*?\.quick-draft-desk \{\s*grid-template-columns: minmax\(0, 1fr\)/, "the collapse turns the desk into one column");
+test.assertNotIncludes(read("styles/60-responsive.css"), "is-shelf-open", "the drawer state is not a second viewport-keyed layout");
+test.assertMatches(appsCss, /--quick-draft-drawer-edge/, "a drawer never covers the whole paper: the exposed edge is a token");
+test.assertIncludes(quickWindowHtml, 'data-quick-draft-drawer-close="shelf"', "each drawer can be closed from its own head");
+test.assertIncludes(quickWindowHtml, 'data-quick-draft-drawer-close="inspector"', "the inspector drawer closes the same way");
+test.assertIncludes(coordinator, "The strip of paper a drawer never covers is the easiest way back", "tapping the exposed paper edge closes the drawer");
+test.assertIncludes(appsCss, "isolation: isolate", "the drawer covers the editor stack by document order, not by a new z-index");
+
+// Pairing means two windows side by side, and a phone has none.
+test.assertIncludes(coordinator, "isPortraitDocumentFlow", "portrait never summons SideAsk on open");
+test.assertMatches(coordinator, /const portrait[\s\S]*?!options\.skipSideAsk && !portrait/, "the pairing guard reads the portrait flow");
+
+// Material is an object list, and provenance is only claimed when it is true.
+test.assertIncludes(feature, "function materialRowMeta", "material rows carry their own provenance line");
+test.assertIncludes(feature, "quick_draft_material_cited", "a citation is reported only when the body carries the source tag");
+test.assertIncludes(feature, "quick_draft_material_empty", "the empty shelf says how to add material");
+test.assertMatches(feature, /body\.includes\(`\[\$\{tag\}\]`\)/, "citation is checked against the body, never assumed");
+
+// Versions are objects too, with the negative pinned at the bottom.
+test.assertIncludes(feature, "function restoreQuickDraftVersion", "a version can be gone back to");
+test.assertIncludes(feature, '"before-restore"', "going back keeps the replaced body as a version first");
+test.assertIncludes(feature, "quick_draft_negative", "the negative is listed as the version the writer never wrote over");
+
+// A layer is one row; its description and scope open behind the triangle, so
+// the stack order stays readable and touch devices still get the description.
+test.assertIncludes(quickWindowHtml, 'data-quick-draft-layer-toggle="mingming"', "each layer row has a disclosure");
+test.assertIncludes(quickWindowHtml, 'data-quick-draft-layer-description="mingming"', "the description lives in the row, not only in Balloon Help");
+test.assertIncludes(feature, "function toggleQuickDraftLayerDetail", "one layer opens at a time");
+
+// Secondary controls are disabled, never removed.
+test.assertIncludes(coordinator, "function syncQuickDraftControlAvailability", "controls keep their place when they cannot run");
+test.assertIncludes(coordinator, "quick_draft_needs_body", "a disabled control can say why it is off");
 test.assertNotIncludes(quickWindowHtml, 'class="quick-draft-card-sidebar"', "Quick Draft no longer renders the failed card sidebar");
 test.assertNotIncludes(quickWindowHtml, 'class="quick-draft-teachtext-strip"', "Quick Draft no longer renders the failed setup strip");
 test.assertIncludes(quickWindowHtml, 'data-quick-draft-adjustment-apply', "the inspector owns Apply (Preview)");
@@ -208,7 +248,7 @@ test.assertIncludes(draftRoute, "不能替用户生成个人感受", "Draft rout
 test.assertIncludes(manifest, '"app/core/grain-diff.js"', "The grain diff module is eager in the runtime manifest");
 test.assertMatches(feature, /renderQuickDraftGrain[\s\S]*quick-draft-grain-model/, "The grain view marks the model's share with its own class");
 test.assertMatches(feature, /renderQuickDraftGrain[\s\S]*quick_draft_grain_passes/, "The grain view reports how many model rewrites the body carries");
-test.assertMatches(feature, /grainVersionChain[\s\S]*dumpEntries\(intakeSnapshot\(record\)\)/, "The version chain reuses the vent-log dumps instead of a new store");
+test.assertMatches(feature, /grainVersionChain[\s\S]*workspace\.versions/, "The version chain reads document Versions instead of material intake");
 test.assertNotIncludes(feature, "chain.passes - introduced + 1", "The generation composition lives in grain-diff.js, where it is executed by a test");
 test.assertNotIncludes(feature, "function grainSmoothMask", "The pure diff functions live in grain-diff.js, not the feature module");
 test.assertNotIncludes(feature, "function grainCollapseRewritten", "The pure diff functions live in grain-diff.js, not the feature module");
@@ -235,8 +275,8 @@ test.assert(
 test.assertIncludes(grainDiff, "function grainChainFromRecordParts", "The version-chain rule is pure, so a test can execute it");
 test.assertIncludes(grainDiff, 'bornEmpty\n    ? ["", ...stored]', "An empty negative is put back at the head of the chain");
 
-// Workspace schema: one canonical v2 shape and explicit legacy migration.
-test.assertIncludes(coordinator, "schemaVersion: 2", "the canonical workspace schema is version 2");
+// Workspace schema: one canonical v3 shape and explicit legacy migration.
+test.assertIncludes(coordinator, "schemaVersion: 3", "the canonical workspace schema is version 3");
 test.assertIncludes(coordinator, "function normalizeQuickDraftWorkspace", "legacy workspaces migrate through one normalization path");
 test.assertMatches(coordinator, /intake: \{\s*\.\.\.emptyIntake,\s*setup:/, "intake owns vent/chat state and the writing setup");
 test.assertMatches(coordinator, /composition: \{\s*currentKey:/, "composition owns the negative, composite, and generation record");
@@ -293,7 +333,7 @@ const developSource = feature.slice(
 test.assertNotIncludes(developSource, "openWindow(", "Develop never routes through another view");
 test.assertIncludes(developSource, "createDocumentRevision", "Develop saves a revision before promoting the composite");
 test.assertIncludes(developSource, "quick_draft_develop_confirm", "Develop asks before the composite becomes the working body");
-test.assertIncludes(developSource, "persistQuickDraftWorkspace", "Develop awaits persistence before claiming success");
+test.assertIncludes(developSource, "await commitQuickDraft", "Develop awaits persistence before claiming success");
 
 // Model availability: without a model the window still writes; AI actions are
 // disabled with a clear Connect AI… affordance.

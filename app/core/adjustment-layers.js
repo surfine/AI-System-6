@@ -26,7 +26,7 @@ const ADJUSTMENT_DEFAULT_STRENGTH = 50;
 function defaultAdjustmentLayers() {
   return ADJUSTMENT_LAYER_KINDS.map((kind) => ({
     kind,
-    enabled: true,
+    enabled: false,
     strength: ADJUSTMENT_DEFAULT_STRENGTH,
     mask: [],
   }));
@@ -101,14 +101,17 @@ function normalizeAdjustmentLayers(value) {
     seen.add(kind);
     ordered.push({
       kind,
-      enabled: item.enabled !== false,
+      // A stored pre-1.0.28 layer without an enabled field used the old
+      // implicit-on meaning. Preserve that migration meaning; only genuinely
+      // new/missing layers use the off defaults below.
+      enabled: Object.prototype.hasOwnProperty.call(item, "enabled") ? item.enabled !== false : true,
       strength: normalizeAdjustmentStrength(item.strength),
       mask: normalizeAdjustmentLayerMask(item.mask),
     });
   });
   ADJUSTMENT_LAYER_KINDS.forEach((kind) => {
     if (seen.has(kind)) return;
-    ordered.push({ kind, enabled: true, strength: ADJUSTMENT_DEFAULT_STRENGTH, mask: [] });
+    ordered.push({ kind, enabled: false, strength: ADJUSTMENT_DEFAULT_STRENGTH, mask: [] });
   });
   return ordered;
 }

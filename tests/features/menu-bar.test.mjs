@@ -74,7 +74,7 @@ test.assertNotIncludes(html, "apple-menu-happy-mac", "The Apple menu no longer e
 test.assertMatches(foundation, /\.apple::before,[\s\S]*\.apple::after \{[\s\S]*content: "";[\s\S]*position: absolute;/, "The Apple menu restores the original compact-computer painter");
 test.assertMatches(foundation, /\.apple::before \{[\s\S]*width: 2px;[\s\S]*height: 2px;[\s\S]*background: currentColor;[\s\S]*box-shadow:/, "The restored menu glyph keeps its clean 16-pixel currentColor grid");
 test.assertMatches(apps, /\.menu-bar \.sys-icon \{[\s\S]*color: inherit;[\s\S]*background: transparent;/, "Menu-bar system icons inherit the button colour so every open menu reverses its glyph");
-test.assertMatches(liquid, /body\.use-liquid-glass \.menu-bar \.sys-icon[\s\S]*color: inherit;[\s\S]*filter: none;/, "Liquid menu glyphs stay monochrome and clean while inheriting active colour");
+test.assertMatches(liquid, /body\.use-liquid-glass :is\(\.menu-bar, \.control-strip\) \.sys-icon[\s\S]*color: inherit;[\s\S]*filter: none;/, "Liquid menu glyphs stay monochrome and clean while inheriting active colour through the shared chrome selector");
 test.assertMatches(apps, /\.menu-bar \.sys-icon \.sys-icon-liquid \.icon-fill,[\s\S]*fill: none;[\s\S]*stroke: currentColor;/, "Liquid menu fills and accents reverse through the shared menu-icon rule");
 test.assertIncludes(foundation, ".multifinder-menu.is-open > .multifinder-button .multifinder-icon", "MultiFinder's glyph reverses even when the menu stays open without focus");
 test.assertNotIncludes(foundation, "--apple-menu-happy-mac-scale", "The menu no longer carries Happy Mac scaling state");

@@ -155,6 +155,12 @@ test.assertIncludes(zh, "balloon_system_help:", "Chinese explains the System Hel
 test.assertMatches(html, /<header class="menu-bar"[\s\S]*id="balloon-help"[\s\S]*<\/header>/, "Balloon Help inherits the existing system menu layer instead of adding z-index debt");
 test.assertMatches(foundation, /\.balloon-help \{[\s\S]*var\(--balloon-help-bg\)/, "Classic uses the shared system balloon geometry");
 test.assertMatches(foundation, /\.balloon-help \{[\s\S]*inset: auto;[\s\S]*margin: 0;/, "the top-layer balloon keeps its measured viewport position instead of popover auto-centering");
+test.assertIncludes(balloon, "window.visualViewport", "balloons stay inside the visible viewport during zoom and mobile resizing");
+test.assertIncludes(balloon, "const available = {", "balloon placement measures all four open sides around its target");
+test.assertIncludes(balloon, "const preference = { below: 4, above: 3, right: 2, left: 1 }", "balloons prefer familiar vertical placement when it fits");
+test.assertIncludes(balloon, 'balloon.style.setProperty("--balloon-help-tail-top"', "side callouts keep their tail aimed at the target");
+test.assertMatches(foundation, /\.balloon-help\[data-side="left"\]::before[\s\S]*\.balloon-help\[data-side="right"\]::before/,
+  "edge targets can use horizontal balloon tails instead of being covered");
 test.assertMatches(foundation, /\.menu-sub-popover \{\s*z-index: var\(--z-system-menu-subpopover\)/, "menu sub-popovers keep their own system layer");
 test.assertMatches(foundation, /\.balloon-help \{\s*z-index: var\(--z-balloon-help\)/, "balloons use a dedicated layer above modal dialogs");
 test.assertIncludes(foundation, "body.is-balloon-help [data-balloon-help]", "help mode gives eligible objects a visible pointer affordance");

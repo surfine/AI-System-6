@@ -1,11 +1,13 @@
 // DocMap is a visual reading map. It must remain exportable as a printable
 // object, not only as saved Markdown, so users can carry the map out as PDF.
 
+import vm from "node:vm";
 import { createFeatureTest, read, readAppSurface } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("docmap");
 const app = readAppSurface([
   "app/features/docmap.js",
+  "app/core/docmap-source-policy.js",
   // The synchronous entry layer (source resolution, button gating) is eager
   // while the tool itself is lazy; the DocMap contract spans both files.
   "app/core/docmap-entry.js",
@@ -14,12 +16,29 @@ const app = readAppSurface([
   "app/core/wireup.js",
 ]);
 const css = read("styles/20-reader-docmap.css");
+const index = read("index.html");
 const bootstrap = read("app.js");
 const cloudRoute = read("src/server/routes/cloud-chat.js");
 const localChat = read("src/server/chat.js");
 const actions = read("app/core/actions.js");
+const sourcePolicy = read("app/core/docmap-source-policy.js");
+
+const policyContext = vm.createContext({});
+vm.runInContext(sourcePolicy, policyContext);
+const chooseSource = policyContext.chooseDocMapSourceCandidate;
+const shortSelection = { text: "s".repeat(86), threshold: 200, rangeMode: "selection" };
+const readySelection = { text: "s".repeat(240), threshold: 200, rangeMode: "selection" };
+const readySource = { text: "d".repeat(900), threshold: 800, rangeMode: "source" };
+
+const automaticFallback = chooseSource(shortSelection, readySource);
+test.assert(automaticFallback.ready && automaticFallback.source === readySource, "a short selection falls back to an eligible whole source");
+test.assert(automaticFallback.fellBackToSource, "the shared policy reports the short-selection fallback for status feedback");
+test.assert(chooseSource(readySelection, readySource).source === readySelection, "an eligible selection remains the automatic DocMap source");
+test.assert(chooseSource(shortSelection, readySource, "selection").state === "too-short", "an explicit selection command never silently maps the whole source");
+test.assert(chooseSource(readySelection, readySource, "source").source === readySource, "an explicit whole-source command ignores an eligible selection");
 
 test.assertIncludes(app, 'id="docmap-print-pdf"', "DocMap command menu exposes Print Map to PDF");
+test.assertIncludes(index, 'class="teachtext-command-menu command-menu-opens-down docmap-command-menu is-disabled"', "DocMap marks its top-toolbar command menu to open into the window");
 test.assertIncludes(app, 'id="docmap-layout-toggle"', "DocMap toolbar exposes the layout picker group");
 test.assertIncludes(actions, '"open-docmap": async () => {', "the DocMap open command awaits the lazy module");
 test.assertIncludes(actions, "await ensureDocMapModule();", "the DocMap open command loads the tool before choosing the tabbed open path");
@@ -130,12 +149,26 @@ test.assertIncludes(app, "const supplemented = ensureDocMapSubBranches(map.nodes
 test.assertNotIncludes(app, "addSupplementChild(detail, 4)", "DocMap deterministic fallback no longer adds fourth-level evidence nodes");
 test.assertIncludes(app, "max_tokens: 2600", "DocMap uses an overview-sized output budget by default");
 
-test.assertIncludes(app, 'window.AISystem6TimeMachine?.docMapSource?.()', "DocMap reaches the loaded Time Machine page through the lazy window's accessor");
-test.assertIncludes(app, 'if (activeName === "timeMachine") {', "a Time Machine page in front is a DocMap source like a Reader page");
-test.assertIncludes(app, "const timeMachineSource = docMapSourceFromTimeMachine();", "DocMap's own entry points still find the Time Machine page once its window is no longer active");
+test.assertIncludes(app, 'window.AISystem6TimeMachine?.docMapSource?.(rangeMode)', "DocMap reaches both Time Machine selection and whole-page candidates through the lazy window's accessor");
+test.assertIncludes(app, 'if (surface === "timeMachine") return docMapSourceFromTimeMachine("source")', "a Time Machine page in front resolves through the same whole-source policy as Reader");
+test.assertIncludes(app, '|| docMapSourceFromTimeMachine("source")', "DocMap's own entry points still find the Time Machine page once its window is no longer active");
 // Registered as a lambda, not a bare reference: DocMap is lazy, and wireup runs
 // at boot, so the name has to resolve when the ask bar calls it.
 test.assertMatches(app, /registerAskBarSource\("docMap", \(\.\.\.args\) => describeDocMapAskScope\(\.\.\.args\)\)/, "DocMap asks through the shared ask bar");
-test.assertIncludes(app, 't("ask_scope_focus", node.title)', "the DocMap ask bar names the focused branch that rides along with the whole map");
+test.assertIncludes(app, 't("ask_scope_focus", node.title)', "DocMap still derives the focused branch carried along with the whole map");
+test.assertIncludes(app, "sourceMeta?.rangeMode", "DocMap status chrome keeps the generated map's selection or whole-source identity");
+test.assertIncludes(app, "beginPendingDocMap(source", "DocMap opens a pending handoff before the model finishes");
+test.assertIncludes(app, 'data-action="docmap-retry-pending"', "a failed pending DocMap remains retryable");
+test.assertIncludes(index, 'id="reader-docmap-button" data-action="reader-make-docmap" data-i18n="docmap"', "the Reader button keeps the compact DocMap label");
+test.assertIncludes(index, 'data-action="reader-docmap-source" data-i18n="docmap_from_source"', "Reader Commands exposes the whole-source override without widening the main button");
+test.assertIncludes(app, "syncDocMapEntryButton(readerDocMapButton, readerReadiness)", "Reader uses the shared DocMap readiness receipt");
+test.assertIncludes(app, "syncDocMapEntryButton(teachTextDocMapButton, teachTextReadiness)", "TeachText uses the shared DocMap readiness receipt");
+test.assertIncludes(app, "syncDocMapEntryButton(clipboardDocMapButton, clipboardReadiness)", "Clipboard uses the shared DocMap readiness receipt");
+test.assertIncludes(app, "syncDocMapEntryButton(scrapbookDocMapButton, scrapbookReadiness)", "Scrapbook uses the shared DocMap readiness receipt");
+test.assertIncludes(app, "syncDocMapEntryButton(chatFileDocMapButton, documentsReadiness)", "Documents uses the shared DocMap readiness receipt");
+test.assertIncludes(app, "window.AISystem6TimeMachine?.docMapReadiness?.()", "Time Machine exposes its readiness to the shared entry synchronizer");
+test.assertIncludes(index, 'id="teachtext-docmap" data-i18n="docmap">DocMap</button>', "TeachText keeps the compact DocMap label");
+test.assertIncludes(index, 'id="scrapbook-docmap" data-action="make-docmap" data-i18n="docmap">DocMap</button>', "Scrapbook keeps the compact DocMap label");
+test.assertIncludes(index, 'id="clipboard-docmap" data-i18n="docmap">DocMap</button>', "Clipboard keeps the compact DocMap label");
 
 test.finish();

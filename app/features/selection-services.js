@@ -38,7 +38,7 @@ function selectionLabelForContext(context) {
   if (!context) return "";
   if (context.surface === "reader") return currentReaderPage?.title || t("reader");
   if (context.surface === "teachtext") return getTeachTextDocumentName({ fallback: "TeachText" });
-  if (context.surface === "fileDisk") return teachTextTitleEl.textContent.trim() || t("mounted_text_disk");
+  if (context.surface === "fileDisk") return getTeachTextDocumentName({ fallback: t("mounted_text_disk") });
   if (context.surface === "scrapbook") return scrapTitleDisplay?.textContent?.trim() || t("scrapbook");
   if (context.surface === "questionSheet") return t("question_sheet");
   if (context.surface === "outline") return t("outline");
@@ -126,7 +126,7 @@ function teachTextSelectionContext() {
     () => selectionLabelForContext({ surface: teachTextSelectionSurface() }),
     {
       source: {
-        title: teachTextTitleEl?.textContent?.trim() || teachTextNameInput.value.trim() || "TeachText",
+        title: getTeachTextDocumentName({ fallback: teachTextNameInput.value.trim() || "TeachText" }),
         fileId: activeTextFileId || "",
       },
     }

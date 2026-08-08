@@ -70,6 +70,13 @@ for (const stop of [1, 2, 3, 4, 5, 6, 7, 8]) {
 test.assertMatches(dictionary, /term: "Scrapbook",[\s\S]{0,400}?termZh: "Scrapbook"/, "Scrapbook stays a brand name in Chinese");
 test.assertMatches(dictionary, /term: "Question Sheet",[\s\S]{0,400}?termZh: "问题单"/, "the Chinese name matches the product naming table");
 test.assertMatches(dictionary, /term: "Section Drafts",[\s\S]{0,400}?termZh: "章节草稿"/, "the Chinese name matches the product naming table");
+for (const helpId of ["control-strip", "menu-bar-extras", "system-messages", "system-clock", "system-status"]) {
+  test.assertIncludes(dictionary, `id: "${helpId}"`, `System Help documents ${helpId}`);
+}
+test.assertIncludes(dictionary, 'termZh: "气球帮助"', "System Help uses the product's Chinese Balloon Help name");
+test.assertIncludes(dictionary, "the two homes never appear together", "System Help explains Control Strip and menu-bar-extra mutual exclusion");
+test.assertIncludes(dictionary, "share the same unread count", "System Help keeps System Messages tied to one source");
+test.assertIncludes(dictionary, "without creating a second time source", "System Help keeps the clock tied to one source");
 test.assertIncludes(feature, 'currentLanguage === "zh" || detectDictionaryTermLanguage(alias) !== "zh"', "aliases stay language-matched with the desk");
 
 // Wiring and handles.

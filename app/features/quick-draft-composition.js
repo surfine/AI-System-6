@@ -39,6 +39,21 @@ function renderLayerDescriptions() {
   });
 }
 
+// One layer opens at a time: the stack order is the information here, and four
+// open rows hide it again. The triangle is the Finder list-row disclosure.
+function toggleQuickDraftLayerDetail(kind = "") {
+  const target = document.getElementById(`quick-draft-layer-detail-${kind}`);
+  if (!target) return false;
+  const open = target.hidden;
+  document.querySelectorAll("[data-quick-draft-layer-toggle]").forEach((button) => {
+    const detail = document.getElementById(`quick-draft-layer-detail-${button.dataset.quickDraftLayerToggle}`);
+    const on = open && detail === target;
+    if (detail) detail.hidden = !on;
+    button.setAttribute("aria-expanded", on ? "true" : "false");
+  });
+  return open;
+}
+
 function renderAdjustmentLayers(record = activeProjectQuickDraft({ create: false })?.record) {
   if (!refs.form) return;
   const layers = adjustmentLayersSnapshot(record);
@@ -56,6 +71,16 @@ function renderAdjustmentLayers(record = activeProjectQuickDraft({ create: false
     if (checkbox) checkbox.checked = layer.enabled;
     if (select) select.value = String(layer.strength);
     if (maskInput) maskInput.value = adjustmentMaskSummary(layer.mask);
+    // The stack order is the information in this panel, so the row carries its
+    // own number, and the scope it will run on stays readable when the row is
+    // closed.
+    const order = refs.form.querySelector(`[data-quick-draft-layer-order="${layer.kind}"]`);
+    if (order) order.textContent = String(index + 1);
+    const scope = refs.form.querySelector(`[data-quick-draft-layer-scope="${layer.kind}"]`);
+    if (scope) {
+      const summary = adjustmentMaskSummary(layer.mask);
+      scope.textContent = t("quick_draft_layer_scope", summary || t("quick_draft_layer_scope_all"));
+    }
     const wrapper = refs.form.querySelector(`[data-quick-draft-adjustment-layer="${layer.kind}"]`);
     if (wrapper) {
       const up = wrapper.querySelector('[data-quick-draft-adjustment-move][data-direction="-1"]');
@@ -198,7 +223,7 @@ function adjustmentStrengthPromptLine(strength = ADJUSTMENT_DEFAULT_STRENGTH, zh
 // The layer mask is stored against the original body's line numbers; the
 // prompt receives the sentinel-protected text, so the mask is remapped onto
 // that layout for honest line numbers.
-function adjustmentLayerCompositionInstruction(layer = {}, zh = true) {
+function adjustmentLayerCompositionInstruction(layer = {}, zh = true, protectedRanges = protectedRangesSnapshot()) {
   const kind = String(layer?.kind || "");
   const strength = Number(layer?.strength) || ADJUSTMENT_DEFAULT_STRENGTH;
   const lensLine = kind === "density"
@@ -217,11 +242,11 @@ function adjustmentLayerCompositionInstruction(layer = {}, zh = true) {
       : "- HKRR adjustment: add discovery, information gain, human feeling, and rhythm; never invent, never flatten boundaries.")
     : "";
   const strengthLine = kind === "density" ? "" : adjustmentStrengthPromptLine(strength, zh);
-  const maskRanges = window.AISystem6ProtectedRanges.remapLineRangesAfterSentinels(
-    layer?.mask || [],
-    protectedRangesSnapshot()
-  );
-  const maskLine = maskRanges.length
+  const originalMask = normalizeAdjustmentLayerMask(layer?.mask);
+  const maskRanges = window.AISystem6ProtectedRanges.remapLineRangesAfterSentinels(originalMask, protectedRanges);
+  const maskLine = !originalMask.length
+    ? (zh ? "- 本层作用于全文。" : "- This layer applies to the whole draft.")
+    : maskRanges.length
     ? (zh
       ? `- 本层只作用于下面正文的第 ${adjustmentMaskSummary(maskRanges)} 行；其余行保持原样，不要给建议。`
       : `- This layer applies only to lines ${adjustmentMaskSummary(maskRanges)} of the text below; leave every other line alone.`)
@@ -268,6 +293,7 @@ function grainMaskEntries(bodyText = "") {
 // this module keeps the in-memory cache, the prompt, and the record writes.
 
 const quickDraftCompositeCache = new Map();
+const QUICK_DRAFT_COMPOSITION_PROMPT_VERSION = 2;
 let quickDraftLastComposite = "";
 let quickDraftLastCompositeKey = "";
 
@@ -282,13 +308,28 @@ function enabledAdjustmentLayers(record = activeProjectQuickDraft({ create: fals
   return adjustmentLayersSnapshot(record).filter((layer) => layer.enabled);
 }
 
+function compositionCacheContext(record = activeProjectQuickDraft({ create: false })?.record) {
+  const workspace = normalizeQuickDraftWorkspace(record?.workspace, record);
+  const targetFormat = normalizeScenario(refs.format?.value || workspace.intake.setup.scenario);
+  return {
+    language: currentLanguage,
+    targetFormat,
+    targetDuration: normalizeDuration(refs.duration?.value || workspace.intake.setup.targetDuration, targetFormat),
+    modelId: typeof getLocalModelRequestName === "function" ? getLocalModelRequestName() : (modelInput?.value?.trim() || ""),
+    promptVersion: QUICK_DRAFT_COMPOSITION_PROMPT_VERSION,
+  };
+}
+
 function currentCompositeState(record = activeProjectQuickDraft({ create: false })?.record) {
   const workspace = normalizeQuickDraftWorkspace(record?.workspace, record);
   const body = String(refs.draft?.value || workspace.body || "");
   const layers = enabledAdjustmentLayers(record);
   if (!layers.length) return { text: body, ready: true, stale: false };
   const source = quickDraftCompositeSource(record);
-  const key = composeCacheKey({ source, layers, protectedRanges: protectedRangesSnapshot(record) });
+  const key = composeCacheKey({ source, layers, protectedRanges: protectedRangesSnapshot(record), ...compositionCacheContext(record) });
+  if (workspace.composition.currentKey === key && workspace.composition.composite) {
+    return { text: workspace.composition.composite, ready: true, stale: false };
+  }
   if (quickDraftCompositeCache.has(key)) {
     return { text: quickDraftCompositeCache.get(key), ready: true, stale: false };
   }
@@ -332,8 +373,9 @@ function buildCompositionPrompt({ sourceText = "", sentinels = [], layers = [] }
     `稿件类型：${formatText}`,
     `目标长度：${lengthText}`,
   ].filter(Boolean).join("\n");
+  const protectedRanges = protectedRangesSnapshot();
   const layerInstructions = layers
-    .map((layer) => adjustmentLayerCompositionInstruction(layer, zh))
+    .map((layer) => adjustmentLayerCompositionInstruction(layer, zh, protectedRanges))
     .filter(Boolean)
     .join("\n\n");
   return zh
@@ -411,21 +453,40 @@ async function applyAdjustmentLayers() {
   setBusy(true);
   setQuickDraftStatus(t("quick_draft_applying"));
   try {
+    const protectedRanges = protectedRangesSnapshot(slot.record);
+    const applicableLayers = layers.filter((layer) => (
+      !normalizeAdjustmentLayerMask(layer.mask).length
+      || window.AISystem6ProtectedRanges.remapLineRangesAfterSentinels(layer.mask, protectedRanges).length
+    ));
+    if (!applicableLayers.length) {
+      setQuickDraftStatus(t("quick_draft_apply_none"));
+      return false;
+    }
+    const cacheContext = compositionCacheContext(slot.record);
     const composed = await composeDocument({
       source,
-      layers,
-      protectedRanges: protectedRangesSnapshot(slot.record),
+      layers: applicableLayers,
+      protectedRanges,
       cache: quickDraftCompositeCache,
+      cacheContext,
       runModel: compositionModelCall,
     });
     quickDraftLastComposite = composed.text;
     quickDraftLastCompositeKey = composeCacheKey({
       source,
-      layers,
+      layers: applicableLayers,
       protectedRanges: composed.ranges,
+      ...cacheContext,
     });
-    saveQuickDraft({}, { debounce: false });
-    renderQuickDraft(activeProjectQuickDraft({ create: false })?.record);
+    const committed = await commitQuickDraft({ workspace: { composition: {
+      ...slot.record.workspace.composition,
+      currentKey: quickDraftLastCompositeKey,
+      composite: composed.text,
+      generatedAt: new Date().toISOString(),
+      sourceHash: textComposeHash(source),
+    } } });
+    if (!committed.ok) throw committed.error;
+    renderQuickDraft(committed.record);
     // Apply means look: the composite opens in the reading view, because the
     // body itself stays untouched until develop.
     const container = refs.draft?.closest(".teachtext-editor-container");
@@ -472,11 +533,11 @@ async function developAdjustmentLayers() {
     setQuickDraftStatus(t("quick_draft_develop_cancelled"));
     return false;
   }
-  if (typeof createDocumentRevision === "function") {
+  if (slot.record.workspace.projectDocId && typeof createDocumentRevision === "function") {
     try {
       await createDocumentRevision({
         projectId: activeProjectId,
-        documentId: slot.record.workspace.projectDocId || activeTextFileId || "",
+        documentId: slot.record.workspace.projectDocId,
         body: previousBody,
         origin: "system",
         operation: "quick-draft-develop",
@@ -486,19 +547,17 @@ async function developAdjustmentLayers() {
       return false;
     }
   }
-  const intake = intakeSnapshot(slot.record);
   const patch = { stage: "draft", workspace: {} };
   if (previousBody.trim()) {
-    const dumpEntry = normalizeVentEntry({
-      id: stableId("dump"),
-      text: previousBody,
+    const version = normalizeQuickDraftVersion({
+      id: stableId("version"),
+      body: previousBody,
+      title: slot.record.workspace.title,
       createdAt: new Date().toISOString(),
-      sourceKind: "quick-draft-dump",
-    }, intake.ventLog.length);
-    patch.workspace.intake = normalizeIntake({
-      ...intake,
-      ventLog: [...(intake.ventLog || []), dumpEntry],
+      reason: "before-develop",
+      source: "quick-draft",
     });
+    patch.workspace.versions = [...slot.record.workspace.versions, version].slice(-100);
   }
   if (!hasRecordedNegative(slot.record)) {
     patch.workspace.composition = {
@@ -518,6 +577,7 @@ async function developAdjustmentLayers() {
       source: quickDraftCompositeSource(slot.record),
       layers: enabledAdjustmentLayers(slot.record),
       protectedRanges: protectedRangesSnapshot(slot.record),
+      ...compositionCacheContext(slot.record),
     }),
     composite,
     generatedAt: new Date().toISOString(),
@@ -525,9 +585,8 @@ async function developAdjustmentLayers() {
   refs.draft.value = composite;
   quickDraftLastComposite = "";
   quickDraftLastCompositeKey = "";
-  const saved = saveQuickDraft(patch, { debounce: false });
-  const persisted = await persistQuickDraftWorkspace();
-  if (!persisted) {
+  const committed = await commitQuickDraft(patch);
+  if (!committed.ok) {
     // The composite must not masquerade as the working body when the write
     // failed; restore the original text and leave the record modified.
     refs.draft.value = previousBody;
@@ -535,7 +594,7 @@ async function developAdjustmentLayers() {
     setQuickDraftStatus(t("quick_draft_save_failed"));
     return false;
   }
-  renderQuickDraft(saved);
+  renderQuickDraft(committed.record);
   setQuickDraftStatus(t("quick_draft_develop_done"));
   return true;
 }
@@ -602,7 +661,7 @@ function grainVersionChain(record) {
   return grainChainFromRecordParts({
     humanAnchor: workspace.composition?.negative,
     humanAnchorUpdatedAt: workspace.composition?.negativeUpdatedAt,
-    dumps: dumpEntries(intakeSnapshot(record)).map((entry) => entry.text),
+    dumps: (workspace.versions || []).map((entry) => entry.body),
   });
 }
 

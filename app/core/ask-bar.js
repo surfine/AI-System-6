@@ -1,7 +1,7 @@
 // Ask bar — the shared question footer under Reader, Scrapbook, DocMap,
 // ClioStage, and Time Machine. Each window registers a describe() that reports
-// what the next question would actually carry; this file renders that scope row
-// and gates the controls on there being something to ask. The answer always
+// what the next question would actually carry; this file gates the controls on
+// there being something to ask. The answer always
 // lands in ClioTalk, so nothing here ever renders a reply.
 const askBarSources = new Map();
 
@@ -27,11 +27,6 @@ function renderAskBar(appId, scope) {
   form.classList.toggle("is-empty", !ready);
   if (input) input.disabled = !ready;
   if (button) button.disabled = !ready;
-  if (!ready) return;
-  const objectEl = form.querySelector(".ask-scope-object");
-  const rangeEl = form.querySelector(".ask-scope-range");
-  if (objectEl) objectEl.textContent = scope.object || "";
-  if (rangeEl) rangeEl.textContent = scope.range || "";
 }
 
 function refreshAskBar(appId) {
@@ -50,13 +45,8 @@ function refreshAskBars() {
   askBarSources.forEach((_describe, appId) => refreshAskBar(appId));
 }
 
-// The question was handed to ClioTalk; say so where the scope was, then let the
-// window's own state take the row back.
+// Preserve the shared completion hook for callers; the compact bar has no
+// secondary status row, so its owning window simply resumes its current state.
 function markAskBarSent(appId) {
-  const form = askBarForm(appId);
-  const rangeEl = form ? form.querySelector(".ask-scope-range") : null;
-  if (!rangeEl) return;
-  rangeEl.textContent = t("ask_scope_sent");
-  window.setTimeout(() => refreshAskBar(appId), 1800);
+  refreshAskBar(appId);
 }
-

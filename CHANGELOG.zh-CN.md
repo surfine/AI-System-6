@@ -1,5 +1,5 @@
 <!-- canonical-source: CHANGELOG.md -->
-<!-- source-sha256: 711341fae90d07ecd7150d56d3d4332417eeeccc168277421815bf9f4a5fb58b -->
+<!-- source-sha256: 5f8abaff74e395d1cb49ed3480e2a44b7a37c5f54d7a23d32e4a97e8fd09f319 -->
 
 # AI System 6 中文更新日志
 
@@ -338,6 +338,13 @@ Liquid Glass 继续作为独立材质存在，而不是被复古修正误伤。
   consistency、checkJs、src typecheck、data、docs、CSS、design、public
   tree、runtime syntax、smoke、release assets、floppy budget——没有
   Playwright、没有浏览器下载、没有 WebKit。E2E 是可选诊断，永不阻塞发版。
+
+## 公开测试版 1.0.28 — 2026-08-09
+
+- Quick Draft Closure 将 working update 与 awaited durable commit 分离；debounce 保存捕获原项目；exact-stack Composite Preview 持久化；交付失败不再显示成功。
+- Workspace schema v3 将旧 `quick-draft-dump` 迁入有上限的文档 Versions，并防御性地把 Versions 排除在模型素材之外。
+- 空 mask 明确表示全文；新调整层栈默认关闭；四层开启只调用一次模型；重复保护文本使用按 occurrence 唯一且无正则状态污染的 sentinel。
+- Send to TeachText 打开已保存的 Project Document，不再改变主写作流程。公开 snapshot 只承诺 `verify:public`；`verify:ship` 保持为维护者私有源树门禁。
 - StateStore commit 回调做静态审计：UI 临时状态（选中、激活、焦点、toast）
   只能在 commit 成功之后变化，并修复了两处既有违规。
 

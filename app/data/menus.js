@@ -31,7 +31,7 @@ const selectionTools = [
   menuItem("selection-find-sources", "find_sources"),
   menuItem("selection-clip-file", "selection_clip_file"),
   menuItem("selection-translate", "translate_selection"),
-  menuItem("make-docmap", "make_docmap"),
+  menuItem("make-docmap-selection", "docmap_from_selection"),
 ];
 
 const writingTools = [
@@ -277,6 +277,7 @@ const readerMenus = [
     menuItem("reader-clip-translate", "clip_translate"),
     menuItem("reader-send-manuscript", "send_to_manuscript"),
     menuItem("reader-make-docmap", "make_docmap"),
+    menuItem("reader-docmap-source", "docmap_from_source"),
     menuItem("reader-open-clio-stage", "open_in_clio_stage"),
     menuItem("focus-reader-question", "ask"),
   ]),
@@ -297,6 +298,7 @@ const timeMachineMenus = [
     menuItem("time-machine-clip-translate", "clip_translate"),
     menuItem("time-machine-send-manuscript", "send_to_manuscript"),
     menuItem("time-machine-docmap", "make_docmap"),
+    menuItem("time-machine-docmap-source", "docmap_from_source"),
     menuItem("time-machine-ask", "ask"),
   ]),
   menu("navigate", "menu_navigate", [
@@ -361,6 +363,7 @@ const scrapbookMenus = [
     menuItem("scrapbook-send-question", "to_question_sheet"),
     menuItem("scrapbook-outline", "make_outline"),
     menuItem("make-docmap", "make_docmap"),
+    menuItem("make-docmap-source", "docmap_from_source"),
     menuItem("focus-scrapbook-question", "ask"),
     menuSeparator,
     menuItem("scrapbook-delete", "delete"),

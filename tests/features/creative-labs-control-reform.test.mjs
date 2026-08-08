@@ -43,6 +43,9 @@ test.assertIncludes(bureaucracy, "bindRovingButtons", "Meme choice groups suppor
 test.assertIncludes(bureaucracy, 'button.setAttribute("aria-pressed"', "Meme choice groups expose committed selection");
 test.assertIncludes(bureaucracy, "currentEditedCaption", "Edited captions are the source of the rendered preview");
 test.assertIncludes(bureaucracyStyles, "@container bureaucracy-meme", "Meme workbench owns narrow-window layouts through its container");
+test.assertIncludes(foundationStyles, "--bureaucracy-copy-min-height: 328px", "Meme workbench reserves enough narrow-window height for the caption editor's bottom inset");
+test.assertIncludes(bureaucracyStyles, "minmax(var(--bureaucracy-copy-min-height), auto)", "Meme workbench lets the caption column retain its bottom breathing room");
+test.assertIncludes(bureaucracyStyles, "min-height: var(--bureaucracy-copy-min-height)", "Meme caption panel consumes the shared narrow-height contract");
 test.assertNotIncludes(bureaucracyStyles, "body:not(.use-liquid-glass)", "Meme geometry no longer forks between themes");
 test.assertNotIncludes(bureaucracyStyles, "!important", "Meme workbench adds no priority overrides");
 test.assertIncludes(bureaucracyStyles, "color: var(--bureaucracy-ink)", "Meme workbench preserves its subject palette without forking geometry");

@@ -19,6 +19,9 @@ const outlineCommands = index.match(/aria-label="Outline commands"[\s\S]*?data-a
 const sectionDraftCommands = index.match(/aria-label="Section Draft commands"[\s\S]*?data-action="advance-drafts-to-review"/)?.[0] || "";
 
 test.assertIncludes(teachText, "function setTeachTextStatus(key)", "tracks visible TeachText saved/modified status");
+test.assertIncludes(teachText, "function syncTeachTextWindowTitle()", "TeachText separates application identity from the active document title");
+test.assertIncludes(teachText, 'teachTextTitleEl.textContent = appTitle', "TeachText keeps its application name in the title bar");
+test.assertIncludes(teachText, 'compactLabelFor: (tab) => tab.title || teachTextRoleLabel(tab.role)', "TeachText places the active document identity in compact TDI chrome");
 test.assertIncludes(teachText, "function captureActiveTeachTextTabState()", "captures TeachText title, body, role, selection, and scroll state");
 test.assertIncludes(teachText, "statusKey: teachTextStatusEl?.dataset.statusKey", "records dirty status with each TeachText tab");
 test.assertIncludes(teachText, "documentRole: teachTextDocumentRole", "preserves manuscript versus scratch-file role");

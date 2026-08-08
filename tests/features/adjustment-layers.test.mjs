@@ -18,18 +18,18 @@ test.assertNotIncludes(source, "adjustmentStrengthPromptLine", "prompt copy stay
 const context = vm.createContext({});
 vm.runInContext(source, context);
 
-// Defaults: every layer present, on, standard strength, in stack order.
+// Defaults: every layer present, off, standard strength, in stack order.
 const defaults = context.defaultAdjustmentLayers();
 test.assert(
   defaults.map((layer) => layer.kind).join(",") === "mingming,luoluo,hkrr,density",
   "the stack keeps the four layers in canonical order"
 );
 test.assert(
-  defaults.every((layer) => layer.enabled && layer.strength === 50),
-  "fresh layers default to on at standard strength"
+  defaults.every((layer) => !layer.enabled && layer.strength === 50),
+  "fresh layers default to off at standard strength"
 );
 test.assert(
-  context.adjustmentLayer("density", defaults)?.enabled === true
+  context.adjustmentLayer("density", defaults)?.enabled === false
     && context.adjustmentLayer("density", defaults)?.strength === 50,
   "density is a fourth adjustment kind with standard defaults"
 );
@@ -71,7 +71,7 @@ test.assert(
 // Strength lookup: enabled layers report a strength, disabled layers have none
 // (off is not "zero-strength on"), and out-of-enum values fall back to
 // standard.
-test.assert(context.adjustmentStrength("mingming", defaults) === 50, "an enabled layer reports its strength");
+test.assert(context.adjustmentStrength("mingming", defaults) === null, "a fresh disabled layer has no strength");
 test.assert(context.adjustmentStrength("hkrr", partial) === null, "a disabled layer has no strength");
 test.assert(
   context.adjustmentStrength("luoluo", [{ kind: "luoluo", enabled: true, strength: 99 }]) === 50,

@@ -1514,7 +1514,7 @@ async function writingDemoTeachText() {
   teachTextFileLabel = "final";
   setTeachTextWorkflowState("final");
   teachTextNameInput.value = writingDemoManuscriptTitle;
-  teachTextTitleEl.textContent = teachTextNameInput.value;
+  if (typeof syncTeachTextWindowTitle === "function") syncTeachTextWindowTitle();
   teachTextBodyInput.value = manuscript;
   setTeachTextStatus("modified");
   updateTeachTextBoundaries();

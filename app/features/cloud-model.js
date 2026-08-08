@@ -397,8 +397,8 @@
     });
   }
 
-  window.renderCloudModelPopover = function () {
-    const popover = document.querySelector("#cloud-model-popover");
+  window.renderCloudModelPopover = function (targetPopover = null) {
+    const popover = targetPopover || document.querySelector("#cloud-model-popover");
     if (!popover) return;
     const localReady = typeof isLocalModelIndicatorReady === "function"
       && isLocalModelIndicatorReady();

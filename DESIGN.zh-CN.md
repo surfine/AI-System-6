@@ -1,5 +1,5 @@
 <!-- canonical-source: DESIGN.md -->
-<!-- source-sha256: 0b8259a29c39c2183496dd5879bc5690530288042d6339bc80e53aef70d95cdd -->
+<!-- source-sha256: 0b2f408905b1b578fe10745e92245f6f5f982b76265586319c15a499898af9df -->
 
 # AI System 6 设计合约
 
@@ -8,6 +8,9 @@
 `CLAUDE.md` 仍是顶层事实来源。本文件是 UI、CSS、视觉评审和 agent 生成界面的设计操作合约。修改窗口、控件、主题、布局、图标、动效或用户可见视觉文案前，先读这里。
 
 本合约把 `external/taste-skill` 和 `external/impeccable` 中有用的部分改造成适合本产品的规则。不要把它们默认的落地页或品牌站审美直接搬进 AI System 6。
+
+规范性的应用骨架、排版角色、状态栏槽位、TDI 适配、响应式优先级与新应用检查表，见
+HIG.md。其中的机器可读窗口注册表会和 feature contract 一起接受门禁；它不会建立第二套组件库。
 
 ## 产品语域
 

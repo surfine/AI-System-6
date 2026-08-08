@@ -144,7 +144,7 @@
 
 .control-strip-module {
   width: 24px;
-  height: 24px;
+  height: calc(var(--control-strip-thickness) - 2px);
   border: 0;
   background: transparent;
   color: var(--ink);
@@ -171,13 +171,43 @@
 }
 
 .control-strip-module .sys-icon {
+  --system-icon-shape-rendering: crispEdges;
   width: 16px;
   height: 16px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
   background: transparent;
+  box-shadow: none;
+  filter: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   /* The module inverts to a black block on hover / focus / open, and the icon
      must follow the button's currentColor or it disappears into the block
      (the base .sys-icon rule pins its own color to var(--ink)). */
   color: inherit;
+}
+
+.control-strip-module .sys-icon-svg {
+  shape-rendering: crispEdges;
+}
+
+.control-strip-module .multifinder-icon {
+  border-color: currentColor;
+  background:
+    linear-gradient(currentColor, currentColor) 2px 2px / 8px 2px no-repeat,
+    transparent;
+}
+
+.menu-bar .is-control-strip-counterpart-hidden {
+  display: none;
+}
+
+.control-strip-clock-text {
+  min-width: 34px;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .control-strip-module.has-gauge {
@@ -188,10 +218,16 @@
 }
 
 .control-strip-module:hover,
-.control-strip-module:focus-visible,
+.control-strip-module:focus-visible {
+  background: var(--control-strip-hover-bg);
+  color: var(--control-strip-hover-fg);
+  box-shadow: var(--control-strip-hover-shadow);
+}
+
 .control-strip-module.is-open {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--control-strip-active-bg);
+  color: var(--control-strip-active-fg);
+  box-shadow: var(--control-strip-active-shadow);
 }
 
 .control-strip-module:focus-visible {
@@ -238,8 +274,9 @@
 .control-strip-mini-control:focus-visible,
 .control-strip-mini-title:hover,
 .control-strip-mini-title:focus-visible {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--control-strip-hover-bg);
+  color: var(--control-strip-hover-fg);
+  box-shadow: var(--control-strip-hover-shadow);
   outline: 0;
 }
 
@@ -268,8 +305,9 @@
 
 .control-strip-scroll:hover,
 .control-strip-scroll:focus-visible {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--control-strip-hover-bg);
+  color: var(--control-strip-hover-fg);
+  box-shadow: var(--control-strip-hover-shadow);
 }
 
 .control-strip-scroll:focus-visible {
@@ -327,16 +365,22 @@
   transform: translateX(-50%);
   background: repeating-linear-gradient(
     to bottom,
-    var(--ink) 0 2px,
+    currentColor 0 2px,
     transparent 2px 4px
   );
 }
 
 .control-strip-handle:hover,
-.control-strip-handle:focus-visible,
+.control-strip-handle:focus-visible {
+  background: var(--control-strip-hover-bg);
+  color: var(--control-strip-hover-fg);
+  box-shadow: var(--control-strip-hover-shadow);
+}
+
 .control-strip-handle.is-dragging {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--control-strip-active-bg);
+  color: var(--control-strip-active-fg);
+  box-shadow: var(--control-strip-active-shadow);
 }
 
 .control-strip-handle:focus-visible {
@@ -356,12 +400,28 @@
   position: fixed;
   top: auto;
   left: var(--control-strip-menu-left, 8px);
-  bottom: calc(var(--control-strip-thickness) + var(--desk-edge-gap) + 2px);
+  bottom: var(--control-strip-menu-bottom, calc(var(--control-strip-thickness) + var(--desk-edge-gap) + 2px));
   z-index: var(--z-control-strip-menu);
   max-height: 60vh;
   overflow-y: auto;
   font-family: var(--control-strip-menu-font, var(--ui-font));
   font-size: var(--control-strip-menu-font-size, 12px);
+}
+
+/* Shared menu-bar extras retain their canonical inner styling here; only the
+   floating host's size is adapted to the movable Control Strip. */
+.control-strip-menu.project-switcher-popover {
+  width: min(300px, calc(100vw - 16px));
+  max-height: min(440px, calc(100vh - 36px));
+  overflow: auto;
+  scrollbar-gutter: stable;
+}
+
+.control-strip-menu.cloud-model-popover {
+  width: min(260px, calc(100vw - 16px));
+  max-height: min(440px, calc(100vh - 36px));
+  overflow: auto;
+  scrollbar-gutter: stable;
 }
 
 /* --- Control Panel -> Control Strip tab ---------------------------------- */

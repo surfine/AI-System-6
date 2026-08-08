@@ -901,7 +901,7 @@ select:focus {
    styled in base (styles/20-reader-docmap.css). Only .teachtext-preview h2
    is a real responsive override. Audited DEAD on 2026-05-28. */
 .teachtext-preview h2 {
-  border-left: 6px solid var(--ink);
+  border-left: var(--teachtext-preview-section-marker);
   padding-left: 10px;
 }
 
@@ -2751,21 +2751,9 @@ input[type="radio"] {
     gap: 6px;
   }
 
-  .quick-draft-editor-actions .teachtext-command-group {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 5px;
-  }
-
-  .quick-draft-editor-actions .teachtext-command-group > .btn,
-  .quick-draft-editor-actions .teachtext-command-group > .teachtext-command-menu > summary,
   .quick-draft-editor-actions > .btn.default {
-    min-height: 44px;
-    padding-inline: 5px;
-  }
-
-  .quick-draft-editor-actions > .btn.default {
-    flex-basis: auto;
     min-width: 72px;
+    padding-inline: 5px;
   }
 
   /* 文字亮室: no canvas on a phone. The screen cannot hold it; phones get the
@@ -2775,43 +2763,12 @@ input[type="radio"] {
     display: none;
   }
 
-  /* 钟点稿 on a phone: the paper keeps the whole column and the two side
-     regions become drawers over it. The action row does not change, so the
-     key you press on a desk is the key you press here. */
-  .quick-draft-desk {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .quick-draft-paper {
-    grid-column: 1;
-  }
-
-  .quick-draft-shelf,
-  .quick-draft-inspector {
-    display: none;
-  }
-
-  .quick-draft-drawer-switch {
-    display: inline-flex;
-  }
-
-  #quick-draft-form.is-shelf-open .quick-draft-shelf,
-  #quick-draft-form.is-inspector-open .quick-draft-inspector {
-    display: grid;
-    position: absolute;
-    inset: 0 auto 0 0;
-    width: min(17rem, 84%);
-    padding: 8px;
-    background: var(--paper);
-    overflow-y: auto;
-  }
-
-  #quick-draft-form.is-inspector-open .quick-draft-inspector {
-    inset: 0 0 0 auto;
-  }
-
-  .quick-draft-advanced-fields {
-    grid-template-columns: minmax(0, 1fr);
+  /* 钟点稿 on a phone: the three-region collapse itself is a container query
+     in 50-apps.css (the window is the container), so it also covers a narrow
+     desk window. What belongs to touch is the target size. */
+  .quick-draft-editor-actions .btn,
+  .quick-draft-editor-actions summary.btn {
+    min-height: 44px;
   }
 
 
@@ -2901,8 +2858,7 @@ input[type="radio"] {
   }
 
   .reader-pane:has(#reader-docmap-button:not(:disabled)) .reader-actions {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+    display: none;
   }
 
 
@@ -3070,5 +3026,14 @@ input[type="radio"] {
        surfaces that declare touch-action: none stay untouched: the property is
        resolved per element, and theirs is the stricter value. */
     touch-action: manipulation;
+  }
+}
+
+/* Use Result on a phone: the dialog stacks its two panes, so it should take the
+   screen it is given. Capping it at the desktop 620px left ~150px of the phone
+   unused while the panes scrolled inside it. */
+@media (max-width: 560px) {
+  .clio-use-result-modal[open] {
+    max-height: calc(100vh - 36px);
   }
 }

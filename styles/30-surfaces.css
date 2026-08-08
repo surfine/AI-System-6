@@ -530,10 +530,6 @@
   border-top: var(--review-td-alt-border);
 }
 
-.review-result-column td {
-  border-top: 1px dotted var(--shade-dark);
-}
-
 .review-result-column tbody tr:first-child td {
   border-top: 0;
 }
@@ -2276,49 +2272,17 @@ body.alarm-clock-ringing .alarm-clock-menu-icon {
 }
 
 /* Ask bar — the shared question footer under Reader, Scrapbook, DocMap,
-   ClioStage, and Time Machine. One structure for all five: a scope row that
-   names the object and the context that will actually be sent, then the
-   input and a single Ask button. The answer always lands in ClioTalk, so the
-   bar itself never grows a transcript. */
+   ClioStage, and Time Machine. The answer always lands in ClioTalk, so the
+   compact bar never grows a transcript or a second status row. */
 .ask-bar {
   display: grid;
-  gap: 4px;
   min-width: 0;
-}
-
-.ask-bar-scope {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  font-size: 11px;
-  line-height: 16px;
 }
 
 /* Nothing loaded, nothing to ask: the window gives the row back rather than
    showing a dead control. Each window's own empty state says what to open. */
 .ask-bar.is-empty {
   display: none;
-}
-
-/* The object being asked. */
-.ask-scope-object {
-  max-width: 190px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  border: var(--ask-scope-object-border);
-  padding: 0 5px;
-}
-
-/* What will be sent: whole source, current selection, N scraps, a snapshot
-   date. Never decorative — it has to match what the request actually carries. */
-.ask-scope-range {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--shade-dark);
 }
 
 .ask-bar-row {

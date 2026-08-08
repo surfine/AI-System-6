@@ -508,8 +508,6 @@ function timeMachineSetDatePopover(open) {
   }
 }
 
-// The title bar carries the date next to the page title, so it wants the day,
-// not the snapshot's clock time — otherwise the time eats the title.
 function timeMachineCapturedDayLabel(value) {
   if (!value) return t("time_machine_unknown_date");
   const parsed = new Date(value);
@@ -526,24 +524,13 @@ function timeMachineCapturedLabel(value) {
 
 function timeMachineUpdateWindowTitle(page = null, archive = null, targetDate = "", live = false) {
   if (!timeMachineTitleEl) return;
+  const appTitle = t("time_machine");
   const pageTitle = page?.title || page?.reader?.title || "";
-  if (archive) {
-    timeMachineTitleEl.textContent = t(
-      "time_machine_title_archive",
-      timeMachineCapturedDayLabel(archive.capturedAt),
-      pageTitle || t("time_machine")
-    );
-    return;
-  }
-  if (targetDate) {
-    timeMachineTitleEl.textContent = t("time_machine_title_target", targetDate);
-    return;
-  }
-  if (page || live) {
-    timeMachineTitleEl.textContent = t("time_machine_title_live", pageTitle || t("time_machine"));
-    return;
-  }
-  timeMachineTitleEl.textContent = t("time_machine");
+  const timeContext = archive ? timeMachineCapturedDayLabel(archive.capturedAt) : targetDate;
+  const documentContext = [timeContext, pageTitle].filter(Boolean).join(" · ");
+  timeMachineTitleEl.dataset.i18n = "time_machine";
+  timeMachineTitleEl.textContent = appTitle;
+  timeMachineTitleEl.title = documentContext ? `${appTitle} — ${documentContext}` : appTitle;
 }
 
 function activeTimeMachineTab(project = getActiveProject()) {
@@ -617,6 +604,7 @@ function renderTimeMachineTabs(project = getActiveProject()) {
   renderTdiTabStrip(timeMachineTabsEl, tabs, {
     activeId: project?.activeDocumentTabIds?.timeMachine,
     labelFor: (tab, index) => `${index + 1}. ${tab.title || t("time_machine_new_tab")}`,
+    compactLabelFor: (tab) => tab.title || t("time_machine_new_tab"),
     sublabelFor: (tab) => {
       const state = tab.state || {};
       if (state.archiveEnabled) return `${timeMachineProviderLabel(state.page?.archive?.provider || state.providerPreference)} · ${state.targetDate || t("time_machine_past")}`;
@@ -635,6 +623,7 @@ function renderTimeMachineTabs(project = getActiveProject()) {
       saveDeskState();
     },
   });
+  setupTdiRailResize(timeMachineTabsEl.closest(".tdi-shell"), { storageKey: "aiSystem6.tdiRail.timeMachine" });
 }
 
 function closeTimeMachineTab(tabId) {
@@ -764,11 +753,11 @@ function timeMachineSetReaderActions(enabled) {
     timeMachineReaderViewButton,
     timeMachineClipButton,
     timeMachineClipTranslateButton,
-    timeMachineDocMapButton,
     timeMachineSendManuscriptButton,
   ].forEach((button) => {
     if (button) button.disabled = !enabled;
   });
+  syncDocMapEntryButton(timeMachineDocMapButton, enabled ? timeMachineDocMapReadiness() : { state: "empty", ready: false });
   // The ask bar's own input and button are owned by describeTimeMachineAskScope
   // so all five ask bars gate on the same rule.
   refreshAskBar("timeMachine");
@@ -1471,12 +1460,10 @@ async function clipTimeMachineSelectionWithTranslation() {
 // The loaded page as a DocMap source. DocMap's own entry points (the desktop
 // icon, the Special menu, a keyboard shortcut) reach for this too, because by
 // the time they run the Time Machine window is no longer the active one.
-function timeMachineDocMapSource() {
+function timeMachineDocMapCandidates() {
   const selection = timeMachineReaderSelection().text;
-  const text = selection || currentTimeMachinePage?.reader?.text || "";
-  if (!text.trim()) return null;
-  return {
-    text,
+  const pageText = currentTimeMachinePage?.reader?.text || "";
+  const base = {
     label: currentTimeMachinePage?.reader?.title || currentTimeMachinePage?.title || t("time_machine"),
     scope: "timeMachine",
     meta: {
@@ -1485,12 +1472,33 @@ function timeMachineDocMapSource() {
       archiveProvider: currentTimeMachinePage?.archive?.provider || "",
       readerCompleteness: currentTimeMachinePage?.reader?.completeness || "unavailable",
     },
-    threshold: selection ? docMapMinSelectionChars : docMapMinDocumentChars,
   };
+  const selectionSource = selection ? docMapSourceWithRange({
+    ...base,
+    text: selection,
+    threshold: docMapMinSelectionChars,
+  }, "selection", { sourceChars: pageText.trim().length || selection.length }) : null;
+  const wholeSource = pageText.trim() ? docMapSourceWithRange({
+    ...base,
+    text: pageText,
+    threshold: docMapMinDocumentChars,
+  }) : null;
+  return { selectionSource, wholeSource };
 }
 
-function makeTimeMachineDocMap() {
-  return withDocMap(() => makeDocMapFromCurrentSource(timeMachineDocMapSource() || { text: "", scope: "timeMachine" }));
+function timeMachineDocMapReadiness(rangeMode = "auto") {
+  const { selectionSource, wholeSource } = timeMachineDocMapCandidates();
+  return chooseDocMapSourceCandidate(selectionSource, wholeSource, rangeMode);
+}
+
+function timeMachineDocMapSource(rangeMode = "auto") {
+  return timeMachineDocMapReadiness(rangeMode).source;
+}
+
+function makeTimeMachineDocMap(rangeMode = "auto") {
+  const readiness = timeMachineDocMapReadiness(rangeMode);
+  const source = readiness.source || { text: "", scope: "timeMachine" };
+  return withDocMap(() => makeDocMapFromCurrentSource(source, { rangeMode, readiness }));
 }
 
 async function askTimeMachineSource() {
@@ -1656,6 +1664,8 @@ function runTimeMachineMenuCommand(command) {
   if (command === "clip") return clipTimeMachineSelection();
   if (command === "clip-translate") return clipTimeMachineSelectionWithTranslation();
   if (command === "docmap") return makeTimeMachineDocMap();
+  if (command === "docmap-selection") return makeTimeMachineDocMap("selection");
+  if (command === "docmap-source") return makeTimeMachineDocMap("source");
   if (command === "ask") return askTimeMachineSource();
   if (command === "send-manuscript") return sendTimeMachineCopyToManuscript();
 }
@@ -1679,5 +1689,7 @@ window.AISystem6TimeMachine = Object.freeze({
   runMenuCommand: runTimeMachineMenuCommand,
   openSnapshot: openTimeMachineSnapshotSource,
   docMapSource: timeMachineDocMapSource,
+  docMapReadiness: timeMachineDocMapReadiness,
+  setStatus: timeMachineSetStatus,
 });
 window.AISystem6TimeMachineLoaded = true;

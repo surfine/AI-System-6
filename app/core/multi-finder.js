@@ -135,6 +135,39 @@ function isMultiFinderMode() {
   return runtimeEnvironment !== "finder";
 }
 
+async function setFinderEnvironment(mode, { persistStartup = true, announce = true } = {}) {
+  const nextEnvironment = mode === "multifinder" ? "multifinder" : "finder";
+  if (runtimeEnvironment === nextEnvironment && (!persistStartup || startupEnvironment === nextEnvironment)) return true;
+  const previous = { runtimeEnvironment, startupEnvironment, startupOpenMode };
+  runtimeEnvironment = nextEnvironment;
+  if (persistStartup) {
+    startupEnvironment = nextEnvironment;
+    startupOpenMode = normalizeStartupOpenMode(startupOpenMode, startupEnvironment);
+    syncStartupOpenOptions(startupEnvironment);
+  }
+  if (nextEnvironment === "multifinder" && previous.runtimeEnvironment !== nextEnvironment) {
+    multiFinderSwitcherHintSeen = false;
+  }
+  renderMultiFinderMenu();
+  if (typeof updateQuickDraftFocusChrome === "function") updateQuickDraftFocusChrome();
+  if (typeof updateMenuState === "function") updateMenuState();
+  if (typeof renderProjectSwitcher === "function") renderProjectSwitcher();
+  const saved = await saveDeskState();
+  if (!saved) {
+    runtimeEnvironment = previous.runtimeEnvironment;
+    startupEnvironment = previous.startupEnvironment;
+    startupOpenMode = previous.startupOpenMode;
+    renderMultiFinderMenu();
+    if (typeof updateQuickDraftFocusChrome === "function") updateQuickDraftFocusChrome();
+    if (typeof updateMenuState === "function") updateMenuState();
+    return false;
+  }
+  if (announce && typeof setStatus === "function") {
+    setStatus(t(nextEnvironment === "multifinder" ? "finder_environment_multifinder_set" : "finder_environment_finder_set"));
+  }
+  return true;
+}
+
 function isFinderModeSingleTaskApp(appId) {
   return !!appId && !finderModeForegroundAppIds.has(appId);
 }

@@ -61,7 +61,6 @@
      dotted divider in Classic; Liquid swaps it for a hairline. */
   --action-row-divider: 1px dotted var(--ink);
   /* The shared Ask-bar scope chip names the object being asked. */
-  --ask-scope-object-border: 1px solid var(--ink);
   /* Dotted separators are a System 6 idiom; Liquid swaps each for a hairline
      (values overridden in the body.use-liquid-glass token block). */
   --message-divider: 1px dotted var(--rule);
@@ -461,6 +460,20 @@
   --tdi-tabs-after-content: none;
   --tdi-tabs-after-flex: 0 0 auto;
   --tdi-tabs-after-min-width: 0;
+  --tdi-stack-popover-border: var(--system-control-line) solid var(--ink);
+  --tdi-stack-popover-radius: 0;
+  --tdi-stack-popover-bg: var(--paper);
+  --tdi-stack-popover-shadow: 3px 3px 0 var(--ink);
+  --tdi-stack-popover-backdrop-filter: none;
+  --tdi-stack-item-border: 1px dotted var(--shade-dark);
+  --tdi-stack-item-bg: var(--paper);
+  --tdi-stack-item-fg: var(--ink);
+  --tdi-stack-item-active-bg: var(--ink);
+  --tdi-stack-item-active-fg: var(--paper);
+  --tdi-stack-item-hover-bg: var(--shade);
+  --tdi-stack-item-hover-fg: var(--ink);
+  --tdi-stack-count-bg: var(--ink);
+  --tdi-stack-count-fg: var(--paper);
   --tdi-tab-wrap-height: auto;
   --tdi-tab-wrap-min-height: auto;
   --tdi-tab-wrap-bg: transparent;
@@ -610,13 +623,19 @@
   --window-placement-step-x: 28px;
   --window-placement-step-y: 24px;
   --desk-edge-gap: 8px;
-  --control-strip-thickness: 26px;
+  --control-strip-thickness: var(--system-menu-height);
   --control-strip-handle-width: 16px;
   --control-strip-scroll-button-width: 14px;
   --control-strip-bg: var(--paper);
   --control-strip-border: 1px solid var(--ink);
   --control-strip-divider: 1px solid var(--ink);
   --control-strip-gauge: var(--ink);
+  --control-strip-hover-bg: var(--ink);
+  --control-strip-hover-fg: var(--paper);
+  --control-strip-hover-shadow: none;
+  --control-strip-active-bg: var(--ink);
+  --control-strip-active-fg: var(--paper);
+  --control-strip-active-shadow: none;
   --control-strip-radius: 0;
   --control-strip-shadow: none;
   --control-strip-backdrop: none;
@@ -1074,14 +1093,24 @@
   --find-path-translation-bg: rgba(255, 255, 255, 0.32);
   --find-path-translation-shadow: none;
   --finder-op-caption-color: var(--shade-dark);
+  --finder-op-item-min-height: 34px;
   --finder-op-last-border: 0;
   --select-divider: 1px dotted var(--shade-dark);
   --teachtext-blockquote-border: 1px dashed var(--ink);
   --teachtext-attachments-empty-border: 1px dashed var(--ink);
+  --teachtext-preview-bg: var(--paper);
+  --teachtext-preview-title-divider: var(--system-control-line) solid var(--ink);
+  --teachtext-preview-section-marker: 8px solid var(--ink);
+  --teachtext-preview-image-border: var(--system-control-line) solid var(--ink);
+  --teachtext-preview-image-bg: var(--paper);
+  --teachtext-preview-blockquote-bg: repeating-linear-gradient(45deg, #fff, #fff 2px, #f9f9f9 2px, #f9f9f9 4px);
   --reader-content-border: var(--system-border);
   --reader-content-radius: 0;
   --reader-content-bg: var(--paper);
   --reader-content-shadow: var(--system-inset);
+  --reader-title-divider: var(--system-control-line) solid var(--ink);
+  --reader-meta-divider: 1px dotted var(--ink);
+  --reader-section-marker: 6px solid var(--ink);
   --drop-target-inset: 8px;
   --drop-target-border: var(--system-control-line) dashed var(--ink);
   --drop-target-radius: 0;
@@ -1472,6 +1501,7 @@
   --bureaucracy-selected-bg: var(--ink);
   --bureaucracy-selected-fg: var(--paper);
   --bureaucracy-selected-shadow: none;
+  --bureaucracy-copy-min-height: 328px;
   --bureaucracy-control-bg: var(--paper);
   --bureaucracy-control-fg: var(--ink);
   --bureaucracy-control-border: 1px solid var(--ink);
@@ -1509,7 +1539,9 @@
   --endfield-quote-radius: 0;
   /* One window, three regions: the paper takes the rest of the width. */
   --quick-draft-shelf-width: 11.5rem;
-  --quick-draft-inspector-width: 16rem;
+  --quick-draft-inspector-width: 15rem;
+  /* The strip of paper a drawer never covers. */
+  --quick-draft-drawer-edge: 16px;
   --quick-draft-panel-bg: var(--quiet-panel);
   --quick-draft-panel-border: 1px dotted var(--shade-dark);
   --quick-draft-panel-radius: 0;
@@ -2830,6 +2862,24 @@ body.has-system-modal .menu-bar {
   border-right: var(--balloon-help-border);
 }
 
+.balloon-help[data-side="left"]::before,
+.balloon-help[data-side="right"]::before {
+  top: calc(var(--balloon-help-tail-top, 24px) - 7px);
+  left: auto;
+}
+
+.balloon-help[data-side="left"]::before {
+  right: -8px;
+  border-right: var(--balloon-help-border);
+  border-top: var(--balloon-help-border);
+}
+
+.balloon-help[data-side="right"]::before {
+  left: -8px;
+  border-left: var(--balloon-help-border);
+  border-bottom: var(--balloon-help-border);
+}
+
 body.is-balloon-help [data-balloon-help] {
   cursor: help;
 }
@@ -2920,7 +2970,7 @@ body.is-balloon-help [data-balloon-help] {
   grid-template-columns: 30px minmax(0, 1fr);
   align-items: center;
   gap: 10px;
-  min-height: 34px;
+  min-height: var(--finder-op-item-min-height);
   padding: 4px 8px;
   border-bottom: 1px solid var(--ink);
 }
@@ -2952,6 +3002,7 @@ body.is-balloon-help [data-balloon-help] {
 
 .finder-operation-modes {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   align-items: center;
 }
@@ -2987,6 +3038,158 @@ body.is-balloon-help [data-balloon-help] {
 .button-row.finder-operation-actions {
   justify-content: flex-end;
   margin-top: 14px;
+}
+
+/* Use Result: the dialog chrome (subject, outcome, buttons) stays put and only
+   the choice region scrolls. The shared finder-operation grammar lets the whole
+   dialog scroll, which pushed Cancel/Write off-screen as soon as a reply, an
+   outline, or a Chinese destination list ran long. */
+.clio-use-result-modal[open] {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  width: min(680px, calc(100vw - 32px));
+}
+
+/* container-type is load-bearing: the panes below split or stack on the dialog's
+   own width, so a phone and a narrow desktop dialog behave the same way. */
+.clio-use-result-modal form {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  container-type: inline-size;
+}
+
+/* Every band keeps its natural height; only the panes give way. */
+.clio-use-result-modal form > * {
+  flex: 0 0 auto;
+}
+
+.clio-use-result-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.clio-use-result-header h2 {
+  margin: 0 0 2px;
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.clio-use-result-header .finder-operation-lede {
+  margin: 0;
+}
+
+/* One-line quote of the reply being filed: it names the subject of the
+   operation without the tall centred column the Finder subject aside used. */
+.clio-use-result-quote {
+  margin: 10px 0 0;
+  padding-left: 8px;
+  border-left: 3px solid var(--finder-op-caption-color);
+  color: var(--finder-op-caption-color);
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Chooser figure: the destinations stand in the left list, and the pane beside
+   them tells the whole consequence of the selected one. Two short columns cost
+   far less height than the same four bands stacked, and the dialog stops
+   reading as a settings sheet. */
+/* Stacked (phone, narrow dialog): the panes region is the scroller, because the
+   list and the detail together are taller than any phone. */
+.clio-use-result-panes {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* Side by side: the detail pane is short, so the list can be the scroller again
+   and every band around it stays put. */
+@container (min-width: 520px) {
+  .clio-use-result-panes {
+    /* Wide enough that the longest destination name stays on one line in both
+       themes and in Chinese; the detail pane takes the rest. */
+    grid-template-columns: minmax(0, 18em) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    overflow: visible;
+  }
+
+  .clio-use-result-modal .finder-operation-list {
+    min-height: 5em;
+  }
+
+  /* Wide enough for the note to share the button row; narrow, it keeps its own
+     line above so Cancel and Write never split across two rows. */
+  .clio-use-result-record {
+    flex: 1 1 16em;
+  }
+}
+
+.clio-use-result-detail {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.clio-use-result-purpose {
+  margin: 0;
+  color: var(--finder-op-caption-color);
+  line-height: 1.35;
+  font-size: 12px;
+}
+
+/* The destination box is the dialog's one scroller: it takes whatever height the
+   pinned chrome leaves, so a clipped row always sits inside a bordered list box
+   with a scroll bar rather than at an invisible dialog edge. */
+.clio-use-result-modal .finder-operation-list {
+  max-height: none;
+}
+
+/* One line per destination, so six of them cost six rows, not twelve. The list
+   keeps the Classic row height in both themes: the taller Liquid Glass row is
+   for lists that carry two lines, and this one no longer does. */
+.clio-use-result-modal {
+  --finder-op-item-min-height: 34px;
+}
+
+.clio-use-result-modal .finder-operation-result {
+  margin: 0;
+}
+
+/* 5.4em is four lines of the 1.35 line-height above, so a long excerpt stops on
+   a line boundary instead of showing a half-cut row of text. */
+.clio-use-result-modal .finder-operation-result dd {
+  max-height: 5.4em;
+  overflow: auto;
+  overflow-wrap: anywhere;
+}
+
+/* The Run Record disclosure sits in the empty half of the button row, so an
+   honest receipt statement costs no extra height at all. When the row is too
+   narrow for both, the note wraps onto its own line above the buttons instead
+   of being squeezed into a four-line column. */
+.clio-use-result-modal .button-row.finder-operation-actions {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.clio-use-result-record {
+  margin: 0 auto 0 0;
+  flex: 1 1 100%;
+  min-width: 0;
+  color: var(--finder-op-caption-color);
+  font-size: 11px;
+  line-height: 1.3;
 }
 
 .is-hidden {

@@ -23,6 +23,8 @@ let docMapBalancedPending = false;
 let docMapBalancedReadyPromise = null;
 let docMapMarkmapLoadPromise = null;
 let docMapMarkmapLoadFailed = false;
+let docMapPendingSource = null;
+const docMapPendingSources = new Map();
 
 
 function loadDocMapScript(src) {
@@ -556,6 +558,7 @@ function parseExportedDocMapMarkdown(markdown, source) {
     currentLanguage === "zh" ? 36 : 72
   );
   const sourceLine = head.find((line) => /^Source\s*[:：]/i.test(line.trim())) || "";
+  const rangeLine = head.find((line) => /^Range\s*[:：]/i.test(line.trim())) || "";
   const traceLine = head.find((line) => /^Trace\s*[:：]/i.test(line.trim())) || "";
   const layoutLine = head.find((line) => /^Layout\s*[:：]/i.test(line.trim())) || "";
   const centralLine = head.find((line) => /^Central\s*[:：]/i.test(line.trim())) || "";
@@ -634,6 +637,12 @@ function parseExportedDocMapMarkdown(markdown, source) {
 
   const traceText = traceLine.replace(/^Trace\s*[:：]\s*/i, "").trim();
   const sourceLabel = sourceLine.replace(/^Source\s*[:：]\s*/i, "").trim() || source.label;
+  const rangeText = rangeLine.replace(/^Range\s*[:：]\s*/i, "").trim();
+  const rangeMode = /selection|选区/i.test(rangeText)
+    ? "selection"
+    : /selected items|所选项目/i.test(rangeText)
+      ? "selected-items"
+      : source.meta?.rangeMode || "source";
   return {
     id: crypto.randomUUID(),
     title,
@@ -650,7 +659,7 @@ function parseExportedDocMapMarkdown(markdown, source) {
     sourceLabel,
     sourceScope: source.scope,
     sourceText: source.text,
-    sourceMeta: source.meta || null,
+    sourceMeta: { ...(source.meta || {}), rangeMode },
     layout: /balanced|左右/i.test(layoutLine) ? "balanced" : "right",
     status: "saved",
     traceability: /完整|full/i.test(traceText) ? "full" : /无|none/i.test(traceText) ? "none" : "partial",
@@ -1441,6 +1450,7 @@ function formatDocMapMarkdown(map = currentDocMap) {
     `# DocMap: ${map.title}`,
     "",
     `Source: ${map.sourceLabel}`,
+    `Range: ${docMapRangeLabel(map.sourceMeta?.rangeMode)}`,
     `Trace: ${t(map.traceability === "full" ? "docmap_trace_full" : map.traceability === "none" ? "docmap_trace_none" : "docmap_trace_partial")}`,
     `Layout: ${docMapLayoutFor(map)}`,
     "",
@@ -1956,8 +1966,22 @@ function renderDocMap() {
       docMapMarkmapInstance.destroy();
       docMapMarkmapInstance = null;
     }
-    docMapCountEl.textContent = t("docmap_nodes_count", 0);
-    docMapTreeEl.innerHTML = `<div class="empty-folder-note">${escapeHtml(t("docmap_empty"))}</div>`;
+    const pending = activeDocMapTab()?.state?.pending || docMapPendingSource;
+    if (pending) {
+      const failed = pending.status === "error";
+      docMapTreeEl.setAttribute("aria-busy", failed ? "false" : "true");
+      docMapCountEl.textContent = failed
+        ? t("docmap_failed_status")
+        : t("docmap_pending_status", docMapRangeLabel(pending.rangeMode));
+      const note = failed
+        ? t("docmap_pending_failed", pending.message || t("docmap_model_quality_failed"))
+        : t("docmap_pending_note", pending.label || t("docmap"), docMapRangeLabel(pending.rangeMode), pending.chars || 0);
+      docMapTreeEl.innerHTML = `<div class="empty-folder-note"><p>${escapeHtml(note)}</p>${pending.retryable ? `<button class="btn" type="button" data-action="docmap-retry-pending">${escapeHtml(t("docmap_retry"))}</button>` : ""}</div>`;
+    } else {
+      docMapTreeEl.removeAttribute("aria-busy");
+      docMapCountEl.textContent = t("docmap_nodes_count", 0);
+      docMapTreeEl.innerHTML = `<div class="empty-folder-note">${escapeHtml(t("docmap_empty"))}</div>`;
+    }
     if (docMapCommandMenu) {
       docMapCommandMenu.classList.add("is-disabled");
       docMapCommandMenu.removeAttribute("open");
@@ -1973,10 +1997,11 @@ function renderDocMap() {
   }
 
   const nodes = flattenDocMapNodes(map.nodes);
+  docMapTreeEl.removeAttribute("aria-busy");
   if (map.kind !== "videoDocMap") map.layout = docMapLayoutFor(map);
   if (!selectedDocMapNodeId) selectedDocMapNodeId = "central";
   const node = selectedDocMapNode();
-  docMapCountEl.textContent = t("docmap_nodes_count", nodes.length);
+  docMapCountEl.textContent = t("docmap_nodes_scope", nodes.length, docMapRangeLabel(map.sourceMeta?.rangeMode));
   docMapTreeEl.innerHTML = renderDocMapTree(map);
   if (!window.markmap?.Markmap || !window.markmap?.Transformer) {
     ensureDocMapMarkmap().then((loaded) => {
@@ -2023,6 +2048,7 @@ function renderDocMapTabs() {
   renderTdiTabStrip(docMapTabsEl, tabs, {
     activeId,
     labelFor: (tab) => tab.title || t("docmap"),
+    compactLabelFor: (tab) => tab.title || t("docmap"),
     sublabelFor: () => t("docmap"),
     onOpen: (tab) => openDocMapTab(tab.id, { ensureWindow: false }),
     onClose: (tab) => closeDocMapTab(tab.id),
@@ -2065,6 +2091,7 @@ function openDocMapWindowWithTabs() {
 function closeDocMapTab(tabId) {
   const project = getActiveProject();
   if (!project) return false;
+  docMapPendingSources.delete(tabId);
   captureActiveDocMapTabState();
   const result = removeDocumentTab("docMap", tabId, project);
   if (!result) return false;
@@ -2084,11 +2111,85 @@ function closeDocMapTab(tabId) {
   return true;
 }
 
-function ensureDocMapDocumentTab(map) {
+function docMapPendingRecord(source, status = "mapping", message = "") {
+  return {
+    status,
+    message,
+    label: source?.label || t("docmap"),
+    scope: source?.scope || "",
+    rangeMode: source?.rangeMode || "source",
+    chars: source?.text?.length || 0,
+    retryable: status === "error",
+  };
+}
+
+function beginPendingDocMap(source, existingTabId = "") {
+  captureActiveDocMapTabState();
+  const pending = docMapPendingRecord(source);
+  const pendingId = existingTabId || crypto.randomUUID();
+  const tab = typeof upsertDocumentTab === "function" ? upsertDocumentTab("docMap", "docmap", {
+    id: existingTabId || undefined,
+    title: source?.label || t("docmap"),
+    backing: { type: "docmapPending", id: pendingId },
+    state: {
+      map: null,
+      selectedNodeId: "central",
+      pending,
+      origin: {
+        app: source?.scope === "teachtext" ? "teachText" : source?.scope || "",
+        scope: source?.scope || "",
+        title: source?.label || t("docmap"),
+      },
+    },
+    forceNew: !existingTabId,
+  }) : null;
+  const key = tab?.id || "__window__";
+  docMapPendingSources.set(key, source);
+  docMapPendingSource = pending;
+  if (tab && typeof setActiveDocumentTab === "function") setActiveDocumentTab("docMap", tab.id);
+  currentDocMap = null;
+  selectedDocMapNodeId = null;
+  renderDocMapTabs();
+  renderDocMap();
+  openWindow("docMap");
+  focusWindow(getWindow("docMap"));
+  return tab?.id || "";
+}
+
+function failPendingDocMap(tabId, source, message) {
+  const pending = docMapPendingRecord(source, "error", message);
+  const tab = tabId && typeof getDocumentTabs === "function"
+    ? getDocumentTabs("docMap").find((item) => item.id === tabId)
+    : null;
+  if (tab) tab.state = { ...(tab.state || {}), map: null, pending };
+  docMapPendingSource = pending;
+  docMapPendingSources.set(tab?.id || "__window__", source);
+  currentDocMap = null;
+  selectedDocMapNodeId = null;
+  renderDocMapTabs();
+  renderDocMap();
+  openWindow("docMap");
+}
+
+function retryPendingDocMap() {
+  const tab = activeDocMapTab();
+  const source = docMapPendingSources.get(tab?.id || "__window__");
+  if (!source) {
+    setStatus(t("docmap_no_text"));
+    return;
+  }
+  return makeDocMapFromCurrentSource(source, {
+    rangeMode: source.rangeMode || "auto",
+    pendingTabId: tab?.id || "",
+  });
+}
+
+function ensureDocMapDocumentTab(map, options = {}) {
   if (!map || typeof upsertDocumentTab !== "function") return null;
   if (map.kind !== "videoDocMap") map.layout = docMapLayoutFor(map);
   const sourceMeta = map.sourceMeta || {};
   return upsertDocumentTab("docMap", "docmap", {
+    id: options.tabId || undefined,
     title: map.title || t("docmap"),
     backing: {
       type: map.kind === "videoDocMap" ? "videoDocMap" : "docmap",
@@ -2097,6 +2198,7 @@ function ensureDocMapDocumentTab(map) {
     state: {
       map: structuredClone(map),
       selectedNodeId: selectedDocMapNodeId || "central",
+      pending: null,
       origin: {
         app: map.sourceScope === "teachtext" ? "teachText" : map.sourceScope === "reader" || map.sourceScope === "fileDisk" || map.sourceScope === "videoTranscript" ? "reader" : map.sourceScope || "",
         scope: map.sourceScope || "",
@@ -2107,14 +2209,16 @@ function ensureDocMapDocumentTab(map) {
         title: map.sourceLabel || map.title || "",
       },
     },
-    forceNew: true,
+    forceNew: !options.tabId,
   });
 }
 
 function showDocMap(map, options = {}) {
   captureActiveDocMapTabState();
   if (map && map.kind !== "videoDocMap") map.layout = docMapLayoutFor(map);
-  const tab = ensureDocMapDocumentTab(map);
+  const tab = ensureDocMapDocumentTab(map, { tabId: options.tabId || "" });
+  docMapPendingSources.delete(options.tabId || tab?.id || "__window__");
+  docMapPendingSource = null;
   if (tab && typeof setActiveDocumentTab === "function") setActiveDocumentTab("docMap", tab.id);
   currentDocMap = map;
   selectedDocMapNodeId = "central";
@@ -2127,20 +2231,25 @@ function showDocMap(map, options = {}) {
   if (options.statusMessage) setStatus(options.statusMessage);
 }
 
-async function makeDocMapFromCurrentSource(preferredContext = null) {
-  const source = resolveDocMapSource(preferredContext);
+async function makeDocMapFromCurrentSource(preferredContext = null, options = {}) {
+  const readiness = options.readiness || resolveDocMapReadiness(preferredContext, options);
+  const source = readiness.source;
   if (!source?.text) {
     setStatus(t("docmap_no_text"));
     openWindow("docMap");
     renderDocMap();
     return;
   }
-  if (source.text.length < source.threshold) {
-    setStatus(t("docmap_too_short"));
+  if (!readiness.ready) {
+    const message = t("docmap_too_short");
+    setDocMapSourceStatus(source, message);
     return;
   }
 
-  if (!beginLongTask("docmap", t("docmap_mapping"))) return;
+  const handoffMessage = docMapHandoffStatus(readiness);
+  if (!beginLongTask("docmap", handoffMessage)) return;
+  setDocMapSourceStatus(source, handoffMessage);
+  const pendingTabId = beginPendingDocMap(source, options.pendingTabId || "");
   let map = null;
   let statusMessage = t("docmap_ready");
   try {
@@ -2153,18 +2262,18 @@ async function makeDocMapFromCurrentSource(preferredContext = null) {
     }
   } catch (error) {
     if (isAbortError(error)) {
+      setDocMapSourceStatus(source, t("stopped"));
+      failPendingDocMap(pendingTabId, source, t("stopped"));
       endLongTask("docmap");
       return;
     }
     console.warn("DocMap model pass failed", error);
     const message = docMapModelFailureStatus(error);
     markActiveLongTaskFailed(message);
+    setDocMapSourceStatus(source, message);
     setStatus(message);
     endLongTask("docmap");
-    currentDocMap = null;
-    selectedDocMapNodeId = null;
-    renderDocMap();
-    openWindow("docMap");
+    failPendingDocMap(pendingTabId, source, message);
     return;
   }
   const project = getActiveProject();
@@ -2174,7 +2283,8 @@ async function makeDocMapFromCurrentSource(preferredContext = null) {
   }
   endLongTask("docmap");
   if (map.kind !== "videoDocMap") await ensureDocMapMarkmap();
-  showDocMap(map, { statusMessage });
+  setDocMapSourceStatus(source, t("docmap_handoff_complete", docMapRangeLabel(source.rangeMode)));
+  showDocMap(map, { statusMessage, tabId: pendingTabId });
 }
 
 
@@ -2301,6 +2411,12 @@ function saveCurrentDocMap() {
     status: "saved",
     savedAt: now,
     sourceLabel: name,
+    sourceScope: currentDocMap.sourceScope || savedMap.sourceScope,
+    sourceMeta: {
+      ...(currentDocMap.sourceMeta || {}),
+      savedFromDocMapId: currentDocMap.id || "",
+      savedAt: now,
+    },
   });
   chatFiles.unshift({
     id: crypto.randomUUID(),

@@ -64,6 +64,7 @@ export const appModulePaths = [
   "app/features/findpath.js",
   "app/features/translation.js",
   "app/features/selection-services.js",
+  "app/core/docmap-source-policy.js",
   "app/core/docmap-entry.js",
   "app/features/teachtext-writing.js",
   "app/features/writer-guide.js",

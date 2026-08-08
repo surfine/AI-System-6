@@ -1634,11 +1634,12 @@ function updateClock() {
   renderSystemClock();
 }
 
+function formatSystemClockTime(now = new Date()) {
+  return now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
 function renderSystemClock(now = new Date()) {
-  const time = now.toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const time = formatSystemClockTime(now);
   if (clockEl) {
     const showMenuClock = !!menuClockInput?.checked;
     clockEl.classList.toggle("is-hidden", !showMenuClock);

@@ -109,7 +109,7 @@ context.activeProject = {
 };
 
 const legacyNormalized = context.normalizeQuickDraftRecord(context.activeProject.quickDraft);
-test.assert(legacyNormalized.workspace.schemaVersion === 2, "legacy records migrate to schemaVersion 2");
+test.assert(legacyNormalized.workspace.schemaVersion === 3, "legacy records migrate to schemaVersion 3");
 test.assert(legacyNormalized.workspace.title === "旧稿", "legacy title survives migration");
 test.assert(legacyNormalized.workspace.body === "第一稿正文。", "legacy draft body survives migration");
 test.assert(
@@ -129,6 +129,17 @@ test.assert(
   legacyNormalized.workspace.strategy.editorial === "取舍",
   "legacy strategyReport migrates into strategy"
 );
+const v2WithDumps = context.normalizeQuickDraftWorkspace({
+  schemaVersion: 2,
+  intake: { ventLog: [
+    { id: "real-vent", text: "真正的树洞材料", createdAt: "2026-08-01T01:00:00.000Z", sourceKind: "clioTalk-vent" },
+    { id: "old-dump", text: "旧版本正文", createdAt: "2026-08-01T02:00:00.000Z", sourceKind: "quick-draft-dump" },
+  ] },
+});
+const v3Again = context.normalizeQuickDraftWorkspace(v2WithDumps);
+test.assert(v2WithDumps.versions.length === 1 && v2WithDumps.versions[0].body === "旧版本正文" && v2WithDumps.versions[0].createdAt === "2026-08-01T02:00:00.000Z", "v2 dump body and timestamp migrate into Versions");
+test.assert(v2WithDumps.intake.ventLog.length === 1 && v2WithDumps.intake.ventLog[0].id === "real-vent", "migration leaves only genuine vent material in ventLog");
+test.assert(v3Again.versions.length === 1, "v2 to v3 dump migration is idempotent");
 
 // Open → write → save → close → reopen: the canonical workspace is
 // idempotent, so no field is lost across cycles.
@@ -139,7 +150,7 @@ const firstCycle = context.normalizeQuickDraftWorkspace({
 }, context.activeProject.quickDraft);
 const reopened = context.normalizeQuickDraftWorkspace(firstCycle, context.activeProject.quickDraft);
 test.assert(reopened.body === "第一稿正文。\n继续写第二句。", "the body survives a save/close/reopen cycle");
-test.assert(reopened.schemaVersion === 2 && reopened.title === "旧稿", "title and schema survive a save/close/reopen cycle");
+test.assert(reopened.schemaVersion === 3 && reopened.title === "旧稿", "title and schema survive a save/close/reopen cycle");
 test.assert(
   reopened.intake.setup.pastedSources === "材料一\n材料二"
     && reopened.materials.length === 1,
@@ -215,7 +226,7 @@ const retried = await context.composeDocument({
   cache: retryCache,
   runModel: failingRunModel,
 });
-test.assert(attempts === 3 && retried.text.includes("[model recovered]"), "Retry after a failure re-calls the model and succeeds");
+test.assert(attempts === 2 && retried.text.includes("[model recovered]"), "Retry after a failure re-calls the exact stack once and succeeds");
 
 // ---- Scenario 4: protect — byte-identical, sentinel break fails ----------
 const exact = await context.composeDocument({

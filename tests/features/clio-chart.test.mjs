@@ -405,7 +405,7 @@ test.assertIncludes(
 );
 test.assertMatches(
   html,
-  /class="teachtext-details-controls"[\s\S]*?id="teachtext-see-as-chart"[\s\S]*?id="teachtext-chart-owner"[\s\S]*?<\/div>[\s\S]*?id="teachtext-status"/,
+  /class="[^"]*\bteachtext-details-controls\b[^"]*"[\s\S]*?id="teachtext-see-as-chart"[\s\S]*?id="teachtext-chart-owner"[\s\S]*?<\/div>[\s\S]*?id="teachtext-status"/,
   "TeachText keeps chart controls grouped between the boundary and save status so the details bar stays on one row"
 );
 

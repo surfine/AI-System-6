@@ -338,6 +338,20 @@ Version `1.0.12`, build `20260804.2`.
   (selection, activation, focus, toasts) may only change after a commit
   resolves, and two existing violations were fixed.
 
+## Public Beta 1.0.28 - 2026-08-09
+
+- Quick Draft Closure separates working updates from awaited durable commits,
+  captures debounced saves by project, persists exact-stack Composite previews,
+  and keeps delivery failures from reporting success.
+- Workspace schema v3 migrates legacy `quick-draft-dump` entries into bounded
+  document Versions and excludes Versions defensively from model material.
+- Empty masks now mean whole draft, new adjustment stacks start disabled, four
+  enabled layers make one model request, and duplicate protected passages use
+  occurrence-unique stateless sentinels.
+- Send to TeachText opens the saved Project document without mutating the main
+  writing pipeline. Public snapshots promise `verify:public`; `verify:ship`
+  remains a maintainer/private-source gate.
+
 ## What Changed Most In One Month
 
 - The product moved from "an AI writing prototype" to a local-first writing

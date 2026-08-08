@@ -16,7 +16,7 @@ function strategySnapshot(record = activeProjectQuickDraft({ create: false })?.r
 
 function humanAnchorSnapshot(record = activeProjectQuickDraft({ create: false })?.record) {
   const workspace = normalizeQuickDraftWorkspace(record?.workspace, record);
-  return workspace.composition?.negative || dumpEntries(workspace.intake)[0]?.text || "";
+  return workspace.composition?.negative || workspace.versions?.[0]?.body || "";
 }
 
 function textExcerpt(text = "", limit = 240) {
@@ -25,7 +25,7 @@ function textExcerpt(text = "", limit = 240) {
 }
 
 function dumpEntries(intake = intakeSnapshot()) {
-  return (intake.ventLog || []).filter((entry) => entry.sourceKind === "quick-draft-dump");
+  return [];
 }
 
 function nonDumpVentEntries(intake = intakeSnapshot()) {
@@ -78,7 +78,7 @@ function renderStanceCandidates(items = []) {
 
 function renderIntake(record = activeProjectQuickDraft({ create: false })?.record || blankQuickDraft()) {
   const intake = normalizeQuickDraftRecord(record).workspace.intake;
-  const dumps = dumpEntries(intake);
+  const dumps = normalizeQuickDraftRecord(record).workspace.versions || [];
   listSlot(
     refs.ventLog,
     nonDumpVentEntries(intake),
@@ -89,7 +89,7 @@ function renderIntake(record = activeProjectQuickDraft({ create: false })?.recor
     refs.dump,
     dumps,
     t("quick_draft_dump_empty"),
-    (entry) => textExcerpt(entry.text, 320)
+    (entry) => textExcerpt(entry.body, 320)
   );
   if (refs.restoreDumpButton) refs.restoreDumpButton.disabled = !dumps.length;
   listSlot(
@@ -287,11 +287,12 @@ function mountedSourceRecords() {
 function intakeSourceRecords() {
   const intake = intakeSnapshot();
   const records = [];
-  if (intake.ventLog.length) {
+  const ventEntries = nonDumpVentEntries(intake);
+  if (ventEntries.length) {
     records.push({
       id: "V1",
       label: t("quick_draft_vent_source_label"),
-      text: intake.ventLog
+      text: ventEntries
         .map((entry, index) => `${index + 1}. ${entry.text}`)
         .join("\n")
         .slice(0, 12000),
@@ -373,28 +374,57 @@ function updateSourceCount() {
   if (refs.sourceSummary) refs.sourceSummary.textContent = label;
 }
 
+// The shelf holds material as objects, one row each: what it is called, how
+// big it is, and whether the body actually cites it. "Cited" is only claimed
+// when the body carries the source tag the draft route asks the model to use;
+// absence is silence, never a "not cited" verdict.
+function materialRowMeta(item, body = "") {
+  const size = String(item.text || "").trim().length;
+  const parts = [];
+  if (size) parts.push(t("quick_draft_material_size", size.toLocaleString()));
+  const tag = String(item.id || "").trim();
+  if (tag && body.includes(`[${tag}]`)) parts.push(t("quick_draft_material_cited"));
+  return parts.join(" · ");
+}
+
 function renderSourceMap(record = normalizeQuickDraftRecord(), sources = sourceRecordsFromForm()) {
   if (!refs.sourceMap) return;
   refs.sourceMap.replaceChildren();
+  const byId = new Map(sources.map((source) => [String(source.id || ""), source]));
   const map = Array.isArray(record.sourceMap) && record.sourceMap.length
-    ? record.sourceMap
-    : sources.map((source) => ({ id: source.id, label: source.label }));
+    ? record.sourceMap.map((item) => ({ ...byId.get(String(item.id || "")), ...item }))
+    : sources;
+  const body = String(refs.draft?.value || record.workspace?.body || "");
+
+  if (refs.shelfTitle) {
+    refs.shelfTitle.textContent = map.length
+      ? t("quick_draft_materials_count", map.length)
+      : t("quick_draft_materials_label");
+  }
 
   if (!map.length) {
-    const empty = document.createElement("span");
+    const empty = document.createElement("p");
     empty.className = "quick-draft-source-empty";
-    empty.textContent = t("quick_draft_empty_slot");
+    empty.textContent = t("quick_draft_material_empty");
     refs.sourceMap.append(empty);
     return;
   }
 
   map.forEach((item) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "btn mini-btn quick-draft-source-chip";
-    button.dataset.sourceLabel = item.label || item.id || "";
-    button.textContent = item.label || item.id || "S";
-    refs.sourceMap.append(button);
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "btn quick-draft-material-row";
+    row.dataset.sourceLabel = item.label || item.id || "";
+    const name = document.createElement("b");
+    name.textContent = item.label || item.id || "S";
+    row.append(name);
+    const meta = materialRowMeta(item, body);
+    if (meta) {
+      const small = document.createElement("small");
+      small.textContent = meta;
+      row.append(small);
+    }
+    refs.sourceMap.append(row);
   });
 
   const preview = document.createElement("pre");
@@ -680,7 +710,7 @@ function setVentMode(enabled = true, options = {}) {
   const nextIntake = normalizeIntake({
     ...intake,
     ventMode: enabled === true,
-    ventLog: enabled === true ? intake.ventLog : dumpEntries(intake),
+    ventLog: enabled === true ? intake.ventLog : [],
   });
   const saved = saveQuickDraft({ workspace: { intake: nextIntake } }, { debounce: false });
   renderIntake(saved);
@@ -700,7 +730,7 @@ function clearVentLog(options = {}) {
   const nextIntake = normalizeIntake({
     ...intake,
     ventMode: false,
-    ventLog: dumpEntries(intake),
+    ventLog: [],
   });
   const saved = saveQuickDraft({ workspace: { intake: nextIntake } }, { debounce: false });
   renderIntake(saved);

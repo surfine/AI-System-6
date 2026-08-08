@@ -193,6 +193,14 @@ function makeDocMapFromFinderOrCurrent() {
   return withDocMap(() => makeDocMapFromCurrentSource());
 }
 
+function makeDocMapForRange(rangeMode = "auto", preferredContext = null) {
+  const context = preferredContext
+    || (rangeMode === "selection"
+      ? (getSelectionServiceContext() || lastSelectionServiceContext)
+      : null);
+  return withDocMap(() => makeDocMapFromCurrentSource(context, { rangeMode }));
+}
+
 function runStyleCheckFromMenu() {
   openFinderSelectedTeachTextFile();
   openWindow("teachText");
@@ -231,7 +239,7 @@ function clearReviewFeedbackSlot(mode = getReviewDeskMode(), message = "") {
 function updateReviewDeskStatusTitle() {
   if (!reviewStatusTitleEl) return;
   reviewStatusTitleEl.textContent = getTeachTextDocumentName({
-    fallback: teachTextNameInput?.value?.trim() || teachTextTitleEl?.textContent?.trim() || t("untitled"),
+    fallback: teachTextNameInput?.value?.trim() || t("untitled"),
   });
 }
 
@@ -1226,6 +1234,8 @@ function getApplicationActionHandlers() {
     "selection-ask-assistant": () => runSelectionServiceCommand("ask"),
     "make-alias": () => withFinderObjects(() => makeAliasForFinderSelection()),
     "make-docmap": makeDocMapFromFinderOrCurrent,
+    "make-docmap-selection": () => makeDocMapForRange("selection"),
+    "make-docmap-source": () => makeDocMapForRange("source"),
     "style-check-teachtext": runStyleCheckFromMenu,
     "style-check-section": () => runTeachTextStyleCheck({ sectionOnly: true }),
     "style-check-manuscript": () => runTeachTextStyleCheck({ fullDocument: true }),
@@ -1277,7 +1287,13 @@ function getApplicationActionHandlers() {
     "reader-clip": clipReaderSelection,
     "reader-clip-translate": clipReaderSelectionWithTranslation,
     "reader-send-manuscript": sendReaderCopyToManuscript,
-    "reader-make-docmap": () => withDocMap(() => makeDocMapFromCurrentSource()),
+    "reader-make-docmap": () => makeDocMapForRange("auto"),
+    "reader-docmap-selection": () => {
+      const context = readerSelectionContext();
+      if (!context) return setStatus(t("select_text_first"));
+      return makeDocMapForRange("selection", context);
+    },
+    "reader-docmap-source": () => makeDocMapForRange("source"),
     "reader-find-sources": runReaderFindSources,
     "reader-open-clio-stage": openCurrentReaderInClioStage,
     "clio-stage-docmap": async () => {
@@ -1301,6 +1317,8 @@ function getApplicationActionHandlers() {
     "time-machine-clip": () => dispatchTimeMachineMenuCommand("clip"),
     "time-machine-clip-translate": () => dispatchTimeMachineMenuCommand("clip-translate"),
     "time-machine-docmap": () => dispatchTimeMachineMenuCommand("docmap"),
+    "time-machine-docmap-selection": () => dispatchTimeMachineMenuCommand("docmap-selection"),
+    "time-machine-docmap-source": () => dispatchTimeMachineMenuCommand("docmap-source"),
     "time-machine-ask": () => dispatchTimeMachineMenuCommand("ask"),
     "time-machine-send-manuscript": () => dispatchTimeMachineMenuCommand("send-manuscript"),
     "clip-selected-find-path": clipSelectedFindPath,
@@ -1476,6 +1494,7 @@ function getApplicationActionHandlers() {
     },
     "docmap-zoom-out": () => withDocMap(() => zoomDocMapOut()),
     "docmap-zoom-in": () => withDocMap(() => zoomDocMapIn()),
+    "docmap-retry-pending": () => withDocMap(() => retryPendingDocMap()),
     "clear-attached-clips": () => {
       attachedClipIds.clear();
       renderAttachedClips();

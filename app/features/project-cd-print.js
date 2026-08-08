@@ -135,7 +135,7 @@ function printCurrentTeachTextDocument() {
   const body = String(teachTextBodyInput?.value || "");
   if (!body.trim()) return;
   const title = getTeachTextDocumentName({
-    fallback: teachTextNameInput?.value?.trim() || teachTextTitleEl?.textContent?.trim() || t("untitled"),
+    fallback: teachTextNameInput?.value?.trim() || t("untitled"),
   });
   const printWindow = window.open("", "_blank", "width=960,height=720");
   if (!printWindow) {

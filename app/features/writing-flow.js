@@ -223,7 +223,6 @@ function linkedManuscriptTitle(project = getActiveProject()) {
   const fallback = markdownDocumentTitle(projectMarkdown)
     || markdownDocumentTitle(bodyMarkdown)
     || teachTextNameInput?.value?.trim()
-    || teachTextTitleEl?.textContent?.trim()
     || t("untitled");
   return typeof getTeachTextDocumentName === "function"
     ? getTeachTextDocumentName({ fallback })
@@ -497,7 +496,7 @@ function syncProjectOutlineToTeachText(project = getActiveProject(), options = {
   }
   restoreLinkedManuscriptScroll();
   if (teachTextNameInput) teachTextNameInput.value = title;
-  if (teachTextTitleEl) teachTextTitleEl.textContent = title;
+  if (typeof syncTeachTextWindowTitle === "function") syncTeachTextWindowTitle();
   updateQuestionSheetManuscriptTitle(project);
   if (typeof updateReviewDeskStatusTitle === "function") updateReviewDeskStatusTitle();
   if (options.markModified !== false) setTeachTextStatus("modified");
@@ -734,7 +733,7 @@ function syncTeachTextToLinkedProjectMarkdown() {
   const sections = setProjectOutlineMarkdown(project, teachTextBodyInput.value);
   const title = linkedManuscriptTitle(project);
   if (teachTextNameInput) teachTextNameInput.value = title;
-  if (teachTextTitleEl) teachTextTitleEl.textContent = title;
+  if (typeof syncTeachTextWindowTitle === "function") syncTeachTextWindowTitle();
   updateQuestionSheetManuscriptTitle(project);
   if (typeof updateReviewDeskStatusTitle === "function") updateReviewDeskStatusTitle();
   syncDraftsFromProjectOutline(project);

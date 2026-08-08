@@ -1164,19 +1164,47 @@ html:lang(zh-Hans) .title-bar h2 {
   white-space: nowrap;
 }
 
-.find-path-details {
+/* Shared application status-bar grammar. Apps choose the content of each
+   semantic slot, but stable placement makes status, context, and overflow
+   commands predictable across document windows. */
+.app-status-bar {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
 }
 
-.find-path-details > span:nth-child(2) {
+.status-bar-leading {
+  grid-column: 1;
+  justify-self: start;
+}
+
+.status-bar-context {
+  grid-column: 2;
   justify-self: center;
-  text-align: center;
+  min-width: 0;
 }
 
-.find-path-details > span:last-child {
+.status-bar-trailing {
+  grid-column: 3;
   justify-self: end;
-  text-align: right;
+  min-width: 0;
+}
+
+/* Compact windows keep the same three semantic slots. Each track can shrink,
+   so live receipts remain visible while document context ellipsizes before the
+   primary command is displaced. */
+@container (max-width: 520px) {
+  .details-bar.app-status-bar {
+    grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto;
+  }
+
+  .details-bar.app-status-bar > .status-bar-context {
+    grid-column: 2;
+  }
+
+  .details-bar.app-status-bar > .status-bar-trailing {
+    grid-column: 3;
+  }
 }
 
 .details-bar .btn {
@@ -1216,11 +1244,6 @@ html:lang(zh-Hans) .title-bar h2 {
   text-align: left;
 }
 
-.teachtext-details-bar {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-}
-
 .teachtext-details-bar #teachtext-status {
   text-align: right;
 }
@@ -1239,56 +1262,16 @@ html:lang(zh-Hans) .title-bar h2 {
 .outline-window .teachtext-details-bar,
 .section-drafts-window .teachtext-details-bar,
 .review-desk-window .teachtext-details-bar {
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   position: relative;
   z-index: var(--z-local-overlay);
 }
 
-.question-sheet-window .linked-manuscript-title {
+.question-sheet-window .linked-manuscript-title,
+.review-desk-window .linked-manuscript-title {
   justify-self: center;
   max-width: min(32ch, 38vw);
   padding: 0 8px;
   text-align: center;
-}
-
-.question-sheet-window .teachtext-details-bar {
-  position: relative;
-}
-
-.outline-window .teachtext-details-bar,
-.section-drafts-window .teachtext-details-bar {
-  position: relative;
-}
-
-.question-sheet-window #question-count {
-  justify-self: start;
-}
-
-.outline-window #outline-status,
-.section-drafts-window #draft-count {
-  justify-self: start;
-}
-
-.question-sheet-window #question-manuscript-title {
-  position: absolute;
-  left: 50%;
-  max-width: min(32ch, calc(100% - 260px));
-  transform: translateX(-50%);
-}
-
-.outline-window .select-wrap-inline,
-.section-drafts-window .select-wrap-inline {
-  position: absolute;
-  left: 50%;
-  justify-self: center;
-  max-width: min(150px, calc(100% - 300px));
-  transform: translateX(-50%);
-}
-
-.outline-window .select-wrap-inline .system-select-menu,
-.section-drafts-window .select-wrap-inline .system-select-menu {
-  left: 50%;
-  transform: translateX(-50%);
 }
 
 .teachtext-window .select-wrap-inline,
@@ -1297,12 +1280,6 @@ html:lang(zh-Hans) .title-bar h2 {
 .section-drafts-window .details-bar-button,
 .review-desk-window .details-bar-button {
   justify-self: end;
-}
-
-.question-sheet-window .details-bar-button,
-.outline-window .details-bar-button,
-.section-drafts-window .details-bar-button {
-  grid-column: 3;
 }
 
 .mini-select {
@@ -1347,15 +1324,27 @@ html:lang(zh-Hans) .title-bar h2 {
 
 .details-bar:has(.view-controls) {
   position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+}
+
+.details-bar:has(.view-controls) > span:first-child {
+  grid-column: 1;
+  justify-self: start;
+}
+
+.details-bar:has(.view-controls) > span:last-child {
+  grid-column: 3;
+  justify-self: end;
+  text-align: right;
 }
 
 .view-controls {
   display: flex;
   align-items: center;
-  position: absolute;
-  left: 50%;
-  top: calc(50% - var(--details-bar-optical-rise));
-  transform: translate(-50%, -50%);
+  position: static;
+  grid-column: 2;
+  justify-self: center;
   gap: 2px;
   border: 1px solid var(--ink);
   background: var(--paper);
@@ -2744,6 +2733,10 @@ html:lang(zh-Hans) .title-bar h2 {
   gap: 8px;
   min-height: 36px;
   margin-top: 2px;
+}
+
+.assistant-window .composer-action-row {
+  margin-bottom: 6px;
 }
 
 

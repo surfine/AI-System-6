@@ -129,7 +129,7 @@ function updateBootLedger(stage = "startup") {
   );
 }
 
-function switchProject(projectId) {
+async function switchProject(projectId) {
   const project = projects.find((item) => item.id === projectId);
   if (!project) {
     renderProjectDisks();
@@ -139,6 +139,11 @@ function switchProject(projectId) {
   if (project.id === activeProjectId && isProjectMounted) {
     renderProjectDisks();
     return;
+  }
+
+  if (typeof flushPendingQuickDraftCommit === "function" && !await flushPendingQuickDraftCommit()) {
+    setStatus(t("quick_draft_save_failed"));
+    return false;
   }
 
   // Play mechanical disk sound
@@ -166,6 +171,7 @@ function switchProject(projectId) {
   saveDeskState();
   scheduleDesktopMaintenance("project");
   setStatus(wasArchived ? t("project_unarchived", project.name) : t("project_opened", project.name));
+  return true;
 }
 
 async function createProjectFromInput() {

@@ -24,7 +24,8 @@
 
 const PROTECTED_TOKEN_OPEN = "\u27e6AI6_PROTECTED_";
 const PROTECTED_TOKEN_CLOSE = "\u27e7";
-const PROTECTED_TOKEN_PATTERN = /⟦AI6_PROTECTED_([A-Fa-f0-9]{8})⟧/g;
+const PROTECTED_TOKEN_PATTERN = /⟦AI6_PROTECTED_(\d{2})_([A-Fa-f0-9]{8})⟧/g;
+const PROTECTED_TOKEN_TEST_PATTERN = /^⟦AI6_PROTECTED_\d{2}_[A-Fa-f0-9]{8}⟧$/;
 
 function protectedTokenId(sourceText = "") {
   // Deterministic per protected bytes: the same protected text produces the
@@ -37,12 +38,13 @@ function protectedTokenId(sourceText = "") {
   return (hash >>> 0).toString(16).padStart(8, "0").slice(0, 8);
 }
 
-function protectedToken(text = "") {
-  return `${PROTECTED_TOKEN_OPEN}${protectedTokenId(text)}${PROTECTED_TOKEN_CLOSE}`;
+function protectedToken(text = "", occurrence = 1) {
+  const ordinal = String(Math.max(1, Number(occurrence) || 1)).padStart(2, "0");
+  return `${PROTECTED_TOKEN_OPEN}${ordinal}_${protectedTokenId(text)}${PROTECTED_TOKEN_CLOSE}`;
 }
 
 function isProtectedToken(value = "") {
-  return PROTECTED_TOKEN_PATTERN.test(String(value || ""));
+  return PROTECTED_TOKEN_TEST_PATTERN.test(String(value || ""));
 }
 
 /**
@@ -78,8 +80,12 @@ function protectTextWithSentinels(source = "", protectedRanges = []) {
     const end = Math.min(range.end, lines.length);
     const start = Math.min(range.start, end);
     const protectedText = lines.slice(start - 1, end).join("\n");
-    const token = protectedToken(protectedText);
-    if (sentinels.some((entry) => entry.token === token)) continue;
+    let occurrence = sentinels.length + 1;
+    let token = protectedToken(protectedText, occurrence);
+    while (text.includes(token) || sentinels.some((entry) => entry.token === token)) {
+      occurrence += 1;
+      token = protectedToken(protectedText, occurrence);
+    }
     sentinels.push({ token, text: protectedText });
     for (let line = start; line <= end; line += 1) protectedLines.add(line);
   }
@@ -97,8 +103,9 @@ function protectTextWithSentinels(source = "", protectedRanges = []) {
     }
     if (lineNumber === range.start) {
       const protectedText = lines.slice(range.start - 1, Math.min(range.end, lines.length)).join("\n");
-      const entry = sentinels.find((item) => item.text === protectedText);
-      next.push(entry?.token || protectedToken(protectedText));
+      const rangeIndex = merged.indexOf(range);
+      const entry = sentinels[rangeIndex];
+      next.push(entry?.token || protectedToken(protectedText, rangeIndex + 1));
     }
     // Every later line of the range is consumed by the token line.
   }

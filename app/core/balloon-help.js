@@ -115,21 +115,63 @@ function positionBalloonHelp(target) {
   if (!balloon || !target) return;
   const targetRect = target.getBoundingClientRect();
   const balloonRect = balloon.getBoundingClientRect();
+  const viewport = window.visualViewport;
   const edge = 10;
   const gap = 12;
-  const above = targetRect.bottom + gap + balloonRect.height > window.innerHeight - edge;
-  const top = above
-    ? targetRect.top - balloonRect.height - gap
-    : targetRect.bottom + gap;
-  const idealLeft = targetRect.left + (targetRect.width - balloonRect.width) / 2;
-  const left = Math.max(edge, Math.min(idealLeft, window.innerWidth - balloonRect.width - edge));
-  const targetCenter = targetRect.left + targetRect.width / 2;
-  const tailLeft = Math.max(18, Math.min(targetCenter - left, balloonRect.width - 18));
+  const bounds = {
+    left: (viewport?.offsetLeft || 0) + edge,
+    top: (viewport?.offsetTop || 0) + edge,
+    right: (viewport?.offsetLeft || 0) + (viewport?.width || window.innerWidth) - edge,
+    bottom: (viewport?.offsetTop || 0) + (viewport?.height || window.innerHeight) - edge,
+  };
+  const available = {
+    below: bounds.bottom - targetRect.bottom - gap,
+    above: targetRect.top - bounds.top - gap,
+    right: bounds.right - targetRect.right - gap,
+    left: targetRect.left - bounds.left - gap,
+  };
+  const required = {
+    below: balloonRect.height,
+    above: balloonRect.height,
+    right: balloonRect.width,
+    left: balloonRect.width,
+  };
+  // Prefer the familiar vertical callout when it fits, but let edge controls
+  // use the open side instead of squeezing a balloon over their target.
+  const preference = { below: 4, above: 3, right: 2, left: 1 };
+  const side = Object.keys(available).sort((a, b) => {
+    const aFits = available[a] >= required[a] ? 1 : 0;
+    const bFits = available[b] >= required[b] ? 1 : 0;
+    if (aFits !== bFits) return bFits - aFits;
+    if (aFits && bFits) return preference[b] - preference[a];
+    const aRoom = available[a] / Math.max(1, required[a]);
+    const bRoom = available[b] / Math.max(1, required[b]);
+    return bRoom - aRoom || preference[b] - preference[a];
+  })[0];
+  const centeredLeft = targetRect.left + (targetRect.width - balloonRect.width) / 2;
+  const centeredTop = targetRect.top + (targetRect.height - balloonRect.height) / 2;
+  const idealLeft = side === "right"
+    ? targetRect.right + gap
+    : side === "left"
+      ? targetRect.left - balloonRect.width - gap
+      : centeredLeft;
+  const idealTop = side === "below"
+    ? targetRect.bottom + gap
+    : side === "above"
+      ? targetRect.top - balloonRect.height - gap
+      : centeredTop;
+  const left = Math.max(bounds.left, Math.min(idealLeft, bounds.right - balloonRect.width));
+  const top = Math.max(bounds.top, Math.min(idealTop, bounds.bottom - balloonRect.height));
+  const targetCenterX = targetRect.left + targetRect.width / 2;
+  const targetCenterY = targetRect.top + targetRect.height / 2;
+  const tailLeft = Math.max(18, Math.min(targetCenterX - left, balloonRect.width - 18));
+  const tailTop = Math.max(18, Math.min(targetCenterY - top, balloonRect.height - 18));
 
-  balloon.dataset.side = above ? "above" : "below";
+  balloon.dataset.side = side;
   balloon.style.setProperty("--balloon-help-left", `${Math.round(left)}px`);
-  balloon.style.setProperty("--balloon-help-top", `${Math.round(Math.max(edge, top))}px`);
+  balloon.style.setProperty("--balloon-help-top", `${Math.round(top)}px`);
   balloon.style.setProperty("--balloon-help-tail-left", `${Math.round(tailLeft)}px`);
+  balloon.style.setProperty("--balloon-help-tail-top", `${Math.round(tailTop)}px`);
 }
 
 function hideBalloonHelp() {

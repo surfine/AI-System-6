@@ -1941,10 +1941,18 @@ function getActionAvailability() {
   }
   const hasSelectionServiceText = !!selectionContext?.text;
   const selectedTextLength = selectionContext?.text?.length || 0;
-  const docMapSource = resolveDocMapSource(selectionContext);
+  const docMapReadiness = resolveDocMapReadiness(selectionContext);
   const canMakeDocMap = isFinderWindow && currentFinderSelection
     ? !!currentFinderSelection.canMakeDocMap
-    : !!docMapSource?.text && docMapSource.text.length >= docMapSource.threshold;
+    : docMapReadiness.ready;
+  const canMakeDocMapSelection = docMapReadiness.selectionReady;
+  const canMakeDocMapSource = isFinderWindow && currentFinderSelection
+    ? !!currentFinderSelection.canMakeDocMap
+    : docMapReadiness.wholeReady;
+  const readerDocMapReadiness = winName === "reader" ? docMapReadinessForSurface("reader") : null;
+  const timeMachineDocMapReadiness = winName === "timeMachine"
+    ? window.AISystem6TimeMachine?.docMapReadiness?.()
+    : null;
   const activeEditable = getActiveEditableElement();
   const hasEditableText = !!String(activeEditable?.value || activeEditable?.textContent || "").trim();
   const canUseWritingTools = hasEditableText || (hasTeachTextBody && teachTextIsManuscript) || hasSelectionServiceText;
@@ -2163,6 +2171,8 @@ function getActionAvailability() {
     "selection-new-note": hasSelectionServiceText,
     "selection-ask-assistant": hasSelectionServiceText,
     "make-docmap": canMakeDocMap,
+    "make-docmap-selection": canMakeDocMapSelection,
+    "make-docmap-source": canMakeDocMapSource,
     "insert-last-reply": !!lastAssistantText,
     "clip-last-reply": !!lastAssistantText,
     "clear-chat": isAssistant && hasConversation,
@@ -2217,6 +2227,8 @@ function getActionAvailability() {
     "reader-clip-translate": winName === "reader" && activeReaderControlEnabled("#reader-clip-translate-button"),
     "reader-send-manuscript": winName === "reader" && activeReaderControlEnabled("#reader-send-manuscript"),
     "reader-make-docmap": winName === "reader" && activeReaderControlEnabled("#reader-docmap-button"),
+    "reader-docmap-selection": winName === "reader" && !!readerDocMapReadiness?.selectionReady,
+    "reader-docmap-source": winName === "reader" && !!readerDocMapReadiness?.wholeReady,
     "reader-open-clio-stage": winName === "reader" && activeReaderControlEnabled("#reader-open-clio-stage"),
     "focus-reader-question": winName === "reader" && !!currentReaderPage?.text,
     "docmap-save": winName === "docMap" && !!currentDocMap,
@@ -2231,6 +2243,11 @@ function getActionAvailability() {
     "docmap-fit-view": winName === "docMap" && !!currentDocMap,
     "docmap-zoom-out": winName === "docMap" && !!currentDocMap,
     "docmap-zoom-in": winName === "docMap" && !!currentDocMap,
+    "docmap-retry-pending": winName === "docMap" && !currentDocMap && !!activeDocMapTab()?.state?.pending?.retryable,
+    "time-machine-docmap": winName === "timeMachine" && !!timeMachineDocMapReadiness?.ready,
+    "time-machine-docmap-selection": winName === "timeMachine" && !!timeMachineDocMapReadiness?.selectionReady,
+    "time-machine-docmap-source": winName === "timeMachine" && !!timeMachineDocMapReadiness?.wholeReady,
+    "clio-stage-docmap": winName === "clioStage" && activeControlEnabled("#clio-stage-docmap"),
     "scrapbook-open-source": winName === "scrapbook" && activeControlEnabled("#open-scrap-source"),
     "scrapbook-toggle-translation": winName === "scrapbook" && activeControlEnabled("#toggle-scrap-translation"),
     "scrapbook-insert": winName === "scrapbook" && activeControlEnabled("#insert-scrap"),

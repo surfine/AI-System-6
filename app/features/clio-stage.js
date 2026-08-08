@@ -203,9 +203,10 @@ function updateClioStageTimer() {
 function syncClioStageControls() {
   const els = clioStageElements();
   const hasSlides = !!clioStageState.parsed;
-  [els.source, els.document, els.slide, els.cue, els.prev, els.next, els.docMap].forEach((button) => {
+  [els.source, els.document, els.slide, els.cue, els.prev, els.next].forEach((button) => {
     if (button) button.disabled = !hasSlides;
   });
+  syncDocMapEntryButton(els.docMap, chooseDocMapSourceCandidate(null, clioStageDocMapSource()));
   [["source", els.source], ["document", els.document], ["slide", els.slide], ["cue", els.cue]]
     .forEach(([mode, button]) => button?.setAttribute("aria-pressed", clioStageState.mode === mode ? "true" : "false"));
   if (els.prev) els.prev.disabled = !hasSlides || clioStageState.index <= 0 || ["document", "source"].includes(clioStageState.mode);
@@ -448,12 +449,12 @@ function describeClioStageAskScope() {
 function clioStageDocMapSource() {
   const markdown = clioStageState.source?.markdown || "";
   if (!markdown.trim()) return null;
-  return {
+  return docMapSourceWithRange({
     text: markdown,
     label: clioStageState.source?.title || t("clio_stage_label"),
     scope: "clioStage",
     threshold: typeof docMapMinDocumentChars === "number" ? docMapMinDocumentChars : 0,
-  };
+  });
 }
 
 function makeClioStageDocMap() {
@@ -497,4 +498,8 @@ window.AISystem6ClioStage = {
   parse: parseClioStageMarpDocument,
   splitSlides: splitClioStageSlides,
   handleKeydown: handleClioStageKeydown,
+  setStatus: (message) => {
+    const status = clioStageElements().status;
+    if (status) status.textContent = message;
+  },
 };

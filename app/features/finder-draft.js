@@ -14,7 +14,7 @@
 //   quick-draft-handoff.js      delivery actions
 //
 // Durable data lives on getActiveProject().quickDraft.workspace with a single
-// canonical schema (schemaVersion 2); the main writing route is only touched
+// canonical schema (schemaVersion 3); the main writing route is only touched
 // by explicit handoff actions.
 
 const FIRST_DAY_FORMAT = "first-day-hands-on";
@@ -59,6 +59,7 @@ const emptyStrategy = Object.freeze({
 const refs = {};
 let bound = false;
 let saveTimer = null;
+let pendingQuickDraftCommit = null;
 let requestController = null;
 
 // One window, three regions: the material shelf, the paper, the inspector.
@@ -147,6 +148,7 @@ function collectRefs() {
   refs.uncertainty = $("quick-draft-uncertainty");
   refs.risks = $("quick-draft-risks");
   refs.sourceMap = $("quick-draft-source-map");
+  refs.shelfTitle = $("quick-draft-shelf-title");
   refs.versionsList = $("quick-draft-versions-list");
   refs.protectState = $("quick-draft-protect-state");
   refs.stackState = $("quick-draft-stack-state");
@@ -184,7 +186,7 @@ function titleFromBody(body = "") {
     .slice(0, 42);
 }
 
-// ---- Workspace schema (schemaVersion 2) --------------------------------
+// ---- Workspace schema (schemaVersion 3) --------------------------------
 // All Quick Draft persistence lives in one canonical shape:
 //
 //   { schemaVersion, title, body, intake: {}, materials: [], strategy: {},
@@ -214,8 +216,9 @@ function blankToolInputs() {
 
 function blankQuickDraftWorkspace() {
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     title: "",
+    titleMode: "auto",
     body: "",
     intake: {
       ...emptyIntake,
@@ -236,6 +239,7 @@ function blankQuickDraftWorkspace() {
       negative: "",
       negativeUpdatedAt: "",
     },
+    versions: [],
     canvas: blankQuickDraftCanvas(),
     projectDocId: "",
     savedStatus: "saved",
@@ -288,6 +292,18 @@ function normalizeVentEntry(entry, index = 0) {
     text: String(source.text || ""),
     createdAt: String(source.createdAt || ""),
     sourceKind: String(source.sourceKind || "clioTalk-vent"),
+  };
+}
+
+function normalizeQuickDraftVersion(entry, index = 0) {
+  const source = entry && typeof entry === "object" ? entry : {};
+  return {
+    id: String(source.id || `version-${index + 1}`),
+    body: String(source.body ?? source.text ?? ""),
+    title: String(source.title || ""),
+    createdAt: String(source.createdAt || source.timestamp || ""),
+    reason: String(source.reason || "before-ai"),
+    source: String(source.source || source.sourceKind || "quick-draft"),
   };
 }
 
@@ -359,6 +375,16 @@ function normalizeQuickDraftWorkspace(value = {}, legacy = {}) {
     scenario,
   };
   const intake = normalizeIntake(source.intake, legacy);
+  const migratedDumps = intake.ventLog
+    .filter((entry) => entry.sourceKind === "quick-draft-dump")
+    .map((entry, index) => normalizeQuickDraftVersion(entry, index));
+  intake.ventLog = intake.ventLog.filter((entry) => entry.sourceKind !== "quick-draft-dump");
+  const explicitVersions = (Array.isArray(source.versions) ? source.versions : []).map(normalizeQuickDraftVersion);
+  const versionsById = new Map();
+  [...explicitVersions, ...migratedDumps].forEach((version) => {
+    const identity = version.id || `${version.createdAt}:${version.body}`;
+    if (version.body.trim() && !versionsById.has(identity)) versionsById.set(identity, version);
+  });
   const compositionSource = source.composition && typeof source.composition === "object" ? source.composition : {};
   const composition = {
     currentKey: String(compositionSource.currentKey || ""),
@@ -386,8 +412,9 @@ function normalizeQuickDraftWorkspace(value = {}, legacy = {}) {
   );
   return {
     ...blankQuickDraftWorkspace(),
-    schemaVersion: 2,
+    schemaVersion: 3,
     title,
+    titleMode: source.titleMode === "manual" ? "manual" : "auto",
     body: String(body || ""),
     intake: {
       ...intake,
@@ -403,6 +430,7 @@ function normalizeQuickDraftWorkspace(value = {}, legacy = {}) {
     adjustmentLayers: normalizeAdjustmentLayers(source.adjustmentLayers || legacy.adjustmentLayers),
     protectedRanges: normalizeAdjustmentLayerMask(source.protectedRanges || legacy.protectedRanges),
     composition,
+    versions: [...versionsById.values()].slice(-100),
     canvas: normalizeQuickDraftCanvas(source.canvas || legacy.canvas),
     projectDocId: String(source.projectDocId || legacy.projectDocId || ""),
     savedStatus: source.savedStatus === "modified" ? "modified" : "saved",
@@ -484,10 +512,10 @@ function currentAnnotations() {
 function workspaceSnapshot(record = activeProjectQuickDraft({ create: false })?.record) {
   const previous = normalizeQuickDraftRecord(record);
   const body = refs.draft?.value || "";
+  const manualTitle = String(refs.titleInput?.value || "").trim();
+  const titleMode = previous.workspace.titleMode === "manual" && manualTitle ? "manual" : "auto";
   const bodyTitle = titleFromBody(body);
-  const titleValue = bodyTitle && bodyTitle !== t("quick_draft_title")
-    ? bodyTitle
-    : (previous.workspace.title || bodyTitle);
+  const titleValue = titleMode === "manual" ? manualTitle : (bodyTitle || previous.workspace.title);
   const subjectValue = titleValue && titleValue !== t("quick_draft_title")
     ? titleValue
     : (refs.firstDaySubject?.value || previous.workspace.intake.setup.firstDaySubject || "");
@@ -510,6 +538,7 @@ function workspaceSnapshot(record = activeProjectQuickDraft({ create: false })?.
   };
   return {
     title: titleValue,
+    titleMode,
     body,
     intake: {
       ...previous.workspace.intake,
@@ -519,6 +548,7 @@ function workspaceSnapshot(record = activeProjectQuickDraft({ create: false })?.
     materials: previous.workspace.materials,
     strategy: previous.workspace.strategy,
     composition: previous.workspace.composition,
+    versions: previous.workspace.versions,
     protectedRanges: previous.workspace.protectedRanges,
     canvas: previous.workspace.canvas,
     projectDocId: previous.workspace.projectDocId,
@@ -574,28 +604,30 @@ function refreshQuickDraftSelectControls() {
 // Persistence has explicit completion semantics: only after saveDeskState()
 // resolves successfully is the state marked Saved. A failed write leaves the
 // record Modified and shows an unsaved state; it never claims Saved.
-async function persistQuickDraftWorkspace() {
-  const slot = activeProjectQuickDraft({ create: false });
-  if (!slot?.project?.quickDraft?.workspace) return true;
+async function persistQuickDraftWorkspace(projectId = activeProjectId) {
+  const project = typeof projects !== "undefined"
+    ? projects.find((item) => item.id === projectId)
+    : activeProjectQuickDraft({ create: false })?.project;
+  if (!project?.quickDraft?.workspace) return true;
   const saved = typeof saveDeskState === "function" ? await saveDeskState() : true;
   if (!saved) {
-    if (slot.project.quickDraft.workspace) {
-      slot.project.quickDraft.workspace.savedStatus = "modified";
-      slot.project.quickDraft.savedStatus = "modified";
+    if (project.quickDraft.workspace) {
+      project.quickDraft.workspace.savedStatus = "modified";
+      project.quickDraft.savedStatus = "modified";
     }
     setSaveState("modified");
     setQuickDraftStatus(t("quick_draft_save_failed"));
     return false;
   }
-  if (slot.project.quickDraft.workspace) {
-    slot.project.quickDraft.workspace.savedStatus = "saved";
-    slot.project.quickDraft.savedStatus = "saved";
+  if (project.quickDraft.workspace) {
+    project.quickDraft.workspace.savedStatus = "saved";
+    project.quickDraft.savedStatus = "saved";
   }
   setSaveState("saved");
   return true;
 }
 
-function saveQuickDraft(patch = {}, { debounce = false, announce = false } = {}) {
+function updateQuickDraft(patch = {}, { announce = false } = {}) {
   const slot = activeProjectQuickDraft();
   if (!slot) {
     setQuickDraftStatus(t("quick_draft_no_project"));
@@ -608,7 +640,7 @@ function saveQuickDraft(patch = {}, { debounce = false, announce = false } = {})
     ...workspaceSnapshot(slot.record),
     ...patchWorkspace,
     updatedAt: now,
-    savedStatus: debounce ? "modified" : "saving",
+    savedStatus: "modified",
   }, slot.record);
   const nextRecord = normalizeQuickDraftRecord({
     ...slot.record,
@@ -622,13 +654,50 @@ function saveQuickDraft(patch = {}, { debounce = false, announce = false } = {})
   updateSourceCount();
   setSaveState(workspace.savedStatus);
   if (announce) setQuickDraftStatus(t("quick_draft_saving"));
-  clearTimeout(saveTimer);
-  if (debounce) {
-    saveTimer = setTimeout(() => { persistQuickDraftWorkspace(); }, 550);
-  } else {
-    persistQuickDraftWorkspace();
-  }
   return nextRecord;
+}
+
+async function commitQuickDraft(patch = {}, options = {}) {
+  const slot = activeProjectQuickDraft();
+  if (!slot) return { ok: false, error: new Error("NO_ACTIVE_PROJECT") };
+  const projectId = slot.project.id;
+  const previous = slot.project.quickDraft;
+  const record = updateQuickDraft(patch, options);
+  setSaveState("saving");
+  const ok = await persistQuickDraftWorkspace(projectId);
+  if (!ok) {
+    slot.project.quickDraft = previous;
+    setSaveState("modified");
+    return { ok: false, error: new Error("QUICK_DRAFT_COMMIT_FAILED") };
+  }
+  return { ok: true, record: slot.project.quickDraft || record };
+}
+
+function scheduleQuickDraftCommit(projectId) {
+  clearTimeout(saveTimer);
+  pendingQuickDraftCommit = { projectId };
+  saveTimer = setTimeout(async () => {
+    const pending = pendingQuickDraftCommit;
+    pendingQuickDraftCommit = null;
+    if (pending) await persistQuickDraftWorkspace(pending.projectId);
+  }, 550);
+}
+
+async function flushPendingQuickDraftCommit() {
+  if (!pendingQuickDraftCommit) return true;
+  clearTimeout(saveTimer);
+  const pending = pendingQuickDraftCommit;
+  pendingQuickDraftCommit = null;
+  return persistQuickDraftWorkspace(pending.projectId);
+}
+
+function saveQuickDraft(patch = {}, { debounce = false, announce = false } = {}) {
+  const record = updateQuickDraft(patch, { announce });
+  if (!record) return null;
+  const projectId = activeProjectId;
+  if (debounce) scheduleQuickDraftCommit(projectId);
+  else void persistQuickDraftWorkspace(projectId);
+  return record;
 }
 
 function setQuickDraftStatus(message) {
@@ -703,9 +772,33 @@ function syncQuickDraftPaperFromState(record = activeProjectQuickDraft({ create:
     workspace.composition?.negativeUpdatedAt
     || workspace.composition?.composite
     || quickDraftLastComposite
-    || dumpEntries(workspace.intake).length
+    || workspace.versions.length
   );
   setQuickDraftPaperSurface(drafted ? "editor" : "intake");
+}
+
+// Secondary controls are disabled, never removed: the position of a key is
+// part of the layout, and a disabled key can say why it is off in Balloon Help.
+function syncQuickDraftControlAvailability(hasBody) {
+  document.querySelectorAll('[data-quick-draft-display="grain"], [data-quick-draft-display="read"]')
+    .forEach((button) => {
+      button.disabled = !hasBody;
+      if (!button.dataset.balloonHelpDisabled) button.dataset.balloonHelpDisabled = "quick_draft_needs_body";
+    });
+  document.querySelectorAll('[data-quick-draft-drawer="inspector"]').forEach((button) => {
+    button.disabled = !hasBody;
+    if (!button.dataset.balloonHelpDisabled) button.dataset.balloonHelpDisabled = "quick_draft_needs_body";
+  });
+  const deliver = refs.deliverMenu;
+  if (deliver) {
+    deliver.classList.toggle("is-disabled", !hasBody);
+    const summary = deliver.querySelector("summary");
+    if (summary) {
+      summary.setAttribute("aria-disabled", hasBody ? "false" : "true");
+      summary.dataset.balloonHelpDisabled = "quick_draft_needs_body";
+    }
+    if (!hasBody) deliver.open = false;
+  }
 }
 
 // The details bar reports and never sets: what is protected, and what the
@@ -827,6 +920,7 @@ function renderQuickDraft(record = activeProjectQuickDraft({ create: false })?.r
   renderQuickDraftVersions(source);
   syncQuickDraftPaperFromState(source);
   updateQuickDraftShellState(source);
+  syncQuickDraftControlAvailability(Boolean(String(refs.draft?.value || source.workspace.body || "").trim()));
   if (quickDraftSurfaceMode === "canvas") renderQuickDraftCanvas(source);
   refs.articleViewButton?.classList.toggle("is-active", quickDraftSurfaceMode !== "canvas");
   refs.canvasViewButton?.classList.toggle("is-active", quickDraftSurfaceMode === "canvas");
@@ -867,7 +961,10 @@ function bind() {
       syncQuickDraftTemplateUi();
       updateDraftStats();
       updateSourceCount();
-      renderDecisionStatuses(saveQuickDraft({}, { debounce: true }));
+      const titlePatch = event.target === refs.titleInput
+        ? { workspace: { title: String(refs.titleInput.value || "").trim(), titleMode: refs.titleInput.value.trim() ? "manual" : "auto" } }
+        : {};
+      renderDecisionStatuses(saveQuickDraft(titlePatch, { debounce: true }));
     });
   });
   refs.form.addEventListener("change", (event) => {
@@ -957,6 +1054,20 @@ function bind() {
       syncQuickDraftDrawerButtons();
     });
   });
+  document.querySelectorAll("[data-quick-draft-drawer-close]").forEach((button) => {
+    button.addEventListener("click", () => {
+      refs.form?.classList.remove("is-shelf-open", "is-inspector-open");
+      syncQuickDraftDrawerButtons();
+    });
+  });
+  // The strip of paper a drawer never covers is the easiest way back.
+  document.querySelector(".quick-draft-paper")?.addEventListener("click", (event) => {
+    const open = refs.form?.classList.contains("is-shelf-open") || refs.form?.classList.contains("is-inspector-open");
+    if (!open) return;
+    event.preventDefault();
+    refs.form?.classList.remove("is-shelf-open", "is-inspector-open");
+    syncQuickDraftDrawerButtons();
+  });
   document.querySelector("[data-quick-draft-open-editor]")?.addEventListener("click", () => {
     setQuickDraftPaperSurface("editor", { manual: true });
     refs.draft?.focus();
@@ -994,6 +1105,19 @@ function bind() {
       if (action === "teachtext") transferQuickDraftToTeachText();
       if (action === "copy-markdown") copyQuickDraftMarkdown();
       if (action === "export-markdown") exportQuickDraftMarkdown();
+      return;
+    }
+    const layerToggle = event.target.closest("[data-quick-draft-layer-toggle]");
+    if (layerToggle) {
+      toggleQuickDraftLayerDetail(layerToggle.dataset.quickDraftLayerToggle || "");
+      return;
+    }
+    const versionButton = event.target.closest("[data-quick-draft-version]");
+    if (versionButton) {
+      restoreQuickDraftVersion(
+        versionButton.dataset.quickDraftVersion || "",
+        versionButton.dataset.quickDraftVersionKind || "version"
+      );
       return;
     }
     const move = event.target.closest("[data-quick-draft-adjustment-move]");
@@ -1105,7 +1229,11 @@ async function open(options = {}) {
   syncQuickDraftSurfaceFromState();
   await openWindow("quickDraft", { ...options, skipQuickDraftEntrypoint: true });
   const win = getWindow("quickDraft");
-  if (!options.skipSideAsk && typeof arrangeWindowAssistantSplit === "function" && !isMultiFinderMode()) {
+  // Pairing is desktop grammar: it means two windows side by side, and a phone
+  // has no side by side — the paired window would take the screen and Quick
+  // Draft would be the one that disappears. SideAsk stays an explicit action.
+  const portrait = typeof isPortraitDocumentFlow === "function" && isPortraitDocumentFlow();
+  if (!options.skipSideAsk && !portrait && typeof arrangeWindowAssistantSplit === "function" && !isMultiFinderMode()) {
     await arrangeWindowAssistantSplit("quickDraft");
   }
   const rect = win?.getBoundingClientRect();
@@ -1130,12 +1258,15 @@ window.AISystem6QuickDraftRuntime = Object.freeze({
   normalizeQuickDraftRecord,
   normalizeQuickDraftWorkspace,
   normalizeScenario,
+  commitQuickDraft,
+  flushPendingQuickDraftCommit,
   persistQuickDraftWorkspace,
   paperSurface: () => quickDraftPaperSurface,
   quickDraftAliases,
   quickDraftModelAvailable,
   refs,
   saveQuickDraft,
+  updateQuickDraft,
   setBusy,
   setQuickDraftPaperSurface,
   setQuickDraftStatus,

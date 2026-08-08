@@ -90,7 +90,14 @@ function formatLabel(value = refs.format?.value) {
 
 function updateQuickDraftChromeSummary() {
   const body = String(refs.draft?.value || "");
-  const title = String(titleFromBody(body) || refs.titleInput?.value || "").trim();
+  const workspace = normalizeQuickDraftRecord(activeProjectQuickDraft({ create: false })?.record).workspace;
+  const editingManualTitle = document.activeElement === refs.titleInput && String(refs.titleInput?.value || "").trim();
+  const title = String(
+    editingManualTitle
+    || (workspace.titleMode === "manual" ? workspace.title : titleFromBody(body))
+    || refs.titleInput?.value
+    || ""
+  ).trim();
   const format = normalizeScenario(refs.format?.value || FIRST_DAY_FORMAT);
   const subject = title && title !== t("quick_draft_title") ? title : "";
   const topline = [formatLabel(format), durationLabel(refs.duration?.value, format), subject]
@@ -101,7 +108,7 @@ function updateQuickDraftChromeSummary() {
     refs.windowTitle.textContent = subject ? `${baseTitle} · ${subject}` : baseTitle;
   }
   if (refs.titleDisplay) refs.titleDisplay.textContent = subject || t("quick_draft_untitled");
-  if (refs.titleInput) refs.titleInput.value = subject || "";
+  if (refs.titleInput && document.activeElement !== refs.titleInput) refs.titleInput.value = subject || "";
   if (refs.firstDaySubject) refs.firstDaySubject.value = subject || "";
   if (refs.settingsSummary) {
     refs.settingsSummary.textContent = `${t("quick_draft_settings_card")}: ${topline || t("quick_draft_untitled")}`;
@@ -303,50 +310,124 @@ function quickDraftFailureMessage(error) {
 }
 
 function restoreDumpToBody() {
-  const intake = intakeSnapshot();
-  const latest = dumpEntries(intake).at(-1);
-  if (!latest?.text) {
+  const slot = activeProjectQuickDraft();
+  const latest = slot?.record?.workspace?.versions?.at(-1);
+  if (!latest?.body) {
     setQuickDraftStatus(t("quick_draft_dump_empty"));
     return false;
   }
-  refs.draft.value = latest.text;
+  const previousBody = String(refs.draft?.value || "");
+  refs.draft.value = latest.body;
   renderQuickDraftPreview();
-  saveQuickDraft({}, { debounce: false });
-  setQuickDraftStatus(t("quick_draft_dump_restored"));
-  refs.draft?.focus();
-  return true;
+  const version = normalizeQuickDraftVersion({ id: stableId("version"), body: previousBody, title: slot.record.workspace.title, createdAt: new Date().toISOString(), reason: "restore", source: "quick-draft" });
+  return commitQuickDraft({ workspace: { body: latest.body, versions: [...slot.record.workspace.versions, version].slice(-100) } }).then((result) => {
+    if (!result.ok) {
+      refs.draft.value = previousBody;
+      setQuickDraftStatus(t("quick_draft_save_failed"));
+      return false;
+    }
+    setQuickDraftStatus(t("quick_draft_dump_restored"));
+    refs.draft?.focus();
+    return true;
+  });
+}
+
+// Versions are a list of objects, newest first, with the negative pinned at the
+// bottom: it is the one version the writer never wrote over. Every row says
+// when it was kept and why, and every row can be gone back to.
+function quickDraftVersionRow({ label, meta, id, kind }) {
+  const row = document.createElement("div");
+  row.className = "quick-draft-version-row";
+  const text = document.createElement("span");
+  const name = document.createElement("b");
+  name.textContent = label;
+  text.append(name);
+  if (meta) {
+    const small = document.createElement("small");
+    small.textContent = meta;
+    text.append(small);
+  }
+  row.append(text);
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "btn mini-btn";
+  button.dataset.quickDraftVersion = String(id || "");
+  if (kind) button.dataset.quickDraftVersionKind = kind;
+  button.textContent = t("quick_draft_version_restore");
+  row.append(button);
+  return row;
 }
 
 function renderQuickDraftVersions(record = activeProjectQuickDraft({ create: false })?.record) {
   if (!refs.versionsList) return;
-  const versions = dumpEntries(normalizeQuickDraftRecord(record).workspace.intake);
+  const workspace = normalizeQuickDraftRecord(record).workspace;
+  const versions = workspace.versions || [];
+  const negativeAt = String(workspace.composition?.negativeUpdatedAt || "");
   refs.versionsList.replaceChildren();
-  if (!versions.length) {
+  if (!versions.length && !negativeAt) {
     refs.versionsList.textContent = t("quick_draft_versions_empty");
     refs.versionsList.classList.add("is-empty");
     if (refs.restoreDumpButton) refs.restoreDumpButton.disabled = true;
     return;
   }
   refs.versionsList.classList.remove("is-empty");
-  const list = document.createElement("ul");
-  [...versions].reverse().slice(0, 12).forEach((entry, index) => {
-    const li = document.createElement("li");
-    const stamp = entry.createdAt
-      ? new Date(entry.createdAt).toLocaleTimeString(currentLanguage === "zh" ? "zh-CN" : "en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-      : `#${versions.length - index}`;
-    const label = document.createElement("button");
-    label.type = "button";
-    label.className = "btn mini-btn quick-draft-version-chip";
-    label.dataset.quickDraftVersion = String(entry.id || "");
-    label.textContent = `${stamp} · ${textExcerpt(entry.text, 36)}`;
-    li.append(label);
-    list.append(li);
+  const stampOf = (value) => (value
+    ? new Date(value).toLocaleTimeString(currentLanguage === "zh" ? "zh-CN" : "en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+    : "");
+  [...versions].reverse().slice(0, 12).forEach((entry) => {
+    refs.versionsList.append(quickDraftVersionRow({
+      label: textExcerpt(entry.body, 24) || t("quick_draft_versions"),
+      meta: [stampOf(entry.createdAt), entry.reason].filter(Boolean).join(" · "),
+      id: entry.id,
+      kind: "version",
+    }));
   });
-  refs.versionsList.append(list);
-  if (refs.restoreDumpButton) refs.restoreDumpButton.disabled = false;
+  if (negativeAt) {
+    refs.versionsList.append(quickDraftVersionRow({
+      label: t("quick_draft_negative"),
+      meta: stampOf(negativeAt),
+      id: "negative",
+      kind: "negative",
+    }));
+  }
+  if (refs.restoreDumpButton) refs.restoreDumpButton.disabled = !versions.length;
+}
+
+// Going back to a version is not a delete: the body being replaced is kept as
+// a version first, so the move is reversible in the same list.
+function restoreQuickDraftVersion(id = "", kind = "version") {
+  const slot = activeProjectQuickDraft();
+  if (!slot) {
+    setQuickDraftStatus(t("quick_draft_no_project"));
+    return false;
+  }
+  const workspace = normalizeQuickDraftRecord(slot.record).workspace;
+  const target = kind === "negative"
+    ? { body: String(workspace.composition?.negative || ""), id: "negative" }
+    : (workspace.versions || []).find((entry) => entry.id === id);
+  if (!target || !String(target.body || "").trim()) {
+    setQuickDraftStatus(t("quick_draft_version_empty"));
+    return false;
+  }
+  const current = String(refs.draft?.value || workspace.body || "");
+  const kept = current.trim()
+    ? [...(workspace.versions || []), {
+      id: `version-${Date.now()}`,
+      body: current,
+      title: String(workspace.title || ""),
+      createdAt: new Date().toISOString(),
+      reason: "before-restore",
+      source: "quick-draft",
+    }]
+    : workspace.versions;
+  if (refs.draft) refs.draft.value = target.body;
+  saveQuickDraft({ workspace: { body: target.body, versions: kept } }, { debounce: false });
+  renderQuickDraft(activeProjectQuickDraft({ create: false })?.record);
+  setQuickDraftStatus(t("quick_draft_version_restored"));
+  return true;
 }
 
 async function copyQuickDraftMarkdown() {

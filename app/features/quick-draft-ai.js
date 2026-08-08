@@ -95,7 +95,12 @@ async function requestQuickDraft(stage = "brief", options = {}) {
 
   if (requestController) requestController.abort();
   requestController = new AbortController();
-  saveQuickDraft({}, { debounce: false });
+  const initialCommit = await commitQuickDraft({});
+  if (!initialCommit.ok) {
+    requestController = null;
+    setQuickDraftStatus(t("quick_draft_save_failed"));
+    return false;
+  }
   setBusy(true);
   setQuickDraftStatus(ventOutlineTask
     ? t("quick_draft_collecting_vent")
@@ -229,7 +234,7 @@ async function requestQuickDraft(stage = "brief", options = {}) {
             followup: annotations.followup || t("quick_draft_placeholder_draft_rejected"),
           },
         };
-        saveQuickDraft(patch, { debounce: false });
+        await commitQuickDraft(patch);
         renderQuickDraft(activeProjectQuickDraft({ create: false })?.record);
         return false;
       }
@@ -237,27 +242,26 @@ async function requestQuickDraft(stage = "brief", options = {}) {
       const rawNext = String(data.draft || "").trim();
       const verification = protectedTools.verifyProtectedSentinels(rawNext, sentinelized.sentinels);
       if (!verification.valid) {
-        saveQuickDraft({}, { debounce: false });
+        await commitQuickDraft({});
         setQuickDraftStatus(t("quick_draft_protect_failed", verification.errors[0] || ""));
         return false;
       }
       const finalBody = protectedTools.restoreProtectedSentinels(rawNext, sentinelized.sentinels);
       if (previousBody && !hasMeaningfulDraftChange(previousBody, finalBody)) {
-        saveQuickDraft(patch, { debounce: false });
+        await commitQuickDraft(patch);
         setQuickDraftStatus(t("quick_draft_no_revision"));
         return false;
       }
       if (previousBody) {
-        const dumpEntry = normalizeVentEntry({
-          id: stableId("dump"),
-          text: previousBody,
+        const version = normalizeQuickDraftVersion({
+          id: stableId("version"),
+          body: previousBody,
+          title: slot.record.workspace.title,
           createdAt: new Date().toISOString(),
-          sourceKind: "quick-draft-dump",
-        }, intake.ventLog.length);
-        patch.workspace.intake = normalizeIntake({
-          ...nextIntake,
-          ventLog: [...(nextIntake.ventLog || []), dumpEntry],
+          reason: "before-ai",
+          source: "quick-draft",
         });
+        patch.workspace.versions = [...slot.record.workspace.versions, version].slice(-100);
       }
       if (!hasRecordedNegative()) {
         patch.workspace.composition = {
@@ -269,23 +273,29 @@ async function requestQuickDraft(stage = "brief", options = {}) {
       refs.draft.value = finalBody;
       patch.draft = refs.draft.value;
       patch.workspace.body = refs.draft.value;
-      patch.workspace.title = titleFromBody(refs.draft.value);
+      if (slot.record.workspace.titleMode !== "manual") patch.workspace.title = titleFromBody(refs.draft.value);
     }
     if (stage === "draft" && !patch.workspace.body) {
-      saveQuickDraft(patch, { debounce: false });
+      await commitQuickDraft(patch);
       setQuickDraftStatus(t("quick_draft_parse_failed"));
       return false;
     }
     if (stage !== "draft") {
       const appended = await appendCommandResultToClioTalk(data, taskKind);
       if (!appended) {
-        saveQuickDraft(patch, { debounce: false });
+        await commitQuickDraft(patch);
         setQuickDraftStatus(t("quick_draft_command_empty"));
         return false;
       }
     }
-    const saved = saveQuickDraft(patch, { debounce: false });
-    renderQuickDraft(saved);
+    const previousBody = slot.record.workspace.body;
+    const committed = await commitQuickDraft(patch);
+    if (!committed.ok) {
+      if (refs.draft) refs.draft.value = previousBody;
+      setQuickDraftStatus(t("quick_draft_save_failed"));
+      return false;
+    }
+    renderQuickDraft(committed.record);
     setQuickDraftStatus(t("quick_draft_done"));
     return true;
   } catch (error) {
@@ -381,7 +391,12 @@ async function requestMingmingQuickDraft() {
 
   if (requestController) requestController.abort();
   requestController = new AbortController();
-  saveQuickDraft({}, { debounce: false });
+  const initialCommit = await commitQuickDraft({});
+  if (!initialCommit.ok) {
+    requestController = null;
+    setQuickDraftStatus(t("quick_draft_save_failed"));
+    return false;
+  }
   setBusy(true);
   setQuickDraftStatus(t("quick_draft_writing_first_day"));
 
@@ -441,21 +456,20 @@ async function requestMingmingQuickDraft() {
       sourceMap: sourceRecords.map((source) => ({ id: source.id, label: source.label })),
       workspace: {
         body: finalBody,
-        title: titleFromBody(finalBody),
+        ...(slot.record.workspace.titleMode === "manual" ? {} : { title: titleFromBody(finalBody) }),
         materials: sourceRecords.map((source) => ({ id: source.id, label: source.label })),
       },
     };
     if (previousBody) {
-      const dumpEntry = normalizeVentEntry({
-        id: stableId("dump"),
-        text: previousBody,
+      const version = normalizeQuickDraftVersion({
+        id: stableId("version"),
+        body: previousBody,
+        title: slot.record.workspace.title,
         createdAt: new Date().toISOString(),
-        sourceKind: "quick-draft-dump",
-      }, intake.ventLog.length);
-      patch.workspace.intake = normalizeIntake({
-        ...intake,
-        ventLog: [...(intake.ventLog || []), dumpEntry],
+        reason: "before-ai",
+        source: "quick-draft",
       });
+      patch.workspace.versions = [...slot.record.workspace.versions, version].slice(-100);
     }
     if (!hasRecordedNegative()) {
       patch.workspace.composition = {
@@ -465,8 +479,13 @@ async function requestMingmingQuickDraft() {
       };
     }
     refs.draft.value = finalBody;
-    const saved = saveQuickDraft(patch, { debounce: false });
-    renderQuickDraft(saved);
+    const committed = await commitQuickDraft(patch);
+    if (!committed.ok) {
+      refs.draft.value = previousBody;
+      setQuickDraftStatus(t("quick_draft_save_failed"));
+      return false;
+    }
+    renderQuickDraft(committed.record);
     setQuickDraftStatus(t("quick_draft_done"));
     return true;
   } catch (error) {
@@ -556,7 +575,6 @@ async function appendCommandResultToClioTalk(data = {}, taskKind = "") {
 function collectVentOutline() {
   if (refs.format) refs.format.value = FIRST_DAY_FORMAT;
   syncQuickDraftTemplateUi();
-  saveQuickDraft({}, { debounce: false });
   return requestQuickDraft("brief", {
     taskKind: "collect-vent-outline",
     userNotes: currentLanguage === "zh"
@@ -609,13 +627,15 @@ async function runClioTalkAction(kind = "", options = {}) {
 }
 
 async function askClioTalk() {
-  saveQuickDraft({}, { debounce: false });
+  const committed = await commitQuickDraft({});
+  if (!committed.ok) return false;
   if (typeof arrangeWindowAssistantSplit === "function") {
     await arrangeWindowAssistantSplit("quickDraft");
     setQuickDraftStatus(t("quick_draft_sideask_done"));
   } else {
     await openWindow("assistant");
   }
+  return true;
 }
 
 function startWritingNow() {

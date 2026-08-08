@@ -487,7 +487,7 @@
     /* `auto` collapses the assets track to 18px here (its grid rows resolve
        against the nested scrollable list), which clips the template/upload
        row. Size the track to its content so the templates stay visible. */
-    grid-template-rows: max-content minmax(360px, 1fr) minmax(320px, auto);
+    grid-template-rows: max-content minmax(360px, 1fr) minmax(var(--bureaucracy-copy-min-height), auto);
     grid-template-areas:
       "assets"
       "preview"
@@ -500,7 +500,7 @@
   }
 
   .bureaucracy-copy-panel {
-    min-height: 320px;
+    min-height: var(--bureaucracy-copy-min-height);
   }
 }
 

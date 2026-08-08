@@ -12,6 +12,19 @@ function setTeachTextStatus(key) {
   updateMenuState();
 }
 
+function syncTeachTextWindowTitle() {
+  if (!teachTextTitleEl) return;
+  const appTitle = t("teachtext");
+  const documentTitle = typeof getTeachTextDocumentName === "function"
+    ? getTeachTextDocumentName({ fallback: teachTextNameInput?.value?.trim() || "" })
+    : teachTextNameInput?.value?.trim() || "";
+  teachTextTitleEl.dataset.i18n = "teachtext";
+  teachTextTitleEl.textContent = appTitle;
+  teachTextTitleEl.title = documentTitle && documentTitle !== appTitle
+    ? `${appTitle} — ${documentTitle}`
+    : appTitle;
+}
+
 function teachTextRoleLabel(role = teachTextDocumentRole) {
   return t(role === "manuscript" ? "document_role_manuscript" : "document_role_scratch_file");
 }
@@ -53,12 +66,14 @@ function captureActiveTeachTextTabState() {
 
 function renderTeachTextTabs() {
   if (!teachTextTabsEl || typeof getDocumentTabs !== "function") return;
+  syncTeachTextWindowTitle();
   const tabs = getDocumentTabs("teachText")
     .filter((tab) => workspaceProfile !== workspaceProfileDesktop || tab.role === "scratch_file");
   const activeId = getActiveTeachTextDocumentTab()?.id;
   renderTdiTabStrip(teachTextTabsEl, tabs, {
     activeId,
     labelFor: (tab) => tab.title || teachTextRoleLabel(tab.role),
+    compactLabelFor: (tab) => tab.title || teachTextRoleLabel(tab.role),
     sublabelFor: (tab) => teachTextRoleLabel(tab.role),
     dirtyFor: (tab) => ["modified", "unsaved"].includes(tab.state?.statusKey || ""),
     closableFor: () => tabs.length > 1,
@@ -124,7 +139,7 @@ function loadTeachTextTabState(tab) {
   teachTextNameInput.value = String(file?.name || state.name || tab.title || t("untitled"));
   teachTextFolderInput.value = String(state.folder || preferredFolderName());
   teachTextBodyInput.value = typeof state.body === "string" ? state.body : (file?.body || "");
-  teachTextTitleEl.textContent = teachTextNameInput.value;
+  syncTeachTextWindowTitle();
   resetTeachTextExportState();
   setTeachTextStatus(state.statusKey || (file ? "saved" : role === "manuscript" ? "modified" : "unsaved"));
   refreshTeachTextDocumentState();
@@ -169,7 +184,7 @@ function openTeachTextStateInTab({
     activeTextFileId = state.activeTextFileId || null;
     teachTextFileLabel = normalizeFileLabel(state.label || "");
     setTeachTextWorkflowState(state.workflowState || "");
-    teachTextTitleEl.textContent = title;
+    syncTeachTextWindowTitle();
     teachTextNameInput.value = state.name || title;
     teachTextFolderInput.value = state.folder || preferredFolderName();
     teachTextBodyInput.value = state.body || "";
@@ -764,8 +779,7 @@ function scheduleTeachTextTabSave() {
 }
 
 function syncTeachTextNameDisplay() {
-  const name = getTeachTextDocumentName();
-  if (teachTextTitleEl) teachTextTitleEl.textContent = name;
+  syncTeachTextWindowTitle();
   if (typeof updateQuestionSheetManuscriptTitle === "function") updateQuestionSheetManuscriptTitle();
   if (typeof updateReviewDeskStatusTitle === "function") updateReviewDeskStatusTitle();
 }

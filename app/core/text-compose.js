@@ -8,10 +8,8 @@
 // range enforcement all take data and return data. The model call is not
 // pure, so it is injected — composeDocument never talks to a model itself.
 //
-// Every layer reads the negative and never another layer's output, so each
-// prefix of the stack is a separate cache key. Computing the full stack also
-// caches every shorter prefix, which is what makes "switch the last layer off
-// and look again" a cache hit with no model call.
+// One Apply is one composite request for the exact enabled stack. We never
+// speculate by precomputing shorter prefixes the writer has not requested.
 //
 // Protected ranges are a property of the text, not of a layer: the writer
 // protects a quote from everything. Enforcement is immutable sentinel based
@@ -49,7 +47,16 @@ function textComposeHash(text = "") {
 // ranges. A layer reads the negative, so the negative text is part of the key;
 // the strength is a transform parameter, not a blend amount, so it is part of
 // the signature too.
-function composeCacheKey({ source = "", layers = [], protectedRanges = [] } = {}) {
+function composeCacheKey({
+  source = "",
+  layers = [],
+  protectedRanges = [],
+  language = "",
+  targetFormat = "",
+  targetDuration = "",
+  modelId = "",
+  promptVersion = 1,
+} = {}) {
   const signature = (Array.isArray(layers) ? layers : [])
     .map((layer) => ({
       kind: String(layer?.kind || ""),
@@ -63,19 +70,23 @@ function composeCacheKey({ source = "", layers = [], protectedRanges = [] } = {}
     String(source || ""),
     signature,
     protectedSignature,
+    String(language || ""),
+    String(targetFormat || ""),
+    String(targetDuration || ""),
+    String(modelId || ""),
+    Number(promptVersion) || 1,
   ]));
 }
 
 /**
- * Compose the negative with the enabled layers in stored order. Each prefix is
- * one model pass over the negative; the result of the last enabled layer is
- * the composite. The model call is injected: runModel receives everything the
+ * Compose the negative with the enabled layers in stored order. The complete
+ * stack is one model pass over the negative. The model call is injected: runModel receives everything the
  * prompt needs (the sentinel-protected source text, the sentinel map, and the
  * prefix layers) and returns the raw model text. Protection is enforced here,
  * after every pass, by strict sentinel verification: any missing, duplicated,
  * unknown, or damaged sentinel fails the whole composition.
  */
-async function composeDocument({ source = "", layers = [], protectedRanges = [], cache = null, runModel }) {
+async function composeDocument({ source = "", layers = [], protectedRanges = [], cache = null, cacheContext = {}, runModel }) {
   if (typeof runModel !== "function") throw new Error("composeDocument needs an injected model call");
   const protectedTools = window.AISystem6ProtectedRanges;
   if (!protectedTools) throw new Error("composeDocument needs the protected-ranges runtime");
@@ -84,26 +95,21 @@ async function composeDocument({ source = "", layers = [], protectedRanges = [],
     .filter((layer) => layer?.enabled && String(layer?.kind || "").trim());
   const ranges = normalizeAdjustmentLayerMask(protectedRanges);
   const { protectedText, sentinels } = protectedTools.protectTextWithSentinels(source, ranges);
-  const prefixes = [];
-  let text = String(source || "");
-  for (let index = 0; index < enabled.length; index += 1) {
-    const prefix = enabled.slice(0, index + 1);
-    const key = composeCacheKey({ source, layers: prefix, protectedRanges: ranges });
-    let cached = false;
-    if (cache && cache.has(key)) {
-      text = cache.get(key);
-      cached = true;
-    } else {
-      const raw = await runModel({ key, source, protectedText, sentinels, layers: prefix, ranges });
-      const verification = protectedTools.verifyProtectedSentinels(raw, sentinels);
-      if (!verification.valid) {
-        throw new ProtectedRangeViolationError(verification.errors);
-      }
-      text = protectedTools.restoreProtectedSentinels(raw, sentinels);
-      if (cache) cache.set(key, text);
-    }
-    prefixes.push({ key, text, cached });
+  if (!enabled.length) return { text: String(source || ""), prefixes: [], protectedText, sentinels, ranges };
+  const key = composeCacheKey({ source, layers: enabled, protectedRanges: ranges, ...cacheContext });
+  let cached = false;
+  let text;
+  if (cache && cache.has(key)) {
+    text = cache.get(key);
+    cached = true;
+  } else {
+    const raw = await runModel({ key, source, protectedText, sentinels, layers: enabled, ranges });
+    const verification = protectedTools.verifyProtectedSentinels(raw, sentinels);
+    if (!verification.valid) throw new ProtectedRangeViolationError(verification.errors);
+    text = protectedTools.restoreProtectedSentinels(raw, sentinels);
+    if (cache) cache.set(key, text);
   }
+  const prefixes = [{ key, text, cached }];
   return { text, prefixes, protectedText, sentinels, ranges };
 }
 

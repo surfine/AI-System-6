@@ -9,6 +9,11 @@ This contract adapts the useful parts of `external/taste-skill` and
 `external/impeccable` to this product. Do not copy their default landing-page
 or brand-site aesthetics into AI System 6.
 
+For the normative application shell, typography roles, status-bar slots, TDI
+adaptation, responsive priorities, and new-app checklist, follow
+HIG.md. Its machine-readable window registry is enforced alongside
+the feature contracts; it does not create a second component library.
+
 ## Product Register
 
 AI System 6 is product UI, not a marketing site. Design serves a writer who is

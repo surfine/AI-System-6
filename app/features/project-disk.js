@@ -7,10 +7,10 @@
 const finderViewModeOrder = ["small-icon", "icon", "name", "date", "size", "kind"];
 const teachTextImageAttachmentLimit = 48;
 
-// TDI tab strips (Reader, TeachText, DocMap) flip between a horizontal top
-// strip and a vertical side rail purely via CSS @container queries on the
-// enclosing .window (see .tdi-shell / .tdi-rail in styles/20-reader-docmap.css).
-// No JS measurement / ResizeObserver is involved, so there is no feedback loop.
+// Every TDI surface shares one adaptive document model: a vertical side rail
+// in wide windows and a compact document-stack menu in existing window chrome
+// when space is constrained. CSS @container queries choose the presentation;
+// state, switching, closing, and reordering remain identical.
 
 function getReaderTabSite(url) {
   try {
@@ -165,6 +165,192 @@ function moveDocumentTab(app, tabId, targetTabId, project = getActiveProject()) 
   return true;
 }
 
+let tdiDocumentStackDismissalReady = false;
+
+function ensureTdiDocumentStackDismissal() {
+  if (tdiDocumentStackDismissalReady) return;
+  tdiDocumentStackDismissalReady = true;
+  document.addEventListener("pointerdown", (event) => {
+    document.querySelectorAll(".tdi-document-stack[open]").forEach((details) => {
+      if (!details.contains(event.target)) details.removeAttribute("open");
+    });
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    document.querySelectorAll(".tdi-document-stack[open]").forEach((details) => {
+      details.removeAttribute("open");
+      details.querySelector("summary")?.focus();
+    });
+  });
+}
+
+function tdiDocumentStackHost(container) {
+  if (!container?.id) return null;
+  return [...document.querySelectorAll(".tdi-stack-host")]
+    .find((host) => host.dataset.tdiStackFor === container.id) || null;
+}
+
+function renderTdiDocumentStack(container, tabs, options = {}) {
+  const host = tdiDocumentStackHost(container);
+  if (!host) return;
+  const visibleTabs = Array.isArray(tabs) ? tabs : [];
+  const {
+    activeId = "",
+    labelFor = (tab) => tab.title || t("untitled"),
+    compactLabelFor = labelFor,
+    sublabelFor = () => "",
+    dirtyFor = () => false,
+    closableFor = () => true,
+    onOpen = () => {},
+    onClose = () => {},
+    onMove = null,
+  } = options;
+  const shouldHide = !visibleTabs.length;
+  host.classList.toggle("is-hidden", shouldHide);
+  host.replaceChildren();
+  if (shouldHide || !visibleTabs.length) return;
+
+  const activeTab = visibleTabs.find((tab) => tab.id === activeId) || visibleTabs[0];
+  const activeIndex = Math.max(0, visibleTabs.indexOf(activeTab));
+  const activeCopy = document.createElement("span");
+  activeCopy.className = "tdi-stack-active-copy";
+  activeCopy.textContent = `${dirtyFor(activeTab) ? "• " : ""}${compactLabelFor(activeTab, activeIndex)}`;
+
+  // With one document there is nothing to switch. Keep its identity visible
+  // in compact chrome, but do not imply a menu, count, or disclosure action.
+  if (visibleTabs.length === 1) {
+    const current = document.createElement("div");
+    current.className = "tdi-document-stack";
+    const currentLabel = document.createElement("span");
+    currentLabel.className = "tdi-stack-summary tdi-stack-single";
+    currentLabel.title = labelFor(activeTab, activeIndex);
+    currentLabel.setAttribute("aria-label", labelFor(activeTab, activeIndex));
+    currentLabel.setAttribute("aria-current", "page");
+    currentLabel.append(activeCopy);
+    current.append(currentLabel);
+    host.append(current);
+    return;
+  }
+
+  ensureTdiDocumentStackDismissal();
+  const details = document.createElement("details");
+  details.className = "tdi-document-stack";
+  const summary = document.createElement("summary");
+  summary.className = "btn tdi-stack-summary";
+  summary.setAttribute("aria-haspopup", "menu");
+  summary.setAttribute("aria-expanded", "false");
+  summary.title = `${labelFor(activeTab, activeIndex)} · ${visibleTabs.length} ${t("documents")}`;
+  summary.setAttribute("aria-label", `${t("documents")}: ${labelFor(activeTab, activeIndex)}`);
+  summary.addEventListener("keydown", (event) => {
+    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    details.open = true;
+    const choices = [...popover.querySelectorAll(".tdi-stack-open")];
+    const target = ["ArrowUp", "End"].includes(event.key) ? choices.at(-1) : choices[0];
+    requestAnimationFrame(() => target?.focus());
+  });
+
+  const count = document.createElement("span");
+  count.className = "tdi-stack-count";
+  count.textContent = String(visibleTabs.length);
+  const disclosure = document.createElement("span");
+  disclosure.className = "tdi-stack-disclosure";
+  disclosure.setAttribute("aria-hidden", "true");
+  summary.append(activeCopy, count, disclosure);
+
+  const popover = document.createElement("div");
+  popover.className = "tdi-stack-popover";
+  popover.setAttribute("role", "menu");
+  popover.setAttribute("aria-label", t("documents"));
+  visibleTabs.forEach((tab, index) => {
+    const closable = !!closableFor(tab);
+    const item = document.createElement("div");
+    item.className = "tdi-stack-item";
+    item.classList.toggle("is-active", tab.id === activeId);
+    item.classList.toggle("is-dirty", dirtyFor(tab));
+    item.dataset.documentTabId = tab.id;
+
+    const open = document.createElement("button");
+    open.type = "button";
+    open.className = "tdi-stack-open";
+    open.setAttribute("role", "menuitemradio");
+    open.setAttribute("aria-checked", String(tab.id === activeId));
+    const label = document.createElement("span");
+    label.textContent = `${dirtyFor(tab) ? "• " : ""}${labelFor(tab, index)}`;
+    const sublabel = document.createElement("small");
+    sublabel.textContent = sublabelFor(tab, index);
+    open.append(label, sublabel);
+    open.addEventListener("click", () => {
+      details.removeAttribute("open");
+      onOpen(tab);
+    });
+    open.addEventListener("keydown", (event) => {
+      const choices = [...popover.querySelectorAll(".tdi-stack-open")];
+      const current = choices.indexOf(open);
+      const target = event.key === "ArrowDown" ? choices[current + 1] || choices[0]
+        : event.key === "ArrowUp" ? choices[current - 1] || choices.at(-1)
+          : event.key === "Home" ? choices[0]
+            : event.key === "End" ? choices.at(-1)
+              : null;
+      if (!target) return;
+      event.preventDefault();
+      target.focus();
+    });
+
+    const close = document.createElement("button");
+    close.type = "button";
+    close.className = "tdi-stack-close";
+    close.setAttribute("aria-label", t("reader_close_tab"));
+    close.title = t("reader_close_tab");
+    close.disabled = !closable;
+    close.classList.toggle("is-disabled", !closable);
+    close.addEventListener("click", (event) => {
+      event.stopPropagation();
+      if (closable) onClose(tab);
+    });
+    item.append(open, close);
+
+    if (typeof onMove === "function") {
+      item.draggable = true;
+      item.addEventListener("dragstart", (event) => {
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", tab.id);
+        popover.dataset.draggingTabId = tab.id;
+        item.classList.add("is-dragging");
+      });
+      item.addEventListener("dragend", () => {
+        delete popover.dataset.draggingTabId;
+        item.classList.remove("is-dragging");
+        popover.querySelectorAll(".is-drop-target").forEach((entry) => entry.classList.remove("is-drop-target"));
+      });
+      item.addEventListener("dragover", (event) => {
+        const draggingId = popover.dataset.draggingTabId;
+        if (!draggingId || draggingId === tab.id) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+        item.classList.add("is-drop-target");
+      });
+      item.addEventListener("dragleave", () => item.classList.remove("is-drop-target"));
+      item.addEventListener("drop", (event) => {
+        event.preventDefault();
+        item.classList.remove("is-drop-target");
+        const draggingId = event.dataTransfer.getData("text/plain") || popover.dataset.draggingTabId;
+        if (draggingId && draggingId !== tab.id) onMove(draggingId, tab.id);
+      });
+    }
+    popover.append(item);
+  });
+  details.addEventListener("toggle", () => {
+    summary.setAttribute("aria-expanded", String(details.open));
+    if (!details.open) return;
+    document.querySelectorAll(".tdi-document-stack[open]").forEach((other) => {
+      if (other !== details) other.removeAttribute("open");
+    });
+  });
+  details.append(summary, popover);
+  host.append(details);
+}
+
 function renderTdiTabStrip(container, tabs, options = {}) {
   if (!container) return;
   const visibleTabs = Array.isArray(tabs) ? tabs : [];
@@ -185,6 +371,7 @@ function renderTdiTabStrip(container, tabs, options = {}) {
   container.classList.toggle("is-hidden", hideWhenEmpty && visibleTabs.length <= 1);
   container.classList.toggle("is-overflowing", visibleTabs.length > 4);
   container.classList.toggle("is-crowded", visibleTabs.length > 7);
+  renderTdiDocumentStack(container, visibleTabs, options);
   if (!visibleTabs.length) return;
   visibleTabs.forEach((tab, index) => {
     const closable = !!closableFor(tab);
@@ -1122,25 +1309,27 @@ function assignProjectScope(projectId) {
   });
 }
 
-function renderProjectSwitcher() {
-  if (!projectSwitcherButton || !projectSwitcherLabelEl || !projectSwitcherPopoverEl) return;
+function renderProjectSwitcher(targetPopover = projectSwitcherPopoverEl) {
+  if (!targetPopover) return;
 
   const activeProject = getActiveProject();
   const activeLabel = activeProject ? projectDisplayName(activeProject) : t("no_project_mounted");
-  projectSwitcherLabelEl.textContent = activeLabel;
-  projectSwitcherButton.title = projectSwitcherStartupPickMode
-    ? t("set_startup")
-    : (activeProject ? t("mounted_project", activeLabel) : t("no_project_mounted"));
-  projectSwitcherButton.setAttribute("aria-label", t("project_switcher_aria"));
-  projectSwitcherButton.classList.toggle("is-unmounted", !activeProject);
-  projectSwitcherButton.classList.toggle("is-startup-pick", projectSwitcherStartupPickMode);
-  projectSwitcherPopoverEl.replaceChildren();
+  if (targetPopover === projectSwitcherPopoverEl && projectSwitcherButton && projectSwitcherLabelEl) {
+    projectSwitcherLabelEl.textContent = activeLabel;
+    projectSwitcherButton.title = projectSwitcherStartupPickMode
+      ? t("set_startup")
+      : (activeProject ? t("mounted_project", activeLabel) : t("no_project_mounted"));
+    projectSwitcherButton.setAttribute("aria-label", t("project_switcher_aria"));
+    projectSwitcherButton.classList.toggle("is-unmounted", !activeProject);
+    projectSwitcherButton.classList.toggle("is-startup-pick", projectSwitcherStartupPickMode);
+  }
+  targetPopover.replaceChildren();
 
   if (projectSwitcherStartupPickMode) {
     const heading = document.createElement("div");
     heading.className = "project-switcher-heading";
     heading.textContent = t("choose_startup_disk");
-    projectSwitcherPopoverEl.append(heading);
+    targetPopover.append(heading);
   }
 
   if (!projects.length) {
@@ -1149,7 +1338,7 @@ function renderProjectSwitcher() {
     empty.disabled = true;
     empty.className = "project-switcher-empty";
     empty.textContent = t("project_switcher_empty");
-    projectSwitcherPopoverEl.append(empty);
+    targetPopover.append(empty);
   } else {
     projects.forEach((project) => {
       const isCurrent = isProjectMounted && project.id === activeProjectId;
@@ -1184,12 +1373,12 @@ function renderProjectSwitcher() {
       copy.append(name, meta);
 
       button.append(mark, copy);
-      projectSwitcherPopoverEl.append(button);
+      targetPopover.append(button);
     });
   }
 
   const divider = document.createElement("hr");
-  projectSwitcherPopoverEl.append(divider);
+  targetPopover.append(divider);
 
   const newProject = document.createElement("button");
   newProject.type = "button";
@@ -1201,7 +1390,7 @@ function renderProjectSwitcher() {
   openProjects.dataset.action = "open-project-disks";
   openProjects.textContent = t("open_project_disks");
 
-  projectSwitcherPopoverEl.append(newProject, openProjects);
+  targetPopover.append(newProject, openProjects);
 }
 
 var projectSwitcherStartupPickMode = false;

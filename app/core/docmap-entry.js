@@ -153,10 +153,162 @@ function docMapCanUseSelectionContext(context) {
   ].includes(context.surface);
 }
 
+function docMapSourceWithRange(source, rangeMode = "source", extraMeta = {}) {
+  if (!source?.text) return null;
+  const text = String(source.text || "").trim();
+  if (!text) return null;
+  const normalizedRange = ["selection", "selected-items"].includes(rangeMode) ? rangeMode : "source";
+  return {
+    ...source,
+    text,
+    rangeMode: normalizedRange,
+    isSelection: normalizedRange === "selection",
+    meta: {
+      ...(source.meta || {}),
+      ...extraMeta,
+      rangeMode: normalizedRange,
+      selectedChars: normalizedRange === "selection" ? text.length : 0,
+      sourceChars: Number(extraMeta.sourceChars) || Number(source.meta?.sourceChars) || text.length,
+    },
+  };
+}
+
+function docMapSelectionSourceFromContext(context) {
+  if (!docMapCanUseSelectionContext(context)) return null;
+  const text = String(context.text || "").trim();
+  if (!text) return null;
+  return docMapSourceWithRange({
+    text,
+    label: selectionLabelForContext(context) || t("selection_services"),
+    scope: context.surface,
+    context,
+    threshold: docMapMinSelectionChars,
+    meta: {
+      ...(context.source || {}),
+      selectionStart: Number.isFinite(context.start) ? context.start : null,
+      selectionEnd: Number.isFinite(context.end) ? context.end : null,
+      before: context.before || "",
+      after: context.after || "",
+    },
+  }, "selection", {
+    sourceChars: String(context.fullText || "").trim().length || text.length,
+  });
+}
+
+function docMapSourceFromReaderPage() {
+  const text = String(currentReaderPage?.text || "").trim();
+  if (!text) return null;
+  if (currentReaderPage.videoTranscript?.type === "video_transcript") {
+    return docMapSourceWithRange({
+      text: docMapVideoTranscriptText(currentReaderPage.videoTranscript),
+      label: currentReaderPage.title || currentReaderPage.fileName || t("reader"),
+      scope: "videoTranscript",
+      threshold: Math.min(docMapMinDocumentChars, 240),
+      kind: "videoTranscript",
+      meta: {
+        fileName: currentReaderPage.fileName || "",
+        sourceId: currentReaderPage.videoTranscript.id || "",
+        url: currentReaderPage.url || "",
+        blocks: currentReaderPage.videoTranscript.blocks || [],
+        paragraphs: currentReaderPage.videoTranscript.paragraphs || [],
+      },
+    });
+  }
+  return docMapSourceWithRange({
+    text,
+    label: currentReaderPage.title || t("reader"),
+    scope: "reader",
+    threshold: docMapMinDocumentChars,
+    meta: { url: currentReaderPage.url || "" },
+  });
+}
+
+function docMapWholeSourceForSurface(surface = "") {
+  if (surface === "reader" || surface === "videoTranscript") return docMapSourceFromReaderPage();
+  if (surface === "timeMachine") return docMapSourceFromTimeMachine("source");
+  if (surface === "teachtext" || surface === "fileDisk") {
+    const text = String(teachTextBodyInput.value || "").trim();
+    return text ? docMapSourceWithRange({
+      text,
+      label: getTeachTextDocumentName({ fallback: surface === "fileDisk" ? t("mounted_text_disk") : "TeachText" }),
+      scope: surface,
+      threshold: docMapMinDocumentChars,
+      meta: { fileId: activeTextFileId || "" },
+    }) : null;
+  }
+  if (surface === "scrapbook") {
+    const source = docMapSourceFromScrapbook();
+    return source ? docMapSourceWithRange(source, "selected-items") : null;
+  }
+  if (surface === "documents") return docMapSourceWithRange(docMapSourceFromSelectedDocument());
+  if (surface === "questionSheet") {
+    const text = String(questionSheetBodyInput.value || "").trim();
+    return text ? docMapSourceWithRange({
+      text: parseMarkdownDocument(text).source.trim(),
+      label: t("question_sheet"),
+      scope: "questionSheet",
+      threshold: docMapMinDocumentChars,
+    }) : null;
+  }
+  if (surface === "outline") {
+    const text = String(outlineContentEl.value || "").trim();
+    return text ? docMapSourceWithRange({
+      text: parseMarkdownDocument(text).source.trim(),
+      label: t("outline"),
+      scope: "outline",
+      threshold: docMapMinDocumentChars,
+    }) : null;
+  }
+  if (surface === "sectionDrafts") {
+    const text = String(draftBodyInput.value || "").trim();
+    return text ? docMapSourceWithRange({
+      text: parseMarkdownDocument(text).source.trim(),
+      label: t("section_drafts"),
+      scope: "sectionDrafts",
+      threshold: docMapMinDocumentChars,
+    }) : null;
+  }
+  if (surface === "clipboard") {
+    const text = String(clipboardText || "").trim();
+    return text ? docMapSourceWithRange({
+      text,
+      label: clipboardSource || t("docmap_source_clipboard"),
+      scope: "clipboard",
+      threshold: docMapMinDocumentChars,
+    }) : null;
+  }
+  if (surface === "notePad") {
+    const text = String(notePadTextInput.value || "").trim();
+    return text ? docMapSourceWithRange({
+      text,
+      label: t("note_pad"),
+      scope: "notePad",
+      threshold: docMapMinDocumentChars,
+    }) : null;
+  }
+  if (surface === "textDisk") return docMapSourceWithRange(docMapSourceFromFileFloppy());
+  if (surface === "projectCd") return docMapSourceWithRange(docMapSourceFromProjectCd());
+  return null;
+}
+
+function docMapSelectionContextForSurface(surface = "") {
+  const current = getSelectionServiceContext();
+  if (current?.surface === surface) return current;
+  if (surface === "reader") return readerSelectionContext();
+  if (surface === "teachtext" || surface === "fileDisk") return teachTextSelectionContext();
+  if (surface === "clipboard") {
+    return textControlSelectionContext(clipboardTextInput, "clipboard", () => clipboardSource || t("clipboard"))
+      || textControlSelectionContext(clipboardTranslationTextInput, "clipboard", () => clipboardSource || t("clipboard"));
+  }
+  if (surface === "scrapbook") return textControlSelectionContext(scrapBodyInput, "scrapbook", () => selectionLabelForContext({ surface: "scrapbook" }));
+  if (surface === "documents") return elementSelectionContext(chatFileBodyEl, "documents", () => chatFileTitleEl?.textContent?.trim() || t("documents"));
+  return null;
+}
+
 // Time Machine ships as a lazy module, so its loaded page is reached through
 // the window's own accessor rather than a shared variable.
-function docMapSourceFromTimeMachine() {
-  const source = window.AISystem6TimeMachine?.docMapSource?.();
+function docMapSourceFromTimeMachine(rangeMode = "auto") {
+  const source = window.AISystem6TimeMachine?.docMapSource?.(rangeMode);
   return source?.text?.trim() ? source : null;
 }
 
@@ -165,22 +317,13 @@ function docMapSourceFromPreferredContext(preferredContext) {
   const text = String(preferredContext.text || "").trim();
   if (!text) return null;
 
-  if (docMapCanUseSelectionContext(preferredContext)) {
-    return {
-      text,
-      label: selectionLabelForContext(preferredContext) || t("selection_services"),
-      scope: preferredContext.surface,
-      context: preferredContext,
-      isSelection: true,
-      threshold: docMapMinSelectionChars,
-    };
-  }
+  if (docMapCanUseSelectionContext(preferredContext)) return docMapSelectionSourceFromContext(preferredContext);
 
   if (!preferredContext.scope && !preferredContext.kind && !preferredContext.meta && !preferredContext.threshold) {
     return null;
   }
 
-  return {
+  return docMapSourceWithRange({
     text,
     label: preferredContext.label || t("docmap"),
     scope: preferredContext.scope || preferredContext.surface || "selection",
@@ -188,156 +331,61 @@ function docMapSourceFromPreferredContext(preferredContext) {
     kind: preferredContext.kind || "",
     meta: preferredContext.meta || null,
     context: preferredContext,
-    isSelection: false,
-  };
+  }, preferredContext.rangeMode || (preferredContext.isSelection ? "selection" : "source"));
 }
 
-function resolveDocMapSource(preferredContext = null) {
+function resolveDocMapReadiness(preferredContext = null, options = {}) {
+  const rangeMode = options.rangeMode || "auto";
   const preferredSource = docMapSourceFromPreferredContext(preferredContext);
-  if (preferredSource) return preferredSource;
-
-  const context = getSelectionServiceContext();
-  if (docMapCanUseSelectionContext(context)) {
-    return {
-      text: context.text,
-      label: selectionLabelForContext(context) || t("selection_services"),
-      scope: context.surface,
-      context,
-      isSelection: true,
-      threshold: docMapMinSelectionChars,
-    };
-  }
-
   const activeWin = document.querySelector(".window.is-active:not(.is-hidden)");
   const activeName = activeWin?.dataset.window || "";
-  if (activeName === "reader" && (currentReaderPage?.text || "").trim()) {
-    if (currentReaderPage.videoTranscript?.type === "video_transcript") {
-      return {
-        text: docMapVideoTranscriptText(currentReaderPage.videoTranscript),
-        label: currentReaderPage.title || currentReaderPage.fileName || t("reader"),
-        scope: "videoTranscript",
-        threshold: Math.min(docMapMinDocumentChars, 240),
-        kind: "videoTranscript",
-        meta: {
-          fileName: currentReaderPage.fileName || "",
-          sourceId: currentReaderPage.videoTranscript.id || "",
-          blocks: currentReaderPage.videoTranscript.blocks || [],
-          paragraphs: currentReaderPage.videoTranscript.paragraphs || [],
-        },
-      };
-    }
-    return {
-      text: currentReaderPage.text.trim(),
-      label: currentReaderPage.title || t("reader"),
-      scope: "reader",
-      threshold: docMapMinDocumentChars,
-    };
+  const activeSurface = activeName === "teachText"
+    ? "teachtext"
+    : activeName === "chatFile"
+      ? "documents"
+      : activeName;
+  const preferredIsSelection = preferredSource?.rangeMode === "selection";
+  const context = preferredIsSelection
+    ? preferredContext
+    : (docMapCanUseSelectionContext(getSelectionServiceContext()) ? getSelectionServiceContext() : null);
+  let selectionSource = preferredIsSelection ? preferredSource : docMapSelectionSourceFromContext(context);
+  let wholeSource = preferredSource && !preferredIsSelection ? preferredSource : null;
+  const contextSurface = preferredIsSelection ? preferredSource.scope : context?.surface;
+
+  if (!wholeSource && contextSurface) wholeSource = docMapWholeSourceForSurface(contextSurface);
+  if (!wholeSource) wholeSource = docMapWholeSourceForSurface(activeSurface);
+  if (!wholeSource && activeName === "clioStage") wholeSource = docMapSourceFromPreferredContext(preferredContext);
+
+  if (!wholeSource && !selectionSource) {
+    wholeSource = docMapSourceFromReaderPage()
+      || docMapSourceFromTimeMachine("source")
+      || docMapWholeSourceForSurface("teachtext")
+      || docMapWholeSourceForSurface("clipboard")
+      || docMapWholeSourceForSurface("documents")
+      || docMapWholeSourceForSurface("projectCd")
+      || docMapWholeSourceForSurface("scrapbook")
+      || docMapWholeSourceForSurface("textDisk");
   }
-  if (activeName === "timeMachine") {
-    const source = docMapSourceFromTimeMachine();
-    if (source) return source;
+
+  if (selectionSource && wholeSource) {
+    selectionSource = docMapSourceWithRange(selectionSource, "selection", {
+      sourceChars: wholeSource.text.length,
+    });
   }
-  if (activeName === "teachText" && teachTextBodyInput.value.trim()) {
-    return {
-      text: teachTextBodyInput.value.trim(),
-      label: getTeachTextDocumentName({ fallback: "TeachText" }),
-      scope: "teachtext",
-      threshold: docMapMinDocumentChars,
-    };
-  }
-  if (activeName === "scrapbook") {
-    const source = docMapSourceFromScrapbook();
-    if (source) return source;
-  }
-  if (activeName === "textDisk") {
-    const source = docMapSourceFromFileFloppy();
-    if (source) return source;
-  }
-  if (activeName === "projectCd") {
-    const source = docMapSourceFromProjectCd();
-    if (source) return source;
-  }
-  if (activeName === "documents" || activeName === "chatFile") {
-    const source = docMapSourceFromSelectedDocument();
-    if (source) return source;
-  }
-  if (activeName === "questionSheet" && questionSheetBodyInput.value.trim()) {
-    return {
-      text: parseMarkdownDocument(questionSheetBodyInput.value).source.trim(),
-      label: t("question_sheet"),
-      scope: "questionSheet",
-      threshold: docMapMinDocumentChars,
-    };
-  }
-  if (activeName === "outline" && outlineContentEl.value.trim()) {
-    return {
-      text: parseMarkdownDocument(outlineContentEl.value).source.trim(),
-      label: t("outline"),
-      scope: "outline",
-      threshold: docMapMinDocumentChars,
-    };
-  }
-  if (activeName === "sectionDrafts" && draftBodyInput.value.trim()) {
-    return {
-      text: parseMarkdownDocument(draftBodyInput.value).source.trim(),
-      label: t("section_drafts"),
-      scope: "sectionDrafts",
-      threshold: docMapMinDocumentChars,
-    };
-  }
-  if (activeName === "notePad" && notePadTextInput.value.trim()) {
-    return {
-      text: notePadTextInput.value.trim(),
-      label: t("note_pad"),
-      scope: "notePad",
-      threshold: docMapMinDocumentChars,
-    };
-  }
-  if (clipboardText.trim()) {
-    return {
-      text: clipboardText.trim(),
-      label: clipboardSource || t("docmap_source_clipboard"),
-      scope: "clipboard",
-      threshold: docMapMinDocumentChars,
-    };
-  }
-  if ((currentReaderPage?.text || "").trim()) {
-    if (currentReaderPage.videoTranscript?.type === "video_transcript") {
-      return {
-        text: docMapVideoTranscriptText(currentReaderPage.videoTranscript),
-        label: currentReaderPage.title || currentReaderPage.fileName || t("reader"),
-        scope: "videoTranscript",
-        threshold: Math.min(docMapMinDocumentChars, 240),
-        kind: "videoTranscript",
-        meta: {
-          fileName: currentReaderPage.fileName || "",
-          sourceId: currentReaderPage.videoTranscript.id || "",
-          blocks: currentReaderPage.videoTranscript.blocks || [],
-          paragraphs: currentReaderPage.videoTranscript.paragraphs || [],
-        },
-      };
-    }
-    return {
-      text: currentReaderPage.text.trim(),
-      label: currentReaderPage.title || t("reader"),
-      scope: "reader",
-      threshold: docMapMinDocumentChars,
-    };
-  }
-  const timeMachineSource = docMapSourceFromTimeMachine();
-  if (timeMachineSource) return timeMachineSource;
-  if (teachTextBodyInput.value.trim()) {
-    return {
-      text: teachTextBodyInput.value.trim(),
-      label: getTeachTextDocumentName({ fallback: "TeachText" }),
-      scope: "teachtext",
-      threshold: docMapMinDocumentChars,
-    };
-  }
-  return docMapSourceFromSelectedDocument()
-    || docMapSourceFromProjectCd()
-    || docMapSourceFromScrapbook()
-    || docMapSourceFromFileFloppy();
+  return chooseDocMapSourceCandidate(selectionSource, wholeSource, rangeMode);
+}
+
+function resolveDocMapSource(preferredContext = null, options = {}) {
+  return resolveDocMapReadiness(preferredContext, options).source;
+}
+
+function docMapReadinessForSurface(surface, rangeMode = "auto") {
+  const selectionSource = docMapSelectionSourceFromContext(docMapSelectionContextForSurface(surface));
+  const wholeSource = docMapWholeSourceForSurface(surface);
+  const enrichedSelection = selectionSource && wholeSource
+    ? docMapSourceWithRange(selectionSource, "selection", { sourceChars: wholeSource.text.length })
+    : selectionSource;
+  return chooseDocMapSourceCandidate(enrichedSelection, wholeSource, rangeMode);
 }
 
 function renderVideoDocMapSwitchers() {
@@ -356,35 +404,114 @@ function isExportedDocMapMarkdown(markdown) {
   return /^#\s+DocMap\s*[:：]/im.test(text) && /^##\s+Relations\s*$/im.test(text);
 }
 
-function updateDocMapEntryButtons() {
-  const context = getSelectionServiceContext();
-  const readerSelection = getReaderSelection();
-  const readerText = readerSelection.text || currentReaderPage?.text || "";
-  const teachTextSelection = getTeachTextSelectionInfo();
-  const teachTextText = teachTextSelection.text || teachTextBodyInput.value || "";
-  const sourceIsLongEnough = (source) => !!source?.text && source.text.length >= source.threshold;
-  if (readerDocMapButton) {
-    const selectedLong = readerSelection.text.length >= docMapMinSelectionChars;
-    const pageLong = !!currentReaderPage?.text && currentReaderPage.text.length >= docMapMinDocumentChars;
-    readerDocMapButton.disabled = !(selectedLong || pageLong);
-  }
-  if (teachTextDocMapButton) {
-    const selectedLong = teachTextSelection.text.length >= docMapMinSelectionChars;
-    const docLong = teachTextBodyInput.value.trim().length >= docMapMinDocumentChars;
-    teachTextDocMapButton.disabled = !(selectedLong || docLong);
-  }
-  if (clipboardDocMapButton) {
-    clipboardDocMapButton.disabled = clipboardText.trim().length < docMapMinDocumentChars;
-  }
-  if (scrapbookDocMapButton) scrapbookDocMapButton.disabled = !sourceIsLongEnough(docMapSourceFromScrapbook());
-  if (chatFileDocMapButton) chatFileDocMapButton.disabled = !sourceIsLongEnough(docMapSourceFromSelectedDocument());
+function docMapRangeLabel(rangeMode = "source") {
+  if (rangeMode === "selection") return t("docmap_range_selection");
+  if (rangeMode === "selected-items") return t("docmap_range_selected_items");
+  return t("docmap_range_source");
+}
 
-  return !!context
-    || readerText.length >= docMapMinDocumentChars
-    || teachTextText.length >= docMapMinDocumentChars
-    || clipboardText.length >= docMapMinDocumentChars
-    || sourceIsLongEnough(docMapSourceFromScrapbook())
-    || sourceIsLongEnough(docMapSourceFromProjectCd())
-    || sourceIsLongEnough(docMapSourceFromFileFloppy())
-    || sourceIsLongEnough(docMapSourceFromSelectedDocument());
+function syncDocMapEntryButton(button, readiness) {
+  if (!button) return;
+  button.disabled = !readiness?.ready;
+  const source = readiness?.source;
+  const rangeMode = source?.rangeMode || "";
+  button.dataset.docmapRange = rangeMode;
+
+  let helpKey = "balloon_docmap_no_source";
+  let ariaKey = "docmap_button_no_source";
+  if (readiness?.state === "too-short") {
+    helpKey = "balloon_docmap_too_short";
+    ariaKey = "docmap_button_too_short";
+  } else if (readiness?.ready && rangeMode === "selection") {
+    helpKey = "balloon_docmap_selection";
+    ariaKey = "docmap_button_selection";
+  } else if (readiness?.ready && rangeMode === "selected-items") {
+    helpKey = "balloon_docmap_selected_items";
+    ariaKey = "docmap_button_selected_items";
+  } else if (readiness?.ready) {
+    helpKey = "balloon_docmap_source";
+    ariaKey = "docmap_button_source";
+  }
+  button.dataset.balloonHelp = helpKey;
+  button.dataset.balloonHelpDisabled = helpKey;
+  button.setAttribute("aria-label", t(ariaKey));
+}
+
+let readerDocMapSelectionReceipt = "";
+
+function syncReaderDocMapSelectionStatus(readiness) {
+  if (!readerStatusEl) return;
+  const selection = readiness?.selectionSource;
+  const signature = selection?.text || "";
+  if (signature === readerDocMapSelectionReceipt) return;
+  readerDocMapSelectionReceipt = signature;
+  if (!signature) {
+    if (readerStatusEl.dataset.docmapReceipt === "selection") {
+      readerStatusEl.textContent = currentReaderPage?.videoTranscript
+        ? t("reader_video_transcript_view")
+        : t("reader_reading_mode");
+      delete readerStatusEl.dataset.docmapReceipt;
+    }
+    return;
+  }
+  readerStatusEl.dataset.docmapReceipt = "selection";
+  readerStatusEl.textContent = readiness.selectionReady
+    ? t("docmap_selection_ready", selection.text.length)
+    : readiness.wholeReady
+      ? t("docmap_selection_short_source_ready", selection.text.length, selection.threshold)
+      : t("docmap_selection_too_short", selection.text.length, selection.threshold);
+}
+
+function setDocMapSourceStatus(source, message) {
+  if (!source || !message) return;
+  if (["reader", "videoTranscript"].includes(source.scope) && readerStatusEl) {
+    readerStatusEl.textContent = message;
+    readerStatusEl.dataset.docmapReceipt = "handoff";
+  }
+  if (source.scope === "teachtext" && teachTextSelectionStateEl) teachTextSelectionStateEl.textContent = message;
+  if (source.scope === "clipboard" && clipboardMetaEl) clipboardMetaEl.textContent = message;
+  if (source.scope === "documents" && chatFileMetaEl) chatFileMetaEl.textContent = message;
+  if (source.scope === "scrapbook" && scrapSelectionCountEl) scrapSelectionCountEl.textContent = message;
+  if (source.scope === "timeMachine") window.AISystem6TimeMachine?.setStatus?.(message);
+  if (source.scope === "clioStage") window.AISystem6ClioStage?.setStatus?.(message);
+  setStatus(message, { notify: false });
+}
+
+function docMapHandoffStatus(readiness) {
+  const source = readiness?.source;
+  if (!source) return t("docmap_no_text");
+  if (readiness.fellBackToSource) {
+    return t("docmap_mapping_source_fallback", readiness.selectionSource?.text?.length || 0, readiness.selectionSource?.threshold || docMapMinSelectionChars);
+  }
+  return source.rangeMode === "selection"
+    ? t("docmap_mapping_selection", source.text.length)
+    : source.rangeMode === "selected-items"
+      ? t("docmap_mapping_selected_items")
+      : t("docmap_mapping_source");
+}
+
+function updateDocMapEntryButtons() {
+  const readerReadiness = docMapReadinessForSurface("reader");
+  const readerSelectionReadiness = docMapReadinessForSurface("reader", "selection");
+  const readerSourceReadiness = docMapReadinessForSurface("reader", "source");
+  const teachTextReadiness = docMapReadinessForSurface("teachtext");
+  const clipboardReadiness = docMapReadinessForSurface("clipboard");
+  const scrapbookReadiness = docMapReadinessForSurface("scrapbook");
+  const documentsReadiness = docMapReadinessForSurface("documents");
+
+  syncDocMapEntryButton(readerDocMapButton, readerReadiness);
+  syncDocMapEntryButton(document.querySelector("#reader-docmap-selection-command"), readerSelectionReadiness);
+  syncDocMapEntryButton(document.querySelector("#reader-docmap-source-command"), readerSourceReadiness);
+  syncDocMapEntryButton(teachTextDocMapButton, teachTextReadiness);
+  syncDocMapEntryButton(clipboardDocMapButton, clipboardReadiness);
+  syncDocMapEntryButton(scrapbookDocMapButton, scrapbookReadiness);
+  syncDocMapEntryButton(chatFileDocMapButton, documentsReadiness);
+  syncReaderDocMapSelectionStatus(readerReadiness);
+
+  const timeMachineButton = document.querySelector("#time-machine-docmap");
+  const timeMachineReadiness = window.AISystem6TimeMachine?.docMapReadiness?.();
+  if (timeMachineButton && timeMachineReadiness) syncDocMapEntryButton(timeMachineButton, timeMachineReadiness);
+
+  return [readerReadiness, teachTextReadiness, clipboardReadiness, scrapbookReadiness, documentsReadiness, timeMachineReadiness]
+    .some((readiness) => readiness?.ready);
 }

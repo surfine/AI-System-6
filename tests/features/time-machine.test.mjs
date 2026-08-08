@@ -57,8 +57,8 @@ test.assertNotIncludes(index, 'data-action="time-machine-home"', "source switchi
 test.assertIncludes(index, 'id="chooser-archive-title"', "archive preference lives in Chooser");
 test.assertIncludes(index, 'id="time-machine-provider"', "Chooser exposes the archive preference");
 test.assertNotIncludes(index, 'id="time-machine-time-band"', "time controls do not occupy a separate browser toolbar");
-test.assertNotIncludes(index, 'id="time-machine-resolution"', "title bar owns the live or historical time label");
-test.assertIncludes(index, 'id="time-machine-title"', "title bar owns the visible time context");
+test.assertNotIncludes(index, 'id="time-machine-resolution"', "live or historical context does not cost a second chrome row");
+test.assertIncludes(index, 'id="time-machine-title"', "title bar owns the stable Time Machine application identity");
 // Superseded 2026-08-04: the window may echo its own receipt, because the
 // desktop status line lives in ClioTalk's details bar and is invisible when
 // that window is closed. What stays forbidden is accumulating a second
@@ -75,6 +75,8 @@ test.assertIncludes(index, 'sandbox="allow-scripts"', "remote pages render in an
 test.assertNotIncludes(index, 'sandbox="allow-scripts allow-same-origin"', "sandbox never combines scripts with same-origin privileges");
 
 test.assertIncludes(feature, "function timeMachineNavigate(value, options = {})", "one navigation kernel owns live and historical browsing");
+test.assertIncludes(feature, 'timeMachineTitleEl.textContent = appTitle', "Time Machine keeps its application name in the title bar");
+test.assertIncludes(feature, 'compactLabelFor: (tab) => tab.title || t("time_machine_new_tab")', "Time Machine puts the active page title in compact TDI chrome without an ordinal prefix");
 test.assertIncludes(feature, "function prepareTimeMachineBlankLaunch()", "each system launch starts Time Machine on a blank tab");
 test.assertIncludes(feature, "function switchTimeMachineSource()", "the active historical page can retry through the other archive");
 test.assertIncludes(feature, "seenProviders", "historical browsing keeps one automatic browse fallback per archive family");
@@ -130,7 +132,7 @@ test.assertNotIncludes(styles, "!important", "new Time Machine CSS does not add 
 test.assertIncludes(server, "data-srcset", "the replay frame promotes lazy media (data-src / data-srcset) without executing page scripts");
 test.assertIncludes(server, "visibleTextLength < 80", "tiny bot-check / JS-shell pages fail with a named error instead of a blank frame");
 test.assertIncludes(html, '<span class="time-machine-provenance" id="time-machine-provenance"', "which snapshot is on screen rides in the navigation row, costing the page no height");
-test.assertIncludes(feature, "? timeMachineProviderLabel(page.archive.provider)", "the toolbar names the archive; the title bar already carries the date and page");
+test.assertIncludes(feature, "? timeMachineProviderLabel(page.archive.provider)", "the navigation row names the archive while TDI carries the active page");
 test.assertIncludes(feature, "setStatus(message, options.error === true ? { notify: true } : {})", "a Time Machine failure reaches the notification center by being marked, not by matching a keyword list");
 test.assertNotIncludes(html, "time-machine-details-bar", "a transient receipt never costs the page a row");
 test.assertIncludes(feature, "timeMachineReceiptTimer = window.setTimeout(renderTimeMachineProvenance", "and hands the slot back");
@@ -140,7 +142,7 @@ test.assertNotIncludes(feature, "\n  setStatus(", "no Time Machine receipt is le
 test.assertIncludes(feature, 'registerAskBarSource("timeMachine", describeTimeMachineAskScope)', "Time Machine uses the shared ask bar instead of its own question row");
 test.assertIncludes(feature, 'if (!page?.reader?.text) return { ready: false };', "an empty Time Machine gives the ask bar's space back instead of showing a dead control");
 test.assertIncludes(feature, 'arrangeWindowAssistantSplit("timeMachine")', "a Time Machine question pairs the page with ClioTalk in SideAsk like every other source window");
-test.assertIncludes(feature, 'range: selection ? t("ask_scope_selection") : t("ask_scope_whole_page")', "the ask bar states whether the question carries the selection or the whole page");
+test.assertIncludes(feature, 'range: selection ? t("ask_scope_selection") : t("ask_scope_whole_page")', "Time Machine still derives the selection or whole-page context carried into SideAsk");
 test.assertNotIncludes(`${index}\n${feature}\n${styles}`, "1996—Today", "the UI never invents a universal archive range");
 test.assertIncludes(dictionary, 'id: "time-machine"', "System Help exposes Time Machine as a restricted historical browser");
 test.assertIncludes(dictionary, "choose a 1990s capture", "System Help documents the historical Apple-site demonstration path");
@@ -259,7 +261,8 @@ test.assert(
 );
 test.assertIncludes(server, '<meta charset="utf-8">', "the replay frame states the encoding of the transcoded page it renders");
 test.assertIncludes(feature, "docMapSource: timeMachineDocMapSource,", "the loaded page is published as a DocMap source, not only as a button handler");
-test.assertIncludes(feature, "function timeMachineDocMapSource()", "one accessor answers both the window's DocMap button and DocMap's own entry points");
+test.assertIncludes(feature, 'function timeMachineDocMapSource(rangeMode = "auto")', "one accessor answers selection, whole-page, and automatic DocMap requests");
+test.assertIncludes(feature, "docMapReadiness: timeMachineDocMapReadiness,", "Time Machine publishes the same readiness state used by its DocMap button");
 test.assertIncludes(feature, "throw new Error(serviceErrorDetail(response.status, text));", "a failed archive request reports a status, never the upstream error page it received");
 test.assertNotIncludes(feature, "payload?.error || text", "a gateway's HTML body is never used as the message shown to the writer");
 test.assertIncludes(strings, "function serviceErrorDetail(status, body)", "one shared helper decides what a failed response is allowed to say");

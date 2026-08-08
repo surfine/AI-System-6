@@ -83,19 +83,42 @@
 }
 
 .quick-draft-details {
-  display: flex;
-  flex-wrap: nowrap;
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto auto;
   gap: 12px;
   align-items: center;
   min-width: 0;
 }
 
 .quick-draft-details > #quick-draft-status {
-  flex: 1 1 auto;
+  grid-column: 3;
+  justify-self: center;
   min-width: 0;
   overflow: hidden;
+  text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.quick-draft-details > #quick-draft-stats {
+  grid-column: 1;
+}
+
+.quick-draft-details > #quick-draft-save-state {
+  grid-column: 2;
+}
+
+.quick-draft-details > #quick-draft-protect-state {
+  grid-column: 4;
+}
+
+.quick-draft-details > #quick-draft-stack-state {
+  grid-column: 5;
+}
+
+.quick-draft-details > span {
+  min-width: 0;
+  margin-left: 0;
 }
 
 .quick-draft-status-center {
@@ -555,6 +578,20 @@
   grid-row: 1;
 }
 
+.quick-draft-region-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* The drawer close is a phone control; on a desk both regions are on screen. */
+.quick-draft-drawer-close {
+  display: none;
+}
+
+.quick-draft-region-head > b,
 .quick-draft-shelf > b,
 .quick-draft-inspector-section > b,
 .quick-draft-well-field > span,
@@ -571,6 +608,90 @@
 .quick-draft-shelf .quick-draft-source-map {
   min-height: 0;
   overflow-y: auto;
+}
+
+/* Material is an object list, drawn like a Finder row: a document mark, the
+   name, and what it came from. Not a stack of buttons. */
+.quick-draft-material-row {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr);
+  align-items: start;
+  gap: 0 6px;
+  width: 100%;
+  padding: 3px 4px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  text-align: left;
+}
+
+.quick-draft-material-row::before {
+  content: "";
+  grid-row: 1 / span 2;
+  width: 10px;
+  height: 12px;
+  margin-top: 2px;
+  border: var(--system-control-line) solid currentColor;
+  background:
+    linear-gradient(currentColor, currentColor) 2px 3px / 6px 1px no-repeat,
+    linear-gradient(currentColor, currentColor) 2px 6px / 6px 1px no-repeat,
+    linear-gradient(currentColor, currentColor) 2px 9px / 4px 1px no-repeat;
+}
+
+.quick-draft-material-row:hover,
+.quick-draft-material-row:focus-visible {
+  background: var(--quiet-panel);
+}
+
+.quick-draft-material-row.is-selected {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.quick-draft-material-row > b {
+  min-width: 0;
+  overflow: hidden;
+  font-weight: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quick-draft-material-row > small {
+  color: var(--shade-dark);
+  font-size: 11px;
+}
+
+.quick-draft-source-empty {
+  margin: 0;
+  color: var(--shade-dark);
+  font: 12px/1.45 var(--system-font);
+}
+
+.quick-draft-version-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+}
+
+.quick-draft-version-row > span {
+  display: grid;
+  min-width: 0;
+}
+
+.quick-draft-version-row b {
+  min-width: 0;
+  overflow: hidden;
+  font-weight: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quick-draft-version-row small {
+  color: var(--shade-dark);
+  font-size: 11px;
 }
 
 .quick-draft-material-actions {
@@ -611,9 +732,15 @@
   min-width: 0;
 }
 
+/* The sheet head is the document's own line: the title fills it and its label
+   stays for screen readers only. */
 .quick-draft-sheet-title > span {
-  color: var(--shade-dark);
-  font: 12px/1.2 var(--system-font);
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
   white-space: nowrap;
 }
 
@@ -698,16 +825,18 @@
   border-left: var(--quick-draft-sidebar-border);
 }
 
+/* A dense tool surface is rows and dividers, not stacked cards. */
 .quick-draft-inspector-section {
   display: grid;
   align-content: start;
   gap: 6px;
   min-width: 0;
-  padding: 8px 10px;
-  background: var(--quick-draft-panel-bg);
-  border: var(--quick-draft-panel-border);
-  border-radius: var(--quick-draft-panel-radius);
-  box-shadow: var(--quick-draft-panel-shadow);
+  padding: 0 0 8px;
+}
+
+.quick-draft-inspector-section + .quick-draft-inspector-section {
+  padding-top: 8px;
+  border-top: var(--quick-draft-divider-border);
 }
 
 .quick-draft-versions-section {
@@ -744,6 +873,108 @@
 
 .quick-draft-editor-container {
   height: 100%;
+}
+
+/* One rule decides the collapse: the paper's smallest readable measure. The
+   window is the container, so a narrow desk window collapses exactly like a
+   phone — same DOM, same task order, one breakpoint. */
+@container (max-width: 800px) {
+  .quick-draft-desk {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .quick-draft-paper {
+    grid-column: 1;
+  }
+
+  .quick-draft-shelf,
+  .quick-draft-inspector {
+    display: none;
+  }
+
+  .quick-draft-editor-actions > .quick-draft-drawer-switch {
+    display: inline-flex;
+  }
+
+  .quick-draft-region-head > .quick-draft-drawer-close {
+    display: inline-flex;
+  }
+
+  /* A drawer covers the paper but never all of it: the exposed edge says the
+     paper is still there, and it is the easiest place to tap to come back. */
+  #quick-draft-form.is-shelf-open .quick-draft-shelf,
+  #quick-draft-form.is-inspector-open .quick-draft-inspector {
+    display: grid;
+    position: absolute;
+    inset: 0 var(--quick-draft-drawer-edge) 0 0;
+    padding: 8px;
+    background: var(--paper);
+    overflow-y: auto;
+  }
+
+  #quick-draft-form.is-inspector-open .quick-draft-inspector {
+    inset: 0 0 0 var(--quick-draft-drawer-edge);
+    padding-left: 10px;
+  }
+
+  /* The editor stack inside the paper carries its own layers (the markdown
+     overlay sits at 2). Isolating the paper keeps those layers local, so the
+     drawer covers the text by document order and needs no z-index of its own. */
+  #quick-draft-form.is-shelf-open .quick-draft-paper,
+  #quick-draft-form.is-inspector-open .quick-draft-paper {
+    isolation: isolate;
+    cursor: pointer;
+  }
+
+  /* Two rows, because none of these eight controls belongs in a menu: the
+     display gears are high traffic, delivery ends the route, and the primary
+     button keeps one position. */
+  .teachtext-actions.quick-draft-editor-actions {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "sideask sideask sideask sideask"
+      "display display display drawers"
+      "tools deliver . primary";
+    gap: 6px;
+  }
+
+  .quick-draft-editor-actions > .quick-draft-actions-gap {
+    display: none;
+  }
+
+  .quick-draft-editor-actions > .quick-draft-display-switch {
+    grid-area: display;
+    justify-self: start;
+  }
+
+  .quick-draft-editor-actions > .quick-draft-drawer-switch {
+    grid-area: drawers;
+    justify-self: end;
+  }
+
+  .quick-draft-editor-actions > #quick-draft-return-sideask {
+    grid-area: sideask;
+  }
+
+  .quick-draft-editor-actions > #quick-draft-tools {
+    grid-area: tools;
+  }
+
+  .quick-draft-editor-actions > #quick-draft-deliver {
+    grid-area: deliver;
+  }
+
+  .quick-draft-editor-actions > .btn.default {
+    grid-area: primary;
+    justify-self: end;
+    flex: 0 0 auto;
+  }
+
+  /* One field per row: the sheet head stays one line of chrome. */
+  .quick-draft-advanced-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .quick-draft-reboot-suggestions {
@@ -1438,9 +1669,33 @@
   text-align: left;
 }
 
+/* The stack order and the scope both stay on the closed row. */
+.quick-draft-layer-order {
+  font-style: normal;
+  color: var(--shade-dark);
+}
+
+.quick-draft-layer-scope {
+  grid-column: 1 / -1;
+  padding-left: 16px;
+  color: var(--shade-dark);
+  font: 11px/1.3 var(--system-font);
+}
+
+.quick-draft-adjustment-layer:has(.quick-draft-layer-detail:not([hidden])) .quick-draft-layer-scope {
+  display: none;
+}
+
+.quick-draft-adjustment-row > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .quick-draft-adjustment-row {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto auto minmax(0, 1fr);
   align-items: center;
   gap: 6px;
   padding: 2px 2px;
@@ -1452,26 +1707,64 @@
   justify-self: end;
 }
 
-/* One layer reads as one row: switch and name on the left, strength on the
-   right, the scope line under both. */
+/* One layer reads as one row: switch and name, strength, disclosure. The
+   description and the scope line live behind the triangle, the way a Finder
+   list row opens. */
 .quick-draft-adjustment-layer {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 2px 6px;
 }
 
-.quick-draft-adjustment-layer > .quick-draft-adjustment-mask {
+.quick-draft-layer-detail-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  min-width: 0;
+  min-height: 16px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.quick-draft-layer-detail-toggle[aria-expanded="true"] {
+  transform: rotate(90deg);
+}
+
+.quick-draft-layer-detail {
   grid-column: 1 / -1;
-  flex-wrap: nowrap;
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding-left: 16px;
+}
+
+.quick-draft-layer-detail[hidden] {
+  display: none;
+}
+
+.quick-draft-layer-description {
+  margin: 0;
+  color: var(--shade-dark);
+  font: 12px/1.4 var(--system-font);
+}
+
+.quick-draft-adjustment-layer .quick-draft-adjustment-mask {
+  flex-wrap: wrap;
 }
 
 .quick-draft-adjustment-layer .quick-draft-adjustment-mask input {
-  width: 3rem;
+  width: 3.5rem;
 }
 
-.quick-draft-adjustment-layer .select-wrap-inline select {
-  max-width: 6.5rem;
+/* No hard cap: the label has to fit the bitmap face and the glass face. */
+.quick-draft-adjustment-layer .select-wrap-inline {
+  min-width: 0;
 }
 
 .quick-draft-layer-stack {
@@ -1539,12 +1832,39 @@
 }
 
 @container (max-width: 1120px) {
-  .quick-draft-details {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-  }
-
   .quick-draft-status-center {
     flex-wrap: wrap;
+  }
+}
+
+@container (max-width: 520px) {
+  .quick-draft-details {
+    grid-template-columns: minmax(0, 1fr) auto auto auto;
+  }
+
+  /* What goes first is the word count, not the guardrail readouts: protected
+     lines and stack depth are evidence, not statistics. */
+  .quick-draft-details > #quick-draft-stats {
+    display: none;
+  }
+
+  .quick-draft-details > #quick-draft-status {
+    grid-row: 1;
+    grid-column: 1;
+    justify-self: start;
+    text-align: left;
+  }
+
+  .quick-draft-details > #quick-draft-save-state {
+    grid-row: 1;
+    grid-column: 2;
+    justify-self: end;
+  }
+
+  .quick-draft-details > #quick-draft-protect-state,
+  .quick-draft-details > #quick-draft-stack-state {
+    grid-row: 1;
+    grid-column: auto;
   }
 }
 
@@ -1662,7 +1982,7 @@
   font-family: var(--preview-font);
   line-height: 1.8;
   user-select: text;
-  background: var(--paper);
+  background: var(--teachtext-preview-bg);
   color: var(--ink);
   word-break: break-word;
 }
@@ -1670,7 +1990,7 @@
 .teachtext-preview h1 {
   font-size: 24px;
   font-family: var(--title-font);
-  border-bottom: var(--system-control-line) solid var(--ink);
+  border-bottom: var(--teachtext-preview-title-divider);
   padding-bottom: 8px;
   margin-bottom: 24px;
   text-align: center;
@@ -1680,7 +2000,7 @@
   font-size: 18px;
   font-family: var(--title-font);
   margin-top: 2em;
-  border-left: 8px solid var(--ink);
+  border-left: var(--teachtext-preview-section-marker);
   padding-left: 12px;
 }
 
@@ -1729,9 +2049,9 @@
   width: auto;
   height: auto;
   margin: 24px auto;
-  border: var(--system-control-line) solid var(--ink);
+  border: var(--teachtext-preview-image-border);
   image-rendering: auto;
-  background: var(--paper);
+  background: var(--teachtext-preview-image-bg);
 }
 
 .teachtext-preview ul, .teachtext-preview ol {
@@ -1743,7 +2063,7 @@
   margin: 20px 0;
   padding: 10px 20px;
   border: var(--teachtext-blockquote-border);
-  background: repeating-linear-gradient(45deg, #fff, #fff 2px, #f9f9f9 2px, #f9f9f9 4px);
+  background: var(--teachtext-preview-blockquote-bg);
   font-style: italic;
 }
 
@@ -2100,6 +2420,17 @@
   margin-bottom: 5px;
 }
 
+/* Command controls in top toolbars open into their owning window. Bottom
+   action bars retain the default upward placement above. */
+.teachtext-command-menu.command-menu-opens-down .teachtext-command-popover {
+  top: 100%;
+  right: 0;
+  bottom: auto;
+  left: auto;
+  margin-top: 5px;
+  margin-bottom: 0;
+}
+
 .teachtext-command-popover .btn,
 .teachtext-command-subpopover .btn {
   width: 100%;
@@ -2149,15 +2480,6 @@
   border-left: var(--teachtext-subpopover-border-left);
 }
 
-.docmap-command-menu .docmap-command-popover {
-  right: 0;
-  bottom: auto;
-  left: auto;
-  top: 100%;
-  margin-top: 5px;
-  margin-bottom: 0;
-}
-
 /* Surface windows share the flex model from .teachtext-actions above; this
    selector only carries the shrink guard for their direct buttons. */
 .teachtext-surface-actions > .btn {
@@ -2177,10 +2499,6 @@
 }
 
 @container (max-width: 520px) {
-  .teachtext-surface-window .details-bar {
-    grid-template-columns: minmax(0, 1fr) auto auto;
-  }
-
   .teachtext-surface-window .details-bar span,
   .teachtext-surface-window .details-bar button {
     min-width: 0;

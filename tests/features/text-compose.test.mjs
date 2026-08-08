@@ -60,6 +60,9 @@ test.assert(
   context.composeCacheKey({ source: SOURCE, layers: DENSITY, protectedRanges: PROTECTED }) !== keyA.replace(/^tc-/, "tc-a"),
   "the key is not a constant"
 );
+for (const [field, value] of [["language", "en"], ["targetFormat", "bili-dynamic"], ["targetDuration", "500w"], ["modelId", "other-model"], ["promptVersion", 2]]) {
+  test.assert(context.composeCacheKey({ source: SOURCE, layers: DENSITY, protectedRanges: PROTECTED, [field]: value }) !== keyA, `${field} changes the cache key`);
+}
 
 // Sentinel protection: the protected region is replaced by one immutable
 // token line before the model sees the text, and the original bytes live in
@@ -95,7 +98,7 @@ test.assert(
   "a duplicated sentinel fails verification"
 );
 const unknown = context.verifyProtectedSentinels(
-  protectedText.replace(sentinels[0].token, "⟦AI6_PROTECTED_deadbeef⟧"),
+  protectedText.replace(sentinels[0].token, "⟦AI6_PROTECTED_99_deadbeef⟧"),
   sentinels
 );
 test.assert(
@@ -111,8 +114,7 @@ test.assert(
   "a damaged token fragment fails verification"
 );
 
-// Composition ordering: one model call per prefix, in stored order, and the
-// last prefix wins. Turning the last layer off is a cache hit with no call.
+// Composition ordering: the full stored stack is sent in one model request.
 // The injected model receives the sentinel-protected text and must keep every
 // token verbatim; restore then returns the original bytes.
 const calls = [];
@@ -130,15 +132,12 @@ const composed = await context.composeDocument({
   cache,
   runModel,
 });
-test.assert(
-  calls.join("|") === "density|density+mingming",
-  "layers compose in stored order, one model call per prefix"
-);
+test.assert(calls.join("|") === "density+mingming", "four or fewer enabled layers compose in one exact-stack model call");
 test.assert(
   composed.text.includes("[model pass over density, mingming]"),
   "the last enabled layer's output is the composite"
 );
-test.assert(composed.prefixes.length === 2 && composed.prefixes.every((prefix) => !prefix.cached), "a fresh stack makes real model calls");
+test.assert(composed.prefixes.length === 1 && !composed.prefixes[0].cached, "a fresh exact stack makes one real model call");
 test.assert(composed.text.includes("这句话不许动。"), "the composite still carries the protected text verbatim");
 
 // A model that breaks a sentinel fails the whole composition: no best-effort
@@ -169,15 +168,23 @@ const withoutLast = await context.composeDocument({
   cache,
   runModel,
 });
-test.assert(
-  withoutLast.prefixes.length === 1 && withoutLast.prefixes[0].cached === true,
-  "switching the last layer off returns the cached prefix with no model call"
-);
+test.assert(withoutLast.prefixes.length === 1 && withoutLast.prefixes[0].cached === false, "a changed exact stack is computed only when requested");
 test.assert(
   withoutLast.text.includes("[model pass over density]"),
   "the composite without the last layer is the shorter prefix's output"
 );
-test.assert(calls.length === 2, "no new model call happened for the cache hit");
+test.assert(calls.length === 2, "the second exact stack caused exactly one additional call");
+
+const duplicateSource = "同一句。\n中间。\n同一句。";
+const duplicateProtected = context.protectTextWithSentinels(duplicateSource, [{ start: 1, end: 1 }, { start: 3, end: 3 }]);
+test.assert(duplicateProtected.sentinels.length === 2 && duplicateProtected.sentinels[0].token !== duplicateProtected.sentinels[1].token, "equal text in separate protected regions gets occurrence-unique sentinels");
+test.assert(context.verifyProtectedSentinels(duplicateProtected.protectedText, duplicateProtected.sentinels).valid, "duplicate protected text verifies when both occurrence tokens survive");
+test.assert(context.restoreProtectedSentinels(duplicateProtected.protectedText, duplicateProtected.sentinels) === duplicateSource, "both equal protected regions restore exactly");
+test.assert([1, 2, 3].every(() => context.isProtectedToken(duplicateProtected.sentinels[0].token)), "protected token tests are stateless across repeated calls");
+
+const fourCalls = [];
+await context.composeDocument({ source: "正文", layers: ["mingming", "luoluo", "hkrr", "density"].map((kind) => ({ kind, enabled: true, strength: 50 })), runModel: async ({ layers }) => { fourCalls.push(layers.length); return "正文"; } });
+test.assert(fourCalls.length === 1 && fourCalls[0] === 4, "four enabled layers invoke runModel exactly once");
 
 // An empty or all-disabled stack returns the negative untouched, with no call.
 const noLayers = await context.composeDocument({ source: SOURCE, layers: [], protectedRanges: PROTECTED, cache, runModel });

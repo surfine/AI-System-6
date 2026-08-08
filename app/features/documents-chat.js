@@ -345,7 +345,6 @@ async function renameSelectedDocumentItem() {
   file.updatedAt = new Date().toISOString();
   if (file.id === activeTextFileId) {
     teachTextNameInput.value = file.name;
-    teachTextTitleEl.textContent = file.name;
     syncTeachTextNameDisplay();
   }
   saveDeskState();
@@ -2552,7 +2551,6 @@ async function renameActiveFile() {
   file.updatedAt = new Date().toISOString();
   if (file.type === "text") {
     teachTextNameInput.value = file.name;
-    teachTextTitleEl.textContent = file.name;
     syncTeachTextNameDisplay();
   } else {
     chatFileTitleEl.textContent = file.name;
@@ -2894,7 +2892,6 @@ async function saveTextDocument({ asCopy = false, revealInDocuments = false, pro
   selectedFolderId = folder.id;
   selectedChatFileId = null;
   selectedDocumentFolderId = null;
-  teachTextTitleEl.textContent = file.name;
   const tab = typeof getActiveDocumentTab === "function" ? getActiveDocumentTab("teachText") : null;
   if (tab) {
     tab.role = teachTextDocumentRole === "manuscript" ? "manuscript" : "scratch_file";

@@ -10,7 +10,8 @@
 // Descriptor shape:
 //   id, labelKey, icon(state) -> icon id, finderIcon, defaultOrder,
 //   defaultEnabled, state() -> {state, detail, source, ...}, subscribe?,
-//   menu(), gauge?, ensureRuntime?, openOwner?, dispose?
+//   menu() or shared renderMenu(popover), menuClass?, gauge?, ensureRuntime?, openOwner?,
+//   renderIcon?, dispose?
 // `state` keeps the existing three-state honesty contract: unknown means "no
 // real source yet" and the shell renders no slot for it.
 
@@ -89,6 +90,19 @@ function controlStripSubscribeSoundscape(listener) {
   // The adapter is lazy; null tells the shell the subscription is not live
   // yet, so it re-attaches once the Soundscape runtime is actually loaded.
   return null;
+}
+
+function controlStripSubscribeClock(listener) {
+  const timer = window.setInterval(listener, 1000);
+  return () => window.clearInterval(timer);
+}
+
+function controlStripSubscribeNotifications(listener) {
+  const indicator = document.querySelector("#notification-center-button");
+  if (!indicator || typeof MutationObserver === "undefined") return null;
+  const observer = new MutationObserver(listener);
+  observer.observe(indicator, { attributes: true, childList: true, subtree: true });
+  return () => observer.disconnect();
 }
 
 function controlStripProjectName(project) {
@@ -184,31 +198,14 @@ const controlStripBuiltinModules = Object.freeze([
     defaultOrder: 1,
     defaultEnabled: true,
     openOwner: "projects",
+    menuClass: "project-switcher-popover",
     state: () => {
       const project = typeof getActiveProject === "function" ? getActiveProject() : null;
       return project
         ? { state: "ready", detail: project.name, source: "project-disk" }
         : { state: "unknown", detail: "", source: "project-disk" };
     },
-    menu: () => {
-      const project = typeof getActiveProject === "function" ? getActiveProject() : null;
-      const items = [];
-      if (project) items.push({ type: "label", label: controlStripProjectName(project), checked: true });
-      if (typeof projects !== "undefined" && Array.isArray(projects)) {
-        projects
-          .filter((candidate) => candidate.id !== project?.id && !candidate.archived)
-          .forEach((candidate) => {
-            items.push({
-              type: "action",
-              label: controlStripProjectName(candidate),
-              run: () => switchProject(candidate.id),
-            });
-          });
-      }
-      items.push({ type: "separator" });
-      items.push({ type: "action", label: t("control_strip_open_project_disk"), run: () => openWindow("projects") });
-      return items;
-    },
+    renderMenu: (popover) => renderProjectSwitcher(popover),
   },
   {
     id: "model",
@@ -218,30 +215,14 @@ const controlStripBuiltinModules = Object.freeze([
     defaultOrder: 2,
     defaultEnabled: true,
     openOwner: "control",
+    menuClass: "cloud-model-popover",
     state: () => {
       const status = controlStripCurrentModelStatus();
       return status.ready
         ? { state: "ready", detail: status.name, source: "model-config", mode: status.mode }
-        : { state: "unknown", detail: "", source: "model-config" };
+        : { state: "idle", detail: t("control_strip_model_not_ready"), source: "model-config" };
     },
-    menu: () => {
-      const status = controlStripCurrentModelStatus();
-      const items = [];
-      if (status.ready) {
-        items.push({
-          type: "label",
-          label: status.mode === "cloud"
-            ? t("control_strip_model_cloud", status.name)
-            : t("control_strip_model_local", status.name),
-          checked: true,
-        });
-      } else {
-        items.push({ type: "label", label: t("control_strip_model_not_ready") });
-      }
-      items.push({ type: "separator" });
-      items.push({ type: "action", label: t("control_strip_open_control_panel"), run: () => openWindow("control") });
-      return items;
-    },
+    renderMenu: (popover) => window.renderCloudModelPopover?.(popover),
   },
   {
     id: "writingBell",
@@ -379,6 +360,75 @@ const controlStripBuiltinModules = Object.freeze([
       items.push({ type: "action", label: t("control_strip_open_soundscape"), run: () => openWindow("soundscape") });
       return items;
     },
+  },
+  {
+    id: "finderEnvironment",
+    labelKey: "control_strip_finder_environment",
+    renderIcon: () => {
+      const icon = document.createElement("span");
+      icon.className = "multifinder-icon";
+      icon.setAttribute("aria-hidden", "true");
+      return icon;
+    },
+    finderIcon: "systemStatus",
+    defaultOrder: 7,
+    defaultEnabled: true,
+    state: () => ({
+      state: "ready",
+      detail: t(isMultiFinderMode() ? "multifinder" : "finder"),
+      source: "finder-environment",
+    }),
+    menu: () => [
+      { type: "action", label: t("finder"), checked: !isMultiFinderMode(), run: () => setFinderEnvironment("finder") },
+      { type: "action", label: t("multifinder"), checked: isMultiFinderMode(), run: () => setFinderEnvironment("multifinder") },
+    ],
+  },
+  {
+    id: "notifications",
+    labelKey: "control_strip_notifications",
+    renderIcon: () => {
+      const icon = document.createElement("span");
+      icon.className = "notification-center-icon";
+      icon.textContent = "!";
+      icon.setAttribute("aria-hidden", "true");
+      return icon;
+    },
+    finderIcon: "systemStatus",
+    defaultOrder: 8,
+    defaultEnabled: true,
+    openOwner: "notificationCenter",
+    subscribe: controlStripSubscribeNotifications,
+    state: () => ({
+      state: "ready",
+      detail: unreadSystemNotifications > 0
+        ? t("notification_center_unread", unreadSystemNotifications)
+        : t("notifications_empty"),
+      source: "system-notifications",
+    }),
+    menu: () => [
+      { type: "action", label: t("notification_center"), run: () => openWindow("notificationCenter") },
+    ],
+  },
+  {
+    id: "clock",
+    labelKey: "control_strip_clock",
+    renderIcon: () => {
+      const time = document.createElement("span");
+      time.className = "control-strip-clock-text";
+      time.textContent = formatSystemClockTime();
+      time.setAttribute("aria-hidden", "true");
+      return time;
+    },
+    finderIcon: "systemStatus",
+    defaultOrder: 9,
+    defaultEnabled: true,
+    openOwner: "alarmClock",
+    subscribe: controlStripSubscribeClock,
+    state: () => ({ state: "ready", detail: formatSystemClockTime(), source: "system-clock" }),
+    menu: () => [
+      { type: "action", label: t("alarm_clock"), run: () => openWindow("alarmClock") },
+      { type: "action", label: t("system_status"), run: () => openWindow("systemStatus") },
+    ],
   },
 ]);
 

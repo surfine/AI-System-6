@@ -111,6 +111,8 @@ function isValidModuleDescriptor(descriptor) {
     && descriptor.id.length > 0
     && (typeof descriptor.state === "function"
       || typeof descriptor.menu === "function"
+      || typeof descriptor.renderMenu === "function"
+      || typeof descriptor.renderIcon === "function"
       || typeof descriptor.icon === "function"
       || typeof descriptor.icon === "string");
 }
@@ -303,6 +305,7 @@ function disable() {
   }
   document.removeEventListener("keydown", handleStripHotkey, true);
   window.removeEventListener("resize", onStripViewportChange);
+  syncMenuExtraExclusivity();
   syncStripPlacementReserve();
 }
 
@@ -417,8 +420,13 @@ function renderModuleButton(descriptor) {
   button.className = "control-strip-module";
   button.dataset.controlStripModule = descriptor.id;
   button.dataset.state = state.state;
-  const iconId = typeof descriptor.icon === "function" ? descriptor.icon(state) : (descriptor.icon || "document");
-  button.innerHTML = renderSystemIcon(iconId, { size: "mini" });
+  if (typeof descriptor.renderIcon === "function") {
+    const renderedIcon = descriptor.renderIcon(state);
+    if (renderedIcon) button.append(renderedIcon);
+  } else {
+    const iconId = typeof descriptor.icon === "function" ? descriptor.icon(state) : (descriptor.icon || "document");
+    button.innerHTML = renderSystemIcon(iconId, { size: "mini" });
+  }
   const label = typeof descriptor.labelKey === "string" ? t(descriptor.labelKey) : descriptor.id;
   const detail = state.detail ? ` · ${state.detail}` : "";
   button.setAttribute("aria-label", `${label}${detail}`);
@@ -684,7 +692,20 @@ function syncStripVisibleState() {
   if (!stripMount) return;
   const visible = stripPrefs().visible !== false;
   stripMount.hidden = !visible;
+  syncMenuExtraExclusivity();
   if (visible) syncStripPlacementReserve();
+}
+
+// Control Strip modules and their menu-bar-extra descendants are alternative
+// homes for the same system controls. Keep exactly one home visible while
+// leaving unrelated extras (notifications and the clock) alone.
+function syncMenuExtraExclusivity() {
+  const stripOwnsExtras = stripEnabled && stripPrefs().visible !== false;
+  document.querySelectorAll("[data-control-strip-counterpart]").forEach((extra) => {
+    extra.classList.toggle("is-control-strip-counterpart-hidden", stripOwnsExtras);
+    extra.setAttribute("aria-hidden", String(stripOwnsExtras));
+  });
+  if (stripOwnsExtras && typeof closeMenus === "function") closeMenus();
 }
 
 function toggleStripCollapsed() {
@@ -693,6 +714,7 @@ function toggleStripCollapsed() {
 
 function onHandleClick() {
   if (performance.now() < stripSuppressClickUntil) return;
+  playSystemSound?.("click");
   toggleStripCollapsed();
   if (isNarrowScreen()) syncStripGeometry();
 }
@@ -1028,26 +1050,50 @@ function onModuleClick(descriptor, button, event) {
   // Switching modules keeps the deferred redraw pending: flushing it here
   // would replace the very button this call is about to anchor the menu to.
   if (stripOpenMenu) closeStripMenu({ flush: false });
-  const items = typeof descriptor.menu === "function" ? descriptor.menu() : [];
-  if (!items.length) return;
   const popover = document.createElement("div");
   popover.className = "menu-popover control-strip-menu";
   popover.dataset.controlStripMenu = descriptor.id;
   popover.setAttribute("role", "menu");
   popover.style.setProperty("--control-strip-menu-font", controlStripMenuFontStack());
   popover.style.setProperty("--control-strip-menu-font-size", `${stripPrefs().menuFontSize || 12}px`);
-  renderMenuItems(popover, items);
+  renderDescriptorMenu(descriptor, popover);
+  if (!popover.children.length) return;
+  if (typeof descriptor.renderMenu === "function") {
+    // Shared menu renderers own their commands. Close the strip host after
+    // their button handler (and any document-level delegation) has run.
+    popover.addEventListener("click", (clickEvent) => {
+      const menuButton = clickEvent.target.closest("button");
+      if (!menuButton) return;
+      // data-action buttons pass through the global menu dispatcher, which
+      // already supplies this sound. Renderer-owned buttons need it here.
+      if (!menuButton.matches("[data-action]")) playSystemSound?.("menu");
+      queueMicrotask(() => closeStripMenu());
+    });
+  }
   popover.addEventListener("keydown", moveStripMenuFocus);
   document.body.append(popover);
   const rect = button.getBoundingClientRect();
   const width = popover.offsetWidth || 180;
   popover.style.setProperty("--control-strip-menu-left", `${Math.min(rect.left, Math.max(0, window.innerWidth - width - 8))}px`);
+  // Anchor to the strip itself, not the desk edge: the strip can be moved
+  // vertically, while every module menu still opens immediately above it.
+  popover.style.setProperty("--control-strip-menu-bottom", `${Math.max(0, window.innerHeight - rect.top + 2)}px`);
   button.classList.add("is-open");
   button.setAttribute("aria-expanded", "true");
   stripOpenMenu = { popover, button, moduleId: descriptor.id };
   document.addEventListener("pointerdown", closeStripMenuOnOutside, true);
   document.addEventListener("keydown", closeStripMenuOnEscape, true);
   popover.querySelector("button")?.focus();
+}
+
+function renderDescriptorMenu(descriptor, popover) {
+  if (typeof descriptor.renderMenu === "function") {
+    if (descriptor.menuClass) popover.classList.add(descriptor.menuClass);
+    descriptor.renderMenu(popover);
+    return;
+  }
+  const items = typeof descriptor.menu === "function" ? descriptor.menu() : [];
+  renderMenuItems(popover, items);
 }
 
 function renderMenuItems(popover, items) {
@@ -1071,6 +1117,7 @@ function renderMenuItems(popover, items) {
     if (item.checked) menuItem.classList.add("is-checked");
     if (item.disabled) menuItem.disabled = true;
     menuItem.addEventListener("click", () => {
+      playSystemSound?.("menu");
       closeStripMenu();
       item.run?.();
       refreshStrip(stripOpenMenu ? null : undefined);
@@ -1089,10 +1136,9 @@ function updateOpenMenu(moduleId) {
     closeStripMenu();
     return;
   }
-  const items = typeof descriptor.menu === "function" ? descriptor.menu() : [];
   const popover = stripOpenMenu.popover;
   const previousIndex = [...popover.querySelectorAll("button")].indexOf(document.activeElement);
-  renderMenuItems(popover, items);
+  renderDescriptorMenu(descriptor, popover);
   const buttons = [...popover.querySelectorAll("button")];
   if (buttons.length) {
     const target = buttons[Math.max(0, Math.min(previousIndex, buttons.length - 1))];

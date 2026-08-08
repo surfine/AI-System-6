@@ -213,6 +213,7 @@ function renderReaderTabs(project = getActiveProject()) {
   renderTdiTabStrip(readerTabsEl, tabs, {
     activeId: project?.activeDocumentTabIds?.reader,
     labelFor: (tab, index) => `${index + 1}. ${tab.title || tab.url}`,
+    compactLabelFor: (tab) => tab.title || tab.url || t("reader"),
     sublabelFor: (tab) => formatReaderTabSubtitle(tab),
     closableFor: () => tabs.length > 1,
     onOpen: (tab) => openReaderDocumentTab(tab.id),
@@ -787,18 +788,11 @@ function handleReaderDrop(event) {
 
 function setReaderWindowTitle(page = null) {
   if (!readerTitleEl) return;
-
-  if (!page) {
-    readerTitleEl.dataset.i18n = "reader";
-    readerTitleEl.textContent = t("reader");
-    readerTitleEl.title = t("reader");
-    return;
-  }
-
-  delete readerTitleEl.dataset.i18n;
-  const title = page.title || t("reader");
-  readerTitleEl.textContent = title;
-  readerTitleEl.title = title;
+  const appTitle = t("reader");
+  const documentTitle = page?.title || page?.fileName || "";
+  readerTitleEl.dataset.i18n = "reader";
+  readerTitleEl.textContent = appTitle;
+  readerTitleEl.title = documentTitle ? `${appTitle} — ${documentTitle}` : appTitle;
 }
 
 function getReaderSiteLabel(page) {
