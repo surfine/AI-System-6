@@ -1,5 +1,6 @@
 import vm from "node:vm";
 import { webcrypto } from "node:crypto";
+import { readFileSync } from "node:fs";
 
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
@@ -17,6 +18,10 @@ const context = vm.createContext({
 });
 vm.runInContext(backupSource, context);
 const backup = context.window.AISystem6ProjectDiskBackup;
+
+const v2Fixture = JSON.parse(
+  readFileSync(new URL("../fixtures/project-disk-backup-v2.json", import.meta.url), "utf8")
+);
 
 const legacyBundle = {
   format: "ai-system-6-project-disk",
@@ -120,24 +125,24 @@ test.assert(
   "legacy backups are explicitly marked as lacking integrity"
 );
 
-const v2Bundle = await backup.attachIntegrity(legacyBundle);
-test.assert(v2Bundle.formatVersion === 3, "new exports use format v3");
+const v3Bundle = await backup.attachIntegrity(legacyBundle);
+test.assert(v3Bundle.formatVersion === 3, "new exports use format v3");
 test.assert(
-  /^[a-f0-9]{64}$/.test(v2Bundle.integrity.contentHash),
+  /^[a-f0-9]{64}$/.test(v3Bundle.integrity.contentHash),
   "new exports carry a SHA-256 content hash"
 );
 test.assert(
-  Array.isArray(v2Bundle.documentRevisions) && v2Bundle.documentRevisions.length === 0,
+  Array.isArray(v3Bundle.documentRevisions) && v3Bundle.documentRevisions.length === 0,
   "v3 exports always carry the documentRevisions array (empty for legacy sources)"
 );
-const v2Validation = backup.validateBackup(v2Bundle);
-if (!v2Validation.valid) console.error(v2Validation.errors.join("\n"));
-test.assert(v2Validation.valid, "the generated v2 bundle satisfies its schema");
-const v2Integrity = await backup.verifyIntegrity(v2Bundle);
-if (!v2Integrity.valid) console.error(v2Integrity.errors.join("\n"));
-test.assert(v2Integrity.valid, "an unchanged v2 backup passes integrity verification");
+const v3Validation = backup.validateBackup(v3Bundle);
+if (!v3Validation.valid) console.error(v3Validation.errors.join("\n"));
+test.assert(v3Validation.valid, "the generated v3 bundle satisfies its schema");
+const v3Integrity = await backup.verifyIntegrity(v3Bundle);
+if (!v3Integrity.valid) console.error(v3Integrity.errors.join("\n"));
+test.assert(v3Integrity.valid, "an unchanged v3 backup passes integrity verification");
 test.assert(
-  v2Bundle.files.some((file) =>
+  v3Bundle.files.some((file) =>
     Array.isArray(file.repairReceipts)
     && file.repairReceipts[0]?.previousValue === "file-gone"
     && file.repairReceipts[0]?.field === "sourceDocumentId"
@@ -145,9 +150,102 @@ test.assert(
   "attachIntegrity keeps repair receipts on the records"
 );
 
-const tampered = structuredClone(v2Bundle);
+const tampered = structuredClone(v3Bundle);
 tampered.files[0].body = "tampered";
 test.assert(!(await backup.verifyIntegrity(tampered)).valid, "tampering is detected before import");
+
+// ---- Real historical v2 fixture -----------------------------------------
+// v2 is a genuinely supported format: SHA-256 integrity + counts, but no
+// documentRevisions. The fixture is a hand-written legacy export, not a
+// current-format export relabeled by attachIntegrity().
+test.assert(v2Fixture.formatVersion === 2, "the fixture is a v2 backup");
+test.assert(
+  !("documentRevisions" in v2Fixture),
+  "a real v2 backup has no documentRevisions field"
+);
+test.assert(
+  v2Fixture.integrity?.algorithm === "SHA-256"
+    && /^[a-f0-9]{64}$/i.test(v2Fixture.integrity.contentHash || ""),
+  "the v2 fixture carries a SHA-256 integrity record"
+);
+const v2Validation = backup.validateBackup(v2Fixture);
+if (!v2Validation.valid) console.error(v2Validation.errors.join("\n"));
+test.assert(v2Validation.valid, "the hand-written v2 backup validates");
+test.assert(
+  v2Validation.warnings.some((warning) => warning.includes("no document revision history")),
+  "v2 validation warns that revision history is absent and will import empty"
+);
+const v2Integrity = await backup.verifyIntegrity(v2Fixture);
+if (!v2Integrity.valid) console.error(v2Integrity.errors.join("\n"));
+test.assert(v2Integrity.valid, "the hand-written v2 backup verifies its integrity");
+
+const tamperedV2 = structuredClone(v2Fixture);
+tamperedV2.files[0].body = "tampered v2";
+test.assert(!(await backup.verifyIntegrity(tamperedV2)).valid, "v2 tampering is detected before import");
+
+// v2 → validate → verify integrity → remap → import → export v3. The remap is
+// the import step; exporting re-attaches integrity at the current version, and
+// the migrated backup must carry an explicit empty revision set, not an error.
+let v2UuidCounter = 0;
+const importedV2 = backup.remapBackup(v2Fixture, {
+  now: "2026-08-01T00:00:00.000Z",
+  uuid: () => `v2-new-${++v2UuidCounter}`,
+  projectName: (name) => `${name} Restored`,
+});
+const importedV2RootFolder = importedV2.folders.find((folder) => folder.name === "Drafts");
+const importedV2SubFolder = importedV2.folders.find((folder) => folder.name === "Archive");
+const importedV2RootFile = importedV2.files.find((file) => file.name === "Root Chat.md");
+const importedV2ChildFile = importedV2.files.find((file) => file.name === "Child Manuscript.md");
+const importedV2Alias = importedV2.files.find((file) => file.name === "Alias to Clip");
+const importedV2Reference = importedV2.references.find((reference) => reference.name === "Source Article");
+test.assert(
+  Array.isArray(importedV2.documentRevisions) && importedV2.documentRevisions.length === 0,
+  "v2 import migrates to an explicit empty documentRevisions array instead of erroring"
+);
+test.assert(
+  importedV2SubFolder.parentId === importedV2RootFolder.id,
+  "v2 folder hierarchy is preserved through remap"
+);
+test.assert(
+  importedV2ChildFile.folderId === importedV2SubFolder.id
+    && importedV2ChildFile.parentChatId === importedV2RootFile.id
+    && importedV2ChildFile.sourceDocumentId === importedV2RootFile.id,
+  "v2 file/folder and document lineage are preserved through remap"
+);
+test.assert(
+  importedV2Alias.type === "alias"
+    && importedV2Alias.aliasTarget.kind === "scrap"
+    && importedV2Alias.aliasTarget.id === importedV2.scraps[0].id,
+  "v2 alias targets are remapped to the imported Scrapbook record"
+);
+test.assert(
+  importedV2.scraps[0].sourceFileId === importedV2RootFile.id
+    && importedV2.scraps[0].sourceReferenceId === importedV2Reference.id,
+  "v2 Scrapbook source relationships are preserved through remap"
+);
+test.assert(
+  importedV2.projectCdItems[0].sourceDocumentId === importedV2ChildFile.id
+    && importedV2.projectCdItems[0].claimCheckId === importedV2RootFile.id,
+  "v2 Project CD relationships are preserved through remap"
+);
+test.assert(
+  importedV2Reference.chunks[0].referenceId === importedV2Reference.id
+    && importedV2Reference.chunks[0].projectId === importedV2.project.id,
+  "v2 reference chunks point at the imported reference and project"
+);
+const exportedV2 = await backup.attachIntegrity(importedV2);
+test.assert(exportedV2.formatVersion === 3, "imported v2 re-exports as the current v3 format");
+test.assert(
+  Array.isArray(exportedV2.documentRevisions) && exportedV2.documentRevisions.length === 0,
+  "the v3 export of an imported v2 backup carries an empty documentRevisions array"
+);
+const exportedV2Validation = backup.validateBackup(exportedV2);
+if (!exportedV2Validation.valid) console.error(exportedV2Validation.errors.join("\n"));
+test.assert(exportedV2Validation.valid, "the migrated v3 export satisfies the current schema");
+test.assert(
+  (await backup.verifyIntegrity(exportedV2)).valid,
+  "the migrated v3 export verifies its integrity"
+);
 
 const dangling = structuredClone(legacyBundle);
 dangling.files[0].folderId = "missing-folder";
@@ -195,7 +293,7 @@ test.assert(
 
 // ---- v3 document revisions -----------------------------------------------
 
-const v3WithRevisions = structuredClone(v2Bundle);
+const v3WithRevisions = structuredClone(v3Bundle);
 v3WithRevisions.documentRevisions = [
   {
     id: "rev-1",
@@ -223,9 +321,9 @@ v3WithRevisions.documentRevisions = [
   },
 ];
 const revisionsAttached = await backup.attachIntegrity(v3WithRevisions);
-const v3Validation = backup.validateBackup(revisionsAttached);
-if (!v3Validation.valid) console.error(v3Validation.errors.join("\n"));
-test.assert(v3Validation.valid, "a v3 backup with document revisions satisfies its schema");
+const revisionsValidation = backup.validateBackup(revisionsAttached);
+if (!revisionsValidation.valid) console.error(revisionsValidation.errors.join("\n"));
+test.assert(revisionsValidation.valid, "a v3 backup with document revisions satisfies its schema");
 test.assert((await backup.verifyIntegrity(revisionsAttached)).valid, "v3 integrity covers document revisions");
 
 const badRevisionDocument = structuredClone(revisionsAttached);

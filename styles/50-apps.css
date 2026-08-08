@@ -83,11 +83,19 @@
 }
 
 .quick-draft-details {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 6px 12px;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 12px;
   align-items: center;
   min-width: 0;
+}
+
+.quick-draft-details > #quick-draft-status {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .quick-draft-status-center {
@@ -499,37 +507,59 @@
 }
 
 .quick-draft-layout.quick-draft-reboot {
-  grid-template-rows: minmax(0, 1fr);
-  grid-template-areas: "editor";
-  gap: 0;
+  display: flex;
+  flex-direction: column;
+  grid-template-rows: unset;
+  grid-template-areas: unset;
+  gap: 6px;
+  min-height: 0;
 }
 
-.quick-draft-reboot .quick-draft-editor {
-  grid-template-rows: minmax(0, 1fr) auto;
-  gap: 8px;
-}
-
-.quick-draft-two-pane {
+/* One window, three regions. The paper is the middle column and never
+   leaves the screen; the shelf and the inspector are the two sides. */
+.quick-draft-desk {
   display: grid;
-  grid-template-columns: minmax(16rem, 0.38fr) minmax(24rem, 0.62fr);
-  grid-template-rows: minmax(0, 1fr);
+  position: relative;
+  flex: 1 1 auto;
+  grid-template-columns:
+    var(--quick-draft-shelf-width)
+    minmax(0, 1fr)
+    var(--quick-draft-inspector-width);
   gap: 8px;
   min-height: 0;
-  grid-row: 1;
-  grid-column: 1;
 }
 
-.quick-draft-material-pane,
-.quick-draft-body-pane {
+.quick-draft-shelf,
+.quick-draft-inspector {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  gap: 5px;
+  align-content: start;
+  gap: 6px;
   min-width: 0;
   min-height: 0;
+  overflow-y: auto;
 }
 
-.quick-draft-material-pane > span,
-.quick-draft-body-pane > span {
+/* The paper comes first in the source so it reads first and, on a phone,
+   the two drawers paint over it without a z-index of their own. Grid
+   placement puts the shelf back on the left. */
+.quick-draft-shelf {
+  grid-column: 1;
+  grid-row: 1;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  padding-right: 6px;
+  border-right: var(--quick-draft-sidebar-border);
+}
+
+.quick-draft-inspector {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+.quick-draft-shelf > b,
+.quick-draft-inspector-section > b,
+.quick-draft-well-field > span,
+.quick-draft-advanced summary,
+.quick-draft-advanced-field > span {
   min-width: 0;
   overflow: hidden;
   color: var(--ink);
@@ -538,16 +568,181 @@
   white-space: nowrap;
 }
 
-.quick-draft-material-pane textarea {
-  width: 100%;
+.quick-draft-shelf .quick-draft-source-map {
   min-height: 0;
-  height: 100%;
+  overflow-y: auto;
+}
+
+.quick-draft-material-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
   min-width: 0;
-  padding: 10px 12px;
+}
+
+.quick-draft-paper {
+  display: grid;
+  grid-column: 2;
+  grid-row: 1;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 6px;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Format and length are properties of this draft, so they ride on the sheet
+   head with the title instead of setting anything from the status bar. */
+.quick-draft-sheet-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 5px;
+  border-bottom: var(--quick-draft-divider-border);
+  min-width: 0;
+}
+
+.quick-draft-sheet-title {
+  display: flex;
+  flex: 1 1 14rem;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.quick-draft-sheet-title > span {
+  color: var(--shade-dark);
+  font: 12px/1.2 var(--system-font);
+  white-space: nowrap;
+}
+
+.quick-draft-sheet-title input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 3px 6px;
+}
+
+.quick-draft-sheet-select select {
+  max-width: 12rem;
+}
+
+.quick-draft-paper-body {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+}
+
+.quick-draft-paper-body > * {
+  grid-row: 1;
+  grid-column: 1;
+  min-height: 0;
+}
+
+/* Empty state, not a phase: the intake well and the body live on the same
+   paper and only one of them is on screen. */
+.quick-draft-intake-well {
+  display: grid;
+  grid-template-rows: minmax(0, 1.2fr) minmax(0, 1fr) auto auto;
+  gap: 8px;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.quick-draft-intake-well[hidden],
+.quick-draft-paper-body > [hidden] {
+  display: none;
+}
+
+.quick-draft-well-field {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 5px;
+  min-width: 0;
+  min-height: 0;
+}
+
+.quick-draft-well-field textarea,
+.quick-draft-advanced-field textarea,
+.quick-draft-advanced-field input {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 10px;
   resize: none;
 }
 
-.quick-draft-body-pane .quick-draft-editor-container {
+.quick-draft-well-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.quick-draft-advanced-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 8px 0 0;
+}
+
+.quick-draft-advanced-field {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 4px;
+  min-width: 0;
+}
+
+.quick-draft-inspector {
+  grid-template-rows: auto minmax(0, 1fr);
+  padding-left: 6px;
+  border-left: var(--quick-draft-sidebar-border);
+}
+
+.quick-draft-inspector-section {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  min-width: 0;
+  padding: 8px 10px;
+  background: var(--quick-draft-panel-bg);
+  border: var(--quick-draft-panel-border);
+  border-radius: var(--quick-draft-panel-radius);
+  box-shadow: var(--quick-draft-panel-shadow);
+}
+
+.quick-draft-versions-section {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-height: 0;
+}
+
+.quick-draft-adjust-note {
+  margin: 0;
+  color: var(--shade-dark);
+  font: 12px/1.45 var(--system-font);
+}
+
+.quick-draft-versions-list {
+  min-height: 0;
+  overflow-y: auto;
+  font: 12px/1.4 var(--system-font);
+  color: var(--shade-dark);
+}
+
+#quick-draft-save-state {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink);
+  font: 13px/1.25 var(--title-font);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#quick-draft-protect-state:empty,
+#quick-draft-stack-state:empty {
+  display: none;
+}
+
+.quick-draft-editor-container {
   height: 100%;
 }
 
@@ -1020,22 +1215,37 @@
   color: var(--ink);
 }
 
-.quick-draft-view-switch {
+.quick-draft-view-switch,
+.quick-draft-display-switch,
+.quick-draft-drawer-switch {
   display: inline-flex;
+  flex: 0 0 auto;
   gap: 2px;
   padding: 2px;
   border: var(--quick-draft-view-switch-border);
 }
 
-.quick-draft-view-switch .mini-btn {
+.quick-draft-view-switch .mini-btn,
+.quick-draft-display-switch .mini-btn,
+.quick-draft-drawer-switch .mini-btn {
+  flex: 0 0 auto;
+  min-width: 0;
   min-height: 20px;
   padding: 1px 7px;
   font-size: 11px;
 }
 
-.quick-draft-view-switch .mini-btn.is-active {
+.quick-draft-view-switch .mini-btn.is-active,
+.quick-draft-display-switch .mini-btn.is-active,
+.quick-draft-drawer-switch .mini-btn.is-active {
   background: var(--ink);
   color: var(--paper);
+}
+
+/* The two side panels stay on screen on a desk, so their drawer switch is a
+   phone control only (see 60-responsive.css). */
+.quick-draft-drawer-switch {
+  display: none;
 }
 
 .quick-draft-editor-container > .mde-surface {
@@ -1149,6 +1359,7 @@
 .quick-draft-protect,
 .quick-draft-adjustment-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 5px;
   padding: 2px 2px 4px;
@@ -1168,12 +1379,20 @@
 }
 
 .quick-draft-editor-actions {
-  justify-content: space-between;
+  flex-wrap: wrap;
+  justify-content: flex-start;
   gap: 8px;
   padding-top: 1px;
   grid-row: 2;
   grid-column: 1;
   position: relative;
+}
+
+/* One flexible gap keeps the display switch on the left and the delivery and
+   draft controls on the right, whatever the label lengths are. */
+.quick-draft-actions-gap {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .quick-draft-editor-actions .teachtext-command-group {
@@ -1233,9 +1452,32 @@
   justify-self: end;
 }
 
+/* One layer reads as one row: switch and name on the left, strength on the
+   right, the scope line under both. */
 .quick-draft-adjustment-layer {
   display: grid;
-  gap: 2px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 2px 6px;
+}
+
+.quick-draft-adjustment-layer > .quick-draft-adjustment-mask {
+  grid-column: 1 / -1;
+  flex-wrap: nowrap;
+}
+
+.quick-draft-adjustment-layer .quick-draft-adjustment-mask input {
+  width: 3rem;
+}
+
+.quick-draft-adjustment-layer .select-wrap-inline select {
+  max-width: 6.5rem;
+}
+
+.quick-draft-layer-stack {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
 }
 
 .quick-draft-adjustment-mask {

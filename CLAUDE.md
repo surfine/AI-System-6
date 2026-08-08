@@ -113,6 +113,8 @@ npm run verify:release    # full gate: build + syntax + src typecheck + smoke,
 npm run verify:features   # executable feature contracts (one per user feature)
 npm run verify:docs       # every .md has a current-hash zh-CN mirror
 npm run smoke:release     # HTML/CSS/terminology checks
+npm run verify:ship       # local release condition: fast deterministic gates,
+                          # never Playwright (see REPO-RUNBOOK)
 ```
 
 **Use risk-tiered verification.** During implementation, run only the smallest
@@ -129,6 +131,12 @@ before state at task start and one Classic/Liquid after state when the whole
 surface batch is complete.
 `verify:release` is reserved for commit/PR, packaging, deployment, broad
 cross-module refactors, or an explicit user request.
+
+**E2E is not a release condition.** Playwright tests under `tests/e2e/` are
+historical diagnostics for humans (`npm run test:e2e`, explicitly optional).
+They are not part of `verify:ship`, `verify:release`, the default CI, or the
+release workflow; feature behavior is owned by the executable feature tests
+(pure / VM / static contracts), and a flaky browser run never blocks a release.
 
 `verify:release` needs a real `build-info.json` stamp (`YYYYMMDD.N`); override
 with `AI_SYSTEM6_BUILD=20260101.1`. Feature tests are executable docs: when you

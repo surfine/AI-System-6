@@ -1,5 +1,5 @@
 <!-- canonical-source: CHANGELOG.md -->
-<!-- source-sha256: c96f142a1cb0754c49ecc62e211c6329cdbbb50ab64f711db8bf4094b7512799 -->
+<!-- source-sha256: 711341fae90d07ecd7150d56d3d4332417eeeccc168277421815bf9f4a5fb58b -->
 
 # AI System 6 中文更新日志
 
@@ -320,6 +320,26 @@ Liquid Glass 继续作为独立材质存在，而不是被复古修正误伤。
 - 本地 `verify:ship` 门禁生成 `dist/verification-report.json`，作为发布条件
   （托管 GitHub Actions 可用性属于账户问题）。浏览器失败矩阵覆盖耐久链路。
 - iPhone / WebKit 可走完整写作路线，并新增黑箱移动端用户旅程。
+
+## 公开测试版 1.0.27 — 2026-08-08
+
+- 钟点稿完成版：窗口变成一个写作应用，三种状态（开始 / 写稿 / 调整）；
+  统一 workspace schema 并带旧数据迁移；调整层做成产品（开关 + 强度 +
+  范围 + 一句话说明）；受保护文字改用不可变 sentinel；痕迹视图提供
+  原文/当前/差异；单对象画布会持久化自己的变换；有版本和明确的交付动作
+  （保存到项目硬盘、送往 TeachText、送往 Review Desk、导出 Markdown）。
+- 非破坏性契约：每一层只读底片；AI 通道永远不能直接覆盖正文；模型破坏
+  受保护文字时整次合成失败，而不是猜着位置塞回去；Develop 会先保存版本
+  并征求确认。
+- Project Hard Disk v2 备份重新可用（validate → 校验完整性 → remap →
+  import → 导出 v3），并用手写的真实 v2 fixture 证明文件夹 / 文件 / 替身 /
+  Scrapbook / references / Project CD 关系全部保留。
+- 发版门禁快速且确定：`verify:ship` 只跑 build、feature tests、version
+  consistency、checkJs、src typecheck、data、docs、CSS、design、public
+  tree、runtime syntax、smoke、release assets、floppy budget——没有
+  Playwright、没有浏览器下载、没有 WebKit。E2E 是可选诊断，永不阻塞发版。
+- StateStore commit 回调做静态审计：UI 临时状态（选中、激活、焦点、toast）
+  只能在 commit 成功之后变化，并修复了两处既有违规。
 
 ## 一个月里真正变大的东西
 

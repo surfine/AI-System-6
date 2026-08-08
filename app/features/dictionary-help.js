@@ -47,12 +47,30 @@ function getSystemHelpEntryById(id) {
   return systemDictionaryEntries.find((entry) => systemHelpEntryId(entry) === id) || null;
 }
 
-function systemHelpCategoryLabel(category) {
-  return t(`system_help_category_${category || "help"}`);
+// Group order is the reading order of the window: the writing route first, then
+// the tools a writer summons, then models, then the desktop, then the rules.
+const systemHelpGroupOrder = ["route", "tools", "model", "desktop", "concept"];
+
+function systemHelpGroupLabel(group) {
+  return t(`system_help_group_${group || "concept"}`);
+}
+
+function systemHelpEntryIcon(entry) {
+  return entry?.icon || "systemHelp";
+}
+
+function systemHelpRouteEntries() {
+  return systemDictionaryEntries
+    .filter((entry) => entry.routeStop)
+    .sort((left, right) => left.routeStop - right.routeStop);
 }
 
 function systemHelpActionLabel(entry) {
   if (!entry?.action) return "";
+  // An entry may name its own verb ("Insert File Floppy"); otherwise the desk
+  // opens the object.
+  const own = currentLanguage === "zh" ? entry.actionLabelZh : entry.actionLabel;
+  if (own) return own;
   return `${t("system_help_open_feature")} ${entry.term}`;
 }
 
@@ -79,6 +97,7 @@ function systemHelpAssistantPrompt(entry) {
 function systemHelpSearchHaystack(entry) {
   return [
     entry.term,
+    entry.termZh,
     ...(entry.aliases || []),
     entry.category,
     entry.definition,
@@ -92,48 +111,64 @@ function systemHelpSearchHaystack(entry) {
 function filteredSystemHelpEntries() {
   const query = normalizeDictionaryTerm(systemHelpQueryInput?.value || "").toLowerCase();
   return systemDictionaryEntries.filter((entry) => {
-    const categoryMatches = selectedSystemHelpCategory === "all" || entry.category === selectedSystemHelpCategory;
-    if (!categoryMatches) return false;
+    const groupMatches = selectedSystemHelpGroup === "all" || entry.category === selectedSystemHelpGroup;
+    if (!groupMatches) return false;
     if (!query) return true;
     return systemHelpSearchHaystack(entry).includes(query);
   });
 }
 
-function renderSystemHelp() {
-  if (!systemHelpListEl || !systemHelpDetailEl || !systemHelpCategoriesEl) return;
+// The route reads in route order; every other group keeps its authored order.
+function orderedSystemHelpEntries(entries) {
+  return [...entries].sort((left, right) => {
+    const leftGroup = systemHelpGroupOrder.indexOf(left.category);
+    const rightGroup = systemHelpGroupOrder.indexOf(right.category);
+    if (leftGroup !== rightGroup) return leftGroup - rightGroup;
+    if (left.routeStop && right.routeStop) return left.routeStop - right.routeStop;
+    if (left.routeStop) return -1;
+    if (right.routeStop) return 1;
+    return systemDictionaryEntries.indexOf(left) - systemDictionaryEntries.indexOf(right);
+  });
+}
 
-  const categoryOrder = ["project", "writing", "reading", "research", "quality", "assistant", "help"];
-  const categories = categoryOrder.filter((category) => systemDictionaryEntries.some((entry) => entry.category === category));
-  const visibleEntries = filteredSystemHelpEntries();
+function syncSystemHelpGroupSelect() {
+  if (!systemHelpGroupSelect) return;
+  const groups = systemHelpGroupOrder.filter((group) =>
+    systemDictionaryEntries.some((entry) => entry.category === group)
+  );
+  const options = [{ value: "all", label: t("system_help_all") }]
+    .concat(groups.map((group) => ({ value: group, label: systemHelpGroupLabel(group) })));
+  systemHelpGroupSelect.replaceChildren();
+  options.forEach(({ value, label }) => {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = label;
+    systemHelpGroupSelect.append(option);
+  });
+  systemHelpGroupSelect.value = options.some((option) => option.value === selectedSystemHelpGroup)
+    ? selectedSystemHelpGroup
+    : "all";
+  // The System 6 select harness mirrors the native options, so repopulating
+  // them has to refresh the visible control.
+  refreshSystemSelectControl(systemHelpGroupSelect);
+}
+
+function renderSystemHelp() {
+  if (!systemHelpListEl || !systemHelpDetailEl) return;
+
+  const query = normalizeDictionaryTerm(systemHelpQueryInput?.value || "");
+  const visibleEntries = orderedSystemHelpEntries(filteredSystemHelpEntries());
   const visibleIds = new Set(visibleEntries.map(systemHelpEntryId));
 
   if (!selectedSystemHelpEntryId || !visibleIds.has(selectedSystemHelpEntryId)) {
     selectedSystemHelpEntryId = systemHelpEntryId(visibleEntries[0]) || systemHelpEntryId(systemDictionaryEntries[0]);
   }
 
-  systemHelpCategoriesEl.replaceChildren();
-  const allButton = document.createElement("button");
-  allButton.type = "button";
-  allButton.className = `btn mini-btn${selectedSystemHelpCategory === "all" ? " is-selected" : ""}`;
-  allButton.textContent = t("system_help_all");
-  allButton.addEventListener("click", () => {
-    selectedSystemHelpCategory = "all";
-    renderSystemHelp();
-  });
-  systemHelpCategoriesEl.append(allButton);
+  syncSystemHelpGroupSelect();
 
-  categories.forEach((category) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = `btn mini-btn${selectedSystemHelpCategory === category ? " is-selected" : ""}`;
-    button.textContent = systemHelpCategoryLabel(category);
-    button.addEventListener("click", () => {
-      selectedSystemHelpCategory = category;
-      renderSystemHelp();
-    });
-    systemHelpCategoriesEl.append(button);
-  });
-
+  if (systemHelpScopeEl) {
+    systemHelpScopeEl.textContent = query ? t("system_help_searching", query) : t("system_help_terms");
+  }
   if (systemHelpCountEl) {
     systemHelpCountEl.textContent = t("system_help_count", visibleEntries.length, systemDictionaryEntries.length);
   }
@@ -145,15 +180,28 @@ function renderSystemHelp() {
     return;
   }
 
+  let renderedGroup = "";
   visibleEntries.forEach((entry) => {
     const id = systemHelpEntryId(entry);
+    if (entry.category !== renderedGroup) {
+      renderedGroup = entry.category;
+      const heading = document.createElement("p");
+      heading.className = "system-help-group";
+      // A listbox owns options; the group heading is a visual divider.
+      heading.setAttribute("role", "presentation");
+      heading.textContent = systemHelpGroupLabel(entry.category);
+      systemHelpListEl.append(heading);
+    }
     const button = document.createElement("button");
     button.type = "button";
     button.setAttribute("role", "option");
+    button.setAttribute("aria-selected", id === selectedSystemHelpEntryId ? "true" : "false");
     button.className = id === selectedSystemHelpEntryId ? "is-selected" : "";
+    const secondaryName = currentLanguage === "zh" ? entry.termZh : "";
     button.innerHTML = `
+      ${renderSystemIcon(systemHelpEntryIcon(entry), { size: "help-row" })}
       <b>${escapeHtml(entry.term)}</b>
-      <small>${escapeHtml(systemHelpCategoryLabel(entry.category))}</small>
+      <small>${escapeHtml(secondaryName && secondaryName !== entry.term ? secondaryName : "")}</small>
     `;
     button.addEventListener("click", () => {
       selectedSystemHelpEntryId = id;
@@ -166,36 +214,70 @@ function renderSystemHelp() {
   renderSystemHelpDetail(selectedEntry);
 }
 
+function systemHelpRouteRibbon(entry) {
+  const stops = systemHelpRouteEntries();
+  if (!stops.length) return "";
+  const marks = stops.map((stop) => {
+    const label = currentLanguage === "zh" ? stop.termZh || stop.term : stop.term;
+    const isCurrent = stop.id === entry.id;
+    return `<span${isCurrent ? ' class="is-current"' : ""}>${escapeHtml(label)}</span>`;
+  });
+  return `<p class="system-help-route">${marks.join("<span aria-hidden=\"true\">&rsaquo;</span>")}</p>`;
+}
+
+// The entry reads like a Get Info window: object header, then labelled rows the
+// user does not have to guess at, then the actions the object itself owns.
 function renderSystemHelpDetail(entry) {
   if (!systemHelpDetailEl || !entry) return;
-  const aliases = (entry.aliases || []).filter((alias) => normalizeDictionaryTerm(alias) !== normalizeDictionaryTerm(entry.term));
+  // Aliases stay language-matched: an English desk does not list 术语表.
+  const aliases = (entry.aliases || []).filter((alias) =>
+    normalizeDictionaryTerm(alias) !== normalizeDictionaryTerm(entry.term)
+    && normalizeDictionaryTerm(alias) !== normalizeDictionaryTerm(entry.termZh)
+    && (currentLanguage === "zh" || detectDictionaryTermLanguage(alias) !== "zh")
+  );
   const relatedEntries = (entry.related || []).map(getSystemHelpEntryById).filter(Boolean);
-  const actionLabel = systemHelpActionLabel(entry);
+  // System Help never offers to open System Help; the window is already here.
+  const actionLabel = entry.action === "open-system-help" ? "" : systemHelpActionLabel(entry);
   const definition = systemHelpLocalizedDefinition(entry);
   const example = systemHelpLocalizedExample(entry);
+  const secondaryName = currentLanguage === "zh" && entry.termZh && entry.termZh !== entry.term ? entry.termZh : "";
+  const routeRibbon = entry.category === "route" ? systemHelpRouteRibbon(entry) : "";
 
   systemHelpDetailEl.innerHTML = `
     <article class="system-help-card">
-      <h3>${escapeHtml(entry.term)}</h3>
-      <p><b>${escapeHtml(systemHelpCategoryLabel(entry.category))}</b></p>
-      <p>${escapeHtml(definition)}</p>
-      ${example ? `<p><b>${escapeHtml(t("dictionary_example"))}</b>: ${escapeHtml(example)}</p>` : ""}
-      ${aliases.length ? `
-        <div class="system-help-aliases">
-          <b>${escapeHtml(t("system_help_aliases"))}:</b>
-          ${aliases.map((alias) => `<span>${escapeHtml(alias)}</span>`).join("")}
+      <header class="system-help-head">
+        ${renderSystemIcon(systemHelpEntryIcon(entry), { size: "help-object" })}
+        <div>
+          <h3>${escapeHtml(entry.term)}</h3>
+          <p>${escapeHtml([secondaryName, systemHelpGroupLabel(entry.category)].filter(Boolean).join(" · "))}</p>
         </div>
-      ` : ""}
-      ${relatedEntries.length ? `
-        <div class="system-help-related">
-          <b>${escapeHtml(t("system_help_related"))}:</b>
-          ${relatedEntries.map((related) => `<button type="button" class="system-help-related-link" data-system-help-related="${escapeHtml(systemHelpEntryId(related))}">${escapeHtml(related.term)}</button>`).join("")}
-        </div>
-      ` : ""}
+      </header>
+      <div class="system-help-card-scroll">
+        <dl class="system-help-info">
+          ${routeRibbon ? `
+            <dt>${escapeHtml(t("system_help_position"))}</dt>
+            <dd>${routeRibbon}</dd>
+          ` : ""}
+          <dt>${escapeHtml(t("system_help_definition"))}</dt>
+          <dd>${escapeHtml(definition)}</dd>
+          ${example ? `
+            <dt>${escapeHtml(t("dictionary_example"))}</dt>
+            <dd>${escapeHtml(example)}</dd>
+          ` : ""}
+          ${aliases.length ? `
+            <dt>${escapeHtml(t("system_help_aliases"))}</dt>
+            <dd class="system-help-aliases">${aliases.map((alias) => `<span>${escapeHtml(alias)}</span>`).join("")}</dd>
+          ` : ""}
+          ${relatedEntries.length ? `
+            <dt>${escapeHtml(t("system_help_related"))}</dt>
+            <dd class="system-help-related">${relatedEntries.map((related) => `<button type="button" class="system-help-related-link" data-system-help-related="${escapeHtml(systemHelpEntryId(related))}">${escapeHtml(currentLanguage === "zh" ? related.termZh || related.term : related.term)}</button>`).join("")}</dd>
+          ` : ""}
+        </dl>
+      </div>
       <div class="button-row system-help-actions">
-        ${actionLabel ? `<button type="button" class="btn" data-system-help-action="open">${escapeHtml(actionLabel)}</button>` : ""}
         <button type="button" class="btn" data-system-help-action="lookup">${escapeHtml(t("system_help_lookup_dictionary"))}</button>
-        <button type="button" class="btn default" data-system-help-action="ask">${escapeHtml(t("system_help_ask_assistant"))}</button>
+        <button type="button" class="btn${actionLabel ? "" : " default"}" data-system-help-action="ask">${escapeHtml(t("system_help_ask_assistant"))}</button>
+        ${actionLabel ? `<button type="button" class="btn default" data-system-help-action="open">${escapeHtml(actionLabel)}</button>` : ""}
       </div>
     </article>
   `;

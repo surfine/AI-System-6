@@ -312,6 +312,32 @@ Version `1.0.12`, build `20260804.2`.
 - iPhone / WebKit can complete the full writing route and a black-box mobile
   user journey ships.
 
+## Public Beta 1.0.27 - 2026-08-08
+
+- Quick Draft Completion: the window is now one writing application with
+  three states (Start / Write / Adjust), a durable workspace schema with
+  legacy migration, plain-language adjustment layers (switch + strength +
+  range + one-line description), immutable-sentinel protected ranges,
+  Original/Current/Difference compression grain, a single-object canvas that
+  persists its transform, versions, and explicit delivery actions (Save to
+  Project Hard Disk, Send to TeachText, Send to Review Desk, Export Markdown).
+- Non-destructive by contract: every layer reads the negative, AI passes can
+  never overwrite the working body, protected text that a model breaks fails
+  the composition instead of being guessed back into place, and Develop saves
+  a revision and asks before promoting a composite.
+- Project Hard Disk v2 backups are supported again (validate → verify
+  integrity → remap → import → export v3), with a real hand-written v2
+  fixture proving folder/file/alias/Scrapbook/reference/Project CD
+  relationships survive.
+- The release gate is fast and deterministic: `verify:ship` runs build,
+  feature tests, version consistency, checkJs, src typecheck, data, docs,
+  CSS, design, public tree, runtime syntax, smoke, release assets, and floppy
+  budget — no Playwright, no browser download, no WebKit. E2E is an optional
+  diagnostic and never blocks a release.
+- StateStore commit callbacks are audited statically: UI ephemeral state
+  (selection, activation, focus, toasts) may only change after a commit
+  resolves, and two existing violations were fixed.
+
 ## What Changed Most In One Month
 
 - The product moved from "an AI writing prototype" to a local-first writing

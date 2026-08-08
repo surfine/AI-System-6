@@ -386,10 +386,11 @@ const {
   dictionaryResultEl,
   dictionaryRecentEl,
   systemHelpQueryInput,
-  systemHelpCategoriesEl,
+  systemHelpGroupSelect,
   systemHelpListEl,
   systemHelpDetailEl,
   systemHelpCountEl,
+  systemHelpScopeEl,
   modernFontsInput,
   liquidGlassInput,
   soundEffectsInput,
@@ -1490,7 +1491,7 @@ let selectedDocMapNodeId = null;
 let currentDictionaryResult = null;
 let dictionaryRecentResults = [];
 let selectedSystemHelpEntryId = null;
-let selectedSystemHelpCategory = "all";
+let selectedSystemHelpGroup = "all";
 let lastTextTarget = null;
 let styleSheetFindings = [];
 const translationCache = new Map();

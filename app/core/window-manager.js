@@ -3816,7 +3816,7 @@ async function shutDownSystem() {
   document.querySelector("#shutdown-screen")?.classList.remove("is-hidden");
   modalScrim.classList.add("is-hidden");
   setStatus(t("shutdown_message"));
-  playSystemSound("close");
+  playSystemSound("shutdown");
   renderMultiFinderMenu();
 }
 
@@ -3870,6 +3870,12 @@ async function closeWindow(name, force = false) {
   win.classList.add("is-hidden");
   if (name === "memoryCards") {
     pauseMemoryCardsGame();
+  }
+  // Stop any in-flight USDZ render and model refresh timer before the window
+  // hides, so a closed CMF Studio never finishes parsing a model nobody can
+  // see. (Guarded: the module is only present once the window has opened.)
+  if (name === "cmfStudio" && window.AISystem6CMFStudio) {
+    window.AISystem6CMFStudio.cancelRender?.();
   }
   delete win.dataset.appHiddenCollapsed;
   playSystemSound("close");
@@ -4184,6 +4190,7 @@ function scheduleWritingSpineAvoidance() {
 
 function zoomWindow(win) {
   if (!isZoomableWindow(win)) return;
+  playSystemSound("zoom");
 
   if(matchMedia("(max-width:860px)").matches){
     win.classList.remove("is-collapsed");

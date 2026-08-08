@@ -317,10 +317,11 @@ function getElements() {
   const dictionaryResultEl = document.querySelector("#dictionary-result");
   const dictionaryRecentEl = document.querySelector("#dictionary-recent");
   const systemHelpQueryInput = document.querySelector("#system-help-query");
-  const systemHelpCategoriesEl = document.querySelector("#system-help-categories");
+  const systemHelpGroupSelect = document.querySelector("#system-help-group");
   const systemHelpListEl = document.querySelector("#system-help-list");
   const systemHelpDetailEl = document.querySelector("#system-help-detail");
   const systemHelpCountEl = document.querySelector("#system-help-count");
+  const systemHelpScopeEl = document.querySelector("#system-help-scope");
   const modernFontsInput = document.querySelector("#modern-fonts");
   const liquidGlassInput = document.querySelector("#liquid-glass");
   const soundEffectsInput = document.querySelector("#sound-effects");
@@ -714,10 +715,11 @@ function getElements() {
     dictionaryResultEl,
     dictionaryRecentEl,
     systemHelpQueryInput,
-    systemHelpCategoriesEl,
+    systemHelpGroupSelect,
     systemHelpListEl,
     systemHelpDetailEl,
     systemHelpCountEl,
+    systemHelpScopeEl,
     modernFontsInput,
     liquidGlassInput,
     soundEffectsInput,

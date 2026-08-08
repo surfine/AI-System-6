@@ -2,7 +2,7 @@
 // Single source of version/build/sourceCommit for browser, server, shell and
 // index.html cache-busters.
 window.AISystem6BuildInfo = Object.freeze({
-  "version": "1.0.26",
-  "build": "20260808.4",
-  "sourceCommit": "b1eade23af28c56e5f1dca13f1779220c5e42df9"
+  "version": "1.0.27",
+  "build": "20260808.5",
+  "sourceCommit": "c592ef07a61c7c1ecb34142941a641120ec5881d"
 });

@@ -389,6 +389,17 @@ body.quick-draft-focus .writing-spine-panel {
   z-index: var(--z-window-pinned);
 }
 
+/* Start Here offers four equal choices, and the window is never wider than
+   430px: one row of four only just fits in Chinese and never in English, so
+   flex-wrap produced three buttons plus a stray fourth pushed to the right
+   edge. Two rows of two is stable at every width and in both languages, and
+   the group is centred instead of right-aligned. */
+.guide-window .button-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, auto));
+  justify-content: center;
+}
+
 .guide-window .window-pane {
   overflow: auto;
   background-color: var(--pane-bg);

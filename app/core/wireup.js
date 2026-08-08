@@ -637,6 +637,12 @@ function wireAppEvents() {
     window.renderSystemHelp?.();
   });
 
+  systemHelpGroupSelect?.addEventListener("change", async () => {
+    selectedSystemHelpGroup = systemHelpGroupSelect.value || "all";
+    await ensureDictionaryHelpModule();
+    window.renderSystemHelp?.();
+  });
+
   calculatorKeys.addEventListener("click", (event) => {
     const key = event.target.closest("[data-calc]")?.dataset.calc;
     if (key) pressCalculatorKey(key);
@@ -935,7 +941,13 @@ function wireAppEvents() {
         return;
       }
       const action = actionTarget.dataset.action;
+      // Choosing a menu command is one mechanical step, distinct from a
+      // toolbar or window-internal button press.
+      const isMenuCommand = Boolean(
+        actionTarget.closest(".menu-popover, .menu-submenu-popover, .menu-sub-popover")
+      );
       handleAction(action);
+      if (isMenuCommand) playSystemSound("menu");
       if (action !== "toggle-compose-tools") {
         closeComposeToolsMenu();
       }
@@ -1299,6 +1311,22 @@ function wireAppEvents() {
   liquidGlassInput?.addEventListener("change", applyLiquidGlass);
 
   soundEffectsInput.addEventListener("change", () => saveDeskState());
+
+  // The writing surfaces type with a quiet mechanical tick. It is throttled
+  // so a paste or fast keystroke produces one click, not a burst, and it is
+  // skipped during IME composition so a single composed character never
+  // double-clicks.
+  let lastTypeSoundAt = 0;
+  const TYPE_SOUND_MIN_GAP_MS = 45;
+  document.addEventListener("input", (event) => {
+    const target = event.target;
+    if (!target || target.isComposing) return;
+    if (target.id !== "teachtext-body" && target.id !== "quick-draft-draft") return;
+    const now = performance.now();
+    if (now - lastTypeSoundAt < TYPE_SOUND_MIN_GAP_MS) return;
+    lastTypeSoundAt = now;
+    playSystemSound("type");
+  });
 
   menuClockInput.addEventListener("change", applyMenuClock);
 

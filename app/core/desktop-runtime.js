@@ -2,78 +2,16 @@
 
 // Loaded before app.js as a classic script; shares the AI System 6 global scope.
 
-
+// One shared, unlock-aware sound engine (see app/core/system-sounds.js). The
+// Control Panel toggle is read lazily at play time, and sounds requested
+// before the browser allows audio (the boot chime) are queued and replayed on
+// the first user gesture.
+const systemSoundEngine = window.AISystem6SystemSounds?.createSystemSoundEngine?.({
+  getEnabled: () => !soundEffectsInput || soundEffectsInput.checked,
+});
 
 function playSystemSound(type) {
-  if (!soundEffectsInput.checked) return;
-
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const tone = (frequency, start, duration, volume = 0.04, wave = "sine") => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = wave;
-      osc.frequency.setValueAtTime(frequency, ctx.currentTime + start);
-      gain.gain.setValueAtTime(volume, ctx.currentTime + start);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + duration);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(ctx.currentTime + start);
-      osc.stop(ctx.currentTime + start + duration);
-    };
-
-    if (type === "disk") {
-      // Classic floppy whir-click sound
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "sawtooth";
-      osc.frequency.setValueAtTime(80, ctx.currentTime);
-      osc.frequency.linearRampToValueAtTime(120, ctx.currentTime + 0.1);
-      osc.frequency.linearRampToValueAtTime(80, ctx.currentTime + 0.2);
-      gain.gain.setValueAtTime(0.02, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.3);
-    } else if (type === "click") {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(1000, ctx.currentTime);
-      gain.gain.setValueAtTime(0.05, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.05);
-    } else if (type === "boot") {
-      tone(523.25, 0, 0.18, 0.045);
-      tone(659.25, 0.08, 0.18, 0.038);
-      tone(783.99, 0.16, 0.28, 0.032);
-    } else if (type === "save") {
-      tone(880, 0, 0.06, 0.035);
-      tone(1174.66, 0.06, 0.08, 0.028);
-    } else if (type === "trash") {
-      tone(220, 0, 0.08, 0.04, "square");
-      tone(110, 0.06, 0.12, 0.025, "sawtooth");
-    } else if (type === "alert") {
-      tone(330, 0, 0.12, 0.05, "square");
-      tone(330, 0.16, 0.12, 0.045, "square");
-    } else if (type === "done") {
-      tone(587.33, 0, 0.08, 0.035);
-      tone(880, 0.08, 0.12, 0.028);
-    } else if (type === "open") {
-      tone(740, 0, 0.035, 0.018);
-    } else if (type === "close") {
-      tone(440, 0, 0.04, 0.016);
-    } else if (type === "match") {
-      tone(660, 0, 0.05, 0.035, "square");
-      tone(990, 0.04, 0.06, 0.026, "square");
-    }
-  } catch (e) {
-    // Audio context might be blocked or unsupported
-  }
+  systemSoundEngine?.play(type);
 }
 
 function delay(ms) {
@@ -246,13 +184,13 @@ async function createProjectFromInput() {
   const previousProjectId = activeProjectId;
   parkConversationInProject(previousProjectId);
   await window.AISystem6StateStores?.projects.commit(() => {
-    isProjectMounted = true;
     projects.unshift(project);
-    activeProjectId = project.id;
-    selectedProjectId = project.id;
-    selectedFolderId = "all";
-    clearProjectTransientState();
   });
+  isProjectMounted = true;
+  activeProjectId = project.id;
+  selectedProjectId = project.id;
+  selectedFolderId = "all";
+  clearProjectTransientState();
   closeProjectScopedWindows();
   scheduleWorkspaceRender({ projectReferences: true, mountedTextDisk: true, menuState: true });
   resetAssistantForProject(project.name);

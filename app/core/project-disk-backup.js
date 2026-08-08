@@ -5,6 +5,11 @@ window.AISystem6ProjectDiskBackup = (() => {
   const format = "ai-system-6-project-disk";
   // v3 adds document revisions to the backup schema and the integrity hash.
   const currentFormatVersion = 3;
+  // Version history:
+  //   v1 — no SHA-256 integrity, no counts, no documentRevisions
+  //   v2 — SHA-256 integrity + counts, no documentRevisions
+  //   v3 — SHA-256 integrity + counts + documentRevisions
+  const supportedFormatVersions = [1, 2, currentFormatVersion];
   const maxBackupBytes = 100 * 1024 * 1024;
   const maxArrayItems = 100000;
   const maxDepth = 40;
@@ -134,7 +139,7 @@ window.AISystem6ProjectDiskBackup = (() => {
 
     if (bundle.format !== format) error("backup.format", `must equal ${format}`);
     const formatVersion = Number(bundle.formatVersion || 1);
-    if (!Number.isInteger(formatVersion) || ![1, currentFormatVersion].includes(formatVersion)) {
+    if (!Number.isInteger(formatVersion) || !supportedFormatVersions.includes(formatVersion)) {
       error("backup.formatVersion", `unsupported version ${String(bundle.formatVersion)}`);
     }
     if (formatVersion === 1 || formatVersion === 2) {
@@ -319,6 +324,8 @@ window.AISystem6ProjectDiskBackup = (() => {
         error("backup.counts", "v2+ backup requires counts");
       } else {
         arrayKeys.forEach((key) => {
+          // v2 ships counts without documentRevisions (revisions arrived in v3).
+          if (key === "documentRevisions" && formatVersion < currentFormatVersion) return;
           if (Number(bundle.counts[key]) !== bundle[key].length) {
             error(`backup.counts.${key}`, "count does not match the array");
           }

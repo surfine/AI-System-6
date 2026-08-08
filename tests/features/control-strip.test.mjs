@@ -117,17 +117,26 @@ test.assertIncludes(module, "stripRefreshDeferred", "a background refresh never 
 // --- First-party module descriptors ---------------------------------------
 
 test.assertIncludes(modules, "window.AISystem6ControlStripModules", "built-in descriptors are exposed to the shell and the folder");
-["soundscape", "projectDisk", "model", "network", "context", "indexing", "longTasks", "writingBell", "outputQueue", "volume"]
+// A tile is a control you set in one click, the way the classic strip carried
+// volume, the printer selector and the CD transport. Read-only gauges
+// (network, context, indexing, long tasks, output queue) were removed: their
+// state belongs to System Status, the Context Panel and Searcher, which can
+// actually explain it.
+["soundscape", "projectDisk", "model", "writingBell", "appearance", "balloonHelp", "volume"]
   .forEach((slot) => {
     test.assertIncludes(modules, `id: "${slot}"`, `${slot} is a declared module descriptor`);
   });
+["network", "context", "indexing", "longTasks", "outputQueue"].forEach((slot) => {
+  test.assertNotMatches(modules, new RegExp(`id: "${slot}"`), `${slot} is not a Control Strip tile: it is a readout, not a control`);
+});
 ["defaultOrder", "defaultEnabled", "finderIcon", "openOwner"].forEach((field) => {
   test.assertIncludes(modules, `${field}:`, `descriptors carry ${field}`);
 });
 test.assertIncludes(modules, "subscribe: controlStripSubscribeSoundscape", "Soundscape modules subscribe to player state");
 test.assertIncludes(modules, "ensureRuntime: controlStripEnsureSoundscapeRuntime", "strip modules load the Soundscape adapter lazily");
 test.assertNotMatches(modules, /\bbattery\b|screen depth|\bresolution\b|\bprinter\b|\bairport\b/i, "no browser-unreachable hardware is faked");
-test.assertIncludes(modules, "control_strip_indexing_progress_failed", "failed index jobs are visible");
+test.assertIncludes(modules, "toggleLiquidGlassAppearance()", "the appearance tile sets the appearance instead of linking to a panel");
+test.assertIncludes(modules, "setBalloonHelpEnabled(", "the Balloon Help tile sets Balloon Help directly");
 
 // --- Folder -----------------------------------------------------------------
 
@@ -135,7 +144,7 @@ test.assertIncludes(html, "open-control-strip-modules", "System Folder exposes a
 test.assertIncludes(html, "five_items", "System Folder counts five items with the folder");
 test.assertIncludes(html, 'data-window="controlStripModules"', "the folder opens a Finder window");
 test.assertIncludes(html, "control-strip-modules-grid", "the folder window has a module grid");
-test.assert(html.match(/data-control-strip-module=/g)?.length >= 10, "the folder window declares at least the ten modules");
+test.assert(html.match(/data-control-strip-module=/g)?.length >= 7, "the folder window declares every built-in module");
 test.assertIncludes(appBundleSource, "getControlStripModuleFinderItems", "the shared Finder renderer knows the module files");
 test.assertIncludes(appBundleSource, 'winName === "controlStripModules"', "the static finder handles the module folder");
 test.assertIncludes(windowManager, '"controlStripModules"', "window manager registers the folder window");

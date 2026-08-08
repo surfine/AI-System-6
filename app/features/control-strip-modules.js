@@ -244,155 +244,11 @@ const controlStripBuiltinModules = Object.freeze([
     },
   },
   {
-    id: "network",
-    labelKey: "control_strip_network",
-    icon: () => "chooser",
-    finderIcon: "chooser",
-    defaultOrder: 3,
-    defaultEnabled: true,
-    openOwner: "control",
-    state: () => ({
-      state: "ready",
-      detail: navigator.onLine ? t("control_strip_browser_online") : t("control_strip_browser_offline"),
-      source: "navigator.onLine",
-    }),
-    menu: () => {
-      const items = [];
-      items.push({
-        type: "label",
-        label: navigator.onLine ? t("control_strip_browser_online") : t("control_strip_browser_offline"),
-        checked: true,
-      });
-      items.push({ type: "separator" });
-      items.push({ type: "action", label: t("control_strip_open_control_panel"), run: () => openWindow("control") });
-      return items;
-    },
-  },
-  {
-    id: "context",
-    labelKey: "control_strip_context",
-    icon: () => "contextPanel",
-    finderIcon: "contextPanel",
-    defaultOrder: 4,
-    defaultEnabled: true,
-    openOwner: "contextPanel",
-    gauge: (state) => (state.state === "ready" ? { ratio: state.ratio } : null),
-    state: () => {
-      const budget = controlStripContextBudget();
-      const total = Number(budget?.contextTokens || 0);
-      if (!total) return { state: "unknown", detail: "", source: "context-budget" };
-      const used = controlStripContextUsed(budget);
-      return {
-        state: "ready",
-        detail: `${controlStripFormatTokens(used)} / ${controlStripFormatTokens(total)}`,
-        source: "context-budget",
-        ratio: Math.max(0, Math.min(1, used / total)),
-      };
-    },
-    menu: () => {
-      const budget = controlStripContextBudget();
-      const total = Number(budget?.contextTokens || 0);
-      const used = controlStripContextUsed(budget);
-      const items = [];
-      if (total) {
-        items.push({
-          type: "label",
-          label: t("control_strip_context_usage", controlStripFormatTokens(used), controlStripFormatTokens(total)),
-        });
-      } else {
-        items.push({ type: "label", label: t("control_strip_context_unavailable") });
-      }
-      items.push({ type: "separator" });
-      items.push({ type: "action", label: t("control_strip_open_context_panel"), run: () => openWindow("contextPanel") });
-      return items;
-    },
-  },
-  {
-    id: "indexing",
-    labelKey: "control_strip_indexing",
-    icon: () => "searcher",
-    finderIcon: "searcher",
-    defaultOrder: 5,
-    defaultEnabled: true,
-    openOwner: "searcher",
-    gauge: (state) => (state.state === "ready" ? { ratio: state.ratio } : null),
-    state: () => {
-      const queueState = typeof window.AISystem6DerivedIndexQueue?.getState === "function"
-        ? window.AISystem6DerivedIndexQueue.getState()
-        : null;
-      const jobs = queueState?.jobs || [];
-      const active = jobs.filter((job) => ["pending", "running"].includes(job.status));
-      const failed = jobs.filter((job) => job.status === "failed");
-      if (!active.length && !failed.length) return { state: "unknown", detail: "", source: "derived-index-queue" };
-      const done = jobs.filter((job) => job.status === "completed").length;
-      return {
-        state: active.length ? "busy" : "ready",
-        detail: failed.length
-          ? t("control_strip_indexing_progress_failed", done, jobs.length, failed.length)
-          : `${done} / ${jobs.length}`,
-        source: "derived-index-queue",
-        ratio: jobs.length ? done / jobs.length : 0,
-        failedCount: failed.length,
-      };
-    },
-    menu: () => {
-      const queueState = typeof window.AISystem6DerivedIndexQueue?.getState === "function"
-        ? window.AISystem6DerivedIndexQueue.getState()
-        : null;
-      const jobs = queueState?.jobs || [];
-      const done = jobs.filter((job) => job.status === "completed").length;
-      const failed = jobs.filter((job) => job.status === "failed").length;
-      const items = [];
-      items.push({
-        type: "label",
-        label: failed.length
-          ? t("control_strip_indexing_progress_failed", done, jobs.length, failed.length)
-          : t("control_strip_indexing_progress", done, jobs.length),
-      });
-      if (failed.length) items.push({ type: "label", label: t("control_strip_indexing_failed_hint") });
-      items.push({ type: "separator" });
-      items.push({ type: "action", label: t("control_strip_open_searcher"), run: () => openWindow("searcher") });
-      return items;
-    },
-  },
-  {
-    id: "longTasks",
-    labelKey: "control_strip_long_tasks",
-    icon: () => "systemStatus",
-    finderIcon: "systemStatus",
-    defaultOrder: 6,
-    defaultEnabled: true,
-    openOwner: "",
-    state: () => {
-      if (typeof activeLongTasks === "undefined" || !activeLongTasks.size) {
-        return { state: "unknown", detail: "", source: "long-task-registry" };
-      }
-      return { state: "ready", detail: String(activeLongTasks.size), source: "long-task-registry" };
-    },
-    menu: () => {
-      const tasks = typeof activeLongTasks === "undefined" ? [] : [...activeLongTasks];
-      if (!tasks.length) return [{ type: "label", label: t("control_strip_long_tasks_none") }];
-      return tasks.flatMap((key) => {
-        const info = typeof longTaskReceiptInfo === "function" ? longTaskReceiptInfo(key) : {};
-        const label = info.label || key;
-        const item = { type: "label", label };
-        const openItem = info.windowName
-          ? {
-              type: "action",
-              label: t("control_strip_open_owner", label),
-              run: () => openWindow(info.windowName),
-            }
-          : null;
-        return openItem ? [item, openItem] : [item];
-      });
-    },
-  },
-  {
     id: "writingBell",
     labelKey: "control_strip_writing_bell",
     icon: () => "writingBell",
     finderIcon: "writingBell",
-    defaultOrder: 7,
+    defaultOrder: 3,
     defaultEnabled: true,
     openOwner: "writingBell",
     state: () => {
@@ -419,36 +275,78 @@ const controlStripBuiltinModules = Object.freeze([
     ],
   },
   {
-    id: "outputQueue",
-    labelKey: "control_strip_output_queue",
-    icon: () => "documents",
-    finderIcon: "documents",
-    defaultOrder: 8,
+    // The classic strip carried the display's own settings. Appearance is this
+    // desk's equivalent — a setting you flip often — and today it is buried in
+    // the Special menu.
+    id: "appearance",
+    labelKey: "control_strip_desk_appearance",
+    icon: () => "control",
+    finderIcon: "control",
+    defaultOrder: 4,
     defaultEnabled: true,
-    openOwner: "assistant",
+    openOwner: "control",
     state: () => {
-      const count = controlStripPendingAssistantMessages().length;
-      return { state: "ready", detail: String(count), source: "assistant-messages" };
+      if (typeof liquidGlassInput === "undefined" || !liquidGlassInput) {
+        return { state: "unknown", detail: "", source: "appearance" };
+      }
+      return {
+        state: "ready",
+        detail: t(liquidGlassInput.checked ? "liquid_glass" : "retro_interface"),
+        source: "appearance",
+      };
     },
     menu: () => {
-      const pending = controlStripPendingAssistantMessages();
-      const items = pending.length
-        ? pending.map((element) => ({
-            type: "label",
-            label: element.querySelector(".wait-title")?.textContent || t("control_strip_output_working"),
-          }))
-        : [{ type: "label", label: t("control_strip_output_idle") }];
-      items.push({ type: "separator" });
-      items.push({ type: "action", label: t("control_strip_open_assistant"), run: () => openWindow("assistant") });
-      return items;
+      const liquid = typeof liquidGlassInput !== "undefined" && !!liquidGlassInput?.checked;
+      // Only one way to set it exists, so each choice acts only when it would
+      // actually change the setting — picking the current one is a no-op.
+      const choose = (wantLiquid) => {
+        if (wantLiquid !== liquid) toggleLiquidGlassAppearance();
+      };
+      return [
+        { type: "action", label: t("retro_interface"), checked: !liquid, run: () => choose(false) },
+        { type: "action", label: t("liquid_glass"), checked: liquid, run: () => choose(true) },
+      ];
     },
+  },
+  {
+    id: "balloonHelp",
+    labelKey: "control_strip_balloon_help",
+    icon: () => "systemHelp",
+    finderIcon: "systemHelp",
+    defaultOrder: 5,
+    defaultEnabled: true,
+    openOwner: "systemHelp",
+    state: () => {
+      if (typeof balloonHelpEnabled === "undefined") {
+        return { state: "unknown", detail: "", source: "balloon-help" };
+      }
+      return {
+        state: "ready",
+        detail: t(balloonHelpEnabled ? "control_strip_balloon_help_on" : "control_strip_balloon_help_off"),
+        source: "balloon-help",
+      };
+    },
+    menu: () => [
+      {
+        type: "action",
+        label: t("control_strip_balloon_help_on"),
+        checked: balloonHelpEnabled === true,
+        run: () => setBalloonHelpEnabled(true),
+      },
+      {
+        type: "action",
+        label: t("control_strip_balloon_help_off"),
+        checked: balloonHelpEnabled !== true,
+        run: () => setBalloonHelpEnabled(false),
+      },
+    ],
   },
   {
     id: "volume",
     labelKey: "control_strip_volume",
     icon: () => "speaker",
     finderIcon: "speaker",
-    defaultOrder: 9,
+    defaultOrder: 6,
     defaultEnabled: true,
     openOwner: "soundscape",
     ensureRuntime: controlStripEnsureSoundscapeRuntime,

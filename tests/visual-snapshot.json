@@ -65,7 +65,7 @@
       "outline-width": "0px",
       "outline-color": "rgb(0, 0, 0)",
       "_w": 430,
-      "_h": 203
+      "_h": 236
     },
     ".window.is-active > .title-bar": {
       "height": "17px",
@@ -103,7 +103,7 @@
       "padding-left": "8px",
       "background-color": "rgba(0, 0, 0, 0)",
       "_w": 428,
-      "_h": 182
+      "_h": 215
     },
     ".btn": {
       "border-radius": "7px",
@@ -195,7 +195,7 @@
       "outline-width": "0px",
       "outline-color": "rgb(16, 17, 20)",
       "_w": 430,
-      "_h": 223
+      "_h": 256
     },
     ".window.is-active > .title-bar": {
       "height": "34px",
@@ -233,7 +233,7 @@
       "padding-left": "8px",
       "background-color": "rgba(255, 255, 255, 0.12)",
       "_w": 430,
-      "_h": 186
+      "_h": 219
     },
     ".btn": {
       "border-radius": "10px",

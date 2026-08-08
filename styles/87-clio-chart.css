@@ -142,7 +142,12 @@ body.is-resizing-tdi .clio-chart-view-pane {
   color: var(--clio-chart-muted);
 }
 
+/* The row's first and last cells are rounded on their outer side only, so the
+   selection ring inherited a square left edge and a round right one. Selection
+   is a mark on one cell, not on the row's end, so it carries the plain cell
+   radius and closes as one shape. */
 .clio-chart-grid td.is-selected {
+  border-radius: var(--clio-chart-cell-radius);
   outline: var(--clio-chart-selected-outline);
   outline-offset: var(--clio-chart-selected-outline-offset);
   box-shadow: var(--clio-chart-focus-shadow);

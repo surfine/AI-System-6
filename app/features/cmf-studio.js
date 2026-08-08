@@ -523,6 +523,14 @@
     return views || VIEW_DEFINITIONS;
   }
 
+  // The first camera set entry is the natural default for a model or pose.
+  // A device switch must never keep a view name that does not exist in the
+  // new set — applyCmfView would silently no-op and the model would load
+  // unframed.
+  function defaultViewForActive() {
+    return activeViews()[0]?.name || "";
+  }
+
   function defaultPartsFor(modelId) {
     const spec = modelSpec(modelId);
     return { ...spec.presets[Object.keys(spec.presets)[0]] };
@@ -711,6 +719,9 @@
     const poseKey = `${activeModel().id}:${activePose()}`;
     if (strip.dataset.pose === poseKey) return;
     strip.dataset.pose = poseKey;
+    if (!activeViews().some((view) => view.name === selectedView)) {
+      selectedView = defaultViewForActive();
+    }
     strip.replaceChildren(...activeViews().map((view) => {
       const button = document.createElement("button");
       button.type = "button";
@@ -789,6 +800,7 @@
     if (spec.id === recipe.model) return;
     recipe = loadRecipeFor(spec.id);
     selectedPartId = activeParts()[0].id;
+    selectedView = defaultViewForActive();
     buildModelControls();
     buildPoseControls();
     buildPartControls();
@@ -816,6 +828,7 @@
       recipe.parts = parts;
     }
     selectedPartId = activeParts()[0].id;
+    selectedView = defaultViewForActive();
     buildPoseControls();
     buildViewControls();
     syncCmfForm();
@@ -914,7 +927,7 @@
     delete store.recipes[recipe.model];
     localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
     recipe = defaultRecipe(recipe.model, activePose());
-    selectedView = "02-back";
+    selectedView = defaultViewForActive();
     selectedPartId = activeParts()[0].id;
     syncCmfForm();
     refreshCmfPresetControl();
@@ -947,9 +960,19 @@
     return out;
   }
 
+  // A hung capabilities probe must not leave the preview in an eternal
+  // "Loading…" state: after the timeout the feature degrades to the
+  // unavailable state like any other fetch failure.
+  const CAPABILITIES_TIMEOUT_MS = 8000;
+
   async function refreshCapabilities() {
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), CAPABILITIES_TIMEOUT_MS);
     try {
-      const response = await fetch("/api/cmf/capabilities", { cache: "no-store" });
+      const response = await fetch("/api/cmf/capabilities", {
+        cache: "no-store",
+        signal: controller.signal,
+      });
       const data = await response.json();
       canRenderModel = Boolean(data.canExport);
       const label = canRenderModel ? t("cmf_cap_ready") : t("cmf_cap_missing");
@@ -978,6 +1001,8 @@
       });
       const empty = cmfEl("cmf-preview-empty");
       if (empty) empty.textContent = t("cmf_preview_unavailable");
+    } finally {
+      window.clearTimeout(timer);
     }
   }
 
@@ -1542,6 +1567,7 @@
   window.AISystem6CMFStudioLoaded = true;
   window.renderCmfStudio = renderCmfStudio;
   window.AISystem6CMFStudio = Object.freeze({
+    cancelRender: cancelModelRender,
     runMenuCommand(command) {
       const commands = {
         save: () => saveRecipe(),

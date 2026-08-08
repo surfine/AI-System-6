@@ -22,7 +22,10 @@ const boot = read("app/core/boot.js");
 const context = read("app/core/context-retrieval.js");
 const imports = read("app/features/export-import.js");
 const importRoute = read("src/server/routes/import-text.js");
-const quickDraft = read("app/features/finder-draft.js");
+const quickDraft = [
+  "app/features/finder-draft.js",
+  "app/features/quick-draft-ai.js",
+].map((path) => read(path)).join("\n");
 const meme = read("app/features/bureaucracy-meme.js");
 const endfield = read("app/features/endfield-terminal.js");
 const reader = read("app/features/reader.js");

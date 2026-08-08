@@ -50,7 +50,7 @@ let stripMount = null;
 let stripOpenMenu = null;
 let stripRefreshDeferred = false;
 let stripRefreshFrame = 0;
-let stripMessagesObserver = null;
+let stripBodyClassObserver = null;
 const stripSubscriptions = new Map();
 let stripSuppressClickUntil = 0;
 let stripHotkeyRecording = false;
@@ -272,12 +272,16 @@ function enable() {
   applyStripCollapsedClass();
   syncStripVisibleState();
   syncStripGeometry();
-  window.addEventListener("online", onStripNetworkChange);
-  window.addEventListener("offline", onStripNetworkChange);
   window.addEventListener("resize", onStripViewportChange);
-  if (typeof messagesEl !== "undefined" && messagesEl && typeof MutationObserver !== "undefined") {
-    stripMessagesObserver = new MutationObserver(() => refreshStrip("outputQueue"));
-    stripMessagesObserver.observe(messagesEl, { childList: true, subtree: true });
+  // Appearance and Balloon Help are settings the desk records as body classes,
+  // and both can be changed from the menus as well as from here, so the tiles
+  // follow the class rather than the control that happened to set it.
+  if (typeof MutationObserver !== "undefined") {
+    stripBodyClassObserver = new MutationObserver(() => {
+      refreshStrip("appearance");
+      refreshStrip("balloonHelp");
+    });
+    stripBodyClassObserver.observe(document.body, { attributes: true, attributeFilter: ["class"] });
   }
   document.addEventListener("keydown", handleStripHotkey, true);
 }
@@ -285,8 +289,8 @@ function enable() {
 function disable() {
   stripEnabled = false;
   closeStripMenu();
-  stripMessagesObserver?.disconnect();
-  stripMessagesObserver = null;
+  stripBodyClassObserver?.disconnect();
+  stripBodyClassObserver = null;
   stripSubscriptions.forEach((unsubscribe) => {
     try {
       unsubscribe?.();
@@ -298,14 +302,8 @@ function disable() {
     stripMount = null;
   }
   document.removeEventListener("keydown", handleStripHotkey, true);
-  window.removeEventListener("online", onStripNetworkChange);
-  window.removeEventListener("offline", onStripNetworkChange);
   window.removeEventListener("resize", onStripViewportChange);
   syncStripPlacementReserve();
-}
-
-function onStripNetworkChange() {
-  refreshStrip("network");
 }
 
 function isEnabled() {

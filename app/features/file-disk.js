@@ -199,6 +199,7 @@ function renderMountedTextDisk() {
 }
 
 function ejectTextDisk({ silent = false } = {}) {
+  if (!silent) playSystemSound("eject");
   for (let index = ragChunks.length - 1; index >= 0; index -= 1) {
     if (!ragChunks[index].fromProjectReference) {
       ragChunks.splice(index, 1);
@@ -282,6 +283,7 @@ function ejectSelectedMountedFile({ silent = false } = {}) {
     return 0;
   }
 
+  playSystemSound("eject");
   removeMountedFilesByName(mountedNames, activeProjectId);
   selectedMountedFileNames.clear();
   selectedMountedFile = mountedTextDisk.files[0] || null;

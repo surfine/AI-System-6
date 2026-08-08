@@ -38,6 +38,46 @@ test.assertIncludes(html, 'data-balloon-help="balloon_soundscape_repeat"', "the 
 test.assertIncludes(html, 'data-balloon-help="balloon_soundscape_shuffle"', "the icon-only Soundscape shuffle control can identify itself");
 test.assertIncludes(html, 'data-balloon-help="balloon_theme_switcher"', "the Liquid Glass appearance switch can identify itself");
 test.assertIncludes(html, 'data-balloon-help="balloon_reader_find_related" data-balloon-help-disabled="balloon_reader_find_related_disabled"', "Reader's Find Related Sources explains itself and its disabled state");
+// The expanded balloon set covers the creative workbench (CMF Studio), the
+// fast-draft delivery surface (Quick Draft), and the Control Panel sound
+// switch — each control that acts on the product deserves a one-line identity.
+test.assertIncludes(html, 'data-balloon-help="balloon_cmf_model"', "CMF model chooser can identify itself");
+test.assertIncludes(html, 'data-balloon-help="balloon_cmf_palette"', "CMF finish palette can identify itself");
+test.assertIncludes(html, 'data-balloon-help="balloon_cmf_export"', "CMF USDZ export can identify itself");
+test.assertIncludes(html, 'data-balloon-help="balloon_cmf_live"', "CMF live model indicator can identify itself");
+test.assertIncludes(html, 'data-balloon-help="balloon_qd_protect"', "Quick Draft Protect Selection can identify itself");
+test.assertIncludes(html, 'data-balloon-help="balloon_qd_develop"', "Quick Draft Develop can identify itself");
+test.assertIncludes(html, 'data-balloon-help="balloon_qd_versions"', "Quick Draft Versions restore can identify itself");
+test.assertIncludes(html, 'data-balloon-help="balloon_qd_save_project"', "Quick Draft Save to Project Hard Disk can identify itself");
+test.assertIncludes(html, 'data-balloon-help="balloon_sound_effects"', "the Control Panel sound switch can identify itself");
+for (const key of [
+  "balloon_cmf_model",
+  "balloon_cmf_pose",
+  "balloon_cmf_preset",
+  "balloon_cmf_shuffle",
+  "balloon_cmf_reset",
+  "balloon_cmf_palette",
+  "balloon_cmf_parts",
+  "balloon_cmf_views",
+  "balloon_cmf_reset_view",
+  "balloon_cmf_export",
+  "balloon_cmf_live",
+  "balloon_qd_add_material",
+  "balloon_qd_protect",
+  "balloon_qd_apply",
+  "balloon_qd_develop",
+  "balloon_qd_versions",
+  "balloon_qd_view_article",
+  "balloon_qd_view_canvas",
+  "balloon_qd_teachtext",
+  "balloon_qd_review",
+  "balloon_qd_save_project",
+  "balloon_qd_export_md",
+  "balloon_sound_effects",
+]) {
+  test.assertIncludes(en, `${key}:`, `English balloon copy exists for ${key}`);
+  test.assertIncludes(zh, `${key}:`, `Chinese balloon copy exists for ${key}`);
+}
 test.assertMatches(balloon, /function balloonHelpKeyFor\(target\)[\s\S]*balloonHelpDisabled/, "balloon copy follows the target's live availability state");
 test.assertMatches(balloon, /pointerover[\s\S]*focusin[\s\S]*pointerdown/, "pointer, keyboard, and explicit touch help are supported");
 test.assertMatches(balloon, /showPopover[\s\S]*positionBalloonHelp/, "showing a balloon promotes it above dialog top layers before positioning it");

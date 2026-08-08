@@ -20,10 +20,17 @@
   --review-surface-bg: var(--paper);
   --review-desk-splitter-hover-bg: var(--ink);
   --review-locked-pane-bg: transparent;
+  --review-splitter-border: var(--system-control-line) solid var(--ink);
+  --review-empty-note-border: var(--system-control-line) solid var(--ink);
   --review-th-border: var(--system-control-line) solid var(--ink);
   --review-th-bg: var(--paper);
   --review-td-border: 0;
-  --review-td-alt-border: 0;
+  --review-td-alt-border: var(--system-control-line) solid var(--ink);
+  --style-note-border: var(--system-control-line) solid var(--ink);
+  --style-note-type-border: 1px solid var(--ink);
+  --outline-notes-border: var(--system-control-line) solid var(--ink);
+  --draft-list-border: var(--system-control-line) solid var(--ink);
+  --claim-results-border: var(--system-control-line) solid var(--ink);
   --composer-file-active-bg: var(--ink);
   --composer-file-active-fg: var(--paper);
   --composer-file-active-border: var(--clio-composer-tool-border);
@@ -406,6 +413,11 @@
     var(--quiet-panel);
   --memory-cards-details-bg: var(--shade);
   --memory-cards-details-border: var(--system-control-line) solid var(--ink);
+  /* Screen budget for the phone deck: the viewport less the desk inset the
+     accessory window sits in, its title bar and details bar, and the status
+     line under the board. The board is capped by this so the whole deck stays
+     on one screen on a small phone as well as a large one. */
+  --memory-cards-board-max-height: calc(100dvh - 186px);
   --memory-cards-board-bg: transparent;
   --memory-cards-board-border: 0;
   --memory-cards-board-radius: 0;
@@ -1146,8 +1158,13 @@
   --system-help-search-input-border: var(--system-control-line) solid var(--ink);
   --system-help-search-input-radius: 0;
   --system-help-list-button-border-bottom: 1px dotted var(--shade-dark);
+  --system-help-group-bg: var(--paper);
+  --system-help-group-border-bottom: var(--system-control-line) solid var(--ink);
+  --system-help-head-border-bottom: var(--system-control-line) solid var(--ink);
   --system-help-actions-border-top: 1px dotted var(--shade-dark);
   --system-help-alias-border: 1px solid var(--shade-dark);
+  --system-help-row-icon-size: 20px;
+  --system-help-group-menu-width: 132px;
   --context-panel-list-bg: var(--paper);
   --context-panel-list-bg-color: var(--paper);
   --context-item-border: 1px solid var(--ink);
@@ -1490,6 +1507,9 @@
   --endfield-context-radius: 0;
   --endfield-quote-rule: 3px solid var(--ink);
   --endfield-quote-radius: 0;
+  /* One window, three regions: the paper takes the rest of the width. */
+  --quick-draft-shelf-width: 11.5rem;
+  --quick-draft-inspector-width: 16rem;
   --quick-draft-panel-bg: var(--quiet-panel);
   --quick-draft-panel-border: 1px dotted var(--shade-dark);
   --quick-draft-panel-radius: 0;

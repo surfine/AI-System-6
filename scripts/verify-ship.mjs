@@ -2,27 +2,25 @@
 /**
  * Local ship gate (verify:ship).
  *
- * GitHub-hosted Actions availability is an account condition, not a code
- * defect, so the release condition is this reproducible local gate. It runs
- * every required check, records each exit code + duration, and writes
- * dist/verification-report.json with the release identity so a release can
- * prove what it actually verified.
+ * The release condition is this reproducible local gate: fast, deterministic,
+ * repeatable, and runnable in a few minutes without a browser download or a
+ * WebKit dependency. It never starts Playwright and never depends on the E2E
+ * matrix; the browser tests remain an optional diagnostic (`npm run
+ * test:e2e`) for humans, not a release condition.
  *
- * `--fast` and `--skip-e2e` run only the nine non-browser checks (build,
- * feature tests, version, checkjs, data, docs, css, design, public tree)
- * and skip the three Playwright E2E projects. `--fast` is for quick local
- * iteration; `--skip-e2e` is the explicit release override used when the
- * browser matrix is covered by GitHub Actions CI instead of the local run.
- * The full gate (including E2E) remains the default release condition.
+ * The gate runs every required check, records each exit code + duration, and
+ * writes dist/verification-report.json with the release identity so a release
+ * can prove what it actually verified.
  *
- * The report is generated fresh on every run; release.mjs invokes this gate
- * rather than trusting a stale file.
+ * `--fast` keeps the same check list (there is no browser matrix to skip);
+ * it is accepted for compatibility with existing invocations.
  */
 
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { appRuntimePaths, lazyRuntimePaths } from "./runtime-manifest.mjs";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -31,20 +29,19 @@ const checks = [
   { name: "feature-tests", command: "npm", args: ["test"] },
   { name: "version-consistency", command: "npm", args: ["run", "verify:version"] },
   { name: "checkjs", command: "npm", args: ["run", "verify:checkjs"] },
+  { name: "src-typecheck", command: "npm", args: ["run", "verify:src"] },
   { name: "data-boundary", command: "npm", args: ["run", "verify:data"] },
   { name: "docs", command: "npm", args: ["run", "verify:docs"] },
   { name: "css", command: "npm", args: ["run", "verify:css"] },
   { name: "design", command: "npm", args: ["run", "verify:design"] },
   { name: "public-tree", command: "npm", args: ["run", "verify:public"] },
-  { name: "e2e-chromium", command: "npx", args: ["playwright", "test", "--config", "tests/e2e/playwright.config.mjs", "--project=chromium-desktop"] },
-  { name: "e2e-webkit", command: "npx", args: ["playwright", "test", "--config", "tests/e2e/playwright.config.mjs", "--project=webkit-desktop"] },
-  { name: "e2e-iphone", command: "npx", args: ["playwright", "test", "--config", "tests/e2e/playwright.config.mjs", "--project=iphone-webkit"] },
+  { name: "runtime-syntax", command: process.execPath, args: ["scripts/verify-ship-runtime-syntax.mjs"] },
+  { name: "release-smoke", command: "npm", args: ["run", "smoke:release"] },
+  { name: "release-assets", command: "npm", args: ["run", "check:release-assets"] },
+  { name: "floppy-budget", command: "npm", args: ["run", "verify:floppy"] },
+  { name: "native-action-audit", command: "npm", args: ["run", "verify:native-action-audit"] },
+  { name: "native-parity", command: "npm", args: ["run", "verify:native-parity-ledger"] },
 ];
-
-const skipE2e = process.argv.includes("--fast") || process.argv.includes("--skip-e2e");
-const activeChecks = skipE2e
-  ? checks.filter((check) => !check.name.startsWith("e2e-"))
-  : checks;
 
 function readJson(relativePath, fallback = {}) {
   try {
@@ -55,6 +52,8 @@ function readJson(relativePath, fallback = {}) {
 }
 
 function browserVersions() {
+  // Kept for the report so a release can still see what browsers exist
+  // locally; no check depends on it.
   const cacheRoot = join(
     process.env.HOME || "",
     "Library",
@@ -63,20 +62,16 @@ function browserVersions() {
   );
   const detect = (prefix) => {
     if (!existsSync(cacheRoot)) return "";
-    return readdirOnce(cacheRoot).find((entry) => entry.startsWith(prefix)) || "";
+    try {
+      return readdirSync(cacheRoot).find((entry) => entry.startsWith(prefix)) || "";
+    } catch {
+      return "";
+    }
   };
   return {
     chromium: detect("chromium-"),
     webkit: detect("webkit-"),
   };
-}
-
-function readdirOnce(dir) {
-  try {
-    return readdirSync(dir);
-  } catch {
-    return [];
-  }
 }
 
 const pkg = readJson("package.json");
@@ -86,7 +81,7 @@ const startedAt = new Date().toISOString();
 
 const results = [];
 let failed = 0;
-for (const check of activeChecks) {
+for (const check of checks) {
   const started = Date.now();
   process.stdout.write(`\n[verify:ship] ${check.name} …\n`);
   const result = spawnSync(check.command, check.args, {
@@ -124,7 +119,7 @@ writeFileSync(
 
 console.log(`\n[verify:ship] verification report written to dist/verification-report.json`);
 if (failed) {
-  console.error(`[verify:ship] FAILED: ${failed} of ${activeChecks.length} checks did not pass.`);
+  console.error(`[verify:ship] FAILED: ${failed} of ${results.length} checks did not pass.`);
   process.exit(1);
 }
-console.log(`[verify:ship] PASSED: all ${activeChecks.length} checks${skipE2e ? " (E2E skipped)" : ""}.`);
+console.log(`[verify:ship] PASSED: all ${results.length} checks. No browser or E2E gate is part of this release condition.`);

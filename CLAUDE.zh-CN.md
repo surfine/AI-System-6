@@ -1,5 +1,5 @@
 <!-- canonical-source: CLAUDE.md -->
-<!-- source-sha256: 6f05149f9971c78b27f39eed36a3d4ed4179697c689cc5f38ce01464fcd619a8 -->
+<!-- source-sha256: cc4f29b614c64cd8ff87823cc4458c9f2019b76eb9db140c08ad5adc3f70c7ec -->
 
 # AI System 6 — CLAUDE.md
 
@@ -99,6 +99,7 @@ npm run verify:release    # 完整门禁：构建 + 语法 + src 类型检查 + 
 npm run verify:features   # 可执行的功能契约（每个用户功能一个）
 npm run verify:docs       # 每个 .md 都有哈希最新的 zh-CN 镜像
 npm run smoke:release     # HTML/CSS/术语检查
+npm run verify:ship       # 本地发版条件：快速确定性门禁，绝不运行 Playwright（见 REPO-RUNBOOK）
 ```
 
 **按风险分级验证。** 实作过程中只运行本次改动直接拥有的最小检查：
@@ -111,6 +112,11 @@ npm run smoke:release     # HTML/CSS/术语检查
 一次 before，整个 surface 批次完成后再统一保留一次 Classic/Liquid after。
 `verify:release` 只用于提交/PR、打包、部署、
 广泛跨模块重构，或用户明确要求的场景。
+
+**E2E 不是发版条件。** `tests/e2e/` 下的 Playwright 测试是给人类的历史诊断
+（`npm run test:e2e`，明确标注为可选）。它们不属于 `verify:ship`、
+`verify:release`、默认 CI 或发版流程；功能行为由可执行的功能测试（纯 /
+VM / 静态契约）负责，一次 flaky 的浏览器运行永远不会阻塞发版。
 
 `verify:release` 需要真实的 `build-info.json` 戳（`YYYYMMDD.N`）；可用
 `AI_SYSTEM6_BUILD=20260101.1` 覆盖。功能测试是可执行文档：当你改动用户可见功能时，在同一次

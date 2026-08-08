@@ -119,7 +119,7 @@ test.assertIncludes(cmfStudio, 'views: MACBOOK_NEO_VIEWS', "the MacBook model re
 test.assertIncludes(cmfStudio, "state.poseId = requestedRecipe.pose || \"closed\"", "the loaded pose is tracked for repaint guards");
 test.assertIncludes(cmfStudio, 'spec.poses.some((entry) => entry.id === saved.pose)', "a saved recipe cannot carry another pose's geometry across");
 test.assertIncludes(index, 'id="cmf-pose"', "a pose chooser exists for posed models");
-test.assertIncludes(index, '<label class="cmf-control cmf-control-pose" id="cmf-pose-control" hidden>', "the pose chooser is hidden until a posed model is selected");
+test.assertIncludes(index, '<label class="cmf-control cmf-control-pose" id="cmf-pose-control" hidden', "the pose chooser is hidden until a posed model is selected");
 // Every finish the picker offers must be drawable, or the chips all fall back
 // to one colour and the user cannot tell the finishes apart.
 test.assertIncludes(index, 'id="cmf-model"', "a model chooser exists");
@@ -267,6 +267,40 @@ test.assertIncludes(cmfStudio, '"/api/cmf/export-usdz"', "front end exports thro
 test.assertIncludes(cmfStudio, "cmf-color-chip", "part colors use stable inline swatch buttons");
 test.assertNotIncludes(cmfStudio, 'document.createElement("select")', "part colors avoid native select dropdowns");
 test.assertNotIncludes(cmfStudio, "filter:", "front end does not rely on CSS filters for recoloring");
+
+// A device or pose switch must never keep a view name that does not exist in
+// the new camera set: applyCmfView would silently no-op, the model would load
+// unframed, and the view strip would show no active entry. The default view
+// is derived from the active camera set on every switch/reset path.
+test.assertIncludes(cmfStudio, "function defaultViewForActive", "the default view is derived from the active camera set");
+test.assert(
+  (cmfStudio.match(/selectedView = defaultViewForActive\(\)/g) || []).length >= 3,
+  "model switch, pose switch, and reset all re-derive the selected view"
+);
+test.assertNotIncludes(
+  cmfStudio.slice(cmfStudio.indexOf("function resetRecipe"), cmfStudio.indexOf("function shuffleRecipe")),
+  'selectedView = "02-back"',
+  "reset no longer hard-codes a phone view name"
+);
+test.assertIncludes(
+  cmfStudio,
+  "if (!activeViews().some((view) => view.name === selectedView))",
+  "the view strip repairs a stale selected view when it rebuilds"
+);
+
+// Closing the window cancels an in-flight render: cancelModelRender existed
+// but was never wired, so a closed CMF Studio could keep parsing a USDZ
+// nobody could see. The close path now calls the API hook.
+test.assertIncludes(cmfStudio, "cancelRender: cancelModelRender", "the CMF API exposes cancelRender");
+test.assertIncludes(app, 'name === "cmfStudio" && window.AISystem6CMFStudio', "window close has a guarded CMF branch");
+test.assertIncludes(app, "window.AISystem6CMFStudio.cancelRender?.()", "closing CMF cancels an in-flight render");
+
+// A hung capabilities probe must degrade to the unavailable state instead of
+// leaving the preview in an eternal loading message.
+test.assertIncludes(cmfStudio, "CAPABILITIES_TIMEOUT_MS = 8000", "the capabilities probe is time-bounded");
+test.assertIncludes(cmfStudio, "controller.abort()", "the timeout aborts the capabilities fetch");
+test.assertIncludes(cmfStudio, "window.clearTimeout(timer)", "the capabilities timer is always cleared");
+
 test.assertIncludes(styleManifest, '"styles/86-cmf-studio.css"', "CMF stylesheet is in the style manifest");
 test.assertNotIncludes(styles, "!important", "CMF stylesheet adds no !important overrides");
 

@@ -16,7 +16,7 @@
     <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png" />
     <link rel="manifest" href="assets/app-icon/manifest.json" />
-    <link rel="stylesheet" href="styles.bundle.css?v=20260808.4" />
+    <link rel="stylesheet" href="styles.bundle.css?v=20260808.5" />
   </head>
   <body class="is-booting">
     <header class="menu-bar" aria-label="System menu" data-i18n-aria-label="system_menu">
@@ -614,7 +614,7 @@
 
               <div class="field-row">
                 <input id="sound-effects" type="checkbox" checked />
-                <label for="sound-effects" data-i18n="sound_effects">Sound Effects</label>
+                <label for="sound-effects" data-i18n="sound_effects" data-balloon-help="balloon_sound_effects">Sound Effects</label>
               </div>
 
               <div class="field-row">
@@ -677,7 +677,7 @@
             <p class="hint" data-i18n="control_strip_hotkey_hint">Shows or hides the Control Strip without disabling it. A modifier plus a key is required; a bare letter is rejected.</p>
           </section>
           <section class="control-section">
-            <h3 data-i18n="control_strip_appearance">Appearance</h3>
+            <h3 data-i18n="control_strip_desk_appearance">Appearance</h3>
             <div class="control-strip-field-row">
               <label class="control-field" for="control-strip-font">
                 <span data-i18n="control_strip_menu_font">Module menu font</span>
@@ -887,29 +887,17 @@
             <span class="sys-icon" data-system-icon="cloudModel" aria-hidden="true"></span>
             <span data-i18n="control_strip_model">Model</span>
           </button>
-          <button class="finder-item" data-control-strip-module="network" draggable="true">
-            <span class="sys-icon" data-system-icon="chooser" aria-hidden="true"></span>
-            <span data-i18n="control_strip_network">Network</span>
-          </button>
-          <button class="finder-item" data-control-strip-module="context" draggable="true">
-            <span class="sys-icon" data-system-icon="contextPanel" aria-hidden="true"></span>
-            <span data-i18n="control_strip_context">Context</span>
-          </button>
-          <button class="finder-item" data-control-strip-module="indexing" draggable="true">
-            <span class="sys-icon" data-system-icon="searcher" aria-hidden="true"></span>
-            <span data-i18n="control_strip_indexing">Indexing</span>
-          </button>
-          <button class="finder-item" data-control-strip-module="longTasks" draggable="true">
-            <span class="sys-icon" data-system-icon="systemStatus" aria-hidden="true"></span>
-            <span data-i18n="control_strip_long_tasks">Long Tasks</span>
-          </button>
           <button class="finder-item" data-control-strip-module="writingBell" draggable="true">
             <span class="sys-icon" data-system-icon="writingBell" aria-hidden="true"></span>
             <span data-i18n="control_strip_writing_bell">Writing Bell</span>
           </button>
-          <button class="finder-item" data-control-strip-module="outputQueue" draggable="true">
-            <span class="sys-icon" data-system-icon="documents" aria-hidden="true"></span>
-            <span data-i18n="control_strip_output_queue">Output Queue</span>
+          <button class="finder-item" data-control-strip-module="appearance" draggable="true">
+            <span class="sys-icon" data-system-icon="control" aria-hidden="true"></span>
+            <span data-i18n="control_strip_desk_appearance">Appearance</span>
+          </button>
+          <button class="finder-item" data-control-strip-module="balloonHelp" draggable="true">
+            <span class="sys-icon" data-system-icon="systemHelp" aria-hidden="true"></span>
+            <span data-i18n="control_strip_balloon_help">Balloon Help</span>
           </button>
           <button class="finder-item" data-control-strip-module="volume" draggable="true">
             <span class="sys-icon" data-system-icon="speaker" aria-hidden="true"></span>
@@ -1056,222 +1044,318 @@
           <h2 id="quick-draft-title" data-i18n="quick_draft_title">Quick Draft</h2>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
         </div>
+        <!-- The details bar reports and never sets: size, save state, what is
+             protected, what the stack still owes. Format and length are
+             properties of this draft, so they sit on the sheet head. -->
         <div class="details-bar quick-draft-details">
           <span id="quick-draft-stats">0 words · ~0 sec</span>
-          <div class="quick-draft-status-center" aria-label="Quick Draft setup" data-i18n-aria-label="quick_draft_setup">
-            <span class="select-wrap quick-draft-status-select">
-              <select id="quick-draft-format" aria-label="Quick Draft format" data-i18n-aria-label="quick_draft_format">
-                <option value="first-day-hands-on" data-i18n="quick_draft_format_first_day">First-Day Hands-on</option>
-                <option value="hands-on-review" data-i18n="quick_draft_format_hands_on_review">Hands-on Review</option>
-                <option value="bili-dynamic" data-i18n="quick_draft_format_bili_dynamic">Bilibili post</option>
-              </select>
-            </span>
-            <span class="select-wrap quick-draft-status-select">
-              <select id="quick-draft-duration" aria-labelledby="quick-draft-length-label">
-                <option value="7m" data-length-kind="duration" data-i18n="quick_draft_duration_7m">~7 minutes</option>
-                <option value="12m" data-length-kind="duration" data-i18n="quick_draft_duration_12m">~12 minutes</option>
-                <option value="140w" data-length-kind="words" data-i18n="quick_draft_words_140">Short ~140 words</option>
-                <option value="280w" data-length-kind="words" data-i18n="quick_draft_words_280">Medium ~280 words</option>
-                <option value="500w" data-length-kind="words" data-i18n="quick_draft_words_500">Long ~500 words</option>
-              </select>
-            </span>
-          </div>
+          <span id="quick-draft-save-state" data-i18n="quick_draft_saved_state">Saved</span>
+          <span id="quick-draft-protect-state"></span>
+          <span id="quick-draft-stack-state"></span>
           <span id="quick-draft-status"></span>
         </div>
         <div class="window-pane quick-draft-pane">
           <form id="quick-draft-form" class="quick-draft-layout quick-draft-reboot">
-            <section class="quick-draft-editor">
-              <div class="quick-draft-two-pane" data-quick-draft-linear>
-                <label class="quick-draft-material-pane" for="quick-draft-sources">
-                  <span data-i18n="quick_draft_sources_label">Sources</span>
-                  <textarea id="quick-draft-sources" rows="24" data-i18n-placeholder="quick_draft_sources_placeholder"></textarea>
-                </label>
-                <label class="quick-draft-body-pane" for="quick-draft-draft">
-                  <span data-i18n="quick_draft_draft_label">Draft</span>
-                  <div class="teachtext-editor-container quick-draft-editor-container window-frame-scroller">
+            <!-- One window, three regions: the material shelf, the paper, the
+                 inspector. The paper never leaves the screen — a tool may
+                 stand beside the text, never in front of it. On a phone the
+                 two sides become drawers over the same paper. -->
+            <div class="quick-draft-desk">
+
+              <section class="quick-draft-paper" aria-label="Draft" data-i18n-aria-label="quick_draft_draft_label">
+                <div class="quick-draft-sheet-head">
+                  <label class="quick-draft-sheet-title" for="quick-draft-title-input">
+                    <span data-i18n="quick_draft_title_field">Title</span>
+                    <input id="quick-draft-title-input" class="quick-draft-title-input" type="text" aria-label="Quick Draft title" data-i18n-aria-label="quick_draft_title_field" />
+                  </label>
+                  <span class="select-wrap quick-draft-sheet-select">
+                    <select id="quick-draft-format" aria-label="Quick Draft format" data-i18n-aria-label="quick_draft_format">
+                      <option value="first-day-hands-on" data-i18n="quick_draft_format_first_day">First-Day Hands-on</option>
+                      <option value="hands-on-review" data-i18n="quick_draft_format_hands_on_review">Hands-on Review</option>
+                      <option value="bili-dynamic" data-i18n="quick_draft_format_bili_dynamic">Bilibili post</option>
+                    </select>
+                  </span>
+                  <span class="select-wrap quick-draft-sheet-select">
+                    <select id="quick-draft-duration" aria-labelledby="quick-draft-length-label">
+                      <option value="7m" data-length-kind="duration" data-i18n="quick_draft_duration_7m">~7 minutes</option>
+                      <option value="12m" data-length-kind="duration" data-i18n="quick_draft_duration_12m">~12 minutes</option>
+                      <option value="140w" data-length-kind="words" data-i18n="quick_draft_words_140">Short ~140 words</option>
+                      <option value="280w" data-length-kind="words" data-i18n="quick_draft_words_280">Medium ~280 words</option>
+                      <option value="500w" data-length-kind="words" data-i18n="quick_draft_words_500">Long ~500 words</option>
+                    </select>
+                  </span>
+                </div>
+                <div class="quick-draft-paper-body">
+                  <!-- Empty state, never a mode switch: with no draft the paper
+                       carries the intake well; once a draft exists the same
+                       paper carries the body. -->
+                  <section class="quick-draft-intake-well" data-quick-draft-intake-well>
+                    <label class="quick-draft-well-field quick-draft-well-say" for="quick-draft-say">
+                      <span data-i18n="quick_draft_say_label">What I want to say</span>
+                      <textarea id="quick-draft-say" rows="8" data-i18n-placeholder="quick_draft_say_placeholder"></textarea>
+                    </label>
+                    <label class="quick-draft-well-field quick-draft-well-materials" for="quick-draft-sources">
+                      <span data-i18n="quick_draft_materials_label">Materials</span>
+                      <textarea id="quick-draft-sources" rows="6" data-i18n-placeholder="quick_draft_sources_placeholder"></textarea>
+                    </label>
+                    <details class="quick-draft-advanced" id="quick-draft-advanced">
+                      <summary data-i18n="quick_draft_writing_setup">Writing Setup…</summary>
+                      <div class="quick-draft-advanced-fields">
+                        <label class="quick-draft-advanced-field" for="quick-draft-audience-concerns">
+                          <span data-i18n="quick_draft_audience_concerns">Audience concerns</span>
+                          <textarea id="quick-draft-audience-concerns" rows="3"></textarea>
+                        </label>
+                        <label class="quick-draft-advanced-field" for="quick-draft-unavailable">
+                          <span data-i18n="quick_draft_unavailable_notes">Unavailable notes</span>
+                          <textarea id="quick-draft-unavailable" rows="3"></textarea>
+                        </label>
+                        <label class="quick-draft-advanced-field" for="quick-draft-must-include">
+                          <span data-i18n="quick_draft_must_include">Must include</span>
+                          <input id="quick-draft-must-include" type="text" />
+                        </label>
+                        <label class="quick-draft-advanced-field" for="quick-draft-must-avoid">
+                          <span data-i18n="quick_draft_must_avoid">Must avoid</span>
+                          <input id="quick-draft-must-avoid" type="text" />
+                        </label>
+                        <label class="quick-draft-advanced-field" for="quick-draft-first-impression">
+                          <span data-i18n="quick_draft_first_impression">First impression</span>
+                          <textarea id="quick-draft-first-impression" rows="3"></textarea>
+                        </label>
+                        <label class="quick-draft-advanced-field" for="quick-draft-tone">
+                          <span data-i18n="quick_draft_tone">Tone</span>
+                          <input id="quick-draft-tone" type="text" />
+                        </label>
+                      </div>
+                    </details>
+                    <div class="quick-draft-well-actions">
+                      <button class="btn mini-btn" type="button" data-quick-draft-open-editor data-i18n="quick_draft_open_editor">Write the body</button>
+                    </div>
+                  </section>
+                  <div class="teachtext-editor-container quick-draft-editor-container window-frame-scroller" data-quick-draft-body-surface>
                     <textarea id="quick-draft-draft" rows="24" data-i18n-placeholder="quick_draft_draft_placeholder"></textarea>
                     <div id="quick-draft-preview" class="teachtext-preview is-hidden"></div>
                   </div>
-                </label>
-              </div>
-              <div class="quick-draft-canvas is-hidden" data-quick-draft-canvas>
-                <div class="quick-draft-canvas-stage" data-quick-draft-canvas-stage>
-                  <div class="quick-draft-canvas-object" data-quick-draft-canvas-object="obj-1">
-                    <div class="quick-draft-canvas-object-text" data-quick-draft-canvas-object-text></div>
-                    <span class="quick-draft-canvas-handle is-nw" data-quick-draft-canvas-handle="nw"></span>
-                    <span class="quick-draft-canvas-handle is-n" data-quick-draft-canvas-handle="n"></span>
-                    <span class="quick-draft-canvas-handle is-ne" data-quick-draft-canvas-handle="ne"></span>
-                    <span class="quick-draft-canvas-handle is-e" data-quick-draft-canvas-handle="e"></span>
-                    <span class="quick-draft-canvas-handle is-se" data-quick-draft-canvas-handle="se"></span>
-                    <span class="quick-draft-canvas-handle is-s" data-quick-draft-canvas-handle="s"></span>
-                    <span class="quick-draft-canvas-handle is-sw" data-quick-draft-canvas-handle="sw"></span>
-                    <span class="quick-draft-canvas-handle is-w" data-quick-draft-canvas-handle="w"></span>
-                    <span class="quick-draft-canvas-rotate" data-quick-draft-canvas-rotate></span>
-                    <span class="quick-draft-canvas-angle" data-quick-draft-canvas-angle>0°</span>
+                  <div class="quick-draft-canvas is-hidden" data-quick-draft-canvas>
+                    <div class="quick-draft-canvas-stage" data-quick-draft-canvas-stage>
+                      <div class="quick-draft-canvas-object" data-quick-draft-canvas-object="obj-1">
+                        <div class="quick-draft-canvas-object-text" data-quick-draft-canvas-object-text></div>
+                        <span class="quick-draft-canvas-handle is-nw" data-quick-draft-canvas-handle="nw"></span>
+                        <span class="quick-draft-canvas-handle is-n" data-quick-draft-canvas-handle="n"></span>
+                        <span class="quick-draft-canvas-handle is-ne" data-quick-draft-canvas-handle="ne"></span>
+                        <span class="quick-draft-canvas-handle is-e" data-quick-draft-canvas-handle="e"></span>
+                        <span class="quick-draft-canvas-handle is-se" data-quick-draft-canvas-handle="se"></span>
+                        <span class="quick-draft-canvas-handle is-s" data-quick-draft-canvas-handle="s"></span>
+                        <span class="quick-draft-canvas-handle is-sw" data-quick-draft-canvas-handle="sw"></span>
+                        <span class="quick-draft-canvas-handle is-w" data-quick-draft-canvas-handle="w"></span>
+                        <span class="quick-draft-canvas-rotate" data-quick-draft-canvas-rotate></span>
+                        <span class="quick-draft-canvas-angle" data-quick-draft-canvas-angle>0°</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div class="teachtext-actions quick-draft-editor-actions">
-                <div class="teachtext-command-group" aria-label="Quick Draft commands" data-i18n-aria-label="quick_draft_commands">
-                  <button class="btn quick-draft-return-sideask is-hidden" type="button" id="quick-draft-return-sideask" data-i18n="quick_draft_return_sideask">Return to SideAsk</button>
-                  <button class="btn" type="button" id="quick-draft-toggle-preview" aria-pressed="false" data-i18n="preview">Preview</button>
-                  <button class="btn" type="button" id="quick-draft-toggle-grain" aria-pressed="false" data-i18n="quick_draft_grain" data-balloon-help="quick_draft_grain_balloon">Grain</button>
-                  <button class="btn" type="button" id="quick-draft-toggle-composite" aria-pressed="false" data-i18n="quick_draft_composite" data-balloon-help="quick_draft_composite_balloon">Read</button>
-                  <button class="btn" type="button" data-mde-focus-cycle data-mde-target="#quick-draft-draft" data-i18n-aria-label="teachtext_focus_off" aria-label="Focus: Off">
-                    <span class="mobile-control-long" data-i18n="teachtext_focus_off">Focus: Off</span>
-                    <span class="mobile-control-short" data-i18n="focus">Focus</span>
-                  </button>
-                  <details id="quick-draft-tools" class="teachtext-command-menu quick-draft-command-menu">
-                    <summary class="btn">
-                      <span class="mobile-control-long" data-i18n="teachtext_commands">Commands</span>
-                      <span class="mobile-control-short" data-i18n="more">More</span>
-                    </summary>
-                    <div class="teachtext-command-popover quick-draft-command-popover">
-                      <section class="quick-draft-command-section" aria-label="Quick Draft intake" data-i18n-aria-label="quick_draft_intake">
-                        <b data-i18n="quick_draft_command_intake">Material</b>
-                        <button class="btn" type="button" data-action="quick-draft-import-chat" data-i18n="quick_draft_import_chat_records">Import Chat Records</button>
-                        <button class="btn" type="button" data-quick-draft-chat-action="vent-on" data-i18n="quick_draft_vent_start">Start Vent Mode</button>
-                        <button class="btn" type="button" data-quick-draft-chat-action="vent-off" data-i18n="quick_draft_vent_stop">End Vent Mode</button>
-                        <button class="btn" type="button" data-quick-draft-chat-action="vent-summary" data-i18n="quick_draft_vent_summarize">Summarize Vents</button>
-                      </section>
-                      <section class="quick-draft-command-section" aria-label="Quick Draft writing" data-i18n-aria-label="quick_draft_writing">
-                        <b data-i18n="quick_draft_command_write">Write</b>
-                        <button class="btn" type="button" data-quick-draft-chat-action="organize" data-i18n="quick_draft_chip_talk_points">Talk Points</button>
-                      </section>
-                      <section class="quick-draft-command-section" aria-label="Quick Draft revision" data-i18n-aria-label="quick_draft_revision">
-                        <b data-i18n="quick_draft_command_review">Fast Review</b>
-                        <button class="btn" type="button" data-quick-draft-chat-action="mingming" data-i18n="quick_draft_chip_mingming">Mingming Pass</button>
-                        <button class="btn" type="button" data-quick-draft-chat-action="luoluo" data-i18n="quick_draft_chip_luoluo">Luoluo Receive</button>
-                        <button class="btn" type="button" data-quick-draft-chat-action="hkrr" data-i18n="quick_draft_chip_hkrr">HKRR Lift</button>
-                        <button class="btn" type="button" data-quick-draft-chat-action="praise" data-i18n="quick_draft_chip_praise">Encourage Me</button>
-                      </section>
-                      <section class="quick-draft-command-section" aria-label="Adjustment Layers" data-i18n-aria-label="quick_draft_command_adjustment">
-                        <b data-i18n="quick_draft_command_adjustment">Adjustment Layers</b>
-                        <div class="quick-draft-adjustment-layer" data-quick-draft-adjustment-layer="mingming">
-                        <label class="quick-draft-adjustment-row">
-                          <input type="checkbox" data-quick-draft-adjustment-enabled="mingming" checked />
-                          <span data-i18n="quick_draft_chip_mingming">Mingming Pass</span>
-                          <span class="select-wrap-inline">
-                            <select data-quick-draft-adjustment-strength="mingming" aria-label="Mingming Pass strength" data-i18n-aria-label="quick_draft_adjustment_strength">
-                              <option value="25" data-i18n="quick_draft_adjustment_light">Light</option>
-                              <option value="50" selected data-i18n="quick_draft_adjustment_standard">Standard</option>
-                              <option value="75" data-i18n="quick_draft_adjustment_heavy">Heavy</option>
-                            </select>
-                          </span>
-                        </label>
-                        <div class="quick-draft-adjustment-mask">
-                          <span data-i18n="quick_draft_adjustment_mask_label">Lines</span>
-                          <input type="text" inputmode="numeric" data-quick-draft-adjustment-mask="mingming" placeholder="all" data-i18n-placeholder="quick_draft_adjustment_mask_placeholder" aria-label="Mingming Pass mask lines" data-i18n-aria-label="quick_draft_adjustment_mask_aria" />
-                          <button type="button" class="btn mini-btn" data-quick-draft-adjustment-scope="mingming" data-i18n="quick_draft_scope_selection">Sel</button>
-                          <span class="quick-draft-adjustment-move">
-                            <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="mingming" data-direction="-1" aria-label="Move up" data-i18n-aria-label="quick_draft_adjustment_move_up">▲</button>
-                            <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="mingming" data-direction="1" aria-label="Move down" data-i18n-aria-label="quick_draft_adjustment_move_down">▼</button>
-                          </span>
-                        </div>
-                        </div>
-                        <div class="quick-draft-adjustment-layer" data-quick-draft-adjustment-layer="luoluo">
-                        <label class="quick-draft-adjustment-row">
-                          <input type="checkbox" data-quick-draft-adjustment-enabled="luoluo" checked />
-                          <span data-i18n="quick_draft_chip_luoluo">Luoluo Receive</span>
-                          <span class="select-wrap-inline">
-                            <select data-quick-draft-adjustment-strength="luoluo" aria-label="Luoluo Receive strength" data-i18n-aria-label="quick_draft_adjustment_strength">
-                              <option value="25" data-i18n="quick_draft_adjustment_light">Light</option>
-                              <option value="50" selected data-i18n="quick_draft_adjustment_standard">Standard</option>
-                              <option value="75" data-i18n="quick_draft_adjustment_heavy">Heavy</option>
-                            </select>
-                          </span>
-                        </label>
-                        <div class="quick-draft-adjustment-mask">
-                          <span data-i18n="quick_draft_adjustment_mask_label">Lines</span>
-                          <input type="text" inputmode="numeric" data-quick-draft-adjustment-mask="luoluo" placeholder="all" data-i18n-placeholder="quick_draft_adjustment_mask_placeholder" aria-label="Luoluo Receive mask lines" data-i18n-aria-label="quick_draft_adjustment_mask_aria" />
-                          <button type="button" class="btn mini-btn" data-quick-draft-adjustment-scope="luoluo" data-i18n="quick_draft_scope_selection">Sel</button>
-                          <span class="quick-draft-adjustment-move">
-                            <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="luoluo" data-direction="-1" aria-label="Move up" data-i18n-aria-label="quick_draft_adjustment_move_up">▲</button>
-                            <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="luoluo" data-direction="1" aria-label="Move down" data-i18n-aria-label="quick_draft_adjustment_move_down">▼</button>
-                          </span>
-                        </div>
-                        </div>
-                        <div class="quick-draft-adjustment-layer" data-quick-draft-adjustment-layer="hkrr">
-                        <label class="quick-draft-adjustment-row">
-                          <input type="checkbox" data-quick-draft-adjustment-enabled="hkrr" checked />
-                          <span data-i18n="quick_draft_chip_hkrr">HKRR Lift</span>
-                          <span class="select-wrap-inline">
-                            <select data-quick-draft-adjustment-strength="hkrr" aria-label="HKRR Lift strength" data-i18n-aria-label="quick_draft_adjustment_strength">
-                              <option value="25" data-i18n="quick_draft_adjustment_light">Light</option>
-                              <option value="50" selected data-i18n="quick_draft_adjustment_standard">Standard</option>
-                              <option value="75" data-i18n="quick_draft_adjustment_heavy">Heavy</option>
-                            </select>
-                          </span>
-                        </label>
-                        <div class="quick-draft-adjustment-mask">
-                          <span data-i18n="quick_draft_adjustment_mask_label">Lines</span>
-                          <input type="text" inputmode="numeric" data-quick-draft-adjustment-mask="hkrr" placeholder="all" data-i18n-placeholder="quick_draft_adjustment_mask_placeholder" aria-label="HKRR Lift mask lines" data-i18n-aria-label="quick_draft_adjustment_mask_aria" />
-                          <button type="button" class="btn mini-btn" data-quick-draft-adjustment-scope="hkrr" data-i18n="quick_draft_scope_selection">Sel</button>
-                          <span class="quick-draft-adjustment-move">
-                            <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="hkrr" data-direction="-1" aria-label="Move up" data-i18n-aria-label="quick_draft_adjustment_move_up">▲</button>
-                            <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="hkrr" data-direction="1" aria-label="Move down" data-i18n-aria-label="quick_draft_adjustment_move_down">▼</button>
-                          </span>
-                        </div>
-                        </div>
-                        <div class="quick-draft-adjustment-layer" data-quick-draft-adjustment-layer="density">
-                        <label class="quick-draft-adjustment-row">
-                          <input type="checkbox" data-quick-draft-adjustment-enabled="density" checked />
-                          <span data-i18n="quick_draft_adjustment_density">Density</span>
-                          <span class="select-wrap-inline">
-                            <select data-quick-draft-adjustment-strength="density" aria-label="Density strength" data-i18n-aria-label="quick_draft_adjustment_strength">
-                              <option value="25" data-i18n="quick_draft_adjustment_density_light">Less compression</option>
-                              <option value="50" selected data-i18n="quick_draft_adjustment_density_standard">Standard</option>
-                              <option value="75" data-i18n="quick_draft_adjustment_density_heavy">More compression</option>
-                            </select>
-                          </span>
-                        </label>
-                        <div class="quick-draft-adjustment-mask">
-                          <span data-i18n="quick_draft_adjustment_mask_label">Lines</span>
-                          <input type="text" inputmode="numeric" data-quick-draft-adjustment-mask="density" placeholder="all" data-i18n-placeholder="quick_draft_adjustment_mask_placeholder" aria-label="Density mask lines" data-i18n-aria-label="quick_draft_adjustment_mask_aria" />
-                          <button type="button" class="btn mini-btn" data-quick-draft-adjustment-scope="density" data-i18n="quick_draft_scope_selection">Sel</button>
-                          <span class="quick-draft-adjustment-move">
-                            <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="density" data-direction="-1" aria-label="Move up" data-i18n-aria-label="quick_draft_adjustment_move_up">▲</button>
-                            <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="density" data-direction="1" aria-label="Move down" data-i18n-aria-label="quick_draft_adjustment_move_down">▼</button>
-                          </span>
-                        </div>
-                        </div>
-                        <div class="quick-draft-protect">
-                          <span data-i18n="quick_draft_protected_label">Protected</span>
-                          <button type="button" class="btn mini-btn" data-quick-draft-protect-selection data-i18n="quick_draft_protect_selection">Protect Selection</button>
-                          <input type="text" inputmode="numeric" data-quick-draft-protected-ranges placeholder="3-5, 8" data-i18n-placeholder="quick_draft_protected_placeholder" aria-label="Protected lines" data-i18n-aria-label="quick_draft_protected_aria" />
-                        </div>
-                        <div class="quick-draft-adjustment-actions">
-                          <button type="button" class="btn" data-quick-draft-adjustment-apply data-i18n="quick_draft_apply_adjustments">Apply</button>
-                          <button type="button" class="btn" data-quick-draft-adjustment-develop data-i18n="quick_draft_develop">Develop</button>
-                        </div>
-                      </section>
-                      <section class="quick-draft-command-section" aria-label="Quick Draft delivery" data-i18n-aria-label="quick_draft_command_delivery">
-                        <b data-i18n="quick_draft_command_delivery">Delivery</b>
-                        <button class="btn" type="button" data-quick-draft-delivery="teachtext" data-i18n="quick_draft_send_teachtext">Transfer to TeachText</button>
-                        <button class="btn" type="button" data-quick-draft-delivery="copy-markdown" data-i18n="copy_markdown">Copy Markdown</button>
-                      </section>
-                    </div>
-                  </details>
+              </section>
+
+              <aside class="quick-draft-shelf" aria-label="Materials" data-i18n-aria-label="quick_draft_materials_label">
+                <b data-i18n="quick_draft_materials_label">Materials</b>
+                <div id="quick-draft-source-map" class="quick-draft-source-map"></div>
+                <div class="quick-draft-material-actions">
+                  <button class="btn mini-btn" type="button" data-quick-draft-to-start data-i18n="quick_draft_add_material" data-balloon-help="balloon_qd_add_material">Add Material…</button>
+                  <button class="btn mini-btn" type="button" data-action="quick-draft-import-chat" data-i18n="quick_draft_import_chat_records">Import Chat Records</button>
+                  <button class="btn mini-btn" type="button" id="quick-draft-use-mounted" data-i18n="quick_draft_use_mounted">Use File Floppy</button>
+                  <button class="btn mini-btn" type="button" data-quick-draft-chat-action="vent-on" data-i18n="quick_draft_vent_start">Start Vent Mode</button>
+                  <button class="btn mini-btn" type="button" data-quick-draft-chat-action="organize" data-i18n="quick_draft_chip_talk_points">Talk Points</button>
                 </div>
-                <span class="quick-draft-view-switch" role="group" aria-label="View" data-i18n-aria-label="quick_draft_view_label">
-                  <button class="btn mini-btn is-active" type="button" data-quick-draft-view="article" data-i18n="quick_draft_view_article">Article</button>
-                  <button class="btn mini-btn" type="button" data-quick-draft-view="canvas" data-i18n="quick_draft_view_canvas">Canvas</button>
-                </span>
-                <button class="btn default" type="button" id="quick-draft-save" data-i18n="quick_draft_start_writing">Draft</button>
-              </div>
-            </section>
+              </aside>
+
+              <aside class="quick-draft-inspector" aria-label="Adjustment Layers" data-i18n-aria-label="quick_draft_command_adjustment">
+                <section class="quick-draft-inspector-section" aria-label="Adjustment Layers" data-i18n-aria-label="quick_draft_command_adjustment">
+                  <b data-i18n="quick_draft_command_adjustment">Adjustment Layers</b>
+                  <!-- One layer, one row: switch, name, strength, then the
+                       scope line. The plain-language description moved into
+                       Balloon Help so the stack order stays readable. -->
+                  <!-- The stack is a list: its order is the order the layers
+                       compose in, so the four rows keep their own container. -->
+                  <div class="quick-draft-layer-stack">
+                    <div class="quick-draft-adjustment-layer" data-quick-draft-adjustment-layer="mingming" data-balloon-help="quick_draft_layer_mingming_desc">
+                      <label class="quick-draft-adjustment-row">
+                        <input type="checkbox" data-quick-draft-adjustment-enabled="mingming" checked />
+                        <span data-i18n="quick_draft_chip_mingming">Mingming Pass</span>
+                      </label>
+                      <span class="select-wrap-inline">
+                        <select data-quick-draft-adjustment-strength="mingming" aria-label="Mingming Pass strength" data-i18n-aria-label="quick_draft_adjustment_strength">
+                          <option value="25" data-i18n="quick_draft_adjustment_light">Light</option>
+                          <option value="50" selected data-i18n="quick_draft_adjustment_standard">Normal</option>
+                          <option value="75" data-i18n="quick_draft_adjustment_heavy">Strong</option>
+                        </select>
+                      </span>
+                      <div class="quick-draft-adjustment-mask">
+                        <span data-i18n="quick_draft_adjustment_mask_label">Lines</span>
+                        <input type="text" inputmode="numeric" data-quick-draft-adjustment-mask="mingming" placeholder="all" data-i18n-placeholder="quick_draft_adjustment_mask_placeholder" aria-label="Mingming Pass mask lines" data-i18n-aria-label="quick_draft_adjustment_mask_aria" />
+                        <button type="button" class="btn mini-btn" data-quick-draft-adjustment-scope="mingming" data-i18n="quick_draft_scope_selection">Sel</button>
+                        <span class="quick-draft-adjustment-move">
+                          <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="mingming" data-direction="-1" aria-label="Move up" data-i18n-aria-label="quick_draft_adjustment_move_up">▲</button>
+                          <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="mingming" data-direction="1" aria-label="Move down" data-i18n-aria-label="quick_draft_adjustment_move_down">▼</button>
+                        </span>
+                      </div>
+                    </div>
+                    <div class="quick-draft-adjustment-layer" data-quick-draft-adjustment-layer="luoluo" data-balloon-help="quick_draft_layer_luoluo_desc">
+                      <label class="quick-draft-adjustment-row">
+                        <input type="checkbox" data-quick-draft-adjustment-enabled="luoluo" checked />
+                        <span data-i18n="quick_draft_chip_luoluo">Luoluo Receive</span>
+                      </label>
+                      <span class="select-wrap-inline">
+                        <select data-quick-draft-adjustment-strength="luoluo" aria-label="Luoluo Receive strength" data-i18n-aria-label="quick_draft_adjustment_strength">
+                          <option value="25" data-i18n="quick_draft_adjustment_light">Light</option>
+                          <option value="50" selected data-i18n="quick_draft_adjustment_standard">Normal</option>
+                          <option value="75" data-i18n="quick_draft_adjustment_heavy">Strong</option>
+                        </select>
+                      </span>
+                      <div class="quick-draft-adjustment-mask">
+                        <span data-i18n="quick_draft_adjustment_mask_label">Lines</span>
+                        <input type="text" inputmode="numeric" data-quick-draft-adjustment-mask="luoluo" placeholder="all" data-i18n-placeholder="quick_draft_adjustment_mask_placeholder" aria-label="Luoluo Receive mask lines" data-i18n-aria-label="quick_draft_adjustment_mask_aria" />
+                        <button type="button" class="btn mini-btn" data-quick-draft-adjustment-scope="luoluo" data-i18n="quick_draft_scope_selection">Sel</button>
+                        <span class="quick-draft-adjustment-move">
+                          <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="luoluo" data-direction="-1" aria-label="Move up" data-i18n-aria-label="quick_draft_adjustment_move_up">▲</button>
+                          <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="luoluo" data-direction="1" aria-label="Move down" data-i18n-aria-label="quick_draft_adjustment_move_down">▼</button>
+                        </span>
+                      </div>
+                    </div>
+                    <div class="quick-draft-adjustment-layer" data-quick-draft-adjustment-layer="hkrr" data-balloon-help="quick_draft_layer_hkrr_desc">
+                      <label class="quick-draft-adjustment-row">
+                        <input type="checkbox" data-quick-draft-adjustment-enabled="hkrr" checked />
+                        <span data-i18n="quick_draft_chip_hkrr">HKRR Lift</span>
+                      </label>
+                      <span class="select-wrap-inline">
+                        <select data-quick-draft-adjustment-strength="hkrr" aria-label="HKRR Lift strength" data-i18n-aria-label="quick_draft_adjustment_strength">
+                          <option value="25" data-i18n="quick_draft_adjustment_light">Light</option>
+                          <option value="50" selected data-i18n="quick_draft_adjustment_standard">Normal</option>
+                          <option value="75" data-i18n="quick_draft_adjustment_heavy">Strong</option>
+                        </select>
+                      </span>
+                      <div class="quick-draft-adjustment-mask">
+                        <span data-i18n="quick_draft_adjustment_mask_label">Lines</span>
+                        <input type="text" inputmode="numeric" data-quick-draft-adjustment-mask="hkrr" placeholder="all" data-i18n-placeholder="quick_draft_adjustment_mask_placeholder" aria-label="HKRR Lift mask lines" data-i18n-aria-label="quick_draft_adjustment_mask_aria" />
+                        <button type="button" class="btn mini-btn" data-quick-draft-adjustment-scope="hkrr" data-i18n="quick_draft_scope_selection">Sel</button>
+                        <span class="quick-draft-adjustment-move">
+                          <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="hkrr" data-direction="-1" aria-label="Move up" data-i18n-aria-label="quick_draft_adjustment_move_up">▲</button>
+                          <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="hkrr" data-direction="1" aria-label="Move down" data-i18n-aria-label="quick_draft_adjustment_move_down">▼</button>
+                        </span>
+                      </div>
+                    </div>
+                    <div class="quick-draft-adjustment-layer" data-quick-draft-adjustment-layer="density" data-balloon-help="quick_draft_layer_density_desc">
+                      <label class="quick-draft-adjustment-row">
+                        <input type="checkbox" data-quick-draft-adjustment-enabled="density" checked />
+                        <span data-i18n="quick_draft_adjustment_density">Density</span>
+                      </label>
+                      <span class="select-wrap-inline">
+                        <select data-quick-draft-adjustment-strength="density" aria-label="Density strength" data-i18n-aria-label="quick_draft_adjustment_strength">
+                          <option value="25" data-i18n="quick_draft_adjustment_density_light">Less</option>
+                          <option value="50" selected data-i18n="quick_draft_adjustment_density_standard">Normal</option>
+                          <option value="75" data-i18n="quick_draft_adjustment_density_heavy">More</option>
+                        </select>
+                      </span>
+                      <div class="quick-draft-adjustment-mask">
+                        <span data-i18n="quick_draft_adjustment_mask_label">Lines</span>
+                        <input type="text" inputmode="numeric" data-quick-draft-adjustment-mask="density" placeholder="all" data-i18n-placeholder="quick_draft_adjustment_mask_placeholder" aria-label="Density mask lines" data-i18n-aria-label="quick_draft_adjustment_mask_aria" />
+                        <button type="button" class="btn mini-btn" data-quick-draft-adjustment-scope="density" data-i18n="quick_draft_scope_selection">Sel</button>
+                        <span class="quick-draft-adjustment-move">
+                          <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="density" data-direction="-1" aria-label="Move up" data-i18n-aria-label="quick_draft_adjustment_move_up">▲</button>
+                          <button type="button" class="btn mini-btn" data-quick-draft-adjustment-move="density" data-direction="1" aria-label="Move down" data-i18n-aria-label="quick_draft_adjustment_move_down">▼</button>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="quick-draft-protect">
+                    <span data-i18n="quick_draft_protected_label">Protected</span>
+                    <button type="button" class="btn mini-btn" data-quick-draft-protect-selection data-i18n="quick_draft_protect_selection" data-balloon-help="balloon_qd_protect">Protect Selection</button>
+                    <input type="text" inputmode="numeric" data-quick-draft-protected-ranges placeholder="3-5, 8" data-i18n-placeholder="quick_draft_protected_placeholder" aria-label="Protected lines" data-i18n-aria-label="quick_draft_protected_aria" />
+                  </div>
+                  <div class="quick-draft-adjustment-actions">
+                    <button type="button" class="btn" data-quick-draft-adjustment-apply data-i18n="quick_draft_apply_adjustments" data-balloon-help="balloon_qd_apply">Preview</button>
+                    <button type="button" class="btn default" data-quick-draft-adjustment-develop data-i18n="quick_draft_develop" data-balloon-help="balloon_qd_develop">Develop</button>
+                  </div>
+                  <p class="quick-draft-adjust-note" data-i18n="quick_draft_adjust_note">Adjustments only preview until you Develop them into the draft.</p>
+                </section>
+                <section class="quick-draft-inspector-section quick-draft-versions-section" aria-label="Versions" data-i18n-aria-label="quick_draft_versions">
+                  <b data-i18n="quick_draft_versions">Versions</b>
+                  <div id="quick-draft-versions-list" class="quick-draft-versions-list"></div>
+                  <button class="btn mini-btn" type="button" id="quick-draft-restore-dump" data-i18n="quick_draft_restore_dump" data-balloon-help="balloon_qd_versions">Restore last version</button>
+                </section>
+              </aside>
+            </div>
+
+            <div class="teachtext-actions quick-draft-editor-actions">
+              <!-- Body / Grain / Read are three exclusive views of one text,
+                   so they are one group and only one of them can be on. -->
+              <span class="quick-draft-display-switch" role="group" aria-label="View" data-i18n-aria-label="quick_draft_view_label">
+                <button class="btn mini-btn is-active" type="button" data-quick-draft-display="body" aria-pressed="true" data-i18n="quick_draft_display_body">Body</button>
+                <button class="btn mini-btn" type="button" id="quick-draft-toggle-grain" data-quick-draft-display="grain" aria-pressed="false" data-i18n="quick_draft_grain" data-balloon-help="quick_draft_grain_balloon">Grain</button>
+                <button class="btn mini-btn" type="button" id="quick-draft-toggle-composite" data-quick-draft-display="read" aria-pressed="false" data-i18n="quick_draft_composite" data-balloon-help="quick_draft_composite_balloon">Read</button>
+              </span>
+              <span class="quick-draft-drawer-switch" role="group" aria-label="Panels" data-i18n-aria-label="quick_draft_panels">
+                <button class="btn mini-btn" type="button" data-quick-draft-drawer="shelf" aria-pressed="false" data-i18n="quick_draft_materials_label">Materials</button>
+                <button class="btn mini-btn" type="button" data-quick-draft-drawer="inspector" aria-pressed="false" data-i18n="quick_draft_drawer_adjust">Adjust</button>
+              </span>
+              <span class="quick-draft-actions-gap"></span>
+              <button class="btn quick-draft-return-sideask is-hidden" type="button" id="quick-draft-return-sideask" data-i18n="quick_draft_return_sideask">Return to SideAsk</button>
+              <details id="quick-draft-tools" class="teachtext-command-menu quick-draft-command-menu">
+                <summary class="btn">
+                  <span class="mobile-control-long" data-i18n="teachtext_commands">Commands</span>
+                  <span class="mobile-control-short" data-i18n="more">More</span>
+                </summary>
+                <div class="teachtext-command-popover quick-draft-command-popover">
+                  <section class="quick-draft-command-section" aria-label="Quick Draft intake" data-i18n-aria-label="quick_draft_intake">
+                    <b data-i18n="quick_draft_command_intake">Material</b>
+                    <button class="btn" type="button" data-action="quick-draft-import-chat" data-i18n="quick_draft_import_chat_records">Import Chat Records</button>
+                    <button class="btn" type="button" data-quick-draft-chat-action="vent-on" data-i18n="quick_draft_vent_start">Start Vent Mode</button>
+                    <button class="btn" type="button" data-quick-draft-chat-action="vent-off" data-i18n="quick_draft_vent_stop">End Vent Mode</button>
+                    <button class="btn" type="button" data-quick-draft-chat-action="vent-summary" data-i18n="quick_draft_vent_summarize">Summarize Vents</button>
+                  </section>
+                  <section class="quick-draft-command-section" aria-label="Quick Draft writing" data-i18n-aria-label="quick_draft_writing">
+                    <b data-i18n="quick_draft_command_write">Write</b>
+                    <button class="btn" type="button" data-quick-draft-chat-action="organize" data-i18n="quick_draft_chip_talk_points">Talk Points</button>
+                  </section>
+                  <section class="quick-draft-command-section" aria-label="Quick Draft revision" data-i18n-aria-label="quick_draft_revision">
+                    <b data-i18n="quick_draft_command_review">Fast Review</b>
+                    <button class="btn" type="button" data-quick-draft-chat-action="mingming" data-i18n="quick_draft_chip_mingming">Mingming Pass</button>
+                    <button class="btn" type="button" data-quick-draft-chat-action="luoluo" data-i18n="quick_draft_chip_luoluo">Luoluo Receive</button>
+                    <button class="btn" type="button" data-quick-draft-chat-action="hkrr" data-i18n="quick_draft_chip_hkrr">HKRR Lift</button>
+                    <button class="btn" type="button" data-quick-draft-chat-action="praise" data-i18n="quick_draft_chip_praise">Encourage Me</button>
+                  </section>
+                  <section class="quick-draft-command-section" aria-label="View" data-i18n-aria-label="quick_draft_view_label">
+                    <b data-i18n="quick_draft_view_label">View</b>
+                    <button class="btn" type="button" data-mde-focus-cycle data-mde-target="#quick-draft-draft" data-i18n-aria-label="teachtext_focus_off" aria-label="Focus: Off">
+                      <span class="mobile-control-long" data-i18n="teachtext_focus_off">Focus: Off</span>
+                      <span class="mobile-control-short" data-i18n="focus">Focus</span>
+                    </button>
+                    <span class="quick-draft-view-switch" role="group" aria-label="View" data-i18n-aria-label="quick_draft_view_label">
+                      <button class="btn mini-btn is-active" type="button" data-quick-draft-view="article" data-i18n="quick_draft_view_article" data-balloon-help="balloon_qd_view_article">Article</button>
+                      <button class="btn mini-btn" type="button" data-quick-draft-view="canvas" data-i18n="quick_draft_view_canvas" data-balloon-help="balloon_qd_view_canvas">Canvas</button>
+                    </span>
+                  </section>
+                </div>
+              </details>
+              <!-- The route ends at "this draft can be sent", so delivery is one
+                   button away from the body and never behind the darkroom. -->
+              <details id="quick-draft-deliver" class="teachtext-command-menu quick-draft-command-menu quick-draft-deliver-menu">
+                <summary class="btn"><span data-i18n="quick_draft_deliver">Deliver…</span></summary>
+                <div class="teachtext-command-popover quick-draft-command-popover">
+                  <section class="quick-draft-command-section" aria-label="Quick Draft delivery" data-i18n-aria-label="quick_draft_command_delivery">
+                    <b data-i18n="quick_draft_command_delivery">Delivery</b>
+                    <button class="btn" type="button" data-quick-draft-delivery="teachtext" data-i18n="quick_draft_send_teachtext" data-balloon-help="balloon_qd_teachtext">Send to TeachText</button>
+                    <button class="btn" type="button" id="quick-draft-send-review" data-i18n="quick_draft_send_review" data-balloon-help="balloon_qd_review">Send to Review Desk</button>
+                    <button class="btn" type="button" id="quick-draft-save-project-doc" data-i18n="quick_draft_save_project_doc" data-balloon-help="balloon_qd_save_project">Save to Project Hard Disk</button>
+                    <button class="btn" type="button" data-quick-draft-delivery="copy-markdown" data-i18n="copy_markdown">Copy Markdown</button>
+                    <button class="btn" type="button" data-quick-draft-delivery="export-markdown" data-i18n="quick_draft_export_markdown" data-balloon-help="balloon_qd_export_md">Export Markdown</button>
+                  </section>
+                </div>
+              </details>
+              <button class="btn default" type="button" id="quick-draft-save" data-i18n="quick_draft_start_writing">Draft</button>
+            </div>
             <section class="quick-draft-legacy-backing" hidden aria-hidden="true">
-              <textarea id="quick-draft-first-impression"></textarea>
               <textarea id="quick-draft-hands-on"></textarea>
               <textarea id="quick-draft-official-materials"></textarea>
-              <textarea id="quick-draft-unavailable"></textarea>
-              <textarea id="quick-draft-audience-concerns"></textarea>
-              <input id="quick-draft-tone" type="text" />
-              <input id="quick-draft-must-include" type="text" />
-              <input id="quick-draft-must-avoid" type="text" />
               <input id="quick-draft-first-day-subject" type="text" />
-              <input id="quick-draft-title-input" class="quick-draft-title-input" type="text" aria-label="Quick Draft title" data-i18n-aria-label="quick_draft_title_field" />
-              <span id="quick-draft-save-state"></span>
               <span id="quick-draft-source-count"></span>
               <span id="quick-draft-length-label" data-i18n="quick_draft_duration">Length</span>
               <span id="quick-draft-settings-summary"></span>
@@ -1279,20 +1363,14 @@
               <span id="quick-draft-hands-on-status"></span>
               <button type="button" id="quick-draft-adopt-impression"></button>
               <button type="button" id="quick-draft-confirm-hands-on"></button>
-              <button type="button" id="quick-draft-save-project-doc"></button>
-              <button type="button" id="quick-draft-send-review"></button>
-              <button type="button" id="quick-draft-send-teachtext"></button>
               <button type="button" id="quick-draft-switch-multifinder"></button>
-              <button type="button" id="quick-draft-use-mounted"></button>
               <div id="quick-draft-vent-log"></div>
               <div id="quick-draft-chat-materials"></div>
               <div id="quick-draft-stance-candidates"></div>
               <div id="quick-draft-dump"></div>
-              <button type="button" id="quick-draft-restore-dump"></button>
               <div id="quick-draft-outline-seed"></div>
               <div id="quick-draft-audience-summary"></div>
               <div id="quick-draft-uncertainty"></div>
-              <div id="quick-draft-source-map"></div>
               <div id="quick-draft-editorial-strategy"></div>
               <div id="quick-draft-material-ledger"></div>
               <div id="quick-draft-adoption-table"></div>
@@ -1314,33 +1392,33 @@
         </div>
         <div class="window-pane cmf-studio-pane">
           <aside class="cmf-panel cmf-setup-panel">
-            <label class="cmf-control cmf-control-model">
+            <label class="cmf-control cmf-control-model" data-balloon-help="balloon_cmf_model">
               <span data-i18n="cmf_model">Model</span>
               <span class="select-wrap"><select id="cmf-model">
                 <option value="iphone-17-standard" data-i18n="cmf_model_iphone_17">iPhone 17</option>
               </select></span>
             </label>
-            <label class="cmf-control cmf-control-pose" id="cmf-pose-control" hidden>
+            <label class="cmf-control cmf-control-pose" id="cmf-pose-control" hidden data-balloon-help="balloon_cmf_pose">
               <span data-i18n="cmf_pose">Pose</span>
               <span class="select-wrap"><select id="cmf-pose"></select></span>
             </label>
-            <label class="cmf-control cmf-control-preset">
+            <label class="cmf-control cmf-control-preset" data-balloon-help="balloon_cmf_preset">
               <span data-i18n="cmf_preset">Preset</span>
               <span class="select-wrap"><select id="cmf-preset">
                 <option value="" data-i18n="cmf_preset_custom">Custom</option>
               </select></span>
             </label>
             <div class="cmf-setup-actions">
-              <button class="btn" type="button" id="cmf-shuffle" data-i18n="cmf_shuffle">Shuffle</button>
-              <button class="btn" type="button" id="cmf-reset" data-i18n="reset">Reset</button>
+              <button class="btn" type="button" id="cmf-shuffle" data-i18n="cmf_shuffle" data-balloon-help="balloon_cmf_shuffle">Shuffle</button>
+              <button class="btn" type="button" id="cmf-reset" data-i18n="reset" data-balloon-help="balloon_cmf_reset">Reset</button>
             </div>
             <p class="cmf-autosave-note" data-i18n="cmf_autosave">Saved in this browser.</p>
             <div class="cmf-button-stack">
-              <button class="btn default" type="button" id="cmf-reset-view" data-i18n-aria-label="cmf_reset_view" aria-label="Reset View">
+              <button class="btn default" type="button" id="cmf-reset-view" data-i18n-aria-label="cmf_reset_view" aria-label="Reset View" data-balloon-help="balloon_cmf_reset_view">
                 <span class="mobile-control-long" data-i18n="cmf_reset_view">Reset View</span>
                 <span class="mobile-control-short" data-i18n="cmf_reset_view_short">View</span>
               </button>
-              <button class="btn" type="button" id="cmf-export" data-i18n-aria-label="cmf_export_usdz" aria-label="Export USDZ">
+              <button class="btn" type="button" id="cmf-export" data-i18n-aria-label="cmf_export_usdz" aria-label="Export USDZ" data-balloon-help="balloon_cmf_export">
                 <span class="mobile-control-long" data-i18n="cmf_export_usdz">Export USDZ</span>
                 <span class="mobile-control-short" data-i18n="cmf_export_short">Export</span>
               </button>
@@ -1352,21 +1430,21 @@
                 <h3 id="cmf-preview-title" data-i18n="preview">Preview</h3>
                 <p id="cmf-selection-summary"></p>
               </div>
-              <span class="cmf-live-indicator" id="cmf-live-indicator" data-i18n="cmf_model_interactive">Interactive USDZ</span>
+              <span class="cmf-live-indicator" id="cmf-live-indicator" data-i18n="cmf_model_interactive" data-balloon-help="balloon_cmf_live">Interactive USDZ</span>
             </header>
             <div class="cmf-preview-stage" id="cmf-model-viewport">
               <canvas id="cmf-model-canvas" tabindex="0" aria-label="Interactive CMF model" data-i18n-aria-label="cmf_model_canvas" hidden></canvas>
               <p id="cmf-preview-empty" class="cmf-preview-empty" data-i18n="cmf_model_loading">Loading interactive model…</p>
             </div>
-            <div class="cmf-view-strip" id="cmf-view-strip" role="toolbar" aria-label="Model views" data-i18n-aria-label="cmf_model_views"></div>
+            <div class="cmf-view-strip" id="cmf-view-strip" role="toolbar" aria-label="Model views" data-i18n-aria-label="cmf_model_views" data-balloon-help="balloon_cmf_views"></div>
           </section>
           <aside class="cmf-panel cmf-parts-panel">
             <header class="cmf-parts-head">
               <h3 data-i18n="cmf_parts">Parts</h3>
               <p data-i18n="cmf_parts_hint">Choose a part, then apply one finish.</p>
             </header>
-            <div class="cmf-palette" id="cmf-palette" role="group" aria-label="Finishes" data-i18n-aria-label="cmf_finishes"></div>
-            <div class="cmf-parts window-frame-scroller" id="cmf-parts" role="listbox" aria-label="Device parts" data-i18n-aria-label="cmf_parts"></div>
+            <div class="cmf-palette" id="cmf-palette" role="group" aria-label="Finishes" data-i18n-aria-label="cmf_finishes" data-balloon-help="balloon_cmf_palette"></div>
+            <div class="cmf-parts window-frame-scroller" id="cmf-parts" role="listbox" aria-label="Device parts" data-i18n-aria-label="cmf_parts" data-balloon-help="balloon_cmf_parts"></div>
           </aside>
         </div>
       </section>
@@ -3117,14 +3195,17 @@ Glass</textarea>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
         </div>
         <div class="details-bar">
-          <span data-i18n="system_help_terms">System Terms</span>
+          <span id="system-help-scope" data-i18n="system_help_terms">System Terms</span>
           <span id="system-help-count">0</span>
         </div>
         <div class="window-pane system-help-pane">
-          <div class="system-help-search-row">
+          <div class="system-help-control-row">
             <input id="system-help-query" type="search" data-i18n-placeholder="system_help_search" placeholder="Search system terms" />
+            <label class="control-field" for="system-help-group">
+              <span data-i18n="system_help_show">Show</span>
+              <div class="select-wrap"><select id="system-help-group" data-i18n-aria-label="system_help_groups" aria-label="System Help groups"></select></div>
+            </label>
           </div>
-          <div id="system-help-categories" class="system-help-categories" aria-label="System Help categories" data-i18n-aria-label="system_help_categories"></div>
           <div class="system-help-layout">
             <div id="system-help-list" class="system-help-list" role="listbox" aria-label="System Help terms" data-i18n-aria-label="system_help_terms"></div>
             <div id="system-help-detail" class="system-help-detail"></div>
@@ -3632,7 +3713,7 @@ Glass</textarea>
       </section>
     </main>
 
-    <script src="app/generated/build-info.js?v=20260808.4"></script>
-    <script src="app.bundle.js?v=20260808.4"></script>
+    <script src="app/generated/build-info.js?v=20260808.5"></script>
+    <script src="app.bundle.js?v=20260808.5"></script>
   </body>
 </html>

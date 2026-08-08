@@ -1,14 +1,23 @@
 .system-help-pane {
   min-height: 0;
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 8px;
   padding: 8px;
   overflow: hidden;
 }
 
-.system-help-window .system-help-search-row input {
-  width: 100%;
+/* One control strip: the open-ended search field plus the closed-set group
+   menu. The former chip grid wrapped to a second row and read as web UI. */
+.system-help-control-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.system-help-window .system-help-control-row input[type="search"] {
+  flex: 1 1 auto;
+  min-width: 0;
   min-height: 28px;
   border: var(--system-help-search-input-border);
   border-radius: var(--system-help-search-input-radius);
@@ -18,30 +27,23 @@
   padding: 6px 9px;
 }
 
-.system-help-categories {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(82px, 1fr));
-  gap: 4px;
-  min-height: 28px;
+.system-help-control-row .control-field {
+  flex: 0 0 auto;
+  display: flex;
   align-items: center;
+  gap: 6px;
+  margin: 0;
 }
 
-.system-help-categories button,
+.system-help-control-row .select-wrap {
+  min-width: var(--system-help-group-menu-width);
+}
+
 .system-help-related button {
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.system-help-categories button {
-  width: 100%;
-  min-width: 0;
-}
-
-.system-help-categories button.btn.is-selected {
-  background: var(--ink);
-  color: #fff;
 }
 
 .system-help-layout {
@@ -55,7 +57,6 @@
 .system-help-list,
 .system-help-detail {
   min-height: 0;
-  overflow: auto;
   border: var(--system-help-panel-border);
   border-radius: var(--system-help-panel-radius);
   background: var(--system-help-panel-bg);
@@ -63,14 +64,36 @@
 }
 
 .system-help-list {
-  padding: 2px;
+  overflow: auto;
+}
+
+/* The detail pane scrolls inside its Get Info body, so the object header and
+   its action row stay put while the labelled rows move. */
+.system-help-detail {
+  overflow: hidden;
+}
+
+/* Finder list view: one group heading per kind, then one row per object. */
+/* Sticky and positioned, so it already paints over the static rows: no
+   z-index needed. */
+.system-help-group {
+  position: sticky;
+  top: 0;
+  margin: 0;
+  padding: 3px 6px 2px;
+  background: var(--system-help-group-bg);
+  border-bottom: var(--system-help-group-border-bottom);
+  font-family: var(--ui-font);
+  font-size: 11px;
 }
 
 .system-help-list button {
   width: 100%;
-  min-height: 42px;
+  min-height: 26px;
   display: grid;
-  gap: 2px;
+  grid-template-columns: var(--system-help-row-icon-size) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
   border: 0;
   border-bottom: var(--system-help-list-button-border-bottom);
   border-radius: 0;
@@ -78,7 +101,14 @@
   color: var(--ink);
   font: inherit;
   text-align: left;
-  padding: 5px 6px;
+  padding: 3px 6px;
+}
+
+.system-help-list button b {
+  font-weight: inherit;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .system-help-list button:hover,
@@ -98,22 +128,103 @@
   font-size: 11px;
 }
 
-.system-help-detail {
-  padding: 8px;
+/* Scoped to their panes so the shared .sys-icon size does not have to be
+   fought with a bare class of the same weight. */
+.system-help-list button .sys-icon-help-row {
+  width: var(--system-help-row-icon-size);
+  height: var(--system-help-row-icon-size);
+  background: none;
+}
+
+.system-help-head .sys-icon-help-object {
+  width: 32px;
+  height: 32px;
+  background: none;
+}
+
+/* A selected row inverts its 1-bit art the way the Finder does, rather than
+   swapping in a second icon. */
+.system-help-list button.is-selected .sys-icon {
+  color: var(--help-row-selected-fg);
+}
+
+.system-help-list button.is-selected .sys-icon-svg rect,
+.system-help-list button.is-selected .sys-icon-svg circle {
+  fill: var(--help-row-selected-bg);
 }
 
 .system-help-card {
+  min-height: 100%;
   display: grid;
-  gap: 8px;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+/* Get Info grammar: the object identifies itself above the rule, the labelled
+   rows scroll, and the object's own actions stay reachable at the bottom. */
+.system-help-head {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-bottom: var(--system-help-head-border-bottom);
+}
+
+.system-help-card-scroll {
+  min-height: 0;
+  overflow: auto;
+}
+
+.system-help-info {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 10px;
+  margin: 0;
+  padding: 8px;
+}
+
+.system-help-info dt {
+  font-family: var(--ui-font);
+  font-size: 11px;
+  padding-top: 2px;
+}
+
+.system-help-info dd {
+  margin: 0;
 }
 
 .system-help-card h3 {
   margin: 0;
-  font-size: 21px;
+  font-size: 17px;
+  line-height: 1.1;
 }
 
 .system-help-card p {
   margin: 0;
+}
+
+.system-help-head p {
+  margin-top: 1px;
+  font-size: 12px;
+}
+
+/* The route line teaches where the object sits without opening the route. */
+.system-help-route {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+}
+
+.system-help-route span {
+  color: var(--shade-dark);
+}
+
+.system-help-route span.is-current {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 0 3px;
 }
 
 .system-help-aliases,
@@ -172,7 +283,8 @@
   justify-content: flex-end;
   flex-wrap: wrap;
   border-top: var(--system-help-actions-border-top);
-  padding-top: 8px;
+  margin: 0;
+  padding: 8px;
 }
 
 @media (max-width: 860px) {
@@ -188,15 +300,6 @@
   .system-help-layout {
     grid-template-columns: 1fr;
     grid-template-rows: minmax(140px, clamp(170px, 34vh, 260px)) minmax(0, 1fr);
-  }
-
-  .system-help-categories {
-    grid-template-columns: repeat(auto-fit, minmax(76px, 1fr));
-  }
-
-  .system-help-list button {
-    min-height: 34px;
-    padding: 3px 6px;
   }
 
   .system-help-card h3 {
@@ -219,8 +322,18 @@
     padding: 6px;
   }
 
-  .system-help-categories {
-    grid-template-columns: repeat(auto-fit, minmax(68px, 1fr));
+  /* A phone keeps both controls, stacked, so the group menu never squeezes the
+     search field into a slot too small to read. */
+  .system-help-control-row {
+    flex-wrap: wrap;
+  }
+
+  .system-help-control-row .control-field {
+    flex: 1 1 100%;
+  }
+
+  .system-help-control-row .select-wrap {
+    flex: 1 1 auto;
   }
 
   .system-help-layout {
@@ -290,8 +403,8 @@
   height: var(--review-splitter-size);
   padding: 0;
   border: 0;
-  border-top: var(--system-control-line) solid var(--ink);
-  border-bottom: var(--system-control-line) solid var(--ink);
+  border-top: var(--review-splitter-border);
+  border-bottom: var(--review-splitter-border);
   border-radius: 0;
   background:
     repeating-linear-gradient(
@@ -342,7 +455,7 @@
   width: min(var(--mde-page-width), calc(100% - 48px));
   min-height: 156px;
   padding: 24px 28px;
-  border: var(--system-control-line) solid var(--ink);
+  border: var(--review-empty-note-border);
   background: var(--paper);
   text-align: center;
   line-height: 1.45;
@@ -441,16 +554,12 @@
   margin-top: 0.22em;
 }
 
-.review-result-column tr + tr td {
-  border-top: var(--system-control-line) solid var(--ink);
-}
-
 .review-desk-actions {
   flex: 0 0 auto;
 }
 
 .style-note {
-  border: var(--system-control-line) solid var(--ink);
+  border: var(--style-note-border);
   background: var(--paper);
   padding: 8px;
 }
@@ -470,7 +579,7 @@
 
 .style-note-type {
   display: inline-block;
-  border: 1px solid var(--ink);
+  border: var(--style-note-type-border);
   background: var(--shade);
   padding: 1px 5px;
   font-size: 10px;
@@ -645,7 +754,7 @@
 }
 
 .outline-notes {
-  border: var(--system-control-line) solid var(--ink);
+  border: var(--outline-notes-border);
   background: var(--paper);
   padding: 8px 10px;
   font-family: var(--text-font);
@@ -705,7 +814,7 @@
 
 .draft-list {
   height: 120px;
-  border: var(--system-control-line) solid var(--ink);
+  border: var(--draft-list-border);
   background: var(--paper);
   overflow-y: auto;
   margin-bottom: 8px;
@@ -803,7 +912,7 @@
 }
 
 .claim-results {
-  border: var(--system-control-line) solid var(--ink);
+  border: var(--claim-results-border);
   background: var(--review-surface-bg);
   padding: 12px;
   overflow: visible;

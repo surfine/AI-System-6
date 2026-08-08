@@ -1270,8 +1270,22 @@ select:focus {
 }
 
 @media (max-width: 620px) {
+  /* A deck you have to scroll cannot be memorised. The window is content-sized,
+     so the board carries the screen budget: rows share whatever height is left
+     and the cards fill their row instead of deriving height from the 2/3
+     aspect. grid-auto-rows keeps this true for any deck size. */
   .memory-cards-board {
     --memory-cards-columns: 4;
+    /* A definite height, not a max: fr rows resolve to zero without one. */
+    height: var(--memory-cards-board-max-height);
+    grid-auto-rows: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .memory-cards-board .memory-card {
+    aspect-ratio: auto;
+    height: 100%;
+    min-height: 0;
   }
 
   /* The menu bar must fit the SuperClock! clock on phones: collapse the
@@ -2755,10 +2769,49 @@ input[type="radio"] {
   }
 
   /* 文字亮室: no canvas on a phone. The screen cannot hold it; phones get the
-     article and reading views, with material in the stacked drawer. */
+     body and reading views, with material in a drawer. */
   .quick-draft-canvas,
   .quick-draft-view-switch {
     display: none;
+  }
+
+  /* 钟点稿 on a phone: the paper keeps the whole column and the two side
+     regions become drawers over it. The action row does not change, so the
+     key you press on a desk is the key you press here. */
+  .quick-draft-desk {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .quick-draft-paper {
+    grid-column: 1;
+  }
+
+  .quick-draft-shelf,
+  .quick-draft-inspector {
+    display: none;
+  }
+
+  .quick-draft-drawer-switch {
+    display: inline-flex;
+  }
+
+  #quick-draft-form.is-shelf-open .quick-draft-shelf,
+  #quick-draft-form.is-inspector-open .quick-draft-inspector {
+    display: grid;
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: min(17rem, 84%);
+    padding: 8px;
+    background: var(--paper);
+    overflow-y: auto;
+  }
+
+  #quick-draft-form.is-inspector-open .quick-draft-inspector {
+    inset: 0 0 0 auto;
+  }
+
+  .quick-draft-advanced-fields {
+    grid-template-columns: minmax(0, 1fr);
   }
 
 
@@ -3009,5 +3062,13 @@ input[type="radio"] {
 @media (hover: none) {
   body {
     overscroll-behavior: none;
+    /* The desk owns the double tap: an icon opens on it and a title bar rolls
+       the window up. Safari's double-tap-to-zoom competes for the same gesture
+       and rescales the whole screen mid-task, so the desk claims it here.
+       `manipulation` removes only that gesture — pinch-to-zoom still works, so
+       the page is not locked away from anyone who needs to magnify it. Drag
+       surfaces that declare touch-action: none stay untouched: the property is
+       resolved per element, and theirs is the stricter value. */
+    touch-action: manipulation;
   }
 }

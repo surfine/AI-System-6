@@ -69,7 +69,7 @@ function auditTranslations() {
   const dataSource = read(dataPath);
   const corpus = sourceCorpus(sourcePaths.filter((path) => path !== dataPath));
   const dynamicPrefixes = [
-    "system_help_category_",
+    "system_help_group_",
     "trash_type_",
   ];
   const keys = unique(collectMatches(dataSource, /^    ([a-z][a-z0-9_]*):/gm));

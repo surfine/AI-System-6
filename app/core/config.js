@@ -408,7 +408,15 @@ const ensureSlidesExportModule = createLazyModuleLoader("AISystem6SlidesExportLo
 const ensureClioStageModule = createLazyModuleLoader("AISystem6ClioStageLoaded", ["app/features/clio-stage.js"]);
 const ensureClioChartModule = createLazyModuleLoader("AISystem6ClioChartLoaded", ["app/features/clio-chart.js"]);
 const ensureLiquidCoverModule = createLazyModuleLoader("AISystem6LiquidCoverLoaded", ["app/features/liquid-cover.js"]);
-const ensureQuickDraftModule = createLazyModuleLoader("AISystem6QuickDraftLoaded", ["app/features/finder-draft.js"]);
+const ensureQuickDraftModule = createLazyModuleLoader("AISystem6QuickDraftLoaded", [
+  "app/features/finder-draft.js",
+  "app/features/quick-draft-intake.js",
+  "app/features/quick-draft-editor.js",
+  "app/features/quick-draft-composition.js",
+  "app/features/quick-draft-canvas.js",
+  "app/features/quick-draft-ai.js",
+  "app/features/quick-draft-handoff.js",
+]);
 const ensureCmfStudioModule = createLazyModuleLoader("AISystem6CMFStudioLoaded", ["app/features/cmf-studio.js?cmf=exterior-ao-sanitized"]);
 const ensureSoundscapeModule = createLazyModuleLoader("AISystem6SoundscapeLoaded", ["app/features/soundscape.js"]);
 const ensureWritingDemoModule = createLazyModuleLoader("AISystem6WritingDemoLoaded", [

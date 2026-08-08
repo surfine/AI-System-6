@@ -363,15 +363,15 @@ async function addProjectCdItem(markdown, name, options = {}) {
       return null;
     }
   }
-  if (existingIndex >= 0) {
-    projectCdItems.splice(existingIndex, 1);
-  }
   await window.AISystem6StateStores?.projects.commit(() => {
+    if (existingIndex >= 0) {
+      projectCdItems.splice(existingIndex, 1);
+    }
     projectCdItems.unshift(item);
-    selectedProjectCdItemId = item.id;
-    selectedProjectCdItemIds.clear();
-    selectedProjectCdItemIds.add(item.id);
   });
+  selectedProjectCdItemId = item.id;
+  selectedProjectCdItemIds.clear();
+  selectedProjectCdItemIds.add(item.id);
   renderProjectCd();
   return item;
 }
