@@ -392,7 +392,7 @@ const {
   systemHelpCountEl,
   systemHelpScopeEl,
   modernFontsInput,
-  liquidGlassInput,
+  appearanceThemeInput,
   soundEffectsInput,
   menuClockInput,
   controlStripInput,
@@ -469,14 +469,9 @@ const {
 } = getElements();
 
 document.body.dataset.appReady = "booting";
-try {
-  if (localStorage.getItem("ai-system-6-liquid-glass") === "true") {
-    document.body.classList.add("use-liquid-glass", "use-modern-fonts");
-    window.AISystem6LiquidGlassOverlay?.setEnabled(true);
-  }
-} catch (error) {
-  console.warn("Could not read cached appearance preference.", error);
-}
+window.AISystem6Theme?.syncBody();
+if (appearanceThemeInput) appearanceThemeInput.value = getCurrentTheme();
+applyTheme(getCurrentTheme(), { persist: false, saveDesk: false, announce: false, syncUi: false });
 let appVersionInfo = { ...getAppBuildInfo() };
 if (rememberInput) rememberInput.checked = true;
 
@@ -1573,40 +1568,38 @@ function syncDocMapDropZoneLabel(message = t("docmap_drop_files")) {
 
 function applyModernFonts(options = {}) {
   const useModern = modernFontsInput.checked;
-  document.body.classList.toggle("use-modern-fonts", useModern || !!liquidGlassInput?.checked);
+  window.AISystem6Theme?.syncFontStrategy(useModern);
   if (options.persist !== false) saveDeskState();
 }
 
-function applyLiquidGlass(options = {}) {
-  const useLiquidGlass = !!liquidGlassInput?.checked;
-  document.body.classList.toggle("use-liquid-glass", useLiquidGlass);
-  document.body.classList.toggle("use-modern-fonts", useLiquidGlass || modernFontsInput.checked);
-  // The modern-font choice only affects the classic UI: Liquid Glass already
-  // forces the modern font, so the checkbox is meaningless while glass is on.
-  // The checked value is preserved so leaving glass restores the old choice.
-  if (modernFontsInput) modernFontsInput.disabled = useLiquidGlass;
-  window.AISystem6LiquidGlassOverlay?.setEnabled(useLiquidGlass);
-  updateAppearanceMenuLabel();
-  try {
-    localStorage.setItem("ai-system-6-liquid-glass", String(useLiquidGlass));
-  } catch (error) {
-    console.warn("Could not cache appearance preference.", error);
-  }
-  if (options.persist !== false) saveDeskState();
+function getCurrentTheme() {
+  return window.AISystem6Theme?.getCurrentTheme?.() || "classic";
 }
 
-function toggleLiquidGlassAppearance() {
-  if (!liquidGlassInput) return;
-  liquidGlassInput.checked = !liquidGlassInput.checked;
-  applyLiquidGlass();
+function themeHasCapability(capability) {
+  return window.AISystem6Theme?.hasCapability?.(capability) === true;
 }
 
-function updateAppearanceMenuLabel() {
-  const labelKey = liquidGlassInput?.checked ? "retro_interface" : "liquid_glass";
-  document.querySelectorAll('[data-action="toggle-liquid-glass"]').forEach((button) => {
-    button.textContent = t(labelKey);
-    button.classList.remove("is-checked");
+function applyTheme(themeId, options = {}) {
+  const theme = window.AISystem6Theme?.applyTheme(themeId, {
+    persist: options.persist !== false,
+    announce: options.announce !== false,
+    modernFontPreference: modernFontsInput?.checked === true,
   });
+  const resolvedTheme = theme?.id || "classic";
+  if (appearanceThemeInput && appearanceThemeInput.value !== resolvedTheme) {
+    appearanceThemeInput.value = resolvedTheme;
+    appearanceThemeInput.dispatchEvent(new Event("system-select-sync"));
+  }
+  const fontStrategy = theme?.fontStrategy || "preference";
+  if (modernFontsInput) modernFontsInput.disabled = fontStrategy === "theme" || fontStrategy === "modern";
+  window.AISystem6LiquidGlassOverlay?.setEnabled(theme?.overlay === "liquid-glass");
+  if (options.syncUi !== false) {
+    if (typeof updateMenuState === "function") updateMenuState();
+    if (typeof refreshStrip === "function") refreshStrip("appearance");
+  }
+  if (options.saveDesk !== false && options.persist !== false) saveDeskState();
+  return resolvedTheme;
 }
 
 function applyMenuClock(options = {}) {
@@ -1695,7 +1688,7 @@ function applyLanguage() {
   updateNotificationIndicator();
   updateMenuStatus();
   renderAboutMacintosh();
-  updateAppearanceMenuLabel();
+  updateMenuState();
 
   document.querySelectorAll("[data-mode-label]").forEach((el) => {
     const value = writerMode ? t("desk_mode") : t("writer_mode");

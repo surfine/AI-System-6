@@ -619,10 +619,10 @@
   gap: 0 6px;
   width: 100%;
   padding: 3px 4px;
-  border: 0;
+  border: var(--radio-border);
   border-radius: 0;
   background: none;
-  box-shadow: none;
+  box-shadow: var(--radio-shadow);
   text-align: left;
 }
 
@@ -1417,7 +1417,7 @@
   width: 14px;
   height: 14px;
   border: var(--quick-draft-canvas-handle-border);
-  border-radius: 50%;
+  border-radius: var(--radio-radius);
   background: var(--quick-draft-canvas-handle-bg);
   cursor: grab;
 }
@@ -3495,13 +3495,13 @@ input[type="checkbox"] {
   width: var(--system-check-size);
   height: var(--system-check-size);
   margin: 0;
-  border: 1.5px solid var(--ink);
-  border-radius: 0;
-  background-color: var(--paper);
+  border: var(--choice-border);
+  border-radius: var(--choice-radius);
+  background-color: var(--choice-bg);
   background-position: center;
   background-repeat: no-repeat;
   background-size: 12px 12px;
-  box-shadow: none;
+  box-shadow: var(--choice-shadow);
   transition:
     background-color var(--control-motion-fast-in) var(--control-motion-ease),
     border-color var(--control-motion-fast-in) var(--control-motion-ease),
@@ -3514,8 +3514,8 @@ input[type="checkbox"]:focus-visible {
 }
 
 input[type="checkbox"]:checked {
-  background-color: var(--paper);
-  background-image: url("./system.css-reference/icon/checkmark.svg");
+  background-color: var(--choice-checked-bg);
+  background-image: var(--choice-checkmark-image);
 }
 
 input[type="radio"] {
@@ -3528,8 +3528,8 @@ input[type="radio"] {
   margin: 0;
   border: 0;
   border-radius: 50%;
-  background-color: transparent;
-  background-image: url("./system.css-reference/icon/radio-border.svg");
+  background-color: var(--radio-bg);
+  background-image: var(--radio-image);
   background-position: center;
   background-repeat: no-repeat;
   background-size: var(--system-radio-size) var(--system-radio-size);
@@ -3541,14 +3541,12 @@ input[type="radio"] {
 
 input[type="radio"]:hover,
 input[type="radio"]:focus-visible {
-  background-image: url("./system.css-reference/icon/radio-border-focused.svg");
+  background-image: var(--radio-focus-image);
   box-shadow: var(--control-choice-hover-shadow);
 }
 
 input[type="radio"]:checked {
-  background-image:
-    url("./system.css-reference/icon/radio-dot.svg"),
-    url("./system.css-reference/icon/radio-border.svg");
+  background-image: var(--radio-checked-image);
   background-size:
     7px 7px,
     var(--system-radio-size) var(--system-radio-size);
@@ -3556,9 +3554,7 @@ input[type="radio"]:checked {
 
 input[type="radio"]:checked:hover,
 input[type="radio"]:checked:focus-visible {
-  background-image:
-    url("./system.css-reference/icon/radio-dot.svg"),
-    url("./system.css-reference/icon/radio-border-focused.svg");
+  background-image: var(--radio-checked-focus-image);
   background-size:
     7px 7px,
     var(--system-radio-size) var(--system-radio-size);

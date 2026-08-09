@@ -1115,7 +1115,7 @@ function wireAppEvents() {
       // Classic drags the dotted outline and moves the window on release — the
       // same primitive the grow box and the selection marquee use. Liquid Glass
       // follows the pointer live.
-      const outline = compactViewport || document.body.classList.contains("use-liquid-glass")
+      const outline = compactViewport || !themeHasCapability("native-window-outline")
         ? null
         : createWindowOutline(rect);
       let pendingLeft = rect.left;
@@ -1308,7 +1308,7 @@ function wireAppEvents() {
 
   modernFontsInput.addEventListener("change", applyModernFonts);
 
-  liquidGlassInput?.addEventListener("change", applyLiquidGlass);
+  appearanceThemeInput?.addEventListener("change", () => applyTheme(appearanceThemeInput.value));
 
   soundEffectsInput.addEventListener("change", () => saveDeskState());
 

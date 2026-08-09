@@ -217,8 +217,8 @@ test.assertMatches(
 );
 test.assertIncludes(
   windowManager,
-  'document.body.classList.contains("use-liquid-glass")\n    ? null\n    : createWindowOutline(rect, win)',
-  "Liquid Glass keeps live sizing; Classic gets the outline"
+  '!themeHasCapability("native-window-outline")\n    ? null\n    : createWindowOutline(rect, win)',
+  "live sizing versus native outline follows Appearance capability metadata"
 );
 
 // One rule for "not in front", applied to all three parts of the frame: an
@@ -332,8 +332,8 @@ test.assertIncludes(
 // Moving a window speaks the same language as sizing one.
 test.assertMatches(
   wireup,
-  /const outline = compactViewport \|\| document\.body\.classList\.contains\("use-liquid-glass"\)\s*\?\s*null\s*:\s*createWindowOutline\(rect\)/,
-  "Classic drags a window by its outline; Liquid Glass and phones move it live"
+  /const outline = compactViewport \|\| !themeHasCapability\("native-window-outline"\)\s*\?\s*null\s*:\s*createWindowOutline\(rect\)/,
+  "window dragging follows the active Appearance capability; compact phones move live"
 );
 test.assertMatches(
   wireup,

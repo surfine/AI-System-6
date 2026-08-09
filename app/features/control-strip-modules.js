@@ -267,27 +267,22 @@ const controlStripBuiltinModules = Object.freeze([
     defaultEnabled: true,
     openOwner: "control",
     state: () => {
-      if (typeof liquidGlassInput === "undefined" || !liquidGlassInput) {
+      if (typeof getCurrentTheme !== "function") {
         return { state: "unknown", detail: "", source: "appearance" };
       }
+      const theme = window.AISystem6Theme?.getTheme?.(getCurrentTheme());
       return {
         state: "ready",
-        detail: t(liquidGlassInput.checked ? "liquid_glass" : "retro_interface"),
+        detail: t(theme?.labelKey || "theme_classic"),
         source: "appearance",
       };
     },
-    menu: () => {
-      const liquid = typeof liquidGlassInput !== "undefined" && !!liquidGlassInput?.checked;
-      // Only one way to set it exists, so each choice acts only when it would
-      // actually change the setting — picking the current one is a no-op.
-      const choose = (wantLiquid) => {
-        if (wantLiquid !== liquid) toggleLiquidGlassAppearance();
-      };
-      return [
-        { type: "action", label: t("retro_interface"), checked: !liquid, run: () => choose(false) },
-        { type: "action", label: t("liquid_glass"), checked: liquid, run: () => choose(true) },
-      ];
-    },
+    menu: () => (window.AISystem6Theme?.themes || []).map((theme) => ({
+      type: "action",
+      label: t(theme.labelKey),
+      checked: theme.id === getCurrentTheme(),
+      run: () => applyTheme(theme.id),
+    })),
   },
   {
     id: "balloonHelp",

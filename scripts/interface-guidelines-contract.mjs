@@ -204,6 +204,13 @@ export const windowInterfaceRegistry = Object.freeze({
     rationale: "ClioTalk multiplexes conversation, model, and SideAsk receipts in one contextual strip.",
   }),
   control: deskAccessory("system", { statusLayout: "none" }),
+  themeLab: specializedUtility("utility", {
+    route: "system",
+    documentModel: "none",
+    statusLayout: "compact",
+    referenceSurface: "control",
+    rationale: "Theme Lab is an internal control-state specimen for reviewing one shared DOM across every Appearance.",
+  }),
   chooser: modalSurface(),
   rag: specializedUtility("utility", {
     statusLayout: "compact",

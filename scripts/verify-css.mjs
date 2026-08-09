@@ -298,8 +298,10 @@ cssFiles
 // --- Liquid-glass twin checks ------------------------------------------------
 
 const LIQUID_FILE = "styles/70-liquid-glass.css";
+const APPEARANCE_FILE = "styles/65-appearance-themes.css";
 const THEME_FILES = new Set([
   LIQUID_FILE,
+  APPEARANCE_FILE,
   // Theme-scoped files that don't participate in twinning. Bureaucracy/meme
   // and Endfield Terminal are standalone surfaces, not base/theme pairs.
   "styles/80-bureaucracy-meme.css",
@@ -476,10 +478,73 @@ if (typeof twinBudget !== "number") {
   ok(`${LIQUID_FILE}: twin selectors ${twinCount}/${twinBudget}`);
 }
 
-const OUTSIDE_THEME_SELECTOR_PATTERN = /\bbody(?:\.use-liquid-glass|:not\(\.use-liquid-glass\))/;
+// --- Multi-era Appearance checks -------------------------------------------
+//
+// New historical themes start token-first. A per-era recipe selector is
+// permitted only in the owning Appearance file, is capped, must reference a
+// real base primitive, and may not be copied across themes. Shared recipes use
+// data-theme-family; repeated per-era selectors are evidence of a missing
+// semantic token or family recipe.
+
+const APPEARANCE_THEME_IDS = Object.freeze([
+  "classic",
+  "platinum",
+  "liquid-glass",
+]);
+const appearanceText = readFileSync(join(root, APPEARANCE_FILE), "utf8");
+const appearanceSelectors = extractSelectorLists(appearanceText);
+const appearanceLimit = budget.appearanceThemeSelectorLimit;
+if (typeof appearanceLimit !== "number") {
+  fail("scripts/css-budget.json is missing appearanceThemeSelectorLimit");
+}
+
+const recipesByBase = new Map();
+const appearanceOrphans = [];
+for (const themeId of APPEARANCE_THEME_IDS) {
+  const escapedId = themeId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const prefix = new RegExp(`^(?:html|body)\\[data-theme=["']${escapedId}["']\\](?:\\s+|$)`);
+  const owned = appearanceSelectors.filter((selector) => prefix.test(selector));
+  if (typeof appearanceLimit === "number" && owned.length > appearanceLimit) {
+    fail(`${APPEARANCE_FILE}: ${themeId} selectors = ${owned.length}, limit = ${appearanceLimit}. Promote repeated values to semantic tokens or a family recipe.`);
+  } else if (typeof appearanceLimit === "number") {
+    ok(`${APPEARANCE_FILE}: ${themeId} selectors ${owned.length}/${appearanceLimit}`);
+  }
+  for (const selector of owned) {
+    const base = selector.replace(prefix, "").trim();
+    if (!base) continue;
+    const themeSet = recipesByBase.get(base) || new Set();
+    themeSet.add(themeId);
+    recipesByBase.set(base, themeSet);
+    const missing = extractClassIdTokens(base).filter((token) => !baseClassIds.has(token));
+    if (missing.length) appearanceOrphans.push({ themeId, base, missing });
+  }
+}
+
+for (const [base, themes] of recipesByBase) {
+  if (themes.size > 1) {
+    fail(`${APPEARANCE_FILE}: duplicated per-theme recipe "${base}" in ${[...themes].join(", ")}. Use semantic tokens or data-theme-family.`);
+  }
+}
+
+const familySelectors = appearanceSelectors.filter((selector) => /^(?:html|body)\[data-theme-family=/.test(selector));
+for (const selector of familySelectors) {
+  const base = selector.replace(/^(?:html|body)\[data-theme-family=["'][^"']+["']\]\s*/, "").trim();
+  const missing = extractClassIdTokens(base).filter((token) => !baseClassIds.has(token));
+  if (missing.length) appearanceOrphans.push({ themeId: "family", base, missing });
+}
+
+if (appearanceOrphans.length) {
+  appearanceOrphans.slice(0, 10).forEach(({ themeId, base, missing }) => {
+    fail(`${APPEARANCE_FILE}: orphan ${themeId} recipe "${base}" (missing: ${missing.join(", ")})`);
+  });
+} else {
+  ok(`${APPEARANCE_FILE}: no orphan theme recipes`);
+}
+
+const OUTSIDE_THEME_SELECTOR_PATTERN = /\b(?:body(?:\.use-liquid-glass|:not\(\.use-liquid-glass\))|(?:html|body)\[data-theme(?:-family)?=)/;
 const outsideThemeBudgets = budget.themeSelectorsOutsideLiquid ?? {};
 cssFiles
-  .filter((path) => path !== LIQUID_FILE)
+  .filter((path) => path !== LIQUID_FILE && path !== APPEARANCE_FILE)
   .forEach((path) => {
     const text = readFileSync(join(root, path), "utf8");
     const count = extractSelectorLists(text).filter((sel) =>

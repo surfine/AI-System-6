@@ -91,9 +91,18 @@ export const SNAPSHOT_EVAL = `(() => {
     }) || all[0] || null;
   };
   const out = {};
-  const originalThemeWasLiquid = document.body.classList.contains("use-liquid-glass");
+  const originalTheme = window.AISystem6Theme?.getCurrentTheme?.() || "classic";
+  const originalModernFontPreference = document.body.classList.contains("use-modern-fonts");
   for (const theme of THEMES) {
-    document.body.classList.toggle("use-liquid-glass", theme === "liquid-glass");
+    window.AISystem6Theme?.applyTheme(theme === "liquid-glass" ? "liquid-glass" : "classic", {
+      persist: false,
+      announce: false,
+      modernFontPreference: false,
+    });
+    // This legacy baseline isolates Appearance CSS from the independent font
+    // preference layer. The product still applies each era's font strategy;
+    // keeping the layer out here preserves the historical comparison contract.
+    document.body.classList.remove("use-modern-fonts");
     // Force a reflow so computed styles reflect the new theme synchronously.
     void document.body.offsetHeight;
     out[theme] = {};
@@ -112,6 +121,10 @@ export const SNAPSHOT_EVAL = `(() => {
     }
   }
   // Restore the original theme to avoid leaving a side-effect.
-  document.body.classList.toggle("use-liquid-glass", originalThemeWasLiquid);
+  window.AISystem6Theme?.applyTheme(originalTheme, {
+    persist: false,
+    announce: false,
+    modernFontPreference: originalModernFontPreference,
+  });
   return out;
 })()`;

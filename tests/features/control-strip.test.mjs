@@ -152,7 +152,7 @@ test.assertIncludes(modules, "window.AISystem6ControlStripModules", "built-in de
 test.assertIncludes(modules, "subscribe: controlStripSubscribeSoundscape", "Soundscape modules subscribe to player state");
 test.assertIncludes(modules, "ensureRuntime: controlStripEnsureSoundscapeRuntime", "strip modules load the Soundscape adapter lazily");
 test.assertNotMatches(modules, /\bbattery\b|screen depth|\bresolution\b|\bprinter\b|\bairport\b/i, "no browser-unreachable hardware is faked");
-test.assertIncludes(modules, "toggleLiquidGlassAppearance()", "the appearance tile sets the appearance instead of linking to a panel");
+test.assertIncludes(modules, "run: () => applyTheme(theme.id)", "the appearance tile sets any registered Appearance instead of linking to a panel");
 test.assertIncludes(modules, "setBalloonHelpEnabled(", "the Balloon Help tile sets Balloon Help directly");
 test.assertIncludes(modules, 'menuClass: "project-switcher-popover"', "the disk tile adopts the menu-bar project switcher styling");
 test.assertIncludes(modules, "renderProjectSwitcher(popover)", "the disk tile reuses the menu-bar project renderer");

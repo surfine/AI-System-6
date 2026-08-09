@@ -1176,6 +1176,7 @@ const mobileDialogWindowNames = new Set([
 const mobileSystemPageWindowNames = new Set([
   "guide",
   "systemHelp",
+  "themeLab",
 ]);
 
 const mobilePresentationClassNames = [
@@ -2517,10 +2518,8 @@ function updateMenuState() {
     if (action === "tile-windows") {
       btn.classList.toggle("is-hidden", matchMedia("(max-width:860px) and (orientation:portrait)").matches);
     }
-    if (action === "toggle-liquid-glass") {
-      const useLiquidGlass = !!liquidGlassInput?.checked;
-      btn.textContent = t(useLiquidGlass ? "retro_interface" : "liquid_glass");
-      btn.classList.remove("is-checked");
+    if (btn.dataset.themeChoice) {
+      btn.classList.toggle("is-checked", btn.dataset.themeChoice === getCurrentTheme());
     }
     if (action === "toggle-balloon-help") {
       btn.textContent = t(balloonHelpEnabled ? "hide_balloon_help" : "show_balloon_help");
@@ -4499,7 +4498,7 @@ function startWindowResize(event, win) {
   // Liquid Glass sizes live, where a wait-for-release frame reads as a stall.
   // Portrait flow sizes a document-flowed window, not a free-floating frame, so
   // an outline anchored to the old top-left would promise the wrong box.
-  const outline = portraitFlow || document.body.classList.contains("use-liquid-glass")
+  const outline = portraitFlow || !themeHasCapability("native-window-outline")
     ? null
     : createWindowOutline(rect, win);
   let pendingWidth = startWidth;

@@ -308,8 +308,8 @@ test("Classic and Liquid Glass share the same strip structure", async ({ page })
   });
   await openWindow(page, "control");
   await page.click('[data-control-tab="general"]');
-  await page.check("#liquid-glass");
-  await page.waitForFunction(() => document.body.classList.contains("use-liquid-glass"));
+  await page.selectOption("#appearance-theme", "liquid-glass");
+  await page.waitForFunction(() => document.body.dataset.theme === "liquid-glass");
   const structureAfter = await page.evaluate(() => {
     const mount = document.querySelector("[data-control-strip]");
     return mount ? mount.className + "|" + [...mount.querySelectorAll("*")].map((el) => el.className).join(",") : "";

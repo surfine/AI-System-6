@@ -212,7 +212,7 @@ function settingsSnapshotPayload() {
     embeddingModel: embeddingModelInput.value,
     remember: rememberInput.checked,
     modernFonts: modernFontsInput.checked,
-    liquidGlass: !!liquidGlassInput?.checked,
+    theme: getCurrentTheme(),
     soundEffects: soundEffectsInput.checked,
     menuClock: menuClockInput.checked,
     controlStrip: controlStripState.enabled,
@@ -1519,14 +1519,13 @@ function applySettings(settings) {
     modernFontsInput.checked = settings.modernFonts;
     applyModernFonts({ persist: false });
   }
-  if (typeof settings.liquidGlass === "boolean" && liquidGlassInput) {
-    liquidGlassInput.checked = settings.liquidGlass;
-    applyLiquidGlass({ persist: false });
-    try {
-      localStorage.setItem("ai-system-6-liquid-glass", String(settings.liquidGlass));
-    } catch (error) {
-      console.warn("Could not cache appearance preference.", error);
-    }
+  const restoredTheme = typeof settings.theme === "string"
+    ? settings.theme
+    : typeof settings.liquidGlass === "boolean"
+      ? (settings.liquidGlass ? "liquid-glass" : "classic")
+      : "";
+  if (restoredTheme) {
+    applyTheme(restoredTheme, { persist: true, saveDesk: false, announce: false });
   }
   if (typeof settings.soundEffects === "boolean") {
     soundEffectsInput.checked = settings.soundEffects;

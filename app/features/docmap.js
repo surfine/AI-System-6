@@ -1660,7 +1660,7 @@ function renderDocMapTree(map) {
 }
 
 function docMapPalette() {
-  return document.body?.classList.contains("use-liquid-glass")
+  return getCurrentTheme() === "liquid-glass"
     ? "#2f9db3 #78ad62 #6f95cf #c98f34 #e07c67 #6cae9c".split` `
     : "#167a8a #b45f16 #6b55b8 #bf2f35 #248a45 #c17b00".split` `;
 }
@@ -2642,7 +2642,7 @@ function buildDocMapPrintHtml(map = currentDocMap) {
   const title = docMapPrintTitle(map);
   const svgHtml = cloneDocMapSvgForPrint(map);
   const markmapCss = docMapPrintMarkmapCss();
-  const bodyClass = document.body?.classList.contains("use-liquid-glass") ? "use-liquid-glass" : "";
+  const bodyClass = getCurrentTheme() === "liquid-glass" ? "use-liquid-glass" : "";
   const markdownFallback = escapeHtml(formatDocMapMarkdown(map || {}));
   const lang = currentLanguage === "zh" ? "zh-Hans" : "en";
   const layout = docMapLayoutFor(map);

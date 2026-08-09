@@ -25,8 +25,12 @@ test.assertIncludes(
   "background: var(--liquid-disabled-control-bg);",
   "the shared disabled-control rule reads its surface from a scoped token",
 );
-test.assertIncludes(menus, 'menuItem("toggle-liquid-glass", "liquid_glass")', "Special menu keeps the manual appearance switch");
-test.assertIncludes(dictionary, 'id: "liquid-glass-appearance"', "System Help documents the manual Liquid Glass switch");
-test.assertIncludes(dictionary, "Special → Liquid Glass", "Help explains that the same running workspace changes appearance");
+for (const themeId of ["classic", "platinum", "liquid-glass"]) {
+  test.assertIncludes(menus, `themeId: "${themeId}"`, `Special → Appearance exposes ${themeId}`);
+}
+test.assertIncludes(menus, 'submenu("appearance", appearanceItems)', "Special owns one Appearance submenu instead of a second theme system");
+test.assertIncludes(dictionary, 'id: "liquid-glass-appearance"', "System Help keeps the stable Appearance dictionary record id");
+test.assertIncludes(dictionary, "Special → Appearance", "Help explains that the same running workspace changes appearance");
+test.assertIncludes(dictionary, "same running workspace", "Help explains that Appearance never opens a parallel workspace");
 
 test.finish();

@@ -323,7 +323,7 @@ function getElements() {
   const systemHelpCountEl = document.querySelector("#system-help-count");
   const systemHelpScopeEl = document.querySelector("#system-help-scope");
   const modernFontsInput = document.querySelector("#modern-fonts");
-  const liquidGlassInput = document.querySelector("#liquid-glass");
+  const appearanceThemeInput = document.querySelector("#appearance-theme");
   const soundEffectsInput = document.querySelector("#sound-effects");
   const menuClockInput = document.querySelector("#menu-clock");
   const controlStripInput = document.querySelector("#control-strip");
@@ -721,7 +721,7 @@ function getElements() {
     systemHelpCountEl,
     systemHelpScopeEl,
     modernFontsInput,
-    liquidGlassInput,
+    appearanceThemeInput,
     soundEffectsInput,
     menuClockInput,
     controlStripInput,

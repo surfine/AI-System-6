@@ -363,6 +363,19 @@ Version `1.0.12`, build `20260804.2`.
   Writing Studio. Desktop, Applications, MultiFinder, menus, mobile shell,
   restore, and native parity contracts follow the new application boundary.
 
+## Public Beta 1.0.30 - 2026-08-09
+
+- Platinum becomes the third release-ready Appearance beside System 6 and
+  Liquid Glass. One boot-safe registry, persisted Control Panel selector, and
+  Special-menu submenu now own appearance state without changing application
+  structure or writing semantics.
+- Platinum applies an evidence-led Mac OS 8 material recipe to shared windows,
+  controls, fields, menus, scroll surfaces, typography, and selection states.
+  Theme Lab remains the three-theme acceptance specimen; unfinished Aqua,
+  Snow Leopard, and Yosemite experiments are excluded from the release.
+- The promotional performance and 4K edits gain tighter deep trims, a
+  multi-device CMF Studio montage, and reusable Bilibili cover renderers.
+
 ## What Changed Most In One Month
 
 - The product moved from "an AI writing prototype" to a local-first writing

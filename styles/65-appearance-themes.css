@@ -1,0 +1,823 @@
+/* Macintosh Appearance parameter tables.
+   Recipe lineage is explicit in the registry: Classic -> Platinum,
+   Aqua -> Snow Leopard, and Liquid Glass -> Yosemite. Classic
+   defaults remain single-sourced in 00-foundation.css, while Liquid Glass
+   keeps its established material and debt ratchet in 70-liquid-glass.css.
+   Historical appearances are evidence-led web adaptations, not claims of
+   pixel-perfect OS resource reproduction. */
+
+@font-face {
+  font-family: "Platinum Asap";
+  src: url("./assets/fonts/platinum/Asap-Variable.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 100 900;
+  font-stretch: 75% 125%;
+  font-display: swap;
+}
+
+body[data-theme]:not(.use-modern-fonts) {
+  --ui-font: var(--theme-ui-font);
+  --title-font: var(--theme-title-font);
+}
+
+html[data-theme="platinum"],
+body[data-theme="platinum"] {
+  /* Apple names Charcoal as the default system font. The face remains
+     local-only; Geneva is the historically adjacent installed fallback. */
+  --theme-ui-font: Charcoal, "Charcoal CY", "Platinum Asap", Geneva, "ChicagoFLF", Chicago, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --theme-title-font: var(--theme-ui-font);
+  --system-readable-min: 12px;
+  --system-title-size: 12px;
+  --system-control-size: 12px;
+  --system-text-size: 12px;
+  --system-caption-size: 10px;
+  --system-menu-height: 20px;
+  --system-titlebar-height: 19px;
+  --system-titlebar-title-height: 13px;
+  --system-titlebar-font-size: 12px;
+  --system-control-min-height: 22px;
+  --system-button-min-height: 20px;
+  --system-button-small-height: 18px;
+  --system-button-mini-height: 16px;
+  --system-button-small-font-size: 11px;
+  --system-button-mini-font-size: 10px;
+  --system-button-small-padding-x: 8px;
+  --system-button-mini-padding-x: 7px;
+  --system-button-padding-y: 2px;
+  --system-button-padding-x: 10px;
+  --ink: #000000;
+  --paper: #dddddd;
+  --panel: #cccccc;
+  --quiet-panel: #eeeeee;
+  --shade: #999999;
+  --shade-dark: #777777;
+  --rule: #888888;
+  --desktop: #9999cc;
+  --desktop-surface: #9999cc;
+  --pane-bg: #dddddd;
+  --window-bg: #cccccc;
+  --window-border: 1px solid #000000;
+  --window-radius: 0;
+  --window-shadow:
+    1px 1px 0 #000000,
+    inset 1px 0 0 #ffffff,
+    inset 0 1px 0 #ffffff,
+    inset -1px 0 0 #999999,
+    inset 0 -1px 0 #999999;
+  --active-window-shadow: var(--window-shadow);
+  --inactive-window-shadow:
+    1px 1px 0 #999999,
+    inset 1px 1px 0 #eeeeee,
+    inset -1px -1px 0 #999999;
+  --system-titlebar-active-bg:
+    repeating-linear-gradient(to bottom, #ffffff 0 1px, #777777 1px 2px);
+  --system-titlebar-inactive-bg: #dddddd;
+  --system-titlebar-inactive-control-visibility: hidden;
+  --system-titlebar-inactive-control-opacity: 1;
+  --system-titlebar-inactive-title-color: #777777;
+  --titlebar-title-bg: #cccccc;
+  --titlebar-title-fg: #000000;
+  --titlebar-border: 1px solid #000000;
+  --titlebar-shadow: inset 0 1px 0 #ffffff;
+  --surface-primary: #dddddd;
+  --surface-secondary: #dddddd;
+  --surface-inset: #ffffff;
+  --toolbar-bg: #dddddd;
+  --toolbar-border: 1px solid #000000;
+  --sidebar-bg: #eeeeee;
+  --selection-bg: #ccccff;
+  --selection-fg: #000000;
+  --sidebar-selection-bg: #ccccff;
+  --sidebar-selection-fg: #000000;
+  --separator: #888888;
+  --control-bg: #dddddd;
+  --control-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #888888;
+  --control-active-shadow: inset 1px 1px 0 #555555, inset -1px -1px 0 #999999;
+  --control-focus-outline: 2px solid #6666cc;
+  --control-focus-offset: 0;
+  --control-disabled-bg: #dddddd;
+  --control-disabled-field-bg: #ffffff;
+  --control-disabled-opacity: 1;
+  --system-border: 1px solid #000000;
+  --system-inset:
+    inset 1px 1px 0 #888888,
+    inset -1px -1px 0 #ffffff;
+  --control-radius: 0;
+  --btn-border-color: #000000;
+  --btn-radius: 3px;
+  --btn-bg: #dddddd;
+  --btn-shadow:
+    inset 1px 1px 0 #dddddd,
+    inset 2px 2px 0 #ffffff,
+    inset -1px -1px 1px #555555;
+  --btn-hover-bg: #dddddd;
+  --btn-hover-fg: #000000;
+  --btn-hover-shadow:
+    inset 1px 1px 0 #dddddd,
+    inset 2px 2px 0 #ffffff,
+    inset -1px -1px 1px #555555;
+  --btn-active-bg: #666666;
+  --btn-active-fg: #ffffff;
+  --btn-active-shadow: inset 1px 1px 1px #333333, inset -1px -1px 1px #999999;
+  --btn-default-bg: var(--btn-bg);
+  --btn-default-shadow: var(--btn-shadow);
+  --field-bg: #ffffff;
+  --field-focus-bg: #ffffff;
+  --field-border: 1px solid #000000;
+  --field-radius: 0;
+  --select-radius: 3px;
+  --field-shadow: -1px -1px 0 #888888;
+  --field-focus-border: 1px solid #000000;
+  --field-focus-ring: 0 0 0 2px #6666cc;
+  --choice-bg: #dddddd;
+  --choice-border: 1px solid #000000;
+  --choice-radius: 0;
+  --choice-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #888888;
+  --choice-checked-bg: #dddddd;
+  --choice-checkmark-image: url("./assets/vendor/classic-stylesheets/macos9/checkmark.svg");
+  --system-check-size: 12px;
+  --system-radio-size: 12px;
+  --radio-bg: #dddddd;
+  --radio-border: 1px solid #000000;
+  --radio-shadow: inset 1px 1px 0 #dddddd, inset -1px -1px 0 #888888;
+  --radio-image: linear-gradient(to bottom right, #ffffff, #888888);
+  --radio-focus-image: var(--radio-image);
+  --radio-checked-image:
+    radial-gradient(circle, #000000 0 3px, transparent 3.5px),
+    linear-gradient(to bottom right, #555555, #ffffff);
+  --radio-checked-focus-image: var(--radio-checked-image);
+  --menu-bar-bg: #dddddd;
+  --menu-bar-border: 1px solid #000000;
+  --menu-bar-shadow: inset 0 1px 0 #ffffff, inset 0 -1px 0 #999999;
+  --menu-panel-bg: #dddddd;
+  --menu-panel-border: 1px solid #000000;
+  --menu-panel-radius: 0;
+  --menu-panel-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #888888, 1px 1px 0 #000000;
+  --menu-item-bg: #dddddd;
+  --menu-item-fg: #000000;
+  --menu-button-active-bg: #333399;
+  --menu-button-active-fg: #ffffff;
+  --menu-item-active-bg: #333399;
+  --menu-item-active-fg: #ffffff;
+  --window-frame-track-bg: #aaaaaa;
+  --window-frame-track-border: 1px solid #000000;
+  --window-frame-thumb-bg: #9999ff;
+  --window-frame-thumb-border: 1px solid #000000;
+  --window-frame-arrow-bg: #dddddd;
+  --scrollbar-track: #aaaaaa;
+  --scrollbar-thumb: var(--window-frame-thumb-bg);
+  --scrollbar-button: #dddddd;
+  --scrollbar-width: 16px;
+  --scrollbar-track-border: 1px solid #000000;
+  --scrollbar-track-shadow: inset 1px 1px #777777, inset 2px 2px #888888, inset -1px -1px #cccccc, inset -2px -2px #bbbbbb;
+  --scrollbar-thumb-shadow: inset 1px 1px #ccccff, inset -1px -1px #6666cc, 0 1px #777777, 0 2px #888888;
+  --scrollbar-button-border: 1px solid #000000;
+  --scrollbar-button-shadow: inset 1px 1px #ffffff, inset -1px -1px #bbbbbb;
+  --tab-radius: 0;
+  --tab-overlap: 1px;
+  --tab-bg: #cccccc;
+  --tab-hover-bg: #dddddd;
+  --tab-active-bg: #eeeeee;
+  --theme-lab-button-min-width: 58px;
+  --theme-lab-group-position: relative;
+  --theme-lab-group-margin: 6px 0 0;
+  --theme-lab-group-padding: 14px 10px 10px;
+  --theme-lab-group-bg: #dddddd;
+  --theme-lab-group-border: 1px solid #888888;
+  --theme-lab-group-shadow: inset 1px 1px 0 #ffffff, 1px 1px 0 #ffffff;
+  /* Theme Lab is a measurement specimen: these are direct Mac OS 8 HIG and
+     classic-stylesheets Mac OS 9 recipe values, not a recolor preset. */
+  --theme-lab-details-min-height: 20px;
+  --theme-lab-details-padding: 2px 7px 3px;
+  --theme-lab-details-border-bottom: 1px solid #000000;
+  --theme-lab-details-bg: #dddddd;
+  --theme-lab-pane-gap: 8px;
+  --theme-lab-pane-padding: 8px;
+  --theme-lab-pane-bg: #dddddd;
+  --theme-lab-pane-border: 1px solid #000000;
+  --theme-lab-pane-border-top: 0;
+  --theme-lab-pane-shadow: 1px 1px 0 #ffffff, 1px 0 0 #ffffff, 0 1px 0 #ffffff, -1px -1px 0 #999999, -1px 0 0 #999999, 0 -1px 0 #999999;
+  --theme-lab-heading-position: absolute;
+  --theme-lab-heading-left: 8px;
+  --theme-lab-heading-top: 0;
+  --theme-lab-heading-transform: translateY(-50%);
+  --theme-lab-heading-margin: 0;
+  --theme-lab-heading-padding: 0 4px;
+  --theme-lab-heading-padding-bottom: 0;
+  --theme-lab-heading-border-bottom: 0;
+  --theme-lab-heading-bg: #dddddd;
+  --theme-lab-heading-line-height: 14px;
+  --theme-lab-heading-weight: 700;
+  --theme-lab-button-row-gap: 10px 12px;
+  --theme-lab-button-row-margin-bottom: 10px;
+  --theme-lab-size-row-margin: -3px 0 9px;
+  --theme-lab-choice-gap: 6px 12px;
+  --theme-lab-choice-row-min-height: 18px;
+  --theme-lab-choice-label-gap: 5px;
+  --theme-lab-era-choice-state-display: flex;
+  --theme-lab-checkbox-checkmark-image: none;
+  --theme-lab-checkbox-mark-content: "";
+  --theme-lab-checkbox-mark-color: #000000;
+  --theme-lab-checkbox-mark-shadow: -1px 1px 0 rgba(0, 0, 0, 0.3);
+  --theme-lab-checkbox-disabled-mark-color: #888888;
+  --theme-lab-checkbox-disabled-mark-shadow: none;
+  --theme-lab-checkbox-active-bg: #777777;
+  --theme-lab-checkbox-active-shadow: inset 1px 1px 0 #555555, inset -1px -1px 0 #999999;
+  --theme-lab-radio-checked-bg: linear-gradient(to bottom right, #555555, #ffffff);
+  --theme-lab-radio-checked-shadow: inset 1px 1px 0 #555555;
+  --theme-lab-radio-dot-content: "";
+  --theme-lab-radio-dot-bg: #000000;
+  --theme-lab-radio-disabled-dot-bg: #888888;
+  --theme-lab-radio-active-bg: linear-gradient(to bottom right, #444444, #bbbbbb);
+  --theme-lab-radio-active-shadow: inset 1px 1px 0 #444444;
+  --theme-lab-radio-disabled-bg: #dddddd;
+  --theme-lab-radio-disabled-image: none;
+  --theme-lab-form-gap: 6px 12px;
+  --theme-lab-form-label-columns: 82px minmax(0, 1fr);
+  --theme-lab-form-label-align: right;
+  --theme-lab-form-label-column-gap: 7px;
+  --theme-lab-form-label-align-items: center;
+  --theme-lab-disabled-field-fg: #808080;
+  --theme-lab-disabled-field-bg: #ffffff;
+  --theme-lab-disabled-field-border-color: #555555;
+  --theme-lab-disabled-field-shadow: 0 0 0 1px #dddddd;
+  --theme-lab-disabled-popup-fg: #777777;
+  --theme-lab-disabled-popup-border-color: #888888;
+  --theme-lab-disabled-popup-shadow: none;
+  --theme-lab-control-margin-top: 8px;
+  --theme-lab-control-font-family: var(--theme-ui-font);
+  --theme-lab-control-font-size: var(--system-control-size);
+  --theme-lab-control-font-weight: 700;
+  --theme-lab-segmented-gap: 4px;
+  --theme-lab-segmented-button-min-height: 20px;
+  --theme-lab-segmented-button-height: 20px;
+  --theme-lab-segmented-button-padding: 1px 5px;
+  --theme-lab-segmented-button-border: 1px solid #000000;
+  --theme-lab-segmented-button-border-right: 1px solid #000000;
+  --theme-lab-segmented-last-border-right: 1px solid #000000;
+  --theme-lab-segmented-button-radius: 0;
+  --theme-lab-segmented-button-bg: #dddddd;
+  --theme-lab-segmented-button-shadow: var(--btn-shadow);
+  --theme-lab-segmented-hover-bg: #dddddd;
+  --theme-lab-segmented-line-height: 14px;
+  --theme-lab-segmented-selected-bg: #666666;
+  --theme-lab-segmented-selected-fg: #ffffff;
+  --theme-lab-segmented-selected-shadow: var(--btn-active-shadow);
+  --theme-lab-segmented-label-display: none;
+  --theme-lab-view-icon-display: block;
+  --theme-lab-tabs-gap: 0;
+  --theme-lab-tabs-padding: 0 10px;
+  --theme-lab-tabs-border-bottom: 0;
+  --theme-lab-tabs-overflow: hidden;
+  --theme-lab-tab-button-flex: 0 0 74px;
+  --theme-lab-tab-button-width: 74px;
+  --theme-lab-tab-button-min-height: 23px;
+  --theme-lab-tab-button-height: 23px;
+  --theme-lab-tab-button-margin: 0 -1px 0 0;
+  --theme-lab-tab-button-padding: 3px 14px 0;
+  --theme-lab-tab-button-border: 0;
+  --theme-lab-tab-button-radius: 0;
+  --theme-lab-tab-button-bg: transparent url("./assets/vendor/classic-stylesheets/macos9/tab.svg") center top / 74px 23px no-repeat;
+  --theme-lab-tab-button-shadow: none;
+  --theme-lab-tab-hover-bg: var(--theme-lab-tab-button-bg);
+  --theme-lab-tab-line-height: 18px;
+  --theme-lab-tab-selected-min-height: 25px;
+  --theme-lab-tab-selected-height: 25px;
+  --theme-lab-tab-selected-bg: transparent url("./assets/vendor/classic-stylesheets/macos9/tab-selected.svg") center top / 74px 25px no-repeat;
+  --theme-lab-tab-selected-fg: #000000;
+  --theme-lab-tab-selected-shadow: none;
+  --theme-lab-tab-active-bg: transparent url("./assets/vendor/classic-stylesheets/macos9/tab-active.svg") center top / 74px 23px no-repeat;
+  --theme-lab-tab-active-fg: #ffffff;
+  --theme-lab-tab-focus-outline: 0;
+  --theme-lab-tab-focus-text-shadow: 0 0 2px #6666cc;
+  --theme-lab-tab-panel-min-height: 31px;
+  --theme-lab-tab-panel-margin-top: -4px;
+  --theme-lab-tab-panel-padding: 7px 10px 5px;
+  --theme-lab-tab-panel-border: 1px solid #000000;
+  --theme-lab-tab-panel-radius: 0;
+  --theme-lab-tab-panel-bg: #eeeeee;
+  --theme-lab-tab-panel-shadow: inset 1px 1px #cccccc, inset 2px 2px #ffffff, inset -1px -1px #999999, inset -2px -2px #bbbbbb;
+  --theme-lab-split-min-height: 146px;
+  --theme-lab-split-columns: minmax(126px, 0.75fr) minmax(180px, 1.25fr);
+  --theme-lab-split-gap: 9px;
+  --theme-lab-split-padding: 1px;
+  --theme-lab-split-border: 0;
+  --theme-lab-split-radius: 0;
+  --theme-lab-split-bg: #eeeeee;
+  --theme-lab-split-overflow: visible;
+  --theme-lab-split-shadow: none;
+  --theme-lab-sidebar-padding: 3px;
+  --theme-lab-sidebar-border: 1px solid #000000;
+  --theme-lab-sidebar-border-right: 1px solid #000000;
+  --theme-lab-sidebar-bg: #ffffff;
+  --theme-lab-sidebar-shadow: -1px -1px #888888, 1px 1px #ffffff;
+  --theme-lab-list-row-min-height: 20px;
+  --theme-lab-list-row-gap: 5px;
+  --theme-lab-list-row-padding: 2px 6px;
+  --theme-lab-list-row-radius: 0;
+  --theme-lab-list-row-font-family: var(--theme-ui-font);
+  --theme-lab-list-row-font-size: var(--system-control-size);
+  --theme-lab-list-row-line-height: 16px;
+  --theme-lab-sidebar-icon-size: 16px;
+  --theme-lab-sidebar-icon-bg: transparent;
+  --theme-lab-sidebar-system-svg-opacity: 0;
+  --theme-lab-sidebar-startup-disk-image: url("./assets/themes/platinum/startup-disk-16.svg");
+  --theme-lab-sidebar-applications-image: url("./assets/themes/platinum/applications-16.svg");
+  --theme-lab-sidebar-trash-image: url("./assets/themes/platinum/trash-16.svg");
+  --theme-lab-sidebar-selected-bg: #ccccff;
+  --theme-lab-sidebar-selected-fg: #000000;
+  --theme-lab-sidebar-selected-outline: 0;
+  --theme-lab-sidebar-selected-outline-offset: 0;
+  --theme-lab-list-bg: #ffffff;
+  --theme-lab-list-frame-border: 1px solid #000000;
+  --theme-lab-list-frame-shadow: -1px -1px #888888, 1px 1px #ffffff;
+  --theme-lab-list-focus-outline: 2px solid #6666cc;
+  --theme-lab-list-focus-outline-offset: 0;
+  --theme-lab-list-row-border-bottom: 0;
+  --theme-lab-list-selected-bg: #ccccff;
+  --theme-lab-list-selected-fg: #000000;
+  --theme-lab-list-icon-display: block;
+  --theme-lab-list-icon-size: 16px;
+  --theme-lab-list-icon-image: url("./assets/themes/platinum/folder-16.svg");
+  --theme-lab-list-scrollbar-display: grid;
+  --theme-lab-list-scrollbar-width: 16px;
+  --theme-lab-layer-columns: minmax(0, 1fr) minmax(0, 1fr);
+  --theme-lab-layer-gap: 10px;
+  --theme-lab-layer-border: 1px solid #000000;
+  --theme-lab-layer-radius: 0;
+  --theme-lab-layer-bg: #dddddd;
+  --theme-lab-layer-shadow: inset 1px 1px #ffffff, inset -1px -1px #888888, 1px 1px #000000;
+  --theme-lab-layer-padding: 10px 12px;
+  --theme-lab-menu-grid-row: 1 / span 2;
+  --theme-lab-menu-padding: 2px 0;
+  --theme-lab-menu-item-min-height: 18px;
+  --theme-lab-menu-item-padding: 1px 3px 1px 21px;
+  --theme-lab-menu-item-bg: #dddddd;
+  --theme-lab-menu-item-fg: #000000;
+  --theme-lab-menu-item-font-family: var(--theme-ui-font);
+  --theme-lab-menu-item-font-size: var(--system-control-size);
+  --theme-lab-menu-item-line-height: 16px;
+  --theme-lab-menu-item-selected-bg: #333399;
+  --theme-lab-menu-item-selected-fg: #ffffff;
+  --theme-lab-menu-item-selected-shadow: inset 1px 0 #6666cc, inset -1px 0 #000088;
+  --theme-lab-menu-item-disabled-bg: #dddddd;
+  --theme-lab-menu-item-disabled-fg: #777777;
+  --theme-lab-menu-item-disabled-opacity: 1;
+  --theme-lab-menu-separator-margin: 2px 0;
+  --theme-lab-menu-separator-border-top: 1px solid #888888;
+  --theme-lab-menu-separator-border-bottom: 1px solid #ffffff;
+  --theme-lab-menu-mark-left: 3px;
+  --theme-lab-menu-mark-width: 9px;
+  --theme-lab-menu-mark-height: 8px;
+  --theme-lab-menu-mark-bg: currentColor;
+  --theme-lab-menu-mark-font-size: 0;
+  --theme-lab-menu-mark-mask: url("./assets/vendor/classic-stylesheets/macos9/checkmark.svg") center / 9px 8px no-repeat;
+  --theme-lab-popover-grid-column: 2;
+  --theme-lab-popover-grid-row: 1;
+  --theme-lab-popover-padding: 7px 9px;
+  --theme-lab-popover-border: 1px solid #000000;
+  --theme-lab-popover-radius: 0;
+  --theme-lab-popover-bg: #ffffcc;
+  --theme-lab-popover-copy-fg: #000000;
+  --theme-lab-popover-shadow: none;
+  --theme-lab-popover-tail-content: "";
+  --theme-lab-popover-tail-bg: #ffffcc;
+  --theme-lab-popover-generic-label-display: none;
+  --theme-lab-balloon-label-display: block;
+  --theme-lab-dialog-grid-column: 2;
+  --theme-lab-dialog-grid-row: 2;
+  --theme-lab-dialog-columns: 32px minmax(0, 1fr);
+  --theme-lab-dialog-gap: 7px 12px;
+  --theme-lab-dialog-padding: 12px;
+  --theme-lab-dialog-copy-gap: 5px;
+  --theme-lab-dialog-actions-column: 2;
+  --theme-lab-dialog-actions-margin-top: 1px;
+  --theme-lab-dialog-button-margin-top: 0;
+  --theme-lab-alert-icon-display: block;
+  --theme-lab-alert-icon-image: url("./assets/themes/platinum/alert-32.svg");
+  --theme-lab-sheet-display: none;
+  --theme-lab-progress-row-gap: 8px;
+  --theme-lab-progress-row-margin-top: 10px;
+  --theme-lab-progress-height: 12px;
+  --theme-lab-progress-padding: 0;
+  --theme-lab-progress-border: 1px solid #000000;
+  --theme-lab-progress-radius: 0;
+  --theme-lab-progress-bg: #bbbbbb;
+  --theme-lab-progress-shadow: 1px 1px #ffffff, -1px -1px #aaaaaa, inset 1px 1px #888888, inset -1px -1px #dddddd;
+  --theme-lab-progress-value-border-right: 1px solid #000000;
+  --theme-lab-progress-value-radius: 0;
+  --theme-lab-progress-value-bg: linear-gradient(to bottom, #333399, #6666cc, #9999ff, #ccccff, #eeeeee, #ccccff, #9999ff, #6666cc, #333399, #000088);
+  --theme-lab-progress-value-shadow: inset 1px 0 #6666cc, inset 2px 0 rgba(255, 255, 255, 0.2), inset -1px 0 #000055, inset -2px 0 #333399, 1px 0 #555555, 2px 0 #888888;
+  --theme-lab-scroll-height: 76px;
+  --theme-lab-scroll-padding: 3px 6px;
+  --theme-lab-scroll-frame-border: 1px solid #000000;
+  --theme-lab-scroll-frame-radius: 0;
+  --theme-lab-scroll-frame-shadow: -1px -1px #888888, 1px 1px #ffffff;
+  --theme-lab-scroll-bg: #ffffff;
+  --theme-lab-scroll-item-margin: 0;
+  --theme-lab-scroll-item-line-height: 17px;
+  --theme-lab-scrollbar-border-left: 1px solid #000000;
+  --theme-lab-scrollbar-bg: #aaaaaa;
+  --theme-lab-scrollbar-track-border: 1px solid #000000;
+  --theme-lab-scrollbar-track-border-width: 0 0 1px;
+  --theme-lab-scrollbar-track-bg: #aaaaaa;
+  --theme-lab-scrollbar-track-shadow: inset 1px 1px #777777, inset 2px 2px #888888, inset -1px -1px #cccccc, inset -2px -2px #bbbbbb;
+  --theme-lab-scrollbar-thumb-top: 3px;
+  --theme-lab-scrollbar-thumb-right: 0;
+  --theme-lab-scrollbar-thumb-left: 0;
+  --theme-lab-scrollbar-thumb-min-height: 36px;
+  --theme-lab-scrollbar-thumb-height: 36px;
+  --theme-lab-scrollbar-thumb-border: 1px solid #000000;
+  --theme-lab-scrollbar-thumb-border-width: 1px 0;
+  --theme-lab-scrollbar-thumb-radius: 0;
+  --theme-lab-scrollbar-thumb-bg: #9999ff;
+  --theme-lab-scrollbar-thumb-shadow: inset 1px 1px #ccccff, inset -1px -1px #6666cc, 0 1px #777777, 0 2px #888888;
+  --theme-lab-scrollbar-thumb-active-bg: #6666cc;
+  --theme-lab-scrollbar-thumb-active-shadow: inset 1px 1px #9999ff, inset -1px -1px #333399, 0 1px #777777, 0 2px #888888;
+  --theme-lab-scrollbar-thumb-grip-content: "";
+  --theme-lab-scrollbar-thumb-grip-width: 8px;
+  --theme-lab-scrollbar-thumb-grip-height: 8px;
+  --theme-lab-scrollbar-thumb-grip-bg: repeating-linear-gradient(180deg, #eeeeee 0 1px, transparent 1px 2px), repeating-linear-gradient(180deg, #ccccff 0 1px, transparent 1px 2px), repeating-linear-gradient(180deg, transparent 0 1px, #333399 1px 2px);
+  --theme-lab-scrollbar-thumb-active-grip-bg: repeating-linear-gradient(180deg, #ccccff 0 1px, transparent 1px 2px), repeating-linear-gradient(180deg, #9999ff 0 1px, transparent 1px 2px), repeating-linear-gradient(180deg, transparent 0 1px, #000055 1px 2px);
+  --theme-lab-scrollbar-button-border: 1px solid #000000;
+  --theme-lab-scrollbar-button-border-width: 0 0 1px;
+  --theme-lab-scrollbar-button-bg: #dddddd;
+  --theme-lab-scrollbar-button-shadow: inset 1px 1px #ffffff, inset -1px -1px #bbbbbb;
+  --theme-lab-scrollbar-button-active-bg: #777777;
+  --theme-lab-scrollbar-button-active-shadow: none;
+  --theme-lab-scrollbar-arrow-width: 8px;
+  --theme-lab-scrollbar-arrow-height: 4px;
+  --theme-lab-scrollbar-arrow-side-border: 0;
+  --theme-lab-scrollbar-decrement-border: 0;
+  --theme-lab-scrollbar-increment-border: 0;
+  --theme-lab-scrollbar-decrement-image: url("./assets/vendor/classic-stylesheets/macos9/arrow-up.svg");
+  --theme-lab-scrollbar-increment-image: url("./assets/vendor/classic-stylesheets/macos9/arrow-down.svg");
+  --theme-lab-scrollbar-arrow-transform: translate(calc(-50% - 1px), calc(-50% - 1px));
+  --theme-lab-mini-position: relative;
+  --theme-lab-mini-min-height: 50px;
+  --theme-lab-mini-padding: 20px 4px 4px;
+  --theme-lab-mini-border: 1px solid #000000;
+  --theme-lab-mini-radius: 0;
+  --theme-lab-mini-shadow: 1px 1px #000000, inset 1px 1px #ffffff, inset -1px -1px #999999;
+  --theme-lab-mini-active-bg: repeating-linear-gradient(to bottom, #ffffff 0 1px, #777777 1px 2px), #cccccc;
+  --theme-lab-mini-body-content: "";
+  --theme-lab-mini-body-inset: 19px 4px 4px;
+  --theme-lab-mini-body-border: 1px solid #000000;
+  --theme-lab-mini-body-bg: #dddddd;
+  --theme-lab-mini-body-shadow: 1px 1px 0 #ffffff, 1px 0 0 #ffffff, 0 1px 0 #ffffff, -1px -1px 0 #999999, -1px 0 0 #999999, 0 -1px 0 #999999;
+  --theme-lab-mini-control-display: block;
+  --theme-lab-mini-control-top: 3px;
+  --theme-lab-mini-control-edge: 4px;
+  --theme-lab-mini-control-size: 11px;
+  --theme-lab-mini-control-border: 1px solid #222222;
+  --theme-lab-mini-control-radius: 0;
+  --theme-lab-mini-control-bg: linear-gradient(to bottom right, #999999, #ffffff);
+  --theme-lab-mini-control-shadow: -1px -1px #888888, 1px 1px #ffffff, inset 1px 1px #cccccc, inset -1px -1px #888888;
+  --theme-lab-mini-zoom-mark-content: "";
+  --theme-lab-mini-zoom-mark-border: 1px solid #222222;
+  --theme-lab-mini-inactive-control-display: none;
+  --theme-lab-mini-title-position: absolute;
+  --theme-lab-mini-title-left: 50%;
+  --theme-lab-mini-title-top: 3px;
+  --theme-lab-mini-title-width: max-content;
+  --theme-lab-mini-title-max-width: calc(100% - 40px);
+  --theme-lab-mini-title-padding: 0 5px;
+  --theme-lab-mini-title-border: 0;
+  --theme-lab-mini-title-border-top: 0;
+  --theme-lab-mini-title-bg: #cccccc;
+  --theme-lab-mini-title-weight: 700;
+  --theme-lab-mini-title-line-height: 13px;
+  --theme-lab-mini-title-transform: translateX(-50%);
+  --theme-lab-mini-inactive-border: 1px solid #555555;
+  --theme-lab-mini-inactive-bg: #dddddd;
+  --theme-lab-mini-inactive-shadow: none;
+  --theme-lab-mini-inactive-opacity: 1;
+  --theme-lab-mini-inactive-body-border: 1px solid #555555;
+  --theme-lab-mini-inactive-body-bg: #eeeeee;
+  --theme-lab-mini-inactive-body-shadow: none;
+  --theme-lab-mini-inactive-title-bg: #dddddd;
+  --theme-lab-mini-inactive-title-fg: #777777;
+  --theme-lab-toolbar-min-height: 20px;
+  --theme-lab-toolbar-gap: 0;
+  --theme-lab-toolbar-padding: 1px 6px;
+  --theme-lab-toolbar-border: 1px solid #000000;
+  --theme-lab-toolbar-radius: 0;
+  --theme-lab-toolbar-bg: #dddddd;
+  --theme-lab-toolbar-shadow: inset 1px 1px #ffffff, inset -1px -1px #999999;
+  --theme-lab-toolbar-button-display: none;
+  --theme-lab-toolbar-location-display: none;
+  --theme-lab-toolbar-status-display: block;
+  --theme-lab-toolbar-status-weight: 400;
+  --theme-lab-separator-display: none;
+  --theme-lab-separator-width: 2px;
+  --theme-lab-separator-bg: linear-gradient(to right, #888888 0 1px, #ffffff 1px 2px);
+  --theme-lab-finder-min-height: 126px;
+  --theme-lab-finder-columns: repeat(3, 76px);
+  --theme-lab-finder-gap: 8px;
+  --theme-lab-finder-padding: 8px;
+  --theme-lab-finder-border: 1px solid #000000;
+  --theme-lab-finder-border-top: 0;
+  --theme-lab-finder-bg: #ffffff;
+  --theme-lab-finder-shadow: inset 1px 1px #888888;
+  --theme-lab-finder-item-width: 76px;
+  --theme-lab-finder-item-gap: 0;
+  --theme-lab-finder-item-icon-size: 32px;
+  --theme-lab-finder-item-font-family: var(--theme-ui-font);
+  --theme-lab-finder-item-font-size: var(--system-control-size);
+  --theme-lab-finder-era-extra-display: flex;
+  --theme-lab-finder-icon-selected-bg: #333399;
+  --theme-lab-finder-icon-selected-fg: #ffffff;
+  --theme-lab-finder-label-bg: #ffffff;
+  --theme-lab-finder-label-margin-top: 5px;
+  --theme-lab-finder-label-padding: 1px;
+  --theme-lab-finder-label-font-weight: 400;
+  --theme-lab-finder-icon-bg: transparent;
+  --theme-lab-finder-system-svg-opacity: 0;
+  --theme-lab-finder-startup-disk-image: url("./assets/themes/platinum/startup-disk-32.svg");
+  --theme-lab-finder-folder-image: url("./assets/themes/platinum/folder-32.svg");
+  --theme-lab-finder-app-image: url("./assets/themes/platinum/finder-app-16.svg");
+  --theme-lab-finder-document-image: url("./assets/themes/platinum/document-16.svg");
+  --theme-lab-finder-rows-border: 1px solid #000000;
+  --theme-lab-finder-rows-display: none;
+  --theme-lab-finder-rows-bg: #ffffff;
+  --theme-lab-finder-rows-shadow: -1px -1px #888888, 1px 1px #ffffff;
+  --theme-lab-finder-row-min-height: 20px;
+  --theme-lab-finder-row-columns: 18px minmax(0, 1fr) auto;
+  --theme-lab-finder-row-gap: 4px;
+  --theme-lab-finder-row-padding: 1px 5px;
+  --theme-lab-finder-row-border-bottom: 0;
+  --theme-lab-finder-row-icon-size: 16px;
+}
+
+/* Semantic aliases keep application selectors independent of the era. */
+body[data-theme] {
+  --help-row-selected-bg: var(--selection-bg);
+  --help-row-selected-fg: var(--selection-fg);
+  --find-path-result-selected-bg: var(--selection-bg);
+  --find-path-result-selected-fg: var(--selection-fg);
+  --find-path-result-selected-title-color: var(--selection-fg);
+  --find-path-result-selected-detail-color: var(--selection-fg);
+  --alarm-clock-selection-bg: var(--selection-bg);
+  --alarm-clock-selection-fg: var(--selection-fg);
+  --cmf-selected-bg: var(--selection-bg);
+  --cmf-selected-fg: var(--selection-fg);
+  --video-timeline-selected-bg: var(--selection-bg);
+  --video-timeline-selected-fg: var(--selection-fg);
+}
+
+/* Shared historical chrome recipe. Values stay in the tables above. */
+body[data-theme]:not([data-theme="classic"]):not([data-theme="liquid-glass"]) .title-bar {
+  background: var(--system-titlebar-active-bg);
+  border-bottom: var(--titlebar-border);
+  box-shadow: var(--titlebar-shadow);
+}
+
+body[data-theme]:not([data-theme="classic"]):not([data-theme="liquid-glass"]) .window:not(.is-active) .title-bar {
+  background: var(--system-titlebar-inactive-bg);
+}
+
+body[data-theme]:not([data-theme="classic"]):not([data-theme="liquid-glass"]) .title-bar h1,
+body[data-theme]:not([data-theme="classic"]):not([data-theme="liquid-glass"]) .title-bar h2 {
+  background: var(--titlebar-title-bg);
+  color: var(--titlebar-title-fg);
+  font-family: var(--theme-title-font);
+}
+
+/* Platinum is not a flat gray recolor. These recipes reproduce the structural
+   cues documented by the Mac OS 8 HIG: a four-sided drag frame, etched title
+   lines, raised controls, inset fields, beveled menu edges, and solid scroll
+   indicators. The application DOM and its layout remain shared. */
+body[data-theme="platinum"] {
+  font-size: var(--system-text-size);
+  font-weight: 400;
+  font-variation-settings: "wdth" 113;
+}
+
+body[data-theme="platinum"] .window {
+  padding: 2px 4px 4px;
+}
+
+body[data-theme="platinum"] .window:not(.is-active) {
+  --pane-bg: #eeeeee;
+  --titlebar-title-bg: #dddddd;
+  border-color: #555555;
+  background: #dddddd;
+  color: #555555;
+  box-shadow: none;
+}
+
+body[data-theme="platinum"] .title-bar {
+  margin: 0 0 1px;
+  padding: 1px;
+  background-origin: border-box;
+  background-clip: border-box;
+}
+
+body[data-theme="platinum"] .title-bar :is(h1, h2) {
+  padding-inline: 6px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+body[data-theme="platinum"] :is(.close-box, .resize-box) {
+  background: none;
+  filter: none;
+}
+
+body[data-theme="platinum"] .title-bar .close-box::before,
+body[data-theme="platinum"] .title-bar .resize-box::before {
+  width: var(--system-titlebar-control-art-size);
+  height: var(--system-titlebar-control-art-size);
+  border: 1px solid #222222;
+  border-radius: 0;
+  background: linear-gradient(to bottom right, #999999, #ffffff);
+  box-shadow:
+    -1px -1px 0 #888888,
+    -1px 0 0 #888888,
+    0 -1px 0 #888888,
+    1px 1px 0 #ffffff,
+    1px 0 0 #ffffff,
+    0 1px 0 #ffffff,
+    inset 1px 1px 0 #cccccc,
+    inset -1px -1px 0 #888888;
+  opacity: 1;
+  transform: none;
+}
+
+body[data-theme="platinum"] .title-bar .resize-box::after {
+  content: "";
+  position: absolute;
+  left: calc(var(--system-titlebar-control-art-offset-x) + 2px);
+  top: calc(var(--system-titlebar-control-art-offset-y) + 2px);
+  width: 5px;
+  height: 5px;
+  border-right: 1px solid #222222;
+  border-bottom: 1px solid #222222;
+  opacity: 1;
+}
+
+body[data-theme="platinum"] :is(.close-box, .resize-box):active::before {
+  background: linear-gradient(to bottom right, #444444, #bbbbbb);
+  box-shadow: -1px -1px 0 #888888, 1px 1px 0 #ffffff, inset -1px -1px 0 #999999;
+  opacity: 1;
+}
+
+body[data-theme="platinum"] .btn {
+  position: relative;
+  min-width: var(--theme-button-min-width, 58px);
+  min-height: 20px;
+  height: 20px;
+  padding: 2px 10px;
+  border: 1px solid var(--btn-border-color);
+  border-radius: var(--btn-radius);
+  background: var(--btn-bg);
+  box-shadow: var(--btn-shadow);
+  font-family: var(--theme-ui-font);
+  font-size: var(--system-control-size);
+  font-weight: 700;
+  line-height: 14px;
+  transition: none;
+}
+
+body[data-theme="platinum"] .btn.default {
+  border-radius: 3px;
+  box-shadow: var(--btn-shadow);
+}
+
+body[data-theme="platinum"] .btn.default::before {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  box-sizing: border-box;
+  border-radius: 4px;
+  box-shadow:
+    0 0 0 1px #000000,
+    inset 1px 1px 0 #dddddd,
+    inset -1px -1px 0 #737373,
+    inset 0 0 0 2px #adadad;
+  pointer-events: none;
+}
+
+body[data-theme="platinum"] :is(.btn:disabled, .btn.is-disabled, .system-select-button:disabled) {
+  border-color: #888888;
+  background: #dddddd;
+  color: #777777;
+  box-shadow: none;
+}
+
+body[data-theme="platinum"] :is(input[type="text"], input[type="search"], input[type="url"], input[type="password"], input[type="number"]) {
+  height: 22px;
+  min-height: 22px;
+  margin: 2px;
+  padding: 2px;
+  border: 1px solid #000000;
+  border-radius: 0;
+  background: #ffffff;
+  box-shadow: -1px -1px 0 #888888;
+  font-family: var(--theme-ui-font);
+  font-size: var(--system-control-size);
+  line-height: 16px;
+}
+
+body[data-theme="platinum"] input[type="search"] {
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+body[data-theme="platinum"] .theme-lab-focus-demo {
+  border: 1px solid #000000;
+  box-shadow: -1px -1px 0 #888888;
+  outline: 2px solid #6666cc;
+  outline-offset: 0;
+}
+
+body[data-theme="platinum"] .theme-lab-form-grid :is(input, select):disabled {
+  border-color: var(--theme-lab-disabled-control-border-color);
+  background: var(--theme-lab-disabled-control-bg);
+  color: var(--theme-lab-disabled-control-fg);
+  box-shadow: var(--theme-lab-disabled-control-shadow);
+  opacity: 1;
+}
+
+body[data-theme="platinum"] :is(select, .system-select-button) {
+  height: 20px;
+  min-height: 20px;
+  padding: 1px 27px 1px 7px;
+  border: 1px solid #000000;
+  border-radius: 3px;
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: #dddddd;
+  background-image: none;
+  box-shadow: inset 1px 1px #ffffff, inset -1px -1px #aaaaaa;
+  font-family: var(--theme-ui-font);
+  font-size: var(--system-control-size);
+  font-weight: 700;
+  line-height: 16px;
+}
+
+body[data-theme="platinum"] :is(.select-wrap, .system-select-button)::after {
+  right: 1px;
+  top: 1px;
+  width: 19px;
+  height: 18px;
+  border: 0;
+  background:
+    url("./assets/vendor/classic-stylesheets/macos9/dropdown.svg") center / 7px 10px no-repeat,
+    #dddddd;
+  box-shadow:
+    inset 1px 1px #dddddd,
+    inset 2px 2px #ffffff,
+    inset -1px -1px #777777,
+    inset -2px -2px #aaaaaa,
+    -1px 0 #aaaaaa;
+  transform: none;
+}
+
+body[data-theme="platinum"] :is(.select-wrap:has(select:disabled), .system-select-button:disabled)::after {
+  background:
+    url("./assets/vendor/classic-stylesheets/macos9/dropdown-disabled.svg") center / 7px 10px no-repeat,
+    #dddddd;
+  box-shadow: -1px 0 #aaaaaa;
+  opacity: 1;
+}
+
+body[data-theme="platinum"] input[type="checkbox"] {
+  background-size: 9px 8px;
+  transition: none;
+}
+
+body[data-theme="platinum"] input[type="radio"] {
+  border: var(--radio-border);
+  background-color: var(--radio-bg);
+  box-shadow: var(--radio-shadow);
+  transition: none;
+}
+
+body[data-theme="platinum"] :is(input[type="checkbox"], input[type="radio"]):disabled {
+  border-color: #888888;
+  background-color: #dddddd;
+  box-shadow: none;
+  opacity: 1;
+}
+
+body[data-theme="platinum"] input[type="radio"]:checked:disabled {
+  background-color: #dddddd;
+  background-image: radial-gradient(circle, #888888 0 3px, transparent 3px);
+  background-size: 6px 6px;
+}
+
+body[data-theme="platinum"] .menu-bar {
+  padding-inline: 4px;
+  box-shadow: var(--menu-bar-shadow);
+}
+
+body[data-theme="platinum"] .menu-bar > .menu > button {
+  font-family: var(--theme-ui-font);
+  font-weight: 600;
+}
+
+body[data-theme="platinum"] :is(.menu-popover, .menu-sub-popover, .theme-lab-menu) hr {
+  border-top: 1px solid #888888;
+  border-bottom: 1px solid #ffffff;
+}

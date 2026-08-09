@@ -1,5 +1,5 @@
 <!-- canonical-source: CHANGELOG.md -->
-<!-- source-sha256: e652aa5eb697e58df9036b1eda406b017ce19fcc7d4e2352f665a7ba5d4d495c -->
+<!-- source-sha256: dac25048cb477a3cc72af2b7d4f8a18b78fd8376db81f2ca5c163713899cd3e7 -->
 
 # AI System 6 中文更新日志
 
@@ -355,6 +355,17 @@ Liquid Glass 继续作为独立材质存在，而不是被复古修正误伤。
   正文、调整层、版本、状态回执与 Body / Grain / Read 视图。
 - 钟点稿新增明确 SideAsk 与“先保存、再单向交给 Writing Studio”的路径；
   桌面、Applications、MultiFinder、菜单、手机壳、会话恢复与原生对齐契约同步更新。
+
+## 公开测试版 1.0.30 — 2026-08-09
+
+- Platinum 成为 System 6 与 Liquid Glass 之外的第三套正式外观。启动前注册表、
+  可持久保存的控制面板选择器与“特别”菜单共同管理外观状态，不改变应用结构
+  或写作语义。
+- Platinum 以 Mac OS 8 证据为基础，为共享窗口、控件、字段、菜单、滚动面、
+  字体与选中状态提供统一材质。Theme Lab 保留为三主题验收面；Aqua、Snow
+  Leopard 与 Yosemite 实验不进入本次发布。
+- 宣传片与 4K 剪辑收紧节奏，CMF Studio 改为多设备蒙太奇，并加入可复用的
+  哔哩哔哩封面渲染脚本。
 
 ## 一个月里真正变大的东西
 

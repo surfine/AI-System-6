@@ -211,8 +211,8 @@
 }
 
 .finder-item.is-selected span:last-of-type {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--selection-bg);
+  color: var(--selection-fg);
 }
 
 .finder-item.is-archived {

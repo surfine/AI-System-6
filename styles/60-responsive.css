@@ -449,12 +449,13 @@ body.use-liquid-glass .menu-bar {
 
 .window {
   border: var(--window-border);
-  background: var(--paper);
+  background: var(--window-bg);
+  border-radius: var(--window-radius);
   box-shadow: var(--active-window-shadow);
 }
 
 .window:not(.is-active) {
-  box-shadow: 2px 2px 0 #5e5e5e;
+  box-shadow: var(--inactive-window-shadow);
 }
 
 .title-bar {
@@ -467,7 +468,7 @@ body.use-liquid-glass .menu-bar {
     var(--system-titlebar-control-slot);
   margin: var(--system-titlebar-margin-y) 0;
   padding: var(--system-titlebar-padding-y) var(--system-titlebar-padding-x);
-  border-bottom: var(--window-frame-track-border);
+  border-bottom: var(--titlebar-border);
   background-color: var(--paper);
   background-image:
     linear-gradient(
@@ -491,7 +492,8 @@ body.use-liquid-glass .menu-bar {
   min-height: 0;
   margin: 0 auto;
   padding: 0 0.5em;
-  background: var(--paper);
+  background: var(--titlebar-title-bg);
+  color: var(--titlebar-title-fg);
   line-height: 1.1;
 }
 

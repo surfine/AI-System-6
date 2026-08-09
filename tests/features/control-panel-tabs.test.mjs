@@ -25,8 +25,8 @@ test.assertNotIncludes(html, 'data-prompt-file="cliotalk.main"', "the inline sys
 // disclosure's slotted details content cannot fall onto different gap rules.
 test.assertMatches(
   html,
-  /class="control-checkbox-grid">[\s\S]*id="remember"[\s\S]*id="modern-fonts"[\s\S]*id="liquid-glass"[\s\S]*id="sound-effects"[\s\S]*id="menu-clock"/,
-  "all preference checkboxes share one spacing grid"
+  /class="control-checkbox-grid">[\s\S]*id="remember"[\s\S]*id="modern-fonts"[\s\S]*id="appearance-theme"[\s\S]*id="sound-effects"[\s\S]*id="menu-clock"/,
+  "all preferences share one spacing grid"
 );
 test.assertMatches(
   html,

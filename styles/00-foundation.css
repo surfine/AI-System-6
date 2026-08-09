@@ -124,9 +124,18 @@
   --backup-preview-shadow: none;
   --field-bg: var(--paper);
   --field-focus-bg: var(--paper);
+  --field-border: var(--system-control-line) solid var(--ink);
+  --field-radius: 0;
+  --select-radius: var(--system-select-radius);
+  --field-shadow: none;
+  --field-focus-border: var(--field-border);
+  --field-focus-ring: 0 0 0 2px var(--shade-dark);
   --shade: #bfbfbf;
   --shade-dark: #696969;
   --desktop: #b6b6b6;
+  --desktop-surface:
+    radial-gradient(rgba(0, 0, 0, 0.16) 1px, transparent 1px) 0 0 / 12px 12px,
+    var(--desktop);
   --panel: #ededed;
   --quiet-panel: #f8f8f8;
   --rule: #777777;
@@ -290,6 +299,8 @@
   /* Fonts */
   --modern-sans-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
   --modern-mono-font: "SFMono-Regular", "Cascadia Mono", "Consolas", "Monaco", "Courier New", monospace;
+  --theme-ui-font: Chicago_12, Chicago, Charcoal, "Songti SC", "SimSun", "STSong", serif;
+  --theme-title-font: var(--theme-ui-font);
   --ui-font: Chicago_12, Chicago, Charcoal, "Songti SC", "SimSun", "STSong", serif;
   --title-font: Chicago_12, Chicago, Charcoal, "Songti SC", "SimSun", "STSong", serif;
   --text-font: "Songti SC", "SimSun", "STSong", Geneva, serif;
@@ -684,6 +695,10 @@
      removes its grow box. */
   --system-titlebar-inactive-control-visibility: hidden;
   --system-titlebar-inactive-title-color: var(--ink);
+  --titlebar-title-bg: var(--paper);
+  --titlebar-title-fg: var(--ink);
+  --titlebar-border: var(--window-frame-track-border);
+  --titlebar-shadow: none;
   --tdi-rail-width: 200px;
   --tdi-tab-close-size: 18px;
   --tdi-tab-close-gutter: 10px;
@@ -765,7 +780,11 @@
   --menu-item-active-fg: var(--paper);
   --menu-item-active-shadow: none;
   --menu-bar-border: 1px solid var(--ink);
+  --menu-panel-bg: var(--paper);
+  --menu-panel-border: var(--system-control-line) solid var(--ink);
+  --menu-panel-radius: 0;
   --menu-panel-shadow: 1px 1px 0 var(--ink);
+  --menu-panel-backdrop-filter: none;
   --happy-mac-border-width: 4px;
   --happy-mac-face-border-width: 2px;
   --happy-mac-border-color: var(--ink);
@@ -774,6 +793,22 @@
   --happy-mac-backdrop: none;
   --scrollbar-corner-bg: var(--paper);
   --window-border: 1px solid var(--ink);
+  --window-bg: var(--paper);
+  --window-radius: 0;
+  --window-shadow: none;
+  --inactive-window-shadow: 2px 2px 0 #5e5e5e;
+  --window-backdrop-filter: none;
+  --surface-primary: var(--paper);
+  --surface-secondary: var(--panel);
+  --surface-inset: var(--quiet-panel);
+  --toolbar-bg: var(--panel);
+  --toolbar-border: 1px solid var(--ink);
+  --sidebar-bg: var(--paper);
+  --sidebar-selection-bg: var(--ink);
+  --separator: var(--rule);
+  --selection-bg: var(--ink);
+  --selection-fg: var(--paper);
+  --focus-ring: var(--control-focus-outline);
   /* Document-window frame: the two scroll bar lanes and the grow box are one
      16px chrome band, so the corner where they meet is exactly one cell wide
      and the grow box can never drift onto content. */
@@ -794,6 +829,12 @@
   --window-frame-thumb-radius: 0;
   --window-frame-arrow-bg: var(--paper);
   --window-frame-arrow-ink: var(--ink);
+  --scrollbar-width: var(--window-frame-lane);
+  --scrollbar-track: var(--window-frame-track-bg);
+  --scrollbar-thumb: var(--window-frame-thumb-bg);
+  --scrollbar-button: var(--window-frame-arrow-bg);
+  --window-control-size: var(--system-titlebar-control-art-size);
+  --window-control-gap: var(--system-titlebar-control-margin-x);
   --active-window-shadow: none;
   --card-caption-color: var(--shade-dark);
   --finder-navigation-border: 1px solid var(--ink);
@@ -1182,7 +1223,7 @@
   --help-row-active-radius: 0;
   --system-help-panel-border: var(--system-control-line) solid var(--ink);
   --system-help-panel-radius: 0;
-  --system-help-panel-bg: var(--paper);
+  --system-help-panel-bg: var(--sidebar-bg);
   --system-help-panel-shadow: none;
   --system-help-search-input-border: var(--system-control-line) solid var(--ink);
   --system-help-search-input-radius: 0;
@@ -1359,6 +1400,23 @@
   --btn-active-bg: var(--ink);
   --btn-active-fg: var(--paper);
   --btn-active-shadow: inset 1px 1px 0 #444444;
+  --choice-bg: var(--paper);
+  --choice-border: 1.5px solid var(--ink);
+  --choice-radius: 0;
+  --choice-shadow: none;
+  --choice-checked-bg: var(--paper);
+  --choice-checkmark-image: url("./system.css-reference/icon/checkmark.svg");
+  --radio-bg: transparent;
+  --radio-border: 0;
+  --radio-shadow: none;
+  --radio-image: url("./system.css-reference/icon/radio-border.svg");
+  --radio-focus-image: url("./system.css-reference/icon/radio-border-focused.svg");
+  --radio-checked-image:
+    url("./system.css-reference/icon/radio-dot.svg"),
+    url("./system.css-reference/icon/radio-border.svg");
+  --radio-checked-focus-image:
+    url("./system.css-reference/icon/radio-dot.svg"),
+    url("./system.css-reference/icon/radio-border-focused.svg");
   --clio-stage-pane-rows: auto minmax(0, 1fr) auto;
   --clio-stage-pane-gap: 8px;
   --clio-stage-pane-bg: transparent;
@@ -1741,7 +1799,7 @@ textarea,
   align-items: center;
   gap: 2px;
   padding: 0 8px;
-  background: var(--paper);
+  background: var(--menu-bar-bg);
   border-bottom: var(--menu-bar-border);
   z-index: var(--z-system-menu);
   overflow: visible;
@@ -1788,9 +1846,12 @@ body.has-system-modal .menu-bar {
   left: 0;
   min-width: 180px;
   padding: 2px 0;
-  background: var(--paper);
-  border: var(--system-control-line) solid var(--ink);
+  background: var(--menu-panel-bg);
+  border: var(--menu-panel-border);
+  border-radius: var(--menu-panel-radius);
   box-shadow: var(--menu-panel-shadow);
+  backdrop-filter: var(--menu-panel-backdrop-filter);
+  -webkit-backdrop-filter: var(--menu-panel-backdrop-filter);
   z-index: var(--z-system-menu-popover);
   scrollbar-gutter: stable;
 }
@@ -1865,9 +1926,12 @@ body.has-system-modal .menu-bar {
   left: calc(100% - 2px);
   min-width: 190px;
   padding: 2px 0;
-  background: var(--paper);
-  border: var(--system-control-line) solid var(--ink);
+  background: var(--menu-panel-bg);
+  border: var(--menu-panel-border);
+  border-radius: var(--menu-panel-radius);
   box-shadow: var(--menu-panel-shadow);
+  backdrop-filter: var(--menu-panel-backdrop-filter);
+  -webkit-backdrop-filter: var(--menu-panel-backdrop-filter);
 }
 
 .menu-submenu:not(.is-disabled):hover > .menu-submenu-popover,
@@ -2344,9 +2408,7 @@ body.has-system-modal .menu-bar {
   flex: 1;
   padding: 16px;
   position: relative;
-  background:
-    radial-gradient(rgba(0, 0, 0, 0.16) 1px, transparent 1px) 0 0 / 12px 12px,
-    var(--desktop);
+  background: var(--desktop-surface);
   overflow: hidden;
   scrollbar-width: none;
 }

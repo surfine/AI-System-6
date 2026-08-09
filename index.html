@@ -16,9 +16,11 @@
     <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png" />
     <link rel="manifest" href="assets/app-icon/manifest.json" />
-    <link rel="stylesheet" href="styles.bundle.css?v=20260809.2" />
+    <script src="app/core/theme-registry.js"></script>
+    <link rel="stylesheet" href="styles.bundle.css?v=20260809.3" />
   </head>
   <body class="is-booting">
+    <script src="app/core/theme-body-init.js"></script>
     <header class="menu-bar" aria-label="System menu" data-i18n-aria-label="system_menu">
       <div class="menu">
         <button class="apple" aria-label="Apple menu" data-i18n-aria-label="apple_menu" data-balloon-help="balloon_apple_menu">
@@ -607,10 +609,14 @@
                 <label for="modern-fonts" data-i18n="modern_fonts">Modern UI Font</label>
               </div>
 
-              <div class="field-row">
-                <input id="liquid-glass" type="checkbox" data-balloon-help="balloon_theme_switcher" />
-                <label for="liquid-glass" data-i18n="liquid_glass" data-balloon-help="balloon_theme_switcher">Liquid Glass Appearance</label>
-              </div>
+              <label class="control-field appearance-theme-field" for="appearance-theme" data-balloon-help="balloon_theme_switcher">
+                <span data-i18n="appearance">Appearance</span>
+                <div class="select-wrap"><select id="appearance-theme" data-balloon-help="balloon_theme_switcher">
+                  <option value="classic" data-i18n="theme_classic">System 6</option>
+                  <option value="platinum" data-i18n="theme_platinum">Platinum</option>
+                  <option value="liquid-glass" data-i18n="theme_liquid_glass">Liquid Glass</option>
+                </select></div>
+              </label>
 
               <div class="field-row">
                 <input id="sound-effects" type="checkbox" checked />
@@ -3528,6 +3534,98 @@ Glass</textarea>
         </div>
       </section>
 
+      <section class="window theme-lab-window is-hidden" data-window="themeLab" aria-labelledby="theme-lab-title">
+        <div class="title-bar">
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
+          <h2 id="theme-lab-title" data-i18n="theme_lab">Theme Lab</h2>
+          <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
+        </div>
+        <div class="details-bar compact-status-bar">
+          <span class="status-bar-leading" data-i18n="theme_lab_status">Shared control specimen</span>
+          <span class="status-bar-context theme-lab-current-era">System 6 → Platinum → Liquid Glass</span>
+          <span class="status-bar-trailing" data-i18n="theme_lab_internal">Internal</span>
+        </div>
+        <div class="window-pane theme-lab-pane">
+          <section class="theme-lab-group theme-lab-controls" aria-labelledby="theme-lab-controls-title">
+            <h3 id="theme-lab-controls-title" data-i18n="theme_lab_controls">Controls</h3>
+            <div class="theme-lab-button-row">
+              <button class="btn" type="button" data-i18n="theme_lab_normal">Normal</button>
+              <button class="btn default" type="button" data-i18n="theme_lab_default">Default</button>
+              <button class="btn is-active" type="button" aria-pressed="true" data-i18n="theme_lab_pressed">Pressed</button>
+              <button class="btn" type="button" disabled data-i18n="theme_lab_disabled">Disabled</button>
+            </div>
+            <div class="theme-lab-form-grid">
+              <label class="field-row"><input type="checkbox" checked /><span data-i18n="theme_lab_checkbox">Checkbox</span></label>
+              <label class="field-row"><input type="radio" name="theme-lab-radio" checked /><span data-i18n="theme_lab_radio">Radio</span></label>
+              <label><span data-i18n="theme_lab_text_field">Text field</span><input type="text" value="Macintosh" readonly /></label>
+              <label><span data-i18n="theme_lab_focused_field">Focused field</span><input class="theme-lab-focus-demo" type="text" value="Appearance" readonly /></label>
+              <label><span data-i18n="theme_lab_search">Search</span><input class="theme-lab-search" type="search" value="System" readonly /></label>
+              <label><span data-i18n="theme_lab_popup">Pop-up</span><span class="select-wrap"><select aria-label="Theme Lab pop-up"><option>Macintosh HD</option><option>Startup Disk</option></select></span></label>
+            </div>
+            <div class="theme-lab-segmented" role="group" aria-label="Segmented control">
+              <button class="is-selected" type="button" data-i18n="theme_lab_icon_view">Icon</button>
+              <button type="button" data-i18n="theme_lab_list_view">List</button>
+              <button type="button" data-i18n="theme_lab_column_view">Column</button>
+            </div>
+            <div class="theme-lab-tabs" role="tablist">
+              <button class="is-selected" type="button" role="tab" aria-selected="true" data-i18n="theme_lab_general">General</button>
+              <button type="button" role="tab" aria-selected="false" data-i18n="theme_lab_advanced">Advanced</button>
+            </div>
+          </section>
+
+          <section class="theme-lab-group theme-lab-navigation" aria-labelledby="theme-lab-navigation-title">
+            <h3 id="theme-lab-navigation-title" data-i18n="theme_lab_navigation">Lists &amp; sidebar</h3>
+            <div class="theme-lab-split-view">
+              <nav class="theme-lab-sidebar" aria-label="Sidebar">
+                <button class="is-selected" type="button"><span class="sys-icon" data-system-icon="startupDisk" aria-hidden="true"></span><span data-i18n="startup_disk">Startup Disk</span></button>
+                <button type="button"><span class="sys-icon" data-system-icon="applications" aria-hidden="true"></span><span data-i18n="applications">Applications</span></button>
+                <button type="button"><span class="sys-icon" data-system-icon="trash" aria-hidden="true"></span><span data-i18n="trash">Trash</span></button>
+              </nav>
+              <div class="theme-lab-list" role="listbox" aria-label="List">
+                <button type="button" role="option">Appearance</button>
+                <button class="is-selected" type="button" role="option" aria-selected="true">Control Panels</button>
+                <button type="button" role="option">System Folder</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="theme-lab-group theme-lab-layered" aria-labelledby="theme-lab-layered-title">
+            <h3 id="theme-lab-layered-title" data-i18n="theme_lab_layered">Menus &amp; layered surfaces</h3>
+            <div class="theme-lab-layer-grid">
+              <div class="theme-lab-menu" role="menu">
+                <button type="button" role="menuitem">Open… <span>⌘O</span></button>
+                <button class="is-selected" type="button" role="menuitem">Appearance <span>✓</span></button>
+                <hr />
+                <button type="button" role="menuitem">Close <span>⌘W</span></button>
+              </div>
+              <div class="theme-lab-popover"><b data-i18n="theme_lab_popover">Popover</b><span data-i18n="theme_lab_popover_copy">A temporary system surface.</span></div>
+              <div class="theme-lab-dialog"><b data-i18n="theme_lab_dialog">Dialog</b><span data-i18n="theme_lab_dialog_copy">Keep this appearance?</span><button class="btn default" type="button" data-i18n="ok">OK</button></div>
+              <div class="theme-lab-sheet"><b data-i18n="theme_lab_sheet">Sheet</b><span data-i18n="theme_lab_sheet_copy">Attached to its owning window.</span></div>
+            </div>
+            <div class="theme-lab-progress-row"><span data-i18n="theme_lab_progress">Progress</span><div class="theme-lab-progress" aria-label="Progress" role="progressbar" aria-valuenow="62"><span></span></div></div>
+            <div class="theme-lab-scroll" tabindex="0"><p>System 6</p><p>Platinum</p><p>Liquid Glass</p></div>
+          </section>
+
+          <section class="theme-lab-group theme-lab-finder" aria-labelledby="theme-lab-finder-title">
+            <h3 id="theme-lab-finder-title" data-i18n="theme_lab_finder">Finder surface</h3>
+            <div class="theme-lab-mini-windows">
+              <div class="theme-lab-mini-window is-active"><span data-i18n="theme_lab_active_window">Active Window</span></div>
+              <div class="theme-lab-mini-window is-inactive"><span data-i18n="theme_lab_inactive_window">Inactive Window</span></div>
+            </div>
+            <div class="theme-lab-toolbar"><button class="btn" type="button" data-i18n="theme_lab_back">Back</button><span class="theme-lab-separator" aria-hidden="true"></span><strong>Macintosh HD</strong></div>
+            <div class="theme-lab-finder-surface">
+              <button class="finder-item is-selected" type="button"><span class="sys-icon sys-icon-desktop" data-system-icon="startupDisk" aria-hidden="true"></span><span>Macintosh HD</span></button>
+              <button class="finder-item" type="button"><span class="sys-icon sys-icon-desktop" data-system-icon="folder" aria-hidden="true"></span><span>System Folder</span></button>
+              <div class="theme-lab-finder-rows">
+                <div class="is-selected"><span class="sys-icon" data-system-icon="finderApp" aria-hidden="true"></span><span>Finder</span><small>Application</small></div>
+                <div><span class="sys-icon" data-system-icon="document" aria-hidden="true"></span><span>Read Me</span><small>Document</small></div>
+              </div>
+            </div>
+          </section>
+        </div>
+        <button class="grow-box" type="button" aria-label="Resize window" data-i18n-aria-label="grow_box_aria"></button>
+      </section>
+
       <section class="icon-column" aria-label="Desktop icons" data-i18n-aria-label="desktop_icons">
         <button class="desktop-icon" type="button" data-open="disk" data-balloon-help="balloon_startup_disk">
           <span class="sys-icon sys-icon-desktop" data-system-icon="startupDisk" aria-hidden="true"></span>
@@ -3566,7 +3664,7 @@ Glass</textarea>
       </section>
     </main>
 
-    <script src="app/generated/build-info.js?v=20260809.2"></script>
-    <script src="app.bundle.js?v=20260809.2"></script>
+    <script src="app/generated/build-info.js?v=20260809.3"></script>
+    <script src="app.bundle.js?v=20260809.3"></script>
   </body>
 </html>

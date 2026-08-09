@@ -66,8 +66,11 @@ const ALWAYS_AVAILABLE = new Map([
   ["open-teachtext-manuscript", "navigation"],
   ["open-image-manager", "navigation"],
   ["new-note", "creating an empty note needs no selection"],
-  // Theme toggle owns its own label swap in updateMenuState().
-  ["toggle-liquid-glass", "theme switch is valid in both directions"],
+  // Appearance choices are always valid and update their own checked state.
+  ["set-theme-classic", "Appearance choice is valid from every application"],
+  ["set-theme-platinum", "Appearance choice is valid from every application"],
+  ["set-theme-liquid-glass", "Appearance choice is valid from every application"],
+  ["open-theme-lab", "internal Appearance specimen is always available"],
 ]);
 
 // Time Machine's own menu is a known, bounded debt: its verbs live in a lazy

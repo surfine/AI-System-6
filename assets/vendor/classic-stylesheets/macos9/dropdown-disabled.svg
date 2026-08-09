@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Color-state adaptation of classic-stylesheets' MIT-licensed dropdown.svg. -->
+<svg width="7" height="10" viewBox="0 0 7 10" xmlns="http://www.w3.org/2000/svg">
+  <g fill="#888888" fill-rule="evenodd">
+    <path d="M0 4 3.5.5 7 4Z"/>
+    <path d="M0 6 3.5 9.5 7 6Z"/>
+  </g>
+</svg>

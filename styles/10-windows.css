@@ -1,7 +1,10 @@
 .window {
-  background: var(--paper);
+  background: var(--window-bg);
   border: var(--window-border);
-  box-shadow: none;
+  border-radius: var(--window-radius);
+  box-shadow: var(--window-shadow);
+  backdrop-filter: var(--window-backdrop-filter);
+  -webkit-backdrop-filter: var(--window-backdrop-filter);
   position: absolute;
   z-index: var(--z-local-control);
   display: flex;
@@ -640,7 +643,7 @@ body.quick-draft-focus .writing-spine-panel {
   align-items: center;
   margin: var(--system-titlebar-margin-y) 0;
   padding: var(--system-titlebar-padding-y) var(--system-titlebar-padding-x);
-  border-bottom: var(--window-frame-track-border);
+  border-bottom: var(--titlebar-border);
   background-color: var(--paper);
   background-image:
     linear-gradient(
@@ -652,6 +655,7 @@ body.quick-draft-focus .writing-spine-panel {
   background-repeat: repeat-y;
   background-origin: content-box;
   background-clip: content-box;
+  box-shadow: var(--titlebar-shadow);
   cursor: move;
   user-select: none;
   flex: none;
@@ -668,7 +672,8 @@ body.quick-draft-focus .writing-spine-panel {
   margin: 0;
   padding: 0 0.5em;
   max-width: min(100%, 52ch);
-  background: var(--paper);
+  background: var(--titlebar-title-bg);
+  color: var(--titlebar-title-fg);
   font-family: var(--title-font);
   font-size: var(--system-titlebar-font-size);
   font-weight: 700;
@@ -1474,13 +1479,13 @@ html:lang(zh-Hans) .title-bar h2 {
 }
 
 .finder-list-row:hover {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--selection-bg);
+  color: var(--selection-fg);
 }
 
 .finder-list-row.is-selected {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--selection-bg);
+  color: var(--selection-fg);
 }
 
 .finder-citation-jump {
@@ -3077,22 +3082,24 @@ input[type="text"],
 input[type="password"],
 input[type="number"] {
   width: 100%;
-  border: var(--system-control-line) solid var(--ink);
-  border-radius: 0;
+  border: var(--field-border);
+  border-radius: var(--field-radius);
   background: var(--field-bg);
   color: var(--ink);
   padding: 6px;
   outline: none;
+  box-shadow: var(--field-shadow);
 }
 
 select {
   width: 100%;
-  border: var(--system-control-line) solid var(--ink);
-  border-radius: var(--system-select-radius);
-  background: var(--paper);
+  border: var(--field-border);
+  border-radius: var(--select-radius);
+  background: var(--field-bg);
   color: var(--ink);
   padding: 6px;
   outline: none;
+  box-shadow: var(--field-shadow);
 }
 
 input.is-derived-name {
@@ -3101,16 +3108,19 @@ input.is-derived-name {
 }
 
 textarea:focus {
-  box-shadow: 0 0 0 2px var(--shade-dark);
+  border: var(--field-focus-border);
+  box-shadow: var(--field-focus-ring);
   background: var(--field-focus-bg);
 }
 
 input:focus {
-  box-shadow: 0 0 0 2px var(--shade-dark);
+  border: var(--field-focus-border);
+  box-shadow: var(--field-focus-ring);
 }
 
 select:focus {
-  box-shadow: 0 0 0 2px var(--shade-dark);
+  border: var(--field-focus-border);
+  box-shadow: var(--field-focus-ring);
 }
 
 .button-row {

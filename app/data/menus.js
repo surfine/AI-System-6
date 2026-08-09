@@ -57,10 +57,18 @@ const editWithWriting = [
   ...flatSelectionTools,
 ];
 
+const appearanceItems = [
+  menuItem("set-theme-classic", "theme_classic", "", { themeId: "classic" }),
+  menuItem("set-theme-platinum", "theme_platinum", "", { themeId: "platinum" }),
+  menuItem("set-theme-liquid-glass", "theme_liquid_glass", "", { themeId: "liquid-glass" }),
+  menuSeparator,
+  menuItem("open-theme-lab", "theme_lab"),
+];
+
 const systemSpecialItems = [
   menuItem("tile-windows", "tile_windows"),
   menuSeparator,
-  menuItem("toggle-liquid-glass", "liquid_glass"),
+  submenu("appearance", appearanceItems),
   menuItem("toggle-balloon-help", "show_balloon_help"),
   menuItem("reset-system", "reset_system"),
   menuSeparator,
@@ -647,6 +655,7 @@ function renderApplicationMenuItem(item) {
   button.type = "button";
   button.dataset.action = item.action;
   button.dataset.i18n = item.labelKey;
+  if (item.themeId) button.dataset.themeChoice = item.themeId;
   if (item.shortcutId) button.dataset.shortcutId = item.shortcutId;
   if (item.viewMode) button.dataset.viewMode = item.viewMode;
   if (item.repeatMode) button.dataset.repeatMode = item.repeatMode;

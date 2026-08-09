@@ -1,6 +1,6 @@
 {
   "name": "ai-system-6",
-  "version": "1.0.29",
+  "version": "1.0.30",
   "description": "A quiet, intentional AI desktop environment inspired by Macintosh System 6.",
   "license": "MIT",
   "main": "src/server.js",
@@ -20,6 +20,7 @@
     "presmoke:release": "npm run build:app",
     "prestart": "npm run build:app",
     "smoke:release": "node scripts/smoke-release.mjs",
+    "snapshot:theme-lab": "npm run build:app && node scripts/theme-lab-snapshot.mjs --update",
     "start": "node src/server.js",
     "test": "npm run verify:features",
     "test:e2e": "playwright test --config tests/e2e/playwright.config.mjs",
@@ -37,6 +38,7 @@
     "verify:ship": "node scripts/verify-ship.mjs",
     "verify:ship:fast": "node scripts/verify-ship.mjs --fast",
     "verify:src": "npm --prefix src run typecheck",
+    "verify:theme-lab": "npm run build:app && node scripts/theme-lab-snapshot.mjs --verify",
     "verify:version": "node scripts/verify-version-consistency.mjs"
   },
   "overrides": {

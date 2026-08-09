@@ -525,7 +525,7 @@ void main() {
 
   function setEnabled(nextEnabled) {
     ensureCanvas();
-    enabled = !!nextEnabled && document.body.classList.contains("use-liquid-glass");
+    enabled = !!nextEnabled && window.AISystem6Theme?.getCurrentTheme?.() === "liquid-glass";
     canvas.hidden = !enabled;
     if (enabled) {
       resizeCanvas();

@@ -38,6 +38,7 @@ const windowAppMap = {
   bureaucracyMeme: "bureaucracyMeme",
   chooser: "accessories",
   control: "accessories",
+  themeLab: "system",
   rag: "finder",
   textDisk: "finder",
   finder: "finder",

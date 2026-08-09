@@ -94,7 +94,7 @@ test.assertIncludes(app, "docMapBalancedReadyPromise", "Print waits for the bala
 test.assertIncludes(app, "syncDocMapSvgSizeAttributes(docMapMarkmapInstance)", "fit refreshes the svg size attributes before zooming");
 test.assertIncludes(app, 'syncDocMapSvgSizeAttributes({ svg: { node: () => svg } })', "render pins svg size attributes before creating markmap");
 test.assertIncludes(app, "document.styleSheets", "DocMap PDF copies the active app stylesheet rules");
-test.assertIncludes(app, "bodyClass = document.body?.classList.contains(\"use-liquid-glass\")", "DocMap PDF preserves the active DocMap theme class");
+test.assertIncludes(app, 'bodyClass = getCurrentTheme() === "liquid-glass"', "DocMap PDF preserves the active Liquid Glass compatibility class through the canonical Appearance API");
 test.assertIncludes(app, '".docmap-balanced-center-box"', "DocMap PDF copies the balanced center-box style");
 test.assertIncludes(app, '".docmap-mm-balanced-root"', "DocMap PDF copies balanced root ornament rules");
 test.assertIncludes(app, 'page: "A4 landscape"', "DocMap PDF uses landscape A4 for symmetric maps");
