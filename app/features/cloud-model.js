@@ -648,6 +648,18 @@
       cloudApiKeyEl.focus();
       return;
     }
+    // On a public deployment, verification happens before Website AI is
+    // marked ready, not on the first Generate after a 401. The passive retry
+    // in public-access.js remains as a fallback for every other protected
+    // capability (Reader, Search), but the model entry point verifies first.
+    if (window.AISystem6PublicAccess?.ensureSession) {
+      try {
+        await window.AISystem6PublicAccess.ensureSession();
+      } catch {
+        if (simpleAiStatus) simpleAiStatus.textContent = typeof t === "function" ? t("website_ai_verification_cancelled") : "Website AI verification was cancelled.";
+        return;
+      }
+    }
     cloudConfig = {
       ...(cloudConfig || {}),
       provider: "deepseek",

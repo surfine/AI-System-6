@@ -19,7 +19,7 @@ const persistence = read("app/core/persistence-status.js");
 const cloud = read("app/features/cloud-model.js");
 const en = read("app/data/translations-en.js");
 const zh = read("app/data/translations-zh.js");
-const smoke = read("RELEASE-SMOKE.md");
+const smoke = read("docs/RELEASE-SMOKE.md");
 
 const guide = html.match(/<section class="window guide-window[\s\S]*?<section class="window rebuild-flow-window/)?.[0] || "";
 const quickDraft = html.match(/<section class="window draft-desk-window[\s\S]*?<section class="window image-manager-window/)?.[0] || "";

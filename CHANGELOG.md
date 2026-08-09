@@ -397,6 +397,35 @@ Version `1.0.12`, build `20260804.2`.
   selection and scroll, and a broader executable test suite for onboarding,
   boundaries, handoff, and working sessions.
 
+## Public Beta 1.0.32 - 2026-08-09
+
+- The release-supported Appearance surface narrows to three — System 6
+  (Classic), Platinum, and Liquid Glass. Aqua, Snow Leopard, and Yosemite
+  become research appearances: their recipes, references, and fixtures stay,
+  but they no longer appear in ordinary product UI, cannot be selected from
+  Control Panel or the Special menu, and never load from saved settings.
+- Existing saved experimental appearances migrate safely: `aqua` and
+  `snow-leopard` resolve to Classic, `yosemite` to Liquid Glass, and the
+  release `applyTheme` path refuses research themes entirely.
+- Theme Lab leaves the production runtime: its styles are no longer part of
+  the startup bundle, and it is a development/acceptance tool reached through
+  the dedicated verification commands instead of a product window.
+- Public verification joins the design system: the Turnstile flow now uses the
+  system finder-operation modal in all three appearances, all copy lives in
+  translations, and Use Website AI verifies the session before marking the
+  model ready instead of waiting for the first 401.
+- The public repository becomes self-sufficient: the snapshot carries
+  `docs/RELEASE-SMOKE.md` and the HIG docs, excludes tests that reference
+  private-only files, and runs a real `npm ci` → `build` → `test` →
+  `verify:checkjs`/`verify:version`/`verify:public` pass before anything is
+  pushed.
+- Continue now restores the real Working Session (project, application,
+  document, window, selection, scroll) before falling back to the last draft,
+  the most recent project document, or Project Hard Disk.
+- README presents the two mature writing paths — Draft Desk for a short piece,
+  Writing Studio for a longer project — and promises exactly three release
+  appearances.
+
 ## What Changed Most In One Month
 
 - The product moved from "an AI writing prototype" to a local-first writing

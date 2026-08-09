@@ -268,7 +268,11 @@ if (shellScript.includes("app/generated/build-info.json")) {
 }
 
 const pkgAssets = new Set((pkg.pkg && pkg.pkg.assets) || []);
-if (pkgAssets.has("app/generated/*.js")) {
+if (!pkg.pkg) {
+  // The public source snapshot intentionally drops the packaging surface;
+  // the pkg asset contract only applies to a tree that packages.
+  ok("no pkg packaging surface in this tree");
+} else if (pkgAssets.has("app/generated/*.js")) {
   ok("pkg assets include app/generated/*.js");
 } else {
   fail("pkg assets missing app/generated/*.js (packaged app would 404 build-info)");

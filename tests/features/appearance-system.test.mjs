@@ -21,8 +21,8 @@ const liquidCss = read("styles/70-liquid-glass.css");
 const packageJson = read("package.json");
 
 const THEME_IDS = ["classic", "platinum", "aqua", "snow-leopard", "yosemite", "liquid-glass"];
-const RELEASE_READY_THEME_IDS = ["classic", "platinum", "aqua", "liquid-glass"];
-const WIP_THEME_IDS = ["snow-leopard", "yosemite"];
+const RELEASE_READY_THEME_IDS = ["classic", "platinum", "liquid-glass"];
+const RESEARCH_THEME_IDS = ["aqua", "snow-leopard", "yosemite"];
 const SYSTEM_FONTS = ["Chicago", "Charcoal", "Lucida Grande", "Lucida Grande", "Helvetica Neue", "SF Pro"];
 const THEME_FAMILIES = ["classic", "classic", "aqua", "aqua", "liquid-glass", "liquid-glass"];
 const RECIPE_BASES = [null, "classic", null, "aqua", "liquid-glass", null];
@@ -85,15 +85,30 @@ test.assert(fresh.values.get("ai-system-6-theme") === "classic", "the canonical 
 test.assert(fresh.documentElement.dataset.theme === "classic" && fresh.body.dataset.theme === "classic", "the registry projects data-theme onto html and body");
 test.assert(fresh.documentElement.dataset.themeFamily === "classic", "the registry projects a family for shared recipes");
 
-fresh.api.applyTheme("aqua");
-test.assert(fresh.api.getCurrentTheme() === "aqua" && fresh.values.get("ai-system-6-theme") === "aqua", "applyTheme changes and persists the canonical theme");
-test.assert(fresh.documentElement.dataset.theme === "aqua" && fresh.body.dataset.theme === "aqua", "applyTheme updates both pre-paint and body selectors");
-test.assert(fresh.documentElement.dataset.themeFamily === "aqua" && fresh.documentElement.dataset.themeBase === undefined, "a recipe root projects its family without a false parent");
-test.assert(fresh.events.at(-1)?.type === "ai-system6-themechange" && fresh.events.at(-1)?.detail.themeId === "aqua", "theme changes emit one namespaced event");
+fresh.api.applyTheme("platinum");
+test.assert(fresh.api.getCurrentTheme() === "platinum" && fresh.values.get("ai-system-6-theme") === "platinum", "applyTheme changes and persists the canonical theme");
+test.assert(fresh.documentElement.dataset.theme === "platinum" && fresh.body.dataset.theme === "platinum", "applyTheme updates both pre-paint and body selectors");
+test.assert(fresh.documentElement.dataset.themeFamily === "classic" && fresh.documentElement.dataset.themeBase === "classic", "a derived recipe projects its family and parent");
+test.assert(fresh.events.at(-1)?.type === "ai-system6-themechange" && fresh.events.at(-1)?.detail.themeId === "platinum", "theme changes emit one namespaced event");
+
+// Research appearances cannot enter the release path.
+fresh.api.applyTheme("aqua", { announce: false });
+test.assert(fresh.api.getCurrentTheme() === "classic" && fresh.values.get("ai-system-6-theme") === "classic", "applyTheme rejects research appearances");
+test.assert(fresh.api.normalizeReleaseThemeId("aqua") === "classic", "aqua normalizes to the canonical System 6 appearance");
+test.assert(fresh.api.normalizeReleaseThemeId("snow-leopard") === "classic", "snow-leopard normalizes to the canonical System 6 appearance");
+test.assert(fresh.api.normalizeReleaseThemeId("yosemite") === "liquid-glass", "yosemite normalizes to Liquid Glass");
+
+fresh.api.previewExperimentalTheme("aqua");
+test.assert(fresh.api.getCurrentTheme() === "aqua" && fresh.values.get("ai-system-6-theme") === "classic", "experimental preview applies without persisting");
+test.assert(fresh.documentElement.dataset.theme === "aqua" && fresh.body.dataset.theme === "aqua", "experimental preview projects the research theme for this session");
+test.assert(fresh.events.at(-1)?.detail.themeId === "aqua", "experimental preview emits the same namespaced event");
 test.assert(!fresh.body.classList.contains("use-liquid-glass"), "historical themes do not impersonate Liquid Glass");
 
-fresh.api.applyTheme("snow-leopard", { announce: false });
+fresh.api.previewExperimentalTheme("snow-leopard");
 test.assert(fresh.documentElement.dataset.themeFamily === "aqua" && fresh.documentElement.dataset.themeBase === "aqua", "Snow Leopard projects the Aqua lineage for shared recipes and diagnostics");
+
+fresh.api.previewExperimentalTheme("yosemite");
+test.assert(fresh.api.getCurrentTheme() === "yosemite" && fresh.values.get("ai-system-6-theme") === "classic", "experimental preview never persists a research theme");
 
 fresh.api.applyTheme("liquid-glass", { announce: false });
 test.assert(fresh.body.classList.contains("use-liquid-glass"), "Liquid Glass keeps its compatibility projection while selectors migrate to tokens");
@@ -109,7 +124,16 @@ test.assert(!migratedOn.values.has("ai-system-6-liquid-glass") && migratedOn.val
 const migratedOff = loadRegistry([["ai-system-6-liquid-glass", "false"]]);
 test.assert(migratedOff.api.getCurrentTheme() === "classic", "the old disabled Boolean migrates to System 6");
 const canonicalWins = loadRegistry([["ai-system-6-theme", "yosemite"], ["ai-system-6-liquid-glass", "true"]]);
-test.assert(canonicalWins.api.getCurrentTheme() === "yosemite", "a valid canonical setting wins over stale legacy state");
+test.assert(canonicalWins.api.getCurrentTheme() === "liquid-glass", "a saved research id migrates to a release theme over stale legacy state");
+for (const [saved, expected] of [["aqua", "classic"], ["snow-leopard", "classic"], ["yosemite", "liquid-glass"]]) {
+  const migrated = loadRegistry([["ai-system-6-theme", saved]]);
+  test.assert(migrated.api.getCurrentTheme() === expected, `saved ${saved} safely migrates to ${expected}`);
+  test.assert(migrated.values.get("ai-system-6-theme") === expected, `the ${saved} migration is persisted as ${expected}`);
+}
+test.assert(
+  fresh.api.getReleaseReadyThemes().map(({ id }) => id).join(",") === "classic,platinum,liquid-glass",
+  "getReleaseReadyThemes returns exactly the three release-supported appearances",
+);
 
 test.assert(index.indexOf('src="app/core/theme-registry.js"') < index.indexOf('rel="stylesheet"'), "the saved era is resolved before the stylesheet loads");
 test.assertIncludes(index, 'src="app/core/theme-body-init.js"', "body receives the pre-resolved theme through a CSP-safe external script before desktop markup");
@@ -119,11 +143,12 @@ for (const id of RELEASE_READY_THEME_IDS) {
   test.assertIncludes(index, `option value="${id}"`, `Control Panel exposes ${id}`);
   test.assertIncludes(menus, `themeId: "${id}"`, `Special menu exposes ${id} from registry-compatible ids`);
 }
-for (const id of WIP_THEME_IDS) {
+for (const id of RESEARCH_THEME_IDS) {
   test.assertNotIncludes(index, `option value="${id}"`, `Control Panel keeps ${id} out of the release surface`);
   test.assertNotIncludes(menus, `themeId: "${id}"`, `Special menu keeps ${id} out of the release surface`);
 }
 test.assertIncludes(menus, 'submenu("appearance", appearanceItems)', "Special owns a single Appearance submenu");
+test.assertNotIncludes(menus, "open-theme-lab", "the release Special menu has no Theme Lab entry");
 test.assertIncludes(actions, '"open-theme-lab": () => openWindow("themeLab")', "Theme Lab has an explicit development entry");
 test.assertIncludes(index, 'data-window="themeLab"', "Theme Lab is a real managed window");
 test.assertIncludes(index, "theme-lab-focus-demo", "Theme Lab includes an explicit focus state");
@@ -157,9 +182,12 @@ test.assertNotIncludes(app, "function toggleLiquidGlassAppearance", "the old bin
 test.assertIncludes(persistence, "theme: getCurrentTheme()", "desk settings persist the enum");
 test.assertIncludes(persistence, "typeof settings.liquidGlass === \"boolean\"", "desk-state restore retains one release-safe Boolean migration");
 
-for (const path of ["styles/65-appearance-themes.css", "styles/66-theme-lab.css"]) {
-  test.assertIncludes(manifest, `"${path}"`, `${path} participates in the production bundle`);
-}
+test.assertIncludes(manifest, '"styles/65-appearance-themes.css"', "the era parameter tables participate in the production bundle");
+test.assertNotIncludes(manifest, '"styles/66-theme-lab.css"', "Theme Lab styles are absent from the production bundle");
+test.assertIncludes(labSnapshot, "66-theme-lab.css", "Theme Lab snapshots inject the dev-only stylesheet");
+test.assertIncludes(labFidelity, "66-theme-lab.css", "canonical comparison injects the dev-only stylesheet");
+test.assertIncludes(labSnapshot, "experimental: true", "Theme Lab snapshots preview research appearances without persisting");
+test.assertIncludes(labFidelity, "experimental: true", "canonical comparison previews research appearances without persisting");
 for (const id of THEME_IDS.slice(1, -1)) {
   test.assertIncludes(appearanceCss, `data-theme="${id}"`, `${id} has an owned parameter table`);
 }

@@ -3515,7 +3515,11 @@ input[type="checkbox"]:focus-visible {
 
 input[type="checkbox"]:checked {
   background-color: var(--choice-checked-bg);
-  background-image: var(--choice-checkmark-image);
+  background-image:
+    var(--choice-checkmark-image),
+    var(--choice-checked-bg-image, none);
+  border-color: var(--choice-checked-border-color, inherit);
+  box-shadow: var(--choice-checked-shadow, inherit);
 }
 
 input[type="radio"] {

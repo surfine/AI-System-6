@@ -1,5 +1,5 @@
 <!-- canonical-source: README.md -->
-<!-- source-sha256: ef67b75ab594b3bf50e81ee1764135c5d1e8162241f096649da1d5a29a97bea0 -->
+<!-- source-sha256: a9596a76b2af283132b3a7725176e5bd52cb0314266bee01a486758c077ad58f -->
 
 <div align="center">
 
@@ -39,11 +39,24 @@
 | 模型本身就是产品 | 自由选择 LM Studio、Ollama、DeepSeek 或其他 OpenAI 兼容服务 |
 | 最终得到另一个回答 | 最终得到文件、文章、图表、幻灯片、封面或 3D 成品 |
 
+## 现在写一篇，或者做一件更大的事
+
+| | |
+| --- | --- |
+| **现在写一篇** | **Draft Desk** — 想法或素材 → 草稿 → 调整 → 交付 |
+| **做一件更大的事** | **Writing Studio** — 研究 → 结构 → 草稿 → 审校 → 发布 |
+
+Draft Desk 把单个想法或一份素材变成可保存、可下载、可分享的短文。Writing
+Studio 则让更长的项目从来源与问题单出发，经过大纲、分节草稿和审校台完成。
+两条路径都不必从搜索开始。
+
 ## 一张桌面，一条完整路径
 
 ```text
 搜索 → 阅读 → 剪藏 → 整理 → 写作 → 审校 → 呈现
 ```
+
+对于长项目，完整桌面路径把研究与交付串在一起：
 
 1. **Searcher** 寻找来源，**Reader** 打开证据。
 2. **Time Machine** 通过 Wayback Machine 回到历史网页。
@@ -64,9 +77,11 @@
 - 使用 ClioStage **制作和播放 Markdown 演示文稿**。
 - 在 Cover Glass 中**渲染带折射效果的 WebGL 文字**。
 - 在 CMF Studio 中**编辑 3D iPhone 配色并导出用于 AR 的 USDZ**。
-- 在不移动任何工作的前提下，让整个桌面从 **Classic 切换到 Liquid Glass**。
+- 在不移动任何工作的前提下，让整个桌面在**正式外观 System 6、Platinum 与 Liquid Glass** 之间切换。
 
-经典界面依据真实的 System 6.0.8 资源和同时代 Macintosh 交互方式制作，而非凭记忆重新绘制。
+System 6 是默认外观，Platinum 与 Liquid Glass 是正式支持的替代外观。经典
+界面依据真实的 System 6.0.8 资源和同时代 Macintosh 交互方式制作，而非凭
+记忆重新绘制。
 
 ## 使用自己的模型
 

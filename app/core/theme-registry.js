@@ -47,7 +47,8 @@
       labelKey: "theme_aqua",
       family: "aqua",
       recipeBase: null,
-      releaseReady: true,
+      // Research appearance: not release-supported in 1.0.32+.
+      releaseReady: false,
       systemFont: "Lucida Grande",
       systemFontSize: 13,
       fontStrategy: "theme",
@@ -102,14 +103,26 @@
     return byId.has(id) ? id : DEFAULT_THEME_ID;
   }
 
+  // Release path: only release-supported appearances may become the active
+  // product theme. Historical saved research ids migrate to a formal theme:
+  // aqua/snow-leopard -> classic, yosemite -> liquid-glass.
+  function normalizeReleaseThemeId(value) {
+    const theme = byId.get(String(value || "").trim().toLowerCase());
+    if (theme?.releaseReady) return theme.id;
+    if (theme?.id === "yosemite") return "liquid-glass";
+    return DEFAULT_THEME_ID;
+  }
+
   function readInitialTheme(storage) {
     try {
       const targetStorage = storage === undefined ? global.localStorage : storage;
       const stored = targetStorage?.getItem(STORAGE_KEY);
-      if (stored && byId.has(stored)) return stored;
-      const migrated = targetStorage?.getItem(LEGACY_LIQUID_KEY) === "true"
-        ? "liquid-glass"
-        : DEFAULT_THEME_ID;
+      let migrated = DEFAULT_THEME_ID;
+      if (stored && byId.has(stored)) {
+        migrated = normalizeReleaseThemeId(stored);
+      } else if (targetStorage?.getItem(LEGACY_LIQUID_KEY) === "true") {
+        migrated = "liquid-glass";
+      }
       targetStorage?.setItem(STORAGE_KEY, migrated);
       targetStorage?.removeItem(LEGACY_LIQUID_KEY);
       return migrated;
@@ -148,10 +161,14 @@
 
   function applyTheme(value, options = {}) {
     const previousId = currentThemeId;
-    currentThemeId = normalizeThemeId(value);
+    const experimental = options.experimental === true;
+    // Experimental previews (Theme Lab / development tooling) may switch to a
+    // research appearance for this session, but never persist it. The normal
+    // API only accepts release-supported themes.
+    currentThemeId = experimental ? normalizeThemeId(value) : normalizeReleaseThemeId(value);
     const theme = syncBody();
     syncFontStrategy(options.modernFontPreference === true);
-    if (options.persist !== false) {
+    if (!experimental && options.persist !== false) {
       try {
         global.localStorage?.setItem(STORAGE_KEY, theme.id);
         global.localStorage?.removeItem(LEGACY_LIQUID_KEY);
@@ -165,6 +182,10 @@
       }));
     }
     return theme;
+  }
+
+  function previewExperimentalTheme(value) {
+    return applyTheme(value, { experimental: true, persist: false });
   }
 
   function getCurrentTheme() {
@@ -202,8 +223,10 @@
     DEFAULT_THEME_ID,
     themes: registry,
     normalizeThemeId,
+    normalizeReleaseThemeId,
     readInitialTheme,
     applyTheme,
+    previewExperimentalTheme,
     getCurrentTheme,
     getTheme,
     getReleaseReadyThemes,

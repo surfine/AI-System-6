@@ -1603,7 +1603,6 @@ function getApplicationActionHandlers() {
     "toggle-sideask": toggleSideAsk,
     "set-theme-classic": () => applyTheme("classic"),
     "set-theme-platinum": () => applyTheme("platinum"),
-    "set-theme-aqua": () => applyTheme("aqua"),
     "set-theme-liquid-glass": () => applyTheme("liquid-glass"),
     "open-theme-lab": () => openWindow("themeLab"),
     "toggle-balloon-help": toggleBalloonHelp,

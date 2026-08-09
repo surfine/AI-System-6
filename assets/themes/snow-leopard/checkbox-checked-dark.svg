@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="12" height="12" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+  <!-- Dark two-pixel check scaled from Quaqua 9.1 CheckBox.icons.png
+       frame 2 (checked): strokes descend from the top-right corner to the
+       lower-left of the 14px box, ~2px thick with rounded joins. -->
+  <path d="M14.2 1.4 8.8 7.2 4.6 10.6" fill="none" stroke="#101010" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

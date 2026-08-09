@@ -43,6 +43,7 @@ function usage() {
 
 Options:
   --theme <id>        Appearance manifest to use (default: platinum)
+  --manifest <path>   Use an explicit manifest file (theme field still applies)
   --fetch             Download missing canonical sources into the local cache
   --source-dir <dir>  Read canonical sources from an existing local directory
   --output-dir <dir>  Write generated artifacts to this directory
@@ -57,6 +58,7 @@ Generated artifacts:
 function parseArgs(argv) {
   const options = {
     theme: DEFAULT_THEME,
+    manifestPath: null,
     fetch: false,
     sourceDir: null,
     outputDir: null,
@@ -71,11 +73,12 @@ function parseArgs(argv) {
       options.fetch = true;
       continue;
     }
-    if (["--theme", "--source-dir", "--output-dir"].includes(argument)) {
+    if (["--theme", "--manifest", "--source-dir", "--output-dir"].includes(argument)) {
       const value = argv[index + 1];
       if (!value || value.startsWith("--")) throw new Error(`${argument} requires a value`);
       index += 1;
       if (argument === "--theme") options.theme = value;
+      if (argument === "--manifest") options.manifestPath = value;
       if (argument === "--source-dir") options.sourceDir = resolve(value);
       if (argument === "--output-dir") options.outputDir = resolve(value);
       continue;
@@ -285,8 +288,10 @@ async function prepareCurrentPage(browser, serverUrl, manifest, outputDir) {
   if (readiness.appReady !== "ready" || !readiness.bootHidden) {
     throw new Error(`App boot failed: ${JSON.stringify(readiness)}\n${diagnostics.join("\n")}`);
   }
-  await page.evaluate((themeId) => {
+  const labCss = readFileSync(join(root, "styles/66-theme-lab.css"), "utf8");
+  await page.evaluate(({ themeId, css }) => {
     window.AISystem6Theme?.applyTheme(themeId, {
+      experimental: true,
       persist: false,
       announce: false,
       modernFontPreference: false,
@@ -304,6 +309,12 @@ async function prepareCurrentPage(browser, serverUrl, manifest, outputDir) {
     const lab = document.querySelector('[data-window="themeLab"]');
     lab?.classList.remove("is-hidden");
     lab?.classList.add("is-active");
+    if (!document.querySelector("#theme-lab-dev-styles")) {
+      const labStyle = document.createElement("style");
+      labStyle.id = "theme-lab-dev-styles";
+      labStyle.textContent = css;
+      document.head.append(labStyle);
+    }
     const style = document.createElement("style");
     style.id = "theme-lab-fidelity-stability";
     style.textContent = `
@@ -316,7 +327,7 @@ async function prepareCurrentPage(browser, serverUrl, manifest, outputDir) {
     document.head.append(style);
     window.scrollTo(0, 0);
     void document.body.offsetHeight;
-  }, manifest.theme);
+  }, { themeId: manifest.theme, css: labCss });
   await page.evaluate(() => document.fonts?.ready);
   await page.waitForTimeout(180);
   const lab = page.locator('[data-window="themeLab"]');
@@ -718,7 +729,14 @@ function sourceFileHashes() {
 }
 
 const options = parseArgs(process.argv.slice(2));
-const { manifest, path: manifestPath } = readManifest(options.theme);
+const { manifest, path: manifestPath } = options.manifestPath
+  ? (() => {
+      const path = resolve(options.manifestPath);
+      const loaded = JSON.parse(readFileSync(path, "utf8"));
+      if (loaded.schemaVersion !== 1) throw new Error(`Unsupported fidelity manifest schema: ${loaded.schemaVersion}`);
+      return { manifest: loaded, path };
+    })()
+  : readManifest(options.theme);
 const outputDir = options.outputDir || join(DEFAULT_OUTPUT_ROOT, manifest.theme);
 mkdirSync(outputDir, { recursive: true });
 

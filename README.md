@@ -34,11 +34,26 @@ Most AI products put every task into one chat window. AI System 6 gives the work
 | The model is the product | Use LM Studio, Ollama, DeepSeek, or another OpenAI-compatible provider |
 | The endpoint is another answer | The endpoint is a file, manuscript, chart, slide deck, cover, or 3D artifact |
 
+## Write something now, or build something larger
+
+| | |
+| --- | --- |
+| **Write something now** | **Draft Desk** — idea or material → draft → adjust → deliver |
+| **Build something larger** | **Writing Studio** — research → structure → draft → review → publish |
+
+Draft Desk turns a single idea or piece of material into a short draft you can
+save, download, or share. Writing Studio carries a longer project from sources
+and a Question Sheet through an outline, section drafts, and the Review Desk.
+Neither path requires starting from a search.
+
 ## One desktop. A complete route.
 
 ```text
 SEARCH → READ → CLIP → MAP → WRITE → REVIEW → PRESENT
 ```
+
+For a long project, the full desktop route ties research and delivery
+together:
 
 1. **Searcher** finds sources; **Reader** opens the evidence.
 2. **Time Machine** revisits archived pages through the Wayback Machine.
@@ -59,9 +74,12 @@ No invisible agent maze. The sources, files, prompts, and handoffs stay on the d
 - **Build and present Markdown slide decks** with ClioStage.
 - **Render refractive WebGL typography** in Cover Glass.
 - **Edit a 3D iPhone colorway and export USDZ for AR** in CMF Studio.
-- **Switch the entire live desktop from Classic to Liquid Glass** without moving the work.
+- **Switch the entire desktop between the release appearances — System 6, Platinum, and Liquid Glass** without moving the work.
 
-The classic interface is grounded in real System 6.0.8 resources and period Macintosh interaction patterns — not redrawn from memory.
+System 6 is the default appearance. Platinum and Liquid Glass are the
+release-supported alternatives. The classic interface is grounded in real
+System 6.0.8 resources and period Macintosh interaction patterns — not redrawn
+from memory.
 
 ## Bring your own model
 

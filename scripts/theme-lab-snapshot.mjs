@@ -6,7 +6,7 @@
 
 import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
-import { copyFileSync, existsSync, mkdirSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { get } from "node:http";
 import { createServer } from "node:net";
 import { dirname, join } from "node:path";
@@ -15,6 +15,9 @@ import { fileURLToPath } from "node:url";
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const require = createRequire(import.meta.url);
 const THEMES = Object.freeze(["classic", "platinum", "aqua", "snow-leopard", "yosemite", "liquid-glass"]);
+// Theme Lab styles are dev-only: they are absent from the production bundle
+// and injected here by the verification tooling.
+const LAB_CSS = readFileSync(join(root, "styles/66-theme-lab.css"), "utf8");
 // The stability fixture expands the lab to its full intrinsic height. Keep the
 // capture canvas taller than the largest era so Playwright never scrolls the
 // absolute-positioned window before taking its element screenshot.
@@ -143,8 +146,9 @@ async function captureTheme(browser, url, themeId) {
     if (readiness.appReady !== "ready" || !readiness.bootHidden) {
       throw new Error(`App boot failed for ${themeId}: ${JSON.stringify(readiness)}\n${diagnostics.join("\n")}`);
     }
-    await page.evaluate((id) => {
+    await page.evaluate(({ id, css }) => {
       window.AISystem6Theme?.applyTheme(id, {
+        experimental: true,
         persist: false,
         announce: false,
         modernFontPreference: false,
@@ -160,6 +164,12 @@ async function captureTheme(browser, url, themeId) {
       const lab = document.querySelector('[data-window="themeLab"]');
       lab?.classList.remove("is-hidden");
       lab?.classList.add("is-active");
+      if (!document.querySelector("#theme-lab-dev-styles")) {
+        const labStyle = document.createElement("style");
+        labStyle.id = "theme-lab-dev-styles";
+        labStyle.textContent = css;
+        document.head.append(labStyle);
+      }
       const style = document.createElement("style");
       style.id = "theme-lab-snapshot-stability";
       style.textContent = `
@@ -178,7 +188,7 @@ async function captureTheme(browser, url, themeId) {
       `;
       document.head.append(style);
       void document.body.offsetHeight;
-    }, themeId);
+    }, { id: themeId, css: LAB_CSS });
     await page.evaluate(() => document.fonts?.ready);
     await page.waitForTimeout(180);
     const target = page.locator('[data-window="themeLab"]');

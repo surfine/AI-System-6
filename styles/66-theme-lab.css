@@ -160,7 +160,9 @@
 }
 
 .theme-lab-choice-matrix input[type="checkbox"]:checked {
-  background-image: var(--theme-lab-checkbox-checkmark-image, var(--choice-checkmark-image));
+  background-image:
+    var(--theme-lab-checkbox-checkmark-image, var(--choice-checkmark-image)),
+    var(--choice-checked-bg-image, none);
 }
 
 .theme-lab-choice-matrix input[type="checkbox"]:checked::after {
@@ -1889,8 +1891,8 @@
 }
 
 .theme-lab-finder-rows > div.is-selected {
-  background: var(--selection-bg);
-  color: var(--selection-fg);
+  background: var(--theme-lab-list-selected-bg, var(--selection-bg));
+  color: var(--theme-lab-list-selected-fg, var(--selection-fg));
 }
 
 .theme-lab-finder-rows .sys-icon {

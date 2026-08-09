@@ -10,7 +10,7 @@
 本合约把 `external/taste-skill` 和 `external/impeccable` 中有用的部分改造成适合本产品的规则。不要把它们默认的落地页或品牌站审美直接搬进 AI System 6。
 
 规范性的应用骨架、排版角色、状态栏槽位、TDI 适配、响应式优先级与新应用检查表，见
-HIG.md。其中的机器可读窗口注册表会和 feature contract 一起接受门禁；它不会建立第二套组件库。
+[HIG.md](HIG.md)。其中的机器可读窗口注册表会和 feature contract 一起接受门禁；它不会建立第二套组件库。
 
 ## 产品语域
 

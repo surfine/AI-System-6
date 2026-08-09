@@ -11,7 +11,7 @@ or brand-site aesthetics into AI System 6.
 
 For the normative application shell, typography roles, status-bar slots, TDI
 adaptation, responsive priorities, and new-app checklist, follow
-HIG.md. Its machine-readable window registry is enforced alongside
+[HIG.md](HIG.md). Its machine-readable window registry is enforced alongside
 the feature contracts; it does not create a second component library.
 
 ## Product Register

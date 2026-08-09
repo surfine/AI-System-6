@@ -1,5 +1,5 @@
 <!-- canonical-source: CHANGELOG.md -->
-<!-- source-sha256: 377f91aa1dac735b9c4868bbd96f8e1b59adf70aeeb8644a3403c6ffdd5a06bd -->
+<!-- source-sha256: 817af5aa3f862ab154ef0fa430828a6a9e06fe0b37bb2988c1f2a585b47d01d8 -->
 
 # AI System 6 中文更新日志
 
@@ -12,6 +12,28 @@
 仓库目前只有两个历史 tag：`pre-refactor-baseline` 和 `src-pilot`。因此下文
 按日期阶段和可确认版本组织，不虚构不存在的 release tag，也不把内部提交逐条
 搬进公开文档。
+
+## v1.0.32 - 2026-08-09
+
+- 正式支持的外观面收窄为三套：System 6（Classic）、Platinum 与 Liquid
+  Glass。Aqua、Snow Leopard 与 Yosemite 转为研究外观：recipe、参照与
+  fixture 全部保留，但不再出现在普通产品 UI、Control Panel 或 Special
+  菜单中，也绝不会从已保存设置加载。
+- 已保存的实验外观安全迁移：`aqua` 与 `snow-leopard` 解析为 Classic，
+  `yosemite` 解析为 Liquid Glass；正式 `applyTheme` 路径完全拒绝研究主题。
+- Theme Lab 退出生产运行时：其样式不再进入启动 bundle，改为通过专门的
+  验证命令使用的开发/验收工具，不再是产品窗口。
+- 公开验证接入设计系统：Turnstile 流程改为三套外观通用的系统
+  finder-operation modal，所有文案进入翻译；Use Website AI 会在标记就绪
+  之前先完成会话验证，而不是等第一次 401 才弹出。
+- 公开仓库自洽：快照携带 `docs/RELEASE-SMOKE.md` 与 HIG 文档，排除引用
+  私有文件的测试，并且在推送前真实执行 `npm ci` → `build` → `test` →
+  `verify:checkjs`/`verify:version`/`verify:public`。
+- Continue 现在优先恢复真实 Working Session（项目、应用、文档、窗口、
+  选区、滚动位置），失败时才回退到最近草稿、最近项目文档或 Project Hard
+  Disk。
+- README 展示两条成熟写作路径——Draft Desk 写短稿、Writing Studio 做长
+  项目——并只承诺三套正式外观。
 
 ## 第一版 — 1.0.0 / 2026-05-18
 

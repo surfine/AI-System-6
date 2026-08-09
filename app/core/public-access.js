@@ -79,34 +79,35 @@
     return turnstileScriptPromise;
   }
 
-  function createVerificationDialog() {
-    const dialog = document.createElement("dialog");
-    dialog.setAttribute("aria-labelledby", "public-verification-title");
-    dialog.style.cssText = [
-      "border:1px solid #4b4b4b",
-      "border-radius:10px",
-      "padding:0",
-      "max-width:390px",
-      "width:calc(100% - 32px)",
-      "background:#f4f1e8",
-      "color:#171717",
-      "box-shadow:0 20px 70px rgba(0,0,0,.28)",
-    ].join(";");
-    dialog.innerHTML = [
-      '<div style="padding:22px 22px 18px">',
-      '<h2 id="public-verification-title" style="font:700 18px/1.3 system-ui;margin:0 0 9px">Verify public access</h2>',
-      '<p style="font:14px/1.5 system-ui;margin:0 0 16px">AI, Reader and Search need a one-time verification for this browsing session.</p>',
-      '<div data-turnstile-slot style="min-height:65px"></div>',
-      '<p data-turnstile-status role="status" style="font:13px/1.4 system-ui;margin:12px 0 0;color:#555">Waiting for verification…</p>',
-      '<div style="display:flex;justify-content:flex-end;margin-top:14px">',
-      '<button type="button" data-cancel style="font:14px system-ui;padding:6px 12px">Cancel</button>',
-      "</div>",
-      "</div>",
-    ].join("");
-    document.body.append(dialog);
-    if (typeof dialog.showModal === "function") dialog.showModal();
-    else dialog.setAttribute("open", "");
-    return dialog;
+  function tr(key) {
+    return typeof t === "function" ? t(key) : key;
+  }
+
+  // The verification surface is a real AI System 6 finder-operation modal
+  // (index.html #public-verification-modal), so Classic, Platinum and Liquid
+  // Glass all render it through the system object grammar. The widget is the
+  // only third-party part, and it is documented through the DOM API: the
+  // sitekey arrives from /api/capabilities and is set only through the DOM
+  // attribute API, never through markup strings.
+  function getVerificationDialog() {
+    return document.querySelector("#public-verification-modal");
+  }
+
+  async function hasValidSession() {
+    try {
+      const response = await nativeFetch("/api/session/status", {
+        headers: { "Accept": "application/json" },
+        cache: "no-store",
+      });
+      if (!response.ok) return false;
+      const data = await response.json().catch(() => ({}));
+      return data.verified === true;
+    } catch {
+      // A status probe must never block the first verification attempt; the
+      // protected request path remains the authority on whether a session
+      // exists, and the 401 retry loop is the fallback.
+      return false;
+    }
   }
 
   async function verifyPublicSession() {
@@ -115,67 +116,94 @@
     const sitekey = String(capabilities.public_access?.turnstile_site_key || "");
     const action = String(capabilities.public_access?.turnstile_action || "turnstile-spin-v2");
     if (!sitekey) throw new Error("Public verification is not configured.");
+    if (await hasValidSession()) return true;
 
     const turnstile = await loadTurnstileScript();
-    const dialog = createVerificationDialog();
-    const slot = dialog.querySelector("[data-turnstile-slot]");
-    const status = dialog.querySelector("[data-turnstile-status]");
-    // The script is loaded with render=explicit, so these attributes document
-    // the widget rather than trigger auto-rendering. Set through the DOM API:
-    // the sitekey arrives from /api/capabilities and never touches innerHTML.
+    const dialog = getVerificationDialog();
+    if (!dialog) throw new Error("Public verification UI is unavailable.");
+    const slot = dialog.querySelector("#public-verification-slot");
+    const status = dialog.querySelector("#public-verification-status");
+    const cancelButton = dialog.querySelector("#public-verification-cancel");
+    const retryButton = dialog.querySelector("#public-verification-retry");
+
+    slot.replaceChildren();
     slot.className = "cf-turnstile";
     slot.setAttribute("data-sitekey", sitekey);
     slot.setAttribute("data-action", action);
 
     return new Promise((resolve, reject) => {
       let settled = false;
+      let widgetId = null;
+      const setStatus = (key) => {
+        if (status) status.textContent = tr(key);
+      };
       const finish = (error) => {
         if (settled) return;
         settled = true;
-        try { dialog.close(); } catch {}
-        dialog.remove();
+        dialog.onclose = null;
+        try { if (dialog.open) dialog.close(); } catch {}
+        if (typeof modalScrim !== "undefined") modalScrim.classList.add("is-hidden");
         if (error) reject(error);
         else resolve(true);
       };
 
-      dialog.querySelector("[data-cancel]")?.addEventListener("click", () => {
-        finish(new Error("Verification cancelled."));
+      cancelButton?.addEventListener("click", () => finish(new Error("Verification cancelled.")), { once: true });
+      retryButton?.addEventListener("click", () => {
+        try { if (widgetId) turnstile.reset(widgetId); } catch {}
+        setStatus("public_verify_waiting");
       });
       dialog.addEventListener("cancel", (event) => {
         event.preventDefault();
         finish(new Error("Verification cancelled."));
       });
+      dialog.onclose = () => {
+        if (!settled) finish(new Error("Verification cancelled."));
+      };
 
-      turnstile.render(slot, {
-        sitekey,
-        action,
-        theme: "light",
-        callback: async (token) => {
-          if (status) status.textContent = "Confirming verification…";
-          try {
-            const response = await nativeFetch("/api/session/turnstile", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ token }),
-              cache: "no-store",
-            });
-            const data = await response.json().catch(() => ({}));
-            if (!response.ok || !data.verified) {
-              throw new Error(data.error || "Verification failed.");
+      try {
+        if (typeof modalScrim !== "undefined") modalScrim.classList.remove("is-hidden");
+        if (typeof playSystemSound === "function") playSystemSound("alert");
+        if (dialog.open) dialog.close("cancel");
+        setStatus("public_verify_waiting");
+        dialog.showModal();
+      } catch (error) {
+        finish(error);
+        return;
+      }
+
+      try {
+        widgetId = turnstile.render(slot, {
+          sitekey,
+          action,
+          theme: "light",
+          callback: async (token) => {
+            if (settled) return;
+            setStatus("public_verify_confirming");
+            try {
+              const response = await nativeFetch("/api/session/turnstile", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ token }),
+                cache: "no-store",
+              });
+              const data = await response.json().catch(() => ({}));
+              if (!response.ok || !data.verified) {
+                throw new Error(data.error || "Verification failed.");
+              }
+              finish();
+            } catch (error) {
+              console.warn("Public verification failed", error);
+              setStatus("public_verify_failed");
+              try { if (widgetId) turnstile.reset(widgetId); } catch {}
             }
-            finish();
-          } catch (error) {
-            if (status) status.textContent = error.message || "Verification failed. Please try again.";
-            try { turnstile.reset(); } catch {}
-          }
-        },
-        "error-callback": () => {
-          if (status) status.textContent = "Verification service unavailable. Please retry.";
-        },
-        "expired-callback": () => {
-          if (status) status.textContent = "Verification expired. Please retry.";
-        },
-      });
+          },
+          "error-callback": () => setStatus("public_verify_unavailable"),
+          "expired-callback": () => setStatus("public_verify_expired"),
+        });
+      } catch (error) {
+        console.warn("Public verification widget failed", error);
+        setStatus("public_verify_unavailable");
+      }
     });
   }
 

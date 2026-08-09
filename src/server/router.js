@@ -46,6 +46,7 @@ const handleHealth = lazyHandler(() => require("./routes/health.js"), "./routes/
 const handleReady = lazyHandler(() => require("./routes/health.js"), "./routes/health.js", "handleReady");
 const handleCapabilities = lazyHandler(() => require("./routes/capabilities.js"), "./routes/capabilities.js", "handleCapabilities");
 const handleTurnstileSession = lazyHandler(() => require("./routes/public-session.js"), "./routes/public-session.js", "handleTurnstileSession");
+const handleSessionStatus = lazyHandler(() => require("./routes/public-session.js"), "./routes/public-session.js", "handleSessionStatus");
 const handleVersion = lazyHandler(() => require("./routes/version.js"), "./routes/version.js", "handleVersion");
 const handleImporterStatus = lazyHandler(() => require("./routes/importer-status.js"), "./routes/importer-status.js", "handleImporterStatus");
 const handleCloudModels = lazyHandler(() => require("./routes/cloud-models.js"), "./routes/cloud-models.js", "handleCloudModels");
@@ -92,6 +93,7 @@ const localExactRoutes = new Map([
   ["GET /readyz", handleReady],
   ["GET /api/capabilities", handleCapabilities],
   ["POST /api/session/turnstile", handleTurnstileSession],
+  ["GET /api/session/status", handleSessionStatus],
   ["GET /api/version", handleVersion],
   ["GET /api/importer-status", handleImporterStatus],
   ["GET /api/cloud/models", handleCloudModels],
@@ -128,6 +130,7 @@ const publicExactRouteKeys = new Set([
   "GET /readyz",
   "GET /api/capabilities",
   "POST /api/session/turnstile",
+  "GET /api/session/status",
   "GET /api/version",
   "GET /api/cloud/models",
   "POST /api/cloud/status",

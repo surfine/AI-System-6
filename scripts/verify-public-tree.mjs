@@ -24,9 +24,14 @@ import { internalOnlyScriptNames, publicPrebuildApp } from "./lib/public-package
 
 const args = process.argv.slice(2);
 const rootFlagIndex = args.indexOf("--root");
-const root = rootFlagIndex >= 0 && args[rootFlagIndex + 1]
+const explicitRoot = rootFlagIndex >= 0 && args[rootFlagIndex + 1]
   ? resolve(args[rootFlagIndex + 1])
-  : resolve(dirname(fileURLToPath(import.meta.url)), "..");
+  : null;
+const scriptDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+// In the private tree `--root dist/public-snapshot` verifies the built
+// payload. In the public repository itself that path does not exist; the
+// snapshot root is the tree under verification, so fall back to it.
+const root = explicitRoot && existsSync(explicitRoot) ? explicitRoot : scriptDir;
 
 const failures = [];
 

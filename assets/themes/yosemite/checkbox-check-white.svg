@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="12" height="12" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+  <!-- Two-stroke white check scaled from the Yosemite-gtk-theme
+       checkbox-checked.png asset (16px frame, ~8px check, 2px stroke). -->
+  <path d="M11.6 5.4 8 9.5 5.4 11.9" fill="none" stroke="#ffffff" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

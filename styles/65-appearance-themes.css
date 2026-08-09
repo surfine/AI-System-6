@@ -149,6 +149,7 @@ body[data-theme="platinum"] {
   --choice-radius: 0;
   --choice-shadow: inset -1px -1px 0 #888888, inset 1px 1px 0 #ffffff;
   --choice-checked-bg: #dddddd;
+  --choice-checked-bg-image: none;
   --choice-checkmark-image: url("./assets/vendor/classic-stylesheets/macos9/checkmark.svg");
   --system-check-size: 12px;
   --system-radio-size: 12px;
@@ -851,10 +852,8 @@ body[data-theme="aqua"] {
   --aqua-radio-pressed-unchecked-image: url("./assets/themes/aqua/radio-pressed-unselected.svg");
   --aqua-radio-pressed-image: url("./assets/themes/aqua/radio-pressed-selected.svg");
   --apple-menu-slot-width: 44px;
-  --apple-menu-pixel-opacity: 0;
-  --apple-menu-era-glyph-display: inline;
-  --apple-menu-era-glyph-color: #3276bd;
-  --apple-menu-era-glyph-active-color: #ffffff;
+  /* The Apple menu icon is the app's own constant pixel glyph in every
+     appearance (base opacity 1); no per-era Apple logo character is drawn. */
   --menu-current-app-display: flex;
   --menu-bar-bg: repeating-linear-gradient(to bottom, #fafafa 0 1px, #ffffff 1px 2px, #fafafa 2px 3px, #e9e9e9 3px 4px);
   --menu-bar-border: 1px solid #8e8e8e;
@@ -1107,6 +1106,33 @@ body[data-theme="aqua"] {
   --theme-lab-era-titlebar-close-left: 7px;
   --theme-lab-era-titlebar-minimize-left: 28px;
   --theme-lab-era-titlebar-zoom-left: 49px;
+  /* Alarm Clock DA: Aqua window chrome, white face, candy controls. */
+  --alarm-clock-frame-border: 1px solid #858585;
+  --alarm-clock-frame-radius: 5px;
+  --alarm-clock-frame-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+  --alarm-clock-title-bg: #f2f2f2;
+  --alarm-clock-surface-bg: #ffffff;
+  --alarm-clock-readout-bg: #ffffff;
+  --alarm-clock-divider: 1px solid #b3b3b3;
+  --alarm-clock-active-bg: linear-gradient(#2a8cff, #0a5bd0);
+  --alarm-clock-active-fg: #ffffff;
+  --alarm-clock-close-size: 12px;
+  --alarm-clock-close-border: 1px solid #b0453e;
+  --alarm-clock-close-radius: 50%;
+  --alarm-clock-close-bg: radial-gradient(circle at 35% 30%, #ff9f98 0 2px, #e6483e 4px, #a52a24 5px);
+  --alarm-clock-close-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  --alarm-clock-lever-radius: 3px;
+  --alarm-clock-lever-bg: #e8e8e8;
+  --alarm-clock-lever-hover-bg: #dcdcdc;
+  --alarm-clock-lever-fg: #202020;
+  --alarm-clock-lever-shadow: inset 0 1px 0 #ffffff, 0 1px 1px rgba(0, 0, 0, 0.2);
+  --alarm-clock-lever-focus-outline: 2px solid rgba(20, 90, 200, 0.6);
+  --alarm-clock-mode-divider: 1px solid #c8c8c8;
+  --alarm-clock-mode-radius: 4px;
+  --alarm-clock-mode-bg: #f2f2f2;
+  --alarm-clock-mode-hover-bg: #e8f3ff;
+  --alarm-clock-mode-active-shadow: inset 0 0 0 2px #0a5bd0;
+  --alarm-clock-section-gap: 3px;
   --theme-lab-era-titlebar-minimize-bg: radial-gradient(circle at 43% 35%, #fff3bd 0 1px, #ffdc72 2px, #e6a839 5px, #9b6822 6px, #5c3c16 7px, transparent 7.5px);
   --theme-lab-sheet-display: grid;
   --theme-lab-sheet-position: absolute;
@@ -1318,7 +1344,9 @@ body[data-theme-family="aqua"]:not([data-theme="aqua"]) {
   --system-titlebar-inactive-control-filter: grayscale(1);
   --system-titlebar-inactive-title-color: #777777;
   --system-control-min-height: 22px;
-  --system-button-min-height: 24px;
+  /* Quaqua 9.1 regular push button face is ~21px of material in a 23px
+     frame; 22px box height keeps the 10.6 compact silhouette. */
+  --system-button-min-height: 22px;
   --system-button-small-height: 20px;
   --system-button-mini-height: 18px;
   --system-button-small-font-size: 11px;
@@ -1329,10 +1357,41 @@ body[data-theme-family="aqua"]:not([data-theme="aqua"]) {
   --system-button-padding-x: 12px;
   --titlebar-content-padding-inline: 7px;
   --titlebar-title-text-shadow: 0 1px 0 rgba(255, 255, 255, 0.72);
-  --traffic-light-size: 14px;
-  --traffic-light-gap: 18px;
-  --traffic-light-close-bg: radial-gradient(circle at 43% 35%, #ffd7d3 0 1px, #ed7a72 2px, #d6534b 5px, #9f3934 6px, transparent 6.5px);
-  --traffic-light-resize-bg: radial-gradient(circle at 43% 35%, #e6f7dc 0 1px, #91cd72 2px, #59ad43 5px, #397e30 6px, transparent 6.5px);
+  /* Real 10.6 capture: 12px lamps with ~22px center spacing. */
+  --traffic-light-size: 12px;
+  --traffic-light-gap: 22px;
+  --traffic-light-close-bg: radial-gradient(circle at 43% 35%, #ffd7d3 0 1px, #ed7a72 1.6px, #d6534b 4.6px, #9f3934 5.4px, transparent 5.8px);
+  --traffic-light-resize-bg: radial-gradient(circle at 43% 35%, #e6f7dc 0 1px, #91cd72 1.6px, #59ad43 4.6px, #397e30 5.4px, transparent 5.8px);
+  --theme-lab-era-titlebar-control-top: 5px;
+  --theme-lab-era-titlebar-control-size: 12px;
+  --theme-lab-era-titlebar-minimize-bg: radial-gradient(circle at 43% 35%, #fff3d0 0 1px, #f7c94a 1.6px, #e2a921 4.6px, #a97a12 5.4px, transparent 5.8px);
+  /* Alarm Clock DA: 10.6 silver chrome, light face, restrained controls. */
+  --alarm-clock-frame-border: 1px solid #8e8e8e;
+  --alarm-clock-frame-radius: 4px;
+  --alarm-clock-frame-shadow: 0 3px 7px rgba(0, 0, 0, 0.25);
+  --alarm-clock-title-bg: #e6e6e6;
+  --alarm-clock-surface-bg: #f2f2f2;
+  --alarm-clock-readout-bg: #ffffff;
+  --alarm-clock-divider: 1px solid #a3a3a3;
+  --alarm-clock-active-bg: linear-gradient(#69a3da, #1468b6);
+  --alarm-clock-active-fg: #ffffff;
+  --alarm-clock-close-size: 12px;
+  --alarm-clock-close-border: 1px solid #9f3934;
+  --alarm-clock-close-radius: 50%;
+  --alarm-clock-close-bg: radial-gradient(circle at 35% 30%, #ffd7d3 0 1px, #ed7a72 2px, #d6534b 5px, #9f3934 6px);
+  --alarm-clock-close-shadow: none;
+  --alarm-clock-lever-radius: 3px;
+  --alarm-clock-lever-bg: #e4e4e4;
+  --alarm-clock-lever-hover-bg: #dcdcdc;
+  --alarm-clock-lever-fg: #202020;
+  --alarm-clock-lever-shadow: inset 0 1px 0 #ffffff, 0 1px 1px rgba(0, 0, 0, 0.18);
+  --alarm-clock-lever-focus-outline: 1px solid #4a6c8f;
+  --alarm-clock-mode-divider: 1px solid #c0c0c0;
+  --alarm-clock-mode-radius: 4px;
+  --alarm-clock-mode-bg: #e6e6e6;
+  --alarm-clock-mode-hover-bg: #d6e4f0;
+  --alarm-clock-mode-active-shadow: inset 0 0 0 2px #216cb7;
+  --alarm-clock-section-gap: 2px;
   --select-control-min-height: 22px;
   --select-control-padding: 3px 25px 3px 7px;
   --select-control-border: 1px solid #a3a3a3;
@@ -1361,9 +1420,29 @@ body[data-theme-family="aqua"]:not([data-theme="aqua"]) {
   --theme-lab-toolbar-min-height: 34px;
   --theme-lab-toolbar-padding: 4px 7px;
   --theme-lab-toolbar-radius: 0;
+  /* Real 10.6 Finder toolbar (1440x900 capture): #d5d5d5 -> #bebebe ->
+     #a7a7a7. The Chromium Web-toolbar gradient stays the semantic token. */
+  --theme-lab-toolbar-bg: linear-gradient(#d5d5d5 0%, #bebebe 45%, #a7a7a7 100%);
   --theme-lab-nav-row-min-height: 24px;
   --theme-lab-nav-row-padding-block: 2px;
   --theme-lab-finder-row-min-height: 27px;
+  /* Theme Lab Finder surface renders the full 10.6 window: light titlebar,
+     unified toolbar, status strip, content. */
+  --theme-lab-finder-window-display: block;
+  --theme-lab-finder-window-border: 1px solid #8e8e8e;
+  --theme-lab-finder-window-radius: 5px 5px 2px 2px;
+  --theme-lab-finder-window-bg: #ffffff;
+  --theme-lab-finder-window-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  --theme-lab-finder-window-titlebar-display: flex;
+  --theme-lab-finder-window-titlebar-height: 22px;
+  --theme-lab-finder-window-titlebar-border: 1px solid #8a8a8a;
+  --theme-lab-finder-window-titlebar-bg: var(--system-titlebar-active-bg);
+  --theme-lab-finder-window-titlebar-shadow: inset 0 1px 0 #ffffff;
+  --theme-lab-finder-status-display: flex;
+  --theme-lab-finder-status-height: 19px;
+  --theme-lab-finder-status-border-top: 1px solid #515151;
+  /* Real 10.6 Finder status bar (1440x900 capture): #cbcbcb -> #a7a7a7. */
+  --theme-lab-finder-status-bg: linear-gradient(#cbcbcb 0%, #b2b2b2 45%, #a7a7a7 100%);
   --search-field-min-height: 20px;
   --search-field-padding: 2px 9px;
   --search-field-radius: 999px;
@@ -1395,9 +1474,11 @@ body[data-theme-family="aqua"]:not([data-theme="aqua"]) {
   --window-shadow: 0 10px 22px rgba(0, 0, 0, 0.34), 0 2px 4px rgba(0, 0, 0, 0.22);
   --active-window-shadow: var(--window-shadow);
   --inactive-window-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
-  /* Quaqua's 2x22 Snow sprite is a near-linear #e2 -> #a8 active ramp and
-     #f4 -> #d9 inactive ramp; the source dividers are #515 and #999. */
-  --system-titlebar-active-bg: linear-gradient(#e2e2e2 0%, #c1c1c1 40%, #a8a8a8 100%);
+  /* Real 10.6 capture (Wikipedia File:Mac OS X Snow Leopard screenshot.png,
+     1440x900): the title bar ramps #e2e2e2 -> #b0b0b0 with a #515151 bottom
+     edge. Quaqua's light Frame.titlePane is the Java render; real captures
+     win conflicts. */
+  --system-titlebar-active-bg: linear-gradient(#e2e2e2 0%, #cacaca 35%, #c0c0c0 100%);
   --system-titlebar-inactive-bg: linear-gradient(#f4f4f4 0%, #e6e6e6 40%, #d9d9d9 100%);
   --system-titlebar-background-origin: padding-box;
   --system-titlebar-background-clip: border-box;
@@ -1417,13 +1498,25 @@ body[data-theme-family="aqua"]:not([data-theme="aqua"]) {
   --toolbar-bg-inactive: linear-gradient(#e4e4e4, #d8d8d8);
   --toolbar-border: 1px solid #515151;
   --toolbar-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.66);
+  /* Quaqua jtree.png (10.6 source list): measured #dde4eb surface with a
+     light blue selection and dark label; the saturated Aqua selection stays
+     on content lists and menus. */
   --sidebar-bg: #dde4eb;
   --sidebar-bg-inactive: #ededed;
-  --selection-bg: linear-gradient(#5796d0, #2b73b9);
+  /* Real 10.6 Apple menu capture (512 Pixels): the open-menu selection is a
+     saturated blue ramp #3f56a2 -> #143ba3 with white labels. */
+  --selection-bg: linear-gradient(#3f56a2, #143ba3);
   --selection-fg: #ffffff;
+  /* Real 10.6 Finder list capture (Finnish Wikipedia 1440x900): content rows
+     select with light blue ~#d2e3ee and dark labels. */
+  --theme-lab-list-selected-bg: linear-gradient(#d6e4f0, #c3d7e9);
+  --theme-lab-list-selected-fg: #000000;
+  /* The real capture's source-list selection is a saturated blue (#5896d0 ->
+     #216cb7) with white labels; content lists use the light selection above. */
+  /* Real 10.6 source list (512 Pixels Finder-Home): #69a3da -> #1468b6. */
   --sidebar-selection-bg:
-    linear-gradient(#5896d0, #5896d0) top / 100% 1px no-repeat,
-    linear-gradient(#6ea6d6, #216cb7);
+    linear-gradient(#69a3da, #69a3da) top / 100% 1px no-repeat,
+    linear-gradient(#69a3da, #1468b6);
   --sidebar-selection-bg-unfocused:
     linear-gradient(#a2b1cb, #a2b1cb) top / 100% 1px no-repeat,
     linear-gradient(#b1bfd8, #8296b8);
@@ -1442,22 +1535,29 @@ body[data-theme-family="aqua"]:not([data-theme="aqua"]) {
   --system-border: 1px solid #a5a5a5;
   --system-inset: inset 0 1px 2px rgba(0, 0, 0, 0.2), inset 0 -1px 0 #ffffff;
   --control-radius: 4px;
-  --btn-border-color: #a5a5a5;
-  --btn-radius: 999px;
-  --btn-bg: linear-gradient(#ffffff 0%, #f8f8f8 43%, #d3d3d3 52%, #f4f4f4 100%);
-  --btn-shadow: inset 0 1px 0 #ffffff, 0 1px 2px rgba(0, 0, 0, 0.24);
-  --btn-hover-bg: linear-gradient(#ffffff 0%, #f5fbff 43%, #c5dfee 52%, #f2f9fd 100%);
+  /* Quaqua 9.1 Button.borders.png frame 0 (enabled): dark outline, ~6px
+     corner arc, silver fill #f6f6f6 -> #ebebeb -> #d9d9d9 (midline) ->
+     #e6e6e6 -> #fdfdfd, bottom drop shadow. */
+  --btn-border-color: #7d7d7d;
+  --btn-radius: 6px;
+  --btn-bg: linear-gradient(#f6f6f6 0%, #ebebeb 38%, #d9d9d9 44%, #e6e6e6 58%, #fdfdfd 100%);
+  --btn-shadow: inset 0 1px 0 #ffffff, inset 0 0 0 1px rgba(255, 255, 255, 0.35), 0 1px 2px rgba(0, 0, 0, 0.28);
+  --btn-hover-bg: linear-gradient(#f8fbff 0%, #eef4fb 38%, #d8e4ee 44%, #eaf1f7 58%, #ffffff 100%);
   --btn-hover-fg: #111111;
   --btn-hover-shadow: inset 0 1px 0 #ffffff, 0 1px 2px rgba(28, 92, 145, 0.22);
   --btn-active-bg: linear-gradient(#d8d8d8 0%, #b7b7b7 48%, #9c9c9c 54%, #d2d2d2 100%);
   --btn-active-fg: #111111;
   --btn-active-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.26);
-  --btn-default-bg: linear-gradient(#e7f8ff 0%, #a8dfff 43%, #4ba9e3 52%, #9bd7f6 100%);
-  --btn-default-fg: #111111;
-  --btn-default-text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
-  --btn-default-shadow: 0 0 0 1px #ffffff, 0 0 0 2px #4a91c3, inset 0 1px 0 #ffffff, 0 1px 2px rgba(0, 0, 0, 0.22);
-  --btn-default-active-bg: linear-gradient(#9dd8f8, #3c94cf 52%, #8acbea);
-  --btn-default-active-fg: #111111;
+  /* Real 10.6 dialogs (512 Pixels Empty-Trash / Eject-Warning): the default
+     button is a light blue ramp #c1dbf2 -> #70acdd -> #c5f0fb with dark
+     labels and no dark outline. */
+  --btn-default-bg: linear-gradient(#c1dbf2 0%, #a9cdec 20%, #8ec7e9 35%, #70acdd 48%, #84b9e3 60%, #a0cff6 80%, #c5f0fb 100%);
+  --btn-default-fg: #1a1a1a;
+  --btn-default-text-shadow: none;
+  --btn-default-border-color: #b9cfe8;
+  --btn-default-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 1px 2px rgba(0, 0, 0, 0.2);
+  --btn-default-active-bg: linear-gradient(#a8c8e8, #4f94cf 52%, #84c4ec);
+  --btn-default-active-fg: #ffffff;
   --field-bg: #ffffff;
   --field-focus-bg: #ffffff;
   --field-border: 1px solid #a3a3a3;
@@ -1470,14 +1570,29 @@ body[data-theme-family="aqua"]:not([data-theme="aqua"]) {
   --choice-border: 1px solid #949494;
   --choice-radius: 3px;
   --choice-shadow: inset 0 1px 0 #ffffff;
-  --choice-checked-bg: #dbeeff;
+  /* Quaqua 9.1 CheckBox.icons.png frame 2: the 10.6 checked box is a
+     vertical blue gradient (light top, saturated mid, light bottom) with a
+     dark check. The flat light-blue fill was an approximation. */
+  --choice-checked-bg: #4392e1;
+  --choice-checked-bg-image: linear-gradient(to bottom, #c6d5ee 0%, #70a4db 8%, #4392e1 42%, #529eec 50%, #71bcff 67%, #92e1ff 83%, #b4ffff 100%);
+  /* Quaqua 9.1 CheckBox.icons.png frame 2 draws a dark two-pixel check,
+     not the shared one-pixel X used by earlier eras. */
+  --choice-checkmark-image: url("./assets/themes/snow-leopard/checkbox-checked-dark.svg");
   --radio-bg: linear-gradient(#ffffff, #dedede);
   --radio-border: 1px solid #949494;
   --radio-shadow: inset 0 1px 0 #ffffff;
   --radio-image: none;
   --radio-focus-image: none;
-  --radio-checked-image: radial-gradient(circle, #397cb6 0 3px, #b8d9ef 3px 4px, transparent 4.5px);
+  /* Quaqua RadioButton.icons.png frame 2: the 10.6 selected radio fills the
+     circle with the same blue gradient and a dark center dot. */
+  --radio-checked-image:
+    radial-gradient(circle, #000000 0 1px, transparent 1.6px),
+    linear-gradient(to bottom, #c6d5ee 0%, #70a4db 8%, #4392e1 42%, #529eec 50%, #71bcff 67%, #92e1ff 83%, #b4ffff 100%);
   --radio-checked-focus-image: var(--radio-checked-image);
+  /* Theme Lab draws the fixture through the same two layers as the app
+     recipe; a single layer would be compressed to the 7px dot size. */
+  --theme-lab-radio-checked-bg: var(--radio-checked-image);
+  --theme-lab-radio-dot-content: none;
   --menu-bar-bg: linear-gradient(#f4f4f4, #d8d8d8);
   --menu-bar-border: 1px solid #9f9f9f;
   --menu-bar-shadow: inset 0 1px 0 #ffffff;
@@ -1486,15 +1601,26 @@ body[data-theme-family="aqua"]:not([data-theme="aqua"]) {
   --menu-panel-radius: 4px;
   --menu-panel-shadow: 0 4px 12px rgba(0, 0, 0, 0.32);
   --menu-panel-backdrop-filter: none;
-  --menu-button-active-bg: var(--selection-bg);
-  --menu-button-active-fg: var(--selection-fg);
-  --menu-item-active-bg: var(--selection-bg);
-  --menu-item-active-fg: var(--selection-fg);
+  /* Real 10.10 Apple menu capture (512 Pixels, 1:1 at 2x): the open-menu
+     selection is blue #2176e9 -> #5e9aec -> #257aec with white labels.
+     (GTK's menuitem:selected #5A5A5A is the GTK convention; real wins.) */
+  --menu-button-active-bg: linear-gradient(#2176e9, #5e9aec 50%, #257aec);
+  --menu-button-active-fg: #ffffff;
+  --menu-item-active-bg: linear-gradient(#2176e9, #5e9aec 50%, #257aec);
+  --menu-item-active-fg: #ffffff;
+  /* Real 10.10 Finder capture (512 Pixels, 1:1): content list selection is
+     light blue ~#bde7fa with dark labels; #0e6bff stays the accent blue. */
+  --theme-lab-list-selected-bg: #bde7fa;
+  --theme-lab-list-selected-fg: #000000;
   --window-frame-lane: 15px;
-  --window-frame-track-bg: linear-gradient(90deg, #d2d2d2, #ffffff 48%, #c7c7c7);
+  /* Quaqua ScrollBar.track.v.png (15px tile): #b8b8b8 -> #fcfcfc ->
+     #efefef horizontal ramp. */
+  --window-frame-track-bg: linear-gradient(90deg, #b8b8b8 0%, #c8c8c8 14%, #dbdbdb 29%, #ebebeb 43%, #f6f6f6 57%, #fcfcfc 79%, #efefef 100%);
   --window-frame-track-border: 1px solid #9b9b9b;
-  --window-frame-thumb-bg: linear-gradient(90deg, #8ed9ff, #168ddd 48%, #6cc9ff);
-  --window-frame-thumb-border: 1px solid #657f92;
+  /* Quaqua ScrollBar.thumb.v.png frame 5 (active): dark blue left edge
+     (#0039b3) ramping to bright cyan right edge (#99e0ff) with a mid dip. */
+  --window-frame-thumb-bg: linear-gradient(90deg, #0a4cbd 0%, #76a2dc 10%, #8fb9e7 24%, #4990e2 45%, #5da1ee 55%, #7ab7f7 70%, #99e0ff 88%, #8ccfff 100%);
+  --window-frame-thumb-border: 1px solid #0b3f8f;
   --window-frame-thumb-radius: 7px;
   --window-frame-arrow-bg: linear-gradient(#ffffff, #d4d4d4 52%, #f5f5f5);
   --scrollbar-track: var(--window-frame-track-bg);
@@ -1514,9 +1640,12 @@ body[data-theme-family="aqua"]:not([data-theme="aqua"]) {
   --scrollbar-compact-radius: 5px;
   --tab-radius: 5px 5px 0 0;
   --tab-overlap: 0;
-  --tab-bg: linear-gradient(#fafafa, #dfdfdf);
-  --tab-hover-bg: linear-gradient(#ffffff, #e8f3fa);
-  --tab-active-bg: linear-gradient(#e3f4ff, #83bde3 52%, #c6e8fa);
+  /* 10.5+ preference tabs are neutral: gray unselected, white selected.
+     The blue-gradient selected tab is a Jaguar (10.2) holdover. Quaqua's
+     Panther/Tiger and later tab renderings are gray/white throughout. */
+  --tab-bg: linear-gradient(#f4f4f4, #d4d4d4);
+  --tab-hover-bg: linear-gradient(#ffffff, #f0f0f0);
+  --tab-active-bg: linear-gradient(#ffffff, #f2f2f2 55%, #e8e8e8);
   --tab-active-fg: #111111;
   --system-check-size: 14px;
   --system-radio-size: 14px;
@@ -1568,6 +1697,64 @@ body[data-theme="yosemite"] {
   --theme-lab-nav-row-min-height: 26px;
   --theme-lab-nav-row-padding-block: 2px;
   --theme-lab-finder-row-min-height: 28px;
+  /* Theme Lab Finder surface renders the full 10.10 window: 22px title bar
+     with 12px traffic lights, the 36px unified toolbar, status, content. */
+  --theme-lab-finder-window-display: block;
+  --theme-lab-finder-window-border: 1px solid #afafaf;
+  --theme-lab-finder-window-radius: 6px 6px 0 0;
+  --theme-lab-finder-window-bg: #ffffff;
+  --theme-lab-finder-window-shadow: 0 4px 10px rgba(0, 0, 0, 0.26);
+  --theme-lab-finder-window-titlebar-display: flex;
+  --theme-lab-finder-window-titlebar-height: 22px;
+  --theme-lab-finder-window-titlebar-border: 0;
+  --theme-lab-finder-window-titlebar-bg: var(--system-titlebar-active-bg);
+  --theme-lab-finder-window-titlebar-shadow: none;
+  --theme-lab-finder-status-display: flex;
+  --theme-lab-finder-status-height: 20px;
+  --theme-lab-finder-status-border-top: 1px solid #d5d5d5;
+  --theme-lab-finder-status-bg: #f6f6f6;
+  /* Yosemite-gtk-theme titlebutton-{close,minimize,maximize}.png: 12px
+     flat red/yellow/green lamps with a darker rim. */
+  --traffic-light-size: 12px;
+  --traffic-light-gap: 18px;
+  --traffic-light-close-bg:
+    radial-gradient(circle at 40% 33%, rgba(255, 255, 255, 0.30) 0 1px, rgba(255, 255, 255, 0) 2.6px),
+    radial-gradient(circle at 50% 50%, #f25056 0 5.8px, #d63a44 6.2px, rgba(214, 58, 68, 0) 6.7px);
+  --traffic-light-resize-bg:
+    radial-gradient(circle at 40% 33%, rgba(255, 255, 255, 0.30) 0 1px, rgba(255, 255, 255, 0) 2.6px),
+    radial-gradient(circle at 50% 50%, #39ea49 0 5.8px, #23c331 6.2px, rgba(35, 195, 49, 0) 6.7px);
+  --theme-lab-era-titlebar-control-top: 5px;
+  --theme-lab-era-titlebar-control-size: 12px;
+  --theme-lab-era-titlebar-minimize-bg:
+    radial-gradient(circle at 40% 33%, rgba(255, 255, 255, 0.30) 0 1px, rgba(255, 255, 255, 0) 2.6px),
+    radial-gradient(circle at 50% 50%, #fac636 0 5.8px, #e9b121 6.2px, rgba(233, 177, 33, 0) 6.7px);
+  /* Alarm Clock: 10.10 flat light chrome, thin borders, blue accent. */
+  --alarm-clock-frame-border: 1px solid rgba(0, 0, 0, 0.11);
+  --alarm-clock-frame-radius: 6px;
+  --alarm-clock-frame-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);
+  --alarm-clock-title-bg: #f5f5f5;
+  --alarm-clock-surface-bg: #ffffff;
+  --alarm-clock-readout-bg: #ffffff;
+  --alarm-clock-divider: 1px solid #d5d5d5;
+  --alarm-clock-active-bg: #0e6bff;
+  --alarm-clock-active-fg: #ffffff;
+  --alarm-clock-close-size: 12px;
+  --alarm-clock-close-border: 0;
+  --alarm-clock-close-radius: 50%;
+  --alarm-clock-close-bg: radial-gradient(circle at 40% 33%, #f7787d 0 1px, #f25056 2.5px, #d63a44 5.8px);
+  --alarm-clock-close-shadow: none;
+  --alarm-clock-lever-radius: 4px;
+  --alarm-clock-lever-bg: #ffffff;
+  --alarm-clock-lever-hover-bg: #f0f0f0;
+  --alarm-clock-lever-fg: #363636;
+  --alarm-clock-lever-shadow: 0 1px 1px rgba(16, 16, 16, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.86);
+  --alarm-clock-lever-focus-outline: 1px solid #74aaff;
+  --alarm-clock-mode-divider: 0;
+  --alarm-clock-mode-radius: 4px;
+  --alarm-clock-mode-bg: #f5f5f5;
+  --alarm-clock-mode-hover-bg: #e8f3ff;
+  --alarm-clock-mode-active-shadow: inset 0 0 0 2px #0e6bff;
+  --alarm-clock-section-gap: 2px;
   --ink: #242424;
   --paper: rgba(245, 245, 245, 0.97);
   --panel: rgba(229, 229, 229, 0.95);
@@ -1647,23 +1834,42 @@ body[data-theme="yosemite"] {
   --btn-default-active-fg: #ffffff;
   --field-bg: #ffffff;
   --field-focus-bg: #ffffff;
-  --field-border: 1px solid rgba(0, 0, 0, 0.2);
+  /* gtk-light.css entry: 1px rgba(0,0,0,0.11) border, outer drop shadows and
+     a hairline inset ring; the old 0.2 border was heavier than 10.10. */
+  --field-border: 1px solid rgba(0, 0, 0, 0.11);
   --field-radius: 5px;
   --select-radius: 5px;
-  --field-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+  --field-shadow: 0 1px 1px rgba(16, 16, 16, 0.04), 0 1px 2px rgba(16, 16, 16, 0.01), inset 0 0 0 1px rgba(0, 0, 0, 0.01);
   --field-focus-border: 1px solid #4c97fe;
   --field-focus-ring: 0 0 0 3px rgba(76, 151, 254, 0.36);
   --choice-bg: #ffffff;
-  --choice-border: 1px solid rgba(0, 0, 0, 0.26);
-  --choice-radius: 4px;
+  /* Yosemite-gtk-theme checkbox-unchecked.png / radio-unchecked.png: the
+     10.10 border is a light steel blue, not a neutral gray. */
+  --choice-border: 1px solid #d0d7e6;
+  /* Yosemite-gtk checkbox asset rect uses rx=2. */
+  --choice-radius: 2px;
   --choice-shadow: inset 0 1px 0 #ffffff;
+  /* checkbox-checked.png: flat #0e6bff fill with a white two-stroke check. */
+  --choice-checked-bg: #0e6bff;
+  --choice-checkmark-image: url("./assets/themes/yosemite/checkbox-check-white.svg");
+  /* The checked fill reaches the rounded corner edge: no gray outline and
+     no white inset highlight in the Yosemite-gtk asset. */
+  --choice-checked-border-color: transparent;
+  --choice-checked-shadow: none;
   --radio-bg: #ffffff;
-  --radio-border: 1px solid rgba(0, 0, 0, 0.26);
+  --radio-border: 1px solid #d0d7e6;
   --radio-shadow: inset 0 1px 0 #ffffff;
   --radio-image: none;
   --radio-focus-image: none;
-  --radio-checked-image: radial-gradient(circle, #0e6bff 0 3px, transparent 3.5px);
+  /* radio-checked.png: #0e6bff circle with a white center dot. */
+  --radio-checked-image:
+    radial-gradient(circle, #ffffff 0 1.3px, rgba(255, 255, 255, 0.65) 2.1px, rgba(14, 107, 255, 0) 2.9px),
+    linear-gradient(to bottom, #0e6bff, #0e6bff);
   --radio-checked-focus-image: var(--radio-checked-image);
+  --theme-lab-checkbox-checkmark-image: var(--choice-checkmark-image);
+  --theme-lab-checkbox-mark-content: none;
+  --theme-lab-radio-checked-bg: var(--radio-checked-image);
+  --theme-lab-radio-dot-content: none;
   --menu-bar-bg: rgba(248, 248, 248, 0.9);
   --menu-bar-border: 1px solid rgba(0, 0, 0, 0.14);
   --menu-bar-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
@@ -2520,6 +2726,7 @@ body[data-theme-family="aqua"]:not([data-theme="aqua"]) :where(.btn) {
 /* The 10.6 button states stay on the silver model: the default button is
    the blue ring emphasis, hover/active darken, disabled flattens. */
 body[data-theme-family="aqua"]:not([data-theme="aqua"]) .btn.default {
+  border-color: var(--btn-default-border-color, var(--btn-border-color));
   background: var(--btn-default-bg);
   color: var(--btn-default-fg);
   text-shadow: var(--btn-default-text-shadow);
@@ -2770,7 +2977,7 @@ body[data-theme="yosemite"] .theme-lab-form-grid input[type="search"] {
 }
 
 body[data-theme="yosemite"] .theme-lab-menu {
-  padding-block: 7px;
+  padding-block: 10px;
 }
 
 body[data-theme="yosemite"] .theme-lab-split-view {

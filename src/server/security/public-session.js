@@ -23,6 +23,7 @@ const unprotectedPaths = new Set([
   "/api/capabilities",
   "/api/cloud/models",
   "/api/session/turnstile",
+  "/api/session/status",
 ]);
 
 /** @type {Map<string, { startedAt: number, count: number }>} */

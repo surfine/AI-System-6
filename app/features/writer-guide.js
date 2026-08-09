@@ -147,6 +147,16 @@ async function startGuidedQuickDraft() {
   saveDeskState();
 }
 
+function recentProjectDocument() {
+  const project = typeof getActiveProject === "function" ? getActiveProject() : null;
+  if (!project) return null;
+  const candidates = [...(Array.isArray(chatFiles) ? chatFiles : [])]
+    .filter((file) => typeof isInActiveProject === "function" && isInActiveProject(file));
+  return candidates.sort(
+    (left, right) => Date.parse(right.updatedAt || right.createdAt || 0) - Date.parse(left.updatedAt || left.createdAt || 0)
+  )[0] || null;
+}
+
 async function continueLastProject() {
   guideSeen = true;
   await closeWindow("guide");
@@ -155,12 +165,35 @@ async function continueLastProject() {
     await openWindow("projects");
     return false;
   }
+
+  // Resume the real working scene first: project, application, document,
+  // window, selection and scroll all live in the Working Session snapshot.
+  // Only when that snapshot is missing or points at a deleted object do we
+  // fall back to a simpler destination.
+  if (typeof restoreWorkingSession === "function") {
+    const resumed = await restoreWorkingSession();
+    if (resumed) {
+      saveDeskState();
+      return true;
+    }
+  }
+
+  // Fallback: Draft Desk body → most recent project document → Project Hard
+  // Disk. No recovery wizard, no new dashboard.
   const hasDraft = Boolean(String(project.quickDraft?.workspace?.body || "").trim());
   if (hasDraft) {
     await ensureQuickDraftModule?.();
     await window.AISystem6QuickDraft?.open?.();
   } else {
-    await openWindow("documents");
+    const recent = recentProjectDocument();
+    if (recent) {
+      await openWindow("documents");
+      if (typeof openDocumentFileOrAttachToClioTalk === "function") {
+        openDocumentFileOrAttachToClioTalk(recent);
+      }
+    } else {
+      await openWindow("projects");
+    }
   }
   saveDeskState();
   return true;
