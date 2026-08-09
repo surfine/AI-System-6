@@ -5,9 +5,18 @@
   "target": "Mac OS 9.0 Platinum",
   "fixtureRevision": "theme-lab-fidelity-v1",
   "capture": {
-    "viewport": { "width": 1280, "height": 1040 },
-    "screen": { "width": 1280, "height": 1040 },
-    "windowSize": { "width": 1080, "height": 730 },
+    "viewport": {
+      "width": 1280,
+      "height": 1040
+    },
+    "screen": {
+      "width": 1280,
+      "height": 1040
+    },
+    "windowSize": {
+      "width": 1080,
+      "height": 730
+    },
     "deviceScaleFactor": 1,
     "zoom": 1,
     "locale": "en-US",
@@ -19,7 +28,7 @@
     "playwrightVersion": "1.62.1",
     "browserRevision": "1234",
     "browserVersion": "151.0.7922.34",
-    "contentSha256": "ec54a8e0775cc7c23e3454d36d983e473e1ce888192de6fa68cac2f7f1252421",
+    "contentSha256": "dcf0c97cd6385b4a49c28665c719574bffe62c1eadbaf43127a005cdcb05bfba",
     "historicalFontTarget": "Charcoal 12 pt",
     "legalFallback": "OFL-licensed Asap variable font",
     "fontProbeSelectors": [
@@ -29,10 +38,26 @@
       ".theme-lab-dialog--platinum-about .btn.default"
     ],
     "fontAssertions": [
-      { "selector": ".theme-lab-controls h3", "requiredFamily": "Asap", "isCustomFont": true },
-      { "selector": ".theme-lab-mini-window.is-active span", "requiredFamily": "Asap", "isCustomFont": true },
-      { "selector": ".theme-lab-form-grid select", "requiredFamily": "Asap", "isCustomFont": true },
-      { "selector": ".theme-lab-dialog--platinum-about .btn.default", "requiredFamily": "Asap", "isCustomFont": true }
+      {
+        "selector": ".theme-lab-controls h3",
+        "requiredFamily": "Asap",
+        "isCustomFont": true
+      },
+      {
+        "selector": ".theme-lab-mini-window.is-active span",
+        "requiredFamily": "Asap",
+        "isCustomFont": true
+      },
+      {
+        "selector": ".theme-lab-form-grid select",
+        "requiredFamily": "Asap",
+        "isCustomFont": true
+      },
+      {
+        "selector": ".theme-lab-dialog--platinum-about .btn.default",
+        "requiredFamily": "Asap",
+        "isCustomFont": true
+      }
     ],
     "requiredResources": [
       "/assets/fonts/platinum/Asap-Variable.woff2",
@@ -66,17 +91,59 @@
       "/assets/vendor/classic-stylesheets/macos9/"
     ],
     "fixtureAssertions": [
-      { "selector": ".theme-lab-open-list-capture", "count": 1, "visible": true },
-      { "selector": ".theme-lab-open-list-items > button", "count": 5 },
-      { "selector": ".theme-lab-open-list-items > button:first-child", "count": 1, "attributes": { "aria-selected": "true" } },
-      { "selector": ".theme-lab-open-scrollbar .theme-lab-scrollbar-thumb", "count": 0 },
-      { "selector": ".theme-lab-menu-capture", "count": 1, "visible": true },
-      { "selector": ".theme-lab-menu--platinum > button", "count": 14 },
-      { "selector": ".theme-lab-platinum-disclosure", "count": 4 },
-      { "selector": ".theme-lab-about-capture", "count": 1, "visible": true },
-      { "selector": ".theme-lab-dialog--platinum-about > button", "count": 1, "text": "OK" },
-      { "selector": ".theme-lab-menu.theme-lab-generic-fixture", "count": 1, "visible": false },
-      { "selector": ".theme-lab-dialog.theme-lab-generic-fixture", "count": 1, "visible": false }
+      {
+        "selector": ".theme-lab-open-list-capture",
+        "count": 1,
+        "visible": true
+      },
+      {
+        "selector": ".theme-lab-open-list-items > button",
+        "count": 5
+      },
+      {
+        "selector": ".theme-lab-open-list-items > button:first-child",
+        "count": 1,
+        "attributes": {
+          "aria-selected": "true"
+        }
+      },
+      {
+        "selector": ".theme-lab-open-scrollbar .theme-lab-scrollbar-thumb",
+        "count": 0
+      },
+      {
+        "selector": ".theme-lab-menu-capture",
+        "count": 1,
+        "visible": true
+      },
+      {
+        "selector": ".theme-lab-menu--platinum > button",
+        "count": 14
+      },
+      {
+        "selector": ".theme-lab-platinum-disclosure",
+        "count": 4
+      },
+      {
+        "selector": ".theme-lab-about-capture",
+        "count": 1,
+        "visible": true
+      },
+      {
+        "selector": ".theme-lab-dialog--platinum-about > button",
+        "count": 1,
+        "text": "OK"
+      },
+      {
+        "selector": ".theme-lab-menu.theme-lab-generic-fixture",
+        "count": 1,
+        "visible": false
+      },
+      {
+        "selector": ".theme-lab-dialog.theme-lab-generic-fixture",
+        "count": 1,
+        "visible": false
+      }
     ]
   },
   "output": {
@@ -163,14 +230,37 @@
       "label": "Active title bar / window frame",
       "reference": {
         "source": "guidebook.macos90.appearance.appearance-tab",
-        "crop": { "x": 0, "y": 0, "width": 477, "height": 22 }
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "width": 477,
+          "height": 22
+        }
       },
       "current": {
         "selector": ".theme-lab-window",
-        "crop": { "x": 0, "y": 0, "width": 477, "height": 22 },
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "width": 477,
+          "height": 22
+        },
         "setup": [
-          { "selector": ".theme-lab-window", "style": { "width": "476px", "minWidth": "476px", "maxWidth": "476px" }, "attributes": { "class": "window theme-lab-window is-active" } },
-          { "selector": ".theme-lab-window > .title-bar h2", "text": "Appearance" }
+          {
+            "selector": ".theme-lab-window",
+            "style": {
+              "width": "476px",
+              "minWidth": "476px",
+              "maxWidth": "476px"
+            },
+            "attributes": {
+              "class": "window theme-lab-window is-active"
+            }
+          },
+          {
+            "selector": ".theme-lab-window > .title-bar h2",
+            "text": "Appearance"
+          }
         ]
       }
     },
@@ -179,14 +269,37 @@
       "label": "Inactive title bar / window frame",
       "reference": {
         "source": "guidebook.macos90.active-inactive",
-        "crop": { "x": 92, "y": 28, "width": 424, "height": 22 }
+        "crop": {
+          "x": 92,
+          "y": 28,
+          "width": 424,
+          "height": 22
+        }
       },
       "current": {
         "selector": ".theme-lab-window",
-        "crop": { "x": 0, "y": 0, "width": 424, "height": 22 },
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "width": 424,
+          "height": 22
+        },
         "setup": [
-          { "selector": ".theme-lab-window", "style": { "width": "424px", "minWidth": "424px", "maxWidth": "424px" }, "attributes": { "class": "window theme-lab-window" } },
-          { "selector": ".theme-lab-window > .title-bar h2", "text": "Web Sharing" }
+          {
+            "selector": ".theme-lab-window",
+            "style": {
+              "width": "424px",
+              "minWidth": "424px",
+              "maxWidth": "424px"
+            },
+            "attributes": {
+              "class": "window theme-lab-window"
+            }
+          },
+          {
+            "selector": ".theme-lab-window > .title-bar h2",
+            "text": "Web Sharing"
+          }
         ]
       }
     },
@@ -195,14 +308,38 @@
       "label": "Selected Appearance tab",
       "reference": {
         "source": "guidebook.macos90.appearance.appearance-tab",
-        "crop": { "x": 81, "y": 31, "width": 103, "height": 24 }
+        "crop": {
+          "x": 81,
+          "y": 31,
+          "width": 103,
+          "height": 24
+        }
       },
       "current": {
         "selector": ".theme-lab-tabs > button.is-selected",
-        "crop": { "x": 0, "y": 0, "width": 103, "height": 24 },
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "width": 103,
+          "height": 24
+        },
         "setup": [
-          { "selector": ".theme-lab-tabs > button.is-selected", "style": { "width": "103px", "minWidth": "103px", "maxWidth": "103px", "flex": "0 0 103px" }, "text": "Appearance" },
-          { "selector": ".theme-lab-tabs > button:not(.is-selected)", "style": { "display": "none" } }
+          {
+            "selector": ".theme-lab-tabs > button.is-selected",
+            "style": {
+              "width": "103px",
+              "minWidth": "103px",
+              "maxWidth": "103px",
+              "flex": "0 0 103px"
+            },
+            "text": "Appearance"
+          },
+          {
+            "selector": ".theme-lab-tabs > button:not(.is-selected)",
+            "style": {
+              "display": "none"
+            }
+          }
         ]
       }
     },
@@ -211,16 +348,45 @@
       "label": "Normal pop-up button",
       "reference": {
         "source": "guidebook.macos90.appearance.appearance-tab",
-        "crop": { "x": 127, "y": 75, "width": 180, "height": 20 }
+        "crop": {
+          "x": 127,
+          "y": 75,
+          "width": 180,
+          "height": 20
+        }
       },
       "current": {
         "selector": ".theme-lab-form-grid > label:nth-child(4) .system-select-button",
-        "crop": { "x": 0, "y": 0, "width": 180, "height": 20 },
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "width": 180,
+          "height": 20
+        },
         "setup": [
-          { "selector": ".theme-lab-form-grid > label:nth-child(4) .select-wrap", "style": { "width": "180px" } },
-          { "selector": ".theme-lab-form-grid > label:nth-child(4) select", "style": { "width": "180px" } },
-          { "selector": ".theme-lab-form-grid > label:nth-child(4) .system-select-button", "text": "Apple platinum" },
-          { "selector": ".theme-lab-form-grid > label:nth-child(4) option", "text": "Apple platinum", "attributes": { "label": "Apple platinum" } }
+          {
+            "selector": ".theme-lab-form-grid > label:nth-child(4) .select-wrap",
+            "style": {
+              "width": "180px"
+            }
+          },
+          {
+            "selector": ".theme-lab-form-grid > label:nth-child(4) select",
+            "style": {
+              "width": "180px"
+            }
+          },
+          {
+            "selector": ".theme-lab-form-grid > label:nth-child(4) .system-select-button",
+            "text": "Apple platinum"
+          },
+          {
+            "selector": ".theme-lab-form-grid > label:nth-child(4) option",
+            "text": "Apple platinum",
+            "attributes": {
+              "label": "Apple platinum"
+            }
+          }
         ]
       }
     },
@@ -229,11 +395,21 @@
       "label": "Checked checkbox",
       "reference": {
         "source": "guidebook.macos90.appearance.options-tab",
-        "crop": { "x": 51, "y": 74, "width": 12, "height": 12 }
+        "crop": {
+          "x": 51,
+          "y": 74,
+          "width": 12,
+          "height": 12
+        }
       },
       "current": {
         "selector": ".theme-lab-choice-matrix > label:first-child > input[type=checkbox]",
-        "crop": { "x": 0, "y": 0, "width": 12, "height": 12 }
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "width": 12,
+          "height": 12
+        }
       }
     },
     {
@@ -241,11 +417,21 @@
       "label": "Unchecked checkbox",
       "reference": {
         "source": "guidebook.macos90.appearance.options-tab",
-        "crop": { "x": 51, "y": 137, "width": 12, "height": 12 }
+        "crop": {
+          "x": 51,
+          "y": 137,
+          "width": 12,
+          "height": 12
+        }
       },
       "current": {
         "selector": ".theme-lab-choice-matrix > label:nth-child(2) > input[type=checkbox]",
-        "crop": { "x": 0, "y": 0, "width": 12, "height": 12 }
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "width": 12,
+          "height": 12
+        }
       }
     },
     {
@@ -253,11 +439,21 @@
       "label": "Default OK button and 3px ring",
       "reference": {
         "source": "guidebook.macos90.about-application",
-        "crop": { "x": 185, "y": 64, "width": 73, "height": 32 }
+        "crop": {
+          "x": 185,
+          "y": 64,
+          "width": 73,
+          "height": 32
+        }
       },
       "current": {
         "selector": ".theme-lab-dialog--platinum-about .btn.default",
-        "crop": { "x": -4, "y": -7, "width": 73, "height": 32 }
+        "crop": {
+          "x": -4,
+          "y": -7,
+          "width": 73,
+          "height": 32
+        }
       }
     },
     {
@@ -265,11 +461,21 @@
       "label": "Open dialog list, selection, and scrollbar",
       "reference": {
         "source": "guidebook.macos90.open-file",
-        "crop": { "x": 124, "y": 35, "width": 218, "height": 128 }
+        "crop": {
+          "x": 124,
+          "y": 35,
+          "width": 218,
+          "height": 128
+        }
       },
       "current": {
         "selector": ".theme-lab-open-list-capture",
-        "crop": { "x": 0, "y": 0, "width": 218, "height": 128 }
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "width": 218,
+          "height": 128
+        }
       }
     },
     {
@@ -277,11 +483,21 @@
       "label": "Tracked Apple menu",
       "reference": {
         "source": "guidebook.macos90.apple-menu",
-        "crop": { "x": 0, "y": 19, "width": 199, "height": 259 }
+        "crop": {
+          "x": 0,
+          "y": 19,
+          "width": 199,
+          "height": 259
+        }
       },
       "current": {
         "selector": ".theme-lab-menu-capture",
-        "crop": { "x": 0, "y": 0, "width": 199, "height": 259 }
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "width": 199,
+          "height": 259
+        }
       }
     },
     {
@@ -289,11 +505,21 @@
       "label": "About application alert",
       "reference": {
         "source": "guidebook.macos90.about-application",
-        "crop": { "x": 0, "y": 0, "width": 273, "height": 110 }
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "width": 273,
+          "height": 110
+        }
       },
       "current": {
         "selector": ".theme-lab-about-capture",
-        "crop": { "x": 0, "y": 0, "width": 273, "height": 110 }
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "width": 273,
+          "height": 110
+        }
       }
     }
   ]

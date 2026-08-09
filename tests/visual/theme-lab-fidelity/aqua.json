@@ -5,9 +5,18 @@
   "target": "Mac OS X 10.2 Jaguar Aqua",
   "fixtureRevision": "theme-lab-fidelity-v1",
   "capture": {
-    "viewport": { "width": 1280, "height": 1040 },
-    "screen": { "width": 1280, "height": 1040 },
-    "windowSize": { "width": 1080, "height": 730 },
+    "viewport": {
+      "width": 1280,
+      "height": 1040
+    },
+    "screen": {
+      "width": 1280,
+      "height": 1040
+    },
+    "windowSize": {
+      "width": 1080,
+      "height": 730
+    },
     "deviceScaleFactor": 1,
     "zoom": 1,
     "locale": "en-US",
@@ -19,7 +28,7 @@
     "playwrightVersion": "1.62.1",
     "browserRevision": "1234",
     "browserVersion": "151.0.7922.34",
-    "contentSha256": "374070f61ae9f038a3fdc4b3751b893a8b8e3ff004bd2a81073d17319e37a93f",
+    "contentSha256": "dcf0c97cd6385b4a49c28665c719574bffe62c1eadbaf43127a005cdcb05bfba",
     "historicalFontTarget": "Lucida Grande 13 pt",
     "fontProbeSelectors": [
       ".theme-lab-controls h3",
@@ -28,10 +37,26 @@
       ".theme-lab-group .theme-lab-tabs button.is-selected"
     ],
     "fontAssertions": [
-      { "selector": ".theme-lab-controls h3", "requiredFamily": "Lucida Grande", "isCustomFont": false },
-      { "selector": ".theme-lab-button-row .btn:first-child", "requiredFamily": "Lucida Grande", "isCustomFont": false },
-      { "selector": ".theme-lab-form-grid > label:nth-child(4) .system-select-button", "requiredFamily": "Lucida Grande", "isCustomFont": false },
-      { "selector": ".theme-lab-group .theme-lab-tabs button.is-selected", "requiredFamily": "Lucida Grande", "isCustomFont": false }
+      {
+        "selector": ".theme-lab-controls h3",
+        "requiredFamily": "Lucida Grande",
+        "isCustomFont": false
+      },
+      {
+        "selector": ".theme-lab-button-row .btn:first-child",
+        "requiredFamily": "Lucida Grande",
+        "isCustomFont": false
+      },
+      {
+        "selector": ".theme-lab-form-grid > label:nth-child(4) .system-select-button",
+        "requiredFamily": "Lucida Grande",
+        "isCustomFont": false
+      },
+      {
+        "selector": ".theme-lab-group .theme-lab-tabs button.is-selected",
+        "requiredFamily": "Lucida Grande",
+        "isCustomFont": false
+      }
     ],
     "requiredResources": [
       "/assets/themes/aqua/browser-folder-16.svg",
@@ -53,34 +78,140 @@
       "/assets/themes/aqua/"
     ],
     "fixtureAssertions": [
-      { "selector": ".theme-lab-aqua-browser", "count": 1, "visible": true },
-      { "selector": ".theme-lab-aqua-browser > .theme-lab-browser-column", "count": 3 },
-      { "selector": ".theme-lab-aqua-browser .theme-lab-list-frame", "count": 2 },
-      { "selector": ".theme-lab-aqua-browser button", "count": 10 },
-      { "selector": ".theme-lab-aqua-browser > .theme-lab-browser-column:first-child button.is-selected", "count": 1, "text": "Documents", "attributes": { "aria-current": "true" } },
-      { "selector": ".theme-lab-aqua-browser .theme-lab-browser-column-scrollbar", "count": 3 },
-      { "selector": ".theme-lab-aqua-browser .theme-lab-browser-horizontal-scrollbar", "count": 1, "visible": true },
-      { "selector": ".theme-lab-generic-browser.theme-lab-generic-fixture", "count": 1, "visible": false },
-      { "selector": ".theme-lab-menu.theme-lab-generic-fixture", "count": 1, "visible": true },
-      { "selector": ".theme-lab-dialog.theme-lab-generic-fixture", "count": 1, "visible": true },
-      { "selector": ".theme-lab-dialog.theme-lab-generic-fixture .theme-lab-alert-icon", "count": 1, "visible": true },
-      { "selector": ".theme-lab-dialog.theme-lab-generic-fixture .theme-lab-dialog-actions > button", "count": 2 },
-      { "selector": ".theme-lab-sheet-specimen", "count": 1, "visible": true },
-      { "selector": ".theme-lab-sheet-owner-titlebar", "count": 1, "visible": true },
-      { "selector": ".theme-lab-sheet-actions > button", "count": 4 },
-      { "selector": ".theme-lab-sheet-aqua-action", "count": 2 },
-      { "selector": ".theme-lab-sheet-generic-action", "count": 2 },
-      { "selector": ".theme-lab-sheet-aqua-copy", "count": 2 },
-      { "selector": ".theme-lab-sheet-generic-copy", "count": 2 },
-      { "selector": ".theme-lab-open-list-capture", "count": 1, "visible": false },
-      { "selector": ".theme-lab-menu-capture", "count": 1, "visible": false },
-      { "selector": ".theme-lab-about-capture", "count": 1, "visible": false },
-      { "selector": ".theme-lab-toolbar-icon-strip", "count": 1, "visible": true },
-      { "selector": ".theme-lab-toolbar-search", "count": 1, "visible": true },
-      { "selector": ".theme-lab-finder-window", "count": 1, "visible": true },
-      { "selector": ".theme-lab-finder-window-titlebar", "count": 1, "visible": true, "text": "Jim McKintie's Computer" },
-      { "selector": ".theme-lab-finder-window-titlebar > i", "count": 3 },
-      { "selector": ".theme-lab-finder-status-strip", "count": 1, "visible": true, "text": "2 items" }
+      {
+        "selector": ".theme-lab-aqua-browser",
+        "count": 1,
+        "visible": true
+      },
+      {
+        "selector": ".theme-lab-aqua-browser > .theme-lab-browser-column",
+        "count": 3
+      },
+      {
+        "selector": ".theme-lab-aqua-browser .theme-lab-list-frame",
+        "count": 2
+      },
+      {
+        "selector": ".theme-lab-aqua-browser button",
+        "count": 10
+      },
+      {
+        "selector": ".theme-lab-aqua-browser > .theme-lab-browser-column:first-child button.is-selected",
+        "count": 1,
+        "text": "Documents",
+        "attributes": {
+          "aria-current": "true"
+        }
+      },
+      {
+        "selector": ".theme-lab-aqua-browser .theme-lab-browser-column-scrollbar",
+        "count": 3
+      },
+      {
+        "selector": ".theme-lab-aqua-browser .theme-lab-browser-horizontal-scrollbar",
+        "count": 1,
+        "visible": true
+      },
+      {
+        "selector": ".theme-lab-generic-browser.theme-lab-generic-fixture",
+        "count": 1,
+        "visible": false
+      },
+      {
+        "selector": ".theme-lab-menu.theme-lab-generic-fixture",
+        "count": 1,
+        "visible": true
+      },
+      {
+        "selector": ".theme-lab-dialog.theme-lab-generic-fixture",
+        "count": 1,
+        "visible": true
+      },
+      {
+        "selector": ".theme-lab-dialog.theme-lab-generic-fixture .theme-lab-alert-icon",
+        "count": 1,
+        "visible": true
+      },
+      {
+        "selector": ".theme-lab-dialog.theme-lab-generic-fixture .theme-lab-dialog-actions > button",
+        "count": 2
+      },
+      {
+        "selector": ".theme-lab-sheet-specimen",
+        "count": 1,
+        "visible": true
+      },
+      {
+        "selector": ".theme-lab-sheet-owner-titlebar",
+        "count": 1,
+        "visible": true
+      },
+      {
+        "selector": ".theme-lab-sheet-actions > button",
+        "count": 4
+      },
+      {
+        "selector": ".theme-lab-sheet-aqua-action",
+        "count": 2
+      },
+      {
+        "selector": ".theme-lab-sheet-generic-action",
+        "count": 2
+      },
+      {
+        "selector": ".theme-lab-sheet-aqua-copy",
+        "count": 2
+      },
+      {
+        "selector": ".theme-lab-sheet-generic-copy",
+        "count": 2
+      },
+      {
+        "selector": ".theme-lab-open-list-capture",
+        "count": 1,
+        "visible": false
+      },
+      {
+        "selector": ".theme-lab-menu-capture",
+        "count": 1,
+        "visible": false
+      },
+      {
+        "selector": ".theme-lab-about-capture",
+        "count": 1,
+        "visible": false
+      },
+      {
+        "selector": ".theme-lab-toolbar-icon-strip",
+        "count": 1,
+        "visible": true
+      },
+      {
+        "selector": ".theme-lab-toolbar-search",
+        "count": 1,
+        "visible": true
+      },
+      {
+        "selector": ".theme-lab-finder-window",
+        "count": 1,
+        "visible": true
+      },
+      {
+        "selector": ".theme-lab-finder-window-titlebar",
+        "count": 1,
+        "visible": true,
+        "text": "Jim McKintie's Computer"
+      },
+      {
+        "selector": ".theme-lab-finder-window-titlebar > i",
+        "count": 3
+      },
+      {
+        "selector": ".theme-lab-finder-status-strip",
+        "count": 1,
+        "visible": true,
+        "text": "2 items"
+      }
     ]
   },
   "output": {
@@ -191,13 +322,30 @@
       "label": "Active Finder title bar / window frame",
       "reference": {
         "source": "guidebook.macosx102.finder",
-        "crop": { "x": 13, "y": 0, "width": 617, "height": 22 }
+        "crop": {
+          "x": 13,
+          "y": 0,
+          "width": 617,
+          "height": 22
+        }
       },
       "current": {
         "selector": ".theme-lab-finder-window",
-        "crop": { "x": 0, "y": 0, "width": 617, "height": 22 },
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "width": 617,
+          "height": 22
+        },
         "setup": [
-          { "selector": ".theme-lab-finder-window", "style": { "width": "617px", "minWidth": "617px", "maxWidth": "617px" } }
+          {
+            "selector": ".theme-lab-finder-window",
+            "style": {
+              "width": "617px",
+              "minWidth": "617px",
+              "maxWidth": "617px"
+            }
+          }
         ]
       }
     },
@@ -206,14 +354,37 @@
       "label": "Inactive utility title bar / window frame",
       "reference": {
         "source": "guidebook.macosx102.desktop-full",
-        "crop": { "x": 255, "y": 76, "width": 295, "height": 22 }
+        "crop": {
+          "x": 255,
+          "y": 76,
+          "width": 295,
+          "height": 22
+        }
       },
       "current": {
         "selector": ".theme-lab-window",
-        "crop": { "x": 97, "y": 0, "width": 295, "height": 22 },
+        "crop": {
+          "x": 97,
+          "y": 0,
+          "width": 295,
+          "height": 22
+        },
         "setup": [
-          { "selector": ".theme-lab-window", "style": { "width": "423px", "minWidth": "423px", "maxWidth": "423px" }, "attributes": { "class": "window theme-lab-window" } },
-          { "selector": ".theme-lab-window > .title-bar h2", "text": "In" }
+          {
+            "selector": ".theme-lab-window",
+            "style": {
+              "width": "423px",
+              "minWidth": "423px",
+              "maxWidth": "423px"
+            },
+            "attributes": {
+              "class": "window theme-lab-window"
+            }
+          },
+          {
+            "selector": ".theme-lab-window > .title-bar h2",
+            "text": "In"
+          }
         ]
       }
     },
@@ -222,48 +393,119 @@
       "label": "Normal 20px push button and shadow",
       "reference": {
         "source": "guidebook.macosx102.shutdown-dialog",
-        "crop": { "x": 249, "y": 114, "width": 92, "height": 23 }
+        "crop": {
+          "x": 249,
+          "y": 114,
+          "width": 92,
+          "height": 23
+        }
       },
       "current": {
         "selector": ".theme-lab-button-row .btn:first-child",
-        "crop": { "x": 0, "y": 0, "width": 92, "height": 23 },
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "width": 92,
+          "height": 23
+        },
         "setup": [
-          { "selector": ".theme-lab-button-row .btn:first-child", "style": { "width": "92px", "minWidth": "92px", "maxWidth": "92px" }, "text": "Cancel" }
+          {
+            "selector": ".theme-lab-button-row .btn:first-child",
+            "style": {
+              "width": "92px",
+              "minWidth": "92px",
+              "maxWidth": "92px"
+            },
+            "text": "Cancel"
+          }
         ]
       },
-      "repeat": { "maxChangedPixels": 12, "maxChannelDelta": 45 }
+      "repeat": {
+        "maxChangedPixels": 12,
+        "maxChannelDelta": 45
+      }
     },
     {
       "id": "button-default",
       "label": "Colored default 20px push button and shadow",
       "reference": {
         "source": "guidebook.macosx102.shutdown-dialog",
-        "crop": { "x": 353, "y": 114, "width": 94, "height": 23 }
+        "crop": {
+          "x": 353,
+          "y": 114,
+          "width": 94,
+          "height": 23
+        }
       },
       "current": {
         "selector": ".theme-lab-button-row .btn.default",
-        "crop": { "x": 0, "y": 0, "width": 94, "height": 23 },
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "width": 94,
+          "height": 23
+        },
         "setup": [
-          { "selector": ".theme-lab-button-row .btn.default", "style": { "width": "94px", "minWidth": "94px", "maxWidth": "94px" }, "text": "Shut Down" }
+          {
+            "selector": ".theme-lab-button-row .btn.default",
+            "style": {
+              "width": "94px",
+              "minWidth": "94px",
+              "maxWidth": "94px"
+            },
+            "text": "Shut Down"
+          }
         ]
       },
-      "repeat": { "maxChangedPixels": 14, "maxChannelDelta": 45 }
+      "repeat": {
+        "maxChangedPixels": 14,
+        "maxChannelDelta": 45
+      }
     },
     {
       "id": "popup-normal",
       "label": "Normal 20px pop-up button",
       "reference": {
         "source": "guidebook.macosx102.general",
-        "crop": { "x": 249, "y": 95, "width": 136, "height": 21 }
+        "crop": {
+          "x": 249,
+          "y": 95,
+          "width": 136,
+          "height": 21
+        }
       },
       "current": {
         "selector": ".theme-lab-form-grid > label:nth-child(4) .system-select-button",
-        "crop": { "x": 0, "y": 0, "width": 136, "height": 21 },
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "width": 136,
+          "height": 21
+        },
         "setup": [
-          { "selector": ".theme-lab-form-grid > label:nth-child(4) .select-wrap", "style": { "width": "136px" } },
-          { "selector": ".theme-lab-form-grid > label:nth-child(4) select", "style": { "width": "136px" } },
-          { "selector": ".theme-lab-form-grid > label:nth-child(4) .system-select-button", "text": "Blue" },
-          { "selector": ".theme-lab-form-grid > label:nth-child(4) option", "text": "Blue", "attributes": { "label": "Blue" } }
+          {
+            "selector": ".theme-lab-form-grid > label:nth-child(4) .select-wrap",
+            "style": {
+              "width": "136px"
+            }
+          },
+          {
+            "selector": ".theme-lab-form-grid > label:nth-child(4) select",
+            "style": {
+              "width": "136px"
+            }
+          },
+          {
+            "selector": ".theme-lab-form-grid > label:nth-child(4) .system-select-button",
+            "text": "Blue"
+          },
+          {
+            "selector": ".theme-lab-form-grid > label:nth-child(4) option",
+            "text": "Blue",
+            "attributes": {
+              "label": "Blue"
+            }
+          }
         ]
       }
     },
@@ -272,11 +514,21 @@
       "label": "Checked pearly checkbox",
       "reference": {
         "source": "guidebook.macosx102.universal-access",
-        "crop": { "x": 33, "y": 550, "width": 18, "height": 18 }
+        "crop": {
+          "x": 33,
+          "y": 550,
+          "width": 18,
+          "height": 18
+        }
       },
       "current": {
         "selector": ".theme-lab-choice-matrix > label:first-child > input[type=checkbox]",
-        "crop": { "x": 0, "y": 0, "width": 18, "height": 18 }
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "width": 18,
+          "height": 18
+        }
       }
     },
     {
@@ -284,11 +536,21 @@
       "label": "Selected pearly radio button",
       "reference": {
         "source": "guidebook.macosx102.general",
-        "crop": { "x": 248, "y": 237, "width": 18, "height": 18 }
+        "crop": {
+          "x": 248,
+          "y": 237,
+          "width": 18,
+          "height": 18
+        }
       },
       "current": {
         "selector": ".theme-lab-choice-matrix > label:nth-child(3) > input[type=radio]",
-        "crop": { "x": 0, "y": 0, "width": 18, "height": 18 }
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "width": 18,
+          "height": 18
+        }
       }
     },
     {
@@ -296,14 +558,38 @@
       "label": "Selected Jaguar tab plus 6px accent bar",
       "reference": {
         "source": "guidebook.macosx102.universal-access",
-        "crop": { "x": 169, "y": 124, "width": 65, "height": 30 }
+        "crop": {
+          "x": 169,
+          "y": 124,
+          "width": 65,
+          "height": 30
+        }
       },
       "current": {
         "selector": ".theme-lab-tabs > button.is-selected",
-        "crop": { "x": 0, "y": 0, "width": 65, "height": 30 },
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "width": 65,
+          "height": 30
+        },
         "setup": [
-          { "selector": ".theme-lab-tabs > button.is-selected", "style": { "width": "65px", "minWidth": "65px", "maxWidth": "65px", "flex": "0 0 65px" }, "text": "Seeing" },
-          { "selector": ".theme-lab-tabs > button:not(.is-selected)", "style": { "display": "none" } }
+          {
+            "selector": ".theme-lab-tabs > button.is-selected",
+            "style": {
+              "width": "65px",
+              "minWidth": "65px",
+              "maxWidth": "65px",
+              "flex": "0 0 65px"
+            },
+            "text": "Seeing"
+          },
+          {
+            "selector": ".theme-lab-tabs > button:not(.is-selected)",
+            "style": {
+              "display": "none"
+            }
+          }
         ]
       }
     },
@@ -312,13 +598,33 @@
       "label": "Open-dialog column browser and horizontal scrollbar",
       "reference": {
         "source": "guidebook.macosx102.open-dialog",
-        "crop": { "x": 40, "y": 78, "width": 398, "height": 202 }
+        "crop": {
+          "x": 40,
+          "y": 78,
+          "width": 398,
+          "height": 202
+        }
       },
       "current": {
         "selector": ".theme-lab-aqua-browser",
-        "crop": { "x": 0, "y": 0, "width": 398, "height": 202 },
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "width": 398,
+          "height": 202
+        },
         "setup": [
-          { "selector": ".theme-lab-aqua-browser", "style": { "width": "398px", "minWidth": "398px", "maxWidth": "398px", "height": "202px", "minHeight": "202px", "maxHeight": "202px" } }
+          {
+            "selector": ".theme-lab-aqua-browser",
+            "style": {
+              "width": "398px",
+              "minWidth": "398px",
+              "maxWidth": "398px",
+              "height": "202px",
+              "minHeight": "202px",
+              "maxHeight": "202px"
+            }
+          }
         ]
       }
     },
@@ -327,14 +633,34 @@
       "label": "Active Aqua vertical scrollbar",
       "reference": {
         "source": "guidebook.macosx102.address-book",
-        "crop": { "x": 534, "y": 61, "width": 15, "height": 217 }
+        "crop": {
+          "x": 534,
+          "y": 61,
+          "width": 15,
+          "height": 217
+        }
       },
       "current": {
         "selector": ".theme-lab-scroll-frame > .theme-lab-scrollbar",
-        "crop": { "x": 0, "y": 0, "width": 15, "height": 217 },
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "width": 15,
+          "height": 217
+        },
         "setup": [
-          { "selector": ".theme-lab-scroll-frame", "style": { "height": "219px" } },
-          { "selector": ".theme-lab-scroll-frame > .theme-lab-scrollbar", "style": { "height": "217px" } }
+          {
+            "selector": ".theme-lab-scroll-frame",
+            "style": {
+              "height": "219px"
+            }
+          },
+          {
+            "selector": ".theme-lab-scroll-frame > .theme-lab-scrollbar",
+            "style": {
+              "height": "217px"
+            }
+          }
         ]
       }
     },
@@ -343,29 +669,66 @@
       "label": "Finder 56px icon toolbar",
       "reference": {
         "source": "guidebook.macosx102.finder",
-        "crop": { "x": 13, "y": 22, "width": 617, "height": 56 }
+        "crop": {
+          "x": 13,
+          "y": 22,
+          "width": 617,
+          "height": 56
+        }
       },
       "current": {
         "selector": ".theme-lab-finder-window",
-        "crop": { "x": 0, "y": 23, "width": 617, "height": 56 },
+        "crop": {
+          "x": 0,
+          "y": 23,
+          "width": 617,
+          "height": 56
+        },
         "setup": [
-          { "selector": ".theme-lab-finder-window", "style": { "width": "617px", "minWidth": "617px", "maxWidth": "617px" } }
+          {
+            "selector": ".theme-lab-finder-window",
+            "style": {
+              "width": "617px",
+              "minWidth": "617px",
+              "maxWidth": "617px"
+            }
+          }
         ]
       },
-      "repeat": { "maxChangedPixels": 34, "maxChannelDelta": 2 }
+      "repeat": {
+        "maxChangedPixels": 34,
+        "maxChannelDelta": 2
+      }
     },
     {
       "id": "finder-status",
       "label": "Finder 20px status strip",
       "reference": {
         "source": "guidebook.macosx102.finder",
-        "crop": { "x": 13, "y": 78, "width": 617, "height": 21 }
+        "crop": {
+          "x": 13,
+          "y": 78,
+          "width": 617,
+          "height": 21
+        }
       },
       "current": {
         "selector": ".theme-lab-finder-window",
-        "crop": { "x": 0, "y": 79, "width": 617, "height": 21 },
+        "crop": {
+          "x": 0,
+          "y": 79,
+          "width": 617,
+          "height": 21
+        },
         "setup": [
-          { "selector": ".theme-lab-finder-window", "style": { "width": "617px", "minWidth": "617px", "maxWidth": "617px" } }
+          {
+            "selector": ".theme-lab-finder-window",
+            "style": {
+              "width": "617px",
+              "minWidth": "617px",
+              "maxWidth": "617px"
+            }
+          }
         ]
       }
     },
@@ -374,14 +737,39 @@
       "label": "Tracked Jaguar menu selection",
       "reference": {
         "source": "guidebook.macosx102.desktop-full",
-        "crop": { "x": 45, "y": 44, "width": 205, "height": 20 }
+        "crop": {
+          "x": 45,
+          "y": 44,
+          "width": 205,
+          "height": 20
+        }
       },
       "current": {
         "selector": ".theme-lab-menu.theme-lab-generic-fixture > button.is-selected",
-        "crop": { "x": 0, "y": 0, "width": 205, "height": 20 },
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "width": 205,
+          "height": 20
+        },
         "setup": [
-          { "selector": ".theme-lab-menu.theme-lab-generic-fixture", "style": { "width": "205px", "minWidth": "205px", "maxWidth": "205px" } },
-          { "selector": ".theme-lab-menu.theme-lab-generic-fixture > button.is-selected", "style": { "width": "205px", "minWidth": "205px", "maxWidth": "205px" }, "text": "Preferences…" }
+          {
+            "selector": ".theme-lab-menu.theme-lab-generic-fixture",
+            "style": {
+              "width": "205px",
+              "minWidth": "205px",
+              "maxWidth": "205px"
+            }
+          },
+          {
+            "selector": ".theme-lab-menu.theme-lab-generic-fixture > button.is-selected",
+            "style": {
+              "width": "205px",
+              "minWidth": "205px",
+              "maxWidth": "205px"
+            },
+            "text": "Preferences…"
+          }
         ]
       }
     }
