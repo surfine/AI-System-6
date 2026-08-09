@@ -418,11 +418,10 @@ const ensureClioStageModule = createLazyModuleLoader("AISystem6ClioStageLoaded",
 const ensureClioChartModule = createLazyModuleLoader("AISystem6ClioChartLoaded", ["app/features/clio-chart.js"]);
 const ensureLiquidCoverModule = createLazyModuleLoader("AISystem6LiquidCoverLoaded", ["app/features/liquid-cover.js"]);
 const ensureQuickDraftModule = createLazyModuleLoader("AISystem6QuickDraftLoaded", [
-  "app/features/finder-draft.js",
+  "app/features/draft-desk.js",
   "app/features/quick-draft-intake.js",
   "app/features/quick-draft-editor.js",
   "app/features/quick-draft-composition.js",
-  "app/features/quick-draft-canvas.js",
   "app/features/quick-draft-ai.js",
   "app/features/quick-draft-handoff.js",
 ]);

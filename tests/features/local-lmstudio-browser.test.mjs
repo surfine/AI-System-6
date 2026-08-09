@@ -23,7 +23,7 @@ const context = read("app/core/context-retrieval.js");
 const imports = read("app/features/export-import.js");
 const importRoute = read("src/server/routes/import-text.js");
 const quickDraft = [
-  "app/features/finder-draft.js",
+  "app/features/draft-desk.js",
   "app/features/quick-draft-ai.js",
 ].map((path) => read(path)).join("\n");
 const meme = read("app/features/bureaucracy-meme.js");

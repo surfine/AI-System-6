@@ -16,7 +16,8 @@
     "styles/90-endfield-terminal.css": 0,
     "styles/87-clio-chart.css": 0,
     "styles/88-soundscape.css": 0,
-    "styles/89-control-strip.css": 0
+    "styles/89-control-strip.css": 0,
+    "styles/91-draft-desk.css": 0
   },
   "zIndex": {
     "styles/00-foundation.css": 9,
@@ -34,7 +35,8 @@
     "styles/90-endfield-terminal.css": 1,
     "styles/87-clio-chart.css": 0,
     "styles/88-soundscape.css": 0,
-    "styles/89-control-strip.css": 2
+    "styles/89-control-strip.css": 2,
+    "styles/91-draft-desk.css": 0
   },
   "inlineLayoutStyles": {
     "_pattern": "element.style.{top,left,right,bottom,width,height,padding,margin,maxWidth,maxHeight,minWidth,minHeight} = ...",

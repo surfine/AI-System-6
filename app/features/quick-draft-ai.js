@@ -120,6 +120,7 @@ async function requestQuickDraft(stage = "brief", options = {}) {
     const protectedRanges = protectedRangesSnapshot();
     const protectedTools = window.AISystem6ProtectedRanges;
     const sentinelized = protectedTools.protectTextWithSentinels(currentBody, protectedRanges);
+    const setup = quickDraftSetupSnapshot();
     const payload = {
       ...activeModelPayload(),
       stage,
@@ -145,9 +146,9 @@ async function requestQuickDraft(stage = "brief", options = {}) {
       unavailableNotes: firstDay.unavailableNotes,
       audienceConcerns: firstDay.audienceConcerns,
       firstImpression: firstDay.firstImpression,
-      tone: refs.tone?.value || "",
-      mustInclude: refs.mustInclude?.value || "",
-      mustAvoid: refs.mustAvoid?.value || "",
+      tone: setup.tone || "",
+      mustInclude: setup.mustInclude || "",
+      mustAvoid: setup.mustAvoid || "",
       pastedSources: String(refs.sources?.value || "").trim(),
       userNotes: `${taskPrefix}${options.userNotes || ""}`.trim(),
       intake,
@@ -315,6 +316,7 @@ function buildQuickDraftMingmingPrompt({ firstDay, sources, targetFormat, target
   const lengthText = durationLabel(targetDuration, targetFormat);
   const strategy = strategySnapshot();
   const intake = intakeSnapshot();
+  const setup = quickDraftSetupSnapshot();
   const targetConstraint = targetDuration.endsWith("w")
     ? `- 目标是 ${formatText}，约 ${targetDuration.replace(/\D/g, "")} 字；必须像 B 站动态，不要写成视频分镜或长口播。`
     : `- 目标是 ${formatText}，${lengthText}；必须能当天直接录，不要写成文章、报告或发布会流水账。`;
@@ -323,9 +325,9 @@ function buildQuickDraftMingmingPrompt({ firstDay, sources, targetFormat, target
     `稿件类型：${formatText}`,
     `目标长度：${lengthText}`,
     firstDay.firstImpression ? `作者第一判断：${firstDay.firstImpression}` : "",
-    refs.tone?.value ? `口气要求：${refs.tone.value}` : "",
-    refs.mustInclude?.value ? `必须保留：${refs.mustInclude.value}` : "",
-    refs.mustAvoid?.value ? `必须避开：${refs.mustAvoid.value}` : "",
+    setup.tone ? `口气要求：${setup.tone}` : "",
+    setup.mustInclude ? `必须保留：${setup.mustInclude}` : "",
+    setup.mustAvoid ? `必须避开：${setup.mustAvoid}` : "",
   ].filter(Boolean).join("\n");
   const projectContext = [
     targetConstraint,
@@ -627,10 +629,11 @@ async function runClioTalkAction(kind = "", options = {}) {
 }
 
 async function askClioTalk() {
-  const committed = await commitQuickDraft({});
-  if (!committed.ok) return false;
+  const saved = await flushPendingQuickDraftCommit();
+  if (!saved) return false;
   if (typeof arrangeWindowAssistantSplit === "function") {
-    await arrangeWindowAssistantSplit("quickDraft");
+    const paired = await arrangeWindowAssistantSplit("quickDraft");
+    if (!paired) return false;
     setQuickDraftStatus(t("quick_draft_sideask_done"));
   } else {
     await openWindow("assistant");

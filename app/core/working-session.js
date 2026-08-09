@@ -290,35 +290,42 @@ function captureWindowWorkingSession() {
       const name = win.dataset.window || "";
       return name && !workingSessionExcludedWindowNames.has(name);
     })
-    .map((win) => ({
-      name: win.dataset.window,
-      appId: getWindowAppId(win),
-      visible: !win.classList.contains("is-hidden"),
-      appHidden: win.classList.contains("is-app-hidden"),
-      active: win.classList.contains("is-active"),
-      collapsed: win.classList.contains("is-collapsed"),
-      shadeWidth: inlineStyleValue(win, "--window-shade-width"),
-      desklet: win.classList.contains("is-desklet"),
-      zoomed: win.dataset.zoomed === "true",
-      userPositioned: win.dataset.userPositioned === "true",
-      layoutGroup: win.dataset.layoutGroup || "",
-      zIndex: workingSessionNumber(win.style.zIndex, 0),
-      frame: {
-        left: inlineStyleValue(win, "left"),
-        top: inlineStyleValue(win, "top"),
-        right: inlineStyleValue(win, "right"),
-        width: inlineStyleValue(win, "width"),
-        height: inlineStyleValue(win, "height"),
-        maxHeight: inlineStyleValue(win, "max-height"),
-        transform: inlineStyleValue(win, "transform"),
-      },
-      restoreFrame: {
-        left: win.dataset.restoreLeft || "",
-        top: win.dataset.restoreTop || "",
-        width: win.dataset.restoreWidth || "",
-        height: win.dataset.restoreHeight || "",
-      },
-    }));
+    .map((win) => {
+      const sideAskRestore = win.dataset.sideaskRestoreActive === "true";
+      const frameValue = (property, restoreKey) => (
+        sideAskRestore ? win.dataset[restoreKey] || "" : inlineStyleValue(win, property)
+      );
+      return {
+        name: win.dataset.window,
+        appId: getWindowAppId(win),
+        visible: !win.classList.contains("is-hidden"),
+        appHidden: win.classList.contains("is-app-hidden"),
+        active: win.classList.contains("is-active"),
+        collapsed: win.classList.contains("is-collapsed"),
+        shadeWidth: inlineStyleValue(win, "--window-shade-width"),
+        desklet: win.classList.contains("is-desklet"),
+        zoomed: sideAskRestore ? win.dataset.sideaskRestoreZoomed === "true" : win.dataset.zoomed === "true",
+        userPositioned: win.dataset.userPositioned === "true",
+        layoutGroup: win.dataset.layoutGroup || "",
+        frameOwner: sideAskRestore ? "sideask-restore" : "window",
+        zIndex: workingSessionNumber(win.style.zIndex, 0),
+        frame: {
+          left: frameValue("left", "sideaskRestoreLeft"),
+          top: frameValue("top", "sideaskRestoreTop"),
+          right: frameValue("right", "sideaskRestoreRight"),
+          width: frameValue("width", "sideaskRestoreWidth"),
+          height: frameValue("height", "sideaskRestoreHeight"),
+          maxHeight: frameValue("max-height", "sideaskRestoreMaxHeight"),
+          transform: frameValue("transform", "sideaskRestoreTransform"),
+        },
+        restoreFrame: {
+          left: win.dataset.restoreLeft || "",
+          top: win.dataset.restoreTop || "",
+          width: win.dataset.restoreWidth || "",
+          height: win.dataset.restoreHeight || "",
+        },
+      };
+    });
   const activeWin = document.querySelector(".window.is-active:not(.is-hidden):not(.is-app-hidden)");
   return {
     activeAppId,
@@ -392,9 +399,17 @@ async function restoreWindowWorkingSession(state = {}) {
       && isWorkspaceWindowAllowed(entry.name)
     ))
     .sort((a, b) => workingSessionNumber(a.zIndex, 0) - workingSessionNumber(b.zIndex, 0));
+  const shouldArrangeQuickDraftPair = visibleWindows.some((entry) => (
+    entry.name === "quickDraft" && !entry.appHidden
+  ));
 
   for (const entry of visibleWindows) {
-    await openWindow(entry.name, { skipFinderMode: true, skipPlacement: true, skipFocus: true });
+    await openWindow(entry.name, {
+      skipFinderMode: true,
+      skipPlacement: true,
+      skipFocus: true,
+      skipSideAsk: entry.name === "quickDraft",
+    });
     const win = getWindow(entry.name);
     if (!win) continue;
     win.dataset.app = entry.appId || getWindowAppId(win);
@@ -425,8 +440,12 @@ async function restoreWindowWorkingSession(state = {}) {
     } else if (typeof avoidWritingSpineOverlap === "function") {
       avoidWritingSpineOverlap(win);
     }
+    const legacyQuickDraftSplit = entry.name === "quickDraft"
+      && state.sideAskEnabled
+      && entry.frameOwner !== "sideask-restore";
+    if (legacyQuickDraftSplit) maximizeWindow(win);
     const quickDraftWidth = Number(String(entry.frame?.width || "").match(/^(-?\d+(?:\.\d+)?)px$/)?.[1] || 0);
-    if (entry.name === "quickDraft" && (!entry.frame?.width || quickDraftWidth < 360)) {
+    if (entry.name === "quickDraft" && !shouldArrangeQuickDraftPair && (!entry.frame?.width || quickDraftWidth < 360)) {
       requestAnimationFrame(() => maximizeWindow(win));
     }
     if (entry.zIndex) setWindowLayerZ(win, entry.zIndex);
@@ -436,6 +455,14 @@ async function restoreWindowWorkingSession(state = {}) {
   hiddenEntries.forEach((entry) => {
     if (entry.appId) hiddenAppIds.add(entry.appId);
   });
+
+  // Quick Draft opens beside the ordinary SideAsk window on desktop. During
+  // resume, wait until every saved zoom/frame has been applied before laying
+  // out that pair; otherwise the stale maximized frame can cover ClioTalk.
+  const portrait = typeof isPortraitDocumentFlow === "function" && isPortraitDocumentFlow();
+  if (shouldArrangeQuickDraftPair && !portrait && !isMultiFinderMode()) {
+    await arrangeWindowAssistantSplit("quickDraft");
+  }
 
   const activeName = state.activeWindowName || visibleWindows.find((entry) => entry.active)?.name || visibleWindows.at(-1)?.name;
   const activeWin = activeName ? getWindow(activeName) : null;

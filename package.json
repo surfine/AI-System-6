@@ -1,6 +1,6 @@
 {
   "name": "ai-system-6",
-  "version": "1.0.28",
+  "version": "1.0.29",
   "description": "A quiet, intentional AI desktop environment inspired by Macintosh System 6.",
   "license": "MIT",
   "main": "src/server.js",

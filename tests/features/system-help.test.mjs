@@ -74,9 +74,10 @@ for (const helpId of ["control-strip", "menu-bar-extras", "system-messages", "sy
   test.assertIncludes(dictionary, `id: "${helpId}"`, `System Help documents ${helpId}`);
 }
 test.assertIncludes(dictionary, 'termZh: "气球帮助"', "System Help uses the product's Chinese Balloon Help name");
-test.assertIncludes(dictionary, "the two homes never appear together", "System Help explains Control Strip and menu-bar-extra mutual exclusion");
+test.assertIncludes(dictionary, "Project Hard Disk, model, and System Messages", "System Help scopes mutual exclusion to the three duplicated controls");
+test.assertIncludes(dictionary, "both remain in the menu bar", "System Help preserves the MultiFinder and clock exceptions");
 test.assertIncludes(dictionary, "share the same unread count", "System Help keeps System Messages tied to one source");
-test.assertIncludes(dictionary, "without creating a second time source", "System Help keeps the clock tied to one source");
+test.assertIncludes(dictionary, "both use one time source", "System Help keeps the clock tied to one source");
 test.assertIncludes(feature, 'currentLanguage === "zh" || detectDictionaryTermLanguage(alias) !== "zh"', "aliases stay language-matched with the desk");
 
 // Wiring and handles.

@@ -178,9 +178,9 @@ test.assertIncludes(html, 'data-control-strip-module="finderEnvironment"', "the 
 test.assertIncludes(html, "ten_items", "the module folder count matches its ten built-ins");
 test.assertIncludes(html, 'data-control-strip-counterpart="projectDisk"', "Project Hard Disk declares its Control Strip counterpart");
 test.assertIncludes(html, 'data-control-strip-counterpart="model"', "the model indicator declares its Control Strip counterpart");
-test.assertIncludes(html, 'data-control-strip-counterpart="finderEnvironment"', "Finder/MultiFinder declares its Control Strip counterpart");
 test.assertIncludes(html, 'data-control-strip-counterpart="notifications"', "System Messages declares its Control Strip counterpart");
-test.assertIncludes(html, 'data-control-strip-counterpart="clock"', "the menu clock declares its Control Strip counterpart");
+test.assertNotIncludes(html, 'data-control-strip-counterpart="finderEnvironment"', "MultiFinder remains a menu-bar application switcher while the strip only changes environments");
+test.assertNotIncludes(html, 'data-control-strip-counterpart="clock"', "the historically persistent menu clock remains visible with the strip");
 test.assertIncludes(appBundleSource, "getControlStripModuleFinderItems", "the shared Finder renderer knows the module files");
 test.assertIncludes(appBundleSource, 'winName === "controlStripModules"', "the static finder handles the module folder");
 test.assertIncludes(windowManager, '"controlStripModules"', "window manager registers the folder window");

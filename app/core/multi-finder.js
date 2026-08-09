@@ -13,6 +13,7 @@ const finderModeForegroundAppIds = new Set(["finder", "system", "accessories"]);
 const multiFinderAppLabels = {
   finder: "Finder",
   writingStudio: "Writing Studio",
+  quickDraft: "Quick Draft",
   teachText: "TeachText",
   clioTalk: "ClioTalk",
   searcher: "Searcher",
@@ -33,7 +34,7 @@ const multiFinderAppLabels = {
 
 const windowAppMap = {
   assistant: "clioTalk",
-  quickDraft: "writingStudio",
+  quickDraft: "quickDraft",
   bureaucracyMeme: "bureaucracyMeme",
   chooser: "accessories",
   control: "accessories",

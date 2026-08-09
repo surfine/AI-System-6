@@ -60,7 +60,6 @@ test.assert(gated.size > 200, "getActionAvailability() answers for the menu acti
 // Adding a row here is a decision, not a default: say why.
 const ALWAYS_AVAILABLE = new Map([
   // Navigation: opening a writing-route window is valid from anywhere.
-  ["open-quick-draft", "navigation — opening a route window is always valid"],
   ["open-question-sheet", "navigation"],
   ["open-outline", "navigation"],
   ["open-section-drafts", "navigation"],

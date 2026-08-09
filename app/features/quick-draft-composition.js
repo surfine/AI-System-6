@@ -25,79 +25,178 @@ function adjustmentLayerLabelKey(kind = "") {
   return labels[kind] || "";
 }
 
-function renderLayerDescriptions() {
+let quickDraftActiveLayerKind = "mingming";
+let quickDraftExpandedLayerKind = "";
+let quickDraftLayerLayoutObserver = null;
+
+function layerDescriptionKey(kind = "") {
   const descriptions = {
     mingming: "quick_draft_layer_mingming_desc",
     luoluo: "quick_draft_layer_luoluo_desc",
     hkrr: "quick_draft_layer_hkrr_desc",
     density: "quick_draft_layer_density_desc",
   };
-  Object.entries(descriptions).forEach(([kind, key]) => {
-    document.querySelectorAll(`[data-quick-draft-layer-description="${kind}"]`).forEach((el) => {
-      el.textContent = t(key);
-    });
-  });
+  return descriptions[kind] || "";
 }
 
-// One layer opens at a time: the stack order is the information here, and four
-// open rows hide it again. The triangle is the Finder list-row disclosure.
-function toggleQuickDraftLayerDetail(kind = "") {
-  const target = document.getElementById(`quick-draft-layer-detail-${kind}`);
+function selectQuickDraftAdjustmentLayer(kind = "") {
+  const layers = adjustmentLayersSnapshot();
+  if (layers.some((layer) => layer.kind === kind)) quickDraftActiveLayerKind = kind;
+  renderAdjustmentLayers(activeProjectQuickDraft({ create: false })?.record);
+  return quickDraftActiveLayerKind;
+}
+
+function quickDraftUsesLayerAccordion() {
+  return typeof quickDraftUsesDrawerLayout === "function" && quickDraftUsesDrawerLayout();
+}
+
+// Figure 03 and Figure 07 share one Range/detail object. On a wide desk it
+// sits below the stack; in the narrow inspector it moves under the one open
+// layer so the rows behave like a Finder disclosure list without duplicating
+// controls or state.
+function syncQuickDraftLayerDetailPlacement() {
+  const stack = refs.form?.querySelector(".draft-desk-layer-stack");
+  const section = stack?.closest(".draft-desk-inspector-section");
+  const scope = refs.form?.querySelector(".draft-desk-layer-scope-row");
+  const detail = document.getElementById("quick-draft-layer-detail");
+  const protect = section?.querySelector(".draft-desk-protect");
+  if (!stack || !section || !scope || !detail || !protect) return;
+  const active = stack.querySelector(`[data-quick-draft-adjustment-layer="${quickDraftExpandedLayerKind}"]`);
+  if (quickDraftUsesLayerAccordion() && active && !detail.hidden) {
+    active.append(detail, scope);
+    return;
+  }
+  section.insertBefore(scope, protect);
+  section.insertBefore(detail, protect);
+}
+
+function observeQuickDraftLayerLayout() {
+  if (quickDraftLayerLayoutObserver || !refs.form || typeof ResizeObserver !== "function") return;
+  quickDraftLayerLayoutObserver = new ResizeObserver(() => syncQuickDraftLayerDetailPlacement());
+  quickDraftLayerLayoutObserver.observe(refs.form);
+}
+
+function toggleQuickDraftLayerDisclosure(kind = "") {
+  const target = document.getElementById("quick-draft-layer-detail");
+  const layers = adjustmentLayersSnapshot();
+  if (!target || !layers.some((layer) => layer.kind === kind)) return false;
+  const open = quickDraftExpandedLayerKind !== kind || target.hidden;
+  quickDraftActiveLayerKind = kind;
+  quickDraftExpandedLayerKind = open ? kind : "";
+  target.hidden = !open;
+  target.classList.remove("is-editing");
+  renderAdjustmentLayers(activeProjectQuickDraft({ create: false })?.record);
+  return open;
+}
+
+function toggleQuickDraftLayerDetail() {
+  const target = document.getElementById("quick-draft-layer-detail");
   if (!target) return false;
+  if (quickDraftUsesLayerAccordion()) {
+    if (target.hidden || quickDraftExpandedLayerKind !== quickDraftActiveLayerKind) {
+      quickDraftExpandedLayerKind = quickDraftActiveLayerKind;
+      target.hidden = false;
+      target.classList.remove("is-editing");
+    } else {
+      target.classList.toggle("is-editing");
+    }
+    renderAdjustmentLayers(activeProjectQuickDraft({ create: false })?.record);
+    return !target.hidden;
+  }
   const open = target.hidden;
-  document.querySelectorAll("[data-quick-draft-layer-toggle]").forEach((button) => {
-    const detail = document.getElementById(`quick-draft-layer-detail-${button.dataset.quickDraftLayerToggle}`);
-    const on = open && detail === target;
-    if (detail) detail.hidden = !on;
-    button.setAttribute("aria-expanded", on ? "true" : "false");
-  });
+  target.hidden = !open;
+  target.classList.toggle("is-editing", open);
+  refs.form?.querySelector("[data-quick-draft-layer-toggle]")
+    ?.setAttribute("aria-expanded", open ? "true" : "false");
   return open;
 }
 
 function renderAdjustmentLayers(record = activeProjectQuickDraft({ create: false })?.record) {
   if (!refs.form) return;
   const layers = adjustmentLayersSnapshot(record);
-  const section = refs.form.querySelector("[data-quick-draft-adjustment-layer]")?.parentElement;
-  if (section) {
+  if (!layers.some((layer) => layer.kind === quickDraftActiveLayerKind)) {
+    quickDraftActiveLayerKind = layers.find((layer) => layer.enabled)?.kind || layers[0]?.kind || "mingming";
+  }
+  const stack = refs.form.querySelector(".draft-desk-layer-stack");
+  if (stack) {
     layers.forEach((layer) => {
-      const wrapper = section.querySelector(`[data-quick-draft-adjustment-layer="${layer.kind}"]`);
-      if (wrapper) section.append(wrapper);
+      const wrapper = stack.querySelector(`[data-quick-draft-adjustment-layer="${layer.kind}"]`);
+      if (wrapper) stack.append(wrapper);
     });
   }
   layers.forEach((layer, index) => {
+    const layerLabel = t(adjustmentLayerLabelKey(layer.kind));
     const checkbox = refs.form.querySelector(`[data-quick-draft-adjustment-enabled="${layer.kind}"]`);
     const select = refs.form.querySelector(`[data-quick-draft-adjustment-strength="${layer.kind}"]`);
-    const maskInput = refs.form.querySelector(`[data-quick-draft-adjustment-mask="${layer.kind}"]`);
     if (checkbox) checkbox.checked = layer.enabled;
     if (select) select.value = String(layer.strength);
-    if (maskInput) maskInput.value = adjustmentMaskSummary(layer.mask);
-    // The stack order is the information in this panel, so the row carries its
-    // own number, and the scope it will run on stays readable when the row is
-    // closed.
     const order = refs.form.querySelector(`[data-quick-draft-layer-order="${layer.kind}"]`);
     if (order) order.textContent = String(index + 1);
-    const scope = refs.form.querySelector(`[data-quick-draft-layer-scope="${layer.kind}"]`);
-    if (scope) {
-      const summary = adjustmentMaskSummary(layer.mask);
-      scope.textContent = t("quick_draft_layer_scope", summary || t("quick_draft_layer_scope_all"));
-    }
     const wrapper = refs.form.querySelector(`[data-quick-draft-adjustment-layer="${layer.kind}"]`);
     if (wrapper) {
-      const up = wrapper.querySelector('[data-quick-draft-adjustment-move][data-direction="-1"]');
-      const down = wrapper.querySelector('[data-quick-draft-adjustment-move][data-direction="1"]');
-      if (up) up.disabled = index === 0;
-      if (down) down.disabled = index === layers.length - 1;
+      wrapper.classList.toggle("is-off", !layer.enabled);
+      wrapper.classList.toggle("is-active-layer", layer.kind === quickDraftActiveLayerKind);
+      wrapper.classList.toggle("is-expanded-layer", layer.kind === quickDraftExpandedLayerKind);
+    }
+    const disclosure = refs.form.querySelector(`[data-quick-draft-layer-disclosure="${layer.kind}"]`);
+    if (disclosure) {
+      const expanded = layer.kind === quickDraftExpandedLayerKind;
+      disclosure.setAttribute("aria-expanded", expanded ? "true" : "false");
+      disclosure.setAttribute("aria-label", t("quick_draft_layer_disclosure_aria", layerLabel, expanded));
+      disclosure.textContent = expanded ? "▼" : "▶";
     }
   });
-  renderLayerDescriptions();
+  const active = layers.find((layer) => layer.kind === quickDraftActiveLayerKind) || layers[0];
+  const summary = adjustmentMaskSummary(active?.mask);
+  const scope = refs.form.querySelector("[data-quick-draft-active-layer-scope]");
+  if (scope) scope.textContent = t("quick_draft_layer_scope", summary || t("quick_draft_layer_scope_all"));
+  const mask = refs.form.querySelector("[data-quick-draft-active-layer-mask]");
+  const activeLabel = t(adjustmentLayerLabelKey(active?.kind));
+  if (mask) {
+    mask.value = summary;
+    mask.setAttribute("aria-label", t("quick_draft_layer_mask_aria", activeLabel));
+  }
+  const description = refs.form.querySelector("[data-quick-draft-active-layer-description]");
+  if (description) description.textContent = t(layerDescriptionKey(active?.kind));
+  refs.form.querySelectorAll("[data-quick-draft-active-layer-move]").forEach((button) => {
+    button.dataset.quickDraftActiveLayerMove = active?.kind || "";
+    const index = layers.findIndex((layer) => layer.kind === active?.kind);
+    button.disabled = Number(button.dataset.direction) < 0 ? index <= 0 : index >= layers.length - 1;
+    button.setAttribute("aria-label", t(
+      Number(button.dataset.direction) < 0
+        ? "quick_draft_layer_move_up_aria"
+        : "quick_draft_layer_move_down_aria",
+      activeLabel
+    ));
+  });
+  const scopeToggle = refs.form.querySelector("[data-quick-draft-layer-toggle]");
+  const detail = document.getElementById("quick-draft-layer-detail");
+  if (scopeToggle && detail) {
+    scopeToggle.setAttribute("aria-expanded", detail.classList.contains("is-editing") ? "true" : "false");
+  }
+  syncQuickDraftLayerDetailPlacement();
+  syncQuickDraftMobileAdjustmentActions(record);
+  if (typeof updateMenuState === "function") updateMenuState();
+}
+
+function syncQuickDraftMobileAdjustmentActions(record = activeProjectQuickDraft({ create: false })?.record) {
+  const normalized = normalizeQuickDraftRecord(record);
+  const hasBody = Boolean(String(refs.draft?.value || normalized.workspace.body || "").trim());
+  const enabled = normalized.workspace.adjustmentLayers.some((layer) => layer.enabled);
+  const previewButton = refs.form?.querySelector("[data-quick-draft-adjustment-apply]");
+  const developButton = refs.form?.querySelector("[data-quick-draft-adjustment-develop]");
+  if (previewButton) previewButton.disabled = !hasBody || !enabled || !quickDraftModelAvailable();
+  if (developButton) developButton.disabled = !hasBody || !currentCompositeState(normalized).ready;
 }
 
 function updateAdjustmentLayer(kind = "", patch = {}) {
   const next = normalizeAdjustmentLayers(adjustmentLayersSnapshot()).map((layer) => (
     layer.kind === kind ? { ...layer, ...patch } : layer
   ));
-  saveQuickDraft({ workspace: { adjustmentLayers: next } }, { debounce: false });
-  renderAdjustmentLayers(activeProjectQuickDraft({ create: false })?.record);
+  const record = saveQuickDraft({ workspace: { adjustmentLayers: next } }, { debounce: false });
+  renderAdjustmentLayers(record);
+  updateQuickDraftShellState(record);
+  syncQuickDraftPrimaryAction(record, Boolean(String(refs.draft?.value || "").trim()));
   refreshQuickDraftPreviewIfOpen();
   setQuickDraftStatus(t("quick_draft_adjustment_saved"));
   return next;
@@ -111,8 +210,10 @@ function moveAdjustmentLayer(kind = "", direction = -1) {
   const next = [...layers];
   const [layer] = next.splice(index, 1);
   next.splice(target, 0, layer);
-  saveQuickDraft({ workspace: { adjustmentLayers: next } }, { debounce: false });
-  renderAdjustmentLayers(activeProjectQuickDraft({ create: false })?.record);
+  const record = saveQuickDraft({ workspace: { adjustmentLayers: next } }, { debounce: false });
+  renderAdjustmentLayers(record);
+  updateQuickDraftShellState(record);
+  syncQuickDraftPrimaryAction(record, Boolean(String(refs.draft?.value || "").trim()));
   refreshQuickDraftPreviewIfOpen();
   setQuickDraftStatus(t("quick_draft_adjustment_saved"));
   return next;
@@ -136,8 +237,13 @@ function protectedRangesSnapshot(record = activeProjectQuickDraft({ create: fals
 
 function renderProtectedRangeControls(record = activeProjectQuickDraft({ create: false })?.record) {
   const input = refs.form?.querySelector("[data-quick-draft-protected-ranges]");
-  if (!input) return;
-  input.value = adjustmentMaskSummary(protectedRangesSnapshot(record));
+  const ranges = protectedRangesSnapshot(record);
+  if (input) input.value = adjustmentMaskSummary(ranges);
+  const lines = ranges.reduce((total, range) => total + Math.max(0, (range.end - range.start) + 1), 0);
+  const summary = refs.form?.querySelector("[data-quick-draft-protected-summary]");
+  if (summary) summary.textContent = lines
+    ? t("quick_draft_protected_summary", lines)
+    : t("quick_draft_protected_empty");
 }
 
 function selectionLineRanges() {
@@ -162,8 +268,9 @@ function protectSelectionFromTextarea() {
     return false;
   }
   const next = normalizeAdjustmentLayerMask([...protectedRangesSnapshot(), ...ranges]);
-  saveQuickDraft({ workspace: { protectedRanges: next } }, { debounce: false });
-  renderProtectedRangeControls(activeProjectQuickDraft({ create: false })?.record);
+  const record = saveQuickDraft({ workspace: { protectedRanges: next } }, { debounce: false });
+  renderProtectedRangeControls(record);
+  updateQuickDraftShellState(record);
   refreshQuickDraftPreviewIfOpen();
   setQuickDraftStatus(t("quick_draft_protect_saved"));
   return true;

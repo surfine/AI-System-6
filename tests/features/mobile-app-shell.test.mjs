@@ -140,6 +140,7 @@ test.assertIncludes(
 // the page shell; Finder folders join it through an explicit window-name set.
 for (const appId of [
   "clioTalk",
+  "quickDraft",
   "teachText",
   "writingStudio",
   "searcher",

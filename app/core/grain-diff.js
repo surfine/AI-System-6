@@ -10,7 +10,7 @@
 // This module touches no DOM, no record, and no translations — it takes text
 // and returns data, so the executable feature test can run it in a bare vm
 // context. The record-aware and rendering layers live in
-// app/features/finder-draft.js.
+// app/features/quick-draft-composition.js.
 
 const GRAIN_DIFF_CELL_BUDGET = 4000000;
 const GRAIN_PARAGRAPH_MATCH = 0.25;

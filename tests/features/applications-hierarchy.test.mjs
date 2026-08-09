@@ -24,6 +24,7 @@ test.assertIncludes(actions, "open-applications-folder-path", "the folder naviga
 const rootBlock = app.slice(app.indexOf("// Root: high-frequency apps"), app.indexOf("], location);", app.indexOf("// Root: high-frequency apps")));
 for (const action of [
   "open-writing-studio",
+  "open-quick-draft",
   "open-assistant",
   "open-reader",
   "open-find-path",
@@ -44,6 +45,7 @@ for (const action of ["open-clio-stage", "open-clio-chart", "open-liquid-cover",
 }
 
 const extrasBlock = app.slice(app.indexOf('applicationsFinderPath === "extras"'), app.indexOf("], location);", app.indexOf('applicationsFinderPath === "extras"')));
+test.assertNotIncludes(extrasBlock, 'action: "open-quick-draft"', "Quick Draft is a root application, not an Extras child");
 for (const action of ["open-endfield-terminal", "open-bureaucracy-meme", "open-time-machine", "open-rebuild-flow", "play-writing-demo"]) {
   test.assertIncludes(extrasBlock, `action: "${action}"`, `Extras keeps ${action}`);
 }

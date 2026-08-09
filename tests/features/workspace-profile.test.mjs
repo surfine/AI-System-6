@@ -17,6 +17,10 @@ const multiFinder = read("app/core/multi-finder.js");
 const dragDrop = read("app/core/drag-drop.js");
 const systemIcons = read("app/core/system-icons.js");
 const menus = read("app/data/menus.js");
+const quickDraftHandoff = read("app/features/quick-draft-handoff.js");
+
+const teachTextMenusBlock = menus.slice(menus.indexOf("const teachTextMenus"), menus.indexOf("const quickDraftMenus"));
+const quickDraftMenusBlock = menus.slice(menus.indexOf("const quickDraftMenus"), menus.indexOf("const clioTalkMenus"));
 
 test.assertIncludes(manifest, '"app/core/workspace-profile.js"', "loads the central profile policy");
 test.assertIncludes(profile, 'let workspaceProfile = workspaceProfileWriting', "keeps the existing writing experience as the default");
@@ -50,9 +54,12 @@ test.assertNotIncludes(html, 'data-action="quit-writing-studio"', "Writing Flow 
 test.assertIncludes(html, 'id="finder-writing-studio-toggle"', "Finder single-task desktop has one Writing Studio toggle icon");
 test.assertIncludes(menus, 'menuItem("print-current", "print")', "TeachText File menu exposes the shared print action");
 test.assertIncludes(html, 'data-workspace-capability="studio"', "studio-only DOM surfaces use the shared visibility marker");
-test.assertMatches(app, /writing_studio[\s\S]*open-writing-studio[\s\S]*assistant_label[\s\S]*open-assistant/, "Applications keeps Writing Studio first, then ClioTalk, on the desktop bridge");
+test.assertMatches(app, /writing_studio[\s\S]*open-writing-studio[\s\S]*quick_draft_label[\s\S]*open-quick-draft[\s\S]*assistant_label[\s\S]*open-assistant/, "Applications keeps Writing Studio, independent Quick Draft, then ClioTalk on the desktop bridge");
 test.assertMatches(app, /open-writing-studio[\s\S]*workspaceProfiles: \[workspaceProfileDesktop\]/, "Writing Studio launcher appears only on the desktop");
-test.assertMatches(app, /quick_draft_label[\s\S]*workspaceCapability: workspaceCapabilityStudio/, "Quick Draft remains inside the studio");
+test.assertMatches(app, /quick_draft_label[\s\S]*action: "open-quick-draft"[\s\S]*type: "application"/, "Quick Draft is a root Applications item");
+test.assertNotMatches(profile, /const studioWindowNames = new Set\(\[[^\]]*"quickDraft"/, "Quick Draft is available outside the writing workspace");
+test.assertNotMatches(profile, /const studioActionNames = new Set\(\[[^\]]*"open-quick-draft"/, "Quick Draft launches directly from the Desktop profile");
+test.assertMatches(html, /desktop-app-icon[\s\S]*data-action="open-quick-draft"[\s\S]*data-system-icon="quickDraft"/, "the Desktop has a direct Quick Draft application icon");
 test.assertMatches(app, /function getStaticFinderItems[\s\S]*filterWorkspaceItems/, "existing Finder registries are profile-filtered");
 test.assertIncludes(actions, '"open-writing-studio": openWritingStudio', "Writing Studio launcher uses the central profile transition");
 test.assertIncludes(actions, '"exit-writing-studio": exitWritingStudio', "Finder desktop toggle exits through the same central transition");
@@ -61,10 +68,16 @@ test.assertNotIncludes(wireup, 'document.getElementById("workspace-profile")', "
 test.assertIncludes(profile, "async function openWritingStudio()", "one transition owns entry into the writing route");
 test.assertIncludes(profile, "async function exitWritingStudio()", "one transition owns exit back to the Desktop");
 test.assertIncludes(profile, "writingStudioOwnedWindowNames", "Writing Studio owns its existing route windows as one application");
-test.assertMatches(profile, /writingStudioOwnedWindowNames = new Set\(\[[\s\S]*"quickDraft"/, "Writing Studio owns Quick Draft");
+test.assertNotMatches(profile, /writingStudioOwnedWindowNames = new Set\(\[[^\]]*"quickDraft"/, "Writing Studio does not own Quick Draft");
 test.assertIncludes(multiFinder, 'writingStudio: "Writing Studio"', "MultiFinder recognizes Writing Studio as an application");
-test.assertIncludes(multiFinder, 'quickDraft: "writingStudio"', "Quick Draft resolves to Writing Studio instead of becoming a separate application");
-test.assertNotIncludes(multiFinder, 'quickDraft: "Quick Draft"', "MultiFinder does not list Quick Draft as a separate running application");
+test.assertIncludes(multiFinder, 'quickDraft: "Quick Draft"', "MultiFinder labels Quick Draft as its own application");
+test.assertIncludes(multiFinder, 'quickDraft: "quickDraft"', "the Quick Draft window resolves to the independent application");
+test.assertIncludes(quickDraftHandoff, 'ensureRunningApp("quickDraft", "quickDraft")', "Quick Draft preserves its own identity when enabling MultiFinder");
+test.assertMatches(windows, /mobileFullScreenAppIds = new Set\(\[[^\]]*"quickDraft"/, "Quick Draft retains a full-screen application shell on phones");
+test.assertNotIncludes(teachTextMenusBlock, 'menuItem("open-quick-draft"', "Writing Studio has no Quick Draft entrance");
+test.assertNotIncludes(teachTextMenusBlock, 'submenu("quick_draft_label"', "Writing Studio has no hidden Quick Draft command submenu");
+test.assertIncludes(quickDraftMenusBlock, 'menuItem("quick-draft-open-writing-studio", "enter_writing_studio")', "Quick Draft owns the one-way entrance into Writing Studio");
+test.assertIncludes(actions, 'flushPendingQuickDraftCommit', "entering Writing Studio flushes pending Quick Draft changes first");
 test.assertIncludes(multiFinder, "syncWorkspaceDesktopIcon()", "MultiFinder mode hides the Finder-only desktop toggle");
 test.assertMatches(profile, /finderSingleTask[\s\S]*exit-writing-studio[\s\S]*open-writing-studio/, "one Finder-only icon changes between enter and exit");
 test.assertMatches(windows, /appId === "writingStudio"[\s\S]*exitWritingStudio/, "Quit Writing Studio returns to Desktop instead of closing unrelated apps");

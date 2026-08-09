@@ -666,12 +666,17 @@ function updateSideAskSourceChrome() {
   if (quickDraftHint) {
     quickDraftHint.classList.add("is-hidden");
   }
-  // A phone has no app switcher in Finder mode, so once a Quick Draft
-  // side-ask session is running, the source page itself must offer the way
-  // back to the conversation.
+  // Like TeachText, Quick Draft keeps an explicit in-window SideAsk command.
+  // Its label describes whether it will open the pair or return focus to it.
   const quickDraftReturnSideAsk = document.getElementById("quick-draft-return-sideask");
   if (quickDraftReturnSideAsk) {
-    quickDraftReturnSideAsk.classList.toggle("is-hidden", !quickDraftSideAsk);
+    const labelKey = quickDraftSideAsk ? "quick_draft_return_sideask" : "quick_draft_show_sideask";
+    quickDraftReturnSideAsk.classList.remove("is-hidden");
+    quickDraftReturnSideAsk.dataset.i18n = labelKey;
+    quickDraftReturnSideAsk.textContent = t(labelKey);
+    const unavailable = isMultiFinderMode() || (typeof canUseSideAsk === "function" && !canUseSideAsk());
+    quickDraftReturnSideAsk.disabled = unavailable;
+    quickDraftReturnSideAsk.dataset.balloonHelpDisabled = "sideask_unavailable";
   }
   const composeToolsToggle = document.getElementById("compose-tools-toggle");
   if (composeToolsToggle && typeof t === "function") {
@@ -696,7 +701,7 @@ function dockAssistantInQuickDraft() {
 function restoreQuickDraftIntegratedAssistant() {
   const assistant = getWindow("assistant");
   const slot = quickDraftClioTalkSlot();
-  const pane = getWindow("quickDraft")?.querySelector(".quick-draft-pane");
+  const pane = getWindow("quickDraft")?.querySelector(".draft-desk-pane");
   pane?.classList.remove("has-integrated-cliotalk");
   assistant?.classList.remove("is-quick-draft-integrated");
   if (!assistant || assistant.parentElement !== slot) return;
@@ -731,12 +736,39 @@ async function toggleSideAsk() {
     setStatus(t("sideask_on"));
   } else {
     const sourceWindowName = sideAskAnchorAppId;
+    const returningToQuickDraft = sourceWindowName === "quickDraft";
     clearSideAskMode();
     const sourceWindow = getWindow(sourceWindowName);
     if (sourceWindow) focusWindow(sourceWindow);
+    if (returningToQuickDraft) {
+      window.AISystem6QuickDraftRuntime?.setQuickDraftStatus?.(t("quick_draft_ready"), { live: false });
+    }
     setStatus(t("sideask_off"));
   }
   updateMenuState();
+}
+
+async function toggleQuickDraftSideAsk() {
+  if (!canUseSideAsk()) {
+    window.AISystem6QuickDraftRuntime?.setQuickDraftStatus?.(t("sideask_unavailable"));
+    return false;
+  }
+  const active = sideAskEnabled && sideAskAnchorAppId === "quickDraft";
+  if (active) {
+    clearSideAskMode();
+    const assistantWindow = getWindow("assistant");
+    if (assistantWindow && !assistantWindow.classList.contains("is-hidden")) {
+      await closeWindow("assistant", true);
+    }
+    const sourceWindow = getWindow("quickDraft");
+    if (sourceWindow) focusWindow(sourceWindow);
+    window.AISystem6QuickDraftRuntime?.setQuickDraftStatus?.(t("quick_draft_ready"), { live: false });
+  } else {
+    const paired = await arrangeWindowAssistantSplit("quickDraft");
+    if (!paired) return false;
+  }
+  updateMenuState();
+  return true;
 }
 
 async function quitApp(appId = activeAppId) {
@@ -869,6 +901,7 @@ function isNarrowViewport() {
 // production window fail the mobile coverage test until its role is deliberate.
 const mobileFullScreenAppIds = new Set([
   "clioTalk",
+  "quickDraft",
   "teachText",
   "writingStudio",
   "searcher",
@@ -1895,6 +1928,14 @@ function getActionAvailability() {
     : activeWin;
   const showResetSystemMenu = showResetSystemMenuInput ? showResetSystemMenuInput.checked : true;
   const winName = menuContextWin?.dataset.window;
+  const quickDraftApi = winName === "quickDraft" ? window.AISystem6QuickDraft : null;
+  const quickDraftHasBody = Boolean(quickDraftApi?.hasBody?.());
+  const quickDraftHasInput = Boolean(quickDraftApi?.hasInput?.());
+  const quickDraftHasOrganizableMaterial = Boolean(quickDraftApi?.hasOrganizableMaterial?.());
+  const quickDraftVentActive = Boolean(quickDraftApi?.isVentIntakeActive?.());
+  const quickDraftHasModel = Boolean(quickDraftApi?.modelAvailable?.());
+  const quickDraftCanPreview = Boolean(quickDraftApi?.canPreviewAdjustments?.());
+  const quickDraftCanDevelop = Boolean(quickDraftApi?.canDevelop?.());
   const teachTextWin = getWindow("teachText");
   const teachTextVisible = teachTextWin && !teachTextWin.classList.contains("is-hidden");
   const hasTeachTextBody = teachTextVisible && !!teachTextBodyInput.value.trim();
@@ -2095,20 +2136,30 @@ function getActionAvailability() {
     "generate-marp-open-clio-stage": hasTeachTextBody && teachTextCanExport,
     "toggle-teachtext-preview": teachTextVisible,
     "toggle-writing-preview": ["quickDraft", "questionSheet", "outline", "sectionDrafts", "reviewDesk", "teachText"].includes(winName),
+    "quick-draft-menu": winName === "quickDraft",
     "quick-draft-import-chat": winName === "quickDraft",
-    "quick-draft-vent-on": winName === "quickDraft",
-    "quick-draft-vent-off": winName === "quickDraft",
-    "quick-draft-vent-summary": winName === "quickDraft",
-    "quick-draft-compose": winName === "quickDraft",
-    "quick-draft-talk-points": winName === "quickDraft",
-    "quick-draft-mingming": winName === "quickDraft",
-    "quick-draft-luoluo": winName === "quickDraft",
-    "quick-draft-hkrr": winName === "quickDraft",
-    "quick-draft-praise": winName === "quickDraft",
-    "quick-draft-save-project": winName === "quickDraft",
-    "quick-draft-copy-markdown": winName === "quickDraft",
-    "quick-draft-send-teachtext": winName === "quickDraft",
-    "quick-draft-send-review": winName === "quickDraft",
+    "quick-draft-open-writing-studio": winName === "quickDraft",
+    "quick-draft-vent-on": winName === "quickDraft" && !quickDraftVentActive,
+    "quick-draft-vent-off": winName === "quickDraft" && quickDraftVentActive,
+    "quick-draft-vent-summary": winName === "quickDraft" && quickDraftHasModel && quickDraftHasOrganizableMaterial,
+    "quick-draft-compose": winName === "quickDraft" && quickDraftHasModel && quickDraftHasInput,
+    "quick-draft-apply": winName === "quickDraft" && quickDraftCanPreview,
+    "quick-draft-develop": winName === "quickDraft" && quickDraftHasBody && quickDraftCanDevelop,
+    "quick-draft-view-body": winName === "quickDraft",
+    "quick-draft-view-grain": winName === "quickDraft" && quickDraftHasBody,
+    "quick-draft-view-read": winName === "quickDraft" && quickDraftHasBody,
+    "quick-draft-toggle-materials": winName === "quickDraft" && quickDraftHasBody,
+    "quick-draft-toggle-adjustments": winName === "quickDraft" && quickDraftHasBody,
+    "quick-draft-toggle-sideask": winName === "quickDraft" && !isMultiFinderMode(),
+    "quick-draft-talk-points": winName === "quickDraft" && quickDraftHasModel && quickDraftHasInput,
+    "quick-draft-mingming": winName === "quickDraft" && quickDraftHasModel && quickDraftHasBody,
+    "quick-draft-luoluo": winName === "quickDraft" && quickDraftHasModel && quickDraftHasBody,
+    "quick-draft-hkrr": winName === "quickDraft" && quickDraftHasModel && quickDraftHasBody,
+    "quick-draft-praise": winName === "quickDraft" && quickDraftHasModel && quickDraftHasBody,
+    "quick-draft-save-project": winName === "quickDraft" && quickDraftHasBody,
+    "quick-draft-copy-markdown": winName === "quickDraft" && quickDraftHasBody,
+    "quick-draft-send-teachtext": winName === "quickDraft" && quickDraftHasBody,
+    "quick-draft-send-review": winName === "quickDraft" && quickDraftHasBody,
     "insert-question-template": winName === "questionSheet",
     "organize-question-sheet": winName === "questionSheet",
     "generate-outline": winName === "questionSheet",
@@ -2403,6 +2454,11 @@ function updateMenuState() {
   const state = getActionAvailability();
   if (typeof syncProjectCdBurnActionVisibility === "function") syncProjectCdBurnActionVisibility();
   const activeWin = document.querySelector(".window.is-active:not(.is-hidden)");
+  const activeQuickDraftApi = activeWin?.dataset.window === "quickDraft"
+    ? window.AISystem6QuickDraft
+    : null;
+  const quickDraftDisplayMode = activeQuickDraftApi?.displayMode?.() || "body";
+  const quickDraftSideAskActive = sideAskEnabled && sideAskAnchorAppId === "quickDraft";
   const activeViewWindow = viewWindowNames.includes(activeWin?.dataset.window) ? activeWin.dataset.window : null;
   const viewTargetIsWritingTools = !activeViewWindow && writingToolsAreViewTarget();
   const activeViewMode = viewTargetIsWritingTools
@@ -2438,6 +2494,25 @@ function updateMenuState() {
       btn.classList.toggle("is-checked", sideAskEnabled);
       btn.classList.toggle("is-active", sideAskEnabled && btn.id === "teachtext-sideask");
       if (btn.hasAttribute("aria-pressed")) btn.setAttribute("aria-pressed", String(sideAskEnabled));
+    }
+    if (["quick-draft-view-body", "quick-draft-view-grain", "quick-draft-view-read"].includes(action)) {
+      btn.classList.toggle("is-checked", action === `quick-draft-view-${quickDraftDisplayMode}`);
+    }
+    if (action === "quick-draft-toggle-materials" || action === "quick-draft-toggle-adjustments") {
+      const panel = action === "quick-draft-toggle-materials" ? "shelf" : "inspector";
+      const visible = Boolean(activeQuickDraftApi?.panelVisible?.(panel));
+      const labelKey = panel === "shelf"
+        ? (visible ? "quick_draft_hide_materials" : "quick_draft_show_materials")
+        : (visible ? "quick_draft_hide_adjustments" : "quick_draft_show_adjustments");
+      btn.dataset.i18n = labelKey;
+      btn.textContent = t(labelKey);
+      btn.classList.toggle("is-checked", visible);
+    }
+    if (action === "quick-draft-toggle-sideask") {
+      const labelKey = quickDraftSideAskActive ? "quick_draft_hide_sideask" : "quick_draft_show_sideask";
+      btn.dataset.i18n = labelKey;
+      btn.textContent = t(labelKey);
+      btn.classList.toggle("is-checked", quickDraftSideAskActive);
     }
     if (action === "tile-windows") {
       btn.classList.toggle("is-hidden", matchMedia("(max-width:860px) and (orientation:portrait)").matches);
@@ -2578,6 +2653,7 @@ async function openWindow(name, options = {}) {
     skipFocus = false,
     skipLiquidCoverEntrypoint = false,
     skipQuickDraftEntrypoint = false,
+    skipSideAsk = false,
   } = options;
 
   if (name === "styleSheet" || name === "claimCheck") {
@@ -2598,7 +2674,7 @@ async function openWindow(name, options = {}) {
   if (name === "quickDraft" && !skipQuickDraftEntrypoint && typeof ensureQuickDraftModule === "function") {
     await ensureQuickDraftModule();
     if (typeof window.AISystem6QuickDraft?.open === "function") {
-      await window.AISystem6QuickDraft.open({ skipFinderMode, skipPlacement, skipFocus });
+      await window.AISystem6QuickDraft.open({ skipFinderMode, skipPlacement, skipFocus, skipSideAsk });
       return;
     }
   }

@@ -221,11 +221,11 @@ export const windowInterfaceRegistry = Object.freeze({
   }),
   helpFolder: finderSurface("system"),
   applications: finderSurface("system"),
-  quickDraft: specializedUtility("writing-route", {
+  quickDraft: specializedUtility("utility", {
     route: "core",
     statusLayout: "multi-receipt",
     referenceSurface: "teachText",
-    rationale: "Quick Draft keeps five independent drafting, protection, stack, save, and operation receipts visible.",
+    rationale: "Quick Draft is an independent drafting application. It keeps drafting, protection, stack, save, and operation receipts visible, then offers a one-way entry into Writing Studio.",
   }),
   cmfStudio: creativeLab(),
   soundscape: creativeLab(),

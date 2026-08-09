@@ -15,7 +15,7 @@
 // current body at use time).
 //
 // This module takes data and returns data: no DOM, no record, no translations.
-// The record-aware and rendering layers live in app/features/finder-draft.js,
+// The record-aware and rendering layers live in Draft Desk's feature modules,
 // and the prompt copy that turns a strength into instructions lives beside the
 // prompts that consume it.
 

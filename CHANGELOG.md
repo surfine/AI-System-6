@@ -352,6 +352,17 @@ Version `1.0.12`, build `20260804.2`.
   writing pipeline. Public snapshots promise `verify:public`; `verify:ship`
   remains a maintainer/private-source gate.
 
+## Public Beta 1.0.29 - 2026-08-09
+
+- Quick Draft becomes an independent Draft Desk application instead of a
+  Writing Studio-owned surface.
+- The former Finder Draft and separate canvas are consolidated into one durable
+  workspace with materials, paper, adjustments, versions, receipts, and
+  Body / Grain / Read views.
+- Quick Draft gains explicit SideAsk and a one-way, save-first handoff into
+  Writing Studio. Desktop, Applications, MultiFinder, menus, mobile shell,
+  restore, and native parity contracts follow the new application boundary.
+
 ## What Changed Most In One Month
 
 - The product moved from "an AI writing prototype" to a local-first writing

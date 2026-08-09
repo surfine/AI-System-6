@@ -6,6 +6,8 @@
 // beside the editor. Pure text helpers stay data-only; the rendering helpers
 // only write to the Quick Draft window's own DOM.
 
+let selectedQuickDraftSourceId = "";
+
 function intakeSnapshot(record = activeProjectQuickDraft({ create: false })?.record) {
   return normalizeQuickDraftWorkspace(record?.workspace, record).intake;
 }
@@ -395,6 +397,7 @@ function renderSourceMap(record = normalizeQuickDraftRecord(), sources = sourceR
     ? record.sourceMap.map((item) => ({ ...byId.get(String(item.id || "")), ...item }))
     : sources;
   const body = String(refs.draft?.value || record.workspace?.body || "");
+  refs.sourceMap.closest(".draft-desk-shelf")?.classList.toggle("is-empty", !map.length);
 
   if (refs.shelfTitle) {
     refs.shelfTitle.textContent = map.length
@@ -404,7 +407,7 @@ function renderSourceMap(record = normalizeQuickDraftRecord(), sources = sourceR
 
   if (!map.length) {
     const empty = document.createElement("p");
-    empty.className = "quick-draft-source-empty";
+    empty.className = "draft-desk-source-empty";
     empty.textContent = t("quick_draft_material_empty");
     refs.sourceMap.append(empty);
     return;
@@ -413,24 +416,28 @@ function renderSourceMap(record = normalizeQuickDraftRecord(), sources = sourceR
   map.forEach((item) => {
     const row = document.createElement("button");
     row.type = "button";
-    row.className = "btn quick-draft-material-row";
-    row.dataset.sourceLabel = item.label || item.id || "";
+    row.className = "draft-desk-material-row";
+    row.dataset.quickDraftSourceId = String(item.id || "");
+    row.classList.toggle("is-selected", row.dataset.quickDraftSourceId === selectedQuickDraftSourceId);
+    row.setAttribute("aria-pressed", row.dataset.quickDraftSourceId === selectedQuickDraftSourceId ? "true" : "false");
+    const icon = document.createElement("span");
+    icon.className = "draft-desk-material-icon";
+    icon.setAttribute("aria-hidden", "true");
+    row.append(icon);
+    const text = document.createElement("span");
+    text.className = "draft-desk-material-copy";
     const name = document.createElement("b");
     name.textContent = item.label || item.id || "S";
-    row.append(name);
+    text.append(name);
     const meta = materialRowMeta(item, body);
     if (meta) {
       const small = document.createElement("small");
       small.textContent = meta;
-      row.append(small);
+      text.append(small);
     }
+    row.append(text);
     refs.sourceMap.append(row);
   });
-
-  const preview = document.createElement("pre");
-  preview.className = "quick-draft-source-preview";
-  preview.textContent = "";
-  refs.sourceMap.append(preview);
 }
 
 function hasEvidence(record) {
@@ -457,11 +464,47 @@ function hasOrganizedCards(record = normalizeQuickDraftRecord()) {
   );
 }
 
-function previewSource(label) {
-  const preview = refs.sourceMap?.querySelector(".quick-draft-source-preview");
-  if (!preview) return;
-  const source = sourceRecordsFromForm().find((item) => item.label === label || item.id === label);
-  preview.textContent = source ? `[${source.label}]\n${source.text.slice(0, 900)}` : "";
+function quickDraftCitationRange(body = "", sourceId = "") {
+  const text = String(body || "");
+  const tag = `[${String(sourceId || "").trim()}]`;
+  const tagIndex = tag.length > 2 ? text.indexOf(tag) : -1;
+  if (tagIndex < 0) return null;
+  const previousBreak = text.lastIndexOf("\n\n", tagIndex);
+  const nextBreak = text.indexOf("\n\n", tagIndex + tag.length);
+  return {
+    start: previousBreak < 0 ? 0 : previousBreak + 2,
+    end: nextBreak < 0 ? text.length : nextBreak,
+  };
+}
+
+function selectQuickDraftMaterial(sourceId = "") {
+  const next = selectedQuickDraftSourceId === sourceId ? "" : String(sourceId || "");
+  selectedQuickDraftSourceId = next;
+  refs.sourceMap?.querySelectorAll("[data-quick-draft-source-id]").forEach((row) => {
+    const selected = row.dataset.quickDraftSourceId === next;
+    row.classList.toggle("is-selected", selected);
+    row.setAttribute("aria-pressed", selected ? "true" : "false");
+  });
+
+  const editor = refs.draft?.closest(".teachtext-editor-container");
+  if (!next || !refs.draft) {
+    editor?.classList.remove("is-selected");
+    return false;
+  }
+  const range = quickDraftCitationRange(refs.draft.value, next);
+  if (!range) {
+    editor?.classList.remove("is-selected");
+    return false;
+  }
+  closeQuickDraftDrawer({ restoreFocus: false });
+  setQuickDraftPaperSurface("editor", { manual: true });
+  leaveQuickDraftPreview();
+  requestAnimationFrame(() => {
+    refs.draft.focus();
+    refs.draft.setSelectionRange(range.start, range.end);
+    refs.draft.dispatchEvent(new Event("select", { bubbles: true }));
+  });
+  return true;
 }
 
 function useMountedSources() {
@@ -690,6 +733,8 @@ function captureVentText(text = "", options = {}) {
   renderStrategyReport(saved);
   updateSourceCount();
   const count = nonDumpVentEntries(nextIntake).length;
+  syncQuickDraftAiAvailability();
+  if (typeof updateMenuState === "function") updateMenuState();
   setQuickDraftStatus(t(strategyCaptured ? "quick_draft_strategy_captured" : "quick_draft_vent_captured", count));
   return { captured: true, strategyCaptured, count };
 }
@@ -709,12 +754,18 @@ function setVentMode(enabled = true, options = {}) {
   const transferred = shouldFlush ? flushVentLogToSources(intake) : false;
   const nextIntake = normalizeIntake({
     ...intake,
+    setup: {
+      ...intake.setup,
+      scenario: normalizeScenario(refs.format?.value || intake.setup?.scenario || FIRST_DAY_FORMAT),
+    },
     ventMode: enabled === true,
     ventLog: enabled === true ? intake.ventLog : [],
   });
   const saved = saveQuickDraft({ workspace: { intake: nextIntake } }, { debounce: false });
   renderIntake(saved);
   updateSourceCount();
+  syncQuickDraftAiAvailability();
+  if (typeof updateMenuState === "function") updateMenuState();
   setQuickDraftStatus(t(nextIntake.ventMode ? "quick_draft_vent_mode_on" : "quick_draft_vent_mode_off", count));
   return { active: nextIntake.ventMode, count, transferred };
 }
@@ -735,6 +786,8 @@ function clearVentLog(options = {}) {
   const saved = saveQuickDraft({ workspace: { intake: nextIntake } }, { debounce: false });
   renderIntake(saved);
   updateSourceCount();
+  syncQuickDraftAiAvailability();
+  if (typeof updateMenuState === "function") updateMenuState();
   if (!options.silent) setQuickDraftStatus(t("quick_draft_vent_cleared", count));
   return { cleared: true, count };
 }
@@ -834,10 +887,18 @@ function adoptFirstImpression(index = -1) {
     setQuickDraftStatus(t("quick_draft_no_stance_candidate"));
     return false;
   }
-  refs.firstImpression.value = candidate;
+  const record = activeProjectQuickDraft({ create: false })?.record;
+  const setup = quickDraftSetupSnapshot(record);
   if (refs.format && !isLaunchDayFormat(refs.format.value)) refs.format.value = FIRST_DAY_FORMAT;
   syncQuickDraftTemplateUi();
-  renderDecisionStatuses(saveQuickDraft({}, { debounce: false }));
+  renderDecisionStatuses(saveQuickDraft({
+    workspace: {
+      intake: {
+        ...normalizeQuickDraftRecord(record).workspace.intake,
+        setup: { ...setup, firstImpression: candidate },
+      },
+    },
+  }, { debounce: false }));
   setQuickDraftStatus(t("quick_draft_adopted_impression"));
   return true;
 }

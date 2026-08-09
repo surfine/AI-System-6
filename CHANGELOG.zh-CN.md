@@ -1,5 +1,5 @@
 <!-- canonical-source: CHANGELOG.md -->
-<!-- source-sha256: 5f8abaff74e395d1cb49ed3480e2a44b7a37c5f54d7a23d32e4a97e8fd09f319 -->
+<!-- source-sha256: e652aa5eb697e58df9036b1eda406b017ce19fcc7d4e2352f665a7ba5d4d495c -->
 
 # AI System 6 中文更新日志
 
@@ -347,6 +347,14 @@ Liquid Glass 继续作为独立材质存在，而不是被复古修正误伤。
 - Send to TeachText 打开已保存的 Project Document，不再改变主写作流程。公开 snapshot 只承诺 `verify:public`；`verify:ship` 保持为维护者私有源树门禁。
 - StateStore commit 回调做静态审计：UI 临时状态（选中、激活、焦点、toast）
   只能在 commit 成功之后变化，并修复了两处既有违规。
+
+## 公开测试版 1.0.29 — 2026-08-09
+
+- 钟点稿从 Writing Studio 所属窗口调整为独立的 Draft Desk 应用。
+- 旧 Finder Draft 与独立 canvas 归并为一个耐久工作区，统一容纳材料、
+  正文、调整层、版本、状态回执与 Body / Grain / Read 视图。
+- 钟点稿新增明确 SideAsk 与“先保存、再单向交给 Writing Studio”的路径；
+  桌面、Applications、MultiFinder、菜单、手机壳、会话恢复与原生对齐契约同步更新。
 
 ## 一个月里真正变大的东西
 

@@ -1538,8 +1538,12 @@
   --endfield-quote-rule: 3px solid var(--ink);
   --endfield-quote-radius: 0;
   /* One window, three regions: the paper takes the rest of the width. */
-  --quick-draft-shelf-width: 11.5rem;
-  --quick-draft-inspector-width: 15rem;
+  --draft-desk-window-left: 56px;
+  --draft-desk-window-top: 38px;
+  --draft-desk-window-width: min(1000px, calc(100vw - 88px));
+  --draft-desk-window-height: min(720px, calc(100vh - 72px));
+  --quick-draft-shelf-width: 168px;
+  --quick-draft-inspector-width: 210px;
   /* The strip of paper a drawer never covers. */
   --quick-draft-drawer-edge: 16px;
   --quick-draft-panel-bg: var(--quiet-panel);
@@ -1550,6 +1554,11 @@
   --quick-draft-status-bg: var(--panel);
   --quick-draft-status-border: 1px dotted var(--shade-dark);
   --quick-draft-divider-border: 1px dotted var(--shade-dark);
+  --quick-draft-actions-bg: var(--panel);
+  --quick-draft-secondary-fg: var(--shade-dark);
+  --quick-draft-selected-fg: var(--paper);
+  --quick-draft-field-focus-bg: var(--paper);
+  --quick-draft-field-focus-shadow: var(--system-shadow);
   /* Compression grain. A 1-bit screen would draw the model's share as a 50%
      dither; the web cannot dither a glyph, so running text uses the grey plus
      a dotted rule and only the legend swatch carries the real pattern. */
@@ -1564,14 +1573,22 @@
     linear-gradient(45deg, var(--ink) 25%, transparent 25%, transparent 75%, var(--ink) 75%) 0 0 / 2px 2px,
     linear-gradient(45deg, var(--ink) 25%, transparent 25%, transparent 75%, var(--ink) 75%) 1px 1px / 2px 2px,
     var(--paper);
-  /* 文字亮室 state language (Figure 01 in drafts/text-photoshop): four
+  /* 文字亮室 state language (Figure 04 in quick-draft-redesign): four
      states, one language, two themes. Default is no border; a line only
      appears where a state must be told apart. Classic draws with line
-     qualities — none, dotted, marching ants, moving 50% dither — because it
-     has no glow; Liquid draws with material (control points, travelling edge
+     qualities — none, lifted paper, marching ants, travelling edge — because
+     it has no glow; Liquid draws with material (control points, travelling edge
      light). Values are theme tokens; the selectors live once in 50-apps.css. */
   --quick-draft-state-selected-outline: none;
   --quick-draft-state-selected-surface:
+    linear-gradient(var(--ink), var(--ink)) 0 0 / 7px 7px no-repeat,
+    linear-gradient(var(--paper), var(--paper)) 1px 1px / 5px 5px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 100% 0 / 7px 7px no-repeat,
+    linear-gradient(var(--paper), var(--paper)) calc(100% - 1px) 1px / 5px 5px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 0 100% / 7px 7px no-repeat,
+    linear-gradient(var(--paper), var(--paper)) 1px calc(100% - 1px) / 5px 5px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 100% 100% / 7px 7px no-repeat,
+    linear-gradient(var(--paper), var(--paper)) calc(100% - 1px) calc(100% - 1px) / 5px 5px no-repeat,
     repeating-linear-gradient(90deg, var(--ink) 0 5px, transparent 5px 10px) 0 0 / 20px 1px repeat-x,
     repeating-linear-gradient(90deg, var(--ink) 0 5px, transparent 5px 10px) 0 100% / 20px 1px repeat-x,
     repeating-linear-gradient(0deg, var(--ink) 0 5px, transparent 5px 10px) 0 0 / 1px 20px repeat-y,
@@ -1579,9 +1596,8 @@
   --quick-draft-state-control-points: none;
   --quick-draft-state-selected-animation: quickDraftMarchingAnts 0.9s linear infinite;
   --quick-draft-state-working-surface:
-    linear-gradient(45deg, var(--ink) 25%, transparent 25%, transparent 75%, var(--ink) 75%) 0 0 / 2px 2px repeat,
-    linear-gradient(45deg, var(--ink) 25%, transparent 25%, transparent 75%, var(--ink) 75%) 1px 1px / 2px 2px repeat;
-  --quick-draft-state-working-animation: quickDraftWorkingDither 1.1s steps(2) infinite;
+    repeating-linear-gradient(90deg, var(--ink) 0 2px, transparent 2px 4px) -40% 100% / 36% 2px no-repeat;
+  --quick-draft-state-working-animation: quickDraftWorkingSweep 2.6s ease-in-out infinite;
   --quick-draft-protected-fg: var(--ink);
   /* 拼台 (task 8): the single-object canvas. The object level carries only
      the visual transform; the text is the same Markdown as the article view.

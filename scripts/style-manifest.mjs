@@ -15,4 +15,5 @@ export const styleRuntimePaths = [
   "styles/88-soundscape.css",
   "styles/89-control-strip.css",
   "styles/90-endfield-terminal.css",
+  "styles/91-draft-desk.css",
 ];

@@ -76,7 +76,6 @@ test.assertIncludes(desktopIconColumn, 'data-open="applications"', "the desktop 
 test.assertIncludes(app, 'action: "open-scrapbook"', "the rendered Applications registry exposes Scrapbook");
 test.assertIncludes(appsCss, "grid-template-columns: minmax(0, 1fr);", "desktop icon labels cannot widen the shared icon column and shift an icon off center");
 [
-  "open-quick-draft",
   "open-find-path",
   "open-reader",
   "open-time-machine",
@@ -90,6 +89,8 @@ test.assertIncludes(appsCss, "grid-template-columns: minmax(0, 1fr);", "desktop 
   test.assertNotIncludes(desktopIconColumn, `data-action="${action}"`, `${action} stays in Applications instead of duplicating onto the desktop`);
   test.assertIncludes(applicationsWindow, `data-action="${action}"`, `${action} remains discoverable in the Applications folder`);
 });
+test.assertIncludes(desktopIconColumn, 'data-action="open-quick-draft"', "Quick Draft is directly reachable from the desktop");
+test.assertIncludes(applicationsWindow, 'data-action="open-quick-draft"', "Quick Draft also remains discoverable in Applications");
 test.assertIncludes(desktopIconColumn, 'id="active-project-drop-target"', "the mounted Project Hard Disk is a real desktop drop target");
 test.assertIncludes(desktopIconColumn, 'id="desktop-project-cd"', "a burned Project CD can join the current desktop working set");
 test.assertIncludes(projectDisk, 'currentProjectIcon?.classList.toggle("is-hidden", !project);', "the Project Hard Disk icon follows mount state");

@@ -17,12 +17,11 @@ const sources = [
   "app/core/protected-ranges.js",
   "app/core/text-compose.js",
   "app/core/grain-diff.js",
-  "app/features/quick-draft-canvas.js",
-  "app/features/finder-draft.js",
+  "app/core/quick-draft-workspace.js",
+  "app/features/draft-desk.js",
   "app/features/quick-draft-intake.js",
   "app/features/quick-draft-editor.js",
   "app/features/quick-draft-composition.js",
-  "app/features/quick-draft-canvas.js",
   "app/features/quick-draft-ai.js",
   "app/features/quick-draft-handoff.js",
 ].map((path) => read(path));
@@ -256,7 +255,7 @@ test.assert(
   "protection never guesses a position or appends the quote at the end"
 );
 
-// ---- Scenario 5: restore — layers, protect, canvas transform, refresh -----
+// ---- Scenario 5: restore — layers, protect, title, body, refresh ---------
 const layered = context.normalizeQuickDraftWorkspace({
   schemaVersion: 2,
   title: "持久稿",
@@ -266,10 +265,7 @@ const layered = context.normalizeQuickDraftWorkspace({
     { kind: "density", enabled: true, strength: 75, mask: "2-3" },
   ]),
   protectedRanges: [{ start: 1, end: 1 }],
-  canvas: {
-    objects: [{ id: "obj-1", x: 320, y: 150, width: 640, height: 120, angle: 17 }],
-    path: ["obj-1"],
-  },
+  versions: [{ id: "kept-1", body: "上一稿。", createdAt: "2026-08-08T00:00:00.000Z" }],
 });
 const refreshed = context.normalizeQuickDraftWorkspace(layered, {});
 test.assert(
@@ -282,14 +278,7 @@ test.assert(
   refreshed.protectedRanges.some((range) => range.start === 1 && range.end === 1),
   "protected ranges restore after a refresh"
 );
-test.assert(
-  refreshed.canvas.objects[0].x === 320
-    && refreshed.canvas.objects[0].y === 150
-    && refreshed.canvas.objects[0].width === 640
-    && refreshed.canvas.objects[0].height === 120
-    && refreshed.canvas.objects[0].angle === 17,
-  "the canvas transform restores after a refresh"
-);
+test.assert(refreshed.versions[0]?.body === "上一稿。", "kept versions restore after a refresh");
 test.assert(refreshed.body === "正文." || refreshed.body === "正文。", "switching views never loses the body");
 test.assert(refreshed.title === "持久稿", "the saved project title restores after a refresh");
 

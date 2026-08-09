@@ -117,7 +117,7 @@ async function switchToMultiFinder() {
   if (!committed.ok) return false;
   const switched = await setFinderEnvironment("multifinder", { persistStartup: true, announce: false });
   if (!switched) return false;
-  ensureRunningApp("writingStudio", "quickDraft");
+  ensureRunningApp("quickDraft", "quickDraft");
   setQuickDraftStatus(t("quick_draft_multifinder_done"));
   return true;
 }
@@ -148,13 +148,25 @@ window.AISystem6QuickDraft = Object.freeze({
   togglePreview: toggleQuickDraftPreview,
   toggleComposite: toggleQuickDraftComposite,
   previewMode: () => quickDraftPreviewMode,
-  surfaceMode: () => quickDraftSurfaceMode,
+  displayMode: currentQuickDraftDisplayMode,
+  setDisplayMode: setQuickDraftDisplayMode,
+  panelVisible: quickDraftPanelVisible,
+  togglePanel: toggleQuickDraftPanel,
+  hasInput: () => quickDraftInteractionState().hasInput,
+  hasOrganizableMaterial: () => quickDraftInteractionState().hasOrganizableMaterial,
   paperSurface: () => quickDraftPaperSurface,
-  setView: (mode) => setQuickDraftSurface(mode === "canvas" ? "canvas" : "linear", { manual: true }),
   setPaperSurface: (surface) => setQuickDraftPaperSurface(surface, { manual: true }),
   protectSelection: protectSelectionFromTextarea,
   applyAdjustments: applyAdjustmentLayers,
   develop: developAdjustmentLayers,
+  hasBody: () => Boolean(String(refs.draft?.value || activeProjectQuickDraft({ create: false })?.record?.workspace?.body || "").trim()),
+  modelAvailable: quickDraftModelAvailable,
+  canPreviewAdjustments: () => Boolean(
+    quickDraftModelAvailable()
+    && String(refs.draft?.value || activeProjectQuickDraft({ create: false })?.record?.workspace?.body || "").trim()
+    && enabledAdjustmentLayers(activeProjectQuickDraft({ create: false })?.record).length
+  ),
+  canDevelop: () => currentCompositeState(activeProjectQuickDraft({ create: false })?.record).ready,
   copyMarkdown: copyQuickDraftMarkdown,
   collectVentOutline,
   adoptFirstImpression,

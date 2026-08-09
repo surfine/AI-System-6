@@ -156,7 +156,6 @@ const teachTextMenus = [
   menu("edit", "menu_edit", editWithWriting),
   menu("writing", "menu_writing", [
     submenu("menu_go_to", [
-      menuItem("open-quick-draft", "quick_draft_label"),
       menuItem("open-question-sheet", "question_sheet"),
       menuItem("open-outline", "outline"),
       menuItem("open-section-drafts", "section_drafts"),
@@ -166,24 +165,6 @@ const teachTextMenus = [
     menuItem("toggle-writing-preview", "preview"),
     menuItem("see-as-chart", "clio_chart_see_as_chart"),
     menuSeparator,
-    submenu("quick_draft_label", [
-      menuItem("quick-draft-import-chat", "quick_draft_import_chat_records"),
-      menuItem("quick-draft-vent-on", "quick_draft_vent_start"),
-      menuItem("quick-draft-vent-off", "quick_draft_vent_stop"),
-      menuItem("quick-draft-vent-summary", "quick_draft_vent_summarize"),
-      menuSeparator,
-      menuItem("quick-draft-compose", "quick_draft_start_writing"),
-      menuItem("quick-draft-talk-points", "quick_draft_chip_talk_points"),
-      menuItem("quick-draft-mingming", "quick_draft_chip_mingming"),
-      menuItem("quick-draft-luoluo", "quick_draft_chip_luoluo"),
-      menuItem("quick-draft-hkrr", "quick_draft_chip_hkrr"),
-      menuItem("quick-draft-praise", "quick_draft_chip_praise"),
-      menuSeparator,
-      menuItem("quick-draft-save-project", "quick_draft_save_project_doc"),
-      menuItem("quick-draft-copy-markdown", "copy_markdown"),
-      menuItem("quick-draft-send-teachtext", "quick_draft_send_teachtext"),
-      menuItem("quick-draft-send-review", "quick_draft_send_review"),
-    ], { surface: "quickDraft" }),
     submenu("question_sheet", [
       menuItem("insert-question-template", "insert_question_template"),
       menuItem("organize-question-sheet", "organize_question_sheet"),
@@ -222,6 +203,50 @@ const teachTextMenus = [
     menuItem("open-image-manager", "image_manager"),
     menuItem("generate-marp-open-clio-stage", "generate_marp_open_clio_stage"),
   ]),
+  specialMenu(),
+];
+
+// Quick Draft is its own application. Its route relationship is deliberately
+// one-way: the draft may enter Writing Studio, but Writing Studio never owns
+// or advertises Quick Draft as one of its internal writing surfaces.
+const quickDraftMenus = [
+  menu("file", "menu_file", [
+    menuItem("close-active-window", "close", "close-window"),
+    menuSeparator,
+    menuItem("quick-draft-save-project", "quick_draft_save_project_doc"),
+    menuSeparator,
+    menuItem("quick-draft-copy-markdown", "copy_markdown"),
+    menuItem("quick-draft-send-teachtext", "quick_draft_send_teachtext"),
+    menuItem("quick-draft-send-review", "quick_draft_send_review"),
+  ]),
+  menu("edit", "menu_edit", editWithWriting),
+  menu("view", "menu_view", [
+    menuItem("quick-draft-view-body", "quick_draft_display_body"),
+    menuItem("quick-draft-view-grain", "quick_draft_grain"),
+    menuItem("quick-draft-view-read", "quick_draft_composite"),
+    menuSeparator,
+    menuItem("quick-draft-toggle-materials", "quick_draft_hide_materials"),
+    menuItem("quick-draft-toggle-adjustments", "quick_draft_hide_adjustments"),
+  ]),
+  menu("quickDraft", "quick_draft_label", [
+    menuItem("quick-draft-compose", "quick_draft_start_writing"),
+    menuItem("quick-draft-apply", "quick_draft_preview_adjustments"),
+    menuItem("quick-draft-develop", "quick_draft_develop"),
+    menuSeparator,
+    menuItem("quick-draft-import-chat", "quick_draft_import_chat_records"),
+    menuItem("quick-draft-vent-on", "quick_draft_vent_start"),
+    menuItem("quick-draft-vent-off", "quick_draft_vent_stop"),
+    menuItem("quick-draft-vent-summary", "quick_draft_vent_summarize"),
+    menuSeparator,
+    menuItem("quick-draft-talk-points", "quick_draft_chip_talk_points"),
+    menuItem("quick-draft-mingming", "quick_draft_chip_mingming"),
+    menuItem("quick-draft-luoluo", "quick_draft_chip_luoluo"),
+    menuItem("quick-draft-hkrr", "quick_draft_chip_hkrr"),
+    menuItem("quick-draft-praise", "quick_draft_chip_praise"),
+    menuSeparator,
+    menuItem("quick-draft-toggle-sideask", "quick_draft_show_sideask"),
+    menuItem("quick-draft-open-writing-studio", "enter_writing_studio"),
+  ], { menuCondition: "quick-draft-menu" }),
   specialMenu(),
 ];
 
@@ -549,6 +574,7 @@ const minimalMenus = [specialMenu()];
 
 const applicationMenuSets = Object.freeze({
   finder: finderMenus,
+  quickDraft: quickDraftMenus,
   teachText: teachTextMenus,
   clioTalk: clioTalkMenus,
   reader: readerMenus,

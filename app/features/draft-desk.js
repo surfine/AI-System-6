@@ -1,15 +1,15 @@
-// Feature module: 钟点稿 / Quick Draft — coordinator.
+// Feature module: 钟点稿 / Draft Desk — clean-shell coordinator.
 //
-// This file owns only the lifecycle: workspace loading and schema
-// normalization, save-state semantics, paper/view switching, module
-// coordination, window open/close/restore, and the public API surface. The
-// feature logic is split across sibling modules (loaded in the same lazy
-// chain, sharing this bundle's top-level scope):
-//
+// This file owns only the new shell lifecycle: save-state semantics, paper
+// switching, module coordination, window open/close/restore, and the public
+// API surface. Workspace schema and migration live in
+// app/core/quick-draft-workspace.js so this UI can be replaced without ever
+// forking a project's durable record. The feature logic is split across
+// sibling modules (loaded in the same lazy chain, sharing this bundle's
+// top-level scope):
 //   quick-draft-intake.js       materials, vent, chat import, source map
 //   quick-draft-editor.js       editor chrome, preview modes, versions
 //   quick-draft-composition.js  adjustment layers, protect, grain, develop
-//   quick-draft-canvas.js       the single-object canvas
 //   quick-draft-ai.js           model requests and command dispatch
 //   quick-draft-handoff.js      delivery actions
 //
@@ -17,50 +17,12 @@
 // canonical schema (schemaVersion 3); the main writing route is only touched
 // by explicit handoff actions.
 
-const FIRST_DAY_FORMAT = "first-day-hands-on";
-const HANDS_ON_REVIEW_FORMAT = "hands-on-review";
-const BILI_DYNAMIC_FORMAT = "bili-dynamic";
-const targetFormats = new Set([FIRST_DAY_FORMAT, HANDS_ON_REVIEW_FORMAT, BILI_DYNAMIC_FORMAT]);
-const targetDurations = new Set(["7m", "12m", "140w", "280w", "500w"]);
-const durationByFormat = {
-  [FIRST_DAY_FORMAT]: "7m",
-  [HANDS_ON_REVIEW_FORMAT]: "12m",
-  [BILI_DYNAMIC_FORMAT]: "280w",
-};
-
-const emptyBrief = Object.freeze({
-  support: "",
-  counter: "",
-  uncertainty: "",
-  outline: "",
-});
-
-const emptyAnnotations = Object.freeze({
-  firsthand: "",
-  official: "",
-  uncertainty: "",
-  followup: "",
-});
-
-const emptyIntake = Object.freeze({
-  ventMode: false,
-  ventLog: [],
-  chatMaterials: [],
-  stanceCandidates: [],
-  outlineSeed: "",
-});
-
-const emptyStrategy = Object.freeze({
-  editorial: "",
-  materialLedger: "",
-  adoptionTable: "",
-});
-
 const refs = {};
 let bound = false;
 let saveTimer = null;
 let pendingQuickDraftCommit = null;
 let requestController = null;
+let quickDraftDrawerTrigger = null;
 
 // One window, three regions: the material shelf, the paper, the inspector.
 // The paper never leaves the screen, so there is no phase to switch — only
@@ -69,9 +31,6 @@ let requestController = null;
 // manual choice is never yanked back.
 let quickDraftPaperSurface = "intake";
 let quickDraftPaperManual = false;
-let quickDraftSurfaceMode = "linear";
-let quickDraftSurfaceManual = false;
-let quickDraftEditingCanvasObject = false;
 let quickDraftPreviewMode = "render";
 
 function $(id) {
@@ -89,6 +48,7 @@ function collectRefs() {
   refs.saveState = $("quick-draft-save-state");
   refs.sourceCount = $("quick-draft-source-count");
   refs.sourceSummary = $("quick-draft-source-summary");
+  refs.addMaterialMenu = $("quick-draft-add-material");
   refs.tools = $("quick-draft-tools");
   refs.deliverMenu = $("quick-draft-deliver");
   refs.aiCards = $("quick-draft-ai-cards");
@@ -116,26 +76,14 @@ function collectRefs() {
   refs.firstDaySubject = $("quick-draft-first-day-subject");
   refs.handsOn = $("quick-draft-hands-on");
   refs.officialMaterials = $("quick-draft-official-materials");
-  refs.unavailable = $("quick-draft-unavailable");
-  refs.audienceConcerns = $("quick-draft-audience-concerns");
   refs.officialSummary = $("quick-draft-official-summary");
   refs.unavailableSummary = $("quick-draft-unavailable-summary");
   refs.audienceSummary = $("quick-draft-audience-summary");
-  refs.firstImpression = $("quick-draft-first-impression");
   refs.firstImpressionStatus = $("quick-draft-first-impression-status");
-  refs.tone = $("quick-draft-tone");
-  refs.mustInclude = $("quick-draft-must-include");
-  refs.mustAvoid = $("quick-draft-must-avoid");
   refs.draft = $("quick-draft-draft");
   refs.preview = $("quick-draft-preview");
   refs.toggleGrainButton = $("quick-draft-toggle-grain");
   refs.toggleCompositeButton = $("quick-draft-toggle-composite");
-  refs.canvas = document.querySelector("[data-quick-draft-canvas]");
-  refs.canvasStage = document.querySelector("[data-quick-draft-canvas-stage]");
-  refs.canvasObject = document.querySelector("[data-quick-draft-canvas-object]");
-  refs.canvasAngle = document.querySelector("[data-quick-draft-canvas-angle]");
-  refs.articleViewButton = document.querySelector("[data-quick-draft-view='article']");
-  refs.canvasViewButton = document.querySelector("[data-quick-draft-view='canvas']");
   refs.saveButton = $("quick-draft-save");
   refs.saveProjectDocButton = $("quick-draft-save-project-doc");
   refs.sendTeachTextButton = $("quick-draft-send-teachtext");
@@ -157,346 +105,6 @@ function collectRefs() {
   refs.displayButtons = document.querySelectorAll("[data-quick-draft-display]");
 }
 
-function hasOwnString(object, key) {
-  return Object.prototype.hasOwnProperty.call(object || {}, key) && typeof object[key] === "string";
-}
-
-function normalizeScenario(value, fallback = FIRST_DAY_FORMAT) {
-  if (value === "bili-video" || value === "spoken-outline") return FIRST_DAY_FORMAT;
-  return targetFormats.has(value) ? value : (targetFormats.has(fallback) ? fallback : FIRST_DAY_FORMAT);
-}
-
-function normalizeDuration(value, format = FIRST_DAY_FORMAT) {
-  const dynamic = normalizeScenario(format) === BILI_DYNAMIC_FORMAT;
-  const allowed = dynamic ? ["140w", "280w", "500w"] : ["7m", "12m"];
-  if (value === "8m") return "7m";
-  if (value === "10m") return "12m";
-  if (["30s", "1m", "3m", "5m"].includes(value)) return durationByFormat[format] || (dynamic ? "280w" : "7m");
-  return allowed.includes(value) ? value : (durationByFormat[format] || (dynamic ? "280w" : "7m"));
-}
-
-function titleFromBody(body = "") {
-  const text = String(body || "");
-  const heading = text.split(/\r?\n/).find((line) => /^#{1,6}\s+\S/.test(line.trim()));
-  const fallback = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean)[0] || "";
-  return String(heading || fallback || t("quick_draft_title"))
-    .replace(/^#{1,6}\s+/, "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 42);
-}
-
-// ---- Workspace schema (schemaVersion 3) --------------------------------
-// All Quick Draft persistence lives in one canonical shape:
-//
-//   { schemaVersion, title, body, intake: {}, materials: [], strategy: {},
-//     adjustmentLayers: [], protectedRanges: [], composition: {}, canvas: {},
-//     projectDocId, savedStatus, updatedAt }
-//
-// Legacy records (pre-schemaVersion workspace, flat aliases, toolInputs /
-// strategyReport / sourceMap / humanAnchor fields) migrate in
-// normalizeQuickDraftWorkspace below; every old project keeps opening.
-
-function blankToolInputs() {
-  return {
-    thesis: "",
-    pastedSources: "",
-    targetDuration: "7m",
-    firstDaySubject: "",
-    handsOnNotes: "",
-    officialMaterials: "",
-    unavailableNotes: "",
-    audienceConcerns: "",
-    firstImpression: "",
-    tone: "",
-    mustInclude: "",
-    mustAvoid: "",
-  };
-}
-
-function blankQuickDraftWorkspace() {
-  return {
-    schemaVersion: 3,
-    title: "",
-    titleMode: "auto",
-    body: "",
-    intake: {
-      ...emptyIntake,
-      setup: {
-        ...blankToolInputs(),
-        scenario: FIRST_DAY_FORMAT,
-      },
-      annotations: { ...emptyAnnotations },
-    },
-    materials: [],
-    strategy: { ...emptyStrategy },
-    adjustmentLayers: [],
-    protectedRanges: [],
-    composition: {
-      currentKey: "",
-      composite: "",
-      generatedAt: "",
-      negative: "",
-      negativeUpdatedAt: "",
-    },
-    versions: [],
-    canvas: blankQuickDraftCanvas(),
-    projectDocId: "",
-    savedStatus: "saved",
-    updatedAt: "",
-  };
-}
-
-function normalizeToolInputs(value = {}, legacy = {}) {
-  const source = value && typeof value === "object" ? value : {};
-  return {
-    ...blankToolInputs(),
-    thesis: String(source.thesis ?? legacy.thesis ?? ""),
-    pastedSources: String(source.pastedSources ?? legacy.pastedSources ?? legacy.sourcesText ?? ""),
-    targetDuration: normalizeDuration(source.targetDuration || legacy.targetDuration),
-    firstDaySubject: String(source.firstDaySubject ?? legacy.firstDaySubject ?? legacy.subject ?? ""),
-    handsOnNotes: String(source.handsOnNotes ?? legacy.handsOnNotes ?? legacy.handsOn ?? ""),
-    officialMaterials: String(source.officialMaterials ?? legacy.officialMaterials ?? ""),
-    unavailableNotes: String(source.unavailableNotes ?? legacy.unavailableNotes ?? legacy.unavailable ?? ""),
-    audienceConcerns: String(source.audienceConcerns ?? legacy.audienceConcerns ?? ""),
-    firstImpression: String(source.firstImpression ?? legacy.firstImpression ?? ""),
-    tone: String(source.tone ?? legacy.tone ?? ""),
-    mustInclude: String(source.mustInclude ?? legacy.mustInclude ?? ""),
-    mustAvoid: String(source.mustAvoid ?? legacy.mustAvoid ?? ""),
-  };
-}
-
-function normalizeAnnotations(value = {}, legacy = {}) {
-  const source = value && typeof value === "object" ? value : {};
-  const brief = legacy.brief && typeof legacy.brief === "object" ? legacy.brief : {};
-  return {
-    firsthand: String(source.firsthand ?? brief.support ?? ""),
-    official: String(source.official ?? brief.counter ?? ""),
-    uncertainty: String(source.uncertainty ?? brief.uncertainty ?? ""),
-    followup: String(source.followup ?? legacy.risks ?? ""),
-  };
-}
-
-function normalizeVentEntry(entry, index = 0) {
-  if (typeof entry === "string") {
-    return {
-      id: `vent-${index + 1}`,
-      text: entry,
-      createdAt: "",
-      sourceKind: "clioTalk-vent",
-    };
-  }
-  const source = entry && typeof entry === "object" ? entry : {};
-  return {
-    id: String(source.id || `vent-${index + 1}`),
-    text: String(source.text || ""),
-    createdAt: String(source.createdAt || ""),
-    sourceKind: String(source.sourceKind || "clioTalk-vent"),
-  };
-}
-
-function normalizeQuickDraftVersion(entry, index = 0) {
-  const source = entry && typeof entry === "object" ? entry : {};
-  return {
-    id: String(source.id || `version-${index + 1}`),
-    body: String(source.body ?? source.text ?? ""),
-    title: String(source.title || ""),
-    createdAt: String(source.createdAt || source.timestamp || ""),
-    reason: String(source.reason || "before-ai"),
-    source: String(source.source || source.sourceKind || "quick-draft"),
-  };
-}
-
-function normalizeChatMaterial(entry, index = 0) {
-  const source = entry && typeof entry === "object" ? entry : {};
-  return {
-    id: String(source.id || `chat-${index + 1}`),
-    name: String(source.name || source.title || `Chat ${index + 1}`),
-    text: String(source.text || ""),
-    platform: String(source.platform || "generic-chat"),
-    sourceKind: String(source.sourceKind || "chat-screenshot"),
-    createdAt: String(source.createdAt || ""),
-  };
-}
-
-function normalizeIntake(value = {}, legacy = {}) {
-  const source = value && typeof value === "object" ? value : {};
-  const legacyVentLog = Array.isArray(legacy.ventLog) ? legacy.ventLog : [];
-  const legacyChatMaterials = Array.isArray(legacy.chatMaterials) ? legacy.chatMaterials : [];
-  const legacyStanceCandidates = Array.isArray(legacy.stanceCandidates) ? legacy.stanceCandidates : [];
-  return {
-    ...emptyIntake,
-    ventMode: source.ventMode === true,
-    ventLog: (Array.isArray(source.ventLog) ? source.ventLog : legacyVentLog)
-      .map(normalizeVentEntry)
-      .filter((entry) => entry.text.trim()),
-    chatMaterials: (Array.isArray(source.chatMaterials) ? source.chatMaterials : legacyChatMaterials)
-      .map(normalizeChatMaterial)
-      .filter((entry) => entry.text.trim()),
-    stanceCandidates: (Array.isArray(source.stanceCandidates) ? source.stanceCandidates : legacyStanceCandidates)
-      .map((item) => String(item || "").trim())
-      .filter(Boolean),
-    outlineSeed: String(source.outlineSeed ?? legacy.outlineSeed ?? ""),
-  };
-}
-
-function normalizeStrategy(value = {}, legacy = {}) {
-  const source = value && typeof value === "object" ? value : {};
-  const fallback = legacy.strategyReport && typeof legacy.strategyReport === "object" ? legacy.strategyReport : {};
-  return {
-    ...emptyStrategy,
-    editorial: String(source.editorial ?? fallback.editorial ?? ""),
-    materialLedger: String(source.materialLedger ?? fallback.materialLedger ?? ""),
-    adoptionTable: String(source.adoptionTable ?? fallback.adoptionTable ?? ""),
-  };
-}
-
-// Legacy field names (toolInputs / annotations / strategyReport / sourceMap /
-// humanAnchor / humanAnchorUpdatedAt / scenario / protectedRanges) are read
-// for migration and never written into the canonical schema again.
-function normalizeQuickDraftWorkspace(value = {}, legacy = {}) {
-  const source = value && typeof value === "object" ? value : {};
-  const legacyToolInputs = legacy.toolInputs && typeof legacy.toolInputs === "object" ? legacy.toolInputs : {};
-  const body = hasOwnString(source, "body") ? source.body : String(legacy.draft || "");
-  const setupSource = source.intake?.setup && typeof source.intake.setup === "object" ? source.intake.setup : {};
-  const annotationsSource = source.intake?.annotations && typeof source.intake.annotations === "object"
-    ? source.intake.annotations
-    : (source.annotations && typeof source.annotations === "object" ? source.annotations : {});
-  const scenario = normalizeScenario(
-    setupSource.scenario || source.scenario || legacy.targetFormat,
-    FIRST_DAY_FORMAT
-  );
-  const toolInputs = {
-    ...normalizeToolInputs(setupSource, { ...legacy, ...legacyToolInputs }),
-    targetDuration: normalizeDuration(
-      setupSource.targetDuration || source.toolInputs?.targetDuration || legacy.targetDuration,
-      scenario
-    ),
-    scenario,
-  };
-  const intake = normalizeIntake(source.intake, legacy);
-  const migratedDumps = intake.ventLog
-    .filter((entry) => entry.sourceKind === "quick-draft-dump")
-    .map((entry, index) => normalizeQuickDraftVersion(entry, index));
-  intake.ventLog = intake.ventLog.filter((entry) => entry.sourceKind !== "quick-draft-dump");
-  const explicitVersions = (Array.isArray(source.versions) ? source.versions : []).map(normalizeQuickDraftVersion);
-  const versionsById = new Map();
-  [...explicitVersions, ...migratedDumps].forEach((version) => {
-    const identity = version.id || `${version.createdAt}:${version.body}`;
-    if (version.body.trim() && !versionsById.has(identity)) versionsById.set(identity, version);
-  });
-  const compositionSource = source.composition && typeof source.composition === "object" ? source.composition : {};
-  const composition = {
-    currentKey: String(compositionSource.currentKey || ""),
-    composite: String(compositionSource.composite || ""),
-    generatedAt: String(compositionSource.generatedAt || ""),
-    negative: String(
-      compositionSource.negative
-      ?? source.humanAnchor
-      ?? legacy.humanAnchor
-      ?? ""
-    ),
-    negativeUpdatedAt: String(
-      compositionSource.negativeUpdatedAt
-      ?? source.humanAnchorUpdatedAt
-      ?? legacy.humanAnchorUpdatedAt
-      ?? ""
-    ),
-  };
-  const title = String(
-    source.title
-    || legacy.title
-    || toolInputs.firstDaySubject
-    || titleFromBody(body)
-    || t("quick_draft_title")
-  );
-  return {
-    ...blankQuickDraftWorkspace(),
-    schemaVersion: 3,
-    title,
-    titleMode: source.titleMode === "manual" ? "manual" : "auto",
-    body: String(body || ""),
-    intake: {
-      ...intake,
-      setup: toolInputs,
-      annotations: normalizeAnnotations(annotationsSource, legacy),
-    },
-    materials: Array.isArray(source.materials)
-      ? source.materials
-      : (Array.isArray(source.sourceMap)
-        ? source.sourceMap
-        : (Array.isArray(legacy.sourceMap) ? legacy.sourceMap : [])),
-    strategy: normalizeStrategy(source.strategy, source.strategyReport ? { strategyReport: source.strategyReport } : legacy),
-    adjustmentLayers: normalizeAdjustmentLayers(source.adjustmentLayers || legacy.adjustmentLayers),
-    protectedRanges: normalizeAdjustmentLayerMask(source.protectedRanges || legacy.protectedRanges),
-    composition,
-    versions: [...versionsById.values()].slice(-100),
-    canvas: normalizeQuickDraftCanvas(source.canvas || legacy.canvas),
-    projectDocId: String(source.projectDocId || legacy.projectDocId || ""),
-    savedStatus: source.savedStatus === "modified" ? "modified" : "saved",
-    updatedAt: String(source.updatedAt || legacy.updatedAt || ""),
-  };
-}
-
-function quickDraftAliases(workspace) {
-  const setup = workspace.intake?.setup || {};
-  const annotations = workspace.intake?.annotations || emptyAnnotations;
-  return {
-    thesis: setup.thesis || "",
-    pastedSources: setup.pastedSources || "",
-    targetFormat: setup.scenario || workspace.scenario || FIRST_DAY_FORMAT,
-    targetDuration: setup.targetDuration || "",
-    firstDaySubject: setup.firstDaySubject || "",
-    handsOnNotes: setup.handsOnNotes || "",
-    officialMaterials: setup.officialMaterials || "",
-    unavailableNotes: setup.unavailableNotes || "",
-    audienceConcerns: setup.audienceConcerns || "",
-    firstImpression: setup.firstImpression || "",
-    tone: setup.tone || "",
-    mustInclude: setup.mustInclude || "",
-    mustAvoid: setup.mustAvoid || "",
-    brief: {
-      ...emptyBrief,
-      support: annotations.firsthand || "",
-      counter: annotations.official || "",
-      uncertainty: annotations.uncertainty || "",
-    },
-    draft: workspace.body || "",
-    risks: annotations.followup || "",
-    humanAnchor: workspace.composition?.negative || "",
-    humanAnchorUpdatedAt: workspace.composition?.negativeUpdatedAt || "",
-    strategyReport: workspace.strategy || emptyStrategy,
-    intake: workspace.intake || emptyIntake,
-    sourceMap: workspace.materials || [],
-    updatedAt: workspace.updatedAt || "",
-  };
-}
-
-function blankQuickDraft() {
-  const workspace = blankQuickDraftWorkspace();
-  return {
-    workspace,
-    stage: "brief",
-    raw: "",
-    insertedAt: "",
-    ...quickDraftAliases(workspace),
-  };
-}
-
-function normalizeQuickDraftRecord(value) {
-  const source = value && typeof value === "object" ? value : {};
-  const workspace = normalizeQuickDraftWorkspace(source.workspace, source);
-  return {
-    ...blankQuickDraft(),
-    ...source,
-    workspace,
-    stage: source.stage === "draft" ? "draft" : "brief",
-    raw: String(source.raw || ""),
-    insertedAt: String(source.insertedAt || ""),
-    ...quickDraftAliases(workspace),
-  };
-}
-
 function activeProjectQuickDraft({ create = true } = {}) {
   const project = typeof getActiveProject === "function" ? getActiveProject() : null;
   if (!project) return null;
@@ -509,6 +117,25 @@ function currentAnnotations() {
   return activeProjectQuickDraft({ create: false })?.record.workspace.intake.annotations || { ...emptyAnnotations };
 }
 
+// The new paper exposes only the fields shown in the design: title, format,
+// length, the writer's words, and material. Older records can still carry the
+// retired setup fields, so keep them in the durable record and model payload
+// without recreating hidden compatibility inputs in the UI.
+function quickDraftSetupSnapshot(record = activeProjectQuickDraft({ create: false })?.record) {
+  const previous = normalizeQuickDraftRecord(record).workspace.intake.setup;
+  const fieldValue = (field, fallback = "") => typeof field?.value === "string" ? field.value : fallback;
+  return {
+    ...previous,
+    thesis: fieldValue(refs.thesis, fieldValue(refs.say, previous.thesis)),
+    pastedSources: fieldValue(refs.sources, previous.pastedSources),
+    targetDuration: fieldValue(refs.duration, previous.targetDuration),
+    scenario: fieldValue(refs.format, previous.scenario),
+    firstDaySubject: fieldValue(refs.firstDaySubject, previous.firstDaySubject),
+    handsOnNotes: fieldValue(refs.handsOn, previous.handsOnNotes),
+    officialMaterials: fieldValue(refs.officialMaterials, previous.officialMaterials),
+  };
+}
+
 function workspaceSnapshot(record = activeProjectQuickDraft({ create: false })?.record) {
   const previous = normalizeQuickDraftRecord(record);
   const body = refs.draft?.value || "";
@@ -519,22 +146,13 @@ function workspaceSnapshot(record = activeProjectQuickDraft({ create: false })?.
   const subjectValue = titleValue && titleValue !== t("quick_draft_title")
     ? titleValue
     : (refs.firstDaySubject?.value || previous.workspace.intake.setup.firstDaySubject || "");
-  const scenario = normalizeScenario(refs.format?.value || previous.workspace.intake.setup.scenario);
+  const previousSetup = quickDraftSetupSnapshot(previous);
+  const scenario = normalizeScenario(previousSetup.scenario);
   const setup = {
-    ...previous.workspace.intake.setup,
-    thesis: refs.thesis?.value || refs.say?.value || "",
-    pastedSources: refs.sources?.value || "",
-    targetDuration: normalizeDuration(refs.duration?.value || previous.workspace.intake.setup.targetDuration, scenario),
+    ...previousSetup,
+    targetDuration: normalizeDuration(previousSetup.targetDuration, scenario),
     scenario,
     firstDaySubject: subjectValue,
-    handsOnNotes: refs.handsOn?.value || "",
-    officialMaterials: refs.officialMaterials?.value || "",
-    unavailableNotes: refs.unavailable?.value || "",
-    audienceConcerns: refs.audienceConcerns?.value || "",
-    firstImpression: refs.firstImpression?.value || "",
-    tone: refs.tone?.value || "",
-    mustInclude: refs.mustInclude?.value || "",
-    mustAvoid: refs.mustAvoid?.value || "",
   };
   return {
     title: titleValue,
@@ -562,7 +180,8 @@ function formSnapshot() {
 function setSaveState(state = "saved") {
   if (!refs.saveState) return;
   refs.saveState.textContent = t(
-    state === "modified" ? "quick_draft_modified_state"
+    state === "new" ? "quick_draft_new_state"
+      : state === "modified" ? "quick_draft_modified_state"
       : state === "saving" ? "quick_draft_saving_state"
         : "quick_draft_saved_state"
   );
@@ -577,6 +196,10 @@ function draftUnitCount(text = "") {
 function updateDraftStats() {
   if (!refs.stats) return;
   const body = refs.draft?.value || "";
+  if (!String(body).trim()) {
+    refs.stats.textContent = t("quick_draft_stats_empty");
+    return;
+  }
   if (typeof formatReviewVoiceStats === "function") {
     refs.stats.textContent = formatReviewVoiceStats(body);
     return;
@@ -584,7 +207,7 @@ function updateDraftStats() {
   const units = draftUnitCount(body);
   const seconds = Math.ceil(units / (currentLanguage === "zh" ? 5 : 2.4));
   if (!units) {
-    refs.stats.textContent = t("draft_voice_stats_empty");
+    refs.stats.textContent = t("quick_draft_stats_empty");
   } else if (seconds < 60) {
     refs.stats.textContent = t("draft_voice_stats_seconds", units, seconds);
   } else {
@@ -700,13 +323,14 @@ function saveQuickDraft(patch = {}, { debounce = false, announce = false } = {})
   return record;
 }
 
-function setQuickDraftStatus(message) {
+function setQuickDraftStatus(message, { live = true } = {}) {
   if (refs.status) refs.status.textContent = message || t("quick_draft_ready");
+  getWindow("quickDraft")?.classList.toggle("has-live-quick-draft-status", !!live);
 }
 
 // ---- Model availability --------------------------------------------------
 // Without a model the window still works as a writing application: handwrite,
-// save, organize material, canvas, versions. AI actions are disabled with a
+// save, organize material, and restore versions. AI actions are disabled with a
 // clear Connect AI… affordance instead of a dead button.
 function quickDraftModelAvailable() {
   const cloudReady = typeof cloudConfig !== "undefined"
@@ -719,16 +343,97 @@ function quickDraftModelAvailable() {
   return Boolean(cloudReady || localModel);
 }
 
+function quickDraftConnectedModelName() {
+  if (typeof cloudConfig !== "undefined"
+    && cloudConfig?.active
+    && typeof cloudCredentialReady === "function"
+    && cloudCredentialReady()) {
+    return String(cloudConfig.model || cloudConfig.provider || "").trim();
+  }
+  return typeof getLocalModelRequestName === "function"
+    ? String(getLocalModelRequestName() || "").trim()
+    : String(modelInput?.value || "").trim();
+}
+
+// One readiness snapshot feeds both the in-window controls and the menu bar.
+// Commands are unavailable before their real inputs exist, matching DocMap's
+// empty-state contract instead of allowing a click only to reject it later.
+function quickDraftInteractionState(record = activeProjectQuickDraft({ create: false })?.record) {
+  const workspace = normalizeQuickDraftRecord(record).workspace;
+  const intake = workspace.intake || {};
+  const setup = intake.setup || {};
+  const body = String(refs.draft?.value || workspace.body || "").trim();
+  const say = String(refs.say?.value || setup.thesis || "").trim();
+  const sources = String(refs.sources?.value || setup.pastedSources || "").trim();
+  const capturedMaterial = Boolean(
+    (Array.isArray(intake.ventLog) && intake.ventLog.length)
+    || (Array.isArray(intake.chatMaterials) && intake.chatMaterials.length)
+    || String(intake.outlineSeed || "").trim()
+  );
+  return {
+    hasBody: Boolean(body),
+    hasInput: Boolean(body || say || sources || capturedMaterial),
+    hasOrganizableMaterial: Boolean(sources || capturedMaterial),
+    ventActive: typeof isVentIntakeActive === "function" && isVentIntakeActive(),
+    ventCount: typeof ventEntryCount === "function" ? ventEntryCount() : 0,
+  };
+}
+
+function setQuickDraftCommandAvailability(button, enabled, reasonKey = "") {
+  if (!button) return;
+  button.disabled = !enabled;
+  if (!enabled && reasonKey) {
+    button.dataset.quickDraftDisabledReason = reasonKey;
+    button.dataset.balloonHelpDisabled = reasonKey;
+    button.title = t(reasonKey);
+    return;
+  }
+  if (!button.dataset.quickDraftDisabledReason) return;
+  delete button.dataset.quickDraftDisabledReason;
+  delete button.dataset.balloonHelpDisabled;
+  button.removeAttribute("title");
+}
+
 function syncQuickDraftAiAvailability() {
-  const available = quickDraftModelAvailable();
-  const message = available ? "" : t("quick_draft_connect_ai");
+  const modelAvailable = quickDraftModelAvailable();
+  const state = quickDraftInteractionState();
+  const message = modelAvailable ? "" : t("quick_draft_connect_ai");
   document.querySelectorAll("[data-quick-draft-ai-action]").forEach((button) => {
-    button.disabled = !available;
-    button.title = message;
+    setQuickDraftCommandAvailability(button, modelAvailable, "quick_draft_connect_ai");
   });
-  if (!available && refs.saveButton) refs.saveButton.disabled = true;
+  const actionButton = (action) => refs.form?.querySelector(`[data-quick-draft-chat-action="${action}"]`);
+  setQuickDraftCommandAvailability(actionButton("vent-on"), !state.ventActive, "quick_draft_vent_mode_on");
+  setQuickDraftCommandAvailability(actionButton("vent-off"), state.ventActive, "quick_draft_vent_mode_off");
+  ["vent-summary", "organize"].forEach((action) => {
+    const reason = !modelAvailable ? "quick_draft_connect_ai" : "quick_draft_vent_missing";
+    setQuickDraftCommandAvailability(actionButton(action), modelAvailable && state.hasOrganizableMaterial, reason);
+  });
+  setQuickDraftCommandAvailability(
+    actionButton("draft"),
+    modelAvailable && state.hasInput,
+    modelAvailable ? "quick_draft_missing_first_day" : "quick_draft_connect_ai"
+  );
+  ["mingming", "luoluo", "hkrr", "praise"].forEach((action) => {
+    const reason = !modelAvailable ? "quick_draft_connect_ai" : "quick_draft_needs_body";
+    setQuickDraftCommandAvailability(actionButton(action), modelAvailable && state.hasBody, reason);
+  });
+  if (refs.saveButton) {
+    const action = refs.saveButton.dataset.quickDraftPrimaryAction || "draft";
+    const enabled = action === "deliver"
+      ? state.hasBody
+      : modelAvailable && (action === "draft" ? state.hasInput : state.hasBody);
+    const reason = !modelAvailable && action !== "deliver"
+      ? "quick_draft_connect_ai"
+      : action === "draft"
+        ? "quick_draft_missing_first_day"
+        : "quick_draft_needs_body";
+    setQuickDraftCommandAvailability(refs.saveButton, enabled, reason);
+  }
   if (refs.status && !String(refs.status.textContent || "").trim()) {
-    setQuickDraftStatus(message || t("quick_draft_ready"));
+    setQuickDraftStatus(message || t("quick_draft_ready"), { live: false });
+  }
+  if (typeof syncQuickDraftMobileAdjustmentActions === "function") {
+    syncQuickDraftMobileAdjustmentActions(activeProjectQuickDraft({ create: false })?.record);
   }
 }
 
@@ -752,13 +457,14 @@ function setQuickDraftPaperSurface(surface = "intake", { manual = false } = {}) 
   if (manual) quickDraftPaperManual = true;
   if (next === "editor") promoteWellTextToBody();
   refs.form?.classList.toggle("is-empty-draft", next === "intake");
+  getWindow("quickDraft")?.classList.toggle("is-quick-draft-empty", next === "intake");
   if (refs.intakeWell) refs.intakeWell.hidden = next !== "intake";
   if (refs.bodySurface) refs.bodySurface.hidden = next !== "editor";
-  if (next === "intake") {
-    refs.canvas?.classList.add("is-hidden");
-  } else if (quickDraftSurfaceMode === "canvas") {
-    refs.canvas?.classList.remove("is-hidden");
-  }
+  if (next === "intake") closeQuickDraftDrawer({ restoreFocus: false });
+  const record = activeProjectQuickDraft({ create: false })?.record;
+  const hasBody = Boolean(String(refs.draft?.value || record?.workspace?.body || "").trim());
+  syncQuickDraftControlAvailability(hasBody);
+  syncQuickDraftPrimaryAction(record, hasBody);
   return next;
 }
 
@@ -769,6 +475,8 @@ function syncQuickDraftPaperFromState(record = activeProjectQuickDraft({ create:
   if (quickDraftPaperManual) return;
   const workspace = normalizeQuickDraftRecord(record).workspace;
   const drafted = Boolean(
+    String(workspace.body || "").trim()
+    ||
     workspace.composition?.negativeUpdatedAt
     || workspace.composition?.composite
     || quickDraftLastComposite
@@ -789,16 +497,41 @@ function syncQuickDraftControlAvailability(hasBody) {
     button.disabled = !hasBody;
     if (!button.dataset.balloonHelpDisabled) button.dataset.balloonHelpDisabled = "quick_draft_needs_body";
   });
-  const deliver = refs.deliverMenu;
-  if (deliver) {
-    deliver.classList.toggle("is-disabled", !hasBody);
-    const summary = deliver.querySelector("summary");
+  if (refs.tools) {
+    refs.tools.classList.remove("is-disabled");
+    refs.tools.querySelector("summary")?.setAttribute("aria-disabled", "false");
+  }
+  [refs.deliverMenu].forEach((menu) => {
+    if (!menu) return;
+    menu.classList.toggle("is-disabled", !hasBody);
+    const summary = menu.querySelector("summary");
     if (summary) {
       summary.setAttribute("aria-disabled", hasBody ? "false" : "true");
       summary.dataset.balloonHelpDisabled = "quick_draft_needs_body";
     }
-    if (!hasBody) deliver.open = false;
+    if (!hasBody) menu.open = false;
+  });
+  if (!hasBody && refs.form?.classList.contains("is-inspector-open")) {
+    closeQuickDraftDrawer({ restoreFocus: false });
   }
+  const displayGroup = refs.form?.querySelector('.draft-desk-display-switch[role="tablist"]');
+  if (displayGroup && typeof syncRovingTabStops === "function") syncRovingTabStops(displayGroup);
+}
+
+function syncQuickDraftPrimaryAction(record = activeProjectQuickDraft({ create: false })?.record, hasBody = false) {
+  if (!refs.saveButton) return "draft";
+  const enabledLayers = normalizeQuickDraftRecord(record).workspace.adjustmentLayers
+    .filter((layer) => layer.enabled).length;
+  const action = !hasBody ? "draft" : enabledLayers ? "develop" : "deliver";
+  const key = action === "develop"
+    ? "quick_draft_develop"
+    : action === "deliver"
+      ? "quick_draft_deliver"
+      : "quick_draft_start_writing";
+  refs.saveButton.dataset.quickDraftPrimaryAction = action;
+  refs.saveButton.dataset.i18n = key;
+  refs.saveButton.textContent = t(key);
+  return action;
 }
 
 // The details bar reports and never sets: what is protected, and what the
@@ -818,8 +551,10 @@ function updateQuickDraftShellState(record = activeProjectQuickDraft({ create: f
 
 function setBusy(isBusy) {
   refs.form?.classList.toggle("is-busy", !!isBusy);
-  refs.draft?.closest(".teachtext-editor-container")?.classList.toggle("is-working", !!isBusy);
-  [
+  refs.form?.setAttribute("aria-busy", String(!!isBusy));
+  refs.intakeWell?.classList.toggle("is-working", !!isBusy);
+  refs.bodySurface?.classList.toggle("is-working", !!isBusy);
+  const controls = new Set([
     refs.saveProjectDocButton,
     refs.sendTeachTextButton,
     refs.sendReviewButton,
@@ -832,42 +567,105 @@ function setBusy(isBusy) {
     refs.startWritingButton,
     refs.restoreDumpButton,
     refs.saveButton,
-  ].forEach((button) => {
-    if (button) button.disabled = !!isBusy;
+    ...(refs.form?.querySelectorAll([
+      "[data-quick-draft-adjustment-apply]",
+      "[data-quick-draft-adjustment-develop]",
+      "[data-quick-draft-chat-action]",
+      '[data-action="quick-draft-import-chat"]',
+      "[data-quick-draft-delivery]",
+    ].join(", ")) || []),
+  ]);
+  controls.forEach((button) => {
+    if (!button) return;
+    if (typeof setControlLoading === "function") {
+      setControlLoading(button, !!isBusy, t("quick_draft_working"));
+      return;
+    }
+    if (isBusy) {
+      button.dataset.quickDraftWasDisabled = String(button.disabled);
+      button.disabled = true;
+    } else {
+      button.disabled = button.dataset.quickDraftWasDisabled === "true";
+      delete button.dataset.quickDraftWasDisabled;
+    }
   });
+  if (!isBusy) {
+    const bodyReady = Boolean(String(refs.draft?.value || "").trim());
+    syncQuickDraftControlAvailability(bodyReady);
+    syncQuickDraftAiAvailability();
+  }
 }
 
-// ---- View switching (article / canvas) -----------------------------------
-function quickDraftCanvasAllowed() {
-  if (typeof isNarrowViewport === "function" && isNarrowViewport()) return false;
-  return !/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-}
-
-function setQuickDraftSurface(mode = "linear", { manual = false } = {}) {
-  const next = mode === "canvas" && quickDraftCanvasAllowed() ? "canvas" : "linear";
-  quickDraftSurfaceMode = next;
-  if (manual) {
-    quickDraftSurfaceManual = true;
-    quickDraftEditingCanvasObject = false;
+function setQuickDraftDrawer(drawer = "", { restoreFocus = false } = {}) {
+  if (!refs.form) return "";
+  const next = drawer === "inspector" || drawer === "shelf" ? drawer : "";
+  const trigger = next
+    ? refs.form.querySelector(`[data-quick-draft-drawer="${next}"]`)
+    : quickDraftDrawerTrigger;
+  if (next) quickDraftDrawerTrigger = trigger || document.activeElement;
+  refs.form.classList.toggle("is-shelf-open", next === "shelf");
+  refs.form.classList.toggle("is-inspector-open", next === "inspector");
+  syncQuickDraftDrawerButtons();
+  syncQuickDraftLayerDetailPlacement();
+  if (next) {
+    const panel = document.getElementById(
+      next === "shelf" ? "quick-draft-materials-drawer" : "quick-draft-adjustments-drawer"
+    );
+    const closeButton = panel?.querySelector("[data-quick-draft-drawer-close]");
+    if (closeButton?.offsetParent) {
+      requestAnimationFrame(() => closeButton.focus({ preventScroll: true }));
+    }
   }
-  if (next === "canvas") {
-    leaveQuickDraftPreview();
-    refs.canvas?.classList.remove("is-hidden");
-    document.querySelector("[data-quick-draft-linear]")?.classList.add("is-hidden");
-  } else {
-    refs.canvas?.classList.add("is-hidden");
-    document.querySelector("[data-quick-draft-linear]")?.classList.remove("is-hidden");
+  if (!next) {
+    quickDraftDrawerTrigger = null;
+    if (restoreFocus && trigger?.isConnected && !trigger.disabled) {
+      requestAnimationFrame(() => trigger.focus({ preventScroll: true }));
+    }
   }
-  getWindow("quickDraft")?.classList.toggle("is-canvas", next === "canvas");
-  refs.articleViewButton?.classList.toggle("is-active", next === "linear");
-  refs.canvasViewButton?.classList.toggle("is-active", next === "canvas");
-  if (next === "canvas") renderQuickDraftCanvas();
   return next;
 }
 
-function syncQuickDraftSurfaceFromState(record = activeProjectQuickDraft({ create: false })?.record) {
-  if (quickDraftSurfaceManual) return;
-  setQuickDraftSurface(quickDraftCanvasSuggests(record) ? "canvas" : "linear");
+function closeQuickDraftDrawer(options = {}) {
+  return setQuickDraftDrawer("", options);
+}
+
+function quickDraftUsesDrawerLayout() {
+  const compactOnlyControl = refs.form?.querySelector(".draft-desk-drawer-close");
+  return Boolean(compactOnlyControl && getComputedStyle(compactOnlyControl).display !== "none");
+}
+
+function quickDraftPanelVisible(panel = "shelf") {
+  if (!refs.form || refs.form.classList.contains("is-empty-draft")) return false;
+  const target = panel === "inspector" ? "inspector" : "shelf";
+  if (quickDraftUsesDrawerLayout()) {
+    return refs.form.classList.contains(target === "inspector" ? "is-inspector-open" : "is-shelf-open");
+  }
+  return !refs.form.classList.contains(target === "inspector" ? "is-inspector-hidden" : "is-shelf-hidden");
+}
+
+function toggleQuickDraftPanel(panel = "shelf") {
+  if (!refs.form || refs.form.classList.contains("is-empty-draft")) return false;
+  const target = panel === "inspector" ? "inspector" : "shelf";
+  const hiddenClass = target === "inspector" ? "is-inspector-hidden" : "is-shelf-hidden";
+  if (quickDraftUsesDrawerLayout()) {
+    refs.form.classList.remove(hiddenClass);
+    const open = quickDraftPanelVisible(target);
+    setQuickDraftDrawer(open ? "" : target, { restoreFocus: open });
+  } else {
+    closeQuickDraftDrawer({ restoreFocus: false });
+    refs.form.classList.toggle(hiddenClass);
+  }
+  if (typeof updateMenuState === "function") updateMenuState();
+  return quickDraftPanelVisible(target);
+}
+
+function focusQuickDraftPaper() {
+  const target = quickDraftPaperSurface === "intake"
+    ? refs.say
+    : !refs.draft?.classList.contains("is-hidden")
+      ? refs.draft
+      : refs.form?.querySelector('[data-quick-draft-display][aria-selected="true"]');
+  target?.focus({ preventScroll: true });
 }
 
 // ---- Render orchestration -------------------------------------------------
@@ -879,17 +677,13 @@ function renderQuickDraft(record = activeProjectQuickDraft({ create: false })?.r
   if (refs.thesis) refs.thesis.value = source.thesis;
   if (refs.say) refs.say.value = source.workspace.body || "";
   if (refs.sources) refs.sources.value = source.pastedSources;
-  refs.format.value = source.targetFormat;
+  refs.format.value = String(source.workspace.body || "").trim()
+    ? source.targetFormat
+    : BILI_DYNAMIC_FORMAT;
   refs.duration.value = source.targetDuration;
   if (refs.firstDaySubject) refs.firstDaySubject.value = source.firstDaySubject || source.workspace.title || "";
   if (refs.handsOn) refs.handsOn.value = source.handsOnNotes;
   if (refs.officialMaterials) refs.officialMaterials.value = source.officialMaterials;
-  if (refs.unavailable) refs.unavailable.value = source.unavailableNotes;
-  if (refs.audienceConcerns) refs.audienceConcerns.value = source.audienceConcerns;
-  if (refs.firstImpression) refs.firstImpression.value = source.firstImpression;
-  if (refs.tone) refs.tone.value = source.tone;
-  if (refs.mustInclude) refs.mustInclude.value = source.mustInclude;
-  if (refs.mustAvoid) refs.mustAvoid.value = source.mustAvoid;
   if (refs.draft) refs.draft.value = source.workspace.body;
   syncQuickDraftTemplateUi();
   renderIntake(source);
@@ -910,20 +704,22 @@ function renderQuickDraft(record = activeProjectQuickDraft({ create: false })?.r
   setPostDraftChipsVisible(source.stage === "draft");
   updateSourceCount();
   updateDraftStats();
-  setSaveState(source.workspace.savedStatus);
+  const hasBody = Boolean(String(refs.draft?.value || source.workspace.body || "").trim());
+  setSaveState(hasBody ? source.workspace.savedStatus : "new");
   // The save state has its own field in the details bar, so the status line
   // reports the last command instead of repeating it.
-  setQuickDraftStatus(t("quick_draft_ready"));
+  const modelName = quickDraftConnectedModelName();
+  setQuickDraftStatus(!hasBody && modelName
+    ? t("quick_draft_model_status", modelName)
+    : t("quick_draft_ready"), { live: false });
   refreshQuickDraftSelectControls();
   renderAdjustmentLayers(source);
   renderProtectedRangeControls(source);
   renderQuickDraftVersions(source);
   syncQuickDraftPaperFromState(source);
   updateQuickDraftShellState(source);
-  syncQuickDraftControlAvailability(Boolean(String(refs.draft?.value || source.workspace.body || "").trim()));
-  if (quickDraftSurfaceMode === "canvas") renderQuickDraftCanvas(source);
-  refs.articleViewButton?.classList.toggle("is-active", quickDraftSurfaceMode !== "canvas");
-  refs.canvasViewButton?.classList.toggle("is-active", quickDraftSurfaceMode === "canvas");
+  syncQuickDraftControlAvailability(hasBody);
+  syncQuickDraftPrimaryAction(source, hasBody);
   syncQuickDraftAiAvailability();
   // A model pass rewrites the body under an open preview; the grain view is
   // the one that must not go stale, since it reports on that very rewrite.
@@ -935,6 +731,7 @@ function renderQuickDraft(record = activeProjectQuickDraft({ create: false })?.r
 // A command runs from one of the two popovers; both close once it starts, so
 // the writer sees the result and not the menu.
 function closeQuickDraftMenus() {
+  if (refs.addMaterialMenu) refs.addMaterialMenu.open = false;
   if (refs.tools) refs.tools.open = false;
   if (refs.deliverMenu) refs.deliverMenu.open = false;
 }
@@ -944,7 +741,7 @@ function isAdjustmentLayerControl(target) {
   return Boolean(
     node?.closest?.("[data-quick-draft-adjustment-enabled]")
     || node?.closest?.("[data-quick-draft-adjustment-strength]")
-    || node?.closest?.("[data-quick-draft-adjustment-mask]")
+    || node?.closest?.("[data-quick-draft-active-layer-mask]")
   );
 }
 
@@ -954,6 +751,7 @@ function bind() {
   if (!refs.form) return;
   bound = true;
   attachQuickDraftMarkdownEditor();
+  observeQuickDraftLayerLayout();
 
   ["input", "change"].forEach((eventName) => {
     refs.form.addEventListener(eventName, (event) => {
@@ -964,30 +762,45 @@ function bind() {
       const titlePatch = event.target === refs.titleInput
         ? { workspace: { title: String(refs.titleInput.value || "").trim(), titleMode: refs.titleInput.value.trim() ? "manual" : "auto" } }
         : {};
-      renderDecisionStatuses(saveQuickDraft(titlePatch, { debounce: true }));
+      const record = saveQuickDraft(titlePatch, { debounce: true });
+      renderDecisionStatuses(record);
+      if (event.target === refs.sources) renderSourceMap(record, sourceRecordsFromForm());
+      const bodyReady = Boolean(String(refs.draft?.value || "").trim());
+      syncQuickDraftPrimaryAction(record, bodyReady);
+      syncQuickDraftAiAvailability();
+      if (typeof updateMenuState === "function") updateMenuState();
     });
   });
   refs.form.addEventListener("change", (event) => {
     const enabledToggle = event.target?.closest?.("[data-quick-draft-adjustment-enabled]");
     if (enabledToggle) {
-      updateAdjustmentLayer(enabledToggle.dataset.quickDraftAdjustmentEnabled, { enabled: enabledToggle.checked });
+      const kind = enabledToggle.dataset.quickDraftAdjustmentEnabled;
+      const enabled = enabledToggle.checked;
+      quickDraftActiveLayerKind = kind;
+      updateAdjustmentLayer(kind, { enabled });
+      const bodyReady = Boolean(String(refs.draft?.value || "").trim());
+      syncQuickDraftPrimaryAction(activeProjectQuickDraft({ create: false })?.record, bodyReady);
       return;
     }
     const strengthSelect = event.target?.closest?.("[data-quick-draft-adjustment-strength]");
     if (strengthSelect) {
-      updateAdjustmentLayer(strengthSelect.dataset.quickDraftAdjustmentStrength, { strength: Number(strengthSelect.value) || ADJUSTMENT_DEFAULT_STRENGTH });
+      const kind = strengthSelect.dataset.quickDraftAdjustmentStrength;
+      const strength = Number(strengthSelect.value) || ADJUSTMENT_DEFAULT_STRENGTH;
+      quickDraftActiveLayerKind = kind;
+      updateAdjustmentLayer(kind, { strength });
       return;
     }
-    const maskInput = event.target?.closest?.("[data-quick-draft-adjustment-mask]");
+    const maskInput = event.target?.closest?.("[data-quick-draft-active-layer-mask]");
     if (maskInput) {
-      updateAdjustmentLayer(maskInput.dataset.quickDraftAdjustmentMask, { mask: maskInput.value });
+      updateAdjustmentLayer(quickDraftActiveLayerKind, { mask: maskInput.value });
       return;
     }
     const protectedInput = event.target?.closest?.("[data-quick-draft-protected-ranges]");
     if (protectedInput) {
       const next = normalizeAdjustmentLayerMask(protectedInput.value);
-      saveQuickDraft({ workspace: { protectedRanges: next } }, { debounce: false });
-      renderProtectedRangeControls(activeProjectQuickDraft({ create: false })?.record);
+      const record = saveQuickDraft({ workspace: { protectedRanges: next } }, { debounce: false });
+      renderProtectedRangeControls(record);
+      updateQuickDraftShellState(record);
       refreshQuickDraftPreviewIfOpen();
       setQuickDraftStatus(t("quick_draft_protect_saved"));
     }
@@ -1019,6 +832,18 @@ function bind() {
   });
   document.getElementById("quick-draft-return-sideask")?.addEventListener("click", askClioTalk);
   refs.saveButton?.addEventListener("click", () => {
+    const action = refs.saveButton.dataset.quickDraftPrimaryAction || "draft";
+    if (action === "develop") {
+      const ready = currentCompositeState(activeProjectQuickDraft({ create: false })?.record).ready;
+      if (ready) developAdjustmentLayers();
+      else void applyAdjustmentLayers().then((applied) => applied && developAdjustmentLayers());
+      return;
+    }
+    if (action === "deliver") {
+      if (refs.deliverMenu) refs.deliverMenu.open = true;
+      refs.deliverMenu?.querySelector("summary")?.focus();
+      return;
+    }
     setQuickDraftPaperSurface("editor", { manual: true });
     startWritingNow();
   });
@@ -1026,15 +851,18 @@ function bind() {
   refs.sendTeachTextButton?.addEventListener("click", transferQuickDraftToTeachText);
   refs.sendReviewButton?.addEventListener("click", sendQuickDraftToReviewDesk);
   refs.switchMultiFinderButton?.addEventListener("click", switchToMultiFinder);
-  refs.useMountedButton?.addEventListener("click", useMountedSources);
+  refs.useMountedButton?.addEventListener("click", () => {
+    closeQuickDraftMenus();
+    useMountedSources();
+  });
   refs.collectVentButton?.addEventListener("click", collectVentOutline);
   refs.importChatButton?.addEventListener("click", importChatScreenshots);
   refs.adoptImpressionButton?.addEventListener("click", adoptFirstImpression);
   refs.confirmHandsOnButton?.addEventListener("click", confirmHandsOnFromAnnotations);
   refs.startWritingButton?.addEventListener("click", startWritingNow);
   refs.restoreDumpButton?.addEventListener("click", restoreDumpToBody);
-  // Body / Grain / Read are three exclusive views of one text, so one group
-  // owns them and the article view is simply "no preview open".
+  // Body / Grain / Read are three exclusive tabs over one paper region, and
+  // the article view is simply "no preview open".
   refs.displayButtons.forEach((button) => {
     button.addEventListener("click", () => {
       const mode = button.dataset.quickDraftDisplay || "body";
@@ -1047,39 +875,80 @@ function bind() {
     button.addEventListener("click", () => {
       const drawer = button.dataset.quickDraftDrawer === "inspector" ? "inspector" : "shelf";
       const className = drawer === "inspector" ? "is-inspector-open" : "is-shelf-open";
-      const other = drawer === "inspector" ? "is-shelf-open" : "is-inspector-open";
       const open = !refs.form?.classList.contains(className);
-      refs.form?.classList.toggle(className, open);
-      refs.form?.classList.remove(other);
-      syncQuickDraftDrawerButtons();
+      setQuickDraftDrawer(open ? drawer : "", { restoreFocus: !open });
     });
   });
   document.querySelectorAll("[data-quick-draft-drawer-close]").forEach((button) => {
     button.addEventListener("click", () => {
-      refs.form?.classList.remove("is-shelf-open", "is-inspector-open");
-      syncQuickDraftDrawerButtons();
+      closeQuickDraftDrawer({ restoreFocus: true });
     });
   });
   // The strip of paper a drawer never covers is the easiest way back.
-  document.querySelector(".quick-draft-paper")?.addEventListener("click", (event) => {
+  document.querySelector(".draft-desk-paper")?.addEventListener("click", (event) => {
     const open = refs.form?.classList.contains("is-shelf-open") || refs.form?.classList.contains("is-inspector-open");
     if (!open) return;
     event.preventDefault();
-    refs.form?.classList.remove("is-shelf-open", "is-inspector-open");
-    syncQuickDraftDrawerButtons();
+    closeQuickDraftDrawer({ restoreFocus: false });
+    requestAnimationFrame(focusQuickDraftPaper);
   });
-  document.querySelector("[data-quick-draft-open-editor]")?.addEventListener("click", () => {
-    setQuickDraftPaperSurface("editor", { manual: true });
-    refs.draft?.focus();
+  document.querySelector("[data-quick-draft-paste]")?.addEventListener("click", async () => {
+    closeQuickDraftMenus();
+    refs.sources?.focus();
+    if (typeof runEditCommand === "function") await runEditCommand("paste");
   });
   document.querySelector("[data-quick-draft-to-start]")?.addEventListener("click", () => {
+    closeQuickDraftDrawer({ restoreFocus: false });
     setQuickDraftPaperSurface("intake", { manual: true });
-    refs.sources?.focus();
+    requestAnimationFrame(() => refs.sources?.focus({ preventScroll: true }));
+  });
+  const commandMenus = [refs.addMaterialMenu, refs.tools, refs.deliverMenu].filter(Boolean);
+  commandMenus.forEach((menu) => {
+    const summary = menu?.querySelector("summary");
+    if (!menu || !summary) return;
+    menu.querySelectorAll(".draft-desk-command-popover button").forEach((button) => {
+      button.setAttribute("role", "menuitem");
+    });
+    const blockDisabledMenu = (event) => {
+      if (summary.getAttribute("aria-disabled") !== "true") return;
+      event.preventDefault();
+      menu.open = false;
+      setQuickDraftStatus(t("quick_draft_needs_body"));
+    };
+    summary.addEventListener("click", blockDisabledMenu);
+    summary.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") blockDisabledMenu(event);
+    });
+    menu.addEventListener("toggle", () => {
+      if (summary.getAttribute("aria-disabled") === "true") {
+        menu.open = false;
+      } else if (menu.open) {
+        commandMenus.forEach((other) => {
+          if (other !== menu) other.open = false;
+        });
+        const popover = menu.querySelector(".draft-desk-command-popover");
+        if (popover) popover.scrollTop = 0;
+      }
+      summary.setAttribute("aria-expanded", String(menu.open));
+    });
+  });
+  document.addEventListener("pointerdown", (event) => {
+    if (!event.target?.closest?.(".draft-desk-command-menu")) closeQuickDraftMenus();
   });
   refs.form.addEventListener("click", (event) => {
-    const sourceChip = event.target.closest(".quick-draft-source-chip");
-    if (sourceChip) {
-      previewSource(sourceChip.dataset.sourceLabel || "");
+    const layerDisclosure = event.target.closest("[data-quick-draft-layer-disclosure]");
+    if (layerDisclosure) {
+      toggleQuickDraftLayerDisclosure(layerDisclosure.dataset.quickDraftLayerDisclosure || "");
+      return;
+    }
+    const materialRow = event.target.closest("[data-quick-draft-source-id]");
+    if (materialRow) {
+      selectQuickDraftMaterial(materialRow.dataset.quickDraftSourceId || "");
+      return;
+    }
+    const layerRow = event.target.closest("[data-quick-draft-adjustment-layer]");
+    if (layerRow && !event.target.closest("input, select, button")) {
+      selectQuickDraftAdjustmentLayer(layerRow.dataset.quickDraftAdjustmentLayer || "");
       return;
     }
     const stanceChip = event.target.closest("[data-quick-draft-stance-index]");
@@ -1109,7 +978,17 @@ function bind() {
     }
     const layerToggle = event.target.closest("[data-quick-draft-layer-toggle]");
     if (layerToggle) {
-      toggleQuickDraftLayerDetail(layerToggle.dataset.quickDraftLayerToggle || "");
+      toggleQuickDraftLayerDetail();
+      return;
+    }
+    const protectToggle = event.target.closest("[data-quick-draft-protect-toggle]");
+    if (protectToggle) {
+      const detail = document.getElementById("quick-draft-protect-detail");
+      if (detail) {
+        const open = detail.hidden;
+        detail.hidden = !open;
+        protectToggle.setAttribute("aria-expanded", open ? "true" : "false");
+      }
       return;
     }
     const versionButton = event.target.closest("[data-quick-draft-version]");
@@ -1120,9 +999,9 @@ function bind() {
       );
       return;
     }
-    const move = event.target.closest("[data-quick-draft-adjustment-move]");
+    const move = event.target.closest("[data-quick-draft-active-layer-move]");
     if (move) {
-      moveAdjustmentLayer(move.dataset.quickDraftAdjustmentMove, Number(move.dataset.direction) || -1);
+      moveAdjustmentLayer(quickDraftActiveLayerKind, Number(move.dataset.direction) || -1);
       return;
     }
     const protectSelection = event.target.closest("[data-quick-draft-protect-selection]");
@@ -1131,9 +1010,9 @@ function bind() {
       protectSelectionFromTextarea();
       return;
     }
-    const scopeButton = event.target.closest("[data-quick-draft-adjustment-scope]");
+    const scopeButton = event.target.closest("[data-quick-draft-active-layer-scope-selection]");
     if (scopeButton) {
-      scopeSelectionToLayer(scopeButton.dataset.quickDraftAdjustmentScope || "");
+      scopeSelectionToLayer(quickDraftActiveLayerKind);
       return;
     }
     const applyButton = event.target.closest("[data-quick-draft-adjustment-apply]");
@@ -1155,14 +1034,20 @@ function bind() {
     }
   });
   document.addEventListener("keydown", (event) => {
-    const quickDraftActive = !getWindow("quickDraft")?.classList.contains("is-hidden");
+    const quickDraftWindow = getWindow("quickDraft");
+    const quickDraftActive = Boolean(
+      quickDraftWindow
+      && quickDraftWindow.classList.contains("is-active")
+      && !quickDraftWindow.classList.contains("is-hidden")
+      && !quickDraftWindow.classList.contains("is-app-hidden")
+    );
     if (!quickDraftActive) return;
     const target = event.target;
     const typing = Boolean(target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable));
-    if (event.key === "Escape" && quickDraftEditingCanvasObject) {
+    const drawerOpen = refs.form?.classList.contains("is-shelf-open") || refs.form?.classList.contains("is-inspector-open");
+    if (event.key === "Escape" && drawerOpen) {
       event.preventDefault();
-      quickDraftEditingCanvasObject = false;
-      setQuickDraftSurface("canvas");
+      closeQuickDraftDrawer({ restoreFocus: true });
       return;
     }
     if (event.key === "Escape" && quickDraftPreviewMode !== "render") {
@@ -1175,9 +1060,6 @@ function bind() {
       toggleQuickDraftComposite();
     }
   });
-  refs.articleViewButton?.addEventListener("click", () => setQuickDraftSurface("linear", { manual: true }));
-  refs.canvasViewButton?.addEventListener("click", () => setQuickDraftSurface("canvas", { manual: true }));
-  bindQuickDraftCanvasInteractions();
 }
 
 function captureWorkingSession() {
@@ -1185,7 +1067,6 @@ function captureWorkingSession() {
     projectId: activeProjectId,
     workspace: workspaceSnapshot(),
     paperSurface: quickDraftPaperSurface,
-    surfaceMode: quickDraftSurfaceMode,
     toolsOpen: !!refs.tools?.open,
     scrollTop: refs.draft?.scrollTop || 0,
     selectionStart: refs.draft?.selectionStart || 0,
@@ -1208,10 +1089,6 @@ function restoreWorkingSession(state = {}) {
   if (state.paperSurface === "editor" || state.paperSurface === "intake") {
     setQuickDraftPaperSurface(state.paperSurface, { manual: true });
   }
-  if (state.surfaceMode === "canvas") {
-    quickDraftSurfaceManual = true;
-    setQuickDraftSurface("canvas", { manual: true });
-  }
   if (refs.tools) refs.tools.open = !!state.toolsOpen;
   requestAnimationFrame(() => {
     if (!refs.draft) return;
@@ -1226,22 +1103,14 @@ function restoreWorkingSession(state = {}) {
 async function open(options = {}) {
   bind();
   renderQuickDraft();
-  syncQuickDraftSurfaceFromState();
   await openWindow("quickDraft", { ...options, skipQuickDraftEntrypoint: true });
   const win = getWindow("quickDraft");
-  // Pairing is desktop grammar: it means two windows side by side, and a phone
-  // has no side by side — the paired window would take the screen and Quick
-  // Draft would be the one that disappears. SideAsk stays an explicit action.
-  const portrait = typeof isPortraitDocumentFlow === "function" && isPortraitDocumentFlow();
-  if (!options.skipSideAsk && !portrait && typeof arrangeWindowAssistantSplit === "function" && !isMultiFinderMode()) {
-    await arrangeWindowAssistantSplit("quickDraft");
-  }
   const rect = win?.getBoundingClientRect();
   if (win && rect && (rect.width < 360 || rect.height < 260) && typeof maximizeWindow === "function") {
     maximizeWindow(win);
   }
   if (typeof updateQuickDraftFocusChrome === "function") updateQuickDraftFocusChrome();
-  refs.draft?.focus({ preventScroll: true });
+  focusQuickDraftPaper();
 }
 
 window.AISystem6QuickDraftRuntime = Object.freeze({
@@ -1268,9 +1137,11 @@ window.AISystem6QuickDraftRuntime = Object.freeze({
   saveQuickDraft,
   updateQuickDraft,
   setBusy,
+  quickDraftPanelVisible,
   setQuickDraftPaperSurface,
   setQuickDraftStatus,
   setSaveState,
   titleFromBody,
+  toggleQuickDraftPanel,
   workspaceSnapshot,
 });

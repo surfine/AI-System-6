@@ -9,6 +9,7 @@ const index = read("index.html");
 const windows = read("styles/10-windows.css");
 const readerStyles = read("styles/20-reader-docmap.css");
 const appStyles = read("styles/50-apps.css");
+const draftDeskStyles = read("styles/91-draft-desk.css");
 const responsive = read("styles/60-responsive.css");
 
 test.assertIncludes(windows, ".app-status-bar {", "document apps share one status-bar grid");
@@ -59,9 +60,8 @@ test.assertIncludes(windows, ".details-bar:has(.view-controls) {\n  position: re
 test.assertIncludes(windows, ".details-bar:has(.view-controls) > span:last-child {", "Finder-family trailing location text owns the trailing grid slot");
 test.assertIncludes(windows, ".view-controls {\n  display: flex;\n  align-items: center;\n  position: static;", "Finder view controls participate in layout instead of overlaying labels");
 
-test.assertIncludes(appStyles, "grid-template-columns: auto auto minmax(0, 1fr) auto auto;", "Quick Draft assigns all five receipts explicit tracks at useful widths");
-test.assertIncludes(appStyles, ".quick-draft-details > #quick-draft-stats {\n    display: none;", "phone-width Quick Draft retains live, save, and guardrail state while word-count statistics yield");
-test.assertIncludes(appStyles, ".quick-draft-details > #quick-draft-protect-state,\n  .quick-draft-details > #quick-draft-stack-state {", "phone-width Quick Draft retains protection and adjustment-stack evidence");
+test.assertIncludes(draftDeskStyles, "grid-template-columns: auto auto minmax(0, 1fr) auto auto;", "Quick Draft assigns all five receipts explicit tracks at useful widths");
+test.assertIncludes(draftDeskStyles, ".draft-desk-details > #quick-draft-protect-state,\n  .draft-desk-details > #quick-draft-stack-state {", "phone-width Quick Draft yields low-frequency guardrail receipts before live status");
 test.assertIncludes(index, 'class="time-machine-navigation"', "Time Machine retains browser navigation as the intentional status-bar analogue");
 
 test.finish();

@@ -23,6 +23,7 @@ function launchDaySubtype(format = refs.format?.value) {
 }
 
 function firstDaySnapshot() {
+  const setup = quickDraftSetupSnapshot();
   const visibleSources = String(refs.sources?.value || "").trim();
   const title = String(refs.titleInput?.value || titleFromBody(refs.draft?.value || "") || "").trim();
   const subject = title && title !== t("quick_draft_title")
@@ -35,11 +36,11 @@ function firstDaySnapshot() {
   return {
     title,
     subject,
-    handsOnNotes: String(refs.handsOn?.value || "").trim(),
+    handsOnNotes: String(setup.handsOnNotes || "").trim(),
     officialMaterials,
-    unavailableNotes: String(refs.unavailable?.value || "").trim(),
-    audienceConcerns: String(refs.audienceConcerns?.value || "").trim(),
-    firstImpression: String(refs.firstImpression?.value || "").trim(),
+    unavailableNotes: String(setup.unavailableNotes || "").trim(),
+    audienceConcerns: String(setup.audienceConcerns || "").trim(),
+    firstImpression: String(setup.firstImpression || "").trim(),
   };
 }
 
@@ -104,8 +105,7 @@ function updateQuickDraftChromeSummary() {
     .filter(Boolean)
     .join(" · ");
   if (refs.windowTitle) {
-    const baseTitle = t("quick_draft_title");
-    refs.windowTitle.textContent = subject ? `${baseTitle} · ${subject}` : baseTitle;
+    refs.windowTitle.textContent = t("quick_draft_title");
   }
   if (refs.titleDisplay) refs.titleDisplay.textContent = subject || t("quick_draft_untitled");
   if (refs.titleInput && document.activeElement !== refs.titleInput) refs.titleInput.value = subject || "";
@@ -227,16 +227,21 @@ function renderQuickDraftPreviewPane() {
   else renderQuickDraftCompositePreview();
 }
 
-// Body / Grain / Read are one exclusive group: the body view is simply "no
-// preview open", so exactly one button reads pressed at any time.
+// Body / Grain / Read are one tab group over the same paper region. The body
+// view is simply "no preview open", so exactly one tab is selected at a time.
 function syncQuickDraftPreviewButtons(active) {
   const reading = active && quickDraftPreviewMode === "composite";
   const current = !active ? "body" : quickDraftPreviewMode === "grain" ? "grain" : "read";
   document.querySelectorAll("[data-quick-draft-display]").forEach((button) => {
     const on = (button.dataset.quickDraftDisplay || "body") === current;
     button.classList.toggle("is-active", on);
-    button.setAttribute("aria-pressed", on ? "true" : "false");
+    button.setAttribute("aria-selected", on ? "true" : "false");
   });
+  const panel = document.getElementById("quick-draft-paper-view");
+  const selected = refs.form?.querySelector('[data-quick-draft-display][aria-selected="true"]');
+  if (panel && selected?.id) panel.setAttribute("aria-labelledby", selected.id);
+  const group = refs.form?.querySelector('.draft-desk-display-switch[role="tablist"]');
+  if (group && typeof syncRovingTabStops === "function") syncRovingTabStops(group);
   getWindow("quickDraft")?.classList.toggle("is-reading", reading);
 }
 
@@ -249,40 +254,51 @@ function syncQuickDraftDrawerButtons() {
       drawer === "inspector" ? "is-inspector-open" : "is-shelf-open"
     ));
     button.classList.toggle("is-active", open);
-    button.setAttribute("aria-pressed", open ? "true" : "false");
+    button.setAttribute("aria-expanded", open ? "true" : "false");
   });
 }
 
 function setQuickDraftPreviewMode(mode) {
   const container = refs.draft?.closest(".teachtext-editor-container");
   if (!container || !refs.preview || !refs.draft) return;
-  const wasActive = container.classList.contains("is-previewing");
-  const active = !(wasActive && quickDraftPreviewMode === mode);
   quickDraftPreviewMode = mode;
-  container.classList.toggle("is-previewing", active);
-  container.classList.toggle("is-graining", active && mode === "grain");
-  refs.preview.classList.toggle("is-hidden", !active);
-  refs.preview.classList.toggle("quick-draft-grain-pane", active && mode === "grain");
-  refs.draft.classList.toggle("is-hidden", active);
-  syncQuickDraftPreviewButtons(active);
-  if (active) {
-    renderQuickDraftPreviewPane();
-  } else {
-    quickDraftPreviewMode = "render";
-    refs.draft.focus();
-  }
+  container.classList.add("is-previewing");
+  container.classList.toggle("is-graining", mode === "grain");
+  refs.preview.classList.remove("is-hidden");
+  refs.preview.classList.toggle("quick-draft-grain-pane", mode === "grain");
+  refs.draft.classList.add("is-hidden");
+  syncQuickDraftPreviewButtons(true);
+  renderQuickDraftPreviewPane();
+  if (typeof updateMenuState === "function") updateMenuState();
+}
+
+function currentQuickDraftDisplayMode() {
+  const active = refs.draft?.closest(".teachtext-editor-container")?.classList.contains("is-previewing");
+  if (!active) return "body";
+  return quickDraftPreviewMode === "grain" ? "grain" : "read";
+}
+
+function setQuickDraftDisplayMode(display = "body") {
+  if (display === "grain") setQuickDraftPreviewMode("grain");
+  else if (display === "read") setQuickDraftPreviewMode("composite");
+  else leaveQuickDraftPreview();
+  return currentQuickDraftDisplayMode();
 }
 
 function toggleQuickDraftPreview() {
-  setQuickDraftPreviewMode("render");
+  const container = refs.draft?.closest(".teachtext-editor-container");
+  if (container?.classList.contains("is-previewing") && quickDraftPreviewMode === "render") leaveQuickDraftPreview();
+  else setQuickDraftPreviewMode("render");
 }
 
 function toggleQuickDraftGrain() {
-  setQuickDraftPreviewMode("grain");
+  if (currentQuickDraftDisplayMode() === "grain") leaveQuickDraftPreview();
+  else setQuickDraftPreviewMode("grain");
 }
 
 function toggleQuickDraftComposite() {
-  setQuickDraftPreviewMode("composite");
+  if (currentQuickDraftDisplayMode() === "read") leaveQuickDraftPreview();
+  else setQuickDraftPreviewMode("composite");
 }
 
 function leaveQuickDraftPreview() {
@@ -294,11 +310,8 @@ function leaveQuickDraftPreview() {
   refs.preview.classList.remove("quick-draft-grain-pane");
   refs.draft.classList.remove("is-hidden");
   syncQuickDraftPreviewButtons(false);
-  if (quickDraftSurfaceMode === "canvas") {
-    refs.canvas?.classList.remove("is-hidden");
-  } else {
-    refs.draft.focus();
-  }
+  refs.draft.focus();
+  if (typeof updateMenuState === "function") updateMenuState();
 }
 
 function quickDraftFailureMessage(error) {
@@ -337,7 +350,7 @@ function restoreDumpToBody() {
 // when it was kept and why, and every row can be gone back to.
 function quickDraftVersionRow({ label, meta, id, kind }) {
   const row = document.createElement("div");
-  row.className = "quick-draft-version-row";
+  row.className = "draft-desk-version-row";
   const text = document.createElement("span");
   const name = document.createElement("b");
   name.textContent = label;
@@ -496,6 +509,8 @@ window.AISystem6QuickDraftEditor = Object.freeze({
   renderQuickDraftPreview,
   renderQuickDraftVersions,
   restoreDumpToBody,
+  currentQuickDraftDisplayMode,
+  setQuickDraftDisplayMode,
   setQuickDraftPreviewMode,
   syncQuickDraftTemplateUi,
   toggleQuickDraftComposite,

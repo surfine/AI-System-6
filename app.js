@@ -727,7 +727,6 @@ function getApplicationsItems() {
       { name: t("endfield_terminal_label"), iconId: "endfieldTerminal", icon: "tools-icon", action: "open-endfield-terminal", type: "application", kind: t("application") },
       { name: t("bureaucracy_meme_label"), iconId: "bureaucracyMeme", icon: "tools-icon", action: "open-bureaucracy-meme", type: "application", kind: t("application") },
       { name: t("time_machine_label"), iconId: "timeMachine", icon: "tools-icon", action: "open-time-machine", type: "application", kind: t("application") },
-      { name: t("quick_draft_label"), iconId: "quickDraft", icon: "teachtext-icon", action: "open-quick-draft", type: "application", kind: t("application"), workspaceCapability: workspaceCapabilityStudio },
       { name: t("rebuild_article"), iconId: "rebuildArticle", icon: "tools-icon", action: "open-rebuild-flow", type: "application", kind: t("application"), workspaceCapability: workspaceCapabilityStudio },
       { name: t("guide_play_demo"), iconId: "writingDemo", icon: "teachtext-icon", action: "play-writing-demo", type: "application", kind: t("application"), workspaceCapability: workspaceCapabilityStudio },
     ], location);
@@ -737,6 +736,7 @@ function getApplicationsItems() {
   // are not listed as top-level applications.
   return withStaticFinderMetadata([
     { name: t("writing_studio"), iconId: "writingStudio", icon: "writing-studio-icon", action: "open-writing-studio", type: "application", kind: t("application"), workspaceProfiles: [workspaceProfileDesktop] },
+    { name: t("quick_draft_label"), iconId: "quickDraft", icon: "teachtext-icon", action: "open-quick-draft", type: "application", kind: t("application") },
     { name: t("assistant_label"), iconId: "assistant", icon: "app-icon", action: "open-assistant", type: "application", kind: t("application") },
     { name: t("reader_label"), iconId: "reader", icon: "reader-desk-icon", action: "open-reader", type: "application", kind: t("application") },
     { name: t("searcher_label"), iconId: "searcher", icon: "tools-icon", action: "open-find-path", type: "application", kind: t("application") },
@@ -1719,6 +1719,9 @@ function applyLanguage() {
   if (typeof renderAllFinderNavigationBars === "function") renderAllFinderNavigationBars();
   updateFilePickerLabels();
   updateReviewDeskStats?.();
+  // Quick Draft owns live receipts, layer descriptions, and generated object
+  // labels that do not participate in the static [data-i18n] sweep.
+  window.AISystem6QuickDraft?.render?.();
   if (typeof refreshSystemSelectControls === "function") refreshSystemSelectControls();
   renderClioTalkRunAssembly();
 }

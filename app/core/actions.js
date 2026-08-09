@@ -795,6 +795,19 @@ async function openQuickDraft() {
   await window.AISystem6QuickDraft?.open();
 }
 
+async function enterWritingStudioFromQuickDraft() {
+  if (typeof ensureQuickDraftModule === "function") {
+    await ensureQuickDraftModule();
+  }
+  const saved = await window.AISystem6QuickDraftRuntime?.flushPendingQuickDraftCommit?.();
+  if (saved === false) {
+    window.AISystem6QuickDraftRuntime?.setQuickDraftStatus?.(t("quick_draft_save_failed"));
+    return false;
+  }
+  await openWritingStudio();
+  return true;
+}
+
 async function importQuickDraftChatRecords() {
   if (typeof ensureQuickDraftModule === "function") {
     await ensureQuickDraftModule();
@@ -810,6 +823,13 @@ async function runQuickDraftMenuCommand(command) {
   if (command === "vent-off") return quickDraft.setVentMode?.(false);
   if (command === "vent-summary") return quickDraft.collectVentOutline?.();
   if (command === "compose") return quickDraft.startWritingNow?.();
+  if (command === "apply") return quickDraft.applyAdjustments?.();
+  if (command === "develop") return quickDraft.develop?.();
+  if (command === "view-body") return quickDraft.setDisplayMode?.("body");
+  if (command === "view-grain") return quickDraft.setDisplayMode?.("grain");
+  if (command === "view-read") return quickDraft.setDisplayMode?.("read");
+  if (command === "toggle-materials") return quickDraft.togglePanel?.("shelf");
+  if (command === "toggle-adjustments") return quickDraft.togglePanel?.("inspector");
   if (command === "save-project") return quickDraft.saveQuickDraftAsProjectDocument?.();
   if (command === "copy-markdown") return quickDraft.copyMarkdown?.();
   if (command === "send-teachtext") return quickDraft.transferQuickDraftToTeachText?.();
@@ -1077,11 +1097,20 @@ function getApplicationActionHandlers() {
     "open-writing-studio": openWritingStudio,
     "exit-writing-studio": exitWritingStudio,
     "open-quick-draft": openQuickDraft,
+    "quick-draft-open-writing-studio": enterWritingStudioFromQuickDraft,
     "quick-draft-import-chat": importQuickDraftChatRecords,
     "quick-draft-vent-on": () => runQuickDraftMenuCommand("vent-on"),
     "quick-draft-vent-off": () => runQuickDraftMenuCommand("vent-off"),
     "quick-draft-vent-summary": () => runQuickDraftMenuCommand("vent-summary"),
     "quick-draft-compose": () => runQuickDraftMenuCommand("compose"),
+    "quick-draft-apply": () => runQuickDraftMenuCommand("apply"),
+    "quick-draft-develop": () => runQuickDraftMenuCommand("develop"),
+    "quick-draft-view-body": () => runQuickDraftMenuCommand("view-body"),
+    "quick-draft-view-grain": () => runQuickDraftMenuCommand("view-grain"),
+    "quick-draft-view-read": () => runQuickDraftMenuCommand("view-read"),
+    "quick-draft-toggle-materials": () => runQuickDraftMenuCommand("toggle-materials"),
+    "quick-draft-toggle-adjustments": () => runQuickDraftMenuCommand("toggle-adjustments"),
+    "quick-draft-toggle-sideask": toggleQuickDraftSideAsk,
     "quick-draft-talk-points": () => runQuickDraftMenuCommand("organize"),
     "quick-draft-mingming": () => runQuickDraftMenuCommand("mingming"),
     "quick-draft-luoluo": () => runQuickDraftMenuCommand("luoluo"),

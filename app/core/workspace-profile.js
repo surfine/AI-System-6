@@ -19,14 +19,12 @@ const studioWindowNames = new Set([
   "styleSheet",
   "claimCheck",
   "projectCd",
-  "quickDraft",
   "rebuildFlow",
   "rag",
   "textDisk",
 ]);
 
 const writingStudioOwnedWindowNames = new Set([
-  "quickDraft",
   "questionSheet",
   "outline",
   "sectionDrafts",
@@ -45,7 +43,6 @@ const studioActionNames = new Set([
   "open-style-sheet",
   "open-claim-check",
   "open-project-cd",
-  "open-quick-draft",
   "open-rebuild-flow",
   "open-rag",
   "open-text-disk",

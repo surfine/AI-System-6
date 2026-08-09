@@ -826,8 +826,12 @@ function currentQuickDraftForClioTalk() {
   const project = typeof getActiveProject === "function" ? getActiveProject() : null;
   const saved = project?.quickDraft && typeof project.quickDraft === "object" ? project.quickDraft : {};
   const workspace = saved.workspace && typeof saved.workspace === "object" ? saved.workspace : {};
+  const intake = workspace.intake && typeof workspace.intake === "object" ? workspace.intake : {};
+  const setup = intake.setup && typeof intake.setup === "object" ? intake.setup : {};
   const toolInputs = workspace.toolInputs && typeof workspace.toolInputs === "object" ? workspace.toolInputs : {};
-  const annotations = workspace.annotations && typeof workspace.annotations === "object" ? workspace.annotations : {};
+  const annotations = intake.annotations && typeof intake.annotations === "object"
+    ? intake.annotations
+    : (workspace.annotations && typeof workspace.annotations === "object" ? workspace.annotations : {});
   const value = (id, fallback = "") => {
     const el = document.getElementById(id);
     return typeof el?.value === "string" ? el.value : fallback;
@@ -837,26 +841,26 @@ function currentQuickDraftForClioTalk() {
   return {
     title,
     body,
-    thesis: value("quick-draft-thesis", toolInputs.thesis || saved.thesis || ""),
-    pastedSources: value("quick-draft-sources", toolInputs.pastedSources || saved.pastedSources || ""),
-    targetFormat: document.getElementById("quick-draft-format")?.value || workspace.scenario || saved.targetFormat || "",
-    targetDuration: document.getElementById("quick-draft-duration")?.value || toolInputs.targetDuration || saved.targetDuration || "",
-    firstDaySubject: title || value("quick-draft-first-day-subject", toolInputs.firstDaySubject || saved.firstDaySubject || ""),
-    handsOnNotes: value("quick-draft-hands-on", toolInputs.handsOnNotes || saved.handsOnNotes || ""),
-    officialMaterials: value("quick-draft-official-materials", toolInputs.officialMaterials || saved.officialMaterials || ""),
-    unavailableNotes: value("quick-draft-unavailable", toolInputs.unavailableNotes || saved.unavailableNotes || ""),
-    audienceConcerns: value("quick-draft-audience-concerns", toolInputs.audienceConcerns || saved.audienceConcerns || ""),
-    firstImpression: value("quick-draft-first-impression", toolInputs.firstImpression || saved.firstImpression || ""),
-    tone: value("quick-draft-tone", toolInputs.tone || saved.tone || ""),
-    mustInclude: value("quick-draft-must-include", toolInputs.mustInclude || saved.mustInclude || ""),
-    mustAvoid: value("quick-draft-must-avoid", toolInputs.mustAvoid || saved.mustAvoid || ""),
+    thesis: value("quick-draft-thesis", setup.thesis || toolInputs.thesis || saved.thesis || ""),
+    pastedSources: value("quick-draft-sources", setup.pastedSources || toolInputs.pastedSources || saved.pastedSources || ""),
+    targetFormat: document.getElementById("quick-draft-format")?.value || setup.scenario || workspace.scenario || saved.targetFormat || "",
+    targetDuration: document.getElementById("quick-draft-duration")?.value || setup.targetDuration || toolInputs.targetDuration || saved.targetDuration || "",
+    firstDaySubject: title || value("quick-draft-first-day-subject", setup.firstDaySubject || toolInputs.firstDaySubject || saved.firstDaySubject || ""),
+    handsOnNotes: value("quick-draft-hands-on", setup.handsOnNotes || toolInputs.handsOnNotes || saved.handsOnNotes || ""),
+    officialMaterials: value("quick-draft-official-materials", setup.officialMaterials || toolInputs.officialMaterials || saved.officialMaterials || ""),
+    unavailableNotes: value("quick-draft-unavailable", setup.unavailableNotes || toolInputs.unavailableNotes || saved.unavailableNotes || ""),
+    audienceConcerns: value("quick-draft-audience-concerns", setup.audienceConcerns || toolInputs.audienceConcerns || saved.audienceConcerns || ""),
+    firstImpression: value("quick-draft-first-impression", setup.firstImpression || toolInputs.firstImpression || saved.firstImpression || ""),
+    tone: value("quick-draft-tone", setup.tone || toolInputs.tone || saved.tone || ""),
+    mustInclude: value("quick-draft-must-include", setup.mustInclude || toolInputs.mustInclude || saved.mustInclude || ""),
+    mustAvoid: value("quick-draft-must-avoid", setup.mustAvoid || toolInputs.mustAvoid || saved.mustAvoid || ""),
     annotations: {
       firsthand: annotations.firsthand || saved.brief?.support || "",
       official: annotations.official || saved.brief?.counter || "",
       uncertainty: annotations.uncertainty || saved.brief?.uncertainty || "",
       followup: annotations.followup || saved.risks || "",
     },
-    intake: workspace.intake && typeof workspace.intake === "object" ? workspace.intake : {},
+    intake,
     strategyReport: workspace.strategyReport && typeof workspace.strategyReport === "object" ? workspace.strategyReport : {},
     sourceMap: Array.isArray(workspace.sourceMap) ? workspace.sourceMap : (Array.isArray(saved.sourceMap) ? saved.sourceMap : []),
   };

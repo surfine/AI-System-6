@@ -13,6 +13,7 @@ const foundation = read("styles/00-foundation.css");
 const apps = read("styles/50-apps.css");
 const liquid = read("styles/70-liquid-glass.css");
 const native = read("native/Sources/AISystemMacApp/main.swift");
+const nativeMultiFinder = read("native/Sources/AISystemCore/MultiFinderApp.swift");
 const nativeMenuBar = read("native/Sources/AISystemDesktop/MenuBarView.swift");
 const menuContext = { document: {}, activeAppId: "finder" };
 vm.runInNewContext(`${menus}\nglobalThis.__menuSets = applicationMenuSets;`, menuContext);
@@ -27,7 +28,8 @@ test.assertNotIncludes(html, 'id="foreground-app-label"', "Finder mode does not 
 test.assertNotIncludes(multiFinder, 'querySelector("#foreground-app-label")', "foreground changes do not render a redundant application label");
 test.assertIncludes(menus, "const applicationMenuSets = Object.freeze({", "applications declare menu sets as data");
 test.assertIncludes(menus, 'if (appId === "writingStudio") return "teachText"', "Writing Studio resolves to the TeachText menu set");
-test.assertNotIncludes(menus, "quickDraft: teachTextMenus", "Quick Draft inherits menus through Writing Studio ownership");
+test.assertIncludes(menus, "quickDraft: quickDraftMenus", "Quick Draft owns an independent application menu set");
+test.assertNotIncludes(menus, "quickDraft: teachTextMenus", "Quick Draft never inherits Writing Studio menus");
 test.assertIncludes(multiFinder, 'var menuOwnerAppId = "finder"', "desk accessories retain a separate host-menu owner");
 test.assertIncludes(menus, "const systemSpecialItems = [", "Special has one shared system section");
 test.assertIncludes(menus, 'menuItem("empty-trash", "empty_trash")', "Finder retains its trash command");
@@ -86,6 +88,10 @@ test.assertIncludes(actions, 'activeAppId === "writingStudio" ? "teachText"', "s
 test.assertIncludes(actions, "function getApplicationCommandRegistry()", "menu handlers, availability and shortcuts resolve through one command registry");
 test.assertIncludes(native, "nativeMenus(for app: MultiFinderApp", "native rebuilds menus from the same application ownership model");
 test.assertIncludes(native, "refreshForegroundApplicationMenu()", "native foreground activation refreshes the menu bar");
+test.assertIncludes(nativeMultiFinder, "case finder, quickDraft, teachText", "native MultiFinder recognizes Quick Draft as an application");
+test.assertIncludes(nativeMultiFinder, '"quick-draft": .quickDraft', "native Quick Draft no longer resolves to TeachText");
+test.assertNotIncludes(native, '.item(L10n.t("quick_draft_label")),\n            .item(L10n.t("question_sheet"))', "native Writing Studio no longer advertises Quick Draft");
+test.assertIncludes(native, '.item(L10n.t("enter_writing_studio"))', "native Quick Draft offers the one-way Writing Studio entry");
 test.assert(
   Object.values(menuSets).every((definitions) => (
     definitions.filter((definition) => !definition.menuCondition).length <= 4
