@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
+  <!-- 10.10 System Folder: folder with a small gear. -->
+  <defs>
+    <linearGradient id="g-body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e6eef8"/>
+      <stop offset="1" stop-color="#c9d9ec"/>
+    </linearGradient>
+    <linearGradient id="g-tab" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#c4d9f0"/>
+      <stop offset="1" stop-color="#a9c4e2"/>
+    </linearGradient>
+  </defs>
+  <path d="M4 5h9v3h15v17a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5z" fill="url(#g-body)" stroke="#8aa6c8" stroke-width="1"/>
+  <path d="M4 5a2 2 0 0 1 2-2h7l2 3H6a2 2 0 0 0-2 2V5z" fill="url(#g-tab)" stroke="#8aa6c8" stroke-width="1"/>
+  <g transform="translate(16,16)">
+    <circle r="3.2" fill="#ffffff" stroke="#5d7087" stroke-width="1"/>
+    <circle r="1.1" fill="#5d7087"/>
+    <path d="M-4.5 0h1.3M3.2 0h1.3M0-4.5v1.3M0 3.2v1.3M-3.2-3.2l0.9 0.9M2.3 2.3l0.9 0.9M3.2-3.2l-0.9 0.9M-2.3 2.3l-0.9 0.9" stroke="#5d7087" stroke-width="1" stroke-linecap="round"/>
+  </g>
+</svg>

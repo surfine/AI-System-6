@@ -66,4 +66,7 @@ interface Window {
   AISystem6ModelTaskRuntime?: any;
   AISystem6DocumentRevisions?: any;
   AISystem6StateStores?: any;
+  AISystem6ApplicationRegistry?: any;
+  AISystem6RunReceipts?: any;
+  AISystem6AssistantActivity?: any;
 }

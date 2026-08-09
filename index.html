@@ -17,7 +17,7 @@
     <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png" />
     <link rel="manifest" href="assets/app-icon/manifest.json" />
     <script src="app/core/theme-registry.js"></script>
-    <link rel="stylesheet" href="styles.bundle.css?v=20260809.10" />
+    <link rel="stylesheet" href="styles.bundle.css?v=20260810.1" />
   </head>
   <body class="is-booting">
     <script src="app/core/theme-body-init.js"></script>
@@ -698,6 +698,8 @@
                 <div class="select-wrap"><select id="appearance-theme" data-balloon-help="balloon_theme_switcher">
                   <option value="classic" data-i18n="theme_classic">System 6</option>
                   <option value="platinum" data-i18n="theme_platinum">Platinum</option>
+                  <option value="aqua" data-i18n="theme_aqua">Aqua</option>
+                  <option value="snow-leopard" data-i18n="theme_snow_leopard">Snow Leopard</option>
                   <option value="yosemite" data-i18n="theme_yosemite">Yosemite</option>
                   <option value="liquid-glass" data-i18n="theme_liquid_glass">Liquid Glass</option>
                 </select></div>
@@ -743,10 +745,6 @@
               <div class="field-row">
                 <input id="clio-web-search" type="checkbox" />
                 <label for="clio-web-search" data-i18n="clio_web_search_setting">Allow ClioTalk web search</label>
-              </div>
-              <div class="field-row">
-                <input id="research-appearances" type="checkbox" />
-                <label for="research-appearances" data-i18n="research_appearances">Research appearances &amp; Theme Lab (Aqua / Snow Leopard)</label>
               </div>
             </div>
           </details>
@@ -2572,6 +2570,7 @@
           <div class="button-row">
             <button class="btn default" type="button" data-action="guide-start-quick-draft" data-i18n="guide_short_draft" aria-keyshortcuts="Enter">Write a Short Draft</button>
             <button class="btn" type="button" data-action="guide-start-route" data-i18n="guide_long_project">Start a Long Project</button>
+            <button class="btn" type="button" data-action="play-teaser-demo" data-i18n="guide_play_teaser_demo">30-Second Demo</button>
             <button class="btn" type="button" data-action="guide-continue-last" data-i18n="guide_continue_last" hidden>Continue</button>
             <button class="btn" type="button" data-action="guide-open-model-settings" data-i18n="guide_connect_ai">Connect AI…</button>
             <button class="btn" type="button" data-action="install-web-app" data-i18n="web_install_action" hidden>Add to Home Screen</button>
@@ -3668,6 +3667,64 @@ Glass</textarea>
           <span class="status-bar-trailing" data-i18n="theme_lab_internal">Internal</span>
         </div>
         <div class="window-pane theme-lab-pane">
+          <section class="theme-lab-group theme-lab-icon-set" aria-labelledby="theme-lab-icon-set-title">
+            <h3 id="theme-lab-icon-set-title" data-i18n="theme_lab_icon_set">Icon set</h3>
+            <div class="theme-lab-icon-grid">
+                <button type="button" class="theme-lab-icon-tile" title="startupDisk"><span class="sys-icon" data-system-icon="startupDisk" aria-hidden="true"></span><b>startup Disk</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="folder"><span class="sys-icon" data-system-icon="folder" aria-hidden="true"></span><b>folder</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="document"><span class="sys-icon" data-system-icon="document" aria-hidden="true"></span><b>document</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="applications"><span class="sys-icon" data-system-icon="applications" aria-hidden="true"></span><b>applications</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="trash"><span class="sys-icon" data-system-icon="trash" aria-hidden="true"></span><b>trash</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="trashFull"><span class="sys-icon" data-system-icon="trashFull" aria-hidden="true"></span><b>trash Full</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="finderApp"><span class="sys-icon" data-system-icon="finderApp" aria-hidden="true"></span><b>finder App</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="floppy"><span class="sys-icon" data-system-icon="fileFloppy" aria-hidden="true"></span><b>floppy</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="assistant"><span class="sys-icon" data-system-icon="assistant" aria-hidden="true"></span><b>assistant</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="quickDraft"><span class="sys-icon" data-system-icon="quickDraft" aria-hidden="true"></span><b>quick Draft</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="writingStudio"><span class="sys-icon" data-system-icon="writingStudio" aria-hidden="true"></span><b>writing Studio</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="projectDisk"><span class="sys-icon" data-system-icon="projectDisk" aria-hidden="true"></span><b>project Disk</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="projectDisc"><span class="sys-icon" data-system-icon="projectDisc" aria-hidden="true"></span><b>project Disc</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="cloudModel"><span class="sys-icon" data-system-icon="cloudModel" aria-hidden="true"></span><b>cloud Model</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="cloudModelOff"><span class="sys-icon" data-system-icon="cloudModelOff" aria-hidden="true"></span><b>cloud Model Off</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="questionSheet"><span class="sys-icon" data-system-icon="questionSheet" aria-hidden="true"></span><b>question Sheet</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="outline"><span class="sys-icon" data-system-icon="outline" aria-hidden="true"></span><b>outline</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="sectionDrafts"><span class="sys-icon" data-system-icon="sectionDrafts" aria-hidden="true"></span><b>section Drafts</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="manuscript"><span class="sys-icon" data-system-icon="manuscript" aria-hidden="true"></span><b>manuscript</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="reviewDesk"><span class="sys-icon" data-system-icon="reviewDesk" aria-hidden="true"></span><b>review Desk</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="searcher"><span class="sys-icon" data-system-icon="searcher" aria-hidden="true"></span><b>searcher</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="reader"><span class="sys-icon" data-system-icon="reader" aria-hidden="true"></span><b>reader</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="timeMachine"><span class="sys-icon" data-system-icon="timeMachine" aria-hidden="true"></span><b>time Machine</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="docMap"><span class="sys-icon" data-system-icon="docMap" aria-hidden="true"></span><b>doc Map</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="clioStage"><span class="sys-icon" data-system-icon="clioStage" aria-hidden="true"></span><b>clio Stage</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="clioChart"><span class="sys-icon" data-system-icon="clioChart" aria-hidden="true"></span><b>clio Chart</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="liquidCover"><span class="sys-icon" data-system-icon="liquidCover" aria-hidden="true"></span><b>liquid Cover</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="cmfStudio"><span class="sys-icon" data-system-icon="cmfStudio" aria-hidden="true"></span><b>cmf Studio</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="soundscape"><span class="sys-icon" data-system-icon="soundscape" aria-hidden="true"></span><b>soundscape</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="scrapbook"><span class="sys-icon" data-system-icon="scrapbook" aria-hidden="true"></span><b>scrapbook</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="systemFolder"><span class="sys-icon" data-system-icon="systemFolder" aria-hidden="true"></span><b>system Folder</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="helpFolder"><span class="sys-icon" data-system-icon="helpFolder" aria-hidden="true"></span><b>help Folder</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="importUtility"><span class="sys-icon" data-system-icon="importUtility" aria-hidden="true"></span><b>import Utility</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="controlPanel"><span class="sys-icon" data-system-icon="controlPanel" aria-hidden="true"></span><b>control Panel</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="chooser"><span class="sys-icon" data-system-icon="chooser" aria-hidden="true"></span><b>chooser</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="systemHelp"><span class="sys-icon" data-system-icon="systemHelp" aria-hidden="true"></span><b>system Help</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="dictionary"><span class="sys-icon" data-system-icon="dictionary" aria-hidden="true"></span><b>dictionary</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="teachText"><span class="sys-icon" data-system-icon="teachText" aria-hidden="true"></span><b>teach Text</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="writingDemo"><span class="sys-icon" data-system-icon="writingDemo" aria-hidden="true"></span><b>writing Demo</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="chatFile"><span class="sys-icon" data-system-icon="chatFile" aria-hidden="true"></span><b>chat File</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="chatImport"><span class="sys-icon" data-system-icon="chatImport" aria-hidden="true"></span><b>chat Import</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="systemStatus"><span class="sys-icon" data-system-icon="systemStatus" aria-hidden="true"></span><b>system Status</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="contextPanel"><span class="sys-icon" data-system-icon="contextPanel" aria-hidden="true"></span><b>context Panel</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="rebuildArticle"><span class="sys-icon" data-system-icon="rebuildArticle" aria-hidden="true"></span><b>rebuild Article</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="bureaucracyMeme"><span class="sys-icon" data-system-icon="bureaucracyMeme" aria-hidden="true"></span><b>bureaucracy Meme</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="endfieldTerminal"><span class="sys-icon" data-system-icon="endfieldTerminal" aria-hidden="true"></span><b>endfield Terminal</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="documents"><span class="sys-icon" data-system-icon="documents" aria-hidden="true"></span><b>documents</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="alias"><span class="sys-icon" data-system-icon="alias" aria-hidden="true"></span><b>alias</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="systemFile"><span class="sys-icon" data-system-icon="systemFile" aria-hidden="true"></span><b>system File</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="multiFinderApp"><span class="sys-icon" data-system-icon="multiFinderApp" aria-hidden="true"></span><b>multi Finder App</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="daHandler"><span class="sys-icon" data-system-icon="daHandler" aria-hidden="true"></span><b>da Handler</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="writingBell"><span class="sys-icon" data-system-icon="writingBell" aria-hidden="true"></span><b>writing Bell</b></button>
+            </div>
+          </section>
+
           <section class="theme-lab-group theme-lab-controls" aria-labelledby="theme-lab-controls-title">
             <h3 id="theme-lab-controls-title" data-i18n="theme_lab_controls">Controls</h3>
             <div class="theme-lab-button-row">
@@ -3858,63 +3915,6 @@ Glass</textarea>
             </div>
           </section>
 
-          <section class="theme-lab-group theme-lab-icon-set theme-lab-platinum-fixture" aria-labelledby="theme-lab-icon-set-title">
-            <h3 id="theme-lab-icon-set-title" data-i18n="theme_lab_icon_set">Platinum icon set</h3>
-            <div class="theme-lab-icon-grid">
-                <button type="button" class="theme-lab-icon-tile" title="startupDisk"><span class="sys-icon" data-system-icon="startupDisk" aria-hidden="true"></span><b>startup Disk</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="folder"><span class="sys-icon" data-system-icon="folder" aria-hidden="true"></span><b>folder</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="document"><span class="sys-icon" data-system-icon="document" aria-hidden="true"></span><b>document</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="applications"><span class="sys-icon" data-system-icon="applications" aria-hidden="true"></span><b>applications</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="trash"><span class="sys-icon" data-system-icon="trash" aria-hidden="true"></span><b>trash</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="finderApp"><span class="sys-icon" data-system-icon="finderApp" aria-hidden="true"></span><b>finder App</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="floppy"><span class="sys-icon" data-system-icon="fileFloppy" aria-hidden="true"></span><b>floppy</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="assistant"><span class="sys-icon" data-system-icon="assistant" aria-hidden="true"></span><b>assistant</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="quickDraft"><span class="sys-icon" data-system-icon="quickDraft" aria-hidden="true"></span><b>quick Draft</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="writingStudio"><span class="sys-icon" data-system-icon="writingStudio" aria-hidden="true"></span><b>writing Studio</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="projectDisk"><span class="sys-icon" data-system-icon="projectDisk" aria-hidden="true"></span><b>project Disk</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="projectDisc"><span class="sys-icon" data-system-icon="projectDisc" aria-hidden="true"></span><b>project Disc</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="cloudModel"><span class="sys-icon" data-system-icon="cloudModel" aria-hidden="true"></span><b>cloud Model</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="cloudModelOff"><span class="sys-icon" data-system-icon="cloudModelOff" aria-hidden="true"></span><b>cloud Model Off</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="questionSheet"><span class="sys-icon" data-system-icon="questionSheet" aria-hidden="true"></span><b>question Sheet</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="outline"><span class="sys-icon" data-system-icon="outline" aria-hidden="true"></span><b>outline</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="sectionDrafts"><span class="sys-icon" data-system-icon="sectionDrafts" aria-hidden="true"></span><b>section Drafts</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="manuscript"><span class="sys-icon" data-system-icon="manuscript" aria-hidden="true"></span><b>manuscript</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="reviewDesk"><span class="sys-icon" data-system-icon="reviewDesk" aria-hidden="true"></span><b>review Desk</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="searcher"><span class="sys-icon" data-system-icon="searcher" aria-hidden="true"></span><b>searcher</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="reader"><span class="sys-icon" data-system-icon="reader" aria-hidden="true"></span><b>reader</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="timeMachine"><span class="sys-icon" data-system-icon="timeMachine" aria-hidden="true"></span><b>time Machine</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="docMap"><span class="sys-icon" data-system-icon="docMap" aria-hidden="true"></span><b>doc Map</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="clioStage"><span class="sys-icon" data-system-icon="clioStage" aria-hidden="true"></span><b>clio Stage</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="clioChart"><span class="sys-icon" data-system-icon="clioChart" aria-hidden="true"></span><b>clio Chart</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="liquidCover"><span class="sys-icon" data-system-icon="liquidCover" aria-hidden="true"></span><b>liquid Cover</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="cmfStudio"><span class="sys-icon" data-system-icon="cmfStudio" aria-hidden="true"></span><b>cmf Studio</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="soundscape"><span class="sys-icon" data-system-icon="soundscape" aria-hidden="true"></span><b>soundscape</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="scrapbook"><span class="sys-icon" data-system-icon="scrapbook" aria-hidden="true"></span><b>scrapbook</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="systemFolder"><span class="sys-icon" data-system-icon="systemFolder" aria-hidden="true"></span><b>system Folder</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="helpFolder"><span class="sys-icon" data-system-icon="helpFolder" aria-hidden="true"></span><b>help Folder</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="importUtility"><span class="sys-icon" data-system-icon="importUtility" aria-hidden="true"></span><b>import Utility</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="controlPanel"><span class="sys-icon" data-system-icon="controlPanel" aria-hidden="true"></span><b>control Panel</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="chooser"><span class="sys-icon" data-system-icon="chooser" aria-hidden="true"></span><b>chooser</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="systemHelp"><span class="sys-icon" data-system-icon="systemHelp" aria-hidden="true"></span><b>system Help</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="dictionary"><span class="sys-icon" data-system-icon="dictionary" aria-hidden="true"></span><b>dictionary</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="teachText"><span class="sys-icon" data-system-icon="teachText" aria-hidden="true"></span><b>teach Text</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="writingDemo"><span class="sys-icon" data-system-icon="writingDemo" aria-hidden="true"></span><b>writing Demo</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="chatFile"><span class="sys-icon" data-system-icon="chatFile" aria-hidden="true"></span><b>chat File</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="chatImport"><span class="sys-icon" data-system-icon="chatImport" aria-hidden="true"></span><b>chat Import</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="systemStatus"><span class="sys-icon" data-system-icon="systemStatus" aria-hidden="true"></span><b>system Status</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="contextPanel"><span class="sys-icon" data-system-icon="contextPanel" aria-hidden="true"></span><b>context Panel</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="rebuildArticle"><span class="sys-icon" data-system-icon="rebuildArticle" aria-hidden="true"></span><b>rebuild Article</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="bureaucracyMeme"><span class="sys-icon" data-system-icon="bureaucracyMeme" aria-hidden="true"></span><b>bureaucracy Meme</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="endfieldTerminal"><span class="sys-icon" data-system-icon="endfieldTerminal" aria-hidden="true"></span><b>endfield Terminal</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="documents"><span class="sys-icon" data-system-icon="documents" aria-hidden="true"></span><b>documents</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="alias"><span class="sys-icon" data-system-icon="alias" aria-hidden="true"></span><b>alias</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="systemFile"><span class="sys-icon" data-system-icon="systemFile" aria-hidden="true"></span><b>system File</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="multiFinderApp"><span class="sys-icon" data-system-icon="multiFinderApp" aria-hidden="true"></span><b>multi Finder App</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="daHandler"><span class="sys-icon" data-system-icon="daHandler" aria-hidden="true"></span><b>da Handler</b></button>
-                <button type="button" class="theme-lab-icon-tile" title="writingBell"><span class="sys-icon" data-system-icon="writingBell" aria-hidden="true"></span><b>writing Bell</b></button>
-            </div>
-          </section>
-
           <section class="theme-lab-group theme-lab-finder" aria-labelledby="theme-lab-finder-title">
             <h3 id="theme-lab-finder-title" data-i18n="theme_lab_finder">Finder surface</h3>
             <div class="theme-lab-mini-windows">
@@ -4021,7 +4021,7 @@ Glass</textarea>
       </section>
     </main>
 
-    <script src="app/generated/build-info.js?v=20260809.10"></script>
-    <script src="app.bundle.js?v=20260809.10"></script>
+    <script src="app/generated/build-info.js?v=20260810.1"></script>
+    <script src="app.bundle.js?v=20260810.1"></script>
   </body>
 </html>

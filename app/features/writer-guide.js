@@ -2,6 +2,11 @@
 
 // Loaded before app.js as a classic script; shares the AI System 6 global scope.
 
+// One light pointer to the 30-second teaser, at most once per session. The
+// OOBE file deliberately introduces no new persistence boundary, so this is
+// intentionally runtime-only.
+let teaserHintShown = false;
+
 
 
 async function enterWriterMode() {
@@ -122,6 +127,13 @@ async function dismissGuide() {
   await closeWindow("guide");
   saveDeskState();
   window.requestAnimationFrame(() => revealMultiFinderSwitcherHint());
+  if (!teaserHintShown && typeof pushSystemNotification === "function") {
+    teaserHintShown = true;
+    pushSystemNotification(t("teaser_hint"), {
+      actionId: "play-teaser-demo",
+      actionLabel: t("guide_play_teaser_demo"),
+    });
+  }
 }
 
 async function openModelSettings() {

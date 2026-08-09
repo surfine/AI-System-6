@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
+  <!-- 10.10 hard disk / startup disk: silver-gray rounded drive with a dark
+       slot and a small status light. Flat Yosemite depth: soft gradient,
+       hairline border. -->
+  <defs>
+    <linearGradient id="g-drive" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f3f5f8"/>
+      <stop offset="0.55" stop-color="#dde2e8"/>
+      <stop offset="1" stop-color="#c3cad4"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="5" width="24" height="22" rx="3" fill="url(#g-drive)" stroke="#9aa7b8" stroke-width="1"/>
+  <path d="M4 17h24v1H4z" fill="#b3bdca"/>
+  <rect x="9" y="9" width="14" height="3.5" rx="1" fill="#3c4654"/>
+  <rect x="9" y="9" width="14" height="1.2" rx="0.6" fill="#5b6778"/>
+  <rect x="7" y="21" width="3" height="2" rx="1" fill="#7d8c9e"/>
+  <rect x="7.5" y="21" width="1" height="2" rx="0.5" fill="#aab8c8"/>
+</svg>

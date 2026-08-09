@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
+  <!-- 10.10 Rebuild Article: document with a circular refresh arrow. -->
+  <defs>
+    <linearGradient id="g-page" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#eef2f7"/>
+    </linearGradient>
+  </defs>
+  <path d="M6 3h13v5h7v19a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V3z" fill="url(#g-page)" stroke="#9db1c8" stroke-width="1"/>
+  <path d="M19 3h7v5h-7z" fill="#e8eef6" stroke="#9db1c8" stroke-width="1"/>
+  <path d="M16 10a6 6 0 1 1-5.2 3" fill="none" stroke="#3e7cc4" stroke-width="1.6" stroke-linecap="round"/>
+  <path d="M16 7v4h-4" fill="none" stroke="#3e7cc4" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="16" cy="16" r="0.8" fill="#3e7cc4"/>
+</svg>

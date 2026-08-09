@@ -81,6 +81,9 @@ process; the browser app is plain concatenated JS.
 - `app.js` → `app/core/` (shared runtime), `app/features/` (one file per
   window/tool), `app/data/` (translations, dictionaries), `app/content/` (lazy
   samples), `app/vendor/` (marked, markmap).
+- `app/core/application-registry.js`, `app/core/run-receipts.js`,
+  `app/core/assistant-activity.js` — appearance-agnostic system semantics:
+  object→app routing, durable AI run receipts, and assistant activity state.
 - `styles/` numbered CSS source; `scripts/` build/verify/packaging (ESM `.mjs`).
 
 Persistence is browser-local; the server is stateless. **Full directory tree →

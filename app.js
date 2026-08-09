@@ -566,6 +566,7 @@ function getSystemFolderItems() {
     { name: t("chooser"), iconId: "chooser", icon: "panel-icon", action: "open-chooser", kind: t("system_component") },
     { name: t("control_panel"), iconId: "controlPanel", icon: "panel-icon", action: "open-control", kind: t("system_component") },
     { name: t("system_status"), iconId: "systemStatus", icon: "panel-icon", action: "open-system-status", kind: t("system_component") },
+    { name: t("theme_lab"), iconId: "controlPanel", icon: "panel-icon", action: "open-theme-lab", kind: t("system_component") },
     { name: t("context_panel"), iconId: "contextPanel", icon: "panel-icon", action: "open-context-panel", kind: t("system_component") },
     { name: t("control_strip_modules_folder"), iconId: "systemFolder", icon: "folder-icon", action: "open-control-strip-modules", kind: t("folder_kind") },
   ], t("system_folder"));
@@ -753,6 +754,7 @@ function getApplicationsItems() {
       { name: t("time_machine_label"), iconId: "timeMachine", icon: "tools-icon", action: "open-time-machine", type: "application", kind: t("application") },
       { name: t("rebuild_article"), iconId: "rebuildArticle", icon: "tools-icon", action: "open-rebuild-flow", type: "application", kind: t("application"), workspaceCapability: workspaceCapabilityStudio },
       { name: t("guide_play_demo"), iconId: "writingDemo", icon: "teachtext-icon", action: "play-writing-demo", type: "application", kind: t("application"), workspaceCapability: workspaceCapabilityStudio },
+      { name: t("guide_play_teaser_demo"), iconId: "writingDemo", icon: "teachtext-icon", action: "play-teaser-demo", type: "application", kind: t("application") },
     ], location);
   }
   // Root: high-frequency apps that explain the product line. Alias, Clipping,
@@ -2510,6 +2512,20 @@ async function importClioStageDroppedFiles(files) {
     renderMountedTextDisk();
   }
 }
+
+// Assistant Activity derives model availability from the real runtime
+// signals (cloud config / local LM Studio indicator) so its offline/idle
+// states never invent a model.
+window.AISystem6AssistantActivity?.setModelReadySource?.(() => {
+  const cloudReady = typeof cloudConfig !== "undefined"
+    && cloudConfig?.active
+    && cloudConfig?.provider
+    && typeof cloudCredentialReady === "function"
+    && cloudCredentialReady();
+  const localReady = typeof isLocalModelIndicatorReady === "function"
+    && isLocalModelIndicatorReady();
+  return cloudReady === true || localReady === true;
+});
 
 wireAppEvents();
 boot();

@@ -161,6 +161,14 @@ async function captureTheme(browser, url, themeId) {
         win.classList.add("is-hidden");
         win.classList.remove("is-active");
       }
+      // The guide (Start Here OOBE) opens on first boot and covers the Theme
+      // Lab titlebar unless fully suppressed (guideSeen lives in IndexedDB,
+      // so the class alone is not enough).
+      const guide = document.querySelector('[data-window="guide"]');
+      if (guide) {
+        guide.classList.add("is-hidden");
+        guide.style.setProperty("display", "none", "important");
+      }
       const lab = document.querySelector('[data-window="themeLab"]');
       lab?.classList.remove("is-hidden");
       lab?.classList.add("is-active");
@@ -246,7 +254,18 @@ let browser;
 try {
   server = await startAppServer();
   const { chromium } = resolvePlaywright();
-  const launchOptions = { headless: true, args: ["--no-sandbox"] };
+  // Match the fidelity pipeline's font rendering: without these flags the
+  // text rasterization depends on the host LCD/hinting state and the same
+  // theme can diff against its own baseline on every run (observed as 0.1-1.4%
+  // pixel noise across text-heavy eras).
+  const launchOptions = {
+    headless: true,
+    args: [
+      "--no-sandbox",
+      "--force-color-profile=srgb",
+      "--disable-lcd-text",
+    ],
+  };
   const executablePath = chromeExecutablePath();
   if (executablePath) launchOptions.executablePath = executablePath;
   browser = await chromium.launch(launchOptions);

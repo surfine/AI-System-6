@@ -1,5 +1,5 @@
 <!-- canonical-source: CLAUDE.md -->
-<!-- source-sha256: ccc79602d5796262791849510338cbaf9c34c90b626f90f1ddef80f47114c98e -->
+<!-- source-sha256: 6ff076829649c2e20c2d624cc03a5b51032ae9b8dfa9851829e0eb30f28d2de0 -->
 
 # AI System 6 — CLAUDE.md
 
@@ -70,6 +70,9 @@ npm start     # 先跑 build:app，再服务于 http://localhost:4173（PORT 可
 - `src/server/{chat,cloud,reader,search,lmstudio,cmf,…}.js` —— 功能模块。
 - `app.js` → `app/core/`（共享运行时）、`app/features/`（每个窗口/工具一个文件）、
   `app/data/`（翻译、词典）、`app/content/`（懒加载样例）、`app/vendor/`（marked、markmap）。
+- `app/core/application-registry.js`、`app/core/run-receipts.js`、
+  `app/core/assistant-activity.js` —— 与外观无关的系统语义：对象→应用路由、
+  可持久化的 AI 运行记录（Run Receipt）、以及助手活动状态。
 - `styles/` 编号的 CSS 源；`scripts/` 构建/校验/打包（ESM `.mjs`）。
 
 持久化在浏览器本地；服务端无状态。**完整目录树 → [CLAUDE.full.md](CLAUDE.full.md)。**

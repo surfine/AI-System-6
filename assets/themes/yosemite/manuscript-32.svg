@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
+  <!-- 10.10 Manuscript: white page with dense writing lines and a blue heading
+       bar — the finished-text object. -->
+  <defs>
+    <linearGradient id="g-page" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#eef2f7"/>
+    </linearGradient>
+  </defs>
+  <path d="M6 3h13v5h7v19a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V3z" fill="url(#g-page)" stroke="#9db1c8" stroke-width="1"/>
+  <path d="M19 3h7v5h-7z" fill="#e8eef6" stroke="#9db1c8" stroke-width="1"/>
+  <rect x="8" y="11" width="14" height="2" rx="1" fill="#3e7cc4"/>
+  <rect x="8" y="15" width="16" height="1" rx="0.5" fill="#7f93ab"/>
+  <rect x="8" y="18" width="15" height="1" rx="0.5" fill="#a7b6c8"/>
+  <rect x="8" y="21" width="14" height="1" rx="0.5" fill="#a7b6c8"/>
+  <rect x="8" y="24" width="12" height="1" rx="0.5" fill="#c2cddb"/>
+</svg>

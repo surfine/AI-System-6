@@ -65,7 +65,7 @@
       "outline-width": "0px",
       "outline-color": "rgb(0, 0, 0)",
       "_w": 430,
-      "_h": 197
+      "_h": 230
     },
     ".window.is-active > .title-bar": {
       "height": "17px",
@@ -103,7 +103,7 @@
       "padding-left": "8px",
       "background-color": "rgba(0, 0, 0, 0)",
       "_w": 428,
-      "_h": 176
+      "_h": 209
     },
     ".btn": {
       "border-radius": "7px",
@@ -113,7 +113,7 @@
       "padding-left": "12px",
       "background-color": "rgb(255, 255, 255)",
       "color": "rgb(0, 0, 0)",
-      "_w": 104,
+      "_w": 91,
       "_h": 26
     },
     ".icon-column > .desktop-icon[data-open=\"applications\"]": {
@@ -195,7 +195,7 @@
       "outline-width": "0px",
       "outline-color": "rgb(16, 17, 20)",
       "_w": 430,
-      "_h": 217
+      "_h": 250
     },
     ".window.is-active > .title-bar": {
       "height": "34px",
@@ -233,7 +233,7 @@
       "padding-left": "8px",
       "background-color": "rgba(255, 255, 255, 0.12)",
       "_w": 430,
-      "_h": 180
+      "_h": 213
     },
     ".btn": {
       "border-radius": "10px",
@@ -243,7 +243,7 @@
       "padding-left": "12px",
       "background-color": "rgb(255, 255, 255)",
       "color": "rgb(255, 255, 255)",
-      "_w": 104,
+      "_w": 91,
       "_h": 26
     },
     ".icon-column > .desktop-icon[data-open=\"applications\"]": {

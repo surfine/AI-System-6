@@ -1,0 +1,2456 @@
+/* Aqua research appearance partial.
+   Aqua is its own recipe root (registry family "aqua", recipeBase null);
+   Snow Leopard descends from it (family "aqua", recipeBase "aqua"). This file
+   exists so the Aqua branch is physically isolated from the Liquid Glass /
+   Yosemite branch while both are being rebuilt in parallel. Every selector is
+   explicit: no Liquid Glass family class or family-scoped selector may style
+   the Aqua branch. Values are measured from the 10.2 evidence chain (Apple
+   Aqua HIG June 2002, GUIdebook 1x captures, 512 Pixels, Quaqua Jaguar). */
+
+/* Era wallpapers override the System 6 desktop grid from the theme layer:
+   Platinum uses the abstracted Mac OS 9 field; the Liquid Glass family
+   (Aqua / Snow Leopard / Yosemite) paints their measured wallpaper ramps. */
+body[data-theme="aqua"] .desktop, body[data-theme="snow-leopard"] .desktop {
+
+  background: var(--desktop-surface);
+
+}
+
+html[data-theme="aqua"],
+body[data-theme="aqua"] {
+
+  /* Jaguar evidence boundary: Apple's June 2002 Aqua HIG owns control geometry;
+     original 10.2 captures own final appearance. Quaqua 9.1 supplies the
+     explicitly Jaguar pinstripe, 22px title bar, wrap tabs and file chooser.
+     Quaqua's own guide warns that Jaguar JButtons fall back to Panther, so its
+     common button sprites are material/state evidence only, never ground truth.
+     Quaqua artwork is measured but not redistributed. */
+  --theme-ui-font: "Lucida Grande", "Lucida Sans Unicode", "PingFang SC", "Hiragino Sans GB", sans-serif;
+  --theme-title-font: var(--theme-ui-font);
+  /* Aqua pop-up arrow: compact double-arrow well on the right edge. */
+  --system-select-arrow-right: 9px;
+  --system-select-arrow-top: 4px;
+  --system-select-arrow-width: 4px;
+  --system-select-arrow-height: 12px;
+  --system-select-arrow-transform: none;
+  --system-select-arrow-bg: url("./assets/themes/aqua/popup-arrows.svg");
+  --system-readable-min: 13px;
+  --system-title-size: 13px;
+  --system-control-size: 13px;
+  --system-text-size: 13px;
+  --system-caption-size: 11px;
+  --system-menu-height: 22px;
+  --system-titlebar-height: 22px;
+  --system-titlebar-control-slot: 82px;
+  --system-titlebar-control-size: 15px;
+  --system-titlebar-title-height: 15px;
+  --system-titlebar-font-size: 13px;
+  --system-titlebar-margin-y: 0;
+  --system-titlebar-padding-y: 0;
+  --system-titlebar-padding-x: 6px;
+  --system-titlebar-inactive-control-filter: grayscale(1);
+  --system-titlebar-inactive-title-color: #6d6d6d;
+  --system-control-min-height: 22px;
+  --system-button-min-height: 20px;
+  --system-button-small-height: 17px;
+  --system-button-mini-height: 17px;
+  --system-button-small-font-size: 11px;
+  --system-button-mini-font-size: 10px;
+  --system-button-small-padding-x: 8px;
+  --system-button-mini-padding-x: 7px;
+  --system-button-padding-y: 0;
+  --system-button-padding-x: 14px;
+  --titlebar-content-padding-inline: 7px;
+  --titlebar-title-weight: 400;
+  --titlebar-title-text-shadow: 0 1px 0 rgba(255, 255, 255, 0.82);
+  --traffic-light-size: 15px;
+  /* Project constraint: Close (red) sits at the left edge, Zoom (green) at
+     the right edge of the title bar. The lamps are glossy spheres with a
+     white top-left highlight, a colored body, a dark rim, and a soft
+     contact shadow below-right. */
+  --traffic-light-close-bg:
+    radial-gradient(circle at 36% 32%, rgba(255, 255, 255, 0.95) 0 1px, rgba(255, 255, 255, 0.4) 2px, rgba(255, 255, 255, 0) 3.5px),
+    radial-gradient(circle at 50% 52%, #ff6a61 0 3.5px, #f34b42 4.5px, #e03830 5.5px, #c02923 6.5px, #941717 7.2px, rgba(0, 0, 0, 0.3) 7.7px, transparent 8.2px);
+  --traffic-light-resize-bg:
+    radial-gradient(circle at 36% 32%, rgba(255, 255, 255, 0.95) 0 1px, rgba(255, 255, 255, 0.4) 2px, rgba(255, 255, 255, 0) 3.5px),
+    radial-gradient(circle at 50% 52%, #72d95a 0 3.5px, #4fc13b 4.5px, #39a82c 5.5px, #2b8a22 6.5px, #1d6419 7.2px, rgba(0, 0, 0, 0.3) 7.7px, transparent 8.2px);
+  --select-control-min-height: 20px;
+  --select-control-padding: 1px 27px 1px 9px;
+  --select-control-border: 1px solid #00005f;
+  --select-control-radius: 10px;
+  --select-control-bg-color: #f7f7f7;
+  --select-control-bg-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='14' viewBox='0 0 6 14'%3E%3Cpath d='m.5 5.5 2.5-3 2.5 3zM.5 8.5l2.5 3 2.5-3z' fill='%23064a79'/%3E%3C/svg%3E"),
+    linear-gradient(#5f9bc1, #5f9bc1),
+    linear-gradient(to bottom,
+      #dde1f4 0 5%, #bed4ef 5% 10%, #a6c8eb 10% 15%,
+      #9ac1ea 15% 25%, #94bdea 25% 30%, #8ebbea 30% 40%,
+      #8ebdec 40% 45%, #64a8f2 45% 50%, #6bb0f6 50% 55%,
+      #73b7fd 55% 60%, #7cbfff 60% 65%, #86c9ff 65% 70%,
+      #93d2ff 70% 75%, #a0dcff 75% 85%, #a9e6ff 85% 95%,
+      #bbffff 95% 100%),
+    linear-gradient(to bottom,
+      #fcfcfc 0 5%, #f6f6f6 5% 10%, #f0f0f0 10% 15%,
+      #eeeeee 15% 35%, #e1e1e1 35% 45%, #e6e6e6 45% 50%,
+      #e9e9e9 50% 55%, #ececec 55% 60%, #efefef 60% 65%,
+      #f3f3f3 65% 70%, #f6f6f6 70% 75%, #f8f8f8 75% 80%,
+      #fcfcfc 80% 90%, #ffffff 90% 100%);
+  --select-control-bg-position: right 5px center, right 18px top, right top, left top;
+  --select-control-bg-size: 6px 14px, 1px 100%, 19px 100%, 100% 100%;
+  --select-control-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92), 0 1px 2px rgba(0, 0, 0, 0.34);
+  --select-control-font-weight: 400;
+  --system-select-control-min-height: 20px;
+  --system-select-control-padding: 1px 27px 1px 9px;
+  --system-select-control-border: 1px solid #00005f;
+  --system-select-control-radius: 10px;
+  --system-select-control-bg:
+    linear-gradient(#5f9bc1, #5f9bc1) right 18px top / 1px 100% no-repeat,
+    linear-gradient(to bottom, #dde1f4 0 5%, #bed4ef 5% 10%, #a6c8eb 10% 15%, #9ac1ea 15% 25%, #94bdea 25% 30%, #8ebbea 30% 40%, #8ebdec 40% 45%, #64a8f2 45% 50%, #6bb0f6 50% 55%, #73b7fd 55% 60%, #7cbfff 60% 65%, #86c9ff 65% 70%, #93d2ff 70% 75%, #a0dcff 75% 85%, #a9e6ff 85% 95%, #bbffff 95% 100%) right top / 19px 100% no-repeat,
+    linear-gradient(to bottom, #fcfcfc 0 5%, #f6f6f6 5% 10%, #f0f0f0 10% 15%, #eeeeee 15% 35%, #e1e1e1 35% 45%, #e6e6e6 45% 50%, #e9e9e9 50% 55%, #ececec 55% 60%, #efefef 60% 65%, #f3f3f3 65% 70%, #f6f6f6 70% 75%, #f8f8f8 75% 80%, #fcfcfc 80% 90%, #ffffff 90% 100%);
+  --system-select-control-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92), 0 1px 2px rgba(0, 0, 0, 0.34);
+  --system-select-control-font-weight: 400;
+  --search-field-min-height: 22px;
+  --search-field-padding: 2px 8px 2px 21px;
+  --search-field-radius: 999px;
+  --search-field-background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 11 11'%3E%3Ccircle cx='4.5' cy='4.5' r='3' fill='none' stroke='%23757575'/%3E%3Cpath d='m6.8 6.8 3 3' stroke='%23757575' stroke-width='1.4' stroke-linecap='round'/%3E%3Cpath d='M2.8 3.4a2.2 2.2 0 0 1 2.9-.9' fill='none' stroke='%23fff' stroke-linecap='round' opacity='.9'/%3E%3C/svg%3E") 7px center / 11px 11px no-repeat,
+    var(--field-bg);
+  --progress-height: 15px;
+  --progress-padding: 1px;
+  --progress-border-color: #7b7b7b;
+  --progress-radius: 999px;
+  --progress-bg: linear-gradient(#d1d1d1, #ffffff 48%, #c5c5c5);
+  --progress-fill-radius: 999px;
+  --progress-fill-bg: linear-gradient(#cdf3ff 0%, #64c9ff 42%, #138adb 50%, #086cc1 56%, #74d0ff 100%);
+  --progress-fill-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.88);
+  --ink: #171717;
+  --paper: #ffffff;
+  --panel: #e9e9e9;
+  --quiet-panel: #fafafa;
+  --shade: #c4c4c4;
+  --shade-dark: #8b8b8b;
+  --rule: #a5a5a5;
+  --pane-bg: #ffffff;
+  --messages-bg: #ffffff;
+  --settings-scrollbar-lane-bg: #ffffff;
+  --details-bar-bg:
+    repeating-linear-gradient(to bottom, #f1f1f1 0 1px, #ffffff 1px 2px, #f1f1f1 2px 3px, #eaeaea 3px 4px);
+  --details-bar-border: #7f7f7f;
+  /* Abstracted from the 10.2 default wallpaper (512 Pixels 6k capture): the
+     medium blue water with a lighter crest band. Measured vertical ramp, no
+     raster payload. */
+  --desktop: #4979b0;
+  --desktop-surface:
+    radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.24), transparent 30%),
+    linear-gradient(180deg, #548dbd 0%, #518abc 20%, #4d85ba 45%, #5c8dc0 60%, #447ab1 80%, #4979b0 100%);
+  --window-bg:
+    repeating-linear-gradient(to bottom, #f1f1f1 0 1px, #ffffff 1px 2px, #f1f1f1 2px 3px, #eaeaea 3px 4px);
+  --window-border: 1px solid #8b8b8b;
+  --window-radius: 8px 8px 2px 2px;
+  /* Real 10.2 windows cast a dense contact shadow with a short falloff,
+     not a wide diffuse bloom. */
+  --window-shadow:
+    0 1px 1px rgba(0, 0, 0, 0.45),
+    0 3px 6px rgba(0, 0, 0, 0.28),
+    0 10px 18px rgba(0, 0, 0, 0.16);
+  --active-window-shadow: var(--window-shadow);
+  --inactive-window-shadow: 0 6px 13px rgba(0, 0, 0, 0.22);
+  /* Exact 21-row columns sampled from Jaguar's 2x22 title-bar sprite; the
+     final source row is the #7f divider represented by --titlebar-border. */
+  --system-titlebar-active-bg: linear-gradient(to bottom,
+    #ffffff 0 2px, #f1f1f1 2px 3px, #eaeaea 3px 4px,
+    #f0f0f0 4px 5px, #fefefe 5px 6px, #f0f0f0 6px 7px, #e9e9e9 7px 8px,
+    #efefef 8px 9px, #fdfdfd 9px 10px, #eeeeee 10px 11px, #e6e6e6 11px 12px,
+    #ebebeb 12px 13px, #f8f8f8 13px 14px, #e8e8e8 14px 15px, #dfdfdf 15px 16px,
+    #e4e4e4 16px 17px, #f0f0f0 17px 18px, #e1e1e1 18px 19px, #d8d8d8 19px 20px,
+    #dedede 20px 21px);
+  /* Jaguar inactive title bars are blue-gray pinstripes over a darker
+     window edge, not a desaturated copy of the active bar. The 21 rows are
+     sampled from the inactive window in the 10.2 desktop capture. */
+  /* Real 10.2 inactive title bars are translucent blue-gray over the
+     desktop. Alpha keeps the pinstripe legible without an opaque sheet.
+     Two-pixel stops compress the 21-row pinstripe at this alpha. */
+  --system-titlebar-inactive-bg: linear-gradient(to bottom,
+    rgba(207, 221, 235, 0.82) 0 2px, rgba(193, 205, 220, 0.82) 2px 4px,
+    rgba(196, 210, 224, 0.82) 4px 6px, rgba(194, 207, 220, 0.82) 6px 8px,
+    rgba(202, 214, 226, 0.82) 8px 10px, rgba(189, 201, 213, 0.82) 10px 12px,
+    rgba(198, 210, 222, 0.82) 12px 14px, rgba(186, 198, 210, 0.82) 14px 16px,
+    rgba(183, 195, 207, 0.82) 16px 18px, rgba(181, 193, 205, 0.82) 18px 20px,
+    rgba(176, 186, 199, 0.82) 20px 21px);
+  --system-titlebar-background-origin: padding-box;
+  --system-titlebar-background-clip: border-box;
+  --system-titlebar-inactive-control-visibility: visible;
+  --system-titlebar-inactive-control-opacity: 0.52;
+  --titlebar-title-bg: transparent;
+  --titlebar-title-fg: #191919;
+  --titlebar-border: 1px solid #7f7f7f;
+  --titlebar-border-inactive: 1px solid #7f7f7f;
+  --titlebar-shadow: inset 0 1px 0 #ffffff;
+  --surface-primary: #ffffff;
+  --surface-secondary:
+    repeating-linear-gradient(to bottom, #f1f1f1 0 1px, #ffffff 1px 2px, #f1f1f1 2px 3px, #eaeaea 3px 4px);
+  --surface-inset: #ffffff;
+  --toolbar-bg:
+    repeating-linear-gradient(to bottom, #fafafa 0 1px, #ffffff 1px 2px, #fafafa 2px 3px, #e9e9e9 3px 4px);
+  --toolbar-bg-inactive: var(--toolbar-bg);
+  --toolbar-border: 1px solid #7f7f7f;
+  --sidebar-bg: #ffffff;
+  --sidebar-bg-inactive: #ffffff;
+  --selection-bg: #3479d4;
+  --selection-fg: #ffffff;
+  --sidebar-selection-bg: var(--selection-bg);
+  --sidebar-selection-fg: #ffffff;
+  --separator: #9b9b9b;
+  --control-bg: linear-gradient(to bottom,
+    #f6f6f6 0%, #ebebeb 37%, #d9d9d9 42%, #e3e3e3 53%,
+    #eeeeee 63%, #ffffff 89%, #fdfdfd 100%);
+  --control-shadow: inset 0 1px 0 #ffffff, 0 1px 1px rgba(0, 0, 0, 0.28);
+  --control-active-shadow: inset 0 2px 3px rgba(0, 63, 114, 0.45);
+  --control-focus-outline: 3px solid rgba(64, 157, 224, 0.72);
+  --control-focus-offset: 1px;
+  --control-disabled-bg: linear-gradient(#f7f7f7, #dedede 52%, #f4f4f4);
+  --control-disabled-field-bg: #f7f7f7;
+  /* Quaqua's disabled button/check/radio frames are the enabled material at
+     one-half alpha; keep the state painter honest instead of whitening it. */
+  --control-disabled-opacity: 0.5;
+  --control-choice-hover-shadow: 0 0 0 3px rgba(65, 157, 224, 0.45);
+  --system-border: 1px solid #909090;
+  --system-inset: inset 0 1px 2px rgba(0, 0, 0, 0.3), inset 0 -1px 0 #ffffff;
+  --control-radius: 7px;
+  --btn-border-color: rgba(39, 39, 39, 0.82);
+  --btn-active-border-color: #00005f;
+  --btn-radius: 999px;
+  /* Quaqua's common 10-state Aqua painter supplies the hard material breaks;
+     native Jaguar captures and the 2002 HIG correct its Panther fallback. */
+  --btn-bg: linear-gradient(to bottom,
+    #f5f5f5 0 5%, #f4f4f4 5% 10%, #f0f0f0 10% 15%,
+    #eeeeee 15% 35%, #d9d9d9 35% 45%, #dedede 45% 50%,
+    #e3e3e3 50% 55%, #e6e6e6 55% 60%, #e9e9e9 60% 65%,
+    #eeeeee 65% 70%, #f3f3f3 70% 75%, #f5f5f5 75% 80%,
+    #ffffff 80% 90%, #fcfcfc 90% 100%);
+  --btn-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.96),
+    0 1px 0 rgba(0, 0, 0, 0.42),
+    0 2px 1px rgba(0, 0, 0, 0.18),
+    0 3px 2px rgba(0, 0, 0, 0.06);
+  --btn-hover-bg: var(--btn-bg);
+  --btn-hover-fg: #111111;
+  --btn-hover-shadow: var(--btn-shadow);
+  --btn-active-bg: linear-gradient(to bottom,
+    #c7cae8 0 5%, #bfc8e8 5% 10%, #afc1e5 10% 15%,
+    #9cb9e3 15% 25%, #89b4e1 25% 30%, #7fafe1 30% 40%,
+    #78ade4 40% 45%, #4693e2 45% 50%, #549eee 50% 55%,
+    #58a4f1 55% 60%, #62adf7 60% 65%, #66b1fd 65% 70%,
+    #6bb8ff 70% 75%, #76c2ff 75% 85%, #78caff 85% 95%,
+    #77d5fd 95% 100%);
+  --btn-active-fg: #06131d;
+  --btn-active-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    inset 0 -1px 1px rgba(0, 45, 104, 0.5),
+    0 1px 0 rgba(0, 0, 0, 0.42),
+    0 2px 1px rgba(0, 0, 0, 0.18),
+    0 3px 2px rgba(0, 0, 0, 0.06);
+  --btn-default-bg: linear-gradient(to bottom,
+    #c6d3eb 0 5%, #bed1eb 5% 10%, #b0cbe9 10% 15%,
+    #a4c4e7 15% 25%, #9fc0e6 25% 30%, #97bee6 30% 40%,
+    #91bdeb 40% 45%, #6dabeb 45% 50%, #7ab5f2 50% 55%,
+    #7ebcfa 55% 60%, #87c2fe 60% 65%, #8ac7fe 65% 70%,
+    #91ceff 70% 75%, #9adaff 75% 85%, #9fe1ff 85% 95%,
+    #a4f1fc 95% 100%);
+  --btn-default-fg: #000000;
+  --btn-default-text-shadow: none;
+  --btn-default-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.82),
+    inset 0 -1px 1px rgba(0, 45, 104, 0.42),
+    0 1px 0 rgba(0, 0, 0, 0.42),
+    0 2px 1px rgba(0, 0, 0, 0.18),
+    0 3px 2px rgba(0, 0, 0, 0.06);
+  --btn-default-active-bg: var(--btn-active-bg);
+  --btn-default-active-fg: #06131d;
+  --field-bg: #ffffff;
+  --field-focus-bg: #ffffff;
+  --field-border: 1px solid #8c8c8c;
+  --field-radius: 2px;
+  /* ClioTalk reply slip: Aqua text-box idiom (field border + radius + inset
+     highlight). The Classic dotted outline must not leak into Aqua. */
+  --clio-slip-radius: 2px;
+  --clio-slip-surface: #ffffff;
+  --clio-slip-border: 1px solid #8c8c8c;
+  --clio-slip-shadow: inset 0 1px 0 #ffffff;
+  --clio-slip-kept-surface: #ffffff;
+  --clio-slip-kept-border: 1px solid #4d4d4d;
+  --clio-slip-kept-shadow: none;
+  --clio-slip-mark-border: 1px solid #8c8c8c;
+  --clio-slip-mark-kept: #333333;
+  --clio-said-rule: 3px solid #8c8c8c;
+  --field-control-padding: 2px 6px;
+  --select-radius: 10px;
+  --field-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px 0 #ffffff;
+  --field-focus-border: 1px solid #4d9ed8;
+  --field-focus-ring: 0 0 0 3px rgba(63, 153, 220, 0.58);
+  --choice-bg: transparent;
+  --choice-border: 0;
+  --choice-radius: 0;
+  --choice-shadow: none;
+  --choice-checked-bg: transparent;
+  --aqua-checkbox-unchecked-image: url("./assets/themes/aqua/checkbox-unchecked.svg");
+  --choice-checkmark-image: url("./assets/themes/aqua/checkbox-checked.svg");
+  --aqua-checkbox-pressed-unchecked-image: url("./assets/themes/aqua/checkbox-pressed-unchecked.svg");
+  --aqua-checkbox-pressed-image: url("./assets/themes/aqua/checkbox-pressed-checked.svg");
+  --system-check-size: 18px;
+  --system-radio-size: 18px;
+  --radio-bg: transparent;
+  --radio-border: 0;
+  --radio-shadow: none;
+  --radio-image: url("./assets/themes/aqua/radio-unselected.svg");
+  --radio-focus-image: var(--radio-image);
+  --radio-checked-image: url("./assets/themes/aqua/radio-selected.svg");
+  --radio-checked-focus-image: var(--radio-checked-image);
+  --aqua-radio-pressed-unchecked-image: url("./assets/themes/aqua/radio-pressed-unselected.svg");
+  --aqua-radio-pressed-image: url("./assets/themes/aqua/radio-pressed-selected.svg");
+  --apple-menu-slot-width: 44px;
+  /* The Apple menu icon is the app's own constant pixel glyph in every
+     appearance (base opacity 1); no per-era Apple logo character is drawn. */
+  --menu-current-app-display: flex;
+  --menu-bar-bg: repeating-linear-gradient(to bottom, #fafafa 0 1px, #ffffff 1px 2px, #fafafa 2px 3px, #e9e9e9 3px 4px);
+  --menu-bar-border: 1px solid #8e8e8e;
+  --menu-bar-shadow: inset 0 1px 0 #ffffff;
+  --menu-panel-bg: rgba(250, 250, 250, 0.94);
+  --menu-panel-border: 1px solid #666666;
+  --menu-panel-radius: 4px;
+  --menu-panel-shadow: 0 6px 14px rgba(0, 0, 0, 0.42);
+  --menu-button-active-bg: linear-gradient(#3973c1, #346cbe 50%, #2c61b9);
+  --menu-button-active-fg: #ffffff;
+  --menu-item-active-bg: linear-gradient(#3973c1, #346cbe 50%, #2c61b9);
+  --menu-item-active-fg: #ffffff;
+  --window-frame-lane: 15px;
+  --window-frame-track-bg: linear-gradient(90deg,
+    #b8b8b8 0 7%, #c0c0c0 7% 13%, #c8c8c8 13% 20%,
+    #d3d3d3 20% 27%, #dbdbdb 27% 33%, #e4e4e4 33% 40%,
+    #ebebeb 40% 47%, #f1f1f1 47% 53%, #f6f6f6 53% 60%,
+    #fafafa 60% 67%, #fbfbfb 67% 73%, #fcfcfc 73% 80%,
+    #f9f9f9 80% 87%, #f4f4f4 87% 93%, #eeeeee 93% 100%);
+  --window-frame-track-border: 1px solid #9b9b9b;
+  /* The Jaguar thumb ends in a bright peak then a dark 1px edge; the
+     address-book capture shows the 92,92,92 right rail. The mid-column stops
+     are sampled from the 10.2 capture, not the common Aqua button ramp. */
+  --window-frame-thumb-bg: linear-gradient(90deg,
+    #0039b3 0 14%, #769ddc 14% 21%, #8cb8e6 21% 29%,
+    #89b6e6 29% 36%, #7fb1e7 36% 43%, #408ae0 43% 50%,
+    #529aec 50% 57%, #65acfb 57% 64%, #76bcff 64% 71%,
+    #83cdff 71% 79%, #90dbff 79% 86%, #87d0ff 86% 92%,
+    #5c5c5c 92% 100%);
+  --window-frame-thumb-border: 1px solid #617d91;
+  --window-frame-thumb-radius: 7px;
+  --window-frame-arrow-bg: linear-gradient(#ffffff, #d3d3d3 52%, #f5f5f5);
+  --scrollbar-track: var(--window-frame-track-bg);
+  --scrollbar-thumb: var(--window-frame-thumb-bg);
+  --scrollbar-button: var(--window-frame-arrow-bg);
+  --scrollbar-width: 15px;
+  --scrollbar-track-border: 1px solid #9b9b9b;
+  --scrollbar-track-shadow: inset 0 0 2px rgba(0, 0, 0, 0.3);
+  --scrollbar-thumb-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.75), inset -1px 0 0 rgba(0, 63, 112, 0.24);
+  --scrollbar-button-border: 1px solid #9b9b9b;
+  --scrollbar-button-shadow: inset 0 1px 0 #ffffff;
+  --tab-radius: 7px 7px 0 0;
+  --tab-overlap: 0;
+  /* Explicit Jaguar wrap-tab sprites, not the common button painter. */
+  --tab-bg: linear-gradient(to bottom,
+    #fbfbfb 0 5%, #f6f6f6 5% 10%, #f2f2f2 10% 15%,
+    #ededed 15% 25%, #ececec 25% 30%, #e9e9e9 30% 40%,
+    #e8e8e8 40% 45%, #e7e7e7 45% 50%, #e5e5e5 50% 55%,
+    #dbdbdb 55% 60%, #dedede 60% 65%, #e2e2e2 65% 70%,
+    #e6e6e6 70% 75%, #eaeaea 75% 80%, #ececec 80% 85%,
+    #f2f2f2 85% 90%, #f8f8f8 90% 95%, #ffffff 95% 100%);
+  --tab-hover-bg: var(--tab-bg);
+  --tab-active-bg: linear-gradient(to bottom,
+    #e2ecf9 0 5%, #cbdff4 5% 10%, #b8d3f0 10% 15%,
+    #accded 15% 25%, #a3c7ec 25% 30%, #9ec5ec 30% 35%,
+    #9ac1eb 35% 40%, #94bfeb 40% 45%, #91beea 45% 50%,
+    #69a8e8 50% 55%, #71adeb 55% 60%, #76b1ee 60% 65%,
+    #7fb8f4 65% 70%, #85bef9 70% 75%, #8cc6ff 75% 80%,
+    #93caff 80% 85%, #98d0ff 85% 90%, #a0d8ff 90% 95%,
+    #b8eeff 95% 100%);
+  --tab-active-fg: #06131d;
+  --theme-lab-button-min-width: 69px;
+  --theme-lab-pane-gap: 10px 18px;
+  --theme-lab-pane-padding: 10px 14px 14px;
+  --theme-lab-pane-bg:
+    repeating-linear-gradient(to bottom, #e6e6e6 0 1px, #eeeeee 1px 2px, #f2f2f2 2px 3px, #eeeeee 3px 4px);
+  --theme-lab-group-padding: 4px 10px 10px;
+  --theme-lab-group-bg: transparent;
+  --theme-lab-group-border: 0;
+  --theme-lab-group-shadow: none;
+  --theme-lab-heading-margin: 0 0 10px;
+  --theme-lab-heading-padding-bottom: 5px;
+  --theme-lab-heading-border-bottom: 1px solid #9b9b9b;
+  --theme-lab-heading-weight: 700;
+  --theme-lab-button-row-gap: 8px;
+  --theme-lab-button-row-margin-bottom: 11px;
+  --theme-lab-choice-gap: 5px 12px;
+  --theme-lab-choice-row-min-height: 19px;
+  --theme-lab-checkbox-checkmark-image: var(--choice-checkmark-image);
+  --theme-lab-checkbox-active-bg: var(--aqua-checkbox-pressed-image) center / 18px 18px no-repeat;
+  --theme-lab-checkbox-active-shadow: none;
+  --theme-lab-radio-active-bg: var(--aqua-radio-pressed-image) center / 18px 18px no-repeat;
+  --theme-lab-radio-active-shadow: none;
+  --theme-lab-form-gap: 7px 12px;
+  --theme-lab-form-label-columns: 88px minmax(0, 1fr);
+  --theme-lab-form-label-align: right;
+  --theme-lab-form-label-column-gap: 7px;
+  --theme-lab-form-label-align-items: center;
+  --theme-lab-control-margin-top: 9px;
+  --theme-lab-segmented-button-min-height: 23px;
+  --theme-lab-segmented-button-height: 23px;
+  --theme-lab-segmented-button-padding: 2px 10px;
+  --theme-lab-tabs-gap: 3px;
+  --theme-lab-tabs-padding: 0 12px 7px;
+  --theme-lab-tabs-border-bottom: 0;
+  --theme-lab-tab-button-min-height: 24px;
+  --theme-lab-tab-button-height: 24px;
+  --theme-lab-tab-button-padding: 3px 13px 2px;
+  --theme-lab-tab-selected-min-height: 24px;
+  --theme-lab-tab-selected-height: 24px;
+  --theme-lab-tab-button-bg: var(--tab-bg);
+  --theme-lab-tab-selected-bg: var(--tab-active-bg);
+  --theme-lab-tab-selected-fg: #06131d;
+  --theme-lab-tab-panel-min-height: 31px;
+  --theme-lab-tab-panel-margin-top: -1px;
+  --theme-lab-tab-panel-padding: 6px 9px;
+  --theme-lab-tab-panel-border: 1px solid #6b8191;
+  --theme-lab-tab-panel-radius: 0 0 3px 3px;
+  --theme-lab-tab-panel-bg: var(--window-bg);
+  --theme-lab-tab-panel-shadow: inset 0 1px 0 #ffffff;
+  --theme-lab-navigation-generic-label-display: none;
+  --theme-lab-column-browser-label-display: inline;
+  --theme-lab-generic-browser-display: none;
+  --theme-lab-aqua-browser-display: grid;
+  --theme-lab-split-min-height: 150px;
+  --theme-lab-split-columns: repeat(3, minmax(0, 1fr));
+  --theme-lab-split-rows: minmax(0, 1fr) 15px;
+  --theme-lab-browser-columns: repeat(3, 190px);
+  --theme-lab-browser-column-scrollbar-width: 15px;
+  --theme-lab-browser-column-scrollbar-display: block;
+  --theme-lab-browser-column-border-right: 1px solid #a8a8a8;
+  --theme-lab-browser-column-bg: #ffffff;
+  --theme-lab-browser-column-scrollbar-border: 1px solid #8e8e8e;
+  --theme-lab-browser-column-scrollbar-bg: linear-gradient(90deg, #e1e1e1, #ffffff 47%, #d2d2d2 76%, #f3f3f3);
+  --theme-lab-browser-column-scrollbar-shadow: inset 0 0 2px rgba(0, 0, 0, 0.28);
+  --theme-lab-browser-column-thumb-top: 3px;
+  --theme-lab-browser-column-thumb-height: 42px;
+  --theme-lab-browser-column-thumb-border: 1px solid #00478f;
+  --theme-lab-browser-column-thumb-radius: 7px;
+  --theme-lab-browser-column-thumb-bg: linear-gradient(90deg, #0c61c3 0%, #64bfff 18%, #c2f2ff 43%, #45a9ec 58%, #8bdcff 80%, #0756b6 100%);
+  --theme-lab-browser-column-thumb-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.5), inset -1px 0 0 rgba(0, 35, 105, 0.36);
+  --theme-lab-browser-column-scrollbar-button-border: 1px solid #8e8e8e;
+  --theme-lab-browser-column-scrollbar-button-bg: var(--btn-bg);
+  --theme-lab-browser-column-scrollbar-arrow-color: #202020;
+  --theme-lab-split-border: 1px solid #8e8e8e;
+  --theme-lab-split-radius: 3px;
+  --theme-lab-split-bg: #ffffff;
+  --theme-lab-split-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.24), 0 1px 0 #ffffff;
+  --theme-lab-sidebar-padding: 0;
+  --theme-lab-sidebar-border-right: 1px solid #a8a8a8;
+  --theme-lab-sidebar-bg: #ffffff;
+  --theme-lab-list-row-min-height: 18px;
+  --theme-lab-list-row-gap: 4px;
+  --theme-lab-list-row-padding: 1px 6px;
+  --theme-lab-list-row-radius: 0;
+  --theme-lab-list-row-font-size: 12px;
+  --theme-lab-list-row-line-height: 16px;
+  --theme-lab-sidebar-icon-size: 16px;
+  --theme-lab-sidebar-icon-bg: transparent;
+  --theme-lab-sidebar-system-svg-opacity: 0;
+  --theme-lab-sidebar-startup-disk-image: url("./assets/themes/aqua/browser-volume-16.svg");
+  --theme-lab-sidebar-applications-image: url("./assets/themes/aqua/browser-folder-16.svg");
+  --theme-lab-sidebar-trash-image: url("./assets/themes/aqua/trash.svg");
+  --theme-lab-sidebar-selected-bg: #bfd8fa;
+  --theme-lab-sidebar-selected-fg: #111111;
+  --theme-lab-list-frame-border: 0;
+  --theme-lab-list-row-border-bottom: 0;
+  --theme-lab-list-selected-bg: #bfd8fa;
+  --theme-lab-list-selected-fg: #111111;
+  --theme-lab-list-icon-display: block;
+  --theme-lab-list-icon-size: 16px;
+  --theme-lab-list-icon-image: url("./assets/themes/aqua/browser-folder-16.svg");
+  --theme-lab-list-document-image: url("./assets/themes/aqua/browser-document-16.svg");
+  --theme-lab-browser-disclosure-display: block;
+  --theme-lab-browser-disclosure-color: #747474;
+  --theme-lab-browser-horizontal-scrollbar-display: block;
+  --theme-lab-browser-scrollbar-border: 1px solid #8e8e8e;
+  --theme-lab-browser-scrollbar-bg: linear-gradient(#d1d1d1, #ffffff 48%, #c3c3c3);
+  --theme-lab-browser-scrollbar-shadow: inset 0 0 2px rgba(0, 0, 0, 0.28);
+  --theme-lab-browser-scrollbar-thumb-border: 1px solid #00478f;
+  --theme-lab-browser-scrollbar-thumb-bg: linear-gradient(#a4e6ff, #2b96dd 50%, #79d2ff);
+  --theme-lab-browser-scrollbar-thumb-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  --theme-lab-list-scrollbar-display: grid;
+  --theme-lab-list-scrollbar-width: 15px;
+  --theme-lab-layer-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  --theme-lab-layer-gap: 9px;
+  --theme-lab-layer-border: 1px solid #6f6f6f;
+  --theme-lab-layer-radius: 5px;
+  --theme-lab-layer-bg: rgba(250, 250, 250, 0.94);
+  --theme-lab-layer-shadow: 0 5px 11px rgba(0, 0, 0, 0.34);
+  --theme-lab-layer-padding: 10px 12px;
+  --theme-lab-menu-grid-row: 1 / span 2;
+  --theme-lab-menu-padding: 3px 0;
+  --theme-lab-menu-item-min-height: 21px;
+  --theme-lab-menu-item-padding: 2px 9px 2px 21px;
+  --theme-lab-menu-item-bg: #f9f9f9;
+  --theme-lab-menu-item-fg: #111111;
+  --theme-lab-menu-item-selected-bg: linear-gradient(to bottom,
+    #dfe1e5 0 1px,
+    #346cbe 1px 3px,
+    #3871c0 3px 4px,
+    #346cbe 4px 5px,
+    #2c61b9 5px 6px,
+    #346cbe 6px 7px,
+    #3973c1 7px 8px,
+    #346cbe 8px 9px,
+    #2c61b9 9px 10px,
+    #346cbe 10px 11px,
+    #3973c1 11px 12px,
+    #346cbe 12px 13px,
+    #2c61b9 13px 14px,
+    #346cbe 14px 15px,
+    #3973c1 15px 16px,
+    #346cbe 16px 17px,
+    #2c61b9 17px 18px,
+    #346cbe 18px 20px);
+  --theme-lab-menu-item-selected-fg: #ffffff;
+  --theme-lab-menu-item-disabled-bg: #f9f9f9;
+  --theme-lab-menu-item-disabled-fg: #a4a4a4;
+  --theme-lab-menu-item-disabled-opacity: 1;
+  --theme-lab-menu-separator-margin: 3px 0;
+  --theme-lab-menu-separator-border-bottom: 1px solid #a7a7a7;
+  --theme-lab-popover-padding: 9px 11px;
+  --theme-lab-popover-bg: #fffcca;
+  --theme-lab-popover-copy-fg: #5f5f5f;
+  --theme-lab-popover-generic-label-display: none;
+  --theme-lab-help-tag-label-display: block;
+  --theme-lab-dialog-columns: 64px minmax(0, 1fr);
+  --theme-lab-dialog-gap: 7px 10px;
+  --theme-lab-dialog-padding: 12px 21px 17px;
+  --theme-lab-dialog-bg: var(--window-bg);
+  --theme-lab-dialog-actions-column: 2;
+  --theme-lab-dialog-action-gap: 6px;
+  --theme-lab-dialog-cancel-display: inline-flex;
+  --theme-lab-alert-icon-display: block;
+  --theme-lab-alert-icon-size: 64px;
+  /* Authored from the 10.2 warning-sheet silhouette; no Quaqua/Apple artwork. */
+  --theme-lab-alert-icon-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x2='0' y2='1'%3E%3Cstop stop-color='%23fff78a'/%3E%3Cstop offset='.45' stop-color='%23ffd91b'/%3E%3Cstop offset='1' stop-color='%23f0a900'/%3E%3C/linearGradient%3E%3Cfilter id='s' x='-20%25' y='-20%25' width='140%25' height='150%25'%3E%3CfeDropShadow dx='0' dy='2' stdDeviation='1.4' flood-opacity='.42'/%3E%3C/filter%3E%3C/defs%3E%3Cpath d='M31.9 5.5c1.9 0 3.5 1 4.5 2.8l24 42c1 1.8 1 3.8 0 5.5-1 1.7-2.7 2.7-4.8 2.7H8.2c-2.1 0-3.8-1-4.8-2.7-1-1.7-1-3.7 0-5.5l24-42c1-1.8 2.6-2.8 4.5-2.8z' fill='url(%23g)' stroke='%23a66a00' stroke-width='2' filter='url(%23s)'/%3E%3Cpath d='M31.9 9.3 7.1 53.9c-.2.4-.1.7.1.9.2.3.5.4 1 .4h47.4c.5 0 .8-.1 1-.4.2-.2.3-.5.1-.9L31.9 9.3z' fill='none' stroke='%23fff' stroke-opacity='.7'/%3E%3Cpath d='M28.4 21.2h7l-1.2 22h-4.6l-1.2-22z' fill='%23fff' stroke='%23b77b00' stroke-width='.7'/%3E%3Cellipse cx='31.9' cy='49.3' rx='3.3' ry='3.1' fill='%23fff' stroke='%23b77b00' stroke-width='.7'/%3E%3C/svg%3E");
+  --theme-lab-sheet-specimen-display: block;
+  --theme-lab-sheet-specimen-position: relative;
+  --theme-lab-sheet-specimen-grid-column: 1 / -1;
+  --theme-lab-sheet-specimen-min-height: 116px;
+  --theme-lab-sheet-owner-window-border: 1px solid #858585;
+  --theme-lab-sheet-owner-window-radius: 7px 7px 2px 2px;
+  --theme-lab-sheet-owner-window-bg: #ffffff;
+  --theme-lab-sheet-owner-window-shadow: 0 3px 7px rgba(0, 0, 0, 0.3);
+  --theme-lab-sheet-owner-window-overflow: hidden;
+  --theme-lab-sheet-owner-display: flex;
+  --theme-lab-sheet-owner-titlebar-height: 22px;
+  --theme-lab-sheet-owner-titlebar-border: 1px solid #7f7f7f;
+  --theme-lab-sheet-owner-titlebar-bg: var(--system-titlebar-active-bg);
+  --theme-lab-sheet-owner-titlebar-shadow: inset 0 1px 0 #ffffff;
+  --theme-lab-sheet-owner-body-height: 92px;
+  --theme-lab-sheet-owner-body-bg: #ffffff;
+  --theme-lab-era-titlebar-control-top: 3px;
+  --theme-lab-era-titlebar-control-size: 15px;
+  --theme-lab-era-titlebar-close-left: 7px;
+  --theme-lab-era-titlebar-minimize-left: 28px;
+  --theme-lab-era-titlebar-zoom-left: 49px;
+  /* Alarm Clock DA: Aqua window chrome, white face, candy controls. */
+  --alarm-clock-frame-border: 1px solid #858585;
+  --alarm-clock-frame-radius: 5px;
+  --alarm-clock-frame-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+  --alarm-clock-title-bg: #f2f2f2;
+  --alarm-clock-surface-bg: #ffffff;
+  --alarm-clock-readout-bg: #ffffff;
+  --alarm-clock-divider: 1px solid #b3b3b3;
+  --alarm-clock-active-bg: linear-gradient(#2a8cff, #0a5bd0);
+  --alarm-clock-active-fg: #ffffff;
+  --alarm-clock-close-size: 12px;
+  --alarm-clock-close-border: 1px solid #b0453e;
+  --alarm-clock-close-radius: 50%;
+  --alarm-clock-close-bg: radial-gradient(circle at 35% 30%, #ff9f98 0 2px, #e6483e 4px, #a52a24 5px);
+  --alarm-clock-close-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  --alarm-clock-lever-radius: 3px;
+  --alarm-clock-lever-bg: #e8e8e8;
+  --alarm-clock-lever-hover-bg: #dcdcdc;
+  --alarm-clock-lever-fg: #202020;
+  --alarm-clock-lever-shadow: inset 0 1px 0 #ffffff, 0 1px 1px rgba(0, 0, 0, 0.2);
+  --alarm-clock-lever-focus-outline: 2px solid rgba(20, 90, 200, 0.6);
+  --alarm-clock-mode-divider: 1px solid #c8c8c8;
+  --alarm-clock-mode-radius: 4px;
+  --alarm-clock-mode-bg: #f2f2f2;
+  --alarm-clock-mode-hover-bg: #e8f3ff;
+  --alarm-clock-mode-active-shadow: inset 0 0 0 2px #0a5bd0;
+  --alarm-clock-section-gap: 3px;
+  --theme-lab-era-titlebar-minimize-bg: radial-gradient(circle at 43% 35%, #fff3bd 0 1px, #ffdc72 2px, #e6a839 5px, #9b6822 6px, #5c3c16 7px, transparent 7.5px);
+  --theme-lab-sheet-display: grid;
+  --theme-lab-sheet-position: absolute;
+  --theme-lab-sheet-top: 22px;
+  --theme-lab-sheet-right: 18px;
+  --theme-lab-sheet-left: 18px;
+  --theme-lab-sheet-margin-top: 0;
+  --theme-lab-sheet-columns: 32px minmax(0, 1fr);
+  --theme-lab-sheet-gap: 5px 9px;
+  --theme-lab-sheet-padding: 9px 14px 11px;
+  --theme-lab-sheet-border: 1px solid #858585;
+  --theme-lab-sheet-border-top-width: 0;
+  --theme-lab-sheet-radius: 0 0 6px 6px;
+  --theme-lab-sheet-bg:
+    repeating-linear-gradient(to bottom, #e6e6e6 0 1px, #eeeeee 1px 2px, #ffffff 2px 3px, #eeeeee 3px 4px);
+  --theme-lab-sheet-shadow: 0 5px 9px rgba(0, 0, 0, 0.38);
+  --theme-lab-sheet-owner-content: none;
+  --theme-lab-sheet-icon-display: block;
+  --theme-lab-sheet-icon-size: 32px;
+  --theme-lab-sheet-icon-image: url("./assets/themes/aqua/sheet-warning-64.svg");
+  --theme-lab-sheet-copy-gap: 3px;
+  --theme-lab-sheet-actions-display: flex;
+  --theme-lab-sheet-generic-copy-display: none;
+  --theme-lab-sheet-generic-action-display: none;
+  --theme-lab-sheet-aqua-copy-display: block;
+  --theme-lab-sheet-aqua-action-display: inline-flex;
+  --theme-lab-sheet-actions-column: 2;
+  --theme-lab-sheet-actions-margin-top: 2px;
+  --theme-lab-sheet-action-gap: 12px;
+  --theme-lab-sheet-button-min-width: 69px;
+  --theme-lab-progress-height: 15px;
+  --theme-lab-progress-padding: 1px;
+  --theme-lab-progress-border: 1px solid #777777;
+  --theme-lab-progress-radius: 999px;
+  --theme-lab-progress-bg: linear-gradient(#d1d1d1, #ffffff 48%, #c5c5c5);
+  --theme-lab-progress-value-radius: 999px;
+  --theme-lab-progress-value-bg: var(--progress-fill-bg);
+  --theme-lab-progress-value-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.88);
+  --theme-lab-scroll-height: 68px;
+  --theme-lab-scroll-padding: 4px 7px;
+  --theme-lab-scroll-frame-border: 1px solid #8e8e8e;
+  --theme-lab-scroll-frame-radius: 2px;
+  --theme-lab-scroll-frame-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+  --theme-lab-scroll-bg: #ffffff;
+  --theme-lab-scroll-item-margin: 0;
+  --theme-lab-scroll-item-line-height: 18px;
+  --theme-lab-scrollbar-border-left: 0;
+  --theme-lab-scrollbar-bg: var(--window-frame-track-bg);
+  --theme-lab-scrollbar-track-bg: var(--window-frame-track-bg);
+  --theme-lab-scrollbar-track-shadow: none;
+  --theme-lab-scrollbar-thumb-top: 8px;
+  --theme-lab-scrollbar-thumb-right: 1px;
+  --theme-lab-scrollbar-thumb-left: 1px;
+  --theme-lab-scrollbar-thumb-min-height: 24px;
+  --theme-lab-scrollbar-thumb-height: 72%;
+  --theme-lab-scrollbar-thumb-border: 0;
+  --theme-lab-scrollbar-thumb-radius: 7px;
+  --theme-lab-scrollbar-thumb-bg: var(--window-frame-thumb-bg);
+  --theme-lab-scrollbar-thumb-shadow: none;
+  --theme-lab-scrollbar-thumb-active-bg: linear-gradient(90deg,
+    #0023a0 0 7%, #5b8bd0 7% 14%, #75a7d9 14% 21%,
+    #69a0d9 21% 29%, #609cd9 29% 36%, #2474cd 36% 43%,
+    #3783da 43% 50%, #4d96ec 50% 57%, #61a9f5 57% 64%,
+    #6fb5fa 64% 71%, #7bc3ff 71% 79%, #70b6f9 79% 100%);
+  --theme-lab-scrollbar-button-border: 0;
+  --theme-lab-scrollbar-button-shadow: none;
+  --theme-lab-scrollbar-button-active-bg: var(--btn-active-bg);
+  --theme-lab-scrollbar-button-active-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --theme-lab-scrollbar-arrow-width: 0;
+  --theme-lab-scrollbar-arrow-height: 0;
+  --theme-lab-scrollbar-arrow-side-border: 3px solid transparent;
+  --theme-lab-scrollbar-decrement-border: 0;
+  --theme-lab-scrollbar-increment-border: 0;
+  --theme-lab-mini-position: relative;
+  --theme-lab-mini-min-height: 50px;
+  --theme-lab-mini-padding: 22px 0 0;
+  --theme-lab-mini-border: 1px solid #858585;
+  --theme-lab-mini-radius: 7px 7px 2px 2px;
+  --theme-lab-mini-shadow: 0 3px 7px rgba(0, 0, 0, 0.3);
+  --theme-lab-mini-body-content: "";
+  --theme-lab-mini-body-inset: 22px 0 0;
+  --theme-lab-mini-body-border: 0;
+  --theme-lab-mini-body-bg: #ffffff;
+  --theme-lab-mini-control-display: block;
+  --theme-lab-mini-control-top: 3px;
+  --theme-lab-mini-control-edge: 5px;
+  --theme-lab-mini-control-size: 15px;
+  --theme-lab-mini-control-border: 0;
+  --theme-lab-mini-control-radius: 50%;
+  --theme-lab-mini-control-shadow: none;
+  --theme-lab-mini-inactive-control-display: block;
+  --theme-lab-mini-title-position: absolute;
+  --theme-lab-mini-title-left: 50%;
+  --theme-lab-mini-title-top: 3px;
+  --theme-lab-mini-title-width: max-content;
+  --theme-lab-mini-title-max-width: calc(100% - 58px);
+  --theme-lab-mini-title-padding: 0 5px;
+  --theme-lab-mini-title-bg: transparent;
+  --theme-lab-mini-title-weight: 600;
+  --theme-lab-mini-title-line-height: 15px;
+  --theme-lab-mini-title-transform: translateX(-50%);
+  --theme-lab-mini-inactive-border: 1px solid #9b9b9b;
+  --theme-lab-mini-inactive-shadow: 0 2px 5px rgba(0, 0, 0, 0.18);
+  --theme-lab-mini-inactive-opacity: 1;
+  --theme-lab-mini-inactive-title-bg: transparent;
+  --theme-lab-mini-inactive-title-fg: #6d6d6d;
+  --theme-lab-finder-window-display: block;
+  --theme-lab-finder-window-border: 1px solid #858585;
+  --theme-lab-finder-window-radius: 7px 7px 2px 2px;
+  --theme-lab-finder-window-bg: #ffffff;
+  --theme-lab-finder-window-shadow: 0 4px 9px rgba(0, 0, 0, 0.34);
+  --theme-lab-finder-window-overflow: hidden;
+  --theme-lab-finder-window-titlebar-display: flex;
+  --theme-lab-finder-window-titlebar-height: 22px;
+  --theme-lab-finder-window-titlebar-border: 1px solid #7f7f7f;
+  --theme-lab-finder-window-titlebar-bg: var(--system-titlebar-active-bg);
+  --theme-lab-finder-window-titlebar-shadow: inset 0 1px 0 #ffffff;
+  --theme-lab-finder-status-display: flex;
+  --theme-lab-finder-status-height: 19px;
+  --theme-lab-finder-status-border-top: 1px solid #a3a3a3;
+  --theme-lab-finder-status-border-bottom: 1px solid #a3a3a3;
+  --theme-lab-finder-status-bg: var(--toolbar-bg);
+  --theme-lab-finder-status-shadow: inset 0 1px 0 #ffffff;
+  --theme-lab-toolbar-min-height: 56px;
+  --theme-lab-toolbar-gap: 16px;
+  --theme-lab-toolbar-padding: 6px 10px;
+  --theme-lab-toolbar-border: 1px solid #7f7f7f;
+  --theme-lab-toolbar-radius: 0;
+  --theme-lab-toolbar-bg: var(--toolbar-bg);
+  --theme-lab-toolbar-shadow: inset 0 1px 0 #ffffff;
+  --theme-lab-toolbar-button-display: none;
+  --theme-lab-toolbar-location-display: none;
+  --theme-lab-toolbar-status-display: none;
+  --theme-lab-separator-display: none;
+  --theme-lab-toolbar-icon-strip-display: flex;
+  --theme-lab-toolbar-icon-gap: 12px;
+  --theme-lab-toolbar-search-display: block;
+  --theme-lab-toolbar-search-width: 120px;
+  --theme-lab-toolbar-navigation-image-size: 24px;
+  --theme-lab-toolbar-back-image: url("./assets/themes/aqua/toolbar-back.svg");
+  --theme-lab-toolbar-forward-image: url("./assets/themes/aqua/toolbar-forward.svg");
+  --theme-lab-toolbar-computer-image: url("./assets/themes/aqua/toolbar-computer.svg");
+  --theme-lab-toolbar-home-image: url("./assets/themes/aqua/toolbar-home.svg");
+  --theme-lab-toolbar-favorites-image: url("./assets/themes/aqua/toolbar-favorites.svg");
+  --theme-lab-toolbar-applications-image: url("./assets/themes/aqua/toolbar-applications.svg");
+  --theme-lab-toolbar-view-icon-image: url("./assets/themes/aqua/view-icon-12.svg");
+  --theme-lab-toolbar-view-list-image: url("./assets/themes/aqua/view-list-12.svg");
+  --theme-lab-toolbar-view-columns-image: url("./assets/themes/aqua/view-columns-12.svg");
+  --theme-lab-toolbar-era-separator-display: block;
+  --theme-lab-toolbar-era-separator-bg: #969696;
+  --theme-lab-toolbar-era-separator-shadow: 1px 0 #ffffff;
+  --theme-lab-finder-min-height: 146px;
+  --theme-lab-finder-columns: repeat(6, minmax(58px, 1fr));
+  --theme-lab-finder-gap: 4px;
+  --theme-lab-finder-padding: 10px 7px;
+  --theme-lab-finder-border: 0;
+  --theme-lab-finder-border-top: 0;
+  --theme-lab-finder-bg: #ffffff;
+  --theme-lab-finder-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.18);
+  --theme-lab-finder-item-width: auto;
+  --theme-lab-finder-item-icon-size: 48px;
+  --theme-lab-finder-item-font-family: var(--theme-ui-font);
+  --theme-lab-finder-item-font-size: 13px;
+  --theme-lab-finder-icon-selected-bg: #b4d1f7;
+  --theme-lab-finder-icon-selected-fg: #111111;
+  --theme-lab-finder-label-bg: #ffffff;
+  --theme-lab-finder-label-margin-top: 4px;
+  --theme-lab-finder-label-padding: 1px 3px;
+  --theme-lab-finder-label-font-weight: 400;
+  --theme-lab-finder-system-svg-opacity: 0;
+  --theme-lab-finder-icon-bg: transparent;
+  --theme-lab-finder-startup-disk-image: url("./assets/themes/aqua/startup-disk.svg");
+  --theme-lab-finder-folder-image: url("./assets/themes/aqua/folder.svg");
+  --theme-lab-finder-app-image: url("./assets/themes/aqua/finder-app.svg");
+  --theme-lab-finder-document-image: url("./assets/themes/aqua/document.svg");
+  --theme-lab-finder-era-extra-display: flex;
+  --theme-lab-finder-rows-display: none;
+  --theme-lab-finder-rows-border: 1px solid #8e8e8e;
+  --theme-lab-finder-rows-bg: #ffffff;
+  --theme-lab-finder-rows-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.16);
+  --theme-lab-finder-row-min-height: 25px;
+  --theme-lab-finder-row-padding: 3px 6px;
+  --theme-lab-finder-row-border-bottom: 1px solid #d1d1d1;
+
+}
+
+html[data-theme="snow-leopard"],
+body[data-theme="snow-leopard"] {
+
+  /* Evidence boundary: Quaqua 9.1's Quaqua16SnowLeopardLookAndFeel.java (the
+     Snow LAF introduced in Quaqua 6.0) owns native geometry, state variants,
+     silver chrome and mature Aqua controls. Chromium f108f78's
+     platform-mac-snowleopard rules supply Web-toolbar and compact-scrollbar
+     evidence only. Real 10.6 captures win conflicts. No source selectors or
+     artwork are imported here. */
+  --theme-ui-font: "Lucida Grande", "Lucida Sans Unicode", "PingFang SC", "Hiragino Sans GB", sans-serif;
+  --theme-title-font: var(--theme-ui-font);
+  /* Snow Leopard pop-up arrow: taller double-arrow with the native steel
+     blue stroke, vertically centered. */
+  --system-select-arrow-right: 6px;
+  --system-select-arrow-width: 8px;
+  --system-select-arrow-height: 13px;
+  --system-select-arrow-transform: translateY(-50%);
+  --system-select-arrow-bg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='13' viewBox='0 0 8 13'%3E%3Cpath d='m1 5 3-3 3 3zM1 8l3 3 3-3z' fill='%23064a79'/%3E%3C/svg%3E");
+  --system-readable-min: 13px;
+  --system-title-size: 13px;
+  --system-control-size: 13px;
+  --system-text-size: 13px;
+  --system-caption-size: 11px;
+  --system-titlebar-height: 22px;
+  --system-titlebar-control-slot: 52px;
+  --system-titlebar-control-size: 14px;
+  --system-titlebar-title-height: 16px;
+  --system-titlebar-font-size: 13px;
+  --system-titlebar-margin-y: 0;
+  --system-titlebar-padding-y: 0;
+  --system-titlebar-padding-x: 5px;
+  --system-titlebar-inactive-control-filter: grayscale(1);
+  --system-titlebar-inactive-title-color: #777777;
+  --system-control-min-height: 22px;
+  /* Quaqua 9.1 regular push button face is ~21px of material in a 23px
+     frame; 22px box height keeps the 10.6 compact silhouette. */
+  --system-button-min-height: 22px;
+  --system-button-small-height: 20px;
+  --system-button-mini-height: 18px;
+  --system-button-small-font-size: 11px;
+  --system-button-mini-font-size: 9px;
+  --system-button-small-padding-x: 8px;
+  --system-button-mini-padding-x: 6px;
+  --system-button-padding-y: 2px;
+  --system-button-padding-x: 12px;
+  --titlebar-content-padding-inline: 7px;
+  --titlebar-title-text-shadow: 0 1px 0 rgba(255, 255, 255, 0.72);
+  /* Real 10.6 capture: 12px lamps with ~22px center spacing. */
+  --traffic-light-size: 12px;
+  /* 10.6 lamps are the same glossy spheres as early Aqua, scaled to 12px:
+     white highlight, colored body, dark rim, soft contact shadow. */
+  --traffic-light-close-bg:
+    radial-gradient(circle at 36% 32%, rgba(255, 255, 255, 0.95) 0 1px, rgba(255, 255, 255, 0.4) 1.6px, rgba(255, 255, 255, 0) 2.8px),
+    radial-gradient(circle at 50% 52%, #ff6a61 0 2.8px, #f34b42 3.6px, #e03830 4.4px, #c02923 5.2px, #941717 5.8px, rgba(0, 0, 0, 0.3) 6.2px, transparent 6.6px);
+  --traffic-light-resize-bg:
+    radial-gradient(circle at 36% 32%, rgba(255, 255, 255, 0.95) 0 1px, rgba(255, 255, 255, 0.4) 1.6px, rgba(255, 255, 255, 0) 2.8px),
+    radial-gradient(circle at 50% 52%, #72d95a 0 2.8px, #4fc13b 3.6px, #39a82c 4.4px, #2b8a22 5.2px, #1d6419 5.8px, rgba(0, 0, 0, 0.3) 6.2px, transparent 6.6px);
+  --theme-lab-era-titlebar-control-top: 3px;
+  --theme-lab-era-titlebar-control-size: 12px;
+  --theme-lab-era-titlebar-minimize-bg: radial-gradient(circle at 43% 35%, #fff3d0 0 1px, #f7c94a 1.6px, #e2a921 4.6px, #a97a12 5.4px, transparent 5.8px);
+  /* Alarm Clock DA: 10.6 silver chrome, light face, restrained controls. */
+  --alarm-clock-frame-border: 1px solid #8e8e8e;
+  --alarm-clock-frame-radius: 4px;
+  --alarm-clock-frame-shadow: 0 3px 7px rgba(0, 0, 0, 0.25);
+  --alarm-clock-title-bg: #e6e6e6;
+  --alarm-clock-surface-bg: #f2f2f2;
+  --alarm-clock-readout-bg: #ffffff;
+  --alarm-clock-divider: 1px solid #a3a3a3;
+  --alarm-clock-active-bg: linear-gradient(#69a3da, #1468b6);
+  --alarm-clock-active-fg: #ffffff;
+  --alarm-clock-close-size: 12px;
+  --alarm-clock-close-border: 1px solid #9f3934;
+  --alarm-clock-close-radius: 50%;
+  --alarm-clock-close-bg: radial-gradient(circle at 35% 30%, #ffd7d3 0 1px, #ed7a72 2px, #d6534b 5px, #9f3934 6px);
+  --alarm-clock-close-shadow: none;
+  --alarm-clock-lever-radius: 3px;
+  --alarm-clock-lever-bg: #e4e4e4;
+  --alarm-clock-lever-hover-bg: #dcdcdc;
+  --alarm-clock-lever-fg: #202020;
+  --alarm-clock-lever-shadow: inset 0 1px 0 #ffffff, 0 1px 1px rgba(0, 0, 0, 0.18);
+  --alarm-clock-lever-focus-outline: 1px solid #4a6c8f;
+  --alarm-clock-mode-divider: 1px solid #c0c0c0;
+  --alarm-clock-mode-radius: 4px;
+  --alarm-clock-mode-bg: #e6e6e6;
+  --alarm-clock-mode-hover-bg: #d6e4f0;
+  --alarm-clock-mode-active-shadow: inset 0 0 0 2px #216cb7;
+  --alarm-clock-section-gap: 2px;
+  --select-control-min-height: 22px;
+  --select-control-padding: 3px 25px 3px 7px;
+  --select-control-border: 1px solid #a3a3a3;
+  --select-control-radius: 5px;
+  --select-control-bg-color: #f7f7f7;
+  --select-control-bg-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='13' viewBox='0 0 8 13'%3E%3Cpath d='m1 5 3-3 3 3zM1 8l3 3 3-3z' fill='%23064a79'/%3E%3C/svg%3E"),
+    linear-gradient(#7ca6bf, #7ca6bf),
+    linear-gradient(#dff5ff 0%, #87cff5 43%, #3598d6 51%, #70bfe9 100%),
+    linear-gradient(#ffffff 0%, #fafafa 45%, #d1d1d1 52%, #f5f5f5 100%);
+  --select-control-bg-position: right 5px center, right 19px top, right top, left top;
+  --select-control-bg-size: 8px 13px, 1px 100%, 20px 100%, 100% 100%;
+  --select-control-shadow: var(--btn-shadow);
+  --select-control-font-weight: 400;
+  --system-select-control-min-height: 22px;
+  --system-select-control-padding: 3px 25px 3px 7px;
+  --system-select-control-border: var(--field-border);
+  --system-select-control-radius: var(--select-radius);
+  --system-select-control-bg:
+    linear-gradient(#7ca6bf, #7ca6bf) right 19px top / 1px 100% no-repeat,
+    linear-gradient(#dff5ff 0%, #87cff5 43%, #3598d6 51%, #70bfe9 100%) right top / 20px 100% no-repeat,
+    linear-gradient(#ffffff 0%, #fafafa 45%, #d1d1d1 52%, #f5f5f5 100%);
+  --system-select-control-shadow: var(--btn-shadow);
+  --system-select-control-font-weight: 400;
+  --field-control-padding: 3px 6px;
+  --theme-lab-toolbar-min-height: 34px;
+  --theme-lab-toolbar-padding: 4px 7px;
+  --theme-lab-toolbar-radius: 0;
+  --theme-lab-toolbar-search-display: block;
+  --theme-lab-toolbar-search-width: 236px;
+  /* Real 10.6 Finder toolbar (1440x900 capture): #d5d5d5 -> #bebebe ->
+     #a7a7a7. The Chromium Web-toolbar gradient stays the semantic token. */
+  /* Real 10.6 Finder toolbar (512 Pixels Home capture, 1:1): silver ramp
+     measured ~#c0c0c0 (top) -> #b1b1b1 (mid) -> #b3b3b3 (bottom), with a
+     darker bottom edge. Previously the fixture used a darker #d5d5d5 ->
+     #a7a7a7 ramp that read more like gray plastic than 10.6 chrome. */
+  --theme-lab-toolbar-bg: linear-gradient(#c0c0c0 0%, #b1b1b1 55%, #b3b3b3 100%);
+  --theme-lab-nav-row-min-height: 24px;
+  --theme-lab-nav-row-padding-block: 2px;
+  --theme-lab-finder-row-min-height: 27px;
+  /* Theme Lab Finder surface renders the full 10.6 window: light titlebar,
+     unified toolbar, status strip, content. */
+  --theme-lab-finder-window-display: block;
+  --theme-lab-finder-window-border: 1px solid #8e8e8e;
+  --theme-lab-finder-window-radius: 5px 5px 2px 2px;
+  --theme-lab-finder-window-bg: #ffffff;
+  --theme-lab-finder-window-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  --theme-lab-finder-window-titlebar-display: flex;
+  --theme-lab-finder-window-titlebar-height: 22px;
+  --theme-lab-finder-window-titlebar-border: 1px solid #8a8a8a;
+  --theme-lab-finder-window-titlebar-bg: var(--system-titlebar-active-bg);
+  --theme-lab-finder-window-titlebar-shadow: inset 0 1px 0 #ffffff;
+  --theme-lab-finder-status-display: flex;
+  --theme-lab-finder-status-height: 19px;
+  --theme-lab-finder-status-border-top: 1px solid #515151;
+  /* Real 10.6 Finder status bar (1440x900 capture): #cbcbcb -> #a7a7a7. */
+  --theme-lab-finder-status-bg: linear-gradient(#cbcbcb 0%, #b2b2b2 45%, #a7a7a7 100%);
+  --search-field-min-height: 20px;
+  --search-field-padding: 2px 9px;
+  --search-field-radius: 999px;
+  --progress-height: 13px;
+  --progress-padding: 1px;
+  --progress-border-color: #9d9d9d;
+  --progress-radius: 6px;
+  --progress-bg: linear-gradient(#d0d0d0, #f8f8f8 48%, #c9c9c9);
+  --progress-fill-radius: 5px;
+  --progress-fill-bg: linear-gradient(#9fd4fb, #3c91d3 52%, #72b7e9);
+  --progress-fill-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.66);
+  --ink: #1f1f1f;
+  --paper: #ededed;
+  --panel: #d6d6d6;
+  --quiet-panel: #f7f7f7;
+  --shade: #c4c4c4;
+  --shade-dark: #707070;
+  --rule: #b5b5b5;
+  --pane-bg: #ededed;
+  --details-bar-bg: linear-gradient(#f3f3f3, #ebebeb);
+  --details-bar-border: #cacaca;
+  /* Abstracted from the 10.6 default wallpaper (512 Pixels 6k capture): the
+     deep purple wave with a bright magenta-purple crest. Measured vertical
+     ramp, no raster payload. */
+  --desktop: #471858;
+  --desktop-surface:
+    radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.3), transparent 26%),
+    linear-gradient(180deg, #311238 0%, #813271 14%, #ae529f 26%, #ae5fb0 40%, #a562b5 55%, #975baa 70%, #905b9b 82%, #471858 100%);
+  --window-bg: #ededed;
+  --window-border: 1px solid #8b8b8b;
+  --window-radius: 5px;
+  --window-shadow: 0 10px 22px rgba(0, 0, 0, 0.34), 0 2px 4px rgba(0, 0, 0, 0.22);
+  --active-window-shadow: var(--window-shadow);
+  --inactive-window-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+  /* Real 10.6 capture (Wikipedia File:Mac OS X Snow Leopard screenshot.png,
+     1440x900): the title bar ramps #e2e2e2 -> #b0b0b0 with a #515151 bottom
+     edge. Quaqua's light Frame.titlePane is the Java render; real captures
+     win conflicts. */
+  --system-titlebar-active-bg: linear-gradient(#e2e2e2 0%, #cacaca 35%, #c0c0c0 100%);
+  --system-titlebar-inactive-bg: linear-gradient(#f4f4f4 0%, #e6e6e6 40%, #d9d9d9 100%);
+  --system-titlebar-background-origin: padding-box;
+  --system-titlebar-background-clip: border-box;
+  --system-titlebar-inactive-control-visibility: visible;
+  --system-titlebar-inactive-control-opacity: 0.48;
+  --titlebar-title-bg: transparent;
+  --titlebar-title-fg: #202020;
+  --titlebar-border: 1px solid #515151;
+  --titlebar-border-inactive: 1px solid #999999;
+  --titlebar-shadow: inset 0 1px 0 #ffffff;
+  --surface-primary: #ffffff;
+  --surface-secondary: #e2e2e2;
+  --surface-inset: #ffffff;
+  /* Chromium f108f78 platform-mac-snowleopard: active #bdbdbd -> #a7a7a7,
+     inactive #e4e4e4 -> #d8d8d8. */
+  --toolbar-bg: linear-gradient(#c0c0c0, #b1b1b1 55%, #b3b3b3);
+  --toolbar-bg-inactive: linear-gradient(#e4e4e4, #d8d8d8);
+  --toolbar-border: 1px solid #515151;
+  --toolbar-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.66);
+  /* Quaqua jtree.png (10.6 source list): measured #dde4eb surface with a
+     light blue selection and dark label; the saturated Aqua selection stays
+     on content lists and menus. */
+  --sidebar-bg: #dde4eb;
+  --sidebar-bg-inactive: #ededed;
+  /* Real 10.6 Apple menu capture (512 Pixels, 10-6 Go-Menu, 1:1): the
+     open-menu selection is a saturated blue ramp measured ~#577dea (top) ->
+     #3766f2 (mid) -> #1d5bf2 (bottom) with white labels. */
+  --selection-bg: linear-gradient(#577dea, #3766f2 50%, #1d5bf2);
+  --selection-fg: #ffffff;
+  /* Real 10.6 Finder list capture (512 Pixels, 10-6 Finder-Home, 1:1):
+     content rows select with light blue measured ~#c1d7e5 (top edge) ->
+     #bbd3e2 (body) -> #b6d0e0 (bottom) and dark labels. */
+  /* Real 10.6 Finder content-row selection (512 Pixels Home capture) is a
+     light blue ramp (~#b4cfe0 -> #92b5ca) with horizontal column variation;
+     the source-list (sidebar) selection is the deep #6aa4db -> #2070bb
+     gradient. The two must not share a token. The flat average that keeps
+     the harness material lowest stays as the generic fixture value. */
+  --theme-lab-list-selected-bg: linear-gradient(#c1d7e5, #bbd3e2 55%, #b6d0e0);
+  --theme-lab-list-selected-fg: #000000;
+  /* The real capture's source-list selection is a saturated blue (#5896d0 ->
+     #216cb7) with white labels; content lists use the light selection above. */
+  /* Real 10.6 source list (512 Pixels Finder-Home): #69a3da -> #1468b6. */
+  --sidebar-selection-bg:
+    linear-gradient(#69a3da, #69a3da) top / 100% 1px no-repeat,
+    linear-gradient(#69a3da, #1468b6);
+  --sidebar-selection-bg-unfocused:
+    linear-gradient(#a2b1cb, #a2b1cb) top / 100% 1px no-repeat,
+    linear-gradient(#b1bfd8, #8296b8);
+  --sidebar-selection-bg-inactive:
+    linear-gradient(#a8a8a8, #a8a8a8) top / 100% 1px no-repeat,
+    linear-gradient(#c1c1c1, #9c9c9c);
+  --sidebar-selection-fg: #ffffff;
+  --separator: #c6c6c6;
+  --control-bg: linear-gradient(#fcfcfc, #ededed 52%, #dedede);
+  --control-shadow: inset 0 1px 0 #ffffff, 0 1px 1px rgba(0, 0, 0, 0.18);
+  --control-active-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.34);
+  --control-focus-outline: 3px solid rgba(83, 154, 219, 0.58);
+  --control-focus-offset: 1px;
+  --control-disabled-bg: linear-gradient(#f7f7f7, #ececec);
+  --control-disabled-field-bg: #f2f2f2;
+  --system-border: 1px solid #a5a5a5;
+  --system-inset: inset 0 1px 2px rgba(0, 0, 0, 0.2), inset 0 -1px 0 #ffffff;
+  --control-radius: 4px;
+  /* Quaqua 9.1 Button.borders.png frame 0 (enabled): dark outline, ~6px
+     corner arc, silver fill #f6f6f6 -> #ebebeb -> #d9d9d9 (midline) ->
+     #e6e6e6 -> #fdfdfd, bottom drop shadow. */
+  --btn-border-color: #7d7d7d;
+  --btn-radius: 6px;
+  --btn-bg: linear-gradient(#f6f6f6 0%, #ebebeb 38%, #d9d9d9 44%, #e6e6e6 58%, #fdfdfd 100%);
+  --btn-shadow: inset 0 1px 0 #ffffff, inset 0 0 0 1px rgba(255, 255, 255, 0.35), 0 1px 2px rgba(0, 0, 0, 0.28);
+  --btn-hover-bg: linear-gradient(#f8fbff 0%, #eef4fb 38%, #d8e4ee 44%, #eaf1f7 58%, #ffffff 100%);
+  --btn-hover-fg: #111111;
+  --btn-hover-shadow: inset 0 1px 0 #ffffff, 0 1px 2px rgba(28, 92, 145, 0.22);
+  --btn-active-bg: linear-gradient(#d8d8d8 0%, #b7b7b7 48%, #9c9c9c 54%, #d2d2d2 100%);
+  --btn-active-fg: #111111;
+  --btn-active-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.26);
+  /* Real 10.6 dialogs (512 Pixels Empty-Trash / Eject-Warning): the default
+     button is a light blue ramp #c1dbf2 -> #70acdd -> #c5f0fb with dark
+     labels and no dark outline. */
+  --btn-default-bg: linear-gradient(#c1dbf2 0%, #a9cdec 20%, #8ec7e9 35%, #70acdd 48%, #84b9e3 60%, #a0cff6 80%, #c5f0fb 100%);
+  --btn-default-fg: #1a1a1a;
+  --btn-default-text-shadow: none;
+  --btn-default-border-color: #b9cfe8;
+  --btn-default-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 1px 2px rgba(0, 0, 0, 0.2);
+  --btn-default-active-bg: linear-gradient(#a8c8e8, #4f94cf 52%, #84c4ec);
+  --btn-default-active-fg: #ffffff;
+  --field-bg: #ffffff;
+  --field-focus-bg: #ffffff;
+  --field-border: 1px solid #a3a3a3;
+  --field-radius: 3px;
+  /* ClioTalk reply slip: 10.6 text-box idiom (measured field border/radius,
+     inset highlight only -- no drop shadow, which would read as a card). */
+  --clio-slip-radius: 3px;
+  --clio-slip-surface: #ffffff;
+  --clio-slip-border: 1px solid #c8c8c8;
+  --clio-slip-shadow: inset 0 1px 0 #ffffff;
+  --clio-slip-kept-surface: #ffffff;
+  --clio-slip-kept-border: 1px solid #7a7a7a;
+  --clio-slip-kept-shadow: none;
+  --clio-slip-mark-border: 1px solid #c8c8c8;
+  --clio-slip-mark-kept: #333333;
+  --clio-said-rule: 3px solid #9a9a9a;
+  --select-radius: 5px;
+  --field-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.18), 0 1px 0 #ffffff;
+  --field-focus-border: 1px solid #4f91cc;
+  --field-focus-ring: 0 0 0 3px rgba(94, 158, 219, 0.42);
+  --choice-bg: linear-gradient(#ffffff, #dedede);
+  --choice-border: 1px solid #949494;
+  --choice-radius: 3px;
+  --choice-shadow: inset 0 1px 0 #ffffff;
+  /* Quaqua 9.1 CheckBox.icons.png frame 2: the 10.6 checked box is a
+     vertical blue gradient (light top, saturated mid, light bottom) with a
+     dark check. The flat light-blue fill was an approximation. */
+  /* Measured from Quaqua 9.1 CheckBox.icons.png frame 2 (10.6 checked box):
+     the fill is a medium-deep blue — mid ~#367ac3, lower fill ~#75c1e9 —
+     not the pastel ramp that previously read as an approximation. */
+  --choice-checked-bg: #367ac3;
+  --choice-checked-bg-image: linear-gradient(to bottom, #3b7cc6 0%, #367ac3 40%, #4f90d2 65%, #75c1e9 90%, #8bd4ef 100%);
+  /* Quaqua 9.1 CheckBox.icons.png frame 2 draws a dark two-pixel check,
+     not the shared one-pixel X used by earlier eras. */
+  --choice-checkmark-image: url("./assets/themes/snow-leopard/checkbox-checked-dark.svg");
+  --radio-bg: linear-gradient(#ffffff, #dedede);
+  --radio-border: 1px solid #949494;
+  --radio-shadow: inset 0 1px 0 #ffffff;
+  --radio-image: none;
+  --radio-focus-image: none;
+  /* Measured from Quaqua 9.1 RadioButton.icons.png frame 3 (10.6 selected
+     radio): fill avg ~#5f8ed1 normal, ~#3d75c3 pressed, dark center dot. */
+  --radio-checked-image:
+    radial-gradient(circle, #000000 0 2px, transparent 2.6px),
+    linear-gradient(to bottom, #6a97d8 0%, #5f8ed1 45%, #4a7fc8 75%, #6fa8dd 100%);
+  --radio-checked-focus-image: var(--radio-checked-image);
+  /* Theme Lab draws the fixture through the same two layers as the app
+     recipe; a single layer would be compressed to the 7px dot size. */
+  --theme-lab-radio-checked-bg: var(--radio-checked-image);
+  --theme-lab-radio-dot-content: none;
+  --menu-bar-bg: linear-gradient(#f4f4f4, #d8d8d8);
+  --menu-bar-border: 1px solid #9f9f9f;
+  --menu-bar-shadow: inset 0 1px 0 #ffffff;
+  --menu-panel-bg: rgba(250, 250, 250, 0.98);
+  --menu-panel-border: 1px solid #9a9a9a;
+  --menu-panel-radius: 4px;
+  --menu-panel-shadow: 0 4px 12px rgba(0, 0, 0, 0.32);
+  --menu-panel-backdrop-filter: none;
+  /* Real 10.6 Apple menu capture (512 Pixels, 10-6 Go-Menu, 1:1): the 10.6
+     menu selection is the saturated blue ramp #577dea -> #3766f2 -> #1d5bf2
+     with white labels. (Previously the 10.10 #2176e9 ramp sat here.) */
+  --menu-button-active-bg: linear-gradient(#577dea, #3766f2 50%, #1d5bf2);
+  --menu-button-active-fg: #ffffff;
+  --menu-item-active-bg: linear-gradient(#577dea, #3766f2 50%, #1d5bf2);
+  --menu-item-active-fg: #ffffff;
+  --window-frame-lane: 15px;
+  /* Quaqua ScrollBar.track.v.png (15px tile): #b8b8b8 -> #fcfcfc ->
+     #efefef horizontal ramp. */
+  --window-frame-track-bg: linear-gradient(90deg, #b8b8b8 0%, #c8c8c8 14%, #dbdbdb 29%, #ebebeb 43%, #f6f6f6 57%, #fcfcfc 79%, #efefef 100%);
+  --window-frame-track-border: 1px solid #9b9b9b;
+  /* Measured frame 3 anatomy: light gray rounded end caps, dark navy
+     outline (stronger at the caps), a two-lobe bright blue body, and a gray
+     right edge. The first layer paints the vertical caps/ends; the second
+     paints the horizontal body underneath. */
+  --window-frame-thumb-bg:
+    linear-gradient(180deg, #dcdcdc 0%, #c9c9c9 5%, #24508f 13%, rgba(36, 80, 143, 0.6) 23%, rgba(36, 80, 143, 0) 38%, rgba(36, 80, 143, 0) 62%, rgba(36, 80, 143, 0.6) 77%, #24508f 87%, #c9c9c9 95%, #dcdcdc 100%),
+    linear-gradient(90deg, #24508f 0%, #4a8fdb 10%, #7dbdf6 28%, #a0dcff 45%, #84c4f8 62%, #4a8fdb 80%, #3d4d5f 93%);
+  --window-frame-thumb-border: 1px solid #0b3f8f;
+  --window-frame-thumb-radius: 7px;
+  --window-frame-arrow-bg: linear-gradient(#ffffff, #d4d4d4 52%, #f5f5f5);
+  --scrollbar-track: var(--window-frame-track-bg);
+  --scrollbar-thumb: var(--window-frame-thumb-bg);
+  --scrollbar-button: var(--window-frame-arrow-bg);
+  --scrollbar-width: 15px;
+  --scrollbar-track-border: 1px solid #9b9b9b;
+  --scrollbar-track-shadow: inset 0 0 2px rgba(0, 0, 0, 0.25);
+  --scrollbar-thumb-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.76), inset -1px 0 0 rgba(0, 60, 108, 0.22);
+  --scrollbar-button-border: 1px solid #9b9b9b;
+  --scrollbar-button-shadow: inset 0 1px 0 #ffffff;
+  /* Chromium Inspector's app-specific compact Web scrollbar is retained as a
+     separate semantic variant; it is not the 10.6 system scrollbar. */
+  --scrollbar-compact-width: 11px;
+  --scrollbar-compact-track: linear-gradient(90deg, #808080, #a4a4a4 25%, #a4a4a4);
+  --scrollbar-compact-thumb: linear-gradient(90deg, #c0c0c0, #d6d6d6 40%, #c0c0c0);
+  --scrollbar-compact-radius: 5px;
+  --tab-radius: 5px 5px 0 0;
+  --tab-overlap: 0;
+  /* 10.5+ preference tabs are neutral: gray unselected, white selected.
+     The blue-gradient selected tab is a Jaguar (10.2) holdover. Quaqua's
+     Panther/Tiger and later tab renderings are gray/white throughout. */
+  --tab-bg: linear-gradient(#f4f4f4, #d4d4d4);
+  --tab-hover-bg: linear-gradient(#ffffff, #f0f0f0);
+  --tab-active-bg: linear-gradient(#ffffff, #f2f2f2 55%, #e8e8e8);
+  --tab-active-fg: #111111;
+  /* Quaqua 9 jtabbedpane 10.6 edge-to-edge strip: tabs sit on a full-width
+     light panel (~#e3e3e3 -> #cccccc) with a hairline bottom border. The
+     shared fixture paints the strip background on the container so the tab
+     silhouette spans the whole element, not just the buttons. */
+  --theme-lab-tabs-border-bottom: 1px solid #a8a8a8;
+  --theme-lab-tabs-border-top: 1px solid #c0c0c0;
+  --theme-lab-tabs-bg: linear-gradient(#f7f7f7 0px, #f7f7f7 1px, #e8e8e8 2px, #dcdcdc 8px, #d5d5d5 45%, #cccccc 100%);
+  --theme-lab-tabs-padding: 6px 10px 0;
+  --theme-lab-tab-button-border: 1px solid #9a9a9a;
+  --system-radio-size: 18px;
+  --system-check-size: 18px;
+  --theme-lab-button-min-width: 72px;
+  --theme-lab-group-bg: #ededed;
+  --theme-lab-group-border: 1px solid #b7b7b7;
+  --theme-lab-group-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+
+}
+
+/* Snow Leopard era-specific Finder fixtures (dev-only Theme Lab). The shared
+   toolbar is replaced inside the Finder window by the 10.6 unified toolbar;
+   the source-list specimen renders real 10.6 sidebar groups. */
+html[data-theme="snow-leopard"] .theme-lab-snow-toolbar,
+body[data-theme="snow-leopard"] .theme-lab-snow-toolbar,
+html[data-theme="snow-leopard"] .theme-lab-snow-source-list,
+body[data-theme="snow-leopard"] .theme-lab-snow-source-list {
+
+  display: block;
+
+}
+
+html[data-theme="snow-leopard"] .theme-lab-finder-window > .theme-lab-toolbar,
+body[data-theme="snow-leopard"] .theme-lab-finder-window > .theme-lab-toolbar {
+
+  display: none;
+
+}
+
+/* Historical chrome recipe. Each branch owns its selector; the values stay in
+   the per-theme token tables above. Classic and Liquid Glass keep their own
+   native title bars from the base files. */
+body[data-theme="aqua"] .title-bar, body[data-theme="snow-leopard"] .title-bar {
+
+  background: var(--system-titlebar-active-bg);
+  background-origin: var(--system-titlebar-background-origin);
+  background-clip: var(--system-titlebar-background-clip);
+  border-bottom: var(--titlebar-border);
+  box-shadow: var(--titlebar-shadow);
+
+}
+
+body[data-theme="aqua"] .window:not(.is-active) .title-bar, body[data-theme="snow-leopard"] .window:not(.is-active) .title-bar {
+
+  background: var(--system-titlebar-inactive-bg);
+  background-origin: var(--system-titlebar-background-origin);
+  background-clip: var(--system-titlebar-background-clip);
+
+}
+
+body[data-theme="aqua"] .title-bar h1, body[data-theme="snow-leopard"] .title-bar h1,
+body[data-theme="aqua"] .title-bar h2, body[data-theme="snow-leopard"] .title-bar h2 {
+
+  background: var(--titlebar-title-bg);
+  color: var(--titlebar-title-fg);
+  font-family: var(--theme-title-font);
+
+}
+
+body[data-theme="aqua"] .theme-lab-window {
+
+  border: var(--window-border);
+  border-radius: var(--window-radius);
+  background: var(--window-bg);
+  box-shadow: var(--active-window-shadow);
+
+}
+
+body[data-theme="aqua"] .theme-lab-window:not(.is-active) {
+
+  background: var(--window-bg);
+  box-shadow: var(--inactive-window-shadow);
+  /* Jaguar inactive frames keep a dark blue top edge (44,85,133). */
+  border-color: #2c5585;
+
+}
+
+/* The Finder toolbar keeps a 56px border-box so its 1px top rail matches the
+   Jaguar capture without moving the status strip below it. */
+body[data-theme="aqua"] .theme-lab-toolbar {
+
+  box-sizing: border-box;
+
+}
+
+/* The Jaguar Finder pushes the search pill to the right of the toolbar and
+   leaves the round-icon buttons breathing room between groups. */
+body[data-theme="aqua"] .theme-lab-toolbar-search {
+  margin-inline-start: auto;
+}
+
+/* The Jaguar scrollbar cap is 16px + 15px (top button taller); keep the
+   track at 186px so the button pattern lands on the reference rows. The
+   address-book capture stacks the arrow buttons after the track. */
+body[data-theme="aqua"] .theme-lab-scrollbar {
+
+  grid-template-rows: minmax(0, 1fr) 16px 15px;
+
+}
+
+/* The cap buttons are pixel-reconstructed from the 10.2 address-book
+   capture, arrow included; the generic CSS triangles are disabled. */
+body[data-theme="aqua"] .theme-lab-scrollbar-button.is-decrement {
+
+  background: url("./assets/themes/aqua/scrollbar-cap-decrement.svg") no-repeat;
+
+}
+
+body[data-theme="aqua"] .theme-lab-scrollbar-button.is-increment {
+
+  background: url("./assets/themes/aqua/scrollbar-cap-increment.svg") no-repeat;
+
+}
+
+body[data-theme="aqua"] :where(
+  input[type="url"],
+  input[type="text"],
+  input[type="password"],
+  input[type="search"],
+  input[type="number"]
+) {
+
+  height: 22px;
+  min-height: 22px;
+  padding: var(--field-control-padding);
+  border: var(--field-border);
+  border-radius: var(--field-radius);
+  background: var(--field-bg);
+  color: var(--ink);
+  box-shadow: var(--field-shadow);
+  font-family: var(--theme-ui-font);
+  font-size: var(--system-control-size);
+  font-weight: 400;
+  line-height: 16px;
+
+}
+
+body[data-theme="aqua"] input[type="search"], body[data-theme="snow-leopard"] input[type="search"] {
+
+  appearance: none;
+  -webkit-appearance: none;
+  padding: var(--search-field-padding);
+  border-radius: var(--search-field-radius);
+  background: var(--search-field-background, var(--field-bg));
+
+}
+
+body[data-theme="aqua"] :where(
+  textarea,
+  input[type="url"],
+  input[type="text"],
+  input[type="password"],
+  input[type="search"],
+  input[type="number"]
+):is(:focus, .theme-lab-focus-demo) {
+
+  border: var(--field-focus-border);
+  outline: 0;
+  background: var(--field-focus-bg);
+  box-shadow: var(--field-focus-ring);
+
+}
+
+body[data-theme="aqua"] :is(input[type="checkbox"], input[type="radio"]) {
+
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 18px 18px;
+
+}
+
+body[data-theme="aqua"] input[type="checkbox"]:not(:checked) {
+
+  background-image: var(--aqua-checkbox-unchecked-image);
+  background-size: 18px 18px;
+
+}
+
+body[data-theme="aqua"] input[type="checkbox"]:checked {
+
+  background-image: var(--choice-checkmark-image);
+  background-size: 18px 18px;
+
+}
+
+body[data-theme="aqua"] input[type="checkbox"]:is(:active, .is-active):not(:disabled):not(:checked) {
+
+  background: transparent var(--aqua-checkbox-pressed-unchecked-image) center / 18px 18px no-repeat;
+
+}
+
+body[data-theme="aqua"] input[type="checkbox"]:is(:active, .is-active):not(:disabled):checked {
+
+  background: transparent var(--aqua-checkbox-pressed-image) center / 18px 18px no-repeat;
+
+}
+
+body[data-theme="aqua"] input[type="radio"]:not(:checked) {
+
+  background-image: var(--radio-image);
+  background-size: 18px 18px;
+
+}
+
+body[data-theme="aqua"] input[type="radio"]:checked {
+
+  background-image: var(--radio-checked-image);
+  background-size: 18px 18px;
+
+}
+
+body[data-theme="aqua"] input[type="radio"]:is(:active, .is-active):not(:disabled):not(:checked) {
+
+  background: transparent var(--aqua-radio-pressed-unchecked-image) center / 18px 18px no-repeat;
+
+}
+
+body[data-theme="aqua"] input[type="radio"]:is(:active, .is-active):not(:disabled):checked {
+
+  background: transparent var(--aqua-radio-pressed-image) center / 18px 18px no-repeat;
+
+}
+
+/* The Aqua family shares traffic-light geometry. Early Aqua's candy material
+   and Snow Leopard's restrained silver material remain separate tables. */
+body[data-theme="aqua"] .close-box,
+body[data-theme="aqua"] .resize-box {
+  width: var(--traffic-light-size);
+  height: var(--traffic-light-size);
+  border: 0;
+  border-radius: 50%;
+  background-position: center;
+  background-size: var(--traffic-light-size) var(--traffic-light-size);
+  background-repeat: no-repeat;
+  filter: none;
+}
+
+body[data-theme="aqua"] .close-box {
+  background: var(--traffic-light-close-bg) center / var(--traffic-light-size) var(--traffic-light-size) no-repeat;
+}
+
+body[data-theme="aqua"] .resize-box {
+  background: var(--traffic-light-resize-bg) center / var(--traffic-light-size) var(--traffic-light-size) no-repeat;
+}
+
+/* The real Aqua title bar follows the project's fixed constraint: Close on
+   the left edge, Zoom on the right edge, and the unused Minimize slot stays
+   visibly empty (no decorative third lamp). */
+body[data-theme="aqua"] .window > .title-bar {
+  grid-template-columns:
+    var(--system-titlebar-control-slot)
+    minmax(0, 1fr)
+    var(--system-titlebar-control-slot);
+}
+
+body[data-theme="aqua"] .title-bar > :is(.close-box, .resize-box) {
+  width: var(--traffic-light-size);
+  height: var(--traffic-light-size);
+  margin: 0;
+  background-position: center;
+  background-size: var(--traffic-light-size) var(--traffic-light-size);
+}
+
+body[data-theme="aqua"] .title-bar > .close-box {
+  grid-column: 1;
+  justify-self: start;
+}
+
+body[data-theme="aqua"] .title-bar > .resize-box {
+  grid-column: 3;
+  justify-self: end;
+  transform: none;
+}
+
+body[data-theme="aqua"] .title-bar > :is(.close-box, .resize-box)::before,
+body[data-theme="aqua"] .title-bar > :is(.close-box, .resize-box)::after {
+  content: none;
+}
+
+/* The lamps carry their action glyphs: an X on Close, a + on Zoom. The
+   strokes are drawn as clipped gradient lines so they scale with the lamp
+   size (15px Aqua, 12px Snow Leopard). */
+body[data-theme="aqua"] .title-bar > .close-box::before,
+body[data-theme="snow-leopard"] .title-bar > .close-box::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background:
+    linear-gradient(45deg, transparent calc(50% - 1px), #ffffff calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px)) center / 58% 58% no-repeat,
+    linear-gradient(-45deg, transparent calc(50% - 1px), #ffffff calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px)) center / 58% 58% no-repeat;
+}
+
+body[data-theme="aqua"] .title-bar > .resize-box::before,
+body[data-theme="snow-leopard"] .title-bar > .resize-box::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background:
+    linear-gradient(#ffffff, #ffffff) center / 58% 2px no-repeat,
+    linear-gradient(#ffffff, #ffffff) center / 2px 58% no-repeat;
+}
+
+body[data-theme="aqua"] .window:not(.is-active) .title-bar > :is(.close-box, .resize-box) {
+  filter: var(--system-titlebar-inactive-control-filter);
+  opacity: var(--system-titlebar-inactive-control-opacity);
+}
+
+/* Inactive Aqua title bars let the desktop show through: a slight blur
+   keeps the title and lamps legible over the wallpaper. */
+body[data-theme="aqua"] .window:not(.is-active) > .title-bar {
+  backdrop-filter: blur(2px) saturate(120%);
+  -webkit-backdrop-filter: blur(2px) saturate(120%);
+}
+
+/* The responsive Classic layer paints windows, modals, and popovers with
+   --paper and --ink. Aqua reclaims these surfaces with its own material
+   tokens so the real app never falls back to the System 6 face. */
+body[data-theme="aqua"] :is(.window, .system-modal) {
+  background: var(--window-bg);
+  border-color: #8b8b8b;
+}
+
+/* The Aqua branch's resize control is a small gray wedge grip in the
+   lower-right corner (HIG Fig 5-1, Fig 8-9) - not the System 6 grow box
+   with its double square and hairlines. The wedge is a project-authored SVG
+   derived from the 10.2 Open dialog corner; 10.6 uses the same grip. */
+body[data-theme="aqua"] .grow-box,
+body[data-theme="snow-leopard"] .grow-box {
+  border: 0;
+  width: 15px;
+  height: 15px;
+  background:
+    url("./assets/themes/aqua/resize-grip.svg") bottom right / 15px 15px no-repeat;
+  cursor: nwse-resize;
+}
+
+body[data-theme="aqua"] .system-modal {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9), 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+
+/* Aqua alert anatomy (HIG pp.95-124): 64x64 application/warning icon at the
+   left, bold 13pt message, right-aligned button row. */
+body[data-theme="aqua"] .system-modal form {
+  position: relative;
+  padding-left: 96px;
+  min-height: 92px;
+}
+
+body[data-theme="aqua"] .system-modal form::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 64px;
+  height: 64px;
+  background: url("./assets/themes/aqua/sheet-warning-64.svg") center / 64px 64px no-repeat;
+}
+
+body[data-theme="aqua"] .system-modal #system-modal-message {
+  font-family: var(--theme-ui-font);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #111111;
+}
+
+body[data-theme="aqua"] :is(
+  .menu-popover,
+  .menu-sub-popover,
+  .compose-tools-menu,
+  .teachtext-command-popover,
+  .teachtext-command-subpopover
+) {
+  background: var(--menu-panel-bg);
+  border: var(--menu-panel-border);
+  border-radius: var(--menu-panel-radius);
+}
+
+/* Aqua HIG: menu separators are blank space, not lines. */
+body[data-theme="aqua"] :is(.menu-popover, .menu-sub-popover) hr {
+  height: 7px;
+  margin: 2px 8px;
+  border: 0;
+  background: transparent;
+}
+
+/* The Aqua default button pulses a soft blue glow to draw attention
+   (HIG pp.120-122). The fidelity/snapshot harness disables animations, so
+   the resting state is unchanged. */
+@keyframes aqua-default-button-pulse {
+  0%, 100% {
+    box-shadow: 0 1px 0 #565656, 0 2px 0 #b9b9b9;
+  }
+  50% {
+    box-shadow:
+      0 1px 0 #565656,
+      0 2px 0 #b9b9b9,
+      0 0 9px 1px rgba(42, 128, 220, 0.55);
+  }
+}
+
+body[data-theme="aqua"] button.btn.default {
+  animation: aqua-default-button-pulse 2.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body[data-theme="aqua"] button.btn.default {
+    animation: none;
+  }
+}
+
+/* Real-app native selects are the System 6 harness by default (black border,
+   Classic arrow). Aqua renders them as the glossy popup with the blue
+   double-arrow well, matching the custom system-select-button recipe. */
+body[data-theme="aqua"] select:not([multiple]) {
+  min-height: 21px;
+  height: 21px;
+  padding: 1px 25px 1px 36px;
+  border: 0;
+  border-radius: 4px;
+  background:
+    url("./assets/themes/aqua/popup-arrows.svg") right 9px center / 4px 12px no-repeat,
+    linear-gradient(to bottom,
+      #8bb0d7 0 1px, #9cbcdf 1px 2px, #9dbfe1 2px 3px,
+      #8ab4e0 3px 4px, #6da3dc 4px 5px, #73a9e1 5px 6px,
+      #80b5ea 6px 7px, #8dbeef 7px 8px, #9acbfb 8px 9px,
+      #a3d2ff 9px 10px) right 9px top 5px / 22px 10px no-repeat,
+    linear-gradient(#3f659d, #3f659d) right 8px top 4px / 24px 12px no-repeat,
+    linear-gradient(to bottom,
+      #00005f 0 1px, #dee2f4 1px 2px, #bed4ef 2px 3px,
+      #a6c8eb 3px 4px, #9ac1ea 4px 5px, #94bdea 5px 6px,
+      #8ebbea 6px 7px, #8ebdec 7px 8px, #8bbbee 8px 9px,
+      #64a8f2 9px 10px, #6bb0f6 10px 11px, #73b7fd 11px 12px,
+      #7cbfff 12px 13px, #86c9ff 13px 14px, #93d2ff 14px 15px,
+      #97daff 15px 16px, #a0e0ff 16px 17px, #a9e6ff 17px 18px,
+      #b1f3ff 18px 19px, #bbffff 19px 20px, #4e4e4e 20px 21px)
+      right top / 21px 21px no-repeat,
+    linear-gradient(to bottom,
+      #8b8b8b 0 1px, #fcfcfc 1px 2px, #f6f6f6 2px 3px,
+      #f0f0f0 3px 4px, #eeeeee 4px 5px, #ededed 5px 7px,
+      #ececec 7px 9px, #e1e1e1 9px 10px, #e6e6e6 10px 11px,
+      #e9e9e9 11px 12px, #ececec 12px 13px, #efefef 13px 14px,
+      #f3f3f3 14px 15px, #f6f6f6 15px 16px, #f8f8f8 16px 17px,
+      #fcfcfc 17px 18px, #ffffff 18px 20px, #4e4e4e 20px 21px);
+  box-shadow: none;
+  font-family: var(--theme-ui-font);
+  font-size: var(--system-control-size);
+  font-weight: 400;
+  color: var(--ink);
+}
+
+body[data-theme="aqua"] select:disabled {
+  filter: grayscale(0.7);
+  opacity: 0.65;
+}
+
+body[data-theme="aqua"] .info-comments textarea {
+  border: var(--field-border);
+  background: var(--field-bg);
+  box-shadow: var(--field-shadow);
+  font-family: var(--theme-ui-font);
+}
+
+/* Real-app window toolbars read as a pinstripe band merged under the
+   title bar, matching the 10.2 unified-header material. Layout stays
+   untouched; only the surface is Aqua. */
+body[data-theme="aqua"] :is(
+  .window-toolbar,
+  .documents-toolbar,
+  .project-disk-toolbar,
+  .reader-toolbar,
+  .time-machine-browser-toolbar,
+  .dictation-toolbar
+) {
+  background: var(--toolbar-bg);
+  border-bottom: 1px solid #c7c7c7;
+}
+
+/* Aqua desktop icon labels sit on a translucent white tag with a soft
+   contact shadow, not the System 6 gray paper tag. */
+body[data-theme="aqua"] .desktop-icon span:last-child {
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.22);
+}
+
+/* The Reader rebuild meter consumes the shared Aqua progress recipe. */
+body[data-theme="aqua"] .rebuild-progress-meter {
+  height: var(--progress-height);
+  border: 1px solid var(--progress-border-color);
+  border-radius: var(--progress-radius);
+  background: var(--progress-bg);
+  box-shadow: none;
+}
+
+body[data-theme="aqua"] .rebuild-progress-meter span,
+body[data-theme="aqua"] .rebuild-progress-meter.is-working span {
+  background: var(--progress-fill-bg);
+  border-radius: var(--progress-fill-radius);
+  box-shadow: var(--progress-fill-shadow);
+}
+
+/* Control Panel / Chooser settings use native webkit scrollbars styled as
+   System 6 by default. Aqua gives them the 15px blue-thumb scrollbar. */
+body[data-theme="aqua"] :is(.control-panel, .chooser-panel) .settings::-webkit-scrollbar,
+body[data-theme="aqua"] :is(.control-panel, .chooser-panel) .settings::-webkit-scrollbar-track {
+  background: #ffffff;
+  border-left: 0;
+}
+
+body[data-theme="aqua"] :is(.control-panel, .chooser-panel) .settings::-webkit-scrollbar-thumb {
+  border: 0;
+  border-radius: var(--window-frame-thumb-radius);
+  background: var(--window-frame-thumb-bg);
+  box-shadow: none;
+}
+
+body[data-theme="aqua"] :is(.control-panel, .chooser-panel) .settings::-webkit-scrollbar-corner {
+  background: #ffffff;
+}
+
+body[data-theme="snow-leopard"] .close-box,
+body[data-theme="snow-leopard"] .resize-box {
+
+  background-position:
+    calc(var(--system-titlebar-control-art-offset-x) - 2px)
+    calc(var(--system-titlebar-control-art-offset-y) - 2px);
+  background-size: var(--traffic-light-size) var(--traffic-light-size);
+  background-repeat: no-repeat;
+  filter: none;
+
+}
+
+body[data-theme="snow-leopard"] .close-box {
+
+  background-image: var(--traffic-light-close-bg);
+
+}
+
+body[data-theme="snow-leopard"] .resize-box {
+
+  background-image: var(--traffic-light-resize-bg);
+
+}
+
+body[data-theme="snow-leopard"] .resize-box::before {
+
+  width: 7px;
+  height: 7px;
+  border: 0;
+  background:
+    linear-gradient(rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0.42)) center / 5px 1px no-repeat,
+    linear-gradient(rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0.42)) center / 1px 5px no-repeat;
+
+}
+
+/* Project constraint, same as Aqua: Close on the left edge, Zoom on the
+   right edge, unused Minimize slot visibly empty. */
+body[data-theme="snow-leopard"] .window > .title-bar {
+
+  grid-template-columns:
+    var(--system-titlebar-control-slot)
+    minmax(0, 1fr)
+    var(--system-titlebar-control-slot);
+
+}
+
+body[data-theme="snow-leopard"] .window > .title-bar :is(h1, h2) {
+
+  padding-inline: var(--titlebar-content-padding-inline);
+  font-weight: var(--titlebar-title-weight, 600);
+  letter-spacing: 0;
+  text-shadow: var(--titlebar-title-text-shadow);
+
+}
+
+body[data-theme="snow-leopard"] .window:not(.is-active) > .title-bar {
+
+  border-bottom: var(--titlebar-border-inactive, var(--titlebar-border));
+
+}
+
+body[data-theme="snow-leopard"] .title-bar > :is(.close-box, .resize-box) {
+  width: var(--traffic-light-size);
+  height: var(--traffic-light-size);
+  margin: 0;
+  background-position: center;
+  background-size: var(--traffic-light-size) var(--traffic-light-size);
+}
+
+body[data-theme="snow-leopard"] .title-bar > .close-box {
+  grid-column: 1;
+  justify-self: start;
+  background-image: var(--traffic-light-close-bg);
+}
+
+body[data-theme="snow-leopard"] .title-bar > .resize-box {
+  grid-column: 3;
+  justify-self: end;
+  transform: none;
+  background-image: var(--traffic-light-resize-bg);
+}
+
+body[data-theme="snow-leopard"] .title-bar > :is(.close-box, .resize-box)::before,
+body[data-theme="snow-leopard"] .title-bar > .close-box::after {
+
+  content: none;
+
+}
+
+body[data-theme="snow-leopard"] select:not([multiple]) {
+
+  min-height: var(--select-control-min-height);
+  padding: var(--select-control-padding);
+  border: var(--select-control-border);
+  border-radius: var(--select-control-radius);
+  background-color: var(--select-control-bg-color);
+  background-image: var(--select-control-bg-image);
+  background-position: var(--select-control-bg-position);
+  background-size: var(--select-control-bg-size);
+  background-repeat: no-repeat;
+  box-shadow: var(--select-control-shadow);
+  font-family: var(--theme-ui-font);
+  font-weight: var(--select-control-font-weight);
+
+}
+
+/* Snow Leopard real-app surfaces: silver unified toolbar band, silver alert
+   with the Aqua-branch alert anatomy, segmented view controls, white
+   desktop labels. */
+body[data-theme="snow-leopard"] :is(
+  .window-toolbar,
+  .documents-toolbar,
+  .project-disk-toolbar,
+  .reader-toolbar,
+  .time-machine-browser-toolbar,
+  .dictation-toolbar
+) {
+  background: linear-gradient(to bottom, #f0f0f0 0%, #e3e3e3 45%, #d2d2d2 100%);
+  border-bottom: 1px solid #a9a9a9;
+}
+
+body[data-theme="snow-leopard"] .system-modal {
+  background: linear-gradient(to bottom, #ffffff 0%, #f2f2f2 100%);
+  border: 1px solid #8e8e8e;
+  border-radius: 4px 4px 3px 3px;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85), 0 5px 14px rgba(0, 0, 0, 0.35);
+}
+
+body[data-theme="snow-leopard"] .system-modal form {
+  position: relative;
+  padding-left: 96px;
+  min-height: 92px;
+}
+
+body[data-theme="snow-leopard"] .system-modal form::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 64px;
+  height: 64px;
+  background: url("./assets/themes/aqua/sheet-warning-64.svg") center / 64px 64px no-repeat;
+}
+
+body[data-theme="snow-leopard"] .system-modal #system-modal-message {
+  font-family: var(--theme-ui-font);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #111111;
+}
+
+body[data-theme="aqua"] .view-btn,
+body[data-theme="snow-leopard"] .view-btn {
+  width: 26px;
+  background: linear-gradient(to bottom, #ffffff 0%, #efefef 55%, #e0e0e0 100%);
+  border: 1px solid #a3a3a3;
+  border-right: 0;
+}
+
+body[data-theme="aqua"] .view-btn.is-active {
+  background: linear-gradient(to bottom, #7fb1e8 0%, #4c8fd6 55%, #3f7ec8 100%);
+  border-color: #2f6fb8;
+}
+
+body[data-theme="snow-leopard"] .view-btn.is-active {
+  background: linear-gradient(to bottom, #b8b8b8 0%, #9f9f9f 55%, #8d8d8d 100%);
+  border-color: #7e7e7e;
+}
+
+body[data-theme="aqua"] .view-btn.is-active::before,
+body[data-theme="snow-leopard"] .view-btn.is-active::before {
+  background: #ffffff;
+  box-shadow:
+    6px 0 0 #ffffff,
+    0 6px 0 #ffffff,
+    6px 6px 0 #ffffff;
+}
+
+body[data-theme="aqua"] .view-btn[data-view="list"].is-active::before,
+body[data-theme="snow-leopard"] .view-btn[data-view="list"].is-active::before {
+  background: #ffffff;
+  box-shadow: 0 -4px 0 #ffffff, 0 4px 0 #ffffff;
+}
+
+body[data-theme="snow-leopard"] .desktop-icon span:last-child {
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+body[data-theme="aqua"] .system-select-button:not(:disabled), body[data-theme="snow-leopard"] .system-select-button:not(:disabled) {
+
+  min-height: var(--system-select-control-min-height);
+  padding: var(--system-select-control-padding);
+  border: var(--system-select-control-border);
+  border-radius: var(--system-select-control-radius);
+  background: var(--system-select-control-bg);
+  box-shadow: var(--system-select-control-shadow);
+  font-family: var(--theme-ui-font);
+  font-size: var(--system-control-size);
+  font-weight: var(--system-select-control-font-weight);
+
+}
+
+/* Native Aqua pop-ups expose both directions in the blue arrow well. The base
+   Classic disclosure triangle remains untouched outside this family. */
+body[data-theme="aqua"] .system-select-button::after, body[data-theme="snow-leopard"] .system-select-button::after {
+
+  right: var(--system-select-arrow-right, 6px);
+  top: var(--system-select-arrow-top, auto);
+  width: var(--system-select-arrow-width, 8px);
+  height: var(--system-select-arrow-height, 13px);
+  border: 0;
+  transform: var(--system-select-arrow-transform, translateY(-50%));
+  background: var(--system-select-arrow-bg) center / var(--system-select-arrow-width, 8px) var(--system-select-arrow-height, 13px) no-repeat;
+
+}
+
+body[data-theme="snow-leopard"] .theme-lab-progress {
+
+  height: var(--progress-height);
+  padding: var(--progress-padding);
+  border-color: var(--progress-border-color);
+  border-radius: var(--progress-radius);
+  background: var(--progress-bg);
+
+}
+
+body[data-theme="snow-leopard"] .theme-lab-progress span {
+
+  border-radius: var(--progress-fill-radius);
+  background: var(--progress-fill-bg);
+  box-shadow: var(--progress-fill-shadow);
+
+}
+
+body[data-theme="aqua"] button.btn {
+
+  position: relative;
+  min-width: 69px;
+  min-height: 21px;
+  height: 21px;
+  padding: var(--system-button-padding-y) var(--system-button-padding-x);
+  border: 0;
+  border-radius: var(--btn-radius);
+  background:
+    linear-gradient(#6f6f6f, #6f6f6f) left 1px / 1px calc(100% - 1px) no-repeat,
+    linear-gradient(#6f6f6f, #6f6f6f) right 1px / 1px calc(100% - 1px) no-repeat,
+    linear-gradient(to bottom,
+      #e4e4e4 0 1px, #6f6f6f 1px 2px, #f5f5f5 2px 3px,
+      #f2f2f2 3px 4px, #efefef 4px 5px, #eaeaea 5px 6px,
+      #e9e9e9 6px 7px, #e8e8e8 7px 8px, #e7e7e7 8px 9px,
+      #dcdcdc 9px 10px, #e1e1e1 10px 11px, #e8e8e8 11px 12px,
+      #eaeaea 12px 13px, #efefef 13px 14px, #f3f3f3 14px 15px,
+      #f8f8f8 15px 16px, #fcfcfc 16px 17px, #ffffff 17px 21px);
+  color: var(--ink);
+  box-shadow: 0 1px 0 #565656, 0 2px 0 #b9b9b9;
+  font-family: var(--theme-ui-font);
+  font-size: var(--system-control-size);
+  font-weight: 400;
+  line-height: 13px;
+
+}
+
+body[data-theme="aqua"] button.btn.default {
+
+  background:
+    linear-gradient(#00006e, #00006e) left 1px / 1px calc(100% - 1px) no-repeat,
+    linear-gradient(#00006e, #00006e) right 1px / 1px calc(100% - 1px) no-repeat,
+    linear-gradient(to bottom,
+      #e4e4e4 0 1px, #00006e 1px 2px, #d2d3ec 2px 3px,
+      #bac7ea 3px 4px, #9dbee5 4px 5px, #88b4e1 5px 6px,
+      #81b0e0 6px 7px, #7bace0 7px 8px, #77ace0 8px 9px,
+      #478fd8 9px 10px, #5096dc 10px 11px, #5a9de0 11px 12px,
+      #61a3e6 12px 13px, #69aaeb 13px 14px, #70b1f1 14px 15px,
+      #78b8fa 15px 16px, #7fbfff 16px 17px, #86c7ff 17px 18px,
+      #8dceff 18px 19px, #93d8ff 19px 20px, #95dbff 20px 21px);
+  color: var(--btn-default-fg);
+  box-shadow: 0 1px 0 #565656, 0 2px 0 #b9b9b9;
+  text-shadow: var(--btn-default-text-shadow);
+
+}
+
+body[data-theme="aqua"] button.btn:is(.is-active, :active):not(:disabled):not(.is-disabled) {
+
+  border-color: var(--btn-active-border-color);
+  background: var(--btn-active-bg);
+  color: var(--btn-active-fg);
+  box-shadow: var(--btn-active-shadow);
+
+}
+
+body[data-theme="aqua"] select:disabled {
+
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='14' viewBox='0 0 6 14'%3E%3Cpath d='m.5 5.5 2.5-3 2.5 3zM.5 8.5l2.5 3 2.5-3z' fill='%23959595'/%3E%3C/svg%3E"),
+    linear-gradient(#b5b5b5, #b5b5b5),
+    linear-gradient(#f5f5f5, #cecece 52%, #eeeeee),
+    linear-gradient(#fafafa, #e6e6e6 52%, #f6f6f6);
+
+}
+
+body[data-theme="aqua"] :is(button.btn:disabled, button.btn.is-disabled, .system-select-button:disabled) {
+
+  border-color: #a4a4a4;
+  background: var(--control-disabled-bg);
+  color: #999999;
+  box-shadow: none;
+  opacity: var(--control-disabled-opacity);
+
+}
+
+body[data-theme="aqua"] .system-select-button:not(:disabled) {
+
+  min-height: 21px;
+  height: 21px;
+  padding: 1px 25px 1px 36px;
+  border: 0;
+  border-radius: 4px;
+  background:
+    linear-gradient(to bottom,
+      #8bb0d7 0 1px, #9cbcdf 1px 2px, #9dbfe1 2px 3px,
+      #8ab4e0 3px 4px, #6da3dc 4px 5px, #73a9e1 5px 6px,
+      #80b5ea 6px 7px, #8dbeef 7px 8px, #9acbfb 8px 9px,
+      #a3d2ff 9px 10px) 9px 5px / 22px 10px no-repeat,
+    linear-gradient(#3f659d, #3f659d) 8px 4px / 24px 12px no-repeat,
+    linear-gradient(to bottom,
+      #00005f 0 1px, #dee2f4 1px 2px, #bed4ef 2px 3px,
+      #a6c8eb 3px 4px, #9ac1ea 4px 5px, #94bdea 5px 6px,
+      #8ebbea 6px 7px, #8ebdec 7px 8px, #8bbbee 8px 9px,
+      #64a8f2 9px 10px, #6bb0f6 10px 11px, #73b7fd 11px 12px,
+      #7cbfff 12px 13px, #86c9ff 13px 14px, #93d2ff 14px 15px,
+      #97daff 15px 16px, #a0e0ff 16px 17px, #a9e6ff 17px 18px,
+      #b1f3ff 18px 19px, #bbffff 19px 20px, #4e4e4e 20px 21px)
+      right top / 21px 21px no-repeat,
+    linear-gradient(to bottom,
+      #8b8b8b 0 1px, #fcfcfc 1px 2px, #f6f6f6 2px 3px,
+      #f0f0f0 3px 4px, #eeeeee 4px 5px, #ededed 5px 7px,
+      #ececec 7px 9px, #e1e1e1 9px 10px, #e6e6e6 10px 11px,
+      #e9e9e9 11px 12px, #ececec 12px 13px, #efefef 13px 14px,
+      #f3f3f3 14px 15px, #f6f6f6 15px 16px, #f8f8f8 16px 17px,
+      #fcfcfc 17px 18px, #ffffff 18px 20px, #4e4e4e 20px 21px);
+  box-shadow: none;
+
+}
+
+body[data-theme="aqua"] .system-select-menu {
+
+  top: calc(100% + 2px);
+  padding: 3px 0;
+  border: 1px solid #666666;
+  border-radius: 3px;
+  background: rgba(250, 250, 250, 0.94);
+  box-shadow: 0 5px 11px rgba(0, 0, 0, 0.4);
+
+}
+
+body[data-theme="aqua"] .system-select-option {
+
+  min-height: 20px;
+  padding: 2px 24px;
+  border: 0;
+  font-family: var(--theme-ui-font);
+  font-size: 13px;
+  line-height: 16px;
+
+}
+
+body[data-theme="aqua"] .theme-lab-mini-window.is-active .theme-lab-mini-control.is-close {
+
+  background: var(--traffic-light-close-bg);
+
+}
+
+body[data-theme="aqua"] .theme-lab-mini-window.is-active .theme-lab-mini-control.is-zoom {
+  background: var(--traffic-light-resize-bg);
+}
+
+body[data-theme="aqua"] .theme-lab-mini-window.is-active .theme-lab-mini-control.is-close::before,
+body[data-theme="snow-leopard"] .theme-lab-mini-window.is-active .theme-lab-mini-control.is-close::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background:
+    linear-gradient(45deg, transparent calc(50% - 1px), #ffffff calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px)) center / 58% 58% no-repeat,
+    linear-gradient(-45deg, transparent calc(50% - 1px), #ffffff calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px)) center / 58% 58% no-repeat;
+}
+
+body[data-theme="aqua"] .theme-lab-mini-window.is-active .theme-lab-mini-control.is-zoom::before,
+body[data-theme="snow-leopard"] .theme-lab-mini-window.is-active .theme-lab-mini-control.is-zoom::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background:
+    linear-gradient(#ffffff, #ffffff) center / 58% 2px no-repeat,
+    linear-gradient(#ffffff, #ffffff) center / 2px 58% no-repeat;
+}
+
+body[data-theme="aqua"] .theme-lab-mini-window.is-inactive .theme-lab-mini-control {
+
+  background: radial-gradient(circle, #f7f7f7 0 4px, #a9a9a9 5px, #777777 6px, transparent 7px);
+
+}
+
+body[data-theme="aqua"] .theme-lab-toolbar-round-icon {
+
+  width: 24px;
+  height: 24px;
+  border: 0;
+  box-shadow: none;
+
+}
+
+body[data-theme="aqua"] .theme-lab-toolbar-round-icon.is-back {
+
+  background: var(--theme-lab-toolbar-back-image) center / 24px 24px no-repeat;
+
+}
+
+body[data-theme="aqua"] .theme-lab-toolbar-round-icon.is-forward {
+
+  background: var(--theme-lab-toolbar-forward-image) center / 24px 24px no-repeat;
+
+}
+
+body[data-theme="aqua"] .theme-lab-segmented {
+
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.24));
+
+}
+
+body[data-theme="aqua"] .theme-lab-group .theme-lab-segmented button {
+
+  min-height: var(--theme-lab-segmented-button-min-height);
+  height: var(--theme-lab-segmented-button-height);
+  padding: var(--theme-lab-segmented-button-padding);
+  border: 1px solid #777777;
+  border-right: 0;
+  background: var(--tab-bg);
+  box-shadow: inset 0 1px 0 #ffffff;
+  font: inherit;
+
+}
+
+body[data-theme="aqua"] .theme-lab-group .theme-lab-segmented button.is-selected {
+
+  background: var(--tab-active-bg);
+  color: #071722;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 -1px 1px rgba(0, 65, 112, 0.34);
+
+}
+
+body[data-theme="aqua"] .theme-lab-group .theme-lab-tabs {
+
+  gap: var(--theme-lab-tabs-gap);
+  padding: var(--theme-lab-tabs-padding);
+  border-bottom: var(--theme-lab-tabs-border-bottom);
+  background: linear-gradient(to bottom,
+    #0a51ae 0 14.285%, #a4c3e5 14.285% 28.57%,
+    #b8d2ef 28.57% 42.855%, #79aeec 42.855% 57.14%,
+    #9ccfff 57.14% 71.425%, #bbefff 71.425% 85.71%,
+    #6c6c6c 85.71% 100%) bottom / 100% 7px no-repeat;
+  overflow: visible;
+
+}
+
+body[data-theme="aqua"] .theme-lab-group .theme-lab-tabs button:not(:active) {
+
+  min-height: var(--theme-lab-tab-button-min-height);
+  height: var(--theme-lab-tab-button-height);
+  margin-bottom: -7px;
+  padding: var(--theme-lab-tab-button-padding);
+  border: 1px solid #777777;
+  border-bottom: 0;
+  border-radius: 7px 7px 0 0;
+  background: var(--tab-bg);
+  box-shadow: 0 -1px 1px rgba(0, 0, 0, 0.08), inset 0 1px 0 #ffffff;
+
+}
+
+body[data-theme="aqua"] .theme-lab-group .theme-lab-tabs button.is-selected {
+
+  min-height: var(--theme-lab-tab-selected-min-height);
+  height: var(--theme-lab-tab-selected-height);
+  border-color: #0024b2;
+  border-bottom: 0;
+  background:
+    linear-gradient(to bottom,
+      #eeeeee 0 1px, #f7f7f7 1px 2px, #d1d1d1 2px 3px,
+      #a0a0a0 3px 4px, #838383 4px 5px, #787878 5px 6px,
+      #6a6a6a 6px 7px, #636363 7px 8px, #666666 8px 9px,
+      #6e6e6e 9px 10px, #666666 10px 11px, #636363 11px 12px,
+      #666666 12px 13px, #6e6e6e 13px 14px, #666666 14px 15px,
+      #636363 15px 16px, #666666 16px 17px, #6e6e6e 17px 18px,
+      #666666 18px 19px, #636363 19px 20px, #666666 20px 21px,
+      #6c6c6c 21px 22px, #616161 22px 23px) right top / 1px 23px no-repeat,
+    linear-gradient(to bottom,
+      #e2ecf9 0 1px, #cbdff4 1px 2px, #b8d3f0 2px 3px,
+      #accded 3px 4px, #a2c6ec 4px 5px, #9dc4eb 5px 6px,
+      #9ac1eb 6px 7px, #96c0eb 7px 8px, #92beea 8px 9px,
+      #90bdea 9px 10px, #69a8e8 10px 11px, #71adeb 11px 12px,
+      #77b2ef 12px 13px, #7fb8f4 13px 14px, #85bef9 14px 15px,
+      #8cc6ff 15px 16px, #93cbff 16px 17px, #99d1ff 17px 18px,
+      #a0d7ff 18px 19px, #a6deff 19px 20px, #abe3ff 20px 21px,
+      #b1e9ff 21px 22px, #b6edff 22px 23px);
+  color: #06131d;
+  box-shadow: none;
+
+}
+
+body[data-theme="aqua"] .theme-lab-group .theme-lab-tabs button.is-selected::after {
+
+  content: "";
+  position: absolute;
+  top: 23px;
+  right: 0;
+  left: 0;
+  width: 100%;
+  height: 6px;
+  background:
+    linear-gradient(to right, #97bee7, #afdcf3 46%, #a4c3e5) 0 0 / 100% 1px no-repeat,
+    linear-gradient(to bottom,
+      #b8d2ef 0 1px, #79aeec 1px 2px, #9ccfff 2px 3px,
+      #bbefff 3px 4px, #6c6c6c 4px 5px, #6c6c6c 5px 6px) 0 1px / 100% 5px no-repeat;
+
+}
+
+/* Aqua-family shared recipe set. Aqua and Snow Leopard consume the same
+   control skeleton; every value comes from each theme's own token table, so
+   the Jaguar candy and the 10.6 silver chrome stay separate. These selectors
+   deliberately name the Aqua family directly - no Liquid Glass family class
+   may style the Aqua branch. */
+body[data-theme="aqua"] .window:not(.is-active), body[data-theme="snow-leopard"] .window:not(.is-active) {
+
+  box-shadow: var(--inactive-window-shadow);
+
+}
+
+body[data-theme="aqua"] :where(.btn), body[data-theme="snow-leopard"] :where(.btn) {
+
+  border-color: var(--btn-border-color);
+  border-radius: var(--btn-radius);
+  background: var(--btn-bg);
+  box-shadow: var(--btn-shadow);
+  font-family: var(--theme-ui-font);
+  font-weight: 400;
+
+}
+
+body[data-theme="aqua"] .btn.default, body[data-theme="snow-leopard"] .btn.default {
+
+  background: var(--btn-default-bg);
+  border-color: #1c6bc7;
+  color: var(--btn-default-fg);
+  text-shadow: var(--btn-default-text-shadow);
+  box-shadow: var(--btn-default-shadow);
+
+}
+
+body[data-theme="aqua"] .btn:is(.is-active, :active):not(:disabled):not(.is-disabled), body[data-theme="snow-leopard"] .btn:is(.is-active, :active):not(:disabled):not(.is-disabled) {
+
+  background: var(--btn-active-bg);
+  color: var(--btn-active-fg);
+  box-shadow: var(--btn-active-shadow);
+
+}
+
+body[data-theme="aqua"] :is(.btn:disabled, .btn.is-disabled), body[data-theme="snow-leopard"] :is(.btn:disabled, .btn.is-disabled) {
+
+  background: var(--control-disabled-bg);
+  color: var(--shade-dark);
+  box-shadow: none;
+
+}
+
+body[data-theme="aqua"] :where(
+  textarea,
+  input[type="url"],
+  input[type="text"],
+  input[type="password"],
+  input[type="search"],
+  input[type="number"]
+), body[data-theme="snow-leopard"] :where(
+  textarea,
+  input[type="url"],
+  input[type="text"],
+  input[type="password"],
+  input[type="search"],
+  input[type="number"]
+) {
+
+  min-height: var(--system-control-min-height);
+  padding: var(--field-control-padding);
+  border: var(--field-border);
+  border-radius: var(--field-radius);
+  background: var(--field-bg);
+  box-shadow: var(--field-shadow);
+  font-family: var(--theme-ui-font);
+  font-size: var(--system-control-size);
+
+}
+
+body[data-theme="aqua"] :is(input, textarea, select):focus, body[data-theme="snow-leopard"] :is(input, textarea, select):focus {
+
+  border: var(--field-focus-border);
+  outline: 0;
+  background: var(--field-focus-bg);
+  box-shadow: var(--field-focus-ring);
+
+}
+
+body[data-theme="aqua"] .theme-lab-toolbar, body[data-theme="snow-leopard"] .theme-lab-toolbar {
+
+  min-height: var(--theme-lab-toolbar-min-height);
+  padding: var(--theme-lab-toolbar-padding);
+  border-radius: var(--theme-lab-toolbar-radius);
+  box-shadow: var(--toolbar-highlight);
+
+}
+
+body[data-theme="aqua"] .theme-lab-mini-window.is-active, body[data-theme="snow-leopard"] .theme-lab-mini-window.is-active {
+
+  background: var(--toolbar-bg);
+
+}
+
+body[data-theme="aqua"] .theme-lab-mini-window.is-inactive, body[data-theme="snow-leopard"] .theme-lab-mini-window.is-inactive {
+
+  background: var(--toolbar-bg-inactive);
+  opacity: 1;
+
+}
+
+body[data-theme="aqua"] :is(.theme-lab-sidebar, .theme-lab-list) button, body[data-theme="snow-leopard"] :is(.theme-lab-sidebar, .theme-lab-list) button {
+
+  min-height: var(--theme-lab-nav-row-min-height);
+  padding-block: var(--theme-lab-nav-row-padding-block);
+
+}
+
+body[data-theme="aqua"] .theme-lab-finder-rows > div, body[data-theme="snow-leopard"] .theme-lab-finder-rows > div {
+
+  min-height: var(--theme-lab-finder-row-min-height);
+
+}
+
+/* Snow Leopard is the Aqua descendant, not an early-Aqua desaturation. The
+   compact, unified silver chrome and quieter controls below are the delta. */
+body[data-theme="snow-leopard"] :is(select, input):disabled {
+
+  color: #8c8c8c;
+  background-color: #f2f2f2;
+  opacity: 0.72;
+
+}
+
+body[data-theme="snow-leopard"] .window:not(.is-active) .theme-lab-sidebar {
+
+  background: var(--sidebar-bg-inactive);
+
+}
+
+body[data-theme="snow-leopard"] .window:not(.is-active) .theme-lab-sidebar button.is-selected {
+
+  background: var(--sidebar-selection-bg-inactive);
+
+}
+/* Aqua branch complete icon sets (54 objects). Continuity: the
+   same silhouettes as the Liquid Glass painter / Yosemite flat family;
+   material is the era generation (10.2 glossy candy vs 10.6 matte silver).
+   Icons live in per-theme PNG sprites. Transport glyphs and menu chrome keep
+   the inline painter. Position rules are theme-independent: --sp is consumed
+   only by the Aqua/SL sprite rule, so other appearances ignore it.
+   No Apple art; AI System 6 paths. */
+:where(body[data-theme="aqua"], body[data-theme="snow-leopard"])
+  .sys-icon[data-system-icon]:not(:where([data-system-icon="play"], [data-system-icon="pause"], [data-system-icon="previousTrack"], [data-system-icon="nextTrack"], [data-system-icon="shuffleTracks"], [data-system-icon="repeatTracks"], [data-system-icon="speaker"])) {
+  border: 0;
+  border-radius: 0;
+  background-color: transparent;
+  background-image: var(--aqua-icon, var(--snow-icon, none));
+  background-repeat: no-repeat;
+  background-position: var(--sp, center);
+  background-size: var(--sprite-size, contain);
+  box-shadow: none;
+}
+body[data-theme="aqua"] .sys-icon {
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+}
+:where(body[data-theme="aqua"], body[data-theme="snow-leopard"])
+  .sys-icon[data-system-icon]:not(:where([data-system-icon="play"], [data-system-icon="pause"], [data-system-icon="previousTrack"], [data-system-icon="nextTrack"], [data-system-icon="shuffleTracks"], [data-system-icon="repeatTracks"], [data-system-icon="speaker"])) .sys-icon-svg {
+  display: none;
+}
+body[data-theme="aqua"] .sys-icon {
+  --aqua-icon: url("./assets/themes/aqua/aqua-sprite.png");
+  --sprite-size: 256px 224px;
+}
+
+body[data-theme="snow-leopard"] .sys-icon {
+  --snow-icon: url("./assets/themes/snow-leopard/snow-leopard-sprite.png");
+  --sprite-size: 256px 224px;
+}
+
+/* Shared sprite positions (theme-independent). */
+[data-system-icon="startupDisk"]{--sp:0 0}
+[data-system-icon="hardDisk"]{--sp:-32px 0}
+[data-system-icon="folder"]{--sp:-64px 0}
+[data-system-icon="document"]{--sp:-96px 0}
+[data-system-icon="applications"]{--sp:-128px 0}
+[data-system-icon="trash"]{--sp:-160px 0}
+[data-system-icon="finderApp"]{--sp:-192px 0}
+[data-system-icon="fileFloppy"]{--sp:-224px 0}
+[data-system-icon="assistant"]{--sp:0 -32px}
+[data-system-icon="quickDraft"]{--sp:-32px -32px}
+[data-system-icon="writingStudio"]{--sp:-64px -32px}
+[data-system-icon="projectDisk"]{--sp:-96px -32px}
+[data-system-icon="projectDisc"]{--sp:-128px -32px}
+[data-system-icon="cloudModel"]{--sp:-160px -32px}
+[data-system-icon="cloudModelOff"]{--sp:-192px -32px}
+[data-system-icon="questionSheet"]{--sp:-224px -32px}
+[data-system-icon="outline"]{--sp:0 -64px}
+[data-system-icon="sectionDrafts"]{--sp:-32px -64px}
+[data-system-icon="manuscript"]{--sp:-64px -64px}
+[data-system-icon="reviewDesk"]{--sp:-96px -64px}
+[data-system-icon="searcher"]{--sp:-128px -64px}
+[data-system-icon="reader"]{--sp:-160px -64px}
+[data-system-icon="timeMachine"]{--sp:-192px -64px}
+[data-system-icon="docMap"]{--sp:-224px -64px}
+[data-system-icon="clioStage"]{--sp:0 -96px}
+[data-system-icon="clioChart"]{--sp:-32px -96px}
+[data-system-icon="liquidCover"]{--sp:-64px -96px}
+[data-system-icon="cmfStudio"]{--sp:-96px -96px}
+[data-system-icon="soundscape"]{--sp:-128px -96px}
+[data-system-icon="scrapbook"]{--sp:-160px -96px}
+[data-system-icon="systemFolder"]{--sp:-192px -96px}
+[data-system-icon="helpFolder"]{--sp:-224px -96px}
+[data-system-icon="importUtility"]{--sp:0 -128px}
+[data-system-icon="controlPanel"]{--sp:-32px -128px}
+[data-system-icon="chooser"]{--sp:-64px -128px}
+[data-system-icon="systemHelp"]{--sp:-96px -128px}
+[data-system-icon="dictionary"]{--sp:-128px -128px}
+[data-system-icon="teachText"]{--sp:-160px -128px}
+[data-system-icon="writingDemo"]{--sp:-192px -128px}
+[data-system-icon="chatFile"]{--sp:-224px -128px}
+[data-system-icon="chatImport"]{--sp:0 -160px}
+[data-system-icon="systemStatus"]{--sp:-32px -160px}
+[data-system-icon="contextPanel"]{--sp:-64px -160px}
+[data-system-icon="rebuildArticle"]{--sp:-96px -160px}
+[data-system-icon="bureaucracyMeme"]{--sp:-128px -160px}
+[data-system-icon="endfieldTerminal"]{--sp:-160px -160px}
+[data-system-icon="documents"]{--sp:-192px -160px}
+[data-system-icon="alias"]{--sp:-224px -160px}
+[data-system-icon="systemFile"]{--sp:0 -192px}
+[data-system-icon="multiFinderApp"]{--sp:-32px -192px}
+[data-system-icon="daHandler"]{--sp:-64px -192px}
+[data-system-icon="writingBell"]{--sp:-96px -192px}
+[data-system-icon="trashFull"]{--sp:-128px -192px}
+[data-system-icon="control"]{--sp:-160px -192px}
+
+/* Aqua/SL boot/shutdown: same shared harness as Classic/LG, era material only. */
+:where(body[data-theme="aqua"], body[data-theme="snow-leopard"]) :is(.boot-screen, .shutdown-screen) { background: linear-gradient(180deg, #20294a, #0e1429); color: #fff; animation: aqua-screen-in .4s ease-out; }
+body[data-theme="snow-leopard"] :is(.boot-screen, .shutdown-screen) { background: linear-gradient(180deg, #262626, #111); }
+:where(body[data-theme="aqua"], body[data-theme="snow-leopard"]) .happy-mac { border-color: #6f86b0; border-radius: 8px; background: linear-gradient(180deg, #f4f8ff, #cfe0f5 45%, #a8c3e8); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 10px 24px rgba(0, 0, 0, 0.35); animation: aqua-mac-in .6s ease-out both; }
+:where(body[data-theme="aqua"], body[data-theme="snow-leopard"]) .happy-mac::after { border-color: #6f86b0; border-radius: 0 0 4px 4px; background: linear-gradient(180deg, #e8f0fb, #b9cdec); }
+:where(body[data-theme="aqua"], body[data-theme="snow-leopard"]) .happy-mac-face { border-color: #6f86b0; border-radius: 4px; background: linear-gradient(180deg, #fff, #e8f0fb); }
+body[data-theme="snow-leopard"] .happy-mac { border-color: #7f8a99; border-radius: 6px; background: linear-gradient(180deg, #f5f5f5, #d9d9d9 45%, #bdbdbd); box-shadow: inset 0 1px 0 #fff, 0 8px 20px rgba(0, 0, 0, 0.4); animation-duration: 0.45s; }
+body[data-theme="snow-leopard"] .happy-mac::after { border-color: #7f8a99; background: linear-gradient(180deg, #ececec, #c4c4c4); }
+body[data-theme="snow-leopard"] .happy-mac-face { border-color: #7f8a99; background: linear-gradient(180deg, #fff, #f0f0f0); }
+:where(body[data-theme="aqua"], body[data-theme="snow-leopard"]) .boot-progress { border: 0; height: 12px; padding: 0; border-radius: 6px; background: rgba(0, 0, 0, 0.48); }
+:where(body[data-theme="aqua"], body[data-theme="snow-leopard"]) .boot-progress span { position: relative; overflow: hidden; border-radius: 6px; background: linear-gradient(180deg, #7ca5ef, #3f70d8 55%, #2f5cc4); }
+body[data-theme="snow-leopard"] .boot-progress span { background: linear-gradient(180deg, #6f9fe6, #3e7cd0 60%, #2e68b8); }
+:where(body[data-theme="aqua"], body[data-theme="snow-leopard"]) .boot-progress span::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent); transform: translateX(-100%); animation: aqua-progress-sheen 1.7s ease-in-out infinite; }
+:where(body[data-theme="aqua"], body[data-theme="snow-leopard"]) :is(.boot-ledger, .shutdown-ledger) { border: 1px solid rgba(255, 255, 255, 0.16); background: rgba(9, 13, 28, 0.55); color: #fff; }
+@keyframes aqua-screen-in { from { opacity: 0 } to { opacity: 1 } }
+@keyframes aqua-mac-in { from { opacity: 0; transform: scale(calc(var(--boot-mac-scale) * 0.97)) } to { opacity: 1; transform: scale(var(--boot-mac-scale)) } }
+@keyframes aqua-progress-sheen { from { transform: translateX(-100%) } to { transform: translateX(100%) } }
+@media (prefers-reduced-motion: reduce) { :where(body[data-theme="aqua"], body[data-theme="snow-leopard"]) :is(.boot-screen, .shutdown-screen), :where(body[data-theme="aqua"], body[data-theme="snow-leopard"]) .happy-mac, :where(body[data-theme="aqua"], body[data-theme="snow-leopard"]) .boot-progress span::after { animation: none } }

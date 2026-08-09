@@ -1857,7 +1857,7 @@ body.is-writer-mode .system-help-window .system-help-pane {
     max-width: calc(100vw - 32px);
     max-height: calc(100vh - 48px);
     border: var(--window-border);
-    border-radius: var(--liquid-window-radius, 0);
+    border-radius: var(--window-radius, 0);
     transform: translate(-50%, -50%);
   }
 

@@ -61,7 +61,7 @@ test.assertMatches(workingSession, /applyWindowSessionFrame\(win, entry\.frame \
 test.assertIncludes(workingSession, 'const workingSessionExcludedWindowNames = new Set(["about", "saveChat", "guide"])', "Start Here is a system OOBE, not recoverable work-session content");
 test.assertMatches(workingSession, /visibleWindows = windows[\s\S]*!workingSessionExcludedWindowNames\.has\(entry\.name\)/, "legacy snapshots cannot reopen Start Here after OOBE completion");
 test.assertMatches(responsiveCss, /\.guide-window\.is-mobile-system-page[\s\S]*inset: auto;[\s\S]*top: 50%;[\s\S]*transform: translate\(-50%, -50%\);/, "mobile keeps Start Here as a centered floating window so the desktop remains visible");
-test.assertMatches(responsiveCss, /\.guide-window\.is-mobile-system-page[\s\S]*border-radius: var\(--liquid-window-radius, 0\);/, "mobile restores Liquid Glass window corners while Classic remains square");
+test.assertMatches(responsiveCss, /\.guide-window\.is-mobile-system-page[\s\S]*border-radius: var\(--window-radius, 0\);/, "mobile restores Liquid Glass window corners while Classic remains square");
 
 for (const key of ["guide_welcome_heading", "guide_welcome_body", "guide_welcome_body_connected", "guide_connect_ai", "guide_ai_settings", "guide_short_draft", "guide_long_project", "guide_continue_project"]) {
   test.assertIncludes(en, `${key}:`, `English copy exists for ${key}`);

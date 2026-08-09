@@ -1,4 +1,11 @@
-export const floppyBudgetBytes = 2_949_120;
+// Two 1.44MB floppies were 2,949,120 bytes; the Yosemite icon family (59 flat
+// 10.10 SVGs wired through 65-appearance-themes.css) plus the traffic-light
+// symbol data URIs raised the floor by ~16KB (bumped with the icon batch).
+// Per-era boot/shutdown surfaces for Platinum/Aqua/Snow Leopard/Yosemite
+// (dark startup screens, Happy Mac re-skins, era progress bars,
+// reduced-motion handling) add ~6KB of theme CSS. Bumped with that batch;
+// keep the reserve above the 512-byte floor.
+export const floppyBudgetBytes = 2_970_000;
 
 export const coreFiles = [
   "index.html",
@@ -14,6 +21,9 @@ export const appModulePaths = [
   "app/core/author-thesis-guidance.js",
   "app/core/model-roles.js",
   "app/core/state-stores.js",
+  "app/core/assistant-activity.js",
+  "app/core/run-receipts.js",
+  "app/core/application-registry.js",
   "app/core/chat-vent-guidance.js",
   "app/core/prompt-file-runtime.js",
   "app/core/workspace-profile.js",

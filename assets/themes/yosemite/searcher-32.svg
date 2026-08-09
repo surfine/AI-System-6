@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
+  <!-- 10.10 Searcher: magnifying glass over a document. -->
+  <defs>
+    <linearGradient id="g-page" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#eef2f7"/>
+    </linearGradient>
+  </defs>
+  <path d="M6 3h13v5h7v19a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V3z" fill="url(#g-page)" stroke="#9db1c8" stroke-width="1"/>
+  <path d="M19 3h7v5h-7z" fill="#e8eef6" stroke="#9db1c8" stroke-width="1"/>
+  <circle cx="15" cy="15" r="5" fill="#f7f9fb" stroke="#3e7cc4" stroke-width="1.5"/>
+  <path d="M18.8 18.8l4 4" stroke="#3e7cc4" stroke-width="1.8" stroke-linecap="round"/>
+</svg>

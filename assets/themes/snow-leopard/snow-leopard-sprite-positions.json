@@ -1,0 +1,218 @@
+{
+  "startupDisk": {
+    "x": 0,
+    "y": 0
+  },
+  "hardDisk": {
+    "x": -32,
+    "y": 0
+  },
+  "folder": {
+    "x": -64,
+    "y": 0
+  },
+  "document": {
+    "x": -96,
+    "y": 0
+  },
+  "applications": {
+    "x": -128,
+    "y": 0
+  },
+  "trash": {
+    "x": -160,
+    "y": 0
+  },
+  "finderApp": {
+    "x": -192,
+    "y": 0
+  },
+  "fileFloppy": {
+    "x": -224,
+    "y": 0
+  },
+  "assistant": {
+    "x": 0,
+    "y": -32
+  },
+  "quickDraft": {
+    "x": -32,
+    "y": -32
+  },
+  "writingStudio": {
+    "x": -64,
+    "y": -32
+  },
+  "projectDisk": {
+    "x": -96,
+    "y": -32
+  },
+  "projectDisc": {
+    "x": -128,
+    "y": -32
+  },
+  "cloudModel": {
+    "x": -160,
+    "y": -32
+  },
+  "cloudModelOff": {
+    "x": -192,
+    "y": -32
+  },
+  "questionSheet": {
+    "x": -224,
+    "y": -32
+  },
+  "outline": {
+    "x": 0,
+    "y": -64
+  },
+  "sectionDrafts": {
+    "x": -32,
+    "y": -64
+  },
+  "manuscript": {
+    "x": -64,
+    "y": -64
+  },
+  "reviewDesk": {
+    "x": -96,
+    "y": -64
+  },
+  "searcher": {
+    "x": -128,
+    "y": -64
+  },
+  "reader": {
+    "x": -160,
+    "y": -64
+  },
+  "timeMachine": {
+    "x": -192,
+    "y": -64
+  },
+  "docMap": {
+    "x": -224,
+    "y": -64
+  },
+  "clioStage": {
+    "x": 0,
+    "y": -96
+  },
+  "clioChart": {
+    "x": -32,
+    "y": -96
+  },
+  "liquidCover": {
+    "x": -64,
+    "y": -96
+  },
+  "cmfStudio": {
+    "x": -96,
+    "y": -96
+  },
+  "soundscape": {
+    "x": -128,
+    "y": -96
+  },
+  "scrapbook": {
+    "x": -160,
+    "y": -96
+  },
+  "systemFolder": {
+    "x": -192,
+    "y": -96
+  },
+  "helpFolder": {
+    "x": -224,
+    "y": -96
+  },
+  "importUtility": {
+    "x": 0,
+    "y": -128
+  },
+  "controlPanel": {
+    "x": -32,
+    "y": -128
+  },
+  "chooser": {
+    "x": -64,
+    "y": -128
+  },
+  "systemHelp": {
+    "x": -96,
+    "y": -128
+  },
+  "dictionary": {
+    "x": -128,
+    "y": -128
+  },
+  "teachText": {
+    "x": -160,
+    "y": -128
+  },
+  "writingDemo": {
+    "x": -192,
+    "y": -128
+  },
+  "chatFile": {
+    "x": -224,
+    "y": -128
+  },
+  "chatImport": {
+    "x": 0,
+    "y": -160
+  },
+  "systemStatus": {
+    "x": -32,
+    "y": -160
+  },
+  "contextPanel": {
+    "x": -64,
+    "y": -160
+  },
+  "rebuildArticle": {
+    "x": -96,
+    "y": -160
+  },
+  "bureaucracyMeme": {
+    "x": -128,
+    "y": -160
+  },
+  "endfieldTerminal": {
+    "x": -160,
+    "y": -160
+  },
+  "documents": {
+    "x": -192,
+    "y": -160
+  },
+  "alias": {
+    "x": -224,
+    "y": -160
+  },
+  "systemFile": {
+    "x": 0,
+    "y": -192
+  },
+  "multiFinderApp": {
+    "x": -32,
+    "y": -192
+  },
+  "daHandler": {
+    "x": -64,
+    "y": -192
+  },
+  "writingBell": {
+    "x": -96,
+    "y": -192
+  },
+  "trashFull": {
+    "x": -128,
+    "y": -192
+  },
+  "control": {
+    "x": -160,
+    "y": -192
+  }
+}

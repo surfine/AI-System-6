@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
+  <!-- 10.10 Writing Bell: the small alarm-bell desk accessory — kept smaller
+       than the page-family icons to preserve the native size relationship,
+       with a blue clapper. -->
+  <defs>
+    <linearGradient id="g-bell" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7f9fb"/>
+      <stop offset="1" stop-color="#d5dde6"/>
+    </linearGradient>
+  </defs>
+  <path d="M11.5 8.5a4.5 4.5 0 0 1 9 0" fill="none" stroke="#5d7087" stroke-width="1.2"/>
+  <path d="M10 18c0-4.2 2-7 4.6-7.8a1.5 1.5 0 0 1 2.8 0c2.6.8 4.6 3.6 4.6 7.8v2.2H10z" fill="url(#g-bell)" stroke="#5d7087" stroke-width="1.1"/>
+  <path d="M9.2 20.2h13.6" stroke="#5d7087" stroke-width="1.1" stroke-linecap="round"/>
+  <path d="M12.8 23.2h6.4" stroke="#5d7087" stroke-width="1.1" stroke-linecap="round"/>
+  <circle cx="16" cy="25" r="1.1" fill="#3e7cc4"/>
+</svg>

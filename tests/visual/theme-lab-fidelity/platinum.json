@@ -28,7 +28,7 @@
     "playwrightVersion": "1.62.1",
     "browserRevision": "1234",
     "browserVersion": "151.0.7922.34",
-    "contentSha256": "9cbbd0ffb944764c1064acb3fb505bc0c3d27f9773197930c3a1968d350d70bb",
+    "contentSha256": "4c9f92258c9608ddad8a709959f43417fe54ddcd016f9ac6752daf300cfccb04",
     "historicalFontTarget": "Charcoal 12 pt",
     "legalFallback": "OFL-licensed Asap variable font",
     "fontProbeSelectors": [
@@ -219,6 +219,30 @@
       "sha256": "6eb91e803620cc11a6280abe6729412f3e7e0c0b63e2d78f39972ec855c08e00",
       "width": 640,
       "height": 480,
+      "systemVersion": "Mac OS 9.0",
+      "credit": "GUIdebook / Marcin Wichary",
+      "redistribution": "Copyrighted reference; no open license stated. Local research and comparison only."
+    },
+    {
+      "id": "guidebook.macos90.file-manager",
+      "file": "guidebook-filemanager-macos90.png",
+      "url": "https://guidebookgallery.org/pics/gui/system/managers/filemanager/macos90-1-1.png",
+      "pageUrl": "https://guidebookgallery.org/screenshots/macos90#filemanager",
+      "sha256": "68889545a3f93d1c7fe141ad5330bfe9ef889e76336c67cbf4d2a4c0e6a31be2",
+      "width": 356,
+      "height": 311,
+      "systemVersion": "Mac OS 9.0",
+      "credit": "GUIdebook / Marcin Wichary",
+      "redistribution": "Copyrighted reference; no open license stated. Local research and comparison only."
+    },
+    {
+      "id": "guidebook.macos90.trashcan",
+      "file": "guidebook-trashcan-macos90.png",
+      "url": "https://guidebookgallery.org/pics/gui/system/features/trashcan/macos90.png",
+      "pageUrl": "https://guidebookgallery.org/screenshots/macos90#trashcan",
+      "sha256": "8ab433dccb40c5e892d7933228242ec5eabcb928b46ce50d4c895e28490a31ea",
+      "width": 413,
+      "height": 125,
       "systemVersion": "Mac OS 9.0",
       "credit": "GUIdebook / Marcin Wichary",
       "redistribution": "Copyrighted reference; no open license stated. Local research and comparison only."
@@ -520,6 +544,267 @@
           "width": 273,
           "height": 110
         }
+      }
+    },
+    {
+      "id": "icon-finder-32",
+      "label": "Finder application icon (32px reconstruction)",
+      "reference": {
+        "source": "guidebook.macos90.file-manager",
+        "crop": {
+          "x": 27,
+          "y": 47,
+          "width": 24,
+          "height": 31
+        }
+      },
+      "current": {
+        "selector": ".theme-lab-icon-tile .sys-icon[data-system-icon=\"finderApp\"]",
+        "setup": [
+          {
+            "selector": ".theme-lab-icon-tile .sys-icon[data-system-icon=\"finderApp\"]",
+            "style": {
+              "width": "32px",
+              "height": "32px"
+            }
+          }
+        ]
+      },
+      "repeat": {
+        "maxChangedPixels": 0,
+        "maxChannelDelta": 0
+      }
+    },
+    {
+      "id": "icon-folder-32",
+      "label": "Mac OS 9 folder (32px reconstruction)",
+      "reference": {
+        "source": "guidebook.macos90.active-inactive",
+        "crop": {
+          "x": 576,
+          "y": 156,
+          "width": 32,
+          "height": 31
+        }
+      },
+      "current": {
+        "selector": ".theme-lab-icon-tile .sys-icon[data-system-icon=\"folder\"]",
+        "setup": [
+          {
+            "selector": ".theme-lab-icon-tile .sys-icon[data-system-icon=\"folder\"]",
+            "style": {
+              "width": "32px",
+              "height": "32px"
+            }
+          }
+        ]
+      },
+      "repeat": {
+        "maxChangedPixels": 0,
+        "maxChannelDelta": 0
+      }
+    },
+    {
+      "id": "icon-hard-disk-32",
+      "label": "Macintosh HD hard disk (32px reconstruction)",
+      "reference": {
+        "source": "guidebook.macos90.active-inactive",
+        "crop": {
+          "x": 584,
+          "y": 43,
+          "width": 24,
+          "height": 17
+        }
+      },
+      "current": {
+        "selector": ".theme-lab-icon-tile .sys-icon[data-system-icon=\"startupDisk\"]",
+        "setup": [
+          {
+            "selector": ".theme-lab-icon-tile .sys-icon[data-system-icon=\"startupDisk\"]",
+            "style": {
+              "width": "32px",
+              "height": "32px"
+            }
+          }
+        ]
+      },
+      "repeat": {
+        "maxChangedPixels": 0,
+        "maxChannelDelta": 0
+      }
+    },
+    {
+      "id": "icon-trash-32",
+      "label": "Trash can (32px reconstruction)",
+      "reference": {
+        "source": "guidebook.macos90.active-inactive",
+        "crop": {
+          "x": 576,
+          "y": 412,
+          "width": 27,
+          "height": 36
+        }
+      },
+      "current": {
+        "selector": ".theme-lab-icon-tile .sys-icon[data-system-icon=\"trash\"]",
+        "setup": [
+          {
+            "selector": ".theme-lab-icon-tile .sys-icon[data-system-icon=\"trash\"]",
+            "style": {
+              "width": "32px",
+              "height": "32px"
+            }
+          }
+        ]
+      },
+      "repeat": {
+        "maxChangedPixels": 0,
+        "maxChannelDelta": 0
+      }
+    },
+    {
+      "id": "icon-document-32",
+      "label": "Generic document (32px reconstruction)",
+      "reference": {
+        "source": "guidebook.macos90.active-inactive",
+        "crop": {
+          "x": 577,
+          "y": 220,
+          "width": 26,
+          "height": 32
+        }
+      },
+      "current": {
+        "selector": ".theme-lab-icon-tile .sys-icon[data-system-icon=\"document\"]",
+        "setup": [
+          {
+            "selector": ".theme-lab-icon-tile .sys-icon[data-system-icon=\"document\"]",
+            "style": {
+              "width": "32px",
+              "height": "32px"
+            }
+          }
+        ]
+      },
+      "repeat": {
+        "maxChangedPixels": 0,
+        "maxChannelDelta": 0
+      }
+    },
+    {
+      "id": "icon-cd-32",
+      "label": "Mac OS 9 CD-ROM (32px reconstruction)",
+      "reference": {
+        "source": "guidebook.macos90.active-inactive",
+        "crop": {
+          "x": 576,
+          "y": 90,
+          "width": 32,
+          "height": 33
+        }
+      },
+      "current": {
+        "selector": ".theme-lab-icon-tile .sys-icon[data-system-icon=\"projectDisc\"]",
+        "setup": [
+          {
+            "selector": ".theme-lab-icon-tile .sys-icon[data-system-icon=\"projectDisc\"]",
+            "style": {
+              "width": "32px",
+              "height": "32px"
+            }
+          }
+        ]
+      },
+      "repeat": {
+        "maxChangedPixels": 0,
+        "maxChannelDelta": 0
+      }
+    },
+    {
+      "id": "icon-floppy-32",
+      "label": "Floppy disk (32px reconstruction)",
+      "reference": {
+        "source": "guidebook.macos90.active-inactive",
+        "crop": {
+          "x": 576,
+          "y": 350,
+          "width": 26,
+          "height": 27
+        }
+      },
+      "current": {
+        "selector": ".theme-lab-icon-tile .sys-icon[data-system-icon=\"fileFloppy\"]",
+        "setup": [
+          {
+            "selector": ".theme-lab-icon-tile .sys-icon[data-system-icon=\"fileFloppy\"]",
+            "style": {
+              "width": "32px",
+              "height": "32px"
+            }
+          }
+        ]
+      },
+      "repeat": {
+        "maxChangedPixels": 0,
+        "maxChannelDelta": 0
+      }
+    },
+    {
+      "id": "icon-application-16",
+      "label": "Generic application (16px reconstruction)",
+      "reference": {
+        "source": "guidebook.macos90.open-file",
+        "crop": {
+          "x": 124,
+          "y": 37,
+          "width": 16,
+          "height": 16
+        }
+      },
+      "current": {
+        "selector": ".theme-lab-icon-tile .sys-icon[data-system-icon=\"applications\"]",
+        "setup": [
+          {
+            "selector": ".theme-lab-icon-tile .sys-icon[data-system-icon=\"applications\"]",
+            "style": {
+              "width": "16px",
+              "height": "16px"
+            }
+          }
+        ]
+      },
+      "repeat": {
+        "maxChangedPixels": 0,
+        "maxChannelDelta": 0
+      }
+    },
+    {
+      "id": "icon-trash-16",
+      "label": "Trash can (16px reconstruction)",
+      "reference": {
+        "source": "guidebook.macos90.trashcan",
+        "crop": {
+          "x": 24,
+          "y": 24,
+          "width": 17,
+          "height": 17
+        }
+      },
+      "current": {
+        "selector": ".theme-lab-icon-tile .sys-icon[data-system-icon=\"trash\"]",
+        "setup": [
+          {
+            "selector": ".theme-lab-icon-tile .sys-icon[data-system-icon=\"trash\"]",
+            "style": {
+              "width": "16px",
+              "height": "16px"
+            }
+          }
+        ]
+      },
+      "repeat": {
+        "maxChangedPixels": 0,
+        "maxChannelDelta": 0
       }
     }
   ]

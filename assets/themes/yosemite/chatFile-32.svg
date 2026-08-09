@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
+  <!-- 10.10 Chat File: white document with a small speech bubble. -->
+  <defs>
+    <linearGradient id="g-page" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#eef2f7"/>
+    </linearGradient>
+  </defs>
+  <path d="M6 3h13v5h7v19a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V3z" fill="url(#g-page)" stroke="#9db1c8" stroke-width="1"/>
+  <path d="M19 3h7v5h-7z" fill="#e8eef6" stroke="#9db1c8" stroke-width="1"/>
+  <path d="M9 13h10a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-6l-3 2.5V19H9a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1z" fill="#f2f5f9" stroke="#7f93ab" stroke-width="0.9"/>
+  <path d="M11 15h6v0.8h-6zM11 17h4v0.8h-4z" fill="#8b9bad"/>
+</svg>

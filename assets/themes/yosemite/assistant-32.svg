@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
+  <!-- 10.10 Assistant: a blue speech bubble over a dashed work surface —
+       the same AI-conversation object as the Liquid Glass assistant,
+       flattened into the Yosemite palette. -->
+  <defs>
+    <linearGradient id="g-bubble" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4b8ad6"/>
+      <stop offset="1" stop-color="#3267a8"/>
+    </linearGradient>
+  </defs>
+  <path d="M4.5 5.5h12v8.5H9.5l-4 3.5 1.5-3.5H4.5z" fill="url(#g-bubble)" stroke="#2b5b96" stroke-width="0.9"/>
+  <circle cx="8.5" cy="9.7" r="1.1" fill="#ffffff"/>
+  <circle cx="12" cy="9.7" r="1.1" fill="#ffffff"/>
+  <circle cx="15.5" cy="9.7" r="1.1" fill="#ffffff"/>
+  <path d="M14 17.5h13a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2z" fill="#eef2f7" stroke="#8d9aab" stroke-width="1" stroke-dasharray="2.5 2.5"/>
+</svg>

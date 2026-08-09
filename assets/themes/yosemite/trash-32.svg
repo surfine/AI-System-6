@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
+  <!-- 10.10 Trash: light gray rounded waste basket with vertical slats and a
+       flat rim. Distinct silhouette (open-top), flat Yosemite depth. -->
+  <defs>
+    <linearGradient id="g-basket" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#eceff3"/>
+      <stop offset="1" stop-color="#c7cfd9"/>
+    </linearGradient>
+  </defs>
+  <path d="M8 10h16v13a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 8 23V10z" fill="url(#g-basket)" stroke="#8d9aab" stroke-width="1"/>
+  <path d="M7 10h18v2.2H7z" fill="#dde3ea" stroke="#8d9aab" stroke-width="1"/>
+  <path d="M12 13v9M16 13v9M20 13v9" stroke="#a5b1c0" stroke-width="1.4" stroke-linecap="round"/>
+  <path d="M11 6h10v3H11z" fill="none" stroke="#8d9aab" stroke-width="1.2"/>
+</svg>

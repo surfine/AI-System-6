@@ -22,6 +22,22 @@ export const publicProductContracts = [
     tests: ["writing-studio-entry.test.mjs"],
   },
   {
+    feature: "Application Services",
+    tests: ["application-registry.test.mjs"],
+  },
+  {
+    feature: "Run Receipts",
+    tests: ["run-receipts.test.mjs"],
+  },
+  {
+    feature: "Assistant Activity",
+    tests: ["assistant-activity.test.mjs"],
+  },
+  {
+    feature: "Writing Demo Teaser",
+    tests: ["writing-demo-teaser.test.mjs"],
+  },
+  {
     feature: "Project Hard Disk",
     tests: ["project-disk.test.mjs", "project-backup-integrity.test.mjs"],
   },

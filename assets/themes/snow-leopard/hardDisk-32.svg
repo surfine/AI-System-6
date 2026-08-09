@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
+  <!-- Snow Leopard 10.6 painter (shared recipe): matte silver body, soft top
+       highlight, gentle shade, quiet rim. Same anatomy, quieter generation. -->
+  <defs>
+    <linearGradient id="g-body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f0f2f6"/>
+      <stop offset="0.5" stop-color="#d8dee6"/>
+      <stop offset="1" stop-color="#b3bcc8"/>
+    </linearGradient>
+    <linearGradient id="g-soft" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f4f6f9"/>
+      <stop offset="1" stop-color="#c9d0d8"/>
+    </linearGradient>
+    <linearGradient id="g-hi" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.38"/>
+      <stop offset="0.45" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="g-sh" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0.6" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.16"/>
+    </linearGradient>
+    <clipPath id="cp-body">
+      <path d="M6.5 4.5h17L27.5 8v19.5h-21z" />
+      <path d="M10.5 5v8h12V5M20 7v4M10 16.5h14v10H10z" />
+    </clipPath>
+  </defs>
+  <path d="M6.5 4.5h17L27.5 8v19.5h-21z" fill="url(#g-body)" stroke="#4d4d4d" stroke-width="1" />
+    <path d="M10.5 5v8h12V5M20 7v4M10 16.5h14v10H10z" fill="url(#g-body)" stroke="#4d4d4d" stroke-width="1" />
+  <g clip-path="url(#cp-body)">
+    <rect x="0" y="0" width="32" height="32" fill="url(#g-hi)"/>
+    <rect x="0" y="0" width="32" height="32" fill="url(#g-sh)"/>
+    <rect x="1" y="0" width="30" height="1" fill="#ffffff" fill-opacity="0.55"/>
+  </g>
+  
+  <path d="M13.2 20c.4-1.5 1.8-2.5 3.6-2.5 2.1 0 3.5 1.2 3.5 2.8 0 2.1-3.2 2.3-3.2 4.1M17.1 25.8h.1" fill="none" stroke="#4a4a4a" stroke-width="1" stroke-linecap="square" />
+</svg>

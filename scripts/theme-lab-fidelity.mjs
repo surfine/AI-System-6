@@ -479,6 +479,15 @@ async function prepareCurrentPage(browser, serverUrl, manifest, outputDir) {
       win.classList.add("is-hidden");
       win.classList.remove("is-active");
     }
+    // The guide (Start Here OOBE) opens on first boot and covers the Theme
+    // Lab titlebar unless fully suppressed: the app keeps its own
+    // window-state (guideSeen lives in IndexedDB), so a class alone is not
+    // enough — force it out of the layout and hit-testing.
+    const guide = document.querySelector('[data-window="guide"]');
+    if (guide) {
+      guide.classList.add("is-hidden");
+      guide.style.setProperty("display", "none", "important");
+    }
     const lab = document.querySelector('[data-window="themeLab"]');
     lab?.classList.remove("is-hidden");
     lab?.classList.add("is-active");

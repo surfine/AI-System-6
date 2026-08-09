@@ -184,7 +184,7 @@
 }
 
 .theme-lab-choice-matrix .theme-lab-era-choice-state {
-  display: var(--theme-lab-era-choice-state-display, none);
+  display: var(--theme-lab-era-choice-state-display, flex);
 }
 
 .theme-lab-choice-matrix input {
@@ -385,7 +385,7 @@
 .theme-lab-view-icon {
   width: var(--theme-lab-view-icon-width, 12px);
   height: var(--theme-lab-view-icon-height, 10px);
-  display: var(--theme-lab-view-icon-display, none);
+  display: var(--theme-lab-view-icon-display, block);
   flex: 0 0 auto;
   color: currentColor;
 }

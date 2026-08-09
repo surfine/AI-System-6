@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
+  <!-- 10.10 Cloud Model (off): the cloud with a red slash — the disabled
+       state of the model hub, matching the Liquid Glass off glyph. -->
+  <defs>
+    <linearGradient id="g-cloud" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e9edf2"/>
+      <stop offset="1" stop-color="#c5ccd6"/>
+    </linearGradient>
+  </defs>
+  <path d="M8 22.5h16.5a4.2 4.2 0 0 0 .4-8.4 6.2 6.2 0 0 0-11.7-1.9A5.3 5.3 0 0 0 8 22.5z" fill="url(#g-cloud)" stroke="#8d9aab" stroke-width="1"/>
+  <path d="M8.5 25.5L25.5 8" fill="none" stroke="#d4554f" stroke-width="1.8" stroke-linecap="round"/>
+</svg>

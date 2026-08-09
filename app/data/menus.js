@@ -60,6 +60,8 @@ const editWithWriting = [
 const appearanceItems = [
   menuItem("set-theme-classic", "theme_classic", "", { themeId: "classic" }),
   menuItem("set-theme-platinum", "theme_platinum", "", { themeId: "platinum" }),
+  menuItem("set-theme-aqua", "theme_aqua", "", { themeId: "aqua" }),
+  menuItem("set-theme-snow-leopard", "theme_snow_leopard", "", { themeId: "snow-leopard" }),
   menuItem("set-theme-yosemite", "theme_yosemite", "", { themeId: "yosemite" }),
   menuItem("set-theme-liquid-glass", "theme_liquid_glass", "", { themeId: "liquid-glass" }),
 ];

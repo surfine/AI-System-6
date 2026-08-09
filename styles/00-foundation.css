@@ -13,24 +13,24 @@
   --details-bar-bg: var(--paper);
   --details-bar-border: var(--ink);
   --review-desk-pane-bg: transparent;
-  --review-desk-results-border: var(--system-control-line) solid var(--ink);
+  --review-desk-results-border: var(--system-border);
   --review-desk-results-radius: 0;
   --review-desk-results-bg: var(--paper);
   --review-desk-results-shadow: none;
   --review-surface-bg: var(--paper);
   --review-desk-splitter-hover-bg: var(--ink);
   --review-locked-pane-bg: transparent;
-  --review-splitter-border: var(--system-control-line) solid var(--ink);
-  --review-empty-note-border: var(--system-control-line) solid var(--ink);
-  --review-th-border: var(--system-control-line) solid var(--ink);
+  --review-splitter-border: var(--system-border);
+  --review-empty-note-border: var(--system-border);
+  --review-th-border: var(--system-border);
   --review-th-bg: var(--paper);
   --review-td-border: 0;
-  --review-td-alt-border: var(--system-control-line) solid var(--ink);
-  --style-note-border: var(--system-control-line) solid var(--ink);
+  --review-td-alt-border: var(--system-border);
+  --style-note-border: var(--system-border);
   --style-note-type-border: 1px solid var(--ink);
-  --outline-notes-border: var(--system-control-line) solid var(--ink);
-  --draft-list-border: var(--system-control-line) solid var(--ink);
-  --claim-results-border: var(--system-control-line) solid var(--ink);
+  --outline-notes-border: var(--system-border);
+  --draft-list-border: var(--system-border);
+  --claim-results-border: var(--system-border);
   --composer-file-active-bg: var(--ink);
   --composer-file-active-fg: var(--paper);
   --composer-file-active-border: var(--clio-composer-tool-border);
@@ -59,23 +59,25 @@
   --info-divider-border: 1px solid var(--shade-dark);
   /* Bottom action rows (Dictation / Translation Pad) keep their System 6
      dotted divider in Classic; Liquid swaps it for a hairline. */
-  --action-row-divider: 1px dotted var(--ink);
+  --action-row-divider: var(--system-secondary-divider);
   /* The shared Ask-bar scope chip names the object being asked. */
   /* Dotted separators are a System 6 idiom; Liquid swaps each for a hairline
      (values overridden in the body.use-liquid-glass token block). */
-  --message-divider: 1px dotted var(--rule);
+  --message-divider: var(--system-secondary-divider);
   --context-panel-budget-border-top: 1px dotted var(--shade);
   --clio-file-chip-disabled-border: 1px dotted var(--shade-dark);
   --empty-object-hatch-alt: #f1f1f1;
   --soundscape-count-badge-border: 1px solid currentColor;
   --teachtext-popover-hr-border: 1px dotted var(--ink);
   --teachtext-subpopover-border-left: 1px dotted var(--ink);
-  --chat-transcript-article-border: 1px dotted var(--shade-dark);
-  --import-row-border-bottom: 1px dotted var(--shade-dark);
+  --chat-transcript-article-border: var(--system-secondary-divider);
+  --import-row-border-bottom: var(--system-secondary-divider);
   /* Pane action rows (Project CD / File Floppy / Trash) and toolbar rows sit
-     above a framed content area; their ink hairline is that area's top edge. */
-  --pane-actions-border-bottom: 1px solid var(--ink);
-  --documents-toolbar-border: 1px solid var(--ink);
+     above a framed content area; their ink hairline is that area's top edge.
+     Both consume the system primary divider role, so each family decides the
+     divider once instead of per app (Theme Family Contract §5). */
+  --pane-actions-border-bottom: var(--system-primary-divider);
+  --documents-toolbar-border: var(--system-primary-divider);
   --large-icon-border: 3px solid var(--ink);
   --image-manager-item-border: 1px solid var(--ink);
   --image-manager-item-bg: #ffffff;
@@ -96,7 +98,7 @@
   --section-label-radius: 0;
   --section-label-shadow: none;
   --draft-label-bg: var(--paper);
-  --draft-label-border: var(--system-control-line) solid var(--ink);
+  --draft-label-border: var(--system-border);
   --meta-label-bg: transparent;
   --meta-label-border: 0;
   --control-section-bg: var(--paper);
@@ -111,7 +113,7 @@
   --scrap-list-shadow: var(--system-inset);
   --scrap-empty-card-border: 1px dotted var(--shade-dark);
   --scrap-empty-card-bg: #f7f7f7;
-  --scrap-list-item-divider: 1px dotted var(--shade-dark);
+  --scrap-list-item-divider: var(--system-secondary-divider);
   --scrap-list-mini-icon-border: 1px solid currentColor;
   --scrap-translation-badge-border: 1px solid currentColor;
   --import-preview-bg: var(--paper);
@@ -124,7 +126,7 @@
   --backup-preview-shadow: none;
   --field-bg: var(--paper);
   --field-focus-bg: var(--paper);
-  --field-border: var(--system-control-line) solid var(--ink);
+  --field-border: var(--system-border);
   --field-radius: 0;
   --select-radius: var(--system-select-radius);
   --field-shadow: none;
@@ -176,7 +178,7 @@
   --clio-welcome-bg: transparent;
   --clio-welcome-shadow: none;
   --clio-welcome-object-bg: var(--paper);
-  --clio-welcome-object-border: var(--system-control-line) solid var(--ink);
+  --clio-welcome-object-border: var(--system-border);
   --clio-welcome-object-shadow: 2px 2px 0 var(--shade-dark);
   --clio-muted-copy: var(--shade-dark);
   --clio-copy-font: var(--text-font);
@@ -197,7 +199,7 @@
   --clio-use-menu-bg: var(--paper);
   --clio-use-menu-shadow: 2px 2px 0 var(--shade-dark);
   --clio-composer-bg: var(--paper);
-  --clio-composer-border: var(--system-control-line) solid var(--ink);
+  --clio-composer-border: var(--system-border);
   --clio-composer-radius: 0;
   --clio-composer-shadow: 2px 2px 0 var(--shade-dark);
   --clio-composer-focus-shadow: 2px 2px 0 var(--shade-dark), 0 0 0 2px var(--shade);
@@ -218,7 +220,7 @@
   --clio-assembly-row-radius: 0;
   --clio-assembly-shadow: 2px 2px 0 var(--shade-dark);
   --clio-assembly-row-bg: var(--quiet-panel);
-  --clio-assembly-divider: 1px dotted var(--shade-dark);
+  --clio-assembly-divider: var(--system-secondary-divider);
   --clio-file-chip-bg: transparent;
   --clio-file-chip-border: 1px solid transparent;
   --clio-file-chip-radius: 0;
@@ -347,6 +349,12 @@
      own value. */
   --system-control-line: 1px;
   --system-border: var(--system-control-line) solid var(--ink);
+  /* Pinned at one unit on purpose: divider hairlines historically stay 1px
+     even where modern-fonts thickens frames to 1.5px. */
+  --system-primary-divider: 1px solid var(--ink);
+  /* Secondary (light/dotted) separators: one role per family, so app
+     dividers stop carrying per-app values (Theme Family Contract §5). */
+  --system-secondary-divider: 1px dotted var(--shade-dark);
   --system-shadow: 2px 2px 0 var(--ink);
   --system-inset: inset 1px 1px 0 #777777, inset -1px -1px 0 #ffffff;
   --control-radius: 0;
@@ -370,16 +378,16 @@
   --ss-panel: color-mix(in srgb, var(--panel) 92%, var(--paper));
   --ss-rule: color-mix(in srgb, var(--ink) 36%, transparent);
   --ss-rule-strong: color-mix(in srgb, var(--ink) 72%, transparent);
-  --soundscape-search-input-border: var(--system-control-line) solid var(--ink);
+  --soundscape-search-input-border: var(--system-border);
   --soundscape-search-input-radius: 0;
   /* Icon chips: paper tile + ink frame in Classic; Liquid swaps the tile to
      translucent glass with a thin light rim (see .sys-icon liquid chip). */
   --icon-bg: var(--paper);
-  --icon-border: var(--system-control-line) solid var(--ink);
+  --icon-border: var(--system-border);
   --mini-icon-bg: var(--paper);
   --mini-icon-border: 2px solid var(--ink);
   --large-mini-icon-bg: var(--paper);
-  --large-mini-icon-border: var(--system-control-line) solid var(--ink);
+  --large-mini-icon-border: var(--system-border);
   --system-segment-bg: var(--paper);
   --system-segment-border: 1px solid var(--ink);
   --system-segment-radius: 0;
@@ -417,7 +425,7 @@
   --control-motion-slow-in: 240ms;
   --control-motion-slow-out: 160ms;
   --control-motion-ease: cubic-bezier(0.2, 0, 0, 1);
-  --control-focus-outline: var(--system-control-line) solid var(--ink);
+  --control-focus-outline: var(--system-border);
   --control-focus-offset: 2px;
   --control-disabled-opacity: 0.56;
   --control-choice-hover-shadow: 0 0 0 1px var(--ink);
@@ -428,7 +436,7 @@
     radial-gradient(rgba(0, 0, 0, 0.09) 1px, transparent 1px) 0 0 / 9px 9px,
     var(--quiet-panel);
   --memory-cards-details-bg: var(--shade);
-  --memory-cards-details-border: var(--system-control-line) solid var(--ink);
+  --memory-cards-details-border: var(--system-border);
   /* Screen budget for the phone deck: the viewport less the desk inset the
      accessory window sits in, its title bar and details bar, and the status
      line under the board. The board is capped by this so the whole deck stays
@@ -473,11 +481,11 @@
   --tdi-tabs-min-height: 45px;
   --tdi-tabs-padding: 4px 6px 0;
   --tdi-tabs-bg: var(--shade);
-  --tdi-tabs-border-bottom: var(--system-control-line) solid var(--ink);
+  --tdi-tabs-border-bottom: var(--system-border);
   --tdi-tabs-after-content: none;
   --tdi-tabs-after-flex: 0 0 auto;
   --tdi-tabs-after-min-width: 0;
-  --tdi-stack-popover-border: var(--system-control-line) solid var(--ink);
+  --tdi-stack-popover-border: var(--system-border);
   --tdi-stack-popover-radius: 0;
   --tdi-stack-popover-bg: var(--paper);
   --tdi-stack-popover-shadow: 3px 3px 0 var(--ink);
@@ -498,7 +506,7 @@
   --tdi-tab-height: 41px;
   --tdi-tab-min-height: 41px;
   --tdi-tab-padding: 4px calc(var(--tdi-tab-close-size) + (2 * var(--tdi-tab-close-gutter)) + 7px) 4px 8px;
-  --tdi-tab-border: var(--system-control-line) solid var(--ink);
+  --tdi-tab-border: var(--system-border);
   --tdi-tab-border-bottom: 0;
   --tdi-tab-radius: 0;
   --tdi-tab-bg: var(--paper);
@@ -529,7 +537,7 @@
   --tdi-tab-close-width: var(--tdi-tab-close-size);
   --tdi-tab-close-height: var(--tdi-tab-close-size);
   --tdi-tab-close-min-height: 0;
-  --tdi-tab-close-border: var(--system-control-line) solid var(--ink);
+  --tdi-tab-close-border: var(--system-border);
   --tdi-tab-close-radius: 0;
   --tdi-tab-close-bg: var(--paper);
   --tdi-tab-close-fg: var(--ink);
@@ -789,7 +797,7 @@
   --menu-item-active-shadow: none;
   --menu-bar-border: 1px solid var(--ink);
   --menu-panel-bg: var(--paper);
-  --menu-panel-border: var(--system-control-line) solid var(--ink);
+  --menu-panel-border: var(--system-border);
   --menu-panel-radius: 0;
   --menu-panel-shadow: 1px 1px 0 var(--ink);
   --menu-panel-backdrop-filter: none;
@@ -884,7 +892,7 @@
   --tab-hover-bg: var(--paper);
   --tab-active-bg: var(--paper);
   --tab-active-fg: var(--ink);
-  --guide-start-card-border: var(--system-control-line) solid var(--ink);
+  --guide-start-card-border: var(--system-border);
   --guide-start-card-radius: 0;
   --guide-start-card-bg: var(--paper);
   --guide-start-card-shadow: inset 1px 1px 0 var(--shade);
@@ -895,7 +903,7 @@
   --startup-settings-header-gap: 14px;
   --startup-settings-disk-icon-width: 39px;
   --startup-settings-disk-icon-height: 45px;
-  --startup-settings-disk-icon-border: var(--system-control-line) solid var(--ink);
+  --startup-settings-disk-icon-border: var(--system-border);
   --startup-settings-disk-icon-radius: 0;
   --startup-settings-disk-icon-bg:
     linear-gradient(var(--paper), var(--paper)) 7px 4px / 22px 14px no-repeat,
@@ -918,12 +926,12 @@
   /* Balloon Help is a later Classic Mac OS system surface. Its object role and
      geometry stay shared; Liquid Glass only swaps the material tokens. */
   --balloon-help-bg: var(--paper);
-  --balloon-help-border: var(--system-control-line) solid var(--ink);
+  --balloon-help-border: var(--system-border);
   --balloon-help-radius: 12px;
   --balloon-help-shadow: 2px 2px 0 var(--shade-dark);
   --balloon-help-padding: 9px 12px;
   --balloon-help-backdrop: none;
-  --status-clock-border: var(--system-control-line) solid var(--ink);
+  --status-clock-border: var(--system-border);
   --status-clock-radius: 0;
   --status-clock-bg: transparent;
   --status-clock-shadow: none;
@@ -946,7 +954,7 @@
   --model-state-row-shadow: none;
   --model-state-row-current-bg: var(--shade);
   --model-state-row-done-bg: transparent;
-  --model-state-running-outline: var(--system-control-line) solid var(--ink);
+  --model-state-running-outline: var(--system-border);
   --model-state-running-shadow: var(--model-state-panel-shadow);
   --model-state-next-margin: 6px 0 0;
   --model-state-next-padding-top: 0;
@@ -971,7 +979,7 @@
   --system-status-pane-gap: 12px;
   --system-status-pane-padding: var(--system-window-padding);
   --system-status-pane-bg: transparent;
-  --writing-bell-time-border: var(--system-control-line) solid var(--ink);
+  --writing-bell-time-border: var(--system-border);
   --writing-bell-time-radius: 0;
   --writing-bell-time-bg: var(--paper);
   --writing-bell-time-shadow: inset 2px 2px 0 var(--shade);
@@ -980,7 +988,7 @@
   --writing-bell-pane-bg: transparent;
   --writing-bell-mode-gap: normal;
   --writing-bell-mode-padding: 0;
-  --writing-bell-mode-border: var(--system-control-line) solid var(--ink);
+  --writing-bell-mode-border: var(--system-border);
   --writing-bell-mode-radius: 0;
   --writing-bell-mode-bg: transparent;
   --writing-bell-mode-shadow: none;
@@ -1017,7 +1025,7 @@
   --writing-bell-preset-active-shadow: inset 1px 1px 0 #444444;
   --writing-bell-preset-active-pressed-bg: var(--writing-bell-preset-active-bg);
   --writing-bell-preset-active-pressed-fg: var(--writing-bell-preset-active-fg);
-  --dictionary-result-border: var(--system-control-line) solid var(--ink);
+  --dictionary-result-border: var(--system-border);
   --dictionary-result-radius: 0;
   --dictionary-result-bg: var(--paper);
   --dictionary-result-shadow: none;
@@ -1057,7 +1065,7 @@
   --find-file-search-row-gap: 8px;
   --find-file-label-color: inherit;
   --find-file-results-padding: 0;
-  --find-file-results-border: var(--system-control-line) solid var(--ink);
+  --find-file-results-border: var(--system-border);
   --find-file-results-radius: 0;
   --find-file-results-bg: var(--paper);
   --find-file-results-shadow: none;
@@ -1090,11 +1098,11 @@
   --find-path-pane-gap: 8px;
   --find-path-pane-padding: var(--system-window-padding);
   --find-path-pane-bg: transparent;
-  --find-path-summary-border: var(--system-control-line) solid var(--ink);
+  --find-path-summary-border: var(--system-border);
   --docmap-mobile-hint-border: 1px solid var(--ink);
   --find-path-results-gap: 0;
   --find-path-results-padding: 0;
-  --find-path-results-border: var(--system-control-line) solid var(--ink);
+  --find-path-results-border: var(--system-border);
   --find-path-results-radius: 0;
   --find-path-results-bg: var(--paper);
   --find-path-results-shadow: none;
@@ -1155,16 +1163,16 @@
   --teachtext-blockquote-border: 1px dashed var(--ink);
   --teachtext-attachments-empty-border: 1px dashed var(--ink);
   --teachtext-preview-bg: var(--paper);
-  --teachtext-preview-title-divider: var(--system-control-line) solid var(--ink);
+  --teachtext-preview-title-divider: var(--system-border);
   --teachtext-preview-section-marker: 8px solid var(--ink);
-  --teachtext-preview-image-border: var(--system-control-line) solid var(--ink);
+  --teachtext-preview-image-border: var(--system-border);
   --teachtext-preview-image-bg: var(--paper);
   --teachtext-preview-blockquote-bg: repeating-linear-gradient(45deg, #fff, #fff 2px, #f9f9f9 2px, #f9f9f9 4px);
   --reader-content-border: var(--system-border);
   --reader-content-radius: 0;
   --reader-content-bg: var(--paper);
   --reader-content-shadow: var(--system-inset);
-  --reader-title-divider: var(--system-control-line) solid var(--ink);
+  --reader-title-divider: var(--system-border);
   --reader-meta-divider: 1px dotted var(--ink);
   --reader-section-marker: 6px solid var(--ink);
   --drop-target-inset: 8px;
@@ -1208,7 +1216,7 @@
   --time-machine-calendar-day-border: var(--shade-dark);
   --time-machine-time-bg: repeating-linear-gradient(135deg, var(--paper) 0 6px, #e8e8e8 6px 7px);
   --time-machine-time-active-bg: repeating-linear-gradient(135deg, #d8d8d8 0 5px, var(--paper) 5px 7px);
-  --time-machine-time-border: var(--system-control-line) solid var(--ink);
+  --time-machine-time-border: var(--system-border);
   --time-machine-frame-border: var(--system-border);
   --time-machine-frame-radius: 0;
   --time-machine-frame-bg: var(--paper);
@@ -1218,7 +1226,7 @@
   --time-machine-loading-bg: rgba(255, 255, 255, 0.9);
   --scrap-selection-actions-border: 1px dotted var(--shade-dark);
   --notification-item-divider: 1px dotted var(--shade-dark);
-  --view-switch-border: var(--system-control-line) solid var(--ink);
+  --view-switch-border: var(--system-border);
   --view-switch-radius: 0;
   --view-switch-bg: var(--paper);
   --view-switch-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 var(--shade-dark);
@@ -1236,16 +1244,16 @@
   --help-row-selected-bg: var(--ink);
   --help-row-selected-fg: var(--paper);
   --help-row-active-radius: 0;
-  --system-help-panel-border: var(--system-control-line) solid var(--ink);
+  --system-help-panel-border: var(--system-border);
   --system-help-panel-radius: 0;
   --system-help-panel-bg: var(--sidebar-bg);
   --system-help-panel-shadow: none;
-  --system-help-search-input-border: var(--system-control-line) solid var(--ink);
+  --system-help-search-input-border: var(--system-border);
   --system-help-search-input-radius: 0;
   --system-help-list-button-border-bottom: 1px dotted var(--shade-dark);
   --system-help-group-bg: var(--paper);
-  --system-help-group-border-bottom: var(--system-control-line) solid var(--ink);
-  --system-help-head-border-bottom: var(--system-control-line) solid var(--ink);
+  --system-help-group-border-bottom: var(--system-border);
+  --system-help-head-border-bottom: var(--system-border);
   --system-help-actions-border-top: 1px dotted var(--shade-dark);
   --system-help-alias-border: 1px solid var(--shade-dark);
   --system-help-row-icon-size: 20px;
@@ -1260,7 +1268,7 @@
   --source-registry-item-border-style: dashed;
   --context-header-border-bottom: 1px solid var(--ink);
   --context-header-badge-border: 1px solid var(--ink);
-  --context-section-title-border-bottom: var(--system-control-line) solid var(--ink);
+  --context-section-title-border-bottom: var(--system-border);
   --context-item-actions-border-top: 1px solid var(--shade);
   --key-caps-pane-gap: 10px;
   --key-caps-pane-padding: var(--system-window-padding);
@@ -1273,16 +1281,16 @@
   --key-caps-note-fg: inherit;
   --key-caps-note-shadow: none;
   --shortcut-grid-overflow: visible;
-  --shortcut-grid-border: var(--system-control-line) solid var(--ink);
+  --shortcut-grid-border: var(--system-border);
   --shortcut-grid-radius: 0;
   --shortcut-grid-bg: transparent;
   --shortcut-grid-shadow: none;
   --shortcut-grid-divider: 1px dotted var(--shade-dark);
-  --shortcut-grid-key-border-right: var(--system-control-line) solid var(--ink);
+  --shortcut-grid-key-border-right: var(--system-border);
   --shortcut-grid-key-bg: #eeeeee;
   --character-map-gap: 6px;
   --character-map-button-min-height: 28px;
-  --character-map-button-border: var(--system-control-line) solid var(--ink);
+  --character-map-button-border: var(--system-border);
   --character-map-button-radius: 0;
   --character-map-button-bg: var(--paper);
   --character-map-button-fg: var(--ink);
@@ -1295,13 +1303,13 @@
   /* Native WIND -16000 is 129×18 in compact form and its PICT mode glyphs
      are 23×23, 24×22, and 14×17. Preserve that 1× relationship. */
   --alarm-clock-window-width: 130px;
-  --alarm-clock-frame-border: var(--system-control-line) solid var(--ink);
+  --alarm-clock-frame-border: var(--system-border);
   --alarm-clock-frame-radius: 0;
   --alarm-clock-frame-shadow: 3px 3px 0 var(--ink);
   --alarm-clock-title-bg: var(--paper);
   --alarm-clock-surface-bg: var(--paper);
   --alarm-clock-readout-bg: var(--paper);
-  --alarm-clock-divider: var(--system-control-line) solid var(--ink);
+  --alarm-clock-divider: var(--system-border);
   --alarm-clock-active-bg: var(--ink);
   --alarm-clock-active-fg: var(--paper);
   --alarm-clock-title-control-width: 28px;
@@ -1335,14 +1343,14 @@
   --calculator-pane-padding: var(--system-window-padding);
   --calculator-pane-bg: var(--shade);
   --calculator-pane-bg-color: var(--shade);
-  --calculator-display-border: var(--system-control-line) solid var(--ink);
+  --calculator-display-border: var(--system-border);
   --calculator-display-radius: 0;
   --calculator-display-bg: var(--paper);
   --calculator-display-shadow: inset 1px 1px 0 var(--shade-dark);
   --calculator-keys-gap: 5px;
   --calculator-keys-row-height: 30px;
   --calculator-key-height: 30px;
-  --calculator-key-border: var(--system-control-line) solid var(--ink);
+  --calculator-key-border: var(--system-border);
   --calculator-key-radius: 0;
   --calculator-key-bg: var(--paper);
   --calculator-key-fg: var(--ink);
@@ -1371,7 +1379,7 @@
   --puzzle-board-width: 160px;
   --puzzle-board-height: 160px;
   --puzzle-board-padding: 0;
-  --puzzle-board-border: var(--system-control-line) solid var(--ink);
+  --puzzle-board-border: var(--system-border);
   --puzzle-board-radius: 0;
   --puzzle-board-bg: var(--paper);
   --puzzle-board-shadow: none;
@@ -1462,7 +1470,7 @@
   --clio-stage-view-disabled-opacity: 1;
   --clio-stage-details-bar-gap: 8px;
   --clio-stage-viewport-min-height: 0;
-  --clio-stage-viewport-border: var(--system-control-line) solid var(--ink);
+  --clio-stage-viewport-border: var(--system-border);
   --clio-stage-viewport-radius: 0;
   --clio-stage-viewport-bg: var(--paper);
   --clio-stage-viewport-shadow: inset 1px 1px 0 var(--shade);
@@ -1472,7 +1480,7 @@
   --clio-stage-slide-mode-min-height: 0;
   --clio-stage-slide-mode-padding: 12px;
   --clio-stage-slide-mode-bg: var(--desktop);
-  --clio-stage-slide-frame-border: var(--system-control-line) solid var(--ink);
+  --clio-stage-slide-frame-border: var(--system-border);
   --clio-stage-slide-frame-radius: 0;
   --clio-stage-slide-frame-shadow: var(--system-shadow);
   --clio-stage-cue-mode-min-height: 0;
@@ -1485,28 +1493,28 @@
   --clio-stage-cue-next-border-top-color: var(--paper);
   --clio-stage-cue-next-fg: var(--paper);
   --attached-context-bg: var(--shade);
-  --attached-context-border: var(--system-control-line) solid var(--ink);
+  --attached-context-border: var(--system-border);
   --demo-caption-bg: rgba(255, 255, 255, 0.96);
-  --demo-caption-border: var(--system-control-line) solid var(--ink);
+  --demo-caption-border: var(--system-border);
   --demo-caption-radius: 12px;
   --demo-caption-shadow: 0 5px 18px rgba(0, 0, 0, 0.22);
   --demo-caption-fg: var(--ink);
   --demo-highlight-border: #ff2d2d;
   --demo-highlight-ring: 0 0 0 3px #ffffff, 0 0 0 6px var(--ink);
   --demo-highlight-label-bg: var(--paper);
-  --demo-highlight-label-border: var(--system-control-line) solid var(--ink);
+  --demo-highlight-label-border: var(--system-border);
   --demo-highlight-label-fg: var(--ink);
   --attached-context-label-color: var(--ink);
   --attached-context-pill-radius: var(--control-radius);
   --attached-context-shadow: none;
-  --print-directory-preview-border: var(--system-control-line) solid var(--ink);
+  --print-directory-preview-border: var(--system-border);
   --print-directory-preview-bg: var(--paper);
   --print-directory-preview-radius: 0;
   --print-directory-preview-shadow: none;
-  --print-directory-heading-border: var(--system-control-line) solid var(--ink);
+  --print-directory-heading-border: var(--system-border);
   --print-directory-table-border: 1px solid var(--ink);
   --print-directory-table-heading-bg: var(--shade);
-  --file-preview-border: var(--system-control-line) solid var(--ink);
+  --file-preview-border: var(--system-border);
   --file-preview-bg: var(--paper);
   --file-preview-radius: 0;
   --file-preview-shadow: none;
@@ -1562,7 +1570,7 @@
   --cmf-pill-bg: rgba(255, 255, 255, 0.55);
   --cmf-chip-bg: var(--paper);
   --cmf-chip-selected-shadow: inset 0 0 0 2px var(--ink);
-  --cmf-chip-focus-outline: var(--system-control-line) solid var(--ink);
+  --cmf-chip-focus-outline: var(--system-border);
   --bureaucracy-pane-bg: var(--paper);
   --bureaucracy-surface-bg: var(--paper);
   --bureaucracy-surface-border: 1px solid var(--ink);
@@ -1639,7 +1647,7 @@
   --quick-draft-grain-model-fg: var(--shade-dark);
   --quick-draft-grain-model-decoration: underline dotted var(--shade-dark);
   --quick-draft-grain-mask-fg: var(--ink);
-  --quick-draft-grain-border: var(--system-control-line) solid var(--ink);
+  --quick-draft-grain-border: var(--system-border);
   --quick-draft-grain-generation-border: var(--system-control-line) solid var(--shade-dark);
   --quick-draft-grain-swatch-author: var(--ink);
   --quick-draft-grain-swatch-model:
@@ -1681,9 +1689,9 @@
   --quick-draft-canvas-object-border: var(--system-border);
   --quick-draft-canvas-object-shadow: var(--system-shadow);
   --quick-draft-canvas-handle-bg: var(--paper);
-  --quick-draft-canvas-handle-border: var(--system-control-line) solid var(--ink);
+  --quick-draft-canvas-handle-border: var(--system-border);
   --quick-draft-canvas-rotate-fg: var(--ink);
-  --quick-draft-view-switch-border: var(--system-control-line) solid var(--ink);
+  --quick-draft-view-switch-border: var(--system-border);
 }
 
 html:lang(zh-Hans) {
@@ -1984,7 +1992,7 @@ body.has-system-modal .menu-bar {
   left: 100%;
   top: -2px;
   background: var(--paper);
-  border: var(--system-control-line) solid var(--ink);
+  border: var(--system-border);
   box-shadow: var(--menu-panel-shadow);
   min-width: 120px;
   scrollbar-gutter: stable;
@@ -2008,12 +2016,12 @@ body.has-system-modal .menu-bar {
 .menu-popover::-webkit-scrollbar-track,
 .menu-sub-popover::-webkit-scrollbar-track {
   background: var(--paper);
-  border-left: var(--system-control-line) solid var(--ink);
+  border-left: var(--system-border);
 }
 
 .menu-popover::-webkit-scrollbar-thumb,
 .menu-sub-popover::-webkit-scrollbar-thumb {
-  border: var(--system-control-line) solid var(--ink);
+  border: var(--system-border);
   border-radius: 0;
   background: var(--paper);
   box-shadow: inset 1px 1px 0 var(--shade);
@@ -2188,7 +2196,7 @@ body.has-system-modal .menu-bar {
   width: 14px;
   height: 12px;
   flex: 0 0 auto;
-  border: var(--system-control-line) solid var(--ink);
+  border: var(--system-border);
   background:
     linear-gradient(var(--ink), var(--ink)) 2px 2px / 8px 2px no-repeat,
     var(--paper);
@@ -2633,7 +2641,7 @@ body.has-system-modal .menu-bar {
   gap: 12px;
   width: min(720px, calc(100vw - 64px));
   padding: 20px 26px;
-  border: var(--system-control-line) solid var(--ink);
+  border: var(--system-border);
   background: var(--paper);
   box-shadow: inset 1px 1px 0 var(--shade);
   font-family: var(--ui-font);
@@ -2669,7 +2677,7 @@ body.has-system-modal .menu-bar {
   justify-items: center;
   width: min(720px, calc(100vw - 64px));
   padding: 20px 26px;
-  border: var(--system-control-line) solid var(--ink);
+  border: var(--system-border);
   background: var(--paper);
   box-shadow: inset 1px 1px 0 var(--shade);
   font-family: var(--ui-font);
@@ -2777,7 +2785,7 @@ body.has-system-modal .menu-bar {
   left: 50%;
   transform: translate(-50%, -50%);
   background: var(--paper);
-  border: var(--system-control-line) solid var(--ink);
+  border: var(--system-border);
   box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--ink);
   padding: 18px 18px 16px;
   width: 320px;
@@ -2807,7 +2815,7 @@ body.has-system-modal .menu-bar {
   top: 0;
   width: 31px;
   height: 31px;
-  border: var(--system-control-line) solid var(--ink);
+  border: var(--system-border);
   background: var(--paper);
   display: grid;
   place-items: center;
@@ -2823,7 +2831,7 @@ body.has-system-modal .menu-bar {
   transform: translate(-50%, -50%);
   width: min(540px, calc(100vw - 32px));
   background: var(--paper);
-  border: var(--system-control-line) solid var(--ink);
+  border: var(--system-border);
   box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--ink);
   padding: var(--startup-settings-modal-padding);
   font-family: var(--ui-font);

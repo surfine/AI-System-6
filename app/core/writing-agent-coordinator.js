@@ -433,8 +433,9 @@ const browserWritingAgentCoordinator = window.AISystem6WritingAgentRuntime.creat
       toolLoopTruncated: loopResult.truncated === true,
     };
   },
-  onTransition(run) {
+  onTransition(run, state) {
     window.lastWritingAgentRun = run;
+    window.AISystem6AssistantActivity?.reportRunTransition?.(run, state);
   },
 });
 

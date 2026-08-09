@@ -87,6 +87,17 @@ function openDocumentFileOrAttachToClioTalk(file) {
   withFinderObjects(() => {
     if (file.type === "alias") return openAliasFile(file);
     if (openProjectFileWithStationery(file)) return;
+    if (file.type === "text" || file.type === "chat") {
+      // The system decides object routing: open intents resolve through the
+      // Application Registry (teachText / docMap / clioTalk), never through
+      // a second per-surface copy of "which app handles this object".
+      window.AISystem6ApplicationRegistry?.dispatchApplicationIntent?.("", {
+        intent: "open",
+        items: [file],
+        sourceAppId: "finder",
+      });
+      return;
+    }
     if (file.type === "text") openTextFile(file.id);
     else openChatFileWindow(file.id);
   });
@@ -1195,11 +1206,11 @@ function saveClioTalkRunRecord({ chatFile, messageRecord, manifest, status = "co
     createdAt: now,
     updatedAt: now,
   };
-  chatFiles.unshift(file);
-  saveDeskState();
-  renderDocuments();
-  renderProjectDisks();
-  return file;
+  // One shared Run Receipt writer: the adapter keeps the ClioTalk-specific
+  // record shape, while persistence, refresh, and listeners live in the
+  // run-receipts module (single system, no second parallel store).
+  const persisted = window.AISystem6RunReceipts?.persistReceiptFileSync?.(file);
+  return persisted?.ok ? file : null;
 }
 
 function conversationLineage(file) {
@@ -1478,6 +1489,9 @@ function rejectSelectedTeachTextModificationSuggestion() {
   const file = selectedTeachTextModificationSuggestion();
   if (!file) return false;
   file.suggestion.status = "rejected"; file.suggestion.rejectedAt = new Date().toISOString(); file.updatedAt = file.suggestion.rejectedAt;
+  if (file.suggestion.runRecordId) {
+    window.AISystem6RunReceipts?.recordUserAction?.(file.suggestion.runRecordId, { action: "reject" });
+  }
   saveDeskState(); renderDocuments(); renderProjectDisks(); return true;
 }
 
@@ -1511,6 +1525,9 @@ async function acceptSelectedTeachTextModificationSuggestion() {
   const newHash = contentHash(target.body);
   suggestion.status = "accepted"; suggestion.acceptedAt = target.updatedAt; suggestion.oldHash = oldHash; suggestion.newHash = newHash;
   if (target.id === activeTextFileId) { teachTextBodyInput.value = target.body; markTeachTextModified(); refreshTeachTextDocumentState(); }
+  if (suggestion.runRecordId) {
+    window.AISystem6RunReceipts?.recordUserAction?.(suggestion.runRecordId, { action: "accept", finalBodyHash: newHash });
+  }
   const receipt = saveClioTalkArtifact("teachtext-modification-acceptance-receipt", `${target.name} ${currentLanguage === "zh" ? "修改接受记录" : "Modification Acceptance Receipt"}`, `Target file ID: ${target.id}\nOld hash: ${oldHash}\nNew hash: ${newHash}\nSuggestion ID: ${file.id}\nRun record ID: ${suggestion.runRecordId || ""}`);
   if (receipt) suggestion.acceptanceRunRecordId = receipt.id;
   saveDeskState(); renderDocuments(); renderProjectDisks(); return true;
@@ -2736,11 +2753,13 @@ function openTextFile(fileId) {
   // A saved DocMap opens in the tool rather than TeachText, but the tool is
   // lazy: settle that with the eager predicate first, then re-enter once it
   // is loaded so the "not actually a DocMap" fallback still works.
-  if (!window.AISystem6DocMapLoaded && (file.docMap || isExportedDocMapMarkdown(file.body || ""))) {
+  const openResolution = window.AISystem6ApplicationRegistry?.resolveApplicationForItem?.(file, "open");
+  const isDocMapRoute = !!openResolution?.ok && openResolution.appId === "docMap";
+  if (isDocMapRoute && !window.AISystem6DocMapLoaded) {
     ensureDocMapModule().then(() => openTextFile(fileId));
     return;
   }
-  if (window.AISystem6DocMapLoaded && openSavedDocMapFile(file)) {
+  if (isDocMapRoute && window.AISystem6DocMapLoaded && openSavedDocMapFile(file)) {
     return;
   }
 

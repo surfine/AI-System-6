@@ -559,6 +559,46 @@ Version `1.0.12`, build `20260804.2`.
   present in this environment, so notarization is reported NOT EXECUTED and
   the beta keeps its ad-hoc caveat until credentials are provided.
 
+## System Closing: Application Services · Run Receipts · Assistant Activity · Teaser — 2026-08-10
+
+- Application Services: one object-routing registry owns "which app handles
+  this object/intent". Finder open, File → Open, Quick Draft send-to, Review /
+  DocMap menus, and Droplets converge on one dispatch contract; broken
+  aliases, cross-project items, and no-handler cases fail visibly instead of
+  silently falling back.
+- Run Receipts: the existing ClioTalk run-record artifact becomes one
+  project-scoped receipt system (schemaVersion 2) covering AI and
+  artifact-producing operations, with checkpoint accept/edit/reject recording,
+  produced-by provenance in Get Info, Recent Runs in System Status, and
+  Repeat This Run.
+- Assistant Activity: a single state source (offline / idle / reading /
+  working / waiting / ready / error) derived only from real model and run
+  events, with a stale-run watchdog, project-switch reset, cancel, and
+  bring-to-front; System Status exposes it through semantic data-* hooks.
+- Teaser: a seeded, deterministic "30-Second Demo" (Start Here and the
+  Applications folder) shows a 2026 source becoming a clipping and then a file
+  on the Project Hard Disk — no model, no network, desk restored on exit.
+- The live Writing Demo is unchanged; Theme/Appearance files were not touched.
+
+## Public Beta 1.0.37 - 2026-08-10
+
+- Application Services: one object-routing registry owns "which app handles
+  this object/intent"; Finder open, File → Open, Quick Draft send-to,
+  Review / DocMap menus, and Droplets converge on one dispatch contract with
+  visible failures.
+- Run Receipts: the ClioTalk run-record becomes one project-scoped receipt
+  system covering AI and artifact-producing operations, with checkpoint
+  accept/edit/reject recording, Get Info provenance, System Status Recent
+  Runs, and Repeat This Run.
+- Assistant Activity: a single state source (offline / idle / reading /
+  working / waiting / ready / error) derived only from real events, exposed
+  in System Status with Cancel and Bring to Front.
+- All six appearances are released (System 6, Platinum, Aqua, Snow Leopard,
+  Yosemite, Liquid Glass); the research switch is gone and Theme Lab now
+  lives in the System folder.
+- The 30-second seeded teaser demo shows a source becoming a file on the
+  Project Hard Disk without a model or network.
+
 ## What Changed Most In One Month
 
 - The product moved from "an AI writing prototype" to a local-first writing

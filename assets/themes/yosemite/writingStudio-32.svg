@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
+  <!-- 10.10 Writing Studio: window with a pen and text lines. -->
+  <defs>
+    <linearGradient id="g-window" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f2f5f9"/>
+      <stop offset="1" stop-color="#dbe2eb"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="5" width="24" height="22" rx="2" fill="url(#g-window)" stroke="#8d9aab" stroke-width="1"/>
+  <rect x="4" y="5" width="24" height="3.5" rx="2" fill="#3e7cc4"/>
+  <rect x="7" y="11" width="14" height="1" rx="0.5" fill="#7f93ab"/>
+  <rect x="7" y="14" width="12" height="1" rx="0.5" fill="#a7b6c8"/>
+  <path d="M7 18l7-1 8 8-1.5 1.5-7.5-8z" fill="none" stroke="#3e7cc4" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M20 24l1.5-1.5 2 2L22 26z" fill="#3e7cc4"/>
+</svg>

@@ -643,7 +643,7 @@ async function writingDemoRunPreflight() {
 }
 
 function stopWritingDemo() {
-  if (!writingDemoRun) return;
+  if (!writingDemoRun || writingDemoRun.mode === "teaser") return;
   writingDemoStopModalAutoAccept();
   writingDemoRun.stopped = true;
   activeAbortController?.abort?.();
@@ -654,7 +654,17 @@ function stopWritingDemo() {
 }
 
 function writingDemoKeydown(event) {
-  if (event.key === "Escape" && writingDemoRun) stopWritingDemo();
+  if (event.key !== "Escape" || !writingDemoRun) return;
+  if (writingDemoRun.mode === "teaser") stopTeaserDemo();
+  else stopWritingDemo();
+}
+
+function writingDemoSetTeaserButtons(running) {
+  document.querySelectorAll('[data-action="play-teaser-demo"], [data-static-finder-action="play-teaser-demo"]').forEach((button) => {
+    const labelEl = button.querySelector("span[data-i18n]") || button;
+    labelEl.textContent = running ? t("teaser_demo_stop") : t("guide_play_teaser_demo");
+    button.dataset.demoRunning = running ? "true" : "false";
+  });
 }
 
 async function writingDemoTypeInto(input, text, { replace = true, delay = 4 } = {}) {
@@ -1772,10 +1782,11 @@ ${ragContext}`,
 
 async function playWritingDemo() {
   if (writingDemoRun) {
-    stopWritingDemo();
+    if (writingDemoRun.mode === "teaser") stopTeaserDemo();
+    else stopWritingDemo();
     return;
   }
-  writingDemoRun = { stopped: false, windowSlots: new Map(), modalAutoAcceptTimer: 0 };
+  writingDemoRun = { stopped: false, mode: "full", windowSlots: new Map(), modalAutoAcceptTimer: 0 };
   writingDemoStartModalAutoAccept();
   document.body.classList.add("writing-demo-recording");
   window.addEventListener("keydown", writingDemoKeydown);
@@ -1846,8 +1857,262 @@ async function playWritingDemo() {
   }
 }
 
+// ---- Teaser mode ----------------------------------------------------------
+// A seeded, deterministic 15–30s walkthrough that needs no model or network.
+// It reuses the demo corpus, window staging, captions, and stop/cleanup
+// machinery; seeded content is always labeled Demo and never claims live
+// search, model calls, or tool calls. The full live demo stays untouched.
+
+const teaserDemoScenePauseMs = 5600;
+const teaserDemoManagedWindows = ["projects", "documents", "teachText", "scrapbook", "reviewDesk", "projectCd"];
+
+function teaserDemoSeededSourceText() {
+  return [
+    `# ${writingDemoCorpus.manuscriptTitle || "iPhone 17e 视频口播稿"} (Demo source)`,
+    "",
+    "演示材料：以下内容为内置示例，不代表实时搜索结果。",
+    "Demo material: built-in sample, not a live search result.",
+    "",
+    "iPhone 17e 使用 A19 芯片，配备 C1X 调制解调器，提供 256GB 起步容量并支持 MagSafe / Qi2。",
+    "外观提供浅粉色版本，采用玻璃背板；相机系统为 48MP 主摄，支持夜景模式。",
+    "续航方面宣称满足全天使用，eSIM 支持快速转移。",
+    "",
+    "（本段为 30 秒演示的确定性素材）",
+    "(This passage is the deterministic fixture for the 30-second demo.)",
+  ].join("\n");
+}
+
+function teaserDemoClippingText() {
+  return "A19 芯片 + C1X 调制解调器 · 256GB 起步 · 支持 MagSafe / Qi2 —— 来自演示素材。";
+}
+
+function teaserDemoManuscriptBody() {
+  return [
+    `# ${writingDemoCorpus.manuscriptTitle || "iPhone 17e 视频口播稿"}`,
+    "",
+    "## 开场",
+    "这台 2026 年的手机第一次出现在 1988 年的桌面上：先别急着说参数，先看它是不是一台“够用的标准版”。",
+    "",
+    "## 来源摘录",
+    `> ${teaserDemoClippingText()}`,
+    "",
+    "（演示文稿：内容为内置示例，用于展示对象在应用之间移动并改变。）",
+  ].join("\n");
+}
+
+function teaserDemoSnapshot() {
+  const visible = Array.from(document.querySelectorAll(".window:not(.is-hidden):not(.is-app-hidden)"))
+    .map((win) => {
+      const rect = win.getBoundingClientRect();
+      return {
+        name: win.dataset.window || "",
+        left: win.style.left || "",
+        top: win.style.top || "",
+        width: win.style.width || "",
+        height: win.style.height || "",
+        collapsed: win.classList.contains("is-collapsed"),
+      };
+    })
+    .filter((entry) => entry.name);
+  return {
+    projectId: typeof activeProjectId !== "undefined" ? activeProjectId : "",
+    visible,
+  };
+}
+
+async function teaserDemoRestore(snapshot) {
+  if (!snapshot) return;
+  if (snapshot.projectId && typeof switchProject === "function") {
+    try {
+      await switchProject(snapshot.projectId);
+    } catch (error) {
+      console.warn("Teaser project restore failed.", error);
+    }
+  }
+  teaserDemoManagedWindows.forEach((name) => {
+    if (typeof closeWindow === "function") closeWindow(name, true);
+  });
+  snapshot.visible.forEach((entry) => {
+    if (!entry.name || typeof openWindow !== "function") return;
+    openWindow(entry.name, { skipFinderMode: true, skipPlacement: true });
+    const win = typeof getWindow === "function" ? getWindow(entry.name) : null;
+    if (!win) return;
+    if (entry.left && typeof setInlineStyleValue === "function") setInlineStyleValue(win, "left", entry.left);
+    if (entry.top && typeof setInlineStyleValue === "function") setInlineStyleValue(win, "top", entry.top);
+    if (entry.width && typeof setInlineStyleValue === "function") setInlineStyleValue(win, "width", entry.width);
+    if (entry.height && typeof setInlineStyleValue === "function") setInlineStyleValue(win, "height", entry.height);
+    if (entry.collapsed) win.classList.add("is-collapsed");
+  });
+}
+
+function writingDemoEnsureTeaserProject() {
+  if (getActiveProject()) return getActiveProject();
+  const baseName = currentLanguage === "zh" ? "30 秒演示 - iPhone 17e" : "Teaser Demo - iPhone 17e";
+  const name = typeof uniqueProjectName === "function" ? uniqueProjectName(baseName) : `${baseName} ${new Date().toLocaleTimeString()}`;
+  const project = createProjectRecord(name);
+  if (typeof parkConversationInProject === "function") parkConversationInProject(activeProjectId);
+  isProjectMounted = true;
+  projects.unshift(project);
+  activeProjectId = project.id;
+  selectedProjectId = project.id;
+  selectedFolderId = "all";
+  if (typeof clearProjectTransientState === "function") clearProjectTransientState();
+  if (typeof closeProjectScopedWindows === "function") closeProjectScopedWindows();
+  if (typeof scheduleWorkspaceRender === "function") scheduleWorkspaceRender({ projectReferences: true, mountedTextDisk: true, menuState: true });
+  if (typeof resetAssistantForProject === "function") resetAssistantForProject(project.name);
+  if (typeof loadActiveProjectReferences === "function") loadActiveProjectReferences();
+  if (typeof saveDeskState === "function") saveDeskState();
+  return project;
+}
+
+function teaserDemoCreateProjectFile(name, body) {
+  const folder = typeof ensureFolder === "function" ? ensureFolder(t("documents"), null) : null;
+  const now = new Date().toISOString();
+  const file = {
+    id: typeof crypto?.randomUUID === "function" ? crypto.randomUUID() : `teaser-${Date.now()}`,
+    projectId: activeProjectId,
+    folderId: folder?.id || null,
+    type: "text",
+    artifactKind: "teaser-demo",
+    name: typeof nextAvailableFileName === "function" ? nextAvailableFileName(name, folder?.id || null) : name,
+    body,
+    label: "demo",
+    demo: { kind: "teaser", seeded: true },
+    createdAt: now,
+    updatedAt: now,
+  };
+  chatFiles.unshift(file);
+  if (typeof saveDeskState === "function") saveDeskState();
+  if (typeof renderDocuments === "function") renderDocuments();
+  if (typeof renderProjectDisks === "function") renderProjectDisks();
+  return file;
+}
+
+async function teaserDemoSceneSource() {
+  writingDemoAssertRunning();
+  await writingDemoStage([{ name: "teachText", slot: "wide" }], { pauseMs: 500 });
+  const sourceFile = teaserDemoCreateProjectFile(
+    currentLanguage === "zh" ? "iPhone 17e 产品资料 (Demo)" : "iPhone 17e Source (Demo)",
+    teaserDemoSeededSourceText()
+  );
+  if (!sourceFile) throw new Error(currentLanguage === "zh" ? "演示来源文件创建失败。" : "Teaser source file creation failed.");
+  selectedChatFileId = sourceFile.id;
+  openTextFile(sourceFile.id);
+  await writingDemoPause(500);
+  writingDemoShowCaption(currentLanguage === "zh"
+    ? "一份 2026 年的产品资料，作为真实文件进入了这台 1988 年的电脑。（演示素材）"
+    : "A 2026 source arrives on this 1988 desktop as a real file. (Demo material)");
+  await writingDemoPause(teaserDemoScenePauseMs);
+}
+
+async function teaserDemoSceneTransform() {
+  writingDemoAssertRunning();
+  const clipping = typeof createClippingFile === "function"
+    ? createClippingFile({
+        text: teaserDemoClippingText(),
+        sourceTitle: currentLanguage === "zh" ? "iPhone 17e 产品资料 (Demo)" : "iPhone 17e Source (Demo)",
+        sourceType: "teaser-demo",
+        folderId: null,
+      })
+    : null;
+  if (!clipping) throw new Error(currentLanguage === "zh" ? "演示摘录创建失败。" : "Teaser clipping creation failed.");
+  await writingDemoStage([{ name: "teachText", slot: "wide" }], { pauseMs: 400 });
+  selectedChatFileId = clipping.id;
+  openTextFile(clipping.id);
+  await writingDemoPause(500);
+  writingDemoShowCaption(currentLanguage === "zh"
+    ? "来源片段变成独立的摘录对象，材料开始在应用之间移动。"
+    : "A selection becomes its own clipping object — material now moves between apps.");
+  await writingDemoPause(teaserDemoScenePauseMs);
+  const manuscript = teaserDemoCreateProjectFile(
+    currentLanguage === "zh" ? "iPhone 17e 视频口播稿 (Demo)" : "iPhone 17e Manuscript (Demo)",
+    teaserDemoManuscriptBody()
+  );
+  selectedChatFileId = manuscript.id;
+  openTextFile(manuscript.id);
+  await writingDemoPause(600);
+  writingDemoShowCaption(currentLanguage === "zh"
+    ? "摘录插入正文：同一段材料，从来源变成了文稿的一部分。"
+    : "The clipping is now part of the manuscript — the same material, transformed.");
+  await writingDemoPause(teaserDemoScenePauseMs);
+}
+
+async function teaserDemoSceneResult() {
+  writingDemoAssertRunning();
+  await writingDemoStage([{ name: "documents", slot: "wide" }], { pauseMs: 500 });
+  const manuscript = chatFiles.find((file) =>
+    file?.projectId === activeProjectId
+    && file?.artifactKind === "teaser-demo"
+    && /(视频口播稿|Manuscript)/i.test(String(file.name || ""))
+  );
+  if (manuscript) {
+    selectedChatFileId = manuscript.id;
+    selectedFolderId = manuscript.folderId || "all";
+    if (typeof renderDocuments === "function") renderDocuments();
+  }
+  await writingDemoPause(500);
+  writingDemoShowCaption(currentLanguage === "zh"
+    ? "结果没有消失在聊天里：它成了项目硬盘里的文稿。"
+    : "The result did not vanish into a chat line — it is now a file on the disk.");
+  await writingDemoPause(teaserDemoScenePauseMs);
+  writingDemoShowCaption("The AI has a desktop now. · AI System 6");
+  await writingDemoPause(2400);
+}
+
+function stopTeaserDemo() {
+  if (!writingDemoRun || writingDemoRun.mode !== "teaser") return;
+  writingDemoRun.stopped = true;
+  activeAbortController?.abort?.();
+  writingDemoClearHighlights();
+  writingDemoClearCaption();
+  setStatus(t("teaser_demo_stopped"));
+  writingDemoSetTeaserButtons(false);
+}
+
+async function playTeaserDemo() {
+  if (writingDemoRun) {
+    if (writingDemoRun.mode === "teaser") stopTeaserDemo();
+    else stopWritingDemo();
+    return;
+  }
+  const snapshot = teaserDemoSnapshot();
+  writingDemoRun = { stopped: false, mode: "teaser", windowSlots: new Map(), modalAutoAcceptTimer: 0 };
+  document.body.classList.add("teaser-demo-running");
+  window.addEventListener("keydown", writingDemoKeydown);
+  writingDemoSetTeaserButtons(true);
+  setStatus(t("teaser_demo_running"));
+  let terminalStatus = "";
+  try {
+    writingDemoEnsureTeaserProject();
+    await writingDemoStage([], { pauseMs: 250 });
+    await teaserDemoSceneSource();
+    await teaserDemoSceneTransform();
+    await teaserDemoSceneResult();
+    terminalStatus = t("teaser_demo_done");
+    setStatus(terminalStatus);
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      terminalStatus = t("teaser_demo_stopped");
+    } else {
+      console.error("Teaser demo failed", error);
+      terminalStatus = t("teaser_demo_failed", error?.message || String(error));
+    }
+  } finally {
+    writingDemoRun = null;
+    document.body.classList.remove("teaser-demo-running");
+    window.removeEventListener("keydown", writingDemoKeydown);
+    writingDemoClearHighlights();
+    writingDemoClearCaption();
+    writingDemoSetTeaserButtons(false);
+    await teaserDemoRestore(snapshot);
+    if (terminalStatus) setStatus(terminalStatus);
+  }
+}
+
 window.AISystem6WritingDemo = {
   play: playWritingDemo,
   stop: stopWritingDemo,
+  playTeaser: playTeaserDemo,
+  stopTeaser: stopTeaserDemo,
 };
 window.AISystem6WritingDemoLoaded = true;

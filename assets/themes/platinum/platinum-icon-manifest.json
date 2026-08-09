@@ -45,9 +45,9 @@
   "writingBell": "writingBell-32.svg",
   "startupDisk": "startup-disk-32.svg",
   "folder": "folder-32.svg",
-  "document": "document-16.svg",
-  "applications": "applications-16.svg",
-  "trash": "trash-16.svg",
-  "finderApp": "finder-app-16.svg",
+  "document": "document-32.svg",
+  "applications": "applications-32.svg",
+  "trash": "trash-32.svg",
+  "finderApp": "finder-app-32.svg",
   "floppy": "floppy-32.svg"
 }

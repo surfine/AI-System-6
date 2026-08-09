@@ -21,52 +21,56 @@ const source = readFileSync(join(root, "app/core/system-icons.js"), "utf8");
 const outDir = join(root, "assets/themes/platinum");
 mkdirSync(outDir, { recursive: true });
 
-// Per-icon Mac OS 9 semantic colours (body gradient stops).
+// Per-icon Platinum material palette (body gradient stops). The brief:
+// bright but not neon (Marshall McLuhan-era Macintosh), plastic / paper /
+// metal / small-object materials, stable front-facing perspective. Each icon
+// keeps its subject identity; the shared recipe supplies the keyline, white
+// highlight, subtle bevel and pixel-crisp rendering.
 const COLORS = {
-  assistant: ["#7fa8e8", "#4a74c8", "#2f519e"],
-  quickDraft: ["#ffffff", "#ececf4", "#d0d3e4"],
-  writingStudio: ["#f2f2f6", "#dfe2ec", "#bfc4d4"],
-  projectDisk: ["#e8e8ea", "#c3c6cd", "#8f949f"],
-  projectDisc: ["#dbe7f5", "#a9c6e4", "#6f97c4"],
-  cloudModel: ["#a9cdf0", "#6fa5dd", "#3f78bb"],
-  cloudModelOff: ["#b9c2d4", "#8b96ad", "#5d6a84"],
-  questionSheet: ["#ffffff", "#f0eef5", "#d4d0e2"],
-  outline: ["#ffffff", "#eef0f6", "#cfd5e6"],
-  sectionDrafts: ["#ffffff", "#edf0f7", "#cbd4e8"],
-  manuscript: ["#fbfbfd", "#e6e9f0", "#c4cad9"],
-  reviewDesk: ["#a9c6ef", "#6f98d8", "#3f6bb0"],
-  searcher: ["#b9d2f2", "#7ea9dd", "#477ab8"],
-  reader: ["#aecdf2", "#739fe0", "#3f6cb4"],
-  timeMachine: ["#c9ccd6", "#9ba2b2", "#5f6879"],
-  docMap: ["#a9c6f0", "#6f98da", "#3f68ad"],
-  clioStage: ["#9dbef0", "#5f8fd4", "#3762aa"],
-  clioChart: ["#aac9f2", "#6f9adc", "#3c68b2"],
-  liquidCover: ["#8fc0ee", "#4f90d4", "#2c64a8"],
-  cmfStudio: ["#a5c6ee", "#6694d8", "#3762ae"],
-  soundscape: ["#c9b6e8", "#9a7fd4", "#684fa8"],
-  scrapbook: ["#ecd9b8", "#d3b98e", "#a9855a"],
-  systemFolder: ["#9dbcf0", "#6690d6", "#3a63ab"],
-  helpFolder: ["#b9d6f4", "#84b0e4", "#4d7fc0"],
-  importUtility: ["#aecdf4", "#7aa6e0", "#4778bd"],
-  controlPanel: ["#d6d9e0", "#aeb4c0", "#7a8190"],
-  chooser: ["#a5c4f0", "#6c96dc", "#3d66b4"],
-  systemHelp: ["#b2cff2", "#7ca6e2", "#4978bf"],
-  dictionary: ["#e8eef6", "#c8d6ea", "#9db4d6"],
-  teachText: ["#ffffff", "#f0f2f7", "#d2d8e6"],
-  writingDemo: ["#a9c9f0", "#6c97dc", "#3c67b4"],
-  chatFile: ["#d8e6f6", "#a9c4e6", "#6f97c6"],
-  chatImport: ["#b9d2f2", "#7fa9e0", "#4a79bf"],
-  systemStatus: ["#d4d7de", "#aab0bd", "#777e8c"],
-  contextPanel: ["#aecdf2", "#78a4e0", "#4576bd"],
-  rebuildArticle: ["#a5c6f0", "#6793da", "#3863b0"],
-  bureaucracyMeme: ["#c9c6d8", "#9b96b4", "#615c7e"],
-  endfieldTerminal: ["#1c1e24", "#2b3038", "#3d454f"],
-  documents: ["#f4f4f8", "#dfe2ec", "#bfc5d6"],
-  alias: ["#a9c9f0", "#6c97dc", "#3c67b4"],
-  systemFile: ["#ffffff", "#eff1f6", "#cfd6e6"],
-  multiFinderApp: ["#a5c4ee", "#6490d8", "#3761ae"],
-  daHandler: ["#b9d2f2", "#7fa9e0", "#4a79bf"],
-  writingBell: ["#ecd0a8", "#d0a86f", "#a07440"],
+  assistant: ["#a8c8f5", "#5f8fd8", "#2f58a8"],
+  quickDraft: ["#ffffff", "#eef0f6", "#c8cfe0"],
+  writingStudio: ["#f2f4fa", "#d8dcea", "#aab2cc"],
+  projectDisk: ["#e0e6f0", "#b8c2d4", "#7a8aa8"],
+  projectDisc: ["#d8ecf8", "#a4d0ea", "#5f9cc4"],
+  cloudModel: ["#a8d8f5", "#6fb0e0", "#3f7fb8"],
+  cloudModelOff: ["#c8ccd8", "#989fb0", "#606878"],
+  questionSheet: ["#ffffff", "#f2f0f6", "#d0c8de"],
+  outline: ["#ffffff", "#eef0f6", "#c8d0e0"],
+  sectionDrafts: ["#ffffff", "#eef2f8", "#c4cfe4"],
+  manuscript: ["#fbfcfd", "#e4e8f0", "#bcc4d4"],
+  reviewDesk: ["#a8c8f0", "#5f8fdc", "#2f5fb0"],
+  searcher: ["#b8d4f5", "#78a8e4", "#4078c0"],
+  reader: ["#a8c8f2", "#6898e0", "#3060b4"],
+  timeMachine: ["#c8ced8", "#98a0b0", "#586078"],
+  docMap: ["#a0c4f0", "#5f90dc", "#3060b0"],
+  clioStage: ["#a0c0f0", "#5888d8", "#3058ac"],
+  clioChart: ["#a8c8f2", "#6090e0", "#3060b4"],
+  liquidCover: ["#90c0f0", "#4890d8", "#2860ac"],
+  cmfStudio: ["#a0c4f0", "#5c8cdc", "#3058b0"],
+  soundscape: ["#c8b8f0", "#9880d8", "#6048ac"],
+  scrapbook: ["#ecd8b8", "#d0b088", "#a08050"],
+  systemFolder: ["#98bcf0", "#5c88d8", "#3058ac"],
+  helpFolder: ["#b8d4f4", "#80a8e8", "#4878c4"],
+  importUtility: ["#a8ccf4", "#70a0e4", "#4078c0"],
+  controlPanel: ["#d4d8e0", "#a8b0c0", "#747c90"],
+  chooser: ["#a0c0f0", "#6090e0", "#3860b8"],
+  systemHelp: ["#b0ccf4", "#78a0e8", "#4078c4"],
+  dictionary: ["#e4ecf6", "#c0d0e8", "#8ca4cc"],
+  teachText: ["#ffffff", "#f0f2f8", "#ccd4e4"],
+  writingDemo: ["#a0c4f0", "#5c90e0", "#3060b8"],
+  chatFile: ["#d4e4f6", "#a0c0e8", "#6088c8"],
+  chatImport: ["#b4d0f4", "#78a4e4", "#4078c4"],
+  systemStatus: ["#d0d6de", "#a4acbc", "#70788c"],
+  contextPanel: ["#a8ccf4", "#70a0e4", "#4078c4"],
+  rebuildArticle: ["#9cc0f0", "#5c8cdc", "#305cb4"],
+  bureaucracyMeme: ["#c8c8d8", "#9494b4", "#585878"],
+  endfieldTerminal: ["#404854", "#2c323c", "#1c1e26"],
+  documents: ["#f2f4f8", "#dce0ec", "#b8c0d4"],
+  alias: ["#a0c4f0", "#5c90e0", "#3060b8"],
+  systemFile: ["#ffffff", "#eef0f6", "#c8d0e0"],
+  multiFinderApp: ["#98bcf0", "#5488dc", "#2858b0"],
+  daHandler: ["#b4d0f4", "#78a4e4", "#4078c4"],
+  writingBell: ["#e8d0a8", "#c8a068", "#987040"],
 };
 
 const DEFAULT_COLORS = ["#b9cdef", "#7fa4dd", "#4574b8"];
@@ -91,17 +95,15 @@ const REFERENCE_ICONS = {
     files: ["startup-disk-32.svg", "startup-disk-16.svg"],
     parts: {
       "32": [
-        { d: "M3 3h23v2h3v23H3z", kind: "main", colors: ["#e8e8e8", "#dddddd", "#b5b5b5"] },
-        { d: "M8 9h15v11H8z", kind: "soft", colors: ["#9ba9e8", "#6f6fd0", "#40409c"] },
-        { d: "M9 18h13v2H9z", kind: "ink", color: "#333399" },
-        { d: "M8 21h17v2H8zM8 24h11v1H8z", kind: "ink", color: "#111111" },
-        { d: "M23 24h2v2h-2z", kind: "accent", color: "#33aa33" },
+        { d: "M3 3h23v2h3v23H3z", kind: "main", colors: ["#f2f2f4", "#dedee2", "#b0b0ba"] },
+        { d: "M8 9h15v11H8z", kind: "soft", colors: ["#a8c0ec", "#7090d4", "#4060a8"] },
+        { d: "M9 18h13v2H9z", kind: "ink", color: "#2c2c34" },
+        { d: "M8 21h17v2H8zM8 24h11v1H8z", kind: "ink", color: "#1c1c24" },
       ],
       "16": [
-        { d: "M2 2h10v1h2v11H2z", kind: "main", colors: ["#e8e8e8", "#dddddd", "#b5b5b5"] },
-        { d: "M4 5h7v5H4z", kind: "soft", colors: ["#9ba9e8", "#6f6fd0", "#40409c"] },
-        { d: "M4 11h8v1H4z", kind: "ink", color: "#111111" },
-        { d: "M11 12h1v1h-1z", kind: "accent", color: "#33aa33" },
+        { d: "M2 2h10v1h2v11H2z", kind: "main", colors: ["#f2f2f4", "#dedee2", "#b0b0ba"] },
+        { d: "M4 5h7v5H4z", kind: "soft", colors: ["#a8c0ec", "#7090d4", "#4060a8"] },
+        { d: "M4 11h8v1H4z", kind: "ink", color: "#1c1c24" },
       ],
     },
   },
@@ -109,57 +111,77 @@ const REFERENCE_ICONS = {
     files: ["folder-32.svg", "folder-16.svg"],
     parts: {
       "32": [
-        { d: "M3 5h10v2h7v2h9v19H3z", kind: "main", colors: ["#b7c9ef", "#9999ff", "#5f5fd0"] },
-        { d: "M8 14h16v9H8z", kind: "soft", colors: ["#f0f1fd", "#e2e5fa", "#c6cbf0"] },
-        { d: "M29 10h2v19h-2zM6 29h23v2H6z", kind: "ink", color: "#333399" },
+        { d: "M3 7h26v21H3z", kind: "main", colors: ["#e0e0ff", "#ccccff", "#b0b0f4"] },
+        { d: "M4 3h10v4H4z", kind: "soft", colors: ["#b9b9ff", "#9999ff", "#7070d8"] },
       ],
       "16": [
-        { d: "M2 4h4v1h3v1h5v8H2z", kind: "main", colors: ["#b7c9ef", "#9999ff", "#5f5fd0"] },
-        { d: "M4 8h8v4H4z", kind: "soft", colors: ["#f0f1fd", "#e2e5fa", "#c6cbf0"] },
-        { d: "M2 12h1v3H2zM13 11h1v4h-1zM2 15h12v1H2z", kind: "ink", color: "#333399" },
+        { d: "M2 4h12v10H2z", kind: "main", colors: ["#e0e0ff", "#ccccff", "#b0b0f4"] },
+        { d: "M2 2h6v2H2z", kind: "soft", colors: ["#b9b9ff", "#9999ff", "#7070d8"] },
       ],
     },
   },
   document: {
-    files: ["document-16.svg"],
+    files: ["document-32.svg", "document-16.svg"],
     parts: {
+      "32": [
+        { d: "M5 2h15v4h7v24H5z", kind: "main", colors: ["#ffffff", "#f4f4f6", "#d0d0da"] },
+        { d: "M20 2h7v4h-7z", kind: "soft", colors: ["#e8e8ee", "#d4d4de", "#b8b8c4"] },
+        { d: "M7 11h14v1H7zM7 15h17v1H7zM7 19h12v1H7zM7 23h15v1H7z", kind: "ink", color: "#33333c" },
+      ],
       "16": [
-        { d: "M4 2h5v3h3v9H4z", kind: "main", colors: ["#ffffff", "#f0f1f6", "#c6cbdd"] },
-        { d: "M10 2l2 2h-2z", kind: "soft", colors: ["#eef0f8", "#d9ddef", "#b9c0dc"] },
-        { d: "M5 7h6v1H5zM5 9h6v1H5zM5 11h4v1H5z", kind: "ink", color: "#6666cc" },
+        { d: "M3 2h6v2h4v10H3z", kind: "main", colors: ["#ffffff", "#f4f4f6", "#d0d0da"] },
+        { d: "M9 2h4v2H9z", kind: "soft", colors: ["#e8e8ee", "#d4d4de", "#b8b8c4"] },
+        { d: "M5 7h7v1H5zM5 9h7v1H5zM5 11h5v1H5z", kind: "ink", color: "#33333c" },
       ],
     },
   },
   applications: {
-    files: ["applications-16.svg"],
+    files: ["applications-32.svg", "applications-16.svg"],
     parts: {
+      "32": [
+        { d: "M3 7h26v21H3z", kind: "main", colors: ["#eeeeF2", "#dedee8", "#bdbdcb"] },
+        { d: "M4 3h10v4H4z", kind: "soft", colors: ["#b3b3dd", "#9c9cce", "#7070b0"] },
+        { d: "M7 12h7v7H7zM18 12h7v7h-7zM7 21h7v7H7zM18 21h7v7h-7z", kind: "light", color: "#ffffff" },
+        { d: "M6 12h9v1H6zM6 19h9v1H6zM6 21h9v1H6zM6 28h9v1H6zM17 12h9v1h-9zM17 19h9v1h-9zM17 21h9v1h-9zM17 28h9v1h-9z", kind: "ink", color: "#8f8fb0" },
+      ],
       "16": [
-        { d: "M2 4h4v1h3v1h5v8H2z", kind: "main", colors: ["#f2f4fa", "#d9dfee", "#aab4d0"] },
-        { d: "M3 6h10v2H3z", kind: "soft", colors: ["#e2e8fb", "#c6cff0", "#9aa8dd"] },
-        { d: "M4 8h3v2H4zM9 8h3v2H9zM4 11h3v2H4zM9 11h3v2H9z", kind: "soft", colors: ["#f6f7fb", "#e8eaf2", "#ccd0de"] },
-        { d: "M2 14h12v1H2z", kind: "ink", color: "#333399" },
+        { d: "M2 4h12v10H2z", kind: "main", colors: ["#eeeeF2", "#dedee8", "#bdbdcb"] },
+        { d: "M2 2h6v2H2z", kind: "soft", colors: ["#b3b3dd", "#9c9cce", "#7070b0"] },
+        { d: "M4 6h3v3H4zM9 6h3v3H9zM4 10h3v3H4zM9 10h3v3H9z", kind: "light", color: "#ffffff" },
+        { d: "M3 6h5v1H3zM3 9h5v1H3zM3 10h5v1H3zM3 13h5v1H3zM8 6h5v1H8zM8 9h5v1H8zM8 10h5v1H8zM8 13h5v1H8z", kind: "ink", color: "#8f8fb0" },
       ],
     },
   },
   trash: {
-    files: ["trash-16.svg"],
+    files: ["trash-32.svg", "trash-16.svg"],
     parts: {
+      "32": [
+        { d: "M5 4h22v24H5z", kind: "main", colors: ["#f0f0f0", "#e0e0e0", "#b8b8b8"] },
+        { d: "M8 5h1v22H8zM13 5h1v22h-1zM18 5h1v22h-1zM23 5h1v22h-1z", kind: "light", color: "#ffffff" },
+        { d: "M5 25h22v1H5z", kind: "ink", color: "#8f8f8f" },
+        { d: "M7 2h18v2H7z", kind: "accent", color: "#999999" },
+      ],
       "16": [
-        { d: "M4 4h8v9H4z", kind: "main", colors: ["#ededed", "#dddddd", "#b0b0b0"] },
-        { d: "M5 5h1v7H5z", kind: "light", color: "#ffffff" },
-        { d: "M7 5h1v7H7zM10 5h1v7h-1zM4 13h8v1H4z", kind: "ink", color: "#999999" },
-        { d: "M5 2h6v1H5z", kind: "accent", color: "#9999ff" },
+        { d: "M3 3h10v11H3z", kind: "main", colors: ["#f0f0f0", "#e0e0e0", "#b8b8b8"] },
+        { d: "M4 4h1v9H4zM7 4h1v9H7zM10 4h1v9h-1z", kind: "light", color: "#ffffff" },
+        { d: "M3 12h10v1H3z", kind: "ink", color: "#8f8f8f" },
+        { d: "M4 2h8v1H4z", kind: "accent", color: "#999999" },
       ],
     },
   },
   finderApp: {
-    files: ["finder-app-16.svg"],
+    files: ["finder-app-32.svg", "finder-app-16.svg"],
     parts: {
+      "32": [
+        { d: "M4 4h11v24H4z", kind: "main", colors: ["#ffffff", "#f4f4f6", "#dcdce0"] },
+        { d: "M17 4h11v24H17z", kind: "soft", colors: ["#34343c", "#24242c", "#141418"] },
+        { d: "M9 10h1v2H9zM6 19q3.5 4.5 7 0", kind: "ink", color: "#1c1c24" },
+        { d: "M22 10h1v2h-1zM19 19q3.5 4.5 7 0", kind: "ink", color: "#ffffff" },
+      ],
       "16": [
-        { d: "M2 4h4v1h3v1h5v8H2z", kind: "main", colors: ["#f2f4fa", "#d9dfee", "#aab4d0"] },
-        { d: "M5 7h7v6H5z", kind: "soft", colors: ["#f0f1f6", "#dfe2ec", "#c2c7d6"] },
-        { d: "M6 8h1v1H6zM10 8h1v1h-1zM6 11h1v1h4v-1h1v2H6z", kind: "ink", color: "#111111" },
-        { d: "M3 6h1v7H3z", kind: "light", color: "#ccccff" },
+        { d: "M3 4h5v9H3z", kind: "main", colors: ["#ffffff", "#f4f4f6", "#dcdce0"] },
+        { d: "M8 4h5v9H8z", kind: "soft", colors: ["#34343c", "#24242c", "#141418"] },
+        { d: "M5 6h1v1H5zM5 9h2v1H5zM9 6h1v1H9zM9 9h2v1H9z", kind: "ink", color: "#1c1c24" },
       ],
     },
   },
@@ -167,13 +189,12 @@ const REFERENCE_ICONS = {
     files: ["floppy-32.svg"],
     parts: {
       "32": [
-        { d: "M1 1h14v17h-14zM16 8h5v10h-5zM22 1h8v17h-8zM4 19h23v12h-23z", kind: "main", colors: ["#8fa5c2", "#6f86a8", "#4a5d7b"] },
-        { d: "M7 1h8v9h-8zM16 9h5v1h-5zM22 1h1v9h-1zM7 9h9v1h-9zM22 9h1v1h-1z", kind: "soft", colors: ["#eef1f6", "#c9d0da", "#97a1b1"] },
-        { d: "M9 1h1v9h-1zM11 1h1v9h-1zM13 1h1v9h-1z", kind: "ink", color: "#7c8796" },
-        { d: "M8 10h15v1h-15zM5 18h22v1h-22z", kind: "ink", color: "#111111" },
-        { d: "M6 19h8v9h-8z", kind: "light", color: "#ffffff" },
-        { d: "M6 19h8v1h-8zM6 27h8v1h-8z", kind: "light", color: "#d7deef" },
-        { d: "M7 21h6v1H7zM7 23h6v1H7zM7 25h4v1H7z", kind: "ink", color: "#6f86a8" },
+        { d: "M1 1h14v17h-14zM16 8h5v10h-5zM22 1h8v17h-8zM4 19h23v12h-23z", kind: "main", colors: ["#dcdce6", "#cfd1de", "#a6a8ba"] },
+        { d: "M7 1h8v9h-8zM16 9h5v1h-5zM22 1h1v9h-1zM7 9h9v1h-9zM22 9h1v1h-1z", kind: "soft", colors: ["#f2f2f7", "#d8dae4", "#b8bcc8"] },
+        { d: "M9 1h1v9h-1zM11 1h1v9h-1zM13 1h1v9h-1z", kind: "ink", color: "#8f93a8" },
+        { d: "M8 10h15v1h-15zM5 18h22v1h-22z", kind: "ink", color: "#1c1c24" },
+        { d: "M6 19h8v9h-8z", kind: "light", color: "#ccffff" },
+        { d: "M7 21h6v1H7zM7 23h6v1H7zM7 25h4v1H7z", kind: "ink", color: "#336699" },
       ],
     },
   },
@@ -312,8 +333,8 @@ function renderIcon({ id, size, parts, sourceComment }) {
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges">
   <!-- Platinum painter (shared recipe)${sourceComment ? " " + sourceComment : ""}.
-       Dark rim, gradient volume, clipped highlight/shade, ink details.
-       No Apple art. -->
+       Black keyline, white highlight, subtle bevel, pixel-crisp edges,
+       material palette, restrained shading. No Apple art. -->
   <defs>
     <linearGradient id="g-body" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="${mainGradient[0]}"/>
@@ -326,12 +347,12 @@ function renderIcon({ id, size, parts, sourceComment }) {
       <stop offset="1" stop-color="${softGradient[2]}"/>
     </linearGradient>
     <linearGradient id="g-hi" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.38"/>
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.5"/>
       <stop offset="0.55" stop-color="#ffffff" stop-opacity="0"/>
     </linearGradient>
     <linearGradient id="g-sh" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0.6" stop-color="#000000" stop-opacity="0"/>
-      <stop offset="1" stop-color="#000000" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.2"/>
     </linearGradient>
     <clipPath id="cp-body">
       ${clipBody}
@@ -341,8 +362,10 @@ function renderIcon({ id, size, parts, sourceComment }) {
   <g clip-path="url(#cp-body)">
     <rect x="0" y="0" width="${size}" height="${size}" fill="url(#g-hi)"/>
     <rect x="0" y="0" width="${size}" height="${size}" fill="url(#g-sh)"/>
-    <rect x="0" y="0" width="${edgeW}" height="${size}" fill="#ffffff" fill-opacity="0.2"/>
-    <rect x="${size - edgeW}" y="0" width="${edgeW}" height="${size}" fill="#000000" fill-opacity="0.12"/>
+    <rect x="0" y="0" width="${edgeW}" height="${size}" fill="#ffffff" fill-opacity="0.32"/>
+    <rect x="0" y="0" width="${size}" height="${edgeW}" fill="#ffffff" fill-opacity="0.24"/>
+    <rect x="${size - edgeW}" y="0" width="${edgeW}" height="${size}" fill="#000000" fill-opacity="0.2"/>
+    <rect x="0" y="${size - edgeW}" width="${size}" height="${edgeW}" fill="#000000" fill-opacity="0.16"/>
   </g>
   ${markSvg}
   ${detailSvgText}

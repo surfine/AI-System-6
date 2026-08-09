@@ -442,6 +442,72 @@ function renderFinderObjectInfo(item) {
   renderClippingFileInfo(item);
   renderAliasFileInfo(item);
   renderFinderLabelInfo(item);
+  renderRunReceiptInfo(item);
+}
+
+function ensureInfoRunReceiptBlock() {
+  if (typeof infoFinderObjectsBlockEl === "undefined" || !infoFinderObjectsBlockEl) return null;
+  let block = document.getElementById("info-run-receipt-block");
+  if (!block) {
+    block = document.createElement("div");
+    block.id = "info-run-receipt-block";
+    block.className = "info-comments";
+    infoFinderObjectsBlockEl.after(block);
+  }
+  return block;
+}
+
+function runReceiptInfoAppLabel(sourceAppId, record) {
+  if (sourceAppId) return String(sourceAppId);
+  if (record?.sourceChatId || record?.sourceMessageId) return "ClioTalk";
+  return "—";
+}
+
+function renderRunReceiptInfo(item) {
+  const block = ensureInfoRunReceiptBlock();
+  if (!block || !item) return;
+  block.replaceChildren();
+  const receipts = typeof window.AISystem6RunReceipts?.queryReceiptsByOutput === "function"
+    ? window.AISystem6RunReceipts.queryReceiptsByOutput(item.id)
+    : [];
+  const isReceiptFile = item.artifactKind === "clio-run-record";
+  if (!isReceiptFile && !receipts.length) {
+    block.hidden = true;
+    return;
+  }
+  block.hidden = false;
+  const title = document.createElement("b");
+  title.textContent = t("run_receipt_produced_by");
+  title.dataset.i18n = "run_receipt_produced_by";
+  block.append(title);
+  const list = document.createElement("ul");
+  list.className = "run-receipt-info-list";
+  const source = isReceiptFile ? [item] : receipts;
+  source.slice(0, 3).forEach((receipt) => {
+    const record = receipt.runReceipt || receipt.runRecord || {};
+    const status = String(record.status || "completed");
+    const li = document.createElement("li");
+    const stamp = receipt.createdAt ? new Date(receipt.createdAt).toLocaleString() : "";
+    li.textContent = `${t(`run_status_${status}`)} · ${runReceiptInfoAppLabel(record.sourceAppId, record)} · ${stamp}`;
+    list.append(li);
+  });
+  block.append(list);
+  if (isReceiptFile && item.runReceipt?.replayContract && typeof window.AISystem6RunReceipts?.repeatReceipt === "function") {
+    const row = document.createElement("div");
+    row.className = "button-row";
+    const repeat = document.createElement("button");
+    repeat.type = "button";
+    repeat.className = "btn mini-btn";
+    repeat.textContent = t("run_receipt_repeat");
+    repeat.addEventListener("click", async () => {
+      const result = await window.AISystem6RunReceipts.repeatReceipt(item.id);
+      if (!result?.ok && typeof setStatus === "function") {
+        setStatus(t("run_receipt_repeat_failed"));
+      }
+    });
+    row.append(repeat);
+    block.append(row);
+  }
 }
 
 // Clipping drag-back: dropping a clipping file onto an editable surface

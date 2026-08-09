@@ -197,6 +197,7 @@ async function switchProject(projectId) {
   project.archived = false;
   isProjectMounted = true;
   activeProjectId = project.id;
+  window.AISystem6AssistantActivity?.resetForProject?.(project.id);
   selectedProjectId = project.id;
   selectedFolderId = "all";
   clearProjectTransientState();
@@ -289,6 +290,7 @@ function mountProject(project) {
   parkConversationInProject(previousProjectId);
   isProjectMounted = true;
   activeProjectId = project.id;
+  window.AISystem6AssistantActivity?.resetForProject?.(project.id);
   selectedProjectId = project.id;
   selectedFolderId = "all";
   clearProjectTransientState();

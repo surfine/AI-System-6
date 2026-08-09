@@ -164,6 +164,16 @@ async function transferQuickDraftToTeachText() {
   if (!quickDraftDocumentMarkdown(slot.record)) return false;
   if (!await saveQuickDraftAsProjectDocument()) return false;
   const documentId = activeProjectQuickDraft({ create: false })?.record.workspace.projectDocId;
+  const file = documentId
+    ? chatFiles.find((item) => item.id === documentId && item.type === "text" && item.projectId === activeProjectId)
+    : null;
+  const dispatch = window.AISystem6ApplicationRegistry?.dispatchApplicationIntent;
+  if (file && typeof dispatch === "function") {
+    const result = await dispatch("teachText", { intent: "open", items: [file], sourceAppId: "quickDraft" });
+    if (!result?.ok) return false;
+    setQuickDraftStatus(t("quick_draft_teachtext_done"));
+    return true;
+  }
   if (!documentId || !window.AISystem6TeachText?.openDocument?.(documentId)) return false;
   setQuickDraftStatus(t("quick_draft_teachtext_done"));
   return true;
@@ -182,6 +192,21 @@ async function sendQuickDraftToReviewDesk() {
   }
   if (!await saveQuickDraftAsProjectDocument()) return false;
   const documentId = activeProjectQuickDraft({ create: false })?.record.workspace.projectDocId;
+  const file = documentId
+    ? chatFiles.find((item) => item.id === documentId && item.type === "text" && item.projectId === activeProjectId)
+    : null;
+  const dispatch = window.AISystem6ApplicationRegistry?.dispatchApplicationIntent;
+  if (file && typeof dispatch === "function") {
+    const result = await dispatch("reviewDesk", {
+      intent: "open",
+      items: [file],
+      sourceAppId: "quickDraft",
+      options: { mode: "facts" },
+    });
+    if (!result?.ok) return false;
+    setQuickDraftStatus(t("quick_draft_review_done"));
+    return true;
+  }
   if (!documentId || !await window.AISystem6ReviewDesk?.openDocument?.({ documentId, mode: "facts" })) return false;
   setQuickDraftStatus(t("quick_draft_review_done"));
   return true;

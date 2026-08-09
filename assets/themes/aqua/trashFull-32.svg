@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
+  <!-- Aqua 10.2 painter (shared recipe): saturated object, glossy top-left
+       light, deep bottom shade, thin dark rim. Same anatomy as the Liquid
+       Glass painter and the Yosemite flat family. No Apple art. -->
+  <defs>
+    <linearGradient id="g-body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#eaeaea"/>
+      <stop offset="0.45" stop-color="#d0d0d0"/>
+      <stop offset="1" stop-color="#8d8d8d"/>
+    </linearGradient>
+    <linearGradient id="g-soft" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f2f2f2"/>
+      <stop offset="1" stop-color="#cbcbcb"/>
+    </linearGradient>
+    <linearGradient id="g-gloss" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.9"/>
+      <stop offset="0.3" stop-color="#ffffff" stop-opacity="0.42"/>
+      <stop offset="0.7" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="g-spec" cx="0.24" cy="0.2" r="0.52">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.85"/>
+      <stop offset="0.42" stop-color="#ffffff" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="g-shade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0.55" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.3"/>
+    </linearGradient>
+    <clipPath id="cp-body">
+      <path d="M13 0h6v1h-6zM12 1h1v1h-1zM19 1h1v1h-1zM6 2h20v1h-20zM5 3h1v1h-1zM26 3h1v1h-1zM6 4h20v1h-20zM6 5h1v3h-1zM25 5h1v3h-1zM11 7h1v1h-1zM21 7h1v1h-1zM5 8h1v2h-1zM10 8h1v2h-1zM14 8h1v2h-1zM18 8h1v2h-1zM22 8h1v2h-1zM26 8h1v2h-1zM4 10h1v2h-1zM9 10h1v2h-1zM13 10h1v2h-1zM19 10h1v2h-1zM23 10h1v2h-1zM27 10h1v2h-1zM3 12h1v11h-1zM8 12h1v11h-1zM12 12h1v11h-1zM20 12h1v11h-1zM24 12h1v11h-1zM28 12h1v11h-1zM4 23h1v2h-1zM9 23h1v2h-1zM13 23h1v2h-1zM19 23h1v2h-1zM23 23h1v2h-1zM27 23h1v2h-1zM5 25h1v3h-1zM10 25h1v3h-1zM14 25h1v3h-1zM18 25h1v3h-1zM22 25h1v3h-1zM26 25h1v3h-1zM11 28h1v1h-1zM6 28h1v3h-1zM25 28h1v3h-1zM7 31h18v1h-18z" />
+    </clipPath>
+  </defs>
+  <path d="M13 0h6v1h-6zM12 1h1v1h-1zM19 1h1v1h-1zM6 2h20v1h-20zM5 3h1v1h-1zM26 3h1v1h-1zM6 4h20v1h-20zM6 5h1v3h-1zM25 5h1v3h-1zM11 7h1v1h-1zM21 7h1v1h-1zM5 8h1v2h-1zM10 8h1v2h-1zM14 8h1v2h-1zM18 8h1v2h-1zM22 8h1v2h-1zM26 8h1v2h-1zM4 10h1v2h-1zM9 10h1v2h-1zM13 10h1v2h-1zM19 10h1v2h-1zM23 10h1v2h-1zM27 10h1v2h-1zM3 12h1v11h-1zM8 12h1v11h-1zM12 12h1v11h-1zM20 12h1v11h-1zM24 12h1v11h-1zM28 12h1v11h-1zM4 23h1v2h-1zM9 23h1v2h-1zM13 23h1v2h-1zM19 23h1v2h-1zM23 23h1v2h-1zM27 23h1v2h-1zM5 25h1v3h-1zM10 25h1v3h-1zM14 25h1v3h-1zM18 25h1v3h-1zM22 25h1v3h-1zM26 25h1v3h-1zM11 28h1v1h-1zM6 28h1v3h-1zM25 28h1v3h-1zM7 31h18v1h-18z" fill="url(#g-body)" stroke="#1d1d1d" stroke-width="1" />
+  <g clip-path="url(#cp-body)">
+    <rect x="0" y="0" width="32" height="32" fill="url(#g-gloss)"/>
+    <rect x="0" y="0" width="32" height="32" fill="url(#g-spec)"/>
+    <rect x="0" y="0" width="32" height="32" fill="url(#g-shade)"/>
+    <rect x="1" y="0" width="30" height="1" fill="#ffffff" fill-opacity="0.55"/>
+    <rect x="0" y="1" width="1" height="30" fill="#ffffff" fill-opacity="0.4"/>
+  </g>
+  
+  
+</svg>

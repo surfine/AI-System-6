@@ -25,10 +25,10 @@ test.assertIncludes(
   "background: var(--liquid-disabled-control-bg);",
   "the shared disabled-control rule reads its surface from a scoped token",
 );
-for (const themeId of ["classic", "platinum", "liquid-glass"]) {
+for (const themeId of ["classic", "platinum", "aqua", "snow-leopard", "yosemite", "liquid-glass"]) {
   test.assertIncludes(menus, `themeId: "${themeId}"`, `Special → Appearance exposes ${themeId}`);
 }
-test.assertNotIncludes(menus, 'themeId: "aqua"', "Special → Appearance keeps research appearances out of the release menu");
+test.assertNotIncludes(menus, 'themeId: "unknown-theme"', "Special → Appearance never fabricates an unregistered theme");
 test.assertIncludes(menus, 'submenu("appearance", appearanceItems)', "Special owns one Appearance submenu instead of a second theme system");
 test.assertIncludes(dictionary, 'id: "liquid-glass-appearance"', "System Help keeps the stable Appearance dictionary record id");
 test.assertIncludes(dictionary, "Special → Appearance", "Help explains that the same running workspace changes appearance");

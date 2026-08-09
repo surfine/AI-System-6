@@ -1,5 +1,5 @@
 <!-- canonical-source: CHANGELOG.md -->
-<!-- source-sha256: 989aa70bcbfea4b963727a9ea8e5addd129a6912507e2cda5e2cb50396b46594 -->
+<!-- source-sha256: ae985c723cc942327e56d8ade95d4b79f544951a64f1aaa395bd73eaf53f9ef0 -->
 
 # AI System 6 中文更新日志
 
@@ -500,6 +500,36 @@ Liquid Glass 继续作为独立材质存在，而不是被复古修正误伤。
   应用可添加到主屏幕。
 - Draft Desk 耐久性契约扩展：恢复提示、选区与滚动位置持久化，以及引导、
   边界、交接、工作会话等更完整的可执行测试套件。
+
+## 系统化收口：应用服务 · 运行记录 · 助手活动 · 30 秒演示 — 2026-08-10
+
+- 应用服务：一个对象路由注册表统一决定“哪个应用处理这个对象/意图”。Finder
+  打开、文件 → 打开、钟点稿送出、审校/DocMap 菜单与 Droplet 都收敛到同一套
+  dispatch 契约；坏替身、跨项目对象与无处理者的情况都显式失败，不再静默回退。
+- 运行记录：既有的 ClioTalk run-record 工件扩展为项目级统一记录系统
+  （schemaVersion 2），覆盖 AI 与产出工件的操作；记录检查点接受/编辑/拒绝、
+  Get Info 的“产生自”溯源、System Status 的最近运行，以及“重复本次运行”。
+- 助手活动：单一状态源（offline / idle / reading / working / waiting /
+  ready / error）只由真实模型与运行事件派生，带停滞看门狗、项目切换重置、
+  取消与置于最前；System Status 通过语义 data-* hooks 暴露。
+- 30 秒演示：种子化、确定性的短演示（Start Here 与应用文件夹入口）展示一份
+  2026 年的来源变成摘录、再变成项目硬盘里的文稿——无需模型、无需网络，
+  退出时恢复原桌面。
+- 实战 Live Demo 保持原样；Theme/Appearance 文件未改动。
+
+## 公开测试版 1.0.37 — 2026-08-10
+
+- 应用服务：一个对象路由注册表统一决定“哪个应用处理这个对象/意图”；Finder
+  打开、文件 → 打开、钟点稿送出、审校/DocMap 菜单与 Droplet 都收敛到同一套
+  dispatch 契约，失败显式呈现。
+- 运行记录：ClioTalk run-record 扩展为项目级统一记录系统，覆盖 AI 与产出
+  工件的操作；记录检查点接受/编辑/拒绝、Get Info 溯源、System Status 最近
+  运行，以及“重复本次运行”。
+- 助手活动：单一状态源（offline / idle / reading / working / waiting /
+  ready / error）只由真实事件派生，System Status 展示并支持取消与置于最前。
+- 六套外观全部发布（System 6、Platinum、Aqua、Snow Leopard、Yosemite、
+  Liquid Glass）；研究开关移除，Theme Lab 移入系统文件夹。
+- 30 秒种子化演示展示来源如何变成项目硬盘里的文件，无需模型与网络。
 
 ## 一个月里真正变大的东西
 

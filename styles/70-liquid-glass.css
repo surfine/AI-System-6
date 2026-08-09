@@ -39,18 +39,14 @@ body.use-liquid-glass {
   --messages-bg: var(--liquid-pane-bg-color, rgba(255, 255, 255, 0.12));
   --details-bar-bg: var(--liquid-pane-bg-color, rgba(255, 255, 255, 0.12));
   --details-bar-border: rgba(16, 17, 20, 0.1);
-  --action-row-divider: 1px solid rgba(16, 17, 20, 0.1);
-  --message-divider: 1px solid rgba(255, 255, 255, 0.16);
   --context-panel-budget-border-top: 1px solid rgba(16, 17, 20, 0.1);
   --clio-file-chip-disabled-border: 1px solid rgba(16, 17, 20, 0.14);
   --empty-object-hatch-alt: rgba(255, 255, 255, 0.16);
   --soundscape-count-badge-border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
   --teachtext-popover-hr-border: 1px solid rgba(16, 17, 20, 0.12);
   --teachtext-subpopover-border-left: 1px solid rgba(16, 17, 20, 0.12);
-  --chat-transcript-article-border: 1px solid rgba(16, 17, 20, 0.12);
-  --import-row-border-bottom: 1px solid rgba(16, 17, 20, 0.12);
-  --pane-actions-border-bottom: 1px solid rgba(16, 17, 20, 0.1);
-  --documents-toolbar-border: 1px solid rgba(16, 17, 20, 0.1);
+  --system-primary-divider: 1px solid rgba(16, 17, 20, 0.1);
+  --system-secondary-divider: 1px solid rgba(16, 17, 20, 0.1);
   --large-icon-border: 1px solid rgba(255, 255, 255, 0.5);
   --image-manager-item-border: 1px solid rgba(255, 255, 255, 0.42);
   --image-manager-item-bg: rgba(255, 255, 255, 0.18);
@@ -146,7 +142,6 @@ body.use-liquid-glass {
   --scrap-list-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68);
   --scrap-empty-card-border: 1px solid rgba(255, 255, 255, 0.42);
   --scrap-empty-card-bg: rgba(255, 255, 255, 0.18);
-  --scrap-list-item-divider: 0;
   --scrap-list-mini-icon-border: 1px solid rgba(255, 255, 255, 0.5);
   --scrap-translation-badge-border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
   --import-preview-bg:
@@ -342,7 +337,6 @@ body.use-liquid-glass {
     0 18px 46px rgba(30, 43, 62, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.86);
   --clio-assembly-row-bg: rgba(255, 255, 255, 0.38);
-  --clio-assembly-divider: 1px solid rgba(16, 17, 20, 0.08);
   --clio-file-chip-bg: rgba(255, 255, 255, 0.2);
   --clio-file-chip-border: 1px solid rgba(16, 17, 20, 0.06);
   --clio-file-chip-radius: 8px;

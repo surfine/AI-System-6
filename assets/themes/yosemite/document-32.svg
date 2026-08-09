@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
+  <!-- 10.10 document: white page, folded top-right corner, light gray text
+       lines, hairline border. Flat Yosemite depth: corner fold + soft shade. -->
+  <defs>
+    <linearGradient id="g-page" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#f1f4f8"/>
+    </linearGradient>
+  </defs>
+  <path d="M6 3h13v5h7v19a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V3z" fill="url(#g-page)" stroke="#9db1c8" stroke-width="1"/>
+  <path d="M19 3h7v5h-7z" fill="#e8eef6" stroke="#9db1c8" stroke-width="1"/>
+  <path d="M19 8h7v1h-7z" fill="#c4d2e2"/>
+  <path d="M8 13h14v1H8zM8 17h16v1H8zM8 21h12v1H8zM8 25h14v1H8z" fill="#8b9bad"/>
+</svg>

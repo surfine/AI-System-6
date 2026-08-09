@@ -544,6 +544,64 @@ if (appearanceOrphans.length) {
   ok(`${APPEARANCE_FILE}: no orphan theme recipes`);
 }
 
+// --- Child-theme app-specific recipe ratchet --------------------------------
+//
+// Derived appearances (Platinum, Snow Leopard, Yosemite) inherit their
+// parent's DOM, interaction, and layout semantics and own only an era delta:
+// geometry, font, color, bevel, shadow, selection, scrollbar, window chrome,
+// era material. A child recipe whose base references a registered app-window
+// class is app-specific knowledge — it means every new business app needs a
+// per-child-era patch, and the three-family model has failed. Such selectors
+// may only decrease. A genuine system-level historical exception (for example
+// a Desk Accessory that is really a system component) goes into
+// budget.childAppSpecificAllowlist with a justification.
+const CHILD_THEME_IDS = ["platinum", "snow-leopard", "yosemite"];
+const SHARED_WINDOW_PRIMITIVES = new Set([".window", ".window-pane"]);
+const indexText = readFileSync(join(root, "index.html"), "utf8");
+const registeredWindowClasses = new Set();
+for (const match of indexText.matchAll(/class="([^"]+)"[^>]*data-window=/g)) {
+  for (const className of match[1].split(/\s+/)) {
+    if (className) registeredWindowClasses.add(`.${className}`);
+  }
+}
+const childAppAllowlist = new Set(budget.childAppSpecificAllowlist || []);
+const childAppPrefixes = budget.childAppSpecificPrefixes || [];
+const childAppViolations = [];
+let childAppSpecificCount = 0;
+for (const themeId of CHILD_THEME_IDS) {
+  const escapedId = themeId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const prefix = new RegExp(`^(?:html|body)\\[data-theme=["']${escapedId}["']\\](?:\\s+|$)`);
+  for (const selector of appearanceSelectors) {
+    if (!prefix.test(selector)) continue;
+    const base = selector.replace(prefix, "").trim();
+    const appTokens = extractClassIdTokens(base).filter((token) => {
+      if (SHARED_WINDOW_PRIMITIVES.has(token) || /^\.is-/.test(token)) return false;
+      if (childAppAllowlist.has(token) || childAppAllowlist.has(`${themeId}:${token}`)) return false;
+      const className = token.replace(/^[.#]/, "");
+      return registeredWindowClasses.has(token)
+        || childAppPrefixes.some((appPrefix) => className.startsWith(appPrefix));
+    });
+    if (!appTokens.length) continue;
+    childAppSpecificCount += 1;
+    childAppViolations.push({ themeId, selector, appTokens });
+  }
+}
+const childAppBudget = budget.childAppSpecificSelectorLimit;
+if (typeof childAppBudget !== "number") {
+  fail("scripts/css-budget.json is missing childAppSpecificSelectorLimit");
+} else if (childAppSpecificCount > childAppBudget) {
+  fail(
+    `${APPEARANCE_FILE}: child+app-specific selectors = ${childAppSpecificCount}, budget = ${childAppBudget}. ` +
+      `A child appearance must understand system controls, not business apps; promote the app surface to semantic tokens or a family recipe. Violations:`
+  );
+  childAppViolations.slice(0, 10).forEach(({ themeId, selector, appTokens }) => {
+    fail(`  ${themeId}: ${selector}   (app classes: ${appTokens.join(", ")})`);
+  });
+  fail("  Add a justified allowlist entry in scripts/css-budget.json only for a system-level historical exception.");
+} else {
+  ok(`${APPEARANCE_FILE}: child+app-specific selectors ${childAppSpecificCount}/${childAppBudget}`);
+}
+
 const OUTSIDE_THEME_SELECTOR_PATTERN = /\b(?:body(?:\.use-liquid-glass|:not\(\.use-liquid-glass\))|(?:html|body)\[data-theme(?:-family)?=)/;
 const outsideThemeBudgets = budget.themeSelectorsOutsideLiquid ?? {};
 cssFiles

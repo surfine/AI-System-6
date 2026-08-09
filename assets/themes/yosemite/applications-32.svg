@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
+  <!-- 10.10 Applications folder: the light-blue folder with a 2×2 grid of
+       generic app windows on its face — the same grid identity the Liquid
+       Glass applications object uses, restyled flat. Distinct folder
+       silhouette, not a uniform rounded rectangle. -->
+  <defs>
+    <linearGradient id="g-body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e6eef8"/>
+      <stop offset="1" stop-color="#c9d9ec"/>
+    </linearGradient>
+    <linearGradient id="g-tab" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#c4d9f0"/>
+      <stop offset="1" stop-color="#a9c4e2"/>
+    </linearGradient>
+    <linearGradient id="g-app" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#eef2f7"/>
+    </linearGradient>
+  </defs>
+  <path d="M4 5h9v3h15v17a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5z" fill="url(#g-body)" stroke="#8aa6c8" stroke-width="1"/>
+  <path d="M4 5a2 2 0 0 1 2-2h7l2 3H6a2 2 0 0 0-2 2V5z" fill="url(#g-tab)" stroke="#8aa6c8" stroke-width="1"/>
+  <g>
+    <rect x="9.2" y="11.6" width="6.2" height="5.4" rx="1" fill="url(#g-app)" stroke="#7f93ab" stroke-width="0.8"/>
+    <path d="M9.2 11.6a1 1 0 0 1 1-1h4.2a1 1 0 0 1 1 1v1.2h-6.2z" fill="#3e7cc4"/>
+    <rect x="16.6" y="11.6" width="6.2" height="5.4" rx="1" fill="url(#g-app)" stroke="#7f93ab" stroke-width="0.8"/>
+    <path d="M16.6 11.6a1 1 0 0 1 1-1h4.2a1 1 0 0 1 1 1v1.2h-6.2z" fill="#3e7cc4"/>
+    <rect x="9.2" y="18.2" width="6.2" height="5.4" rx="1" fill="url(#g-app)" stroke="#7f93ab" stroke-width="0.8"/>
+    <path d="M9.2 18.2a1 1 0 0 1 1-1h4.2a1 1 0 0 1 1 1v1.2h-6.2z" fill="#3e7cc4"/>
+    <rect x="16.6" y="18.2" width="6.2" height="5.4" rx="1" fill="url(#g-app)" stroke="#7f93ab" stroke-width="0.8"/>
+    <path d="M16.6 18.2a1 1 0 0 1 1-1h4.2a1 1 0 0 1 1 1v1.2h-6.2z" fill="#3e7cc4"/>
+  </g>
+</svg>

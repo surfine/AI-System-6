@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
+  <!-- 10.10 Documents: two overlapping documents. -->
+  <defs>
+    <linearGradient id="g-back" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e2e8ef"/>
+      <stop offset="1" stop-color="#c7d2df"/>
+    </linearGradient>
+    <linearGradient id="g-front" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#eef2f7"/>
+    </linearGradient>
+  </defs>
+  <path d="M8 8h9v3.5h5v11a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 8 22.5V8z" fill="url(#g-back)" stroke="#93a3b5" stroke-width="0.9"/>
+  <path d="M12 4h9v3.5h5v11a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 12 18.5V4z" fill="url(#g-front)" stroke="#8d9aab" stroke-width="1"/>
+  <path d="M21 4h5v3.5h-5z" fill="#dde5ee" stroke="#8d9aab" stroke-width="1"/>
+  <rect x="14.5" y="8.5" width="8" height="0.8" rx="0.4" fill="#a7b6c8"/>
+  <rect x="14.5" y="11.5" width="7" height="0.8" rx="0.4" fill="#c2cddb"/>
+</svg>

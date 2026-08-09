@@ -96,6 +96,22 @@ const dropletDefinitions = Object.freeze([
 
 const scriptableCommandById = new Map(dropletDefinitions.map((command) => [command.id, command]));
 
+// Droplet commands map onto Application Registry intents so a drop and a
+// Finder menu entry for the same object type resolve through the same object
+// routing contract. The registry owns "which app handles this object"; the
+// droplet set itself stays exactly the five declared above.
+const dropletApplicationRoutes = Object.freeze({
+  "droplet-docmap": { appId: "docMap", intent: "map" },
+  "droplet-slides": { appId: "clioStage", intent: "present" },
+  "droplet-projectcd": { appId: "projectCd", intent: "attach" },
+  "droplet-review": { appId: "reviewDesk", intent: "review" },
+  "droplet-markdown": { appId: "teachText", intent: "export" },
+});
+
+function dropletApplicationRoute(commandId) {
+  return dropletApplicationRoutes[String(commandId || "")] || null;
+}
+
 function dropletName(command) {
   return currentLanguage === "zh" ? command.nameZh : command.nameEn;
 }
@@ -174,6 +190,17 @@ async function runScriptableCommand(id, context = {}) {
   if (files.some((file) => !command.accepts.includes(file.type))) {
     setStatus(currentLanguage === "zh" ? "这个 Droplet 只接受文稿" : "This droplet accepts documents only");
     return false;
+  }
+  const route = dropletApplicationRoute(command.id);
+  const dispatch = route && window.AISystem6ApplicationRegistry?.dispatchApplicationIntent;
+  if (typeof dispatch === "function") {
+    return dispatch(route.appId, {
+      intent: route.intent,
+      items: files,
+      sourceAppId: "droplet",
+      projectId: activeProjectId,
+      options: { dropletId: command.id },
+    }).then((result) => result?.ok === true);
   }
   return command.handler(files, context);
 }

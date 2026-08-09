@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" shape-rendering="geometricPrecision">
+  <defs>
+    <linearGradient id="g-basket" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#eceff3"/>
+      <stop offset="1" stop-color="#c7cfd9"/>
+    </linearGradient>
+  </defs>
+  <path d="M4 6h8v6.5a1.5 1.5 0 0 1-1.5 1.5h-5A1.5 1.5 0 0 1 4 12.5V6z" fill="url(#g-basket)" stroke="#8d9aab" stroke-width="0.75"/>
+  <path d="M3.5 6h9v1.2h-9z" fill="#dde3ea" stroke="#8d9aab" stroke-width="0.75"/>
+  <path d="M6 7.5v4.5M8 7.5v4.5M10 7.5v4.5" stroke="#a5b1c0" stroke-width="0.9" stroke-linecap="round"/>
+</svg>

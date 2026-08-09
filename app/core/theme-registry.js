@@ -9,7 +9,6 @@
 
   const STORAGE_KEY = "ai-system-6-theme";
   const LEGACY_LIQUID_KEY = "ai-system-6-liquid-glass";
-  const RESEARCH_FLAG_KEY = "ai-system-6-research-appearances";
   const DEFAULT_THEME_ID = "classic";
 
   // recipeBase is a maintenance lineage, not a second active CSS class. A
@@ -46,13 +45,12 @@
       id: "aqua",
       label: "Aqua",
       labelKey: "theme_aqua",
-      // Inheritance law: Platinum follows Classic; everything else follows
-      // Liquid Glass. Aqua keeps its own research appearance but is built on
-      // the Liquid Glass recipe and overrides it toward Jaguar.
-      family: "liquid-glass",
-      recipeBase: "liquid-glass",
-      // Research appearance: not release-supported.
-      releaseReady: false,
+      // Aqua is its own recipe root. Liquid Glass was only the engineering
+      // donor while the Aqua branch was scaffolded; the finished appearance
+      // owns its material, geometry, and state rules under data-theme="aqua".
+      family: "aqua",
+      recipeBase: null,
+      releaseReady: true,
       systemFont: "Lucida Grande",
       systemFontSize: 13,
       fontStrategy: "theme",
@@ -63,11 +61,12 @@
       id: "snow-leopard",
       label: "Snow Leopard",
       labelKey: "theme_snow_leopard",
-      // Built on Liquid Glass under the inheritance law. May move to the
-      // Aqua recipe in the future once Aqua itself is LG-based.
-      family: "liquid-glass",
-      recipeBase: "liquid-glass",
-      releaseReady: false,
+      // Snow Leopard derives from the Aqua branch, not from Liquid Glass.
+      // It shares the Aqua control skeleton and replaces the Jaguar material
+      // with its own 10.6 token delta.
+      family: "aqua",
+      recipeBase: "aqua",
+      releaseReady: true,
       systemFont: "Lucida Grande",
       systemFontSize: 13,
       fontStrategy: "theme",
@@ -80,7 +79,7 @@
       labelKey: "theme_yosemite",
       family: "liquid-glass",
       recipeBase: "liquid-glass",
-      releaseReady: false,
+      releaseReady: true,
       systemFont: "Helvetica Neue",
       systemFontSize: 13,
       fontStrategy: "theme",
@@ -109,48 +108,12 @@
     return byId.has(id) ? id : DEFAULT_THEME_ID;
   }
 
-  // Release path: only release-supported appearances may become the active
-  // product theme, plus Yosemite (a limited release built on the Liquid
-  // Glass recipe). The Control Panel "research appearances" switch lets
-  // Aqua / Snow Leopard preview for this session; historical saved research
-  // ids migrate to a formal theme: aqua/snow-leopard -> classic.
+  // Release path: every era in the registry is a supported appearance and
+  // may become the active product theme. No research switch gates any theme.
   function normalizeReleaseThemeId(value) {
     const theme = byId.get(String(value || "").trim().toLowerCase());
-    if (theme?.id === "yosemite") return "yosemite";
-    if (isResearchEnabled() && theme) return theme.id;
     if (theme?.releaseReady) return theme.id;
     return DEFAULT_THEME_ID;
-  }
-
-  function isResearchEnabled() {
-    try {
-      return global.localStorage?.getItem(RESEARCH_FLAG_KEY) === "1";
-    } catch {
-      return false;
-    }
-  }
-
-  function setResearchEnabled(enabled) {
-    try {
-      if (enabled) global.localStorage?.setItem(RESEARCH_FLAG_KEY, "1");
-      else global.localStorage?.removeItem(RESEARCH_FLAG_KEY);
-    } catch {
-      // Research flag stays session-only when storage is blocked.
-    }
-    // Turning the flag off drops a research appearance back to its release
-    // mapping (Yosemite is a release theme and stays) and persists the result.
-    const mapped = normalizeReleaseThemeId(currentThemeId);
-    if (mapped !== currentThemeId) {
-      currentThemeId = mapped;
-      try {
-        global.localStorage?.setItem(STORAGE_KEY, mapped);
-        global.localStorage?.removeItem(LEGACY_LIQUID_KEY);
-      } catch {
-        // Appearance remains applied for this session when storage is blocked.
-      }
-    }
-    syncBody();
-    return isResearchEnabled();
   }
 
   function readInitialTheme(storage) {
@@ -180,10 +143,10 @@
     if (theme.recipeBase) element.dataset.themeBase = theme.recipeBase;
     else delete element.dataset.themeBase;
     if (element === global.document?.body) {
-      // The liquid-glass family shares one base: Liquid Glass itself and the
-      // appearances built on its recipe (Yosemite). The family class carries
-      // the shared rule structure; each member's own theme block then wins
-      // with a higher-specificity selector.
+      // Only the Liquid Glass family carries the glass skin class. Aqua and
+      // Snow Leopard live on their own family branch and own their rules
+      // directly under body[data-theme="..."], so they must not inherit the
+      // glass skin. Yosemite remains the single Liquid-Glass descendant.
       element.classList.toggle("use-liquid-glass", theme.family === "liquid-glass");
     }
   }
@@ -206,9 +169,9 @@
   function applyTheme(value, options = {}) {
     const previousId = currentThemeId;
     const experimental = options.experimental === true;
-    // Experimental previews (Theme Lab / development tooling) may switch to a
-    // research appearance for this session, but never persist it. The normal
-    // API only accepts release-supported themes.
+    // Experimental previews (Theme Lab / development tooling) switch for this
+    // session only and never persist. The normal API accepts every release
+    // theme in the registry.
     currentThemeId = experimental ? normalizeThemeId(value) : normalizeReleaseThemeId(value);
     const theme = syncBody();
     syncFontStrategy(options.modernFontPreference === true);
@@ -268,8 +231,6 @@
     themes: registry,
     normalizeThemeId,
     normalizeReleaseThemeId,
-    isResearchEnabled,
-    setResearchEnabled,
     readInitialTheme,
     applyTheme,
     previewExperimentalTheme,

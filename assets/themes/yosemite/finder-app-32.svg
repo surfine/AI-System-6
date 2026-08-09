@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
+  <!-- 10.10 Finder app icon: the classic split face — light top, blue bottom,
+       flat halves with a soft seam. Distinct silhouette, no uniform squircle. -->
+  <defs>
+    <linearGradient id="g-top" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f4f7fb"/>
+      <stop offset="1" stop-color="#d9e2ee"/>
+    </linearGradient>
+    <linearGradient id="g-bottom" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4d8fdd"/>
+      <stop offset="1" stop-color="#2b6bb8"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="5" width="24" height="22" rx="4" fill="url(#g-top)" stroke="#7f93ab" stroke-width="1"/>
+  <path d="M4 15.5h24v1H4z" fill="#b9c7d8"/>
+  <path d="M4 16h24v5.5a5.5 5.5 0 0 1-5.5 5.5h-13A5.5 5.5 0 0 1 4 21.5V16z" fill="url(#g-bottom)"/>
+  <path d="M8 9.5h10v0.9H8zM8 12h7v0.9H8z" fill="#7f93ab"/>
+  <path d="M8 18.5h10v0.9H8zM8 21h7v0.9H8z" fill="#ffffff" fill-opacity="0.85"/>
+</svg>

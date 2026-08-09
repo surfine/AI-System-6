@@ -1856,7 +1856,120 @@ function renderSystemStatus() {
       ? `${workspaceLabel} · ${modeLabel} · ${t("sideask")}`
       : `${workspaceLabel} · ${modeLabel}`;
   }
+  const activity = typeof window.AISystem6AssistantActivity?.getState === "function"
+    ? window.AISystem6AssistantActivity.getState()
+    : null;
+  renderAssistantActivityRow(activity);
+  const recentRuns = typeof window.AISystem6RunReceipts?.queryReceipts === "function"
+    ? window.AISystem6RunReceipts.queryReceipts({ limit: 5 })
+    : [];
+  renderSystemRecentRuns(recentRuns);
   window.AISystem6WebPlatform?.renderProjectStorageStatus?.();
+}
+
+const runReceiptAppLabelKeys = {
+  teachText: "teachtext_label",
+  docMap: "docmap",
+  reviewDesk: "review_desk",
+  clioStage: "clio_stage_label",
+  projectCd: "project_cd",
+  clioTalk: "assistant_label",
+  droplet: "droplet",
+  repeat: "run_receipt_repeat",
+};
+
+function runReceiptAppLabel(sourceAppId) {
+  const key = runReceiptAppLabelKeys[String(sourceAppId || "")];
+  return key ? t(key) : (String(sourceAppId || "—"));
+}
+
+function ensureSystemStatusPanelContainer(id) {
+  const pane = document.querySelector(".system-status-pane");
+  if (!pane) return null;
+  let el = document.getElementById(id);
+  if (!el) {
+    el = document.createElement("div");
+    el.id = id;
+    el.className = "system-status-subpanel";
+    pane.append(el);
+  }
+  return el;
+}
+
+function renderAssistantActivityRow(activity) {
+  const container = ensureSystemStatusPanelContainer("assistant-activity-panel");
+  if (!container) return;
+  container.replaceChildren();
+  const title = document.createElement("b");
+  title.textContent = t("assistant_activity_label");
+  title.dataset.i18n = "assistant_activity_label";
+  container.append(title);
+  const stateName = activity?.state || "idle";
+  const labelKey = activity?.labelKey || `activity_${stateName}`;
+  const row = document.createElement("div");
+  row.className = "assistant-activity-row";
+  row.dataset.assistantState = stateName;
+  row.dataset.runState = stateName;
+  row.dataset.activity = labelKey;
+  if (activity?.runId) row.dataset.activityRunId = activity.runId;
+  row.setAttribute("aria-label", t(labelKey));
+  const label = document.createElement("span");
+  label.className = "assistant-activity-label";
+  label.textContent = t(labelKey);
+  row.append(label);
+  if (activity?.cancellable && typeof window.AISystem6AssistantActivity?.cancelActiveRun === "function") {
+    const cancel = document.createElement("button");
+    cancel.type = "button";
+    cancel.className = "btn mini-btn";
+    cancel.textContent = t("stop_generation");
+    cancel.addEventListener("click", () => window.AISystem6AssistantActivity.cancelActiveRun());
+    row.append(cancel);
+  }
+  if ((activity?.bringToFrontTarget || activity?.ownerAppId) && typeof window.AISystem6AssistantActivity?.bringToFront === "function") {
+    const front = document.createElement("button");
+    front.type = "button";
+    front.className = "btn mini-btn";
+    front.textContent = t("run_receipt_bring_to_front");
+    front.addEventListener("click", () => window.AISystem6AssistantActivity.bringToFront());
+    row.append(front);
+  }
+  container.append(row);
+}
+
+function renderSystemRecentRuns(receipts = []) {
+  const container = ensureSystemStatusPanelContainer("system-recent-runs-panel");
+  if (!container) return;
+  container.replaceChildren();
+  const title = document.createElement("b");
+  title.textContent = t("recent_runs");
+  title.dataset.i18n = "recent_runs";
+  container.append(title);
+  if (!receipts.length) {
+    const empty = document.createElement("p");
+    empty.className = "hint";
+    empty.textContent = t("run_receipt_no_runs");
+    container.append(empty);
+    return;
+  }
+  const list = document.createElement("ol");
+  list.className = "system-recent-runs-list";
+  receipts.forEach((receipt) => {
+    const item = document.createElement("li");
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "system-recent-run";
+    button.dataset.receiptId = receipt.id || "";
+    const status = String(receipt.runReceipt?.status || "completed");
+    const app = runReceiptAppLabel(receipt.runReceipt?.sourceAppId || "");
+    const stamp = receipt.createdAt ? new Date(receipt.createdAt).toLocaleString() : "";
+    button.textContent = `${t(`run_status_${status}`)} · ${app} · ${stamp}`;
+    button.addEventListener("click", () => {
+      if (typeof openTextFile === "function") openTextFile(receipt.id);
+    });
+    item.append(button);
+    list.append(item);
+  });
+  container.append(list);
 }
 
 function formatNotificationTime(date = new Date()) {

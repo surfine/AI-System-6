@@ -211,6 +211,10 @@ function openFinderSelectedTeachTextFile() {
 function makeDocMapFromFinderOrCurrent() {
   const file = getFinderSelectedTeachTextFile();
   if (file?.body?.trim()) {
+    const dispatch = window.AISystem6ApplicationRegistry?.dispatchApplicationIntent;
+    if (typeof dispatch === "function") {
+      return dispatch("docMap", { intent: "map", items: [file], sourceAppId: "finder" });
+    }
     return withDocMap(() => makeDocMapFromCurrentSource({
       text: file.body.trim(),
       label: file.name,
@@ -237,6 +241,12 @@ function runStyleCheckFromMenu() {
 }
 
 function runClaimCheckFromMenu() {
+  const file = getFinderSelectedTeachTextFile();
+  const dispatch = window.AISystem6ApplicationRegistry?.dispatchApplicationIntent;
+  if (file && typeof dispatch === "function") {
+    dispatch("reviewDesk", { intent: "review", items: [file], sourceAppId: "finder" });
+    return;
+  }
   openFinderSelectedTeachTextFile();
   runClaimCheck();
 }
@@ -1008,6 +1018,13 @@ async function playWritingDemoFromGuide() {
   await window.AISystem6WritingDemo?.play?.();
 }
 
+async function playTeaserDemoFromGuide() {
+  // The 30-second teaser is seeded and deterministic: it needs no model,
+  // network, or profile switch, and always restores the user's desk.
+  await ensureWritingDemoModule();
+  await window.AISystem6WritingDemo?.playTeaser?.();
+}
+
 let applicationActionHandlersCache = null;
 let applicationCommandRegistryCache = null;
 
@@ -1144,6 +1161,7 @@ function getApplicationActionHandlers() {
     "open-clio-model-settings": openModelSettings,
     "guide-start-route": startGuidedWritingRoute,
     "play-writing-demo": playWritingDemoFromGuide,
+    "play-teaser-demo": playTeaserDemoFromGuide,
     "open-read-me": () => openSystemFolderDocument("readMe"),
     "open-flow-readme": () => openSystemFolderDocument("flow"),
     "open-memory-readme": () => openSystemFolderDocument("memory"),
@@ -1660,6 +1678,8 @@ function getApplicationActionHandlers() {
     "toggle-sideask": toggleSideAsk,
     "set-theme-classic": () => applyTheme("classic"),
     "set-theme-platinum": () => applyTheme("platinum"),
+    "set-theme-aqua": () => applyTheme("aqua"),
+    "set-theme-snow-leopard": () => applyTheme("snow-leopard"),
     "set-theme-yosemite": () => applyTheme("yosemite"),
     "set-theme-liquid-glass": () => applyTheme("liquid-glass"),
     "open-theme-lab": () => openWindow("themeLab"),

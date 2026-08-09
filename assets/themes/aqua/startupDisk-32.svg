@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
+  <!-- Aqua 10.2 painter (shared recipe): saturated object, glossy top-left
+       light, deep bottom shade, thin dark rim. Same anatomy as the Liquid
+       Glass painter and the Yosemite flat family. No Apple art. -->
+  <defs>
+    <linearGradient id="g-body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#eaeef3"/>
+      <stop offset="0.45" stop-color="#c9d2de"/>
+      <stop offset="1" stop-color="#85909e"/>
+    </linearGradient>
+    <linearGradient id="g-soft" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f2f5f8"/>
+      <stop offset="1" stop-color="#c6cdd6"/>
+    </linearGradient>
+    <linearGradient id="g-gloss" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.9"/>
+      <stop offset="0.3" stop-color="#ffffff" stop-opacity="0.42"/>
+      <stop offset="0.7" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="g-spec" cx="0.24" cy="0.2" r="0.52">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.85"/>
+      <stop offset="0.42" stop-color="#ffffff" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="g-shade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0.55" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.3"/>
+    </linearGradient>
+    <clipPath id="cp-body">
+      <path d="M6.5 4.5h17L27.5 8v19.5h-21z" />
+      <path d="M10.5 5v8h12V5M20 7v4M10 16.5h14v10H10z" />
+    </clipPath>
+  </defs>
+  <path d="M6.5 4.5h17L27.5 8v19.5h-21z" fill="url(#g-body)" stroke="#1d1d1d" stroke-width="1" />
+    <path d="M10.5 5v8h12V5M20 7v4M10 16.5h14v10H10z" fill="url(#g-body)" stroke="#1d1d1d" stroke-width="1" />
+  <g clip-path="url(#cp-body)">
+    <rect x="0" y="0" width="32" height="32" fill="url(#g-gloss)"/>
+    <rect x="0" y="0" width="32" height="32" fill="url(#g-spec)"/>
+    <rect x="0" y="0" width="32" height="32" fill="url(#g-shade)"/>
+    <rect x="1" y="0" width="30" height="1" fill="#ffffff" fill-opacity="0.55"/>
+    <rect x="0" y="1" width="1" height="30" fill="#ffffff" fill-opacity="0.4"/>
+  </g>
+  
+  <path d="M13.2 20c.4-1.5 1.8-2.5 3.6-2.5 2.1 0 3.5 1.2 3.5 2.8 0 2.1-3.2 2.3-3.2 4.1M17.1 25.8h.1" fill="none" stroke="#333333" stroke-width="1" stroke-linecap="square" />
+</svg>

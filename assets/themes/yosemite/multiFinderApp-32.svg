@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
+  <!-- 10.10 Multi-Finder: two overlapping app windows — the rear window sits
+       up-left in the lighter material, the front window carries the blue
+       title bar. Same two-window identity as the Liquid Glass object. -->
+  <defs>
+    <linearGradient id="g-back" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#dde5ee"/>
+      <stop offset="1" stop-color="#c2ccd8"/>
+    </linearGradient>
+    <linearGradient id="g-front" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#e8eef4"/>
+    </linearGradient>
+  </defs>
+  <rect x="4.5" y="6" width="17" height="15" rx="2" fill="url(#g-back)" stroke="#8d9aab" stroke-width="1"/>
+  <rect x="4.5" y="6" width="17" height="3" rx="2" fill="#9fb0c4"/>
+  <circle cx="7.5" cy="7.5" r="0.8" fill="#ffffff"/>
+  <circle cx="9.8" cy="7.5" r="0.8" fill="#ffffff"/>
+  <rect x="9.5" y="10.5" width="18.5" height="16" rx="2" fill="url(#g-front)" stroke="#8d9aab" stroke-width="1"/>
+  <rect x="9.5" y="10.5" width="18.5" height="3" rx="2" fill="#3e7cc4"/>
+  <circle cx="12.5" cy="12" r="0.9" fill="#ffffff"/>
+  <circle cx="15" cy="12" r="0.9" fill="#ffffff"/>
+  <rect x="12" y="16.5" width="12" height="0.9" rx="0.45" fill="#7f93ab"/>
+  <rect x="12" y="19.5" width="10" height="0.9" rx="0.45" fill="#a7b6c8"/>
+  <rect x="12" y="22.5" width="11" height="0.9" rx="0.45" fill="#a7b6c8"/>
+</svg>
