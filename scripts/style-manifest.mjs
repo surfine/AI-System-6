@@ -8,6 +8,7 @@ export const styleRuntimePaths = [
   "styles/50-apps.css",
   "styles/60-responsive.css",
   "styles/65-appearance-themes.css",
+  "styles/66-theme-lab.css",
   "styles/70-liquid-glass.css",
   "styles/80-bureaucracy-meme.css",
   "styles/85-liquid-cover.css",

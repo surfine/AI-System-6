@@ -56,6 +56,16 @@ drafts/ui-reform-after-pareto/
 drafts/theme-lab-current/
 drafts/theme-lab-fidelity-cache/
 drafts/theme-lab-fidelity/
+# local era icon reference caches (third-party captures / scratch renders);
+# owned measurements, provenance and built icons live in assets/themes/*/icons
+drafts/snow-leopard-icon-reference/
+drafts/liquid-glass-reference/captures/
+drafts/liquid-glass-reference/transcripts/
+drafts/yosemite-icon-reference/
+drafts/yosemite-icon-render/
+drafts/classic-icon-references/
+# local Python scratch caches
+scripts/__pycache__/
 # local 15MB test photo (bg-1..6 are the shipped backgrounds)
 assets/liquid-cover/test-shot.jpg
 native/nohup.out

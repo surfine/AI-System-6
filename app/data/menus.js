@@ -60,6 +60,7 @@ const editWithWriting = [
 const appearanceItems = [
   menuItem("set-theme-classic", "theme_classic", "", { themeId: "classic" }),
   menuItem("set-theme-platinum", "theme_platinum", "", { themeId: "platinum" }),
+  menuItem("set-theme-yosemite", "theme_yosemite", "", { themeId: "yosemite" }),
   menuItem("set-theme-liquid-glass", "theme_liquid_glass", "", { themeId: "liquid-glass" }),
 ];
 
@@ -135,6 +136,7 @@ const finderMenus = [
     menuItem("empty-trash", "empty_trash"),
     menuItem("erase-disk", "erase_disk"),
     menuItem("set-startup-project", "set_startup"),
+    menuItem("open-theme-lab", "theme_lab"),
   ]),
 ];
 

@@ -57,35 +57,37 @@ window.AISystem6RecoveryStorage = (() => {
     let db;
     try {
       db = await openAppDb();
-      const [storedProjects, storedScraps, storedTrash, storedFolders, storedFiles] = await Promise.all([
+      const [storedProjects, storedScraps, storedTrash, storedFolders, storedFiles, storedReferences, settings] = await Promise.all([
         readStoreAll(db, projectsStoreName),
         readStoreAll(db, scrapsStoreName),
         readStoreAll(db, trashStoreName),
         readStoreAll(db, chatFoldersStoreName),
         readStoreAll(db, chatFilesStoreName),
+        readStoreAll(db, referenceStoreName),
+        window.AISystem6StorageTransactions.runTransaction(
+          db,
+          [keyvalStoreName],
+          "readonly",
+          (tx) => idbRequest(tx.objectStore(keyvalStoreName).get("settings"))
+        ),
       ]);
-      const project = (Array.isArray(storedProjects) ? storedProjects : [])
-        .find((entry) => entry && entry.id === projectId);
-      if (!project) return null;
-      const bundle = {
-        format: "ai-system-6-project-disk",
-        formatVersion: window.AISystem6ProjectDiskBackup.currentFormatVersion,
-        schemaVersion: indexedDbVersion,
-        appVersion: window.AISystem6BuildInfo?.version || "",
-        appBuild: window.AISystem6BuildInfo?.build || "",
-        storageVersion,
-        exportedAt: new Date().toISOString(),
-        projectRevision: project.updatedAt || "",
-        project,
-        folders: (Array.isArray(storedFolders) ? storedFolders : []).filter((entry) => entry?.projectId === projectId),
-        files: (Array.isArray(storedFiles) ? storedFiles : []).filter((entry) => entry?.projectId === projectId),
-        scraps: (Array.isArray(storedScraps) ? storedScraps : []).filter((entry) => entry?.projectId === projectId),
-        trash: (Array.isArray(storedTrash) ? storedTrash : []).filter((entry) => entry?.projectId === projectId),
-        projectCdItems: [],
-        references: [],
-        documentRevisions: await readProjectDocumentRevisions(projectId),
-      };
-      return window.AISystem6ProjectDiskBackup.attachIntegrity(bundle);
+      const result = await window.AISystem6ProjectBackupAssembler.assembleProjectBackup({
+        projectId,
+        source: {
+          getProject: async () => (Array.isArray(storedProjects) ? storedProjects : [])
+            .find((entry) => entry && entry.id === projectId) || null,
+          getFolders: async () => (Array.isArray(storedFolders) ? storedFolders : []).filter((entry) => entry?.projectId === projectId),
+          getFiles: async () => (Array.isArray(storedFiles) ? storedFiles : []).filter((entry) => entry?.projectId === projectId),
+          getScraps: async () => (Array.isArray(storedScraps) ? storedScraps : []).filter((entry) => entry?.projectId === projectId),
+          getTrash: async () => (Array.isArray(storedTrash) ? storedTrash : []).filter((entry) => entry?.projectId === projectId),
+          getProjectCdItems: async () => (Array.isArray(settings?.projectCdItems) ? settings.projectCdItems : [])
+            .filter((entry) => entry?.projectId === projectId),
+          getReferences: async () => (Array.isArray(storedReferences) ? storedReferences : [])
+            .filter((entry) => entry?.projectId === projectId),
+          getDocumentRevisions: () => readProjectDocumentRevisions(projectId),
+        },
+      });
+      return result && result.ready ? result.bundle : null;
     } finally {
       db?.close();
     }

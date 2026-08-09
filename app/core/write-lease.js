@@ -30,7 +30,7 @@ try {
   instanceId = `instance-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-let leaseState = { writer: false, readOnly: false, claimedAt: 0 };
+let leaseState = { writer: false, readOnly: false, claimedAt: 0, mode: "readonly" };
 let heartbeatTimer = null;
 let broadcastChannel = null;
 let takeoverInFlight = null;
@@ -78,7 +78,12 @@ function storedLeaseBelongsToMe() {
 }
 
 function assertCanWrite() {
-  if (leaseState.writer !== true || !isCurrentStoredWriter()) {
+  // Handoff still owns the lease and may finish pending durable writes; only
+  // a true read-only instance is refused at the storage fence.
+  if (
+    (leaseState.mode !== "writer" && leaseState.mode !== "handoff")
+    || !isCurrentStoredWriter()
+  ) {
     const error = new Error("This window is read-only; another window owns the write lease.");
     error.code = "READ_ONLY_INSTANCE";
     throw error;
@@ -98,37 +103,21 @@ function notifyLeaseListeners(event) {
 
 function syncWriteModeDataset() {
   try {
-    document.body.dataset.writeMode = leaseState.writer ? "writer" : "readonly";
+    document.body.dataset.writeMode = leaseState.mode;
   } catch {}
 }
 
-// Read-only honesty: mutating surfaces become uneditable/disabled while this
-// instance does not own the lease. Reading, copying, sharing, downloading,
-// exporting backups, and Get Info stay available — the storage boundary
-// remains the final fence, this is the user-visible layer.
-const READ_ONLY_DISABLE_SELECTORS = [
-  "#quick-draft-draft",
-  "#quick-draft-save",
-  "#quick-draft-save-project-doc",
-  "[data-quick-draft-adjustment-apply]",
-  "[data-quick-draft-adjustment-develop]",
-  "[data-quick-draft-protect-selection]",
-  "[data-quick-draft-adjustment-enabled]",
-  "[data-quick-draft-adjustment-strength]",
-  "#teachtext-body",
-  "[data-action='new-folder']",
-  "[data-action='rename-file']",
-  "[data-action='rename-project-disk']",
-  "[data-action='move-file-trash']",
-  "[data-action='new-project-disk']",
-  "#new-project-disk-name",
-  "#project-disk-name-input",
-];
-
+// Read-only honesty is DECLARATIVE: every interactive element that mutates
+// durable / project state carries `data-requires-write` in the document, and
+// this single query freezes it when the instance is not the writer. Reading,
+// copying, sharing, downloading, exporting backups, and Get Info carry no such
+// marker and stay available. The storage boundary remains the final fence.
 function syncReadOnlySurface() {
-  const readOnly = !leaseState.writer;
+  // Handoff freezes new user mutations exactly like read-only: the old writer
+  // may finish pending durable writes but must not accept new edits.
+  const readOnly = leaseState.mode !== "writer";
   try {
-    document.querySelectorAll(READ_ONLY_DISABLE_SELECTORS.join(",")).forEach((element) => {
+    document.querySelectorAll("[data-requires-write]").forEach((element) => {
       const tag = element.tagName?.toLowerCase();
       if (tag === "textarea" || tag === "input" || tag === "select") {
         element.readOnly = readOnly;
@@ -139,7 +128,12 @@ function syncReadOnlySurface() {
 }
 
 function setWriter(value, claimedAt = 0) {
-  leaseState = { writer: value, readOnly: !value, claimedAt: value ? claimedAt : leaseState.claimedAt };
+  leaseState = {
+    writer: value,
+    readOnly: !value,
+    claimedAt: value ? claimedAt : leaseState.claimedAt,
+    mode: value ? "writer" : "readonly",
+  };
   syncWriteModeDataset();
   syncReadOnlySurface();
 }
@@ -228,8 +222,10 @@ function releaseWriteLease() {
   post({ type: "released", instanceId });
 }
 
-// Safe takeover handshake. The requesting instance (B) asks the current
-// writer (A) to flush; A replies ready/denied; B only claims after ready.
+// Safe takeover handshake. The requesting instance (C) asks the CURRENT
+// STORED WRITER (A) — by instance id — to flush; only A may reply
+// ready/denied; C claims only after ready. Read-only bystanders ignore the
+// request entirely.
 function requestSafeTakeover() {
   if (takeoverInFlight) return Promise.resolve({ ok: false, reason: "busy" });
   const stored = currentStoredLease();
@@ -242,8 +238,9 @@ function requestSafeTakeover() {
   if (stored.instanceId === instanceId) {
     return Promise.resolve({ ok: true, writer: true });
   }
+  const targetInstanceId = stored.instanceId;
   const requestId = `${instanceId}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
-  takeoverInFlight = { requestId, timeoutId: null };
+  takeoverInFlight = { requestId, targetInstanceId, timeoutId: null };
   return new Promise((resolve) => {
     const settle = (result) => {
       if (!takeoverInFlight || takeoverInFlight.requestId !== requestId) return;
@@ -255,7 +252,12 @@ function requestSafeTakeover() {
       settle({ ok: false, reason: "timeout" });
     }, TAKEOVER_TIMEOUT_MS);
     takeoverInFlight.resolve = settle;
-    post({ type: "takeover-request", instanceId, requestId });
+    post({
+      type: "takeover-request",
+      fromInstanceId: instanceId,
+      targetInstanceId,
+      requestId,
+    });
   });
 }
 
@@ -281,18 +283,50 @@ async function flushOldWriterBeforeTakeover() {
 }
 
 async function handleTakeoverRequest(message) {
-  if (message.requestId && takeoverInFlight?.requestId === message.requestId) {
-    // A and B cannot both be the old writer and the requester; ignore self-loop
-    // safety by instance id filtering in handleBroadcast.
+  // Only the targeted stored writer may answer; read-only bystanders ignore.
+  if (message.targetInstanceId !== instanceId) return;
+  if (!isCurrentStoredWriter()) return;
+
+  enterHandoff("takeover-request");
+  let flushOk = false;
+  let leaseStillMine = false;
+  try {
+    flushOk = await flushOldWriterBeforeTakeover();
+    // Between the flush and the release, confirm the stored lease is still
+    // ours — a rival claim during the flush must abort the handoff.
+    if (flushOk) leaseStillMine = storedLeaseBelongsToMe();
+  } catch (error) {
+    console.warn("Safe takeover flush failed.", error);
+    flushOk = false;
   }
-  const ok = await flushOldWriterBeforeTakeover();
-  if (!ok) {
-    post({ type: "takeover-denied", instanceId, requestId: message.requestId, reason: "unsaved-work" });
+  if (!flushOk) {
+    restoreWriterAfterFailedHandoff();
+    post({
+      type: "takeover-denied",
+      fromInstanceId: instanceId,
+      requestId: message.requestId,
+      reason: "unsaved-work",
+    });
+    return;
+  }
+  if (!leaseStillMine) {
+    // The lease moved during the flush: we can no longer restore writer mode.
+    enterReadOnly("takeover-lease-lost");
+    post({
+      type: "takeover-denied",
+      fromInstanceId: instanceId,
+      requestId: message.requestId,
+      reason: "lease-lost",
+    });
     return;
   }
   releaseWriteLease();
   enterReadOnly("takeover-complete");
-  post({ type: "takeover-ready", instanceId, requestId: message.requestId });
+  post({
+    type: "takeover-ready",
+    fromInstanceId: instanceId,
+    requestId: message.requestId,
+  });
 }
 
 function handleBroadcast(event) {
@@ -301,7 +335,13 @@ function handleBroadcast(event) {
   if (message.type === "takeover-request") {
     handleTakeoverRequest(message).catch((error) => {
       console.warn("Safe takeover flush failed.", error);
-      post({ type: "takeover-denied", instanceId, requestId: message.requestId, reason: "unsaved-work" });
+      restoreWriterAfterFailedHandoff();
+      post({
+        type: "takeover-denied",
+        fromInstanceId: instanceId,
+        requestId: message.requestId,
+        reason: "unsaved-work",
+      });
     });
     return;
   }
@@ -321,7 +361,7 @@ function handleBroadcast(event) {
     return;
   }
   if (message.type === "takeover" || message.type === "acquired" || message.type === "heartbeat") {
-    if (leaseState.writer) {
+    if (leaseState.mode !== "readonly") {
       stopHeartbeat();
       setWriter(false);
       notifyLeaseListeners({ type: "write-access-lost", owner: message.instanceId });
@@ -333,7 +373,7 @@ function handleStorageEvent(event) {
   if (event.key !== WRITE_LEASE_KEY) return;
   try {
     const lease = JSON.parse(event.newValue || "null");
-    if (lease && lease.instanceId !== instanceId && leaseIsFresh(lease) && leaseState.writer) {
+    if (lease && lease.instanceId !== instanceId && leaseIsFresh(lease) && leaseState.mode !== "readonly") {
       stopHeartbeat();
       setWriter(false);
       notifyLeaseListeners({ type: "write-access-lost", owner: lease.instanceId });
@@ -381,11 +421,15 @@ function initWriteLease() {
 }
 
 function isReadOnlyInstance() {
-  return leaseState.readOnly;
+  return leaseState.mode === "readonly";
 }
 
 function isWriteLeaseOwner() {
-  return leaseState.writer;
+  return leaseState.mode !== "readonly";
+}
+
+function canMutate() {
+  return leaseState.mode === "writer";
 }
 
 function onWriteLeaseEvent(listener) {
@@ -400,6 +444,40 @@ function enterReadOnly(reason = "write-access-lost") {
   if (typeof setStatus === "function") setStatus(t("read_only_instance_status"));
   if (typeof updateMenuState === "function") updateMenuState();
   return reason;
+}
+
+// Handoff: the lease is still ours, pending durable writes may finish, but
+// the UI freezes new mutations (syncReadOnlySurface treats handoff like
+// read-only) until the takeover resolves.
+function enterHandoff(reason = "takeover-request") {
+  if (leaseState.mode === "readonly") return false;
+  leaseState = {
+    ...leaseState,
+    writer: true,
+    readOnly: false,
+    mode: "handoff",
+  };
+  syncWriteModeDataset();
+  syncReadOnlySurface();
+  if (typeof setStatus === "function") setStatus(t("write_lease_handoff_status"));
+  if (typeof updateMenuState === "function") updateMenuState();
+  return reason;
+}
+
+// A failed handoff restores full writer mode: the lease was never released,
+// the user's edits stay intact and remain editable.
+function restoreWriterAfterFailedHandoff() {
+  if (leaseState.mode !== "handoff") return;
+  leaseState = {
+    ...leaseState,
+    writer: true,
+    readOnly: false,
+    mode: "writer",
+  };
+  syncWriteModeDataset();
+  syncReadOnlySurface();
+  if (typeof setStatus === "function") setStatus(t("write_lease_handoff_failed"));
+  if (typeof updateMenuState === "function") updateMenuState();
 }
 
 function showWriteLeaseDialog({ lost = false, denied = false } = {}) {
@@ -489,10 +567,13 @@ window.AISystem6WriteLease = Object.freeze({
   reconcile: reconcileWriteLease,
   isReadOnly: isReadOnlyInstance,
   isOwner: isWriteLeaseOwner,
+  canMutate,
   isCurrentStoredWriter,
   storedLeaseBelongsToMe,
   assertCanWrite,
   enterReadOnly,
+  enterHandoff,
+  restoreWriterAfterFailedHandoff,
   showConflict: () => showWriteLeaseDialog({ lost: false }),
   showLost: () => showWriteLeaseDialog({ lost: true }),
   showDenied: () => showWriteLeaseDialog({ denied: true }),

@@ -1,5 +1,5 @@
 <!-- canonical-source: CHANGELOG.md -->
-<!-- source-sha256: a060c6da3826e09965b0ed6aaf1d437682f11bfdaca2a865a332b10ac68c9599 -->
+<!-- source-sha256: 989aa70bcbfea4b963727a9ea8e5addd129a6912507e2cda5e2cb50396b46594 -->
 
 # AI System 6 中文更新日志
 
@@ -107,6 +107,29 @@
 - 研究外观（Aqua、Snow Leopard、Yosemite）保留 recipe、资产、canonical
   参照与 Theme Lab 支持，但只允许在开发环境通过 ?debugTheme= 预览；公开
   deployment 忽略该参数，始终回到已保存的正式外观。
+
+## v1.0.36 - 2026-08-09
+
+- Recovery 与正常导出共用同一个 Project Backup assembler：启动恢复面板导出
+  的备份与正常 Project Hard Disk 备份 schema 完全一致。Recovery 从真实
+  IndexedDB 源读取 Project CD 与 References，先 attach 再 verify，验证失败
+  拒绝下载。
+- Project Backup 走真实 validator 的 round-trip：复杂项目（嵌套文件夹、
+  alias 文件、scraps、带 chunks 的 references、Project CD、trash、修订父链、
+  Quick Draft 状态）导出、验证、remap 后所有 relation 仍指向存在对象——
+  包括 Quick Draft 的 projectDocId（现会重映射到导入后的文档）。
+- Takeover 按 instance id 定向到存储中的真正 writer，只读旁观者绝不应答。
+  旧 writer 进入 handoff 模式：冻结新的用户编辑、让 pending 落盘完成，
+  release 前复查存储 lease；flush 失败恢复 writer；flush 期间 lease 被抢则
+  转只读。
+- 研究预览默认拒绝：`?debugTheme=` 只在显式开发面（development capability
+  或 loopback）生效；未解析的 deployment profile 绝不视为开发环境。
+- 写入权限声明式化：变更型元素带 `data-requires-write`（UI 层冻结），
+  action 路由在 handler 前拒绝变更型命令，IndexedDB 仍是最终 fence；
+  Recovery 导出因只读事务而在只读实例中也可用。
+- 提供可复现的 Developer ID / Hardened Runtime / notarize / staple 管线
+  脚本与凭证契约。本环境没有签名身份，公证如实报告 NOT EXECUTED，beta
+  在提供凭证前保留 ad-hoc 提示。
 
 ## 第一版 — 1.0.0 / 2026-05-18
 

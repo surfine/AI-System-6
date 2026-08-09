@@ -2424,7 +2424,8 @@ function getActionAvailability() {
     "view-list": true,
     "hide-sidebars": true,
     "switch-language": true,
-    "toggle-writer-mode": false
+    "toggle-writer-mode": false,
+    "open-theme-lab": window.AISystem6Theme?.isResearchEnabled?.() === true
   };
   Object.keys(availability).forEach((action) => {
     if (!isWorkspaceActionAllowed(action)) availability[action] = false;

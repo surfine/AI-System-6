@@ -1,6 +1,6 @@
 {
   "name": "ai-system-6",
-  "version": "1.0.35",
+  "version": "1.0.36",
   "description": "A quiet, intentional AI desktop environment inspired by Macintosh System 6.",
   "license": "MIT",
   "main": "src/server.js",
@@ -20,6 +20,7 @@
     "prepare:runtime": "npm run build:app && npm run check:release-assets",
     "presmoke:release": "npm run build:app",
     "prestart": "npm run build:app",
+    "sign:mac-app": "node scripts/sign-mac-app.mjs",
     "smoke:release": "node scripts/smoke-release.mjs",
     "snapshot:theme-lab": "npm run build:app && node scripts/theme-lab-snapshot.mjs --update",
     "start": "node src/server.js",

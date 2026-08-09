@@ -17,7 +17,7 @@
     <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png" />
     <link rel="manifest" href="assets/app-icon/manifest.json" />
     <script src="app/core/theme-registry.js"></script>
-    <link rel="stylesheet" href="styles.bundle.css?v=20260809.9" />
+    <link rel="stylesheet" href="styles.bundle.css?v=20260809.10" />
   </head>
   <body class="is-booting">
     <script src="app/core/theme-body-init.js"></script>
@@ -302,7 +302,7 @@
             <section class="finder-operation-body">
               <h2 id="new-project-disk-title" data-i18n="new_project_disk_title">New Project Hard Disk</h2>
               <p id="new-project-disk-lede" class="finder-operation-lede" data-i18n="new_project_disk_lede">Name the new Project Hard Disk. The name appears on the desktop and in the project switcher.</p>
-              <input id="new-project-disk-name" type="text" data-i18n-aria-label="new_project_prompt" autocomplete="off" spellcheck="false" />
+              <input id="new-project-disk-name" type="text" data-requires-write data-i18n-aria-label="new_project_prompt" autocomplete="off" spellcheck="false" />
             </section>
           </div>
           <div class="button-row finder-operation-actions">
@@ -698,6 +698,7 @@
                 <div class="select-wrap"><select id="appearance-theme" data-balloon-help="balloon_theme_switcher">
                   <option value="classic" data-i18n="theme_classic">System 6</option>
                   <option value="platinum" data-i18n="theme_platinum">Platinum</option>
+                  <option value="yosemite" data-i18n="theme_yosemite">Yosemite</option>
                   <option value="liquid-glass" data-i18n="theme_liquid_glass">Liquid Glass</option>
                 </select></div>
               </label>
@@ -742,6 +743,10 @@
               <div class="field-row">
                 <input id="clio-web-search" type="checkbox" />
                 <label for="clio-web-search" data-i18n="clio_web_search_setting">Allow ClioTalk web search</label>
+              </div>
+              <div class="field-row">
+                <input id="research-appearances" type="checkbox" />
+                <label for="research-appearances" data-i18n="research_appearances">Research appearances &amp; Theme Lab (Aqua / Snow Leopard)</label>
               </div>
             </div>
           </details>
@@ -1221,7 +1226,7 @@
                   </section>
 
                   <div class="teachtext-editor-container draft-desk-editor" data-quick-draft-body-surface hidden>
-                    <textarea id="quick-draft-draft" rows="24" data-i18n-placeholder="quick_draft_draft_placeholder"></textarea>
+                    <textarea id="quick-draft-draft" rows="24" data-requires-write data-i18n-placeholder="quick_draft_draft_placeholder"></textarea>
                     <div id="quick-draft-preview" class="teachtext-preview is-hidden"></div>
                   </div>
                 </div>
@@ -1246,26 +1251,26 @@
                   <div class="draft-desk-layer-stack">
                     <div class="draft-desk-layer" data-quick-draft-adjustment-layer="mingming" data-balloon-help="quick_draft_layer_mingming_desc">
                       <label class="draft-desk-layer-row">
-                        <input type="checkbox" data-quick-draft-adjustment-enabled="mingming" checked />
+                        <input type="checkbox" data-requires-write data-quick-draft-adjustment-enabled="mingming" checked />
                         <i data-quick-draft-layer-order="mingming" aria-hidden="true"></i>
                         <span id="quick-draft-layer-mingming-label" data-i18n="quick_draft_chip_mingming">Mingming Pass</span>
                       </label>
-                      <span class="select-wrap-inline"><select data-quick-draft-adjustment-strength="mingming" aria-labelledby="quick-draft-layer-mingming-label quick-draft-adjustment-strength-label"><option value="25" data-i18n="quick_draft_adjustment_light">Light</option><option value="50" selected data-i18n="quick_draft_adjustment_standard">Normal</option><option value="75" data-i18n="quick_draft_adjustment_heavy">Strong</option></select></span>
+                      <span class="select-wrap-inline"><select data-requires-write data-quick-draft-adjustment-strength="mingming" aria-labelledby="quick-draft-layer-mingming-label quick-draft-adjustment-strength-label"><option value="25" data-i18n="quick_draft_adjustment_light">Light</option><option value="50" selected data-i18n="quick_draft_adjustment_standard">Normal</option><option value="75" data-i18n="quick_draft_adjustment_heavy">Strong</option></select></span>
                       <button class="btn mini-btn draft-desk-layer-disclosure" type="button" data-quick-draft-layer-disclosure="mingming" aria-expanded="false" aria-controls="quick-draft-layer-detail" data-i18n-aria-label="quick_draft_scope_edit">▶</button>
                     </div>
                     <div class="draft-desk-layer" data-quick-draft-adjustment-layer="luoluo" data-balloon-help="quick_draft_layer_luoluo_desc">
-                      <label class="draft-desk-layer-row"><input type="checkbox" data-quick-draft-adjustment-enabled="luoluo" checked /><i data-quick-draft-layer-order="luoluo" aria-hidden="true"></i><span id="quick-draft-layer-luoluo-label" data-i18n="quick_draft_chip_luoluo">Luoluo Receive</span></label>
-                      <span class="select-wrap-inline"><select data-quick-draft-adjustment-strength="luoluo" aria-labelledby="quick-draft-layer-luoluo-label quick-draft-adjustment-strength-label"><option value="25" data-i18n="quick_draft_adjustment_light">Light</option><option value="50" selected data-i18n="quick_draft_adjustment_standard">Normal</option><option value="75" data-i18n="quick_draft_adjustment_heavy">Strong</option></select></span>
+                      <label class="draft-desk-layer-row"><input type="checkbox" data-requires-write data-quick-draft-adjustment-enabled="luoluo" checked /><i data-quick-draft-layer-order="luoluo" aria-hidden="true"></i><span id="quick-draft-layer-luoluo-label" data-i18n="quick_draft_chip_luoluo">Luoluo Receive</span></label>
+                      <span class="select-wrap-inline"><select data-requires-write data-quick-draft-adjustment-strength="luoluo" aria-labelledby="quick-draft-layer-luoluo-label quick-draft-adjustment-strength-label"><option value="25" data-i18n="quick_draft_adjustment_light">Light</option><option value="50" selected data-i18n="quick_draft_adjustment_standard">Normal</option><option value="75" data-i18n="quick_draft_adjustment_heavy">Strong</option></select></span>
                       <button class="btn mini-btn draft-desk-layer-disclosure" type="button" data-quick-draft-layer-disclosure="luoluo" aria-expanded="false" aria-controls="quick-draft-layer-detail" data-i18n-aria-label="quick_draft_scope_edit">▶</button>
                     </div>
                     <div class="draft-desk-layer" data-quick-draft-adjustment-layer="hkrr" data-balloon-help="quick_draft_layer_hkrr_desc">
-                      <label class="draft-desk-layer-row"><input type="checkbox" data-quick-draft-adjustment-enabled="hkrr" checked /><i data-quick-draft-layer-order="hkrr" aria-hidden="true"></i><span id="quick-draft-layer-hkrr-label" data-i18n="quick_draft_chip_hkrr">HKRR Lift</span></label>
-                      <span class="select-wrap-inline"><select data-quick-draft-adjustment-strength="hkrr" aria-labelledby="quick-draft-layer-hkrr-label quick-draft-adjustment-strength-label"><option value="25" data-i18n="quick_draft_adjustment_light">Light</option><option value="50" selected data-i18n="quick_draft_adjustment_standard">Normal</option><option value="75" data-i18n="quick_draft_adjustment_heavy">Strong</option></select></span>
+                      <label class="draft-desk-layer-row"><input type="checkbox" data-requires-write data-quick-draft-adjustment-enabled="hkrr" checked /><i data-quick-draft-layer-order="hkrr" aria-hidden="true"></i><span id="quick-draft-layer-hkrr-label" data-i18n="quick_draft_chip_hkrr">HKRR Lift</span></label>
+                      <span class="select-wrap-inline"><select data-requires-write data-quick-draft-adjustment-strength="hkrr" aria-labelledby="quick-draft-layer-hkrr-label quick-draft-adjustment-strength-label"><option value="25" data-i18n="quick_draft_adjustment_light">Light</option><option value="50" selected data-i18n="quick_draft_adjustment_standard">Normal</option><option value="75" data-i18n="quick_draft_adjustment_heavy">Strong</option></select></span>
                       <button class="btn mini-btn draft-desk-layer-disclosure" type="button" data-quick-draft-layer-disclosure="hkrr" aria-expanded="false" aria-controls="quick-draft-layer-detail" data-i18n-aria-label="quick_draft_scope_edit">▶</button>
                     </div>
                     <div class="draft-desk-layer" data-quick-draft-adjustment-layer="density" data-balloon-help="quick_draft_layer_density_desc">
-                      <label class="draft-desk-layer-row"><input type="checkbox" data-quick-draft-adjustment-enabled="density" checked /><i data-quick-draft-layer-order="density" aria-hidden="true"></i><span id="quick-draft-layer-density-label" data-i18n="quick_draft_adjustment_density">Density</span></label>
-                      <span class="select-wrap-inline"><select data-quick-draft-adjustment-strength="density" aria-labelledby="quick-draft-layer-density-label quick-draft-adjustment-strength-label"><option value="25" data-i18n="quick_draft_adjustment_density_light">Less</option><option value="50" selected data-i18n="quick_draft_adjustment_density_standard">Normal</option><option value="75" data-i18n="quick_draft_adjustment_density_heavy">More</option></select></span>
+                      <label class="draft-desk-layer-row"><input type="checkbox" data-requires-write data-quick-draft-adjustment-enabled="density" checked /><i data-quick-draft-layer-order="density" aria-hidden="true"></i><span id="quick-draft-layer-density-label" data-i18n="quick_draft_adjustment_density">Density</span></label>
+                      <span class="select-wrap-inline"><select data-requires-write data-quick-draft-adjustment-strength="density" aria-labelledby="quick-draft-layer-density-label quick-draft-adjustment-strength-label"><option value="25" data-i18n="quick_draft_adjustment_density_light">Less</option><option value="50" selected data-i18n="quick_draft_adjustment_density_standard">Normal</option><option value="75" data-i18n="quick_draft_adjustment_density_heavy">More</option></select></span>
                       <button class="btn mini-btn draft-desk-layer-disclosure" type="button" data-quick-draft-layer-disclosure="density" aria-expanded="false" aria-controls="quick-draft-layer-detail" data-i18n-aria-label="quick_draft_scope_edit">▶</button>
                     </div>
                   </div>
@@ -1291,11 +1296,11 @@
                     <div class="draft-desk-protect-detail" id="quick-draft-protect-detail" hidden>
                       <input type="text" inputmode="text" data-quick-draft-protected-ranges data-i18n-placeholder="quick_draft_protected_placeholder" data-i18n-aria-label="quick_draft_protected_aria" />
                     </div>
-                    <button type="button" class="btn mini-btn" data-quick-draft-protect-selection data-i18n="quick_draft_protect_selection" data-balloon-help="balloon_qd_protect">Protect Selection</button>
+                    <button type="button" class="btn mini-btn" data-requires-write data-quick-draft-protect-selection data-i18n="quick_draft_protect_selection" data-balloon-help="balloon_qd_protect">Protect Selection</button>
                   </div>
                   <div class="draft-desk-mobile-inspector-actions">
-                    <button type="button" class="btn mini-btn" data-quick-draft-adjustment-apply data-i18n="quick_draft_preview_adjustments">Preview</button>
-                    <button type="button" class="btn mini-btn default" data-quick-draft-adjustment-develop data-i18n="quick_draft_develop" data-balloon-help="balloon_qd_develop">Develop</button>
+                    <button type="button" class="btn mini-btn" data-requires-write data-quick-draft-adjustment-apply data-i18n="quick_draft_preview_adjustments">Preview</button>
+                    <button type="button" class="btn mini-btn default" data-requires-write data-quick-draft-adjustment-develop data-i18n="quick_draft_develop" data-balloon-help="balloon_qd_develop">Develop</button>
                   </div>
                 </section>
                 <section class="draft-desk-inspector-section draft-desk-versions-section" data-balloon-help="balloon_qd_versions">
@@ -1330,9 +1335,9 @@
               </details>
               <details id="quick-draft-deliver" class="teachtext-command-menu draft-desk-command-menu draft-desk-deliver-menu">
                 <summary class="btn" role="button" aria-haspopup="menu" aria-expanded="false" aria-controls="quick-draft-deliver-menu"><span data-i18n="quick_draft_deliver">Deliver…</span></summary>
-                <div id="quick-draft-deliver-menu" class="teachtext-command-popover draft-desk-command-popover" role="menu"><section class="draft-desk-command-section"><b data-i18n="quick_draft_command_delivery">Delivery</b><button class="btn" type="button" id="quick-draft-save-project-doc" data-i18n="quick_draft_save_project_doc" data-balloon-help="balloon_qd_save_project">Save to Project Hard Disk</button><button class="btn" type="button" data-quick-draft-delivery="export-markdown" data-i18n="quick_draft_download_markdown" data-balloon-help="balloon_qd_export_md">Download Markdown</button><button class="btn" type="button" data-quick-draft-delivery="share-markdown" data-i18n="share_ellipsis" hidden>Share…</button><hr /><button class="btn" type="button" data-quick-draft-delivery="teachtext" data-i18n="quick_draft_continue_teachtext" data-balloon-help="balloon_qd_teachtext">Continue in TeachText</button><button class="btn" type="button" id="quick-draft-send-review" data-i18n="quick_draft_review_in_review_desk" data-balloon-help="balloon_qd_review">Review in Review Desk</button><button class="btn" type="button" data-quick-draft-delivery="copy-markdown" data-i18n="copy_markdown">Copy Markdown</button></section></div>
+                <div id="quick-draft-deliver-menu" class="teachtext-command-popover draft-desk-command-popover" role="menu"><section class="draft-desk-command-section"><b data-i18n="quick_draft_command_delivery">Delivery</b><button class="btn" type="button" data-requires-write id="quick-draft-save-project-doc" data-i18n="quick_draft_save_project_doc" data-balloon-help="balloon_qd_save_project">Save to Project Hard Disk</button><button class="btn" type="button" data-quick-draft-delivery="export-markdown" data-i18n="quick_draft_download_markdown" data-balloon-help="balloon_qd_export_md">Download Markdown</button><button class="btn" type="button" data-quick-draft-delivery="share-markdown" data-i18n="share_ellipsis" hidden>Share…</button><hr /><button class="btn" type="button" data-quick-draft-delivery="teachtext" data-i18n="quick_draft_continue_teachtext" data-balloon-help="balloon_qd_teachtext">Continue in TeachText</button><button class="btn" type="button" id="quick-draft-send-review" data-i18n="quick_draft_review_in_review_desk" data-balloon-help="balloon_qd_review">Review in Review Desk</button><button class="btn" type="button" data-quick-draft-delivery="copy-markdown" data-i18n="copy_markdown">Copy Markdown</button></section></div>
               </details>
-              <button class="btn default" type="button" id="quick-draft-save" data-i18n="quick_draft_start_writing">Draft</button>
+              <button class="btn default" type="button" data-requires-write id="quick-draft-save" data-i18n="quick_draft_start_writing">Draft</button>
             </footer>
           </form>
         </div>
@@ -1860,7 +1865,7 @@
           <div class="project-disk-toolbar" hidden>
             <label for="project-disk-name" data-i18n="project_name">Project name</label>
             <input id="project-disk-name" type="text" value="Untitled Project" />
-            <button class="btn default" type="button" id="new-project-disk" data-i18n="new_project">New</button>
+            <button class="btn default" type="button" data-requires-write id="new-project-disk" data-i18n="new_project">New</button>
           </div>
           <div class="project-finder-pathbar">
             <button class="btn" type="button" id="project-disk-up" data-i18n="all_documents">All Documents</button>
@@ -1954,7 +1959,7 @@
 
           <label class="teachtext-body-label" for="teachtext-body" data-i18n="text">Text</label>
           <div class="teachtext-editor-container">
-            <textarea id="teachtext-body" rows="16" aria-label="Text" data-i18n-aria-label="teachtext_body" placeholder="Start writing..." data-i18n-placeholder="start_writing" data-drop-target="editor-insert" data-editor-surface="teachtext"></textarea>
+            <textarea id="teachtext-body" rows="16" aria-label="Text" data-requires-write data-i18n-aria-label="teachtext_body" placeholder="Start writing..." data-i18n-placeholder="start_writing" data-drop-target="editor-insert" data-editor-surface="teachtext"></textarea>
             <div id="teachtext-preview" class="teachtext-preview is-hidden"></div>
           </div>
 
@@ -3704,6 +3709,7 @@ Glass</textarea>
             <div class="theme-lab-tabs" role="tablist">
               <button class="is-selected" type="button" role="tab" aria-selected="true" data-i18n="theme_lab_general">General</button>
               <button type="button" role="tab" aria-selected="false" data-i18n="theme_lab_advanced">Advanced</button>
+              <button type="button" role="tab" aria-selected="false" data-i18n="theme_lab_accounts">Accounts</button>
             </div>
             <div class="theme-lab-tab-panel" role="tabpanel"><span data-i18n="appearance">Appearance</span></div>
           </section>
@@ -3728,6 +3734,15 @@ Glass</textarea>
                   <span class="theme-lab-scrollbar-button is-increment"></span>
                 </div>
               </div>
+            </div>
+            <div class="theme-lab-snow-source-list" aria-hidden="true" lang="en" translate="no">
+              <h4 class="theme-lab-snow-group" data-i18n="theme_lab_snow_devices">Devices</h4>
+              <button type="button"><span class="sys-icon" data-system-icon="startupDisk" aria-hidden="true"></span><span>Macintosh HD</span></button>
+              <h4 class="theme-lab-snow-group" data-i18n="theme_lab_snow_places">Places</h4>
+              <button type="button"><span class="sys-icon" data-system-icon="folder" aria-hidden="true"></span><span>Desktop</span></button>
+              <button class="is-selected" type="button"><span class="sys-icon" data-system-icon="folder" aria-hidden="true"></span><span>Documents</span></button>
+              <button type="button"><span class="sys-icon" data-system-icon="folder" aria-hidden="true"></span><span>Applications</span></button>
+              <button type="button"><span class="sys-icon" data-system-icon="document" aria-hidden="true"></span><span>Downloads</span></button>
             </div>
             <div class="theme-lab-split-view theme-lab-aqua-browser" aria-label="Aqua column browser" data-theme-lab-reference="guidebook.macosx102.open-dialog" lang="en" translate="no">
               <div class="theme-lab-browser-column">
@@ -3843,6 +3858,63 @@ Glass</textarea>
             </div>
           </section>
 
+          <section class="theme-lab-group theme-lab-icon-set theme-lab-platinum-fixture" aria-labelledby="theme-lab-icon-set-title">
+            <h3 id="theme-lab-icon-set-title" data-i18n="theme_lab_icon_set">Platinum icon set</h3>
+            <div class="theme-lab-icon-grid">
+                <button type="button" class="theme-lab-icon-tile" title="startupDisk"><span class="sys-icon" data-system-icon="startupDisk" aria-hidden="true"></span><b>startup Disk</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="folder"><span class="sys-icon" data-system-icon="folder" aria-hidden="true"></span><b>folder</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="document"><span class="sys-icon" data-system-icon="document" aria-hidden="true"></span><b>document</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="applications"><span class="sys-icon" data-system-icon="applications" aria-hidden="true"></span><b>applications</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="trash"><span class="sys-icon" data-system-icon="trash" aria-hidden="true"></span><b>trash</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="finderApp"><span class="sys-icon" data-system-icon="finderApp" aria-hidden="true"></span><b>finder App</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="floppy"><span class="sys-icon" data-system-icon="fileFloppy" aria-hidden="true"></span><b>floppy</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="assistant"><span class="sys-icon" data-system-icon="assistant" aria-hidden="true"></span><b>assistant</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="quickDraft"><span class="sys-icon" data-system-icon="quickDraft" aria-hidden="true"></span><b>quick Draft</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="writingStudio"><span class="sys-icon" data-system-icon="writingStudio" aria-hidden="true"></span><b>writing Studio</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="projectDisk"><span class="sys-icon" data-system-icon="projectDisk" aria-hidden="true"></span><b>project Disk</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="projectDisc"><span class="sys-icon" data-system-icon="projectDisc" aria-hidden="true"></span><b>project Disc</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="cloudModel"><span class="sys-icon" data-system-icon="cloudModel" aria-hidden="true"></span><b>cloud Model</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="cloudModelOff"><span class="sys-icon" data-system-icon="cloudModelOff" aria-hidden="true"></span><b>cloud Model Off</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="questionSheet"><span class="sys-icon" data-system-icon="questionSheet" aria-hidden="true"></span><b>question Sheet</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="outline"><span class="sys-icon" data-system-icon="outline" aria-hidden="true"></span><b>outline</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="sectionDrafts"><span class="sys-icon" data-system-icon="sectionDrafts" aria-hidden="true"></span><b>section Drafts</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="manuscript"><span class="sys-icon" data-system-icon="manuscript" aria-hidden="true"></span><b>manuscript</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="reviewDesk"><span class="sys-icon" data-system-icon="reviewDesk" aria-hidden="true"></span><b>review Desk</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="searcher"><span class="sys-icon" data-system-icon="searcher" aria-hidden="true"></span><b>searcher</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="reader"><span class="sys-icon" data-system-icon="reader" aria-hidden="true"></span><b>reader</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="timeMachine"><span class="sys-icon" data-system-icon="timeMachine" aria-hidden="true"></span><b>time Machine</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="docMap"><span class="sys-icon" data-system-icon="docMap" aria-hidden="true"></span><b>doc Map</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="clioStage"><span class="sys-icon" data-system-icon="clioStage" aria-hidden="true"></span><b>clio Stage</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="clioChart"><span class="sys-icon" data-system-icon="clioChart" aria-hidden="true"></span><b>clio Chart</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="liquidCover"><span class="sys-icon" data-system-icon="liquidCover" aria-hidden="true"></span><b>liquid Cover</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="cmfStudio"><span class="sys-icon" data-system-icon="cmfStudio" aria-hidden="true"></span><b>cmf Studio</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="soundscape"><span class="sys-icon" data-system-icon="soundscape" aria-hidden="true"></span><b>soundscape</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="scrapbook"><span class="sys-icon" data-system-icon="scrapbook" aria-hidden="true"></span><b>scrapbook</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="systemFolder"><span class="sys-icon" data-system-icon="systemFolder" aria-hidden="true"></span><b>system Folder</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="helpFolder"><span class="sys-icon" data-system-icon="helpFolder" aria-hidden="true"></span><b>help Folder</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="importUtility"><span class="sys-icon" data-system-icon="importUtility" aria-hidden="true"></span><b>import Utility</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="controlPanel"><span class="sys-icon" data-system-icon="controlPanel" aria-hidden="true"></span><b>control Panel</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="chooser"><span class="sys-icon" data-system-icon="chooser" aria-hidden="true"></span><b>chooser</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="systemHelp"><span class="sys-icon" data-system-icon="systemHelp" aria-hidden="true"></span><b>system Help</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="dictionary"><span class="sys-icon" data-system-icon="dictionary" aria-hidden="true"></span><b>dictionary</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="teachText"><span class="sys-icon" data-system-icon="teachText" aria-hidden="true"></span><b>teach Text</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="writingDemo"><span class="sys-icon" data-system-icon="writingDemo" aria-hidden="true"></span><b>writing Demo</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="chatFile"><span class="sys-icon" data-system-icon="chatFile" aria-hidden="true"></span><b>chat File</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="chatImport"><span class="sys-icon" data-system-icon="chatImport" aria-hidden="true"></span><b>chat Import</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="systemStatus"><span class="sys-icon" data-system-icon="systemStatus" aria-hidden="true"></span><b>system Status</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="contextPanel"><span class="sys-icon" data-system-icon="contextPanel" aria-hidden="true"></span><b>context Panel</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="rebuildArticle"><span class="sys-icon" data-system-icon="rebuildArticle" aria-hidden="true"></span><b>rebuild Article</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="bureaucracyMeme"><span class="sys-icon" data-system-icon="bureaucracyMeme" aria-hidden="true"></span><b>bureaucracy Meme</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="endfieldTerminal"><span class="sys-icon" data-system-icon="endfieldTerminal" aria-hidden="true"></span><b>endfield Terminal</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="documents"><span class="sys-icon" data-system-icon="documents" aria-hidden="true"></span><b>documents</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="alias"><span class="sys-icon" data-system-icon="alias" aria-hidden="true"></span><b>alias</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="systemFile"><span class="sys-icon" data-system-icon="systemFile" aria-hidden="true"></span><b>system File</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="multiFinderApp"><span class="sys-icon" data-system-icon="multiFinderApp" aria-hidden="true"></span><b>multi Finder App</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="daHandler"><span class="sys-icon" data-system-icon="daHandler" aria-hidden="true"></span><b>da Handler</b></button>
+                <button type="button" class="theme-lab-icon-tile" title="writingBell"><span class="sys-icon" data-system-icon="writingBell" aria-hidden="true"></span><b>writing Bell</b></button>
+            </div>
+          </section>
+
           <section class="theme-lab-group theme-lab-finder" aria-labelledby="theme-lab-finder-title">
             <h3 id="theme-lab-finder-title" data-i18n="theme_lab_finder">Finder surface</h3>
             <div class="theme-lab-mini-windows">
@@ -3870,6 +3942,19 @@ Glass</textarea>
                   <button class="theme-lab-toolbar-icon-button" type="button"><span class="theme-lab-toolbar-role-icon is-applications" aria-hidden="true"></span><small>Applications</small></button>
                 </div>
                 <label class="theme-lab-toolbar-search"><input type="search" value="" placeholder="Search" aria-label="Finder search" /></label>
+              </div>
+              <div class="theme-lab-snow-toolbar" aria-hidden="true" lang="en" translate="no">
+                <strong class="theme-lab-snow-title">Macintosh HD</strong>
+                <div class="theme-lab-snow-nav">
+                  <button class="theme-lab-snow-droplet is-back" type="button" aria-label="Back"></button>
+                  <button class="theme-lab-snow-droplet is-forward" type="button" aria-label="Forward"></button>
+                </div>
+                <div class="theme-lab-snow-view-controls" role="group" aria-label="View controls">
+                  <button class="is-selected" type="button" aria-label="Icon view"><span class="theme-lab-view-icon is-icon" aria-hidden="true"></span></button>
+                  <button type="button" aria-label="List view"><span class="theme-lab-view-icon is-list" aria-hidden="true"></span></button>
+                  <button type="button" aria-label="Column view"><span class="theme-lab-view-icon is-columns" aria-hidden="true"></span></button>
+                </div>
+                <label class="theme-lab-snow-search"><input type="search" placeholder="Search" aria-label="Finder search" /></label>
               </div>
               <div class="theme-lab-finder-status-strip" aria-hidden="true" lang="en" translate="no"><span>2 items</span></div>
               <div class="theme-lab-finder-surface">
@@ -3936,7 +4021,7 @@ Glass</textarea>
       </section>
     </main>
 
-    <script src="app/generated/build-info.js?v=20260809.9"></script>
-    <script src="app.bundle.js?v=20260809.9"></script>
+    <script src="app/generated/build-info.js?v=20260809.10"></script>
+    <script src="app.bundle.js?v=20260809.10"></script>
   </body>
 </html>

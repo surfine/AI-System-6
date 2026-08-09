@@ -471,17 +471,26 @@ const {
 document.body.dataset.appReady = "booting";
 window.AISystem6Theme?.syncBody();
 const bootThemeId = getCurrentTheme();
+
+// Development surfaces are explicit only: an explicit capabilities flag, or
+// loopback hosts. An UNRESOLVED deployment profile is never treated as
+// development, so public hosted deployments cannot unlock research previews
+// before /api/capabilities resolves.
+function isDevelopmentSurface() {
+  if (window.AISystem6Capabilities?.development === true) return true;
+  const hostname = String(window.location.hostname || "").toLowerCase();
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]";
+}
+
 const bootSearch = String(window.location?.search || "");
 const bootDebugMatch = bootSearch.match(/[?&]debugTheme=([a-z0-9-]+)/i);
 const bootDebugId = bootDebugMatch ? bootDebugMatch[1].toLowerCase() : "";
 const bootDebugTheme = bootDebugId ? window.AISystem6Theme?.getTheme?.(bootDebugId) : null;
 // Research appearances preview only through ?debugTheme= on a development
-// surface (local server, localhost, or an explicit development capability).
-// Public hosted deployments ignore the parameter and always land on the
-// saved release Appearance.
-const developmentPreviewAllowed = window.AISystem6Capabilities?.development === true
-  || document.documentElement.dataset.deploymentProfile !== "public"
-  || ["localhost", "127.0.0.1"].includes(window.location.hostname || "");
+// surface (explicit development capability or loopback). Public hosted
+// deployments — including before capabilities resolve — ignore the parameter
+// and always land on the saved release Appearance.
+const developmentPreviewAllowed = isDevelopmentSurface();
 if (bootDebugTheme && bootDebugTheme.releaseReady === false && developmentPreviewAllowed) {
   // Dev-only session preview, never persisted: the Appearance selector keeps
   // reflecting the release base, and a reload without the parameter restores

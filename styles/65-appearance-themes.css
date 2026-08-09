@@ -59,8 +59,15 @@ body[data-theme="platinum"] {
   --shade: #999999;
   --shade-dark: #777777;
   --rule: #888888;
-  --desktop: #9999cc;
-  --desktop-surface: #9999cc;
+  /* Abstracted from the Mac OS 9 default wallpaper (512 Pixels capture): a
+     light blue field with a subtle diagonal accent band and a brighter
+     crest. Measured from the 5120x3840 original, no raster payload. */
+  --desktop: #d1dcf8;
+  --desktop-surface:
+    linear-gradient(115deg,
+      #d1dcf8 0%, #c7d4f1 18%, #b7cbf0 28%,
+      #dce7fc 38%, #e3ebfe 48%, #d9e3fa 58%,
+      #c7d4f1 74%, #b7cbf0 86%, #d1dcf8 100%);
   --pane-bg: #dddddd;
   --window-bg: #cccccc;
   --window-border: 1px solid #000000;
@@ -598,10 +605,292 @@ body[data-theme="platinum"] {
   --theme-lab-finder-row-padding: 1px 5px;
   --theme-lab-finder-row-border-bottom: 0;
   --theme-lab-finder-row-icon-size: 16px;
+  /* Alarm Clock DA: Platinum chrome (Mac OS 9). 1px black frame with the
+     bevel window shadow, striped Platinum title bar, white face and readout,
+     square bevel close box and lever. Classic and Liquid Glass keep their
+     own dedicated sets; Platinum must not inherit the System 6 look. */
+  --alarm-clock-frame-border: 1px solid #000000;
+  --alarm-clock-frame-radius: 0;
+  --alarm-clock-frame-shadow: var(--window-shadow);
+  --alarm-clock-title-bg: var(--system-titlebar-active-bg);
+  --alarm-clock-surface-bg: #dddddd;
+  --alarm-clock-readout-bg: #ffffff;
+  --alarm-clock-divider: 1px solid #000000;
+  --alarm-clock-active-bg: #000000;
+  --alarm-clock-active-fg: #ffffff;
+  --alarm-clock-close-size: 10px;
+  --alarm-clock-close-border: 1px solid #000000;
+  --alarm-clock-close-radius: 0;
+  --alarm-clock-close-bg: #ffffff;
+  --alarm-clock-close-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #888888;
+  --alarm-clock-lever-radius: 0;
+  --alarm-clock-lever-bg: #dddddd;
+  --alarm-clock-lever-hover-bg: #eeeeee;
+  --alarm-clock-lever-fg: #000000;
+  --alarm-clock-lever-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #888888;
+  --alarm-clock-lever-focus-outline: 1px dotted #000000;
+  --alarm-clock-mode-divider: 1px solid #000000;
+  --alarm-clock-mode-radius: 0;
+  --alarm-clock-mode-bg: #dddddd;
+  --alarm-clock-mode-hover-bg: #eeeeee;
+  --alarm-clock-mode-active-shadow: inset 0 0 0 3px #ffffff;
+  --alarm-clock-section-gap: 0px;
+}
+
+/* Platinum icon family: the middle state between Classic 1-bit line art and
+   Liquid Glass. Filled painter shapes (the application's own silhouettes,
+   Mac OS 9-style gradient bodies, dark outlines) replace the 1-bit glyph on
+   the desktop/finder icons; the CSS drop-shadow adds depth. Menus and the
+   control strip keep the light 1-bit glyph. */
+body[data-theme="platinum"] .sys-icon:is([data-system-icon="startupDisk"],[data-system-icon="hardDisk"],[data-system-icon="folder"],[data-system-icon="document"],[data-system-icon="applications"],[data-system-icon="trash"],[data-system-icon="finderApp"],[data-system-icon="fileFloppy"],[data-system-icon="assistant"],[data-system-icon="quickDraft"],[data-system-icon="writingStudio"],[data-system-icon="projectDisk"],[data-system-icon="projectDisc"],[data-system-icon="cloudModel"],[data-system-icon="cloudModelOff"],[data-system-icon="questionSheet"],[data-system-icon="outline"],[data-system-icon="sectionDrafts"],[data-system-icon="manuscript"],[data-system-icon="reviewDesk"],[data-system-icon="searcher"],[data-system-icon="reader"],[data-system-icon="timeMachine"],[data-system-icon="docMap"],[data-system-icon="clioStage"],[data-system-icon="clioChart"],[data-system-icon="liquidCover"],[data-system-icon="cmfStudio"],[data-system-icon="soundscape"],[data-system-icon="scrapbook"],[data-system-icon="systemFolder"],[data-system-icon="helpFolder"],[data-system-icon="importUtility"],[data-system-icon="controlPanel"],[data-system-icon="chooser"],[data-system-icon="systemHelp"],[data-system-icon="dictionary"],[data-system-icon="teachText"],[data-system-icon="writingDemo"],[data-system-icon="chatFile"],[data-system-icon="chatImport"],[data-system-icon="systemStatus"],[data-system-icon="contextPanel"],[data-system-icon="rebuildArticle"],[data-system-icon="bureaucracyMeme"],[data-system-icon="endfieldTerminal"],[data-system-icon="documents"],[data-system-icon="alias"],[data-system-icon="systemFile"],[data-system-icon="multiFinderApp"],[data-system-icon="daHandler"],[data-system-icon="writingBell"],[data-system-icon="trashFull"], [data-system-icon="control"]) {
+  background-color: transparent;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  filter: drop-shadow(1px 1px 1px rgba(0, 0, 0, 0.45));
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="startupDisk"] {
+  background-image: url("./assets/themes/platinum/startup-disk-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="hardDisk"] {
+  background-image: url("./assets/themes/platinum/startup-disk-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="folder"] {
+  background-image: url("./assets/themes/platinum/folder-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="document"] {
+  background-image: url("./assets/themes/platinum/document-16.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="applications"] {
+  background-image: url("./assets/themes/platinum/applications-16.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="trash"] {
+  background-image: url("./assets/themes/platinum/trash-16.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="trashFull"] {
+  background-image: url("./assets/themes/platinum/trashFull-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="finderApp"] {
+  background-image: url("./assets/themes/platinum/finder-app-16.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="fileFloppy"] {
+  background-image: url("./assets/themes/platinum/floppy-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="assistant"] {
+  background-image: url("./assets/themes/platinum/assistant-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="quickDraft"] {
+  background-image: url("./assets/themes/platinum/quickDraft-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="writingStudio"] {
+  background-image: url("./assets/themes/platinum/writingStudio-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="projectDisk"] {
+  background-image: url("./assets/themes/platinum/projectDisk-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="projectDisc"] {
+  background-image: url("./assets/themes/platinum/projectDisc-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="cloudModel"] {
+  background-image: url("./assets/themes/platinum/cloudModel-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="cloudModelOff"] {
+  background-image: url("./assets/themes/platinum/cloudModelOff-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="questionSheet"] {
+  background-image: url("./assets/themes/platinum/questionSheet-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="outline"] {
+  background-image: url("./assets/themes/platinum/outline-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="sectionDrafts"] {
+  background-image: url("./assets/themes/platinum/sectionDrafts-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="manuscript"] {
+  background-image: url("./assets/themes/platinum/manuscript-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="reviewDesk"] {
+  background-image: url("./assets/themes/platinum/reviewDesk-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="searcher"] {
+  background-image: url("./assets/themes/platinum/searcher-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="reader"] {
+  background-image: url("./assets/themes/platinum/reader-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="timeMachine"] {
+  background-image: url("./assets/themes/platinum/timeMachine-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="docMap"] {
+  background-image: url("./assets/themes/platinum/docMap-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="clioStage"] {
+  background-image: url("./assets/themes/platinum/clioStage-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="clioChart"] {
+  background-image: url("./assets/themes/platinum/clioChart-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="liquidCover"] {
+  background-image: url("./assets/themes/platinum/liquidCover-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="cmfStudio"] {
+  background-image: url("./assets/themes/platinum/cmfStudio-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="soundscape"] {
+  background-image: url("./assets/themes/platinum/soundscape-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="scrapbook"] {
+  background-image: url("./assets/themes/platinum/scrapbook-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="systemFolder"] {
+  background-image: url("./assets/themes/platinum/systemFolder-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="helpFolder"] {
+  background-image: url("./assets/themes/platinum/helpFolder-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="importUtility"] {
+  background-image: url("./assets/themes/platinum/importUtility-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="controlPanel"] {
+  background-image: url("./assets/themes/platinum/controlPanel-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="chooser"] {
+  background-image: url("./assets/themes/platinum/chooser-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="systemHelp"] {
+  background-image: url("./assets/themes/platinum/systemHelp-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="dictionary"] {
+  background-image: url("./assets/themes/platinum/dictionary-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="teachText"] {
+  background-image: url("./assets/themes/platinum/teachText-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="writingDemo"] {
+  background-image: url("./assets/themes/platinum/writingDemo-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="chatFile"] {
+  background-image: url("./assets/themes/platinum/chatFile-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="chatImport"] {
+  background-image: url("./assets/themes/platinum/chatImport-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="systemStatus"] {
+  background-image: url("./assets/themes/platinum/systemStatus-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="contextPanel"] {
+  background-image: url("./assets/themes/platinum/contextPanel-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="rebuildArticle"] {
+  background-image: url("./assets/themes/platinum/rebuildArticle-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="bureaucracyMeme"] {
+  background-image: url("./assets/themes/platinum/bureaucracyMeme-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="endfieldTerminal"] {
+  background-image: url("./assets/themes/platinum/endfieldTerminal-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="documents"] {
+  background-image: url("./assets/themes/platinum/documents-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="alias"] {
+  background-image: url("./assets/themes/platinum/alias-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="systemFile"] {
+  background-image: url("./assets/themes/platinum/systemFile-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="multiFinderApp"] {
+  background-image: url("./assets/themes/platinum/multiFinderApp-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="daHandler"] {
+  background-image: url("./assets/themes/platinum/daHandler-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="writingBell"] {
+  background-image: url("./assets/themes/platinum/writingBell-32.svg");
+}
+
+body[data-theme="platinum"] :is([data-system-icon="startupDisk"],[data-system-icon="hardDisk"],[data-system-icon="folder"],[data-system-icon="document"],[data-system-icon="applications"],[data-system-icon="trash"],[data-system-icon="finderApp"],[data-system-icon="fileFloppy"],[data-system-icon="assistant"],[data-system-icon="quickDraft"],[data-system-icon="writingStudio"],[data-system-icon="projectDisk"],[data-system-icon="projectDisc"],[data-system-icon="cloudModel"],[data-system-icon="questionSheet"],[data-system-icon="outline"],[data-system-icon="sectionDrafts"],[data-system-icon="manuscript"],[data-system-icon="reviewDesk"],[data-system-icon="searcher"],[data-system-icon="reader"],[data-system-icon="timeMachine"],[data-system-icon="docMap"],[data-system-icon="clioStage"],[data-system-icon="clioChart"],[data-system-icon="liquidCover"],[data-system-icon="cmfStudio"],[data-system-icon="soundscape"],[data-system-icon="scrapbook"],[data-system-icon="systemFolder"],[data-system-icon="helpFolder"],[data-system-icon="importUtility"],[data-system-icon="controlPanel"],[data-system-icon="chooser"],[data-system-icon="systemHelp"],[data-system-icon="dictionary"],[data-system-icon="teachText"],[data-system-icon="writingDemo"],[data-system-icon="chatFile"],[data-system-icon="chatImport"],[data-system-icon="systemStatus"],[data-system-icon="contextPanel"],[data-system-icon="rebuildArticle"],[data-system-icon="bureaucracyMeme"],[data-system-icon="endfieldTerminal"],[data-system-icon="documents"],[data-system-icon="alias"],[data-system-icon="systemFile"],[data-system-icon="multiFinderApp"],[data-system-icon="daHandler"],[data-system-icon="writingBell"], [data-system-icon="control"]) .sys-icon-svg {
+  display: none;
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="control"] {
+  background-image: url("./assets/themes/platinum/controlPanel-32.svg");
+}
+
+body[data-theme="platinum"] :is(.menu-bar, .control-strip) .sys-icon {
+  background-color: var(--paper);
+  background-image: none;
+  filter: none;
+}
+
+body[data-theme="platinum"] :is(.menu-bar, .control-strip) .sys-icon .sys-icon-svg {
+  display: block;
+}
+/* Era wallpapers override the System 6 desktop grid from the theme layer:
+   Platinum uses the abstracted Mac OS 9 field; the Liquid Glass family
+   (Aqua / Snow Leopard / Yosemite) paints their measured wallpaper ramps. */
+body[data-theme="platinum"] .desktop,
+body.use-liquid-glass[data-theme="aqua"] .desktop,
+body.use-liquid-glass[data-theme="snow-leopard"] .desktop,
+body.use-liquid-glass[data-theme="yosemite"] .desktop {
+  background: var(--desktop-surface);
 }
 
 html[data-theme="aqua"],
-body[data-theme="aqua"] {
+body.use-liquid-glass[data-theme="aqua"] {
   /* Jaguar evidence boundary: Apple's June 2002 Aqua HIG owns control geometry;
      original 10.2 captures own final appearance. Quaqua 9.1 supplies the
      explicitly Jaguar pinstripe, 22px title bar, wrap tabs and file chooser.
@@ -704,8 +993,13 @@ body[data-theme="aqua"] {
   --details-bar-bg:
     repeating-linear-gradient(to bottom, #f1f1f1 0 1px, #ffffff 1px 2px, #f1f1f1 2px 3px, #eaeaea 3px 4px);
   --details-bar-border: #7f7f7f;
-  --desktop: #4772ad;
-  --desktop-surface: #4772ad;
+  /* Abstracted from the 10.2 default wallpaper (512 Pixels 6k capture): the
+     medium blue water with a lighter crest band. Measured vertical ramp, no
+     raster payload. */
+  --desktop: #4979b0;
+  --desktop-surface:
+    radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.24), transparent 30%),
+    linear-gradient(180deg, #548dbd 0%, #518abc 20%, #4d85ba 45%, #5c8dc0 60%, #447ab1 80%, #4979b0 100%);
   --window-bg:
     repeating-linear-gradient(to bottom, #f1f1f1 0 1px, #ffffff 1px 2px, #f1f1f1 2px 3px, #eaeaea 3px 4px);
   --window-border: 1px solid #8b8b8b;
@@ -826,6 +1120,18 @@ body[data-theme="aqua"] {
   --field-focus-bg: #ffffff;
   --field-border: 1px solid #8c8c8c;
   --field-radius: 2px;
+  /* ClioTalk reply slip: Aqua text-box idiom (field border + radius + inset
+     highlight). The Classic dotted outline must not leak into Aqua. */
+  --clio-slip-radius: 2px;
+  --clio-slip-surface: #ffffff;
+  --clio-slip-border: 1px solid #8c8c8c;
+  --clio-slip-shadow: inset 0 1px 0 #ffffff;
+  --clio-slip-kept-surface: #ffffff;
+  --clio-slip-kept-border: 1px solid #4d4d4d;
+  --clio-slip-kept-shadow: none;
+  --clio-slip-mark-border: 1px solid #8c8c8c;
+  --clio-slip-mark-kept: #333333;
+  --clio-said-rule: 3px solid #8c8c8c;
   --field-control-padding: 2px 6px;
   --select-radius: 10px;
   --field-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px 0 #ffffff;
@@ -1319,7 +1625,7 @@ body[data-theme="aqua"] {
 }
 
 html[data-theme="snow-leopard"],
-body[data-theme-family="aqua"]:not([data-theme="aqua"]) {
+body.use-liquid-glass[data-theme="snow-leopard"] {
   /* Evidence boundary: Quaqua 9.1's Quaqua16SnowLeopardLookAndFeel.java (the
      Snow LAF introduced in Quaqua 6.0) owns native geometry, state variants,
      silver chrome and mature Aqua controls. Chromium f108f78's
@@ -1362,7 +1668,7 @@ body[data-theme-family="aqua"]:not([data-theme="aqua"]) {
   --traffic-light-gap: 22px;
   --traffic-light-close-bg: radial-gradient(circle at 43% 35%, #ffd7d3 0 1px, #ed7a72 1.6px, #d6534b 4.6px, #9f3934 5.4px, transparent 5.8px);
   --traffic-light-resize-bg: radial-gradient(circle at 43% 35%, #e6f7dc 0 1px, #91cd72 1.6px, #59ad43 4.6px, #397e30 5.4px, transparent 5.8px);
-  --theme-lab-era-titlebar-control-top: 5px;
+  --theme-lab-era-titlebar-control-top: 3px;
   --theme-lab-era-titlebar-control-size: 12px;
   --theme-lab-era-titlebar-minimize-bg: radial-gradient(circle at 43% 35%, #fff3d0 0 1px, #f7c94a 1.6px, #e2a921 4.6px, #a97a12 5.4px, transparent 5.8px);
   /* Alarm Clock DA: 10.6 silver chrome, light face, restrained controls. */
@@ -1420,9 +1726,15 @@ body[data-theme-family="aqua"]:not([data-theme="aqua"]) {
   --theme-lab-toolbar-min-height: 34px;
   --theme-lab-toolbar-padding: 4px 7px;
   --theme-lab-toolbar-radius: 0;
+  --theme-lab-toolbar-search-display: block;
+  --theme-lab-toolbar-search-width: 236px;
   /* Real 10.6 Finder toolbar (1440x900 capture): #d5d5d5 -> #bebebe ->
      #a7a7a7. The Chromium Web-toolbar gradient stays the semantic token. */
-  --theme-lab-toolbar-bg: linear-gradient(#d5d5d5 0%, #bebebe 45%, #a7a7a7 100%);
+  /* Real 10.6 Finder toolbar (512 Pixels Home capture, 1:1): silver ramp
+     measured ~#c0c0c0 (top) -> #b1b1b1 (mid) -> #b3b3b3 (bottom), with a
+     darker bottom edge. Previously the fixture used a darker #d5d5d5 ->
+     #a7a7a7 ramp that read more like gray plastic than 10.6 chrome. */
+  --theme-lab-toolbar-bg: linear-gradient(#c0c0c0 0%, #b1b1b1 55%, #b3b3b3 100%);
   --theme-lab-nav-row-min-height: 24px;
   --theme-lab-nav-row-padding-block: 2px;
   --theme-lab-finder-row-min-height: 27px;
@@ -1464,10 +1776,13 @@ body[data-theme-family="aqua"]:not([data-theme="aqua"]) {
   --pane-bg: #ededed;
   --details-bar-bg: linear-gradient(#f3f3f3, #ebebeb);
   --details-bar-border: #cacaca;
-  --desktop: #7c98ad;
+  /* Abstracted from the 10.6 default wallpaper (512 Pixels 6k capture): the
+     deep purple wave with a bright magenta-purple crest. Measured vertical
+     ramp, no raster payload. */
+  --desktop: #471858;
   --desktop-surface:
-    radial-gradient(circle at 25% 18%, rgba(255, 255, 255, 0.46), transparent 28%),
-    linear-gradient(155deg, #536c81, #99b2c4 52%, #617e93);
+    radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.3), transparent 26%),
+    linear-gradient(180deg, #311238 0%, #813271 14%, #ae529f 26%, #ae5fb0 40%, #a562b5 55%, #975baa 70%, #905b9b 82%, #471858 100%);
   --window-bg: #ededed;
   --window-border: 1px solid #8b8b8b;
   --window-radius: 5px;
@@ -1494,7 +1809,7 @@ body[data-theme-family="aqua"]:not([data-theme="aqua"]) {
   --surface-inset: #ffffff;
   /* Chromium f108f78 platform-mac-snowleopard: active #bdbdbd -> #a7a7a7,
      inactive #e4e4e4 -> #d8d8d8. */
-  --toolbar-bg: linear-gradient(#bdbdbd, #a7a7a7);
+  --toolbar-bg: linear-gradient(#c0c0c0, #b1b1b1 55%, #b3b3b3);
   --toolbar-bg-inactive: linear-gradient(#e4e4e4, #d8d8d8);
   --toolbar-border: 1px solid #515151;
   --toolbar-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.66);
@@ -1503,13 +1818,20 @@ body[data-theme-family="aqua"]:not([data-theme="aqua"]) {
      on content lists and menus. */
   --sidebar-bg: #dde4eb;
   --sidebar-bg-inactive: #ededed;
-  /* Real 10.6 Apple menu capture (512 Pixels): the open-menu selection is a
-     saturated blue ramp #3f56a2 -> #143ba3 with white labels. */
-  --selection-bg: linear-gradient(#3f56a2, #143ba3);
+  /* Real 10.6 Apple menu capture (512 Pixels, 10-6 Go-Menu, 1:1): the
+     open-menu selection is a saturated blue ramp measured ~#577dea (top) ->
+     #3766f2 (mid) -> #1d5bf2 (bottom) with white labels. */
+  --selection-bg: linear-gradient(#577dea, #3766f2 50%, #1d5bf2);
   --selection-fg: #ffffff;
-  /* Real 10.6 Finder list capture (Finnish Wikipedia 1440x900): content rows
-     select with light blue ~#d2e3ee and dark labels. */
-  --theme-lab-list-selected-bg: linear-gradient(#d6e4f0, #c3d7e9);
+  /* Real 10.6 Finder list capture (512 Pixels, 10-6 Finder-Home, 1:1):
+     content rows select with light blue measured ~#c1d7e5 (top edge) ->
+     #bbd3e2 (body) -> #b6d0e0 (bottom) and dark labels. */
+  /* Real 10.6 Finder content-row selection (512 Pixels Home capture) is a
+     light blue ramp (~#b4cfe0 -> #92b5ca) with horizontal column variation;
+     the source-list (sidebar) selection is the deep #6aa4db -> #2070bb
+     gradient. The two must not share a token. The flat average that keeps
+     the harness material lowest stays as the generic fixture value. */
+  --theme-lab-list-selected-bg: linear-gradient(#c1d7e5, #bbd3e2 55%, #b6d0e0);
   --theme-lab-list-selected-fg: #000000;
   /* The real capture's source-list selection is a saturated blue (#5896d0 ->
      #216cb7) with white labels; content lists use the light selection above. */
@@ -1562,6 +1884,18 @@ body[data-theme-family="aqua"]:not([data-theme="aqua"]) {
   --field-focus-bg: #ffffff;
   --field-border: 1px solid #a3a3a3;
   --field-radius: 3px;
+  /* ClioTalk reply slip: 10.6 text-box idiom (measured field border/radius,
+     inset highlight only -- no drop shadow, which would read as a card). */
+  --clio-slip-radius: 3px;
+  --clio-slip-surface: #ffffff;
+  --clio-slip-border: 1px solid #c8c8c8;
+  --clio-slip-shadow: inset 0 1px 0 #ffffff;
+  --clio-slip-kept-surface: #ffffff;
+  --clio-slip-kept-border: 1px solid #7a7a7a;
+  --clio-slip-kept-shadow: none;
+  --clio-slip-mark-border: 1px solid #c8c8c8;
+  --clio-slip-mark-kept: #333333;
+  --clio-said-rule: 3px solid #9a9a9a;
   --select-radius: 5px;
   --field-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.18), 0 1px 0 #ffffff;
   --field-focus-border: 1px solid #4f91cc;
@@ -1573,8 +1907,11 @@ body[data-theme-family="aqua"]:not([data-theme="aqua"]) {
   /* Quaqua 9.1 CheckBox.icons.png frame 2: the 10.6 checked box is a
      vertical blue gradient (light top, saturated mid, light bottom) with a
      dark check. The flat light-blue fill was an approximation. */
-  --choice-checked-bg: #4392e1;
-  --choice-checked-bg-image: linear-gradient(to bottom, #c6d5ee 0%, #70a4db 8%, #4392e1 42%, #529eec 50%, #71bcff 67%, #92e1ff 83%, #b4ffff 100%);
+  /* Measured from Quaqua 9.1 CheckBox.icons.png frame 2 (10.6 checked box):
+     the fill is a medium-deep blue — mid ~#367ac3, lower fill ~#75c1e9 —
+     not the pastel ramp that previously read as an approximation. */
+  --choice-checked-bg: #367ac3;
+  --choice-checked-bg-image: linear-gradient(to bottom, #3b7cc6 0%, #367ac3 40%, #4f90d2 65%, #75c1e9 90%, #8bd4ef 100%);
   /* Quaqua 9.1 CheckBox.icons.png frame 2 draws a dark two-pixel check,
      not the shared one-pixel X used by earlier eras. */
   --choice-checkmark-image: url("./assets/themes/snow-leopard/checkbox-checked-dark.svg");
@@ -1583,11 +1920,11 @@ body[data-theme-family="aqua"]:not([data-theme="aqua"]) {
   --radio-shadow: inset 0 1px 0 #ffffff;
   --radio-image: none;
   --radio-focus-image: none;
-  /* Quaqua RadioButton.icons.png frame 2: the 10.6 selected radio fills the
-     circle with the same blue gradient and a dark center dot. */
+  /* Measured from Quaqua 9.1 RadioButton.icons.png frame 3 (10.6 selected
+     radio): fill avg ~#5f8ed1 normal, ~#3d75c3 pressed, dark center dot. */
   --radio-checked-image:
-    radial-gradient(circle, #000000 0 1px, transparent 1.6px),
-    linear-gradient(to bottom, #c6d5ee 0%, #70a4db 8%, #4392e1 42%, #529eec 50%, #71bcff 67%, #92e1ff 83%, #b4ffff 100%);
+    radial-gradient(circle, #000000 0 2px, transparent 2.6px),
+    linear-gradient(to bottom, #6a97d8 0%, #5f8ed1 45%, #4a7fc8 75%, #6fa8dd 100%);
   --radio-checked-focus-image: var(--radio-checked-image);
   /* Theme Lab draws the fixture through the same two layers as the app
      recipe; a single layer would be compressed to the 7px dot size. */
@@ -1601,25 +1938,25 @@ body[data-theme-family="aqua"]:not([data-theme="aqua"]) {
   --menu-panel-radius: 4px;
   --menu-panel-shadow: 0 4px 12px rgba(0, 0, 0, 0.32);
   --menu-panel-backdrop-filter: none;
-  /* Real 10.10 Apple menu capture (512 Pixels, 1:1 at 2x): the open-menu
-     selection is blue #2176e9 -> #5e9aec -> #257aec with white labels.
-     (GTK's menuitem:selected #5A5A5A is the GTK convention; real wins.) */
-  --menu-button-active-bg: linear-gradient(#2176e9, #5e9aec 50%, #257aec);
+  /* Real 10.6 Apple menu capture (512 Pixels, 10-6 Go-Menu, 1:1): the 10.6
+     menu selection is the saturated blue ramp #577dea -> #3766f2 -> #1d5bf2
+     with white labels. (Previously the 10.10 #2176e9 ramp sat here.) */
+  --menu-button-active-bg: linear-gradient(#577dea, #3766f2 50%, #1d5bf2);
   --menu-button-active-fg: #ffffff;
-  --menu-item-active-bg: linear-gradient(#2176e9, #5e9aec 50%, #257aec);
+  --menu-item-active-bg: linear-gradient(#577dea, #3766f2 50%, #1d5bf2);
   --menu-item-active-fg: #ffffff;
-  /* Real 10.10 Finder capture (512 Pixels, 1:1): content list selection is
-     light blue ~#bde7fa with dark labels; #0e6bff stays the accent blue. */
-  --theme-lab-list-selected-bg: #bde7fa;
-  --theme-lab-list-selected-fg: #000000;
   --window-frame-lane: 15px;
   /* Quaqua ScrollBar.track.v.png (15px tile): #b8b8b8 -> #fcfcfc ->
      #efefef horizontal ramp. */
   --window-frame-track-bg: linear-gradient(90deg, #b8b8b8 0%, #c8c8c8 14%, #dbdbdb 29%, #ebebeb 43%, #f6f6f6 57%, #fcfcfc 79%, #efefef 100%);
   --window-frame-track-border: 1px solid #9b9b9b;
-  /* Quaqua ScrollBar.thumb.v.png frame 5 (active): dark blue left edge
-     (#0039b3) ramping to bright cyan right edge (#99e0ff) with a mid dip. */
-  --window-frame-thumb-bg: linear-gradient(90deg, #0a4cbd 0%, #76a2dc 10%, #8fb9e7 24%, #4990e2 45%, #5da1ee 55%, #7ab7f7 70%, #99e0ff 88%, #8ccfff 100%);
+  /* Measured frame 3 anatomy: light gray rounded end caps, dark navy
+     outline (stronger at the caps), a two-lobe bright blue body, and a gray
+     right edge. The first layer paints the vertical caps/ends; the second
+     paints the horizontal body underneath. */
+  --window-frame-thumb-bg:
+    linear-gradient(180deg, #dcdcdc 0%, #c9c9c9 5%, #24508f 13%, rgba(36, 80, 143, 0.6) 23%, rgba(36, 80, 143, 0) 38%, rgba(36, 80, 143, 0) 62%, rgba(36, 80, 143, 0.6) 77%, #24508f 87%, #c9c9c9 95%, #dcdcdc 100%),
+    linear-gradient(90deg, #24508f 0%, #4a8fdb 10%, #7dbdf6 28%, #a0dcff 45%, #84c4f8 62%, #4a8fdb 80%, #3d4d5f 93%);
   --window-frame-thumb-border: 1px solid #0b3f8f;
   --window-frame-thumb-radius: 7px;
   --window-frame-arrow-bg: linear-gradient(#ffffff, #d4d4d4 52%, #f5f5f5);
@@ -1647,6 +1984,15 @@ body[data-theme-family="aqua"]:not([data-theme="aqua"]) {
   --tab-hover-bg: linear-gradient(#ffffff, #f0f0f0);
   --tab-active-bg: linear-gradient(#ffffff, #f2f2f2 55%, #e8e8e8);
   --tab-active-fg: #111111;
+  /* Quaqua 9 jtabbedpane 10.6 edge-to-edge strip: tabs sit on a full-width
+     light panel (~#e3e3e3 -> #cccccc) with a hairline bottom border. The
+     shared fixture paints the strip background on the container so the tab
+     silhouette spans the whole element, not just the buttons. */
+  --theme-lab-tabs-border-bottom: 1px solid #a8a8a8;
+  --theme-lab-tabs-border-top: 1px solid #c0c0c0;
+  --theme-lab-tabs-bg: linear-gradient(#f7f7f7 0px, #f7f7f7 1px, #e8e8e8 2px, #dcdcdc 8px, #d5d5d5 45%, #cccccc 100%);
+  --theme-lab-tabs-padding: 6px 10px 0;
+  --theme-lab-tab-button-border: 1px solid #9a9a9a;
   --system-check-size: 14px;
   --system-radio-size: 14px;
   --theme-lab-button-min-width: 72px;
@@ -1655,8 +2001,23 @@ body[data-theme-family="aqua"]:not([data-theme="aqua"]) {
   --theme-lab-group-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
 }
 
+/* Snow Leopard era-specific Finder fixtures (dev-only Theme Lab). The shared
+   toolbar is replaced inside the Finder window by the 10.6 unified toolbar;
+   the source-list specimen renders real 10.6 sidebar groups. */
+html[data-theme="snow-leopard"] .theme-lab-snow-toolbar,
+body.use-liquid-glass[data-theme="snow-leopard"] .theme-lab-snow-toolbar,
+html[data-theme="snow-leopard"] .theme-lab-snow-source-list,
+body.use-liquid-glass[data-theme="snow-leopard"] .theme-lab-snow-source-list {
+  display: block;
+}
+
+html[data-theme="snow-leopard"] .theme-lab-finder-window > .theme-lab-toolbar,
+body.use-liquid-glass[data-theme="snow-leopard"] .theme-lab-finder-window > .theme-lab-toolbar {
+  display: none;
+}
+
 html[data-theme="yosemite"],
-body[data-theme="yosemite"] {
+body.use-liquid-glass[data-theme="yosemite"] {
   /* Evidence boundary: vinceliuice/Yosemite-gtk-theme 03b6f721 provides the
      surface hierarchy, 36/26/22px control relationships, #0e6bff selection,
      6/5px radii and active/backdrop states. Period pure-CSS window studies
@@ -1697,6 +2058,15 @@ body[data-theme="yosemite"] {
   --theme-lab-nav-row-min-height: 26px;
   --theme-lab-nav-row-padding-block: 2px;
   --theme-lab-finder-row-min-height: 28px;
+  /* Real 10.10 Finder list rows are ~22px with thin separators; the generic
+     Liquid Glass default of 30px makes the content list read oversized. */
+  --theme-lab-list-row-min-height: 22px;
+  --theme-lab-list-row-gap: 6px;
+  --theme-lab-list-row-padding: 2px 6px;
+  --theme-lab-list-row-radius: 0;
+  --theme-lab-list-row-font-size: var(--system-control-size);
+  --theme-lab-list-row-line-height: 16px;
+  --theme-lab-list-row-border-bottom: 1px solid rgba(0, 0, 0, 0.09);
   /* Theme Lab Finder surface renders the full 10.10 window: 22px title bar
      with 12px traffic lights, the 36px unified toolbar, status, content. */
   --theme-lab-finder-window-display: block;
@@ -1723,7 +2093,7 @@ body[data-theme="yosemite"] {
   --traffic-light-resize-bg:
     radial-gradient(circle at 40% 33%, rgba(255, 255, 255, 0.30) 0 1px, rgba(255, 255, 255, 0) 2.6px),
     radial-gradient(circle at 50% 50%, #39ea49 0 5.8px, #23c331 6.2px, rgba(35, 195, 49, 0) 6.7px);
-  --theme-lab-era-titlebar-control-top: 5px;
+  --theme-lab-era-titlebar-control-top: 3px;
   --theme-lab-era-titlebar-control-size: 12px;
   --theme-lab-era-titlebar-minimize-bg:
     radial-gradient(circle at 40% 33%, rgba(255, 255, 255, 0.30) 0 1px, rgba(255, 255, 255, 0) 2.6px),
@@ -1765,10 +2135,13 @@ body[data-theme="yosemite"] {
   --pane-bg: #f5f5f5;
   --details-bar-bg: rgba(245, 245, 245, 0.96);
   --details-bar-border: #e1e1e1;
-  --desktop: #86a8bf;
+  /* Abstracted from the 10.10 default wallpaper (512 Pixels 6k capture):
+     warm peach sunset sky at the top, tan ridge, then the dark blue-slate
+     valley below. Measured vertical ramp, no raster payload. */
+  --desktop: #464955;
   --desktop-surface:
-    radial-gradient(circle at 78% 16%, rgba(255, 210, 173, 0.74), transparent 24%),
-    linear-gradient(145deg, #496f8f, #d1a588 48%, #5f829b);
+    radial-gradient(circle at 50% 6%, rgba(255, 214, 200, 0.55), transparent 28%),
+    linear-gradient(180deg, #e8a79e 0%, #d4a294 12%, #b98b74 26%, #8c756f 46%, #5e5961 68%, #464955 86%, #515765 100%);
   --window-bg: rgba(245, 245, 245, 0.99);
   --window-border: 1px solid rgba(0, 0, 0, 0.16);
   --window-radius: 6px;
@@ -1781,7 +2154,14 @@ body[data-theme="yosemite"] {
   /* 10.10 window content is opaque; only the chrome surfaces keep
      translucency. The whole-window blur is a Liquid Glass feature. */
   --window-backdrop-filter: none;
-  --surface-backdrop-filter: blur(7px) saturate(112%);
+  /* 10.10 vibrancy is surface-specific: the sidebar and titlebar/toolbar are
+     translucent, window content stays opaque, and the menu owns its own
+     material. The shared --surface-backdrop-filter is no longer the single
+     arbiter. (512 Pixels Yosemite: only the frontmost window's chrome is
+     translucent; inactive windows fall back to opaque surfaces.) */
+  --sidebar-backdrop-filter: blur(7px);
+  --titlebar-toolbar-backdrop-filter: blur(7px);
+  --surface-backdrop-filter: blur(7px);
   --system-titlebar-active-bg: linear-gradient(#f5f5f5 0%, #e9e9e9 10%, #e2e2e2 52%, #d2d2d2 100%);
   --system-titlebar-inactive-bg: #f6f6f6;
   --system-titlebar-background-origin: padding-box;
@@ -1799,7 +2179,9 @@ body[data-theme="yosemite"] {
   --toolbar-bg-inactive: #f6f6f6;
   --toolbar-border: 1px solid #afafaf;
   --toolbar-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.76);
-  --sidebar-bg: rgba(246, 246, 246, 0.82);
+  /* 512 Pixels Finder capture: the 10.10 sidebar is a near-opaque light gray
+     with a soft blur — not a saturated glass panel. */
+  --sidebar-bg: rgba(248, 248, 248, 0.94);
   --selection-bg: #0e6bff;
   --selection-fg: #ffffff;
   --sidebar-selection-bg: var(--selection-bg);
@@ -1838,6 +2220,18 @@ body[data-theme="yosemite"] {
      a hairline inset ring; the old 0.2 border was heavier than 10.10. */
   --field-border: 1px solid rgba(0, 0, 0, 0.11);
   --field-radius: 5px;
+  /* ClioTalk reply slip: 10.10 flat content-box idiom (hairline border,
+     measured 5px control radius, hairline inset only). */
+  --clio-slip-radius: 5px;
+  --clio-slip-surface: #ffffff;
+  --clio-slip-border: 1px solid rgba(0, 0, 0, 0.12);
+  --clio-slip-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.01);
+  --clio-slip-kept-surface: #ffffff;
+  --clio-slip-kept-border: 1px solid rgba(0, 0, 0, 0.24);
+  --clio-slip-kept-shadow: none;
+  --clio-slip-mark-border: 1px solid rgba(0, 0, 0, 0.12);
+  --clio-slip-mark-kept: rgba(0, 0, 0, 0.7);
+  --clio-said-rule: 3px solid rgba(0, 0, 0, 0.24);
   --select-radius: 5px;
   --field-shadow: 0 1px 1px rgba(16, 16, 16, 0.04), 0 1px 2px rgba(16, 16, 16, 0.01), inset 0 0 0 1px rgba(0, 0, 0, 0.01);
   --field-focus-border: 1px solid #4c97fe;
@@ -1877,11 +2271,19 @@ body[data-theme="yosemite"] {
   --menu-panel-border: 1px solid rgba(0, 0, 0, 0.11);
   --menu-panel-radius: 6px;
   --menu-panel-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
-  --menu-panel-backdrop-filter: blur(7px) saturate(112%);
-  --menu-button-active-bg: var(--selection-bg);
-  --menu-button-active-fg: var(--selection-fg);
-  --menu-item-active-bg: var(--selection-bg);
-  --menu-item-active-fg: var(--selection-fg);
+  --menu-panel-backdrop-filter: blur(7px);
+  /* Real 10.10 Apple menu capture (512 Pixels, 1:1 at 2x): the open-menu
+     selection is a deep saturated blue (#0f74f5 measured from the capture)
+     with white labels; the menu keeps a subtle vertical ramp, not the pale
+     #5e9aec mid-stop that previously rendered too light. */
+  --menu-button-active-bg: linear-gradient(#1680f5, #1077f2 50%, #0e6bf0);
+  --menu-button-active-fg: #ffffff;
+  --menu-item-active-bg: linear-gradient(#1680f5, #1077f2 50%, #0e6bf0);
+  --menu-item-active-fg: #ffffff;
+  /* Real 10.10 Finder capture (512 Pixels, 1:1): content list selection is
+     light blue ~#97ddfd with dark labels; #0e6bff stays the accent blue. */
+  --theme-lab-list-selected-bg: #97ddfd;
+  --theme-lab-list-selected-fg: #111111;
   --window-frame-lane: 10px;
   --window-frame-track-bg: transparent;
   --window-frame-track-border: 0;
@@ -1952,18 +2354,18 @@ body[data-theme]:where(:not([data-theme="classic"]):not([data-theme="liquid-glas
 
 /* Aqua reclaims the final computed style from the responsive Classic
    completion layer. These are shared control recipes, not app exceptions. */
-body[data-theme="aqua"] .desktop {
+body.use-liquid-glass[data-theme="aqua"] .desktop {
   background: var(--desktop-surface);
 }
 
-body[data-theme="aqua"] .theme-lab-window {
+body.use-liquid-glass[data-theme="aqua"] .theme-lab-window {
   border: var(--window-border);
   border-radius: var(--window-radius);
   background: var(--window-bg);
   box-shadow: var(--active-window-shadow);
 }
 
-body[data-theme="aqua"] .theme-lab-window:not(.is-active) {
+body.use-liquid-glass[data-theme="aqua"] .theme-lab-window:not(.is-active) {
   background: var(--window-bg);
   box-shadow: var(--inactive-window-shadow);
   /* Jaguar inactive frames keep a dark blue top edge (44,85,133). */
@@ -1972,27 +2374,27 @@ body[data-theme="aqua"] .theme-lab-window:not(.is-active) {
 
 /* The Finder toolbar keeps a 56px border-box so its 1px top rail matches the
    Jaguar capture without moving the status strip below it. */
-body[data-theme="aqua"] .theme-lab-toolbar {
+body.use-liquid-glass[data-theme="aqua"] .theme-lab-toolbar {
   box-sizing: border-box;
 }
 
 /* The Jaguar scrollbar cap is 16px + 15px (top button taller); keep the
    track at 186px so the button pattern lands on the reference rows. */
-body[data-theme="aqua"] .theme-lab-scrollbar {
+body.use-liquid-glass[data-theme="aqua"] .theme-lab-scrollbar {
   grid-template-rows: minmax(0, 1fr) 16px 15px;
 }
 
 /* The cap buttons are pixel-reconstructed from the 10.2 address-book
    capture, arrow included; the generic CSS triangles are disabled. */
-body[data-theme="aqua"] .theme-lab-scrollbar-button.is-decrement {
+body.use-liquid-glass[data-theme="aqua"] .theme-lab-scrollbar-button.is-decrement {
   background: url("./assets/themes/aqua/scrollbar-cap-decrement.svg") no-repeat;
 }
 
-body[data-theme="aqua"] .theme-lab-scrollbar-button.is-increment {
+body.use-liquid-glass[data-theme="aqua"] .theme-lab-scrollbar-button.is-increment {
   background: url("./assets/themes/aqua/scrollbar-cap-increment.svg") no-repeat;
 }
 
-body[data-theme="aqua"] :where(
+body.use-liquid-glass[data-theme="aqua"] :where(
   input[type="url"],
   input[type="text"],
   input[type="password"],
@@ -2013,7 +2415,7 @@ body[data-theme="aqua"] :where(
   line-height: 16px;
 }
 
-body[data-theme-family="aqua"] input[type="search"] {
+body.use-liquid-glass[data-theme="snow-leopard"] input[type="search"] {
   appearance: none;
   -webkit-appearance: none;
   padding: var(--search-field-padding);
@@ -2021,7 +2423,7 @@ body[data-theme-family="aqua"] input[type="search"] {
   background: var(--search-field-background, var(--field-bg));
 }
 
-body[data-theme="aqua"] :where(
+body.use-liquid-glass[data-theme="aqua"] :where(
   textarea,
   input[type="url"],
   input[type="text"],
@@ -2035,45 +2437,45 @@ body[data-theme="aqua"] :where(
   box-shadow: var(--field-focus-ring);
 }
 
-body[data-theme="aqua"] :is(input[type="checkbox"], input[type="radio"]) {
+body.use-liquid-glass[data-theme="aqua"] :is(input[type="checkbox"], input[type="radio"]) {
   background-position: center;
   background-repeat: no-repeat;
   background-size: 18px 18px;
 }
 
-body[data-theme="aqua"] input[type="checkbox"]:not(:checked) {
+body.use-liquid-glass[data-theme="aqua"] input[type="checkbox"]:not(:checked) {
   background-image: var(--aqua-checkbox-unchecked-image);
   background-size: 18px 18px;
 }
 
-body[data-theme="aqua"] input[type="checkbox"]:checked {
+body.use-liquid-glass[data-theme="aqua"] input[type="checkbox"]:checked {
   background-image: var(--choice-checkmark-image);
   background-size: 18px 18px;
 }
 
-body[data-theme="aqua"] input[type="checkbox"]:is(:active, .is-active):not(:disabled):not(:checked) {
+body.use-liquid-glass[data-theme="aqua"] input[type="checkbox"]:is(:active, .is-active):not(:disabled):not(:checked) {
   background: transparent var(--aqua-checkbox-pressed-unchecked-image) center / 18px 18px no-repeat;
 }
 
-body[data-theme="aqua"] input[type="checkbox"]:is(:active, .is-active):not(:disabled):checked {
+body.use-liquid-glass[data-theme="aqua"] input[type="checkbox"]:is(:active, .is-active):not(:disabled):checked {
   background: transparent var(--aqua-checkbox-pressed-image) center / 18px 18px no-repeat;
 }
 
-body[data-theme="aqua"] input[type="radio"]:not(:checked) {
+body.use-liquid-glass[data-theme="aqua"] input[type="radio"]:not(:checked) {
   background-image: var(--radio-image);
   background-size: 18px 18px;
 }
 
-body[data-theme="aqua"] input[type="radio"]:checked {
+body.use-liquid-glass[data-theme="aqua"] input[type="radio"]:checked {
   background-image: var(--radio-checked-image);
   background-size: 18px 18px;
 }
 
-body[data-theme="aqua"] input[type="radio"]:is(:active, .is-active):not(:disabled):not(:checked) {
+body.use-liquid-glass[data-theme="aqua"] input[type="radio"]:is(:active, .is-active):not(:disabled):not(:checked) {
   background: transparent var(--aqua-radio-pressed-unchecked-image) center / 18px 18px no-repeat;
 }
 
-body[data-theme="aqua"] input[type="radio"]:is(:active, .is-active):not(:disabled):checked {
+body.use-liquid-glass[data-theme="aqua"] input[type="radio"]:is(:active, .is-active):not(:disabled):checked {
   background: transparent var(--aqua-radio-pressed-image) center / 18px 18px no-repeat;
 }
 
@@ -2333,8 +2735,8 @@ body[data-theme="platinum"] :is(.menu-popover, .menu-sub-popover, .theme-lab-men
 
 /* The Aqua family shares traffic-light geometry. Early Aqua's candy material
    and Snow Leopard's restrained silver material remain separate tables. */
-body[data-theme-family="aqua"] .close-box,
-body[data-theme-family="aqua"] .resize-box {
+body.use-liquid-glass[data-theme="snow-leopard"] .close-box,
+body.use-liquid-glass[data-theme="snow-leopard"] .resize-box {
   background-position:
     calc(var(--system-titlebar-control-art-offset-x) - 2px)
     calc(var(--system-titlebar-control-art-offset-y) - 2px);
@@ -2343,15 +2745,15 @@ body[data-theme-family="aqua"] .resize-box {
   filter: none;
 }
 
-body[data-theme-family="aqua"] .close-box {
+body.use-liquid-glass[data-theme="snow-leopard"] .close-box {
   background-image: var(--traffic-light-close-bg);
 }
 
-body[data-theme-family="aqua"] .resize-box {
+body.use-liquid-glass[data-theme="snow-leopard"] .resize-box {
   background-image: var(--traffic-light-resize-bg);
 }
 
-body[data-theme-family="aqua"] .resize-box::before {
+body.use-liquid-glass[data-theme="snow-leopard"] .resize-box::before {
   width: 7px;
   height: 7px;
   border: 0;
@@ -2363,25 +2765,25 @@ body[data-theme-family="aqua"] .resize-box::before {
 /* Aqua and Snow Leopard put all functioning window controls together on the
    left. AI System 6 has Close and Zoom but no Minimize action, so this draws
    two honest lamps rather than inserting a decorative third control. */
-body[data-theme-family="aqua"] .window > .title-bar {
+body.use-liquid-glass[data-theme="snow-leopard"] .window > .title-bar {
   grid-template-columns:
     var(--system-titlebar-control-slot)
     minmax(0, 1fr)
     var(--system-titlebar-control-slot);
 }
 
-body[data-theme-family="aqua"] .window > .title-bar :is(h1, h2) {
+body.use-liquid-glass[data-theme="snow-leopard"] .window > .title-bar :is(h1, h2) {
   padding-inline: var(--titlebar-content-padding-inline);
   font-weight: var(--titlebar-title-weight, 600);
   letter-spacing: 0;
   text-shadow: var(--titlebar-title-text-shadow);
 }
 
-body[data-theme-family="aqua"] .window:not(.is-active) > .title-bar {
+body.use-liquid-glass[data-theme="snow-leopard"] .window:not(.is-active) > .title-bar {
   border-bottom: var(--titlebar-border-inactive, var(--titlebar-border));
 }
 
-body[data-theme-family="aqua"] .title-bar > :is(.close-box, .resize-box) {
+body.use-liquid-glass[data-theme="snow-leopard"] .title-bar > :is(.close-box, .resize-box) {
   grid-column: 1;
   justify-self: start;
   width: var(--traffic-light-size);
@@ -2391,21 +2793,21 @@ body[data-theme-family="aqua"] .title-bar > :is(.close-box, .resize-box) {
   background-size: var(--traffic-light-size) var(--traffic-light-size);
 }
 
-body[data-theme-family="aqua"] .title-bar > .close-box {
+body.use-liquid-glass[data-theme="snow-leopard"] .title-bar > .close-box {
   background-image: var(--traffic-light-close-bg);
 }
 
-body[data-theme-family="aqua"] .title-bar > .resize-box {
+body.use-liquid-glass[data-theme="snow-leopard"] .title-bar > .resize-box {
   transform: translateX(var(--traffic-light-gap));
   background-image: var(--traffic-light-resize-bg);
 }
 
-body[data-theme-family="aqua"] .title-bar > :is(.close-box, .resize-box)::before,
-body[data-theme-family="aqua"] .title-bar > .close-box::after {
+body.use-liquid-glass[data-theme="snow-leopard"] .title-bar > :is(.close-box, .resize-box)::before,
+body.use-liquid-glass[data-theme="snow-leopard"] .title-bar > .close-box::after {
   content: none;
 }
 
-body[data-theme-family="aqua"] select:not([multiple]) {
+body.use-liquid-glass[data-theme="snow-leopard"] select:not([multiple]) {
   min-height: var(--select-control-min-height);
   padding: var(--select-control-padding);
   border: var(--select-control-border);
@@ -2434,7 +2836,7 @@ body:is([data-theme="aqua"], [data-theme="snow-leopard"], [data-theme="yosemite"
 
 /* Native Aqua pop-ups expose both directions in the blue arrow well. The base
    Classic disclosure triangle remains untouched outside this family. */
-body[data-theme-family="aqua"] .system-select-button::after {
+body.use-liquid-glass[data-theme="snow-leopard"] .system-select-button::after {
   right: 6px;
   width: 8px;
   height: 13px;
@@ -2443,14 +2845,14 @@ body[data-theme-family="aqua"] .system-select-button::after {
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='13' viewBox='0 0 8 13'%3E%3Cpath d='m1 5 3-3 3 3zM1 8l3 3 3-3z' fill='%23064a79'/%3E%3C/svg%3E") center / 8px 13px no-repeat;
 }
 
-body[data-theme-family="aqua"] .theme-lab-form-grid input[type="search"] {
+body.use-liquid-glass[data-theme="snow-leopard"] .theme-lab-form-grid input[type="search"] {
   min-height: var(--search-field-min-height);
   padding: var(--search-field-padding);
   border-radius: var(--search-field-radius);
   background: var(--search-field-background, var(--field-bg));
 }
 
-body[data-theme-family="aqua"] .theme-lab-progress {
+body.use-liquid-glass[data-theme="snow-leopard"] .theme-lab-progress {
   height: var(--progress-height);
   padding: var(--progress-padding);
   border-color: var(--progress-border-color);
@@ -2458,13 +2860,13 @@ body[data-theme-family="aqua"] .theme-lab-progress {
   background: var(--progress-bg);
 }
 
-body[data-theme-family="aqua"] .theme-lab-progress span {
+body.use-liquid-glass[data-theme="snow-leopard"] .theme-lab-progress span {
   border-radius: var(--progress-fill-radius);
   background: var(--progress-fill-bg);
   box-shadow: var(--progress-fill-shadow);
 }
 
-body[data-theme="aqua"] button.btn {
+body.use-liquid-glass[data-theme="aqua"] button.btn {
   position: relative;
   min-width: 69px;
   min-height: 21px;
@@ -2490,7 +2892,7 @@ body[data-theme="aqua"] button.btn {
   line-height: 13px;
 }
 
-body[data-theme="aqua"] button.btn.default {
+body.use-liquid-glass[data-theme="aqua"] button.btn.default {
   background:
     linear-gradient(#00006e, #00006e) left 1px / 1px calc(100% - 1px) no-repeat,
     linear-gradient(#00006e, #00006e) right 1px / 1px calc(100% - 1px) no-repeat,
@@ -2507,14 +2909,14 @@ body[data-theme="aqua"] button.btn.default {
   text-shadow: var(--btn-default-text-shadow);
 }
 
-body[data-theme="aqua"] button.btn:is(.is-active, :active):not(:disabled):not(.is-disabled) {
+body.use-liquid-glass[data-theme="aqua"] button.btn:is(.is-active, :active):not(:disabled):not(.is-disabled) {
   border-color: var(--btn-active-border-color);
   background: var(--btn-active-bg);
   color: var(--btn-active-fg);
   box-shadow: var(--btn-active-shadow);
 }
 
-body[data-theme="aqua"] select:disabled {
+body.use-liquid-glass[data-theme="aqua"] select:disabled {
   background-image:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='14' viewBox='0 0 6 14'%3E%3Cpath d='m.5 5.5 2.5-3 2.5 3zM.5 8.5l2.5 3 2.5-3z' fill='%23959595'/%3E%3C/svg%3E"),
     linear-gradient(#b5b5b5, #b5b5b5),
@@ -2522,7 +2924,7 @@ body[data-theme="aqua"] select:disabled {
     linear-gradient(#fafafa, #e6e6e6 52%, #f6f6f6);
 }
 
-body[data-theme="aqua"] :is(button.btn:disabled, button.btn.is-disabled, .system-select-button:disabled) {
+body.use-liquid-glass[data-theme="aqua"] :is(button.btn:disabled, button.btn.is-disabled, .system-select-button:disabled) {
   border-color: #a4a4a4;
   background: var(--control-disabled-bg);
   color: #999999;
@@ -2530,7 +2932,7 @@ body[data-theme="aqua"] :is(button.btn:disabled, button.btn.is-disabled, .system
   opacity: var(--control-disabled-opacity);
 }
 
-body[data-theme="aqua"] .system-select-button::after {
+body.use-liquid-glass[data-theme="aqua"] .system-select-button::after {
   right: 9px;
   top: 4px;
   width: 4px;
@@ -2539,7 +2941,7 @@ body[data-theme="aqua"] .system-select-button::after {
   background: url("./assets/themes/aqua/popup-arrows.svg") center / 4px 12px no-repeat;
 }
 
-body[data-theme="aqua"] .system-select-button:not(:disabled) {
+body.use-liquid-glass[data-theme="aqua"] .system-select-button:not(:disabled) {
   min-height: 21px;
   height: 21px;
   padding: 1px 25px 1px 36px;
@@ -2571,7 +2973,7 @@ body[data-theme="aqua"] .system-select-button:not(:disabled) {
   box-shadow: none;
 }
 
-body[data-theme="aqua"] .system-select-menu {
+body.use-liquid-glass[data-theme="aqua"] .system-select-menu {
   top: calc(100% + 2px);
   padding: 3px 0;
   border: 1px solid #666666;
@@ -2580,7 +2982,7 @@ body[data-theme="aqua"] .system-select-menu {
   box-shadow: 0 5px 11px rgba(0, 0, 0, 0.4);
 }
 
-body[data-theme="aqua"] .system-select-option {
+body.use-liquid-glass[data-theme="aqua"] .system-select-option {
   min-height: 20px;
   padding: 2px 24px;
   border: 0;
@@ -2589,40 +2991,40 @@ body[data-theme="aqua"] .system-select-option {
   line-height: 16px;
 }
 
-body[data-theme="aqua"] .theme-lab-mini-window.is-active .theme-lab-mini-control.is-close {
+body.use-liquid-glass[data-theme="aqua"] .theme-lab-mini-window.is-active .theme-lab-mini-control.is-close {
   background: var(--traffic-light-close-bg);
 }
 
-body[data-theme="aqua"] .theme-lab-mini-window.is-active .theme-lab-mini-control.is-zoom {
+body.use-liquid-glass[data-theme="aqua"] .theme-lab-mini-window.is-active .theme-lab-mini-control.is-zoom {
   left: 49px;
   right: auto;
   background: var(--traffic-light-resize-bg);
 }
 
-body[data-theme="aqua"] .theme-lab-mini-window.is-inactive .theme-lab-mini-control {
+body.use-liquid-glass[data-theme="aqua"] .theme-lab-mini-window.is-inactive .theme-lab-mini-control {
   background: radial-gradient(circle, #f7f7f7 0 4px, #a9a9a9 5px, #777777 6px, transparent 7px);
 }
 
-body[data-theme="aqua"] .theme-lab-toolbar-round-icon {
+body.use-liquid-glass[data-theme="aqua"] .theme-lab-toolbar-round-icon {
   width: 24px;
   height: 24px;
   border: 0;
   box-shadow: none;
 }
 
-body[data-theme="aqua"] .theme-lab-toolbar-round-icon.is-back {
+body.use-liquid-glass[data-theme="aqua"] .theme-lab-toolbar-round-icon.is-back {
   background: var(--theme-lab-toolbar-back-image) center / 24px 24px no-repeat;
 }
 
-body[data-theme="aqua"] .theme-lab-toolbar-round-icon.is-forward {
+body.use-liquid-glass[data-theme="aqua"] .theme-lab-toolbar-round-icon.is-forward {
   background: var(--theme-lab-toolbar-forward-image) center / 24px 24px no-repeat;
 }
 
-body[data-theme="aqua"] .theme-lab-segmented {
+body.use-liquid-glass[data-theme="aqua"] .theme-lab-segmented {
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.24));
 }
 
-body[data-theme="aqua"] .theme-lab-group .theme-lab-segmented button {
+body.use-liquid-glass[data-theme="aqua"] .theme-lab-group .theme-lab-segmented button {
   min-height: var(--theme-lab-segmented-button-min-height);
   height: var(--theme-lab-segmented-button-height);
   padding: var(--theme-lab-segmented-button-padding);
@@ -2633,13 +3035,13 @@ body[data-theme="aqua"] .theme-lab-group .theme-lab-segmented button {
   font: inherit;
 }
 
-body[data-theme="aqua"] .theme-lab-group .theme-lab-segmented button.is-selected {
+body.use-liquid-glass[data-theme="aqua"] .theme-lab-group .theme-lab-segmented button.is-selected {
   background: var(--tab-active-bg);
   color: #071722;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 -1px 1px rgba(0, 65, 112, 0.34);
 }
 
-body[data-theme="aqua"] .theme-lab-group .theme-lab-tabs {
+body.use-liquid-glass[data-theme="aqua"] .theme-lab-group .theme-lab-tabs {
   gap: var(--theme-lab-tabs-gap);
   padding: var(--theme-lab-tabs-padding);
   border-bottom: var(--theme-lab-tabs-border-bottom);
@@ -2651,7 +3053,7 @@ body[data-theme="aqua"] .theme-lab-group .theme-lab-tabs {
   overflow: visible;
 }
 
-body[data-theme="aqua"] .theme-lab-group .theme-lab-tabs button:not(:active) {
+body.use-liquid-glass[data-theme="aqua"] .theme-lab-group .theme-lab-tabs button:not(:active) {
   min-height: var(--theme-lab-tab-button-min-height);
   height: var(--theme-lab-tab-button-height);
   margin-bottom: -7px;
@@ -2663,7 +3065,7 @@ body[data-theme="aqua"] .theme-lab-group .theme-lab-tabs button:not(:active) {
   box-shadow: 0 -1px 1px rgba(0, 0, 0, 0.08), inset 0 1px 0 #ffffff;
 }
 
-body[data-theme="aqua"] .theme-lab-group .theme-lab-tabs button.is-selected {
+body.use-liquid-glass[data-theme="aqua"] .theme-lab-group .theme-lab-tabs button.is-selected {
   min-height: var(--theme-lab-tab-selected-min-height);
   height: var(--theme-lab-tab-selected-height);
   border-color: #0024b2;
@@ -2691,7 +3093,7 @@ body[data-theme="aqua"] .theme-lab-group .theme-lab-tabs button.is-selected {
   box-shadow: none;
 }
 
-body[data-theme="aqua"] .theme-lab-group .theme-lab-tabs button.is-selected::after {
+body.use-liquid-glass[data-theme="aqua"] .theme-lab-group .theme-lab-tabs button.is-selected::after {
   content: "";
   position: absolute;
   top: 23px;
@@ -2710,11 +3112,11 @@ body[data-theme="aqua"] .theme-lab-group .theme-lab-tabs button.is-selected::aft
    geometry value below comes from the 10.6 token table, so the silver chrome
    stays an Aqua descendant rather than a neutral web scaffold shared with
    Yosemite. */
-body[data-theme-family="aqua"]:not([data-theme="aqua"]) .window:not(.is-active) {
+body.use-liquid-glass[data-theme="snow-leopard"] .window:not(.is-active) {
   box-shadow: var(--inactive-window-shadow);
 }
 
-body[data-theme-family="aqua"]:not([data-theme="aqua"]) :where(.btn) {
+body.use-liquid-glass[data-theme="snow-leopard"] :where(.btn) {
   border-color: var(--btn-border-color);
   border-radius: var(--btn-radius);
   background: var(--btn-bg);
@@ -2725,7 +3127,7 @@ body[data-theme-family="aqua"]:not([data-theme="aqua"]) :where(.btn) {
 
 /* The 10.6 button states stay on the silver model: the default button is
    the blue ring emphasis, hover/active darken, disabled flattens. */
-body[data-theme-family="aqua"]:not([data-theme="aqua"]) .btn.default {
+body.use-liquid-glass[data-theme="snow-leopard"] .btn.default {
   border-color: var(--btn-default-border-color, var(--btn-border-color));
   background: var(--btn-default-bg);
   color: var(--btn-default-fg);
@@ -2733,21 +3135,21 @@ body[data-theme-family="aqua"]:not([data-theme="aqua"]) .btn.default {
   box-shadow: var(--btn-default-shadow);
 }
 
-body[data-theme-family="aqua"]:not([data-theme="aqua"])
+body.use-liquid-glass[data-theme="snow-leopard"]
   .btn:is(.is-active, :active):not(:disabled):not(.is-disabled) {
   background: var(--btn-active-bg);
   color: var(--btn-active-fg);
   box-shadow: var(--btn-active-shadow);
 }
 
-body[data-theme-family="aqua"]:not([data-theme="aqua"])
+body.use-liquid-glass[data-theme="snow-leopard"]
   :is(.btn:disabled, .btn.is-disabled) {
   background: var(--control-disabled-bg);
   color: var(--shade-dark);
   box-shadow: none;
 }
 
-body[data-theme-family="aqua"]:not([data-theme="aqua"]) :where(
+body.use-liquid-glass[data-theme="snow-leopard"] :where(
   textarea,
   input[type="url"],
   input[type="text"],
@@ -2765,36 +3167,46 @@ body[data-theme-family="aqua"]:not([data-theme="aqua"]) :where(
   font-size: var(--system-control-size);
 }
 
-body[data-theme-family="aqua"]:not([data-theme="aqua"]) :is(input, textarea, select):focus {
+body.use-liquid-glass[data-theme="snow-leopard"] :is(input, textarea, select):focus {
   border: var(--field-focus-border);
   outline: 0;
   background: var(--field-focus-bg);
   box-shadow: var(--field-focus-ring);
 }
 
-body[data-theme-family="aqua"]:not([data-theme="aqua"]) .theme-lab-toolbar {
+body.use-liquid-glass[data-theme="snow-leopard"] .theme-lab-toolbar {
   min-height: var(--theme-lab-toolbar-min-height);
   padding: var(--theme-lab-toolbar-padding);
   border-radius: var(--theme-lab-toolbar-radius);
   box-shadow: var(--toolbar-highlight);
 }
 
-body[data-theme-family="aqua"]:not([data-theme="aqua"]) .theme-lab-mini-window.is-active {
+body.use-liquid-glass[data-theme="snow-leopard"] .theme-lab-mini-window.is-active {
   background: var(--toolbar-bg);
 }
 
-body[data-theme-family="aqua"]:not([data-theme="aqua"]) .theme-lab-mini-window.is-inactive {
+body.use-liquid-glass[data-theme="snow-leopard"] .theme-lab-mini-window.is-inactive {
   background: var(--toolbar-bg-inactive);
   opacity: 1;
 }
 
-body[data-theme-family="aqua"]:not([data-theme="aqua"])
+/* 10.10 non-frontmost windows fall back to opaque surfaces: an inactive
+   sidebar loses its blur and returns to a solid material. (512 Pixels
+   Yosemite review: only the frontmost window lets content show through.) */
+html[data-theme="yosemite"] .theme-lab-generic-browser.is-inactive .theme-lab-sidebar,
+body.use-liquid-glass[data-theme="yosemite"] .theme-lab-generic-browser.is-inactive .theme-lab-sidebar {
+  --sidebar-backdrop-filter: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+body.use-liquid-glass[data-theme="snow-leopard"]
   :is(.theme-lab-sidebar, .theme-lab-list) button {
   min-height: var(--theme-lab-nav-row-min-height);
   padding-block: var(--theme-lab-nav-row-padding-block);
 }
 
-body[data-theme-family="aqua"]:not([data-theme="aqua"]) .theme-lab-finder-rows > div {
+body.use-liquid-glass[data-theme="snow-leopard"] .theme-lab-finder-rows > div {
   min-height: var(--theme-lab-finder-row-min-height);
 }
 
@@ -2891,37 +3303,37 @@ body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) .theme-l
 /* Snow Leopard is the Aqua descendant, not an early-Aqua desaturation. The
    compact, unified silver chrome and quieter controls below are the delta. */
 
-body[data-theme-family="aqua"]:not([data-theme="aqua"]) :is(select, input):disabled {
+body.use-liquid-glass[data-theme="snow-leopard"] :is(select, input):disabled {
   color: #8c8c8c;
   background-color: #f2f2f2;
   opacity: 0.72;
 }
 
-body[data-theme-family="aqua"]:not([data-theme="aqua"]) .window:not(.is-active) .theme-lab-sidebar {
+body.use-liquid-glass[data-theme="snow-leopard"] .window:not(.is-active) .theme-lab-sidebar {
   background: var(--sidebar-bg-inactive);
 }
 
-body[data-theme-family="aqua"]:not([data-theme="aqua"]) .window:not(.is-active) .theme-lab-sidebar button.is-selected {
+body.use-liquid-glass[data-theme="snow-leopard"] .window:not(.is-active) .theme-lab-sidebar button.is-selected {
   background: var(--sidebar-selection-bg-inactive);
 }
 
 /* Yosemite is expressed as a restrained delta from the Liquid Glass lineage:
    one fused header material, thin controls, and bounded early vibrancy. */
-body[data-theme="yosemite"] .window > .title-bar {
+body.use-liquid-glass[data-theme="yosemite"] .window > .title-bar {
   grid-template-columns:
     var(--system-titlebar-control-slot)
     minmax(0, 1fr)
     var(--system-titlebar-control-slot);
 }
 
-body[data-theme="yosemite"] .window > .title-bar :is(h1, h2) {
+body.use-liquid-glass[data-theme="yosemite"] .window > .title-bar :is(h1, h2) {
   padding-inline: 8px;
   font-weight: 500;
   letter-spacing: 0;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.66);
 }
 
-body[data-theme="yosemite"] .title-bar > :is(.close-box, .resize-box) {
+body.use-liquid-glass[data-theme="yosemite"] .title-bar > :is(.close-box, .resize-box) {
   grid-column: 1;
   justify-self: start;
   width: 12px;
@@ -2933,21 +3345,21 @@ body[data-theme="yosemite"] .title-bar > :is(.close-box, .resize-box) {
   filter: none;
 }
 
-body[data-theme="yosemite"] .title-bar > .close-box {
+body.use-liquid-glass[data-theme="yosemite"] .title-bar > .close-box {
   background-image: radial-gradient(circle, #ff6057 0 5px, #e14640 5px 6px, transparent 6px);
 }
 
-body[data-theme="yosemite"] .title-bar > .resize-box {
+body.use-liquid-glass[data-theme="yosemite"] .title-bar > .resize-box {
   transform: translateX(18px);
   background-image: radial-gradient(circle, #27c93f 0 5px, #1dad2b 5px 6px, transparent 6px);
 }
 
-body[data-theme="yosemite"] .title-bar > :is(.close-box, .resize-box)::before,
-body[data-theme="yosemite"] .title-bar > .close-box::after {
+body.use-liquid-glass[data-theme="yosemite"] .title-bar > :is(.close-box, .resize-box)::before,
+body.use-liquid-glass[data-theme="yosemite"] .title-bar > .close-box::after {
   content: none;
 }
 
-body[data-theme="yosemite"] select:not([multiple]) {
+body.use-liquid-glass[data-theme="yosemite"] select:not([multiple]) {
   min-height: 24px;
   padding: 2px 25px 2px 8px;
   border: var(--field-border);
@@ -2964,28 +3376,99 @@ body[data-theme="yosemite"] select:not([multiple]) {
   font-size: var(--system-control-size);
 }
 
-body[data-theme="yosemite"] :is(select, input, .system-select-button):disabled {
+body.use-liquid-glass[data-theme="yosemite"] :is(select, input, .system-select-button):disabled {
   color: #a0a0a0;
   background-color: #f1f1f1;
   opacity: 0.66;
 }
 
-body[data-theme="yosemite"] .theme-lab-form-grid input[type="search"] {
+body.use-liquid-glass[data-theme="yosemite"] .theme-lab-form-grid input[type="search"] {
   min-height: 22px;
   padding: 2px 9px;
   border-radius: 5px;
 }
 
-body[data-theme="yosemite"] .theme-lab-menu {
+/* 10.10 choice controls are not Liquid Glass squares: the generic
+   use-liquid-glass rules paint 18px glass with the star glyph, which loses
+   Yosemite's flat 15-16px steel-blue checkbox/radio. The vinceliuice assets
+   (16px frame) calibrate these recipes; the Theme Lab checkmark image is the
+   two-stroke white check. State coverage: normal, checked, pressed, disabled,
+   and the hover hairline from 10.10. */
+body.use-liquid-glass[data-theme="yosemite"] .theme-lab-choice-matrix :is(
+  input[type="checkbox"],
+  input[type="radio"]
+) {
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-grid;
+  place-items: center;
+  width: 15px;
+  min-width: 15px;
+  height: 15px;
+  min-height: 15px;
+  margin: 0;
+  border: var(--choice-border);
+  background: var(--choice-bg);
+  box-shadow: var(--choice-shadow);
+}
+
+body.use-liquid-glass[data-theme="yosemite"] .theme-lab-choice-matrix input[type="checkbox"] {
+  border-radius: var(--choice-radius);
+}
+
+body.use-liquid-glass[data-theme="yosemite"] .theme-lab-choice-matrix input[type="radio"] {
+  border-radius: 50%;
+}
+
+body.use-liquid-glass[data-theme="yosemite"] .theme-lab-choice-matrix input[type="checkbox"]:checked {
+  border-color: transparent;
+  background-color: var(--choice-checked-bg);
+  background-image:
+    var(--theme-lab-checkbox-checkmark-image, var(--choice-checkmark-image)),
+    var(--choice-checked-bg-image, none);
+  box-shadow: none;
+}
+
+body.use-liquid-glass[data-theme="yosemite"] .theme-lab-choice-matrix input[type="radio"]:checked {
+  border-color: var(--choice-border);
+  background-color: var(--choice-checked-bg);
+  background-image: var(--theme-lab-radio-checked-bg, var(--radio-checked-image));
+  box-shadow: var(--radio-shadow);
+}
+
+body.use-liquid-glass[data-theme="yosemite"] .theme-lab-choice-matrix input[type="checkbox"]:is(:active, .is-active):not(:disabled) {
+  background-color: var(--theme-lab-checkbox-active-bg, var(--choice-checked-bg));
+  background-image:
+    var(--theme-lab-checkbox-checkmark-image, var(--choice-checkmark-image)),
+    var(--choice-checked-bg-image, none);
+  box-shadow: var(--control-active-shadow);
+}
+
+body.use-liquid-glass[data-theme="yosemite"] .theme-lab-choice-matrix input[type="radio"]:is(:active, .is-active):not(:disabled) {
+  background-color: var(--theme-lab-checkbox-active-bg, var(--choice-checked-bg));
+  background-image: var(--theme-lab-radio-checked-bg, var(--radio-checked-image));
+  box-shadow: var(--control-active-shadow);
+}
+
+body.use-liquid-glass[data-theme="yosemite"] .theme-lab-choice-matrix :is(
+  input[type="checkbox"],
+  input[type="radio"]
+):disabled {
+  background-color: var(--control-disabled-bg);
+  box-shadow: none;
+  opacity: var(--control-disabled-opacity, 0.56);
+}
+
+body.use-liquid-glass[data-theme="yosemite"] .theme-lab-menu {
   padding-block: 10px;
 }
 
-body[data-theme="yosemite"] .theme-lab-split-view {
+body.use-liquid-glass[data-theme="yosemite"] .theme-lab-split-view {
   background: var(--desktop-surface);
   background-size: cover;
 }
 
-body[data-theme="yosemite"] .theme-lab-progress {
+body.use-liquid-glass[data-theme="yosemite"] .theme-lab-progress {
   height: 12px;
   padding: 1px;
   border-color: rgba(0, 0, 0, 0.18);
@@ -2993,24 +3476,26 @@ body[data-theme="yosemite"] .theme-lab-progress {
   background: #e5e5e5;
 }
 
-body[data-theme="yosemite"] .theme-lab-progress span {
+body.use-liquid-glass[data-theme="yosemite"] .theme-lab-progress span {
   border-radius: 5px;
   background: linear-gradient(#4c97fe, #0564e3);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26);
 }
 
-body[data-theme="yosemite"] .theme-lab-scroll::-webkit-scrollbar-thumb {
+body.use-liquid-glass[data-theme="yosemite"] .theme-lab-scroll::-webkit-scrollbar-thumb {
   background-clip: content-box;
 }
 
 @media (prefers-reduced-transparency: reduce) {
   html[data-theme="yosemite"],
-  body[data-theme="yosemite"] {
+  body.use-liquid-glass[data-theme="yosemite"] {
     --window-bg: #f2f3f4;
     --menu-panel-bg: #f5f6f7;
     --sidebar-bg: #dfe4e8;
     --window-backdrop-filter: none;
     --surface-backdrop-filter: none;
     --menu-panel-backdrop-filter: none;
+    --sidebar-backdrop-filter: none;
+    --titlebar-toolbar-backdrop-filter: none;
   }
 }

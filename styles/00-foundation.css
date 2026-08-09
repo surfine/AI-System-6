@@ -794,6 +794,11 @@
   --menu-panel-shadow: 1px 1px 0 var(--ink);
   --menu-panel-backdrop-filter: none;
   --surface-backdrop-filter: none;
+  /* Surface-specific vibrancy: each translucent surface owns its own filter so
+     no single --surface-backdrop-filter rules a whole system. Defaults follow
+     the shared surface token; eras override per surface. */
+  --sidebar-backdrop-filter: var(--surface-backdrop-filter);
+  --titlebar-toolbar-backdrop-filter: var(--surface-backdrop-filter);
   --happy-mac-border-width: 4px;
   --happy-mac-face-border-width: 2px;
   --happy-mac-border-color: var(--ink);

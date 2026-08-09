@@ -69,6 +69,7 @@ const ALWAYS_AVAILABLE = new Map([
   // Appearance choices are always valid and update their own checked state.
   ["set-theme-classic", "Appearance choice is valid from every application"],
   ["set-theme-platinum", "Appearance choice is valid from every application"],
+  ["set-theme-yosemite", "Appearance choice is valid from every application"],
   ["set-theme-liquid-glass", "Appearance choice is valid from every application"],
 ]);
 

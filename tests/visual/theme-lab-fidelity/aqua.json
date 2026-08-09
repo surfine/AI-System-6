@@ -28,7 +28,7 @@
     "playwrightVersion": "1.62.1",
     "browserRevision": "1234",
     "browserVersion": "151.0.7922.34",
-    "contentSha256": "dcf0c97cd6385b4a49c28665c719574bffe62c1eadbaf43127a005cdcb05bfba",
+    "contentSha256": "5d176922fd7554c486808b3696451c4a5fa1d5f85161410678b5a4fc21f158a0",
     "historicalFontTarget": "Lucida Grande 13 pt",
     "fontProbeSelectors": [
       ".theme-lab-controls h3",
@@ -212,7 +212,8 @@
         "visible": true,
         "text": "2 items"
       }
-    ]
+    ],
+    "sourceScale": 1
   },
   "output": {
     "atlasWidth": 1120,

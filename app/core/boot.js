@@ -115,12 +115,12 @@ function openBootRecovery() {
     try {
       const bundle = await window.AISystem6RecoveryStorage?.exportRecoveryProjectBackup?.(selectedRecoveryProjectId);
       if (!bundle) {
-        setNote(t("boot_recovery_export_failed"));
+        setNote(t("boot_recovery_export_unverified"));
         return;
       }
       const project = recoveryProjectsCache.find((entry) => entry.id === selectedRecoveryProjectId);
-      downloadJsonFile(bundle, `${project?.name || "Project"} Project Hard Disk Backup`);
       setNote(t("boot_recovery_exported"));
+      downloadJsonFile(bundle, `${project?.name || "Project"} Project Hard Disk Backup`);
     } catch {
       setNote(t("boot_recovery_export_failed"));
     }

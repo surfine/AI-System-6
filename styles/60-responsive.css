@@ -353,6 +353,8 @@ body.is-writer-mode .context-panel-window {
 /* body { background: var(--desktop) } — already in styles/00-foundation.css.
    Audited DEAD on 2026-05-28. */
 
+/* The 1-bit desktop grid is the System 6 desktop default; era wallpapers
+   override it from the theme layer (styles/65-appearance-themes.css). */
 .desktop {
   padding: 18px;
   background:

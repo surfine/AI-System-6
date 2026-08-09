@@ -1,8 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <defs>
+    <linearGradient id="g-alert" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8f9fe0"/>
+      <stop offset="0.55" stop-color="#6666cc"/>
+      <stop offset="1" stop-color="#3a3a8f"/>
+    </linearGradient>
+  </defs>
   <path fill="#111" d="M3 2h22v3h3v22h-3v3H3z"/>
   <path fill="#ddbb88" d="M5 4h18v3h3v18h-3v3H5z"/>
   <path fill="#ffeecc" d="M6 5h16v2H6zM6 8h2v16H6z"/>
-  <path fill="#6666cc" d="M9 8h13v13H9z"/>
+  <path fill="url(#g-alert)" d="M9 8h13v13H9z"/>
   <path fill="#ccccff" d="M10 9h11v3H10z"/>
   <path fill="#333399" d="M10 18h11v2H10z"/>
   <path fill="#ffffff" d="M13 11h2v5h-2zM13 17h2v1h-2z"/>

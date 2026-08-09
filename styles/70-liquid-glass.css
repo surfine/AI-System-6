@@ -1822,7 +1822,7 @@ body.use-liquid-glass {
     #e4e8ea;
 }
 
-body.use-liquid-glass .desktop {
+body.use-liquid-glass[data-theme="liquid-glass"] .desktop {
   background:
     linear-gradient(rgba(255, 255, 255, 0.32) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.26) 1px, transparent 1px),

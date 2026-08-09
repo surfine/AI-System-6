@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <!-- Platinum painter (shared recipe) : AI System 6's own bureaucracyMeme silhouette.
+       Dark rim, gradient volume, clipped highlight/shade, ink details.
+       No Apple art. -->
+  <defs>
+    <linearGradient id="g-body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#c9c6d8"/>
+      <stop offset="0.5" stop-color="#9b96b4"/>
+      <stop offset="1" stop-color="#615c7e"/>
+    </linearGradient>
+    <linearGradient id="g-soft" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e1e0ea"/>
+      <stop offset="0.5" stop-color="#c8c5d6"/>
+      <stop offset="1" stop-color="#a8a5b8"/>
+    </linearGradient>
+    <linearGradient id="g-hi" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.38"/>
+      <stop offset="0.55" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="g-sh" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0.6" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.16"/>
+    </linearGradient>
+    <clipPath id="cp-body">
+      <path d="M5 7h22v16H5z" />
+      <path d="M8 10h16v10H8z" />
+    </clipPath>
+  </defs>
+  <path d="M5 7h22v16H5z" fill="url(#g-body)" stroke="#111" stroke-width="1" />
+    <path d="M8 10h16v10H8z" fill="url(#g-body)" stroke="#111" stroke-width="1" />
+  <g clip-path="url(#cp-body)">
+    <rect x="0" y="0" width="32" height="32" fill="url(#g-hi)"/>
+    <rect x="0" y="0" width="32" height="32" fill="url(#g-sh)"/>
+    <rect x="0" y="0" width="2" height="32" fill="#ffffff" fill-opacity="0.2"/>
+    <rect x="30" y="0" width="2" height="32" fill="#000000" fill-opacity="0.12"/>
+  </g>
+  <circle cx="13" cy="14" r="2" fill="#3d3a4d" stroke="#111" stroke-width="0.8" />
+  <circle cx="19" cy="14" r="2" fill="#3d3a4d" stroke="#111" stroke-width="0.8" />
+  <path d="M10 22l-2 5M22 22l2 5" fill="none" stroke="#111" stroke-width="1" stroke-linecap="square" />
+  <path d="M11 17h10M12 20h8" fill="none" stroke="#111" stroke-width="1" stroke-linecap="square" />
+  <path d="M14 5h4M16 3v4" fill="none" stroke="#111" stroke-width="1" stroke-linecap="square" />
+</svg>

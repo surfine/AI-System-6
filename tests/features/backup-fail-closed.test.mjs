@@ -8,6 +8,7 @@ import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("backup-fail-closed");
 const backupSource = read("app/core/project-disk-backup.js");
+const assemblerSource = read("app/core/project-backup-assembler.js");
 const exportImportSource = read("app/features/export-import.js");
 
 function makeContext({ readRevisionsFails = false } = {}) {
@@ -24,6 +25,7 @@ function makeContext({ readRevisionsFails = false } = {}) {
     window: {
       location: { protocol: "http:", hostname: "x" },
       AISystem6Config: {},
+      AISystem6BuildInfo: { version: "1.0.26", build: "20260808.9" },
     },
     projectCdGridEl: null,
     getActiveProject: () => ({ id: "p1", name: "P" }),
@@ -64,6 +66,7 @@ function makeContext({ readRevisionsFails = false } = {}) {
     countMarkdownWords: (text) => String(text || "").length,
   });
   vm.runInContext(backupSource, context);
+  vm.runInContext(assemblerSource, context);
   vm.runInContext(exportImportSource, context);
   return { context, state, keyval };
 }

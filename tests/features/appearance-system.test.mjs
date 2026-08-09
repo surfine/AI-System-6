@@ -7,6 +7,7 @@ const index = read("index.html");
 const app = read("app.js");
 const actions = read("app/core/actions.js");
 const menus = read("app/data/menus.js");
+const windowManager = read("app/core/window-manager.js");
 const persistence = read("app/core/persistence-status.js");
 const manifest = read("scripts/style-manifest.mjs");
 const verification = read("scripts/verify-css.mjs");
@@ -22,10 +23,15 @@ const packageJson = read("package.json");
 
 const THEME_IDS = ["classic", "platinum", "aqua", "snow-leopard", "yosemite", "liquid-glass"];
 const RELEASE_READY_THEME_IDS = ["classic", "platinum", "liquid-glass"];
-const RESEARCH_THEME_IDS = ["aqua", "snow-leopard", "yosemite"];
+// Yosemite is a limited release: selectable through the normal path and the
+// Control Panel, but still not part of the three official release themes.
+const SELECTABLE_THEME_IDS = ["classic", "platinum", "yosemite", "liquid-glass"];
+const RESEARCH_THEME_IDS = ["aqua", "snow-leopard"];
 const SYSTEM_FONTS = ["Chicago", "Charcoal", "Lucida Grande", "Lucida Grande", "Helvetica Neue", "SF Pro"];
-const THEME_FAMILIES = ["classic", "classic", "aqua", "aqua", "liquid-glass", "liquid-glass"];
-const RECIPE_BASES = [null, "classic", null, "aqua", "liquid-glass", null];
+// Inheritance law: Platinum follows Classic; everything else follows Liquid
+// Glass (Snow Leopard may move to the Aqua recipe in the future).
+const THEME_FAMILIES = ["classic", "classic", "liquid-glass", "liquid-glass", "liquid-glass", "liquid-glass"];
+const RECIPE_BASES = [null, "classic", "liquid-glass", "liquid-glass", "liquid-glass", null];
 
 function fakeElement() {
   const classes = new Set();
@@ -76,9 +82,9 @@ test.assert(fresh.api.themes.map(({ systemFontSize }) => systemFontSize).join(",
 test.assert(fresh.api.themes.map(({ family }) => family).join(",") === THEME_FAMILIES.join(","), "the registry owns the three requested recipe families");
 test.assert(fresh.api.themes.map(({ recipeBase }) => recipeBase).join(",") === RECIPE_BASES.join(","), "the registry owns the requested parent recipe for each era");
 test.assert(fresh.api.getRecipeChain("platinum").map(({ id }) => id).join(",") === "classic,platinum", "Platinum derives from Classic");
-test.assert(fresh.api.getRecipeChain("snow-leopard").map(({ id }) => id).join(",") === "aqua,snow-leopard", "Snow Leopard derives from Aqua");
+test.assert(fresh.api.getRecipeChain("snow-leopard").map(({ id }) => id).join(",") === "liquid-glass,snow-leopard", "Snow Leopard derives from Liquid Glass (may move to Aqua later)");
 test.assert(fresh.api.getRecipeChain("yosemite").map(({ id }) => id).join(",") === "liquid-glass,yosemite", "Yosemite derives from Liquid Glass");
-test.assert(fresh.api.getRecipeChain("aqua").map(({ id }) => id).join(",") === "aqua", "Aqua remains a recipe root");
+test.assert(fresh.api.getRecipeChain("aqua").map(({ id }) => id).join(",") === "liquid-glass,aqua", "Aqua derives from Liquid Glass under the inheritance law");
 test.assert(fresh.api.getTheme("platinum").fontStrategy === "theme", "Platinum owns Charcoal instead of inheriting the modern-font preference");
 test.assert(fresh.api.getCurrentTheme() === "classic", "fresh installs default to System 6");
 test.assert(fresh.values.get("ai-system-6-theme") === "classic", "the canonical theme key is initialized immediately");
@@ -91,24 +97,41 @@ test.assert(fresh.documentElement.dataset.theme === "platinum" && fresh.body.dat
 test.assert(fresh.documentElement.dataset.themeFamily === "classic" && fresh.documentElement.dataset.themeBase === "classic", "a derived recipe projects its family and parent");
 test.assert(fresh.events.at(-1)?.type === "ai-system6-themechange" && fresh.events.at(-1)?.detail.themeId === "platinum", "theme changes emit one namespaced event");
 
-// Research appearances cannot enter the release path.
+// Research appearances (Aqua / Snow Leopard) cannot enter the release path;
+// Yosemite is a limited release built on the Liquid Glass recipe.
 fresh.api.applyTheme("aqua", { announce: false });
 test.assert(fresh.api.getCurrentTheme() === "classic" && fresh.values.get("ai-system-6-theme") === "classic", "applyTheme rejects research appearances");
 test.assert(fresh.api.normalizeReleaseThemeId("aqua") === "classic", "aqua normalizes to the canonical System 6 appearance");
 test.assert(fresh.api.normalizeReleaseThemeId("snow-leopard") === "classic", "snow-leopard normalizes to the canonical System 6 appearance");
-test.assert(fresh.api.normalizeReleaseThemeId("yosemite") === "liquid-glass", "yosemite normalizes to Liquid Glass");
+test.assert(fresh.api.normalizeReleaseThemeId("yosemite") === "yosemite", "Yosemite is a limited release built on Liquid Glass");
+
+fresh.api.applyTheme("yosemite", { announce: false });
+test.assert(fresh.api.getCurrentTheme() === "yosemite" && fresh.values.get("ai-system-6-theme") === "yosemite", "Yosemite applies and persists through the release path");
+test.assert(fresh.body.classList.contains("use-liquid-glass"), "Yosemite shares the Liquid Glass family base");
+test.assert(fresh.body.dataset.themeFamily === "liquid-glass", "Yosemite projects the Liquid Glass lineage");
+fresh.api.applyTheme("classic", { announce: false });
+
+// The research switch (Control Panel -> Advanced) gates Aqua / Snow Leopard
+// and the Theme Lab entry in the Special menu.
+test.assert(fresh.api.isResearchEnabled?.() === false, "the research switch starts off");
+fresh.api.setResearchEnabled?.(true);
+test.assert(fresh.api.isResearchEnabled?.() === true, "the research switch enables research appearances");
+fresh.api.applyTheme("aqua", { announce: false });
+test.assert(fresh.api.getCurrentTheme() === "aqua" && fresh.values.get("ai-system-6-theme") === "aqua", "Aqua applies and persists while the research switch is on");
+fresh.api.setResearchEnabled?.(false);
+test.assert(fresh.api.getCurrentTheme() === "classic" && fresh.values.get("ai-system-6-theme") === "classic", "turning the research switch off drops Aqua back to System 6");
 
 fresh.api.previewExperimentalTheme("aqua");
 test.assert(fresh.api.getCurrentTheme() === "aqua" && fresh.values.get("ai-system-6-theme") === "classic", "experimental preview applies without persisting");
 test.assert(fresh.documentElement.dataset.theme === "aqua" && fresh.body.dataset.theme === "aqua", "experimental preview projects the research theme for this session");
 test.assert(fresh.events.at(-1)?.detail.themeId === "aqua", "experimental preview emits the same namespaced event");
-test.assert(!fresh.body.classList.contains("use-liquid-glass"), "historical themes do not impersonate Liquid Glass");
+test.assert(fresh.body.classList.contains("use-liquid-glass"), "Aqua shares the Liquid Glass family base");
 
 fresh.api.previewExperimentalTheme("snow-leopard");
-test.assert(fresh.documentElement.dataset.themeFamily === "aqua" && fresh.documentElement.dataset.themeBase === "aqua", "Snow Leopard projects the Aqua lineage for shared recipes and diagnostics");
+test.assert(fresh.documentElement.dataset.themeFamily === "liquid-glass" && fresh.documentElement.dataset.themeBase === "liquid-glass", "Snow Leopard projects the Liquid Glass lineage for shared recipes and diagnostics");
 
 fresh.api.previewExperimentalTheme("yosemite");
-test.assert(fresh.api.getCurrentTheme() === "yosemite" && fresh.values.get("ai-system-6-theme") === "classic", "experimental preview never persists a research theme");
+test.assert(fresh.api.getCurrentTheme() === "yosemite" && fresh.values.get("ai-system-6-theme") === "classic", "experimental preview stays session-only even for the limited release");
 
 fresh.api.applyTheme("liquid-glass", { announce: false });
 test.assert(fresh.body.classList.contains("use-liquid-glass"), "Liquid Glass keeps its compatibility projection while selectors migrate to tokens");
@@ -124,8 +147,8 @@ test.assert(!migratedOn.values.has("ai-system-6-liquid-glass") && migratedOn.val
 const migratedOff = loadRegistry([["ai-system-6-liquid-glass", "false"]]);
 test.assert(migratedOff.api.getCurrentTheme() === "classic", "the old disabled Boolean migrates to System 6");
 const canonicalWins = loadRegistry([["ai-system-6-theme", "yosemite"], ["ai-system-6-liquid-glass", "true"]]);
-test.assert(canonicalWins.api.getCurrentTheme() === "liquid-glass", "a saved research id migrates to a release theme over stale legacy state");
-for (const [saved, expected] of [["aqua", "classic"], ["snow-leopard", "classic"], ["yosemite", "liquid-glass"]]) {
+test.assert(canonicalWins.api.getCurrentTheme() === "yosemite", "a saved Yosemite id wins over stale legacy Liquid Glass state");
+for (const [saved, expected] of [["aqua", "classic"], ["snow-leopard", "classic"], ["yosemite", "yosemite"]]) {
   const migrated = loadRegistry([["ai-system-6-theme", saved]]);
   test.assert(migrated.api.getCurrentTheme() === expected, `saved ${saved} safely migrates to ${expected}`);
   test.assert(migrated.values.get("ai-system-6-theme") === expected, `the ${saved} migration is persisted as ${expected}`);
@@ -139,7 +162,8 @@ test.assert(index.indexOf('src="app/core/theme-registry.js"') < index.indexOf('r
 test.assertIncludes(index, 'src="app/core/theme-body-init.js"', "body receives the pre-resolved theme through a CSP-safe external script before desktop markup");
 test.assertIncludes(read("app/core/theme-body-init.js"), "window.AISystem6Theme?.syncBody()", "the body initializer delegates to the registry instead of owning theme state");
 test.assertIncludes(index, 'id="appearance-theme"', "Control Panel exposes one Appearance selector");
-for (const id of RELEASE_READY_THEME_IDS) {
+test.assertIncludes(index, 'id="research-appearances"', "Control Panel exposes the research-appearances switch in Advanced");
+for (const id of SELECTABLE_THEME_IDS) {
   test.assertIncludes(index, `option value="${id}"`, `Control Panel exposes ${id}`);
   test.assertIncludes(menus, `themeId: "${id}"`, `Special menu exposes ${id} from registry-compatible ids`);
 }
@@ -148,9 +172,12 @@ for (const id of RESEARCH_THEME_IDS) {
   test.assertNotIncludes(menus, `themeId: "${id}"`, `Special menu keeps ${id} out of the release surface`);
 }
 test.assertIncludes(menus, 'submenu("appearance", appearanceItems)', "Special owns a single Appearance submenu");
-test.assertNotIncludes(menus, "open-theme-lab", "the release Special menu has no Theme Lab entry");
+test.assertIncludes(menus, "open-theme-lab", "the Special menu carries the Theme Lab entry");
+test.assertIncludes(windowManager, '"open-theme-lab": window.AISystem6Theme?.isResearchEnabled?.() === true', "Theme Lab is gated by the research switch");
 test.assertIncludes(actions, '"open-theme-lab": () => openWindow("themeLab")', "Theme Lab has an explicit development entry");
 test.assertIncludes(index, 'data-window="themeLab"', "Theme Lab is a real managed window");
+test.assertIncludes(index, "theme-lab-icon-set", "Theme Lab hosts the full Platinum icon set overview");
+test.assertIncludes(index, 'data-system-icon="writingBell"', "the Platinum icon set overview covers the last painter in the family");
 test.assertIncludes(index, "theme-lab-focus-demo", "Theme Lab includes an explicit focus state");
 test.assertIncludes(index, "theme-lab-focus-control", "Theme Lab exposes button focus without relying on screenshot-time keyboard state");
 test.assertIncludes(index, "theme-lab-size-row", "Theme Lab compares regular, small, and mini control variants on the shared DOM");
@@ -183,7 +210,7 @@ test.assertIncludes(persistence, "theme: getCurrentTheme()", "desk settings pers
 test.assertIncludes(persistence, "typeof settings.liquidGlass === \"boolean\"", "desk-state restore retains one release-safe Boolean migration");
 
 test.assertIncludes(manifest, '"styles/65-appearance-themes.css"', "the era parameter tables participate in the production bundle");
-test.assertNotIncludes(manifest, '"styles/66-theme-lab.css"', "Theme Lab styles are absent from the production bundle");
+test.assertIncludes(manifest, '"styles/66-theme-lab.css"', "Theme Lab is a research-gated product surface, so its stylesheet ships in the production bundle");
 test.assertIncludes(labSnapshot, "66-theme-lab.css", "Theme Lab snapshots inject the dev-only stylesheet");
 test.assertIncludes(labFidelity, "66-theme-lab.css", "canonical comparison injects the dev-only stylesheet");
 test.assertIncludes(labSnapshot, "experimental: true", "Theme Lab snapshots preview research appearances without persisting");
@@ -201,7 +228,10 @@ test.assertIncludes(packageJson, '"verify:theme-lab"', "the six-era visual compa
 // public deployment, and never persists.
 test.assertIncludes(app, "bootDebugMatch", "research previews enter through ?debugTheme=");
 test.assertIncludes(app, "developmentPreviewAllowed", "research previews require a development surface");
-test.assertIncludes(app, "deploymentProfile !== \"public\"", "public deployments cannot trigger research previews");
+test.assertIncludes(app, "function isDevelopmentSurface", "development surfaces are decided by one explicit helper");
+test.assertNotIncludes(app, "deploymentProfile !== \"public\"", "unknown deployment state is never treated as development");
+test.assertIncludes(app, "window.AISystem6Capabilities?.development === true", "remote staging needs an explicit development capability");
+test.assertIncludes(app, "localhost", "loopback hosts are development surfaces");
 test.assertIncludes(app, "previewExperimentalTheme(bootDebugTheme.id)", "the research preview stays experimental and non-persisting");
 test.assertIncludes(app, "normalizeReleaseThemeId(bootDebugTheme.id)", "the Appearance selector still reflects the release theme during preview");
 test.assertNotMatches(app, /\[?&\]theme=\(\[a-z0-9-\]+\).*releaseReady === false/, "plain ?theme= no longer unlocks research appearances");
@@ -268,13 +298,17 @@ test.assertIncludes(appearanceCss, "--sidebar-bg: #dde4eb", "Snow Leopard expose
 test.assertIncludes(appearanceCss, "--sidebar-selection-bg-inactive:", "Snow Leopard exposes focused, unfocused, and inactive source-list selection states");
 test.assertIncludes(appearanceCss, "--scrollbar-width: 15px", "the system specimen uses the native 10.6 Aqua scrollbar width");
 test.assertIncludes(appearanceCss, "--scrollbar-compact-width: 11px", "Chromium's custom compact scrollbar survives as a separate Web variant token");
-test.assertIncludes(appearanceCss, 'body[data-theme-family="aqua"] .system-select-button::after', "the Aqua lineage shares the native up/down pop-up indicator recipe");
+test.assertIncludes(appearanceCss, 'body.use-liquid-glass[data-theme="aqua"] .system-select-button::after', "Aqua keeps its native up/down pop-up indicator over the Liquid Glass base");
 test.assertIncludes(appearanceCss, "vinceliuice/Yosemite-gtk-theme 03b6f721", "Yosemite records the exact GTK evidence revision");
 test.assertIncludes(appearanceCss, "--selection-bg: #0e6bff", "Yosemite preserves the evidence-led selection blue");
-test.assertIncludes(appearanceCss, 'body[data-theme-family="aqua"]:not([data-theme="aqua"]) .theme-lab-toolbar', "Snow Leopard's mature toolbar geometry is an Aqua-family recipe driven by era tokens");
+test.assertIncludes(appearanceCss, 'body.use-liquid-glass[data-theme="snow-leopard"] .theme-lab-toolbar', "Snow Leopard's mature toolbar geometry is a snow-leopard recipe driven by era tokens over the Liquid Glass base");
 test.assertIncludes(foundationCss, "--surface-backdrop-filter: none", "surface vibrancy has a safe Classic default");
 test.assertIncludes(liquidCss, "--surface-backdrop-filter: var(--menu-panel-backdrop-filter)", "the new surface token keeps its Liquid Glass twin");
-test.assertIncludes(labCss, "backdrop-filter: var(--surface-backdrop-filter)", "Theme Lab diagnoses surface vibrancy through the semantic token");
+test.assertIncludes(labCss, "backdrop-filter: var(--sidebar-backdrop-filter", "Theme Lab diagnoses sidebar vibrancy through its own semantic token");
+test.assertIncludes(labCss, "backdrop-filter: var(--titlebar-toolbar-backdrop-filter", "Theme Lab diagnoses titlebar/toolbar vibrancy through its own semantic token");
+test.assertIncludes(foundationCss, "--sidebar-backdrop-filter: var(--surface-backdrop-filter)", "surface vibrancy is split per surface in the token foundation");
+test.assertIncludes(appearanceCss, ".theme-lab-generic-browser.is-inactive .theme-lab-sidebar", "Yosemite's inactive sidebar returns to an opaque surface");
+test.assertIncludes(appearanceCss, "backdrop-filter: none", "the inactive sidebar drops its blur");
 
 for (const id of THEME_IDS) {
   test.assert(exists(`tests/visual/theme-lab/${id}.png`), `${id} has a committed Theme Lab baseline`);

@@ -9,6 +9,7 @@ const app = readAppSurface([
   "app/data/translations-en.js",
   "app/data/translations-zh.js",
   "app/core/context-retrieval.js",
+  "app/core/project-backup-assembler.js",
   "app/features/export-import.js",
   "app/features/scrapbook.js",
 ]);

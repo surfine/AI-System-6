@@ -529,6 +529,36 @@ Version `1.0.12`, build `20260804.2`.
   through ?debugTheme= on a development surface; public hosted deployments
   ignore the parameter and always land on the saved release Appearance.
 
+## Public Beta 1.0.36 - 2026-08-09
+
+- Recovery and normal Export share one Project Backup assembler, so a backup
+  from the Startup Recovery panel is byte-identical in schema to a normal
+  Project Hard Disk backup. Recovery now reads Project CD items and
+  References from their real IndexedDB sources, attaches integrity, verifies
+  it, and refuses to download a bundle that does not validate.
+- Project Backup round-trips through the real validator: a complex project
+  (nested folders, alias files, scraps, references with chunks, Project CD,
+  trash, revision parent chains, Quick Draft state) exports, verifies,
+  remaps, and every relation still resolves after import — including the
+  Quick Draft projectDocId, which now remaps to the imported document.
+- Takeover is targeted at the stored writer by instance id; read-only
+  bystanders never answer. The old writer enters a handoff mode that freezes
+  new user edits while pending durable writes finish, re-checks the stored
+  lease before releasing, restores writer mode on a failed flush, and goes
+  read-only if the lease moved mid-flush.
+- Research previews default to deny: `?debugTheme=` works only on an explicit
+  development surface (development capability or loopback); an unresolved
+  deployment profile is never treated as development.
+- Write access is declarative: mutating surfaces carry `data-requires-write`
+  (frozen by the UI layer), the action router rejects mutating commands
+  before their handlers run, and IndexedDB remains the final storage fence.
+  Recovery export works from read-only instances because it never requests a
+  write transaction.
+- A reproducible Developer ID / Hardened Runtime / notarization / staple
+  pipeline ships as a script and credential contract. No signing identity is
+  present in this environment, so notarization is reported NOT EXECUTED and
+  the beta keeps its ad-hoc caveat until credentials are provided.
+
 ## What Changed Most In One Month
 
 - The product moved from "an AI writing prototype" to a local-first writing

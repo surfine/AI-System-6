@@ -1312,6 +1312,41 @@ function wireAppEvents() {
 
   appearanceThemeInput?.addEventListener("change", () => applyTheme(appearanceThemeInput.value));
 
+  // Research appearance switch (Control Panel -> Advanced): adds Aqua and
+  // Snow Leopard to the Appearance menu for inspection and unlocks the
+  // Theme Lab entry in the Special menu. Yosemite is a release theme and is
+  // always selectable.
+  const researchAppearancesInput = document.querySelector("#research-appearances");
+  const RESEARCH_THEME_IDS = ["aqua", "snow-leopard"];
+  function syncResearchThemeSelect() {
+    const enabled = window.AISystem6Theme?.isResearchEnabled?.() === true;
+    if (!appearanceThemeInput) return;
+    for (const id of RESEARCH_THEME_IDS) {
+      const existing = appearanceThemeInput.querySelector(`option[value="${id}"]`);
+      if (enabled && !existing) {
+        const option = document.createElement("option");
+        option.value = id;
+        option.textContent = window.AISystem6Theme?.getTheme?.(id)?.label || id;
+        appearanceThemeInput.append(option);
+      } else if (!enabled && existing) {
+        existing.remove();
+      }
+    }
+    const current = window.AISystem6Theme?.getCurrentTheme?.();
+    if (current && [...appearanceThemeInput.options].some((option) => option.value === current)) {
+      appearanceThemeInput.value = current;
+    }
+  }
+  if (researchAppearancesInput) {
+    researchAppearancesInput.checked = window.AISystem6Theme?.isResearchEnabled?.() === true;
+    researchAppearancesInput.addEventListener("change", () => {
+      window.AISystem6Theme?.setResearchEnabled?.(researchAppearancesInput.checked);
+      syncResearchThemeSelect();
+      if (typeof updateMenuState === "function") updateMenuState();
+    });
+  }
+  syncResearchThemeSelect();
+
   soundEffectsInput.addEventListener("change", () => saveDeskState());
 
   // The writing surfaces type with a quiet mechanical tick. It is throttled

@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <!-- Platinum painter: full Trash (Finder ICN# 134 silhouette, drawn as a
+       solid Mac OS 9 object). Metal can with the same gradient/rim language
+       as the empty Trash reference, three cream paper sheets sticking out,
+       dark ink folds, top highlight and right/bottom shade. No Apple art. -->
+  <defs>
+    <linearGradient id="g-metal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f2f2f2"/>
+      <stop offset="0.5" stop-color="#dcdcdc"/>
+      <stop offset="1" stop-color="#adadad"/>
+    </linearGradient>
+  </defs>
+  <!-- papers (drawn back to front, tucked into the rim) -->
+  <path fill="#111" d="M6 2h9v1h-1v9H6z"/>
+  <path fill="#f7f5ee" d="M7 3h7v8H7z"/>
+  <path fill="#ddd8c9" d="M7 9h7v2H7z"/>
+  <path fill="#ffffff" d="M7 3h7v1H7z"/>
+  <path fill="#111" d="M14 1h9v1h-1v10h-8z"/>
+  <path fill="#f7f5ee" d="M15 2h7v9h-7z"/>
+  <path fill="#ddd8c9" d="M15 9h7v2h-7z"/>
+  <path fill="#ffffff" d="M15 2h7v1h-7z"/>
+  <path fill="#111" d="M22 3h7v1h-1v9h-6z"/>
+  <path fill="#f7f5ee" d="M23 4h5v8h-5z"/>
+  <path fill="#ddd8c9" d="M23 10h5v2h-5z"/>
+  <path fill="#ffffff" d="M23 4h5v1h-5z"/>
+  <!-- can rim -->
+  <path fill="#111" d="M5 11h22v2H5z"/>
+  <path fill="#e8e8e8" d="M5 11h22v1H5z"/>
+  <path fill="#ffffff" d="M5 12h22v1H5z"/>
+  <!-- can body -->
+  <path fill="#111" d="M5 13h22v1h2v16H3v-16h2z"/>
+  <path fill="url(#g-metal)" d="M6 14h20v15H6z"/>
+  <path fill="#ffffff" d="M6 14h2v15H6z"/>
+  <path fill="#c9c9c9" d="M10 14h1v15h-1zM14 14h1v15h-1zM18 14h1v15h-1zM22 14h1v15h-1z"/>
+  <path fill="#999999" d="M25 14h1v15h-1z"/>
+  <path fill="#bdbdbd" d="M6 27h20v2H6z"/>
+  <!-- base -->
+  <path fill="#111" d="M3 29h26v2H3z"/>
+  <path fill="#cccccc" d="M4 30h24v1H4z"/>
+</svg>

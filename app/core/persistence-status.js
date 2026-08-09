@@ -318,6 +318,16 @@ function saveDeskState() {
   return saveDeskStatePromise;
 }
 
+// The Appearance selector (and menu / control-strip theme actions) persist
+// through theme-registry's localStorage, but the desk-state record also
+// carries `theme` and wins on the next boot. Keep the two sources in sync so
+// a saved era (e.g. Platinum) survives a restart instead of reverting to
+// Classic. restoreDeskState() re-applies with announce:false, so this
+// listener never loops.
+document.addEventListener("ai-system6-themechange", () => {
+  saveDeskState();
+});
+
 function scheduleSettingsSave() {
   clearTimeout(settingsSaveTimer);
   settingsSaveTimer = setTimeout(() => {

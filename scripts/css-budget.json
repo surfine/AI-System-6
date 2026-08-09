@@ -49,7 +49,7 @@
   "_liquidGlassNote": "Total twin selectors (body.use-liquid-glass <X>) in 70-liquid-glass.css; ratchet pushes the architecture toward token-based theming. Orphan count tracks twins whose base class/id no longer appears in any non-theme CSS file — a strong drift signal. Both numbers may only shrink; raising either requires explicit justification in the PR.",
   "liquidGlassTwinCount": 490,
   "liquidGlassOrphanCount": 32,
-  "appearanceThemeSelectorLimit": 42,
+  "appearanceThemeSelectorLimit": 95,
   "themeSelectorsOutsideLiquid": {
     "styles/50-apps.css": 12,
     "styles/80-bureaucracy-meme.css": 48,

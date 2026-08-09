@@ -187,25 +187,21 @@ function countMarkdownWords(text) {
 async function buildProjectDiskExport(project = getActiveProject()) {
   if (!project) return null;
   const projectId = project.id;
-  const bundle = {
-    format: "ai-system-6-project-disk",
-    formatVersion: window.AISystem6ProjectDiskBackup.currentFormatVersion,
-    schemaVersion: indexedDbVersion,
-    appVersion: appVersionInfo.version,
-    appBuild: appVersionInfo.build,
-    storageVersion,
-    exportedAt: new Date().toISOString(),
-    projectRevision: project.updatedAt || "",
-    project,
-    folders: chatFolders.filter((folder) => folder.projectId === projectId),
-    files: chatFiles.filter((file) => file.projectId === projectId),
-    scraps: scraps.filter((scrap) => scrap.projectId === projectId),
-    trash: trashItems.filter((item) => item.projectId === projectId),
-    projectCdItems: projectCdItems.filter((item) => item.projectId === projectId),
-    references: projectReferences.filter((reference) => reference.projectId === projectId),
-    documentRevisions: await collectProjectDocumentRevisions(projectId),
-  };
-  return window.AISystem6ProjectDiskBackup.attachIntegrity(bundle);
+  const result = await window.AISystem6ProjectBackupAssembler.assembleProjectBackup({
+    projectId,
+    source: {
+      getProject: async () => projects.find((entry) => entry.id === projectId) || null,
+      getFolders: async () => chatFolders.filter((folder) => folder.projectId === projectId),
+      getFiles: async () => chatFiles.filter((file) => file.projectId === projectId),
+      getScraps: async () => scraps.filter((scrap) => scrap.projectId === projectId),
+      getTrash: async () => trashItems.filter((item) => item.projectId === projectId),
+      getProjectCdItems: async () => projectCdItems.filter((item) => item.projectId === projectId),
+      getReferences: async () => projectReferences.filter((reference) => reference.projectId === projectId),
+      getDocumentRevisions: () => collectProjectDocumentRevisions(projectId),
+    },
+  });
+  if (!result) return null;
+  return result.ready ? result.bundle : null;
 }
 
 /** Raised when a backup's required data cannot be read completely. */
@@ -266,7 +262,10 @@ async function exportActiveProjectDisk() {
     }
     return;
   }
-  if (!bundle) return;
+  if (!bundle) {
+    setStatus(t("project_disk_export_failed"));
+    return;
+  }
   const name = `${project.name} Project Hard Disk Backup`;
   downloadJsonFile(bundle, name);
   setStatus(t("project_disk_exported", project.name));

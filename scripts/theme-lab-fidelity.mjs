@@ -45,6 +45,8 @@ Options:
   --theme <id>        Appearance manifest to use (default: platinum)
   --manifest <path>   Use an explicit manifest file (theme field still applies)
   --fetch             Download missing canonical sources into the local cache
+  --update-fingerprint  Accept the current Theme Lab content hash and write it
+                       back to the manifest (intentional fixture DOM changes)
   --source-dir <dir>  Read canonical sources from an existing local directory
   --output-dir <dir>  Write generated artifacts to this directory
   --help               Print this help
@@ -60,6 +62,7 @@ function parseArgs(argv) {
     theme: DEFAULT_THEME,
     manifestPath: null,
     fetch: false,
+    updateFingerprint: false,
     sourceDir: null,
     outputDir: null,
   };
@@ -71,6 +74,10 @@ function parseArgs(argv) {
     }
     if (argument === "--fetch") {
       options.fetch = true;
+      continue;
+    }
+    if (argument === "--update-fingerprint") {
+      options.updateFingerprint = true;
       continue;
     }
     if (["--theme", "--manifest", "--source-dir", "--output-dir"].includes(argument)) {
@@ -231,11 +238,177 @@ function referenceCrop(source, rawCrop, label) {
   if (crop.x < 0 || crop.y < 0 || crop.x + crop.width > source.width || crop.y + crop.height > source.height) {
     throw new Error(`${label} crop ${JSON.stringify(crop)} is outside ${source.width}x${source.height}`);
   }
-  const canvas = createCanvas(crop.width, crop.height);
+  const scale = Number(rawCrop.scale || 1);
+  if (!Number.isFinite(scale) || scale <= 0 || scale > 1) {
+    throw new Error(`${label} reference scale must be in (0, 1]: got ${rawCrop.scale}`);
+  }
+  const outWidth = Math.max(1, Math.round(crop.width * scale));
+  const outHeight = Math.max(1, Math.round(crop.height * scale));
+  const canvas = createCanvas(outWidth, outHeight);
   const context = canvas.getContext("2d");
-  context.imageSmoothingEnabled = false;
-  context.drawImage(source.image, crop.x, crop.y, crop.width, crop.height, 0, 0, crop.width, crop.height);
-  return { canvas, crop };
+  // Retina references (e.g. 512 Pixels Yosemite at 2x) are downscaled to the
+  // CSS pixel grid before comparison; sourceScale records the original ratio.
+  context.imageSmoothingEnabled = scale < 1;
+  context.imageSmoothingQuality = "high";
+  context.drawImage(source.image, crop.x, crop.y, crop.width, crop.height, 0, 0, outWidth, outHeight);
+  return { canvas, crop: { ...crop, scale } };
+}
+
+// Geometry / material analysis for a no-vision model. Edge positions measure
+// the control silhouette (strict), colour measures interior material while
+// ignoring antialiased edges and text.
+function luminanceMap(imageData, width, height) {
+  const out = new Float32Array(width * height);
+  for (let i = 0; i < width * height; i += 1) {
+    const offset = i * 4;
+    out[i] = imageData[offset] * 0.2126
+      + imageData[offset + 1] * 0.7152
+      + imageData[offset + 2] * 0.0722;
+  }
+  return out;
+}
+
+function edgeMap(lum, width, height, threshold = 24) {
+  const edges = new Uint8Array(width * height);
+  for (let y = 1; y < height - 1; y += 1) {
+    for (let x = 1; x < width - 1; x += 1) {
+      const i = y * width + x;
+      const gradient = Math.abs(lum[i + 1] - lum[i - 1]) + Math.abs(lum[i + width] - lum[i - width]);
+      if (gradient > threshold) edges[i] = 1;
+    }
+  }
+  return edges;
+}
+
+// Text / icon masking for the material metric: glyph strokes and their
+// antialiasing neighbors sit in high local-variance regions. Excluding them
+// keeps materialError measuring surface colour, not text content.
+function textLikeMask(lum, width, height, varianceThreshold = 55) {
+  const mask = new Uint8Array(width * height);
+  for (let y = 2; y < height - 2; y += 1) {
+    for (let x = 2; x < width - 2; x += 1) {
+      let sum = 0;
+      let sumSq = 0;
+      let count = 0;
+      for (let dy = -1; dy <= 1; dy += 1) {
+        for (let dx = -1; dx <= 1; dx += 1) {
+          const value = lum[(y + dy) * width + (x + dx)];
+          sum += value;
+          sumSq += value * value;
+          count += 1;
+        }
+      }
+      const mean = sum / count;
+      const variance = sumSq / count - mean * mean;
+      if (variance > varianceThreshold) mask[y * width + x] = 1;
+    }
+  }
+  return mask;
+}
+
+function dilateMask(mask, width, height, iterations) {
+  let current = mask;
+  for (let pass = 0; pass < iterations; pass += 1) {
+    const next = new Uint8Array(current);
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        const i = y * width + x;
+        if (current[i]) continue;
+        if (
+          (x > 0 && current[i - 1])
+          || (x < width - 1 && current[i + 1])
+          || (y > 0 && current[i - width])
+          || (y < height - 1 && current[i + width])
+        ) {
+          next[i] = 1;
+        }
+      }
+    }
+    current = next;
+  }
+  return current;
+}
+
+function analyzeGeometryAndMaterial(referenceCanvas, currentCanvas, options = {}) {
+  const width = referenceCanvas.width;
+  const height = referenceCanvas.height;
+  if (width !== currentCanvas.width || height !== currentCanvas.height) {
+    return { edgeErrorPx: null, geometryMismatch: null, materialError: null, reason: "size-mismatch" };
+  }
+  const referenceData = referenceCanvas.getContext("2d").getImageData(0, 0, width, height).data;
+  const currentData = currentCanvas.getContext("2d").getImageData(0, 0, width, height).data;
+  const refLum = luminanceMap(referenceData, width, height);
+  const curLum = luminanceMap(currentData, width, height);
+  const refEdges = edgeMap(refLum, width, height);
+  const curEdges = edgeMap(curLum, width, height);
+  const refText = textLikeMask(refLum, width, height);
+  // Optional text masking for the *silhouette* metric. Label glyphs are
+  // content, not control chrome: a tab strip with different labels should not
+  // inflate geometryMismatch. State glyphs (checkmarks, radio dots) stay
+  // unmasked -- they are part of the control's visual identity.
+  if (options.geometryMask === "text") {
+    const refTextMask = dilateMask(refText, width, height, 1);
+    const curTextMask = dilateMask(textLikeMask(curLum, width, height), width, height, 1);
+    for (let i = 0; i < refEdges.length; i += 1) {
+      if (refTextMask[i]) refEdges[i] = 0;
+      if (curTextMask[i]) curEdges[i] = 0;
+    }
+  }
+
+  let refEdgeCount = 0;
+  for (let i = 0; i < refEdges.length; i += 1) if (refEdges[i]) refEdgeCount += 1;
+  if (!refEdgeCount) {
+    return { edgeErrorPx: 0, geometryMismatch: 0, materialError: 0 };
+  }
+
+  // Edge distance: dilate the current edges up to 8px; each uncovered pass
+  // accumulates distance for the reference edges.
+  // Distance-0 coverage is the current silhouette itself: reference edges
+  // that exactly overlap a current edge are covered at distance 0 and must
+  // not be reported as missing; the loop counts distances 1..8 from there.
+  let uncovered = 0;
+  for (let i = 0; i < refEdges.length; i += 1) {
+    if (refEdges[i] && !curEdges[i]) uncovered += 1;
+  }
+  let previous = new Uint8Array(curEdges);
+  let distanceSum = 0;
+  for (let distance = 1; distance <= 8 && uncovered > 0; distance += 1) {
+    const covered = dilateMask(curEdges, width, height, distance);
+    let newly = 0;
+    for (let i = 0; i < refEdges.length; i += 1) {
+      if (refEdges[i] && !previous[i] && covered[i]) {
+        distanceSum += distance;
+        newly += 1;
+      }
+    }
+    uncovered -= newly;
+    previous = covered;
+  }
+  distanceSum += uncovered * 8;
+
+  // Material error: interior (non-edge) pixels of the reference, colour delta.
+  let materialSum = 0;
+  let materialCount = 0;
+  for (let y = 2; y < height - 2; y += 1) {
+    for (let x = 2; x < width - 2; x += 1) {
+      const i = y * width + x;
+      if (refEdges[i] || curEdges[i] || refText[i]) continue;
+      const offset = i * 4;
+      materialSum += (
+        Math.abs(referenceData[offset] - currentData[offset])
+        + Math.abs(referenceData[offset + 1] - currentData[offset + 1])
+        + Math.abs(referenceData[offset + 2] - currentData[offset + 2])
+      ) / 3;
+      materialCount += 1;
+    }
+  }
+
+  const geometryMismatch = refEdgeCount ? uncovered / refEdgeCount : 0;
+  return {
+    edgeErrorPx: Math.round((distanceSum / refEdgeCount) * 10) / 10,
+    geometryMismatch: Math.round(geometryMismatch * 1000) / 1000,
+    materialError: materialCount ? Math.round((materialSum / materialCount) * 10) / 10 : 0,
+  };
 }
 
 async function prepareCurrentPage(browser, serverUrl, manifest, outputDir) {
@@ -342,7 +515,15 @@ async function prepareCurrentPage(browser, serverUrl, manifest, outputDir) {
   const fixtureHtml = await lab.evaluate((element) => element.outerHTML);
   const contentSha256 = sha256Buffer(Buffer.from(fixtureHtml));
   if (capture.contentSha256 && contentSha256 !== capture.contentSha256) {
-    throw new Error(`Theme Lab content fingerprint ${contentSha256} does not match canonical contract ${capture.contentSha256}`);
+    if (options.updateFingerprint) {
+      const manifestPath = options.manifestPath || readManifest(manifest.theme).path;
+      const manifestData = JSON.parse(readFileSync(manifestPath, "utf8"));
+      manifestData.capture.contentSha256 = contentSha256;
+      writeFileSync(manifestPath, `${JSON.stringify(manifestData, null, 2)}\n`);
+      console.log(`OK  updated ${manifest.theme} content fingerprint to ${contentSha256}`);
+    } else {
+      throw new Error(`Theme Lab content fingerprint ${contentSha256} does not match canonical contract ${capture.contentSha256}`);
+    }
   }
   await lab.screenshot({ path: join(outputDir, "current-full.png"), animations: "disabled" });
   return { context, page, diagnostics, resourceResponses, labBox, contentSha256 };
@@ -531,9 +712,40 @@ async function captureCurrentSpecimen(page, specimen) {
         boxShadow: style.boxShadow,
       };
     });
-    return { canvas, crop, box, computed };
+    const computedAssertions = await assertSpecimenComputedStyles(page, specimen.computedStyleAssertions);
+    return { canvas, crop, box, computed, computedAssertions };
   } finally {
     await restoreSpecimenSetup(page, savedSetup);
+  }
+}
+
+async function assertSpecimenComputedStyles(page, assertions = []) {
+  if (!assertions.length) return [];
+  return page.evaluate((contracts) => contracts.map((contract) => {
+    const element = document.querySelector(contract.selector);
+    if (!element) {
+      return { ...contract, actual: null, missing: true };
+    }
+    const actual = getComputedStyle(element)[contract.property];
+    return { ...contract, actual };
+  }), assertions);
+}
+
+function validateComputedAssertions(results = []) {
+  for (const result of results) {
+    if (result.missing) {
+      throw new Error(`Computed-style assertion missing selector: ${result.selector}`);
+    }
+    if (result.expected !== undefined && result.actual !== result.expected) {
+      throw new Error(
+        `Computed-style assertion failed for ${result.selector} ${result.property}: expected ${JSON.stringify(result.expected)}, got ${JSON.stringify(result.actual)}`,
+      );
+    }
+    if (result.expectedContains !== undefined && !String(result.actual).includes(result.expectedContains)) {
+      throw new Error(
+        `Computed-style assertion failed for ${result.selector} ${result.property}: expected to contain ${JSON.stringify(result.expectedContains)}, got ${JSON.stringify(result.actual)}`,
+      );
+    }
   }
 }
 
@@ -787,6 +999,12 @@ try {
       aligned.currentCanvas,
       specimen.compare?.channelThreshold ?? DIFF_THRESHOLD,
     );
+    const geometryMaterial = analyzeGeometryAndMaterial(
+      aligned.referenceCanvas,
+      aligned.currentCanvas,
+      { geometryMask: specimen.geometryMask },
+    );
+    validateComputedAssertions(current.computedAssertions);
     results.push({
       id: specimen.id,
       label: specimen.label,
@@ -800,6 +1018,11 @@ try {
       overlay: comparison.overlay,
       difference: comparison.difference,
       metrics: comparison.metrics,
+      review: {
+        ...geometryMaterial,
+        changedRatio: Math.round(comparison.metrics.changedRatio * 1000) / 1000,
+        sourceScale: specimen.reference?.scale || manifest.capture?.sourceScale || 1,
+      },
       repeat: {
         contract: {
           maxChangedPixels: maxRepeatPixels,
@@ -812,6 +1035,7 @@ try {
         current: aligned.currentPosition,
       },
       computed: current.computed,
+      computedAssertions: current.computedAssertions,
     });
     console.log(`OK  mapped ${specimen.id}: ${(comparison.metrics.changedRatio * 100).toFixed(2)}% changed`);
   }
@@ -836,6 +1060,7 @@ try {
     theme: manifest.theme,
     target: manifest.target,
     generatedAt: new Date().toISOString(),
+    sourceScale: manifest.capture?.sourceScale || 1,
     summary: {
       changedPixels: totalChanged,
       totalPixels,
@@ -854,9 +1079,31 @@ try {
       computed: result.computed,
       metrics: result.metrics,
       repeat: result.repeat,
+      computedAssertions: result.computedAssertions,
     })),
   };
   writeFileSync(join(outputDir, "metrics.json"), `${JSON.stringify(metrics, null, 2)}\n`);
+
+  const reviewSpecimens = results.map((result) => ({
+    id: result.id,
+    label: result.label,
+    ...result.review,
+  })).sort((left, right) => (
+    (right.geometryMismatch ?? 0) - (left.geometryMismatch ?? 0)
+    || (right.edgeErrorPx ?? 0) - (left.edgeErrorPx ?? 0)
+    || (right.materialError ?? 0) - (left.materialError ?? 0)
+  ));
+  const reviewSummary = {
+    theme: manifest.theme,
+    target: manifest.target,
+    generatedAt: new Date().toISOString(),
+    sourceScale: manifest.capture?.sourceScale || 1,
+    note: "Machine-readable fidelity summary for a visual reviewer. geometryMismatch and edgeErrorPx describe the control silhouette (strict); materialError describes interior colour while ignoring antialiasing and text. Fix the top residual regions first.",
+    specimens: reviewSpecimens,
+    topResidualRegions: reviewSpecimens.slice(0, 3).map((entry) => entry.id),
+  };
+  writeFileSync(join(outputDir, "review-summary.json"), `${JSON.stringify(reviewSummary, null, 2)}\n`);
+  console.log(`OK  review summary: top residual = ${reviewSummary.topResidualRegions.join(", ") || "(none)"}`);
 
   const platformFonts = await platformFontFingerprint(pageContext.page, manifest.capture.fontProbeSelectors);
   assertPlatformFonts(platformFonts, manifest.capture.fontAssertions);

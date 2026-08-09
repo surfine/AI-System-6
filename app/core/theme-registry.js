@@ -9,6 +9,7 @@
 
   const STORAGE_KEY = "ai-system-6-theme";
   const LEGACY_LIQUID_KEY = "ai-system-6-liquid-glass";
+  const RESEARCH_FLAG_KEY = "ai-system-6-research-appearances";
   const DEFAULT_THEME_ID = "classic";
 
   // recipeBase is a maintenance lineage, not a second active CSS class. A
@@ -45,9 +46,12 @@
       id: "aqua",
       label: "Aqua",
       labelKey: "theme_aqua",
-      family: "aqua",
-      recipeBase: null,
-      // Research appearance: not release-supported in 1.0.32+.
+      // Inheritance law: Platinum follows Classic; everything else follows
+      // Liquid Glass. Aqua keeps its own research appearance but is built on
+      // the Liquid Glass recipe and overrides it toward Jaguar.
+      family: "liquid-glass",
+      recipeBase: "liquid-glass",
+      // Research appearance: not release-supported.
       releaseReady: false,
       systemFont: "Lucida Grande",
       systemFontSize: 13,
@@ -59,8 +63,10 @@
       id: "snow-leopard",
       label: "Snow Leopard",
       labelKey: "theme_snow_leopard",
-      family: "aqua",
-      recipeBase: "aqua",
+      // Built on Liquid Glass under the inheritance law. May move to the
+      // Aqua recipe in the future once Aqua itself is LG-based.
+      family: "liquid-glass",
+      recipeBase: "liquid-glass",
       releaseReady: false,
       systemFont: "Lucida Grande",
       systemFontSize: 13,
@@ -104,13 +110,47 @@
   }
 
   // Release path: only release-supported appearances may become the active
-  // product theme. Historical saved research ids migrate to a formal theme:
-  // aqua/snow-leopard -> classic, yosemite -> liquid-glass.
+  // product theme, plus Yosemite (a limited release built on the Liquid
+  // Glass recipe). The Control Panel "research appearances" switch lets
+  // Aqua / Snow Leopard preview for this session; historical saved research
+  // ids migrate to a formal theme: aqua/snow-leopard -> classic.
   function normalizeReleaseThemeId(value) {
     const theme = byId.get(String(value || "").trim().toLowerCase());
+    if (theme?.id === "yosemite") return "yosemite";
+    if (isResearchEnabled() && theme) return theme.id;
     if (theme?.releaseReady) return theme.id;
-    if (theme?.id === "yosemite") return "liquid-glass";
     return DEFAULT_THEME_ID;
+  }
+
+  function isResearchEnabled() {
+    try {
+      return global.localStorage?.getItem(RESEARCH_FLAG_KEY) === "1";
+    } catch {
+      return false;
+    }
+  }
+
+  function setResearchEnabled(enabled) {
+    try {
+      if (enabled) global.localStorage?.setItem(RESEARCH_FLAG_KEY, "1");
+      else global.localStorage?.removeItem(RESEARCH_FLAG_KEY);
+    } catch {
+      // Research flag stays session-only when storage is blocked.
+    }
+    // Turning the flag off drops a research appearance back to its release
+    // mapping (Yosemite is a release theme and stays) and persists the result.
+    const mapped = normalizeReleaseThemeId(currentThemeId);
+    if (mapped !== currentThemeId) {
+      currentThemeId = mapped;
+      try {
+        global.localStorage?.setItem(STORAGE_KEY, mapped);
+        global.localStorage?.removeItem(LEGACY_LIQUID_KEY);
+      } catch {
+        // Appearance remains applied for this session when storage is blocked.
+      }
+    }
+    syncBody();
+    return isResearchEnabled();
   }
 
   function readInitialTheme(storage) {
@@ -140,7 +180,11 @@
     if (theme.recipeBase) element.dataset.themeBase = theme.recipeBase;
     else delete element.dataset.themeBase;
     if (element === global.document?.body) {
-      element.classList.toggle("use-liquid-glass", theme.id === "liquid-glass");
+      // The liquid-glass family shares one base: Liquid Glass itself and the
+      // appearances built on its recipe (Yosemite). The family class carries
+      // the shared rule structure; each member's own theme block then wins
+      // with a higher-specificity selector.
+      element.classList.toggle("use-liquid-glass", theme.family === "liquid-glass");
     }
   }
 
@@ -224,6 +268,8 @@
     themes: registry,
     normalizeThemeId,
     normalizeReleaseThemeId,
+    isResearchEnabled,
+    setResearchEnabled,
     readInitialTheme,
     applyTheme,
     previewExperimentalTheme,

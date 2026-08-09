@@ -22,6 +22,7 @@ export const appModulePaths = [
   "app/core/input-guard.js",
   "app/core/write-lease.js",
   "app/core/recovery-storage.js",
+  "app/core/project-backup-assembler.js",
   "app/core/web-platform.js",
   "app/core/user-recovery-messages.js",
   "app/shared/model-task-runtime.js",

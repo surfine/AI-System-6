@@ -35,6 +35,35 @@ const keyboardShortcutRegistry = [
   { id: "clio-chart-reverse", key: "r", action: "clio-chart-reverse-sort", display: "⌘R", labelKey: "clio_chart_reverse_sort", suppressInEditable: true, scope: ["clioChart"] },
 ];
 
+// Action-level write contract: these commands mutate durable / project state
+// and are rejected by the router before their handler runs when this window
+// cannot write (read-only or mid-handoff). The UI layer uses
+// `data-requires-write` and the storage fence uses assertCanWrite — three
+// layers, same boundary.
+const writeRequiredActions = new Set([
+  "save-current",
+  "save-copy",
+  "save-chat",
+  "save-conversation",
+  "rename-active-chat",
+  "new-document",
+  "new-folder",
+  "new-project-disk",
+  "rename-project-disk",
+  "rename-file",
+  "duplicate-selection",
+  "move-file-trash",
+  "empty-trash",
+  "put-away",
+  "erase-disk",
+  "quick-draft-save-project",
+  "quick-draft-send-teachtext",
+  "quick-draft-send-review",
+  "insert-text-disk",
+  "eject-text-disk",
+  "add-text-disk-project",
+]);
+
 function keyboardShortcutById(id) {
   return keyboardShortcutRegistry.find((shortcut) => shortcut.id === id) || null;
 }
@@ -1631,6 +1660,7 @@ function getApplicationActionHandlers() {
     "toggle-sideask": toggleSideAsk,
     "set-theme-classic": () => applyTheme("classic"),
     "set-theme-platinum": () => applyTheme("platinum"),
+    "set-theme-yosemite": () => applyTheme("yosemite"),
     "set-theme-liquid-glass": () => applyTheme("liquid-glass"),
     "open-theme-lab": () => openWindow("themeLab"),
     "toggle-balloon-help": toggleBalloonHelp,
@@ -1687,6 +1717,11 @@ function handleAction(action, commandContext = {}) {
   }
   const command = getApplicationCommandRegistry().get(action);
   if (!command?.isAvailable()) {
+    updateMenuState();
+    return;
+  }
+  if (writeRequiredActions.has(action) && window.AISystem6WriteLease?.canMutate?.() !== true) {
+    if (typeof setStatus === "function") setStatus(t("write_required_status"));
     updateMenuState();
     return;
   }

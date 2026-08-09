@@ -597,6 +597,13 @@ window.AISystem6ProjectDiskBackup = (() => {
         importedAt: now,
       },
     };
+    // Quick Draft's durable linkage lives inside the project record; after
+    // import it must point at the remapped Project document, or
+    // "Continue in TeachText" would resolve a dead id.
+    if (importedProject?.quickDraft?.workspace?.projectDocId) {
+      const mappedDocumentId = idMaps.file.get(importedProject.quickDraft.workspace.projectDocId);
+      if (mappedDocumentId) importedProject.quickDraft.workspace.projectDocId = mappedDocumentId;
+    }
 
     const importedDocumentRevisions = (bundle.documentRevisions || []).map((revision, index) => {
       const oldId = recordId(revision?.id) || `revision:${index}`;
