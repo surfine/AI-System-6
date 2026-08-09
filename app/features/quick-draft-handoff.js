@@ -167,6 +167,61 @@ async function switchToMultiFinder() {
   return true;
 }
 
+// Standard Save: flush the textarea into the workspace, durable-commit, and
+// resolve with a boolean. Receipts (saving → saved / modified) are owned by
+// the commit machinery so a failed persist can never leave a Saved receipt.
+async function saveQuickDraftNow() {
+  const slot = activeProjectQuickDraft({ create: false });
+  if (!slot) {
+    setQuickDraftStatus(t("quick_draft_no_project"));
+    return false;
+  }
+  const committed = await commitQuickDraft({});
+  if (!committed.ok) {
+    setQuickDraftStatus(t("quick_draft_save_failed"));
+    return false;
+  }
+  return true;
+}
+
+// Standard New: flush whatever is on the desk first, confirm when a body
+// would be replaced, then start a fresh blank draft in the same project.
+async function newQuickDraftDocument() {
+  const slot = activeProjectQuickDraft({ create: false });
+  if (!slot) {
+    setQuickDraftStatus(t("quick_draft_no_project"));
+    return false;
+  }
+  const flushed = await commitQuickDraft({});
+  if (!flushed.ok) {
+    setQuickDraftStatus(t("quick_draft_save_failed"));
+    return false;
+  }
+  const hasBody = Boolean(String(refs.draft?.value || "").trim());
+  if (hasBody && typeof showSystemModal === "function") {
+    const choice = await showSystemModal(t("quick_draft_new_confirm"), "confirm", { defaultAction: "cancel" });
+    if (choice !== "yes") return false;
+  }
+  const fresh = await commitQuickDraft({ workspace: { ...blankQuickDraftWorkspace(), body: "" } });
+  if (!fresh.ok) {
+    setQuickDraftStatus(t("quick_draft_save_failed"));
+    return false;
+  }
+  renderQuickDraft(activeProjectQuickDraft({ create: false })?.record);
+  focusQuickDraftPaper();
+  setQuickDraftStatus(t("quick_draft_ready"));
+  return true;
+}
+
+// Standard Close: the window layer flushes any pending or Modified workspace
+// before hiding; this is the public entry so the command router never touches
+// Draft Desk internals.
+async function closeQuickDraftWindow() {
+  if (typeof closeWindow !== "function") return false;
+  await closeWindow("quickDraft");
+  return true;
+}
+
 // Module boot (runs last in the lazy chain, after every sibling has loaded):
 // wire the window, register the working-session adapter, and publish the API.
 bind();
@@ -214,6 +269,10 @@ window.AISystem6QuickDraft = Object.freeze({
   canDevelop: () => currentCompositeState(activeProjectQuickDraft({ create: false })?.record).ready,
   copyMarkdown: copyQuickDraftMarkdown,
   shareMarkdown: shareQuickDraftMarkdown,
+  save: saveQuickDraftNow,
+  newDocument: newQuickDraftDocument,
+  close: closeQuickDraftWindow,
+  share: shareQuickDraftMarkdown,
   collectVentOutline,
   adoptFirstImpression,
   startWritingNow,

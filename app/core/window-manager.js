@@ -3884,6 +3884,9 @@ async function restartSystem() {
   } catch (error) {
     console.warn("Restart save failed", error);
   }
+  // An explicit Restart is a cold boot: the full Happy Mac ceremony plays
+  // again instead of the warm-resume flash.
+  if (typeof clearSessionBootSeen === "function") clearSessionBootSeen();
   closeMenus();
   document.body.classList.add("is-shutting-down");
   setStatus(t("restart_starting"));
@@ -3937,25 +3940,46 @@ function setAssistantDesklet(enabled) {
 
 async function closeWindow(name, force = false) {
   const win = getWindow(name);
-  if (!win) return;
+  if (!win) return false;
 
   if (name === "assistant" && clioTalkTemporaryMode) {
     if (activeAbortController && !force) {
       setStatus(t("task_already_running", localModelState.task || t("working_locally")));
-      return;
+      return false;
     }
-    if (!force && !await confirmDiscardTemporaryClioTalkConversation()) return;
+    if (!force && !await confirmDiscardTemporaryClioTalkConversation()) return false;
     discardTemporaryClioTalkConversation();
   }
 
   if (name === "teachText" && !force && shouldPromptForTeachTextFileSave()) {
     const result = await showSystemModal(teachTextUnsavedChangesMessage(), "save");
-    if (result === "cancel") return;
+    if (result === "cancel") return false;
     if (result === "yes") {
       const saved = await saveTextDocument();
-      if (!saved) return;
+      if (!saved) return false;
     } else {
       setTeachTextStatus("saved"); // clear dirty state after discard
+    }
+  }
+
+  // Draft Desk closes like every first-class writing app: pending or Modified
+  // work is flushed before the window hides, and a failed persist keeps the
+  // window open with a Modified receipt. Never close silently over unsaved
+  // durable state.
+  if (name === "quickDraft" && !force) {
+    const workspace = typeof activeProjectQuickDraft === "function"
+      ? activeProjectQuickDraft({ create: false })?.record?.workspace
+      : null;
+    const pendingCommit = typeof pendingQuickDraftCommit !== "undefined" && pendingQuickDraftCommit;
+    if (pendingCommit || workspace?.savedStatus === "modified") {
+      const result = typeof commitQuickDraft === "function"
+        ? await commitQuickDraft({})
+        : null;
+      if (!result || result.ok !== true) {
+        window.AISystem6QuickDraftRuntime?.setSaveState?.("modified");
+        window.AISystem6QuickDraftRuntime?.setQuickDraftStatus?.(t("quick_draft_save_failed"));
+        return false;
+      }
     }
   }
 
@@ -4065,6 +4089,7 @@ async function closeWindow(name, force = false) {
   syncMobileAppForeground();
   renderMultiFinderMenu();
   scheduleWorkingSessionSave?.();
+  return true;
 }
 
 function toggleCollapsed(win) {

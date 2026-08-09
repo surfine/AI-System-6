@@ -426,6 +426,35 @@ Version `1.0.12`, build `20260804.2`.
   Writing Studio for a longer project — and promises exactly three release
   appearances.
 
+## Public Beta 1.0.33 - 2026-08-09
+
+- Draft Desk joins the standard command vocabulary: ⌘S / Ctrl+S flushes the
+  working body through a durable public Save API, ⌘W flushes pending or
+  Modified work before closing and never closes over a failed persist, and ⌘N
+  starts a fresh draft through the app's public New API. Edit commands
+  (Undo/Redo/Select All/Cut/Copy/Paste) stay native while a field has focus.
+- The Working Session gains one commit layer: high-frequency changes debounce
+  through scheduleWorkingSessionCommit, and project switches, Continue, and
+  window close flush through flushWorkingSessionCommit before ownership moves.
+- Model failures now map to a localized message plus an executable recovery
+  action (reconnect / choose a model / retry / check connection). Raw HTTP
+  codes and fetch internals stay in the console and System Status detail,
+  never in ordinary UI.
+- Public tests are layered: `tests/features/public/` holds public-safe
+  contracts for File Floppy, ClioStage, CMF Studio, Dictation, Menu Bar,
+  Streaming Output, Cover Glass, and ClioTalk, and `npm test` prints a public
+  product coverage summary so a public feature can never silently lose its
+  contract.
+- Warm resume: a refresh or same-session reopen skips the visual boot hold
+  (≤300ms) while new sessions and explicit Restart keep the full Happy Mac
+  ceremony; desk-state load, migration, and Working Session restore are never
+  skipped.
+- IME safety: a shared composition guard protects Enter-submit across Draft
+  Desk, ClioTalk, modals, Reader, Start Here, and the global shortcut router.
+- Accessibility closure: icon-only controls all carry accessible names, and a
+  contract test locks visible keyboard focus, disabled, and selected states
+  across the three release appearances.
+
 ## What Changed Most In One Month
 
 - The product moved from "an AI writing prototype" to a local-first writing

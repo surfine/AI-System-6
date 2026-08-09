@@ -18,6 +18,8 @@ export const appModulePaths = [
   "app/core/prompt-file-runtime.js",
   "app/core/workspace-profile.js",
   "app/core/public-access.js",
+  "app/core/model-user-errors.js",
+  "app/core/input-guard.js",
   "app/core/web-platform.js",
   "app/core/user-recovery-messages.js",
   "app/shared/model-task-runtime.js",

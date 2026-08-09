@@ -8,7 +8,7 @@ const keyboardShortcutRegistry = [
   { id: "new-document", key: "n", action: "new-document", display: "⌘N", labelKey: "new_document", keyCaps: true, scope: ["teachText", "quickDraft"] },
   { id: "new-folder", key: "n", shift: true, action: "new-folder", display: "⇧⌘N", labelKey: "new_folder", keyCaps: true, suppressInEditable: true, scope: ["finder"] },
   { id: "open", key: "o", action: "open-menu-selection", display: "⌘O", labelKey: "open", keyCaps: true, suppressInEditable: true, scope: ["finder", "teachText"] },
-  { id: "save", key: "s", action: "save-current", display: "⌘S", labelKey: "save_current", keyCaps: true, scope: ["teachText", "clioTalk"] },
+  { id: "save", key: "s", action: "save-current", display: "⌘S", labelKey: "save_current", keyCaps: true, scope: ["teachText", "clioTalk", "quickDraft"] },
   { id: "save-copy", key: "s", shift: true, action: "save-copy", display: "⇧⌘S", labelKey: "save_copy", keyCaps: true, scope: ["teachText"] },
   { id: "close-window", key: "w", action: "close-active-window", display: "⌘W", labelKey: "close_window", keyCaps: true, scope: "global" },
   { id: "undo", key: "z", action: "undo", display: "⌘Z / ⇧⌘Z", menuDisplay: "⌘Z", labelKey: "undo_redo", keyCaps: true, scope: "application" },
@@ -1120,7 +1120,15 @@ function getApplicationActionHandlers() {
     "open-memory-readme": () => openSystemFolderDocument("memory"),
     "open-system-concepts-docmap": openSystemConceptDocMap,
     "open-system-concepts-clio-stage": openSystemConceptClioStage,
-    "new-document": newTextDocument,
+    "new-document": () => {
+      // Draft Desk is a first-class application: its commands enter through
+      // its public API, never through another app's internal functions.
+      const activeWin = document.querySelector(".window.is-active:not(.is-hidden)");
+      if (activeWin?.dataset.window === "quickDraft") {
+        return window.AISystem6QuickDraft?.newDocument?.() || newTextDocument();
+      }
+      return newTextDocument();
+    },
     "open-text-document": openTextDocumentFromDisk,
     "new-folder": createFolderFromMenu,
     "open-menu-selection": openFinderMenuSelection,
@@ -1322,6 +1330,17 @@ function getApplicationActionHandlers() {
     "open-project-backup": openProjectBackupPanel,
     "open-chooser": () => openWindow("chooser"),
     "open-control": () => openWindow("control"),
+    "open-ai-connection-settings": () => {
+      openWindow("control");
+      if (typeof setControlTab === "function") setControlTab("cloud");
+      return true;
+    },
+    "retry-current-ai-action": () => {
+      const retry = document.querySelector(".message-retry-button:not([hidden])");
+      if (!retry) return false;
+      retry.click();
+      return true;
+    },
     "open-rag": () => openWindow("rag"),
     "open-find-path": () => {
       const selection = teachTextBodyInput.value.slice(teachTextBodyInput.selectionStart || 0, teachTextBodyInput.selectionEnd || 0).trim();
@@ -1572,7 +1591,10 @@ function getApplicationActionHandlers() {
     "close-active-window": async () => {
       const active = document.querySelector(".window.is-active:not(.is-hidden):not(.is-app-hidden)");
       if (active) {
-        await closeWindow(active.dataset.window);
+        const closed = await closeWindow(active.dataset.window);
+        // A blocked close (unsaved save prompt, failed flush) keeps the window
+        // foreground; never hand focus to another window over it.
+        if (closed === false) return;
         const next = Array.from(document.querySelectorAll(".window:not(.is-hidden):not(.is-app-hidden)"))
           .sort((a, b) => Number(b.style.zIndex) - Number(a.style.zIndex))[0];
         if (next) focusWindow(next);
@@ -1683,7 +1705,7 @@ function closeTeachTextCommandMenus() {
 }
 
 function runShortcut(event) {
-  if (event.defaultPrevented || event.isComposing || !shortcutModifierPressed(event)) return;
+  if (event.defaultPrevented || eventIsTextComposition(event) || !shortcutModifierPressed(event)) return;
 
   const key = event.key.toLowerCase();
   const shortcutAppId = activeAppId === "writingStudio" ? "teachText" : activeAppId;

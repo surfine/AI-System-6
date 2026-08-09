@@ -1,5 +1,5 @@
 <!-- canonical-source: CHANGELOG.md -->
-<!-- source-sha256: 817af5aa3f862ab154ef0fa430828a6a9e06fe0b37bb2988c1f2a585b47d01d8 -->
+<!-- source-sha256: 66259764da94f0a04bd69be2cc74bfe55914b07877d4a75caa471c976ef08b71 -->
 
 # AI System 6 中文更新日志
 
@@ -34,6 +34,29 @@
   Disk。
 - README 展示两条成熟写作路径——Draft Desk 写短稿、Writing Studio 做长
   项目——并只承诺三套正式外观。
+
+## v1.0.33 - 2026-08-09
+
+- Draft Desk 接入标准命令体系：⌘S / Ctrl+S 通过持久化公开 Save API 立即
+  落盘，⌘W 在关闭前先落盘 pending/Modified 工作、失败绝不静默关闭，⌘N
+  通过公开 New API 开始新草稿；编辑命令（撤销/重做/全选/剪切/复制/粘贴）
+  在输入框聚焦时保持浏览器原生行为。
+- Working Session 统一提交层：高频变化经 scheduleWorkingSessionCommit
+  防抖，项目切换、Continue、关闭窗口等关键边界经 flushWorkingSessionCommit
+  在归属权变化前先落盘。
+- 模型错误统一映射为本地化文案 + 可执行的恢复动作（重新连接 / 选择其他
+  模型 / 重试 / 检查连接）；裸 HTTP 状态码与 fetch 内部细节只出现在控制台
+  与 System Status 详情，不再进入普通 UI。
+- 公开测试分层：`tests/features/public/` 为 File Floppy、ClioStage、CMF
+  Studio、Dictation、Menu Bar、Streaming Output、Cover Glass、ClioTalk
+  提供 public-safe 契约，`npm test` 末尾打印公开产品覆盖摘要。
+- Warm resume：刷新或同会话重开不再等待完整启动动画（人为等待 ≤300ms），
+  新会话与显式 Restart 保留完整 Happy Mac 仪式；数据加载、迁移与 Working
+  Session 恢复一律不跳过。
+- IME 安全：统一组合输入守卫覆盖 Draft Desk、ClioTalk、弹窗、Reader、
+  Start Here 与全局快捷键路由。
+- 可访问性收口：纯图标控件全部具备可访问名称，契约测试锁定三套正式外观
+  的键盘焦点、disabled 与 selected 状态。
 
 ## 第一版 — 1.0.0 / 2026-05-18
 

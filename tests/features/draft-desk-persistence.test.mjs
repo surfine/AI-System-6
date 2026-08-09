@@ -1,7 +1,115 @@
 import { createFeatureTest } from "../helpers/feature-test-harness.mjs";
+import { read } from "../helpers/feature-test-harness.mjs";
 import { createDraftDeskVm } from "../helpers/draft-desk-vm.mjs";
 
 const test = createFeatureTest("draft-desk-persistence");
+const actions = read("app/core/actions.js");
+const saveCurrent = read("app/features/documents-chat.js");
+const windowManager = read("app/core/window-manager.js");
+
+// Case 1 — standard Save command: flush textarea, one durable commit, Saved
+// receipt, and no second write.
+{
+  const runtime = createDraftDeskVm();
+  const project = runtime.addProject("project-a", "原正文");
+  runtime.controls.get("quick-draft-draft").value = "已修改正文";
+  const facade = runtime.context.window.AISystem6QuickDraft;
+  test.assert(typeof facade.save === "function", "Draft Desk exposes a public Save API");
+  test.assert(typeof facade.newDocument === "function", "Draft Desk exposes a public New API");
+  test.assert(typeof facade.close === "function", "Draft Desk exposes a public Close API");
+  test.assert(typeof facade.share === "function", "Draft Desk exposes a public Share API");
+  const saved = await facade.save();
+  test.assert(saved === true, "the Save command resolves true on success");
+  test.assert(runtime.context.persistedStatuses.length === 1, "the Save command persists exactly once");
+  test.assert(runtime.context.persistedStatuses.at(-1)?.[0] === "saved", "saveDeskState observes Saved, not Modified");
+  test.assert(project.quickDraft.workspace.body === "已修改正文", "the Save command flushes the textarea body");
+  test.assert(project.quickDraft.workspace.savedStatus === "saved", "the durable workspace receipt is Saved");
+  test.assert(
+    runtime.controls.get("quick-draft-save-state").textContent === "quick_draft_saved_state",
+    "the visible save receipt is Saved"
+  );
+}
+
+// Case 2 — persistence failure: Save returns false, body stays, receipt stays
+// Modified, and Saved is never displayed.
+{
+  const runtime = createDraftDeskVm();
+  const project = runtime.addProject("project-fail", "原正文");
+  const draft = runtime.controls.get("quick-draft-draft");
+  draft.value = "不能落盘的正文";
+  runtime.context.persistSucceeds = false;
+  const saved = await runtime.context.window.AISystem6QuickDraft.save();
+  test.assert(saved === false, "the Save command returns false when persistence fails");
+  test.assert(draft.value === "不能落盘的正文", "a failed Save keeps the typed body in the editor");
+  test.assert(project.quickDraft.workspace.body === "原正文", "a failed Save rolls the durable record back to the last good body");
+  test.assert(project.quickDraft.workspace.savedStatus === "modified", "a failed Save leaves the durable receipt Modified");
+  test.assert(
+    runtime.controls.get("quick-draft-save-state").textContent === "quick_draft_modified_state",
+    "a failed Save never displays Saved"
+  );
+}
+
+// Case 3 — two rapid Save commands: no duplicate Versions, no duplicate
+// Project Document, and the latest body wins.
+{
+  const runtime = createDraftDeskVm();
+  const project = runtime.addProject("project-rapid", "第一版", {
+    versions: [{ id: "v1", body: "更早的稿", reason: "before" }],
+    projectDocId: "document-1",
+  });
+  const draft = runtime.controls.get("quick-draft-draft");
+  draft.value = "第二版";
+  const gate = runtime.deferred();
+  runtime.context.persistDeferred = gate;
+  const first = runtime.context.window.AISystem6QuickDraft.save();
+  draft.value = "第三版";
+  const second = runtime.context.window.AISystem6QuickDraft.save();
+  gate.resolve(true);
+  const results = await Promise.all([first, second]);
+  test.assert(results.every((result) => result === true), "both rapid Save commands resolve successfully");
+  test.assert(project.quickDraft.workspace.body === "第三版", "the later Save wins; no stale body overwrite");
+  test.assert(project.quickDraft.workspace.versions.length === 1, "rapid Saves never duplicate Versions");
+  test.assert(project.quickDraft.workspace.projectDocId === "document-1", "rapid Saves never duplicate the Project Document");
+  test.assert(project.quickDraft.workspace.savedStatus === "saved", "rapid Saves settle on Saved");
+}
+
+// Case 4 — ⌘S and Ctrl+S dispatch to the same save-current command.
+test.assertIncludes(actions, 'scope: ["teachText", "clioTalk", "quickDraft"]', "⌘S / Ctrl+S applies to Draft Desk");
+test.assertIncludes(actions, 'action: "save-current"', "the S shortcut targets the shared save-current command");
+test.assertIncludes(actions, "function shortcutModifierPressed", "platform Command/Control resolution is shared");
+test.assertIncludes(
+  saveCurrent,
+  'if (activeWin?.dataset.window === "quickDraft")',
+  "save-current routes Draft Desk through its own window"
+);
+test.assertIncludes(
+  saveCurrent,
+  "window.AISystem6QuickDraft?.save",
+  "save-current calls the Draft Desk public Save API"
+);
+
+// Close contract: ⌘W on Draft Desk flushes pending/Modified work before hiding
+// and never closes silently over a failed persist.
+test.assertIncludes(
+  windowManager,
+  'name === "quickDraft" && !force',
+  "closing Draft Desk goes through the guarded close path"
+);
+test.assertIncludes(
+  windowManager,
+  'workspace?.savedStatus === "modified"',
+  "closing Draft Desk flushes a Modified workspace"
+);
+test.assertIncludes(
+  windowManager,
+  'commitQuickDraft({})',
+  "closing Draft Desk performs a durable commit before hiding"
+);
+test.assertIncludes(
+  windowManager,
+  'result.ok !== true',
+  "a failed close flush keeps the window open"
+);
 
 // saveDeskState must observe Saved, not persist a stale Modified receipt.
 {

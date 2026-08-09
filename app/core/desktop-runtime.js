@@ -10,6 +10,31 @@ const systemSoundEngine = window.AISystem6SystemSounds?.createSystemSoundEngine?
   getEnabled: () => !soundEffectsInput || soundEffectsInput.checked,
 });
 
+// Session-only boot flag: a refresh, PWA background return, or same-session
+// reopen is a warm resume and skips the full Happy Mac hold; a new browser
+// session or an explicit Restart is a cold boot with the complete ceremony.
+const BOOT_SESSION_KEY = "ai-system6-boot-seen";
+
+function sessionBootSeen() {
+  try {
+    return typeof sessionStorage !== "undefined" && sessionStorage.getItem(BOOT_SESSION_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markSessionBootSeen() {
+  try {
+    sessionStorage.setItem(BOOT_SESSION_KEY, "1");
+  } catch {}
+}
+
+function clearSessionBootSeen() {
+  try {
+    sessionStorage.removeItem(BOOT_SESSION_KEY);
+  } catch {}
+}
+
 function playSystemSound(type) {
   systemSoundEngine?.play(type);
 }
@@ -43,17 +68,24 @@ async function runBootSequence() {
   ];
 
   playSystemSound("boot");
-  for (const [message, progress, stage, macState, holdMs] of steps) {
+  const warmResume = sessionBootSeen();
+  steps.forEach(([message, progress, stage, macState]) => {
     setBootMacState(macState);
     updateBootLedger(stage);
     if (bootMessageEl) bootMessageEl.textContent = message;
     if (bootProgressFillEl) bootProgressFillEl.style.width = progress;
-    await delay(holdMs);
+  });
+  // Warm resume cancels the visual holds (only a short Happy Mac flash and
+  // fade remain); it never skips loadDeskState, migration, storage restore or
+  // the Working Session, which all run before this sequence.
+  for (let index = 0; index < steps.length; index += 1) {
+    await delay(warmResume ? (index === steps.length - 1 ? 80 : 0) : steps[index][4]);
   }
   bootScreenEl.classList.add("is-done");
-  await delay(260);
+  await delay(warmResume ? 140 : 260);
   bootScreenEl.hidden = true;
   document.body.classList.remove("is-booting");
+  if (!warmResume) markSessionBootSeen();
 }
 
 function setBootMacState(state = "sleeping") {
@@ -145,6 +177,12 @@ async function switchProject(projectId) {
     setStatus(t("quick_draft_save_failed"));
     return false;
   }
+  // Flush the Working Session before activeProjectId moves: the old project's
+  // scene (windows, selection, cursor, scroll) must never be saved under the
+  // new project's ownership.
+  if (typeof flushWorkingSessionCommit === "function") {
+    await flushWorkingSessionCommit();
+  }
 
   // Play mechanical disk sound
   playSystemSound("disk");
@@ -188,6 +226,9 @@ async function createProjectFromInput() {
   isPreparingProjectDisk = false;
   const project = createProjectRecord(name);
   const previousProjectId = activeProjectId;
+  if (typeof flushWorkingSessionCommit === "function") {
+    await flushWorkingSessionCommit();
+  }
   parkConversationInProject(previousProjectId);
   await window.AISystem6StateStores?.projects.commit(() => {
     projects.unshift(project);
@@ -328,7 +369,7 @@ function showNewProjectDiskModal() {
     if (!dialog.dataset.inputWired) {
       dialog.dataset.inputWired = "true";
       input.addEventListener("keydown", (event) => {
-        if (event.key === "Enter") {
+        if (event.key === "Enter" && !eventIsTextComposition(event)) {
           event.preventDefault();
           commit();
         }

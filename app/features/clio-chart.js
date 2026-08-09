@@ -691,7 +691,7 @@ function handleClioChartGridKeydown(event) {
     if (key === "Escape") {
       event.preventDefault();
       commitClioChartCellEdit(false);
-    } else if (key === "Enter") {
+    } else if (key === "Enter" && !eventIsTextComposition(event)) {
       event.preventDefault();
       commitClioChartCellEdit(true);
       moveClioChartSelection(event.shiftKey ? -1 : 1, 0);
@@ -717,7 +717,7 @@ function handleClioChartGridKeydown(event) {
   else if (key === "ArrowLeft") { event.preventDefault(); moveClioChartSelection(0, -1); }
   else if (key === "ArrowRight") { event.preventDefault(); moveClioChartSelection(0, 1); }
   else if (key === "Tab") { event.preventDefault(); moveClioChartSelection(0, event.shiftKey ? -1 : 1); }
-  else if (key === "Enter") { event.preventDefault(); beginClioChartCellEdit(row, column); }
+  else if (key === "Enter" && !eventIsTextComposition(event)) { event.preventDefault(); beginClioChartCellEdit(row, column); }
   else if (key === "Backspace" || key === "Delete") {
     event.preventDefault();
     pushClioChartUndo();

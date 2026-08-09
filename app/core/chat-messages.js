@@ -3764,7 +3764,9 @@ async function throwModelResponseError(response, endPerf) {
   const message = `${routeLabel} returned ${response.status}: ${serviceErrorDetail(response.status, detail)}`;
   const code = typeof classifyLmStudioError === "function" ? classifyLmStudioError(message, response) : "";
   endPerf?.({ error: true, status: response.status });
-  throw new Error([code, message].filter(Boolean).join(": "));
+  const error = new Error([code, message].filter(Boolean).join(": "));
+  error.status = response.status;
+  throw error;
 }
 
 async function sendLocalModelTask(options = {}) {
@@ -4424,6 +4426,10 @@ async function submitUserText(userText, options = {}) {
     } else {
       const code = typeof classifyLmStudioError === "function" ? classifyLmStudioError(error) : "";
       const isCloudActive = typeof cloudConfig !== "undefined" && cloudConfig && cloudConfig.active;
+      const modelRecovery = window.AISystem6ModelUserErrors?.failure?.(error, {
+        provider: isCloudActive ? (cloudConfig?.provider || "deepseek") : "lm-studio",
+        kind: isCloudActive ? "cloud" : "local",
+      });
       const cloudErrorKey = {
         cloud_invalid_key: "cloud_invalid_key",
         cloud_insufficient_balance: "cloud_insufficient_balance",
@@ -4436,6 +4442,20 @@ async function submitUserText(userText, options = {}) {
         : code === "lmstudio_context_length" ? t("lm_context_error")
         : isCloudActive ? t("cloud_api_error")
         : t("connection_error");
+      // Ordinary UI shows a localized message + next step, never a raw HTTP
+      // code or fetch failure. The original error stays in the run record and
+      // console for Advanced diagnostics / System Status.
+      const userMessage = cloudErrorKey || code === "lmstudio_context_length"
+        ? prefix
+        : modelRecovery
+          ? `${t(modelRecovery.messageKey)} ${t(modelRecovery.actionKey)}`
+          : `${prefix} ${t("ai_error_unknown")} ${t("ai_action_view_connection")}`;
+      if (modelRecovery?.actionId && typeof window.AISystem6ModelUserErrors?.notify === "function") {
+        window.AISystem6ModelUserErrors.notify(error, {
+          provider: isCloudActive ? (cloudConfig?.provider || "deepseek") : "lm-studio",
+          kind: isCloudActive ? "cloud" : "local",
+        });
+      }
       submittedUserRecord.deliveryState = "failed";
       if (!conversation.some((record) => record.id === submittedUserRecord.id)) {
         conversation.push(submittedUserRecord);
@@ -4457,7 +4477,7 @@ async function submitUserText(userText, options = {}) {
         appendClioTalkRunState(failedUserItem, submittedUserRecord);
         appendClioTalkRunReceipt(failedUserItem, submittedUserRecord);
       }
-      resolvePendingStatus(pendingMessage, `${prefix} ${error.message}`, {
+      resolvePendingStatus(pendingMessage, userMessage, {
         retryText: userText,
         retryOptions: replayOptions,
         userRecordId: submittedUserRecord.id,

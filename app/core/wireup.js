@@ -26,7 +26,7 @@ function wireAppEvents() {
   });
 
   promptInput.addEventListener("keydown", (event) => {
-    if (event.key !== "Enter" || event.isComposing) return;
+    if (event.key !== "Enter" || eventIsTextComposition(event)) return;
     if (event.shiftKey) return;
     if (composerSubmitButton.dataset.mode === "stop") return;
     event.preventDefault();
@@ -307,7 +307,7 @@ function wireAppEvents() {
   newProjectDiskButton.addEventListener("click", createProjectFromInput);
 
   projectDiskNameInput.addEventListener("keydown", (event) => {
-    if (event.key === "Enter") {
+    if (event.key === "Enter" && !eventIsTextComposition(event)) {
       event.preventDefault();
       if (isPreparingProjectDisk) {
         createProjectFromInput();
@@ -410,7 +410,7 @@ function wireAppEvents() {
   });
 
   readerUrlInput.addEventListener("keydown", (event) => {
-    if (event.key === "Enter") {
+    if (event.key === "Enter" && !eventIsTextComposition(event)) {
       event.preventDefault();
       fetchReaderPage();
     }

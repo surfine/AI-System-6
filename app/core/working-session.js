@@ -178,6 +178,19 @@ function flushWorkingSessionSave() {
   return workingSessionSavePromise;
 }
 
+// Unified session-commit layer. High-frequency changes (movement, selection,
+// scroll, focus, drawer/view toggles) call scheduleWorkingSessionCommit and
+// are debounced; important boundaries (project switch, closing the active
+// writing app, Continue, environment change, pagehide) call
+// flushWorkingSessionCommit and wait for the durable write.
+function scheduleWorkingSessionCommit(delayMs = 350) {
+  return scheduleWorkingSessionSave(delayMs);
+}
+
+async function flushWorkingSessionCommit() {
+  return flushWorkingSessionSave();
+}
+
 async function clearWorkingSession(options = {}) {
   clearTimeout(workingSessionSaveTimer);
   workingSessionSaveTimer = null;
@@ -268,19 +281,23 @@ function installWorkingSessionAutosave() {
 
   document.addEventListener("input", (event) => {
     if (event.target?.closest?.("input, textarea, select, [contenteditable='true']")) {
-      scheduleWorkingSessionSave();
+      scheduleWorkingSessionCommit();
     }
   }, true);
-  document.addEventListener("change", () => scheduleWorkingSessionSave(), true);
-  document.addEventListener("selectionchange", () => scheduleWorkingSessionSave(900));
+  document.addEventListener("change", () => scheduleWorkingSessionCommit(), true);
+  document.addEventListener("selectionchange", () => scheduleWorkingSessionCommit(900));
+  // These unload handlers are best effort only: a browser never guarantees an
+  // arbitrary IndexedDB promise completes here. Normal typing is debounced
+  // ahead of time and high-value actions flush explicitly; the app never
+  // claims "saved" from beforeunload.
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "hidden") flushWorkingSessionSave();
+    if (document.visibilityState === "hidden") flushWorkingSessionCommit();
   });
   window.addEventListener("pagehide", () => {
-    flushWorkingSessionSave();
+    flushWorkingSessionCommit();
   });
   window.addEventListener("beforeunload", () => {
-    flushWorkingSessionSave();
+    flushWorkingSessionCommit();
   });
 }
 

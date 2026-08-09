@@ -82,7 +82,7 @@ function showInputDialog({
     if (!dialog.dataset.inputWired) {
       dialog.dataset.inputWired = "true";
       field.addEventListener("keydown", (event) => {
-        if (event.key === "Enter") {
+        if (event.key === "Enter" && !eventIsTextComposition(event)) {
           event.preventDefault();
           dialog.close("ok");
         }

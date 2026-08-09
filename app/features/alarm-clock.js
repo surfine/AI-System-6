@@ -279,7 +279,7 @@ function initializeAlarmClock() {
     selectAlarmClockSegment(elements.value, alarmClockSegmentAtPosition(elements.value, position));
   });
   elements.value?.addEventListener("keydown", (event) => {
-    if (event.key === "Enter") {
+    if (event.key === "Enter" && !eventIsTextComposition(event)) {
       event.preventDefault();
       elements.value.blur();
     } else if (event.key === "ArrowLeft" || event.key === "ArrowRight") {

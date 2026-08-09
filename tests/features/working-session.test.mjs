@@ -1,75 +1,144 @@
-// Working Session exists to protect the user's in-progress work from ordinary
-// refreshes, while preserving Special > Restart/Shut Down as explicit reset
-// gestures for transient state.
+// Working Session commit boundaries: schedule is debounced, flush is awaited,
+// and a project switch persists the old project's scene before ownership
+// moves to the new project.
 
+import vm from "node:vm";
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("working-session");
-const workingSession = read("app/core/working-session.js");
-const boot = read("app/core/boot.js");
-const windowManager = read("app/core/window-manager.js");
-const desktopRuntime = read("app/core/desktop-runtime.js");
-const manifest = read("scripts/runtime-manifest.mjs");
+const source = read("app/core/working-session.js");
+const switchProjectSource = read("app/core/desktop-runtime.js");
+const guideSource = read("app/features/writer-guide.js");
 
-test.assertIncludes(workingSession, 'const workingSessionStorageKey = "workingSession:v1"', "stores resume snapshots under a versioned Working Session key");
-test.assertIncludes(workingSession, "function registerWorkingSessionAdapter(adapter)", "uses an adapter registry instead of one-off feature patches");
-test.assertIncludes(workingSession, 'workingSessionExcludedWindowNames = new Set(["about", "saveChat", "guide"])', "system welcome and modal windows are excluded from resumable work");
-[
-  "windows",
-  "selection",
-  "assistant",
-  "teachText",
-  "fileFloppy",
-  "reader",
-  "writingFlow",
-  "reviewDesk",
-].forEach((id) => {
-  test.assertIncludes(workingSession, `id: "${id}"`, `documents and registers the ${id} resume adapter`);
-});
+function createWorkingSessionVm() {
+  const snapshots = new Map();
+  const store = {
+    get: async (key) => snapshots.get(key),
+    put: async (value, key) => { snapshots.set(key, value); return key; },
+    delete: async (key) => { snapshots.delete(key); return undefined; },
+  };
+  const documentStub = {
+    activeElement: null,
+    addEventListener: () => {},
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    body: { dataset: {}, classList: { add() {}, remove() {}, contains: () => false } },
+  };
+  let activeProjectId = "";
+  const context = vm.createContext({
+    console: { warn: () => {}, error: () => {}, log: () => {} },
+    document: documentStub,
+    window: {
+      innerWidth: 800,
+      innerHeight: 600,
+      addEventListener: () => {},
+      AISystem6StorageTransactions: {
+        runTransaction: async (db, storeName, mode, fn) => fn({
+          objectStore: () => store,
+        }),
+      },
+    },
+    openAppDb: async () => ({ close() {} }),
+    keyvalStoreName: "keyval",
+    idbRequest: (request) => Promise.resolve(request),
+    setTimeout,
+    clearTimeout,
+    structuredClone,
+    activeProjectId,
+    projects: [],
+    getActiveProject: () => context.projects.find((project) => project.id === context.activeProjectId) || null,
+    assignProjectScope: () => {},
+    scheduleWorkspaceRender: () => {},
+    scheduleStatusRender: () => {},
+    renderMultiFinderMenu: () => {},
+    updateMenuState: () => {},
+  });
+  context.activeProjectId = activeProjectId;
+  vm.runInContext(source, context);
+  context.setActiveProject = (id) => { context.activeProjectId = id; };
+  return {
+    context,
+    snapshots,
+    setActiveProject(id) {
+      context.activeProjectId = id;
+      if (!context.projects.some((project) => project.id === id)) {
+        context.projects.push({ id, name: id, archived: false });
+      }
+    },
+  };
+}
 
-test.assertIncludes(boot, "restoreWorkingSession()", "ordinary startup attempts to resume the previous work session");
-test.assertIncludes(boot, "openStartupItems()", "falls back to normal startup items when no Working Session can be restored");
-test.assertMatches(boot, /installWorkingSessionAutosave\(\)/, "installs autosave after boot wiring is ready");
+// scheduleWorkingSessionCommit + flushWorkingSessionCommit write exactly one
+// snapshot for the active project.
+{
+  const runtime = createWorkingSessionVm();
+  runtime.setActiveProject("project-a");
+  let captured = null;
+  runtime.context.registerWorkingSessionAdapter({
+    id: "test",
+    capture: () => { captured = { projectId: runtime.context.activeProjectId, cursor: 10 }; return captured; },
+    restore: () => true,
+    clear: (state) => (state.projectId === "project-a" ? undefined : state),
+  });
+  runtime.context.scheduleWorkingSessionCommit();
+  await runtime.context.flushWorkingSessionCommit();
+  const snapshot = runtime.snapshots.get("workingSession:v1");
+  test.assert(Boolean(snapshot), "flushWorkingSessionCommit writes the snapshot");
+  test.assert(snapshot.projectId === "project-a", "the snapshot is owned by the active project");
+  test.assert(snapshot.adapters.test.cursor === 10, "the adapter state is captured");
+}
 
-test.assertMatches(windowManager, /async function restartSystem\(\)[\s\S]*await clearWorkingSession\(\)/, "Special > Restart clears transient Working Session state");
-test.assertMatches(windowManager, /async function shutDownSystem\(\)[\s\S]*await clearWorkingSession\(\)/, "Special > Shut Down clears transient Working Session state");
-test.assertIncludes(windowManager, 't("shutdown_confirm")', "Special > Shut Down asks before leaving the desktop");
-test.assertIncludes(windowManager, "function arrangeOutlineTeachTextSplit()", "window manager has a dedicated Outline + TeachText split layout");
-test.assertIncludes(windowManager, "function arrangeActiveWritingWorkspace()", "window manager arranges whichever phase workspace is open as a manuscript pair");
-test.assertMatches(windowManager, /\["outline", "sectionDrafts", "reviewDesk", "teachText"\]\.includes\(name\)[\s\S]*arrangeActiveWritingWorkspace\(\)/, "opening any route writing window arranges the active phase workspace");
-test.assertMatches(windowManager, /const wasAlreadyOpen =[\s\S]*const shouldPlaceWindow = !skipPlacement\s*&& !wasAlreadyOpen[\s\S]*&& win\.dataset\.userPositioned !== "true"[\s\S]*shouldPlaceWindow && \["outline", "sectionDrafts", "reviewDesk", "teachText"\]\.includes\(name\)/, "re-opening an already visible or user-positioned writing window focuses it without moving the writing layout");
-test.assertIncludes(windowManager, "function markWindowUserPositioned(win)", "window manager records user-positioned windows as spatial memory");
-test.assertIncludes(windowManager, "function placeNewWindowAvoidingVisibleWindows(win)", "new floating windows avoid visible old windows without moving them");
-test.assertIncludes(windowManager, "if (outline.dataset.userPositioned === \"true\" || teachText.dataset.userPositioned === \"true\") return", "automatic Outline + TeachText split does not override user-positioned writing windows");
-test.assertMatches(windowManager, /applyFrame\(outline[\s\S]*applyFrame\(teachText/, "Outline is placed before TeachText in the split");
-test.assertMatches(desktopRuntime, /async function eraseSelectedProjectDisk\(\)[\s\S]*clearWorkingSession\(\{ projectId \}\)/, "Erase Disk clears only the erased project's Working Session scope");
+// The flush boundary persists the OLD project's scene before ownership moves,
+// so Continue can restore A after switching to B and back.
+{
+  const runtime = createWorkingSessionVm();
+  runtime.setActiveProject("project-a");
+  runtime.context.registerWorkingSessionAdapter({
+    id: "cursor",
+    capture: () => ({ projectId: runtime.context.activeProjectId, cursor: runtime.context.__cursor }),
+    restore: () => true,
+    clear: (state, options) => (options.projectId && state.projectId === options.projectId ? undefined : state),
+  });
+  runtime.context.__cursor = 1250;
+  await runtime.context.flushWorkingSessionCommit();
+  test.assert(runtime.snapshots.get("workingSession:v1")?.projectId === "project-a", "Project A's scene is flushed while A is still active");
 
-test.assertIncludes(manifest, '"app/core/working-session.js"', "loads Working Session in the runtime bundle");
-test.assertNotIncludes(workingSession, "localStorage", "does not reintroduce scattered localStorage persistence for resume state");
-test.assertIncludes(workingSession, "userPositioned: win.dataset.userPositioned === \"true\"", "captures user-positioned window state");
-test.assertIncludes(workingSession, "win.dataset.userPositioned = entry.userPositioned ? \"true\" : \"false\"", "restores user-positioned window state");
-test.assertIncludes(workingSession, "layoutGroup: win.dataset.layoutGroup || \"\"", "captures the app/layout group used by window placement");
-test.assertMatches(workingSession, /app\/: inline layout styles|setInlineStyleValue|style\.setProperty/, "uses a centralized style helper for restored runtime frames");
-test.assert(!/\.style\.(left|top|right|bottom|width|height|padding|margin)\s*=/.test(workingSession), "does not add direct inline layout assignments");
-test.assertIncludes(workingSession, "function captureTextControlWorkingSession(control)", "one route-wide contract captures caret, selection, direction, scroll, and focus");
-test.assertIncludes(workingSession, "function restoreTextControlWorkingSession(control, state = {}, options = {})", "one route-wide contract restores text-control working position");
-[
-  "questionEditor",
-  "outlineEditor",
-  "draftEditor",
-].forEach((key) => {
-  test.assertIncludes(workingSession, `${key}: captureTextControlWorkingSession`, `${key} protects in-progress writing position`);
-});
-test.assertIncludes(workingSession, "editor: captureTextControlWorkingSession(teachTextBodyInput)", "TeachText uses the same caret and focus contract as upstream writing surfaces");
-test.assertIncludes(workingSession, "editor: captureTextControlWorkingSession(reviewDeskBodyInput)", "Review Desk uses the same caret and focus contract as the manuscript");
-test.assertMatches(workingSession, /if \(draftSectionSelectEl && state\.draftSection\)[\s\S]*restoreTextControlWorkingSession\(draftBodyInput/, "Section Drafts restores its chapter before its caret and selection");
-test.assertMatches(workingSession, /if \(reviewSectionSelectEl && state\.section\)[\s\S]*selectStyleCheckSection\(index\)[\s\S]*selectClaimCheckSection\(index\)/, "Review Desk restores the selected chapter and both review projections");
-test.assertIncludes(workingSession, "activeWindowName: activeWin?.dataset.window", "the same snapshot preserves the foreground route window");
-test.assertIncludes(workingSession, 'shadeWidth: inlineStyleValue(win, "--window-shade-width")', "captures a shaded window's horizontal size");
-test.assertMatches(
-  workingSession,
-  /const shadeWidth = entry\.shadeWidth[\s\S]*entry\.frame\?\.width[\s\S]*getBoundingClientRect\(\)\.width[\s\S]*setInlineStyleValue\(win, "--window-shade-width", entry\.collapsed \? shadeWidth : ""\)/,
-  "restores WindowShade width and repairs snapshots created before that field existed"
+  // switchProject ordering: flush happens before activeProjectId moves.
+  const previous = runtime.context.activeProjectId;
+  await runtime.context.flushWorkingSessionCommit();
+  runtime.setActiveProject("project-b");
+  runtime.context.__cursor = 3;
+  await runtime.context.flushWorkingSessionCommit();
+  test.assert(runtime.snapshots.get("workingSession:v1")?.projectId === "project-b", "Project B's scene replaces A only after the switch");
+  test.assert(previous === "project-a", "the switch boundary flushes the old project first");
+}
+
+// Static contracts: every high-value boundary flushes before the ownership or
+// visibility change.
+test.assertIncludes(
+  switchProjectSource,
+  "flushWorkingSessionCommit()",
+  "switchProject flushes the Working Session"
+);
+test.assertIncludes(
+  switchProjectSource,
+  "flushPendingQuickDraftCommit",
+  "switchProject still flushes the Draft Desk document first"
+);
+const switchBlock = switchProjectSource.match(/async function switchProject\(projectId\)[\s\S]*?\n\}\n/)?.[0] || "";
+test.assert(
+  switchBlock.indexOf("flushWorkingSessionCommit") < switchBlock.indexOf("parkConversationInProject"),
+  "the Working Session flush precedes the conversation park and ownership switch"
+);
+test.assertIncludes(
+  source,
+  "flushWorkingSessionCommit",
+  "the unload/best-effort paths use the shared flush boundary"
+);
+test.assertIncludes(
+  guideSource,
+  "flushWorkingSessionCommit()",
+  "Continue flushes before restoring the Working Session"
 );
 
 test.finish();

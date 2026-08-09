@@ -228,7 +228,11 @@
           base_url: baseUrl,
         }),
       });
-      if (!response.ok) throw new Error("HTTP " + response.status);
+      if (!response.ok) {
+        const error = new Error("HTTP " + response.status);
+        error.status = response.status;
+        throw error;
+      }
       const data = await response.json();
       if (data.connected) {
         cloudConfig.credentialMode = data.credential_mode || cloudCredentialMode();
@@ -632,8 +636,20 @@
       saveCloudConfig();
       cloudStatusEl.hidden = false;
       cloudStatusDot.className = "cloud-status-dot is-error";
-      cloudStatusText.textContent = window.AISystem6UserRecoveryMessages?.text?.("cloudConnection")
-        || (typeof t === "function" ? t("cloud_connection_failed_message") : "Website AI is unavailable.");
+      const recovery = window.AISystem6ModelUserErrors?.failure?.(error, {
+        provider: cloudConfig?.provider || "deepseek",
+        kind: "cloud",
+      });
+      cloudStatusText.textContent = recovery
+        ? `${t(recovery.messageKey)} ${t(recovery.actionKey)}`
+        : (window.AISystem6UserRecoveryMessages?.text?.("cloudConnection")
+          || (typeof t === "function" ? t("cloud_connection_failed_message") : "Website AI is unavailable."));
+      if (recovery?.actionId) {
+        window.AISystem6ModelUserErrors?.notify?.(error, {
+          provider: cloudConfig?.provider || "deepseek",
+          kind: "cloud",
+        });
+      }
       applyCloudActiveState();
     } finally {
       setControlLoading(cloudCheckBtn, false);

@@ -84,7 +84,7 @@ function initializeGuideOobe() {
   guide.addEventListener("keydown", (event) => {
     if (event.isComposing || guide.classList.contains("is-hidden")) return;
 
-    if (event.key === "Enter" && !event.metaKey && !event.ctrlKey && !event.altKey) {
+    if (event.key === "Enter" && !event.metaKey && !event.ctrlKey && !event.altKey && !eventIsTextComposition(event)) {
       event.preventDefault();
       startGuidedQuickDraft();
       return;
@@ -171,6 +171,9 @@ async function continueLastProject() {
   // Only when that snapshot is missing or points at a deleted object do we
   // fall back to a simpler destination.
   if (typeof restoreWorkingSession === "function") {
+    if (typeof flushWorkingSessionCommit === "function") {
+      await flushWorkingSessionCommit();
+    }
     const resumed = await restoreWorkingSession();
     if (resumed) {
       saveDeskState();

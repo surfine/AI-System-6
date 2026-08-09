@@ -202,7 +202,7 @@ function attachMarkdownEditor(textarea) {
       return;
     }
 
-    if (event.key === "Enter" && !event.shiftKey) {
+    if (event.key === "Enter" && !event.shiftKey && !eventIsTextComposition(event)) {
       if (mdeContinueList(textarea)) event.preventDefault();
       return;
     }

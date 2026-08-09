@@ -3181,6 +3181,16 @@ async function runEditCommand(command) {
 
 function saveCurrentWork() {
   const activeWin = document.querySelector(".window.is-active:not(.is-hidden)");
+  if (activeWin?.dataset.window === "quickDraft") {
+    // Draft Desk saves through its public durable API; the fallback flush
+    // covers a partially-loaded module so ⌘S never no-ops.
+    if (typeof window.AISystem6QuickDraft?.save === "function") {
+      window.AISystem6QuickDraft.save();
+    } else {
+      window.AISystem6QuickDraftRuntime?.flushPendingQuickDraftCommit?.();
+    }
+    return;
+  }
   const teachTextVisible = !getWindow("teachText").classList.contains("is-hidden");
   if (activeWin?.dataset.window === "teachText") {
     saveTextDocument();

@@ -2305,7 +2305,7 @@ window.AISystem6LiquidCoverLoaded = true;
       loadLayerIntoPanel();
     };
     input.addEventListener("keydown", (event) => {
-      if (event.key === "Enter") { event.preventDefault(); finish(true); }
+      if (event.key === "Enter" && !eventIsTextComposition(event)) { event.preventDefault(); finish(true); }
       if (event.key === "Escape") { event.preventDefault(); finish(false); }
     });
     input.addEventListener("blur", () => finish(true));
