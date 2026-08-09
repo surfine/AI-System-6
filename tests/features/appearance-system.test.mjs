@@ -225,7 +225,7 @@ test.assert(exists("assets/themes/aqua/README.md") && exists("assets/themes/aqua
 test.assert(!exists("assets/vendor/quaqua"), "Apple-owned Quaqua artwork remains evidence-only and is not redistributed");
 test.assertIncludes(appearanceCss, "Quaqua16SnowLeopardLookAndFeel.java", "Snow Leopard is pinned to Quaqua's dedicated 10.6 implementation");
 test.assertIncludes(appearanceCss, "platform-mac-snowleopard rules", "Snow Leopard records the period Chromium Web evidence boundary");
-test.assertIncludes(appearanceCss, "--toolbar-bg-inactive: linear-gradient(#eaeaea, #d8d8d8)", "Snow Leopard preserves Quaqua's inactive toolbar relationship as a semantic token");
+test.assertIncludes(appearanceCss, "--toolbar-bg-inactive: linear-gradient(#e4e4e4, #d8d8d8)", "Snow Leopard preserves the Chromium 10.6 inactive toolbar gradient as a semantic token");
 test.assertIncludes(appearanceCss, "--sidebar-bg: #dde4eb", "Snow Leopard exposes the measured active source-list surface");
 test.assertIncludes(appearanceCss, "--sidebar-selection-bg-inactive:", "Snow Leopard exposes focused, unfocused, and inactive source-list selection states");
 test.assertIncludes(appearanceCss, "--scrollbar-width: 15px", "the system specimen uses the native 10.6 Aqua scrollbar width");
@@ -233,7 +233,7 @@ test.assertIncludes(appearanceCss, "--scrollbar-compact-width: 11px", "Chromium'
 test.assertIncludes(appearanceCss, 'body[data-theme-family="aqua"] .system-select-button::after', "the Aqua lineage shares the native up/down pop-up indicator recipe");
 test.assertIncludes(appearanceCss, "vinceliuice/Yosemite-gtk-theme 03b6f721", "Yosemite records the exact GTK evidence revision");
 test.assertIncludes(appearanceCss, "--selection-bg: #0e6bff", "Yosemite preserves the evidence-led selection blue");
-test.assertIncludes(appearanceCss, 'body:is([data-theme="snow-leopard"], [data-theme="yosemite"]) .theme-lab-toolbar', "mature toolbar geometry is a shared recipe driven by era tokens");
+test.assertIncludes(appearanceCss, 'body[data-theme-family="aqua"]:not([data-theme="aqua"]) .theme-lab-toolbar', "Snow Leopard's mature toolbar geometry is an Aqua-family recipe driven by era tokens");
 test.assertIncludes(foundationCss, "--surface-backdrop-filter: none", "surface vibrancy has a safe Classic default");
 test.assertIncludes(liquidCss, "--surface-backdrop-filter: var(--menu-panel-backdrop-filter)", "the new surface token keeps its Liquid Glass twin");
 test.assertIncludes(labCss, "backdrop-filter: var(--surface-backdrop-filter)", "Theme Lab diagnoses surface vibrancy through the semantic token");

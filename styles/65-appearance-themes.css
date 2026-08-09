@@ -721,12 +721,16 @@ body[data-theme="aqua"] {
     #ebebeb 12px 13px, #f8f8f8 13px 14px, #e8e8e8 14px 15px, #dfdfdf 15px 16px,
     #e4e4e4 16px 17px, #f0f0f0 17px 18px, #e1e1e1 18px 19px, #d8d8d8 19px 20px,
     #dedede 20px 21px);
-  --system-titlebar-inactive-bg:
-    repeating-linear-gradient(to bottom,
-      rgba(250, 250, 250, 0.7) 0 1px,
-      rgba(255, 255, 255, 0.7) 1px 2px,
-      rgba(250, 250, 250, 0.7) 2px 3px,
-      rgba(233, 233, 233, 0.7) 3px 4px);
+  /* Jaguar inactive title bars are blue-gray pinstripes over a darker
+     window edge, not a desaturated copy of the active bar. The 21 rows are
+     sampled from the inactive window in the 10.2 desktop capture. */
+  --system-titlebar-inactive-bg: linear-gradient(to bottom,
+    #cfddeb 0 1px, #cfddeb 1px 2px, #c1cddc 2px 3px, #bfcddb 3px 4px,
+    #c4d2e0 4px 5px, #cad6e5 5px 6px, #c2cfdc 6px 7px, #bac5d2 7px 8px,
+    #bfcad7 8px 9px, #cad6e2 9px 10px, #bfcbd7 10px 11px, #b6c1ce 11px 12px,
+    #bdc9d5 12px 13px, #c6d2de 13px 14px, #bac6d2 14px 15px, #b4c0cc 15px 16px,
+    #b7c3cf 16px 17px, #c1cdd9 17px 18px, #b5c1cd 18px 19px, #acb6c3 19px 20px,
+    #b0bac7 20px 21px);
   --system-titlebar-background-origin: padding-box;
   --system-titlebar-background-clip: border-box;
   --system-titlebar-inactive-control-visibility: visible;
@@ -807,8 +811,8 @@ body[data-theme="aqua"] {
     #7ebcfa 55% 60%, #87c2fe 60% 65%, #8ac7fe 65% 70%,
     #91ceff 70% 75%, #9adaff 75% 85%, #9fe1ff 85% 95%,
     #a4f1fc 95% 100%);
-  --btn-default-fg: #06131d;
-  --btn-default-text-shadow: 0 1px 0 rgba(255, 255, 255, 0.76);
+  --btn-default-fg: #000000;
+  --btn-default-text-shadow: none;
   --btn-default-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.82),
     inset 0 -1px 1px rgba(0, 45, 104, 0.42),
@@ -865,17 +869,20 @@ body[data-theme="aqua"] {
   --menu-item-active-fg: #ffffff;
   --window-frame-lane: 15px;
   --window-frame-track-bg: linear-gradient(90deg,
-    #b8b8b8 0 7%, #c0c0c0 7% 13%, #c8c8c8 13% 20%,
-    #d3d3d3 20% 27%, #dbdbdb 27% 33%, #e4e4e4 33% 40%,
-    #ebebeb 40% 47%, #f1f1f1 47% 53%, #f6f6f6 53% 60%,
-    #fafafa 60% 67%, #fbfbfb 67% 73%, #fcfcfc 73% 80%,
-    #f9f9f9 80% 87%, #f4f4f4 87% 93%, #efefef 93% 100%);
+    #b4b4b4 0 7%, #b7b7b7 7% 13%, #c1c1c1 13% 20%,
+    #c7c7c7 20% 27%, #cfcfcf 27% 33%, #d5d5d5 33% 40%,
+    #dbdbdb 40% 47%, #e0e0e0 47% 53%, #e5e5e5 53% 60%,
+    #e9e9e9 60% 67%, #eaeaea 67% 73%, #eaeaea 73% 80%,
+    #e7e7e7 80% 87%, #e2e2e2 87% 93%, #dddddd 93% 100%);
   --window-frame-track-border: 1px solid #9b9b9b;
+  /* The Jaguar thumb ends in a bright peak then a dark 1px edge; the
+     address-book capture shows the 92,92,92 right rail. */
   --window-frame-thumb-bg: linear-gradient(90deg,
-    #0039b3 0 7%, #769edc 7% 14%, #90b9e6 14% 21%,
-    #88b4e6 21% 29%, #80b1e6 29% 36%, #428adf 36% 43%,
-    #559beb 43% 50%, #69adfb 50% 57%, #7abfff 57% 64%,
-    #87ccff 64% 71%, #93daff 71% 79%, #89cdff 79% 100%);
+    #0039b3 0 14%, #77a2dd 14% 21%, #92bbe7 21% 29%,
+    #8eb9e7 29% 36%, #85b5e8 36% 43%, #4990e2 43% 50%,
+    #5da1ee 50% 57%, #6fb2fe 57% 64%, #80c3ff 64% 71%,
+    #8ed2ff 71% 79%, #99e0ff 79% 86%, #91d4ff 86% 92%,
+    #5c5c5c 92% 100%);
   --window-frame-thumb-border: 1px solid #617d91;
   --window-frame-thumb-radius: 7px;
   --window-frame-arrow-bg: linear-gradient(#ffffff, #d3d3d3 52%, #f5f5f5);
@@ -912,7 +919,7 @@ body[data-theme="aqua"] {
   --theme-lab-pane-gap: 10px 18px;
   --theme-lab-pane-padding: 10px 14px 14px;
   --theme-lab-pane-bg:
-    repeating-linear-gradient(to bottom, #e6e6e6 0 1px, #eeeeee 1px 2px, #ffffff 2px 3px, #eeeeee 3px 4px);
+    repeating-linear-gradient(to bottom, #e6e6e6 0 1px, #eeeeee 1px 2px, #f2f2f2 2px 3px, #eeeeee 3px 4px);
   --theme-lab-group-padding: 4px 10px 10px;
   --theme-lab-group-bg: transparent;
   --theme-lab-group-border: 0;
@@ -949,8 +956,8 @@ body[data-theme="aqua"] {
   --theme-lab-tab-button-min-height: 24px;
   --theme-lab-tab-button-height: 24px;
   --theme-lab-tab-button-padding: 3px 13px 2px;
-  --theme-lab-tab-selected-min-height: 25px;
-  --theme-lab-tab-selected-height: 25px;
+  --theme-lab-tab-selected-min-height: 24px;
+  --theme-lab-tab-selected-height: 24px;
   --theme-lab-tab-button-bg: var(--tab-bg);
   --theme-lab-tab-selected-bg: var(--tab-active-bg);
   --theme-lab-tab-selected-fg: #06131d;
@@ -1149,7 +1156,7 @@ body[data-theme="aqua"] {
   --theme-lab-scrollbar-border-left: 0;
   --theme-lab-scrollbar-bg: var(--window-frame-track-bg);
   --theme-lab-scrollbar-track-bg: var(--window-frame-track-bg);
-  --theme-lab-scrollbar-track-shadow: inset 1px 0 1px rgba(0, 0, 0, 0.15), inset -1px 0 1px rgba(255, 255, 255, 0.34);
+  --theme-lab-scrollbar-track-shadow: none;
   --theme-lab-scrollbar-thumb-top: 8px;
   --theme-lab-scrollbar-thumb-right: 1px;
   --theme-lab-scrollbar-thumb-left: 1px;
@@ -1165,15 +1172,14 @@ body[data-theme="aqua"] {
     #3783da 43% 50%, #4d96ec 50% 57%, #61a9f5 57% 64%,
     #6fb5fa 64% 71%, #7bc3ff 71% 79%, #70b6f9 79% 100%);
   --theme-lab-scrollbar-button-border: 0;
-  --theme-lab-scrollbar-button-bg: var(--window-frame-track-bg);
-  --theme-lab-scrollbar-button-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62);
+  --theme-lab-scrollbar-button-shadow: none;
   --theme-lab-scrollbar-button-active-bg: var(--btn-active-bg);
   --theme-lab-scrollbar-button-active-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
   --theme-lab-scrollbar-arrow-width: 0;
   --theme-lab-scrollbar-arrow-height: 0;
   --theme-lab-scrollbar-arrow-side-border: 3px solid transparent;
-  --theme-lab-scrollbar-decrement-border: 4px solid #202020;
-  --theme-lab-scrollbar-increment-border: 4px solid #202020;
+  --theme-lab-scrollbar-decrement-border: 0;
+  --theme-lab-scrollbar-increment-border: 0;
   --theme-lab-mini-position: relative;
   --theme-lab-mini-min-height: 50px;
   --theme-lab-mini-padding: 22px 0 0;
@@ -1219,15 +1225,15 @@ body[data-theme="aqua"] {
   --theme-lab-finder-window-titlebar-bg: var(--system-titlebar-active-bg);
   --theme-lab-finder-window-titlebar-shadow: inset 0 1px 0 #ffffff;
   --theme-lab-finder-status-display: flex;
-  --theme-lab-finder-status-height: 20px;
-  --theme-lab-finder-status-border-top: 1px solid #ffffff;
-  --theme-lab-finder-status-border-bottom: 1px solid #9b9b9b;
+  --theme-lab-finder-status-height: 19px;
+  --theme-lab-finder-status-border-top: 1px solid #a3a3a3;
+  --theme-lab-finder-status-border-bottom: 1px solid #a3a3a3;
   --theme-lab-finder-status-bg: var(--toolbar-bg);
   --theme-lab-finder-status-shadow: inset 0 1px 0 #ffffff;
   --theme-lab-toolbar-min-height: 56px;
   --theme-lab-toolbar-gap: 8px;
   --theme-lab-toolbar-padding: 4px 8px;
-  --theme-lab-toolbar-border: 0;
+  --theme-lab-toolbar-border: 1px solid #7f7f7f;
   --theme-lab-toolbar-radius: 0;
   --theme-lab-toolbar-bg: var(--toolbar-bg);
   --theme-lab-toolbar-shadow: inset 0 1px 0 #ffffff;
@@ -1287,7 +1293,7 @@ body[data-theme="aqua"] {
 }
 
 html[data-theme="snow-leopard"],
-body[data-theme="snow-leopard"] {
+body[data-theme-family="aqua"]:not([data-theme="aqua"]) {
   /* Evidence boundary: Quaqua 9.1's Quaqua16SnowLeopardLookAndFeel.java (the
      Snow LAF introduced in Quaqua 6.0) owns native geometry, state variants,
      silver chrome and mature Aqua controls. Chromium f108f78's
@@ -1405,8 +1411,10 @@ body[data-theme="snow-leopard"] {
   --surface-primary: #ffffff;
   --surface-secondary: #e2e2e2;
   --surface-inset: #ffffff;
-  --toolbar-bg: linear-gradient(#cbcbcb, #a7a7a7);
-  --toolbar-bg-inactive: linear-gradient(#eaeaea, #d8d8d8);
+  /* Chromium f108f78 platform-mac-snowleopard: active #bdbdbd -> #a7a7a7,
+     inactive #e4e4e4 -> #d8d8d8. */
+  --toolbar-bg: linear-gradient(#bdbdbd, #a7a7a7);
+  --toolbar-bg-inactive: linear-gradient(#e4e4e4, #d8d8d8);
   --toolbar-border: 1px solid #515151;
   --toolbar-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.66);
   --sidebar-bg: #dde4eb;
@@ -1574,7 +1582,7 @@ body[data-theme="yosemite"] {
   --desktop-surface:
     radial-gradient(circle at 78% 16%, rgba(255, 210, 173, 0.74), transparent 24%),
     linear-gradient(145deg, #496f8f, #d1a588 48%, #5f829b);
-  --window-bg: rgba(245, 245, 245, 0.96);
+  --window-bg: rgba(245, 245, 245, 0.99);
   --window-border: 1px solid rgba(0, 0, 0, 0.16);
   --window-radius: 6px;
   --window-shadow:
@@ -1583,7 +1591,9 @@ body[data-theme="yosemite"] {
     0 0 0 1px rgba(0, 0, 0, 0.08);
   --active-window-shadow: var(--window-shadow);
   --inactive-window-shadow: 0 3px 3px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.06);
-  --window-backdrop-filter: blur(6px) saturate(108%);
+  /* 10.10 window content is opaque; only the chrome surfaces keep
+     translucency. The whole-window blur is a Liquid Glass feature. */
+  --window-backdrop-filter: none;
   --surface-backdrop-filter: blur(7px) saturate(112%);
   --system-titlebar-active-bg: linear-gradient(#f5f5f5 0%, #e9e9e9 10%, #e2e2e2 52%, #d2d2d2 100%);
   --system-titlebar-inactive-bg: #f6f6f6;
@@ -1628,11 +1638,12 @@ body[data-theme="yosemite"] {
   --btn-active-bg: #afafaf;
   --btn-active-fg: #242424;
   --btn-active-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
-  --btn-default-bg: linear-gradient(#4c97fe, #0564e3);
+  /* GTK 03b6f721 suggested-action: solid #3484e2 with #1c6bc7 border. */
+  --btn-default-bg: #3484e2;
   --btn-default-fg: #ffffff;
   --btn-default-text-shadow: 0 -1px 0 rgba(0, 58, 130, 0.32);
-  --btn-default-shadow: 0 1px 2px rgba(0, 70, 145, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.28);
-  --btn-default-active-bg: #075bc8;
+  --btn-default-shadow: 0 1px 1px rgba(19, 71, 132, 0.06), 0 1px 2px rgba(19, 71, 132, 0.02);
+  --btn-default-active-bg: #1c6bc7;
   --btn-default-active-fg: #ffffff;
   --field-bg: #ffffff;
   --field-focus-bg: #ffffff;
@@ -1749,6 +1760,30 @@ body[data-theme="aqua"] .theme-lab-window {
 body[data-theme="aqua"] .theme-lab-window:not(.is-active) {
   background: var(--window-bg);
   box-shadow: var(--inactive-window-shadow);
+  /* Jaguar inactive frames keep a dark blue top edge (44,85,133). */
+  border-color: #2c5585;
+}
+
+/* The Finder toolbar keeps a 56px border-box so its 1px top rail matches the
+   Jaguar capture without moving the status strip below it. */
+body[data-theme="aqua"] .theme-lab-toolbar {
+  box-sizing: border-box;
+}
+
+/* The Jaguar scrollbar cap is 16px + 15px (top button taller); keep the
+   track at 186px so the button pattern lands on the reference rows. */
+body[data-theme="aqua"] .theme-lab-scrollbar {
+  grid-template-rows: minmax(0, 1fr) 16px 15px;
+}
+
+/* The cap buttons are pixel-reconstructed from the 10.2 address-book
+   capture, arrow included; the generic CSS triangles are disabled. */
+body[data-theme="aqua"] .theme-lab-scrollbar-button.is-decrement {
+  background: url("./assets/themes/aqua/scrollbar-cap-decrement.svg") no-repeat;
+}
+
+body[data-theme="aqua"] .theme-lab-scrollbar-button.is-increment {
+  background: url("./assets/themes/aqua/scrollbar-cap-increment.svg") no-repeat;
 }
 
 body[data-theme="aqua"] :where(
@@ -2246,7 +2281,7 @@ body[data-theme="aqua"] button.btn {
   font-family: var(--theme-ui-font);
   font-size: var(--system-control-size);
   font-weight: 400;
-  line-height: 16px;
+  line-height: 13px;
 }
 
 body[data-theme="aqua"] button.btn.default {
@@ -2438,21 +2473,22 @@ body[data-theme="aqua"] .theme-lab-group .theme-lab-tabs button.is-selected {
       #666666 18px 19px, #636363 19px 20px, #666666 20px 21px,
       #6c6c6c 21px 22px, #616161 22px 23px) right top / 1px 23px no-repeat,
     linear-gradient(to bottom,
-      #0024b2 0 1px, #e2ecf9 1px 2px, #cbdff4 2px 3px,
-      #b8d3f0 3px 4px, #accded 4px 5px, #a2c6ec 5px 6px,
-      #9dc4eb 6px 7px, #9ac1eb 7px 8px, #96c0eb 8px 9px,
-      #92beea 9px 10px, #90bdea 10px 11px, #69a8e8 11px 12px,
-      #71adeb 12px 13px, #77b2ef 13px 14px, #7fb8f4 14px 15px,
-      #85bef9 15px 16px, #8cc6ff 16px 17px, #93cbff 17px 18px,
-      #99d1ff 18px 19px, #a0d7ff 19px 20px, #a6deff 20px 21px,
-      #abe3ff 21px 22px, #b1e9ff 22px 23px, #b6edff 23px 25px);
+      #e2ecf9 0 1px, #cbdff4 1px 2px, #b8d3f0 2px 3px,
+      #accded 3px 4px, #a2c6ec 4px 5px, #9dc4eb 5px 6px,
+      #9ac1eb 6px 7px, #96c0eb 7px 8px, #92beea 8px 9px,
+      #90bdea 9px 10px, #69a8e8 10px 11px, #71adeb 11px 12px,
+      #77b2ef 12px 13px, #7fb8f4 13px 14px, #85bef9 14px 15px,
+      #8cc6ff 15px 16px, #93cbff 16px 17px, #99d1ff 17px 18px,
+      #a0d7ff 18px 19px, #a6deff 19px 20px, #abe3ff 20px 21px,
+      #b1e9ff 21px 22px, #b6edff 22px 23px);
   color: #06131d;
   box-shadow: none;
 }
 
 body[data-theme="aqua"] .theme-lab-group .theme-lab-tabs button.is-selected::after {
   content: "";
-  top: 24px;
+  position: absolute;
+  top: 23px;
   right: 0;
   left: 0;
   width: 100%;
@@ -2464,15 +2500,15 @@ body[data-theme="aqua"] .theme-lab-group .theme-lab-tabs button.is-selected::aft
       #bbefff 3px 4px, #6c6c6c 4px 5px, #6c6c6c 5px 6px) 0 1px / 100% 5px no-repeat;
 }
 
-/* Snow Leopard and Yosemite happen to use the same neutral Web rendering
-   scaffold here; this is not theme lineage. Registry ancestry remains
-   Aqua -> Snow Leopard and Liquid Glass -> Yosemite, while every material,
-   state and geometry value below comes from its own era table. */
-body:is([data-theme="snow-leopard"], [data-theme="yosemite"]) .window:not(.is-active) {
+/* Snow Leopard inherits the Aqua control recipes; every material, state and
+   geometry value below comes from the 10.6 token table, so the silver chrome
+   stays an Aqua descendant rather than a neutral web scaffold shared with
+   Yosemite. */
+body[data-theme-family="aqua"]:not([data-theme="aqua"]) .window:not(.is-active) {
   box-shadow: var(--inactive-window-shadow);
 }
 
-body:is([data-theme="snow-leopard"], [data-theme="yosemite"]) :where(.btn) {
+body[data-theme-family="aqua"]:not([data-theme="aqua"]) :where(.btn) {
   border-color: var(--btn-border-color);
   border-radius: var(--btn-radius);
   background: var(--btn-bg);
@@ -2481,7 +2517,30 @@ body:is([data-theme="snow-leopard"], [data-theme="yosemite"]) :where(.btn) {
   font-weight: 400;
 }
 
-body:is([data-theme="snow-leopard"], [data-theme="yosemite"]) :where(
+/* The 10.6 button states stay on the silver model: the default button is
+   the blue ring emphasis, hover/active darken, disabled flattens. */
+body[data-theme-family="aqua"]:not([data-theme="aqua"]) .btn.default {
+  background: var(--btn-default-bg);
+  color: var(--btn-default-fg);
+  text-shadow: var(--btn-default-text-shadow);
+  box-shadow: var(--btn-default-shadow);
+}
+
+body[data-theme-family="aqua"]:not([data-theme="aqua"])
+  .btn:is(.is-active, :active):not(:disabled):not(.is-disabled) {
+  background: var(--btn-active-bg);
+  color: var(--btn-active-fg);
+  box-shadow: var(--btn-active-shadow);
+}
+
+body[data-theme-family="aqua"]:not([data-theme="aqua"])
+  :is(.btn:disabled, .btn.is-disabled) {
+  background: var(--control-disabled-bg);
+  color: var(--shade-dark);
+  box-shadow: none;
+}
+
+body[data-theme-family="aqua"]:not([data-theme="aqua"]) :where(
   textarea,
   input[type="url"],
   input[type="text"],
@@ -2499,53 +2558,143 @@ body:is([data-theme="snow-leopard"], [data-theme="yosemite"]) :where(
   font-size: var(--system-control-size);
 }
 
-body:is([data-theme="snow-leopard"], [data-theme="yosemite"]) :is(input, textarea, select):focus {
+body[data-theme-family="aqua"]:not([data-theme="aqua"]) :is(input, textarea, select):focus {
   border: var(--field-focus-border);
   outline: 0;
   background: var(--field-focus-bg);
   box-shadow: var(--field-focus-ring);
 }
 
-body:is([data-theme="snow-leopard"], [data-theme="yosemite"]) .theme-lab-toolbar {
+body[data-theme-family="aqua"]:not([data-theme="aqua"]) .theme-lab-toolbar {
   min-height: var(--theme-lab-toolbar-min-height);
   padding: var(--theme-lab-toolbar-padding);
   border-radius: var(--theme-lab-toolbar-radius);
   box-shadow: var(--toolbar-highlight);
 }
 
-body:is([data-theme="snow-leopard"], [data-theme="yosemite"]) .theme-lab-mini-window.is-active {
+body[data-theme-family="aqua"]:not([data-theme="aqua"]) .theme-lab-mini-window.is-active {
   background: var(--toolbar-bg);
 }
 
-body:is([data-theme="snow-leopard"], [data-theme="yosemite"]) .theme-lab-mini-window.is-inactive {
+body[data-theme-family="aqua"]:not([data-theme="aqua"]) .theme-lab-mini-window.is-inactive {
   background: var(--toolbar-bg-inactive);
   opacity: 1;
 }
 
-body:is([data-theme="snow-leopard"], [data-theme="yosemite"])
+body[data-theme-family="aqua"]:not([data-theme="aqua"])
   :is(.theme-lab-sidebar, .theme-lab-list) button {
   min-height: var(--theme-lab-nav-row-min-height);
   padding-block: var(--theme-lab-nav-row-padding-block);
 }
 
-body:is([data-theme="snow-leopard"], [data-theme="yosemite"]) .theme-lab-finder-rows > div {
+body[data-theme-family="aqua"]:not([data-theme="aqua"]) .theme-lab-finder-rows > div {
+  min-height: var(--theme-lab-finder-row-min-height);
+}
+
+/* Interim Yosemite recipe set: same selectors, Liquid-Glass-derived tokens,
+   until the Yosemite phase replaces it with its own chrome recipes. */
+body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) .window:not(.is-active) {
+  box-shadow: var(--inactive-window-shadow);
+}
+
+body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) :where(.btn) {
+  border-color: var(--btn-border-color);
+  border-radius: var(--btn-radius);
+  background: var(--btn-bg);
+  box-shadow: var(--btn-shadow);
+  font-family: var(--theme-ui-font);
+  font-weight: 400;
+}
+
+/* The 10.10 button states: the default button is the solid blue suggestion,
+   pressed darkens, disabled flattens. */
+body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) .btn.default {
+  background: var(--btn-default-bg);
+  border-color: #1c6bc7;
+  color: var(--btn-default-fg);
+  text-shadow: var(--btn-default-text-shadow);
+  box-shadow: var(--btn-default-shadow);
+}
+
+body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"])
+  .btn:is(.is-active, :active):not(:disabled):not(.is-disabled) {
+  background: var(--btn-active-bg);
+  color: var(--btn-active-fg);
+  box-shadow: var(--btn-active-shadow);
+}
+
+body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"])
+  :is(.btn:disabled, .btn.is-disabled) {
+  background: var(--control-disabled-bg);
+  color: var(--shade-dark);
+  box-shadow: none;
+}
+
+body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) :where(
+  textarea,
+  input[type="url"],
+  input[type="text"],
+  input[type="password"],
+  input[type="search"],
+  input[type="number"]
+) {
+  min-height: var(--system-control-min-height);
+  padding: var(--field-control-padding);
+  border: var(--field-border);
+  border-radius: var(--field-radius);
+  background: var(--field-bg);
+  box-shadow: var(--field-shadow);
+  font-family: var(--theme-ui-font);
+  font-size: var(--system-control-size);
+}
+
+body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) :is(input, textarea, select):focus {
+  border: var(--field-focus-border);
+  outline: 0;
+  background: var(--field-focus-bg);
+  box-shadow: var(--field-focus-ring);
+}
+
+body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) .theme-lab-toolbar {
+  min-height: var(--theme-lab-toolbar-min-height);
+  padding: var(--theme-lab-toolbar-padding);
+  border-radius: var(--theme-lab-toolbar-radius);
+  box-shadow: var(--toolbar-highlight);
+}
+
+body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) .theme-lab-mini-window.is-active {
+  background: var(--toolbar-bg);
+}
+
+body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) .theme-lab-mini-window.is-inactive {
+  background: var(--toolbar-bg-inactive);
+  opacity: 1;
+}
+
+body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"])
+  :is(.theme-lab-sidebar, .theme-lab-list) button {
+  min-height: var(--theme-lab-nav-row-min-height);
+  padding-block: var(--theme-lab-nav-row-padding-block);
+}
+
+body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) .theme-lab-finder-rows > div {
   min-height: var(--theme-lab-finder-row-min-height);
 }
 
 /* Snow Leopard is the Aqua descendant, not an early-Aqua desaturation. The
    compact, unified silver chrome and quieter controls below are the delta. */
 
-body[data-theme="snow-leopard"] :is(select, input):disabled {
+body[data-theme-family="aqua"]:not([data-theme="aqua"]) :is(select, input):disabled {
   color: #8c8c8c;
   background-color: #f2f2f2;
   opacity: 0.72;
 }
 
-body[data-theme="snow-leopard"] .window:not(.is-active) .theme-lab-sidebar {
+body[data-theme-family="aqua"]:not([data-theme="aqua"]) .window:not(.is-active) .theme-lab-sidebar {
   background: var(--sidebar-bg-inactive);
 }
 
-body[data-theme="snow-leopard"] .window:not(.is-active) .theme-lab-sidebar button.is-selected {
+body[data-theme-family="aqua"]:not([data-theme="aqua"]) .window:not(.is-active) .theme-lab-sidebar button.is-selected {
   background: var(--sidebar-selection-bg-inactive);
 }
 
