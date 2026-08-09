@@ -102,27 +102,57 @@ async function commitQuickDraftProjectDocument({ projectId = "", title = "", bod
   return { ok: false, documentId: "", repairNeeded: !rollbackSaved };
 }
 
-async function saveQuickDraftAsProjectDocument() {
-  const slot = activeProjectQuickDraft();
+async function saveQuickDraftAsProjectDocumentFor(projectId) {
+  const slot = projectQuickDraft(projectId, { create: false });
   if (!slot) {
-    setQuickDraftStatus(t("quick_draft_no_project"));
+    if (projectId === activeProjectId) setQuickDraftStatus(t("quick_draft_no_project"));
     return false;
   }
   const markdown = quickDraftDocumentMarkdown(slot.record);
   if (!markdown) {
-    setQuickDraftStatus(t("quick_draft_empty_body"));
-    refs.draft?.focus();
+    if (projectId === activeProjectId) {
+      setQuickDraftStatus(t("quick_draft_empty_body"));
+      refs.draft?.focus();
+    }
     return false;
   }
-  const title = String(refs.titleInput?.value || titleFromBody(markdown) || t("quick_draft_title")).trim();
+  const title = String(
+    (projectId === activeProjectId ? refs.titleInput?.value : "")
+    || titleFromBody(markdown)
+    || t("quick_draft_title")
+  ).trim();
   const result = await commitQuickDraftProjectDocument({
-    projectId: slot.project.id,
+    projectId,
     title,
     body: markdown,
     existingDocumentId: slot.record.workspace.projectDocId,
   });
-  setQuickDraftStatus(t(result.repairNeeded ? "quick_draft_repair_needed" : result.ok ? "quick_draft_project_doc_saved" : "quick_draft_save_failed"));
+  if (projectId === activeProjectId) {
+    setQuickDraftStatus(t(result.repairNeeded ? "quick_draft_repair_needed" : result.ok ? "quick_draft_project_doc_saved" : "quick_draft_save_failed"));
+  }
   return result.ok;
+}
+
+function saveQuickDraftAsProjectDocument() {
+  return saveQuickDraftAsProjectDocumentFor(activeProjectId);
+}
+
+// A New draft keeps the user's format/scenario preferences but gets a fresh
+// identity: no projectDocId, no versions, no composite, no protects.
+function freshQuickDraftWorkspaceAfterNew(previousRecord) {
+  const blank = blankQuickDraftWorkspace();
+  const previousWorkspace = normalizeQuickDraftRecord(previousRecord).workspace;
+  return {
+    ...blank,
+    intake: {
+      ...blank.intake,
+      setup: {
+        ...blank.intake.setup,
+        scenario: previousWorkspace.intake.setup.scenario,
+        targetDuration: previousWorkspace.intake.setup.targetDuration,
+      },
+    },
+  };
 }
 
 async function transferQuickDraftToTeachText() {
@@ -184,33 +214,77 @@ async function saveQuickDraftNow() {
   return true;
 }
 
-// Standard New: flush whatever is on the desk first, confirm when a body
-// would be replaced, then start a fresh blank draft in the same project.
+// Standard New contract:
+//   A) empty desk → blank draft, no confirm;
+//   B) body + durable Project Document → flush, update the document, blank;
+//   C) body without a Project Document → explicit "Save & New" (default),
+//      save creates a reopenable document, then blank.
+// A failed save aborts New and leaves the old draft untouched.
 async function newQuickDraftDocument() {
   const slot = activeProjectQuickDraft({ create: false });
   if (!slot) {
     setQuickDraftStatus(t("quick_draft_no_project"));
     return false;
   }
-  const flushed = await commitQuickDraft({});
+  const projectId = slot.project.id;
+  const record = normalizeQuickDraftRecord(slot.record);
+  const hasBody = Boolean(String(refs.draft?.value || record.workspace.body || "").trim());
+  const openBlank = async () => {
+    const fresh = await commitQuickDraftForProject(projectId, {
+      workspace: freshQuickDraftWorkspaceAfterNew(record),
+    });
+    if (!fresh.ok) {
+      setQuickDraftStatus(t("quick_draft_save_failed"));
+      return false;
+    }
+    renderQuickDraft(fresh.record || activeProjectQuickDraft({ create: false })?.record);
+    focusQuickDraftPaper();
+    setQuickDraftStatus(t("quick_draft_ready"));
+    return true;
+  };
+
+  // Case A: nothing to preserve.
+  if (!hasBody) return openBlank();
+
+  // Case C: the draft was never saved as a Project document, so New must ask
+  // to save it first; a bare "start a new draft?" would lose the old draft.
+  if (!record.workspace.projectDocId) {
+    if (typeof showSystemModal === "function") {
+      const choice = await showSystemModal(
+        t("quick_draft_new_save_confirm"),
+        "confirm",
+        { confirmKey: "quick_draft_new_save_button", defaultAction: "yes" }
+      );
+      if (choice !== "yes") return false;
+    }
+    const saved = await saveQuickDraftAsProjectDocumentFor(projectId);
+    if (!saved) {
+      setQuickDraftStatus(t("quick_draft_save_failed"));
+      return false;
+    }
+    return openBlank();
+  }
+
+  // Case B: durable document exists — flush the working draft, update the
+  // document, then open a fresh blank workspace.
+  const flushed = await commitQuickDraftForProject(projectId, {}, { captureForm: true });
   if (!flushed.ok) {
     setQuickDraftStatus(t("quick_draft_save_failed"));
     return false;
   }
-  const hasBody = Boolean(String(refs.draft?.value || "").trim());
-  if (hasBody && typeof showSystemModal === "function") {
-    const choice = await showSystemModal(t("quick_draft_new_confirm"), "confirm", { defaultAction: "cancel" });
-    if (choice !== "yes") return false;
-  }
-  const fresh = await commitQuickDraft({ workspace: { ...blankQuickDraftWorkspace(), body: "" } });
-  if (!fresh.ok) {
-    setQuickDraftStatus(t("quick_draft_save_failed"));
+  const markdown = quickDraftDocumentMarkdown(flushed.record);
+  const title = String(refs.titleInput?.value || titleFromBody(markdown) || t("quick_draft_title")).trim();
+  const updated = await commitQuickDraftProjectDocument({
+    projectId,
+    title,
+    body: markdown,
+    existingDocumentId: record.workspace.projectDocId,
+  });
+  if (!updated.ok) {
+    setQuickDraftStatus(t(updated.repairNeeded ? "quick_draft_repair_needed" : "quick_draft_save_failed"));
     return false;
   }
-  renderQuickDraft(activeProjectQuickDraft({ create: false })?.record);
-  focusQuickDraftPaper();
-  setQuickDraftStatus(t("quick_draft_ready"));
-  return true;
+  return openBlank();
 }
 
 // Standard Close: the window layer flushes any pending or Modified workspace

@@ -470,8 +470,20 @@ const {
 
 document.body.dataset.appReady = "booting";
 window.AISystem6Theme?.syncBody();
-if (appearanceThemeInput) appearanceThemeInput.value = getCurrentTheme();
-applyTheme(getCurrentTheme(), { persist: false, saveDesk: false, announce: false, syncUi: false });
+const bootThemeId = getCurrentTheme();
+const bootPreviewMatch = String(window.location?.search || "").match(/[?&]theme=([a-z0-9-]+)/i);
+const bootPreviewId = bootPreviewMatch ? bootPreviewMatch[1].toLowerCase() : "";
+const bootPreviewTheme = bootPreviewId ? window.AISystem6Theme?.getTheme?.(bootPreviewId) : null;
+if (bootPreviewTheme && bootPreviewTheme.releaseReady === false) {
+  // Dev-only session preview: ?theme=<research id> shows a research appearance
+  // for this page load without persisting. The Appearance selector reflects
+  // the release base; reloading without the parameter restores the saved theme.
+  if (appearanceThemeInput) appearanceThemeInput.value = window.AISystem6Theme.normalizeReleaseThemeId(bootPreviewTheme.id);
+  window.AISystem6Theme.previewExperimentalTheme(bootPreviewTheme.id);
+} else {
+  if (appearanceThemeInput) appearanceThemeInput.value = bootThemeId;
+  applyTheme(bootThemeId, { persist: false, saveDesk: false, announce: false, syncUi: false });
+}
 let appVersionInfo = { ...getAppBuildInfo() };
 if (rememberInput) rememberInput.checked = true;
 

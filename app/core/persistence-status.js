@@ -306,6 +306,7 @@ async function switchLanguage() {
 
 function saveDeskState() {
   if (!deskPersistenceWritable) return Promise.resolve(false);
+  if (window.AISystem6WriteLease?.isReadOnly?.()) return Promise.resolve(false);
   if (typeof scheduleWorkingSessionSave === "function") scheduleWorkingSessionSave();
   saveDeskStatePromise = saveDeskStatePromise
     .catch(() => {})

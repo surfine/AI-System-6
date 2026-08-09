@@ -65,6 +65,30 @@ export const publicProductContracts = [
     feature: "Streaming Output",
     tests: ["public/streaming-output-contract.test.mjs"],
   },
+  {
+    feature: "Review Desk",
+    tests: ["mingming-review.test.mjs", "mingming-handoff-review.test.mjs"],
+  },
+  {
+    feature: "Scrapbook",
+    tests: ["scrapbook.test.mjs"],
+  },
+  {
+    feature: "DocMap",
+    tests: ["docmap.test.mjs"],
+  },
+  {
+    feature: "Project CD",
+    tests: ["project-cd-simple.test.mjs", "project-cd-async.test.mjs"],
+  },
+  {
+    feature: "ClioChart",
+    tests: ["clio-chart.test.mjs"],
+  },
+  {
+    feature: "Time Machine",
+    tests: ["time-machine.test.mjs"],
+  },
 ];
 
 export function publicContractFiles() {

@@ -567,6 +567,16 @@ async function applyAdjustmentLayers() {
     setQuickDraftStatus(t("quick_draft_no_project"));
     return false;
   }
+  const task = createQuickDraftAsyncTask({ create: false });
+  if (!task) {
+    setQuickDraftStatus(t("quick_draft_no_project"));
+    return false;
+  }
+  window.AISystem6ModelUserErrors?.registerRetryable?.({
+    owner: "quickDraft-adjustment",
+    projectId: task.projectId,
+    callback: () => applyAdjustmentLayers(),
+  });
   const layers = enabledAdjustmentLayers(slot.record);
   if (!layers.length) {
     setQuickDraftStatus(t("quick_draft_apply_none"));
@@ -612,13 +622,19 @@ async function applyAdjustmentLayers() {
       protectedRanges: composed.ranges,
       ...cacheContext,
     });
-    const committed = await commitQuickDraft({ workspace: { composition: {
-      ...slot.record.workspace.composition,
+    if (!task.stillOwnsActiveProject()) {
+      // The writer switched projects while the model composed. Discard the
+      // composite: it belongs to the old project and must not touch Project B.
+      return false;
+    }
+    const currentRecord = task.currentRecord();
+    const committed = await task.commit({ workspace: { composition: {
+      ...currentRecord.workspace.composition,
       currentKey: quickDraftLastCompositeKey,
       composite: composed.text,
       generatedAt: new Date().toISOString(),
       sourceHash: textComposeHash(source),
-    } } });
+    } } }, { captureForm: false });
     if (!committed.ok) throw committed.error;
     renderQuickDraft(committed.record);
     // Apply means look: the composite opens in the reading view, because the
@@ -628,15 +644,15 @@ async function applyAdjustmentLayers() {
       && quickDraftDisplayMode === "read";
     if (!showingComposite) setQuickDraftDisplayMode("read");
     setQuickDraftStatus(t("quick_draft_apply_done"));
+    window.AISystem6ModelUserErrors?.clearRetryable?.("quickDraft-adjustment");
     return true;
   } catch (error) {
     if (error?.name !== "AbortError") {
-      setQuickDraftStatus(t(
-        error?.code === "PROTECTED_RANGE_VIOLATION"
-          ? "quick_draft_protect_failed"
-          : "quick_draft_failed",
-        quickDraftFailureMessage(error)
-      ));
+      if (error?.code === "PROTECTED_RANGE_VIOLATION") {
+        setQuickDraftStatus(t("quick_draft_protect_failed", quickDraftFailureMessage(error)));
+      } else {
+        presentQuickDraftModelFailure(error);
+      }
     }
     return false;
   } finally {
@@ -655,6 +671,11 @@ async function developAdjustmentLayers() {
     setQuickDraftStatus(t("quick_draft_no_project"));
     return false;
   }
+  const task = createQuickDraftAsyncTask({ create: false });
+  if (!task) {
+    setQuickDraftStatus(t("quick_draft_no_project"));
+    return false;
+  }
   const state = currentCompositeState(slot.record);
   if (!state.ready || !String(state.text || "").trim()) {
     setQuickDraftStatus(t("quick_draft_develop_none"));
@@ -667,10 +688,11 @@ async function developAdjustmentLayers() {
     setQuickDraftStatus(t("quick_draft_develop_cancelled"));
     return false;
   }
+  if (!task.stillOwnsActiveProject()) return false;
   if (slot.record.workspace.projectDocId && typeof createDocumentRevision === "function") {
     try {
       await createDocumentRevision({
-        projectId: activeProjectId,
+        projectId: task.projectId,
         documentId: slot.record.workspace.projectDocId,
         body: previousBody,
         origin: "system",
@@ -681,6 +703,7 @@ async function developAdjustmentLayers() {
       return false;
     }
   }
+  if (!task.stillOwnsActiveProject()) return false;
   const patch = { stage: "draft", workspace: {} };
   if (previousBody.trim()) {
     const version = normalizeQuickDraftVersion({
@@ -719,7 +742,7 @@ async function developAdjustmentLayers() {
   refs.draft.value = composite;
   quickDraftLastComposite = "";
   quickDraftLastCompositeKey = "";
-  const committed = await commitQuickDraft(patch);
+  const committed = await task.commit(patch, { captureForm: false });
   if (!committed.ok) {
     // The composite must not masquerade as the working body when the write
     // failed; restore the original text and leave the record modified.

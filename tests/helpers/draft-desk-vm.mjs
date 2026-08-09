@@ -246,6 +246,11 @@ export function createDraftDeskVm() {
       saveQuickDraftAsProjectDocument,
       transferQuickDraftToTeachText,
       sendQuickDraftToReviewDesk,
+      requestQuickDraft,
+      requestMingmingQuickDraft,
+      applyAdjustmentLayers,
+      developAdjustmentLayers,
+      createQuickDraftAsyncTask,
       quickDraftContextSnapshot,
       inferStrategySignals,
     };

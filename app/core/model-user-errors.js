@@ -9,13 +9,13 @@ const modelRecoveryKinds = Object.freeze({
   invalidCredentials: Object.freeze({
     messageKey: "ai_error_invalid_credentials",
     actionKey: "ai_action_reconnect",
-    actionId: "open-ai-connection-settings",
+    actionId: "open-cloud-ai-settings",
     diagnosticCode: "invalid-credentials",
   }),
   modelUnavailable: Object.freeze({
     messageKey: "ai_error_model_unavailable",
     actionKey: "ai_action_choose_model",
-    actionId: "open-ai-connection-settings",
+    actionId: "open-cloud-ai-settings",
     diagnosticCode: "model-unavailable",
   }),
   busy: Object.freeze({
@@ -27,7 +27,7 @@ const modelRecoveryKinds = Object.freeze({
   connectionFailed: Object.freeze({
     messageKey: "ai_error_connection_failed",
     actionKey: "ai_action_check_local",
-    actionId: "open-ai-connection-settings",
+    actionId: "open-local-ai-settings",
     diagnosticCode: "connection-failed",
   }),
   timeout: Object.freeze({
@@ -39,7 +39,7 @@ const modelRecoveryKinds = Object.freeze({
   unknown: Object.freeze({
     messageKey: "ai_error_unknown",
     actionKey: "ai_action_view_connection",
-    actionId: "open-ai-connection-settings",
+    actionId: "open-cloud-ai-settings",
     diagnosticCode: "unknown",
   }),
 });
@@ -76,12 +76,48 @@ function classifyModelFailure(error, context = {}) {
 function modelConnectionFailure(error, context = {}) {
   const kind = classifyModelFailure(error, context);
   const recovery = modelRecoveryKinds[kind];
-  if (kind !== "connectionFailed") return recovery;
-  // Local services (LM Studio / Ollama) share the connection message but need
-  // the local startup hint instead of the cloud network hint.
-  return context.kind === "local"
-    ? recovery
-    : { ...recovery, actionKey: "ai_action_check_connection" };
+  if (!recovery) return recovery;
+  if (kind === "busy" || kind === "timeout") return recovery;
+  // Settings recovery routes by the failing route: local model failures open
+  // Local AI settings, cloud / Website AI failures open Cloud settings.
+  const routed = {
+    ...recovery,
+    actionId: context.kind === "local" ? "open-local-ai-settings" : "open-cloud-ai-settings",
+  };
+  if (kind === "connectionFailed") {
+    routed.actionKey = context.kind === "local" ? "ai_action_check_local" : "ai_action_check_connection";
+  }
+  return routed;
+}
+
+// Owner-aware retry registry: the global retry action re-runs the actual
+// failing AI action (Draft Desk request, adjustment apply, ClioTalk submit),
+// never a fixed window. Registration carries the owner project / conversation
+// so a stale context can never re-run an old prompt in a new project.
+let lastRetryableAiAction = null;
+
+function registerRetryableAiAction({ owner = "", projectId = "", conversationId = "", callback } = {}) {
+  lastRetryableAiAction = { owner, projectId, conversationId, callback };
+}
+
+function clearRetryableAiAction(owner = "") {
+  if (!owner || lastRetryableAiAction?.owner === owner) lastRetryableAiAction = null;
+}
+
+function runRetryableAiAction() {
+  const action = lastRetryableAiAction;
+  if (!action || typeof action.callback !== "function") return false;
+  const activeProject = typeof getActiveProject === "function" ? getActiveProject() : null;
+  if (action.projectId && action.projectId !== activeProject?.id) {
+    if (typeof setStatus === "function") setStatus(t("retry_context_stale"));
+    return false;
+  }
+  if (action.conversationId && typeof activeConversationFile !== "undefined" && activeConversationFile?.id !== action.conversationId) {
+    if (typeof setStatus === "function") setStatus(t("retry_context_stale"));
+    return false;
+  }
+  action.callback();
+  return true;
 }
 
 function pushModelRecoveryNotification(error, context = {}) {
@@ -101,4 +137,7 @@ window.AISystem6ModelUserErrors = Object.freeze({
   classify: classifyModelFailure,
   failure: modelConnectionFailure,
   notify: pushModelRecoveryNotification,
+  registerRetryable: registerRetryableAiAction,
+  clearRetryable: clearRetryableAiAction,
+  runRetryable: runRetryableAiAction,
 });

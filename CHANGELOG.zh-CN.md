@@ -1,5 +1,5 @@
 <!-- canonical-source: CHANGELOG.md -->
-<!-- source-sha256: 66259764da94f0a04bd69be2cc74bfe55914b07877d4a75caa471c976ef08b71 -->
+<!-- source-sha256: 1712b73bdc13c50bdc4f352a9575cb2700beb5da223acaa1d172e77028f99b3d -->
 
 # AI System 6 中文更新日志
 
@@ -57,6 +57,30 @@
   Start Here 与全局快捷键路由。
 - 可访问性收口：纯图标控件全部具备可访问名称，契约测试锁定三套正式外观
   的键盘焦点、disabled 与 selected 状态。
+
+## v1.0.34 - 2026-08-09
+
+- Draft Desk 的 New 永远不会丢稿：未保存草稿先以“保存并新建”（默认）写入
+  项目硬盘，已保存草稿则更新其现有文档；保存失败时 New 中止，旧稿原样保留。
+  新空白稿获得全新身份——不继承文档 ID、Versions、合成或保护范围。
+- 所有异步 Draft Desk AI 路径都绑定发起项目：Mingming、调整合成与 Develop
+  只写回原项目；模型返回时若已切换项目则丢弃结果，绝不写入新项目。
+- Draft Desk 模型错误统一接入 ModelUserErrors：状态栏只显示本地化文案与
+  下一步，裸 HTTP 只留在控制台；恢复设置按路径路由（本地→本地 AI 设置，
+  云端→云端设置）；全局 Retry 只重跑真正失败的 owner（Draft Desk 请求、
+  调整合成或 ClioTalk 提交），并带过期项目/会话守卫。
+- 两个 Web 实例不再互相覆盖：single-writer lease（BroadcastChannel +
+  localStorage 兜底）让第二个窗口只读，其写入事务被拒绝并返回
+  READ_ONLY_INSTANCE；可显式接管，旧窗口失去写权、取消 pending autosave，
+  并提示刷新或以只读继续。
+- 启动失败可恢复：Sad Mac 提供 Retry、不恢复窗口启动（只清除 Working
+  Session）与极简 Recovery 面板（报告项目存储/项目数/工作会话/AI 配置，
+  可导出项目备份、重置工作会话或重置 AI 连接）；boot 有重入守卫，此界面
+  不提供破坏性重置。
+- Warm resume 不再播放开机声（避免刷新后延迟补响）；显式 Restart 仍清除
+  warm 标志并完整播放仪式。
+- Draft Desk 帮助文案区分三种保存语义：⌘S 把工作稿保存在项目中、保存到
+  项目硬盘会创建/更新可重新打开的文档、New 会先保留当前草稿。
 
 ## 第一版 — 1.0.0 / 2026-05-18
 

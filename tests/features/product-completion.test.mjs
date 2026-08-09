@@ -56,7 +56,7 @@ for (const protectedState of ["projects", "chatFiles", "scraps", "mountedTextDis
 }
 test.assertIncludes(cloud, 'AISystem6UserRecoveryMessages?.text?.("cloudConnection")', "cloud errors include a recovery action instead of HTTP details");
 
-const timeoutSource = boot.slice(boot.indexOf("function startupTaskWithTimeout"), boot.indexOf("\n\nasync function boot"));
+const timeoutSource = boot.slice(boot.indexOf("function startupTaskWithTimeout"), boot.indexOf("\n\nasync function boot()"));
 const context = vm.createContext({ console: { warn() {} }, setTimeout, clearTimeout, Promise });
 vm.runInContext(`${timeoutSource}\nthis.startupTaskWithTimeout = startupTaskWithTimeout;`, context);
 const invalidLocalResult = await context.startupTaskWithTimeout(Promise.reject(new Error("missing local model")), "local", 20);

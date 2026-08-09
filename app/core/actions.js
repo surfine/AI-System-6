@@ -1330,17 +1330,23 @@ function getApplicationActionHandlers() {
     "open-project-backup": openProjectBackupPanel,
     "open-chooser": () => openWindow("chooser"),
     "open-control": () => openWindow("control"),
-    "open-ai-connection-settings": () => {
+    "open-local-ai-settings": () => {
+      openWindow("control");
+      if (typeof setControlTab === "function") setControlTab("local");
+      return true;
+    },
+    "open-cloud-ai-settings": () => {
       openWindow("control");
       if (typeof setControlTab === "function") setControlTab("cloud");
       return true;
     },
-    "retry-current-ai-action": () => {
-      const retry = document.querySelector(".message-retry-button:not([hidden])");
-      if (!retry) return false;
-      retry.click();
-      return true;
-    },
+    // Legacy alias: Website AI lives on the Cloud tab.
+    "open-ai-connection-settings": () => handleAction("open-cloud-ai-settings"),
+    "retry-current-ai-action": () => (
+      typeof window.AISystem6ModelUserErrors?.runRetryable === "function"
+        ? window.AISystem6ModelUserErrors.runRetryable()
+        : false
+    ),
     "open-rag": () => openWindow("rag"),
     "open-find-path": () => {
       const selection = teachTextBodyInput.value.slice(teachTextBodyInput.selectionStart || 0, teachTextBodyInput.selectionEnd || 0).trim();

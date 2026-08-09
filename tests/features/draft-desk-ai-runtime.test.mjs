@@ -1,7 +1,9 @@
 import { createFeatureTest } from "../helpers/feature-test-harness.mjs";
+import { read } from "../helpers/feature-test-harness.mjs";
 import { createDraftDeskVm } from "../helpers/draft-desk-vm.mjs";
 
 const test = createFeatureTest("draft-desk-ai-runtime");
+const composition = read("app/features/quick-draft-composition.js");
 
 function modelResult(draft) {
   return {
@@ -68,9 +70,75 @@ function modelResult(draft) {
   const result = await pending;
   test.assert(result === false, "a response is discarded after the active project changes");
   test.assert(projectB.quickDraft.workspace.body === "B 的正文绝不能变化。", "Project B remains byte-for-byte unchanged");
-  test.assert(projectA.quickDraft.workspace.body === "A 的旧正文。", "the discarded result does not write Project A through Project B's UI");
-  test.assert(runtime.controls.get("quick-draft-draft").value === "B 的正文绝不能变化。", "the shared Draft Desk textarea remains Project B's body");
+test.assert(projectA.quickDraft.workspace.body === "A 的旧正文。", "the discarded result does not write Project A through Project B's UI");
+test.assert(runtime.controls.get("quick-draft-draft").value === "B 的正文绝不能变化。", "the shared Draft Desk textarea remains Project B's body");
 }
+
+// Mingming project affinity: the response is discarded when the active
+// project changes, and neither project's durable body moves.
+{
+  const runtime = createDraftDeskVm();
+  const projectA = runtime.addProject("project-a", "A 的正文。");
+  const projectB = runtime.addProject("project-b", "B 的正文绝不能变化。");
+  runtime.controls.get("quick-draft-format").value = "first-day-hands-on";
+  runtime.context.buildMingmingRewritePrompt = () => "mingming prompt fixture";
+  runtime.context.withMarkdownModelMessages = (messages) => messages;
+  const modelGate = runtime.deferred();
+  const started = runtime.deferred();
+  runtime.context.fetchModelPayload = async () => {
+    started.resolve();
+    await modelGate.promise;
+    return {
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: "A 的模型返回结果，完全不同的结构，不得进入 B。" } }] }),
+    };
+  };
+  const pending = runtime.testApi.requestMingmingQuickDraft();
+  await started.promise;
+  runtime.setActiveProject("project-b");
+  modelGate.resolve();
+  const result = await pending;
+  test.assert(result === false, "Mingming discards its result after the active project changes");
+  test.assert(projectA.quickDraft.workspace.body === "A 的正文。", "Project A keeps its pre-request body");
+  test.assert(projectB.quickDraft.workspace.body === "B 的正文绝不能变化。", "Project B is byte-for-byte unchanged");
+  test.assert(runtime.controls.get("quick-draft-draft").value === "B 的正文绝不能变化。", "the shared textarea remains Project B's body");
+}
+
+// Adjustment Apply project affinity: a composite that lands after the project
+// switch is discarded and never writes through Project B.
+{
+  const runtime = createDraftDeskVm();
+  const projectA = runtime.addProject("project-a", "A 的正文。", {
+    adjustmentLayers: [{ kind: "mingming", enabled: true, strength: 1 }],
+  });
+  const projectB = runtime.addProject("project-b", "B 的正文绝不能变化。");
+  runtime.context.withMarkdownModelMessages = (messages) => messages;
+  const modelGate = runtime.deferred();
+  const started = runtime.deferred();
+  runtime.context.fetchModelPayload = async () => {
+    started.resolve();
+    await modelGate.promise;
+    return {
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: "合成的 A 文本，完全不同的内容结构，不得进入 B。" } }] }),
+    };
+  };
+  const pending = runtime.testApi.applyAdjustmentLayers();
+  await started.promise;
+  runtime.setActiveProject("project-b");
+  modelGate.resolve();
+  const result = await pending;
+  test.assert(result === false, "Adjustment Apply discards its composite after the project changes");
+  test.assert(projectA.quickDraft.workspace.composition.composite === "", "Project A records no stale composite");
+  test.assert(projectB.quickDraft.workspace.body === "B 的正文绝不能变化。", "Project B is byte-for-byte unchanged");
+  test.assert(runtime.controls.get("quick-draft-draft").value === "B 的正文绝不能变化。", "the shared textarea remains Project B's body");
+}
+
+// Develop also guards its owning project after the confirm await and the
+// revision write.
+test.assertIncludes(composition, "createQuickDraftAsyncTask({ create: false })", "develop owns its project task");
+test.assertIncludes(composition, "task.stillOwnsActiveProject()", "develop re-checks ownership after awaits");
+test.assertIncludes(composition, "task.commit(patch, { captureForm: false })", "develop commits back to its owner project only");
 
 // Protect sentinel failure: the model omits the real sentinel token. The
 // request must fail without adding a version or changing the working body.

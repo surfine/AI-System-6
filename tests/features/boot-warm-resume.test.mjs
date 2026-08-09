@@ -18,6 +18,17 @@ test.assertIncludes(desktopRuntime, "if (!warmResume) markSessionBootSeen()", "o
 test.assertIncludes(windowManager, "clearSessionBootSeen()", "explicit Restart clears the warm flag");
 test.assertIncludes(boot, "await loadDeskState()", "warm boot never skips desk-state load");
 test.assertIncludes(boot, "restoreWorkingSession()", "warm boot never skips the Working Session restore");
-test.assertIncludes(desktopRuntime, "playSystemSound(\"boot\")", "the boot sound survives warm resume");
+test.assertIncludes(desktopRuntime, "const warmResume = sessionBootSeen();", "warm detection precedes the boot sound decision");
+const soundOrderBlock = desktopRuntime.match(/const warmResume = sessionBootSeen\(\);[\s\S]*?if \(!warmResume\) playSystemSound\("boot"\);[\s\S]*?playSystemSound\("boot"\);?/)?.[0] || "";
+test.assertIncludes(
+  desktopRuntime,
+  "if (!warmResume) playSystemSound(\"boot\")",
+  "warm resume never queues a boot chime"
+);
+test.assert(
+  desktopRuntime.indexOf("const warmResume = sessionBootSeen();")
+    < desktopRuntime.indexOf("if (!warmResume) playSystemSound(\"boot\")"),
+  "the warm flag is read before any sound plays"
+);
 
 test.finish();

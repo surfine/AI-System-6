@@ -57,5 +57,6 @@ interface Window {
   AISystem6QuickDraftComposition?: any;
   AISystem6QuickDraftAI?: any;
   AISystem6QuickDraftHandoff?: any;
+  AISystem6ModelUserErrors?: any;
   AISystem6WebPlatform?: any;
 }

@@ -105,6 +105,11 @@ async function requestQuickDraft(stage = "brief", options = {}) {
     setQuickDraftStatus(t("quick_draft_connect_ai"));
     return false;
   }
+  window.AISystem6ModelUserErrors?.registerRetryable?.({
+    owner: "quickDraft",
+    projectId: requestProjectId,
+    callback: () => requestQuickDraft(stage, options),
+  });
 
   if (requestController) requestController.abort();
   requestController = new AbortController();
@@ -317,10 +322,11 @@ async function requestQuickDraft(stage = "brief", options = {}) {
     }
     renderQuickDraft(committed.record);
     setQuickDraftStatus(t("quick_draft_done"));
+    window.AISystem6ModelUserErrors?.clearRetryable?.("quickDraft");
     return true;
   } catch (error) {
     if (error?.name !== "AbortError") {
-      setQuickDraftStatus(t("quick_draft_failed", quickDraftFailureMessage(error)));
+      presentQuickDraftModelFailure(error);
     }
     return false;
   } finally {
@@ -391,6 +397,16 @@ async function requestMingmingQuickDraft() {
     setQuickDraftStatus(t("quick_draft_no_project"));
     return false;
   }
+  const task = createQuickDraftAsyncTask({ create: false });
+  if (!task) {
+    setQuickDraftStatus(t("quick_draft_no_project"));
+    return false;
+  }
+  window.AISystem6ModelUserErrors?.registerRetryable?.({
+    owner: "quickDraft",
+    projectId: task.projectId,
+    callback: () => requestMingmingQuickDraft(),
+  });
   const targetFormat = normalizeScenario(refs.format?.value || FIRST_DAY_FORMAT);
   const launchDayMode = isLaunchDayFormat(targetFormat);
   const firstDay = firstDaySnapshot();
@@ -414,7 +430,7 @@ async function requestMingmingQuickDraft() {
 
   if (requestController) requestController.abort();
   requestController = new AbortController();
-  const initialCommit = await commitQuickDraft({});
+  const initialCommit = await task.commit({}, { captureForm: true });
   if (!initialCommit.ok) {
     requestController = null;
     setQuickDraftStatus(t("quick_draft_save_failed"));
@@ -472,7 +488,13 @@ async function requestMingmingQuickDraft() {
       setQuickDraftStatus(t("quick_draft_no_revision"));
       return false;
     }
+    if (!task.stillOwnsActiveProject()) {
+      // The writer switched projects while the model ran. The result belongs
+      // to the old project; discard it instead of writing through Project B.
+      return false;
+    }
 
+    const currentRecord = task.currentRecord();
     /** @type {any} */
     const patch = {
       stage: "draft",
@@ -480,7 +502,7 @@ async function requestMingmingQuickDraft() {
       sourceMap: sourceRecords.map((source) => ({ id: source.id, label: source.label })),
       workspace: {
         body: finalBody,
-        ...(slot.record.workspace.titleMode === "manual" ? {} : { title: titleFromBody(finalBody) }),
+        ...(currentRecord.workspace.titleMode === "manual" ? {} : { title: titleFromBody(finalBody) }),
         materials: sourceRecords.map((source) => ({ id: source.id, label: source.label })),
       },
     };
@@ -488,22 +510,22 @@ async function requestMingmingQuickDraft() {
       const version = normalizeQuickDraftVersion({
         id: stableId("version"),
         body: previousBody,
-        title: slot.record.workspace.title,
+        title: currentRecord.workspace.title,
         createdAt: new Date().toISOString(),
         reason: "before-ai",
         source: "quick-draft",
       });
-      patch.workspace.versions = [...slot.record.workspace.versions, version].slice(-100);
+      patch.workspace.versions = [...currentRecord.workspace.versions, version].slice(-100);
     }
     if (!hasRecordedNegative()) {
       patch.workspace.composition = {
-        ...slot.record.workspace.composition,
+        ...currentRecord.workspace.composition,
         negative: previousBody,
         negativeUpdatedAt: new Date().toISOString(),
       };
     }
     refs.draft.value = finalBody;
-    const committed = await commitQuickDraft(patch);
+    const committed = await task.commit(patch, { captureForm: false });
     if (!committed.ok) {
       refs.draft.value = previousBody;
       setQuickDraftStatus(t("quick_draft_save_failed"));
@@ -511,9 +533,10 @@ async function requestMingmingQuickDraft() {
     }
     renderQuickDraft(committed.record);
     setQuickDraftStatus(t("quick_draft_done"));
+    window.AISystem6ModelUserErrors?.clearRetryable?.("quickDraft");
     return true;
   } catch (error) {
-    if (error?.name !== "AbortError") setQuickDraftStatus(t("quick_draft_failed", quickDraftFailureMessage(error)));
+    if (error?.name !== "AbortError") presentQuickDraftModelFailure(error);
     return false;
   } finally {
     requestController = null;

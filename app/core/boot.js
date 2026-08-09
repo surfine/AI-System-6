@@ -1,5 +1,104 @@
 // Startup orchestration for app.js.
 
+let bootInProgress = false;
+
+async function retryBoot() {
+  if (bootInProgress) return false;
+  document.getElementById("boot-failure-actions")?.classList.add("is-hidden");
+  document.getElementById("boot-recovery-modal")?.close?.();
+  if (bootScreenEl) {
+    bootScreenEl.classList.remove("is-done");
+    bootScreenEl.hidden = false;
+  }
+  document.body.classList.add("is-booting");
+  await boot();
+  return true;
+}
+
+// Safe-mode-lite: clear only the Working Session (windows, cursor, scroll
+// scene), never projects, files, or IndexedDB data, then retry startup.
+async function startBootWithoutSession() {
+  if (bootInProgress) return false;
+  try {
+    await clearWorkingSession();
+  } catch (error) {
+    console.warn("Could not clear the Working Session for safe startup.", error);
+  }
+  return retryBoot();
+}
+
+async function bootRecoveryStatus() {
+  let storage = "unavailable";
+  let session = "unavailable";
+  let aiConfig = "unavailable";
+  try {
+    const db = await openAppDb();
+    storage = "readable";
+    db.close();
+  } catch {}
+  try {
+    const snapshot = await readWorkingSessionSnapshot();
+    session = snapshot && typeof snapshot.version !== "undefined" ? "available" : "unavailable";
+  } catch {}
+  try {
+    aiConfig = localStorage.getItem("ai-system6-cloud-config") ? "available" : "unavailable";
+  } catch {}
+  return {
+    storage,
+    projectsCount: Array.isArray(projects) ? projects.length : 0,
+    session,
+    aiConfig,
+  };
+}
+
+function openBootRecovery() {
+  const dialog = document.getElementById("boot-recovery-modal");
+  if (!dialog || typeof dialog.showModal !== "function") return;
+  const note = document.getElementById("boot-recovery-note");
+  const label = (available) => t(available ? "boot_recovery_available" : "boot_recovery_unavailable");
+  const renderStatus = async () => {
+    const status = await bootRecoveryStatus();
+    document.getElementById("boot-recovery-storage").textContent = label(status.storage === "readable");
+    document.getElementById("boot-recovery-projects").textContent = String(status.projectsCount);
+    document.getElementById("boot-recovery-session").textContent = label(status.session === "available");
+    document.getElementById("boot-recovery-ai").textContent = label(status.aiConfig === "available");
+  };
+  const setNote = (message) => {
+    if (note) note.textContent = message;
+  };
+  document.getElementById("boot-recovery-export").onclick = async () => {
+    try {
+      const exported = typeof handleAction === "function"
+        ? await handleAction("export-project-backup")
+        : false;
+      setNote(exported !== false ? t("boot_recovery_exported") : t("boot_recovery_export_failed"));
+    } catch {
+      setNote(t("boot_recovery_export_failed"));
+    }
+  };
+  document.getElementById("boot-recovery-reset-session").onclick = async () => {
+    try {
+      await clearWorkingSession();
+      setNote(t("boot_recovery_session_reset"));
+      await renderStatus();
+    } catch {
+      setNote(t("boot_recovery_export_failed"));
+    }
+  };
+  document.getElementById("boot-recovery-reset-ai").onclick = () => {
+    try {
+      handleAction("reset-ai-connection");
+    } catch {}
+  };
+  document.getElementById("boot-recovery-retry").onclick = () => {
+    dialog.close();
+    retryBoot();
+  };
+  renderStatus();
+  if (typeof playSystemSound === "function") playSystemSound("alert");
+  dialog.showModal();
+}
+
 function startupTaskWithTimeout(promise, label, ms = 1600) {
   let timeoutId = null;
   const timeout = new Promise((resolve) => {
@@ -18,7 +117,21 @@ function startupTaskWithTimeout(promise, label, ms = 1600) {
 }
 
 async function boot() {
+  if (bootInProgress) return false;
+  bootInProgress = true;
   try {
+    // Single-writer lease: acquire before any durable write can run. A second
+    // instance starts read-only and gets the conflict dialog after first paint.
+    window.AISystem6WriteLease?.initUi?.();
+    window.AISystem6WriteLease?.acquireAtBoot?.();
+    // Sad Mac recovery controls (wired once; boot may retry).
+    const retryControl = document.getElementById("boot-retry");
+    if (retryControl && retryControl.dataset.wired !== "true") {
+      retryControl.dataset.wired = "true";
+      retryControl.addEventListener("click", () => retryBoot());
+      document.getElementById("boot-without-session")?.addEventListener("click", () => startBootWithoutSession());
+      document.getElementById("boot-recovery")?.addEventListener("click", () => openBootRecovery());
+    }
     updateClock();
     await Promise.all([
       ensureAlarmClockModule(),
@@ -110,5 +223,7 @@ async function boot() {
     console.error("AI System 6 boot failed", error);
     document.body.dataset.appReady = "error";
     showBootFailure(error);
+  } finally {
+    bootInProgress = false;
   }
 }

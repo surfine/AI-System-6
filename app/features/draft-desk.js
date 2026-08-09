@@ -328,6 +328,29 @@ async function commitQuickDraft(patch = {}, options = {}) {
   return commitQuickDraftForProject(activeProjectId, patch, options);
 }
 
+// Every async Quick Draft task (AI rewrite, Mingming, adjustment compose)
+// captures its owning project up front and commits back to that project only.
+// The shared textarea may move to another project while the model runs; a
+// response is discarded once the active project changes.
+function createQuickDraftAsyncTask({ create = true } = {}) {
+  const slot = activeProjectQuickDraft({ create });
+  if (!slot) return null;
+  const projectId = slot.project.id;
+  return {
+    projectId,
+    record: normalizeQuickDraftRecord(slot.record),
+    stillOwnsActiveProject() {
+      return activeProjectId === projectId;
+    },
+    currentRecord() {
+      return projectQuickDraft(projectId, { create: false })?.record || null;
+    },
+    async commit(patch, options = {}) {
+      return commitQuickDraftForProject(projectId, patch, options);
+    },
+  };
+}
+
 function scheduleQuickDraftCommit(projectId) {
   clearTimeout(saveTimer);
   pendingQuickDraftCommit = { projectId };
@@ -1225,6 +1248,7 @@ window.AISystem6QuickDraftRuntime = Object.freeze({
   normalizeScenario,
   commitQuickDraft,
   commitQuickDraftForProject,
+  createQuickDraftAsyncTask,
   flushPendingQuickDraftCommit,
   persistQuickDraftWorkspace,
   paperSurface: () => quickDraftPaperSurface,

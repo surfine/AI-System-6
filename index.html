@@ -17,7 +17,7 @@
     <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png" />
     <link rel="manifest" href="assets/app-icon/manifest.json" />
     <script src="app/core/theme-registry.js"></script>
-    <link rel="stylesheet" href="styles.bundle.css?v=20260809.7" />
+    <link rel="stylesheet" href="styles.bundle.css?v=20260809.8" />
   </head>
   <body class="is-booting">
     <script src="app/core/theme-body-init.js"></script>
@@ -118,6 +118,14 @@
           <span id="boot-startup-disk" data-i18n="boot_startup_pending">Startup Disk</span>
           <span id="boot-project-disk" data-i18n="boot_project_pending">Project Hard Disk</span>
           <span id="boot-local-model" data-i18n="boot_model_pending">LLM</span>
+        </div>
+        <div class="boot-failure-actions is-hidden" id="boot-failure-actions">
+          <p id="boot-failure-message" data-i18n="boot_failed_recovery">AI System 6 couldn't finish starting.</p>
+          <div class="button-row boot-failure-button-row">
+            <button class="btn" type="button" id="boot-retry" data-i18n="boot_retry">Retry</button>
+            <button class="btn" type="button" id="boot-without-session" data-i18n="boot_without_session">Start without restoring windows</button>
+            <button class="btn default" type="button" id="boot-recovery" data-i18n="boot_recovery">Recovery…</button>
+          </div>
         </div>
       </section>
 
@@ -330,6 +338,44 @@
           <div class="button-row finder-operation-actions">
             <button class="btn" type="button" id="public-verification-cancel" data-i18n="public_verify_cancel">Cancel</button>
             <button class="btn default" type="button" id="public-verification-retry" data-i18n="public_verify_retry">Retry</button>
+          </div>
+        </form>
+      </dialog>
+
+      <dialog id="write-lease-modal" class="finder-operation-modal write-lease-modal">
+        <form method="dialog">
+          <section class="finder-operation-body">
+            <h2 id="write-lease-title" data-i18n="write_lease_title">AI System 6 is already open in another window.</h2>
+            <p id="write-lease-message" class="finder-operation-lede" data-i18n="write_lease_message">Only one window can save changes at a time. Open this one read-only, or take over writing here.</p>
+          </section>
+          <div class="button-row finder-operation-actions">
+            <button class="btn" type="button" id="write-lease-readonly" data-i18n="write_lease_read_only">Open Read Only</button>
+            <button class="btn default" type="button" id="write-lease-takeover" data-i18n="write_lease_takeover">Use This Window</button>
+          </div>
+        </form>
+      </dialog>
+
+      <dialog id="boot-recovery-modal" class="finder-operation-modal boot-recovery-modal">
+        <form method="dialog">
+          <section class="finder-operation-body">
+            <h2 id="boot-recovery-title" data-i18n="boot_recovery_title">Startup Recovery</h2>
+            <dl class="finder-operation-result" id="boot-recovery-status">
+              <dt data-i18n="boot_recovery_storage">Project storage</dt>
+              <dd id="boot-recovery-storage">—</dd>
+              <dt data-i18n="boot_recovery_projects">Projects</dt>
+              <dd id="boot-recovery-projects">—</dd>
+              <dt data-i18n="boot_recovery_session">Working Session</dt>
+              <dd id="boot-recovery-session">—</dd>
+              <dt data-i18n="boot_recovery_ai">AI configuration</dt>
+              <dd id="boot-recovery-ai">—</dd>
+            </dl>
+            <p id="boot-recovery-note" class="finder-operation-lede" role="status"></p>
+          </section>
+          <div class="button-row finder-operation-actions">
+            <button class="btn" type="button" id="boot-recovery-export" data-i18n="boot_recovery_export">Export Project Backup</button>
+            <button class="btn" type="button" id="boot-recovery-reset-session" data-i18n="boot_recovery_reset_session">Reset Working Session</button>
+            <button class="btn" type="button" id="boot-recovery-reset-ai" data-i18n="boot_recovery_reset_ai">Reset AI Connection</button>
+            <button class="btn default" type="button" id="boot-recovery-retry" data-i18n="boot_recovery_retry">Retry Startup</button>
           </div>
         </form>
       </dialog>
@@ -1110,7 +1156,7 @@
         </div>
         <div class="details-bar draft-desk-details">
           <span id="quick-draft-stats">0 words · ~0 sec</span>
-          <span id="quick-draft-save-state" data-i18n="quick_draft_saved_state">Saved</span>
+          <span id="quick-draft-save-state" data-i18n="quick_draft_saved_state" data-balloon-help="balloon_qd_save_working_draft">Saved</span>
           <span id="quick-draft-protect-state"></span>
           <span id="quick-draft-stack-state"></span>
           <span id="quick-draft-status" role="status" aria-live="polite" aria-atomic="true"></span>
@@ -3889,7 +3935,7 @@ Glass</textarea>
       </section>
     </main>
 
-    <script src="app/generated/build-info.js?v=20260809.7"></script>
-    <script src="app.bundle.js?v=20260809.7"></script>
+    <script src="app/generated/build-info.js?v=20260809.8"></script>
+    <script src="app.bundle.js?v=20260809.8"></script>
   </body>
 </html>

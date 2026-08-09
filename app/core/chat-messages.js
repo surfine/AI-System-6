@@ -4166,6 +4166,18 @@ async function submitUserText(userText, options = {}) {
     return;
   }
 
+  // The global Retry action re-runs the last failed AI action. ClioTalk
+  // registers its own submit so retry never falls through to another app.
+  window.AISystem6ModelUserErrors?.registerRetryable?.({
+    owner: "clioTalk",
+    projectId: activeProjectId,
+    conversationId: activeConversationFile?.id || "",
+    callback: () => {
+      const text = lastUserText || userText;
+      if (text) submitUserText(text, options);
+    },
+  });
+
   const quickDraftAction = options.quickDraftAction || quickDraftActionFromText(userText);
   if (quickDraftAction && typeof window !== "undefined" && typeof window.AISystem6QuickDraft?.runClioTalkAction === "function") {
     addMessage("user", options.displayText || userText);

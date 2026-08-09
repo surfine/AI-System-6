@@ -455,6 +455,42 @@ Version `1.0.12`, build `20260804.2`.
   contract test locks visible keyboard focus, disabled, and selected states
   across the three release appearances.
 
+## Public Beta 1.0.34 - 2026-08-09
+
+- Draft Desk New never loses a draft: an unsaved draft is saved as a durable
+  Project Hard Disk document first ("Save & New", the default), a durable
+  draft updates its existing document, and a failed save aborts New with the
+  old draft intact. The fresh workspace gets a new identity — no stale
+  document, versions, composite, or protects.
+- Every asynchronous Draft Desk AI path is project-owned. Mingming rewrites,
+  adjustment composites, and Develop commit back to the project that started
+  them; a response that lands after a project switch is discarded and never
+  writes through the new project's UI.
+- Draft Desk model failures join the shared ModelUserErrors mapper: localized
+  message + next step in the status line, raw HTTP details only in the
+  console. Recovery settings route by route — local failures open Local AI
+  settings, cloud failures open Cloud settings — and the global Retry action
+  re-runs the actual failing owner (Draft Desk request, adjustment apply, or
+  ClioTalk submit) with a stale-project / stale-conversation guard.
+- Two Web instances can no longer overwrite each other: a single-writer lease
+  (BroadcastChannel with localStorage fallback) makes the second window
+  read-only, rejects its mutating storage transactions with
+  READ_ONLY_INSTANCE, and lets it take over explicitly — the old window loses
+  write access, cancels pending autosaves, and is prompted to reload or
+  continue read-only.
+- Boot failure is recoverable: the Sad Mac offers Retry, Start without
+  restoring windows (clears only the Working Session), and a minimal Recovery
+  panel that reports project storage / project count / Working Session / AI
+  configuration and can export a Project Backup, reset the Working Session,
+  or reset the AI connection. Boot has a re-entry guard and never offers a
+  destructive reset from this screen.
+- Warm resume no longer plays the boot chime (which the sound engine could
+  queue and fire seconds after a refresh); explicit Restart still clears the
+  warm flag and plays the full ceremony.
+- Draft Desk help copy now distinguishes the three save verbs: ⌘S keeps the
+  working draft in the project, Save to Project Hard Disk creates or updates
+  a reopenable document, and New preserves the current draft first.
+
 ## What Changed Most In One Month
 
 - The product moved from "an AI writing prototype" to a local-first writing

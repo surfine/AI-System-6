@@ -111,6 +111,70 @@ test.assertIncludes(
   "a failed close flush keeps the window open"
 );
 
+// New contract — Case 1: an unsaved draft is saved as a durable Project
+// document before a blank workspace opens.
+{
+  const runtime = createDraftDeskVm();
+  const project = runtime.addProject("project-new-unsaved", "A 的正文");
+  const saved = await runtime.context.window.AISystem6QuickDraft.newDocument();
+  test.assert(saved === true, "New resolves true after Save & New");
+  const files = runtime.context.chatFiles.filter((file) => file.projectId === "project-new-unsaved");
+  test.assert(files.length === 1, "Save & New creates exactly one Project document");
+  test.assert(files[0].body.includes("A 的正文") && files[0].durable === true, "the old draft is durable and reopenable from Project Hard Disk");
+  test.assert(project.quickDraft.workspace.body === "" && project.quickDraft.workspace.projectDocId === "", "the blank workspace has no stale body or document identity");
+  test.assert(project.quickDraft.workspace.versions.length === 0, "the blank workspace carries no Versions");
+}
+
+// New contract — Case 2: a failed Project Document save aborts New and leaves
+// the old draft fully intact.
+{
+  const runtime = createDraftDeskVm();
+  const project = runtime.addProject("project-new-fail", "A 的正文");
+  runtime.context.persistSucceeds = false;
+  const saved = await runtime.context.window.AISystem6QuickDraft.newDocument();
+  test.assert(saved === false, "New returns false when the Project Document save fails");
+  test.assert(project.quickDraft.workspace.body === "A 的正文", "the old draft survives a failed New");
+  test.assert(project.quickDraft.workspace.projectDocId === "", "no document identity is invented on failure");
+  test.assert(runtime.context.chatFiles.length === 0, "no empty Project document is created on failure");
+  test.assert(
+    runtime.controls.get("quick-draft-draft").value === "A 的正文",
+    "the shared editor still shows the old draft"
+  );
+}
+
+// New contract — Case 3: an already-durable draft updates its existing
+// Project document, then opens a blank workspace without duplicating it.
+{
+  const runtime = createDraftDeskVm();
+  const project = runtime.addProject("project-new-durable", "A 的正文", { projectDocId: "document-1" });
+  runtime.context.chatFiles.push({
+    id: "document-1",
+    projectId: "project-new-durable",
+    type: "text",
+    name: "A",
+    body: "旧文档",
+    durable: true,
+    updatedAt: new Date().toISOString(),
+  });
+  const saved = await runtime.context.window.AISystem6QuickDraft.newDocument();
+  test.assert(saved === true, "New resolves true when the durable document exists");
+  const document = runtime.context.chatFiles.find((file) => file.id === "document-1");
+  test.assert(document.body.includes("A 的正文"), "the existing Project document is updated to the latest draft");
+  test.assert(runtime.context.chatFiles.filter((file) => file.projectId === "project-new-durable").length === 1, "New never duplicates the Project document");
+  test.assert(project.quickDraft.workspace.body === "" && project.quickDraft.workspace.projectDocId === "", "the blank workspace starts with fresh identity");
+}
+
+// New contract — Case 4: an empty desk simply opens a blank draft and never
+// creates a meaningless empty document.
+{
+  const runtime = createDraftDeskVm();
+  runtime.addProject("project-new-empty");
+  const saved = await runtime.context.window.AISystem6QuickDraft.newDocument();
+  test.assert(saved === true, "New on an empty desk resolves true");
+  test.assert(runtime.context.chatFiles.length === 0, "an empty New never creates a Project document");
+  test.assert(runtime.controls.get("quick-draft-save-state").textContent !== "quick_draft_save_failed", "an empty New never shows a save failure");
+}
+
 // saveDeskState must observe Saved, not persist a stale Modified receipt.
 {
   const runtime = createDraftDeskVm();

@@ -20,7 +20,8 @@ vm.runInContext(protectedRanges, context);
 vm.runInContext(compose, context);
 
 test.assertIncludes(intake, "const ventEntries = nonDumpVentEntries(intake)", "Versions never enter sourceRecordsFromForm");
-test.assertIncludes(composition, "commitQuickDraft({ workspace: { composition:", "Apply durably commits preview metadata");
+test.assertIncludes(composition, "task.commit({ workspace: { composition:", "Apply durably commits preview metadata through its owner project");
+test.assertIncludes(composition, "{ captureForm: false })", "Apply commits back without re-capturing a moved form");
 test.assertIncludes(composition, '"- This layer applies to the whole draft."', "an empty original mask explicitly means whole draft");
 test.assertIncludes(composition, "!normalizeAdjustmentLayerMask(layer.mask).length", "an empty mask remains applicable even when Protect exists");
 test.assertIncludes(composition, "remapLineRangesAfterSentinels(layer.mask, protectedRanges).length", "a non-empty mask fully consumed by Protect is skipped");

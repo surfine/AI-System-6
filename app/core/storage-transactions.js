@@ -47,6 +47,11 @@ window.AISystem6StorageTransactions = (() => {
   }
 
   async function runTransaction(db, storeNames, mode, operation) {
+    if (mode === "readwrite" && window.AISystem6WriteLease?.isReadOnly?.()) {
+      const error = new Error("This window is read-only; another window owns the write lease.");
+      error.code = "READ_ONLY_INSTANCE";
+      return Promise.reject(error);
+    }
     const transaction = mode === "readwrite"
       ? readwriteTransaction(db, storeNames)
       : db.transaction(storeNames, "readonly");

@@ -67,8 +67,10 @@ async function runBootSequence() {
     [t("boot_ready"), "84%", "ready", "happy", 760],
   ];
 
-  playSystemSound("boot");
   const warmResume = sessionBootSeen();
+  // Warm resume plays no boot chime: the sound engine may queue it until the
+  // first user gesture, which would turn a refresh into a delayed boot sound.
+  if (!warmResume) playSystemSound("boot");
   steps.forEach(([message, progress, stage, macState]) => {
     setBootMacState(macState);
     updateBootLedger(stage);
@@ -104,8 +106,9 @@ function showBootFailure(error) {
     bootScreenEl.hidden = false;
     bootScreenEl.classList.remove("is-done");
   }
-  if (bootMessageEl) bootMessageEl.textContent = t("boot_failed");
+  if (bootMessageEl) bootMessageEl.textContent = t("boot_failed_recovery");
   if (bootProgressFillEl) bootProgressFillEl.style.width = "100%";
+  document.getElementById("boot-failure-actions")?.classList.remove("is-hidden");
 }
 
 function setBootLedgerItem(el, label, value = "", state = "pending") {

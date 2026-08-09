@@ -325,6 +325,34 @@ function quickDraftFailureMessage(error) {
   return t("quick_draft_operation_failed_recovery");
 }
 
+// Draft Desk model failures go through the shared ModelUserErrors mapper:
+// ordinary UI shows a localized message + next step, and the recovery
+// notification appears only when it carries an executable action. Raw HTTP
+// codes and fetch internals stay in the console.
+function presentQuickDraftModelFailure(error, context = {}) {
+  const recovery = window.AISystem6ModelUserErrors?.failure?.(error, {
+    provider: typeof cloudConfig !== "undefined" && cloudConfig?.active
+      ? (cloudConfig.provider || "deepseek")
+      : "lm-studio",
+    kind: typeof cloudConfig !== "undefined" && cloudConfig?.active ? "cloud" : "local",
+    ...context,
+  });
+  if (!recovery) {
+    setQuickDraftStatus(t("quick_draft_failed", quickDraftFailureMessage(error)));
+    return;
+  }
+  setQuickDraftStatus(`${t(recovery.messageKey)} ${t(recovery.actionKey)}`);
+  if (recovery.actionId) {
+    window.AISystem6ModelUserErrors?.notify?.(error, {
+      provider: typeof cloudConfig !== "undefined" && cloudConfig?.active
+        ? (cloudConfig.provider || "deepseek")
+        : "lm-studio",
+      kind: typeof cloudConfig !== "undefined" && cloudConfig?.active ? "cloud" : "local",
+      ...context,
+    });
+  }
+}
+
 function restoreDumpToBody() {
   const slot = activeProjectQuickDraft();
   const latest = slot?.record?.workspace?.versions?.at(-1);

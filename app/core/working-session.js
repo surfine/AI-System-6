@@ -191,6 +191,13 @@ async function flushWorkingSessionCommit() {
   return flushWorkingSessionSave();
 }
 
+// Read-only instances (another window owns the write lease) cancel pending
+// autosaves instead of letting them fail into the UI.
+function cancelWorkingSessionAutosave() {
+  clearTimeout(workingSessionSaveTimer);
+  workingSessionSaveTimer = null;
+}
+
 async function clearWorkingSession(options = {}) {
   clearTimeout(workingSessionSaveTimer);
   workingSessionSaveTimer = null;
