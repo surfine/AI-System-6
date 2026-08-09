@@ -4,14 +4,9 @@ let bootInProgress = false;
 
 async function retryBoot() {
   if (bootInProgress) return false;
-  document.getElementById("boot-failure-actions")?.classList.add("is-hidden");
-  document.getElementById("boot-recovery-modal")?.close?.();
-  if (bootScreenEl) {
-    bootScreenEl.classList.remove("is-done");
-    bootScreenEl.hidden = false;
-  }
-  document.body.classList.add("is-booting");
-  await boot();
+  // A fresh runtime is the only reliable retry: partial boot state, listeners,
+  // timers and lazy-module state are discarded by reloading.
+  window.location.reload();
   return true;
 }
 
@@ -24,18 +19,22 @@ async function startBootWithoutSession() {
   } catch (error) {
     console.warn("Could not clear the Working Session for safe startup.", error);
   }
-  return retryBoot();
+  window.location.reload();
+  return true;
 }
 
 async function bootRecoveryStatus() {
   let storage = "unavailable";
   let session = "unavailable";
   let aiConfig = "unavailable";
+  let projectsCount = 0;
   try {
-    const db = await openAppDb();
-    storage = "readable";
-    db.close();
-  } catch {}
+    const status = await window.AISystem6RecoveryStorage?.recoveryStorageStatus?.() || { readable: false, projectCount: 0 };
+    storage = status.readable ? "readable" : "unavailable";
+    projectsCount = status.projectCount;
+  } catch {
+    storage = "unavailable";
+  }
   try {
     const snapshot = await readWorkingSessionSnapshot();
     session = snapshot && typeof snapshot.version !== "undefined" ? "available" : "unavailable";
@@ -45,10 +44,51 @@ async function bootRecoveryStatus() {
   } catch {}
   return {
     storage,
-    projectsCount: Array.isArray(projects) ? projects.length : 0,
+    projectsCount,
     session,
     aiConfig,
   };
+}
+
+let recoveryProjectsCache = [];
+let selectedRecoveryProjectId = "";
+
+async function renderRecoveryProjectList() {
+  const list = document.getElementById("boot-recovery-projects-list");
+  if (!list) return;
+  recoveryProjectsCache = await window.AISystem6RecoveryStorage?.listRecoverableProjects?.() || [];
+  list.replaceChildren();
+  if (!recoveryProjectsCache.length) {
+    const empty = document.createElement("p");
+    empty.className = "finder-operation-lede";
+    empty.textContent = t("boot_recovery_no_projects");
+    list.append(empty);
+    selectedRecoveryProjectId = "";
+    return;
+  }
+  if (!selectedRecoveryProjectId || !recoveryProjectsCache.some((project) => project.id === selectedRecoveryProjectId)) {
+    selectedRecoveryProjectId = recoveryProjectsCache[0].id;
+  }
+  recoveryProjectsCache.forEach((project) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "finder-operation-item btn";
+    button.dataset.recoveryProjectId = project.id;
+    button.setAttribute("aria-pressed", String(project.id === selectedRecoveryProjectId));
+    const copy = document.createElement("span");
+    copy.className = "finder-operation-item-copy";
+    const name = document.createElement("b");
+    name.textContent = project.name;
+    const meta = document.createElement("small");
+    meta.textContent = project.updatedAt || "";
+    copy.append(name, meta);
+    button.append(copy);
+    button.addEventListener("click", () => {
+      selectedRecoveryProjectId = project.id;
+      renderRecoveryProjectList();
+    });
+    list.append(button);
+  });
 }
 
 function openBootRecovery() {
@@ -62,16 +102,25 @@ function openBootRecovery() {
     document.getElementById("boot-recovery-projects").textContent = String(status.projectsCount);
     document.getElementById("boot-recovery-session").textContent = label(status.session === "available");
     document.getElementById("boot-recovery-ai").textContent = label(status.aiConfig === "available");
+    await renderRecoveryProjectList();
   };
   const setNote = (message) => {
     if (note) note.textContent = message;
   };
   document.getElementById("boot-recovery-export").onclick = async () => {
+    if (!selectedRecoveryProjectId) {
+      setNote(t("boot_recovery_export_failed"));
+      return;
+    }
     try {
-      const exported = typeof handleAction === "function"
-        ? await handleAction("export-project-backup")
-        : false;
-      setNote(exported !== false ? t("boot_recovery_exported") : t("boot_recovery_export_failed"));
+      const bundle = await window.AISystem6RecoveryStorage?.exportRecoveryProjectBackup?.(selectedRecoveryProjectId);
+      if (!bundle) {
+        setNote(t("boot_recovery_export_failed"));
+        return;
+      }
+      const project = recoveryProjectsCache.find((entry) => entry.id === selectedRecoveryProjectId);
+      downloadJsonFile(bundle, `${project?.name || "Project"} Project Hard Disk Backup`);
+      setNote(t("boot_recovery_exported"));
     } catch {
       setNote(t("boot_recovery_export_failed"));
     }
@@ -92,7 +141,7 @@ function openBootRecovery() {
   };
   document.getElementById("boot-recovery-retry").onclick = () => {
     dialog.close();
-    retryBoot();
+    window.location.reload();
   };
   renderStatus();
   if (typeof playSystemSound === "function") playSystemSound("alert");

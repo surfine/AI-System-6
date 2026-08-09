@@ -45,7 +45,12 @@ function createLeaseInstance(storage, { noBroadcastChannel = false } = {}) {
     setStatus: () => {},
     updateMenuState: () => {},
     cancelWorkingSessionAutosave: () => { context.__autosaveCancelled = true; },
-    document: { querySelector: () => null },
+    document: {
+      querySelector: () => null,
+      addEventListener: () => {},
+      body: { dataset: {} },
+      visibilityState: "visible",
+    },
     playSystemSound: () => {},
   });
   vm.runInContext(leaseSource, context);

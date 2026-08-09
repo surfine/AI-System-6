@@ -491,6 +491,44 @@ Version `1.0.12`, build `20260804.2`.
   working draft in the project, Save to Project Hard Disk creates or updates
   a reopenable document, and New preserves the current draft first.
 
+## Public Beta 1.0.35 - 2026-08-09
+
+- The single-writer lease is fenced, not trusted from memory. Acquire claims
+  then reads the stored lease back before becoming a writer; the heartbeat
+  refreshes only a lease still stored under this instance (never overwriting
+  a new owner); release deletes only its own lease; and every mutating
+  IndexedDB transaction re-verifies the stored owner via assertCanWrite.
+  Even two instances that briefly believe they own the lease cannot both pass
+  the write-time fence.
+- Takeover is a handshake: the requesting window asks the old writer to flush
+  Draft Desk, the Working Session, and desk state, and only becomes the
+  writer after a takeover-ready reply. A failed flush denies the takeover
+  with the old draft intact; unresponsive windows time out (never auto-force);
+  Force Take Over is reserved for stale owners or an explicit danger
+  confirmation.
+- BFCache and foreground resume reconcile the lease instead of trusting
+  pre-freeze memory: stored owner → writer, no owner → try acquire, other
+  fresh owner → read-only, never an automatic takeover.
+- Startup Recovery no longer depends on the desktop runtime: a new
+  recovery-storage layer reads projects, files, folders, scraps, trash, and
+  document revisions directly from IndexedDB, lists real recoverable
+  projects, and exports a verified per-project backup without mounting it.
+  Retry, Start without restoring windows, and Recovery's Retry Startup all
+  reload into a fresh runtime instead of re-running boot in a half-initialized
+  one.
+- Read-only is honest at the UI layer: the body advertises write mode, and
+  mutating surfaces (Draft Desk textarea and Save/New/Apply/Develop/Protect,
+  TeachText body, Finder rename/delete/new-folder, project create/import) are
+  disabled while reading, copying, sharing, downloading, and exporting stay
+  available.
+- Retry is truly async: one in-flight retry at a time (double-click safe),
+  callbacks are awaited, successes clear the owner, and rejections never
+  surface as unhandled promise errors.
+- Research appearances (Aqua, Snow Leopard, Yosemite) keep their recipes,
+  assets, canonical references, and Theme Lab support, but preview only
+  through ?debugTheme= on a development surface; public hosted deployments
+  ignore the parameter and always land on the saved release Appearance.
+
 ## What Changed Most In One Month
 
 - The product moved from "an AI writing prototype" to a local-first writing

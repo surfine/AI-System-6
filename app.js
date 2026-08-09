@@ -471,15 +471,23 @@ const {
 document.body.dataset.appReady = "booting";
 window.AISystem6Theme?.syncBody();
 const bootThemeId = getCurrentTheme();
-const bootPreviewMatch = String(window.location?.search || "").match(/[?&]theme=([a-z0-9-]+)/i);
-const bootPreviewId = bootPreviewMatch ? bootPreviewMatch[1].toLowerCase() : "";
-const bootPreviewTheme = bootPreviewId ? window.AISystem6Theme?.getTheme?.(bootPreviewId) : null;
-if (bootPreviewTheme && bootPreviewTheme.releaseReady === false) {
-  // Dev-only session preview: ?theme=<research id> shows a research appearance
-  // for this page load without persisting. The Appearance selector reflects
-  // the release base; reloading without the parameter restores the saved theme.
-  if (appearanceThemeInput) appearanceThemeInput.value = window.AISystem6Theme.normalizeReleaseThemeId(bootPreviewTheme.id);
-  window.AISystem6Theme.previewExperimentalTheme(bootPreviewTheme.id);
+const bootSearch = String(window.location?.search || "");
+const bootDebugMatch = bootSearch.match(/[?&]debugTheme=([a-z0-9-]+)/i);
+const bootDebugId = bootDebugMatch ? bootDebugMatch[1].toLowerCase() : "";
+const bootDebugTheme = bootDebugId ? window.AISystem6Theme?.getTheme?.(bootDebugId) : null;
+// Research appearances preview only through ?debugTheme= on a development
+// surface (local server, localhost, or an explicit development capability).
+// Public hosted deployments ignore the parameter and always land on the
+// saved release Appearance.
+const developmentPreviewAllowed = window.AISystem6Capabilities?.development === true
+  || document.documentElement.dataset.deploymentProfile !== "public"
+  || ["localhost", "127.0.0.1"].includes(window.location.hostname || "");
+if (bootDebugTheme && bootDebugTheme.releaseReady === false && developmentPreviewAllowed) {
+  // Dev-only session preview, never persisted: the Appearance selector keeps
+  // reflecting the release base, and a reload without the parameter restores
+  // the saved theme.
+  if (appearanceThemeInput) appearanceThemeInput.value = window.AISystem6Theme.normalizeReleaseThemeId(bootDebugTheme.id);
+  window.AISystem6Theme.previewExperimentalTheme(bootDebugTheme.id);
 } else {
   if (appearanceThemeInput) appearanceThemeInput.value = bootThemeId;
   applyTheme(bootThemeId, { persist: false, saveDesk: false, announce: false, syncUi: false });

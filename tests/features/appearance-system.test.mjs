@@ -195,6 +195,16 @@ test.assertNotMatches(appearanceCss, /\.(?:assistant|docmap|reader|quick-draft|t
 test.assertNotIncludes(labCss, "data-theme=", "Theme Lab has one shared component stylesheet, not six implementations");
 test.assertIncludes(verification, "appearanceThemeSelectorLimit", "CSS verification ratchets per-era structural recipes");
 test.assertIncludes(packageJson, '"verify:theme-lab"', "the six-era visual comparison has a named verification command");
+
+// Research themes keep a controlled development preview path. ?debugTheme=
+// previews a research appearance only on a development surface, never on a
+// public deployment, and never persists.
+test.assertIncludes(app, "bootDebugMatch", "research previews enter through ?debugTheme=");
+test.assertIncludes(app, "developmentPreviewAllowed", "research previews require a development surface");
+test.assertIncludes(app, "deploymentProfile !== \"public\"", "public deployments cannot trigger research previews");
+test.assertIncludes(app, "previewExperimentalTheme(bootDebugTheme.id)", "the research preview stays experimental and non-persisting");
+test.assertIncludes(app, "normalizeReleaseThemeId(bootDebugTheme.id)", "the Appearance selector still reflects the release theme during preview");
+test.assertNotMatches(app, /\[?&\]theme=\(\[a-z0-9-\]+\).*releaseReady === false/, "plain ?theme= no longer unlocks research appearances");
 test.assertIncludes(packageJson, '"snapshot:theme-lab"', "the six-era baselines have an explicit update command");
 test.assertIncludes(packageJson, '"compare:theme-lab:canonical"', "historical fidelity has a separate canonical-reference command");
 test.assertIncludes(labSnapshot, "overflow: visible !important", "Theme Lab snapshots cover the complete scrollable atlas instead of only its first viewport");

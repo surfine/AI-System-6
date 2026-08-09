@@ -47,10 +47,16 @@ window.AISystem6StorageTransactions = (() => {
   }
 
   async function runTransaction(db, storeNames, mode, operation) {
-    if (mode === "readwrite" && window.AISystem6WriteLease?.isReadOnly?.()) {
-      const error = new Error("This window is read-only; another window owns the write lease.");
-      error.code = "READ_ONLY_INSTANCE";
-      return Promise.reject(error);
+    if (mode === "readwrite") {
+      // The fence re-verifies the STORED lease at write time, not just the
+      // in-memory flag: a throttled background tab may still think it owns the
+      // lease after another instance took over.
+      try {
+        window.AISystem6WriteLease?.assertCanWrite?.();
+      } catch (error) {
+        if (error?.code === "READ_ONLY_INSTANCE") return Promise.reject(error);
+        throw error;
+      }
     }
     const transaction = mode === "readwrite"
       ? readwriteTransaction(db, storeNames)

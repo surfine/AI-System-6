@@ -95,6 +95,7 @@ function modelConnectionFailure(error, context = {}) {
 // never a fixed window. Registration carries the owner project / conversation
 // so a stale context can never re-run an old prompt in a new project.
 let lastRetryableAiAction = null;
+let retryInFlight = false;
 
 function registerRetryableAiAction({ owner = "", projectId = "", conversationId = "", callback } = {}) {
   lastRetryableAiAction = { owner, projectId, conversationId, callback };
@@ -104,20 +105,36 @@ function clearRetryableAiAction(owner = "") {
   if (!owner || lastRetryableAiAction?.owner === owner) lastRetryableAiAction = null;
 }
 
-function runRetryableAiAction() {
+function retryContextIsStillValid(action) {
+  const activeProject = typeof getActiveProject === "function" ? getActiveProject() : null;
+  if (action.projectId && action.projectId !== activeProject?.id) return false;
+  if (action.conversationId && typeof activeConversationFile !== "undefined" && activeConversationFile?.id !== action.conversationId) {
+    return false;
+  }
+  return true;
+}
+
+async function runRetryableAiAction() {
+  if (retryInFlight) return false;
   const action = lastRetryableAiAction;
   if (!action || typeof action.callback !== "function") return false;
-  const activeProject = typeof getActiveProject === "function" ? getActiveProject() : null;
-  if (action.projectId && action.projectId !== activeProject?.id) {
+  if (!retryContextIsStillValid(action)) {
     if (typeof setStatus === "function") setStatus(t("retry_context_stale"));
     return false;
   }
-  if (action.conversationId && typeof activeConversationFile !== "undefined" && activeConversationFile?.id !== action.conversationId) {
-    if (typeof setStatus === "function") setStatus(t("retry_context_stale"));
+  retryInFlight = true;
+  try {
+    const result = await action.callback();
+    if (result !== false) clearRetryableAiAction(action.owner);
+    return result !== false;
+  } catch (error) {
+    // A rejected callback must never surface as an unhandled rejection; the
+    // failure presenter re-registers the recovery path.
+    console.warn("Retryable AI action failed.", error);
     return false;
+  } finally {
+    retryInFlight = false;
   }
-  action.callback();
-  return true;
 }
 
 function pushModelRecoveryNotification(error, context = {}) {

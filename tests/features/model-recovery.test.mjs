@@ -107,19 +107,52 @@ function createRetryVm() {
   runtime.mapper.registerRetryable({
     owner: "quickDraft",
     projectId: "project-a",
-    callback: () => { ran += 1; },
+    callback: () => { ran += 1; return true; },
   });
-  test.assert(runtime.mapper.runRetryable() === true, "retry runs the registered owner in the same project");
+  test.assert(await runtime.mapper.runRetryable() === true, "retry runs the registered owner in the same project");
   test.assert(ran === 1, "the retry callback executed");
+  test.assert(runtime.mapper.runRetryable && await runtime.mapper.runRetryable() === false, "a successful retry clears the owner");
 
+  // A new failed action stays registered; a stale project blocks it.
+  runtime.mapper.registerRetryable({
+    owner: "quickDraft",
+    projectId: "project-a",
+    callback: () => { ran += 1; return false; },
+  });
   runtime.context.__activeProjectId = "project-b";
-  test.assert(runtime.mapper.runRetryable() === false, "retry refuses to run in a different project");
+  test.assert(await runtime.mapper.runRetryable() === false, "retry refuses to run in a different project");
   test.assert(ran === 1, "the stale-context retry never executed the callback");
   test.assert(runtime.context.__status === "retry_context_stale", "a stale retry explains itself");
 
   runtime.mapper.clearRetryable("quickDraft");
   runtime.context.__activeProjectId = "project-a";
-  test.assert(runtime.mapper.runRetryable() === false, "a cleared owner cannot retry");
+  test.assert(await runtime.mapper.runRetryable() === false, "a cleared owner cannot retry");
+}
+
+// Double retry: two rapid clicks start exactly one AI request.
+{
+  const runtime = createRetryVm();
+  let started = 0;
+  let release;
+  const gate = new Promise((resolve) => { release = resolve; });
+  runtime.context.projects.push({ id: "project-a", name: "A" });
+  runtime.context.__activeProjectId = "project-a";
+  runtime.mapper.registerRetryable({
+    owner: "quickDraft",
+    projectId: "project-a",
+    callback: async () => {
+      started += 1;
+      await gate;
+      return true;
+    },
+  });
+  const first = runtime.mapper.runRetryable();
+  const second = runtime.mapper.runRetryable();
+  test.assert(started === 1, "the double-retry guard starts exactly one request");
+  test.assert(await second === false, "the second retry is refused while the first is in flight");
+  release();
+  test.assert(await first === true, "the in-flight retry completes");
+  test.assert(started === 1, "no second request ever started");
 }
 
 // Static contracts: ordinary UI paths route through the mapper and the two

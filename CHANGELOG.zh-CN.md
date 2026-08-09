@@ -1,5 +1,5 @@
 <!-- canonical-source: CHANGELOG.md -->
-<!-- source-sha256: 1712b73bdc13c50bdc4f352a9575cb2700beb5da223acaa1d172e77028f99b3d -->
+<!-- source-sha256: a060c6da3826e09965b0ed6aaf1d437682f11bfdaca2a865a332b10ac68c9599 -->
 
 # AI System 6 中文更新日志
 
@@ -81,6 +81,32 @@
   warm 标志并完整播放仪式。
 - Draft Desk 帮助文案区分三种保存语义：⌘S 把工作稿保存在项目中、保存到
   项目硬盘会创建/更新可重新打开的文档、New 会先保留当前草稿。
+
+## v1.0.35 - 2026-08-09
+
+- single-writer lease 改为 fencing 而非信任内存：acquire 先写入再 read-back
+  验证才成为 writer；heartbeat 只刷新仍属于本实例的 lease（绝不覆盖新
+  owner）；release 只删除自己的 lease；每次写入事务都在写前经
+  assertCanWrite 重新验证存储中的 owner。即使两个实例短暂都自认是 writer，
+  写时也只可能有一个通过验证。
+- Takeover 改为握手：请求方先让旧 writer flush Draft Desk、Working Session
+  与桌面状态，收到 takeover-ready 才成为 writer；flush 失败则拒绝接管、
+  旧稿保留；无响应会超时（绝不自动 force）；Force Take Over 仅限 stale
+  owner 或用户显式确认风险。
+- BFCache 与前台恢复时重新 reconcile lease：存储 owner 是自己→writer，
+  无 owner→尝试 acquire，他人 fresh owner→只读，绝不自动接管。
+- Startup Recovery 不再依赖桌面 runtime：新增 recovery-storage 层直接从
+  IndexedDB 读取 projects/files/folders/scraps/trash/文档修订，列出真实
+  可恢复项目，并无需挂载即可导出按项目的已验证备份。Retry、不恢复窗口启动
+  与 Recovery 的重试启动都改为 location.reload() 进入全新 runtime。
+- 只读在 UI 层诚实：body 标记 write mode，变更型表面（Draft Desk 正文与
+  Save/New/Apply/Develop/Protect、TeachText 正文、Finder 重命名/删除/新建
+  文件夹、项目新建/导入）被禁用；阅读、复制、分享、下载、导出备份仍可用。
+- Retry 真正 async：同一时刻只有一个 retry（防双击）、await 回调、成功清
+  owner、rejection 不会变成未处理 promise 错误。
+- 研究外观（Aqua、Snow Leopard、Yosemite）保留 recipe、资产、canonical
+  参照与 Theme Lab 支持，但只允许在开发环境通过 ?debugTheme= 预览；公开
+  deployment 忽略该参数，始终回到已保存的正式外观。
 
 ## 第一版 — 1.0.0 / 2026-05-18
 
