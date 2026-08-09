@@ -17,6 +17,19 @@
     "core/document-revisions.js",
     "core/desktop-maintenance.js",
     "core/model-roles.js",
-    "core/project-disk-backup.js"
+    "core/project-disk-backup.js",
+    "core/adjustment-layers.js",
+    "core/protected-ranges.js",
+    "core/text-compose.js",
+    "core/grain-diff.js",
+    "core/quick-draft-workspace.js",
+    "data/draft-desk-presets.js",
+    "features/draft-desk.js",
+    "features/quick-draft-intake.js",
+    "features/quick-draft-editor.js",
+    "features/quick-draft-composition.js",
+    "features/quick-draft-ai.js",
+    "features/quick-draft-handoff.js",
+    "draft-desk-globals.d.ts"
   ]
 }

@@ -103,7 +103,7 @@ function toggleQuickDraftLayerDetail() {
     renderAdjustmentLayers(activeProjectQuickDraft({ create: false })?.record);
     return !target.hidden;
   }
-  const open = target.hidden;
+  const open = Boolean(target.hidden);
   target.hidden = !open;
   target.classList.toggle("is-editing", open);
   refs.form?.querySelector("[data-quick-draft-layer-toggle]")
@@ -189,11 +189,18 @@ function syncQuickDraftMobileAdjustmentActions(record = activeProjectQuickDraft(
   if (developButton) developButton.disabled = !hasBody || !currentCompositeState(normalized).ready;
 }
 
-function updateAdjustmentLayer(kind = "", patch = {}) {
+async function updateAdjustmentLayer(kind = "", patch = {}) {
+  const previousRecord = activeProjectQuickDraft({ create: false })?.record;
   const next = normalizeAdjustmentLayers(adjustmentLayersSnapshot()).map((layer) => (
     layer.kind === kind ? { ...layer, ...patch } : layer
   ));
-  const record = saveQuickDraft({ workspace: { adjustmentLayers: next } }, { debounce: false });
+  const committed = await commitQuickDraft({ workspace: { adjustmentLayers: next } });
+  if (!committed.ok) {
+    renderQuickDraft(previousRecord);
+    setQuickDraftStatus(t("quick_draft_save_failed"));
+    return false;
+  }
+  const record = committed.record;
   renderAdjustmentLayers(record);
   updateQuickDraftShellState(record);
   syncQuickDraftPrimaryAction(record, Boolean(String(refs.draft?.value || "").trim()));
@@ -202,7 +209,7 @@ function updateAdjustmentLayer(kind = "", patch = {}) {
   return next;
 }
 
-function moveAdjustmentLayer(kind = "", direction = -1) {
+async function moveAdjustmentLayer(kind = "", direction = -1) {
   const layers = adjustmentLayersSnapshot();
   const index = layers.findIndex((layer) => layer.kind === kind);
   const target = index + (Number(direction) || -1);
@@ -210,7 +217,14 @@ function moveAdjustmentLayer(kind = "", direction = -1) {
   const next = [...layers];
   const [layer] = next.splice(index, 1);
   next.splice(target, 0, layer);
-  const record = saveQuickDraft({ workspace: { adjustmentLayers: next } }, { debounce: false });
+  const previousRecord = activeProjectQuickDraft({ create: false })?.record;
+  const committed = await commitQuickDraft({ workspace: { adjustmentLayers: next } });
+  if (!committed.ok) {
+    renderQuickDraft(previousRecord);
+    setQuickDraftStatus(t("quick_draft_save_failed"));
+    return false;
+  }
+  const record = committed.record;
   renderAdjustmentLayers(record);
   updateQuickDraftShellState(record);
   syncQuickDraftPrimaryAction(record, Boolean(String(refs.draft?.value || "").trim()));
@@ -260,7 +274,7 @@ function selectionLineRanges() {
   return [{ start: startLine, end: endLine }];
 }
 
-function protectSelectionFromTextarea() {
+async function protectSelectionFromTextarea() {
   const ranges = selectionLineRanges();
   if (!ranges.length) {
     setQuickDraftStatus(t("quick_draft_protect_no_selection"));
@@ -268,7 +282,14 @@ function protectSelectionFromTextarea() {
     return false;
   }
   const next = normalizeAdjustmentLayerMask([...protectedRangesSnapshot(), ...ranges]);
-  const record = saveQuickDraft({ workspace: { protectedRanges: next } }, { debounce: false });
+  const previousRecord = activeProjectQuickDraft({ create: false })?.record;
+  const committed = await commitQuickDraft({ workspace: { protectedRanges: next } });
+  if (!committed.ok) {
+    renderQuickDraft(previousRecord);
+    setQuickDraftStatus(t("quick_draft_save_failed"));
+    return false;
+  }
+  const record = committed.record;
   renderProtectedRangeControls(record);
   updateQuickDraftShellState(record);
   refreshQuickDraftPreviewIfOpen();
@@ -276,7 +297,7 @@ function protectSelectionFromTextarea() {
   return true;
 }
 
-function scopeSelectionToLayer(kind = "") {
+async function scopeSelectionToLayer(kind = "") {
   const ranges = selectionLineRanges();
   if (!ranges.length) {
     setQuickDraftStatus(t("quick_draft_scope_no_selection"));
@@ -288,8 +309,14 @@ function scopeSelectionToLayer(kind = "") {
   if (!layer) return false;
   const merged = normalizeAdjustmentLayerMask([...(layer.mask || []), ...ranges]);
   const next = layers.map((item) => (item.kind === kind ? { ...item, mask: merged } : item));
-  saveQuickDraft({ workspace: { adjustmentLayers: next } }, { debounce: false });
-  renderAdjustmentLayers(activeProjectQuickDraft({ create: false })?.record);
+  const previousRecord = activeProjectQuickDraft({ create: false })?.record;
+  const committed = await commitQuickDraft({ workspace: { adjustmentLayers: next } });
+  if (!committed.ok) {
+    renderQuickDraft(previousRecord);
+    setQuickDraftStatus(t("quick_draft_save_failed"));
+    return false;
+  }
+  renderAdjustmentLayers(committed.record);
   refreshQuickDraftPreviewIfOpen();
   setQuickDraftStatus(t("quick_draft_scope_saved"));
   return true;
@@ -598,8 +625,8 @@ async function applyAdjustmentLayers() {
     // body itself stays untouched until develop.
     const container = refs.draft?.closest(".teachtext-editor-container");
     const showingComposite = Boolean(container?.classList.contains("is-previewing"))
-      && quickDraftPreviewMode === "composite";
-    if (!showingComposite) setQuickDraftPreviewMode("composite");
+      && quickDraftDisplayMode === "read";
+    if (!showingComposite) setQuickDraftDisplayMode("read");
     setQuickDraftStatus(t("quick_draft_apply_done"));
     return true;
   } catch (error) {
@@ -916,8 +943,13 @@ async function runAdjustmentCommand(kind = "") {
       : item.mask;
     return { ...item, enabled: true, mask };
   });
-  saveQuickDraft({ workspace: { adjustmentLayers: nextLayers } }, { debounce: false });
-  renderAdjustmentLayers(activeProjectQuickDraft({ create: false })?.record);
+  const committed = await commitQuickDraft({ workspace: { adjustmentLayers: nextLayers } });
+  if (!committed.ok) {
+    renderQuickDraft(slot.record);
+    setQuickDraftStatus(t("quick_draft_save_failed"));
+    return false;
+  }
+  renderAdjustmentLayers(committed.record);
   refreshQuickDraftPreviewIfOpen();
   if (String(quickDraftCompositeSource(slot.record) || "").trim()) {
     return applyAdjustmentLayers();

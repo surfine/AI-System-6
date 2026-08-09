@@ -33,6 +33,13 @@ body[data-theme="platinum"] {
   --system-caption-size: 10px;
   --system-menu-height: 20px;
   --system-titlebar-height: 19px;
+  --system-titlebar-control-slot: 19px;
+  --system-titlebar-control-size: 11px;
+  --system-titlebar-control-art-size: 11px;
+  --system-titlebar-control-art-offset-y: -2px;
+  --system-titlebar-close-art-offset-x: -1px;
+  --system-titlebar-resize-art-offset-x: 1px;
+  --system-titlebar-control-margin-x: 0;
   --system-titlebar-title-height: 13px;
   --system-titlebar-font-size: 12px;
   --system-control-min-height: 22px;
@@ -70,8 +77,14 @@ body[data-theme="platinum"] {
     inset 1px 1px 0 #eeeeee,
     inset -1px -1px 0 #999999;
   --system-titlebar-active-bg:
-    repeating-linear-gradient(to bottom, #ffffff 0 1px, #777777 1px 2px);
+    linear-gradient(#cccccc, #cccccc) left top / 19px 100% no-repeat,
+    linear-gradient(#cccccc, #cccccc) right top / 19px 100% no-repeat,
+    linear-gradient(to bottom, #cccccc 0 2px, transparent 2px 13px, #cccccc 13px 17px, #999999 17px 18px),
+    repeating-linear-gradient(to bottom, #ffffff 0 1px, #777777 1px 2px) 0 1px / 100% 2px repeat-y,
+    #cccccc;
   --system-titlebar-inactive-bg: #dddddd;
+  --system-titlebar-background-origin: border-box;
+  --system-titlebar-background-clip: border-box;
   --system-titlebar-inactive-control-visibility: hidden;
   --system-titlebar-inactive-control-opacity: 1;
   --system-titlebar-inactive-title-color: #777777;
@@ -109,13 +122,15 @@ body[data-theme="platinum"] {
   --btn-shadow:
     inset 1px 1px 0 #dddddd,
     inset 2px 2px 0 #ffffff,
-    inset -1px -1px 1px #555555;
+    inset -1px -1px 0 #777777,
+    inset -2px -2px 0 #aaaaaa;
   --btn-hover-bg: #dddddd;
   --btn-hover-fg: #000000;
   --btn-hover-shadow:
     inset 1px 1px 0 #dddddd,
     inset 2px 2px 0 #ffffff,
-    inset -1px -1px 1px #555555;
+    inset -1px -1px 0 #777777,
+    inset -2px -2px 0 #aaaaaa;
   --btn-active-bg: #666666;
   --btn-active-fg: #ffffff;
   --btn-active-shadow: inset 1px 1px 1px #333333, inset -1px -1px 1px #999999;
@@ -132,7 +147,7 @@ body[data-theme="platinum"] {
   --choice-bg: #dddddd;
   --choice-border: 1px solid #000000;
   --choice-radius: 0;
-  --choice-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #888888;
+  --choice-shadow: inset -1px -1px 0 #888888, inset 1px 1px 0 #ffffff;
   --choice-checked-bg: #dddddd;
   --choice-checkmark-image: url("./assets/vendor/classic-stylesheets/macos9/checkmark.svg");
   --system-check-size: 12px;
@@ -217,10 +232,25 @@ body[data-theme="platinum"] {
   --theme-lab-era-choice-state-display: flex;
   --theme-lab-checkbox-checkmark-image: none;
   --theme-lab-checkbox-mark-content: "";
+  --theme-lab-checkbox-mark-position: absolute;
+  --theme-lab-checkbox-mark-inset: -1px auto auto -1px;
+  --theme-lab-checkbox-mark-width: 12px;
+  --theme-lab-checkbox-mark-height: 12px;
+  --theme-lab-checkbox-mark-margin: 0;
+  --theme-lab-checkbox-mark-border-bottom: 0;
+  --theme-lab-checkbox-mark-border-left: 0;
+  --theme-lab-checkbox-mark-bg: url("./assets/themes/platinum/checkbox-checked-overlay.svg") center / 12px 12px no-repeat;
+  --theme-lab-checkbox-mark-transform: none;
+  --theme-lab-checkbox-frame-overlay-content: "";
+  --theme-lab-checkbox-frame-overlay-inset: -1px auto auto -1px;
+  --theme-lab-checkbox-frame-overlay-bg:
+    linear-gradient(#dddddd, #dddddd) 10px 1px / 1px 1px no-repeat,
+    linear-gradient(#dddddd, #dddddd) 1px 10px / 1px 1px no-repeat;
   --theme-lab-checkbox-mark-color: #000000;
   --theme-lab-checkbox-mark-shadow: -1px 1px 0 rgba(0, 0, 0, 0.3);
   --theme-lab-checkbox-disabled-mark-color: #888888;
   --theme-lab-checkbox-disabled-mark-shadow: none;
+  --theme-lab-checkbox-disabled-mark-filter: grayscale(1) opacity(0.55);
   --theme-lab-checkbox-active-bg: #777777;
   --theme-lab-checkbox-active-shadow: inset 1px 1px 0 #555555, inset -1px -1px 0 #999999;
   --theme-lab-radio-checked-bg: linear-gradient(to bottom right, #555555, #ffffff);
@@ -274,18 +304,35 @@ body[data-theme="platinum"] {
   --theme-lab-tab-button-min-height: 23px;
   --theme-lab-tab-button-height: 23px;
   --theme-lab-tab-button-margin: 0 -1px 0 0;
-  --theme-lab-tab-button-padding: 3px 14px 0;
+  --theme-lab-tab-button-padding: 0 14px 3px;
+  --theme-lab-tab-font-variation-settings: "wdth" 123;
   --theme-lab-tab-button-border: 0;
   --theme-lab-tab-button-radius: 0;
-  --theme-lab-tab-button-bg: transparent url("./assets/vendor/classic-stylesheets/macos9/tab.svg") center top / 74px 23px no-repeat;
-  --theme-lab-tab-button-shadow: none;
+  --theme-lab-tab-button-bg: #cccccc;
+  --theme-lab-tab-button-shadow: inset 0 1px #000000, inset 0 2px #cccccc, inset 0 3px #dddddd;
+  --theme-lab-tab-edge-content: "";
+  --theme-lab-tab-edge-width: 14px;
+  --theme-lab-tab-edge-height: 23px;
+  --theme-lab-tab-edge-left-bg: url("./assets/vendor/classic-stylesheets/macos9/tab.svg") left top / 74px 23px no-repeat;
+  --theme-lab-tab-edge-right-bg: url("./assets/vendor/classic-stylesheets/macos9/tab.svg") right top / 74px 23px no-repeat;
   --theme-lab-tab-hover-bg: var(--theme-lab-tab-button-bg);
   --theme-lab-tab-line-height: 18px;
   --theme-lab-tab-selected-min-height: 25px;
   --theme-lab-tab-selected-height: 25px;
-  --theme-lab-tab-selected-bg: transparent url("./assets/vendor/classic-stylesheets/macos9/tab-selected.svg") center top / 74px 25px no-repeat;
+  --theme-lab-tab-selected-bg:
+    linear-gradient(to bottom,
+      #dddddd 0 1px,
+      #000000 1px 2px,
+      #cccccc 2px 3px,
+      #ffffff 3px 4px,
+      #eeeeee 4px 24px)
+      center top / calc(100% - 28px) 24px no-repeat;
   --theme-lab-tab-selected-fg: #000000;
   --theme-lab-tab-selected-shadow: none;
+  --theme-lab-tab-selected-edge-top: 0;
+  --theme-lab-tab-selected-edge-height: 24px;
+  --theme-lab-tab-selected-edge-left-bg: url("./assets/themes/platinum/tab-selected-left.svg") left top / 14px 24px no-repeat;
+  --theme-lab-tab-selected-edge-right-bg: url("./assets/themes/platinum/tab-selected-right.svg") right top / 14px 24px no-repeat;
   --theme-lab-tab-active-bg: transparent url("./assets/vendor/classic-stylesheets/macos9/tab-active.svg") center top / 74px 23px no-repeat;
   --theme-lab-tab-active-fg: #ffffff;
   --theme-lab-tab-focus-outline: 0;
@@ -348,6 +395,8 @@ body[data-theme="platinum"] {
   --theme-lab-layer-bg: #dddddd;
   --theme-lab-layer-shadow: inset 1px 1px #ffffff, inset -1px -1px #888888, 1px 1px #000000;
   --theme-lab-layer-padding: 10px 12px;
+  --theme-lab-generic-fixture-display: none;
+  --theme-lab-platinum-fixture-display: grid;
   --theme-lab-menu-grid-row: 1 / span 2;
   --theme-lab-menu-padding: 2px 0;
   --theme-lab-menu-item-min-height: 18px;
@@ -393,6 +442,7 @@ body[data-theme="platinum"] {
   --theme-lab-dialog-actions-column: 2;
   --theme-lab-dialog-actions-margin-top: 1px;
   --theme-lab-dialog-button-margin-top: 0;
+  --theme-lab-dialog-button-min-width: 65px;
   --theme-lab-alert-icon-display: block;
   --theme-lab-alert-icon-image: url("./assets/themes/platinum/alert-32.svg");
   --theme-lab-sheet-display: none;
@@ -549,6 +599,1102 @@ body[data-theme="platinum"] {
   --theme-lab-finder-row-icon-size: 16px;
 }
 
+html[data-theme="aqua"],
+body[data-theme="aqua"] {
+  /* Jaguar evidence boundary: Apple's June 2002 Aqua HIG owns control geometry;
+     original 10.2 captures own final appearance. Quaqua 9.1 supplies the
+     explicitly Jaguar pinstripe, 22px title bar, wrap tabs and file chooser.
+     Quaqua's own guide warns that Jaguar JButtons fall back to Panther, so its
+     common button sprites are material/state evidence only, never ground truth.
+     Quaqua artwork is measured but not redistributed. */
+  --theme-ui-font: "Lucida Grande", "Lucida Sans Unicode", "PingFang SC", "Hiragino Sans GB", sans-serif;
+  --theme-title-font: var(--theme-ui-font);
+  --system-readable-min: 13px;
+  --system-title-size: 13px;
+  --system-control-size: 13px;
+  --system-text-size: 13px;
+  --system-caption-size: 11px;
+  --system-menu-height: 22px;
+  --system-titlebar-height: 22px;
+  --system-titlebar-control-slot: 82px;
+  --system-titlebar-control-size: 15px;
+  --system-titlebar-title-height: 15px;
+  --system-titlebar-font-size: 13px;
+  --system-titlebar-margin-y: 0;
+  --system-titlebar-padding-y: 0;
+  --system-titlebar-padding-x: 6px;
+  --system-titlebar-inactive-control-filter: grayscale(1);
+  --system-titlebar-inactive-title-color: #6d6d6d;
+  --system-control-min-height: 22px;
+  --system-button-min-height: 20px;
+  --system-button-small-height: 17px;
+  --system-button-mini-height: 17px;
+  --system-button-small-font-size: 11px;
+  --system-button-mini-font-size: 10px;
+  --system-button-small-padding-x: 8px;
+  --system-button-mini-padding-x: 7px;
+  --system-button-padding-y: 0;
+  --system-button-padding-x: 14px;
+  --titlebar-content-padding-inline: 7px;
+  --titlebar-title-weight: 400;
+  --titlebar-title-text-shadow: 0 1px 0 rgba(255, 255, 255, 0.82);
+  --traffic-light-size: 15px;
+  /* Close and Zoom are 44px apart: the unused Minimize slot stays visible. */
+  --traffic-light-gap: 44px;
+  --traffic-light-close-bg: radial-gradient(circle at 43% 35%, #ffe9e6 0 1px, #ff988d 2px, #e64e42 5px, #9e2923 6px, #5f1d19 7px, transparent 7.5px);
+  --traffic-light-resize-bg: radial-gradient(circle at 43% 35%, #edffe8 0 1px, #a8ed87 2px, #55b83f 5px, #2d7725 6px, #1f4f1c 7px, transparent 7.5px);
+  --select-control-min-height: 20px;
+  --select-control-padding: 1px 27px 1px 9px;
+  --select-control-border: 1px solid #00005f;
+  --select-control-radius: 10px;
+  --select-control-bg-color: #f7f7f7;
+  --select-control-bg-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='14' viewBox='0 0 6 14'%3E%3Cpath d='m.5 5.5 2.5-3 2.5 3zM.5 8.5l2.5 3 2.5-3z' fill='%23064a79'/%3E%3C/svg%3E"),
+    linear-gradient(#5f9bc1, #5f9bc1),
+    linear-gradient(to bottom,
+      #dde1f4 0 5%, #bed4ef 5% 10%, #a6c8eb 10% 15%,
+      #9ac1ea 15% 25%, #94bdea 25% 30%, #8ebbea 30% 40%,
+      #8ebdec 40% 45%, #64a8f2 45% 50%, #6bb0f6 50% 55%,
+      #73b7fd 55% 60%, #7cbfff 60% 65%, #86c9ff 65% 70%,
+      #93d2ff 70% 75%, #a0dcff 75% 85%, #a9e6ff 85% 95%,
+      #bbffff 95% 100%),
+    linear-gradient(to bottom,
+      #fcfcfc 0 5%, #f6f6f6 5% 10%, #f0f0f0 10% 15%,
+      #eeeeee 15% 35%, #e1e1e1 35% 45%, #e6e6e6 45% 50%,
+      #e9e9e9 50% 55%, #ececec 55% 60%, #efefef 60% 65%,
+      #f3f3f3 65% 70%, #f6f6f6 70% 75%, #f8f8f8 75% 80%,
+      #fcfcfc 80% 90%, #ffffff 90% 100%);
+  --select-control-bg-position: right 5px center, right 18px top, right top, left top;
+  --select-control-bg-size: 6px 14px, 1px 100%, 19px 100%, 100% 100%;
+  --select-control-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92), 0 1px 2px rgba(0, 0, 0, 0.34);
+  --select-control-font-weight: 400;
+  --system-select-control-min-height: 20px;
+  --system-select-control-padding: 1px 27px 1px 9px;
+  --system-select-control-border: 1px solid #00005f;
+  --system-select-control-radius: 10px;
+  --system-select-control-bg:
+    linear-gradient(#5f9bc1, #5f9bc1) right 18px top / 1px 100% no-repeat,
+    linear-gradient(to bottom, #dde1f4 0 5%, #bed4ef 5% 10%, #a6c8eb 10% 15%, #9ac1ea 15% 25%, #94bdea 25% 30%, #8ebbea 30% 40%, #8ebdec 40% 45%, #64a8f2 45% 50%, #6bb0f6 50% 55%, #73b7fd 55% 60%, #7cbfff 60% 65%, #86c9ff 65% 70%, #93d2ff 70% 75%, #a0dcff 75% 85%, #a9e6ff 85% 95%, #bbffff 95% 100%) right top / 19px 100% no-repeat,
+    linear-gradient(to bottom, #fcfcfc 0 5%, #f6f6f6 5% 10%, #f0f0f0 10% 15%, #eeeeee 15% 35%, #e1e1e1 35% 45%, #e6e6e6 45% 50%, #e9e9e9 50% 55%, #ececec 55% 60%, #efefef 60% 65%, #f3f3f3 65% 70%, #f6f6f6 70% 75%, #f8f8f8 75% 80%, #fcfcfc 80% 90%, #ffffff 90% 100%);
+  --system-select-control-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92), 0 1px 2px rgba(0, 0, 0, 0.34);
+  --system-select-control-font-weight: 400;
+  --search-field-min-height: 22px;
+  --search-field-padding: 2px 8px 2px 21px;
+  --search-field-radius: 999px;
+  --search-field-background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 11 11'%3E%3Ccircle cx='4.5' cy='4.5' r='3' fill='none' stroke='%23757575'/%3E%3Cpath d='m6.8 6.8 3 3' stroke='%23757575' stroke-width='1.4' stroke-linecap='round'/%3E%3Cpath d='M2.8 3.4a2.2 2.2 0 0 1 2.9-.9' fill='none' stroke='%23fff' stroke-linecap='round' opacity='.9'/%3E%3C/svg%3E") 7px center / 11px 11px no-repeat,
+    var(--field-bg);
+  --progress-height: 15px;
+  --progress-padding: 1px;
+  --progress-border-color: #7b7b7b;
+  --progress-radius: 999px;
+  --progress-bg: linear-gradient(#d1d1d1, #ffffff 48%, #c5c5c5);
+  --progress-fill-radius: 999px;
+  --progress-fill-bg: linear-gradient(#cdf3ff 0%, #64c9ff 42%, #138adb 50%, #086cc1 56%, #74d0ff 100%);
+  --progress-fill-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.88);
+  --ink: #171717;
+  --paper: #f3f3f3;
+  --panel: #e9e9e9;
+  --quiet-panel: #fafafa;
+  --shade: #c4c4c4;
+  --shade-dark: #8b8b8b;
+  --rule: #a5a5a5;
+  --pane-bg: #f1f1f1;
+  --details-bar-bg:
+    repeating-linear-gradient(to bottom, #f1f1f1 0 1px, #ffffff 1px 2px, #f1f1f1 2px 3px, #eaeaea 3px 4px);
+  --details-bar-border: #7f7f7f;
+  --desktop: #4772ad;
+  --desktop-surface: #4772ad;
+  --window-bg:
+    repeating-linear-gradient(to bottom, #f1f1f1 0 1px, #ffffff 1px 2px, #f1f1f1 2px 3px, #eaeaea 3px 4px);
+  --window-border: 1px solid #8b8b8b;
+  --window-radius: 8px 8px 2px 2px;
+  --window-shadow: 0 11px 20px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.26);
+  --active-window-shadow: var(--window-shadow);
+  --inactive-window-shadow: 0 6px 13px rgba(0, 0, 0, 0.22);
+  /* Exact 21-row columns sampled from Jaguar's 2x22 title-bar sprite; the
+     final source row is the #7f divider represented by --titlebar-border. */
+  --system-titlebar-active-bg: linear-gradient(to bottom,
+    #ffffff 0 2px, #f1f1f1 2px 3px, #eaeaea 3px 4px,
+    #f0f0f0 4px 5px, #fefefe 5px 6px, #f0f0f0 6px 7px, #e9e9e9 7px 8px,
+    #efefef 8px 9px, #fdfdfd 9px 10px, #eeeeee 10px 11px, #e6e6e6 11px 12px,
+    #ebebeb 12px 13px, #f8f8f8 13px 14px, #e8e8e8 14px 15px, #dfdfdf 15px 16px,
+    #e4e4e4 16px 17px, #f0f0f0 17px 18px, #e1e1e1 18px 19px, #d8d8d8 19px 20px,
+    #dedede 20px 21px);
+  --system-titlebar-inactive-bg:
+    repeating-linear-gradient(to bottom,
+      rgba(250, 250, 250, 0.7) 0 1px,
+      rgba(255, 255, 255, 0.7) 1px 2px,
+      rgba(250, 250, 250, 0.7) 2px 3px,
+      rgba(233, 233, 233, 0.7) 3px 4px);
+  --system-titlebar-background-origin: padding-box;
+  --system-titlebar-background-clip: border-box;
+  --system-titlebar-inactive-control-visibility: visible;
+  --system-titlebar-inactive-control-opacity: 0.52;
+  --titlebar-title-bg: transparent;
+  --titlebar-title-fg: #191919;
+  --titlebar-border: 1px solid #7f7f7f;
+  --titlebar-border-inactive: 1px solid #7f7f7f;
+  --titlebar-shadow: inset 0 1px 0 #ffffff;
+  --surface-primary: #ffffff;
+  --surface-secondary:
+    repeating-linear-gradient(to bottom, #f1f1f1 0 1px, #ffffff 1px 2px, #f1f1f1 2px 3px, #eaeaea 3px 4px);
+  --surface-inset: #ffffff;
+  --toolbar-bg:
+    repeating-linear-gradient(to bottom, #fafafa 0 1px, #ffffff 1px 2px, #fafafa 2px 3px, #e9e9e9 3px 4px);
+  --toolbar-bg-inactive: var(--toolbar-bg);
+  --toolbar-border: 1px solid #7f7f7f;
+  --sidebar-bg: #ffffff;
+  --sidebar-bg-inactive: #ffffff;
+  --selection-bg: #3479d4;
+  --selection-fg: #ffffff;
+  --sidebar-selection-bg: var(--selection-bg);
+  --sidebar-selection-fg: #ffffff;
+  --separator: #9b9b9b;
+  --control-bg: linear-gradient(to bottom,
+    #f6f6f6 0%, #ebebeb 37%, #d9d9d9 42%, #e3e3e3 53%,
+    #eeeeee 63%, #ffffff 89%, #fdfdfd 100%);
+  --control-shadow: inset 0 1px 0 #ffffff, 0 1px 1px rgba(0, 0, 0, 0.28);
+  --control-active-shadow: inset 0 2px 3px rgba(0, 63, 114, 0.45);
+  --control-focus-outline: 3px solid rgba(64, 157, 224, 0.72);
+  --control-focus-offset: 1px;
+  --control-disabled-bg: linear-gradient(#f7f7f7, #dedede 52%, #f4f4f4);
+  --control-disabled-field-bg: #f7f7f7;
+  /* Quaqua's disabled button/check/radio frames are the enabled material at
+     one-half alpha; keep the state painter honest instead of whitening it. */
+  --control-disabled-opacity: 0.5;
+  --control-choice-hover-shadow: 0 0 0 3px rgba(65, 157, 224, 0.45);
+  --system-border: 1px solid #909090;
+  --system-inset: inset 0 1px 2px rgba(0, 0, 0, 0.3), inset 0 -1px 0 #ffffff;
+  --control-radius: 7px;
+  --btn-border-color: rgba(39, 39, 39, 0.82);
+  --btn-active-border-color: #00005f;
+  --btn-radius: 999px;
+  /* Quaqua's common 10-state Aqua painter supplies the hard material breaks;
+     native Jaguar captures and the 2002 HIG correct its Panther fallback. */
+  --btn-bg: linear-gradient(to bottom,
+    #f5f5f5 0 5%, #f4f4f4 5% 10%, #f0f0f0 10% 15%,
+    #eeeeee 15% 35%, #d9d9d9 35% 45%, #dedede 45% 50%,
+    #e3e3e3 50% 55%, #e6e6e6 55% 60%, #e9e9e9 60% 65%,
+    #eeeeee 65% 70%, #f3f3f3 70% 75%, #f5f5f5 75% 80%,
+    #ffffff 80% 90%, #fcfcfc 90% 100%);
+  --btn-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.96),
+    0 1px 0 rgba(0, 0, 0, 0.42),
+    0 2px 1px rgba(0, 0, 0, 0.18),
+    0 3px 2px rgba(0, 0, 0, 0.06);
+  --btn-hover-bg: var(--btn-bg);
+  --btn-hover-fg: #111111;
+  --btn-hover-shadow: var(--btn-shadow);
+  --btn-active-bg: linear-gradient(to bottom,
+    #c7cae8 0 5%, #bfc8e8 5% 10%, #afc1e5 10% 15%,
+    #9cb9e3 15% 25%, #89b4e1 25% 30%, #7fafe1 30% 40%,
+    #78ade4 40% 45%, #4693e2 45% 50%, #549eee 50% 55%,
+    #58a4f1 55% 60%, #62adf7 60% 65%, #66b1fd 65% 70%,
+    #6bb8ff 70% 75%, #76c2ff 75% 85%, #78caff 85% 95%,
+    #77d5fd 95% 100%);
+  --btn-active-fg: #06131d;
+  --btn-active-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    inset 0 -1px 1px rgba(0, 45, 104, 0.5),
+    0 1px 0 rgba(0, 0, 0, 0.42),
+    0 2px 1px rgba(0, 0, 0, 0.18),
+    0 3px 2px rgba(0, 0, 0, 0.06);
+  --btn-default-bg: linear-gradient(to bottom,
+    #c6d3eb 0 5%, #bed1eb 5% 10%, #b0cbe9 10% 15%,
+    #a4c4e7 15% 25%, #9fc0e6 25% 30%, #97bee6 30% 40%,
+    #91bdeb 40% 45%, #6dabeb 45% 50%, #7ab5f2 50% 55%,
+    #7ebcfa 55% 60%, #87c2fe 60% 65%, #8ac7fe 65% 70%,
+    #91ceff 70% 75%, #9adaff 75% 85%, #9fe1ff 85% 95%,
+    #a4f1fc 95% 100%);
+  --btn-default-fg: #06131d;
+  --btn-default-text-shadow: 0 1px 0 rgba(255, 255, 255, 0.76);
+  --btn-default-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.82),
+    inset 0 -1px 1px rgba(0, 45, 104, 0.42),
+    0 1px 0 rgba(0, 0, 0, 0.42),
+    0 2px 1px rgba(0, 0, 0, 0.18),
+    0 3px 2px rgba(0, 0, 0, 0.06);
+  --btn-default-active-bg: var(--btn-active-bg);
+  --btn-default-active-fg: #06131d;
+  --field-bg: #ffffff;
+  --field-focus-bg: #ffffff;
+  --field-border: 1px solid #8c8c8c;
+  --field-radius: 2px;
+  --field-control-padding: 2px 6px;
+  --select-radius: 10px;
+  --field-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px 0 #ffffff;
+  --field-focus-border: 1px solid #4d9ed8;
+  --field-focus-ring: 0 0 0 3px rgba(63, 153, 220, 0.58);
+  --choice-bg: transparent;
+  --choice-border: 0;
+  --choice-radius: 0;
+  --choice-shadow: none;
+  --choice-checked-bg: transparent;
+  --aqua-checkbox-unchecked-image: url("./assets/themes/aqua/checkbox-unchecked.svg");
+  --choice-checkmark-image: url("./assets/themes/aqua/checkbox-checked.svg");
+  --aqua-checkbox-pressed-unchecked-image: url("./assets/themes/aqua/checkbox-pressed-unchecked.svg");
+  --aqua-checkbox-pressed-image: url("./assets/themes/aqua/checkbox-pressed-checked.svg");
+  --system-check-size: 18px;
+  --system-radio-size: 18px;
+  --radio-bg: transparent;
+  --radio-border: 0;
+  --radio-shadow: none;
+  --radio-image: url("./assets/themes/aqua/radio-unselected.svg");
+  --radio-focus-image: var(--radio-image);
+  --radio-checked-image: url("./assets/themes/aqua/radio-selected.svg");
+  --radio-checked-focus-image: var(--radio-checked-image);
+  --aqua-radio-pressed-unchecked-image: url("./assets/themes/aqua/radio-pressed-unselected.svg");
+  --aqua-radio-pressed-image: url("./assets/themes/aqua/radio-pressed-selected.svg");
+  --apple-menu-slot-width: 44px;
+  --apple-menu-pixel-opacity: 0;
+  --apple-menu-era-glyph-display: inline;
+  --apple-menu-era-glyph-color: #3276bd;
+  --apple-menu-era-glyph-active-color: #ffffff;
+  --menu-current-app-display: flex;
+  --menu-bar-bg: repeating-linear-gradient(to bottom, #fafafa 0 1px, #ffffff 1px 2px, #fafafa 2px 3px, #e9e9e9 3px 4px);
+  --menu-bar-border: 1px solid #8e8e8e;
+  --menu-bar-shadow: inset 0 1px 0 #ffffff;
+  --menu-panel-bg: rgba(250, 250, 250, 0.94);
+  --menu-panel-border: 1px solid #666666;
+  --menu-panel-radius: 4px;
+  --menu-panel-shadow: 0 6px 14px rgba(0, 0, 0, 0.42);
+  --menu-button-active-bg: linear-gradient(#3973c1, #346cbe 50%, #2c61b9);
+  --menu-button-active-fg: #ffffff;
+  --menu-item-active-bg: linear-gradient(#3973c1, #346cbe 50%, #2c61b9);
+  --menu-item-active-fg: #ffffff;
+  --window-frame-lane: 15px;
+  --window-frame-track-bg: linear-gradient(90deg,
+    #b8b8b8 0 7%, #c0c0c0 7% 13%, #c8c8c8 13% 20%,
+    #d3d3d3 20% 27%, #dbdbdb 27% 33%, #e4e4e4 33% 40%,
+    #ebebeb 40% 47%, #f1f1f1 47% 53%, #f6f6f6 53% 60%,
+    #fafafa 60% 67%, #fbfbfb 67% 73%, #fcfcfc 73% 80%,
+    #f9f9f9 80% 87%, #f4f4f4 87% 93%, #efefef 93% 100%);
+  --window-frame-track-border: 1px solid #9b9b9b;
+  --window-frame-thumb-bg: linear-gradient(90deg,
+    #0039b3 0 7%, #769edc 7% 14%, #90b9e6 14% 21%,
+    #88b4e6 21% 29%, #80b1e6 29% 36%, #428adf 36% 43%,
+    #559beb 43% 50%, #69adfb 50% 57%, #7abfff 57% 64%,
+    #87ccff 64% 71%, #93daff 71% 79%, #89cdff 79% 100%);
+  --window-frame-thumb-border: 1px solid #617d91;
+  --window-frame-thumb-radius: 7px;
+  --window-frame-arrow-bg: linear-gradient(#ffffff, #d3d3d3 52%, #f5f5f5);
+  --scrollbar-track: var(--window-frame-track-bg);
+  --scrollbar-thumb: var(--window-frame-thumb-bg);
+  --scrollbar-button: var(--window-frame-arrow-bg);
+  --scrollbar-width: 15px;
+  --scrollbar-track-border: 1px solid #9b9b9b;
+  --scrollbar-track-shadow: inset 0 0 2px rgba(0, 0, 0, 0.3);
+  --scrollbar-thumb-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.75), inset -1px 0 0 rgba(0, 63, 112, 0.24);
+  --scrollbar-button-border: 1px solid #9b9b9b;
+  --scrollbar-button-shadow: inset 0 1px 0 #ffffff;
+  --tab-radius: 7px 7px 0 0;
+  --tab-overlap: 0;
+  /* Explicit Jaguar wrap-tab sprites, not the common button painter. */
+  --tab-bg: linear-gradient(to bottom,
+    #fbfbfb 0 5%, #f6f6f6 5% 10%, #f2f2f2 10% 15%,
+    #ededed 15% 25%, #ececec 25% 30%, #e9e9e9 30% 40%,
+    #e8e8e8 40% 45%, #e7e7e7 45% 50%, #e5e5e5 50% 55%,
+    #dbdbdb 55% 60%, #dedede 60% 65%, #e2e2e2 65% 70%,
+    #e6e6e6 70% 75%, #eaeaea 75% 80%, #ececec 80% 85%,
+    #f2f2f2 85% 90%, #f8f8f8 90% 95%, #ffffff 95% 100%);
+  --tab-hover-bg: var(--tab-bg);
+  --tab-active-bg: linear-gradient(to bottom,
+    #e2ecf9 0 5%, #cbdff4 5% 10%, #b8d3f0 10% 15%,
+    #accded 15% 25%, #a3c7ec 25% 30%, #9ec5ec 30% 35%,
+    #9ac1eb 35% 40%, #94bfeb 40% 45%, #91beea 45% 50%,
+    #69a8e8 50% 55%, #71adeb 55% 60%, #76b1ee 60% 65%,
+    #7fb8f4 65% 70%, #85bef9 70% 75%, #8cc6ff 75% 80%,
+    #93caff 80% 85%, #98d0ff 85% 90%, #a0d8ff 90% 95%,
+    #b8eeff 95% 100%);
+  --tab-active-fg: #06131d;
+  --theme-lab-button-min-width: 69px;
+  --theme-lab-pane-gap: 10px 18px;
+  --theme-lab-pane-padding: 10px 14px 14px;
+  --theme-lab-pane-bg:
+    repeating-linear-gradient(to bottom, #e6e6e6 0 1px, #eeeeee 1px 2px, #ffffff 2px 3px, #eeeeee 3px 4px);
+  --theme-lab-group-padding: 4px 10px 10px;
+  --theme-lab-group-bg: transparent;
+  --theme-lab-group-border: 0;
+  --theme-lab-group-shadow: none;
+  --theme-lab-heading-margin: 0 0 10px;
+  --theme-lab-heading-padding-bottom: 5px;
+  --theme-lab-heading-border-bottom: 1px solid #9b9b9b;
+  --theme-lab-heading-weight: 700;
+  --theme-lab-button-row-gap: 8px;
+  --theme-lab-button-row-margin-bottom: 11px;
+  --theme-lab-size-mini-display: none;
+  --theme-lab-choice-gap: 5px 12px;
+  --theme-lab-choice-row-min-height: 19px;
+  --theme-lab-era-choice-state-display: flex;
+  --theme-lab-checkbox-checkmark-image: var(--choice-checkmark-image);
+  --theme-lab-checkbox-active-bg: var(--aqua-checkbox-pressed-image) center / 18px 18px no-repeat;
+  --theme-lab-checkbox-active-shadow: none;
+  --theme-lab-radio-active-bg: var(--aqua-radio-pressed-image) center / 18px 18px no-repeat;
+  --theme-lab-radio-active-shadow: none;
+  --theme-lab-form-gap: 7px 12px;
+  --theme-lab-form-label-columns: 88px minmax(0, 1fr);
+  --theme-lab-form-label-align: right;
+  --theme-lab-form-label-column-gap: 7px;
+  --theme-lab-form-label-align-items: center;
+  --theme-lab-control-margin-top: 9px;
+  --theme-lab-segmented-button-min-height: 23px;
+  --theme-lab-segmented-button-height: 23px;
+  --theme-lab-segmented-button-padding: 2px 10px;
+  --theme-lab-segmented-label-display: none;
+  --theme-lab-view-icon-display: block;
+  --theme-lab-tabs-gap: 3px;
+  --theme-lab-tabs-padding: 0 12px 7px;
+  --theme-lab-tabs-border-bottom: 0;
+  --theme-lab-tab-button-min-height: 24px;
+  --theme-lab-tab-button-height: 24px;
+  --theme-lab-tab-button-padding: 3px 13px 2px;
+  --theme-lab-tab-selected-min-height: 25px;
+  --theme-lab-tab-selected-height: 25px;
+  --theme-lab-tab-button-bg: var(--tab-bg);
+  --theme-lab-tab-selected-bg: var(--tab-active-bg);
+  --theme-lab-tab-selected-fg: #06131d;
+  --theme-lab-tab-panel-min-height: 31px;
+  --theme-lab-tab-panel-margin-top: -1px;
+  --theme-lab-tab-panel-padding: 6px 9px;
+  --theme-lab-tab-panel-border: 1px solid #6b8191;
+  --theme-lab-tab-panel-radius: 0 0 3px 3px;
+  --theme-lab-tab-panel-bg: var(--window-bg);
+  --theme-lab-tab-panel-shadow: inset 0 1px 0 #ffffff;
+  --theme-lab-navigation-generic-label-display: none;
+  --theme-lab-column-browser-label-display: inline;
+  --theme-lab-generic-browser-display: none;
+  --theme-lab-aqua-browser-display: grid;
+  --theme-lab-split-min-height: 150px;
+  --theme-lab-split-columns: repeat(3, minmax(0, 1fr));
+  --theme-lab-split-rows: minmax(0, 1fr) 15px;
+  --theme-lab-browser-columns: repeat(3, 190px);
+  --theme-lab-browser-column-scrollbar-width: 15px;
+  --theme-lab-browser-column-scrollbar-display: block;
+  --theme-lab-browser-column-border-right: 1px solid #a8a8a8;
+  --theme-lab-browser-column-bg: #ffffff;
+  --theme-lab-browser-column-scrollbar-border: 1px solid #8e8e8e;
+  --theme-lab-browser-column-scrollbar-bg: linear-gradient(90deg, #e1e1e1, #ffffff 47%, #d2d2d2 76%, #f3f3f3);
+  --theme-lab-browser-column-scrollbar-shadow: inset 0 0 2px rgba(0, 0, 0, 0.28);
+  --theme-lab-browser-column-thumb-top: 3px;
+  --theme-lab-browser-column-thumb-height: 42px;
+  --theme-lab-browser-column-thumb-border: 1px solid #00478f;
+  --theme-lab-browser-column-thumb-radius: 7px;
+  --theme-lab-browser-column-thumb-bg: linear-gradient(90deg, #0c61c3 0%, #64bfff 18%, #c2f2ff 43%, #45a9ec 58%, #8bdcff 80%, #0756b6 100%);
+  --theme-lab-browser-column-thumb-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.5), inset -1px 0 0 rgba(0, 35, 105, 0.36);
+  --theme-lab-browser-column-scrollbar-button-border: 1px solid #8e8e8e;
+  --theme-lab-browser-column-scrollbar-button-bg: var(--btn-bg);
+  --theme-lab-browser-column-scrollbar-arrow-color: #202020;
+  --theme-lab-split-border: 1px solid #8e8e8e;
+  --theme-lab-split-radius: 3px;
+  --theme-lab-split-bg: #ffffff;
+  --theme-lab-split-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.24), 0 1px 0 #ffffff;
+  --theme-lab-sidebar-padding: 0;
+  --theme-lab-sidebar-border-right: 1px solid #a8a8a8;
+  --theme-lab-sidebar-bg: #ffffff;
+  --theme-lab-list-row-min-height: 18px;
+  --theme-lab-list-row-gap: 4px;
+  --theme-lab-list-row-padding: 1px 6px;
+  --theme-lab-list-row-radius: 0;
+  --theme-lab-list-row-font-size: 12px;
+  --theme-lab-list-row-line-height: 16px;
+  --theme-lab-sidebar-icon-size: 16px;
+  --theme-lab-sidebar-icon-bg: transparent;
+  --theme-lab-sidebar-system-svg-opacity: 0;
+  --theme-lab-sidebar-startup-disk-image: url("./assets/themes/aqua/browser-volume-16.svg");
+  --theme-lab-sidebar-applications-image: url("./assets/themes/aqua/browser-folder-16.svg");
+  --theme-lab-sidebar-trash-image: url("./assets/themes/aqua/trash.svg");
+  --theme-lab-sidebar-selected-bg: #bfd8fa;
+  --theme-lab-sidebar-selected-fg: #111111;
+  --theme-lab-list-frame-border: 0;
+  --theme-lab-list-row-border-bottom: 0;
+  --theme-lab-list-selected-bg: #bfd8fa;
+  --theme-lab-list-selected-fg: #111111;
+  --theme-lab-list-icon-display: block;
+  --theme-lab-list-icon-size: 16px;
+  --theme-lab-list-icon-image: url("./assets/themes/aqua/browser-folder-16.svg");
+  --theme-lab-list-document-image: url("./assets/themes/aqua/browser-document-16.svg");
+  --theme-lab-browser-disclosure-display: block;
+  --theme-lab-browser-disclosure-color: #747474;
+  --theme-lab-browser-horizontal-scrollbar-display: block;
+  --theme-lab-browser-scrollbar-border: 1px solid #8e8e8e;
+  --theme-lab-browser-scrollbar-bg: linear-gradient(#d1d1d1, #ffffff 48%, #c3c3c3);
+  --theme-lab-browser-scrollbar-shadow: inset 0 0 2px rgba(0, 0, 0, 0.28);
+  --theme-lab-browser-scrollbar-thumb-border: 1px solid #00478f;
+  --theme-lab-browser-scrollbar-thumb-bg: linear-gradient(#a4e6ff, #2b96dd 50%, #79d2ff);
+  --theme-lab-browser-scrollbar-thumb-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  --theme-lab-list-scrollbar-display: grid;
+  --theme-lab-list-scrollbar-width: 15px;
+  --theme-lab-layer-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  --theme-lab-layer-gap: 9px;
+  --theme-lab-layer-border: 1px solid #6f6f6f;
+  --theme-lab-layer-radius: 5px;
+  --theme-lab-layer-bg: rgba(250, 250, 250, 0.94);
+  --theme-lab-layer-shadow: 0 5px 11px rgba(0, 0, 0, 0.34);
+  --theme-lab-layer-padding: 10px 12px;
+  --theme-lab-menu-grid-row: 1 / span 2;
+  --theme-lab-menu-padding: 3px 0;
+  --theme-lab-menu-item-min-height: 21px;
+  --theme-lab-menu-item-padding: 2px 9px 2px 21px;
+  --theme-lab-menu-item-bg: #f9f9f9;
+  --theme-lab-menu-item-fg: #111111;
+  --theme-lab-menu-item-selected-bg: linear-gradient(to bottom,
+    #dfe1e5 0 1px,
+    #346cbe 1px 3px,
+    #3871c0 3px 4px,
+    #346cbe 4px 5px,
+    #2c61b9 5px 6px,
+    #346cbe 6px 7px,
+    #3973c1 7px 8px,
+    #346cbe 8px 9px,
+    #2c61b9 9px 10px,
+    #346cbe 10px 11px,
+    #3973c1 11px 12px,
+    #346cbe 12px 13px,
+    #2c61b9 13px 14px,
+    #346cbe 14px 15px,
+    #3973c1 15px 16px,
+    #346cbe 16px 17px,
+    #2c61b9 17px 18px,
+    #346cbe 18px 20px);
+  --theme-lab-menu-item-selected-fg: #ffffff;
+  --theme-lab-menu-item-disabled-bg: #f9f9f9;
+  --theme-lab-menu-item-disabled-fg: #a4a4a4;
+  --theme-lab-menu-item-disabled-opacity: 1;
+  --theme-lab-menu-separator-margin: 3px 0;
+  --theme-lab-menu-separator-border-bottom: 1px solid #a7a7a7;
+  --theme-lab-popover-padding: 9px 11px;
+  --theme-lab-popover-bg: #fffcca;
+  --theme-lab-popover-copy-fg: #5f5f5f;
+  --theme-lab-popover-generic-label-display: none;
+  --theme-lab-help-tag-label-display: block;
+  --theme-lab-dialog-columns: 64px minmax(0, 1fr);
+  --theme-lab-dialog-gap: 7px 10px;
+  --theme-lab-dialog-padding: 12px 21px 17px;
+  --theme-lab-dialog-bg: var(--window-bg);
+  --theme-lab-dialog-actions-column: 2;
+  --theme-lab-dialog-action-gap: 6px;
+  --theme-lab-dialog-cancel-display: inline-flex;
+  --theme-lab-alert-icon-display: block;
+  --theme-lab-alert-icon-size: 64px;
+  /* Authored from the 10.2 warning-sheet silhouette; no Quaqua/Apple artwork. */
+  --theme-lab-alert-icon-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x2='0' y2='1'%3E%3Cstop stop-color='%23fff78a'/%3E%3Cstop offset='.45' stop-color='%23ffd91b'/%3E%3Cstop offset='1' stop-color='%23f0a900'/%3E%3C/linearGradient%3E%3Cfilter id='s' x='-20%25' y='-20%25' width='140%25' height='150%25'%3E%3CfeDropShadow dx='0' dy='2' stdDeviation='1.4' flood-opacity='.42'/%3E%3C/filter%3E%3C/defs%3E%3Cpath d='M31.9 5.5c1.9 0 3.5 1 4.5 2.8l24 42c1 1.8 1 3.8 0 5.5-1 1.7-2.7 2.7-4.8 2.7H8.2c-2.1 0-3.8-1-4.8-2.7-1-1.7-1-3.7 0-5.5l24-42c1-1.8 2.6-2.8 4.5-2.8z' fill='url(%23g)' stroke='%23a66a00' stroke-width='2' filter='url(%23s)'/%3E%3Cpath d='M31.9 9.3 7.1 53.9c-.2.4-.1.7.1.9.2.3.5.4 1 .4h47.4c.5 0 .8-.1 1-.4.2-.2.3-.5.1-.9L31.9 9.3z' fill='none' stroke='%23fff' stroke-opacity='.7'/%3E%3Cpath d='M28.4 21.2h7l-1.2 22h-4.6l-1.2-22z' fill='%23fff' stroke='%23b77b00' stroke-width='.7'/%3E%3Cellipse cx='31.9' cy='49.3' rx='3.3' ry='3.1' fill='%23fff' stroke='%23b77b00' stroke-width='.7'/%3E%3C/svg%3E");
+  --theme-lab-sheet-specimen-display: block;
+  --theme-lab-sheet-specimen-position: relative;
+  --theme-lab-sheet-specimen-grid-column: 1 / -1;
+  --theme-lab-sheet-specimen-min-height: 116px;
+  --theme-lab-sheet-owner-window-border: 1px solid #858585;
+  --theme-lab-sheet-owner-window-radius: 7px 7px 2px 2px;
+  --theme-lab-sheet-owner-window-bg: #ffffff;
+  --theme-lab-sheet-owner-window-shadow: 0 3px 7px rgba(0, 0, 0, 0.3);
+  --theme-lab-sheet-owner-window-overflow: hidden;
+  --theme-lab-sheet-owner-display: flex;
+  --theme-lab-sheet-owner-titlebar-height: 22px;
+  --theme-lab-sheet-owner-titlebar-border: 1px solid #7f7f7f;
+  --theme-lab-sheet-owner-titlebar-bg: var(--system-titlebar-active-bg);
+  --theme-lab-sheet-owner-titlebar-shadow: inset 0 1px 0 #ffffff;
+  --theme-lab-sheet-owner-body-height: 92px;
+  --theme-lab-sheet-owner-body-bg: #ffffff;
+  --theme-lab-era-titlebar-control-top: 3px;
+  --theme-lab-era-titlebar-control-size: 15px;
+  --theme-lab-era-titlebar-close-left: 7px;
+  --theme-lab-era-titlebar-minimize-left: 28px;
+  --theme-lab-era-titlebar-zoom-left: 49px;
+  --theme-lab-era-titlebar-minimize-bg: radial-gradient(circle at 43% 35%, #fff3bd 0 1px, #ffdc72 2px, #e6a839 5px, #9b6822 6px, #5c3c16 7px, transparent 7.5px);
+  --theme-lab-sheet-display: grid;
+  --theme-lab-sheet-position: absolute;
+  --theme-lab-sheet-top: 22px;
+  --theme-lab-sheet-right: 18px;
+  --theme-lab-sheet-left: 18px;
+  --theme-lab-sheet-margin-top: 0;
+  --theme-lab-sheet-columns: 32px minmax(0, 1fr);
+  --theme-lab-sheet-gap: 5px 9px;
+  --theme-lab-sheet-padding: 9px 14px 11px;
+  --theme-lab-sheet-border: 1px solid #858585;
+  --theme-lab-sheet-border-top-width: 0;
+  --theme-lab-sheet-radius: 0 0 6px 6px;
+  --theme-lab-sheet-bg:
+    repeating-linear-gradient(to bottom, #e6e6e6 0 1px, #eeeeee 1px 2px, #ffffff 2px 3px, #eeeeee 3px 4px);
+  --theme-lab-sheet-shadow: 0 5px 9px rgba(0, 0, 0, 0.38);
+  --theme-lab-sheet-owner-content: none;
+  --theme-lab-sheet-icon-display: block;
+  --theme-lab-sheet-icon-size: 32px;
+  --theme-lab-sheet-icon-image: url("./assets/themes/aqua/sheet-warning-64.svg");
+  --theme-lab-sheet-copy-gap: 3px;
+  --theme-lab-sheet-actions-display: flex;
+  --theme-lab-sheet-generic-copy-display: none;
+  --theme-lab-sheet-generic-action-display: none;
+  --theme-lab-sheet-aqua-copy-display: block;
+  --theme-lab-sheet-aqua-action-display: inline-flex;
+  --theme-lab-sheet-actions-column: 2;
+  --theme-lab-sheet-actions-margin-top: 2px;
+  --theme-lab-sheet-action-gap: 12px;
+  --theme-lab-sheet-button-min-width: 69px;
+  --theme-lab-progress-height: 15px;
+  --theme-lab-progress-padding: 1px;
+  --theme-lab-progress-border: 1px solid #777777;
+  --theme-lab-progress-radius: 999px;
+  --theme-lab-progress-bg: linear-gradient(#d1d1d1, #ffffff 48%, #c5c5c5);
+  --theme-lab-progress-value-radius: 999px;
+  --theme-lab-progress-value-bg: var(--progress-fill-bg);
+  --theme-lab-progress-value-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.88);
+  --theme-lab-scroll-height: 68px;
+  --theme-lab-scroll-padding: 4px 7px;
+  --theme-lab-scroll-frame-border: 1px solid #8e8e8e;
+  --theme-lab-scroll-frame-radius: 2px;
+  --theme-lab-scroll-frame-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+  --theme-lab-scroll-bg: #ffffff;
+  --theme-lab-scroll-item-margin: 0;
+  --theme-lab-scroll-item-line-height: 18px;
+  --theme-lab-scrollbar-border-left: 0;
+  --theme-lab-scrollbar-bg: var(--window-frame-track-bg);
+  --theme-lab-scrollbar-track-bg: var(--window-frame-track-bg);
+  --theme-lab-scrollbar-track-shadow: inset 1px 0 1px rgba(0, 0, 0, 0.15), inset -1px 0 1px rgba(255, 255, 255, 0.34);
+  --theme-lab-scrollbar-thumb-top: 8px;
+  --theme-lab-scrollbar-thumb-right: 1px;
+  --theme-lab-scrollbar-thumb-left: 1px;
+  --theme-lab-scrollbar-thumb-min-height: 24px;
+  --theme-lab-scrollbar-thumb-height: 72%;
+  --theme-lab-scrollbar-thumb-border: 0;
+  --theme-lab-scrollbar-thumb-radius: 7px;
+  --theme-lab-scrollbar-thumb-bg: var(--window-frame-thumb-bg);
+  --theme-lab-scrollbar-thumb-shadow: none;
+  --theme-lab-scrollbar-thumb-active-bg: linear-gradient(90deg,
+    #0023a0 0 7%, #5b8bd0 7% 14%, #75a7d9 14% 21%,
+    #69a0d9 21% 29%, #609cd9 29% 36%, #2474cd 36% 43%,
+    #3783da 43% 50%, #4d96ec 50% 57%, #61a9f5 57% 64%,
+    #6fb5fa 64% 71%, #7bc3ff 71% 79%, #70b6f9 79% 100%);
+  --theme-lab-scrollbar-button-border: 0;
+  --theme-lab-scrollbar-button-bg: var(--window-frame-track-bg);
+  --theme-lab-scrollbar-button-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62);
+  --theme-lab-scrollbar-button-active-bg: var(--btn-active-bg);
+  --theme-lab-scrollbar-button-active-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --theme-lab-scrollbar-arrow-width: 0;
+  --theme-lab-scrollbar-arrow-height: 0;
+  --theme-lab-scrollbar-arrow-side-border: 3px solid transparent;
+  --theme-lab-scrollbar-decrement-border: 4px solid #202020;
+  --theme-lab-scrollbar-increment-border: 4px solid #202020;
+  --theme-lab-mini-position: relative;
+  --theme-lab-mini-min-height: 50px;
+  --theme-lab-mini-padding: 22px 0 0;
+  --theme-lab-mini-border: 1px solid #858585;
+  --theme-lab-mini-radius: 7px 7px 2px 2px;
+  --theme-lab-mini-shadow: 0 3px 7px rgba(0, 0, 0, 0.3);
+  --theme-lab-mini-body-content: "";
+  --theme-lab-mini-body-inset: 22px 0 0;
+  --theme-lab-mini-body-border: 0;
+  --theme-lab-mini-body-bg: #ffffff;
+  --theme-lab-mini-control-display: block;
+  --theme-lab-mini-control-top: 3px;
+  --theme-lab-mini-control-edge: 5px;
+  --theme-lab-mini-control-size: 15px;
+  --theme-lab-mini-control-border: 0;
+  --theme-lab-mini-control-radius: 50%;
+  --theme-lab-mini-control-shadow: none;
+  --theme-lab-mini-inactive-control-display: block;
+  --theme-lab-mini-title-position: absolute;
+  --theme-lab-mini-title-left: 50%;
+  --theme-lab-mini-title-top: 3px;
+  --theme-lab-mini-title-width: max-content;
+  --theme-lab-mini-title-max-width: calc(100% - 58px);
+  --theme-lab-mini-title-padding: 0 5px;
+  --theme-lab-mini-title-bg: transparent;
+  --theme-lab-mini-title-weight: 600;
+  --theme-lab-mini-title-line-height: 15px;
+  --theme-lab-mini-title-transform: translateX(-50%);
+  --theme-lab-mini-inactive-border: 1px solid #9b9b9b;
+  --theme-lab-mini-inactive-shadow: 0 2px 5px rgba(0, 0, 0, 0.18);
+  --theme-lab-mini-inactive-opacity: 1;
+  --theme-lab-mini-inactive-title-bg: transparent;
+  --theme-lab-mini-inactive-title-fg: #6d6d6d;
+  --theme-lab-finder-window-display: block;
+  --theme-lab-finder-window-border: 1px solid #858585;
+  --theme-lab-finder-window-radius: 7px 7px 2px 2px;
+  --theme-lab-finder-window-bg: #ffffff;
+  --theme-lab-finder-window-shadow: 0 4px 9px rgba(0, 0, 0, 0.34);
+  --theme-lab-finder-window-overflow: hidden;
+  --theme-lab-finder-window-titlebar-display: flex;
+  --theme-lab-finder-window-titlebar-height: 22px;
+  --theme-lab-finder-window-titlebar-border: 1px solid #7f7f7f;
+  --theme-lab-finder-window-titlebar-bg: var(--system-titlebar-active-bg);
+  --theme-lab-finder-window-titlebar-shadow: inset 0 1px 0 #ffffff;
+  --theme-lab-finder-status-display: flex;
+  --theme-lab-finder-status-height: 20px;
+  --theme-lab-finder-status-border-top: 1px solid #ffffff;
+  --theme-lab-finder-status-border-bottom: 1px solid #9b9b9b;
+  --theme-lab-finder-status-bg: var(--toolbar-bg);
+  --theme-lab-finder-status-shadow: inset 0 1px 0 #ffffff;
+  --theme-lab-toolbar-min-height: 56px;
+  --theme-lab-toolbar-gap: 8px;
+  --theme-lab-toolbar-padding: 4px 8px;
+  --theme-lab-toolbar-border: 0;
+  --theme-lab-toolbar-radius: 0;
+  --theme-lab-toolbar-bg: var(--toolbar-bg);
+  --theme-lab-toolbar-shadow: inset 0 1px 0 #ffffff;
+  --theme-lab-toolbar-button-display: none;
+  --theme-lab-toolbar-location-display: none;
+  --theme-lab-toolbar-status-display: none;
+  --theme-lab-separator-display: none;
+  --theme-lab-toolbar-icon-strip-display: flex;
+  --theme-lab-toolbar-icon-gap: 3px;
+  --theme-lab-toolbar-search-display: block;
+  --theme-lab-toolbar-search-width: 120px;
+  --theme-lab-toolbar-navigation-image-size: 24px;
+  --theme-lab-toolbar-back-image: url("./assets/themes/aqua/toolbar-back.svg");
+  --theme-lab-toolbar-forward-image: url("./assets/themes/aqua/toolbar-forward.svg");
+  --theme-lab-toolbar-computer-image: url("./assets/themes/aqua/toolbar-computer.svg");
+  --theme-lab-toolbar-home-image: url("./assets/themes/aqua/toolbar-home.svg");
+  --theme-lab-toolbar-favorites-image: url("./assets/themes/aqua/toolbar-favorites.svg");
+  --theme-lab-toolbar-applications-image: url("./assets/themes/aqua/toolbar-applications.svg");
+  --theme-lab-toolbar-view-icon-image: url("./assets/themes/aqua/view-icon-12.svg");
+  --theme-lab-toolbar-view-list-image: url("./assets/themes/aqua/view-list-12.svg");
+  --theme-lab-toolbar-view-columns-image: url("./assets/themes/aqua/view-columns-12.svg");
+  --theme-lab-toolbar-era-separator-display: block;
+  --theme-lab-toolbar-era-separator-bg: #969696;
+  --theme-lab-toolbar-era-separator-shadow: 1px 0 #ffffff;
+  --theme-lab-finder-min-height: 146px;
+  --theme-lab-finder-columns: repeat(6, minmax(58px, 1fr));
+  --theme-lab-finder-gap: 4px;
+  --theme-lab-finder-padding: 10px 7px;
+  --theme-lab-finder-border: 0;
+  --theme-lab-finder-border-top: 0;
+  --theme-lab-finder-bg: #ffffff;
+  --theme-lab-finder-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.18);
+  --theme-lab-finder-item-width: auto;
+  --theme-lab-finder-item-icon-size: 48px;
+  --theme-lab-finder-item-font-family: var(--theme-ui-font);
+  --theme-lab-finder-item-font-size: 13px;
+  --theme-lab-finder-icon-selected-bg: #b4d1f7;
+  --theme-lab-finder-icon-selected-fg: #111111;
+  --theme-lab-finder-label-bg: #ffffff;
+  --theme-lab-finder-label-margin-top: 4px;
+  --theme-lab-finder-label-padding: 1px 3px;
+  --theme-lab-finder-label-font-weight: 400;
+  --theme-lab-finder-system-svg-opacity: 0;
+  --theme-lab-finder-icon-bg: transparent;
+  --theme-lab-finder-startup-disk-image: url("./assets/themes/aqua/startup-disk.svg");
+  --theme-lab-finder-folder-image: url("./assets/themes/aqua/folder.svg");
+  --theme-lab-finder-app-image: url("./assets/themes/aqua/finder-app.svg");
+  --theme-lab-finder-document-image: url("./assets/themes/aqua/document.svg");
+  --theme-lab-finder-era-extra-display: flex;
+  --theme-lab-finder-rows-display: none;
+  --theme-lab-finder-rows-border: 1px solid #8e8e8e;
+  --theme-lab-finder-rows-bg: #ffffff;
+  --theme-lab-finder-rows-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.16);
+  --theme-lab-finder-row-min-height: 25px;
+  --theme-lab-finder-row-padding: 3px 6px;
+  --theme-lab-finder-row-border-bottom: 1px solid #d1d1d1;
+}
+
+html[data-theme="snow-leopard"],
+body[data-theme="snow-leopard"] {
+  /* Evidence boundary: Quaqua 9.1's Quaqua16SnowLeopardLookAndFeel.java (the
+     Snow LAF introduced in Quaqua 6.0) owns native geometry, state variants,
+     silver chrome and mature Aqua controls. Chromium f108f78's
+     platform-mac-snowleopard rules supply Web-toolbar and compact-scrollbar
+     evidence only. Real 10.6 captures win conflicts. No source selectors or
+     artwork are imported here. */
+  --theme-ui-font: "Lucida Grande", "Lucida Sans Unicode", "PingFang SC", "Hiragino Sans GB", sans-serif;
+  --theme-title-font: var(--theme-ui-font);
+  --system-readable-min: 13px;
+  --system-title-size: 13px;
+  --system-control-size: 13px;
+  --system-text-size: 13px;
+  --system-caption-size: 11px;
+  --system-titlebar-height: 22px;
+  --system-titlebar-control-slot: 52px;
+  --system-titlebar-control-size: 14px;
+  --system-titlebar-title-height: 16px;
+  --system-titlebar-font-size: 13px;
+  --system-titlebar-margin-y: 0;
+  --system-titlebar-padding-y: 0;
+  --system-titlebar-padding-x: 5px;
+  --system-titlebar-inactive-control-filter: grayscale(1);
+  --system-titlebar-inactive-title-color: #777777;
+  --system-control-min-height: 22px;
+  --system-button-min-height: 24px;
+  --system-button-small-height: 20px;
+  --system-button-mini-height: 18px;
+  --system-button-small-font-size: 11px;
+  --system-button-mini-font-size: 9px;
+  --system-button-small-padding-x: 8px;
+  --system-button-mini-padding-x: 6px;
+  --system-button-padding-y: 2px;
+  --system-button-padding-x: 12px;
+  --titlebar-content-padding-inline: 7px;
+  --titlebar-title-text-shadow: 0 1px 0 rgba(255, 255, 255, 0.72);
+  --traffic-light-size: 14px;
+  --traffic-light-gap: 18px;
+  --traffic-light-close-bg: radial-gradient(circle at 43% 35%, #ffd7d3 0 1px, #ed7a72 2px, #d6534b 5px, #9f3934 6px, transparent 6.5px);
+  --traffic-light-resize-bg: radial-gradient(circle at 43% 35%, #e6f7dc 0 1px, #91cd72 2px, #59ad43 5px, #397e30 6px, transparent 6.5px);
+  --select-control-min-height: 22px;
+  --select-control-padding: 3px 25px 3px 7px;
+  --select-control-border: 1px solid #a3a3a3;
+  --select-control-radius: 5px;
+  --select-control-bg-color: #f7f7f7;
+  --select-control-bg-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='13' viewBox='0 0 8 13'%3E%3Cpath d='m1 5 3-3 3 3zM1 8l3 3 3-3z' fill='%23064a79'/%3E%3C/svg%3E"),
+    linear-gradient(#7ca6bf, #7ca6bf),
+    linear-gradient(#dff5ff 0%, #87cff5 43%, #3598d6 51%, #70bfe9 100%),
+    linear-gradient(#ffffff 0%, #fafafa 45%, #d1d1d1 52%, #f5f5f5 100%);
+  --select-control-bg-position: right 5px center, right 19px top, right top, left top;
+  --select-control-bg-size: 8px 13px, 1px 100%, 20px 100%, 100% 100%;
+  --select-control-shadow: var(--btn-shadow);
+  --select-control-font-weight: 400;
+  --system-select-control-min-height: 22px;
+  --system-select-control-padding: 3px 25px 3px 7px;
+  --system-select-control-border: var(--field-border);
+  --system-select-control-radius: var(--select-radius);
+  --system-select-control-bg:
+    linear-gradient(#7ca6bf, #7ca6bf) right 19px top / 1px 100% no-repeat,
+    linear-gradient(#dff5ff 0%, #87cff5 43%, #3598d6 51%, #70bfe9 100%) right top / 20px 100% no-repeat,
+    linear-gradient(#ffffff 0%, #fafafa 45%, #d1d1d1 52%, #f5f5f5 100%);
+  --system-select-control-shadow: var(--btn-shadow);
+  --system-select-control-font-weight: 400;
+  --field-control-padding: 3px 6px;
+  --theme-lab-toolbar-min-height: 34px;
+  --theme-lab-toolbar-padding: 4px 7px;
+  --theme-lab-toolbar-radius: 0;
+  --theme-lab-nav-row-min-height: 24px;
+  --theme-lab-nav-row-padding-block: 2px;
+  --theme-lab-finder-row-min-height: 27px;
+  --search-field-min-height: 20px;
+  --search-field-padding: 2px 9px;
+  --search-field-radius: 999px;
+  --progress-height: 13px;
+  --progress-padding: 1px;
+  --progress-border-color: #9d9d9d;
+  --progress-radius: 6px;
+  --progress-bg: linear-gradient(#d0d0d0, #f8f8f8 48%, #c9c9c9);
+  --progress-fill-radius: 5px;
+  --progress-fill-bg: linear-gradient(#9fd4fb, #3c91d3 52%, #72b7e9);
+  --progress-fill-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.66);
+  --ink: #1f1f1f;
+  --paper: #ededed;
+  --panel: #d6d6d6;
+  --quiet-panel: #f7f7f7;
+  --shade: #c4c4c4;
+  --shade-dark: #707070;
+  --rule: #b5b5b5;
+  --pane-bg: #ededed;
+  --details-bar-bg: linear-gradient(#f3f3f3, #ebebeb);
+  --details-bar-border: #cacaca;
+  --desktop: #7c98ad;
+  --desktop-surface:
+    radial-gradient(circle at 25% 18%, rgba(255, 255, 255, 0.46), transparent 28%),
+    linear-gradient(155deg, #536c81, #99b2c4 52%, #617e93);
+  --window-bg: #ededed;
+  --window-border: 1px solid #8b8b8b;
+  --window-radius: 5px;
+  --window-shadow: 0 10px 22px rgba(0, 0, 0, 0.34), 0 2px 4px rgba(0, 0, 0, 0.22);
+  --active-window-shadow: var(--window-shadow);
+  --inactive-window-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+  /* Quaqua's 2x22 Snow sprite is a near-linear #e2 -> #a8 active ramp and
+     #f4 -> #d9 inactive ramp; the source dividers are #515 and #999. */
+  --system-titlebar-active-bg: linear-gradient(#e2e2e2 0%, #c1c1c1 40%, #a8a8a8 100%);
+  --system-titlebar-inactive-bg: linear-gradient(#f4f4f4 0%, #e6e6e6 40%, #d9d9d9 100%);
+  --system-titlebar-background-origin: padding-box;
+  --system-titlebar-background-clip: border-box;
+  --system-titlebar-inactive-control-visibility: visible;
+  --system-titlebar-inactive-control-opacity: 0.48;
+  --titlebar-title-bg: transparent;
+  --titlebar-title-fg: #202020;
+  --titlebar-border: 1px solid #515151;
+  --titlebar-border-inactive: 1px solid #999999;
+  --titlebar-shadow: inset 0 1px 0 #ffffff;
+  --surface-primary: #ffffff;
+  --surface-secondary: #e2e2e2;
+  --surface-inset: #ffffff;
+  --toolbar-bg: linear-gradient(#cbcbcb, #a7a7a7);
+  --toolbar-bg-inactive: linear-gradient(#eaeaea, #d8d8d8);
+  --toolbar-border: 1px solid #515151;
+  --toolbar-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.66);
+  --sidebar-bg: #dde4eb;
+  --sidebar-bg-inactive: #ededed;
+  --selection-bg: linear-gradient(#5796d0, #2b73b9);
+  --selection-fg: #ffffff;
+  --sidebar-selection-bg:
+    linear-gradient(#5896d0, #5896d0) top / 100% 1px no-repeat,
+    linear-gradient(#6ea6d6, #216cb7);
+  --sidebar-selection-bg-unfocused:
+    linear-gradient(#a2b1cb, #a2b1cb) top / 100% 1px no-repeat,
+    linear-gradient(#b1bfd8, #8296b8);
+  --sidebar-selection-bg-inactive:
+    linear-gradient(#a8a8a8, #a8a8a8) top / 100% 1px no-repeat,
+    linear-gradient(#c1c1c1, #9c9c9c);
+  --sidebar-selection-fg: #ffffff;
+  --separator: #c6c6c6;
+  --control-bg: linear-gradient(#fcfcfc, #ededed 52%, #dedede);
+  --control-shadow: inset 0 1px 0 #ffffff, 0 1px 1px rgba(0, 0, 0, 0.18);
+  --control-active-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.34);
+  --control-focus-outline: 3px solid rgba(83, 154, 219, 0.58);
+  --control-focus-offset: 1px;
+  --control-disabled-bg: linear-gradient(#f7f7f7, #ececec);
+  --control-disabled-field-bg: #f2f2f2;
+  --system-border: 1px solid #a5a5a5;
+  --system-inset: inset 0 1px 2px rgba(0, 0, 0, 0.2), inset 0 -1px 0 #ffffff;
+  --control-radius: 4px;
+  --btn-border-color: #a5a5a5;
+  --btn-radius: 999px;
+  --btn-bg: linear-gradient(#ffffff 0%, #f8f8f8 43%, #d3d3d3 52%, #f4f4f4 100%);
+  --btn-shadow: inset 0 1px 0 #ffffff, 0 1px 2px rgba(0, 0, 0, 0.24);
+  --btn-hover-bg: linear-gradient(#ffffff 0%, #f5fbff 43%, #c5dfee 52%, #f2f9fd 100%);
+  --btn-hover-fg: #111111;
+  --btn-hover-shadow: inset 0 1px 0 #ffffff, 0 1px 2px rgba(28, 92, 145, 0.22);
+  --btn-active-bg: linear-gradient(#d8d8d8 0%, #b7b7b7 48%, #9c9c9c 54%, #d2d2d2 100%);
+  --btn-active-fg: #111111;
+  --btn-active-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.26);
+  --btn-default-bg: linear-gradient(#e7f8ff 0%, #a8dfff 43%, #4ba9e3 52%, #9bd7f6 100%);
+  --btn-default-fg: #111111;
+  --btn-default-text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+  --btn-default-shadow: 0 0 0 1px #ffffff, 0 0 0 2px #4a91c3, inset 0 1px 0 #ffffff, 0 1px 2px rgba(0, 0, 0, 0.22);
+  --btn-default-active-bg: linear-gradient(#9dd8f8, #3c94cf 52%, #8acbea);
+  --btn-default-active-fg: #111111;
+  --field-bg: #ffffff;
+  --field-focus-bg: #ffffff;
+  --field-border: 1px solid #a3a3a3;
+  --field-radius: 3px;
+  --select-radius: 5px;
+  --field-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.18), 0 1px 0 #ffffff;
+  --field-focus-border: 1px solid #4f91cc;
+  --field-focus-ring: 0 0 0 3px rgba(94, 158, 219, 0.42);
+  --choice-bg: linear-gradient(#ffffff, #dedede);
+  --choice-border: 1px solid #949494;
+  --choice-radius: 3px;
+  --choice-shadow: inset 0 1px 0 #ffffff;
+  --choice-checked-bg: #dbeeff;
+  --radio-bg: linear-gradient(#ffffff, #dedede);
+  --radio-border: 1px solid #949494;
+  --radio-shadow: inset 0 1px 0 #ffffff;
+  --radio-image: none;
+  --radio-focus-image: none;
+  --radio-checked-image: radial-gradient(circle, #397cb6 0 3px, #b8d9ef 3px 4px, transparent 4.5px);
+  --radio-checked-focus-image: var(--radio-checked-image);
+  --menu-bar-bg: linear-gradient(#f4f4f4, #d8d8d8);
+  --menu-bar-border: 1px solid #9f9f9f;
+  --menu-bar-shadow: inset 0 1px 0 #ffffff;
+  --menu-panel-bg: rgba(250, 250, 250, 0.98);
+  --menu-panel-border: 1px solid #9a9a9a;
+  --menu-panel-radius: 4px;
+  --menu-panel-shadow: 0 4px 12px rgba(0, 0, 0, 0.32);
+  --menu-panel-backdrop-filter: none;
+  --menu-button-active-bg: var(--selection-bg);
+  --menu-button-active-fg: var(--selection-fg);
+  --menu-item-active-bg: var(--selection-bg);
+  --menu-item-active-fg: var(--selection-fg);
+  --window-frame-lane: 15px;
+  --window-frame-track-bg: linear-gradient(90deg, #d2d2d2, #ffffff 48%, #c7c7c7);
+  --window-frame-track-border: 1px solid #9b9b9b;
+  --window-frame-thumb-bg: linear-gradient(90deg, #8ed9ff, #168ddd 48%, #6cc9ff);
+  --window-frame-thumb-border: 1px solid #657f92;
+  --window-frame-thumb-radius: 7px;
+  --window-frame-arrow-bg: linear-gradient(#ffffff, #d4d4d4 52%, #f5f5f5);
+  --scrollbar-track: var(--window-frame-track-bg);
+  --scrollbar-thumb: var(--window-frame-thumb-bg);
+  --scrollbar-button: var(--window-frame-arrow-bg);
+  --scrollbar-width: 15px;
+  --scrollbar-track-border: 1px solid #9b9b9b;
+  --scrollbar-track-shadow: inset 0 0 2px rgba(0, 0, 0, 0.25);
+  --scrollbar-thumb-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.76), inset -1px 0 0 rgba(0, 60, 108, 0.22);
+  --scrollbar-button-border: 1px solid #9b9b9b;
+  --scrollbar-button-shadow: inset 0 1px 0 #ffffff;
+  /* Chromium Inspector's app-specific compact Web scrollbar is retained as a
+     separate semantic variant; it is not the 10.6 system scrollbar. */
+  --scrollbar-compact-width: 11px;
+  --scrollbar-compact-track: linear-gradient(90deg, #808080, #a4a4a4 25%, #a4a4a4);
+  --scrollbar-compact-thumb: linear-gradient(90deg, #c0c0c0, #d6d6d6 40%, #c0c0c0);
+  --scrollbar-compact-radius: 5px;
+  --tab-radius: 5px 5px 0 0;
+  --tab-overlap: 0;
+  --tab-bg: linear-gradient(#fafafa, #dfdfdf);
+  --tab-hover-bg: linear-gradient(#ffffff, #e8f3fa);
+  --tab-active-bg: linear-gradient(#e3f4ff, #83bde3 52%, #c6e8fa);
+  --tab-active-fg: #111111;
+  --system-check-size: 14px;
+  --system-radio-size: 14px;
+  --theme-lab-button-min-width: 72px;
+  --theme-lab-group-bg: #ededed;
+  --theme-lab-group-border: 1px solid #b7b7b7;
+  --theme-lab-group-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+html[data-theme="yosemite"],
+body[data-theme="yosemite"] {
+  /* Evidence boundary: vinceliuice/Yosemite-gtk-theme 03b6f721 provides the
+     surface hierarchy, 36/26/22px control relationships, #0e6bff selection,
+     6/5px radii and active/backdrop states. Period pure-CSS window studies
+     confirm the shell geometry; real 10.10 Finder and System Preferences
+     captures calibrate translucency. No GTK selectors or assets are copied. */
+  --theme-ui-font: "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", sans-serif;
+  --theme-title-font: var(--theme-ui-font);
+  --system-readable-min: 13px;
+  --system-title-size: 13px;
+  --system-control-size: 13px;
+  --system-text-size: 13px;
+  --system-caption-size: 11px;
+  --system-titlebar-height: 26px;
+  --system-titlebar-control-slot: 52px;
+  --system-titlebar-control-size: 12px;
+  --system-titlebar-title-height: 18px;
+  --system-titlebar-font-size: 13px;
+  --system-titlebar-margin-y: 0;
+  --system-titlebar-padding-y: 0;
+  --system-titlebar-padding-x: 8px;
+  --system-titlebar-inactive-control-filter: grayscale(1);
+  --system-titlebar-inactive-title-color: rgba(36, 36, 36, 0.48);
+  --system-control-min-height: 22px;
+  --system-button-min-height: 26px;
+  --system-button-padding-y: 2px;
+  --system-button-padding-x: 9px;
+  --system-select-control-min-height: 24px;
+  --system-select-control-padding: 2px 25px 2px 8px;
+  --system-select-control-border: 1px solid rgba(0, 0, 0, 0.2);
+  --system-select-control-radius: 5px;
+  --system-select-control-bg: linear-gradient(#ffffff, #f1f1f1);
+  --system-select-control-shadow: 0 1px 1px rgba(16, 16, 16, 0.04), 0 1px 2px rgba(16, 16, 16, 0.01), inset 0 1px 0 rgba(255, 255, 255, 0.86);
+  --system-select-control-font-weight: 400;
+  --field-control-padding: 2px 8px;
+  --theme-lab-toolbar-min-height: 36px;
+  --theme-lab-toolbar-padding: 4px 8px;
+  --theme-lab-toolbar-radius: 6px 6px 0 0;
+  --theme-lab-nav-row-min-height: 26px;
+  --theme-lab-nav-row-padding-block: 2px;
+  --theme-lab-finder-row-min-height: 28px;
+  --ink: #242424;
+  --paper: rgba(245, 245, 245, 0.97);
+  --panel: rgba(229, 229, 229, 0.95);
+  --quiet-panel: rgba(250, 250, 250, 0.97);
+  --shade: #c7c7c7;
+  --shade-dark: #777777;
+  --rule: rgba(0, 0, 0, 0.11);
+  --pane-bg: #f5f5f5;
+  --details-bar-bg: rgba(245, 245, 245, 0.96);
+  --details-bar-border: #e1e1e1;
+  --desktop: #86a8bf;
+  --desktop-surface:
+    radial-gradient(circle at 78% 16%, rgba(255, 210, 173, 0.74), transparent 24%),
+    linear-gradient(145deg, #496f8f, #d1a588 48%, #5f829b);
+  --window-bg: rgba(245, 245, 245, 0.96);
+  --window-border: 1px solid rgba(0, 0, 0, 0.16);
+  --window-radius: 6px;
+  --window-shadow:
+    0 5px 5px rgba(0, 0, 0, 0.18),
+    0 8px 15px rgba(0, 0, 0, 0.14),
+    0 0 0 1px rgba(0, 0, 0, 0.08);
+  --active-window-shadow: var(--window-shadow);
+  --inactive-window-shadow: 0 3px 3px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.06);
+  --window-backdrop-filter: blur(6px) saturate(108%);
+  --surface-backdrop-filter: blur(7px) saturate(112%);
+  --system-titlebar-active-bg: linear-gradient(#f5f5f5 0%, #e9e9e9 10%, #e2e2e2 52%, #d2d2d2 100%);
+  --system-titlebar-inactive-bg: #f6f6f6;
+  --system-titlebar-background-origin: padding-box;
+  --system-titlebar-background-clip: border-box;
+  --system-titlebar-inactive-control-visibility: visible;
+  --system-titlebar-inactive-control-opacity: 0.38;
+  --titlebar-title-bg: transparent;
+  --titlebar-title-fg: #363636;
+  --titlebar-border: 1px solid #afafaf;
+  --titlebar-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  --surface-primary: rgba(255, 255, 255, 0.96);
+  --surface-secondary: rgba(245, 245, 245, 0.95);
+  --surface-inset: #ffffff;
+  --toolbar-bg: linear-gradient(#f5f5f5 0%, #e9e9e9 10%, #e2e2e2 52%, #d2d2d2 100%);
+  --toolbar-bg-inactive: #f6f6f6;
+  --toolbar-border: 1px solid #afafaf;
+  --toolbar-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.76);
+  --sidebar-bg: rgba(246, 246, 246, 0.82);
+  --selection-bg: #0e6bff;
+  --selection-fg: #ffffff;
+  --sidebar-selection-bg: var(--selection-bg);
+  --sidebar-selection-fg: #ffffff;
+  --separator: rgba(0, 0, 0, 0.11);
+  --control-bg: #ffffff;
+  --control-shadow: 0 1px 1px rgba(16, 16, 16, 0.04), 0 1px 2px rgba(16, 16, 16, 0.01);
+  --control-active-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.18);
+  --control-focus-outline: 3px solid rgba(78, 158, 255, 0.52);
+  --control-focus-offset: 1px;
+  --control-disabled-bg: #f3f3f3;
+  --control-disabled-field-bg: #f1f1f1;
+  --system-border: 1px solid rgba(0, 0, 0, 0.16);
+  --system-inset: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+  --control-radius: 5px;
+  --btn-border-color: rgba(0, 0, 0, 0.18);
+  --btn-radius: 5px;
+  --btn-bg: #ffffff;
+  --btn-shadow: 0 1px 1px rgba(16, 16, 16, 0.04), 0 1px 2px rgba(16, 16, 16, 0.01), inset 0 1px 0 rgba(255, 255, 255, 0.86);
+  --btn-hover-bg: #fafafa;
+  --btn-hover-fg: #242424;
+  --btn-hover-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  --btn-active-bg: #afafaf;
+  --btn-active-fg: #242424;
+  --btn-active-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+  --btn-default-bg: linear-gradient(#4c97fe, #0564e3);
+  --btn-default-fg: #ffffff;
+  --btn-default-text-shadow: 0 -1px 0 rgba(0, 58, 130, 0.32);
+  --btn-default-shadow: 0 1px 2px rgba(0, 70, 145, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  --btn-default-active-bg: #075bc8;
+  --btn-default-active-fg: #ffffff;
+  --field-bg: #ffffff;
+  --field-focus-bg: #ffffff;
+  --field-border: 1px solid rgba(0, 0, 0, 0.2);
+  --field-radius: 5px;
+  --select-radius: 5px;
+  --field-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+  --field-focus-border: 1px solid #4c97fe;
+  --field-focus-ring: 0 0 0 3px rgba(76, 151, 254, 0.36);
+  --choice-bg: #ffffff;
+  --choice-border: 1px solid rgba(0, 0, 0, 0.26);
+  --choice-radius: 4px;
+  --choice-shadow: inset 0 1px 0 #ffffff;
+  --radio-bg: #ffffff;
+  --radio-border: 1px solid rgba(0, 0, 0, 0.26);
+  --radio-shadow: inset 0 1px 0 #ffffff;
+  --radio-image: none;
+  --radio-focus-image: none;
+  --radio-checked-image: radial-gradient(circle, #0e6bff 0 3px, transparent 3.5px);
+  --radio-checked-focus-image: var(--radio-checked-image);
+  --menu-bar-bg: rgba(248, 248, 248, 0.9);
+  --menu-bar-border: 1px solid rgba(0, 0, 0, 0.14);
+  --menu-bar-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --menu-panel-bg: rgba(255, 255, 255, 0.95);
+  --menu-panel-border: 1px solid rgba(0, 0, 0, 0.11);
+  --menu-panel-radius: 6px;
+  --menu-panel-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+  --menu-panel-backdrop-filter: blur(7px) saturate(112%);
+  --menu-button-active-bg: var(--selection-bg);
+  --menu-button-active-fg: var(--selection-fg);
+  --menu-item-active-bg: var(--selection-bg);
+  --menu-item-active-fg: var(--selection-fg);
+  --window-frame-lane: 10px;
+  --window-frame-track-bg: transparent;
+  --window-frame-track-border: 0;
+  --window-frame-thumb-bg: rgba(36, 36, 36, 0.42);
+  --window-frame-thumb-border: 3px solid transparent;
+  --window-frame-thumb-radius: 8px;
+  --window-frame-arrow-bg: transparent;
+  --window-frame-arrow-ink: transparent;
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: var(--window-frame-thumb-bg);
+  --scrollbar-button: transparent;
+  --scrollbar-width: 10px;
+  --scrollbar-track-border: 0;
+  --scrollbar-track-shadow: none;
+  --scrollbar-thumb-shadow: none;
+  --scrollbar-button-border: 0;
+  --scrollbar-button-shadow: none;
+  --tab-radius: 5px 5px 0 0;
+  --tab-overlap: 0;
+  --tab-bg: #f6f6f6;
+  --tab-hover-bg: #ffffff;
+  --tab-active-bg: #ffffff;
+  --system-check-size: 15px;
+  --system-radio-size: 15px;
+  --theme-lab-button-min-width: 70px;
+  --theme-lab-group-bg: rgba(245, 245, 245, 0.95);
+  --theme-lab-group-border: 1px solid rgba(0, 0, 0, 0.11);
+  --theme-lab-group-shadow: none;
+}
+
 /* Semantic aliases keep application selectors independent of the era. */
 body[data-theme] {
   --help-row-selected-bg: var(--selection-bg);
@@ -566,21 +1712,128 @@ body[data-theme] {
 }
 
 /* Shared historical chrome recipe. Values stay in the tables above. */
-body[data-theme]:not([data-theme="classic"]):not([data-theme="liquid-glass"]) .title-bar {
+body[data-theme]:where(:not([data-theme="classic"]):not([data-theme="liquid-glass"])) .title-bar {
   background: var(--system-titlebar-active-bg);
+  background-origin: var(--system-titlebar-background-origin);
+  background-clip: var(--system-titlebar-background-clip);
   border-bottom: var(--titlebar-border);
   box-shadow: var(--titlebar-shadow);
 }
 
-body[data-theme]:not([data-theme="classic"]):not([data-theme="liquid-glass"]) .window:not(.is-active) .title-bar {
+body[data-theme]:where(:not([data-theme="classic"]):not([data-theme="liquid-glass"])) .window:not(.is-active) .title-bar {
   background: var(--system-titlebar-inactive-bg);
+  background-origin: var(--system-titlebar-background-origin);
+  background-clip: var(--system-titlebar-background-clip);
 }
 
-body[data-theme]:not([data-theme="classic"]):not([data-theme="liquid-glass"]) .title-bar h1,
-body[data-theme]:not([data-theme="classic"]):not([data-theme="liquid-glass"]) .title-bar h2 {
+body[data-theme]:where(:not([data-theme="classic"]):not([data-theme="liquid-glass"])) .title-bar h1,
+body[data-theme]:where(:not([data-theme="classic"]):not([data-theme="liquid-glass"])) .title-bar h2 {
   background: var(--titlebar-title-bg);
   color: var(--titlebar-title-fg);
   font-family: var(--theme-title-font);
+}
+
+/* Aqua reclaims the final computed style from the responsive Classic
+   completion layer. These are shared control recipes, not app exceptions. */
+body[data-theme="aqua"] .desktop {
+  background: var(--desktop-surface);
+}
+
+body[data-theme="aqua"] .theme-lab-window {
+  border: var(--window-border);
+  border-radius: var(--window-radius);
+  background: var(--window-bg);
+  box-shadow: var(--active-window-shadow);
+}
+
+body[data-theme="aqua"] .theme-lab-window:not(.is-active) {
+  background: var(--window-bg);
+  box-shadow: var(--inactive-window-shadow);
+}
+
+body[data-theme="aqua"] :where(
+  input[type="url"],
+  input[type="text"],
+  input[type="password"],
+  input[type="search"],
+  input[type="number"]
+) {
+  height: 22px;
+  min-height: 22px;
+  padding: var(--field-control-padding);
+  border: var(--field-border);
+  border-radius: var(--field-radius);
+  background: var(--field-bg);
+  color: var(--ink);
+  box-shadow: var(--field-shadow);
+  font-family: var(--theme-ui-font);
+  font-size: var(--system-control-size);
+  font-weight: 400;
+  line-height: 16px;
+}
+
+body[data-theme-family="aqua"] input[type="search"] {
+  appearance: none;
+  -webkit-appearance: none;
+  padding: var(--search-field-padding);
+  border-radius: var(--search-field-radius);
+  background: var(--search-field-background, var(--field-bg));
+}
+
+body[data-theme="aqua"] :where(
+  textarea,
+  input[type="url"],
+  input[type="text"],
+  input[type="password"],
+  input[type="search"],
+  input[type="number"]
+):is(:focus, .theme-lab-focus-demo) {
+  border: var(--field-focus-border);
+  outline: 0;
+  background: var(--field-focus-bg);
+  box-shadow: var(--field-focus-ring);
+}
+
+body[data-theme="aqua"] :is(input[type="checkbox"], input[type="radio"]) {
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 18px 18px;
+}
+
+body[data-theme="aqua"] input[type="checkbox"]:not(:checked) {
+  background-image: var(--aqua-checkbox-unchecked-image);
+  background-size: 18px 18px;
+}
+
+body[data-theme="aqua"] input[type="checkbox"]:checked {
+  background-image: var(--choice-checkmark-image);
+  background-size: 18px 18px;
+}
+
+body[data-theme="aqua"] input[type="checkbox"]:is(:active, .is-active):not(:disabled):not(:checked) {
+  background: transparent var(--aqua-checkbox-pressed-unchecked-image) center / 18px 18px no-repeat;
+}
+
+body[data-theme="aqua"] input[type="checkbox"]:is(:active, .is-active):not(:disabled):checked {
+  background: transparent var(--aqua-checkbox-pressed-image) center / 18px 18px no-repeat;
+}
+
+body[data-theme="aqua"] input[type="radio"]:not(:checked) {
+  background-image: var(--radio-image);
+  background-size: 18px 18px;
+}
+
+body[data-theme="aqua"] input[type="radio"]:checked {
+  background-image: var(--radio-checked-image);
+  background-size: 18px 18px;
+}
+
+body[data-theme="aqua"] input[type="radio"]:is(:active, .is-active):not(:disabled):not(:checked) {
+  background: transparent var(--aqua-radio-pressed-unchecked-image) center / 18px 18px no-repeat;
+}
+
+body[data-theme="aqua"] input[type="radio"]:is(:active, .is-active):not(:disabled):checked {
+  background: transparent var(--aqua-radio-pressed-image) center / 18px 18px no-repeat;
 }
 
 /* Platinum is not a flat gray recolor. These recipes reproduce the structural
@@ -595,6 +1848,7 @@ body[data-theme="platinum"] {
 
 body[data-theme="platinum"] .window {
   padding: 2px 4px 4px;
+  background: var(--window-bg);
 }
 
 body[data-theme="platinum"] .window:not(.is-active) {
@@ -606,17 +1860,27 @@ body[data-theme="platinum"] .window:not(.is-active) {
   box-shadow: none;
 }
 
+body[data-theme="platinum"] .window:not(.is-active) .title-bar {
+  border-bottom-color: #555555;
+}
+
+body[data-theme="platinum"] .window:not(.is-active) .title-bar :is(h1, h2) {
+  background: #dddddd;
+  color: #777777;
+}
+
 body[data-theme="platinum"] .title-bar {
   margin: 0 0 1px;
   padding: 1px;
-  background-origin: border-box;
-  background-clip: border-box;
+  border-bottom: 1px solid #000000;
 }
 
 body[data-theme="platinum"] .title-bar :is(h1, h2) {
-  padding-inline: 6px;
+  padding-inline: 4px;
   font-weight: 700;
+  font-variation-settings: "wdth" 123;
   letter-spacing: 0;
+  transform: translate(-1px, -1px);
 }
 
 body[data-theme="platinum"] :is(.close-box, .resize-box) {
@@ -626,6 +1890,7 @@ body[data-theme="platinum"] :is(.close-box, .resize-box) {
 
 body[data-theme="platinum"] .title-bar .close-box::before,
 body[data-theme="platinum"] .title-bar .resize-box::before {
+  box-sizing: border-box;
   width: var(--system-titlebar-control-art-size);
   height: var(--system-titlebar-control-art-size);
   border: 1px solid #222222;
@@ -681,7 +1946,10 @@ body[data-theme="platinum"] .btn {
 
 body[data-theme="platinum"] .btn.default {
   border-radius: 3px;
-  box-shadow: var(--btn-shadow);
+  background: var(--btn-default-bg);
+  color: var(--btn-default-fg, var(--ink));
+  text-shadow: var(--btn-default-text-shadow, none);
+  box-shadow: var(--btn-default-shadow);
 }
 
 body[data-theme="platinum"] .btn.default::before {
@@ -689,12 +1957,12 @@ body[data-theme="platinum"] .btn.default::before {
   position: absolute;
   inset: -3px;
   box-sizing: border-box;
-  border-radius: 4px;
+  border-radius: 3px;
   box-shadow:
     0 0 0 1px #000000,
     inset 1px 1px 0 #dddddd,
-    inset -1px -1px 0 #737373,
-    inset 0 0 0 2px #adadad;
+    inset -1px -1px 0 #777777,
+    inset 0 0 0 2px #aaaaaa;
   pointer-events: none;
 }
 
@@ -763,7 +2031,7 @@ body[data-theme="platinum"] :is(.select-wrap, .system-select-button)::after {
   height: 18px;
   border: 0;
   background:
-    url("./assets/vendor/classic-stylesheets/macos9/dropdown.svg") center / 7px 10px no-repeat,
+    url("./assets/vendor/classic-stylesheets/macos9/dropdown.svg") calc(50% - 1px) center / 7px 10px no-repeat,
     #dddddd;
   box-shadow:
     inset 1px 1px #dddddd,
@@ -820,4 +2088,573 @@ body[data-theme="platinum"] .menu-bar > .menu > button {
 body[data-theme="platinum"] :is(.menu-popover, .menu-sub-popover, .theme-lab-menu) hr {
   border-top: 1px solid #888888;
   border-bottom: 1px solid #ffffff;
+}
+
+/* The Aqua family shares traffic-light geometry. Early Aqua's candy material
+   and Snow Leopard's restrained silver material remain separate tables. */
+body[data-theme-family="aqua"] .close-box,
+body[data-theme-family="aqua"] .resize-box {
+  background-position:
+    calc(var(--system-titlebar-control-art-offset-x) - 2px)
+    calc(var(--system-titlebar-control-art-offset-y) - 2px);
+  background-size: var(--traffic-light-size) var(--traffic-light-size);
+  background-repeat: no-repeat;
+  filter: none;
+}
+
+body[data-theme-family="aqua"] .close-box {
+  background-image: var(--traffic-light-close-bg);
+}
+
+body[data-theme-family="aqua"] .resize-box {
+  background-image: var(--traffic-light-resize-bg);
+}
+
+body[data-theme-family="aqua"] .resize-box::before {
+  width: 7px;
+  height: 7px;
+  border: 0;
+  background:
+    linear-gradient(rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0.42)) center / 5px 1px no-repeat,
+    linear-gradient(rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0.42)) center / 1px 5px no-repeat;
+}
+
+/* Aqua and Snow Leopard put all functioning window controls together on the
+   left. AI System 6 has Close and Zoom but no Minimize action, so this draws
+   two honest lamps rather than inserting a decorative third control. */
+body[data-theme-family="aqua"] .window > .title-bar {
+  grid-template-columns:
+    var(--system-titlebar-control-slot)
+    minmax(0, 1fr)
+    var(--system-titlebar-control-slot);
+}
+
+body[data-theme-family="aqua"] .window > .title-bar :is(h1, h2) {
+  padding-inline: var(--titlebar-content-padding-inline);
+  font-weight: var(--titlebar-title-weight, 600);
+  letter-spacing: 0;
+  text-shadow: var(--titlebar-title-text-shadow);
+}
+
+body[data-theme-family="aqua"] .window:not(.is-active) > .title-bar {
+  border-bottom: var(--titlebar-border-inactive, var(--titlebar-border));
+}
+
+body[data-theme-family="aqua"] .title-bar > :is(.close-box, .resize-box) {
+  grid-column: 1;
+  justify-self: start;
+  width: var(--traffic-light-size);
+  height: var(--traffic-light-size);
+  margin: 0;
+  background-position: center;
+  background-size: var(--traffic-light-size) var(--traffic-light-size);
+}
+
+body[data-theme-family="aqua"] .title-bar > .close-box {
+  background-image: var(--traffic-light-close-bg);
+}
+
+body[data-theme-family="aqua"] .title-bar > .resize-box {
+  transform: translateX(var(--traffic-light-gap));
+  background-image: var(--traffic-light-resize-bg);
+}
+
+body[data-theme-family="aqua"] .title-bar > :is(.close-box, .resize-box)::before,
+body[data-theme-family="aqua"] .title-bar > .close-box::after {
+  content: none;
+}
+
+body[data-theme-family="aqua"] select:not([multiple]) {
+  min-height: var(--select-control-min-height);
+  padding: var(--select-control-padding);
+  border: var(--select-control-border);
+  border-radius: var(--select-control-radius);
+  background-color: var(--select-control-bg-color);
+  background-image: var(--select-control-bg-image);
+  background-position: var(--select-control-bg-position);
+  background-size: var(--select-control-bg-size);
+  background-repeat: no-repeat;
+  box-shadow: var(--select-control-shadow);
+  font-weight: var(--select-control-font-weight);
+}
+
+body:is([data-theme="aqua"], [data-theme="snow-leopard"], [data-theme="yosemite"])
+  .system-select-button:not(:disabled) {
+  min-height: var(--system-select-control-min-height);
+  padding: var(--system-select-control-padding);
+  border: var(--system-select-control-border);
+  border-radius: var(--system-select-control-radius);
+  background: var(--system-select-control-bg);
+  box-shadow: var(--system-select-control-shadow);
+  font-family: var(--theme-ui-font);
+  font-size: var(--system-control-size);
+  font-weight: var(--system-select-control-font-weight);
+}
+
+/* Native Aqua pop-ups expose both directions in the blue arrow well. The base
+   Classic disclosure triangle remains untouched outside this family. */
+body[data-theme-family="aqua"] .system-select-button::after {
+  right: 6px;
+  width: 8px;
+  height: 13px;
+  border: 0;
+  transform: translateY(-50%);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='13' viewBox='0 0 8 13'%3E%3Cpath d='m1 5 3-3 3 3zM1 8l3 3 3-3z' fill='%23064a79'/%3E%3C/svg%3E") center / 8px 13px no-repeat;
+}
+
+body[data-theme-family="aqua"] .theme-lab-form-grid input[type="search"] {
+  min-height: var(--search-field-min-height);
+  padding: var(--search-field-padding);
+  border-radius: var(--search-field-radius);
+  background: var(--search-field-background, var(--field-bg));
+}
+
+body[data-theme-family="aqua"] .theme-lab-progress {
+  height: var(--progress-height);
+  padding: var(--progress-padding);
+  border-color: var(--progress-border-color);
+  border-radius: var(--progress-radius);
+  background: var(--progress-bg);
+}
+
+body[data-theme-family="aqua"] .theme-lab-progress span {
+  border-radius: var(--progress-fill-radius);
+  background: var(--progress-fill-bg);
+  box-shadow: var(--progress-fill-shadow);
+}
+
+body[data-theme="aqua"] button.btn {
+  position: relative;
+  min-width: 69px;
+  min-height: 21px;
+  height: 21px;
+  padding: var(--system-button-padding-y) var(--system-button-padding-x);
+  border: 0;
+  border-radius: var(--btn-radius);
+  background:
+    linear-gradient(#6f6f6f, #6f6f6f) left 1px / 1px calc(100% - 1px) no-repeat,
+    linear-gradient(#6f6f6f, #6f6f6f) right 1px / 1px calc(100% - 1px) no-repeat,
+    linear-gradient(to bottom,
+      #e4e4e4 0 1px, #6f6f6f 1px 2px, #f5f5f5 2px 3px,
+      #f2f2f2 3px 4px, #efefef 4px 5px, #eaeaea 5px 6px,
+      #e9e9e9 6px 7px, #e8e8e8 7px 8px, #e7e7e7 8px 9px,
+      #dcdcdc 9px 10px, #e1e1e1 10px 11px, #e8e8e8 11px 12px,
+      #eaeaea 12px 13px, #efefef 13px 14px, #f3f3f3 14px 15px,
+      #f8f8f8 15px 16px, #fcfcfc 16px 17px, #ffffff 17px 21px);
+  color: var(--ink);
+  box-shadow: 0 1px 0 #565656, 0 2px 0 #b9b9b9;
+  font-family: var(--theme-ui-font);
+  font-size: var(--system-control-size);
+  font-weight: 400;
+  line-height: 16px;
+}
+
+body[data-theme="aqua"] button.btn.default {
+  background:
+    linear-gradient(#00006e, #00006e) left 1px / 1px calc(100% - 1px) no-repeat,
+    linear-gradient(#00006e, #00006e) right 1px / 1px calc(100% - 1px) no-repeat,
+    linear-gradient(to bottom,
+      #e4e4e4 0 1px, #00006e 1px 2px, #d2d3ec 2px 3px,
+      #bac7ea 3px 4px, #9dbee5 4px 5px, #88b4e1 5px 6px,
+      #81b0e0 6px 7px, #7bace0 7px 8px, #77ace0 8px 9px,
+      #478fd8 9px 10px, #5096dc 10px 11px, #5a9de0 11px 12px,
+      #61a3e6 12px 13px, #69aaeb 13px 14px, #70b1f1 14px 15px,
+      #78b8fa 15px 16px, #7fbfff 16px 17px, #86c7ff 17px 18px,
+      #8dceff 18px 19px, #93d8ff 19px 20px, #95dbff 20px 21px);
+  color: var(--btn-default-fg);
+  box-shadow: 0 1px 0 #565656, 0 2px 0 #b9b9b9;
+  text-shadow: var(--btn-default-text-shadow);
+}
+
+body[data-theme="aqua"] button.btn:is(.is-active, :active):not(:disabled):not(.is-disabled) {
+  border-color: var(--btn-active-border-color);
+  background: var(--btn-active-bg);
+  color: var(--btn-active-fg);
+  box-shadow: var(--btn-active-shadow);
+}
+
+body[data-theme="aqua"] select:disabled {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='14' viewBox='0 0 6 14'%3E%3Cpath d='m.5 5.5 2.5-3 2.5 3zM.5 8.5l2.5 3 2.5-3z' fill='%23959595'/%3E%3C/svg%3E"),
+    linear-gradient(#b5b5b5, #b5b5b5),
+    linear-gradient(#f5f5f5, #cecece 52%, #eeeeee),
+    linear-gradient(#fafafa, #e6e6e6 52%, #f6f6f6);
+}
+
+body[data-theme="aqua"] :is(button.btn:disabled, button.btn.is-disabled, .system-select-button:disabled) {
+  border-color: #a4a4a4;
+  background: var(--control-disabled-bg);
+  color: #999999;
+  box-shadow: none;
+  opacity: var(--control-disabled-opacity);
+}
+
+body[data-theme="aqua"] .system-select-button::after {
+  right: 9px;
+  top: 4px;
+  width: 4px;
+  height: 12px;
+  transform: none;
+  background: url("./assets/themes/aqua/popup-arrows.svg") center / 4px 12px no-repeat;
+}
+
+body[data-theme="aqua"] .system-select-button:not(:disabled) {
+  min-height: 21px;
+  height: 21px;
+  padding: 1px 25px 1px 36px;
+  border: 0;
+  border-radius: 4px;
+  background:
+    linear-gradient(to bottom,
+      #8bb0d7 0 1px, #9cbcdf 1px 2px, #9dbfe1 2px 3px,
+      #8ab4e0 3px 4px, #6da3dc 4px 5px, #73a9e1 5px 6px,
+      #80b5ea 6px 7px, #8dbeef 7px 8px, #9acbfb 8px 9px,
+      #a3d2ff 9px 10px) 9px 5px / 22px 10px no-repeat,
+    linear-gradient(#3f659d, #3f659d) 8px 4px / 24px 12px no-repeat,
+    linear-gradient(to bottom,
+      #00005f 0 1px, #dee2f4 1px 2px, #bed4ef 2px 3px,
+      #a6c8eb 3px 4px, #9ac1ea 4px 5px, #94bdea 5px 6px,
+      #8ebbea 6px 7px, #8ebdec 7px 8px, #8bbbee 8px 9px,
+      #64a8f2 9px 10px, #6bb0f6 10px 11px, #73b7fd 11px 12px,
+      #7cbfff 12px 13px, #86c9ff 13px 14px, #93d2ff 14px 15px,
+      #97daff 15px 16px, #a0e0ff 16px 17px, #a9e6ff 17px 18px,
+      #b1f3ff 18px 19px, #bbffff 19px 20px, #4e4e4e 20px 21px)
+      right top / 21px 21px no-repeat,
+    linear-gradient(to bottom,
+      #8b8b8b 0 1px, #fcfcfc 1px 2px, #f6f6f6 2px 3px,
+      #f0f0f0 3px 4px, #eeeeee 4px 5px, #ededed 5px 7px,
+      #ececec 7px 9px, #e1e1e1 9px 10px, #e6e6e6 10px 11px,
+      #e9e9e9 11px 12px, #ececec 12px 13px, #efefef 13px 14px,
+      #f3f3f3 14px 15px, #f6f6f6 15px 16px, #f8f8f8 16px 17px,
+      #fcfcfc 17px 18px, #ffffff 18px 20px, #4e4e4e 20px 21px);
+  box-shadow: none;
+}
+
+body[data-theme="aqua"] .system-select-menu {
+  top: calc(100% + 2px);
+  padding: 3px 0;
+  border: 1px solid #666666;
+  border-radius: 3px;
+  background: rgba(250, 250, 250, 0.94);
+  box-shadow: 0 5px 11px rgba(0, 0, 0, 0.4);
+}
+
+body[data-theme="aqua"] .system-select-option {
+  min-height: 20px;
+  padding: 2px 24px;
+  border: 0;
+  font-family: var(--theme-ui-font);
+  font-size: 13px;
+  line-height: 16px;
+}
+
+body[data-theme="aqua"] .theme-lab-mini-window.is-active .theme-lab-mini-control.is-close {
+  background: var(--traffic-light-close-bg);
+}
+
+body[data-theme="aqua"] .theme-lab-mini-window.is-active .theme-lab-mini-control.is-zoom {
+  left: 49px;
+  right: auto;
+  background: var(--traffic-light-resize-bg);
+}
+
+body[data-theme="aqua"] .theme-lab-mini-window.is-inactive .theme-lab-mini-control {
+  background: radial-gradient(circle, #f7f7f7 0 4px, #a9a9a9 5px, #777777 6px, transparent 7px);
+}
+
+body[data-theme="aqua"] .theme-lab-toolbar-round-icon {
+  width: 24px;
+  height: 24px;
+  border: 0;
+  box-shadow: none;
+}
+
+body[data-theme="aqua"] .theme-lab-toolbar-round-icon.is-back {
+  background: var(--theme-lab-toolbar-back-image) center / 24px 24px no-repeat;
+}
+
+body[data-theme="aqua"] .theme-lab-toolbar-round-icon.is-forward {
+  background: var(--theme-lab-toolbar-forward-image) center / 24px 24px no-repeat;
+}
+
+body[data-theme="aqua"] .theme-lab-segmented {
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.24));
+}
+
+body[data-theme="aqua"] .theme-lab-group .theme-lab-segmented button {
+  min-height: var(--theme-lab-segmented-button-min-height);
+  height: var(--theme-lab-segmented-button-height);
+  padding: var(--theme-lab-segmented-button-padding);
+  border: 1px solid #777777;
+  border-right: 0;
+  background: var(--tab-bg);
+  box-shadow: inset 0 1px 0 #ffffff;
+  font: inherit;
+}
+
+body[data-theme="aqua"] .theme-lab-group .theme-lab-segmented button.is-selected {
+  background: var(--tab-active-bg);
+  color: #071722;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 -1px 1px rgba(0, 65, 112, 0.34);
+}
+
+body[data-theme="aqua"] .theme-lab-group .theme-lab-tabs {
+  gap: var(--theme-lab-tabs-gap);
+  padding: var(--theme-lab-tabs-padding);
+  border-bottom: var(--theme-lab-tabs-border-bottom);
+  background: linear-gradient(to bottom,
+    #0a51ae 0 14.285%, #a4c3e5 14.285% 28.57%,
+    #b8d2ef 28.57% 42.855%, #79aeec 42.855% 57.14%,
+    #9ccfff 57.14% 71.425%, #bbefff 71.425% 85.71%,
+    #6c6c6c 85.71% 100%) bottom / 100% 7px no-repeat;
+  overflow: visible;
+}
+
+body[data-theme="aqua"] .theme-lab-group .theme-lab-tabs button:not(:active) {
+  min-height: var(--theme-lab-tab-button-min-height);
+  height: var(--theme-lab-tab-button-height);
+  margin-bottom: -7px;
+  padding: var(--theme-lab-tab-button-padding);
+  border: 1px solid #777777;
+  border-bottom: 0;
+  border-radius: 7px 7px 0 0;
+  background: var(--tab-bg);
+  box-shadow: 0 -1px 1px rgba(0, 0, 0, 0.08), inset 0 1px 0 #ffffff;
+}
+
+body[data-theme="aqua"] .theme-lab-group .theme-lab-tabs button.is-selected {
+  min-height: var(--theme-lab-tab-selected-min-height);
+  height: var(--theme-lab-tab-selected-height);
+  border-color: #0024b2;
+  border-bottom: 0;
+  background:
+    linear-gradient(to bottom,
+      #eeeeee 0 1px, #f7f7f7 1px 2px, #d1d1d1 2px 3px,
+      #a0a0a0 3px 4px, #838383 4px 5px, #787878 5px 6px,
+      #6a6a6a 6px 7px, #636363 7px 8px, #666666 8px 9px,
+      #6e6e6e 9px 10px, #666666 10px 11px, #636363 11px 12px,
+      #666666 12px 13px, #6e6e6e 13px 14px, #666666 14px 15px,
+      #636363 15px 16px, #666666 16px 17px, #6e6e6e 17px 18px,
+      #666666 18px 19px, #636363 19px 20px, #666666 20px 21px,
+      #6c6c6c 21px 22px, #616161 22px 23px) right top / 1px 23px no-repeat,
+    linear-gradient(to bottom,
+      #0024b2 0 1px, #e2ecf9 1px 2px, #cbdff4 2px 3px,
+      #b8d3f0 3px 4px, #accded 4px 5px, #a2c6ec 5px 6px,
+      #9dc4eb 6px 7px, #9ac1eb 7px 8px, #96c0eb 8px 9px,
+      #92beea 9px 10px, #90bdea 10px 11px, #69a8e8 11px 12px,
+      #71adeb 12px 13px, #77b2ef 13px 14px, #7fb8f4 14px 15px,
+      #85bef9 15px 16px, #8cc6ff 16px 17px, #93cbff 17px 18px,
+      #99d1ff 18px 19px, #a0d7ff 19px 20px, #a6deff 20px 21px,
+      #abe3ff 21px 22px, #b1e9ff 22px 23px, #b6edff 23px 25px);
+  color: #06131d;
+  box-shadow: none;
+}
+
+body[data-theme="aqua"] .theme-lab-group .theme-lab-tabs button.is-selected::after {
+  content: "";
+  top: 24px;
+  right: 0;
+  left: 0;
+  width: 100%;
+  height: 6px;
+  background:
+    linear-gradient(to right, #97bee7, #afdcf3 46%, #a4c3e5) 0 0 / 100% 1px no-repeat,
+    linear-gradient(to bottom,
+      #b8d2ef 0 1px, #79aeec 1px 2px, #9ccfff 2px 3px,
+      #bbefff 3px 4px, #6c6c6c 4px 5px, #6c6c6c 5px 6px) 0 1px / 100% 5px no-repeat;
+}
+
+/* Snow Leopard and Yosemite happen to use the same neutral Web rendering
+   scaffold here; this is not theme lineage. Registry ancestry remains
+   Aqua -> Snow Leopard and Liquid Glass -> Yosemite, while every material,
+   state and geometry value below comes from its own era table. */
+body:is([data-theme="snow-leopard"], [data-theme="yosemite"]) .window:not(.is-active) {
+  box-shadow: var(--inactive-window-shadow);
+}
+
+body:is([data-theme="snow-leopard"], [data-theme="yosemite"]) :where(.btn) {
+  border-color: var(--btn-border-color);
+  border-radius: var(--btn-radius);
+  background: var(--btn-bg);
+  box-shadow: var(--btn-shadow);
+  font-family: var(--theme-ui-font);
+  font-weight: 400;
+}
+
+body:is([data-theme="snow-leopard"], [data-theme="yosemite"]) :where(
+  textarea,
+  input[type="url"],
+  input[type="text"],
+  input[type="password"],
+  input[type="search"],
+  input[type="number"]
+) {
+  min-height: var(--system-control-min-height);
+  padding: var(--field-control-padding);
+  border: var(--field-border);
+  border-radius: var(--field-radius);
+  background: var(--field-bg);
+  box-shadow: var(--field-shadow);
+  font-family: var(--theme-ui-font);
+  font-size: var(--system-control-size);
+}
+
+body:is([data-theme="snow-leopard"], [data-theme="yosemite"]) :is(input, textarea, select):focus {
+  border: var(--field-focus-border);
+  outline: 0;
+  background: var(--field-focus-bg);
+  box-shadow: var(--field-focus-ring);
+}
+
+body:is([data-theme="snow-leopard"], [data-theme="yosemite"]) .theme-lab-toolbar {
+  min-height: var(--theme-lab-toolbar-min-height);
+  padding: var(--theme-lab-toolbar-padding);
+  border-radius: var(--theme-lab-toolbar-radius);
+  box-shadow: var(--toolbar-highlight);
+}
+
+body:is([data-theme="snow-leopard"], [data-theme="yosemite"]) .theme-lab-mini-window.is-active {
+  background: var(--toolbar-bg);
+}
+
+body:is([data-theme="snow-leopard"], [data-theme="yosemite"]) .theme-lab-mini-window.is-inactive {
+  background: var(--toolbar-bg-inactive);
+  opacity: 1;
+}
+
+body:is([data-theme="snow-leopard"], [data-theme="yosemite"])
+  :is(.theme-lab-sidebar, .theme-lab-list) button {
+  min-height: var(--theme-lab-nav-row-min-height);
+  padding-block: var(--theme-lab-nav-row-padding-block);
+}
+
+body:is([data-theme="snow-leopard"], [data-theme="yosemite"]) .theme-lab-finder-rows > div {
+  min-height: var(--theme-lab-finder-row-min-height);
+}
+
+/* Snow Leopard is the Aqua descendant, not an early-Aqua desaturation. The
+   compact, unified silver chrome and quieter controls below are the delta. */
+
+body[data-theme="snow-leopard"] :is(select, input):disabled {
+  color: #8c8c8c;
+  background-color: #f2f2f2;
+  opacity: 0.72;
+}
+
+body[data-theme="snow-leopard"] .window:not(.is-active) .theme-lab-sidebar {
+  background: var(--sidebar-bg-inactive);
+}
+
+body[data-theme="snow-leopard"] .window:not(.is-active) .theme-lab-sidebar button.is-selected {
+  background: var(--sidebar-selection-bg-inactive);
+}
+
+/* Yosemite is expressed as a restrained delta from the Liquid Glass lineage:
+   one fused header material, thin controls, and bounded early vibrancy. */
+body[data-theme="yosemite"] .window > .title-bar {
+  grid-template-columns:
+    var(--system-titlebar-control-slot)
+    minmax(0, 1fr)
+    var(--system-titlebar-control-slot);
+}
+
+body[data-theme="yosemite"] .window > .title-bar :is(h1, h2) {
+  padding-inline: 8px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.66);
+}
+
+body[data-theme="yosemite"] .title-bar > :is(.close-box, .resize-box) {
+  grid-column: 1;
+  justify-self: start;
+  width: 12px;
+  height: 12px;
+  margin: 0;
+  background-position: center;
+  background-size: 12px 12px;
+  background-repeat: no-repeat;
+  filter: none;
+}
+
+body[data-theme="yosemite"] .title-bar > .close-box {
+  background-image: radial-gradient(circle, #ff6057 0 5px, #e14640 5px 6px, transparent 6px);
+}
+
+body[data-theme="yosemite"] .title-bar > .resize-box {
+  transform: translateX(18px);
+  background-image: radial-gradient(circle, #27c93f 0 5px, #1dad2b 5px 6px, transparent 6px);
+}
+
+body[data-theme="yosemite"] .title-bar > :is(.close-box, .resize-box)::before,
+body[data-theme="yosemite"] .title-bar > .close-box::after {
+  content: none;
+}
+
+body[data-theme="yosemite"] select:not([multiple]) {
+  min-height: 24px;
+  padding: 2px 25px 2px 8px;
+  border: var(--field-border);
+  border-radius: var(--select-radius);
+  background-color: #ffffff;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='m1 1 3 3 3-3z' fill='%235c5c5c'/%3E%3C/svg%3E"),
+    linear-gradient(#ffffff, #f1f1f1);
+  background-position: right 8px center, left top;
+  background-size: 8px 5px, 100% 100%;
+  background-repeat: no-repeat;
+  box-shadow: var(--btn-shadow);
+  font-family: var(--theme-ui-font);
+  font-size: var(--system-control-size);
+}
+
+body[data-theme="yosemite"] :is(select, input, .system-select-button):disabled {
+  color: #a0a0a0;
+  background-color: #f1f1f1;
+  opacity: 0.66;
+}
+
+body[data-theme="yosemite"] .theme-lab-form-grid input[type="search"] {
+  min-height: 22px;
+  padding: 2px 9px;
+  border-radius: 5px;
+}
+
+body[data-theme="yosemite"] .theme-lab-menu {
+  padding-block: 7px;
+}
+
+body[data-theme="yosemite"] .theme-lab-split-view {
+  background: var(--desktop-surface);
+  background-size: cover;
+}
+
+body[data-theme="yosemite"] .theme-lab-progress {
+  height: 12px;
+  padding: 1px;
+  border-color: rgba(0, 0, 0, 0.18);
+  border-radius: 6px;
+  background: #e5e5e5;
+}
+
+body[data-theme="yosemite"] .theme-lab-progress span {
+  border-radius: 5px;
+  background: linear-gradient(#4c97fe, #0564e3);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26);
+}
+
+body[data-theme="yosemite"] .theme-lab-scroll::-webkit-scrollbar-thumb {
+  background-clip: content-box;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  html[data-theme="yosemite"],
+  body[data-theme="yosemite"] {
+    --window-bg: #f2f3f4;
+    --menu-panel-bg: #f5f6f7;
+    --sidebar-bg: #dfe4e8;
+    --window-backdrop-filter: none;
+    --surface-backdrop-filter: none;
+    --menu-panel-backdrop-filter: none;
+  }
 }

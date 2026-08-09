@@ -1,0 +1,10 @@
+<!-- AI System 6 measured reconstruction of the shared 16px application-list silhouette; no embedded source pixels. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges">
+  <path fill="#aaa" d="M9 10h6v4h-2v2H8v-2h1z"/>
+  <path fill="#336" d="M2 1h4v1h3V1h4v2h2v12H5v-1H2z"/>
+  <path fill="#66c" d="M3 2h3v1h3V2h3v2h2v10h-3v-1H3z"/>
+  <path fill="#99f" d="M4 3h2v1h3V3h3v2h1v7h-2v1H5l-1-1z"/>
+  <path fill="#ccf" d="M5 4h2v1h3V4h2v2h1v5h-2v1H6l-1-1z"/>
+  <path fill="#eef" d="M6 6h6v4h-1v1H6z"/>
+  <path fill="#333" d="M12 5h2v9h-2z"/>
+</svg>

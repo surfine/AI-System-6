@@ -1426,11 +1426,16 @@ function updateProjectLabels() {
   if (currentProjectLabelEl) {
     currentProjectLabelEl.textContent = t("current_project_desktop");
     const currentProjectIcon = currentProjectLabelEl.closest(".desktop-icon");
-    currentProjectIcon?.classList.toggle("is-hidden", !project);
-    currentProjectIcon?.setAttribute("aria-hidden", String(!project));
+    currentProjectIcon?.classList.remove("is-hidden");
+    currentProjectIcon?.setAttribute("aria-hidden", "false");
     currentProjectIcon?.setAttribute("title", name);
-    if (project && currentProjectIcon) currentProjectIcon.dataset.projectId = project.id;
-    else delete currentProjectIcon?.dataset.projectId;
+    if (project && currentProjectIcon) {
+      currentProjectIcon.dataset.projectId = project.id;
+      currentProjectIcon.dataset.dropTarget = "project";
+    } else if (currentProjectIcon) {
+      delete currentProjectIcon.dataset.projectId;
+      delete currentProjectIcon.dataset.dropTarget;
+    }
   }
   if (assistantProjectStatusEl) assistantProjectStatusEl.textContent = activeText;
   if (activeProjectLabelEl) activeProjectLabelEl.textContent = activeText;

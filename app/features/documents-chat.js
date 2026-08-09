@@ -2759,6 +2759,17 @@ function openTextFile(fileId) {
   });
 }
 
+function openTeachTextDocument(documentId) {
+  const file = chatFiles.find((item) => item.id === documentId && item.type === "text" && isInActiveProject(item));
+  if (!file) return false;
+  openTextFile(documentId);
+  return true;
+}
+
+window.AISystem6TeachText = Object.freeze({
+  openDocument: openTeachTextDocument,
+});
+
 function openMountedTextFile(name) {
   const body = mountedTextDisk.fileBodies[name];
   if (typeof body !== "string") return;
@@ -3053,6 +3064,42 @@ function downloadActiveMarkdown() {
   }
 
   setStatus(t("no_document_export"));
+}
+
+async function shareActiveMarkdown() {
+  const textVisible = !getWindow("teachText").classList.contains("is-hidden");
+  const chatVisible = !getWindow("chatFile").classList.contains("is-hidden");
+  let markdown = "";
+  let name = t("untitled");
+
+  if (textVisible) {
+    ({ markdown, name } = getTeachTextMarkdown({ originalImages: true }));
+  } else if (chatVisible) {
+    const file = getSelectedChatFile();
+    if (file) {
+      markdown = formatChatFileMarkdown(file);
+      name = file.name || name;
+    }
+  }
+
+  if (!markdown.trim()) {
+    setStatus(t("no_document_export"));
+    return false;
+  }
+
+  try {
+    const shared = await window.AISystem6WebPlatform?.shareMarkdown?.({
+      title: name,
+      markdown,
+      fileName: `${sanitizeFilename(name)}.md`,
+    });
+    if (shared) setStatus(t("share_markdown_done"), { notify: false });
+    return !!shared;
+  } catch (error) {
+    console.warn("Markdown share failed.", error);
+    setStatus(t("share_markdown_failed"));
+    return false;
+  }
 }
 
 function downloadActiveBilingualMarkdown() {

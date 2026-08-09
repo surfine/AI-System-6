@@ -14,8 +14,11 @@ import { fileURLToPath } from "node:url";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const require = createRequire(import.meta.url);
-const THEMES = Object.freeze(["classic", "platinum", "liquid-glass"]);
-const VIEWPORT = Object.freeze({ width: 1280, height: 820 });
+const THEMES = Object.freeze(["classic", "platinum", "aqua", "snow-leopard", "yosemite", "liquid-glass"]);
+// The stability fixture expands the lab to its full intrinsic height. Keep the
+// capture canvas taller than the largest era so Playwright never scrolls the
+// absolute-positioned window before taking its element screenshot.
+const VIEWPORT = Object.freeze({ width: 1280, height: 1040 });
 const BASELINE_DIR = join(root, "tests", "visual", "theme-lab");
 const CURRENT_DIR = join(root, "drafts", "theme-lab-current");
 const CHANNEL_TOLERANCE = 10;
@@ -164,6 +167,13 @@ async function captureTheme(browser, url, themeId) {
           animation: none !important;
           caret-color: transparent !important;
           transition: none !important;
+        }
+        [data-window="themeLab"] {
+          height: auto !important;
+          max-height: none !important;
+        }
+        [data-window="themeLab"] .theme-lab-pane {
+          overflow: visible !important;
         }
       `;
       document.head.append(style);

@@ -1,6 +1,6 @@
 {
   "name": "ai-system-6",
-  "version": "1.0.30",
+  "version": "1.0.31",
   "description": "A quiet, intentional AI desktop environment inspired by Macintosh System 6.",
   "license": "MIT",
   "main": "src/server.js",
@@ -14,6 +14,7 @@
     "build:cmf-renderer-vendor": "node scripts/build-cmf-renderer-vendor.mjs",
     "build:stream-markdown-vendor": "node scripts/build-stream-markdown-vendor.mjs",
     "check:release-assets": "node scripts/check-release-assets.mjs",
+    "compare:theme-lab:canonical": "npm run build:app && node scripts/theme-lab-fidelity.mjs",
     "perf:budget": "node scripts/verify-floppy-budget.mjs",
     "prebuild:app": "npm run build:stream-markdown-vendor && npm run build:cmf-renderer-vendor",
     "prepare:runtime": "npm run build:app && npm run check:release-assets",

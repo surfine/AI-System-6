@@ -1,5 +1,5 @@
 <!-- canonical-source: CHANGELOG.md -->
-<!-- source-sha256: dac25048cb477a3cc72af2b7d4f8a18b78fd8376db81f2ca5c163713899cd3e7 -->
+<!-- source-sha256: 377f91aa1dac735b9c4868bbd96f8e1b59adf70aeeb8644a3403c6ffdd5a06bd -->
 
 # AI System 6 中文更新日志
 
@@ -366,6 +366,22 @@ Liquid Glass 继续作为独立材质存在，而不是被复古修正误伤。
   Leopard 与 Yosemite 实验不进入本次发布。
 - 宣传片与 4K 剪辑收紧节奏，CMF Studio 改为多设备蒙太奇，并加入可复用的
   哔哩哔哩封面渲染脚本。
+
+## 公开测试版 1.0.31 — 2026-08-09
+
+- Aqua 成为 System 6、Platinum、Liquid Glass 之外的第四套正式外观：Jaguar
+  时代控件几何、当前应用菜单、三栏打开对话框、附着式工作表与 Finder 工具栏，
+  均以时代 HIG 与固定原始参照为证据。
+- 外观注册表加入显式 recipe 血缘（Platinum ← Classic、Snow Leopard ← Aqua、
+  Yosemite ← Liquid Glass），每个时代只保留自己的差异；上线门控让 Snow
+  Leopard 与 Yosemite 不进入对外界面，同时保留 recipe 供后续完善。
+- Theme Lab 升级为多时代验收面，提供时代精准样本与 SHA-256 固定的原始参照
+  （Mac OS 9 Platinum 菜单、Jaguar Aqua 三栏浏览器、工作表、滚动条与选项状态）。
+- Draft Desk 加固收尾：引导式“写一篇短稿”只需一个设置页面，Continue 回到
+  上一篇草稿，模型缺失或配置损坏不再挡住桌面，Markdown 可从手机分享，
+  应用可添加到主屏幕。
+- Draft Desk 耐久性契约扩展：恢复提示、选区与滚动位置持久化，以及引导、
+  边界、交接、工作会话等更完整的可执行测试套件。
 
 ## 一个月里真正变大的东西
 

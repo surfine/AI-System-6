@@ -41,6 +41,9 @@ ClioStage, Scrapbook, ClioTalk, plus creative labs (Cover Glass, CMF Studio).
   infer them). Never claim something was saved, clipped, inserted, exported,
   searched, indexed, or fact-checked unless UI state or a tool result confirms it.
 - The first route must be clearer than the feature inventory.
+- **Beta completion budget:** every new-feature change must answer whether it
+  makes the first finished work easier, existing work safer, or returning to
+  work clearer. If all three answers are no, it does not enter the current Beta.
 - **Question Sheet must welcome messy human input** before prose: real
   recipient, raw questions, personal observations, objections, usage details,
   pressure points, handoff friction. Sparse prompts create mouthpiece output.

@@ -112,6 +112,8 @@ function renderMountedTextDisk() {
   const mountedChunkCount = getMountedTextDiskChunks().length;
   const mounted = isProjectMounted && mountedChunkCount > 0 && mountedTextDisk.projectId === activeProjectId;
   mountedTextDiskEl.hidden = !mounted;
+  const starter = document.querySelector("#desktop-file-floppy-starter");
+  if (starter) starter.hidden = mounted;
   if (spineFileFloppyButtonEl) spineFileFloppyButtonEl.hidden = mounted;
   indexFilesButton.textContent = fileDiskImportController ? t("cancel") : mounted ? t("add_to_text_disk") : t("mount");
   const files = mounted ? mountedTextDisk.files : [];

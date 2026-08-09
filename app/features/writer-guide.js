@@ -53,7 +53,8 @@ function syncGuideWelcomeState({ focusDefault = false } = {}) {
   const connected = guideHasReadyModel();
   const body = guide.querySelector("[data-i18n^='guide_welcome_body']");
   const aiButton = guide.querySelector("[data-action='guide-open-model-settings']");
-  const defaultButton = guide.querySelector("[data-action='dismiss-guide']");
+  const defaultButton = guide.querySelector("[data-action='guide-start-quick-draft']");
+  const continueButton = guide.querySelector("[data-action='guide-continue-last']");
 
   if (body) {
     body.dataset.i18n = connected ? "guide_welcome_body_connected" : "guide_welcome_body";
@@ -63,6 +64,12 @@ function syncGuideWelcomeState({ focusDefault = false } = {}) {
     aiButton.dataset.i18n = connected ? "guide_ai_settings" : "guide_connect_ai";
     aiButton.textContent = t(aiButton.dataset.i18n);
   }
+  const project = typeof getActiveProject === "function" ? getActiveProject() : null;
+  if (continueButton) {
+    continueButton.hidden = !project;
+    continueButton.textContent = project ? t("guide_continue_project", project.name) : t("guide_continue_last");
+  }
+  window.AISystem6WebPlatform?.syncWebInstallUi?.();
 
   if (focusDefault && defaultButton && !guide.classList.contains("is-hidden")) {
     window.requestAnimationFrame(() => defaultButton.focus({ preventScroll: true }));
@@ -79,7 +86,7 @@ function initializeGuideOobe() {
 
     if (event.key === "Enter" && !event.metaKey && !event.ctrlKey && !event.altKey) {
       event.preventDefault();
-      dismissGuide();
+      startGuidedQuickDraft();
       return;
     }
 
@@ -91,8 +98,11 @@ function initializeGuideOobe() {
 
     if (event.key !== "Tab") return;
     const actions = [
+      guide.querySelector("[data-action='guide-start-quick-draft']"),
+      guide.querySelector("[data-action='guide-start-route']"),
+      guide.querySelector("[data-action='guide-continue-last']"),
       guide.querySelector("[data-action='guide-open-model-settings']"),
-      guide.querySelector("[data-action='dismiss-guide']"),
+      guide.querySelector("[data-action='install-web-app']"),
     ].filter((button) => button && !button.disabled);
     if (!actions.length) return;
 
@@ -124,6 +134,36 @@ async function openGuideModelSettings() {
   await closeWindow("guide");
   await openModelSettings();
   saveDeskState();
+}
+
+async function startGuidedQuickDraft() {
+  guideSeen = true;
+  await closeWindow("guide");
+  if (typeof openQuickDraft === "function") await openQuickDraft();
+  else {
+    await ensureQuickDraftModule?.();
+    await window.AISystem6QuickDraft?.open?.();
+  }
+  saveDeskState();
+}
+
+async function continueLastProject() {
+  guideSeen = true;
+  await closeWindow("guide");
+  const project = typeof getActiveProject === "function" ? getActiveProject() : null;
+  if (!project) {
+    await openWindow("projects");
+    return false;
+  }
+  const hasDraft = Boolean(String(project.quickDraft?.workspace?.body || "").trim());
+  if (hasDraft) {
+    await ensureQuickDraftModule?.();
+    await window.AISystem6QuickDraft?.open?.();
+  } else {
+    await openWindow("documents");
+  }
+  saveDeskState();
+  return true;
 }
 
 async function startGuidedWritingRoute() {

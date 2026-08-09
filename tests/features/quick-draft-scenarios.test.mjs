@@ -1,4 +1,4 @@
-// 钟点稿 1.0.27 completion scenarios — pure / VM behavior tests.
+// Draft Desk durability scenarios — pure / VM behavior tests.
 //
 // The five scenarios from the release contract run here against the real
 // production functions in a bare vm context (no DOM, no browser, no

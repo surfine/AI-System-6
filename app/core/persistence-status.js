@@ -1071,6 +1071,53 @@ function startLocalModelMonitor() {
   }, 5000);
 }
 
+async function detectLocalModelConnection() {
+  const provider = document.getElementById("local-provider");
+  const status = document.getElementById("local-detection-status");
+  const button = document.getElementById("detect-local-models");
+  if (!provider) return false;
+  setControlLoading(button, true, t("local_detection_checking"));
+  for (const candidate of ["lm-studio", "ollama"]) {
+    provider.value = candidate;
+    provider.dispatchEvent(new Event("change", { bubbles: true }));
+    const data = await connectLocalLmStudio({ toggle: false, silent: true });
+    if (data) {
+      if (status) status.textContent = t(candidate === "ollama" ? "local_detection_found_ollama" : "local_detection_found_lm_studio");
+      setControlLoading(button, false);
+      return true;
+    }
+  }
+  if (status) status.textContent = t("local_detection_none");
+  setControlLoading(button, false);
+  return false;
+}
+
+async function resetAiConnection() {
+  localLmStudioConnectionEnabled = false;
+  const provider = document.getElementById("local-provider");
+  if (provider) provider.value = "lm-studio";
+  endpointInput.value = window.AISystem6LocalLMStudio.defaultBaseUrl("lm-studio");
+  modelInput.value = "";
+  if (typeof embeddingModelInput !== "undefined" && embeddingModelInput) embeddingModelInput.value = "";
+  setModelPickerOptions([], []);
+  updateLocalModelState({ server: false, models: false, selected: false, loaded: false, ready: false, running: false, task: "" });
+  renderLocalConnectionStatus("local_connection_waiting");
+  if (typeof cloudConfig !== "undefined") cloudConfig = null;
+  if (typeof saveCloudConfig === "function") saveCloudConfig();
+  if (typeof setCloudRuntimeApiKey === "function") setCloudRuntimeApiKey("");
+  const cloudProvider = document.getElementById("cloud-provider");
+  const cloudKey = document.getElementById("cloud-api-key");
+  const cloudModel = document.getElementById("cloud-model");
+  if (cloudProvider) cloudProvider.value = "";
+  if (cloudKey) cloudKey.value = "";
+  if (cloudModel) cloudModel.value = "";
+  document.getElementById("cloud-model-select")?.replaceChildren();
+  await saveDeskState();
+  setStatus(t("reset_ai_connection_done"), { notify: false });
+  setControlTab("cloud");
+  return true;
+}
+
 // Control Panel used to be one long scroll; a phone user could not always
 // reach the close box below it. It is now three tabs (Local Model / Cloud
 // Model / General), each short enough to fit one screen, following the same
@@ -1798,6 +1845,7 @@ function renderSystemStatus() {
       ? `${workspaceLabel} · ${modeLabel} · ${t("sideask")}`
       : `${workspaceLabel} · ${modeLabel}`;
   }
+  window.AISystem6WebPlatform?.renderProjectStorageStatus?.();
 }
 
 function formatNotificationTime(date = new Date()) {
@@ -1860,7 +1908,7 @@ function renderNotificationCenter() {
     body.append(message, meta);
     row.append(body);
 
-    if (item.windowName) {
+    if (item.windowName || item.actionId) {
       const button = document.createElement("button");
       button.className = "btn mini-btn notification-open-button";
       button.type = "button";
@@ -1889,6 +1937,7 @@ function pushSystemNotification(message, options = {}) {
     item.createdAt = now;
     item.state = options.state || item.state || "";
     item.windowName = options.windowName ?? item.windowName;
+    item.actionId = options.actionId ?? item.actionId;
     item.actionLabel = options.actionLabel ?? item.actionLabel;
   } else {
     item = null;
@@ -1899,6 +1948,7 @@ function pushSystemNotification(message, options = {}) {
     last.createdAt = now;
     last.state = options.state || last.state || "";
     last.windowName = options.windowName ?? last.windowName;
+    last.actionId = options.actionId ?? last.actionId;
     last.actionLabel = options.actionLabel ?? last.actionLabel;
     item = last;
   } else {
@@ -1908,6 +1958,7 @@ function pushSystemNotification(message, options = {}) {
       createdAt: now,
       state: options.state || "",
       windowName: options.windowName || "",
+      actionId: options.actionId || "",
       actionLabel: options.actionLabel || "",
     };
     if (!wasExisting) {
@@ -1928,6 +1979,10 @@ function pushSystemNotification(message, options = {}) {
 
 function openSystemNotification(id) {
   const item = systemNotifications.find((entry) => entry.id === id);
+  if (item?.actionId && typeof handleAction === "function") {
+    handleAction(item.actionId);
+    return;
+  }
   if (!item?.windowName) return;
   openWindow(item.windowName);
   const target = getWindow(item.windowName);

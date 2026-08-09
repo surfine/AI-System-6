@@ -811,64 +811,16 @@ function exitQuickDraftClioTalkSession(options = {}) {
   return exitSideAskClioTalkSession(options);
 }
 
-function quickDraftTitleFromBody(body = "") {
-  const text = String(body || "");
-  const heading = text.split(/\r?\n/).find((line) => /^#{1,6}\s+\S/.test(line.trim()));
-  const fallback = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean)[0] || "";
-  return String(heading || fallback || "")
-    .replace(/^#{1,6}\s+/, "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 42);
-}
-
 function currentQuickDraftForClioTalk() {
   const project = typeof getActiveProject === "function" ? getActiveProject() : null;
-  const saved = project?.quickDraft && typeof project.quickDraft === "object" ? project.quickDraft : {};
-  const workspace = saved.workspace && typeof saved.workspace === "object" ? saved.workspace : {};
-  const intake = workspace.intake && typeof workspace.intake === "object" ? workspace.intake : {};
-  const setup = intake.setup && typeof intake.setup === "object" ? intake.setup : {};
-  const toolInputs = workspace.toolInputs && typeof workspace.toolInputs === "object" ? workspace.toolInputs : {};
-  const annotations = intake.annotations && typeof intake.annotations === "object"
-    ? intake.annotations
-    : (workspace.annotations && typeof workspace.annotations === "object" ? workspace.annotations : {});
-  const value = (id, fallback = "") => {
-    const el = document.getElementById(id);
-    return typeof el?.value === "string" ? el.value : fallback;
-  };
-  const body = value("quick-draft-draft", workspace.body || saved.draft || "");
-  const title = quickDraftTitleFromBody(body) || value("quick-draft-title-input", workspace.title || saved.title || "");
-  return {
-    title,
-    body,
-    thesis: value("quick-draft-thesis", setup.thesis || toolInputs.thesis || saved.thesis || ""),
-    pastedSources: value("quick-draft-sources", setup.pastedSources || toolInputs.pastedSources || saved.pastedSources || ""),
-    targetFormat: document.getElementById("quick-draft-format")?.value || setup.scenario || workspace.scenario || saved.targetFormat || "",
-    targetDuration: document.getElementById("quick-draft-duration")?.value || setup.targetDuration || toolInputs.targetDuration || saved.targetDuration || "",
-    firstDaySubject: title || value("quick-draft-first-day-subject", setup.firstDaySubject || toolInputs.firstDaySubject || saved.firstDaySubject || ""),
-    handsOnNotes: value("quick-draft-hands-on", setup.handsOnNotes || toolInputs.handsOnNotes || saved.handsOnNotes || ""),
-    officialMaterials: value("quick-draft-official-materials", setup.officialMaterials || toolInputs.officialMaterials || saved.officialMaterials || ""),
-    unavailableNotes: value("quick-draft-unavailable", setup.unavailableNotes || toolInputs.unavailableNotes || saved.unavailableNotes || ""),
-    audienceConcerns: value("quick-draft-audience-concerns", setup.audienceConcerns || toolInputs.audienceConcerns || saved.audienceConcerns || ""),
-    firstImpression: value("quick-draft-first-impression", setup.firstImpression || toolInputs.firstImpression || saved.firstImpression || ""),
-    tone: value("quick-draft-tone", setup.tone || toolInputs.tone || saved.tone || ""),
-    mustInclude: value("quick-draft-must-include", setup.mustInclude || toolInputs.mustInclude || saved.mustInclude || ""),
-    mustAvoid: value("quick-draft-must-avoid", setup.mustAvoid || toolInputs.mustAvoid || saved.mustAvoid || ""),
-    annotations: {
-      firsthand: annotations.firsthand || saved.brief?.support || "",
-      official: annotations.official || saved.brief?.counter || "",
-      uncertainty: annotations.uncertainty || saved.brief?.uncertainty || "",
-      followup: annotations.followup || saved.risks || "",
-    },
-    intake,
-    strategyReport: workspace.strategyReport && typeof workspace.strategyReport === "object" ? workspace.strategyReport : {},
-    sourceMap: Array.isArray(workspace.sourceMap) ? workspace.sourceMap : (Array.isArray(saved.sourceMap) ? saved.sourceMap : []),
-  };
+  return window.AISystem6QuickDraft?.getContextSnapshot?.()
+    || quickDraftContextSnapshot(project?.quickDraft || {});
 }
 
 function formatQuickDraftForClioTalk() {
   const record = currentQuickDraftForClioTalk();
-  const launchDayFormat = record.targetFormat === "first-day-hands-on" || record.targetFormat === "hands-on-review";
+  const setupRecord = record.setup && typeof record.setup === "object" ? record.setup : {};
+  const launchDayFormat = setupRecord.scenario === "first-day-hands-on" || setupRecord.scenario === "hands-on-review";
   const lines = [];
   const pushSection = (heading, body, limit = 10000) => {
     const text = String(body || "").trim();
@@ -878,14 +830,14 @@ function formatQuickDraftForClioTalk() {
 
   pushSection(t(launchDayFormat ? "quick_draft_first_day_title" : "quick_draft_title"), record.title, 1200);
   pushSection(t("quick_draft_draft_label"), record.body, 12000);
-  pushSection(t("quick_draft_thesis_label"), record.thesis, 2400);
+  pushSection(t("quick_draft_thesis_label"), setupRecord.thesis, 2400);
   if (launchDayFormat) {
-    pushSection(t("quick_draft_first_day_subject"), record.firstDaySubject, 1200);
-    pushSection(t("quick_draft_hands_on"), record.handsOnNotes, 6000);
-    pushSection(t("quick_draft_official_materials"), record.officialMaterials, 9000);
-    pushSection(t("quick_draft_unavailable"), record.unavailableNotes, 4000);
-    pushSection(t("quick_draft_audience_concerns"), record.audienceConcerns, 3000);
-    pushSection(t("quick_draft_first_impression"), record.firstImpression, 2400);
+    pushSection(t("quick_draft_first_day_subject"), setupRecord.firstDaySubject || record.title, 1200);
+    pushSection(t("quick_draft_hands_on"), setupRecord.handsOnNotes, 6000);
+    pushSection(t("quick_draft_official_materials"), setupRecord.officialMaterials, 9000);
+    pushSection(t("quick_draft_unavailable"), setupRecord.unavailableNotes, 4000);
+    pushSection(t("quick_draft_audience_concerns"), setupRecord.audienceConcerns, 3000);
+    pushSection(t("quick_draft_first_impression"), setupRecord.firstImpression, 2400);
   }
   const intake = record.intake && typeof record.intake === "object" ? record.intake : {};
   const ventLog = Array.isArray(intake.ventLog) ? intake.ventLog : [];
@@ -907,26 +859,26 @@ function formatQuickDraftForClioTalk() {
   );
   pushSection(t("quick_draft_stance_candidates"), stanceCandidates.join("\n"), 2400);
   pushSection(t("quick_draft_outline_seed"), intake.outlineSeed || "", 6000);
-  const strategyReport = record.strategyReport && typeof record.strategyReport === "object" ? record.strategyReport : {};
+  const strategyReport = record.strategy && typeof record.strategy === "object" ? record.strategy : {};
   pushSection(t("quick_draft_editorial_strategy"), strategyReport.editorial, 4000);
   pushSection(t("quick_draft_material_ledger"), strategyReport.materialLedger, 5000);
   pushSection(t("quick_draft_adoption_table"), strategyReport.adoptionTable, 5000);
   const setup = [
-    record.targetFormat ? `${t("quick_draft_format")}: ${record.targetFormat}` : "",
-    record.targetDuration ? `${t(record.targetFormat === "bili-dynamic" ? "quick_draft_word_count" : "quick_draft_duration")}: ${record.targetDuration}` : "",
-    record.tone ? `${t("quick_draft_tone")}: ${record.tone}` : "",
-    record.mustInclude ? `${t("quick_draft_must_include")}: ${record.mustInclude}` : "",
-    record.mustAvoid ? `${t("quick_draft_must_avoid")}: ${record.mustAvoid}` : "",
+    setupRecord.scenario ? `${t("quick_draft_format")}: ${setupRecord.scenario}` : "",
+    setupRecord.targetDuration ? `${t(setupRecord.scenario === "bili-dynamic" ? "quick_draft_word_count" : "quick_draft_duration")}: ${setupRecord.targetDuration}` : "",
+    setupRecord.tone ? `${t("quick_draft_tone")}: ${setupRecord.tone}` : "",
+    setupRecord.mustInclude ? `${t("quick_draft_must_include")}: ${setupRecord.mustInclude}` : "",
+    setupRecord.mustAvoid ? `${t("quick_draft_must_avoid")}: ${setupRecord.mustAvoid}` : "",
   ].filter(Boolean).join("\n");
   pushSection(currentLanguage === "zh" ? "出稿设置" : "Draft Settings", setup, 2000);
-  pushSection(t("quick_draft_sources_label"), record.pastedSources, 9000);
+  pushSection(t("quick_draft_sources_label"), setupRecord.pastedSources, 9000);
   pushSection(t("quick_draft_first_day_annotated_hands_on"), record.annotations.firsthand, 6000);
   pushSection(t("quick_draft_first_day_annotated_official"), record.annotations.official, 4000);
   pushSection(t("quick_draft_first_day_annotated_uncertain"), record.annotations.uncertainty, 4000);
   pushSection(t("quick_draft_first_day_annotated_followup"), record.annotations.followup, 4000);
 
-  if (record.sourceMap.length) {
-    const sourceMap = record.sourceMap
+  if (record.materials.length) {
+    const sourceMap = record.materials
       .map((item) => `- ${item.label || item.id || ""}`.trim())
       .filter((item) => item !== "-")
       .join("\n");
@@ -4222,7 +4174,7 @@ async function submitUserText(userText, options = {}) {
   }
 
   if (shouldCaptureQuickDraftVentInput(options)) {
-    const captured = window.AISystem6QuickDraft.captureVentText(userText, {
+    const captured = await window.AISystem6QuickDraft.captureVentText(userText, {
       sourceKind: "clioTalk-vent",
     });
     if (captured) {

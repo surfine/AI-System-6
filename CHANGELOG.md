@@ -376,6 +376,27 @@ Version `1.0.12`, build `20260804.2`.
 - The promotional performance and 4K edits gain tighter deep trims, a
   multi-device CMF Studio montage, and reusable Bilibili cover renderers.
 
+## Public Beta 1.0.31 - 2026-08-09
+
+- Aqua becomes the fourth release-ready Appearance beside System 6, Platinum,
+  and Liquid Glass, with Jaguar-era geometry, the current-application menu,
+  three-column Open dialogs, attached sheets, and Finder toolbars evidenced
+  from the period HIG and pinned canonical sources.
+- The Appearance registry gains an explicit recipe lineage (Platinum ← Classic,
+  Snow Leopard ← Aqua, Yosemite ← Liquid Glass), so each era owns only its
+  deltas; release gating keeps Snow Leopard and Yosemite out of the shipped
+  surface while retaining their recipes for later work.
+- Theme Lab becomes a multi-era acceptance surface with era-accurate fixtures
+  and SHA-256-pinned canonical references (Mac OS 9 Platinum menus, Jaguar
+  Aqua column browser, sheets, scrollbars, and choice states).
+- Draft Desk hardening lands: guided Write-a-Short-Draft onboarding with one
+  setup surface, Continue-last returns to the previous draft, broken or
+  missing model setups no longer block the desktop, and Markdown can be shared
+  or the app installed to the home screen from phones.
+- Draft Desk durability contracts expand: recovery messaging, persistence of
+  selection and scroll, and a broader executable test suite for onboarding,
+  boundaries, handoff, and working sessions.
+
 ## What Changed Most In One Month
 
 - The product moved from "an AI writing prototype" to a local-first writing

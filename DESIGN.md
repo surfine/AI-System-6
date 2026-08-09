@@ -21,6 +21,11 @@ reading sources, sorting evidence, drafting, saving, reviewing, and exporting.
 Familiarity is a feature. Surprise is allowed only when it clarifies object
 identity or feedback.
 
+Before adding a visible capability, answer three completion questions: does it
+make the first finished work easier, make existing work safer, or make the next
+session easier to resume? A change that answers no to all three is feature
+inventory, not product completion, and stays out of the current Beta.
+
 The Macintosh System 6 desktop metaphor is a constraint, not decoration:
 
 - Visible objects beat abstract AI controls.
@@ -49,9 +54,8 @@ Adopting a historical element requires all of the following:
   accessibility instead of reproducing an obsolete input limitation.
 - Keep the default experience quiet. Later-system features should appear on
   demand or at the moment they become relevant, not as a feature inventory.
-- Keep one semantic DOM and state model across Classic and Liquid Glass. Classic
-  preserves the recognizable historical form; Liquid Glass changes material,
-  not the object's meaning.
+- Keep one semantic DOM and state model across all six appearances. Each era
+  changes material and optical geometry, not the object's meaning.
 
 Control meanings are load-bearing:
 
@@ -96,11 +100,22 @@ Exceptions must be named in the feature contract. `Cover Glass` (file name
 carry more visual range, but they still reuse the same window, control, state,
 and theme contracts.
 
-## Two Themes, One Object Grammar
+## Six Appearances, One Object Grammar
 
-Classic and Liquid Glass are two material skins over the same desktop language.
-They share object names, DOM structure, task flow, copy, state model, keyboard
-behavior, and feature contracts.
+System 6, Platinum, Aqua, Snow Leopard, Yosemite, and Liquid Glass are material
+skins over the same desktop language. They share object names, DOM structure,
+task flow, copy, state model, keyboard behavior, and feature contracts.
+
+The maintenance lineage has three deliberate branches:
+
+- Classic → Platinum
+- Aqua → Snow Leopard
+- Liquid Glass → Yosemite
+
+`recipeBase` names the comparison and authoring baseline; it does not activate a
+second theme class. Each child owns a reviewable delta, so Aqua candy does not
+leak into Snow Leopard and Liquid Glass refraction does not leak into Yosemite.
+`family` is only for genuinely shared internal primitives.
 
 Theme changes may alter:
 
@@ -119,16 +134,46 @@ Theme changes must not alter without a documented reason:
 - Window ownership boundaries.
 - Reading, writing, clipping, saving, or export rules.
 
-New theme work should be token-first:
+Appearance work should be token-first:
 
 1. Add the default token in `styles/00-foundation.css`.
-2. Override the value inside the existing `body.use-liquid-glass {}` block in
-   `styles/70-liquid-glass.css`.
-3. Consume the token from the base selector.
-4. Avoid adding a new `body.use-liquid-glass .selector` twin.
+2. Put historical parameter-table deltas in `styles/65-appearance-themes.css`,
+   or Liquid Glass values in `styles/70-liquid-glass.css`.
+3. Compare child work against its registry `recipeBase` and override only the
+   semantic values or small structural recipes that truly differ.
+4. Consume the token from the shared base selector.
+5. Avoid application-specific theme selectors and new Liquid Glass twins.
 
 If a Liquid Glass twin is structurally necessary, add a short comment explaining
 why a token cannot carry the difference.
+
+### Appearance evidence ledger
+
+Historical themes require a reviewable source chain. Reference code establishes
+geometry and state coverage; it does not donate selectors, DOM, or redistributable
+artwork.
+
+| Theme target | Primary implementation evidence | Secondary evidence | Final calibration |
+| --- | --- | --- | --- |
+| Platinum — Mac OS 9 | MIT-licensed [`classic-stylesheets` Mac OS 9 recipes at `9ebd2d8`](https://github.com/nielssp/classic-stylesheets/tree/9ebd2d84664095345097a71e1a137f985d03d4f2/themes/macos9): window, button, input, tab, list, menu, and 16px scrollbar geometry plus state SVGs | Apple's [Mac OS 8 HIG](https://dev.os9.ca/techpubs/mac/pdf/HIGOS8Guidelines.pdf) supplies the 19px title bar, 20×58px standard button, 22px edit field, dialog spacing, and control semantics; [Classicy](https://github.com/robbiebyrd/classicy/tree/ca8c0ae294b5a289aa5a69cc223c152b55672d35) and [platinum.css](https://github.com/mat-sz/platinum.css/tree/d3f345731f886c7dc767be5877f10db14f11ead4) only cross-check missing geometry | Real Mac OS 9 Finder, Appearance, Open dialog, menu, SimpleText, and alert captures from the [GUIdebook Mac OS 9 gallery](https://guidebookgallery.org/screenshots/macos90) |
+| Aqua — Mac OS X 10.2 Jaguar | [Quaqua 9.1 nested package](https://www.randelshofer.ch/quaqua/files/quaqua-9.1.nested.zip): `Quaqua15JaguarLookAndFeel.java`, its `jaguar/` resources, common push/default/field/choice/popup/scrollbar assets, and the [Jaguar wrap-tab contract](https://www.randelshofer.ch/quaqua/guide/jtabbedpane.html) | Apple's archived [Aqua HIG](https://developer.apple.com/library/archive/documentation/UserExperience/Conceptual/OSXHIGuidelines/) supplies control roles and interaction semantics, not Jaguar pixel values | Real 10.2 Finder, System Preferences, open/save panels, Mail, and dialogs in the [512 Pixels Jaguar library](https://512pixels.net/projects/aqua-screenshot-library/mac-os-x-10-2-jaguar/) |
+| Snow Leopard — Mac OS X 10.6 | Quaqua 9.1: `Quaqua16SnowLeopardLookAndFeel.java`, Snow resources, active/inactive title bars and toolbars, source-list states, and size variants; the [Quaqua changelog](https://www.randelshofer.ch/quaqua/changes.html) records the Snow LAF arriving in 6.0 | Chromium's period [`platform-mac-snowleopard` Inspector CSS](https://chromium.googlesource.com/chromium/reference_builds/chrome_linux/+/f108f78bd628aceeb5d44dcaaac401a2a2e97a9d/resources/inspector/inspector.css) supplies Web-toolbar, search-field, status-bar, and compact custom-scrollbar evidence | Real 10.6 Finder, System Preferences, open/save panels, Mail, and dialogs in the [512 Pixels Snow Leopard library](https://512pixels.net/projects/aqua-screenshot-library/mac-os-x-10-6-snow-leopard/) |
+
+Resolve conflicts in that order of authority: a native screenshot from the target
+OS wins; Quaqua supplies missing geometry, repeatable states, and regular/small/mini
+relationships; period Web CSS only governs comparable Web-owned surfaces. Thus
+Chromium's 11px gray Inspector scrollbar is a compact Web variant, while the Snow
+Leopard system scrollbar remains the 15px blue Aqua control shown by Quaqua and
+native open panels. External selectors, component DOM, and Apple-owned artwork
+must not enter the repository.
+
+Platinum typography has an explicit licensing boundary: Charcoal and Charcoal
+CY remain local system-font names; the OFL-licensed [Asap variable face at
+`2de32f2`](https://github.com/Omnibus-Type/Asap/tree/2de32f20d7a0d48d4084adcf4bd6ac8115cf2f1a)
+is the measured cross-platform fallback, followed by installed Geneva. Do not
+redistribute an extracted Apple font or an unlicensed lookalike merely to make
+a snapshot report the canonical face. Theme Lab reports “Charcoal” as the
+historical target, not as a claim that the Apple binary has been bundled.
 
 ## Object Vocabulary
 
@@ -199,6 +244,29 @@ Classic theme:
 - Borders and insets should feel like System 6 controls.
 - Bitmap/System-style icon language wins over decorative illustration.
 
+Platinum derives from Classic:
+
+- Keep Classic density and object grammar.
+- Add neutral gray depth, compact bevels, striped active title bars, and
+  Mac OS 8/9 controls without turning them into Windows 95 chrome.
+
+Aqua is the second recipe root:
+
+- Use early Jaguar-era pinstripes, plastic depth, blue focus, candy default
+  controls, and solid windows.
+
+Snow Leopard derives from Aqua:
+
+- Preserve the Aqua control skeleton while reducing candy gloss.
+- Prefer unified silver chrome, tighter density, mature sidebars, and quieter
+  shadows.
+
+Yosemite derives from Liquid Glass:
+
+- Retain the modern window structure while flattening it into thin, cold,
+  compact 10.10-era planes and restrained vibrancy.
+- Do not inherit Liquid Glass refraction, large radii, or card-like depth.
+
 Liquid Glass theme:
 
 - Glass is a material for the same objects, not a license for generic
@@ -213,7 +281,7 @@ Liquid Glass theme:
   and control-specific acceptance criteria, follow
   LIQUID-GLASS-CONTROLS.md.
 
-Both themes:
+All appearances:
 
 - One icon family per object id.
 - One state vocabulary for controls.
@@ -261,10 +329,11 @@ Before changing a UI surface, answer these in the work notes or PR:
 2. Is it on the core writing route or a summoned utility?
 3. Which existing primitives does it reuse?
 4. Which tokens define its geometry, material, and state?
-5. What changes between Classic and Liquid Glass?
+5. What changes from this appearance's registry `recipeBase`?
 6. What states exist: default, hover, focus, active, selected, disabled,
    loading, empty, error?
-7. What verification covers both themes and at least one narrow viewport?
+7. What verification covers the six-era Theme Lab and at least one narrow
+   Classic/Liquid viewport?
 
 If an answer is "new pattern", justify it before editing CSS.
 
@@ -296,6 +365,7 @@ For visual work:
 npm run build:app
 npm run verify:css
 npm run verify:design
+npm run verify:theme-lab
 npm run smoke:release
 ```
 

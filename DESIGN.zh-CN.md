@@ -1,5 +1,5 @@
 <!-- canonical-source: DESIGN.md -->
-<!-- source-sha256: 0b2f408905b1b578fe10745e92245f6f5f982b76265586319c15a499898af9df -->
+<!-- source-sha256: 8da7f657af05fed11f6030591bbc90ce77985142702fdabb6b1956c0aebdc8d6 -->
 
 # AI System 6 设计合约
 
@@ -15,6 +15,9 @@ HIG.md。其中的机器可读窗口注册表会和 feature contract 一起接�
 ## 产品语域
 
 AI System 6 是产品 UI，不是营销页面。设计服务于正在阅读来源、整理证据、起草、保存、审校和导出的写作者。熟悉感是优点。只有在能澄清对象身份或反馈时，才允许意外感。
+
+增加可见能力前，先回答三项完成度问题：它是否让第一份成品更容易完成、让已有作品更安全，
+或让下一次会话更容易继续？三个答案都是否的变更属于功能清单，不属于产品完成度，不进入当前 Beta。
 
 Macintosh System 6 桌面隐喻是约束，不是装饰：
 
@@ -39,8 +42,8 @@ Classic Mac OS 思想，只要能改善产品，就可以被引进、消化和�
 - 保留原始角色和状态转换。外观相近或位于同一块窗口边框上的控件，并不因此可以互换。
 - 针对网页、指针、键盘、触控、窄屏和无障碍重新消化，而不是复刻过时的输入限制。
 - 默认体验保持安静。后续系统功能应按需出现，或在真正相关时出现，不能堆成功能清单。
-- Classic 与 Liquid Glass 使用同一套语义 DOM 和状态模型。Classic 保留可辨识的历史形态；
-  Liquid Glass 改变材质，不改变对象含义。
+- 六套 Appearance 使用同一套语义 DOM 和状态模型。各时代只改变材质与视觉几何，不改变
+  对象含义。
 
 控件语义是承重规则：
 
@@ -78,9 +81,20 @@ Classic Mac OS 思想，只要能改善产品，就可以被引进、消化和�
 
 例外必须写进 feature contract。`Cover Glass` 玻璃封面（文件名 `liquid-cover.js`）、`CMF Studio`、`ClioStage` 和媒体创作工具可以有更宽的视觉范围，但仍要复用同一套窗口、控件、状态和主题合约。
 
-## 两套主题，一套对象语法
+## 六套 Appearance，一套对象语法
 
-Classic 和 Liquid Glass 是同一桌面语言的两套材质皮肤。它们共享对象名称、DOM 结构、任务流程、文案、状态模型、键盘行为和功能合约。
+System 6、Platinum、Aqua、Snow Leopard、Yosemite 和 Liquid Glass 是同一桌面
+语言的材质皮肤。它们共享对象名称、DOM 结构、任务流程、文案、状态模型、键盘行为和功能合约。
+
+维护谱系刻意分为三条：
+
+- Classic → Platinum
+- Aqua → Snow Leopard
+- Liquid Glass → Yosemite
+
+`recipeBase` 指定比较与编写时的基底，不会激活第二个主题 class。每个子主题拥有可评审的
+显式差异，因此 Aqua 的糖果材质不会泄漏到 Snow Leopard，Liquid Glass 的折射也不会泄漏到
+Yosemite。`family` 只用于确实共享的内部 primitive。
 
 主题可以改变：
 
@@ -99,14 +113,39 @@ Classic 和 Liquid Glass 是同一桌面语言的两套材质皮肤。它们共�
 - 窗口所有权边界。
 - 阅读、写作、摘录、保存或导出规则。
 
-新增主题工作应优先走 token：
+Appearance 工作应优先走 token：
 
 1. 在 `styles/00-foundation.css` 添加默认 token。
-2. 在 `styles/70-liquid-glass.css` 现有 `body.use-liquid-glass {}` 块里覆盖值。
-3. 基础 selector 消费这个 token。
-4. 避免新增 `body.use-liquid-glass .selector` twin。
+2. 历史主题参数表差异写进 `styles/65-appearance-themes.css`；Liquid Glass 的值写进
+   `styles/70-liquid-glass.css`。
+3. 子主题以注册表中的 `recipeBase` 为比较对象，只覆盖真正不同的 semantic value 或小型结构 recipe。
+4. 共享基础 selector 消费 token。
+5. 避免应用专属主题 selector 和新增 Liquid Glass twin。
 
 如果 Liquid Glass twin 在结构上确实必要，写一条短注释说明为什么 token 不能承载这个差异。
+
+### Appearance 证据账本
+
+历史主题必须有可评审的来源链。参考代码用来确定几何与状态覆盖，不提供可直接移植的
+selector、DOM 或可再分发美术资源。
+
+| 主题目标 | 首要实现证据 | 次要证据 | 最终校准 |
+| --- | --- | --- | --- |
+| Platinum — Mac OS 9 | MIT 许可的 [`classic-stylesheets` Mac OS 9 recipe（固定于 `9ebd2d8`）](https://github.com/nielssp/classic-stylesheets/tree/9ebd2d84664095345097a71e1a137f985d03d4f2/themes/macos9)：window、button、input、tab、list、menu、16px scrollbar 的几何与状态 SVG | Apple [Mac OS 8 HIG](https://dev.os9.ca/techpubs/mac/pdf/HIGOS8Guidelines.pdf) 提供 19px 标题栏、20×58px 标准按钮、22px edit field、dialog 间距与控件语义；[Classicy](https://github.com/robbiebyrd/classicy/tree/ca8c0ae294b5a289aa5a69cc223c152b55672d35) 和 [platinum.css](https://github.com/mat-sz/platinum.css/tree/d3f345731f886c7dc767be5877f10db14f11ead4) 只交叉检查缺失几何 | 用 [GUIdebook Mac OS 9 图库](https://guidebookgallery.org/screenshots/macos90) 中真实 Finder、Appearance、Open dialog、menu、SimpleText 与 alert 截图校准 |
+| Aqua — Mac OS X 10.2 Jaguar | [Quaqua 9.1 nested package](https://www.randelshofer.ch/quaqua/files/quaqua-9.1.nested.zip) 中的 `Quaqua15JaguarLookAndFeel.java`、`jaguar/` 资源、共享 push/default/field/choice/popup/scrollbar 资源，以及 [Jaguar wrap-tab 合约](https://www.randelshofer.ch/quaqua/guide/jtabbedpane.html) | Apple 存档的 [Aqua HIG](https://developer.apple.com/library/archive/documentation/UserExperience/Conceptual/OSXHIGuidelines/) 只提供控件角色与交互语义，不作为 Jaguar 像素值 | [512 Pixels Jaguar 图库](https://512pixels.net/projects/aqua-screenshot-library/mac-os-x-10-2-jaguar/) 中真实 10.2 的 Finder、System Preferences、打开/存储面板、Mail 与对话框 |
+| Snow Leopard — Mac OS X 10.6 | Quaqua 9.1 中的 `Quaqua16SnowLeopardLookAndFeel.java`、Snow 资源、active/inactive 标题栏和工具栏、source-list 状态与尺寸变体；[Quaqua changelog](https://www.randelshofer.ch/quaqua/changes.html) 记录 Snow LAF 从 6.0 开始提供 | 同时代 Chromium 的 [`platform-mac-snowleopard` Inspector CSS](https://chromium.googlesource.com/chromium/reference_builds/chrome_linux/+/f108f78bd628aceeb5d44dcaaac401a2a2e97a9d/resources/inspector/inspector.css) 提供 Web toolbar、search field、status bar 和 compact custom scrollbar 证据 | [512 Pixels Snow Leopard 图库](https://512pixels.net/projects/aqua-screenshot-library/mac-os-x-10-6-snow-leopard/) 中真实 10.6 的 Finder、System Preferences、打开/存储面板、Mail 与对话框 |
+
+发生冲突时按以下权威顺序处理：目标系统的原生截图优先；Quaqua 补足几何、可重复状态和
+regular/small/mini 的关系；同期 Web CSS 只约束相同的 Web 自有表面。因此 Chromium Inspector
+的 11px 灰色滚动条只能作为 compact Web 变体；Snow Leopard 的系统滚动条仍采用 Quaqua 和
+原生打开面板共同显示的 15px 蓝色 Aqua 控件。外部 selector、组件 DOM 和 Apple 所有的美术
+资源不得进入仓库。
+
+Platinum 字体有明确许可边界：Charcoal 与 Charcoal CY 只作为本机系统字体名；跨平台时使用
+固定在 [`2de32f2` 的 OFL Asap Variable](https://github.com/Omnibus-Type/Asap/tree/2de32f20d7a0d48d4084adcf4bd6ac8115cf2f1a)
+测量兜底，最后才使用已安装的 Geneva。不能仅为了让截图显示规范字体名，就随项目分发从
+Apple 系统提取的字体或许可证不明的仿制字体。Theme Lab 显示“Charcoal”代表历史目标，
+不等于项目已捆绑 Apple 字体二进制。
 
 ## 对象词汇表
 
@@ -182,7 +221,26 @@ Liquid Glass theme：
 - hover 预览、相对表面、控件连续性、动效家族和逐控件验收条件，遵循
   LIQUID-GLASS-CONTROLS.zh-CN.md。
 
-两套主题共同遵守：
+Platinum 由 Classic 派生：
+
+- 保留 Classic 的密度与对象语法。
+- 增加中性灰层次、紧凑 bevel、活动标题栏条纹和 Mac OS 8/9 控件，不能变成 Windows 95 chrome。
+
+Aqua 是第二个 recipe 根：
+
+- 使用 Jaguar 早期 pinstripe、塑料厚度、蓝色 focus、糖果 default control 和实体窗口。
+
+Snow Leopard 由 Aqua 派生：
+
+- 保留 Aqua 的控件骨架，同时收敛糖果高光。
+- 使用统一银灰 chrome、更紧凑密度、成熟 sidebar 与更安静的阴影。
+
+Yosemite 由 Liquid Glass 派生：
+
+- 保留现代窗口结构，但压成薄、冷、紧凑的 10.10 平面与克制 vibrancy。
+- 不继承 Liquid Glass 的折射、大圆角或卡片式纵深。
+
+所有 Appearance 共同遵守：
 
 - 每个对象 id 只有一个图标家族。
 - 控件使用同一套状态词汇。
@@ -225,9 +283,9 @@ UI 文案应该直接，并且绑定对象：
 2. 它属于核心写作路线，还是被召唤的工具？
 3. 复用了哪些现有 primitives？
 4. 哪些 tokens 定义它的几何、材质和状态？
-5. Classic 和 Liquid Glass 之间有什么变化？
+5. 它相对注册表 `recipeBase` 改变了什么？
 6. 存在哪些状态：default、hover、focus、active、selected、disabled、loading、empty、error？
-7. 哪个验证覆盖了两套主题和至少一个窄 viewport？
+7. 哪个验证覆盖了六时代 Theme Lab，以及至少一个窄屏 Classic/Liquid viewport？
 
 如果答案是“新模式”，先说明理由，再编辑 CSS。
 
@@ -259,6 +317,7 @@ UI 文案应该直接，并且绑定对象：
 npm run build:app
 npm run verify:css
 npm run verify:design
+npm run verify:theme-lab
 npm run smoke:release
 ```
 

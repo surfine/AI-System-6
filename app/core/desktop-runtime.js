@@ -205,6 +205,31 @@ async function createProjectFromInput() {
   setStatus(t("project_created", project.name));
 }
 
+async function createDefaultProjectForDraftDesk() {
+  const name = uniqueProjectName(t("untitled_project"));
+  const project = createProjectRecord(name);
+  const previousProjectId = activeProjectId;
+  parkConversationInProject(previousProjectId);
+  await window.AISystem6StateStores?.projects.commit(() => {
+    projects.unshift(project);
+  });
+  isProjectMounted = true;
+  activeProjectId = project.id;
+  selectedProjectId = project.id;
+  selectedFolderId = "all";
+  clearProjectTransientState();
+  closeProjectScopedWindows();
+  scheduleWorkspaceRender({ projectReferences: true, mountedTextDisk: true, menuState: true });
+  resetAssistantForProject(project.name);
+  loadActiveProjectReferences();
+  await saveDeskState();
+  await window.AISystem6WebPlatform?.renderProjectStorageStatus?.();
+  await ensureQuickDraftModule?.();
+  await window.AISystem6QuickDraft?.open?.();
+  setStatus(t("project_created", project.name));
+  return project;
+}
+
 function uniqueProjectName(baseName) {
   const base = (baseName || t("untitled_project")).trim() || t("untitled_project");
   if (!getProjectNameConflict(base)) return base;

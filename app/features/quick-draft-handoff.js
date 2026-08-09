@@ -6,6 +6,102 @@
 // success or failure; a failure never shows as success and never claims the
 // draft was saved.
 
+/**
+ * @param {{projectId?: string, title?: string, body?: string, existingDocumentId?: string}} options
+ */
+async function commitQuickDraftProjectDocument({ projectId = "", title = "", body = "", existingDocumentId = "" } = {}) {
+  const project = projects.find((item) => item.id === projectId);
+  if (!project || !String(body || "").trim()) return { ok: false, documentId: "", repairNeeded: false };
+
+  const previousFolders = chatFolders.filter((folder) => folder.projectId === projectId).map((folder) => structuredClone(folder));
+  const previousQuickDraft = structuredClone(project.quickDraft || blankQuickDraft());
+  const previousBackupReminderShownAt = project.backupReminderShownAt || "";
+  const previousSelectedId = selectedChatFileId;
+  const existing = existingDocumentId
+    ? chatFiles.find((file) => file.id === existingDocumentId && file.projectId === projectId && file.type === "text")
+    : null;
+  const previousFile = existing ? structuredClone(existing) : null;
+  const now = new Date().toISOString();
+  const folder = typeof ensureFolder === "function" ? ensureFolder(t("documents"), null) : null;
+  const file = existing || {
+    id: crypto.randomUUID(),
+    projectId,
+    type: "text",
+    name: typeof nextAvailableProjectFileName === "function" ? nextAvailableProjectFileName(title, projectId) : title,
+    folderId: folder?.id || "",
+    source: "Quick Draft",
+    durable: true,
+    label: "draft",
+    createdAt: now,
+  };
+  file.name = existing ? title : file.name;
+  file.body = body;
+  file.folderId = folder?.id || file.folderId || "";
+  file.updatedAt = now;
+  if (!existing) chatFiles.unshift(file);
+  const shouldRemindBackup = !previousBackupReminderShownAt
+    && !chatFiles.some((item) => item.projectId === projectId && item.id !== file.id && item.durable && item.type === "text");
+  if (shouldRemindBackup) project.backupReminderShownAt = now;
+  project.quickDraft = normalizeQuickDraftRecord({
+    ...project.quickDraft,
+    workspace: {
+      ...normalizeQuickDraftRecord(project.quickDraft).workspace,
+      projectDocId: file.id,
+      savedStatus: "saved",
+      updatedAt: now,
+    },
+  });
+
+  let saved = false;
+  try {
+    saved = typeof saveDeskState === "function" ? await saveDeskState() : true;
+  } catch {
+    saved = false;
+  }
+  if (saved) {
+    selectedChatFileId = file.id;
+    if (typeof renderDocuments === "function") renderDocuments();
+    if (typeof renderProjectDisks === "function") renderProjectDisks();
+    if (shouldRemindBackup && typeof pushSystemNotification === "function") {
+      pushSystemNotification(t("first_work_backup_reminder"), {
+        state: "saved",
+        actionId: "export-project-backup",
+        actionLabel: t("export_project_backup"),
+      });
+    }
+    return { ok: true, documentId: file.id, repairNeeded: false };
+  }
+
+  chatFolders.splice(
+    0,
+    chatFolders.length,
+    ...chatFolders.filter((folder) => folder.projectId !== projectId),
+    ...previousFolders.map((folder) => structuredClone(folder))
+  );
+  if (previousFile) {
+    const target = chatFiles.find((item) => item.id === previousFile.id);
+    if (target) Object.assign(target, structuredClone(previousFile));
+    else chatFiles.unshift(structuredClone(previousFile));
+  } else {
+    const index = chatFiles.findIndex((item) => item.id === file.id);
+    if (index >= 0) chatFiles.splice(index, 1);
+  }
+  project.quickDraft = previousQuickDraft;
+  project.backupReminderShownAt = previousBackupReminderShownAt;
+  selectedChatFileId = previousSelectedId;
+
+  let rollbackSaved = false;
+  try {
+    rollbackSaved = typeof saveDeskState === "function" ? await saveDeskState() : true;
+  } catch {
+    rollbackSaved = false;
+  }
+  if (!rollbackSaved && typeof pushSystemNotification === "function") {
+    pushSystemNotification(t("quick_draft_repair_needed"), { state: "failed", windowName: "quickDraft" });
+  }
+  return { ok: false, documentId: "", repairNeeded: !rollbackSaved };
+}
+
 async function saveQuickDraftAsProjectDocument() {
   const slot = activeProjectQuickDraft();
   if (!slot) {
@@ -18,48 +114,15 @@ async function saveQuickDraftAsProjectDocument() {
     refs.draft?.focus();
     return false;
   }
-  const now = new Date().toISOString();
   const title = String(refs.titleInput?.value || titleFromBody(markdown) || t("quick_draft_title")).trim();
-  const folder = typeof ensureFolder === "function" ? ensureFolder(teachTextFolderInput?.value || t("documents")) : null;
-  const existingId = slot.record.workspace.projectDocId;
-  const existing = existingId ? chatFiles.find((file) => file.id === existingId && file.type === "text" && isInActiveProject(file)) : null;
-  const previousFile = existing ? { ...existing } : null;
-  const previousSelectedId = selectedChatFileId;
-  const previousProjectDocId = slot.record.workspace.projectDocId;
-  const file = existing || {
-    id: crypto.randomUUID(),
-    projectId: activeProjectId,
-    type: "text",
-    name: typeof nextAvailableProjectFileName === "function" ? nextAvailableProjectFileName(title, activeProjectId) : title,
-    folderId: folder?.id || "",
-    source: "Quick Draft",
-    durable: true,
-    label: "draft",
-    createdAt: now,
-  };
-  file.name = existing ? title : file.name;
-  file.body = markdown;
-  file.folderId = folder?.id || file.folderId || "";
-  file.updatedAt = now;
-  if (!existing) chatFiles.unshift(file);
-  const committed = await commitQuickDraft({ workspace: { projectDocId: file.id } });
-  if (!committed.ok) {
-    if (previousFile) Object.assign(file, previousFile);
-    else {
-      const index = chatFiles.findIndex((item) => item.id === file.id);
-      if (index >= 0) chatFiles.splice(index, 1);
-    }
-    selectedChatFileId = previousSelectedId;
-    slot.project.quickDraft.workspace.projectDocId = previousProjectDocId;
-    await saveDeskState();
-    setQuickDraftStatus(t("quick_draft_save_failed"));
-    return false;
-  }
-  selectedChatFileId = file.id;
-  if (typeof renderDocuments === "function") renderDocuments();
-  if (typeof renderProjectDisks === "function") renderProjectDisks();
-  setQuickDraftStatus(t("quick_draft_project_doc_saved"));
-  return true;
+  const result = await commitQuickDraftProjectDocument({
+    projectId: slot.project.id,
+    title,
+    body: markdown,
+    existingDocumentId: slot.record.workspace.projectDocId,
+  });
+  setQuickDraftStatus(t(result.repairNeeded ? "quick_draft_repair_needed" : result.ok ? "quick_draft_project_doc_saved" : "quick_draft_save_failed"));
+  return result.ok;
 }
 
 async function transferQuickDraftToTeachText() {
@@ -71,8 +134,7 @@ async function transferQuickDraftToTeachText() {
   if (!quickDraftDocumentMarkdown(slot.record)) return false;
   if (!await saveQuickDraftAsProjectDocument()) return false;
   const documentId = activeProjectQuickDraft({ create: false })?.record.workspace.projectDocId;
-  if (!documentId || typeof openTextFile !== "function") return false;
-  openTextFile(documentId);
+  if (!documentId || !window.AISystem6TeachText?.openDocument?.(documentId)) return false;
   setQuickDraftStatus(t("quick_draft_teachtext_done"));
   return true;
 }
@@ -89,25 +151,8 @@ async function sendQuickDraftToReviewDesk() {
     return false;
   }
   if (!await saveQuickDraftAsProjectDocument()) return false;
-  const durableSlot = activeProjectQuickDraft({ create: false });
-  const file = chatFiles.find((item) => item.id === durableSlot?.record.workspace.projectDocId);
-  const markdown = String(file?.body || "");
-  if (!markdown) return false;
-  await openWindow("reviewDesk");
-  getWindow("reviewDesk")?.classList.remove("is-review-locked");
-  if (reviewDeskBodyInput) {
-    reviewDeskBodyInput.readOnly = false;
-    reviewDeskBodyInput.classList.remove("is-hidden");
-    reviewDeskBodyInput.value = markdown;
-    reviewDeskBodyInput.scrollTop = 0;
-    reviewDeskDirty = true;
-  }
-  reviewDeskPreviewEl?.classList.add("is-hidden");
-  reviewDeskEmptyNoteEl?.classList.add("is-hidden");
-  if (typeof setReviewDeskMode === "function") setReviewDeskMode("facts");
-  if (typeof updateReviewDeskStats === "function") updateReviewDeskStats();
-  if (typeof updateReviewDeskStatusTitle === "function") updateReviewDeskStatusTitle();
-  if (typeof updateMenuState === "function") updateMenuState();
+  const documentId = activeProjectQuickDraft({ create: false })?.record.workspace.projectDocId;
+  if (!documentId || !await window.AISystem6ReviewDesk?.openDocument?.({ documentId, mode: "facts" })) return false;
   setQuickDraftStatus(t("quick_draft_review_done"));
   return true;
 }
@@ -147,7 +192,7 @@ window.AISystem6QuickDraft = Object.freeze({
   importChatScreenshots,
   togglePreview: toggleQuickDraftPreview,
   toggleComposite: toggleQuickDraftComposite,
-  previewMode: () => quickDraftPreviewMode,
+  previewMode: currentQuickDraftDisplayMode,
   displayMode: currentQuickDraftDisplayMode,
   setDisplayMode: setQuickDraftDisplayMode,
   panelVisible: quickDraftPanelVisible,
@@ -168,6 +213,7 @@ window.AISystem6QuickDraft = Object.freeze({
   ),
   canDevelop: () => currentCompositeState(activeProjectQuickDraft({ create: false })?.record).ready,
   copyMarkdown: copyQuickDraftMarkdown,
+  shareMarkdown: shareQuickDraftMarkdown,
   collectVentOutline,
   adoptFirstImpression,
   startWritingNow,
@@ -176,9 +222,11 @@ window.AISystem6QuickDraft = Object.freeze({
   transferQuickDraftToTeachText,
   sendQuickDraftToReviewDesk,
   saveQuickDraftAsProjectDocument,
+  getContextSnapshot: () => quickDraftContextSnapshot(activeProjectQuickDraft({ create: false })?.record || {}),
 });
 
 window.AISystem6QuickDraftHandoff = Object.freeze({
+  commitQuickDraftProjectDocument,
   saveQuickDraftAsProjectDocument,
   sendQuickDraftToReviewDesk,
   switchToMultiFinder,

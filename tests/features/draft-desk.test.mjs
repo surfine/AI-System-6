@@ -153,7 +153,7 @@ test.assertIncludes(coordinator, 'summary.getAttribute("aria-disabled") !== "tru
 test.assertIncludes(coordinator, 'summary.setAttribute("aria-expanded", String(menu.open))', "pull-down buttons expose their live expanded state");
 test.assertIncludes(coordinator, "if (other !== menu) other.open = false", "only one Quick Draft pull-down remains open at a time");
 test.assertIncludes(coordinator, "if (popover) popover.scrollTop = 0", "a reopened command menu starts from its first command");
-test.assertIncludes(coordinator, 'event.target?.closest?.(".draft-desk-command-menu")', "outside pointer dismissal tolerates non-element event targets");
+test.assertIncludes(coordinator, 'const target = /** @type {Element | null} */ (event.target)', "outside pointer dismissal narrows non-element event targets safely");
 test.assertNotIncludes(coordinator, 'arrangeWindowAssistantSplit("quickDraft")', "opening Quick Draft never launches a secondary conversation window");
 test.assertIncludes(ai, "await flushPendingQuickDraftCommit()", "an explicit SideAsk request flushes pending edits without manufacturing a blank draft revision");
 test.assertIncludes(quickWindowHtml, 'id="quick-draft-return-sideask" data-i18n="quick_draft_show_sideask"', "Quick Draft exposes SideAsk explicitly inside its own Tools menu");
@@ -183,7 +183,7 @@ test.assertIncludes(composition, "function toggleQuickDraftLayerDisclosure", "Fi
 test.assertIncludes(composition, "active.append(detail, scope)", "Figure 07 moves the one shared detail beneath the active narrow row");
 test.assertIncludes(composition, "new ResizeObserver", "dragging a desktop window narrow uses the same Figure 07 accordion");
 test.assertIncludes(coordinator, 'refs.saveButton.dataset.quickDraftPrimaryAction = action', "the primary action changes meaning without changing position");
-test.assertMatches(coordinator, /!hasBody \? "draft" : enabledLayers \? "develop" : "deliver"/, "Figure 02 / 01 primary states are Draft, Develop, and Deliver");
+test.assertIncludes(coordinator, 'const action = hasBody ? "continue" : "draft";', "first success keeps one stable primary control: Draft, then Continue Writing");
 test.assertIncludes(coordinator, 'state === "new" ? "quick_draft_new_state"', "Figure 02 reports New draft instead of Saved");
 test.assertIncludes(coordinator, 't("quick_draft_model_status", modelName)', "Figure 02 reports the connected model in the details bar");
 test.assertMatches(coordinator, /refs\.format\.value = String\(source\.workspace\.body[\s\S]*?\? source\.targetFormat[\s\S]*?: BILI_DYNAMIC_FORMAT;/, "Figure 02 opens every bodyless blank on Bilibili post");

@@ -31,10 +31,15 @@ test.assertIncludes(state, 'entry.sourceKind === "quick-draft-dump"', "v2 dumps 
 test.assertIncludes(state, "intake.ventLog = intake.ventLog.filter", "migration removes dumps from material intake");
 test.assertIncludes(state, "async function commitQuickDraft", "durable writes use an awaited commit API");
 test.assertIncludes(state, "scheduleQuickDraftCommit(projectId)", "debounced saves capture their originating project");
-test.assertIncludes(handoff, "openTextFile(documentId)", "Send to TeachText opens the durable Project document");
+test.assertIncludes(handoff, "window.AISystem6TeachText?.openDocument", "Send to TeachText uses the public document API");
 test.assertNotIncludes(handoff, "setProjectOutlineMarkdown", "Send to TeachText does not mutate the writing pipeline");
-test.assertIncludes(handoff, "Object.assign(file, previousFile)", "failed Project document updates roll back the target");
+test.assertIncludes(handoff, "async function commitQuickDraftProjectDocument", "Project document writes have one transaction owner");
 test.assertIncludes(state, 'titleMode: source.titleMode === "manual"', "manual title ownership survives normalize and reload");
+test.assertNotIncludes(workspace, "canvas: blankQuickDraftCanvas()", "new Draft Desk workspaces do not create Canvas state");
+test.assertIncludes(workspace, "legacyCanvas ?", "legacy Canvas state is isolated behind an explicit compatibility bucket");
+test.assertNotIncludes(coordinator, "canvas: previous.workspace.canvas", "new Draft Desk saves do not write Canvas state");
+test.assertIncludes(coordinator, 'let quickDraftDisplayMode = "body"', "Body is the canonical initial display mode");
+test.assertNotIncludes(coordinator, "quickDraftPreviewMode", "the coordinator has no retired preview-mode enum");
 
 const calls = [];
 await context.composeDocument({

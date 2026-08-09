@@ -61,6 +61,7 @@ function firstDaySeedValues(data = firstDaySnapshot()) {
   ];
 }
 
+/** @param {any} data */
 function firstDayThesisText(data = firstDaySnapshot()) {
   return [
     meaningfulFirstDayTitle(data.title) ? `${t("quick_draft_first_day_title")}: ${meaningfulFirstDayTitle(data.title)}` : "",
@@ -222,18 +223,18 @@ function quickDraftMarkdownPreview(text = "") {
 }
 
 function renderQuickDraftPreviewPane() {
-  if (quickDraftPreviewMode === "grain") renderQuickDraftGrain();
-  else if (quickDraftPreviewMode === "composite") renderQuickDraftReadingView();
-  else renderQuickDraftCompositePreview();
+  if (quickDraftDisplayMode === "grain") renderQuickDraftGrain();
+  else renderQuickDraftReadingView();
 }
 
 // Body / Grain / Read are one tab group over the same paper region. The body
 // view is simply "no preview open", so exactly one tab is selected at a time.
 function syncQuickDraftPreviewButtons(active) {
-  const reading = active && quickDraftPreviewMode === "composite";
-  const current = !active ? "body" : quickDraftPreviewMode === "grain" ? "grain" : "read";
+  const reading = active && quickDraftDisplayMode === "read";
+  const current = active ? quickDraftDisplayMode : "body";
   document.querySelectorAll("[data-quick-draft-display]").forEach((button) => {
-    const on = (button.dataset.quickDraftDisplay || "body") === current;
+    const control = /** @type {HTMLElement} */ (button);
+    const on = (control.dataset.quickDraftDisplay || "body") === current;
     button.classList.toggle("is-active", on);
     button.setAttribute("aria-selected", on ? "true" : "false");
   });
@@ -249,7 +250,8 @@ function syncQuickDraftPreviewButtons(active) {
 // is open so the state is never implied by the layout alone.
 function syncQuickDraftDrawerButtons() {
   document.querySelectorAll("[data-quick-draft-drawer]").forEach((button) => {
-    const drawer = button.dataset.quickDraftDrawer === "inspector" ? "inspector" : "shelf";
+    const control = /** @type {HTMLElement} */ (button);
+    const drawer = control.dataset.quickDraftDrawer === "inspector" ? "inspector" : "shelf";
     const open = Boolean(refs.form?.classList.contains(
       drawer === "inspector" ? "is-inspector-open" : "is-shelf-open"
     ));
@@ -258,14 +260,14 @@ function syncQuickDraftDrawerButtons() {
   });
 }
 
-function setQuickDraftPreviewMode(mode) {
+function showQuickDraftDisplayMode(mode) {
   const container = refs.draft?.closest(".teachtext-editor-container");
   if (!container || !refs.preview || !refs.draft) return;
-  quickDraftPreviewMode = mode;
+  quickDraftDisplayMode = mode === "grain" ? "grain" : "read";
   container.classList.add("is-previewing");
-  container.classList.toggle("is-graining", mode === "grain");
+  container.classList.toggle("is-graining", quickDraftDisplayMode === "grain");
   refs.preview.classList.remove("is-hidden");
-  refs.preview.classList.toggle("quick-draft-grain-pane", mode === "grain");
+  refs.preview.classList.toggle("quick-draft-grain-pane", quickDraftDisplayMode === "grain");
   refs.draft.classList.add("is-hidden");
   syncQuickDraftPreviewButtons(true);
   renderQuickDraftPreviewPane();
@@ -273,38 +275,35 @@ function setQuickDraftPreviewMode(mode) {
 }
 
 function currentQuickDraftDisplayMode() {
-  const active = refs.draft?.closest(".teachtext-editor-container")?.classList.contains("is-previewing");
-  if (!active) return "body";
-  return quickDraftPreviewMode === "grain" ? "grain" : "read";
+  return quickDraftDisplayMode;
 }
 
 function setQuickDraftDisplayMode(display = "body") {
-  if (display === "grain") setQuickDraftPreviewMode("grain");
-  else if (display === "read") setQuickDraftPreviewMode("composite");
+  if (display === "grain") showQuickDraftDisplayMode("grain");
+  else if (display === "read") showQuickDraftDisplayMode("read");
   else leaveQuickDraftPreview();
   return currentQuickDraftDisplayMode();
 }
 
 function toggleQuickDraftPreview() {
-  const container = refs.draft?.closest(".teachtext-editor-container");
-  if (container?.classList.contains("is-previewing") && quickDraftPreviewMode === "render") leaveQuickDraftPreview();
-  else setQuickDraftPreviewMode("render");
+  if (currentQuickDraftDisplayMode() === "read") leaveQuickDraftPreview();
+  else showQuickDraftDisplayMode("read");
 }
 
 function toggleQuickDraftGrain() {
   if (currentQuickDraftDisplayMode() === "grain") leaveQuickDraftPreview();
-  else setQuickDraftPreviewMode("grain");
+  else showQuickDraftDisplayMode("grain");
 }
 
 function toggleQuickDraftComposite() {
   if (currentQuickDraftDisplayMode() === "read") leaveQuickDraftPreview();
-  else setQuickDraftPreviewMode("composite");
+  else showQuickDraftDisplayMode("read");
 }
 
 function leaveQuickDraftPreview() {
   const container = refs.draft?.closest(".teachtext-editor-container");
   if (!container || !refs.preview || !refs.draft) return;
-  quickDraftPreviewMode = "render";
+  quickDraftDisplayMode = "body";
   container.classList.remove("is-previewing", "is-graining");
   refs.preview.classList.add("is-hidden");
   refs.preview.classList.remove("quick-draft-grain-pane");
@@ -316,10 +315,14 @@ function leaveQuickDraftPreview() {
 
 function quickDraftFailureMessage(error) {
   const message = error?.message || String(error || "");
+  console.warn("Quick Draft operation failed.", error);
   if (/not handled by src\/|Use the root server/i.test(message)) {
     return t("quick_draft_server_stale");
   }
-  return message;
+  if (/fetch|network|offline|model|provider|endpoint|api key|401|403|404|429|5\d\d/i.test(message)) {
+    return t("quick_draft_ai_unavailable_recovery");
+  }
+  return t("quick_draft_operation_failed_recovery");
 }
 
 function restoreDumpToBody() {
@@ -411,7 +414,7 @@ function renderQuickDraftVersions(record = activeProjectQuickDraft({ create: fal
 
 // Going back to a version is not a delete: the body being replaced is kept as
 // a version first, so the move is reversible in the same list.
-function restoreQuickDraftVersion(id = "", kind = "version") {
+async function restoreQuickDraftVersion(id = "", kind = "version") {
   const slot = activeProjectQuickDraft();
   if (!slot) {
     setQuickDraftStatus(t("quick_draft_no_project"));
@@ -437,8 +440,14 @@ function restoreQuickDraftVersion(id = "", kind = "version") {
     }]
     : workspace.versions;
   if (refs.draft) refs.draft.value = target.body;
-  saveQuickDraft({ workspace: { body: target.body, versions: kept } }, { debounce: false });
-  renderQuickDraft(activeProjectQuickDraft({ create: false })?.record);
+  const committed = await commitQuickDraft({ workspace: { body: target.body, versions: kept } });
+  if (!committed.ok) {
+    if (refs.draft) refs.draft.value = current;
+    renderQuickDraft(slot.record);
+    setQuickDraftStatus(t("quick_draft_save_failed"));
+    return false;
+  }
+  renderQuickDraft(committed.record);
   setQuickDraftStatus(t("quick_draft_version_restored"));
   return true;
 }
@@ -492,9 +501,38 @@ async function exportQuickDraftMarkdown() {
   return true;
 }
 
+async function shareQuickDraftMarkdown() {
+  const slot = activeProjectQuickDraft();
+  if (!slot) {
+    setQuickDraftStatus(t("quick_draft_no_project"));
+    return false;
+  }
+  const markdown = quickDraftDocumentMarkdown(slot.record);
+  if (!markdown) {
+    setQuickDraftStatus(t("quick_draft_empty_body"));
+    refs.draft?.focus();
+    return false;
+  }
+  const title = String(refs.titleInput?.value || slot.record.workspace.title || titleFromBody(markdown) || "quick-draft").trim();
+  const safeName = title.replace(/[\\/:*?"<>|]/g, "-").slice(0, 80) || "quick-draft";
+  try {
+    const shared = await window.AISystem6WebPlatform?.shareMarkdown?.({
+      title,
+      markdown,
+      fileName: `${safeName}.md`,
+    });
+    setQuickDraftStatus(t(shared ? "quick_draft_share_done" : "quick_draft_share_cancelled"));
+    return !!shared;
+  } catch {
+    setQuickDraftStatus(t("quick_draft_share_failed"));
+    return false;
+  }
+}
+
 window.AISystem6QuickDraftEditor = Object.freeze({
   copyQuickDraftMarkdown,
   exportQuickDraftMarkdown,
+  shareQuickDraftMarkdown,
   firstDaySnapshot,
   firstDaySeedValues,
   firstDayThesisText,
@@ -511,7 +549,6 @@ window.AISystem6QuickDraftEditor = Object.freeze({
   restoreDumpToBody,
   currentQuickDraftDisplayMode,
   setQuickDraftDisplayMode,
-  setQuickDraftPreviewMode,
   syncQuickDraftTemplateUi,
   toggleQuickDraftComposite,
   toggleQuickDraftGrain,

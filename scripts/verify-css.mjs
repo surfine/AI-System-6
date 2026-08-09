@@ -489,6 +489,9 @@ if (typeof twinBudget !== "number") {
 const APPEARANCE_THEME_IDS = Object.freeze([
   "classic",
   "platinum",
+  "aqua",
+  "snow-leopard",
+  "yosemite",
   "liquid-glass",
 ]);
 const appearanceText = readFileSync(join(root, APPEARANCE_FILE), "utf8");

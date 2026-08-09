@@ -500,6 +500,34 @@ function openReviewDesk(mode = "style") {
   syncReviewDeskAvailability();
 }
 
+async function openReviewDeskDocument({ documentId, mode = "facts" } = {}) {
+  const file = chatFiles.find((item) => item.id === documentId && item.type === "text" && isInActiveProject(item));
+  if (!file) return false;
+  window.AISystem6TeachText?.openDocument?.(documentId);
+  await openWindow("reviewDesk");
+  getWindow("reviewDesk")?.classList.remove("is-review-locked");
+  if (reviewDeskBodyInput) {
+    reviewDeskBodyInput.readOnly = false;
+    reviewDeskBodyInput.classList.remove("is-hidden");
+    reviewDeskBodyInput.value = String(file.body || "");
+    reviewDeskBodyInput.scrollTop = 0;
+    reviewDeskDirty = true;
+  }
+  reviewDeskPreviewEl?.classList.add("is-hidden");
+  reviewDeskEmptyNoteEl?.classList.add("is-hidden");
+  setReviewDeskMode(mode);
+  updateReviewDeskStats();
+  updateReviewDeskStatusTitle();
+  renderStyleCheckSections();
+  renderClaimCheckSections();
+  updateMenuState();
+  return true;
+}
+
+window.AISystem6ReviewDesk = Object.freeze({
+  openDocument: openReviewDeskDocument,
+});
+
 function getReviewDeskMode() {
   return ["facts", "hkrr"].includes(reviewDeskMode) ? reviewDeskMode : "style";
 }
@@ -965,6 +993,10 @@ function getApplicationActionHandlers() {
     "page-setup": openPageSetup,
     "print-current": printCurrentTeachTextDocument,
     "open-guide": () => openWindow("guide"),
+    "guide-start-quick-draft": startGuidedQuickDraft,
+    "guide-continue-last": continueLastProject,
+    "install-web-app": () => window.AISystem6WebPlatform?.installWebApp?.(),
+    "export-project-backup": exportActiveProjectDisk,
     "open-guide-promo": () => window.open("https://www.bilibili.com/video/BV1ht3m6UEDb/", "_blank", "noopener"),
     "open-system-file-system": () => showSystemModal(t("system_file_not_openable"), "alert"),
     "open-system-file-finder": () => showSystemModal(t("system_file_not_openable"), "alert"),
@@ -1239,6 +1271,7 @@ function getApplicationActionHandlers() {
     "move-file-trash": moveActiveFileToTrash,
     "copy-active-markdown": copyActiveMarkdown,
     "download-active-markdown": downloadActiveMarkdown,
+    "share-active-markdown": shareActiveMarkdown,
     "download-active-bilingual-markdown": downloadActiveBilingualMarkdown,
     "print-to-slides": printMarkdownToSlidesFromMenu,
     "ai-print-to-slides": printMarkdownToSlidesAiFromMenu,
@@ -1283,6 +1316,8 @@ function getApplicationActionHandlers() {
         .catch((error) => console.warn("Control Strip Modules folder unavailable.", error));
     },
     "open-project-cd": () => openWindow("projectCd"),
+    "copy-project-cd-markdown": copySelectedProjectCdMarkdown,
+    "share-project-cd-markdown": shareSelectedProjectCdMarkdown,
     "open-import-utility": () => openWindow("importUtility"),
     "open-project-backup": openProjectBackupPanel,
     "open-chooser": () => openWindow("chooser"),
@@ -1568,6 +1603,7 @@ function getApplicationActionHandlers() {
     "toggle-sideask": toggleSideAsk,
     "set-theme-classic": () => applyTheme("classic"),
     "set-theme-platinum": () => applyTheme("platinum"),
+    "set-theme-aqua": () => applyTheme("aqua"),
     "set-theme-liquid-glass": () => applyTheme("liquid-glass"),
     "open-theme-lab": () => openWindow("themeLab"),
     "toggle-balloon-help": toggleBalloonHelp,

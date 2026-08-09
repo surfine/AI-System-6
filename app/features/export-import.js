@@ -300,6 +300,37 @@ async function downloadSelectedProjectCdItem() {
   return true;
 }
 
+function copySelectedProjectCdMarkdown() {
+  const item = getSelectedProjectCdItem();
+  if (!item) {
+    setStatus(t("select_find_path_first"));
+    return false;
+  }
+  copyMarkdown(item.body || "");
+  return true;
+}
+
+async function shareSelectedProjectCdMarkdown() {
+  const item = getSelectedProjectCdItem();
+  if (!item) {
+    setStatus(t("select_find_path_first"));
+    return false;
+  }
+  try {
+    const shared = await window.AISystem6WebPlatform?.shareMarkdown?.({
+      title: item.title || t("project_cd"),
+      markdown: item.body || "",
+      fileName: item.title || "project-cd.md",
+    });
+    if (shared) setStatus(t("share_markdown_done"), { notify: false });
+    return !!shared;
+  } catch (error) {
+    console.warn("Project CD share failed.", error);
+    setStatus(t("share_markdown_failed"));
+    return false;
+  }
+}
+
 async function printSelectedProjectCdItem() {
   const item = getSelectedProjectCdItem();
   if (!item) {
@@ -483,7 +514,12 @@ function renderProjectCd() {
 
 function syncProjectCdSelectionControls(visibleItems = getProjectCdItems()) {
   const hasSelectedItem = !!selectedProjectCdItemId;
-  [downloadProjectCdButton, printProjectCdPdfButton].forEach((button) => {
+  [
+    downloadProjectCdButton,
+    printProjectCdPdfButton,
+    document.querySelector("[data-action='copy-project-cd-markdown']"),
+    document.querySelector("[data-action='share-project-cd-markdown']"),
+  ].forEach((button) => {
     if (!button) return;
     button.disabled = !hasSelectedItem;
     button.classList.toggle("is-disabled", !hasSelectedItem);

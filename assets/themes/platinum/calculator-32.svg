@@ -1,0 +1,28 @@
+<!-- AI System 6 measured reconstruction; 21x32 occupied bounds within a 32px slot, not extracted Apple artwork. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <path fill="#555" d="M5 0h21v1H5zM5 31h21v1H5z"/>
+  <path fill="#000" d="M6 0h19v1H6zM5 1h1v30H5zM25 1h1v30h-1zM6 31h19v1H6z"/>
+  <path fill="#aaa" d="M6 1h19v30H6z"/>
+  <path fill="#777" d="M8 4h15v1H8z"/>
+  <path fill="#ccf" d="M9 5h13v2H9z"/>
+  <path fill="#eee" d="M9 7h14v1H9z"/>
+  <g fill="#eee">
+    <path d="M8 9h3v3H8zM12 9h3v3h-3zM16 9h3v3h-3zM20 9h3v3h-3z"/>
+    <path d="M8 13h3v3H8zM12 13h3v3h-3zM16 13h3v3h-3zM20 13h3v3h-3z"/>
+    <path d="M8 17h3v3H8zM12 17h3v3h-3zM16 17h3v3h-3zM20 17h3v3h-3z"/>
+    <path d="M8 21h3v3H8zM12 21h3v3h-3zM16 21h3v3h-3zM20 21h3v7h-3z"/>
+    <path d="M8 25h7v3H8zM16 25h3v3h-3z"/>
+  </g>
+  <g fill="#ccc">
+    <path d="M9 10h2v1H9zM13 10h2v1h-2zM17 10h2v1h-2zM21 10h2v1h-2z"/>
+    <path d="M9 14h2v1H9zM13 14h2v1h-2zM17 14h2v1h-2zM21 14h2v1h-2z"/>
+    <path d="M9 18h2v1H9zM13 18h2v1h-2zM17 18h2v1h-2zM21 18h2v1h-2z"/>
+    <path d="M9 22h2v1H9zM13 22h2v1h-2zM17 22h2v1h-2zM21 22h2v1H21zM21 26h2v1h-2zM9 26h6v1H9zM17 26h2v1h-2z"/>
+  </g>
+  <g fill="#777">
+    <path d="M10 11h1v1h-1zM14 11h1v1h-1zM18 11h1v1h-1zM22 11h1v1h-1z"/>
+    <path d="M10 15h1v1h-1zM14 15h1v1h-1zM18 15h1v1h-1zM22 15h1v1h-1z"/>
+    <path d="M10 19h1v1h-1zM14 19h1v1h-1zM18 19h1v1h-1zM22 19h1v1h-1z"/>
+    <path d="M10 23h1v1h-1zM14 23h1v1h-1zM18 23h1v1h-1zM22 23h1v1h-1zM22 27h1v1h-1zM14 27h1v1h-1zM18 27h1v1h-1z"/>
+  </g>
+</svg>

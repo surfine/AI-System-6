@@ -30,6 +30,7 @@ function dumpEntries(intake = intakeSnapshot()) {
   return [];
 }
 
+/** @param {any} intake */
 function nonDumpVentEntries(intake = intakeSnapshot()) {
   return (intake.ventLog || []).filter((entry) => entry.sourceKind !== "quick-draft-dump");
 }
@@ -131,7 +132,7 @@ function renderStrategyReport(record = activeProjectQuickDraft({ create: false }
 
 function setPostDraftChipsVisible(visible) {
   document.querySelectorAll("[data-quick-draft-after-draft]").forEach((button) => {
-    button.hidden = !visible;
+    /** @type {HTMLElement} */ (button).hidden = !visible;
   });
 }
 
@@ -202,6 +203,14 @@ function inferStrategySignals(text = "") {
   const addEditorial = (label, detail = excerpt) => signals.editorial.push(`- ${label}：${detail}`);
   const addMaterial = (label, status = "聊天/ClioTalk 捕捉") => signals.materialLedger.push(`- ${label}：[聊天建议] [待确认] ${status}；原话：${excerpt}`);
   const addRow = (item, handling, status = "待检查") => signals.adoptionRows.push([item, handling, status]);
+  const presetSignals = window.AISystem6DraftDeskPresets?.inferStrategySignals?.(
+    activeDraftDeskPreset(),
+    value,
+    excerpt
+  ) || {};
+  signals.editorial.push(...(presetSignals.editorial || []));
+  signals.materialLedger.push(...(presetSignals.materialLedger || []));
+  signals.adoptionRows.push(...(presetSignals.adoptionRows || []));
 
   const deadline = value.match(/(?:deadline|ddl|截稿|截止|交稿|出来|发出|发布)?\s*(\d{1,2})\s*(?:点|:|：)(?:\d{1,2})?/i);
   if (deadline && /(deadline|ddl|截稿|截止|交稿|出来|发出|发布|\d{1,2}\s*(?:点|:|：))/i.test(value)) {
@@ -211,17 +220,9 @@ function inferStrategySignals(text = "") {
     addEditorial("降权", "AI/Siri 先降权，不作为主线");
     addRow("AI/Siri 降权", "只一笔带过或放入不好展示/待核边界", "待检查");
   }
-  if (/(iOS|iPadOS|macOS).*(一起|三件套|一起讲)|三件套/i.test(value)) {
-    addEditorial("主线", "iOS / iPadOS / macOS 作为三件套一起讲");
-    addRow("三系统一起讲", "用“三件套升级”串联结构", "待检查");
-  }
   if (/(设计|视觉|美学).*(不敢|不好乱|别乱|说不准|不下结论)/.test(value)) {
     addEditorial("作者边界", "设计类只说可观察变化，不下大结论");
     addRow("设计类不好乱说", "改成可观察变化和画面描述", "待检查");
-  }
-  if (/(自己表述|我自己说|自己的语言|别替我|不要替我|Aaron.*语言|落落.*语言)/i.test(value)) {
-    addEditorial("作者边界", "最终用 Aaron/落落自己的语言，ClioTalk 只做编辑建议");
-    addRow("作者自己的语言", "只建议改法，不默认替换正文", "待检查");
   }
   if (/(官方|发布会|官网|资料)/.test(value)) addMaterial("官方资料", "适合放入快速扫功能段，不能替代亲测");
   if (/(亲测|我试了|我看到了|实测|上手)/.test(value)) addMaterial("亲测体验", "优先进入可拍展示段");
@@ -229,22 +230,6 @@ function inferStrategySignals(text = "") {
   if (/(没测|未测|不能测|不好展示|不能展示|待核|不确定)/.test(value)) {
     addMaterial("未测/不好展示", "标边界、降权或删除");
     addRow("未测功能", "标边界或删除，不能写成亲测结论", "待处理");
-  }
-  if (/(Liquid Glass|液态玻璃|玻璃)/i.test(value)) {
-    addMaterial("Liquid Glass", "可拍，适合开头或第一段画面");
-    addRow("Liquid Glass", "翻成开头可拍画面", "待检查");
-  }
-  if (/(iPhone Mirroring|镜像)/i.test(value)) {
-    addMaterial("iPhone Mirroring", "能演示时适合中段");
-    addRow("iPhone Mirroring", "放在中段演示，不能演示则标边界", "待检查");
-  }
-  if (/(Apple Music|音乐)/i.test(value)) {
-    addMaterial("Apple Music", "一句带过，避免展开太多");
-    addRow("Apple Music", "一句带过", "待检查");
-  }
-  if (/(Apple Pay|支付)/i.test(value)) {
-    addMaterial("Apple Pay", "能录就放，不能录就删");
-    addRow("Apple Pay", "能录才进稿，否则删除或标边界", "待检查");
   }
   return signals;
 }
@@ -507,11 +492,16 @@ function selectQuickDraftMaterial(sourceId = "") {
   return true;
 }
 
-function useMountedSources() {
+async function useMountedSources() {
   const count = mountedSourceRecords().length;
+  const committed = await commitQuickDraft({});
+  if (!committed.ok) {
+    setQuickDraftStatus(t("quick_draft_save_failed"));
+    return false;
+  }
   updateSourceCount();
   setQuickDraftStatus(t("quick_draft_mounted_added", count));
-  saveQuickDraft({}, { debounce: false });
+  return true;
 }
 
 function stableId(prefix = "item") {
@@ -703,7 +693,7 @@ function flushVentLogToSources(intake = intakeSnapshot()) {
   return entries.length ? appendBlocksToSources([ventLogMaterialBlock(entries)]) : false;
 }
 
-function captureVentText(text = "", options = {}) {
+async function captureVentText(text = "", options = {}) {
   collectRefs();
   const value = String(text || "").trim();
   if (!value) return false;
@@ -728,7 +718,12 @@ function captureVentText(text = "", options = {}) {
   const workspacePatch = strategyCaptured
     ? { intake: nextIntake, strategy: mergeStrategySignals(strategySnapshot(slot.record), signals) }
     : { intake: nextIntake };
-  const saved = saveQuickDraft({ workspace: workspacePatch }, { debounce: false });
+  const committed = await commitQuickDraft({ workspace: workspacePatch });
+  if (!committed.ok) {
+    setQuickDraftStatus(t("quick_draft_save_failed"));
+    return false;
+  }
+  const saved = committed.record;
   renderIntake(saved);
   renderStrategyReport(saved);
   updateSourceCount();
@@ -739,7 +734,7 @@ function captureVentText(text = "", options = {}) {
   return { captured: true, strategyCaptured, count };
 }
 
-function setVentMode(enabled = true, options = {}) {
+async function setVentMode(enabled = true, options = {}) {
   collectRefs();
   const slot = activeProjectQuickDraft();
   if (!slot) {
@@ -761,7 +756,12 @@ function setVentMode(enabled = true, options = {}) {
     ventMode: enabled === true,
     ventLog: enabled === true ? intake.ventLog : [],
   });
-  const saved = saveQuickDraft({ workspace: { intake: nextIntake } }, { debounce: false });
+  const committed = await commitQuickDraft({ workspace: { intake: nextIntake } });
+  if (!committed.ok) {
+    setQuickDraftStatus(t("quick_draft_save_failed"));
+    return false;
+  }
+  const saved = committed.record;
   renderIntake(saved);
   updateSourceCount();
   syncQuickDraftAiAvailability();
@@ -770,7 +770,7 @@ function setVentMode(enabled = true, options = {}) {
   return { active: nextIntake.ventMode, count, transferred };
 }
 
-function clearVentLog(options = {}) {
+async function clearVentLog(options = {}) {
   collectRefs();
   const slot = activeProjectQuickDraft({ create: false });
   if (!slot?.record?.workspace?.intake) return { cleared: false, count: 0 };
@@ -783,7 +783,12 @@ function clearVentLog(options = {}) {
     ventMode: false,
     ventLog: [],
   });
-  const saved = saveQuickDraft({ workspace: { intake: nextIntake } }, { debounce: false });
+  const committed = await commitQuickDraft({ workspace: { intake: nextIntake } });
+  if (!committed.ok) {
+    setQuickDraftStatus(t("quick_draft_save_failed"));
+    return { cleared: false, count };
+  }
+  const saved = committed.record;
   renderIntake(saved);
   updateSourceCount();
   syncQuickDraftAiAvailability();
@@ -858,12 +863,17 @@ async function importChatScreenshots() {
           chatMaterials: [...intake.chatMaterials, ...imported],
         });
         appendChatMaterialsToSources(imported);
-        const saved = saveQuickDraft({ workspace: { intake: nextIntake } }, { debounce: false });
+        const committed = await commitQuickDraft({ workspace: { intake: nextIntake } });
+        if (!committed.ok) {
+          setQuickDraftStatus(t("quick_draft_save_failed"));
+          return;
+        }
+        const saved = committed.record;
         renderIntake(saved);
         updateSourceCount();
         setQuickDraftStatus(t("quick_draft_chat_imported", imported.length));
       } catch (error) {
-        setQuickDraftStatus(t("quick_draft_failed", error?.message || String(error)));
+        setQuickDraftStatus(t("quick_draft_failed", quickDraftFailureMessage(error)));
       } finally {
         setBusy(false);
       }
@@ -881,7 +891,7 @@ function firstStanceCandidate(index = -1) {
     .trim();
 }
 
-function adoptFirstImpression(index = -1) {
+async function adoptFirstImpression(index = -1) {
   const candidate = firstStanceCandidate(Number(index));
   if (!candidate) {
     setQuickDraftStatus(t("quick_draft_no_stance_candidate"));
@@ -891,19 +901,24 @@ function adoptFirstImpression(index = -1) {
   const setup = quickDraftSetupSnapshot(record);
   if (refs.format && !isLaunchDayFormat(refs.format.value)) refs.format.value = FIRST_DAY_FORMAT;
   syncQuickDraftTemplateUi();
-  renderDecisionStatuses(saveQuickDraft({
+  const committed = await commitQuickDraft({
     workspace: {
       intake: {
         ...normalizeQuickDraftRecord(record).workspace.intake,
         setup: { ...setup, firstImpression: candidate },
       },
     },
-  }, { debounce: false }));
+  });
+  if (!committed.ok) {
+    setQuickDraftStatus(t("quick_draft_save_failed"));
+    return false;
+  }
+  renderDecisionStatuses(committed.record);
   setQuickDraftStatus(t("quick_draft_adopted_impression"));
   return true;
 }
 
-function confirmHandsOnFromAnnotations() {
+async function confirmHandsOnFromAnnotations() {
   const annotations = currentAnnotations();
   const candidate = String(annotations.firsthand || "").trim();
   if (!candidate) {
@@ -913,7 +928,12 @@ function confirmHandsOnFromAnnotations() {
   refs.handsOn.value = refs.handsOn.value
     ? `${refs.handsOn.value.trim()}\n${candidate}`.trim()
     : candidate;
-  renderDecisionStatuses(saveQuickDraft({}, { debounce: false }));
+  const committed = await commitQuickDraft({});
+  if (!committed.ok) {
+    setQuickDraftStatus(t("quick_draft_save_failed"));
+    return false;
+  }
+  renderDecisionStatuses(committed.record);
   setQuickDraftStatus(t("quick_draft_hands_on_confirmed"));
   return true;
 }

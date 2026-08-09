@@ -34,15 +34,15 @@ test.assertNotIncludes(guideMarkup, "resize-box", "Start Here does not claim the
 test.assertMatches(guideMarkup, /class="close-box"[^>]*tabindex="-1"/, "the DA close box does not enter the two-action keyboard loop");
 test.assertIncludes(guideMarkup, 'data-i18n="guide_welcome_heading"', "the welcome states the time-travel premise");
 test.assertIncludes(guideMarkup, 'data-i18n="guide_welcome_body"', "the welcome leaves two lightweight menu clues");
-test.assertIncludes(guideMarkup, 'class="btn default" type="button" data-action="dismiss-guide" data-i18n="guide_start_exploring" aria-keyshortcuts="Enter"', "Start Exploring is the single Return-key default action");
+test.assertIncludes(guideMarkup, 'class="btn default" type="button" data-action="guide-start-quick-draft" data-i18n="guide_short_draft" aria-keyshortcuts="Enter"', "the shortest success path is the Return-key default action");
 test.assertIncludes(guideMarkup, 'data-action="guide-open-model-settings"', "AI setup remains a secondary action");
-test.assertIncludes(guideMarkup, 'data-action="open-github-repo"', "Start Here links out to the public GitHub source snapshot");
+test.assertNotIncludes(guideMarkup, 'data-action="open-github-repo"', "first success is not displaced by a source-code link");
 test.assertIncludes(actions, '"open-github-repo": () => window.open("https://github.com/surfine/AI-System-6"', "Start Here GitHub action is centrally registered and opens the public source snapshot");
 test.assertMatches(responsiveCss, /\.guide-window\.is-mobile-system-page[\s\S]*\.button-row[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/, "mobile keeps the Start Here button group in two rows of two");
 test.assertNotIncludes(guideMarkup, "guide_ai_later", "AI guidance is folded into the single short paragraph");
 test.assertNotIncludes(guideMarkup, "guide-cloud-key", "OOBE does not duplicate the cloud credential form");
 test.assertNotIncludes(guideMarkup, "data-guide-source", "OOBE does not ask the user to choose a model source");
-test.assertNotIncludes(guideMarkup, "guide-start-route", "OOBE does not teach the writing route");
+test.assertIncludes(guideMarkup, 'data-action="guide-start-route"', "the long-project route is explicit and secondary to Draft Desk");
 test.assertNotIncludes(guideMarkup, "play-writing-demo", "OOBE does not launch the live demo");
 test.assertNotIncludes(guideMarkup, "guide-open-cliotalk", "OOBE does not push the user into chat");
 
@@ -50,7 +50,7 @@ test.assertMatches(guide, /async function dismissGuide\(\)[\s\S]*guideSeen = tru
 test.assertMatches(guide, /function openGuideModelSettings\(\)[\s\S]*guideSeen = true;[\s\S]*closeWindow\("guide"\);[\s\S]*openModelSettings\(\);[\s\S]*saveDeskState\(\);/, "Connect AI completes OOBE and delegates to model settings");
 test.assertMatches(guide, /function openModelSettings\(\)[\s\S]*openWindow\("control"\);[\s\S]*setControlTab\(\);/, "model setup reuses the existing Control Panel");
 test.assertMatches(guide, /function syncGuideWelcomeState[\s\S]*guide_welcome_body_connected[\s\S]*guide_ai_settings[\s\S]*defaultButton\.focus/, "reopened OOBE reflects model state and focuses its default action");
-test.assertMatches(guide, /function initializeGuideOobe[\s\S]*event\.key === "Enter"[\s\S]*dismissGuide\(\)[\s\S]*event\.key === "Escape"[\s\S]*dismissGuide\(\)[\s\S]*event\.key !== "Tab"/, "Return, Escape, and the two-button Tab loop have explicit OOBE behavior");
+test.assertMatches(guide, /function initializeGuideOobe[\s\S]*event\.key === "Enter"[\s\S]*startGuidedQuickDraft\(\)[\s\S]*event\.key === "Escape"[\s\S]*dismissGuide\(\)[\s\S]*event\.key !== "Tab"/, "Return starts the short-draft path while Escape dismisses OOBE");
 test.assertMatches(wireup, /win\.dataset\.window === "guide"[\s\S]*await dismissGuide\(\)/, "the close box completes OOBE instead of leaving it pending");
 test.assertIncludes(chatMessages, 'typeof syncGuideWelcomeState === "function"', "model connection changes refresh an open Start Here window in place");
 test.assertIncludes(actions, '"guide-open-model-settings": openGuideModelSettings', "the welcome action is centrally registered");
@@ -63,12 +63,12 @@ test.assertMatches(workingSession, /visibleWindows = windows[\s\S]*!workingSessi
 test.assertMatches(responsiveCss, /\.guide-window\.is-mobile-system-page[\s\S]*inset: auto;[\s\S]*top: 50%;[\s\S]*transform: translate\(-50%, -50%\);/, "mobile keeps Start Here as a centered floating window so the desktop remains visible");
 test.assertMatches(responsiveCss, /\.guide-window\.is-mobile-system-page[\s\S]*border-radius: var\(--liquid-window-radius, 0\);/, "mobile restores Liquid Glass window corners while Classic remains square");
 
-for (const key of ["guide_welcome_heading", "guide_welcome_body", "guide_welcome_body_connected", "guide_connect_ai", "guide_ai_settings", "guide_start_exploring", "github_repo"]) {
+for (const key of ["guide_welcome_heading", "guide_welcome_body", "guide_welcome_body_connected", "guide_connect_ai", "guide_ai_settings", "guide_short_draft", "guide_long_project", "guide_continue_project"]) {
   test.assertIncludes(en, `${key}:`, `English copy exists for ${key}`);
   test.assertIncludes(zh, `${key}:`, `Chinese copy exists for ${key}`);
 }
-test.assertIncludes(en, "To keep several applications on the desktop or change the appearance, open Special.", "Special remains one quiet clue toward MultiFinder and appearance");
-test.assertIncludes(zh, "想让多个应用留在桌面，或换一种外观，再打开「特别」菜单。想写作时，打开桌面上的「创作坊」，进入写作工作区。需要 AI 时再连接。", "Chinese OOBE uses the actual menu label and the approved compact copy");
+test.assertIncludes(en, "Quick Draft turns an idea or material into a short piece. Writing Studio handles research, structure, sections, and review.", "OOBE distinguishes the short and long writing routes without internal concepts");
+test.assertIncludes(zh, "「钟点稿」快速把想法和材料写成一篇稿；「创作坊」用于研究、结构、分段写作和审阅。需要 AI 时再连接。", "Chinese OOBE uses the product names and approved compact copy");
 test.assertIncludes(dictionary, "Start Here leaves AI optional", "System Help matches the optional-AI first experience");
 test.assertIncludes(dictionary, "开始使用”不会强制连接 AI", "Chinese System Help matches the optional-AI first experience");
 

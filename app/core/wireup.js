@@ -821,6 +821,8 @@ function wireAppEvents() {
   setupLocalModelButton?.addEventListener("click", setupLocalLmStudioModel);
 
   findModelsButton?.addEventListener("click", findLmStudioModels);
+  document.getElementById("detect-local-models")?.addEventListener("click", detectLocalModelConnection);
+  document.getElementById("reset-ai-connection")?.addEventListener("click", resetAiConnection);
 
   loadModelButton.addEventListener("click", loadSelectedLmStudioModel);
   localProviderEl?.addEventListener("change", () => {

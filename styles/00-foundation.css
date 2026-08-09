@@ -400,6 +400,12 @@
   --system-window-padding: 8px;
   --system-control-min-height: 26px;
   --system-button-min-height: 26px;
+  --system-button-small-height: 22px;
+  --system-button-mini-height: 19px;
+  --system-button-small-font-size: 11px;
+  --system-button-mini-font-size: 10px;
+  --system-button-small-padding-x: 9px;
+  --system-button-mini-padding-x: 7px;
   --system-button-padding-y: 2px;
   --system-button-padding-x: 12px;
   --control-hit-target: 28px;
@@ -683,6 +689,8 @@
     repeat-y 0% 0% / 100% var(--system-titlebar-stripe-size) content-box content-box;
   --system-titlebar-active-bg: var(--system-titlebar-striped-bg);
   --system-titlebar-inactive-bg: var(--paper);
+  --system-titlebar-background-origin: content-box;
+  --system-titlebar-background-clip: content-box;
   --system-titlebar-control-focus-outline: 0;
   --system-titlebar-control-focus-shadow: none;
   --system-titlebar-close-attention-mark-opacity: 0;
@@ -785,6 +793,7 @@
   --menu-panel-radius: 0;
   --menu-panel-shadow: 1px 1px 0 var(--ink);
   --menu-panel-backdrop-filter: none;
+  --surface-backdrop-filter: none;
   --happy-mac-border-width: 4px;
   --happy-mac-face-border-width: 2px;
   --happy-mac-border-color: var(--ink);
@@ -869,6 +878,7 @@
   --tab-bg: var(--shade);
   --tab-hover-bg: var(--paper);
   --tab-active-bg: var(--paper);
+  --tab-active-fg: var(--ink);
   --guide-start-card-border: var(--system-control-line) solid var(--ink);
   --guide-start-card-radius: 0;
   --guide-start-card-bg: var(--paper);
@@ -2053,7 +2063,7 @@ body.has-system-modal .menu-bar {
 }
 
 .menu-bar > .menu > .apple {
-  width: 34px;
+  width: var(--apple-menu-slot-width, 34px);
   padding: 0;
   position: relative;
   display: inline-flex;
@@ -2066,6 +2076,29 @@ body.has-system-modal .menu-bar {
   content: "";
   position: absolute;
   display: block;
+  opacity: var(--apple-menu-pixel-opacity, 1);
+}
+
+.apple-menu-era-glyph {
+  display: var(--apple-menu-era-glyph-display, none);
+  color: var(--apple-menu-era-glyph-color, currentColor);
+  font-family: var(--theme-ui-font, sans-serif);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.menu:focus-within > .apple .apple-menu-era-glyph,
+.menu.is-open > .apple .apple-menu-era-glyph {
+  color: var(--apple-menu-era-glyph-active-color, currentColor);
+}
+
+.menu-bar-current-app {
+  display: var(--menu-current-app-display, none);
+}
+
+.menu-bar-current-app > button strong {
+  font-weight: 700;
 }
 
 .apple::before {

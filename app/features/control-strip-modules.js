@@ -277,7 +277,7 @@ const controlStripBuiltinModules = Object.freeze([
         source: "appearance",
       };
     },
-    menu: () => (window.AISystem6Theme?.themes || []).map((theme) => ({
+    menu: () => (window.AISystem6Theme?.getReleaseReadyThemes?.() || window.AISystem6Theme?.themes || []).map((theme) => ({
       type: "action",
       label: t(theme.labelKey),
       checked: theme.id === getCurrentTheme(),

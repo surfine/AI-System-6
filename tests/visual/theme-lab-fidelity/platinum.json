@@ -1,0 +1,300 @@
+{
+  "schemaVersion": 1,
+  "id": "platinum-macos90-v1",
+  "theme": "platinum",
+  "target": "Mac OS 9.0 Platinum",
+  "fixtureRevision": "theme-lab-fidelity-v1",
+  "capture": {
+    "viewport": { "width": 1280, "height": 1040 },
+    "screen": { "width": 1280, "height": 1040 },
+    "windowSize": { "width": 1080, "height": 730 },
+    "deviceScaleFactor": 1,
+    "zoom": 1,
+    "locale": "en-US",
+    "timezoneId": "UTC",
+    "colorScheme": "light",
+    "reducedMotion": "reduce",
+    "forcedColors": "none",
+    "colorSpace": "srgb",
+    "playwrightVersion": "1.62.1",
+    "browserRevision": "1234",
+    "browserVersion": "151.0.7922.34",
+    "contentSha256": "ec54a8e0775cc7c23e3454d36d983e473e1ce888192de6fa68cac2f7f1252421",
+    "historicalFontTarget": "Charcoal 12 pt",
+    "legalFallback": "OFL-licensed Asap variable font",
+    "fontProbeSelectors": [
+      ".theme-lab-controls h3",
+      ".theme-lab-mini-window.is-active span",
+      ".theme-lab-form-grid select",
+      ".theme-lab-dialog--platinum-about .btn.default"
+    ],
+    "fontAssertions": [
+      { "selector": ".theme-lab-controls h3", "requiredFamily": "Asap", "isCustomFont": true },
+      { "selector": ".theme-lab-mini-window.is-active span", "requiredFamily": "Asap", "isCustomFont": true },
+      { "selector": ".theme-lab-form-grid select", "requiredFamily": "Asap", "isCustomFont": true },
+      { "selector": ".theme-lab-dialog--platinum-about .btn.default", "requiredFamily": "Asap", "isCustomFont": true }
+    ],
+    "requiredResources": [
+      "/assets/fonts/platinum/Asap-Variable.woff2",
+      "/assets/themes/platinum/checkbox-checked-overlay.svg",
+      "/assets/themes/platinum/calculator-32.svg",
+      "/assets/themes/platinum/tab-selected-left.svg",
+      "/assets/themes/platinum/tab-selected-right.svg",
+      "/assets/themes/platinum/menu/system-profiler.svg",
+      "/assets/themes/platinum/menu/calculator.svg",
+      "/assets/themes/platinum/menu/chooser.svg",
+      "/assets/themes/platinum/menu/control-panels.svg",
+      "/assets/themes/platinum/menu/favorites.svg",
+      "/assets/themes/platinum/menu/key-caps.svg",
+      "/assets/themes/platinum/menu/network-browser.svg",
+      "/assets/themes/platinum/menu/recent-applications.svg",
+      "/assets/themes/platinum/menu/recent-documents.svg",
+      "/assets/themes/platinum/menu/remote-access.svg",
+      "/assets/themes/platinum/menu/scrapbook.svg",
+      "/assets/themes/platinum/menu/sherlock.svg",
+      "/assets/themes/platinum/menu/stickies.svg",
+      "/assets/themes/platinum/open-list/apple-dvd-player.svg",
+      "/assets/themes/platinum/open-list/apple-video-player.svg",
+      "/assets/themes/platinum/open-list/applecd-audio-player.svg",
+      "/assets/themes/platinum/open-list/quicktime.svg",
+      "/assets/themes/platinum/open-list/security.svg",
+      "/assets/vendor/classic-stylesheets/macos9/dropdown.svg"
+    ],
+    "requiredResourcePrefixes": [
+      "/assets/fonts/platinum/",
+      "/assets/themes/platinum/",
+      "/assets/vendor/classic-stylesheets/macos9/"
+    ],
+    "fixtureAssertions": [
+      { "selector": ".theme-lab-open-list-capture", "count": 1, "visible": true },
+      { "selector": ".theme-lab-open-list-items > button", "count": 5 },
+      { "selector": ".theme-lab-open-list-items > button:first-child", "count": 1, "attributes": { "aria-selected": "true" } },
+      { "selector": ".theme-lab-open-scrollbar .theme-lab-scrollbar-thumb", "count": 0 },
+      { "selector": ".theme-lab-menu-capture", "count": 1, "visible": true },
+      { "selector": ".theme-lab-menu--platinum > button", "count": 14 },
+      { "selector": ".theme-lab-platinum-disclosure", "count": 4 },
+      { "selector": ".theme-lab-about-capture", "count": 1, "visible": true },
+      { "selector": ".theme-lab-dialog--platinum-about > button", "count": 1, "text": "OK" },
+      { "selector": ".theme-lab-menu.theme-lab-generic-fixture", "count": 1, "visible": false },
+      { "selector": ".theme-lab-dialog.theme-lab-generic-fixture", "count": 1, "visible": false }
+    ]
+  },
+  "output": {
+    "atlasWidth": 1120,
+    "columns": 2
+  },
+  "sources": [
+    {
+      "id": "guidebook.macos90.appearance.appearance-tab",
+      "file": "guidebook-appearance-macos90-1-1.png",
+      "url": "https://guidebookgallery.org/pics/gui/settings/appearance/macos90-1-1.png",
+      "pageUrl": "https://guidebookgallery.org/screenshots/macos90#appearance",
+      "sha256": "abd73b69018e25bc2fa91317a99e037f34cb386a8ef8b24544e2ed958dffd188",
+      "width": 477,
+      "height": 339,
+      "systemVersion": "Mac OS 9.0",
+      "credit": "GUIdebook / Marcin Wichary",
+      "redistribution": "Copyrighted reference; no open license stated. Local research and comparison only."
+    },
+    {
+      "id": "guidebook.macos90.appearance.options-tab",
+      "file": "guidebook-appearance-macos90-1-4.png",
+      "url": "https://guidebookgallery.org/pics/gui/settings/appearance/macos90-1-4.png",
+      "pageUrl": "https://guidebookgallery.org/screenshots/macos90#appearance",
+      "sha256": "2031e79559dd552a0b8481798720fa9c2082807c6bb064450542c8363b1f92ff",
+      "width": 477,
+      "height": 339,
+      "systemVersion": "Mac OS 9.0",
+      "credit": "GUIdebook / Marcin Wichary",
+      "redistribution": "Copyrighted reference; no open license stated. Local research and comparison only."
+    },
+    {
+      "id": "guidebook.macos90.open-file",
+      "file": "guidebook-openfile-macos90.png",
+      "url": "https://guidebookgallery.org/pics/gui/interface/dialogs/openfile/macos90.png",
+      "pageUrl": "https://guidebookgallery.org/screenshots/macos90#openfile",
+      "sha256": "1ba1ccf382723be19be231f8295755cda408b25de7de6aacb5933e70b552c893",
+      "width": 460,
+      "height": 194,
+      "systemVersion": "Mac OS 9.0",
+      "credit": "GUIdebook / Marcin Wichary",
+      "redistribution": "Copyrighted reference; no open license stated. Local research and comparison only."
+    },
+    {
+      "id": "guidebook.macos90.about-application",
+      "file": "guidebook-about-application-macos90.png",
+      "url": "https://guidebookgallery.org/pics/gui/interface/dialogs/aboutapplication/macos90.png",
+      "pageUrl": "https://guidebookgallery.org/screenshots/macos90#aboutapplication",
+      "sha256": "d7b02aa966881210040d8d782bef8b34860191bc811fbe9d586542d9f85ddae2",
+      "width": 273,
+      "height": 110,
+      "systemVersion": "Mac OS 9.0",
+      "credit": "GUIdebook / Marcin Wichary",
+      "redistribution": "Copyrighted reference; no open license stated. Local research and comparison only."
+    },
+    {
+      "id": "guidebook.macos90.apple-menu",
+      "file": "guidebook-application-manager-macos90-1-1.png",
+      "url": "https://guidebookgallery.org/pics/gui/system/managers/applicationmanager/macos90-1-1.png",
+      "pageUrl": "https://guidebookgallery.org/screenshots/macos90#applicationmanager",
+      "sha256": "5077de75f53909afb2cfd32168336fb23a2bb30d88cee56aba7b3e6e22ba5245",
+      "width": 199,
+      "height": 278,
+      "systemVersion": "Mac OS 9.0",
+      "credit": "GUIdebook / Marcin Wichary",
+      "redistribution": "Copyrighted reference; no open license stated. Local research and comparison only."
+    },
+    {
+      "id": "guidebook.macos90.active-inactive",
+      "file": "guidebook-desktop-full-macos90.png",
+      "url": "https://guidebookgallery.org/pics/gui/desktop/full/macos90.png",
+      "pageUrl": "https://guidebookgallery.org/screenshots/macos90#full",
+      "sha256": "6eb91e803620cc11a6280abe6729412f3e7e0c0b63e2d78f39972ec855c08e00",
+      "width": 640,
+      "height": 480,
+      "systemVersion": "Mac OS 9.0",
+      "credit": "GUIdebook / Marcin Wichary",
+      "redistribution": "Copyrighted reference; no open license stated. Local research and comparison only."
+    }
+  ],
+  "specimens": [
+    {
+      "id": "active-titlebar",
+      "label": "Active title bar / window frame",
+      "reference": {
+        "source": "guidebook.macos90.appearance.appearance-tab",
+        "crop": { "x": 0, "y": 0, "width": 477, "height": 22 }
+      },
+      "current": {
+        "selector": ".theme-lab-window",
+        "crop": { "x": 0, "y": 0, "width": 477, "height": 22 },
+        "setup": [
+          { "selector": ".theme-lab-window", "style": { "width": "476px", "minWidth": "476px", "maxWidth": "476px" }, "attributes": { "class": "window theme-lab-window is-active" } },
+          { "selector": ".theme-lab-window > .title-bar h2", "text": "Appearance" }
+        ]
+      }
+    },
+    {
+      "id": "inactive-titlebar",
+      "label": "Inactive title bar / window frame",
+      "reference": {
+        "source": "guidebook.macos90.active-inactive",
+        "crop": { "x": 92, "y": 28, "width": 424, "height": 22 }
+      },
+      "current": {
+        "selector": ".theme-lab-window",
+        "crop": { "x": 0, "y": 0, "width": 424, "height": 22 },
+        "setup": [
+          { "selector": ".theme-lab-window", "style": { "width": "424px", "minWidth": "424px", "maxWidth": "424px" }, "attributes": { "class": "window theme-lab-window" } },
+          { "selector": ".theme-lab-window > .title-bar h2", "text": "Web Sharing" }
+        ]
+      }
+    },
+    {
+      "id": "selected-tab",
+      "label": "Selected Appearance tab",
+      "reference": {
+        "source": "guidebook.macos90.appearance.appearance-tab",
+        "crop": { "x": 81, "y": 31, "width": 103, "height": 24 }
+      },
+      "current": {
+        "selector": ".theme-lab-tabs > button.is-selected",
+        "crop": { "x": 0, "y": 0, "width": 103, "height": 24 },
+        "setup": [
+          { "selector": ".theme-lab-tabs > button.is-selected", "style": { "width": "103px", "minWidth": "103px", "maxWidth": "103px", "flex": "0 0 103px" }, "text": "Appearance" },
+          { "selector": ".theme-lab-tabs > button:not(.is-selected)", "style": { "display": "none" } }
+        ]
+      }
+    },
+    {
+      "id": "popup-normal",
+      "label": "Normal pop-up button",
+      "reference": {
+        "source": "guidebook.macos90.appearance.appearance-tab",
+        "crop": { "x": 127, "y": 75, "width": 180, "height": 20 }
+      },
+      "current": {
+        "selector": ".theme-lab-form-grid > label:nth-child(4) .system-select-button",
+        "crop": { "x": 0, "y": 0, "width": 180, "height": 20 },
+        "setup": [
+          { "selector": ".theme-lab-form-grid > label:nth-child(4) .select-wrap", "style": { "width": "180px" } },
+          { "selector": ".theme-lab-form-grid > label:nth-child(4) select", "style": { "width": "180px" } },
+          { "selector": ".theme-lab-form-grid > label:nth-child(4) .system-select-button", "text": "Apple platinum" },
+          { "selector": ".theme-lab-form-grid > label:nth-child(4) option", "text": "Apple platinum", "attributes": { "label": "Apple platinum" } }
+        ]
+      }
+    },
+    {
+      "id": "checkbox-checked",
+      "label": "Checked checkbox",
+      "reference": {
+        "source": "guidebook.macos90.appearance.options-tab",
+        "crop": { "x": 51, "y": 74, "width": 12, "height": 12 }
+      },
+      "current": {
+        "selector": ".theme-lab-choice-matrix > label:first-child > input[type=checkbox]",
+        "crop": { "x": 0, "y": 0, "width": 12, "height": 12 }
+      }
+    },
+    {
+      "id": "checkbox-unchecked",
+      "label": "Unchecked checkbox",
+      "reference": {
+        "source": "guidebook.macos90.appearance.options-tab",
+        "crop": { "x": 51, "y": 137, "width": 12, "height": 12 }
+      },
+      "current": {
+        "selector": ".theme-lab-choice-matrix > label:nth-child(2) > input[type=checkbox]",
+        "crop": { "x": 0, "y": 0, "width": 12, "height": 12 }
+      }
+    },
+    {
+      "id": "default-ok",
+      "label": "Default OK button and 3px ring",
+      "reference": {
+        "source": "guidebook.macos90.about-application",
+        "crop": { "x": 185, "y": 64, "width": 73, "height": 32 }
+      },
+      "current": {
+        "selector": ".theme-lab-dialog--platinum-about .btn.default",
+        "crop": { "x": -4, "y": -7, "width": 73, "height": 32 }
+      }
+    },
+    {
+      "id": "open-list-scrollbar",
+      "label": "Open dialog list, selection, and scrollbar",
+      "reference": {
+        "source": "guidebook.macos90.open-file",
+        "crop": { "x": 124, "y": 35, "width": 218, "height": 128 }
+      },
+      "current": {
+        "selector": ".theme-lab-open-list-capture",
+        "crop": { "x": 0, "y": 0, "width": 218, "height": 128 }
+      }
+    },
+    {
+      "id": "apple-menu",
+      "label": "Tracked Apple menu",
+      "reference": {
+        "source": "guidebook.macos90.apple-menu",
+        "crop": { "x": 0, "y": 19, "width": 199, "height": 259 }
+      },
+      "current": {
+        "selector": ".theme-lab-menu-capture",
+        "crop": { "x": 0, "y": 0, "width": 199, "height": 259 }
+      }
+    },
+    {
+      "id": "about-alert",
+      "label": "About application alert",
+      "reference": {
+        "source": "guidebook.macos90.about-application",
+        "crop": { "x": 0, "y": 0, "width": 273, "height": 110 }
+      },
+      "current": {
+        "selector": ".theme-lab-about-capture",
+        "crop": { "x": 0, "y": 0, "width": 273, "height": 110 }
+      }
+    }
+  ]
+}

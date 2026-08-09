@@ -1580,6 +1580,20 @@ function themeHasCapability(capability) {
   return window.AISystem6Theme?.hasCapability?.(capability) === true;
 }
 
+function syncThemeLabEvidence(theme) {
+  const lab = document.querySelector('[data-window="themeLab"]');
+  if (!lab || !theme) return;
+  const values = [
+    ["[data-theme-lab-appearance]", theme.label],
+    ["[data-theme-lab-font]", theme.systemFont],
+    ["[data-theme-lab-font-size]", theme.systemFontSize],
+  ];
+  for (const [selector, value] of values) {
+    const target = lab.querySelector(selector);
+    if (target) target.textContent = String(value);
+  }
+}
+
 function applyTheme(themeId, options = {}) {
   const theme = window.AISystem6Theme?.applyTheme(themeId, {
     persist: options.persist !== false,
@@ -1587,6 +1601,7 @@ function applyTheme(themeId, options = {}) {
     modernFontPreference: modernFontsInput?.checked === true,
   });
   const resolvedTheme = theme?.id || "classic";
+  syncThemeLabEvidence(theme);
   if (appearanceThemeInput && appearanceThemeInput.value !== resolvedTheme) {
     appearanceThemeInput.value = resolvedTheme;
     appearanceThemeInput.dispatchEvent(new Event("system-select-sync"));

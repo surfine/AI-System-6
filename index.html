@@ -17,7 +17,7 @@
     <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png" />
     <link rel="manifest" href="assets/app-icon/manifest.json" />
     <script src="app/core/theme-registry.js"></script>
-    <link rel="stylesheet" href="styles.bundle.css?v=20260809.3" />
+    <link rel="stylesheet" href="styles.bundle.css?v=20260809.4" />
   </head>
   <body class="is-booting">
     <script src="app/core/theme-body-init.js"></script>
@@ -27,6 +27,7 @@
           <svg class="alarm-clock-menu-icon" viewBox="0 0 15 16" aria-hidden="true" focusable="false">
             <path d="M2 0h1v1H2zM7 0h1v1H7zM12 0h1v1h-1zM3 1h1v1H3zM7 1h1v1H7zM11 1h1v1h-1zM4 3h1v1H4zM7 3h1v1H7zM10 3h1v1h-1zM0 4h1v1H0zM2 4h1v1H2zM12 4h1v1h-1zM14 4h1v1h-1zM4 5h7v1H4zM2 6h3v1H2zM10 6h3v1h-3zM2 7h1v7H2zM7 7h1v4H7zM12 7h1v7h-1zM6 11h1v1H6zM5 12h1v1H5zM2 13h2v1H2zM11 13h2v1h-2zM4 14h7v1H4zM3 15h9v1H3z"></path>
           </svg>
+          <span class="apple-menu-era-glyph" aria-hidden="true"></span>
         </button>
         <div class="menu-popover apple-menu-popover">
           <button data-action="open-about" data-i18n="about_menu">About AI System 6...</button>
@@ -63,6 +64,13 @@
           <button data-action="open-system-status" data-i18n="system_status">System Status</button>
           <hr class="apple-multifinder-about-separator" />
           <button class="apple-multifinder-about-item" data-action="open-about-multifinder" data-i18n="about_multifinder">About MultiFinder...</button>
+        </div>
+      </div>
+      <div class="menu menu-bar-current-app">
+        <button type="button"><strong>AI System 6</strong></button>
+        <div class="menu-popover">
+          <button data-action="open-about" data-i18n="about_menu">About AI System 6...</button>
+          <button data-action="open-control" data-i18n="control_panel">Control Panel</button>
         </div>
       </div>
       <span id="app-menu-slot" hidden></span>
@@ -465,6 +473,10 @@
 
           <section class="control-section control-model-section" id="control-panel-local" role="tabpanel" aria-labelledby="control-tab-local" data-control-panel="local" hidden>
             <h3 data-i18n="control_connection">Local Model</h3>
+            <button class="btn default control-wide-button" type="button" id="detect-local-models" data-i18n="detect_local_models">Find LM Studio or Ollama</button>
+            <p class="hint control-status" id="local-detection-status" data-i18n="local_detection_ready">Checks this device for a running local model.</p>
+            <details class="control-diagnostics" id="local-manual-connection">
+              <summary data-i18n="advanced_settings">Advanced Settings…</summary>
             <!-- Step 1: connect. Provider and endpoint fold into Advanced once
                  the connection is up — you don't re-read an address you're
                  already connected to. -->
@@ -559,11 +571,19 @@
                 <p class="hint control-status" id="model-picker-status" data-i18n="models_hint">Models are read when Control Panel opens.</p>
               </details>
             </div>
+            </details>
           </section>
 
 
           <section class="control-section control-cloud-section" id="control-panel-cloud" role="tabpanel" aria-labelledby="control-tab-cloud" data-control-panel="cloud">
-            <h3 data-i18n="cloud_model">Cloud Model</h3>
+            <h3 data-i18n="ai_connection">AI Connection</h3>
+            <button class="btn default control-wide-button" type="button" id="use-website-ai" data-i18n="use_website_ai">Use Website AI</button>
+            <button class="btn control-wide-button" type="button" id="use-local-ai" data-i18n="use_local_ai">Use Local AI</button>
+            <button class="btn control-wide-button" type="button" id="show-ai-advanced" data-i18n="advanced_settings">Advanced Settings…</button>
+            <p class="hint control-status" id="simple-ai-status" data-i18n="website_ai_ready">Uses the site's shared AI when it is available.</p>
+
+            <details class="control-diagnostics" id="cloud-own-key-details">
+              <summary data-i18n="use_own_api_key">Use Your Own API Key</summary>
 
             <label class="control-field" for="cloud-provider">
               <span data-i18n="cloud_provider">Provider</span>
@@ -594,6 +614,8 @@
 
             <button class="btn default control-wide-button" type="button" id="cloud-check-status" data-i18n="cloud_check_status">Check Status</button>
             <p class="hint control-status" id="cloud-status-hint" data-i18n="cloud_status_hint">The key is kept for this tab session only; project files and exports never include it.</p>
+            </details>
+            <button class="btn control-wide-button" type="button" id="reset-ai-connection" data-i18n="reset_ai_connection">Reset AI Connection</button>
           </section>
           <div id="control-panel-general" role="tabpanel" aria-labelledby="control-tab-general" data-control-panel="general" hidden>
           <section class="control-section">
@@ -614,6 +636,7 @@
                 <div class="select-wrap"><select id="appearance-theme" data-balloon-help="balloon_theme_switcher">
                   <option value="classic" data-i18n="theme_classic">System 6</option>
                   <option value="platinum" data-i18n="theme_platinum">Platinum</option>
+                  <option value="aqua" data-i18n="theme_aqua">Aqua</option>
                   <option value="liquid-glass" data-i18n="theme_liquid_glass">Liquid Glass</option>
                 </select></div>
               </label>
@@ -977,7 +1000,7 @@
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
         </div>
         <div class="details-bar">
-          <span data-i18n="twelve_items">12 items</span>
+          <span data-i18n="eighteen_items">18 items</span>
           <div class="view-controls" data-view-window="applications" aria-label="View" data-i18n-aria-label="view_controls">
             <button class="view-btn is-active" type="button" data-view="icon" aria-label="Icon view" data-i18n-aria-label="view_icon"></button>
             <button class="view-btn" type="button" data-view="list" aria-label="List view" data-i18n-aria-label="view_list"></button>
@@ -988,10 +1011,17 @@
           <button class="finder-item" data-action="open-assistant">
             <span class="sys-icon" data-system-icon="assistant" aria-hidden="true"></span>
             <span data-i18n="assistant_label">ClioTalk</span>
+            <small data-i18n="app_desc_cliotalk">Talk with a model or discuss the work in front of you.</small>
           </button>
           <button class="finder-item" data-action="open-quick-draft">
             <span class="sys-icon" data-system-icon="quickDraft" aria-hidden="true"></span>
             <span data-i18n="quick_draft_label">Quick Draft</span>
+            <small data-i18n="app_desc_draft_desk">Turn an idea or material into a short draft.</small>
+          </button>
+          <button class="finder-item" data-action="open-writing-studio">
+            <span class="sys-icon" data-system-icon="writingStudio" aria-hidden="true"></span>
+            <span data-i18n="writing_studio">Writing Studio</span>
+            <small data-i18n="app_desc_writing_studio">Research, structure, draft sections, and review a long project.</small>
           </button>
           <button class="finder-item" data-action="open-teachtext">
             <span class="sys-icon" data-system-icon="teachText" aria-hidden="true"></span>
@@ -1000,6 +1030,7 @@
           <button class="finder-item" data-action="open-reader">
             <span class="sys-icon" data-system-icon="reader" aria-hidden="true"></span>
             <span data-i18n="reader_label">Reader</span>
+            <small data-i18n="app_desc_reader">Read sources and clip useful passages.</small>
           </button>
           <button class="finder-item" data-action="open-time-machine">
             <span class="sys-icon" data-system-icon="timeMachine" aria-hidden="true"></span>
@@ -1008,6 +1039,7 @@
           <button class="finder-item" data-action="open-find-path">
             <span class="sys-icon" data-system-icon="searcher" aria-hidden="true"></span>
             <span data-i18n="searcher_label">Searcher</span>
+            <small data-i18n="app_desc_searcher">Find material you can inspect and cite.</small>
           </button>
           <button class="finder-item" data-action="open-docmap">
             <span class="sys-icon" data-system-icon="docMap" aria-hidden="true"></span>
@@ -1071,6 +1103,13 @@
         </div>
         <div class="window-pane draft-desk-pane">
           <form id="quick-draft-form" class="draft-desk-layout is-empty-draft">
+            <section id="quick-draft-no-project" class="finder-empty-object" hidden>
+              <p data-i18n="quick_draft_project_required">Quick Draft needs a project to save your work.</p>
+              <div class="button-row">
+                <button class="btn default" type="button" data-quick-draft-create-project data-i18n="quick_draft_create_project">New Project</button>
+                <button class="btn" type="button" data-quick-draft-open-projects data-i18n="quick_draft_open_project">Open Existing Project</button>
+              </div>
+            </section>
             <div class="draft-desk-workspace">
               <section class="draft-desk-paper" aria-label="Draft" data-i18n-aria-label="quick_draft_draft_label">
                 <header class="draft-desk-sheet-head">
@@ -1230,7 +1269,7 @@
               </details>
               <details id="quick-draft-deliver" class="teachtext-command-menu draft-desk-command-menu draft-desk-deliver-menu">
                 <summary class="btn" role="button" aria-haspopup="menu" aria-expanded="false" aria-controls="quick-draft-deliver-menu"><span data-i18n="quick_draft_deliver">Deliver…</span></summary>
-                <div id="quick-draft-deliver-menu" class="teachtext-command-popover draft-desk-command-popover" role="menu"><section class="draft-desk-command-section"><b data-i18n="quick_draft_command_delivery">Delivery</b><button class="btn" type="button" data-quick-draft-delivery="teachtext" data-i18n="quick_draft_send_teachtext" data-balloon-help="balloon_qd_teachtext">Send to TeachText</button><button class="btn" type="button" id="quick-draft-send-review" data-i18n="quick_draft_send_review" data-balloon-help="balloon_qd_review">Send to Review Desk</button><button class="btn" type="button" id="quick-draft-save-project-doc" data-i18n="quick_draft_save_project_doc" data-balloon-help="balloon_qd_save_project">Save to Project Hard Disk</button><button class="btn" type="button" data-quick-draft-delivery="copy-markdown" data-i18n="copy_markdown">Copy Markdown</button><button class="btn" type="button" data-quick-draft-delivery="export-markdown" data-i18n="quick_draft_export_markdown" data-balloon-help="balloon_qd_export_md">Export Markdown</button></section></div>
+                <div id="quick-draft-deliver-menu" class="teachtext-command-popover draft-desk-command-popover" role="menu"><section class="draft-desk-command-section"><b data-i18n="quick_draft_command_delivery">Delivery</b><button class="btn" type="button" id="quick-draft-save-project-doc" data-i18n="quick_draft_save_project_doc" data-balloon-help="balloon_qd_save_project">Save to Project Hard Disk</button><button class="btn" type="button" data-quick-draft-delivery="export-markdown" data-i18n="quick_draft_download_markdown" data-balloon-help="balloon_qd_export_md">Download Markdown</button><button class="btn" type="button" data-quick-draft-delivery="share-markdown" data-i18n="share_ellipsis" hidden>Share…</button><hr /><button class="btn" type="button" data-quick-draft-delivery="teachtext" data-i18n="quick_draft_continue_teachtext" data-balloon-help="balloon_qd_teachtext">Continue in TeachText</button><button class="btn" type="button" id="quick-draft-send-review" data-i18n="quick_draft_review_in_review_desk" data-balloon-help="balloon_qd_review">Review in Review Desk</button><button class="btn" type="button" data-quick-draft-delivery="copy-markdown" data-i18n="copy_markdown">Copy Markdown</button></section></div>
               </details>
               <button class="btn default" type="button" id="quick-draft-save" data-i18n="quick_draft_start_writing">Draft</button>
             </footer>
@@ -1652,7 +1691,9 @@
         </div>
         <div class="window-pane project-cd-pane">
           <div class="button-row">
+            <button class="btn" type="button" data-action="copy-project-cd-markdown" data-i18n="copy_markdown">Copy Markdown</button>
             <button class="btn" type="button" id="download-project-cd" data-i18n="download">Download</button>
+            <button class="btn" type="button" data-action="share-project-cd-markdown" data-web-share-action data-i18n="share_ellipsis" hidden>Share…</button>
             <button class="btn default" type="button" id="print-project-cd-pdf" data-i18n="print_to_pdf">Print to PDF</button>
             <button class="btn danger" type="button" id="clear-project-cd" data-i18n="clear">Clear</button>
           </div>
@@ -1875,6 +1916,10 @@
                   <button class="btn" type="button" data-action="make-docmap-source" data-i18n="docmap_from_source">Map Entire Source</button>
                   <button class="btn" type="button" data-action="open-image-manager" data-i18n="image_manager">Image Manager</button>
                   <button class="btn" type="button" data-action="generate-marp-open-clio-stage" data-i18n="generate_marp_open_clio_stage">Generate Marp and Open</button>
+                  <hr />
+                  <button class="btn" type="button" data-action="copy-active-markdown" data-i18n="copy_markdown">Copy Markdown</button>
+                  <button class="btn" type="button" data-action="download-active-markdown" data-i18n="download_markdown">Download Markdown</button>
+                  <button class="btn" type="button" data-action="share-active-markdown" data-web-share-action data-i18n="share_ellipsis" hidden>Share…</button>
                 </div>
               </details>
             </div>
@@ -2454,14 +2499,16 @@
         <div class="window-pane guide-pane">
           <div class="guide-step" id="guide-welcome-step">
             <h3 data-i18n="guide_welcome_heading">This Macintosh did not stop in 1988.</h3>
-            <p data-i18n="guide_welcome_body">Start with the Apple menu at the top left. To keep several applications on the desktop or change the appearance, open Special. To write, open Writing Studio on the desktop to enter the writing workspace. Connect AI when you need it.</p>
+            <p data-i18n="guide_welcome_body">Quick Draft turns an idea or material into a short piece. Writing Studio handles research, structure, sections, and review. Connect AI only when you need it.</p>
+            <p id="web-install-hint" class="hint" hidden></p>
           </div>
 
           <div class="button-row">
-            <button class="btn" type="button" data-action="open-guide-promo" data-i18n="guide_watch_promo">Watch Promo</button>
-            <button class="btn" type="button" data-action="open-github-repo" data-i18n="github_repo">View GitHub</button>
+            <button class="btn default" type="button" data-action="guide-start-quick-draft" data-i18n="guide_short_draft" aria-keyshortcuts="Enter">Write a Short Draft</button>
+            <button class="btn" type="button" data-action="guide-start-route" data-i18n="guide_long_project">Start a Long Project</button>
+            <button class="btn" type="button" data-action="guide-continue-last" data-i18n="guide_continue_last" hidden>Continue</button>
             <button class="btn" type="button" data-action="guide-open-model-settings" data-i18n="guide_connect_ai">Connect AI…</button>
-            <button class="btn default" type="button" data-action="dismiss-guide" data-i18n="guide_start_exploring" aria-keyshortcuts="Enter">Start Exploring</button>
+            <button class="btn" type="button" data-action="install-web-app" data-i18n="web_install_action" hidden>Add to Home Screen</button>
           </div>
         </div>
       </section>
@@ -3405,7 +3452,10 @@ Glass</textarea>
             <dd id="status-current-task">--</dd>
             <dt data-i18n="about_mode">Mode</dt>
             <dd id="status-mode">--</dd>
+            <dt data-i18n="project_storage">Project Storage</dt>
+            <dd id="status-project-storage">--</dd>
           </dl>
+          <button class="btn" type="button" id="keep-projects-on-device" data-i18n="project_storage_keep">Keep Projects on This Device</button>
         </div>
       </section>
 
@@ -3542,7 +3592,13 @@ Glass</textarea>
         </div>
         <div class="details-bar compact-status-bar">
           <span class="status-bar-leading" data-i18n="theme_lab_status">Shared control specimen</span>
-          <span class="status-bar-context theme-lab-current-era">System 6 → Platinum → Liquid Glass</span>
+          <span class="status-bar-context theme-lab-current-era" aria-live="polite">
+            <strong data-theme-lab-appearance>System 6</strong>
+            <span aria-hidden="true">·</span>
+            <span data-theme-lab-font>Chicago</span>
+            <span aria-hidden="true">·</span>
+            <span><span data-theme-lab-font-size>12</span> pt</span>
+          </span>
           <span class="status-bar-trailing" data-i18n="theme_lab_internal">Internal</span>
         </div>
         <div class="window-pane theme-lab-pane">
@@ -3552,39 +3608,108 @@ Glass</textarea>
               <button class="btn" type="button" data-i18n="theme_lab_normal">Normal</button>
               <button class="btn default" type="button" data-i18n="theme_lab_default">Default</button>
               <button class="btn is-active" type="button" aria-pressed="true" data-i18n="theme_lab_pressed">Pressed</button>
+              <button class="btn theme-lab-focus-control" type="button" data-i18n="theme_lab_focused">Focused</button>
               <button class="btn" type="button" disabled data-i18n="theme_lab_disabled">Disabled</button>
             </div>
+            <div class="theme-lab-size-row" aria-label="Control size variants">
+              <span data-i18n="theme_lab_sizes">Sizes</span>
+              <button class="btn" type="button" data-i18n="theme_lab_regular">Regular</button>
+              <button class="btn theme-lab-size-small" type="button" data-i18n="theme_lab_small">Small</button>
+              <button class="btn theme-lab-size-mini" type="button" data-i18n="theme_lab_mini">Mini</button>
+            </div>
+            <div class="theme-lab-choice-matrix" aria-label="Choice control states">
+              <label class="field-row"><input type="checkbox" checked /><span data-i18n="theme_lab_checked">Checked</span></label>
+              <label class="field-row"><input type="checkbox" /><span data-i18n="theme_lab_unchecked">Unchecked</span></label>
+              <label class="field-row"><input type="radio" name="theme-lab-radio" checked /><span data-i18n="theme_lab_selected">Selected</span></label>
+              <label class="field-row"><input type="radio" name="theme-lab-disabled-radio" checked disabled /><span data-i18n="theme_lab_disabled">Disabled</span></label>
+              <label class="field-row theme-lab-era-choice-state"><input class="is-active" type="checkbox" checked /><span data-i18n="theme_lab_pressed">Pressed</span></label>
+              <label class="field-row theme-lab-era-choice-state"><input type="checkbox" checked disabled /><span data-i18n="theme_lab_disabled">Disabled</span></label>
+              <label class="field-row theme-lab-era-choice-state"><input type="radio" name="theme-lab-unselected-radio" /><span data-i18n="theme_lab_unchecked">Unchecked</span></label>
+              <label class="field-row theme-lab-era-choice-state"><input class="is-active" type="radio" name="theme-lab-active-radio" checked /><span data-i18n="theme_lab_pressed">Pressed</span></label>
+            </div>
             <div class="theme-lab-form-grid">
-              <label class="field-row"><input type="checkbox" checked /><span data-i18n="theme_lab_checkbox">Checkbox</span></label>
-              <label class="field-row"><input type="radio" name="theme-lab-radio" checked /><span data-i18n="theme_lab_radio">Radio</span></label>
               <label><span data-i18n="theme_lab_text_field">Text field</span><input type="text" value="Macintosh" readonly /></label>
               <label><span data-i18n="theme_lab_focused_field">Focused field</span><input class="theme-lab-focus-demo" type="text" value="Appearance" readonly /></label>
               <label><span data-i18n="theme_lab_search">Search</span><input class="theme-lab-search" type="search" value="System" readonly /></label>
-              <label><span data-i18n="theme_lab_popup">Pop-up</span><span class="select-wrap"><select aria-label="Theme Lab pop-up"><option>Macintosh HD</option><option>Startup Disk</option></select></span></label>
+              <label><span data-i18n="theme_lab_popup">Pop-up</span><span class="select-wrap theme-lab-color-popup"><select aria-label="Theme Lab pop-up"><option>Blue</option><option>Graphite</option></select></span></label>
+              <label><span data-i18n="theme_lab_disabled_field">Disabled field</span><input type="text" value="Unavailable" disabled /></label>
+              <label><span data-i18n="theme_lab_disabled_popup">Disabled pop-up</span><span class="select-wrap theme-lab-color-popup"><select aria-label="Disabled Theme Lab pop-up" disabled><option>Blue</option></select></span></label>
             </div>
             <div class="theme-lab-segmented" role="group" aria-label="Segmented control">
-              <button class="is-selected" type="button" data-i18n="theme_lab_icon_view">Icon</button>
-              <button type="button" data-i18n="theme_lab_list_view">List</button>
-              <button type="button" data-i18n="theme_lab_column_view">Column</button>
+              <button class="is-selected" type="button"><span class="theme-lab-view-icon is-icon" aria-hidden="true"></span><span data-i18n="theme_lab_icon_view">Icon</span></button>
+              <button type="button"><span class="theme-lab-view-icon is-list" aria-hidden="true"></span><span data-i18n="theme_lab_list_view">List</span></button>
+              <button type="button"><span class="theme-lab-view-icon is-columns" aria-hidden="true"></span><span data-i18n="theme_lab_column_view">Column</span></button>
             </div>
             <div class="theme-lab-tabs" role="tablist">
               <button class="is-selected" type="button" role="tab" aria-selected="true" data-i18n="theme_lab_general">General</button>
               <button type="button" role="tab" aria-selected="false" data-i18n="theme_lab_advanced">Advanced</button>
             </div>
+            <div class="theme-lab-tab-panel" role="tabpanel"><span data-i18n="appearance">Appearance</span></div>
           </section>
 
           <section class="theme-lab-group theme-lab-navigation" aria-labelledby="theme-lab-navigation-title">
-            <h3 id="theme-lab-navigation-title" data-i18n="theme_lab_navigation">Lists &amp; sidebar</h3>
-            <div class="theme-lab-split-view">
-              <nav class="theme-lab-sidebar" aria-label="Sidebar">
+            <h3 id="theme-lab-navigation-title"><span class="theme-lab-navigation-generic-label" data-i18n="theme_lab_navigation">Lists &amp; sidebar</span><span class="theme-lab-column-browser-label" data-i18n="theme_lab_column_browser">Column browser</span></h3>
+            <div class="theme-lab-split-view theme-lab-generic-browser theme-lab-generic-fixture">
+              <nav class="theme-lab-sidebar" aria-label="Icon list">
                 <button class="is-selected" type="button"><span class="sys-icon" data-system-icon="startupDisk" aria-hidden="true"></span><span data-i18n="startup_disk">Startup Disk</span></button>
                 <button type="button"><span class="sys-icon" data-system-icon="applications" aria-hidden="true"></span><span data-i18n="applications">Applications</span></button>
                 <button type="button"><span class="sys-icon" data-system-icon="trash" aria-hidden="true"></span><span data-i18n="trash">Trash</span></button>
               </nav>
-              <div class="theme-lab-list" role="listbox" aria-label="List">
-                <button type="button" role="option">Appearance</button>
-                <button class="is-selected" type="button" role="option" aria-selected="true">Control Panels</button>
-                <button type="button" role="option">System Folder</button>
+              <div class="theme-lab-list-frame is-focused" tabindex="0">
+                <div class="theme-lab-list" role="listbox" aria-label="List">
+                  <button type="button" role="option"><span class="theme-lab-list-icon" aria-hidden="true"></span><span>Appearance</span></button>
+                  <button class="is-selected" type="button" role="option" aria-selected="true"><span class="theme-lab-list-icon" aria-hidden="true"></span><span>Control Panels</span></button>
+                  <button type="button" role="option"><span class="theme-lab-list-icon" aria-hidden="true"></span><span>System Folder</span></button>
+                </div>
+                <div class="theme-lab-scrollbar theme-lab-list-scrollbar" aria-hidden="true">
+                  <div class="theme-lab-scrollbar-track"><span class="theme-lab-scrollbar-thumb is-active"></span></div>
+                  <span class="theme-lab-scrollbar-button is-decrement is-active"></span>
+                  <span class="theme-lab-scrollbar-button is-increment"></span>
+                </div>
+              </div>
+            </div>
+            <div class="theme-lab-split-view theme-lab-aqua-browser" aria-label="Aqua column browser" data-theme-lab-reference="guidebook.macosx102.open-dialog" lang="en" translate="no">
+              <div class="theme-lab-browser-column">
+                <nav class="theme-lab-sidebar" aria-label="Column one">
+                  <button type="button"><span class="sys-icon" data-system-icon="applications" aria-hidden="true"></span><span>Desktop</span><span class="theme-lab-browser-disclosure" aria-hidden="true"></span></button>
+                  <button class="is-selected" type="button" aria-current="true"><span class="sys-icon" data-system-icon="applications" aria-hidden="true"></span><span>Documents</span><span class="theme-lab-browser-disclosure" aria-hidden="true"></span></button>
+                  <button type="button"><span class="sys-icon" data-system-icon="applications" aria-hidden="true"></span><span>Library</span><span class="theme-lab-browser-disclosure" aria-hidden="true"></span></button>
+                  <button type="button"><span class="sys-icon" data-system-icon="applications" aria-hidden="true"></span><span>Movies</span><span class="theme-lab-browser-disclosure" aria-hidden="true"></span></button>
+                  <button type="button"><span class="sys-icon" data-system-icon="applications" aria-hidden="true"></span><span>Music</span><span class="theme-lab-browser-disclosure" aria-hidden="true"></span></button>
+                  <button type="button"><span class="sys-icon" data-system-icon="applications" aria-hidden="true"></span><span>Pictures</span><span class="theme-lab-browser-disclosure" aria-hidden="true"></span></button>
+                  <button type="button"><span class="sys-icon" data-system-icon="applications" aria-hidden="true"></span><span>Public</span><span class="theme-lab-browser-disclosure" aria-hidden="true"></span></button>
+                  <button type="button" disabled><span class="sys-icon" data-system-icon="applications" aria-hidden="true"></span><span>Send Registration</span></button>
+                  <button type="button"><span class="sys-icon" data-system-icon="applications" aria-hidden="true"></span><span>Sites</span><span class="theme-lab-browser-disclosure" aria-hidden="true"></span></button>
+                </nav>
+                <div class="theme-lab-browser-column-scrollbar" aria-hidden="true"><span class="theme-lab-browser-column-thumb is-active"></span><i class="is-decrement"></i><i class="is-increment"></i></div>
+              </div>
+              <div class="theme-lab-browser-column">
+                <div class="theme-lab-list-frame">
+                  <div class="theme-lab-list" role="listbox" aria-label="Column two">
+                    <button class="is-selected" type="button" role="option" aria-selected="true"><span class="theme-lab-list-icon" aria-hidden="true"></span><span>Acrobat User Data</span><span class="theme-lab-browser-disclosure" aria-hidden="true"></span></button>
+                  </div>
+                </div>
+                <div class="theme-lab-browser-column-scrollbar is-inactive" aria-hidden="true"><i class="is-decrement"></i><i class="is-increment"></i></div>
+              </div>
+              <div class="theme-lab-browser-column">
+                <div class="theme-lab-list-frame"><div class="theme-lab-list" role="listbox" aria-label="Column three"></div></div>
+                <div class="theme-lab-browser-column-scrollbar is-inactive" aria-hidden="true"><i class="is-decrement"></i><i class="is-increment"></i></div>
+              </div>
+              <div class="theme-lab-browser-horizontal-scrollbar" aria-hidden="true"></div>
+            </div>
+            <div class="theme-lab-open-list-capture theme-lab-platinum-fixture"
+                 data-theme-lab-reference="guidebook.macos90.open-file">
+              <div class="theme-lab-open-list-items" role="listbox" aria-label="Mac OS 9 Open list" lang="en" translate="no">
+                <button class="is-selected" type="button" role="option" aria-selected="true"><span class="theme-lab-open-list-icon is-dvd-player" aria-hidden="true"></span><span>Apple DVD Player</span></button>
+                <button type="button" role="option"><span class="theme-lab-open-list-icon is-video-player" aria-hidden="true"></span><span>Apple Video Player ƒ</span></button>
+                <button type="button" role="option"><span class="theme-lab-open-list-icon is-audio-player" aria-hidden="true"></span><span>AppleCD Audio Player ƒ</span></button>
+                <button type="button" role="option"><span class="theme-lab-open-list-icon is-quicktime" aria-hidden="true"></span><span>QuickTime</span></button>
+                <button type="button" role="option"><span class="theme-lab-open-list-icon is-security" aria-hidden="true"></span><span>Security</span></button>
+              </div>
+              <div class="theme-lab-open-scrollbar" aria-hidden="true">
+                <div class="theme-lab-open-scroll-track"></div>
+                <span class="theme-lab-open-scroll-button is-decrement"></span>
+                <span class="theme-lab-open-scroll-button is-increment"></span>
               </div>
             </div>
           </section>
@@ -3592,33 +3717,111 @@ Glass</textarea>
           <section class="theme-lab-group theme-lab-layered" aria-labelledby="theme-lab-layered-title">
             <h3 id="theme-lab-layered-title" data-i18n="theme_lab_layered">Menus &amp; layered surfaces</h3>
             <div class="theme-lab-layer-grid">
-              <div class="theme-lab-menu" role="menu">
+              <div class="theme-lab-menu theme-lab-generic-fixture" role="menu">
                 <button type="button" role="menuitem">Open… <span>⌘O</span></button>
-                <button class="is-selected" type="button" role="menuitem">Appearance <span>✓</span></button>
+                <button class="is-selected" type="button" role="menuitem">Appearance <span class="theme-lab-menu-mark">✓</span></button>
                 <hr />
+                <button type="button" role="menuitem" disabled>Duplicate <span>⌘D</span></button>
                 <button type="button" role="menuitem">Close <span>⌘W</span></button>
               </div>
-              <div class="theme-lab-popover"><b data-i18n="theme_lab_popover">Popover</b><span data-i18n="theme_lab_popover_copy">A temporary system surface.</span></div>
-              <div class="theme-lab-dialog"><b data-i18n="theme_lab_dialog">Dialog</b><span data-i18n="theme_lab_dialog_copy">Keep this appearance?</span><button class="btn default" type="button" data-i18n="ok">OK</button></div>
-              <div class="theme-lab-sheet"><b data-i18n="theme_lab_sheet">Sheet</b><span data-i18n="theme_lab_sheet_copy">Attached to its owning window.</span></div>
+              <div class="theme-lab-popover"><b class="theme-lab-popover-generic-label" data-i18n="theme_lab_popover">Popover</b><b class="theme-lab-balloon-label" data-i18n="theme_lab_balloon_help">Balloon Help</b><b class="theme-lab-help-tag-label" data-i18n="theme_lab_help_tag">Help Tag</b><span data-i18n="theme_lab_popover_copy">A temporary system surface.</span></div>
+              <div class="theme-lab-menu-capture theme-lab-platinum-fixture"
+                   data-theme-lab-reference="guidebook.macos90.apple-menu">
+                <div class="theme-lab-menu--platinum" role="menu" aria-label="Mac OS 9 Apple menu" lang="en" translate="no">
+                  <button class="is-about" type="button" role="menuitem"><span>About This Computer</span></button>
+                  <hr />
+                  <button class="is-profiler" type="button" role="menuitem"><span class="theme-lab-platinum-menu-icon is-system-profiler" aria-hidden="true"></span><span>Apple System Profiler</span></button>
+                  <button type="button" role="menuitem"><span class="theme-lab-platinum-menu-icon is-calculator" aria-hidden="true"></span><span>Calculator</span></button>
+                  <button type="button" role="menuitem"><span class="theme-lab-platinum-menu-icon is-chooser" aria-hidden="true"></span><span>Chooser</span></button>
+                  <button type="button" role="menuitem"><span class="theme-lab-platinum-menu-icon is-control-panels" aria-hidden="true"></span><span>Control Panels</span><i class="theme-lab-platinum-disclosure" aria-hidden="true"></i></button>
+                  <button type="button" role="menuitem"><span class="theme-lab-platinum-menu-icon is-favorites" aria-hidden="true"></span><span>Favorites</span><i class="theme-lab-platinum-disclosure" aria-hidden="true"></i></button>
+                  <button type="button" role="menuitem"><span class="theme-lab-platinum-menu-icon is-key-caps" aria-hidden="true"></span><span>Key Caps</span></button>
+                  <button type="button" role="menuitem"><span class="theme-lab-platinum-menu-icon is-network-browser" aria-hidden="true"></span><span>Network Browser</span></button>
+                  <button type="button" role="menuitem"><span class="theme-lab-platinum-menu-icon is-recent-applications" aria-hidden="true"></span><span>Recent Applications</span><i class="theme-lab-platinum-disclosure" aria-hidden="true"></i></button>
+                  <button type="button" role="menuitem"><span class="theme-lab-platinum-menu-icon is-recent-documents" aria-hidden="true"></span><span>Recent Documents</span><i class="theme-lab-platinum-disclosure" aria-hidden="true"></i></button>
+                  <button type="button" role="menuitem"><span class="theme-lab-platinum-menu-icon is-remote-access" aria-hidden="true"></span><span>Remote Access Status</span></button>
+                  <button type="button" role="menuitem"><span class="theme-lab-platinum-menu-icon is-scrapbook" aria-hidden="true"></span><span>Scrapbook</span></button>
+                  <button type="button" role="menuitem"><span class="theme-lab-platinum-menu-icon is-sherlock" aria-hidden="true"></span><span>Sherlock 2</span></button>
+                  <button type="button" role="menuitem"><span class="theme-lab-platinum-menu-icon is-stickies" aria-hidden="true"></span><span>Stickies</span></button>
+                </div>
+              </div>
+              <div class="theme-lab-dialog theme-lab-generic-fixture">
+                <span class="theme-lab-alert-icon" aria-hidden="true"></span>
+                <div class="theme-lab-dialog-copy"><b data-i18n="theme_lab_dialog">Dialog</b><span data-i18n="theme_lab_dialog_copy">Keep this appearance?</span></div>
+                <div class="theme-lab-dialog-actions"><button class="btn theme-lab-dialog-cancel" type="button" data-i18n="cancel">Cancel</button><button class="btn default" type="button" data-i18n="ok">OK</button></div>
+              </div>
+              <div class="theme-lab-about-capture theme-lab-platinum-fixture"
+                   data-theme-lab-reference="guidebook.macos90.about-application">
+                <div class="theme-lab-dialog--platinum-about" role="dialog" aria-label="About Calculator" lang="en" translate="no">
+                  <span class="theme-lab-calculator-icon" aria-hidden="true"></span>
+                  <strong>Calculator</strong>
+                  <button class="btn default" type="button">OK</button>
+                </div>
+              </div>
+              <div class="theme-lab-sheet-specimen" data-theme-lab-reference="macosx102.finder-replace-sheet">
+                <div class="theme-lab-sheet-owner-titlebar" aria-hidden="true">
+                  <i class="is-close"></i><i class="is-minimize"></i><i class="is-zoom"></i>
+                  <span data-i18n="appearance">Appearance</span>
+                </div>
+                <div class="theme-lab-sheet-owner-body" aria-hidden="true"></div>
+                <div class="theme-lab-sheet" role="dialog" aria-label="Attached sheet">
+                  <span class="theme-lab-sheet-icon" aria-hidden="true"></span>
+                  <div class="theme-lab-sheet-copy"><b class="theme-lab-sheet-generic-copy" data-i18n="theme_lab_sheet">Sheet</b><span class="theme-lab-sheet-generic-copy" data-i18n="theme_lab_sheet_copy">Attached to its owning window.</span><b class="theme-lab-sheet-aqua-copy" lang="en" translate="no">Preparing move to “Documents”</b><span class="theme-lab-sheet-aqua-copy" lang="en" translate="no">A file with the same name already exists.</span></div>
+                  <div class="theme-lab-sheet-actions"><button class="btn theme-lab-sheet-generic-action" type="button" data-i18n="cancel">Cancel</button><button class="btn default theme-lab-sheet-generic-action" type="button" data-i18n="ok">OK</button><button class="btn theme-lab-sheet-aqua-action" type="button" lang="en" translate="no">Stop</button><button class="btn default theme-lab-sheet-aqua-action" type="button" lang="en" translate="no">Replace</button></div>
+                </div>
+              </div>
             </div>
             <div class="theme-lab-progress-row"><span data-i18n="theme_lab_progress">Progress</span><div class="theme-lab-progress" aria-label="Progress" role="progressbar" aria-valuenow="62"><span></span></div></div>
-            <div class="theme-lab-scroll" tabindex="0"><p>System 6</p><p>Platinum</p><p>Liquid Glass</p></div>
+            <div class="theme-lab-scroll-frame">
+              <div class="theme-lab-scroll" tabindex="0"><p>System 6</p><p>Platinum</p><p>Aqua</p><p>Snow Leopard</p><p>Yosemite</p><p>Liquid Glass</p></div>
+              <div class="theme-lab-scrollbar" aria-hidden="true">
+                <div class="theme-lab-scrollbar-track"><span class="theme-lab-scrollbar-thumb"></span></div>
+                <span class="theme-lab-scrollbar-button is-decrement"></span>
+                <span class="theme-lab-scrollbar-button is-increment"></span>
+              </div>
+            </div>
           </section>
 
           <section class="theme-lab-group theme-lab-finder" aria-labelledby="theme-lab-finder-title">
             <h3 id="theme-lab-finder-title" data-i18n="theme_lab_finder">Finder surface</h3>
             <div class="theme-lab-mini-windows">
-              <div class="theme-lab-mini-window is-active"><span data-i18n="theme_lab_active_window">Active Window</span></div>
-              <div class="theme-lab-mini-window is-inactive"><span data-i18n="theme_lab_inactive_window">Inactive Window</span></div>
+              <div class="theme-lab-mini-window is-active"><i class="theme-lab-mini-control is-close" aria-hidden="true"></i><i class="theme-lab-mini-control is-zoom" aria-hidden="true"></i><span data-i18n="theme_lab_active_window">Active Window</span></div>
+              <div class="theme-lab-mini-window is-inactive"><i class="theme-lab-mini-control is-close" aria-hidden="true"></i><i class="theme-lab-mini-control is-zoom" aria-hidden="true"></i><span data-i18n="theme_lab_inactive_window">Inactive Window</span></div>
             </div>
-            <div class="theme-lab-toolbar"><button class="btn" type="button" data-i18n="theme_lab_back">Back</button><span class="theme-lab-separator" aria-hidden="true"></span><strong>Macintosh HD</strong></div>
-            <div class="theme-lab-finder-surface">
-              <button class="finder-item is-selected" type="button"><span class="sys-icon sys-icon-desktop" data-system-icon="startupDisk" aria-hidden="true"></span><span>Macintosh HD</span></button>
-              <button class="finder-item" type="button"><span class="sys-icon sys-icon-desktop" data-system-icon="folder" aria-hidden="true"></span><span>System Folder</span></button>
-              <div class="theme-lab-finder-rows">
-                <div class="is-selected"><span class="sys-icon" data-system-icon="finderApp" aria-hidden="true"></span><span>Finder</span><small>Application</small></div>
-                <div><span class="sys-icon" data-system-icon="document" aria-hidden="true"></span><span>Read Me</span><small>Document</small></div>
+            <div class="theme-lab-finder-window" data-theme-lab-reference="guidebook.macosx102.finder">
+              <div class="theme-lab-finder-window-titlebar" aria-hidden="true" lang="en" translate="no">
+                <i class="is-close"></i><i class="is-minimize"></i><i class="is-zoom"></i>
+                <span>Jim McKintie's Computer</span>
+              </div>
+              <div class="theme-lab-toolbar">
+                <button class="btn theme-lab-toolbar-back" type="button" data-i18n="theme_lab_back">Back</button>
+                <span class="theme-lab-separator" aria-hidden="true"></span>
+                <strong class="theme-lab-toolbar-location">Macintosh HD</strong>
+                <span class="theme-lab-toolbar-status" data-i18n="theme_lab_finder_status">10 items, 59.1 MB available</span>
+                <div class="theme-lab-toolbar-icon-strip" aria-label="Finder toolbar controls">
+                  <button class="theme-lab-toolbar-icon-button" type="button"><span class="theme-lab-toolbar-round-icon is-back" aria-hidden="true"></span><small data-i18n="theme_lab_back">Back</small></button>
+                  <button class="theme-lab-toolbar-icon-button" type="button"><span class="theme-lab-toolbar-round-icon is-forward" aria-hidden="true"></span><small>Forward</small></button>
+                  <div class="theme-lab-toolbar-view-control"><span class="theme-lab-toolbar-view-buttons" aria-hidden="true"><i class="theme-lab-view-icon is-icon"></i><i class="theme-lab-view-icon is-list"></i><i class="theme-lab-view-icon is-columns"></i></span><small>View</small></div>
+                  <span class="theme-lab-toolbar-era-separator" aria-hidden="true"></span>
+                  <button class="theme-lab-toolbar-icon-button" type="button"><span class="theme-lab-toolbar-role-icon is-computer" aria-hidden="true"></span><small>Computer</small></button>
+                  <button class="theme-lab-toolbar-icon-button" type="button"><span class="theme-lab-toolbar-role-icon is-home" aria-hidden="true"></span><small>Home</small></button>
+                  <button class="theme-lab-toolbar-icon-button" type="button"><span class="theme-lab-toolbar-role-icon is-favorites" aria-hidden="true"></span><small>Favorites</small></button>
+                  <button class="theme-lab-toolbar-icon-button" type="button"><span class="theme-lab-toolbar-role-icon is-applications" aria-hidden="true"></span><small>Applications</small></button>
+                </div>
+                <label class="theme-lab-toolbar-search"><input type="search" value="" placeholder="Search" aria-label="Finder search" /></label>
+              </div>
+              <div class="theme-lab-finder-status-strip" aria-hidden="true" lang="en" translate="no"><span>2 items</span></div>
+              <div class="theme-lab-finder-surface">
+                <button class="finder-item is-selected" type="button"><span class="sys-icon sys-icon-desktop" data-system-icon="startupDisk" aria-hidden="true"></span><span>Macintosh HD</span></button>
+                <button class="finder-item" type="button"><span class="sys-icon sys-icon-desktop" data-system-icon="folder" aria-hidden="true"></span><span>System Folder</span></button>
+                <button class="finder-item theme-lab-finder-era-extra" type="button"><span class="sys-icon sys-icon-desktop" data-system-icon="folder" aria-hidden="true"></span><span>Applications</span></button>
+                <button class="finder-item theme-lab-finder-era-extra" type="button"><span class="sys-icon sys-icon-desktop" data-system-icon="folder" aria-hidden="true"></span><span>Documents</span></button>
+                <button class="finder-item theme-lab-finder-era-extra" type="button"><span class="sys-icon sys-icon-desktop" data-system-icon="folder" aria-hidden="true"></span><span>Utilities</span></button>
+                <button class="finder-item theme-lab-finder-era-extra" type="button"><span class="sys-icon sys-icon-desktop" data-system-icon="document" aria-hidden="true"></span><span>Read Me</span></button>
+                <div class="theme-lab-finder-rows">
+                  <div class="is-selected"><span class="sys-icon" data-system-icon="finderApp" aria-hidden="true"></span><span>Finder</span><small>Application</small></div>
+                  <div><span class="sys-icon" data-system-icon="document" aria-hidden="true"></span><span>Read Me</span><small>Document</small></div>
+                </div>
               </div>
             </div>
           </section>
@@ -3631,25 +3834,33 @@ Glass</textarea>
           <span class="sys-icon sys-icon-desktop" data-system-icon="startupDisk" aria-hidden="true"></span>
           <span data-i18n="startup_disk">Startup Disk</span>
         </button>
-        <button class="desktop-icon" type="button" data-open="applications" data-balloon-help="balloon_applications">
-          <span class="sys-icon sys-icon-desktop" data-system-icon="applications" aria-hidden="true"></span>
-          <span data-i18n="applications">Applications</span>
-        </button>
-        <button class="desktop-icon desktop-app-icon" id="finder-writing-studio-toggle" type="button" data-balloon-help="balloon_writing_studio">
-          <span class="sys-icon sys-icon-desktop" data-system-icon="writingStudio" aria-hidden="true"></span>
-          <span id="finder-writing-studio-toggle-label">Writing Studio</span>
+        <button class="desktop-icon" id="desktop-file-floppy-starter" type="button" data-action="open-rag" data-balloon-help="balloon_text_disk">
+          <span class="sys-icon sys-icon-desktop" data-system-icon="fileFloppy" aria-hidden="true"></span>
+          <span data-i18n="file_floppy">File Floppy</span>
         </button>
         <button class="desktop-icon desktop-app-icon" type="button" data-action="open-quick-draft" data-balloon-help="balloon_quick_draft">
           <span class="sys-icon sys-icon-desktop" data-system-icon="quickDraft" aria-hidden="true"></span>
           <span data-i18n="quick_draft_label">Quick Draft</span>
         </button>
+        <button class="desktop-icon desktop-app-icon" id="finder-writing-studio-toggle" type="button" data-balloon-help="balloon_writing_studio">
+          <span class="sys-icon sys-icon-desktop" data-system-icon="writingStudio" aria-hidden="true"></span>
+          <span id="finder-writing-studio-toggle-label">Writing Studio</span>
+        </button>
+        <button class="desktop-icon desktop-app-icon" type="button" data-open="assistant" data-balloon-help="balloon_assistant">
+          <span class="sys-icon sys-icon-desktop" data-system-icon="assistant" aria-hidden="true"></span>
+          <span data-i18n="assistant_label">ClioTalk</span>
+        </button>
+        <button class="desktop-icon" type="button" data-open="applications" data-balloon-help="balloon_applications">
+          <span class="sys-icon sys-icon-desktop" data-system-icon="applications" aria-hidden="true"></span>
+          <span data-i18n="applications">Applications</span>
+        </button>
         <!-- The desktop is the current working set. The complete application
              catalogue remains in Applications and MultiFinder. -->
-        <button class="desktop-icon is-hidden" id="active-project-drop-target" type="button" data-action="open-project-disks" data-drop-target="project" data-balloon-help="balloon_project_disk" aria-hidden="true">
+        <button class="desktop-icon" id="active-project-drop-target" type="button" data-action="open-project-disks" data-balloon-help="balloon_project_disk" aria-hidden="false">
           <span class="sys-icon sys-icon-desktop" data-system-icon="projectDisk" aria-hidden="true"></span>
           <span id="current-project-label" data-i18n="current_project_desktop">Project Hard Disk</span>
         </button>
-        <button class="desktop-icon is-mounted-disk" data-workspace-capability="studio" data-drag-type="mounted-disk" draggable="true" type="button" data-open="textDisk" id="mounted-text-disk" hidden data-balloon-help="balloon_text_disk">
+        <button class="desktop-icon is-mounted-disk" data-drag-type="mounted-disk" draggable="true" type="button" data-open="textDisk" id="mounted-text-disk" hidden data-balloon-help="balloon_text_disk">
           <span class="sys-icon sys-icon-desktop" data-system-icon="fileFloppy" aria-hidden="true"></span>
           <span data-i18n="mounted_text_disk">File Floppy</span>
         </button>
@@ -3664,7 +3875,7 @@ Glass</textarea>
       </section>
     </main>
 
-    <script src="app/generated/build-info.js?v=20260809.3"></script>
-    <script src="app.bundle.js?v=20260809.3"></script>
+    <script src="app/generated/build-info.js?v=20260809.4"></script>
+    <script src="app.bundle.js?v=20260809.4"></script>
   </body>
 </html>

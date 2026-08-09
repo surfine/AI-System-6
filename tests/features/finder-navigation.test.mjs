@@ -93,7 +93,7 @@ test.assertIncludes(desktopIconColumn, 'data-action="open-quick-draft"', "Quick 
 test.assertIncludes(applicationsWindow, 'data-action="open-quick-draft"', "Quick Draft also remains discoverable in Applications");
 test.assertIncludes(desktopIconColumn, 'id="active-project-drop-target"', "the mounted Project Hard Disk is a real desktop drop target");
 test.assertIncludes(desktopIconColumn, 'id="desktop-project-cd"', "a burned Project CD can join the current desktop working set");
-test.assertIncludes(projectDisk, 'currentProjectIcon?.classList.toggle("is-hidden", !project);', "the Project Hard Disk icon follows mount state");
+test.assertMatches(projectDisk, /currentProjectIcon\?\.classList\.remove\("is-hidden"\)[\s\S]*project[\s\S]*currentProjectIcon\.dataset\.dropTarget = "project"[\s\S]*delete currentProjectIcon\.dataset\.dropTarget/, "one Project Hard Disk icon stays visible and becomes a drop target only while mounted");
 test.assertIncludes(projectDisk, "scheduleWorkingSessionSave();", "shading Writing Flow updates the resumable session");
 test.assertIncludes(exportImport, "desktopProjectCdEl.hidden = !hasVisibleItems;", "Project CD media state remains independent from workspace visibility");
 test.assertIncludes(fileDisk, "mountedTextDiskEl.hidden = !mounted;", "File Floppy media state remains independent from workspace visibility");

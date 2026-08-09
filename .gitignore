@@ -53,6 +53,9 @@ drafts/css-refactor-snapshots/
 drafts/ui-reform-before/
 drafts/ui-reform-after/
 drafts/ui-reform-after-pareto/
+drafts/theme-lab-current/
+drafts/theme-lab-fidelity-cache/
+drafts/theme-lab-fidelity/
 # local 15MB test photo (bg-1..6 are the shipped backgrounds)
 assets/liquid-cover/test-shot.jpg
 native/nohup.out

@@ -17,6 +17,7 @@
 // canonical schema (schemaVersion 3); the main writing route is only touched
 // by explicit handoff actions.
 
+/** @type {Record<string, any>} */
 const refs = {};
 let bound = false;
 let saveTimer = null;
@@ -31,14 +32,19 @@ let quickDraftDrawerTrigger = null;
 // manual choice is never yanked back.
 let quickDraftPaperSurface = "intake";
 let quickDraftPaperManual = false;
-let quickDraftPreviewMode = "render";
+let quickDraftDisplayMode = "body";
+let quickDraftAdvancedRevealed = false;
 
+/** @returns {any} */
 function $(id) {
   return document.getElementById(id);
 }
 
 function collectRefs() {
   refs.form = $("quick-draft-form");
+  refs.noProject = $("quick-draft-no-project");
+  refs.workspace = refs.form?.querySelector(".draft-desk-workspace");
+  refs.footer = refs.form?.querySelector(".draft-desk-actions");
   refs.status = $("quick-draft-status");
   refs.windowTitle = $("quick-draft-title");
   refs.titleInput = $("quick-draft-title-input");
@@ -51,6 +57,7 @@ function collectRefs() {
   refs.addMaterialMenu = $("quick-draft-add-material");
   refs.tools = $("quick-draft-tools");
   refs.deliverMenu = $("quick-draft-deliver");
+  refs.shareButton = refs.form?.querySelector('[data-quick-draft-delivery="share-markdown"]');
   refs.aiCards = $("quick-draft-ai-cards");
   refs.lengthLabel = $("quick-draft-length-label");
   refs.ventLog = $("quick-draft-vent-log");
@@ -105,12 +112,24 @@ function collectRefs() {
   refs.displayButtons = document.querySelectorAll("[data-quick-draft-display]");
 }
 
-function activeProjectQuickDraft({ create = true } = {}) {
-  const project = typeof getActiveProject === "function" ? getActiveProject() : null;
+function projectQuickDraft(projectId = activeProjectId, { create = true } = {}) {
+  const active = typeof getActiveProject === "function" ? getActiveProject() : null;
+  const project = !projectId || active?.id === projectId
+    ? active
+    : (typeof projects !== "undefined" ? projects.find((item) => item.id === projectId) : null);
   if (!project) return null;
   const normalized = normalizeQuickDraftRecord(project.quickDraft);
   if (create || project.quickDraft) project.quickDraft = normalized;
   return { project, record: normalized };
+}
+
+function activeProjectQuickDraft(options = {}) {
+  return projectQuickDraft(activeProjectId, options);
+}
+
+function activeDraftDeskPreset(scenario = "") {
+  const format = scenario || quickDraftSetupSnapshot().scenario;
+  return window.AISystem6DraftDeskPresets?.forScenario?.(normalizeScenario(format)) || null;
 }
 
 function currentAnnotations() {
@@ -168,7 +187,6 @@ function workspaceSnapshot(record = activeProjectQuickDraft({ create: false })?.
     composition: previous.workspace.composition,
     versions: previous.workspace.versions,
     protectedRanges: previous.workspace.protectedRanges,
-    canvas: previous.workspace.canvas,
     projectDocId: previous.workspace.projectDocId,
   };
 }
@@ -224,43 +242,46 @@ function refreshQuickDraftSelectControls() {
   if (typeof refreshSystemSelectControls === "function") refreshSystemSelectControls();
 }
 
-// Persistence has explicit completion semantics: only after saveDeskState()
-// resolves successfully is the state marked Saved. A failed write leaves the
-// record Modified and shows an unsaved state; it never claims Saved.
+// Persistence has explicit completion semantics. The record is prepared as
+// Saved before saveDeskState snapshots it; a failed write rolls the in-memory
+// receipt back to Modified and never claims that the write landed.
 async function persistQuickDraftWorkspace(projectId = activeProjectId) {
-  const project = typeof projects !== "undefined"
-    ? projects.find((item) => item.id === projectId)
-    : activeProjectQuickDraft({ create: false })?.project;
+  const project = projectQuickDraft(projectId, { create: false })?.project;
   if (!project?.quickDraft?.workspace) return true;
-  const saved = typeof saveDeskState === "function" ? await saveDeskState() : true;
+  project.quickDraft.workspace.savedStatus = "saved";
+  project.quickDraft.savedStatus = "saved";
+  let saved = true;
+  try {
+    saved = typeof saveDeskState === "function" ? await saveDeskState() : true;
+  } catch {
+    saved = false;
+  }
   if (!saved) {
     if (project.quickDraft.workspace) {
       project.quickDraft.workspace.savedStatus = "modified";
       project.quickDraft.savedStatus = "modified";
     }
-    setSaveState("modified");
-    setQuickDraftStatus(t("quick_draft_save_failed"));
+    if (project.id === activeProjectId) {
+      setSaveState("modified");
+      setQuickDraftStatus(t("quick_draft_save_failed"));
+    }
     return false;
   }
-  if (project.quickDraft.workspace) {
-    project.quickDraft.workspace.savedStatus = "saved";
-    project.quickDraft.savedStatus = "saved";
-  }
-  setSaveState("saved");
+  if (project.id === activeProjectId) setSaveState("saved");
   return true;
 }
 
-function updateQuickDraft(patch = {}, { announce = false } = {}) {
-  const slot = activeProjectQuickDraft();
+function updateQuickDraftForProject(projectId, patch = {}, { announce = false, captureForm = projectId === activeProjectId } = {}) {
+  const slot = projectQuickDraft(projectId);
   if (!slot) {
-    setQuickDraftStatus(t("quick_draft_no_project"));
+    if (projectId === activeProjectId) setQuickDraftStatus(t("quick_draft_no_project"));
     return null;
   }
   const now = new Date().toISOString();
   const patchWorkspace = patch.workspace && typeof patch.workspace === "object" ? patch.workspace : {};
   const workspace = normalizeQuickDraftWorkspace({
     ...slot.record.workspace,
-    ...workspaceSnapshot(slot.record),
+    ...(captureForm ? workspaceSnapshot(slot.record) : {}),
     ...patchWorkspace,
     updatedAt: now,
     savedStatus: "modified",
@@ -273,27 +294,38 @@ function updateQuickDraft(patch = {}, { announce = false } = {}) {
   });
   slot.project.quickDraft = nextRecord;
   slot.project.updatedAt = now;
-  updateDraftStats();
-  updateSourceCount();
-  setSaveState(workspace.savedStatus);
-  if (announce) setQuickDraftStatus(t("quick_draft_saving"));
+  if (slot.project.id === activeProjectId) {
+    updateDraftStats();
+    updateSourceCount();
+    setSaveState(workspace.savedStatus);
+    if (announce) setQuickDraftStatus(t("quick_draft_saving"));
+  }
   return nextRecord;
 }
 
-async function commitQuickDraft(patch = {}, options = {}) {
-  const slot = activeProjectQuickDraft();
+function updateQuickDraft(patch = {}, options = {}) {
+  return updateQuickDraftForProject(activeProjectId, patch, options);
+}
+
+async function commitQuickDraftForProject(projectId, patch = {}, options = {}) {
+  const slot = projectQuickDraft(projectId);
   if (!slot) return { ok: false, error: new Error("NO_ACTIVE_PROJECT") };
-  const projectId = slot.project.id;
   const previous = slot.project.quickDraft;
-  const record = updateQuickDraft(patch, options);
-  setSaveState("saving");
+  const record = updateQuickDraftForProject(projectId, patch, options);
+  if (slot.project.id === activeProjectId) setSaveState("saving");
   const ok = await persistQuickDraftWorkspace(projectId);
   if (!ok) {
     slot.project.quickDraft = previous;
-    setSaveState("modified");
+    slot.project.quickDraft.workspace.savedStatus = "modified";
+    slot.project.quickDraft.savedStatus = "modified";
+    if (slot.project.id === activeProjectId) setSaveState("modified");
     return { ok: false, error: new Error("QUICK_DRAFT_COMMIT_FAILED") };
   }
   return { ok: true, record: slot.project.quickDraft || record };
+}
+
+async function commitQuickDraft(patch = {}, options = {}) {
+  return commitQuickDraftForProject(activeProjectId, patch, options);
 }
 
 function scheduleQuickDraftCommit(projectId) {
@@ -314,12 +346,13 @@ async function flushPendingQuickDraftCommit() {
   return persistQuickDraftWorkspace(pending.projectId);
 }
 
-function saveQuickDraft(patch = {}, { debounce = false, announce = false } = {}) {
+// Input-like edits are the only callers of this lightweight API. Explicit
+// commands use commitQuickDraft() so no durable operation is fire-and-forget.
+function saveQuickDraft(patch = {}, { announce = false } = {}) {
+  const projectId = activeProjectId;
   const record = updateQuickDraft(patch, { announce });
   if (!record) return null;
-  const projectId = activeProjectId;
-  if (debounce) scheduleQuickDraftCommit(projectId);
-  else void persistQuickDraftWorkspace(projectId);
+  scheduleQuickDraftCommit(projectId);
   return record;
 }
 
@@ -419,10 +452,10 @@ function syncQuickDraftAiAvailability() {
   });
   if (refs.saveButton) {
     const action = refs.saveButton.dataset.quickDraftPrimaryAction || "draft";
-    const enabled = action === "deliver"
+    const enabled = action === "deliver" || action === "continue"
       ? state.hasBody
       : modelAvailable && (action === "draft" ? state.hasInput : state.hasBody);
-    const reason = !modelAvailable && action !== "deliver"
+    const reason = !modelAvailable && action !== "deliver" && action !== "continue"
       ? "quick_draft_connect_ai"
       : action === "draft"
         ? "quick_draft_missing_first_day"
@@ -447,7 +480,7 @@ function promoteWellTextToBody() {
   if (body || !say || !refs.draft) return false;
   refs.draft.value = say;
   refs.say.value = "";
-  saveQuickDraft({ workspace: { body: say } }, { debounce: false });
+  saveQuickDraft({ workspace: { body: say } });
   return true;
 }
 
@@ -489,11 +522,15 @@ function syncQuickDraftPaperFromState(record = activeProjectQuickDraft({ create:
 // part of the layout, and a disabled key can say why it is off in Balloon Help.
 function syncQuickDraftControlAvailability(hasBody) {
   document.querySelectorAll('[data-quick-draft-display="grain"], [data-quick-draft-display="read"]')
-    .forEach((button) => {
+    .forEach((element) => {
+      const button = /** @type {HTMLButtonElement} */ (element);
+      button.hidden = !hasBody || !quickDraftAdvancedRevealed;
       button.disabled = !hasBody;
       if (!button.dataset.balloonHelpDisabled) button.dataset.balloonHelpDisabled = "quick_draft_needs_body";
     });
-  document.querySelectorAll('[data-quick-draft-drawer="inspector"]').forEach((button) => {
+  document.querySelectorAll('[data-quick-draft-drawer="inspector"]').forEach((element) => {
+    const button = /** @type {HTMLButtonElement} */ (element);
+    button.hidden = !hasBody;
     button.disabled = !hasBody;
     if (!button.dataset.balloonHelpDisabled) button.dataset.balloonHelpDisabled = "quick_draft_needs_body";
   });
@@ -520,14 +557,8 @@ function syncQuickDraftControlAvailability(hasBody) {
 
 function syncQuickDraftPrimaryAction(record = activeProjectQuickDraft({ create: false })?.record, hasBody = false) {
   if (!refs.saveButton) return "draft";
-  const enabledLayers = normalizeQuickDraftRecord(record).workspace.adjustmentLayers
-    .filter((layer) => layer.enabled).length;
-  const action = !hasBody ? "draft" : enabledLayers ? "develop" : "deliver";
-  const key = action === "develop"
-    ? "quick_draft_develop"
-    : action === "deliver"
-      ? "quick_draft_deliver"
-      : "quick_draft_start_writing";
+  const action = hasBody ? "continue" : "draft";
+  const key = hasBody ? "quick_draft_continue_writing" : "quick_draft_start_writing";
   refs.saveButton.dataset.quickDraftPrimaryAction = action;
   refs.saveButton.dataset.i18n = key;
   refs.saveButton.textContent = t(key);
@@ -611,7 +642,7 @@ function setQuickDraftDrawer(drawer = "", { restoreFocus = false } = {}) {
     const panel = document.getElementById(
       next === "shelf" ? "quick-draft-materials-drawer" : "quick-draft-adjustments-drawer"
     );
-    const closeButton = panel?.querySelector("[data-quick-draft-drawer-close]");
+    const closeButton = /** @type {HTMLElement | null} */ (panel?.querySelector("[data-quick-draft-drawer-close]") || null);
     if (closeButton?.offsetParent) {
       requestAnimationFrame(() => closeButton.focus({ preventScroll: true }));
     }
@@ -672,7 +703,17 @@ function focusQuickDraftPaper() {
 function renderQuickDraft(record = activeProjectQuickDraft({ create: false })?.record || blankQuickDraft()) {
   collectRefs();
   if (!refs.form) return;
+  const hasProject = Boolean(activeProjectQuickDraft({ create: false }));
+  if (refs.noProject) refs.noProject.hidden = hasProject;
+  if (refs.workspace) refs.workspace.hidden = !hasProject;
+  if (refs.footer) refs.footer.hidden = !hasProject;
+  if (!hasProject) {
+    setSaveState("new");
+    setQuickDraftStatus(t("quick_draft_project_required"), { live: false });
+    return;
+  }
   const source = normalizeQuickDraftRecord(record);
+  if (refs.shareButton) refs.shareButton.hidden = typeof navigator.share !== "function";
   refs.titleInput.value = source.workspace.title || titleFromBody(source.workspace.body);
   if (refs.thesis) refs.thesis.value = source.thesis;
   if (refs.say) refs.say.value = source.workspace.body || "";
@@ -742,6 +783,7 @@ function isAdjustmentLayerControl(target) {
     node?.closest?.("[data-quick-draft-adjustment-enabled]")
     || node?.closest?.("[data-quick-draft-adjustment-strength]")
     || node?.closest?.("[data-quick-draft-active-layer-mask]")
+    || node?.closest?.("[data-quick-draft-protected-ranges]")
   );
 }
 
@@ -762,7 +804,7 @@ function bind() {
       const titlePatch = event.target === refs.titleInput
         ? { workspace: { title: String(refs.titleInput.value || "").trim(), titleMode: refs.titleInput.value.trim() ? "manual" : "auto" } }
         : {};
-      const record = saveQuickDraft(titlePatch, { debounce: true });
+      const record = saveQuickDraft(titlePatch);
       renderDecisionStatuses(record);
       if (event.target === refs.sources) renderSourceMap(record, sourceRecordsFromForm());
       const bodyReady = Boolean(String(refs.draft?.value || "").trim());
@@ -771,13 +813,13 @@ function bind() {
       if (typeof updateMenuState === "function") updateMenuState();
     });
   });
-  refs.form.addEventListener("change", (event) => {
+  refs.form.addEventListener("change", async (event) => {
     const enabledToggle = event.target?.closest?.("[data-quick-draft-adjustment-enabled]");
     if (enabledToggle) {
       const kind = enabledToggle.dataset.quickDraftAdjustmentEnabled;
       const enabled = enabledToggle.checked;
       quickDraftActiveLayerKind = kind;
-      updateAdjustmentLayer(kind, { enabled });
+      await updateAdjustmentLayer(kind, { enabled });
       const bodyReady = Boolean(String(refs.draft?.value || "").trim());
       syncQuickDraftPrimaryAction(activeProjectQuickDraft({ create: false })?.record, bodyReady);
       return;
@@ -787,18 +829,25 @@ function bind() {
       const kind = strengthSelect.dataset.quickDraftAdjustmentStrength;
       const strength = Number(strengthSelect.value) || ADJUSTMENT_DEFAULT_STRENGTH;
       quickDraftActiveLayerKind = kind;
-      updateAdjustmentLayer(kind, { strength });
+      await updateAdjustmentLayer(kind, { strength });
       return;
     }
     const maskInput = event.target?.closest?.("[data-quick-draft-active-layer-mask]");
     if (maskInput) {
-      updateAdjustmentLayer(quickDraftActiveLayerKind, { mask: maskInput.value });
+      await updateAdjustmentLayer(quickDraftActiveLayerKind, { mask: maskInput.value });
       return;
     }
     const protectedInput = event.target?.closest?.("[data-quick-draft-protected-ranges]");
     if (protectedInput) {
       const next = normalizeAdjustmentLayerMask(protectedInput.value);
-      const record = saveQuickDraft({ workspace: { protectedRanges: next } }, { debounce: false });
+      const previousRecord = activeProjectQuickDraft({ create: false })?.record;
+      const committed = await commitQuickDraft({ workspace: { protectedRanges: next } });
+      if (!committed.ok) {
+        renderQuickDraft(previousRecord);
+        setQuickDraftStatus(t("quick_draft_save_failed"));
+        return;
+      }
+      const record = committed.record;
       renderProtectedRangeControls(record);
       updateQuickDraftShellState(record);
       refreshQuickDraftPreviewIfOpen();
@@ -831,6 +880,14 @@ function bind() {
     refs.draft?.closest(".teachtext-editor-container")?.classList.remove("is-selected");
   });
   document.getElementById("quick-draft-return-sideask")?.addEventListener("click", askClioTalk);
+  document.querySelector("[data-quick-draft-create-project]")?.addEventListener("click", async () => {
+    await createDefaultProjectForDraftDesk();
+    renderQuickDraft();
+    requestAnimationFrame(focusQuickDraftPaper);
+  });
+  document.querySelector("[data-quick-draft-open-projects]")?.addEventListener("click", async () => {
+    await openWindow("projects");
+  });
   refs.saveButton?.addEventListener("click", () => {
     const action = refs.saveButton.dataset.quickDraftPrimaryAction || "draft";
     if (action === "develop") {
@@ -844,36 +901,44 @@ function bind() {
       refs.deliverMenu?.querySelector("summary")?.focus();
       return;
     }
+    if (action === "continue") {
+      setQuickDraftPaperSurface("editor", { manual: true });
+      requestAnimationFrame(focusQuickDraftPaper);
+      return;
+    }
     setQuickDraftPaperSurface("editor", { manual: true });
     startWritingNow();
   });
-  refs.saveProjectDocButton?.addEventListener("click", saveQuickDraftAsProjectDocument);
-  refs.sendTeachTextButton?.addEventListener("click", transferQuickDraftToTeachText);
-  refs.sendReviewButton?.addEventListener("click", sendQuickDraftToReviewDesk);
-  refs.switchMultiFinderButton?.addEventListener("click", switchToMultiFinder);
-  refs.useMountedButton?.addEventListener("click", () => {
+  refs.saveProjectDocButton?.addEventListener("click", async () => { await saveQuickDraftAsProjectDocument(); });
+  refs.sendTeachTextButton?.addEventListener("click", async () => { await transferQuickDraftToTeachText(); });
+  refs.sendReviewButton?.addEventListener("click", async () => { await sendQuickDraftToReviewDesk(); });
+  refs.switchMultiFinderButton?.addEventListener("click", async () => { await switchToMultiFinder(); });
+  refs.useMountedButton?.addEventListener("click", async () => {
     closeQuickDraftMenus();
-    useMountedSources();
+    await useMountedSources();
   });
-  refs.collectVentButton?.addEventListener("click", collectVentOutline);
-  refs.importChatButton?.addEventListener("click", importChatScreenshots);
-  refs.adoptImpressionButton?.addEventListener("click", adoptFirstImpression);
-  refs.confirmHandsOnButton?.addEventListener("click", confirmHandsOnFromAnnotations);
-  refs.startWritingButton?.addEventListener("click", startWritingNow);
+  refs.collectVentButton?.addEventListener("click", async () => { await collectVentOutline(); });
+  refs.importChatButton?.addEventListener("click", async () => { await importChatScreenshots(); });
+  refs.adoptImpressionButton?.addEventListener("click", async () => { await adoptFirstImpression(); });
+  refs.confirmHandsOnButton?.addEventListener("click", async () => { await confirmHandsOnFromAnnotations(); });
+  refs.startWritingButton?.addEventListener("click", async () => { await startWritingNow(); });
   refs.restoreDumpButton?.addEventListener("click", restoreDumpToBody);
   // Body / Grain / Read are three exclusive tabs over one paper region, and
   // the article view is simply "no preview open".
   refs.displayButtons.forEach((button) => {
     button.addEventListener("click", () => {
       const mode = button.dataset.quickDraftDisplay || "body";
-      if (mode === "grain") setQuickDraftPreviewMode("grain");
-      else if (mode === "read") setQuickDraftPreviewMode("composite");
-      else leaveQuickDraftPreview();
+      setQuickDraftDisplayMode(mode);
     });
   });
-  document.querySelectorAll("[data-quick-draft-drawer]").forEach((button) => {
+  document.querySelectorAll("[data-quick-draft-drawer]").forEach((element) => {
+    const button = /** @type {HTMLElement} */ (element);
     button.addEventListener("click", () => {
       const drawer = button.dataset.quickDraftDrawer === "inspector" ? "inspector" : "shelf";
+      if (drawer === "inspector") {
+        quickDraftAdvancedRevealed = true;
+        syncQuickDraftControlAvailability(true);
+      }
       const className = drawer === "inspector" ? "is-inspector-open" : "is-shelf-open";
       const open = !refs.form?.classList.contains(className);
       setQuickDraftDrawer(open ? drawer : "", { restoreFocus: !open });
@@ -933,9 +998,10 @@ function bind() {
     });
   });
   document.addEventListener("pointerdown", (event) => {
-    if (!event.target?.closest?.(".draft-desk-command-menu")) closeQuickDraftMenus();
+    const target = /** @type {Element | null} */ (event.target);
+    if (!target?.closest(".draft-desk-command-menu")) closeQuickDraftMenus();
   });
-  refs.form.addEventListener("click", (event) => {
+  refs.form.addEventListener("click", async (event) => {
     const layerDisclosure = event.target.closest("[data-quick-draft-layer-disclosure]");
     if (layerDisclosure) {
       toggleQuickDraftLayerDisclosure(layerDisclosure.dataset.quickDraftLayerDisclosure || "");
@@ -953,7 +1019,7 @@ function bind() {
     }
     const stanceChip = event.target.closest("[data-quick-draft-stance-index]");
     if (stanceChip) {
-      adoptFirstImpression(Number(stanceChip.dataset.quickDraftStanceIndex));
+      await adoptFirstImpression(Number(stanceChip.dataset.quickDraftStanceIndex));
       return;
     }
     const next = event.target.closest("[data-quick-draft-next]");
@@ -971,9 +1037,10 @@ function bind() {
     if (delivery) {
       closeQuickDraftMenus();
       const action = delivery.dataset.quickDraftDelivery || "";
-      if (action === "teachtext") transferQuickDraftToTeachText();
-      if (action === "copy-markdown") copyQuickDraftMarkdown();
-      if (action === "export-markdown") exportQuickDraftMarkdown();
+      if (action === "teachtext") await transferQuickDraftToTeachText();
+      if (action === "copy-markdown") await copyQuickDraftMarkdown();
+      if (action === "export-markdown") await exportQuickDraftMarkdown();
+      if (action === "share-markdown") await shareQuickDraftMarkdown();
       return;
     }
     const layerToggle = event.target.closest("[data-quick-draft-layer-toggle]");
@@ -993,7 +1060,7 @@ function bind() {
     }
     const versionButton = event.target.closest("[data-quick-draft-version]");
     if (versionButton) {
-      restoreQuickDraftVersion(
+      await restoreQuickDraftVersion(
         versionButton.dataset.quickDraftVersion || "",
         versionButton.dataset.quickDraftVersionKind || "version"
       );
@@ -1001,36 +1068,36 @@ function bind() {
     }
     const move = event.target.closest("[data-quick-draft-active-layer-move]");
     if (move) {
-      moveAdjustmentLayer(quickDraftActiveLayerKind, Number(move.dataset.direction) || -1);
+      await moveAdjustmentLayer(quickDraftActiveLayerKind, Number(move.dataset.direction) || -1);
       return;
     }
     const protectSelection = event.target.closest("[data-quick-draft-protect-selection]");
     if (protectSelection) {
       closeQuickDraftMenus();
-      protectSelectionFromTextarea();
+      await protectSelectionFromTextarea();
       return;
     }
     const scopeButton = event.target.closest("[data-quick-draft-active-layer-scope-selection]");
     if (scopeButton) {
-      scopeSelectionToLayer(quickDraftActiveLayerKind);
+      await scopeSelectionToLayer(quickDraftActiveLayerKind);
       return;
     }
     const applyButton = event.target.closest("[data-quick-draft-adjustment-apply]");
     if (applyButton) {
       closeQuickDraftMenus();
-      applyAdjustmentLayers();
+      await applyAdjustmentLayers();
       return;
     }
     const developButton = event.target.closest("[data-quick-draft-adjustment-develop]");
     if (developButton) {
       closeQuickDraftMenus();
-      developAdjustmentLayers();
+      await developAdjustmentLayers();
       return;
     }
     const quickDraftAction = event.target.closest("[data-quick-draft-chat-action]");
     if (quickDraftAction) {
       closeQuickDraftMenus();
-      runClioTalkAction(quickDraftAction.dataset.quickDraftChatAction || "", { announceUser: true });
+      await runClioTalkAction(quickDraftAction.dataset.quickDraftChatAction || "", { announceUser: true });
     }
   });
   document.addEventListener("keydown", (event) => {
@@ -1042,7 +1109,7 @@ function bind() {
       && !quickDraftWindow.classList.contains("is-app-hidden")
     );
     if (!quickDraftActive) return;
-    const target = event.target;
+    const target = /** @type {HTMLElement | null} */ (event.target);
     const typing = Boolean(target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable));
     const drawerOpen = refs.form?.classList.contains("is-shelf-open") || refs.form?.classList.contains("is-inspector-open");
     if (event.key === "Escape" && drawerOpen) {
@@ -1050,7 +1117,7 @@ function bind() {
       closeQuickDraftDrawer({ restoreFocus: true });
       return;
     }
-    if (event.key === "Escape" && quickDraftPreviewMode !== "render") {
+    if (event.key === "Escape" && quickDraftDisplayMode !== "body") {
       event.preventDefault();
       leaveQuickDraftPreview();
       return;
@@ -1063,14 +1130,26 @@ function bind() {
 }
 
 function captureWorkingSession() {
+  const drawer = refs.form?.classList.contains("is-shelf-open")
+    ? "shelf"
+    : refs.form?.classList.contains("is-inspector-open") ? "inspector" : "";
   return {
     projectId: activeProjectId,
-    workspace: workspaceSnapshot(),
     paperSurface: quickDraftPaperSurface,
+    displayMode: typeof currentQuickDraftDisplayMode === "function" ? currentQuickDraftDisplayMode() : "body",
     toolsOpen: !!refs.tools?.open,
-    scrollTop: refs.draft?.scrollTop || 0,
-    selectionStart: refs.draft?.selectionStart || 0,
-    selectionEnd: refs.draft?.selectionEnd || 0,
+    drawer,
+    activeLayerKind: quickDraftActiveLayerKind,
+    expandedLayerKind: quickDraftExpandedLayerKind,
+    editor: typeof captureTextControlWorkingSession === "function"
+      ? captureTextControlWorkingSession(refs.draft)
+      : {
+        selectionStart: refs.draft?.selectionStart || 0,
+        selectionEnd: refs.draft?.selectionEnd || 0,
+        selectionDirection: refs.draft?.selectionDirection || "none",
+        scrollTop: refs.draft?.scrollTop || 0,
+        focused: document.activeElement === refs.draft,
+      },
   };
 }
 
@@ -1078,24 +1157,41 @@ function restoreWorkingSession(state = {}) {
   if (state.projectId && state.projectId !== activeProjectId) return false;
   const slot = activeProjectQuickDraft();
   if (!slot) return false;
-  slot.project.quickDraft = normalizeQuickDraftRecord({
-    ...slot.record,
-    workspace: {
-      ...slot.record.workspace,
-      ...(state.workspace && typeof state.workspace === "object" ? state.workspace : {}),
-    },
-  });
-  renderQuickDraft(slot.project.quickDraft);
+  // Legacy state.workspace is deliberately ignored: Project Hard Disk owns
+  // the latest durable draft, while Working Session restores only its view.
+  renderQuickDraft(slot.record);
   if (state.paperSurface === "editor" || state.paperSurface === "intake") {
     setQuickDraftPaperSurface(state.paperSurface, { manual: true });
   }
+  if (["body", "grain", "read"].includes(state.displayMode) && typeof setQuickDraftDisplayMode === "function") {
+    setQuickDraftDisplayMode(state.displayMode);
+  }
   if (refs.tools) refs.tools.open = !!state.toolsOpen;
+  quickDraftActiveLayerKind = String(state.activeLayerKind || quickDraftActiveLayerKind);
+  quickDraftExpandedLayerKind = String(state.expandedLayerKind || "");
+  renderAdjustmentLayers(slot.record);
+  closeQuickDraftDrawer({ restoreFocus: false });
+  if (state.drawer === "shelf" || state.drawer === "inspector") {
+    setQuickDraftDrawer(state.drawer, { restoreFocus: false });
+  }
   requestAnimationFrame(() => {
     if (!refs.draft) return;
-    refs.draft.scrollTop = Number(state.scrollTop) || 0;
-    const start = Math.min(Number(state.selectionStart) || 0, refs.draft.value.length);
-    const end = Math.min(Number(state.selectionEnd) || start, refs.draft.value.length);
-    refs.draft.setSelectionRange(start, end);
+    const editor = state.editor && typeof state.editor === "object"
+      ? state.editor
+      : {
+        scrollTop: state.scrollTop,
+        selectionStart: state.selectionStart,
+        selectionEnd: state.selectionEnd,
+      };
+    if (typeof restoreTextControlWorkingSession === "function") {
+      restoreTextControlWorkingSession(refs.draft, editor, { windowName: "quickDraft" });
+      return;
+    }
+    refs.draft.scrollTop = Number(editor.scrollTop) || 0;
+    const start = Math.min(Number(editor.selectionStart) || 0, refs.draft.value.length);
+    const end = Math.min(Number(editor.selectionEnd) || start, refs.draft.value.length);
+    refs.draft.setSelectionRange(start, end, editor.selectionDirection || "none");
+    if (editor.focused) refs.draft.focus({ preventScroll: true });
   });
   return true;
 }
@@ -1128,6 +1224,7 @@ window.AISystem6QuickDraftRuntime = Object.freeze({
   normalizeQuickDraftWorkspace,
   normalizeScenario,
   commitQuickDraft,
+  commitQuickDraftForProject,
   flushPendingQuickDraftCommit,
   persistQuickDraftWorkspace,
   paperSurface: () => quickDraftPaperSurface,
@@ -1136,6 +1233,7 @@ window.AISystem6QuickDraftRuntime = Object.freeze({
   refs,
   saveQuickDraft,
   updateQuickDraft,
+  updateQuickDraftForProject,
   setBusy,
   quickDraftPanelVisible,
   setQuickDraftPaperSurface,

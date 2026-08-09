@@ -18,6 +18,11 @@
   const cloudBalanceEl = document.querySelector("#cloud-balance");
   const cloudStatusHint = document.querySelector("#cloud-status-hint");
   const cloudIndicatorEl = document.querySelector("#cloud-model-indicator");
+  const websiteAiButton = document.querySelector("#use-website-ai");
+  const localAiButton = document.querySelector("#use-local-ai");
+  const advancedAiButton = document.querySelector("#show-ai-advanced");
+  const simpleAiStatus = document.querySelector("#simple-ai-status");
+  const ownKeyDetails = document.querySelector("#cloud-own-key-details");
   const DEEPSEEK_BASE_URL = "https:" + String.fromCharCode(47, 47) + "api.deepseek.com";
 
   const PROVIDER_BASE_URLS = {
@@ -617,6 +622,7 @@
         applyCloudActiveState();
       }
     } catch (error) {
+      console.warn("Website AI connection failed", error);
       await discardStagedCloudCredential(stagedCredentialId);
       if (stagedCredentialId && cloudConfig?.credentialId === stagedCredentialId) {
         cloudConfig.credentialId = "";
@@ -626,12 +632,46 @@
       saveCloudConfig();
       cloudStatusEl.hidden = false;
       cloudStatusDot.className = "cloud-status-dot is-error";
-      cloudStatusText.textContent = String(error?.message || error || (typeof t === "function" ? t("cloud_error") : "Error"));
+      cloudStatusText.textContent = window.AISystem6UserRecoveryMessages?.text?.("cloudConnection")
+        || (typeof t === "function" ? t("cloud_connection_failed_message") : "Website AI is unavailable.");
       applyCloudActiveState();
     } finally {
       setControlLoading(cloudCheckBtn, false);
       updateCheckButtonState();
     }
+  });
+
+  websiteAiButton?.addEventListener("click", async function () {
+    if (!publicSharedCloudAvailable) {
+      if (simpleAiStatus) simpleAiStatus.textContent = typeof t === "function" ? t("website_ai_unavailable") : "Website AI is unavailable.";
+      if (ownKeyDetails) ownKeyDetails.open = true;
+      cloudApiKeyEl.focus();
+      return;
+    }
+    cloudConfig = {
+      ...(cloudConfig || {}),
+      provider: "deepseek",
+      model: cloudConfig?.model || BUILTIN_PROVIDER_MODELS.deepseek[0].id,
+      credentialMode: "shared",
+      active: false,
+    };
+    cloudProviderEl.value = "deepseek";
+    populateCloudModelDropdown(BUILTIN_PROVIDER_MODELS.deepseek);
+    setCloudModelControlValue(cloudConfig.model);
+    saveCloudConfig();
+    updateCheckButtonState();
+    cloudCheckBtn.click();
+    if (simpleAiStatus) simpleAiStatus.textContent = typeof t === "function" ? t("website_ai_connecting") : "Connecting to website AI…";
+  });
+
+  localAiButton?.addEventListener("click", function () {
+    if (typeof setControlTab === "function") setControlTab("local");
+    document.getElementById("detect-local-models")?.focus();
+  });
+
+  advancedAiButton?.addEventListener("click", function () {
+    if (ownKeyDetails) ownKeyDetails.open = true;
+    ownKeyDetails?.querySelector("summary")?.focus();
   });
 
   // Restore saved config

@@ -74,7 +74,7 @@ function titleFromBody(body = "") {
     .slice(0, 42);
 }
 
-function blankQuickDraftCanvas() {
+function blankLegacyQuickDraftCanvas() {
   return {
     objects: [{
       id: "obj-1",
@@ -88,9 +88,10 @@ function blankQuickDraftCanvas() {
   };
 }
 
-function normalizeQuickDraftCanvas(value = {}) {
+/** @param {Record<string, any>} value */
+function normalizeLegacyQuickDraftCanvas(value = {}) {
   const source = value && typeof value === "object" ? value : {};
-  const defaults = blankQuickDraftCanvas();
+  const defaults = blankLegacyQuickDraftCanvas();
   let objectIndex = 0;
   const objects = (Array.isArray(source.objects) ? source.objects : [])
     .map((item) => {
@@ -158,13 +159,13 @@ function blankQuickDraftWorkspace() {
       negativeUpdatedAt: "",
     },
     versions: [],
-    canvas: blankQuickDraftCanvas(),
     projectDocId: "",
     savedStatus: "saved",
     updatedAt: "",
   };
 }
 
+/** @param {Record<string, any>} value @param {Record<string, any>} legacy */
 function normalizeToolInputs(value = {}, legacy = {}) {
   const source = value && typeof value === "object" ? value : {};
   return {
@@ -184,6 +185,7 @@ function normalizeToolInputs(value = {}, legacy = {}) {
   };
 }
 
+/** @param {Record<string, any>} value @param {Record<string, any>} legacy */
 function normalizeAnnotations(value = {}, legacy = {}) {
   const source = value && typeof value === "object" ? value : {};
   const brief = legacy.brief && typeof legacy.brief === "object" ? legacy.brief : {};
@@ -237,6 +239,7 @@ function normalizeChatMaterial(entry, index = 0) {
   };
 }
 
+/** @param {Record<string, any>} value @param {Record<string, any>} legacy @returns {any} */
 function normalizeIntake(value = {}, legacy = {}) {
   const source = value && typeof value === "object" ? value : {};
   const legacyVentLog = Array.isArray(legacy.ventLog) ? legacy.ventLog : [];
@@ -258,6 +261,7 @@ function normalizeIntake(value = {}, legacy = {}) {
   };
 }
 
+/** @param {Record<string, any>} value @param {Record<string, any>} legacy */
 function normalizeStrategy(value = {}, legacy = {}) {
   const source = value && typeof value === "object" ? value : {};
   const fallback = legacy.strategyReport && typeof legacy.strategyReport === "object" ? legacy.strategyReport : {};
@@ -269,6 +273,7 @@ function normalizeStrategy(value = {}, legacy = {}) {
   };
 }
 
+/** @param {Record<string, any>} value @param {Record<string, any>} legacy @returns {any} */
 function normalizeQuickDraftWorkspace(value = {}, legacy = {}) {
   const source = value && typeof value === "object" ? value : {};
   const legacyToolInputs = legacy.toolInputs && typeof legacy.toolInputs === "object" ? legacy.toolInputs : {};
@@ -316,6 +321,8 @@ function normalizeQuickDraftWorkspace(value = {}, legacy = {}) {
     || titleFromBody(body)
     || defaultTitle
   );
+  const legacySource = source.legacy && typeof source.legacy === "object" ? source.legacy : {};
+  const legacyCanvas = source.canvas || legacy.canvas || legacySource.canvas;
   return {
     ...blankQuickDraftWorkspace(),
     schemaVersion: 3,
@@ -337,7 +344,12 @@ function normalizeQuickDraftWorkspace(value = {}, legacy = {}) {
     protectedRanges: normalizeAdjustmentLayerMask(source.protectedRanges || legacy.protectedRanges),
     composition,
     versions: [...versionsById.values()].slice(-100),
-    canvas: normalizeQuickDraftCanvas(source.canvas || legacy.canvas),
+    ...(legacyCanvas ? {
+      legacy: {
+        ...legacySource,
+        canvas: normalizeLegacyQuickDraftCanvas(legacyCanvas),
+      },
+    } : {}),
     projectDocId: String(source.projectDocId || legacy.projectDocId || ""),
     savedStatus: source.savedStatus === "modified" ? "modified" : "saved",
     updatedAt: String(source.updatedAt || legacy.updatedAt || ""),
@@ -389,7 +401,8 @@ function blankQuickDraft() {
   };
 }
 
-function normalizeQuickDraftRecord(value) {
+/** @param {Record<string, any>} value @returns {any} */
+function normalizeQuickDraftRecord(value = {}) {
   const source = value && typeof value === "object" ? value : {};
   const workspace = normalizeQuickDraftWorkspace(source.workspace, source);
   return {
@@ -400,5 +413,26 @@ function normalizeQuickDraftRecord(value) {
     raw: String(source.raw || ""),
     insertedAt: String(source.insertedAt || ""),
     ...quickDraftAliases(workspace),
+  };
+}
+
+// Public, DOM-free context contract for SideAsk and other app boundaries.
+// Consumers receive a detached snapshot so they cannot mutate Project Hard
+// Disk state by retaining references into project.quickDraft.
+/** @param {Record<string, any>} record */
+function quickDraftContextSnapshot(record = {}) {
+  const normalized = normalizeQuickDraftRecord(record);
+  const workspace = normalized.workspace;
+  return {
+    title: String(workspace.title || titleFromBody(workspace.body)),
+    body: String(workspace.body || ""),
+    setup: structuredClone(workspace.intake?.setup || {}),
+    intake: structuredClone(workspace.intake || {}),
+    annotations: structuredClone(workspace.intake?.annotations || {}),
+    materials: structuredClone(workspace.materials || []),
+    strategy: structuredClone(workspace.strategy || {}),
+    protectedRanges: structuredClone(workspace.protectedRanges || []),
+    versionCount: Array.isArray(workspace.versions) ? workspace.versions.length : 0,
+    projectDocId: String(workspace.projectDocId || ""),
   };
 }

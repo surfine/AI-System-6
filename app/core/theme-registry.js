@@ -11,12 +11,17 @@
   const LEGACY_LIQUID_KEY = "ai-system-6-liquid-glass";
   const DEFAULT_THEME_ID = "classic";
 
+  // recipeBase is a maintenance lineage, not a second active CSS class. A
+  // child starts from its named parent recipe, then owns an explicit delta;
+  // family is reserved for genuinely shared primitives.
   const registry = Object.freeze([
     Object.freeze({
       id: "classic",
       label: "System 6",
       labelKey: "theme_classic",
       family: "classic",
+      recipeBase: null,
+      releaseReady: true,
       systemFont: "Chicago",
       systemFontSize: 12,
       fontStrategy: "preference",
@@ -28,6 +33,8 @@
       label: "Platinum",
       labelKey: "theme_platinum",
       family: "classic",
+      recipeBase: "classic",
+      releaseReady: true,
       systemFont: "Charcoal",
       systemFontSize: 12,
       fontStrategy: "theme",
@@ -35,10 +42,51 @@
       capabilities: Object.freeze(["solid-material", "grayscale-depth", "native-window-outline"]),
     }),
     Object.freeze({
+      id: "aqua",
+      label: "Aqua",
+      labelKey: "theme_aqua",
+      family: "aqua",
+      recipeBase: null,
+      releaseReady: true,
+      systemFont: "Lucida Grande",
+      systemFontSize: 13,
+      fontStrategy: "theme",
+      overlay: "none",
+      capabilities: Object.freeze(["solid-material", "pinstripe", "traffic-lights"]),
+    }),
+    Object.freeze({
+      id: "snow-leopard",
+      label: "Snow Leopard",
+      labelKey: "theme_snow_leopard",
+      family: "aqua",
+      recipeBase: "aqua",
+      releaseReady: false,
+      systemFont: "Lucida Grande",
+      systemFontSize: 13,
+      fontStrategy: "theme",
+      overlay: "none",
+      capabilities: Object.freeze(["solid-material", "unified-toolbar", "traffic-lights"]),
+    }),
+    Object.freeze({
+      id: "yosemite",
+      label: "Yosemite",
+      labelKey: "theme_yosemite",
+      family: "liquid-glass",
+      recipeBase: "liquid-glass",
+      releaseReady: false,
+      systemFont: "Helvetica Neue",
+      systemFontSize: 13,
+      fontStrategy: "theme",
+      overlay: "none",
+      capabilities: Object.freeze(["vibrancy", "translucent-sidebar", "traffic-lights"]),
+    }),
+    Object.freeze({
       id: "liquid-glass",
       label: "Liquid Glass",
       labelKey: "theme_liquid_glass",
-      family: "modern",
+      family: "liquid-glass",
+      recipeBase: null,
+      releaseReady: true,
       systemFont: "SF Pro",
       systemFontSize: 13,
       fontStrategy: "modern",
@@ -76,6 +124,8 @@
     if (!element) return;
     element.dataset.theme = theme.id;
     element.dataset.themeFamily = theme.family;
+    if (theme.recipeBase) element.dataset.themeBase = theme.recipeBase;
+    else delete element.dataset.themeBase;
     if (element === global.document?.body) {
       element.classList.toggle("use-liquid-glass", theme.id === "liquid-glass");
     }
@@ -125,6 +175,23 @@
     return byId.get(normalizeThemeId(value));
   }
 
+  function getReleaseReadyThemes() {
+    return registry.filter((theme) => theme.releaseReady !== false);
+  }
+
+  function getRecipeChain(value = currentThemeId) {
+    const chain = [];
+    const visited = new Set();
+    let theme = getTheme(value);
+    while (theme) {
+      if (visited.has(theme.id)) throw new Error(`Appearance recipe cycle at ${theme.id}`);
+      visited.add(theme.id);
+      chain.unshift(theme);
+      theme = theme.recipeBase ? byId.get(theme.recipeBase) : null;
+    }
+    return Object.freeze(chain);
+  }
+
   function hasCapability(capability, value = currentThemeId) {
     return getTheme(value).capabilities.includes(String(capability || ""));
   }
@@ -139,6 +206,8 @@
     applyTheme,
     getCurrentTheme,
     getTheme,
+    getReleaseReadyThemes,
+    getRecipeChain,
     hasCapability,
     syncBody,
     syncFontStrategy,

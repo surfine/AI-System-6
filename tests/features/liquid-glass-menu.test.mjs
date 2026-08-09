@@ -25,7 +25,7 @@ test.assertIncludes(
   "background: var(--liquid-disabled-control-bg);",
   "the shared disabled-control rule reads its surface from a scoped token",
 );
-for (const themeId of ["classic", "platinum", "liquid-glass"]) {
+for (const themeId of ["classic", "platinum", "aqua", "liquid-glass"]) {
   test.assertIncludes(menus, `themeId: "${themeId}"`, `Special → Appearance exposes ${themeId}`);
 }
 test.assertIncludes(menus, 'submenu("appearance", appearanceItems)', "Special owns one Appearance submenu instead of a second theme system");

@@ -1129,6 +1129,8 @@ html:lang(zh-Hans) .title-bar h2 {
 
   .window.is-active .title-bar {
     background: var(--system-titlebar-active-bg);
+    background-origin: var(--system-titlebar-background-origin);
+    background-clip: var(--system-titlebar-background-clip);
   }
 
   .title-bar h1,
@@ -3543,7 +3545,10 @@ select:focus {
 
 .system-select-button:disabled {
   color: var(--shade-dark);
-  background: repeating-linear-gradient(45deg, var(--paper) 0, var(--paper) 4px, #eeeeee 4px, #eeeeee 8px);
+  background: var(
+    --control-disabled-bg,
+    repeating-linear-gradient(45deg, var(--paper) 0, var(--paper) 4px, #eeeeee 4px, #eeeeee 8px)
+  );
   opacity: var(--control-disabled-opacity);
 }
 

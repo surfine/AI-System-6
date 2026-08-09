@@ -484,6 +484,8 @@ body.use-liquid-glass .menu-bar {
 
 .window:not(.is-active) .title-bar {
   background: var(--system-titlebar-inactive-bg);
+  background-origin: var(--system-titlebar-background-origin);
+  background-clip: var(--system-titlebar-background-clip);
 }
 
 .title-bar h1,
@@ -2250,6 +2252,8 @@ body.use-modern-fonts .mde-surface * {
 
 .window:not(.is-active) .title-bar {
   background: var(--system-titlebar-inactive-bg);
+  background-origin: var(--system-titlebar-background-origin);
+  background-clip: var(--system-titlebar-background-clip);
 }
 
 .title-bar h1,
@@ -2361,7 +2365,7 @@ select:not(:disabled):hover {
 
 select:disabled {
   color: var(--shade-dark);
-  background-color: var(--panel);
+  background-color: var(--control-disabled-field-bg, var(--panel));
 }
 
 option,
@@ -2514,8 +2518,10 @@ button.btn {
 button:disabled {
   color: var(--shade-dark);
   font-weight: 400;
-  background:
-    repeating-linear-gradient(45deg, var(--paper) 0, var(--paper) 4px, #eeeeee 4px, #eeeeee 8px);
+  background: var(
+    --control-disabled-bg,
+    repeating-linear-gradient(45deg, var(--paper) 0, var(--paper) 4px, #eeeeee 4px, #eeeeee 8px)
+  );
   box-shadow: none;
 }
 

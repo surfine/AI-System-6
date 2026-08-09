@@ -60,6 +60,7 @@ const editWithWriting = [
 const appearanceItems = [
   menuItem("set-theme-classic", "theme_classic", "", { themeId: "classic" }),
   menuItem("set-theme-platinum", "theme_platinum", "", { themeId: "platinum" }),
+  menuItem("set-theme-aqua", "theme_aqua", "", { themeId: "aqua" }),
   menuItem("set-theme-liquid-glass", "theme_liquid_glass", "", { themeId: "liquid-glass" }),
   menuSeparator,
   menuItem("open-theme-lab", "theme_lab"),

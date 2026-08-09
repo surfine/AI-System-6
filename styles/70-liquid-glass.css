@@ -19,6 +19,7 @@ body.use-liquid-glass {
   --menu-panel-border: 1px solid var(--glass-border);
   --menu-panel-radius: var(--liquid-menu-radius);
   --menu-panel-backdrop-filter: blur(34px) saturate(160%) brightness(1.04);
+  --surface-backdrop-filter: var(--menu-panel-backdrop-filter);
   --field-border: 1px solid rgba(255, 255, 255, 0.62);
   --field-radius: 12px;
   --select-radius: 12px;
@@ -581,6 +582,8 @@ body.use-liquid-glass {
   --system-titlebar-inactive-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.22)),
     rgba(255, 255, 255, 0.26);
+  --system-titlebar-background-origin: padding-box;
+  --system-titlebar-background-clip: border-box;
   --system-titlebar-control-focus-outline: 0;
   --system-titlebar-control-focus-shadow:
     0 0 0 3px rgba(255, 255, 255, 0.72),
