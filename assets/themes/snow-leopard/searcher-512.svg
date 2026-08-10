@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
+<defs>
+      <linearGradient id="body" x1="0.08" y1="0" x2="0.92" y2="1"><stop offset="0" stop-color="#d9efff"/><stop offset="0.42" stop-color="#75b9ec"/><stop offset="1" stop-color="#173e75"/></linearGradient>
+      <linearGradient id="paper" x1="0" y1="0" x2="0.75" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="0.66" stop-color="#f4f3ed"/><stop offset="1" stop-color="#bdc3c9"/></linearGradient>
+      <linearGradient id="metal" x1="0" y1="0" x2="0.2" y2="1"><stop offset="0" stop-color="#fdfefe"/><stop offset="0.18" stop-color="#bec7cf"/><stop offset="0.47" stop-color="#6f7d8a"/><stop offset="0.65" stop-color="#e1e6e9"/><stop offset="1" stop-color="#48535d"/></linearGradient>
+      <radialGradient id="lens" cx="0.3" cy="0.22" r="0.78"><stop offset="0" stop-color="#e8f7ff" stop-opacity="0.92"/><stop offset="0.48" stop-color="#72b2dc" stop-opacity="0.74"/><stop offset="1" stop-color="#234c6d" stop-opacity="0.92"/></radialGradient>
+      <linearGradient id="leather" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c39a69"/><stop offset="0.52" stop-color="#87603f"/><stop offset="1" stop-color="#4b3024"/></linearGradient>
+    </defs>
+<ellipse cx="33" cy="54" rx="19" ry="2.7" fill="#000000" fill-opacity="0.24"/><path d="M7 14h33v39H7z" fill="url(#paper)" stroke="#36434d" stroke-width="1.65"/><circle cx="37" cy="32" r="13" fill="url(#lens)" stroke="#36434d" stroke-width="1.65"/><line x1="46" y1="42" x2="57" y2="53" stroke="#36434d" stroke-width="5" stroke-linecap="round"/><g ><path d="M19 18h27M18 21h29M20 24h25M19 27h27" stroke="#ffffff" stroke-width="0.28" stroke-opacity="0.22"/><circle cx="23" cy="31" r="0.45" fill="#ffffff" fill-opacity="0.28"/><circle cx="42" cy="35" r="0.35" fill="#17212a" fill-opacity="0.18"/><circle cx="29" cy="45" r="0.4" fill="#ffffff" fill-opacity="0.2"/></g><circle cx="30" cy="33" r="9" fill="url(#lens)" stroke="#303b45" stroke-width="2.3"/><line x1="37" y1="40" x2="46" y2="49" stroke="#303b45" stroke-width="3.8" stroke-linecap="round"/>
+</svg>

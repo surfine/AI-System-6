@@ -648,55 +648,27 @@ body[data-theme="platinum"] {
   --alarm-clock-section-gap: 0px;
 }
 
-/* Platinum icon family: the middle state between Classic 1-bit line art and
-   Liquid Glass. Filled painter shapes (the application's own silhouettes,
-   Mac OS 9-style gradient bodies, dark outlines) replace the 1-bit glyph on
-   the desktop/finder icons; the CSS drop-shadow adds depth. Menus and the
-   control strip keep the light 1-bit glyph. */
-body[data-theme="platinum"] .sys-icon:is([data-system-icon="startupDisk"],[data-system-icon="hardDisk"],[data-system-icon="folder"],[data-system-icon="document"],[data-system-icon="applications"],[data-system-icon="trash"],[data-system-icon="finderApp"],[data-system-icon="fileFloppy"],[data-system-icon="assistant"],[data-system-icon="quickDraft"],[data-system-icon="writingStudio"],[data-system-icon="projectDisk"],[data-system-icon="projectDisc"],[data-system-icon="cloudModel"],[data-system-icon="cloudModelOff"],[data-system-icon="questionSheet"],[data-system-icon="outline"],[data-system-icon="sectionDrafts"],[data-system-icon="manuscript"],[data-system-icon="reviewDesk"],[data-system-icon="searcher"],[data-system-icon="reader"],[data-system-icon="timeMachine"],[data-system-icon="docMap"],[data-system-icon="clioStage"],[data-system-icon="clioChart"],[data-system-icon="liquidCover"],[data-system-icon="cmfStudio"],[data-system-icon="soundscape"],[data-system-icon="scrapbook"],[data-system-icon="systemFolder"],[data-system-icon="helpFolder"],[data-system-icon="importUtility"],[data-system-icon="controlPanel"],[data-system-icon="chooser"],[data-system-icon="systemHelp"],[data-system-icon="dictionary"],[data-system-icon="teachText"],[data-system-icon="writingDemo"],[data-system-icon="chatFile"],[data-system-icon="chatImport"],[data-system-icon="systemStatus"],[data-system-icon="contextPanel"],[data-system-icon="rebuildArticle"],[data-system-icon="bureaucracyMeme"],[data-system-icon="endfieldTerminal"],[data-system-icon="documents"],[data-system-icon="alias"],[data-system-icon="systemFile"],[data-system-icon="multiFinderApp"],[data-system-icon="daHandler"],[data-system-icon="writingBell"],[data-system-icon="trashFull"], [data-system-icon="control"]) {
+/* Platinum icon family: 54 Mac OS 9-era object painters with dedicated 32 px
+   and 16 px artwork. Integer silhouettes, selective keylines, and one-pixel
+   light/shade live in the asset; CSS owns only placement and state. */
+body[data-theme="platinum"] .sys-icon[data-system-icon]:not(:where([data-system-icon="play"], [data-system-icon="pause"], [data-system-icon="previousTrack"], [data-system-icon="nextTrack"], [data-system-icon="shuffleTracks"], [data-system-icon="repeatTracks"], [data-system-icon="speaker"])) {
   background-color: transparent;
   background-repeat: no-repeat;
   background-position: center;
   background-size: contain;
-  /* Restrained hard shadow: 1px offset, no blur — the Platinum icon look
-     keeps a crisp offset shadow instead of a soft modern glow. */
-  filter: drop-shadow(1px 1px 0 rgba(0, 0, 0, 0.5));
+  filter: none;
 }
 
 body[data-theme="platinum"] .sys-icon[data-system-icon="startupDisk"] {
   background-image: url("./assets/themes/platinum/startup-disk-32.svg");
 }
 
-body[data-theme="platinum"] .sys-icon[data-system-icon="hardDisk"] {
-  background-image: url("./assets/themes/platinum/startup-disk-32.svg");
-}
-
-body[data-theme="platinum"] .sys-icon[data-system-icon="folder"] {
-  background-image: url("./assets/themes/platinum/folder-32.svg");
-}
-
-body[data-theme="platinum"] .sys-icon[data-system-icon="document"] {
-  background-image: url("./assets/themes/platinum/document-32.svg");
-}
-
 body[data-theme="platinum"] .sys-icon[data-system-icon="applications"] {
   background-image: url("./assets/themes/platinum/applications-32.svg");
 }
 
-body[data-theme="platinum"] .sys-icon[data-system-icon="trash"] {
-  background-image: url("./assets/themes/platinum/trash-32.svg");
-}
-
 body[data-theme="platinum"] .sys-icon[data-system-icon="trashFull"] {
   background-image: url("./assets/themes/platinum/trashFull-32.svg");
-}
-
-body[data-theme="platinum"] .sys-icon[data-system-icon="finderApp"] {
-  background-image: url("./assets/themes/platinum/finder-app-32.svg");
-}
-
-body[data-theme="platinum"] .sys-icon[data-system-icon="fileFloppy"] {
-  background-image: url("./assets/themes/platinum/floppy-32.svg");
 }
 
 body[data-theme="platinum"] .sys-icon[data-system-icon="assistant"] {
@@ -713,10 +685,6 @@ body[data-theme="platinum"] .sys-icon[data-system-icon="writingStudio"] {
 
 body[data-theme="platinum"] .sys-icon[data-system-icon="projectDisk"] {
   background-image: url("./assets/themes/platinum/projectDisk-32.svg");
-}
-
-body[data-theme="platinum"] .sys-icon[data-system-icon="projectDisc"] {
-  background-image: url("./assets/themes/platinum/projectDisc-32.svg");
 }
 
 body[data-theme="platinum"] .sys-icon[data-system-icon="cloudModel"] {
@@ -783,10 +751,6 @@ body[data-theme="platinum"] .sys-icon[data-system-icon="soundscape"] {
   background-image: url("./assets/themes/platinum/soundscape-32.svg");
 }
 
-body[data-theme="platinum"] .sys-icon[data-system-icon="scrapbook"] {
-  background-image: url("./assets/themes/platinum/scrapbook-32.svg");
-}
-
 body[data-theme="platinum"] .sys-icon[data-system-icon="systemFolder"] {
   background-image: url("./assets/themes/platinum/systemFolder-32.svg");
 }
@@ -797,10 +761,6 @@ body[data-theme="platinum"] .sys-icon[data-system-icon="helpFolder"] {
 
 body[data-theme="platinum"] .sys-icon[data-system-icon="importUtility"] {
   background-image: url("./assets/themes/platinum/importUtility-32.svg");
-}
-
-body[data-theme="platinum"] .sys-icon[data-system-icon="controlPanel"] {
-  background-image: url("./assets/themes/platinum/controlPanel-32.svg");
 }
 
 body[data-theme="platinum"] .sys-icon[data-system-icon="chooser"] {
@@ -859,28 +819,46 @@ body[data-theme="platinum"] .sys-icon[data-system-icon="alias"] {
   background-image: url("./assets/themes/platinum/alias-32.svg");
 }
 
-body[data-theme="platinum"] .sys-icon[data-system-icon="systemFile"] {
-  background-image: url("./assets/themes/platinum/systemFile-32.svg");
-}
-
 body[data-theme="platinum"] .sys-icon[data-system-icon="multiFinderApp"] {
   background-image: url("./assets/themes/platinum/multiFinderApp-32.svg");
-}
-
-body[data-theme="platinum"] .sys-icon[data-system-icon="daHandler"] {
-  background-image: url("./assets/themes/platinum/daHandler-32.svg");
 }
 
 body[data-theme="platinum"] .sys-icon[data-system-icon="writingBell"] {
   background-image: url("./assets/themes/platinum/writingBell-32.svg");
 }
 
-body[data-theme="platinum"] :is([data-system-icon="startupDisk"],[data-system-icon="hardDisk"],[data-system-icon="folder"],[data-system-icon="document"],[data-system-icon="applications"],[data-system-icon="trash"],[data-system-icon="finderApp"],[data-system-icon="fileFloppy"],[data-system-icon="assistant"],[data-system-icon="quickDraft"],[data-system-icon="writingStudio"],[data-system-icon="projectDisk"],[data-system-icon="projectDisc"],[data-system-icon="cloudModel"],[data-system-icon="questionSheet"],[data-system-icon="outline"],[data-system-icon="sectionDrafts"],[data-system-icon="manuscript"],[data-system-icon="reviewDesk"],[data-system-icon="searcher"],[data-system-icon="reader"],[data-system-icon="timeMachine"],[data-system-icon="docMap"],[data-system-icon="clioStage"],[data-system-icon="clioChart"],[data-system-icon="liquidCover"],[data-system-icon="cmfStudio"],[data-system-icon="soundscape"],[data-system-icon="scrapbook"],[data-system-icon="systemFolder"],[data-system-icon="helpFolder"],[data-system-icon="importUtility"],[data-system-icon="controlPanel"],[data-system-icon="chooser"],[data-system-icon="systemHelp"],[data-system-icon="dictionary"],[data-system-icon="teachText"],[data-system-icon="writingDemo"],[data-system-icon="chatFile"],[data-system-icon="chatImport"],[data-system-icon="systemStatus"],[data-system-icon="contextPanel"],[data-system-icon="rebuildArticle"],[data-system-icon="bureaucracyMeme"],[data-system-icon="endfieldTerminal"],[data-system-icon="documents"],[data-system-icon="alias"],[data-system-icon="systemFile"],[data-system-icon="multiFinderApp"],[data-system-icon="daHandler"],[data-system-icon="writingBell"], [data-system-icon="control"]) .sys-icon-svg {
+body[data-theme="platinum"] .sys-icon[data-system-icon]:not(:where([data-system-icon="play"], [data-system-icon="pause"], [data-system-icon="previousTrack"], [data-system-icon="nextTrack"], [data-system-icon="shuffleTracks"], [data-system-icon="repeatTracks"], [data-system-icon="speaker"])) .sys-icon-svg {
   display: none;
 }
 
+body[data-theme="platinum"] .sys-icon:has(.sys-icon-svg.has-platinum-core) {
+  background-image: none;
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon]:has(.sys-icon-svg.has-platinum-core) .sys-icon-svg.has-platinum-core {
+  display: block;
+}
+
+body[data-theme="platinum"] .sys-icon-svg.has-platinum-core[data-classic-source-size="32"] {
+  width: 32px;
+  height: 32px;
+}
+
+body[data-theme="platinum"] .sys-icon-svg.has-platinum-core[data-classic-source-size="16"] {
+  width: 16px;
+  height: 16px;
+}
+
+body[data-theme="platinum"] .sys-icon-svg.has-platinum-core :is(.sys-icon-classic, .sys-icon-liquid) {
+  display: none;
+}
+
+body[data-theme="platinum"] .sys-icon-svg.has-platinum-core .sys-icon-platinum-core {
+  display: block;
+}
+
 body[data-theme="platinum"] .sys-icon[data-system-icon="control"] {
-  background-image: url("./assets/themes/platinum/controlPanel-32.svg");
+  background-image: url("./assets/themes/platinum/control-32.svg");
 }
 
 body[data-theme="platinum"] :is(.menu-bar, .control-strip) .sys-icon {
@@ -893,12 +871,11 @@ body[data-theme="platinum"] :is(.menu-bar, .control-strip) .sys-icon .sys-icon-s
   display: block;
 }
 
-/* Yosemite icon family: the flat 10.10 look. Every object keeps the Liquid
-   Glass composition but swaps the glass pill for Yosemite materials —
-   distinct silhouettes (folder, page, disk, trash, window), hairline
-   steel-blue borders, soft vertical gradients, no drop shadow. The inline
-   1-bit glyph stays for menus and the control strip, as in 10.10. */
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon:is([data-system-icon="startupDisk"],[data-system-icon="hardDisk"],[data-system-icon="folder"],[data-system-icon="document"],[data-system-icon="applications"],[data-system-icon="trash"],[data-system-icon="finderApp"],[data-system-icon="fileFloppy"],[data-system-icon="assistant"],[data-system-icon="quickDraft"],[data-system-icon="writingStudio"],[data-system-icon="projectDisk"],[data-system-icon="projectDisc"],[data-system-icon="cloudModel"],[data-system-icon="cloudModelOff"],[data-system-icon="questionSheet"],[data-system-icon="outline"],[data-system-icon="sectionDrafts"],[data-system-icon="manuscript"],[data-system-icon="reviewDesk"],[data-system-icon="searcher"],[data-system-icon="reader"],[data-system-icon="timeMachine"],[data-system-icon="docMap"],[data-system-icon="clioStage"],[data-system-icon="clioChart"],[data-system-icon="liquidCover"],[data-system-icon="cmfStudio"],[data-system-icon="soundscape"],[data-system-icon="scrapbook"],[data-system-icon="systemFolder"],[data-system-icon="helpFolder"],[data-system-icon="importUtility"],[data-system-icon="controlPanel"],[data-system-icon="chooser"],[data-system-icon="systemHelp"],[data-system-icon="dictionary"],[data-system-icon="teachText"],[data-system-icon="writingDemo"],[data-system-icon="chatFile"],[data-system-icon="chatImport"],[data-system-icon="systemStatus"],[data-system-icon="contextPanel"],[data-system-icon="rebuildArticle"],[data-system-icon="bureaucracyMeme"],[data-system-icon="endfieldTerminal"],[data-system-icon="documents"],[data-system-icon="alias"],[data-system-icon="systemFile"],[data-system-icon="multiFinderApp"],[data-system-icon="daHandler"],[data-system-icon="writingBell"],[data-system-icon="trashFull"], [data-system-icon="control"]) {
+/* Yosemite icon family: independent OS X 10.10 object geometry with flat
+   Retina fills, steel-blue hairlines, shallow gradients, and no inherited
+   Liquid Glass composition. Menus and the control strip retain compact inline
+   glyphs; Finder and application objects use this complete asset family. */
+body[data-theme="yosemite"] .sys-icon[data-system-icon]:not(:where([data-system-icon="play"], [data-system-icon="pause"], [data-system-icon="previousTrack"], [data-system-icon="nextTrack"], [data-system-icon="shuffleTracks"], [data-system-icon="repeatTracks"], [data-system-icon="speaker"])) {
   border: 0;
   border-radius: 0;
   background-color: transparent;
@@ -913,220 +890,220 @@ body.use-liquid-glass[data-theme="yosemite"] .sys-icon:is([data-system-icon="sta
   padding: 0;
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="startupDisk"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="startupDisk"] {
   --yosemite-icon: url("./assets/themes/yosemite/startup-disk-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="hardDisk"] {
-  --yosemite-icon: url("./assets/themes/yosemite/startup-disk-32.svg");
+body[data-theme="yosemite"] .sys-icon[data-system-icon="hardDisk"] {
+  --yosemite-icon: url("./assets/themes/yosemite/hardDisk-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="folder"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="folder"] {
   --yosemite-icon: url("./assets/themes/yosemite/folder-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="document"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="document"] {
   --yosemite-icon: url("./assets/themes/yosemite/document-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="applications"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="applications"] {
   --yosemite-icon: url("./assets/themes/yosemite/applications-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="trash"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="trash"] {
   --yosemite-icon: url("./assets/themes/yosemite/trash-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="trashFull"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="trashFull"] {
   --yosemite-icon: url("./assets/themes/yosemite/trashFull-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="finderApp"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="finderApp"] {
   --yosemite-icon: url("./assets/themes/yosemite/finder-app-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="fileFloppy"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="fileFloppy"] {
   --yosemite-icon: url("./assets/themes/yosemite/fileFloppy-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="assistant"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="assistant"] {
   --yosemite-icon: url("./assets/themes/yosemite/assistant-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="quickDraft"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="quickDraft"] {
   --yosemite-icon: url("./assets/themes/yosemite/quickDraft-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="writingStudio"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="writingStudio"] {
   --yosemite-icon: url("./assets/themes/yosemite/writingStudio-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="projectDisk"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="projectDisk"] {
   --yosemite-icon: url("./assets/themes/yosemite/projectDisk-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="projectDisc"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="projectDisc"] {
   --yosemite-icon: url("./assets/themes/yosemite/projectDisc-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="cloudModel"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="cloudModel"] {
   --yosemite-icon: url("./assets/themes/yosemite/cloudModel-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="cloudModelOff"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="cloudModelOff"] {
   --yosemite-icon: url("./assets/themes/yosemite/cloudModelOff-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="questionSheet"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="questionSheet"] {
   --yosemite-icon: url("./assets/themes/yosemite/questionSheet-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="outline"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="outline"] {
   --yosemite-icon: url("./assets/themes/yosemite/outline-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="sectionDrafts"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="sectionDrafts"] {
   --yosemite-icon: url("./assets/themes/yosemite/sectionDrafts-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="manuscript"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="manuscript"] {
   --yosemite-icon: url("./assets/themes/yosemite/manuscript-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="reviewDesk"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="reviewDesk"] {
   --yosemite-icon: url("./assets/themes/yosemite/reviewDesk-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="searcher"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="searcher"] {
   --yosemite-icon: url("./assets/themes/yosemite/searcher-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="reader"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="reader"] {
   --yosemite-icon: url("./assets/themes/yosemite/reader-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="timeMachine"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="timeMachine"] {
   --yosemite-icon: url("./assets/themes/yosemite/timeMachine-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="docMap"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="docMap"] {
   --yosemite-icon: url("./assets/themes/yosemite/docMap-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="clioStage"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="clioStage"] {
   --yosemite-icon: url("./assets/themes/yosemite/clioStage-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="clioChart"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="clioChart"] {
   --yosemite-icon: url("./assets/themes/yosemite/clioChart-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="liquidCover"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="liquidCover"] {
   --yosemite-icon: url("./assets/themes/yosemite/liquidCover-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="cmfStudio"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="cmfStudio"] {
   --yosemite-icon: url("./assets/themes/yosemite/cmfStudio-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="soundscape"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="soundscape"] {
   --yosemite-icon: url("./assets/themes/yosemite/soundscape-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="scrapbook"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="scrapbook"] {
   --yosemite-icon: url("./assets/themes/yosemite/scrapbook-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="systemFolder"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="systemFolder"] {
   --yosemite-icon: url("./assets/themes/yosemite/systemFolder-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="helpFolder"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="helpFolder"] {
   --yosemite-icon: url("./assets/themes/yosemite/helpFolder-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="importUtility"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="importUtility"] {
   --yosemite-icon: url("./assets/themes/yosemite/importUtility-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="controlPanel"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="controlPanel"] {
   --yosemite-icon: url("./assets/themes/yosemite/controlPanel-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="chooser"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="chooser"] {
   --yosemite-icon: url("./assets/themes/yosemite/chooser-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="systemHelp"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="systemHelp"] {
   --yosemite-icon: url("./assets/themes/yosemite/systemHelp-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="dictionary"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="dictionary"] {
   --yosemite-icon: url("./assets/themes/yosemite/dictionary-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="teachText"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="teachText"] {
   --yosemite-icon: url("./assets/themes/yosemite/teachText-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="writingDemo"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="writingDemo"] {
   --yosemite-icon: url("./assets/themes/yosemite/writingDemo-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="chatFile"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="chatFile"] {
   --yosemite-icon: url("./assets/themes/yosemite/chatFile-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="chatImport"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="chatImport"] {
   --yosemite-icon: url("./assets/themes/yosemite/chatImport-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="systemStatus"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="systemStatus"] {
   --yosemite-icon: url("./assets/themes/yosemite/systemStatus-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="contextPanel"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="contextPanel"] {
   --yosemite-icon: url("./assets/themes/yosemite/contextPanel-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="rebuildArticle"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="rebuildArticle"] {
   --yosemite-icon: url("./assets/themes/yosemite/rebuildArticle-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="bureaucracyMeme"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="bureaucracyMeme"] {
   --yosemite-icon: url("./assets/themes/yosemite/bureaucracyMeme-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="endfieldTerminal"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="endfieldTerminal"] {
   --yosemite-icon: url("./assets/themes/yosemite/endfieldTerminal-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="documents"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="documents"] {
   --yosemite-icon: url("./assets/themes/yosemite/documents-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="alias"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="alias"] {
   --yosemite-icon: url("./assets/themes/yosemite/alias-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="systemFile"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="systemFile"] {
   --yosemite-icon: url("./assets/themes/yosemite/systemFile-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="multiFinderApp"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="multiFinderApp"] {
   --yosemite-icon: url("./assets/themes/yosemite/multiFinderApp-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="daHandler"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="daHandler"] {
   --yosemite-icon: url("./assets/themes/yosemite/daHandler-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="writingBell"] {
+body[data-theme="yosemite"] .sys-icon[data-system-icon="writingBell"] {
   --yosemite-icon: url("./assets/themes/yosemite/writingBell-32.svg");
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="control"] {
-  --yosemite-icon: url("./assets/themes/yosemite/controlPanel-32.svg");
+body[data-theme="yosemite"] .sys-icon[data-system-icon="control"] {
+  --yosemite-icon: url("./assets/themes/yosemite/control-32.svg");
 }
 
 /* Liquid Glass's selected/hover icon resets use the `background` shorthand at
@@ -1134,7 +1111,7 @@ body.use-liquid-glass[data-theme="yosemite"] .sys-icon[data-system-icon="control
    the flat Yosemite art on selected Finder items and hovered desktop icons.
    The per-icon image travels in --yosemite-icon, so this context rule can
    re-assert it without duplicating every URL. */
-body.use-liquid-glass[data-theme="yosemite"] :is(
+body[data-theme="yosemite"] :is(
   .finder-item.is-selected,
   .desktop-icon:is(:hover, :focus-visible, .is-selected),
   .spine-actions button:is(:hover, :focus-visible, .is-selected)
@@ -1156,7 +1133,7 @@ body.use-liquid-glass[data-theme="yosemite"] :is(
    shadow and blue ring. This recipe mirrors those guards and adds the
    data-theme-family attribute to win the cascade without touching the
    Liquid Glass skin (its own desktop-icon hover recipe keeps working there). */
-body.use-liquid-glass[data-theme="yosemite"][data-theme-family="liquid-glass"] :is(
+body[data-theme="yosemite"] :is(
   .desktop-icon,
   .spine-actions button
 ):is(:hover, :focus-visible, .is-selected):not(:disabled):not(.is-disabled):not(.is-active):not(.is-multi-selected):not(.tdi-tab-close):not(.tdi-stack-open):not(.tdi-stack-close):not(.view-switch-option):not(.system-help-related-link) {
@@ -1168,7 +1145,7 @@ body.use-liquid-glass[data-theme="yosemite"][data-theme-family="liquid-glass"] :
   outline: 0;
 }
 
-body.use-liquid-glass[data-theme="yosemite"][data-theme-family="liquid-glass"] .finder-item:is(:hover, :focus-visible):not(:disabled):not(.is-disabled):not(.is-active):not(.is-multi-selected):not(.tdi-tab-close):not(.tdi-stack-open):not(.tdi-stack-close):not(.view-switch-option):not(.system-help-related-link) {
+body[data-theme="yosemite"] .finder-item:is(:hover, :focus-visible):not(:disabled):not(.is-disabled):not(.is-active):not(.is-multi-selected):not(.tdi-tab-close):not(.tdi-stack-open):not(.tdi-stack-close):not(.view-switch-option):not(.system-help-related-link) {
   background: rgba(0, 0, 0, 0.1);
   border-radius: 6px;
   box-shadow: none;
@@ -1179,32 +1156,32 @@ body.use-liquid-glass[data-theme="yosemite"][data-theme-family="liquid-glass"] .
 
 /* The System 6 label inversion (black pill + light text) is not 10.10:
    hovered/selected desktop labels keep dark text on the gray selection. */
-body.use-liquid-glass[data-theme="yosemite"] .desktop-icon:is(:hover, :focus-visible, .is-selected) span:last-child {
+body[data-theme="yosemite"] .desktop-icon:is(:hover, :focus-visible, .is-selected) span:last-child {
   background: transparent;
   color: var(--ink);
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .sys-icon:is([data-system-icon="startupDisk"],[data-system-icon="hardDisk"],[data-system-icon="folder"],[data-system-icon="document"],[data-system-icon="applications"],[data-system-icon="trash"],[data-system-icon="finderApp"],[data-system-icon="fileFloppy"],[data-system-icon="assistant"],[data-system-icon="quickDraft"],[data-system-icon="writingStudio"],[data-system-icon="projectDisk"],[data-system-icon="projectDisc"],[data-system-icon="cloudModel"],[data-system-icon="cloudModelOff"],[data-system-icon="questionSheet"],[data-system-icon="outline"],[data-system-icon="sectionDrafts"],[data-system-icon="manuscript"],[data-system-icon="reviewDesk"],[data-system-icon="searcher"],[data-system-icon="reader"],[data-system-icon="timeMachine"],[data-system-icon="docMap"],[data-system-icon="clioStage"],[data-system-icon="clioChart"],[data-system-icon="liquidCover"],[data-system-icon="cmfStudio"],[data-system-icon="soundscape"],[data-system-icon="scrapbook"],[data-system-icon="systemFolder"],[data-system-icon="helpFolder"],[data-system-icon="importUtility"],[data-system-icon="controlPanel"],[data-system-icon="chooser"],[data-system-icon="systemHelp"],[data-system-icon="dictionary"],[data-system-icon="teachText"],[data-system-icon="writingDemo"],[data-system-icon="chatFile"],[data-system-icon="chatImport"],[data-system-icon="systemStatus"],[data-system-icon="contextPanel"],[data-system-icon="rebuildArticle"],[data-system-icon="bureaucracyMeme"],[data-system-icon="endfieldTerminal"],[data-system-icon="documents"],[data-system-icon="alias"],[data-system-icon="systemFile"],[data-system-icon="multiFinderApp"],[data-system-icon="daHandler"],[data-system-icon="writingBell"],[data-system-icon="trashFull"], [data-system-icon="control"]) .sys-icon-svg {
+body[data-theme="yosemite"] .sys-icon[data-system-icon]:not(:where([data-system-icon="play"], [data-system-icon="pause"], [data-system-icon="previousTrack"], [data-system-icon="nextTrack"], [data-system-icon="shuffleTracks"], [data-system-icon="repeatTracks"], [data-system-icon="speaker"])) .sys-icon-svg {
   display: none;
 }
 
 /* Menus and the control strip keep the light inline glyph: full-color
    desktop art would read oversized in the 16-20px menu rows. */
-body.use-liquid-glass[data-theme="yosemite"] :is(.menu-bar, .control-strip) .sys-icon {
+body[data-theme="yosemite"] :is(.menu-bar, .control-strip) .sys-icon {
   background-color: transparent;
   background-image: none;
   filter: none;
 }
 
-body.use-liquid-glass[data-theme="yosemite"] :is(.menu-bar, .control-strip) .sys-icon .sys-icon-svg {
+body[data-theme="yosemite"] :is(.menu-bar, .control-strip) .sys-icon .sys-icon-svg {
   display: block;
 }
 
-body.use-liquid-glass[data-theme="yosemite"] :is(.menu-bar, .control-strip) .sys-icon .sys-icon-svg .sys-icon-classic {
+body[data-theme="yosemite"] :is(.menu-bar, .control-strip) .sys-icon .sys-icon-svg .sys-icon-classic {
   display: block;
 }
 
-body.use-liquid-glass[data-theme="yosemite"] :is(.menu-bar, .control-strip) .sys-icon .sys-icon-svg .sys-icon-liquid {
+body[data-theme="yosemite"] :is(.menu-bar, .control-strip) .sys-icon .sys-icon-svg .sys-icon-liquid {
   display: none;
 }
 
@@ -1217,7 +1194,7 @@ body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) .desktop
 }
 
 html[data-theme="yosemite"],
-body.use-liquid-glass[data-theme="yosemite"] {
+body[data-theme="yosemite"] {
   /* Evidence boundary: vinceliuice/Yosemite-gtk-theme 03b6f721 provides the
      surface hierarchy, 36/26/22px control relationships, #0e6bff selection,
      6/5px radii and active/backdrop states. Period pure-CSS window studies
@@ -1465,6 +1442,11 @@ body.use-liquid-glass[data-theme="yosemite"] {
   --btn-default-shadow: 0 1px 1px rgba(19, 71, 132, 0.06), 0 1px 2px rgba(19, 71, 132, 0.02);
   --btn-default-active-bg: #1c6bc7;
   --btn-default-active-fg: #ffffff;
+  /* 10.10 suggested-action hover: GTK 03b6f721 gtk-light.css pins
+     button.suggested-action:hover background-color #619fe8 (lighter than the
+     resting #3484e2, darker than nothing — the blue button never turns white). */
+  --btn-default-hover-bg: #619fe8;
+  --btn-default-hover-fg: #ffffff;
   --field-bg: #ffffff;
   --field-focus-bg: #ffffff;
   /* gtk-light.css entry: 1px rgba(0,0,0,0.11) border, outer drop shadows and
@@ -1721,7 +1703,7 @@ body[data-theme="platinum"] :is(.close-box, .resize-box):active::before {
    grooves (measured from the GUIdebook Finder capture, ~12x14 art in the
    16px corner lane). This replaces the System 6 double-square hairline icon:
    the two eras are a decade apart and share no resize-control grammar. */
-body[data-theme="platinum"] .grow-box {
+body[data-theme-family="classic"]:not([data-theme="classic"]) .grow-box {
   background:
     repeating-linear-gradient(
       to bottom right,
@@ -1734,7 +1716,7 @@ body[data-theme="platinum"] .grow-box {
   cursor: se-resize;
 }
 
-body[data-theme="platinum"] .window:not(.is-active) .grow-box {
+body[data-theme-family="classic"]:not([data-theme="classic"]) .window:not(.is-active) .grow-box {
   /* The corner cell stays (the scrollbar lanes end there); only the icon
      goes away on a background window, exactly like Mac OS 9. */
   background-image: none;
@@ -1924,7 +1906,7 @@ body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) .system-
    sidebar loses its blur and returns to a solid material. (512 Pixels
    Yosemite review: only the frontmost window lets content show through.) */
 html[data-theme="yosemite"] .theme-lab-generic-browser.is-inactive .theme-lab-sidebar,
-body.use-liquid-glass[data-theme="yosemite"] .theme-lab-generic-browser.is-inactive .theme-lab-sidebar {
+body[data-theme="yosemite"] .theme-lab-generic-browser.is-inactive .theme-lab-sidebar {
   --sidebar-backdrop-filter: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
@@ -1987,7 +1969,10 @@ body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) :where(
   input[type="number"]
 )  {
 
-  min-height: var(--system-control-min-height);
+  /* Single-line controls keep the shared 22px control minimum from the base
+     rule; textareas stay content-sized so app-owned transcript/editor
+     min-heights (dictation 84px, translation pad 118px, rebuild 180px) win
+     again instead of collapsing to a field row height. */
   padding: var(--field-control-padding);
   border: var(--field-border);
   border-radius: var(--field-radius);
@@ -1996,6 +1981,15 @@ body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) :where(
   font-family: var(--theme-ui-font);
   font-size: var(--system-control-size);
 
+}
+
+/* The generic .btn:hover recipe repaints the blue 10.10 default button to the
+   white regular-button hover. A default action button stays blue: rest
+   #3484e2, hover #619fe8, pressed #1c6bc7 (GTK 03b6f721 gtk-light.css
+   button.suggested-action). */
+body[data-theme="yosemite"] .btn.default:hover:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected) {
+  background: var(--btn-default-hover-bg);
+  color: var(--btn-default-hover-fg);
 }
 
 
@@ -2050,21 +2044,21 @@ body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) .theme-l
 
 /* Yosemite is expressed as a restrained delta from the Liquid Glass lineage:
    one fused header material, thin controls, and bounded early vibrancy. */
-body.use-liquid-glass[data-theme="yosemite"] .window > .title-bar {
+body[data-theme="yosemite"] .window > .title-bar {
   grid-template-columns:
     var(--system-titlebar-control-slot)
     minmax(0, 1fr)
     var(--system-titlebar-control-slot);
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .window > .title-bar :is(h1, h2) {
+body[data-theme="yosemite"] .window > .title-bar :is(h1, h2) {
   padding-inline: 8px;
   font-weight: 500;
   letter-spacing: 0;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.66);
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .title-bar > :is(.close-box, .resize-box) {
+body[data-theme="yosemite"] .title-bar > :is(.close-box, .resize-box) {
   width: 12px;
   height: 12px;
   margin: 0;
@@ -2074,35 +2068,35 @@ body.use-liquid-glass[data-theme="yosemite"] .title-bar > :is(.close-box, .resiz
   filter: none;
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .title-bar > .close-box {
+body[data-theme="yosemite"] .title-bar > .close-box {
   grid-column: 1;
   justify-self: start;
   background: var(--traffic-light-close-bg) center / 12px 12px no-repeat;
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .title-bar > .resize-box {
+body[data-theme="yosemite"] .title-bar > .resize-box {
   grid-column: 3;
   justify-self: end;
   transform: none;
   background: var(--traffic-light-resize-bg) center / 12px 12px no-repeat;
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .title-bar > :is(.close-box, .resize-box)::before,
-body.use-liquid-glass[data-theme="yosemite"] .title-bar > .close-box::after {
+body[data-theme="yosemite"] .title-bar > :is(.close-box, .resize-box)::before,
+body[data-theme="yosemite"] .title-bar > .close-box::after {
   content: none;
 }
 
 /* Real 10.10 hover: the lamp deepens and draws its dark symbol (× on close,
    + on zoom) only while the pointer is over it. */
-body.use-liquid-glass[data-theme="yosemite"] .title-bar > .close-box:hover {
+body[data-theme="yosemite"] .title-bar > .close-box:hover {
   background: var(--traffic-light-close-hover-bg) center / 12px 12px no-repeat;
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .title-bar > .resize-box:hover {
+body[data-theme="yosemite"] .title-bar > .resize-box:hover {
   background: var(--traffic-light-resize-hover-bg) center / 12px 12px no-repeat;
 }
 
-body.use-liquid-glass[data-theme="yosemite"] select:not([multiple]) {
+body[data-theme="yosemite"] select:not([multiple]) {
   min-height: 24px;
   padding: 2px 25px 2px 8px;
   border: var(--field-border);
@@ -2119,13 +2113,13 @@ body.use-liquid-glass[data-theme="yosemite"] select:not([multiple]) {
   font-size: var(--system-control-size);
 }
 
-body.use-liquid-glass[data-theme="yosemite"] :is(select, input, .system-select-button):disabled {
+body[data-theme="yosemite"] :is(select, input, .system-select-button):disabled {
   color: #a0a0a0;
   background-color: #f1f1f1;
   opacity: 0.66;
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .theme-lab-form-grid input[type="search"] {
+body[data-theme="yosemite"] .theme-lab-form-grid input[type="search"] {
   appearance: none;
   -webkit-appearance: none;
   min-height: var(--search-field-min-height);
@@ -2137,12 +2131,12 @@ body.use-liquid-glass[data-theme="yosemite"] .theme-lab-form-grid input[type="se
 /* 10.10 non-frontmost windows: the fused titlebar/toolbar falls back to the
    flat inactive material and the traffic lights lose their saturation.
    (512 Pixels captures show the inactive chrome as a flat light gray.) */
-body.use-liquid-glass[data-theme="yosemite"] .theme-lab-finder-window.is-inactive .theme-lab-finder-window-titlebar {
+body[data-theme="yosemite"] .theme-lab-finder-window.is-inactive .theme-lab-finder-window-titlebar {
   background: var(--system-titlebar-inactive-bg);
   box-shadow: none;
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .theme-lab-finder-window.is-inactive .theme-lab-finder-window-titlebar > i {
+body[data-theme="yosemite"] .theme-lab-finder-window.is-inactive .theme-lab-finder-window-titlebar > i {
   filter: grayscale(1);
   opacity: 0.5;
 }
@@ -2151,7 +2145,7 @@ body.use-liquid-glass[data-theme="yosemite"] .theme-lab-finder-window.is-inactiv
    edge gesture, and the corner is plain window edge. The generic Liquid Glass
    skin draws a rounded-corner handle here (the later iPadOS-era affordance);
    Yosemite keeps the drag target but paints nothing. */
-body.use-liquid-glass[data-theme="yosemite"] .grow-box {
+body[data-theme="yosemite"] .grow-box {
   width: 10px;
   height: 10px;
   background: transparent;
@@ -2159,28 +2153,28 @@ body.use-liquid-glass[data-theme="yosemite"] .grow-box {
   cursor: se-resize;
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .grow-box::before {
+body[data-theme="yosemite"] .grow-box::before {
   content: none;
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .grow-box:hover,
-body.use-liquid-glass[data-theme="yosemite"] .grow-box:focus,
-body.use-liquid-glass[data-theme="yosemite"] .grow-box:focus-visible {
+body[data-theme="yosemite"] .grow-box:hover,
+body[data-theme="yosemite"] .grow-box:focus,
+body[data-theme="yosemite"] .grow-box:focus-visible {
   background: transparent;
   outline: 0;
   box-shadow: none;
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .grow-box:hover::before,
-body.use-liquid-glass[data-theme="yosemite"] .grow-box:focus::before,
-body.use-liquid-glass[data-theme="yosemite"] .grow-box:focus-visible::before {
+body[data-theme="yosemite"] .grow-box:hover::before,
+body[data-theme="yosemite"] .grow-box:focus::before,
+body[data-theme="yosemite"] .grow-box:focus-visible::before {
   border-color: transparent;
 }
 
 /* Yosemite titlebar chrome is solid: the generic Liquid Glass skin blurs the
    title bar, but 10.10 keeps a flat gradient (毛玻璃 applies only to the
    sidebar and menus). */
-body.use-liquid-glass[data-theme="yosemite"] .window > .title-bar {
+body[data-theme="yosemite"] .window > .title-bar {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
@@ -2188,35 +2182,35 @@ body.use-liquid-glass[data-theme="yosemite"] .window > .title-bar {
 /* Theme Lab Finder titlebar: red and yellow traffic lights sit left, the
    green zoom light sits right of the title — the project's fixed titlebar
    constraint. */
-body.use-liquid-glass[data-theme="yosemite"] .theme-lab-finder-window-titlebar > i.is-close {
+body[data-theme="yosemite"] .theme-lab-finder-window-titlebar > i.is-close {
   left: 7px;
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .theme-lab-finder-window-titlebar > i.is-minimize {
+body[data-theme="yosemite"] .theme-lab-finder-window-titlebar > i.is-minimize {
   left: 28px;
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .theme-lab-finder-window-titlebar > i.is-zoom {
+body[data-theme="yosemite"] .theme-lab-finder-window-titlebar > i.is-zoom {
   left: auto;
   right: 7px;
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .theme-lab-finder-window:not(.is-inactive) .theme-lab-finder-window-titlebar > i.is-close:hover {
+body[data-theme="yosemite"] .theme-lab-finder-window:not(.is-inactive) .theme-lab-finder-window-titlebar > i.is-close:hover {
   background: var(--traffic-light-close-hover-bg);
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .theme-lab-finder-window:not(.is-inactive) .theme-lab-finder-window-titlebar > i.is-minimize:hover {
+body[data-theme="yosemite"] .theme-lab-finder-window:not(.is-inactive) .theme-lab-finder-window-titlebar > i.is-minimize:hover {
   background: var(--theme-lab-era-titlebar-minimize-hover-bg);
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .theme-lab-finder-window:not(.is-inactive) .theme-lab-finder-window-titlebar > i.is-zoom:hover {
+body[data-theme="yosemite"] .theme-lab-finder-window:not(.is-inactive) .theme-lab-finder-window-titlebar > i.is-zoom:hover {
   background: var(--traffic-light-resize-hover-bg);
 }
 
 /* The Finder toolbar field is a 10.10 NSSearchField, not the generic
    aqua-family text field (which wins on specificity over the theme-lab rule
    and would flatten padding and the magnifying-glass layer). */
-body.use-liquid-glass[data-theme="yosemite"] .theme-lab-toolbar-search input {
+body[data-theme="yosemite"] .theme-lab-toolbar-search input {
   appearance: none;
   -webkit-appearance: none;
   padding: var(--search-field-padding);
@@ -2227,7 +2221,7 @@ body.use-liquid-glass[data-theme="yosemite"] .theme-lab-toolbar-search input {
 /* 10.10 text fields are flat white with a hairline border and 5px radius;
    the generic Liquid Glass field recipe (12px glass pill, translucent
    gradient) must not leak into Yosemite. */
-body.use-liquid-glass[data-theme="yosemite"] .theme-lab-form-grid :where(
+body[data-theme="yosemite"] .theme-lab-form-grid :where(
   input[type="text"],
   input[type="search"],
   input[type="url"],
@@ -2244,7 +2238,7 @@ body.use-liquid-glass[data-theme="yosemite"] .theme-lab-form-grid :where(
   box-shadow: var(--field-shadow);
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .theme-lab-form-grid :where(
+body[data-theme="yosemite"] .theme-lab-form-grid :where(
   input[type="text"],
   input[type="search"]
 ):is(:focus, .theme-lab-focus-demo) {
@@ -2256,7 +2250,7 @@ body.use-liquid-glass[data-theme="yosemite"] .theme-lab-form-grid :where(
 
 /* 10.10 pressed button: blue gradient with white text (vinceliuice active
    recipe #4c97fe -> #0564e3), not the Liquid Glass white-down state. */
-body.use-liquid-glass[data-theme="yosemite"] .theme-lab-button-row .btn:is(
+body[data-theme="yosemite"] .theme-lab-button-row .btn:is(
   :active,
   .is-active
 ):not(:disabled):not(.is-disabled):not(.default) {
@@ -2274,7 +2268,7 @@ body.use-liquid-glass[data-theme="yosemite"] .theme-lab-button-row .btn:is(
    (16px frame) calibrate these recipes; the Theme Lab checkmark image is the
    two-stroke white check. State coverage: normal, checked, pressed, disabled,
    and the hover hairline from 10.10. */
-body.use-liquid-glass[data-theme="yosemite"] .theme-lab-choice-matrix :is(
+body[data-theme="yosemite"] .theme-lab-choice-matrix :is(
   input[type="checkbox"],
   input[type="radio"]
 ) {
@@ -2292,15 +2286,15 @@ body.use-liquid-glass[data-theme="yosemite"] .theme-lab-choice-matrix :is(
   box-shadow: var(--choice-shadow);
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .theme-lab-choice-matrix input[type="checkbox"] {
+body[data-theme="yosemite"] .theme-lab-choice-matrix input[type="checkbox"] {
   border-radius: var(--choice-radius);
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .theme-lab-choice-matrix input[type="radio"] {
+body[data-theme="yosemite"] .theme-lab-choice-matrix input[type="radio"] {
   border-radius: 50%;
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .theme-lab-choice-matrix input[type="checkbox"]:checked {
+body[data-theme="yosemite"] .theme-lab-choice-matrix input[type="checkbox"]:checked {
   border-color: transparent;
   background-color: var(--choice-checked-bg);
   background-image:
@@ -2309,14 +2303,14 @@ body.use-liquid-glass[data-theme="yosemite"] .theme-lab-choice-matrix input[type
   box-shadow: none;
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .theme-lab-choice-matrix input[type="radio"]:checked {
+body[data-theme="yosemite"] .theme-lab-choice-matrix input[type="radio"]:checked {
   border-color: #8f99ac;
   background-color: var(--choice-checked-bg);
   background-image: var(--theme-lab-radio-checked-bg, var(--radio-checked-image));
   box-shadow: var(--radio-shadow);
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .theme-lab-choice-matrix input[type="checkbox"]:is(:active, .is-active):not(:disabled) {
+body[data-theme="yosemite"] .theme-lab-choice-matrix input[type="checkbox"]:is(:active, .is-active):not(:disabled) {
   background-color: var(--theme-lab-checkbox-active-bg, var(--choice-checked-bg));
   background-image:
     var(--theme-lab-checkbox-checkmark-image, var(--choice-checkmark-image)),
@@ -2324,13 +2318,13 @@ body.use-liquid-glass[data-theme="yosemite"] .theme-lab-choice-matrix input[type
   box-shadow: var(--control-active-shadow);
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .theme-lab-choice-matrix input[type="radio"]:is(:active, .is-active):not(:disabled) {
+body[data-theme="yosemite"] .theme-lab-choice-matrix input[type="radio"]:is(:active, .is-active):not(:disabled) {
   background-color: var(--theme-lab-checkbox-active-bg, var(--choice-checked-bg));
   background-image: var(--theme-lab-radio-checked-bg, var(--radio-checked-image));
   box-shadow: var(--control-active-shadow);
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .theme-lab-choice-matrix :is(
+body[data-theme="yosemite"] .theme-lab-choice-matrix :is(
   input[type="checkbox"],
   input[type="radio"]
 ):disabled {
@@ -2339,16 +2333,16 @@ body.use-liquid-glass[data-theme="yosemite"] .theme-lab-choice-matrix :is(
   opacity: var(--control-disabled-opacity, 0.56);
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .theme-lab-menu {
+body[data-theme="yosemite"] .theme-lab-menu {
   padding-block: 10px;
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .theme-lab-split-view {
+body[data-theme="yosemite"] .theme-lab-split-view {
   background: var(--desktop-surface);
   background-size: cover;
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .theme-lab-progress {
+body[data-theme="yosemite"] .theme-lab-progress {
   height: 12px;
   padding: 1px;
   border-color: rgba(0, 0, 0, 0.18);
@@ -2356,19 +2350,19 @@ body.use-liquid-glass[data-theme="yosemite"] .theme-lab-progress {
   background: #e5e5e5;
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .theme-lab-progress span {
+body[data-theme="yosemite"] .theme-lab-progress span {
   border-radius: 5px;
   background: linear-gradient(#4c97fe, #0564e3);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26);
 }
 
-body.use-liquid-glass[data-theme="yosemite"] .theme-lab-scroll::-webkit-scrollbar-thumb {
+body[data-theme="yosemite"] .theme-lab-scroll::-webkit-scrollbar-thumb {
   background-clip: content-box;
 }
 
 @media (prefers-reduced-transparency: reduce) {
   html[data-theme="yosemite"],
-  body.use-liquid-glass[data-theme="yosemite"] {
+  body[data-theme="yosemite"] {
     --window-bg: #f2f3f4;
     --menu-panel-bg: #f5f6f7;
     --sidebar-bg: #dfe4e8;
@@ -2382,20 +2376,20 @@ body.use-liquid-glass[data-theme="yosemite"] .theme-lab-scroll::-webkit-scrollba
 
 
 /* Platinum/Yosemite boot/shutdown: same shared harness, era material only. */
-body[data-theme="platinum"] :is(.boot-screen, .shutdown-screen) { background: linear-gradient(180deg, #dde3ec, #c4cddb); }
-body[data-theme="platinum"] .boot-progress { border-color: #6f7b8d; background: #f4f6f9; }
-body[data-theme="platinum"] .boot-progress span { background: #6a7689; }
-body[data-theme="platinum"] .shutdown-screen { animation: platinum-boot-in .35s ease-out; }
+body[data-theme-family="classic"]:not([data-theme="classic"]) :is(.boot-screen, .shutdown-screen) { background: linear-gradient(180deg, #dde3ec, #c4cddb); }
+body[data-theme-family="classic"]:not([data-theme="classic"]) .boot-progress { border-color: #6f7b8d; background: #f4f6f9; }
+body[data-theme-family="classic"]:not([data-theme="classic"]) .boot-progress span { background: #6a7689; }
+body[data-theme-family="classic"]:not([data-theme="classic"]) .shutdown-screen { animation: platinum-boot-in .35s ease-out; }
 @keyframes platinum-boot-in { from { opacity: 0 } to { opacity: 1 } }
-body.use-liquid-glass[data-theme="yosemite"] :is(.boot-screen, .shutdown-screen) { background: linear-gradient(180deg, #242424, #0f0f0f); color: #fff; animation: yosemite-screen-in .45s ease-out; }
-body.use-liquid-glass[data-theme="yosemite"] .happy-mac { border-color: #4a4a4a; border-radius: 4px; background: #dcdcdc; box-shadow: inset 0 1px 0 #f5f5f5, 0 8px 20px rgba(0, 0, 0, 0.45); animation: yosemite-mac-in .55s ease-out both; }
-body.use-liquid-glass[data-theme="yosemite"] .happy-mac::after { border-color: #4a4a4a; background: #cfcfcf; }
-body.use-liquid-glass[data-theme="yosemite"] .happy-mac-face { border-color: #4a4a4a; background: #fafafa; }
-body.use-liquid-glass[data-theme="yosemite"] .boot-progress { border: 0; height: 6px; padding: 0; border-radius: 3px; background: rgba(255, 255, 255, 0.14); }
-body.use-liquid-glass[data-theme="yosemite"] .boot-progress span { position: relative; overflow: hidden; border-radius: 3px; background: #0a84ff; }
-body.use-liquid-glass[data-theme="yosemite"] .boot-progress span::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent); transform: translateX(-100%); animation: yosemite-progress-stripe 1.4s ease-in-out infinite; }
-body.use-liquid-glass[data-theme="yosemite"] :is(.boot-ledger, .shutdown-ledger) { border: 1px solid rgba(255, 255, 255, 0.16); background: rgba(30, 30, 33, 0.62); color: #fff; }
+body[data-theme="yosemite"] :is(.boot-screen, .shutdown-screen) { background: linear-gradient(180deg, #242424, #0f0f0f); color: #fff; animation: yosemite-screen-in .45s ease-out; }
+body[data-theme="yosemite"] .happy-mac { border-color: #4a4a4a; border-radius: 4px; background: #dcdcdc; box-shadow: inset 0 1px 0 #f5f5f5, 0 8px 20px rgba(0, 0, 0, 0.45); animation: yosemite-mac-in .55s ease-out both; }
+body[data-theme="yosemite"] .happy-mac::after { border-color: #4a4a4a; background: #cfcfcf; }
+body[data-theme="yosemite"] .happy-mac-face { border-color: #4a4a4a; background: #fafafa; }
+body[data-theme="yosemite"] .boot-progress { border: 0; height: 6px; padding: 0; border-radius: 3px; background: rgba(255, 255, 255, 0.14); }
+body[data-theme="yosemite"] .boot-progress span { position: relative; overflow: hidden; border-radius: 3px; background: #0a84ff; }
+body[data-theme="yosemite"] .boot-progress span::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent); transform: translateX(-100%); animation: yosemite-progress-stripe 1.4s ease-in-out infinite; }
+body[data-theme="yosemite"] :is(.boot-ledger, .shutdown-ledger) { border: 1px solid rgba(255, 255, 255, 0.16); background: rgba(30, 30, 33, 0.62); color: #fff; }
 @keyframes yosemite-screen-in { from { opacity: 0 } to { opacity: 1 } }
 @keyframes yosemite-mac-in { from { opacity: 0; transform: translateY(10px) scale(var(--boot-mac-scale)) } to { opacity: 1; transform: translateY(0) scale(var(--boot-mac-scale)) } }
 @keyframes yosemite-progress-stripe { from { transform: translateX(-100%) } to { transform: translateX(100%) } }
-@media (prefers-reduced-motion: reduce) { body[data-theme="platinum"] .shutdown-screen, body.use-liquid-glass[data-theme="yosemite"] :is(.boot-screen, .shutdown-screen), body.use-liquid-glass[data-theme="yosemite"] .happy-mac, body.use-liquid-glass[data-theme="yosemite"] .boot-progress span::after { animation: none } }
+@media (prefers-reduced-motion: reduce) { body[data-theme-family="classic"]:not([data-theme="classic"]) .shutdown-screen, body[data-theme="yosemite"] :is(.boot-screen, .shutdown-screen), body[data-theme="yosemite"] .happy-mac, body[data-theme="yosemite"] .boot-progress span::after { animation: none } }

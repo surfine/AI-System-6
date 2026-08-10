@@ -1,5 +1,5 @@
 <!-- canonical-source: CHANGELOG.md -->
-<!-- source-sha256: ae985c723cc942327e56d8ade95d4b79f544951a64f1aaa395bd73eaf53f9ef0 -->
+<!-- source-sha256: 51ef8495bce9ec8b65ef634d1e04a9dd20f42d6c9de706c26f9984e25dd3a8a6 -->
 
 # AI System 6 中文更新日志
 
@@ -529,6 +529,11 @@ Liquid Glass 继续作为独立材质存在，而不是被复古修正误伤。
   ready / error）只由真实事件派生，System Status 展示并支持取消与置于最前。
 - 六套外观全部发布（System 6、Platinum、Aqua、Snow Leopard、Yosemite、
   Liquid Glass）；研究开关移除，Theme Lab 移入系统文件夹。
+- 主题验收收口：修复 Aqua/Snow Leopard/Yosemite 将听写、翻译板与重建流程
+  文本域压扁成 22 px 字段行的问题（时代字段配方不再覆盖应用自有 textarea
+  最小高度）；修复 Yosemite 蓝色默认按钮悬停变白（现为 10.10 悬停蓝
+  #619fe8，已对照引用 GTK 源验证）；并将 README / README.zh-CN 同步为六套
+  正式外观。
 - 30 秒种子化演示展示来源如何变成项目硬盘里的文件，无需模型与网络。
 
 ## 一个月里真正变大的东西

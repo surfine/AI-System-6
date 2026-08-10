@@ -56,6 +56,7 @@ drafts/ui-reform-after-pareto/
 drafts/theme-lab-current/
 drafts/theme-lab-fidelity-cache/
 drafts/theme-lab-fidelity/
+drafts/appearance-app-coverage/
 # local era icon reference caches (third-party captures / scratch renders);
 # owned measurements, provenance and built icons live in assets/themes/*/icons
 drafts/snow-leopard-icon-reference/
@@ -67,8 +68,12 @@ drafts/classic-icon-references/
 # three-family coverage evidence (window sweeps, computed-style records,
 # icon-crop review sheets); owned metrics live in docs/THEME-FAMILY-REPORT.md
 drafts/theme-coverage/
+# era icon comparison/reference boards (rendered evidence, not product assets)
+drafts/era-icons/
 # local Python scratch caches
 scripts/__pycache__/
+# local personal scratch output (audit dumps, temp exports)
+private/
 # local 15MB test photo (bg-1..6 are the shipped backgrounds)
 assets/liquid-cover/test-shot.jpg
 native/nohup.out

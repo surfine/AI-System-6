@@ -1,22 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
-  <!-- 10.10 DA Handler: a control card with a pull tab, a small screen with
-       a smiling face, and a baseline — the desk-accessory manager. Same
-       card+tab identity as the Liquid Glass object, flattened. -->
-  <defs>
-    <linearGradient id="g-card" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#f2f5f9"/>
-      <stop offset="1" stop-color="#d9e1ea"/>
-    </linearGradient>
-    <linearGradient id="g-screen" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffffff"/>
-      <stop offset="1" stop-color="#e9eef4"/>
-    </linearGradient>
-  </defs>
-  <path d="M7 9h18v18a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9z" fill="url(#g-card)" stroke="#8d9aab" stroke-width="1"/>
-  <path d="M12 9V6.5h8V9z" fill="#dde5ee" stroke="#8d9aab" stroke-width="1"/>
-  <rect x="10" y="13" width="12" height="8.5" rx="1.5" fill="url(#g-screen)" stroke="#93a3b5" stroke-width="0.9"/>
-  <circle cx="13.5" cy="16" r="0.9" fill="#3e7cc4"/>
-  <circle cx="18.5" cy="16" r="0.9" fill="#3e7cc4"/>
-  <path d="M12.8 18.6c1.7 1.5 4.7 1.5 6.4 0" fill="none" stroke="#3e7cc4" stroke-width="1.1" stroke-linecap="round"/>
-  <path d="M10 24.5h12" stroke="#7f93ab" stroke-width="0.9" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
+<defs>
+      <linearGradient id="body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9efff"/><stop offset="1" stop-color="#75b9ec"/></linearGradient>
+      <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#eef3f7"/></linearGradient>
+      <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7fafc"/><stop offset="1" stop-color="#b7c3cf"/></linearGradient>
+    </defs>
+<path d="M7 20h50v35H7z" fill="#8eb7d3" stroke="#789bb9" stroke-width="1.35"/><path d="M21 20v-8h22v8M7 34h50" fill="none" stroke="#789bb9" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"/><rect x="28" y="31" width="8" height="8" rx="1" fill="#e7eef4" stroke="#789bb9" stroke-width="1.35"/><rect x="23" y="29" width="18" height="17" fill="#ffffff" stroke="#2e7fcb" stroke-width="1.7"/><path d="M27 26h10v5H27zM27 34h10M27 38h7M27 42h9" fill="none" stroke="#35516c" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

@@ -1,16 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
-  <!-- 10.10 DocMap: document with a branching map (three nodes + links). -->
-  <defs>
-    <linearGradient id="g-page" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffffff"/>
-      <stop offset="1" stop-color="#eef2f7"/>
-    </linearGradient>
-  </defs>
-  <path d="M6 3h13v5h7v19a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V3z" fill="url(#g-page)" stroke="#9db1c8" stroke-width="1"/>
-  <path d="M19 3h7v5h-7z" fill="#e8eef6" stroke="#9db1c8" stroke-width="1"/>
-  <circle cx="10" cy="14" r="2" fill="#3e7cc4"/>
-  <circle cx="17" cy="10.5" r="1.6" fill="#7f93ab"/>
-  <circle cx="17" cy="17.5" r="1.6" fill="#7f93ab"/>
-  <circle cx="23" cy="14" r="1.6" fill="#a7b6c8"/>
-  <path d="M11.6 14.8l3.8-3M11.6 14.8l3.8 2.5M18.6 10.5l3 3M18.6 17.5l3-3" fill="none" stroke="#93a3b5" stroke-width="0.9"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
+<defs>
+      <linearGradient id="body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9efff"/><stop offset="1" stop-color="#75b9ec"/></linearGradient>
+      <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#eef3f7"/></linearGradient>
+      <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7fafc"/><stop offset="1" stop-color="#b7c3cf"/></linearGradient>
+    </defs>
+<path d="M5 17l17-8 20 7 17-8v39l-17 8-20-7-17 8zM22 9v39M42 16v39" fill="#f1f2dd" stroke="#789bb9" stroke-width="1.35" stroke-linejoin="round"/><path d="M20 30l8-4 8 4 8-4v20l-8 4-8-4-8 4zM28 26v20M36 30v20" fill="#ffffff" stroke="#2e7fcb" stroke-width="1.7"/>
 </svg>

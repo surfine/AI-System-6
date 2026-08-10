@@ -147,18 +147,67 @@ test.assert(byOutput.length === 1 && byOutput[0].id === created2.receiptId, "out
 const foreignProject = api2.queryReceipts({ projectId: "project-other", limit: 10 });
 test.assert(foreignProject.length === 0, "receipts never leak across projects");
 
+// Provenance vocabulary: input vs affected vs output are distinct. A review
+// that only inspects a manuscript must never claim the manuscript as output.
+const provenanceCtx = createReceiptsContext();
+const provenanceApi = provenanceCtx.context.window.AISystem6RunReceipts;
+const reviewed = await provenanceApi.createReceipt({
+  sourceAppId: "reviewDesk",
+  intent: "review",
+  inputObjectIds: ["manuscript-1"],
+});
+await provenanceApi.finishReceipt(reviewed.receiptId, {
+  status: "completed",
+  affectedObjectIds: ["manuscript-1"],
+});
+const reviewedRecord = provenanceCtx.chatFiles.find((file) => file.id === reviewed.receiptId).runReceipt;
+test.assert(
+  reviewedRecord.outputObjectIds.length === 0 && !reviewedRecord.outputObjectIds.includes("manuscript-1"),
+  "an inspected manuscript is not recorded as produced output"
+);
+test.assert(
+  reviewedRecord.affectedObjectIds.includes("manuscript-1") && reviewedRecord.inputObjectIds.includes("manuscript-1"),
+  "an inspected manuscript is recorded as input and affected, not output"
+);
+test.assert(
+  provenanceApi.queryReceiptsByOutput("manuscript-1").length === 0,
+  "Get Info Produced-by finds nothing for an inspected-only manuscript"
+);
+const produced = await provenanceApi.createReceipt({
+  sourceAppId: "projectCd",
+  intent: "attach",
+  inputObjectIds: ["manuscript-1"],
+});
+await provenanceApi.finishReceipt(produced.receiptId, { status: "completed", outputObjectIds: ["cd-item-1"] });
+test.assert(
+  provenanceApi.queryReceiptsByOutput("cd-item-1").length === 1,
+  "a durable artifact is traced back to its producing receipt"
+);
+
+// Model/provider honesty: the receipt records only what the runtime actually
+// resolved and wrote via updateReceipt; it never guesses the active model.
+const modelCtx = createReceiptsContext();
+const modelApi = modelCtx.context.window.AISystem6RunReceipts;
+const modelRun = await modelApi.createReceipt({ sourceAppId: "docMap", intent: "map", inputObjectIds: ["file-2"] });
+let modelRecord = modelCtx.chatFiles.find((file) => file.id === modelRun.receiptId).runReceipt;
+test.assert(modelRecord.model === "" && modelRecord.provider === "", "a receipt starts with no guessed model or provider");
+await modelApi.updateReceipt(modelRun.receiptId, { provider: "local", model: "foo" });
+modelRecord = modelCtx.chatFiles.find((file) => file.id === modelRun.receiptId).runReceipt;
+test.assert(modelRecord.model === "foo" && modelRecord.provider === "local", "updateReceipt records the model the runtime actually used");
+const noModelRun = await modelApi.createReceipt({ sourceAppId: "clioStage", intent: "present", inputObjectIds: [] });
+const noModelRecord = modelCtx.chatFiles.find((file) => file.id === noModelRun.receiptId).runReceipt;
+test.assert(noModelRecord.model === "" && noModelRecord.provider === "", "an operation that never resolves a model stays unclaimed");
+
 // Reload recovery: a fresh module instance over the same backing store can
 // still read receipts written before the reload.
 const reloaded = createReceiptsContext({ chatFiles: second.chatFiles });
 const afterReload = reloaded.context.window.AISystem6RunReceipts.queryReceipts({ projectId: "project-1", limit: 10, includeRunning: true });
 test.assert(afterReload.length === 2, "receipts survive a reload of the runtime");
 
-// Backup -> restore keeps the records and their relationships.
-const backup = structuredClone(second.chatFiles);
-second.chatFiles.splice(0, second.chatFiles.length);
-second.chatFiles.push(...structuredClone(backup));
-const afterRestore = second.context.window.AISystem6RunReceipts.queryReceiptsByOutput("file-2");
-test.assert(afterRestore.length === 1, "receipts and output relations survive backup -> restore");
+// Backup -> restore identity remapping is covered by the real remapBackup()
+// fixture in project-backup-integrity.test.mjs. A structuredClone round-trip
+// here would fake a restore without the id remap and assert nothing real, so
+// it is intentionally not repeated in this module.
 
 // Privacy: the serialized receipt and its body never contain secrets.
 const serialized = JSON.stringify(second.chatFiles);

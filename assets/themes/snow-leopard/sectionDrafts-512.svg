@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
+<defs>
+      <linearGradient id="body" x1="0.08" y1="0" x2="0.92" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="0.42" stop-color="#f1f0e9"/><stop offset="1" stop-color="#77756f"/></linearGradient>
+      <linearGradient id="paper" x1="0" y1="0" x2="0.75" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="0.66" stop-color="#f4f3ed"/><stop offset="1" stop-color="#bdc3c9"/></linearGradient>
+      <linearGradient id="metal" x1="0" y1="0" x2="0.2" y2="1"><stop offset="0" stop-color="#fdfefe"/><stop offset="0.18" stop-color="#bec7cf"/><stop offset="0.47" stop-color="#6f7d8a"/><stop offset="0.65" stop-color="#e1e6e9"/><stop offset="1" stop-color="#48535d"/></linearGradient>
+      <radialGradient id="lens" cx="0.3" cy="0.22" r="0.78"><stop offset="0" stop-color="#e8f7ff" stop-opacity="0.92"/><stop offset="0.48" stop-color="#72b2dc" stop-opacity="0.74"/><stop offset="1" stop-color="#234c6d" stop-opacity="0.92"/></radialGradient>
+      <linearGradient id="leather" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c39a69"/><stop offset="0.52" stop-color="#87603f"/><stop offset="1" stop-color="#4b3024"/></linearGradient>
+    </defs>
+<ellipse cx="33" cy="54" rx="14" ry="2.7" fill="#000000" fill-opacity="0.24"/><path d="M20 12h31v39H20z" fill="#aeb7bf" stroke="#36434d" stroke-width="1.65"/><path d="M16 9h31v43H16z" fill="#d8dce0" stroke="#36434d" stroke-width="1.65"/><path d="M11 6h30l10 10v40H11z" fill="url(#paper)" stroke="#36434d" stroke-width="1.65"/><path d="M41 6v10h10" fill="#cbd1d6" stroke="#36434d" stroke-width="1.65"/><g ><path d="M19 18h27M18 21h29M20 24h25M19 27h27" stroke="#ffffff" stroke-width="0.28" stroke-opacity="0.22"/><circle cx="23" cy="31" r="0.45" fill="#ffffff" fill-opacity="0.28"/><circle cx="42" cy="35" r="0.35" fill="#17212a" fill-opacity="0.18"/><circle cx="29" cy="45" r="0.4" fill="#ffffff" fill-opacity="0.2"/></g><path d="M26 29h14M26 34h8M26 39h14M26 44h10" fill="none" stroke="#4c82ac" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

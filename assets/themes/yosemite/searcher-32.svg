@@ -1,13 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
-  <!-- 10.10 Searcher: magnifying glass over a document. -->
-  <defs>
-    <linearGradient id="g-page" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffffff"/>
-      <stop offset="1" stop-color="#eef2f7"/>
-    </linearGradient>
-  </defs>
-  <path d="M6 3h13v5h7v19a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V3z" fill="url(#g-page)" stroke="#9db1c8" stroke-width="1"/>
-  <path d="M19 3h7v5h-7z" fill="#e8eef6" stroke="#9db1c8" stroke-width="1"/>
-  <circle cx="15" cy="15" r="5" fill="#f7f9fb" stroke="#3e7cc4" stroke-width="1.5"/>
-  <path d="M18.8 18.8l4 4" stroke="#3e7cc4" stroke-width="1.8" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
+<defs>
+      <linearGradient id="body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9efff"/><stop offset="1" stop-color="#75b9ec"/></linearGradient>
+      <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#eef3f7"/></linearGradient>
+      <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7fafc"/><stop offset="1" stop-color="#b7c3cf"/></linearGradient>
+    </defs>
+<path d="M8 15h31v38H8z" fill="url(#paper)" stroke="#789bb9" stroke-width="1.35"/><circle cx="38" cy="31" r="13" fill="#c7e4f4" stroke="#357fbc" stroke-width="1.35"/><line x1="47" y1="41" x2="57" y2="51" stroke="#357fbc" stroke-width="5" stroke-linecap="round"/><circle cx="30" cy="33" r="9" fill="#d7ecff" stroke="#35516c" stroke-width="2.2"/><line x1="37" y1="40" x2="46" y2="49" stroke="#35516c" stroke-width="3.7" stroke-linecap="round"/>
 </svg>

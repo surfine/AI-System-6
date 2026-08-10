@@ -5,7 +5,20 @@
 // (dark startup screens, Happy Mac re-skins, era progress bars,
 // reduced-motion handling) add ~6KB of theme CSS. Bumped with that batch;
 // keep the reserve above the 512-byte floor.
-export const floppyBudgetBytes = 2_970_000;
+// CSS asset cache-busting (every static url() in styles.bundle.css carries
+// ?v=<build> so a new release is never hidden by the 7-day asset cache) adds
+// ~2.7KB of version stamps. Bumped with that change; still well under two
+// 1.44MB floppies.
+// First-user UI hardening adds the remaining ~1.1KB: arrow-key menu
+// navigation (wireup.js), window viewport clamping for wide creative labs
+// (window-manager.js), and the Quick Draft lightning-bolt icon. Bumped with
+// that round; reserve is back at the 512-byte floor.
+// Acceptance-contract hardening (1.0.37 fixes) adds ~2.5KB of runtime code:
+// dispatcher {ok:false} propagation, run-receipt provenance/restore remap,
+// assistant cancellation binding, and teaser transactional rollback. The
+// prior batch left only a 656-byte reserve at the 512-byte floor, so this
+// batch is bumped with the same justification.
+export const floppyBudgetBytes = 2_978_000;
 
 export const coreFiles = [
   "index.html",
@@ -132,6 +145,7 @@ export const lazyRuntimePaths = [
   "app/features/quick-draft-handoff.js",
   "app/features/cmf-studio.js",
   "app/features/soundscape.js",
+  "app/features/theme-lab.js",
   "app/features/endfield-terminal.js",
   "app/features/time-machine.js",
   "app/features/video-transcript.js",

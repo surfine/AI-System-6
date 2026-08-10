@@ -1,11 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" shape-rendering="geometricPrecision">
-  <defs>
-    <linearGradient id="g-page" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffffff"/>
-      <stop offset="1" stop-color="#f1f4f8"/>
-    </linearGradient>
-  </defs>
-  <path d="M3 2h7v2.5h3.5V13a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2z" fill="url(#g-page)" stroke="#9db1c8" stroke-width="0.75"/>
-  <path d="M10 2h3.5v2.5H10z" fill="#e8eef6" stroke="#9db1c8" stroke-width="0.75"/>
-  <path d="M4.5 7h7v0.8h-7zM4.5 10h7v0.8h-7z" fill="#8b9bad"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
+<defs>
+      <linearGradient id="body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#f1f0e9"/></linearGradient>
+      <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#eef3f7"/></linearGradient>
+      <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7fafc"/><stop offset="1" stop-color="#b7c3cf"/></linearGradient>
+    </defs>
+<path d="M14 7h28l10 10v40H14z" fill="url(#paper)" stroke="#789bb9" stroke-width="2.3"/><path d="M42 7v10h10" fill="#dfeaf3" stroke="#789bb9" stroke-width="2.3"/>
 </svg>

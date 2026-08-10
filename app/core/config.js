@@ -428,6 +428,8 @@ const ensureQuickDraftModule = createLazyModuleLoader("AISystem6QuickDraftLoaded
 ]);
 const ensureCmfStudioModule = createLazyModuleLoader("AISystem6CMFStudioLoaded", ["app/features/cmf-studio.js?cmf=exterior-ao-sanitized"]);
 const ensureSoundscapeModule = createLazyModuleLoader("AISystem6SoundscapeLoaded", ["app/features/soundscape.js"]);
+const ensureThemeLabModule = createLazyModuleLoader("AISystem6ThemeLabLoaded", ["app/features/theme-lab.js"]);
+window.AISystem6EnsureThemeLabModule = ensureThemeLabModule;
 const ensureWritingDemoModule = createLazyModuleLoader("AISystem6WritingDemoLoaded", [
   "app/data/iphone-17e-demo-corpus.js",
   "app/features/writing-demo.js",

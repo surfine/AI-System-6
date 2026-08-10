@@ -1,32 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
-  <!-- 10.10 Applications folder: the light-blue folder with a 2×2 grid of
-       generic app windows on its face — the same grid identity the Liquid
-       Glass applications object uses, restyled flat. Distinct folder
-       silhouette, not a uniform rounded rectangle. -->
-  <defs>
-    <linearGradient id="g-body" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#e6eef8"/>
-      <stop offset="1" stop-color="#c9d9ec"/>
-    </linearGradient>
-    <linearGradient id="g-tab" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#c4d9f0"/>
-      <stop offset="1" stop-color="#a9c4e2"/>
-    </linearGradient>
-    <linearGradient id="g-app" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffffff"/>
-      <stop offset="1" stop-color="#eef2f7"/>
-    </linearGradient>
-  </defs>
-  <path d="M4 5h9v3h15v17a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5z" fill="url(#g-body)" stroke="#8aa6c8" stroke-width="1"/>
-  <path d="M4 5a2 2 0 0 1 2-2h7l2 3H6a2 2 0 0 0-2 2V5z" fill="url(#g-tab)" stroke="#8aa6c8" stroke-width="1"/>
-  <g>
-    <rect x="9.2" y="11.6" width="6.2" height="5.4" rx="1" fill="url(#g-app)" stroke="#7f93ab" stroke-width="0.8"/>
-    <path d="M9.2 11.6a1 1 0 0 1 1-1h4.2a1 1 0 0 1 1 1v1.2h-6.2z" fill="#3e7cc4"/>
-    <rect x="16.6" y="11.6" width="6.2" height="5.4" rx="1" fill="url(#g-app)" stroke="#7f93ab" stroke-width="0.8"/>
-    <path d="M16.6 11.6a1 1 0 0 1 1-1h4.2a1 1 0 0 1 1 1v1.2h-6.2z" fill="#3e7cc4"/>
-    <rect x="9.2" y="18.2" width="6.2" height="5.4" rx="1" fill="url(#g-app)" stroke="#7f93ab" stroke-width="0.8"/>
-    <path d="M9.2 18.2a1 1 0 0 1 1-1h4.2a1 1 0 0 1 1 1v1.2h-6.2z" fill="#3e7cc4"/>
-    <rect x="16.6" y="18.2" width="6.2" height="5.4" rx="1" fill="url(#g-app)" stroke="#7f93ab" stroke-width="0.8"/>
-    <path d="M16.6 18.2a1 1 0 0 1 1-1h4.2a1 1 0 0 1 1 1v1.2h-6.2z" fill="#3e7cc4"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
+<defs>
+      <linearGradient id="body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eeeeff"/><stop offset="1" stop-color="#a7a3db"/></linearGradient>
+      <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#eef3f7"/></linearGradient>
+      <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7fafc"/><stop offset="1" stop-color="#b7c3cf"/></linearGradient>
+    </defs>
+<path d="M6 20h20l6 6h26v29H6z" fill="#70b2e5" stroke="#789bb9" stroke-width="1.35" stroke-linejoin="round"/><path d="M6 31h52v24H6z" fill="#78b7e7" stroke="#789bb9" stroke-width="1.35"/><rect x="23" y="29" width="7" height="7" fill="#2e7fcb"/><rect x="34" y="29" width="7" height="7" fill="#e45b62"/><rect x="23" y="40" width="7" height="7" fill="#d19a3c"/><rect x="34" y="40" width="7" height="7" fill="#41a75a"/>
 </svg>

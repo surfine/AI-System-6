@@ -1,0 +1,575 @@
+{
+  "target": "Mac OS X 10.2 Jaguar Aqua",
+  "generatedBy": "scripts/build-era-icons.mjs",
+  "sharedGeometryAcrossEras": false,
+  "runtimeSize": 32,
+  "icons": {
+    "startupDisk": {
+      "genre": "hardware",
+      "physicalMetaphor": "drive",
+      "semanticMark": "startup",
+      "sizes": {
+        "16": "startupDisk-16.svg",
+        "32": "startupDisk-32.svg",
+        "128": "startupDisk-128.svg"
+      }
+    },
+    "hardDisk": {
+      "genre": "hardware",
+      "physicalMetaphor": "heavy brushed-aluminum mounted drive",
+      "semanticMark": "object-owned",
+      "sizes": {
+        "16": "icons/hardDisk-16.png",
+        "32": "icons/hardDisk-32.png",
+        "128": "icons/hardDisk-128.png"
+      },
+      "reviewStatus": "accepted-core"
+    },
+    "folder": {
+      "genre": "Finder object",
+      "physicalMetaphor": "early-Aqua blue system folder",
+      "semanticMark": "object-owned",
+      "sizes": {
+        "16": "icons/folder-16.png",
+        "32": "icons/folder-32.png",
+        "128": "icons/folder-128.png"
+      },
+      "reviewStatus": "accepted-core"
+    },
+    "document": {
+      "genre": "document",
+      "physicalMetaphor": "hovering folded-corner paper",
+      "semanticMark": "object-owned",
+      "sizes": {
+        "16": "icons/document-16.png",
+        "32": "icons/document-32.png",
+        "128": "icons/document-128.png"
+      },
+      "reviewStatus": "accepted-core"
+    },
+    "applications": {
+      "genre": "file",
+      "physicalMetaphor": "folder",
+      "semanticMark": "applications",
+      "sizes": {
+        "16": "applications-16.svg",
+        "32": "applications-32.svg",
+        "128": "applications-128.svg"
+      }
+    },
+    "trash": {
+      "genre": "Finder object",
+      "physicalMetaphor": "empty chrome wire-mesh basket",
+      "semanticMark": "object-owned",
+      "sizes": {
+        "16": "icons/trash-16.png",
+        "32": "icons/trash-32.png",
+        "128": "icons/trash-128.png"
+      },
+      "reviewStatus": "accepted-core"
+    },
+    "finderApp": {
+      "genre": "system identity",
+      "physicalMetaphor": "Jaguar two-tone Finder face",
+      "semanticMark": "object-owned",
+      "sizes": {
+        "16": "icons/finderApp-16.png",
+        "32": "icons/finderApp-32.png",
+        "128": "icons/finderApp-128.png"
+      },
+      "reviewStatus": "accepted-core"
+    },
+    "fileFloppy": {
+      "genre": "hardware",
+      "physicalMetaphor": "floppy",
+      "semanticMark": "floppy",
+      "sizes": {
+        "16": "fileFloppy-16.svg",
+        "32": "fileFloppy-32.svg",
+        "128": "fileFloppy-128.svg"
+      }
+    },
+    "assistant": {
+      "genre": "application",
+      "physicalMetaphor": "transcript and telephone receiver",
+      "semanticMark": "object-owned",
+      "sizes": {
+        "16": "icons/assistant-16.png",
+        "32": "icons/assistant-32.png",
+        "128": "icons/assistant-128.png"
+      },
+      "reviewStatus": "accepted-core"
+    },
+    "quickDraft": {
+      "genre": "document",
+      "physicalMetaphor": "paper",
+      "semanticMark": "pencil",
+      "sizes": {
+        "16": "quickDraft-16.svg",
+        "32": "quickDraft-32.svg",
+        "128": "quickDraft-128.svg"
+      }
+    },
+    "writingStudio": {
+      "genre": "application",
+      "physicalMetaphor": "typewriter",
+      "semanticMark": "writing",
+      "sizes": {
+        "16": "writingStudio-16.svg",
+        "32": "writingStudio-32.svg",
+        "128": "writingStudio-128.svg"
+      }
+    },
+    "projectDisk": {
+      "genre": "hardware",
+      "physicalMetaphor": "labeled external project volume",
+      "semanticMark": "object-owned",
+      "sizes": {
+        "16": "icons/projectDisk-16.png",
+        "32": "icons/projectDisk-32.png",
+        "128": "icons/projectDisk-128.png"
+      },
+      "reviewStatus": "accepted-core"
+    },
+    "projectDisc": {
+      "genre": "hardware",
+      "physicalMetaphor": "disc",
+      "semanticMark": "project",
+      "sizes": {
+        "16": "projectDisc-16.svg",
+        "32": "projectDisc-32.svg",
+        "128": "projectDisc-128.svg"
+      }
+    },
+    "cloudModel": {
+      "genre": "utility",
+      "physicalMetaphor": "server",
+      "semanticMark": "cloud",
+      "sizes": {
+        "16": "cloudModel-16.svg",
+        "32": "cloudModel-32.svg",
+        "128": "cloudModel-128.svg"
+      }
+    },
+    "cloudModelOff": {
+      "genre": "utility",
+      "physicalMetaphor": "server",
+      "semanticMark": "cloudOff",
+      "sizes": {
+        "16": "cloudModelOff-16.svg",
+        "32": "cloudModelOff-32.svg",
+        "128": "cloudModelOff-128.svg"
+      }
+    },
+    "questionSheet": {
+      "genre": "document",
+      "physicalMetaphor": "paper",
+      "semanticMark": "question",
+      "sizes": {
+        "16": "questionSheet-16.svg",
+        "32": "questionSheet-32.svg",
+        "128": "questionSheet-128.svg"
+      }
+    },
+    "outline": {
+      "genre": "document",
+      "physicalMetaphor": "cards",
+      "semanticMark": "outline",
+      "sizes": {
+        "16": "outline-16.svg",
+        "32": "outline-32.svg",
+        "128": "outline-128.svg"
+      }
+    },
+    "sectionDrafts": {
+      "genre": "document",
+      "physicalMetaphor": "paperStack",
+      "semanticMark": "sections",
+      "sizes": {
+        "16": "sectionDrafts-16.svg",
+        "32": "sectionDrafts-32.svg",
+        "128": "sectionDrafts-128.svg"
+      }
+    },
+    "manuscript": {
+      "genre": "document",
+      "physicalMetaphor": "manuscript",
+      "semanticMark": "manuscript",
+      "sizes": {
+        "16": "manuscript-16.svg",
+        "32": "manuscript-32.svg",
+        "128": "manuscript-128.svg"
+      }
+    },
+    "reviewDesk": {
+      "genre": "application",
+      "physicalMetaphor": "review",
+      "semanticMark": "proof",
+      "sizes": {
+        "16": "reviewDesk-16.svg",
+        "32": "reviewDesk-32.svg",
+        "128": "reviewDesk-128.svg"
+      }
+    },
+    "searcher": {
+      "genre": "application",
+      "physicalMetaphor": "Sherlock-era chrome magnifying glass",
+      "semanticMark": "object-owned",
+      "sizes": {
+        "16": "icons/searcher-16.png",
+        "32": "icons/searcher-32.png",
+        "128": "icons/searcher-128.png"
+      },
+      "reviewStatus": "accepted-core"
+    },
+    "reader": {
+      "genre": "application",
+      "physicalMetaphor": "book",
+      "semanticMark": "reader",
+      "sizes": {
+        "16": "reader-16.svg",
+        "32": "reader-32.svg",
+        "128": "reader-128.svg"
+      }
+    },
+    "timeMachine": {
+      "genre": "utility",
+      "physicalMetaphor": "clock",
+      "semanticMark": "archive",
+      "sizes": {
+        "16": "timeMachine-16.svg",
+        "32": "timeMachine-32.svg",
+        "128": "timeMachine-128.svg"
+      }
+    },
+    "docMap": {
+      "genre": "application",
+      "physicalMetaphor": "map",
+      "semanticMark": "map",
+      "sizes": {
+        "16": "docMap-16.svg",
+        "32": "docMap-32.svg",
+        "128": "docMap-128.svg"
+      }
+    },
+    "clioStage": {
+      "genre": "application",
+      "physicalMetaphor": "stage",
+      "semanticMark": "stage",
+      "sizes": {
+        "16": "clioStage-16.svg",
+        "32": "clioStage-32.svg",
+        "128": "clioStage-128.svg"
+      }
+    },
+    "clioChart": {
+      "genre": "application",
+      "physicalMetaphor": "easel",
+      "semanticMark": "chart",
+      "sizes": {
+        "16": "clioChart-16.svg",
+        "32": "clioChart-32.svg",
+        "128": "clioChart-128.svg"
+      }
+    },
+    "liquidCover": {
+      "genre": "application",
+      "physicalMetaphor": "cover",
+      "semanticMark": "cover",
+      "sizes": {
+        "16": "liquidCover-16.svg",
+        "32": "liquidCover-32.svg",
+        "128": "liquidCover-128.svg"
+      }
+    },
+    "cmfStudio": {
+      "genre": "application",
+      "physicalMetaphor": "swatches",
+      "semanticMark": "swatches",
+      "sizes": {
+        "16": "cmfStudio-16.svg",
+        "32": "cmfStudio-32.svg",
+        "128": "cmfStudio-128.svg"
+      }
+    },
+    "soundscape": {
+      "genre": "application",
+      "physicalMetaphor": "speaker",
+      "semanticMark": "sound",
+      "sizes": {
+        "16": "soundscape-16.svg",
+        "32": "soundscape-32.svg",
+        "128": "soundscape-128.svg"
+      }
+    },
+    "scrapbook": {
+      "genre": "application",
+      "physicalMetaphor": "bound clipping album",
+      "semanticMark": "object-owned",
+      "sizes": {
+        "16": "icons/scrapbook-16.png",
+        "32": "icons/scrapbook-32.png",
+        "128": "icons/scrapbook-128.png"
+      },
+      "reviewStatus": "accepted-core"
+    },
+    "systemFolder": {
+      "genre": "file",
+      "physicalMetaphor": "folder",
+      "semanticMark": "gear",
+      "sizes": {
+        "16": "systemFolder-16.svg",
+        "32": "systemFolder-32.svg",
+        "128": "systemFolder-128.svg"
+      }
+    },
+    "helpFolder": {
+      "genre": "file",
+      "physicalMetaphor": "folder",
+      "semanticMark": "help",
+      "sizes": {
+        "16": "helpFolder-16.svg",
+        "32": "helpFolder-32.svg",
+        "128": "helpFolder-128.svg"
+      }
+    },
+    "importUtility": {
+      "genre": "utility",
+      "physicalMetaphor": "inbox",
+      "semanticMark": "import",
+      "sizes": {
+        "16": "importUtility-16.svg",
+        "32": "importUtility-32.svg",
+        "128": "importUtility-128.svg"
+      }
+    },
+    "controlPanel": {
+      "genre": "utility",
+      "physicalMetaphor": "compact silver system instrument",
+      "semanticMark": "object-owned",
+      "sizes": {
+        "16": "icons/controlPanel-16.png",
+        "32": "icons/controlPanel-32.png",
+        "128": "icons/controlPanel-128.png"
+      },
+      "reviewStatus": "accepted-core"
+    },
+    "chooser": {
+      "genre": "utility",
+      "physicalMetaphor": "network",
+      "semanticMark": "chooser",
+      "sizes": {
+        "16": "chooser-16.svg",
+        "32": "chooser-32.svg",
+        "128": "chooser-128.svg"
+      }
+    },
+    "systemHelp": {
+      "genre": "application",
+      "physicalMetaphor": "book",
+      "semanticMark": "help",
+      "sizes": {
+        "16": "systemHelp-16.svg",
+        "32": "systemHelp-32.svg",
+        "128": "systemHelp-128.svg"
+      }
+    },
+    "dictionary": {
+      "genre": "application",
+      "physicalMetaphor": "dictionary",
+      "semanticMark": "dictionary",
+      "sizes": {
+        "16": "dictionary-16.svg",
+        "32": "dictionary-32.svg",
+        "128": "dictionary-128.svg"
+      }
+    },
+    "teachText": {
+      "genre": "application",
+      "physicalMetaphor": "writing paper and fountain pen",
+      "semanticMark": "object-owned",
+      "sizes": {
+        "16": "icons/teachText-16.png",
+        "32": "icons/teachText-32.png",
+        "128": "icons/teachText-128.png"
+      },
+      "reviewStatus": "accepted-core"
+    },
+    "writingDemo": {
+      "genre": "document",
+      "physicalMetaphor": "paper",
+      "semanticMark": "play",
+      "sizes": {
+        "16": "writingDemo-16.svg",
+        "32": "writingDemo-32.svg",
+        "128": "writingDemo-128.svg"
+      }
+    },
+    "chatFile": {
+      "genre": "document",
+      "physicalMetaphor": "paper",
+      "semanticMark": "chat",
+      "sizes": {
+        "16": "chatFile-16.svg",
+        "32": "chatFile-32.svg",
+        "128": "chatFile-128.svg"
+      }
+    },
+    "chatImport": {
+      "genre": "utility",
+      "physicalMetaphor": "inbox",
+      "semanticMark": "chat",
+      "sizes": {
+        "16": "chatImport-16.svg",
+        "32": "chatImport-32.svg",
+        "128": "chatImport-128.svg"
+      }
+    },
+    "systemStatus": {
+      "genre": "utility",
+      "physicalMetaphor": "monitor",
+      "semanticMark": "status",
+      "sizes": {
+        "16": "systemStatus-16.svg",
+        "32": "systemStatus-32.svg",
+        "128": "systemStatus-128.svg"
+      }
+    },
+    "contextPanel": {
+      "genre": "utility",
+      "physicalMetaphor": "indexBox",
+      "semanticMark": "context",
+      "sizes": {
+        "16": "contextPanel-16.svg",
+        "32": "contextPanel-32.svg",
+        "128": "contextPanel-128.svg"
+      }
+    },
+    "rebuildArticle": {
+      "genre": "utility",
+      "physicalMetaphor": "press",
+      "semanticMark": "rebuild",
+      "sizes": {
+        "16": "rebuildArticle-16.svg",
+        "32": "rebuildArticle-32.svg",
+        "128": "rebuildArticle-128.svg"
+      }
+    },
+    "bureaucracyMeme": {
+      "genre": "application",
+      "physicalMetaphor": "stamp",
+      "semanticMark": "forms",
+      "sizes": {
+        "16": "bureaucracyMeme-16.svg",
+        "32": "bureaucracyMeme-32.svg",
+        "128": "bureaucracyMeme-128.svg"
+      }
+    },
+    "endfieldTerminal": {
+      "genre": "utility",
+      "physicalMetaphor": "terminal",
+      "semanticMark": "terminal",
+      "sizes": {
+        "16": "endfieldTerminal-16.svg",
+        "32": "endfieldTerminal-32.svg",
+        "128": "endfieldTerminal-128.svg"
+      }
+    },
+    "documents": {
+      "genre": "file",
+      "physicalMetaphor": "folder",
+      "semanticMark": "documents",
+      "sizes": {
+        "16": "documents-16.svg",
+        "32": "documents-32.svg",
+        "128": "documents-128.svg"
+      }
+    },
+    "alias": {
+      "genre": "document",
+      "physicalMetaphor": "paper",
+      "semanticMark": "alias",
+      "sizes": {
+        "16": "alias-16.svg",
+        "32": "alias-32.svg",
+        "128": "alias-128.svg"
+      }
+    },
+    "systemFile": {
+      "genre": "document",
+      "physicalMetaphor": "paper",
+      "semanticMark": "gear",
+      "sizes": {
+        "16": "systemFile-16.svg",
+        "32": "systemFile-32.svg",
+        "128": "systemFile-128.svg"
+      }
+    },
+    "multiFinderApp": {
+      "genre": "application",
+      "physicalMetaphor": "finderPair",
+      "semanticMark": "finder",
+      "sizes": {
+        "16": "multiFinderApp-16.svg",
+        "32": "multiFinderApp-32.svg",
+        "128": "multiFinderApp-128.svg"
+      }
+    },
+    "daHandler": {
+      "genre": "application",
+      "physicalMetaphor": "crossed drafting tools",
+      "semanticMark": "object-owned",
+      "sizes": {
+        "16": "icons/daHandler-16.png",
+        "32": "icons/daHandler-32.png",
+        "128": "icons/daHandler-128.png"
+      },
+      "reviewStatus": "accepted-core"
+    },
+    "writingBell": {
+      "genre": "accessory",
+      "physicalMetaphor": "bell",
+      "semanticMark": "bell",
+      "sizes": {
+        "16": "writingBell-16.svg",
+        "32": "writingBell-32.svg",
+        "128": "writingBell-128.svg"
+      }
+    },
+    "trashFull": {
+      "genre": "hardware",
+      "physicalMetaphor": "trash",
+      "semanticMark": "full",
+      "sizes": {
+        "16": "trashFull-16.svg",
+        "32": "trashFull-32.svg",
+        "128": "trashFull-128.svg"
+      }
+    },
+    "control": {
+      "genre": "utility",
+      "physicalMetaphor": "controlBoard",
+      "semanticMark": "knobs",
+      "sizes": {
+        "16": "control-16.svg",
+        "32": "control-32.svg",
+        "128": "control-128.svg"
+      }
+    }
+  },
+  "reviewedCore": [
+    "finderApp",
+    "folder",
+    "hardDisk",
+    "trash",
+    "document",
+    "daHandler",
+    "controlPanel",
+    "searcher",
+    "teachText",
+    "assistant",
+    "scrapbook",
+    "projectDisk"
+  ],
+  "coreBuilder": "scripts/build-aqua-core-icons.mjs"
+}

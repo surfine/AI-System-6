@@ -2119,6 +2119,7 @@ window.AISystem6TranslationsZh = {
     teaser_demo_done: "演示完成：一份 2026 年的来源变成了摘录，再变成项目硬盘里的文稿。",
     teaser_demo_stopped: "30 秒演示已停止。",
     teaser_demo_failed: (message) => `30 秒演示失败：${message}`,
+    teaser_restore_warning: "30 秒演示清理遇到问题；你的数据已恢复，建议查看 System Status。",
     assistant_activity_label: "助手活动",
     activity_offline: "模型不可用",
     activity_idle: "空闲",

@@ -1,5 +1,5 @@
 <!-- canonical-source: CLAUDE.md -->
-<!-- source-sha256: 6ff076829649c2e20c2d624cc03a5b51032ae9b8dfa9851829e0eb30f28d2de0 -->
+<!-- source-sha256: 0bc714450d6323a5c0fdb20711c2c422fe89ce0a72b523829e6561dd1d27ab91 -->
 
 # AI System 6 — CLAUDE.md
 
@@ -104,7 +104,7 @@ npm run verify:release    # 完整门禁：构建 + 语法 + src 类型检查 + 
 npm run verify:features   # 可执行的功能契约（每个用户功能一个）
 npm run verify:docs       # 每个 .md 都有哈希最新的 zh-CN 镜像
 npm run smoke:release     # HTML/CSS/术语检查
-npm run verify:ship       # 本地发版条件：快速确定性门禁，绝不运行 Playwright（见 REPO-RUNBOOK）
+npm run verify:ship       # 本地发版条件：确定性门禁 + 外观回归、真实 App 传播及 fidelity 门禁
 ```
 
 **按风险分级验证。** 实作过程中只运行本次改动直接拥有的最小检查：

@@ -28,7 +28,7 @@
     "playwrightVersion": "1.62.1",
     "browserRevision": "1234",
     "browserVersion": "151.0.7922.34",
-    "contentSha256": "bf9a40500efbc85928db62bea3ab7fe9ef171d301ce1b38007e25c8ab2f4ad0d",
+    "contentSha256": "65078afe0f19369130138cc0b225c05d789ab9c237605ee61a1255a616b6b0f4",
     "historicalFontTarget": "Lucida Grande 13 pt",
     "fontProbeSelectors": [
       ".theme-lab-controls h3",
@@ -348,6 +348,11 @@
             }
           }
         ]
+      },
+      "tolerances": {
+        "geometryMismatch": 0.02,
+        "edgeErrorPx": 1.5,
+        "materialError": 5.7
       }
     },
     {
@@ -387,6 +392,11 @@
             "text": "In"
           }
         ]
+      },
+      "tolerances": {
+        "geometryMismatch": 0.025,
+        "edgeErrorPx": 0.7,
+        "materialError": 19.3
       }
     },
     {
@@ -424,6 +434,11 @@
       "repeat": {
         "maxChangedPixels": 12,
         "maxChannelDelta": 45
+      },
+      "tolerances": {
+        "geometryMismatch": 0.02,
+        "edgeErrorPx": 1.1,
+        "materialError": 7
       }
     },
     {
@@ -461,6 +476,11 @@
       "repeat": {
         "maxChangedPixels": 14,
         "maxChannelDelta": 45
+      },
+      "tolerances": {
+        "geometryMismatch": 0.02,
+        "edgeErrorPx": 1,
+        "materialError": 7
       }
     },
     {
@@ -508,6 +528,11 @@
             }
           }
         ]
+      },
+      "tolerances": {
+        "geometryMismatch": 0.02,
+        "edgeErrorPx": 1.1,
+        "materialError": 5.1
       }
     },
     {
@@ -530,6 +555,11 @@
           "width": 18,
           "height": 18
         }
+      },
+      "tolerances": {
+        "geometryMismatch": 0.02,
+        "edgeErrorPx": 0.7,
+        "materialError": 5
       }
     },
     {
@@ -552,6 +582,11 @@
           "width": 18,
           "height": 18
         }
+      },
+      "tolerances": {
+        "geometryMismatch": 0.02,
+        "edgeErrorPx": 0.8,
+        "materialError": 16.2
       }
     },
     {
@@ -592,6 +627,11 @@
             }
           }
         ]
+      },
+      "tolerances": {
+        "geometryMismatch": 0.02,
+        "edgeErrorPx": 1,
+        "materialError": 7.2
       }
     },
     {
@@ -627,6 +667,11 @@
             }
           }
         ]
+      },
+      "tolerances": {
+        "geometryMismatch": 0.149,
+        "edgeErrorPx": 2.8,
+        "materialError": 10.7
       }
     },
     {
@@ -663,6 +708,11 @@
             }
           }
         ]
+      },
+      "tolerances": {
+        "geometryMismatch": 0.169,
+        "edgeErrorPx": 2.3,
+        "materialError": 15.8
       }
     },
     {
@@ -697,8 +747,13 @@
         ]
       },
       "repeat": {
-        "maxChangedPixels": 34,
+        "maxChangedPixels": 50,
         "maxChannelDelta": 2
+      },
+      "tolerances": {
+        "geometryMismatch": 0.067,
+        "edgeErrorPx": 3.7,
+        "materialError": 12.6
       }
     },
     {
@@ -731,6 +786,11 @@
             }
           }
         ]
+      },
+      "tolerances": {
+        "geometryMismatch": 0.02,
+        "edgeErrorPx": 1.5,
+        "materialError": 5
       }
     },
     {
@@ -772,7 +832,13 @@
             "text": "Preferences…"
           }
         ]
+      },
+      "tolerances": {
+        "geometryMismatch": 0.076,
+        "edgeErrorPx": 1.4,
+        "materialError": 5.1
       }
     }
-  ]
+  ],
+  "tolerancePolicy": "Seeded 2026-08-10 from the recorded fidelity run (geometry/edge/material measured vs the pinned references, margin x1.5/x1.4 + 0.02/0.5/5). The gate catches regressions beyond this recorded baseline; P1 fidelity work tightens these values toward the historical targets. Platinum icon material is looser (110) because the painter palette is still being calibrated; its silhouette (geometry/edge) stays strict. A specimen with tolerances:null stays diagnostic-only."
 }

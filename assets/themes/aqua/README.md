@@ -1,40 +1,21 @@
-# Aqua Theme Lab artwork
+# Jaguar Aqua icon family
 
-These small SVG painters were drawn for AI System 6 from the geometry and
-material relationships visible in Mac OS X 10.2 screenshots. They are not
-copied from Quaqua or from Apple system artwork. Quaqua's bundled artwork is
-Apple-copyrighted and remains evidence-only.
+The first reviewed Aqua batch contains twelve objects for Mac OS X 10.2
+Jaguar: Finder, Folder, Hard Disk, Trash, Generic Document, Generic
+Application, System Preferences, Searcher, TeachText, ClioTalk, Scrapbook, and
+Project Hard Disk. Each owns original 128×128, 32×32, and 16×16 PNG artwork.
+The smaller files are separate compositions, not reductions of the master.
 
-Reference roles:
+The remaining 42 semantic ids still use the earlier deterministic SVG family
+and are explicitly fallbacks until they pass the same object-by-object review.
+The 32 px runtime sprite mixes the accepted PNG core with those fallbacks
+without changing semantic ids or sprite positions.
 
-- `startup-disk.svg`: silver Jaguar-era volume silhouette
-- `folder.svg`: early Aqua blue folder silhouette
-- `document.svg`: white Aqua document with folded corner
-- `finder-app.svg`: project-authored two-tone Finder application stand-in
-- `trash.svg`: translucent blue wastebasket stand-in
-- `menu-system-mark-16.svg`: original blue AI System 6 menu glyph; deliberately
-  not an Apple logo
-- `menu-speaker-16.svg`: original 16px menu-status speaker
-- `toolbar-back.svg` and `toolbar-forward.svg`: 24px pearly navigation controls
-- `toolbar-computer.svg`, `toolbar-home.svg`, `toolbar-favorites.svg`, and
-  `toolbar-applications.svg`: original 28px Finder toolbar role icons
-- `view-icon-12.svg`, `view-list-12.svg`, and `view-columns-12.svg`: original
-  compact view-mode glyphs
-- `browser-volume-16.svg`, `browser-folder-16.svg`, and
-  `browser-document-16.svg`: original 16px NSBrowser row icons
-- `sheet-warning-64.svg`: original warning symbol for the attached-sheet
-  specimen; deliberately omits Finder and Apple artwork
+`icons/src/aqua-core-icons.json` pins the twenty-object Jaguar reference board,
+material and perspective rules, copyright boundary, and the twelve accepted
+prototypes. `icons/aqua-core-icon-family.json` records output metrics and hashes.
+`scripts/build-aqua-core-icons.mjs` is the deterministic accepted-core source;
+`scripts/build-era-icons.mjs` reapplies it after rebuilding the fallback family.
 
-Geometry and state references:
-
-- Original 1x Mac OS X 10.2 Finder, Open panel, menu bar, and Address Book
-  captures catalogued by GUIdebook
-- Apple, *Aqua Human Interface Guidelines* (June 2002), for 20px push and
-  pop-up controls, 22px text fields, 18px choices, and alert typography
-- Quaqua 9.1's Jaguar file chooser and browser implementation for repeatable
-  column and scrollbar state relationships
-
-The SVG paths and gradients in this directory are project-authored. Do not
-replace them with extracted Aqua resources, Quaqua PNGs, Apple application
-icons, or screenshot crops. Quaqua's images and the original system captures
-remain local evidence only.
+Historical Apple artwork and screenshots remain evidence-only and are not
+packaged as product assets.

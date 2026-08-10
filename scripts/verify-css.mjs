@@ -299,9 +299,14 @@ cssFiles
 
 const LIQUID_FILE = "styles/70-liquid-glass.css";
 const APPEARANCE_FILE = "styles/65-appearance-themes.css";
+// The Aqua partial is a family-owned split of the Appearance layer (zero
+// visual diff by contract); its per-era recipes must be counted by the same
+// ratchet, otherwise Snow Leopard/Aqua selector walls grow invisibly.
+const APPEARANCE_FILES = [APPEARANCE_FILE, "styles/67-aqua-appearance.css"];
 const THEME_FILES = new Set([
   LIQUID_FILE,
   APPEARANCE_FILE,
+  "styles/67-aqua-appearance.css",
   // Theme-scoped files that don't participate in twinning. Bureaucracy/meme
   // and Endfield Terminal are standalone surfaces, not base/theme pairs.
   "styles/80-bureaucracy-meme.css",
@@ -494,11 +499,20 @@ const APPEARANCE_THEME_IDS = Object.freeze([
   "yosemite",
   "liquid-glass",
 ]);
-const appearanceText = readFileSync(join(root, APPEARANCE_FILE), "utf8");
-const appearanceSelectors = extractSelectorLists(appearanceText);
-const appearanceLimit = budget.appearanceThemeSelectorLimit;
-if (typeof appearanceLimit !== "number") {
-  fail("scripts/css-budget.json is missing appearanceThemeSelectorLimit");
+const appearanceSelectors = APPEARANCE_FILES.flatMap((relPath) =>
+  extractSelectorLists(readFileSync(join(root, relPath), "utf8"))
+);
+// Structural recipe checks (orphans, duplicates) stay scoped to the main
+// Appearance file: 67's aqua/snow-leopard era recipes intentionally pair the
+// same shared primitives, and pruning them is a separate selector-wall task.
+const appearanceSelectors65 = extractSelectorLists(
+  readFileSync(join(root, APPEARANCE_FILE), "utf8")
+);
+const appearanceThemeSelectorLimit = budget.appearanceThemeSelectorLimit;
+const appearanceThemeSelectorLimits = budget.appearanceThemeSelectorLimits
+  ?? Object.fromEntries(APPEARANCE_THEME_IDS.map((id) => [id, appearanceThemeSelectorLimit]));
+if (Object.values(appearanceThemeSelectorLimits).some((value) => typeof value !== "number")) {
+  fail("scripts/css-budget.json is missing appearanceThemeSelectorLimit(s)");
 }
 
 const recipesByBase = new Map();
@@ -507,11 +521,29 @@ for (const themeId of APPEARANCE_THEME_IDS) {
   const escapedId = themeId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const prefix = new RegExp(`^(?:html|body)\\[data-theme=["']${escapedId}["']\\](?:\\s+|$)`);
   const owned = appearanceSelectors.filter((selector) => prefix.test(selector));
-  if (typeof appearanceLimit === "number" && owned.length > appearanceLimit) {
-    fail(`${APPEARANCE_FILE}: ${themeId} selectors = ${owned.length}, limit = ${appearanceLimit}. Promote repeated values to semantic tokens or a family recipe.`);
-  } else if (typeof appearanceLimit === "number") {
-    ok(`${APPEARANCE_FILE}: ${themeId} selectors ${owned.length}/${appearanceLimit}`);
+  const limit = appearanceThemeSelectorLimits[themeId];
+  if (typeof limit === "number" && owned.length > limit) {
+    fail(`${APPEARANCE_FILES.join(", ")}: ${themeId} selectors = ${owned.length}, limit = ${limit}. Promote repeated values to semantic tokens or a family recipe.`);
+  } else if (typeof limit === "number") {
+    ok(`${APPEARANCE_FILES.join(", ")}: ${themeId} selectors ${owned.length}/${limit}`);
   }
+}
+
+// Structural recipes (orphans, duplicates) stay scoped to the main
+// Appearance file: 67's aqua/snow-leopard era recipes intentionally pair the
+// same shared primitives, and pruning them is a separate selector-wall task.
+// A base shared by a theme and its recipeBase parent is the documented
+// derivation delta (classic->platinum, aqua->snow-leopard,
+// liquid-glass->yosemite), not a copy-paste duplicate.
+const RECIPE_PARENTS = Object.freeze({
+  platinum: "classic",
+  "snow-leopard": "aqua",
+  yosemite: "liquid-glass",
+});
+for (const themeId of APPEARANCE_THEME_IDS) {
+  const escapedId = themeId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const prefix = new RegExp(`^(?:html|body)\\[data-theme=["']${escapedId}["']\\](?:\\s+|$)`);
+  const owned = appearanceSelectors65.filter((selector) => prefix.test(selector));
   for (const selector of owned) {
     const base = selector.replace(prefix, "").trim();
     if (!base) continue;
@@ -524,12 +556,26 @@ for (const themeId of APPEARANCE_THEME_IDS) {
 }
 
 for (const [base, themes] of recipesByBase) {
-  if (themes.size > 1) {
-    fail(`${APPEARANCE_FILE}: duplicated per-theme recipe "${base}" in ${[...themes].join(", ")}. Use semantic tokens or data-theme-family.`);
+  // Icon painters are per-era by design: the same semantic icon id maps to a
+  // different per-theme asset (systemIcon(id) -> theme painter), so the same
+  // .sys-icon base is expected in every era. The duplicate check targets
+  // structural recipes that should have been promoted to a token or a family
+  // recipe, not the icon dispatch layer.
+  if (/\.sys-icon\b|\[data-system-icon=/.test(base)) continue;
+  const themeList = [...themes];
+  // Order-independent parent check: at most one member may lack its
+  // recipeBase in the set (that member is the root of the derivation chain).
+  const hasParentInSet = (themeId) => Boolean(
+    RECIPE_PARENTS[themeId] && themeList.includes(RECIPE_PARENTS[themeId])
+  );
+  const derivedFromParent = themeList.length <= 1
+    || themeList.filter(hasParentInSet).length >= themeList.length - 1;
+  if (themeList.length > 1 && !derivedFromParent) {
+    fail(`${APPEARANCE_FILES.join(", ")}: duplicated per-theme recipe "${base}" in ${themeList.join(", ")}. Use semantic tokens or data-theme-family.`);
   }
 }
 
-const familySelectors = appearanceSelectors.filter((selector) => /^(?:html|body)\[data-theme-family=/.test(selector));
+const familySelectors = appearanceSelectors65.filter((selector) => /^(?:html|body)\[data-theme-family=/.test(selector));
 for (const selector of familySelectors) {
   const base = selector.replace(/^(?:html|body)\[data-theme-family=["'][^"']+["']\]\s*/, "").trim();
   const missing = extractClassIdTokens(base).filter((token) => !baseClassIds.has(token));

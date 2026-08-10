@@ -1,14 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
-  <!-- 10.10 Dictionary: book with an "A" letter mark. -->
-  <defs>
-    <linearGradient id="g-book" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffffff"/>
-      <stop offset="1" stop-color="#e3eaf1"/>
-    </linearGradient>
-  </defs>
-  <path d="M4 8c4-1.5 8-1 10-0.5v15c-2-0.5-6-1-10 0.5V8z" fill="url(#g-book)" stroke="#93a3b5" stroke-width="1"/>
-  <path d="M28 8c-4-1.5-8-1-10-0.5v15c2-0.5 6-1 10 0.5V8z" fill="url(#g-book)" stroke="#93a3b5" stroke-width="1"/>
-  <path d="M14 7.5h4v16h-4z" fill="#c7d2df"/>
-  <path d="M12.8 20.5L16 12.5l3.2 8" fill="none" stroke="#3e7cc4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M13.7 17.4h4.6" stroke="#3e7cc4" stroke-width="1.8" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
+<defs>
+      <linearGradient id="body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff0bf"/><stop offset="1" stop-color="#dab86c"/></linearGradient>
+      <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#eef3f7"/></linearGradient>
+      <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7fafc"/><stop offset="1" stop-color="#b7c3cf"/></linearGradient>
+    </defs>
+<path d="M5 16q13-6 27 2v39q-13-7-27-2zM59 16q-13-6-27 2v39q13-7 27-2z" fill="url(#paper)" stroke="#789bb9" stroke-width="1.35"/><path d="M32 18v39" stroke="#789bb9" stroke-width="1"/><path d="M21 29q6-3 11 1v18q-5-4-11-1zM43 29q-6-3-11 1v18q5-4 11-1z" fill="#ffffff" stroke="#d19a3c" stroke-width="1.7"/><path d="M26 40l3-8 3 8M27 37h4M35 33h4l-4 8h4" fill="none" stroke="#35516c" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

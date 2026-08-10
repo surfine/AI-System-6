@@ -1,0 +1,177 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Preserve one semantic object identity across six appearances without sharing era artwork, geometry, material, perspective, or size hints.",
+  "continuityRules": [
+    "Runtime ids, product names, actions, and state meanings stay stable across appearances.",
+    "Historical system objects use the target operating system's real prototype before custom product objects are drawn.",
+    "Custom objects keep one physical metaphor across eras only when that metaphor remains period-plausible.",
+    "Every appearance owns independent large and small artwork; no appearance is recolored, flattened, thresholded, or glass-wrapped from another.",
+    "Selection, dragging, disabled state, and Finder label treatment belong to the system surface rather than the icon artwork."
+  ],
+  "semanticAnchors": {
+    "finderApp": {
+      "role": "Finder or system identity",
+      "continuity": "The operating environment itself, using the target era's native system identity prototype."
+    },
+    "folder": {
+      "role": "Folder",
+      "continuity": "A system-owned container; reproduce the target era's real Finder folder."
+    },
+    "hardDisk": {
+      "role": "Hard disk",
+      "continuity": "A mounted local storage volume; reproduce the target era's real disk prototype."
+    },
+    "trash": {
+      "role": "Trash",
+      "continuity": "The system waste container; empty and full are states of the same object."
+    },
+    "document": {
+      "role": "Generic document",
+      "continuity": "A neutral editable paper or document owned by the target system."
+    },
+    "daHandler": {
+      "role": "Generic application",
+      "continuity": "The target era's generic application or utility container, not an AI logo."
+    },
+    "fileFloppy": {
+      "role": "File Floppy",
+      "continuity": "Temporary removable context media; literal floppy where period-correct, translated to era-appropriate removable media later."
+    },
+    "projectDisk": {
+      "role": "Project Hard Disk",
+      "continuity": "Durable project storage: a period-correct volume with one restrained project label cue."
+    },
+    "searcher": {
+      "role": "Searcher",
+      "continuity": "A single magnifying glass; material, perspective, and optical construction change per era."
+    },
+    "teachText": {
+      "role": "TeachText",
+      "continuity": "A writing document with a period-correct writing instrument or text-editor identity."
+    },
+    "scrapbook": {
+      "role": "Scrapbook",
+      "continuity": "A bound album holding selected clippings; never a generic notes page."
+    },
+    "assistant": {
+      "role": "ClioTalk",
+      "continuity": "Conversation translated through period-plausible correspondence, telephone, transcript, or speech objects; never a modern chatbot mark."
+    },
+    "controlPanel": {
+      "role": "Settings",
+      "continuity": "The target era's real Control Panel, System Preferences, or Settings prototype."
+    },
+    "reviewDesk": {
+      "role": "Review Desk",
+      "continuity": "A document under proofing or correction, reduced to one readable compound object."
+    },
+    "docMap": {
+      "role": "DocMap",
+      "continuity": "A period-plausible map, index, or filing structure rather than a modern node graph."
+    },
+    "projectDisc": {
+      "role": "Project CD",
+      "continuity": "Finished export media, represented by the target era's optical or archival medium."
+    },
+    "systemFile": {
+      "role": "System",
+      "continuity": "The target era's native system software container or identity object."
+    },
+    "clipboard": {
+      "role": "Clipboard",
+      "continuity": "A period-correct clipboard for transient copied material; distinct from Scrapbook's durable selected clippings."
+    }
+  },
+  "coreBatches": {
+    "classic": [
+      "finderApp",
+      "folder",
+      "hardDisk",
+      "trash",
+      "document",
+      "daHandler",
+      "fileFloppy",
+      "projectDisk",
+      "searcher",
+      "teachText",
+      "scrapbook",
+      "assistant"
+    ],
+    "platinum": [
+      "finderApp",
+      "folder",
+      "hardDisk",
+      "trash",
+      "document",
+      "daHandler",
+      "fileFloppy",
+      "projectDisc",
+      "controlPanel",
+      "systemFile",
+      "scrapbook",
+      "clipboard"
+    ],
+    "aqua": [
+      "finderApp",
+      "folder",
+      "hardDisk",
+      "trash",
+      "document",
+      "daHandler",
+      "controlPanel",
+      "searcher",
+      "teachText",
+      "assistant",
+      "scrapbook",
+      "projectDisk"
+    ],
+    "snow-leopard": [
+      "finderApp",
+      "folder",
+      "hardDisk",
+      "trash",
+      "document",
+      "daHandler",
+      "controlPanel",
+      "searcher",
+      "teachText",
+      "assistant",
+      "scrapbook",
+      "reviewDesk",
+      "docMap",
+      "projectDisk"
+    ],
+    "yosemite": [
+      "finderApp",
+      "folder",
+      "hardDisk",
+      "trash",
+      "document",
+      "daHandler",
+      "controlPanel",
+      "searcher",
+      "teachText",
+      "assistant",
+      "scrapbook",
+      "reviewDesk",
+      "docMap",
+      "projectDisk"
+    ],
+    "liquid-glass": [
+      "finderApp",
+      "folder",
+      "hardDisk",
+      "trash",
+      "document",
+      "daHandler",
+      "controlPanel",
+      "searcher",
+      "teachText",
+      "assistant",
+      "scrapbook",
+      "reviewDesk",
+      "docMap",
+      "projectDisk"
+    ]
+  }
+}

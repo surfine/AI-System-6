@@ -13,7 +13,7 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 // Regenerate the single source of version/build/commit and stamp the
 // index.html cache-busters before the bundle is assembled, so every build
 // path (dev, verify:release, web release, packaging) reports one identity.
-generateBuildInfo();
+const buildIdentity = generateBuildInfo();
 
 // Canonical tesseract.js worker patch. tesseract.js@7's worker file
 // uses `require('..')` which trips Node's CJS resolver in certain
@@ -92,6 +92,20 @@ console.log(`Built app.bundle.js from ${appRuntimePaths.length} source files.`);
 const cssSource = styleRuntimePaths
   .map((path) => readFileSync(join(root, path), "utf8"))
   .join("\n");
-const cssBundle = minifyCss(cssSource);
+
+// The origin serves non-HTML/JS/CSS assets with a long cache lifetime
+// (public, max-age=604800) and the CSS refers to them by stable URLs, so a
+// release that changes an asset would leave returning visitors on the old
+// bytes for up to a week. index.html already busts its own bundle refs with
+// ?v=<build>; stamp every static asset url() in the CSS bundle with the same
+// build so a new release always fetches fresh icons, sprites and fonts.
+function stampCssAssetUrls(css, build) {
+  return css.replace(
+    /url\(\s*(['"]?)((?:\.{0,2}\/)*assets\/[\w./-]+\.(?:svg|png|jpg|jpeg|webp|gif|ico|woff|woff2|dat|ttf)(?:\?[^)'"]*)?)\1\s*\)/gi,
+    (match, quote, url) => (/\?/.test(url) ? match : `url(${quote}${url}?v=${build}${quote})`)
+  );
+}
+
+const cssBundle = stampCssAssetUrls(minifyCss(cssSource), buildIdentity.build);
 writeFileSync(join(root, cssBundlePath), `${cssBundle}\n`, "utf8");
 console.log(`Built ${cssBundlePath} from ${styleRuntimePaths.length} source files.`);

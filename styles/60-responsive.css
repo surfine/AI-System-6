@@ -3039,6 +3039,29 @@ input[type="radio"] {
   }
 }
 
+/* The current-application menu is a pointer-era desktop affordance. On touch
+   devices every appearance hides it (the base rule defaults to none and Aqua
+   re-enables it via --menu-current-app-display), so the menu bar fits the
+   viewport instead of pushing the trailing Model / New Project buttons off
+   the right edge of a phone. */
+@media (hover: none) {
+  .menu-bar-current-app {
+    display: none;
+  }
+}
+
+/* The compact phone menu bar rule must win over the iPad-portrait block
+   above. That block applies at every width up to 860px in portrait, so its
+   10px button padding overrides the narrower phone rule and pushes the
+   trailing Model / New Project buttons past a 320px viewport in English.
+   Source order decides the cascade, so this narrow-phone override stays after
+   it: phones keep compact 4px padding, tablets keep the roomier 10px. */
+@media (max-width: 420px) {
+  .menu-bar > .menu > button {
+    padding: 0 4px;
+  }
+}
+
 /* Use Result on a phone: the dialog stacks its two panes, so it should take the
    screen it is given. Capping it at the desktop 620px left ~150px of the phone
    unused while the panes scrolled inside it. */

@@ -2,11 +2,11 @@
 /**
  * Local ship gate (verify:ship).
  *
- * The release condition is this reproducible local gate: fast, deterministic,
- * repeatable, and runnable in a few minutes without a browser download or a
- * WebKit dependency. It never starts Playwright and never depends on the E2E
- * matrix; the browser tests remain an optional diagnostic (`npm run
- * test:e2e`) for humans, not a release condition.
+ * The release condition is this reproducible local gate: deterministic and
+ * repeatable, plus six-appearance regression, representative real-app
+ * propagation, and four-appearance canonical-fidelity browser gates. The E2E
+ * matrix remains an optional diagnostic (`npm run test:e2e`) for humans, not
+ * a release condition.
  *
  * The gate runs every required check, records each exit code + duration, and
  * writes dist/verification-report.json with the release identity so a release
@@ -33,6 +33,10 @@ const checks = [
   { name: "data-boundary", command: "npm", args: ["run", "verify:data"] },
   { name: "docs", command: "npm", args: ["run", "verify:docs"] },
   { name: "css", command: "npm", args: ["run", "verify:css"] },
+  { name: "theme-icons", command: "npm", args: ["run", "verify:theme-icons"] },
+  { name: "theme-lab-regression", command: "npm", args: ["run", "verify:theme-lab"] },
+  { name: "appearance-real-apps", command: "npm", args: ["run", "verify:appearance-apps"] },
+  { name: "theme-lab-fidelity", command: "npm", args: ["run", "verify:theme-lab:fidelity"] },
   { name: "design", command: "npm", args: ["run", "verify:design"] },
   { name: "public-tree", command: "npm", args: ["run", "verify:public"] },
   { name: "runtime-syntax", command: process.execPath, args: ["scripts/verify-ship-runtime-syntax.mjs"] },
@@ -122,4 +126,4 @@ if (failed) {
   console.error(`[verify:ship] FAILED: ${failed} of ${results.length} checks did not pass.`);
   process.exit(1);
 }
-console.log(`[verify:ship] PASSED: all ${results.length} checks. No browser or E2E gate is part of this release condition.`);
+console.log(`[verify:ship] PASSED: all ${results.length} checks (appearance regression, real-app propagation, and canonical fidelity are release conditions; the E2E matrix is not).`);

@@ -1,17 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
-  <!-- 10.10 Outline: white document with indented outline lines (heading +
-       sub-lines). -->
-  <defs>
-    <linearGradient id="g-page" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffffff"/>
-      <stop offset="1" stop-color="#eef2f7"/>
-    </linearGradient>
-  </defs>
-  <path d="M6 3h13v5h7v19a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V3z" fill="url(#g-page)" stroke="#9db1c8" stroke-width="1"/>
-  <path d="M19 3h7v5h-7z" fill="#e8eef6" stroke="#9db1c8" stroke-width="1"/>
-  <rect x="8" y="12" width="5" height="1.2" rx="0.6" fill="#3e7cc4"/>
-  <rect x="8" y="15" width="13" height="1" rx="0.5" fill="#a7b6c8"/>
-  <rect x="10" y="18" width="11" height="1" rx="0.5" fill="#a7b6c8"/>
-  <rect x="10" y="21" width="9" height="1" rx="0.5" fill="#a7b6c8"/>
-  <rect x="8" y="24" width="12" height="1" rx="0.5" fill="#c2cddb"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
+<defs>
+      <linearGradient id="body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#f1f0e9"/></linearGradient>
+      <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#eef3f7"/></linearGradient>
+      <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7fafc"/><stop offset="1" stop-color="#b7c3cf"/></linearGradient>
+    </defs>
+<path d="M11 20h43v35H11z" fill="#d7bd8c" stroke="#789bb9" stroke-width="1.35"/><path d="M16 11h34v35H16z" fill="url(#paper)" stroke="#789bb9" stroke-width="1.35"/><path d="M22 7h28v32H22z" fill="url(#paper)" stroke="#789bb9" stroke-width="1.35"/><path d="M25 29h3v3h-3zM31 30h10M25 36h3v3h-3zM31 37h9M25 43h3v3h-3zM31 44h7" fill="none" stroke="#2e7fcb" stroke-width="1.7"/>
 </svg>

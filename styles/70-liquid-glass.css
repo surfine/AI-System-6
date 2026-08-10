@@ -3282,8 +3282,7 @@ body.use-liquid-glass .finder-list-row {
   border-bottom: 1px solid rgba(255, 255, 255, 0.28);
 }
 
-body.use-liquid-glass .empty-folder-note .icon,
-body.use-liquid-glass .empty-folder-note .sys-icon {
+body.use-liquid-glass .empty-folder-note .icon {
   border-color: rgba(255, 255, 255, 0.5);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.24)),
@@ -3385,7 +3384,7 @@ body.use-liquid-glass .finder-item.is-selected small {
 
 body.use-liquid-glass .finder-item.is-selected .sys-icon {
   color: #ffffff;
-  background: rgba(255, 255, 255, 0.12);
+  background: transparent;
 }
 
 body.use-liquid-glass .finder-list-row.is-selected,
@@ -3522,8 +3521,7 @@ body.use-liquid-glass .spine-actions button:focus-visible b {
 }
 
 body.use-liquid-glass .icon,
-body.use-liquid-glass .mini-icon,
-body.use-liquid-glass .sys-icon {
+body.use-liquid-glass .mini-icon {
   filter: drop-shadow(0 4px 8px rgba(18, 28, 38, 0.16));
 }
 
@@ -3541,17 +3539,14 @@ body.use-liquid-glass .sys-icon-liquid {
 
 body.use-liquid-glass .sys-icon {
   color: #101114;
-  border: 1px solid rgba(255, 255, 255, 0.58);
-  border-radius: 12px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.76), rgba(255, 255, 255, 0.24)),
-    rgba(255, 255, 255, 0.24);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.82),
-    0 8px 24px rgba(18, 28, 38, 0.12);
-  backdrop-filter: blur(7px) saturate(135%);
-  -webkit-backdrop-filter: blur(7px) saturate(135%);
-  padding: 4px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  filter: none;
+  padding: 0;
 }
 
 body.use-liquid-glass :is(.menu-bar, .control-strip) .sys-icon,
@@ -3610,12 +3605,9 @@ body.use-liquid-glass .desktop-icon:focus-visible .sys-icon,
 body.use-liquid-glass .desktop-icon.is-selected .sys-icon,
 body.use-liquid-glass .spine-actions button:hover .sys-icon,
 body.use-liquid-glass .spine-actions button:focus-visible .sys-icon {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.34)),
-    rgba(255, 255, 255, 0.3);
-  box-shadow:
-    inset 0 1px 0 #ffffff,
-    0 10px 30px rgba(18, 28, 38, 0.16);
+  background: transparent;
+  box-shadow: none;
+  filter: drop-shadow(0 5px 9px rgba(18, 28, 38, 0.2)) saturate(1.08);
 }
 
 body.use-liquid-glass .teachtext-tabs.tdi-tabs + .details-bar {

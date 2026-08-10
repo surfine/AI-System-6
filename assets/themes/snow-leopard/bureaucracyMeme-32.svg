@@ -1,39 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
-  <!-- Snow Leopard 10.6 painter (shared recipe): matte silver body, soft top
-       highlight, gentle shade, quiet rim. Same anatomy, quieter generation. -->
-  <defs>
-    <linearGradient id="g-body" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#e4e4ed"/>
-      <stop offset="0.5" stop-color="#c7c7d6"/>
-      <stop offset="1" stop-color="#9e9fb2"/>
-    </linearGradient>
-    <linearGradient id="g-soft" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ededf3"/>
-      <stop offset="1" stop-color="#bbbdca"/>
-    </linearGradient>
-    <linearGradient id="g-hi" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.38"/>
-      <stop offset="0.45" stop-color="#ffffff" stop-opacity="0"/>
-    </linearGradient>
-    <linearGradient id="g-sh" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0.6" stop-color="#000000" stop-opacity="0"/>
-      <stop offset="1" stop-color="#000000" stop-opacity="0.16"/>
-    </linearGradient>
-    <clipPath id="cp-body">
-      <path d="M5 7h22v16H5z" />
-      <path d="M8 10h16v10H8z" />
-    </clipPath>
-  </defs>
-  <path d="M5 7h22v16H5z" fill="url(#g-body)" stroke="#4d4d4d" stroke-width="1" />
-    <path d="M8 10h16v10H8z" fill="url(#g-body)" stroke="#4d4d4d" stroke-width="1" />
-  <g clip-path="url(#cp-body)">
-    <rect x="0" y="0" width="32" height="32" fill="url(#g-hi)"/>
-    <rect x="0" y="0" width="32" height="32" fill="url(#g-sh)"/>
-    <rect x="1" y="0" width="30" height="1" fill="#ffffff" fill-opacity="0.55"/>
-  </g>
-  <circle cx="13" cy="14" r="2" fill="#444152" stroke="#3c3c3c" stroke-width="0.8" />
-  <circle cx="19" cy="14" r="2" fill="#444152" stroke="#3c3c3c" stroke-width="0.8" />
-  <path d="M10 22l-2 5M22 22l2 5" fill="none" stroke="#4a4a4a" stroke-width="1" stroke-linecap="square" />
-  <path d="M11 17h10M12 20h8" fill="none" stroke="#4a4a4a" stroke-width="1" stroke-linecap="square" />
-  <path d="M14 5h4M16 3v4" fill="none" stroke="#4a4a4a" stroke-width="1" stroke-linecap="square" />
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
+<defs>
+      <linearGradient id="body" x1="0.08" y1="0" x2="0.92" y2="1"><stop offset="0" stop-color="#ffd9d5"/><stop offset="0.42" stop-color="#e88778"/><stop offset="1" stop-color="#6d292c"/></linearGradient>
+      <linearGradient id="paper" x1="0" y1="0" x2="0.75" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="0.66" stop-color="#f4f3ed"/><stop offset="1" stop-color="#bdc3c9"/></linearGradient>
+      <linearGradient id="metal" x1="0" y1="0" x2="0.2" y2="1"><stop offset="0" stop-color="#fdfefe"/><stop offset="0.18" stop-color="#bec7cf"/><stop offset="0.47" stop-color="#6f7d8a"/><stop offset="0.65" stop-color="#e1e6e9"/><stop offset="1" stop-color="#48535d"/></linearGradient>
+      <radialGradient id="lens" cx="0.3" cy="0.22" r="0.78"><stop offset="0" stop-color="#e8f7ff" stop-opacity="0.92"/><stop offset="0.48" stop-color="#72b2dc" stop-opacity="0.74"/><stop offset="1" stop-color="#234c6d" stop-opacity="0.92"/></radialGradient>
+      <linearGradient id="leather" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c39a69"/><stop offset="0.52" stop-color="#87603f"/><stop offset="1" stop-color="#4b3024"/></linearGradient>
+    </defs>
+<ellipse cx="33" cy="54" rx="19" ry="2.7" fill="#000000" fill-opacity="0.24"/><path d="M14 39h36l8 15H6z" fill="#943f39" stroke="#36434d" stroke-width="1.65"/><path d="M20 9h24v31H20z" fill="url(#leather)" stroke="#36434d" stroke-width="1.65"/><path d="M25 7h14" stroke="#402820" stroke-width="5" stroke-linecap="round"/><rect x="23" y="27" width="17" height="21" fill="#ffffff" stroke="#303b45" stroke-width="1.8"/><path d="M26 32h11M26 37h8M26 42h10" fill="none" stroke="#303b45" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M35 43l9-9" stroke="#aa4e48" stroke-width="3.8"/>
 </svg>

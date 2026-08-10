@@ -1612,17 +1612,7 @@ function themeHasCapability(capability) {
 }
 
 function syncThemeLabEvidence(theme) {
-  const lab = document.querySelector('[data-window="themeLab"]');
-  if (!lab || !theme) return;
-  const values = [
-    ["[data-theme-lab-appearance]", theme.label],
-    ["[data-theme-lab-font]", theme.systemFont],
-    ["[data-theme-lab-font-size]", theme.systemFontSize],
-  ];
-  for (const [selector, value] of values) {
-    const target = lab.querySelector(selector);
-    if (target) target.textContent = String(value);
-  }
+  window.AISystem6ThemeLab?.sync?.(theme);
 }
 
 function applyTheme(themeId, options = {}) {

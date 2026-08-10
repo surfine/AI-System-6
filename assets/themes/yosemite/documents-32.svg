@@ -1,18 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
-  <!-- 10.10 Documents: two overlapping documents. -->
-  <defs>
-    <linearGradient id="g-back" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#e2e8ef"/>
-      <stop offset="1" stop-color="#c7d2df"/>
-    </linearGradient>
-    <linearGradient id="g-front" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffffff"/>
-      <stop offset="1" stop-color="#eef2f7"/>
-    </linearGradient>
-  </defs>
-  <path d="M8 8h9v3.5h5v11a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 8 22.5V8z" fill="url(#g-back)" stroke="#93a3b5" stroke-width="0.9"/>
-  <path d="M12 4h9v3.5h5v11a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 12 18.5V4z" fill="url(#g-front)" stroke="#8d9aab" stroke-width="1"/>
-  <path d="M21 4h5v3.5h-5z" fill="#dde5ee" stroke="#8d9aab" stroke-width="1"/>
-  <rect x="14.5" y="8.5" width="8" height="0.8" rx="0.4" fill="#a7b6c8"/>
-  <rect x="14.5" y="11.5" width="7" height="0.8" rx="0.4" fill="#c2cddb"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
+<defs>
+      <linearGradient id="body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9efff"/><stop offset="1" stop-color="#75b9ec"/></linearGradient>
+      <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#eef3f7"/></linearGradient>
+      <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7fafc"/><stop offset="1" stop-color="#b7c3cf"/></linearGradient>
+    </defs>
+<path d="M6 20h20l6 6h26v29H6z" fill="#70b2e5" stroke="#789bb9" stroke-width="1.35" stroke-linejoin="round"/><path d="M6 31h52v24H6z" fill="#78b7e7" stroke="#789bb9" stroke-width="1.35"/><path d="M23 27h14v18H23zM28 31h14v18H28z" fill="#ffffff" stroke="#2e7fcb" stroke-width="1.7"/>
 </svg>

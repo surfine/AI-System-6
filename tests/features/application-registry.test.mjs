@@ -219,4 +219,101 @@ test.assert(
 test.assert(fifth.statusCalls.some((message) => message.includes("boom")), "handler errors show the public error");
 test.assert(statusCalls.length >= 0, "dispatch status helpers stay available");
 
+// Handler business failures: a handler returning { ok:false } is a normal
+// unsuccessful result, never a completed run. The receipt must not be marked
+// completed and Assistant Activity must not end ready.
+const sixth = createRegistryContext();
+let rejectedHandlerCalls = 0;
+sixth.context.window.AISystem6ApplicationRegistry.registerApplication({
+  id: "rejectingApp",
+  labelKey: "reject",
+  windowName: "",
+  acceptedItemKinds: ["text"],
+  acceptedIntents: ["review"],
+  recordsRuns: ["review"],
+  handler: async () => {
+    rejectedHandlerCalls += 1;
+    return { ok: false, reason: "empty", publicErrorReason: "Nothing to review." };
+  },
+});
+const rejected = await sixth.context.window.AISystem6ApplicationRegistry.dispatchApplicationIntent("rejectingApp", {
+  intent: "review",
+  items: [textFile],
+});
+test.assert(rejected.ok === false && rejected.reason === "empty", "a handler {ok:false} result fails the dispatch");
+test.assert(rejectedHandlerCalls === 1, "the {ok:false} handler did run once");
+test.assert(
+  sixth.receiptCalls.some((call) => call[0] === "finish" && call[2]?.status === "failed"),
+  "a business failure is recorded as a failed receipt, never completed"
+);
+test.assert(
+  !sixth.receiptCalls.some((call) => call[0] === "finish" && call[2]?.status === "completed"),
+  "a business failure never writes a completed receipt"
+);
+test.assert(
+  sixth.activityCalls.some((call) => call[0] === "end" && call[2]?.ok === false),
+  "a business failure ends assistant activity as unsuccessful"
+);
+test.assert(
+  sixth.statusCalls.some((message) => message.includes("Nothing to review.")),
+  "a business failure shows its public error reason"
+);
+
+// Typed dispatch cannot bypass descriptor capability: an explicit appId that
+// does not accept the intent or the item kind fails closed before the handler
+// runs, and no receipt is created.
+const seventh = createRegistryContext();
+let mismatchHandlerCalls = 0;
+seventh.context.window.AISystem6ApplicationRegistry.registerApplication({
+  id: "openOnlyApp",
+  labelKey: "open",
+  windowName: "",
+  acceptedItemKinds: ["text"],
+  acceptedIntents: ["open"],
+  recordsRuns: [],
+  handler: async () => {
+    mismatchHandlerCalls += 1;
+    return { ok: true };
+  },
+});
+const mismatchIntent = await seventh.context.window.AISystem6ApplicationRegistry.dispatchApplicationIntent("openOnlyApp", {
+  intent: "review",
+  items: [textFile],
+});
+test.assert(
+  mismatchIntent.ok === false && mismatchIntent.reason === "unsupported-intent",
+  "an explicit appId cannot run an intent it does not accept"
+);
+test.assert(mismatchHandlerCalls === 0, "the handler never runs on an unsupported intent");
+test.assert(seventh.receiptCalls.length === 0, "no receipt is created on an unsupported intent");
+test.assert(
+  seventh.statusCalls.some((message) => message.includes("application_dispatch_unsupported_intent")),
+  "an unsupported intent fails visibly"
+);
+
+const eighth = createRegistryContext();
+let kindMismatchCalls = 0;
+eighth.context.window.AISystem6ApplicationRegistry.registerApplication({
+  id: "chatOnlyApp",
+  labelKey: "chat",
+  windowName: "",
+  acceptedItemKinds: ["chat"],
+  acceptedIntents: ["open"],
+  recordsRuns: [],
+  handler: async () => {
+    kindMismatchCalls += 1;
+    return { ok: true };
+  },
+});
+const mismatchKind = await eighth.context.window.AISystem6ApplicationRegistry.dispatchApplicationIntent("chatOnlyApp", {
+  intent: "open",
+  items: [textFile],
+});
+test.assert(
+  mismatchKind.ok === false && mismatchKind.reason === "unsupported-kind",
+  "an explicit appId cannot run on an item kind it does not accept"
+);
+test.assert(kindMismatchCalls === 0, "the handler never runs on an unsupported kind");
+test.assert(eighth.receiptCalls.length === 0, "no receipt is created on an unsupported kind");
+
 test.finish();

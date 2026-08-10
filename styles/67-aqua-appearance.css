@@ -194,6 +194,8 @@ body[data-theme="aqua"] {
     repeating-linear-gradient(to bottom, #fafafa 0 1px, #ffffff 1px 2px, #fafafa 2px 3px, #e9e9e9 3px 4px);
   --toolbar-bg-inactive: var(--toolbar-bg);
   --toolbar-border: 1px solid #7f7f7f;
+  --app-toolbar-bg: var(--toolbar-bg);
+  --app-toolbar-border-bottom: 1px solid #c7c7c7;
   --sidebar-bg: #ffffff;
   --sidebar-bg-inactive: #ffffff;
   --selection-bg: #3479d4;
@@ -897,6 +899,12 @@ body[data-theme="snow-leopard"] {
      darker bottom edge. Previously the fixture used a darker #d5d5d5 ->
      #a7a7a7 ramp that read more like gray plastic than 10.6 chrome. */
   --theme-lab-toolbar-bg: linear-gradient(#c0c0c0 0%, #b1b1b1 55%, #b3b3b3 100%);
+  /* The Home capture's 29px control band is a nearly linear #bebebe ->
+     #a7a7a7 ramp. Its separator sits on the following pixel, outside the
+     canonical control-row crop. */
+  --theme-lab-snow-toolbar-height: 30px;
+  --theme-lab-snow-toolbar-bg: linear-gradient(#bebebe, #a7a7a7);
+  --theme-lab-snow-toolbar-shadow: none;
   --theme-lab-nav-row-min-height: 24px;
   --theme-lab-nav-row-padding-block: 2px;
   --theme-lab-finder-row-min-height: 27px;
@@ -974,6 +982,8 @@ body[data-theme="snow-leopard"] {
   --toolbar-bg: linear-gradient(#c0c0c0, #b1b1b1 55%, #b3b3b3);
   --toolbar-bg-inactive: linear-gradient(#e4e4e4, #d8d8d8);
   --toolbar-border: 1px solid #515151;
+  --app-toolbar-bg: linear-gradient(to bottom, #f0f0f0 0%, #e3e3e3 45%, #d2d2d2 100%);
+  --app-toolbar-border-bottom: 1px solid #a9a9a9;
   --toolbar-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.66);
   /* Quaqua jtree.png (10.6 source list): measured #dde4eb surface with a
      light blue selection and dark label; the saturated Aqua selection stays
@@ -985,18 +995,22 @@ body[data-theme="snow-leopard"] {
      #3766f2 (mid) -> #1d5bf2 (bottom) with white labels. */
   --selection-bg: linear-gradient(#577dea, #3766f2 50%, #1d5bf2);
   --selection-fg: #ffffff;
-  /* Real 10.6 Finder list capture (512 Pixels, 10-6 Finder-Home, 1:1):
-     content rows select with light blue measured ~#c1d7e5 (top edge) ->
-     #bbd3e2 (body) -> #b6d0e0 (bottom) and dark labels. */
-  /* Real 10.6 Finder content-row selection (512 Pixels Home capture) is a
-     light blue ramp (~#b4cfe0 -> #92b5ca) with horizontal column variation;
-     the source-list (sidebar) selection is the deep #6aa4db -> #2070bb
-     gradient. The two must not share a token. The flat average that keeps
-     the harness material lowest stays as the generic fixture value. */
-  --theme-lab-list-selected-bg: linear-gradient(#c1d7e5, #bbd3e2 55%, #b6d0e0);
-  --theme-lab-list-selected-fg: #000000;
-  /* The real capture's source-list selection is a saturated blue (#5896d0 ->
-     #216cb7) with white labels; content lists use the light selection above. */
+  /* Real 10.6 Finder Cover Flow list selection (512 Pixels, 1:1): an 18px
+     active row with a #3875d7 rim, #5b8dde center band and white labels.
+     This is independent from the source-list gradient below. */
+  --theme-lab-list-selected-bg:
+    linear-gradient(#3875d7 0 22%, #4a81da 22% 28%, #5b8dde 33% 78%, #3875d7 78% 100%);
+  --theme-lab-list-selected-fg: #ffffff;
+  --theme-lab-list-row-min-height: 18px;
+  --theme-lab-list-row-gap: 4px;
+  --theme-lab-list-row-padding: 1px 6px;
+  --theme-lab-list-row-border-bottom: 0;
+  --theme-lab-list-row-font-size: 12px;
+  --theme-lab-list-row-line-height: 16px;
+  --theme-lab-list-icon-display: block;
+  --theme-lab-list-icon-size: 16px;
+  --theme-lab-list-icon-image: url("./assets/themes/snow-leopard/folder-16.svg");
+  --theme-lab-list-document-image: url("./assets/themes/snow-leopard/document-16.svg");
   /* Real 10.6 source list (512 Pixels Finder-Home): #69a3da -> #1468b6. */
   --sidebar-selection-bg:
     linear-gradient(#69a3da, #69a3da) top / 100% 1px no-repeat,
@@ -1137,30 +1151,48 @@ body[data-theme="snow-leopard"] {
   --scrollbar-compact-track: linear-gradient(90deg, #808080, #a4a4a4 25%, #a4a4a4);
   --scrollbar-compact-thumb: linear-gradient(90deg, #c0c0c0, #d6d6d6 40%, #c0c0c0);
   --scrollbar-compact-radius: 5px;
-  --tab-radius: 5px 5px 0 0;
+  --tab-radius: 5px;
   --tab-overlap: 0;
-  /* 10.5+ preference tabs are neutral: gray unselected, white selected.
-     The blue-gradient selected tab is a Jaguar (10.2) holdover. Quaqua's
-     Panther/Tiger and later tab renderings are gray/white throughout. */
-  --tab-bg: linear-gradient(#f4f4f4, #d4d4d4);
+  /* Real 10.6 Displays preference pane (512 Pixels, 1:1): compact connected
+     tabs use a neutral gloss at rest and a blue Aqua gloss when selected. */
+  --tab-bg: linear-gradient(#f9f9f9 0%, #ededed 42%, #e3e3e3 50%, #ffffff 100%);
   --tab-hover-bg: linear-gradient(#ffffff, #f0f0f0);
-  --tab-active-bg: linear-gradient(#ffffff, #f2f2f2 55%, #e8e8e8);
+  --tab-active-bg: linear-gradient(#eaf2fb 0%, #acd1f0 42%, #7ab7e8 48%, #9cd1fb 75%, #cfffff 100%);
   --tab-active-fg: #111111;
-  /* Quaqua 9 jtabbedpane 10.6 edge-to-edge strip: tabs sit on a full-width
-     light panel (~#e3e3e3 -> #cccccc) with a hairline bottom border. The
-     shared fixture paints the strip background on the container so the tab
-     silhouette spans the whole element, not just the buttons. */
-  --theme-lab-tabs-border-bottom: 1px solid #a8a8a8;
-  --theme-lab-tabs-border-top: 1px solid #c0c0c0;
-  --theme-lab-tabs-bg: linear-gradient(#f7f7f7 0px, #f7f7f7 1px, #e8e8e8 2px, #dcdcdc 8px, #d5d5d5 45%, #cccccc 100%);
-  --theme-lab-tabs-padding: 6px 10px 0;
-  --theme-lab-tab-button-border: 1px solid #9a9a9a;
+  --theme-lab-tabs-gap: 0;
+  --theme-lab-tabs-border-bottom: 0;
+  --theme-lab-tabs-border-top: 0;
+  --theme-lab-tabs-bg: #ededed;
+  --theme-lab-tabs-padding: 1px 0 0;
+  --theme-lab-tab-button-min-height: 22px;
+  --theme-lab-tab-button-height: 22px;
+  --theme-lab-tab-button-padding: 1px 12px;
+  --theme-lab-tab-button-border: 1px solid #777777;
+  --theme-lab-tab-button-radius: 0;
+  --theme-lab-tab-button-bg: var(--tab-bg);
+  --theme-lab-tab-button-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.74);
+  --theme-lab-tab-selected-min-height: 22px;
+  --theme-lab-tab-selected-height: 22px;
+  --theme-lab-tab-selected-bg: var(--tab-active-bg);
+  --theme-lab-tab-selected-fg: #111111;
+  --theme-lab-tab-selected-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  --theme-lab-tab-line-height: 18px;
+  --theme-lab-tab-first-radius: 5px 0 0 5px;
+  --theme-lab-tab-last-radius: 0 5px 5px 0;
+  --theme-lab-tab-last-border-right: 1px solid #777777;
   --system-radio-size: 18px;
   --system-check-size: 18px;
   --theme-lab-button-min-width: 72px;
   --theme-lab-group-bg: #ededed;
   --theme-lab-group-border: 1px solid #b7b7b7;
   --theme-lab-group-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  /* Real 10.6 Apple menu capture (512 Pixels, 10-6 Go-Menu, 1:1): a 20px row
+     with a ~21px left icon gutter and the full-width saturated blue ramp
+     (#577dea -> #1d5bf2, owned by --menu-item-active-bg below). These Theme
+     Lab fixture tokens keep the selected row at the 10.6 reference geometry
+     instead of the generic 22px default row. */
+  --theme-lab-menu-item-min-height: 16px;
+  --theme-lab-menu-item-padding: 2px 9px 2px 21px;
 
 }
 
@@ -1619,21 +1651,6 @@ body[data-theme="aqua"] .info-comments textarea {
   font-family: var(--theme-ui-font);
 }
 
-/* Real-app window toolbars read as a pinstripe band merged under the
-   title bar, matching the 10.2 unified-header material. Layout stays
-   untouched; only the surface is Aqua. */
-body[data-theme="aqua"] :is(
-  .window-toolbar,
-  .documents-toolbar,
-  .project-disk-toolbar,
-  .reader-toolbar,
-  .time-machine-browser-toolbar,
-  .dictation-toolbar
-) {
-  background: var(--toolbar-bg);
-  border-bottom: 1px solid #c7c7c7;
-}
-
 /* Aqua desktop icon labels sit on a translucent white tag with a soft
    contact shadow, not the System 6 gray paper tag. */
 body[data-theme="aqua"] .desktop-icon span:last-child {
@@ -1780,21 +1797,6 @@ body[data-theme="snow-leopard"] select:not([multiple]) {
   font-family: var(--theme-ui-font);
   font-weight: var(--select-control-font-weight);
 
-}
-
-/* Snow Leopard real-app surfaces: silver unified toolbar band, silver alert
-   with the Aqua-branch alert anatomy, segmented view controls, white
-   desktop labels. */
-body[data-theme="snow-leopard"] :is(
-  .window-toolbar,
-  .documents-toolbar,
-  .project-disk-toolbar,
-  .reader-toolbar,
-  .time-machine-browser-toolbar,
-  .dictation-toolbar
-) {
-  background: linear-gradient(to bottom, #f0f0f0 0%, #e3e3e3 45%, #d2d2d2 100%);
-  border-bottom: 1px solid #a9a9a9;
 }
 
 body[data-theme="snow-leopard"] .system-modal {
@@ -2269,7 +2271,10 @@ body[data-theme="aqua"] :where(
   input[type="number"]
 ) {
 
-  min-height: var(--system-control-min-height);
+  /* Same rule as the Yosemite recipe: single-line controls keep the shared
+     22px control minimum from the base rule; textareas stay content-sized so
+     app-owned transcript/editor min-heights win (dictation 84px, translation
+     pad 118px, rebuild 180px). */
   padding: var(--field-control-padding);
   border: var(--field-border);
   border-radius: var(--field-radius);
@@ -2311,10 +2316,16 @@ body[data-theme="aqua"] .theme-lab-mini-window.is-inactive, body[data-theme="sno
 
 }
 
-body[data-theme="aqua"] :is(.theme-lab-sidebar, .theme-lab-list) button, body[data-theme="snow-leopard"] :is(.theme-lab-sidebar, .theme-lab-list) button {
+body[data-theme="aqua"] :is(.theme-lab-sidebar, .theme-lab-list) button, body[data-theme="snow-leopard"] .theme-lab-sidebar button {
 
   min-height: var(--theme-lab-nav-row-min-height);
   padding-block: var(--theme-lab-nav-row-padding-block);
+
+}
+
+body[data-theme="snow-leopard"] .theme-lab-tabs button.is-selected {
+
+  border-color: #353b95;
 
 }
 
@@ -2345,13 +2356,10 @@ body[data-theme="snow-leopard"] .window:not(.is-active) .theme-lab-sidebar butto
   background: var(--sidebar-selection-bg-inactive);
 
 }
-/* Aqua branch complete icon sets (54 objects). Continuity: the
-   same silhouettes as the Liquid Glass painter / Yosemite flat family;
-   material is the era generation (10.2 glossy candy vs 10.6 matte silver).
-   Icons live in per-theme PNG sprites. Transport glyphs and menu chrome keep
-   the inline painter. Position rules are theme-independent: --sp is consumed
-   only by the Aqua/SL sprite rule, so other appearances ignore it.
-   No Apple art; AI System 6 paths. */
+/* Aqua and Snow Leopard own independent 54-object families. Jaguar uses
+   early-Aqua illustrated geometry; Snow Leopard uses its own mature material,
+   perspective, and detail construction. Only the semantic sprite order is
+   shared. Shadows are part of each artwork rather than a CSS filter. */
 :where(body[data-theme="aqua"], body[data-theme="snow-leopard"])
   .sys-icon[data-system-icon]:not(:where([data-system-icon="play"], [data-system-icon="pause"], [data-system-icon="previousTrack"], [data-system-icon="nextTrack"], [data-system-icon="shuffleTracks"], [data-system-icon="repeatTracks"], [data-system-icon="speaker"])) {
   border: 0;
@@ -2362,9 +2370,6 @@ body[data-theme="snow-leopard"] .window:not(.is-active) .theme-lab-sidebar butto
   background-position: var(--sp, center);
   background-size: var(--sprite-size, contain);
   box-shadow: none;
-}
-body[data-theme="aqua"] .sys-icon {
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
 }
 :where(body[data-theme="aqua"], body[data-theme="snow-leopard"])
   .sys-icon[data-system-icon]:not(:where([data-system-icon="play"], [data-system-icon="pause"], [data-system-icon="previousTrack"], [data-system-icon="nextTrack"], [data-system-icon="shuffleTracks"], [data-system-icon="repeatTracks"], [data-system-icon="speaker"])) .sys-icon-svg {

@@ -839,6 +839,7 @@ window.AISystem6TranslationsEn = {
     teaser_demo_done: "Teaser complete: a 2026 source became a clipping, then a file on the Project Hard Disk.",
     teaser_demo_stopped: "Teaser stopped.",
     teaser_demo_failed: (message) => `Teaser failed: ${message}`,
+    teaser_restore_warning: "Teaser cleanup had an issue; your data was restored and you may want to check System Status.",
     assistant_activity_label: "Assistant Activity",
     activity_offline: "Model unavailable",
     activity_idle: "Idle",

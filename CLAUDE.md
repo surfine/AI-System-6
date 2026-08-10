@@ -119,8 +119,8 @@ npm run verify:release    # full gate: build + syntax + src typecheck + smoke,
 npm run verify:features   # executable feature contracts (one per user feature)
 npm run verify:docs       # every .md has a current-hash zh-CN mirror
 npm run smoke:release     # HTML/CSS/terminology checks
-npm run verify:ship       # local release condition: fast deterministic gates,
-                          # never Playwright (see REPO-RUNBOOK)
+npm run verify:ship       # local release condition: deterministic gates plus the
+                          # Appearance regression, real-app, and fidelity gates
 ```
 
 **Use risk-tiered verification.** During implementation, run only the smallest

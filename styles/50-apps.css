@@ -3763,6 +3763,12 @@ body:not(.use-liquid-glass) .desktop-app-icon span[data-liquid-label="DAA Meme"]
   fill: var(--paper);
 }
 
+/* Reviewed Platinum raster art travels beside the shared fallback painters.
+   Its theme layer opts it in only for the accepted core batch. */
+.sys-icon-svg.has-platinum-core .sys-icon-platinum-core {
+  display: none;
+}
+
 /* Native Classic resources and the filled details in companion icons are
    one-unit pixel runs. Classic keeps them exact; Modern Fonts expands each run
    just enough to match its outlined companions through the mode-owned token. */
@@ -3781,6 +3787,7 @@ body:not(.use-liquid-glass) .desktop-app-icon span[data-liquid-label="DAA Meme"]
 
 .sys-icon-classic .classic-paper {
   fill: var(--paper);
+  stroke: none;
 }
 
 .sys-icon-large,

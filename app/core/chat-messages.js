@@ -3500,7 +3500,7 @@ function refreshCloudUsageDisplay() {
     if (labelEl) labelEl.textContent = localName;
     if (iconEl) {
       iconEl.dataset.systemIcon = localReady ? "cloudModel" : "cloudModelOff";
-      iconEl.innerHTML = systemIconSvg(iconEl.dataset.systemIcon);
+      iconEl.innerHTML = systemIconSvg(iconEl.dataset.systemIcon, { sourceSize: 16 });
     }
     indicator.classList.add("is-local-model");
     indicator.title = localReady
@@ -3519,7 +3519,7 @@ function refreshCloudUsageDisplay() {
   if (labelEl) labelEl.textContent = displayName;
   if (iconEl) {
     iconEl.dataset.systemIcon = isCloudActive || localReady ? "cloudModel" : "cloudModelOff";
-    iconEl.innerHTML = systemIconSvg(iconEl.dataset.systemIcon);
+    iconEl.innerHTML = systemIconSvg(iconEl.dataset.systemIcon, { sourceSize: 16 });
   }
   if (typeof syncPromptPlaceholder === "function") syncPromptPlaceholder();
   indicator.classList.toggle("is-local-model", !isCloudActive);

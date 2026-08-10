@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
+<defs>
+      <linearGradient id="body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9efff"/><stop offset="1" stop-color="#75b9ec"/></linearGradient>
+      <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#eef3f7"/></linearGradient>
+      <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7fafc"/><stop offset="1" stop-color="#b7c3cf"/></linearGradient>
+    </defs>
+<path d="M8 13h48v34H8z" fill="#9db9cf" stroke="#789bb9" stroke-width="1.35"/><path d="M13 18h38v24H13z" fill="url(#paper)" stroke="#789bb9" stroke-width="1.35"/><path d="M5 48h54v7H5z" fill="#5f8caf" stroke="#789bb9" stroke-width="1.35"/><path d="M21 43V29h22v14M18 46h28" fill="none" stroke="#35516c" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M25 31l14 10H25z" fill="#2e7fcb"/>
+</svg>

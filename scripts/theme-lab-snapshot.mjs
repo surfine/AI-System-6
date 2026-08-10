@@ -6,7 +6,7 @@
 
 import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
-import { copyFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { get } from "node:http";
 import { createServer } from "node:net";
 import { dirname, join } from "node:path";
@@ -146,6 +146,7 @@ async function captureTheme(browser, url, themeId) {
     if (readiness.appReady !== "ready" || !readiness.bootHidden) {
       throw new Error(`App boot failed for ${themeId}: ${JSON.stringify(readiness)}\n${diagnostics.join("\n")}`);
     }
+    await page.evaluate(() => window.AISystem6EnsureThemeLabModule?.());
     await page.evaluate(({ id, css }) => {
       window.AISystem6Theme?.applyTheme(id, {
         experimental: true,
@@ -153,6 +154,7 @@ async function captureTheme(browser, url, themeId) {
         announce: false,
         modernFontPreference: false,
       });
+      window.AISystem6ThemeLab?.sync?.(window.AISystem6Theme?.getTheme?.(id));
       window.AISystem6LiquidGlassOverlay?.setEnabled(false);
       document.querySelector("#liquid-glass-overlay")?.setAttribute("hidden", "");
       document.body.classList.remove("is-writer-mode", "is-cloud-active", "quick-draft-focus");
@@ -172,6 +174,14 @@ async function captureTheme(browser, url, themeId) {
       const lab = document.querySelector('[data-window="themeLab"]');
       lab?.classList.remove("is-hidden");
       lab?.classList.add("is-active");
+      // Pin the specimen window to its stylesheet frame. The window manager
+      // may have left inline position from an earlier layout, and any leftover
+      // transform/offset shifts the element screenshot by a few pixels on
+      // some runs (observed as identical whole-window diffs across captures).
+      lab?.style.removeProperty("left");
+      lab?.style.removeProperty("top");
+      lab?.style.removeProperty("right");
+      lab?.style.removeProperty("transform");
       if (!document.querySelector("#theme-lab-dev-styles")) {
         const labStyle = document.createElement("style");
         labStyle.id = "theme-lab-dev-styles";
@@ -193,6 +203,9 @@ async function captureTheme(browser, url, themeId) {
         [data-window="themeLab"] .theme-lab-pane {
           overflow: visible !important;
         }
+        html, body {
+          scroll-behavior: auto !important;
+        }
       `;
       document.head.append(style);
       void document.body.offsetHeight;
@@ -201,8 +214,38 @@ async function captureTheme(browser, url, themeId) {
     await page.waitForTimeout(180);
     const target = page.locator('[data-window="themeLab"]');
     await target.waitFor({ state: "visible" });
+    // Element screenshots depend on the live scroll position: when the
+    // specimen window is taller than the viewport, Playwright scrolls and
+    // stitches, and a scroll settling mid-capture shifts the whole image by
+    // the window's top offset (the observed flake). Capture the full page
+    // from a pinned scroll position and crop the window box instead.
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(120);
+    const box = await target.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      return { x: r.x, y: r.y, width: r.width, height: r.height };
+    });
+    if (!box || box.width <= 0 || box.height <= 0) {
+      throw new Error(`Theme Lab has no box for ${themeId}`);
+    }
+    // The Theme Lab window is absolutely positioned, so a tall evidence
+    // section can extend beyond the document's scroll height. Expand only the
+    // disposable capture page before full-page capture; otherwise the crop
+    // below would contain transparent rows after the viewport boundary.
+    await page.evaluate(({ y, height }) => {
+      const captureHeight = `${Math.ceil(y + height)}px`;
+      document.documentElement.style.minHeight = captureHeight;
+      document.body.style.minHeight = captureHeight;
+    }, box);
     const path = join(CURRENT_DIR, `${themeId}.png`);
-    await target.screenshot({ path, animations: "disabled" });
+    const fullPath = join(CURRENT_DIR, `${themeId}-full.png`);
+    await page.screenshot({ path: fullPath, fullPage: true, animations: "disabled" });
+    const { createCanvas, loadImage } = require("canvas");
+    const fullImage = await loadImage(fullPath);
+    const canvas = createCanvas(Math.round(box.width), Math.round(box.height));
+    const canvasContext = canvas.getContext("2d");
+    canvasContext.drawImage(fullImage, -Math.round(box.x), -Math.round(box.y));
+    writeFileSync(path, canvas.toBuffer("image/png"));
     return path;
   } finally {
     await context.close();

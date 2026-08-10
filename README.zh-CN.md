@@ -1,5 +1,5 @@
 <!-- canonical-source: README.md -->
-<!-- source-sha256: a9596a76b2af283132b3a7725176e5bd52cb0314266bee01a486758c077ad58f -->
+<!-- source-sha256: 5cd0b6afe8245e428dc991e9449e3e154a274436cb592d4ebe5a70f59fd1379d -->
 
 <div align="center">
 
@@ -77,11 +77,11 @@ Studio 则让更长的项目从来源与问题单出发，经过大纲、分节�
 - 使用 ClioStage **制作和播放 Markdown 演示文稿**。
 - 在 Cover Glass 中**渲染带折射效果的 WebGL 文字**。
 - 在 CMF Studio 中**编辑 3D iPhone 配色并导出用于 AR 的 USDZ**。
-- 在不移动任何工作的前提下，让整个桌面在**正式外观 System 6、Platinum 与 Liquid Glass** 之间切换。
+- 在不移动任何工作的前提下，让整个桌面在**六套正式外观 System 6、Platinum、Aqua、Snow Leopard、Yosemite 与 Liquid Glass** 之间切换。
 
-System 6 是默认外观，Platinum 与 Liquid Glass 是正式支持的替代外观。经典
-界面依据真实的 System 6.0.8 资源和同时代 Macintosh 交互方式制作，而非凭
-记忆重新绘制。
+System 6 是默认外观，Platinum、Aqua、Snow Leopard、Yosemite 与 Liquid Glass
+是正式支持的替代外观。经典界面依据真实的 System 6.0.8 资源和同时代
+Macintosh 交互方式制作，而非凭记忆重新绘制。
 
 ## 使用自己的模型
 

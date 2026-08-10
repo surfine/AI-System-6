@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
+<defs>
+      <linearGradient id="body" x1="0.08" y1="0" x2="0.92" y2="1"><stop offset="0" stop-color="#f5f7f9"/><stop offset="0.42" stop-color="#c8d0d9"/><stop offset="1" stop-color="#3a4652"/></linearGradient>
+      <linearGradient id="paper" x1="0" y1="0" x2="0.75" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="0.66" stop-color="#f4f3ed"/><stop offset="1" stop-color="#bdc3c9"/></linearGradient>
+      <linearGradient id="metal" x1="0" y1="0" x2="0.2" y2="1"><stop offset="0" stop-color="#fdfefe"/><stop offset="0.18" stop-color="#bec7cf"/><stop offset="0.47" stop-color="#6f7d8a"/><stop offset="0.65" stop-color="#e1e6e9"/><stop offset="1" stop-color="#48535d"/></linearGradient>
+      <radialGradient id="lens" cx="0.3" cy="0.22" r="0.78"><stop offset="0" stop-color="#e8f7ff" stop-opacity="0.92"/><stop offset="0.48" stop-color="#72b2dc" stop-opacity="0.74"/><stop offset="1" stop-color="#234c6d" stop-opacity="0.92"/></radialGradient>
+      <linearGradient id="leather" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c39a69"/><stop offset="0.52" stop-color="#87603f"/><stop offset="1" stop-color="#4b3024"/></linearGradient>
+    </defs>
+<ellipse cx="33" cy="54" rx="19" ry="2.7" fill="#000000" fill-opacity="0.24"/><path d="M9 7h46v51H9z" fill="#8896a4" stroke="#36434d" stroke-width="1.65" stroke-linejoin="round"/><path d="M16 7h32v20H16z" fill="url(#metal)" stroke="#36434d" stroke-width="1.65"/><path d="M20 36h25v22H20z" fill="url(#paper)" stroke="#36434d" stroke-width="1.65"/><path d="M22 41h21M22 46h16" stroke="#718397" stroke-width="1.2"/><rect x="26" y="27" width="13" height="8" fill="#ffffff" stroke="#303b45" stroke-width="1.8"/><rect x="29" y="39" width="9" height="6" fill="#4c82ac"/>
+</svg>

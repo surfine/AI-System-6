@@ -74,12 +74,12 @@ No invisible agent maze. The sources, files, prompts, and handoffs stay on the d
 - **Build and present Markdown slide decks** with ClioStage.
 - **Render refractive WebGL typography** in Cover Glass.
 - **Edit a 3D iPhone colorway and export USDZ for AR** in CMF Studio.
-- **Switch the entire desktop between the release appearances — System 6, Platinum, and Liquid Glass** without moving the work.
+- **Switch the entire desktop between the release appearances — System 6, Platinum, Aqua, Snow Leopard, Yosemite, and Liquid Glass** without moving the work.
 
-System 6 is the default appearance. Platinum and Liquid Glass are the
-release-supported alternatives. The classic interface is grounded in real
-System 6.0.8 resources and period Macintosh interaction patterns — not redrawn
-from memory.
+System 6 is the default appearance. Platinum, Aqua, Snow Leopard, Yosemite, and
+Liquid Glass are the release-supported alternatives. The classic interface is
+grounded in real System 6.0.8 resources and period Macintosh interaction
+patterns — not redrawn from memory.
 
 ## Bring your own model
 

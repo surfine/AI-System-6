@@ -985,6 +985,80 @@ function wireAppEvents() {
     document.querySelectorAll(".menu.is-open").forEach(positionOpenMenu);
   });
 
+  // Arrow-key menu navigation. Menus open on click / Enter / Space; once open,
+  // Down / Up walk the items (with the existing visible focus ring), Right
+  // opens a submenu, Left closes it, and Home / End jump to the ends. Arrows
+  // are only captured while focus is on the open menu or its bar button, so
+  // typing elsewhere with a menu open is never hijacked.
+  function menuPopoverButtons(popover) {
+    const direct = Array.from(popover.querySelectorAll(":scope > button"));
+    const submenuTriggers = Array.from(popover.querySelectorAll(":scope > .menu-item-with-sub > .menu-submenu-trigger"));
+    return [...direct, ...submenuTriggers].filter((button) =>
+      !button.disabled
+      && !button.classList.contains("is-disabled")
+      && button.getBoundingClientRect().width > 0
+    );
+  }
+
+  function handleMenuArrowKey(event) {
+    const active = document.activeElement;
+    const focusedPopover = active instanceof Element
+      ? active.closest(".menu-sub-popover") || active.closest(".menu-submenu-popover") || active.closest(".menu-popover")
+      : null;
+    const popover = focusedPopover
+      || Array.from(document.querySelectorAll(".menu-popover, .menu-sub-popover, .menu-submenu-popover"))
+        .filter((el) => el.getBoundingClientRect().width > 0)
+        .pop()
+      || null;
+    if (!popover) return false;
+
+    if (event.key === "ArrowRight" && active instanceof Element && active.classList.contains("menu-submenu-trigger")) {
+      const item = active.closest(".menu-item-with-sub");
+      if (item) {
+        event.preventDefault();
+        if (!item.classList.contains("is-open")) toggleMenuSubItem(item);
+        const first = menuPopoverButtons(item.querySelector(".menu-sub-popover"))[0];
+        if (first) first.focus();
+        return true;
+      }
+    }
+
+    if (event.key === "ArrowLeft") {
+      const sub = active instanceof Element ? active.closest(".menu-sub-popover") : null;
+      if (sub) {
+        event.preventDefault();
+        const item = sub.closest(".menu-item-with-sub");
+        if (item) {
+          item.classList.remove("is-open");
+          item.querySelector(":scope > .menu-submenu-trigger")?.focus();
+        }
+        return true;
+      }
+      const menu = popover.closest(".menu");
+      const trigger = menu?.querySelector(":scope > button");
+      if (trigger && active instanceof Element && popover.contains(active)) {
+        event.preventDefault();
+        trigger.focus();
+        return true;
+      }
+    }
+
+    const buttons = menuPopoverButtons(popover);
+    if (!buttons.length) return false;
+    const currentIndex = buttons.indexOf(active);
+    let nextIndex = -1;
+    if (event.key === "ArrowDown") nextIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % buttons.length;
+    else if (event.key === "ArrowUp") nextIndex = currentIndex < 0 ? buttons.length - 1 : (currentIndex - 1 + buttons.length) % buttons.length;
+    else if (event.key === "Home") nextIndex = 0;
+    else if (event.key === "End") nextIndex = buttons.length - 1;
+    if (nextIndex >= 0 && nextIndex !== currentIndex) {
+      event.preventDefault();
+      buttons[nextIndex].focus();
+      return true;
+    }
+    return false;
+  }
+
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
       const composeMenuWasOpen = composeToolsMenuEl && !composeToolsMenuEl.classList.contains("is-hidden");
@@ -993,6 +1067,16 @@ function wireAppEvents() {
       closeComposeToolsMenu();
       if (composeMenuWasOpen) composeToolsToggleButton?.focus();
       return;
+    }
+
+    if (["ArrowDown", "ArrowUp", "ArrowRight", "ArrowLeft", "Home", "End"].includes(event.key)) {
+      const openMenu = document.querySelector(".menu.is-open");
+      const onOpenMenuButton = event.target.closest?.(".menu.is-open > button");
+      const active = document.activeElement;
+      const insidePopover = active instanceof Element && !!active.closest(".menu-popover, .menu-sub-popover, .menu-submenu-popover");
+      if (openMenu && (insidePopover || onOpenMenuButton) && handleMenuArrowKey(event)) {
+        return;
+      }
     }
   
     const desktopIconTarget = event.target.closest?.(".icon-column .desktop-icon");

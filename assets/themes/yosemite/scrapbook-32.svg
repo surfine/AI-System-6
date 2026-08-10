@@ -1,16 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
-  <!-- 10.10 Scrapbook: ring binder with a clipping page. -->
-  <defs>
-    <linearGradient id="g-cover" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#eef2f7"/>
-      <stop offset="1" stop-color="#cbd5e1"/>
-    </linearGradient>
-  </defs>
-  <rect x="4" y="5" width="24" height="22" rx="2" fill="url(#g-cover)" stroke="#8d9aab" stroke-width="1"/>
-  <rect x="5.5" y="7" width="5" height="18" fill="#b6c2d0"/>
-  <rect x="7" y="8.5" width="2" height="15" rx="1" fill="#7f93ab"/>
-  <rect x="12" y="9" width="13" height="12" rx="1" fill="#ffffff" stroke="#93a3b5" stroke-width="0.9"/>
-  <rect x="13.5" y="11" width="10" height="0.8" rx="0.4" fill="#a7b6c8"/>
-  <rect x="13.5" y="13.5" width="8" height="0.8" rx="0.4" fill="#c2cddb"/>
-  <path d="M12 25h13v1.5H12z" fill="#7f93ab" fill-opacity="0.4"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
+<defs>
+      <linearGradient id="body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff0bf"/><stop offset="1" stop-color="#dab86c"/></linearGradient>
+      <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#eef3f7"/></linearGradient>
+      <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7fafc"/><stop offset="1" stop-color="#b7c3cf"/></linearGradient>
+    </defs>
+<path d="M10 7h44v50H10z" fill="#d4b47d" stroke="#a28455" stroke-width="1.35"/><path d="M16 13h32v35H16z" fill="url(#paper)" stroke="#789bb9" stroke-width="1.35"/><rect x="22" y="29" width="20" height="16" fill="#ffffff" stroke="#35516c" stroke-width="1.7"/><path d="M25 41l5-6 4 4 3-3 3 5z" fill="#41a75a"/><circle cx="37" cy="33" r="2" fill="#d19a3c"/>
 </svg>

@@ -433,9 +433,16 @@ const browserWritingAgentCoordinator = window.AISystem6WritingAgentRuntime.creat
       toolLoopTruncated: loopResult.truncated === true,
     };
   },
-  onTransition(run, state) {
+  onTransition(run, state, input) {
     window.lastWritingAgentRun = run;
-    window.AISystem6AssistantActivity?.reportRunTransition?.(run, state);
+    // The pure run record has no abort handle; the real cancel path is the
+    // caller's signal (owned by activeAbortController in the chat/long-task
+    // runtimes). Hand the signal's abort capability through when it exists;
+    // otherwise assistant-activity falls back to the live activeAbortController.
+    const signal = input?.signal;
+    window.AISystem6AssistantActivity?.reportRunTransition?.(run, state, {
+      cancel: signal && typeof signal.abort === "function" ? () => signal.abort() : null,
+    });
   },
 });
 

@@ -1,11 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" shape-rendering="geometricPrecision">
-  <defs>
-    <linearGradient id="g-drive" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#f3f5f8"/>
-      <stop offset="1" stop-color="#c3cad4"/>
-    </linearGradient>
-  </defs>
-  <rect x="2" y="3" width="12" height="11" rx="1.5" fill="url(#g-drive)" stroke="#9aa7b8" stroke-width="0.75"/>
-  <path d="M2 8.5h12v0.7H2z" fill="#b3bdca"/>
-  <rect x="4.5" y="5" width="7" height="2" rx="0.7" fill="#3c4654"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
+<defs>
+      <linearGradient id="body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f5f7f9"/><stop offset="1" stop-color="#c8d0d9"/></linearGradient>
+      <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#eef3f7"/></linearGradient>
+      <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7fafc"/><stop offset="1" stop-color="#b7c3cf"/></linearGradient>
+    </defs>
+<path d="M12 16h40l4 38H8z" fill="url(#metal)" stroke="#789bb9" stroke-width="2.3" stroke-linejoin="round"/><path d="M18 12h28l4 8H14z" fill="#edf4f9" stroke="#789bb9" stroke-width="2.3"/><path d="M19 43h26M24 49h16" fill="none" stroke="#789bb9" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M24 38h16v5H24zM27 30h10v4H27z" fill="#2e7fcb"/><circle cx="32" cy="40.5" r="1.2" fill="#ffffff"/>
 </svg>

@@ -108,15 +108,45 @@ async function resolveDispatchItems(items = []) {
   return { blocked: false, files };
 }
 
+async function recordDispatchFailure(appId, receiptId, activityHandle, { status, publicErrorReason, reason, result = null, error = null }) {
+  if (receiptId && typeof window.AISystem6RunReceipts?.finishReceipt === "function") {
+    try {
+      await window.AISystem6RunReceipts.finishReceipt(receiptId, {
+        status,
+        publicErrorReason,
+        outputObjectIds: Array.isArray(result?.outputObjectIds) ? result.outputObjectIds : [],
+        destination: String(result?.destination || ""),
+      });
+    } catch (receiptError) {
+      console.warn("Run receipt failure recording failed.", receiptError);
+    }
+  }
+  if (activityHandle && typeof window.AISystem6AssistantActivity?.endOperation === "function") {
+    try {
+      window.AISystem6AssistantActivity.endOperation(activityHandle, { ok: false, error });
+    } catch (activityError) {
+      console.warn("Assistant activity error recording failed.", activityError);
+    }
+  }
+  return { ok: false, appId, receiptId, reason, result, error };
+}
+
 function applicationDispatchStatus(reason) {
   if (reason === "broken-alias") return t("alias_broken", "—");
   if (reason === "non-file-alias") return t("application_dispatch_non_file");
   if (reason === "cross-project") return t("application_dispatch_cross_project");
   if (reason === "no-handler") return t("application_dispatch_no_handler");
+  if (reason === "unsupported-intent") return t("application_dispatch_unsupported_intent");
+  if (reason === "unsupported-kind") return t("application_dispatch_unsupported_kind");
   if (reason === "no-items") return t("select_finder_item_first");
   return "";
 }
 
+// Handler result contract: { ok, reason?, publicErrorReason?,
+// outputObjectIds?, affectedObjectIds?, destination? }. `ok:false` is a
+// normal business failure (empty input, failed attach, ...), not an
+// exception; it must produce an unsuccessful terminal path so receipts are
+// never marked completed and Assistant Activity never enters ready.
 async function dispatchApplicationIntent(appId, { intent, items = [], sourceAppId = "", projectId = "", options = {} } = {}) {
   const normalized = normalizeApplicationIntent(intent);
   if (!normalized) {
@@ -156,6 +186,18 @@ async function dispatchApplicationIntent(appId, { intent, items = [], sourceAppI
   if (!app) {
     if (typeof setStatus === "function") setStatus(applicationDispatchStatus("no-handler"));
     return { ok: false, reason: "no-handler", appId: "" };
+  }
+
+  // Explicit appId cannot bypass descriptor capability; fail closed before
+  // the handler runs so no receipt is created on a mismatch.
+  if (!app.acceptedIntents.includes(normalized)) {
+    if (typeof setStatus === "function") setStatus(applicationDispatchStatus("unsupported-intent"));
+    return { ok: false, reason: "unsupported-intent", appId: app.id };
+  }
+  const unsupportedKind = resolved.files.find((file) => !app.acceptedItemKinds.includes(applicationItemKind(file)));
+  if (unsupportedKind) {
+    if (typeof setStatus === "function") setStatus(applicationDispatchStatus("unsupported-kind"));
+    return { ok: false, reason: "unsupported-kind", appId: app.id };
   }
 
   const shouldRecord = app.recordsRuns.includes(normalized);
@@ -208,11 +250,27 @@ async function dispatchApplicationIntent(appId, { intent, items = [], sourceAppI
       options,
       receiptId,
     });
+    if (result?.ok === false) {
+      const publicErrorReason = String(result.publicErrorReason || "");
+      if (publicErrorReason && typeof setStatus === "function") setStatus(publicErrorReason);
+      return recordDispatchFailure(app.id, receiptId, activityHandle, {
+        status: "failed",
+        publicErrorReason,
+        reason: String(result.reason || "handler-rejected"),
+        result,
+      });
+    }
     const outputObjectIds = Array.isArray(result?.outputObjectIds) ? result.outputObjectIds : [];
+    const affectedObjectIds = Array.isArray(result?.affectedObjectIds) ? result.affectedObjectIds : [];
     const destination = String(result?.destination || "");
     if (receiptId && typeof window.AISystem6RunReceipts?.finishReceipt === "function") {
       try {
-        await window.AISystem6RunReceipts.finishReceipt(receiptId, { status: "completed", outputObjectIds, destination });
+        await window.AISystem6RunReceipts.finishReceipt(receiptId, {
+          status: "completed",
+          outputObjectIds,
+          affectedObjectIds,
+          destination,
+        });
       } catch (error) {
         console.warn("Run receipt finish failed.", error);
       }
@@ -227,28 +285,15 @@ async function dispatchApplicationIntent(appId, { intent, items = [], sourceAppI
     return { ok: true, appId: app.id, receiptId, result };
   } catch (error) {
     const cancelled = error?.name === "AbortError" || options?.signal?.aborted === true;
-    const status = cancelled ? "cancelled" : "failed";
-    if (receiptId && typeof window.AISystem6RunReceipts?.finishReceipt === "function") {
-      try {
-        await window.AISystem6RunReceipts.finishReceipt(receiptId, {
-          status,
-          publicErrorReason: cancelled ? "" : String(error?.message || error),
-        });
-      } catch (receiptError) {
-        console.warn("Run receipt failure recording failed.", receiptError);
-      }
-    }
-    if (activityHandle && typeof window.AISystem6AssistantActivity?.endOperation === "function") {
-      try {
-        window.AISystem6AssistantActivity.endOperation(activityHandle, { ok: false, error });
-      } catch (activityError) {
-        console.warn("Assistant activity error recording failed.", activityError);
-      }
-    }
     if (typeof setStatus === "function") {
       setStatus(cancelled ? t("stopped") : String(error?.message || error));
     }
-    return { ok: false, appId: app.id, receiptId, reason: cancelled ? "cancelled" : "handler-error", error };
+    return recordDispatchFailure(app.id, receiptId, activityHandle, {
+      status: cancelled ? "cancelled" : "failed",
+      publicErrorReason: cancelled ? "" : String(error?.message || error),
+      reason: cancelled ? "cancelled" : "handler-error",
+      error,
+    });
   }
 }
 
@@ -285,10 +330,12 @@ registerApplication({
       if (typeof downloadMarkdown === "function") {
         downloadMarkdown(String(file.body || ""), file.name);
       }
-      return { ok: true, outputObjectIds: [file.id], destination: "download" };
+      // A download is not a Project durable object; the source document is
+      // only affected (read + exported), never produced by this run.
+      return { ok: true, affectedObjectIds: [file.id], destination: "download" };
     }
     if (typeof openTextFile === "function") openTextFile(file.id);
-    return { ok: true, outputObjectIds: [file.id] };
+    return { ok: true };
   },
 });
 
@@ -304,7 +351,9 @@ registerApplication({
     const file = items[0];
     if (!file) return { ok: false, reason: "missing" };
     if (context.intent === "map") {
-      if (!String(file.body || "").trim()) return { ok: false, reason: "empty" };
+      if (!String(file.body || "").trim()) {
+        return { ok: false, reason: "empty", publicErrorReason: t("docmap_no_text") };
+      }
       if (typeof ensureDocMapModule === "function") await ensureDocMapModule();
       if (typeof makeDocMapFromCurrentSource === "function") {
         await makeDocMapFromCurrentSource({
@@ -315,13 +364,15 @@ registerApplication({
           threshold: typeof docMapMinDocumentChars === "number" ? docMapMinDocumentChars : 1,
         });
       }
-      return { ok: true, outputObjectIds: [file.id] };
+      // DocMap renders a temporary UI map; it creates no durable Project
+      // file here, so nothing was produced. The source is the affected object.
+      return { ok: true, affectedObjectIds: [file.id] };
     }
     if (!window.AISystem6DocMapLoaded && typeof ensureDocMapModule === "function") {
       await ensureDocMapModule();
     }
     if (typeof openSavedDocMapFile === "function" && openSavedDocMapFile(file)) {
-      return { ok: true, outputObjectIds: [file.id] };
+      return { ok: true };
     }
     return { ok: false, reason: "not-docmap" };
   },
@@ -343,16 +394,18 @@ registerApplication({
           documentId: file.id,
           mode: context.options?.mode || "facts",
         });
-        return { ok: opened !== false, outputObjectIds: [file.id] };
+        return { ok: opened !== false };
       }
       if (typeof openTextFile === "function") openTextFile(file.id);
       if (typeof openWindow === "function") openWindow("reviewDesk");
-      return { ok: true, outputObjectIds: [file.id] };
+      return { ok: true };
     }
     if (typeof openTextFile === "function") openTextFile(file.id);
     if (typeof openWindow === "function") openWindow("teachText");
     if (typeof runClaimCheck === "function") await runClaimCheck();
-    return { ok: true, outputObjectIds: [file.id] };
+    // Review Desk shows its results in the window; the manuscript is
+    // inspected (affected) but not produced by this run.
+    return { ok: true, affectedObjectIds: [file.id] };
   },
 });
 
@@ -367,14 +420,22 @@ registerApplication({
     const file = items[0];
     if (!file || !String(file.body || "").trim()) return { ok: false, reason: "empty" };
     if (typeof ensureSlidesExportModule === "function") await ensureSlidesExportModule();
+    let createdFile = null;
     if (typeof generateMarpMarkdownAndOpenClioStage === "function") {
-      await generateMarpMarkdownAndOpenClioStage({
+      createdFile = await generateMarpMarkdownAndOpenClioStage({
         markdown: file.body,
         title: file.name,
         folder: typeof preferredFolderName === "function" ? preferredFolderName() : "",
       });
     }
-    return { ok: true, outputObjectIds: [file.id] };
+    if (!createdFile) return { ok: false, reason: "present-failed" };
+    // ClioStage writes a durable *.slides.md document; only that new object
+    // is the run's output. The source document was used as input/affected.
+    return {
+      ok: true,
+      outputObjectIds: [createdFile.id],
+      affectedObjectIds: [file.id],
+    };
   },
 });
 
@@ -413,7 +474,7 @@ registerApplication({
     const file = items[0];
     if (!file) return { ok: false, reason: "missing" };
     if (typeof openChatFileWindow === "function") openChatFileWindow(file.id);
-    return { ok: true, outputObjectIds: [file.id] };
+    return { ok: true };
   },
 });
 

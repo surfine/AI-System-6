@@ -28,7 +28,7 @@
     "playwrightVersion": "1.62.1",
     "browserRevision": "1234",
     "browserVersion": "151.0.7922.34",
-    "contentSha256": "4c9f92258c9608ddad8a709959f43417fe54ddcd016f9ac6752daf300cfccb04",
+    "contentSha256": "b3969dad2dccc74ea43e998dcdea82ea166ee85fb1445b4f99c92523284ba615",
     "historicalFontTarget": "Charcoal 12 pt",
     "legalFallback": "OFL-licensed Asap variable font",
     "fontProbeSelectors": [
@@ -286,6 +286,11 @@
             "text": "Appearance"
           }
         ]
+      },
+      "tolerances": {
+        "geometryMismatch": 0.02,
+        "edgeErrorPx": 0.8,
+        "materialError": 9.8
       }
     },
     {
@@ -325,6 +330,11 @@
             "text": "Web Sharing"
           }
         ]
+      },
+      "tolerances": {
+        "geometryMismatch": 0.02,
+        "edgeErrorPx": 0.7,
+        "materialError": 8.6
       }
     },
     {
@@ -365,6 +375,11 @@
             }
           }
         ]
+      },
+      "tolerances": {
+        "geometryMismatch": 0.02,
+        "edgeErrorPx": 0.7,
+        "materialError": 5
       }
     },
     {
@@ -412,6 +427,11 @@
             }
           }
         ]
+      },
+      "tolerances": {
+        "geometryMismatch": 0.02,
+        "edgeErrorPx": 0.7,
+        "materialError": 5
       }
     },
     {
@@ -434,6 +454,11 @@
           "width": 12,
           "height": 12
         }
+      },
+      "tolerances": {
+        "geometryMismatch": 0.02,
+        "edgeErrorPx": 0.8,
+        "materialError": 5
       }
     },
     {
@@ -456,6 +481,11 @@
           "width": 12,
           "height": 12
         }
+      },
+      "tolerances": {
+        "geometryMismatch": 0.02,
+        "edgeErrorPx": 0.5,
+        "materialError": 5
       }
     },
     {
@@ -478,6 +508,11 @@
           "width": 73,
           "height": 32
         }
+      },
+      "tolerances": {
+        "geometryMismatch": 0.02,
+        "edgeErrorPx": 0.5,
+        "materialError": 5
       }
     },
     {
@@ -500,6 +535,11 @@
           "width": 218,
           "height": 128
         }
+      },
+      "tolerances": {
+        "geometryMismatch": 0.02,
+        "edgeErrorPx": 0.8,
+        "materialError": 5.1
       }
     },
     {
@@ -522,6 +562,11 @@
           "width": 199,
           "height": 259
         }
+      },
+      "tolerances": {
+        "geometryMismatch": 0.022,
+        "edgeErrorPx": 1,
+        "materialError": 5.1
       }
     },
     {
@@ -544,6 +589,11 @@
           "width": 273,
           "height": 110
         }
+      },
+      "tolerances": {
+        "geometryMismatch": 0.02,
+        "edgeErrorPx": 1.1,
+        "materialError": 5
       }
     },
     {
@@ -559,10 +609,10 @@
         }
       },
       "current": {
-        "selector": ".theme-lab-icon-tile .sys-icon[data-system-icon=\"finderApp\"]",
+        "selector": "[data-platinum-icon-id=\"finderApp\"] .theme-lab-classic-icon-states > .finder-item:first-child .sys-icon",
         "setup": [
           {
-            "selector": ".theme-lab-icon-tile .sys-icon[data-system-icon=\"finderApp\"]",
+            "selector": "[data-platinum-icon-id=\"finderApp\"] .theme-lab-classic-icon-states > .finder-item:first-child .sys-icon",
             "style": {
               "width": "32px",
               "height": "32px"
@@ -573,6 +623,11 @@
       "repeat": {
         "maxChangedPixels": 0,
         "maxChannelDelta": 0
+      },
+      "tolerances": {
+        "geometryMismatch": 0.02,
+        "edgeErrorPx": 1.3,
+        "materialError": 45
       }
     },
     {
@@ -588,10 +643,10 @@
         }
       },
       "current": {
-        "selector": ".theme-lab-icon-tile .sys-icon[data-system-icon=\"folder\"]",
+        "selector": "[data-platinum-icon-id=\"folder\"] .theme-lab-classic-icon-states > .finder-item:first-child .sys-icon",
         "setup": [
           {
-            "selector": ".theme-lab-icon-tile .sys-icon[data-system-icon=\"folder\"]",
+            "selector": "[data-platinum-icon-id=\"folder\"] .theme-lab-classic-icon-states > .finder-item:first-child .sys-icon",
             "style": {
               "width": "32px",
               "height": "32px"
@@ -602,6 +657,11 @@
       "repeat": {
         "maxChangedPixels": 0,
         "maxChannelDelta": 0
+      },
+      "tolerances": {
+        "geometryMismatch": 0.02,
+        "edgeErrorPx": 1.6,
+        "materialError": 105
       }
     },
     {
@@ -617,10 +677,10 @@
         }
       },
       "current": {
-        "selector": ".theme-lab-icon-tile .sys-icon[data-system-icon=\"startupDisk\"]",
+        "selector": "[data-platinum-icon-id=\"hardDisk\"] .theme-lab-classic-icon-states > .finder-item:first-child .sys-icon",
         "setup": [
           {
-            "selector": ".theme-lab-icon-tile .sys-icon[data-system-icon=\"startupDisk\"]",
+            "selector": "[data-platinum-icon-id=\"hardDisk\"] .theme-lab-classic-icon-states > .finder-item:first-child .sys-icon",
             "style": {
               "width": "32px",
               "height": "32px"
@@ -628,9 +688,15 @@
           }
         ]
       },
+      "align": "bottom-center",
       "repeat": {
         "maxChangedPixels": 0,
         "maxChannelDelta": 0
+      },
+      "tolerances": {
+        "geometryMismatch": 0.02,
+        "edgeErrorPx": 0.8,
+        "materialError": 32
       }
     },
     {
@@ -646,10 +712,10 @@
         }
       },
       "current": {
-        "selector": ".theme-lab-icon-tile .sys-icon[data-system-icon=\"trash\"]",
+        "selector": "[data-platinum-icon-id=\"trash\"] .theme-lab-classic-icon-states > .finder-item:first-child .sys-icon",
         "setup": [
           {
-            "selector": ".theme-lab-icon-tile .sys-icon[data-system-icon=\"trash\"]",
+            "selector": "[data-platinum-icon-id=\"trash\"] .theme-lab-classic-icon-states > .finder-item:first-child .sys-icon",
             "style": {
               "width": "32px",
               "height": "32px"
@@ -660,6 +726,11 @@
       "repeat": {
         "maxChangedPixels": 0,
         "maxChannelDelta": 0
+      },
+      "tolerances": {
+        "geometryMismatch": 0.05,
+        "edgeErrorPx": 2.4,
+        "materialError": 55
       }
     },
     {
@@ -675,10 +746,10 @@
         }
       },
       "current": {
-        "selector": ".theme-lab-icon-tile .sys-icon[data-system-icon=\"document\"]",
+        "selector": "[data-platinum-icon-id=\"document\"] .theme-lab-classic-icon-states > .finder-item:first-child .sys-icon",
         "setup": [
           {
-            "selector": ".theme-lab-icon-tile .sys-icon[data-system-icon=\"document\"]",
+            "selector": "[data-platinum-icon-id=\"document\"] .theme-lab-classic-icon-states > .finder-item:first-child .sys-icon",
             "style": {
               "width": "32px",
               "height": "32px"
@@ -689,6 +760,11 @@
       "repeat": {
         "maxChangedPixels": 0,
         "maxChannelDelta": 0
+      },
+      "tolerances": {
+        "geometryMismatch": 0.02,
+        "edgeErrorPx": 1.6,
+        "materialError": 30
       }
     },
     {
@@ -704,10 +780,10 @@
         }
       },
       "current": {
-        "selector": ".theme-lab-icon-tile .sys-icon[data-system-icon=\"projectDisc\"]",
+        "selector": "[data-platinum-icon-id=\"projectDisc\"] .theme-lab-classic-icon-states > .finder-item:first-child .sys-icon",
         "setup": [
           {
-            "selector": ".theme-lab-icon-tile .sys-icon[data-system-icon=\"projectDisc\"]",
+            "selector": "[data-platinum-icon-id=\"projectDisc\"] .theme-lab-classic-icon-states > .finder-item:first-child .sys-icon",
             "style": {
               "width": "32px",
               "height": "32px"
@@ -718,6 +794,11 @@
       "repeat": {
         "maxChangedPixels": 0,
         "maxChannelDelta": 0
+      },
+      "tolerances": {
+        "geometryMismatch": 0.02,
+        "edgeErrorPx": 1.3,
+        "materialError": 120
       }
     },
     {
@@ -733,10 +814,10 @@
         }
       },
       "current": {
-        "selector": ".theme-lab-icon-tile .sys-icon[data-system-icon=\"fileFloppy\"]",
+        "selector": "[data-platinum-icon-id=\"fileFloppy\"] .theme-lab-classic-icon-states > .finder-item:first-child .sys-icon",
         "setup": [
           {
-            "selector": ".theme-lab-icon-tile .sys-icon[data-system-icon=\"fileFloppy\"]",
+            "selector": "[data-platinum-icon-id=\"fileFloppy\"] .theme-lab-classic-icon-states > .finder-item:first-child .sys-icon",
             "style": {
               "width": "32px",
               "height": "32px"
@@ -747,6 +828,11 @@
       "repeat": {
         "maxChangedPixels": 0,
         "maxChannelDelta": 0
+      },
+      "tolerances": {
+        "geometryMismatch": 0.02,
+        "edgeErrorPx": 1,
+        "materialError": 85
       }
     },
     {
@@ -762,10 +848,10 @@
         }
       },
       "current": {
-        "selector": ".theme-lab-icon-tile .sys-icon[data-system-icon=\"applications\"]",
+        "selector": "[data-platinum-icon-id=\"daHandler\"] .theme-lab-classic-icon-states > .finder-item:nth-child(3) .sys-icon",
         "setup": [
           {
-            "selector": ".theme-lab-icon-tile .sys-icon[data-system-icon=\"applications\"]",
+            "selector": "[data-platinum-icon-id=\"daHandler\"] .theme-lab-classic-icon-states > .finder-item:nth-child(3) .sys-icon",
             "style": {
               "width": "16px",
               "height": "16px"
@@ -776,6 +862,11 @@
       "repeat": {
         "maxChangedPixels": 0,
         "maxChannelDelta": 0
+      },
+      "tolerances": {
+        "geometryMismatch": 0.02,
+        "edgeErrorPx": 1,
+        "materialError": 55
       }
     },
     {
@@ -791,10 +882,10 @@
         }
       },
       "current": {
-        "selector": ".theme-lab-icon-tile .sys-icon[data-system-icon=\"trash\"]",
+        "selector": "[data-platinum-icon-id=\"trash\"] .theme-lab-classic-icon-states > .finder-item:nth-child(3) .sys-icon",
         "setup": [
           {
-            "selector": ".theme-lab-icon-tile .sys-icon[data-system-icon=\"trash\"]",
+            "selector": "[data-platinum-icon-id=\"trash\"] .theme-lab-classic-icon-states > .finder-item:nth-child(3) .sys-icon",
             "style": {
               "width": "16px",
               "height": "16px"
@@ -805,7 +896,13 @@
       "repeat": {
         "maxChangedPixels": 0,
         "maxChannelDelta": 0
+      },
+      "tolerances": {
+        "geometryMismatch": 0.02,
+        "edgeErrorPx": 0.5,
+        "materialError": 5
       }
     }
-  ]
+  ],
+  "tolerancePolicy": "Recalibrated 2026-08-10 after the reviewed Platinum raster core replaced the legacy SVG painter. Each icon uses its dedicated 32 px or 16 px Theme Lab specimen; geometry stays at 0.02 except the irregular Trash crop (0.05), edge limits are 0.5–2.4 px, and material limits are object-specific (5–120) from the pinned historical crops. These are regression ceilings, not claims of pixel identity; the fixed reference/current/overlay/difference boards remain part of visual acceptance."
 }

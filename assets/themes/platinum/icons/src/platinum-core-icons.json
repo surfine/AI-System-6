@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "target": "Mac OS 9.0 Platinum Finder",
+  "purpose": "Fixed reference board and construction ledger for the first 12 reviewed Platinum icons.",
+  "copyrightBoundary": "Historical Apple artwork is research-only evidence. Production PNGs are independent pixel constructions; extracted bitmaps are not copied into runtime assets.",
+  "systemRules": {
+    "nativeSizes": [32, 16],
+    "sizePolicy": "32 px and 16 px are separately composed; 16 px is never a mechanical reduction.",
+    "outline": "Selective one-pixel charcoal keyline, reinforced only at load-bearing corners and overlaps.",
+    "light": "Discrete upper-left highlight with lower-right structural shade.",
+    "perspective": "Front-on media and documents; shallow three-quarter folders, volumes, containers, and system objects.",
+    "alpha": "Hard or stepped alpha on the native pixel grid; no blurred CSS shadow or theme filter.",
+    "palette": {
+      "keyline": "#24242b",
+      "deepShadow": "#55555f",
+      "shadow": "#858590",
+      "midtone": "#b9bac2",
+      "highlight": "#f7f7fa",
+      "paper": "#ffffff",
+      "folderHighlight": "#e5e2ff",
+      "folderMidtone": "#aaa6e8",
+      "folderShadow": "#6d6aab",
+      "blueAccent": "#5976bf"
+    }
+  },
+  "sources": [
+    {
+      "id": "apple.inside-macintosh.finder-icon-families",
+      "url": "https://dev.os9.ca/techpubs/mac/Toolbox/graphics/FI-SL-01.jpg",
+      "sha256": "543e2a3b186947b69f87dbe79a165e26b9393a33d93a010088e3998dd4e6afc5",
+      "use": "Independent 32×32 and 16×16 family structure plus default application/document genre silhouettes.",
+      "redistribution": "Apple technical publication; citation and local comparison only."
+    },
+    {
+      "id": "guidebook.macos90.desktop-and-finder",
+      "url": "https://guidebookgallery.org/screenshots/macos90",
+      "localEvidence": [
+        "drafts/theme-lab-fidelity-cache/platinum/guidebook-desktop-full-macos90.png",
+        "drafts/theme-lab-fidelity-cache/platinum/guidebook-filemanager-macos90.png",
+        "drafts/theme-lab-fidelity-cache/platinum/guidebook-application-manager-macos90-1-1.png",
+        "drafts/theme-lab-fidelity-cache/platinum/guidebook-trashcan-macos90.png"
+      ],
+      "use": "Finder scale, desktop contrast, list-view 16 px behavior, label selection, and object coexistence.",
+      "redistribution": "Copyrighted reference; no open license stated. Local research and comparison only."
+    },
+    {
+      "id": "bearz314.macos9-icons.reference-extraction",
+      "url": "https://github.com/bearz314/MacOS9-icons",
+      "commit": "7b2c2febd1a5c1e3bd78ce9b37a732fa95bdd436",
+      "use": "Research-only decoding of ICNS 32 px and 16 px chunks to measure silhouettes, palette steps, one-pixel edges, and alpha treatment.",
+      "licenseNote": "Repository code is MIT; extracted Apple artwork remains Apple artwork and is not redistributed as a runtime asset."
+    }
+  ],
+  "referenceBoard": [
+    { "label": "Finder", "referenceId": 31, "nativeSize": 32, "bbox": "shallow folder with centered Finder face", "outline": "charcoal selective keyline", "perspective": "three-quarter folder", "coreId": "finderApp" },
+    { "label": "Folder", "referenceId": 24, "nativeSize": 32, "bbox": "wide 28×21 silhouette with left tab", "outline": "dark violet lower/right edge", "perspective": "three-quarter folder", "coreId": "folder" },
+    { "label": "Open folder", "referenceId": 55, "nativeSize": 32, "bbox": "folder back plus pale open leaf", "outline": "selective charcoal overlap", "perspective": "three-quarter open container" },
+    { "label": "Hard disk", "referenceId": 1, "nativeSize": 32, "bbox": "low 28×13 silver volume", "outline": "charcoal base and corners", "perspective": "shallow top plane", "coreId": "hardDisk" },
+    { "label": "Removable disk", "referenceId": 83, "nativeSize": 32, "bbox": "low external drive with front slot", "outline": "dark base and front seam", "perspective": "shallow top plane" },
+    { "label": "Floppy", "referenceId": 25, "nativeSize": 32, "bbox": "front-on square media", "outline": "gray-black perimeter", "perspective": "front-on", "coreId": "fileFloppy" },
+    { "label": "CD", "referenceId": 4, "nativeSize": 32, "bbox": "round optical medium with center hub", "outline": "neutral gray circumference", "perspective": "front-on", "coreId": "projectDisc" },
+    { "label": "Trash, empty", "referenceId": 7, "nativeSize": 32, "bbox": "tall ribbed metal can", "outline": "dark rim and right edge", "perspective": "shallow top ellipse", "coreId": "trash" },
+    { "label": "Trash, full", "referenceId": 6, "nativeSize": 32, "bbox": "open ribbed can with protruding paper", "outline": "dark overlaps", "perspective": "shallow top ellipse" },
+    { "label": "Generic document", "referenceId": 10, "nativeSize": 32, "bbox": "upright paper with folded upper-right corner", "outline": "one-pixel charcoal perimeter", "perspective": "front-on", "coreId": "document" },
+    { "label": "Generic application", "referenceId": 80, "nativeSize": 32, "bbox": "diamond plaque carrying a hand", "outline": "black diamond keyline", "perspective": "front-on symbol plaque", "coreId": "daHandler" },
+    { "label": "Control Panel", "referenceId": 40, "nativeSize": 32, "bbox": "paper/control surface with buttons and rules", "outline": "paper keyline plus strong controls", "perspective": "front-on", "coreId": "controlPanel" },
+    { "label": "System", "referenceId": 21, "nativeSize": 32, "bbox": "wire-bound system suitcase with Finder face", "outline": "dark spine and case", "perspective": "front-on case", "coreId": "systemFile" },
+    { "label": "Alias", "referenceId": 64, "nativeSize": 32, "bbox": "small curved alias arrow cue", "outline": "black one-pixel glyph", "perspective": "overlay cue" },
+    { "label": "Network / server", "referenceId": 82, "nativeSize": 32, "bbox": "three linked Macintosh displays", "outline": "black hardware frames", "perspective": "front-on cluster" },
+    { "label": "Printer", "referenceId": 85, "nativeSize": 32, "bbox": "front-on desktop printer and paper", "outline": "black chassis keyline", "perspective": "shallow front plane" },
+    { "label": "Scrapbook", "referenceId": 41, "nativeSize": 32, "bbox": "wire-bound gray album", "outline": "dark spine and lower edge", "perspective": "front-on bound book", "coreId": "scrapbook" },
+    { "label": "Clipboard", "referenceId": 20, "nativeSize": 32, "bbox": "white board/paper with top metal clip", "outline": "gray-black paper keyline", "perspective": "front-on", "coreId": "clipboard" }
+  ],
+  "icons": {
+    "finderApp": { "label": "Finder / System", "genre": "system identity", "prototype": "Finder-face folder", "referenceId": 31 },
+    "folder": { "label": "Folder", "genre": "Finder object", "prototype": "violet Finder folder", "referenceId": 24 },
+    "hardDisk": { "label": "Hard Disk", "genre": "hardware", "prototype": "silver mounted volume", "referenceId": 1 },
+    "trash": { "label": "Trash", "genre": "Finder object", "prototype": "empty ribbed metal can", "referenceId": 7 },
+    "document": { "label": "Generic Document", "genre": "document", "prototype": "folded-corner white paper", "referenceId": 10 },
+    "daHandler": { "label": "Generic Application", "genre": "application", "prototype": "hand-in-diamond application plaque", "referenceId": 80 },
+    "fileFloppy": { "label": "Floppy Disk", "genre": "removable media", "prototype": "front-on 3.5-inch floppy", "referenceId": 25 },
+    "projectDisc": { "label": "CD", "genre": "optical media", "prototype": "front-on rainbow compact disc", "referenceId": 4 },
+    "controlPanel": { "label": "Control Panel", "genre": "system utility", "prototype": "control surface document", "referenceId": 40 },
+    "systemFile": { "label": "System", "genre": "system file", "prototype": "wire-bound system suitcase", "referenceId": 21 },
+    "scrapbook": { "label": "Scrapbook", "genre": "desk accessory", "prototype": "wire-bound clipping album", "referenceId": 41 },
+    "clipboard": { "label": "Clipboard", "genre": "desk accessory", "prototype": "paper board with top clip", "referenceId": 20 }
+  }
+}

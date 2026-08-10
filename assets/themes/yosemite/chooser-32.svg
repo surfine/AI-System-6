@@ -1,20 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
-  <!-- 10.10 Chooser: a device-list window — rows, a divider column, and a
-       blue selection square. Same list-window identity as the Liquid Glass
-       chooser, flattened into the Yosemite palette. -->
-  <defs>
-    <linearGradient id="g-window" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#f2f5f9"/>
-      <stop offset="1" stop-color="#dbe2eb"/>
-    </linearGradient>
-  </defs>
-  <rect x="5" y="6" width="22" height="20" rx="2" fill="url(#g-window)" stroke="#8d9aab" stroke-width="1"/>
-  <rect x="5" y="6" width="22" height="3.5" rx="2" fill="#3e7cc4"/>
-  <circle cx="9" cy="7.8" r="0.9" fill="#ffffff"/>
-  <circle cx="11.6" cy="7.8" r="0.9" fill="#ffffff"/>
-  <circle cx="14.2" cy="7.8" r="0.9" fill="#ffffff"/>
-  <path d="M8 13.5h8M8 17h8M8 20.5h8" stroke="#a7b6c8" stroke-width="1.1" stroke-linecap="round"/>
-  <path d="M17.5 11.5v13" stroke="#c2cddb" stroke-width="1"/>
-  <rect x="18.6" y="15.2" width="4.6" height="3.1" rx="0.8" fill="#3e7cc4"/>
-  <path d="M18.8 20.6h5.4M18.8 23.5h5.4" stroke="#c2cddb" stroke-width="0.9" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
+<defs>
+      <linearGradient id="body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9efff"/><stop offset="1" stop-color="#75b9ec"/></linearGradient>
+      <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#eef3f7"/></linearGradient>
+      <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7fafc"/><stop offset="1" stop-color="#b7c3cf"/></linearGradient>
+    </defs>
+<path d="M7 10h20v17H7zM37 10h20v17H37zM22 38h20v17H22zM17 27l15 11 15-11" fill="#b8cedf" stroke="#789bb9" stroke-width="1.35" stroke-linejoin="round"/><circle cx="24" cy="34" r="4" fill="#2e7fcb"/><circle cx="40" cy="30" r="4" fill="#41a75a"/><circle cx="39" cy="44" r="4" fill="#d19a3c"/><path d="M28 34l8-3M28 36l8 6" fill="none" stroke="#35516c" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

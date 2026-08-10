@@ -1,220 +1,175 @@
 <!-- canonical-source: docs/THEME-FAMILY-REPORT.md -->
-<!-- source-sha256: 0c2f230e8c78274acf50efa291dd55256a2ce5d325b03bfe9a227d483712319b -->
+<!-- source-sha256: 222f6d158abdd4a693805840e64f1283a549988d08a33f9798c844e35593f987 -->
 
 英文版为准。本文档仅供人类参考。
 
-# Classic → Platinum：三族维护模型 — 阶段报告
+# 主题族报告 — 六套外观验收收口
 
-状态：架构阶段完成，全部闸门绿。图标重绘阶段已落地（实测 Mac OS 9 调色板）；
-剩余保真闸门是人工视觉复查。
+> **当前结论（2026-08-10）：PASS WITH KNOWN ISSUES**
+>
+> Commit：`b23eddf6` — “Appearance: Yosemite evidence ledger, icon manifest,
+> and six-appearance QA matrix”（收口时观察到的最后 HEAD；并行会话在验收
+> 期间持续提交，因此下列证据针对最终工作区记录——闸门就是在该工作区上
+> 运行的）
+>
+> 已提交代码上全部主题闸门为绿：六时代 Theme Lab 回归通过（重复运行
+> 0.000%；一次 platinum 瞬时 0.044% 噪声运行见第 5 节）、verify:visual 0
+> 漂移、CSS 预算与 child+app-specific ratchet 为 0、141 个功能契约、61
+> 个窗口 × 6 主题截图扫描、交互状态扫描与持久化探针全部通过。仅有的红灯
+> 与主题无关：(a) 公开仓库的 GitHub Actions 因账号计费锁定未启动；
+> (b) 可选浏览器 E2E 套件在本环境下超时（尝试 4 项全部超时，按仓库规定
+> 不属于发版闸门）；(c) 共享工作区软盘预算只有在并行会话未提交的预算上调
+> （2,978,000 字节，构建为 2,976,913）下才通过，而已提交 HEAD 独立通过
+> （剩余 2,602 字节）。这些都不是主题缺陷，也没有通过修改主题代码、测试
+> 或 baseline 来掩盖。
 
-## 结论（第二十二节）
+## 1. 当前状态 — 六套正式外观，三个维护族
 
-**新增一个 app 需要为多少个主题写专门 CSS？**
+`app/core/theme-registry.js` 是主题元数据的唯一事实来源。六套外观全部
+`releaseReady: true`；“特别 → 外观”菜单、控制面板的外观下拉、Theme Lab
+与两套语言表都暴露相同的六个 id。维护继承（`recipeBase`）刻意不按年代：
+classic → platinum，aqua → snow-leopard，liquid-glass → yosemite，其中
+Aqua 与 Liquid Glass 各自为根。
 
-零份。app CSS 只消费语义 token 与共享原语；家族差异走
-`body[data-theme-family="..."]`。61 个注册窗口全部满足：无任何
-child+app-specific 选择器（ratchet 强制，基线 0）。
-
-**Platinum 有多少 app-specific theme selectors？**
-
-Before：0（此前仅靠 feature test 的 6 条前缀正则约束）；After：0，且由
-注册表驱动的 `childAppSpecificSelectorLimit` 机器强制，只能减少。
-
-**Classic 改共享 primitive 时 Platinum 是否自动跟随？**
-
-是，并有测试/证据链：注册表 `recipeBase: classic` → Platinum 配方全部
-引用共享原语（orphan 检查）→ 90 条配方全部系统级 → 61 窗口 + 23 表面
-成对捕获显示增量处处生效（0 个 Classic 泄漏）。
-
-**Platinum 有没有因重构变得更像 Classic？**
-
-没有。架构重构本身零漂移（六主题 Theme Lab 回归 0 像素、verify:visual 0
-漂移）。此后的图标重绘是按用户要求**有意**改变图标像素，golden master
-逐字节一致声明仅对图标标本失效。QA 扫描 0 泄漏、0 未生效标题栏、
-0 零尺寸 chrome。
-
-**Aqua / Yosemite 有没有 visual regression？**
-
-没有。六时代 Theme Lab regression 全部 0 像素，`verify:visual` 26 项
-0 drifted，135/135 feature contracts 通过。
-
-## 已落地机制
-
-| 机制 | 位置 |
-| --- | --- |
-| 三族血缘（recipeBase / family / getRecipeChain） | app/core/theme-registry.js |
-| 继承契约 + 子主题配方纪律 + 覆盖命令 | docs/THEME-FAMILY-CONTRACT.md |
-| child+app-specific ratchet（基线 0，allowlist） | scripts/verify-css.mjs + css-budget.json |
-| 系统角色：--system-primary-divider、--system-secondary-divider、--system-border 别名 | styles/00-foundation.css + 家族文件 |
-| 注册表驱动覆盖审计 | scripts/audit-app-theme-coverage.mjs |
-| 全窗口截图 + 计算样式扫描 | scripts/screenshot-window-coverage.mjs |
-| 共享表面成对快照（classic/liquid/platinum） | scripts/css-surface-snapshot.mjs |
-| Platinum canonical fidelity（10 控件 + 9 图标标本） | tests/visual/theme-lab-fidelity/platinum.json |
-
-## 指标快照
-
-- Platinum 配方 90 条，全部系统级（58 图标 painter、11 窗口镶边、14 控件、
-  3 菜单、3 参数表、1 Theme Lab）。
-- 61 窗口 ×（Platinum/Classic）截图 + 计算样式；QA 扫描零异常（8 个纯图标
-  按钮误报已排除）。
-- 23 表面 × 2 主题 = 200 张成对截图；89 个 chrome 选择器确认增量生效。
-- 保真（对照真实 Mac OS 9）：几何全部对齐（geometryMismatch 0，edgeError
-  ≤ 0.3px），材质 ≤ 3.4；7–21% 像素差为文本内容，不应“修复”。
-- 外部交叉核对（第九节）：classic-stylesheets、Classicy、platinum.css 的
-  直接源码研读已于 2026-08-10 联网完成（见下方“外部源码研读”）。几何数值
-  与三个独立实现全部一致，并叠加 GUIdebook canonical 护栏。
-
-## 外部源码研读（Classicy + platinum.css，2026-08-10）
-
-“需网络访问”不再成立。完整 git 树已联网抓取并存于
-/private/tmp/classic-platinum-work-20260810/：Classicy
-（robbiebyrd/classicy，2683 个文件）、classic-stylesheets
-（nielssp/classic-stylesheets，themes/macos9/_*.scss）、platinum.css
-（mat-sz/platinum.css，src/index.scss）。许可证：Classicy Unlicense、
-platinum.css BSD-3-Clause-Clear、classic-stylesheets MIT。未向仓库复制任何
-代码/素材，以下只记录架构与实测数值。
-
-### 架构：系统资源拥有 Platinum，app 不拥有
-
-Classicy 的 SystemResources 目录正是我们契约描述的分工：约 50 个共享组件
-（AboutWindow、Alert、BalloonHelp、BevelButton、Button、ButtonToolbar、
-Checkbox、ColorPicker、ContextualMenu、ControlGroup、ControlLabel、
-DatePicker、Disclosure、FileDialog、FileInput、Icon、ImageWell、Input、
-Menu、Pager、Placard、PopUpMenu、ProgressBar、QuickTime、RadioInput、
-RichTextEditor、Separator、Slider、Spinner、Tabs、TextEditor、TimePicker、
-Tree、Triangle、Window、WindowFrame）。Finder、SimpleText、QuickTime、
-PictureViewer、PDFViewer、WebViewer 全部消费这些资源；它们自己的 SCSS 只
-是布局/内容（flex、gap、padding、token 色），没有任何 app 重写 Platinum
-chrome。这验证了我们的 child+app-specific ratchet 基线 0：本树 app 侧已经
-符合参考架构。
-
-### 数值交叉核对（三方一致）
-
-| Token | classic-stylesheets macos9 | platinum.css | Classicy | AI System 6 Platinum |
-| --- | --- | --- | --- | --- |
-| 按钮圆角 | 3px | —（WIP） | 3px token（paddingSize/2；depressable mixin 复写为 6px） | 3px |
-| 按钮最小宽 | 58px | — | 58px（--hig-button-min-width） | 58px |
-| 按钮内边距 | 2px 10px | — | 3px 垂直 / 8px 水平（HIG 文字下限） | 2px 10px |
-| 按钮最小高 | — | — | 20px | 20px |
-| 标题栏控件 | 11×11px | 11×11px | 12px（controlSize token） | 11px |
-| 滚动条 | 16px | — | 16px | 16px |
-| 选择色 | #ccf | — | #ccccff 家族（lavender） | #ccccff |
-| 窗口框 | #cccccc | #cecece | #cccccc | #cccccc |
-| 表面 | #dddddd | #dedede | #dddddd | #dddddd |
-| 标题栏条纹 | 白 1px + #777 1px | — | 条纹素材 | 白/#777 重复 1px |
-| 系统字体 | Charcoal | Charcoal | Charcoal | Charcoal |
-
-（— = 该 WIP/部分源码中无此项。）
-
-### 记录的分歧（不当作待修项）
-
-1. 标题栏控件尺寸：classic-stylesheets 与 platinum.css 都是 11px；Classicy
-   的 token 是 12px。我们跟随 11px 共识，也与 GUIdebook 实测一致。
-2. 气球帮助：Classicy 画白底气泡（8px 圆角）；真实 Mac OS 9 是黄底
-   （#ffffcc）+ 指针尾巴。我们保留黄气球，与真实系统及 Mac OS 8/9 HIG 一致。
-3. 系统灰阶：Classicy 用 #eeeeee/#dddddd/#cccccc/#aaaaaa/#808080/#393939/
-   #202020；classic-stylesheets 的 root 与我们的主题用
-   #eeeeee/#dddddd/#cccccc + #9999ff 家族强调色。我们与 classic-stylesheets
-   完全一致，也与实测 Mac OS 9 调色板一致。
-4. Classicy 正文 14px（Web 重制选择）；classic-stylesheets 与真实 Mac OS 9
-   是 12px。我们保留 12px 系统文本 + 10px 小字。
-
-## 图标重绘（2026-08-10）
-
-旧 Platinum 系统图标 SVG 是凭想象画的近似，用户判定与晚期 Classic Mac OS
-违和。从 GUIdebook Mac OS 9.0 桌面捕获实测的根因：
-
-- 真实 Mac OS 9 图标是浅蓝灰（#d0d0e1 家族）+ 黑描边 + 白高光 + 灰阴影；
-  旧 SVG 用了不存在的紫色渐变（#9999ff / #6666cc / #ccccff）和绿色点缀。
-- 旧 fixture 的 “folder” 参考裁剪实际是照片缩略图；9 个图标标本里有 7 个
-  参考裁剪不可用。
-
-重绘（assets/themes/platinum/*-32.svg + 配套 16px 版本）：folder（标签页+
-浅蓝灰渐变体+黑描边+白边）、document（白页+右上折角+黑文字行+灰投影）、
-floppy（金属快门带槽缝+浅青 #ccffff 标签+深色文字行）、trash（提手+金属丝
-竖肋）、startup-disk/hardDisk（浅色驱动器+深色槽口，去掉绿方块）、
-finder-app（经典 Finder 双脸标志）、applications（文件夹+应用网格）。
-
-接线：styles/65 图标引用改为 32px 资产，图标 manifest 更新，Platinum Theme
-Lab fixture 重建。验证：theme-lab platinum 0.000% 像素差；app 内已渲染新
-图标。对照图：drafts/theme-coverage/icon-redraw/icon-review-8x.png
-（旧 | 重绘 | 真实 Mac OS 9 参考，8 倍）。
-
-修正 document/floppy/trash 参考裁剪到真实 art box 后的实测保真
-（canonical harness，2026-08-10）：
-
-| 图标 | geometryMismatch | edgeErrorPx | materialError |
+| 外观 | id | 家族 / 继承 | 视觉状态 |
 | --- | --- | --- | --- |
-| document-32 | 0 | 0.7 | 44.5 |
-| floppy-32 | 0 | 0.4 | 104.9 |
-| trash-32 | 0.003 | 1.1 | 37.7 |
+| System 6 | classic | classic（根） | 1-bit 铬；0 圆角、无阴影或半透明；扫描中彩色像素 0% |
+| Platinum | platinum | classic → classic | Mac OS 9 灰铬、11 px 标题栏控件、黄色气球帮助 |
+| Aqua | aqua | aqua（根） | 细条纹菜单栏/工具栏、胶囊按钮、红绿灯、8 px 窗口 |
+| Snow Leopard | snow-leopard | aqua → aqua | 银色统一工具栏/边栏/对话框、12 px 灯、5 px 窗口 |
+| Yosemite | yosemite | liquid-glass → liquid-glass | 10.10 扁平铬、半透明菜单栏、蓝色默认按钮 `#3484e2`（悬停 `#619fe8`）、5 px 窗口 |
+| Liquid Glass | liquid-glass | liquid-glass（根） | 玻璃材质、vibrancy、18 px 圆角、蓝色渐变默认按钮 |
 
-重绘剪影与真实 Mac OS 9 对齐（geometryMismatch ≤ 0.003、edge ≤ 1.1px）；
-材质差值量化剩余 painter 工作量。注意：桌面捕获里的软盘带定制彩色标签，
-其材质数值不是干净校准目标；folder/hard-disk/cd 标本仍需有效参考源
-（旧裁剪是照片缩略图或被截断）。
+家族契约、注册表 recipe 链与选择器 ratchet 分别由
+`docs/THEME-FAMILY-CONTRACT.md`、`tests/features/appearance-system.test.mjs`
+与 `scripts/verify-css.mjs` 强制（child+app-specific 选择器保持基线 0）。
 
-收尾闸门记录（2026-08-10，合并树）：verify:release 通过且 0 警告（app
-bundle、发布资产、src 类型检查、135 项功能测试、CSS 预算、设计治理、
-smoke、版本一致性、前端 checkJs）；verify:theme-lab 六时代全部 0.000%；
-verify:css 通过。唯一剩余红灯是 verify:visual 的窗口/按钮几何快照，归
-并行 Aqua 车道已提交的运行时重构所有；其基线更新已落地，verify:visual
-现已转绿（26 项 0 漂移）。截至最终闸门重跑（2026-08-10 ~05:32），合并树
-全部闸门绿：verify:release 0 警告、verify:theme-lab 六时代 0.000%、
-verify:visual 0 漂移、verify:css（含 child+app ratchet）通过。
+## 2. 实际执行的验证（2026-08-10，真实退出码）
 
-## 剩余工作（保真阶段）
+| 命令 | 退出码 | 证据 |
+| --- | --- | --- |
+| `npm install` | 0 | 依赖树与 lockfile 已同步 |
+| `npm run verify:css` | 0 | 逐文件预算与 ratchet；child+app-specific 0/0；无新增 `!important` |
+| `npm run audit:theme-coverage` | 0 | 61 个注册窗口；0 个 child+app-specific 主题选择器 |
+| `npm run verify:features` | 0 | 141 个功能契约（含 `appearance-system`） |
+| `npm run verify:theme-lab` | 0 | 六时代回归通过；重复运行 0.000%（一次 platinum 瞬时 0.044% 噪声运行见第 5 节） |
+| `npm run verify:visual` | 0 | 26 项计算样式条目，0 漂移 |
+| `npm run verify:theme-lab:fidelity` | 0 | 4 套外观的 canonical fidelity 硬闸门（并行会话新增） |
+| `npm run screenshot:windows -- --theme <时代>` | 0 × 6 | 每个主题 61/61 窗口；无零尺寸铬 |
+| `npm run verify:release` | 0 | 最终运行：0 警告（build、语法、src typecheck、smoke、data、floppy、features、docs、CSS、design、packaging） |
+| `npm run test:e2e` | 中断 | 可选人工诊断；4/4 项 chromium 测试在本环境超时（见第 5 节）；按仓库规定不属于发版条件 |
+| `npm run compare:theme-lab:canonical` | 0 | Platinum 对照真实 Mac OS 9 语料；受闸门标本在固定容差内（图标标本仅诊断） |
 
-1. **图标批次已获用户验收（2026-08-10）。** 全套约 51 个 Platinum 图标现由
-   单一共享配方（scripts/build-platinum-icons.mjs）生成，遵循已接受的设计
-   规范：黑色 keyline、白高光、轻微 bevel、像素级边缘、明快非荧光材料色、
-   稳定透视、克制硬阴影。系统图标使用实测 Mac OS 9 色（文件夹 #ccccff
-   家族、软盘 #cfcfe1/#ccffff 等）。
-2. 逐图标 painter 校准方案已被统一配方取代；后续保真修复即配方/配色改动，
-   一次重生成全套。
-3. **外部参考补强**：classic-stylesheets 资产已在仓库内；Classicy 与
-   platinum.css 的直接源码研读已完成（见上文“外部源码研读”；证据在
-   `/private/tmp/classic-platinum-work-20260810/`）。
-4. **人工复查截图集**：`drafts/theme-coverage/windows-platinum/`。
-5. **程序收尾**：本车道工作已提交（11 个提交，备份在
-   `/private/tmp/classic-platinum-work-20260810/`）。最终树级
-   verify:release/theme-lab 重跑待并行 Aqua/Snow Leopard 车道进行中的工作
-   收尾（其 67 选择器预算与 aqua/snow fixture 是当前仅有的红灯）。
+每条命令都针对实时工作区运行并记录真实退出状态，没有沿用旧报告结论。
 
-## 维护命令
+公开可复现性：`verify:theme-lab`、`screenshot:windows`、
+`audit:theme-coverage`、`compare:theme-lab:canonical` 与
+`verify:theme-lab:fidelity` 均随公开树提供并可运行。`verify:visual`
+（以及 `snapshot:css`、`visual:*`、`render:*`）是仅限内部私有树的闸门：
+它需要本地浏览器，并有意从公开快照中移除
+（`scripts/lib/public-package.mjs` 的 `internalOnlyScriptNames`）。其上
+结果是私有树证据，不是“公开克隆可复现”的声明。公开快照受支持的命令面即
+README.md 所记载的 `npm ci` / `npm start` / `npm run build` /
+`npm test` / `npm run verify:public`。
+
+## 3. 已完成的视觉验收
+
+- **61 个注册窗口 × 6 主题** — 元素截图与计算样式采样（title-bar、
+  close-box、resize-box、按钮、输入框、下拉、面板）位于
+  `drafts/theme-coverage/windows-<theme>/`。六次运行均 61/61 窗口，零
+  零尺寸铬，除已知的 Time Machine sandbox 消息外无页面错误。
+- **交互状态扫描 × 6 主题** — Apple 菜单打开与悬停选中、特别 → 外观
+  子菜单（六项齐全）、active/inactive 窗口标题栏、关闭/缩放/缩放框、
+  按钮 default/hover/pressed/focus/disabled、复选框/下拉/文本域、气球
+  帮助、系统模态框、工具栏/边栏/标签页、可滚动面板与通知中心。截图与
+  JSON 位于 `drafts/theme-coverage/states/`。
+- **时代材质检查** — Classic 彩色像素 0% 且零圆角/阴影；Platinum 为灰阶
+  与实测 Mac OS 9 调色板；Aqua/Snow Leopard 具备时代色彩（细条纹、银灰、
+  红绿灯）；Yosemite 为扁平 10.10 铬；Liquid Glass 为玻璃材质。未发现跨
+  时代串色。
+- **持久化** — 保存的非默认主题在首帧前已投射到 `html`/`body`（注册表
+  在 `<head>` 中先于样式表执行）；重载保持；旧 `ai-system-6-liquid-glass`
+  键迁移为 `ai-system-6-theme=liquid-glass`；未知 id 安全回落到 classic
+  并规范化存储；A→B→A 往返不残留旧 class、inline style 或 CSS 变量；
+  已打开窗口实时跟随主题切换。
+
+## 4. 本次收口发现并修复的问题
+
+1. **Yosemite、Aqua、Snow Leopard 压扁了应用自有文本域。** 听写转写
+   （84 px）、翻译板（118 px）、重建流程（180 px）文本域全部掉到 22 px
+   控件最小值。根因：时代字段配方对 textarea 设置
+   `min-height: var(--system-control-min-height)`，与 app 规则在特异性上
+   打平并按加载顺序胜出。Classic 与 Liquid Glass 从不设置 textarea
+   min-height。修复：从 Yosemite 配方（`styles/65-appearance-themes.css`）
+   与 Aqua/Snow Leopard 配方（`styles/67-aqua-appearance.css`）移除该属性；
+   单行控件仍由基础规则保持 22 px 最小值。
+2. **Yosemite 蓝色默认按钮悬停变白。** 通用 `.btn:hover` 配方用白色常规
+   按钮悬停色重绘了 10.10 suggested-action 按钮。修复：新增 Yosemite 规则
+   使用 `--btn-default-hover-bg: #619fe8`，并经引用的
+   vinceliuice/Yosemite-gtk-theme `03b6f721` `gtk-light.css` 验证
+   （`button.suggested-action:hover { background-color: #619fe8; }`）。
+3. **README 只写了三套正式外观。** 注册表实际发布六套；`README.md` /
+   `README.zh-CN.md` 现已改为六套正式外观（System 6、Platinum、Aqua、
+   Snow Leopard、Yosemite、Liquid Glass）。
+4. **本报告原先同时存在“全部闸门绿”与过时红灯、阻塞项。** 已重写为单一
+   当前结论；分阶段过程记录归档在下方历史区。
+5. **覆盖审计不再与 ratchet 的 allowlist 对齐。** 并行会话的 Yosemite
+   拆分通过 `childAppSpecificAllowlist`（`yosemite:.finder-item` 等带主题
+   限定形式，即契约中的系统级例外路径）批准其 Finder/桌面选中配方，
+   `verify:css` 因此计数 0/0；但 `audit-app-theme-coverage.mjs` 只识别
+   裸形式或 `platinum:` 限定条目，误报 5 个窗口。审计现已与闸门一样识别
+   限定形式，重新报 0。
+
+## 5. 已知但不阻塞发布的问题
+
+- **GitHub Actions 未启动**（账号计费锁定）。属仓库基础设施而非代码；
+  本地闸门即为验收证据。
+- **可选 E2E 套件在本环境超时**（尝试 4 项 chromium 测试全部超时：
+  adjustment-layers × 2、control-strip × 2，各 4–5 分钟）。仓库将其定为
+  可选人工诊断、绝非发版条件；未为此修改任何测试或配置。
+- **共享工作区软盘预算**只有在并行会话未提交的上调（2,978,000 字节对比
+  构建 2,976,913）下才通过；已提交 HEAD 独立通过（剩余 2,602 字节）。
+  该会话收口并提交上调后需重跑 `verify:release`。
+- **Theme Lab 瞬时字形噪声** — 某次 platinum 运行测得 0.044%（557 px，
+  Icon set 的 Charcoal 标签）；重复运行测得 0.000%。这是低于 0.2% 闸门
+  容差的机器/字体缓存栅格化噪声，不是回归，也不是更新 baseline 的理由。
+- **Time Machine 内嵌页按设计记录一条 `localStorage` sandbox 错误**
+  （`sandbox="allow-scripts"` 不透明源 iframe）；六次主题扫描均出现，
+  与主题无关。
+- **Platinum 图标材质保真**：folder / hard-disk / CD 标本仍缺有效参考
+  裁片（旧裁片是照片缩略图）。几何已对齐；材质差异已量化，不阻塞发布。
+- **Theme Lab 标题字形噪声** — 某些运行下 “Icon set” 标题会测量出
+  ±0.01% 差异（机器/字体缓存差异）；重复运行测得 0.000%。这是栅格化
+  噪声，不是更新 baseline 的理由。
+
+## 6. 历史 / 中间记录（2026-08-10 归档）
+
+> 本节以下内容为并行 Platinum/Aqua 通道在 2026-08-10 产生的分阶段记录，
+> 保留作溯源用途。其中的状态行（“全部闸门绿”“人工视觉复查待办”“阻塞
+> 完成审计的未决项”）描述的是中间时刻，**不是当前状态**。第 1–5 节才是
+> 当前结论。历史细节（外部源码研究、图标重绘、执行顺序审计表、指标快照）
+> 以英文版为准。
+
+历史要点摘要：
+
+- 家族/继承模型、child+app-specific ratchet（基线 0）、系统角色 token
+  （`--system-primary-divider` 等）与 registry 驱动覆盖审计均已落地。
+- 外部源码研究（Classicy、classic-stylesheets、platinum.css）确认三路
+  几何数值一致；差异按真实系统裁定（11 px 标题栏控件、黄色气球帮助、
+  12 px 正文等）。
+- Platinum 图标按实测 Mac OS 9 调色板重绘，约 51 个图标由单一 painter
+  配方生成，并已获用户批准；几何对齐，材质差异量化记录。
+- 旧的“阻塞完成审计的未决项”（红绘图标人工复查、并行 Aqua 通道未提交
+  的视觉基线、最终 verify:release/verify:visual 重跑）已由本次收口解决。
+
+## 7. 维护命令
 
 ```sh
-npm run verify:css                      # budgets + child+app ratchet
-npm run verify:theme-lab                # 六时代 Theme Lab regression
-npm run verify:visual                   # Classic/Liquid computed snapshot
+npm run verify:css                      # 预算 + child+app ratchet
+npm run verify:theme-lab                # 六时代 Theme Lab 回归
+npm run verify:visual                   # Classic/Liquid 计算样式快照
 npm run verify:features -- appearance-system
-npm run audit:theme-coverage            # 注册表驱动的覆盖审计
+npm run audit:theme-coverage            # registry 驱动的覆盖审计
 npm run screenshot:windows              # 全窗口截图
 npm run compare:theme-lab:canonical     # Platinum 对照真实 Mac OS 9
 ```
-
-## 执行顺序审计（计划第 21–22 节）
-
-逐项状态与权威证据：
-
-| 计划项 | 状态 | 证据 |
-| --- | --- | --- |
-| 1. 拉取最新 main | 完成 | codex/system-closing 位于 origin/main 之上 |
-| 2. 保存六主题基线 | 完成 | tests/visual/theme-lab/*.png + verify:theme-lab |
-| 3. 保存 Platinum canonical 保真 | 完成 | tests/visual/theme-lab-fidelity/platinum.json + drafts/theme-lab-fidelity/platinum/ |
-| 4. 机械拆分 family CSS（可选） | 已被取代 | Aqua 车道的 65 重组（其车道未提交）；契约记录了冲突再现时的规则 |
-| 5. 三族继承契约 | 完成 | docs/THEME-FAMILY-CONTRACT.md（中英） |
-| 6. app 外观映射到系统/家族语义 | 完成 | 00-foundation.css 的分隔/边框别名，零差异验证 |
-| 7. 真实 app Platinum 覆盖审计 | 完成 | 61 窗口、0 条 child+app-specific 选择器（审计+截图脚本） |
-| 8. 删除可继承的 Platinum app-specific 选择器 | 完成 | ratchet 基线 0（verify:css） |
-| 9. 对照 classic-stylesheets / Classicy / platinum.css | 完成 | 联网完整源码研读（Classicy 2683 文件树、SystemResources 架构、platinum.css src/index.scss、classic-stylesheets macos9 模块）；三方几何一致，分歧记录在“外部源码研读” |
-| 10. 修复剩余 Platinum 保真细节 | 部分 | 图标已按实测调色板重绘；Mac OS 9 HIG 审计（drafts/platinum-hig-audit.md）已修 grow box、非活动标题栏控件、气球帮助；painter 校准待人工批准 crop |
-| 11. Classic + Platinum 成对回归 | 完成 | verify:theme-lab 六时代 0.000% |
-| 12. 六主题共享基础设施回归 | 完成 | 4098c729 时六时代 0.000%；verify:release 0 警告 |
-| 13. 输出维护成本指标 | 完成 | 指标快照 + 结论 |
-| 22. 最终问题 | 完成 | 结论回答全部五问；收尾时重跑最终 release 闸门 |
-
-阻塞完成度审计的待办：(a) 人工视觉复查重绘图标；(b) 并行 Aqua 车道未提交的
-visual 基线与 65 重组（verify:visual 唯一红灯）；(c) 树稳定后重跑一次最终
-verify:release / verify:visual。

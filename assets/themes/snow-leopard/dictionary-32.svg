@@ -1,35 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
-  <!-- Snow Leopard 10.6 painter (shared recipe): matte silver body, soft top
-       highlight, gentle shade, quiet rim. Same anatomy, quieter generation. -->
-  <defs>
-    <linearGradient id="g-body" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#f2f5f9"/>
-      <stop offset="0.5" stop-color="#dbe1eb"/>
-      <stop offset="1" stop-color="#b7c2d3"/>
-    </linearGradient>
-    <linearGradient id="g-soft" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#f6f8fb"/>
-      <stop offset="1" stop-color="#ccd4e0"/>
-    </linearGradient>
-    <linearGradient id="g-hi" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.38"/>
-      <stop offset="0.45" stop-color="#ffffff" stop-opacity="0"/>
-    </linearGradient>
-    <linearGradient id="g-sh" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0.6" stop-color="#000000" stop-opacity="0"/>
-      <stop offset="1" stop-color="#000000" stop-opacity="0.16"/>
-    </linearGradient>
-    <clipPath id="cp-body">
-      <path d="M7 5h18v22H7z" />
-    </clipPath>
-  </defs>
-  <path d="M7 5h18v22H7z" fill="url(#g-body)" stroke="#4d4d4d" stroke-width="1" />
-  <g clip-path="url(#cp-body)">
-    <rect x="0" y="0" width="32" height="32" fill="url(#g-hi)"/>
-    <rect x="0" y="0" width="32" height="32" fill="url(#g-sh)"/>
-    <rect x="1" y="0" width="30" height="1" fill="#ffffff" fill-opacity="0.55"/>
-  </g>
-  
-  <path d="M10 5v22M13 11h8M13 16h7M13 21h8" fill="none" stroke="#4a4a4a" stroke-width="1" stroke-linecap="square" />
-  <path d="M21 5v5h4" fill="none" stroke="#4a4a4a" stroke-width="1" stroke-linecap="square" />
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
+<defs>
+      <linearGradient id="body" x1="0.08" y1="0" x2="0.92" y2="1"><stop offset="0" stop-color="#fff0bf"/><stop offset="0.42" stop-color="#dab86c"/><stop offset="1" stop-color="#583e27"/></linearGradient>
+      <linearGradient id="paper" x1="0" y1="0" x2="0.75" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="0.66" stop-color="#f4f3ed"/><stop offset="1" stop-color="#bdc3c9"/></linearGradient>
+      <linearGradient id="metal" x1="0" y1="0" x2="0.2" y2="1"><stop offset="0" stop-color="#fdfefe"/><stop offset="0.18" stop-color="#bec7cf"/><stop offset="0.47" stop-color="#6f7d8a"/><stop offset="0.65" stop-color="#e1e6e9"/><stop offset="1" stop-color="#48535d"/></linearGradient>
+      <radialGradient id="lens" cx="0.3" cy="0.22" r="0.78"><stop offset="0" stop-color="#e8f7ff" stop-opacity="0.92"/><stop offset="0.48" stop-color="#72b2dc" stop-opacity="0.74"/><stop offset="1" stop-color="#234c6d" stop-opacity="0.92"/></radialGradient>
+      <linearGradient id="leather" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c39a69"/><stop offset="0.52" stop-color="#87603f"/><stop offset="1" stop-color="#4b3024"/></linearGradient>
+    </defs>
+<ellipse cx="33" cy="54" rx="19" ry="2.7" fill="#000000" fill-opacity="0.24"/><path d="M5 16q13-7 27 2v39q-13-8-27-2zM59 16q-13-7-27 2v39q13-8 27-2z" fill="url(#leather)" stroke="#36434d" stroke-width="1.65"/><path d="M9 20q11-5 22 1v31q-11-6-22-2zM55 20q-11-5-22 1v31q11-6 22-2z" fill="url(#paper)" stroke="#8a6b4d" stroke-width="1"/><path d="M21 29q6-3 11 1v18q-5-4-11-1zM43 29q-6-3-11 1v18q5-4 11-1z" fill="#ffffff" stroke="#9b7548" stroke-width="1.8"/><path d="M26 40l3-8 3 8M27 37h4M35 33h4l-4 8h4" fill="none" stroke="#303b45" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

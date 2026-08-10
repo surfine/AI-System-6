@@ -2429,6 +2429,21 @@ body.alarm-clock-ringing .alarm-clock-menu-icon {
   flex-wrap: wrap;
 }
 
+/* Window-toolbar chrome is a shared surface: one enumeration of the toolbar
+   roles here, era material via tokens. Themes must not re-list app toolbar
+   classes. */
+:is(
+  .window-toolbar,
+  .documents-toolbar,
+  .project-disk-toolbar,
+  .reader-toolbar,
+  .time-machine-browser-toolbar,
+  .dictation-toolbar
+) {
+  background: var(--app-toolbar-bg);
+  border-bottom: var(--app-toolbar-border-bottom);
+}
+
 /* A cluster of controls inside a toolbar row. */
 .toolbar-group {
   display: flex;

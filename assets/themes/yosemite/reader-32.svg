@@ -1,16 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
-  <!-- 10.10 Reader: open book — two facing pages, flat. -->
-  <defs>
-    <linearGradient id="g-book" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffffff"/>
-      <stop offset="1" stop-color="#e8edf3"/>
-    </linearGradient>
-  </defs>
-  <path d="M4 8c4-1.5 8-1 10-0.5v15c-2-0.5-6-1-10 0.5V8z" fill="url(#g-book)" stroke="#93a3b5" stroke-width="1"/>
-  <path d="M28 8c-4-1.5-8-1-10-0.5v15c2-0.5 6-1 10 0.5V8z" fill="url(#g-book)" stroke="#93a3b5" stroke-width="1"/>
-  <path d="M14 7.5h4v16h-4z" fill="#c7d2df"/>
-  <rect x="6" y="10.5" width="6" height="0.8" rx="0.4" fill="#a7b6c8"/>
-  <rect x="6" y="13" width="6" height="0.8" rx="0.4" fill="#a7b6c8"/>
-  <rect x="20" y="10.5" width="6" height="0.8" rx="0.4" fill="#a7b6c8"/>
-  <rect x="20" y="13" width="6" height="0.8" rx="0.4" fill="#a7b6c8"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
+<defs>
+      <linearGradient id="body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9efff"/><stop offset="1" stop-color="#75b9ec"/></linearGradient>
+      <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#eef3f7"/></linearGradient>
+      <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7fafc"/><stop offset="1" stop-color="#b7c3cf"/></linearGradient>
+    </defs>
+<path d="M5 16q13-6 27 2v39q-13-7-27-2zM59 16q-13-6-27 2v39q13-7 27-2z" fill="url(#paper)" stroke="#789bb9" stroke-width="1.35"/><path d="M32 18v39" stroke="#789bb9" stroke-width="1"/><path d="M20 29q7-4 12 1v18q-6-4-12-1zM44 29q-7-4-12 1v18q6-4 12-1z" fill="#ffffff" stroke="#2e7fcb" stroke-width="1.7"/>
 </svg>

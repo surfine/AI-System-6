@@ -55,6 +55,7 @@ function buildRunReceiptRecord(input = {}, now = runReceiptNow()) {
     finishedAt: "",
     sourceScope: normalizeRunReceiptScope(input.sourceScope),
     inputObjectIds: [...new Set((input.inputObjectIds || []).map(String).filter(Boolean))],
+    affectedObjectIds: [...new Set((input.affectedObjectIds || []).map(String).filter(Boolean))],
     provider: String(input.provider || ""),
     model: String(input.model || ""),
     allowedTools: [],
@@ -88,6 +89,7 @@ function formatRunReceiptBody(record = {}) {
     `- Finished: ${record.finishedAt || "—"}`,
     `- Project: ${record.projectId || "—"}`,
     `- Inputs: ${(record.inputObjectIds || []).join(", ") || "—"}`,
+    `- Affected: ${(record.affectedObjectIds || []).join(", ") || "—"}`,
     `- Provider / model: ${record.provider || "—"} / ${record.model || "—"}`,
     `- Allowed tools: ${(record.allowedTools || []).join(", ") || "—"}`,
     `- Tool calls: ${tools.length ? tools.map((tool) => `${tool.name} [${tool.effect || ""}] ${tool.ok ? "ok" : "failed"}`).join("; ") : "—"}`,
@@ -234,12 +236,15 @@ async function updateReceipt(receiptId, patch = {}) {
   if (Object.prototype.hasOwnProperty.call(patch, "proposal")) record.proposal = String(patch.proposal || "");
   if (Object.prototype.hasOwnProperty.call(patch, "provider")) record.provider = String(patch.provider || "");
   if (Object.prototype.hasOwnProperty.call(patch, "model")) record.model = String(patch.model || "");
+  if (Object.prototype.hasOwnProperty.call(patch, "affectedObjectIds") && Array.isArray(patch.affectedObjectIds)) {
+    record.affectedObjectIds = [...new Set(patch.affectedObjectIds.map(String).filter(Boolean))];
+  }
   if (Object.prototype.hasOwnProperty.call(patch, "replayContract")) record.replayContract = patch.replayContract || null;
   refreshReceiptFileBody(file);
   return persistReceiptFile(file);
 }
 
-async function finishReceipt(receiptId, { status = "completed", outputObjectIds = [], destination = "", publicErrorReason = "" } = {}) {
+async function finishReceipt(receiptId, { status = "completed", outputObjectIds = [], affectedObjectIds = null, destination = "", publicErrorReason = "" } = {}) {
   const file = findReceiptFile(receiptId);
   if (!file?.runReceipt) return { ok: false, reason: "missing" };
   const record = file.runReceipt;
@@ -247,6 +252,7 @@ async function finishReceipt(receiptId, { status = "completed", outputObjectIds 
   record.status = normalizedStatus;
   if (runReceiptStatusIsTerminal(normalizedStatus) && !record.finishedAt) record.finishedAt = runReceiptNow();
   if (Array.isArray(outputObjectIds)) record.outputObjectIds = [...new Set(outputObjectIds.map(String).filter(Boolean))];
+  if (Array.isArray(affectedObjectIds)) record.affectedObjectIds = [...new Set(affectedObjectIds.map(String).filter(Boolean))];
   if (destination) record.destination = String(destination);
   if (publicErrorReason) record.publicErrorReason = String(publicErrorReason);
   refreshReceiptFileBody(file);

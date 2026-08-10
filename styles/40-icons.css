@@ -215,6 +215,13 @@
   color: var(--selection-fg);
 }
 
+/* Native ICN# artwork keeps its bitmap and mask separate. Finder selection
+   inverts those two colours inside the mask; it never swaps to another icon. */
+.finder-item.is-selected .sys-icon-svg.has-classic-mask .sys-icon-classic,
+.desktop-icon.is-selected .sys-icon-svg.has-classic-mask .sys-icon-classic {
+  filter: invert(1);
+}
+
 .finder-item.is-archived {
   color: var(--shade-dark);
 }

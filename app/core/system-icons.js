@@ -64,6 +64,7 @@ const nativeSystem6HardDiskPath = `
 
 const nativeSystem6FinderIconPaths = {
   startupDisk: nativeSystem6StartupDiskPath,
+  hardDisk: nativeSystem6HardDiskPath,
   projectDisk: nativeSystem6HardDiskPath,
   fileFloppy: `
     <path class="classic-ink" d="M1 0h28v1h-28zM29 1h1v1h-1zM17 2h3v1h-3zM30 2h1v1h-1zM16 3h1v5h-1zM20 3h1v5h-1zM17 8h3v1h-3zM7 1h1v9h-1zM23 1h1v9h-1zM8 10h15v1h-15zM5 18h22v1h-22zM0 1h1v30h-1zM31 3h1v28h-1zM4 19h1v12h-1zM27 19h1v12h-1zM1 31h30v1h-30z" />
@@ -198,6 +199,10 @@ const systemIconPaths = {
     <path d="M12 10h10M12 15h8M12 21h10" />
     <path d="M9 8v16" />
   `,
+  clipboard: `
+    <path d="M8 7h16v21H8zM12 4h8v5h-8z" />
+    <path d="M11 13h10M11 18h10M11 23h7" />
+  `,
   applications: `
     <path d="M6 6h20v20H6z" />
     <path d="M6 16h20M16 6v20" />
@@ -259,6 +264,13 @@ const systemIconPaths = {
     <rect x="18" y="13" width="5" height="6" />
     <rect x="12" y="21" width="5" height="6" />
   `,
+  control: `
+    <path d="M5 6h22v21H5z" />
+    <path d="M9 10h14M9 16h14M9 22h14" />
+    <circle class="classic-ink" cx="12" cy="10" r="2" />
+    <circle class="classic-ink" cx="20" cy="16" r="2" />
+    <circle class="classic-ink" cx="15" cy="22" r="2" />
+  `,
   chooser: `
     <path d="M5 7h22v18H5z" />
     <path d="M9 12h14M9 17h14M9 22h14" />
@@ -290,8 +302,9 @@ const systemIconPaths = {
   quickDraft: `
     <path d="M8 5h16v22H8z" />
     <path d="M12 10h8M12 14h6" />
-    <circle cx="20" cy="21" r="6" />
-    <path d="M20 17v4h3" />
+    <!-- Quick Draft reads as a page with a lightning bolt: "quick", and a
+         shape that cannot be confused with TeachText's plain ruled page. -->
+    <path d="M20 11L13 19h5L16 26l7-8h-5l2-7z" />
   `,
   /* The demo plays the writing route back to the user, so the object is a
      page with the shared transport play glyph on it — solid 1-bit fill, the
@@ -568,8 +581,7 @@ const liquidSystemIconPaths = {
   quickDraft: `
     <rect class="icon-fill" x="8" y="5.5" width="16" height="21" rx="3" />
     <path d="M12 10.5h8M12 15h6" />
-    <circle class="icon-fill-soft" cx="20" cy="21" r="5.5" />
-    <path class="icon-accent" d="M20 17.5v3.5h3" />
+    <path class="icon-accent" d="M20 11L13 19h5L16 26l7-8h-5l2-7z" />
   `,
   writingDemo: `
     <rect class="icon-fill" x="8" y="5.5" width="16" height="21" rx="3" />
@@ -773,6 +785,13 @@ const classicPlusSystemIconPaths = {
     <path d="M5 8h22M5 16h22M5 24h22" />
     <path class="classic-ink" d="M9 5h5v6H9zM18 13h5v6h-5zM12 21h5v6h-5z" />
   `,
+  control: `
+    <path d="M5 6h22v21H5z" />
+    <path d="M9 10h14M9 16h14M9 22h14" />
+    <circle class="classic-ink" cx="12" cy="10" r="2" />
+    <circle class="classic-ink" cx="20" cy="16" r="2" />
+    <circle class="classic-ink" cx="15" cy="22" r="2" />
+  `,
   chooser: `
     <path d="M5 7h22v18H5z" />
     <path d="M9 12h14M9 17h14M9 22h14M13 9v16M19 9v16" />
@@ -800,23 +819,74 @@ function normalizeSystemIconId(iconId) {
   return systemIconPaths[raw] ? raw : "document";
 }
 
-function systemIconSvg(iconId) {
+const classicCoreSystemIconIds = new Set([
+  "finderApp", "folder", "hardDisk", "trash", "document", "daHandler",
+  "fileFloppy", "projectDisk", "searcher", "teachText", "scrapbook", "assistant",
+]);
+
+const platinumCoreSystemIconIds = new Set([
+  "finderApp", "folder", "hardDisk", "trash", "document", "daHandler",
+  "fileFloppy", "projectDisc", "controlPanel", "systemFile", "scrapbook", "clipboard",
+]);
+
+function classicCoreSystemIconArt(iconId, sourceSize) {
+  if (!classicCoreSystemIconIds.has(iconId)) return "";
+  return `<image href="assets/themes/classic/icons/${systemIconEscape(iconId)}-${sourceSize}.svg" x="0" y="0" width="32" height="32" preserveAspectRatio="xMidYMid meet" />`;
+}
+
+function platinumCoreSystemIconArt(iconId, sourceSize) {
+  if (!platinumCoreSystemIconIds.has(iconId)) return "";
+  return `<image href="assets/themes/platinum/icons/${systemIconEscape(iconId)}-${sourceSize}.png" x="0" y="0" width="32" height="32" preserveAspectRatio="xMidYMid meet" />`;
+}
+
+function liquidGlassSystemIconArt(iconId, sourceSize = 32) {
+  if (transportIconPaths[iconId]) return transportIconPaths[iconId];
+  // `scrap` is a retired pre-Theme-Lab id kept for old saved workspaces. The
+  // current 54-object contract calls the same object `scrapbook`.
+  const assetId = iconId === "scrap" ? "scrapbook" : iconId;
+  const assetSize = sourceSize === 16 ? 16 : 32;
+  return `<image href="assets/themes/liquid-glass/${systemIconEscape(assetId)}-${assetSize}.svg" x="0" y="0" width="32" height="32" preserveAspectRatio="xMidYMid meet" />`;
+}
+
+function systemIconUsesSmallSource(options = {}) {
+  if (Number(options.sourceSize) === 16) return true;
+  if (typeof options.size === "number") return options.size <= 22;
+  return ["mini", "small", "tiny", "menu"].includes(String(options.size || ""));
+}
+
+function systemIconSvg(iconId, options = {}) {
   const id = normalizeSystemIconId(iconId);
-  const paths = classicPlusSystemIconPaths[id] || systemIconPaths[id] || systemIconPaths.document;
-  const liquidPaths = liquidSystemIconPaths[id] || liquidSystemIconPaths.document;
-  return `<svg class="sys-icon-svg" viewBox="0 0 32 32" focusable="false" aria-hidden="true"><g class="sys-icon-classic">${paths}</g><g class="sys-icon-liquid">${liquidPaths}</g></svg>`;
+  const sourceSize = systemIconUsesSmallSource(options) ? 16 : 32;
+  const coreArt = classicCoreSystemIconArt(id, sourceSize);
+  const platinumArt = platinumCoreSystemIconArt(id, sourceSize);
+  const paths = coreArt || classicPlusSystemIconPaths[id] || systemIconPaths[id] || systemIconPaths.document;
+  const liquidPaths = liquidGlassSystemIconArt(id, sourceSize);
+  const maskClass = coreArt ? " has-classic-mask" : "";
+  const platinumClass = platinumArt ? " has-platinum-core" : "";
+  return `<svg class="sys-icon-svg${maskClass}${platinumClass}" data-classic-source-size="${sourceSize}" viewBox="0 0 32 32" focusable="false" aria-hidden="true"><g class="sys-icon-classic">${paths}</g><g class="sys-icon-platinum-core">${platinumArt}</g><g class="sys-icon-liquid">${liquidPaths}</g></svg>`;
 }
 
 function renderSystemIcon(iconId, options = {}) {
   const id = normalizeSystemIconId(iconId);
   const size = options.size || "mini";
   const extraClass = options.className ? ` ${systemIconEscape(options.className)}` : "";
-  return `<span class="sys-icon sys-icon-${systemIconEscape(size)}${extraClass}" data-system-icon="${systemIconEscape(id)}" aria-hidden="true">${systemIconSvg(id)}</span>`;
+  return `<span class="sys-icon sys-icon-${systemIconEscape(size)}${extraClass}" data-system-icon="${systemIconEscape(id)}" aria-hidden="true">${systemIconSvg(id, options)}</span>`;
 }
 
 function hydrateSystemIcons(root = document) {
   root.querySelectorAll("[data-system-icon]").forEach((item) => {
     item.classList.add("sys-icon");
-    item.innerHTML = systemIconSvg(item.dataset.systemIcon);
+    const useSmallSource = item.matches([
+      ".sys-icon-mini",
+      ".menu-bar .sys-icon",
+      ".cloud-icon",
+      ".project-switcher-icon",
+      ".control-strip .sys-icon",
+      ".finder-list-name-cell .sys-icon",
+      ".finder-list-row .sys-icon",
+    ].join(", "));
+    item.innerHTML = systemIconSvg(item.dataset.systemIcon, {
+      sourceSize: useSmallSource ? 16 : 32,
+    });
   });
 }

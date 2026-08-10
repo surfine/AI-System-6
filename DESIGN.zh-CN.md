@@ -1,5 +1,5 @@
 <!-- canonical-source: DESIGN.md -->
-<!-- source-sha256: 8da7f657af05fed11f6030591bbc90ce77985142702fdabb6b1956c0aebdc8d6 -->
+<!-- source-sha256: 193265ba88df9a27d2ae9e5fb96821a4fca6767a810d358332897a6e3a7f4d9c -->
 
 # AI System 6 设计合约
 
@@ -134,12 +134,17 @@ selector、DOM 或可再分发美术资源。
 | Platinum — Mac OS 9 | MIT 许可的 [`classic-stylesheets` Mac OS 9 recipe（固定于 `9ebd2d8`）](https://github.com/nielssp/classic-stylesheets/tree/9ebd2d84664095345097a71e1a137f985d03d4f2/themes/macos9)：window、button、input、tab、list、menu、16px scrollbar 的几何与状态 SVG | Apple [Mac OS 8 HIG](https://dev.os9.ca/techpubs/mac/pdf/HIGOS8Guidelines.pdf) 提供 19px 标题栏、20×58px 标准按钮、22px edit field、dialog 间距与控件语义；[Classicy](https://github.com/robbiebyrd/classicy/tree/ca8c0ae294b5a289aa5a69cc223c152b55672d35) 和 [platinum.css](https://github.com/mat-sz/platinum.css/tree/d3f345731f886c7dc767be5877f10db14f11ead4) 只交叉检查缺失几何 | 用 [GUIdebook Mac OS 9 图库](https://guidebookgallery.org/screenshots/macos90) 中真实 Finder、Appearance、Open dialog、menu、SimpleText 与 alert 截图校准 |
 | Aqua — Mac OS X 10.2 Jaguar | [Quaqua 9.1 nested package](https://www.randelshofer.ch/quaqua/files/quaqua-9.1.nested.zip) 中的 `Quaqua15JaguarLookAndFeel.java`、`jaguar/` 资源、共享 push/default/field/choice/popup/scrollbar 资源，以及 [Jaguar wrap-tab 合约](https://www.randelshofer.ch/quaqua/guide/jtabbedpane.html) | Apple 存档的 [Aqua HIG](https://developer.apple.com/library/archive/documentation/UserExperience/Conceptual/OSXHIGuidelines/) 只提供控件角色与交互语义，不作为 Jaguar 像素值 | [512 Pixels Jaguar 图库](https://512pixels.net/projects/aqua-screenshot-library/mac-os-x-10-2-jaguar/) 中真实 10.2 的 Finder、System Preferences、打开/存储面板、Mail 与对话框 |
 | Snow Leopard — Mac OS X 10.6 | Quaqua 9.1 中的 `Quaqua16SnowLeopardLookAndFeel.java`、Snow 资源、active/inactive 标题栏和工具栏、source-list 状态与尺寸变体；[Quaqua changelog](https://www.randelshofer.ch/quaqua/changes.html) 记录 Snow LAF 从 6.0 开始提供 | 同时代 Chromium 的 [`platform-mac-snowleopard` Inspector CSS](https://chromium.googlesource.com/chromium/reference_builds/chrome_linux/+/f108f78bd628aceeb5d44dcaaac401a2a2e97a9d/resources/inspector/inspector.css) 提供 Web toolbar、search field、status bar 和 compact custom scrollbar 证据 | [512 Pixels Snow Leopard 图库](https://512pixels.net/projects/aqua-screenshot-library/mac-os-x-10-6-snow-leopard/) 中真实 10.6 的 Finder、System Preferences、打开/存储面板、Mail 与对话框 |
+| Yosemite — OS X 10.10 | [Yosemite-gtk-theme `03b6f721`](https://github.com/vinceliuice/Yosemite-gtk-theme/tree/03b6f721)：checkbox/radio/titlebutton 资产几何与 `gtk-light.css` 控件值，以及同时代纯 CSS 窗口研究提供的 shell 层级 | Apple 存档的 [OS X HIG](https://developer.apple.com/library/archive/documentation/UserExperience/Conceptual/OSXHIGuidelines/) 提供控件角色；[512 Pixels OS X 10.10 图库](https://512pixels.net/projects/aqua-screenshot-library/mac-os-x-10-10-yosemite/)（Retina 2x）校准 Finder、系统偏好设置与 Apple 菜单的 translucency | 真实 10.10 的 Finder、System Preferences、打开/存储面板、菜单、工具栏、侧栏、控件与滚动条，已 pin 在 `tests/visual/theme-lab-fidelity/yosemite.json` |
 
 发生冲突时按以下权威顺序处理：目标系统的原生截图优先；Quaqua 补足几何、可重复状态和
 regular/small/mini 的关系；同期 Web CSS 只约束相同的 Web 自有表面。因此 Chromium Inspector
 的 11px 灰色滚动条只能作为 compact Web 变体；Snow Leopard 的系统滚动条仍采用 Quaqua 和
 原生打开面板共同显示的 15px 蓝色 Aqua 控件。外部 selector、组件 DOM 和 Apple 所有的美术
 资源不得进入仓库。
+
+Yosemite 只是维护血缘上的 Liquid-Glass 家族后代：它拥有
+`body[data-theme="yosemite"]` 下独立的 10.10 painter，绝不能被实现为
+"Liquid Glass 减去玻璃覆盖"（见 `docs/THEME-FAMILY-CONTRACT.md`）。
 
 Platinum 字体有明确许可边界：Charcoal 与 Charcoal CY 只作为本机系统字体名；跨平台时使用
 固定在 [`2de32f2` 的 OFL Asap Variable](https://github.com/Omnibus-Type/Asap/tree/2de32f20d7a0d48d4084adcf4bd6ac8115cf2f1a)

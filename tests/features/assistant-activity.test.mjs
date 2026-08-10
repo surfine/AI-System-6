@@ -78,18 +78,52 @@ state = activity.reportRunTransition(
 );
 test.assert(state.state === "reading", "retrieving sources means reading");
 test.assert(state.runId === "run-1" && state.bringToFrontTarget === "assistant", "activity carries the run id and real owner window");
-test.assert(state.cancellable === true, "an active run is cancellable");
+test.assert(state.cancellable === false, "without a real cancel path the UI never claims Stop");
+test.assert(activity.cancelActiveRun().ok === false, "cancelActiveRun without a cancel path fails honestly");
 
 state = activity.reportRunTransition({ id: "run-1", state: "generating" }, "generating");
 test.assert(state.state === "working", "generating means working");
 state = activity.reportRunTransition({ id: "run-1", state: "awaitingCommit" }, "awaitingCommit");
 test.assert(state.state === "waiting", "awaiting user approval means waiting");
+test.assert(state.cancellable === false, "awaitingCommit is a checkpoint, not a cancellable generation");
 state = activity.reportRunTransition({ id: "run-1", state: "committed" }, "committed");
 test.assert(state.state === "ready", "completion means ready");
 state = activity.reportRunTransition({ id: "run-2", state: "failed" }, "failed");
 test.assert(state.state === "error", "failure means error");
 state = activity.reportRunTransition({ id: "run-2", state: "aborted" }, "aborted");
 test.assert(state.state === "idle", "an aborted run returns to idle");
+
+// Production path: a run transition reports a real cancel capability and
+// System Status can actually stop the run. The UI state's cancellable flag
+// and cancelActiveRun() come from the same source of truth.
+const runAborts = [];
+const liveController = {
+  abort: () => runAborts.push("controller"),
+};
+const production = createActivityContext({
+  globals: { activeAbortController: liveController },
+});
+const productionActivity = production.context.window.AISystem6AssistantActivity;
+state = productionActivity.reportRunTransition(
+  { id: "run-live", projectId: "project-1", taskKind: "chat", state: "generating", startedAt: "2026-08-10T00:00:00.000Z" },
+  "generating"
+);
+test.assert(state.cancellable === true, "a run with a live abort controller is cancellable");
+const liveCancel = productionActivity.cancelActiveRun();
+test.assert(liveCancel.ok === true && runAborts.length === 1, "Stop on a real run calls the abort path");
+const explicitAborts = [];
+const explicit = createActivityContext();
+const explicitActivity = explicit.context.window.AISystem6AssistantActivity;
+state = explicitActivity.reportRunTransition(
+  { id: "run-explicit", state: "generating" },
+  "generating",
+  { cancel: () => explicitAborts.push("explicit") }
+);
+test.assert(state.cancellable === true, "an explicitly provided cancel capability makes the run cancellable");
+const explicitCancel = explicitActivity.cancelActiveRun();
+test.assert(explicitCancel.ok === true && explicitAborts.length === 1, "cancelActiveRun uses the explicit cancel function");
+state = explicitActivity.reportRunTransition({ id: "run-explicit", state: "awaitingCommit" }, "awaitingCommit");
+test.assert(state.cancellable === false, "even with a cancel capability, awaitingCommit does not advertise Stop");
 
 // Operations: begin -> working, cancel, end with abort -> idle, end ok -> ready.
 const cancelStub = () => first.cancelCalls.push("cancel");

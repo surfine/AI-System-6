@@ -1900,6 +1900,24 @@ function teaserDemoManuscriptBody() {
   ].join("\n");
 }
 
+function teaserDemoClone(value) {
+  return typeof structuredClone === "function" ? structuredClone(value) : JSON.parse(JSON.stringify(value));
+}
+
+const teaserDemoDurableCollections = [
+  ["projects", projects],
+  ["chatFolders", chatFolders],
+  ["chatFiles", chatFiles],
+  ["scraps", scraps],
+  ["trashItems", trashItems],
+  ["projectCdItems", projectCdItems],
+  ["projectReferences", projectReferences],
+];
+
+function teaserDemoSnapshotDurable() {
+  return Object.fromEntries(teaserDemoDurableCollections.map(([name, collection]) => [name, teaserDemoClone(collection)]));
+}
+
 function teaserDemoSnapshot() {
   const visible = Array.from(document.querySelectorAll(".window:not(.is-hidden):not(.is-app-hidden)"))
     .map((win) => {
@@ -1916,46 +1934,96 @@ function teaserDemoSnapshot() {
     .filter((entry) => entry.name);
   return {
     projectId: typeof activeProjectId !== "undefined" ? activeProjectId : "",
+    isProjectMounted: typeof isProjectMounted !== "undefined" ? isProjectMounted : true,
+    selectedProjectId: typeof selectedProjectId !== "undefined" ? selectedProjectId : null,
+    selectedFolderId: typeof selectedFolderId !== "undefined" ? selectedFolderId : "all",
+    selectedChatFileId: typeof selectedChatFileId !== "undefined" ? selectedChatFileId : null,
+    selectedDocumentFolderId: typeof selectedDocumentFolderId !== "undefined" ? selectedDocumentFolderId : null,
+    selectedProjectRootItemId: typeof selectedProjectRootItemId !== "undefined" ? selectedProjectRootItemId : null,
     visible,
+    durable: teaserDemoSnapshotDurable(),
   };
 }
 
 async function teaserDemoRestore(snapshot) {
   if (!snapshot) return;
-  if (snapshot.projectId && typeof switchProject === "function") {
-    try {
-      await switchProject(snapshot.projectId);
-    } catch (error) {
-      console.warn("Teaser project restore failed.", error);
-    }
-  }
+  const errors = [];
+  const durable = snapshot.durable || {};
   teaserDemoManagedWindows.forEach((name) => {
-    if (typeof closeWindow === "function") closeWindow(name, true);
+    try {
+      if (typeof closeWindow === "function") closeWindow(name, true);
+    } catch (error) {
+      errors.push(`close ${name}: ${error?.message || error}`);
+    }
   });
+  // Durable collections are restored wholesale: every demo-created record
+  // disappears and the pre-run state is deep-equivalent to the snapshot.
+  teaserDemoDurableCollections.forEach(([name, collection]) => {
+    try {
+      collection.splice(0, collection.length, ...(Array.isArray(durable[name]) ? durable[name] : []));
+    } catch (error) {
+      errors.push(`${name}: ${error?.message || error}`);
+    }
+  });
+  try {
+    if (typeof isProjectMounted !== "undefined") isProjectMounted = snapshot.isProjectMounted === true;
+    if (typeof activeProjectId !== "undefined") activeProjectId = snapshot.projectId;
+    if (typeof selectedProjectId !== "undefined") selectedProjectId = snapshot.selectedProjectId ?? null;
+    if (typeof selectedFolderId !== "undefined") selectedFolderId = snapshot.selectedFolderId ?? "all";
+    if (typeof selectedChatFileId !== "undefined") selectedChatFileId = snapshot.selectedChatFileId ?? null;
+    if (typeof selectedDocumentFolderId !== "undefined") selectedDocumentFolderId = snapshot.selectedDocumentFolderId ?? null;
+    if (typeof selectedProjectRootItemId !== "undefined") selectedProjectRootItemId = snapshot.selectedProjectRootItemId ?? null;
+  } catch (error) {
+    errors.push(`session restore: ${error?.message || error}`);
+  }
+  try {
+    if (typeof clearProjectTransientState === "function") clearProjectTransientState();
+    if (typeof scheduleWorkspaceRender === "function") scheduleWorkspaceRender({ projectReferences: true, mountedTextDisk: true, menuState: true });
+    if (typeof renderDocuments === "function") renderDocuments();
+    if (typeof renderProjectDisks === "function") renderProjectDisks();
+    if (typeof renderScraps === "function") renderScraps();
+    if (typeof renderTrash === "function") renderTrash();
+    if (typeof renderProjectCd === "function") renderProjectCd();
+    if (typeof renderProjectReferences === "function") renderProjectReferences();
+    window.AISystem6AssistantActivity?.resetForProject?.(snapshot.projectId || "");
+    if (typeof saveDeskState === "function") await saveDeskState();
+  } catch (error) {
+    errors.push(`render/persist restore: ${error?.message || error}`);
+  }
   snapshot.visible.forEach((entry) => {
     if (!entry.name || typeof openWindow !== "function") return;
-    openWindow(entry.name, { skipFinderMode: true, skipPlacement: true });
-    const win = typeof getWindow === "function" ? getWindow(entry.name) : null;
-    if (!win) return;
-    if (entry.left && typeof setInlineStyleValue === "function") setInlineStyleValue(win, "left", entry.left);
-    if (entry.top && typeof setInlineStyleValue === "function") setInlineStyleValue(win, "top", entry.top);
-    if (entry.width && typeof setInlineStyleValue === "function") setInlineStyleValue(win, "width", entry.width);
-    if (entry.height && typeof setInlineStyleValue === "function") setInlineStyleValue(win, "height", entry.height);
-    if (entry.collapsed) win.classList.add("is-collapsed");
+    try {
+      openWindow(entry.name, { skipFinderMode: true, skipPlacement: true });
+      const win = typeof getWindow === "function" ? getWindow(entry.name) : null;
+      if (!win) return;
+      if (entry.left && typeof setInlineStyleValue === "function") setInlineStyleValue(win, "left", entry.left);
+      if (entry.top && typeof setInlineStyleValue === "function") setInlineStyleValue(win, "top", entry.top);
+      if (entry.width && typeof setInlineStyleValue === "function") setInlineStyleValue(win, "width", entry.width);
+      if (entry.height && typeof setInlineStyleValue === "function") setInlineStyleValue(win, "height", entry.height);
+      if (entry.collapsed) win.classList.add("is-collapsed");
+    } catch (error) {
+      errors.push(`open ${entry.name}: ${error?.message || error}`);
+    }
   });
+  if (errors.length) {
+    console.warn("Teaser rollback encountered issues.", errors);
+    if (typeof setStatus === "function") setStatus(t("teaser_restore_warning"));
+  }
 }
 
-function writingDemoEnsureTeaserProject() {
-  if (getActiveProject()) return getActiveProject();
+function teaserDemoEnsureDemoProject() {
   const baseName = currentLanguage === "zh" ? "30 秒演示 - iPhone 17e" : "Teaser Demo - iPhone 17e";
   const name = typeof uniqueProjectName === "function" ? uniqueProjectName(baseName) : `${baseName} ${new Date().toLocaleTimeString()}`;
   const project = createProjectRecord(name);
+  // Marker for cleanup/assertion only; rollback removes the whole demo project.
+  project.teaserDemo = { seeded: true, kind: "teaser" };
   if (typeof parkConversationInProject === "function") parkConversationInProject(activeProjectId);
   isProjectMounted = true;
   projects.unshift(project);
   activeProjectId = project.id;
   selectedProjectId = project.id;
   selectedFolderId = "all";
+  if (typeof selectedChatFileId !== "undefined") selectedChatFileId = null;
   if (typeof clearProjectTransientState === "function") clearProjectTransientState();
   if (typeof closeProjectScopedWindows === "function") closeProjectScopedWindows();
   if (typeof scheduleWorkspaceRender === "function") scheduleWorkspaceRender({ projectReferences: true, mountedTextDisk: true, menuState: true });
@@ -2083,7 +2151,7 @@ async function playTeaserDemo() {
   setStatus(t("teaser_demo_running"));
   let terminalStatus = "";
   try {
-    writingDemoEnsureTeaserProject();
+    teaserDemoEnsureDemoProject();
     await writingDemoStage([], { pauseMs: 250 });
     await teaserDemoSceneSource();
     await teaserDemoSceneTransform();

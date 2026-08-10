@@ -143,11 +143,11 @@
     if (theme.recipeBase) element.dataset.themeBase = theme.recipeBase;
     else delete element.dataset.themeBase;
     if (element === global.document?.body) {
-      // Only the Liquid Glass family carries the glass skin class. Aqua and
-      // Snow Leopard live on their own family branch and own their rules
-      // directly under body[data-theme="..."], so they must not inherit the
-      // glass skin. Yosemite remains the single Liquid-Glass descendant.
-      element.classList.toggle("use-liquid-glass", theme.family === "liquid-glass");
+      // Only Liquid Glass itself carries the glass skin class. Yosemite is a
+      // Liquid-Glass-family descendant for maintenance lineage, but it owns
+      // an independent 10.10 painter under body[data-theme="yosemite"] and
+      // must never inherit the glass material, blur, refraction, or overlay.
+      element.classList.toggle("use-liquid-glass", theme.id === "liquid-glass");
     }
   }
 

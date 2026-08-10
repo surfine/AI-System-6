@@ -1,14 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
-  <!-- 10.10 ClioStage: presentation stage — screen with a small person. -->
-  <defs>
-    <linearGradient id="g-screen" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffffff"/>
-      <stop offset="1" stop-color="#dde6f0"/>
-    </linearGradient>
-  </defs>
-  <rect x="4" y="6" width="24" height="17" rx="2" fill="url(#g-screen)" stroke="#8d9aab" stroke-width="1"/>
-  <path d="M13 17v-4h6v4" fill="none" stroke="#3e7cc4" stroke-width="1.4"/>
-  <circle cx="16" cy="10.5" r="2" fill="#7f93ab"/>
-  <path d="M11 21v-1.5c0-1.5 2.2-2.5 5-2.5s5 1 5 2.5V21" fill="#a7b6c8"/>
-  <rect x="11" y="23" width="10" height="2" rx="0.5" fill="#8d9aab"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
+<defs>
+      <linearGradient id="body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9efff"/><stop offset="1" stop-color="#75b9ec"/></linearGradient>
+      <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#eef3f7"/></linearGradient>
+      <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7fafc"/><stop offset="1" stop-color="#b7c3cf"/></linearGradient>
+    </defs>
+<path d="M8 13h48v34H8z" fill="#9db9cf" stroke="#789bb9" stroke-width="1.35"/><path d="M13 18h38v24H13z" fill="url(#paper)" stroke="#789bb9" stroke-width="1.35"/><path d="M5 48h54v7H5z" fill="#5f8caf" stroke="#789bb9" stroke-width="1.35"/><path d="M21 43V29h22v14M18 46h28" fill="none" stroke="#35516c" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M25 31l14 10H25z" fill="#2e7fcb"/>
 </svg>

@@ -51,11 +51,25 @@
   "_liquidGlassNote": "Total twin selectors (body.use-liquid-glass <X>) in 70-liquid-glass.css; ratchet pushes the architecture toward token-based theming. Orphan count tracks twins whose base class/id no longer appears in any non-theme CSS file — a strong drift signal. Both numbers may only shrink; raising either requires explicit justification in the PR.",
   "liquidGlassTwinCount": 490,
   "liquidGlassOrphanCount": 32,
-  "appearanceThemeSelectorLimit": 100,
+  "_appearanceSelectorLimitNote": "Per-theme ratchet over styles/65-appearance-themes.css + styles/67-aqua-appearance.css. Values are the honest 2026-08-10 counts: Yosemite's 122 body.use-liquid-glass[data-theme=yosemite] counter-rules became countable after de-inheritance rewrote them to body[data-theme=yosemite]; Aqua/Snow Leopard live in 67 and were previously invisible to the ratchet. These are corrections, not new churn; each may only shrink. Icon painter mappings (semantic id -> per-theme asset) are exempt from the duplicated-recipe check by design, and a base shared with the recipeBase parent (classic->platinum, aqua->snow-leopard, liquid-glass->yosemite) is the documented derivation delta.",
+  "appearanceThemeSelectorLimits": {
+    "classic": 0,
+    "platinum": 90,
+    "aqua": 105,
+    "snow-leopard": 68,
+    "yosemite": 128,
+    "liquid-glass": 0
+  },
   "_bootThemeSurfaceNote": "2026-08-10 bump: per-era boot/shutdown surfaces added for Platinum (+5 appearance selectors) and Aqua/Snow Leopard (+16 theme selectors in 67). These re-skin the shared Happy Mac boot/shutdown harness per theme (same DOM/JS as Classic and Liquid Glass), not per-app churn; both files remain under the raised limits.",
   "_childAppNote": "Child+app-specific selector budget for the derived appearances (Platinum / Snow Leopard / Yosemite). A child recipe that references a registered app-window class, or any class starting with a childAppSpecificPrefix, is app-specific knowledge and only ever decreases here. Prefixes cover inner app classes that are not window-level (e.g. .draft-desk-card); extend the list when a new business app registers. For a genuine system-level historical exception (e.g. a Desk Accessory that is really a system component), add its class token (or 'themeId:token' for one child only) to childAppSpecificAllowlist and justify it in the commit.",
   "childAppSpecificSelectorLimit": 0,
-  "childAppSpecificAllowlist": [],
+  "_childAppAllowlistNote": "2026-08-10: Yosemite's desktop/Finder/spine hover and selection-counter recipes became visible to the child+app ratchet after the de-inheritance rewrite. They target shared system primitives (Finder desktop objects, desktop icons, writing-spine actions, System Help links) to restore 10.10 hover/selection after the Liquid Glass skin stopped applying — system-level historical exceptions, not business-app knowledge. The P1 icon-dispatch task converts the remaining .sys-icon painter rules to a generated mapping.",
+  "childAppSpecificAllowlist": [
+    "yosemite:.finder-item",
+    "yosemite:.desktop-icon",
+    "yosemite:.spine-actions",
+    "yosemite:.system-help-related-link"
+  ],
   "childAppSpecificPrefixes": [
     "draft-",
     "reader-",

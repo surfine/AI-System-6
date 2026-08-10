@@ -38,6 +38,14 @@ export const publicProductContracts = [
     tests: ["writing-demo-teaser.test.mjs"],
   },
   {
+    feature: "Icon Distinguishability",
+    tests: ["icon-distinguishability.test.mjs"],
+  },
+  {
+    feature: "Menu Keyboard Navigation",
+    tests: ["menu-keyboard.test.mjs"],
+  },
+  {
     feature: "Project Hard Disk",
     tests: ["project-disk.test.mjs", "project-backup-integrity.test.mjs"],
   },

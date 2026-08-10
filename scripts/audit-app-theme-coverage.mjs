@@ -150,12 +150,24 @@ const childAppPrefixes = budget.childAppSpecificPrefixes || [];
 const childAppAllowlist = new Set(budget.childAppSpecificAllowlist || []);
 const sharedPrimitives = new Set([".window", ".window-pane"]);
 
+function allowlistedChildToken(classToken, themeId) {
+  // The ratchet (verify-css.mjs) accepts both bare and theme-qualified
+  // entries ("yosemite:.finder-item"); the audit must honor the same forms or
+  // it will flag sanctioned system-level exceptions (e.g. the Finder/desktop
+  // selection recipes in the Yosemite split) as new app-specific debt.
+  return childAppAllowlist.has(classToken)
+    || childAppAllowlist.has(`platinum:${classToken}`)
+    || (themeId && childAppAllowlist.has(`${themeId}:${classToken}`));
+}
+
 function isChildAppSpecific(themeSelector, tokens) {
   if (!themeSelector || !CHILD_THEME_SELECTOR.test(themeSelector)) return false;
+  const themeMatch = themeSelector.match(/\[data-theme="(platinum|snow-leopard|yosemite)"\]/);
+  const themeId = themeMatch ? themeMatch[1] : null;
   return tokens.some((token) => {
     const classToken = `.${token}`;
     if (sharedPrimitives.has(classToken) || token.startsWith("is-")) return false;
-    if (childAppAllowlist.has(classToken) || childAppAllowlist.has(`platinum:${classToken}`)) return false;
+    if (allowlistedChildToken(classToken, themeId)) return false;
     return childAppPrefixes.some((prefix) => token.startsWith(prefix));
   });
 }

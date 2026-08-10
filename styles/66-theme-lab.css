@@ -39,9 +39,9 @@
   box-shadow: var(--theme-lab-group-shadow, var(--system-inset));
 }
 
-/* Platinum icon set overview: all 51 painters on one board so the whole
-   family can be reviewed at a glance. The tiles render through the real
-   .sys-icon path (same CSS painters as the desktop and Finder). */
+/* Complete semantic icon overview. The main painter is the real 32 px runtime
+   path; historical themes also attach their independently authored native
+   16 px hint in the top-right corner. */
 .theme-lab-icon-set {
   grid-column: 1 / -1;
 }
@@ -54,6 +54,7 @@
 }
 
 .theme-lab-icon-tile {
+  position: relative;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -68,6 +69,16 @@
   cursor: default;
 }
 
+.theme-lab-icon-hint {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  pointer-events: none;
+}
+
 .theme-lab-icon-tile .sys-icon {
   width: 34px;
   height: 34px;
@@ -80,6 +91,227 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font-weight: normal;
+}
+
+/* Classic is accepted object by object, not as a themed thumbnail sheet.
+   The fixed pixel sizes below are the test itself: 16 and 32 are authored
+   sources; 64/128/256 are integer nearest-neighbor inspection scales. */
+.theme-lab-classic-icon-lab {
+  grid-column: 1 / -1;
+}
+
+.theme-lab-classic-icon-intro {
+  margin: 0 0 9px;
+  color: var(--shade-dark);
+}
+
+.theme-lab-classic-icon-key {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 8px 5px;
+  border-bottom: 1px solid var(--rule);
+  color: var(--shade-dark);
+  font-size: 10px;
+}
+
+.theme-lab-classic-icon-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  padding-top: 6px;
+}
+
+.theme-lab-classic-icon-card {
+  min-width: 0;
+  padding: 5px;
+  border: 1px solid var(--separator);
+  background: var(--paper);
+}
+
+.theme-lab-classic-icon-card.is-inspected {
+  border-color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+
+.theme-lab-classic-icon-inspector h4,
+.theme-lab-classic-context h4 {
+  margin: 0;
+  font: inherit;
+  font-weight: var(--system-emphasis-weight);
+}
+
+.theme-lab-classic-inspect {
+  width: 100%;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 5px;
+  padding: 0 0 4px;
+  border: 0;
+  border-bottom: 1px solid var(--separator);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.theme-lab-classic-inspect code,
+.theme-lab-classic-icon-inspector code {
+  display: block;
+  color: var(--shade-dark);
+  font: 10px/1.2 var(--theme-mono-font);
+}
+
+.theme-lab-classic-icon-states {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 3px;
+  margin-top: 5px;
+}
+
+.classic-icon-lab-finder-item.finder-item {
+  width: 100%;
+  min-height: 60px;
+  justify-content: flex-end;
+  gap: 2px;
+  padding: 3px 1px;
+  border: 0;
+  background: var(--paper);
+  font-size: 8px;
+  cursor: default;
+}
+
+.classic-icon-lab-finder-item .sys-icon-classic-lab-32 {
+  width: 32px;
+  height: 32px;
+}
+
+.classic-icon-lab-finder-item .sys-icon-classic-lab-16 {
+  width: 16px;
+  height: 16px;
+}
+
+.theme-lab-classic-icon-inspector {
+  min-height: 280px;
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 10px;
+  margin-top: 8px;
+  padding: 8px;
+  border: 1px solid var(--rule);
+  background: var(--surface-inset);
+}
+
+.theme-lab-classic-icon-inspector h4 code {
+  margin-top: 4px;
+}
+
+.theme-lab-classic-icon-zooms {
+  min-height: 280px;
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  overflow-x: auto;
+}
+
+.theme-lab-classic-icon-zooms figure {
+  flex: 0 0 auto;
+  margin: 0;
+  text-align: center;
+}
+
+.theme-lab-classic-icon-zooms img {
+  display: block;
+  object-fit: contain;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.theme-lab-classic-icon-zooms figcaption {
+  margin-top: 3px;
+  color: var(--shade-dark);
+  font-size: 10px;
+}
+
+.theme-lab-classic-contexts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.theme-lab-classic-context {
+  padding: 8px;
+  border: 1px solid var(--rule);
+  background: var(--surface-inset);
+}
+
+.theme-lab-classic-context > div {
+  min-height: 94px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 7px;
+  padding: 8px;
+  border: var(--system-border);
+  background: var(--paper);
+}
+
+.theme-lab-classic-context.is-desktop > div {
+  background: var(--desktop-surface);
+}
+
+.theme-lab-platinum-icon-lab .theme-lab-classic-context.is-light-desktop > div {
+  background: #d9d9d9;
+}
+
+.theme-lab-platinum-icon-lab .theme-lab-classic-context.is-medium-gray > div {
+  background: #929292;
+}
+
+.theme-lab-classic-context .classic-icon-lab-finder-item {
+  width: 80px;
+  min-height: 74px;
+  padding: 2px;
+  border: 0;
+  background: transparent;
+}
+
+.theme-lab-classic-context.is-list-view > div {
+  min-height: 94px;
+  flex-direction: column;
+  gap: 0;
+}
+
+.theme-lab-classic-context .is-list-row {
+  width: 100%;
+  min-height: 24px;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  justify-items: start;
+  align-items: center;
+  text-align: left;
+}
+
+.theme-lab-classic-context .is-list-row span:last-of-type {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@container (max-width: 760px) {
+  .theme-lab-classic-icon-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .theme-lab-classic-icon-inspector {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .theme-lab-classic-contexts {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .theme-lab-group h3 {
@@ -427,10 +659,19 @@
   border-radius: var(--control-radius) 0 0 var(--control-radius);
 }
 
+.theme-lab-tabs button:first-child {
+  border-radius: var(--theme-lab-tab-first-radius, var(--control-radius) 0 0 var(--control-radius));
+}
+
 .theme-lab-segmented button:last-child,
 .theme-lab-tabs button:last-child {
   border-right: var(--system-border);
   border-radius: 0 var(--control-radius) var(--control-radius) 0;
+}
+
+.theme-lab-tabs button:last-child {
+  border-right: var(--theme-lab-tab-last-border-right, var(--system-border));
+  border-radius: var(--theme-lab-tab-last-radius, 0 var(--control-radius) var(--control-radius) 0);
 }
 
 .theme-lab-segmented button:last-child {
@@ -1988,10 +2229,10 @@
 /* Snow Leopard era-specific Finder specimens (dev-only Theme Lab fixtures).
    The blocks stay hidden outside the snow-leopard research appearance so the
    shared fixture DOM remains the single object grammar for every other era.
-   Geometry comes from the 512 Pixels 10.6 Home capture: 46px unified toolbar
-   with 12px traffic lights at ~22px spacing, droplet Back/Forward, droplet
-   view controls, and a 224px NSSearchField on the right; 135px source list
-   with a 24px blue selected row. */
+   Geometry comes from the 512 Pixels 10.6 Home capture: a 29px control row
+   below the title bar, paired Back/Forward and four-view controls, an action
+   menu, and a right-aligned NSSearchField; the 135px source list keeps its
+   own 24px blue selected row. */
 .theme-lab-snow-toolbar,
 .theme-lab-snow-source-list {
   display: none;
@@ -2000,32 +2241,25 @@
 .theme-lab-snow-toolbar {
   position: relative;
   box-sizing: border-box;
-  height: var(--theme-lab-snow-toolbar-height, 46px);
+  height: var(--theme-lab-snow-toolbar-height, 29px);
   border-bottom: var(--theme-lab-snow-toolbar-border, 1px solid #686868);
   background: var(--theme-lab-snow-toolbar-bg, var(--theme-lab-toolbar-bg));
   box-shadow: var(--theme-lab-snow-toolbar-shadow, inset 0 1px 0 #ffffff);
 }
 
 .theme-lab-snow-title {
-  position: absolute;
-  top: var(--theme-lab-snow-title-top, 9px);
-  left: 50%;
-  transform: translateX(-50%);
-  font: 600 13px/13px var(--theme-ui-font);
-  color: var(--ink);
-  text-shadow: 0 1px 0 #ffffff;
-  white-space: nowrap;
+  display: none;
 }
 
 .theme-lab-snow-nav {
   position: absolute;
-  top: var(--theme-lab-snow-controls-top, 27px);
-  left: var(--theme-lab-snow-nav-left, 106px);
+  top: var(--theme-lab-snow-controls-top, 1px);
+  left: var(--theme-lab-snow-nav-left, 8px);
   display: flex;
 }
 
 .theme-lab-snow-droplet {
-  width: var(--theme-lab-snow-droplet-width, 30px);
+  width: var(--theme-lab-snow-droplet-width, 27px);
   height: var(--theme-lab-snow-droplet-height, 20px);
   padding: 0;
   border: 1px solid #767676;
@@ -2058,13 +2292,13 @@
 
 .theme-lab-snow-view-controls {
   position: absolute;
-  top: var(--theme-lab-snow-controls-top, 27px);
-  left: var(--theme-lab-snow-view-left, 224px);
+  top: var(--theme-lab-snow-controls-top, 1px);
+  left: var(--theme-lab-snow-view-left, 68px);
   display: flex;
 }
 
 .theme-lab-snow-view-controls > button {
-  width: var(--theme-lab-snow-view-button-width, 13px);
+  width: var(--theme-lab-snow-view-button-width, 28px);
   height: var(--theme-lab-snow-droplet-height, 20px);
   padding: 0;
   border: 1px solid #767676;
@@ -2087,14 +2321,47 @@
   margin: 6px auto 0;
 }
 
+.theme-lab-view-icon.is-cover {
+  border: 1px solid currentColor;
+  background:
+    linear-gradient(currentColor, currentColor) 50% 0 / 1px 100% no-repeat,
+    linear-gradient(currentColor, currentColor) 0 55% / 100% 1px no-repeat;
+}
+
+.theme-lab-snow-action {
+  position: absolute;
+  top: var(--theme-lab-snow-controls-top, 1px);
+  left: var(--theme-lab-snow-action-left, 188px);
+  width: var(--theme-lab-snow-action-width, 40px);
+  height: var(--theme-lab-snow-droplet-height, 20px);
+  padding: 0;
+  border: 1px solid #767676;
+  border-radius: 4px;
+  background: linear-gradient(#e8e8e8, #bcbcbc);
+  box-shadow: #f1f1f1 0 1px inset, #cccccc 0 1px;
+  color: #303030;
+}
+
+.theme-lab-snow-action::before {
+  content: "⚙";
+  font: 14px/18px var(--theme-ui-font);
+}
+
+.theme-lab-snow-action::after {
+  content: "▾";
+  margin-left: 3px;
+  font: 8px/18px var(--theme-ui-font);
+  vertical-align: 2px;
+}
+
 .theme-lab-snow-search {
   position: absolute;
-  top: var(--theme-lab-snow-search-top, 29px);
-  left: var(--theme-lab-snow-search-left, 676px);
+  top: var(--theme-lab-snow-search-top, 1px);
+  right: var(--theme-lab-snow-search-right, 8px);
 }
 
 .theme-lab-snow-search input {
-  width: var(--theme-lab-snow-search-width, 224px);
+  width: var(--theme-lab-snow-search-width, 249px);
   height: var(--theme-lab-snow-search-height, 18px);
   padding: 0 9px;
   border: 1px solid #8d8d8d;

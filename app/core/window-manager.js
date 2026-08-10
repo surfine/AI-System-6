@@ -286,6 +286,30 @@ function placeWindowForExplicitLayout(win, frame = {}, options = {}) {
   else markWindowSystemPositioned(win);
 }
 
+// A system-placed window must stay reachable: if its default frame (creative
+// labs and other wide windows after the writing spine) would push the right
+// or bottom edge past the viewport, shift it back inside. User-dragged
+// windows are never touched here — the user owns their position.
+function clampWindowToViewport(win, margin = 16) {
+  if (!win || win.dataset.userPositioned === "true") return;
+  const r = win.getBoundingClientRect();
+  if (r.width <= 0 || r.height <= 0) return;
+  const vw = window.innerWidth || document.documentElement.clientWidth;
+  const vh = window.innerHeight || document.documentElement.clientHeight;
+  const maxH = Math.max(160, Math.round(vh - Math.max(margin, r.top) - margin));
+  if (r.height > maxH) {
+    setInlineStyleValue(win, "height", maxH + "px");
+    setInlineStyleValue(win, "maxHeight", maxH + "px");
+  }
+  const oR = r.right - vw + margin;
+  const oB = r.bottom - vh + margin;
+  if (oR <= 0 && oB <= 0) return;
+  const l = Number.parseFloat(win.style.left || "") || r.left;
+  const t = Number.parseFloat(win.style.top || "") || r.top;
+  setInlineStyleValue(win, "left", Math.max(margin, Math.round(l - Math.max(0, oR))) + "px");
+  setInlineStyleValue(win, "top", Math.max(margin, Math.round(t - Math.max(0, oB))) + "px");
+}
+
 function saveSideAskRestoreFrame(win) {
   if (!win || win.dataset.sideaskRestoreActive === "true") return;
   const frame = windowFrame(win);
@@ -1624,7 +1648,10 @@ function scheduleWritingSpineTitleAlignment(win) {
     // Alignment is delayed until content strips have their final height. Run
     // collision placement after that shift as well, or a clear lower slot can
     // be pulled back over an old window on the next animation frame.
-    if (win.dataset.systemPositioned === "true") placeNewWindowAvoidingVisibleWindows(win);
+    if (win.dataset.systemPositioned === "true") {
+      placeNewWindowAvoidingVisibleWindows(win);
+      clampWindowToViewport(win);
+    }
   };
   requestAnimationFrame(() => {
     align();
@@ -2602,6 +2629,10 @@ const lazyWindowModules = {
     },
   },
   memoryCards: { ensure: () => ensureMemoryCardsModule() },
+  themeLab: {
+    ensure: () => ensureThemeLabModule(),
+    attach: () => window.AISystem6ThemeLab?.attach?.(),
+  },
   alarmClock: { ensure: () => ensureAlarmClockModule() },
   translationPad: { ensure: () => ensureTranslationPadModule() },
   bureaucracyMeme: { ensure: () => ensureBureaucracyMemeModule() },
@@ -2899,6 +2930,7 @@ async function openWindow(name, options = {}) {
 
       if (cascadeOffset > maxOffset) cascadeOffset = 0;
       placeNewWindowAvoidingVisibleWindows(win);
+      clampWindowToViewport(win);
       markWindowSystemPositioned(win);
       scheduleWritingSpineTitleAlignment(win);
     }

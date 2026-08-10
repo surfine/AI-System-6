@@ -1,0 +1,14 @@
+{
+  "finderApp": "icons/finderApp-32.png",
+  "folder": "icons/folder-32.png",
+  "hardDisk": "icons/hardDisk-32.png",
+  "trash": "icons/trash-32.png",
+  "document": "icons/document-32.png",
+  "daHandler": "icons/daHandler-32.png",
+  "fileFloppy": "icons/fileFloppy-32.png",
+  "projectDisc": "icons/projectDisc-32.png",
+  "controlPanel": "icons/controlPanel-32.png",
+  "systemFile": "icons/systemFile-32.png",
+  "scrapbook": "icons/scrapbook-32.png",
+  "clipboard": "icons/clipboard-32.png"
+}

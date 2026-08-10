@@ -1,44 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
-  <!-- Aqua 10.2 painter (shared recipe): saturated object, glossy top-left
-       light, deep bottom shade, thin dark rim. Same anatomy as the Liquid
-       Glass painter and the Yosemite flat family. No Apple art. -->
-  <defs>
-    <linearGradient id="g-body" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#dadde3"/>
-      <stop offset="0.45" stop-color="#adb3c0"/>
-      <stop offset="1" stop-color="#6b727f"/>
-    </linearGradient>
-    <linearGradient id="g-soft" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#e9ebef"/>
-      <stop offset="1" stop-color="#b6bac2"/>
-    </linearGradient>
-    <linearGradient id="g-gloss" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.9"/>
-      <stop offset="0.3" stop-color="#ffffff" stop-opacity="0.42"/>
-      <stop offset="0.7" stop-color="#ffffff" stop-opacity="0"/>
-    </linearGradient>
-    <radialGradient id="g-spec" cx="0.24" cy="0.2" r="0.52">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.85"/>
-      <stop offset="0.42" stop-color="#ffffff" stop-opacity="0.22"/>
-      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
-    </radialGradient>
-    <linearGradient id="g-shade" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0.55" stop-color="#000000" stop-opacity="0"/>
-      <stop offset="1" stop-color="#000000" stop-opacity="0.3"/>
-    </linearGradient>
-    <clipPath id="cp-body">
-      <path d="M6 7h20v18H6z" />
-    </clipPath>
-  </defs>
-  <path d="M6 7h20v18H6z" fill="url(#g-body)" stroke="#1d1d1d" stroke-width="1" />
-  <g clip-path="url(#cp-body)">
-    <rect x="0" y="0" width="32" height="32" fill="url(#g-gloss)"/>
-    <rect x="0" y="0" width="32" height="32" fill="url(#g-spec)"/>
-    <rect x="0" y="0" width="32" height="32" fill="url(#g-shade)"/>
-    <rect x="1" y="0" width="30" height="1" fill="#ffffff" fill-opacity="0.55"/>
-    <rect x="0" y="1" width="1" height="30" fill="#ffffff" fill-opacity="0.4"/>
-  </g>
-  
-  <path d="M10 21l4-7 4 5 4-9" fill="none" stroke="#333333" stroke-width="1" stroke-linecap="square" />
-  <path d="M9 28h14" fill="none" stroke="#333333" stroke-width="1" stroke-linecap="square" />
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
+<defs>
+      <linearGradient id="body" x1="0" y1="0" x2="0.82" y2="1"><stop offset="0" stop-color="#f5f7f9"/><stop offset="0.38" stop-color="#c8d0d9"/><stop offset="0.7" stop-color="#7d8a99"/><stop offset="1" stop-color="#3a4652"/></linearGradient>
+      <linearGradient id="paper" x1="0" y1="0" x2="0.8" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="0.7" stop-color="#f5f7fa"/><stop offset="1" stop-color="#c8d1dc"/></linearGradient>
+      <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="0.22" stop-color="#dce5ef"/><stop offset="0.53" stop-color="#8d9dad"/><stop offset="0.72" stop-color="#eef3f8"/><stop offset="1" stop-color="#657281"/></linearGradient>
+      <radialGradient id="aquaGlass" cx="0.28" cy="0.18" r="0.82"><stop offset="0" stop-color="#ffffff" stop-opacity="0.95"/><stop offset="0.32" stop-color="#bfe9ff" stop-opacity="0.72"/><stop offset="0.7" stop-color="#4f9ed8" stop-opacity="0.45"/><stop offset="1" stop-color="#16588f" stop-opacity="0.82"/></radialGradient>
+    </defs>
+<ellipse cx="32" cy="53" rx="18" ry="3.2" fill="#24435f" fill-opacity="0.18"/><path d="M8 7h48v36q0 5-5 5H13q-5 0-5-5z" fill="url(#metal)" stroke="#173d67" stroke-width="1.7"/><path d="M13 13h38v27H13z" fill="#eef4ef" stroke="#173d67" stroke-width="1.7"/><path d="M27 47h10v7h8v4H19v-4h8z" fill="url(#metal)" stroke="#173d67" stroke-width="1.7"/><path d="M22 43l5-8 4 4 5-12 6 16" fill="none" stroke="#3f8747" stroke-width="3.3" stroke-linejoin="round"/>
 </svg>

@@ -26,6 +26,11 @@ let activityState = {
 let modelReadyOverride = null;
 let modelReadySource = null;
 let activeOperation = null;
+// The real cancel path for run-transition reporting. It is set only when a
+// genuine cancel function exists (an explicit capability from the reporting
+// runtime, or the live activeAbortController that owns the run's signal), so
+// cancellable === true never advertises a Stop that cannot stop anything.
+let activeRunCapability = null;
 let staleCheckTimer = null;
 let readyClearTimer = null;
 
@@ -138,22 +143,37 @@ const runTransitionActivityMap = Object.freeze({
   failed: "error",
 });
 
-function reportRunTransition(run = {}, transition = "") {
+function runCancelFunction(capability) {
+  if (capability && typeof capability.cancel === "function") return capability.cancel;
+  if (typeof activeAbortController?.abort !== "function") return null;
+  const controller = activeAbortController;
+  return () => controller.abort();
+}
+
+function reportRunTransition(run = {}, transition = "", capability = null) {
   const stateName = String(transition || run.state || "");
   const nextState = runTransitionActivityMap[stateName] || "working";
   const owner = ownerForRun(run);
+  const runId = String(run.id || "");
+  // awaitingCommit means generation is done (user acts via Accept/Edit/
+  // Reject), so Stop is not advertised there.
+  const cancellable = !["committed", "aborted", "failed", "awaitingCommit"].includes(stateName);
+  const cancel = cancellable ? runCancelFunction(capability) : null;
+  if (cancel && runId) activeRunCapability = { runId, cancel };
+  else if (!cancel || !runId || ["committed", "aborted", "failed"].includes(stateName)) activeRunCapability = null;
   return transitionActivity(nextState, {
-    runId: String(run.id || ""),
+    runId,
     projectId: String(run.projectId || ""),
     ownerAppId: owner.ownerAppId,
     targetObjectId: run.sourceScope?.sourceIds?.[0] || run.targetObjectId || "",
     startedAt: run.startedAt || "",
-    cancellable: !["committed", "aborted", "failed"].includes(stateName),
+    cancellable: cancel !== null,
     bringToFrontTarget: owner.windowName,
   });
 }
 
 function beginOperation(meta = {}) {
+  const cancel = typeof meta.cancel === "function" ? meta.cancel : null;
   const operation = {
     runId: String(meta.runId || runReceiptUuidLike("op")),
     projectId: String(meta.projectId || ""),
@@ -161,8 +181,10 @@ function beginOperation(meta = {}) {
     windowName: String(meta.windowName || ""),
     targetObjectId: String(meta.targetObjectId || ""),
     labelKey: String(meta.labelKey || ""),
-    cancellable: meta.cancellable === true,
-    cancel: typeof meta.cancel === "function" ? meta.cancel : null,
+    // cancellable is only true when a real cancel path exists right now; the
+    // UI Stop button is bound to cancelActiveRun(), which needs one of these.
+    cancellable: meta.cancellable === true && (cancel !== null || typeof activeAbortController?.abort === "function"),
+    cancel,
     startedAt: new Date().toISOString(),
   };
   activeOperation = operation;
@@ -184,6 +206,7 @@ function endOperation(handle, { ok = true, error = null } = {}) {
   if (handle && String(handle.runId || "") !== String(activeOperation.runId || "")) {
     return getAssistantActivity();
   }
+  activeRunCapability = null;
   const cancelled = error?.name === "AbortError";
   const finishedOperation = activeOperation;
   activeOperation = null;
@@ -209,15 +232,19 @@ function endOperation(handle, { ok = true, error = null } = {}) {
 }
 
 function cancelActiveRun() {
-  if (!activeOperation || !activeOperation.cancellable) {
-    return { ok: false, reason: "not-cancellable" };
-  }
-  if (typeof activeOperation.cancel === "function") {
+  if (activeOperation?.cancellable && typeof activeOperation.cancel === "function") {
     activeOperation.cancel();
-  } else if (typeof activeAbortController?.abort === "function") {
-    activeAbortController.abort();
+    return { ok: true };
   }
-  return { ok: true };
+  if (activityState.cancellable && activeRunCapability && typeof activeRunCapability.cancel === "function") {
+    activeRunCapability.cancel();
+    return { ok: true };
+  }
+  if (activityState.cancellable && typeof activeAbortController?.abort === "function") {
+    activeAbortController.abort();
+    return { ok: true };
+  }
+  return { ok: false, reason: "not-cancellable" };
 }
 
 function bringActivityToFront() {
@@ -239,6 +266,7 @@ function checkStaleActivity(now = Date.now()) {
   if (!activityState.lastTransitionAt) return false;
   if (now - activityState.lastTransitionAt < assistantActivityStaleRunMs) return false;
   activeOperation = null;
+  activeRunCapability = null;
   transitionActivity("error", {
     runId: "",
     cancellable: false,
@@ -249,6 +277,7 @@ function checkStaleActivity(now = Date.now()) {
 
 function clearActivity(reason = "") {
   activeOperation = null;
+  activeRunCapability = null;
   return transitionActivity(activityModelReady() ? "idle" : "offline", {
     runId: "",
     projectId: "",
@@ -263,6 +292,7 @@ function clearActivity(reason = "") {
 
 function resetForProject(projectId) {
   activeOperation = null;
+  activeRunCapability = null;
   return transitionActivity(activityModelReady() ? "idle" : "offline", {
     runId: "",
     projectId: String(projectId || ""),

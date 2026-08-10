@@ -381,6 +381,148 @@ test.assert(
   "remapBackup keeps the receipt kind, field, and action intact"
 );
 
+// ---- Run Receipt relations survive a real backup -> restore --------------
+// Every Project identity relation stored inside a Run Receipt must be
+// remapped on import. The pinned contract:
+//   runReceipt.projectId
+//   runReceipt.inputObjectIds
+//   runReceipt.affectedObjectIds
+//   runReceipt.outputObjectIds
+//   runReceipt.replayContract.inputObjectIds
+const receiptBackup = structuredClone(legacyBundle);
+receiptBackup.files.push(
+  { id: "file-source", projectId: "project-old", name: "Source.md", folderId: "folder-root", body: "Source body" },
+  { id: "file-output", projectId: "project-old", name: "Output.md", folderId: "folder-root", body: "Output body" }
+);
+receiptBackup.files.push({
+  id: "receipt-file",
+  projectId: "project-old",
+  folderId: "folder-root",
+  type: "text",
+  artifactKind: "clio-run-record",
+  name: "Run receipt",
+  body: "Run Receipt",
+  runReceipt: {
+    schemaVersion: 2,
+    runId: "run-1",
+    projectId: "project-old",
+    sourceAppId: "docMap",
+    intent: "map",
+    status: "completed",
+    inputObjectIds: ["file-source"],
+    affectedObjectIds: ["file-source"],
+    outputObjectIds: ["file-output"],
+    replayContract: {
+      appId: "docMap",
+      intent: "map",
+      inputObjectIds: ["file-source"],
+    },
+  },
+});
+
+let receiptUuidCounter = 0;
+const importedReceiptBackup = backup.remapBackup(receiptBackup, {
+  now: "2026-08-01T03:00:00.000Z",
+  uuid: () => `receipt-new-${++receiptUuidCounter}`,
+  projectName: (name) => `${name} Restored`,
+});
+const importedSourceFile = importedReceiptBackup.files.find((file) => file.name === "Source.md");
+const importedOutputFile = importedReceiptBackup.files.find((file) => file.name === "Output.md");
+const importedReceiptFile2 = importedReceiptBackup.files.find((file) => file.artifactKind === "clio-run-record");
+test.assert(
+  importedSourceFile && importedOutputFile && importedReceiptFile2,
+  "the restored backup carries the source, output, and receipt files"
+);
+const restoredReceipt = importedReceiptFile2.runReceipt;
+test.assert(
+  restoredReceipt.projectId === importedReceiptBackup.project.id,
+  "runReceipt.projectId is remapped to the restored project"
+);
+test.assert(
+  restoredReceipt.inputObjectIds[0] === importedSourceFile.id,
+  "runReceipt.inputObjectIds points at the imported source file"
+);
+test.assert(
+  restoredReceipt.affectedObjectIds[0] === importedSourceFile.id,
+  "runReceipt.affectedObjectIds points at the imported source file"
+);
+test.assert(
+  restoredReceipt.outputObjectIds[0] === importedOutputFile.id,
+  "runReceipt.outputObjectIds points at the imported output file"
+);
+test.assert(
+  restoredReceipt.replayContract.inputObjectIds[0] === importedSourceFile.id,
+  "replayContract.inputObjectIds points at the imported source file"
+);
+
+// The restored receipt is actually queryable and replayable: Get Info's
+// queryReceiptsByOutput finds it through the imported output id, and
+// Repeat This Run resolves the imported input instead of reporting
+// inputs-missing.
+const receiptsContext = vm.createContext({
+  console,
+  crypto: webcrypto,
+  chatFiles: importedReceiptBackup.files,
+  activeProjectId: importedReceiptBackup.project.id,
+  window: {},
+});
+vm.runInContext(read("app/core/run-receipts.js"), receiptsContext);
+const receiptsApi = receiptsContext.window.AISystem6RunReceipts;
+const repeatPayloads = [];
+receiptsContext.window.AISystem6ApplicationRegistry = {
+  dispatchApplicationIntent: async (appId, payload) => {
+    repeatPayloads.push({ appId, payload });
+    return { ok: true };
+  },
+};
+const byOutput = receiptsApi.queryReceiptsByOutput(importedOutputFile.id);
+test.assert(
+  byOutput.length === 1 && byOutput[0].id === importedReceiptFile2.id,
+  "queryReceiptsByOutput finds the receipt through the imported output id"
+);
+const replayed = await receiptsApi.repeatReceipt(importedReceiptFile2.id);
+test.assert(replayed.ok === true, "Repeat This Run works on the restored receipt");
+test.assert(
+  repeatPayloads.length === 1
+    && repeatPayloads[0].payload.items[0]?.id === importedSourceFile.id
+    && repeatPayloads[0].payload.projectId === importedReceiptBackup.project.id,
+  "Repeat This Run resolves the imported input file in the restored project"
+);
+
+// Direct helper contract: remapRunReceiptRelations remaps exactly the pinned
+// relation fields and leaves external/scope identifiers untouched.
+const helperMaps = {
+  project: new Map([["p-old", "p-new"]]),
+  file: new Map([["f-in", "f-in-new"], ["f-out", "f-out-new"]]),
+  folder: new Map(),
+  scrap: new Map(),
+  trash: new Map(),
+  projectCdItem: new Map(),
+  reference: new Map(),
+  revision: new Map(),
+};
+const helperReceipt = backup.remapRunReceiptRelations({
+  projectId: "p-old",
+  inputObjectIds: ["f-in"],
+  affectedObjectIds: ["f-in"],
+  outputObjectIds: ["f-out"],
+  replayContract: { appId: "docMap", intent: "map", inputObjectIds: ["f-in"] },
+  sourceScope: { sourceIds: ["external-source-id"], citationIds: ["external-citation"] },
+}, helperMaps);
+test.assert(
+  helperReceipt.projectId === "p-new"
+    && helperReceipt.inputObjectIds[0] === "f-in-new"
+    && helperReceipt.affectedObjectIds[0] === "f-in-new"
+    && helperReceipt.outputObjectIds[0] === "f-out-new"
+    && helperReceipt.replayContract.inputObjectIds[0] === "f-in-new",
+  "remapRunReceiptRelations remaps every pinned run receipt relation"
+);
+test.assert(
+  helperReceipt.sourceScope.sourceIds[0] === "external-source-id"
+    && helperReceipt.sourceScope.citationIds[0] === "external-citation",
+  "sourceScope identifiers are retrieval scope, never blind-remapped as file ids"
+);
+
 test.assertIncludes(
   manifest,
   '"app/core/project-disk-backup.js"',

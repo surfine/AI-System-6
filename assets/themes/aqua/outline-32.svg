@@ -1,45 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
-  <!-- Aqua 10.2 painter (shared recipe): saturated object, glossy top-left
-       light, deep bottom shade, thin dark rim. Same anatomy as the Liquid
-       Glass painter and the Yosemite flat family. No Apple art. -->
-  <defs>
-    <linearGradient id="g-body" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffffff"/>
-      <stop offset="0.45" stop-color="#f0f2f8"/>
-      <stop offset="1" stop-color="#b9bece"/>
-    </linearGradient>
-    <linearGradient id="g-soft" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffffff"/>
-      <stop offset="1" stop-color="#e6eaf3"/>
-    </linearGradient>
-    <linearGradient id="g-gloss" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.9"/>
-      <stop offset="0.3" stop-color="#ffffff" stop-opacity="0.42"/>
-      <stop offset="0.7" stop-color="#ffffff" stop-opacity="0"/>
-    </linearGradient>
-    <radialGradient id="g-spec" cx="0.24" cy="0.2" r="0.52">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.85"/>
-      <stop offset="0.42" stop-color="#ffffff" stop-opacity="0.22"/>
-      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
-    </radialGradient>
-    <linearGradient id="g-shade" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0.55" stop-color="#000000" stop-opacity="0"/>
-      <stop offset="1" stop-color="#000000" stop-opacity="0.3"/>
-    </linearGradient>
-    <clipPath id="cp-body">
-      <path d="M8 5h16v22H8z" />
-    </clipPath>
-  </defs>
-  <path d="M8 5h16v22H8z" fill="url(#g-body)" stroke="#1d1d1d" stroke-width="1" />
-  <g clip-path="url(#cp-body)">
-    <rect x="0" y="0" width="32" height="32" fill="url(#g-gloss)"/>
-    <rect x="0" y="0" width="32" height="32" fill="url(#g-spec)"/>
-    <rect x="0" y="0" width="32" height="32" fill="url(#g-shade)"/>
-    <rect x="1" y="0" width="30" height="1" fill="#ffffff" fill-opacity="0.55"/>
-    <rect x="0" y="1" width="1" height="30" fill="#ffffff" fill-opacity="0.4"/>
-  </g>
-  
-  <path d="M13 10h8M13 16h8M13 22h8" fill="none" stroke="#333333" stroke-width="1" stroke-linecap="square" />
-  <path d="M11 10h1M11 16h1M11 22h1" fill="none" stroke="#333333" stroke-width="1" stroke-linecap="square" />
-  <path d="M11 10v12" fill="none" stroke="#333333" stroke-width="1" stroke-linecap="square" />
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
+<defs>
+      <linearGradient id="body" x1="0" y1="0" x2="0.82" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="0.38" stop-color="#f1f0e9"/><stop offset="0.7" stop-color="#d2d0c5"/><stop offset="1" stop-color="#77756f"/></linearGradient>
+      <linearGradient id="paper" x1="0" y1="0" x2="0.8" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="0.7" stop-color="#f5f7fa"/><stop offset="1" stop-color="#c8d1dc"/></linearGradient>
+      <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="0.22" stop-color="#dce5ef"/><stop offset="0.53" stop-color="#8d9dad"/><stop offset="0.72" stop-color="#eef3f8"/><stop offset="1" stop-color="#657281"/></linearGradient>
+      <radialGradient id="aquaGlass" cx="0.28" cy="0.18" r="0.82"><stop offset="0" stop-color="#ffffff" stop-opacity="0.95"/><stop offset="0.32" stop-color="#bfe9ff" stop-opacity="0.72"/><stop offset="0.7" stop-color="#4f9ed8" stop-opacity="0.45"/><stop offset="1" stop-color="#16588f" stop-opacity="0.82"/></radialGradient>
+    </defs>
+<ellipse cx="32" cy="53" rx="13" ry="3.2" fill="#24435f" fill-opacity="0.18"/><path d="M12 18h40v36H12z" fill="url(#body)" stroke="#173d67" stroke-width="1.7"/><path d="M17 10h31v34H17z" fill="url(#paper)" stroke="#173d67" stroke-width="1.7"/><path d="M22 6h25v31H22z" fill="url(#paper)" stroke="#173d67" stroke-width="1.7"/><path d="M25 29h3v3h-3zM31 30h10M25 36h3v3h-3zM31 37h9M25 43h3v3h-3zM31 44h7" fill="none" stroke="#2b7fc4" stroke-width="2"/>
 </svg>

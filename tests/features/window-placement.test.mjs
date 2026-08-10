@@ -137,8 +137,8 @@ test.assert(
 );
 test.assertIncludes(
   windowManager,
-  'if (win.dataset.systemPositioned === "true") placeNewWindowAvoidingVisibleWindows(win);',
-  "delayed title alignment rechecks collision clearance",
+  'placeNewWindowAvoidingVisibleWindows(win);\n      clampWindowToViewport(win);',
+  "delayed title alignment rechecks collision clearance and keeps the window in the viewport",
 );
 test.assertIncludes(
   windowManager,

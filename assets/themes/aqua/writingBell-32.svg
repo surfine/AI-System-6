@@ -1,43 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
-  <!-- Aqua 10.2 painter (shared recipe): saturated object, glossy top-left
-       light, deep bottom shade, thin dark rim. Same anatomy as the Liquid
-       Glass painter and the Yosemite flat family. No Apple art. -->
-  <defs>
-    <linearGradient id="g-body" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#f1d6b1"/>
-      <stop offset="0.45" stop-color="#d5ab72"/>
-      <stop offset="1" stop-color="#94683a"/>
-    </linearGradient>
-    <linearGradient id="g-soft" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#f7e6d0"/>
-      <stop offset="1" stop-color="#cfb497"/>
-    </linearGradient>
-    <linearGradient id="g-gloss" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.9"/>
-      <stop offset="0.3" stop-color="#ffffff" stop-opacity="0.42"/>
-      <stop offset="0.7" stop-color="#ffffff" stop-opacity="0"/>
-    </linearGradient>
-    <radialGradient id="g-spec" cx="0.24" cy="0.2" r="0.52">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.85"/>
-      <stop offset="0.42" stop-color="#ffffff" stop-opacity="0.22"/>
-      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
-    </radialGradient>
-    <linearGradient id="g-shade" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0.55" stop-color="#000000" stop-opacity="0"/>
-      <stop offset="1" stop-color="#000000" stop-opacity="0.3"/>
-    </linearGradient>
-    <clipPath id="cp-body">
-      <path d="M14 7h3v1h-3zM13 8h1v1h-1zM17 8h1v1h-1zM12 9h1v1h-1zM18 9h1v1h-1zM12 10h7v1h-7zM11 11h2v1h-2zM18 11h2v1h-2zM10 12h2v1h-2zM15 12h1v1h-1zM19 12h2v1h-2zM10 13h1v1h-1zM15 13h1v1h-1zM20 13h1v1h-1zM9 14h1v1h-1zM15 14h1v1h-1zM21 14h1v1h-1zM9 15h1v1h-1zM15 15h1v1h-1zM21 15h1v1h-1zM9 16h1v1h-1zM15 16h1v1h-1zM21 16h1v1h-1zM9 17h1v1h-1zM16 17h1v1h-1zM21 17h1v1h-1zM9 18h1v1h-1zM17 18h1v1h-1zM21 18h1v1h-1zM10 19h1v1h-1zM20 19h1v1h-1zM10 20h2v1h-2zM19 20h2v1h-2zM11 21h2v1h-2zM18 21h3v1h-3zM10 22h2v1h-2zM13 22h5v1h-5zM20 22h2v1h-2zM9 23h2v1h-2zM21 23h2v1h-2z" />
-    </clipPath>
-  </defs>
-  <path d="M14 7h3v1h-3zM13 8h1v1h-1zM17 8h1v1h-1zM12 9h1v1h-1zM18 9h1v1h-1zM12 10h7v1h-7zM11 11h2v1h-2zM18 11h2v1h-2zM10 12h2v1h-2zM15 12h1v1h-1zM19 12h2v1h-2zM10 13h1v1h-1zM15 13h1v1h-1zM20 13h1v1h-1zM9 14h1v1h-1zM15 14h1v1h-1zM21 14h1v1h-1zM9 15h1v1h-1zM15 15h1v1h-1zM21 15h1v1h-1zM9 16h1v1h-1zM15 16h1v1h-1zM21 16h1v1h-1zM9 17h1v1h-1zM16 17h1v1h-1zM21 17h1v1h-1zM9 18h1v1h-1zM17 18h1v1h-1zM21 18h1v1h-1zM10 19h1v1h-1zM20 19h1v1h-1zM10 20h2v1h-2zM19 20h2v1h-2zM11 21h2v1h-2zM18 21h3v1h-3zM10 22h2v1h-2zM13 22h5v1h-5zM20 22h2v1h-2zM9 23h2v1h-2zM21 23h2v1h-2z" fill="url(#g-body)" stroke="#1d1d1d" stroke-width="1" />
-  <g clip-path="url(#cp-body)">
-    <rect x="0" y="0" width="32" height="32" fill="url(#g-gloss)"/>
-    <rect x="0" y="0" width="32" height="32" fill="url(#g-spec)"/>
-    <rect x="0" y="0" width="32" height="32" fill="url(#g-shade)"/>
-    <rect x="1" y="0" width="30" height="1" fill="#ffffff" fill-opacity="0.55"/>
-    <rect x="0" y="1" width="1" height="30" fill="#ffffff" fill-opacity="0.4"/>
-  </g>
-  
-  
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
+<defs>
+      <linearGradient id="body" x1="0" y1="0" x2="0.82" y2="1"><stop offset="0" stop-color="#fff0bf"/><stop offset="0.38" stop-color="#dab86c"/><stop offset="0.7" stop-color="#9a7140"/><stop offset="1" stop-color="#583e27"/></linearGradient>
+      <linearGradient id="paper" x1="0" y1="0" x2="0.8" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="0.7" stop-color="#f5f7fa"/><stop offset="1" stop-color="#c8d1dc"/></linearGradient>
+      <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="0.22" stop-color="#dce5ef"/><stop offset="0.53" stop-color="#8d9dad"/><stop offset="0.72" stop-color="#eef3f8"/><stop offset="1" stop-color="#657281"/></linearGradient>
+      <radialGradient id="aquaGlass" cx="0.28" cy="0.18" r="0.82"><stop offset="0" stop-color="#ffffff" stop-opacity="0.95"/><stop offset="0.32" stop-color="#bfe9ff" stop-opacity="0.72"/><stop offset="0.7" stop-color="#4f9ed8" stop-opacity="0.45"/><stop offset="1" stop-color="#16588f" stop-opacity="0.82"/></radialGradient>
+    </defs>
+<ellipse cx="32" cy="53" rx="18" ry="3.2" fill="#24435f" fill-opacity="0.18"/><path d="M12 48h40c-6-7-7-14-7-23 0-17-26-17-26 0 0 9-1 16-7 23z" fill="#e6bd55" stroke="#173d67" stroke-width="1.7" stroke-linejoin="round"/><ellipse cx="32" cy="51" rx="23" ry="5" fill="#9d6b29" stroke="#173d67" stroke-width="1.7"/><circle cx="32" cy="56" r="3.5" fill="#6b4726"/><path d="M23 43h18c-3-3-3-7-3-11 0-8-12-8-12 0 0 4 0 8-3 11z" fill="#b17a2f" stroke="#183c63" stroke-width="2"/><circle cx="32" cy="47" r="2" fill="#183c63"/>
 </svg>

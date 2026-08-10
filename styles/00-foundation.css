@@ -380,8 +380,9 @@
   --ss-rule-strong: color-mix(in srgb, var(--ink) 72%, transparent);
   --soundscape-search-input-border: var(--system-border);
   --soundscape-search-input-radius: 0;
-  /* Icon chips: paper tile + ink frame in Classic; Liquid swaps the tile to
-     translucent glass with a thin light rim (see .sys-icon liquid chip). */
+  /* Legacy icon chips keep their paper tile in Classic. Liquid system icons
+     carry object-specific material and specular edges inside their artwork;
+     the shared icon holder must not add a second generic glass container. */
   --icon-bg: var(--paper);
   --icon-border: var(--system-border);
   --mini-icon-bg: var(--paper);
@@ -825,6 +826,12 @@
   --surface-inset: var(--quiet-panel);
   --toolbar-bg: var(--panel);
   --toolbar-border: 1px solid var(--ink);
+  /* Real-app window toolbars paint era chrome through these tokens; the
+     shared .window-toolbar surface owns the only enumeration of toolbar
+     roles, so a theme never lists business apps. Defaults stay unpainted
+     (Classic/Liquid Glass/Yosemite keep their existing bare toolbars). */
+  --app-toolbar-bg: none;
+  --app-toolbar-border-bottom: none;
   --sidebar-bg: var(--paper);
   --sidebar-selection-bg: var(--ink);
   --separator: var(--rule);

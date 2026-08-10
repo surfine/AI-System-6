@@ -596,6 +596,12 @@ Version `1.0.12`, build `20260804.2`.
 - All six appearances are released (System 6, Platinum, Aqua, Snow Leopard,
   Yosemite, Liquid Glass); the research switch is gone and Theme Lab now
   lives in the System folder.
+- Theme acceptance closeout: fixed Aqua/Snow Leopard/Yosemite collapsing the
+  dictation, translation-pad, and rebuild textareas to a 22 px field row
+  (their era field recipes stopped overriding app-owned textarea min-heights);
+  fixed Yosemite's blue default button turning white on hover (now the 10.10
+  hover blue #619fe8, verified against the cited GTK source); and synced
+  README / README.zh-CN to the six released appearances.
 - The 30-second seeded teaser demo shows a source becoming a file on the
   Project Hard Disk without a model or network.
 

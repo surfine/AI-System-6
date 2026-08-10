@@ -1,0 +1,602 @@
+{
+  "target": "Apple Liquid Glass icon language (2025–2026), adapted to AI System 6 semantic objects",
+  "generatedBy": "scripts/build-era-icons.mjs",
+  "sharedGeometryAcrossEras": false,
+  "runtimeSize": 32,
+  "icons": {
+    "startupDisk": {
+      "genre": "hardware",
+      "physicalMetaphor": "drive",
+      "semanticMark": "startup",
+      "sizes": {
+        "16": "startupDisk-16.svg",
+        "32": "startupDisk-32.svg",
+        "64": "startupDisk-64.svg",
+        "128": "startupDisk-128.svg"
+      }
+    },
+    "hardDisk": {
+      "genre": "hardware",
+      "physicalMetaphor": "drive",
+      "semanticMark": "disk",
+      "sizes": {
+        "16": "hardDisk-16.svg",
+        "32": "hardDisk-32.svg",
+        "64": "hardDisk-64.svg",
+        "128": "hardDisk-128.svg"
+      }
+    },
+    "folder": {
+      "genre": "file",
+      "physicalMetaphor": "folder",
+      "semanticMark": "none",
+      "sizes": {
+        "16": "folder-16.svg",
+        "32": "folder-32.svg",
+        "64": "folder-64.svg",
+        "128": "folder-128.svg"
+      }
+    },
+    "document": {
+      "genre": "document",
+      "physicalMetaphor": "paper",
+      "semanticMark": "none",
+      "sizes": {
+        "16": "document-16.svg",
+        "32": "document-32.svg",
+        "64": "document-64.svg",
+        "128": "document-128.svg"
+      }
+    },
+    "applications": {
+      "genre": "file",
+      "physicalMetaphor": "folder",
+      "semanticMark": "applications",
+      "sizes": {
+        "16": "applications-16.svg",
+        "32": "applications-32.svg",
+        "64": "applications-64.svg",
+        "128": "applications-128.svg"
+      }
+    },
+    "trash": {
+      "genre": "hardware",
+      "physicalMetaphor": "trash",
+      "semanticMark": "empty",
+      "sizes": {
+        "16": "trash-16.svg",
+        "32": "trash-32.svg",
+        "64": "trash-64.svg",
+        "128": "trash-128.svg"
+      }
+    },
+    "finderApp": {
+      "genre": "application",
+      "physicalMetaphor": "finder",
+      "semanticMark": "finder",
+      "sizes": {
+        "16": "finderApp-16.svg",
+        "32": "finderApp-32.svg",
+        "64": "finderApp-64.svg",
+        "128": "finderApp-128.svg"
+      }
+    },
+    "fileFloppy": {
+      "genre": "hardware",
+      "physicalMetaphor": "floppy",
+      "semanticMark": "floppy",
+      "sizes": {
+        "16": "fileFloppy-16.svg",
+        "32": "fileFloppy-32.svg",
+        "64": "fileFloppy-64.svg",
+        "128": "fileFloppy-128.svg"
+      }
+    },
+    "assistant": {
+      "genre": "application",
+      "physicalMetaphor": "correspondence",
+      "semanticMark": "assistant",
+      "sizes": {
+        "16": "assistant-16.svg",
+        "32": "assistant-32.svg",
+        "64": "assistant-64.svg",
+        "128": "assistant-128.svg"
+      }
+    },
+    "quickDraft": {
+      "genre": "document",
+      "physicalMetaphor": "paper",
+      "semanticMark": "pencil",
+      "sizes": {
+        "16": "quickDraft-16.svg",
+        "32": "quickDraft-32.svg",
+        "64": "quickDraft-64.svg",
+        "128": "quickDraft-128.svg"
+      }
+    },
+    "writingStudio": {
+      "genre": "application",
+      "physicalMetaphor": "typewriter",
+      "semanticMark": "writing",
+      "sizes": {
+        "16": "writingStudio-16.svg",
+        "32": "writingStudio-32.svg",
+        "64": "writingStudio-64.svg",
+        "128": "writingStudio-128.svg"
+      }
+    },
+    "projectDisk": {
+      "genre": "hardware",
+      "physicalMetaphor": "drive",
+      "semanticMark": "project",
+      "sizes": {
+        "16": "projectDisk-16.svg",
+        "32": "projectDisk-32.svg",
+        "64": "projectDisk-64.svg",
+        "128": "projectDisk-128.svg"
+      }
+    },
+    "projectDisc": {
+      "genre": "hardware",
+      "physicalMetaphor": "disc",
+      "semanticMark": "project",
+      "sizes": {
+        "16": "projectDisc-16.svg",
+        "32": "projectDisc-32.svg",
+        "64": "projectDisc-64.svg",
+        "128": "projectDisc-128.svg"
+      }
+    },
+    "cloudModel": {
+      "genre": "utility",
+      "physicalMetaphor": "server",
+      "semanticMark": "cloud",
+      "sizes": {
+        "16": "cloudModel-16.svg",
+        "32": "cloudModel-32.svg",
+        "64": "cloudModel-64.svg",
+        "128": "cloudModel-128.svg"
+      }
+    },
+    "cloudModelOff": {
+      "genre": "utility",
+      "physicalMetaphor": "server",
+      "semanticMark": "cloudOff",
+      "sizes": {
+        "16": "cloudModelOff-16.svg",
+        "32": "cloudModelOff-32.svg",
+        "64": "cloudModelOff-64.svg",
+        "128": "cloudModelOff-128.svg"
+      }
+    },
+    "questionSheet": {
+      "genre": "document",
+      "physicalMetaphor": "paper",
+      "semanticMark": "question",
+      "sizes": {
+        "16": "questionSheet-16.svg",
+        "32": "questionSheet-32.svg",
+        "64": "questionSheet-64.svg",
+        "128": "questionSheet-128.svg"
+      }
+    },
+    "outline": {
+      "genre": "document",
+      "physicalMetaphor": "cards",
+      "semanticMark": "outline",
+      "sizes": {
+        "16": "outline-16.svg",
+        "32": "outline-32.svg",
+        "64": "outline-64.svg",
+        "128": "outline-128.svg"
+      }
+    },
+    "sectionDrafts": {
+      "genre": "document",
+      "physicalMetaphor": "paperStack",
+      "semanticMark": "sections",
+      "sizes": {
+        "16": "sectionDrafts-16.svg",
+        "32": "sectionDrafts-32.svg",
+        "64": "sectionDrafts-64.svg",
+        "128": "sectionDrafts-128.svg"
+      }
+    },
+    "manuscript": {
+      "genre": "document",
+      "physicalMetaphor": "manuscript",
+      "semanticMark": "manuscript",
+      "sizes": {
+        "16": "manuscript-16.svg",
+        "32": "manuscript-32.svg",
+        "64": "manuscript-64.svg",
+        "128": "manuscript-128.svg"
+      }
+    },
+    "reviewDesk": {
+      "genre": "application",
+      "physicalMetaphor": "review",
+      "semanticMark": "proof",
+      "sizes": {
+        "16": "reviewDesk-16.svg",
+        "32": "reviewDesk-32.svg",
+        "64": "reviewDesk-64.svg",
+        "128": "reviewDesk-128.svg"
+      }
+    },
+    "searcher": {
+      "genre": "application",
+      "physicalMetaphor": "search",
+      "semanticMark": "magnify",
+      "sizes": {
+        "16": "searcher-16.svg",
+        "32": "searcher-32.svg",
+        "64": "searcher-64.svg",
+        "128": "searcher-128.svg"
+      }
+    },
+    "reader": {
+      "genre": "application",
+      "physicalMetaphor": "book",
+      "semanticMark": "reader",
+      "sizes": {
+        "16": "reader-16.svg",
+        "32": "reader-32.svg",
+        "64": "reader-64.svg",
+        "128": "reader-128.svg"
+      }
+    },
+    "timeMachine": {
+      "genre": "utility",
+      "physicalMetaphor": "clock",
+      "semanticMark": "archive",
+      "sizes": {
+        "16": "timeMachine-16.svg",
+        "32": "timeMachine-32.svg",
+        "64": "timeMachine-64.svg",
+        "128": "timeMachine-128.svg"
+      }
+    },
+    "docMap": {
+      "genre": "application",
+      "physicalMetaphor": "map",
+      "semanticMark": "map",
+      "sizes": {
+        "16": "docMap-16.svg",
+        "32": "docMap-32.svg",
+        "64": "docMap-64.svg",
+        "128": "docMap-128.svg"
+      }
+    },
+    "clioStage": {
+      "genre": "application",
+      "physicalMetaphor": "stage",
+      "semanticMark": "stage",
+      "sizes": {
+        "16": "clioStage-16.svg",
+        "32": "clioStage-32.svg",
+        "64": "clioStage-64.svg",
+        "128": "clioStage-128.svg"
+      }
+    },
+    "clioChart": {
+      "genre": "application",
+      "physicalMetaphor": "easel",
+      "semanticMark": "chart",
+      "sizes": {
+        "16": "clioChart-16.svg",
+        "32": "clioChart-32.svg",
+        "64": "clioChart-64.svg",
+        "128": "clioChart-128.svg"
+      }
+    },
+    "liquidCover": {
+      "genre": "application",
+      "physicalMetaphor": "cover",
+      "semanticMark": "cover",
+      "sizes": {
+        "16": "liquidCover-16.svg",
+        "32": "liquidCover-32.svg",
+        "64": "liquidCover-64.svg",
+        "128": "liquidCover-128.svg"
+      }
+    },
+    "cmfStudio": {
+      "genre": "application",
+      "physicalMetaphor": "swatches",
+      "semanticMark": "swatches",
+      "sizes": {
+        "16": "cmfStudio-16.svg",
+        "32": "cmfStudio-32.svg",
+        "64": "cmfStudio-64.svg",
+        "128": "cmfStudio-128.svg"
+      }
+    },
+    "soundscape": {
+      "genre": "application",
+      "physicalMetaphor": "speaker",
+      "semanticMark": "sound",
+      "sizes": {
+        "16": "soundscape-16.svg",
+        "32": "soundscape-32.svg",
+        "64": "soundscape-64.svg",
+        "128": "soundscape-128.svg"
+      }
+    },
+    "scrapbook": {
+      "genre": "application",
+      "physicalMetaphor": "album",
+      "semanticMark": "scraps",
+      "sizes": {
+        "16": "scrapbook-16.svg",
+        "32": "scrapbook-32.svg",
+        "64": "scrapbook-64.svg",
+        "128": "scrapbook-128.svg"
+      }
+    },
+    "systemFolder": {
+      "genre": "file",
+      "physicalMetaphor": "folder",
+      "semanticMark": "gear",
+      "sizes": {
+        "16": "systemFolder-16.svg",
+        "32": "systemFolder-32.svg",
+        "64": "systemFolder-64.svg",
+        "128": "systemFolder-128.svg"
+      }
+    },
+    "helpFolder": {
+      "genre": "file",
+      "physicalMetaphor": "folder",
+      "semanticMark": "help",
+      "sizes": {
+        "16": "helpFolder-16.svg",
+        "32": "helpFolder-32.svg",
+        "64": "helpFolder-64.svg",
+        "128": "helpFolder-128.svg"
+      }
+    },
+    "importUtility": {
+      "genre": "utility",
+      "physicalMetaphor": "inbox",
+      "semanticMark": "import",
+      "sizes": {
+        "16": "importUtility-16.svg",
+        "32": "importUtility-32.svg",
+        "64": "importUtility-64.svg",
+        "128": "importUtility-128.svg"
+      }
+    },
+    "controlPanel": {
+      "genre": "utility",
+      "physicalMetaphor": "controlBoard",
+      "semanticMark": "sliders",
+      "sizes": {
+        "16": "controlPanel-16.svg",
+        "32": "controlPanel-32.svg",
+        "64": "controlPanel-64.svg",
+        "128": "controlPanel-128.svg"
+      }
+    },
+    "chooser": {
+      "genre": "utility",
+      "physicalMetaphor": "network",
+      "semanticMark": "chooser",
+      "sizes": {
+        "16": "chooser-16.svg",
+        "32": "chooser-32.svg",
+        "64": "chooser-64.svg",
+        "128": "chooser-128.svg"
+      }
+    },
+    "systemHelp": {
+      "genre": "application",
+      "physicalMetaphor": "book",
+      "semanticMark": "help",
+      "sizes": {
+        "16": "systemHelp-16.svg",
+        "32": "systemHelp-32.svg",
+        "64": "systemHelp-64.svg",
+        "128": "systemHelp-128.svg"
+      }
+    },
+    "dictionary": {
+      "genre": "application",
+      "physicalMetaphor": "dictionary",
+      "semanticMark": "dictionary",
+      "sizes": {
+        "16": "dictionary-16.svg",
+        "32": "dictionary-32.svg",
+        "64": "dictionary-64.svg",
+        "128": "dictionary-128.svg"
+      }
+    },
+    "teachText": {
+      "genre": "application",
+      "physicalMetaphor": "paperPen",
+      "semanticMark": "writing",
+      "sizes": {
+        "16": "teachText-16.svg",
+        "32": "teachText-32.svg",
+        "64": "teachText-64.svg",
+        "128": "teachText-128.svg"
+      }
+    },
+    "writingDemo": {
+      "genre": "document",
+      "physicalMetaphor": "paper",
+      "semanticMark": "play",
+      "sizes": {
+        "16": "writingDemo-16.svg",
+        "32": "writingDemo-32.svg",
+        "64": "writingDemo-64.svg",
+        "128": "writingDemo-128.svg"
+      }
+    },
+    "chatFile": {
+      "genre": "document",
+      "physicalMetaphor": "paper",
+      "semanticMark": "chat",
+      "sizes": {
+        "16": "chatFile-16.svg",
+        "32": "chatFile-32.svg",
+        "64": "chatFile-64.svg",
+        "128": "chatFile-128.svg"
+      }
+    },
+    "chatImport": {
+      "genre": "utility",
+      "physicalMetaphor": "inbox",
+      "semanticMark": "chat",
+      "sizes": {
+        "16": "chatImport-16.svg",
+        "32": "chatImport-32.svg",
+        "64": "chatImport-64.svg",
+        "128": "chatImport-128.svg"
+      }
+    },
+    "systemStatus": {
+      "genre": "utility",
+      "physicalMetaphor": "monitor",
+      "semanticMark": "status",
+      "sizes": {
+        "16": "systemStatus-16.svg",
+        "32": "systemStatus-32.svg",
+        "64": "systemStatus-64.svg",
+        "128": "systemStatus-128.svg"
+      }
+    },
+    "contextPanel": {
+      "genre": "utility",
+      "physicalMetaphor": "indexBox",
+      "semanticMark": "context",
+      "sizes": {
+        "16": "contextPanel-16.svg",
+        "32": "contextPanel-32.svg",
+        "64": "contextPanel-64.svg",
+        "128": "contextPanel-128.svg"
+      }
+    },
+    "rebuildArticle": {
+      "genre": "utility",
+      "physicalMetaphor": "press",
+      "semanticMark": "rebuild",
+      "sizes": {
+        "16": "rebuildArticle-16.svg",
+        "32": "rebuildArticle-32.svg",
+        "64": "rebuildArticle-64.svg",
+        "128": "rebuildArticle-128.svg"
+      }
+    },
+    "bureaucracyMeme": {
+      "genre": "application",
+      "physicalMetaphor": "stamp",
+      "semanticMark": "forms",
+      "sizes": {
+        "16": "bureaucracyMeme-16.svg",
+        "32": "bureaucracyMeme-32.svg",
+        "64": "bureaucracyMeme-64.svg",
+        "128": "bureaucracyMeme-128.svg"
+      }
+    },
+    "endfieldTerminal": {
+      "genre": "utility",
+      "physicalMetaphor": "terminal",
+      "semanticMark": "terminal",
+      "sizes": {
+        "16": "endfieldTerminal-16.svg",
+        "32": "endfieldTerminal-32.svg",
+        "64": "endfieldTerminal-64.svg",
+        "128": "endfieldTerminal-128.svg"
+      }
+    },
+    "documents": {
+      "genre": "file",
+      "physicalMetaphor": "folder",
+      "semanticMark": "documents",
+      "sizes": {
+        "16": "documents-16.svg",
+        "32": "documents-32.svg",
+        "64": "documents-64.svg",
+        "128": "documents-128.svg"
+      }
+    },
+    "alias": {
+      "genre": "document",
+      "physicalMetaphor": "paper",
+      "semanticMark": "alias",
+      "sizes": {
+        "16": "alias-16.svg",
+        "32": "alias-32.svg",
+        "64": "alias-64.svg",
+        "128": "alias-128.svg"
+      }
+    },
+    "systemFile": {
+      "genre": "document",
+      "physicalMetaphor": "paper",
+      "semanticMark": "gear",
+      "sizes": {
+        "16": "systemFile-16.svg",
+        "32": "systemFile-32.svg",
+        "64": "systemFile-64.svg",
+        "128": "systemFile-128.svg"
+      }
+    },
+    "multiFinderApp": {
+      "genre": "application",
+      "physicalMetaphor": "finderPair",
+      "semanticMark": "finder",
+      "sizes": {
+        "16": "multiFinderApp-16.svg",
+        "32": "multiFinderApp-32.svg",
+        "64": "multiFinderApp-64.svg",
+        "128": "multiFinderApp-128.svg"
+      }
+    },
+    "daHandler": {
+      "genre": "utility",
+      "physicalMetaphor": "briefcase",
+      "semanticMark": "deskAccessory",
+      "sizes": {
+        "16": "daHandler-16.svg",
+        "32": "daHandler-32.svg",
+        "64": "daHandler-64.svg",
+        "128": "daHandler-128.svg"
+      }
+    },
+    "writingBell": {
+      "genre": "accessory",
+      "physicalMetaphor": "bell",
+      "semanticMark": "bell",
+      "sizes": {
+        "16": "writingBell-16.svg",
+        "32": "writingBell-32.svg",
+        "64": "writingBell-64.svg",
+        "128": "writingBell-128.svg"
+      }
+    },
+    "trashFull": {
+      "genre": "hardware",
+      "physicalMetaphor": "trash",
+      "semanticMark": "full",
+      "sizes": {
+        "16": "trashFull-16.svg",
+        "32": "trashFull-32.svg",
+        "64": "trashFull-64.svg",
+        "128": "trashFull-128.svg"
+      }
+    },
+    "control": {
+      "genre": "utility",
+      "physicalMetaphor": "controlBoard",
+      "semanticMark": "knobs",
+      "sizes": {
+        "16": "control-16.svg",
+        "32": "control-32.svg",
+        "64": "control-64.svg",
+        "128": "control-128.svg"
+      }
+    }
+  }
+}

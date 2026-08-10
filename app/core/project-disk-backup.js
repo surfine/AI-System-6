@@ -48,6 +48,13 @@ window.AISystem6ProjectDiskBackup = (() => {
     referenceIds: "reference",
     scrapIds: "scrap",
   });
+  // Run Receipt arrays pointing into Project file identity space. Remapped
+  // only under the clio-run-record structural contract, never by name alone.
+  const runReceiptRelationArrayFields = Object.freeze([
+    "inputObjectIds",
+    "affectedObjectIds",
+    "outputObjectIds",
+  ]);
 
   function isPlainObject(value) {
     if (!value || typeof value !== "object" || Array.isArray(value)) return false;
@@ -430,6 +437,20 @@ window.AISystem6ProjectDiskBackup = (() => {
     }));
   }
 
+  function remapRunReceiptRelations(receipt, idMaps) {
+    if (!isPlainObject(receipt)) return receipt;
+    const copy = remapRelations(clone(receipt), idMaps);
+    runReceiptRelationArrayFields.forEach((field) => {
+      if (!Array.isArray(copy[field])) return;
+      copy[field] = copy[field].map((id) => idMaps.file?.get(recordId(id)) || "");
+    });
+    const replay = copy.replayContract;
+    if (isPlainObject(replay) && Array.isArray(replay.inputObjectIds)) {
+      replay.inputObjectIds = replay.inputObjectIds.map((id) => idMaps.file?.get(recordId(id)) || "");
+    }
+    return copy;
+  }
+
   function remapBackup(bundle, options = {}) {
     const validation = validateBackup(bundle);
     if (!validation.valid) {
@@ -565,10 +586,22 @@ window.AISystem6ProjectDiskBackup = (() => {
       return copy;
     }
 
-    const importedFiles = remapRecords("file", bundle.files).map((file) => ({
-      ...file,
-      folderId: file.folderId || ensureDefaultFolder(),
-    }));
+    const importedFiles = remapRecords("file", bundle.files).map((file, index) => {
+      const copy = { ...file, folderId: file.folderId || ensureDefaultFolder() };
+      // Remap receipt relations from the original record (single pass). The
+      // generic walker above already handled scalar relation fields; the
+      // receipt-specific object-id arrays are handled here under the
+      // clio-run-record structural contract only.
+      const original = bundle.files[index];
+      const isRunReceiptFile = original?.artifactKind === "clio-run-record"
+        || isPlainObject(original?.runReceipt)
+        || isPlainObject(original?.runRecord);
+      if (isRunReceiptFile) {
+        if (isPlainObject(original.runReceipt)) copy.runReceipt = remapRunReceiptRelations(original.runReceipt, idMaps);
+        if (isPlainObject(original.runRecord)) copy.runRecord = remapRunReceiptRelations(original.runRecord, idMaps);
+      }
+      return copy;
+    });
     const importedReferences = remapRecords("reference", bundle.references).map((reference) => ({
       ...reference,
       chunks: (Array.isArray(reference.chunks) ? reference.chunks : []).map((chunk) => ({
@@ -637,6 +670,7 @@ window.AISystem6ProjectDiskBackup = (() => {
     format,
     maxBackupBytes,
     remapBackup,
+    remapRunReceiptRelations,
     stableStringify,
     validateBackup,
     verifyIntegrity,

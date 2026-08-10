@@ -20,6 +20,7 @@ import { createServer } from "node:net";
 import { release as osRelease, version as osVersion } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { validateFidelityManifest } from "./theme-lab-fidelity-contract.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const require = createRequire(import.meta.url);
@@ -32,6 +33,16 @@ const DEFAULT_MANIFEST_DIR = join(root, "tests", "visual", "theme-lab-fidelity")
 const DEFAULT_CACHE_ROOT = join(root, "drafts", "theme-lab-fidelity-cache");
 const DEFAULT_OUTPUT_ROOT = join(root, "drafts", "theme-lab-fidelity");
 const DIFF_THRESHOLD = 10;
+// Per-specimen fidelity tolerances. A manifest pins explicit tolerances
+// (capture.tolerances defaults + specimen.tolerances overrides) so the
+// harness can fail loudly when geometry/material drifts beyond the recorded
+// 2026-08-10 baseline; specimen.tolerances === null keeps a specimen
+// diagnostic-only (unreliable reference crops stay visible, not gated).
+const DEFAULT_TOLERANCES = Object.freeze({
+  geometryMismatch: 0.2,
+  edgeErrorPx: 4,
+  materialError: 60,
+});
 const ATLAS_PADDING = 20;
 const ATLAS_GAP = 18;
 const PANEL_LABEL_HEIGHT = 34;
@@ -173,10 +184,7 @@ function readManifest(theme) {
   const path = join(DEFAULT_MANIFEST_DIR, `${theme}.json`);
   if (!existsSync(path)) throw new Error(`No fidelity manifest for ${theme}: ${path}`);
   const manifest = JSON.parse(readFileSync(path, "utf8"));
-  if (manifest.schemaVersion !== 1) throw new Error(`Unsupported fidelity manifest schema: ${manifest.schemaVersion}`);
-  if (manifest.theme !== theme) throw new Error(`Manifest theme ${manifest.theme} does not match requested ${theme}`);
-  if (!Array.isArray(manifest.sources) || !manifest.sources.length) throw new Error("Fidelity manifest has no canonical sources");
-  if (!Array.isArray(manifest.specimens) || !manifest.specimens.length) throw new Error("Fidelity manifest has no specimen mappings");
+  validateFidelityManifest(manifest, { expectedTheme: theme, label: path.slice(root.length + 1) });
   return { manifest, path };
 }
 
@@ -442,7 +450,9 @@ async function prepareCurrentPage(browser, serverUrl, manifest, outputDir) {
   page.on("response", (response) => {
     const parsed = new URL(response.url());
     resourceResponses.push({
-      path: `${parsed.pathname}${parsed.search}`,
+      // The build stamps ?v=<build> onto every CSS url(); the manifest pins
+      // bare asset paths, so drop the cache-buster before matching.
+      path: parsed.pathname,
       status: response.status(),
       resourceType: response.request().resourceType(),
     });
@@ -461,6 +471,7 @@ async function prepareCurrentPage(browser, serverUrl, manifest, outputDir) {
   if (readiness.appReady !== "ready" || !readiness.bootHidden) {
     throw new Error(`App boot failed: ${JSON.stringify(readiness)}\n${diagnostics.join("\n")}`);
   }
+  await page.evaluate(() => window.AISystem6EnsureThemeLabModule?.());
   const labCss = readFileSync(join(root, "styles/66-theme-lab.css"), "utf8");
   await page.evaluate(({ themeId, css }) => {
     window.AISystem6Theme?.applyTheme(themeId, {
@@ -469,6 +480,7 @@ async function prepareCurrentPage(browser, serverUrl, manifest, outputDir) {
       announce: false,
       modernFontPreference: false,
     });
+    window.AISystem6ThemeLab?.sync?.(window.AISystem6Theme?.getTheme?.(themeId));
     window.AISystem6LiquidGlassOverlay?.setEnabled(false);
     document.querySelector("#liquid-glass-overlay")?.setAttribute("hidden", "");
     document.documentElement.lang = "en";
@@ -690,9 +702,19 @@ async function captureCurrentSpecimen(page, specimen) {
     if (crop.x < 0 || crop.y < 0 || crop.x + crop.width > viewport.width || crop.y + crop.height > viewport.height) {
       throw new Error(`${specimen.id}: current crop ${JSON.stringify(crop)} is outside ${viewport.width}x${viewport.height}`);
     }
+    // locator.boundingBox() is viewport-relative after scrollIntoViewIfNeeded,
+    // while page.screenshot({ clip }) consumes page coordinates. Once Theme
+    // Lab grows beyond one viewport, passing the box through unchanged captures
+    // an unrelated object at the same document-space y position.
+    const scroll = await page.evaluate(() => ({ x: window.scrollX, y: window.scrollY }));
+    const pageCrop = {
+      ...crop,
+      x: crop.x + scroll.x,
+      y: crop.y + scroll.y,
+    };
     const buffer = await page.screenshot({
       type: "png",
-      clip: crop,
+      clip: pageCrop,
       animations: "disabled",
     });
     const image = await loadImage(buffer);
@@ -722,7 +744,7 @@ async function captureCurrentSpecimen(page, specimen) {
       };
     });
     const computedAssertions = await assertSpecimenComputedStyles(page, specimen.computedStyleAssertions);
-    return { canvas, crop, box, computed, computedAssertions };
+    return { canvas, crop: pageCrop, box, computed, computedAssertions };
   } finally {
     await restoreSpecimenSetup(page, savedSetup);
   }
@@ -758,6 +780,31 @@ function validateComputedAssertions(results = []) {
   }
 }
 
+function assertSpecimenTolerances(specimen, review, defaults) {
+  const tolerances = specimen.tolerances === null ? null : {
+    ...defaults,
+    ...(specimen.tolerances || {}),
+  };
+  if (!tolerances) return;
+  const checks = [
+    ["geometryMismatch", "geometry mismatch"],
+    ["edgeErrorPx", "edge error"],
+    ["materialError", "material error"],
+  ];
+  for (const [key, label] of checks) {
+    const limit = tolerances[key];
+    const actual = review[key];
+    if (typeof limit !== "number" || !Number.isFinite(limit)) {
+      throw new Error(`${specimen.id}: tolerance ${key} must be a finite number or null (got ${JSON.stringify(limit)})`);
+    }
+    if (typeof actual !== "number" || actual > limit) {
+      throw new Error(
+        `${specimen.id}: ${label} ${actual} exceeds tolerance ${limit} (geometry=${review.geometryMismatch}, edge=${review.edgeErrorPx}, material=${review.materialError})`,
+      );
+    }
+  }
+}
+
 function alignedCanvases(reference, current, alignment = "top-left") {
   const width = Math.max(reference.width, current.width);
   const height = Math.max(reference.height, current.height);
@@ -771,6 +818,9 @@ function alignedCanvases(reference, current, alignment = "top-left") {
   }
   const position = (image) => {
     if (alignment === "top-center") return { x: Math.floor((width - image.width) / 2), y: 0 };
+    if (alignment === "bottom-center") {
+      return { x: Math.floor((width - image.width) / 2), y: height - image.height };
+    }
     if (alignment === "center") return { x: Math.floor((width - image.width) / 2), y: Math.floor((height - image.height) / 2) };
     return { x: 0, y: 0 };
   };
@@ -954,7 +1004,7 @@ const { manifest, path: manifestPath } = options.manifestPath
   ? (() => {
       const path = resolve(options.manifestPath);
       const loaded = JSON.parse(readFileSync(path, "utf8"));
-      if (loaded.schemaVersion !== 1) throw new Error(`Unsupported fidelity manifest schema: ${loaded.schemaVersion}`);
+      validateFidelityManifest(loaded, { label: path });
       return { manifest: loaded, path };
     })()
   : readManifest(options.theme);
@@ -1013,6 +1063,12 @@ try {
       aligned.currentCanvas,
       { geometryMask: specimen.geometryMask },
     );
+    const review = {
+      ...geometryMaterial,
+      changedRatio: Math.round(comparison.metrics.changedRatio * 1000) / 1000,
+      sourceScale: specimen.reference?.scale || manifest.capture?.sourceScale || 1,
+    };
+    assertSpecimenTolerances(specimen, review, manifest.capture?.tolerances || DEFAULT_TOLERANCES);
     validateComputedAssertions(current.computedAssertions);
     results.push({
       id: specimen.id,
@@ -1027,11 +1083,7 @@ try {
       overlay: comparison.overlay,
       difference: comparison.difference,
       metrics: comparison.metrics,
-      review: {
-        ...geometryMaterial,
-        changedRatio: Math.round(comparison.metrics.changedRatio * 1000) / 1000,
-        sourceScale: specimen.reference?.scale || manifest.capture?.sourceScale || 1,
-      },
+      review,
       repeat: {
         contract: {
           maxChangedPixels: maxRepeatPixels,
