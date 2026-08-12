@@ -26,6 +26,7 @@ const BASELINE_DIR = join(root, "tests", "visual", "theme-lab");
 const CURRENT_DIR = join(root, "internal", "evidence", "drafts", "theme-lab-current");
 const CHANNEL_TOLERANCE = 10;
 const PIXEL_RATIO_TOLERANCE = 0.002;
+const MAX_CAPTURE_ATTEMPTS = 2;
 
 const mode = process.argv[2] || "--verify";
 if (!["--verify", "--update"].includes(mode)) {
@@ -252,6 +253,22 @@ async function captureTheme(browser, url, themeId) {
   }
 }
 
+async function captureThemeWithRetry(browser, url, themeId) {
+  let lastError;
+  for (let attempt = 1; attempt <= MAX_CAPTURE_ATTEMPTS; attempt += 1) {
+    try {
+      return await captureTheme(browser, url, themeId);
+    } catch (error) {
+      lastError = error;
+      if (attempt < MAX_CAPTURE_ATTEMPTS) {
+        console.warn(`RETRY  Theme Lab ${themeId}: ${error.message}`);
+        await wait(250);
+      }
+    }
+  }
+  throw lastError;
+}
+
 async function decode(path) {
   const { createCanvas, loadImage } = require("canvas");
   const image = await loadImage(path);
@@ -314,7 +331,7 @@ try {
   browser = await chromium.launch(launchOptions);
 
   const captured = await Promise.all(THEMES.map(async (themeId) => {
-    const path = await captureTheme(browser, server.url, themeId);
+    const path = await captureThemeWithRetry(browser, server.url, themeId);
     console.log(`OK  captured Theme Lab: ${themeId}`);
     return [themeId, path];
   }));

@@ -1,7 +1,16 @@
 // Era timeline strip: drag the thumb (or click a year) and the whole page
 // changes era in place. A native range input does the keyboard work.
 
-import { ERAS, currentEra, setEra, onEraChange } from "./eras.js?v=20260813a";
+import { ERAS, currentEra, setEra, onEraChange, prefetchEras } from "./eras.js?v=20260813d";
+
+// The first touch of any strip warms the remaining eras, so the drag that
+// follows does not pop in icon by icon.
+let warmed = false;
+function warmOnce() {
+  if (warmed) return;
+  warmed = true;
+  prefetchEras();
+}
 
 export function buildEraStrip(container, opts) {
   const big = !!(opts && opts.big);
@@ -37,6 +46,8 @@ export function buildEraStrip(container, opts) {
 
   container.appendChild(range);
   container.appendChild(ticks);
+  ["pointerenter", "touchstart", "focusin"].forEach((ev) =>
+    container.addEventListener(ev, warmOnce, { once: false, passive: true }));
 
   onEraChange((era) => {
     range.value = ERAS.indexOf(era);

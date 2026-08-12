@@ -85,7 +85,7 @@ body::before {
   /* No overflow clipping here: the pull-down menus hang below the bar. */
 }
 
-.menu-apple { font-size: 15px; line-height: 1; }
+.menu-apple.s6-mark { vertical-align: -3px; }
 .menu-title { font-weight: normal; }
 .menu-spacer { flex: 1; }
 
@@ -233,6 +233,53 @@ details.menu[open] > summary {
 .wbody > p + p { margin-top: 12px; }
 
 
+
+/* The product's own menu mark: a 1-bit happy Macintosh, drawn pixel by pixel.
+   Copied from the app's .apple::before/::after recipe (00-foundation.css) —
+   AI System 6 does not wear the Apple logo. */
+.s6-mark {
+  position: relative;
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  vertical-align: -2px;
+}
+.s6-mark::before,
+.s6-mark::after {
+  content: "";
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  left: 50%;
+  top: 50%;
+  background: currentColor;
+}
+.s6-mark::before {
+  transform: translate(-8px, -8px);
+  box-shadow:
+    2px 0 0 currentColor, 4px 0 0 currentColor, 6px 0 0 currentColor,
+    8px 0 0 currentColor, 10px 0 0 currentColor, 12px 0 0 currentColor,
+    14px 0 0 currentColor,
+    0 2px 0 currentColor, 14px 2px 0 currentColor,
+    0 4px 0 currentColor, 14px 4px 0 currentColor,
+    0 6px 0 currentColor, 6px 6px 0 currentColor, 8px 6px 0 currentColor, 14px 6px 0 currentColor,
+    0 8px 0 currentColor, 14px 8px 0 currentColor,
+    0 10px 0 currentColor, 2px 10px 0 currentColor, 4px 10px 0 currentColor,
+    6px 10px 0 currentColor, 8px 10px 0 currentColor, 10px 10px 0 currentColor,
+    12px 10px 0 currentColor, 14px 10px 0 currentColor,
+    6px 12px 0 currentColor, 8px 12px 0 currentColor,
+    4px 14px 0 currentColor, 6px 14px 0 currentColor, 8px 14px 0 currentColor, 10px 14px 0 currentColor;
+}
+.s6-mark::after {
+  transform: translate(-5px, -4px);
+  box-shadow:
+    8px 0 0 currentColor,
+    2px 4px 0 currentColor,
+    8px 4px 0 currentColor,
+    4px 6px 0 currentColor,
+    6px 6px 0 currentColor;
+}
+
 /* ---------- Buttons ---------- */
 
 .btn-row {
@@ -244,7 +291,9 @@ details.menu[open] > summary {
 }
 
 .btn {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-family: var(--site-font, var(--ui-font));
   font-size: 18px;
   color: var(--btn-ink, var(--ink));
@@ -253,9 +302,11 @@ details.menu[open] > summary {
   border: 1px solid var(--btn-border, var(--ink));
   border-radius: var(--btn-radius, 7px);
   box-shadow: var(--btn-shadow, none);
-  padding: 5px 18px;
+  padding: 7px 18px 3px;
+  line-height: 1;
   cursor: pointer;
 }
+html[data-theme] .btn { padding: 5px 18px; }
 .btn:hover,
 .btn:focus-visible {
   background: var(--ink);
@@ -340,71 +391,178 @@ pre {
 }
 
 /* ---------- Boot and shutdown ---------- */
+/* The product's own startup and shutdown screens, ported from the app's
+   00-foundation.css: the CSS-drawn happy Mac (box-shadow pixel face, awake
+   and sleeping states), the stepped progress bar, and the startup ledger. */
 
-.boot {
+.boot-screen,
+.shutdown-screen {
   position: fixed;
   inset: 0;
   z-index: 200;
-  background-color: #808080;
-  background-image: var(--desk-pattern);
-  background-size: 2px 2px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: opacity 0.35s steps(3, end);
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 22px;
+  padding: 24px;
+  background:
+    radial-gradient(rgba(0, 0, 0, 0.24) 1.5px, transparent 1.5px) 0 0 / 20px 20px,
+    var(--desk-bg, #808080);
+  transition: opacity 0.25s steps(3, end);
 }
-.boot.boot-done { opacity: 0; }
-.boot-box {
-  color: #000;
-  font-family: var(--display-font);
-  font-size: clamp(20px, 4vw, 30px);
+.shutdown-screen { z-index: 210; }
+.boot-screen.boot-done { opacity: 0; pointer-events: none; }
+.boot-screen[hidden],
+.shutdown-screen[hidden] { display: none; }
+
+.happy-mac {
+  width: 112px;
+  height: 108px;
+  border: 4px solid var(--ink);
+  border-radius: 2px;
+  background:
+    linear-gradient(var(--ink), var(--ink)) 16px 84px / 11px 4px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 57px 84px / 40px 4px no-repeat,
+    var(--paper);
+  position: relative;
+  margin: 10px 0 34px;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.28);
+  transform: scale(1.15);
+  transform-origin: center center;
+}
+.happy-mac::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: -22px;
+  height: 14px;
+  border: 4px solid var(--ink);
   background: var(--paper);
+}
+.happy-mac-face {
+  position: absolute;
+  left: 12px;
+  top: 18px;
+  width: 84px;
+  height: 56px;
   border: 2px solid var(--ink);
-  border-radius: 10px;
-  box-shadow: 0 0 0 1px var(--paper), 0 0 0 2px var(--ink);
-  padding: 26px 44px;
+  border-radius: 2px;
+  background: var(--paper);
+  overflow: hidden;
+}
+.happy-mac-face::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 5px;
+  height: 5px;
+  background: transparent;
+  box-shadow:
+    20px 18px 0 var(--ink),
+    20px 23px 0 var(--ink),
+    62px 18px 0 var(--ink),
+    62px 23px 0 var(--ink),
+    43px 10px 0 var(--ink),
+    43px 15px 0 var(--ink),
+    43px 20px 0 var(--ink),
+    43px 25px 0 var(--ink),
+    43px 30px 0 var(--ink),
+    38px 30px 0 var(--ink),
+    38px 35px 0 var(--ink),
+    26px 40px 0 var(--ink),
+    31px 45px 0 var(--ink),
+    36px 45px 0 var(--ink),
+    41px 45px 0 var(--ink),
+    46px 45px 0 var(--ink),
+    51px 45px 0 var(--ink),
+    56px 45px 0 var(--ink),
+    61px 40px 0 var(--ink);
+}
+.happy-mac.is-sleeping .happy-mac-face::before {
+  box-shadow:
+    18px 15px 0 var(--ink),
+    28px 15px 0 var(--ink),
+    23px 20px 0 var(--ink),
+    18px 25px 0 var(--ink),
+    28px 25px 0 var(--ink),
+    56px 15px 0 var(--ink),
+    66px 15px 0 var(--ink),
+    61px 20px 0 var(--ink),
+    56px 25px 0 var(--ink),
+    66px 25px 0 var(--ink),
+    43px 10px 0 var(--ink),
+    43px 15px 0 var(--ink),
+    43px 20px 0 var(--ink),
+    43px 25px 0 var(--ink),
+    43px 30px 0 var(--ink),
+    38px 30px 0 var(--ink),
+    38px 35px 0 var(--ink),
+    31px 43px 0 var(--ink),
+    36px 43px 0 var(--ink),
+    41px 43px 0 var(--ink),
+    46px 43px 0 var(--ink),
+    51px 43px 0 var(--ink),
+    56px 43px 0 var(--ink);
 }
 
-.shutdown {
-  position: fixed;
-  inset: 0;
-  z-index: 210;
-  background: var(--ink);
-  color: var(--paper);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 34px;
+.boot-msg,
+.shutdown-ledger p {
+  margin: 0;
   text-align: center;
-  padding: 0 20px;
-}
-.shutdown[hidden] { display: none; }
-.shutdown p {
-  font-family: var(--display-font);
-  font-size: clamp(22px, 4.5vw, 34px);
-  max-width: 18em;
-}
-.shutdown button {
   font-family: var(--ui-font);
-  font-size: 18px;
-  color: var(--paper);
-  background: var(--ink);
-  border: 1px solid var(--paper);
-  border-radius: 7px;
-  padding: 5px 22px;
-  cursor: pointer;
-}
-.shutdown button:hover,
-.shutdown button:focus-visible {
-  background: var(--paper);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.35;
   color: var(--ink);
 }
+.boot-msg { background: var(--paper); padding: 2px 14px; }
+
+.boot-progress {
+  width: min(420px, calc(100vw - 48px));
+  height: 20px;
+  border: 3px solid var(--ink);
+  background: var(--paper);
+  padding: 3px;
+}
+.boot-progress span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: var(--ink);
+  transition: width 0.18s steps(4, end);
+}
+
+.boot-ledger,
+.shutdown-ledger {
+  display: grid;
+  gap: 8px;
+  width: min(420px, calc(100vw - 48px));
+  padding: 14px 20px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  font-family: var(--ui-font);
+  font-size: 17px;
+  line-height: 1.4;
+  color: var(--ink);
+}
+.shutdown-ledger { gap: 16px; justify-items: center; text-align: center; }
+.boot-ledger span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.boot-ledger span::before { content: "\25A1"; margin-right: 6px; }
+.boot-ledger span.is-ready::before { content: "\25C6"; }
+.boot-ledger span.is-standby::before { content: "\25C7"; }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .js .window { opacity: 1; animation: none; }
-  .hero-head::after { animation: none; }
+  .boot-screen,
+  .shutdown-screen,
+  .boot-progress span { transition: none; }
 }
 
 /* ---------- Small screens ---------- */

@@ -2,7 +2,7 @@
 // Each item behaves like a Finder object: click selects, double-click opens
 // a 3–6 second micro demo in a small window, close returns to the Finder.
 
-import { iconImg } from "./eras.js?v=20260813a";
+import { iconImg } from "./eras.js?v=20260813d";
 
 const doc = document;
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -95,10 +95,11 @@ const ITEMS = [
 
 export function initImpossible(body, statusBar) {
   let openWin = null;
+  const restingStatus = "8 items          2 floppies in disk          38 years available";
 
   function closeDemo() {
     if (openWin) { openWin.remove(); openWin = null; }
-    statusBar.textContent = "8 items   Double-click one to see for yourself";
+    statusBar.textContent = restingStatus;
   }
 
   function openDemo(item, fromBtn) {

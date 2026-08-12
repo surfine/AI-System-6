@@ -117,6 +117,7 @@ html[data-theme="liquid-glass"] .hero-head { color: #17222e; --head-shadow: 0 1p
   overflow: hidden;
   background-color: var(--desk-bg, #808080);
 }
+html[data-theme] .mini-desktop { border: 1px solid rgba(0, 0, 0, 0.45); }
 .mini-desktop::before {
   content: "";
   position: absolute;
@@ -141,7 +142,7 @@ html[data-theme="liquid-glass"] .hero-head { color: #17222e; --head-shadow: 0 1p
   -webkit-user-select: none;
 }
 .mini-menubar .mini-spacer { flex: 1; }
-.mini-menubar .mini-apple { font-size: 12px; }
+.mini-menubar .mini-apple { flex: none; }
 
 .mini-surface {
   position: relative;
@@ -190,6 +191,34 @@ button.close-box {
 }
 button.close-box:focus-visible { outline: 2px solid var(--btn-border, var(--ink)); outline-offset: 2px; }
 .mini-tbar .close-box { left: 7px; width: 11px; height: 11px; }
+
+/* Platinum's collapse box: the WindowShade control Mac OS 8 puts on the
+   right end of the title bar. Other eras collapse by double-click only. */
+.shade-box { display: none; }
+html[data-theme="platinum"] .shade-box {
+  display: block;
+  position: absolute;
+  right: 7px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 11px;
+  height: 11px;
+  padding: 0;
+  appearance: none;
+  border: 1px solid #555;
+  background: linear-gradient(135deg, #f4f4f4, #bdbdbd);
+  cursor: pointer;
+}
+html[data-theme="platinum"] .shade-box::after {
+  content: "";
+  position: absolute;
+  left: 1px;
+  right: 1px;
+  top: 4px;
+  height: 1px;
+  background: #555;
+}
+html[data-theme="platinum"] .shade-box:focus-visible { outline: 2px solid #333; outline-offset: 2px; }
 html[data-theme="aqua"] .mini-tbar .close-box,
 html[data-theme="snow-leopard"] .mini-tbar .close-box,
 html[data-theme="yosemite"] .mini-tbar .close-box,
@@ -446,6 +475,10 @@ html[data-theme="platinum"] img.obj-icon { image-rendering: pixelated; }
 .era-tick.is-active .era-tick-name { background: var(--ink); color: var(--paper); padding: 0 4px; }
 .era-tick:focus-visible { outline: 2px dotted var(--ink); outline-offset: 2px; }
 .era-actions { margin-top: 16px; }
+.btn-glyph svg { vertical-align: -3px; margin-right: 4px; }
+.cycle-stop { display: none; }
+#cycle-btn.is-cycling .cycle-play { display: none; }
+#cycle-btn.is-cycling .cycle-stop { display: block; }
 
 /* ---------- Chat scene ---------- */
 
@@ -465,8 +498,9 @@ html[data-theme="platinum"] img.obj-icon { image-rendering: pixelated; }
 .chat-apps-left { grid-area: appsL; }
 .chat-apps-right { grid-area: appsR; }
 .chat-bubble-slot { grid-area: bubble; }
-.chat-trash { grid-area: trash; min-width: 76px; }
-.chat-trash img { width: 48px; height: 48px; }
+/* Keep the Trash art at its native 32 px (integer scale for the 1-bit eras);
+   the padding carries the 44 px touch target. */
+.chat-trash { grid-area: trash; min-width: 76px; padding: 10px 8px; }
 .chat-apps {
   display: grid;
   grid-template-columns: repeat(2, auto);
@@ -859,18 +893,18 @@ html[data-theme] .finder-item.selected .desk-icon-label { background: var(--sel-
   background: linear-gradient(#c8ccd4, #9aa0ab);
   border: 1px solid rgba(0,0,0,0.4);
 }
-.floppy-disk-1 { top: -6px; }
-.floppy-disk-2 { top: 104px; }
+/* Each disk carries its own travel vector to the slot, so the narrow-screen
+   Mac (smaller case, higher slot) can retarget with two custom properties. */
+.floppy-disk-1 { top: -6px; --slot-dx: 40px; --slot-dy: 142px; }
+.floppy-disk-2 { top: 104px; --slot-dx: 40px; --slot-dy: 32px; }
 
 .floppy-run .floppy-disk-1 { animation: floppy-insert 1.5s steps(8, end) 0.2s forwards; }
 .floppy-run .floppy-disk-2 { animation: floppy-insert 1.5s steps(8, end) 2.0s forwards; }
 @keyframes floppy-insert {
   0%   { transform: translate(0, 0) scale(1); opacity: 1; }
-  55%  { transform: translate(64px, 214px) scale(0.7); opacity: 1; }
-  55.1% { transform: translate(64px, 214px) scale(0.7); opacity: 1; }
-  100% { transform: translate(64px, 236px) scale(0.12); opacity: 0; }
+  55%  { transform: translate(var(--slot-dx), var(--slot-dy)) scale(0.7); opacity: 1; }
+  100% { transform: translate(var(--slot-dx), calc(var(--slot-dy) + 22px)) scale(0.12); opacity: 0; }
 }
-.floppy-disk-2.floppy-disk-2 { --slot-shift: 110px; }
 .floppy-run .floppy-screen-msg,
 .floppy-booted .floppy-screen-msg { animation: demo-fade 0.4s steps(2, end) 3.8s forwards; }
 .floppy-booted .floppy-screen-msg { animation-delay: 0s; }
@@ -878,14 +912,6 @@ html[data-theme] .finder-item.selected .desk-icon-label { background: var(--sel-
 .floppy-booted .floppy-screen { transition: background-color 0.2s steps(2, end) 3.7s; background-color: #cfd4dc; }
 .floppy-booted .floppy-disk-1,
 .floppy-booted .floppy-disk-2 { opacity: 0; }
-
-/* Disk 2 travels from lower start point: shorten its path */
-.floppy-run .floppy-disk-2 { animation-name: floppy-insert-2; }
-@keyframes floppy-insert-2 {
-  0%   { transform: translate(0, 0) scale(1); opacity: 1; }
-  55%  { transform: translate(64px, 104px) scale(0.7); opacity: 1; }
-  100% { transform: translate(64px, 126px) scale(0.12); opacity: 0; }
-}
 
 /* ---------- Control Panel scene ---------- */
 
@@ -971,51 +997,65 @@ html[data-theme] .finder-item.selected .desk-icon-label { background: var(--sel-
   border: 1px solid var(--tbar-border, var(--ink));
 }
 .qt-body { position: relative; background: #000; }
-.qt-body video { display: block; width: 100%; height: auto; }
-.qt-controls {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 7px 10px;
+.qt-poster { display: block; position: relative; cursor: pointer; }
+.qt-poster img { display: block; width: 100%; height: auto; }
+.qt-poster-play {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 64px;
+  height: 44px;
+  background: var(--btn-bg, var(--paper));
+  border: 2px solid var(--btn-border, var(--ink));
+  border-radius: var(--btn-radius, 8px);
+  box-shadow: var(--btn-shadow, 2px 2px 0 rgba(0,0,0,0.6));
+}
+.qt-poster-play::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-40%, -50%);
+  border-style: solid;
+  border-width: 9px 0 9px 15px;
+  border-color: transparent transparent transparent currentColor;
+  color: var(--btn-ink, var(--ink));
+}
+.qt-poster:hover .qt-poster-play,
+.qt-poster:focus-visible .qt-poster-play { background: var(--ink); }
+.qt-poster:hover .qt-poster-play::after,
+.qt-poster:focus-visible .qt-poster-play::after { color: var(--paper); }
+.qt-poster:focus-visible { outline: 2px dotted var(--paper); outline-offset: -4px; }
+.qt-poster-note {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  font-size: 12.5px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--ink);
+  padding: 1px 10px;
+  white-space: nowrap;
+}
+.qt-frame {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 0;
+  background: #000;
+}
+.qt-strip {
+  margin: 0;
+  padding: 5px 12px;
+  font-size: 12.5px;
+  color: var(--ink);
   background: var(--bar-bg, var(--paper));
   border-top: 1px solid var(--bar-border, var(--ink));
+  text-align: left;
 }
-.qt-controls button {
-  appearance: none;
-  width: 34px;
-  height: 26px;
-  font-size: 13px;
-  font-family: var(--site-font, var(--ui-font));
-  background: var(--btn-bg, var(--paper));
-  color: var(--btn-ink, var(--ink));
-  border: 1px solid var(--btn-border, var(--ink));
-  border-radius: var(--btn-radius, 4px);
-  cursor: pointer;
-  line-height: 1;
-}
-.qt-controls input[type="range"] {
-  flex: 1;
-  appearance: none;
-  -webkit-appearance: none;
-  height: 18px;
-  background: transparent;
-}
-.qt-controls input[type="range"]::-webkit-slider-runnable-track {
-  height: 6px;
-  background: var(--paper);
-  border: 1px solid var(--ink);
-}
-.qt-controls input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 12px;
-  height: 16px;
-  margin-top: -6px;
-  background: var(--btn-bg, var(--paper));
-  border: 1px solid var(--ink);
-}
-.qt-controls input[type="range"]::-moz-range-track { height: 6px; background: var(--paper); border: 1px solid var(--ink); }
-.qt-controls input[type="range"]::-moz-range-thumb { width: 10px; height: 14px; background: var(--btn-bg, var(--paper)); border: 1px solid var(--ink); border-radius: 0; }
-.qt-time { font-family: var(--mono-font); font-size: 12px; color: var(--ink); min-width: 36px; text-align: right; }
+.qt-strip a { color: inherit; }
 
 /* ---------- Boot picker ---------- */
 
@@ -1044,7 +1084,7 @@ html[data-theme] .finder-item.selected .desk-icon-label { background: var(--sel-
 .boot-choice:hover .boot-label,
 .boot-choice:focus-visible .boot-label { background: var(--ink); color: var(--paper); }
 .boot-choice:focus-visible { outline: 2px dotted var(--ink); outline-offset: 3px; }
-.boot-choice img { width: 56px; height: 56px; }
+.boot-choice img { width: 64px; height: 64px; }
 .boot-label { font-size: 17px; padding: 0 6px; }
 .boot-sub { font-size: 12.5px; opacity: 0.75; }
 
@@ -1179,10 +1219,10 @@ html[data-theme="liquid-glass"] { --sel-bg: rgba(40, 90, 200, 0.8); --gauge-fill
   .floppy-slot { top: 158px; }
   .floppy-chin { top: 162px; }
   .floppy-disk { width: 82px; height: 82px; margin-left: -41px; }
-  .floppy-disk-2 { top: 92px; }
+  .floppy-disk-1 { --slot-dx: 24px; --slot-dy: 124px; }
+  .floppy-disk-2 { top: 92px; --slot-dx: 24px; --slot-dy: 26px; }
 
   .boot-picker { grid-template-columns: 1fr; max-width: 280px; margin-left: auto; margin-right: auto; }
-  .qt-controls { gap: 6px; }
 }
 
 @keyframes caret-blink {

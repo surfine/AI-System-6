@@ -1,7 +1,7 @@
 // Snapshot: draw a share card of the current era on a canvas and hand it
 // over as a PNG. Fixed poster composition — not a cropped page screenshot.
 
-import { ERAS, currentEra, iconSrc } from "./eras.js?v=20260813a";
+import { ERAS, currentEra, iconSrc } from "./eras.js?v=20260813d";
 
 // Card palettes mirror the era tokens in site.css, reduced to flat paint.
 const CARD_STYLES = {

@@ -3,7 +3,7 @@
 // A document chip physically travels the stations. No model calls — this is
 // choreography of the real object relationships.
 
-import { iconImg } from "./eras.js?v=20260813a";
+import { iconImg } from "./eras.js?v=20260813d";
 
 const doc = document;
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;

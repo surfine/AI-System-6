@@ -1,7 +1,7 @@
 // Model Control Panel: pick a provider, the light goes Ready. Nothing is
 // stored and nothing connects — the point is that the model is a setting.
 
-import { iconImg } from "./eras.js?v=20260813a";
+import { iconImg } from "./eras.js?v=20260813d";
 
 const PROVIDERS = [
   { id: "lmstudio", icon: "localModel", name: "LM Studio", note: "local" },

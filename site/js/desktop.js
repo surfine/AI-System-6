@@ -2,8 +2,8 @@
 // objects. Not the app in an iframe — just enough DOM to drag a window,
 // double-click an icon, and watch the eras change around the same work.
 
-import { currentEra, iconImg } from "./eras.js?v=20260813a";
-import { flashBalloon } from "./balloon.js?v=20260813a";
+import { currentEra, iconImg } from "./eras.js?v=20260813d";
+import { flashBalloon } from "./balloon.js?v=20260813d";
 
 const doc = document;
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -126,6 +126,7 @@ export function createMiniWindow(desk, app, opts) {
     <header class="tbar mini-tbar">
       <button type="button" class="close-box mw-close" aria-label="Close ${conf.title}"></button>
       <h3>${conf.title}</h3>
+      <button type="button" class="shade-box" aria-label="Collapse ${conf.title}"></button>
     </header>
     <div class="mini-wbody">${conf.content()}</div>`;
   desk.surface.appendChild(win);
@@ -138,15 +139,19 @@ export function createMiniWindow(desk, app, opts) {
   win.addEventListener("pointerdown", () => { win.style.zIndex = ++zCounter; });
   win.querySelector(".mw-close").addEventListener("click", () => win.remove());
 
-  // Double-click the title bar: WindowShade.
+  // WindowShade: double-click the title bar, or use the collapse box that
+  // Platinum draws on the right side of its title bars.
   bar.addEventListener("dblclick", (e) => {
-    if (e.target.closest(".mw-close")) return;
+    if (e.target.closest(".mw-close") || e.target.closest(".shade-box")) return;
+    win.classList.toggle("shaded");
+  });
+  win.querySelector(".shade-box").addEventListener("click", () => {
     win.classList.toggle("shaded");
   });
 
   // Drag. Classic moves a dotted outline and jumps once; later eras move live.
   bar.addEventListener("pointerdown", (e) => {
-    if (e.button !== 0 || e.target.closest(".mw-close")) return;
+    if (e.button !== 0 || e.target.closest(".mw-close") || e.target.closest(".shade-box")) return;
     e.preventDefault();
     const surfRect = desk.surface.getBoundingClientRect();
     const rect = win.getBoundingClientRect();
@@ -236,7 +241,7 @@ export function createMiniDesktop(container, config) {
   const menubar = doc.createElement("div");
   menubar.className = "mini-menubar";
   menubar.setAttribute("aria-hidden", "true");
-  menubar.innerHTML = `<span class="mini-apple">&#63743;</span><span>File</span><span>Edit</span><span>View</span><span>Special</span><span class="mini-spacer"></span><span class="mini-clock">10:07 AM</span>`;
+  menubar.innerHTML = `<span class="mini-apple s6-mark"></span><span>File</span><span>Edit</span><span>View</span><span>Special</span><span class="mini-spacer"></span><span class="mini-clock">10:07 AM</span>`;
   container.appendChild(menubar);
   container.appendChild(surface);
 

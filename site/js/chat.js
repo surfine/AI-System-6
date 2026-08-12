@@ -1,9 +1,9 @@
 // "Chat is an app" scene: a ClioTalk window surrounded by working app icons,
 // and a giant modern chat bubble the visitor can put where it belongs.
 
-import { iconImg } from "./eras.js?v=20260813a";
-import { APPS } from "./desktop.js?v=20260813a";
-import { flashBalloon } from "./balloon.js?v=20260813a";
+import { iconImg } from "./eras.js?v=20260813d";
+import { APPS } from "./desktop.js?v=20260813d";
+import { flashBalloon } from "./balloon.js?v=20260813d";
 
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 

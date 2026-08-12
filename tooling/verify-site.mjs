@@ -41,7 +41,6 @@ const required = [
   "desk.css",
   "js/main.js",
   "img/og-poster.png",
-  "img/hero-desktop.mp4",
 ];
 for (const relative of required) {
   if (existsSync(path.join(siteRoot, relative))) ok(`site/${relative}`);
@@ -91,6 +90,7 @@ if (posterWidth === 1200 && posterHeight === 630) ok("Open Graph poster is 1200�
 else fail(`Open Graph poster is ${posterWidth}×${posterHeight}; expected 1200×630`);
 
 const index = readFileSync(path.join(siteRoot, "index.html"), "utf8");
+const quickTime = readFileSync(path.join(siteRoot, "js", "quicktime.js"), "utf8");
 for (const needle of [
   "THE AI HAS",
   "https://system6.aaronlau.me",
@@ -102,6 +102,27 @@ for (const needle of [
 }
 if (!index.includes("site.js")) ok("legacy monolithic site.js is absent");
 else fail("site/index.html still references legacy site.js");
+if (index.includes('class="menu-apple s6-mark"') && !index.includes("&#63743;")) {
+  ok("the menu bar wears the project-owned 1-bit System mark");
+} else {
+  fail("the menu bar still depends on the Apple private-use glyph");
+}
+if (index.includes('id="cycle-btn"') && index.includes('class="cycle-play"')) {
+  ok("era cycling uses a project-owned crisp transport glyph");
+} else {
+  fail("era cycling is missing its project-owned transport glyph");
+}
+if (quickTime.includes("https://player.bilibili.com/player.html?bvid=BV1ht3m6UEDb")
+  && quickTime.includes('poster.addEventListener("click"')) {
+  ok("Bilibili film embed loads only after the poster is clicked");
+} else {
+  fail("Bilibili film embed is missing or eagerly loaded");
+}
+if (!existsSync(path.join(siteRoot, "img", "hero-desktop.mp4"))) {
+  ok("the site does not duplicate the film in its public payload");
+} else {
+  fail("site/img/hero-desktop.mp4 duplicates the Bilibili film");
+}
 
 const siteFiles = walk(siteRoot);
 const siteBytes = siteFiles.reduce((sum, file) => sum + statSync(file).size, 0);

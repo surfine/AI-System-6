@@ -21,23 +21,33 @@
 <meta name="twitter:description" content="Six Mac eras. One AI desktop. Boot it in your browser.">
 <meta name="twitter:image" content="https://aisystem6.pages.dev/img/og-poster.png">
 <script>try{var t=localStorage.getItem("s6-site-theme");if(t&&t!=="classic")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=20260813a">
-<link rel="stylesheet" href="desk.css?v=20260813a">
+<link rel="stylesheet" href="site.css?v=20260813d">
+<link rel="stylesheet" href="desk.css?v=20260813d">
 </head>
 <body>
 
-<div class="boot" id="boot" hidden aria-hidden="true">
-  <div class="boot-box">Welcome to AI System 6.</div>
+<div class="boot-screen" id="boot" hidden aria-hidden="true">
+  <div class="happy-mac"><span class="happy-mac-face"></span></div>
+  <p class="boot-msg" id="boot-msg">Starting AI System 6&hellip;</p>
+  <div class="boot-progress"><span id="boot-fill"></span></div>
+  <div class="boot-ledger">
+    <span id="boot-check-disk">Startup Disk</span>
+    <span id="boot-check-eras">Six Appearances</span>
+    <span id="boot-check-llm">LLM</span>
+  </div>
 </div>
 
-<div class="shutdown" id="shutdown" hidden>
-  <p>It is now safe to shut down AI&nbsp;System&nbsp;6.</p>
-  <button type="button">Restart</button>
+<div class="shutdown-screen" id="shutdown" hidden>
+  <div class="happy-mac is-sleeping"><span class="happy-mac-face"></span></div>
+  <div class="shutdown-ledger">
+    <p>It is now safe to shut down AI&nbsp;System&nbsp;6.</p>
+    <button type="button" class="btn btn-default">Restart</button>
+  </div>
 </div>
 
 <nav class="menu-bar" aria-label="Site">
   <details class="menu">
-    <summary><span class="menu-apple" aria-hidden="true">&#63743;</span><span class="visually-hidden">Apple menu</span></summary>
+    <summary><span class="menu-apple s6-mark" aria-hidden="true"></span><span class="visually-hidden">System menu</span></summary>
     <ul class="menu-list">
       <li><a href="#top">About AI System 6&hellip;</a></li>
       <li class="menu-sep" aria-hidden="true"></li>
@@ -134,7 +144,9 @@
     <div class="mini-desktop" id="era-desk" data-desk="eras"></div>
     <div class="era-strip era-strip-big" id="era-strip" aria-label="Era timeline 1988 to 2026"></div>
     <p class="era-actions">
-      <button type="button" class="btn" id="snapshot-btn" data-balloon="Saves a share card of this desktop, in the current era.">&#128247;&#xFE0E; Snapshot</button>
+      <button type="button" class="btn btn-glyph" id="cycle-btn" aria-pressed="false"
+              data-balloon="Plays the whole timeline by itself — 1988 to 2026, one era every two seconds."><svg class="cycle-glyph" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" shape-rendering="crispEdges" aria-hidden="true"><path class="cycle-play" d="M4 2l10 6L4 14z"/><path class="cycle-stop" d="M3 3h10v10H3z"/></svg><span class="cycle-label">Cycle Eras</span></button>
+      <button type="button" class="btn btn-glyph" id="snapshot-btn" data-balloon="Saves a share card of this desktop, in the current era."><svg viewBox="0 0 32 32" width="16" height="16" fill="currentColor" shape-rendering="crispEdges" aria-hidden="true"><path d="M10 6h12l2 4h6v16H2V10h6zM16 12a6 6 0 1 0 0 12 6 6 0 0 0 0-12z" fill-rule="evenodd"/><path d="M16 14a4 4 0 1 1 0 8 4 4 0 0 1 0-8z"/></svg> Take Snapshot&hellip;</button>
     </p>
   </section>
 
@@ -144,7 +156,7 @@
       <header class="tbar"><span class="close-box" aria-hidden="true"></span>
         <h2 id="impossible-title">Things This 1988 Computer Should Not Be Able to Do</h2>
       </header>
-      <div class="finder-status" id="impossible-status">8 items&nbsp;&nbsp;&nbsp;Double-click one to see for yourself</div>
+      <div class="finder-status" id="impossible-status">8 items          2 floppies in disk          38 years available</div>
       <div class="finder-body" id="impossible-body"></div>
     </div>
   </section>
@@ -168,21 +180,16 @@
   <!-- ================= QuickTime demo ================= -->
   <section class="scene" id="demo" aria-labelledby="demo-title">
     <div class="qt-window" id="qt-window">
-      <header class="tbar"><span class="close-box" aria-hidden="true"></span><h2 id="demo-title">AI System 6 Demo</h2><span class="qt-badge">50s&nbsp;Demo</span></header>
-      <div class="qt-body">
-        <video id="qt-video" preload="none" muted playsinline width="1440" height="900"
-               data-poster="img/hero-poster.jpg"
-               aria-label="Silent 50-second recording of the AI System 6 desktop: windows dragged with the classic dotted outline, then the whole desktop cycles through its six release appearances without moving the work.">
-          <source src="img/hero-desktop.mp4" type="video/mp4">
-        </video>
-        <div class="qt-controls">
-          <button type="button" id="qt-play" aria-label="Play">&#9654;&#xFE0E;</button>
-          <input type="range" id="qt-scrub" min="0" max="1000" value="0" step="1" aria-label="Timeline">
-          <span class="qt-time" id="qt-time">0:00</span>
-          <button type="button" id="qt-mute" aria-label="Sound off" aria-pressed="true">&#128264;&#xFE0E;</button>
-          <button type="button" id="qt-full" aria-label="Full screen">&#8689;&#xFE0E;</button>
-        </div>
+      <header class="tbar"><span class="close-box" aria-hidden="true"></span><h2 id="demo-title">AI System 6 — The Film</h2><span class="qt-badge">50s&nbsp;Demo</span></header>
+      <div class="qt-body" id="qt-body">
+        <a class="qt-poster" id="qt-poster" href="https://www.bilibili.com/video/BV1ht3m6UEDb/">
+          <img src="img/hero-poster.jpg" width="1440" height="900" loading="lazy" decoding="async"
+               alt="Poster frame: the AI System 6 desktop with Searcher, Reader, DocMap, and ClioTalk windows open.">
+          <span class="qt-poster-play" aria-hidden="true"></span>
+          <span class="qt-poster-note">Play the 50-second film</span>
+        </a>
       </div>
+      <p class="qt-strip">Plays here via Bilibili — or <a href="https://www.bilibili.com/video/BV1ht3m6UEDb/">watch it on the site</a>.</p>
     </div>
   </section>
 
@@ -290,6 +297,6 @@ npm start</code></pre>
   </footer>
 
 </main>
-<script type="module" src="js/main.js?v=20260813a"></script>
+<script type="module" src="js/main.js?v=20260813d"></script>
 </body>
 </html>
