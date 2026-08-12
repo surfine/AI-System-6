@@ -7,18 +7,20 @@
 A Macintosh System 6-inspired workspace where AI can **search, read, map, write, review, chart, present, and make** — across real apps and visible files.
 
 [![Open AI System 6](https://img.shields.io/badge/OPEN_THE_LIVE_DESKTOP-000?style=for-the-badge)](https://system6.aaronlau.me)
+[![Official website](https://img.shields.io/badge/OFFICIAL_WEBSITE-000?style=for-the-badge)](https://aisystem6.pages.dev)
 [![Download for Mac](https://img.shields.io/badge/DOWNLOAD_FOR_APPLE_SILICON-000?style=for-the-badge&logo=apple&logoColor=fff)](https://github.com/surfine/AI-System-6/releases/latest)
 [![Watch the demo](https://img.shields.io/badge/WATCH_THE_50S_DEMO-F9D71C?style=for-the-badge&logo=bilibili&logoColor=000)](https://www.bilibili.com/video/BV1ht3m6UEDb/)
 
 [![GitHub stars](https://img.shields.io/github/stars/surfine/AI-System-6?style=flat-square&color=111)](https://github.com/surfine/AI-System-6/stargazers)
+[![Latest release](https://img.shields.io/github/v/release/surfine/AI-System-6?style=flat-square&color=111&label=release)](https://github.com/surfine/AI-System-6/releases/latest)
 [![MIT license](https://img.shields.io/badge/license-MIT-black?style=flat-square)](LICENSE)
 [![Local AI](https://img.shields.io/badge/local_AI-LM_Studio_%C2%B7_Ollama-black?style=flat-square)](#bring-your-own-model)
 [![English](https://img.shields.io/badge/lang-English-black?style=flat-square)](README.md)
 [![简体中文](https://img.shields.io/badge/lang-简体中文-black?style=flat-square)](README.zh-CN.md)
 
-[![AI System 6 live desktop](assets/readme/ai-system-6-live-desktop.png)](https://system6.aaronlau.me)
+[![AI System 6 live desktop: a window drag with the classic dotted outline, then all six release appearances](assets/readme/hero-desktop.gif)](https://system6.aaronlau.me)
 
-**This is a live system, not a concept render.** Click the image and use it in your browser.
+**Recorded from the live system, not a concept render** — one desk, six release appearances, and then the [official site](https://aisystem6.pages.dev) cycling them too. Click it and use it in your browser.
 
 </div>
 
@@ -48,8 +50,9 @@ Neither path requires starting from a search.
 
 ## One desktop. A complete route.
 
-```text
-SEARCH → READ → CLIP → MAP → WRITE → REVIEW → PRESENT
+```mermaid
+flowchart LR
+    A["SEARCH"] --> B["READ"] --> C["CLIP"] --> D["MAP"] --> E["WRITE"] --> F["REVIEW"] --> G["PRESENT"]
 ```
 
 For a long project, the full desktop route ties research and delivery
@@ -116,6 +119,10 @@ For local AI, start LM Studio, load a chat model, then refresh models in **Contr
 
 ## What the public repository supports
 
+<details>
+<summary><strong>Command surface, CI, and what stays private</strong> (click to expand)</summary>
+<br>
+
 This GitHub repository is a curated, public-safe source snapshot, not a mirror
 of the maintainer's working tree: internal deployment, signing, packaging, and
 native-tooling commands live only in the private source. From a fresh clone,
@@ -140,13 +147,15 @@ is **not** a release condition: `verify:ship`, `verify:release`, the default
 CI, and the release workflow never run Playwright, and a flaky browser test
 never blocks a release.
 
+</details>
+
 ## Built differently
 
 - **Local-first:** durable project data lives in IndexedDB; the server has no application database.
 - **File-native:** Project Hard Disk, File Floppy, Scrapbook, TeachText, and Project CD are working objects, not decorative metaphors.
 - **Inspectable:** model inputs, selected skills, harnesses, prompts, and run records are designed to remain visible.
 - **Deliberate:** AI may help read, organize, draft, rewrite, and review, but it does not get to silently become the writer.
-- **Small by constraint:** the boot-critical browser payload is kept within two 1.44 MB floppy disks.
+- **Small by constraint:** a build gate caps the boot-critical browser payload at about two 1.44 MB floppy disks; heavy tools load lazily, from a third disk.
 
 The browser app is plain JavaScript with a small stateless Node.js server — no frontend framework and no transpiler. See [CLAUDE.md](CLAUDE.md) for architecture, verification, and product contracts.
 
@@ -162,7 +171,15 @@ The retro interface is not the product. It is the constraint that keeps AI work 
 
 If this is the kind of AI computer you want to exist, **star the repository**, try the [live desktop](https://system6.aaronlau.me), and tell us what you would build inside it.
 
-[Live desktop](https://system6.aaronlau.me) · [50-second demo](https://www.bilibili.com/video/BV1ht3m6UEDb/) · [Issues](https://github.com/surfine/AI-System-6/issues)
+<a href="https://www.star-history.com/#surfine/AI-System-6&Date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=surfine/AI-System-6&type=Date&theme=dark">
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=surfine/AI-System-6&type=Date">
+    <img alt="Star history chart for AI System 6" src="https://api.star-history.com/svg?repos=surfine/AI-System-6&type=Date" width="600">
+  </picture>
+</a>
+
+[Official website](https://aisystem6.pages.dev) · [Live desktop](https://system6.aaronlau.me) · [50-second demo](https://www.bilibili.com/video/BV1ht3m6UEDb/) · [Issues](https://github.com/surfine/AI-System-6/issues)
 
 MIT licensed. AI System 6 is an independent project and is not affiliated with or endorsed by Apple Inc.
 

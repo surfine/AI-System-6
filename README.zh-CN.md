@@ -1,5 +1,5 @@
 <!-- canonical-source: README.md -->
-<!-- source-sha256: 5cd0b6afe8245e428dc991e9449e3e154a274436cb592d4ebe5a70f59fd1379d -->
+<!-- source-sha256: f426ea83bfc6fac6978b340a628b9e9da3d99c59b415b55337baa954ed34c3bf -->
 
 <div align="center">
 
@@ -10,18 +10,20 @@
 一套受 Macintosh System 6 启发的工作环境：让 AI 在真正的应用和看得见的文件之间完成**搜索、阅读、整理、写作、审校、制图、演示与创作**。
 
 [![打开 AI System 6](https://img.shields.io/badge/打开在线桌面-000?style=for-the-badge)](https://system6.aaronlau.me)
+[![官方网站](https://img.shields.io/badge/官方网站-000?style=for-the-badge)](https://aisystem6.pages.dev)
 [![下载 Mac 版](https://img.shields.io/badge/下载_APPLE_SILICON_版-000?style=for-the-badge&logo=apple&logoColor=fff)](https://github.com/surfine/AI-System-6/releases/latest)
 [![观看演示](https://img.shields.io/badge/观看_50_秒演示-F9D71C?style=for-the-badge&logo=bilibili&logoColor=000)](https://www.bilibili.com/video/BV1ht3m6UEDb/)
 
 [![GitHub stars](https://img.shields.io/github/stars/surfine/AI-System-6?style=flat-square&color=111)](https://github.com/surfine/AI-System-6/stargazers)
+[![最新版本](https://img.shields.io/github/v/release/surfine/AI-System-6?style=flat-square&color=111&label=release)](https://github.com/surfine/AI-System-6/releases/latest)
 [![MIT license](https://img.shields.io/badge/license-MIT-black?style=flat-square)](LICENSE)
 [![本地 AI](https://img.shields.io/badge/本地_AI-LM_Studio_%C2%B7_Ollama-black?style=flat-square)](#使用自己的模型)
 [![English](https://img.shields.io/badge/lang-English-black?style=flat-square)](README.md)
 [![简体中文](https://img.shields.io/badge/lang-简体中文-black?style=flat-square)](README.zh-CN.md)
 
-[![AI System 6 实时桌面](assets/readme/ai-system-6-live-desktop.png)](https://system6.aaronlau.me)
+[![AI System 6 实时桌面：经典虚线轮廓拖动窗口，随后整张桌面轮转六套正式外观](assets/readme/hero-desktop.gif)](https://system6.aaronlau.me)
 
-**这是真正运行的系统，不是概念图。** 点击图片即可在浏览器中使用。
+**录自真正运行的系统，不是概念动画** —— 同一张桌面，六套正式外观；影片后半段是[官方网站](https://aisystem6.pages.dev)页面自己在轮换。点击即可在浏览器中使用。
 
 </div>
 
@@ -52,8 +54,9 @@ Studio 则让更长的项目从来源与问题单出发，经过大纲、分节�
 
 ## 一张桌面，一条完整路径
 
-```text
-搜索 → 阅读 → 剪藏 → 整理 → 写作 → 审校 → 呈现
+```mermaid
+flowchart LR
+    A["搜索"] --> B["阅读"] --> C["剪藏"] --> D["整理"] --> E["写作"] --> F["审校"] --> G["呈现"]
 ```
 
 对于长项目，完整桌面路径把研究与交付串在一起：
@@ -118,6 +121,10 @@ npm start
 
 ## 公开仓库实际支持的命令
 
+<details>
+<summary><strong>命令面、CI 与私有部分</strong>（点击展开）</summary>
+<br>
+
 这个 GitHub 仓库是经过整理的公开安全源码快照，不是维护者工作区的镜像：内部部署、签名、打包与原生工具命令只留在私有源码中。全新克隆后，实际受支持的命令如下：
 
 ```bash
@@ -133,13 +140,15 @@ npm run verify:public  # 公开仓库自洽验证（命令、文件、CI、文�
 `verify:ship`、`verify:release`、默认 CI 和发版流程都不会运行 Playwright，
 一次 flaky 的浏览器测试永远不会阻塞发版。
 
+</details>
+
 ## 不一样的构建方式
 
 - **本地优先：** 持久项目数据保存在 IndexedDB，服务端没有应用数据库。
 - **基于文件：** 项目硬盘、文件软盘、Scrapbook、TeachText 和项目光盘是真正的工作对象，而不是装饰。
 - **可以检查：** 模型输入、选中的 Skill、Harness、提示词与运行记录都应保持可见。
 - **刻意保留：** AI 可以协助阅读、整理、起草、改写和审校，但不能悄悄变成作者本人。
-- **以小为约束：** 启动所需的浏览器核心内容被限制在两张 1.44 MB 软盘以内。
+- **以小为约束：** 构建门禁把启动所需的浏览器核心内容限制在约两张 1.44 MB 软盘的体量；重量级工具从“第三张软盘”按需加载。
 
 浏览器端采用原生 JavaScript，配合一个小型、无状态的 Node.js 服务；没有前端框架或转译器。架构、验证方式与产品约束见 [CLAUDE.md](CLAUDE.md)。
 
@@ -155,7 +164,15 @@ npm run verify:public  # 公开仓库自洽验证（命令、文件、CI、文�
 
 如果你也想让这样的 AI 电脑真正存在，欢迎为仓库点下 **Star**、体验[在线桌面](https://system6.aaronlau.me)，并告诉我们你想在里面创造什么。
 
-[在线桌面](https://system6.aaronlau.me) · [50 秒演示](https://www.bilibili.com/video/BV1ht3m6UEDb/) · [Issues](https://github.com/surfine/AI-System-6/issues)
+<a href="https://www.star-history.com/#surfine/AI-System-6&Date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=surfine/AI-System-6&type=Date&theme=dark">
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=surfine/AI-System-6&type=Date">
+    <img alt="AI System 6 的 Star 增长曲线" src="https://api.star-history.com/svg?repos=surfine/AI-System-6&type=Date" width="600">
+  </picture>
+</a>
+
+[官方网站](https://aisystem6.pages.dev) · [在线桌面](https://system6.aaronlau.me) · [50 秒演示](https://www.bilibili.com/video/BV1ht3m6UEDb/) · [Issues](https://github.com/surfine/AI-System-6/issues)
 
 MIT 许可证。AI System 6 是独立项目，与 Apple Inc. 不存在从属或背书关系。
 
