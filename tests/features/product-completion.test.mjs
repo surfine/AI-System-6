@@ -19,7 +19,6 @@ const persistence = read("app/core/persistence-status.js");
 const cloud = read("app/features/cloud-model.js");
 const en = read("app/data/translations-en.js");
 const zh = read("app/data/translations-zh.js");
-const smoke = read("docs/RELEASE-SMOKE.md");
 
 const guide = html.match(/<section class="window guide-window[\s\S]*?<section class="window rebuild-flow-window/)?.[0] || "";
 const quickDraft = html.match(/<section class="window draft-desk-window[\s\S]*?<section class="window image-manager-window/)?.[0] || "";
@@ -105,11 +104,7 @@ for (const key of ["cloud_connection_failed_message", "cloud_connection_failed_a
   test.assertIncludes(zh, `${key}:`, `Chinese has ${key}`);
 }
 
-for (const path of ["Fresh Web", "No model", "Broken model", "iPhone Web"]) {
-  test.assertIncludes(smoke, path, `manual release smoke covers ${path}`);
-}
-test.assertIncludes(smoke, "do not automate them as E2E tests", "completion paths remain manual rather than E2E");
-for (const document of ["CLAUDE.md", "DESIGN.md", "HIG.md"]) {
+for (const document of ["docs/ARCHITECTURE.md", "docs/design/DESIGN.md", "docs/design/HIG.md"]) {
   const source = read(document);
   test.assertMatches(source, /first[- ](?:success|finished work)/i, `${document} carries the first-success budget`);
   test.assertMatches(source, /(?:existing|saved) work safer/i, `${document} carries the durability budget`);

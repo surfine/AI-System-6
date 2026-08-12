@@ -1,6 +1,6 @@
 // Ratcheting design-governance checks.
 //
-// This is not a beauty linter. It turns DESIGN.md into a small set of
+// This is not a beauty linter. It turns docs/design/DESIGN.md into a small set of
 // enforceable "do not get worse" gates for the recurring agent defaults that
 // make AI System 6 drift: marketing-page patterns, thick accent stripes,
 // layout-property motion, arbitrary layering, placeholder copy, and sketchy
@@ -146,7 +146,7 @@ const checks = [
   {
     key: "gradientTextRules",
     label: "gradient text rules",
-    reason: "Gradient text is a forbidden default in DESIGN.md; use weight, size, or a solid token color.",
+    reason: "Gradient text is a forbidden default in docs/design/DESIGN.md; use weight, size, or a solid token color.",
     findings: () => cssRuleFindings((selector, body) =>
       /gradient\s*\(/i.test(body) &&
       /(?:-webkit-)?background-clip\s*:\s*text/i.test(body)
@@ -221,7 +221,7 @@ if (cssFiles.length === 0) fail("No CSS files found for design verification");
 
 if (failures.length) {
   console.error(`\nDesign governance verification failed: ${failures.length} issue(s).`);
-  console.error("See DESIGN.md for the project design contract.");
+  console.error("See docs/design/DESIGN.md for the project design contract.");
   process.exit(1);
 }
 

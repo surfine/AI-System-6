@@ -1,39 +1,14 @@
-import { createHash } from "node:crypto";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { dirname, join, relative } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  collectCanonicalMarkdown,
+  localizedPath,
+  sha256,
+} from "./lib/doc-locales.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const failures = [];
-const ignoredDirs = new Set([
-  ".git",
-  ".agents",
-  ".antigravitycli",
-  ".claude",
-  ".venv",
-  ".venv-markitdown",
-  ".venv-markitdown-trim",
-  "assets",
-  "data",
-  "node_modules",
-  "dist",
-  "test-results",
-  "playwright-report",
-  "external",
-  "marked",
-  "markitdown",
-  "markmap",
-  "readability",
-  "liquid-glass-studio",
-  "liquid-glass-text",
-  "codex-snapshots",
-  "shell",
-]);
-
-const ignoredFiles = new Set([
-  "AGENTS.md",
-]);
-
 function ok(message) {
   console.log(`OK  ${message}`);
 }
@@ -43,36 +18,7 @@ function fail(message) {
   console.error(`NO  ${message}`);
 }
 
-function shouldIgnoreDirectory(absPath, entryName) {
-  if (ignoredDirs.has(entryName) || entryName.startsWith(".venv")) return true;
-  return existsSync(join(absPath, ".git"));
-}
-
-function collectMarkdown(dir, docs = []) {
-  readdirSync(dir, { withFileTypes: true }).forEach((entry) => {
-    if (entry.isDirectory()) {
-      const nextDir = join(dir, entry.name);
-      if (!shouldIgnoreDirectory(nextDir, entry.name)) collectMarkdown(nextDir, docs);
-      return;
-    }
-
-    if (!entry.name.endsWith(".md") || entry.name.endsWith(".zh-CN.md")) return;
-    if (ignoredFiles.has(entry.name)) return;
-    docs.push(relative(root, join(dir, entry.name)));
-  });
-
-  return docs.sort();
-}
-
-function localizedPath(path) {
-  return path.replace(/\.md$/, ".zh-CN.md");
-}
-
-function sha256(text) {
-  return createHash("sha256").update(text).digest("hex");
-}
-
-collectMarkdown(root).forEach((sourcePath) => {
+collectCanonicalMarkdown(root).forEach((sourcePath) => {
   const zhPath = localizedPath(sourcePath);
   const source = readFileSync(join(root, sourcePath), "utf8");
   const expectedHash = sha256(source);

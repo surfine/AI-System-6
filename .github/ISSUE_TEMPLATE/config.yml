@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Live Desktop
+    url: https://system6.aaronlau.me
+    about: Reproduce the behavior in the current web release.
+  - name: Security report
+    url: https://github.com/surfine/AI-System-6/security
+    about: Report vulnerabilities privately; do not open a public issue.
+  - name: Product website
+    url: https://aisystem6.pages.dev
+    about: See the product story, appearances, and release links.

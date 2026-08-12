@@ -1,4 +1,4 @@
-// Machine-readable companion to HIG.md.
+// Machine-readable companion to docs/design/HIG.md.
 //
 // This file is intentionally outside the browser bundle. It makes every
 // product window declare its object role and shell before feature code can

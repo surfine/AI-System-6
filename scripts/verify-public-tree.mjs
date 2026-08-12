@@ -17,10 +17,10 @@
  *   - the CI workflow that runs these commands ships with the tree.
  */
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { internalOnlyScriptNames, publicPrebuildApp } from "./lib/public-package.mjs";
+import { publicPrebuildApp, publicScriptNames } from "./lib/public-package.mjs";
 
 const args = process.argv.slice(2);
 const rootFlagIndex = args.indexOf("--root");
@@ -67,7 +67,11 @@ function assertFile(relativePath, message = `${relativePath} present`) {
  * manifest exclusions on purpose: the gate must not trust the thing it gates.
  */
 const forbiddenSnapshotPaths = [
+  "AGENTS.md",
+  "CLAUDE.md",
+  "CLAUDE.zh-CN.md",
   ".claude/",
+  "internal/",
   "deploy/",
   "native/",
   "drafts/",
@@ -101,18 +105,23 @@ const forbiddenSnapshotPaths = [
   "scripts/run-ui-writing-flow-clean.mjs",
   "tests/features/public-web-deployment.test.mjs",
   "tests/features/public-snapshot.test.mjs",
+  "assets/themes/classic/icons/imagegen-source/",
+  "assets/themes/platinum/icons/imagegen-source/",
+  "assets/themes/aqua/icons/imagegen-source/",
+  "assets/themes/snow-leopard/icons/imagegen-source/",
+  "assets/themes/yosemite/icons/imagegen-source/",
 ];
 
 const pkg = readJson("package.json");
 const scripts = pkg.scripts || {};
 
-const presentInternalScripts = Object.keys(scripts).filter((name) =>
-  internalOnlyScriptNames.has(name)
+const presentUnsupportedScripts = Object.keys(scripts).filter((name) =>
+  !publicScriptNames.has(name)
 );
-if (presentInternalScripts.length) {
-  fail(`internal-only scripts exposed: ${presentInternalScripts.join(", ")}`);
+if (presentUnsupportedScripts.length) {
+  fail(`unsupported scripts exposed: ${presentUnsupportedScripts.join(", ")}`);
 } else {
-  ok("no internal-only scripts exposed");
+  ok("only supported public scripts are exposed");
 }
 
 for (const relativePath of forbiddenSnapshotPaths) {
@@ -133,6 +142,17 @@ function referencedPaths(scriptValue) {
   const configMatch = String(scriptValue).match(/playwright\s+test\s+--config\s+([A-Za-z0-9_./-]+\.mjs)/);
   if (configMatch) found.add(configMatch[1]);
   return found;
+}
+
+function collectFiles(directory, files = []) {
+  if (!existsSync(directory)) return files;
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    if (entry.name === ".git" || entry.name === "node_modules") continue;
+    const absolute = join(directory, entry.name);
+    if (entry.isDirectory()) collectFiles(absolute, files);
+    else files.push(absolute);
+  }
+  return files;
 }
 
 let dangling = 0;
@@ -172,6 +192,14 @@ if (typeof scripts.build === "string" && scripts.build.trim()) {
 }
 
 for (const required of [
+  ".editorconfig",
+  "CODE_OF_CONDUCT.md",
+  "CONTRIBUTING.md",
+  "SECURITY.md",
+  "docs/ARCHITECTURE.md",
+  "docs/DEVELOPMENT.md",
+  "docs/design/DESIGN.md",
+  "scripts/public-tree-budget.json",
   "scripts/verify-public-tree.mjs",
   "scripts/verify-version-consistency.mjs",
   "scripts/runtime-manifest.mjs",
@@ -182,6 +210,21 @@ for (const required of [
   ".github/workflows/ci.yml",
 ]) {
   assertFile(required);
+}
+
+const budget = readJson("scripts/public-tree-budget.json");
+const allFiles = collectFiles(root);
+const assetFiles = collectFiles(join(root, "assets"));
+const allBytes = allFiles.reduce((sum, file) => sum + statSync(file).size, 0);
+const assetBytes = assetFiles.reduce((sum, file) => sum + statSync(file).size, 0);
+for (const [name, actual, limit] of [
+  ["public files", allFiles.length, budget.maxFiles],
+  ["public bytes", allBytes, budget.maxBytes],
+  ["public asset files", assetFiles.length, budget.maxAssetFiles],
+  ["public asset bytes", assetBytes, budget.maxAssetBytes],
+]) {
+  if (Number.isFinite(limit) && actual <= limit) ok(`${name} ${actual} <= ${limit}`);
+  else fail(`${name} ${actual} exceeds budget ${limit}`);
 }
 
 for (const command of ["npm ci", "npm run build", "npm test", "npm run verify:public", "npm start"]) {

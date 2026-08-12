@@ -1,0 +1,69 @@
+name: Bug report
+description: Report a reproducible product defect
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve AI System 6. Search existing issues first. Security vulnerabilities must follow SECURITY.md instead of this public form.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Release number, live desktop, or source commit.
+      placeholder: v1.0.39-beta.1 / Live Desktop / commit SHA
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Surface
+      options:
+        - Live Desktop
+        - Local browser build
+        - macOS beta
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Browser or macOS version, device, and active appearance.
+      placeholder: Safari 19 / macOS 15 / Aqua
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction
+      description: Give the shortest exact path from desktop launch to failure.
+      placeholder: |
+        1. Open …
+        2. Choose …
+        3. Observe …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual result
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Add screenshots, recordings, console output, or a minimal sample without secrets or private documents.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues and pull requests.
+          required: true
+        - label: This report contains no credential, private document, or personal data.
+          required: true
+        - label: This is not a security vulnerability.
+          required: true

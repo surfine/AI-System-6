@@ -26,5 +26,7 @@ jobs:
         run: npm run verify:version
       - name: Frontend checkJs
         run: npm run verify:checkjs
+      - name: Documentation mirrors
+        run: npm run verify:docs
       - name: Public tree verification
         run: npm run verify:public
