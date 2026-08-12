@@ -14,7 +14,7 @@ const {
 
 const execFileAsync = promisify(execFile);
 const ocrImageMaxBytes = 10 * 1024 * 1024;
-const ocrLangPath = path.join(__dirname, "../../../ocr/tessdata");
+const ocrLangPath = path.join(__dirname, "../../assets/ocr/tessdata");
 const ocrCachePath = path.join(os.tmpdir(), "ai-system6-tessdata-cache");
 const visionOcrModel = process.env.AI_SYSTEM6_VISION_MODEL || "";
 

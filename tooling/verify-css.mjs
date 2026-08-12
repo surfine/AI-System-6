@@ -28,12 +28,19 @@ const failures = [];
 const cliArgs = process.argv.slice(2);
 const requestedCssFiles = [];
 
+function normalizeRequestedCssFile(value) {
+  const normalized = String(value || "").replaceAll("\\", "/");
+  return normalized.startsWith("apps/desktop/")
+    ? normalized.slice("apps/desktop/".length)
+    : normalized;
+}
+
 for (let index = 0; index < cliArgs.length; index += 1) {
   const arg = cliArgs[index];
   if (arg === "--file") {
-    const value = String(cliArgs[index + 1] || "").replaceAll("\\", "/");
+    const value = normalizeRequestedCssFile(cliArgs[index + 1]);
     if (!value || value.startsWith("--")) {
-      console.error("NO  --file requires a path under styles/.");
+      console.error("NO  --file requires a path under apps/desktop/styles/.");
       process.exit(1);
     }
     requestedCssFiles.push(value);
@@ -41,7 +48,7 @@ for (let index = 0; index < cliArgs.length; index += 1) {
   } else if (arg === "--help") {
     console.log(`Usage:
   node tooling/verify-css.mjs
-  node tooling/verify-css.mjs --file styles/10-windows.css [--file styles/00-foundation.css]
+  node tooling/verify-css.mjs --file apps/desktop/styles/10-windows.css [--file apps/desktop/styles/00-foundation.css]
 
 Without --file the release-grade gate checks every stylesheet. Repeated --file
 arguments scope the normal edit loop to the styles owned by the current task.`);
@@ -172,7 +179,7 @@ const cssFiles = scopedCssCheck
 
 for (const relPath of cssFiles) {
   if (!/^styles\/[^/]+\.css$/.test(relPath) || !allCssFiles.includes(relPath)) {
-    console.error(`NO  scoped CSS file must exist directly under styles/: ${relPath}`);
+    console.error(`NO  scoped CSS file must exist directly under apps/desktop/styles/: ${relPath}`);
     process.exit(1);
   }
 }

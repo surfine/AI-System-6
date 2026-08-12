@@ -388,7 +388,7 @@ Use the output from `npm run visual:eval` with the browser snapshot workflow in
 Optional design anti-pattern scan:
 
 ```sh
-node external/impeccable/skill/tooling/detect.mjs --json index.html app styles
+node external/impeccable/skill/tooling/detect.mjs --json apps/desktop/index.html apps/desktop/app apps/desktop/styles
 ```
 
 Treat third-party and generated findings as signals, not automatic blockers.

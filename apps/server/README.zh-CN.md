@@ -1,5 +1,5 @@
 <!-- canonical-source: apps/server/README.md -->
-<!-- source-sha256: 24a8d5ada2bc68cd15e45efb1a7c2508160fd3ce93551fcfe1f245069966c2bb -->
+<!-- source-sha256: 689634301422a6cf5d7e99136433d05c2e729eac5a3b204ba48b2bba0fbad262 -->
 
 # apps/server/ —— AI System 6 服务端源码
 
@@ -21,7 +21,7 @@ npm start
 ```
 
 通过 `PORT=4280 npm start` 覆盖端口。服务端单独调试时也可以运行
-`node apps/server/server.js`，但它不会重建 `app.bundle.js`。
+`node apps/server/server.js`，但它不会重建 `apps/desktop/app.bundle.js`。
 
 `apps/server/server/router.js` 负责路由表和静态文件兜底。未知路由会返回结构化
 404。
@@ -48,7 +48,7 @@ apps/server/
     importers/
       *.js                 /api/import-text 文件格式处理器。
   tsconfig.json            allowJs + checkJs + noEmit。类型检查通过
-                           `npm --prefix src run typecheck` 运行。
+                           `npm --prefix apps/server run typecheck` 运行。
 ```
 
 ## 服务端契约
@@ -64,6 +64,6 @@ apps/server/
 
 - 行为改动。若发现行为差异，那是 bug。
 - 重新排版或删除 `CLAUDE.md` 中记录的 System 6 产品细节。
-- 把客户端代码迁移进 `apps/server/`。浏览器代码位于根目录 `app.js`，以及
-  `app/core/`、`app/features/`、`app/data/`、`app/content/` 和
-  `app/vendor/`。
+- 把客户端代码迁移进 `apps/server/`。浏览器代码位于 `apps/desktop/app.js`，以及
+  `apps/desktop/app/core/`、`apps/desktop/app/features/`、`apps/desktop/app/data/`、`apps/desktop/app/content/` 和
+  `apps/desktop/app/vendor/`。

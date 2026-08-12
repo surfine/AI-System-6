@@ -365,7 +365,7 @@ function isVentOutlineTask(body) {
 }
 
 /**
- * Mask parser mirroring app/core/adjustment-layers.js: "3-5, 8" or
+ * Mask parser mirroring apps/desktop/app/core/adjustment-layers.js: "3-5, 8" or
  * [{ start, end }] into sorted, merged, 1-based inclusive ranges, clamped to
  * the current body's line count.
  * @param {any} value

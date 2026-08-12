@@ -37,6 +37,7 @@ export const publicScriptNames = new Set([
   "build:stream-markdown-vendor",
   "site:sync",
   "site:check",
+  "site:capture-frames",
   "site:render-og",
   "docs:sync-hashes",
   "verify:docs",

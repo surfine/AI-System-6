@@ -112,6 +112,39 @@ const forbiddenSnapshotPaths = [
   "apps/desktop/assets/themes/yosemite/icons/imagegen-source/",
 ];
 
+// These paths belonged to the pre-monorepo layout. The public gate repeats the
+// repository-layout feature contract so a malformed snapshot cannot pass by
+// omitting that test or by carrying a compatibility copy/symlink.
+const forbiddenLegacyRootPaths = [
+  ".codex-video-work",
+  "ai-desktop-6-promo/",
+  "app/",
+  "app.js",
+  "app.bundle.js",
+  "assets/",
+  "british-bureaucracy-meme-generator/",
+  "codex-snapshots/",
+  "data/",
+  "deploy/",
+  "endfield-archive/",
+  "endfield-terminal.html",
+  "eng.traineddata",
+  "index.html",
+  "liquid-glass-studio/",
+  "native/",
+  "ocr/",
+  "private/",
+  "scripts/",
+  "server/",
+  "shell/",
+  "src/",
+  "styles/",
+  "styles.bundle.css",
+  "styles.css",
+  "styles.theme-lab.css",
+  "system.css-web-reference/",
+];
+
 const pkg = readJson("package.json");
 const scripts = pkg.scripts || {};
 
@@ -131,6 +164,14 @@ for (const relativePath of forbiddenSnapshotPaths) {
 }
 if (!forbiddenSnapshotPaths.some((relativePath) => fileExists(relativePath))) {
   ok("internal paths are absent from the public tree");
+}
+for (const relativePath of forbiddenLegacyRootPaths) {
+  if (fileExists(relativePath)) {
+    fail(`retired root path must not be public: ${relativePath}`);
+  }
+}
+if (!forbiddenLegacyRootPaths.some((relativePath) => fileExists(relativePath))) {
+  ok("retired root paths are absent from the public tree");
 }
 
 function referencedPaths(scriptValue) {

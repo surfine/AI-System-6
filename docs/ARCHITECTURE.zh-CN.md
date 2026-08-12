@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/ARCHITECTURE.md -->
-<!-- source-sha256: 41d793f49bb052a0eb794ba29fc56ceda3df3b1653f7f04a1cf1d32b27a89d31 -->
+<!-- source-sha256: 3bdbd242dfb70640137147ce3dce6d61d2fd755a835f9a574af28e6770b1390b -->
 
 > 英文版为准 ・ 仅供人类参考
 
@@ -47,8 +47,24 @@ internal/        维护者证据、实验、归档与 vendored 源
 
 `apps/desktop/index.html`、`apps/desktop/app.js` 与 `apps/desktop/styles.css` 是浏览器
 产品的明确入口。源码物理位置已经按产品边界收拢，但浏览器 URL 仍稳定保持为 `/app`、
-`/assets` 与 `/data`。生成的 `app.bundle.js` 与 `styles.bundle.css` 是本地构建产物，
+`/assets` 与 `/data`。生成的 `apps/desktop/app.bundle.js` 与 `apps/desktop/styles.bundle.css` 是本地构建产物，
 不是规范源码。
+
+### 物理路径与浏览器 URL
+
+仓库路径表达所有权；浏览器 URL 表达稳定的运行时契约。两者有意不同：
+
+| 运行时 URL | 所属源码路径 |
+| --- | --- |
+| `/`、`/index.html`、`/app.bundle.js` | `apps/desktop/` |
+| `/app/*` | `apps/desktop/app/` |
+| `/assets/*` | `apps/desktop/assets/` |
+| `/data/*` | `apps/desktop/data/` |
+| 仅服务器使用的 OCR 模型 | `apps/server/assets/ocr/` |
+
+根目录不保留任何兼容副本或符号链接。`app/`、`assets/`、`data/`、`src/`、
+`styles/`、`ocr/` 等已退役的单体仓库路径均受可执行的仓库布局契约禁止。
+因此局部迁回或误迁会在合并、发版之前失败，而不会悄悄为同一产品面制造两个所有者。
 
 ## 运行时分层
 

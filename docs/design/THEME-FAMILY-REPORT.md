@@ -64,7 +64,7 @@ skin.
 | `npm run verify:visual` | 0 | 26 computed-style entries, 0 drifted |
 | `npm run verify:theme-lab:fidelity` | 0 | canonical fidelity hard gate for 4 appearances (added by the parallel lane) |
 | `npm run screenshot:windows -- --theme <era>` | 0 × 6 | 61/61 windows captured per theme; zero zero-size chrome |
-| `npm run verify:release` | 0 | final run: 0 warnings (build, syntax, src typecheck, smoke, data, floppy, features, docs, CSS, design, packaging) |
+| `npm run verify:release` | 0 | final run: 0 warnings (build, syntax, server typecheck, smoke, data, floppy, features, docs, CSS, design, packaging) |
 | `npm run test:e2e` | interrupted | optional human diagnostic; 4/4 attempted chromium tests timed out in this environment (see section 5); per repo policy this suite is not a release condition |
 | `npm run compare:theme-lab:canonical` | 0 | Platinum vs real Mac OS 9 corpus; gated specimens within pinned tolerances (icon specimens diagnostic-only) |
 
@@ -224,10 +224,10 @@ time (the count is now 141).
 
 | Mechanism | Location |
 | --- | --- |
-| Three-family lineage (recipeBase / family / getRecipeChain) | app/core/theme-registry.js |
-| Inheritance contract + child recipe discipline + commands | docs/THEME-FAMILY-CONTRACT.md |
-| child+app-specific ratchet (baseline 0, allowlist) | tooling/verify-css.mjs + css-budget.json |
-| System roles: --system-primary-divider, --system-secondary-divider, --system-border aliases | styles/00-foundation.css + family files |
+| Three-family lineage (recipeBase / family / getRecipeChain) | apps/desktop/app/core/theme-registry.js |
+| Inheritance contract + child recipe discipline + commands | docs/design/THEME-FAMILY-CONTRACT.md |
+| child+app-specific ratchet (baseline 0, allowlist) | tooling/verify-css.mjs + tooling/css-budget.json |
+| System roles: --system-primary-divider, --system-secondary-divider, --system-border aliases | apps/desktop/styles/00-foundation.css + family files |
 | Registry-driven coverage audit | tooling/audit-app-theme-coverage.mjs |
 | Full-window screenshots + computed-style sweep | tooling/screenshot-window-coverage.mjs |
 | Paired shared-surface snapshots (classic/liquid/platinum) | tooling/css-surface-snapshot.mjs |

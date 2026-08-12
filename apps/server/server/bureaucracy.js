@@ -2,7 +2,7 @@
 //
 // Lifts the full pipeline from root server.js:
 //   - tone / topic normalization
-//   - template registry lookup (data/bureaucracy-templates.json)
+//   - template registry lookup (apps/desktop/data/bureaucracy-templates.json)
 //   - banned-term filter (real-show references)
 //   - markdown-table / markdown-list caption parser
 //   - validator with dedup + length limits
@@ -79,7 +79,7 @@ const bureaucracyBannedTerms = [
 
 /**
  * Template registry, loaded once at startup from
- * data/bureaucracy-templates.json under the repo root. Missing file
+ * apps/desktop/data/bureaucracy-templates.json. A missing file
  * is treated as an empty registry (matches root behavior).
  *
  * @type {Array<{ id: string, mood?: string, sceneDescription?: string }>}

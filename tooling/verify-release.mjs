@@ -89,9 +89,9 @@ const srcTypecheck = spawnSync(npmCommand, ["--prefix", "apps/server", "run", "t
   encoding: "utf8",
 });
 if (srcTypecheck.status === 0) {
-  ok("src typecheck");
+  ok("server typecheck");
 } else {
-  fail(`src typecheck failed\n${srcTypecheck.stderr || srcTypecheck.stdout}`);
+  fail(`server typecheck failed\n${srcTypecheck.stderr || srcTypecheck.stdout}`);
 }
 
 [

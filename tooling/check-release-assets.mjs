@@ -17,9 +17,9 @@ const requiredAssets = [
   "app/vendor/markmap/d3.min.js",
   "app/vendor/markmap/markmap-lib.js",
   "app/vendor/markmap/markmap-view.js",
-  "ocr/tessdata/eng.traineddata.gz",
-  "ocr/tessdata/chi_sim.traineddata.gz",
-  "ocr/tessdata/chi_tra.traineddata.gz",
+  "apps/server/assets/ocr/tessdata/eng.traineddata.gz",
+  "apps/server/assets/ocr/tessdata/chi_sim.traineddata.gz",
+  "apps/server/assets/ocr/tessdata/chi_tra.traineddata.gz",
   "system.css-reference/cursors/watch.png",
   "system.css-reference/fonts/ChicagoFLF.woff2",
   "system.css-reference/fonts/ChiKareGo2.woff2",
@@ -85,5 +85,5 @@ if (packaging.length) {
   packaging.forEach((message) => console.error(`- ${message}`));
 }
 
-console.error("\nThese assets are intentionally not tracked in git. Restore them from the local asset cache before building a release.");
+console.error("\nRestore missing generated assets through their owning build, or restore vendored assets from source control before releasing.");
 process.exit(1);

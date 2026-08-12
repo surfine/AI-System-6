@@ -26,6 +26,7 @@
     "perf:budget": "node tooling/verify-floppy-budget.mjs",
     "prebuild:app": "npm run build:stream-markdown-vendor && npm run build:cmf-renderer-vendor",
     "prestart": "npm run build:app",
+    "site:capture-frames": "node tooling/capture-site-frames.mjs",
     "site:check": "node tooling/verify-site.mjs",
     "site:render-og": "node tooling/render-og-poster.mjs",
     "site:sync": "node tooling/sync-site-assets.mjs",

@@ -45,11 +45,30 @@ docs/            public architecture, development, and design knowledge
 internal/        evidence, experiments, archives, maintainer operations
 ```
 
-`apps/desktop/index.html`, `app.js`, and `styles.css` are the inspectable browser
-entry points. Generated `app.bundle.js` and `styles.bundle.css` stay beside the
+`apps/desktop/index.html`, `apps/desktop/app.js`, and `apps/desktop/styles.css` are the inspectable browser
+entry points. Generated `apps/desktop/app.bundle.js` and `apps/desktop/styles.bundle.css` stay beside the
 desktop they belong to and are not source-authoritative. Browser-facing paths
 remain `/app`, `/assets`, and `/data`; builders resolve those logical URLs
 through one physical `apps/desktop` boundary.
+
+### Physical paths and browser URLs
+
+Repository paths express ownership; browser URLs express the stable runtime
+contract. They intentionally differ:
+
+| Runtime URL | Owned source path |
+| --- | --- |
+| `/`, `/index.html`, `/app.bundle.js` | `apps/desktop/` |
+| `/app/*` | `apps/desktop/app/` |
+| `/assets/*` | `apps/desktop/assets/` |
+| `/data/*` | `apps/desktop/data/` |
+| server-only OCR models | `apps/server/assets/ocr/` |
+
+There are no root-level compatibility copies or symlinks. Retired monorepo
+paths such as `app/`, `assets/`, `data/`, `src/`, `styles/`, and `ocr/` are
+forbidden by the executable repository-layout contract. This makes a partial
+or accidental reverse migration fail before merge or release instead of
+silently creating two owners for the same product surface.
 
 ## Runtime layers
 

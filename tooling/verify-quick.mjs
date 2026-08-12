@@ -28,7 +28,7 @@ for (let index = 0; index < args.length; index += 1) {
   } else if (arg === "--css-file") {
     const path = args[index + 1];
     if (!path || path.startsWith("--")) {
-      console.error("NO  --css-file requires a path under styles/.");
+      console.error("NO  --css-file requires a path under apps/desktop/styles/.");
       process.exit(1);
     }
     css = true;
@@ -111,7 +111,7 @@ if (src) {
   checks.push({
     label: "server typecheck",
     command: npm,
-    commandArgs: ["--prefix", "src", "run", "typecheck"],
+    commandArgs: ["--prefix", "apps/server", "run", "typecheck"],
   });
 }
 

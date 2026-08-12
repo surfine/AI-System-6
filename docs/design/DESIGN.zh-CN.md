@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/DESIGN.md -->
-<!-- source-sha256: 8d84ef3f6a7571e2fc19a46fdef50e18187049bea3ada286a09203101e8f1b7a -->
+<!-- source-sha256: e79261bd2c938e2d3becb8bed3b1409921c131f3cabc2a238fae9a361571304a -->
 
 # AI System 6 设计合约
 
@@ -338,7 +338,7 @@ npm run visual:eval
 可选设计反模式扫描：
 
 ```sh
-node external/impeccable/skill/tooling/detect.mjs --json index.html app styles
+node external/impeccable/skill/tooling/detect.mjs --json apps/desktop/index.html apps/desktop/app apps/desktop/styles
 ```
 
 第三方和生成文件的 findings 是信号，不是自动 blocker。当本地产品规则更具体时，以本地规则为准。

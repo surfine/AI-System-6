@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/THEME-FAMILY-CONTRACT.md -->
-<!-- source-sha256: 97782732c055e31b8781ba87c3da56cb47227c06b6d8504efdf426e2c5afcf91 -->
+<!-- source-sha256: 87f5ce2cc93475b541205ffa8f4ee6f96cd59c77e8524f957410337e5e3d912d -->
 
 英文版为准。本文档仅供人类参考。
 
@@ -81,7 +81,7 @@ DOM 结构
   绝不夹带重新设计。
 - `apps/desktop/styles/66-theme-lab.css` —— 一份共享的 Theme Lab 组件样式表，而不是
   六份实现。它的每一条选择器都限定在实验室内部，因此这份样式表会被单独构建成
-  `styles.theme-lab.css`，随懒加载的 Theme Lab 模块一起请求，而不是在启动时加载。
+  `apps/desktop/styles.theme-lab.css`，随懒加载的 Theme Lab 模块一起请求，而不是在启动时加载。
   不要把它放回 `styleRuntimePaths`：它是仓库里最大的一份样式表，而任何一次启动都
   不需要它。
 

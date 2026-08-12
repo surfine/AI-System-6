@@ -4,12 +4,10 @@ node_modules/
 .DS_Store
 test-results/
 playwright-report/
-app.bundle.js
+/apps/desktop/app.bundle.js
 internal/archive/runtime-legacy/
-styles.bundle.css
-styles.theme-lab.css
-*.traineddata
-ocr/tessdata/*.traineddata.gz
+/apps/desktop/styles.bundle.css
+/apps/desktop/styles.theme-lab.css
 apps/desktop/app/vendor/markmap/*.js
 .venv-markitdown/
 .venv-markitdown-trim/
@@ -47,10 +45,9 @@ internal/evidence/drafts/hero-frames/
 *.pdf
 
 # vendored reference clones (own .git) and local scratch output
-liquid-glass-studio/
 external/
-codex-snapshots/
-.codex-video-work/
+internal/evidence/drafts/codex-snapshots/
+internal/evidence/drafts/promo-video-work/
 internal/archive/promo/output/
 internal/archive/promo/recordings/
 internal/evidence/drafts/css-refactor-snapshots/
@@ -62,7 +59,7 @@ internal/evidence/drafts/theme-lab-fidelity-cache/
 internal/evidence/drafts/theme-lab-fidelity/
 internal/evidence/drafts/appearance-app-coverage/
 # local era icon reference caches (third-party captures / scratch renders);
-# owned measurements, provenance and built icons live in assets/themes/*/icons
+# owned measurements, provenance and built icons live in apps/desktop/assets/themes/*/icons
 internal/evidence/drafts/snow-leopard-icon-reference/
 internal/evidence/drafts/liquid-glass-reference/
 internal/evidence/drafts/yosemite-icon-reference/
@@ -80,7 +77,8 @@ internal/evidence/drafts/liquid-glass-icons/
 tooling/__pycache__/
 __pycache__/
 # local personal scratch output (audit dumps, temp exports)
-private/
+internal/evidence/drafts/coverage/
 # local 15MB test photo (bg-1..6 are the shipped backgrounds)
-assets/liquid-cover/test-shot.jpg
+internal/evidence/drafts/liquid-cover/test-shot.jpg
 platform/macos/native/nohup.out
+.wrangler/

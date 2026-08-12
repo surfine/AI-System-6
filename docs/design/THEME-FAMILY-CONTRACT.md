@@ -81,7 +81,7 @@ era-specific material
   carries a redesign.
 - `apps/desktop/styles/66-theme-lab.css` — one shared Theme Lab component stylesheet, not
   six implementations. Every selector in it is scoped to the lab, so the sheet
-  is built as its own `styles.theme-lab.css` bundle and loaded with the lazy
+  is built as its own `apps/desktop/styles.theme-lab.css` bundle and loaded with the lazy
   Theme Lab module rather than at boot. Keep it out of `styleRuntimePaths`: it
   is the largest sheet in the repository and no boot needs it.
 

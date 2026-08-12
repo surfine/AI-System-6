@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/THEME-FAMILY-REPORT.md -->
-<!-- source-sha256: 490fed4dfc5d90b985db0249821757deadeddb5fb146de5f37f5b30985030f47 -->
+<!-- source-sha256: 4c962a4f9ee3d963ff5116567e822c08656e40ac9bc56239b02dac3e9f9bfc79 -->
 
 英文版为准。本文档仅供人类参考。
 
@@ -56,7 +56,7 @@ Aqua 与 Liquid Glass 各自为根。
 | `npm run verify:visual` | 0 | 26 项计算样式条目，0 漂移 |
 | `npm run verify:theme-lab:fidelity` | 0 | 4 套外观的 canonical fidelity 硬闸门（并行会话新增） |
 | `npm run screenshot:windows -- --theme <时代>` | 0 × 6 | 每个主题 61/61 窗口；无零尺寸铬 |
-| `npm run verify:release` | 0 | 最终运行：0 警告（build、语法、src typecheck、smoke、data、floppy、features、docs、CSS、design、packaging） |
+| `npm run verify:release` | 0 | 最终运行：0 警告（build、语法、server typecheck、smoke、data、floppy、features、docs、CSS、design、packaging） |
 | `npm run test:e2e` | 中断 | 可选人工诊断；4/4 项 chromium 测试在本环境超时（见第 5 节）；按仓库规定不属于发版条件 |
 | `npm run compare:theme-lab:canonical` | 0 | Platinum 对照真实 Mac OS 9 语料；受闸门标本在固定容差内（图标标本仅诊断） |
 

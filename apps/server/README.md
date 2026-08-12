@@ -17,7 +17,7 @@ npm start
 ```
 
 Override the port with `PORT=4280 npm start`. For server-only debugging,
-`node apps/server/server.js` also works, but it does not rebuild `app.bundle.js`.
+`node apps/server/server.js` also works, but it does not rebuild `apps/desktop/app.bundle.js`.
 
 `apps/server/server/router.js` owns the route table and static file fallthrough.
 Unknown routes return structured 404s.
@@ -44,7 +44,7 @@ apps/server/
     importers/
       *.js                 /api/import-text file-format handlers.
   tsconfig.json            allowJs + checkJs + noEmit. Type checking runs
-                           through `npm --prefix src run typecheck`.
+                           through `npm --prefix apps/server run typecheck`.
 ```
 
 ## Server contracts
@@ -63,6 +63,6 @@ apps/server/
 - Behavior changes. If you spot a behavior delta, it is a bug.
 - Reordering or removing the System 6 product details documented in
   `CLAUDE.md`.
-- Migrating client code into `apps/server/`. Browser code lives in root `app.js`
-  plus `app/core/`, `app/features/`, `app/data/`, `app/content/`, and
-  `app/vendor/`.
+- Migrating client code into `apps/server/`. Browser code lives in `apps/desktop/app.js`
+  plus `apps/desktop/app/core/`, `apps/desktop/app/features/`, `apps/desktop/app/data/`, `apps/desktop/app/content/`, and
+  `apps/desktop/app/vendor/`.

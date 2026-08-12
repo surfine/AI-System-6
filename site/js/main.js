@@ -1,17 +1,15 @@
 // AI System 6 official site — entry module. Progressive enhancement only:
 // with JS off the page is a readable document with a desktop screenshot.
 
-import { ERAS, setEra, onEraChange, prefetchEras, refreshIcons } from "./eras.js?v=20260813d";
-import { initBalloons, setBalloons, balloonsEnabled, flashBalloon } from "./balloon.js?v=20260813d";
-import { createMiniDesktop } from "./desktop.js?v=20260813d";
-import { buildEraStrip } from "./timeline.js?v=20260813d";
-import { initChatScene } from "./chat.js?v=20260813d";
-import { initRouteScene } from "./route.js?v=20260813d";
-import { initImpossible } from "./impossible.js?v=20260813d";
-import { initFloppies } from "./floppies.js?v=20260813d";
-import { initControlPanel } from "./controlpanel.js?v=20260813d";
-import { initQuickTime } from "./quicktime.js?v=20260813d";
-import { initShareCard } from "./sharecard.js?v=20260813d";
+import { ERAS, setEra, onEraChange, prefetchEras, refreshIcons } from "./eras.js?v=20260814a";
+import { initBalloons, setBalloons, balloonsEnabled, flashBalloon } from "./balloon.js?v=20260814a";
+import { buildEraStrip } from "./timeline.js?v=20260814a";
+import { loadMachine, createMachine, warmAllFrames, machineManifest } from "./machine.js?v=20260814a";
+import { initRouteScene } from "./route.js?v=20260814a";
+import { initImpossible } from "./impossible.js?v=20260814a";
+import { initFloppies } from "./floppies.js?v=20260814a";
+import { initQuickTime } from "./quicktime.js?v=20260814a";
+import { initShareCard } from "./sharecard.js?v=20260814a";
 
 const doc = document;
 doc.documentElement.classList.add("js");
@@ -182,56 +180,56 @@ if (balloonItem) {
   });
 }
 
-/* ---------- Hero mini desktop ---------- */
-const heroDesk = doc.getElementById("hero-desk");
-if (heroDesk) {
-  createMiniDesktop(heroDesk, {
-    objects: narrow ? ["hardDisk", "fileFloppy", "trash"] : ["hardDisk", "fileFloppy", "projectDisc", "startupDisk", "trash"],
-    apps: ["searcher", "reader", "scrapbook", "docMap", "teachText", "reviewDesk", "clioStage", "cmfStudio"],
-    open: narrow ? ["teachText"] : ["teachText", "searcher"],
-    spots: narrow ? {
-      teachText: { x: 12, y: 10, w: 235 },
-    } : {
-      teachText: { x: 250, y: 40 },
-      searcher: { x: 40, y: 120 },
-      scrapbook: { x: 560, y: 150 },
-      docMap: { x: 480, y: 30 },
-      reader: { x: 90, y: 60 },
-      reviewDesk: { x: 300, y: 170 },
-      clioStage: { x: 150, y: 190 },
-      cmfStudio: { x: 520, y: 100 },
-      clioChart: { x: 200, y: 90 },
-      clioTalk: { x: 360, y: 130 },
-    },
-  });
+/* ---------- The machine: real frames from the real app ---------- */
+await loadMachine();
+
+const heroMachine = doc.getElementById("hero-machine");
+if (heroMachine) {
+  createMachine(heroMachine, { region: "full" });
   buildEraStrip(doc.getElementById("hero-era-strip"), { big: false });
+  const prov = doc.getElementById("hero-provenance");
+  const m = machineManifest();
+  if (prov && m.build) {
+    prov.textContent = "Captured from Build " + m.build + " — every frame is the real system, unretouched.";
+  }
 }
 
-/* ---------- Scenes ---------- */
-initChatScene(doc.getElementById("chat-stage"));
-initRouteScene(doc.getElementById("route-stage"));
-
-const eraDesk = doc.getElementById("era-desk");
-if (eraDesk) {
-  createMiniDesktop(eraDesk, {
-    objects: narrow ? ["hardDisk", "trash"] : ["hardDisk", "fileFloppy", "projectDisc", "trash"],
-    apps: [],
-    open: narrow ? ["teachText"] : ["docMap", "teachText", "reviewDesk"],
-    spots: narrow ? {
-      teachText: { x: 14, y: 16, w: 230 },
-    } : {
-      docMap: { x: 30, y: 26 },
-      teachText: { x: 300, y: 60 },
-      reviewDesk: { x: 90, y: 160 },
-    },
+const chatMachine = doc.getElementById("chat-machine");
+if (chatMachine) {
+  createMachine(chatMachine, {
+    region: "assistant",
+    pad: 0.025,
+    alt: "The ClioTalk window from the captured desktop: “Connect AI to send a message.” One chat window among many working apps.",
   });
+}
+
+const routeMachine = doc.getElementById("route-machine");
+if (routeMachine) {
+  const viewer = createMachine(routeMachine, { region: "scrapbook", pad: 0.03 });
+  initRouteScene(doc.getElementById("route-stage"), viewer);
+}
+
+const eraMachine = doc.getElementById("era-machine");
+if (eraMachine) {
+  createMachine(eraMachine, { region: "full" });
   buildEraStrip(doc.getElementById("era-strip"), { big: true });
   initShareCard(doc.getElementById("snapshot-btn"));
 }
 
+const modelMachine = doc.getElementById("model-machine");
+if (modelMachine) {
+  createMachine(modelMachine, {
+    region: "menuBar",
+    pad: 0.004,
+    alt: "The captured menu bar: “Model not connected” — and the desk keeps working.",
+  });
+}
+
+// Frames for the other five eras load once the visitor is likely to travel.
+addEventListener("load", () => setTimeout(warmAllFrames, 2200));
+
 initImpossible(doc.getElementById("impossible-body"), doc.getElementById("impossible-status"));
 initFloppies(doc.getElementById("floppy-stage"));
-initControlPanel(doc.getElementById("cp-stage"));
 initQuickTime();
 
 /* ---------- Scene reveal ---------- */
@@ -248,18 +246,6 @@ if ("IntersectionObserver" in window && !reducedMotion) {
 } else {
   scenes.forEach((s) => s.classList.add("scene-in"));
 }
-
-/* ---------- Mini menu-bar clocks keep real time ---------- */
-function tickClocks() {
-  const now = new Date();
-  let h = now.getHours();
-  const suffix = h >= 12 ? "PM" : "AM";
-  h = h % 12 || 12;
-  const text = h + ":" + String(now.getMinutes()).padStart(2, "0") + " " + suffix;
-  doc.querySelectorAll(".mini-clock").forEach((el) => { el.textContent = text; });
-}
-tickClocks();
-setInterval(tickClocks, 30000);
 
 /* ---------- Icon warmup ---------- */
 refreshIcons();

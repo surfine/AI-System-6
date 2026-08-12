@@ -77,7 +77,6 @@ const desktopPublicPrefixes = [
 ];
 
 const repositoryPublicPrefixes = [
-  "ocr/",
   "system.css-reference/",
   "endfield-archive/public/",
 ];

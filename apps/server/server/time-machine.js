@@ -706,7 +706,7 @@ const TIME_MACHINE_FRAME_CSP =
  * the frame into postMessage requests the parent handles (rather than
  * letting the sandboxed frame navigate on its own).
  *
- * Mirrors app/features/time-machine.js's timeMachineFrameDocument() — kept
+ * Mirrors apps/desktop/app/features/time-machine.js's timeMachineFrameDocument() — kept
  * in sync by hand; there is no shared module between client and server.
  */
 function renderTimeMachineFrameDocument(page) {

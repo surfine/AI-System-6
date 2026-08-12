@@ -41,6 +41,13 @@ const required = [
   "desk.css",
   "js/main.js",
   "img/og-poster.png",
+  "img/frames/manifest.json",
+  "img/frames/classic.png",
+  "img/frames/platinum.png",
+  "img/frames/aqua.webp",
+  "img/frames/snow-leopard.webp",
+  "img/frames/yosemite.webp",
+  "img/frames/liquid-glass.webp",
 ];
 for (const relative of required) {
   if (existsSync(path.join(siteRoot, relative))) ok(`site/${relative}`);

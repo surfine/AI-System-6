@@ -1,7 +1,7 @@
 // Era timeline strip: drag the thumb (or click a year) and the whole page
 // changes era in place. A native range input does the keyboard work.
 
-import { ERAS, currentEra, setEra, onEraChange, prefetchEras } from "./eras.js?v=20260813d";
+import { ERAS, currentEra, setEra, onEraChange, prefetchEras } from "./eras.js?v=20260814a";
 
 // The first touch of any strip warms the remaining eras, so the drag that
 // follows does not pop in icon by icon.
