@@ -1483,6 +1483,8 @@ function getApplicationActionHandlers() {
     },
     "open-scrapbook": () => openWindow("scrapbook"),
     "scrapbook-open-source": openSelectedScrapSourceInReader,
+    "scrapbook-page-previous": showPreviousScrapbookPage,
+    "scrapbook-page-next": showNextScrapbookPage,
     "scrapbook-toggle-translation": toggleScrapTranslationView,
     "scrapbook-insert": insertScrapIntoPrompt,
     "scrapbook-attach": toggleClipAttachment,

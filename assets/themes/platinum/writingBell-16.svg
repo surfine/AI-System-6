@@ -1,3 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges">
-<path d="M4 12h9c-2-2-2-4-2-6 0-4-6-4-6 0 0 4 0 6-2 6z" fill="#ccaa55" stroke="#111111" stroke-width="1"/><g transform="scale(0.25)"><path d="M23 43h18c-3-3-3-7-3-11 0-8-12-8-12 0 0 4 0 8-3 11z" fill="#996622" stroke="#111111" stroke-width="1"/><circle cx="32" cy="47" r="2" fill="#111111"/></g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><image href="icons/writingBell-16.png" width="16" height="16" style="image-rendering:pixelated"/></svg>

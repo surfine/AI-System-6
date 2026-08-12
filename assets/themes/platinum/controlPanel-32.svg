@@ -1,3 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
-<rect x="4" y="5" width="24" height="23" fill="#cccccc" stroke="#111111" stroke-width="1"/><rect x="7" y="8" width="18" height="17" fill="#eeeeee" stroke="#111111" stroke-width="1"/><g transform="scale(0.5)"><path d="M23 29h18M23 36h18M23 43h18" fill="none" stroke="#111111" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/><circle cx="29" cy="29" r="2.5" fill="#336699"/><circle cx="36" cy="36" r="2.5" fill="#336699"/><circle cx="27" cy="43" r="2.5" fill="#336699"/></g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><image href="icons/controlPanel-32.png" width="32" height="32" style="image-rendering:pixelated"/></svg>

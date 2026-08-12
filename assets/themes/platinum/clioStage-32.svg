@@ -1,3 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
-<rect x="4" y="7" width="24" height="19" fill="#777799" stroke="#111111" stroke-width="1"/><rect x="7" y="10" width="18" height="12" fill="#ffffff" stroke="#111111" stroke-width="1"/><rect x="3" y="25" width="26" height="3" fill="#444455" stroke="#111111" stroke-width="1"/><g transform="scale(0.5)"><path d="M21 43V29h22v14M18 46h28" fill="none" stroke="#111111" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/><path d="M25 31l14 10H25z" fill="#336699"/></g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><image href="icons/clioStage-32.png" width="32" height="32" style="image-rendering:pixelated"/></svg>

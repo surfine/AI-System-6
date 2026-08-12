@@ -605,6 +605,51 @@ Version `1.0.12`, build `20260804.2`.
 - The 30-second seeded teaser demo shows a source becoming a file on the
   Project Hard Disk without a model or network.
 
+## Public Beta 1.0.38 - 2026-08-12
+
+- Completed all six 56-object icon families with zero fallback artwork:
+  System 6, Platinum, Aqua, Snow Leopard, Yosemite, and Liquid Glass now carry
+  independent, era-owned construction behind the same semantic object ids.
+- Redrew Finder, MultiFinder, and ClioTalk across every era while preserving
+  their shared identities and rebuilding each era's material, perspective,
+  pixel density, lighting, and small-size optical hints.
+- Rebuilt Liquid Glass from 56 independent Image Gen masters into four native
+  sizes and three appearances per object; Classic and Platinum retain reviewed
+  32/16 px families, and the three OS X eras retain their native multi-size
+  raster families.
+- Closed the reproducibility gap for accepted Aqua, Snow Leopard, and Yosemite
+  Image Gen art: 490 hash-pinned accepted source files now live in the tracked
+  source boundary, so a clean clone can rebuild without ignored draft
+  candidates.
+- Added fail-closed family, source-archive, continuity, runtime-dispatch,
+  distinguishability, native-canvas, and release-asset gates for the completed
+  six-era system.
+
+## Public Beta 1.0.39 - 2026-08-12
+
+- Rebuilt the complete System 6 family as authored 32/16 px SVGs: surviving
+  classic objects are grounded in real System 6 resources, new application
+  objects use the same one-bit grammar, and selected-state masks are embedded
+  in the artwork for clean Retina rendering without generic vector smoothing.
+- Added a dedicated 42 px Platinum desktop tier with optical-parity tests, and
+  tightened its runtime dispatch so Finder uses the era-native canvas instead
+  of stretching another size.
+- Removed keyed-magenta residue from the accepted Aqua, Snow Leopard, and
+  Yosemite families while protecting intentional violet pixels, alpha edges,
+  and the distinct shadow/material recipes of each era.
+- Expanded Theme Lab evidence and fail-closed gates for canonical fidelity,
+  runtime payloads, native-size coverage, cross-era distinction, selected
+  masks, and Classic/Liquid visual snapshots.
+- Corrected Aqua's Jaguar current-application menu: its bold title now follows
+  the actual menu owner (Finder at startup) instead of the hard-coded product
+  name. The real-app browser gate now switches owners and rejects this exact
+  semantic regression across all six appearances.
+- Closed the packaged theme asset gap: Aqua, Snow Leopard, Yosemite, and
+  Liquid Glass now ship every family-declared PNG size/appearance; the Aqua and
+  Snow Leopard runtime sprites and Platinum desktop texture ship too. The
+  macOS bundle gate serves all 1,291 UI-referenced theme PNGs from the finished
+  pkg binary and compares their bytes with the reviewed sources before signing.
+
 ## What Changed Most In One Month
 
 - The product moved from "an AI writing prototype" to a local-first writing

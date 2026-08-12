@@ -1,19 +1,58 @@
 # Snow Leopard icon family
 
-This directory contains the complete 54-object AI System 6 icon family for
-Mac OS X 10.6.8. Every id owns 512×512, 128×128, 32×32, and 16×16 artwork.
-The 32px and 16px files are separately simplified hints rather than one large
-image scaled by the browser.
+This directory contains the complete 56-object Mac OS X 10.6.8 appearance for
+AI System 6. Every semantic object keeps the cross-era `metaphorKey` recorded
+in [icon-system-continuity.json](../icon-system-continuity.json), while its
+materials, shallow perspective, and lighting follow the Snow Leopard reference
+world.
 
-Snow Leopard has its own geometry and painter. It uses mature OS X object
-compositions, controlled saturation, restrained overhead light, denser material
-detail, and object-owned shadows. It does not recolor or desaturate the Jaguar
-family, and no theme-wide CSS filter supplies its depth.
+## Runtime and size policy
 
-`snow-leopard-icon-manifest.json` maps the 32px runtime sprite.
-`snow-leopard-icon-family.json` records every size, genre, physical metaphor,
-and semantic mark. `scripts/build-era-icons.mjs` is the deterministic source.
+The runtime manifest maps every object to its 32 px PNG. The 512, 128, and
+16 px files retained in the repository are deterministic Theme Lab review
+derivatives produced from the accepted master. They are useful for inspecting
+resampling and material behavior, but they are not separately authored small
+artwork. The packaged app carries every declared review size so Theme Lab never
+falls back to an absent or older asset.
 
-Evidence and the sRGB review boundary are recorded in
-`../era-icon-reference.json`. Original `.icns`, Apple bitmaps, screenshot crops,
-and Quaqua artwork are evidence-only and do not ship in these files.
+All 56 user-facing objects are the accepted generated family. The earlier
+measured core remains only as a deterministic reconstruction layer; the
+accepted overlay always runs last, and the final family rejects `accepted-core`
+or fallback pixel residue.
+
+This is the deliberately honest policy for the current family: mechanical
+reductions are review evidence, not native compact compositions. A future
+separately authored compact family must replace this policy and its pixel
+checks, not merely rename the derivatives.
+
+## Files and rebuilding
+
+- `snow-leopard-icon-manifest.json` — the complete 56-object, 32 px runtime
+  mapping.
+- `snow-leopard-icon-family.json` — per-object provenance, sizes, metrics, and
+  review status; the family is complete and has no fallback objects.
+- `icons/imagegen-source/` — checked-in accepted generated sources used by the
+  deterministic overlay rebuild.
+- `scripts/build-snow-leopard-core-icons.mjs` and
+  `scripts/build-accepted-generated-era-icons.mjs` — rebuild the historical
+  measured layer and then reapply all 56 accepted generated objects without
+  changing semantic ids.
+
+Theme Lab reads 512/128/32/16 directly from the working tree and keeps its
+Finder, Dock-like, desktop, and source-list review contexts. The application
+package ships every declared Theme Lab tier; the checked-in `imagegen-source`
+provenance archive remains development-only. Desktop sprites are rebuilt from
+the 128 px tier for Retina display, while the 32 px manifest keeps stable
+semantic ordering and compatibility.
+
+Local 10.6 research evidence remains git-ignored and evidence-only. No
+screenshot crop, extracted bitmap, traced path, or embedded historical Apple
+resource ships as a runtime icon.
+
+## Grid
+
+Every object sits on the shared icon grid in
+[icon-grid.mjs](../../../scripts/lib/icon-grid.mjs). Scaling is uniform, never
+a stretch, and each object keeps its proportions and optical allowance. The
+pipeline records placement per object in the family JSON; this family does not
+change the shared grid.

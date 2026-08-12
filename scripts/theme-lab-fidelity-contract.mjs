@@ -33,6 +33,7 @@ export const REQUIRED_FIDELITY_SPECIMENS = Object.freeze({
     "icon-floppy-32",
     "icon-application-16",
     "icon-trash-16",
+    "button-disabled",
   ]),
   aqua: Object.freeze([
     "active-titlebar",
@@ -48,6 +49,9 @@ export const REQUIRED_FIDELITY_SPECIMENS = Object.freeze({
     "finder-toolbar",
     "finder-status",
     "menu-selected-item",
+    "button-disabled",
+    "list-row-disabled",
+    "search-field-focused",
   ]),
   "snow-leopard": Object.freeze([
     "active-titlebar",
@@ -64,6 +68,9 @@ export const REQUIRED_FIDELITY_SPECIMENS = Object.freeze({
     "search-field",
     "finder-toolbar",
     "source-list-selected",
+    "checkbox-disabled",
+    "radio-disabled",
+    "search-field-focused",
   ]),
   yosemite: Object.freeze([
     "checkbox-checked",
@@ -84,8 +91,59 @@ export const REQUIRED_FIDELITY_SPECIMENS = Object.freeze({
     "popup",
     "button-default",
     "inactive-titlebar",
+    "search-field-focused",
   ]),
 });
+
+// The absolute fidelity floor: what "this is the same control" means.
+//
+// Read this together with the per-specimen `tolerances`. The two tiers answer
+// two different questions and must never be merged:
+//
+//   tolerances  — the regression tier. Seeded from our own recorded run with a
+//                 margin, so it detects "today drifted from yesterday". A board
+//                 can pass this tier while looking nothing like the target.
+//   FIDELITY_FLOOR — the absolute tier. Derived from the metric definitions,
+//                 never from our own output, and identical for every specimen
+//                 and every era, so no single specimen can be quietly loosened.
+//
+// The three numbers restate the metrics in `analyzeGeometryAndMaterial`:
+//   geometryMismatch  share of the reference silhouette with no current edge
+//                     within 8px  -> at most 5% of the outline may be absent
+//   edgeErrorPx       mean distance from a reference edge to the nearest
+//                     current edge -> the outline sits within 1.5px at 1x
+//                     (scaled by the board's deviceScaleFactor)
+//   materialError     mean channel delta on interior pixels, ignoring edges
+//                     and text -> within 12 of 255, about 4.7% of the range
+//   markMismatch      1 - IoU of the two glyph masks, measured only where a
+//                     specimen declares `mark` -> at most 35% of the combined
+//                     glyph area may disagree. Scale-free, so a Retina board
+//                     keeps the same number.
+export const FIDELITY_FLOOR = Object.freeze({
+  geometryMismatch: 0.05,
+  edgeErrorPx: 1.5,
+  materialError: 12,
+  markMismatch: 0.35,
+});
+
+// The three metrics measured for every specimen. markMismatch is conditional —
+// it needs a glyph to compare — so it is not in this list; the harness appends it
+// for specimens that declare `mark`.
+export const FLOOR_METRICS = Object.freeze(["geometryMismatch", "edgeErrorPx", "materialError"]);
+
+export const MARK_METRIC = "markMismatch";
+
+export const FLOOR_STATUSES = Object.freeze(["met", "gap", "unreliable-reference"]);
+
+export function floorForCapture(capture = {}) {
+  const scale = Number(capture.deviceScaleFactor) || 1;
+  return Object.freeze({
+    geometryMismatch: FIDELITY_FLOOR.geometryMismatch,
+    edgeErrorPx: FIDELITY_FLOOR.edgeErrorPx * scale,
+    materialError: FIDELITY_FLOOR.materialError,
+    markMismatch: FIDELITY_FLOOR.markMismatch,
+  });
+}
 
 // Retina (deviceScaleFactor 2) acceptance boards are supplementary control
 // acceptance surfaces, not the main historical contract: they pin a subset of
@@ -297,15 +355,82 @@ function validateComputedStyleAssertions(assertions, label) {
   });
 }
 
-function validateTolerances(tolerances, label, { required }) {
+function validateTolerances(tolerances, label, { required, hasMark = false }) {
   if (tolerances === null) {
     if (required) invalid(label, "cannot be diagnostic-only for a required specimen");
     return;
   }
   requireRecord(tolerances, label);
-  for (const key of ["geometryMismatch", "edgeErrorPx", "materialError"]) {
+  const keys = hasMark ? [...FLOOR_METRICS, MARK_METRIC] : FLOOR_METRICS;
+  for (const key of keys) {
     requireFinite(tolerances[key], `${label}.${key}`, { minimum: 0 });
   }
+}
+
+// A gated specimen must declare where it stands against FIDELITY_FLOOR. The
+// declaration is a ledger, not a tuning knob: `failing` and `exempt` name the
+// metrics that are not floor-asserted, and every other metric is. The harness
+// also fails when a `failing` metric starts to meet the floor, so an
+// improvement cannot hide behind a stale entry.
+// A specimen that carries a glyph inside the control declares it, which turns on
+// the mark metric. `inset` drops the control frame before the glyph is isolated;
+// `threshold` is the luminance distance from the control's own interior median
+// that counts as glyph.
+function validateMark(mark, label) {
+  if (mark === undefined) return false;
+  requireRecord(mark, label);
+  if (mark.inset !== undefined) requireFinite(mark.inset, `${label}.inset`, { minimum: 0, integer: true });
+  if (mark.threshold !== undefined) requireFinite(mark.threshold, `${label}.threshold`, { minimum: 1 });
+  requireString(mark.note, `${label}.note`);
+  return true;
+}
+
+function validateFloor(floor, label, { required, hasMark }) {
+  if (floor === undefined || floor === null) {
+    if (required) invalid(label, "is required for a gated specimen");
+    return;
+  }
+  requireRecord(floor, label);
+  const status = requireString(floor.status, `${label}.status`);
+  if (!FLOOR_STATUSES.includes(status)) {
+    invalid(`${label}.status`, `must be one of ${FLOOR_STATUSES.join(", ")}`);
+  }
+  const allowed = hasMark ? [...FLOOR_METRICS, MARK_METRIC] : FLOOR_METRICS;
+  const metricList = (value, key) => {
+    if (value === undefined) return [];
+    const list = requireArray(value, `${label}.${key}`);
+    list.forEach((metric, index) => {
+      const name = requireString(metric, `${label}.${key}[${index}]`);
+      if (!allowed.includes(name)) {
+        invalid(
+          `${label}.${key}[${index}]`,
+          name === MARK_METRIC
+            ? "cannot be listed unless the specimen declares a mark"
+            : `must be one of ${allowed.join(", ")}`,
+        );
+      }
+    });
+    if (new Set(list).size !== list.length) invalid(`${label}.${key}`, "repeats a metric");
+    return list;
+  };
+  const failing = metricList(floor.failing, "failing");
+  const exempt = metricList(floor.exempt, "exempt");
+  for (const metric of failing) {
+    if (exempt.includes(metric)) invalid(`${label}.failing`, `${metric} is also listed as exempt`);
+  }
+  if (exempt.length && status !== "unreliable-reference") {
+    invalid(`${label}.status`, "must be unreliable-reference when a metric is exempt");
+  }
+  if (status === "unreliable-reference" && !exempt.length) {
+    invalid(`${label}.exempt`, "must name the metric the reference cannot support");
+  }
+  if (status === "gap" && !failing.length) {
+    invalid(`${label}.failing`, "must name the metric that exceeds the floor");
+  }
+  if (status === "met" && (failing.length || exempt.length)) {
+    invalid(`${label}.status`, "cannot be met while a metric is listed as failing or exempt");
+  }
+  if (status !== "met") requireString(floor.note, `${label}.note`);
 }
 
 function validateSpecimens(specimens, sourcesById, theme, requiredList) {
@@ -337,7 +462,9 @@ function validateSpecimens(specimens, sourcesById, theme, requiredList) {
     validateSetup(current.setup, `${label}.current.setup`);
 
     if (!Object.hasOwn(specimen, "tolerances")) invalid(`${label}.tolerances`, "is required");
-    validateTolerances(specimen.tolerances, `${label}.tolerances`, { required: requiredIds.has(id) });
+    const hasMark = validateMark(specimen.mark, `${label}.mark`);
+    validateTolerances(specimen.tolerances, `${label}.tolerances`, { required: requiredIds.has(id), hasMark });
+    validateFloor(specimen.floor, `${label}.floor`, { required: specimen.tolerances !== null, hasMark });
     if (specimen.repeat !== undefined) {
       const repeat = requireRecord(specimen.repeat, `${label}.repeat`);
       requireFinite(repeat.maxChangedPixels, `${label}.repeat.maxChangedPixels`, { minimum: 0, integer: true });

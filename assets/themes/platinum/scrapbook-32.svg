@@ -1,3 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
-<rect x="5" y="4" width="22" height="25" fill="#aa8855" stroke="#111111" stroke-width="1"/><rect x="8" y="7" width="16" height="17" fill="#ffffff" stroke="#111111" stroke-width="1"/><g transform="scale(0.5)"><rect x="22" y="29" width="20" height="16" fill="#ffffff" stroke="#111111" stroke-width="1"/><path d="M25 41l5-6 4 4 3-3 3 5z" fill="#336633"/><circle cx="37" cy="33" r="2" fill="#996622"/></g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><image href="icons/scrapbook-32.png" width="32" height="32" style="image-rendering:pixelated"/></svg>

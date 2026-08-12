@@ -1,0 +1,381 @@
+{
+  "schemaVersion": 1,
+  "target": "OS X 10.10 Yosemite",
+  "purpose": "Fixed reference board and construction ledger for the fourteen reviewed Yosemite icons.",
+  "copyrightBoundary": "Historical Apple artwork is research-only evidence. Production PNGs are original measured reconstructions and semantic adaptations. No screenshot crop, extracted resource, or traced Apple path ships as a runtime asset.",
+  "systemRules": {
+    "nativeSizes": [
+      128,
+      64,
+      32,
+      16
+    ],
+    "sizePolicy": "Runtime surfaces downscale the 128 px master. The twelve programmatic cores own separately composed 64 px, 32 px, and 16 px review hints with thickened structure and merged parts; the two accepted Image Gen cores use separately processed ledger artifacts.",
+    "light": "Soft light from above and slightly in front. Shading is shallow: broad, clean gradients rather than modelled material. One short contact shadow only where an object overlaps another.",
+    "perspective": "Flattened but object-specific. Paper and folders are front-on, hardware is front-on with a shallow top face, and no object is tilted into a desk perspective the way 10.6 tilts it.",
+    "silhouette": "Free-form per object. Yosemite did not put Mac icons in one rounded-square container, so only the objects whose real 10.10 prototype is a rounded square use one.",
+    "palette": "Brighter and cleaner than 10.6, with cyan-leaning blues, taken from the measured reference board rather than invented.",
+    "depth": "Overlap, one thin keyline, and a small amount of inner shading carry depth. No heavy bevel, no photographic texture, no large cast shadow.",
+    "alpha": "Anti-aliased edges with artwork-owned shading. No theme filter, saturate, or drop-shadow turns another era's artwork into Yosemite.",
+    "smallArt": "At 32 remove secondary objects and keep one dominant cue. At 16 merge or move parts to protect recognition.",
+    "toolbarBoundary": "Finder artwork is never reused as toolbar or sidebar art; 10.10 states those as separate, simpler symbol families.",
+    "grid": "Every object is placed on the shared icon grid in scripts/lib/icon-grid.mjs: one live dimension per shape class (square, portrait, landscape) with a margin that no object may cross, plus small optical allowances for shapes that read large or small at equal bounds. Objects are scaled uniformly, never stretched, so a row reads as one family while each object keeps its own proportions."
+  },
+  "continuityRule": "System objects reproduce the real 10.10 prototype. The seven AI System 6 objects keep the metaphorKey recorded in assets/themes/icon-system-continuity.json, drawn again in 2014 language rather than flattened from the 10.6 artwork.",
+  "provenance": {
+    "webReference": {
+      "path": "drafts/yosemite-icon-reference/web/",
+      "kind": "Collected 10.10 application and system icon images",
+      "use": "Silhouette, palette, detail density, and the per-object decision about whether a rounded-square container is period-correct.",
+      "redistribution": "Local evidence only; ignored by git and excluded from every package."
+    },
+    "captures": {
+      "path": "drafts/theme-lab-fidelity-cache/yosemite/",
+      "kind": "OS X 10.10 screen captures",
+      "use": "Finder icon-view scale, sidebar and toolbar treatment, System Preferences.",
+      "redistribution": "Copyrighted screenshots; local research and comparison only."
+    },
+    "rejected": {
+      "path": "drafts/yosemite-icon-render/",
+      "reason": "An earlier draft set drawn in modern macOS language: squircle containers, gradient blobs, a single-letter TextEdit mark, and a node-graph DocMap. It fails the period test and is kept only as a negative control."
+    }
+  },
+  "referenceBoard": [
+    {
+      "label": "Finder",
+      "evidence": "web/finder.png",
+      "measured": {
+        "alphaBox": [
+          12,
+          15,
+          115,
+          112
+        ],
+        "palette": [
+          "#f3f5f6",
+          "#e5edf4",
+          "#ecf1f6",
+          "#1ac8fb",
+          "#1c97f6",
+          "#1d87f5"
+        ]
+      },
+      "silhouette": "rounded square split light and blue, thin dark face",
+      "container": "rounded square, period-correct for this object",
+      "coreId": "finderApp"
+    },
+    {
+      "label": "Generic folder",
+      "evidence": "folder1.png",
+      "measured": {
+        "palette": [
+          "#97ddfc",
+          "#7bd3f9",
+          "#6cccf6",
+          "#57b5e3",
+          "#76c8ed"
+        ]
+      },
+      "silhouette": "front-on folder with a rear tab and a pale inner panel",
+      "container": "rounded-square",
+      "coreId": "folder"
+    },
+    {
+      "label": "Generic document",
+      "evidence": "web/generic-document-512.png",
+      "measured": {
+        "alphaBox": [
+          19,
+          2,
+          108,
+          120
+        ],
+        "palette": [
+          "#fefefe",
+          "#e9e9e9",
+          "#d9d9d9",
+          "#c9c9c9",
+          "#bbbbbb",
+          "#ababab"
+        ]
+      },
+      "silhouette": "upright sheet with a folded upper-right corner and a thin grey keyline",
+      "container": "free-form",
+      "coreId": "document"
+    },
+    {
+      "label": "System Preferences",
+      "evidence": "web/system-preferences.png",
+      "measured": {
+        "alphaBox": [
+          7,
+          14,
+          120,
+          114
+        ],
+        "palette": [
+          "#858887",
+          "#797877",
+          "#494a49",
+          "#373837",
+          "#282827",
+          "#181818"
+        ]
+      },
+      "silhouette": "grey rounded square holding flat gear wheels",
+      "container": "rounded square, period-correct for this object",
+      "coreId": "controlPanel"
+    },
+    {
+      "label": "TextEdit",
+      "evidence": "web/textedit.png",
+      "measured": {
+        "alphaBox": [
+          14,
+          4,
+          115,
+          122
+        ],
+        "palette": [
+          "#fbfbfb",
+          "#e8e8e8",
+          "#d8d8d8",
+          "#c7c7c7",
+          "#bbbbbb",
+          "#888888"
+        ]
+      },
+      "silhouette": "ruled sheet with one slim pen across it",
+      "container": "free-form",
+      "coreId": "teachText"
+    },
+    {
+      "label": "Preview",
+      "evidence": "web/preview.png",
+      "measured": {
+        "alphaBox": [
+          5,
+          14,
+          122,
+          117
+        ],
+        "palette": [
+          "#fcfdfd",
+          "#a6c5f4",
+          "#9bc2fb",
+          "#d7eaf8",
+          "#685a4b",
+          "#37458a"
+        ]
+      },
+      "silhouette": "photograph with a lens in front of it",
+      "container": "free-form",
+      "coreId": "searcher",
+      "note": "Genre parent for lens objects. Confirms that a real magnifier is still period-correct in 10.10 and is not replaced by a line glyph."
+    },
+    {
+      "label": "Notes",
+      "evidence": "web/notes.png",
+      "measured": {
+        "palette": [
+          "#f9f9f9",
+          "#ffd429",
+          "#ffd737",
+          "#fbca05",
+          "#dcdddd"
+        ]
+      },
+      "silhouette": "ruled pad with a coloured header",
+      "container": "free-form",
+      "coreId": "scrapbook",
+      "note": "Family control for paper products: flat rules, one saturated accent, no leather or cloth."
+    },
+    {
+      "label": "Maps",
+      "evidence": "web/maps.png",
+      "silhouette": "flat map panel with a route and a marker",
+      "container": "free-form",
+      "coreId": "docMap",
+      "note": "Confirms the flattened map language: filled land and water blocks, one clear route, one marker."
+    },
+    {
+      "label": "Messages",
+      "evidence": "web/messages.png",
+      "silhouette": "one solid speech balloon",
+      "container": "free-form",
+      "coreId": "assistant",
+      "note": "Period control only. ClioTalk keeps its clipped transcript; a ClioTalk conversation is a file with attached material, not a message thread."
+    },
+    {
+      "label": "Calendar",
+      "evidence": "web/calendar.png",
+      "silhouette": "flat sheet with a coloured header",
+      "container": "free-form",
+      "note": "Family control for detail density and saturation."
+    },
+    {
+      "label": "Contacts",
+      "evidence": "web/contacts.png",
+      "silhouette": "simplified bound book",
+      "container": "free-form",
+      "note": "Family control: 10.10 keeps bound-volume objects but drops 10.6 leather grain."
+    },
+    {
+      "label": "Reminders",
+      "evidence": "web/reminders.png",
+      "silhouette": "sheet with coloured dots",
+      "container": "free-form",
+      "note": "Family control for flat accent colour on paper."
+    },
+    {
+      "label": "Safari",
+      "evidence": "web/safari.png",
+      "silhouette": "circular compass",
+      "container": "circle",
+      "note": "Family control proving Yosemite uses several container shapes, not one."
+    },
+    {
+      "label": "Calculator",
+      "evidence": "web/calculator.png",
+      "silhouette": "dark keypad seen at a shallow angle",
+      "container": "free-form",
+      "note": "Family control for the small amount of perspective 10.10 still allows."
+    }
+  ],
+  "icons": {
+    "finderApp": {
+      "label": "Finder / System",
+      "genre": "system identity",
+      "prototype": "flat frontal white compact Macintosh with a cyan-blue and white split smiling screen and a simple lower drive plinth",
+      "metaphorKey": "smiling-compact-macintosh",
+      "container": "rounded-square",
+      "comparison": {
+        "evidence": "web/finder.png"
+      }
+    },
+    "folder": {
+      "label": "Folder",
+      "genre": "Finder object",
+      "prototype": "10.10 cyan system folder with a pale inner panel",
+      "container": "free-form",
+      "comparison": {
+        "evidence": "folder1.png"
+      }
+    },
+    "hardDisk": {
+      "label": "Hard Disk",
+      "genre": "hardware",
+      "prototype": "10.10 simplified silver volume with a shallow top face",
+      "container": "free-form",
+      "comparison": {
+        "evidence": "captures/10-10-Yosemite-Finder-Home.png"
+      }
+    },
+    "trash": {
+      "label": "Trash",
+      "genre": "Finder object",
+      "prototype": "10.10 pale basket with vertical ribs and a thin rim",
+      "container": "free-form",
+      "comparison": {
+        "evidence": "captures/10-10-Yosemite-Finder-Home.png"
+      }
+    },
+    "document": {
+      "label": "Generic Document",
+      "genre": "document",
+      "prototype": "10.10 sheet with a folded corner and a thin grey keyline",
+      "container": "free-form",
+      "comparison": {
+        "evidence": "web/generic-document-512.png"
+      }
+    },
+    "daHandler": {
+      "label": "Generic Application",
+      "genre": "application",
+      "prototype": "10.10 drawing tools on paper, flattened to clean colour blocks",
+      "container": "free-form",
+      "comparison": {
+        "evidence": "web/textedit.png"
+      }
+    },
+    "controlPanel": {
+      "label": "Settings",
+      "genre": "utility",
+      "prototype": "10.10 grey rounded square holding flat gears",
+      "container": "rounded-square",
+      "comparison": {
+        "evidence": "web/system-preferences.png"
+      }
+    },
+    "searcher": {
+      "label": "Searcher",
+      "genre": "application",
+      "metaphorKey": "magnifier-over-page",
+      "prototype": "flat lens with a blue glass over a ruled page",
+      "container": "free-form",
+      "comparison": {
+        "evidence": "web/preview.png"
+      }
+    },
+    "teachText": {
+      "label": "TeachText",
+      "genre": "application",
+      "metaphorKey": "writing-paper-and-pen",
+      "prototype": "ruled sheet with one slim pen, flattened",
+      "container": "free-form",
+      "comparison": {
+        "evidence": "web/textedit.png"
+      }
+    },
+    "assistant": {
+      "label": "ClioTalk",
+      "genre": "application",
+      "metaphorKey": "solid-user-dashed-reply-balloons",
+      "prototype": "flattened Yosemite conversation pair: a solid cyan user balloon overlapping a white reply balloon with a clearly dashed blue edge",
+      "container": "free-form",
+      "comparison": {
+        "evidence": "web/messages.png"
+      }
+    },
+    "scrapbook": {
+      "label": "Scrapbook",
+      "genre": "application",
+      "metaphorKey": "bound-album-with-print",
+      "prototype": "flat bound album with one mounted print",
+      "container": "free-form",
+      "comparison": {
+        "evidence": "web/notes.png"
+      }
+    },
+    "reviewDesk": {
+      "label": "Review Desk",
+      "genre": "application",
+      "metaphorKey": "marked-manuscript-with-lens",
+      "prototype": "manuscript with red correction marks under a flat lens",
+      "container": "free-form",
+      "comparison": {
+        "evidence": "web/preview.png"
+      }
+    },
+    "docMap": {
+      "label": "DocMap",
+      "genre": "application",
+      "metaphorKey": "branching-document-map",
+      "prototype": "flat page with a blue branch map and filled nodes",
+      "container": "free-form",
+      "comparison": {
+        "evidence": "web/maps.png"
+      }
+    },
+    "projectDisk": {
+      "label": "Project Hard Disk",
+      "genre": "hardware",
+      "metaphorKey": "labelled-external-volume",
+      "prototype": "flat blue external volume with one paper label",
+      "container": "free-form",
+      "comparison": {
+        "evidence": "captures/10-10-Yosemite-Finder-Home.png"
+      }
+    }
+  }
+}

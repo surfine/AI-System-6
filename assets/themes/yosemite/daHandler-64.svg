@@ -1,8 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
-<defs>
-      <linearGradient id="body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9efff"/><stop offset="1" stop-color="#75b9ec"/></linearGradient>
-      <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#eef3f7"/></linearGradient>
-      <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7fafc"/><stop offset="1" stop-color="#b7c3cf"/></linearGradient>
-    </defs>
-<path d="M7 20h50v35H7z" fill="#8eb7d3" stroke="#789bb9" stroke-width="1.35"/><path d="M21 20v-8h22v8M7 34h50" fill="none" stroke="#789bb9" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"/><rect x="28" y="31" width="8" height="8" rx="1" fill="#e7eef4" stroke="#789bb9" stroke-width="1.35"/><rect x="23" y="29" width="18" height="17" fill="#ffffff" stroke="#2e7fcb" stroke-width="1.7"/><path d="M27 26h10v5H27zM27 34h10M27 38h7M27 42h9" fill="none" stroke="#35516c" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><image href="icons/daHandler-64.png" width="64" height="64"/></svg>

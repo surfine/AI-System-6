@@ -80,7 +80,10 @@ era-specific material
   collide. A split is **zero visual diff** and its own commit; it never
   carries a redesign.
 - `styles/66-theme-lab.css` — one shared Theme Lab component stylesheet, not
-  six implementations.
+  six implementations. Every selector in it is scoped to the lab, so the sheet
+  is built as its own `styles.theme-lab.css` bundle and loaded with the lazy
+  Theme Lab module rather than at boot. Keep it out of `styleRuntimePaths`: it
+  is the largest sheet in the repository and no boot needs it.
 
 The parent chain is a maintenance lineage, not a second active CSS class.
 Family-shared recipes use `body[data-theme-family="..."]`; a child's own
@@ -221,16 +224,59 @@ later step. When the shared Theme Lab DOM intentionally changes, refresh
 each theme's `contentSha256` in its fidelity fixture in the same change —
 never leave a fixture fingerprint stale.
 
-## 9. Verification
+## 9. Two visual tiers, never merged
+
+A stable snapshot proves nothing about correctness: a wrong design holds a
+perfect regression baseline. The two tiers answer two different questions and
+live in different places.
+
+| Tier | Question | Where | Fails when |
+| --- | --- | --- | --- |
+| Regression | Is today the same as yesterday? | `tests/visual/theme-lab/*.png`, and each specimen's `tolerances` | The output moved from the recorded run |
+| Canonical fidelity | Is this actually the target era? | `FIDELITY_FLOOR` in `scripts/theme-lab-fidelity-contract.mjs`, and each specimen's `floor` ledger | A specimen is further from its pinned historical reference than the floor allows |
+
+The floor is one shared constant for every era and every specimen, derived from
+the metric definitions and **never** from our own output:
+
+```text
+geometryMismatch  <= 0.05   at most 5% of the reference silhouette may be absent
+edgeErrorPx       <= 1.5    the outline sits within 1.5px at 1x
+                            (multiplied by the board's deviceScaleFactor)
+materialError     <= 12     interior colour within 12 of 255 (about 4.7%)
+```
+
+Every gated specimen carries a `floor` ledger:
+
+```text
+{ "status": "met" }
+{ "status": "gap", "failing": ["materialError"], "note": "<historical reason>" }
+{ "status": "unreliable-reference", "exempt": ["materialError"], "note": "<why the crop cannot support it>" }
+```
+
+- A metric that is **not** listed must meet the floor. The gate fails otherwise.
+- A metric under `failing` is a recorded distance from the target, with its
+  reason. It is honest bookkeeping, not permission.
+- A metric under `exempt` means the pinned crop cannot measure it at all (for
+  example a photo-thumbnail reference). This is the only escape, and it needs a
+  written reason.
+- When a `failing` metric starts to meet the floor, the gate **fails** until the
+  ledger is corrected, so an improvement can never hide behind a stale entry.
+
+Never widen a tolerance, add a `failing` metric, or reach for `exempt` to turn a
+board green. Fix the painter, or improve the reference and re-measure.
+
+## 10. Verification
 
 ```sh
 npm run verify:css                      # budgets, ratchets, selector limits
-npm run verify:theme-lab                # six-era Theme Lab snapshots
-npm run compare:theme-lab:canonical     # Platinum vs real Mac OS 9 corpus
+npm run verify:theme-lab                # six-era Theme Lab regression snapshots
+npm run verify:theme-lab:fidelity       # canonical fidelity: 4 eras + Retina board
+npm run compare:theme-lab:canonical     # one board, with review artifacts
 npm run audit:theme-coverage            # registry-driven app coverage audit
 npm run screenshot:windows              # every registered window, one theme
 npm run snapshot:css -- --theme platinum --label <step>   # shared surfaces
 npm run verify:features -- appearance-system   # registry + contract tests
+npm run verify:features -- theme-lab-fidelity-contract   # fixture + floor schema
 ```
 
 The coverage evidence is registry-driven: `audit:theme-coverage` answers the

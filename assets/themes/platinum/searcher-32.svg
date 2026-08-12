@@ -1,3 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
-<rect x="4" y="8" width="17" height="18" fill="#eeeeee" stroke="#111111" stroke-width="1"/><circle cx="18" cy="15" r="8" fill="#cceeff" stroke="#111111" stroke-width="1"/><path d="M23 21l6 7" stroke="#111111" stroke-width="3"/><g transform="scale(0.5)"><circle cx="30" cy="33" r="9" fill="#d7ecff" stroke="#111111" stroke-width="1.5"/><line x1="37" y1="40" x2="46" y2="49" stroke="#111111" stroke-width="3" stroke-linecap="round"/></g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><image href="icons/searcher-32.png" width="32" height="32" style="image-rendering:pixelated"/></svg>

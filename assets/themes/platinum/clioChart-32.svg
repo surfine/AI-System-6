@@ -1,3 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
-<rect x="6" y="5" width="20" height="18" fill="#ffffff" stroke="#111111" stroke-width="1"/><path d="M12 23l-4 6M20 23l4 6" stroke="#111111" stroke-width="1"/><g transform="scale(0.5)"><path d="M23 44V28h19v16zM26 40l4-5 4 2 5-7" fill="#ffffff" stroke="#336699" stroke-width="1" stroke-linejoin="round"/></g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><image href="icons/clioChart-32.png" width="32" height="32" style="image-rendering:pixelated"/></svg>

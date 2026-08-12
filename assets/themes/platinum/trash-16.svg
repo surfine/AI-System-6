@@ -1,3 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges">
-<path d="M3 7h10l-2 8H5z" fill="#e6e8f0" stroke="#111111" stroke-width="1" stroke-linejoin="miter"/><rect x="3" y="5" width="10" height="2" fill="#dcdce2" stroke="#111111" stroke-width="1" stroke-linejoin="miter"/><path d="M5 7v7M8 7v7M11 7v7M5 5C5 1 11 1 11 5" fill="none" stroke="#8b8d98" stroke-width="1"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><image href="icons/trash-16.png" width="16" height="16" style="image-rendering:pixelated"/></svg>

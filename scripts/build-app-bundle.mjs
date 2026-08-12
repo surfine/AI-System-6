@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { transformSync } from "esbuild";
 import { appRuntimePaths } from "./runtime-manifest.mjs";
-import { styleRuntimePaths } from "./style-manifest.mjs";
+import { lazyStyleBundles, styleRuntimePaths } from "./style-manifest.mjs";
 import { generateBuildInfo } from "./lib/build-info.mjs";
 import { minifyCss } from "./lib/minify-css.mjs";
 
@@ -109,3 +109,12 @@ function stampCssAssetUrls(css, build) {
 const cssBundle = stampCssAssetUrls(minifyCss(cssSource), buildIdentity.build);
 writeFileSync(join(root, cssBundlePath), `${cssBundle}\n`, "utf8");
 console.log(`Built ${cssBundlePath} from ${styleRuntimePaths.length} source files.`);
+
+// Lazy stylesheets are built the same way, just into their own files. They are
+// requested by the window that needs them, so they never enter a boot.
+for (const bundle of lazyStyleBundles) {
+  const source = bundle.sources.map((path) => readFileSync(join(root, path), "utf8")).join("\n");
+  const built = stampCssAssetUrls(minifyCss(source), buildIdentity.build);
+  writeFileSync(join(root, bundle.output), `${built}\n`, "utf8");
+  console.log(`Built ${bundle.output} from ${bundle.sources.length} source file(s), loaded on demand.`);
+}

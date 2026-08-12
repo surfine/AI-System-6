@@ -1,4 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
-  <path fill="#ffffff" d="M9 5h15v1h-15zM9 6h15v1h-15zM9 7h15v1h-15zM9 8h15v1h-15zM9 9h15v1h-15zM9 10h15v1h-15zM7 11h18v1h-18zM7 12h18v1h-18zM7 13h18v1h-18zM7 14h18v1h-18zM7 15h18v1h-18zM7 16h18v1h-18zM7 17h18v1h-18zM7 18h18v1h-18zM7 19h18v1h-18zM7 20h18v1h-18zM7 21h18v1h-18zM7 22h18v1h-18zM7 23h18v1h-18zM7 24h18v1h-18zM7 25h18v1h-18zM7 26h18v1h-18zM7 27h18v1h-18zM7 28h18v1h-18z"/>
-  <path fill="#000000" d="M12 5h9v1h-9zM11 6h1v1h-1zM21 6h1v1h-1zM10 7h1v1h-1zM22 7h1v1h-1zM9 8h1v1h-1zM22 8h2v1h-2zM10 9h2v1h-2zM20 9h2v1h-2zM12 10h2v1h-2zM19 10h1v1h-1zM7 11h18v1h-18zM7 12h1v1h-1zM24 12h1v1h-1zM7 13h1v1h-1zM24 13h1v1h-1zM7 14h1v1h-1zM24 14h1v1h-1zM7 15h1v1h-1zM11 15h10v1h-10zM24 15h1v1h-1zM7 16h1v1h-1zM11 16h1v1h-1zM20 16h1v1h-1zM24 16h1v1h-1zM7 17h1v1h-1zM11 17h1v1h-1zM20 17h1v1h-1zM24 17h1v1h-1zM7 18h1v1h-1zM11 18h1v1h-1zM14 18h4v1h-4zM20 18h1v1h-1zM24 18h1v1h-1zM7 19h1v1h-1zM11 19h1v1h-1zM14 19h4v1h-4zM20 19h1v1h-1zM24 19h1v1h-1zM7 20h1v1h-1zM11 20h1v1h-1zM14 20h4v1h-4zM20 20h1v1h-1zM24 20h1v1h-1zM7 21h1v1h-1zM11 21h1v1h-1zM20 21h1v1h-1zM24 21h1v1h-1zM7 22h1v1h-1zM11 22h1v1h-1zM20 22h1v1h-1zM24 22h1v1h-1zM7 23h1v1h-1zM11 23h10v1h-10zM24 23h1v1h-1zM7 24h1v1h-1zM24 24h1v1h-1zM7 25h1v1h-1zM24 25h1v1h-1zM7 26h1v1h-1zM24 26h1v1h-1zM7 27h18v1h-18zM11 28h11v1h-11z"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="#000000" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" shape-rendering="geometricPrecision">
+  <style>
+    .classic-ink{fill:#000000;stroke:#000000;stroke-width:.25}
+    .classic-paper{fill:#ffffff;stroke:none}
+  </style>
+  <g transform="translate(16 16) scale(1.1) translate(-16 -16)">
+    <path d="M4 5h13v9H4z" />
+    <path d="M7 14l-2 4 5-4" />
+    <path d="M13 17h16v11H13z" stroke-dasharray="3 2" />
+    <path d="M25 28l2 3-6-3" stroke-dasharray="3 2" />
+  </g>
 </svg>

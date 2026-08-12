@@ -1,4 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
+<g transform="translate(-0.6776 -0.1729) scale(1.0093)">
 <defs>
       <linearGradient id="body" x1="0.08" y1="0" x2="0.92" y2="1"><stop offset="0" stop-color="#d9efff"/><stop offset="0.42" stop-color="#75b9ec"/><stop offset="1" stop-color="#173e75"/></linearGradient>
       <linearGradient id="paper" x1="0" y1="0" x2="0.75" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="0.66" stop-color="#f4f3ed"/><stop offset="1" stop-color="#bdc3c9"/></linearGradient>
@@ -7,4 +8,5 @@
       <linearGradient id="leather" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c39a69"/><stop offset="0.52" stop-color="#87603f"/><stop offset="1" stop-color="#4b3024"/></linearGradient>
     </defs>
 <ellipse cx="33" cy="54" rx="19" ry="2.7" fill="#000000" fill-opacity="0.24"/><path d="M10 6h44q3 0 3 3v48H7V9q0-3 3-3z" fill="url(#metal)" stroke="#36434d" stroke-width="1.65"/><path d="M12 15h40M12 29h40M12 43h40" stroke="#5e6c79" stroke-width="1.65"/><path d="M16 19h28M16 33h28M16 47h28" stroke="#e6ecef" stroke-width="1.1"/><circle cx="48" cy="22" r="2" fill="#58a761"/><circle cx="48" cy="36" r="2" fill="#d09a3b"/><circle cx="48" cy="50" r="2" fill="#4e85b2"/><path d="M22 40c-4-7 4-11 9-7 3-7 13-4 12 3 7 0 7 9 0 9H24c-4 0-5-3-2-5z" fill="#ffffff" stroke="#4c82ac" stroke-width="1.8"/>
+</g>
 </svg>

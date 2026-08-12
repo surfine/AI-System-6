@@ -31,7 +31,17 @@ function readManifest(theme) {
       throw new Error(`${theme.id} manifest references a missing asset: ${file} (for ${id})`);
     }
   }
-  return manifest;
+  if (theme.id !== "yosemite") return manifest;
+  const familyPath = join(root, "assets", "themes", theme.dir, `${theme.id}-icon-family.json`);
+  const family = JSON.parse(readFileSync(familyPath, "utf8"));
+  const retinaManifest = Object.fromEntries(Object.keys(manifest).map((id) => {
+    const file = family.icons?.[id]?.sizes?.[128];
+    if (!file || !existsSync(join(root, "assets", "themes", theme.dir, file))) {
+      throw new Error(`${theme.id}/${id}: missing reviewed 128 px runtime asset`);
+    }
+    return [id, file];
+  }));
+  return retinaManifest;
 }
 
 function svgEmbedCoreIds(theme) {

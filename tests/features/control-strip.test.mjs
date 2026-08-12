@@ -242,14 +242,18 @@ test.assertIncludes(stripCss, "z-index: var(--z-control-strip)", "the strip cons
 test.assertIncludes(stripCss, "shape-rendering: crispEdges", "compact module icons keep crisp pixel edges");
 test.assertMatches(stripCss, /\.control-strip-module \.sys-icon\s*\{[^}]*padding:\s*0;[^}]*border:\s*0;/s,
   "Liquid Glass does not shrink strip glyphs inside the global icon tile padding");
+test.assertMatches(stripCss, /\.control-strip-module \.sys-icon\s*\{[^}]*background-color:\s*transparent;/s,
+  "Control Strip clears tile material without erasing era sprite painters");
 test.assertIncludes(liquidGlass, "body.use-liquid-glass :is(.menu-bar, .control-strip) .sys-icon", "the late Liquid Glass icon layer preserves the strip's compact glyph reset without duplicating its theme selector");
 test.assertIncludes(stripCss, "--system-icon-shape-rendering: crispEdges", "the strip keeps crisp glyphs through the late Liquid Glass SVG rule");
 test.assertIncludes(stripCss, ".control-strip-menu.project-switcher-popover", "the shared project menu is sized for the strip host");
 test.assertIncludes(stripCss, ".control-strip-menu.cloud-model-popover", "the shared model menu is sized for the strip host");
 test.assertMatches(stripCss, /\.control-strip-module \.multifinder-icon\s*\{[^}]*currentColor/s,
   "the Finder mode tile reuses the crisp menu-bar glyph and follows inversion color");
-test.assertMatches(stripCss, /\.control-strip-handle::after\s*\{[^}]*currentColor 0 2px/s,
-  "the handle grip follows foreground color and stays visible when the tab inverts");
+test.assertIncludes(foundation, "--control-strip-grip: repeating-linear-gradient(to bottom, currentColor",
+  "the Classic handle grip follows foreground color and stays visible when the tab inverts");
+test.assertMatches(stripCss, /\.control-strip-handle::after\s*\{[^}]*background:\s*var\(--control-strip-grip\)/s,
+  "the handle consumes the era-owned grip token");
 
 // --- Themes ------------------------------------------------------------------
 
@@ -268,5 +272,23 @@ test.assert(zValue(foundation, "--z-control-strip") > zValue(foundation, "--z-wi
   "the strip stays above pinned windows");
 test.assert(zValue(foundation, "--z-control-strip") < zValue(foundation, "--z-system-menu"),
   "…but never above the system menu bar");
+
+// --- Six-era strip materials (tokens only, one DOM) --------------------------
+// Platinum is the strip's native era (Mac OS 8/9): raised tiles, a rounded
+// outer-end tab with grip ribs. Aqua, Snow Leopard, and Yosemite are *signed
+// counterfactuals* — the Control Strip died with Mac OS X 10.0, so their
+// materials are built from each era's real controls and must say so in the
+// stylesheet. Every era is a token table; no era owns a .control-strip
+// selector of its own.
+const appearanceCss = read("styles/65-appearance-themes.css");
+const aquaCss = read("styles/67-aqua-appearance.css");
+test.assertIncludes(stripCss, "background: var(--control-strip-tile-bg)", "module tiles consume the era tile material");
+test.assertIncludes(stripCss, "background: var(--control-strip-grip)", "the handle grip texture is an era token");
+test.assertIncludes(stripCss, "border-radius: var(--control-strip-radius-mirrored)", "a right-anchored strip mirrors its rounded tab end");
+test.assertIncludes(appearanceCss, "--control-strip-radius: 4px 12px 12px 4px;", "Platinum rounds the outer tab end into the OS 9 half-capsule");
+test.assertIncludes(appearanceCss, "--control-strip-tile-shadow: inset 0 0 0 1px #7a7a7a", "Platinum tiles are raised bevel buttons");
+test.assertMatches(aquaCss, /counterfactual[\s\S]*--control-strip-bg/, "the Aqua-family strip materials are labeled counterfactual, not reproduction");
+test.assertMatches(appearanceCss, /counterfactual[\s\S]*--control-strip-bg: rgba\(251, 251, 251, 0\.82\)/, "the Yosemite strip material is labeled counterfactual");
+test.assertNotMatches(aquaCss, /\.control-strip[\s-]/, "Aqua-family eras theme the strip through tokens, never selectors");
 
 test.finish();

@@ -1,3 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges">
-<rect x="3" y="2" width="10" height="12" fill="#ffffff" stroke="#111111" stroke-width="1"/><path d="M10 13l5-8" stroke="#335588" stroke-width="2"/><g transform="scale(0.25)"><path d="M24 31h17M24 36h14M24 41h17" fill="none" stroke="#336699" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><image href="icons/teachText-16.png" width="16" height="16" style="image-rendering:pixelated"/></svg>

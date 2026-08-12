@@ -52,5 +52,7 @@
   "daHandler": "daHandler-32.svg",
   "writingBell": "writingBell-32.svg",
   "trashFull": "trashFull-32.svg",
-  "control": "control-32.svg"
+  "control": "control-32.svg",
+  "localModel": "localModel-32.svg",
+  "controlStrip": "controlStrip-32.svg"
 }

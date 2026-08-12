@@ -10,5 +10,8 @@
   "searcher": "searcher-32.svg",
   "teachText": "teachText-32.svg",
   "scrapbook": "scrapbook-32.svg",
-  "assistant": "assistant-32.svg"
+  "assistant": "assistant-32.svg",
+  "controlPanel": "controlPanel-32.svg",
+  "reviewDesk": "reviewDesk-32.svg",
+  "docMap": "docMap-32.svg"
 }

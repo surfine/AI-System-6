@@ -123,4 +123,29 @@ for (const file of ["app/data/translations-en.js", "app/data/translations-zh.js"
 test.assertIncludes(read("app.js"), 'label.className = "system-select-label"', "select labels get a real element");
 test.assertIncludes(windows, ".system-select-button > .system-select-label", "that label is what truncates");
 
+// --- Section chooser: one tablist, six era presentations ---------------------
+// The Control Panel's tablist wears era-owned clothes through
+// --control-chooser-* tokens. This is the one sanctioned structural recipe of
+// the appearance system: Classic (the default token values) renders the
+// System 4-6 cdev icon rail; Platinum pins the OS 8 tab sheet in its own
+// token block; the Aqua family and Yosemite render icon toolbars; Liquid
+// Glass a segmented capsule. DOM, tab order, wiring, and keyboard behavior
+// never change per era.
+const surfaces = read("styles/30-surfaces.css");
+const appearance = read("styles/65-appearance-themes.css");
+test.assertIncludes(html, 'class="system-tabs control-chooser"', "the Control Panel tablist is the era-clothed chooser variant");
+for (const [tab, icon] of [["local", "localModel"], ["cloud", "cloudModel"], ["general", "control"], ["strip", "controlStrip"]]) {
+  test.assertMatches(
+    html,
+    new RegExp(`data-control-tab="${tab}"><span class="sys-icon" data-system-icon="${icon}"`),
+    `the ${tab} section carries its ${icon} object icon`
+  );
+}
+test.assertMatches(html, /control-chooser-label" data-i18n=/, "labels translate on their own span so the icon survives applyLanguage");
+test.assertIncludes(foundation, "--control-chooser-direction: column;", "Classic's default chooser is the vertical cdev rail");
+test.assertIncludes(foundation, "--control-settings-columns: 92px minmax(0, 1fr);", "the rail owns a fixed column beside the settings pane");
+test.assertIncludes(surfaces, "flex-direction: var(--control-chooser-direction);", "the chooser consumes era tokens, not era selectors");
+test.assertIncludes(appearance, "--control-chooser-item-radius: var(--tab-radius) var(--tab-radius) 0 0;", "Platinum pins the OS 8 tab sheet in its token block");
+test.assertNotMatches(appearance, /body\[data-theme="classic"\]/, "Classic stays the foundation default — no classic-scoped selector");
+
 test.finish();

@@ -1,5 +1,5 @@
 <!-- canonical-source: CLAUDE.md -->
-<!-- source-sha256: 0bc714450d6323a5c0fdb20711c2c422fe89ce0a72b523829e6561dd1d27ab91 -->
+<!-- source-sha256: f228338cab237cbe4b8b544d2d099c8ba61a4ee4c651bb5b3bd4421ed2b3c8a0 -->
 
 # AI System 6 — CLAUDE.md
 
@@ -94,6 +94,11 @@ npm start     # 先跑 build:app，再服务于 http://localhost:4173（PORT 可
 video-transcript、memory-cards、Cover Glass、CMF Studio、writing-demo、
 system-dictionary、writing-flow-help、demo 语料、rebuild-samples）。**绝不要把懒加载模块
 加进 `index.html` 的 script 标签或 `appModulePaths`**——软盘校验器会因此失败。
+
+CSS 也可以懒加载：`scripts/style-manifest.mjs` 里的 `lazyStyleBundles`（目前是 Theme
+Lab）各自构建成独立文件，由需要它的懒加载模块请求。只有当一份样式表的所有选择器都
+限定在那个窗口内部时才可以这样做。**不要把它移回 `styleRuntimePaths`**——软盘预算量
+的正是启动包。
 
 ## Verification
 

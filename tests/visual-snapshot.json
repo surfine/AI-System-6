@@ -118,7 +118,7 @@
     },
     ".icon-column > .desktop-icon[data-open=\"applications\"]": {
       "width": "82px",
-      "height": "67.8594px",
+      "height": "67.5938px",
       "_w": 82,
       "_h": 68
     },
@@ -248,9 +248,9 @@
     },
     ".icon-column > .desktop-icon[data-open=\"applications\"]": {
       "width": "84px",
-      "height": "67.8594px",
+      "height": "69.5938px",
       "_w": 84,
-      "_h": 68
+      "_h": 70
     },
     ".icon-column > .desktop-icon[data-open=\"applications\"] span:last-child": {
       "font-size": "13px",

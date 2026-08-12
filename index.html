@@ -17,7 +17,7 @@
     <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png" />
     <link rel="manifest" href="assets/app-icon/manifest.json" />
     <script src="app/core/theme-registry.js"></script>
-    <link rel="stylesheet" href="styles.bundle.css?v=20260810.3" />
+    <link rel="stylesheet" href="styles.bundle.css?v=20260812.1" />
   </head>
   <body class="is-booting">
     <script src="app/core/theme-body-init.js"></script>
@@ -67,7 +67,7 @@
         </div>
       </div>
       <div class="menu menu-bar-current-app">
-        <button type="button"><strong>AI System 6</strong></button>
+        <button type="button"><strong id="current-app-menu-label">Finder</strong></button>
         <div class="menu-popover">
           <button data-action="open-about" data-i18n="about_menu">About AI System 6...</button>
           <button data-action="open-control" data-i18n="control_panel">Control Panel</button>
@@ -402,6 +402,7 @@
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h1 id="assistant-title" data-i18n="assistant_title">ClioTalk</h1>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
+          <button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button>
         </div>
         <!-- Info bar: this window's Finder header. Counts on the left, the
              file this conversation lives in on the right, visible before the
@@ -526,11 +527,16 @@
           <button class="resize-box hidden" aria-label="Zoom" data-i18n-aria-label="zoom" disabled aria-hidden="true"></button>
         </div>
         <div class="window-pane settings control-settings">
-          <div class="system-tabs" role="tablist" aria-label="Control Panel section" data-i18n-aria-label="control_panel_sections">
-            <button class="system-tab" id="control-tab-local" type="button" role="tab" aria-selected="false" aria-controls="control-panel-local" data-control-tab="local" data-i18n="control_connection">Local Model</button>
-            <button class="system-tab is-active" id="control-tab-cloud" type="button" role="tab" aria-selected="true" aria-controls="control-panel-cloud" data-control-tab="cloud" data-i18n="cloud_model">Cloud Model</button>
-            <button class="system-tab" id="control-tab-general" type="button" role="tab" aria-selected="false" aria-controls="control-panel-general" data-control-tab="general" data-i18n="control_tab_general">General</button>
-            <button class="system-tab" id="control-tab-strip" type="button" role="tab" aria-selected="false" aria-controls="control-panel-strip" data-control-tab="strip" data-i18n="control_strip_tab">Control Strip</button>
+          <!-- One tablist, six era presentations: the base harness stays the
+               shared horizontal tab sheet; each appearance re-clothes it
+               through control-chooser tokens (Classic renders it as the
+               System 4-6 cdev icon rail). The icon spans are part of the
+               shared DOM and stay hidden where an era shows text-only tabs. -->
+          <div class="system-tabs control-chooser" role="tablist" aria-label="Control Panel section" data-i18n-aria-label="control_panel_sections">
+            <button class="system-tab" id="control-tab-local" type="button" role="tab" aria-selected="false" aria-controls="control-panel-local" data-control-tab="local"><span class="sys-icon" data-system-icon="localModel" aria-hidden="true"></span><span class="control-chooser-label" data-i18n="control_connection">Local Model</span></button>
+            <button class="system-tab is-active" id="control-tab-cloud" type="button" role="tab" aria-selected="true" aria-controls="control-panel-cloud" data-control-tab="cloud"><span class="sys-icon" data-system-icon="cloudModel" aria-hidden="true"></span><span class="control-chooser-label" data-i18n="cloud_model">Cloud Model</span></button>
+            <button class="system-tab" id="control-tab-general" type="button" role="tab" aria-selected="false" aria-controls="control-panel-general" data-control-tab="general"><span class="sys-icon" data-system-icon="control" aria-hidden="true"></span><span class="control-chooser-label" data-i18n="control_tab_general">General</span></button>
+            <button class="system-tab" id="control-tab-strip" type="button" role="tab" aria-selected="false" aria-controls="control-panel-strip" data-control-tab="strip"><span class="sys-icon" data-system-icon="controlStrip" aria-hidden="true"></span><span class="control-chooser-label" data-i18n="control_strip_tab">Control Strip</span></button>
           </div>
 
           <section class="control-section control-model-section" id="control-panel-local" role="tabpanel" aria-labelledby="control-tab-local" data-control-panel="local" hidden>
@@ -920,6 +926,7 @@
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="finder-title" data-i18n="system_folder">System Folder</h2>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
+          <button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button>
         </div>
         <div class="details-bar">
           <span data-i18n="five_items">5 items</span>
@@ -958,6 +965,7 @@
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="control-strip-modules-title" data-i18n="control_strip_modules_folder">Control Strip Modules</h2>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
+          <button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button>
         </div>
         <div class="details-bar">
           <span id="control-strip-modules-count" data-i18n="ten_items">10 items</span>
@@ -1016,6 +1024,7 @@
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="help-folder-title" data-i18n="help_folder">Help Folder</h2>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
+          <button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button>
         </div>
         <div class="details-bar">
           <span data-i18n="seven_items">7 items</span>
@@ -1062,6 +1071,7 @@
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="applications-title" data-i18n="applications">Applications</h2>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
+          <button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button>
         </div>
         <div class="details-bar">
           <span data-i18n="eighteen_items">18 items</span>
@@ -1157,6 +1167,7 @@
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="quick-draft-title" data-i18n="quick_draft_title">Quick Draft</h2>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
+          <button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button>
         </div>
         <div class="details-bar draft-desk-details">
           <span id="quick-draft-stats">0 words · ~0 sec</span>
@@ -1346,6 +1357,7 @@
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="cmf-studio-title" data-i18n="cmf_studio_title">CMF Studio</h2>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
+          <button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button>
         </div>
         <div class="details-bar cmf-status-bar">
           <span id="cmf-status" role="status" aria-live="polite" aria-atomic="true" data-i18n="cmf_ready">Ready.</span>
@@ -1415,6 +1427,7 @@
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="soundscape-title" data-i18n="soundscape_title">Soundscape</h2>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
+          <button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button>
         </div>
         <div class="details-bar soundscape-status-bar">
           <span id="soundscape-status" data-i18n="soundscape_ready">Ready to listen.</span>
@@ -1583,6 +1596,7 @@
         <div class="title-bar">
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
+          <button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button>
           <h2 id="endfield-terminal-title" data-i18n="endfield_terminal_title">Endfield Terminal</h2>
         </div>
         <div class="details-bar endfield-status-bar">
@@ -1620,6 +1634,7 @@
         <div class="title-bar">
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
+          <button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button>
           <h2 id="bureaucracy-meme-title" data-i18n="bureaucracy_meme_title">British Bureaucracy Meme Generator</h2>
         </div>
         <div class="details-bar bureaucracy-status-bar">
@@ -1702,6 +1717,7 @@
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="disk-title" data-i18n="startup_disk">Startup Disk</h2>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
+          <button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button>
         </div>
         <div class="details-bar">
           <span data-i18n="seven_items">7 items</span>
@@ -1748,6 +1764,7 @@
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="project-cd-title" data-i18n="project_cd">Project CD</h2>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
+          <button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button>
         </div>
         <div class="details-bar compact-status-bar">
           <span class="status-bar-leading" id="project-cd-count">0 Project CD items</span>
@@ -1850,6 +1867,7 @@
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="project-disk-title" data-i18n="project_disk">Project Hard Disk</h2>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
+          <button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button>
         </div>
         <div class="details-bar">
           <span id="project-disk-count">0 items</span>
@@ -1884,6 +1902,7 @@
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="documents-title" data-i18n="documents">Documents</h2>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
+          <button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button>
         </div>
         <div class="details-bar">
           <span id="documents-count">0 files</span>
@@ -1930,6 +1949,7 @@
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="teachtext-title" data-i18n="teachtext">TeachText</h2>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
+          <button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button>
         </div>
         <div class="details-bar app-status-bar teachtext-details-bar">
           <span class="status-bar-leading" id="teachtext-boundary">0 words</span>
@@ -1998,6 +2018,7 @@
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="image-manager-title" data-i18n="image_manager">Image Manager</h2>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
+          <button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button>
         </div>
         <div class="details-bar">
           <span id="image-manager-status">0 / 48</span>
@@ -2022,6 +2043,7 @@
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="review-desk-title" data-i18n="review_desk">Review Desk</h2>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
+          <button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button>
         </div>
         <div class="details-bar app-status-bar teachtext-details-bar">
           <span class="status-bar-leading" id="style-sheet-count" data-i18n="draft_voice_stats_empty">0 words · ~0 sec</span>
@@ -2102,6 +2124,7 @@
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="scrapbook-title" data-i18n="scrapbook">Scrapbook</h2>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
+          <button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button>
         </div>
         <div class="details-bar scrapbook-details-bar">
           <span id="scrap-count">0 scraps</span>
@@ -2144,6 +2167,17 @@
               </div>
             </div>
           </form>
+          <div class="scrapbook-pager" role="group" aria-label="Scrapbook pages" data-i18n-aria-label="scrapbook_pages">
+            <div class="scrapbook-page-rail is-horizontal">
+              <button class="window-frame-arrow is-left" type="button" id="scrapbook-page-previous" data-action="scrapbook-page-previous" aria-label="Previous" data-i18n-aria-label="previous_page"></button>
+              <div id="scrapbook-page-track" class="scrapbook-page-track"></div>
+              <button class="window-frame-arrow is-right" type="button" id="scrapbook-page-next" data-action="scrapbook-page-next" aria-label="Next" data-i18n-aria-label="next_page"></button>
+            </div>
+            <div class="scrapbook-page-meta" aria-live="polite">
+              <output id="scrapbook-page-position">0 / 0</output>
+              <span aria-hidden="true">TEXT</span>
+            </div>
+          </div>
           <form id="scrapbook-ask-form" class="ask-bar" data-ask-source="scrapbook">
             <label class="visually-hidden" for="scrapbook-question" data-i18n="scrapbook_ask_label">Ask these scraps</label>
             <div class="ask-bar-row">
@@ -2159,6 +2193,7 @@
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="trash-title" data-i18n="trash">Trash</h2>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
+          <button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button>
         </div>
         <div class="details-bar">
           <span id="trash-count">0 items</span>
@@ -2196,9 +2231,10 @@
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="reader-title" data-i18n="reader">Reader</h2>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
+          <button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button>
         </div>
         <div class="details-bar app-status-bar reader-details-bar">
-          <span class="status-bar-leading" id="reader-status" data-i18n="ready" role="status" aria-live="polite">Ready</span>
+          <span class="status-bar-leading status-bar-placard" id="reader-status" data-i18n="ready" role="status" aria-live="polite">Ready</span>
           <div class="status-bar-context reader-status-context">
             <span id="reader-url-display"></span>
             <div class="tdi-stack-host" data-tdi-stack-for="reader-tabs"></div>
@@ -2228,7 +2264,8 @@
             </div>
           </div>
           <div class="reader-workspace drop-target" id="reader-workspace" data-i18n-drop-label="reader_drop_files">
-            <div class="tdi-rail reader-rail">
+            <div class="tdi-rail tdi-source-rail reader-rail">
+              <div class="tdi-source-rail-label" data-i18n="reader_sources_label" aria-hidden="true">Sources</div>
               <div id="reader-tabs" class="tdi-tabs reader-tabs is-hidden"></div>
             </div>
             <div id="reader-split-handle" class="tdi-grabber" role="separator" tabindex="0" aria-label="Resize Reader tabs" data-i18n-aria-label="resize_reader_tabs"></div>
@@ -2252,6 +2289,7 @@
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="time-machine-title" data-i18n="time_machine">Time Machine</h2>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
+          <button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button>
         </div>
         <div class="window-pane time-machine-pane">
           <div class="time-machine-browser-toolbar">
@@ -2366,6 +2404,7 @@
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="question-sheet-title" data-i18n="question_sheet">Question Sheet</h2>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
+          <button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button>
         </div>
         <div class="details-bar app-status-bar teachtext-details-bar">
           <span class="status-bar-leading" id="question-count">0 questions</span>
@@ -2400,6 +2439,7 @@
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="outline-title" data-i18n="outline">Outline</h2>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
+          <button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button>
         </div>
         <div class="details-bar app-status-bar teachtext-details-bar">
           <span class="status-bar-leading" id="outline-status" data-i18n="draft">Draft</span>
@@ -2439,6 +2479,7 @@
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="section-drafts-title" data-i18n="section_drafts">Section Drafts</h2>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
+          <button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button>
         </div>
         <div class="details-bar app-status-bar teachtext-details-bar">
           <span class="status-bar-leading" id="draft-count" data-i18n="draft_voice_stats_empty">0 words · ~0 sec</span>
@@ -2616,6 +2657,7 @@
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="docmap-title" data-i18n="docmap">DocMap</h2>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
+          <button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button>
         </div>
         <div class="details-bar app-status-bar docmap-details-bar">
           <span class="status-bar-leading" id="docmap-count">0 nodes</span>
@@ -2690,6 +2732,7 @@
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="clio-stage-title" data-i18n="clio_stage_title">ClioStage</h2>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
+          <button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button>
         </div>
         <div class="details-bar clio-stage-details-bar">
           <button class="btn details-bar-button" type="button" id="clio-stage-import-files" data-i18n="docmap_import_files">Import Files...</button>
@@ -2742,6 +2785,7 @@
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="clio-chart-title" data-i18n="clio_chart_title">ClioChart</h2>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
+          <button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button>
         </div>
         <div class="details-bar clio-chart-details-bar">
           <button class="btn details-bar-button" type="button" id="clio-chart-import-file" data-i18n-aria-label="clio_chart_import_file">
@@ -2803,6 +2847,7 @@
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="liquid-cover-title" data-i18n="liquid_cover_title">Cover Glass</h2>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
+          <button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button>
         </div>
         <div class="details-bar lc-status-bar">
           <span class="lc-ask-status" id="lc-ai-status" role="status" aria-live="polite" data-i18n="ready">Ready</span>
@@ -3160,6 +3205,7 @@ Glass</textarea>
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="system-help-title" data-i18n="system_help">System Help</h2>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
+          <button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button>
         </div>
         <div class="details-bar compact-status-bar">
           <span class="status-bar-leading" id="system-help-scope" data-i18n="system_help_terms">System Terms</span>
@@ -3654,6 +3700,7 @@ Glass</textarea>
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="theme-lab-title" data-i18n="theme_lab">Theme Lab</h2>
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
+          <button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button>
         </div>
         <div class="details-bar compact-status-bar">
           <span class="status-bar-leading" data-i18n="theme_lab_status">Shared control specimen</span>
@@ -4025,7 +4072,7 @@ Glass</textarea>
       </section>
     </main>
 
-    <script src="app/generated/build-info.js?v=20260810.3"></script>
-    <script src="app.bundle.js?v=20260810.3"></script>
+    <script src="app/generated/build-info.js?v=20260812.1"></script>
+    <script src="app.bundle.js?v=20260812.1"></script>
   </body>
 </html>

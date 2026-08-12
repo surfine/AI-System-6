@@ -1170,6 +1170,77 @@
   opacity: var(--control-disabled-opacity);
 }
 
+/* Control Panel section chooser — the same tablist wearing era-owned clothes.
+   Every declaration resolves through a --control-chooser-* token whose default
+   equals the base harness value above, so the base sheet (and Platinum's OS 8
+   tabs) renders unchanged. An era with its own native settings-navigation
+   object swaps token values only: Classic clothes it as the System 4-6 cdev
+   icon rail, the Aqua family as its icon toolbar, Liquid Glass as a segmented
+   capsule. One DOM, one keyboard order, six presentations. */
+.control-chooser {
+  flex-direction: var(--control-chooser-direction);
+  gap: var(--control-chooser-gap);
+  width: var(--control-chooser-width);
+  max-width: 100%;
+  padding: var(--control-chooser-padding);
+  background: var(--control-chooser-bg);
+  border-radius: var(--control-chooser-radius);
+  border-bottom: var(--control-chooser-border-bottom);
+  border-right: var(--control-chooser-border-right);
+}
+
+.control-chooser .system-tab {
+  display: flex;
+  flex-direction: var(--control-chooser-item-direction);
+  align-items: center;
+  justify-content: center;
+  gap: var(--control-chooser-item-gap);
+  flex: var(--control-chooser-item-flex);
+  padding: var(--control-chooser-item-padding);
+  bottom: var(--control-chooser-item-offset);
+  border: var(--control-chooser-item-border);
+  border-bottom-width: var(--control-chooser-item-border-bottom-width);
+  border-radius: var(--control-chooser-item-radius);
+  background: var(--control-chooser-item-bg);
+  color: var(--control-chooser-item-fg);
+  box-shadow: var(--control-chooser-item-shadow);
+}
+
+.control-chooser .system-tab:not(.is-active):hover {
+  background: var(--control-chooser-hover-bg);
+  color: var(--control-chooser-hover-fg);
+}
+
+.control-chooser .system-tab.is-active {
+  background: var(--control-chooser-active-bg);
+  color: var(--control-chooser-active-fg);
+  font-weight: var(--control-chooser-active-weight);
+  box-shadow: var(--control-chooser-active-shadow);
+}
+
+.control-chooser .sys-icon {
+  display: var(--control-chooser-icon-display);
+  width: var(--control-chooser-icon-size);
+  height: var(--control-chooser-icon-size);
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  /* background-color only: an era painter may carry the icon art in
+     background-image (Aqua/Snow Leopard sprite cells). */
+  background-color: transparent;
+  box-shadow: none;
+  color: inherit;
+}
+
+.control-chooser .control-chooser-label {
+  font-size: var(--control-chooser-label-size);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .system-tab-panel {
   display: grid;
   gap: 8px;

@@ -232,6 +232,31 @@ try {
       `${theme.id}: font strategy ${theme.fontStrategy} projected the wrong modern-font state`,
     );
 
+    const applicationMenu = await page.evaluate(() => {
+      const currentMenu = document.querySelector(".menu-bar-current-app");
+      const currentLabel = document.querySelector("#current-app-menu-label");
+      renderAppMenuBar("finder", { force: true });
+      const finderLabel = currentLabel?.textContent?.trim() || "";
+      renderAppMenuBar("reader", { force: true });
+      const readerLabel = currentLabel?.textContent?.trim() || "";
+      const readerOwner = currentMenu?.getAttribute("data-current-app-id") || "";
+      renderAppMenuBar("finder", { force: true });
+      return {
+        display: currentMenu ? getComputedStyle(currentMenu).display : "missing",
+        finderLabel,
+        readerLabel,
+        readerOwner,
+      };
+    });
+    assert(applicationMenu.finderLabel === "Finder", `${theme.id}: foreground Finder is labeled ${applicationMenu.finderLabel}`);
+    assert(applicationMenu.readerLabel === "Reader", `${theme.id}: foreground Reader is labeled ${applicationMenu.readerLabel}`);
+    assert(applicationMenu.readerOwner === "reader", `${theme.id}: current-application owner did not follow Reader`);
+    assert(![applicationMenu.finderLabel, applicationMenu.readerLabel].includes("AI System 6"), `${theme.id}: environment name leaked into the current-application title`);
+    assert(
+      (theme.id === "aqua") === (applicationMenu.display !== "none"),
+      `${theme.id}: Jaguar-only current-application menu visibility is wrong (${applicationMenu.display})`,
+    );
+
     const windows = [];
     for (const contract of REPRESENTATIVE_WINDOWS) {
       const snapshot = await page.evaluate(({ id, sample }) => {

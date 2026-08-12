@@ -361,12 +361,51 @@ function loadClassicScriptOnce(src) {
 // a failed load clears the promise so a later retry can succeed. Data loaders
 // resolve to the object they install. All loaders always return a Promise, so
 // both `await` and `.then()` callers behave identically.
-function createLazyModuleLoader(flag, sources, resolveData = false) {
+// Stylesheets can be lazy too. A window whose module is lazy and whose CSS is
+// scoped to it does not need that CSS in the boot bundle; it is requested here
+// and awaited before the module runs, so the window never paints unstyled.
+const lazyStylePromises = new Map();
+
+function loadStylesheetOnce(href) {
+  if (lazyStylePromises.has(href)) return lazyStylePromises.get(href);
+  const promise = new Promise((resolve) => {
+    const existing = document.querySelector(`link[data-lazy-style="${CSS.escape(href)}"]`);
+    if (existing?.dataset.loaded === "true") {
+      resolve(true);
+      return;
+    }
+    const link = existing || document.createElement("link");
+    const settle = (loaded) => {
+      link.dataset.loaded = String(loaded);
+      // A stylesheet that failed must not be remembered as loaded, so a later
+      // open can try again.
+      if (!loaded) lazyStylePromises.delete(href);
+      resolve(loaded);
+    };
+    link.rel = "stylesheet";
+    link.href = lazyScriptUrl(href);
+    link.dataset.lazyStyle = href;
+    link.onload = () => settle(true);
+    // A missing stylesheet degrades the window, it does not break it: the
+    // module still loads and the failure stays visible on screen.
+    link.onerror = () => settle(false);
+    if (!existing) document.head.append(link);
+  });
+  lazyStylePromises.set(href, promise);
+  return promise;
+}
+
+function createLazyModuleLoader(flag, sources, resolveData = false, stylesheets = []) {
   let loadPromise = null;
   return async function ensureLazyModuleLoaded() {
     if (flag && window[flag]) return resolveData ? (window[flag] || {}) : true;
     if (loadPromise) return loadPromise;
-    const chain = sources.reduce((pending, src) => pending.then(() => loadClassicScriptOnce(src)), Promise.resolve());
+    // The stylesheet request starts in parallel with the module and is awaited
+    // with it, so the two arrive together.
+    const styleChain = Promise.all(stylesheets.map((href) => loadStylesheetOnce(href)));
+    const chain = sources
+      .reduce((pending, src) => pending.then(() => loadClassicScriptOnce(src)), Promise.resolve())
+      .then(() => styleChain);
     loadPromise = chain
       .then(() => {
         // A script can fire onload without executing (syntax error) or a
@@ -428,7 +467,7 @@ const ensureQuickDraftModule = createLazyModuleLoader("AISystem6QuickDraftLoaded
 ]);
 const ensureCmfStudioModule = createLazyModuleLoader("AISystem6CMFStudioLoaded", ["app/features/cmf-studio.js?cmf=exterior-ao-sanitized"]);
 const ensureSoundscapeModule = createLazyModuleLoader("AISystem6SoundscapeLoaded", ["app/features/soundscape.js"]);
-const ensureThemeLabModule = createLazyModuleLoader("AISystem6ThemeLabLoaded", ["app/features/theme-lab.js"]);
+const ensureThemeLabModule = createLazyModuleLoader("AISystem6ThemeLabLoaded", ["app/features/theme-lab.js"], false, ["styles.theme-lab.css"]);
 window.AISystem6EnsureThemeLabModule = ensureThemeLabModule;
 const ensureWritingDemoModule = createLazyModuleLoader("AISystem6WritingDemoLoaded", [
   "app/data/iphone-17e-demo-corpus.js",

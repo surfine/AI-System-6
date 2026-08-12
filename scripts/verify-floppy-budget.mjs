@@ -2,6 +2,7 @@ import { existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { appRuntimePaths, coreFiles, floppyBudgetBytes, lazyStartupExclusions } from "./runtime-manifest.mjs";
+import { lazyStyleBundles } from "./style-manifest.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 
@@ -36,6 +37,17 @@ appRuntimePaths
   .forEach(({ path, bytes }) => {
     console.log(`${path.padEnd(36)} ${String(bytes).padStart(9)} bytes`);
   });
+// Reported, not counted: a lazy stylesheet is downloaded by the window that
+// needs it, so it does not belong in the boot budget. It stays on screen here
+// so the size can never quietly grow out of sight.
+lazyStyleBundles.forEach(({ output }) => {
+  const absolutePath = join(root, output);
+  if (!existsSync(absolutePath)) {
+    failures.push(`${output} is missing`);
+    return;
+  }
+  console.log(`${`${output} (lazy)`.padEnd(24)} ${String(statSync(absolutePath).size).padStart(9)} bytes`);
+});
 console.log(`${"core total".padEnd(24)} ${String(total).padStart(9)} bytes`);
 console.log(`${"floppy budget".padEnd(24)} ${String(floppyBudgetBytes).padStart(9)} bytes`);
 

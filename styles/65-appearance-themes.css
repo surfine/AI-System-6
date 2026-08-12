@@ -33,12 +33,18 @@ body[data-theme="platinum"] {
   --system-caption-size: 10px;
   --system-menu-height: 20px;
   --system-titlebar-height: 19px;
-  --system-titlebar-control-slot: 19px;
+  /* The finished Mac OS 9 recipe uses 11px boxes with a 5px visual gap:
+     11px art + 5px spacing = a 16px title-bar lane per control. */
+  --system-titlebar-control-slot: 16px;
+  /* Mac OS 8/9 is the only era whose native title bar carries the
+     WindowShade collapse box; open its slot and show the control. */
+  --system-titlebar-shade-slot: 16px;
+  --system-titlebar-shade-display: block;
   --system-titlebar-control-size: 11px;
   --system-titlebar-control-art-size: 11px;
   --system-titlebar-control-art-offset-y: -2px;
-  --system-titlebar-close-art-offset-x: -1px;
-  --system-titlebar-resize-art-offset-x: 1px;
+  --system-titlebar-close-art-offset-x: 0px;
+  --system-titlebar-resize-art-offset-x: 0px;
   --system-titlebar-control-margin-x: 0;
   --system-titlebar-title-height: 13px;
   --system-titlebar-font-size: 12px;
@@ -59,15 +65,14 @@ body[data-theme="platinum"] {
   --shade: #999999;
   --shade-dark: #777777;
   --rule: #888888;
-  /* Abstracted from the Mac OS 9 default wallpaper (512 Pixels capture): a
-     light blue field with a subtle diagonal accent band and a brighter
-     crest. Measured from the 5120x3840 original, no raster payload. */
-  --desktop: #d1dcf8;
+  /* Mac OS 9 "azul" desktop: a deep-mid blue wave pattern, not a light
+     gradient. The seamless 96px tile is generated (drafts/gen-azul-tile.mjs,
+     3.4KB, within the 4KB per-era tile budget) from the wave geometry of the
+     512 Pixels capture; the solid base carries reduced-data fallbacks. */
+  --desktop: #4a71ab;
   --desktop-surface:
-    linear-gradient(115deg,
-      #d1dcf8 0%, #c7d4f1 18%, #b7cbf0 28%,
-      #dce7fc 38%, #e3ebfe 48%, #d9e3fa 58%,
-      #c7d4f1 74%, #b7cbf0 86%, #d1dcf8 100%);
+    url("./assets/themes/platinum/azul-tile.png") left top / 96px 96px repeat,
+    linear-gradient(#4a71ab, #4a71ab);
   --pane-bg: #dddddd;
   --window-bg: #cccccc;
   --window-border: 1px solid #000000;
@@ -84,19 +89,18 @@ body[data-theme="platinum"] {
     inset 1px 1px 0 #eeeeee,
     inset -1px -1px 0 #999999;
   --system-titlebar-active-bg:
-    linear-gradient(#cccccc, #cccccc) left top / 19px 100% no-repeat,
-    linear-gradient(#cccccc, #cccccc) right top / 19px 100% no-repeat,
+    linear-gradient(#cccccc, #cccccc) left top / var(--system-titlebar-control-slot) 100% no-repeat,
+    linear-gradient(#cccccc, #cccccc) right top / calc(var(--system-titlebar-control-slot) + var(--system-titlebar-shade-slot)) 100% no-repeat,
     linear-gradient(to bottom, #cccccc 0 2px, transparent 2px 13px, #cccccc 13px 17px, #999999 17px 18px),
     repeating-linear-gradient(to bottom, #ffffff 0 1px, #777777 1px 2px) 0 1px / 100% 2px repeat-y,
     #cccccc;
   --system-titlebar-inactive-bg: #dddddd;
   --system-titlebar-background-origin: border-box;
   --system-titlebar-background-clip: border-box;
-  /* Mac OS 9 keeps the close/zoom controls on a background window, dimmed
-     (Mac OS 8/9 HIG: inactive windows show inactive controls). System 6
-     hid them entirely — that rule does not carry to Platinum. */
-  --system-titlebar-inactive-control-visibility: visible;
-  --system-titlebar-inactive-control-opacity: 0.45;
+  /* The finished Mac OS 9 CSS reference and GUIdebook captures both erase
+     title-bar controls on a background window while retaining its title. */
+  --system-titlebar-inactive-control-visibility: hidden;
+  --system-titlebar-inactive-control-opacity: 1;
   --system-titlebar-inactive-title-color: #777777;
   --titlebar-title-bg: #cccccc;
   --titlebar-title-fg: #000000;
@@ -110,6 +114,54 @@ body[data-theme="platinum"] {
   --sidebar-bg: #eeeeee;
   --selection-bg: #ccccff;
   --selection-fg: #000000;
+  /* Mac OS 9 document chrome: a compact inset placard for the leading
+     receipt, beside a grooved source rail. These are shared system roles;
+     the Reader merely opts into them in its stable DOM. */
+  --status-placard-padding: 2px 6px;
+  --status-placard-border: var(--system-border);
+  --status-placard-bg: #eeeeee;
+  --status-placard-shadow: inset 1px 1px 0 #888888, inset -1px -1px 0 #ffffff;
+  --status-placard-font-family: var(--mono-font);
+  --status-placard-font-size: var(--system-caption-size);
+  --tdi-rail-padding: 3px;
+  --tdi-rail-border: var(--system-border);
+  --tdi-rail-bg: #cccccc;
+  --tdi-rail-shadow: inset 1px 1px 0 #888888, inset -1px -1px 0 #ffffff;
+  --tdi-tabs-gap: 1px;
+  --tdi-tabs-padding: 1px;
+  --tdi-tabs-bg: transparent;
+  --tdi-tabs-border-bottom: 0;
+  --tdi-tab-height: 38px;
+  --tdi-tab-min-height: 38px;
+  --tdi-tab-border: 0;
+  --tdi-tab-border-bottom: 1px solid #aaaaaa;
+  --tdi-tab-bg: #eeeeee;
+  --tdi-tab-shadow: none;
+  --tdi-tab-active-border: 0;
+  --tdi-tab-active-border-bottom: 1px solid #888888;
+  --tdi-tab-active-bg: var(--selection-bg);
+  --tdi-tab-active-fg: var(--selection-fg);
+  --tdi-tab-active-shadow: inset 1px 1px 0 #ffffff;
+  /* Searcher result table, Sherlock 2 idiom (Mac OS 9 gallery evidence):
+     column headers over dense rows in a white list interior, plus the
+     rank-mapped relevance bar. The bar paints with currentColor so the
+     lavender selection inversion keeps it visible. */
+  --find-path-header-display: grid;
+  --find-path-relevance-display: block;
+  --find-path-result-display: grid;
+  --find-path-result-align: baseline;
+  --find-path-result-column-gap: 10px;
+  --find-path-result-padding: 6px 10px;
+  --find-path-results-bg: #ffffff;
+  --find-path-header-padding: 3px 10px;
+  --find-path-header-border-bottom: 1px solid var(--shade-dark);
+  --find-path-header-bg: linear-gradient(var(--quiet-panel), var(--panel));
+  --find-path-header-font-size: var(--system-caption-size);
+  /* OS 9 desktop labels keep the white tag but draw a hairline edge; the
+     selected tag uses the era's lavender selection, not a 1-bit invert. */
+  --desktop-label-box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
+  --desktop-label-selected-bg: var(--selection-bg);
+  --desktop-label-selected-fg: var(--selection-fg);
   --sidebar-selection-bg: #ccccff;
   --sidebar-selection-fg: #000000;
   --separator: #888888;
@@ -646,9 +698,62 @@ body[data-theme="platinum"] {
   --alarm-clock-mode-hover-bg: #eeeeee;
   --alarm-clock-mode-active-shadow: inset 0 0 0 3px #ffffff;
   --alarm-clock-section-gap: 0px;
+  /* Control Panel section chooser: the OS 8 tab sheet is Platinum-era
+     vocabulary, so Platinum pins the shared .system-tab harness values here
+     (the foundation defaults are Classic's cdev icon rail). */
+  --control-settings-columns: minmax(0, 1fr);
+  --control-settings-rows: none;
+  --control-chooser-area: auto;
+  --control-chooser-direction: row;
+  --control-chooser-gap: 3px;
+  --control-chooser-border-bottom: var(--system-border);
+  --control-chooser-border-right: 0;
+  --control-chooser-item-direction: row;
+  --control-chooser-item-flex: 1 1 0;
+  --control-chooser-item-gap: 6px;
+  --control-chooser-item-padding: 4px 10px;
+  --control-chooser-item-offset: calc(0px - var(--tab-overlap));
+  --control-chooser-item-border: var(--system-border);
+  --control-chooser-item-radius: var(--tab-radius) var(--tab-radius) 0 0;
+  --control-chooser-item-bg: var(--tab-bg);
+  --control-chooser-item-fg: var(--ink);
+  --control-chooser-hover-bg: var(--tab-hover-bg);
+  --control-chooser-hover-fg: var(--ink);
+  --control-chooser-active-bg: var(--tab-active-bg);
+  --control-chooser-active-fg: var(--ink);
+  --control-chooser-active-weight: var(--system-strong-weight);
+  --control-chooser-icon-display: none;
+  --control-chooser-label-size: inherit;
+  /* Control Strip — Platinum is the strip's native era (Mac OS 8/9): raised
+     #DDD body with an outer-end half-capsule tab, ribbed grip, and each
+     module as a small bevel button that presses to an inset. Approximation
+     from Mac OS 9 captures (512pixels / GUIdebook), not a resource decode. */
+  --control-strip-thickness: 24px;
+  --control-strip-bg: #dddddd;
+  --control-strip-border: 1px solid #333333;
+  --control-strip-divider: 1px solid transparent;
+  --control-strip-radius: 4px 12px 12px 4px;
+  --control-strip-radius-mirrored: 12px 4px 4px 12px;
+  --control-strip-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #9e9e9e, 1px 2px 4px rgba(0, 0, 0, 0.35);
+  --control-strip-tile-bg: linear-gradient(#f4f4f4, #c9c9c9);
+  --control-strip-tile-radius: 3px;
+  --control-strip-tile-shadow: inset 0 0 0 1px #7a7a7a, inset 1px 1px 0 rgba(255, 255, 255, 0.85), inset -1px -1px 0 #9a9a9a;
+  --control-strip-tile-margin: 2px 1px;
+  --control-strip-tile-height: calc(var(--control-strip-thickness) - 6px);
+  --control-strip-tile-hover-shadow: inset 0 0 0 1px #6f6f6f, inset 1px 1px 0 #ffffff, inset -1px -1px 0 #9a9a9a;
+  --control-strip-hover-bg: rgba(255, 255, 255, 0.55);
+  --control-strip-hover-fg: #111111;
+  --control-strip-hover-shadow: none;
+  --control-strip-active-bg: linear-gradient(#bfbfbf, #d8d8d8);
+  --control-strip-active-fg: #111111;
+  --control-strip-active-shadow: inset 0 0 0 1px #6f6f6f, inset 1px 1px 3px rgba(0, 0, 0, 0.35);
+  --control-strip-gauge: #333333;
+  --control-strip-gauge-bg: #ffffff;
+  --control-strip-grip-inset: 5px 3px;
+  --control-strip-grip: repeating-linear-gradient(to bottom, #f6f6f6 0 1px, #8e8e8e 1px 2px, rgba(0, 0, 0, 0) 2px 4px);
 }
 
-/* Platinum icon family: 54 Mac OS 9-era object painters with dedicated 32 px
+/* Platinum icon family: 56 Mac OS 9-era object painters with dedicated 32 px
    and 16 px artwork. Integer silhouettes, selective keylines, and one-pixel
    light/shade live in the asset; CSS owns only placement and state. */
 body[data-theme="platinum"] .sys-icon[data-system-icon]:not(:where([data-system-icon="play"], [data-system-icon="pause"], [data-system-icon="previousTrack"], [data-system-icon="nextTrack"], [data-system-icon="shuffleTracks"], [data-system-icon="repeatTracks"], [data-system-icon="speaker"])) {
@@ -657,6 +762,12 @@ body[data-theme="platinum"] .sys-icon[data-system-icon]:not(:where([data-system-
   background-position: center;
   background-size: contain;
   filter: none;
+}
+
+/* Reviewed Platinum PNGs are native 32/16 px pixel art. Preserve each
+   authored pixel as an integer device-pixel block on Retina displays. */
+.sys-icon-platinum-raster {
+  image-rendering: pixelated;
 }
 
 body[data-theme="platinum"] .sys-icon[data-system-icon="startupDisk"] {
@@ -839,12 +950,17 @@ body[data-theme="platinum"] .sys-icon[data-system-icon]:has(.sys-icon-svg.has-pl
   display: block;
 }
 
-body[data-theme="platinum"] .sys-icon-svg.has-platinum-core[data-classic-source-size="32"] {
+body[data-theme="platinum"] .sys-icon-svg.has-platinum-core[data-platinum-source-size="42"] {
+  width: 42px;
+  height: 42px;
+}
+
+body[data-theme="platinum"] .sys-icon-svg.has-platinum-core[data-platinum-source-size="32"] {
   width: 32px;
   height: 32px;
 }
 
-body[data-theme="platinum"] .sys-icon-svg.has-platinum-core[data-classic-source-size="16"] {
+body[data-theme="platinum"] .sys-icon-svg.has-platinum-core[data-platinum-source-size="16"] {
   width: 16px;
   height: 16px;
 }
@@ -859,6 +975,14 @@ body[data-theme="platinum"] .sys-icon-svg.has-platinum-core .sys-icon-platinum-c
 
 body[data-theme="platinum"] .sys-icon[data-system-icon="control"] {
   background-image: url("./assets/themes/platinum/control-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="localModel"] {
+  background-image: url("./assets/themes/platinum/localModel-32.svg");
+}
+
+body[data-theme="platinum"] .sys-icon[data-system-icon="controlStrip"] {
+  background-image: url("./assets/themes/platinum/controlStrip-32.svg");
 }
 
 body[data-theme="platinum"] :is(.menu-bar, .control-strip) .sys-icon {
@@ -891,219 +1015,227 @@ body[data-theme="yosemite"] .sys-icon[data-system-icon]:not(:where([data-system-
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="startupDisk"] {
-  --yosemite-icon: url("./assets/themes/yosemite/startup-disk-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/startupDisk-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="hardDisk"] {
-  --yosemite-icon: url("./assets/themes/yosemite/hardDisk-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/hardDisk-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="folder"] {
-  --yosemite-icon: url("./assets/themes/yosemite/folder-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/folder-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="document"] {
-  --yosemite-icon: url("./assets/themes/yosemite/document-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/document-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="applications"] {
-  --yosemite-icon: url("./assets/themes/yosemite/applications-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/applications-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="trash"] {
-  --yosemite-icon: url("./assets/themes/yosemite/trash-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/trash-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="trashFull"] {
-  --yosemite-icon: url("./assets/themes/yosemite/trashFull-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/trashFull-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="finderApp"] {
-  --yosemite-icon: url("./assets/themes/yosemite/finder-app-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/finderApp-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="fileFloppy"] {
-  --yosemite-icon: url("./assets/themes/yosemite/fileFloppy-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/fileFloppy-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="assistant"] {
-  --yosemite-icon: url("./assets/themes/yosemite/assistant-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/assistant-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="quickDraft"] {
-  --yosemite-icon: url("./assets/themes/yosemite/quickDraft-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/quickDraft-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="writingStudio"] {
-  --yosemite-icon: url("./assets/themes/yosemite/writingStudio-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/writingStudio-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="projectDisk"] {
-  --yosemite-icon: url("./assets/themes/yosemite/projectDisk-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/projectDisk-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="projectDisc"] {
-  --yosemite-icon: url("./assets/themes/yosemite/projectDisc-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/projectDisc-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="cloudModel"] {
-  --yosemite-icon: url("./assets/themes/yosemite/cloudModel-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/cloudModel-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="cloudModelOff"] {
-  --yosemite-icon: url("./assets/themes/yosemite/cloudModelOff-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/cloudModelOff-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="questionSheet"] {
-  --yosemite-icon: url("./assets/themes/yosemite/questionSheet-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/questionSheet-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="outline"] {
-  --yosemite-icon: url("./assets/themes/yosemite/outline-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/outline-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="sectionDrafts"] {
-  --yosemite-icon: url("./assets/themes/yosemite/sectionDrafts-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/sectionDrafts-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="manuscript"] {
-  --yosemite-icon: url("./assets/themes/yosemite/manuscript-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/manuscript-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="reviewDesk"] {
-  --yosemite-icon: url("./assets/themes/yosemite/reviewDesk-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/reviewDesk-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="searcher"] {
-  --yosemite-icon: url("./assets/themes/yosemite/searcher-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/searcher-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="reader"] {
-  --yosemite-icon: url("./assets/themes/yosemite/reader-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/reader-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="timeMachine"] {
-  --yosemite-icon: url("./assets/themes/yosemite/timeMachine-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/timeMachine-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="docMap"] {
-  --yosemite-icon: url("./assets/themes/yosemite/docMap-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/docMap-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="clioStage"] {
-  --yosemite-icon: url("./assets/themes/yosemite/clioStage-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/clioStage-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="clioChart"] {
-  --yosemite-icon: url("./assets/themes/yosemite/clioChart-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/clioChart-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="liquidCover"] {
-  --yosemite-icon: url("./assets/themes/yosemite/liquidCover-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/liquidCover-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="cmfStudio"] {
-  --yosemite-icon: url("./assets/themes/yosemite/cmfStudio-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/cmfStudio-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="soundscape"] {
-  --yosemite-icon: url("./assets/themes/yosemite/soundscape-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/soundscape-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="scrapbook"] {
-  --yosemite-icon: url("./assets/themes/yosemite/scrapbook-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/scrapbook-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="systemFolder"] {
-  --yosemite-icon: url("./assets/themes/yosemite/systemFolder-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/systemFolder-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="helpFolder"] {
-  --yosemite-icon: url("./assets/themes/yosemite/helpFolder-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/helpFolder-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="importUtility"] {
-  --yosemite-icon: url("./assets/themes/yosemite/importUtility-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/importUtility-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="controlPanel"] {
-  --yosemite-icon: url("./assets/themes/yosemite/controlPanel-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/controlPanel-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="chooser"] {
-  --yosemite-icon: url("./assets/themes/yosemite/chooser-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/chooser-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="systemHelp"] {
-  --yosemite-icon: url("./assets/themes/yosemite/systemHelp-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/systemHelp-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="dictionary"] {
-  --yosemite-icon: url("./assets/themes/yosemite/dictionary-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/dictionary-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="teachText"] {
-  --yosemite-icon: url("./assets/themes/yosemite/teachText-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/teachText-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="writingDemo"] {
-  --yosemite-icon: url("./assets/themes/yosemite/writingDemo-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/writingDemo-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="chatFile"] {
-  --yosemite-icon: url("./assets/themes/yosemite/chatFile-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/chatFile-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="chatImport"] {
-  --yosemite-icon: url("./assets/themes/yosemite/chatImport-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/chatImport-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="systemStatus"] {
-  --yosemite-icon: url("./assets/themes/yosemite/systemStatus-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/systemStatus-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="contextPanel"] {
-  --yosemite-icon: url("./assets/themes/yosemite/contextPanel-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/contextPanel-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="rebuildArticle"] {
-  --yosemite-icon: url("./assets/themes/yosemite/rebuildArticle-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/rebuildArticle-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="bureaucracyMeme"] {
-  --yosemite-icon: url("./assets/themes/yosemite/bureaucracyMeme-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/bureaucracyMeme-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="endfieldTerminal"] {
-  --yosemite-icon: url("./assets/themes/yosemite/endfieldTerminal-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/endfieldTerminal-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="documents"] {
-  --yosemite-icon: url("./assets/themes/yosemite/documents-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/documents-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="alias"] {
-  --yosemite-icon: url("./assets/themes/yosemite/alias-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/alias-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="systemFile"] {
-  --yosemite-icon: url("./assets/themes/yosemite/systemFile-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/systemFile-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="multiFinderApp"] {
-  --yosemite-icon: url("./assets/themes/yosemite/multiFinderApp-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/multiFinderApp-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="daHandler"] {
-  --yosemite-icon: url("./assets/themes/yosemite/daHandler-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/daHandler-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="writingBell"] {
-  --yosemite-icon: url("./assets/themes/yosemite/writingBell-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/writingBell-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="control"] {
-  --yosemite-icon: url("./assets/themes/yosemite/control-32.svg");
+  --yosemite-icon: url("./assets/themes/yosemite/icons/control-128.png");
+}
+
+body[data-theme="yosemite"] .sys-icon[data-system-icon="localModel"] {
+  --yosemite-icon: url("./assets/themes/yosemite/icons/localModel-128.png");
+}
+
+body[data-theme="yosemite"] .sys-icon[data-system-icon="controlStrip"] {
+  --yosemite-icon: url("./assets/themes/yosemite/icons/controlStrip-128.png");
 }
 
 /* Liquid Glass's selected/hover icon resets use the `background` shorthand at
@@ -1207,8 +1339,8 @@ body[data-theme="yosemite"] {
   --system-control-size: 13px;
   --system-text-size: 13px;
   --system-caption-size: 11px;
-  --system-titlebar-height: 26px;
-  --system-titlebar-control-slot: 52px;
+  --system-titlebar-height: 22px;
+  --system-titlebar-control-slot: 24px;
   --system-titlebar-control-size: 12px;
   --system-titlebar-title-height: 18px;
   --system-titlebar-font-size: 13px;
@@ -1285,40 +1417,30 @@ body[data-theme="yosemite"] {
   --theme-lab-finder-status-height: 20px;
   --theme-lab-finder-status-border-top: 1px solid #d5d5d5;
   --theme-lab-finder-status-bg: #f6f6f6;
-  /* Yosemite-gtk-theme titlebutton-{close,minimize,maximize}.png: 12px
-     flat red/yellow/green lamps. Measured fills from the 14px assets:
-     close #f25056, minimize #fac636, zoom #39ea49, each with the darker
-     rim stop and a small top-left catchlight. */
+  /* Yosemite-gtk-theme titlebutton-{close,minimize,maximize}.png: flat
+     red/yellow/green lamps. Their 14px source assets have a uniform fill
+     plus a darker antialiased rim, with no specular catchlight. */
   --traffic-light-size: 12px;
   /* Real 10.10 Finder capture (512 Pixels, 1:1): 12px lamps centered
      ~20.5px apart — an ~8.5px edge gap, not the 18px spacing of the
      System 6-era titlebar controls. */
   --traffic-light-gap: 8.5px;
-  --traffic-light-close-bg:
-    radial-gradient(circle at 36% 30%, rgba(255, 255, 255, 0.55) 0 1.2px, rgba(255, 255, 255, 0) 2.2px),
-    #f25056;
-  --traffic-light-resize-bg:
-    radial-gradient(circle at 36% 30%, rgba(255, 255, 255, 0.55) 0 1.2px, rgba(255, 255, 255, 0) 2.2px),
-    #39ea49;
+  --traffic-light-close-bg: #f25056;
+  --traffic-light-resize-bg: #39ea49;
   /* Real 10.10: the 12px lamps sit ~4px below the window top edge. */
   --theme-lab-era-titlebar-control-top: 4px;
   --theme-lab-era-titlebar-control-size: 12px;
-  --theme-lab-era-titlebar-minimize-bg:
-    radial-gradient(circle at 36% 30%, rgba(255, 255, 255, 0.55) 0 1.2px, rgba(255, 255, 255, 0) 2.2px),
-    #fac636;
+  --theme-lab-era-titlebar-minimize-bg: #fac636;
   /* Real 10.10 hover: the lamp deepens and draws its dark symbol (×, −, +)
      only while the pointer is over it. Resting lamps stay plain circles. */
   --traffic-light-close-hover-bg:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3.8 3.8l4.4 4.4M8.2 3.8l-4.4 4.4' stroke='%238e1017' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") center / 12px 12px no-repeat,
-    radial-gradient(circle at 36% 30%, rgba(255, 255, 255, 0.45) 0 1.2px, rgba(255, 255, 255, 0) 2.2px) center / 12px 12px no-repeat,
     #d9434b;
   --traffic-light-resize-hover-bg:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 6h6M6 3v6' stroke='%23126317' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") center / 12px 12px no-repeat,
-    radial-gradient(circle at 36% 30%, rgba(255, 255, 255, 0.45) 0 1.2px, rgba(255, 255, 255, 0) 2.2px) center / 12px 12px no-repeat,
     #2fbb3c;
   --theme-lab-era-titlebar-minimize-hover-bg:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 6h6' stroke='%238a5e10' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") center / 12px 12px no-repeat,
-    radial-gradient(circle at 36% 30%, rgba(255, 255, 255, 0.45) 0 1.2px, rgba(255, 255, 255, 0) 2.2px) center / 12px 12px no-repeat,
     #e0a92a;
   /* Alarm Clock: 10.10 flat light chrome, thin borders, blue accent. */
   --alarm-clock-frame-border: 1px solid rgba(0, 0, 0, 0.11);
@@ -1414,6 +1536,31 @@ body[data-theme="yosemite"] {
   --selection-fg: #ffffff;
   --sidebar-selection-bg: var(--selection-bg);
   --sidebar-selection-fg: #ffffff;
+  /* Yosemite keeps the browser visible as a flat, lightly separated source
+     sidebar; only the material changes, not Scrapbook selection behavior. */
+  --scrapbook-list-display: block;
+  --scrapbook-pager-display: none;
+  --scrapbook-pane-columns: minmax(160px, 0.72fr) minmax(0, 1fr);
+  --scrapbook-pane-rows: minmax(0, 1fr) auto auto;
+  --scrapbook-pane-gap: 12px;
+  --scrapbook-mobile-pane-columns: 1fr;
+  --scrapbook-mobile-pane-rows: minmax(132px, 156px) minmax(0, 1fr) auto;
+  --scrap-list-bg: rgba(248, 248, 248, 0.96);
+  --scrap-list-border: 1px solid rgba(0, 0, 0, 0.18);
+  --scrap-list-radius: 4px;
+  --scrap-list-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.86);
+  --scrap-list-item-divider: 1px solid rgba(0, 0, 0, 0.08);
+  --scrap-list-item-selected-bg: var(--selection-bg);
+  --scrap-list-item-selected-fg: var(--selection-fg);
+  --scrap-list-item-selected-radius: 3px;
+  /* 10.10 desktop labels are shadowed white text on the wallpaper with a
+     small-radius flat selection rectangle — no paper tag, no candy pill. */
+  --desktop-label-bg: transparent;
+  --desktop-label-fg: #ffffff;
+  --desktop-label-text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+  --desktop-label-radius: 3px;
+  --desktop-label-selected-bg: var(--selection-bg);
+  --desktop-label-selected-fg: var(--selection-fg);
   --separator: rgba(0, 0, 0, 0.11);
   --control-bg: #ffffff;
   --control-shadow: 0 1px 1px rgba(16, 16, 16, 0.04), 0 1px 2px rgba(16, 16, 16, 0.01);
@@ -1555,6 +1702,57 @@ body[data-theme="yosemite"] {
   --theme-lab-group-bg: rgba(245, 245, 245, 0.95);
   --theme-lab-group-border: 1px solid rgba(0, 0, 0, 0.11);
   --theme-lab-group-shadow: none;
+  /* Control Panel section chooser — the flat 10.10 toolbar: thin-line icons,
+     hairline divider, the chosen section on a light gray rounded plane. An
+     independent 10.10 recipe, never "Liquid Glass minus glass". */
+  --control-settings-columns: minmax(0, 1fr);
+  --control-settings-rows: none;
+  --control-chooser-area: auto;
+  --control-chooser-direction: row;
+  --control-chooser-gap: 4px;
+  --control-chooser-padding: 2px 8px;
+  --control-chooser-border-bottom: 1px solid #d4d4d4;
+  --control-chooser-border-right: 0;
+  --control-chooser-item-direction: column;
+  --control-chooser-item-flex: 1 1 0;
+  --control-chooser-item-gap: 2px;
+  --control-chooser-item-padding: 3px 8px 4px;
+  --control-chooser-item-offset: 0px;
+  --control-chooser-item-border: 0;
+  --control-chooser-item-radius: 4px;
+  --control-chooser-item-bg: transparent;
+  --control-chooser-item-fg: #4a4a4a;
+  --control-chooser-hover-bg: rgba(0, 0, 0, 0.05);
+  --control-chooser-hover-fg: #2b2b2b;
+  --control-chooser-active-bg: #dcdcdc;
+  --control-chooser-active-fg: #2b2b2b;
+  --control-chooser-active-weight: inherit;
+  --control-chooser-active-shadow: none;
+  --control-chooser-icon-display: block;
+  --control-chooser-icon-size: 20px;
+  --control-chooser-label-size: 10px;
+  /* Control Strip — signed counterfactual: translucent 10.10 white with a
+     hairline frame; the active module lights the system blue instead of
+     gaining a plate. Flat 5px corners keep distance from the Liquid Glass
+     capsule. */
+  --control-strip-thickness: 24px;
+  --control-strip-bg: rgba(251, 251, 251, 0.82);
+  --control-strip-border: 1px solid rgba(0, 0, 0, 0.16);
+  --control-strip-divider: 1px solid rgba(0, 0, 0, 0.08);
+  --control-strip-radius: 5px;
+  --control-strip-radius-mirrored: 5px;
+  --control-strip-shadow: 0 3px 9px rgba(0, 0, 30, 0.25);
+  --control-strip-backdrop: blur(18px);
+  --control-strip-hover-bg: rgba(0, 0, 0, 0.05);
+  --control-strip-hover-fg: #2b2b2b;
+  --control-strip-hover-shadow: none;
+  --control-strip-active-bg: rgba(0, 0, 0, 0.05);
+  --control-strip-active-fg: #157efb;
+  --control-strip-active-shadow: none;
+  --control-strip-gauge: #157efb;
+  --control-strip-gauge-bg: rgba(255, 255, 255, 0.9);
+  --control-strip-grip-inset: 6px 7px;
+  --control-strip-grip: repeating-linear-gradient(to bottom, #9a9a9a 0 1px, rgba(0, 0, 0, 0) 1px 4px);
 }
 
 /* Semantic aliases keep application selectors independent of the era. */
@@ -1565,6 +1763,17 @@ body[data-theme] {
   --find-path-result-selected-fg: var(--selection-fg);
   --find-path-result-selected-title-color: var(--selection-fg);
   --find-path-result-selected-detail-color: var(--selection-fg);
+  /* The foundation hover chain substitutes on :root, where the era
+     selection override cannot reach it; re-substitute the chain here so
+     hover previews each era's own selection instead of Classic ink. */
+  --find-path-result-hover-border: var(--find-path-result-selected-border);
+  --find-path-result-hover-border-bottom: var(--find-path-result-selected-border-bottom);
+  --find-path-result-hover-bg: var(--find-path-result-selected-bg);
+  --find-path-result-hover-fg: var(--find-path-result-selected-fg);
+  --find-path-result-hover-shadow: var(--find-path-result-selected-shadow);
+  --find-path-result-hover-title-color: var(--find-path-result-selected-title-color);
+  --find-path-result-hover-detail-color: var(--find-path-result-selected-detail-color);
+  --find-path-result-last-hover-border-bottom: var(--find-path-result-last-border-bottom);
   --alarm-clock-selection-bg: var(--selection-bg);
   --alarm-clock-selection-fg: var(--selection-fg);
   --cmf-selected-bg: var(--selection-bg);
@@ -1645,6 +1854,14 @@ body[data-theme="platinum"] .title-bar {
   margin: 0 0 1px;
   padding: 1px;
   border-bottom: 1px solid #000000;
+  /* Reclaim the fourth lane after the late responsive layer collapses the
+     shared title bar to three columns. This keeps Zoom and WindowShade at
+     the measured five-pixel visual gap without adding another owner. */
+  grid-template-columns:
+    var(--system-titlebar-control-slot)
+    minmax(0, 1fr)
+    var(--system-titlebar-control-slot)
+    var(--system-titlebar-shade-slot);
 }
 
 body[data-theme="platinum"] .title-bar :is(h1, h2) {
@@ -1655,13 +1872,14 @@ body[data-theme="platinum"] .title-bar :is(h1, h2) {
   transform: translate(-1px, -1px);
 }
 
-body[data-theme="platinum"] :is(.close-box, .resize-box) {
+body[data-theme="platinum"] :is(.close-box, .resize-box, .shade-box) {
   background: none;
   filter: none;
 }
 
 body[data-theme="platinum"] .title-bar .close-box::before,
-body[data-theme="platinum"] .title-bar .resize-box::before {
+body[data-theme="platinum"] .title-bar .resize-box::before,
+body[data-theme="platinum"] .title-bar .shade-box::before {
   box-sizing: border-box;
   width: var(--system-titlebar-control-art-size);
   height: var(--system-titlebar-control-art-size);
@@ -1684,18 +1902,40 @@ body[data-theme="platinum"] .title-bar .resize-box::before {
 body[data-theme="platinum"] .title-bar .resize-box::after {
   content: "";
   position: absolute;
-  left: calc(var(--system-titlebar-control-art-offset-x) + 2px);
-  top: calc(var(--system-titlebar-control-art-offset-y) + 2px);
-  width: 5px;
-  height: 5px;
-  border-right: 1px solid #222222;
-  border-bottom: 1px solid #222222;
+  /* GUIdebook Mac OS 9, 1x pixels: inside the 11px frame the Zoom mark is
+     a six-pixel lower-left corner — x=1..6 on y=6, and y=1..6 on x=6. */
+  left: calc(var(--system-titlebar-control-art-offset-x) + 1px);
+  top: calc(var(--system-titlebar-control-art-offset-y) + 1px);
+  width: 6px;
+  height: 6px;
+  border: 0;
+  background:
+    linear-gradient(#222222, #222222) right top / 1px 6px no-repeat,
+    linear-gradient(#222222, #222222) left bottom / 6px 1px no-repeat;
   opacity: 1;
 }
 
-body[data-theme="platinum"] :is(.close-box, .resize-box):active::before {
+body[data-theme="platinum"] :is(.close-box, .resize-box, .shade-box):active::before {
   background: linear-gradient(to bottom right, #444444, #bbbbbb);
   box-shadow: -1px -1px 0 #888888, 1px 1px 0 #ffffff, inset -1px -1px 0 #999999;
+  opacity: 1;
+}
+
+/* Mac OS 8/9 collapse box: the WindowShade control at the far right of the
+   title bar. The real 1x glyph is two nine-pixel horizontal rules at y=4
+   and y=6, not a generic centered minus. It remains separate from Zoom
+   (see DESIGN.md, Historical Vocabulary). */
+body[data-theme="platinum"] .title-bar .shade-box::after {
+  content: "";
+  position: absolute;
+  left: calc(var(--system-titlebar-control-art-offset-x) + 1px);
+  top: calc(var(--system-titlebar-control-art-offset-y) + 4px);
+  width: 9px;
+  height: 3px;
+  border: 0;
+  background:
+    linear-gradient(#222222, #222222) left top / 9px 1px no-repeat,
+    linear-gradient(#222222, #222222) left bottom / 9px 1px no-repeat;
   opacity: 1;
 }
 
@@ -2055,13 +2295,19 @@ body[data-theme="yosemite"] .window > .title-bar :is(h1, h2) {
   padding-inline: 8px;
   font-weight: 500;
   letter-spacing: 0;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.66);
+  text-shadow: none;
 }
 
 body[data-theme="yosemite"] .title-bar > :is(.close-box, .resize-box) {
   width: 12px;
   height: 12px;
   margin: 0;
+  /* Real 10.10 lamps are flat 12px discs. The uniform fill has no specular
+     highlight; this inset hairline only reproduces the source asset's dark
+     antialiased edge and prevents the classic square frame leaking through. */
+  border: 0;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.14);
   background-position: center;
   background-size: 12px 12px;
   background-repeat: no-repeat;
@@ -2088,11 +2334,11 @@ body[data-theme="yosemite"] .title-bar > .close-box::after {
 
 /* Real 10.10 hover: the lamp deepens and draws its dark symbol (× on close,
    + on zoom) only while the pointer is over it. */
-body[data-theme="yosemite"] .title-bar > .close-box:hover {
+body[data-theme="yosemite"] .title-bar > .close-box:is(:hover, :focus-visible) {
   background: var(--traffic-light-close-hover-bg) center / 12px 12px no-repeat;
 }
 
-body[data-theme="yosemite"] .title-bar > .resize-box:hover {
+body[data-theme="yosemite"] .title-bar > .resize-box:is(:hover, :focus-visible) {
   background: var(--traffic-light-resize-hover-bg) center / 12px 12px no-repeat;
 }
 
@@ -2157,17 +2403,13 @@ body[data-theme="yosemite"] .grow-box::before {
   content: none;
 }
 
-body[data-theme="yosemite"] .grow-box:hover,
-body[data-theme="yosemite"] .grow-box:focus,
-body[data-theme="yosemite"] .grow-box:focus-visible {
+body[data-theme="yosemite"] .grow-box:is(:hover, :focus, :focus-visible) {
   background: transparent;
   outline: 0;
   box-shadow: none;
 }
 
-body[data-theme="yosemite"] .grow-box:hover::before,
-body[data-theme="yosemite"] .grow-box:focus::before,
-body[data-theme="yosemite"] .grow-box:focus-visible::before {
+body[data-theme="yosemite"] .grow-box:is(:hover, :focus, :focus-visible)::before {
   border-color: transparent;
 }
 
@@ -2193,6 +2435,14 @@ body[data-theme="yosemite"] .theme-lab-finder-window-titlebar > i.is-minimize {
 body[data-theme="yosemite"] .theme-lab-finder-window-titlebar > i.is-zoom {
   left: auto;
   right: 7px;
+}
+
+body[data-theme="yosemite"] :is(
+  .theme-lab-finder-window-titlebar,
+  .theme-lab-sheet-owner-titlebar
+) > i {
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.14);
 }
 
 body[data-theme="yosemite"] .theme-lab-finder-window:not(.is-inactive) .theme-lab-finder-window-titlebar > i.is-close:hover {

@@ -20,7 +20,11 @@ import { createServer } from "node:net";
 import { release as osRelease, version as osVersion } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { validateFidelityManifest } from "./theme-lab-fidelity-contract.mjs";
+import {
+  FLOOR_METRICS,
+  floorForCapture,
+  validateFidelityManifest,
+} from "./theme-lab-fidelity-contract.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const require = createRequire(import.meta.url);
@@ -312,6 +316,72 @@ function textLikeMask(lum, width, height, varianceThreshold = 55) {
     }
   }
   return mask;
+}
+
+// The glyph inside a control — a checkmark, a radio dot — is invisible to the
+// other three metrics. textLikeMask removes it from materialError by design, and
+// a thick stroke still finds an edge counterpart within the 8px search that
+// edgeErrorPx walks, so a control can carry the wrong glyph and still measure
+// geometry 0 / material 0. This isolates the glyph and compares the two masks
+// directly.
+//
+// The mark is the minority class inside the control: pixels whose luminance is
+// far from that image's own interior median. Each image is thresholded against
+// its own median, so a grey mark on a near-white well and a black mark on a blue
+// well are both found without knowing either palette. `inset` drops the control
+// frame, which also differs from the median but is not the glyph.
+function markMask(lum, width, height, { inset = 2, threshold = 60 } = {}) {
+  const values = [];
+  for (let y = inset; y < height - inset; y += 1) {
+    for (let x = inset; x < width - inset; x += 1) values.push(lum[y * width + x]);
+  }
+  if (!values.length) return { mask: new Uint8Array(width * height), count: 0, median: 0 };
+  values.sort((left, right) => left - right);
+  const median = values[Math.floor(values.length / 2)];
+  const mask = new Uint8Array(width * height);
+  let count = 0;
+  for (let y = inset; y < height - inset; y += 1) {
+    for (let x = inset; x < width - inset; x += 1) {
+      const i = y * width + x;
+      if (Math.abs(lum[i] - median) <= threshold) continue;
+      mask[i] = 1;
+      count += 1;
+    }
+  }
+  return { mask, count, median };
+}
+
+// 1 - intersection over union of the two glyph masks. 0 means the same glyph in
+// the same place; 1 means no shared pixel at all. Union-based, so a mark that is
+// present in one image and absent in the other scores 1 rather than passing.
+function analyzeMark(referenceCanvas, currentCanvas, options = {}) {
+  const width = referenceCanvas.width;
+  const height = referenceCanvas.height;
+  if (width !== currentCanvas.width || height !== currentCanvas.height) {
+    return { markMismatch: null, reason: "size-mismatch" };
+  }
+  const refLum = luminanceMap(referenceCanvas.getContext("2d").getImageData(0, 0, width, height).data, width, height);
+  const curLum = luminanceMap(currentCanvas.getContext("2d").getImageData(0, 0, width, height).data, width, height);
+  const reference = markMask(refLum, width, height, options);
+  const current = markMask(curLum, width, height, options);
+  if (!reference.count && !current.count) {
+    return { markMismatch: null, reason: "no-mark-found" };
+  }
+  let intersection = 0;
+  let union = 0;
+  for (let i = 0; i < reference.mask.length; i += 1) {
+    const inReference = reference.mask[i];
+    const inCurrent = current.mask[i];
+    if (inReference || inCurrent) union += 1;
+    if (inReference && inCurrent) intersection += 1;
+  }
+  return {
+    markMismatch: union ? Math.round((1 - intersection / union) * 1000) / 1000 : 0,
+    referencePixels: reference.count,
+    currentPixels: current.count,
+    referenceMedian: Math.round(reference.median),
+    currentMedian: Math.round(current.median),
+  };
 }
 
 function dilateMask(mask, width, height, iterations) {
@@ -790,6 +860,7 @@ function assertSpecimenTolerances(specimen, review, defaults) {
     ["geometryMismatch", "geometry mismatch"],
     ["edgeErrorPx", "edge error"],
     ["materialError", "material error"],
+    ...(specimen.mark ? [["markMismatch", "mark mismatch"]] : []),
   ];
   for (const [key, label] of checks) {
     const limit = tolerances[key];
@@ -803,6 +874,48 @@ function assertSpecimenTolerances(specimen, review, defaults) {
       );
     }
   }
+}
+
+// Absolute tier. `assertSpecimenTolerances` above only proves that today equals
+// the recorded run; this proves how far the specimen is from the historical
+// target, with one floor for every era. A specimen listed as `failing` or
+// `exempt` is not floor-asserted for that metric, but the ledger must stay
+// true: a metric that starts to meet the floor has to leave the list, and a
+// metric that is not listed must meet the floor.
+function assertSpecimenFloor(specimen, review, floor) {
+  if (specimen.tolerances === null) return { status: "diagnostic-only", promoted: [] };
+  const declared = specimen.floor || {};
+  const failing = new Set(declared.failing || []);
+  const exempt = new Set(declared.exempt || []);
+  const promoted = [];
+  // markMismatch is only measured where a specimen declares a glyph, so it joins
+  // the floor metrics for those specimens only.
+  const metrics = specimen.mark ? [...FLOOR_METRICS, "markMismatch"] : FLOOR_METRICS;
+  for (const metric of metrics) {
+    const limit = floor[metric];
+    const actual = review[metric];
+    if (exempt.has(metric)) continue;
+    if (typeof actual !== "number") {
+      throw new Error(`${specimen.id}: ${metric} did not measure, so the fidelity floor cannot be proven`);
+    }
+    if (failing.has(metric)) {
+      if (actual <= limit) promoted.push(`${metric} ${actual} now meets the floor ${limit}`);
+      continue;
+    }
+    if (actual > limit) {
+      throw new Error(
+        `${specimen.id}: ${metric} ${actual} is worse than the fidelity floor ${limit}. `
+        + "Fix the painter, or record the gap in the specimen's floor ledger with its historical reason.",
+      );
+    }
+  }
+  if (promoted.length) {
+    throw new Error(
+      `${specimen.id}: the floor ledger is stale — ${promoted.join("; ")}. `
+      + "Remove the metric from floor.failing so the gate holds the improvement.",
+    );
+  }
+  return { status: declared.status || "met", promoted };
 }
 
 function alignedCanvases(reference, current, alignment = "top-left") {
@@ -1008,7 +1121,16 @@ const { manifest, path: manifestPath } = options.manifestPath
       return { manifest: loaded, path };
     })()
   : readManifest(options.theme);
-const outputDir = options.outputDir || join(DEFAULT_OUTPUT_ROOT, manifest.theme);
+// One board writes one directory. The board name is the manifest file stem, not
+// manifest.theme: a theme may own more than one board (for example the Yosemite
+// 1x contract plus the yosemite-2x Retina acceptance board), and two boards that
+// share an output directory silently overwrite each other's metrics.json,
+// review-summary.json, overlay, and diff.
+const boardName = basename(manifestPath).replace(/\.json$/i, "");
+const outputDir = options.outputDir || join(DEFAULT_OUTPUT_ROOT, boardName);
+// One floor for every specimen on this board. edgeErrorPx is a pixel distance,
+// so a Retina board scales it; the other two metrics are scale-free.
+const boardFloor = floorForCapture(manifest.capture);
 mkdirSync(outputDir, { recursive: true });
 
 let server;
@@ -1063,16 +1185,28 @@ try {
       aligned.currentCanvas,
       { geometryMask: specimen.geometryMask },
     );
+    const markAnalysis = specimen.mark
+      ? analyzeMark(aligned.referenceCanvas, aligned.currentCanvas, specimen.mark)
+      : null;
+    if (specimen.mark && markAnalysis.markMismatch === null) {
+      throw new Error(
+        `${specimen.id}: the mark check found no glyph in either image (${markAnalysis.reason}). `
+        + "Fix the inset/threshold, or drop `mark` if this specimen carries no glyph.",
+      );
+    }
     const review = {
       ...geometryMaterial,
+      ...(markAnalysis ? { markMismatch: markAnalysis.markMismatch } : {}),
       changedRatio: Math.round(comparison.metrics.changedRatio * 1000) / 1000,
       sourceScale: specimen.reference?.scale || manifest.capture?.sourceScale || 1,
     };
     assertSpecimenTolerances(specimen, review, manifest.capture?.tolerances || DEFAULT_TOLERANCES);
+    const floorResult = assertSpecimenFloor(specimen, review, boardFloor);
     validateComputedAssertions(current.computedAssertions);
     results.push({
       id: specimen.id,
       label: specimen.label,
+      floor: { ...floorResult, limits: boardFloor, declared: specimen.floor || null },
       sourceId: source.id,
       sourceUrl: source.url,
       referenceNative: { width: reference.canvas.width, height: reference.canvas.height, crop: reference.crop },
@@ -1098,7 +1232,8 @@ try {
       computed: current.computed,
       computedAssertions: current.computedAssertions,
     });
-    console.log(`OK  mapped ${specimen.id}: ${(comparison.metrics.changedRatio * 100).toFixed(2)}% changed`);
+    const floorTag = floorResult.status === "met" ? "floor met" : `floor ${floorResult.status}`;
+    console.log(`OK  mapped ${specimen.id}: ${(comparison.metrics.changedRatio * 100).toFixed(2)}% changed, ${floorTag}`);
   }
 
   writeCanvas(join(outputDir, "reference.png"), drawAtlas(results, manifest, "referenceCanvas"));
@@ -1140,6 +1275,7 @@ try {
       computed: result.computed,
       metrics: result.metrics,
       repeat: result.repeat,
+      floor: result.floor,
       computedAssertions: result.computedAssertions,
     })),
   };
@@ -1149,22 +1285,39 @@ try {
     id: result.id,
     label: result.label,
     ...result.review,
+    floorStatus: result.floor.status,
+    floorFailing: result.floor.declared?.failing || [],
+    floorExempt: result.floor.declared?.exempt || [],
   })).sort((left, right) => (
     (right.geometryMismatch ?? 0) - (left.geometryMismatch ?? 0)
     || (right.edgeErrorPx ?? 0) - (left.edgeErrorPx ?? 0)
     || (right.materialError ?? 0) - (left.materialError ?? 0)
   ));
+  const floorCounts = reviewSpecimens.reduce((counts, entry) => {
+    counts[entry.floorStatus] = (counts[entry.floorStatus] || 0) + 1;
+    return counts;
+  }, {});
+  const floorGapMetrics = FLOOR_METRICS.filter((metric) => reviewSpecimens
+    .some((entry) => entry.floorFailing.includes(metric) || entry.floorExempt.includes(metric)));
   const reviewSummary = {
     theme: manifest.theme,
     target: manifest.target,
     generatedAt: new Date().toISOString(),
     sourceScale: manifest.capture?.sourceScale || 1,
     note: "Machine-readable fidelity summary for a visual reviewer. geometryMismatch and edgeErrorPx describe the control silhouette (strict); materialError describes interior colour while ignoring antialiasing and text. Fix the top residual regions first.",
+    floor: {
+      limits: boardFloor,
+      counts: floorCounts,
+      gapMetrics: floorGapMetrics,
+      note: "The floor is the absolute tier: how far this board is from the historical target. It is never derived from our own output. A specimen counted as gap or unreliable-reference is not held to the floor for the metrics named in floorFailing / floorExempt.",
+    },
     specimens: reviewSpecimens,
     topResidualRegions: reviewSpecimens.slice(0, 3).map((entry) => entry.id),
   };
   writeFileSync(join(outputDir, "review-summary.json"), `${JSON.stringify(reviewSummary, null, 2)}\n`);
   console.log(`OK  review summary: top residual = ${reviewSummary.topResidualRegions.join(", ") || "(none)"}`);
+  const floorLine = Object.entries(floorCounts).map(([status, count]) => `${count} ${status}`).join(", ");
+  console.log(`OK  fidelity floor (geometry ${boardFloor.geometryMismatch}, edge ${boardFloor.edgeErrorPx}px, material ${boardFloor.materialError}): ${floorLine} of ${reviewSpecimens.length} specimens`);
 
   const platformFonts = await platformFontFingerprint(pageContext.page, manifest.capture.fontProbeSelectors);
   assertPlatformFonts(platformFonts, manifest.capture.fontAssertions);

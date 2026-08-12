@@ -1,3 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
-<rect x="7" y="4" width="19" height="24" fill="#99bbdd" stroke="#111111" stroke-width="1"/><rect x="10" y="7" width="13" height="17" fill="#ddeeff" stroke="#111111" stroke-width="1"/><g transform="scale(0.5)"><rect x="23" y="27" width="18" height="21" rx="0" fill="#d8ecfa" stroke="#336699" stroke-width="1"/><path d="M27 32h10M27 37h8" fill="none" stroke="#ffffff" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><image href="icons/liquidCover-32.png" width="32" height="32" style="image-rendering:pixelated"/></svg>

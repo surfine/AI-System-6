@@ -1,0 +1,16 @@
+{
+  "finderApp": "icons/finderApp-32-default.png",
+  "folder": "icons/folder-32-default.png",
+  "hardDisk": "icons/hardDisk-32-default.png",
+  "trash": "icons/trash-32-default.png",
+  "document": "icons/document-32-default.png",
+  "daHandler": "icons/daHandler-32-default.png",
+  "controlPanel": "icons/controlPanel-32-default.png",
+  "searcher": "icons/searcher-32-default.png",
+  "teachText": "icons/teachText-32-default.png",
+  "assistant": "icons/assistant-32-default.png",
+  "scrapbook": "icons/scrapbook-32-default.png",
+  "reviewDesk": "icons/reviewDesk-32-default.png",
+  "docMap": "icons/docMap-32-default.png",
+  "projectDisk": "icons/projectDisk-32-default.png"
+}

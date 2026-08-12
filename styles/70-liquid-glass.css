@@ -144,6 +144,15 @@ body.use-liquid-glass {
   --scrap-empty-card-bg: rgba(255, 255, 255, 0.18);
   --scrap-list-mini-icon-border: 1px solid rgba(255, 255, 255, 0.5);
   --scrap-translation-badge-border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+  /* Preserve the established Liquid Scrapbook split browser while Classic
+     and Platinum opt into the native single-item page projection. */
+  --scrapbook-list-display: block;
+  --scrapbook-pager-display: none;
+  --scrapbook-pane-columns: minmax(160px, 0.72fr) minmax(0, 1fr);
+  --scrapbook-pane-rows: minmax(0, 1fr) auto auto;
+  --scrapbook-pane-gap: 20px;
+  --scrapbook-mobile-pane-columns: 1fr;
+  --scrapbook-mobile-pane-rows: minmax(132px, 156px) minmax(0, 1fr) auto;
   --import-preview-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.26)),
     rgba(255, 255, 255, 0.24);
@@ -183,6 +192,46 @@ body.use-liquid-glass {
   --control-strip-radius: var(--liquid-menu-radius);
   --control-strip-shadow: var(--liquid-menu-panel-shadow);
   --control-strip-backdrop: blur(34px) saturate(160%) brightness(1.04);
+  /* Glass-era refinements: the open module floats as a tinted pill, and the
+     handle grip is a grabber bar instead of Classic's tick texture. */
+  --control-strip-tile-radius: 999px;
+  --control-strip-tile-margin: 3px 1px;
+  --control-strip-tile-height: calc(var(--control-strip-thickness) - 6px);
+  --control-strip-grip-inset: 8px 6px;
+  --control-strip-grip: rgba(16, 17, 20, 0.28);
+  --control-strip-grip-radius: 2px;
+  --control-strip-gauge-bg: rgba(255, 255, 255, 0.8);
+  /* Control Panel section chooser — a glass segmented capsule: the active
+     section is a porcelain pill on a shaded track. Same tablist DOM. */
+  --control-settings-columns: minmax(0, 1fr);
+  --control-settings-rows: none;
+  --control-chooser-area: auto;
+  --control-chooser-bg: rgba(16, 17, 20, 0.07);
+  --control-chooser-radius: 999px;
+  --control-chooser-padding: 3px;
+  --control-chooser-width: max-content;
+  --control-chooser-direction: row;
+  --control-chooser-gap: 2px;
+  --control-chooser-border-bottom: 0;
+  --control-chooser-border-right: 0;
+  --control-chooser-item-direction: row;
+  --control-chooser-item-flex: 0 1 auto;
+  --control-chooser-item-gap: 4px;
+  --control-chooser-item-padding: 3px 8px;
+  --control-chooser-item-offset: 0px;
+  --control-chooser-item-border: 0;
+  --control-chooser-item-radius: 999px;
+  --control-chooser-item-bg: transparent;
+  --control-chooser-item-fg: rgba(16, 17, 20, 0.66);
+  --control-chooser-hover-bg: rgba(255, 255, 255, 0.5);
+  --control-chooser-hover-fg: rgba(16, 17, 20, 0.9);
+  --control-chooser-active-bg: rgba(255, 255, 255, 0.92);
+  --control-chooser-active-fg: rgba(16, 17, 20, 0.96);
+  --control-chooser-active-weight: 600;
+  --control-chooser-active-shadow: 0 2px 6px rgba(30, 34, 60, 0.18), inset 0 0 0 1px rgba(255, 255, 255, 0.8);
+  --control-chooser-icon-display: block;
+  --control-chooser-icon-size: 14px;
+  --control-chooser-label-size: 11px;
   --memory-transfer-note-bg: rgba(255, 255, 255, 0.26);
   --memory-transfer-note-line: rgba(16, 17, 20, 0.28);
   --memory-transfer-note-border: rgba(255, 255, 255, 0.48);
@@ -709,8 +758,14 @@ body.use-liquid-glass {
   --system-scrollbar-button-display: none;
   --desktop-icon-column-gap: 4px;
   --desktop-icon-width: 84px;
+  /* Liquid Glass desktop labels are the glass chip; values live here so the
+     base .desktop-icon span:last-child rule needs no glass twin. */
+  --desktop-label-bg: rgba(255, 255, 255, 0.54);
+  --desktop-label-fg: var(--ink);
+  --desktop-label-radius: 8px;
+  --desktop-label-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --desktop-label-max-width: 92px;
   --liquid-desktop-icon-padding: 2px 2px;
-  --liquid-desktop-icon-size: 40px;
   --liquid-desktop-icon-label-line-height: 1;
   --settings-scrollbar-lane-bg: transparent;
   --settings-scrollbar-lane-padding-right: 12px;
@@ -3426,7 +3481,6 @@ body.use-liquid-glass .spine-actions button.is-selected {
   outline: 0;
 }
 
-body.use-liquid-glass .desktop-icon span:last-child,
 body.use-liquid-glass .spine-actions b {
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.54);
@@ -3452,12 +3506,6 @@ body.use-liquid-glass .spine-actions .spine-step-number {
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
     0 0 0 1px rgba(255, 255, 255, 0.44),
     0 8px 20px rgba(18, 28, 38, 0.1);
-}
-
-body.use-liquid-glass .desktop-icon span:last-child {
-  max-width: 92px;
-  overflow-wrap: normal;
-  word-break: keep-all;
 }
 
 body.use-liquid-glass .desktop-app-icon span[data-liquid-label] {

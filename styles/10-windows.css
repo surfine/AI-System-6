@@ -634,7 +634,8 @@ body.quick-draft-focus .writing-spine-panel {
   grid-template-columns:
     var(--system-titlebar-control-slot)
     minmax(0, 1fr)
-    var(--system-titlebar-control-slot);
+    var(--system-titlebar-control-slot)
+    var(--system-titlebar-shade-slot);
   /* The 40px controls are generous hit targets, not the row's painted height.
      Constraining the implicit row keeps their 13px art on the same centerline
      as the title instead of letting the hit target push both below the bars. */
@@ -744,6 +745,39 @@ html:lang(zh-Hans) .title-bar h2 {
   --system-titlebar-control-art-offset-x: var(--system-titlebar-close-art-offset-x);
 }
 
+/* WindowShade collapse box. The control is in every title bar so all six
+   appearances share one DOM, but only an era whose native window had it
+   (Mac OS 8/9) opens --system-titlebar-shade-slot and paints the art.
+   It triggers the same toggleCollapsed action as a title-bar double-click;
+   it is never a Zoom fallback. */
+.title-bar > .shade-box {
+  grid-column: 4;
+  grid-row: 1;
+  justify-self: end;
+  display: var(--system-titlebar-shade-display);
+  width: var(--system-titlebar-control-size);
+  height: var(--system-titlebar-control-size);
+  box-sizing: border-box;
+  align-self: center;
+  flex: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  position: relative;
+  cursor: pointer;
+  --system-titlebar-control-art-offset-x: var(--system-titlebar-resize-art-offset-x);
+}
+
+/* The era recipe paints the shade-box art; the base only anchors the
+   pseudo-element the same way the close and zoom marks are anchored. */
+.shade-box::before {
+  content: "";
+  position: absolute;
+  left: var(--system-titlebar-control-art-offset-x);
+  top: var(--system-titlebar-control-art-offset-y);
+}
+
 .title-bar > .resize-box {
   grid-column: 3;
   justify-self: end;
@@ -834,8 +868,10 @@ html:lang(zh-Hans) .title-bar h2 {
 
 .close-box:focus,
 .resize-box:focus,
+.shade-box:focus,
 .close-box:focus-visible,
-.resize-box:focus-visible {
+.resize-box:focus-visible,
+.shade-box:focus-visible {
   outline: var(--system-titlebar-control-focus-outline);
   box-shadow: var(--system-titlebar-control-focus-shadow);
 }
@@ -1110,7 +1146,8 @@ html:lang(zh-Hans) .title-bar h2 {
     grid-template-columns:
       var(--system-titlebar-control-slot)
       minmax(0, 1fr)
-      var(--system-titlebar-control-slot);
+      var(--system-titlebar-control-slot)
+      var(--system-titlebar-shade-slot);
     min-height: var(--system-titlebar-height);
     margin: var(--system-titlebar-margin-y) 0;
     padding: var(--system-titlebar-padding-y) var(--system-titlebar-padding-x);
@@ -1183,6 +1220,19 @@ html:lang(zh-Hans) .title-bar h2 {
 .status-bar-leading {
   grid-column: 1;
   justify-self: start;
+}
+
+/* A placard is a material treatment for a confirmed leading receipt, not a
+   second status model. The default tokens are inert; Platinum supplies the
+   compact inset-cell painter used by OS 9 document and Finder chrome. */
+.status-bar-placard {
+  box-sizing: border-box;
+  padding: var(--status-placard-padding);
+  border: var(--status-placard-border);
+  background: var(--status-placard-bg);
+  box-shadow: var(--status-placard-shadow);
+  font-family: var(--status-placard-font-family);
+  font-size: var(--status-placard-font-size);
 }
 
 .status-bar-context {
@@ -1760,7 +1810,8 @@ html:lang(zh-Hans) .title-bar h2 {
   grid-template-columns:
     var(--system-titlebar-control-slot)
     minmax(0, 1fr)
-    var(--system-titlebar-control-slot);
+    var(--system-titlebar-control-slot)
+    var(--system-titlebar-shade-slot);
   background: var(--system-titlebar-active-bg);
 }
 
@@ -3310,6 +3361,19 @@ select:focus {
   background: var(--settings-scrollbar-lane-bg);
 }
 
+/* The Control Panel's own pane can trade its single column for the Classic
+   cdev-rail layout (rail + content); the token defaults to the shared single
+   column, so only an appearance that owns a rail changes anything. The
+   chooser element then spans both content rows through its grid-area token. */
+.control-panel .settings {
+  grid-template-columns: var(--control-settings-columns);
+  grid-template-rows: var(--control-settings-rows);
+}
+
+.control-panel .settings > .control-chooser {
+  grid-area: var(--control-chooser-area);
+}
+
 .control-panel .settings > .control-section,
 .chooser-panel .settings > .control-section {
   /* A grid item's implied minimum width is its own content's min-content, not
@@ -3364,6 +3428,10 @@ select:focus {
      child (a long model id, an endpoint URL) could stretch this past its own
      already-clamped outer box instead of shrinking inside it. */
   grid-template-columns: minmax(0, 1fr);
+  /* When the Classic rail layout stretches a section to fill the pane
+     column, its rows must stay content-sized at the top instead of being
+     spaced out by the default stretch. No-op while sections exactly fit. */
+  align-content: start;
   gap: 8px;
   padding: 10px 12px 12px;
   border: var(--system-border);
@@ -4094,16 +4162,37 @@ body.is-cloud-configured .cloud-state-panel {
   font-weight: bold;
 }
 
+/* The query row and field carry era search chrome through tokens: Snow
+   Leopard lifts the row onto full-bleed toolbar material, and the Aqua
+   branch swaps the field for its measured rounded search-field recipe.
+   Every default repeats the shared field/row values, so Classic, Yosemite,
+   and Liquid Glass stay untouched. */
 .find-path-query-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 8px;
-  width: 100%;
+  width: var(--find-path-query-row-width, 100%);
+  margin: var(--find-path-query-row-margin, 0);
+  padding: var(--find-path-query-row-padding, 0);
+  background: var(--find-path-query-row-bg, none);
+  border-bottom: var(--find-path-query-row-border-bottom, 0);
 }
 
 .find-path-query-row input {
   min-width: 0;
+}
+
+/* Two classes: the era tokens must win over the theme layers' one-class
+   generic field recipes (Aqua/SL load later), while the theme layers'
+   stronger own-field recipes (Platinum, Yosemite family, Liquid Glass)
+   still win over this rule. Defaults mirror the shared field recipe, so
+   themes without tokens render unchanged. */
+.find-path-window .find-path-query-row input {
+  min-height: var(--find-path-query-min-height, auto);
+  padding: var(--find-path-query-padding, 6px);
+  border-radius: var(--find-path-query-radius, var(--field-radius));
+  background: var(--find-path-query-bg, var(--field-bg));
 }
 
 .find-path-query-row input:focus {
@@ -4171,6 +4260,37 @@ body.is-cloud-configured .cloud-state-panel {
     var(--paper);
 }
 
+/* Era result-table chrome (Sherlock idiom). The header row and per-result
+   relevance bar are always in the DOM; every visual decision rides on
+   --find-path-* tokens so the historical appearance layers stay app-free.
+   Classic keeps both display tokens at none, which makes the rest of the
+   recipe inert. Sticky keeps the header over the scrolling rows. */
+.find-path-results-header {
+  display: var(--find-path-header-display);
+  grid-template-columns: var(--find-path-table-columns);
+  column-gap: 10px;
+  position: sticky;
+  top: 0;
+  padding: var(--find-path-header-padding, 2px 10px);
+  border-bottom: var(--find-path-header-border-bottom, 1px solid var(--shade));
+  background: var(--find-path-header-bg, var(--paper));
+  font-family: var(--ui-font);
+  font-size: var(--find-path-header-font-size, 11px);
+}
+
+.find-path-header-relevance,
+.find-path-result-relevance {
+  display: var(--find-path-relevance-display);
+}
+
+.find-path-result-relevance {
+  align-self: center;
+  height: 8px;
+  border: 1px solid currentColor;
+  border-radius: var(--find-path-relevance-radius, 0);
+  background: linear-gradient(to right, currentColor 0 var(--find-path-relevance, 0%), transparent var(--find-path-relevance, 0%));
+}
+
 .find-path-result {
   border: var(--find-path-result-border);
   border-bottom: var(--find-path-result-border-bottom);
@@ -4179,11 +4299,27 @@ body.is-cloud-configured .cloud-state-panel {
   color: var(--find-path-result-fg);
   box-shadow: var(--find-path-result-shadow);
   cursor: pointer;
-  display: flex;
+  display: var(--find-path-result-display, flex);
   flex-direction: column;
+  grid-template-columns: var(--find-path-table-columns);
+  align-items: var(--find-path-result-align, stretch);
   gap: var(--find-path-result-gap);
-  padding: 10px 12px;
+  column-gap: var(--find-path-result-column-gap, var(--find-path-result-gap));
+  padding: var(--find-path-result-padding);
   text-align: left;
+}
+
+/* Inert in the Classic flex layout; in era grid mode these children span
+   the full row under the name / relevance / site line. */
+.find-path-result > :is(p, .find-path-result-actions, .find-path-translation) {
+  grid-column: 1 / -1;
+}
+
+/* Zebra rows for eras that stripe lists (Aqua). :where keeps specificity at
+   one class so hover and selection still win; the fallback repeats the
+   normal row background everywhere else. */
+.find-path-result:where(:nth-child(even of .find-path-result)) {
+  background: var(--find-path-result-even-bg, var(--find-path-result-bg));
 }
 
 .find-path-result:hover {

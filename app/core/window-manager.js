@@ -2048,12 +2048,12 @@ function getActionAvailability() {
     const control = document.querySelector(selector);
     return !!control && !control.disabled && !control.classList.contains("is-disabled") && !control.hidden;
   };
-  // Reader's visible toolbar actions own their real availability through the
-  // native disabled/hidden state. updateMenuState() mirrors that availability
-  // onto the shared `is-disabled` class, so reading the mirrored class back
-  // here would make an initially empty Reader permanently disable itself even
-  // after a document finishes loading.
-  const activeReaderControlEnabled = (selector) => {
+  // Some controls (Reader's toolbar, Scrapbook's editor buttons) own their
+  // real availability through the native disabled/hidden state. updateMenuState()
+  // mirrors that availability onto the shared `is-disabled` class, so reading
+  // the mirrored class back here latches the action disabled forever after one
+  // pass while the window is inactive.
+  const activeOwnedControlEnabled = (selector) => {
     const control = document.querySelector(selector);
     return !!control && !control.disabled && !control.hidden;
   };
@@ -2302,13 +2302,13 @@ function getActionAvailability() {
     "copy-search-result-markdown": winName === "findPath" && selectedFindPathIndex !== null,
     "insert-search-result": winName === "findPath" && selectedFindPathIndex !== null,
     "reader-open-source": winName === "reader",
-    "reader-clip": winName === "reader" && activeReaderControlEnabled("#reader-clip-button"),
-    "reader-clip-translate": winName === "reader" && activeReaderControlEnabled("#reader-clip-translate-button"),
-    "reader-send-manuscript": winName === "reader" && activeReaderControlEnabled("#reader-send-manuscript"),
-    "reader-make-docmap": winName === "reader" && activeReaderControlEnabled("#reader-docmap-button"),
+    "reader-clip": winName === "reader" && activeOwnedControlEnabled("#reader-clip-button"),
+    "reader-clip-translate": winName === "reader" && activeOwnedControlEnabled("#reader-clip-translate-button"),
+    "reader-send-manuscript": winName === "reader" && activeOwnedControlEnabled("#reader-send-manuscript"),
+    "reader-make-docmap": winName === "reader" && activeOwnedControlEnabled("#reader-docmap-button"),
     "reader-docmap-selection": winName === "reader" && !!readerDocMapReadiness?.selectionReady,
     "reader-docmap-source": winName === "reader" && !!readerDocMapReadiness?.wholeReady,
-    "reader-open-clio-stage": winName === "reader" && activeReaderControlEnabled("#reader-open-clio-stage"),
+    "reader-open-clio-stage": winName === "reader" && activeOwnedControlEnabled("#reader-open-clio-stage"),
     "focus-reader-question": winName === "reader" && !!currentReaderPage?.text,
     "docmap-save": winName === "docMap" && !!currentDocMap,
     "docmap-print-pdf": winName === "docMap" && !!currentDocMap,
@@ -2327,14 +2327,14 @@ function getActionAvailability() {
     "time-machine-docmap-selection": winName === "timeMachine" && !!timeMachineDocMapReadiness?.selectionReady,
     "time-machine-docmap-source": winName === "timeMachine" && !!timeMachineDocMapReadiness?.wholeReady,
     "clio-stage-docmap": winName === "clioStage" && activeControlEnabled("#clio-stage-docmap"),
-    "scrapbook-open-source": winName === "scrapbook" && activeControlEnabled("#open-scrap-source"),
-    "scrapbook-toggle-translation": winName === "scrapbook" && activeControlEnabled("#toggle-scrap-translation"),
-    "scrapbook-insert": winName === "scrapbook" && activeControlEnabled("#insert-scrap"),
-    "scrapbook-attach": winName === "scrapbook" && activeControlEnabled("#attach-scrap-to-assistant"),
-    "scrapbook-send-question": winName === "scrapbook" && activeControlEnabled("#send-scraps-to-question"),
-    "scrapbook-outline": winName === "scrapbook" && activeControlEnabled("#outline-scraps"),
-    "scrapbook-export-bilingual": winName === "scrapbook" && activeControlEnabled("#download-scraps-bilingual"),
-    "scrapbook-delete": winName === "scrapbook" && activeControlEnabled("#delete-scrap"),
+    "scrapbook-open-source": winName === "scrapbook" && activeOwnedControlEnabled("#open-scrap-source"),
+    "scrapbook-toggle-translation": winName === "scrapbook" && activeOwnedControlEnabled("#toggle-scrap-translation"),
+    "scrapbook-insert": winName === "scrapbook" && activeOwnedControlEnabled("#insert-scrap"),
+    "scrapbook-attach": winName === "scrapbook" && activeOwnedControlEnabled("#attach-scrap-to-assistant"),
+    "scrapbook-send-question": winName === "scrapbook" && activeOwnedControlEnabled("#send-scraps-to-question"),
+    "scrapbook-outline": winName === "scrapbook" && activeOwnedControlEnabled("#outline-scraps"),
+    "scrapbook-export-bilingual": winName === "scrapbook" && activeOwnedControlEnabled("#download-scraps-bilingual"),
+    "scrapbook-delete": winName === "scrapbook" && activeOwnedControlEnabled("#delete-scrap"),
     "focus-scrapbook-question": winName === "scrapbook" && getSelectedScraps().length > 0,
     "clio-chart-import": winName === "clioChart",
     "clio-chart-new-cpu-gpu": winName === "clioChart",

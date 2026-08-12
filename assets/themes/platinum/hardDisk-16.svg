@@ -1,3 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges">
-<path d="M2 5h12v8H2z" fill="#c7c9cf" stroke="#111111" stroke-width="1" stroke-linejoin="miter"/><path d="M3 5l2-2h7l2 2M4 10h8M5 12h6" fill="none" stroke="#52545c" stroke-width="1"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><image href="icons/hardDisk-16.png" width="16" height="16" style="image-rendering:pixelated"/></svg>

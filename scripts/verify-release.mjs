@@ -101,6 +101,7 @@ if (srcTypecheck.status === 0) {
   ...lazyRuntimePaths,
   "styles.css",
   "styles.bundle.css",
+  "styles.theme-lab.css",
   "src/server.js",
   "package.json",
   "CLAUDE.md",
@@ -163,11 +164,17 @@ if (smokeRelease.status === 0) {
 const featureTests = spawnSync(process.execPath, ["scripts/verify-features.mjs"], {
   cwd: root,
   encoding: "utf8",
+  maxBuffer: 64 * 1024 * 1024,
 });
 if (featureTests.status === 0) {
   ok("feature verification");
 } else {
-  fail(`feature verification failed\n${featureTests.stderr || featureTests.stdout}`);
+  const featureFailureDetails = [
+    featureTests.error?.message,
+    featureTests.stderr,
+    featureTests.stdout,
+  ].filter(Boolean).join("\n");
+  fail(`feature verification failed\n${featureFailureDetails}`);
 }
 
 const docLocales = spawnSync(process.execPath, ["scripts/verify-doc-locales.mjs"], {
@@ -217,6 +224,7 @@ const pkgTargets = new Set(pkg.pkg?.targets || []);
   "app.js",
   "styles.css",
   "styles.bundle.css",
+  "styles.theme-lab.css",
   "system.css-reference/cursors/watch.png",
   "system.css-reference/fonts/*.woff",
   "system.css-reference/fonts/*.woff2",

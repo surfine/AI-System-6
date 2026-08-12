@@ -669,9 +669,23 @@ function renderApplicationMenuItem(item) {
 
 let renderedApplicationMenuSetId = "";
 
+function syncCurrentApplicationMenuLabel(appId = "finder") {
+  const label = document.querySelector("#current-app-menu-label");
+  if (!label) return;
+  const ownerLabel = typeof multiFinderAppLabels !== "undefined"
+    ? multiFinderAppLabels[appId]
+    : null;
+  label.textContent = ownerLabel || (appId === "finder" ? "Finder" : appId);
+  label.closest(".menu-bar-current-app")?.setAttribute("data-current-app-id", appId);
+}
+
 function renderAppMenuBar(appId = activeAppId || "finder", { force = false } = {}) {
   const slot = document.querySelector("#app-menu-slot");
   if (!slot) return;
+  // Jaguar's bold application menu belongs to the foreground application,
+  // not to the whole AI System 6 environment. Update it even when two apps
+  // share the same declarative menu set and no menu DOM rebuild is required.
+  syncCurrentApplicationMenuLabel(appId);
   const setId = menuSetIdForApp(appId);
   if (!force && renderedApplicationMenuSetId === setId) return;
 

@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-08-12",
+  "engine": "built-in Image Gen",
+  "inventory": "scripts/lib/icon-family-inventory.mjs",
+  "themes": ["classic", "platinum"],
+  "semanticObjectsPerTheme": 56,
+  "baseCalls": 112,
+  "refinementCalls": 7,
+  "totalCalls": 119,
+  "oneCallPerDistinctAsset": true,
+  "spriteSheetGeneration": false,
+  "referenceEvidence": {
+    "classicNative": "drafts/era-icons/imagegen-redraw/references/classic-native",
+    "platinumNative": "drafts/era-icons/imagegen-redraw/references/platinum-native",
+    "crossEraContinuity": "drafts/era-icons/imagegen-redraw/references/continuity",
+    "continuityEras": ["aqua", "snow-leopard", "yosemite"]
+  },
+  "promptTemplates": {
+    "classic": "Create one isolated Classic Macintosh System 6 desktop icon for {id}: {physicalMetaphor}, carrying {semanticMark}. Use real System 6 evidence for period construction and Aqua, Snow Leopard, and Yosemite only for semantic lineage. Strict black-and-white one-bit pixel-art vocabulary, square pixels, compact native-icon silhouette, no modern vector smoothing, no text, no UI frame, solid chroma-green extraction background. Produce this one icon only.",
+    "platinum": "Create one isolated Mac OS 8/9 Platinum desktop icon for {id}: {physicalMetaphor}, carrying {semanticMark}. Use historical Platinum evidence for period materials and Aqua, Snow Leopard, and Yosemite only for semantic lineage. Authentic late-1990s Macintosh pixel-art geometry, platinum grey volume, restrained lavender/blue accents, crisp dark outline, no Aqua gloss, no modern flat vector style, no text, no UI frame, solid chroma-green extraction background. Produce this one icon only."
+  },
+  "refinements": [
+    { "theme": "classic", "id": "projectDisc", "reason": "Make the optical disc unmistakable at native size." },
+    { "theme": "classic", "id": "cloudModelOff", "reason": "Clarify the Macintosh/server, cloud, and disabled slash." },
+    { "theme": "classic", "id": "soundscape", "reason": "Use a period speaker with legible sound rays." },
+    { "theme": "classic", "id": "chooser", "reason": "Simplify to a recognizable Classic Chooser panel." },
+    { "theme": "platinum", "id": "hardDisk", "size": 32, "reason": "Restore the Mac OS 9 tray silhouette and pass the historical edge floor." },
+    { "theme": "platinum", "id": "hardDisk", "size": 16, "reason": "Author an independent list-size tray silhouette with a legible drive opening." },
+    { "theme": "platinum", "id": "document", "size": 32, "reason": "Restore the native folded-paper silhouette while retaining the generated cool-gray material." }
+  ],
+  "acceptedSources": {
+    "classic": "assets/themes/classic/icons/imagegen-source/{id}-{size}.png",
+    "platinum": "assets/themes/platinum/icons/imagegen-source/{id}-{size}.png"
+  },
+  "rawArchive": "drafts/era-icons/imagegen-redraw/raw/{theme}/{id}.png",
+  "nativeSizeProof": "drafts/era-icons/imagegen-redraw/previews/native-size-proof.png",
+  "acceptance": {
+    "sourceKind": "accepted-imagegen-period-pixel-redraw",
+    "reviewStatus": "accepted-imagegen",
+    "nativeSizes": [32, 16],
+    "platinumDesktopSize": 42,
+    "fallbackAllowed": false
+  }
+}

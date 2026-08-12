@@ -1,8 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
-<defs>
-      <linearGradient id="body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9efff"/><stop offset="1" stop-color="#75b9ec"/></linearGradient>
-      <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#eef3f7"/></linearGradient>
-      <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7fafc"/><stop offset="1" stop-color="#b7c3cf"/></linearGradient>
-    </defs>
-<path d="M6 35h15l5 7h12l5-7h15v20H6z" fill="#9fc5df" stroke="#789bb9" stroke-width="1.35"/><path d="M13 8h38v35H13z" fill="url(#paper)" stroke="#789bb9" stroke-width="1.35"/><path d="M21 30h16v10H27l-5 4 2-4h-3zM32 38h12v8h-4l3 3-6-3h-5" fill="#ffffff" stroke="#2e7fcb" stroke-width="1.7"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><image href="icons/chatImport-32.png" width="32" height="32"/></svg>

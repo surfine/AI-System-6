@@ -1,4 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges">
-  <path fill="#ffffff" d="M1 5h14v1h-14zM1 6h14v1h-14zM1 7h14v1h-14zM1 8h14v1h-14zM1 9h14v1h-14zM1 10h14v1h-14zM1 11h14v1h-14zM1 12h14v1h-14zM1 13h14v1h-14z"/>
-  <path fill="#000000" d="M1 5h14v1h-14zM1 6h1v1h-1zM14 6h1v1h-1zM1 7h14v1h-14zM1 8h1v1h-1zM14 8h1v1h-1zM1 9h1v1h-1zM5 9h6v1h-6zM14 9h1v1h-1zM1 10h1v1h-1zM3 10h1v1h-1zM5 10h1v1h-1zM10 10h1v1h-1zM14 10h1v1h-1zM1 11h1v1h-1zM5 11h6v1h-6zM14 11h1v1h-1zM1 12h1v1h-1zM14 12h1v1h-1zM1 13h14v1h-14z"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 32 32" fill="none" stroke="#000000" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" shape-rendering="geometricPrecision">
+  <style>
+    .classic-ink{fill:#000000;stroke:#000000;stroke-width:.25}
+    .classic-paper{fill:#ffffff;stroke:none}
+    .sys-icon-detail{display:none}
+  </style>
+  <g transform="translate(16 16) scale(1.1) translate(-16 -16)">
+    <path d="M3 12h26v12H3z" />
+    <path d="M3 21h26" />
+    <circle class="classic-ink" cx="7" cy="18" r="1" />
+  </g>
 </svg>

@@ -1,3 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges">
-<rect x="2" y="3" width="5" height="5" fill="#dddddd" stroke="#111111" stroke-width="1"/><rect x="9" y="3" width="5" height="5" fill="#dddddd" stroke="#111111" stroke-width="1"/><rect x="6" y="10" width="5" height="4" fill="#dddddd" stroke="#111111" stroke-width="1"/><path d="M5 8l4 3 4-3" fill="none" stroke="#111111" stroke-width="1"/><g transform="scale(0.25)"><circle cx="24" cy="34" r="4" fill="#336699"/><circle cx="40" cy="30" r="4" fill="#336633"/><circle cx="39" cy="44" r="4" fill="#996622"/><path d="M28 34l8-3M28 36l8 6" fill="none" stroke="#111111" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><image href="icons/chooser-16.png" width="16" height="16" style="image-rendering:pixelated"/></svg>

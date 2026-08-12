@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="12" height="12" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+  <!-- Grey check for the disabled checked state, fitted to Quaqua 9.1
+       CheckBox.icons.png frame 6 (checked + disabled).
+
+       Thresholding each frame against its own interior median shows frame 6
+       carries the same mark pixels as frame 2 (checked, enabled), so this shares
+       the geometry of checkbox-checked-dark.svg exactly. 10.6 redraws the
+       disabled control in grey rather than fading the enabled art: the mark
+       centre reads rgb(122,122,122) over a near-white well, where frame 2 reads
+       rgb(2,3,5) over a blue well.
+
+       The stroke is lighter than the enabled twin (2.0 against 2.9) because the
+       reference's disabled mark covers fewer pixels — 26 against 29 — as the
+       grey mark's antialiased edge falls below the detection threshold that the
+       near-black mark clears. Matching the measured coverage reproduces the
+       reference's optical weight rather than only its centre line. Fitted in the
+       real painter geometry with the gate's own glyph comparison: markMismatch
+       0.111 against the reference frame, in the 14px control. -->
+  <path d="M4.75 4 8.5 10.25 15.25 2" fill="none" stroke="#7a7a7a" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { appRuntimePaths, lazyRuntimePaths } from "./runtime-manifest.mjs";
-import { styleRuntimePaths } from "./style-manifest.mjs";
+import { allStylePaths } from "./style-manifest.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const failures = [];
@@ -46,7 +46,7 @@ const appDictionary = read("app/data/system-dictionary.js");
 const appContent = read("app/content/rebuild-samples.js");
 const appBundle = read("app.bundle.js");
 const app = [...appRuntimePaths, ...lazyRuntimePaths, "app.bundle.js"].map(read).join("\n");
-const styles = ["styles.css", ...styleRuntimePaths].map(read).join("\n");
+const styles = ["styles.css", ...allStylePaths].map(read).join("\n");
 const claudeDoc = read("CLAUDE.md");
 const terminologySurface = [
   index,

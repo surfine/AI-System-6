@@ -1,8 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
-<defs>
-      <linearGradient id="body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd9d5"/><stop offset="1" stop-color="#e88778"/></linearGradient>
-      <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#eef3f7"/></linearGradient>
-      <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7fafc"/><stop offset="1" stop-color="#b7c3cf"/></linearGradient>
-    </defs>
-<path d="M15 39h34l8 14H7z" fill="#e45d61" stroke="#b44348" stroke-width="1.35"/><path d="M21 9h22v31H21z" fill="#d7ab79" stroke="#a47c50" stroke-width="1.35"/><rect x="23" y="27" width="17" height="21" fill="#ffffff" stroke="#35516c" stroke-width="1.7"/><path d="M26 32h11M26 37h8M26 42h10" fill="none" stroke="#35516c" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M35 43l9-9" stroke="#e45b62" stroke-width="3.7"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128"><image href="icons/bureaucracyMeme-128.png" width="128" height="128"/></svg>

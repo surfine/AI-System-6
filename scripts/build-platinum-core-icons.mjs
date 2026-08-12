@@ -8,6 +8,7 @@ const require = createRequire(import.meta.url);
 const { createCanvas, loadImage } = require("canvas");
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const assetDir = join(root, "assets/themes/platinum/icons");
+const coreAssetDir = join(assetDir, "core-evidence");
 const sourceFile = join(assetDir, "src/platinum-core-icons.json");
 const draftDir = join(root, "drafts/era-icons");
 const historicalRoot = "/private/tmp/macos9-icon-reference/png 64px";
@@ -15,6 +16,7 @@ const source = JSON.parse(readFileSync(sourceFile, "utf8"));
 const ids = Object.keys(source.icons);
 
 mkdirSync(assetDir, { recursive: true });
+mkdirSync(coreAssetDir, { recursive: true });
 mkdirSync(draftDir, { recursive: true });
 
 const C = Object.freeze({
@@ -87,32 +89,51 @@ function framedRect(ctx, x, y, width, height, inner, edge = C.ink) {
   rect(ctx, x + 1, y + 1, width - 2, height - 2, inner);
 }
 
+function dashedLine(ctx, x0, y0, x1, y1, color, dash = 3, gap = 2) {
+  const horizontal = y0 === y1;
+  const length = horizontal ? Math.abs(x1 - x0) : Math.abs(y1 - y0);
+  const direction = horizontal ? Math.sign(x1 - x0) || 1 : Math.sign(y1 - y0) || 1;
+  for (let offset = 0; offset <= length; offset += dash + gap) {
+    const run = Math.min(dash, length - offset + 1);
+    if (horizontal) rect(ctx, x0 + offset * direction, y0, run, 1, color);
+    else rect(ctx, x0, y0 + offset * direction, 1, run, color);
+  }
+}
+
+// Finder is the friendly system identity: a compact Macintosh whose screen
+// carries eyes and a small smile. Platinum changes the bevel and palette, not
+// the semantic silhouette.
 function drawFinder32(ctx) {
-  shadow(ctx, [[9, 27, 21, 2], [14, 29, 14, 1], [29, 13, 2, 14]]);
-  poly(ctx, [[3, 7], [11, 7], [14, 9], [25, 10], [29, 13], [29, 26], [26, 29], [7, 27], [3, 24]], C.ink);
-  poly(ctx, [[4, 8], [11, 8], [14, 10], [25, 11], [27, 13], [8, 11], [4, 12]], C.violetHi);
-  poly(ctx, [[4, 13], [8, 12], [28, 14], [28, 25], [25, 28], [8, 26], [4, 23]], C.violetShadow);
-  poly(ctx, [[6, 14], [26, 15], [26, 24], [24, 26], [9, 25], [6, 22]], C.violet);
-  pixelLine(ctx, 7, 14, 26, 15, C.violetHi);
-  pixelLine(ctx, 7, 23, 23, 25, C.violetLight);
-  framedRect(ctx, 15, 16, 11, 9, C.hi, C.deep);
-  rect(ctx, 16, 17, 9, 1, C.blue);
-  rect(ctx, 17, 19, 2, 2, C.violetDeep);
-  rect(ctx, 22, 19, 2, 2, C.violetDeep);
-  rect(ctx, 19, 22, 4, 1, C.violetDeep);
-  rect(ctx, 20, 23, 2, 1, C.violetDeep);
+  shadow(ctx, [[8, 27, 18, 3], [26, 7, 3, 20]]);
+  framedRect(ctx, 5, 3, 22, 24, C.mid, C.ink);
+  rect(ctx, 6, 4, 20, 2, C.hi);
+  rect(ctx, 6, 6, 2, 19, C.light);
+  rect(ctx, 24, 6, 2, 19, C.shadow);
+  framedRect(ctx, 8, 6, 16, 14, C.hi, C.deep);
+  rect(ctx, 9, 7, 14, 1, C.white);
+  rect(ctx, 11, 10, 2, 2, C.blueDeep);
+  rect(ctx, 19, 10, 2, 2, C.blueDeep);
+  pixelLine(ctx, 12, 15, 14, 17, C.violetDeep);
+  pixelLine(ctx, 14, 17, 18, 17, C.violetDeep);
+  pixelLine(ctx, 18, 17, 20, 15, C.violetDeep);
+  framedRect(ctx, 14, 22, 6, 3, C.light, C.deep);
+  framedRect(ctx, 9, 27, 14, 3, C.mid, C.ink2);
+  rect(ctx, 10, 27, 12, 1, C.hi);
 }
 
 function drawFinder16(ctx) {
-  shadow(ctx, [[5, 14, 10, 1], [14, 7, 1, 7]]);
-  poly(ctx, [[1, 4], [6, 4], [8, 5], [13, 6], [15, 8], [15, 13], [13, 15], [3, 14], [1, 12]], C.ink);
-  poly(ctx, [[2, 5], [6, 5], [8, 6], [13, 7], [14, 8], [3, 7], [2, 8]], C.violetHi);
-  poly(ctx, [[2, 8], [14, 9], [14, 12], [12, 14], [4, 13], [2, 12]], C.violet);
-  framedRect(ctx, 8, 9, 6, 5, C.hi, C.deep);
-  rect(ctx, 9, 10, 1, 1, C.blueDeep);
-  rect(ctx, 12, 10, 1, 1, C.blueDeep);
-  rect(ctx, 10, 12, 2, 1, C.blueDeep);
+  shadow(ctx, [[5, 14, 8, 2], [13, 4, 2, 10]]);
+  framedRect(ctx, 2, 1, 12, 13, C.mid, C.ink);
+  rect(ctx, 3, 2, 10, 1, C.hi);
+  framedRect(ctx, 4, 3, 8, 7, C.hi, C.deep);
+  rect(ctx, 5, 5, 1, 1, C.blueDeep);
+  rect(ctx, 10, 5, 1, 1, C.blueDeep);
+  pixelLine(ctx, 5, 7, 7, 8, C.violetDeep);
+  pixelLine(ctx, 7, 8, 10, 7, C.violetDeep);
+  rect(ctx, 6, 11, 4, 2, C.light);
+  framedRect(ctx, 5, 14, 6, 2, C.mid, C.ink2);
 }
+
 
 function drawFolder32(ctx) {
   shadow(ctx, [[9, 27, 21, 2], [14, 29, 14, 1], [29, 13, 2, 14]]);
@@ -418,6 +439,134 @@ function drawClipboard16(ctx) {
   pixelLine(ctx, 12, 13, 9, 9, C.shadow);
 }
 
+// ClioTalk exposes the temporary-output rule directly: the user's turn is a
+// solid balloon; the model reply stays visibly dashed until the user saves,
+// clips, inserts, or exports it.
+function drawAssistant32(ctx) {
+  shadow(ctx, [[5, 15, 15, 2], [14, 28, 16, 2]]);
+  framedRect(ctx, 3, 4, 17, 11, C.white, C.ink);
+  poly(ctx, [[7, 14], [7, 18], [12, 14]], C.ink);
+  poly(ctx, [[8, 14], [8, 16], [10, 14]], C.white);
+  rect(ctx, 7, 8, 9, 1, C.mid);
+  rect(ctx, 7, 11, 6, 1, C.shadow);
+
+  rect(ctx, 12, 17, 17, 11, C.light);
+  poly(ctx, [[24, 27], [28, 31], [27, 27]], C.light);
+  dashedLine(ctx, 12, 17, 28, 17, C.violetDeep);
+  dashedLine(ctx, 12, 17, 12, 27, C.violetDeep);
+  dashedLine(ctx, 28, 17, 28, 27, C.violetDeep);
+  dashedLine(ctx, 12, 27, 28, 27, C.violetDeep);
+  pixelLine(ctx, 25, 27, 28, 30, C.violetDeep);
+  rect(ctx, 16, 21, 8, 1, C.shadow);
+  rect(ctx, 19, 24, 6, 1, C.shadow);
+}
+
+function drawAssistant16(ctx) {
+  framedRect(ctx, 1, 1, 9, 7, C.white, C.ink);
+  poly(ctx, [[3, 7], [3, 10], [6, 7]], C.ink);
+  rect(ctx, 3, 4, 5, 1, C.mid);
+  rect(ctx, 6, 8, 9, 7, C.light);
+  dashedLine(ctx, 6, 8, 14, 8, C.violetDeep, 2, 1);
+  dashedLine(ctx, 6, 8, 6, 14, C.violetDeep, 2, 1);
+  dashedLine(ctx, 14, 8, 14, 14, C.violetDeep, 2, 1);
+  dashedLine(ctx, 6, 14, 14, 14, C.violetDeep, 2, 1);
+  pixelLine(ctx, 11, 14, 14, 16, C.violetDeep);
+  rect(ctx, 9, 11, 4, 1, C.shadow);
+}
+
+function drawSearcher32(ctx) {
+  shadow(ctx, [[8, 29, 16, 2], [27, 21, 4, 9]]);
+  poly(ctx, [[5, 3], [18, 3], [23, 8], [23, 28], [5, 28]], C.ink);
+  poly(ctx, [[6, 4], [17, 4], [17, 9], [22, 9], [22, 27], [6, 27]], C.white);
+  rect(ctx, 9, 11, 9, 1, C.mid);
+  rect(ctx, 9, 15, 7, 1, C.light);
+  poly(ctx, [[17, 13], [22, 11], [27, 13], [29, 18], [27, 23], [22, 25], [17, 23], [15, 18]], C.ink2);
+  poly(ctx, [[18, 14], [22, 12], [26, 14], [28, 18], [26, 22], [22, 24], [18, 22], [16, 18]], C.cyan);
+  poly(ctx, [[18, 15], [21, 13], [24, 14], [19, 19]], C.hi);
+  pixelLine(ctx, 27, 23, 31, 27, C.ink);
+  pixelLine(ctx, 26, 24, 30, 28, C.deep);
+}
+
+function drawSearcher16(ctx) {
+  poly(ctx, [[2, 1], [8, 1], [11, 4], [11, 14], [2, 14]], C.ink);
+  poly(ctx, [[3, 2], [7, 2], [7, 5], [10, 5], [10, 13], [3, 13]], C.white);
+  poly(ctx, [[8, 6], [11, 5], [14, 7], [15, 10], [13, 13], [10, 14], [7, 12], [6, 9]], C.ink2);
+  poly(ctx, [[8, 7], [11, 6], [13, 7], [14, 10], [12, 12], [10, 13], [8, 12], [7, 9]], C.cyan);
+  pixelLine(ctx, 13, 12, 15, 15, C.ink);
+}
+
+function drawTeachText32(ctx) {
+  drawDocument32(ctx);
+  for (const y of [13, 17, 21]) rect(ctx, 10, y, y === 21 ? 8 : 11, 1, C.shadow);
+  pixelLine(ctx, 12, 27, 25, 14, C.blueDeep);
+  pixelLine(ctx, 14, 28, 27, 15, C.blue);
+  poly(ctx, [[25, 13], [28, 16], [27, 18], [23, 14]], C.hi);
+  poly(ctx, [[11, 27], [14, 28], [10, 30]], C.ink2);
+}
+
+function drawTeachText16(ctx) {
+  drawDocument16(ctx);
+  rect(ctx, 5, 8, 5, 1, C.shadow);
+  rect(ctx, 5, 11, 4, 1, C.shadow);
+  pixelLine(ctx, 6, 14, 13, 7, C.blueDeep);
+  pixelLine(ctx, 7, 15, 14, 8, C.blue);
+}
+
+function drawReviewDesk32(ctx) {
+  drawDocument32(ctx);
+  pixelLine(ctx, 10, 22, 14, 26, C.red);
+  pixelLine(ctx, 14, 26, 22, 16, C.red);
+  poly(ctx, [[18, 13], [23, 11], [28, 14], [30, 19], [28, 24], [23, 27], [18, 25], [16, 19]], C.ink2);
+  poly(ctx, [[19, 14], [23, 12], [27, 14], [29, 19], [27, 23], [23, 26], [19, 24], [17, 19]], C.hi);
+  poly(ctx, [[19, 15], [22, 13], [25, 14], [20, 19]], C.cyan);
+  pixelLine(ctx, 27, 24, 31, 28, C.ink);
+}
+
+function drawReviewDesk16(ctx) {
+  drawDocument16(ctx);
+  pixelLine(ctx, 4, 11, 6, 13, C.red);
+  pixelLine(ctx, 6, 13, 10, 8, C.red);
+  poly(ctx, [[9, 7], [12, 6], [15, 8], [15, 12], [13, 14], [10, 14], [8, 11]], C.ink2);
+  poly(ctx, [[10, 8], [12, 7], [14, 8], [14, 11], [12, 13], [10, 13], [9, 11]], C.cyan);
+  pixelLine(ctx, 13, 13, 15, 15, C.ink);
+}
+
+function drawDocMap32(ctx) {
+  shadow(ctx, [[7, 29, 14, 2], [29, 9, 3, 20]]);
+  framedRect(ctx, 4, 3, 15, 26, C.white, C.ink);
+  rect(ctx, 7, 9, 9, 1, C.deep);
+  rect(ctx, 7, 14, 6, 1, C.shadow);
+  pixelLine(ctx, 18, 16, 23, 16, C.ink2);
+  pixelLine(ctx, 23, 8, 23, 25, C.ink2);
+  for (const y of [8, 16, 25]) {
+    pixelLine(ctx, 23, y, 27, y, C.ink2);
+    framedRect(ctx, 27, y - 2, 5, 5, y === 16 ? C.violet : C.light, C.deep);
+  }
+}
+
+function drawDocMap16(ctx) {
+  framedRect(ctx, 1, 1, 8, 14, C.white, C.ink);
+  rect(ctx, 3, 5, 4, 1, C.deep);
+  pixelLine(ctx, 8, 9, 11, 9, C.ink2);
+  pixelLine(ctx, 11, 4, 11, 14, C.ink2);
+  for (const y of [4, 9, 14]) framedRect(ctx, 12, y - 1, 4, 3, y === 9 ? C.violet : C.light, C.deep);
+}
+
+function drawProjectDisk32(ctx) {
+  drawHardDisk32(ctx);
+  framedRect(ctx, 10, 19, 13, 5, C.blue, C.deep);
+  rect(ctx, 12, 20, 9, 1, C.hi);
+  rect(ctx, 13, 22, 7, 1, C.blueDeep);
+}
+
+function drawProjectDisk16(ctx) {
+  drawHardDisk16(ctx);
+  framedRect(ctx, 5, 9, 7, 4, C.blue, C.deep);
+  rect(ctx, 6, 10, 5, 1, C.hi);
+}
+
+
+
 const recipes = Object.freeze({
   finderApp: { 32: drawFinder32, 16: drawFinder16 },
   folder: { 32: drawFolder32, 16: drawFolder16 },
@@ -431,6 +580,12 @@ const recipes = Object.freeze({
   systemFile: { 32: drawSystem32, 16: drawSystem16 },
   scrapbook: { 32: drawScrapbook32, 16: drawScrapbook16 },
   clipboard: { 32: drawClipboard32, 16: drawClipboard16 },
+  assistant: { 32: drawAssistant32, 16: drawAssistant16 },
+  searcher: { 32: drawSearcher32, 16: drawSearcher16 },
+  teachText: { 32: drawTeachText32, 16: drawTeachText16 },
+  reviewDesk: { 32: drawReviewDesk32, 16: drawReviewDesk16 },
+  docMap: { 32: drawDocMap32, 16: drawDocMap16 },
+  projectDisk: { 32: drawProjectDisk32, 16: drawProjectDisk16 },
 });
 
 function metrics(ctx, size) {
@@ -464,7 +619,13 @@ function metrics(ctx, size) {
 const generated = {};
 const runtimeCore = {};
 for (const id of ids) {
-  generated[id] = { ...source.icons[id], sourceKind: "measured-independent-pixel-construction", sizes: {}, metrics: {} };
+  generated[id] = {
+    ...source.icons[id],
+    sourceKind: "measured-independent-pixel-construction",
+    reviewStatus: "accepted-core",
+    sizes: {},
+    metrics: {},
+  };
   for (const size of [32, 16]) {
     const canvas = createCanvas(size, size);
     const ctx = canvas.getContext("2d");
@@ -472,14 +633,14 @@ for (const id of ids) {
     recipes[id][size](ctx);
     const filename = `${id}-${size}.png`;
     const buffer = canvas.toBuffer("image/png", { compressionLevel: 9, filters: canvas.PNG_FILTER_NONE });
-    writeFileSync(join(assetDir, filename), buffer);
-    generated[id].sizes[size] = `icons/${filename}`;
+    writeFileSync(join(coreAssetDir, filename), buffer);
+    generated[id].sizes[size] = `icons/core-evidence/${filename}`;
     generated[id].metrics[size] = {
       ...metrics(ctx, size),
       sha256: createHash("sha256").update(buffer).digest("hex"),
       bytes: buffer.length,
     };
-    if (size === 32) runtimeCore[id] = `icons/${filename}`;
+    if (size === 32) runtimeCore[id] = `icons/core-evidence/${filename}`;
   }
 }
 
@@ -501,17 +662,23 @@ const familyFile = join(root, "assets/themes/platinum/platinum-icon-family.json"
 const eraFamily = JSON.parse(readFileSync(familyFile, "utf8"));
 eraFamily.reviewedCore = ids;
 eraFamily.coreBuilder = "scripts/build-platinum-core-icons.mjs";
-for (const id of ids) {
-  if (!eraFamily.icons[id]) continue;
-  eraFamily.icons[id] = {
-    ...eraFamily.icons[id],
-    genre: source.icons[id].genre,
-    physicalMetaphor: source.icons[id].prototype,
-    semanticMark: "object-owned",
-    reviewStatus: "accepted-core",
-    sizes: { 16: `icons/${id}-16.png`, 32: `icons/${id}-32.png` },
-  };
+const completeImagegenFamily = eraFamily.completeFamily === true
+  && eraFamily.imageGenerationMode === "built-in-imagegen-one-call-per-asset";
+if (!completeImagegenFamily) {
+  for (const id of ids) {
+    if (!eraFamily.icons[id]) continue;
+    eraFamily.icons[id] = {
+      ...eraFamily.icons[id],
+      genre: source.icons[id].genre,
+      physicalMetaphor: source.icons[id].prototype,
+      semanticMark: "object-owned",
+      sourceKind: "measured-independent-pixel-construction",
+      reviewStatus: "accepted-core",
+      sizes: { 16: `icons/core-evidence/${id}-16.png`, 32: `icons/core-evidence/${id}-32.png` },
+    };
+  }
 }
+
 writeFileSync(familyFile, `${JSON.stringify(eraFamily, null, 2)}\n`);
 
 function label(ctx, text, x, y, { font = "12px sans-serif", color = "#24242b", align = "left" } = {}) {
@@ -525,7 +692,7 @@ function label(ctx, text, x, y, { font = "12px sans-serif", color = "#24242b", a
 async function contactSheet() {
   const cellWidth = 250;
   const cellHeight = 116;
-  const canvas = createCanvas(cellWidth * 4, 72 + cellHeight * 3);
+  const canvas = createCanvas(cellWidth * 4, 72 + cellHeight * Math.ceil(ids.length / 4));
   const ctx = canvas.getContext("2d");
   rect(ctx, 0, 0, canvas.width, canvas.height, "#d7d7d7");
   label(ctx, "Platinum core · independent 32 px / 16 px", 28, 34, { font: "bold 22px sans-serif" });
@@ -537,8 +704,8 @@ async function contactSheet() {
     rect(ctx, x + 8, y + 8, cellWidth - 16, cellHeight - 16, index % 2 ? "#ededed" : "#f6f6f6");
     rect(ctx, x + 8, y + 8, cellWidth - 16, 1, "#ffffff");
     rect(ctx, x + 8, y + cellHeight - 9, cellWidth - 16, 1, "#858590");
-    const icon32 = await loadImage(join(assetDir, `${id}-32.png`));
-    const icon16 = await loadImage(join(assetDir, `${id}-16.png`));
+    const icon32 = await loadImage(join(coreAssetDir, `${id}-32.png`));
+    const icon16 = await loadImage(join(coreAssetDir, `${id}-16.png`));
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(icon32, x + 22, y + 29, 64, 64);
     ctx.drawImage(icon16, x + 105, y + 53, 32, 32);
@@ -598,7 +765,7 @@ async function comparisonBoard() {
     rect(ctx, 8, y + 5, canvas.width - 16, rowHeight - 10, index % 2 ? "#eeeeee" : "#f7f7f7");
     label(ctx, source.icons[id].label, 18, y + 31, { font: "bold 12px sans-serif" });
     label(ctx, id, 18, y + 49, { font: "10px monospace", color: "#55555f" });
-    const current = await loadImage(join(assetDir, `${id}-32.png`));
+    const current = await loadImage(join(coreAssetDir, `${id}-32.png`));
     const referencePath = join(historicalRoot, `${source.icons[id].referenceId}.png`);
     const reference = existsSync(referencePath) ? await loadImage(referencePath) : current;
     const refCanvas = createCanvas(32, 32);

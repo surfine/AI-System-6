@@ -1,9 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
+<g transform="translate(1.8027 1.6861) scale(0.9327)">
 <defs>
       <linearGradient id="body" x1="0" y1="0" x2="0.82" y2="1"><stop offset="0" stop-color="#fff0bf"/><stop offset="0.38" stop-color="#dab86c"/><stop offset="0.7" stop-color="#9a7140"/><stop offset="1" stop-color="#583e27"/></linearGradient>
       <linearGradient id="paper" x1="0" y1="0" x2="0.8" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="0.7" stop-color="#f5f7fa"/><stop offset="1" stop-color="#c8d1dc"/></linearGradient>
       <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="0.22" stop-color="#dce5ef"/><stop offset="0.53" stop-color="#8d9dad"/><stop offset="0.72" stop-color="#eef3f8"/><stop offset="1" stop-color="#657281"/></linearGradient>
       <radialGradient id="aquaGlass" cx="0.28" cy="0.18" r="0.82"><stop offset="0" stop-color="#ffffff" stop-opacity="0.95"/><stop offset="0.32" stop-color="#bfe9ff" stop-opacity="0.72"/><stop offset="0.7" stop-color="#4f9ed8" stop-opacity="0.45"/><stop offset="1" stop-color="#16588f" stop-opacity="0.82"/></radialGradient>
     </defs>
-<ellipse cx="32" cy="53" rx="18" ry="3.2" fill="#24435f" fill-opacity="0.18"/><path d="M12 18h40v36H12z" fill="url(#body)" stroke="#173d67" stroke-width="2.4"/><path d="M17 10h31v34H17z" fill="url(#paper)" stroke="#173d67" stroke-width="2.4"/><path d="M22 6h25v31H22z" fill="url(#paper)" stroke="#173d67" stroke-width="2.4"/><rect x="22" y="28" width="20" height="18" fill="#ffffff" stroke="#b17a2f" stroke-width="2"/><path d="M25 32h14M25 37h9M25 42h12" fill="none" stroke="#183c63" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<ellipse cx="32" cy="53" rx="18" ry="3.2" fill="#24435f" fill-opacity="0.18"/><path d="M8 8h48v48H8z" fill="url(#paper)" stroke="#173d67" stroke-width="2.4"/><path d="M8 20h48" stroke="#173d67" stroke-width="2.4"/><path d="M15 12h22v5H15z" fill="#dbeaf6" stroke="#173d67" stroke-width="1"/><path d="M16 28h6v6h-6zM16 40h6v6h-6z" fill="#2f6ea9"/><path d="M26 30h22M26 42h16" stroke="#b5c0c9" stroke-width="2.4" stroke-linecap="round"/><path d="M24 49h24" stroke="#c0605f" stroke-width="2.2" stroke-linecap="round"/><rect x="22" y="28" width="20" height="18" fill="#ffffff" stroke="#b17a2f" stroke-width="2"/><path d="M25 32h14M25 37h9M25 42h12" fill="none" stroke="#183c63" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
 </svg>

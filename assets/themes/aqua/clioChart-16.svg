@@ -1,9 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
+<g transform="translate(3.2222 3.1111) scale(0.8889)">
 <defs>
       <linearGradient id="body" x1="0" y1="0" x2="0.82" y2="1"><stop offset="0" stop-color="#d9efff"/><stop offset="0.38" stop-color="#75b9ec"/><stop offset="0.7" stop-color="#2f73b8"/><stop offset="1" stop-color="#173e75"/></linearGradient>
       <linearGradient id="paper" x1="0" y1="0" x2="0.8" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="0.7" stop-color="#f5f7fa"/><stop offset="1" stop-color="#c8d1dc"/></linearGradient>
       <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="0.22" stop-color="#dce5ef"/><stop offset="0.53" stop-color="#8d9dad"/><stop offset="0.72" stop-color="#eef3f8"/><stop offset="1" stop-color="#657281"/></linearGradient>
       <radialGradient id="aquaGlass" cx="0.28" cy="0.18" r="0.82"><stop offset="0" stop-color="#ffffff" stop-opacity="0.95"/><stop offset="0.32" stop-color="#bfe9ff" stop-opacity="0.72"/><stop offset="0.7" stop-color="#4f9ed8" stop-opacity="0.45"/><stop offset="1" stop-color="#16588f" stop-opacity="0.82"/></radialGradient>
     </defs>
-<ellipse cx="32" cy="53" rx="18" ry="3.2" fill="#24435f" fill-opacity="0.18"/><path d="M12 8h40v34H12z" fill="url(#paper)" stroke="#173d67" stroke-width="2.4"/><path d="M24 42l-8 16M40 42l8 16M20 48h24" fill="none" stroke="#657585" stroke-width="3.9" stroke-linecap="round"/><path d="M23 44V28h19v16zM26 40l4-5 4 2 5-7" fill="#ffffff" stroke="#2b7fc4" stroke-width="2" stroke-linejoin="round"/>
+<ellipse cx="32" cy="53" rx="18" ry="3.2" fill="#24435f" fill-opacity="0.18"/><path d="M6 8h52v48H6z" fill="url(#paper)" stroke="#173d67" stroke-width="2.4"/><path d="M6 20h52M24 8v48M42 8v48M6 34h52" fill="none" stroke="#173d67" stroke-width="1.2"/><path d="M11 50h7V38h-7zM29 50h7V30h-7zM47 50h7V42h-7z" fill="#2f8fd0" stroke="#173d67" stroke-width="1"/><path d="M23 44V28h19v16zM26 40l4-5 4 2 5-7" fill="#ffffff" stroke="#2b7fc4" stroke-width="2" stroke-linejoin="round"/>
+</g>
 </svg>

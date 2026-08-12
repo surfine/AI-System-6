@@ -12,6 +12,15 @@
   --messages-bg: var(--paper);
   --details-bar-bg: var(--paper);
   --details-bar-border: var(--ink);
+  /* Optional status placard role. It is visually inert in System 6; eras
+     that used a compact inset status cell can repaint the same semantic
+     leading receipt without moving it out of the shared three-slot bar. */
+  --status-placard-padding: 0;
+  --status-placard-border: 0;
+  --status-placard-bg: transparent;
+  --status-placard-shadow: none;
+  --status-placard-font-family: inherit;
+  --status-placard-font-size: inherit;
   --review-desk-pane-bg: transparent;
   --review-desk-results-border: var(--system-border);
   --review-desk-results-radius: 0;
@@ -116,6 +125,23 @@
   --scrap-list-item-divider: var(--system-secondary-divider);
   --scrap-list-mini-icon-border: 1px solid currentColor;
   --scrap-translation-badge-border: 1px solid currentColor;
+  /* Native System 6 Scrapbook projects one saved object at a time over a
+     horizontal page rail. Later appearances turn the same stable DOM back
+     into a browser list without changing the curated-scrap data model. */
+  --scrapbook-list-display: none;
+  --scrapbook-pager-display: grid;
+  --scrapbook-pane-columns: 1fr;
+  --scrapbook-pane-rows: minmax(0, 1fr) auto auto;
+  --scrapbook-pane-gap: 6px;
+  --scrapbook-mobile-pane-columns: 1fr;
+  --scrapbook-mobile-pane-rows: minmax(0, 1fr) auto auto;
+  --scrap-list-item-bg: transparent;
+  --scrap-list-item-radius: 0;
+  --scrap-list-item-shadow: none;
+  --scrap-list-item-selected-bg: var(--ink);
+  --scrap-list-item-selected-fg: var(--paper);
+  --scrap-list-item-selected-radius: 0;
+  --scrap-list-item-selected-shadow: none;
   --import-preview-bg: var(--paper);
   --import-preview-border: var(--system-border);
   --import-preview-radius: 0;
@@ -486,6 +512,24 @@
   --tdi-tabs-after-content: none;
   --tdi-tabs-after-flex: 0 0 auto;
   --tdi-tabs-after-min-width: 0;
+  /* Vertical TDI rails are a system role shared by Reader, TeachText, and
+     DocMap. Defaults preserve the plain System 6 list; later eras may turn
+     the same rail into a grooved list, drawer, or source list by tokens. */
+  --tdi-rail-padding: 0;
+  --tdi-rail-border: 0;
+  --tdi-rail-radius: 0;
+  --tdi-rail-bg: transparent;
+  --tdi-rail-shadow: none;
+  --tdi-source-label-display: none;
+  --tdi-source-label-padding: 0;
+  --tdi-source-label-border-bottom: 0;
+  --tdi-source-label-bg: transparent;
+  --tdi-source-label-fg: currentColor;
+  --tdi-source-label-font-family: var(--ui-font);
+  --tdi-source-label-font-size: var(--system-caption-size);
+  --tdi-source-label-font-weight: var(--system-strong-weight);
+  --tdi-source-label-letter-spacing: normal;
+  --tdi-source-label-text-transform: none;
   --tdi-stack-popover-border: var(--system-border);
   --tdi-stack-popover-radius: 0;
   --tdi-stack-popover-bg: var(--paper);
@@ -663,14 +707,73 @@
   --control-strip-active-fg: var(--paper);
   --control-strip-active-shadow: none;
   --control-strip-radius: 0;
+  /* The rounded end follows the tab, and the tab sits at the outer end — a
+     right-anchored strip mirrors its radius through this second token. */
+  --control-strip-radius-mirrored: var(--control-strip-radius);
   --control-strip-shadow: none;
   --control-strip-backdrop: none;
   --control-strip-collapse-duration: 180ms;
+  /* Era material slots for the strip's tiles, handle grip, and gauge well.
+     Classic keeps flat tiles with ink dividers; Platinum raises each tile
+     into a bevel button; later eras go flat again with their own materials. */
+  --control-strip-tile-bg: transparent;
+  --control-strip-tile-radius: 0;
+  --control-strip-tile-shadow: none;
+  --control-strip-tile-margin: 0;
+  --control-strip-tile-height: calc(var(--control-strip-thickness) - 2px);
+  --control-strip-tile-hover-shadow: var(--control-strip-hover-shadow);
+  --control-strip-grip-inset: 6px 6px;
+  --control-strip-grip: repeating-linear-gradient(to bottom, currentColor 0 2px, transparent 2px 4px);
+  --control-strip-grip-radius: 0;
+  --control-strip-gauge-bg: var(--paper);
+  /* Control Panel section chooser: one tablist, era-specific clothes.
+     Classic is the default appearance, so the defaults ARE the System 4-6
+     cdev icon rail (vertical scrolling icon list at the window's left, the
+     1987 Control Panel DA form). Eras with another native
+     settings-navigation object swap these values in their own token block:
+     Platinum pins the OS 8 tab sheet, the Aqua family its icon toolbar,
+     Liquid Glass a segmented capsule. */
+  --control-settings-columns: 92px minmax(0, 1fr);
+  --control-settings-rows: minmax(0, 1fr) auto;
+  --control-chooser-area: 1 / 1 / span 2 / auto;
+  --control-chooser-bg: transparent;
+  --control-chooser-radius: 0;
+  --control-chooser-padding: 0;
+  --control-chooser-width: 100%;
+  --control-chooser-direction: column;
+  --control-chooser-gap: 10px;
+  --control-chooser-border-bottom: 0;
+  --control-chooser-border-right: var(--system-border);
+  --control-chooser-item-direction: column;
+  --control-chooser-item-flex: 0 0 auto;
+  --control-chooser-item-gap: 4px;
+  --control-chooser-item-padding: 6px 4px;
+  --control-chooser-item-offset: 0px;
+  --control-chooser-item-border: 0;
+  --control-chooser-item-border-bottom-width: 0;
+  --control-chooser-item-radius: 0;
+  --control-chooser-item-bg: transparent;
+  --control-chooser-item-fg: var(--ink);
+  --control-chooser-item-shadow: none;
+  --control-chooser-hover-bg: var(--ink);
+  --control-chooser-hover-fg: var(--paper);
+  --control-chooser-active-bg: var(--ink);
+  --control-chooser-active-fg: var(--paper);
+  --control-chooser-active-weight: inherit;
+  --control-chooser-active-shadow: none;
+  --control-chooser-icon-display: block;
+  --control-chooser-icon-size: 32px;
+  --control-chooser-label-size: 11px;
   /* System 6 native window chrome, measured at the emulator's exact 2×
      pixels: 17px title-bar box + the window's 1px top border and 1px inset. */
   --system-titlebar-height: 17px;
   --system-titlebar-control-slot: 40px;
   --system-titlebar-control-size: 40px;
+  /* WindowShade collapse box: one shared DOM control, zero-width and hidden
+     by default. Only eras whose native title bar had it (Mac OS 8/9) open
+     the slot and paint it. */
+  --system-titlebar-shade-slot: 0px;
+  --system-titlebar-shade-display: none;
   --system-titlebar-control-art-size: 11px;
   --system-titlebar-control-art-offset-x: 13px;
   --system-titlebar-control-art-offset-y: calc((var(--system-titlebar-control-size) - var(--system-titlebar-title-height)) / 2);
@@ -724,8 +827,20 @@
   --system-check-size: 13px;
   --desktop-icon-column-gap: 10px;
   --desktop-icon-width: 82px;
+  /* Desktop icon label material. Classic owns the white paper tag; eras
+     repaint through these tokens (Aqua-family drops the tag for shadowed
+     text, Liquid Glass keeps its chip). Width may exceed the icon so a
+     name like "Applications" wraps between words, never inside one. */
+  --desktop-label-bg: var(--paper);
+  --desktop-label-fg: var(--ink);
+  --desktop-label-text-shadow: none;
+  --desktop-label-box-shadow: none;
+  --desktop-label-radius: 0;
+  --desktop-label-max-width: 96px;
+  --desktop-label-selected-bg: var(--ink);
+  --desktop-label-selected-fg: var(--paper);
   --liquid-desktop-icon-padding: 6px 4px;
-  --liquid-desktop-icon-size: 46px;
+  --liquid-desktop-icon-size: 42px;
   --liquid-desktop-icon-label-line-height: 1.08;
   --settings-scrollbar-lane-bg: var(--paper);
   --settings-scrollbar-lane-padding-right: 12px;
@@ -1129,6 +1244,13 @@
   --find-path-empty-note-shadow: none;
   --find-path-empty-note-fg: var(--ink);
   --find-path-result-gap: 2px;
+  --find-path-result-padding: 10px 12px;
+  /* Era result-table recipe: Classic hides the header row and relevance
+     bar; Platinum / Aqua / Snow Leopard flip the display tokens and set
+     their own column template. */
+  --find-path-header-display: none;
+  --find-path-relevance-display: none;
+  --find-path-table-columns: minmax(0, 1fr) 84px minmax(0, 32%);
   --find-path-result-border: 0;
   --find-path-result-border-bottom: 1px solid var(--shade);
   --find-path-result-last-border-bottom: 0;
@@ -1447,6 +1569,18 @@
   --radio-checked-focus-image:
     url("./system.css-reference/icon/radio-dot.svg"),
     url("./system.css-reference/icon/radio-border-focused.svg");
+  /* A disabled choice control defaults to the enabled art plus the shared
+     disabled opacity, which is what every era rendered before these roles
+     existed. An era whose real disabled control is drawn differently rather
+     than faded (Snow Leopard replaces the blue well with a near-white one and
+     a grey mark) overrides these instead of adding a selector. */
+  --choice-disabled-checked-bg: var(--choice-checked-bg);
+  --choice-disabled-checked-bg-image: var(--choice-checked-bg-image, none);
+  --choice-disabled-checkmark-image: var(--choice-checkmark-image);
+  --choice-disabled-border-color: var(--choice-checked-border-color, inherit);
+  --choice-disabled-opacity: var(--control-disabled-opacity);
+  --radio-disabled-checked-image: var(--radio-checked-image);
+  --radio-disabled-checked-size: var(--system-radio-size);
   --clio-stage-pane-rows: auto minmax(0, 1fr) auto;
   --clio-stage-pane-gap: 8px;
   --clio-stage-pane-bg: transparent;

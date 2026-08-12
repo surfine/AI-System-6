@@ -1,3 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
-<path d="M3 8q6-3 13 1v19q-7-4-13-1zM29 8q-6-3-13 1v19q7-4 13-1z" fill="#ffffff" stroke="#111111" stroke-width="1"/><g transform="scale(0.5)"><path d="M20 29q7-4 12 1v18q-6-4-12-1zM44 29q-7-4-12 1v18q6-4 12-1z" fill="#ffffff" stroke="#336699" stroke-width="1"/></g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><image href="icons/reader-32.png" width="32" height="32" style="image-rendering:pixelated"/></svg>

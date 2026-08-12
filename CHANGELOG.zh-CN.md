@@ -1,5 +1,5 @@
 <!-- canonical-source: CHANGELOG.md -->
-<!-- source-sha256: 51ef8495bce9ec8b65ef634d1e04a9dd20f42d6c9de706c26f9984e25dd3a8a6 -->
+<!-- source-sha256: dc078a637fafa17ebdb85111eeaf4d5929b632de28e48e425d397498ea9e3782 -->
 
 # AI System 6 中文更新日志
 
@@ -535,6 +535,41 @@ Liquid Glass 继续作为独立材质存在，而不是被复古修正误伤。
   #619fe8，已对照引用 GTK 源验证）；并将 README / README.zh-CN 同步为六套
   正式外观。
 - 30 秒种子化演示展示来源如何变成项目硬盘里的文件，无需模型与网络。
+
+## 公开测试版 1.0.38 — 2026-08-12
+
+- 六套 56 对象图标家族全部完成，fallback 图稿归零：System 6、Platinum、
+  Aqua、Snow Leopard、Yosemite 与 Liquid Glass 现在在同一组语义对象 id
+  后拥有各时代独立的构造。
+- Finder、MultiFinder 与 ClioTalk 已跨六个时代重绘；共享身份保持不变，
+  各时代的材质、透视、像素密度、光线与小尺寸光学提示分别重建。
+- Liquid Glass 从 56 份独立 Image Gen 母版重建为每个对象四个原生尺寸、
+  三种外观；Classic 与 Platinum 保留审定的 32/16 px 家族，三个 OS X
+  时代保留各自的原生多尺寸位图家族。
+- Aqua、Snow Leopard 与 Yosemite 已接受 Image Gen 图稿的可重建性缺口
+  已关闭：490 份以哈希固定的审定来源进入受版本控制的来源边界，干净克隆
+  不再依赖被忽略的草稿候选即可重建。
+- 为完成后的六时代系统增加失败关闭的家族、来源归档、连续性、运行时分发、
+  可区分性、原生画布与发布资源门禁。
+
+## 公开测试版 1.0.39 — 2026-08-12
+
+- 将完整 System 6 家族重建为手工定义的 32/16 px SVG：留存至今的经典对象
+  以真实 System 6 资源为依据，新增应用对象沿用相同的一位图语法；选中态蒙版
+  直接嵌入图稿，在 Retina 屏上清晰缩放而不被抹成泛化矢量图标。
+- 增加独立的 42 px Platinum 桌面尺寸与光学一致性测试；Finder 现在分发
+  时代原生画布，不再拉伸其他尺寸。
+- 清除 Aqua、Snow Leopard 与 Yosemite 审定家族中的色键洋红残留，同时
+  保护有意使用的紫色像素、透明边缘，以及各时代独有的阴影与材质配方。
+- 扩充 Theme Lab 证据与失败关闭门禁，覆盖经典依据、运行时载荷、原生尺寸、
+  跨时代可区分性、选中态蒙版，以及 Classic/Liquid 视觉快照。
+- 修正 Aqua 的 Jaguar 当前应用程序菜单：粗体标题现在跟随真实菜单所有者
+  （启动时为 Finder），不再硬编码产品名。真实应用浏览器门禁现在会主动
+  切换所有者，并在六套外观中拦截这一语义回归。
+- 补齐打包版主题资源缺口：Aqua、Snow Leopard、Yosemite 与 Liquid Glass
+  现在携带家族清单声明的全部 PNG 尺寸/外观；Aqua/Snow Leopard 运行时
+  sprite 与 Platinum 桌面纹理也会随包提供。macOS 打包门禁会从最终 pkg
+  二进制逐一提供 1,291 份 UI 引用主题 PNG，并在签名前与审定来源逐字节比对。
 
 ## 一个月里真正变大的东西
 

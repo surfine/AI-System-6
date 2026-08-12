@@ -90,6 +90,9 @@ function syncWindowBalloonHelpTargets() {
   document.querySelectorAll(".window > .title-bar > .resize-box:not([disabled])").forEach((zoomBox) => {
     zoomBox.dataset.balloonHelp ||= "balloon_zoom_box";
   });
+  document.querySelectorAll(".window > .title-bar > .shade-box").forEach((shadeBox) => {
+    shadeBox.dataset.balloonHelp ||= "balloon_shade_box";
+  });
   document.querySelectorAll(".window > .grow-box").forEach((growBox) => {
     growBox.dataset.balloonHelp ||= "balloon_grow_box";
   });

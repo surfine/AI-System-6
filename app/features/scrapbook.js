@@ -471,6 +471,79 @@ function selectedScrapDisplayBody(scrap) {
   return scrap?.body || "";
 }
 
+function renderScrapbookPager(visibleScraps, selectedScrap = null) {
+  if (!scrapbookPageTrackEl || !scrapbookPagePositionEl) return;
+
+  const selectedIndex = selectedScrap
+    ? visibleScraps.findIndex((scrap) => scrap.id === selectedScrap.id)
+    : -1;
+  const current = selectedIndex >= 0 ? selectedIndex + 1 : 0;
+  scrapbookPagePositionEl.textContent = t("scrapbook_page_position", current, visibleScraps.length);
+  scrapbookPagePreviousButton.disabled = current <= 1;
+  scrapbookPageNextButton.disabled = current === 0 || current >= visibleScraps.length;
+
+  const fragment = document.createDocumentFragment();
+  visibleScraps.forEach((scrap, index) => {
+    const tick = document.createElement("button");
+    tick.type = "button";
+    tick.className = [
+      "scrapbook-page-tick",
+      scrap.id === selectedScrap?.id ? "is-active" : "",
+      selectedScrapIds.has(scrap.id) ? "is-multi-selected" : "",
+    ].filter(Boolean).join(" ");
+    tick.setAttribute("aria-pressed", selectedScrapIds.has(scrap.id) ? "true" : "false");
+    tick.setAttribute("aria-label", `${t("scrapbook_page_position", index + 1, visibleScraps.length)} — ${scrap.title}`);
+    // Same selection grammar as the list rows: a plain activation turns to
+    // this page, a modifier click toggles the scrap in the multi-selection.
+    tick.addEventListener("click", (event) => {
+      const wasSelected = selectedScrapId === scrap.id;
+      if (event.metaKey || event.ctrlKey || event.shiftKey) {
+        if (selectedScrapIds.has(scrap.id) && selectedScrapIds.size > 1) {
+          selectedScrapIds.delete(scrap.id);
+        } else {
+          selectedScrapIds.add(scrap.id);
+        }
+      } else {
+        selectedScrapIds.clear();
+        selectedScrapIds.add(scrap.id);
+      }
+      selectedScrapId = scrap.id;
+      if (!wasSelected) {
+        showingScrapTranslation = false;
+        scrapTranslationViewMode = "original";
+      }
+      renderScraps();
+    });
+    fragment.append(tick);
+  });
+  scrapbookPageTrackEl.replaceChildren(fragment);
+}
+
+function moveScrapbookPage(direction) {
+  const visibleScraps = selectedScrapStack === "all"
+    ? getProjectScraps()
+    : getProjectScraps().filter((scrap) => getScrapStack(scrap) === selectedScrapStack);
+  if (!visibleScraps.length) return;
+
+  const currentIndex = Math.max(0, visibleScraps.findIndex((scrap) => scrap.id === selectedScrapId));
+  const nextIndex = Math.max(0, Math.min(visibleScraps.length - 1, currentIndex + direction));
+  if (nextIndex === currentIndex) return;
+  selectedScrapId = visibleScraps[nextIndex].id;
+  selectedScrapIds.clear();
+  selectedScrapIds.add(selectedScrapId);
+  showingScrapTranslation = false;
+  scrapTranslationViewMode = "original";
+  renderScraps();
+}
+
+function showPreviousScrapbookPage() {
+  moveScrapbookPage(-1);
+}
+
+function showNextScrapbookPage() {
+  moveScrapbookPage(1);
+}
+
 function scrapListItemHtml(scrap) {
   const stack = getScrapStack(scrap);
   const isClip = stack === "sources";
@@ -610,10 +683,16 @@ function renderScraps() {
     : projectScraps.filter((scrap) => getScrapStack(scrap) === selectedScrapStack);
   syncScrapSelection(visibleScraps);
   scrapCountEl.textContent = t("scraps_count", visibleScraps.length);
+  const selectedCount = getSelectedScraps().length;
   if (scrapSelectionCountEl) {
-    const count = getSelectedScraps().length;
-    scrapSelectionCountEl.textContent = count ? t("selected_scraps_count", count) : t("no_scraps_selected");
+    scrapSelectionCountEl.textContent = selectedCount ? t("selected_scraps_count", selectedCount) : t("no_scraps_selected");
   }
+  // These buttons own their real availability (the menu reads it back through
+  // activeOwnedControlEnabled instead of the mirrored is-disabled class).
+  if (sendScrapsToQuestionButton) sendScrapsToQuestionButton.disabled = !selectedCount;
+  if (outlineScrapsButton) outlineScrapsButton.disabled = !selectedCount;
+  if (insertScrapButton) insertScrapButton.disabled = !selectedCount;
+  if (deleteScrapButton) deleteScrapButton.disabled = !selectedCount;
   if (downloadScrapsBilingualButton) {
     const canExportBilingual = getSelectedScraps().some(scrapHasTranslation);
     downloadScrapsBilingualButton.disabled = !canExportBilingual;
@@ -652,6 +731,7 @@ function renderScraps() {
     renderScrapSourceInfo(null);
     if (openScrapSourceButton) openScrapSourceButton.disabled = true;
     scrapBodyInput.value = "";
+    renderScrapbookPager(visibleScraps);
     updateDocMapEntryButtons();
     return;
   }
@@ -706,6 +786,7 @@ function renderScraps() {
       openScrapSourceButton.disabled = !canOpenScrapSource(selected);
     }
   }
+  renderScrapbookPager(visibleScraps, selected);
   updateDocMapEntryButtons();
 }
 

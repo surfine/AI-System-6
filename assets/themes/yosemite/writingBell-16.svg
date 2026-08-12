@@ -1,8 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
-<defs>
-      <linearGradient id="body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff0bf"/><stop offset="1" stop-color="#dab86c"/></linearGradient>
-      <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#eef3f7"/></linearGradient>
-      <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7fafc"/><stop offset="1" stop-color="#b7c3cf"/></linearGradient>
-    </defs>
-<path d="M12 48h40c-6-7-7-14-7-23 0-17-26-17-26 0 0 9-1 16-7 23z" fill="#f0b943" stroke="#b47d2f" stroke-width="2.3" stroke-linejoin="round"/><ellipse cx="32" cy="51" rx="23" ry="5" fill="#d99d39" stroke="#b47d2f" stroke-width="2.3"/><circle cx="32" cy="56" r="3.5" fill="#8d5a25"/><path d="M23 43h18c-3-3-3-7-3-11 0-8-12-8-12 0 0 4 0 8-3 11z" fill="#d19a3c" stroke="#35516c" stroke-width="1.7"/><circle cx="32" cy="47" r="2" fill="#35516c"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><image href="icons/writingBell-16.png" width="16" height="16"/></svg>

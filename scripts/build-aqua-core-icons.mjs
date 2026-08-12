@@ -6,8 +6,12 @@ import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
 const { createCanvas, loadImage } = require("canvas");
+const { gridTransform, inkBox } = await import("./lib/icon-grid.mjs");
+const { runtimePixelMetrics } = await import("./lib/icon-pixel-metrics.mjs");
+const { assertDocMapMetaphor, measureDocMapMetaphor } = await import("./lib/docmap-metaphor-metrics.mjs");
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const assetDir = join(root, "assets/themes/aqua/icons");
+const acceptedImagegenSourceDir = join(assetDir, "imagegen-source");
 const evidenceDir = join(root, "drafts/theme-lab-fidelity-cache/aqua");
 const sourceFile = join(assetDir, "src/aqua-core-icons.json");
 const draftDir = join(root, "drafts/era-icons");
@@ -128,61 +132,68 @@ function paper(ctx, x0, y0, x1, y1) {
   return linear(ctx, x0, y0, x1, y1, [[0, P.white], [0.65, P.paper], [1, P.paperShadow]]);
 }
 
+// This product's Finder is the launcher and volume browser, so Jaguar draws
+// that browser: an Aqua window with a striped title bar and the writing objects
+// inside it.
 function drawFinder128(ctx) {
-  softShadow(ctx, 66, 111, 42, 8, 9, 0.34);
-  rounded(ctx, 18, 13, 92, 96, 15, linear(ctx, 18, 13, 105, 109, [[0, "#bfeaff"], [0.42, "#65b8ea"], [1, "#2367ad"]]), "#315f91", 2.2);
+  softShadow(ctx, 64, 110, 44, 7, 9, 0.3);
+  rounded(ctx, 12, 20, 104, 86, 8, P.paper, "#7c8b98", 2);
   ctx.save();
   ctx.beginPath();
-  ctx.roundRect(21, 16, 86, 89, 12);
+  ctx.roundRect(12, 20, 104, 86, 8);
   ctx.clip();
-  ctx.fillStyle = linear(ctx, 24, 15, 103, 105, [[0, "#e4f7ff"], [0.56, "#85c9ec"], [1, "#4a91cb"]]);
-  ctx.fillRect(20, 15, 46, 92);
-  ctx.fillStyle = linear(ctx, 64, 15, 104, 106, [[0, "#6bb5e2"], [0.58, "#247bc1"], [1, "#185395"]]);
-  ctx.fillRect(64, 15, 45, 92);
-  ctx.fillStyle = "rgba(255,255,255,.48)";
-  ctx.fillRect(25, 19, 77, 4);
+  ctx.fillStyle = linear(ctx, 0, 20, 0, 42, [[0, "#fdfdfe"], [0.5, "#dfe5eb"], [1, "#b9c3cd"]]);
+  ctx.fillRect(12, 20, 104, 22);
+  ctx.strokeStyle = "rgba(255,255,255,.7)";
+  ctx.lineWidth = 1;
+  for (let y = 24; y < 40; y += 3) {
+    ctx.beginPath();
+    ctx.moveTo(12, y);
+    ctx.lineTo(116, y);
+    ctx.stroke();
+  }
+  ctx.fillStyle = "#e8edf2";
+  ctx.fillRect(12, 42, 26, 64);
   ctx.restore();
-  ctx.strokeStyle = "#244f83";
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(64, 25);
-  ctx.bezierCurveTo(57, 40, 54, 53, 61, 63);
-  ctx.bezierCurveTo(68, 74, 67, 86, 59, 93);
-  ctx.stroke();
-  ellipse(ctx, 44, 48, 3.6, 5, P.ink);
-  ellipse(ctx, 79, 47, 3.7, 5.2, "#183c68");
-  ctx.beginPath();
-  ctx.moveTo(36, 74);
-  ctx.bezierCurveTo(44, 88, 57, 92, 66, 82);
-  ctx.strokeStyle = P.ink;
-  ctx.lineWidth = 3.1;
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(67, 81);
-  ctx.bezierCurveTo(79, 94, 92, 87, 96, 74);
-  ctx.strokeStyle = "#173e6d";
-  ctx.stroke();
+  for (const [index, color, edge] of [[0, "#f26d5f", "#a8352c"], [1, "#f5c04a", "#a8791f"], [2, "#7bc45f", "#3f7a2c"]]) {
+    ellipse(ctx, 22 + index * 11, 31, 4.4, 4.4,
+      radial(ctx, 20 + index * 11, 29, 0.6, 22 + index * 11, 31, 5, [[0, "#ffffff"], [0.45, color], [1, edge]]), edge, 0.8);
+  }
+  shape(ctx, [[46, 54], [62, 54], [67, 61], [96, 61], [96, 90], [46, 90]],
+    aquaBlue(ctx, 54, 90), "#4f83ab", 1.4);
+  shape(ctx, [[50, 64], [92, 64], [90, 72], [52, 72]], "rgba(255,255,255,.45)");
+  shape(ctx, [[74, 44], [92, 44], [102, 54], [102, 86], [74, 86]], paper(ctx, 74, 44, 102, 86), P.paperShadow, 1.2);
+  ctx.fillStyle = "#b9c2ca";
+  for (let index = 0; index < 3; index += 1) ctx.fillRect(79, 60 + index * 8, index === 2 ? 12 : 19, 3);
 }
 
 function drawFinder32(ctx) {
-  softShadow(ctx, 16.5, 28, 10, 2, 2.3, 0.32);
-  rounded(ctx, 4, 3, 24, 25, 4, aquaBlue(ctx, 3, 28), "#315f91", 0.8);
-  ctx.save();
-  ctx.beginPath(); ctx.roundRect(5, 4, 11, 22, 3); ctx.clip();
-  ctx.fillStyle = linear(ctx, 5, 4, 15, 26, [[0, "#e5f7ff"], [1, "#73bce5"]]); ctx.fillRect(5, 4, 12, 22); ctx.restore();
-  line(ctx, 16, 7, 15, 22, "#265788", 0.9);
-  ellipse(ctx, 11, 13, 1, 1.4, P.ink); ellipse(ctx, 21, 12.8, 1, 1.4, "#173e6d");
-  ctx.beginPath(); ctx.moveTo(9, 19); ctx.bezierCurveTo(12, 23, 15, 23.5, 17, 20.5); ctx.bezierCurveTo(20, 23.5, 23, 22, 24, 19); ctx.strokeStyle = P.ink; ctx.lineWidth = 0.9; ctx.stroke();
+  softShadow(ctx, 16, 28, 11, 2, 2.3, 0.28);
+  rounded(ctx, 3, 6, 26, 21, 2.4, P.paper, "#78838d", 0.8);
+  ctx.fillStyle = linear(ctx, 0, 6, 0, 12, [[0, "#fdfdfe"], [1, "#c2ccd5"]]);
+  ctx.beginPath();
+  ctx.roundRect(3, 6, 26, 6, [2.4, 2.4, 0, 0]);
+  ctx.fill();
+  ctx.fillStyle = "#e8edf2";
+  ctx.fillRect(3, 12, 6.5, 15);
+  for (const [index, color] of [[0, "#ef6a5c"], [1, "#f2bd48"], [2, "#78c15c"]]) ellipse(ctx, 5.4 + index * 3, 9, 1.2, 1.2, color);
+  shape(ctx, [[12, 15], [17, 15], [18.4, 17], [25, 17], [25, 24], [12, 24]], aquaBlue(ctx, 15, 24), "#4f83ab", 0.5);
+  shape(ctx, [[19, 12.6], [24, 12.6], [26.4, 15], [26.4, 22], [19, 22]], P.white, P.paperShadow, 0.5);
 }
 
 function drawFinder16(ctx) {
-  softShadow(ctx, 8, 14.2, 5, 1, 1.1, 0.27);
-  rounded(ctx, 2, 1.5, 12, 13, 2.2, aquaBlue(ctx, 1.5, 14.5), "#315f91", 0.55);
-  ctx.fillStyle = "rgba(225,247,255,.8)"; ctx.fillRect(2.7, 3, 5.3, 9.8);
-  line(ctx, 8, 4, 7.7, 11.3, "#275b8b", 0.6);
-  ellipse(ctx, 5.4, 6.8, 0.65, 0.8, P.ink); ellipse(ctx, 10.4, 6.8, 0.65, 0.8, "#173e6d");
-  ctx.beginPath(); ctx.moveTo(4.5, 10); ctx.quadraticCurveTo(7.8, 13, 11.5, 9.8); ctx.strokeStyle = P.ink; ctx.lineWidth = 0.7; ctx.stroke();
+  softShadow(ctx, 8, 14, 5.6, 1, 1.1, 0.25);
+  rounded(ctx, 1.4, 3, 13.2, 10.6, 1.4, P.paper, "#74808a", 0.55);
+  ctx.fillStyle = "#c8d1d9";
+  ctx.beginPath();
+  ctx.roundRect(1.4, 3, 13.2, 3.2, [1.4, 1.4, 0, 0]);
+  ctx.fill();
+  ctx.fillStyle = "#e8edf2";
+  ctx.fillRect(1.4, 6.2, 3.6, 7.4);
+  shape(ctx, [[6, 8], [8.6, 8], [9.4, 9], [13, 9], [13, 12.4], [6, 12.4]], "#63aede");
+  shape(ctx, [[9.8, 6.6], [12.4, 6.6], [13.6, 7.8], [13.6, 11.4], [9.8, 11.4]], P.white, P.paperShadow, 0.4);
 }
+
 
 function drawFolder128(ctx) {
   softShadow(ctx, 67, 106, 49, 9, 10, 0.28);
@@ -381,33 +392,69 @@ function drawTeachText16(ctx) {
   line(ctx, 8, 13, 12.7, 7.5, "#2d78a9", 1.4);
 }
 
+// ClioTalk is a written conversation kept as a file, with its material
+// attached: an illustrated transcript and a second sheet under a chrome clip.
+function quoteMark(ctx, x, y, unit, color) {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.roundRect(x, y, unit, unit * 1.7, unit * 0.5);
+  ctx.roundRect(x + unit * 1.7, y, unit, unit * 1.7, unit * 0.5);
+  ctx.moveTo(x, y + unit * 1.7);
+  ctx.lineTo(x + unit, y + unit * 1.7);
+  ctx.lineTo(x + unit * 0.3, y + unit * 3.1);
+  ctx.closePath();
+  ctx.moveTo(x + unit * 1.7, y + unit * 1.7);
+  ctx.lineTo(x + unit * 2.7, y + unit * 1.7);
+  ctx.lineTo(x + unit * 2, y + unit * 3.1);
+  ctx.closePath();
+  ctx.fill();
+}
+
+// ClioTalk: a written conversation kept as a file. Jaguar paper, an inked
+// quotation mark, the two voices below it, and the earlier turn behind.
 function drawAssistant128(ctx) {
-  softShadow(ctx, 66, 109, 42, 8, 9, 0.29);
-  shape(ctx, [[28, 18], [82, 14], [102, 34], [98, 104], [34, 110]], paper(ctx, 28, 14, 102, 110), "#96a6b0", 1.5);
-  shape(ctx, [[82, 14], [102, 34], [82, 34]], "#d0dce3", "#96a4ad", 1);
-  for (const [y, width] of [[45, 35], [55, 48], [65, 43], [75, 49]]) line(ctx, 42, y, 42 + width, y - 1.5, "#7d96a7", 2);
-  ctx.save(); ctx.translate(69, 78); ctx.rotate(-0.58);
-  ctx.beginPath(); ctx.moveTo(-27, -7); ctx.bezierCurveTo(-19, -22, -10, -24, -4, -18); ctx.bezierCurveTo(2, -11, 8, -7, 17, -4); ctx.bezierCurveTo(23, -2, 25, 7, 16, 15); ctx.bezierCurveTo(8, 22, -3, 18, -9, 10); ctx.bezierCurveTo(-15, 2, -21, 2, -27, -7); ctx.fillStyle = linear(ctx, 0, -24, 0, 22, [[0, "#758f9f"], [0.38, "#3e5969"], [1, "#182c38"]]); ctx.fill(); ctx.strokeStyle = "#293f4d"; ctx.lineWidth = 1.4; ctx.stroke();
-  rounded(ctx, -27, -14, 14, 14, 5, "#4c6879", "#273d4a", 1); rounded(ctx, 12, 2, 14, 14, 5, "#293f4d", "#152a36", 1);
-  ctx.beginPath(); ctx.moveTo(-18, -14); ctx.bezierCurveTo(-9, -20, -2, -15, 4, -10); ctx.strokeStyle = "rgba(220,239,247,.48)"; ctx.lineWidth = 2; ctx.stroke();
+  softShadow(ctx, 66, 112, 42, 7, 9, 0.3);
+  ctx.save();
+  ctx.translate(76, 58);
+  ctx.rotate(0.08);
+  shape(ctx, [[-30, -44], [30, -44], [30, 44], [-30, 44]], "#eef2f5", "#b9c3cb", 1.4);
+  ctx.restore();
+  ctx.save();
+  ctx.translate(56, 62);
+  ctx.rotate(-0.05);
+  shape(ctx, [[-34, -46], [34, -46], [34, 46], [-34, 46]], paper(ctx, -34, -46, 34, 46), P.paperShadow, 1.6);
+  quoteMark(ctx, -22, -34, 7.5, P.deep);
+  ctx.fillStyle = "#aebac4";
+  ctx.fillRect(-22, 4, 44, 4);
+  ctx.fillRect(-22, 13, 34, 4);
+  ctx.fillStyle = "#7f8d99";
+  ctx.fillRect(-6, 24, 28, 4);
+  ctx.fillStyle = "#aebac4";
+  ctx.fillRect(-6, 33, 22, 4);
   ctx.restore();
 }
 
 function drawAssistant32(ctx) {
-  softShadow(ctx, 16.5, 27.5, 10, 1.8, 2, 0.26);
-  shape(ctx, [[7, 5], [20, 4], [26, 9], [25, 26], [9, 28]], paper(ctx, 7, 4, 26, 28), "#91a1ab", 0.6);
-  shape(ctx, [[20, 4], [26, 9], [20, 9]], "#d0dbe1");
-  line(ctx, 10, 13, 21, 12.5, "#7a94a5", 0.75); line(ctx, 10, 16, 19, 15.6, "#7a94a5", 0.75);
-  ctx.save(); ctx.translate(18, 20); ctx.rotate(-0.55); rounded(ctx, -6, -2, 12, 5, 2.5, "#3d5969", "#263d4a", 0.5); rounded(ctx, -7, -3, 3.5, 4, 1.2, "#597486"); rounded(ctx, 3.5, 0, 3.5, 4, 1.2, "#263d4a"); line(ctx, -3.5, -1.2, 2.5, 0.1, "rgba(220,239,247,.5)", 0.45); ctx.restore();
+  softShadow(ctx, 16, 29, 11, 2, 2.2, 0.26);
+  shape(ctx, [[12, 3], [28, 3], [28, 25], [12, 25]], "#eef2f5", "#b4bec6", 0.5);
+  shape(ctx, [[4, 6], [21, 6], [21, 28], [4, 28]], P.white, P.paperShadow, 0.6);
+  quoteMark(ctx, 6.8, 10, 2.3, P.deep);
+  ctx.fillStyle = "#aebac4";
+  ctx.fillRect(6.8, 20, 11, 2);
+  ctx.fillStyle = "#7f8d99";
+  ctx.fillRect(10, 23.8, 8, 2);
 }
 
 function drawAssistant16(ctx) {
-  softShadow(ctx, 8, 14.1, 4.7, 0.8, 1, 0.23);
-  shape(ctx, [[3.5, 2.5], [10, 2], [13.5, 5], [13, 13.5], [4.5, 14.5]], paper(ctx, 3.5, 2, 13.5, 14.5), "#8798a4", 0.45);
-  shape(ctx, [[10, 2], [13.5, 5], [10, 5]], "#ccd7de");
-  line(ctx, 5.5, 8, 10.5, 7.7, "#7892a3", 0.5);
-  ctx.save(); ctx.translate(9, 11); ctx.rotate(-0.5); rounded(ctx, -3.4, -1.2, 6.8, 2.8, 1.3, "#3d5868", "#263d4a", 0.4); ctx.restore();
+  softShadow(ctx, 8, 14.6, 5.6, 1, 1.1, 0.24);
+  shape(ctx, [[6, 1.4], [14, 1.4], [14, 12], [6, 12]], "#eef2f5", "#adb8c1", 0.4);
+  shape(ctx, [[2, 3], [10.6, 3], [10.6, 13.6], [2, 13.6]], P.white, P.paperShadow, 0.5);
+  quoteMark(ctx, 3.3, 5, 1.35, P.deep);
+  ctx.fillStyle = "#9aa7b2";
+  ctx.fillRect(3.3, 10.4, 5.6, 1.4);
 }
+
+
 
 function drawScrapbook128(ctx) {
   softShadow(ctx, 65, 110, 43, 7, 9, 0.3);
@@ -476,10 +523,24 @@ const recipes = Object.freeze({
   projectDisk: { 128: drawProjectDisk128, 32: drawProjectDisk32, 16: drawProjectDisk16 },
 });
 
-function render(size, recipe) {
+// Two passes: paint once to find the object, then paint again on the shared
+// icon grid so every object in the row carries the same optical size.
+function render(size, recipe, id) {
   const scale = 4;
-  const working = createCanvas(size * scale, size * scale);
+  const px = size * scale;
+  const measure = createCanvas(px, px);
+  const mctx = measure.getContext("2d");
+  mctx.scale(scale, scale);
+  recipe(mctx);
+  const box = inkBox(mctx, px);
+  const working = createCanvas(px, px);
   const ctx = working.getContext("2d");
+  let shape = null;
+  if (box) {
+    const grid = gridTransform("aqua", id, box, px);
+    ctx.setTransform(grid.scale, 0, 0, grid.scale, grid.dx, grid.dy);
+    shape = grid.shape;
+  }
   ctx.scale(scale, scale);
   recipe(ctx);
   const canvas = createCanvas(size, size);
@@ -487,7 +548,7 @@ function render(size, recipe) {
   output.imageSmoothingEnabled = true;
   output.imageSmoothingQuality = "high";
   output.drawImage(working, 0, 0, size, size);
-  return { canvas, ctx: output };
+  return { canvas, ctx: output, shape };
 }
 
 function metrics(ctx, size) {
@@ -508,24 +569,45 @@ function metrics(ctx, size) {
       colors.add(`${data[offset]},${data[offset + 1]},${data[offset + 2]},${data[offset + 3]}`);
     }
   }
-  return { pixels, colors: colors.size, bbox: { minX, minY, maxX, maxY } };
+  return { pixels, colors: colors.size, bbox: { minX, minY, maxX, maxY }, ink: inkBox(ctx, size) };
 }
 
 const generated = {};
 const runtimeCore = {};
+const acceptedImagegenCoreIds = new Set(["assistant", "finderApp"]);
 for (const id of ids) {
-  generated[id] = { ...source.icons[id], sourceKind: "original-independent-aqua-illustration", sizes: {}, metrics: {} };
+  generated[id] = {
+    ...source.icons[id],
+    sourceKind: acceptedImagegenCoreIds.has(id) ? "accepted-imagegen-era-illustration" : "original-independent-aqua-illustration",
+    reviewStatus: acceptedImagegenCoreIds.has(id) ? "accepted-imagegen" : "accepted-core",
+    sizes: {},
+    metrics: {},
+  };
   for (const size of sizes) {
-    const { canvas, ctx } = render(size, recipes[id][size]);
+    let rendered;
+    if (acceptedImagegenCoreIds.has(id)) {
+      const source = join(acceptedImagegenSourceDir, `${id}-${size}.png`);
+      if (!existsSync(source)) throw new Error(`Aqua ${id}/${size}: missing checked-in accepted Image Gen source ${source}`);
+      const image = await loadImage(source);
+      const canvas = createCanvas(size, size);
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(image, 0, 0, size, size);
+      rendered = { canvas, ctx, shape: "square" };
+    } else {
+      rendered = render(size, recipes[id][size], id);
+    }
+    const { canvas, ctx, shape } = rendered;
     const filename = `${id}-${size}.png`;
     const buffer = canvas.toBuffer("image/png", { compressionLevel: 9 });
     writeFileSync(join(assetDir, filename), buffer);
     generated[id].sizes[size] = `icons/${filename}`;
     generated[id].metrics[size] = {
       ...metrics(ctx, size),
+      gridShape: shape,
       sha256: createHash("sha256").update(buffer).digest("hex"),
       bytes: buffer.length,
     };
+    if (size === 128) generated[id].runtimePixelMetrics = runtimePixelMetrics(ctx, size);
     if (size === 32) runtimeCore[id] = `icons/${filename}`;
   }
 }
@@ -538,6 +620,7 @@ const family = {
   nativeSizes: sizes,
   referenceLedger: "icons/src/aqua-core-icons.json",
   referenceBoard: "drafts/era-icons/aqua-core-reference-board.png",
+  sizeRule: "Runtime surfaces downscale the 128 px master. The ten programmatic cores own separately composed 32 px and 16 px review hints; accepted Image Gen cores use separately processed ledger artifacts.",
   selectionRecipe: "Finder selection belongs to the label and view surface; normal and selected states use the same Aqua artwork.",
   icons: generated,
 };
@@ -546,6 +629,7 @@ writeFileSync(join(assetDir, "aqua-core-icon-manifest.json"), `${JSON.stringify(
 
 const familyFile = join(root, "assets/themes/aqua/aqua-icon-family.json");
 const eraFamily = JSON.parse(readFileSync(familyFile, "utf8"));
+eraFamily.runtimeSize = 128;
 eraFamily.reviewedCore = ids;
 eraFamily.coreBuilder = "scripts/build-aqua-core-icons.mjs";
 for (const id of ids) {
@@ -553,11 +637,17 @@ for (const id of ids) {
     ...eraFamily.icons[id],
     genre: source.icons[id].genre,
     physicalMetaphor: source.icons[id].prototype,
+    metaphorKey: source.icons[id].metaphorKey,
     semanticMark: "object-owned",
-    reviewStatus: "accepted-core",
+    sourceKind: acceptedImagegenCoreIds.has(id) ? "accepted-imagegen-era-illustration" : "original-independent-aqua-illustration",
+    reviewStatus: acceptedImagegenCoreIds.has(id) ? "accepted-imagegen" : "accepted-core",
     sizes: { 16: `icons/${id}-16.png`, 32: `icons/${id}-32.png`, 128: `icons/${id}-128.png` },
+    runtimePixelMetrics: generated[id].runtimePixelMetrics,
   };
 }
+eraFamily.icons.docMap.metaphorKey = "branching-document-map";
+eraFamily.icons.docMap.metaphorMetrics = await measureDocMapMetaphor(join(assetDir, "docMap-128.png"), "aqua");
+assertDocMapMetaphor(eraFamily.icons.docMap.metaphorMetrics, "aqua/docMap");
 writeFileSync(familyFile, `${JSON.stringify(eraFamily, null, 2)}\n`);
 
 const manifestFile = join(root, "assets/themes/aqua/aqua-icon-manifest.json");
@@ -567,12 +657,15 @@ writeFileSync(manifestFile, `${JSON.stringify(eraManifest, null, 2)}\n`);
 
 async function rebuildSprite() {
   const entries = Object.entries(eraManifest);
-  const canvas = createCanvas(256, Math.ceil(entries.length / 8) * 32);
+  const cellSize = 128;
+  const canvas = createCanvas(8 * cellSize, Math.ceil(entries.length / 8) * cellSize);
   const ctx = canvas.getContext("2d");
   for (let index = 0; index < entries.length; index += 1) {
-    const [, file] = entries[index];
+    const [iconId] = entries[index];
+    const file = eraFamily.icons[iconId]?.sizes?.[cellSize];
+    if (!file) throw new Error(`aqua/${iconId}: missing ${cellSize} px sprite source`);
     const image = await loadImage(join(root, "assets/themes/aqua", file));
-    ctx.drawImage(image, (index % 8) * 32, Math.floor(index / 8) * 32, 32, 32);
+    ctx.drawImage(image, (index % 8) * cellSize, Math.floor(index / 8) * cellSize, cellSize, cellSize);
   }
   writeFileSync(join(root, "assets/themes/aqua/aqua-sprite.png"), canvas.toBuffer("image/png", { compressionLevel: 9 }));
 }

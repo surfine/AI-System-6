@@ -1,8 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
-<defs>
-      <linearGradient id="body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9efff"/><stop offset="1" stop-color="#75b9ec"/></linearGradient>
-      <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#eef3f7"/></linearGradient>
-      <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7fafc"/><stop offset="1" stop-color="#b7c3cf"/></linearGradient>
-    </defs>
-<path d="M5 17l17-8 20 7 17-8v39l-17 8-20-7-17 8zM22 9v39M42 16v39" fill="#f1f2dd" stroke="#789bb9" stroke-width="2.3" stroke-linejoin="round"/><path d="M20 30l8-4 8 4 8-4v20l-8 4-8-4-8 4zM28 26v20M36 30v20" fill="#ffffff" stroke="#2e7fcb" stroke-width="1.7"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><image href="icons/docMap-16.png" width="16" height="16"/></svg>

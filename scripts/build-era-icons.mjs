@@ -3,70 +3,16 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
+import { ICON_SPECS as ICONS } from "./lib/icon-family-inventory.mjs";
 
 const require = createRequire(import.meta.url);
+const { gridTransform, inkBox } = await import("./lib/icon-grid.mjs");
 const { createCanvas, loadImage } = require("canvas");
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 // The semantic metaphor is shared because the object keeps its meaning across
 // appearances. Geometry is not shared: every era below owns its body,
 // perspective, light, edge treatment, badge construction, and size hints.
-const ICONS = [
-  ["startupDisk", "hardware", "drive", "startup", "steel"],
-  ["hardDisk", "hardware", "drive", "disk", "steel"],
-  ["folder", "file", "folder", "none", "blue"],
-  ["document", "document", "paper", "none", "paper"],
-  ["applications", "file", "folder", "applications", "violet"],
-  ["trash", "hardware", "trash", "empty", "steel"],
-  ["finderApp", "application", "finder", "finder", "blue"],
-  ["fileFloppy", "hardware", "floppy", "floppy", "steel"],
-  ["assistant", "application", "correspondence", "assistant", "blue"],
-  ["quickDraft", "document", "paper", "pencil", "paper"],
-  ["writingStudio", "application", "typewriter", "writing", "steel"],
-  ["projectDisk", "hardware", "drive", "project", "steel"],
-  ["projectDisc", "hardware", "disc", "project", "rainbow"],
-  ["cloudModel", "utility", "server", "cloud", "blue"],
-  ["cloudModelOff", "utility", "server", "cloudOff", "gray"],
-  ["questionSheet", "document", "paper", "question", "paper"],
-  ["outline", "document", "cards", "outline", "paper"],
-  ["sectionDrafts", "document", "paperStack", "sections", "paper"],
-  ["manuscript", "document", "manuscript", "manuscript", "paper"],
-  ["reviewDesk", "application", "review", "proof", "red"],
-  ["searcher", "application", "search", "magnify", "blue"],
-  ["reader", "application", "book", "reader", "blue"],
-  ["timeMachine", "utility", "clock", "archive", "steel"],
-  ["docMap", "application", "map", "map", "blue"],
-  ["clioStage", "application", "stage", "stage", "blue"],
-  ["clioChart", "application", "easel", "chart", "blue"],
-  ["liquidCover", "application", "cover", "cover", "blue"],
-  ["cmfStudio", "application", "swatches", "swatches", "rainbow"],
-  ["soundscape", "application", "speaker", "sound", "violet"],
-  ["scrapbook", "application", "album", "scraps", "gold"],
-  ["systemFolder", "file", "folder", "gear", "blue"],
-  ["helpFolder", "file", "folder", "help", "blue"],
-  ["importUtility", "utility", "inbox", "import", "blue"],
-  ["controlPanel", "utility", "controlBoard", "sliders", "steel"],
-  ["chooser", "utility", "network", "chooser", "blue"],
-  ["systemHelp", "application", "book", "help", "blue"],
-  ["dictionary", "application", "dictionary", "dictionary", "gold"],
-  ["teachText", "application", "paperPen", "writing", "blue"],
-  ["writingDemo", "document", "paper", "play", "paper"],
-  ["chatFile", "document", "paper", "chat", "paper"],
-  ["chatImport", "utility", "inbox", "chat", "blue"],
-  ["systemStatus", "utility", "monitor", "status", "steel"],
-  ["contextPanel", "utility", "indexBox", "context", "gold"],
-  ["rebuildArticle", "utility", "press", "rebuild", "blue"],
-  ["bureaucracyMeme", "application", "stamp", "forms", "red"],
-  ["endfieldTerminal", "utility", "terminal", "terminal", "green"],
-  ["documents", "file", "folder", "documents", "blue"],
-  ["alias", "document", "paper", "alias", "paper"],
-  ["systemFile", "document", "paper", "gear", "paper"],
-  ["multiFinderApp", "application", "finderPair", "finder", "blue"],
-  ["daHandler", "utility", "briefcase", "deskAccessory", "blue"],
-  ["writingBell", "accessory", "bell", "bell", "gold"],
-  ["trashFull", "hardware", "trash", "full", "steel"],
-  ["control", "utility", "controlBoard", "knobs", "steel"]
-].map(([id, genre, body, symbol, tone]) => ({ id, genre, body, symbol, tone }));
 
 const THEMES = {
   platinum: { sizes: [32, 16], manifest: "platinum-icon-manifest.json" },
@@ -354,10 +300,19 @@ function platinumBody(spec, size) {
     case "review": body = pxRect(5, 6, 18, 22, hi) + path(`M${q(19)} ${q(20)}l${q(8)} ${q(8)}`, { stroke: ink, "stroke-width": small ? 2 : 3 }) + circle(q(18), q(18), q(6), { fill: "#cceeff", stroke: ink, "stroke-width": 1 }); break;
     case "search": body = pxRect(4, 8, 17, 18, "#eeeeee") + circle(q(18), q(15), q(8), { fill: "#cceeff", stroke: ink, "stroke-width": 1 }) + path(`M${q(23)} ${q(21)}l${q(6)} ${q(7)}`, { stroke: ink, "stroke-width": small ? 2 : 3 }); break;
     case "book": case "dictionary": body = path(`M${q(3)} ${q(8)}q${q(6)}-${q(3)} ${q(13)} ${q(1)}v${q(19)}q-${q(7)}-${q(4)}-${q(13)}-${q(1)}zM${q(29)} ${q(8)}q-${q(6)}-${q(3)}-${q(13)} ${q(1)}v${q(19)}q${q(7)}-${q(4)} ${q(13)}-${q(1)}z`, { fill: hi, stroke: ink, "stroke-width": 1 }); break;
-    case "clock": body = circle(q(16), q(16), q(12), { fill: hi, stroke: ink, "stroke-width": 1 }) + pxRect(12, 2, 8, 3, "#777777"); break;
-    case "map": body = pxRect(3, 7, 26, 20, "#eeeecc"); break;
+    case "clock": body = pxRect(3, 5, 26, 22, hi)
+      + path(`M${q(3)} ${q(11)}h${q(26)}`, { stroke: ink, "stroke-width": 1 })
+      + pxRect(5, 7, 8, 2, ink) + pxRect(20, 7, 7, 2, "#777777")
+      + path(`M${q(16)} ${q(14)}v${q(5)}h${q(4)}`, { stroke: ink, "stroke-width": 1 })
+      + circle(q(16), q(19), q(6), { fill: "none", stroke: ink, "stroke-width": 1 }); break;
+    case "map": body = pxRect(3, 5, 15, 23, "#ffffff")
+      + pxRect(6, 9, 9, 2, "#777777") + pxRect(6, 14, 7, 2, "#aaaaaa")
+      + path(`M${q(18)} ${q(16)}h${q(4)}M${q(22)} ${q(9)}v${q(14)}M${q(22)} ${q(9)}h${q(3)}M${q(22)} ${q(23)}h${q(3)}`, { stroke: ink, "stroke-width": 1 })
+      + pxRect(24, 7, 5, 4, hi) + pxRect(24, 14, 5, 4, hi) + pxRect(24, 21, 5, 4, hi); break;
     case "stage": body = pxRect(4, 7, 24, 19, "#777799") + pxRect(7, 10, 18, 12, "#ffffff") + pxRect(3, 25, 26, 3, "#444455"); break;
-    case "easel": body = pxRect(6, 5, 20, 18, hi) + path(`M${q(12)} ${q(23)}l-${q(4)} ${q(6)}M${q(20)} ${q(23)}l${q(4)} ${q(6)}`, { stroke: ink, "stroke-width": 1 }); break;
+    case "easel": body = pxRect(3, 4, 26, 24, hi)
+      + path(`M${q(3)} ${q(11)}h${q(26)}M${q(11)} ${q(4)}v${q(24)}M${q(20)} ${q(4)}v${q(24)}M${q(3)} ${q(18)}h${q(26)}`, { stroke: ink, "stroke-width": 1 })
+      + pxRect(5, 21, 4, 5, ink) + pxRect(13, 19, 4, 7, ink) + pxRect(22, 22, 4, 4, ink); break;
     case "cover": body = pxRect(7, 4, 19, 24, "#99bbdd") + pxRect(10, 7, 13, 17, "#ddeeff"); break;
     case "swatches": body = circle(q(16), q(16), q(12), { fill: "#dddddd", stroke: ink, "stroke-width": 1 }); break;
     case "speaker": body = pxRect(6, 5, 20, 23, "#777799") + circle(q(16), q(17), q(7), { fill: "#333344", stroke: ink, "stroke-width": 1 }) + circle(q(16), q(17), q(2), { fill: mid }); break;
@@ -367,13 +322,19 @@ function platinumBody(spec, size) {
     case "network": body = pxRect(4, 6, 10, 9, "#dddddd") + pxRect(18, 6, 10, 9, "#dddddd") + pxRect(11, 20, 10, 8, "#dddddd") + path(`M${q(9)} ${q(15)}l${q(7)} ${q(5)} ${q(7)}-${q(5)}`, { fill: "none", stroke: ink, "stroke-width": 1 }); break;
     case "paperPen": body = pxRect(5, 4, 20, 24, hi) + path(`M${q(19)} ${q(25)}l${q(9)}-${q(15)}`, { stroke: "#335588", "stroke-width": small ? 2 : 3 }); break;
     case "monitor": body = pxRect(4, 5, 24, 19, "#777777") + pxRect(7, 8, 18, 12, "#eef5ee") + pxRect(12, 24, 8, 4, "#777777"); break;
-    case "indexBox": body = pxRect(4, 10, 24, 18, "#aa8855") + pxRect(7, 5, 18, 17, hi); break;
+    case "indexBox": body = pxRect(3, 4, 26, 24, hi)
+      + path(`M${q(3)} ${q(11)}h${q(26)}`, { stroke: ink, "stroke-width": 1 })
+      + pxRect(6, 14, 3, 3, ink) + pxRect(11, 15, 13, 2, "#777777")
+      + pxRect(6, 19, 3, 3, ink) + pxRect(11, 20, 10, 2, "#777777")
+      + path(`M${q(6)} ${q(25)}h${q(16)}`, { stroke: ink, "stroke-width": 1 }); break;
     case "press": body = pxRect(5, 10, 22, 17, "#888888") + pxRect(9, 4, 14, 12, hi) + pxRect(3, 24, 26, 4, "#555555"); break;
     case "stamp": body = pxRect(6, 17, 20, 10, "#994444") + pxRect(10, 5, 12, 13, "#ccaa77"); break;
     case "terminal": body = pxRect(4, 5, 24, 19, "#333333") + pxRect(7, 8, 18, 12, "#112211") + pxRect(11, 24, 10, 4, "#777777"); break;
     case "finderPair": body = pxRect(3, 7, 18, 20, "#7777aa") + pxRect(11, 4, 18, 20, "#aaaadd"); break;
     case "briefcase": body = pxRect(4, 10, 24, 17, "#777799") + path(`M${q(11)} ${q(10)}V${q(6)}h${q(10)}v${q(4)}`, { fill: "none", stroke: ink, "stroke-width": 1 }); break;
     case "bell": body = path(`M${q(7)} ${q(24)}h${q(18)}c-${q(3)}-${q(4)}-${q(3)}-${q(8)}-${q(3)}-${q(12)} 0-${q(8)}-${q(12)}-${q(8)}-${q(12)} 0 0 ${q(8)} 0 ${q(12)}-${q(3)} ${q(12)}z`, { fill: "#ccaa55", stroke: ink, "stroke-width": 1 }); break;
+    case "chip": body = pxRect(9, 9, 14, 14, "#cccccc") + pxRect(13, 13, 6, 6, "#eeeeee") + path(`M${q(12)} ${q(5)}v${q(4)}M${q(16)} ${q(5)}v${q(4)}M${q(20)} ${q(5)}v${q(4)}M${q(12)} ${q(23)}v${q(4)}M${q(16)} ${q(23)}v${q(4)}M${q(20)} ${q(23)}v${q(4)}M${q(5)} ${q(12)}h${q(4)}M${q(5)} ${q(16)}h${q(4)}M${q(5)} ${q(20)}h${q(4)}M${q(23)} ${q(12)}h${q(4)}M${q(23)} ${q(16)}h${q(4)}M${q(23)} ${q(20)}h${q(4)}`, { fill: "none", stroke: "#777777", "stroke-width": 1 }); break;
+    case "strip": body = path(`M${q(3)} ${q(11)}h${q(20)}q${q(6)} 0 ${q(6)} ${q(5)}q0 ${q(5)}-${q(6)} ${q(5)}H${q(3)}z`, { fill: "#dddddd", stroke: ink, "stroke-width": 1 }) + path(`M${q(9)} ${q(11)}v${q(10)}M${q(14)} ${q(11)}v${q(10)}M${q(19)} ${q(11)}v${q(10)}`, { fill: "none", stroke: "#777777", "stroke-width": 1 }) + path(`M${q(25)} ${q(13)}v${q(6)}`, { fill: "none", stroke: "#777777", "stroke-width": 1 }); break;
     default: body = pxRect(5, 5, 22, 22, mid);
   }
   const badge = group(symbolMark(spec, "platinum", small ? "small" : "regular"), { transform: `scale(${size / 64})` });
@@ -428,8 +389,17 @@ function aquaBody(spec, detail) {
     case "server":
       body = path(aqua ? "M14 7h36q4 0 4 4v44H10V11q0-4 4-4z" : snow ? "M12 6h40q3 0 3 3v47H9V9q0-3 3-3z" : "M12 7h40v49H12z", { fill, stroke: edge, "stroke-width": sw }) + path("M14 14h36M14 27h36M14 40h36", { stroke: "#6e7f8f", "stroke-width": sw }) + circle(18, 20, 2, { fill: "#55aa65" }) + circle(18, 33, 2, { fill: "#d39b38" }) + circle(18, 46, 2, { fill: "#4f8fc7" });
       break;
-    case "cards": case "indexBox":
-      body = path("M12 18h40v36H12z", { fill: spec.body === "indexBox" && snow ? "url(#leather)" : fill, stroke: edge, "stroke-width": sw }) + path("M17 10h31v34H17z", { fill: "url(#paper)", stroke: edge, "stroke-width": sw }) + path("M22 6h25v31H22z", { fill: "url(#paper)", stroke: edge, "stroke-width": sw });
+    case "cards":
+      body = path("M12 18h40v36H12z", { fill, stroke: edge, "stroke-width": sw }) + path("M17 10h31v34H17z", { fill: "url(#paper)", stroke: edge, "stroke-width": sw }) + path("M22 6h25v31H22z", { fill: "url(#paper)", stroke: edge, "stroke-width": sw });
+      break;
+    case "indexBox":
+      // Memory Inspector: the run's context budget, with one dropped row.
+      body = path("M8 8h48v48H8z", { fill: "url(#paper)", stroke: edge, "stroke-width": sw })
+        + path("M8 20h48", { stroke: edge, "stroke-width": sw })
+        + path("M15 12h22v5H15z", { fill: aqua ? "#dbeaf6" : "#dfe4e9", stroke: edge, "stroke-width": 1 })
+        + path("M16 28h6v6h-6zM16 40h6v6h-6z", { fill: aqua ? "#2f6ea9" : "#5a6570" })
+        + path("M26 30h22M26 42h16", { stroke: "#b5c0c9", "stroke-width": 2.4, "stroke-linecap": "round" })
+        + path("M24 49h24", { stroke: "#c0605f", "stroke-width": 2.2, "stroke-linecap": "round" });
       break;
     case "review": case "search":
       body = path("M10 8h33l9 9v37H10z", { fill: "url(#paper)", stroke: edge, "stroke-width": sw }) + path("M43 8v9h9", { fill: "#d8e0e8", stroke: edge, "stroke-width": sw });
@@ -438,16 +408,31 @@ function aquaBody(spec, detail) {
       body = path("M5 15q13-7 27 2v39q-13-8-27-2zM59 15q-13-7-27 2v39q13-8 27-2z", { fill: spec.body === "dictionary" && snow ? "url(#leather)" : "url(#paper)", stroke: edge, "stroke-width": sw, "stroke-linejoin": "round" });
       break;
     case "clock":
-      body = circle(32, 32, 25, { fill: "url(#paper)", stroke: edge, "stroke-width": sw + 0.7 }) + circle(32, 32, 21, { fill: "none", stroke: snow ? "#a6afb7" : "#73a6cd", "stroke-width": sw });
+      // A window on the archived web: the page, its date field, and the dial
+      // that moves it back through captures.
+      body = path("M6 9h52v46H6z", { fill: "url(#paper)", stroke: edge, "stroke-width": sw })
+        + path("M6 21h52", { stroke: edge, "stroke-width": sw })
+        + path("M11 13h20v5H11z", { fill: "#dfe4e9", stroke: edge, "stroke-width": 1 })
+        + circle(40, 38, 13, { fill: "none", stroke: "#8e9aa5", "stroke-width": 2.4 })
+        + path("M40 30v9l7 4", { fill: "none", stroke: "#5a6570", "stroke-width": 2.6, "stroke-linecap": "round" })
+        + path("M14 30h14M14 38h10M14 46h16", { stroke: "#b9c2ca", "stroke-width": 2, "stroke-linecap": "round" });
       break;
     case "map":
-      body = path("M6 16l17-7 18 7 17-7v39l-17 7-18-7-17 7zM23 9v39M41 16v39", { fill: aqua ? "#eff4d4" : snow ? "#e7e0c8" : "#f2f4df", stroke: edge, "stroke-width": sw, "stroke-linejoin": "round" });
+      // The document's own structure: a page whose headings branch into a map.
+      body = path("M7 10h26v44H7z", { fill: "url(#paper)", stroke: edge, "stroke-width": sw })
+        + path("M13 20h14M13 28h10", { stroke: aqua ? "#8fa3b4" : "#9aa0a6", "stroke-width": 2.4, "stroke-linecap": "round" })
+        + path("M33 32h9M42 18v28M42 18h6M42 32h6M42 46h6", { fill: "none", stroke: aqua ? "#3f7fb4" : "#5a6570", "stroke-width": 2.6, "stroke-linecap": "round", "stroke-linejoin": "round" })
+        + circle(52, 18, 5, { fill: aqua ? "#9ad9f7" : "#c3ccd4", stroke: edge, "stroke-width": sw })
+        + circle(53, 32, 6, { fill: aqua ? "#4aa3e0" : "#aeb8c1", stroke: edge, "stroke-width": sw })
+        + circle(52, 46, 5, { fill: aqua ? "#9ad9f7" : "#c3ccd4", stroke: edge, "stroke-width": sw });
       break;
     case "stage":
       body = path("M8 13h48v34H8z", { fill, stroke: edge, "stroke-width": sw }) + path("M13 18h38v24H13z", { fill: "#f7f9fb", stroke: edge, "stroke-width": sw }) + path("M5 48h54v7H5z", { fill: snow ? "url(#metal)" : "#5e83ab", stroke: edge, "stroke-width": sw });
       break;
     case "easel":
-      body = path("M12 8h40v34H12z", { fill: "url(#paper)", stroke: edge, "stroke-width": sw }) + path("M24 42l-8 16M40 42l8 16M20 48h24", { fill: "none", stroke: snow ? "#805c3c" : "#657585", "stroke-width": sw + 1.5, "stroke-linecap": "round" });
+      body = path("M6 8h52v48H6z", { fill: "url(#paper)", stroke: edge, "stroke-width": sw })
+        + path("M6 20h52M24 8v48M42 8v48M6 34h52", { fill: "none", stroke: edge, "stroke-width": 1.2 })
+        + path("M11 50h7V38h-7zM29 50h7V30h-7zM47 50h7V42h-7z", { fill: aqua ? "#2f8fd0" : "#7f97ad", stroke: edge, "stroke-width": 1 });
       break;
     case "cover":
       body = path("M13 7h38v50H13z", { fill: aqua ? "url(#aquaGlass)" : snow ? "url(#lens)" : "url(#body)", stroke: edge, "stroke-width": sw }) + path("M18 12h28v40H18z", { fill: "#ffffff", "fill-opacity": aqua ? 0.28 : 0.55, stroke: "#ffffff", "stroke-opacity": 0.72, "stroke-width": sw });
@@ -490,6 +475,16 @@ function aquaBody(spec, detail) {
       break;
     case "bell":
       body = path("M12 48h40c-6-7-7-14-7-23 0-17-26-17-26 0 0 9-1 16-7 23z", { fill: aqua ? "#e6bd55" : snow ? "#c99c43" : "#f0b943", stroke: edge, "stroke-width": sw, "stroke-linejoin": "round" }) + ellipse(32, 51, 23, 5, { fill: "#9d6b29", stroke: edge, "stroke-width": sw }) + circle(32, 56, 3.5, { fill: "#6b4726" });
+      break;
+    case "chip":
+      body = path("M20 20h24v24H20z", { fill: "url(#metal)", stroke: edge, "stroke-width": sw })
+        + path("M27 27h10v10H27z", { fill: "#d7dde2", stroke: edge, "stroke-width": sw })
+        + path("M26 12v8M32 12v8M38 12v8M26 44v8M32 44v8M38 44v8M12 26h8M12 32h8M12 38h8M44 26h8M44 32h8M44 38h8", { fill: "none", stroke: edge, "stroke-width": sw + 0.8, "stroke-linecap": "round" });
+      break;
+    case "strip":
+      body = path("M6 22h40q12 0 12 10q0 10-12 10H6z", { fill: "url(#metal)", stroke: edge, "stroke-width": sw })
+        + path("M46 22q12 0 12 10q0 10-12 10z", { fill: "url(#aquaGlass)", stroke: edge, "stroke-width": sw })
+        + path("M20 22v20M30 22v20M40 22v20", { fill: "none", stroke: "#7d8994", "stroke-width": sw });
       break;
     default:
       body = path("M10 8h44v48H10z", { fill, stroke: edge, "stroke-width": sw });
@@ -552,7 +547,12 @@ function snowLeopardBody(spec, detail) {
       body = path("M9 21h45v34H9z", { fill: "url(#leather)", stroke: edge, "stroke-width": sw }) + path("M14 12h36v34H14z", { fill: paper, stroke: edge, "stroke-width": sw }) + path("M20 7h30v32H20z", { fill: paper, stroke: edge, "stroke-width": sw });
       break;
     case "indexBox":
-      body = path("M7 24h50v32H7z", { fill: "url(#leather)", stroke: edge, "stroke-width": sw }) + path("M14 11h37v34H14z", { fill: paper, stroke: edge, "stroke-width": sw }) + path("M23 7h25v8H23z", { fill: "#e8e3d7", stroke: edge, "stroke-width": sw });
+      body = path("M8 8h48v48H8z", { fill: paper, stroke: edge, "stroke-width": sw })
+        + path("M8 20h48", { stroke: edge, "stroke-width": sw })
+        + path("M15 12h22v5H15z", { fill: "#dfe4e9", stroke: edge, "stroke-width": 1 })
+        + path("M16 28h6v6h-6zM16 40h6v6h-6z", { fill: "#5a6570" })
+        + path("M26 30h22M26 42h16", { stroke: "#aeb6be", "stroke-width": 2.4, "stroke-linecap": "round" })
+        + path("M24 49h24", { stroke: "#b0616a", "stroke-width": 2.2, "stroke-linecap": "round" });
       break;
     case "review":
       body = path("M8 9h34l10 10v36H8z", { fill: paper, stroke: edge, "stroke-width": sw }) + path("M42 9v10h10", { fill: "#d1d7dc", stroke: edge, "stroke-width": sw }) + circle(41, 40, 11, { fill: "url(#lens)", stroke: edge, "stroke-width": sw }) + line(49, 48, 57, 56, { stroke: edge, "stroke-width": 4, "stroke-linecap": "round" });
@@ -567,16 +567,29 @@ function snowLeopardBody(spec, detail) {
       body = path("M5 16q13-7 27 2v39q-13-8-27-2zM59 16q-13-7-27 2v39q13-8 27-2z", { fill: "url(#leather)", stroke: edge, "stroke-width": sw }) + path("M9 20q11-5 22 1v31q-11-6-22-2zM55 20q-11-5-22 1v31q11-6 22-2z", { fill: paper, stroke: "#8a6b4d", "stroke-width": 1 });
       break;
     case "clock":
-      body = circle(32, 32, 26, { fill: metal, stroke: edge, "stroke-width": sw }) + circle(32, 32, 21, { fill: paper, stroke: "#7a858d", "stroke-width": sw }) + path("M32 14v4M32 46v4M14 32h4M46 32h4", { stroke: "#68737c", "stroke-width": 1.4 });
+      body = path("M6 9h52v46H6z", { fill: paper, stroke: edge, "stroke-width": sw })
+        + path("M6 21h52", { stroke: edge, "stroke-width": sw })
+        + path("M11 13h20v5H11z", { fill: "#dfe4e9", stroke: edge, "stroke-width": 1 })
+        + circle(40, 38, 13, { fill: metal, stroke: "#8e9aa5", "stroke-width": sw })
+        + path("M40 30v9l7 4", { fill: "none", stroke: "#5a6570", "stroke-width": 2.6, "stroke-linecap": "round" })
+        + path("M14 30h14M14 38h10M14 46h16", { stroke: "#b9c2ca", "stroke-width": 2, "stroke-linecap": "round" });
       break;
     case "map":
-      body = path("M5 17l17-8 20 7 17-8v39l-17 8-20-7-17 8zM22 9v39M42 16v39", { fill: "#e9e1c9", stroke: edge, "stroke-width": sw, "stroke-linejoin": "round" }) + path("M9 25l10-5 8 7 10-6 18 10", { fill: "none", stroke: "#6887a1", "stroke-width": 1.2 });
+      body = path("M6 9h27v46H6z", { fill: paper, stroke: edge, "stroke-width": sw })
+        + path("M12 19h15M12 27h11", { stroke: "#9aa0a6", "stroke-width": 2.6, "stroke-linecap": "round" })
+        + path("M33 32h9M42 18v28M42 18h6M42 32h6M42 46h6", { fill: "none", stroke: "#5a6570", "stroke-width": 2.8, "stroke-linecap": "round", "stroke-linejoin": "round" })
+        + circle(52, 18, 5, { fill: metal, stroke: edge, "stroke-width": sw })
+        + circle(53, 32, 6, { fill: metal, stroke: edge, "stroke-width": sw })
+        + circle(52, 46, 5, { fill: metal, stroke: edge, "stroke-width": sw });
       break;
     case "stage":
       body = path("M7 12h50v36H7z", { fill: metal, stroke: edge, "stroke-width": sw }) + path("M12 17h40v26H12z", { fill: paper, stroke: edge, "stroke-width": sw }) + path("M4 49h56v7H4z", { fill: "#4e5e6b", stroke: edge, "stroke-width": sw });
       break;
     case "easel":
-      body = path("M12 7h40v35H12z", { fill: paper, stroke: edge, "stroke-width": sw }) + path("M23 42l-8 17M41 42l8 17M19 49h26", { fill: "none", stroke: "#725136", "stroke-width": 3, "stroke-linecap": "round" });
+      // A comparison bench: the editable grid with one read-only projection.
+      body = path("M6 8h52v48H6z", { fill: paper, stroke: edge, "stroke-width": sw })
+        + path("M6 20h52M24 8v48M42 8v48M6 34h52", { fill: "none", stroke: edge, "stroke-width": 1.2 })
+        + path("M11 50h7V38h-7zM29 50h7V30h-7zM47 50h7V42h-7z", { fill: "#7f97ad", stroke: edge, "stroke-width": 1 });
       break;
     case "cover":
       body = path("M12 6h40v52H12z", { fill: "url(#lens)", stroke: edge, "stroke-width": sw }) + path("M17 11h30v42H17z", { fill: "#ffffff", "fill-opacity": 0.42, stroke: "#f4fbff", "stroke-opacity": 0.75, "stroke-width": 1.2 }) + path("M15 9l34 46", { stroke: "#ffffff", "stroke-opacity": 0.35, "stroke-width": 3 });
@@ -620,6 +633,16 @@ function snowLeopardBody(spec, detail) {
     case "bell":
       body = path("M11 48h42c-7-8-8-15-8-24 0-18-26-18-26 0 0 9-1 16-8 24z", { fill: "#c99c43", stroke: edge, "stroke-width": sw, "stroke-linejoin": "round" }) + ellipse(32, 51, 24, 5, { fill: "#8c6229", stroke: edge, "stroke-width": sw }) + circle(32, 57, 3.5, { fill: "#5e3d1f" });
       break;
+    case "chip":
+      body = path("M20 20h24v24H20z", { fill: metal, stroke: edge, "stroke-width": sw })
+        + path("M27 27h10v10H27z", { fill: "#d9dde0", stroke: "#69747d", "stroke-width": sw })
+        + path("M26 12v8M32 12v8M38 12v8M26 44v8M32 44v8M38 44v8M12 26h8M12 32h8M12 38h8M44 26h8M44 32h8M44 38h8", { fill: "none", stroke: edge, "stroke-width": sw + 0.8, "stroke-linecap": "round" });
+      break;
+    case "strip":
+      body = path("M6 22h40q12 0 12 10q0 10-12 10H6z", { fill: metal, stroke: edge, "stroke-width": sw })
+        + path("M20 22v20M30 22v20M40 22v20", { fill: "none", stroke: "#69747d", "stroke-width": sw })
+        + path("M50 28v8", { fill: "none", stroke: "#69747d", "stroke-width": sw, "stroke-linecap": "round" });
+      break;
     default:
       body = path("M9 7h46v51H9z", { fill: bodyFill, stroke: edge, "stroke-width": sw });
   }
@@ -657,14 +680,31 @@ function yosemiteBody(spec, detail) {
     case "typewriter": body = path("M7 31h50l3 23H4z", { fill: "#b6c5d1", stroke: edge, "stroke-width": sw }) + path("M16 7h32v30H16z", { fill: paper, stroke: edge, "stroke-width": sw }) + (detail === "small" ? "" : path("M12 39h40M11 45h42M9 51h46", { stroke: "#6e8496", "stroke-width": 1.2, "stroke-dasharray": "2 2" })); break;
     case "server": body = path("M12 7h40v49H12z", { fill: "#b8c7d3", stroke: edge, "stroke-width": sw }) + path("M15 15h34M15 29h34M15 43h34", { stroke: "#71879a", "stroke-width": sw }) + circle(45, 21, 2, { fill: "#44b85e" }) + circle(45, 35, 2, { fill: "#f0a93d" }) + circle(45, 49, 2, { fill: "#378ad0" }); break;
     case "cards": body = path("M11 20h43v35H11z", { fill: "#d7bd8c", stroke: edge, "stroke-width": sw }) + path("M16 11h34v35H16z", { fill: paper, stroke: edge, "stroke-width": sw }) + path("M22 7h28v32H22z", { fill: paper, stroke: edge, "stroke-width": sw }); break;
-    case "indexBox": body = path("M8 24h48v32H8z", { fill: "#d9b777", stroke: "#a98956", "stroke-width": sw }) + path("M14 11h37v34H14z", { fill: paper, stroke: edge, "stroke-width": sw }); break;
+    case "indexBox": body = path("M8 8h48v48H8z", { fill: paper, stroke: edge, "stroke-width": sw })
+      + path("M8 20h48", { stroke: edge, "stroke-width": sw })
+      + path("M15 12h22v5H15z", { fill: "#e2ecf5", stroke: edge, "stroke-width": 1 })
+      + path("M16 28h6v6h-6zM16 40h6v6h-6z", { fill: deep })
+      + path("M26 30h22M26 42h16", { stroke: "#c2ccd6", "stroke-width": 2.6, "stroke-linecap": "round" })
+      + path("M24 49h24", { stroke: "#e0736f", "stroke-width": 2.4, "stroke-linecap": "round" }); break;
     case "review": body = path("M10 8h33l9 9v39H10z", { fill: paper, stroke: edge, "stroke-width": sw }) + path("M43 8v9h9", { fill: "#dae6ef", stroke: edge, "stroke-width": sw }) + circle(42, 41, 10, { fill: "#b9def3", "fill-opacity": 0.78, stroke: deep, "stroke-width": sw }) + line(49, 48, 56, 55, { stroke: deep, "stroke-width": 4, "stroke-linecap": "round" }); break;
     case "search": body = path("M8 15h31v38H8z", { fill: paper, stroke: edge, "stroke-width": sw }) + circle(38, 31, 13, { fill: "#c7e4f4", stroke: deep, "stroke-width": sw }) + line(47, 41, 57, 51, { stroke: deep, "stroke-width": 5, "stroke-linecap": "round" }); break;
     case "book": case "dictionary": body = path("M5 16q13-6 27 2v39q-13-7-27-2zM59 16q-13-6-27 2v39q13-7 27-2z", { fill: paper, stroke: edge, "stroke-width": sw }) + path("M32 18v39", { stroke: edge, "stroke-width": 1 }); break;
-    case "clock": body = circle(32, 32, 25, { fill: paper, stroke: edge, "stroke-width": sw }) + circle(32, 32, 21, { fill: "none", stroke: "#b7c9d7", "stroke-width": 1 }); break;
-    case "map": body = path("M5 17l17-8 20 7 17-8v39l-17 8-20-7-17 8zM22 9v39M42 16v39", { fill: "#f1f2dd", stroke: edge, "stroke-width": sw, "stroke-linejoin": "round" }); break;
+    case "clock": body = path("M6 9h52v46H6z", { fill: paper, stroke: edge, "stroke-width": sw })
+      + path("M6 21h52", { stroke: edge, "stroke-width": sw })
+      + path("M11 13h20v5H11z", { fill: "#dbe7f2", stroke: edge, "stroke-width": 1 })
+      + circle(40, 38, 13, { fill: "none", stroke: deep, "stroke-width": 2.6 })
+      + path("M40 30v9l7 4", { fill: "none", stroke: deep, "stroke-width": 2.8, "stroke-linecap": "round" })
+      + path("M14 30h14M14 38h10M14 46h16", { stroke: "#c2ccd6", "stroke-width": 2.2, "stroke-linecap": "round" }); break;
+    case "map": body = path("M6 9h26v46H6z", { fill: "#ffffff", stroke: edge, "stroke-width": sw })
+      + path("M12 19h14M12 27h10", { stroke: "#c2c8ce", "stroke-width": 2.6, "stroke-linecap": "round" })
+      + path("M32 32h10M42 18v28M42 18h6M42 32h6M42 46h6", { fill: "none", stroke: deep, "stroke-width": 3, "stroke-linecap": "round", "stroke-linejoin": "round" })
+      + circle(52, 18, 5, { fill: blue })
+      + circle(53, 32, 6, { fill: deep })
+      + circle(52, 46, 5, { fill: blue }); break;
     case "stage": body = path("M8 13h48v34H8z", { fill: "#9db9cf", stroke: edge, "stroke-width": sw }) + path("M13 18h38v24H13z", { fill: paper, stroke: edge, "stroke-width": sw }) + path("M5 48h54v7H5z", { fill: "#5f8caf", stroke: edge, "stroke-width": sw }); break;
-    case "easel": body = path("M12 8h40v34H12z", { fill: paper, stroke: edge, "stroke-width": sw }) + path("M24 42l-8 16M40 42l8 16M20 48h24", { fill: "none", stroke: "#9e7959", "stroke-width": 2.2, "stroke-linecap": "round" }); break;
+    case "easel": body = path("M6 8h52v48H6z", { fill: paper, stroke: edge, "stroke-width": sw })
+      + path("M6 20h52M24 8v48M42 8v48M6 34h52", { fill: "none", stroke: "#c2ccd6", "stroke-width": 1.4 })
+      + path("M11 50h7V38h-7zM29 50h7V30h-7zM47 50h7V42h-7z", { fill: blue }); break;
     case "cover": body = path("M13 7h38v50H13z", { fill: "#8cc8eb", stroke: deep, "stroke-width": sw }) + path("M18 12h28v40H18z", { fill: "#ffffff", "fill-opacity": 0.48, stroke: "#d8f1ff", "stroke-width": 1 }); break;
     case "swatches": body = path("M12 52l5-40h30l5 40z", { fill: "#eef3f7", stroke: edge, "stroke-width": sw }); break;
     case "speaker": body = path("M12 7h40v50H12z", { fill: "#3f5162", stroke: "#294052", "stroke-width": sw }) + circle(32, 39, 14, { fill: "#172736", stroke: "#7892a7", "stroke-width": sw }) + circle(32, 39, 6, { fill: "#657b8e" }) + circle(32, 17, 4, { fill: "#c5d5e0" }); break;
@@ -679,6 +719,16 @@ function yosemiteBody(spec, detail) {
     case "finderPair": body = path("M6 16h36v40H6z", { fill: "#9dbbd1", stroke: edge, "stroke-width": sw }) + path("M22 7h36v40H22z", { fill: "#b1d8ef", stroke: edge, "stroke-width": sw }) + path("M40 8v38", { stroke: deep, "stroke-width": sw }); break;
     case "briefcase": body = path("M7 20h50v35H7z", { fill: "#8eb7d3", stroke: edge, "stroke-width": sw }) + path("M21 20v-8h22v8M7 34h50", rule) + rect(28, 31, 8, 8, { rx: 1, fill: "#e7eef4", stroke: edge, "stroke-width": sw }); break;
     case "bell": body = path("M12 48h40c-6-7-7-14-7-23 0-17-26-17-26 0 0 9-1 16-7 23z", { fill: "#f0b943", stroke: "#b47d2f", "stroke-width": sw, "stroke-linejoin": "round" }) + ellipse(32, 51, 23, 5, { fill: "#d99d39", stroke: "#b47d2f", "stroke-width": sw }) + circle(32, 56, 3.5, { fill: "#8d5a25" }); break;
+    case "chip":
+      body = path("M20 20h24v24H20z", { fill: "#c2d0dc", stroke: edge, "stroke-width": sw })
+        + path("M27 27h10v10H27z", { fill: "#edf2f6", stroke: edge, "stroke-width": sw })
+        + path("M26 12v8M32 12v8M38 12v8M26 44v8M32 44v8M38 44v8M12 26h8M12 32h8M12 38h8M44 26h8M44 32h8M44 38h8", { fill: "none", stroke: edge, "stroke-width": sw + 0.6, "stroke-linecap": "round" });
+      break;
+    case "strip":
+      body = path("M6 22h40q12 0 12 10q0 10-12 10H6z", { fill: "#edf2f6", stroke: edge, "stroke-width": sw })
+        + path("M20 22v20M30 22v20M40 22v20", { fill: "none", stroke: "#a9c0d4", "stroke-width": sw })
+        + path("M50 28v8", { fill: "none", stroke: edge, "stroke-width": sw, "stroke-linecap": "round" });
+      break;
     default: body = path("M10 8h44v48H10z", { fill: "url(#body)", stroke: edge, "stroke-width": sw });
   }
   return body + symbolMark(spec, "yosemite", detail);
@@ -931,8 +981,10 @@ function liquidGlassBody(spec, detail) {
         + path("M32 18v39", { fill: "none", stroke: "#ffffff", "stroke-opacity": 0.66, "stroke-width": sw });
       break;
     case "clock":
-      body = circle(32, 32, 27, { fill: "url(#glassViolet)", ...rim })
-        + circle(32, 32, 22, { fill: "url(#paperGlass)", ...rim });
+      body = path("M6 9h52v46H6z", { fill: "url(#paperGlass)", ...rim })
+        + path("M11 13h20v5H11z", { fill: "url(#glassClear)", ...rim })
+        + circle(40, 38, 13, { fill: "url(#glassViolet)", ...rim })
+        + path("M40 30v9l7 4", { fill: "none", stroke: "#3b4a5c", "stroke-width": 3, "stroke-linecap": "round" });
       break;
     case "map":
       body = path("M5 17l17-8 20 7 17-8v39l-17 8-20-7-17 8zM22 9v39M42 16v39", { fill: "url(#glassClear)", ...rim })
@@ -944,8 +996,9 @@ function liquidGlassBody(spec, detail) {
         + path("M4 50h56v7H4z", { rx: 3.5, fill: "url(#glassSteel)", ...rim });
       break;
     case "easel":
-      body = path("M12 7h40v36H12z", { fill: "url(#paperGlass)", ...rim })
-        + path("M24 43l-9 16M40 43l9 16M19 50h26", { fill: "none", stroke: "#8b673f", "stroke-width": 3, "stroke-linecap": "round" });
+      body = path("M6 8h52v48H6z", { fill: "url(#paperGlass)", ...rim })
+        + path("M6 20h52M24 8v48M42 8v48", inner)
+        + path("M11 50h7V38h-7zM29 50h7V30h-7zM47 50h7V42h-7z", { fill: "url(#glassBlue)", ...rim });
       break;
     case "cover":
       body = path("M12 6h40v52H12z", { fill: "url(#glassBlue)", ...rim })
@@ -986,9 +1039,11 @@ function liquidGlassBody(spec, detail) {
         + path("M26 49h12v6h9v3H17v-3h9z", { fill: "url(#glassSteel)", ...rim });
       break;
     case "indexBox":
-      body = path("M7 24h50v33H7z", { fill: "url(#glassGold)", ...rim })
-        + path("M14 11h37v35H14z", { fill: "url(#paperGlass)", ...rim })
-        + path("M23 7h25v9H23z", { fill: "url(#glassClear)", ...rim });
+      body = path("M8 8h48v48H8z", { fill: "url(#paperGlass)", ...rim })
+        + path("M8 20h48", inner)
+        + path("M15 12h22v5H15z", { fill: "url(#glassClear)", ...rim })
+        + path("M16 28h6v6h-6zM16 40h6v6h-6z", { fill: "url(#glassBlue)", ...rim })
+        + path("M26 30h22M26 42h16", inner);
       break;
     case "press":
       body = path("M7 27h50v30H7z", { fill: "url(#glassBlue)", ...rim })
@@ -1020,6 +1075,16 @@ function liquidGlassBody(spec, detail) {
         + ellipse(32, 51, 24, 5, { fill: "#d9992d", "fill-opacity": 0.88, ...rim })
         + circle(32, 57, 3.5, { fill: "#8c591f" });
       break;
+    case "chip":
+      body = rect(20, 20, 24, 24, { rx: 5, fill: "url(#glassSteel)", ...rim })
+        + rect(27, 27, 10, 10, { rx: 2, fill: "#ffffff", "fill-opacity": 0.24, ...rim })
+        + path("M26 12v8M32 12v8M38 12v8M26 44v8M32 44v8M38 44v8M12 26h8M12 32h8M12 38h8M44 26h8M44 32h8M44 38h8", { fill: "none", stroke: "#ffffff", "stroke-opacity": 0.66, "stroke-width": sw, "stroke-linecap": "round" });
+      break;
+    case "strip":
+      body = path("M6 22h40q12 0 12 10q0 10-12 10H6z", { fill: "url(#glassSteel)", ...rim })
+        + path("M20 22v20M30 22v20M40 22v20", { fill: "none", stroke: "#ffffff", "stroke-opacity": 0.55, "stroke-width": sw })
+        + path("M50 28v8", { fill: "none", stroke: "#ffffff", "stroke-opacity": 0.8, "stroke-width": sw, "stroke-linecap": "round" });
+      break;
     default:
       body = path("M9 7h46v51H9z", { rx: 10, fill: toneFill, ...rim });
   }
@@ -1050,6 +1115,83 @@ function renderSvg(theme, spec, size) {
   ].join("\n");
 }
 
+// Liquid Glass appearances are material parameter sets over one owned layer
+// geometry. They are emitted as separate SVG bytes; no CSS brightness, opacity,
+// hue, or saturation filter stands in for a real Dark or Clear rendering.
+function liquidAppearanceSvg(svg, appearance) {
+  if (appearance === "default") return svg;
+  const dark = new Map([
+    ["#f2fbff", "#6f8da8"], ["#8ed8ff", "#3e6f98"], ["#2688e8", "#204f7d"], ["#1652b8", "#112e52"],
+    ["#ffffff", "#dce9f5"], ["#edf7ff", "#7d93a7"], ["#a9c7dc", "#3f566d"],
+    ["#d4e1ec", "#75899d"], ["#8299ad", "#3d5063"], ["#49637b", "#263747"],
+    ["#fbf7ff", "#9d8db0"], ["#c8a9ff", "#66507f"], ["#7e55d8", "#443566"], ["#49339b", "#28213e"],
+    ["#fff8f7", "#ae8d92"], ["#ffaca4", "#7a4f59"], ["#e34d58", "#68313d"], ["#a5273f", "#3c2029"],
+    ["#f5fff7", "#8fa99a"], ["#91e7ad", "#4c765f"], ["#29a967", "#315943"], ["#147143", "#203b2e"],
+    ["#fffdf5", "#b3a785"], ["#ffe18b", "#806a3f"], ["#e5a42f", "#654b27"], ["#9b6420", "#3d3020"],
+    ["#f8fbff", "#a6b2be"], ["#cfdfeb", "#657584"], ["#17324d", "#d8e7f4"], ["#102d49", "#07111b"],
+  ]);
+  const clear = new Map([
+    ["#8ed8ff", "#d7efff"], ["#2688e8", "#8fc6e8"], ["#1652b8", "#5d8faf"],
+    ["#d4e1ec", "#edf6fc"], ["#8299ad", "#b9cfdf"], ["#49637b", "#7895aa"],
+    ["#c8a9ff", "#eadfff"], ["#7e55d8", "#b6a2d8"], ["#49339b", "#82749a"],
+    ["#ffaca4", "#ffe1de"], ["#e34d58", "#d9a2a8"], ["#a5273f", "#a2767d"],
+    ["#91e7ad", "#d9f5e2"], ["#29a967", "#9ac9aa"], ["#147143", "#6d9a7e"],
+    ["#ffe18b", "#fff1c1"], ["#e5a42f", "#d7bd78"], ["#9b6420", "#9f8254"],
+    ["#17324d", "#426681"], ["#102d49", "#5b7488"],
+  ]);
+  const table = appearance === "dark" ? dark : clear;
+  let output = svg;
+  for (const [from, to] of table) output = output.replaceAll(from, to);
+  if (appearance === "clear") {
+    output = output
+      .replaceAll('stop-opacity="0.98"', 'stop-opacity="0.78"')
+      .replaceAll('stop-opacity="0.96"', 'stop-opacity="0.7"')
+      .replaceAll('stop-opacity="0.94"', 'stop-opacity="0.64"')
+      .replaceAll('stop-opacity="0.92"', 'stop-opacity="0.6"')
+      .replaceAll('stop-opacity="0.9"', 'stop-opacity="0.58"')
+      .replaceAll('fill-opacity="0.18"', 'fill-opacity="0.1"');
+  }
+  return output;
+}
+
+
+// The generated family goes on the same grid as the reviewed cores. These are
+// vector drawings, so the object is measured by rasterising it once and then
+// wrapped in one uniform transform; nothing is redrawn and nothing is
+// stretched. Without this a desktop mixes reviewed icons that sit on the grid
+// with generated ones that do not, which is exactly the jumble the grid exists
+// to remove.
+const GRID_PROBE = 256;
+
+async function placeOnGrid(theme, id, svg, view) {
+  const image = await loadImage(Buffer.from(svg));
+  const probe = createCanvas(GRID_PROBE, GRID_PROBE);
+  const ctx = probe.getContext("2d");
+  ctx.drawImage(image, 0, 0, GRID_PROBE, GRID_PROBE);
+  const box = inkBox(ctx, GRID_PROBE);
+  if (!box) return { svg, grid: null };
+  const toView = view / GRID_PROBE;
+  const viewBox = {
+    minX: box.minX * toView,
+    minY: box.minY * toView,
+    maxX: box.maxX * toView,
+    maxY: box.maxY * toView,
+    width: box.width * toView,
+    height: box.height * toView,
+  };
+  const { scale, dx, dy, shape } = gridTransform(theme, id, viewBox, view);
+  const fitted = (shape === "landscape" ? viewBox.width : shape === "portrait" ? viewBox.height : Math.max(viewBox.width, viewBox.height)) * scale;
+  const open = svg.indexOf(">", svg.indexOf("<svg")) + 1;
+  const close = svg.lastIndexOf("</svg>");
+  const head = svg.slice(0, open);
+  const content = svg.slice(open, close);
+  const round = (value) => Number(value.toFixed(4));
+  return {
+    svg: `${head}\n<g transform="translate(${round(dx)} ${round(dy)}) scale(${round(scale)})">${content}</g>\n</svg>\n`,
+    grid: { shape, fitted: round(fitted / view), scale: round(scale) },
+  };
+}
+
 function assertUnique(theme, rendered) {
   const hashes = new Map();
   for (const [id, svg] of rendered) {
@@ -1075,7 +1217,7 @@ async function buildContactSheet(theme, manifest) {
   ctx.fillText(`${theme} icon family`, 14, 26);
   ctx.font = "10px sans-serif";
   ctx.fillStyle = "#44515c";
-  ctx.fillText("54 semantic objects at native 32 px; each also owns appearance-specific small and large variants", 14, 39);
+  ctx.fillText(`${ICONS.length} semantic objects at native 32 px; each also owns appearance-specific small and large variants`, 14, 39);
   for (let i = 0; i < ICONS.length; i += 1) {
     const spec = ICONS[i];
     const col = i % cols;
@@ -1092,6 +1234,60 @@ async function buildContactSheet(theme, manifest) {
     ctx.fillText(spec.id, x + 5, y + 57, cellW - 10);
   }
   writeFileSync(join(outDir, `${theme}-contact-sheet.png`), canvas.toBuffer("image/png"));
+}
+
+async function buildLiquidAppearanceSheet() {
+  const theme = "liquid-glass";
+  const family = JSON.parse(readFileSync(join(root, "assets/themes/liquid-glass/liquid-glass-icon-family.json"), "utf8"));
+  const columns = 9;
+  const cellWidth = 112;
+  const cellHeight = 62;
+  const rows = Math.ceil(ICONS.length / columns);
+  const sectionHeight = 38 + rows * cellHeight;
+  const canvas = createCanvas(columns * cellWidth, 56 + sectionHeight * 3);
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#111923";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "#f2f7fb";
+  ctx.font = "bold 20px sans-serif";
+  ctx.fillText("Liquid Glass complete family · Default / Dark / Clear", 14, 27);
+  ctx.fillStyle = "#a9b9c8";
+  ctx.font = "11px sans-serif";
+  ctx.fillText("56 objects · native 32 px appearance files · same semantic layer geometry, independently parameterised material", 14, 45);
+  const appearances = [
+    ["default", "Default", "#dce8f2"],
+    ["dark", "Dark", "#152230"],
+    ["clear", "Clear · high-frequency check", "#8597a8"],
+  ];
+  for (let appearanceIndex = 0; appearanceIndex < appearances.length; appearanceIndex += 1) {
+    const [appearance, label, background] = appearances[appearanceIndex];
+    const top = 56 + appearanceIndex * sectionHeight;
+    ctx.fillStyle = background;
+    ctx.fillRect(0, top, canvas.width, sectionHeight);
+    if (appearance === "clear") {
+      for (let y = top; y < top + sectionHeight; y += 12) {
+        for (let x = 0; x < canvas.width; x += 12) {
+          ctx.fillStyle = (Math.floor(x / 12) + Math.floor((y - top) / 12)) % 2 ? "#aab8c4" : "#718798";
+          ctx.fillRect(x, y, 12, 12);
+        }
+      }
+    }
+    ctx.fillStyle = appearance === "dark" ? "#edf5fc" : "#16212b";
+    ctx.font = "bold 14px sans-serif";
+    ctx.fillText(label, 14, top + 24);
+    for (let index = 0; index < ICONS.length; index += 1) {
+      const id = ICONS[index].id;
+      const file = family.icons[id].appearanceSizes[`32-${appearance}`];
+      const image = await loadImage(join(root, "assets/themes/liquid-glass", file));
+      const x = (index % columns) * cellWidth;
+      const y = top + 38 + Math.floor(index / columns) * cellHeight;
+      ctx.drawImage(image, x + 8, y + 3, 40, 40);
+      ctx.fillStyle = appearance === "dark" ? "#dce8f2" : "#17232d";
+      ctx.font = "9px sans-serif";
+      ctx.fillText(id, x + 4, y + 56, cellWidth - 8);
+    }
+  }
+  writeFileSync(join(root, "drafts/era-icons/liquid-glass-family-appearance-board.png"), canvas.toBuffer("image/png"));
 }
 
 async function buildSprite(theme, manifest) {
@@ -1151,21 +1347,39 @@ async function validateTheme(theme, familyManifest) {
 async function buildTheme(theme, config) {
   const dir = join(root, "assets", "themes", theme);
   mkdirSync(dir, { recursive: true });
+  const completeFamily = theme === "platinum" || theme === "liquid-glass";
   const runtimeManifest = {};
   const familyManifest = {
     target: JSON.parse(readFileSync(join(root, "assets", "themes", "era-icon-reference.json"), "utf8")).themes[theme].target,
     generatedBy: "scripts/build-era-icons.mjs",
     sharedGeometryAcrossEras: false,
-    runtimeSize: 32,
+    completeFamily,
+    reviewedFamily: completeFamily ? ICONS.map(({ id }) => id) : [],
+    fallback: completeFamily ? [] : ICONS.map(({ id }) => id),
+    // Aqua and Snow Leopard dispatch 128 px sprite cells; Yosemite dispatches
+    // one 128 px PNG per icon. Smaller files remain review/Theme Lab artifacts.
+    runtimeSize: 128,
     icons: {}
   };
   const rendered32 = new Map();
+  const gridReport = new Map();
   for (const spec of ICONS) {
     const files = {};
+    const appearanceSizes = {};
     for (const size of config.sizes) {
       const file = `${fileStem(theme, spec.id)}-${size}.svg`;
-      const svg = renderSvg(theme, spec, size);
+      const view = theme === "platinum" ? size : 64;
+      const placed = await placeOnGrid(theme, spec.id, renderSvg(theme, spec, size), view);
+      const svg = placed.svg;
       writeFileSync(join(dir, file), svg);
+      if (theme === "liquid-glass") {
+        for (const appearance of ["default", "dark", "clear"]) {
+          const appearanceFile = `${fileStem(theme, spec.id)}-${size}-${appearance}.svg`;
+          writeFileSync(join(dir, appearanceFile), liquidAppearanceSvg(svg, appearance));
+          appearanceSizes[`${size}-${appearance}`] = appearanceFile;
+        }
+      }
+      if (size === 32) gridReport.set(spec.id, placed.grid);
       files[size] = file;
       if (size === 32) {
         runtimeManifest[spec.id] = file;
@@ -1174,9 +1388,15 @@ async function buildTheme(theme, config) {
     }
     familyManifest.icons[spec.id] = {
       genre: spec.genre,
+      grid: gridReport.get(spec.id) || null,
       physicalMetaphor: spec.body,
       semanticMark: spec.symbol,
-      sizes: files
+      sourceKind: completeFamily
+        ? "era-specific-independent-vector-construction"
+        : "shared-generated-fallback",
+      reviewStatus: completeFamily ? "accepted-family" : "fallback",
+      sizes: files,
+      ...(theme === "liquid-glass" ? { appearanceSizes } : {}),
     };
   }
   assertUnique(theme, rendered32);
@@ -1189,10 +1409,50 @@ async function buildTheme(theme, config) {
   console.log(`${theme}: ${ICONS.length} icons, sizes ${config.sizes.join("/")}`);
 }
 
-for (const [theme, config] of Object.entries(THEMES)) await buildTheme(theme, config);
+function requestedThemes() {
+  const args = process.argv.slice(2);
+  if (!args.length) return Object.keys(THEMES);
+  const requested = [];
+  for (let index = 0; index < args.length; index += 1) {
+    const value = args[index] === "--theme" ? args[++index] : args[index].replace(/^--theme=/, "");
+    if (!THEMES[value]) throw new Error(`Unknown icon theme ${value}. Expected one of: ${Object.keys(THEMES).join(", ")}`);
+    requested.push(value);
+  }
+  return [...new Set(requested)];
+}
 
-// The broad legacy generator remains the fallback for unreviewed objects.
-// Reapply accepted cores last so a full rebuild cannot regress reviewed art
-// to the old shared body-plus-badge painter.
-await import("./build-platinum-core-icons.mjs");
-await import("./build-aqua-core-icons.mjs");
+const selectedThemes = requestedThemes();
+for (const theme of selectedThemes) await buildTheme(theme, THEMES[theme]);
+
+// The broad legacy and measured core generators remain deterministic
+// reconstruction layers. Reapply the complete accepted generated family last
+// so a full rebuild cannot expose those older pixels on any runtime surface.
+// Keep these imports explicit. Besides making the rebuild order auditable, the
+// acceptance contracts pin every reviewed-core builder by name so a future
+// refactor cannot silently omit one era from the final overlay pass.
+if (selectedThemes.includes("platinum")) await import("./build-platinum-core-icons.mjs");
+if (selectedThemes.includes("aqua")) await import("./build-aqua-core-icons.mjs");
+if (selectedThemes.includes("snow-leopard")) await import("./build-snow-leopard-core-icons.mjs");
+if (selectedThemes.includes("yosemite")) await import("./build-yosemite-core-icons.mjs");
+if (selectedThemes.includes("liquid-glass")) await import("./build-liquid-glass-imagegen-icons.mjs");
+
+// Draft candidates are never accepted implicitly. This last overlay reads
+// only the checked-in human acceptance ledger and checked-in accepted source
+// archive, verifies every PNG hash, and restores those reviewed bytes after
+// the broad fallback and core builders.
+const { buildAcceptedGeneratedIcons } = await import("./build-accepted-generated-era-icons.mjs");
+await buildAcceptedGeneratedIcons(selectedThemes);
+
+// Core builders replace accepted ids in the runtime manifest. Rebuild the full
+// sheet afterwards so it shows the bytes users actually receive instead of a
+// stale pre-core fallback for Finder, ClioTalk, or another reviewed object.
+for (const theme of selectedThemes) {
+  const manifest = JSON.parse(readFileSync(join(root, "assets", "themes", theme, THEMES[theme].manifest), "utf8"));
+  await buildContactSheet(theme, manifest);
+}
+// Platinum's complete accepted Image Gen family is the final authority for
+// all 56 objects. Apply it after legacy/core/accepted overlays and after their
+// compatibility sheet so its official PNGs, ledger, and raster proof cannot
+// be overwritten by the broad SVG generator.
+if (selectedThemes.includes("platinum")) await import("./build-platinum-imagegen-icons.mjs");
+if (selectedThemes.includes("liquid-glass")) await buildLiquidAppearanceSheet();

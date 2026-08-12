@@ -2,601 +2,2590 @@
   "target": "OS X 10.10 Yosemite",
   "generatedBy": "scripts/build-era-icons.mjs",
   "sharedGeometryAcrossEras": false,
-  "runtimeSize": 32,
+  "completeFamily": true,
+  "reviewedFamily": [
+    "startupDisk",
+    "hardDisk",
+    "folder",
+    "document",
+    "applications",
+    "trash",
+    "finderApp",
+    "fileFloppy",
+    "assistant",
+    "quickDraft",
+    "writingStudio",
+    "projectDisk",
+    "projectDisc",
+    "cloudModel",
+    "cloudModelOff",
+    "questionSheet",
+    "outline",
+    "sectionDrafts",
+    "manuscript",
+    "reviewDesk",
+    "searcher",
+    "reader",
+    "timeMachine",
+    "docMap",
+    "clioStage",
+    "clioChart",
+    "liquidCover",
+    "cmfStudio",
+    "soundscape",
+    "scrapbook",
+    "systemFolder",
+    "helpFolder",
+    "importUtility",
+    "controlPanel",
+    "chooser",
+    "systemHelp",
+    "dictionary",
+    "teachText",
+    "writingDemo",
+    "chatFile",
+    "chatImport",
+    "systemStatus",
+    "contextPanel",
+    "rebuildArticle",
+    "bureaucracyMeme",
+    "endfieldTerminal",
+    "documents",
+    "alias",
+    "systemFile",
+    "multiFinderApp",
+    "daHandler",
+    "writingBell",
+    "trashFull",
+    "control",
+    "localModel",
+    "controlStrip"
+  ],
+  "fallback": [],
+  "runtimeSize": 128,
   "icons": {
     "startupDisk": {
       "genre": "hardware",
-      "physicalMetaphor": "drive",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 1.0097
+      },
+      "physicalMetaphor": "a bootable system disk volume with one small illuminated startup indicator in a lower corner, clearly distinct from the plain local hard disk; no arrow, upload symbol, download symbol, or large badge",
       "semanticMark": "startup",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "startup-disk-16.svg",
-        "32": "startup-disk-32.svg",
-        "64": "startup-disk-64.svg",
-        "128": "startup-disk-128.svg"
+        "16": "icons/startupDisk-16.png",
+        "32": "icons/startupDisk-32.png",
+        "64": "icons/startupDisk-64.png",
+        "128": "icons/startupDisk-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6719,
+          "meanLum": 161.13,
+          "lumStd": 66.17,
+          "edgeEnergy": 45
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6035,
+          "meanLum": 163.51,
+          "lumStd": 62.36,
+          "edgeEnergy": 173
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5941,
+          "meanLum": 163.73,
+          "lumStd": 61.85,
+          "edgeEnergy": 300
+        }
       }
     },
     "hardDisk": {
       "genre": "hardware",
-      "physicalMetaphor": "drive",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 1.0097
+      },
+      "physicalMetaphor": "a mounted local hard-disk volume, clearly hardware rather than a folder or document",
       "semanticMark": "disk",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "hardDisk-16.svg",
-        "32": "hardDisk-32.svg",
-        "64": "hardDisk-64.svg",
-        "128": "hardDisk-128.svg"
+        "16": "icons/hardDisk-16.png",
+        "32": "icons/hardDisk-32.png",
+        "64": "icons/hardDisk-64.png",
+        "128": "icons/hardDisk-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.418,
+          "meanLum": 189.41,
+          "lumStd": 39.96,
+          "edgeEnergy": 35
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.3857,
+          "meanLum": 191.39,
+          "lumStd": 39.3,
+          "edgeEnergy": 71
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.3912,
+          "meanLum": 189.81,
+          "lumStd": 41.68,
+          "edgeEnergy": 175
+        }
       }
     },
     "folder": {
       "genre": "file",
-      "physicalMetaphor": "folder",
+      "grid": {
+        "shape": "landscape",
+        "fitted": 0.8728,
+        "scale": 0.98
+      },
+      "physicalMetaphor": "the era's system folder as one unmistakable tabbed folder object",
       "semanticMark": "none",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "folder-16.svg",
-        "32": "folder-32.svg",
-        "64": "folder-64.svg",
-        "128": "folder-128.svg"
+        "16": "icons/folder-16.png",
+        "32": "icons/folder-32.png",
+        "64": "icons/folder-64.png",
+        "128": "icons/folder-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.625,
+          "meanLum": 134.74,
+          "lumStd": 18.44,
+          "edgeEnergy": 42
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.626,
+          "meanLum": 133.83,
+          "lumStd": 24.6,
+          "edgeEnergy": 96
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6429,
+          "meanLum": 131.74,
+          "lumStd": 27.87,
+          "edgeEnergy": 133
+        }
       }
     },
     "document": {
       "genre": "document",
-      "physicalMetaphor": "paper",
+      "grid": {
+        "shape": "portrait",
+        "fitted": 0.8461,
+        "scale": 1.0121
+      },
+      "physicalMetaphor": "a generic white document sheet with one folded top corner and only a few neutral text marks",
       "semanticMark": "none",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "document-16.svg",
-        "32": "document-32.svg",
-        "64": "document-64.svg",
-        "128": "document-128.svg"
+        "16": "icons/document-16.png",
+        "32": "icons/document-32.png",
+        "64": "icons/document-64.png",
+        "128": "icons/document-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6328,
+          "meanLum": 201.04,
+          "lumStd": 41.92,
+          "edgeEnergy": 69
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5811,
+          "meanLum": 200.26,
+          "lumStd": 48.19,
+          "edgeEnergy": 250
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5556,
+          "meanLum": 200.61,
+          "lumStd": 51.66,
+          "edgeEnergy": 319
+        }
       }
     },
     "applications": {
       "genre": "file",
-      "physicalMetaphor": "folder",
+      "grid": {
+        "shape": "landscape",
+        "fitted": 0.8906,
+        "scale": 1
+      },
+      "physicalMetaphor": "a tabbed applications folder with a compact inset grid of four distinct application tiles, still unmistakably a folder",
       "semanticMark": "applications",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "applications-16.svg",
-        "32": "applications-32.svg",
-        "64": "applications-64.svg",
-        "128": "applications-128.svg"
+        "16": "icons/applications-16.png",
+        "32": "icons/applications-32.png",
+        "64": "icons/applications-64.png",
+        "128": "icons/applications-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.7109,
+          "meanLum": 154.8,
+          "lumStd": 31.78,
+          "edgeEnergy": 77
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.625,
+          "meanLum": 156.53,
+          "lumStd": 33,
+          "edgeEnergy": 222
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6253,
+          "meanLum": 156.79,
+          "lumStd": 35.26,
+          "edgeEnergy": 390
+        }
       }
     },
     "trash": {
       "genre": "hardware",
-      "physicalMetaphor": "trash",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8369,
+        "scale": 1.1158
+      },
+      "physicalMetaphor": "an empty waste basket with an open top and a readable woven or perforated body",
       "semanticMark": "empty",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "trash-16.svg",
-        "32": "trash-32.svg",
-        "64": "trash-64.svg",
-        "128": "trash-128.svg"
+        "16": "icons/trash-16.png",
+        "32": "icons/trash-32.png",
+        "64": "icons/trash-64.png",
+        "128": "icons/trash-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6211,
+          "meanLum": 160.67,
+          "lumStd": 28.78,
+          "edgeEnergy": 59
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.4932,
+          "meanLum": 158.1,
+          "lumStd": 32.78,
+          "edgeEnergy": 140
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4768,
+          "meanLum": 158.23,
+          "lumStd": 33.03,
+          "edgeEnergy": 187
+        }
       }
     },
     "finderApp": {
       "genre": "application",
-      "physicalMetaphor": "finder",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 1
+      },
+      "physicalMetaphor": "a compact beige Macintosh computer, front-facing, whose dark screen carries two friendly eyes and a small smile",
       "semanticMark": "finder",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "finder-app-16.svg",
-        "32": "finder-app-32.svg",
-        "64": "finder-app-64.svg",
-        "128": "finder-app-128.svg"
+        "16": "icons/finderApp-16.png",
+        "32": "icons/finderApp-32.png",
+        "64": "icons/finderApp-64.png",
+        "128": "icons/finderApp-128.png"
+      },
+      "metaphorKey": "smiling-compact-macintosh",
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6563,
+          "meanLum": 200.36,
+          "lumStd": 34.15,
+          "edgeEnergy": 54
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6035,
+          "meanLum": 199.22,
+          "lumStd": 40.12,
+          "edgeEnergy": 238
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.61,
+          "meanLum": 197.97,
+          "lumStd": 41.84,
+          "edgeEnergy": 397
+        }
       }
     },
     "fileFloppy": {
       "genre": "hardware",
-      "physicalMetaphor": "floppy",
+      "grid": {
+        "shape": "portrait",
+        "fitted": 0.8906,
+        "scale": 1.0755
+      },
+      "physicalMetaphor": "one 3.5-inch floppy disk with a readable metal shutter and label panel, clearly removable storage rather than a hard drive",
       "semanticMark": "floppy",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "fileFloppy-16.svg",
-        "32": "fileFloppy-32.svg",
-        "64": "fileFloppy-64.svg",
-        "128": "fileFloppy-128.svg"
+        "16": "icons/fileFloppy-16.png",
+        "32": "icons/fileFloppy-32.png",
+        "64": "icons/fileFloppy-64.png",
+        "128": "icons/fileFloppy-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.7461,
+          "meanLum": 124.2,
+          "lumStd": 76.91,
+          "edgeEnergy": 92
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6572,
+          "meanLum": 131.79,
+          "lumStd": 81.15,
+          "edgeEnergy": 171
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6502,
+          "meanLum": 132.18,
+          "lumStd": 82.28,
+          "edgeEnergy": 288
+        }
       }
     },
     "assistant": {
       "genre": "application",
-      "physicalMetaphor": "correspondence",
+      "grid": {
+        "shape": "landscape",
+        "fitted": 0.8906,
+        "scale": 1.0857
+      },
+      "physicalMetaphor": "two overlapping speech balloons: the user's turn is a solid filled balloon and the reply is a separate balloon drawn with a clearly dashed outline to show that it remains provisional until saved",
       "semanticMark": "assistant",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "assistant-16.svg",
-        "32": "assistant-32.svg",
-        "64": "assistant-64.svg",
-        "128": "assistant-128.svg"
+        "16": "icons/assistant-16.png",
+        "32": "icons/assistant-32.png",
+        "64": "icons/assistant-64.png",
+        "128": "icons/assistant-128.png"
+      },
+      "metaphorKey": "solid-user-dashed-reply-balloons",
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.4922,
+          "meanLum": 175.79,
+          "lumStd": 44.73,
+          "edgeEnergy": 33
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.4551,
+          "meanLum": 176.38,
+          "lumStd": 48.38,
+          "edgeEnergy": 127
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4512,
+          "meanLum": 175.76,
+          "lumStd": 49.74,
+          "edgeEnergy": 169
+        }
       }
     },
     "quickDraft": {
       "genre": "document",
-      "physicalMetaphor": "paper",
+      "grid": {
+        "shape": "portrait",
+        "fitted": 0.8906,
+        "scale": 1.0654
+      },
+      "physicalMetaphor": "one loose draft sheet with a pencil crossing a few rough horizontal marks, visibly provisional rather than a finished manuscript",
       "semanticMark": "pencil",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "quickDraft-16.svg",
-        "32": "quickDraft-32.svg",
-        "64": "quickDraft-64.svg",
-        "128": "quickDraft-128.svg"
+        "16": "icons/quickDraft-16.png",
+        "32": "icons/quickDraft-32.png",
+        "64": "icons/quickDraft-64.png",
+        "128": "icons/quickDraft-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5391,
+          "meanLum": 200.02,
+          "lumStd": 41.72,
+          "edgeEnergy": 80
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.501,
+          "meanLum": 199.64,
+          "lumStd": 49.65,
+          "edgeEnergy": 290
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5,
+          "meanLum": 199.39,
+          "lumStd": 50.85,
+          "edgeEnergy": 470
+        }
       }
     },
     "writingStudio": {
       "genre": "application",
-      "physicalMetaphor": "typewriter",
+      "grid": {
+        "shape": "landscape",
+        "fitted": 0.8906,
+        "scale": 0.958
+      },
+      "physicalMetaphor": "a compact mechanical typewriter with one blank manuscript sheet emerging from the carriage",
       "semanticMark": "writing",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "writingStudio-16.svg",
-        "32": "writingStudio-32.svg",
-        "64": "writingStudio-64.svg",
-        "128": "writingStudio-128.svg"
+        "16": "icons/writingStudio-16.png",
+        "32": "icons/writingStudio-32.png",
+        "64": "icons/writingStudio-64.png",
+        "128": "icons/writingStudio-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6406,
+          "meanLum": 134.78,
+          "lumStd": 70.26,
+          "edgeEnergy": 102
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5703,
+          "meanLum": 136.28,
+          "lumStd": 71.78,
+          "edgeEnergy": 409
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5624,
+          "meanLum": 136.51,
+          "lumStd": 74.37,
+          "edgeEnergy": 690
+        }
       }
     },
     "projectDisk": {
       "genre": "hardware",
-      "physicalMetaphor": "drive",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 1.0097
+      },
+      "physicalMetaphor": "a labelled external storage volume with one restrained project label cue, distinct from the unlabelled local hard disk",
       "semanticMark": "project",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "projectDisk-16.svg",
-        "32": "projectDisk-32.svg",
-        "64": "projectDisk-64.svg",
-        "128": "projectDisk-128.svg"
+        "16": "icons/projectDisk-16.png",
+        "32": "icons/projectDisk-32.png",
+        "64": "icons/projectDisk-64.png",
+        "128": "icons/projectDisk-128.png"
+      },
+      "metaphorKey": "labelled-external-volume",
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.3359,
+          "meanLum": 145.63,
+          "lumStd": 30.26,
+          "edgeEnergy": 33
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.2793,
+          "meanLum": 147.91,
+          "lumStd": 35.1,
+          "edgeEnergy": 104
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.2891,
+          "meanLum": 146.98,
+          "lumStd": 35.15,
+          "edgeEnergy": 195
+        }
       }
     },
     "projectDisc": {
       "genre": "hardware",
-      "physicalMetaphor": "disc",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 1
+      },
+      "physicalMetaphor": "one optical project disc partly seated in a compact protective sleeve, with a small blank project tab and visible rainbow diffraction",
       "semanticMark": "project",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "projectDisc-16.svg",
-        "32": "projectDisc-32.svg",
-        "64": "projectDisc-64.svg",
-        "128": "projectDisc-128.svg"
+        "16": "icons/projectDisc-16.png",
+        "32": "icons/projectDisc-32.png",
+        "64": "icons/projectDisc-64.png",
+        "128": "icons/projectDisc-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.3594,
+          "meanLum": 148.83,
+          "lumStd": 32.26,
+          "edgeEnergy": 26
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.3232,
+          "meanLum": 150.05,
+          "lumStd": 34.1,
+          "edgeEnergy": 74
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.3169,
+          "meanLum": 150.94,
+          "lumStd": 32.9,
+          "edgeEnergy": 81
+        }
       }
     },
     "cloudModel": {
       "genre": "utility",
-      "physicalMetaphor": "server",
+      "grid": {
+        "shape": "portrait",
+        "fitted": 0.8906,
+        "scale": 1.0806
+      },
+      "physicalMetaphor": "a compact remote server unit paired with one active cloud-shaped status light, clearly a network model service rather than local hardware",
       "semanticMark": "cloud",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "cloudModel-16.svg",
-        "32": "cloudModel-32.svg",
-        "64": "cloudModel-64.svg",
-        "128": "cloudModel-128.svg"
+        "16": "icons/cloudModel-16.png",
+        "32": "icons/cloudModel-32.png",
+        "64": "icons/cloudModel-64.png",
+        "128": "icons/cloudModel-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5664,
+          "meanLum": 140.48,
+          "lumStd": 55.49,
+          "edgeEnergy": 78
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5332,
+          "meanLum": 138.29,
+          "lumStd": 58.65,
+          "edgeEnergy": 165
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5306,
+          "meanLum": 136.7,
+          "lumStd": 58.46,
+          "edgeEnergy": 295
+        }
       }
     },
     "cloudModelOff": {
       "genre": "utility",
-      "physicalMetaphor": "server",
+      "grid": {
+        "shape": "portrait",
+        "fitted": 0.8906,
+        "scale": 1.0806
+      },
+      "physicalMetaphor": "the same compact remote server concept with an unlit cloud-shaped status light and one visibly unplugged network cable",
       "semanticMark": "cloudOff",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "cloudModelOff-16.svg",
-        "32": "cloudModelOff-32.svg",
-        "64": "cloudModelOff-64.svg",
-        "128": "cloudModelOff-128.svg"
+        "16": "icons/cloudModelOff-16.png",
+        "32": "icons/cloudModelOff-32.png",
+        "64": "icons/cloudModelOff-64.png",
+        "128": "icons/cloudModelOff-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5469,
+          "meanLum": 127.6,
+          "lumStd": 52.2,
+          "edgeEnergy": 117
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5146,
+          "meanLum": 131.92,
+          "lumStd": 54.22,
+          "edgeEnergy": 260
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5108,
+          "meanLum": 130.6,
+          "lumStd": 53.89,
+          "edgeEnergy": 426
+        }
       }
     },
     "questionSheet": {
       "genre": "document",
-      "physicalMetaphor": "paper",
+      "grid": {
+        "shape": "portrait",
+        "fitted": 0.8906,
+        "scale": 1.0654
+      },
+      "physicalMetaphor": "one white worksheet with a large centred question mark and two short blank response lines, no other text",
       "semanticMark": "question",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "questionSheet-16.svg",
-        "32": "questionSheet-32.svg",
-        "64": "questionSheet-64.svg",
-        "128": "questionSheet-128.svg"
+        "16": "icons/questionSheet-16.png",
+        "32": "icons/questionSheet-32.png",
+        "64": "icons/questionSheet-64.png",
+        "128": "icons/questionSheet-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6055,
+          "meanLum": 200.89,
+          "lumStd": 36.48,
+          "edgeEnergy": 102
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6172,
+          "meanLum": 195.79,
+          "lumStd": 53.04,
+          "edgeEnergy": 298
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5873,
+          "meanLum": 199.3,
+          "lumStd": 50,
+          "edgeEnergy": 360
+        }
       }
     },
     "outline": {
       "genre": "document",
-      "physicalMetaphor": "cards",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 1.0097
+      },
+      "physicalMetaphor": "three stacked index cards showing only indented bullets and horizontal hierarchy bars, clearly an outline rather than prose",
       "semanticMark": "outline",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "outline-16.svg",
-        "32": "outline-32.svg",
-        "64": "outline-64.svg",
-        "128": "outline-128.svg"
+        "16": "icons/outline-16.png",
+        "32": "icons/outline-32.png",
+        "64": "icons/outline-64.png",
+        "128": "icons/outline-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.625,
+          "meanLum": 201.27,
+          "lumStd": 26.98,
+          "edgeEnergy": 59
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5859,
+          "meanLum": 199.17,
+          "lumStd": 47.34,
+          "edgeEnergy": 355
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5913,
+          "meanLum": 196.72,
+          "lumStd": 57.87,
+          "edgeEnergy": 616
+        }
       }
     },
     "sectionDrafts": {
       "genre": "document",
-      "physicalMetaphor": "paperStack",
+      "grid": {
+        "shape": "portrait",
+        "fitted": 0.8906,
+        "scale": 1.0654
+      },
+      "physicalMetaphor": "three staggered draft pages with distinct coloured section tabs and rough line blocks, clearly separate sections of one work",
       "semanticMark": "sections",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "sectionDrafts-16.svg",
-        "32": "sectionDrafts-32.svg",
-        "64": "sectionDrafts-64.svg",
-        "128": "sectionDrafts-128.svg"
+        "16": "icons/sectionDrafts-16.png",
+        "32": "icons/sectionDrafts-32.png",
+        "64": "icons/sectionDrafts-64.png",
+        "128": "icons/sectionDrafts-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5156,
+          "meanLum": 201.45,
+          "lumStd": 33.87,
+          "edgeEnergy": 66
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.4727,
+          "meanLum": 202.05,
+          "lumStd": 38.17,
+          "edgeEnergy": 213
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4683,
+          "meanLum": 201.9,
+          "lumStd": 40.22,
+          "edgeEnergy": 305
+        }
       }
     },
     "manuscript": {
       "genre": "document",
-      "physicalMetaphor": "manuscript",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 0.9858
+      },
+      "physicalMetaphor": "a substantial bound manuscript stack with a cloth spine and one bookmark, clearly a finished long-form document",
       "semanticMark": "manuscript",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "manuscript-16.svg",
-        "32": "manuscript-32.svg",
-        "64": "manuscript-64.svg",
-        "128": "manuscript-128.svg"
+        "16": "icons/manuscript-16.png",
+        "32": "icons/manuscript-32.png",
+        "64": "icons/manuscript-64.png",
+        "128": "icons/manuscript-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6797,
+          "meanLum": 144.93,
+          "lumStd": 57.07,
+          "edgeEnergy": 78
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6445,
+          "meanLum": 144.67,
+          "lumStd": 63.04,
+          "edgeEnergy": 184
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6224,
+          "meanLum": 148.39,
+          "lumStd": 61.41,
+          "edgeEnergy": 209
+        }
       }
     },
     "reviewDesk": {
       "genre": "application",
-      "physicalMetaphor": "review",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8287,
+        "scale": 1.02
+      },
+      "physicalMetaphor": "a marked manuscript page under a magnifying lens, reduced to one readable proofing object",
       "semanticMark": "proof",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "reviewDesk-16.svg",
-        "32": "reviewDesk-32.svg",
-        "64": "reviewDesk-64.svg",
-        "128": "reviewDesk-128.svg"
+        "16": "icons/reviewDesk-16.png",
+        "32": "icons/reviewDesk-32.png",
+        "64": "icons/reviewDesk-64.png",
+        "128": "icons/reviewDesk-128.png"
+      },
+      "metaphorKey": "marked-manuscript-with-lens",
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5625,
+          "meanLum": 200.83,
+          "lumStd": 33.13,
+          "edgeEnergy": 95
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5527,
+          "meanLum": 199.88,
+          "lumStd": 42.74,
+          "edgeEnergy": 321
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5731,
+          "meanLum": 195.92,
+          "lumStd": 47.45,
+          "edgeEnergy": 466
+        }
       }
     },
     "searcher": {
       "genre": "application",
-      "physicalMetaphor": "search",
+      "grid": {
+        "shape": "landscape",
+        "fitted": 0.9084,
+        "scale": 1.0668
+      },
+      "physicalMetaphor": "a single magnifying glass overlapping a document page, with the lens and page both readable",
       "semanticMark": "magnify",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "searcher-16.svg",
-        "32": "searcher-32.svg",
-        "64": "searcher-64.svg",
-        "128": "searcher-128.svg"
+        "16": "icons/searcher-16.png",
+        "32": "icons/searcher-32.png",
+        "64": "icons/searcher-64.png",
+        "128": "icons/searcher-128.png"
+      },
+      "metaphorKey": "magnifier-over-page",
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5,
+          "meanLum": 200.43,
+          "lumStd": 49.97,
+          "edgeEnergy": 77
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.4756,
+          "meanLum": 200.43,
+          "lumStd": 59.9,
+          "edgeEnergy": 277
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4666,
+          "meanLum": 201.02,
+          "lumStd": 62.06,
+          "edgeEnergy": 413
+        }
       }
     },
     "reader": {
       "genre": "application",
-      "physicalMetaphor": "book",
+      "grid": {
+        "shape": "landscape",
+        "fitted": 0.8906,
+        "scale": 1
+      },
+      "physicalMetaphor": "an open reading book with one restrained highlighted passage block and a slim reading marker, no legible words",
       "semanticMark": "reader",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "reader-16.svg",
-        "32": "reader-32.svg",
-        "64": "reader-64.svg",
-        "128": "reader-128.svg"
+        "16": "icons/reader-16.png",
+        "32": "icons/reader-32.png",
+        "64": "icons/reader-64.png",
+        "128": "icons/reader-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6523,
+          "meanLum": 200.8,
+          "lumStd": 63.2,
+          "edgeEnergy": 67
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6162,
+          "meanLum": 204.28,
+          "lumStd": 65.35,
+          "edgeEnergy": 167
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6111,
+          "meanLum": 205.61,
+          "lumStd": 62.91,
+          "edgeEnergy": 249
+        }
       }
     },
     "timeMachine": {
       "genre": "utility",
-      "physicalMetaphor": "clock",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 0.9286
+      },
+      "physicalMetaphor": "a compact archive drawer behind a round clock face with one restrained backward-history arrow",
       "semanticMark": "archive",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "timeMachine-16.svg",
-        "32": "timeMachine-32.svg",
-        "64": "timeMachine-64.svg",
-        "128": "timeMachine-128.svg"
+        "16": "icons/timeMachine-16.png",
+        "32": "icons/timeMachine-32.png",
+        "64": "icons/timeMachine-64.png",
+        "128": "icons/timeMachine-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6563,
+          "meanLum": 135.68,
+          "lumStd": 34.99,
+          "edgeEnergy": 87
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6348,
+          "meanLum": 135.32,
+          "lumStd": 41.1,
+          "edgeEnergy": 335
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6366,
+          "meanLum": 133.34,
+          "lumStd": 45.65,
+          "edgeEnergy": 499
+        }
       }
     },
     "docMap": {
       "genre": "application",
-      "physicalMetaphor": "map",
-      "semanticMark": "map",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 0.9244
+      },
+      "physicalMetaphor": "a document page whose heading lines grow into one simple stem with a few branches and nodes, a document structure map rather than a geographic map",
+      "semanticMark": "none",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "docMap-16.svg",
-        "32": "docMap-32.svg",
-        "64": "docMap-64.svg",
-        "128": "docMap-128.svg"
+        "16": "icons/docMap-16.png",
+        "32": "icons/docMap-32.png",
+        "64": "icons/docMap-64.png",
+        "128": "icons/docMap-128.png"
+      },
+      "metaphorKey": "branching-document-map",
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.4805,
+          "meanLum": 168.65,
+          "lumStd": 62.06,
+          "edgeEnergy": 76
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.4434,
+          "meanLum": 176.5,
+          "lumStd": 63.28,
+          "edgeEnergy": 200
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.3951,
+          "meanLum": 185.14,
+          "lumStd": 63.68,
+          "edgeEnergy": 260
+        }
+      },
+      "metaphorMetrics": {
+        "version": 1,
+        "sourceSize": [
+          128,
+          128
+        ],
+        "bounds": [
+          23,
+          7,
+          105,
+          120
+        ],
+        "pageMode": "opaque",
+        "pageLeftDensity": 0.9782,
+        "pageRightDensity": 0.1756,
+        "pageAdvantage": 0.8026,
+        "pageAdvantageMin": 0.2,
+        "nodeMode": "opaque",
+        "nodeBandDensities": [
+          0.2587,
+          0.2525,
+          0.25
+        ],
+        "nodeGapDensities": [
+          0,
+          0
+        ]
       }
     },
     "clioStage": {
       "genre": "application",
-      "physicalMetaphor": "stage",
+      "grid": {
+        "shape": "landscape",
+        "fitted": 0.8906,
+        "scale": 0.9913
+      },
+      "physicalMetaphor": "a small presentation stage with side curtains, a blank projection screen, and one focused overhead light",
       "semanticMark": "stage",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "clioStage-16.svg",
-        "32": "clioStage-32.svg",
-        "64": "clioStage-64.svg",
-        "128": "clioStage-128.svg"
+        "16": "icons/clioStage-16.png",
+        "32": "icons/clioStage-32.png",
+        "64": "icons/clioStage-64.png",
+        "128": "icons/clioStage-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5859,
+          "meanLum": 120.82,
+          "lumStd": 65.72,
+          "edgeEnergy": 69
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5791,
+          "meanLum": 121.37,
+          "lumStd": 72.54,
+          "edgeEnergy": 225
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5896,
+          "meanLum": 120,
+          "lumStd": 72.92,
+          "edgeEnergy": 344
+        }
       }
     },
     "clioChart": {
       "genre": "application",
-      "physicalMetaphor": "easel",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 0.9286
+      },
+      "physicalMetaphor": "a standing presentation easel carrying one simple bar-and-line chart with no labels or numbers",
       "semanticMark": "chart",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "clioChart-16.svg",
-        "32": "clioChart-32.svg",
-        "64": "clioChart-64.svg",
-        "128": "clioChart-128.svg"
+        "16": "icons/clioChart-16.png",
+        "32": "icons/clioChart-32.png",
+        "64": "icons/clioChart-64.png",
+        "128": "icons/clioChart-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5547,
+          "meanLum": 184.88,
+          "lumStd": 56.83,
+          "edgeEnergy": 91
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.4824,
+          "meanLum": 186.07,
+          "lumStd": 61.84,
+          "edgeEnergy": 242
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4875,
+          "meanLum": 187.92,
+          "lumStd": 63,
+          "edgeEnergy": 361
+        }
       }
     },
     "liquidCover": {
       "genre": "application",
-      "physicalMetaphor": "cover",
+      "grid": {
+        "shape": "portrait",
+        "fitted": 0.8906,
+        "scale": 1.0755
+      },
+      "physicalMetaphor": "a book-cover sheet partly overlaid by one clear glass lens panel, with the opaque cover and transparent material both readable",
       "semanticMark": "cover",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "liquidCover-16.svg",
-        "32": "liquidCover-32.svg",
-        "64": "liquidCover-64.svg",
-        "128": "liquidCover-128.svg"
+        "16": "icons/liquidCover-16.png",
+        "32": "icons/liquidCover-32.png",
+        "64": "icons/liquidCover-64.png",
+        "128": "icons/liquidCover-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.4961,
+          "meanLum": 174.62,
+          "lumStd": 45.07,
+          "edgeEnergy": 40
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.4385,
+          "meanLum": 174.07,
+          "lumStd": 48.69,
+          "edgeEnergy": 99
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4189,
+          "meanLum": 176.65,
+          "lumStd": 48.12,
+          "edgeEnergy": 132
+        }
       }
     },
     "cmfStudio": {
       "genre": "application",
-      "physicalMetaphor": "swatches",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 1.1818
+      },
+      "physicalMetaphor": "a fan of colour, material, and finish swatches with one metal chip, one fabric chip, and restrained colour samples",
       "semanticMark": "swatches",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "cmfStudio-16.svg",
-        "32": "cmfStudio-32.svg",
-        "64": "cmfStudio-64.svg",
-        "128": "cmfStudio-128.svg"
+        "16": "icons/cmfStudio-16.png",
+        "32": "icons/cmfStudio-32.png",
+        "64": "icons/cmfStudio-64.png",
+        "128": "icons/cmfStudio-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5078,
+          "meanLum": 170.09,
+          "lumStd": 38.45,
+          "edgeEnergy": 65
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.4756,
+          "meanLum": 170.92,
+          "lumStd": 41.84,
+          "edgeEnergy": 157
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4751,
+          "meanLum": 170.46,
+          "lumStd": 43.01,
+          "edgeEnergy": 237
+        }
       }
     },
     "soundscape": {
       "genre": "application",
-      "physicalMetaphor": "speaker",
+      "grid": {
+        "shape": "portrait",
+        "fitted": 0.8906,
+        "scale": 1.0654
+      },
+      "physicalMetaphor": "one compact loudspeaker emitting two controlled waveform ribbons, clearly an audio environment tool",
       "semanticMark": "sound",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "soundscape-16.svg",
-        "32": "soundscape-32.svg",
-        "64": "soundscape-64.svg",
-        "128": "soundscape-128.svg"
+        "16": "icons/soundscape-16.png",
+        "32": "icons/soundscape-32.png",
+        "64": "icons/soundscape-64.png",
+        "128": "icons/soundscape-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.2578,
+          "meanLum": 132.83,
+          "lumStd": 31.96,
+          "edgeEnergy": 27
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.2441,
+          "meanLum": 132.28,
+          "lumStd": 40.03,
+          "edgeEnergy": 164
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.246,
+          "meanLum": 130.39,
+          "lumStd": 45.64,
+          "edgeEnergy": 278
+        }
       }
     },
     "scrapbook": {
       "genre": "application",
-      "physicalMetaphor": "album",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 0.972
+      },
+      "physicalMetaphor": "a bound album opened or angled to show one mounted photographic print, clearly an album rather than a notes page",
       "semanticMark": "scraps",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "scrapbook-16.svg",
-        "32": "scrapbook-32.svg",
-        "64": "scrapbook-64.svg",
-        "128": "scrapbook-128.svg"
+        "16": "icons/scrapbook-16.png",
+        "32": "icons/scrapbook-32.png",
+        "64": "icons/scrapbook-64.png",
+        "128": "icons/scrapbook-128.png"
+      },
+      "metaphorKey": "bound-album-with-print",
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6172,
+          "meanLum": 157.18,
+          "lumStd": 41.39,
+          "edgeEnergy": 88
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5762,
+          "meanLum": 160.29,
+          "lumStd": 44.09,
+          "edgeEnergy": 253
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.576,
+          "meanLum": 159.91,
+          "lumStd": 45.29,
+          "edgeEnergy": 376
+        }
       }
     },
     "systemFolder": {
       "genre": "file",
-      "physicalMetaphor": "folder",
+      "grid": {
+        "shape": "landscape",
+        "fitted": 0.8906,
+        "scale": 1
+      },
+      "physicalMetaphor": "a system folder carrying one small inset mechanical wheel badge, unmistakably the operating-system folder",
       "semanticMark": "gear",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "systemFolder-16.svg",
-        "32": "systemFolder-32.svg",
-        "64": "systemFolder-64.svg",
-        "128": "systemFolder-128.svg"
+        "16": "icons/systemFolder-16.png",
+        "32": "icons/systemFolder-32.png",
+        "64": "icons/systemFolder-64.png",
+        "128": "icons/systemFolder-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6289,
+          "meanLum": 159.12,
+          "lumStd": 44.07,
+          "edgeEnergy": 27
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.627,
+          "meanLum": 157.97,
+          "lumStd": 49.75,
+          "edgeEnergy": 117
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.61,
+          "meanLum": 161.51,
+          "lumStd": 44.18,
+          "edgeEnergy": 147
+        }
       }
     },
     "helpFolder": {
       "genre": "file",
-      "physicalMetaphor": "folder",
+      "grid": {
+        "shape": "landscape",
+        "fitted": 0.8906,
+        "scale": 1
+      },
+      "physicalMetaphor": "a help folder carrying one large clean question-mark badge, with no other text",
       "semanticMark": "help",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "helpFolder-16.svg",
-        "32": "helpFolder-32.svg",
-        "64": "helpFolder-64.svg",
-        "128": "helpFolder-128.svg"
+        "16": "icons/helpFolder-16.png",
+        "32": "icons/helpFolder-32.png",
+        "64": "icons/helpFolder-64.png",
+        "128": "icons/helpFolder-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.625,
+          "meanLum": 165.78,
+          "lumStd": 32.37,
+          "edgeEnergy": 62
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.624,
+          "meanLum": 165.4,
+          "lumStd": 37.45,
+          "edgeEnergy": 175
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6247,
+          "meanLum": 165.01,
+          "lumStd": 38.81,
+          "edgeEnergy": 271
+        }
       }
     },
     "importUtility": {
       "genre": "utility",
-      "physicalMetaphor": "inbox",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 0.9286
+      },
+      "physicalMetaphor": "an inbox tray receiving one document sheet from above through a single downward arrow",
       "semanticMark": "import",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "importUtility-16.svg",
-        "32": "importUtility-32.svg",
-        "64": "importUtility-64.svg",
-        "128": "importUtility-128.svg"
+        "16": "icons/importUtility-16.png",
+        "32": "icons/importUtility-32.png",
+        "64": "icons/importUtility-64.png",
+        "128": "icons/importUtility-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5508,
+          "meanLum": 169.77,
+          "lumStd": 60.13,
+          "edgeEnergy": 68
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.4863,
+          "meanLum": 168.71,
+          "lumStd": 66.99,
+          "edgeEnergy": 178
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4847,
+          "meanLum": 168.27,
+          "lumStd": 68.58,
+          "edgeEnergy": 229
+        }
       }
     },
     "controlPanel": {
       "genre": "utility",
-      "physicalMetaphor": "controlBoard",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 1
+      },
+      "physicalMetaphor": "the era's settings object, expressed as a compact panel of physical controls rather than a modern gear glyph",
       "semanticMark": "sliders",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "controlPanel-16.svg",
-        "32": "controlPanel-32.svg",
-        "64": "controlPanel-64.svg",
-        "128": "controlPanel-128.svg"
+        "16": "icons/controlPanel-16.png",
+        "32": "icons/controlPanel-32.png",
+        "64": "icons/controlPanel-64.png",
+        "128": "icons/controlPanel-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.7656,
+          "meanLum": 145.44,
+          "lumStd": 31.47,
+          "edgeEnergy": 100
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6602,
+          "meanLum": 147.4,
+          "lumStd": 36.94,
+          "edgeEnergy": 295
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6553,
+          "meanLum": 147.98,
+          "lumStd": 37.58,
+          "edgeEnergy": 430
+        }
       }
     },
     "chooser": {
       "genre": "utility",
-      "physicalMetaphor": "network",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 0.972
+      },
+      "physicalMetaphor": "two small desktop computers joined by one cable, with one machine visibly selected by a compact pointer tab",
       "semanticMark": "chooser",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "chooser-16.svg",
-        "32": "chooser-32.svg",
-        "64": "chooser-64.svg",
-        "128": "chooser-128.svg"
+        "16": "icons/chooser-16.png",
+        "32": "icons/chooser-32.png",
+        "64": "icons/chooser-64.png",
+        "128": "icons/chooser-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.3047,
+          "meanLum": 173.74,
+          "lumStd": 39.32,
+          "edgeEnergy": 55
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.2646,
+          "meanLum": 171.28,
+          "lumStd": 44.44,
+          "edgeEnergy": 162
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.2596,
+          "meanLum": 170.44,
+          "lumStd": 48.93,
+          "edgeEnergy": 259
+        }
       }
     },
     "systemHelp": {
       "genre": "application",
-      "physicalMetaphor": "book",
+      "grid": {
+        "shape": "landscape",
+        "fitted": 0.8906,
+        "scale": 1
+      },
+      "physicalMetaphor": "a closed reference book with one large question mark on the cover and a single bookmark, no other text",
       "semanticMark": "help",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "systemHelp-16.svg",
-        "32": "systemHelp-32.svg",
-        "64": "systemHelp-64.svg",
-        "128": "systemHelp-128.svg"
+        "16": "icons/systemHelp-16.png",
+        "32": "icons/systemHelp-32.png",
+        "64": "icons/systemHelp-64.png",
+        "128": "icons/systemHelp-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6836,
+          "meanLum": 135.54,
+          "lumStd": 43.05,
+          "edgeEnergy": 79
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6025,
+          "meanLum": 139.74,
+          "lumStd": 45.44,
+          "edgeEnergy": 185
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6139,
+          "meanLum": 137.69,
+          "lumStd": 47.04,
+          "edgeEnergy": 284
+        }
       }
     },
     "dictionary": {
       "genre": "application",
-      "physicalMetaphor": "dictionary",
+      "grid": {
+        "shape": "landscape",
+        "fitted": 0.8906,
+        "scale": 1
+      },
+      "physicalMetaphor": "a thick indexed reference book with stepped edge tabs and one bookmark, no letters or words",
       "semanticMark": "dictionary",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "dictionary-16.svg",
-        "32": "dictionary-32.svg",
-        "64": "dictionary-64.svg",
-        "128": "dictionary-128.svg"
+        "16": "icons/dictionary-16.png",
+        "32": "icons/dictionary-32.png",
+        "64": "icons/dictionary-64.png",
+        "128": "icons/dictionary-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.4609,
+          "meanLum": 136.08,
+          "lumStd": 32.45,
+          "edgeEnergy": 23
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.4082,
+          "meanLum": 139.47,
+          "lumStd": 31.53,
+          "edgeEnergy": 63
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4002,
+          "meanLum": 139.12,
+          "lumStd": 34.39,
+          "edgeEnergy": 107
+        }
       }
     },
     "teachText": {
       "genre": "application",
-      "physicalMetaphor": "paperPen",
+      "grid": {
+        "shape": "portrait",
+        "fitted": 0.8639,
+        "scale": 1.0335
+      },
+      "physicalMetaphor": "writing paper with a pen resting across it, clearly an editable writing object",
       "semanticMark": "writing",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "teachText-16.svg",
-        "32": "teachText-32.svg",
-        "64": "teachText-64.svg",
-        "128": "teachText-128.svg"
+        "16": "icons/teachText-16.png",
+        "32": "icons/teachText-32.png",
+        "64": "icons/teachText-64.png",
+        "128": "icons/teachText-128.png"
+      },
+      "metaphorKey": "writing-paper-and-pen",
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5352,
+          "meanLum": 201.4,
+          "lumStd": 35.16,
+          "edgeEnergy": 77
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5371,
+          "meanLum": 200.95,
+          "lumStd": 43.67,
+          "edgeEnergy": 272
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5323,
+          "meanLum": 200.48,
+          "lumStd": 45.2,
+          "edgeEnergy": 395
+        }
       }
     },
     "writingDemo": {
       "genre": "document",
-      "physicalMetaphor": "paper",
+      "grid": {
+        "shape": "portrait",
+        "fitted": 0.8906,
+        "scale": 1.0654
+      },
+      "physicalMetaphor": "a document sheet with a single inset triangular play mark and two neutral writing lines, no text",
       "semanticMark": "play",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "writingDemo-16.svg",
-        "32": "writingDemo-32.svg",
-        "64": "writingDemo-64.svg",
-        "128": "writingDemo-128.svg"
+        "16": "icons/writingDemo-16.png",
+        "32": "icons/writingDemo-32.png",
+        "64": "icons/writingDemo-64.png",
+        "128": "icons/writingDemo-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6563,
+          "meanLum": 201.13,
+          "lumStd": 37.39,
+          "edgeEnergy": 85
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6016,
+          "meanLum": 201.61,
+          "lumStd": 42.87,
+          "edgeEnergy": 220
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5862,
+          "meanLum": 199.12,
+          "lumStd": 52.51,
+          "edgeEnergy": 253
+        }
       }
     },
     "chatFile": {
       "genre": "document",
-      "physicalMetaphor": "paper",
+      "grid": {
+        "shape": "portrait",
+        "fitted": 0.8906,
+        "scale": 1.0654
+      },
+      "physicalMetaphor": "a document sheet carrying two small overlapping speech balloons, clearly a saved conversation file",
       "semanticMark": "chat",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "chatFile-16.svg",
-        "32": "chatFile-32.svg",
-        "64": "chatFile-64.svg",
-        "128": "chatFile-128.svg"
+        "16": "icons/chatFile-16.png",
+        "32": "icons/chatFile-32.png",
+        "64": "icons/chatFile-64.png",
+        "128": "icons/chatFile-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6484,
+          "meanLum": 201.4,
+          "lumStd": 42.39,
+          "edgeEnergy": 51
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5947,
+          "meanLum": 199.92,
+          "lumStd": 45.91,
+          "edgeEnergy": 156
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5828,
+          "meanLum": 196.53,
+          "lumStd": 51.56,
+          "edgeEnergy": 217
+        }
       }
     },
     "chatImport": {
       "genre": "utility",
-      "physicalMetaphor": "inbox",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 0.9286
+      },
+      "physicalMetaphor": "an inbox tray receiving one speech balloon through a single downward arrow",
       "semanticMark": "chat",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "chatImport-16.svg",
-        "32": "chatImport-32.svg",
-        "64": "chatImport-64.svg",
-        "128": "chatImport-128.svg"
+        "16": "icons/chatImport-16.png",
+        "32": "icons/chatImport-32.png",
+        "64": "icons/chatImport-64.png",
+        "128": "icons/chatImport-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.457,
+          "meanLum": 158.49,
+          "lumStd": 65.1,
+          "edgeEnergy": 54
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.4141,
+          "meanLum": 157.62,
+          "lumStd": 65.61,
+          "edgeEnergy": 116
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4093,
+          "meanLum": 158.16,
+          "lumStd": 66.05,
+          "edgeEnergy": 168
+        }
       }
     },
     "systemStatus": {
       "genre": "utility",
-      "physicalMetaphor": "monitor",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 0.963
+      },
+      "physicalMetaphor": "a compact desktop monitor showing one simple activity trace beside three physical status lights, no numbers or text",
       "semanticMark": "status",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "systemStatus-16.svg",
-        "32": "systemStatus-32.svg",
-        "64": "systemStatus-64.svg",
-        "128": "systemStatus-128.svg"
+        "16": "icons/systemStatus-16.png",
+        "32": "icons/systemStatus-32.png",
+        "64": "icons/systemStatus-64.png",
+        "128": "icons/systemStatus-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5859,
+          "meanLum": 132.47,
+          "lumStd": 73.18,
+          "edgeEnergy": 103
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5703,
+          "meanLum": 129.96,
+          "lumStd": 79.95,
+          "edgeEnergy": 308
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5499,
+          "meanLum": 124.72,
+          "lumStd": 79.04,
+          "edgeEnergy": 408
+        }
       }
     },
     "contextPanel": {
       "genre": "utility",
-      "physicalMetaphor": "indexBox",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 1
+      },
+      "physicalMetaphor": "a small index-card box with three raised source cards and distinct coloured tabs, clearly curated context rather than a folder",
       "semanticMark": "context",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "contextPanel-16.svg",
-        "32": "contextPanel-32.svg",
-        "64": "contextPanel-64.svg",
-        "128": "contextPanel-128.svg"
+        "16": "icons/contextPanel-16.png",
+        "32": "icons/contextPanel-32.png",
+        "64": "icons/contextPanel-64.png",
+        "128": "icons/contextPanel-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6484,
+          "meanLum": 185.19,
+          "lumStd": 46.41,
+          "edgeEnergy": 68
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5889,
+          "meanLum": 187.58,
+          "lumStd": 49.26,
+          "edgeEnergy": 186
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5901,
+          "meanLum": 187.19,
+          "lumStd": 51.06,
+          "edgeEnergy": 298
+        }
       }
     },
     "rebuildArticle": {
       "genre": "utility",
-      "physicalMetaphor": "press",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 0.9858
+      },
+      "physicalMetaphor": "a compact tabletop printing press feeding one manuscript sheet through its rollers, clearly reconstructing a document",
       "semanticMark": "rebuild",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "rebuildArticle-16.svg",
-        "32": "rebuildArticle-32.svg",
-        "64": "rebuildArticle-64.svg",
-        "128": "rebuildArticle-128.svg"
+        "16": "icons/rebuildArticle-16.png",
+        "32": "icons/rebuildArticle-32.png",
+        "64": "icons/rebuildArticle-64.png",
+        "128": "icons/rebuildArticle-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5781,
+          "meanLum": 153.15,
+          "lumStd": 69.95,
+          "edgeEnergy": 82
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5127,
+          "meanLum": 157.6,
+          "lumStd": 73.94,
+          "edgeEnergy": 282
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5164,
+          "meanLum": 157,
+          "lumStd": 75.32,
+          "edgeEnergy": 454
+        }
       }
     },
     "bureaucracyMeme": {
       "genre": "application",
-      "physicalMetaphor": "stamp",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 0.9811
+      },
+      "physicalMetaphor": "a red rubber office stamp pressed over a small stack of blank administrative forms, no seals or words",
       "semanticMark": "forms",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "bureaucracyMeme-16.svg",
-        "32": "bureaucracyMeme-32.svg",
-        "64": "bureaucracyMeme-64.svg",
-        "128": "bureaucracyMeme-128.svg"
+        "16": "icons/bureaucracyMeme-16.png",
+        "32": "icons/bureaucracyMeme-32.png",
+        "64": "icons/bureaucracyMeme-64.png",
+        "128": "icons/bureaucracyMeme-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.4375,
+          "meanLum": 173.75,
+          "lumStd": 77.46,
+          "edgeEnergy": 51
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.4229,
+          "meanLum": 172.95,
+          "lumStd": 81.45,
+          "edgeEnergy": 124
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4195,
+          "meanLum": 171.99,
+          "lumStd": 82.55,
+          "edgeEnergy": 192
+        }
       }
     },
     "endfieldTerminal": {
       "genre": "utility",
-      "physicalMetaphor": "terminal",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 0.963
+      },
+      "physicalMetaphor": "a compact dark terminal monitor with one green prompt block and two short luminous command lines, no legible characters",
       "semanticMark": "terminal",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "endfieldTerminal-16.svg",
-        "32": "endfieldTerminal-32.svg",
-        "64": "endfieldTerminal-64.svg",
-        "128": "endfieldTerminal-128.svg"
+        "16": "icons/endfieldTerminal-16.png",
+        "32": "icons/endfieldTerminal-32.png",
+        "64": "icons/endfieldTerminal-64.png",
+        "128": "icons/endfieldTerminal-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.7266,
+          "meanLum": 88.43,
+          "lumStd": 34.27,
+          "edgeEnergy": 79
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6504,
+          "meanLum": 85.34,
+          "lumStd": 37.96,
+          "edgeEnergy": 237
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6451,
+          "meanLum": 84.79,
+          "lumStd": 38.66,
+          "edgeEnergy": 263
+        }
       }
     },
     "documents": {
       "genre": "file",
-      "physicalMetaphor": "folder",
+      "grid": {
+        "shape": "landscape",
+        "fitted": 0.8906,
+        "scale": 1
+      },
+      "physicalMetaphor": "a documents folder with three visible paper sheets rising behind its front panel",
       "semanticMark": "documents",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "documents-16.svg",
-        "32": "documents-32.svg",
-        "64": "documents-64.svg",
-        "128": "documents-128.svg"
+        "16": "icons/documents-16.png",
+        "32": "icons/documents-32.png",
+        "64": "icons/documents-64.png",
+        "128": "icons/documents-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6016,
+          "meanLum": 184.9,
+          "lumStd": 46.1,
+          "edgeEnergy": 26
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.541,
+          "meanLum": 186.37,
+          "lumStd": 45.45,
+          "edgeEnergy": 33
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.53,
+          "meanLum": 186.88,
+          "lumStd": 45.41,
+          "edgeEnergy": 59
+        }
       }
     },
     "alias": {
       "genre": "document",
-      "physicalMetaphor": "paper",
+      "grid": {
+        "shape": "portrait",
+        "fitted": 0.8906,
+        "scale": 1.0654
+      },
+      "physicalMetaphor": "a white document sheet carrying one small curled shortcut arrow at its lower corner, clearly a reference rather than the original",
       "semanticMark": "alias",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "alias-16.svg",
-        "32": "alias-32.svg",
-        "64": "alias-64.svg",
-        "128": "alias-128.svg"
+        "16": "icons/alias-16.png",
+        "32": "icons/alias-32.png",
+        "64": "icons/alias-64.png",
+        "128": "icons/alias-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6094,
+          "meanLum": 201.61,
+          "lumStd": 34.6,
+          "edgeEnergy": 44
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5771,
+          "meanLum": 203.67,
+          "lumStd": 40.39,
+          "edgeEnergy": 149
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5607,
+          "meanLum": 205.15,
+          "lumStd": 41.24,
+          "edgeEnergy": 215
+        }
       }
     },
     "systemFile": {
       "genre": "document",
-      "physicalMetaphor": "paper",
+      "grid": {
+        "shape": "portrait",
+        "fitted": 0.8906,
+        "scale": 1.0654
+      },
+      "physicalMetaphor": "a white system document sheet with one small inset mechanical wheel badge and no text",
       "semanticMark": "gear",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "systemFile-16.svg",
-        "32": "systemFile-32.svg",
-        "64": "systemFile-64.svg",
-        "128": "systemFile-128.svg"
+        "16": "icons/systemFile-16.png",
+        "32": "icons/systemFile-32.png",
+        "64": "icons/systemFile-64.png",
+        "128": "icons/systemFile-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5547,
+          "meanLum": 200.39,
+          "lumStd": 32.65,
+          "edgeEnergy": 29
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5898,
+          "meanLum": 195.84,
+          "lumStd": 38.48,
+          "edgeEnergy": 164
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5754,
+          "meanLum": 194.89,
+          "lumStd": 45.94,
+          "edgeEnergy": 239
+        }
       }
     },
     "multiFinderApp": {
       "genre": "application",
-      "physicalMetaphor": "finderPair",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 0.9286
+      },
+      "physicalMetaphor": "two overlapping compact Macintosh computers with friendly dark screens, clearly a paired Finder environment",
       "semanticMark": "finder",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "multiFinderApp-16.svg",
-        "32": "multiFinderApp-32.svg",
-        "64": "multiFinderApp-64.svg",
-        "128": "multiFinderApp-128.svg"
+        "16": "icons/multiFinderApp-16.png",
+        "32": "icons/multiFinderApp-32.png",
+        "64": "icons/multiFinderApp-64.png",
+        "128": "icons/multiFinderApp-128.png"
+      },
+      "metaphorKey": "paired-smiling-compact-macintoshes",
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5352,
+          "meanLum": 200.21,
+          "lumStd": 36.18,
+          "edgeEnergy": 76
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5322,
+          "meanLum": 195.39,
+          "lumStd": 44.05,
+          "edgeEnergy": 262
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5028,
+          "meanLum": 198.16,
+          "lumStd": 44.94,
+          "edgeEnergy": 364
+        }
       }
     },
     "daHandler": {
       "genre": "utility",
-      "physicalMetaphor": "briefcase",
+      "grid": {
+        "shape": "landscape",
+        "fitted": 0.9084,
+        "scale": 1.0867
+      },
+      "physicalMetaphor": "a generic desktop application object for the era, distinct from a document, folder, or settings panel",
       "semanticMark": "deskAccessory",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "daHandler-16.svg",
-        "32": "daHandler-32.svg",
-        "64": "daHandler-64.svg",
-        "128": "daHandler-128.svg"
+        "16": "icons/daHandler-16.png",
+        "32": "icons/daHandler-32.png",
+        "64": "icons/daHandler-64.png",
+        "128": "icons/daHandler-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6563,
+          "meanLum": 189,
+          "lumStd": 66.14,
+          "edgeEnergy": 83
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.7061,
+          "meanLum": 175.35,
+          "lumStd": 80.17,
+          "edgeEnergy": 259
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6531,
+          "meanLum": 186.36,
+          "lumStd": 73.36,
+          "edgeEnergy": 295
+        }
       }
     },
     "writingBell": {
       "genre": "accessory",
-      "physicalMetaphor": "bell",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 1.0505
+      },
+      "physicalMetaphor": "a compact brass desk bell with one small pen-nib relief on its base, clearly a writing accessory",
       "semanticMark": "bell",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "writingBell-16.svg",
-        "32": "writingBell-32.svg",
-        "64": "writingBell-64.svg",
-        "128": "writingBell-128.svg"
+        "16": "icons/writingBell-16.png",
+        "32": "icons/writingBell-32.png",
+        "64": "icons/writingBell-64.png",
+        "128": "icons/writingBell-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.4609,
+          "meanLum": 120.06,
+          "lumStd": 48.47,
+          "edgeEnergy": 86
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.4365,
+          "meanLum": 121.81,
+          "lumStd": 54.23,
+          "edgeEnergy": 298
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4229,
+          "meanLum": 122.3,
+          "lumStd": 54.99,
+          "edgeEnergy": 378
+        }
       }
     },
     "trashFull": {
       "genre": "hardware",
-      "physicalMetaphor": "trash",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 1.0833
+      },
+      "physicalMetaphor": "a waste basket filled with several crumpled paper sheets rising above the rim, clearly the full state of the empty basket",
       "semanticMark": "full",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "trashFull-16.svg",
-        "32": "trashFull-32.svg",
-        "64": "trashFull-64.svg",
-        "128": "trashFull-128.svg"
+        "16": "icons/trashFull-16.png",
+        "32": "icons/trashFull-32.png",
+        "64": "icons/trashFull-64.png",
+        "128": "icons/trashFull-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.4531,
+          "meanLum": 190.43,
+          "lumStd": 42.33,
+          "edgeEnergy": 54
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.4307,
+          "meanLum": 191.69,
+          "lumStd": 45.38,
+          "edgeEnergy": 167
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4252,
+          "meanLum": 192.61,
+          "lumStd": 45.29,
+          "edgeEnergy": 266
+        }
       }
     },
     "control": {
       "genre": "utility",
-      "physicalMetaphor": "controlBoard",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 1
+      },
+      "physicalMetaphor": "a compact physical control board with two round knobs, one toggle, and one small indicator light",
       "semanticMark": "knobs",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
-        "16": "control-16.svg",
-        "32": "control-32.svg",
-        "64": "control-64.svg",
-        "128": "control-128.svg"
+        "16": "icons/control-16.png",
+        "32": "icons/control-32.png",
+        "64": "icons/control-64.png",
+        "128": "icons/control-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.4766,
+          "meanLum": 110.45,
+          "lumStd": 26.96,
+          "edgeEnergy": 48
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.4551,
+          "meanLum": 110.87,
+          "lumStd": 32.59,
+          "edgeEnergy": 186
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4484,
+          "meanLum": 111.55,
+          "lumStd": 33.17,
+          "edgeEnergy": 284
+        }
+      }
+    },
+    "localModel": {
+      "genre": "utility",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 1.2235
+      },
+      "physicalMetaphor": "one processor chip mounted on a compact circuit board with short visible traces, clearly local compute rather than a cloud service",
+      "semanticMark": "none",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/localModel-16.png",
+        "32": "icons/localModel-32.png",
+        "64": "icons/localModel-64.png",
+        "128": "icons/localModel-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.7422,
+          "meanLum": 129.97,
+          "lumStd": 47.43,
+          "edgeEnergy": 68
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6543,
+          "meanLum": 134.35,
+          "lumStd": 48.38,
+          "edgeEnergy": 299
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6519,
+          "meanLum": 134.19,
+          "lumStd": 50.9,
+          "edgeEnergy": 460
+        }
+      }
+    },
+    "controlStrip": {
+      "genre": "utility",
+      "grid": {
+        "shape": "landscape",
+        "fitted": 0.8906,
+        "scale": 1.0179
+      },
+      "physicalMetaphor": "a narrow horizontal strip containing four distinct physical control modules, including a slider, a status light, and two compact toggles",
+      "semanticMark": "none",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/controlStrip-16.png",
+        "32": "icons/controlStrip-32.png",
+        "64": "icons/controlStrip-64.png",
+        "128": "icons/controlStrip-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.2344,
+          "meanLum": 124.02,
+          "lumStd": 41.15,
+          "edgeEnergy": 35
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.2178,
+          "meanLum": 127.41,
+          "lumStd": 43.01,
+          "edgeEnergy": 130
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.2228,
+          "meanLum": 128.67,
+          "lumStd": 46.08,
+          "edgeEnergy": 181
+        }
       }
     }
-  }
+  },
+  "reviewedCore": [
+    "finderApp",
+    "folder",
+    "hardDisk",
+    "trash",
+    "document",
+    "daHandler",
+    "controlPanel",
+    "searcher",
+    "teachText",
+    "assistant",
+    "scrapbook",
+    "reviewDesk",
+    "docMap",
+    "projectDisk"
+  ],
+  "coreBuilder": "scripts/build-yosemite-core-icons.mjs",
+  "generatedOverlayBuilder": "scripts/build-accepted-generated-era-icons.mjs",
+  "generatedAcceptanceLedger": "scripts/icon-generation/accepted-generated-icons.json",
+  "imageGenerationSource": "assets/themes/yosemite/icons/imagegen-source",
+  "reviewedGenerated": [
+    "startupDisk",
+    "applications",
+    "fileFloppy",
+    "projectDisc",
+    "quickDraft",
+    "writingStudio",
+    "manuscript",
+    "reader",
+    "cloudModel",
+    "cloudModelOff",
+    "localModel",
+    "systemStatus",
+    "questionSheet",
+    "outline",
+    "sectionDrafts",
+    "timeMachine",
+    "assistant",
+    "clioStage",
+    "clioChart",
+    "liquidCover",
+    "cmfStudio",
+    "finderApp",
+    "multiFinderApp",
+    "soundscape",
+    "systemFolder",
+    "helpFolder",
+    "importUtility",
+    "chooser",
+    "systemHelp",
+    "dictionary",
+    "writingDemo",
+    "chatFile",
+    "chatImport",
+    "contextPanel",
+    "rebuildArticle",
+    "bureaucracyMeme",
+    "endfieldTerminal",
+    "documents",
+    "alias",
+    "systemFile",
+    "writingBell",
+    "trashFull",
+    "control",
+    "controlStrip",
+    "hardDisk",
+    "folder",
+    "document",
+    "trash",
+    "projectDisk",
+    "reviewDesk",
+    "searcher",
+    "docMap",
+    "scrapbook",
+    "controlPanel",
+    "teachText",
+    "daHandler"
+  ]
 }

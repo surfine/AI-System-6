@@ -1,3 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
-<path d="M5 5h12L5 17z" fill="#2a2a36" stroke="#111111" stroke-width="1" stroke-linejoin="miter"/><path d="M17 5h10v22H5V17h12z" fill="#5f8fd8" stroke="#111111" stroke-width="1" stroke-linejoin="miter"/><rect x="9" y="11" width="10" height="11" fill="#ffffff"/><path d="M11 14h2v2h-2zM15 14h2v2h-2zM12 18c2 2 3 2 5 0" fill="#1c1c24" stroke="#1c1c24" stroke-width="1"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><image href="icons/finderApp-32.png" width="32" height="32" style="image-rendering:pixelated"/></svg>

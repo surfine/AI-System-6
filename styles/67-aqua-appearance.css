@@ -41,7 +41,7 @@ body[data-theme="aqua"] {
   --system-caption-size: 11px;
   --system-menu-height: 22px;
   --system-titlebar-height: 22px;
-  --system-titlebar-control-slot: 82px;
+  --system-titlebar-control-slot: 24px;
   --system-titlebar-control-size: 15px;
   --system-titlebar-title-height: 15px;
   --system-titlebar-font-size: 13px;
@@ -115,6 +115,27 @@ body[data-theme="aqua"] {
   --search-field-background:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 11 11'%3E%3Ccircle cx='4.5' cy='4.5' r='3' fill='none' stroke='%23757575'/%3E%3Cpath d='m6.8 6.8 3 3' stroke='%23757575' stroke-width='1.4' stroke-linecap='round'/%3E%3Cpath d='M2.8 3.4a2.2 2.2 0 0 1 2.9-.9' fill='none' stroke='%23fff' stroke-linecap='round' opacity='.9'/%3E%3C/svg%3E") 7px center / 11px 11px no-repeat,
     var(--field-bg);
+  /* Searcher result table, Jaguar expression: white/blue zebra rows (the
+     iTunes list idiom), a rounded Sherlock-style search field from the
+     measured search-field tokens above, and the rank-mapped relevance bar. */
+  --find-path-header-display: grid;
+  --find-path-relevance-display: block;
+  --find-path-relevance-radius: 999px;
+  --find-path-result-display: grid;
+  --find-path-result-align: baseline;
+  --find-path-result-column-gap: 10px;
+  --find-path-results-bg: #ffffff;
+  --find-path-result-border-bottom: 0;
+  --find-path-result-last-border-bottom: 0;
+  --find-path-result-selected-border-bottom: 0;
+  --find-path-result-even-bg: #edf3fe;
+  --find-path-header-padding: 2px 10px;
+  --find-path-header-border-bottom: 1px solid #b4b4b4;
+  --find-path-header-bg: linear-gradient(#ffffff, #e4e4e4);
+  --find-path-query-min-height: var(--search-field-min-height);
+  --find-path-query-padding: var(--search-field-padding);
+  --find-path-query-radius: var(--search-field-radius);
+  --find-path-query-bg: var(--search-field-background, var(--field-bg));
   --progress-height: 15px;
   --progress-padding: 1px;
   --progress-border-color: #7b7b7b;
@@ -140,9 +161,14 @@ body[data-theme="aqua"] {
      medium blue water with a lighter crest band. Measured vertical ramp, no
      raster payload. */
   --desktop: #4979b0;
+  /* Jaguar's Aqua Blue is a diagonal ribbon of light through blue water, not
+     a vertical ramp: keep the measured hues, add the ribbon geometry (crest
+     runs lower-left to upper-right with a soft top-left highlight). */
   --desktop-surface:
-    radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.24), transparent 30%),
-    linear-gradient(180deg, #548dbd 0%, #518abc 20%, #4d85ba 45%, #5c8dc0 60%, #447ab1 80%, #4979b0 100%);
+    radial-gradient(120% 80% at 22% 8%, rgba(255, 255, 255, 0.3), transparent 45%),
+    linear-gradient(128deg,
+      #3b6ba3 0%, #4d86ba 34%, #6ea6d6 46%, #82b6e2 52%,
+      #6ea6d6 58%, #4d85ba 70%, #416f9f 100%);
   --window-bg:
     repeating-linear-gradient(to bottom, #f1f1f1 0 1px, #ffffff 1px 2px, #f1f1f1 2px 3px, #eaeaea 3px 4px);
   --window-border: 1px solid #8b8b8b;
@@ -202,6 +228,72 @@ body[data-theme="aqua"] {
   --selection-fg: #ffffff;
   --sidebar-selection-bg: var(--selection-bg);
   --sidebar-selection-fg: #ffffff;
+  /* Jaguar Scrapbook keeps the object browser in an Aqua drawer rather than
+     adopting the single-item System 6 page rail. */
+  --scrapbook-list-display: block;
+  --scrapbook-pager-display: none;
+  --scrapbook-pane-columns: minmax(160px, 0.72fr) minmax(0, 1fr);
+  --scrapbook-pane-rows: minmax(0, 1fr) auto auto;
+  --scrapbook-pane-gap: 10px;
+  --scrapbook-mobile-pane-columns: 1fr;
+  --scrapbook-mobile-pane-rows: minmax(132px, 156px) minmax(0, 1fr) auto;
+  --scrap-list-bg:
+    repeating-linear-gradient(to bottom, #f1f1f1 0 1px, #ffffff 1px 2px, #f1f1f1 2px 3px, #eaeaea 3px 4px);
+  --scrap-list-border: 1px solid #7f7f7f;
+  --scrap-list-radius: 4px;
+  --scrap-list-shadow: inset 1px 1px 0 #ffffff, 2px 2px 4px rgba(0, 0, 0, 0.18);
+  --scrap-list-item-divider: 1px solid rgba(80, 80, 80, 0.24);
+  --scrap-list-item-bg: linear-gradient(rgba(255, 255, 255, 0.82), rgba(229, 229, 229, 0.82));
+  --scrap-list-item-selected-bg: linear-gradient(#73baff, #2778d8);
+  --scrap-list-item-selected-fg: #ffffff;
+  --scrap-list-item-selected-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  /* Jaguar document rails borrow the Aqua drawer: pinstripe metal around
+     raised source rows, with the same blue selection used by native lists.
+     The rail remains fixed TDI chrome; no drawer motion or behavior fork. */
+  --tdi-rail-padding: 5px;
+  --tdi-rail-border: 1px solid #7f7f7f;
+  --tdi-rail-radius: 4px;
+  --tdi-rail-bg:
+    repeating-linear-gradient(to bottom, #f1f1f1 0 1px, #ffffff 1px 2px, #f1f1f1 2px 3px, #eaeaea 3px 4px);
+  --tdi-rail-shadow: inset 1px 1px 0 #ffffff, 2px 2px 4px rgba(0, 0, 0, 0.22);
+  --tdi-tabs-gap: 3px;
+  --tdi-tabs-padding: 0;
+  --tdi-tabs-bg: transparent;
+  --tdi-tabs-border-bottom: 0;
+  --tdi-tab-height: 40px;
+  --tdi-tab-min-height: 40px;
+  --tdi-tab-border: 1px solid #7d7d7d;
+  --tdi-tab-border-bottom: var(--tdi-tab-border);
+  --tdi-tab-radius: 4px;
+  --tdi-tab-bg: linear-gradient(#ffffff, #e5e5e5);
+  --tdi-tab-shadow: inset 0 1px 0 #ffffff;
+  --tdi-tab-active-border: 1px solid #0d4aa6;
+  --tdi-tab-active-border-bottom: var(--tdi-tab-active-border);
+  --tdi-tab-active-bg: linear-gradient(#73baff, #2778d8);
+  --tdi-tab-active-fg: #ffffff;
+  --tdi-tab-active-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  --tdi-tab-small-color: #5f5f5f;
+  --tdi-tab-active-small-color: rgba(255, 255, 255, 0.86);
+  --tdi-tab-close-size: 16px;
+  --tdi-tab-close-gutter: 5px;
+  --tdi-tab-close-border: 1px solid #767676;
+  --tdi-tab-close-radius: 999px;
+  --tdi-tab-close-bg: linear-gradient(#f9f9f9, #c9c9c9);
+  --tdi-tab-close-shadow: inset 0 1px 0 #ffffff;
+  --tdi-tab-close-active-bg: rgba(255, 255, 255, 0.82);
+  --tdi-tab-close-active-fg: #1d4f8b;
+  --tdi-tab-close-active-shadow: inset 0 1px 0 #ffffff;
+  --tdi-tab-close-hover-bg: #ffffff;
+  --tdi-tab-close-hover-fg: #173f70;
+  --tdi-tab-close-hover-shadow: 0 0 0 2px rgba(52, 121, 212, 0.24);
+  /* 10.2 desktop labels are shadowed white text straight on the wallpaper;
+     selection paints the rounded blue pill. No System 6 paper tag. */
+  --desktop-label-bg: transparent;
+  --desktop-label-fg: #ffffff;
+  --desktop-label-text-shadow: 0 1px 2px rgba(0, 10, 40, 0.85);
+  --desktop-label-radius: 8px;
+  --desktop-label-selected-bg: var(--selection-bg);
+  --desktop-label-selected-fg: var(--selection-fg);
   --separator: #9b9b9b;
   --control-bg: linear-gradient(to bottom,
     #f6f6f6 0%, #ebebeb 37%, #d9d9d9 42%, #e3e3e3 53%,
@@ -212,9 +304,17 @@ body[data-theme="aqua"] {
   --control-focus-offset: 1px;
   --control-disabled-bg: linear-gradient(#f7f7f7, #dedede 52%, #f4f4f4);
   --control-disabled-field-bg: #f7f7f7;
-  /* Quaqua's disabled button/check/radio frames are the enabled material at
-     one-half alpha; keep the state painter honest instead of whitening it. */
+  /* Quaqua's disabled frames are the enabled material at one-half alpha. That
+     came from a 10.6-era Java clone, and the native 10.2 Open dialog disagrees
+     for the push button: its disabled capsule keeps a fully opaque #cbcbcb
+     outline while the four-row Jaguar pinstripe remains visible through the
+     interior. At one-half alpha the outline disappeared and only the label
+     survived. The button now owns its opacity and outline; the other controls
+     keep this fade until a native reference is pinned for each of them. */
   --control-disabled-opacity: 0.5;
+  --btn-disabled-opacity: 1;
+  --btn-disabled-border-color: #cbcbcb;
+  --btn-disabled-bg: transparent;
   --control-choice-hover-shadow: 0 0 0 3px rgba(65, 157, 224, 0.45);
   --system-border: 1px solid #909090;
   --system-inset: inset 0 1px 2px rgba(0, 0, 0, 0.3), inset 0 -1px 0 #ffffff;
@@ -773,6 +873,58 @@ body[data-theme="aqua"] {
   --theme-lab-finder-row-padding: 3px 6px;
   --theme-lab-finder-row-border-bottom: 1px solid #d1d1d1;
 
+  /* Control Panel section chooser — the Jaguar System Preferences language:
+     an icon-and-label toolbar row, the chosen section pressed into a
+     recessed tint. Same tablist DOM as every era. */
+  --control-settings-columns: minmax(0, 1fr);
+  --control-settings-rows: none;
+  --control-chooser-area: auto;
+  --control-chooser-direction: row;
+  --control-chooser-gap: 2px;
+  --control-chooser-border-bottom: 1px solid #b9b9bd;
+  --control-chooser-border-right: 0;
+  --control-chooser-item-direction: column;
+  --control-chooser-item-flex: 1 1 0;
+  --control-chooser-item-gap: 2px;
+  --control-chooser-item-padding: 4px 8px;
+  --control-chooser-item-offset: 0px;
+  --control-chooser-item-border: 0;
+  --control-chooser-item-radius: 5px;
+  --control-chooser-item-bg: transparent;
+  --control-chooser-item-fg: #333333;
+  --control-chooser-hover-bg: rgba(0, 20, 60, 0.08);
+  --control-chooser-hover-fg: #222222;
+  --control-chooser-active-bg: rgba(0, 20, 60, 0.16);
+  --control-chooser-active-fg: #111111;
+  --control-chooser-active-weight: inherit;
+  --control-chooser-active-shadow: inset 0 1px 2px rgba(0, 0, 30, 0.28);
+  --control-chooser-icon-display: block;
+  --control-chooser-icon-size: 24px;
+  --control-chooser-label-size: 10px;
+
+  /* Control Strip — a signed counterfactual: the strip died with Mac OS X
+     10.0, so this is "the strip had it survived into Jaguar", built from
+     real Jaguar control materials (porcelain capsule body, gel-blue tab,
+     gel selection). Not a reproduction of any shipped 10.2 object. */
+  --control-strip-thickness: 26px;
+  --control-strip-bg: linear-gradient(#ffffff, #d9d9de 48%, #ccccd2 52%, #ececf1);
+  --control-strip-border: 1px solid #8e8e94;
+  --control-strip-divider: 1px solid rgba(0, 0, 0, 0.12);
+  --control-strip-radius: 13px;
+  --control-strip-radius-mirrored: 13px;
+  --control-strip-shadow: 0 2px 6px rgba(0, 0, 40, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.9);
+  --control-strip-hover-bg: linear-gradient(#e2eeff, #b6d2f8 50%, #a2c6f6);
+  --control-strip-hover-fg: #10306a;
+  --control-strip-hover-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.7);
+  --control-strip-active-bg: linear-gradient(#b4d2fa, #4f8ef2 50%, #2f6ad0);
+  --control-strip-active-fg: #ffffff;
+  --control-strip-active-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.6);
+  --control-strip-gauge: #4f8ef2;
+  --control-strip-gauge-bg: #ffffff;
+  --control-strip-grip-inset: 0;
+  --control-strip-grip:
+    repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.85) 0 1px, rgba(0, 0, 0, 0) 1px 4px) 50% 50% / 8px 60% no-repeat,
+    linear-gradient(#cfe4ff, #6ba2f7 45%, #3672e8 55%, #7fb0f8);
 }
 
 html[data-theme="snow-leopard"],
@@ -799,7 +951,7 @@ body[data-theme="snow-leopard"] {
   --system-text-size: 13px;
   --system-caption-size: 11px;
   --system-titlebar-height: 22px;
-  --system-titlebar-control-slot: 52px;
+  --system-titlebar-control-slot: 24px;
   --system-titlebar-control-size: 14px;
   --system-titlebar-title-height: 16px;
   --system-titlebar-font-size: 13px;
@@ -928,6 +1080,30 @@ body[data-theme="snow-leopard"] {
   --search-field-min-height: 20px;
   --search-field-padding: 2px 9px;
   --search-field-radius: 999px;
+  /* Searcher result table, 10.6 expression: header on, relevance column off
+     (two-column template), hairline row separators, and the query row on
+     full-bleed unified toolbar material with an NSSearchField-style field. */
+  --find-path-header-display: grid;
+  --find-path-table-columns: minmax(0, 1fr) minmax(0, 36%);
+  --find-path-result-display: grid;
+  --find-path-result-align: baseline;
+  --find-path-result-column-gap: 10px;
+  --find-path-result-padding: 6px 10px;
+  --find-path-results-bg: #ffffff;
+  --find-path-result-border-bottom: 1px solid #e3e3e3;
+  --find-path-result-last-border-bottom: 0;
+  --find-path-header-padding: 2px 10px;
+  --find-path-header-border-bottom: 1px solid #c8c8c8;
+  --find-path-header-bg: linear-gradient(#fbfbfb, #e8e8e8);
+  --find-path-query-min-height: var(--search-field-min-height);
+  --find-path-query-padding: var(--search-field-padding);
+  --find-path-query-radius: var(--search-field-radius);
+  --find-path-query-bg: var(--field-bg);
+  --find-path-query-row-width: auto;
+  --find-path-query-row-margin: calc(-1 * var(--find-path-pane-padding)) calc(-1 * var(--find-path-pane-padding)) 0;
+  --find-path-query-row-padding: 6px var(--find-path-pane-padding);
+  --find-path-query-row-bg: var(--toolbar-bg);
+  --find-path-query-row-border-bottom: var(--toolbar-border);
   --progress-height: 13px;
   --progress-padding: 1px;
   --progress-border-color: #9d9d9d;
@@ -959,12 +1135,15 @@ body[data-theme="snow-leopard"] {
   --window-shadow: 0 10px 22px rgba(0, 0, 0, 0.34), 0 2px 4px rgba(0, 0, 0, 0.22);
   --active-window-shadow: var(--window-shadow);
   --inactive-window-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
-  /* Real 10.6 capture (Wikipedia File:Mac OS X Snow Leopard screenshot.png,
-     1440x900): the title bar ramps #e2e2e2 -> #b0b0b0 with a #515151 bottom
-     edge. Quaqua's light Frame.titlePane is the Java render; real captures
-     win conflicts. */
-  --system-titlebar-active-bg: linear-gradient(#e2e2e2 0%, #cacaca 35%, #c0c0c0 100%);
-  --system-titlebar-inactive-bg: linear-gradient(#f4f4f4 0%, #e6e6e6 40%, #d9d9d9 100%);
+  /* Real 10.6 Finder-Home capture, sampled at 1x: a one-pixel #e2e2e2 top
+     edge over a smooth #d0d0d0 -> #bcbcbc silver ramp. The real capture
+     wins conflicts with the lighter Quaqua Java title pane. */
+  --system-titlebar-active-bg: linear-gradient(to bottom,
+    #e2e2e2 0 1px, #d0d0d0 1px 3px, #cdcdcd 3px 6px, #cacaca 6px 9px,
+    #c6c6c6 9px 12px, #c3c3c3 12px 15px, #c0c0c0 15px 18px,
+    #bcbcbc 18px 22px);
+  --system-titlebar-inactive-bg: linear-gradient(to bottom,
+    #f0f0f0 0 1px, #e7e7e7 1px 8px, #dedede 8px 22px);
   --system-titlebar-background-origin: padding-box;
   --system-titlebar-background-clip: border-box;
   --system-titlebar-inactive-control-visibility: visible;
@@ -995,6 +1174,14 @@ body[data-theme="snow-leopard"] {
      #3766f2 (mid) -> #1d5bf2 (bottom) with white labels. */
   --selection-bg: linear-gradient(#577dea, #3766f2 50%, #1d5bf2);
   --selection-fg: #ffffff;
+  /* 10.6 keeps the Aqua desktop-label recipe: shadowed white text on the
+     wallpaper, rounded selection pill from the era's own selection ramp. */
+  --desktop-label-bg: transparent;
+  --desktop-label-fg: #ffffff;
+  --desktop-label-text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  --desktop-label-radius: 8px;
+  --desktop-label-selected-bg: var(--selection-bg);
+  --desktop-label-selected-fg: var(--selection-fg);
   /* Real 10.6 Finder Cover Flow list selection (512 Pixels, 1:1): an 18px
      active row with a #3875d7 rim, #5b8dde center band and white labels.
      This is independent from the source-list gradient below. */
@@ -1022,6 +1209,70 @@ body[data-theme="snow-leopard"] {
     linear-gradient(#a8a8a8, #a8a8a8) top / 100% 1px no-repeat,
     linear-gradient(#c1c1c1, #9c9c9c);
   --sidebar-selection-fg: #ffffff;
+  /* 10.6 Scrapbook reads as a Finder source list: quiet blue-gray rail,
+     borderless rows, and the measured source-list selection ramp. */
+  --scrapbook-list-display: block;
+  --scrapbook-pager-display: none;
+  --scrapbook-pane-columns: minmax(160px, 0.72fr) minmax(0, 1fr);
+  --scrapbook-pane-rows: minmax(0, 1fr) auto auto;
+  --scrapbook-pane-gap: 10px;
+  --scrapbook-mobile-pane-columns: 1fr;
+  --scrapbook-mobile-pane-rows: minmax(132px, 156px) minmax(0, 1fr) auto;
+  --scrap-list-bg: var(--sidebar-bg);
+  --scrap-list-border: 1px solid #a6adb5;
+  --scrap-list-radius: 0;
+  --scrap-list-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.42);
+  --scrap-list-item-divider: 0;
+  --scrap-list-item-bg: transparent;
+  --scrap-list-item-selected-bg: var(--sidebar-selection-bg);
+  --scrap-list-item-selected-fg: var(--sidebar-selection-fg);
+  --scrap-list-item-selected-radius: 3px;
+  --scrap-list-item-selected-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  /* 10.6 source list: one blue-gray rail, compact category heading, quiet
+     borderless rows, and the measured Finder Home selection gradient. */
+  --tdi-rail-padding: 0;
+  --tdi-rail-border: 1px solid #a6adb5;
+  --tdi-rail-radius: 0;
+  --tdi-rail-bg: var(--sidebar-bg);
+  --tdi-rail-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.42);
+  --tdi-source-label-display: block;
+  --tdi-source-label-padding: 8px 9px 4px;
+  --tdi-source-label-bg: transparent;
+  --tdi-source-label-fg: #728194;
+  --tdi-source-label-font-size: 10px;
+  --tdi-source-label-letter-spacing: 0.04em;
+  --tdi-source-label-text-transform: uppercase;
+  --tdi-tabs-gap: 0;
+  --tdi-tabs-padding: 0 5px 5px;
+  --tdi-tabs-bg: transparent;
+  --tdi-tabs-border-bottom: 0;
+  --tdi-tab-height: 38px;
+  --tdi-tab-min-height: 38px;
+  --tdi-tab-border: 0;
+  --tdi-tab-border-bottom: 0;
+  --tdi-tab-radius: 3px;
+  --tdi-tab-bg: transparent;
+  --tdi-tab-shadow: none;
+  --tdi-tab-active-border: 0;
+  --tdi-tab-active-border-bottom: 0;
+  --tdi-tab-active-bg: var(--sidebar-selection-bg);
+  --tdi-tab-active-fg: var(--sidebar-selection-fg);
+  --tdi-tab-active-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  --tdi-tab-small-color: #66717d;
+  --tdi-tab-active-small-color: rgba(255, 255, 255, 0.9);
+  --tdi-tab-close-size: 16px;
+  --tdi-tab-close-gutter: 5px;
+  --tdi-tab-close-border: 0;
+  --tdi-tab-close-radius: 999px;
+  --tdi-tab-close-bg: transparent;
+  --tdi-tab-close-fg: #4d5660;
+  --tdi-tab-close-shadow: none;
+  --tdi-tab-close-active-bg: rgba(255, 255, 255, 0.22);
+  --tdi-tab-close-active-fg: #ffffff;
+  --tdi-tab-close-active-shadow: none;
+  --tdi-tab-close-hover-bg: rgba(0, 0, 0, 0.12);
+  --tdi-tab-close-hover-fg: currentColor;
+  --tdi-tab-close-hover-shadow: none;
   --separator: #c6c6c6;
   --control-bg: linear-gradient(#fcfcfc, #ededed 52%, #dedede);
   --control-shadow: inset 0 1px 0 #ffffff, 0 1px 1px rgba(0, 0, 0, 0.18);
@@ -1099,8 +1350,22 @@ body[data-theme="snow-leopard"] {
   /* Measured from Quaqua 9.1 RadioButton.icons.png frame 3 (10.6 selected
      radio): fill avg ~#5f8ed1 normal, ~#3d75c3 pressed, dark center dot. */
   --radio-checked-image:
-    radial-gradient(circle, #000000 0 2px, transparent 2.6px),
+    radial-gradient(circle, #000000 0 1.75px, transparent 2.5px),
     linear-gradient(to bottom, #6a97d8 0%, #5f8ed1 45%, #4a7fc8 75%, #6fa8dd 100%);
+  /* 10.6 draws a disabled checked control; it does not fade the enabled one.
+     Measured from the disabled frames of the same Quaqua strips (frame 6):
+     checkbox well rgb(239,239,239) with a rgb(122,122,122) mark and a
+     rgb(168,168,168)..rgb(227,227,227) frame; radio well rgb(246,246,246) with a
+     rgb(120,120,120) dot. The blue is gone, so the opacity fade goes too. */
+  --choice-disabled-checked-bg: #efefef;
+  --choice-disabled-checked-bg-image: none;
+  --choice-disabled-checkmark-image: url("./assets/themes/snow-leopard/checkbox-checked-disabled.svg");
+  --choice-disabled-border-color: #a8a8a8;
+  --choice-disabled-opacity: 1;
+  --radio-disabled-checked-image:
+    radial-gradient(circle, #787878 0 1.75px, transparent 2.5px),
+    radial-gradient(circle, #f6f6f6 0 5px, #c0c0c0 5.5px, #a8a8a8 6px, transparent 6.5px);
+  --radio-disabled-checked-size: 14px;
   --radio-checked-focus-image: var(--radio-checked-image);
   /* Theme Lab draws the fixture through the same two layers as the app
      recipe; a single layer would be compressed to the 7px dot size. */
@@ -1180,8 +1445,14 @@ body[data-theme="snow-leopard"] {
   --theme-lab-tab-first-radius: 5px 0 0 5px;
   --theme-lab-tab-last-radius: 0 5px 5px 0;
   --theme-lab-tab-last-border-right: 1px solid #777777;
-  --system-radio-size: 18px;
-  --system-check-size: 18px;
+  /* 10.6 shrank the choice controls that Jaguar drew at 18px. Every Quaqua 9.1
+     state strip paints the frame across a 14px cell, and the pinned 10.6
+     specimens crop 14x14 while Aqua's crop 18x18 — so the 18px inherited from
+     the Aqua block was a size the reference never draws. It also cost the glyph
+     metrics: an 18px control centres its mark 2px away from where a 14px
+     reference centres it, which no path can correct. */
+  --system-radio-size: 14px;
+  --system-check-size: 14px;
   --theme-lab-button-min-width: 72px;
   --theme-lab-group-bg: #ededed;
   --theme-lab-group-border: 1px solid #b7b7b7;
@@ -1194,6 +1465,57 @@ body[data-theme="snow-leopard"] {
   --theme-lab-menu-item-min-height: 16px;
   --theme-lab-menu-item-padding: 2px 9px 2px 21px;
 
+  /* Control Panel section chooser — the Aqua icon toolbar matured into the
+     10.6 unified silver bar: same skeleton as the parent recipe, candy
+     removed, selection as the dark recessed capsule with a white label. */
+  --control-settings-columns: minmax(0, 1fr);
+  --control-settings-rows: none;
+  --control-chooser-area: auto;
+  --control-chooser-bg: linear-gradient(#cfcfcf, #b6b6b6);
+  --control-chooser-direction: row;
+  --control-chooser-gap: 4px;
+  --control-chooser-padding: 2px 8px;
+  --control-chooser-border-bottom: 1px solid #838383;
+  --control-chooser-border-right: 0;
+  --control-chooser-item-direction: column;
+  --control-chooser-item-flex: 1 1 0;
+  --control-chooser-item-gap: 2px;
+  --control-chooser-item-padding: 3px 8px 4px;
+  --control-chooser-item-offset: 0px;
+  --control-chooser-item-border: 0;
+  --control-chooser-item-radius: 5px;
+  --control-chooser-item-bg: transparent;
+  --control-chooser-item-fg: #2e2e2e;
+  --control-chooser-hover-bg: rgba(0, 0, 0, 0.12);
+  --control-chooser-hover-fg: #1c1c1c;
+  --control-chooser-active-bg: rgba(0, 0, 0, 0.28);
+  --control-chooser-active-fg: #ffffff;
+  --control-chooser-active-weight: inherit;
+  --control-chooser-active-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 0 rgba(255, 255, 255, 0.3);
+  --control-chooser-icon-display: block;
+  --control-chooser-icon-size: 22px;
+  --control-chooser-label-size: 10px;
+
+  /* Control Strip — signed counterfactual (see the Aqua note): brushed
+     silver gradient, etched hairline dividers, quiet shadow, the selection
+     recessed like the 10.6 toolbar item. */
+  --control-strip-thickness: 25px;
+  --control-strip-bg: linear-gradient(#f4f4f4, #d2d2d2);
+  --control-strip-border: 1px solid #7e7e7e;
+  --control-strip-divider: 1px solid rgba(0, 0, 0, 0.12);
+  --control-strip-radius: 5px 10px 10px 5px;
+  --control-strip-radius-mirrored: 10px 5px 5px 10px;
+  --control-strip-shadow: 0 2px 5px rgba(0, 0, 10, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  --control-strip-hover-bg: rgba(0, 0, 0, 0.08);
+  --control-strip-hover-fg: #1c1c1c;
+  --control-strip-hover-shadow: none;
+  --control-strip-active-bg: rgba(0, 0, 0, 0.22);
+  --control-strip-active-fg: #ffffff;
+  --control-strip-active-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.35);
+  --control-strip-gauge: #5787d8;
+  --control-strip-gauge-bg: #ffffff;
+  --control-strip-grip-inset: 5px 5px;
+  --control-strip-grip: repeating-linear-gradient(to bottom, #8a8a8a 0 1px, rgba(0, 0, 0, 0) 1px 3px);
 }
 
 /* Snow Leopard era-specific Finder fixtures (dev-only Theme Lab). The shared
@@ -1465,18 +1787,19 @@ body[data-theme="aqua"] .title-bar > :is(.close-box, .resize-box)::after {
   content: none;
 }
 
-/* The lamps carry their action glyphs: an X on Close, a + on Zoom. The
-   strokes are drawn as clipped gradient lines so they scale with the lamp
-   size (15px Aqua, 12px Snow Leopard). */
+/* The lamps reveal their action glyphs on pointer hover or keyboard focus:
+   an X on Close and a + on Zoom. Resting lamps stay plain, as in the native
+   captures; the product-specific red-left / green-right placement remains. */
 body[data-theme="aqua"] .title-bar > .close-box::before,
 body[data-theme="snow-leopard"] .title-bar > .close-box::before {
   content: "";
   position: absolute;
   inset: 0;
   border: 0;
+  opacity: 0;
   background:
-    linear-gradient(45deg, transparent calc(50% - 1px), #ffffff calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px)) center / 58% 58% no-repeat,
-    linear-gradient(-45deg, transparent calc(50% - 1px), #ffffff calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px)) center / 58% 58% no-repeat;
+    linear-gradient(45deg, transparent calc(50% - 1px), rgba(0, 0, 0, 0.48) calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px)) center / 58% 58% no-repeat,
+    linear-gradient(-45deg, transparent calc(50% - 1px), rgba(0, 0, 0, 0.48) calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px)) center / 58% 58% no-repeat;
 }
 
 body[data-theme="aqua"] .title-bar > .resize-box::before,
@@ -1485,9 +1808,15 @@ body[data-theme="snow-leopard"] .title-bar > .resize-box::before {
   position: absolute;
   inset: 0;
   border: 0;
+  opacity: 0;
   background:
-    linear-gradient(#ffffff, #ffffff) center / 58% 2px no-repeat,
-    linear-gradient(#ffffff, #ffffff) center / 2px 58% no-repeat;
+    linear-gradient(rgba(0, 0, 0, 0.48), rgba(0, 0, 0, 0.48)) center / 58% 2px no-repeat,
+    linear-gradient(rgba(0, 0, 0, 0.48), rgba(0, 0, 0, 0.48)) center / 2px 58% no-repeat;
+}
+
+body[data-theme="aqua"] .title-bar > :is(.close-box, .resize-box):is(:hover, :focus-visible)::before,
+body[data-theme="snow-leopard"] .title-bar > :is(.close-box, .resize-box):is(:hover, :focus-visible)::before {
+  opacity: 1;
 }
 
 body[data-theme="aqua"] .window:not(.is-active) .title-bar > :is(.close-box, .resize-box) {
@@ -1651,13 +1980,6 @@ body[data-theme="aqua"] .info-comments textarea {
   font-family: var(--theme-ui-font);
 }
 
-/* Aqua desktop icon labels sit on a translucent white tag with a soft
-   contact shadow, not the System 6 gray paper tag. */
-body[data-theme="aqua"] .desktop-icon span:last-child {
-  background: rgba(255, 255, 255, 0.88);
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.22);
-}
-
 /* The Reader rebuild meter consumes the shared Aqua progress recipe. */
 body[data-theme="aqua"] .rebuild-progress-meter {
   height: var(--progress-height);
@@ -1719,8 +2041,8 @@ body[data-theme="snow-leopard"] .resize-box {
 
 body[data-theme="snow-leopard"] .resize-box::before {
 
-  width: 7px;
-  height: 7px;
+  width: 100%;
+  height: 100%;
   border: 0;
   background:
     linear-gradient(rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0.42)) center / 5px 1px no-repeat,
@@ -1775,8 +2097,7 @@ body[data-theme="snow-leopard"] .title-bar > .resize-box {
   background-image: var(--traffic-light-resize-bg);
 }
 
-body[data-theme="snow-leopard"] .title-bar > :is(.close-box, .resize-box)::before,
-body[data-theme="snow-leopard"] .title-bar > .close-box::after {
+body[data-theme="snow-leopard"] .title-bar > :is(.close-box, .resize-box)::after {
 
   content: none;
 
@@ -1861,11 +2182,6 @@ body[data-theme="aqua"] .view-btn[data-view="list"].is-active::before,
 body[data-theme="snow-leopard"] .view-btn[data-view="list"].is-active::before {
   background: #ffffff;
   box-shadow: 0 -4px 0 #ffffff, 0 4px 0 #ffffff;
-}
-
-body[data-theme="snow-leopard"] .desktop-icon span:last-child {
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
 }
 
 body[data-theme="aqua"] .system-select-button:not(:disabled), body[data-theme="snow-leopard"] .system-select-button:not(:disabled) {
@@ -1982,11 +2298,11 @@ body[data-theme="aqua"] select:disabled {
 
 body[data-theme="aqua"] :is(button.btn:disabled, button.btn.is-disabled, .system-select-button:disabled) {
 
-  border-color: #a4a4a4;
-  background: var(--control-disabled-bg);
+  border: 1px solid var(--btn-disabled-border-color, #a4a4a4);
+  background: var(--btn-disabled-bg, var(--control-disabled-bg));
   color: #999999;
   box-shadow: none;
-  opacity: var(--control-disabled-opacity);
+  opacity: var(--btn-disabled-opacity, var(--control-disabled-opacity));
 
 }
 
@@ -2337,7 +2653,10 @@ body[data-theme="aqua"] .theme-lab-finder-rows > div, body[data-theme="snow-leop
 
 /* Snow Leopard is the Aqua descendant, not an early-Aqua desaturation. The
    compact, unified silver chrome and quieter controls below are the delta. */
-body[data-theme="snow-leopard"] :is(select, input):disabled {
+/* Text-like controls only. A checkbox or radio is not faded in 10.6: it is
+   redrawn in grey, which the --choice-disabled-* roles above own. Leaving them
+   in this rule let its opacity and field background outrank those roles. */
+body[data-theme="snow-leopard"] :is(select, input:not([type="checkbox"]):not([type="radio"])):disabled {
 
   color: #8c8c8c;
   background-color: #f2f2f2;
@@ -2367,8 +2686,11 @@ body[data-theme="snow-leopard"] .window:not(.is-active) .theme-lab-sidebar butto
   background-color: transparent;
   background-image: var(--aqua-icon, var(--snow-icon, none));
   background-repeat: no-repeat;
-  background-position: var(--sp, center);
-  background-size: var(--sprite-size, contain);
+  /* The sheet is 8 cells wide and 7 tall, addressed by cell index, so one cell
+     always fills the box whatever size the surface asks for. A fixed pixel
+     sheet showed the neighbouring cell on every 42 px desktop icon. */
+  background-position: calc(var(--sx, 0) * 100% / 7) calc(var(--sy, 0) * 100% / 6);
+  background-size: 800% 700%;
   box-shadow: none;
 }
 :where(body[data-theme="aqua"], body[data-theme="snow-leopard"])
@@ -2377,69 +2699,69 @@ body[data-theme="snow-leopard"] .window:not(.is-active) .theme-lab-sidebar butto
 }
 body[data-theme="aqua"] .sys-icon {
   --aqua-icon: url("./assets/themes/aqua/aqua-sprite.png");
-  --sprite-size: 256px 224px;
 }
 
 body[data-theme="snow-leopard"] .sys-icon {
   --snow-icon: url("./assets/themes/snow-leopard/snow-leopard-sprite.png");
-  --sprite-size: 256px 224px;
 }
 
-/* Shared sprite positions (theme-independent). */
-[data-system-icon="startupDisk"]{--sp:0 0}
-[data-system-icon="hardDisk"]{--sp:-32px 0}
-[data-system-icon="folder"]{--sp:-64px 0}
-[data-system-icon="document"]{--sp:-96px 0}
-[data-system-icon="applications"]{--sp:-128px 0}
-[data-system-icon="trash"]{--sp:-160px 0}
-[data-system-icon="finderApp"]{--sp:-192px 0}
-[data-system-icon="fileFloppy"]{--sp:-224px 0}
-[data-system-icon="assistant"]{--sp:0 -32px}
-[data-system-icon="quickDraft"]{--sp:-32px -32px}
-[data-system-icon="writingStudio"]{--sp:-64px -32px}
-[data-system-icon="projectDisk"]{--sp:-96px -32px}
-[data-system-icon="projectDisc"]{--sp:-128px -32px}
-[data-system-icon="cloudModel"]{--sp:-160px -32px}
-[data-system-icon="cloudModelOff"]{--sp:-192px -32px}
-[data-system-icon="questionSheet"]{--sp:-224px -32px}
-[data-system-icon="outline"]{--sp:0 -64px}
-[data-system-icon="sectionDrafts"]{--sp:-32px -64px}
-[data-system-icon="manuscript"]{--sp:-64px -64px}
-[data-system-icon="reviewDesk"]{--sp:-96px -64px}
-[data-system-icon="searcher"]{--sp:-128px -64px}
-[data-system-icon="reader"]{--sp:-160px -64px}
-[data-system-icon="timeMachine"]{--sp:-192px -64px}
-[data-system-icon="docMap"]{--sp:-224px -64px}
-[data-system-icon="clioStage"]{--sp:0 -96px}
-[data-system-icon="clioChart"]{--sp:-32px -96px}
-[data-system-icon="liquidCover"]{--sp:-64px -96px}
-[data-system-icon="cmfStudio"]{--sp:-96px -96px}
-[data-system-icon="soundscape"]{--sp:-128px -96px}
-[data-system-icon="scrapbook"]{--sp:-160px -96px}
-[data-system-icon="systemFolder"]{--sp:-192px -96px}
-[data-system-icon="helpFolder"]{--sp:-224px -96px}
-[data-system-icon="importUtility"]{--sp:0 -128px}
-[data-system-icon="controlPanel"]{--sp:-32px -128px}
-[data-system-icon="chooser"]{--sp:-64px -128px}
-[data-system-icon="systemHelp"]{--sp:-96px -128px}
-[data-system-icon="dictionary"]{--sp:-128px -128px}
-[data-system-icon="teachText"]{--sp:-160px -128px}
-[data-system-icon="writingDemo"]{--sp:-192px -128px}
-[data-system-icon="chatFile"]{--sp:-224px -128px}
-[data-system-icon="chatImport"]{--sp:0 -160px}
-[data-system-icon="systemStatus"]{--sp:-32px -160px}
-[data-system-icon="contextPanel"]{--sp:-64px -160px}
-[data-system-icon="rebuildArticle"]{--sp:-96px -160px}
-[data-system-icon="bureaucracyMeme"]{--sp:-128px -160px}
-[data-system-icon="endfieldTerminal"]{--sp:-160px -160px}
-[data-system-icon="documents"]{--sp:-192px -160px}
-[data-system-icon="alias"]{--sp:-224px -160px}
-[data-system-icon="systemFile"]{--sp:0 -192px}
-[data-system-icon="multiFinderApp"]{--sp:-32px -192px}
-[data-system-icon="daHandler"]{--sp:-64px -192px}
-[data-system-icon="writingBell"]{--sp:-96px -192px}
-[data-system-icon="trashFull"]{--sp:-128px -192px}
-[data-system-icon="control"]{--sp:-160px -192px}
+/* Shared sprite cells, addressed by column and row (theme-independent). */
+[data-system-icon="startupDisk"]{--sx:0}
+[data-system-icon="hardDisk"]{--sx:1}
+[data-system-icon="folder"]{--sx:2}
+[data-system-icon="document"]{--sx:3}
+[data-system-icon="applications"]{--sx:4}
+[data-system-icon="trash"]{--sx:5}
+[data-system-icon="finderApp"]{--sx:6}
+[data-system-icon="fileFloppy"]{--sx:7}
+[data-system-icon="assistant"]{--sy:1}
+[data-system-icon="quickDraft"]{--sx:1;--sy:1}
+[data-system-icon="writingStudio"]{--sx:2;--sy:1}
+[data-system-icon="projectDisk"]{--sx:3;--sy:1}
+[data-system-icon="projectDisc"]{--sx:4;--sy:1}
+[data-system-icon="cloudModel"]{--sx:5;--sy:1}
+[data-system-icon="cloudModelOff"]{--sx:6;--sy:1}
+[data-system-icon="questionSheet"]{--sx:7;--sy:1}
+[data-system-icon="outline"]{--sy:2}
+[data-system-icon="sectionDrafts"]{--sx:1;--sy:2}
+[data-system-icon="manuscript"]{--sx:2;--sy:2}
+[data-system-icon="reviewDesk"]{--sx:3;--sy:2}
+[data-system-icon="searcher"]{--sx:4;--sy:2}
+[data-system-icon="reader"]{--sx:5;--sy:2}
+[data-system-icon="timeMachine"]{--sx:6;--sy:2}
+[data-system-icon="docMap"]{--sx:7;--sy:2}
+[data-system-icon="clioStage"]{--sy:3}
+[data-system-icon="clioChart"]{--sx:1;--sy:3}
+[data-system-icon="liquidCover"]{--sx:2;--sy:3}
+[data-system-icon="cmfStudio"]{--sx:3;--sy:3}
+[data-system-icon="soundscape"]{--sx:4;--sy:3}
+[data-system-icon="scrapbook"]{--sx:5;--sy:3}
+[data-system-icon="systemFolder"]{--sx:6;--sy:3}
+[data-system-icon="helpFolder"]{--sx:7;--sy:3}
+[data-system-icon="importUtility"]{--sy:4}
+[data-system-icon="controlPanel"]{--sx:1;--sy:4}
+[data-system-icon="chooser"]{--sx:2;--sy:4}
+[data-system-icon="systemHelp"]{--sx:3;--sy:4}
+[data-system-icon="dictionary"]{--sx:4;--sy:4}
+[data-system-icon="teachText"]{--sx:5;--sy:4}
+[data-system-icon="writingDemo"]{--sx:6;--sy:4}
+[data-system-icon="chatFile"]{--sx:7;--sy:4}
+[data-system-icon="chatImport"]{--sy:5}
+[data-system-icon="systemStatus"]{--sx:1;--sy:5}
+[data-system-icon="contextPanel"]{--sx:2;--sy:5}
+[data-system-icon="rebuildArticle"]{--sx:3;--sy:5}
+[data-system-icon="bureaucracyMeme"]{--sx:4;--sy:5}
+[data-system-icon="endfieldTerminal"]{--sx:5;--sy:5}
+[data-system-icon="documents"]{--sx:6;--sy:5}
+[data-system-icon="alias"]{--sx:7;--sy:5}
+[data-system-icon="systemFile"]{--sy:6}
+[data-system-icon="multiFinderApp"]{--sx:1;--sy:6}
+[data-system-icon="daHandler"]{--sx:2;--sy:6}
+[data-system-icon="writingBell"]{--sx:3;--sy:6}
+[data-system-icon="trashFull"]{--sx:4;--sy:6}
+[data-system-icon="control"]{--sx:5;--sy:6}
+[data-system-icon="localModel"]{--sx:6;--sy:6}
+[data-system-icon="controlStrip"]{--sx:7;--sy:6}
 
 /* Aqua/SL boot/shutdown: same shared harness as Classic/LG, era material only. */
 :where(body[data-theme="aqua"], body[data-theme="snow-leopard"]) :is(.boot-screen, .shutdown-screen) { background: linear-gradient(180deg, #20294a, #0e1429); color: #fff; animation: aqua-screen-in .4s ease-out; }

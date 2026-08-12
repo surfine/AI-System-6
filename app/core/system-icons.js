@@ -45,15 +45,15 @@ const transportIconPaths = {
   `,
 };
 
-// Exact 32×32 1-bit resources from the bundled System 6.0.8 image. The
-// horizontal/vertical runs below are a lossless currentColor SVG encoding of
-// the source pixels — no raster asset is stretched at runtime:
+// Exact 32×32 1-bit resources from the bundled System 6.0.8 image, retained as
+// historical build evidence and fallback painters. The complete Classic
+// runtime family is the smooth external SVG reconstruction loaded below:
 // - startup disk: Startup Device, ICN# -4064
 // - hard disk: Apple HD SC Setup, ICN# 16646
 // - floppy: Finder, ICN# 129
 // - empty/full Trash: Finder, ICN# 130 / 134
-// Classic and Classic Plus use these source pixels. Liquid Glass keeps the
-// same semantic ids but supplies its own coherent rounded-outline family.
+// Classic Plus can still use these source pixels as fallback evidence. Liquid
+// Glass keeps the same semantic ids but supplies its own material family.
 const nativeSystem6StartupDiskPath = `
   <path class="classic-ink" d="M1 0h27v1h-27zM28 1h1v1h-1zM17 2h3v1h-3zM29 2h1v1h-1zM30 3h1v1h-1zM16 3h1v5h-1zM20 3h1v5h-1zM17 8h3v1h-3zM7 1h1v9h-1zM23 1h1v9h-1zM8 10h15v1h-15zM5 14h22v1h-22zM13 17h6v1h-6zM12 18h8v1h-8zM12 19h2v2h-2zM18 19h2v2h-2zM17 21h3v1h-3zM16 22h3v1h-3zM15 23h3v1h-3zM15 24h2v2h-2zM15 27h2v2h-2zM0 1h1v30h-1zM31 4h1v27h-1zM4 15h1v16h-1zM27 15h1v16h-1zM0 31h31v1h-31z" />
 `;
@@ -86,6 +86,21 @@ const systemIconPaths = {
   cloudModelOff: `
     <path d="M6 22h20v-4h-3v-4h-4v-2h-6v2h-4v4h-3z" />
     <path d="M7 27L27 7" />
+  `,
+  /* Local model: a processor chip — compute that lives on this machine, as
+     opposed to the cloudModel server shape. */
+  localModel: `
+    <path d="M10 10h12v12H10z" />
+    <path d="M13 10V5M16 10V5M19 10V5M13 27v-5M16 27v-5M19 27v-5" />
+    <path d="M10 13H5M10 16H5M10 19H5M27 13h-5M27 16h-5M27 19h-5" />
+    <path d="M14 14h4v4h-4z" />
+  `,
+  /* Control Strip: the strip object itself — flat anchored end, rounded tab
+     end, module dividers, grip tick. */
+  controlStrip: `
+    <path d="M4 12h20c3 0 4 2 4 4s-1 4-4 4H4z" />
+    <path d="M9 12v8M14 12v8M19 12v8" />
+    <path d="M24 14v4" />
   `,
   questionSheet: `
     <path d="M8 4h14l4 4v20H8z" />
@@ -155,12 +170,15 @@ const systemIconPaths = {
     <path d="M17 15v4l3 2M9 9h2M14 9h2" />
     <path d="M8 19l-3 3 3 3" />
   `,
+  /* DocMap: the document's own headings drawn as a branching map, which is what
+     the tool renders — not a geographic map and not a node graph. */
   docMap: `
-    <rect x="12" y="4" width="8" height="8" />
-    <rect x="4" y="20" width="8" height="8" />
-    <rect x="20" y="20" width="8" height="8" />
-    <path d="M16 12v5M8 20l8-8 8 8" />
-    <circle cx="16" cy="17" r="2" />
+    <path d="M4 5h13v22H4z" />
+    <path d="M7 10h7M7 14h5" />
+    <path d="M17 16h5M22 8v16M22 8h4M22 16h4M22 24h4" />
+    <rect x="26" y="6" width="4" height="4" />
+    <rect x="26" y="14" width="4" height="4" />
+    <rect x="26" y="22" width="4" height="4" />
   `,
   clioStage: `
     <path d="M5 7h22v14H5z" />
@@ -386,6 +404,17 @@ const liquidSystemIconPaths = {
     <path class="icon-fill" d="M8 22.5h16.5a4.2 4.2 0 0 0 .4-8.4 6.2 6.2 0 0 0-11.7-1.9A5.3 5.3 0 0 0 8 22.5z" />
     <path d="M8 26L26 8" />
   `,
+  localModel: `
+    <rect class="icon-fill" x="10" y="10" width="12" height="12" rx="2.5" />
+    <path d="M13.5 10V6.5M16 10V6.5M18.5 10V6.5M13.5 25.5V22M16 25.5V22M18.5 25.5V22" />
+    <path d="M10 13.5H6.5M10 16H6.5M10 18.5H6.5M25.5 13.5H22M25.5 16H22M25.5 18.5H22" />
+    <rect x="14" y="14" width="4" height="4" rx="1" />
+  `,
+  controlStrip: `
+    <rect class="icon-fill" x="4.5" y="12" width="23" height="8.5" rx="4.25" />
+    <path d="M10.5 12.5v7.5M16 12.5v7.5M21.5 12.5v7.5" />
+    <path d="M24.5 14.5v3.5" />
+  `,
   questionSheet: `
     <path class="icon-fill" d="M8 5.5h13.5L25.5 10v17H8z" />
     <path d="M21.5 6v5h4M13 14.5c.8-1.6 2.4-2.5 4.2-2.2 1.7.2 2.9 1.3 2.9 2.8 0 2.7-4 2.8-4 5.4M16.1 24h.1" />
@@ -444,10 +473,12 @@ const liquidSystemIconPaths = {
     <path class="icon-accent" d="M17 15v4l3 2M9 19l-3 3 3 3" />
   `,
   docMap: `
-    <rect class="icon-fill" x="12" y="4.5" width="8" height="8" rx="2" />
-    <rect class="icon-fill-soft" x="4.5" y="20" width="8" height="8" rx="2" />
-    <rect class="icon-fill-soft" x="19.5" y="20" width="8" height="8" rx="2" />
-    <path d="M16 12.5v4.5M8.5 20l7.5-7.5 7.5 7.5" />
+    <rect class="icon-fill" x="4.5" y="5.5" width="13" height="21" rx="2" />
+    <path d="M8 11h6M8 15h4" />
+    <path class="icon-accent" d="M17.5 16h4.5M22 9.5v13M22 9.5h3M22 16h3M22 22.5h3" />
+    <rect class="icon-fill-soft" x="25" y="7.5" width="4.5" height="4.5" rx="1.5" />
+    <rect class="icon-fill-soft" x="25" y="13.75" width="4.5" height="4.5" rx="1.5" />
+    <rect class="icon-fill-soft" x="25" y="20.25" width="4.5" height="4.5" rx="1.5" />
   `,
   clioStage: `
     <rect class="icon-fill" x="5.5" y="7" width="21" height="14" rx="3" />
@@ -819,33 +850,72 @@ function normalizeSystemIconId(iconId) {
   return systemIconPaths[raw] ? raw : "document";
 }
 
-const classicCoreSystemIconIds = new Set([
-  "finderApp", "folder", "hardDisk", "trash", "document", "daHandler",
-  "fileFloppy", "projectDisk", "searcher", "teachText", "scrapbook", "assistant",
-]);
+// Complete 56-object vocabulary. Kept as one split string because this module
+// is eager and every extra array token spends the two-floppy startup budget.
+const completeEraSystemIconIds = new Set(("startupDisk hardDisk folder document applications trash finderApp fileFloppy "
+  + "assistant quickDraft writingStudio projectDisk projectDisc cloudModel cloudModelOff questionSheet outline "
+  + "sectionDrafts manuscript reviewDesk searcher reader timeMachine docMap clioStage clioChart liquidCover "
+  + "cmfStudio soundscape scrapbook systemFolder helpFolder importUtility controlPanel chooser systemHelp dictionary "
+  + "teachText writingDemo chatFile chatImport systemStatus contextPanel rebuildArticle bureaucracyMeme "
+  + "endfieldTerminal documents alias systemFile multiFinderApp daHandler writingBell trashFull control localModel "
+  + "controlStrip").split(" "));
 
 const platinumCoreSystemIconIds = new Set([
-  "finderApp", "folder", "hardDisk", "trash", "document", "daHandler",
-  "fileFloppy", "projectDisc", "controlPanel", "systemFile", "scrapbook", "clipboard",
+  "startupDisk", "hardDisk", "folder", "document", "applications", "trash", "finderApp", "fileFloppy",
+  "assistant", "quickDraft", "writingStudio", "projectDisk", "projectDisc", "cloudModel", "cloudModelOff", "questionSheet",
+  "outline", "sectionDrafts", "manuscript", "reviewDesk", "searcher", "reader", "timeMachine", "docMap", "clioStage",
+  "clioChart", "liquidCover", "cmfStudio", "soundscape", "scrapbook", "systemFolder", "helpFolder", "importUtility",
+  "controlPanel", "chooser", "systemHelp", "dictionary", "teachText", "writingDemo", "chatFile", "chatImport",
+  "systemStatus", "contextPanel", "rebuildArticle", "bureaucracyMeme", "endfieldTerminal", "documents", "alias",
+  "systemFile", "multiFinderApp", "daHandler", "writingBell", "trashFull", "control", "localModel", "controlStrip",
+  "clipboard",
 ]);
 
-function classicCoreSystemIconArt(iconId, sourceSize) {
-  if (!classicCoreSystemIconIds.has(iconId)) return "";
-  return `<image href="assets/themes/classic/icons/${systemIconEscape(iconId)}-${sourceSize}.svg" x="0" y="0" width="32" height="32" preserveAspectRatio="xMidYMid meet" />`;
+// Icon files are served with a long cache lifetime, and these hrefs sit inside
+// inline SVG rather than in the CSS bundle the build stamps. Without the build
+// stamp a release that redraws an icon leaves returning visitors on the old
+// bytes for as long as the asset cache lives.
+function systemIconAssetUrl(path) {
+  const build = window.AISystem6Config?.getAppBuildInfo?.().build;
+  return build ? `${path}?v=${encodeURIComponent(build)}` : path;
+}
+
+function classicSystemIconArt(iconId, sourceSize) {
+  if (!completeEraSystemIconIds.has(iconId)) return "";
+  const stem = systemIconEscape(iconId);
+  const mask = systemIconAssetUrl(`assets/themes/classic/icons/${stem}-mask-${sourceSize}.svg`);
+  const art = systemIconAssetUrl(`assets/themes/classic/icons/${stem}-${sourceSize}.svg`);
+  return `<image class="sys-icon-classic-mask" href="${mask}" x="0" y="0" width="32" height="32" preserveAspectRatio="xMidYMid meet" /><image class="sys-icon-classic-art" href="${art}" x="0" y="0" width="32" height="32" preserveAspectRatio="xMidYMid meet" />`;
 }
 
 function platinumCoreSystemIconArt(iconId, sourceSize) {
-  if (!platinumCoreSystemIconIds.has(iconId)) return "";
-  return `<image href="assets/themes/platinum/icons/${systemIconEscape(iconId)}-${sourceSize}.png" x="0" y="0" width="32" height="32" preserveAspectRatio="xMidYMid meet" />`;
+  if (!completeEraSystemIconIds.has(iconId) && !platinumCoreSystemIconIds.has(iconId)) return "";
+  const fallbackStem = iconId === "startupDisk" ? "startup-disk"
+    : iconId === "finderApp" ? "finder-app"
+      : iconId === "fileFloppy" ? "floppy" : iconId;
+  const usesNativeRaster = platinumCoreSystemIconIds.has(iconId);
+  const file = usesNativeRaster
+    ? `icons/${systemIconEscape(iconId)}-${sourceSize}.png`
+    : `${systemIconEscape(fallbackStem)}-${sourceSize}.svg`;
+  const rasterClass = usesNativeRaster ? ' class="sys-icon-platinum-raster"' : "";
+  return `<image${rasterClass} href="${systemIconAssetUrl(`assets/themes/platinum/${file}`)}" x="0" y="0" width="32" height="32" preserveAspectRatio="xMidYMid meet" />`;
 }
 
 function liquidGlassSystemIconArt(iconId, sourceSize = 32) {
   if (transportIconPaths[iconId]) return transportIconPaths[iconId];
   // `scrap` is a retired pre-Theme-Lab id kept for old saved workspaces. The
-  // current 54-object contract calls the same object `scrapbook`.
+  // current 56-object contract calls the same object `scrapbook`.
   const assetId = iconId === "scrap" ? "scrapbook" : iconId;
-  const assetSize = sourceSize === 16 ? 16 : 32;
-  return `<image href="assets/themes/liquid-glass/${systemIconEscape(assetId)}-${assetSize}.svg" x="0" y="0" width="32" height="32" preserveAspectRatio="xMidYMid meet" />`;
+  // Liquid Glass raster art is displayed at up to 46 CSS px. A 16/32 px
+  // source is visibly enlarged on Retina displays, so runtime icons use the
+  // reviewed 128 px master and let the browser downsample it.
+  const assetSize = 128;
+  const stem = systemIconEscape(assetId);
+  // The complete 56-object Liquid Glass vocabulary owns independent Image Gen
+  // raster artwork. Clipboard remains a legacy inline object and keeps the old
+  // SVG fallback because it is not part of the canonical family.
+  const file = completeEraSystemIconIds.has(assetId) ? `icons/${stem}-${assetSize}-default.png` : `${stem}-${assetSize}.svg`;
+  return `<image href="${systemIconAssetUrl(`assets/themes/liquid-glass/${file}`)}" x="0" y="0" width="32" height="32" preserveAspectRatio="xMidYMid meet" />`;
 }
 
 function systemIconUsesSmallSource(options = {}) {
@@ -857,13 +927,17 @@ function systemIconUsesSmallSource(options = {}) {
 function systemIconSvg(iconId, options = {}) {
   const id = normalizeSystemIconId(iconId);
   const sourceSize = systemIconUsesSmallSource(options) ? 16 : 32;
-  const coreArt = classicCoreSystemIconArt(id, sourceSize);
-  const platinumArt = platinumCoreSystemIconArt(id, sourceSize);
+  const requestedPlatinumSize = Number(options.platinumSourceSize);
+  const platinumSourceSize = [16, 32, 42].includes(requestedPlatinumSize)
+    ? requestedPlatinumSize
+    : String(options.size || "") === "desktop" ? 42 : sourceSize;
+  const coreArt = classicSystemIconArt(id, sourceSize);
+  const platinumArt = platinumCoreSystemIconArt(id, platinumSourceSize);
   const paths = coreArt || classicPlusSystemIconPaths[id] || systemIconPaths[id] || systemIconPaths.document;
   const liquidPaths = liquidGlassSystemIconArt(id, sourceSize);
   const maskClass = coreArt ? " has-classic-mask" : "";
   const platinumClass = platinumArt ? " has-platinum-core" : "";
-  return `<svg class="sys-icon-svg${maskClass}${platinumClass}" data-classic-source-size="${sourceSize}" viewBox="0 0 32 32" focusable="false" aria-hidden="true"><g class="sys-icon-classic">${paths}</g><g class="sys-icon-platinum-core">${platinumArt}</g><g class="sys-icon-liquid">${liquidPaths}</g></svg>`;
+  return `<svg class="sys-icon-svg${maskClass}${platinumClass}" data-classic-source-size="${sourceSize}" data-platinum-source-size="${platinumSourceSize}" viewBox="0 0 32 32" focusable="false" aria-hidden="true"><g class="sys-icon-classic">${paths}</g><g class="sys-icon-platinum-core">${platinumArt}</g><g class="sys-icon-liquid">${liquidPaths}</g></svg>`;
 }
 
 function renderSystemIcon(iconId, options = {}) {
@@ -885,8 +959,10 @@ function hydrateSystemIcons(root = document) {
       ".finder-list-name-cell .sys-icon",
       ".finder-list-row .sys-icon",
     ].join(", "));
+    const usePlatinumDesktopSource = !useSmallSource && item.classList.contains("sys-icon-desktop");
     item.innerHTML = systemIconSvg(item.dataset.systemIcon, {
       sourceSize: useSmallSource ? 16 : 32,
+      platinumSourceSize: useSmallSource ? 16 : usePlatinumDesktopSource ? 42 : 32,
     });
   });
 }

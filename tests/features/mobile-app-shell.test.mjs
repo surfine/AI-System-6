@@ -106,9 +106,14 @@ test.assertIncludes(
   "every ask bar keeps a phone-sized touch target in one shared rule"
 );
 test.assertIncludes(
+  foundation,
+  "--scrapbook-mobile-pane-rows: minmax(0, 1fr) auto auto;",
+  "Scrapbook gives its phone editor the space a hidden page-era list no longer needs"
+);
+test.assertIncludes(
   responsive,
-  "grid-template-rows: minmax(132px, 156px) minmax(0, 1fr) auto;",
-  "Scrapbook gives its phone editor the space an empty list no longer needs"
+  "grid-template-rows: var(--scrapbook-mobile-pane-rows);",
+  "the phone shell consumes the era-owned Scrapbook row contract"
 );
 test.assertIncludes(
   chatMessages,

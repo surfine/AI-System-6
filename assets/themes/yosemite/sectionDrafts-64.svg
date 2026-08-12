@@ -1,8 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
-<defs>
-      <linearGradient id="body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#f1f0e9"/></linearGradient>
-      <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#eef3f7"/></linearGradient>
-      <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7fafc"/><stop offset="1" stop-color="#b7c3cf"/></linearGradient>
-    </defs>
-<path d="M20 12h32v40H20z" fill="#c9d7e3" stroke="#789bb9" stroke-width="1.35"/><path d="M14 7h29l9 9v41H14z" fill="url(#paper)" stroke="#789bb9" stroke-width="1.35"/><path d="M43 7v9h9" fill="#dbe6ef" stroke="#789bb9" stroke-width="1.35"/><path d="M26 29h14M26 34h8M26 39h14M26 44h10" fill="none" stroke="#2e7fcb" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><image href="icons/sectionDrafts-64.png" width="64" height="64"/></svg>

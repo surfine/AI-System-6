@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/THEME-FAMILY-CONTRACT.md -->
-<!-- source-sha256: 5fea5d70afa78002e067efab0f21a54bef489e684bebad62a33f118f7d5540b7 -->
+<!-- source-sha256: df7edeeb70445415e088744f332b7baf9adfe204c9a5b8754de64c64d6a2f176 -->
 
 英文版为准。本文档仅供人类参考。
 
@@ -80,7 +80,10 @@ DOM 结构
   `styles/67-aqua-appearance.css`）。拆分必须**视觉零差异**且单独提交，
   绝不夹带重新设计。
 - `styles/66-theme-lab.css` —— 一份共享的 Theme Lab 组件样式表，而不是
-  六份实现。
+  六份实现。它的每一条选择器都限定在实验室内部，因此这份样式表会被单独构建成
+  `styles.theme-lab.css`，随懒加载的 Theme Lab 模块一起请求，而不是在启动时加载。
+  不要把它放回 `styleRuntimePaths`：它是仓库里最大的一份样式表，而任何一次启动都
+  不需要它。
 
 父链是维护血缘，不是第二个生效的 CSS 类。家族共享配方使用
 `body[data-theme-family="..."]`；子主题自身块通过更高特异性的
@@ -214,16 +217,56 @@ Classic → Platinum 成对回归即 canonical fidelity 工具
 Theme Lab DOM 有意变化时，在同一次修改里刷新各主题保真 fixture 的
 `contentSha256`——绝不让 fixture 指纹过期。
 
-## 9. 验证
+## 9. 两个视觉层级，绝不混为一谈
+
+稳定的快照不能证明正确：错误的设计也可以拥有完美的回归基线。两个层级回答
+两个不同的问题，存放位置也不同。
+
+| 层级 | 问题 | 位置 | 何时失败 |
+| --- | --- | --- | --- |
+| 回归 | 今天和昨天一样吗？ | `tests/visual/theme-lab/*.png`，以及每个 specimen 的 `tolerances` | 输出偏离了记录运行 |
+| Canonical fidelity | 这真的是目标时代吗？ | `scripts/theme-lab-fidelity-contract.mjs` 中的 `FIDELITY_FLOOR`，以及每个 specimen 的 `floor` 台账 | 某个 specimen 与已 pin 的历史 reference 的差距超过 floor |
+
+floor 对所有时代、所有 specimen 只有一套共享常量，由指标定义推出，**绝不**
+来自我们自己的输出：
+
+```text
+geometryMismatch  <= 0.05   reference 轮廓最多允许 5% 完全缺失
+edgeErrorPx       <= 1.5    1x 下轮廓落在 1.5px 内
+                            （按 board 的 deviceScaleFactor 缩放）
+materialError     <= 12     内部颜色差在 255 的 12 以内（约 4.7%）
+```
+
+每个受门控的 specimen 都带一份 `floor` 台账：
+
+```text
+{ "status": "met" }
+{ "status": "gap", "failing": ["materialError"], "note": "<历史原因>" }
+{ "status": "unreliable-reference", "exempt": ["materialError"], "note": "<为何该裁切无法测量>" }
+```
+
+- **未**列出的指标必须达到 floor，否则 gate 失败。
+- `failing` 中的指标是与目标距离的记录，并写明原因。它是诚实记账，不是许可。
+- `exempt` 表示已 pin 的裁切根本无法测量该指标（例如 reference 是照片缩略
+  图）。这是唯一的豁免口，且必须写明原因。
+- 当某个 `failing` 指标开始达到 floor 时，gate 会**失败**，直到台账被修正；
+  这样任何改进都不可能躲在过期条目后面。
+
+绝不为了让 board 变绿而放宽 tolerance、新增 `failing` 指标或动用 `exempt`。
+要么修 painter，要么改进 reference 后重新测量。
+
+## 10. 验证
 
 ```sh
 npm run verify:css                      # 预算、ratchet、选择器上限
-npm run verify:theme-lab                # 六时代 Theme Lab 快照
-npm run compare:theme-lab:canonical     # Platinum 对照真实 Mac OS 9 语料
+npm run verify:theme-lab                # 六时代 Theme Lab 回归快照
+npm run verify:theme-lab:fidelity       # canonical fidelity：四时代 + Retina board
+npm run compare:theme-lab:canonical     # 单块 board，附评审产物
 npm run audit:theme-coverage            # 注册表驱动的 app 覆盖审计
 npm run screenshot:windows              # 逐个截图每个已注册窗口
 npm run snapshot:css -- --theme platinum --label <step>   # 共享表面
 npm run verify:features -- appearance-system   # 注册表与契约测试
+npm run verify:features -- theme-lab-fidelity-contract   # fixture 与 floor 模式
 ```
 
 覆盖证据全部注册表驱动：`audit:theme-coverage` 回答选择器/token 问题，

@@ -1117,6 +1117,12 @@ function wireAppEvents() {
     win.querySelector(".resize-box")?.addEventListener("click", () => {
       zoomWindow(win);
     });
+
+    // The Platinum collapse box is the click form of WindowShade. It shares
+    // toggleCollapsed with the title-bar double-click and never calls Zoom.
+    win.querySelector(".shade-box")?.addEventListener("click", () => {
+      toggleCollapsed(win);
+    });
   });
 
   const documentVersionsDialog = document.querySelector("#document-versions-modal");

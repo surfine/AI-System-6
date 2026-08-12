@@ -95,6 +95,10 @@ function getElements() {
   const downloadScrapsBilingualButton = document.querySelector("#download-scraps-bilingual");
   const scrapListEl = document.querySelector("#scrap-list");
   const scrapCountEl = document.querySelector("#scrap-count");
+  const scrapbookPagePreviousButton = document.querySelector("#scrapbook-page-previous");
+  const scrapbookPageNextButton = document.querySelector("#scrapbook-page-next");
+  const scrapbookPageTrackEl = document.querySelector("#scrapbook-page-track");
+  const scrapbookPagePositionEl = document.querySelector("#scrapbook-page-position");
   const trashListEl = document.querySelector("#trash-list");
   const trashCountEl = document.querySelector("#trash-count");
   const restoreTrashButton = document.querySelector("#restore-trash");
@@ -493,6 +497,10 @@ function getElements() {
     downloadScrapsBilingualButton,
     scrapListEl,
     scrapCountEl,
+    scrapbookPagePreviousButton,
+    scrapbookPageNextButton,
+    scrapbookPageTrackEl,
+    scrapbookPagePositionEl,
     trashListEl,
     trashCountEl,
     restoreTrashButton,

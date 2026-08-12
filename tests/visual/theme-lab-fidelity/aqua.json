@@ -28,7 +28,7 @@
     "playwrightVersion": "1.62.1",
     "browserRevision": "1234",
     "browserVersion": "151.0.7922.34",
-    "contentSha256": "65078afe0f19369130138cc0b225c05d789ab9c237605ee61a1255a616b6b0f4",
+    "contentSha256": "0ac981bf59043bdd2187b5abff18b29d6fa35ae2758e643f0fd65945122ae8f6",
     "historicalFontTarget": "Lucida Grande 13 pt",
     "fontProbeSelectors": [
       ".theme-lab-controls h3",
@@ -353,6 +353,9 @@
         "geometryMismatch": 0.02,
         "edgeErrorPx": 1.5,
         "materialError": 5.7
+      },
+      "floor": {
+        "status": "met"
       }
     },
     {
@@ -397,6 +400,9 @@
         "geometryMismatch": 0.025,
         "edgeErrorPx": 0.7,
         "materialError": 19.3
+      },
+      "floor": {
+        "status": "met"
       }
     },
     {
@@ -439,6 +445,9 @@
         "geometryMismatch": 0.02,
         "edgeErrorPx": 1.1,
         "materialError": 7
+      },
+      "floor": {
+        "status": "met"
       }
     },
     {
@@ -481,6 +490,55 @@
         "geometryMismatch": 0.02,
         "edgeErrorPx": 1,
         "materialError": 7
+      },
+      "floor": {
+        "status": "met"
+      }
+    },
+    {
+      "id": "button-disabled",
+      "label": "Disabled Jaguar push button (Open dialog Open)",
+      "reference": {
+        "source": "guidebook.macosx102.open-dialog",
+        "crop": {
+          "x": 367,
+          "y": 333,
+          "width": 73,
+          "height": 21
+        }
+      },
+      "current": {
+        "selector": ".theme-lab-button-row .btn:disabled",
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "width": 73,
+          "height": 21
+        },
+        "setup": [
+          {
+            "selector": ".theme-lab-button-row .btn:disabled",
+            "style": {
+              "width": "73px",
+              "minWidth": "73px",
+              "maxWidth": "73px"
+            },
+            "text": "Open"
+          }
+        ]
+      },
+      "geometryMask": "text",
+      "tolerances": {
+        "geometryMismatch": 1,
+        "edgeErrorPx": 8,
+        "materialError": 11.3
+      },
+      "floor": {
+        "status": "met"
+      },
+      "repeat": {
+        "maxChangedPixels": 400,
+        "maxChannelDelta": 2
       }
     },
     {
@@ -533,6 +591,54 @@
         "geometryMismatch": 0.02,
         "edgeErrorPx": 1.1,
         "materialError": 5.1
+      },
+      "floor": {
+        "status": "met"
+      }
+    },
+    {
+      "id": "search-field-focused",
+      "label": "Focused Jaguar search field with its focus ring (Address Book)",
+      "reference": {
+        "source": "guidebook.macosx102.address-book",
+        "crop": {
+          "x": 413,
+          "y": 27,
+          "width": 133,
+          "height": 27
+        }
+      },
+      "current": {
+        "selector": ".theme-lab-search",
+        "crop": {
+          "x": -3,
+          "y": -3,
+          "width": 133,
+          "height": 27
+        },
+        "setup": [
+          {
+            "selector": ".theme-lab-search",
+            "style": {
+              "width": "127px",
+              "minWidth": "127px",
+              "maxWidth": "127px"
+            },
+            "attributes": {
+              "class": "theme-lab-search theme-lab-focus-demo",
+              "value": ""
+            }
+          }
+        ]
+      },
+      "geometryMask": "text",
+      "tolerances": {
+        "geometryMismatch": 0.02,
+        "edgeErrorPx": 0.5,
+        "materialError": 5
+      },
+      "floor": {
+        "status": "met"
       }
     },
     {
@@ -559,7 +665,14 @@
       "tolerances": {
         "geometryMismatch": 0.02,
         "edgeErrorPx": 0.7,
-        "materialError": 5
+        "materialError": 5,
+        "markMismatch": 0.155
+      },
+      "floor": {
+        "status": "met"
+      },
+      "mark": {
+        "note": "Jaguar check inside the 18px capsule box."
       }
     },
     {
@@ -586,7 +699,14 @@
       "tolerances": {
         "geometryMismatch": 0.02,
         "edgeErrorPx": 0.8,
-        "materialError": 16.2
+        "materialError": 16.2,
+        "markMismatch": 0.22
+      },
+      "floor": {
+        "status": "met"
+      },
+      "mark": {
+        "note": "Jaguar radio dot inside the well."
       }
     },
     {
@@ -632,6 +752,9 @@
         "geometryMismatch": 0.02,
         "edgeErrorPx": 1,
         "materialError": 7.2
+      },
+      "floor": {
+        "status": "met"
       }
     },
     {
@@ -672,6 +795,66 @@
         "geometryMismatch": 0.149,
         "edgeErrorPx": 2.8,
         "materialError": 10.7
+      },
+      "floor": {
+        "status": "gap",
+        "failing": [
+          "geometryMismatch",
+          "edgeErrorPx"
+        ],
+        "note": "Column-browser row separators and the disclosure triangle miss the native 10.2 outline (8.6% absent, 1.6px mean edge distance)."
+      }
+    },
+    {
+      "id": "list-row-disabled",
+      "label": "Disabled Jaguar column-browser row (Send Registration)",
+      "reference": {
+        "source": "guidebook.macosx102.open-dialog",
+        "crop": {
+          "x": 48,
+          "y": 212,
+          "width": 180,
+          "height": 18
+        }
+      },
+      "current": {
+        "selector": ".theme-lab-aqua-browser .theme-lab-sidebar button:disabled",
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "width": 180,
+          "height": 18
+        },
+        "setup": [
+          {
+            "selector": ".theme-lab-aqua-browser .theme-lab-sidebar button:disabled",
+            "style": {
+              "width": "180px",
+              "minWidth": "180px",
+              "maxWidth": "180px",
+              "height": "18px"
+            }
+          }
+        ]
+      },
+      "geometryMask": "text",
+      "tolerances": {
+        "geometryMismatch": 1,
+        "edgeErrorPx": 8,
+        "materialError": 18.5
+      },
+      "floor": {
+        "status": "gap",
+        "failing": [
+          "geometryMismatch",
+          "edgeErrorPx",
+          "materialError"
+        ],
+        "note": "Same root cause as button-disabled: the disabled column-browser row keeps no icon or row shape, so the reference silhouette has no counterpart. Native 10.2 greys the row icon and label but keeps both. One painter fix should close both specimens."
+      },
+      "repeat": {
+        "maxChangedPixels": 400,
+        "maxChannelDelta": 2
       }
     },
     {
@@ -713,6 +896,13 @@
         "geometryMismatch": 0.169,
         "edgeErrorPx": 2.3,
         "materialError": 15.8
+      },
+      "floor": {
+        "status": "gap",
+        "failing": [
+          "geometryMismatch"
+        ],
+        "note": "The 15px Jaguar scrollbar arrow buttons are not yet drawn to the native outline: 9.9% of the reference silhouette has no counterpart. Reference is a native 10.2 capture."
       }
     },
     {
@@ -754,6 +944,13 @@
         "geometryMismatch": 0.067,
         "edgeErrorPx": 3.7,
         "materialError": 12.6
+      },
+      "floor": {
+        "status": "gap",
+        "failing": [
+          "edgeErrorPx"
+        ],
+        "note": "Toolbar button outlines sit 2.1px from the native 10.2 Finder toolbar; the material meets the floor."
       }
     },
     {
@@ -791,6 +988,9 @@
         "geometryMismatch": 0.02,
         "edgeErrorPx": 1.5,
         "materialError": 5
+      },
+      "floor": {
+        "status": "met"
       }
     },
     {
@@ -837,8 +1037,11 @@
         "geometryMismatch": 0.076,
         "edgeErrorPx": 1.4,
         "materialError": 5.1
+      },
+      "floor": {
+        "status": "met"
       }
     }
   ],
-  "tolerancePolicy": "Seeded 2026-08-10 from the recorded fidelity run (geometry/edge/material measured vs the pinned references, margin x1.5/x1.4 + 0.02/0.5/5). The gate catches regressions beyond this recorded baseline; P1 fidelity work tightens these values toward the historical targets. Platinum icon material is looser (110) because the painter palette is still being calibrated; its silhouette (geometry/edge) stays strict. A specimen with tolerances:null stays diagnostic-only."
+  "tolerancePolicy": "Seeded 2026-08-10 from the recorded fidelity run (geometry/edge/material measured vs the pinned references, margin x1.5/x1.4 + 0.02/0.5/5). The gate catches regressions beyond this recorded baseline; P1 fidelity work tightens these values toward the historical targets. Platinum icon material is looser (110) because the painter palette is still being calibrated; its silhouette (geometry/edge) stays strict. A specimen with tolerances:null stays diagnostic-only. Two tiers, never merged: `tolerances` is the regression tier (seeded from the recorded run with a margin, so it detects drift from that run — not distance from the historical target). `floor` is the absolute tier from FIDELITY_FLOOR in scripts/theme-lab-fidelity-contract.mjs (geometry 0.05, edge 1.5px at 1x scaled by deviceScaleFactor, material 12); it is identical for every era and never derived from our own output. Every specimen must meet the floor unless its ledger names the metric under `failing` (a real gap, with its historical reason) or `exempt` (the pinned crop cannot support that metric). A `failing` metric that starts to meet the floor fails the gate until the ledger is corrected, so an improvement cannot hide behind a stale entry."
 }

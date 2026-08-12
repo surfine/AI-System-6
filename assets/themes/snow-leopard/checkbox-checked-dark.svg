@@ -1,9 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="12" height="12" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
-  <!-- Dark check scaled from Quaqua 9.1 CheckBox.icons.png frame 2
-       (checked): strokes descend from the top-right corner to the lower-left
-       of the 14px box, ~3px thick with rounded joins. The 16-unit viewBox
-       maps onto the 12px background image inside the 14px input, so the
-       rendered strokes land at the same y4-y11 band as the reference frame. -->
-  <path d="M12.7 4 10 6.7 6.7 13.3" fill="none" stroke="#101010" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Dark check for the checked state, fitted to Quaqua 9.1
+       CheckBox.icons.png frame 2 (checked).
+
+       The previous path, M12.7 4 10 6.7 6.7 13.3, was not a checkmark: both of
+       its segments descended leftward, so it drew a bent diagonal with no
+       vertex. Nothing caught it, because a glyph inside a control was invisible
+       to the geometry, edge, and material metrics — materialError masks it as
+       text and a thick stroke finds an edge counterpart inside the 8px search.
+       The mark metric measured that path at markMismatch 0.891.
+
+       This path is fitted, not estimated: candidates were rasterised into the
+       real painter geometry (12px image centred in the 14px control) and scored
+       with the same 1 - IoU glyph comparison the gate uses. It measures
+       markMismatch 0.067 with 29 mark pixels against the reference's 29. The
+       geometry is tied to the control size, so it was refitted when the
+       system check-size token dropped from the 18px inherited from Aqua to the
+       14px every Quaqua 10.6 strip paints; refit it again if that size moves.
+       (An XML comment cannot carry a double hyphen, so token names appear here
+       without their leading dashes.) The vertex sits at the
+       bottom with a short arm rising to the upper left and a longer arm rising
+       to the upper right, which is what frame 2 draws — and frame 6 (disabled)
+       carries the same mark pixels, so checkbox-checked-disabled.svg shares this
+       geometry with a lighter stroke. -->
+  <path d="M4.75 4 8.5 10.25 15.25 2" fill="none" stroke="#101010" stroke-width="2.9" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

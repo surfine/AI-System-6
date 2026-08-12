@@ -10,12 +10,14 @@
   ],
   "referenceLedger": "icons/src/aqua-core-icons.json",
   "referenceBoard": "drafts/era-icons/aqua-core-reference-board.png",
+  "sizeRule": "Runtime surfaces downscale the 128 px master. The ten programmatic cores own separately composed 32 px and 16 px review hints; accepted Image Gen cores use separately processed ledger artifacts.",
   "selectionRecipe": "Finder selection belongs to the label and view surface; normal and selected states use the same Aqua artwork.",
   "icons": {
     "finderApp": {
       "label": "Finder / System",
       "genre": "system identity",
-      "prototype": "Jaguar two-tone Finder face",
+      "prototype": "friendly translucent ice-blue and milky-white compact Macintosh with a split blue-white smiling CRT face and a clear lower drive plinth",
+      "metaphorKey": "smiling-compact-macintosh",
       "comparison": {
         "evidence": "guidebook-desktop-full.png",
         "crop": [
@@ -25,7 +27,8 @@
           56
         ]
       },
-      "sourceKind": "original-independent-aqua-illustration",
+      "sourceKind": "accepted-imagegen-era-illustration",
+      "reviewStatus": "accepted-imagegen",
       "sizes": {
         "16": "icons/finderApp-16.png",
         "32": "icons/finderApp-32.png",
@@ -33,40 +36,92 @@
       },
       "metrics": {
         "16": {
-          "pixels": 200,
-          "colors": 119,
+          "pixels": 148,
+          "colors": 45,
           "bbox": {
             "minX": 1,
             "minY": 1,
             "maxX": 14,
-            "maxY": 15
+            "maxY": 13
           },
-          "sha256": "3717b513bc39860304d12803eaf433951fccc008c9f559fef1e9a054185a7a82",
-          "bytes": 647
+          "ink": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 13,
+            "width": 14,
+            "height": 13
+          },
+          "gridShape": "square",
+          "sha256": "2e3bf41b2cb534825c0312e207cfff4feeac843608107caff6aac78afe9491b1",
+          "bytes": 418
         },
         "32": {
-          "pixels": 711,
-          "colors": 336,
+          "pixels": 603,
+          "colors": 141,
           "bbox": {
             "minX": 3,
-            "minY": 2,
+            "minY": 3,
             "maxX": 28,
-            "maxY": 30
+            "maxY": 28
           },
-          "sha256": "904bb0223c08b37705b8cf63eebd33bfb255a6fc7b6981b9f271690e93c92d53",
-          "bytes": 1204
+          "ink": {
+            "minX": 3,
+            "minY": 3,
+            "maxX": 28,
+            "maxY": 28,
+            "width": 26,
+            "height": 26
+          },
+          "gridShape": "square",
+          "sha256": "8842b8d9940b3b32ff7d4152f6ace23ebca5d5e3312e6672f27d413811f121ec",
+          "bytes": 1092
         },
         "128": {
-          "pixels": 10137,
-          "colors": 1550,
+          "pixels": 9650,
+          "colors": 5507,
           "bbox": {
-            "minX": 16,
+            "minX": 11,
             "minY": 11,
-            "maxX": 111,
-            "maxY": 121
+            "maxX": 115,
+            "maxY": 116
           },
-          "sha256": "e4de33ef53bb571174c97c1d7bbc05d59c15bfc10a83455197dd00fcd1f6d297",
-          "bytes": 7801
+          "ink": {
+            "minX": 12,
+            "minY": 12,
+            "maxX": 115,
+            "maxY": 115,
+            "width": 104,
+            "height": 104
+          },
+          "gridShape": "square",
+          "sha256": "cbfe657d1febf9242f1e613fe108dde5f1bff3f5028477721e701a79027da05e",
+          "bytes": 16852
+        }
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6523,
+          "meanLum": 183.34,
+          "lumStd": 50.59,
+          "edgeEnergy": 85
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5967,
+          "meanLum": 182.43,
+          "lumStd": 55.65,
+          "edgeEnergy": 280
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5901,
+          "meanLum": 182.77,
+          "lumStd": 56.32,
+          "edgeEnergy": 416
         }
       }
     },
@@ -78,6 +133,7 @@
         "evidence": "icons/folder-generic-1004.png"
       },
       "sourceKind": "original-independent-aqua-illustration",
+      "reviewStatus": "accepted-core",
       "sizes": {
         "16": "icons/folder-16.png",
         "32": "icons/folder-32.png",
@@ -85,40 +141,92 @@
       },
       "metrics": {
         "16": {
-          "pixels": 172,
-          "colors": 99,
+          "pixels": 151,
+          "colors": 97,
           "bbox": {
             "minX": 1,
             "minY": 2,
             "maxX": 14,
-            "maxY": 15
+            "maxY": 14
           },
-          "sha256": "b04db2ede6c13943d780495cdd8311d4f7345522488df9d33a893c3d6ffec02f",
-          "bytes": 526
+          "ink": {
+            "minX": 1,
+            "minY": 2,
+            "maxX": 14,
+            "maxY": 13,
+            "width": 14,
+            "height": 12
+          },
+          "gridShape": "square",
+          "sha256": "c5e5134036de2cd0aca656dd84cea9d11c62dd116a3be4b94a25252819c6ed47",
+          "bytes": 506
         },
         "32": {
-          "pixels": 621,
-          "colors": 406,
+          "pixels": 543,
+          "colors": 393,
           "bbox": {
-            "minX": 2,
+            "minX": 3,
             "minY": 4,
-            "maxX": 29,
-            "maxY": 29
+            "maxX": 28,
+            "maxY": 27
           },
-          "sha256": "4862f9d0eeb400b0a94fbe8e7cbde901ebafc4e79bc3f73bad29d8bc5bf8ab64",
-          "bytes": 1239
+          "ink": {
+            "minX": 3,
+            "minY": 4,
+            "maxX": 28,
+            "maxY": 27,
+            "width": 26,
+            "height": 24
+          },
+          "gridShape": "square",
+          "sha256": "fc019cb158f8e4d0503940b636ed03983bf7a4e3c945cc6095835f6d68d3f410",
+          "bytes": 1122
         },
         "128": {
-          "pixels": 8673,
-          "colors": 1662,
+          "pixels": 8667,
+          "colors": 1852,
           "bbox": {
             "minX": 13,
-            "minY": 22,
-            "maxX": 118,
-            "maxY": 117
+            "minY": 17,
+            "maxX": 117,
+            "maxY": 112
           },
-          "sha256": "0e1b578c6b2cfd34a9af705cbcd173bed69dbf7b5322d079fa14160893a557c4",
-          "bytes": 6747
+          "ink": {
+            "minX": 13,
+            "minY": 17,
+            "maxX": 114,
+            "maxY": 110,
+            "width": 102,
+            "height": 94
+          },
+          "gridShape": "square",
+          "sha256": "076205db3754ee70bca736c5479ec9d9df57232ad348b739e0940de84a00bbeb",
+          "bytes": 6988
+        }
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5469,
+          "meanLum": 157.62,
+          "lumStd": 48.22,
+          "edgeEnergy": 44
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5313,
+          "meanLum": 157.75,
+          "lumStd": 49.81,
+          "edgeEnergy": 149
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5215,
+          "meanLum": 159.49,
+          "lumStd": 47.79,
+          "edgeEnergy": 234
         }
       }
     },
@@ -130,6 +238,7 @@
         "evidence": "icons/harddisk-1004.png"
       },
       "sourceKind": "original-independent-aqua-illustration",
+      "reviewStatus": "accepted-core",
       "sizes": {
         "16": "icons/hardDisk-16.png",
         "32": "icons/hardDisk-32.png",
@@ -137,40 +246,92 @@
       },
       "metrics": {
         "16": {
-          "pixels": 177,
-          "colors": 92,
+          "pixels": 180,
+          "colors": 106,
           "bbox": {
             "minX": 1,
             "minY": 1,
             "maxX": 14,
             "maxY": 14
           },
-          "sha256": "007bc3fd632f6874812ea3f55a2f00ab28f04d0daba4d12f4fcdbd83d97b86eb",
+          "ink": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 13,
+            "width": 14,
+            "height": 13
+          },
+          "gridShape": "square",
+          "sha256": "645587d41df0787bc0893f47af48667253715ef1cae20d803ed9e76e0bb69658",
           "bytes": 619
         },
         "32": {
-          "pixels": 632,
-          "colors": 198,
+          "pixels": 636,
+          "colors": 217,
           "bbox": {
             "minX": 3,
             "minY": 3,
             "maxX": 28,
             "maxY": 29
           },
-          "sha256": "cc333c1e39b796c8752cbe7e4ec4a6e3693ce9e279ed09f6ef91147cca310499",
-          "bytes": 1166
+          "ink": {
+            "minX": 3,
+            "minY": 3,
+            "maxX": 28,
+            "maxY": 28,
+            "width": 26,
+            "height": 26
+          },
+          "gridShape": "square",
+          "sha256": "f44baa7520ff2e0df88474c9cfaad73e26a51d25da1e22593af16f031da61ddb",
+          "bytes": 1230
         },
         "128": {
-          "pixels": 8911,
-          "colors": 1004,
+          "pixels": 10189,
+          "colors": 1136,
           "bbox": {
-            "minX": 15,
-            "minY": 19,
-            "maxX": 112,
-            "maxY": 118
+            "minX": 12,
+            "minY": 12,
+            "maxX": 115,
+            "maxY": 117
           },
-          "sha256": "a6c4504af4e52867c04fb6b4504a26ae275da48b70c38cbdca67c0f1c6203788",
-          "bytes": 6869
+          "ink": {
+            "minX": 12,
+            "minY": 12,
+            "maxX": 115,
+            "maxY": 115,
+            "width": 104,
+            "height": 104
+          },
+          "gridShape": "square",
+          "sha256": "ad531ae3f40d36dbfb03085334cad97f226145fbb95ed7ba2d374f357dc45dd4",
+          "bytes": 7635
+        }
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6719,
+          "meanLum": 154.58,
+          "lumStd": 53.5,
+          "edgeEnergy": 100
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6221,
+          "meanLum": 156.58,
+          "lumStd": 55.76,
+          "edgeEnergy": 240
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6151,
+          "meanLum": 157.16,
+          "lumStd": 56.61,
+          "edgeEnergy": 398
         }
       }
     },
@@ -182,6 +343,7 @@
         "evidence": "icons/trash-1004.png"
       },
       "sourceKind": "original-independent-aqua-illustration",
+      "reviewStatus": "accepted-core",
       "sizes": {
         "16": "icons/trash-16.png",
         "32": "icons/trash-32.png",
@@ -189,40 +351,92 @@
       },
       "metrics": {
         "16": {
-          "pixels": 128,
-          "colors": 103,
+          "pixels": 160,
+          "colors": 124,
           "bbox": {
-            "minX": 2,
-            "minY": 3,
-            "maxX": 13,
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
             "maxY": 15
           },
-          "sha256": "09414422302a478a0ee9857048bbee5bf35524361a3b361e10aa810e83f3d332",
-          "bytes": 556
+          "ink": {
+            "minX": 2,
+            "minY": 1,
+            "maxX": 13,
+            "maxY": 14,
+            "width": 12,
+            "height": 14
+          },
+          "gridShape": "square",
+          "sha256": "d00b3e65c36102183eb015295baf98eabb8d969df12720aa44e68a458af70bfa",
+          "bytes": 660
         },
         "32": {
-          "pixels": 457,
-          "colors": 276,
+          "pixels": 568,
+          "colors": 327,
           "bbox": {
-            "minX": 5,
-            "minY": 5,
-            "maxX": 26,
+            "minX": 4,
+            "minY": 2,
+            "maxX": 27,
             "maxY": 29
           },
-          "sha256": "5dc63fbe65f44b7ef46488e9129eb4aca80db363edcafe06841ddb90a8f671a4",
-          "bytes": 1351
+          "ink": {
+            "minX": 4,
+            "minY": 2,
+            "maxX": 27,
+            "maxY": 28,
+            "width": 24,
+            "height": 27
+          },
+          "gridShape": "square",
+          "sha256": "beddfb36c9d250c034804a4116347ad939040ca2a5e9dab2212dc775069f3828",
+          "bytes": 1583
         },
         "128": {
-          "pixels": 6604,
-          "colors": 2016,
+          "pixels": 10193,
+          "colors": 2559,
           "bbox": {
-            "minX": 23,
-            "minY": 25,
-            "maxX": 104,
-            "maxY": 121
+            "minX": 13,
+            "minY": 5,
+            "maxX": 114,
+            "maxY": 124
           },
-          "sha256": "416cf10d6567610635577587cd531691ebf2ca3fb52e250541faae8f75e55932",
-          "bytes": 11069
+          "ink": {
+            "minX": 14,
+            "minY": 5,
+            "maxX": 113,
+            "maxY": 122,
+            "width": 100,
+            "height": 118
+          },
+          "gridShape": "portrait",
+          "sha256": "c363633669420e3b6f6bb9468e8f181309fb67300d8142ec6836f6935d2a364a",
+          "bytes": 14456
+        }
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6445,
+          "meanLum": 138.58,
+          "lumStd": 36.76,
+          "edgeEnergy": 90
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6289,
+          "meanLum": 136.69,
+          "lumStd": 46.81,
+          "edgeEnergy": 375
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6185,
+          "meanLum": 137.46,
+          "lumStd": 47.23,
+          "edgeEnergy": 567
         }
       }
     },
@@ -234,6 +448,7 @@
         "evidence": "icons/document-generic-1004.png"
       },
       "sourceKind": "original-independent-aqua-illustration",
+      "reviewStatus": "accepted-core",
       "sizes": {
         "16": "icons/document-16.png",
         "32": "icons/document-32.png",
@@ -241,40 +456,92 @@
       },
       "metrics": {
         "16": {
-          "pixels": 155,
-          "colors": 86,
+          "pixels": 136,
+          "colors": 78,
           "bbox": {
+            "minX": 2,
+            "minY": 1,
+            "maxX": 12,
+            "maxY": 14
+          },
+          "ink": {
             "minX": 3,
             "minY": 1,
-            "maxX": 13,
-            "maxY": 15
+            "maxX": 12,
+            "maxY": 14,
+            "width": 10,
+            "height": 14
           },
-          "sha256": "1792b0e6e2189d928699efd39b108b5140c3908c6caa991246fcb78aa78c4a5e",
-          "bytes": 481
+          "gridShape": "portrait",
+          "sha256": "7d9dce6343ef71f8c05f5a332efd60491570609a48316b9ac0ec0fe805b81b08",
+          "bytes": 439
         },
         "32": {
-          "pixels": 545,
-          "colors": 195,
+          "pixels": 524,
+          "colors": 183,
           "bbox": {
             "minX": 6,
             "minY": 2,
-            "maxX": 26,
-            "maxY": 30
+            "maxX": 25,
+            "maxY": 29
           },
-          "sha256": "15a5c67b98c3feb050314167b1af9ce70e7c5eaf2d8976b77b36ae0997546632",
-          "bytes": 808
+          "ink": {
+            "minX": 6,
+            "minY": 2,
+            "maxX": 25,
+            "maxY": 29,
+            "width": 20,
+            "height": 28
+          },
+          "gridShape": "portrait",
+          "sha256": "cd1c5e928f4ef9032b8a678015c17f8a47786045362181a6ce79c54484f0c4f3",
+          "bytes": 775
         },
         "128": {
-          "pixels": 7818,
-          "colors": 569,
+          "pixels": 8117,
+          "colors": 599,
           "bbox": {
-            "minX": 28,
-            "minY": 10,
-            "maxX": 104,
-            "maxY": 118
+            "minX": 25,
+            "minY": 9,
+            "maxX": 102,
+            "maxY": 119
           },
-          "sha256": "845e7a22a56c429d018f6ce659eaef89f21b936e19143052af619002d0888bd6",
-          "bytes": 3420
+          "ink": {
+            "minX": 25,
+            "minY": 10,
+            "maxX": 102,
+            "maxY": 117,
+            "width": 78,
+            "height": 108
+          },
+          "gridShape": "portrait",
+          "sha256": "526681cc2dc1c595e25afc95098fc57edb689becc3dbaae249bc4b52d38044c6",
+          "bytes": 3568
+        }
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5234,
+          "meanLum": 230.12,
+          "lumStd": 40.31,
+          "edgeEnergy": 28
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5088,
+          "meanLum": 228.51,
+          "lumStd": 46.29,
+          "edgeEnergy": 95
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5017,
+          "meanLum": 229.31,
+          "lumStd": 45.74,
+          "edgeEnergy": 156
         }
       }
     },
@@ -286,6 +553,7 @@
         "evidence": "icons/application-generic-1004.png"
       },
       "sourceKind": "original-independent-aqua-illustration",
+      "reviewStatus": "accepted-core",
       "sizes": {
         "16": "icons/daHandler-16.png",
         "32": "icons/daHandler-32.png",
@@ -293,40 +561,92 @@
       },
       "metrics": {
         "16": {
-          "pixels": 120,
-          "colors": 86,
+          "pixels": 159,
+          "colors": 108,
           "bbox": {
-            "minX": 2,
-            "minY": 2,
-            "maxX": 13,
-            "maxY": 14
+            "minX": 1,
+            "minY": 0,
+            "maxX": 14,
+            "maxY": 15
           },
-          "sha256": "aa387a7da43b34ed562f888e052b0163d82c22fbaec34ac15f8ee5b54b37b394",
-          "bytes": 610
+          "ink": {
+            "minX": 2,
+            "minY": 1,
+            "maxX": 13,
+            "maxY": 15,
+            "width": 12,
+            "height": 15
+          },
+          "gridShape": "portrait",
+          "sha256": "99d4a867ec6ebab3dc409148b63fad42d5aef5296f84a816364542a4aedd7a8b",
+          "bytes": 711
         },
         "32": {
-          "pixels": 380,
-          "colors": 246,
+          "pixels": 436,
+          "colors": 298,
           "bbox": {
-            "minX": 5,
-            "minY": 2,
-            "maxX": 25,
-            "maxY": 29
+            "minX": 4,
+            "minY": 1,
+            "maxX": 26,
+            "maxY": 30
           },
-          "sha256": "ce7ad4cda251b1677daa1bf6d32dff0f863307ae5fc62565fcec2d0dc3c74842",
-          "bytes": 1501
+          "ink": {
+            "minX": 5,
+            "minY": 1,
+            "maxX": 26,
+            "maxY": 30,
+            "width": 22,
+            "height": 30
+          },
+          "gridShape": "portrait",
+          "sha256": "c7c982991a99bc6b3f6471d9cba4efb0e3e9d57687c7f3cf027cd753dc392978",
+          "bytes": 1633
         },
         "128": {
-          "pixels": 5117,
-          "colors": 2134,
+          "pixels": 6479,
+          "colors": 2444,
           "bbox": {
-            "minX": 23,
-            "minY": 12,
-            "maxX": 108,
-            "maxY": 117
+            "minX": 15,
+            "minY": 6,
+            "maxX": 112,
+            "maxY": 123
           },
-          "sha256": "1073b11eb5260fdd5bd9e5902ba248c59032cb2cc4a4ca4449fec1a2b4a262c6",
-          "bytes": 9856
+          "ink": {
+            "minX": 18,
+            "minY": 6,
+            "maxX": 109,
+            "maxY": 121,
+            "width": 92,
+            "height": 116
+          },
+          "gridShape": "portrait",
+          "sha256": "83750453802c6d556a95f3bc0dfdfc6f50f8a74465528a965b1ec75e1008d28b",
+          "bytes": 11410
+        }
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.4414,
+          "meanLum": 122.57,
+          "lumStd": 50.67,
+          "edgeEnergy": 64
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.4033,
+          "meanLum": 122.6,
+          "lumStd": 55.9,
+          "edgeEnergy": 209
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.398,
+          "meanLum": 123.49,
+          "lumStd": 56.76,
+          "edgeEnergy": 305
         }
       }
     },
@@ -338,6 +658,7 @@
         "evidence": "icons/system-preferences-1028.png"
       },
       "sourceKind": "original-independent-aqua-illustration",
+      "reviewStatus": "accepted-core",
       "sizes": {
         "16": "icons/controlPanel-16.png",
         "32": "icons/controlPanel-32.png",
@@ -345,40 +666,92 @@
       },
       "metrics": {
         "16": {
-          "pixels": 170,
-          "colors": 66,
+          "pixels": 185,
+          "colors": 84,
           "bbox": {
             "minX": 1,
-            "minY": 2,
+            "minY": 1,
             "maxX": 14,
             "maxY": 14
           },
-          "sha256": "b6cc043fbd6dd2448ff4ad1071840ddf3846fb4412109e663dccf7bbdd16e008",
-          "bytes": 552
+          "ink": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 13,
+            "width": 14,
+            "height": 13
+          },
+          "gridShape": "square",
+          "sha256": "f4a0bb85a313cea750d05b21c94fd4c9256dd9d2d38505fef1f0facfd745d27a",
+          "bytes": 569
         },
         "32": {
-          "pixels": 584,
-          "colors": 158,
+          "pixels": 619,
+          "colors": 185,
           "bbox": {
             "minX": 3,
-            "minY": 5,
+            "minY": 3,
             "maxX": 28,
-            "maxY": 29
+            "maxY": 28
           },
-          "sha256": "94070867f51b8c0a9007c2df8645cc5deb2a199b39d7b6d44a5569111fbe0bb1",
-          "bytes": 1037
+          "ink": {
+            "minX": 3,
+            "minY": 3,
+            "maxX": 28,
+            "maxY": 27,
+            "width": 26,
+            "height": 25
+          },
+          "gridShape": "square",
+          "sha256": "9bc0f7df3f366977ec5d0de9b40acf13626f20dd486a0ff92b1aa24a17aa5f62",
+          "bytes": 1102
         },
         "128": {
-          "pixels": 7946,
-          "colors": 853,
+          "pixels": 9728,
+          "colors": 1154,
           "bbox": {
-            "minX": 17,
-            "minY": 24,
-            "maxX": 110,
-            "maxY": 119
+            "minX": 12,
+            "minY": 12,
+            "maxX": 115,
+            "maxY": 117
           },
-          "sha256": "4aba0ca0a03b44235a5885f40df6e7468eedc3077c0e37473e4a14d4bb23afb7",
-          "bytes": 4936
+          "ink": {
+            "minX": 12,
+            "minY": 12,
+            "maxX": 115,
+            "maxY": 115,
+            "width": 104,
+            "height": 104
+          },
+          "gridShape": "square",
+          "sha256": "4df033f03c44832c5b483e2610907e9ebdfbc6ab3facfa22626657005de7646a",
+          "bytes": 5786
+        }
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6445,
+          "meanLum": 153.47,
+          "lumStd": 47.36,
+          "edgeEnergy": 94
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5879,
+          "meanLum": 152.51,
+          "lumStd": 55.45,
+          "edgeEnergy": 294
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5828,
+          "meanLum": 153.24,
+          "lumStd": 56.5,
+          "edgeEnergy": 391
         }
       }
     },
@@ -390,6 +763,7 @@
         "evidence": "icons/quicktime-1028.png"
       },
       "sourceKind": "original-independent-aqua-illustration",
+      "reviewStatus": "accepted-core",
       "sizes": {
         "16": "icons/searcher-16.png",
         "32": "icons/searcher-32.png",
@@ -397,40 +771,92 @@
       },
       "metrics": {
         "16": {
-          "pixels": 125,
-          "colors": 71,
+          "pixels": 134,
+          "colors": 81,
           "bbox": {
-            "minX": 2,
-            "minY": 2,
-            "maxX": 15,
-            "maxY": 15
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14
           },
-          "sha256": "53464a23f2e5ff3c75046f173cdc8ebc9721a2eae5bf4a4267e8b355b1e518e8",
-          "bytes": 553
+          "ink": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14,
+            "width": 14,
+            "height": 14
+          },
+          "gridShape": "square",
+          "sha256": "7f5f6c54ee4bc74b25a1ce9a1405120a1016a0b77bb5fe5accc0a87441e69e92",
+          "bytes": 591
         },
         "32": {
-          "pixels": 419,
-          "colors": 298,
+          "pixels": 471,
+          "colors": 349,
           "bbox": {
-            "minX": 4,
-            "minY": 4,
-            "maxX": 27,
+            "minX": 3,
+            "minY": 2,
+            "maxX": 28,
             "maxY": 29
           },
-          "sha256": "76d76dbe1ce881b0cb3fe8cea8e201951214e44212b8d1186bc172917ab20c8a",
-          "bytes": 1474
+          "ink": {
+            "minX": 3,
+            "minY": 3,
+            "maxX": 28,
+            "maxY": 28,
+            "width": 26,
+            "height": 26
+          },
+          "gridShape": "square",
+          "sha256": "5b1a526dbc08f05c90eaef1e35612200e0fc1c5384c553c3e3e18def3e82d7ad",
+          "bytes": 1620
         },
         "128": {
-          "pixels": 6722,
-          "colors": 1509,
+          "pixels": 7065,
+          "colors": 1640,
           "bbox": {
-            "minX": 17,
-            "minY": 13,
-            "maxX": 115,
+            "minX": 13,
+            "minY": 10,
+            "maxX": 114,
             "maxY": 118
           },
-          "sha256": "47493cd303855cdae8dc9c956efd055ebce4e92d0c9f4cf0c317d0b41563a12c",
-          "bytes": 9730
+          "ink": {
+            "minX": 13,
+            "minY": 11,
+            "maxX": 113,
+            "maxY": 116,
+            "width": 101,
+            "height": 106
+          },
+          "gridShape": "square",
+          "sha256": "b5217a0dafa95a973e96f623096a2cf678c7ec455286e81fe9001b718e9f9b6e",
+          "bytes": 10166
+        }
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.4688,
+          "meanLum": 134.88,
+          "lumStd": 56.76,
+          "edgeEnergy": 44
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.4375,
+          "meanLum": 135.78,
+          "lumStd": 60.03,
+          "edgeEnergy": 89
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4269,
+          "meanLum": 136.81,
+          "lumStd": 60.35,
+          "edgeEnergy": 95
         }
       }
     },
@@ -442,6 +868,7 @@
         "evidence": "icons/document-text-1004.png"
       },
       "sourceKind": "original-independent-aqua-illustration",
+      "reviewStatus": "accepted-core",
       "sizes": {
         "16": "icons/teachText-16.png",
         "32": "icons/teachText-32.png",
@@ -449,51 +876,105 @@
       },
       "metrics": {
         "16": {
-          "pixels": 150,
-          "colors": 115,
+          "pixels": 151,
+          "colors": 113,
           "bbox": {
-            "minX": 3,
+            "minX": 2,
             "minY": 1,
             "maxX": 13,
             "maxY": 15
           },
-          "sha256": "54fa9754b910d6f4c48ef84bde03ee3746eb0161925709ecd9b2952280e0b82b",
-          "bytes": 635
+          "ink": {
+            "minX": 2,
+            "minY": 1,
+            "maxX": 13,
+            "maxY": 14,
+            "width": 12,
+            "height": 14
+          },
+          "gridShape": "portrait",
+          "sha256": "f096281e226350ea530d034fe2ba4043204043e124a363b550bdb01827e8d821",
+          "bytes": 657
         },
         "32": {
-          "pixels": 499,
-          "colors": 267,
+          "pixels": 528,
+          "colors": 276,
           "bbox": {
-            "minX": 6,
+            "minX": 5,
             "minY": 2,
             "maxX": 26,
             "maxY": 29
           },
-          "sha256": "ac80ae11eea364fec4e5a15307e4dd17bd88b34c461a0e24c35917c4c437c6b7",
-          "bytes": 1357
+          "ink": {
+            "minX": 6,
+            "minY": 2,
+            "maxX": 25,
+            "maxY": 29,
+            "width": 20,
+            "height": 28
+          },
+          "gridShape": "portrait",
+          "sha256": "290e2a3a553808d6f5976803a3080bdc25f9a8cf6ac7b6dcd0916c2df21028af",
+          "bytes": 1389
         },
         "128": {
-          "pixels": 7513,
-          "colors": 1454,
+          "pixels": 8111,
+          "colors": 1517,
           "bbox": {
-            "minX": 25,
-            "minY": 10,
+            "minX": 22,
+            "minY": 8,
             "maxX": 106,
-            "maxY": 118
+            "maxY": 121
           },
-          "sha256": "4079c194fa23dedb93b8dae700a240a101201605d5d028ad8ea6e8ef6e9e9cf7",
-          "bytes": 7437
+          "ink": {
+            "minX": 23,
+            "minY": 9,
+            "maxX": 104,
+            "maxY": 118,
+            "width": 82,
+            "height": 110
+          },
+          "gridShape": "portrait",
+          "sha256": "5ff460eb8887737ccba7227c89b83fa628e54cf379c342e973ff4056e815ccea",
+          "bytes": 7850
+        }
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5313,
+          "meanLum": 203.43,
+          "lumStd": 59.88,
+          "edgeEnergy": 69
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.502,
+          "meanLum": 203.87,
+          "lumStd": 63.4,
+          "edgeEnergy": 254
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4904,
+          "meanLum": 205.71,
+          "lumStd": 62.56,
+          "edgeEnergy": 385
         }
       }
     },
     "assistant": {
       "label": "ClioTalk",
       "genre": "application",
-      "prototype": "transcript and telephone receiver",
+      "prototype": "Aqua candy conversation pair: a solid Bondi-blue user balloon overlapping a pearl-white reply balloon with a clearly dashed blue rim",
+      "metaphorKey": "solid-user-dashed-reply-balloons",
       "comparison": {
         "evidence": "icons/addressbook-1028.png"
       },
-      "sourceKind": "original-independent-aqua-illustration",
+      "sourceKind": "accepted-imagegen-era-illustration",
+      "reviewStatus": "accepted-imagegen",
       "sizes": {
         "16": "icons/assistant-16.png",
         "32": "icons/assistant-32.png",
@@ -501,40 +982,92 @@
       },
       "metrics": {
         "16": {
-          "pixels": 145,
-          "colors": 103,
+          "pixels": 120,
+          "colors": 38,
           "bbox": {
-            "minX": 3,
-            "minY": 1,
-            "maxX": 13,
-            "maxY": 15
+            "minX": 1,
+            "minY": 2,
+            "maxX": 14,
+            "maxY": 13
           },
-          "sha256": "395a2dbfd94bd24d3ff436d48d7abf887b765e2dd760c807208acdbb922bfc9e",
-          "bytes": 607
+          "ink": {
+            "minX": 1,
+            "minY": 2,
+            "maxX": 14,
+            "maxY": 13,
+            "width": 14,
+            "height": 12
+          },
+          "gridShape": "square",
+          "sha256": "cf5f19edb139b398d5a257de983bdb7e258e203eb28daab010e63ecb8a18557f",
+          "bytes": 342
         },
         "32": {
-          "pixels": 495,
-          "colors": 273,
+          "pixels": 491,
+          "colors": 127,
           "bbox": {
-            "minX": 6,
+            "minX": 3,
             "minY": 3,
-            "maxX": 26,
-            "maxY": 29
+            "maxX": 28,
+            "maxY": 28
           },
-          "sha256": "4c25fc05abe469e38fdc9dafa2a2b073117deb493bc27b94002277c5174f491c",
-          "bytes": 1344
+          "ink": {
+            "minX": 3,
+            "minY": 3,
+            "maxX": 28,
+            "maxY": 28,
+            "width": 26,
+            "height": 26
+          },
+          "gridShape": "square",
+          "sha256": "bc5814492af365ba33e281e0a1dcaf83c07ea1c21815e50865029888926328e8",
+          "bytes": 891
         },
         "128": {
-          "pixels": 7504,
-          "colors": 1146,
+          "pixels": 8129,
+          "colors": 3842,
           "bbox": {
-            "minX": 22,
+            "minX": 11,
             "minY": 12,
-            "maxX": 109,
-            "maxY": 119
+            "maxX": 116,
+            "maxY": 115
           },
-          "sha256": "824b8b1ca716d3fc58f26e3a828ea4af92d267c78cf51cc14af519ad9ade77a4",
-          "bytes": 6515
+          "ink": {
+            "minX": 12,
+            "minY": 13,
+            "maxX": 115,
+            "maxY": 114,
+            "width": 104,
+            "height": 102
+          },
+          "gridShape": "square",
+          "sha256": "63d49cbe70587cb2bfeee8373dee31eeb3308351bceeba1e25994e2584f5b2cb",
+          "bytes": 13020
+        }
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5313,
+          "meanLum": 154.28,
+          "lumStd": 55.39,
+          "edgeEnergy": 70
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.498,
+          "meanLum": 154.19,
+          "lumStd": 60.64,
+          "edgeEnergy": 175
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4921,
+          "meanLum": 154.09,
+          "lumStd": 61.71,
+          "edgeEnergy": 263
         }
       }
     },
@@ -546,6 +1079,7 @@
         "evidence": "icons/folder-pictures-1004.png"
       },
       "sourceKind": "original-independent-aqua-illustration",
+      "reviewStatus": "accepted-core",
       "sizes": {
         "16": "icons/scrapbook-16.png",
         "32": "icons/scrapbook-32.png",
@@ -553,40 +1087,92 @@
       },
       "metrics": {
         "16": {
-          "pixels": 142,
-          "colors": 115,
+          "pixels": 171,
+          "colors": 141,
           "bbox": {
+            "minX": 1,
+            "minY": 0,
+            "maxX": 14,
+            "maxY": 15
+          },
+          "ink": {
             "minX": 2,
             "minY": 1,
             "maxX": 13,
-            "maxY": 15
+            "maxY": 14,
+            "width": 12,
+            "height": 14
           },
-          "sha256": "cef8c2629a0bd59954e55e798a8ff335988f9c897792e0caa3f3e027727fe2d0",
-          "bytes": 626
+          "gridShape": "portrait",
+          "sha256": "400482b8f1471fc4dcfa06c4641877d768ef062fc3ea410d77e4a5e1945e34be",
+          "bytes": 713
         },
         "32": {
-          "pixels": 508,
-          "colors": 354,
+          "pixels": 625,
+          "colors": 423,
           "bbox": {
-            "minX": 5,
-            "minY": 3,
-            "maxX": 27,
-            "maxY": 29
+            "minX": 3,
+            "minY": 1,
+            "maxX": 28,
+            "maxY": 30
           },
-          "sha256": "539066f40134541203b81c5cc3e48823d37d7dbe5f450c12f367d2046165ed07",
-          "bytes": 1535
+          "ink": {
+            "minX": 4,
+            "minY": 2,
+            "maxX": 27,
+            "maxY": 29,
+            "width": 24,
+            "height": 28
+          },
+          "gridShape": "portrait",
+          "sha256": "591c66a471b1180daeaa380cbdd792ec262d7fbe3226007442bdf4a8a90cb97d",
+          "bytes": 1827
         },
         "128": {
-          "pixels": 7551,
-          "colors": 1978,
+          "pixels": 9128,
+          "colors": 2105,
           "bbox": {
-            "minX": 20,
-            "minY": 13,
-            "maxX": 109,
-            "maxY": 119
+            "minX": 14,
+            "minY": 7,
+            "maxX": 112,
+            "maxY": 122
           },
-          "sha256": "6ded6d9994b3592560d4f453cea48f1bb0a232a958f6fe374d7a82b1a6596890",
-          "bytes": 9092
+          "ink": {
+            "minX": 16,
+            "minY": 7,
+            "maxX": 111,
+            "maxY": 120,
+            "width": 96,
+            "height": 114
+          },
+          "gridShape": "portrait",
+          "sha256": "44f9d8528e54100223cc3b0fbe801ee951b11b99d73855ccf9568a4a5b37da07",
+          "bytes": 10460
+        }
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.582,
+          "meanLum": 136.44,
+          "lumStd": 67.36,
+          "edgeEnergy": 98
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5518,
+          "meanLum": 139.71,
+          "lumStd": 71.11,
+          "edgeEnergy": 252
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5533,
+          "meanLum": 138.96,
+          "lumStd": 72.24,
+          "edgeEnergy": 360
         }
       }
     },
@@ -598,6 +1184,7 @@
         "evidence": "icons/harddisk-1004.png"
       },
       "sourceKind": "original-independent-aqua-illustration",
+      "reviewStatus": "accepted-core",
       "sizes": {
         "16": "icons/projectDisk-16.png",
         "32": "icons/projectDisk-32.png",
@@ -605,40 +1192,92 @@
       },
       "metrics": {
         "16": {
-          "pixels": 164,
-          "colors": 83,
+          "pixels": 184,
+          "colors": 90,
           "bbox": {
             "minX": 1,
-            "minY": 2,
+            "minY": 1,
             "maxX": 14,
             "maxY": 14
           },
-          "sha256": "2643862310853bfe4dcd0548733c216aa574a804fbbc602849661dd9b185474f",
-          "bytes": 568
+          "ink": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14,
+            "width": 14,
+            "height": 14
+          },
+          "gridShape": "square",
+          "sha256": "740d28a33a3b110afc5f0ea8bca280c1176fd30873ae008b523e19576deb5a80",
+          "bytes": 571
         },
         "32": {
-          "pixels": 608,
-          "colors": 200,
+          "pixels": 644,
+          "colors": 201,
           "bbox": {
             "minX": 3,
-            "minY": 4,
+            "minY": 3,
             "maxX": 28,
-            "maxY": 29
+            "maxY": 28
           },
-          "sha256": "d6432988e4fbb2f0139be397c210e693cbc7a55da37f9d85576876e70c1ec7f3",
-          "bytes": 1107
+          "ink": {
+            "minX": 3,
+            "minY": 3,
+            "maxX": 28,
+            "maxY": 28,
+            "width": 26,
+            "height": 26
+          },
+          "gridShape": "square",
+          "sha256": "848dde7313d659255b6a99cd1f8cd180e0f484d13457c2973a6a7f819bda686d",
+          "bytes": 1119
         },
         "128": {
-          "pixels": 9143,
-          "colors": 806,
+          "pixels": 10282,
+          "colors": 889,
           "bbox": {
-            "minX": 14,
-            "minY": 19,
-            "maxX": 113,
-            "maxY": 118
+            "minX": 11,
+            "minY": 12,
+            "maxX": 116,
+            "maxY": 117
           },
-          "sha256": "285fc89a3703ab92cc10b1c921555cf0a7b607fce92a355f4b1a7ebd8e5275fa",
-          "bytes": 5197
+          "ink": {
+            "minX": 12,
+            "minY": 12,
+            "maxX": 115,
+            "maxY": 115,
+            "width": 104,
+            "height": 104
+          },
+          "gridShape": "square",
+          "sha256": "5ba9d05daf0272e40f1967b8c1515af928a6e0076fbe08ed542262e84a1184cd",
+          "bytes": 5589
+        }
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6797,
+          "meanLum": 149.43,
+          "lumStd": 59.56,
+          "edgeEnergy": 120
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.625,
+          "meanLum": 151.84,
+          "lumStd": 63.63,
+          "edgeEnergy": 304
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6202,
+          "meanLum": 152.15,
+          "lumStd": 65.11,
+          "edgeEnergy": 458
         }
       }
     }

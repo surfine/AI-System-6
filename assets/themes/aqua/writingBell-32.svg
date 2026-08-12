@@ -1,4 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
+<g transform="translate(-1.5025 -4.995) scale(1.0348)">
 <defs>
       <linearGradient id="body" x1="0" y1="0" x2="0.82" y2="1"><stop offset="0" stop-color="#fff0bf"/><stop offset="0.38" stop-color="#dab86c"/><stop offset="0.7" stop-color="#9a7140"/><stop offset="1" stop-color="#583e27"/></linearGradient>
       <linearGradient id="paper" x1="0" y1="0" x2="0.8" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="0.7" stop-color="#f5f7fa"/><stop offset="1" stop-color="#c8d1dc"/></linearGradient>
@@ -6,4 +7,5 @@
       <radialGradient id="aquaGlass" cx="0.28" cy="0.18" r="0.82"><stop offset="0" stop-color="#ffffff" stop-opacity="0.95"/><stop offset="0.32" stop-color="#bfe9ff" stop-opacity="0.72"/><stop offset="0.7" stop-color="#4f9ed8" stop-opacity="0.45"/><stop offset="1" stop-color="#16588f" stop-opacity="0.82"/></radialGradient>
     </defs>
 <ellipse cx="32" cy="53" rx="18" ry="3.2" fill="#24435f" fill-opacity="0.18"/><path d="M12 48h40c-6-7-7-14-7-23 0-17-26-17-26 0 0 9-1 16-7 23z" fill="#e6bd55" stroke="#173d67" stroke-width="1.7" stroke-linejoin="round"/><ellipse cx="32" cy="51" rx="23" ry="5" fill="#9d6b29" stroke="#173d67" stroke-width="1.7"/><circle cx="32" cy="56" r="3.5" fill="#6b4726"/><path d="M23 43h18c-3-3-3-7-3-11 0-8-12-8-12 0 0 4 0 8-3 11z" fill="#b17a2f" stroke="#183c63" stroke-width="2"/><circle cx="32" cy="47" r="2" fill="#183c63"/>
+</g>
 </svg>

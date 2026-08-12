@@ -1,3 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
-<rect x="4" y="5" width="24" height="22" fill="#c8cad8" stroke="#111111" stroke-width="1" stroke-linejoin="miter"/><rect x="5" y="5" width="22" height="9" fill="#e0e2ea" stroke="#111111" stroke-width="1" stroke-linejoin="miter"/><rect x="6" y="10" width="20" height="2" fill="#25252d"/><path d="M8 6l4 3M12 6l4 3M16 6l4 3M20 6l4 3" stroke="#8f929e" stroke-width="1"/><rect x="8" y="19" width="16" height="7" fill="#ffffff" stroke="#111111" stroke-width="1" stroke-linejoin="miter"/><path d="M9 20h13v1H9zM9 22h9v1H9zM9 24h11v1H9z" fill="#336699"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><image href="icons/fileFloppy-32.png" width="32" height="32" style="image-rendering:pixelated"/></svg>

@@ -1,6 +1,13 @@
 {
   "schemaVersion": 1,
-  "canvas": { "large": 32, "small": 16, "colors": ["black", "white-or-transparent"] },
+  "canvas": {
+    "large": 32,
+    "small": 16,
+    "colors": [
+      "black",
+      "white-or-transparent"
+    ]
+  },
   "nativeImage": {
     "path": ".claude/skills/system6-ui-review/assets/System 6.0.8 - System Startup.img",
     "sha256": "d1129d50e08064124ecba7423544f753650ceb2b064a3e447f86ef5ce3d6fba2"
@@ -8,166 +15,1950 @@
   "icons": {
     "finderApp": {
       "label": "Finder / System",
+      "prototype": "friendly one-bit compact Macintosh with two square eyes and a small smile",
+      "metaphorKey": "smiling-compact-macintosh",
       "source32": {
         "kind": "reference-guided-stand-in",
-        "nativeReference": { "file": "System Folder/System", "type": "ICN#", "id": 3, "prefix": "system" },
-        "art": [["outlineRect", 5, 3, 22, 24], ["outlineRect", 8, 6, 16, 14], ["rect", 11, 9, 2, 2], ["rect", 19, 9, 2, 2], ["line", 12, 15, 19, 15], ["line", 15, 20, 17, 20], ["line", 12, 26, 20, 26], ["outlineRect", 9, 27, 14, 3]],
-        "mask": [["rect", 5, 3, 22, 24], ["rect", 9, 27, 14, 3]]
+        "nativeReference": {
+          "file": "System Folder/System",
+          "type": "ICN#",
+          "id": 3,
+          "prefix": "system"
+        },
+        "art": [
+          [
+            "outlineRect",
+            5,
+            3,
+            22,
+            24
+          ],
+          [
+            "outlineRect",
+            6,
+            8,
+            16,
+            14
+          ],
+          [
+            "rect",
+            11,
+            9,
+            2,
+            2
+          ],
+          [
+            "rect",
+            19,
+            9,
+            2,
+            2
+          ],
+        [
+          "line",
+          12,
+          15,
+          13,
+          16
+        ],
+        [
+          "line",
+          13,
+          16,
+          18,
+          16
+        ],
+        [
+          "line",
+          18,
+          16,
+          19,
+          15
+        ],
+          [
+            "line",
+            15,
+            20,
+            17,
+            20
+          ],
+          [
+            "line",
+            12,
+            26,
+            20,
+            26
+          ],
+          [
+            "outlineRect",
+            9,
+            27,
+            14,
+            3
+          ]
+        ],
+        "mask": [
+          [
+            "rect",
+            5,
+            3,
+            22,
+            24
+          ],
+          [
+            "rect",
+            9,
+            27,
+            14,
+            3
+          ]
+        ]
       },
       "source16": {
         "kind": "optical-stand-in",
-        "art": [["outlineRect", 3, 1, 10, 12], ["outlineRect", 5, 3, 6, 6], ["rect", 6, 4, 1, 1], ["rect", 9, 4, 1, 1], ["line", 6, 7, 9, 7], ["line", 6, 12, 10, 12], ["outlineRect", 5, 13, 6, 2]],
-        "mask": [["rect", 3, 1, 10, 12], ["rect", 5, 13, 6, 2]]
+        "art": [
+          [
+            "outlineRect",
+            3,
+            1,
+            10,
+            12
+          ],
+          [
+            "outlineRect",
+            5,
+            3,
+            6,
+            6
+          ],
+          [
+            "rect",
+            6,
+            4,
+            1,
+            1
+          ],
+          [
+            "rect",
+            9,
+            4,
+            1,
+            1
+          ],
+        [
+          "line",
+          6,
+          7,
+          7,
+          8
+        ],
+        [
+          "line",
+          7,
+          8,
+          9,
+          8
+        ],
+        [
+          "line",
+          9,
+          8,
+          10,
+          7
+        ],
+          [
+            "line",
+            6,
+            12,
+            10,
+            12
+          ],
+          [
+            "outlineRect",
+            5,
+            13,
+            6,
+            2
+          ]
+        ],
+        "mask": [
+          [
+            "rect",
+            3,
+            1,
+            10,
+            12
+          ],
+          [
+            "rect",
+            5,
+            13,
+            6,
+            2
+          ]
+        ]
       }
     },
     "folder": {
       "label": "Folder",
       "source32": {
         "kind": "reference-guided-stand-in",
-        "nativeReference": { "file": "System Folder/Finder", "type": "ICN#", "id": 131, "prefix": "finder" },
-        "art": [["outlineRect", 6, 6, 11, 7], ["outlineRect", 4, 10, 24, 18], ["line", 5, 13, 27, 13], ["outlineRect", 9, 17, 11, 6]],
-        "mask": [["rect", 6, 6, 11, 7], ["rect", 4, 10, 24, 18]]
+        "nativeReference": {
+          "file": "System Folder/Finder",
+          "type": "ICN#",
+          "id": 131,
+          "prefix": "finder"
+        },
+        "art": [
+          [
+            "outlineRect",
+            6,
+            6,
+            11,
+            7
+          ],
+          [
+            "outlineRect",
+            4,
+            10,
+            24,
+            18
+          ],
+          [
+            "line",
+            5,
+            13,
+            27,
+            13
+          ],
+          [
+            "outlineRect",
+            9,
+            17,
+            11,
+            6
+          ]
+        ],
+        "mask": [
+          [
+            "rect",
+            6,
+            6,
+            11,
+            7
+          ],
+          [
+            "rect",
+            4,
+            10,
+            24,
+            18
+          ]
+        ]
       },
       "source16": {
         "kind": "optical-stand-in",
-        "art": [["outlineRect", 3, 3, 6, 4], ["outlineRect", 1, 6, 14, 9], ["line", 2, 8, 14, 8]],
-        "mask": [["rect", 3, 3, 6, 4], ["rect", 1, 6, 14, 9]]
+        "art": [
+          [
+            "outlineRect",
+            3,
+            3,
+            6,
+            4
+          ],
+          [
+            "outlineRect",
+            1,
+            6,
+            14,
+            9
+          ],
+          [
+            "line",
+            2,
+            8,
+            14,
+            8
+          ]
+        ],
+        "mask": [
+          [
+            "rect",
+            3,
+            3,
+            6,
+            4
+          ],
+          [
+            "rect",
+            1,
+            6,
+            14,
+            9
+          ]
+        ]
       }
     },
     "hardDisk": {
       "label": "Hard Disk",
       "source32": {
         "kind": "reference-guided-stand-in",
-        "nativeReference": { "file": "Apple HD SC Setup", "type": "ICN#", "id": 16646, "prefix": "hdsc" },
-        "art": [["outlineRect", 3, 8, 26, 17], ["line", 4, 12, 28, 12], ["line", 4, 21, 28, 21], ["outlineRect", 9, 15, 14, 4], ["rect", 6, 17, 2, 2], ["line", 24, 17, 26, 17]],
-        "mask": [["rect", 3, 8, 26, 17]]
+        "nativeReference": {
+          "file": "Apple HD SC Setup",
+          "type": "ICN#",
+          "id": 16646,
+          "prefix": "hdsc"
+        },
+        "art": [
+          [
+            "outlineRect",
+            3,
+            8,
+            26,
+            17
+          ],
+          [
+            "line",
+            4,
+            12,
+            28,
+            12
+          ],
+          [
+            "line",
+            4,
+            21,
+            28,
+            21
+          ],
+          [
+            "outlineRect",
+            9,
+            15,
+            14,
+            4
+          ],
+          [
+            "rect",
+            6,
+            17,
+            2,
+            2
+          ],
+          [
+            "line",
+            24,
+            17,
+            26,
+            17
+          ]
+        ],
+        "mask": [
+          [
+            "rect",
+            3,
+            8,
+            26,
+            17
+          ]
+        ]
       },
       "source16": {
         "kind": "optical-stand-in",
-        "art": [["outlineRect", 1, 5, 14, 9], ["line", 2, 7, 14, 7], ["outlineRect", 5, 9, 6, 3], ["rect", 3, 10, 1, 1]],
-        "mask": [["rect", 1, 5, 14, 9]]
+        "art": [
+          [
+            "outlineRect",
+            1,
+            5,
+            14,
+            9
+          ],
+          [
+            "line",
+            2,
+            7,
+            14,
+            7
+          ],
+          [
+            "outlineRect",
+            5,
+            9,
+            6,
+            3
+          ],
+          [
+            "rect",
+            3,
+            10,
+            1,
+            1
+          ]
+        ],
+        "mask": [
+          [
+            "rect",
+            1,
+            5,
+            14,
+            9
+          ]
+        ]
       }
     },
     "trash": {
       "label": "Trash",
       "source32": {
         "kind": "reference-guided-stand-in",
-        "nativeReference": { "file": "System Folder/Finder", "type": "ICN#", "id": 130, "prefix": "finder" },
-        "art": [["outlineRect", 12, 2, 8, 3], ["outlineRect", 5, 5, 22, 4], ["outlineRect", 7, 8, 18, 22], ["line", 11, 12, 11, 26], ["line", 15, 12, 15, 26], ["line", 19, 12, 19, 26], ["line", 23, 12, 23, 26]],
-        "mask": [["rect", 12, 2, 8, 3], ["rect", 5, 5, 22, 4], ["rect", 7, 8, 18, 22]]
+        "nativeReference": {
+          "file": "System Folder/Finder",
+          "type": "ICN#",
+          "id": 130,
+          "prefix": "finder"
+        },
+        "art": [
+          [
+            "outlineRect",
+            12,
+            2,
+            8,
+            3
+          ],
+          [
+            "outlineRect",
+            5,
+            5,
+            22,
+            4
+          ],
+          [
+            "outlineRect",
+            7,
+            8,
+            18,
+            22
+          ],
+          [
+            "line",
+            11,
+            12,
+            11,
+            26
+          ],
+          [
+            "line",
+            15,
+            12,
+            15,
+            26
+          ],
+          [
+            "line",
+            19,
+            12,
+            19,
+            26
+          ],
+          [
+            "line",
+            23,
+            12,
+            23,
+            26
+          ]
+        ],
+        "mask": [
+          [
+            "rect",
+            12,
+            2,
+            8,
+            3
+          ],
+          [
+            "rect",
+            5,
+            5,
+            22,
+            4
+          ],
+          [
+            "rect",
+            7,
+            8,
+            18,
+            22
+          ]
+        ]
       },
       "source16": {
         "kind": "optical-stand-in",
-        "art": [["outlineRect", 6, 1, 4, 2], ["outlineRect", 2, 3, 12, 3], ["outlineRect", 4, 5, 8, 10], ["line", 6, 7, 6, 13], ["line", 9, 7, 9, 13]],
-        "mask": [["rect", 6, 1, 4, 2], ["rect", 2, 3, 12, 3], ["rect", 4, 5, 8, 10]]
+        "art": [
+          [
+            "outlineRect",
+            6,
+            1,
+            4,
+            2
+          ],
+          [
+            "outlineRect",
+            2,
+            3,
+            12,
+            3
+          ],
+          [
+            "outlineRect",
+            4,
+            5,
+            8,
+            10
+          ],
+          [
+            "line",
+            6,
+            7,
+            6,
+            13
+          ],
+          [
+            "line",
+            9,
+            7,
+            9,
+            13
+          ]
+        ],
+        "mask": [
+          [
+            "rect",
+            6,
+            1,
+            4,
+            2
+          ],
+          [
+            "rect",
+            2,
+            3,
+            12,
+            3
+          ],
+          [
+            "rect",
+            4,
+            5,
+            8,
+            10
+          ]
+        ]
       }
     },
     "document": {
       "label": "Document",
       "source32": {
         "kind": "reference-guided-stand-in",
-        "nativeReference": { "file": "System Folder/Finder", "type": "ICN#", "id": 132, "prefix": "finder" },
-        "art": [["outlineRect", 6, 3, 20, 27], ["line", 20, 3, 25, 8], ["line", 20, 3, 20, 8], ["line", 20, 8, 25, 8], ["line", 10, 13, 21, 13], ["line", 10, 18, 22, 18], ["line", 10, 23, 18, 23]],
-        "mask": [["rect", 6, 3, 20, 27]]
+        "nativeReference": {
+          "file": "System Folder/Finder",
+          "type": "ICN#",
+          "id": 132,
+          "prefix": "finder"
+        },
+        "art": [
+          [
+            "outlineRect",
+            6,
+            3,
+            20,
+            27
+          ],
+          [
+            "line",
+            20,
+            3,
+            25,
+            8
+          ],
+          [
+            "line",
+            20,
+            3,
+            20,
+            8
+          ],
+          [
+            "line",
+            20,
+            8,
+            25,
+            8
+          ],
+          [
+            "line",
+            10,
+            13,
+            21,
+            13
+          ],
+          [
+            "line",
+            10,
+            18,
+            22,
+            18
+          ],
+          [
+            "line",
+            10,
+            23,
+            18,
+            23
+          ]
+        ],
+        "mask": [
+          [
+            "rect",
+            6,
+            3,
+            20,
+            27
+          ]
+        ]
       },
       "source16": {
         "kind": "optical-stand-in",
-        "art": [["outlineRect", 3, 1, 10, 14], ["line", 9, 1, 12, 4], ["line", 9, 1, 9, 4], ["line", 9, 4, 12, 4], ["line", 5, 8, 10, 8], ["line", 5, 11, 9, 11]],
-        "mask": [["rect", 3, 1, 10, 14]]
+        "art": [
+          [
+            "outlineRect",
+            3,
+            1,
+            10,
+            14
+          ],
+          [
+            "line",
+            9,
+            1,
+            12,
+            4
+          ],
+          [
+            "line",
+            9,
+            1,
+            9,
+            4
+          ],
+          [
+            "line",
+            9,
+            4,
+            12,
+            4
+          ],
+          [
+            "line",
+            5,
+            8,
+            10,
+            8
+          ],
+          [
+            "line",
+            5,
+            11,
+            9,
+            11
+          ]
+        ],
+        "mask": [
+          [
+            "rect",
+            3,
+            1,
+            10,
+            14
+          ]
+        ]
       }
     },
     "daHandler": {
       "label": "Application",
       "source32": {
         "kind": "reference-guided-stand-in",
-        "nativeReference": { "file": "System Folder/Finder", "type": "ICN#", "id": 133, "prefix": "finder" },
-        "art": [["outlineRect", 4, 5, 24, 23], ["line", 5, 10, 27, 10], ["rect", 7, 7, 2, 2], ["rect", 11, 7, 2, 2], ["outlineRect", 9, 14, 14, 9], ["line", 12, 20, 15, 16], ["line", 15, 16, 18, 20], ["line", 13, 19, 17, 19]],
-        "mask": [["rect", 4, 5, 24, 23]]
+        "nativeReference": {
+          "file": "System Folder/Finder",
+          "type": "ICN#",
+          "id": 133,
+          "prefix": "finder"
+        },
+        "art": [
+          [
+            "outlineRect",
+            4,
+            5,
+            24,
+            23
+          ],
+          [
+            "line",
+            5,
+            10,
+            27,
+            10
+          ],
+          [
+            "rect",
+            7,
+            7,
+            2,
+            2
+          ],
+          [
+            "rect",
+            11,
+            7,
+            2,
+            2
+          ],
+          [
+            "outlineRect",
+            9,
+            14,
+            14,
+            9
+          ],
+          [
+            "line",
+            12,
+            20,
+            15,
+            16
+          ],
+          [
+            "line",
+            15,
+            16,
+            18,
+            20
+          ],
+          [
+            "line",
+            13,
+            19,
+            17,
+            19
+          ]
+        ],
+        "mask": [
+          [
+            "rect",
+            4,
+            5,
+            24,
+            23
+          ]
+        ]
       },
       "source16": {
         "kind": "optical-stand-in",
-        "art": [["outlineRect", 1, 3, 14, 12], ["line", 2, 6, 14, 6], ["rect", 3, 4, 1, 1], ["rect", 5, 4, 1, 1], ["outlineRect", 5, 8, 6, 4]],
-        "mask": [["rect", 1, 3, 14, 12]]
+        "art": [
+          [
+            "outlineRect",
+            1,
+            3,
+            14,
+            12
+          ],
+          [
+            "line",
+            2,
+            6,
+            14,
+            6
+          ],
+          [
+            "rect",
+            3,
+            4,
+            1,
+            1
+          ],
+          [
+            "rect",
+            5,
+            4,
+            1,
+            1
+          ],
+          [
+            "outlineRect",
+            5,
+            8,
+            6,
+            4
+          ]
+        ],
+        "mask": [
+          [
+            "rect",
+            1,
+            3,
+            14,
+            12
+          ]
+        ]
       }
     },
     "fileFloppy": {
       "label": "File Floppy",
       "source32": {
         "kind": "reference-guided-stand-in",
-        "nativeReference": { "file": "System Folder/Finder", "type": "ICN#", "id": 129, "prefix": "finder" },
-        "art": [["outlineRect", 4, 2, 24, 28], ["outlineRect", 8, 5, 14, 8], ["rect", 18, 6, 2, 5], ["outlineRect", 9, 18, 14, 10], ["line", 12, 22, 20, 22], ["rect", 6, 25, 1, 2]],
-        "mask": [["rect", 4, 2, 24, 28]]
+        "nativeReference": {
+          "file": "System Folder/Finder",
+          "type": "ICN#",
+          "id": 129,
+          "prefix": "finder"
+        },
+        "art": [
+          [
+            "outlineRect",
+            4,
+            2,
+            24,
+            28
+          ],
+          [
+            "outlineRect",
+            8,
+            5,
+            14,
+            8
+          ],
+          [
+            "rect",
+            18,
+            6,
+            2,
+            5
+          ],
+          [
+            "outlineRect",
+            9,
+            18,
+            14,
+            10
+          ],
+          [
+            "line",
+            12,
+            22,
+            20,
+            22
+          ],
+          [
+            "rect",
+            6,
+            25,
+            1,
+            2
+          ]
+        ],
+        "mask": [
+          [
+            "rect",
+            4,
+            2,
+            24,
+            28
+          ]
+        ]
       },
       "source16": {
         "kind": "optical-stand-in",
-        "art": [["outlineRect", 2, 1, 12, 14], ["outlineRect", 4, 3, 7, 4], ["rect", 9, 4, 1, 2], ["outlineRect", 5, 10, 6, 4]],
-        "mask": [["rect", 2, 1, 12, 14]]
+        "art": [
+          [
+            "outlineRect",
+            2,
+            1,
+            12,
+            14
+          ],
+          [
+            "outlineRect",
+            4,
+            3,
+            7,
+            4
+          ],
+          [
+            "rect",
+            9,
+            4,
+            1,
+            2
+          ],
+          [
+            "outlineRect",
+            5,
+            10,
+            6,
+            4
+          ]
+        ],
+        "mask": [
+          [
+            "rect",
+            2,
+            1,
+            12,
+            14
+          ]
+        ]
       }
     },
     "projectDisk": {
       "label": "Project Hard Disk",
       "source32": {
         "kind": "period-metaphor-stand-in",
-        "art": [["outlineRect", 3, 8, 26, 17], ["line", 4, 12, 28, 12], ["line", 4, 21, 28, 21], ["outlineRect", 9, 14, 14, 6], ["line", 12, 18, 12, 15], ["line", 12, 15, 17, 15], ["line", 17, 15, 17, 17], ["line", 12, 17, 17, 17], ["rect", 6, 17, 2, 2]],
-        "mask": [["rect", 3, 8, 26, 17]]
+        "art": [
+          [
+            "outlineRect",
+            3,
+            8,
+            26,
+            17
+          ],
+          [
+            "line",
+            4,
+            12,
+            28,
+            12
+          ],
+          [
+            "line",
+            4,
+            21,
+            28,
+            21
+          ],
+          [
+            "outlineRect",
+            9,
+            14,
+            14,
+            6
+          ],
+          [
+            "line",
+            12,
+            18,
+            12,
+            15
+          ],
+          [
+            "line",
+            12,
+            15,
+            17,
+            15
+          ],
+          [
+            "line",
+            17,
+            15,
+            17,
+            17
+          ],
+          [
+            "line",
+            12,
+            17,
+            17,
+            17
+          ],
+          [
+            "rect",
+            6,
+            17,
+            2,
+            2
+          ]
+        ],
+        "mask": [
+          [
+            "rect",
+            3,
+            8,
+            26,
+            17
+          ]
+        ]
       },
       "source16": {
         "kind": "optical-stand-in",
-        "art": [["outlineRect", 1, 5, 14, 9], ["line", 2, 7, 14, 7], ["outlineRect", 5, 9, 6, 3], ["rect", 3, 10, 1, 1], ["line", 7, 10, 7, 11], ["line", 7, 10, 9, 10]],
-        "mask": [["rect", 1, 5, 14, 9]]
+        "art": [
+          [
+            "outlineRect",
+            1,
+            5,
+            14,
+            9
+          ],
+          [
+            "line",
+            2,
+            7,
+            14,
+            7
+          ],
+          [
+            "outlineRect",
+            5,
+            9,
+            6,
+            3
+          ],
+          [
+            "rect",
+            3,
+            10,
+            1,
+            1
+          ],
+          [
+            "line",
+            7,
+            10,
+            7,
+            11
+          ],
+          [
+            "line",
+            7,
+            10,
+            9,
+            10
+          ]
+        ],
+        "mask": [
+          [
+            "rect",
+            1,
+            5,
+            14,
+            9
+          ]
+        ]
       }
     },
     "searcher": {
       "label": "Searcher",
       "source32": {
         "kind": "period-metaphor-stand-in",
-        "art": [["line", 9, 4, 16, 4], ["line", 5, 8, 5, 15], ["line", 20, 8, 20, 15], ["line", 9, 20, 16, 20], ["line", 6, 7, 8, 5], ["line", 17, 5, 19, 7], ["line", 6, 16, 8, 19], ["line", 17, 19, 19, 16], ["line", 18, 18, 28, 28], ["line", 19, 17, 29, 27]],
-        "mask": [["rect", 8, 4, 9, 17], ["rect", 5, 8, 16, 9], ["line", 6, 7, 8, 5], ["line", 17, 5, 19, 7], ["line", 6, 16, 8, 19], ["line", 17, 19, 19, 16], ["line", 18, 18, 28, 28], ["line", 19, 17, 29, 27]]
+        "art": [
+          [
+            "line",
+            9,
+            4,
+            16,
+            4
+          ],
+          [
+            "line",
+            5,
+            8,
+            5,
+            15
+          ],
+          [
+            "line",
+            20,
+            8,
+            20,
+            15
+          ],
+          [
+            "line",
+            9,
+            20,
+            16,
+            20
+          ],
+          [
+            "line",
+            6,
+            7,
+            8,
+            5
+          ],
+          [
+            "line",
+            17,
+            5,
+            19,
+            7
+          ],
+          [
+            "line",
+            6,
+            16,
+            8,
+            19
+          ],
+          [
+            "line",
+            17,
+            19,
+            19,
+            16
+          ],
+          [
+            "line",
+            18,
+            18,
+            28,
+            28
+          ],
+          [
+            "line",
+            19,
+            17,
+            29,
+            27
+          ]
+        ],
+        "mask": [
+          [
+            "rect",
+            8,
+            4,
+            9,
+            17
+          ],
+          [
+            "rect",
+            5,
+            8,
+            16,
+            9
+          ],
+          [
+            "line",
+            6,
+            7,
+            8,
+            5
+          ],
+          [
+            "line",
+            17,
+            5,
+            19,
+            7
+          ],
+          [
+            "line",
+            6,
+            16,
+            8,
+            19
+          ],
+          [
+            "line",
+            17,
+            19,
+            19,
+            16
+          ],
+          [
+            "line",
+            18,
+            18,
+            28,
+            28
+          ],
+          [
+            "line",
+            19,
+            17,
+            29,
+            27
+          ]
+        ]
       },
       "source16": {
         "kind": "optical-stand-in",
-        "art": [["line", 4, 2, 7, 2], ["line", 2, 4, 2, 7], ["line", 9, 4, 9, 7], ["line", 4, 9, 7, 9], ["line", 3, 3, 3, 3], ["line", 8, 3, 8, 3], ["line", 3, 8, 3, 8], ["line", 8, 8, 8, 8], ["line", 8, 8, 14, 14]],
-        "mask": [["rect", 4, 2, 4, 8], ["rect", 2, 4, 8, 4], ["line", 3, 3, 3, 3], ["line", 8, 3, 8, 3], ["line", 3, 8, 3, 8], ["line", 8, 8, 8, 8], ["line", 8, 8, 14, 14]]
+        "art": [
+          [
+            "line",
+            4,
+            2,
+            7,
+            2
+          ],
+          [
+            "line",
+            2,
+            4,
+            2,
+            7
+          ],
+          [
+            "line",
+            9,
+            4,
+            9,
+            7
+          ],
+          [
+            "line",
+            4,
+            9,
+            7,
+            9
+          ],
+          [
+            "line",
+            3,
+            3,
+            3,
+            3
+          ],
+          [
+            "line",
+            8,
+            3,
+            8,
+            3
+          ],
+          [
+            "line",
+            3,
+            8,
+            3,
+            8
+          ],
+          [
+            "line",
+            8,
+            8,
+            8,
+            8
+          ],
+          [
+            "line",
+            8,
+            8,
+            14,
+            14
+          ]
+        ],
+        "mask": [
+          [
+            "rect",
+            4,
+            2,
+            4,
+            8
+          ],
+          [
+            "rect",
+            2,
+            4,
+            8,
+            4
+          ],
+          [
+            "line",
+            3,
+            3,
+            3,
+            3
+          ],
+          [
+            "line",
+            8,
+            3,
+            8,
+            3
+          ],
+          [
+            "line",
+            3,
+            8,
+            3,
+            8
+          ],
+          [
+            "line",
+            8,
+            8,
+            8,
+            8
+          ],
+          [
+            "line",
+            8,
+            8,
+            14,
+            14
+          ]
+        ]
       }
     },
     "teachText": {
       "label": "TeachText",
       "source32": {
         "kind": "reference-guided-stand-in",
-        "nativeReference": { "file": "TeachText", "type": "ICN#", "id": 128, "prefix": "teachtext" },
-        "art": [["outlineRect", 5, 3, 22, 27], ["line", 9, 10, 21, 10], ["line", 9, 15, 19, 15], ["line", 9, 20, 16, 20], ["line", 12, 25, 23, 14], ["line", 14, 27, 25, 16], ["line", 22, 13, 26, 17], ["line", 11, 26, 14, 27]],
-        "mask": [["rect", 5, 3, 22, 27]]
+        "nativeReference": {
+          "file": "TeachText",
+          "type": "ICN#",
+          "id": 128,
+          "prefix": "teachtext"
+        },
+        "art": [
+          [
+            "outlineRect",
+            5,
+            3,
+            22,
+            27
+          ],
+          [
+            "line",
+            9,
+            10,
+            21,
+            10
+          ],
+          [
+            "line",
+            9,
+            15,
+            19,
+            15
+          ],
+          [
+            "line",
+            9,
+            20,
+            16,
+            20
+          ],
+          [
+            "line",
+            12,
+            25,
+            23,
+            14
+          ],
+          [
+            "line",
+            14,
+            27,
+            25,
+            16
+          ],
+          [
+            "line",
+            22,
+            13,
+            26,
+            17
+          ],
+          [
+            "line",
+            11,
+            26,
+            14,
+            27
+          ]
+        ],
+        "mask": [
+          [
+            "rect",
+            5,
+            3,
+            22,
+            27
+          ]
+        ]
       },
       "source16": {
         "kind": "optical-stand-in",
-        "art": [["outlineRect", 2, 1, 12, 14], ["line", 4, 5, 11, 5], ["line", 4, 8, 9, 8], ["line", 6, 12, 12, 6], ["line", 7, 13, 13, 7]],
-        "mask": [["rect", 2, 1, 12, 14]]
+        "art": [
+          [
+            "outlineRect",
+            2,
+            1,
+            12,
+            14
+          ],
+          [
+            "line",
+            4,
+            5,
+            11,
+            5
+          ],
+          [
+            "line",
+            4,
+            8,
+            9,
+            8
+          ],
+          [
+            "line",
+            6,
+            12,
+            12,
+            6
+          ],
+          [
+            "line",
+            7,
+            13,
+            13,
+            7
+          ]
+        ],
+        "mask": [
+          [
+            "rect",
+            2,
+            1,
+            12,
+            14
+          ]
+        ]
       }
     },
     "scrapbook": {
       "label": "Scrapbook",
       "source32": {
         "kind": "period-metaphor-stand-in",
-        "art": [["outlineRect", 6, 3, 20, 27], ["line", 10, 4, 10, 29], ["outlineRect", 13, 8, 9, 8], ["line", 14, 21, 22, 21], ["line", 14, 24, 20, 24], ["line", 14, 27, 22, 27]],
-        "mask": [["rect", 6, 3, 20, 27]]
+        "art": [
+          [
+            "outlineRect",
+            6,
+            3,
+            20,
+            27
+          ],
+          [
+            "line",
+            10,
+            4,
+            10,
+            29
+          ],
+          [
+            "outlineRect",
+            13,
+            8,
+            9,
+            8
+          ],
+          [
+            "line",
+            14,
+            21,
+            22,
+            21
+          ],
+          [
+            "line",
+            14,
+            24,
+            20,
+            24
+          ],
+          [
+            "line",
+            14,
+            27,
+            22,
+            27
+          ]
+        ],
+        "mask": [
+          [
+            "rect",
+            6,
+            3,
+            20,
+            27
+          ]
+        ]
       },
       "source16": {
         "kind": "optical-stand-in",
-        "art": [["outlineRect", 2, 1, 12, 14], ["line", 5, 2, 5, 14], ["outlineRect", 7, 4, 5, 4], ["line", 7, 10, 11, 10], ["line", 7, 12, 10, 12]],
-        "mask": [["rect", 2, 1, 12, 14]]
+        "art": [
+          [
+            "outlineRect",
+            2,
+            1,
+            12,
+            14
+          ],
+          [
+            "line",
+            5,
+            2,
+            5,
+            14
+          ],
+          [
+            "outlineRect",
+            7,
+            4,
+            5,
+            4
+          ],
+          [
+            "line",
+            7,
+            10,
+            11,
+            10
+          ],
+          [
+            "line",
+            7,
+            12,
+            10,
+            12
+          ]
+        ],
+        "mask": [
+          [
+            "rect",
+            2,
+            1,
+            12,
+            14
+          ]
+        ]
       }
     },
     "assistant": {
       "label": "ClioTalk",
+      "prototype": "one-bit solid user balloon followed by a dashed provisional reply balloon",
+      "metaphorKey": "solid-user-dashed-reply-balloons",
       "source32": {
         "kind": "period-metaphor-stand-in",
-        "art": [["outlineRect", 7, 11, 18, 17], ["outlineRect", 11, 15, 10, 9], ["rect", 14, 18, 4, 3], ["line", 9, 8, 12, 5], ["line", 12, 5, 20, 5], ["line", 20, 5, 23, 8], ["line", 9, 8, 13, 10], ["line", 19, 10, 23, 8], ["line", 11, 28, 21, 28]],
-        "mask": [["rect", 7, 11, 18, 18], ["rect", 9, 5, 15, 6]]
+        "note": "Two speech balloons: the user's turn is solid and the provisional model reply is dashed until saved, clipped, inserted, or exported.",
+        "art": [
+          [
+            "outlineRect",
+            3,
+            4,
+            15,
+            10
+          ],
+          [
+            "line",
+            7,
+            13,
+            5,
+            17
+          ],
+          [
+            "line",
+            5,
+            17,
+            10,
+            13
+          ],
+          [
+            "rect",
+            12,
+            17,
+            3,
+            1
+          ],
+          [
+            "rect",
+            17,
+            17,
+            3,
+            1
+          ],
+          [
+            "rect",
+            22,
+            17,
+            3,
+            1
+          ],
+          [
+            "rect",
+            27,
+            17,
+            2,
+            1
+          ],
+          [
+            "rect",
+            12,
+            19,
+            1,
+            3
+          ],
+          [
+            "rect",
+            12,
+            24,
+            1,
+            3
+          ],
+          [
+            "rect",
+            28,
+            19,
+            1,
+            3
+          ],
+          [
+            "rect",
+            28,
+            24,
+            1,
+            4
+          ],
+          [
+            "rect",
+            14,
+            27,
+            3,
+            1
+          ],
+          [
+            "rect",
+            19,
+            27,
+            3,
+            1
+          ],
+          [
+            "rect",
+            24,
+            27,
+            3,
+            1
+          ],
+          [
+            "line",
+            25,
+            27,
+            27,
+            30
+          ],
+          [
+            "line",
+            23,
+            28,
+            27,
+            30
+          ]
+        ],
+        "mask": [
+          [
+            "rect",
+            3,
+            4,
+            15,
+            10
+          ],
+          [
+            "rect",
+            5,
+            13,
+            6,
+            5
+          ],
+          [
+            "rect",
+            12,
+            17,
+            17,
+            11
+          ],
+          [
+            "rect",
+            22,
+            27,
+            7,
+            4
+          ]
+        ]
       },
       "source16": {
         "kind": "optical-stand-in",
-        "art": [["outlineRect", 3, 6, 10, 8], ["outlineRect", 6, 8, 4, 4], ["line", 4, 4, 6, 2], ["line", 6, 2, 10, 2], ["line", 10, 2, 12, 4], ["line", 4, 4, 6, 5], ["line", 10, 5, 12, 4]],
-        "mask": [["rect", 3, 6, 10, 8], ["rect", 4, 2, 9, 4]]
+        "art": [
+          [
+            "outlineRect",
+            1,
+            2,
+            8,
+            6
+          ],
+          [
+            "rect",
+            2,
+            7,
+            1,
+            3
+          ],
+          [
+            "rect",
+            2,
+            7,
+            4,
+            3
+          ],
+          [
+            "rect",
+            6,
+            8,
+            3,
+            1
+          ],
+          [
+            "rect",
+            10,
+            8,
+            3,
+            1
+          ],
+          [
+            "rect",
+            14,
+            8,
+            1,
+            1
+          ],
+          [
+            "rect",
+            6,
+            10,
+            1,
+            2
+          ],
+          [
+            "rect",
+            14,
+            10,
+            1,
+            2
+          ],
+          [
+            "rect",
+            6,
+            13,
+            1,
+            2
+          ],
+          [
+            "rect",
+            14,
+            13,
+            1,
+            2
+          ],
+          [
+            "rect",
+            8,
+            14,
+            2,
+            1
+          ],
+          [
+            "rect",
+            11,
+            14,
+            2,
+            1
+          ],
+          [
+            "line",
+            11,
+            14,
+            13,
+            15
+          ]
+        ],
+        "mask": [
+          [
+            "rect",
+            1,
+            2,
+            8,
+            6
+          ],
+          [
+            "rect",
+            2,
+            7,
+            4,
+            3
+          ],
+          [
+            "rect",
+            6,
+            8,
+            9,
+            7
+          ],
+          [
+            "rect",
+            11,
+            14,
+            4,
+            2
+          ]
+        ]
+      }
+    },
+    "controlPanel": {
+      "label": "Control Panel",
+      "source32": {
+        "kind": "period-metaphor-stand-in",
+        "note": "A compact System 6 control surface with three mechanical sliders.",
+        "art": [
+          ["outlineRect", 5, 4, 22, 24],
+          ["line", 9, 11, 23, 11],
+          ["line", 9, 17, 23, 17],
+          ["line", 9, 23, 23, 23],
+          ["rect", 10, 8, 5, 7],
+          ["rect", 18, 14, 5, 7],
+          ["rect", 12, 20, 5, 7]
+        ],
+        "mask": [
+          ["rect", 5, 4, 22, 24]
+        ]
+      },
+      "source16": {
+        "kind": "optical-stand-in",
+        "art": [
+          ["outlineRect", 2, 1, 12, 14],
+          ["line", 4, 5, 12, 5],
+          ["line", 4, 9, 12, 9],
+          ["line", 4, 12, 12, 12],
+          ["rect", 5, 3, 3, 5],
+          ["rect", 9, 7, 3, 5],
+          ["rect", 5, 11, 3, 3]
+        ],
+        "mask": [
+          ["rect", 2, 1, 12, 14]
+        ]
+      }
+    },
+    "reviewDesk": {
+      "label": "Review Desk",
+      "source32": {
+        "kind": "period-metaphor-stand-in",
+        "note": "A marked manuscript under a one-bit proofing lens.",
+        "art": [
+          ["outlineRect", 4, 3, 18, 26],
+          ["line", 8, 9, 18, 9],
+          ["line", 8, 14, 16, 14],
+          ["line", 8, 20, 11, 23],
+          ["line", 11, 23, 18, 15],
+          ["line", 18, 15, 24, 9],
+          ["line", 24, 9, 28, 13],
+          ["line", 28, 13, 28, 19],
+          ["line", 28, 19, 24, 23],
+          ["line", 24, 23, 18, 23],
+          ["line", 18, 23, 15, 20],
+          ["line", 25, 22, 30, 27],
+          ["line", 24, 23, 29, 28]
+        ],
+        "mask": [
+          ["rect", 4, 3, 18, 26],
+          ["rect", 17, 9, 12, 15],
+          ["rect", 24, 22, 7, 7]
+        ]
+      },
+      "source16": {
+        "kind": "optical-stand-in",
+        "art": [
+          ["outlineRect", 1, 1, 9, 14],
+          ["line", 3, 5, 8, 5],
+          ["line", 3, 9, 5, 11],
+          ["line", 5, 11, 9, 7],
+          ["line", 9, 6, 12, 6],
+          ["line", 12, 6, 14, 8],
+          ["line", 14, 8, 14, 11],
+          ["line", 14, 11, 12, 13],
+          ["line", 12, 13, 9, 13],
+          ["line", 12, 13, 15, 15]
+        ],
+        "mask": [
+          ["rect", 1, 1, 9, 14],
+          ["rect", 8, 6, 7, 8],
+          ["rect", 12, 13, 4, 3]
+        ]
+      }
+    },
+    "docMap": {
+      "label": "DocMap",
+      "source32": {
+        "kind": "period-metaphor-stand-in",
+        "note": "A document whose heading runs branch into a three-node map.",
+        "art": [
+          ["outlineRect", 3, 4, 14, 24],
+          ["line", 7, 9, 14, 9],
+          ["line", 7, 14, 12, 14],
+          ["line", 17, 16, 22, 16],
+          ["line", 22, 8, 22, 24],
+          ["line", 22, 8, 26, 8],
+          ["line", 22, 16, 26, 16],
+          ["line", 22, 24, 26, 24],
+          ["outlineRect", 26, 6, 5, 5],
+          ["outlineRect", 26, 14, 5, 5],
+          ["outlineRect", 26, 22, 5, 5]
+        ],
+        "mask": [
+          ["rect", 3, 4, 14, 24],
+          ["line", 17, 16, 26, 16],
+          ["line", 22, 8, 22, 24],
+          ["line", 22, 8, 30, 8],
+          ["line", 22, 24, 30, 24],
+          ["rect", 26, 6, 5, 5],
+          ["rect", 26, 14, 5, 5],
+          ["rect", 26, 22, 5, 5]
+        ]
+      },
+      "source16": {
+        "kind": "optical-stand-in",
+        "art": [
+          ["outlineRect", 1, 2, 7, 13],
+          ["line", 3, 5, 6, 5],
+          ["line", 3, 8, 5, 8],
+          ["line", 8, 9, 11, 9],
+          ["line", 11, 4, 11, 14],
+          ["line", 11, 4, 13, 4],
+          ["line", 11, 9, 13, 9],
+          ["line", 11, 14, 13, 14],
+          ["outlineRect", 13, 3, 3, 3],
+          ["outlineRect", 13, 8, 3, 3],
+          ["outlineRect", 13, 13, 3, 3]
+        ],
+        "mask": [
+          ["rect", 1, 2, 7, 13],
+          ["line", 8, 9, 15, 9],
+          ["line", 11, 4, 11, 14],
+          ["line", 11, 4, 15, 4],
+          ["line", 11, 14, 15, 14],
+          ["rect", 13, 3, 3, 3],
+          ["rect", 13, 8, 3, 3],
+          ["rect", 13, 13, 3, 3]
+        ]
       }
     }
   }

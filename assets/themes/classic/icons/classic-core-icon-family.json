@@ -8,13 +8,14 @@
   "icons": {
     "finderApp": {
       "label": "Finder / System",
-      "sourceKind": "reference-guided-stand-in",
+      "sourceKind": "reference-guided-semantic-adaptation",
       "nativeReference": {
         "file": "System Folder/System",
         "type": "ICN#",
         "id": 3
       },
-      "referenceDiffPixels": 512,
+      "nativeReference16": null,
+      "referenceDiffPixels": 516,
       "sizes": {
         "16": "finderApp-16.svg",
         "32": "finderApp-32.svg"
@@ -26,7 +27,7 @@
       "metrics": {
         "16": {
           "art": {
-            "pixels": 78,
+            "pixels": 75,
             "bbox": {
               "minX": 3,
               "minY": 1,
@@ -68,13 +69,14 @@
     },
     "folder": {
       "label": "Folder",
-      "sourceKind": "reference-guided-stand-in",
+      "sourceKind": "native-resource-replica",
       "nativeReference": {
         "file": "System Folder/Finder",
         "type": "ICN#",
         "id": 131
       },
-      "referenceDiffPixels": 546,
+      "nativeReference16": null,
+      "referenceDiffPixels": 0,
       "sizes": {
         "16": "folder-16.svg",
         "32": "folder-32.svg"
@@ -106,21 +108,21 @@
         },
         "32": {
           "art": {
-            "pixels": 162,
+            "pixels": 111,
             "bbox": {
-              "minX": 4,
-              "minY": 6,
-              "maxX": 27,
-              "maxY": 27
+              "minX": 0,
+              "minY": 7,
+              "maxX": 30,
+              "maxY": 31
             }
           },
           "mask": {
-            "pixels": 476,
+            "pixels": 689,
             "bbox": {
-              "minX": 4,
-              "minY": 6,
-              "maxX": 27,
-              "maxY": 27
+              "minX": 0,
+              "minY": 7,
+              "maxX": 30,
+              "maxY": 31
             }
           }
         }
@@ -128,13 +130,14 @@
     },
     "hardDisk": {
       "label": "Hard Disk",
-      "sourceKind": "reference-guided-stand-in",
+      "sourceKind": "native-resource-replica",
       "nativeReference": {
         "file": "Apple HD SC Setup",
         "type": "ICN#",
         "id": 16646
       },
-      "referenceDiffPixels": 638,
+      "nativeReference16": null,
+      "referenceDiffPixels": 0,
       "sizes": {
         "16": "hardDisk-16.svg",
         "32": "hardDisk-32.svg"
@@ -166,21 +169,21 @@
         },
         "32": {
           "art": {
-            "pixels": 169,
+            "pixels": 79,
             "bbox": {
-              "minX": 3,
-              "minY": 8,
-              "maxX": 28,
-              "maxY": 24
+              "minX": 0,
+              "minY": 18,
+              "maxX": 31,
+              "maxY": 28
             }
           },
           "mask": {
-            "pixels": 442,
+            "pixels": 348,
             "bbox": {
-              "minX": 3,
-              "minY": 8,
-              "maxX": 28,
-              "maxY": 24
+              "minX": 0,
+              "minY": 18,
+              "maxX": 31,
+              "maxY": 28
             }
           }
         }
@@ -188,13 +191,14 @@
     },
     "trash": {
       "label": "Trash",
-      "sourceKind": "reference-guided-stand-in",
+      "sourceKind": "native-resource-replica",
       "nativeReference": {
         "file": "System Folder/Finder",
         "type": "ICN#",
         "id": 130
       },
-      "referenceDiffPixels": 492,
+      "nativeReference16": null,
+      "referenceDiffPixels": 0,
       "sizes": {
         "16": "trash-16.svg",
         "32": "trash-32.svg"
@@ -226,21 +230,21 @@
         },
         "32": {
           "art": {
-            "pixels": 184,
+            "pixels": 212,
             "bbox": {
               "minX": 5,
-              "minY": 2,
+              "minY": 0,
               "maxX": 26,
-              "maxY": 29
+              "maxY": 31
             }
           },
           "mask": {
-            "pixels": 490,
+            "pixels": 618,
             "bbox": {
               "minX": 5,
-              "minY": 2,
+              "minY": 0,
               "maxX": 26,
-              "maxY": 29
+              "maxY": 31
             }
           }
         }
@@ -248,13 +252,14 @@
     },
     "document": {
       "label": "Document",
-      "sourceKind": "reference-guided-stand-in",
+      "sourceKind": "native-resource-replica",
       "nativeReference": {
         "file": "System Folder/Finder",
         "type": "ICN#",
         "id": 132
       },
-      "referenceDiffPixels": 481,
+      "nativeReference16": null,
+      "referenceDiffPixels": 0,
       "sizes": {
         "16": "document-16.svg",
         "32": "document-32.svg"
@@ -286,21 +291,21 @@
         },
         "32": {
           "art": {
-            "pixels": 137,
+            "pixels": 115,
             "bbox": {
-              "minX": 6,
-              "minY": 3,
-              "maxX": 25,
-              "maxY": 29
+              "minX": 4,
+              "minY": 0,
+              "maxX": 28,
+              "maxY": 31
             }
           },
           "mask": {
-            "pixels": 540,
+            "pixels": 779,
             "bbox": {
-              "minX": 6,
-              "minY": 3,
-              "maxX": 25,
-              "maxY": 29
+              "minX": 4,
+              "minY": 0,
+              "maxX": 28,
+              "maxY": 31
             }
           }
         }
@@ -308,13 +313,14 @@
     },
     "daHandler": {
       "label": "Application",
-      "sourceKind": "reference-guided-stand-in",
+      "sourceKind": "native-resource-replica",
       "nativeReference": {
         "file": "System Folder/Finder",
         "type": "ICN#",
         "id": 133
       },
-      "referenceDiffPixels": 457,
+      "nativeReference16": null,
+      "referenceDiffPixels": 0,
       "sizes": {
         "16": "daHandler-16.svg",
         "32": "daHandler-32.svg"
@@ -346,21 +352,21 @@
         },
         "32": {
           "art": {
-            "pixels": 174,
+            "pixels": 128,
             "bbox": {
-              "minX": 4,
-              "minY": 5,
-              "maxX": 27,
-              "maxY": 27
+              "minX": 0,
+              "minY": 0,
+              "maxX": 31,
+              "maxY": 31
             }
           },
           "mask": {
-            "pixels": 552,
+            "pixels": 553,
             "bbox": {
-              "minX": 4,
-              "minY": 5,
-              "maxX": 27,
-              "maxY": 27
+              "minX": 0,
+              "minY": 0,
+              "maxX": 31,
+              "maxY": 31
             }
           }
         }
@@ -368,13 +374,14 @@
     },
     "fileFloppy": {
       "label": "File Floppy",
-      "sourceKind": "reference-guided-stand-in",
+      "sourceKind": "native-resource-replica",
       "nativeReference": {
         "file": "System Folder/Finder",
         "type": "ICN#",
         "id": 129
       },
-      "referenceDiffPixels": 663,
+      "nativeReference16": null,
+      "referenceDiffPixels": 0,
       "sizes": {
         "16": "fileFloppy-16.svg",
         "32": "fileFloppy-32.svg"
@@ -406,21 +413,21 @@
         },
         "32": {
           "art": {
-            "pixels": 205,
+            "pixels": 213,
             "bbox": {
-              "minX": 4,
-              "minY": 2,
-              "maxX": 27,
-              "maxY": 29
+              "minX": 0,
+              "minY": 0,
+              "maxX": 31,
+              "maxY": 31
             }
           },
           "mask": {
-            "pixels": 672,
+            "pixels": 1015,
             "bbox": {
-              "minX": 4,
-              "minY": 2,
-              "maxX": 27,
-              "maxY": 29
+              "minX": 0,
+              "minY": 0,
+              "maxX": 31,
+              "maxY": 31
             }
           }
         }
@@ -430,6 +437,7 @@
       "label": "Project Hard Disk",
       "sourceKind": "period-metaphor-stand-in",
       "nativeReference": null,
+      "nativeReference16": null,
       "referenceDiffPixels": null,
       "sizes": {
         "16": "projectDisk-16.svg",
@@ -486,6 +494,7 @@
       "label": "Searcher",
       "sourceKind": "period-metaphor-stand-in",
       "nativeReference": null,
+      "nativeReference16": null,
       "referenceDiffPixels": null,
       "sizes": {
         "16": "searcher-16.svg",
@@ -540,13 +549,14 @@
     },
     "teachText": {
       "label": "TeachText",
-      "sourceKind": "reference-guided-stand-in",
+      "sourceKind": "native-resource-replica",
       "nativeReference": {
         "file": "TeachText",
         "type": "ICN#",
         "id": 128
       },
-      "referenceDiffPixels": 476,
+      "nativeReference16": null,
+      "referenceDiffPixels": 0,
       "sizes": {
         "16": "teachText-16.svg",
         "32": "teachText-32.svg"
@@ -578,21 +588,21 @@
         },
         "32": {
           "art": {
-            "pixels": 155,
+            "pixels": 152,
             "bbox": {
-              "minX": 5,
-              "minY": 3,
-              "maxX": 26,
-              "maxY": 29
+              "minX": 0,
+              "minY": 0,
+              "maxX": 31,
+              "maxY": 31
             }
           },
           "mask": {
-            "pixels": 594,
+            "pixels": 555,
             "bbox": {
-              "minX": 5,
-              "minY": 3,
-              "maxX": 26,
-              "maxY": 29
+              "minX": 0,
+              "minY": 0,
+              "maxX": 31,
+              "maxY": 31
             }
           }
         }
@@ -602,6 +612,7 @@
       "label": "Scrapbook",
       "sourceKind": "period-metaphor-stand-in",
       "nativeReference": null,
+      "nativeReference16": null,
       "referenceDiffPixels": null,
       "sizes": {
         "16": "scrapbook-16.svg",
@@ -658,6 +669,7 @@
       "label": "ClioTalk",
       "sourceKind": "period-metaphor-stand-in",
       "nativeReference": null,
+      "nativeReference16": null,
       "referenceDiffPixels": null,
       "sizes": {
         "16": "assistant-16.svg",
@@ -670,41 +682,212 @@
       "metrics": {
         "16": {
           "art": {
-            "pixels": 57,
+            "pixels": 53,
             "bbox": {
-              "minX": 3,
+              "minX": 1,
               "minY": 2,
-              "maxX": 12,
-              "maxY": 13
+              "maxX": 14,
+              "maxY": 15
             }
           },
           "mask": {
-            "pixels": 116,
+            "pixels": 123,
             "bbox": {
-              "minX": 3,
+              "minX": 1,
               "minY": 2,
-              "maxX": 12,
-              "maxY": 13
+              "maxX": 14,
+              "maxY": 15
             }
           }
         },
         "32": {
           "art": {
-            "pixels": 146,
+            "pixels": 94,
             "bbox": {
-              "minX": 7,
-              "minY": 5,
-              "maxX": 24,
+              "minX": 3,
+              "minY": 4,
+              "maxX": 28,
+              "maxY": 30
+            }
+          },
+          "mask": {
+            "pixels": 382,
+            "bbox": {
+              "minX": 3,
+              "minY": 4,
+              "maxX": 28,
+              "maxY": 30
+            }
+          }
+        }
+      }
+    },
+    "controlPanel": {
+      "label": "Control Panel",
+      "sourceKind": "period-metaphor-stand-in",
+      "nativeReference": null,
+      "nativeReference16": null,
+      "referenceDiffPixels": null,
+      "sizes": {
+        "16": "controlPanel-16.svg",
+        "32": "controlPanel-32.svg"
+      },
+      "masks": {
+        "16": "controlPanel-mask-16.svg",
+        "32": "controlPanel-mask-32.svg"
+      },
+      "metrics": {
+        "16": {
+          "art": {
+            "pixels": 105,
+            "bbox": {
+              "minX": 2,
+              "minY": 1,
+              "maxX": 13,
+              "maxY": 14
+            }
+          },
+          "mask": {
+            "pixels": 168,
+            "bbox": {
+              "minX": 2,
+              "minY": 1,
+              "maxX": 13,
+              "maxY": 14
+            }
+          }
+        },
+        "32": {
+          "art": {
+            "pixels": 223,
+            "bbox": {
+              "minX": 5,
+              "minY": 4,
+              "maxX": 26,
+              "maxY": 27
+            }
+          },
+          "mask": {
+            "pixels": 528,
+            "bbox": {
+              "minX": 5,
+              "minY": 4,
+              "maxX": 26,
+              "maxY": 27
+            }
+          }
+        }
+      }
+    },
+    "reviewDesk": {
+      "label": "Review Desk",
+      "sourceKind": "period-metaphor-stand-in",
+      "nativeReference": null,
+      "nativeReference16": null,
+      "referenceDiffPixels": null,
+      "sizes": {
+        "16": "reviewDesk-16.svg",
+        "32": "reviewDesk-32.svg"
+      },
+      "masks": {
+        "16": "reviewDesk-mask-16.svg",
+        "32": "reviewDesk-mask-32.svg"
+      },
+      "metrics": {
+        "16": {
+          "art": {
+            "pixels": 69,
+            "bbox": {
+              "minX": 1,
+              "minY": 1,
+              "maxX": 15,
+              "maxY": 15
+            }
+          },
+          "mask": {
+            "pixels": 175,
+            "bbox": {
+              "minX": 1,
+              "minY": 1,
+              "maxX": 15,
+              "maxY": 15
+            }
+          }
+        },
+        "32": {
+          "art": {
+            "pixels": 153,
+            "bbox": {
+              "minX": 4,
+              "minY": 3,
+              "maxX": 30,
               "maxY": 28
             }
           },
           "mask": {
-            "pixels": 414,
+            "pixels": 612,
             "bbox": {
-              "minX": 7,
-              "minY": 5,
-              "maxX": 24,
+              "minX": 4,
+              "minY": 3,
+              "maxX": 30,
               "maxY": 28
+            }
+          }
+        }
+      }
+    },
+    "docMap": {
+      "label": "DocMap",
+      "sourceKind": "period-metaphor-stand-in",
+      "nativeReference": null,
+      "nativeReference16": null,
+      "referenceDiffPixels": null,
+      "sizes": {
+        "16": "docMap-16.svg",
+        "32": "docMap-32.svg"
+      },
+      "masks": {
+        "16": "docMap-mask-16.svg",
+        "32": "docMap-mask-32.svg"
+      },
+      "metrics": {
+        "16": {
+          "art": {
+            "pixels": 84,
+            "bbox": {
+              "minX": 1,
+              "minY": 2,
+              "maxX": 15,
+              "maxY": 15
+            }
+          },
+          "mask": {
+            "pixels": 135,
+            "bbox": {
+              "minX": 1,
+              "minY": 2,
+              "maxX": 15,
+              "maxY": 15
+            }
+          }
+        },
+        "32": {
+          "art": {
+            "pixels": 165,
+            "bbox": {
+              "minX": 3,
+              "minY": 4,
+              "maxX": 30,
+              "maxY": 27
+            }
+          },
+          "mask": {
+            "pixels": 442,
+            "bbox": {
+              "minX": 3,
+              "minY": 4,
+              "maxX": 30,
+              "maxY": 27
             }
           }
         }

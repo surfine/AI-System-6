@@ -1,4 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
+<g transform="translate(-0.078 1.2844) scale(0.9908)">
 <defs>
       <linearGradient id="body" x1="0.08" y1="0" x2="0.92" y2="1"><stop offset="0" stop-color="#ffd9d5"/><stop offset="0.42" stop-color="#e88778"/><stop offset="1" stop-color="#6d292c"/></linearGradient>
       <linearGradient id="paper" x1="0" y1="0" x2="0.75" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="0.66" stop-color="#f4f3ed"/><stop offset="1" stop-color="#bdc3c9"/></linearGradient>
@@ -7,4 +8,5 @@
       <linearGradient id="leather" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c39a69"/><stop offset="0.52" stop-color="#87603f"/><stop offset="1" stop-color="#4b3024"/></linearGradient>
     </defs>
 <ellipse cx="33" cy="54" rx="19" ry="2.7" fill="#000000" fill-opacity="0.24"/><path d="M14 39h36l8 15H6z" fill="#943f39" stroke="#36434d" stroke-width="1.65"/><path d="M20 9h24v31H20z" fill="url(#leather)" stroke="#36434d" stroke-width="1.65"/><path d="M25 7h14" stroke="#402820" stroke-width="5" stroke-linecap="round"/><g ><path d="M19 18h27M18 21h29M20 24h25M19 27h27" stroke="#ffffff" stroke-width="0.28" stroke-opacity="0.22"/><circle cx="23" cy="31" r="0.45" fill="#ffffff" fill-opacity="0.28"/><circle cx="42" cy="35" r="0.35" fill="#17212a" fill-opacity="0.18"/><circle cx="29" cy="45" r="0.4" fill="#ffffff" fill-opacity="0.2"/></g><rect x="23" y="27" width="17" height="21" fill="#ffffff" stroke="#303b45" stroke-width="1.8"/><path d="M26 32h11M26 37h8M26 42h10" fill="none" stroke="#303b45" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M35 43l9-9" stroke="#aa4e48" stroke-width="3.8"/>
+</g>
 </svg>

@@ -58,6 +58,7 @@ const exactPublicFiles = new Set([
   "index.html",
   "app.bundle.js",
   "styles.bundle.css",
+  "styles.theme-lab.css",
   "endfield-terminal.html",
 ]);
 

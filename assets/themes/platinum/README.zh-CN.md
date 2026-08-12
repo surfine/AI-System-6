@@ -1,6 +1,6 @@
 # Platinum 图标家族
 
-本目录保存循序扩展的 Mac OS 9 Platinum 图标系统。第一批通过验收的是 12 个 Finder 核心对象：Finder、文件夹、硬盘、废纸篓、通用文稿、通用应用程序、软盘、CD、控制面板、System、Scrapbook 与 Clipboard。每个对象都有独立构成的 32×32 和 16×16 PNG；16px 不是 32px 的缩小版。
+本目录保存循序扩展的 Mac OS 9 Platinum 图标系统。已通过验收的是 13 个核心对象：Finder、文件夹、硬盘、废纸篓、通用文稿、通用应用程序、软盘、CD、控制面板、System、Scrapbook、Clipboard 与 ClioTalk。ClioTalk 是后加入的：它原先的生成式 fallback 是一个信封，那说的是邮件，而不是“作为文件保存的对话”，因此改画成其他外观也在用的“带附件的记录稿”。每个对象都有独立构成的 32×32 和 16×16 PNG；16px 不是 32px 的缩小版。
 
 原有 54 项 SVG 家族暂时只作为尚未复核对象的后备。`platinum-icon-family.json` 会标记已通过的新核心对象；它不代表所有旧后备图标都已经达到新的历史真实性验收线。
 

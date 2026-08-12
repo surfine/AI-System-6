@@ -110,6 +110,12 @@ memory-cards, Cover Glass, CMF Studio, writing-demo, system-dictionary,
 writing-flow-help, demo corpus, rebuild-samples). **Never add a lazy module to
 `index.html` script tags or `appModulePaths`** — the floppy verifier fails on it.
 
+CSS can be lazy too: `scripts/style-manifest.mjs` lists `lazyStyleBundles`
+(currently Theme Lab), each built into its own file and requested by the lazy
+module that needs it. A stylesheet qualifies only when every selector is scoped
+to that window. **Do not move one back into `styleRuntimePaths`** — the boot
+bundle is what the floppy budget measures.
+
 ## Verification
 
 ```sh

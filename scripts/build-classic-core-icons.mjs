@@ -297,7 +297,7 @@ async function makeContactSheet(iconResults) {
   context.fillRect(0, 0, canvas.width, canvas.height);
   context.fillStyle = "#000000";
   context.font = "bold 22px sans-serif";
-  context.fillText("Classic core icon lab - reference-guided stand-ins, masks, independent 16px hints", 18, 30);
+  context.fillText("Classic core icon lab - native replicas, masks, independent 16px hints", 18, 30);
   context.font = "12px sans-serif";
   context.fillText("Normal / selected use the same artwork and separate mask. Zoom columns use nearest-neighbor only.", 18, 49);
 
@@ -397,7 +397,7 @@ async function makeReferenceBoard(iconResults) {
   context.fillRect(0, 0, canvas.width, canvas.height);
   context.fillStyle = "#000000";
   context.font = "bold 22px sans-serif";
-  context.fillText("Classic evidence board - native reference vs shipped stand-in", 18, 30);
+  context.fillText("Classic evidence board - native reference vs shipped replica", 18, 30);
   context.imageSmoothingEnabled = false;
   for (let index = 0; index < direct.length; index += 1) {
     const icon = direct[index];
@@ -431,11 +431,13 @@ async function makeReferenceBoard(iconResults) {
     context.fillStyle = "#000000";
     context.font = "11px sans-serif";
     context.fillText("native evidence", x + 18, y + 190);
-    context.fillText("runtime redraw", x + 150, y + 190);
+    context.fillText("runtime replica", x + 150, y + 190);
     context.fillText("runtime mask", x + 282, y + 190);
     context.font = "10px monospace";
-    context.fillText(`required nonzero diff: ${icon.referenceDiffPixels} pixels`, x + 18, y + 220);
-    context.fillText("native artwork is evidence-only and is not written to assets/", x + 18, y + 240);
+    context.fillText(`${icon.replica32 ? "required exact" : "semantic adaptation"} diff: ${icon.referenceDiffPixels} pixels`, x + 18, y + 220);
+    context.fillText(icon.replica32
+      ? "native one-bit runs are vectorized into the runtime SVG"
+      : "native geometry is evidence; the product contract owns the semantic mark", x + 18, y + 240);
   }
   writeFileSync(
     join(draftDir, "classic-core-reference-board.png"),
@@ -473,8 +475,20 @@ try {
 
   for (const id of coreIds) {
     const icon = source.icons[id];
-    const large = customPaths(icon.source32, 32, `${id} 32`);
-    const small = customPaths(icon.source16, 16, `${id} 16`);
+    const nativeReference = icon.source32.nativeReference || null;
+    const nativeEvidence = nativeReference
+      ? readNativePaths(tempDir, nativeReference, 32)
+      : null;
+    // Finder is deliberately a friendly Macintosh in the product continuity
+    // contract. System ICN# 3 supplies its physical geometry, but it is not a
+    // smiling Finder face, so this one object remains a documented adaptation.
+    const replica32 = Boolean(nativeEvidence) && id !== "finderApp";
+    const large = replica32 ? nativeEvidence : customPaths(icon.source32, 32, `${id} 32`);
+    const nativeReference16 = icon.source16.nativeReference || null;
+    const nativeEvidence16 = nativeReference16
+      ? readNativePaths(tempDir, nativeReference16, 16)
+      : null;
+    const small = nativeEvidence16 || customPaths(icon.source16, 16, `${id} 16`);
     const rasters = {
       32: {
         art: await rasterizePath(large.artwork, 32),
@@ -499,19 +513,19 @@ try {
       }
     }
 
-    let nativeEvidence = null;
     let referenceDiffPixels = null;
-    const nativeReference = icon.source32.nativeReference || null;
     if (nativeReference) {
-      nativeEvidence = readNativePaths(tempDir, nativeReference, 32);
       const nativeRasters = {
         art: await rasterizePath(nativeEvidence.artwork, 32),
         mask: await rasterizePath(nativeEvidence.mask, 32),
       };
       referenceDiffPixels = pixelDiffCount(rasters[32].art.occupied, nativeRasters.art.occupied)
         + pixelDiffCount(rasters[32].mask.occupied, nativeRasters.mask.occupied);
-      if (referenceDiffPixels === 0) {
-        throw new Error(`${id}: runtime stand-in is an exact copy of its native reference`);
+      if (replica32 && referenceDiffPixels !== 0) {
+        throw new Error(`${id}: runtime replica differs from its native reference by ${referenceDiffPixels} pixels`);
+      }
+      if (!replica32 && referenceDiffPixels === 0) {
+        throw new Error(`${id}: semantic adaptation unexpectedly became an exact native copy`);
       }
     }
 
@@ -524,8 +538,10 @@ try {
     writeFileSync(join(outputDir, largeMaskFile), maskSvg(32, large.mask));
     writeFileSync(join(outputDir, smallMaskFile), maskSvg(16, small.mask));
 
-    const sourceKind = nativeReference
-      ? "reference-guided-stand-in"
+    const sourceKind = replica32
+      ? "native-resource-replica"
+      : nativeReference
+        ? "reference-guided-semantic-adaptation"
       : "period-metaphor-stand-in";
     const nativeLabel = nativeReference
       ? `${nativeReference.file}, ${nativeReference.type} ${nativeReference.id}`
@@ -538,6 +554,13 @@ try {
         file: nativeReference.file,
         type: nativeReference.type,
         id: nativeReference.id,
+      } : null,
+      nativeReference16: nativeReference16 ? {
+        file: nativeReference16.file,
+        type: nativeReference16.type,
+        id: nativeReference16.id,
+        artIndex: nativeReference16.artIndex,
+        maskIndex: nativeReference16.maskIndex,
       } : null,
       referenceDiffPixels,
       sizes: {
@@ -560,6 +583,7 @@ try {
       nativeLabel,
       nativeEvidence,
       referenceDiffPixels,
+      replica32,
     });
   }
 

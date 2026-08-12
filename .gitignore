@@ -7,6 +7,7 @@ playwright-report/
 app.bundle.js
 app/legacy/
 styles.bundle.css
+styles.theme-lab.css
 *.traineddata
 ocr/tessdata/*.traineddata.gz
 app/vendor/markmap/*.js
@@ -40,6 +41,9 @@ builds/
 system.css-reference/fonts/modern/
 *.7z
 *.mp4
+# The official-site hero clip is a shipped asset, not a working file.
+!site/img/hero-desktop.mp4
+drafts/hero-frames/
 *.pdf
 
 # vendored reference clones (own .git) and local scratch output
@@ -70,8 +74,12 @@ drafts/classic-icon-references/
 drafts/theme-coverage/
 # era icon comparison/reference boards (rendered evidence, not product assets)
 drafts/era-icons/
+drafts/icon-generation/
+# before/after render evidence for the Liquid Glass icon family
+drafts/liquid-glass-icons/
 # local Python scratch caches
 scripts/__pycache__/
+__pycache__/
 # local personal scratch output (audit dumps, temp exports)
 private/
 # local 15MB test photo (bg-1..6 are the shipped backgrounds)

@@ -1,8 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
-<defs>
-      <linearGradient id="body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eeeeff"/><stop offset="1" stop-color="#a7a3db"/></linearGradient>
-      <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#eef3f7"/></linearGradient>
-      <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7fafc"/><stop offset="1" stop-color="#b7c3cf"/></linearGradient>
-    </defs>
-<path d="M12 7h40v50H12z" fill="#3f5162" stroke="#294052" stroke-width="1.35"/><circle cx="32" cy="39" r="14" fill="#172736" stroke="#7892a7" stroke-width="1.35"/><circle cx="32" cy="39" r="6" fill="#657b8e"/><circle cx="32" cy="17" r="4" fill="#c5d5e0"/><path d="M22 35h7l8-7v20l-8-7h-7zM40 34c4 3 4 7 0 10M43 30c8 6 8 13 0 19" fill="#2e7fcb" stroke="#35516c" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><image href="icons/soundscape-32.png" width="32" height="32"/></svg>

@@ -1,0 +1,1819 @@
+{
+  "schemaVersion": 1,
+  "target": "OS X 10.10 Yosemite",
+  "generatedBy": "scripts/build-yosemite-core-icons.mjs",
+  "coreOnly": true,
+  "nativeSizes": [
+    128,
+    64,
+    32,
+    16
+  ],
+  "referenceLedger": "icons/src/yosemite-core-icons.json",
+  "referenceBoard": "drafts/era-icons/yosemite-core-reference-board.png",
+  "sizeRule": "Runtime surfaces downscale the 128 px master. The twelve programmatic cores own separately composed 64 px, 32 px, and 16 px review hints; accepted Image Gen cores use separately processed ledger artifacts.",
+  "continuityRule": "System objects reproduce the real 10.10 prototype. The seven AI System 6 objects keep the metaphorKey recorded in assets/themes/icon-system-continuity.json, drawn again in 2014 language rather than flattened from the 10.6 artwork.",
+  "selectionRecipe": "Finder selection belongs to the label and the view surface; normal and selected states use the same artwork.",
+  "icons": {
+    "finderApp": {
+      "label": "Finder / System",
+      "genre": "system identity",
+      "prototype": "flat frontal white compact Macintosh with a cyan-blue and white split smiling screen and a simple lower drive plinth",
+      "metaphorKey": "smiling-compact-macintosh",
+      "container": "rounded-square",
+      "comparison": {
+        "evidence": "web/finder.png"
+      },
+      "sourceKind": "accepted-imagegen-era-illustration",
+      "reviewStatus": "accepted-imagegen",
+      "sizes": {
+        "16": "icons/finderApp-16.png",
+        "32": "icons/finderApp-32.png",
+        "64": "icons/finderApp-64.png",
+        "128": "icons/finderApp-128.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 164,
+          "colors": 10,
+          "bbox": {
+            "minX": 2,
+            "minY": 1,
+            "maxX": 13,
+            "maxY": 14
+          },
+          "ink": {
+            "minX": 2,
+            "minY": 1,
+            "maxX": 13,
+            "maxY": 14,
+            "width": 12,
+            "height": 14
+          },
+          "gridShape": "square",
+          "sha256": "d9b7ed544d6a02f85d1140d46c14e1df5262d330792b794041b11216cf63ccb2",
+          "bytes": 213
+        },
+        "32": {
+          "pixels": 618,
+          "colors": 39,
+          "bbox": {
+            "minX": 4,
+            "minY": 3,
+            "maxX": 27,
+            "maxY": 28
+          },
+          "ink": {
+            "minX": 4,
+            "minY": 3,
+            "maxX": 27,
+            "maxY": 28,
+            "width": 24,
+            "height": 26
+          },
+          "gridShape": "square",
+          "sha256": "0ccc0889fdd7dff70477a0e485f247e2a5a80ae527c42474167744a68b506538",
+          "bytes": 495
+        },
+        "64": {
+          "pixels": 2552,
+          "colors": 334,
+          "bbox": {
+            "minX": 8,
+            "minY": 5,
+            "maxX": 55,
+            "maxY": 58
+          },
+          "ink": {
+            "minX": 8,
+            "minY": 6,
+            "maxX": 55,
+            "maxY": 57,
+            "width": 48,
+            "height": 52
+          },
+          "gridShape": "square",
+          "sha256": "f0f608a617ab9c789c467a57e50d993477262f60dd1c6ef69e7742b4ab3f33d8",
+          "bytes": 2507
+        },
+        "128": {
+          "pixels": 9856,
+          "colors": 782,
+          "bbox": {
+            "minX": 17,
+            "minY": 11,
+            "maxX": 110,
+            "maxY": 116
+          },
+          "ink": {
+            "minX": 17,
+            "minY": 12,
+            "maxX": 110,
+            "maxY": 115,
+            "width": 94,
+            "height": 104
+          },
+          "gridShape": "square",
+          "sha256": "79967b57411c354cd0ef0910e823aee8eb5ba19d8a8327d78df5e7643f923de8",
+          "bytes": 9095
+        }
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6563,
+          "meanLum": 200.36,
+          "lumStd": 34.15,
+          "edgeEnergy": 54
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6035,
+          "meanLum": 199.22,
+          "lumStd": 40.12,
+          "edgeEnergy": 238
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.61,
+          "meanLum": 197.97,
+          "lumStd": 41.84,
+          "edgeEnergy": 397
+        }
+      }
+    },
+    "folder": {
+      "label": "Folder",
+      "genre": "Finder object",
+      "prototype": "10.10 cyan system folder with a pale inner panel",
+      "container": "free-form",
+      "comparison": {
+        "evidence": "folder1.png"
+      },
+      "sourceKind": "original-measured-yosemite-reconstruction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/folder-16.png",
+        "32": "icons/folder-32.png",
+        "64": "icons/folder-64.png",
+        "128": "icons/folder-128.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 132,
+          "colors": 41,
+          "bbox": {
+            "minX": 1,
+            "minY": 3,
+            "maxX": 14,
+            "maxY": 12
+          },
+          "ink": {
+            "minX": 1,
+            "minY": 3,
+            "maxX": 14,
+            "maxY": 12,
+            "width": 14,
+            "height": 10
+          },
+          "gridShape": "landscape",
+          "sha256": "67d06bebc1f3dc0197955b45cad08bb12d18e74a385186211a084c46cad63411",
+          "bytes": 325
+        },
+        "32": {
+          "pixels": 519,
+          "colors": 88,
+          "bbox": {
+            "minX": 2,
+            "minY": 6,
+            "maxX": 29,
+            "maxY": 25
+          },
+          "ink": {
+            "minX": 2,
+            "minY": 7,
+            "maxX": 29,
+            "maxY": 24,
+            "width": 28,
+            "height": 18
+          },
+          "gridShape": "landscape",
+          "sha256": "faee02da61ad89e072ac5c86086621035747b11a1a04eb127559ab79ba5fca07",
+          "bytes": 490
+        },
+        "64": {
+          "pixels": 2240,
+          "colors": 190,
+          "bbox": {
+            "minX": 3,
+            "minY": 11,
+            "maxX": 60,
+            "maxY": 52
+          },
+          "ink": {
+            "minX": 4,
+            "minY": 11,
+            "maxX": 59,
+            "maxY": 52,
+            "width": 56,
+            "height": 42
+          },
+          "gridShape": "landscape",
+          "sha256": "35b52007bab94957f5e2fc4394e44691b746d0ad4eb80e90093e5fbe600aa473",
+          "bytes": 886
+        },
+        "128": {
+          "pixels": 8611,
+          "colors": 415,
+          "bbox": {
+            "minX": 7,
+            "minY": 23,
+            "maxX": 120,
+            "maxY": 104
+          },
+          "ink": {
+            "minX": 8,
+            "minY": 23,
+            "maxX": 119,
+            "maxY": 104,
+            "width": 112,
+            "height": 82
+          },
+          "gridShape": "landscape",
+          "sha256": "e90c5c5ccaf7ed759eebfa315890b2aa52297867d3141e3bcb471936f75c3bc9",
+          "bytes": 1825
+        }
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5156,
+          "meanLum": 194.93,
+          "lumStd": 18.19,
+          "edgeEnergy": 12
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5439,
+          "meanLum": 192.34,
+          "lumStd": 22.03,
+          "edgeEnergy": 22
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5465,
+          "meanLum": 192.61,
+          "lumStd": 20.84,
+          "edgeEnergy": 0
+        }
+      }
+    },
+    "hardDisk": {
+      "label": "Hard Disk",
+      "genre": "hardware",
+      "prototype": "10.10 simplified silver volume with a shallow top face",
+      "container": "free-form",
+      "comparison": {
+        "evidence": "captures/10-10-Yosemite-Finder-Home.png"
+      },
+      "sourceKind": "original-measured-yosemite-reconstruction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/hardDisk-16.png",
+        "32": "icons/hardDisk-32.png",
+        "64": "icons/hardDisk-64.png",
+        "128": "icons/hardDisk-128.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 184,
+          "colors": 61,
+          "bbox": {
+            "minX": 0,
+            "minY": 2,
+            "maxX": 15,
+            "maxY": 13
+          },
+          "ink": {
+            "minX": 1,
+            "minY": 2,
+            "maxX": 14,
+            "maxY": 13,
+            "width": 14,
+            "height": 12
+          },
+          "gridShape": "landscape",
+          "sha256": "453fda5908011752acabae8d1091e45f306ee62369d928041b5a858ca703c574",
+          "bytes": 392
+        },
+        "32": {
+          "pixels": 688,
+          "colors": 106,
+          "bbox": {
+            "minX": 1,
+            "minY": 4,
+            "maxX": 30,
+            "maxY": 27
+          },
+          "ink": {
+            "minX": 2,
+            "minY": 5,
+            "maxX": 29,
+            "maxY": 26,
+            "width": 28,
+            "height": 22
+          },
+          "gridShape": "landscape",
+          "sha256": "28d376c2a6d4744e0892baa5042657033a1e7a12e551a24c8f01844850a3810d",
+          "bytes": 663
+        },
+        "64": {
+          "pixels": 2400,
+          "colors": 224,
+          "bbox": {
+            "minX": 3,
+            "minY": 11,
+            "maxX": 60,
+            "maxY": 52
+          },
+          "ink": {
+            "minX": 3,
+            "minY": 11,
+            "maxX": 60,
+            "maxY": 52,
+            "width": 58,
+            "height": 42
+          },
+          "gridShape": "landscape",
+          "sha256": "e3d01018215c6673a94637938d2d69b926020bc658ab2ebed5279acaf7b22899",
+          "bytes": 1172
+        },
+        "128": {
+          "pixels": 9450,
+          "colors": 401,
+          "bbox": {
+            "minX": 7,
+            "minY": 22,
+            "maxX": 120,
+            "maxY": 105
+          },
+          "ink": {
+            "minX": 7,
+            "minY": 22,
+            "maxX": 120,
+            "maxY": 105,
+            "width": 114,
+            "height": 84
+          },
+          "gridShape": "landscape",
+          "sha256": "5eb72d4b4779a709c692ac95c3791e472efa79fd87fbb5761bae240213e723b8",
+          "bytes": 2264
+        }
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6484,
+          "meanLum": 215.62,
+          "lumStd": 29.91,
+          "edgeEnergy": 10
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.625,
+          "meanLum": 214.43,
+          "lumStd": 30.39,
+          "edgeEnergy": 76
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.593,
+          "meanLum": 217.03,
+          "lumStd": 26.85,
+          "edgeEnergy": 76
+        }
+      }
+    },
+    "trash": {
+      "label": "Trash",
+      "genre": "Finder object",
+      "prototype": "10.10 pale basket with vertical ribs and a thin rim",
+      "container": "free-form",
+      "comparison": {
+        "evidence": "captures/10-10-Yosemite-Finder-Home.png"
+      },
+      "sourceKind": "original-measured-yosemite-reconstruction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/trash-16.png",
+        "32": "icons/trash-32.png",
+        "64": "icons/trash-64.png",
+        "128": "icons/trash-128.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 160,
+          "colors": 120,
+          "bbox": {
+            "minX": 2,
+            "minY": 0,
+            "maxX": 13,
+            "maxY": 15
+          },
+          "ink": {
+            "minX": 2,
+            "minY": 1,
+            "maxX": 13,
+            "maxY": 15,
+            "width": 12,
+            "height": 15
+          },
+          "gridShape": "portrait",
+          "sha256": "3d4c405e8cec9ce8d3cf64802434e856ebef7f3805d82b1b6ab227dc829535cb",
+          "bytes": 626
+        },
+        "32": {
+          "pixels": 558,
+          "colors": 256,
+          "bbox": {
+            "minX": 5,
+            "minY": 1,
+            "maxX": 26,
+            "maxY": 30
+          },
+          "ink": {
+            "minX": 5,
+            "minY": 1,
+            "maxX": 26,
+            "maxY": 30,
+            "width": 22,
+            "height": 30
+          },
+          "gridShape": "portrait",
+          "sha256": "b472cb9899a0a40eab13fa6653cfd34f18ea75b821000fd9a4c52e28e2c5085b",
+          "bytes": 1313
+        },
+        "64": {
+          "pixels": 2138,
+          "colors": 631,
+          "bbox": {
+            "minX": 11,
+            "minY": 2,
+            "maxX": 52,
+            "maxY": 61
+          },
+          "ink": {
+            "minX": 12,
+            "minY": 2,
+            "maxX": 51,
+            "maxY": 61,
+            "width": 40,
+            "height": 60
+          },
+          "gridShape": "portrait",
+          "sha256": "726f7dd0ae7f651b8f291910115585fe0a3e244fe62829e993f61493bb7d115b",
+          "bytes": 3071
+        },
+        "128": {
+          "pixels": 8336,
+          "colors": 1125,
+          "bbox": {
+            "minX": 23,
+            "minY": 5,
+            "maxX": 104,
+            "maxY": 122
+          },
+          "ink": {
+            "minX": 23,
+            "minY": 5,
+            "maxX": 104,
+            "maxY": 122,
+            "width": 82,
+            "height": 118
+          },
+          "gridShape": "portrait",
+          "sha256": "bd86cdcb2889ac5eb841ace9be7538903f61053dcf7cac0253fe0d9e6e44ab48",
+          "bytes": 6893
+        }
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5547,
+          "meanLum": 173.5,
+          "lumStd": 28.44,
+          "edgeEnergy": 31
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5234,
+          "meanLum": 172.63,
+          "lumStd": 32.37,
+          "edgeEnergy": 204
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5147,
+          "meanLum": 172.28,
+          "lumStd": 33.55,
+          "edgeEnergy": 312
+        }
+      }
+    },
+    "document": {
+      "label": "Generic Document",
+      "genre": "document",
+      "prototype": "10.10 sheet with a folded corner and a thin grey keyline",
+      "container": "free-form",
+      "comparison": {
+        "evidence": "web/generic-document-512.png"
+      },
+      "sourceKind": "original-measured-yosemite-reconstruction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/document-16.png",
+        "32": "icons/document-32.png",
+        "64": "icons/document-64.png",
+        "128": "icons/document-128.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 139,
+          "colors": 40,
+          "bbox": {
+            "minX": 3,
+            "minY": 1,
+            "maxX": 12,
+            "maxY": 14
+          },
+          "ink": {
+            "minX": 3,
+            "minY": 1,
+            "maxX": 12,
+            "maxY": 14,
+            "width": 10,
+            "height": 14
+          },
+          "gridShape": "portrait",
+          "sha256": "fa11e4d7e93f1c0327718af7584717aeaaeb896e333e86277a0dfc74b8bc3bac",
+          "bytes": 270
+        },
+        "32": {
+          "pixels": 550,
+          "colors": 66,
+          "bbox": {
+            "minX": 6,
+            "minY": 2,
+            "maxX": 25,
+            "maxY": 29
+          },
+          "ink": {
+            "minX": 6,
+            "minY": 2,
+            "maxX": 25,
+            "maxY": 29,
+            "width": 20,
+            "height": 28
+          },
+          "gridShape": "portrait",
+          "sha256": "7abb387320af0e5648ec063cc86bc6c98834bed0b1db18b3cfa292067086d043",
+          "bytes": 385
+        },
+        "64": {
+          "pixels": 2166,
+          "colors": 127,
+          "bbox": {
+            "minX": 11,
+            "minY": 4,
+            "maxX": 52,
+            "maxY": 59
+          },
+          "ink": {
+            "minX": 12,
+            "minY": 5,
+            "maxX": 51,
+            "maxY": 58,
+            "width": 40,
+            "height": 54
+          },
+          "gridShape": "portrait",
+          "sha256": "b6155fc639162c3dc981cf7e5d0cf5b7e09d25f47ffc9a489ef06d64a33587ed",
+          "bytes": 838
+        },
+        "128": {
+          "pixels": 8427,
+          "colors": 125,
+          "bbox": {
+            "minX": 23,
+            "minY": 9,
+            "maxX": 104,
+            "maxY": 118
+          },
+          "ink": {
+            "minX": 23,
+            "minY": 10,
+            "maxX": 103,
+            "maxY": 117,
+            "width": 81,
+            "height": 108
+          },
+          "gridShape": "portrait",
+          "sha256": "c0b88e0e68fd7f8bee05122030b9c2b5d34c9c53edfe7e3f15746104ffcfec5d",
+          "bytes": 1129
+        }
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5234,
+          "meanLum": 226.12,
+          "lumStd": 25.28,
+          "edgeEnergy": 39
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5195,
+          "meanLum": 225.52,
+          "lumStd": 34.4,
+          "edgeEnergy": 190
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5249,
+          "meanLum": 225.14,
+          "lumStd": 39.01,
+          "edgeEnergy": 331
+        }
+      }
+    },
+    "daHandler": {
+      "label": "Generic Application",
+      "genre": "application",
+      "prototype": "10.10 drawing tools on paper, flattened to clean colour blocks",
+      "container": "free-form",
+      "comparison": {
+        "evidence": "web/textedit.png"
+      },
+      "sourceKind": "original-measured-yosemite-reconstruction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/daHandler-16.png",
+        "32": "icons/daHandler-32.png",
+        "64": "icons/daHandler-64.png",
+        "128": "icons/daHandler-128.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 155,
+          "colors": 76,
+          "bbox": {
+            "minX": 2,
+            "minY": 0,
+            "maxX": 13,
+            "maxY": 15
+          },
+          "ink": {
+            "minX": 2,
+            "minY": 0,
+            "maxX": 13,
+            "maxY": 14,
+            "width": 12,
+            "height": 15
+          },
+          "gridShape": "portrait",
+          "sha256": "a7da2ec96337567459a9f7db9d782e77d15b18b0a0037947cdf583d24c02e595",
+          "bytes": 532
+        },
+        "32": {
+          "pixels": 625,
+          "colors": 147,
+          "bbox": {
+            "minX": 4,
+            "minY": 2,
+            "maxX": 27,
+            "maxY": 29
+          },
+          "ink": {
+            "minX": 4,
+            "minY": 3,
+            "maxX": 27,
+            "maxY": 28,
+            "width": 24,
+            "height": 26
+          },
+          "gridShape": "square",
+          "sha256": "a2d04d1a728d9c958a9bf23f4639d5f825c863dd418f3b2c0e508469384e21be",
+          "bytes": 941
+        },
+        "64": {
+          "pixels": 2280,
+          "colors": 514,
+          "bbox": {
+            "minX": 8,
+            "minY": 5,
+            "maxX": 55,
+            "maxY": 58
+          },
+          "ink": {
+            "minX": 9,
+            "minY": 5,
+            "maxX": 54,
+            "maxY": 58,
+            "width": 46,
+            "height": 54
+          },
+          "gridShape": "square",
+          "sha256": "02f03fddc2a99e79c85d06a8c8d5d1de480a8e158f69c8a9abe172fee552e3d1",
+          "bytes": 2356
+        },
+        "128": {
+          "pixels": 9073,
+          "colors": 1014,
+          "bbox": {
+            "minX": 17,
+            "minY": 10,
+            "maxX": 110,
+            "maxY": 117
+          },
+          "ink": {
+            "minX": 18,
+            "minY": 11,
+            "maxX": 109,
+            "maxY": 116,
+            "width": 92,
+            "height": 106
+          },
+          "gridShape": "square",
+          "sha256": "bbc1f1e7d6fdb8cc31eba92a8d54dbb7f53e21147ea2f5091e2c936b0c897f52",
+          "bytes": 5793
+        }
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6094,
+          "meanLum": 229.6,
+          "lumStd": 21.51,
+          "edgeEnergy": 28
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.583,
+          "meanLum": 227.61,
+          "lumStd": 25.38,
+          "edgeEnergy": 133
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5612,
+          "meanLum": 228.52,
+          "lumStd": 26.61,
+          "edgeEnergy": 168
+        }
+      }
+    },
+    "controlPanel": {
+      "label": "Settings",
+      "genre": "utility",
+      "prototype": "10.10 grey rounded square holding flat gears",
+      "container": "rounded-square",
+      "comparison": {
+        "evidence": "web/system-preferences.png"
+      },
+      "sourceKind": "original-measured-yosemite-reconstruction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/controlPanel-16.png",
+        "32": "icons/controlPanel-32.png",
+        "64": "icons/controlPanel-64.png",
+        "128": "icons/controlPanel-128.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 207,
+          "colors": 113,
+          "bbox": {
+            "minX": 0,
+            "minY": 1,
+            "maxX": 15,
+            "maxY": 14
+          },
+          "ink": {
+            "minX": 1,
+            "minY": 2,
+            "maxX": 14,
+            "maxY": 13,
+            "width": 14,
+            "height": 12
+          },
+          "gridShape": "landscape",
+          "sha256": "1b211befca34b334faa31550a8ba338d5983546f0ca4f0c7d7286569d939a8c1",
+          "bytes": 646
+        },
+        "32": {
+          "pixels": 612,
+          "colors": 217,
+          "bbox": {
+            "minX": 3,
+            "minY": 4,
+            "maxX": 28,
+            "maxY": 27
+          },
+          "ink": {
+            "minX": 3,
+            "minY": 4,
+            "maxX": 28,
+            "maxY": 27,
+            "width": 26,
+            "height": 24
+          },
+          "gridShape": "square",
+          "sha256": "62bda25f6c7c4b4b1612d2ae0a923be13e6a93a00031e6295ef943b2a104c843",
+          "bytes": 1245
+        },
+        "64": {
+          "pixels": 2504,
+          "colors": 531,
+          "bbox": {
+            "minX": 5,
+            "minY": 8,
+            "maxX": 58,
+            "maxY": 55
+          },
+          "ink": {
+            "minX": 6,
+            "minY": 9,
+            "maxX": 57,
+            "maxY": 54,
+            "width": 52,
+            "height": 46
+          },
+          "gridShape": "square",
+          "sha256": "fd13784c65eae01c48457ccb270fe804e344363d0d043d18f99a10b51ab5acf3",
+          "bytes": 3209
+        },
+        "128": {
+          "pixels": 9540,
+          "colors": 1049,
+          "bbox": {
+            "minX": 12,
+            "minY": 17,
+            "maxX": 115,
+            "maxY": 110
+          },
+          "ink": {
+            "minX": 12,
+            "minY": 18,
+            "maxX": 115,
+            "maxY": 109,
+            "width": 104,
+            "height": 92
+          },
+          "gridShape": "square",
+          "sha256": "8289589357c11813fbd4680e8a23b91dd686b26c1018710782672f07b0ec362f",
+          "bytes": 7766
+        }
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6406,
+          "meanLum": 130.3,
+          "lumStd": 61.44,
+          "edgeEnergy": 120
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5967,
+          "meanLum": 133.83,
+          "lumStd": 67.78,
+          "edgeEnergy": 288
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5986,
+          "meanLum": 133.04,
+          "lumStd": 69.28,
+          "edgeEnergy": 433
+        }
+      }
+    },
+    "searcher": {
+      "label": "Searcher",
+      "genre": "application",
+      "metaphorKey": "magnifier-over-page",
+      "prototype": "flat lens with a blue glass over a ruled page",
+      "container": "free-form",
+      "comparison": {
+        "evidence": "web/preview.png"
+      },
+      "sourceKind": "original-measured-yosemite-reconstruction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/searcher-16.png",
+        "32": "icons/searcher-32.png",
+        "64": "icons/searcher-64.png",
+        "128": "icons/searcher-128.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 158,
+          "colors": 101,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14
+          },
+          "ink": {
+            "minX": 1,
+            "minY": 2,
+            "maxX": 14,
+            "maxY": 13,
+            "width": 14,
+            "height": 12
+          },
+          "gridShape": "square",
+          "sha256": "1470988e04994fe59e8df231a16f5faf1e8ee59a20cd4224d2155d69ff95fe0e",
+          "bytes": 601
+        },
+        "32": {
+          "pixels": 599,
+          "colors": 181,
+          "bbox": {
+            "minX": 2,
+            "minY": 3,
+            "maxX": 29,
+            "maxY": 28
+          },
+          "ink": {
+            "minX": 3,
+            "minY": 3,
+            "maxX": 28,
+            "maxY": 28,
+            "width": 26,
+            "height": 26
+          },
+          "gridShape": "square",
+          "sha256": "d5f0ede195de412eedf0fed7f2c8de56d0df8c0b32ec835a908151fc421f7dd8",
+          "bytes": 1083
+        },
+        "64": {
+          "pixels": 2507,
+          "colors": 454,
+          "bbox": {
+            "minX": 5,
+            "minY": 5,
+            "maxX": 58,
+            "maxY": 58
+          },
+          "ink": {
+            "minX": 6,
+            "minY": 5,
+            "maxX": 57,
+            "maxY": 58,
+            "width": 52,
+            "height": 54
+          },
+          "gridShape": "square",
+          "sha256": "c7aa28f8b9ec2dfce15b96604249b98ac963f9306c6f5e8c7c2e86438c8882c9",
+          "bytes": 2217
+        },
+        "128": {
+          "pixels": 9743,
+          "colors": 891,
+          "bbox": {
+            "minX": 11,
+            "minY": 10,
+            "maxX": 116,
+            "maxY": 117
+          },
+          "ink": {
+            "minX": 11,
+            "minY": 11,
+            "maxX": 115,
+            "maxY": 116,
+            "width": 105,
+            "height": 106
+          },
+          "gridShape": "square",
+          "sha256": "ee6aa82f3552f49fbfaf14a9e8d3fe3338a0c179d5ab51d9859146fc33139e8d",
+          "bytes": 5175
+        }
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6719,
+          "meanLum": 214.79,
+          "lumStd": 40.37,
+          "edgeEnergy": 52
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6104,
+          "meanLum": 215.06,
+          "lumStd": 40.49,
+          "edgeEnergy": 150
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6168,
+          "meanLum": 215.47,
+          "lumStd": 39.98,
+          "edgeEnergy": 269
+        }
+      }
+    },
+    "teachText": {
+      "label": "TeachText",
+      "genre": "application",
+      "metaphorKey": "writing-paper-and-pen",
+      "prototype": "ruled sheet with one slim pen, flattened",
+      "container": "free-form",
+      "comparison": {
+        "evidence": "web/textedit.png"
+      },
+      "sourceKind": "original-measured-yosemite-reconstruction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/teachText-16.png",
+        "32": "icons/teachText-32.png",
+        "64": "icons/teachText-64.png",
+        "128": "icons/teachText-128.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 145,
+          "colors": 51,
+          "bbox": {
+            "minX": 2,
+            "minY": 1,
+            "maxX": 13,
+            "maxY": 14
+          },
+          "ink": {
+            "minX": 2,
+            "minY": 2,
+            "maxX": 13,
+            "maxY": 13,
+            "width": 12,
+            "height": 12
+          },
+          "gridShape": "square",
+          "sha256": "dbe5e8c4127954c07b5b38ac49580f659a28d09f6ed314b466039717a6cd88e0",
+          "bytes": 412
+        },
+        "32": {
+          "pixels": 624,
+          "colors": 106,
+          "bbox": {
+            "minX": 4,
+            "minY": 2,
+            "maxX": 27,
+            "maxY": 29
+          },
+          "ink": {
+            "minX": 4,
+            "minY": 2,
+            "maxX": 27,
+            "maxY": 29,
+            "width": 24,
+            "height": 28
+          },
+          "gridShape": "portrait",
+          "sha256": "abff593d5e87408a491ec74479357338c3e171488ccf6bc49bb2c902bf681345",
+          "bytes": 705
+        },
+        "64": {
+          "pixels": 2308,
+          "colors": 297,
+          "bbox": {
+            "minX": 10,
+            "minY": 4,
+            "maxX": 53,
+            "maxY": 59
+          },
+          "ink": {
+            "minX": 10,
+            "minY": 4,
+            "maxX": 52,
+            "maxY": 59,
+            "width": 43,
+            "height": 56
+          },
+          "gridShape": "portrait",
+          "sha256": "991cc32c5360c49d1f453d82db3dac149ca60f4e34d5179aebffaae666821526",
+          "bytes": 1692
+        },
+        "128": {
+          "pixels": 9106,
+          "colors": 528,
+          "bbox": {
+            "minX": 21,
+            "minY": 8,
+            "maxX": 106,
+            "maxY": 119
+          },
+          "ink": {
+            "minX": 21,
+            "minY": 8,
+            "maxX": 106,
+            "maxY": 119,
+            "width": 86,
+            "height": 112
+          },
+          "gridShape": "portrait",
+          "sha256": "d50846ae016596ac9b681cea0ca65fe581c94e9bafda01596405d050f410efb3",
+          "bytes": 3508
+        }
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6016,
+          "meanLum": 213,
+          "lumStd": 30.7,
+          "edgeEnergy": 77
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5762,
+          "meanLum": 211.36,
+          "lumStd": 44.32,
+          "edgeEnergy": 339
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5816,
+          "meanLum": 210.71,
+          "lumStd": 45.45,
+          "edgeEnergy": 601
+        }
+      }
+    },
+    "assistant": {
+      "label": "ClioTalk",
+      "genre": "application",
+      "metaphorKey": "solid-user-dashed-reply-balloons",
+      "prototype": "flattened Yosemite conversation pair: a solid cyan user balloon overlapping a white reply balloon with a clearly dashed blue edge",
+      "container": "free-form",
+      "comparison": {
+        "evidence": "web/messages.png"
+      },
+      "sourceKind": "accepted-imagegen-era-illustration",
+      "reviewStatus": "accepted-imagegen",
+      "sizes": {
+        "16": "icons/assistant-16.png",
+        "32": "icons/assistant-32.png",
+        "64": "icons/assistant-64.png",
+        "128": "icons/assistant-128.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 118,
+          "colors": 20,
+          "bbox": {
+            "minX": 1,
+            "minY": 2,
+            "maxX": 14,
+            "maxY": 13
+          },
+          "ink": {
+            "minX": 1,
+            "minY": 2,
+            "maxX": 14,
+            "maxY": 13,
+            "width": 14,
+            "height": 12
+          },
+          "gridShape": "square",
+          "sha256": "7d2ff195fad5db8da2c20ea35693a9fd50f7ecf9e0d985498c9723c96a99c89c",
+          "bytes": 271
+        },
+        "32": {
+          "pixels": 453,
+          "colors": 46,
+          "bbox": {
+            "minX": 3,
+            "minY": 4,
+            "maxX": 28,
+            "maxY": 27
+          },
+          "ink": {
+            "minX": 3,
+            "minY": 4,
+            "maxX": 28,
+            "maxY": 27,
+            "width": 26,
+            "height": 24
+          },
+          "gridShape": "square",
+          "sha256": "57e86448bf23e6ef04865b8d5b18f40a2faa4dd79fe29cb0be691bef4d0b4139",
+          "bytes": 539
+        },
+        "64": {
+          "pixels": 1842,
+          "colors": 401,
+          "bbox": {
+            "minX": 6,
+            "minY": 8,
+            "maxX": 57,
+            "maxY": 55
+          },
+          "ink": {
+            "minX": 6,
+            "minY": 8,
+            "maxX": 57,
+            "maxY": 55,
+            "width": 52,
+            "height": 48
+          },
+          "gridShape": "square",
+          "sha256": "8540983eb4ebe0562d15dc7f9fca4115b8a0582d14f77a00fb2a63be33d47872",
+          "bytes": 2579
+        },
+        "128": {
+          "pixels": 7227,
+          "colors": 1024,
+          "bbox": {
+            "minX": 11,
+            "minY": 17,
+            "maxX": 115,
+            "maxY": 110
+          },
+          "ink": {
+            "minX": 12,
+            "minY": 17,
+            "maxX": 115,
+            "maxY": 110,
+            "width": 104,
+            "height": 94
+          },
+          "gridShape": "square",
+          "sha256": "162cbcbd4b588a0743e3d09f7832ade6f837c2f329292ecf3279c4e0ea76d85e",
+          "bytes": 8099
+        }
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.4922,
+          "meanLum": 175.79,
+          "lumStd": 44.73,
+          "edgeEnergy": 33
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.4551,
+          "meanLum": 176.38,
+          "lumStd": 48.38,
+          "edgeEnergy": 127
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4512,
+          "meanLum": 175.76,
+          "lumStd": 49.74,
+          "edgeEnergy": 169
+        }
+      }
+    },
+    "scrapbook": {
+      "label": "Scrapbook",
+      "genre": "application",
+      "metaphorKey": "bound-album-with-print",
+      "prototype": "flat bound album with one mounted print",
+      "container": "free-form",
+      "comparison": {
+        "evidence": "web/notes.png"
+      },
+      "sourceKind": "original-measured-yosemite-reconstruction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/scrapbook-16.png",
+        "32": "icons/scrapbook-32.png",
+        "64": "icons/scrapbook-64.png",
+        "128": "icons/scrapbook-128.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 196,
+          "colors": 119,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14
+          },
+          "ink": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14,
+            "width": 14,
+            "height": 14
+          },
+          "gridShape": "square",
+          "sha256": "e719f8ba1d48f5e6e257ad5cbc7959182287904f4d1c8b8a94896985535cc2c3",
+          "bytes": 487
+        },
+        "32": {
+          "pixels": 674,
+          "colors": 221,
+          "bbox": {
+            "minX": 3,
+            "minY": 3,
+            "maxX": 28,
+            "maxY": 28
+          },
+          "ink": {
+            "minX": 3,
+            "minY": 3,
+            "maxX": 27,
+            "maxY": 28,
+            "width": 25,
+            "height": 26
+          },
+          "gridShape": "square",
+          "sha256": "5f1fea7cb01bacdc5875abc98ee2d7acac510800e42d902d43c1879692dfa550",
+          "bytes": 762
+        },
+        "64": {
+          "pixels": 2490,
+          "colors": 349,
+          "bbox": {
+            "minX": 8,
+            "minY": 6,
+            "maxX": 55,
+            "maxY": 57
+          },
+          "ink": {
+            "minX": 8,
+            "minY": 6,
+            "maxX": 55,
+            "maxY": 57,
+            "width": 48,
+            "height": 52
+          },
+          "gridShape": "square",
+          "sha256": "764c23a05cc0c240228ba0eeeab0b154b6c0071a1189c9bd5a28a8d8105e0ce6",
+          "bytes": 1494
+        },
+        "128": {
+          "pixels": 9958,
+          "colors": 534,
+          "bbox": {
+            "minX": 16,
+            "minY": 12,
+            "maxX": 111,
+            "maxY": 115
+          },
+          "ink": {
+            "minX": 16,
+            "minY": 12,
+            "maxX": 111,
+            "maxY": 115,
+            "width": 96,
+            "height": 104
+          },
+          "gridShape": "square",
+          "sha256": "b7a9ba54e82434acaad924316e9350989300caf59cdf29140f74a7a2c109d41f",
+          "bytes": 2878
+        }
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6563,
+          "meanLum": 151.8,
+          "lumStd": 53.06,
+          "edgeEnergy": 71
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6094,
+          "meanLum": 155.21,
+          "lumStd": 55,
+          "edgeEnergy": 215
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6145,
+          "meanLum": 155.37,
+          "lumStd": 56.49,
+          "edgeEnergy": 273
+        }
+      }
+    },
+    "reviewDesk": {
+      "label": "Review Desk",
+      "genre": "application",
+      "metaphorKey": "marked-manuscript-with-lens",
+      "prototype": "manuscript with red correction marks under a flat lens",
+      "container": "free-form",
+      "comparison": {
+        "evidence": "web/preview.png"
+      },
+      "sourceKind": "original-measured-yosemite-reconstruction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/reviewDesk-16.png",
+        "32": "icons/reviewDesk-32.png",
+        "64": "icons/reviewDesk-64.png",
+        "128": "icons/reviewDesk-128.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 152,
+          "colors": 94,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14
+          },
+          "ink": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14,
+            "width": 14,
+            "height": 14
+          },
+          "gridShape": "square",
+          "sha256": "09f792effb7e2c4fbfdc4598c7a47cfdaa524b06a69f5ada7bc575da8d7e5261",
+          "bytes": 617
+        },
+        "32": {
+          "pixels": 622,
+          "colors": 167,
+          "bbox": {
+            "minX": 2,
+            "minY": 2,
+            "maxX": 29,
+            "maxY": 29
+          },
+          "ink": {
+            "minX": 3,
+            "minY": 3,
+            "maxX": 28,
+            "maxY": 28,
+            "width": 26,
+            "height": 26
+          },
+          "gridShape": "square",
+          "sha256": "a6c031f2d7d1e511636162276999c687a9ba3712866c7c0eedac3e3bdce247c7",
+          "bytes": 1161
+        },
+        "64": {
+          "pixels": 2361,
+          "colors": 456,
+          "bbox": {
+            "minX": 7,
+            "minY": 5,
+            "maxX": 56,
+            "maxY": 58
+          },
+          "ink": {
+            "minX": 7,
+            "minY": 5,
+            "maxX": 56,
+            "maxY": 58,
+            "width": 50,
+            "height": 54
+          },
+          "gridShape": "square",
+          "sha256": "763be88d19fb91c7bb7fcfb7479a4ef25c3fb8b3f2ac46fbafe6048363f61c42",
+          "bytes": 2371
+        },
+        "128": {
+          "pixels": 9339,
+          "colors": 900,
+          "bbox": {
+            "minX": 14,
+            "minY": 10,
+            "maxX": 113,
+            "maxY": 116
+          },
+          "ink": {
+            "minX": 14,
+            "minY": 11,
+            "maxX": 113,
+            "maxY": 116,
+            "width": 100,
+            "height": 106
+          },
+          "gridShape": "square",
+          "sha256": "859088265f96e34ea595d56f8c923bb83013e5aa1b91c328bf70080396be513f",
+          "bytes": 5348
+        }
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6445,
+          "meanLum": 217.91,
+          "lumStd": 36.77,
+          "edgeEnergy": 71
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5977,
+          "meanLum": 217.7,
+          "lumStd": 40.02,
+          "edgeEnergy": 192
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5941,
+          "meanLum": 217.55,
+          "lumStd": 40.69,
+          "edgeEnergy": 287
+        }
+      }
+    },
+    "docMap": {
+      "label": "DocMap",
+      "genre": "application",
+      "metaphorKey": "branching-document-map",
+      "prototype": "flat page with a blue branch map and filled nodes",
+      "container": "free-form",
+      "comparison": {
+        "evidence": "web/maps.png"
+      },
+      "sourceKind": "original-measured-yosemite-reconstruction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/docMap-16.png",
+        "32": "icons/docMap-32.png",
+        "64": "icons/docMap-64.png",
+        "128": "icons/docMap-128.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 152,
+          "colors": 60,
+          "bbox": {
+            "minX": 1,
+            "minY": 2,
+            "maxX": 14,
+            "maxY": 13
+          },
+          "ink": {
+            "minX": 1,
+            "minY": 2,
+            "maxX": 14,
+            "maxY": 13,
+            "width": 14,
+            "height": 12
+          },
+          "gridShape": "landscape",
+          "sha256": "b397379c09234b86352e2da5d6cfd67fda11f72f261eb2f63bc53e61ca00623e",
+          "bytes": 475
+        },
+        "32": {
+          "pixels": 550,
+          "colors": 102,
+          "bbox": {
+            "minX": 1,
+            "minY": 4,
+            "maxX": 30,
+            "maxY": 27
+          },
+          "ink": {
+            "minX": 2,
+            "minY": 4,
+            "maxX": 30,
+            "maxY": 27,
+            "width": 29,
+            "height": 24
+          },
+          "gridShape": "landscape",
+          "sha256": "397cb539a1b53bc795b9c02ef4ddb4ffaf48266a40f9cca0fc4069120876e583",
+          "bytes": 841
+        },
+        "64": {
+          "pixels": 1902,
+          "colors": 226,
+          "bbox": {
+            "minX": 3,
+            "minY": 8,
+            "maxX": 60,
+            "maxY": 55
+          },
+          "ink": {
+            "minX": 3,
+            "minY": 8,
+            "maxX": 60,
+            "maxY": 55,
+            "width": 58,
+            "height": 48
+          },
+          "gridShape": "landscape",
+          "sha256": "a648f18c54a1c8567843842071afd64bfb70b181c5670066881d0fa099c31d76",
+          "bytes": 1628
+        },
+        "128": {
+          "pixels": 7129,
+          "colors": 387,
+          "bbox": {
+            "minX": 7,
+            "minY": 16,
+            "maxX": 120,
+            "maxY": 111
+          },
+          "ink": {
+            "minX": 7,
+            "minY": 16,
+            "maxX": 120,
+            "maxY": 111,
+            "width": 114,
+            "height": 96
+          },
+          "gridShape": "landscape",
+          "sha256": "964c582336b2e57f41de83daeb6ab0b83d93c45a2ea6baabfd745acb6ee2cb30",
+          "bytes": 3133
+        }
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5391,
+          "meanLum": 205.21,
+          "lumStd": 51.3,
+          "edgeEnergy": 27
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.4609,
+          "meanLum": 208.85,
+          "lumStd": 52.41,
+          "edgeEnergy": 50
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4546,
+          "meanLum": 210.76,
+          "lumStd": 51.91,
+          "edgeEnergy": 68
+        }
+      }
+    },
+    "projectDisk": {
+      "label": "Project Hard Disk",
+      "genre": "hardware",
+      "metaphorKey": "labelled-external-volume",
+      "prototype": "flat blue external volume with one paper label",
+      "container": "free-form",
+      "comparison": {
+        "evidence": "captures/10-10-Yosemite-Finder-Home.png"
+      },
+      "sourceKind": "original-measured-yosemite-reconstruction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/projectDisk-16.png",
+        "32": "icons/projectDisk-32.png",
+        "64": "icons/projectDisk-64.png",
+        "128": "icons/projectDisk-128.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 184,
+          "colors": 66,
+          "bbox": {
+            "minX": 0,
+            "minY": 2,
+            "maxX": 15,
+            "maxY": 13
+          },
+          "ink": {
+            "minX": 1,
+            "minY": 2,
+            "maxX": 14,
+            "maxY": 13,
+            "width": 14,
+            "height": 12
+          },
+          "gridShape": "landscape",
+          "sha256": "577086832a8288c455e81b2b2d0ee9918bda903cfcd8f4c1b76308882c6a36bb",
+          "bytes": 448
+        },
+        "32": {
+          "pixels": 688,
+          "colors": 121,
+          "bbox": {
+            "minX": 1,
+            "minY": 4,
+            "maxX": 30,
+            "maxY": 27
+          },
+          "ink": {
+            "minX": 2,
+            "minY": 5,
+            "maxX": 29,
+            "maxY": 26,
+            "width": 28,
+            "height": 22
+          },
+          "gridShape": "landscape",
+          "sha256": "6ef443eb865aed0704ee5a62e9eb4aff00942657d9010596035e538ea405688c",
+          "bytes": 741
+        },
+        "64": {
+          "pixels": 2392,
+          "colors": 238,
+          "bbox": {
+            "minX": 3,
+            "minY": 11,
+            "maxX": 60,
+            "maxY": 52
+          },
+          "ink": {
+            "minX": 3,
+            "minY": 11,
+            "maxX": 60,
+            "maxY": 51,
+            "width": 58,
+            "height": 41
+          },
+          "gridShape": "landscape",
+          "sha256": "c148ac8e150919c876fd98dd1c2c9fd92eadbaf88a0d88449ec425d6362fca88",
+          "bytes": 1172
+        },
+        "128": {
+          "pixels": 9208,
+          "colors": 439,
+          "bbox": {
+            "minX": 7,
+            "minY": 23,
+            "maxX": 120,
+            "maxY": 104
+          },
+          "ink": {
+            "minX": 7,
+            "minY": 23,
+            "maxX": 120,
+            "maxY": 104,
+            "width": 114,
+            "height": 82
+          },
+          "gridShape": "landscape",
+          "sha256": "22ff5d8831bb95805936484ee595891e65cee0053520f8bab598a358f1bb8e76",
+          "bytes": 2173
+        }
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5469,
+          "meanLum": 170.24,
+          "lumStd": 39.47,
+          "edgeEnergy": 33
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5918,
+          "meanLum": 167.84,
+          "lumStd": 42.78,
+          "edgeEnergy": 143
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5907,
+          "meanLum": 167.06,
+          "lumStd": 44.25,
+          "edgeEnergy": 235
+        }
+      }
+    }
+  }
+}

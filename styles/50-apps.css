@@ -2925,9 +2925,9 @@
 
 .scrapbook-pane {
   display: grid;
-  grid-template-columns: minmax(160px, 0.72fr) minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr) auto;
-  gap: 10px;
+  grid-template-columns: var(--scrapbook-pane-columns);
+  grid-template-rows: var(--scrapbook-pane-rows);
+  gap: var(--scrapbook-pane-gap);
   min-height: 0;
   overflow: hidden;
 }
@@ -2940,6 +2940,7 @@
 }
 
 .scrap-list {
+  display: var(--scrapbook-list-display);
   border: var(--scrap-list-border);
   border-radius: var(--scrap-list-radius);
   min-height: 0;
@@ -2970,8 +2971,10 @@
   min-height: 28px;
   border: 0;
   border-bottom: var(--scrap-list-item-divider);
-  background: transparent;
+  border-radius: var(--scrap-list-item-radius);
+  background: var(--scrap-list-item-bg);
   color: var(--ink);
+  box-shadow: var(--scrap-list-item-shadow);
   padding: 8px 9px;
   text-align: left;
   display: grid;
@@ -3072,7 +3075,13 @@
 
 body:not(.use-liquid-glass) .scrap-list button:hover,
 body:not(.use-liquid-glass) .scrap-list button.is-selected,
-body:not(.use-liquid-glass) .scrap-list button.is-multi-selected,
+body:not(.use-liquid-glass) .scrap-list button.is-multi-selected {
+  border-radius: var(--scrap-list-item-selected-radius);
+  background: var(--scrap-list-item-selected-bg);
+  color: var(--scrap-list-item-selected-fg);
+  box-shadow: var(--scrap-list-item-selected-shadow);
+}
+
 body:not(.use-liquid-glass) .trash-list button:hover,
 body:not(.use-liquid-glass) .trash-list button.is-selected {
   background: var(--ink);
@@ -3110,6 +3119,88 @@ body:not(.use-liquid-glass) .scrap-list button.is-multi-selected:not(.is-selecte
   min-width: 0;
   overflow: auto;
   padding-right: 2px;
+}
+
+/* System 6 Scrapbook page rail. Its stepped arrows reuse the exact shared
+   window-frame arrow primitive; the one flexible segment per saved object
+   makes the white thumb position truthful without JS-authored layout. */
+.scrapbook-pager {
+  display: var(--scrapbook-pager-display);
+  grid-column: 1 / -1;
+  gap: 5px;
+  min-width: 0;
+}
+
+.scrapbook-page-rail {
+  display: flex;
+  min-width: 0;
+  height: var(--window-frame-lane);
+  border: var(--window-frame-track-border);
+  background: var(--window-frame-track-bg);
+}
+
+.scrapbook-page-rail .window-frame-arrow {
+  margin: -1px 0;
+}
+
+.scrapbook-page-rail .window-frame-arrow:first-child {
+  margin-left: -1px;
+}
+
+.scrapbook-page-rail .window-frame-arrow:last-child {
+  margin-right: -1px;
+}
+
+.scrapbook-page-rail .window-frame-arrow:disabled {
+  opacity: 0.42;
+}
+
+.scrapbook-page-track {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  background: var(--window-frame-track-bg);
+}
+
+/* Each tick is one saved object: plain activation turns to its page, a
+   modifier click toggles it in the multi-selection (same grammar as the
+   list rows the later appearances show). Order matters below: the active
+   white thumb must win over the multi-selected ink segment. */
+.scrapbook-page-tick {
+  flex: 1 1 0;
+  min-width: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.scrapbook-page-tick:hover {
+  background: var(--shade-dark);
+}
+
+.scrapbook-page-tick:focus-visible {
+  outline: 1px dotted var(--ink);
+  outline-offset: -1px;
+}
+
+.scrapbook-page-tick.is-multi-selected {
+  background: var(--ink);
+}
+
+.scrapbook-page-tick.is-active {
+  border-inline: var(--window-frame-thumb-border);
+  background: var(--window-frame-thumb-bg);
+}
+
+.scrapbook-page-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-inline: 5px;
+  font-family: var(--mono-font);
+  font-size: var(--system-caption-size);
+  line-height: 1;
 }
 
 #scrap-body-input {
@@ -3573,7 +3664,26 @@ input[type="radio"]:focus-visible {
 input[type="checkbox"]:disabled,
 input[type="radio"]:disabled {
   cursor: default;
-  opacity: var(--control-disabled-opacity);
+  opacity: var(--choice-disabled-opacity);
+}
+
+/* The disabled checked state is a role, not a fade. The default tokens resolve
+   to the enabled art, so an era that really does fade keeps its old result; an
+   era whose disabled control is drawn differently supplies its own values. */
+input[type="checkbox"]:checked:disabled {
+  border-color: var(--choice-disabled-border-color, inherit);
+  background-color: var(--choice-disabled-checked-bg);
+  background-image:
+    var(--choice-disabled-checkmark-image),
+    var(--choice-disabled-checked-bg-image, none);
+}
+
+input[type="radio"]:checked:disabled {
+  background-image: var(--radio-disabled-checked-image);
+  background-size:
+    7px 7px,
+    var(--radio-disabled-checked-size, var(--system-radio-size))
+      var(--radio-disabled-checked-size, var(--system-radio-size));
 }
 
 .hint {
@@ -3621,8 +3731,9 @@ input[type="radio"]:disabled {
 .desktop-icon:hover span:last-child,
 .desktop-icon:focus span:last-child,
 .desktop-icon.is-selected span:last-child {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--desktop-label-selected-bg);
+  color: var(--desktop-label-selected-fg);
+  text-shadow: none;
 }
 
 /* One dotted primitive for both System 6 drag outlines: the selection marquee
@@ -3672,16 +3783,21 @@ input[type="radio"]:disabled {
 }
 
 .desktop-icon span:last-child {
-  background: var(--paper);
-  padding: 1px 3px;
-  max-width: 100%;
-  line-height: 1.18;
+  background: var(--desktop-label-bg);
+  color: var(--desktop-label-fg);
+  text-shadow: var(--desktop-label-text-shadow);
+  box-shadow: var(--desktop-label-box-shadow);
+  border-radius: var(--desktop-label-radius);
+  padding: 2px 4px;
+  max-width: var(--desktop-label-max-width);
+  line-height: 1.22;
   text-align: center;
   /* Break between words, not inside one: "退出 创作坊" wraps after 退出
-     rather than splitting the name into 创作 / 坊. anywhere stays as the
-     last resort for a single word too long for the icon. */
+     rather than splitting the name into 创作 / 坊. The label box may run
+     wider than the icon so "Applications" never becomes "Applicati/ons";
+     the native Finder widened labels the same way. */
   word-break: keep-all;
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
   box-decoration-break: clone;
 }
 
@@ -3769,9 +3885,15 @@ body:not(.use-liquid-glass) .desktop-app-icon span[data-liquid-label="DAA Meme"]
   display: none;
 }
 
-/* Native Classic resources and the filled details in companion icons are
-   one-unit pixel runs. Classic keeps them exact; Modern Fonts expands each run
-   just enough to match its outlined companions through the mode-owned token. */
+/* Reviewed Platinum PNGs are native 32/16 px pixel art. Preserve each
+   authored pixel as an integer device-pixel block on high-density screens. */
+.sys-icon-platinum-raster {
+  image-rendering: pixelated;
+}
+
+/* Inline Classic fallback painters and filled details use unit-grid runs.
+   Runtime Classic family SVGs are external smooth vectors and keep their own
+   optical strokes; this rule only governs the fallback markup. */
 .sys-icon-classic .classic-ink {
   fill: currentColor;
   stroke: currentColor;

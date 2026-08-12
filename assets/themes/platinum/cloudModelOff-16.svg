@@ -1,3 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges">
-<rect x="4" y="3" width="10" height="12" fill="#aaaaaa" stroke="#111111" stroke-width="1"/><rect x="5" y="4" width="8" height="3" fill="#eeeeee" stroke="#111111" stroke-width="1"/><rect x="5" y="8" width="8" height="3" fill="#aabbd0" stroke="#111111" stroke-width="1"/><rect x="5" y="11" width="8" height="2" fill="#777777" stroke="#111111" stroke-width="1"/><g transform="scale(0.25)"><path d="M22 40c-4-7 4-11 9-7 3-7 13-4 12 3 7 0 7 9 0 9H24c-4 0-5-3-2-5zM20 24l25 25" fill="none" stroke="#aa3333" stroke-width="2" stroke-linecap="round"/></g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><image href="icons/cloudModelOff-16.png" width="16" height="16" style="image-rendering:pixelated"/></svg>

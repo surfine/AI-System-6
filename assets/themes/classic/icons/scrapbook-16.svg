@@ -1,4 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges">
-  <path fill="#ffffff" d="M2 1h12v1h-12zM2 2h12v1h-12zM2 3h12v1h-12zM2 4h12v1h-12zM2 5h12v1h-12zM2 6h12v1h-12zM2 7h12v1h-12zM2 8h12v1h-12zM2 9h12v1h-12zM2 10h12v1h-12zM2 11h12v1h-12zM2 12h12v1h-12zM2 13h12v1h-12zM2 14h12v1h-12z"/>
-  <path fill="#000000" d="M2 1h12v1h-12zM2 2h1v1h-1zM5 2h1v1h-1zM13 2h1v1h-1zM2 3h1v1h-1zM5 3h1v1h-1zM13 3h1v1h-1zM2 4h1v1h-1zM5 4h1v1h-1zM7 4h5v1h-5zM13 4h1v1h-1zM2 5h1v1h-1zM5 5h1v1h-1zM7 5h1v1h-1zM11 5h1v1h-1zM13 5h1v1h-1zM2 6h1v1h-1zM5 6h1v1h-1zM7 6h1v1h-1zM11 6h1v1h-1zM13 6h1v1h-1zM2 7h1v1h-1zM5 7h1v1h-1zM7 7h5v1h-5zM13 7h1v1h-1zM2 8h1v1h-1zM5 8h1v1h-1zM13 8h1v1h-1zM2 9h1v1h-1zM5 9h1v1h-1zM13 9h1v1h-1zM2 10h1v1h-1zM5 10h1v1h-1zM7 10h5v1h-5zM13 10h1v1h-1zM2 11h1v1h-1zM5 11h1v1h-1zM13 11h1v1h-1zM2 12h1v1h-1zM5 12h1v1h-1zM7 12h4v1h-4zM13 12h1v1h-1zM2 13h1v1h-1zM5 13h1v1h-1zM13 13h1v1h-1zM2 14h12v1h-12z"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 32 32" fill="none" stroke="#000000" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" shape-rendering="geometricPrecision">
+  <style>
+    .classic-ink{fill:#000000;stroke:#000000;stroke-width:.25}
+    .classic-paper{fill:#ffffff;stroke:none}
+    .sys-icon-detail{display:none}
+  </style>
+  <g transform="translate(16 16) scale(1.1) translate(-16 -16)">
+    <path d="M8 5h18v22H8z" />
+    <path d="M8 5l-3 3v19h3" />
+    <path d="M12 10h10M12 15h8M12 21h10" />
+    <path d="M9 8v16" />
+  </g>
 </svg>

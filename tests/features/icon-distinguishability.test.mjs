@@ -94,16 +94,17 @@ const runtimeManifestNames = {
   "liquid-glass": "liquid-glass-icon-manifest.json",
 };
 const era32Bodies = new Map();
+const expectedRuntimeIconCount = 56;
 for (const [theme, sizes] of Object.entries(eraSizes)) {
   const runtime = JSON.parse(read(`assets/themes/${theme}/${runtimeManifestNames[theme]}`));
   const family = JSON.parse(read(`assets/themes/${theme}/${theme}-icon-family.json`));
   const ids = Object.keys(runtime);
   const incompleteEntries = [];
   const missingFiles = [];
-  test.assert(ids.length === 54, `${theme} maps all 54 semantic icon ids`);
-  test.assert(new Set(Object.values(runtime)).size === 54, `${theme} maps every runtime id to a distinct file`);
+  test.assert(ids.length === expectedRuntimeIconCount, `${theme} maps all ${expectedRuntimeIconCount} semantic icon ids`);
+  test.assert(new Set(Object.values(runtime)).size === expectedRuntimeIconCount, `${theme} maps every runtime id to a distinct file`);
   test.assert(family.sharedGeometryAcrossEras === false, `${theme} keeps the legacy fallback family structurally separate`);
-  test.assert(Object.keys(family.icons).length === 54, `${theme} records the full family ledger`);
+  test.assert(Object.keys(family.icons).length === expectedRuntimeIconCount, `${theme} records the full family ledger`);
   for (const id of ids) {
     const entry = family.icons[id];
     if (!entry || !sizes.every((size) => entry.sizes[size])) {

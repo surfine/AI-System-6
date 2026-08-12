@@ -1,3 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges">
-<circle cx="8" cy="8" r="6" fill="#cfe6ee" stroke="#111111" stroke-width="1" stroke-linejoin="miter"/><path d="M4 4l8 8M5 12l7-7" stroke="#9d8fc5" stroke-width="1"/><circle cx="8" cy="8" r="1" fill="#ffffff" stroke="#111111" stroke-width="1" stroke-linejoin="miter"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><image href="icons/projectDisc-16.png" width="16" height="16" style="image-rendering:pixelated"/></svg>

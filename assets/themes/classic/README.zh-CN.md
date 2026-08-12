@@ -1,24 +1,29 @@
 <!-- canonical-source: assets/themes/classic/README.md -->
-<!-- source-sha256: 020b6fdf226a66b3a89b233a6ee1d160cd46ab69cb5506ee278f279604c065a9 -->
+<!-- source-sha256: 936129b483e3adca60933fad71d732270b044e8e061f9e31d16e8c22b5a39ed3 -->
 
 # Classic（System 6）主题资产
 
 英文版为准。本文档仅供人类参考，不被任何脚本读取。
 
-System 6 外观刻意几乎不持有栅格或矢量资产：其图标是在
-`app/core/system-icons.js` 中定义的内联 1-bit SVG 路径，依据随项目提供的
-System 6.0.8 磁盘映像资源分支进行无损编码（例如 Startup Device ICN# -4064、
-Finder ICN# 129、Trash ICN# 130/134）。这样可以精确保留默认主题的像素网格、
-1-bit 反色规则与字形尺寸关系，同时避免拉伸或重采样栅格文件。
+System 6 外观在 `icons/` 下持有完整的 56 对象**平滑 SVG 图标族**。凡原系统
+存在直接对应对象，均以真实 System 6.0.8 资源确定轮廓、比例与选中行为
+（例如 Startup Device、Finder 磁盘、文件夹、文档、应用程序与废纸篓）。
+产品专属对象沿用同一套克制的黑白图形语法，并保持已锁定的产品隐喻。
+运行时图稿采用平滑几何重新绘制，而非保留原始位图阶梯，因此在 Retina
+屏幕上依然清晰。
+
+每个对象均有独立微调的 32 px、16 px SVG 图稿，以及平滑的黑色选中遮罩。
+Finder 选中时显示该遮罩并把同一份图稿反白，不切换到另一张“选中图标”。
 
 本目录内容：
 
-- `icons/reference/`：供代理复刻 Classic 对象时使用的原生系统检查裁片。
-  这些文件是参考材料，不是产品运行时资产；产品实际发布的是
-  `app/core/system-icons.js` 中的 SVG 编码。
+- `icons/<id>-32.svg` 与 `icons/<id>-16.svg`：适配 Retina 的运行时图稿。
+- `icons/<id>-mask-32.svg` 与 `icons/<id>-mask-16.svg`：平滑的 Finder
+  选中轮廓。
+- `icons/reference/`：供复刻 Classic 对象时使用的原生系统检查裁片；
+  这些文件不是运行时资产。
+- `icons/classic-icon-family.json`：完整图标族的来源、隐喻、尺寸与清晰度账本。
 
-版权边界：SVG 路径是对所观察 System 6 资源像素进行的无损 `currentColor`
-编码（项目依据为研究而保存并获许可使用的模拟器磁盘映像，对历史系统图稿
-进行的自有重建）。产品资产不再分发 Apple 字体二进制、栅格裁片或资源分支。
-Classic Plus 变体及未来任何 Classic 时代的 painter 均遵循同一规则：编码
-实测像素，绝不发布抽取的 Apple 文件。
+版权边界：运行时 SVG 是项目依据保存用于研究的 System 6 映像观察结果所做的
+自有几何重建。原生栅格裁片、资源分支与 Apple 字体二进制仅作为证据保留，
+不会作为产品运行时资产分发。

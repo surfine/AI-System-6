@@ -1,4 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
-  <path fill="#ffffff" d="M6 3h20v1h-20zM6 4h20v1h-20zM6 5h20v1h-20zM6 6h20v1h-20zM6 7h20v1h-20zM6 8h20v1h-20zM6 9h20v1h-20zM6 10h20v1h-20zM6 11h20v1h-20zM6 12h20v1h-20zM6 13h20v1h-20zM6 14h20v1h-20zM6 15h20v1h-20zM6 16h20v1h-20zM6 17h20v1h-20zM6 18h20v1h-20zM6 19h20v1h-20zM6 20h20v1h-20zM6 21h20v1h-20zM6 22h20v1h-20zM6 23h20v1h-20zM6 24h20v1h-20zM6 25h20v1h-20zM6 26h20v1h-20zM6 27h20v1h-20zM6 28h20v1h-20zM6 29h20v1h-20z"/>
-  <path fill="#000000" d="M6 3h20v1h-20zM6 4h1v1h-1zM20 4h2v1h-2zM25 4h1v1h-1zM6 5h1v1h-1zM20 5h1v1h-1zM22 5h1v1h-1zM25 5h1v1h-1zM6 6h1v1h-1zM20 6h1v1h-1zM23 6h1v1h-1zM25 6h1v1h-1zM6 7h1v1h-1zM20 7h1v1h-1zM24 7h2v1h-2zM6 8h1v1h-1zM20 8h6v1h-6zM6 9h1v1h-1zM25 9h1v1h-1zM6 10h1v1h-1zM25 10h1v1h-1zM6 11h1v1h-1zM25 11h1v1h-1zM6 12h1v1h-1zM25 12h1v1h-1zM6 13h1v1h-1zM10 13h12v1h-12zM25 13h1v1h-1zM6 14h1v1h-1zM25 14h1v1h-1zM6 15h1v1h-1zM25 15h1v1h-1zM6 16h1v1h-1zM25 16h1v1h-1zM6 17h1v1h-1zM25 17h1v1h-1zM6 18h1v1h-1zM10 18h13v1h-13zM25 18h1v1h-1zM6 19h1v1h-1zM25 19h1v1h-1zM6 20h1v1h-1zM25 20h1v1h-1zM6 21h1v1h-1zM25 21h1v1h-1zM6 22h1v1h-1zM25 22h1v1h-1zM6 23h1v1h-1zM10 23h9v1h-9zM25 23h1v1h-1zM6 24h1v1h-1zM25 24h1v1h-1zM6 25h1v1h-1zM25 25h1v1h-1zM6 26h1v1h-1zM25 26h1v1h-1zM6 27h1v1h-1zM25 27h1v1h-1zM6 28h1v1h-1zM25 28h1v1h-1zM6 29h20v1h-20z"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="#000000" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" shape-rendering="geometricPrecision">
+  <style>
+    .classic-ink{fill:#000000;stroke:#000000;stroke-width:.25}
+    .classic-paper{fill:#ffffff;stroke:none}
+  </style>
+  <g transform="translate(16 16) scale(1.1) translate(-16 -16)">
+    <path d="M7 3h14l5 5v21H7z" />
+    <path d="M21 3v6h5" />
+  </g>
 </svg>

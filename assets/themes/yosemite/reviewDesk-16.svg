@@ -1,8 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
-<defs>
-      <linearGradient id="body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd9d5"/><stop offset="1" stop-color="#e88778"/></linearGradient>
-      <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#eef3f7"/></linearGradient>
-      <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7fafc"/><stop offset="1" stop-color="#b7c3cf"/></linearGradient>
-    </defs>
-<path d="M10 8h33l9 9v39H10z" fill="url(#paper)" stroke="#789bb9" stroke-width="2.3"/><path d="M43 8v9h9" fill="#dae6ef" stroke="#789bb9" stroke-width="2.3"/><circle cx="42" cy="41" r="10" fill="#b9def3" fill-opacity="0.78" stroke="#357fbc" stroke-width="2.3"/><line x1="49" y1="48" x2="56" y2="55" stroke="#357fbc" stroke-width="4" stroke-linecap="round"/><path d="M22 42l8 5 14-19" fill="none" stroke="#e45b62" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><image href="icons/reviewDesk-16.png" width="16" height="16"/></svg>

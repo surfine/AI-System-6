@@ -4,12 +4,29 @@
   "themes": {
     "platinum": {
       "target": "Mac OS 9.0 Platinum Finder",
-      "referenceSizes": [32, 16],
-      "productSizes": [32, 16],
+      "referenceSizes": [
+        32,
+        16
+      ],
+      "productSizes": [
+        32,
+        16
+      ],
       "light": "upper-left, discrete one-pixel highlight; lower-right structural shade",
       "perspective": "compact front or shallow three-quarter object view; removable media front-on",
       "edge": "integer pixel grid, dark selective keyline, hard alpha, no soft filter shadow",
-      "palette": ["#111111", "#ffffff", "#dddddd", "#aaaaaa", "#777777", "#ccccff", "#9999cc", "#666699", "#336699", "#cc9933"],
+      "palette": [
+        "#111111",
+        "#ffffff",
+        "#dddddd",
+        "#aaaaaa",
+        "#777777",
+        "#ccccff",
+        "#9999cc",
+        "#666699",
+        "#336699",
+        "#cc9933"
+      ],
       "sources": [
         "https://guidebookgallery.org/screenshots/macos90",
         "drafts/theme-lab-fidelity-cache/platinum/guidebook-filemanager-macos90.png",
@@ -20,12 +37,29 @@
     },
     "aqua": {
       "target": "Mac OS X 10.2 Jaguar Aqua",
-      "referenceSizes": [128, 32, 16],
-      "productSizes": [128, 32, 16],
+      "referenceSizes": [
+        128,
+        32,
+        16
+      ],
+      "productSizes": [
+        128,
+        32,
+        16
+      ],
       "light": "above and slightly toward the viewer; bright early-Aqua highlight with object-owned cast shadow",
       "perspective": "user applications sit on a desk and widen toward the base; utilities are straight-on; documents hover; media is front-on",
       "edge": "anti-aliased alpha, illustrated material edge, no CSS gloss or global drop shadow",
-      "palette": ["#f8fbff", "#cfeaff", "#72b9ee", "#2f79c2", "#173e78", "#f6d977", "#cf7c45", "#8796a8"],
+      "palette": [
+        "#f8fbff",
+        "#cfeaff",
+        "#72b9ee",
+        "#2f79c2",
+        "#173e78",
+        "#f6d977",
+        "#cf7c45",
+        "#8796a8"
+      ],
       "sources": [
         "https://guidebookgallery.org/screenshots/macosx102",
         "https://512pixels.net/projects/aqua-screenshot-library/mac-os-x-10-2-jaguar/",
@@ -36,52 +70,133 @@
     },
     "snow-leopard": {
       "target": "Mac OS X 10.6.8 Snow Leopard",
-      "referenceSizes": [512, 128, 32, 16],
-      "productSizes": [512, 128, 32, 16],
+      "referenceSizes": [
+        512,
+        128,
+        32,
+        16
+      ],
+      "productSizes": [
+        512,
+        128,
+        32,
+        16
+      ],
       "light": "controlled overhead key light with restrained ambient fill and object-specific contact shadow",
       "perspective": "mature OS X genre split: desk perspective for user apps, shelf perspective for utilities, hovering paper for documents, front-on removable media",
       "edge": "high-resolution material detail, subtle alpha, no shared Aqua anatomy and no theme-wide CSS shadow",
-      "palette": ["#fafbfc", "#dce2e8", "#a9b4c0", "#637384", "#253341", "#5d98c9", "#b7cbe0", "#9a7754"],
+      "palette": [
+        "#fafbfc",
+        "#dce2e8",
+        "#a9b4c0",
+        "#637384",
+        "#253341",
+        "#5d98c9",
+        "#b7cbe0",
+        "#9a7754"
+      ],
       "sources": [
         "https://leopard-adc.pepas.com/documentation/UserExperience/Conceptual/AppleHIGuidelines/XHIGIcons/XHIGIcons.html",
         "https://512pixels.net/projects/aqua-screenshot-library/mac-os-x-10-6-snow-leopard/",
-        "drafts/theme-lab-fidelity-cache/snow-leopard/10-6-Snow-Leopard-Finder-Home.png",
-        "drafts/theme-lab-fidelity-cache/snow-leopard/10-6-Snow-Leopard-System-Preferences-Appearance.png"
+        "drafts/snow-leopard-icon-reference/captures/10-6-Snow-Leopard-Applications.png",
+        "drafts/snow-leopard-icon-reference/captures/10-6-Snow-Leopard-Desktop.png",
+        "drafts/snow-leopard-icon-reference/iconsets/",
+        "drafts/era-icons/snow-leopard-core-reference-board.png"
       ],
       "colorSpace": "References are normalized to sRGB for browser review; source profile provenance remains in the ignored evidence cache.",
-      "acceptance": "512 and 128 own richer texture; 32 and 16 are separately simplified and may move details. New application objects must disappear convincingly into a mixed 10.6 family."
+      "acceptance": "512 and 128 own richer texture; 32 and 16 are separately composed and may move details. New application objects must disappear convincingly into a mixed 10.6 family board.",
+      "coreLedger": "assets/themes/snow-leopard/icons/src/snow-leopard-core-icons.json",
+      "coreBatch": "Fourteen reviewed objects own measured 512/128/32/16 PNG artwork; the remaining forty still use the generated fallback family.",
+      "periodCaution": "Exported .icns resources carry sizes newer than 10.6, so they serve only objects whose artwork is unchanged across 10.5-10.9, each confirmed against a genuine 10.6.8 capture."
     },
     "yosemite": {
       "target": "OS X 10.10 Yosemite",
-      "referenceSizes": [128, 64, 32, 16],
-      "productSizes": [128, 64, 32, 16],
+      "referenceSizes": [
+        128,
+        64,
+        32,
+        16
+      ],
+      "productSizes": [
+        128,
+        64,
+        32,
+        16
+      ],
       "light": "soft frontal-upper light with shallow shading; no skeuomorphic cast-shadow theatre",
       "perspective": "flattened but object-specific Finder and application silhouettes; Retina hairlines and compact optical centers",
       "edge": "clean anti-aliased fill shapes, light steel-blue keyline, limited gradients, no squircle container and no uniform outline-glyph pack",
-      "palette": ["#ffffff", "#eef4f9", "#c8d8e7", "#7aaad6", "#2d78c4", "#2363a7", "#f45b69", "#ffbd45", "#34c84a"],
+      "palette": [
+        "#ffffff",
+        "#eef4f9",
+        "#c8d8e7",
+        "#7aaad6",
+        "#2d78c4",
+        "#2363a7",
+        "#f45b69",
+        "#ffbd45",
+        "#34c84a"
+      ],
       "sources": [
         "https://512pixels.net/projects/aqua-screenshot-library/os-x-10-10-yosemite/",
+        "drafts/yosemite-icon-reference/web/",
+        "drafts/yosemite-icon-reference/folder1.png",
         "drafts/theme-lab-fidelity-cache/yosemite/10-10-Yosemite-Finder-Home.png",
-        "drafts/theme-lab-fidelity-cache/yosemite/10-10-Yosemite-System-Preferences-General.png",
-        "drafts/theme-lab-fidelity-cache/yosemite/yosemite-finder-500.png"
+        "drafts/era-icons/yosemite-core-reference-board.png"
       ],
-      "acceptance": "Retina large art remains flatter and clearer than 10.6 while preserving distinct object silhouettes. The 16 pixel family uses fewer strokes and stronger filled marks."
+      "acceptance": "Flatter and cleaner than 10.6 while keeping distinct object silhouettes. The 16 pixel family uses fewer strokes and stronger filled marks.",
+      "coreLedger": "assets/themes/yosemite/icons/src/yosemite-core-icons.json",
+      "coreBatch": "Fourteen reviewed objects own measured 128/64/32/16 PNG artwork; the remaining forty still use the generated fallback family.",
+      "containerRule": "Only Finder and Settings use a rounded square, because only their real 10.10 prototypes do. There is no family-wide container.",
+      "continuity": "System objects follow the 10.10 prototype, including the Finder face reversing sides against 10.6. The seven custom objects keep the metaphorKey in icon-system-continuity.json."
     },
     "liquid-glass": {
-      "target": "Apple Liquid Glass icon language (2025–2026), adapted to AI System 6 semantic objects",
-      "referenceSizes": [128, 64, 32, 16],
-      "productSizes": [128, 64, 32, 16],
+      "target": "macOS Tahoe 26 Liquid Glass",
+      "referenceSizes": [
+        128,
+        64,
+        32,
+        16
+      ],
+      "productSizes": [
+        128,
+        64,
+        32,
+        16
+      ],
       "light": "vertical light from above, with crisp specular rims and object-owned contact shadows",
       "perspective": "simple layered physical metaphors; app objects may use a bounded canvas, while disks, folders, documents, tools, and media retain independent silhouettes",
       "edge": "translucent layered fills with controlled refraction cues and bright specular edges; no theme-wide CSS glass tile, outline pack, or indiscriminate squircle container",
-      "palette": ["#ffffff", "#edf7ff", "#8ed8ff", "#2688e8", "#1652b8", "#c8a9ff", "#ffaca4", "#91e7ad", "#ffe18b", "#17324d"],
-      "sources": [
-        "https://developer.apple.com/icon-composer/",
-        "https://developer.apple.com/design/human-interface-guidelines/app-icons/",
-        "https://developer.apple.com/videos/play/wwdc2025/361/",
-        "https://developer.apple.com/design/human-interface-guidelines/materials"
+      "palette": [
+        "#ffffff",
+        "#edf7ff",
+        "#8ed8ff",
+        "#2688e8",
+        "#1652b8",
+        "#c8a9ff",
+        "#ffaca4",
+        "#91e7ad",
+        "#ffe18b",
+        "#17324d"
       ],
-      "acceptance": "Every one of the 54 semantic objects has an independent runtime file, object-specific silhouette, layered material, and 16 pixel hint. Inspect all four sizes on both light and dark photographic backgrounds; small art must remain identifiable without depending on the label."
+      "sources": [
+        "https://developer.apple.com/design/human-interface-guidelines/app-icons/",
+        "https://developer.apple.com/icon-composer/",
+        "drafts/liquid-glass-reference/captures/512pixels/",
+        "drafts/liquid-glass-reference/captures/macworld-21-icons/",
+        "drafts/liquid-glass-reference/captures/wallpapers/",
+        "drafts/era-icons/liquid-glass-core-reference-board.png"
+      ],
+      "acceptance": "Every object stays readable in Default, Dark, and Clear over light, dark, photographic, and high-frequency backgrounds, and no object may be recognisable as a generic glassmorphism tile.",
+      "appearances": [
+        "default",
+        "dark",
+        "clear"
+      ],
+      "coreLedger": "assets/themes/liquid-glass/icons/src/liquid-glass-core-icons.json",
+      "coreBatch": "Fourteen reviewed objects own layered 128/64/32/16 px artwork in three appearances; the remaining forty still use the generated fallback family.",
+      "materialModel": "Artwork contributes silhouettes only. One shared material stack applies ambient shadow, identity background, directional specular, and per-layer refraction, tint, and edge. Dark and Clear are re-rendered from the same layers.",
+      "limits": "Refraction acts on the icon own background layer; a static asset cannot sample the live desktop. Tinted appearances and the toolbar family are not drawn yet."
     }
   }
 }

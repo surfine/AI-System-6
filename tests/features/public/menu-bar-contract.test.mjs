@@ -10,7 +10,10 @@ const actions = read("app/core/actions.js");
 
 test.assertIncludes(html, 'class="menu-bar"', "the menu bar is a system surface");
 test.assertIncludes(html, 'class="apple"', "the Apple menu exists");
+test.assertIncludes(html, 'id="current-app-menu-label">Finder</strong>', "the Aqua application menu starts with the Finder owner");
+test.assertNotIncludes(html, '<strong>AI System 6</strong>', "the Aqua application title is not a hard-coded environment label");
 test.assertIncludes(menus, "const menu = (id, labelKey, items", "menus are declared through one factory");
+test.assertIncludes(menus, "syncCurrentApplicationMenuLabel(appId);", "application-menu rendering keeps the Aqua owner title synchronized");
 test.assertIncludes(menus, "menuItem(", "menu items are declared declaratively");
 test.assertIncludes(actions, "syncKeyboardShortcutLabels", "menu shortcut labels resync with the platform");
 test.assertIncludes(html, "data-balloon-help", "menu controls carry help labels");

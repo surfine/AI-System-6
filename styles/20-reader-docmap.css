@@ -258,6 +258,30 @@ body.is-resizing-tdi {
   flex-direction: column;
   min-width: 0;
   min-height: 0;
+  box-sizing: border-box;
+  padding: var(--tdi-rail-padding);
+  border: var(--tdi-rail-border);
+  border-radius: var(--tdi-rail-radius);
+  background: var(--tdi-rail-bg);
+  box-shadow: var(--tdi-rail-shadow);
+}
+
+/* Source-list category chrome is part of the rail's historical painter.
+   Reader keeps one label in the shared DOM; System 6 hides it, while Snow
+   Leopard reveals the familiar compact source-list heading. */
+.tdi-source-rail-label {
+  display: var(--tdi-source-label-display);
+  flex: 0 0 auto;
+  padding: var(--tdi-source-label-padding);
+  border-bottom: var(--tdi-source-label-border-bottom);
+  background: var(--tdi-source-label-bg);
+  color: var(--tdi-source-label-fg);
+  font-family: var(--tdi-source-label-font-family);
+  font-size: var(--tdi-source-label-font-size);
+  font-weight: var(--tdi-source-label-font-weight);
+  letter-spacing: var(--tdi-source-label-letter-spacing);
+  line-height: 1;
+  text-transform: var(--tdi-source-label-text-transform);
 }
 
 /* Compact TDI document stack. The host sits in each app's existing chrome, so

@@ -215,10 +215,20 @@
   color: var(--selection-fg);
 }
 
-/* Native ICN# artwork keeps its bitmap and mask separate. Finder selection
-   inverts those two colours inside the mask; it never swaps to another icon. */
-.finder-item.is-selected .sys-icon-svg.has-classic-mask .sys-icon-classic,
-.desktop-icon.is-selected .sys-icon-svg.has-classic-mask .sys-icon-classic {
+/* Classic keeps smooth artwork and its System 6 selection silhouette separate.
+   Selection reveals the black mask and reverses the same artwork to white; it
+   never swaps to an alternate icon. */
+.sys-icon-svg.has-classic-mask .sys-icon-classic-mask {
+  display: none;
+}
+
+.finder-item.is-selected .sys-icon-svg.has-classic-mask .sys-icon-classic-mask,
+.desktop-icon.is-selected .sys-icon-svg.has-classic-mask .sys-icon-classic-mask {
+  display: block;
+}
+
+.finder-item.is-selected .sys-icon-svg.has-classic-mask .sys-icon-classic-art,
+.desktop-icon.is-selected .sys-icon-svg.has-classic-mask .sys-icon-classic-art {
   filter: invert(1);
 }
 

@@ -1,9 +1,46 @@
+<!-- canonical-source: assets/themes/snow-leopard/README.md -->
+<!-- source-sha256: beb45968760b3c6e88f04d6a8428cfe9f8ed51a68233b5d023c5efb6d5e7a23c -->
+<!-- 英文版为准；本译文仅供人类参考。 -->
+
 # Snow Leopard 图标家族
 
-本目录是面向 Mac OS X 10.6.8 的完整 54 项 AI System 6 图标家族。每个 ID 都有 512×512、128×128、32×32 与 16×16 作品；32px 和 16px 是分别简化的 hint，不是浏览器缩放同一张大图。
+本目录包含 AI System 6 完整的 56 项 Mac OS X 10.6.8 外观。每个语义对象都保持
+[icon-system-continuity.json](../icon-system-continuity.json) 记录的跨时代
+`metaphorKey`，材质、浅透视与光照则遵循 Snow Leopard 参考世界。
 
-Snow Leopard 拥有独立几何和绘制器，使用成熟 OS X 的物件组合、受控饱和度、克制的顶部光源、更密的真实材质细节和对象自身的阴影。它不是 Jaguar 家族的降饱和版本，也不通过主题级 CSS filter 制造立体感。
+## 运行时与尺寸政策
 
-`snow-leopard-icon-manifest.json` 映射运行时 32px sprite，`snow-leopard-icon-family.json` 记录每个尺寸、类别、物理隐喻和语义标记，确定性源文件是 `scripts/build-era-icons.mjs`。
+运行时 manifest 将全部对象映射到 32 px PNG。仓库保留的 512、128 与 16 px 文件，
+是从已接受主图确定性生成的 Theme Lab 审查派生件。它们用于检查缩放与材质表现，但
+不是分别创作的小尺寸图稿。应用包会携带所有声明的审查尺寸，Theme Lab 因此不会回退
+到缺失资源或旧图稿。
 
-证据与 sRGB 验收边界记录在 `../era-icon-reference.json`。原始 `.icns`、Apple bitmap、截图裁切与 Quaqua 图稿只作证据，不会进入产品资产。
+用户可见的 56 项现在全部属于已接受生成式家族。早期实测核心只保留为确定性重建层；
+已接受覆盖始终最后执行，最终家族会拒绝 `accepted-core` 或 fallback 像素残留。
+
+这是当前家族刻意选择的诚实政策：机械缩小是审查证据，不是原生紧凑构图。未来若真
+正创作独立小尺寸家族，必须同时替换此政策及其像素门禁，不能只给派生件改名。
+
+## 文件与重建
+
+- `snow-leopard-icon-manifest.json` — 完整 56 项、32 px 运行时映射。
+- `snow-leopard-icon-family.json` — 每项来源、尺寸、指标与审核状态；家族已完整，无
+  fallback。
+- `icons/imagegen-source/` — 确定性覆盖重建所用的已接受生成式源文件。
+- `scripts/build-snow-leopard-core-icons.mjs` 与
+  `scripts/build-accepted-generated-era-icons.mjs` — 重建历史实测层，再重新应用全部 56 项
+  已接受生成式图稿，不改变语义 ID。
+
+Theme Lab 直接从工作树读取 512/128/32/16，并保留 Finder、Dock、桌面与 source-list
+审查场景。应用包发布所有声明的 Theme Lab 尺寸，但不包含仅供开发溯源的
+`imagegen-source`。桌面 sprite 从 128 px 层重建以适配 Retina，32 px manifest 则
+保持稳定的语义顺序与兼容性。
+
+本地 10.6 研究证据继续被 git 忽略且仅作证据。截图裁切、提取 bitmap、描摹路径或
+历史 Apple 资源都不会作为运行时图标发布。
+
+## 网格
+
+每个对象都位于共享 [icon-grid.mjs](../../../scripts/lib/icon-grid.mjs) 网格上。缩放
+保持等比，保留对象比例与视觉补偿；管线把每项摆放记录在家族 JSON 中，本家族不改动
+共享网格。

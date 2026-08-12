@@ -94,8 +94,8 @@
 }
 
 /* Classic is accepted object by object, not as a themed thumbnail sheet.
-   The fixed pixel sizes below are the test itself: 16 and 32 are authored
-   sources; 64/128/256 are integer nearest-neighbor inspection scales. */
+   The 16 and 32 px files have independent optical policies; larger samples
+   inspect the same smooth SVG geometry at Retina-safe scales. */
 .theme-lab-classic-icon-lab {
   grid-column: 1 / -1;
 }
@@ -225,8 +225,7 @@
 .theme-lab-classic-icon-zooms img {
   display: block;
   object-fit: contain;
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
+  image-rendering: auto;
 }
 
 .theme-lab-classic-icon-zooms figcaption {
@@ -269,6 +268,24 @@
 
 .theme-lab-platinum-icon-lab .theme-lab-classic-context.is-medium-gray > div {
   background: #929292;
+}
+
+/* Liquid Glass is judged against its background, so each appearance check
+   carries its own surface. */
+.theme-lab-glass-appearance.is-default > div {
+  background: linear-gradient(160deg, #eef4fb, #cfe0f0);
+}
+
+.theme-lab-glass-appearance.is-dark > div {
+  background: linear-gradient(160deg, #1b2430, #070b12);
+}
+
+.theme-lab-glass-appearance.is-clear > div {
+  background: linear-gradient(120deg, #2b7ea8, #7fc4d8 42%, #d6b98a 70%, #3c4a5e);
+}
+
+.theme-lab-glass-appearance.is-busy > div {
+  background: repeating-linear-gradient(45deg, #16283f 0 6px, #f0faff 6px 12px);
 }
 
 .theme-lab-classic-context .classic-icon-lab-finder-item {
@@ -440,6 +457,14 @@
     var(--choice-checked-bg-image, none);
 }
 
+.theme-lab-choice-matrix input[type="checkbox"]:checked:disabled {
+  border-color: var(--choice-disabled-border-color, inherit);
+  background-color: var(--choice-disabled-checked-bg);
+  background-image:
+    var(--choice-disabled-checkmark-image),
+    var(--choice-disabled-checked-bg-image, none);
+}
+
 .theme-lab-choice-matrix input[type="checkbox"]:checked::after {
   content: var(--theme-lab-checkbox-mark-content, none);
   position: var(--theme-lab-checkbox-mark-position, static);
@@ -489,7 +514,11 @@
 
 .theme-lab-choice-matrix input[type="radio"]:checked:disabled {
   background-color: var(--theme-lab-radio-disabled-bg, var(--radio-bg));
-  background-image: var(--theme-lab-radio-disabled-image, var(--radio-checked-image));
+  background-image: var(--theme-lab-radio-disabled-image, var(--radio-disabled-checked-image, var(--radio-checked-image)));
+  background-size:
+    7px 7px,
+    var(--radio-disabled-checked-size, var(--system-radio-size))
+      var(--radio-disabled-checked-size, var(--system-radio-size));
 }
 
 .theme-lab-choice-matrix input[type="radio"]:checked:disabled::after {
@@ -531,6 +560,18 @@
 .theme-lab-form-grid .theme-lab-focus-demo {
   border: var(--field-focus-border);
   background: var(--field-focus-bg);
+  box-shadow: var(--field-focus-ring);
+}
+
+/* The painted focus state on a search field, which the rule above could not
+   reach: the resting search rule sits at (0,2,1), so it outranked the shared
+   focus rule (0,2,0) for Snow Leopard and tied the Aqua focus recipe (0,2,1) and
+   won on order. Both eras therefore painted a resting field where the board
+   asks for a focus ring. This supplies only the ring, so the era keeps its own
+   search-field radius, padding, and background — and real `:focus` was never
+   affected, because the era `:focus` recipes sit at (0,2,2). */
+.theme-lab-form-grid input[type="search"].theme-lab-focus-demo {
+  border: var(--field-focus-border);
   box-shadow: var(--field-focus-ring);
 }
 
@@ -2394,7 +2435,7 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  width: calc(100% - 10px);
+  width: calc(100% - 5px);
   margin: 0 5px;
   padding: 1px 6px;
   border: 0;

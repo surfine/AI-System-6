@@ -1,3 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges">
-<path d="M2 2h10v1h2v11H2z" fill="#dedee2" stroke="#111111" stroke-width="1" stroke-linejoin="miter"/><path d="M3 3h8" stroke="#ffffff" stroke-width="1"/><rect x="4" y="5" width="7" height="5" fill="#7090d4" stroke="#111111" stroke-width="1" stroke-linejoin="miter"/><rect x="4" y="11" width="8" height="1" fill="#25252d"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><image href="icons/startupDisk-16.png" width="16" height="16" style="image-rendering:pixelated"/></svg>

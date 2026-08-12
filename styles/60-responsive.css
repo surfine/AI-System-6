@@ -507,7 +507,8 @@ body.use-liquid-glass .menu-bar {
 }
 
 .window:not(.is-active) .close-box,
-.window:not(.is-active) .resize-box {
+.window:not(.is-active) .resize-box,
+.window:not(.is-active) .shade-box {
   --system-titlebar-control-art-ink: var(--shade-dark);
   /* Glass-only values, inert in Classic: a background window's lamps go one
      flat gray and drop their glyphs. */
@@ -1250,7 +1251,7 @@ select:focus {
   }
 
   .scrapbook-pane {
-    grid-template-columns: minmax(190px, 0.7fr) minmax(0, 1fr);
+    grid-template-columns: var(--scrapbook-pane-columns);
   }
 
   .reader-workspace {
@@ -1321,7 +1322,7 @@ select:focus {
   }
 
   .scrapbook-pane {
-    grid-template-columns: minmax(170px, 0.72fr) minmax(0, 1fr);
+    grid-template-columns: var(--scrapbook-pane-columns);
   }
 
   .spine-title-row {
@@ -1362,7 +1363,8 @@ select:focus {
 
 @media (max-width: 420px) {
   .scrapbook-pane {
-    grid-template-columns: 1fr;
+    grid-template-columns: var(--scrapbook-mobile-pane-columns);
+    grid-template-rows: var(--scrapbook-mobile-pane-rows);
   }
 
   .desktop {
@@ -2575,7 +2577,9 @@ button:disabled {
   width: 100%;
 }
 
-.desktop-icon span:last-child,
+/* .desktop-icon span:last-child left this group: its material is owned by
+   the --desktop-label-* tokens in styles/50-apps.css (padding and
+   line-height were consolidated there with the same effective values). */
 .finder-item span:last-of-type,
 .spine-actions b {
   padding: 2px 4px;
@@ -2699,8 +2703,8 @@ input[type="radio"] {
   }
 
   body:not(.is-writer-mode) .scrapbook-window .scrapbook-pane {
-    grid-template-columns: minmax(170px, 0.72fr) minmax(0, 1fr);
-    grid-template-rows: minmax(0, 1fr);
+    grid-template-columns: var(--scrapbook-pane-columns);
+    grid-template-rows: var(--scrapbook-pane-rows);
     min-height: 0;
     overflow: hidden;
   }
@@ -2749,8 +2753,8 @@ input[type="radio"] {
 
 @media (max-width: 430px) and (orientation: portrait) {
   body:not(.is-writer-mode) .scrapbook-window .scrapbook-pane {
-    grid-template-columns: 1fr;
-    grid-template-rows: minmax(132px, 156px) minmax(0, 1fr) auto;
+    grid-template-columns: var(--scrapbook-mobile-pane-columns);
+    grid-template-rows: var(--scrapbook-mobile-pane-rows);
     overflow: hidden;
   }
 
@@ -2817,7 +2821,9 @@ input[type="radio"] {
     display: none;
   }
 
-  .find-path-query-row input,
+  /* Two classes on the input: the touch minimum must outrank the era
+     search-field recipe in 10-windows (also two classes, earlier file). */
+  .find-path-window .find-path-query-row input,
   .find-path-query-row .btn {
     min-height: 44px;
   }

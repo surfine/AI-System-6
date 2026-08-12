@@ -1,9 +1,11 @@
 # Platinum icon family
 
 This directory contains the progressive Mac OS 9-era Platinum icon system.
-The first accepted batch is twelve core Finder objects: Finder, Folder, Hard
-Disk, Trash, Generic Document, Generic Application, Floppy, CD, Control Panel,
-System, Scrapbook, and Clipboard. Each owns independently composed 32×32 and
+The accepted batch is thirteen core objects: Finder, Folder, Hard Disk, Trash,
+Generic Document, Generic Application, Floppy, CD, Control Panel, System,
+Scrapbook, Clipboard, and ClioTalk. ClioTalk joined when its generated fallback
+(an envelope, which states mail rather than a conversation kept as a file) was
+replaced by the clipped transcript the other appearances use. Each owns independently composed 32×32 and
 16×16 PNG artwork. The 16px files are not reductions of the 32px files.
 
 The pre-existing 54-object SVG family remains available only as fallback while

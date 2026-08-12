@@ -35,6 +35,9 @@
   left: auto;
   right: 0;
   flex-direction: row-reverse;
+  /* The tab (and its rounded end, where an era rounds one) moves to the other
+     end when the strip anchors right. */
+  border-radius: var(--control-strip-radius-mirrored);
 }
 
 /* A user-chosen length caps the strip; 0 (the default) means fit all modules. */
@@ -144,14 +147,17 @@
 
 .control-strip-module {
   width: 24px;
-  height: calc(var(--control-strip-thickness) - 2px);
+  height: var(--control-strip-tile-height);
   border: 0;
-  background: transparent;
+  background: var(--control-strip-tile-bg);
   color: var(--ink);
   display: grid;
   place-items: center;
   cursor: pointer;
   padding: 0;
+  margin: var(--control-strip-tile-margin);
+  border-radius: var(--control-strip-tile-radius);
+  box-shadow: var(--control-strip-tile-shadow);
 }
 
 .control-strip-module + .control-strip-module {
@@ -177,7 +183,9 @@
   padding: 0;
   border: 0;
   border-radius: 0;
-  background: transparent;
+  /* Preserve an era painter's background-image (Aqua/Snow Leopard sprites)
+     while clearing only the module tile material. */
+  background-color: transparent;
   box-shadow: none;
   filter: none;
   backdrop-filter: none;
@@ -221,7 +229,7 @@
 .control-strip-module:focus-visible {
   background: var(--control-strip-hover-bg);
   color: var(--control-strip-hover-fg);
-  box-shadow: var(--control-strip-hover-shadow);
+  box-shadow: var(--control-strip-tile-hover-shadow);
 }
 
 .control-strip-module.is-open {
@@ -327,7 +335,7 @@
   width: 36px;
   height: 8px;
   border: var(--control-strip-border);
-  background: var(--paper);
+  background: var(--control-strip-gauge-bg);
   position: relative;
 }
 
@@ -353,21 +361,16 @@
   flex: 0 0 auto;
 }
 
-/* Handle grip: short vertical ticks. Texture is approximation — the native
-   Control Strip tab is not in the bundled System 6 image. */
+/* Handle grip: era-owned texture. Classic keeps the short vertical ticks;
+   Platinum swaps in its rib rows; Liquid Glass a grabber pill. The texture is
+   approximation — the native Control Strip tab is not in the bundled
+   System 6 image. */
 .control-strip-handle::after {
   content: "";
   position: absolute;
-  left: 50%;
-  top: 6px;
-  bottom: 6px;
-  width: 4px;
-  transform: translateX(-50%);
-  background: repeating-linear-gradient(
-    to bottom,
-    currentColor 0 2px,
-    transparent 2px 4px
-  );
+  inset: var(--control-strip-grip-inset);
+  border-radius: var(--control-strip-grip-radius);
+  background: var(--control-strip-grip);
 }
 
 .control-strip-handle:hover,

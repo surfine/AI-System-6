@@ -235,7 +235,7 @@ test.assertIncludes(
 );
 test.assertMatches(
   responsive,
-  /\.window:not\(\.is-active\) \.close-box,\n\.window:not\(\.is-active\) \.resize-box \{[^}]*visibility: var\(--system-titlebar-inactive-control-visibility\)/,
+  /\.window:not\(\.is-active\) \.close-box,\n\.window:not\(\.is-active\) \.resize-box,\n\.window:not\(\.is-active\) \.shade-box \{[^}]*visibility: var\(--system-titlebar-inactive-control-visibility\)/,
   "The inactive title bar drops its controls by token"
 );
 // macOS states the same thing its own way: a background window's traffic lights
@@ -248,12 +248,12 @@ test.assertMatches(
 );
 test.assertMatches(
   responsive,
-  /\.window:not\(\.is-active\) \.close-box,\n\.window:not\(\.is-active\) \.resize-box \{[^}]*--glass-lamp-close: var\(--glass-lamp-inactive\)/,
+  /\.window:not\(\.is-active\) \.close-box,\n\.window:not\(\.is-active\) \.resize-box,\n\.window:not\(\.is-active\) \.shade-box \{[^}]*--glass-lamp-close: var\(--glass-lamp-inactive\)/,
   "One inactive rule serves both themes: stripes and controls in Classic, gray lamps in glass"
 );
 test.assertMatches(
   responsive,
-  /\.window:not\(\.is-active\) \.close-box,\n\.window:not\(\.is-active\) \.resize-box \{[^}]*--glass-lamp-mark-opacity: 0/,
+  /\.window:not\(\.is-active\) \.close-box,\n\.window:not\(\.is-active\) \.resize-box,\n\.window:not\(\.is-active\) \.shade-box \{[^}]*--glass-lamp-mark-opacity: 0/,
   "A background window's lamps show no glyphs"
 );
 test.assertIncludes(
@@ -292,6 +292,44 @@ test.assertIncludes(windows, "--system-titlebar-control-art-offset-x: var(--syst
 test.assertIncludes(windows, "--system-titlebar-control-art-offset-x: var(--system-titlebar-resize-art-offset-x)", "The zoom box sits at the native trailing inset while retaining its larger hit target");
 test.assertMatches(wireup, /bar\.addEventListener\("dblclick"[\s\S]*const win = bar\.closest\("\.window"\);\s*if \(win\) toggleCollapsed\(win\);/, "Double-clicking an ordinary title bar keeps the separate WindowShade action");
 test.assertMatches(wireup, /win\.querySelector\("\.resize-box"\)\?\.addEventListener\("click", \(\) => \{\s*zoomWindow\(win\);/, "The right-side title-bar box invokes Zoom, not WindowShade");
+
+// Platinum collapse box: one shared DOM control, hidden by default, opened
+// and painted only by the Mac OS 8/9 recipe, wired to WindowShade not Zoom.
+const themes = read("styles/65-appearance-themes.css");
+const aquaThemes = read("styles/67-aqua-appearance.css");
+test.assertIncludes(html, 'class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"', "Every full window carries the collapse box in the shared DOM");
+test.assertIncludes(en, 'collapse: "Collapse"', "English has the collapse box accessible label");
+test.assertIncludes(zh, 'collapse: "折叠"', "Chinese has the collapse box accessible label");
+test.assertIncludes(foundation, "--system-titlebar-shade-slot: 0px", "The collapse-box slot is closed by default");
+test.assertIncludes(foundation, "--system-titlebar-shade-display: none", "The collapse box is hidden outside eras that own it");
+test.assertMatches(themes, /--system-titlebar-control-slot: 16px;[\s\S]*?--system-titlebar-shade-slot: 16px;\s*\n\s*--system-titlebar-shade-display: block;/, "Platinum uses measured 16px lanes for its 11px boxes and 5px visual gaps");
+test.assertMatches(themes, /--system-titlebar-control-size: 11px;\s*\n\s*--system-titlebar-control-art-size: 11px;/, "Platinum Close, Zoom, and WindowShade boxes share the native 11px size");
+test.assertMatches(themes, /--system-titlebar-close-art-offset-x: 0px;\s*\n\s*--system-titlebar-resize-art-offset-x: 0px;/, "Platinum glyph offsets remain valid CSS lengths inside calc()");
+test.assertMatches(wireup, /win\.querySelector\("\.shade-box"\)\?\.addEventListener\("click", \(\) => \{\s*toggleCollapsed\(win\);/, "The collapse box invokes WindowShade");
+test.assertNotMatches(wireup, /shade-box[\s\S]{0,120}zoomWindow/, "The collapse box never falls back to Zoom");
+test.assertMatches(themes, /body\[data-theme="platinum"\] \.title-bar \.resize-box::after \{[^}]*width: 6px;[^}]*height: 6px;[^}]*right top \/ 1px 6px no-repeat,[^}]*left bottom \/ 6px 1px no-repeat;/, "Platinum draws the real six-pixel lower-left Zoom corner");
+test.assertMatches(themes, /body\[data-theme="platinum"\] \.title-bar \.shade-box::after \{[^}]*width: 9px;[^}]*height: 3px;[^}]*left top \/ 9px 1px no-repeat,[^}]*left bottom \/ 9px 1px no-repeat;/, "Platinum draws WindowShade's two native nine-pixel rules");
+test.assertIncludes(themes, "right top / calc(var(--system-titlebar-control-slot) + var(--system-titlebar-shade-slot)) 100% no-repeat", "Platinum clears the striped title field behind both right-side Zoom and WindowShade boxes");
+test.assertMatches(themes, /body\[data-theme="platinum"\] \.title-bar \{[^}]*var\(--system-titlebar-control-slot\)[^}]*var\(--system-titlebar-shade-slot\);/, "Platinum restores the fourth WindowShade lane after responsive title-bar rules");
+test.assertMatches(themes, /--system-titlebar-inactive-control-visibility: hidden;\s*\n\s*--system-titlebar-inactive-control-opacity: 1;/, "Platinum background windows erase their title-bar boxes like the finished Mac OS 9 CSS reference");
+test.assertMatches(windows, /\.shade-box:focus,[\s\S]*\.shade-box:focus-visible \{[^}]*--system-titlebar-control-focus/, "WindowShade shares the title-bar keyboard focus painter");
+
+// Product-owned title-bar placement outranks the historical three-lamp row:
+// Close stays red at the left edge and Zoom stays green at the right edge.
+for (const theme of ["aqua", "snow-leopard"]) {
+  test.assertMatches(aquaThemes, new RegExp(`body\\[data-theme="${theme}"\\] \\.title-bar > \\.close-box \\{[^}]*grid-column: 1;[^}]*justify-self: start;`), `${theme} keeps Close on the left edge`);
+  test.assertMatches(aquaThemes, new RegExp(`body\\[data-theme="${theme}"\\] \\.title-bar > \\.resize-box \\{[^}]*grid-column: 3;[^}]*justify-self: end;`), `${theme} keeps Zoom on the right edge`);
+}
+test.assertMatches(themes, /body\[data-theme="yosemite"\] \.title-bar > \.close-box \{[^}]*grid-column: 1;[^}]*justify-self: start;/, "Yosemite keeps Close on the left edge");
+test.assertMatches(themes, /body\[data-theme="yosemite"\] \.title-bar > \.resize-box \{[^}]*grid-column: 3;[^}]*justify-self: end;/, "Yosemite keeps Zoom on the right edge");
+test.assertMatches(aquaThemes, /html\[data-theme="aqua"\],[\s\S]*?--system-titlebar-height: 22px;\s*\n\s*--system-titlebar-control-slot: 24px;/, "Jaguar uses its 22px pinstripe bar without reserving a missing three-lamp cluster");
+test.assertMatches(aquaThemes, /html\[data-theme="snow-leopard"\],[\s\S]*?--system-titlebar-height: 22px;\s*\n\s*--system-titlebar-control-slot: 24px;/, "Snow Leopard uses its compact 22px silver bar without reserving a missing three-lamp cluster");
+test.assertIncludes(aquaThemes, "#e2e2e2 0 1px, #d0d0d0 1px 3px", "Snow Leopard paints the sampled silver title-bar ramp");
+test.assertMatches(themes, /html\[data-theme="yosemite"\],[\s\S]*?--system-titlebar-height: 22px;\s*\n\s*--system-titlebar-control-slot: 24px;/, "Yosemite uses the native-scale 22px flat title bar");
+test.assertMatches(themes, /body\[data-theme="yosemite"\] \.title-bar > :is\(\.close-box, \.resize-box\) \{[^}]*border-radius: 50%;/, "Yosemite clips its flat traffic lights to circles");
+test.assertMatches(themes, /--traffic-light-close-bg: #f25056;\s*\n\s*--traffic-light-resize-bg: #39ea49;/, "Yosemite traffic lights use the source assets' uniform flat fills");
+test.assertNotIncludes(themes, "radial-gradient(circle at 36% 30%", "Yosemite title-bar lamps never add a synthetic specular highlight");
+test.assertMatches(aquaThemes, /:is\(\.close-box, \.resize-box\):is\(:hover, :focus-visible\)::before \{\s*opacity: 1;/, "Aqua and Snow Leopard expose control glyphs to pointer and keyboard users");
 test.assertNotIncludes(zoomWindowContract, "toggleCollapsed", "Zoom never falls back to WindowShade on a narrow or fixed-size window");
 test.assertMatches(windowManager, /function isZoomableWindow\(win\) \{[\s\S]*\.resize-box:not\(\[disabled\]\)/, "Zoom capability follows the title-bar Zoom box instead of the grow-box allowlist");
 test.assertIncludes(html, 'aria-label="Zoom"', "Title-bar Zoom boxes expose their actual semantic name");

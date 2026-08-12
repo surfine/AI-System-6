@@ -1,3 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
-<path d="M7 13l4-5 4 4 4-7 5 8v8H7z" fill="#b98b45" stroke="#5d4428" stroke-width="1"/><path d="M5 12h22l-4 16H9z" fill="#e6e8f0" stroke="#111111" stroke-width="1" stroke-linejoin="miter"/><rect x="4" y="9" width="24" height="4" fill="#dcdce2" stroke="#111111" stroke-width="1" stroke-linejoin="miter"/><path d="M8 13h1v14H8zM12 13h1v14h-1zM16 13h1v14h-1zM20 13h1v14h-1zM24 13h1v14h-1z" fill="#9a9aa8"/><path d="M9 9C9 2 23 2 23 9M10 9C10 3 22 3 22 9" fill="none" stroke="#50515a" stroke-width="1"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><image href="icons/trashFull-32.png" width="32" height="32" style="image-rendering:pixelated"/></svg>

@@ -101,6 +101,19 @@ function renderFindPathResults() {
 
   synthesizeFindPathButton.hidden = deepSeekProvider;
 
+  // Era result-table header (Sherlock idiom). The header is always in the
+  // DOM; only the Platinum / Aqua / Snow Leopard appearance CSS shows it.
+  // Rows carry all the same text, so screen readers can skip the header.
+  const resultsHeader = document.createElement("div");
+  resultsHeader.className = "find-path-results-header";
+  resultsHeader.setAttribute("aria-hidden", "true");
+  resultsHeader.innerHTML = `
+    <span>${escapeHtml(t("searcher_column_name"))}</span>
+    <span class="find-path-header-relevance">${escapeHtml(t("searcher_column_relevance"))}</span>
+    <span>${escapeHtml(t("searcher_column_site"))}</span>
+  `;
+  findPathResultsEl.append(resultsHeader);
+
   findPathResults.forEach((result, index) => {
     const resultText = `${result.title || ""}\n${result.snippet || ""}`.trim();
     const targetLanguage = getTranslationTargetForUi(resultText);
@@ -110,8 +123,12 @@ function renderFindPathResults() {
     item.tabIndex = 0;
     item.role = "button";
     item.title = t("searcher_open_link_hint");
+    // Rank-mapped relevance bar (Sherlock idiom): the value is the result's
+    // rank order, not a score. Only Platinum / Aqua appearance CSS draws it.
+    item.style.setProperty("--find-path-relevance", `${Math.max(12, 96 - index * 7)}%`);
     item.innerHTML = `
       <strong>${escapeHtml(result.title)}</strong>
+      <span class="find-path-result-relevance" aria-hidden="true"></span>
       <span>${escapeHtml(result.site || result.url)}</span>
       <p>${escapeHtml(result.snippet || "")}</p>
       ${targetLanguage || hasTranslation ? `

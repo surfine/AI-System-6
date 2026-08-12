@@ -39,8 +39,8 @@ test.assertIncludes(foundation, "--reader-title-divider:", "Reader title hierarc
 test.assertIncludes(foundation, "--reader-meta-divider:", "Reader metadata hierarchy uses a theme-owned divider token");
 test.assertIncludes(foundation, "--reader-section-marker:", "Reader section hierarchy uses a theme-owned marker token");
 test.assertIncludes(liquid, "--reader-meta-divider: 1px solid rgba(16, 17, 20, 0.1)", "Liquid Glass replaces the Classic dotted metadata rule with a quiet solid divider");
-test.assertIncludes(windowManager, "const activeReaderControlEnabled", "Reader menu availability reads the toolbar's native state without self-locking on its mirrored class");
-test.assertIncludes(windowManager, '"reader-make-docmap": winName === "reader" && activeReaderControlEnabled("#reader-docmap-button")', "a loaded Reader document can re-enable its DocMap handoff after starting empty");
+test.assertIncludes(windowManager, "const activeOwnedControlEnabled", "Reader menu availability reads the toolbar's native state without self-locking on its mirrored class");
+test.assertIncludes(windowManager, '"reader-make-docmap": winName === "reader" && activeOwnedControlEnabled("#reader-docmap-button")', "a loaded Reader document can re-enable its DocMap handoff after starting empty");
 test.assertIncludes(app, "clipReaderSelection", "Reader selections can become project evidence");
 test.assertIncludes(app, "openSelectedScrapSourceInReader", "Scrapbook sources can return to Reader");
 test.assertNotIncludes(reader, "window.open(", "Reader does not degrade into a raw browser window");
