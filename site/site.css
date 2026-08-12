@@ -1,0 +1,631 @@
+/* AI System 6 — official site. Static, zero JS.
+   Visual vocabulary is cribbed from the app's own System 6 recipes
+   (styles/00-foundation.css, styles/10-windows.css): Chicago faces,
+   striped title bars, 50% dither desk. */
+
+@font-face {
+  font-family: Chicago;
+  src: url("fonts/ChicagoFLF.woff2") format("woff2");
+  font-display: swap;
+}
+@font-face {
+  font-family: Chicago_12;
+  src: url("fonts/ChiKareGo2.woff2") format("woff2");
+  font-display: swap;
+}
+@font-face {
+  font-family: Monaco;
+  src: url("fonts/monaco.woff2") format("woff2");
+  font-display: swap;
+}
+
+:root {
+  --ink: #000;
+  --paper: #fff;
+  --ui-font: Chicago_12, Chicago, Charcoal, sans-serif;
+  --display-font: Chicago, Charcoal, sans-serif;
+  --mono-font: Monaco, "Courier New", monospace;
+  /* 2x2 checkerboard = the System 6 50% gray desk pattern. */
+  --desk-pattern: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="2" height="2"><rect width="2" height="2" fill="%23ffffff"/><rect width="1" height="1" fill="%23000000"/><rect x="1" y="1" width="1" height="1" fill="%23000000"/></svg>');
+  --menu-bar-height: 26px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+  scroll-padding-top: 40px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+body {
+  font-family: var(--site-font, var(--ui-font));
+  font-size: 18px;
+  line-height: 1.45;
+  color: var(--ink);
+  background-color: var(--desk-bg, #808080);
+}
+
+/* The desk pattern lives on a fixed layer, not the scrolling body: a 2px
+   tile repainted across the whole document on every scroll frame is what
+   makes long pages smear gray. A fixed layer rasterizes once. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image: var(--desk-image, var(--desk-pattern));
+  background-size: var(--desk-size, 2px 2px);
+}
+
+/* ---------- Menu bar ---------- */
+
+.menu-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  height: var(--menu-bar-height);
+  padding: 0 14px;
+  background: var(--bar-bg, var(--paper));
+  -webkit-backdrop-filter: var(--bar-blur, none);
+  backdrop-filter: var(--bar-blur, none);
+  border-bottom: 1px solid var(--bar-border, var(--ink));
+  white-space: nowrap;
+  /* No overflow clipping here: the pull-down menus hang below the bar. */
+}
+
+.menu-apple { font-size: 15px; line-height: 1; }
+.menu-title { font-weight: normal; }
+.menu-spacer { flex: 1; }
+
+/* ---------- Pull-down menus ---------- */
+
+details.menu { position: relative; }
+details.menu > summary {
+  list-style: none;
+  cursor: default;
+  padding: 3px 10px;
+  white-space: nowrap;
+}
+details.menu > summary::-webkit-details-marker { display: none; }
+details.menu[open] > summary {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.menu-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 30;
+  min-width: 218px;
+  list-style: none;
+  background: var(--menu-bg, var(--paper));
+  border: 1px solid var(--ink);
+  border-top: 0;
+  border-radius: var(--menu-radius, 0);
+  box-shadow: var(--menu-shadow, 1px 1px 0 var(--ink));
+  padding: 3px 0;
+}
+.menu-list a,
+.menu-list .menu-dim {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 3px 14px;
+  color: var(--ink);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.menu-list a:hover,
+.menu-list a:focus-visible {
+  background: var(--ink);
+  color: var(--paper);
+}
+.menu-dim { color: #909090; }
+.menu-dim kbd { font-family: var(--ui-font); }
+.menu-sep {
+  height: 1px;
+  margin: 3px 1px;
+  background-image: linear-gradient(to right, var(--ink) 50%, transparent 50%);
+  background-size: 2px 1px;
+}
+
+.menu-link {
+  color: var(--ink);
+  text-decoration: none;
+  padding: 2px 6px;
+}
+.menu-link:hover,
+.menu-link:focus-visible {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* ---------- Desk & windows ---------- */
+
+.desk {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 36px 16px 48px;
+}
+
+.window {
+  background: var(--win-bg, var(--paper));
+  border: 1px solid var(--win-border, var(--ink));
+  border-radius: var(--win-radius, 0);
+  box-shadow: var(--win-shadow, none);
+  -webkit-backdrop-filter: var(--win-blur, none);
+  backdrop-filter: var(--win-blur, none);
+  overflow: hidden;
+  margin: 0 0 34px;
+}
+
+/* System 6 drags an inverted dotted outline, then the window jumps once. */
+.drag-outline {
+  position: fixed;
+  z-index: 90;
+  pointer-events: none;
+  border: 1px dashed var(--paper);
+  mix-blend-mode: difference;
+}
+
+
+/* Title bar: the app's racing-stripe recipe — 1px black lines every 2px,
+   title on a white plate that interrupts the stripes. */
+.tbar {
+  position: relative;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: pan-y;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 25px;
+  padding: 3px 4px;
+  border-bottom: 1px solid var(--tbar-border, var(--ink));
+  background-color: transparent;
+  background-image: var(--tbar-bg, linear-gradient(to bottom, var(--ink) 0 1px, transparent 1px 2px));
+  background-size: var(--tbar-bg-size, 100% 2px);
+  background-origin: var(--tbar-bg-origin, content-box);
+  background-clip: var(--tbar-bg-origin, content-box);
+}
+
+.tbar h1,
+.tbar h2 {
+  font-family: var(--site-font, var(--ui-font));
+  font-size: 18px;
+  font-weight: normal;
+  line-height: 19px;
+  background: var(--tbar-title-bg, var(--paper));
+  color: var(--tbar-ink, var(--ink));
+  padding: 0 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: calc(100% - 60px);
+}
+
+.close-box {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  width: 13px;
+  height: 13px;
+  transform: translateY(-50%);
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  box-shadow: 0 0 0 2px var(--paper);
+}
+
+.wbody { padding: 20px 22px 24px; }
+.wbody > p + p { margin-top: 12px; }
+
+
+/* ---------- Buttons ---------- */
+
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px 18px;
+  margin: 4px 0 24px;
+}
+
+.btn {
+  display: inline-block;
+  font-family: var(--site-font, var(--ui-font));
+  font-size: 18px;
+  color: var(--btn-ink, var(--ink));
+  text-decoration: none;
+  background: var(--btn-bg, var(--paper));
+  border: 1px solid var(--btn-border, var(--ink));
+  border-radius: var(--btn-radius, 7px);
+  box-shadow: var(--btn-shadow, none);
+  padding: 5px 18px;
+  cursor: pointer;
+}
+.btn:hover,
+.btn:focus-visible {
+  background: var(--ink);
+  color: var(--paper);
+}
+.btn:active { transform: translateY(1px); }
+
+/* Default button: the System 6 heavy outer ring. */
+.btn-default {
+  position: relative;
+  margin: 4px;
+}
+.btn-default::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border: 3px solid var(--ink);
+  border-radius: 11px;
+  pointer-events: none;
+}
+
+/* ---------- Memory box (About This Macintosh gauge) ---------- */
+
+.memory-box {
+  border: 1px solid var(--ink);
+  padding: 14px 16px;
+  margin-top: 18px;
+}
+.memory-title { margin-bottom: 10px; }
+
+.memory-row {
+  display: grid;
+  grid-template-columns: minmax(90px, 160px) minmax(0, 1fr) 90px;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 6px;
+  font-size: 16px;
+}
+.memory-bar {
+  display: block;
+  height: 12px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+}
+.memory-bar > span {
+  display: block;
+  height: 100%;
+  background-image: var(--desk-pattern);
+  background-size: 2px 2px;
+  background-color: #808080;
+}
+.memory-bytes { text-align: right; font-family: var(--mono-font); font-size: 13px; }
+.memory-total { border-top: 1px solid var(--ink); padding-top: 6px; margin-top: 8px; }
+.memory-note { margin-top: 10px; font-size: 15px; }
+
+pre {
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--mono-font);
+  font-size: 12px;
+  line-height: 1.7;
+  padding: 10px 12px;
+  overflow-x: auto;
+}
+
+/* ---------- Footer ---------- */
+
+.site-footer {
+  text-align: center;
+  color: var(--paper);
+  font-size: 16px;
+  text-shadow: 1px 1px 0 var(--ink);
+  padding: 8px 0 20px;
+}
+.site-footer a { color: var(--paper); }
+.site-footer p { margin-bottom: 8px; }
+
+.footer-shutdown {
+  font-family: var(--display-font);
+  margin-top: 18px;
+  font-size: 18px;
+}
+
+/* ---------- Boot and shutdown ---------- */
+
+.boot {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background-color: #808080;
+  background-image: var(--desk-pattern);
+  background-size: 2px 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.35s steps(3, end);
+}
+.boot.boot-done { opacity: 0; }
+.boot-box {
+  color: #000;
+  font-family: var(--display-font);
+  font-size: clamp(20px, 4vw, 30px);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  box-shadow: 0 0 0 1px var(--paper), 0 0 0 2px var(--ink);
+  padding: 26px 44px;
+}
+
+.shutdown {
+  position: fixed;
+  inset: 0;
+  z-index: 210;
+  background: var(--ink);
+  color: var(--paper);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 34px;
+  text-align: center;
+  padding: 0 20px;
+}
+.shutdown[hidden] { display: none; }
+.shutdown p {
+  font-family: var(--display-font);
+  font-size: clamp(22px, 4.5vw, 34px);
+  max-width: 18em;
+}
+.shutdown button {
+  font-family: var(--ui-font);
+  font-size: 18px;
+  color: var(--paper);
+  background: var(--ink);
+  border: 1px solid var(--paper);
+  border-radius: 7px;
+  padding: 5px 22px;
+  cursor: pointer;
+}
+.shutdown button:hover,
+.shutdown button:focus-visible {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .js .window { opacity: 1; animation: none; }
+  .hero-head::after { animation: none; }
+}
+
+/* ---------- Small screens ---------- */
+
+@media (max-width: 700px) {
+  .menu-extra { display: none; }
+  /* A real System 6 menu bar has no app-name label; the hero names the
+     product, so the narrow bar keeps Apple, Special, and the two links. */
+  .menu-title { display: none; }
+  /* The hero's default button already opens the live desktop; the menu-bar
+     copy of that link is the one item 375px cannot afford. */
+  .menu-link-live { display: none; }
+  .menu-bar { gap: 12px; }
+  /* Two-line gauge rows: the three-column row leaves the bar ~9px at 375px. */
+  .memory-row { grid-template-columns: minmax(0, 1fr) 84px; row-gap: 3px; }
+  .memory-label { grid-column: 1 / -1; }
+  .wbody { padding: 16px 14px 18px; }
+  body { font-size: 17px; }
+}
+
+/* ==========================================================================
+   Appearances — the six release eras, token-only like the app's era skins.
+   Classic (System 6) is the bare :root; each era swaps tokens and, where an
+   era genuinely drew different chrome, a few structural rules follow.
+   ========================================================================== */
+
+/* ---------- Platinum (Mac OS 8/9): embossed grays, horizontal pinstripes */
+html[data-theme="platinum"] {
+  --site-font: "Charcoal", "Helvetica Neue", Geneva, Arial, sans-serif;
+  --display-font: "Charcoal", "Helvetica Neue", Geneva, Arial, sans-serif;
+  --desk-bg: #666a6e;
+  --desk-image: none;
+  --win-bg: #dddddd;
+  --tbar-bg: linear-gradient(to bottom, #b3b3b3 0 1px, transparent 1px 3px);
+  --tbar-bg-size: 100% 3px;
+  --tbar-title-bg: #dddddd;
+  --tbar-border: #555;
+  --btn-bg: linear-gradient(#f2f2f2, #cfcfcf);
+  --btn-radius: 5px;
+  --btn-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #8a8a8a;
+  --menu-bg: #dddddd;
+  --bar-bg: #dddddd;
+  --gauge-fill: #7a7a7a;
+}
+
+/* ---------- Aqua (Mac OS X 10.0): pinstripes and gel ---------- */
+html[data-theme="aqua"] {
+  --site-font: "Lucida Grande", "Helvetica Neue", Arial, sans-serif;
+  --display-font: "Lucida Grande", "Helvetica Neue", Arial, sans-serif;
+  --desk-bg: #31599e;
+  --desk-image: linear-gradient(165deg, #7db2e8 0%, #4a7fc4 45%, #274d8f 100%);
+  --desk-size: 100% 100%;
+  --win-bg: repeating-linear-gradient(to bottom, #f4f4f4 0 3px, #e9e9e9 3px 6px);
+  --win-border: #8a8a8a;
+  --win-radius: 8px;
+  --win-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --tbar-bg: linear-gradient(#fdfdfd, #d2d2d2);
+  --tbar-bg-size: 100% 100%;
+  --tbar-bg-origin: border-box;
+  --tbar-title-bg: transparent;
+  --tbar-border: #9a9a9a;
+  --btn-bg: linear-gradient(#ffffff, #dbe9fb 55%, #b5d3f6);
+  --btn-border: #7f9db9;
+  --btn-radius: 14px;
+  --btn-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 1px 2px rgba(0, 0, 0, 0.25);
+  --menu-bg: rgba(248, 248, 248, 0.96);
+  --menu-radius: 0 0 6px 6px;
+  --menu-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+  --bar-bg: linear-gradient(#fefefe, #d8d8d8);
+  --bar-border: #999;
+  --gauge-fill: linear-gradient(#8fc0f4, #4a7fc4);
+}
+
+/* ---------- Snow Leopard (10.6): brushed gray, quiet blue ---------- */
+html[data-theme="snow-leopard"] {
+  --site-font: "Lucida Grande", "Helvetica Neue", Arial, sans-serif;
+  --display-font: "Lucida Grande", "Helvetica Neue", Arial, sans-serif;
+  --desk-bg: #26364d;
+  --desk-image: linear-gradient(170deg, #4a5f80 0%, #26364d 55%, #131c2b 100%);
+  --desk-size: 100% 100%;
+  --win-bg: #e8e8e8;
+  --win-border: #6f6f6f;
+  --win-radius: 6px;
+  --win-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
+  --tbar-bg: linear-gradient(#f2f2f2, #c6c6c6);
+  --tbar-bg-size: 100% 100%;
+  --tbar-bg-origin: border-box;
+  --tbar-title-bg: transparent;
+  --tbar-ink: #3a3a3a;
+  --tbar-border: #8e8e8e;
+  --btn-bg: linear-gradient(#ffffff, #d6d6d6);
+  --btn-border: #8e8e8e;
+  --btn-radius: 12px;
+  --btn-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+  --menu-bg: rgba(246, 246, 246, 0.97);
+  --menu-radius: 0 0 5px 5px;
+  --menu-shadow: 0 3px 12px rgba(0, 0, 0, 0.4);
+  --bar-bg: linear-gradient(#f4f4f4, #cfcfcf);
+  --bar-border: #909090;
+  --gauge-fill: linear-gradient(#9fb6d4, #5c799f);
+}
+
+/* ---------- Yosemite (10.10): flat, translucent, hairlines ---------- */
+html[data-theme="yosemite"] {
+  --ink: #2b2b2b;
+  --site-font: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  --display-font: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  --desk-bg: #4568dc;
+  --desk-image: linear-gradient(160deg, #b06ab3 0%, #7b5bb8 45%, #4568dc 100%);
+  --desk-size: 100% 100%;
+  --win-bg: #f6f6f6;
+  --win-border: #c9c9c9;
+  --win-radius: 8px;
+  --win-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  --tbar-bg: linear-gradient(#f6f6f6, #ececec);
+  --tbar-bg-size: 100% 100%;
+  --tbar-bg-origin: border-box;
+  --tbar-title-bg: transparent;
+  --tbar-ink: #4a4a4a;
+  --tbar-border: #d6d6d6;
+  --btn-bg: #ffffff;
+  --btn-border: #c8c8c8;
+  --btn-ink: #0a60ff;
+  --btn-radius: 6px;
+  --menu-bg: rgba(252, 252, 252, 0.92);
+  --menu-radius: 0 0 6px 6px;
+  --menu-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  --bar-bg: rgba(250, 250, 250, 0.85);
+  --bar-blur: blur(12px);
+  --bar-border: #d9d9d9;
+  --gauge-fill: #0a60ff;
+}
+
+/* ---------- Liquid Glass: refraction, depth, pill geometry ---------- */
+html[data-theme="liquid-glass"] {
+  --ink: #1c1c1e;
+  --site-font: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  --display-font: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  --desk-bg: #aab6c8;
+  --desk-image: linear-gradient(140deg, #f6d5c3 0%, #dcd0e8 35%, #c9d6f0 65%, #9fb3cd 100%);
+  --desk-size: 100% 100%;
+  --win-bg: rgba(255, 255, 255, 0.58);
+  --win-border: rgba(255, 255, 255, 0.65);
+  --win-radius: 18px;
+  --win-shadow: 0 18px 48px rgba(40, 55, 80, 0.35);
+  --win-blur: blur(22px) saturate(1.5);
+  --tbar-bg: linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.15));
+  --tbar-bg-size: 100% 100%;
+  --tbar-bg-origin: border-box;
+  --tbar-title-bg: transparent;
+  --tbar-ink: #33383f;
+  --tbar-border: rgba(255, 255, 255, 0.4);
+  --btn-bg: rgba(255, 255, 255, 0.65);
+  --btn-border: rgba(255, 255, 255, 0.8);
+  --btn-radius: 999px;
+  --btn-shadow: 0 2px 10px rgba(40, 55, 80, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --menu-bg: rgba(255, 255, 255, 0.75);
+  --menu-radius: 0 0 14px 14px;
+  --menu-shadow: 0 8px 24px rgba(40, 55, 80, 0.3);
+  --bar-bg: rgba(255, 255, 255, 0.55);
+  --bar-blur: blur(18px) saturate(1.6);
+  --bar-border: rgba(255, 255, 255, 0.5);
+  --gauge-fill: linear-gradient(90deg, #7fa8e0, #b48ccb);
+}
+
+/* Aqua-lineage eras close with traffic lights, not a close box. */
+html[data-theme="aqua"] .close-box,
+html[data-theme="snow-leopard"] .close-box,
+html[data-theme="yosemite"] .close-box,
+html[data-theme="liquid-glass"] .close-box {
+  width: 12px;
+  height: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 50%;
+  background: #ff5f57;
+  box-shadow: 19px 0 0 #febc2e, 38px 0 0 #28c840;
+}
+html[data-theme="aqua"] .tbar,
+html[data-theme="snow-leopard"] .tbar,
+html[data-theme="yosemite"] .tbar,
+html[data-theme="liquid-glass"] .tbar {
+  height: 30px;
+}
+html[data-theme="aqua"] .tbar h1, html[data-theme="aqua"] .tbar h2,
+html[data-theme="snow-leopard"] .tbar h1, html[data-theme="snow-leopard"] .tbar h2,
+html[data-theme="yosemite"] .tbar h1, html[data-theme="yosemite"] .tbar h2,
+html[data-theme="liquid-glass"] .tbar h1, html[data-theme="liquid-glass"] .tbar h2 {
+  font-size: 15px;
+  font-weight: 600;
+}
+html[data-theme="platinum"] .tbar h1,
+html[data-theme="platinum"] .tbar h2 {
+  font-size: 15px;
+}
+
+/* Modern body text sizes down a step; Chicago needed the extra height. */
+html[data-theme="yosemite"] body,
+html[data-theme="liquid-glass"] body,
+html[data-theme="aqua"] body,
+html[data-theme="snow-leopard"] body {
+  font-size: 16px;
+}
+
+/* The default button's heavy System 6 ring reads wrong off-era. */
+html[data-theme] .btn-default::after { border-width: 2px; border-radius: calc(var(--btn-radius, 7px) + 4px); }
+html[data-theme="yosemite"] .btn-default::after,
+html[data-theme="liquid-glass"] .btn-default::after { content: none; }
+html[data-theme="yosemite"] .btn-default { background: #0a60ff; color: #fff; border-color: #0a60ff; }
+html[data-theme="liquid-glass"] .btn-default { background: rgba(20, 40, 80, 0.75); color: #fff; border-color: transparent; }
+
+/* Gauge fill follows the era. */
+html[data-theme] .memory-bar > span {
+  background-image: none;
+  background-color: transparent;
+  background: var(--gauge-fill, #808080);
+}
+
+/* Appearance menu checkmark. */
+.menu-check {
+  display: inline-block;
+  width: 1.1em;
+  visibility: hidden;
+}
+.menu-list a.is-active .menu-check { visibility: visible; }

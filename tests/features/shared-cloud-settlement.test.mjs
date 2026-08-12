@@ -5,18 +5,18 @@
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("shared-cloud-settlement");
-const budget = read("src/server/shared-cloud-budget.js");
-const cloudRoute = read("src/server/lib/cloud-route.js");
-const cloudChat = read("src/server/routes/cloud-chat.js");
-const searchAnswer = read("src/server/routes/search-answer.js");
-const subtitles = read("src/server/routes/subtitles-translate.js");
-const srt = read("src/server/importers/srt.js");
-const draftThesis = read("src/server/routes/draft-thesis.js");
-const bureaucracyRoute = read("src/server/routes/bureaucracy-captions.js");
-const bureaucracyModule = read("src/server/bureaucracy.js");
-const endfieldRoute = read("src/server/routes/endfield-ask.js");
-const endfieldModule = read("src/server/endfield.js");
-const fetchLib = read("src/server/lib/fetch.js");
+const budget = read("apps/server/server/shared-cloud-budget.js");
+const cloudRoute = read("apps/server/server/lib/cloud-route.js");
+const cloudChat = read("apps/server/server/routes/cloud-chat.js");
+const searchAnswer = read("apps/server/server/routes/search-answer.js");
+const subtitles = read("apps/server/server/routes/subtitles-translate.js");
+const srt = read("apps/server/server/importers/srt.js");
+const draftThesis = read("apps/server/server/routes/draft-thesis.js");
+const bureaucracyRoute = read("apps/server/server/routes/bureaucracy-captions.js");
+const bureaucracyModule = read("apps/server/server/bureaucracy.js");
+const endfieldRoute = read("apps/server/server/routes/endfield-ask.js");
+const endfieldModule = read("apps/server/server/endfield.js");
+const fetchLib = read("apps/server/server/lib/fetch.js");
 
 test.assertIncludes(budget, "function settleSharedCloudRequest", "the budget module can reconcile reservations against actual usage");
 test.assertIncludes(budget, "state.reserved_tokens + delta", "settlement adjusts the shared daily counter");

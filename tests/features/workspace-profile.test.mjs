@@ -2,7 +2,7 @@ import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("workspace-profile");
 const profile = read("app/core/workspace-profile.js");
-const manifest = read("scripts/runtime-manifest.mjs");
+const manifest = read("tooling/runtime-manifest.mjs");
 const persistence = read("app/core/persistence-status.js");
 const actions = read("app/core/actions.js");
 const windows = read("app/core/window-manager.js");

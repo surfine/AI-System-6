@@ -10,9 +10,10 @@ import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("async-contract");
 
-const sourceFiles = execFileSync("rg", ["--files", "app", "-g", "*.js"], { encoding: "utf8" })
+const sourceFiles = execFileSync("rg", ["--files", "apps/desktop/app", "-g", "*.js"], { encoding: "utf8" })
   .trim()
   .split("\n")
+  .map((file) => file.replace(/^apps\/desktop\//, ""))
   .filter((file) => !file.startsWith("app/legacy/") && !file.startsWith("app/vendor/") && !file.startsWith("app/generated/"));
 sourceFiles.push("app.js");
 

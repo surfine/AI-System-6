@@ -41,17 +41,17 @@ The default CI sequence is `npm ci`, `npm run build`, `npm test`,
 
 ## Editing the browser runtime
 
-Source lives in `app/` and the root `app.js` entry point. The browser loads the
-generated `app.bundle.js`, so rebuild after changing browser source. Do not edit
+Source lives in `apps/desktop/app/` and `apps/desktop/app.js`. The browser loads
+the generated `apps/desktop/app.bundle.js`, so rebuild after changing browser source. Do not edit
 the generated bundle by hand.
 
 Keep feature modules behind their owning application or shared service. A fix
-that crosses several applications usually belongs in `app/core/`; a local
-workflow should stay in `app/features/`.
+that crosses several applications usually belongs in `apps/desktop/app/core/`;
+a local workflow should stay in `apps/desktop/app/features/`.
 
 ## Editing styles or appearances
 
-Styles are split by ownership under `styles/`. Before changing a visual
+Styles are split by ownership under `apps/desktop/styles/`. Before changing a visual
 surface, identify its base rule, responsive rule, appearance override, and any
 inline layout that participates in the result. Validate both System 6 and Liquid
 Glass; attach before and after evidence to the pull request.
@@ -73,7 +73,8 @@ browser probe must not replace a deterministic product contract.
 
 ## Assets and generated files
 
-Runtime icon families, fonts, OCR payloads, and model assets live in `assets/`.
+Runtime icon families, fonts, OCR payloads, and model assets live in
+`apps/desktop/assets/`.
 The public repository contains the files loaded by the product. Duplicate
 accepted-source image archives and internal proof boards remain in the
 maintainer source and are not required by public commands.

@@ -13,12 +13,11 @@
 // and fails when a newly added lazy window forgets to register.
 
 import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
-import { createFeatureTest, read, root } from "../helpers/feature-test-harness.mjs";
+import { createFeatureTest, read, resolveProjectPath } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("lazy-window-restore");
 const html = read("index.html");
-const manifest = read("scripts/runtime-manifest.mjs");
+const manifest = read("tooling/runtime-manifest.mjs");
 const windowManager = read("app/core/window-manager.js");
 const actions = read("app/core/actions.js");
 const selectionServices = read("app/features/selection-services.js");
@@ -32,7 +31,7 @@ const lazyBlock = manifest.slice(
 );
 const lazyModules = [...lazyBlock.matchAll(/"(app\/[a-z0-9/-]+\.js)"/g)]
   .map((match) => match[1])
-  .filter((path) => existsSync(join(root, path)));
+  .filter((path) => existsSync(resolveProjectPath(path)));
 
 test.assert(lazyModules.length > 0, "the runtime manifest declares lazy modules");
 
@@ -57,9 +56,9 @@ test.assert(windowSections.length > 10, "index.html declares the window sections
 const allModules = [...new Set([
   ...[...manifest.matchAll(/"(app\/[a-z0-9/-]+\.js)"/g)].map((match) => match[1]),
   ...lazyModules,
-])].filter((path) => existsSync(join(root, path)));
+])].filter((path) => existsSync(resolveProjectPath(path)));
 
-const moduleSources = new Map(allModules.map((path) => [path, readFileSync(join(root, path), "utf8")]));
+const moduleSources = new Map(allModules.map((path) => [path, readFileSync(resolveProjectPath(path), "utf8")]));
 const lazySet = new Set(lazyModules);
 
 const ownership = [];

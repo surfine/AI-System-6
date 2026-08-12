@@ -8,7 +8,7 @@ const persistenceSource = read("app/core/persistence-status.js");
 const bootSource = read("app/core/boot.js");
 const workingSessionSource = read("app/core/working-session.js");
 const projectDiskSource = read("app/features/project-disk.js");
-const manifest = read("scripts/runtime-manifest.mjs");
+const manifest = read("tooling/runtime-manifest.mjs");
 
 const context = vm.createContext({
   DOMException,

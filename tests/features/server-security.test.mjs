@@ -8,11 +8,11 @@ import { createFeatureTest, root } from "../helpers/feature-test-harness.mjs";
 
 const require = createRequire(import.meta.url);
 const test = createFeatureTest("server-security");
-const localRequest = require("../../src/server/security/local-request.js");
-const httpHelpers = require("../../src/server/lib/http.js");
-const localUrls = require("../../src/server/lib/local-urls.js");
-const cloud = require("../../src/server/cloud.js");
-const fetchHelpers = require("../../src/server/lib/fetch.js");
+const localRequest = require("../../apps/server/server/security/local-request.js");
+const httpHelpers = require("../../apps/server/server/lib/http.js");
+const localUrls = require("../../apps/server/server/lib/local-urls.js");
+const cloud = require("../../apps/server/server/cloud.js");
+const fetchHelpers = require("../../apps/server/server/lib/fetch.js");
 
 function reservePort() {
   return new Promise((resolve, reject) => {
@@ -240,7 +240,7 @@ try {
 }
 
 if (port) {
-  const child = spawn(process.execPath, ["src/server.js"], {
+  const child = spawn(process.execPath, ["apps/server/server.js"], {
     cwd: root,
     env: {
       ...process.env,
@@ -263,7 +263,7 @@ if (port) {
       "responses carry the application CSP"
     );
 
-    for (const path of ["/src/server.js", "/package.json", "/.git/config"]) {
+    for (const path of ["/apps/server/server.js", "/package.json", "/.git/config"]) {
       const blocked = await request(port, path);
       test.assert(blocked.status === 404, `${path} is not downloadable`);
     }

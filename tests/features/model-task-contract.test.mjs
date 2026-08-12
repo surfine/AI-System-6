@@ -6,12 +6,12 @@ import { createFeatureTest } from "../helpers/feature-test-harness.mjs";
 
 const require = createRequire(import.meta.url);
 const test = createFeatureTest("model-task-contract");
-const runtime = require("../../app/shared/model-task-runtime.js");
+const runtime = require("../../apps/desktop/app/shared/model-task-runtime.js");
 const {
   applyChatTaskContract,
   enforceMarkdownOnlyChatPayload,
-} = require("../../src/server/chat.js");
-const { HUMANIZER_MARKER } = require("../../src/server/humanizer.js");
+} = require("../../apps/server/server/chat.js");
+const { HUMANIZER_MARKER } = require("../../apps/server/server/humanizer.js");
 
 const extraction = runtime.taskContractRegistry.require("extract-facts");
 test.assert(extraction.id === "source.extract-facts", "Fact extraction resolves to a closed registry entry");

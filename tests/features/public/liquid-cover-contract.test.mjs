@@ -4,7 +4,7 @@ import { createFeatureTest, read } from "../../helpers/feature-test-harness.mjs"
 
 const test = createFeatureTest("public-liquid-cover");
 const actions = read("app/core/actions.js");
-const manifest = read("scripts/runtime-manifest.mjs");
+const manifest = read("tooling/runtime-manifest.mjs");
 const cover = read("app/features/liquid-cover.js");
 
 test.assertIncludes(manifest, '"app/features/liquid-cover.js"', "Cover Glass loads lazily");

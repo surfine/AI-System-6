@@ -1,5 +1,5 @@
 <!-- canonical-source: CHANGELOG.md -->
-<!-- source-sha256: dc078a637fafa17ebdb85111eeaf4d5929b632de28e48e425d397498ea9e3782 -->
+<!-- source-sha256: 82504c37376e8075c83fa2c395e0670fb4d80454ae5d2551de7caf6cdbcfa334 -->
 
 # AI System 6 中文更新日志
 
@@ -196,10 +196,10 @@ Scrapbook、DocMap 和 File Floppy 共同服务写作。
 
 - 项目文档被合并到 `CLAUDE.md`，成为人和 agent 共同遵守的单一事实来源；
   `CLAUDE.zh-CN.md` 作为中文参考镜像保留。
-- 服务端从根目录 `server.js` 迁移到 `src/server.js`，拆出 route table、
+- 服务端从根目录 `server.js` 迁移到 `apps/server/server.js`，拆出 route table、
   shared libraries、focused route handlers 和 importers。
 - `/api/version`、云模型、本地模型、导入、Reader、Searcher、Endfield、
-  静态文件服务与 import-text parity 被陆续迁移到新的 `src/` 结构。
+  静态文件服务与 import-text parity 被陆续迁移到新的 `apps/server/` 结构。
 - `verify:release` 开始包含 src typecheck；CSS、design、data、docs、
   smoke、floppy budget 和 packaging 也被纳入更严格的发布验证。
 - prompt 本地化、Reader 字幕翻译和包装行为继续被修补。

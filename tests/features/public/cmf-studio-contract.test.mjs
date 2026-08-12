@@ -6,7 +6,7 @@ import { createFeatureTest, read } from "../../helpers/feature-test-harness.mjs"
 const test = createFeatureTest("public-cmf-studio");
 const cmf = read("app/features/cmf-studio.js");
 const actions = read("app/core/actions.js");
-const manifest = read("scripts/runtime-manifest.mjs");
+const manifest = read("tooling/runtime-manifest.mjs");
 
 test.assertIncludes(manifest, '"app/features/cmf-studio.js"', "CMF Studio loads lazily");
 test.assertIncludes(cmf, '"cmf-palette"', "CMF Studio owns a supported-device palette");

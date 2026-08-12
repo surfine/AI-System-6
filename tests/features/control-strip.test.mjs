@@ -8,7 +8,7 @@
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("control-strip");
-const manifest = read("scripts/runtime-manifest.mjs");
+const manifest = read("tooling/runtime-manifest.mjs");
 const html = read("index.html");
 const persistence = read("app/core/persistence-status.js");
 const domHandles = read("app/core/dom-handles.js");

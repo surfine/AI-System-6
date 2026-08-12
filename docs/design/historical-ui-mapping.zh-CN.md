@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/historical-ui-mapping.md -->
-<!-- source-sha256: f2d824a9e267d46e492b2f874d28447fad9d3354724791d6dd4c86b63ab38b04 -->
+<!-- source-sha256: ca3914c22c4aebd3d8df705cd2e02b11337843e7c33f715027073cd24e78c734 -->
 
 英文版为准。本文档仅供人类参考。
 
@@ -10,7 +10,7 @@
 皮肤的 Liquid Glass）里如何绘制。这是执行代理的工作契约：**能力可以来自
 2026 年，但视觉语法必须属于目标年代。**
 
-配套证据：`drafts/appearance-external-research.md`（Quaqua / 512 Pixels /
+配套证据：`internal/evidence/drafts/appearance-external-research.md`（Quaqua / 512 Pixels /
 GTK / Web 参考测量）、`tests/visual/theme-lab-fidelity/*`（harness 与评审板）。
 
 ---
@@ -171,5 +171,5 @@ Preferences；Snow Leopard -> 侧栏分类的 System Preferences；Yosemite ->
 
 找到更准确的历史母体时，在同一编辑里更新本文档并记录参考来源（URL +
 采集倍率 + 日期）。当前 recipe 参考的所有测量见
-`drafts/appearance-external-research.md`；fidelity manifest 钉住规范来源与
+`internal/evidence/drafts/appearance-external-research.md`；fidelity manifest 钉住规范来源与
 裁切坐标。

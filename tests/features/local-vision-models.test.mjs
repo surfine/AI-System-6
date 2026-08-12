@@ -5,12 +5,12 @@ import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("local-vision-models");
 
-const vision = read("src/server/vision.js");
-const router = read("src/server/router.js");
-const route = read("src/server/routes/vision-analyze.js");
-const imageOcr = read("src/server/importers/image-ocr.js");
-const lmstudio = read("src/server/lmstudio.js");
-const setupRoute = read("src/server/routes/lmstudio-setup.js");
+const vision = read("apps/server/server/vision.js");
+const router = read("apps/server/server/router.js");
+const route = read("apps/server/server/routes/vision-analyze.js");
+const imageOcr = read("apps/server/server/importers/image-ocr.js");
+const lmstudio = read("apps/server/server/lmstudio.js");
+const setupRoute = read("apps/server/server/routes/lmstudio-setup.js");
 const persistence = read("app/core/persistence-status.js");
 const teachText = read("app/features/teachtext-accessories.js");
 const en = read("app/data/translations-en.js");

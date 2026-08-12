@@ -7,10 +7,10 @@ import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const require = createRequire(import.meta.url);
 const test = createFeatureTest("agent-runtime");
-const agent = require("../../app/shared/writing-agent-runtime.js");
-const retrieval = require("../../app/shared/retrieval-runtime.js");
+const agent = require("../../apps/desktop/app/shared/writing-agent-runtime.js");
+const retrieval = require("../../apps/desktop/app/shared/retrieval-runtime.js");
 
-const manifest = read("scripts/runtime-manifest.mjs");
+const manifest = read("tooling/runtime-manifest.mjs");
 const coordinatorSource = read("app/core/writing-agent-coordinator.js");
 const chatMessages = read("app/core/chat-messages.js");
 const contextRetrieval = read("app/core/context-retrieval.js");

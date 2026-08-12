@@ -6,10 +6,10 @@
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("responses-structured-output");
-const responses = read("src/server/responses.js");
-const srt = read("src/server/importers/srt.js");
-const webSearch = read("src/server/web-search.js");
-const draftThesis = read("src/server/routes/draft-thesis.js");
+const responses = read("apps/server/server/responses.js");
+const srt = read("apps/server/server/importers/srt.js");
+const webSearch = read("apps/server/server/web-search.js");
+const draftThesis = read("apps/server/server/routes/draft-thesis.js");
 
 test.assertIncludes(responses, "DEEPSEEK_RESPONSES_URL", "the transport targets the official Responses endpoint");
 test.assertIncludes(responses, "function isResponsesEligible", "Responses eligibility is explicit");

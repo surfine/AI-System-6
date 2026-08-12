@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>OG poster source — screenshot me at 1200×630</title>
+<!-- Not linked from the site. Regenerate the share image with:
+     node scripts/render-og-poster.mjs -->
+<style>
+  @font-face {
+    font-family: Chicago;
+    src: url("fonts/ChicagoFLF.woff2") format("woff2");
+  }
+  @font-face {
+    font-family: Chicago_12;
+    src: url("fonts/ChiKareGo2.woff2") format("woff2");
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+  body {
+    font-family: Chicago, sans-serif;
+    background-color: #808080;
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="2" height="2"><rect width="2" height="2" fill="%23ffffff"/><rect width="1" height="1" fill="%23000000"/><rect x="1" y="1" width="1" height="1" fill="%23000000"/></svg>');
+    background-size: 4px 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .card {
+    width: 1108px;
+    height: 540px;
+    background: #fff;
+    border: 4px solid #000;
+    box-shadow: 10px 10px 0 rgba(0,0,0,0.55);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .tbar {
+    align-self: stretch;
+    height: 54px;
+    border-bottom: 4px solid #000;
+    background-image: linear-gradient(to bottom, #000 0 3px, transparent 3px 6px);
+    background-size: 100% 6px;
+    background-origin: content-box;
+    background-clip: content-box;
+    padding: 8px 10px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .tbar span {
+    background: #fff;
+    font-size: 26px;
+    padding: 0 22px;
+    line-height: 38px;
+  }
+  .close {
+    position: absolute;
+    left: 22px;
+    top: 50%;
+    width: 26px;
+    height: 26px;
+    transform: translateY(-50%);
+    border: 3px solid #000;
+    background: #fff;
+    box-shadow: 0 0 0 6px #fff;
+  }
+  h1 {
+    font-size: 96px;
+    font-weight: normal;
+    line-height: 1.02;
+    text-align: center;
+    margin-top: 38px;
+    letter-spacing: 0.01em;
+  }
+  .icons {
+    display: flex;
+    gap: 54px;
+    align-items: flex-end;
+    margin-top: 44px;
+  }
+  .icons img { width: 72px; height: 72px; display: block; }
+  .icons img.pix { image-rendering: pixelated; }
+  .rail {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-top: 40px;
+    width: 900px;
+    font-size: 26px;
+  }
+  .rail .line {
+    flex: 1;
+    height: 4px;
+    background: #000;
+    position: relative;
+  }
+  .rail .line i {
+    position: absolute;
+    top: -5px;
+    width: 14px;
+    height: 14px;
+    background: #000;
+  }
+  .badge {
+    margin-top: 34px;
+    font-family: Chicago_12, Chicago, sans-serif;
+    font-size: 24px;
+    background: #000;
+    color: #fff;
+    padding: 6px 26px 8px;
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="tbar"><span class="close"></span><span>AI System 6</span></div>
+    <h1>THE AI HAS<br>A DESKTOP NOW.</h1>
+    <div class="icons">
+      <img class="pix" src="img/themes/classic/hardDisk.svg" alt="">
+      <img class="pix" src="img/themes/platinum/hardDisk.png" alt="">
+      <img src="img/themes/aqua/hardDisk.png" alt="">
+      <img src="img/themes/snow-leopard/hardDisk.png" alt="">
+      <img src="img/themes/yosemite/hardDisk.png" alt="">
+      <img src="img/themes/liquid-glass/hardDisk.png" alt="">
+    </div>
+    <div class="rail">
+      <span>1988</span>
+      <span class="line"><i style="left:0"></i><i style="left:19.6%"></i><i style="left:39.2%"></i><i style="left:58.8%"></i><i style="left:78.4%"></i><i style="right:0"></i></span>
+      <span>2026</span>
+    </div>
+    <div class="badge">BOOT IT IN YOUR BROWSER — LIVE SYSTEM</div>
+  </div>
+</body>
+</html>

@@ -5,14 +5,14 @@ import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("credential-boundary");
 const require = createRequire(import.meta.url);
-const credentialVault = require("../../src/server/credential-vault.js");
+const credentialVault = require("../../apps/server/server/credential-vault.js");
 const app = read("app.js");
 const persistence = read("app/core/persistence-status.js");
 const cloudModel = read("app/features/cloud-model.js");
 const liquidCover = read("app/features/liquid-cover.js");
-const cloudChat = read("src/server/routes/cloud-chat.js");
-const cloudStatus = read("src/server/routes/cloud-status.js");
-const router = read("src/server/router.js");
+const cloudChat = read("apps/server/server/routes/cloud-chat.js");
+const cloudStatus = read("apps/server/server/routes/cloud-status.js");
+const router = read("apps/server/server/router.js");
 
 function storage(initial = {}) {
   const values = new Map(Object.entries(initial));

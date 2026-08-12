@@ -1,0 +1,707 @@
+{
+  "schemaVersion": 1,
+  "target": "Mac OS 9.0 Platinum Finder",
+  "generatedBy": "tooling/build-platinum-core-icons.mjs",
+  "coreOnly": true,
+  "nativeSizes": [
+    32,
+    16
+  ],
+  "referenceLedger": "icons/src/platinum-core-icons.json",
+  "referenceBoard": "internal/evidence/drafts/era-icons/platinum-core-reference-board.png",
+  "selectionRecipe": "Use the same native artwork in normal and selected Finder states; selection belongs to the Finder label/state surface.",
+  "icons": {
+    "finderApp": {
+      "label": "Finder / System",
+      "genre": "system identity",
+      "prototype": "friendly Platinum compact Macintosh with eyes and a small smile on its screen",
+      "metaphorKey": "smiling-compact-macintosh",
+      "referenceId": 31,
+      "sourceKind": "measured-independent-pixel-construction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/core-evidence/finderApp-16.png",
+        "32": "icons/core-evidence/finderApp-32.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 182,
+          "colors": 9,
+          "bbox": {
+            "minX": 2,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 15
+          },
+          "sha256": "8c3236bff3e9834bc36e93fc362094660fded66b3d999e72f5f0c3396187c433",
+          "bytes": 255
+        },
+        "32": {
+          "pixels": 622,
+          "colors": 11,
+          "bbox": {
+            "minX": 5,
+            "minY": 3,
+            "maxX": 28,
+            "maxY": 29
+          },
+          "sha256": "4014775dd86b1375d76cbd34d93566720382448dbe7f0043c78f992bcb90618d",
+          "bytes": 348
+        }
+      }
+    },
+    "folder": {
+      "label": "Folder",
+      "genre": "Finder object",
+      "prototype": "violet Finder folder",
+      "referenceId": 24,
+      "sourceKind": "measured-independent-pixel-construction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/core-evidence/folder-16.png",
+        "32": "icons/core-evidence/folder-32.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 141,
+          "colors": 61,
+          "bbox": {
+            "minX": 1,
+            "minY": 4,
+            "maxX": 14,
+            "maxY": 14
+          },
+          "sha256": "9bb5d8ebff6748158c0cdd239dcf00541f99519d3813baa6a6f4e804895ebc2a",
+          "bytes": 436
+        },
+        "32": {
+          "pixels": 565,
+          "colors": 132,
+          "bbox": {
+            "minX": 3,
+            "minY": 7,
+            "maxX": 30,
+            "maxY": 29
+          },
+          "sha256": "a7426aa63320289fe4034fd75bf1d693dc3d124d0018ffeade2d3747f3ee4b59",
+          "bytes": 870
+        }
+      }
+    },
+    "hardDisk": {
+      "label": "Hard Disk",
+      "genre": "hardware",
+      "prototype": "silver mounted volume",
+      "referenceId": 1,
+      "sourceKind": "measured-independent-pixel-construction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/core-evidence/hardDisk-16.png",
+        "32": "icons/core-evidence/hardDisk-32.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 132,
+          "colors": 13,
+          "bbox": {
+            "minX": 1,
+            "minY": 5,
+            "maxX": 14,
+            "maxY": 14
+          },
+          "sha256": "09c730fe86a083bb7b65fcceab4c3a266443b86ad70e67792f2c737a08a872ab",
+          "bytes": 241
+        },
+        "32": {
+          "pixels": 415,
+          "colors": 40,
+          "bbox": {
+            "minX": 3,
+            "minY": 12,
+            "maxX": 29,
+            "maxY": 28
+          },
+          "sha256": "1fb54d063273cf0ccabba50d5216cc346200eebb6e74889285dbce71364d82a3",
+          "bytes": 454
+        }
+      }
+    },
+    "trash": {
+      "label": "Trash",
+      "genre": "Finder object",
+      "prototype": "empty ribbed metal can",
+      "referenceId": 7,
+      "sourceKind": "measured-independent-pixel-construction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/core-evidence/trash-16.png",
+        "32": "icons/core-evidence/trash-32.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 115,
+          "colors": 32,
+          "bbox": {
+            "minX": 4,
+            "minY": 2,
+            "maxX": 13,
+            "maxY": 14
+          },
+          "sha256": "4e387af02100ffe585d5f25591a4ff88312177f9494735f8dda0e508f174a3c5",
+          "bytes": 332
+        },
+        "32": {
+          "pixels": 463,
+          "colors": 74,
+          "bbox": {
+            "minX": 8,
+            "minY": 5,
+            "maxX": 28,
+            "maxY": 30
+          },
+          "sha256": "77c2a42a56ceca582a12afe142d8a8507f10de7ec0f73bca60ae424dad5c7d13",
+          "bytes": 618
+        }
+      }
+    },
+    "document": {
+      "label": "Generic Document",
+      "genre": "document",
+      "prototype": "folded-corner white paper",
+      "referenceId": 10,
+      "sourceKind": "measured-independent-pixel-construction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/core-evidence/document-16.png",
+        "32": "icons/core-evidence/document-32.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 165,
+          "colors": 8,
+          "bbox": {
+            "minX": 3,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 15
+          },
+          "sha256": "c26369b24217114ed9835e1d9703dc200bb88e974fe9514db328aa8d4a56d55d",
+          "bytes": 235
+        },
+        "32": {
+          "pixels": 610,
+          "colors": 9,
+          "bbox": {
+            "minX": 7,
+            "minY": 3,
+            "maxX": 29,
+            "maxY": 30
+          },
+          "sha256": "8fe66851ef044fe02c457489fd9a0dfbf560fe7ce78a48c1bc33bc3ac4f10e11",
+          "bytes": 311
+        }
+      }
+    },
+    "daHandler": {
+      "label": "Generic Application",
+      "genre": "application",
+      "prototype": "hand-in-diamond application plaque",
+      "referenceId": 80,
+      "sourceKind": "measured-independent-pixel-construction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/core-evidence/daHandler-16.png",
+        "32": "icons/core-evidence/daHandler-32.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 134,
+          "colors": 25,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 15
+          },
+          "sha256": "30334f2cb7eaa4adb018e75845ff1e1e125a4ecf3a4f0d3ac08eadf557e81fe2",
+          "bytes": 398
+        },
+        "32": {
+          "pixels": 468,
+          "colors": 45,
+          "bbox": {
+            "minX": 3,
+            "minY": 3,
+            "maxX": 28,
+            "maxY": 29
+          },
+          "sha256": "01ab1824e69537fcfa1ab19a5ba2cfd070e837ffb0ae38ac3340cce06d88aca8",
+          "bytes": 831
+        }
+      }
+    },
+    "fileFloppy": {
+      "label": "Floppy Disk",
+      "genre": "removable media",
+      "prototype": "front-on 3.5-inch floppy",
+      "referenceId": 25,
+      "sourceKind": "measured-independent-pixel-construction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/core-evidence/fileFloppy-16.png",
+        "32": "icons/core-evidence/fileFloppy-32.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 188,
+          "colors": 10,
+          "bbox": {
+            "minX": 2,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 15
+          },
+          "sha256": "1774b375b74313e5b7ca3f1b9ce85a905d18b57a8b9dcad1f850297eadeb3955",
+          "bytes": 246
+        },
+        "32": {
+          "pixels": 635,
+          "colors": 12,
+          "bbox": {
+            "minX": 5,
+            "minY": 4,
+            "maxX": 29,
+            "maxY": 29
+          },
+          "sha256": "c52988796f7d9384ddf673bcbec4cc6f3c8bb54905c3994e143d6df892a40c34",
+          "bytes": 355
+        }
+      }
+    },
+    "projectDisc": {
+      "label": "CD",
+      "genre": "optical media",
+      "prototype": "front-on rainbow compact disc",
+      "referenceId": 4,
+      "sourceKind": "measured-independent-pixel-construction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/core-evidence/projectDisc-16.png",
+        "32": "icons/core-evidence/projectDisc-32.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 168,
+          "colors": 12,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 15,
+            "maxY": 15
+          },
+          "sha256": "254b8ecc21b42a4926e8729fff202e88fd3f2da9488a44089cf04e8df6eb9b56",
+          "bytes": 380
+        },
+        "32": {
+          "pixels": 624,
+          "colors": 12,
+          "bbox": {
+            "minX": 3,
+            "minY": 3,
+            "maxX": 29,
+            "maxY": 30
+          },
+          "sha256": "a64e2483cd483f86d745afe85a49510e493fe7939ad82b091a96540c9d561884",
+          "bytes": 641
+        }
+      }
+    },
+    "controlPanel": {
+      "label": "Control Panel",
+      "genre": "system utility",
+      "prototype": "control surface document",
+      "referenceId": 40,
+      "sourceKind": "measured-independent-pixel-construction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/core-evidence/controlPanel-16.png",
+        "32": "icons/core-evidence/controlPanel-32.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 165,
+          "colors": 11,
+          "bbox": {
+            "minX": 3,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 15
+          },
+          "sha256": "1cb2cde3005b3330bb7be2ea4fad97e675d71f6d32f4ca0935f46c92a7c6ff22",
+          "bytes": 308
+        },
+        "32": {
+          "pixels": 610,
+          "colors": 14,
+          "bbox": {
+            "minX": 7,
+            "minY": 3,
+            "maxX": 29,
+            "maxY": 30
+          },
+          "sha256": "3f78a4bcf8e9f658f316e9490a223a04e2fbf429206b956b7bf8a09fe46a5b5c",
+          "bytes": 383
+        }
+      }
+    },
+    "systemFile": {
+      "label": "System",
+      "genre": "system file",
+      "prototype": "wire-bound system suitcase",
+      "referenceId": 21,
+      "sourceKind": "measured-independent-pixel-construction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/core-evidence/systemFile-16.png",
+        "32": "icons/core-evidence/systemFile-32.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 160,
+          "colors": 11,
+          "bbox": {
+            "minX": 2,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 15
+          },
+          "sha256": "5e23122e1ff4f75dd1e474edcb9a09fe0cf733f61113cf7ff0f9034e70b8d353",
+          "bytes": 293
+        },
+        "32": {
+          "pixels": 556,
+          "colors": 21,
+          "bbox": {
+            "minX": 5,
+            "minY": 4,
+            "maxX": 29,
+            "maxY": 29
+          },
+          "sha256": "14c70e3694ae8b4ff2eb63336ce41fc1371cbaa6840b88287a1aed76e234d0b6",
+          "bytes": 425
+        }
+      }
+    },
+    "scrapbook": {
+      "label": "Scrapbook",
+      "genre": "desk accessory",
+      "prototype": "wire-bound clipping album",
+      "referenceId": 41,
+      "sourceKind": "measured-independent-pixel-construction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/core-evidence/scrapbook-16.png",
+        "32": "icons/core-evidence/scrapbook-32.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 145,
+          "colors": 12,
+          "bbox": {
+            "minX": 2,
+            "minY": 3,
+            "maxX": 14,
+            "maxY": 15
+          },
+          "sha256": "9d328c1cd916b1a3fa379f687cd33b8b79b67fccf6d899ebb24ba92bca1a3c2e",
+          "bytes": 274
+        },
+        "32": {
+          "pixels": 544,
+          "colors": 27,
+          "bbox": {
+            "minX": 4,
+            "minY": 7,
+            "maxX": 29,
+            "maxY": 29
+          },
+          "sha256": "78b24e1a96bb127bd438d49c0c0f2e13fce6e85160d7af2967160ff681e4cfb1",
+          "bytes": 505
+        }
+      }
+    },
+    "clipboard": {
+      "label": "Clipboard",
+      "genre": "desk accessory",
+      "prototype": "paper board with top clip",
+      "referenceId": 20,
+      "sourceKind": "measured-independent-pixel-construction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/core-evidence/clipboard-16.png",
+        "32": "icons/core-evidence/clipboard-32.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 162,
+          "colors": 25,
+          "bbox": {
+            "minX": 3,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 15
+          },
+          "sha256": "dc65053a0018715c4293d55ec57c6c922740825a88ee419dc39a9785cb52ed20",
+          "bytes": 348
+        },
+        "32": {
+          "pixels": 559,
+          "colors": 32,
+          "bbox": {
+            "minX": 8,
+            "minY": 3,
+            "maxX": 29,
+            "maxY": 30
+          },
+          "sha256": "bf1f3ae2ad627a144e388248a403d53fbae17a84830aacbe74d7ad2dff9e704e",
+          "bytes": 536
+        }
+      }
+    },
+    "assistant": {
+      "label": "ClioTalk",
+      "genre": "application",
+      "prototype": "two Platinum speech balloons: solid user turn and clearly dashed provisional reply",
+      "metaphorKey": "solid-user-dashed-reply-balloons",
+      "referenceId": null,
+      "note": "The dashed reply is a semantic state cue for temporary model output, not a decorative border.",
+      "sourceKind": "measured-independent-pixel-construction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/core-evidence/assistant-16.png",
+        "32": "icons/core-evidence/assistant-32.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 131,
+          "colors": 8,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 15
+          },
+          "sha256": "95e4809f12c8385a2b6da1a861f3b1f5464de68305a238dc3efb858990c397de",
+          "bytes": 267
+        },
+        "32": {
+          "pixels": 440,
+          "colors": 18,
+          "bbox": {
+            "minX": 3,
+            "minY": 4,
+            "maxX": 29,
+            "maxY": 30
+          },
+          "sha256": "0cdb483b014d56e70454c789d01fec3de1954020565a980ec5f2fd8ed2d71fc2",
+          "bytes": 417
+        }
+      }
+    },
+    "searcher": {
+      "label": "Searcher",
+      "genre": "application",
+      "prototype": "Platinum document under an octagonal blue magnifying lens",
+      "metaphorKey": "magnifier-over-page",
+      "referenceId": null,
+      "sourceKind": "measured-independent-pixel-construction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/core-evidence/searcher-16.png",
+        "32": "icons/core-evidence/searcher-32.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 147,
+          "colors": 40,
+          "bbox": {
+            "minX": 2,
+            "minY": 1,
+            "maxX": 15,
+            "maxY": 15
+          },
+          "sha256": "9701bbf7a60bf9316d52e1841cefc84e53e28a1d03fc5c0db8f4ea9b3b1f0d88",
+          "bytes": 379
+        },
+        "32": {
+          "pixels": 576,
+          "colors": 53,
+          "bbox": {
+            "minX": 5,
+            "minY": 3,
+            "maxX": 31,
+            "maxY": 30
+          },
+          "sha256": "ce7ee5af24c75664f65c2fe2edcc3e8a14b9f7c57feeddc112d693a1fdeac0c7",
+          "bytes": 765
+        }
+      }
+    },
+    "teachText": {
+      "label": "TeachText",
+      "genre": "application",
+      "prototype": "Platinum ruled writing paper crossed by a blue pen",
+      "metaphorKey": "writing-paper-and-pen",
+      "referenceId": null,
+      "sourceKind": "measured-independent-pixel-construction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/core-evidence/teachText-16.png",
+        "32": "icons/core-evidence/teachText-32.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 165,
+          "colors": 11,
+          "bbox": {
+            "minX": 3,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 15
+          },
+          "sha256": "35bccae891a07140225522e8400429d58d99b6f815819b37ef27622fd70d2a22",
+          "bytes": 321
+        },
+        "32": {
+          "pixels": 610,
+          "colors": 32,
+          "bbox": {
+            "minX": 7,
+            "minY": 3,
+            "maxX": 29,
+            "maxY": 30
+          },
+          "sha256": "c11d4290a529c8e5a094b5b8464e7514ee5cf48305128b5a55cb4888e698d8bc",
+          "bytes": 560
+        }
+      }
+    },
+    "reviewDesk": {
+      "label": "Review Desk",
+      "genre": "application",
+      "prototype": "Platinum marked manuscript under a proofing lens",
+      "metaphorKey": "marked-manuscript-with-lens",
+      "referenceId": null,
+      "sourceKind": "measured-independent-pixel-construction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/core-evidence/reviewDesk-16.png",
+        "32": "icons/core-evidence/reviewDesk-32.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 167,
+          "colors": 35,
+          "bbox": {
+            "minX": 3,
+            "minY": 1,
+            "maxX": 15,
+            "maxY": 15
+          },
+          "sha256": "5ce8c093808060201a5f698e5fb573216c3a3dd1934acf0a892d33f79abcff1f",
+          "bytes": 400
+        },
+        "32": {
+          "pixels": 612,
+          "colors": 72,
+          "bbox": {
+            "minX": 7,
+            "minY": 3,
+            "maxX": 31,
+            "maxY": 30
+          },
+          "sha256": "115e74a87459901a16a97d5fdf1032cb3a3ca6d9430c214ec770276b973f33a0",
+          "bytes": 859
+        }
+      }
+    },
+    "docMap": {
+      "label": "DocMap",
+      "genre": "application",
+      "prototype": "Platinum page whose heading runs branch into three inset nodes",
+      "metaphorKey": "branching-document-map",
+      "referenceId": null,
+      "sourceKind": "measured-independent-pixel-construction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/core-evidence/docMap-16.png",
+        "32": "icons/core-evidence/docMap-32.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 161,
+          "colors": 6,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 15,
+            "maxY": 15
+          },
+          "sha256": "d9f2074e24141c4edbb0bee76ad4bb97b49cf7078408e7eaad4037d3eb9015d5",
+          "bytes": 241
+        },
+        "32": {
+          "pixels": 548,
+          "colors": 8,
+          "bbox": {
+            "minX": 4,
+            "minY": 3,
+            "maxX": 31,
+            "maxY": 30
+          },
+          "sha256": "9e923e2ae34f0ed4d1239eac13de4a75b52500de58aeab45c771bcc28174a017",
+          "bytes": 298
+        }
+      }
+    },
+    "projectDisk": {
+      "label": "Project Hard Disk",
+      "genre": "hardware",
+      "prototype": "silver external project volume with a restrained blue label",
+      "metaphorKey": "labelled-external-volume",
+      "referenceId": null,
+      "sourceKind": "measured-independent-pixel-construction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/core-evidence/projectDisk-16.png",
+        "32": "icons/core-evidence/projectDisk-32.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 132,
+          "colors": 14,
+          "bbox": {
+            "minX": 1,
+            "minY": 5,
+            "maxX": 14,
+            "maxY": 14
+          },
+          "sha256": "68145d2c1d003bca65682ea0052b502ebbd2fff08fc935cdf991b0f75fda67c0",
+          "bytes": 273
+        },
+        "32": {
+          "pixels": 415,
+          "colors": 42,
+          "bbox": {
+            "minX": 3,
+            "minY": 12,
+            "maxX": 29,
+            "maxY": 28
+          },
+          "sha256": "2d2c47fa9fae83625f7ba680e28512565166b9dd1f9b517d3b13701b6c8228ba",
+          "bytes": 507
+        }
+      }
+    }
+  }
+}

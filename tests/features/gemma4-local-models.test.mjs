@@ -5,9 +5,9 @@ import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("gemma4-local-models");
 
-const lmstudioModels = read("src/server/lib/lmstudio-models.js");
-const serverChat = read("src/server/chat.js");
-const chatRoute = read("src/server/routes/chat.js");
+const lmstudioModels = read("apps/server/server/lib/lmstudio-models.js");
+const serverChat = read("apps/server/server/chat.js");
+const chatRoute = read("apps/server/server/routes/chat.js");
 const chatMessages = read("app/core/chat-messages.js");
 
 test.assertIncludes(lmstudioModels, "gemma[-_/ ]?4", "known context matching accepts Gemma 4 aliases");

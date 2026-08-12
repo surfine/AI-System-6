@@ -59,7 +59,7 @@ its resting search-field rule sits at specificity (0,2,1), so it outranked the
 shared painted-focus rule (0,2,0) for Snow Leopard and tied the Aqua focus
 recipe (0,2,1) and won on document order. Real `:focus` was never affected,
 because the era `:focus` recipes sit at (0,2,2). The fix adds one lab-scoped
-rule in `styles/66-theme-lab.css` that supplies only the ring, so each era keeps
+rule in `apps/desktop/styles/66-theme-lab.css` that supplies only the ring, so each era keeps
 its own search-field radius, padding, and background.
 
 Open state gaps, with the reason each one is not pinned yet:

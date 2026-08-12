@@ -20,7 +20,7 @@ import { createFeatureTest, read, root } from "../helpers/feature-test-harness.m
 const test = createFeatureTest("lazy-loader");
 const config = read("app/core/config.js");
 const exportImport = read("app/features/export-import.js");
-const manifest = read("scripts/runtime-manifest.mjs");
+const manifest = read("tooling/runtime-manifest.mjs");
 
 // Canonical loader ownership.
 test.assertIncludes(config, "function loadClassicScriptOnce", "the shared lazy loader lives in config.js");

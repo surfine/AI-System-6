@@ -7,12 +7,12 @@ import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("model-provider-scope");
 
-const serverChat = read("src/server/chat.js");
+const serverChat = read("apps/server/server/chat.js");
 const clientChat = read("app/core/chat-messages.js");
 const cloudModel = read("app/features/cloud-model.js");
-const serverCloud = read("src/server/cloud.js");
-const cloudRoute = read("src/server/routes/cloud-chat.js");
-const localVision = read("src/server/vision.js");
+const serverCloud = read("apps/server/server/cloud.js");
+const cloudRoute = read("apps/server/server/routes/cloud-chat.js");
+const localVision = read("apps/server/server/vision.js");
 
 test.assertIncludes(serverChat, "function isQwen35ModelName", "local first-class support includes Qwen 3.5 / 3.6 detection on the server");
 test.assertIncludes(clientChat, "function isQwen35ModelName", "local first-class support includes Qwen 3.5 / 3.6 detection in the browser");

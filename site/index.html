@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI System 6 — The AI has a desktop now</title>
+<meta name="description" content="Six Mac eras. One AI desktop. Chat is an app — not the whole computer. AI System 6 is a local-first writing environment where AI work lives in visible apps and files: Searcher, Reader, Scrapbook, DocMap, TeachText, Review Desk. Boot it in your browser.">
+<link rel="canonical" href="https://aisystem6.pages.dev/">
+<link rel="icon" href="img/app-icon-192.png">
+<link rel="apple-touch-icon" href="img/app-icon-180.png">
+<meta property="og:type" content="website">
+<meta property="og:title" content="AI System 6 — The AI has a desktop now">
+<meta property="og:description" content="Six Mac eras. One AI desktop. Boot it in your browser.">
+<meta property="og:image" content="https://aisystem6.pages.dev/img/og-poster.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="AI System 6 — The AI has a desktop now. Six Macintosh-era icons on a timeline from 1988 to 2026.">
+<meta property="og:url" content="https://aisystem6.pages.dev/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="AI System 6 — The AI has a desktop now">
+<meta name="twitter:description" content="Six Mac eras. One AI desktop. Boot it in your browser.">
+<meta name="twitter:image" content="https://aisystem6.pages.dev/img/og-poster.png">
+<script>try{var t=localStorage.getItem("s6-site-theme");if(t&&t!=="classic")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+<link rel="stylesheet" href="site.css?v=20260813a">
+<link rel="stylesheet" href="desk.css?v=20260813a">
+</head>
+<body>
+
+<div class="boot" id="boot" hidden aria-hidden="true">
+  <div class="boot-box">Welcome to AI System 6.</div>
+</div>
+
+<div class="shutdown" id="shutdown" hidden>
+  <p>It is now safe to shut down AI&nbsp;System&nbsp;6.</p>
+  <button type="button">Restart</button>
+</div>
+
+<nav class="menu-bar" aria-label="Site">
+  <details class="menu">
+    <summary><span class="menu-apple" aria-hidden="true">&#63743;</span><span class="visually-hidden">Apple menu</span></summary>
+    <ul class="menu-list">
+      <li><a href="#top">About AI System 6&hellip;</a></li>
+      <li class="menu-sep" aria-hidden="true"></li>
+      <li><a href="https://system6.aaronlau.me">Open the Live System</a></li>
+    </ul>
+  </details>
+  <span class="menu-title">AI System 6</span>
+  <details class="menu menu-extra">
+    <summary>File</summary>
+    <ul class="menu-list">
+      <li><a href="https://system6.aaronlau.me">New Project&hellip;</a></li>
+      <li><a href="https://github.com/surfine/AI-System-6/releases/latest">Download for Mac&hellip;</a></li>
+      <li><a href="https://github.com/surfine/AI-System-6">View Source&hellip;</a></li>
+    </ul>
+  </details>
+  <details class="menu menu-extra">
+    <summary>View</summary>
+    <ul class="menu-list">
+      <li><a href="#chat">Chat Is an App</a></li>
+      <li><a href="#route">The Route</a></li>
+      <li><a href="#eras">Six Mac Eras</a></li>
+      <li><a href="#impossible">The 1988 Computer</a></li>
+      <li><a href="#floppies">Two Floppies</a></li>
+      <li><a href="#model">Your Model</a></li>
+      <li><a href="#demo">50s Demo</a></li>
+      <li><a href="#readme">Read Me</a></li>
+    </ul>
+  </details>
+  <details class="menu">
+    <summary>Special</summary>
+    <ul class="menu-list">
+      <li><a href="#" data-appearance="classic"><span><span class="menu-check" aria-hidden="true">&#10003;</span>System 6</span><kbd>1988</kbd></a></li>
+      <li><a href="#" data-appearance="platinum"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Platinum</span><kbd>1999</kbd></a></li>
+      <li><a href="#" data-appearance="aqua"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Aqua</span><kbd>2002</kbd></a></li>
+      <li><a href="#" data-appearance="snow-leopard"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Snow Leopard</span><kbd>2009</kbd></a></li>
+      <li><a href="#" data-appearance="yosemite"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Yosemite</span><kbd>2014</kbd></a></li>
+      <li><a href="#" data-appearance="liquid-glass"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Liquid Glass</span><kbd>2026</kbd></a></li>
+      <li class="menu-sep" aria-hidden="true"></li>
+      <li><a href="#" id="menu-cycle"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Cycle Appearances</span></a></li>
+      <li class="menu-sep" aria-hidden="true"></li>
+      <li><a href="#" id="menu-shutdown">Shut Down&hellip;</a></li>
+    </ul>
+  </details>
+  <details class="menu menu-extra">
+    <summary>Help</summary>
+    <ul class="menu-list">
+      <li><a href="#" id="menu-balloons"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Show Balloons</span></a></li>
+      <li class="menu-sep" aria-hidden="true"></li>
+      <li><a href="#readme">Read Me&hellip;</a></li>
+    </ul>
+  </details>
+  <span class="menu-spacer"></span>
+  <a class="menu-link menu-link-live" href="https://system6.aaronlau.me">Live&nbsp;System</a>
+  <a class="menu-link" href="https://github.com/surfine/AI-System-6">GitHub</a>
+</nav>
+
+<main class="desk" id="top">
+
+  <!-- ================= Hero ================= -->
+  <header class="hero-scene" id="hero" aria-labelledby="hero-title">
+    <p class="hero-brand">AI SYSTEM 6</p>
+    <h1 class="hero-head" id="hero-title">THE AI HAS<br>A DESKTOP NOW.</h1>
+    <p class="btn-row hero-btns">
+      <a class="btn btn-default" href="https://system6.aaronlau.me">Boot the Live System</a>
+      <a class="btn" href="#demo">Watch the 50s Demo</a>
+    </p>
+    <div class="mini-desktop" id="hero-desk" data-desk="hero">
+      <noscript>
+        <img src="img/ai-system-6-live-desktop.png" width="1673" height="941" style="width:100%;height:auto"
+             alt="The AI System 6 desktop: Searcher, Reader, DocMap, ClioTalk, ClioChart, ClioStage, and Scrapbook windows open under MultiFinder.">
+      </noscript>
+    </div>
+    <div class="era-strip" id="hero-era-strip" aria-label="Appearance timeline"></div>
+  </header>
+
+  <!-- ================= Chat is an app ================= -->
+  <section class="scene" id="chat" aria-labelledby="chat-title">
+    <div class="chat-stage" id="chat-stage"></div>
+    <h2 class="scene-head" id="chat-title">CHAT IS AN APP.<br>NOT THE WHOLE COMPUTER.</h2>
+    <p class="scene-note" id="chat-note">Drag the modern chat bubble to the Trash. The desktop keeps working.</p>
+  </section>
+
+  <!-- ================= The route ================= -->
+  <section class="scene" id="route" aria-labelledby="route-title">
+    <h2 class="scene-head" id="route-title">SOURCES GO IN.<br>FILES COME OUT.</h2>
+    <div class="route-stage" id="route-stage"></div>
+    <p class="scene-note">Nothing becomes permanent until you choose to keep it.</p>
+  </section>
+
+  <!-- ================= Six eras ================= -->
+  <section class="scene scene-wide" id="eras" aria-labelledby="eras-title">
+    <h2 class="scene-head" id="eras-title">SAME WORK.<br>SIX MAC ERAS.</h2>
+    <p class="scene-note">The interface changes. The work stays.</p>
+    <div class="mini-desktop" id="era-desk" data-desk="eras"></div>
+    <div class="era-strip era-strip-big" id="era-strip" aria-label="Era timeline 1988 to 2026"></div>
+    <p class="era-actions">
+      <button type="button" class="btn" id="snapshot-btn" data-balloon="Saves a share card of this desktop, in the current era.">&#128247;&#xFE0E; Snapshot</button>
+    </p>
+  </section>
+
+  <!-- ================= Impossible ================= -->
+  <section class="scene" id="impossible" aria-labelledby="impossible-title">
+    <div class="finder-window" id="impossible-window" aria-labelledby="impossible-title">
+      <header class="tbar"><span class="close-box" aria-hidden="true"></span>
+        <h2 id="impossible-title">Things This 1988 Computer Should Not Be Able to Do</h2>
+      </header>
+      <div class="finder-status" id="impossible-status">8 items&nbsp;&nbsp;&nbsp;Double-click one to see for yourself</div>
+      <div class="finder-body" id="impossible-body"></div>
+    </div>
+  </section>
+
+  <!-- ================= Two floppies ================= -->
+  <section class="scene" id="floppies" aria-labelledby="floppies-title">
+    <div class="floppy-stage" id="floppy-stage" role="img"
+         aria-label="Two 1.44 megabyte floppy disks slide into a Macintosh, and the desktop boots.">
+    </div>
+    <h2 class="scene-head" id="floppies-title">THE DESKTOP BOOTS<br>IN TWO FLOPPIES.</h2>
+    <p class="scene-note">Your model doesn't.</p>
+    <p class="scene-fine">Boot-critical browser payload. Heavy tools load later.</p>
+  </section>
+
+  <!-- ================= Your model ================= -->
+  <section class="scene" id="model" aria-labelledby="model-title">
+    <h2 class="scene-head" id="model-title">YOUR MODEL.<br>OUR DESKTOP.</h2>
+    <div class="cp-stage" id="cp-stage"></div>
+  </section>
+
+  <!-- ================= QuickTime demo ================= -->
+  <section class="scene" id="demo" aria-labelledby="demo-title">
+    <div class="qt-window" id="qt-window">
+      <header class="tbar"><span class="close-box" aria-hidden="true"></span><h2 id="demo-title">AI System 6 Demo</h2><span class="qt-badge">50s&nbsp;Demo</span></header>
+      <div class="qt-body">
+        <video id="qt-video" preload="none" muted playsinline width="1440" height="900"
+               data-poster="img/hero-poster.jpg"
+               aria-label="Silent 50-second recording of the AI System 6 desktop: windows dragged with the classic dotted outline, then the whole desktop cycles through its six release appearances without moving the work.">
+          <source src="img/hero-desktop.mp4" type="video/mp4">
+        </video>
+        <div class="qt-controls">
+          <button type="button" id="qt-play" aria-label="Play">&#9654;&#xFE0E;</button>
+          <input type="range" id="qt-scrub" min="0" max="1000" value="0" step="1" aria-label="Timeline">
+          <span class="qt-time" id="qt-time">0:00</span>
+          <button type="button" id="qt-mute" aria-label="Sound off" aria-pressed="true">&#128264;&#xFE0E;</button>
+          <button type="button" id="qt-full" aria-label="Full screen">&#8689;&#xFE0E;</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= Ready to boot ================= -->
+  <section class="scene" id="boot-cta" aria-labelledby="boot-title">
+    <h2 class="scene-head" id="boot-title">READY TO BOOT?</h2>
+    <div class="boot-picker">
+      <a class="boot-choice" href="https://system6.aaronlau.me">
+        <img data-icon="startupDisk" class="obj-icon" width="64" height="64" alt="" src="img/themes/classic/startupDisk.svg">
+        <span class="boot-label">Startup Disk</span>
+        <span class="boot-sub">Boot the Live System</span>
+      </a>
+      <a class="boot-choice" href="https://github.com/surfine/AI-System-6/releases/latest">
+        <img data-icon="applications" class="obj-icon" width="64" height="64" alt="" src="img/themes/classic/applications.svg">
+        <span class="boot-label">Mac Application</span>
+        <span class="boot-sub">Download for Apple silicon</span>
+      </a>
+      <a class="boot-choice" href="https://github.com/surfine/AI-System-6">
+        <img data-icon="folder" class="obj-icon" width="64" height="64" alt="" src="img/themes/classic/folder.svg">
+        <span class="boot-label">Source Folder</span>
+        <span class="boot-sub">View on GitHub</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- ================= Read Me ================= -->
+  <section class="scene" id="readme" aria-labelledby="readme-title">
+    <div class="window readme-window">
+      <header class="tbar"><span class="close-box" aria-hidden="true"></span><h2 id="readme-title">Read Me</h2></header>
+      <div class="wbody readme-body">
+        <details>
+          <summary>What this is</summary>
+          <p>AI System 6 is a local-first writing environment for source-based writing,
+          shaped like a Macintosh desktop. AI can search, read, map, write, review,
+          chart, present, and make — but every result lands in a visible object:
+          a scrap, a file, a manuscript, a chart, a disk. AI output stays temporary
+          until you save, clip, insert, or export it. The AI helps read, organize,
+          draft, and review; it does not get to silently become the writer.</p>
+        </details>
+        <details>
+          <summary>The route</summary>
+          <p><strong>Searcher</strong> finds sources; <strong>Reader</strong> opens the evidence;
+          <strong>Time Machine</strong> revisits archived pages. <strong>Scrapbook</strong> keeps only
+          what you deliberately clip. <strong>DocMap</strong> turns research into a visible map.
+          <strong>Question Sheet → Outline → Section Drafts → TeachText</strong> carries one manuscript
+          from messy intent to finished prose. <strong>Review Desk</strong> checks factual and structural
+          risk — including generic AI-mouthpiece drift. <strong>ClioChart, ClioStage, and Cover Glass</strong>
+          turn the same work into charts, slides, and finished visual artifacts.</p>
+        </details>
+        <details>
+          <summary>Local-first, inspectable</summary>
+          <p>Durable project data lives in your browser's IndexedDB; the server is a small,
+          stateless Node.js process with no application database. Model inputs, prompts, and
+          run records are designed to remain visible. Provider credentials stay outside project
+          files, chats, backups, and exports. You can explore the whole desktop with no model connected.</p>
+        </details>
+        <details>
+          <summary>Bring your own model</summary>
+          <p>AI System 6 is model-agnostic: LM Studio or Ollama for local models, DeepSeek or any
+          OpenAI-compatible endpoint in the cloud. The desktop is the product; the model is a setting
+          in the Control Panel.</p>
+        </details>
+        <details>
+          <summary>The floppy budget</summary>
+          <div class="memory-box" role="img" aria-label="Boot payload gauge: 2,950,637 bytes used of a 2,978,000-byte budget">
+            <p class="memory-title">System Floppy Budget</p>
+            <div class="memory-row"><span class="memory-label">index.html</span><span class="memory-bar"><span style="width:11%"></span></span><span class="memory-bytes">326,696</span></div>
+            <div class="memory-row"><span class="memory-label">styles.bundle.css</span><span class="memory-bar"><span style="width:29%"></span></span><span class="memory-bytes">868,956</span></div>
+            <div class="memory-row"><span class="memory-label">app.bundle.js</span><span class="memory-bar"><span style="width:59%"></span></span><span class="memory-bytes">1,754,985</span></div>
+            <div class="memory-row memory-total"><span class="memory-label">Total</span><span class="memory-bar"><span style="width:99%"></span></span><span class="memory-bytes">2,950,637</span></div>
+            <p class="memory-note">A build gate caps the boot-critical payload at 2,978,000 bytes —
+            about two 1.44&nbsp;MB floppy disks. Heavy tools load lazily, from a third disk.</p>
+          </div>
+        </details>
+        <details>
+          <summary>No framework</summary>
+          <p>Plain JavaScript, concatenated — no framework, no transpiler. The classic interface is
+          grounded in real System&nbsp;6.0.8 resources and period Macintosh interaction patterns,
+          not redrawn from memory. This site works the same way.</p>
+          <pre><code>git clone https://github.com/surfine/AI-System-6.git
+cd AI-System-6
+npm install
+npm start</code></pre>
+        </details>
+        <details>
+          <summary>Why System 6?</summary>
+          <p>Because a desktop makes state visible. A disk tells you what lasts. A floppy tells you
+          what is temporary. A Scrapbook contains only what you chose to keep. A Trash can makes
+          deletion honest. The retro interface is not the product — it is the constraint that keeps
+          AI work legible.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <p>
+      <a href="https://system6.aaronlau.me">Live system</a> ·
+      <a href="https://github.com/surfine/AI-System-6">GitHub</a> ·
+      <a href="https://github.com/surfine/AI-System-6/issues">Issues</a> ·
+      <a href="https://www.bilibili.com/video/BV1ht3m6UEDb/">50-second demo</a>
+    </p>
+    <p>MIT licensed. AI System 6 is an independent project and is not affiliated with or endorsed by Apple&nbsp;Inc.</p>
+    <p class="footer-shutdown">It is now safe to shut down AI System 6.</p>
+  </footer>
+
+</main>
+<script type="module" src="js/main.js?v=20260813a"></script>
+</body>
+</html>

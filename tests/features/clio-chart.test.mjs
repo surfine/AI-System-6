@@ -196,8 +196,8 @@ test.assert(percent(121.9, 76.3, true) === -60, "Blender: the class average read
 
 // --- Wiring contracts ------------------------------------------------------
 const html = read("index.html");
-const manifest = read("scripts/runtime-manifest.mjs");
-const styleManifest = read("scripts/style-manifest.mjs");
+const manifest = read("tooling/runtime-manifest.mjs");
+const styleManifest = read("tooling/style-manifest.mjs");
 const menus = read("app/data/menus.js");
 const app = read("app.js");
 const multiFinder = read("app/core/multi-finder.js");

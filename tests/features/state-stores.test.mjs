@@ -8,7 +8,7 @@ import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("state-stores");
 const stores = read("app/core/state-stores.js");
-const manifest = read("scripts/runtime-manifest.mjs");
+const manifest = read("tooling/runtime-manifest.mjs");
 const desktopRuntime = read("app/core/desktop-runtime.js");
 const exportImport = read("app/features/export-import.js");
 const writingFlow = read("app/features/writing-flow.js");

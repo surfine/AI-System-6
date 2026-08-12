@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/DEVELOPMENT.md -->
-<!-- source-sha256: 7bf7ca3ac9de8fca0bcf29cc8c79052cd433d4a5390406427ad09dfdd65c7b51 -->
+<!-- source-sha256: afe9d09ed937760a9dc2f93e1ce6f23562a91035a5d49bc479c8544ae17afdd0 -->
 
 > 英文版为准 ・ 仅供人类参考
 
@@ -44,15 +44,16 @@ npm start
 
 ## 编辑浏览器运行时
 
-源码位于 `app/` 与根目录 `app.js` 入口。浏览器读取生成的 `app.bundle.js`，所以修改
+源码位于 `apps/desktop/app/` 与 `apps/desktop/app.js` 入口。浏览器读取生成的
+`apps/desktop/app.bundle.js`，所以修改
 浏览器源码后必须重建。不要手改生成 bundle。
 
-功能模块应位于拥有它的应用或共享服务之后。跨多个应用的修复通常属于 `app/core/`；
-局部工作流应留在 `app/features/`。
+功能模块应位于拥有它的应用或共享服务之后。跨多个应用的修复通常属于
+`apps/desktop/app/core/`；局部工作流应留在 `apps/desktop/app/features/`。
 
 ## 编辑样式或外观
 
-样式按职责拆分在 `styles/`。改视觉表面前，应找出基础规则、响应式规则、外观覆盖与
+样式按职责拆分在 `apps/desktop/styles/`。改视觉表面前，应找出基础规则、响应式规则、外观覆盖与
 参与最终结果的内联布局。验证 System 6 与 Liquid Glass，并在 pull request 附上前后
 证据。
 
@@ -68,7 +69,7 @@ Playwright 测试是可选诊断，不是发布条件。易波动的浏览器探
 
 ## 资产与生成文件
 
-运行时图标家族、字体、OCR 载荷与模型资产位于 `assets/`。公开仓库包含产品真正加载
+运行时图标家族、字体、OCR 载荷与模型资产位于 `apps/desktop/assets/`。公开仓库包含产品真正加载
 的文件；重复的 accepted-source 图片档案与内部 proof board 留在维护者源码中，公开
 命令不依赖它们。
 

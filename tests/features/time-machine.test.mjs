@@ -9,15 +9,15 @@ import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 const require = createRequire(import.meta.url);
 const test = createFeatureTest("time-machine");
 const feature = read("app/features/time-machine.js");
-const server = read("src/server/time-machine.js");
-const route = read("src/server/routes/time-machine.js");
+const server = read("apps/server/server/time-machine.js");
+const route = read("apps/server/server/routes/time-machine.js");
 const index = read("index.html");
 const projectDisk = read("app/features/project-disk.js");
 const persistence = read("app/core/persistence-status.js");
 const menus = read("app/data/menus.js");
 const html = read("index.html");
 const styles = read("styles/22-time-machine.css");
-const router = read("src/server/router.js");
+const router = read("apps/server/server/router.js");
 const dictionary = read("app/data/system-dictionary.js");
 const strings = read("app/core/strings.js");
 const en = read("app/data/translations-en.js");
@@ -32,9 +32,9 @@ const {
   normalizeTimeMachineProvider,
   sanitizeBrowserHtml,
   timeMachineReaderIntegrity,
-} = require("../../src/server/time-machine.js");
-const { decodeTextBuffer } = require("../../src/server/lib/fetch.js");
-const { charsetFromMetaPrescan } = require("../../src/server/lib/charset.js");
+} = require("../../apps/server/server/time-machine.js");
+const { decodeTextBuffer } = require("../../apps/server/server/lib/fetch.js");
+const { charsetFromMetaPrescan } = require("../../apps/server/server/lib/charset.js");
 
 test.assertIncludes(index, 'data-window="timeMachine"', "Time Machine owns an independent application window");
 test.assertIncludes(index, 'id="time-machine-back"', "restricted browser exposes Back navigation");

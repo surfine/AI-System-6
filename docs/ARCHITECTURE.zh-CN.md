@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/ARCHITECTURE.md -->
-<!-- source-sha256: 1853e4f3cac0ce48bc4f917672334483602e2bcf42ad03140297cf2cdc3cc858 -->
+<!-- source-sha256: 41d793f49bb052a0eb794ba29fc56ceda3df3b1653f7f04a1cf1d32b27a89d31 -->
 
 > 英文版为准 ・ 仅供人类参考
 
@@ -12,9 +12,9 @@ AI System 6 是一个本地优先的浏览器桌面，配有小型、无状态�
 
 ```mermaid
 flowchart TB
-    UI["浏览器桌面\napp/ + styles/"]
+    UI["浏览器桌面\napps/desktop/"]
     DB["IndexedDB\n项目 + 设置"]
-    API["无状态 Node 服务\nsrc/"]
+    API["无状态 Node 服务\napps/server/"]
     LOCAL["本地提供商\nLM Studio + Ollama"]
     CLOUD["兼容的云端提供商"]
     WEB["搜索 + 正文 + 存档服务"]
@@ -32,40 +32,40 @@ flowchart TB
 ## 源码布局
 
 ```text
-app/
-  core/          桌面服务与共享运行时原语
-  features/      面向用户的应用与工作流
-  data/          静态注册表与产品数据
-  generated/     供浏览器读取的确定性生成产物
-src/             服务、提供商适配器与服务端本地类型
-styles/          基础对象语法与具名外观层
-assets/          运行时媒体与重型懒加载载荷
-shell/           包裹本地 Web 运行时的 Apple Silicon 原生外壳
-scripts/         构建器、审计、验证与仓库门禁
-tests/           功能契约与可选浏览器诊断
+apps/
+  desktop/       完整浏览器产品：入口、应用、样式、数据与资产
+  server/        无状态 Node.js 桥接服务与提供商适配器
+site/            可独立部署的产品官网
+platform/
+  macos/         原生重写与 WebView 壳
+  web/           Web 发布与部署契约
+tooling/         构建器、审计、验证与发布编排
+tests/           可执行产品契约与可选浏览器诊断
 docs/            公开架构、开发与设计证据
+internal/        维护者证据、实验、归档与 vendored 源
 ```
 
-根目录的 `index.html`、`app.js` 与 `styles.css` 是刻意保留的入口，不是杂项。它们让
-浏览器启动路径保持可检查。生成的 `app.bundle.js` 与 `styles.bundle.css` 是本地构建
-产物，不是规范源码。
+`apps/desktop/index.html`、`apps/desktop/app.js` 与 `apps/desktop/styles.css` 是浏览器
+产品的明确入口。源码物理位置已经按产品边界收拢，但浏览器 URL 仍稳定保持为 `/app`、
+`/assets` 与 `/data`。生成的 `app.bundle.js` 与 `styles.bundle.css` 是本地构建产物，
+不是规范源码。
 
 ## 运行时分层
 
 ### 浏览器操作系统
 
-`app/` 实现桌面、对象模型、窗口管理、持久化、应用与写作路线。功能通过明确的共享
+`apps/desktop/app/` 实现桌面、对象模型、窗口管理、持久化、应用与写作路线。功能通过明确的共享
 服务与持久对象协作，不依赖应用框架互相导入。
 
 ### 外观系统
 
-`styles/` 用同一套语义对象语法实现六套正式外观：System 6、Platinum、Aqua、
+`apps/desktop/styles/` 用同一套语义对象语法实现六套正式外观：System 6、Platinum、Aqua、
 Snow Leopard、Yosemite 与 Liquid Glass。外观可以改变材质与有历史依据的几何，
 但不能建立第二套产品结构，也不能悄悄改变应用状态。
 
 ### 服务端
 
-`src/` 为模型提供商、网页阅读、OCR 或转写适配器与版本身份提供有边界的 HTTP 和
+`apps/server/` 为模型提供商、网页阅读、OCR 或转写适配器与版本身份提供有边界的 HTTP 和
 流式接口。对项目而言它是无状态的。凭证在运行时提供，绝不能序列化进项目文件、对话、
 备份或导出。
 
@@ -99,7 +99,7 @@ OCR 模型、3D 渲染、演示库与其他大型能力只在被调用时加载�
 源码使用原生 JavaScript，并采用确定性的拼接与 vendor 构建。验证分层如下：
 
 1. 功能契约固定产品行为与架构边界；
-2. checkJs 与 `src/` 类型检查保护 JavaScript/TypeScript 表面；
+2. checkJs 与 `apps/server/` 类型检查保护 JavaScript/TypeScript 表面；
 3. CSS、设计、数据、版本与 bundle 门禁保护跨领域预算；
 4. 可选浏览器诊断检查渲染行为；
 5. 公开树门禁证明全新 clone 拥有所有宣传的命令，且不含内部发布机械。

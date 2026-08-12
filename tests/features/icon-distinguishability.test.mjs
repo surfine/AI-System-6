@@ -68,7 +68,7 @@ quickDraftDefs.forEach((quickDraft, index) => {
 // focused evidence contract instead of inferred from file differences.
 test.assertMatches(icons, /M20 11L13 19h5L16 26l7-8h-5l2-7z/, "the lightning bolt is defined once in the shared icon registry");
 
-const eraBuilder = read("scripts/build-era-icons.mjs");
+const eraBuilder = read("tooling/build-era-icons.mjs");
 test.assertNotIncludes(eraBuilder, "app/core/system-icons.js", "historical icon families never extract the shared Classic/Liquid paths");
 test.assertNotIncludes(eraBuilder, "ALIASES", "the era builder has no semantic asset aliases");
 test.assertNotIncludes(eraBuilder, "extractBlock", "the era builder does not recolor source SVG blocks");

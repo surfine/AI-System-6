@@ -1,0 +1,3486 @@
+/* Single source of truth for default-theme design tokens.
+   Theme overrides (liquid-glass etc.) live in body.<theme-class> {} blocks.
+   No other CSS file may contain a top-level html {} or :root {} block —
+   enforced by tooling/verify-css.mjs. */
+:root {
+  color-scheme: light;
+
+  /* Colors */
+  --ink: #000000;
+  --paper: #ffffff;
+  --pane-bg: transparent;
+  --messages-bg: var(--paper);
+  --details-bar-bg: var(--paper);
+  --details-bar-border: var(--ink);
+  /* Optional status placard role. It is visually inert in System 6; eras
+     that used a compact inset status cell can repaint the same semantic
+     leading receipt without moving it out of the shared three-slot bar. */
+  --status-placard-padding: 0;
+  --status-placard-border: 0;
+  --status-placard-bg: transparent;
+  --status-placard-shadow: none;
+  --status-placard-font-family: inherit;
+  --status-placard-font-size: inherit;
+  --review-desk-pane-bg: transparent;
+  --review-desk-results-border: var(--system-border);
+  --review-desk-results-radius: 0;
+  --review-desk-results-bg: var(--paper);
+  --review-desk-results-shadow: none;
+  --review-surface-bg: var(--paper);
+  --review-desk-splitter-hover-bg: var(--ink);
+  --review-locked-pane-bg: transparent;
+  --review-splitter-border: var(--system-border);
+  --review-empty-note-border: var(--system-border);
+  --review-th-border: var(--system-border);
+  --review-th-bg: var(--paper);
+  --review-td-border: 0;
+  --review-td-alt-border: var(--system-border);
+  --style-note-border: var(--system-border);
+  --style-note-type-border: 1px solid var(--ink);
+  --outline-notes-border: var(--system-border);
+  --draft-list-border: var(--system-border);
+  --claim-results-border: var(--system-border);
+  --composer-file-active-bg: var(--ink);
+  --composer-file-active-fg: var(--paper);
+  --composer-file-active-border: var(--clio-composer-tool-border);
+  --compose-menu-hover-bg: var(--ink);
+  --compose-menu-hover-fg: var(--paper);
+  --compose-tool-copy-b: inherit;
+  --compose-tool-copy-small: var(--shade-dark);
+  --menu-bar-bg: var(--paper);
+  --menu-bar-shadow: inset 0 -1px 0 var(--paper);
+  --menu-button-height: 22px;
+  --menu-button-radius: 0;
+  --menu-button-transition: none;
+  --btn-default-bg: var(--btn-bg);
+  --btn-default-fg: var(--btn-fg);
+  --btn-default-text-shadow: none;
+  --btn-default-shadow:
+    0 0 0 var(--system-control-line) var(--paper),
+    0 0 0 calc(var(--system-control-line) * 3) var(--ink),
+    inset -1px -1px 0 var(--shade-dark);
+  --btn-default-active-bg: var(--btn-active-bg);
+  --btn-default-active-fg: var(--btn-active-fg);
+  --control-status-border: 1px dotted var(--shade-dark);
+  --memory-transfer-note-bg: #f7f7f7;
+  --memory-transfer-note-line: var(--ink);
+  --memory-transfer-note-border: var(--ink);
+  --info-divider-border: 1px solid var(--shade-dark);
+  /* Bottom action rows (Dictation / Translation Pad) keep their System 6
+     dotted divider in Classic; Liquid swaps it for a hairline. */
+  --action-row-divider: var(--system-secondary-divider);
+  /* The shared Ask-bar scope chip names the object being asked. */
+  /* Dotted separators are a System 6 idiom; Liquid swaps each for a hairline
+     (values overridden in the body.use-liquid-glass token block). */
+  --message-divider: var(--system-secondary-divider);
+  --context-panel-budget-border-top: 1px dotted var(--shade);
+  --clio-file-chip-disabled-border: 1px dotted var(--shade-dark);
+  --empty-object-hatch-alt: #f1f1f1;
+  --soundscape-count-badge-border: 1px solid currentColor;
+  --teachtext-popover-hr-border: 1px dotted var(--ink);
+  --teachtext-subpopover-border-left: 1px dotted var(--ink);
+  --chat-transcript-article-border: var(--system-secondary-divider);
+  --import-row-border-bottom: var(--system-secondary-divider);
+  /* Pane action rows (Project CD / File Floppy / Trash) and toolbar rows sit
+     above a framed content area; their ink hairline is that area's top edge.
+     Both consume the system primary divider role, so each family decides the
+     divider once instead of per app (Theme Family Contract §5). */
+  --pane-actions-border-bottom: var(--system-primary-divider);
+  --documents-toolbar-border: var(--system-primary-divider);
+  --large-icon-border: 3px solid var(--ink);
+  --image-manager-item-border: 1px solid var(--ink);
+  --image-manager-item-bg: #ffffff;
+  --image-manager-thumb-border: 1px solid var(--ink);
+  --control-label-fg: inherit;
+  --control-summary-fg: inherit;
+  --outline-item-border: 1px dotted var(--shade);
+  --outline-item-span-bg: var(--paper);
+  --outline-item-span-border: 1px solid transparent;
+  --outline-item-span-radius: 0;
+  --outline-focus-border: var(--ink);
+  --outline-focus-outline: 1px dotted var(--ink);
+  --outline-focus-outline-offset: 1px;
+  --outline-focus-bg: transparent;
+  --outline-focus-shadow: none;
+  --radio-radius: 50%;
+  --section-label-fg: inherit;
+  --section-label-radius: 0;
+  --section-label-shadow: none;
+  --draft-label-bg: var(--paper);
+  --draft-label-border: var(--system-border);
+  --meta-label-bg: transparent;
+  --meta-label-border: 0;
+  --control-section-bg: var(--paper);
+  --source-info-panel-border: var(--system-border);
+  --teachtext-editor-bg: var(--paper);
+  --teachtext-editor-border: var(--system-border);
+  --teachtext-editor-radius: 0;
+  --teachtext-editor-shadow: var(--system-inset);
+  --scrap-list-bg: var(--paper);
+  --scrap-list-border: var(--system-border);
+  --scrap-list-radius: 0;
+  --scrap-list-shadow: var(--system-inset);
+  --scrap-empty-card-border: 1px dotted var(--shade-dark);
+  --scrap-empty-card-bg: #f7f7f7;
+  --scrap-list-item-divider: var(--system-secondary-divider);
+  --scrap-list-mini-icon-border: 1px solid currentColor;
+  --scrap-translation-badge-border: 1px solid currentColor;
+  /* Native System 6 Scrapbook projects one saved object at a time over a
+     horizontal page rail. Later appearances turn the same stable DOM back
+     into a browser list without changing the curated-scrap data model. */
+  --scrapbook-list-display: none;
+  --scrapbook-pager-display: grid;
+  --scrapbook-pane-columns: 1fr;
+  --scrapbook-pane-rows: minmax(0, 1fr) auto auto;
+  --scrapbook-pane-gap: 6px;
+  --scrapbook-mobile-pane-columns: 1fr;
+  --scrapbook-mobile-pane-rows: minmax(0, 1fr) auto auto;
+  --scrap-list-item-bg: transparent;
+  --scrap-list-item-radius: 0;
+  --scrap-list-item-shadow: none;
+  --scrap-list-item-selected-bg: var(--ink);
+  --scrap-list-item-selected-fg: var(--paper);
+  --scrap-list-item-selected-radius: 0;
+  --scrap-list-item-selected-shadow: none;
+  --import-preview-bg: var(--paper);
+  --import-preview-border: var(--system-border);
+  --import-preview-radius: 0;
+  --import-preview-shadow: var(--system-inset);
+  --backup-preview-bg: transparent;
+  --backup-preview-border: 0;
+  --backup-preview-radius: 0;
+  --backup-preview-shadow: none;
+  --field-bg: var(--paper);
+  --field-focus-bg: var(--paper);
+  --field-border: var(--system-border);
+  --field-radius: 0;
+  --select-radius: var(--system-select-radius);
+  --field-shadow: none;
+  --field-focus-border: var(--field-border);
+  --field-focus-ring: 0 0 0 2px var(--shade-dark);
+  --shade: #bfbfbf;
+  --shade-dark: #696969;
+  --desktop: #b6b6b6;
+  --desktop-surface:
+    radial-gradient(rgba(0, 0, 0, 0.16) 1px, transparent 1px) 0 0 / 12px 12px,
+    var(--desktop);
+  --panel: #ededed;
+  --quiet-panel: #f8f8f8;
+  --rule: #777777;
+
+  /* ClioTalk keeps one conversational layout across themes. Theme-specific
+     material swaps happen here rather than through duplicate selectors. */
+  --clio-assistant-message-bg: transparent;
+  --clio-assistant-message-border: var(--shade-dark);
+  --clio-assistant-message-radius: 0;
+  --clio-assistant-message-shadow: none;
+  /* A reply is a slip of paper whose edge says whether it was kept. Classic
+     carries that in the border style; Liquid Glass carries it in whether the
+     slip has landed on the surface (see 70-liquid-glass.css). Same sentence,
+     two materials. */
+  --clio-said-rule: 3px solid var(--ink);
+  --clio-slip-radius: 0;
+  --clio-slip-surface: transparent;
+  --clio-slip-border: 1px dotted var(--shade-dark);
+  --clio-slip-shadow: none;
+  --clio-slip-kept-surface: var(--paper);
+  --clio-slip-kept-border: 1px solid var(--ink);
+  --clio-slip-kept-shadow: 2px 2px 0 var(--shade);
+  --clio-slip-mark-border: 1px dotted var(--shade-dark);
+  --clio-slip-mark-kept: var(--ink);
+  --clio-basis-chip-radius: 0;
+  --clio-basis-chip-border: 1px solid var(--shade-dark);
+  --clio-basis-chip-bg: var(--paper);
+  --clio-entry-bg: var(--quiet-panel);
+  --clio-entry-divider: 1px solid var(--ink);
+  --clio-entry-field-border: 1px solid var(--ink);
+  --clio-entry-field-radius: 0;
+  --clio-entry-field-bg: var(--paper);
+  --clio-entry-field-shadow: inset 1px 1px 0 var(--shade);
+  --clio-user-message-bg: var(--quiet-panel);
+  --clio-user-message-border: 1px solid var(--ink);
+  --clio-user-message-radius: 0;
+  --clio-user-message-shadow: none;
+  --clio-welcome-bg: transparent;
+  --clio-welcome-shadow: none;
+  --clio-welcome-object-bg: var(--paper);
+  --clio-welcome-object-border: var(--system-border);
+  --clio-welcome-object-shadow: 2px 2px 0 var(--shade-dark);
+  --clio-muted-copy: var(--shade-dark);
+  --clio-copy-font: var(--text-font);
+  --clio-title-font: var(--title-font);
+  --clio-control-font: var(--ui-font);
+  --clio-title-size: clamp(24px, 4vw, 30px);
+  --clio-title-weight: 500;
+  --clio-title-leading: 1.45;
+  --clio-title-tracking: -0.025em;
+  --clio-transcript-width: 820px;
+  --clio-speaker-gutter: 72px;
+  --clio-grounding-rule: var(--shade);
+  --clio-use-active-border: var(--ink);
+  --clio-use-active-bg: var(--ink);
+  --clio-use-active-fg: var(--paper);
+  --clio-use-menu-border: 1px solid var(--ink);
+  --clio-use-menu-radius: 0;
+  --clio-use-menu-bg: var(--paper);
+  --clio-use-menu-shadow: 2px 2px 0 var(--shade-dark);
+  --clio-composer-bg: var(--paper);
+  --clio-composer-border: var(--system-border);
+  --clio-composer-radius: 0;
+  --clio-composer-shadow: 2px 2px 0 var(--shade-dark);
+  --clio-composer-focus-shadow: 2px 2px 0 var(--shade-dark), 0 0 0 2px var(--shade);
+  --clio-composer-control-radius: 0;
+  --clio-composer-tool-border: var(--ink);
+  --clio-action-surface: var(--paper);
+  --clio-action-border: 1px solid var(--ink);
+  --clio-action-radius: 0;
+  --clio-action-item-radius: 0;
+  --clio-action-shadow: 2px 2px 0 var(--shade-dark);
+  --clio-context-control-bg: var(--quiet-panel);
+  --clio-context-control-border: 1px solid var(--shade-dark);
+  --clio-context-control-radius: 0;
+  --clio-context-control-shadow: none;
+  --clio-assembly-bg: var(--paper);
+  --clio-assembly-border: 1px solid var(--ink);
+  --clio-assembly-radius: 0;
+  --clio-assembly-row-radius: 0;
+  --clio-assembly-shadow: 2px 2px 0 var(--shade-dark);
+  --clio-assembly-row-bg: var(--quiet-panel);
+  --clio-assembly-divider: var(--system-secondary-divider);
+  --clio-file-chip-bg: transparent;
+  --clio-file-chip-border: 1px solid transparent;
+  --clio-file-chip-radius: 0;
+
+  /* ClioChart keeps a strict 1-bit default theme. Liquid Glass overrides only
+     these component tokens, so both themes share the same data and geometry. */
+  --clio-chart-surface: var(--paper);
+  --clio-chart-ink: var(--ink);
+  --clio-chart-rule: var(--rule);
+  --clio-chart-muted: var(--shade-dark);
+  --clio-chart-panel: var(--panel);
+  --clio-chart-panel-quiet: var(--quiet-panel);
+  --clio-chart-accent: var(--ink);
+  /* Frame colour for marks and boxes (bars, legend swatches, spatial cells,
+     score tracks). Classic draws them in ink, keeping the 1-bit print look;
+     Liquid Glass swaps to the surface hairline so a 1px accent border never
+     reads as a hard black box on translucent material. */
+  --clio-chart-mark-border: 1px solid var(--clio-chart-accent);
+  --clio-chart-track: var(--shade);
+  --clio-chart-pattern-paper: var(--paper);
+  --clio-chart-reference: var(--shade);
+  --clio-chart-focus-shadow: none;
+  --clio-chart-selected-outline: 2px solid var(--clio-chart-accent);
+  --clio-chart-selected-outline-offset: -2px;
+  --clio-chart-solid-fill: var(--ink);
+  --clio-chart-pattern-1: repeating-conic-gradient(var(--ink) 0 25%, var(--paper) 0 50%) 0 0 / 3px 3px;
+  --clio-chart-pattern-2: repeating-linear-gradient(45deg, var(--ink) 0 1px, var(--paper) 1px 4px);
+  --clio-chart-pattern-3: conic-gradient(var(--ink) 0 25%, var(--paper) 0) 0 0 / 4px 4px;
+  --clio-chart-pattern-4: repeating-linear-gradient(90deg, var(--ink) 0 1px, var(--paper) 1px 4px);
+  --clio-chart-pattern-5: repeating-linear-gradient(-45deg, var(--ink) 0 1px, var(--paper) 1px 5px);
+  --clio-chart-material-shadow: none;
+  --clio-chart-material-filter: none;
+  --clio-chart-typeface: var(--ui-font);
+  --clio-chart-type-size: 11px;
+  --clio-chart-radius: 0;
+  --clio-chart-cell-radius: 0;
+  --clio-chart-pane-bg: transparent;
+  --clio-chart-pane-border: 0;
+  --clio-chart-pane-shadow: none;
+  --clio-chart-pane-filter: none;
+  --clio-chart-pane-margin: 0;
+  --clio-chart-pane-padding: 8px 10px;
+  --clio-chart-grid-pane-padding: 8px;
+  --clio-chart-grid-collapse: collapse;
+  --clio-chart-grid-spacing: 0;
+  --clio-chart-cell-height: 20px;
+  --clio-chart-cell-padding: 2px 6px;
+  /* P2 comparison matrix. Classic draws the full ruled grid a System 6 table
+     has; Liquid Glass keeps only the row rules, because a box around every
+     cell reads as a black wireframe laid over the translucent material. */
+  --clio-chart-matrix-size: 10px;
+  --clio-chart-matrix-cell-padding: 2px 6px;
+  --clio-chart-matrix-cell-border: 1px solid var(--clio-chart-rule);
+  --clio-chart-matrix-row-rule: 1px solid var(--clio-chart-rule);
+  --clio-chart-matrix-note-size: 9px;
+  /* Stacked grid card (narrow container). Classic frames each row the way a
+     System 6 table does; Liquid Glass uses the surface hairline, because the
+     accent ink is an emphasis colour for bars and marks and reads as a hard
+     black box when it is spent on a card frame. */
+  --clio-chart-card-border: 1px solid var(--clio-chart-accent);
+  --clio-chart-card-radius: 0;
+  --clio-chart-row-gap: 5px;
+  --clio-chart-track-height: 16px;
+  --clio-chart-switcher-width: auto;
+  --clio-chart-switcher-justify: flex-end;
+  --clio-chart-label-bg: transparent;
+  --clio-chart-label-padding: 0;
+  --clio-chart-label-leading: normal;
+  --clio-chart-value-bg: var(--paper);
+  --clio-chart-density-12: conic-gradient(var(--ink) 0 12.5%, var(--paper) 0) 0 0 / 4px 4px;
+  --clio-chart-density-25: conic-gradient(var(--ink) 0 25%, var(--paper) 0) 0 0 / 4px 4px;
+  --clio-chart-density-50: repeating-conic-gradient(var(--ink) 0 25%, var(--paper) 0 50%) 0 0 / 4px 4px;
+  --clio-chart-density-75: conic-gradient(var(--paper) 0 25%, var(--ink) 0) 0 0 / 4px 4px;
+  --clio-chart-spatial-cell-height: 62px;
+  --clio-chart-spatial-label-size: 9px;
+  --clio-chart-spatial-value-size: 13px;
+
+  /* Fonts */
+  --modern-sans-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  --modern-mono-font: "SFMono-Regular", "Cascadia Mono", "Consolas", "Monaco", "Courier New", monospace;
+  --theme-ui-font: Chicago_12, Chicago, Charcoal, "Songti SC", "SimSun", "STSong", serif;
+  --theme-title-font: var(--theme-ui-font);
+  --ui-font: Chicago_12, Chicago, Charcoal, "Songti SC", "SimSun", "STSong", serif;
+  --title-font: Chicago_12, Chicago, Charcoal, "Songti SC", "SimSun", "STSong", serif;
+  --text-font: "Songti SC", "SimSun", "STSong", Geneva, serif;
+  --mono-font: Monaco, "Courier New", monospace;
+  /* Writing surfaces: serif for composing, sans-serif for the rendered preview. */
+  --editor-font: "Songti SC", "SimSun", "STSong", Georgia, "Times New Roman", serif;
+  --preview-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  /* Single source of truth for the writing-window geometry. The paper is the
+     star; the window is sized FROM the paper, never from the button row.
+     --mde-font-size is the editor glyph size; one full-width CJK column is
+     exactly 1em at that size, so --editor-measure is resolved to px here
+     (28 columns) rather than left as `28em`. An em would otherwise resolve
+     against whatever font-size the *consuming* element happens to have — the
+     window chrome (13px) and the editor (15px) disagreed, which is why the
+     paper used to be clamped and the 28th character pushed under the
+     scrollbar. */
+  --mde-font-size: 15px;
+  --editor-measure: calc(28 * var(--mde-font-size));
+  --mde-page-padding-x: 16px;
+  --mde-page-padding-y: 24px;
+  --mde-scrollbar-gutter: 32px;
+  --mde-scrollbar-offset: 0px;
+  /* paper = text columns + comfortable inner padding (liquid-glass paper). */
+  --mde-paper-width: calc(var(--editor-measure) + (2 * var(--mde-page-padding-x)));
+  /* page = paper + a reserved lane for the classic scrollbar, so the 28th
+     column is never covered. This is the editable box width. */
+  --mde-page-width: calc(var(--editor-measure) + var(--mde-scrollbar-gutter) + (2 * var(--mde-page-padding-x)));
+  /* Equal visual gutter on all four sides between the page and the window. */
+  --writing-window-gutter: 28px;
+  /* Bottom action-row sizing tokens. These size the BUTTONS to fit the
+     window; they deliberately do NOT feed back into the window width. */
+  --teachtext-action-side-width: 104px;
+  --teachtext-action-focus-width: 160px;
+  --teachtext-action-primary-width: 140px;
+  --teachtext-action-gap: 8px;
+  --teachtext-action-primary-gap: 24px;
+  --writing-window-min-width: calc(var(--mde-page-width) + (2 * var(--writing-window-gutter)));
+  --writing-window-default-width: var(--writing-window-min-width);
+
+  /* System chrome. One line weight owns every ink rule the interface draws —
+     window chrome, control outlines, panel frames — so controls cannot read
+     heavier than the frame around them. Classic keeps the native one-pixel
+     line; Modern Fonts thickens it in step with the icon grid. Liquid pins its
+     own value. */
+  --system-control-line: 1px;
+  --system-border: var(--system-control-line) solid var(--ink);
+  /* Pinned at one unit on purpose: divider hairlines historically stay 1px
+     even where modern-fonts thickens frames to 1.5px. */
+  --system-primary-divider: 1px solid var(--ink);
+  /* Secondary (light/dotted) separators: one role per family, so app
+     dividers stop carrying per-app values (Theme Family Contract §5). */
+  --system-secondary-divider: 1px dotted var(--shade-dark);
+  --system-shadow: 2px 2px 0 var(--ink);
+  --system-inset: inset 1px 1px 0 #777777, inset -1px -1px 0 #ffffff;
+  --control-radius: 0;
+  /* Position/level controls: a dithered scroll-bar track with a bordered thumb,
+     and the Sound control panel's segmented cells. Shared so a second surface
+     does not reinvent them. */
+  --system-track-bg: repeating-conic-gradient(var(--ink) 0 25%, var(--paper) 0 50%) 0 0 / 2px 2px;
+  --system-track-border: 1px solid var(--ink);
+  --system-track-radius: 0;
+  --system-track-shadow: var(--system-inset);
+  --system-track-fill: transparent;
+  /* How much of Soundscape's sensory colour a tinted surface may take. Classic
+     is bitmap paper, so it stays near the ceiling of "still paper". */
+  --ss-tint-ceiling: 6%;
+  --system-track-thumb-bg: var(--paper);
+  --system-track-thumb-border: 1px solid var(--ink);
+  --system-track-thumb-radius: 0;
+  --system-track-thumb-shadow: none;
+  /* Soundscape window materials: the deck and drawer sit on paper in Classic;
+     Liquid swaps the panel for glass and softens the hairline rules. */
+  --ss-panel: color-mix(in srgb, var(--panel) 92%, var(--paper));
+  --ss-rule: color-mix(in srgb, var(--ink) 36%, transparent);
+  --ss-rule-strong: color-mix(in srgb, var(--ink) 72%, transparent);
+  --soundscape-search-input-border: var(--system-border);
+  --soundscape-search-input-radius: 0;
+  /* Legacy icon chips keep their paper tile in Classic. Liquid system icons
+     carry object-specific material and specular edges inside their artwork;
+     the shared icon holder must not add a second generic glass container. */
+  --icon-bg: var(--paper);
+  --icon-border: var(--system-border);
+  --mini-icon-bg: var(--paper);
+  --mini-icon-border: 2px solid var(--ink);
+  --large-mini-icon-bg: var(--paper);
+  --large-mini-icon-border: var(--system-border);
+  --system-segment-bg: var(--paper);
+  --system-segment-border: 1px solid var(--ink);
+  --system-segment-radius: 0;
+  --system-segment-on-bg: var(--ink);
+  --system-segment-on-shadow: none;
+  /* System sizes (System.css replica completion layer) */
+  --system-readable-min: 13px;
+  --system-title-size: 13px;
+  --system-control-size: 13px;
+  --system-text-size: 13px;
+  --system-caption-size: 11px;
+  --system-micro-size: 10px;
+  --system-icon-stroke-width: 1;
+  --system-icon-pixel-run-expansion: 0;
+  --menu-system-icon-stroke-width: 1;
+  --menu-system-icon-pixel-run-expansion: 0;
+  --system-leading: 1.28;
+  --system-window-padding: 8px;
+  --system-control-min-height: 26px;
+  --system-button-min-height: 26px;
+  --system-button-small-height: 22px;
+  --system-button-mini-height: 19px;
+  --system-button-small-font-size: 11px;
+  --system-button-mini-font-size: 10px;
+  --system-button-small-padding-x: 9px;
+  --system-button-mini-padding-x: 7px;
+  --system-button-padding-y: 2px;
+  --system-button-padding-x: 12px;
+  --control-hit-target: 28px;
+  --control-icon-slot: 20px;
+  --control-motion-fast-in: 80ms;
+  --control-motion-fast-out: 60ms;
+  --control-motion-medium-in: 160ms;
+  --control-motion-medium-out: 120ms;
+  --control-motion-slow-in: 240ms;
+  --control-motion-slow-out: 160ms;
+  --control-motion-ease: cubic-bezier(0.2, 0, 0, 1);
+  --control-focus-outline: var(--system-border);
+  --control-focus-offset: 2px;
+  --control-disabled-opacity: 0.56;
+  --control-choice-hover-shadow: 0 0 0 1px var(--ink);
+  /* Memory Cards uses color + object silhouette as the paired information.
+     Both themes keep the same board geometry and state model. */
+  --memory-cards-window-width: 520px;
+  --memory-cards-pane-bg:
+    radial-gradient(rgba(0, 0, 0, 0.09) 1px, transparent 1px) 0 0 / 9px 9px,
+    var(--quiet-panel);
+  --memory-cards-details-bg: var(--shade);
+  --memory-cards-details-border: var(--system-border);
+  /* Screen budget for the phone deck: the viewport less the desk inset the
+     accessory window sits in, its title bar and details bar, and the status
+     line under the board. The board is capped by this so the whole deck stays
+     on one screen on a small phone as well as a large one. */
+  --memory-cards-board-max-height: calc(100dvh - 186px);
+  --memory-cards-board-bg: transparent;
+  --memory-cards-board-border: 0;
+  --memory-cards-board-radius: 0;
+  --memory-cards-board-shadow: none;
+  --memory-card-bg:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.34), transparent 45%),
+    linear-gradient(var(--paper), var(--panel));
+  --memory-card-border: 1px solid rgba(0, 0, 0, 0.45);
+  --memory-card-radius: 8px;
+  --memory-card-shadow:
+    1px 1px 0 rgba(0, 0, 0, 0.75),
+    3px 3px 0 rgba(0, 0, 0, 0.2),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.55);
+  --memory-card-hover-shadow:
+    1px 2px 0 rgba(0, 0, 0, 0.7),
+    3px 4px 0 rgba(0, 0, 0, 0.18),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.7);
+  --memory-card-back-bg: linear-gradient(var(--paper), var(--quiet-panel));
+  --memory-card-back-mark-bg: rgba(0, 0, 0, 0.14);
+  --memory-card-face-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.42);
+  --memory-card-match-ring: inset 0 0 0 4px var(--paper), inset 0 0 0 6px var(--ink);
+  --memory-cards-muted: var(--shade-dark);
+  --system-select-radius: 6px;
+  --system-select-option-margin: 0;
+  --system-select-option-min-height: 28px;
+  --system-select-option-border: 0;
+  --system-select-option-radius: 0;
+  --system-select-option-bg: var(--paper);
+  --system-select-option-fg: var(--ink);
+  --system-select-option-shadow: none;
+  --system-select-option-active-bg: var(--ink);
+  --system-select-option-active-fg: var(--paper);
+  --system-select-option-active-shadow: none;
+  --system-select-option-active-next-border-top-color: var(--shade-dark);
+  --tdi-tabs-align-items: stretch;
+  --tdi-tabs-gap: 3px;
+  --tdi-tabs-min-height: 45px;
+  --tdi-tabs-padding: 4px 6px 0;
+  --tdi-tabs-bg: var(--shade);
+  --tdi-tabs-border-bottom: var(--system-border);
+  --tdi-tabs-after-content: none;
+  --tdi-tabs-after-flex: 0 0 auto;
+  --tdi-tabs-after-min-width: 0;
+  /* Vertical TDI rails are a system role shared by Reader, TeachText, and
+     DocMap. Defaults preserve the plain System 6 list; later eras may turn
+     the same rail into a grooved list, drawer, or source list by tokens. */
+  --tdi-rail-padding: 0;
+  --tdi-rail-border: 0;
+  --tdi-rail-radius: 0;
+  --tdi-rail-bg: transparent;
+  --tdi-rail-shadow: none;
+  --tdi-source-label-display: none;
+  --tdi-source-label-padding: 0;
+  --tdi-source-label-border-bottom: 0;
+  --tdi-source-label-bg: transparent;
+  --tdi-source-label-fg: currentColor;
+  --tdi-source-label-font-family: var(--ui-font);
+  --tdi-source-label-font-size: var(--system-caption-size);
+  --tdi-source-label-font-weight: var(--system-strong-weight);
+  --tdi-source-label-letter-spacing: normal;
+  --tdi-source-label-text-transform: none;
+  --tdi-stack-popover-border: var(--system-border);
+  --tdi-stack-popover-radius: 0;
+  --tdi-stack-popover-bg: var(--paper);
+  --tdi-stack-popover-shadow: 3px 3px 0 var(--ink);
+  --tdi-stack-popover-backdrop-filter: none;
+  --tdi-stack-item-border: 1px dotted var(--shade-dark);
+  --tdi-stack-item-bg: var(--paper);
+  --tdi-stack-item-fg: var(--ink);
+  --tdi-stack-item-active-bg: var(--ink);
+  --tdi-stack-item-active-fg: var(--paper);
+  --tdi-stack-item-hover-bg: var(--shade);
+  --tdi-stack-item-hover-fg: var(--ink);
+  --tdi-stack-count-bg: var(--ink);
+  --tdi-stack-count-fg: var(--paper);
+  --tdi-tab-wrap-height: auto;
+  --tdi-tab-wrap-min-height: auto;
+  --tdi-tab-wrap-bg: transparent;
+  --tdi-tab-wrap-border: 0;
+  --tdi-tab-height: 41px;
+  --tdi-tab-min-height: 41px;
+  --tdi-tab-padding: 4px calc(var(--tdi-tab-close-size) + (2 * var(--tdi-tab-close-gutter)) + 7px) 4px 8px;
+  --tdi-tab-border: var(--system-border);
+  --tdi-tab-border-bottom: 0;
+  --tdi-tab-radius: 0;
+  --tdi-tab-bg: var(--paper);
+  --tdi-tab-fg: var(--ink);
+  --tdi-tab-shadow: inset 1px 1px 0 var(--shade);
+  --tdi-tab-backdrop-filter: none;
+  --tdi-tab-active-border: var(--tdi-tab-border);
+  --tdi-tab-active-border-bottom: var(--tdi-tab-border-bottom);
+  --tdi-tab-active-bg: var(--paper);
+  --tdi-tab-active-fg: var(--ink);
+  --tdi-tab-active-shadow: inset 0 5px 0 var(--ink), inset 1px 1px 0 var(--shade);
+  --tdi-tab-small-color: currentColor;
+  --tdi-tab-active-small-color: currentColor;
+  --tdi-tab-dragging-border: var(--tdi-tab-active-border);
+  --tdi-tab-dragging-border-bottom: var(--tdi-tab-active-border-bottom);
+  --tdi-tab-dragging-bg: var(--tdi-tab-active-bg);
+  --tdi-tab-dragging-fg: var(--tdi-tab-active-fg);
+  --tdi-tab-dragging-shadow: var(--tdi-tab-active-shadow);
+  --tdi-tab-dragging-transform: none;
+  --tdi-tab-active-dragging-border: var(--tdi-tab-dragging-border);
+  --tdi-tab-active-dragging-border-bottom: var(--tdi-tab-dragging-border-bottom);
+  --tdi-tab-active-dragging-bg: var(--tdi-tab-dragging-bg);
+  --tdi-tab-active-dragging-fg: var(--tdi-tab-dragging-fg);
+  --tdi-tab-active-dragging-shadow: var(--tdi-tab-dragging-shadow);
+  --tdi-tab-drop-shadow: inset 4px 0 0 var(--ink), inset 1px 1px 0 var(--shade);
+  --tdi-tab-close-top: var(--tdi-tab-close-gutter);
+  --tdi-tab-close-right: var(--tdi-tab-close-gutter);
+  --tdi-tab-close-width: var(--tdi-tab-close-size);
+  --tdi-tab-close-height: var(--tdi-tab-close-size);
+  --tdi-tab-close-min-height: 0;
+  --tdi-tab-close-border: var(--system-border);
+  --tdi-tab-close-radius: 0;
+  --tdi-tab-close-bg: var(--paper);
+  --tdi-tab-close-fg: var(--ink);
+  --tdi-tab-close-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 var(--shade-dark);
+  --tdi-tab-close-font-size: 0;
+  --tdi-tab-close-line-height: 1;
+  --tdi-tab-close-transform: none;
+  --tdi-tab-close-backdrop-filter: none;
+  --tdi-tab-close-active-border-color: var(--ink);
+  --tdi-tab-close-active-bg: var(--ink);
+  --tdi-tab-close-active-fg: var(--paper);
+  --tdi-tab-close-active-shadow: inset 1px 1px 0 var(--shade-dark), inset -1px -1px 0 #ffffff;
+  --tdi-tab-close-hover-border-color: var(--ink);
+  --tdi-tab-close-hover-bg: var(--ink);
+  --tdi-tab-close-hover-fg: var(--paper);
+  --tdi-tab-close-hover-shadow: inset 1px 1px 0 var(--shade-dark);
+  --tdi-tab-close-hover-transform: none;
+  --tdi-tab-wrap-dragging-opacity: 0.55;
+  --tdi-grabber-mark-top: 50%;
+  --tdi-grabber-mark-left: 50%;
+  --tdi-grabber-mark-width: 2px;
+  --tdi-grabber-mark-height: 18px;
+  --tdi-grabber-mark-radius: 0;
+  --tdi-grabber-mark-bg: var(--shade-dark);
+  --tdi-grabber-mark-shadow: 4px 0 0 var(--shade-dark);
+  --tdi-grabber-mark-opacity: 0.42;
+  --tdi-grabber-mark-transform: translate(-3px, -50%);
+  --tdi-grabber-mark-active-bg: var(--ink);
+  --tdi-grabber-mark-active-shadow: 4px 0 0 var(--ink);
+  --tdi-grabber-mark-active-opacity: 0.9;
+  --reader-tab-active-open-border-color: var(--ink);
+  --reader-tab-active-open-bg: var(--ink);
+  --reader-tab-active-open-fg: var(--paper);
+  --reader-tab-active-remove-bg: var(--paper);
+  --reader-tab-active-remove-fg: var(--ink);
+  --docmap-node-circle-fill: var(--paper);
+  --docmap-node-circle-stroke-width: 1px;
+  --video-chip-border: 1px solid var(--ink);
+  --video-chip-radius: 0;
+  --video-chip-bg: var(--paper);
+  --video-chip-fg: inherit;
+  --video-timeline-min-height: 0;
+  --video-timeline-border: 1px solid #9a9a9a;
+  --video-timeline-radius: 0;
+  --video-timeline-bg: #f4f4f4;
+  --video-timeline-shadow: none;
+  --video-timeline-fg: var(--ink);
+  --video-timeline-selected-border-color: var(--ink);
+  --video-timeline-selected-bg: var(--ink);
+  --video-timeline-selected-fg: var(--paper);
+  --video-timeline-selected-shadow: none;
+  --video-timeline-selected-span-fg: inherit;
+  --window-toolbar-gap: 6px;
+  --window-toolbar-align: center;
+  --details-bar-optical-rise: 1px;
+  --empty-note-max-width: 62ch;
+  --empty-note-margin: 10px auto;
+  --empty-note-padding: 10px 12px;
+  --empty-note-border: 1px dotted var(--shade-dark);
+  --empty-note-radius: 0;
+  --empty-note-bg:
+    repeating-linear-gradient(
+      -45deg,
+      var(--paper) 0,
+      var(--paper) 6px,
+      #f1f1f1 6px,
+      #f1f1f1 12px
+    );
+  --empty-note-shadow: none;
+  --empty-note-fg: var(--ink);
+  --reader-tab-open-border-color: var(--btn-border-color);
+  --reader-tab-open-bg: var(--btn-bg);
+  --reader-tab-open-shadow: var(--btn-shadow);
+  --system-menu-height: 24px;
+  --z-local-base: 0;
+  --z-local-control: 1;
+  --z-local-chrome: 2;
+  --z-local-overlay: 20;
+  --z-local-popover: 30;
+  --z-window-layer-base: 10;
+  --z-window-layer-compact-base: 100;
+  --z-window-toolbox: 8000;
+  --z-window-save: 8500;
+  --z-window-layer-compact-threshold: 8800;
+  --z-window-layer-max: 8990;
+  --z-liquid-glass-overlay: 8992;
+  --z-floating-field-control: 8995;
+  --z-window-pinned: 9000;
+  --z-window-priority: 9200;
+  --z-control-strip: 9400;
+  --z-control-strip-menu: 9410;
+  --z-selection-marquee: 30000;
+  --z-demo-overlay: 39900;
+  --z-demo-highlight: 39910;
+  --z-system-menu: 40000;
+  --z-system-menu-popover: 40010;
+  --z-system-menu-subpopover: 40020;
+  --z-system-modal-scrim: 40100;
+  --z-system-modal: 40110;
+  --z-balloon-help: 40120;
+  --z-boot-screen: 41000;
+  --z-shutdown-screen: 42000;
+  /* One placement rhythm for every floating desktop window. The manager uses
+     these values for clear-space search and its last-resort diagonal cascade;
+     portrait pages, dialogs, and Desk Accessories keep their owned flows. */
+  --window-placement-edge: 18px;
+  --window-placement-gap: 14px;
+  --window-placement-step-x: 28px;
+  --window-placement-step-y: 24px;
+  --desk-edge-gap: 8px;
+  --control-strip-thickness: var(--system-menu-height);
+  --control-strip-handle-width: 16px;
+  --control-strip-scroll-button-width: 14px;
+  --control-strip-bg: var(--paper);
+  --control-strip-border: 1px solid var(--ink);
+  --control-strip-divider: 1px solid var(--ink);
+  --control-strip-gauge: var(--ink);
+  --control-strip-hover-bg: var(--ink);
+  --control-strip-hover-fg: var(--paper);
+  --control-strip-hover-shadow: none;
+  --control-strip-active-bg: var(--ink);
+  --control-strip-active-fg: var(--paper);
+  --control-strip-active-shadow: none;
+  --control-strip-radius: 0;
+  /* The rounded end follows the tab, and the tab sits at the outer end — a
+     right-anchored strip mirrors its radius through this second token. */
+  --control-strip-radius-mirrored: var(--control-strip-radius);
+  --control-strip-shadow: none;
+  --control-strip-backdrop: none;
+  --control-strip-collapse-duration: 180ms;
+  /* Era material slots for the strip's tiles, handle grip, and gauge well.
+     Classic keeps flat tiles with ink dividers; Platinum raises each tile
+     into a bevel button; later eras go flat again with their own materials. */
+  --control-strip-tile-bg: transparent;
+  --control-strip-tile-radius: 0;
+  --control-strip-tile-shadow: none;
+  --control-strip-tile-margin: 0;
+  --control-strip-tile-height: calc(var(--control-strip-thickness) - 2px);
+  --control-strip-tile-hover-shadow: var(--control-strip-hover-shadow);
+  --control-strip-grip-inset: 6px 6px;
+  --control-strip-grip: repeating-linear-gradient(to bottom, currentColor 0 2px, transparent 2px 4px);
+  --control-strip-grip-radius: 0;
+  --control-strip-gauge-bg: var(--paper);
+  /* Control Panel section chooser: one tablist, era-specific clothes.
+     Classic is the default appearance, so the defaults ARE the System 4-6
+     cdev icon rail (vertical scrolling icon list at the window's left, the
+     1987 Control Panel DA form). Eras with another native
+     settings-navigation object swap these values in their own token block:
+     Platinum pins the OS 8 tab sheet, the Aqua family its icon toolbar,
+     Liquid Glass a segmented capsule. */
+  --control-settings-columns: 92px minmax(0, 1fr);
+  --control-settings-rows: minmax(0, 1fr) auto;
+  --control-chooser-area: 1 / 1 / span 2 / auto;
+  --control-chooser-bg: transparent;
+  --control-chooser-radius: 0;
+  --control-chooser-padding: 0;
+  --control-chooser-width: 100%;
+  --control-chooser-direction: column;
+  --control-chooser-gap: 10px;
+  --control-chooser-border-bottom: 0;
+  --control-chooser-border-right: var(--system-border);
+  --control-chooser-item-direction: column;
+  --control-chooser-item-flex: 0 0 auto;
+  --control-chooser-item-gap: 4px;
+  --control-chooser-item-padding: 6px 4px;
+  --control-chooser-item-offset: 0px;
+  --control-chooser-item-border: 0;
+  --control-chooser-item-border-bottom-width: 0;
+  --control-chooser-item-radius: 0;
+  --control-chooser-item-bg: transparent;
+  --control-chooser-item-fg: var(--ink);
+  --control-chooser-item-shadow: none;
+  --control-chooser-hover-bg: var(--ink);
+  --control-chooser-hover-fg: var(--paper);
+  --control-chooser-active-bg: var(--ink);
+  --control-chooser-active-fg: var(--paper);
+  --control-chooser-active-weight: inherit;
+  --control-chooser-active-shadow: none;
+  --control-chooser-icon-display: block;
+  --control-chooser-icon-size: 32px;
+  --control-chooser-label-size: 11px;
+  /* System 6 native window chrome, measured at the emulator's exact 2×
+     pixels: 17px title-bar box + the window's 1px top border and 1px inset. */
+  --system-titlebar-height: 17px;
+  --system-titlebar-control-slot: 40px;
+  --system-titlebar-control-size: 40px;
+  /* WindowShade collapse box: one shared DOM control, zero-width and hidden
+     by default. Only eras whose native title bar had it (Mac OS 8/9) open
+     the slot and paint it. */
+  --system-titlebar-shade-slot: 0px;
+  --system-titlebar-shade-display: none;
+  --system-titlebar-control-art-size: 11px;
+  --system-titlebar-control-art-offset-x: 13px;
+  --system-titlebar-control-art-offset-y: calc((var(--system-titlebar-control-size) - var(--system-titlebar-title-height)) / 2);
+  --system-titlebar-close-art-offset-x: 7px;
+  --system-titlebar-resize-art-offset-x: 22px;
+  --system-titlebar-control-art-ink: var(--ink);
+  --system-titlebar-title-height: 12px;
+  --system-titlebar-font-size: 12px;
+  --system-titlebar-control-stroke: 1px;
+  --system-titlebar-control-mark-stroke: 1px;
+  --system-titlebar-control-isolation: 3px;
+  --system-titlebar-control-margin-x: 4px;
+  --system-titlebar-margin-y: 1px;
+  --system-titlebar-padding-y: 2px;
+  --system-titlebar-padding-x: 1px;
+  --system-titlebar-stripe-size: 2px;
+  --system-titlebar-stripe-line: 1px;
+  --system-titlebar-striped-bg:
+    var(--paper)
+    linear-gradient(
+      to bottom,
+      var(--ink) 0 var(--system-titlebar-stripe-line),
+      transparent var(--system-titlebar-stripe-line) var(--system-titlebar-stripe-size)
+    )
+    repeat-y 0% 0% / 100% var(--system-titlebar-stripe-size) content-box content-box;
+  --system-titlebar-active-bg: var(--system-titlebar-striped-bg);
+  --system-titlebar-inactive-bg: var(--paper);
+  --system-titlebar-background-origin: content-box;
+  --system-titlebar-background-clip: content-box;
+  --system-titlebar-control-focus-outline: 0;
+  --system-titlebar-control-focus-shadow: none;
+  --system-titlebar-close-attention-mark-opacity: 0;
+  --system-titlebar-resize-attention-mark-opacity: 1;
+  --system-titlebar-inactive-control-filter: none;
+  --system-titlebar-inactive-control-opacity: 1;
+  /* System 6 draws a window's controls only while it is in front: an inactive
+     window's title bar is a plain white strip with its name, no stripes, no
+     close box and no zoom box — the same rule that empties its scroll bars and
+     removes its grow box. */
+  --system-titlebar-inactive-control-visibility: hidden;
+  --system-titlebar-inactive-title-color: var(--ink);
+  --titlebar-title-bg: var(--paper);
+  --titlebar-title-fg: var(--ink);
+  --titlebar-border: var(--window-frame-track-border);
+  --titlebar-shadow: none;
+  --tdi-rail-width: 200px;
+  --tdi-tab-close-size: 18px;
+  --tdi-tab-close-gutter: 10px;
+  --tdi-tab-close-mark-opacity: 1;
+  --system-radio-size: 12px;
+  --system-check-size: 13px;
+  --desktop-icon-column-gap: 10px;
+  --desktop-icon-width: 82px;
+  /* Desktop icon label material. Classic owns the white paper tag; eras
+     repaint through these tokens (Aqua-family drops the tag for shadowed
+     text, Liquid Glass keeps its chip). Width may exceed the icon so a
+     name like "Applications" wraps between words, never inside one. */
+  --desktop-label-bg: var(--paper);
+  --desktop-label-fg: var(--ink);
+  --desktop-label-text-shadow: none;
+  --desktop-label-box-shadow: none;
+  --desktop-label-radius: 0;
+  --desktop-label-max-width: 96px;
+  --desktop-label-selected-bg: var(--ink);
+  --desktop-label-selected-fg: var(--paper);
+  --liquid-desktop-icon-padding: 6px 4px;
+  --liquid-desktop-icon-size: 42px;
+  --liquid-desktop-icon-label-line-height: 1.08;
+  --settings-scrollbar-lane-bg: var(--paper);
+  --settings-scrollbar-lane-padding-right: 12px;
+  --control-panel-height: 440px;
+  --control-panel-max-height: 760px;
+  --system-title-weight: 600;
+  --system-emphasis-weight: 600;
+  --system-strong-weight: 700;
+
+  /* Writing editor */
+  --writing-editor-font-size: 14px;
+  --writing-editor-line-height: 1.5;
+  --writing-editor-padding-y: 16px;
+  --writing-editor-padding-x: 18px;
+  --writing-editor-focus-bg: var(--paper);
+  --writing-preview-padding-y: clamp(24px, 5vw, 52px);
+  --writing-preview-padding-x: clamp(22px, 6vw, 68px);
+
+  --stripe: repeating-linear-gradient(
+    to bottom,
+    #ffffff 0,
+    #ffffff 1px,
+    #000000 1px,
+    #000000 2px
+  );
+
+  /* System 6 draws every drag outline — selection marquee, window move, window
+     grow — with the 50% gray pattern: a one-pixel hairline, one pixel on, one
+     off. Not the browser's `dotted` rendering, which spaces round dots out. */
+  --drag-outline-unit: 1px;
+  /* QuickDraw drew these outlines by inverting the pixels underneath, which is
+     why one outline stays readable over the gray desk, a white window and black
+     art alike. White dashes + difference blending is that same invert. */
+  --drag-outline-ink: #ffffff;
+  --drag-outline-blend: difference;
+  --drag-outline-dashes-x: repeating-linear-gradient(
+    to right,
+    var(--drag-outline-ink) 0 var(--drag-outline-unit),
+    transparent var(--drag-outline-unit) calc(2 * var(--drag-outline-unit))
+  );
+  --drag-outline-dashes-y: repeating-linear-gradient(
+    to bottom,
+    var(--drag-outline-ink) 0 var(--drag-outline-unit),
+    transparent var(--drag-outline-unit) calc(2 * var(--drag-outline-unit))
+  );
+
+  /* Theme-overridable component tokens.
+     Each pairs with an override in body.use-liquid-glass {} at the top of
+     styles/70-liquid-glass.css. Add new tokens here as twins get migrated. */
+  --menu-divider-color: var(--rule);
+  --menu-shortcut-color: currentColor;
+  --menu-shortcut-opacity: 0.85;
+  --menu-button-bg: transparent;
+  --menu-button-fg: var(--ink);
+  --menu-button-shadow: none;
+  --menu-button-active-bg: var(--ink);
+  --menu-button-active-fg: var(--paper);
+  --menu-button-active-shadow: none;
+  --menu-chip-bg: transparent;
+  --menu-chip-fg: var(--ink);
+  --menu-chip-shadow: none;
+  --menu-chip-active-bg: transparent;
+  --menu-chip-active-fg: var(--ink);
+  --menu-chip-active-shadow: none;
+  --menu-item-bg: transparent;
+  --menu-item-fg: var(--ink);
+  --menu-item-shadow: none;
+  --menu-item-active-bg: var(--ink);
+  --menu-item-active-fg: var(--paper);
+  --menu-item-active-shadow: none;
+  --menu-bar-border: 1px solid var(--ink);
+  --menu-panel-bg: var(--paper);
+  --menu-panel-border: var(--system-border);
+  --menu-panel-radius: 0;
+  --menu-panel-shadow: 1px 1px 0 var(--ink);
+  --menu-panel-backdrop-filter: none;
+  --surface-backdrop-filter: none;
+  /* Surface-specific vibrancy: each translucent surface owns its own filter so
+     no single --surface-backdrop-filter rules a whole system. Defaults follow
+     the shared surface token; eras override per surface. */
+  --sidebar-backdrop-filter: var(--surface-backdrop-filter);
+  --titlebar-toolbar-backdrop-filter: var(--surface-backdrop-filter);
+  --happy-mac-border-width: 4px;
+  --happy-mac-face-border-width: 2px;
+  --happy-mac-border-color: var(--ink);
+  --happy-mac-shadow: 4px 4px 0 rgba(0, 0, 0, 0.28);
+  --happy-mac-face-shadow: inset 3px 3px 0 var(--shade);
+  --happy-mac-backdrop: none;
+  --scrollbar-corner-bg: var(--paper);
+  --window-border: 1px solid var(--ink);
+  --window-bg: var(--paper);
+  --window-radius: 0;
+  --window-shadow: none;
+  --inactive-window-shadow: 2px 2px 0 #5e5e5e;
+  --window-backdrop-filter: none;
+  --surface-primary: var(--paper);
+  --surface-secondary: var(--panel);
+  --surface-inset: var(--quiet-panel);
+  --toolbar-bg: var(--panel);
+  --toolbar-border: 1px solid var(--ink);
+  /* Real-app window toolbars paint era chrome through these tokens; the
+     shared .window-toolbar surface owns the only enumeration of toolbar
+     roles, so a theme never lists business apps. Defaults stay unpainted
+     (Classic/Liquid Glass/Yosemite keep their existing bare toolbars). */
+  --app-toolbar-bg: none;
+  --app-toolbar-border-bottom: none;
+  --sidebar-bg: var(--paper);
+  --sidebar-selection-bg: var(--ink);
+  --separator: var(--rule);
+  --selection-bg: var(--ink);
+  --selection-fg: var(--paper);
+  --focus-ring: var(--control-focus-outline);
+  /* Document-window frame: the two scroll bar lanes and the grow box are one
+     16px chrome band, so the corner where they meet is exactly one cell wide
+     and the grow box can never drift onto content. */
+  --window-frame-lane: 16px;
+  --window-frame-bar-display: flex;
+  --window-frame-reserve: var(--window-frame-lane);
+  --window-frame-scrollbar-width: none;
+  /* The lane's 50% gray, drawn the way the vendored system.css reference does:
+     two 45-degree checkers offset by half a tile, so the cell is 2px — a 1px
+     checker reads as flat gray instead of a dither. */
+  --window-frame-track-bg:
+    linear-gradient(45deg, var(--shade) 25%, transparent 25% 75%, var(--shade) 75%) 0 0 / 4px 4px,
+    linear-gradient(45deg, var(--shade) 25%, transparent 25% 75%, var(--shade) 75%) 2px 2px / 4px 4px,
+    var(--paper);
+  --window-frame-track-border: 1px solid var(--ink);
+  --window-frame-thumb-bg: var(--paper);
+  --window-frame-thumb-border: 1px solid var(--ink);
+  --window-frame-thumb-radius: 0;
+  --window-frame-arrow-bg: var(--paper);
+  --window-frame-arrow-ink: var(--ink);
+  --scrollbar-width: var(--window-frame-lane);
+  --scrollbar-track: var(--window-frame-track-bg);
+  --scrollbar-thumb: var(--window-frame-thumb-bg);
+  --scrollbar-button: var(--window-frame-arrow-bg);
+  --window-control-size: var(--system-titlebar-control-art-size);
+  --window-control-gap: var(--system-titlebar-control-margin-x);
+  --active-window-shadow: none;
+  --card-caption-color: var(--shade-dark);
+  --finder-navigation-border: 1px solid var(--ink);
+  --finder-navigation-bg: var(--paper);
+  --finder-breadcrumb-radius: 0;
+  --finder-breadcrumb-text-decoration: underline;
+  --finder-breadcrumb-hover-bg: var(--ink);
+  --finder-breadcrumb-hover-fg: var(--paper);
+  --finder-breadcrumb-current-color: var(--ink);
+  /* Classic already states overflow through its native frame bars. The same
+     semantic indicator stays in the DOM for both themes; Liquid Glass turns it
+     into a trackless edge lens through these material tokens. */
+  --finder-continuation-display: none;
+  --finder-continuation-border: 1px solid var(--ink);
+  --finder-continuation-radius: 0;
+  --finder-continuation-bg: var(--paper);
+  --finder-continuation-fg: var(--ink);
+  --finder-continuation-shadow: none;
+  --finder-continuation-backdrop: none;
+  /* Zero in a browser tab; real insets once the desk runs standalone from the
+     iOS home screen, where nothing else protects the notch or home indicator. */
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  /* The menu bar's own height, so each theme sets the value in one place and
+     the portrait rule can add the status-bar inset on top of it. */
+  --menu-bar-height: var(--system-menu-height);
+  /* Where a menu-bar popover hangs from: the bar's real bottom, inset included. */
+  --menu-popover-top: calc(var(--menu-bar-height) + var(--safe-area-top));
+  --guide-pane-gap: 10px;
+  --tab-radius: 0;
+  --tab-overlap: 0px;
+  --tab-bg: var(--shade);
+  --tab-hover-bg: var(--paper);
+  --tab-active-bg: var(--paper);
+  --tab-active-fg: var(--ink);
+  --guide-start-card-border: var(--system-border);
+  --guide-start-card-radius: 0;
+  --guide-start-card-bg: var(--paper);
+  --guide-start-card-shadow: inset 1px 1px 0 var(--shade);
+  --guide-start-card-padding: 10px;
+  --guide-start-card-small-color: inherit;
+  --startup-settings-modal-padding: 22px 28px 18px;
+  --startup-settings-form-gap: 14px;
+  --startup-settings-header-gap: 14px;
+  --startup-settings-disk-icon-width: 39px;
+  --startup-settings-disk-icon-height: 45px;
+  --startup-settings-disk-icon-border: var(--system-border);
+  --startup-settings-disk-icon-radius: 0;
+  --startup-settings-disk-icon-bg:
+    linear-gradient(var(--paper), var(--paper)) 7px 4px / 22px 14px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 7px 18px / 22px 2px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 26px 6px / 2px 8px no-repeat,
+    linear-gradient(var(--shade), var(--shade)) 9px 24px / 21px 14px no-repeat,
+    var(--paper);
+  --startup-settings-disk-icon-shadow: none;
+  --startup-settings-option-gap: 8px;
+  --startup-settings-option-radius: 0;
+  --startup-settings-hr-border: 1px inset gray;
+  --startup-settings-hr-border-top: 1px inset gray;
+  --startup-settings-hr-shadow: none;
+  --startup-settings-subhead-color: currentColor;
+  --startup-settings-radio-focus-outline: 1px dotted var(--ink);
+  --startup-settings-radio-focus-outline-offset: 2px;
+  --startup-settings-radio-focus-visible-outline: var(--startup-settings-radio-focus-outline);
+  --startup-settings-radio-focus-visible-outline-offset: var(--startup-settings-radio-focus-outline-offset);
+  --startup-settings-radio-focus-visible-shadow: var(--system-inset);
+  /* Balloon Help is a later Classic Mac OS system surface. Its object role and
+     geometry stay shared; Liquid Glass only swaps the material tokens. */
+  --balloon-help-bg: var(--paper);
+  --balloon-help-border: var(--system-border);
+  --balloon-help-radius: 12px;
+  --balloon-help-shadow: 2px 2px 0 var(--shade-dark);
+  --balloon-help-padding: 9px 12px;
+  --balloon-help-backdrop: none;
+  --status-clock-border: var(--system-border);
+  --status-clock-radius: 0;
+  --status-clock-bg: transparent;
+  --status-clock-shadow: none;
+  --status-clock-gap: 2px;
+  --status-clock-padding: 8px;
+  --status-clock-time-shadow: none;
+  --model-state-panel-border: var(--system-border);
+  --model-state-panel-radius: 0;
+  --model-state-panel-bg: var(--paper);
+  --model-state-panel-shadow: var(--system-inset);
+  --model-state-panel-gap: 5px;
+  --model-state-panel-padding: 6px 7px;
+  --model-state-title-color: currentColor;
+  --model-state-title-font-size: 12px;
+  --model-state-list-gap: 3px 7px;
+  --model-state-row-padding: 1px 3px;
+  --model-state-row-border-left: 3px solid var(--shade-dark);
+  --model-state-row-radius: 0;
+  --model-state-row-bg: transparent;
+  --model-state-row-shadow: none;
+  --model-state-row-current-bg: var(--shade);
+  --model-state-row-done-bg: transparent;
+  --model-state-running-outline: var(--system-border);
+  --model-state-running-shadow: var(--model-state-panel-shadow);
+  --model-state-next-margin: 6px 0 0;
+  --model-state-next-padding-top: 0;
+  --model-state-next-border-top: 0;
+  --model-state-next-color: currentColor;
+  --cloud-state-panel-border: 1px solid var(--ink);
+  --cloud-state-panel-radius: 0;
+  --cloud-state-panel-bg: var(--paper);
+  --cloud-state-panel-shadow: none;
+  --cloud-state-panel-gap: 6px;
+  --cloud-state-panel-padding: 6px 7px;
+  --cloud-state-title-color: currentColor;
+  --cloud-state-title-font-size: 12px;
+  --cloud-state-name-color: inherit;
+  --cloud-state-status-color: currentColor;
+  --cloud-state-status-font-size: 11px;
+  --cloud-state-usage-gap: 2px 10px;
+  --cloud-state-usage-padding-top: 5px;
+  --cloud-state-usage-border-top: 1px dotted var(--shade-dark);
+  --cloud-state-usage-font-size: 11px;
+  --cloud-state-usage-label-color: var(--shade-dark);
+  --system-status-pane-gap: 12px;
+  --system-status-pane-padding: var(--system-window-padding);
+  --system-status-pane-bg: transparent;
+  --writing-bell-time-border: var(--system-border);
+  --writing-bell-time-radius: 0;
+  --writing-bell-time-bg: var(--paper);
+  --writing-bell-time-shadow: inset 2px 2px 0 var(--shade);
+  --writing-bell-pane-gap: 8px;
+  --writing-bell-pane-padding: var(--system-window-padding);
+  --writing-bell-pane-bg: transparent;
+  --writing-bell-mode-gap: normal;
+  --writing-bell-mode-padding: 0;
+  --writing-bell-mode-border: var(--system-border);
+  --writing-bell-mode-radius: 0;
+  --writing-bell-mode-bg: transparent;
+  --writing-bell-mode-shadow: none;
+  --writing-bell-mode-button-min-height: 26px;
+  --writing-bell-mode-button-border: 0;
+  --writing-bell-mode-button-border-right: 1px solid var(--ink);
+  --writing-bell-mode-button-last-border-right: 0;
+  --writing-bell-mode-button-radius: 0;
+  --writing-bell-mode-button-bg: var(--paper);
+  --writing-bell-mode-button-fg: var(--ink);
+  --writing-bell-mode-button-shadow: none;
+  --writing-bell-mode-active-border-top-color: currentColor;
+  --writing-bell-mode-active-border-right-color: var(--ink);
+  --writing-bell-mode-active-border-bottom-color: currentColor;
+  --writing-bell-mode-active-border-left-color: currentColor;
+  --writing-bell-mode-active-bg: var(--ink);
+  --writing-bell-mode-active-fg: var(--paper);
+  --writing-bell-mode-active-shadow: none;
+  --writing-bell-preset-border-color: var(--ink);
+  --writing-bell-preset-bg: var(--paper);
+  --writing-bell-preset-fg: var(--ink);
+  --writing-bell-preset-shadow: inset -1px -1px 0 var(--shade-dark);
+  --writing-bell-preset-hover-border-color: var(--ink);
+  --writing-bell-preset-hover-bg: var(--ink);
+  --writing-bell-preset-hover-fg: var(--paper);
+  --writing-bell-preset-hover-shadow: inset 1px 1px 0 #444444;
+  --writing-bell-preset-pressed-border-color: var(--ink);
+  --writing-bell-preset-pressed-bg: var(--ink);
+  --writing-bell-preset-pressed-fg: var(--paper);
+  --writing-bell-preset-pressed-shadow: inset 1px 1px 0 #444444;
+  --writing-bell-preset-active-border-color: var(--ink);
+  --writing-bell-preset-active-bg: var(--ink);
+  --writing-bell-preset-active-fg: var(--paper);
+  --writing-bell-preset-active-shadow: inset 1px 1px 0 #444444;
+  --writing-bell-preset-active-pressed-bg: var(--writing-bell-preset-active-bg);
+  --writing-bell-preset-active-pressed-fg: var(--writing-bell-preset-active-fg);
+  --dictionary-result-border: var(--system-border);
+  --dictionary-result-radius: 0;
+  --dictionary-result-bg: var(--paper);
+  --dictionary-result-shadow: none;
+  --dictionary-empty-note-max-width: 62ch;
+  --dictionary-empty-note-margin: 10px auto;
+  --dictionary-empty-note-border: 1px dotted var(--shade-dark);
+  --dictionary-empty-note-radius: 0;
+  --dictionary-empty-note-bg:
+    repeating-linear-gradient(
+      -45deg,
+      var(--paper) 0,
+      var(--paper) 6px,
+      #f1f1f1 6px,
+      #f1f1f1 12px
+    );
+  --dictionary-empty-note-fg: var(--ink);
+  --dictionary-empty-note-shadow: none;
+  --dictionary-pane-gap: 8px;
+  --dictionary-pane-padding: 8px;
+  --dictionary-pane-bg: transparent;
+  --dictionary-form-label-width: auto;
+  --dictionary-form-label-padding: 0;
+  --dictionary-form-label-radius: 0;
+  --dictionary-form-label-bg: transparent;
+  --dictionary-form-label-color: inherit;
+  --dictionary-form-label-shadow: none;
+  --dictionary-recent-min-height: 28px;
+  --dictionary-recent-border-top: 1px dotted var(--shade-dark);
+  --dictionary-recent-color: inherit;
+  --dictionary-recent-button-border: var(--system-control-line) solid var(--btn-border-color);
+  --dictionary-recent-button-radius: 7px;
+  --dictionary-recent-button-bg: var(--btn-bg);
+  --dictionary-recent-button-fg: var(--btn-fg);
+  --find-file-pane-gap: 8px;
+  --find-file-pane-padding: var(--system-window-padding);
+  --find-file-pane-bg: transparent;
+  --find-file-search-row-gap: 8px;
+  --find-file-label-color: inherit;
+  --find-file-results-padding: 0;
+  --find-file-results-border: var(--system-border);
+  --find-file-results-radius: 0;
+  --find-file-results-bg: var(--paper);
+  --find-file-results-shadow: none;
+  --find-file-empty-note-max-width: 62ch;
+  --find-file-empty-note-margin: 10px auto;
+  --find-file-empty-note-padding: 10px 12px;
+  --find-file-empty-note-border: 1px dotted var(--shade-dark);
+  --find-file-empty-note-radius: 0;
+  --find-file-empty-note-bg:
+    repeating-linear-gradient(
+      -45deg,
+      var(--paper) 0,
+      var(--paper) 6px,
+      #f1f1f1 6px,
+      #f1f1f1 12px
+    );
+  --find-file-empty-note-shadow: none;
+  --find-file-empty-note-fg: var(--ink);
+  --find-file-result-margin-bottom: 0;
+  --find-file-result-border: 0;
+  --find-file-result-border-bottom: 1px dotted var(--shade-dark);
+  --find-file-result-radius: 0;
+  --find-file-result-bg: transparent;
+  --find-file-result-fg: var(--ink);
+  --find-file-result-shadow: none;
+  --find-file-result-active-border-color: currentColor;
+  --find-file-result-active-border-bottom-color: var(--shade-dark);
+  --find-file-result-active-bg: var(--ink);
+  --find-file-result-active-fg: var(--paper);
+  --find-path-pane-gap: 8px;
+  --find-path-pane-padding: var(--system-window-padding);
+  --find-path-pane-bg: transparent;
+  --find-path-summary-border: var(--system-border);
+  --docmap-mobile-hint-border: 1px solid var(--ink);
+  --find-path-results-gap: 0;
+  --find-path-results-padding: 0;
+  --find-path-results-border: var(--system-border);
+  --find-path-results-radius: 0;
+  --find-path-results-bg: var(--paper);
+  --find-path-results-shadow: none;
+  --find-path-empty-note-max-width: 62ch;
+  --find-path-empty-note-margin: 10px auto;
+  --find-path-empty-note-padding: 10px 12px;
+  --find-path-empty-note-border: 1px dotted var(--shade-dark);
+  --find-path-empty-note-radius: 0;
+  --find-path-empty-note-bg:
+    repeating-linear-gradient(
+      -45deg,
+      var(--paper) 0,
+      var(--paper) 6px,
+      #f1f1f1 6px,
+      #f1f1f1 12px
+    );
+  --find-path-empty-note-shadow: none;
+  --find-path-empty-note-fg: var(--ink);
+  --find-path-result-gap: 2px;
+  --find-path-result-padding: 10px 12px;
+  /* Era result-table recipe: Classic hides the header row and relevance
+     bar; Platinum / Aqua / Snow Leopard flip the display tokens and set
+     their own column template. */
+  --find-path-header-display: none;
+  --find-path-relevance-display: none;
+  --find-path-table-columns: minmax(0, 1fr) 84px minmax(0, 32%);
+  --find-path-result-border: 0;
+  --find-path-result-border-bottom: 1px solid var(--shade);
+  --find-path-result-last-border-bottom: 0;
+  --find-path-result-last-hover-border-bottom: var(--find-path-result-last-border-bottom);
+  --find-path-result-radius: 0;
+  --find-path-result-bg: transparent;
+  --find-path-result-fg: var(--ink);
+  --find-path-result-shadow: none;
+  --find-path-result-title-color: currentColor;
+  --find-path-result-detail-color: var(--shade-dark);
+  --find-path-result-body-color: currentColor;
+  --find-path-result-selected-border: 0;
+  --find-path-result-selected-border-bottom: 1px solid var(--shade);
+  --find-path-result-selected-bg: var(--ink);
+  --find-path-result-selected-fg: var(--paper);
+  --find-path-result-selected-shadow: none;
+  --find-path-result-selected-title-color: var(--paper);
+  --find-path-result-selected-detail-color: var(--paper);
+  --find-path-result-hover-border: var(--find-path-result-selected-border);
+  --find-path-result-hover-border-bottom: var(--find-path-result-selected-border-bottom);
+  --find-path-result-hover-bg: var(--find-path-result-selected-bg);
+  --find-path-result-hover-fg: var(--find-path-result-selected-fg);
+  --find-path-result-hover-shadow: var(--find-path-result-selected-shadow);
+  --find-path-result-hover-title-color: var(--find-path-result-selected-title-color);
+  --find-path-result-hover-detail-color: var(--find-path-result-selected-detail-color);
+  --find-path-result-selected-hover-border: var(--find-path-result-selected-border);
+  --find-path-result-selected-hover-border-bottom: var(--find-path-result-selected-border-bottom);
+  --find-path-result-selected-hover-bg: var(--find-path-result-selected-bg);
+  --find-path-result-selected-hover-fg: var(--find-path-result-selected-fg);
+  --find-path-result-selected-hover-shadow: var(--find-path-result-selected-shadow);
+  --find-path-translation-border: 1px dotted currentColor;
+  --find-path-translation-radius: 0;
+  --find-path-translation-bg: rgba(255, 255, 255, 0.32);
+  --find-path-translation-shadow: none;
+  --finder-op-caption-color: var(--shade-dark);
+  --finder-op-item-min-height: 34px;
+  --finder-op-last-border: 0;
+  --select-divider: 1px dotted var(--shade-dark);
+  --teachtext-blockquote-border: 1px dashed var(--ink);
+  --teachtext-attachments-empty-border: 1px dashed var(--ink);
+  --teachtext-preview-bg: var(--paper);
+  --teachtext-preview-title-divider: var(--system-border);
+  --teachtext-preview-section-marker: 8px solid var(--ink);
+  --teachtext-preview-image-border: var(--system-border);
+  --teachtext-preview-image-bg: var(--paper);
+  --teachtext-preview-blockquote-bg: repeating-linear-gradient(45deg, #fff, #fff 2px, #f9f9f9 2px, #f9f9f9 4px);
+  --reader-content-border: var(--system-border);
+  --reader-content-radius: 0;
+  --reader-content-bg: var(--paper);
+  --reader-content-shadow: var(--system-inset);
+  --reader-title-divider: var(--system-border);
+  --reader-meta-divider: 1px dotted var(--ink);
+  --reader-section-marker: 6px solid var(--ink);
+  --drop-target-inset: 8px;
+  --drop-target-border: var(--system-control-line) dashed var(--ink);
+  --drop-target-radius: 0;
+  --drop-target-bg: rgba(255, 255, 255, 0.88);
+  --drop-target-shadow: none;
+  --drop-target-fg: var(--ink);
+  --drop-target-font-family: var(--ui-font);
+  --drop-target-font-size: inherit;
+  --drop-target-font-weight: 700;
+  --drop-target-text-align: start;
+  --drop-target-text-shadow: none;
+  --drop-target-backdrop-filter: none;
+  --reader-transcript-view-gap: 10px;
+  --reader-transcript-list-gap: 8px;
+  --reader-transcript-card-border: 1px solid #a8a8a8;
+  --reader-transcript-card-radius: 6px;
+  --reader-transcript-card-bg: #fbfbfb;
+  --reader-transcript-card-shadow: none;
+  --reader-transcript-block-header-color: #4b4b4b;
+  --reader-transcript-button-border: 1px solid #8a8a8a;
+  --reader-transcript-button-radius: 4px;
+  --reader-transcript-button-bg: #efefef;
+  --reader-transcript-button-fg: var(--ink);
+  --reader-transcript-button-shadow: none;
+  --reader-transcript-blocks-border: 1px dashed #9a9a9a;
+  --reader-transcript-summary-border: 0;
+  --time-machine-window-width: 820px;
+  --time-machine-window-height: 620px;
+  --time-machine-toolbar-bg: var(--paper);
+  --time-machine-toolbar-border: 1px solid var(--shade-dark);
+  --time-machine-popover-bg: var(--paper);
+  --time-machine-popover-border: var(--time-machine-toolbar-border);
+  --time-machine-popover-shadow: var(--system-shadow);
+  --time-machine-popover-backdrop-filter: none;
+  --time-machine-popover-fg: var(--ink);
+  --time-machine-popover-muted: var(--shade-dark);
+  --time-machine-popover-divider: var(--shade);
+  --time-machine-calendar-day-bg: var(--shade);
+  --time-machine-calendar-day-border: var(--shade-dark);
+  --time-machine-time-bg: repeating-linear-gradient(135deg, var(--paper) 0 6px, #e8e8e8 6px 7px);
+  --time-machine-time-active-bg: repeating-linear-gradient(135deg, #d8d8d8 0 5px, var(--paper) 5px 7px);
+  --time-machine-time-border: var(--system-border);
+  --time-machine-frame-border: var(--system-border);
+  --time-machine-frame-radius: 0;
+  --time-machine-frame-bg: var(--paper);
+  --time-machine-frame-shadow: var(--system-inset);
+  --time-machine-live-color: var(--shade-dark);
+  --time-machine-archive-color: var(--ink);
+  --time-machine-loading-bg: rgba(255, 255, 255, 0.9);
+  --scrap-selection-actions-border: 1px dotted var(--shade-dark);
+  --notification-item-divider: 1px dotted var(--shade-dark);
+  --view-switch-border: var(--system-border);
+  --view-switch-radius: 0;
+  --view-switch-bg: var(--paper);
+  --view-switch-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 var(--shade-dark);
+  --view-switch-thumb-radius: 0;
+  --view-switch-thumb-bg: var(--ink);
+  --view-switch-thumb-shadow: inset 1px 1px 0 var(--shade-dark), inset -1px -1px 0 #ffffff;
+  --view-switch-fg: var(--ink);
+  --view-switch-active-fg: var(--paper);
+  --view-switch-focus-outline: 1px dotted var(--ink);
+  /* System Help / dictionary list row states. Defaults reproduce the classic
+     System 6 look (hover, focus and selected are all the solid ink fill, sharp
+     corners). Liquid glass overrides these to soften + distinguish the states. */
+  --help-row-hover-bg: var(--ink);
+  --help-row-hover-fg: var(--paper);
+  --help-row-selected-bg: var(--ink);
+  --help-row-selected-fg: var(--paper);
+  --help-row-active-radius: 0;
+  --system-help-panel-border: var(--system-border);
+  --system-help-panel-radius: 0;
+  --system-help-panel-bg: var(--sidebar-bg);
+  --system-help-panel-shadow: none;
+  --system-help-search-input-border: var(--system-border);
+  --system-help-search-input-radius: 0;
+  --system-help-list-button-border-bottom: 1px dotted var(--shade-dark);
+  --system-help-group-bg: var(--paper);
+  --system-help-group-border-bottom: var(--system-border);
+  --system-help-head-border-bottom: var(--system-border);
+  --system-help-actions-border-top: 1px dotted var(--shade-dark);
+  --system-help-alias-border: 1px solid var(--shade-dark);
+  --system-help-row-icon-size: 20px;
+  --system-help-group-menu-width: 132px;
+  --context-panel-list-bg: var(--paper);
+  --context-panel-list-bg-color: var(--paper);
+  --context-item-border: 1px solid var(--ink);
+  --context-item-radius: 0;
+  --context-item-bg: var(--paper);
+  --context-item-shadow: none;
+  --context-item-dropped-bg: var(--panel);
+  --source-registry-item-border-style: dashed;
+  --context-header-border-bottom: 1px solid var(--ink);
+  --context-header-badge-border: 1px solid var(--ink);
+  --context-section-title-border-bottom: var(--system-border);
+  --context-item-actions-border-top: 1px solid var(--shade);
+  --key-caps-pane-gap: 10px;
+  --key-caps-pane-padding: var(--system-window-padding);
+  --key-caps-pane-bg: transparent;
+  --key-caps-pane-bg-color: transparent;
+  --key-caps-note-width: auto;
+  --key-caps-note-padding: 0;
+  --key-caps-note-radius: 0;
+  --key-caps-note-bg: transparent;
+  --key-caps-note-fg: inherit;
+  --key-caps-note-shadow: none;
+  --shortcut-grid-overflow: visible;
+  --shortcut-grid-border: var(--system-border);
+  --shortcut-grid-radius: 0;
+  --shortcut-grid-bg: transparent;
+  --shortcut-grid-shadow: none;
+  --shortcut-grid-divider: 1px dotted var(--shade-dark);
+  --shortcut-grid-key-border-right: var(--system-border);
+  --shortcut-grid-key-bg: #eeeeee;
+  --character-map-gap: 6px;
+  --character-map-button-min-height: 28px;
+  --character-map-button-border: var(--system-border);
+  --character-map-button-radius: 0;
+  --character-map-button-bg: var(--paper);
+  --character-map-button-fg: var(--ink);
+  --character-map-button-shadow: none;
+  --character-map-button-hover-border-color: var(--ink);
+  --character-map-button-hover-bg: var(--character-map-button-bg);
+  --character-map-button-hover-fg: var(--character-map-button-fg);
+  --character-map-button-active-bg: var(--ink);
+  --character-map-button-active-fg: var(--paper);
+  /* Native WIND -16000 is 129×18 in compact form and its PICT mode glyphs
+     are 23×23, 24×22, and 14×17. Preserve that 1× relationship. */
+  --alarm-clock-window-width: 130px;
+  --alarm-clock-frame-border: var(--system-border);
+  --alarm-clock-frame-radius: 0;
+  --alarm-clock-frame-shadow: 3px 3px 0 var(--ink);
+  --alarm-clock-title-bg: var(--paper);
+  --alarm-clock-surface-bg: var(--paper);
+  --alarm-clock-readout-bg: var(--paper);
+  --alarm-clock-divider: var(--system-border);
+  --alarm-clock-active-bg: var(--ink);
+  --alarm-clock-active-fg: var(--paper);
+  --alarm-clock-title-control-width: 28px;
+  --alarm-clock-title-height: 18px;
+  --alarm-clock-close-size: 10px;
+  --alarm-clock-close-border: 1px solid var(--ink);
+  --alarm-clock-close-radius: 0;
+  --alarm-clock-close-bg: var(--paper);
+  --alarm-clock-close-shadow: none;
+  --alarm-clock-lever-size: 18px;
+  --alarm-clock-lever-margin: 0 4px;
+  --alarm-clock-lever-border: 0;
+  --alarm-clock-lever-radius: 0;
+  --alarm-clock-lever-bg: transparent;
+  --alarm-clock-lever-hover-bg: transparent;
+  --alarm-clock-lever-fg: var(--ink);
+  --alarm-clock-lever-shadow: none;
+  --alarm-clock-lever-focus-outline: 1px dotted var(--ink);
+  --alarm-clock-lever-focus-shadow: none;
+  --alarm-clock-selection-bg: var(--ink);
+  --alarm-clock-selection-fg: var(--paper);
+  --alarm-clock-mode-divider: var(--alarm-clock-divider);
+  --alarm-clock-mode-radius: 0;
+  --alarm-clock-mode-bg: var(--alarm-clock-surface-bg);
+  --alarm-clock-mode-hover-bg: var(--alarm-clock-surface-bg);
+  --alarm-clock-mode-active-shadow: inset 0 0 0 3px var(--alarm-clock-active-fg);
+  --alarm-clock-readout-height: 22px;
+  --alarm-clock-section-gap: 0px;
+  --alarm-clock-modes-height: 29px;
+  --calculator-pane-gap: 5px;
+  --calculator-pane-padding: var(--system-window-padding);
+  --calculator-pane-bg: var(--shade);
+  --calculator-pane-bg-color: var(--shade);
+  --calculator-display-border: var(--system-border);
+  --calculator-display-radius: 0;
+  --calculator-display-bg: var(--paper);
+  --calculator-display-shadow: inset 1px 1px 0 var(--shade-dark);
+  --calculator-keys-gap: 5px;
+  --calculator-keys-row-height: 30px;
+  --calculator-key-height: 30px;
+  --calculator-key-border: var(--system-border);
+  --calculator-key-radius: 0;
+  --calculator-key-bg: var(--paper);
+  --calculator-key-fg: var(--ink);
+  --calculator-key-shadow:
+    1px 1px 0 var(--ink),
+    inset 1px 1px 0 var(--paper),
+    inset -1px -1px 0 var(--shade-dark);
+  --calculator-key-hover-border-color: var(--ink);
+  --calculator-key-hover-bg: var(--calculator-key-bg);
+  --calculator-key-active-transform: translate(1px, 1px);
+  --calculator-key-active-bg: var(--ink);
+  --calculator-key-active-fg: var(--paper);
+  --calculator-key-active-shadow: inset 1px 1px 0 #444444;
+  --calculator-equals-height: auto;
+  --calculator-equals-border-color: var(--ink);
+  --calculator-equals-bg: var(--calculator-key-bg);
+  --puzzle-window-width: 188px;
+  --puzzle-window-height: auto;
+  --puzzle-pane-flex: 1 1 auto;
+  --puzzle-pane-align-items: center;
+  --puzzle-pane-gap: 5px;
+  --puzzle-pane-padding: var(--system-window-padding);
+  --puzzle-pane-bg: var(--shade);
+  --puzzle-pane-bg-color: var(--shade);
+  --puzzle-board-gap: 0;
+  --puzzle-board-width: 160px;
+  --puzzle-board-height: 160px;
+  --puzzle-board-padding: 0;
+  --puzzle-board-border: var(--system-border);
+  --puzzle-board-radius: 0;
+  --puzzle-board-bg: var(--paper);
+  --puzzle-board-shadow: none;
+  --puzzle-tile-width: 39px;
+  --puzzle-tile-height: 39px;
+  --puzzle-tile-border: 0;
+  --puzzle-tile-border-right: 1px solid var(--ink);
+  --puzzle-tile-border-bottom: 1px solid var(--ink);
+  --puzzle-tile-radius: 0;
+  --puzzle-tile-bg: var(--paper);
+  --puzzle-tile-fg: var(--ink);
+  --puzzle-tile-shadow: none;
+  --puzzle-tile-edge-border-right: 0;
+  --puzzle-tile-edge-border-bottom: 0;
+  --puzzle-tile-hover-border-color: var(--ink);
+  --puzzle-tile-hover-bg: var(--puzzle-tile-bg);
+  --puzzle-tile-active-border-color: var(--paper);
+  --puzzle-tile-active-bg: var(--ink);
+  --puzzle-tile-active-fg: var(--paper);
+  --puzzle-tile-active-shadow: inset 1px 1px 0 #444444;
+  --puzzle-blank-border-style: dotted;
+  --puzzle-blank-border-color: var(--ink);
+  --puzzle-blank-bg: var(--paper);
+  --puzzle-blank-shadow: none;
+  --puzzle-footer-width: 160px;
+  --puzzle-footer-badge-display: inline;
+  --puzzle-footer-badge-min-height: 0;
+  --puzzle-footer-badge-padding: 0;
+  --puzzle-footer-badge-radius: 0;
+  --puzzle-footer-badge-bg: transparent;
+  --puzzle-footer-badge-fg: inherit;
+  --btn-border-color: var(--ink);
+  --btn-radius: 8px;
+  --btn-bg: var(--paper);
+  --btn-fg: var(--ink);
+  --btn-shadow: inset -1px -1px 0 var(--shade-dark);
+  --btn-hover-bg: var(--ink);
+  --btn-hover-fg: var(--paper);
+  --btn-hover-shadow: inset 1px 1px 0 #444444;
+  --btn-active-border-color: var(--ink);
+  --btn-active-bg: var(--ink);
+  --btn-active-fg: var(--paper);
+  --btn-active-shadow: inset 1px 1px 0 #444444;
+  --choice-bg: var(--paper);
+  --choice-border: 1.5px solid var(--ink);
+  --choice-radius: 0;
+  --choice-shadow: none;
+  --choice-checked-bg: var(--paper);
+  --choice-checkmark-image: url("./system.css-reference/icon/checkmark.svg");
+  --radio-bg: transparent;
+  --radio-border: 0;
+  --radio-shadow: none;
+  --radio-image: url("./system.css-reference/icon/radio-border.svg");
+  --radio-focus-image: url("./system.css-reference/icon/radio-border-focused.svg");
+  --radio-checked-image:
+    url("./system.css-reference/icon/radio-dot.svg"),
+    url("./system.css-reference/icon/radio-border.svg");
+  --radio-checked-focus-image:
+    url("./system.css-reference/icon/radio-dot.svg"),
+    url("./system.css-reference/icon/radio-border-focused.svg");
+  /* A disabled choice control defaults to the enabled art plus the shared
+     disabled opacity, which is what every era rendered before these roles
+     existed. An era whose real disabled control is drawn differently rather
+     than faded (Snow Leopard replaces the blue well with a near-white one and
+     a grey mark) overrides these instead of adding a selector. */
+  --choice-disabled-checked-bg: var(--choice-checked-bg);
+  --choice-disabled-checked-bg-image: var(--choice-checked-bg-image, none);
+  --choice-disabled-checkmark-image: var(--choice-checkmark-image);
+  --choice-disabled-border-color: var(--choice-checked-border-color, inherit);
+  --choice-disabled-opacity: var(--control-disabled-opacity);
+  --radio-disabled-checked-image: var(--radio-checked-image);
+  --radio-disabled-checked-size: var(--system-radio-size);
+  --clio-stage-pane-rows: auto minmax(0, 1fr) auto;
+  --clio-stage-pane-gap: 8px;
+  --clio-stage-pane-bg: transparent;
+  --clio-stage-toolbar-align-items: center;
+  --clio-stage-toolbar-gap: 8px;
+  --clio-stage-responsive-toolbar-align-items: stretch;
+  --clio-stage-controls-gap: 8px;
+  --clio-stage-view-switcher-gap: 8px;
+  --clio-stage-nav-min-width: 72px;
+  --clio-stage-nav-padding-inline: 12px;
+  --clio-stage-nav-font-size: var(--system-text-size);
+  --clio-stage-nav-line-height: 1.2;
+  --clio-stage-page-font-family: var(--mono-font);
+  --clio-stage-page-font-size: var(--system-text-size);
+  --clio-stage-page-font-weight: 700;
+  --clio-stage-page-letter-spacing: 0;
+  --clio-stage-view-button-min-height: var(--system-button-min-height);
+  --clio-stage-view-button-border-color: var(--btn-border-color);
+  --clio-stage-view-button-bg: var(--btn-bg);
+  --clio-stage-view-button-fg: var(--btn-fg);
+  --clio-stage-view-button-opacity: 1;
+  --clio-stage-view-default-border-color: var(--ink);
+  --clio-stage-view-default-bg: var(--paper);
+  --clio-stage-view-default-fg: var(--ink);
+  --clio-stage-view-disabled-border-color: var(--ink);
+  --clio-stage-view-disabled-bg: repeating-linear-gradient(45deg, #ffffff 0, #ffffff 4px, #eeeeee 4px, #eeeeee 8px);
+  --clio-stage-view-disabled-fg: var(--shade-dark);
+  --clio-stage-view-disabled-opacity: 1;
+  --clio-stage-details-bar-gap: 8px;
+  --clio-stage-viewport-min-height: 0;
+  --clio-stage-viewport-border: var(--system-border);
+  --clio-stage-viewport-radius: 0;
+  --clio-stage-viewport-bg: var(--paper);
+  --clio-stage-viewport-shadow: inset 1px 1px 0 var(--shade);
+  --clio-stage-viewport-padding: 24px;
+  --clio-stage-viewport-active-border-color: var(--ink);
+  --clio-stage-viewport-active-bg: repeating-linear-gradient(45deg, var(--paper) 0, var(--paper) 7px, var(--shade-light) 7px, var(--shade-light) 14px);
+  --clio-stage-slide-mode-min-height: 0;
+  --clio-stage-slide-mode-padding: 12px;
+  --clio-stage-slide-mode-bg: var(--desktop);
+  --clio-stage-slide-frame-border: var(--system-border);
+  --clio-stage-slide-frame-radius: 0;
+  --clio-stage-slide-frame-shadow: var(--system-shadow);
+  --clio-stage-cue-mode-min-height: 0;
+  --clio-stage-cue-mode-border-color: var(--ink);
+  --clio-stage-cue-mode-bg: var(--ink);
+  --clio-stage-cue-current-font-size: clamp(24px, 4vw, 44px);
+  --clio-stage-cue-current-h1-font-size: 2em;
+  --clio-stage-cue-current-h1-line-height: inherit;
+  --clio-stage-cue-current-h2-font-size: 1.5em;
+  --clio-stage-cue-next-border-top-color: var(--paper);
+  --clio-stage-cue-next-fg: var(--paper);
+  --attached-context-bg: var(--shade);
+  --attached-context-border: var(--system-border);
+  --demo-caption-bg: rgba(255, 255, 255, 0.96);
+  --demo-caption-border: var(--system-border);
+  --demo-caption-radius: 12px;
+  --demo-caption-shadow: 0 5px 18px rgba(0, 0, 0, 0.22);
+  --demo-caption-fg: var(--ink);
+  --demo-highlight-border: #ff2d2d;
+  --demo-highlight-ring: 0 0 0 3px #ffffff, 0 0 0 6px var(--ink);
+  --demo-highlight-label-bg: var(--paper);
+  --demo-highlight-label-border: var(--system-border);
+  --demo-highlight-label-fg: var(--ink);
+  --attached-context-label-color: var(--ink);
+  --attached-context-pill-radius: var(--control-radius);
+  --attached-context-shadow: none;
+  --print-directory-preview-border: var(--system-border);
+  --print-directory-preview-bg: var(--paper);
+  --print-directory-preview-radius: 0;
+  --print-directory-preview-shadow: none;
+  --print-directory-heading-border: var(--system-border);
+  --print-directory-table-border: 1px solid var(--ink);
+  --print-directory-table-heading-bg: var(--shade);
+  --file-preview-border: var(--system-border);
+  --file-preview-bg: var(--paper);
+  --file-preview-radius: 0;
+  --file-preview-shadow: none;
+  --project-cd-grid-bg: transparent;
+  --project-cd-grid-border: 0;
+  --project-cd-grid-radius: 0;
+  --project-cd-grid-shadow: none;
+  --note-pad-pane-bg: transparent;
+  --note-pad-pane-border: 0;
+  --note-pad-pane-radius: 0;
+  --note-pad-pane-shadow: none;
+  --note-pad-details-bg: transparent;
+  --note-pad-details-border: 0;
+  --note-pad-details-radius: 0;
+  --clipboard-pane-bg: transparent;
+  --clipboard-pane-border: 0;
+  --clipboard-pane-radius: 0;
+  --clipboard-pane-shadow: none;
+  --cmf-panel-border: var(--system-border);
+  --cmf-panel-bg: var(--paper);
+  --cmf-panel-radius: 0;
+  --cmf-panel-shadow: var(--inset-shadow);
+  --cmf-window-width: 1120px;
+  --cmf-window-height: 720px;
+  --cmf-inspector-width: 286px;
+  --cmf-toolbar-bg: var(--panel);
+  --cmf-toolbar-border: 1px solid var(--ink);
+  --cmf-toolbar-radius: 0;
+  --cmf-toolbar-shadow: none;
+  --cmf-preview-head-bg: var(--panel);
+  --cmf-muted: var(--shade-dark);
+  --cmf-hover-bg: var(--quiet-panel);
+  --cmf-selected-bg: var(--ink);
+  --cmf-selected-fg: var(--paper);
+  --cmf-live-bg: var(--paper);
+  --cmf-live-border: 1px solid var(--ink);
+  --cmf-stage-bg:
+    linear-gradient(45deg, rgba(0, 0, 0, 0.06) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(0, 0, 0, 0.06) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(0, 0, 0, 0.06) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(0, 0, 0, 0.06) 75%);
+  --cmf-strip-bg: var(--paper);
+  --cmf-strip-border: var(--system-border);
+  --cmf-thumb-border: var(--system-border);
+  --cmf-thumb-bg: var(--btn-bg);
+  --cmf-thumb-active-border: var(--ink);
+  --cmf-thumb-active-bg: rgba(255, 255, 255, 0.72);
+  /* Classic marks the active view with a heavy inset frame on a light chip, so
+     its label stays ink. The glass theme darkens the chip and flips this. */
+  --cmf-thumb-active-fg: var(--ink);
+  --cmf-thumb-active-shadow: inset 0 0 0 2px var(--ink);
+  --cmf-row-divider: 1px solid rgba(0, 0, 0, 0.12);
+  --cmf-pill-bg: rgba(255, 255, 255, 0.55);
+  --cmf-chip-bg: var(--paper);
+  --cmf-chip-selected-shadow: inset 0 0 0 2px var(--ink);
+  --cmf-chip-focus-outline: var(--system-border);
+  --bureaucracy-pane-bg: var(--paper);
+  --bureaucracy-surface-bg: var(--paper);
+  --bureaucracy-surface-border: 1px solid var(--ink);
+  --bureaucracy-surface-radius: 0;
+  --bureaucracy-surface-shadow: none;
+  --bureaucracy-ink: var(--ink);
+  --bureaucracy-muted: var(--shade-dark);
+  --bureaucracy-hover-bg: var(--quiet-panel);
+  --bureaucracy-selected-bg: var(--ink);
+  --bureaucracy-selected-fg: var(--paper);
+  --bureaucracy-selected-shadow: none;
+  --bureaucracy-copy-min-height: 328px;
+  --bureaucracy-control-bg: var(--paper);
+  --bureaucracy-control-fg: var(--ink);
+  --bureaucracy-control-border: 1px solid var(--ink);
+  --bureaucracy-thumbnail-border: 1px solid var(--ink);
+  --bureaucracy-thumbnail-filter: grayscale(1) contrast(1.2);
+  --bureaucracy-preview-bg: var(--shade);
+  --bureaucracy-error: var(--ink);
+  --endfield-pane-bg:
+    linear-gradient(rgba(0, 0, 0, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.045) 1px, transparent 1px),
+    url("assets/endfield-background.svg"),
+    var(--paper);
+  --endfield-pane-bg-size: 34px 34px, 34px 34px, max(1200px, 118vw) auto, auto;
+  --endfield-pane-bg-position: center, center, 45% 20%, center;
+  --endfield-pane-bg-repeat: repeat, repeat, no-repeat, no-repeat;
+  --endfield-sidebar-bg: var(--panel);
+  --endfield-surface-bg: var(--paper);
+  --endfield-surface-border: 1px solid var(--ink);
+  --endfield-surface-radius: 0;
+  --endfield-surface-shadow: none;
+  --endfield-muted: var(--shade-dark);
+  --endfield-hover-bg: var(--quiet-panel);
+  --endfield-selected-bg: var(--ink);
+  --endfield-selected-fg: var(--paper);
+  --endfield-evidence-divider: 1px solid var(--ink);
+  --endfield-index-bg: var(--paper);
+  --endfield-index-border: 1px solid var(--ink);
+  --endfield-index-radius: 0;
+  /* Surrounding lines of the same transcript. The quoted line is the evidence,
+     so it keeps full ink; only the speaker tag steps back. */
+  --endfield-context-rule: 1px solid var(--ink);
+  --endfield-context-bg: transparent;
+  --endfield-context-radius: 0;
+  --endfield-quote-rule: 3px solid var(--ink);
+  --endfield-quote-radius: 0;
+  /* One window, three regions: the paper takes the rest of the width. */
+  --draft-desk-window-left: 56px;
+  --draft-desk-window-top: 38px;
+  --draft-desk-window-width: min(1000px, calc(100vw - 88px));
+  --draft-desk-window-height: min(720px, calc(100vh - 72px));
+  --quick-draft-shelf-width: 168px;
+  --quick-draft-inspector-width: 210px;
+  /* The strip of paper a drawer never covers. */
+  --quick-draft-drawer-edge: 16px;
+  --quick-draft-panel-bg: var(--quiet-panel);
+  --quick-draft-panel-border: 1px dotted var(--shade-dark);
+  --quick-draft-panel-radius: 0;
+  --quick-draft-panel-shadow: none;
+  --quick-draft-sidebar-border: 1px solid var(--shade-dark);
+  --quick-draft-status-bg: var(--panel);
+  --quick-draft-status-border: 1px dotted var(--shade-dark);
+  --quick-draft-divider-border: 1px dotted var(--shade-dark);
+  --quick-draft-actions-bg: var(--panel);
+  --quick-draft-secondary-fg: var(--shade-dark);
+  --quick-draft-selected-fg: var(--paper);
+  --quick-draft-field-focus-bg: var(--paper);
+  --quick-draft-field-focus-shadow: var(--system-shadow);
+  /* Compression grain. A 1-bit screen would draw the model's share as a 50%
+     dither; the web cannot dither a glyph, so running text uses the grey plus
+     a dotted rule and only the legend swatch carries the real pattern. */
+  --quick-draft-grain-author-fg: var(--ink);
+  --quick-draft-grain-model-fg: var(--shade-dark);
+  --quick-draft-grain-model-decoration: underline dotted var(--shade-dark);
+  --quick-draft-grain-mask-fg: var(--ink);
+  --quick-draft-grain-border: var(--system-border);
+  --quick-draft-grain-generation-border: var(--system-control-line) solid var(--shade-dark);
+  --quick-draft-grain-swatch-author: var(--ink);
+  --quick-draft-grain-swatch-model:
+    linear-gradient(45deg, var(--ink) 25%, transparent 25%, transparent 75%, var(--ink) 75%) 0 0 / 2px 2px,
+    linear-gradient(45deg, var(--ink) 25%, transparent 25%, transparent 75%, var(--ink) 75%) 1px 1px / 2px 2px,
+    var(--paper);
+  /* 文字亮室 state language (Figure 04 in quick-draft-redesign): four
+     states, one language, two themes. Default is no border; a line only
+     appears where a state must be told apart. Classic draws with line
+     qualities — none, lifted paper, marching ants, travelling edge — because
+     it has no glow; Liquid draws with material (control points, travelling edge
+     light). Values are theme tokens; the selectors live once in 50-apps.css. */
+  --quick-draft-state-selected-outline: none;
+  --quick-draft-state-selected-surface:
+    linear-gradient(var(--ink), var(--ink)) 0 0 / 7px 7px no-repeat,
+    linear-gradient(var(--paper), var(--paper)) 1px 1px / 5px 5px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 100% 0 / 7px 7px no-repeat,
+    linear-gradient(var(--paper), var(--paper)) calc(100% - 1px) 1px / 5px 5px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 0 100% / 7px 7px no-repeat,
+    linear-gradient(var(--paper), var(--paper)) 1px calc(100% - 1px) / 5px 5px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 100% 100% / 7px 7px no-repeat,
+    linear-gradient(var(--paper), var(--paper)) calc(100% - 1px) calc(100% - 1px) / 5px 5px no-repeat,
+    repeating-linear-gradient(90deg, var(--ink) 0 5px, transparent 5px 10px) 0 0 / 20px 1px repeat-x,
+    repeating-linear-gradient(90deg, var(--ink) 0 5px, transparent 5px 10px) 0 100% / 20px 1px repeat-x,
+    repeating-linear-gradient(0deg, var(--ink) 0 5px, transparent 5px 10px) 0 0 / 1px 20px repeat-y,
+    repeating-linear-gradient(0deg, var(--ink) 0 5px, transparent 5px 10px) 100% 0 / 1px 20px repeat-y;
+  --quick-draft-state-control-points: none;
+  --quick-draft-state-selected-animation: quickDraftMarchingAnts 0.9s linear infinite;
+  --quick-draft-state-working-surface:
+    repeating-linear-gradient(90deg, var(--ink) 0 2px, transparent 2px 4px) -40% 100% / 36% 2px no-repeat;
+  --quick-draft-state-working-animation: quickDraftWorkingSweep 2.6s ease-in-out infinite;
+  --quick-draft-protected-fg: var(--ink);
+  /* 拼台 (task 8): the single-object canvas. The object level carries only
+     the visual transform; the text is the same Markdown as the article view.
+     The canvas is an empty-state surface (more material than article), never
+     a required stop on the fast path, and it does not exist on a phone. */
+  --quick-draft-canvas-dot: var(--ink);
+  --quick-draft-canvas-object-bg: var(--paper);
+  --quick-draft-canvas-object-border: var(--system-border);
+  --quick-draft-canvas-object-shadow: var(--system-shadow);
+  --quick-draft-canvas-handle-bg: var(--paper);
+  --quick-draft-canvas-handle-border: var(--system-border);
+  --quick-draft-canvas-rotate-fg: var(--ink);
+  --quick-draft-view-switch-border: var(--system-border);
+}
+
+html:lang(zh-Hans) {
+  --ui-font: "Songti SC", "SimSun", "STSong", "serif";
+  --title-font: "Songti SC", "SimSun", "STSong", "serif";
+  --text-font: "Songti SC", "SimSun", "STSong", "serif";
+}
+
+body.use-modern-fonts {
+  --ui-font: var(--modern-sans-font);
+  --title-font: var(--modern-sans-font);
+  --text-font: var(--modern-sans-font);
+  --mono-font: var(--modern-mono-font);
+  /* Semantic aliases declared on :root otherwise resolve against :root's
+     Classic font values before they inherit. Rebind them on the mode owner. */
+  --clio-copy-font: var(--text-font);
+  --clio-title-font: var(--title-font);
+  --clio-control-font: var(--ui-font);
+  --drop-target-font-family: var(--ui-font);
+  --clio-title-size: clamp(23px, 3.4vw, 28px);
+  --clio-title-weight: 600;
+  --clio-title-leading: 1.22;
+  --clio-title-tracking: 0;
+  /* Modern type needs more ink than the native one-unit bitmaps, but a full
+     two-unit outline overpowers 42px route icons. Outline paths use 1.5 units;
+     one-unit filled pixel runs expand by 0.5 so both families finish at the
+     same optical width on the shared 32×32 grid. */
+  --system-icon-stroke-width: 1.5;
+  --system-icon-pixel-run-expansion: 0.5;
+  /* Control and frame lines carry the same compensation: a one-pixel rule
+     beside 1.5-unit icon outlines reads as the lighter of the two families. */
+  --system-control-line: 1.5px;
+  /* Menu icons render at 17px rather than the desktop's 42px. Their grid
+     stroke therefore needs its own optical compensation to remain legible. */
+  --menu-system-icon-stroke-width: 2.25;
+  --menu-system-icon-pixel-run-expansion: 1.25;
+}
+
+body.use-modern-fonts .teachtext-preview,
+body.use-modern-fonts .print-directory-preview,
+body.use-modern-fonts .reader-content {
+  font-family: var(--text-font);
+}
+
+@font-face {
+  font-family: Chicago;
+  src: url("./system.css-reference/fonts/ChicagoFLF.woff2") format("woff2"),
+       url("./system.css-reference/fonts/ChicagoFLF.woff") format("woff");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: Chicago_12;
+  src: url("./system.css-reference/fonts/ChiKareGo2.woff2") format("woff2"),
+       url("./system.css-reference/fonts/ChiKareGo2.woff") format("woff");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: Monaco;
+  src: url("./system.css-reference/fonts/monaco.woff2") format("woff2"),
+       url("./system.css-reference/fonts/monaco.woff") format("woff");
+  font-display: swap;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--desktop);
+  color: var(--ink);
+  font-family: var(--ui-font);
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-rendering: optimizeLegibility;
+}
+
+.teachtext-preview,
+.print-directory-preview,
+.reader-content {
+  font-size: 16px;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+/* Desk furniture is not text. A drag that starts on a control (the marquee
+   bows out of those, see finderMarqueeContext) or any touch long-press used to
+   paint a text selection across the menu bar, the Writing Flow strip, control
+   labels, item names and the status strip, and that furniture text then went to
+   the clipboard. A Mac never let you select the words on a button; what a
+   writer can carry away is documents, sources, model output and readouts such
+   as the build stamp — those all stay selectable. */
+button,
+[role="button"],
+label,
+.menu-bar,
+.writing-spine-panel,
+.desktop-icon,
+.details-bar,
+.finder-list-header {
+  user-select: none;
+}
+
+/* A field is where text lives, even when a non-selectable label wraps it. */
+input,
+textarea,
+[contenteditable="true"] {
+  user-select: text;
+}
+
+.menu-bar {
+  height: 25px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 8px;
+  background: var(--menu-bar-bg);
+  border-bottom: var(--menu-bar-border);
+  z-index: var(--z-system-menu);
+  overflow: visible;
+}
+
+body.is-booting .menu-bar,
+body.is-shutting-down .menu-bar {
+  display: none;
+}
+
+body.has-system-modal .menu-bar {
+  pointer-events: none;
+}
+
+.menu {
+  height: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.menu-bar > .menu > button {
+  height: 21px;
+  border: 0;
+  background: var(--menu-button-bg);
+  padding: 0 9px;
+  color: var(--menu-button-fg);
+  box-shadow: var(--menu-button-shadow);
+  white-space: nowrap;
+}
+
+.menu-bar > .menu > button:hover,
+.menu:focus-within > button,
+.menu.is-open > button {
+  --menu-button-bg: var(--menu-button-active-bg);
+  --menu-button-fg: var(--menu-button-active-fg);
+  --menu-button-shadow: var(--menu-button-active-shadow);
+}
+
+.menu-popover {
+  display: none;
+  position: absolute;
+  top: 23px;
+  left: 0;
+  min-width: 180px;
+  padding: 2px 0;
+  background: var(--menu-panel-bg);
+  border: var(--menu-panel-border);
+  border-radius: var(--menu-panel-radius);
+  box-shadow: var(--menu-panel-shadow);
+  backdrop-filter: var(--menu-panel-backdrop-filter);
+  -webkit-backdrop-filter: var(--menu-panel-backdrop-filter);
+  z-index: var(--z-system-menu-popover);
+  scrollbar-gutter: stable;
+}
+
+.menu.is-open .menu-popover {
+  display: block;
+}
+
+.menu-popover button,
+.menu-submenu-trigger {
+  width: 100%;
+  border: 0;
+  background: var(--menu-item-bg);
+  padding: 2px 12px 2px 28px;
+  color: var(--menu-item-fg);
+  box-shadow: var(--menu-item-shadow);
+  text-align: left;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  justify-content: stretch;
+  gap: 8px;
+  align-items: center;
+  white-space: nowrap;
+  line-height: 1.4;
+  position: relative;
+}
+
+.menu-section-label {
+  padding: 3px 12px 1px 16px;
+  color: var(--shade-dark);
+  font-size: var(--system-caption-size);
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.menu-popover button.is-checked::before {
+  content: "✓";
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 12px;
+  text-align: center;
+}
+
+.menu-popover hr {
+  margin: 4px 0;
+  border: 0;
+  border-bottom: 1px solid var(--menu-divider-color);
+}
+
+.menu-popover button:hover:not(:disabled):not(.is-disabled) {
+  --menu-item-bg: var(--menu-item-active-bg);
+  --menu-item-fg: var(--menu-item-active-fg);
+  --menu-item-shadow: var(--menu-item-active-shadow);
+}
+
+.menu-submenu {
+  position: relative;
+}
+
+.menu-submenu-trigger::after {
+  content: "▶";
+  margin-left: auto;
+  font-size: 9px;
+}
+
+.menu-submenu-popover {
+  display: none;
+  position: absolute;
+  top: -4px;
+  left: calc(100% - 2px);
+  min-width: 190px;
+  padding: 2px 0;
+  background: var(--menu-panel-bg);
+  border: var(--menu-panel-border);
+  border-radius: var(--menu-panel-radius);
+  box-shadow: var(--menu-panel-shadow);
+  backdrop-filter: var(--menu-panel-backdrop-filter);
+  -webkit-backdrop-filter: var(--menu-panel-backdrop-filter);
+}
+
+.menu-submenu:not(.is-disabled):hover > .menu-submenu-popover,
+.menu-submenu:not(.is-disabled):focus-within > .menu-submenu-popover {
+  display: block;
+}
+
+.menu-submenu:not(.is-disabled):hover > .menu-submenu-trigger,
+.menu-submenu:not(.is-disabled):focus-within > .menu-submenu-trigger {
+  --menu-item-bg: var(--menu-item-active-bg);
+  --menu-item-fg: var(--menu-item-active-fg);
+  --menu-item-shadow: var(--menu-item-active-shadow);
+}
+
+.apple-menu-popover {
+  min-width: 190px;
+  max-height: calc(100vh - var(--system-menu-height) - 8px);
+  overflow: auto;
+}
+
+.menu-item-with-sub {
+  position: relative;
+}
+
+.menu-item-with-sub > button::after {
+  content: "▶";
+  float: right;
+  font-size: 9px;
+  margin-top: 2px;
+}
+
+.menu-sub-popover {
+  display: none;
+  position: absolute;
+  left: 100%;
+  top: -2px;
+  background: var(--paper);
+  border: var(--system-border);
+  box-shadow: var(--menu-panel-shadow);
+  min-width: 120px;
+  scrollbar-gutter: stable;
+}
+
+.menu-sub-popover {
+  z-index: var(--z-system-menu-subpopover);
+}
+
+.balloon-help {
+  z-index: var(--z-balloon-help);
+}
+
+.menu-popover::-webkit-scrollbar,
+.menu-sub-popover::-webkit-scrollbar {
+  width: 16px;
+  height: 16px;
+  background: var(--paper);
+}
+
+.menu-popover::-webkit-scrollbar-track,
+.menu-sub-popover::-webkit-scrollbar-track {
+  background: var(--paper);
+  border-left: var(--system-border);
+}
+
+.menu-popover::-webkit-scrollbar-thumb,
+.menu-sub-popover::-webkit-scrollbar-thumb {
+  border: var(--system-border);
+  border-radius: 0;
+  background: var(--paper);
+  box-shadow: inset 1px 1px 0 var(--shade);
+}
+
+.menu-popover::-webkit-scrollbar-corner,
+.menu-sub-popover::-webkit-scrollbar-corner {
+  background: var(--scrollbar-corner-bg);
+}
+
+.menu-item-with-sub:hover .menu-sub-popover,
+.menu-item-with-sub.is-open .menu-sub-popover {
+  display: block;
+}
+
+.menu-sub-popover button {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 4px 12px;
+  text-align: left;
+  display: flex;
+  justify-content: space-between;
+  gap: 28px;
+  align-items: center;
+  white-space: nowrap;
+  font-family: var(--ui-font);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.menu-sub-popover button:hover:not(:disabled):not(.is-disabled) {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.menu-popover button.is-disabled {
+  color: var(--shade-dark);
+  pointer-events: none;
+}
+
+.menu-popover button.is-disabled:hover {
+  background: transparent;
+  color: var(--shade-dark);
+}
+
+.shortcut {
+  justify-self: end;
+  margin-left: 24px;
+  color: var(--menu-shortcut-color);
+  opacity: var(--menu-shortcut-opacity);
+}
+
+.menu-bar > .menu > .apple {
+  width: var(--apple-menu-slot-width, 34px);
+  padding: 0;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.apple::before,
+.apple::after {
+  content: "";
+  position: absolute;
+  display: block;
+  opacity: var(--apple-menu-pixel-opacity, 1);
+}
+
+.apple-menu-era-glyph {
+  display: var(--apple-menu-era-glyph-display, none);
+  color: var(--apple-menu-era-glyph-color, currentColor);
+  font-family: var(--theme-ui-font, sans-serif);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.menu:focus-within > .apple .apple-menu-era-glyph,
+.menu.is-open > .apple .apple-menu-era-glyph {
+  color: var(--apple-menu-era-glyph-active-color, currentColor);
+}
+
+.menu-bar-current-app {
+  display: var(--menu-current-app-display, none);
+}
+
+.menu-bar-current-app > button strong {
+  font-weight: 700;
+}
+
+.apple::before {
+  width: 2px;
+  height: 2px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-8px, -8px);
+  background: currentColor;
+  clip-path: none;
+  box-shadow:
+    2px 0 0 currentColor,
+    4px 0 0 currentColor,
+    6px 0 0 currentColor,
+    8px 0 0 currentColor,
+    10px 0 0 currentColor,
+    12px 0 0 currentColor,
+    14px 0 0 currentColor,
+    0 2px 0 currentColor,
+    14px 2px 0 currentColor,
+    0 4px 0 currentColor,
+    14px 4px 0 currentColor,
+    0 6px 0 currentColor,
+    6px 6px 0 currentColor,
+    8px 6px 0 currentColor,
+    14px 6px 0 currentColor,
+    0 8px 0 currentColor,
+    14px 8px 0 currentColor,
+    0 10px 0 currentColor,
+    2px 10px 0 currentColor,
+    4px 10px 0 currentColor,
+    6px 10px 0 currentColor,
+    8px 10px 0 currentColor,
+    10px 10px 0 currentColor,
+    12px 10px 0 currentColor,
+    14px 10px 0 currentColor,
+    6px 12px 0 currentColor,
+    8px 12px 0 currentColor,
+    4px 14px 0 currentColor,
+    6px 14px 0 currentColor,
+    8px 14px 0 currentColor,
+    10px 14px 0 currentColor;
+}
+
+.apple::after {
+  width: 2px;
+  height: 2px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-5px, -4px);
+  background: currentColor;
+  box-shadow:
+    8px 0 0 currentColor,
+    2px 4px 0 currentColor,
+    4px 6px 0 currentColor,
+    6px 6px 0 currentColor,
+    8px 4px 0 currentColor;
+}
+
+.menu-spacer {
+  flex: 1;
+}
+
+.multifinder-menu .menu-popover {
+  left: auto;
+  right: 0;
+  min-width: 220px;
+  max-width: min(320px, calc(100vw - 18px));
+  max-height: min(420px, calc(100vh - 38px));
+  overflow: auto;
+}
+
+.multifinder-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  padding: 0;
+}
+
+.multifinder-icon {
+  width: 14px;
+  height: 12px;
+  flex: 0 0 auto;
+  border: var(--system-border);
+  background:
+    linear-gradient(var(--ink), var(--ink)) 2px 2px / 8px 2px no-repeat,
+    var(--paper);
+}
+
+#multifinder-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.multifinder-button:hover .multifinder-icon,
+.multifinder-menu:focus-within > .multifinder-button .multifinder-icon,
+.multifinder-menu.is-open > .multifinder-button .multifinder-icon {
+  border-color: var(--paper);
+  background:
+    linear-gradient(var(--paper), var(--paper)) 2px 2px / 8px 2px no-repeat,
+    var(--ink);
+}
+
+.project-switcher-menu .menu-popover {
+  left: auto;
+  right: 0;
+  min-width: 250px;
+  max-width: min(360px, calc(100vw - 18px));
+  max-height: min(420px, calc(100vh - 38px));
+  overflow: auto;
+}
+
+.project-switcher-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: min(270px, 34vw);
+}
+
+.project-switcher-icon {
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
+}
+
+#project-switcher-label {
+  min-width: 0;
+  max-width: 210px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notification-center-button {
+  min-width: 42px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 0;
+  border-left: 1px solid var(--ink);
+  border-right: 1px solid var(--ink);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+}
+
+.notification-center-button:hover,
+.notification-center-button:focus-visible,
+.notification-center-button.has-unread {
+  background: var(--ink);
+  color: var(--paper);
+  outline: 0;
+}
+
+.notification-center-icon {
+  width: 13px;
+  height: 13px;
+  border: 1px solid currentColor;
+  display: inline-grid;
+  place-items: center;
+  font-size: 10px;
+  font-weight: var(--system-strong-weight);
+  line-height: 1;
+}
+
+#notification-center-count {
+  min-width: 12px;
+  text-align: right;
+}
+
+.project-switcher-popover button {
+  height: auto;
+  min-height: 22px;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  white-space: normal;
+}
+
+.project-switcher-popover button.project-switcher-item {
+  min-height: 38px;
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: start;
+  padding: 4px 12px 5px 8px;
+  line-height: 1.15;
+}
+
+.project-switcher-popover button.is-current {
+  font-weight: var(--system-strong-weight);
+}
+
+.project-switcher-mark {
+  width: 18px;
+  text-align: center;
+  line-height: 16px;
+}
+
+.project-switcher-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  line-height: 1.15;
+}
+
+.project-switcher-copy b {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 16px;
+}
+
+.project-switcher-copy small {
+  display: block;
+  color: #555;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 13px;
+}
+
+.project-switcher-popover button:hover .project-switcher-copy small {
+  color: var(--paper);
+}
+
+.project-switcher-empty {
+  color: var(--shade-dark);
+}
+
+.multifinder-heading,
+.project-switcher-heading {
+  padding: 3px 12px 2px 16px;
+  font-weight: var(--system-strong-weight);
+  white-space: nowrap;
+}
+
+.multifinder-app {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  align-items: center;
+  justify-items: stretch;
+  text-align: left;
+  direction: ltr;
+  padding-left: 10px;
+}
+
+.multifinder-app .multifinder-mark {
+  grid-column: 1;
+  justify-self: center;
+}
+
+.multifinder-app > span:not(.multifinder-mark) {
+  grid-column: 2;
+  justify-self: start;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.multifinder-app small {
+  grid-column: 3;
+  justify-self: end;
+  font-size: 12px;
+  color: #555;
+}
+
+.multifinder-app:hover small {
+  color: var(--paper);
+}
+
+.multifinder-app.is-app-hidden {
+  color: var(--shade-dark);
+}
+
+.multifinder-app.is-app-hidden small {
+  color: var(--shade-dark);
+}
+
+.multifinder-app.is-app-hidden:hover,
+.multifinder-app.is-app-hidden:hover small {
+  color: var(--paper);
+}
+
+.multifinder-mark {
+  text-align: center;
+}
+
+.multifinder-menu:focus-within > .multifinder-button,
+.multifinder-menu.is-open > .multifinder-button {
+  --menu-chip-bg: var(--menu-chip-active-bg);
+  --menu-chip-fg: var(--menu-chip-active-fg);
+  --menu-chip-shadow: var(--menu-chip-active-shadow);
+  background: var(--menu-chip-bg);
+  color: var(--menu-chip-fg);
+  box-shadow: var(--menu-chip-shadow);
+}
+
+.multifinder-empty {
+  color: var(--shade-dark);
+}
+
+.window.is-app-hidden {
+  display: none;
+}
+
+.shutdown-screen {
+  --boot-mac-scale: 1.72;
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-shutdown-screen);
+  display: grid;
+  place-content: center;
+  gap: 32px;
+  justify-items: center;
+  padding: 40px 24px;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.shutdown-screen.is-hidden {
+  display: none;
+}
+
+.shutdown-screen p {
+  margin: 0;
+  padding: 0;
+}
+
+.desktop {
+  flex: 1;
+  padding: 16px;
+  position: relative;
+  background: var(--desktop-surface);
+  overflow: hidden;
+  scrollbar-width: none;
+}
+
+.boot-screen {
+  --boot-mac-scale: 1.72;
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-boot-screen);
+  display: grid;
+  place-content: center;
+  gap: 24px;
+  justify-items: center;
+  padding: 32px;
+  background:
+    radial-gradient(rgba(0, 0, 0, 0.24) 1.5px, transparent 1.5px) 0 0 / 20px 20px,
+    var(--desktop);
+  transition: opacity 0.22s ease-out;
+}
+
+.boot-screen.is-done {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.boot-screen[hidden] {
+  display: none;
+}
+
+.happy-mac {
+  width: 112px;
+  height: 108px;
+  border: var(--happy-mac-border-width) solid var(--happy-mac-border-color);
+  border-radius: 2px;
+  background:
+    linear-gradient(var(--ink), var(--ink)) 16px 84px / 11px 4px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 57px 84px / 40px 4px no-repeat,
+    var(--paper);
+  position: relative;
+  margin: 14px 0 58px;
+  box-shadow: var(--happy-mac-shadow);
+  backdrop-filter: var(--happy-mac-backdrop);
+  -webkit-backdrop-filter: var(--happy-mac-backdrop);
+  transform: scale(var(--boot-mac-scale));
+  transform-origin: center center;
+}
+
+.happy-mac::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: -22px;
+  height: 14px;
+  border: var(--happy-mac-border-width) solid var(--happy-mac-border-color);
+  background: var(--paper);
+}
+
+.happy-mac-face {
+  position: absolute;
+  left: 12px;
+  top: 18px;
+  width: 84px;
+  height: 56px;
+  border: var(--happy-mac-face-border-width) solid var(--happy-mac-border-color);
+  border-radius: 2px;
+  background: var(--paper);
+  box-shadow: var(--happy-mac-face-shadow);
+  overflow: hidden;
+}
+
+.happy-mac-face::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 5px;
+  height: 5px;
+  background: transparent;
+  box-shadow:
+    20px 18px 0 var(--ink),
+    20px 23px 0 var(--ink),
+    62px 18px 0 var(--ink),
+    62px 23px 0 var(--ink),
+    43px 10px 0 var(--ink),
+    43px 15px 0 var(--ink),
+    43px 20px 0 var(--ink),
+    43px 25px 0 var(--ink),
+    43px 30px 0 var(--ink),
+    38px 30px 0 var(--ink),
+    38px 35px 0 var(--ink),
+    26px 40px 0 var(--ink),
+    31px 45px 0 var(--ink),
+    36px 45px 0 var(--ink),
+    41px 45px 0 var(--ink),
+    46px 45px 0 var(--ink),
+    51px 45px 0 var(--ink),
+    56px 45px 0 var(--ink),
+    61px 40px 0 var(--ink);
+}
+
+.happy-mac.is-sleeping .happy-mac-face::before {
+  box-shadow:
+    18px 15px 0 var(--ink),
+    28px 15px 0 var(--ink),
+    23px 20px 0 var(--ink),
+    18px 25px 0 var(--ink),
+    28px 25px 0 var(--ink),
+    56px 15px 0 var(--ink),
+    66px 15px 0 var(--ink),
+    61px 20px 0 var(--ink),
+    56px 25px 0 var(--ink),
+    66px 25px 0 var(--ink),
+    43px 10px 0 var(--ink),
+    43px 15px 0 var(--ink),
+    43px 20px 0 var(--ink),
+    43px 25px 0 var(--ink),
+    43px 30px 0 var(--ink),
+    38px 30px 0 var(--ink),
+    38px 35px 0 var(--ink),
+    31px 43px 0 var(--ink),
+    36px 43px 0 var(--ink),
+    41px 43px 0 var(--ink),
+    46px 43px 0 var(--ink),
+    51px 43px 0 var(--ink),
+    56px 43px 0 var(--ink);
+}
+
+.happy-mac.is-sad .happy-mac-face::before {
+  box-shadow:
+    18px 15px 0 var(--ink),
+    28px 15px 0 var(--ink),
+    23px 20px 0 var(--ink),
+    18px 25px 0 var(--ink),
+    28px 25px 0 var(--ink),
+    56px 15px 0 var(--ink),
+    66px 15px 0 var(--ink),
+    61px 20px 0 var(--ink),
+    56px 25px 0 var(--ink),
+    66px 25px 0 var(--ink),
+    43px 10px 0 var(--ink),
+    43px 15px 0 var(--ink),
+    43px 20px 0 var(--ink),
+    43px 25px 0 var(--ink),
+    38px 25px 0 var(--ink),
+    38px 30px 0 var(--ink),
+    27px 47px 0 var(--ink),
+    32px 42px 0 var(--ink),
+    37px 39px 0 var(--ink),
+    47px 39px 0 var(--ink),
+    52px 42px 0 var(--ink),
+    57px 47px 0 var(--ink);
+}
+
+.boot-screen p {
+  margin: 0;
+  min-width: min(640px, calc(100vw - 44px));
+  text-align: center;
+  font-family: var(--ui-font);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.boot-progress {
+  width: min(600px, calc(100vw - 48px));
+  height: 24px;
+  border: 3px solid var(--ink);
+  background: var(--paper);
+  padding: 4px;
+}
+
+.boot-progress span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: var(--ink);
+  transition: width 0.18s steps(4, end);
+}
+
+.boot-ledger {
+  display: grid;
+  gap: 12px;
+  width: min(720px, calc(100vw - 64px));
+  padding: 20px 26px;
+  border: var(--system-border);
+  background: var(--paper);
+  box-shadow: inset 1px 1px 0 var(--shade);
+  font-family: var(--ui-font);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.boot-ledger span {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.boot-ledger span::before {
+  content: "□";
+  margin-right: 2px;
+}
+
+.boot-ledger span.is-ready::before {
+  content: "◆";
+}
+
+.boot-ledger span.is-standby::before {
+  content: "◇";
+}
+
+.shutdown-ledger {
+  display: grid;
+  gap: 16px;
+  justify-items: center;
+  width: min(720px, calc(100vw - 64px));
+  padding: 20px 26px;
+  border: var(--system-border);
+  background: var(--paper);
+  box-shadow: inset 1px 1px 0 var(--shade);
+  font-family: var(--ui-font);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+@media (max-width: 520px), (max-height: 760px) {
+  .boot-screen,
+  .shutdown-screen {
+  padding: 40px 24px;
+    --boot-mac-scale: 1.24;
+    gap: 16px;
+    padding: 14px;
+  }
+
+  .happy-mac {
+    margin: 16px 0 36px;
+  }
+
+  .boot-screen p {
+    min-width: min(320px, calc(100vw - 28px));
+    font-size: 15px;
+  }
+
+  .boot-progress {
+    width: min(320px, calc(100vw - 32px));
+    height: 18px;
+  }
+
+  .boot-ledger,
+  .shutdown-ledger {
+    width: min(360px, calc(100vw - 24px));
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+}
+
+@media (max-width: 520px) {
+  .project-switcher-button {
+    min-width: 30px;
+    max-width: 38px;
+    padding: 0 4px;
+    justify-content: center;
+  }
+
+  .project-switcher-icon {
+    width: 17px;
+    height: 17px;
+  }
+
+  #project-switcher-label {
+    display: none;
+  }
+}
+
+@media (max-width: 360px), (max-height: 620px) {
+  .boot-screen,
+  .shutdown-screen {
+  padding: 40px 24px;
+    --boot-mac-scale: 1.08;
+    gap: 12px;
+    padding: 10px;
+  }
+
+  .happy-mac {
+    margin: 10px 0 28px;
+  }
+
+  .boot-screen p {
+    min-width: min(280px, calc(100vw - 20px));
+    font-size: 14px;
+  }
+
+  .boot-progress {
+    width: min(280px, calc(100vw - 24px));
+    height: 16px;
+  }
+
+  .boot-ledger,
+  .shutdown-ledger {
+    width: min(300px, calc(100vw - 20px));
+    gap: 5px;
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+}
+
+.modal-scrim {
+  position: fixed;
+  inset: 0;
+  background: transparent;
+  z-index: var(--z-system-modal-scrim);
+}
+
+.modal-scrim.is-hidden {
+  display: none;
+}
+
+.system-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--paper);
+  border: var(--system-border);
+  box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--ink);
+  padding: 18px 18px 16px;
+  width: 320px;
+  max-width: 90vw;
+  font-family: var(--ui-font);
+  font-size: 13px;
+  margin: 0;
+}
+
+.system-modal::backdrop {
+  background: transparent;
+}
+
+.system-modal p {
+  min-height: 34px;
+  margin: 0 0 16px 0;
+  padding-left: 46px;
+  position: relative;
+  line-height: 1.4;
+  white-space: pre-line;
+}
+
+.system-modal p::before {
+  content: "!";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 31px;
+  height: 31px;
+  border: var(--system-border);
+  background: var(--paper);
+  display: grid;
+  place-items: center;
+  font-family: var(--mono-font);
+  font-weight: 700;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.startup-settings-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(540px, calc(100vw - 32px));
+  background: var(--paper);
+  border: var(--system-border);
+  box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--ink);
+  padding: var(--startup-settings-modal-padding);
+  font-family: var(--ui-font);
+  font-size: 13px;
+  margin: 0;
+}
+
+.startup-settings-modal::backdrop {
+  background: transparent;
+}
+
+.startup-settings-modal form {
+  display: grid;
+  gap: var(--startup-settings-form-gap);
+}
+
+.startup-settings-header {
+  display: flex;
+  align-items: center;
+  gap: var(--startup-settings-header-gap);
+}
+
+.startup-settings-disk-icon {
+  width: var(--startup-settings-disk-icon-width);
+  height: var(--startup-settings-disk-icon-height);
+  flex: 0 0 auto;
+  border: var(--startup-settings-disk-icon-border);
+  border-radius: var(--startup-settings-disk-icon-radius);
+  background: var(--startup-settings-disk-icon-bg);
+  box-shadow: var(--startup-settings-disk-icon-shadow);
+}
+
+.startup-settings-choice-row {
+  display: grid;
+  gap: 10px;
+}
+
+.startup-settings-choice-row {
+  grid-template-columns: repeat(2, max-content);
+  justify-content: center;
+  column-gap: 40px;
+}
+
+.startup-settings-choice-row label,
+.startup-open-option {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--startup-settings-option-gap);
+  border-radius: var(--startup-settings-option-radius);
+  min-height: 24px;
+}
+
+.startup-environment-help {
+  justify-self: center;
+  max-width: 420px;
+  min-height: 2.7em;
+  margin: 0;
+  color: var(--shade-dark);
+  line-height: 1.35;
+  text-align: center;
+}
+
+.startup-settings-subhead {
+  margin: 0;
+  color: var(--startup-settings-subhead-color);
+  font-weight: 700;
+}
+
+.startup-open-options {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+
+.startup-open-option {
+  margin-left: 10px;
+}
+
+.startup-open-option:has(input:disabled) {
+  color: var(--shade-dark);
+}
+
+.startup-settings-modal input[type="radio"] {
+  width: var(--system-radio-size);
+  height: var(--system-radio-size);
+}
+
+.startup-settings-modal input[type="radio"]:focus {
+  outline: var(--startup-settings-radio-focus-outline);
+  outline-offset: var(--startup-settings-radio-focus-outline-offset);
+}
+
+.startup-settings-modal input[type="radio"]:focus-visible {
+  outline: var(--startup-settings-radio-focus-visible-outline);
+  outline-offset: var(--startup-settings-radio-focus-visible-outline-offset);
+  box-shadow: var(--startup-settings-radio-focus-visible-shadow);
+}
+
+.startup-settings-modal hr {
+  width: 100%;
+  margin: 0;
+  border: var(--startup-settings-hr-border);
+  border-top: var(--startup-settings-hr-border-top);
+  box-shadow: var(--startup-settings-hr-shadow);
+}
+
+.startup-settings-actions {
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.balloon-help {
+  position: fixed;
+  inset: auto;
+  left: var(--balloon-help-left, 10px);
+  top: var(--balloon-help-top, 10px);
+  margin: 0;
+  width: max-content;
+  max-width: min(300px, calc(100vw - 20px));
+  padding: var(--balloon-help-padding);
+  border: var(--balloon-help-border);
+  border-radius: var(--balloon-help-radius);
+  background: var(--balloon-help-bg);
+  box-shadow: var(--balloon-help-shadow);
+  backdrop-filter: var(--balloon-help-backdrop);
+  color: var(--ink);
+  font-family: var(--ui-font);
+  font-size: 12px;
+  line-height: 1.35;
+  pointer-events: none;
+}
+
+.balloon-help::before {
+  content: "";
+  position: absolute;
+  left: calc(var(--balloon-help-tail-left, 24px) - 7px);
+  width: 12px;
+  height: 12px;
+  background: var(--balloon-help-bg);
+  transform: rotate(45deg);
+}
+
+.balloon-help[data-side="below"]::before {
+  top: -8px;
+  border-left: var(--balloon-help-border);
+  border-top: var(--balloon-help-border);
+}
+
+.balloon-help[data-side="above"]::before {
+  bottom: -8px;
+  border-bottom: var(--balloon-help-border);
+  border-right: var(--balloon-help-border);
+}
+
+.balloon-help[data-side="left"]::before,
+.balloon-help[data-side="right"]::before {
+  top: calc(var(--balloon-help-tail-top, 24px) - 7px);
+  left: auto;
+}
+
+.balloon-help[data-side="left"]::before {
+  right: -8px;
+  border-right: var(--balloon-help-border);
+  border-top: var(--balloon-help-border);
+}
+
+.balloon-help[data-side="right"]::before {
+  left: -8px;
+  border-left: var(--balloon-help-border);
+  border-bottom: var(--balloon-help-border);
+}
+
+body.is-balloon-help [data-balloon-help] {
+  cursor: help;
+}
+
+.finder-operation-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(600px, calc(100vw - 32px));
+  max-height: min(620px, calc(100vh - 36px));
+  padding: 0;
+  margin: 0;
+  border: 3px solid var(--ink);
+  box-shadow: 0 0 0 3px var(--paper), 0 0 0 5px var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--ui-font);
+  overflow: auto;
+}
+
+.system-modal,
+.startup-settings-modal,
+.finder-operation-modal {
+  z-index: var(--z-system-modal);
+}
+
+.finder-operation-modal::backdrop {
+  background: transparent;
+}
+
+.finder-operation-modal form {
+  padding: 14px;
+}
+
+.finder-operation-layout {
+  display: grid;
+  grid-template-columns: 136px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.finder-operation-subject {
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+  text-align: center;
+  word-break: break-word;
+}
+
+.finder-operation-subject .icon {
+  transform: scale(1.08);
+  transform-origin: center;
+}
+
+.finder-operation-subject b {
+  font-size: 15px;
+  line-height: 1.15;
+}
+
+.finder-operation-subject small {
+  color: var(--finder-op-caption-color);
+  line-height: 1.2;
+}
+
+.finder-operation-body h2 {
+  margin: 0 0 6px;
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.finder-operation-lede {
+  margin: 0 0 10px;
+  color: var(--finder-op-caption-color);
+  line-height: 1.35;
+}
+
+.finder-operation-list {
+  border: var(--system-border);
+  box-shadow: var(--system-inset);
+  background: var(--paper);
+  max-height: 220px;
+  overflow: auto;
+}
+
+.finder-operation-item {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-height: var(--finder-op-item-min-height);
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--ink);
+}
+
+.finder-operation-item:last-child {
+  border-bottom: var(--finder-op-last-border);
+}
+
+.finder-operation-item.is-empty {
+  color: var(--shade-dark);
+}
+
+.finder-operation-item-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.finder-operation-item-copy b,
+.finder-operation-item-copy small {
+  overflow-wrap: anywhere;
+}
+
+.finder-operation-item-copy small {
+  color: var(--finder-op-caption-color);
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.finder-operation-modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.finder-operation-modes .btn {
+  min-height: 28px;
+}
+
+.finder-operation-mode-help {
+  margin: 5px 0 0;
+  color: var(--finder-op-caption-color);
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.finder-operation-result {
+  margin: 10px 0 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 5px 10px;
+  line-height: 1.35;
+  font-size: 12px;
+}
+
+.finder-operation-result dt {
+  font-weight: 700;
+}
+
+.finder-operation-result dd {
+  margin: 0;
+}
+
+.button-row.finder-operation-actions {
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+
+/* Use Result: the dialog chrome (subject, outcome, buttons) stays put and only
+   the choice region scrolls. The shared finder-operation grammar lets the whole
+   dialog scroll, which pushed Cancel/Write off-screen as soon as a reply, an
+   outline, or a Chinese destination list ran long. */
+.clio-use-result-modal[open] {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  width: min(680px, calc(100vw - 32px));
+}
+
+/* container-type is load-bearing: the panes below split or stack on the dialog's
+   own width, so a phone and a narrow desktop dialog behave the same way. */
+.clio-use-result-modal form {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  container-type: inline-size;
+}
+
+/* Every band keeps its natural height; only the panes give way. */
+.clio-use-result-modal form > * {
+  flex: 0 0 auto;
+}
+
+.clio-use-result-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.clio-use-result-header h2 {
+  margin: 0 0 2px;
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.clio-use-result-header .finder-operation-lede {
+  margin: 0;
+}
+
+/* One-line quote of the reply being filed: it names the subject of the
+   operation without the tall centred column the Finder subject aside used. */
+.clio-use-result-quote {
+  margin: 10px 0 0;
+  padding-left: 8px;
+  border-left: 3px solid var(--finder-op-caption-color);
+  color: var(--finder-op-caption-color);
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Chooser figure: the destinations stand in the left list, and the pane beside
+   them tells the whole consequence of the selected one. Two short columns cost
+   far less height than the same four bands stacked, and the dialog stops
+   reading as a settings sheet. */
+/* Stacked (phone, narrow dialog): the panes region is the scroller, because the
+   list and the detail together are taller than any phone. */
+.clio-use-result-panes {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* Side by side: the detail pane is short, so the list can be the scroller again
+   and every band around it stays put. */
+@container (min-width: 520px) {
+  .clio-use-result-panes {
+    /* Wide enough that the longest destination name stays on one line in both
+       themes and in Chinese; the detail pane takes the rest. */
+    grid-template-columns: minmax(0, 18em) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    overflow: visible;
+  }
+
+  .clio-use-result-modal .finder-operation-list {
+    min-height: 5em;
+  }
+
+  /* Wide enough for the note to share the button row; narrow, it keeps its own
+     line above so Cancel and Write never split across two rows. */
+  .clio-use-result-record {
+    flex: 1 1 16em;
+  }
+}
+
+.clio-use-result-detail {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.clio-use-result-purpose {
+  margin: 0;
+  color: var(--finder-op-caption-color);
+  line-height: 1.35;
+  font-size: 12px;
+}
+
+/* The destination box is the dialog's one scroller: it takes whatever height the
+   pinned chrome leaves, so a clipped row always sits inside a bordered list box
+   with a scroll bar rather than at an invisible dialog edge. */
+.clio-use-result-modal .finder-operation-list {
+  max-height: none;
+}
+
+/* One line per destination, so six of them cost six rows, not twelve. The list
+   keeps the Classic row height in both themes: the taller Liquid Glass row is
+   for lists that carry two lines, and this one no longer does. */
+.clio-use-result-modal {
+  --finder-op-item-min-height: 34px;
+}
+
+.clio-use-result-modal .finder-operation-result {
+  margin: 0;
+}
+
+/* 5.4em is four lines of the 1.35 line-height above, so a long excerpt stops on
+   a line boundary instead of showing a half-cut row of text. */
+.clio-use-result-modal .finder-operation-result dd {
+  max-height: 5.4em;
+  overflow: auto;
+  overflow-wrap: anywhere;
+}
+
+/* The Run Record disclosure sits in the empty half of the button row, so an
+   honest receipt statement costs no extra height at all. When the row is too
+   narrow for both, the note wraps onto its own line above the buttons instead
+   of being squeezed into a four-line column. */
+.clio-use-result-modal .button-row.finder-operation-actions {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.clio-use-result-record {
+  margin: 0 auto 0 0;
+  flex: 1 1 100%;
+  min-width: 0;
+  color: var(--finder-op-caption-color);
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.is-hidden {
+  display: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .system-tab,
+  .system-select-button,
+  .system-select-menu,
+  .system-select-option,
+  .finder-continuation,
+  .memory-card,
+  .memory-card-back,
+  .memory-card-face,
+  input[type="checkbox"],
+  input[type="radio"] {
+    transition-duration: 0s;
+  }
+
+  .message.pending.streaming .message-content::after {
+    animation: none;
+  }
+
+  .system-select-menu {
+    transform: none;
+  }
+}

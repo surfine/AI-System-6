@@ -6,7 +6,7 @@ import { createFeatureTest, read } from "../../helpers/feature-test-harness.mjs"
 const test = createFeatureTest("public-clio-stage");
 const html = read("index.html");
 const actions = read("app/core/actions.js");
-const manifest = read("scripts/runtime-manifest.mjs");
+const manifest = read("tooling/runtime-manifest.mjs");
 
 test.assertIncludes(manifest, '"app/features/slides-export.js"', "ClioStage loads lazily");
 test.assertIncludes(manifest, '"app/features/clio-stage.js"', "ClioStage is a lazy module");

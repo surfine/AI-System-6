@@ -5,22 +5,22 @@ node_modules/
 test-results/
 playwright-report/
 app.bundle.js
-app/legacy/
+internal/archive/runtime-legacy/
 styles.bundle.css
 styles.theme-lab.css
 *.traineddata
 ocr/tessdata/*.traineddata.gz
-app/vendor/markmap/*.js
+apps/desktop/app/vendor/markmap/*.js
 .venv-markitdown/
 .venv-markitdown-trim/
 marked/
 markitdown/
 markmap/
 readability/
-native/.build/
-native/.swiftpm/
-shell/macos-webview/.build/
-shell/macos-webview/.swiftpm/
+platform/macos/native/.build/
+platform/macos/native/.swiftpm/
+platform/macos/shell/macos-webview/.build/
+platform/macos/shell/macos-webview/.swiftpm/
 ai-system-6-mac
 ai-system-6.exe
 ai-system-6-macos
@@ -29,8 +29,8 @@ dist/
 builds/
 
 # Secrets never enter the repo. Production values live only in
-# /etc/ai-system6/env on the server; deploy/ai-system6.env.example (committed)
-# carries placeholders. scripts/verify-web-release-safety.mjs is the gate that
+# /etc/ai-system6/env on the server; platform/web/ai-system6.env.example (committed)
+# carries placeholders. tooling/verify-web-release-safety.mjs is the gate that
 # stops a stray one from reaching the public site.
 .env
 .env.*
@@ -43,7 +43,7 @@ system.css-reference/fonts/modern/
 *.mp4
 # The official-site hero clip is a shipped asset, not a working file.
 !site/img/hero-desktop.mp4
-drafts/hero-frames/
+internal/evidence/drafts/hero-frames/
 *.pdf
 
 # vendored reference clones (own .git) and local scratch output
@@ -51,37 +51,36 @@ liquid-glass-studio/
 external/
 codex-snapshots/
 .codex-video-work/
-ai-desktop-6-promo/output/
-ai-desktop-6-promo/recordings/
-drafts/css-refactor-snapshots/
-drafts/ui-reform-before/
-drafts/ui-reform-after/
-drafts/ui-reform-after-pareto/
-drafts/theme-lab-current/
-drafts/theme-lab-fidelity-cache/
-drafts/theme-lab-fidelity/
-drafts/appearance-app-coverage/
+internal/archive/promo/output/
+internal/archive/promo/recordings/
+internal/evidence/drafts/css-refactor-snapshots/
+internal/evidence/drafts/ui-reform-before/
+internal/evidence/drafts/ui-reform-after/
+internal/evidence/drafts/ui-reform-after-pareto/
+internal/evidence/drafts/theme-lab-current/
+internal/evidence/drafts/theme-lab-fidelity-cache/
+internal/evidence/drafts/theme-lab-fidelity/
+internal/evidence/drafts/appearance-app-coverage/
 # local era icon reference caches (third-party captures / scratch renders);
 # owned measurements, provenance and built icons live in assets/themes/*/icons
-drafts/snow-leopard-icon-reference/
-drafts/liquid-glass-reference/captures/
-drafts/liquid-glass-reference/transcripts/
-drafts/yosemite-icon-reference/
-drafts/yosemite-icon-render/
-drafts/classic-icon-references/
+internal/evidence/drafts/snow-leopard-icon-reference/
+internal/evidence/drafts/liquid-glass-reference/
+internal/evidence/drafts/yosemite-icon-reference/
+internal/evidence/drafts/yosemite-icon-render/
+internal/evidence/drafts/classic-icon-references/
 # three-family coverage evidence (window sweeps, computed-style records,
 # icon-crop review sheets); owned metrics live in docs/THEME-FAMILY-REPORT.md
-drafts/theme-coverage/
+internal/evidence/drafts/theme-coverage/
 # era icon comparison/reference boards (rendered evidence, not product assets)
-drafts/era-icons/
-drafts/icon-generation/
+internal/evidence/drafts/era-icons/
+internal/evidence/drafts/icon-generation/
 # before/after render evidence for the Liquid Glass icon family
-drafts/liquid-glass-icons/
+internal/evidence/drafts/liquid-glass-icons/
 # local Python scratch caches
-scripts/__pycache__/
+tooling/__pycache__/
 __pycache__/
 # local personal scratch output (audit dumps, temp exports)
 private/
 # local 15MB test photo (bg-1..6 are the shipped backgrounds)
 assets/liquid-cover/test-shot.jpg
-native/nohup.out
+platform/macos/native/nohup.out

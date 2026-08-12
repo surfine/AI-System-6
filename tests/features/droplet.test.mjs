@@ -14,7 +14,7 @@ import { webcrypto } from "node:crypto";
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("droplet");
-const manifest = read("scripts/runtime-manifest.mjs");
+const manifest = read("tooling/runtime-manifest.mjs");
 const scripting = read("app/core/scripting.js");
 const config = read("app/core/config.js");
 const boot = read("app/core/boot.js");

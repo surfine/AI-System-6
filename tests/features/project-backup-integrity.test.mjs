@@ -7,7 +7,7 @@ import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 const test = createFeatureTest("project-backup-integrity");
 const backupSource = read("app/core/project-disk-backup.js");
 const exportImportSource = read("app/features/export-import.js");
-const manifest = read("scripts/runtime-manifest.mjs");
+const manifest = read("tooling/runtime-manifest.mjs");
 
 const context = vm.createContext({
   crypto: webcrypto,

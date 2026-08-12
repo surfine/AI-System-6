@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/DESIGN.md -->
-<!-- source-sha256: 926dc9345f5b46862dd892f401b8dc9b4585cb3d23e52cb45d17d04c36c52e46 -->
+<!-- source-sha256: 8d84ef3f6a7571e2fc19a46fdef50e18187049bea3ada286a09203101e8f1b7a -->
 
 # AI System 6 设计合约
 
@@ -115,9 +115,9 @@ Yosemite。`family` 只用于确实共享的内部 primitive。
 
 Appearance 工作应优先走 token：
 
-1. 在 `styles/00-foundation.css` 添加默认 token。
-2. 历史主题参数表差异写进 `styles/65-appearance-themes.css`；Liquid Glass 的值写进
-   `styles/70-liquid-glass.css`。
+1. 在 `apps/desktop/styles/00-foundation.css` 添加默认 token。
+2. 历史主题参数表差异写进 `apps/desktop/styles/65-appearance-themes.css`；Liquid Glass 的值写进
+   `apps/desktop/styles/70-liquid-glass.css`。
 3. 子主题以注册表中的 `recipeBase` 为比较对象，只覆盖真正不同的 semantic value 或小型结构 recipe。
 4. 共享基础 selector 消费 token。
 5. 避免应用专属主题 selector 和新增 Liquid Glass twin。
@@ -174,13 +174,13 @@ agent 发明 UI 前必须先选择一个对象角色：
 - 有限下拉必须使用自定义 System 6 select harness
 - Finder items 和 list rows 表示对象
 - 共享 empty、loading、error、selected、hover、focus、active、disabled 状态
-- 通过 `app/core/system-icons.js` 使用现有 system icon id
+- 通过 `apps/desktop/app/core/system-icons.js` 使用现有 system icon id
 
 不要因为某个形状看起来现代就新增组件。只有现有对象角色无法表达任务时，才添加新形状。
 
 ## 布局和几何
 
-窗口和 panel 几何必须 token 化。重复出现的新值应放进 `styles/00-foundation.css`，不要散落在多个 selector 中。
+窗口和 panel 几何必须 token 化。重复出现的新值应放进 `apps/desktop/styles/00-foundation.css`，不要散落在多个 selector 中。
 
 使用：
 
@@ -202,7 +202,7 @@ agent 发明 UI 前必须先选择一个对象角色：
 
 稠密工具表面应使用 pane、row、divider 和对象列表。Card 只用于重复条目、modal 和确实需要框定的工具。
 
-层级使用 `styles/00-foundation.css` 中具名的 `--z-*` 词汇。全局层级顺序为窗口、
+层级使用 `apps/desktop/styles/00-foundation.css` 中具名的 `--z-*` 词汇。全局层级顺序为窗口、
 置顶窗口、系统 modal、启动/关机、演示遮罩，最后是系统菜单。窗口内部控件、
 滚动条、select menu 和命令 popover 必须使用窗口 stacking context 内的本地
 `--z-local-*` token；不要为了修一个内部遮挡问题，把它直接跳到全局菜单或演示层。
@@ -338,12 +338,12 @@ npm run visual:eval
 可选设计反模式扫描：
 
 ```sh
-node external/impeccable/skill/scripts/detect.mjs --json index.html app styles
+node external/impeccable/skill/tooling/detect.mjs --json index.html app styles
 ```
 
 第三方和生成文件的 findings 是信号，不是自动 blocker。当本地产品规则更具体时，以本地规则为准。
 
-`npm run verify:design` 是本地 blocker。计数在 `scripts/design-budget.json` 中，只有在明确说明理由时才允许上调。
+`npm run verify:design` 是本地 blocker。计数在 `tooling/design-budget.json` 中，只有在明确说明理由时才允许上调。
 
 ## 迁移优先级
 

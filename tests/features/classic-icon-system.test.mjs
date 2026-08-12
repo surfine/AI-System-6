@@ -74,7 +74,7 @@ for (const [id, entry] of Object.entries(completeFamily.icons)) {
   }
 }
 
-const builder = read("scripts/build-classic-core-icons.mjs");
+const builder = read("tooling/build-classic-core-icons.mjs");
 test.assertIncludes(builder, "nativeImageHash", "the builder pins the System 6 disk image by SHA-256");
 test.assertIncludes(builder, "outsideMask", "the builder raster-checks that every artwork pixel stays inside its mask");
 test.assertIncludes(builder, "replica32 && referenceDiffPixels !== 0", "the evidence builder rejects drift from a direct native counterpart");
@@ -114,7 +114,7 @@ test.assertIncludes(themeLab, "16 Selected", "the lab exercises the 16 px select
 test.assertIncludes(themeLab, "Finder list view · true 16 px", "the lab includes a true small-icon Finder context");
 test.assertIncludes(app, "window.AISystem6ThemeLab?.sync?.(theme)", "appearance changes resync an already-open lazy Theme Lab");
 test.assertIncludes(read("app/core/window-manager.js"), "themeLab: {", "opening Theme Lab loads its inspection code on demand");
-test.assertIncludes(read("scripts/runtime-manifest.mjs"), '"app/features/theme-lab.js"', "Theme Lab stays outside the two-floppy startup budget");
+test.assertIncludes(read("tooling/runtime-manifest.mjs"), '"app/features/theme-lab.js"', "Theme Lab stays outside the two-floppy startup budget");
 test.assertIncludes(labCss, "image-rendering: auto", "the inspection zoom preserves smooth SVG rendering on Retina screens");
 test.assertNotIncludes(labCss, "data-theme=", "the Classic lab does not add theme-specific selector leakage");
 

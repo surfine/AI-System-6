@@ -1,5 +1,5 @@
 {
-  "_comment": "Render fingerprint for the default Liquid Cover scene (text 'Liquid\\nGlass', bg-1, 16:9, default params). A 24x16 downsampled luminance grid of a 1× export. Guards against silent shader/parameter regressions. Machine-specific (GPU + font rasterization vary), like tests/visual-snapshot.json — capture/update on the same machine. See scripts/verify-liquid-render.mjs.",
+  "_comment": "Render fingerprint for the default Liquid Cover scene (text 'Liquid\\nGlass', bg-1, 16:9, default params). A 24x16 downsampled luminance grid of a 1× export. Guards against silent shader/parameter regressions. Machine-specific (GPU + font rasterization vary), like tests/visual-snapshot.json — capture/update on the same machine. See tooling/verify-liquid-render.mjs.",
   "scene": "default",
   "w": 24,
   "h": 16,

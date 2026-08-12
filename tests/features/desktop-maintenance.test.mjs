@@ -16,7 +16,7 @@ import { webcrypto } from "node:crypto";
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("desktop-maintenance");
-const manifest = read("scripts/runtime-manifest.mjs");
+const manifest = read("tooling/runtime-manifest.mjs");
 const maintenance = read("app/core/desktop-maintenance.js");
 const config = read("app/core/config.js");
 const boot = read("app/core/boot.js");

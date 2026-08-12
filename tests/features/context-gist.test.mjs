@@ -12,7 +12,7 @@ const gist = read("app/core/context-gist.js");
 const retrieval = read("app/core/context-retrieval.js");
 const chatMessages = read("app/core/chat-messages.js");
 const scrapbook = read("app/features/scrapbook.js");
-const manifest = read("scripts/runtime-manifest.mjs");
+const manifest = read("tooling/runtime-manifest.mjs");
 const translationsEn = read("app/data/translations-en.js");
 const translationsZh = read("app/data/translations-zh.js");
 const outlineClaim = read("app/features/outline-claim.js");
@@ -176,7 +176,7 @@ function collectFunctionCalls(source, functionName) {
 
 function collectAppJsSources() {
   const sources = [];
-  const appRoot = join(root, "app");
+  const appRoot = join(root, "apps", "desktop", "app");
   walk(appRoot);
   return sources;
 
@@ -190,7 +190,7 @@ function collectAppJsSources() {
       }
       if (!name.endsWith(".js") || name === "app.bundle.js") return;
       sources.push({
-        path: relative(root, fullPath).replace(/\\/g, "/"),
+        path: relative(root, fullPath).replace(/\\/g, "/").replace(/^apps\/desktop\//, ""),
         source: read(relative(root, fullPath)),
       });
     });

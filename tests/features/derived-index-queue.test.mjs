@@ -3,7 +3,7 @@ import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const require = createRequire(import.meta.url);
 const test = createFeatureTest("derived-index-queue");
-const runtime = require("../../app/shared/derived-index-runtime.js");
+const runtime = require("../../apps/desktop/app/shared/derived-index-runtime.js");
 
 const source = {
   projectId: "project-a",
@@ -71,7 +71,7 @@ const docMap = runtime.buildDerivedProduct("docmap", source);
 test.assert(gist.coarse.includes("First"), "gist derivation is deterministic and local");
 test.assert(docMap.nodes[0]?.title === "First", "DocMap derivation preserves Markdown headings");
 
-const manifest = read("scripts/runtime-manifest.mjs");
+const manifest = read("tooling/runtime-manifest.mjs");
 const persistence = read("app/core/persistence-status.js");
 const boot = read("app/core/boot.js");
 const adapter = read("app/core/derived-index-queue.js");

@@ -7,10 +7,10 @@ import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("chat-vent-guardrail");
 
-const manifest = read("scripts/runtime-manifest.mjs");
+const manifest = read("tooling/runtime-manifest.mjs");
 const appVent = read("app/core/chat-vent-guidance.js");
-const serverVent = read("src/server/chat-vent.js");
-const draftRoute = read("src/server/routes/draft-thesis.js");
+const serverVent = read("apps/server/server/chat-vent.js");
+const draftRoute = read("apps/server/server/routes/draft-thesis.js");
 const chatMessages = read("app/core/chat-messages.js");
 
 const SHARED_MARKER = "AI System 6 chat vent intake guardrail";

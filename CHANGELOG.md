@@ -54,7 +54,7 @@ quiet Macintosh-inspired desktop for source-based writing.
 
 - Documentation was consolidated into `CLAUDE.md` as the single source of truth,
   with `CLAUDE.zh-CN.md` as the human reference mirror.
-- The server was migrated from the root `server.js` into `src/server.js` with a
+- The server was migrated from the root `server.js` into `apps/server/server.js` with a
   route table, shared libraries, focused route handlers, importers, and
   `npm --prefix src run typecheck` in the release gate.
 - `/api/version`, cloud routes, local model routes, import routes, Reader,

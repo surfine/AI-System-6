@@ -18,8 +18,8 @@ const app = readAppSurface([
 const css = read("styles/20-reader-docmap.css");
 const index = read("index.html");
 const bootstrap = read("app.js");
-const cloudRoute = read("src/server/routes/cloud-chat.js");
-const localChat = read("src/server/chat.js");
+const cloudRoute = read("apps/server/server/routes/cloud-chat.js");
+const localChat = read("apps/server/server/chat.js");
 const actions = read("app/core/actions.js");
 const sourcePolicy = read("app/core/docmap-source-policy.js");
 

@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/THEME-FAMILY-REPORT.md -->
-<!-- source-sha256: 222f6d158abdd4a693805840e64f1283a549988d08a33f9798c844e35593f987 -->
+<!-- source-sha256: 490fed4dfc5d90b985db0249821757deadeddb5fb146de5f37f5b30985030f47 -->
 
 英文版为准。本文档仅供人类参考。
 
@@ -25,7 +25,7 @@
 
 ## 1. 当前状态 — 六套正式外观，三个维护族
 
-`app/core/theme-registry.js` 是主题元数据的唯一事实来源。六套外观全部
+`apps/desktop/app/core/theme-registry.js` 是主题元数据的唯一事实来源。六套外观全部
 `releaseReady: true`；“特别 → 外观”菜单、控制面板的外观下拉、Theme Lab
 与两套语言表都暴露相同的六个 id。维护继承（`recipeBase`）刻意不按年代：
 classic → platinum，aqua → snow-leopard，liquid-glass → yosemite，其中
@@ -42,7 +42,7 @@ Aqua 与 Liquid Glass 各自为根。
 
 家族契约、注册表 recipe 链与选择器 ratchet 分别由
 `docs/THEME-FAMILY-CONTRACT.md`、`tests/features/appearance-system.test.mjs`
-与 `scripts/verify-css.mjs` 强制（child+app-specific 选择器保持基线 0）。
+与 `tooling/verify-css.mjs` 强制（child+app-specific 选择器保持基线 0）。
 
 ## 2. 实际执行的验证（2026-08-10，真实退出码）
 
@@ -67,7 +67,7 @@ Aqua 与 Liquid Glass 各自为根。
 `verify:theme-lab:fidelity` 均随公开树提供并可运行。`verify:visual`
 （以及 `snapshot:css`、`visual:*`、`render:*`）是仅限内部私有树的闸门：
 它需要本地浏览器，并有意从公开快照中移除
-（`scripts/lib/public-package.mjs` 的 `internalOnlyScriptNames`）。其上
+（`tooling/lib/public-package.mjs` 的 `internalOnlyScriptNames`）。其上
 结果是私有树证据，不是“公开克隆可复现”的声明。公开快照受支持的命令面即
 README.md 所记载的 `npm ci` / `npm start` / `npm run build` /
 `npm test` / `npm run verify:public`。
@@ -76,13 +76,13 @@ README.md 所记载的 `npm ci` / `npm start` / `npm run build` /
 
 - **61 个注册窗口 × 6 主题** — 元素截图与计算样式采样（title-bar、
   close-box、resize-box、按钮、输入框、下拉、面板）位于
-  `drafts/theme-coverage/windows-<theme>/`。六次运行均 61/61 窗口，零
+  `internal/evidence/drafts/theme-coverage/windows-<theme>/`。六次运行均 61/61 窗口，零
   零尺寸铬，除已知的 Time Machine sandbox 消息外无页面错误。
 - **交互状态扫描 × 6 主题** — Apple 菜单打开与悬停选中、特别 → 外观
   子菜单（六项齐全）、active/inactive 窗口标题栏、关闭/缩放/缩放框、
   按钮 default/hover/pressed/focus/disabled、复选框/下拉/文本域、气球
   帮助、系统模态框、工具栏/边栏/标签页、可滚动面板与通知中心。截图与
-  JSON 位于 `drafts/theme-coverage/states/`。
+  JSON 位于 `internal/evidence/drafts/theme-coverage/states/`。
 - **时代材质检查** — Classic 彩色像素 0% 且零圆角/阴影；Platinum 为灰阶
   与实测 Mac OS 9 调色板；Aqua/Snow Leopard 具备时代色彩（细条纹、银灰、
   红绿灯）；Yosemite 为扁平 10.10 铬；Liquid Glass 为玻璃材质。未发现跨
@@ -100,8 +100,8 @@ README.md 所记载的 `npm ci` / `npm start` / `npm run build` /
    控件最小值。根因：时代字段配方对 textarea 设置
    `min-height: var(--system-control-min-height)`，与 app 规则在特异性上
    打平并按加载顺序胜出。Classic 与 Liquid Glass 从不设置 textarea
-   min-height。修复：从 Yosemite 配方（`styles/65-appearance-themes.css`）
-   与 Aqua/Snow Leopard 配方（`styles/67-aqua-appearance.css`）移除该属性；
+   min-height。修复：从 Yosemite 配方（`apps/desktop/styles/65-appearance-themes.css`）
+   与 Aqua/Snow Leopard 配方（`apps/desktop/styles/67-aqua-appearance.css`）移除该属性；
    单行控件仍由基础规则保持 22 px 最小值。
 2. **Yosemite 蓝色默认按钮悬停变白。** 通用 `.btn:hover` 配方用白色常规
    按钮悬停色重绘了 10.10 suggested-action 按钮。修复：新增 Yosemite 规则

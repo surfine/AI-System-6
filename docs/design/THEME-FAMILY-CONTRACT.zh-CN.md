@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/THEME-FAMILY-CONTRACT.md -->
-<!-- source-sha256: df7edeeb70445415e088744f332b7baf9adfe204c9a5b8754de64c64d6a2f176 -->
+<!-- source-sha256: 97782732c055e31b8781ba87c3da56cb47227c06b6d8504efdf426e2c5afcf91 -->
 
 英文版为准。本文档仅供人类参考。
 
@@ -16,13 +16,13 @@ app、面板、对话框或系统控件时，只针对共享对象语法和它�
 | Liquid Glass | Liquid Glass | Yosemite |
 
 本契约是每一次主题编辑的常设规则。它由注册表
-(`app/core/theme-registry.js`)、CSS 预算
-(`scripts/css-budget.json`、`scripts/verify-css.mjs`) 与功能契约
+(`apps/desktop/app/core/theme-registry.js`)、CSS 预算
+(`tooling/css-budget.json`、`tooling/verify-css.mjs`) 与功能契约
 (`tests/features/appearance-system.test.mjs`) 共同强制。
 
 ## 1. 继承关系，而不是第二套主题
 
-`app/core/theme-registry.js` 是主题元数据的唯一来源：
+`apps/desktop/app/core/theme-registry.js` 是主题元数据的唯一来源：
 
 - `family` 命名三个维护根（`classic`、`aqua`、`liquid-glass`）。
 - `recipeBase` 命名父配方。子主题从父配方出发，只拥有显式增量：
@@ -70,16 +70,16 @@ DOM 结构
 
 ## 3. 主题代码放在哪里
 
-- `styles/00-foundation.css` —— 唯一的顶层 token 块（`:root`）。Classic
+- `apps/desktop/styles/00-foundation.css` —— 唯一的顶层 token 块（`:root`）。Classic
   默认值留在这里。
-- `styles/65-appearance-themes.css` —— 时代参数表、家族配方与子主题增量。
+- `apps/desktop/styles/65-appearance-themes.css` —— 时代参数表、家族配方与子主题增量。
   每个时代的配方选择器只允许出现在这里，受 `appearanceThemeSelectorLimit`
   上限约束，必须引用真实基础原语，且不得跨主题复制。
-- `styles/70-liquid-glass.css` —— 仅 Liquid Glass 材质。
+- `apps/desktop/styles/70-liquid-glass.css` —— 仅 Liquid Glass 材质。
 - 当并行工作流冲突时，Appearance 文件可以机械拆分为家族专属文件（例如
-  `styles/67-aqua-appearance.css`）。拆分必须**视觉零差异**且单独提交，
+  `apps/desktop/styles/67-aqua-appearance.css`）。拆分必须**视觉零差异**且单独提交，
   绝不夹带重新设计。
-- `styles/66-theme-lab.css` —— 一份共享的 Theme Lab 组件样式表，而不是
+- `apps/desktop/styles/66-theme-lab.css` —— 一份共享的 Theme Lab 组件样式表，而不是
   六份实现。它的每一条选择器都限定在实验室内部，因此这份样式表会被单独构建成
   `styles.theme-lab.css`，随懒加载的 Theme Lab 模块一起请求，而不是在启动时加载。
   不要把它放回 `styleRuntimePaths`：它是仓库里最大的一份样式表，而任何一次启动都
@@ -191,7 +191,7 @@ platinum-cmf-toolbar
 
 `verify:css` 强制这一点：子主题选择器的基础部分引用已注册的 app 窗口类
 时，计入 `childAppSpecificSelectorLimit` 且只许减少（基线 0）。真正属于
-系统级历史例外的，只能通过 `scripts/css-budget.json` 中的
+系统级历史例外的，只能通过 `tooling/css-budget.json` 中的
 `childAppSpecificAllowlist` 放行，并在提交中写明理由。
 
 ## 7. 父主题变更必须测试子主题
@@ -225,7 +225,7 @@ Theme Lab DOM 有意变化时，在同一次修改里刷新各主题保真 fixtu
 | 层级 | 问题 | 位置 | 何时失败 |
 | --- | --- | --- | --- |
 | 回归 | 今天和昨天一样吗？ | `tests/visual/theme-lab/*.png`，以及每个 specimen 的 `tolerances` | 输出偏离了记录运行 |
-| Canonical fidelity | 这真的是目标时代吗？ | `scripts/theme-lab-fidelity-contract.mjs` 中的 `FIDELITY_FLOOR`，以及每个 specimen 的 `floor` 台账 | 某个 specimen 与已 pin 的历史 reference 的差距超过 floor |
+| Canonical fidelity | 这真的是目标时代吗？ | `tooling/theme-lab-fidelity-contract.mjs` 中的 `FIDELITY_FLOOR`，以及每个 specimen 的 `floor` 台账 | 某个 specimen 与已 pin 的历史 reference 的差距超过 floor |
 
 floor 对所有时代、所有 specimen 只有一套共享常量，由指标定义推出，**绝不**
 来自我们自己的输出：

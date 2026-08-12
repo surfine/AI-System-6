@@ -14,14 +14,14 @@ const ok = (condition, message) => {
 const source = read("app/core/local-lmstudio-client.js");
 const sharedSource = read("app/shared/model-task-runtime.js");
 const html = read("index.html");
-const manifest = read("scripts/runtime-manifest.mjs");
+const manifest = read("tooling/runtime-manifest.mjs");
 const chat = read("app/core/chat-messages.js");
 const persistenceStatus = read("app/core/persistence-status.js");
 const cloudModel = read("app/features/cloud-model.js");
 const boot = read("app/core/boot.js");
 const context = read("app/core/context-retrieval.js");
 const imports = read("app/features/export-import.js");
-const importRoute = read("src/server/routes/import-text.js");
+const importRoute = read("apps/server/server/routes/import-text.js");
 const quickDraft = [
   "app/features/draft-desk.js",
   "app/features/quick-draft-ai.js",
@@ -137,7 +137,7 @@ function makeClient(fetchImpl, options = {}) {
 }
 
 const require = createRequire(import.meta.url);
-const sharedRuntime = require("../../app/shared/model-task-runtime.js");
+const sharedRuntime = require("../../apps/desktop/app/shared/model-task-runtime.js");
 ok(sharedRuntime.buildImportRepairMessages("raw", "scan.pdf").length === 2, "loads the same pure task contract in Node");
 ok(sharedRuntime.localChatDefaults("qwen3.5-4b", { taskKind: "draft" }).enable_thinking === false, "shares local model tuning without DOM or Node dependencies");
 ok(sharedRuntime.scrubVisibleModelOutput("<|channel>final answer<channel|>") === "answer", "shares visible-output cleanup");
@@ -418,7 +418,7 @@ ok(meme.includes("sendLocalModelTask"), "Bureaucracy Meme has a direct local-mod
 ok(endfield.includes('fetch("/api/endfield/search"') && endfield.includes("sendLocalModelTask"), "Endfield separates deterministic VPS search from browser inference");
 ok(reader.includes("translateReaderSubtitleLocally"), "subtitle translation has a browser-local path");
 ok(vision.includes("sendLocalModelTask"), "vision analysis has a browser-local path");
-ok(importRoute.includes('require("../../../app/shared/model-task-runtime.js")'), "Node import repair uses the same pure prompt and cleanup module");
+ok(importRoute.includes('require("../../../desktop/app/shared/model-task-runtime.js")'), "Node import repair uses the same pure prompt and cleanup module");
 ok(!imports.includes("localApiToken") && !importRoute.includes("localApiToken"), "LM Studio token is absent from import payloads and server processing");
 
 if (failures.length) {

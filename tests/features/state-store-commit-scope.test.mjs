@@ -16,7 +16,7 @@
 import ts from "typescript";
 import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { createFeatureTest, read, root } from "../helpers/feature-test-harness.mjs";
+import { createFeatureTest, read, resolveProjectPath } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("state-store-commit-scope");
 
@@ -78,9 +78,9 @@ const EPHEMERAL_CALLS = new Set([
 
 function walkFiles(dir, extension) {
   const out = [];
-  for (const entry of readdirSync(join(root, dir))) {
+  for (const entry of readdirSync(resolveProjectPath(dir))) {
     const full = join(dir, entry);
-    const stat = statSync(join(root, full));
+    const stat = statSync(resolveProjectPath(full));
     if (stat.isDirectory()) out.push(...walkFiles(full, extension));
     else if (entry.endsWith(extension)) out.push(full);
   }

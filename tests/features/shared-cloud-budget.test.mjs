@@ -7,7 +7,7 @@ import { createFeatureTest } from "../helpers/feature-test-harness.mjs";
 
 const require = createRequire(import.meta.url);
 const test = createFeatureTest("shared-cloud-budget");
-const budget = require("../../src/server/shared-cloud-budget.js");
+const budget = require("../../apps/server/server/shared-cloud-budget.js");
 const stateDirectory = mkdtempSync(join(tmpdir(), "ai-system6-shared-cloud-"));
 
 const envNames = [

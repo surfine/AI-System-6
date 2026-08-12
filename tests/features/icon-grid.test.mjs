@@ -7,15 +7,15 @@
 // keeps the margin that stops icons colliding with each other.
 
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
-import { ICON_GRID, OPTICAL_ALLOWANCE, shapeClass } from "../../scripts/lib/icon-grid.mjs";
+import { ICON_GRID, OPTICAL_ALLOWANCE, shapeClass } from "../../tooling/lib/icon-grid.mjs";
 
 const test = createFeatureTest("icon-grid");
 
 const ERAS = [
-  { theme: "aqua", family: "assets/themes/aqua/icons/aqua-core-icon-family.json", key: "128", builder: "scripts/build-aqua-core-icons.mjs" },
-  { theme: "snow-leopard", family: "assets/themes/snow-leopard/icons/snow-leopard-core-icon-family.json", key: "128", builder: "scripts/build-snow-leopard-core-icons.mjs" },
-  { theme: "yosemite", family: "assets/themes/yosemite/icons/yosemite-core-icon-family.json", key: "128", builder: "scripts/build-yosemite-core-icons.mjs" },
-  { theme: "liquid-glass", family: "assets/themes/liquid-glass/liquid-glass-icon-family.json", key: "128-default", builder: "scripts/build-liquid-glass-imagegen-icons.mjs", imagegen: true },
+  { theme: "aqua", family: "assets/themes/aqua/icons/aqua-core-icon-family.json", key: "128", builder: "tooling/build-aqua-core-icons.mjs" },
+  { theme: "snow-leopard", family: "assets/themes/snow-leopard/icons/snow-leopard-core-icon-family.json", key: "128", builder: "tooling/build-snow-leopard-core-icons.mjs" },
+  { theme: "yosemite", family: "assets/themes/yosemite/icons/yosemite-core-icon-family.json", key: "128", builder: "tooling/build-yosemite-core-icons.mjs" },
+  { theme: "liquid-glass", family: "assets/themes/liquid-glass/liquid-glass-icon-family.json", key: "128-default", builder: "tooling/build-liquid-glass-imagegen-icons.mjs", imagegen: true },
 ];
 
 // Platinum joins the grid for its generated family only: its reviewed core is
@@ -84,8 +84,8 @@ for (const theme of ["platinum", "aqua", "snow-leopard", "yosemite", "liquid-gla
   const spread = Math.max(...fitted) / Math.min(...fitted);
   test.assert(spread <= 1.2, `${theme}'s full family keeps one size (spread ${spread.toFixed(2)}x)`);
 }
-test.assertIncludes(read("scripts/build-era-icons.mjs"), "placeOnGrid", "the generated family is placed on the grid");
-test.assertIncludes(read("scripts/build-era-icons.mjs"), "icon-grid.mjs", "the generator uses the shared grid module");
+test.assertIncludes(read("tooling/build-era-icons.mjs"), "placeOnGrid", "the generated family is placed on the grid");
+test.assertIncludes(read("tooling/build-era-icons.mjs"), "icon-grid.mjs", "the generator uses the shared grid module");
 
 // Classic preserves object-specific System 6 proportions but now ships smooth
 // vectors across the complete family. Its optical median is pinned by the

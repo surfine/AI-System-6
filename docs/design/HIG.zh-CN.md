@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/HIG.md -->
-<!-- source-sha256: fae031f677bebb925e7f969c44896e82376e5dda1ec6f2a358b6037bc3c742d3 -->
+<!-- source-sha256: 04cc13c60b9918d590a6f8501403c534546f4a2c300a55a96ee7770767d4c3dc -->
 
 # AI System 6 人机界面指南
 
@@ -9,7 +9,7 @@
 中的产品边界和 [DESIGN.md](DESIGN.md) 中的视觉原则，转化成开发新应用时可以重复使用的决定。
 
 这些规则会在可行处由
-[`scripts/interface-guidelines-contract.mjs`](../../scripts/interface-guidelines-contract.mjs)
+[`tooling/interface-guidelines-contract.mjs`](../../tooling/interface-guidelines-contract.mjs)
 和 `tests/features/interface-guidelines.test.mjs` 执行。新的 `data-window`
 只有在注册表中声明对象角色和窗口骨架之后，才算完成。
 
@@ -205,7 +205,7 @@ AI System 6 使用两个间距带，而不是一个万能网格：
 规则：
 
 - 增加数值以前，先使用组件拥有的 token。
-- 重复几何只能进入 `styles/00-foundation.css`。
+- 重复几何只能进入 `apps/desktop/styles/00-foundation.css`。
 - 主题值进入已有主题块；token 能表达材质时，不新增 selector twin。
 - 二维窗口骨架使用 Grid，一维操作行使用 Flexbox，相邻项目间距使用 `gap`。
 - 不对称字形和材质可以做视觉居中，但 Classic 与 Liquid Glass 必须维持同一逻辑网格。

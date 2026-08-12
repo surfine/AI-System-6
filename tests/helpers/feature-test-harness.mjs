@@ -3,13 +3,33 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const root = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
+export const desktopRoot = join(root, "apps", "desktop");
+const desktopEntries = new Set([
+  "index.html",
+  "endfield-terminal.html",
+  "app.js",
+  "app.bundle.js",
+  "styles.css",
+  "styles.bundle.css",
+  "styles.theme-lab.css",
+]);
+
+export function resolveProjectPath(relativePath) {
+  if (
+    desktopEntries.has(relativePath)
+    || /^(?:app|assets|data|styles)(?:\/|$)/.test(relativePath)
+  ) {
+    return join(desktopRoot, relativePath);
+  }
+  return join(root, relativePath);
+}
 
 export function read(path) {
-  return readFileSync(join(root, path), "utf8");
+  return readFileSync(resolveProjectPath(path), "utf8");
 }
 
 export function exists(path) {
-  return existsSync(join(root, path));
+  return existsSync(resolveProjectPath(path));
 }
 
 export function createFeatureTest(feature) {
@@ -85,7 +105,7 @@ export function readAppSurface(paths = []) {
     "app/features/teachtext-accessories.js",
     "app/features/documents-chat.js",
     "app/features/writing-flow.js",
-    "scripts/runtime-manifest.mjs",
+    "tooling/runtime-manifest.mjs",
   ];
   return [...new Set([...defaultPaths, ...paths])]
     .filter((path) => exists(path))

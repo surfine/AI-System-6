@@ -24,7 +24,7 @@
 
 ## 1. Current state — six released appearances, three families
 
-`app/core/theme-registry.js` is the single source of theme metadata. All six
+`apps/desktop/app/core/theme-registry.js` is the single source of theme metadata. All six
 appearances are `releaseReady: true`; the Special → Appearance menu, the
 Control Panel Appearance select, Theme Lab, and both locale tables expose the
 same six ids. The maintenance lineage (`recipeBase`) is deliberately not
@@ -42,7 +42,7 @@ liquid-glass → yosemite, with Aqua and Liquid Glass as their own roots.
 
 The family contract, the registry recipe chains, and the selector ratchet are
 enforced by `docs/THEME-FAMILY-CONTRACT.md`,
-`tests/features/appearance-system.test.mjs`, and `scripts/verify-css.mjs`
+`tests/features/appearance-system.test.mjs`, and `tooling/verify-css.mjs`
 (child+app-specific selectors stay at baseline 0).
 
 Since the parallel lane's Yosemite split (`d60ecf0d`), only Liquid Glass
@@ -76,7 +76,7 @@ Public reproducibility: `verify:theme-lab`, `screenshot:windows`,
 `verify:theme-lab:fidelity` are tracked and runnable from the public tree.
 `verify:visual` (and `snapshot:css`, `visual:*`, `render:*`) is an
 internal-only private-tree gate: it needs a local browser and is stripped
-from the public snapshot by design (`scripts/lib/public-package.mjs`,
+from the public snapshot by design (`tooling/lib/public-package.mjs`,
 `internalOnlyScriptNames`). Its results above are private-tree evidence,
 not a claim that a public clone can reproduce it. The public snapshot's
 supported command surface is the one documented in README.md
@@ -87,7 +87,7 @@ supported command surface is the one documented in README.md
 
 - **61 registered windows × 6 themes** — element screenshots plus computed
   chrome samples (`title-bar`, `close-box`, `resize-box`, buttons, inputs,
-  selects, panes) land in `drafts/theme-coverage/windows-<theme>/`. All six
+  selects, panes) land in `internal/evidence/drafts/theme-coverage/windows-<theme>/`. All six
   runs captured 61/61 windows with zero zero-size chrome and no page errors
   beyond the known Time Machine sandbox message.
 - **Interactive states sweep × 6 themes** — Apple menu open + hover
@@ -95,7 +95,7 @@ supported command surface is the one documented in README.md
   window title bars, close/zoom/grow boxes, button
   default/hover/pressed/focus/disabled, checkbox/select/textarea, balloon
   help, system modal, toolbar/sidebar/tabs, scrollable panes, and the
-  notification center. Screenshots and JSON: `drafts/theme-coverage/states/`.
+  notification center. Screenshots and JSON: `internal/evidence/drafts/theme-coverage/states/`.
 - **Era material checks** — Classic measures 0% colored pixels and zero
   radius/shadow; Platinum is grayscale with the measured Mac OS 9 palette;
   Aqua/Snow Leopard show era-specific color (pinstripe, silver, traffic
@@ -118,8 +118,8 @@ supported command surface is the one documented in README.md
    on textareas, tying the app rules on specificity and winning by load
    order. Classic and Liquid Glass never set textarea min-height. Fixed by
    removing that property from the Yosemite recipe
-   (`styles/65-appearance-themes.css`) and the Aqua/Snow Leopard recipe
-   (`styles/67-aqua-appearance.css`); single-line controls keep the shared
+   (`apps/desktop/styles/65-appearance-themes.css`) and the Aqua/Snow Leopard recipe
+   (`apps/desktop/styles/67-aqua-appearance.css`); single-line controls keep the shared
    22 px minimum from the base rule.
 2. **Yosemite's blue default button turned white on hover.** The generic
    `.btn:hover` recipe repainted the 10.10 suggested-action button with the
@@ -226,11 +226,11 @@ time (the count is now 141).
 | --- | --- |
 | Three-family lineage (recipeBase / family / getRecipeChain) | app/core/theme-registry.js |
 | Inheritance contract + child recipe discipline + commands | docs/THEME-FAMILY-CONTRACT.md |
-| child+app-specific ratchet (baseline 0, allowlist) | scripts/verify-css.mjs + css-budget.json |
+| child+app-specific ratchet (baseline 0, allowlist) | tooling/verify-css.mjs + css-budget.json |
 | System roles: --system-primary-divider, --system-secondary-divider, --system-border aliases | styles/00-foundation.css + family files |
-| Registry-driven coverage audit | scripts/audit-app-theme-coverage.mjs |
-| Full-window screenshots + computed-style sweep | scripts/screenshot-window-coverage.mjs |
-| Paired shared-surface snapshots (classic/liquid/platinum) | scripts/css-surface-snapshot.mjs |
+| Registry-driven coverage audit | tooling/audit-app-theme-coverage.mjs |
+| Full-window screenshots + computed-style sweep | tooling/screenshot-window-coverage.mjs |
+| Paired shared-surface snapshots (classic/liquid/platinum) | tooling/css-surface-snapshot.mjs |
 | Platinum canonical fidelity (10 controls + 9 icon specimens) | tests/visual/theme-lab-fidelity/platinum.json |
 
 #### Metric snapshot (historical)
@@ -252,7 +252,7 @@ fetched over the network on 2026-08-10 and kept at
 `/private/tmp/classic-platinum-work-20260810/`: Classicy
 (robbiebyrd/classicy, 2,683 files), classic-stylesheets
 (nielssp/classic-stylesheets, themes/macos9/_*.scss) and platinum.css
-(mat-sz/platinum.css, src/index.scss). Licenses: Classicy Unlicense,
+(mat-sz/platinum.css, apps/server/index.scss). Licenses: Classicy Unlicense,
 platinum.css BSD-3-Clause-Clear, classic-stylesheets MIT. Nothing was copied
 into the repo. Three-way value agreement was confirmed for button radius
 (3 px), min-width (58 px), titlebar controls (11 px), scrollbar (16 px),
@@ -269,7 +269,7 @@ the user rejected them. Root cause was measured from the GUIdebook Mac OS 9.0
 desktop capture: real Mac OS 9 icons are light blue-gray (#d0d0e1 family),
 black-outlined, with white highlights and gray shading; the old SVGs used
 invented purple gradients and a non-existent green accent. The icons were
-redrawn on one shared painter recipe (scripts/build-platinum-icons.mjs) with
+redrawn on one shared painter recipe (tooling/build-platinum-icons.mjs) with
 the measured palette, and the complete set (~51 icons) was approved by the
 user on 2026-08-10.
 

@@ -12,13 +12,13 @@ derived appearances receive their era automatically.
 | Liquid Glass | Liquid Glass | Yosemite |
 
 This contract is the standing rule set for every theme edit. It is enforced
-by the registry (`app/core/theme-registry.js`), the CSS budgets
-(`scripts/css-budget.json`, `scripts/verify-css.mjs`), and the feature
+by the registry (`apps/desktop/app/core/theme-registry.js`), the CSS budgets
+(`tooling/css-budget.json`, `tooling/verify-css.mjs`), and the feature
 contracts (`tests/features/appearance-system.test.mjs`).
 
 ## 1. Lineage, not second themes
 
-`app/core/theme-registry.js` is the single source of theme metadata:
+`apps/desktop/app/core/theme-registry.js` is the single source of theme metadata:
 
 - `family` names the three maintenance roots (`classic`, `aqua`,
   `liquid-glass`).
@@ -68,18 +68,18 @@ era-specific material
 
 ## 3. Where theme code lives
 
-- `styles/00-foundation.css` — the only top-level token block (`:root`).
+- `apps/desktop/styles/00-foundation.css` — the only top-level token block (`:root`).
   Classic default values stay here.
-- `styles/65-appearance-themes.css` — era parameter tables, family recipes,
+- `apps/desktop/styles/65-appearance-themes.css` — era parameter tables, family recipes,
   and child deltas. A per-era selector is allowed here only, is capped by
   `appearanceThemeSelectorLimit`, must reference a real base primitive, and
   may not be duplicated across themes.
-- `styles/70-liquid-glass.css` — Liquid Glass material only.
+- `apps/desktop/styles/70-liquid-glass.css` — Liquid Glass material only.
 - The Appearance file may be mechanically split into family-owned files
-  (for example `styles/67-aqua-appearance.css`) when parallel workflows
+  (for example `apps/desktop/styles/67-aqua-appearance.css`) when parallel workflows
   collide. A split is **zero visual diff** and its own commit; it never
   carries a redesign.
-- `styles/66-theme-lab.css` — one shared Theme Lab component stylesheet, not
+- `apps/desktop/styles/66-theme-lab.css` — one shared Theme Lab component stylesheet, not
   six implementations. Every selector in it is scoped to the lab, so the sheet
   is built as its own `styles.theme-lab.css` bundle and loaded with the lazy
   Theme Lab module rather than at boot. Keep it out of `styleRuntimePaths`: it
@@ -197,7 +197,7 @@ platinum-cmf-toolbar
 registered app-window class is counted by `childAppSpecificSelectorLimit`
 and may only decrease (baseline 0). A genuine system-level historical
 exception is allowed only through `childAppSpecificAllowlist` in
-`scripts/css-budget.json`, with the justification written in the commit.
+`tooling/css-budget.json`, with the justification written in the commit.
 
 ## 7. Parent changes test the children
 
@@ -233,7 +233,7 @@ live in different places.
 | Tier | Question | Where | Fails when |
 | --- | --- | --- | --- |
 | Regression | Is today the same as yesterday? | `tests/visual/theme-lab/*.png`, and each specimen's `tolerances` | The output moved from the recorded run |
-| Canonical fidelity | Is this actually the target era? | `FIDELITY_FLOOR` in `scripts/theme-lab-fidelity-contract.mjs`, and each specimen's `floor` ledger | A specimen is further from its pinned historical reference than the floor allows |
+| Canonical fidelity | Is this actually the target era? | `FIDELITY_FLOOR` in `tooling/theme-lab-fidelity-contract.mjs`, and each specimen's `floor` ledger | A specimen is further from its pinned historical reference than the floor allows |
 
 The floor is one shared constant for every era and every specimen, derived from
 the metric definitions and **never** from our own output:

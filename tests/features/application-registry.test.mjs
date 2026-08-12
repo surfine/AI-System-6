@@ -9,7 +9,7 @@ import { webcrypto } from "node:crypto";
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("application-registry");
-const manifest = read("scripts/runtime-manifest.mjs");
+const manifest = read("tooling/runtime-manifest.mjs");
 const registrySource = read("app/core/application-registry.js");
 const actions = read("app/core/actions.js");
 const documentsChat = read("app/features/documents-chat.js");

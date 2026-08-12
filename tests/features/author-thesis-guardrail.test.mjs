@@ -7,11 +7,11 @@ import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("author-thesis-guardrail");
 
-const manifest = read("scripts/runtime-manifest.mjs");
+const manifest = read("tooling/runtime-manifest.mjs");
 const appThesis = read("app/core/author-thesis-guidance.js");
-const serverThesis = read("src/server/author-thesis.js");
-const draftRoute = read("src/server/routes/draft-thesis.js");
-const router = read("src/server/router.js");
+const serverThesis = read("apps/server/server/author-thesis.js");
+const draftRoute = read("apps/server/server/routes/draft-thesis.js");
+const router = read("apps/server/server/router.js");
 const chatMessages = read("app/core/chat-messages.js");
 
 const SHARED_MARKER = "AI System 6 author thesis guardrail";

@@ -1,0 +1,1886 @@
+{
+  "schemaVersion": 1,
+  "target": "Mac OS X 10.6.8 Snow Leopard",
+  "generatedBy": "tooling/build-snow-leopard-core-icons.mjs",
+  "coreOnly": true,
+  "nativeSizes": [
+    512,
+    128,
+    32,
+    16
+  ],
+  "referenceLedger": "icons/src/snow-leopard-core-icons.json",
+  "referenceBoard": "internal/evidence/drafts/era-icons/snow-leopard-core-reference-board.png",
+  "sizeRule": "Runtime surfaces downscale the 128 px tier. For the twelve programmatic cores, 512 carries fine texture while 32 and 16 are separately composed review hints; accepted Image Gen cores use separately processed ledger artifacts.",
+  "selectionRecipe": "Finder selection belongs to the label and the view surface; normal and selected states use the same artwork.",
+  "icons": {
+    "finderApp": {
+      "label": "Finder / System",
+      "genre": "system identity",
+      "prototype": "friendly restrained white-polycarbonate compact Macintosh with a split cool-blue and white smiling CRT face",
+      "metaphorKey": "smiling-compact-macintosh",
+      "perspective": "measured front three-quarter object",
+      "material": "white polycarbonate and pale aluminum with narrow highlights",
+      "comparison": {
+        "evidence": "iconsets/FinderIcon.iconset/icon_128x128.png"
+      },
+      "sourceKind": "accepted-imagegen-era-illustration",
+      "reviewStatus": "accepted-imagegen",
+      "sizes": {
+        "16": "icons/finderApp-16.png",
+        "32": "icons/finderApp-32.png",
+        "128": "icons/finderApp-128.png",
+        "512": "icons/finderApp-512.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 153,
+          "colors": 39,
+          "bbox": {
+            "minX": 2,
+            "minY": 1,
+            "maxX": 13,
+            "maxY": 14
+          },
+          "ink": {
+            "minX": 2,
+            "minY": 1,
+            "maxX": 13,
+            "maxY": 14,
+            "width": 12,
+            "height": 14
+          },
+          "gridShape": "square",
+          "sha256": "c1fb049d3bde8933b3787da26270303bef4d5c0269016b08d791e97d4c65297e",
+          "bytes": 346
+        },
+        "32": {
+          "pixels": 621,
+          "colors": 137,
+          "bbox": {
+            "minX": 3,
+            "minY": 2,
+            "maxX": 28,
+            "maxY": 29
+          },
+          "ink": {
+            "minX": 3,
+            "minY": 2,
+            "maxX": 28,
+            "maxY": 29,
+            "width": 26,
+            "height": 28
+          },
+          "gridShape": "square",
+          "sha256": "8349e916bddba9eba86ca58ccdb510e31c2f130611b54317b50b79a58c712616",
+          "bytes": 971
+        },
+        "128": {
+          "pixels": 9877,
+          "colors": 3543,
+          "bbox": {
+            "minX": 14,
+            "minY": 9,
+            "maxX": 114,
+            "maxY": 118
+          },
+          "ink": {
+            "minX": 14,
+            "minY": 10,
+            "maxX": 113,
+            "maxY": 117,
+            "width": 100,
+            "height": 108
+          },
+          "gridShape": "square",
+          "sha256": "3303b941accae4be5bf67b6887a5c6687589498ad98ffb74663da71aeb5530b4",
+          "bytes": 15263
+        },
+        "512": {
+          "pixels": 156180,
+          "colors": 20535,
+          "bbox": {
+            "minX": 55,
+            "minY": 39,
+            "maxX": 456,
+            "maxY": 472
+          },
+          "ink": {
+            "minX": 56,
+            "minY": 40,
+            "maxX": 455,
+            "maxY": 471,
+            "width": 400,
+            "height": 432
+          },
+          "gridShape": "square",
+          "sha256": "a1e96244d9066e5fa49632187aff19be85b61625f5d23c826ca7b154da954891",
+          "bytes": 199110
+        }
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6523,
+          "meanLum": 178.82,
+          "lumStd": 46.7,
+          "edgeEnergy": 87
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6191,
+          "meanLum": 179.71,
+          "lumStd": 48.48,
+          "edgeEnergy": 198
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6111,
+          "meanLum": 179.49,
+          "lumStd": 49.33,
+          "edgeEnergy": 290
+        }
+      }
+    },
+    "folder": {
+      "label": "Folder",
+      "genre": "Finder object",
+      "prototype": "10.6 blue system folder with a rear tab",
+      "perspective": "front-on with a shallow lean",
+      "material": "flecked painted card",
+      "comparison": {
+        "evidence": "iconsets/GenericFolderIcon.iconset/icon_128x128.png"
+      },
+      "sourceKind": "original-measured-snow-leopard-reconstruction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/folder-16.png",
+        "32": "icons/folder-32.png",
+        "128": "icons/folder-128.png",
+        "512": "icons/folder-512.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 167,
+          "colors": 61,
+          "bbox": {
+            "minX": 0,
+            "minY": 2,
+            "maxX": 15,
+            "maxY": 13
+          },
+          "ink": {
+            "minX": 1,
+            "minY": 2,
+            "maxX": 14,
+            "maxY": 13,
+            "width": 14,
+            "height": 12
+          },
+          "gridShape": "landscape",
+          "sha256": "13cd67b77a05d0611d4bf38cc9db48d5916e933cea7bf45794c766d0765a652f",
+          "bytes": 420
+        },
+        "32": {
+          "pixels": 639,
+          "colors": 113,
+          "bbox": {
+            "minX": 1,
+            "minY": 4,
+            "maxX": 30,
+            "maxY": 28
+          },
+          "ink": {
+            "minX": 1,
+            "minY": 4,
+            "maxX": 30,
+            "maxY": 27,
+            "width": 30,
+            "height": 24
+          },
+          "gridShape": "landscape",
+          "sha256": "016e6ded6dc73f4017469ae94d0d353d32cbc33eb2950de92a41775f4419c30d",
+          "bytes": 690
+        },
+        "128": {
+          "pixels": 9985,
+          "colors": 732,
+          "bbox": {
+            "minX": 6,
+            "minY": 15,
+            "maxX": 121,
+            "maxY": 112
+          },
+          "ink": {
+            "minX": 6,
+            "minY": 16,
+            "maxX": 121,
+            "maxY": 111,
+            "width": 116,
+            "height": 96
+          },
+          "gridShape": "landscape",
+          "sha256": "c04c3d92a0086dc046fecc34c2d03250c3169fa49f32dd8b79c01e2565d9212c",
+          "bytes": 6244
+        },
+        "512": {
+          "pixels": 157092,
+          "colors": 2402,
+          "bbox": {
+            "minX": 24,
+            "minY": 63,
+            "maxX": 486,
+            "maxY": 448
+          },
+          "ink": {
+            "minX": 24,
+            "minY": 63,
+            "maxX": 486,
+            "maxY": 448,
+            "width": 463,
+            "height": 386
+          },
+          "gridShape": "landscape",
+          "sha256": "8327ed90730de0fa9b34a892882f4724f8dcb9c9975425a9459a164492bb16b0",
+          "bytes": 36250
+        }
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6328,
+          "meanLum": 167.25,
+          "lumStd": 27.04,
+          "edgeEnergy": 16
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6279,
+          "meanLum": 165.18,
+          "lumStd": 33.38,
+          "edgeEnergy": 46
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6179,
+          "meanLum": 165.26,
+          "lumStd": 36.14,
+          "edgeEnergy": 124
+        }
+      }
+    },
+    "hardDisk": {
+      "label": "Hard Disk",
+      "genre": "hardware",
+      "prototype": "bare drive mechanism seen from above",
+      "perspective": "shallow top view",
+      "material": "machined aluminum",
+      "comparison": {
+        "evidence": "captures/10-6-Snow-Leopard-Desktop.png",
+        "crop": [
+          1805,
+          28,
+          66,
+          60
+        ]
+      },
+      "sourceKind": "original-measured-snow-leopard-reconstruction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/hardDisk-16.png",
+        "32": "icons/hardDisk-32.png",
+        "128": "icons/hardDisk-128.png",
+        "512": "icons/hardDisk-512.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 192,
+          "colors": 136,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14
+          },
+          "ink": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14,
+            "width": 14,
+            "height": 14
+          },
+          "gridShape": "square",
+          "sha256": "284a5bc3d61659cbe8cdadfaada7056453a68595188cc94263bcba523632d925",
+          "bytes": 610
+        },
+        "32": {
+          "pixels": 691,
+          "colors": 400,
+          "bbox": {
+            "minX": 3,
+            "minY": 2,
+            "maxX": 28,
+            "maxY": 29
+          },
+          "ink": {
+            "minX": 3,
+            "minY": 2,
+            "maxX": 28,
+            "maxY": 28,
+            "width": 26,
+            "height": 27
+          },
+          "gridShape": "square",
+          "sha256": "f1ca02cc1f4298408950c5d1bb5ebe7d63c74003b98eb45895bb51107b68be91",
+          "bytes": 1611
+        },
+        "128": {
+          "pixels": 9944,
+          "colors": 1075,
+          "bbox": {
+            "minX": 16,
+            "minY": 10,
+            "maxX": 111,
+            "maxY": 117
+          },
+          "ink": {
+            "minX": 16,
+            "minY": 10,
+            "maxX": 111,
+            "maxY": 117,
+            "width": 96,
+            "height": 108
+          },
+          "gridShape": "square",
+          "sha256": "541a9fd7f3a2053dc0d60335c4202a03da74fa95634b5b4c0771f215786b9068",
+          "bytes": 11004
+        },
+        "512": {
+          "pixels": 157234,
+          "colors": 2043,
+          "bbox": {
+            "minX": 64,
+            "minY": 40,
+            "maxX": 447,
+            "maxY": 472
+          },
+          "ink": {
+            "minX": 64,
+            "minY": 40,
+            "maxX": 447,
+            "maxY": 471,
+            "width": 384,
+            "height": 432
+          },
+          "gridShape": "square",
+          "sha256": "964903561c1cba0a80c5b3d715df0228227760b4b3f3e2fcf810be124de01305",
+          "bytes": 65960
+        }
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6484,
+          "meanLum": 171.2,
+          "lumStd": 54.46,
+          "edgeEnergy": 63
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.625,
+          "meanLum": 171.66,
+          "lumStd": 57.67,
+          "edgeEnergy": 215
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.627,
+          "meanLum": 171.27,
+          "lumStd": 57.4,
+          "edgeEnergy": 300
+        }
+      }
+    },
+    "trash": {
+      "label": "Trash",
+      "genre": "Finder object",
+      "prototype": "chrome-banded wire mesh basket",
+      "perspective": "shallow top view",
+      "material": "woven wire and polished chrome",
+      "comparison": {
+        "evidence": "iconsets/TrashIcon.iconset/icon_128x128.png"
+      },
+      "sourceKind": "original-measured-snow-leopard-reconstruction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/trash-16.png",
+        "32": "icons/trash-32.png",
+        "128": "icons/trash-128.png",
+        "512": "icons/trash-512.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 184,
+          "colors": 160,
+          "bbox": {
+            "minX": 1,
+            "minY": 0,
+            "maxX": 14,
+            "maxY": 15
+          },
+          "ink": {
+            "minX": 1,
+            "minY": 0,
+            "maxX": 14,
+            "maxY": 14,
+            "width": 14,
+            "height": 15
+          },
+          "gridShape": "portrait",
+          "sha256": "f55f89f12f4e70a216e3d1510990cb9202a98342f520d1c580baef3f5ecb270f",
+          "bytes": 799
+        },
+        "32": {
+          "pixels": 680,
+          "colors": 368,
+          "bbox": {
+            "minX": 3,
+            "minY": 0,
+            "maxX": 28,
+            "maxY": 31
+          },
+          "ink": {
+            "minX": 3,
+            "minY": 1,
+            "maxX": 28,
+            "maxY": 30,
+            "width": 26,
+            "height": 30
+          },
+          "gridShape": "portrait",
+          "sha256": "46443352150f021af080d073637760b6b5e439a0032b031605e46186285fe524",
+          "bytes": 1925
+        },
+        "128": {
+          "pixels": 9973,
+          "colors": 2171,
+          "bbox": {
+            "minX": 16,
+            "minY": 3,
+            "maxX": 111,
+            "maxY": 124
+          },
+          "ink": {
+            "minX": 16,
+            "minY": 3,
+            "maxX": 111,
+            "maxY": 124,
+            "width": 96,
+            "height": 122
+          },
+          "gridShape": "portrait",
+          "sha256": "074a66702c4cb3bc8b52c6269626b9c0c8afdf0a39a046f4079e7e570c08f68c",
+          "bytes": 20529
+        },
+        "512": {
+          "pixels": 156720,
+          "colors": 5421,
+          "bbox": {
+            "minX": 66,
+            "minY": 13,
+            "maxX": 445,
+            "maxY": 499
+          },
+          "ink": {
+            "minX": 66,
+            "minY": 13,
+            "maxX": 445,
+            "maxY": 498,
+            "width": 380,
+            "height": 486
+          },
+          "gridShape": "portrait",
+          "sha256": "29ec877c3c17ba625e31175d83d2ea730e254ca91e51ff508348b62245d90c0e",
+          "bytes": 180723
+        }
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6641,
+          "meanLum": 105.14,
+          "lumStd": 37.11,
+          "edgeEnergy": 52
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.625,
+          "meanLum": 102.77,
+          "lumStd": 39.7,
+          "edgeEnergy": 232
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6213,
+          "meanLum": 101.8,
+          "lumStd": 40.51,
+          "edgeEnergy": 396
+        }
+      }
+    },
+    "document": {
+      "label": "Generic Document",
+      "genre": "document",
+      "prototype": "hovering sheet with a curled upper-right corner",
+      "perspective": "front-on paper",
+      "material": "coated paper",
+      "comparison": {
+        "evidence": "iconsets/GenericDocumentIcon.iconset/icon_128x128.png"
+      },
+      "sourceKind": "original-measured-snow-leopard-reconstruction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/document-16.png",
+        "32": "icons/document-32.png",
+        "128": "icons/document-128.png",
+        "512": "icons/document-512.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 158,
+          "colors": 54,
+          "bbox": {
+            "minX": 2,
+            "minY": 1,
+            "maxX": 12,
+            "maxY": 15
+          },
+          "ink": {
+            "minX": 3,
+            "minY": 1,
+            "maxX": 12,
+            "maxY": 14,
+            "width": 10,
+            "height": 14
+          },
+          "gridShape": "portrait",
+          "sha256": "f632672c90d0861cbb3ab608bafca30a151f5cd2e0c1d7d3a5218826ecdffb02",
+          "bytes": 325
+        },
+        "32": {
+          "pixels": 562,
+          "colors": 67,
+          "bbox": {
+            "minX": 6,
+            "minY": 2,
+            "maxX": 25,
+            "maxY": 30
+          },
+          "ink": {
+            "minX": 6,
+            "minY": 2,
+            "maxX": 25,
+            "maxY": 29,
+            "width": 20,
+            "height": 28
+          },
+          "gridShape": "portrait",
+          "sha256": "0e4ed35cc94ade75b303f6ba855841ddaf848b1c214b90b762ab3397a2138b92",
+          "bytes": 526
+        },
+        "128": {
+          "pixels": 8564,
+          "colors": 183,
+          "bbox": {
+            "minX": 24,
+            "minY": 8,
+            "maxX": 103,
+            "maxY": 120
+          },
+          "ink": {
+            "minX": 24,
+            "minY": 8,
+            "maxX": 103,
+            "maxY": 119,
+            "width": 80,
+            "height": 112
+          },
+          "gridShape": "portrait",
+          "sha256": "b4185c90ee5be49b2c2fe94e5ed8983cfde6e5d6f1af552814bcd076ef856c93",
+          "bytes": 1696
+        },
+        "512": {
+          "pixels": 140828,
+          "colors": 241,
+          "bbox": {
+            "minX": 96,
+            "minY": 31,
+            "maxX": 415,
+            "maxY": 480
+          },
+          "ink": {
+            "minX": 96,
+            "minY": 32,
+            "maxX": 415,
+            "maxY": 479,
+            "width": 320,
+            "height": 448
+          },
+          "gridShape": "portrait",
+          "sha256": "a13c3d5908388444b421ea4b6373cd0668420285a7e8d806071d1058e0d5c777",
+          "bytes": 7509
+        }
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5352,
+          "meanLum": 238.91,
+          "lumStd": 21.34,
+          "edgeEnergy": 17
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5225,
+          "meanLum": 236.58,
+          "lumStd": 39.08,
+          "edgeEnergy": 50
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5368,
+          "meanLum": 235.7,
+          "lumStd": 37.3,
+          "edgeEnergy": 114
+        }
+      }
+    },
+    "daHandler": {
+      "label": "Generic Application",
+      "genre": "application",
+      "prototype": "drawing tools resting on rotated sheets",
+      "perspective": "tilted desk objects",
+      "material": "paper, painted wood, brass, rubber",
+      "comparison": {
+        "evidence": "iconsets/GenericApplicationIcon.iconset/icon_128x128.png"
+      },
+      "sourceKind": "original-measured-snow-leopard-reconstruction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/daHandler-16.png",
+        "32": "icons/daHandler-32.png",
+        "128": "icons/daHandler-128.png",
+        "512": "icons/daHandler-512.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 160,
+          "colors": 84,
+          "bbox": {
+            "minX": 2,
+            "minY": 0,
+            "maxX": 14,
+            "maxY": 15
+          },
+          "ink": {
+            "minX": 2,
+            "minY": 0,
+            "maxX": 13,
+            "maxY": 14,
+            "width": 12,
+            "height": 15
+          },
+          "gridShape": "portrait",
+          "sha256": "c08e54389beff50a7b5a4ce6556e7bbf87b43ac54dbec8025cc0749b00015a8f",
+          "bytes": 561
+        },
+        "32": {
+          "pixels": 613,
+          "colors": 362,
+          "bbox": {
+            "minX": 2,
+            "minY": 2,
+            "maxX": 29,
+            "maxY": 29
+          },
+          "ink": {
+            "minX": 2,
+            "minY": 2,
+            "maxX": 29,
+            "maxY": 28,
+            "width": 28,
+            "height": 27
+          },
+          "gridShape": "square",
+          "sha256": "92da87114df0c95fe65d22b1cd50f096226788e4143e995e7301245856aab581",
+          "bytes": 1658
+        },
+        "128": {
+          "pixels": 9450,
+          "colors": 1786,
+          "bbox": {
+            "minX": 10,
+            "minY": 9,
+            "maxX": 117,
+            "maxY": 119
+          },
+          "ink": {
+            "minX": 10,
+            "minY": 9,
+            "maxX": 117,
+            "maxY": 118,
+            "width": 108,
+            "height": 110
+          },
+          "gridShape": "square",
+          "sha256": "f3344cccf371d1782d8e00f5995f2450cebdba4cb0b2881a59e6e18bc6e12fcf",
+          "bytes": 9427
+        },
+        "512": {
+          "pixels": 147854,
+          "colors": 5233,
+          "bbox": {
+            "minX": 42,
+            "minY": 35,
+            "maxX": 469,
+            "maxY": 476
+          },
+          "ink": {
+            "minX": 42,
+            "minY": 35,
+            "maxX": 469,
+            "maxY": 475,
+            "width": 428,
+            "height": 441
+          },
+          "gridShape": "square",
+          "sha256": "15a3cf9140c524305706e264259ae65b555360b7bcf61eb0db2b361c819dc973",
+          "bytes": 54458
+        }
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6406,
+          "meanLum": 202.94,
+          "lumStd": 64.87,
+          "edgeEnergy": 66
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5938,
+          "meanLum": 204.99,
+          "lumStd": 64.02,
+          "edgeEnergy": 153
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5918,
+          "meanLum": 204.4,
+          "lumStd": 65.04,
+          "edgeEnergy": 237
+        }
+      }
+    },
+    "controlPanel": {
+      "label": "System Preferences",
+      "genre": "utility",
+      "prototype": "steel frame over a punched panel with meshed gears",
+      "perspective": "straight-on shelf object",
+      "material": "brushed steel and machined gears",
+      "comparison": {
+        "evidence": "captures/10-6-Snow-Leopard-Applications.png",
+        "crop": [
+          650,
+          528,
+          88,
+          88
+        ]
+      },
+      "sourceKind": "original-measured-snow-leopard-reconstruction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/controlPanel-16.png",
+        "32": "icons/controlPanel-32.png",
+        "128": "icons/controlPanel-128.png",
+        "512": "icons/controlPanel-512.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 190,
+          "colors": 95,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14
+          },
+          "ink": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 13,
+            "width": 14,
+            "height": 13
+          },
+          "gridShape": "square",
+          "sha256": "95e194a3b6ca03432204093c396fc12aaaa46422bfb4adb33f5432c8f6dce408",
+          "bytes": 604
+        },
+        "32": {
+          "pixels": 758,
+          "colors": 320,
+          "bbox": {
+            "minX": 2,
+            "minY": 2,
+            "maxX": 29,
+            "maxY": 29
+          },
+          "ink": {
+            "minX": 2,
+            "minY": 3,
+            "maxX": 29,
+            "maxY": 28,
+            "width": 28,
+            "height": 26
+          },
+          "gridShape": "square",
+          "sha256": "0dc264898c21478278541780f669ac5bde3aeedff02797be778fe461a9bb629b",
+          "bytes": 1665
+        },
+        "128": {
+          "pixels": 11358,
+          "colors": 919,
+          "bbox": {
+            "minX": 10,
+            "minY": 10,
+            "maxX": 117,
+            "maxY": 117
+          },
+          "ink": {
+            "minX": 10,
+            "minY": 10,
+            "maxX": 117,
+            "maxY": 117,
+            "width": 108,
+            "height": 108
+          },
+          "gridShape": "square",
+          "sha256": "baf03f49ece6c6efc1f60c35f4ea125f46b4fa48a3a3426628b12dcb421a1452",
+          "bytes": 11904
+        },
+        "512": {
+          "pixels": 180050,
+          "colors": 1734,
+          "bbox": {
+            "minX": 40,
+            "minY": 41,
+            "maxX": 471,
+            "maxY": 470
+          },
+          "ink": {
+            "minX": 40,
+            "minY": 41,
+            "maxX": 471,
+            "maxY": 469,
+            "width": 432,
+            "height": 429
+          },
+          "gridShape": "square",
+          "sha256": "99ec505afc967c49d4fc91880e4ab3d048febd224826df70ae13a9185e34acb9",
+          "bytes": 55808
+        }
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.7422,
+          "meanLum": 162.94,
+          "lumStd": 48.45,
+          "edgeEnergy": 144
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.7227,
+          "meanLum": 161.79,
+          "lumStd": 56.87,
+          "edgeEnergy": 423
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.7075,
+          "meanLum": 160.64,
+          "lumStd": 57.07,
+          "edgeEnergy": 622
+        }
+      }
+    },
+    "searcher": {
+      "label": "Searcher",
+      "genre": "application",
+      "prototype": "ringed lens held over a printed page",
+      "perspective": "tilted desk objects with the lens in front",
+      "material": "dark metal ring, glass, paper",
+      "comparison": {
+        "evidence": "captures/10-6-Snow-Leopard-Applications.png",
+        "crop": [
+          940,
+          382,
+          88,
+          88
+        ]
+      },
+      "metaphorKey": "magnifier-over-page",
+      "sourceKind": "original-measured-snow-leopard-reconstruction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/searcher-16.png",
+        "32": "icons/searcher-32.png",
+        "128": "icons/searcher-128.png",
+        "512": "icons/searcher-512.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 168,
+          "colors": 101,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 15
+          },
+          "ink": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14,
+            "width": 14,
+            "height": 14
+          },
+          "gridShape": "square",
+          "sha256": "7574270b23d37224bb15773e1de43f0d6c2623faff9c8eb17e98ed8abead9f04",
+          "bytes": 634
+        },
+        "32": {
+          "pixels": 599,
+          "colors": 370,
+          "bbox": {
+            "minX": 3,
+            "minY": 2,
+            "maxX": 28,
+            "maxY": 29
+          },
+          "ink": {
+            "minX": 3,
+            "minY": 2,
+            "maxX": 28,
+            "maxY": 29,
+            "width": 26,
+            "height": 28
+          },
+          "gridShape": "square",
+          "sha256": "431d68355f48c29ca9727f3b237dbb49e121182d824375d02e2933081ab863cf",
+          "bytes": 1662
+        },
+        "128": {
+          "pixels": 8990,
+          "colors": 2175,
+          "bbox": {
+            "minX": 13,
+            "minY": 9,
+            "maxX": 114,
+            "maxY": 119
+          },
+          "ink": {
+            "minX": 13,
+            "minY": 9,
+            "maxX": 114,
+            "maxY": 118,
+            "width": 102,
+            "height": 110
+          },
+          "gridShape": "square",
+          "sha256": "46daabea729df3a948f04567016d5fa370a673f7746bbf34452e4536a83e949d",
+          "bytes": 11432
+        },
+        "512": {
+          "pixels": 141110,
+          "colors": 4787,
+          "bbox": {
+            "minX": 54,
+            "minY": 35,
+            "maxX": 457,
+            "maxY": 476
+          },
+          "ink": {
+            "minX": 54,
+            "minY": 36,
+            "maxX": 457,
+            "maxY": 475,
+            "width": 404,
+            "height": 440
+          },
+          "gridShape": "square",
+          "sha256": "678ce9344cee58c79dcd7fed1c40d86b7a7f2a4e60539ddf9de8508d27bdfe59",
+          "bytes": 73190
+        }
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6055,
+          "meanLum": 179.44,
+          "lumStd": 71.37,
+          "edgeEnergy": 90
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5664,
+          "meanLum": 180.78,
+          "lumStd": 72.93,
+          "edgeEnergy": 256
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5612,
+          "meanLum": 180.44,
+          "lumStd": 73.98,
+          "edgeEnergy": 443
+        }
+      }
+    },
+    "teachText": {
+      "label": "TeachText",
+      "genre": "application",
+      "prototype": "written letter with a slim steel pen",
+      "perspective": "tilted desk paper",
+      "material": "writing paper, ink, polished steel",
+      "comparison": {
+        "evidence": "captures/10-6-Snow-Leopard-Applications.png",
+        "crop": [
+          795,
+          528,
+          88,
+          88
+        ]
+      },
+      "metaphorKey": "writing-paper-and-pen",
+      "sourceKind": "original-measured-snow-leopard-reconstruction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/teachText-16.png",
+        "32": "icons/teachText-32.png",
+        "128": "icons/teachText-128.png",
+        "512": "icons/teachText-512.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 149,
+          "colors": 95,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14
+          },
+          "ink": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 12,
+            "width": 14,
+            "height": 12
+          },
+          "gridShape": "square",
+          "sha256": "7d6510c9a50521615ff8199bc23bf3e9c1ef672a6faa4c0c46e6256d79a85d29",
+          "bytes": 598
+        },
+        "32": {
+          "pixels": 555,
+          "colors": 290,
+          "bbox": {
+            "minX": 3,
+            "minY": 3,
+            "maxX": 28,
+            "maxY": 29
+          },
+          "ink": {
+            "minX": 3,
+            "minY": 3,
+            "maxX": 28,
+            "maxY": 28,
+            "width": 26,
+            "height": 26
+          },
+          "gridShape": "square",
+          "sha256": "3c428c8738c2953226b5bb6f95b97aee41fc10fc2af678da37040654c656b4bb",
+          "bytes": 1459
+        },
+        "128": {
+          "pixels": 8084,
+          "colors": 1054,
+          "bbox": {
+            "minX": 14,
+            "minY": 11,
+            "maxX": 113,
+            "maxY": 116
+          },
+          "ink": {
+            "minX": 14,
+            "minY": 11,
+            "maxX": 113,
+            "maxY": 115,
+            "width": 100,
+            "height": 105
+          },
+          "gridShape": "square",
+          "sha256": "4bcb3b202204aa1e26f59a95d6c23892f8f0e6fb05a5ecdda92e31267a898f6e",
+          "bytes": 6609
+        },
+        "512": {
+          "pixels": 126076,
+          "colors": 2118,
+          "bbox": {
+            "minX": 56,
+            "minY": 46,
+            "maxX": 455,
+            "maxY": 465
+          },
+          "ink": {
+            "minX": 56,
+            "minY": 46,
+            "maxX": 454,
+            "maxY": 465,
+            "width": 399,
+            "height": 420
+          },
+          "gridShape": "square",
+          "sha256": "23936fb0d15790ab26142e09879badbe7cc1a81f337618efe09f1c25ca53aab8",
+          "bytes": 35190
+        }
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5313,
+          "meanLum": 221.29,
+          "lumStd": 44.44,
+          "edgeEnergy": 47
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5156,
+          "meanLum": 213.62,
+          "lumStd": 60.17,
+          "edgeEnergy": 192
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5006,
+          "meanLum": 216.53,
+          "lumStd": 56.89,
+          "edgeEnergy": 412
+        }
+      }
+    },
+    "assistant": {
+      "label": "ClioTalk",
+      "genre": "application",
+      "prototype": "10.6 realistic conversation pair: a restrained cerulean resin user balloon overlapping a frosted reply balloon with a clearly dashed graphite-blue rim",
+      "perspective": "shallow overlapping desk objects",
+      "material": "restrained translucent resin, frosted white surface, and graphite-blue edging",
+      "comparison": {
+        "evidence": "captures/10-6-Snow-Leopard-Applications.png",
+        "crop": [
+          940,
+          236,
+          92,
+          92
+        ]
+      },
+      "metaphorKey": "solid-user-dashed-reply-balloons",
+      "sourceKind": "accepted-imagegen-era-illustration",
+      "reviewStatus": "accepted-imagegen",
+      "sizes": {
+        "16": "icons/assistant-16.png",
+        "32": "icons/assistant-32.png",
+        "128": "icons/assistant-128.png",
+        "512": "icons/assistant-512.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 125,
+          "colors": 33,
+          "bbox": {
+            "minX": 1,
+            "minY": 2,
+            "maxX": 14,
+            "maxY": 13
+          },
+          "ink": {
+            "minX": 1,
+            "minY": 2,
+            "maxX": 14,
+            "maxY": 13,
+            "width": 14,
+            "height": 12
+          },
+          "gridShape": "square",
+          "sha256": "aef64db05d15273c2b3c94d3d8447f66dabb3a0cd16ea1eaaac9520c56de5c28",
+          "bytes": 342
+        },
+        "32": {
+          "pixels": 513,
+          "colors": 141,
+          "bbox": {
+            "minX": 2,
+            "minY": 3,
+            "maxX": 29,
+            "maxY": 28
+          },
+          "ink": {
+            "minX": 2,
+            "minY": 3,
+            "maxX": 29,
+            "maxY": 28,
+            "width": 28,
+            "height": 26
+          },
+          "gridShape": "square",
+          "sha256": "c0f3b2233ca7cf0f347ae72aa2e76c144048c5a90052f96f9494e347eddcd8f1",
+          "bytes": 1008
+        },
+        "128": {
+          "pixels": 8293,
+          "colors": 3979,
+          "bbox": {
+            "minX": 9,
+            "minY": 12,
+            "maxX": 118,
+            "maxY": 115
+          },
+          "ink": {
+            "minX": 10,
+            "minY": 13,
+            "maxX": 117,
+            "maxY": 113,
+            "width": 108,
+            "height": 101
+          },
+          "gridShape": "square",
+          "sha256": "ecc1dcb3bb27b55ba9bac99f70c8b24bf78c2ea9ed2edc194253bc7ec89a7b87",
+          "bytes": 14203
+        },
+        "512": {
+          "pixels": 130192,
+          "colors": 24562,
+          "bbox": {
+            "minX": 39,
+            "minY": 51,
+            "maxX": 473,
+            "maxY": 461
+          },
+          "ink": {
+            "minX": 40,
+            "minY": 52,
+            "maxX": 470,
+            "maxY": 457,
+            "width": 431,
+            "height": 406
+          },
+          "gridShape": "square",
+          "sha256": "75cfcf656025a3b414584d75ec485430d3749df89b630b853daaa8566a083824",
+          "bytes": 158593
+        }
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5313,
+          "meanLum": 146.6,
+          "lumStd": 55.2,
+          "edgeEnergy": 59
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5098,
+          "meanLum": 144.75,
+          "lumStd": 62.67,
+          "edgeEnergy": 224
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5017,
+          "meanLum": 143.79,
+          "lumStd": 64.27,
+          "edgeEnergy": 332
+        }
+      }
+    },
+    "scrapbook": {
+      "label": "Scrapbook",
+      "genre": "application",
+      "prototype": "cloth-bound clipping album with a mounted print",
+      "perspective": "desk application object",
+      "material": "book cloth, paper block, photo emulsion",
+      "comparison": {
+        "evidence": "captures/10-6-Snow-Leopard-Applications.png",
+        "crop": [
+          205,
+          90,
+          92,
+          92
+        ]
+      },
+      "metaphorKey": "bound-album-with-print",
+      "sourceKind": "original-measured-snow-leopard-reconstruction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/scrapbook-16.png",
+        "32": "icons/scrapbook-32.png",
+        "128": "icons/scrapbook-128.png",
+        "512": "icons/scrapbook-512.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 194,
+          "colors": 67,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14
+          },
+          "ink": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14,
+            "width": 14,
+            "height": 14
+          },
+          "gridShape": "square",
+          "sha256": "ae8bb90e1e2ed1dceebff770b7dda3f24e52eef9e74b3ee6fd30d66e78d01f6c",
+          "bytes": 426
+        },
+        "32": {
+          "pixels": 721,
+          "colors": 398,
+          "bbox": {
+            "minX": 3,
+            "minY": 1,
+            "maxX": 28,
+            "maxY": 30
+          },
+          "ink": {
+            "minX": 3,
+            "minY": 1,
+            "maxX": 28,
+            "maxY": 30,
+            "width": 26,
+            "height": 30
+          },
+          "gridShape": "portrait",
+          "sha256": "cd91b9341c41eda3f2db274951e1b7a30e1e7cf1c27de96829b5c1656a39c4c5",
+          "bytes": 1424
+        },
+        "128": {
+          "pixels": 10120,
+          "colors": 1770,
+          "bbox": {
+            "minX": 13,
+            "minY": 5,
+            "maxX": 114,
+            "maxY": 122
+          },
+          "ink": {
+            "minX": 14,
+            "minY": 5,
+            "maxX": 113,
+            "maxY": 122,
+            "width": 100,
+            "height": 118
+          },
+          "gridShape": "portrait",
+          "sha256": "655f9f1a521de3a35f0c7f6238e422d9aad05f7c357a92a75b859ea7576dab38",
+          "bytes": 8190
+        },
+        "512": {
+          "pixels": 159525,
+          "colors": 5067,
+          "bbox": {
+            "minX": 54,
+            "minY": 20,
+            "maxX": 457,
+            "maxY": 492
+          },
+          "ink": {
+            "minX": 55,
+            "minY": 20,
+            "maxX": 456,
+            "maxY": 491,
+            "width": 402,
+            "height": 472
+          },
+          "gridShape": "portrait",
+          "sha256": "2c9369112a7e1c4e625e432d19c33e3625c82375fadba78d2071be0341c320f3",
+          "bytes": 60288
+        }
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6836,
+          "meanLum": 123.76,
+          "lumStd": 57.37,
+          "edgeEnergy": 110
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6367,
+          "meanLum": 123.38,
+          "lumStd": 64.44,
+          "edgeEnergy": 248
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.631,
+          "meanLum": 122.84,
+          "lumStd": 64.86,
+          "edgeEnergy": 377
+        }
+      }
+    },
+    "reviewDesk": {
+      "label": "Review Desk",
+      "genre": "application",
+      "prototype": "marked manuscript under a lens with a red pencil",
+      "perspective": "tilted desk objects",
+      "material": "manuscript paper, red pencil, metal and glass",
+      "comparison": {
+        "evidence": "captures/10-6-Snow-Leopard-Applications.png",
+        "crop": [
+          500,
+          528,
+          88,
+          88
+        ]
+      },
+      "metaphorKey": "marked-manuscript-with-lens",
+      "sourceKind": "original-measured-snow-leopard-reconstruction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/reviewDesk-16.png",
+        "32": "icons/reviewDesk-32.png",
+        "128": "icons/reviewDesk-128.png",
+        "512": "icons/reviewDesk-512.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 164,
+          "colors": 86,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 15
+          },
+          "ink": {
+            "minX": 2,
+            "minY": 1,
+            "maxX": 13,
+            "maxY": 14,
+            "width": 12,
+            "height": 14
+          },
+          "gridShape": "square",
+          "sha256": "1ba86453962d8b8f2a4933e4d529a908c61b16ef5742d528b8638cac7112dea2",
+          "bytes": 602
+        },
+        "32": {
+          "pixels": 614,
+          "colors": 421,
+          "bbox": {
+            "minX": 2,
+            "minY": 2,
+            "maxX": 29,
+            "maxY": 29
+          },
+          "ink": {
+            "minX": 3,
+            "minY": 2,
+            "maxX": 28,
+            "maxY": 29,
+            "width": 26,
+            "height": 28
+          },
+          "gridShape": "square",
+          "sha256": "992ce8f16b135618646c54480964f5b4ad4cde72a57111207cf6f15b8b1b8bdf",
+          "bytes": 1761
+        },
+        "128": {
+          "pixels": 8840,
+          "colors": 2380,
+          "bbox": {
+            "minX": 12,
+            "minY": 8,
+            "maxX": 115,
+            "maxY": 119
+          },
+          "ink": {
+            "minX": 12,
+            "minY": 9,
+            "maxX": 115,
+            "maxY": 118,
+            "width": 104,
+            "height": 110
+          },
+          "gridShape": "square",
+          "sha256": "853c1986cd24571d3f14fa84228395305594c060f1577d8ed014fd3446d58b2c",
+          "bytes": 10806
+        },
+        "512": {
+          "pixels": 138095,
+          "colors": 5653,
+          "bbox": {
+            "minX": 50,
+            "minY": 35,
+            "maxX": 461,
+            "maxY": 476
+          },
+          "ink": {
+            "minX": 50,
+            "minY": 35,
+            "maxX": 461,
+            "maxY": 475,
+            "width": 412,
+            "height": 441
+          },
+          "gridShape": "square",
+          "sha256": "204afc47cb6800f0532e2f82ddf390efa0e0b904b54a6ea469528aa035d9ea64",
+          "bytes": 65655
+        }
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5898,
+          "meanLum": 185.31,
+          "lumStd": 71.42,
+          "edgeEnergy": 84
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5527,
+          "meanLum": 188.08,
+          "lumStd": 71.8,
+          "edgeEnergy": 280
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5476,
+          "meanLum": 187.44,
+          "lumStd": 73.6,
+          "edgeEnergy": 411
+        }
+      }
+    },
+    "docMap": {
+      "label": "DocMap",
+      "genre": "application",
+      "prototype": "printed page whose headings branch into a map with steel nodes",
+      "perspective": "tilted desk objects",
+      "material": "printed map paper and card stock",
+      "comparison": {
+        "evidence": "captures/10-6-Snow-Leopard-Applications.png",
+        "crop": [
+          205,
+          236,
+          92,
+          92
+        ]
+      },
+      "metaphorKey": "branching-document-map",
+      "sourceKind": "original-measured-snow-leopard-reconstruction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/docMap-16.png",
+        "32": "icons/docMap-32.png",
+        "128": "icons/docMap-128.png",
+        "512": "icons/docMap-512.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 148,
+          "colors": 80,
+          "bbox": {
+            "minX": 1,
+            "minY": 2,
+            "maxX": 14,
+            "maxY": 13
+          },
+          "ink": {
+            "minX": 1,
+            "minY": 2,
+            "maxX": 14,
+            "maxY": 13,
+            "width": 14,
+            "height": 12
+          },
+          "gridShape": "square",
+          "sha256": "5fce4d7eb698a461d47f02b8dd88139930ba66d557f5dfc32ccf5ee227f1d3f1",
+          "bytes": 566
+        },
+        "32": {
+          "pixels": 547,
+          "colors": 185,
+          "bbox": {
+            "minX": 2,
+            "minY": 3,
+            "maxX": 29,
+            "maxY": 28
+          },
+          "ink": {
+            "minX": 2,
+            "minY": 3,
+            "maxX": 29,
+            "maxY": 28,
+            "width": 28,
+            "height": 26
+          },
+          "gridShape": "square",
+          "sha256": "49a00a4b7e98d2a6ab9153e1b92b577f874cbe6b9134e480d8c039b6396b4ac5",
+          "bytes": 1138
+        },
+        "128": {
+          "pixels": 7593,
+          "colors": 866,
+          "bbox": {
+            "minX": 11,
+            "minY": 9,
+            "maxX": 116,
+            "maxY": 117
+          },
+          "ink": {
+            "minX": 11,
+            "minY": 10,
+            "maxX": 116,
+            "maxY": 117,
+            "width": 106,
+            "height": 108
+          },
+          "gridShape": "square",
+          "sha256": "15f4cd6fcac58a230ecffa8a25e842ea79650bbc545992f50861efed2c2da526",
+          "bytes": 5557
+        },
+        "512": {
+          "pixels": 116031,
+          "colors": 1682,
+          "bbox": {
+            "minX": 46,
+            "minY": 39,
+            "maxX": 465,
+            "maxY": 472
+          },
+          "ink": {
+            "minX": 46,
+            "minY": 40,
+            "maxX": 465,
+            "maxY": 471,
+            "width": 420,
+            "height": 432
+          },
+          "gridShape": "square",
+          "sha256": "838b8a48d9805952bebd1a0b6ede983ce8bdeda88ef4731b3afaa632c05539e8",
+          "bytes": 31255
+        }
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5664,
+          "meanLum": 205.53,
+          "lumStd": 66.81,
+          "edgeEnergy": 49
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.4902,
+          "meanLum": 209.32,
+          "lumStd": 68.88,
+          "edgeEnergy": 145
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4892,
+          "meanLum": 206.93,
+          "lumStd": 71.76,
+          "edgeEnergy": 221
+        }
+      }
+    },
+    "projectDisk": {
+      "label": "Project Hard Disk",
+      "genre": "hardware",
+      "prototype": "labeled external project volume",
+      "perspective": "shallow top view",
+      "material": "coated enclosure, pale foot, paper label",
+      "comparison": {
+        "evidence": "captures/10-6-Snow-Leopard-Desktop.png",
+        "crop": [
+          1805,
+          110,
+          66,
+          70
+        ]
+      },
+      "metaphorKey": "labelled-external-volume",
+      "sourceKind": "original-measured-snow-leopard-reconstruction",
+      "reviewStatus": "accepted-core",
+      "sizes": {
+        "16": "icons/projectDisk-16.png",
+        "32": "icons/projectDisk-32.png",
+        "128": "icons/projectDisk-128.png",
+        "512": "icons/projectDisk-512.png"
+      },
+      "metrics": {
+        "16": {
+          "pixels": 194,
+          "colors": 133,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14
+          },
+          "ink": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14,
+            "width": 14,
+            "height": 14
+          },
+          "gridShape": "square",
+          "sha256": "57a9eef4901b5862f207864ad21f52d7d4f3a6b9b3f463eca37778e6cb560648",
+          "bytes": 571
+        },
+        "32": {
+          "pixels": 670,
+          "colors": 358,
+          "bbox": {
+            "minX": 3,
+            "minY": 2,
+            "maxX": 28,
+            "maxY": 29
+          },
+          "ink": {
+            "minX": 3,
+            "minY": 2,
+            "maxX": 28,
+            "maxY": 28,
+            "width": 26,
+            "height": 27
+          },
+          "gridShape": "square",
+          "sha256": "d76febb1fb026c8755285917bd77cbf83541857c7be12b93260820eaa1fd748f",
+          "bytes": 1061
+        },
+        "128": {
+          "pixels": 10193,
+          "colors": 774,
+          "bbox": {
+            "minX": 13,
+            "minY": 10,
+            "maxX": 114,
+            "maxY": 117
+          },
+          "ink": {
+            "minX": 13,
+            "minY": 10,
+            "maxX": 114,
+            "maxY": 117,
+            "width": 102,
+            "height": 108
+          },
+          "gridShape": "square",
+          "sha256": "b21334f38fe38b80e06dc80c47bbebc12621bebd36e108ee7dbc5d06b68d7b90",
+          "bytes": 4206
+        },
+        "512": {
+          "pixels": 160897,
+          "colors": 2576,
+          "bbox": {
+            "minX": 52,
+            "minY": 40,
+            "maxX": 459,
+            "maxY": 471
+          },
+          "ink": {
+            "minX": 52,
+            "minY": 40,
+            "maxX": 459,
+            "maxY": 471,
+            "width": 408,
+            "height": 432
+          },
+          "gridShape": "square",
+          "sha256": "d9131b39f791c12b6bb88a699f4728e5238bfffda559f5116182caa3f5dd1818",
+          "bytes": 26215
+        }
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6875,
+          "meanLum": 146.16,
+          "lumStd": 50.77,
+          "edgeEnergy": 101
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6602,
+          "meanLum": 147.58,
+          "lumStd": 55.89,
+          "edgeEnergy": 247
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6395,
+          "meanLum": 149.22,
+          "lumStd": 57.12,
+          "edgeEnergy": 258
+        }
+      }
+    }
+  }
+}

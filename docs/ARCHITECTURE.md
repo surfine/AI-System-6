@@ -8,9 +8,9 @@ builds, and narrow boundaries over framework machinery.
 
 ```mermaid
 flowchart TB
-    UI["Browser desktop\napp/ + styles/"]
+    UI["Browser desktop\napps/desktop/"]
     DB["IndexedDB\nprojects + settings"]
-    API["Stateless Node server\nsrc/"]
+    API["Stateless Node server\napps/server/"]
     LOCAL["Local providers\nLM Studio + Ollama"]
     CLOUD["Compatible cloud providers"]
     WEB["Search + article + archive services"]
@@ -29,43 +29,46 @@ own projects or an application database.
 ## Source layout
 
 ```text
-app/
-  core/          desktop services and shared runtime primitives
-  features/      user-facing applications and workflows
-  data/          static registries and product data
-  generated/     deterministic build outputs consumed by the browser
-src/             server, provider adapters, and server-local types
-styles/          base object grammar plus named appearance layers
-assets/          runtime media and heavyweight lazy payloads
-shell/           native Apple-silicon wrapper around the local web runtime
-scripts/         builders, audits, verification, and repository gates
-tests/           feature contracts and optional browser diagnostics
-docs/            public architecture, development, and design evidence
+apps/
+  desktop/       complete browser product and static web root
+    app/         core services, applications, data, generated registries
+    styles/      object grammar plus named appearance layers
+    assets/      runtime media and heavyweight lazy payloads
+  server/        stateless server, provider adapters, server-local types
+site/            independently deployable product website
+platform/
+  macos/         native rewrite and lightweight webview shell
+  web/           production web-release and host contracts
+tooling/         builders, audits, verification, packaging, release
+tests/           executable feature and architecture contracts
+docs/            public architecture, development, and design knowledge
+internal/        evidence, experiments, archives, maintainer operations
 ```
 
-Root-level `index.html`, `app.js`, and `styles.css` are deliberate entry points,
-not miscellaneous files. They make the browser boot path inspectable. Generated
-`app.bundle.js` and `styles.bundle.css` are local build artifacts and are not
-source-authoritative.
+`apps/desktop/index.html`, `app.js`, and `styles.css` are the inspectable browser
+entry points. Generated `app.bundle.js` and `styles.bundle.css` stay beside the
+desktop they belong to and are not source-authoritative. Browser-facing paths
+remain `/app`, `/assets`, and `/data`; builders resolve those logical URLs
+through one physical `apps/desktop` boundary.
 
 ## Runtime layers
 
 ### Browser OS
 
-`app/` implements the desktop, object model, window manager, persistence,
+`apps/desktop/app/` implements the desktop, object model, window manager, persistence,
 applications, and writing route. Features communicate through explicit shared
 services and durable objects instead of importing an application framework.
 
 ### Appearance system
 
-`styles/` applies one semantic object grammar through six supported appearances:
+`apps/desktop/styles/` applies one semantic object grammar through six supported appearances:
 System 6, Platinum, Aqua, Snow Leopard, Yosemite, and Liquid Glass. Appearances
 may change material and historically grounded geometry; they must not invent a
 second product structure or silently change application state.
 
 ### Server
 
-`src/` exposes a bounded HTTP and streaming surface for model providers, web
+`apps/server/` exposes a bounded HTTP and streaming surface for model providers, web
 reading, OCR or transcription adapters, and version identity. It is stateless
 with respect to projects. Credentials are supplied at runtime and must never be
 serialized into project files, chats, backups, or exports.
@@ -104,7 +107,7 @@ The source is plain JavaScript with a deterministic concatenation and vendor
 build. Verification is layered:
 
 1. feature contracts pin product behavior and architectural boundaries;
-2. checkJs and the `src/` typecheck guard the JavaScript/TypeScript surfaces;
+2. checkJs and the `apps/server/` typecheck guard the JavaScript/TypeScript surfaces;
 3. CSS, design, data, version, and bundle gates guard cross-cutting budgets;
 4. optional browser diagnostics inspect rendered behavior;
 5. the public-tree gate proves a fresh clone contains every advertised command

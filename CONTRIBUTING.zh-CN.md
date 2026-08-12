@@ -1,5 +1,5 @@
 <!-- canonical-source: CONTRIBUTING.md -->
-<!-- source-sha256: 8974bd685405619f71d29772e6042295d3db5c2300bafdd2127a3bb5bcc84400 -->
+<!-- source-sha256: df6feff22327ac823cdddadef61efc08d4d7a1281ff8ee4f44775d15502f382a -->
 
 > 英文版为准 ・ 仅供人类参考
 
@@ -35,13 +35,14 @@ npm start
 
 | 路径 | 职责 |
 | --- | --- |
-| `app/` | 浏览器运行时、应用、核心服务、生成注册表 |
-| `src/` | 无状态 Node.js 服务与提供商适配器 |
-| `styles/` | 共享对象语法与外观层 |
-| `assets/` | 运行时图标、字体、OCR、媒体与 3D 载荷 |
-| `scripts/` | 确定性构建与验证工具 |
+| `apps/desktop/` | 完整浏览器产品：入口、应用、样式、数据与资产 |
+| `apps/server/` | 无状态 Node.js 服务与提供商适配器 |
+| `site/` | 可独立部署的产品官网 |
+| `platform/` | macOS 原生实现、WebView 壳与 Web 发布契约 |
+| `tooling/` | 确定性构建、验证与发布工具 |
 | `tests/` | 可执行的产品与架构契约 |
 | `docs/` | 公开架构、开发与设计证据 |
+| `internal/` | 维护者证据、实验、归档与 vendored 源 |
 
 改变边界前请阅读[架构](docs/ARCHITECTURE.zh-CN.md)，命令约定见
 [开发指南](docs/DEVELOPMENT.zh-CN.md)。

@@ -2,8 +2,7 @@
 // stays compatible, but none of the retired card/canvas UI is allowed back
 // into the live DOM or lazy chain.
 
-import { existsSync } from "node:fs";
-import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
+import { createFeatureTest, exists, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("draft-desk");
 
@@ -14,8 +13,8 @@ const menus = read("app/data/menus.js");
 const config = read("app/core/config.js");
 const windowManager = read("app/core/window-manager.js");
 const workingSession = read("app/core/working-session.js");
-const manifest = read("scripts/runtime-manifest.mjs");
-const styleManifest = read("scripts/style-manifest.mjs");
+const manifest = read("tooling/runtime-manifest.mjs");
+const styleManifest = read("tooling/style-manifest.mjs");
 const foundation = read("styles/00-foundation.css");
 const workspace = read("app/core/quick-draft-workspace.js");
 const coordinator = read("app/features/draft-desk.js");
@@ -41,8 +40,8 @@ test.assertMatches(manifest, /appModulePaths[\s\S]*"app\/core\/quick-draft-works
 test.assertMatches(manifest, /lazyRuntimePaths[\s\S]*"app\/features\/draft-desk\.js"/, "Draft Desk stays lazy");
 test.assertNotIncludes(manifest, "app/features/finder-draft.js", "the retired coordinator is not bundled");
 test.assertNotIncludes(manifest, "app/features/quick-draft-canvas.js", "the retired canvas is not bundled");
-test.assert(!existsSync("app/features/finder-draft.js"), "the retired coordinator file is gone");
-test.assert(!existsSync("app/features/quick-draft-canvas.js"), "the retired canvas file is gone");
+test.assert(!exists("app/features/finder-draft.js"), "the retired coordinator file is gone");
+test.assert(!exists("app/features/quick-draft-canvas.js"), "the retired canvas file is gone");
 test.assertIncludes(styleManifest, '"styles/91-draft-desk.css"', "Draft Desk owns a late independent stylesheet");
 test.assertIncludes(foundation, "--draft-desk-window-width:", "the target window geometry has a named token");
 test.assertIncludes(foundation, "--quick-draft-shelf-width: 168px;", "Figure 01 fixes the material shelf at 168px");

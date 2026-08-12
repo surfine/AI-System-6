@@ -34,13 +34,14 @@ Control Panel.
 
 | Path | Owns |
 | --- | --- |
-| `app/` | Browser runtime, apps, core services, generated registries |
-| `src/` | Stateless Node.js server and provider adapters |
-| `styles/` | Shared object grammar and appearance layers |
-| `assets/` | Runtime icons, fonts, OCR, media, and 3D payloads |
-| `scripts/` | Deterministic build and verification tools |
+| `apps/desktop/` | Complete browser product: runtime, apps, styles, and assets |
+| `apps/server/` | Stateless Node.js server and provider adapters |
+| `site/` | Independently deployable product website |
+| `platform/` | macOS implementations and web-release contracts |
+| `tooling/` | Deterministic build and verification tools |
 | `tests/` | Executable product and architecture contracts |
 | `docs/` | Public architecture, development, and design evidence |
+| `internal/` | Non-public evidence, experiments, archives, and operations |
 
 See [Architecture](docs/ARCHITECTURE.md) before changing a boundary and
 [Development](docs/DEVELOPMENT.md) for the command surface.

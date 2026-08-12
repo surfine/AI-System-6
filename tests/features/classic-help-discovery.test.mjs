@@ -7,7 +7,7 @@ import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 const test = createFeatureTest("classic-help-discovery");
 const html = read("index.html");
 const app = read("app.js");
-const manifest = read("scripts/runtime-manifest.mjs");
+const manifest = read("tooling/runtime-manifest.mjs");
 const menus = read("app/data/menus.js");
 const actions = read("app/core/actions.js");
 const wireup = read("app/core/wireup.js");

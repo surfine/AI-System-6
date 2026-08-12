@@ -136,9 +136,9 @@ Theme changes must not alter without a documented reason:
 
 Appearance work should be token-first:
 
-1. Add the default token in `styles/00-foundation.css`.
-2. Put historical parameter-table deltas in `styles/65-appearance-themes.css`,
-   or Liquid Glass values in `styles/70-liquid-glass.css`.
+1. Add the default token in `apps/desktop/styles/00-foundation.css`.
+2. Put historical parameter-table deltas in `apps/desktop/styles/65-appearance-themes.css`,
+   or Liquid Glass values in `apps/desktop/styles/70-liquid-glass.css`.
 3. Compare child work against its registry `recipeBase` and override only the
    semantic values or small structural recipes that truly differ.
 4. Consume the token from the shared base selector.
@@ -203,7 +203,7 @@ Prefer existing primitives before adding classes:
 - the custom System 6 select harness for finite dropdowns
 - Finder items and list rows for objects
 - shared empty, loading, error, selected, hover, focus, active, and disabled states
-- existing system icon ids through `app/core/system-icons.js`
+- existing system icon ids through `apps/desktop/app/core/system-icons.js`
 
 Do not add a new component shape because it looks modern. Add one only when an
 existing object role cannot express the task.
@@ -211,7 +211,7 @@ existing object role cannot express the task.
 ## Layout And Geometry
 
 Window and panel geometry is tokenized. New repeated values belong in
-`styles/00-foundation.css`, not in scattered selectors.
+`apps/desktop/styles/00-foundation.css`, not in scattered selectors.
 
 Use:
 
@@ -234,7 +234,7 @@ Avoid:
 Dense tool surfaces should use panes, rows, dividers, and object lists. Cards
 are reserved for repeated items, modals, and genuinely framed tools.
 
-Layering uses the named `--z-*` vocabulary from `styles/00-foundation.css`.
+Layering uses the named `--z-*` vocabulary from `apps/desktop/styles/00-foundation.css`.
 Global layers are ordered as windows, pinned windows, system modals, boot/shutdown,
 demo overlays, then system menus. Window-internal controls, scrollbars, select
 menus, and command popovers must use local `--z-local-*` tokens inside their
@@ -388,14 +388,14 @@ Use the output from `npm run visual:eval` with the browser snapshot workflow in
 Optional design anti-pattern scan:
 
 ```sh
-node external/impeccable/skill/scripts/detect.mjs --json index.html app styles
+node external/impeccable/skill/tooling/detect.mjs --json index.html app styles
 ```
 
 Treat third-party and generated findings as signals, not automatic blockers.
 Local product rules win when they are more specific.
 
 `npm run verify:design` is the local blocker. Its counts live in
-`scripts/design-budget.json` and may only increase with explicit justification.
+`tooling/design-budget.json` and may only increase with explicit justification.
 
 ## Migration Priorities
 

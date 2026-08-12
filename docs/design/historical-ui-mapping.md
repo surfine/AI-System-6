@@ -7,7 +7,7 @@ non-historical glass skin). It is a working contract for execution agents:
 **capabilities may come from 2026, but the visual grammar must belong to the
 target era.**
 
-Companion evidence: `drafts/appearance-external-research.md` (Quaqua / 512
+Companion evidence: `internal/evidence/drafts/appearance-external-research.md` (Quaqua / 512
 Pixels / GTK / web-donor measurements), `tests/visual/theme-lab-fidelity/*`
 (harness + review boards).
 
@@ -182,5 +182,5 @@ Any of these in a non-Liquid-Glass appearance is an anachronism to fix:
 When a more accurate historical mother is found, update this document and
 record the reference source (URL + capture scale + date) in the same edit.
 All measurements consulted for the current recipes live in
-`drafts/appearance-external-research.md`; the fidelity manifests pin the
+`internal/evidence/drafts/appearance-external-research.md`; the fidelity manifests pin the
 canonical sources and crop coordinates.

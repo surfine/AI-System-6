@@ -9,9 +9,9 @@ import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("model-roles");
 const require = createRequire(import.meta.url);
-const taskRuntime = require("../../app/shared/model-task-runtime.js");
+const taskRuntime = require("../../apps/desktop/app/shared/model-task-runtime.js");
 const roles = read("app/core/model-roles.js");
-const manifest = read("scripts/runtime-manifest.mjs");
+const manifest = read("tooling/runtime-manifest.mjs");
 const chatMessages = read("app/core/chat-messages.js");
 const index = read("index.html");
 

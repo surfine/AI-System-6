@@ -6,7 +6,7 @@ the visual principles in [DESIGN.md](DESIGN.md) into repeatable decisions for
 new applications.
 
 The rules in this document are enforced where practical by
-[`scripts/interface-guidelines-contract.mjs`](../../scripts/interface-guidelines-contract.mjs)
+[`tooling/interface-guidelines-contract.mjs`](../../tooling/interface-guidelines-contract.mjs)
 and `tests/features/interface-guidelines.test.mjs`. A new `data-window` is not
 complete until it declares an object role and shell in that registry.
 
@@ -234,7 +234,7 @@ Canonical geometry tokens include:
 Rules:
 
 - Use the token owned by the component before adding a numeric value.
-- Repeated geometry belongs in `styles/00-foundation.css`.
+- Repeated geometry belongs in `apps/desktop/styles/00-foundation.css`.
 - Theme values belong in the existing theme block; do not add a selector twin
   when a token can carry the material.
 - Use Grid for two-dimensional shell structure, Flexbox for one-dimensional

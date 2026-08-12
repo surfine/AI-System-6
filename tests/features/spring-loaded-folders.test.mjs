@@ -11,7 +11,7 @@ import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 const test = createFeatureTest("spring-loaded-folders");
 const dragDrop = read("app/core/drag-drop.js");
 const reader = read("app/features/reader.js");
-const manifest = read("scripts/runtime-manifest.mjs");
+const manifest = read("tooling/runtime-manifest.mjs");
 
 // ---- Structure contract ----------------------------------------------------
 test.assertIncludes(dragDrop, "springFolderDelayMs = 650", "the spring delay is a named 650ms constant");

@@ -11,11 +11,11 @@
 import vm from "node:vm";
 import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { createFeatureTest, read, root } from "../helpers/feature-test-harness.mjs";
+import { createFeatureTest, read, resolveProjectPath } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("system-sounds");
 const source = read("app/core/system-sounds.js");
-const manifest = read("scripts/runtime-manifest.mjs");
+const manifest = read("tooling/runtime-manifest.mjs");
 
 test.assertIncludes(manifest, '"app/core/system-sounds.js"', "the system-sounds module is eager in the runtime manifest");
 test.assertMatches(
@@ -28,9 +28,9 @@ test.assertNotIncludes(source, "fetch(", "system-sounds never performs network w
 // ---- Static contract: every requested sound type is defined --------------
 function walkFiles(dir) {
   const out = [];
-  for (const entry of readdirSync(join(root, dir))) {
+  for (const entry of readdirSync(resolveProjectPath(dir))) {
     const full = join(dir, entry);
-    const stat = statSync(join(root, full));
+    const stat = statSync(resolveProjectPath(full));
     if (stat.isDirectory()) out.push(...walkFiles(full));
     else if (entry.endsWith(".js")) out.push(full);
   }

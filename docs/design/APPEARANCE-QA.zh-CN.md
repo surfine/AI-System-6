@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/APPEARANCE-QA.md -->
-<!-- source-sha256: e11177ab6ee3e474847cd9c18fa0a0365a0dec95a72ef5ba73578fe7d1054f7c -->
+<!-- source-sha256: a1802979f2847c1561478903946de13c467766f7750f1c78f98a65503e71e0dc -->
 
 英文版为准。本文档仅供人类参考。
 
@@ -61,7 +61,7 @@ Aqua 与 Snow Leopard 的 focus ring 本来就是对的——Aqua 对照原生 1
 0/0/0。只是 Theme Lab 显示不出来：它的静息 search-field 规则特异性为 (0,2,1)，
 对 Snow Leopard 压过了共享的绘制式 focus 规则 (0,2,0)，对 Aqua 与其 focus 配方
 (0,2,1) 同级并靠文档顺序取胜。真实 `:focus` 从未受影响，因为时代的 `:focus`
-配方位于 (0,2,2)。修复方式是在 `styles/66-theme-lab.css` 里加一条只作用于实验室
+配方位于 (0,2,2)。修复方式是在 `apps/desktop/styles/66-theme-lab.css` 里加一条只作用于实验室
 的规则，仅提供 ring，因此各时代保留自己的 search-field 圆角、内边距与背景。
 
 尚未 pin 的状态缺口，以及各自的原因：

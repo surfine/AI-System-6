@@ -1,9 +1,9 @@
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
-import { CORE_OBJECTS, ERAS, GENERATION_OBJECTS, REMAINING_OBJECTS, allMasterPromptRecords, buildPrompt } from "../../scripts/icon-generation/generated-era-core-prompts.mjs";
+import { CORE_OBJECTS, ERAS, GENERATION_OBJECTS, REMAINING_OBJECTS, allMasterPromptRecords, buildPrompt } from "../../tooling/icon-generation/generated-era-core-prompts.mjs";
 
 const test = createFeatureTest("generated-era-icon-pipeline");
-const pipeline = read("scripts/generated-era-icon-pipeline.mjs");
-const promptSource = read("scripts/icon-generation/generated-era-core-prompts.mjs");
+const pipeline = read("tooling/generated-era-icon-pipeline.mjs");
+const promptSource = read("tooling/icon-generation/generated-era-core-prompts.mjs");
 const records = allMasterPromptRecords();
 
 test.assert(Object.keys(CORE_OBJECTS).length === 14, "the generated family locks fourteen semantic objects");
@@ -37,7 +37,7 @@ test.assertIncludes(buildPrompt("yosemite", "projectDisc"), "rainbow diffraction
 
 test.assertIncludes(pipeline, 'fetch(`${server}/api/image/generate`', "automated mode uses the existing server proxy");
 test.assertIncludes(pipeline, "AI_SYSTEM6_IMAGE_API_KEY", "automated mode reads the key from local environment only");
-test.assertIncludes(pipeline, "drafts/icon-generation/inbox", "manual mode has a stable drop folder");
+test.assertIncludes(pipeline, "internal/evidence/drafts/icon-generation/inbox", "manual mode has a stable drop folder");
 test.assertIncludes(pipeline, "gridTransform", "imports use the shared icon grid");
 test.assertIncludes(pipeline, "chromaToAlpha", "imports remove the flat key before placement");
 test.assertIncludes(pipeline, "quantiseSmall", "small sizes receive deterministic hinting rather than a raw copy");
