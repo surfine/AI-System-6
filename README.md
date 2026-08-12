@@ -1,91 +1,113 @@
 <div align="center">
 
-<samp>AI SYSTEM 6 / LOCAL-FIRST AI COMPUTER / BUILD 20260812.1</samp>
+<samp>1988 OBJECTS / 2026 INTELLIGENCE</samp>
 
-# CHAT IS AN APP.<br>NOT THE WHOLE COMPUTER.
+# AI System 6
 
-**AI System 6 is a file-native AI desktop inspired by Macintosh System 6.**<br>
-Search. Read. Clip. Map. Write. Review. Present. Keep the work on the desk.
+**The AI has a desktop now.**<br>
+A local-first, file-native AI computer inspired by Macintosh System 6.
 
-[**BOOT LIVE SYSTEM ↗**](https://system6.aaronlau.me)　·　[**WATCH 50S FILM ↗**](https://www.bilibili.com/video/BV1ht3m6UEDb/)　·　[**PRODUCT SITE ↗**](https://aisystem6.pages.dev)　·　[**MAC BETA ↓**](https://github.com/surfine/AI-System-6/releases/latest)
+[**BOOT LIVE SYSTEM**](https://system6.aaronlau.me)&nbsp;&nbsp;&nbsp;[**WATCH THE 50S FILM**](https://www.bilibili.com/video/BV1ht3m6UEDb/)&nbsp;&nbsp;&nbsp;[**ENTER PRODUCT SITE**](https://aisystem6.pages.dev)&nbsp;&nbsp;&nbsp;[**GET MAC BETA**](https://github.com/surfine/AI-System-6/releases/latest)
 
-<sub><a href="README.zh-CN.md">简体中文</a>　/　<a href="docs/README.md">DOCS</a>　/　<a href="CONTRIBUTING.md">CONTRIBUTE</a>　/　<a href="https://github.com/surfine/AI-System-6/stargazers">STAR THE MACHINE ★</a></sub>
+<sub><a href="README.zh-CN.md">简体中文</a> / <a href="docs/README.md">Docs</a> / <a href="CONTRIBUTING.md">Contribute</a> / <a href="https://github.com/surfine/AI-System-6/stargazers">Star the machine ★</a></sub>
 
-<br>
+<br><br>
 
-[![The real AI System 6 desktop moving a window by its classic dotted outline, then switching through all six appearances](apps/desktop/assets/readme/hero-desktop.gif)](https://system6.aaronlau.me)
+<a href="https://system6.aaronlau.me"><img src="site/img/og-poster.png" width="100%" alt="AI System 6 poster showing one computer across six eras from 1988 to 2026"></a>
 
-<sub>RECORDED FROM THE RUNNING SYSTEM · NOT A CONCEPT RENDER</sub>
+<sub>BOOT IT IN YOUR BROWSER. NO MODEL REQUIRED.</sub>
 
 </div>
 
-```text
-AI SYSTEM 6 / BOOT RECORD
-──────────────────────────────────────────────────────
-[ OK ] LOCAL-FIRST        projects live in your browser
-[ OK ] MODEL-AGNOSTIC     LM Studio · Ollama · DeepSeek
-[ OK ] FILE-NATIVE        sources go in · artifacts come out
-[ OK ] NO UI FRAMEWORK    plain JavaScript · visible machinery
-[ 2× ] 1.44 MB            hard boot budget, enforced in CI
-──────────────────────────────────────────────────────
-STATUS: THE AI HAS A DESKTOP NOW.
-```
-
-## The missing layer between a model and your work
+## Chat is an app. Not the whole computer.
 
 Chat is excellent at conversation. It is a poor filesystem, workspace,
 provenance model, and long-running project surface. AI System 6 restores the
-parts of a computer that chat removed:
+parts of a computer that chat removed.
 
 | A chat product | This computer |
 | --- | --- |
 | One thread owns the workflow | MultiFinder keeps real working apps open together |
 | Context disappears into a prompt | Sources, scraps, maps, drafts, and outputs stay visible |
-| Generated text quietly becomes truth | AI output is temporary until you save, clip, insert, or export it |
+| Generated text quietly becomes truth | AI output stays temporary until you save, clip, insert, or export it |
 | The answer is the endpoint | The endpoint is a file, manuscript, chart, deck, cover, or 3D object |
-| The model is the product | Bring a local model, a cloud model, or no model at all |
 
 > A disk tells you what lasts. A floppy tells you what is temporary. A
 > Scrapbook contains only what you chose to keep.
 
-## Sources go in. Files come out.
+## This is the running system
 
-```text
- WEB / PDF / AUDIO / IMAGE / NOTES
-                  │
-                  ▼
-  SEARCH ── READ ── CLIP ── MAP ── WRITE ── REVIEW
-     │        │       │       │        │         │
- Searcher   Reader  Scrapbook DocMap  Studio  Review Desk
-                  │
-                  └──────────────►  .md  .pdf  .pptx  .png  .usdz
-```
+<div align="center">
 
-Draft Desk handles the quick route. Writing Studio carries a serious project
-from research and Question Sheet through outline, sections, manuscript, and
-review. ClioChart, ClioStage, Cover Glass, and CMF Studio turn the same visible
-work into charts, presentations, visual artifacts, and AR-ready 3D files.
+[![AI System 6 moving a window by its classic dotted outline and switching through all six appearances](apps/desktop/assets/readme/hero-desktop.gif)](https://system6.aaronlau.me)
+
+<sub>RECORDED FROM THE PRODUCT. NOT A CONCEPT RENDER.</sub>
+
+</div>
 
 ## One desk. Six systems.
 
-`SYSTEM 6` → `PLATINUM` → `AQUA` → `SNOW LEOPARD` → `YOSEMITE` → `LIQUID GLASS`
+The files and open windows stay put. The whole computer changes era around
+them.
 
-The work never moves; the entire computer changes era around it. System 6 is
-the default and begins with real System 6.0.8 resources and observed Macintosh
-behavior. Known historical objects are evidence-led, not generic retro redraws.
-Modern appearances own independent, Retina-ready icon families.
+<table>
+  <tr>
+    <td width="33%" align="center"><img src="site/img/frames/classic.png" alt="System 6 appearance"><br><code>1988 / SYSTEM 6</code></td>
+    <td width="33%" align="center"><img src="site/img/frames/platinum.png" alt="Platinum appearance"><br><code>1999 / PLATINUM</code></td>
+    <td width="33%" align="center"><img src="site/img/frames/aqua.webp" alt="Aqua appearance"><br><code>2001 / AQUA</code></td>
+  </tr>
+  <tr>
+    <td width="33%" align="center"><img src="site/img/frames/snow-leopard.webp" alt="Snow Leopard appearance"><br><code>2009 / SNOW LEOPARD</code></td>
+    <td width="33%" align="center"><img src="site/img/frames/yosemite.webp" alt="Yosemite appearance"><br><code>2014 / YOSEMITE</code></td>
+    <td width="33%" align="center"><img src="site/img/frames/liquid-glass.webp" alt="Liquid Glass appearance"><br><code>2026 / LIQUID GLASS</code></td>
+  </tr>
+</table>
+
+Every frame is captured from the same live desktop by
+`npm run site:capture-frames`. System 6 begins with real System 6.0.8 resources
+and observed Macintosh behavior. Later eras own independent, Retina-ready icon
+families. This is a time machine with one working state, not six screenshots.
+
+## Sources go in. Files come out.
+
+```mermaid
+flowchart LR
+    A["Web / PDF / audio / image / notes"] --> B["Searcher + Reader"]
+    B --> C["Scrapbook"]
+    C --> D["DocMap"]
+    D --> E["Draft Desk + Writing Studio"]
+    E --> F["Review Desk"]
+    F --> G["Markdown / PDF / slides / chart / cover / USDZ"]
+    M{{"LM Studio / Ollama / DeepSeek"}} -. "optional" .-> B
+    M -. "optional" .-> E
+    M -. "optional" .-> F
+```
+
+AI is optional. Provenance is not. The server is a stateless bridge; durable
+project state lives in your browser. Credentials never enter project files,
+chats, backups, or exports.
 
 ## Impossible software for a 1988 computer
 
-| MACHINE | CAN NOW |
+| SYSTEM JOB | REAL APPLICATIONS |
 | --- | --- |
-| **Searcher + Time Machine** | search the web and revisit archived pages |
-| **File Floppy** | OCR images and documents; transcribe audio |
-| **ClioChart** | project Markdown data into editable charts |
-| **ClioStage** | build and present Markdown slide decks |
-| **Cover Glass** | render refractive WebGL typography |
-| **CMF Studio** | recolor 3D products and export USDZ for AR |
-| **Control Panel** | switch models, providers, language, and the whole visual era |
+| **Find and remember** | Searcher searches the web, Reader extracts sources, Time Machine revisits archived pages |
+| **Collect and understand** | File Floppy imports, OCRs, and transcribes; Scrapbook keeps chosen evidence; DocMap reveals structure |
+| **Write and inspect** | Draft Desk handles the quick route; Writing Studio carries research through manuscript; Review Desk checks the result |
+| **Make and ship** | ClioChart builds charts, ClioStage presents decks, Cover Glass renders WebGL type, CMF Studio exports AR-ready USDZ |
+
+The desktop also boots, shuts down, restarts, restores its working session, and
+collapses into focused full-screen applications on a phone. The metaphor
+survives the small screen instead of becoming a generic mobile dashboard.
+
+## Open the machine
+
+| ENTRY | WHAT IS THERE |
+| --- | --- |
+| [**Live Desktop**](https://system6.aaronlau.me) | The full browser computer. Start without a model and connect one later. |
+| [**50-second Bilibili film**](https://www.bilibili.com/video/BV1ht3m6UEDb/) | Search, source handling, writing, files, and MultiFinder in motion. |
+| [**Product site**](https://aisystem6.pages.dev) | The six-era tour, startup and shutdown rituals, mobile experience, and product story. |
+| [**Mac beta**](https://github.com/surfine/AI-System-6/releases/latest) | The latest packaged desktop release. |
 
 ## The repository is the system diagram
 
@@ -96,21 +118,22 @@ AI-System-6/
 │   └── server/        stateless Node.js bridge and model adapters
 ├── site/              independently deployable product website
 ├── platform/
-│   ├── macos/         native rewrite + lightweight desktop shell
+│   ├── macos/         native rewrite and lightweight desktop shell
 │   └── web/           production web-release contracts
 ├── tooling/           build, verify, package, snapshot, release
 ├── tests/             executable product and architecture contracts
-├── docs/              public architecture, development, and design knowledge
-└── internal/          evidence, experiments, archives, maintainer operations
+├── docs/              public architecture, development, design evidence
+└── internal/          maintainer evidence, active plans, operations
 ```
 
 These are physical ownership boundaries, not decorative folders. Browser URLs
-remain stable (`/app`, `/assets`, `/data`), while every builder resolves them
-through `apps/desktop`. The server owns no application database; durable project
-state lives in IndexedDB. Heavy tools load lazily from a third “floppy.”
+stay stable (`/app`, `/assets`, `/data`), while source ownership stays under
+`apps/desktop`. A repository layout test rejects retired root copies and
+compatibility symlinks before they can return.
 
-Read [Architecture](docs/ARCHITECTURE.md), [Development](docs/DEVELOPMENT.md),
-and [Design evidence](docs/design/DESIGN.md).
+Read [Architecture](docs/ARCHITECTURE.md),
+[Development](docs/DEVELOPMENT.md), and the
+[Design Contract](docs/design/DESIGN.md).
 
 ## Boot a local machine
 
@@ -123,22 +146,22 @@ npm ci
 npm start
 ```
 
-Open [localhost:4173](http://localhost:4173). No model is required to explore
-the desktop; connect one later in Control Panel.
+Open [localhost:4173](http://localhost:4173). Then inspect the machinery:
 
 ```bash
 npm run build          # deterministic desktop bundle
-npm test               # executable feature contracts
-npm run site:check     # official website + canonical icon sync
-npm run verify:public  # repository + command + asset + docs gate
+npm test               # executable product contracts
+npm run site:check     # official site and product-frame gate
+npm run verify:public  # repository, command, asset, and docs gate
 ```
 
 The public repository is a curated, independently verifiable source snapshot.
-Every command it exposes must work from a fresh clone.
+Every advertised command must work from a fresh clone.
 
-## Bring your own intelligence
+<details>
+<summary><strong>Bring your own intelligence</strong></summary>
 
-| Route | Use it for |
+| ROUTE | USE IT FOR |
 | --- | --- |
 | **LM Studio** | local chat, embeddings, discovery, and model loading |
 | **Ollama** | local OpenAI-compatible serving |
@@ -146,23 +169,23 @@ Every command it exposes must work from a fresh clone.
 | **Custom endpoint** | any compatible provider and model |
 | **No model** | the desktop and every non-AI tool |
 
-Credentials never enter project files, chats, backups, or exports.
+</details>
 
 ## Help this computer escape the lab
 
-AI System 6 is MIT licensed. Start with [CONTRIBUTING.md](CONTRIBUTING.md) or
-open an issue with a reproducible product contract. Security reports follow
-[SECURITY.md](SECURITY.md).
+AI System 6 is MIT licensed. Start with
+[CONTRIBUTING.md](CONTRIBUTING.md), open an issue with a reproducible product
+contract, or report security problems through [SECURITY.md](SECURITY.md).
 
 <div align="center">
 
-### IF YOU WANT AI SOFTWARE TO FEEL LIKE A COMPUTER AGAIN—
+### If AI software should feel like a computer again,
 
 # [★ STAR AI SYSTEM 6](https://github.com/surfine/AI-System-6)
 
-Stars are the signal that helps this strange machine find its builders.
+Stars help this strange machine find its builders.
 
-[**LIVE DESKTOP**](https://system6.aaronlau.me)　·　[**BILIBILI FILM**](https://www.bilibili.com/video/BV1ht3m6UEDb/)　·　[**PRODUCT SITE**](https://aisystem6.pages.dev)　·　[**LATEST RELEASE**](https://github.com/surfine/AI-System-6/releases/latest)
+[**LIVE DESKTOP**](https://system6.aaronlau.me)&nbsp;&nbsp;&nbsp;[**BILIBILI FILM**](https://www.bilibili.com/video/BV1ht3m6UEDb/)&nbsp;&nbsp;&nbsp;[**PRODUCT SITE**](https://aisystem6.pages.dev)&nbsp;&nbsp;&nbsp;[**LATEST RELEASE**](https://github.com/surfine/AI-System-6/releases/latest)
 
 <sub>Independent project. Not affiliated with or endorsed by Apple Inc.</sub>
 

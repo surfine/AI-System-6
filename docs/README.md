@@ -34,3 +34,6 @@ linked files and supported commands exist in the published tree.
 
 Internal release orchestration, signing, host configuration, working notes, and
 accepted-source icon archives do not belong to this public documentation tree.
+Completed plans and closeout reports are not documentation: durable decisions
+must graduate into an owning contract, test, or runbook before the temporary
+document is removed.
