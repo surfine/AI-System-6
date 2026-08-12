@@ -41,7 +41,7 @@ export function onEraChange(fn) {
   listeners.add(fn);
 }
 
-// Every themed image on the page declares data-icon="name"; swapping eras
+// Every themed image on the page declares its icon id in a data attribute; swapping eras
 // swaps the source. Icons added later are picked up by the next swap.
 export function refreshIcons(root) {
   const era = currentEra();

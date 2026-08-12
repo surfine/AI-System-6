@@ -1,8 +1,8 @@
 // Snapshot: compose a share card from the CURRENT ERA's real captured frame.
-// No mockups — the desktop on the card is the desktop from the machine.
+// No mockups. The desktop on the card is the desktop from the machine.
 
-import { currentEra } from "./eras.js?v=20260814a";
-import { frameSrc, machineManifest } from "./machine.js?v=20260814a";
+import { currentEra } from "./eras.js?v=20260814b";
+import { frameSrc, machineManifest } from "./machine.js?v=20260814b";
 
 function loadImage(src) {
   return new Promise((resolve, reject) => {
@@ -33,7 +33,7 @@ export async function drawShareCard(w, h) {
   const font = classic ? "Chicago" : "'Helvetica Neue', Helvetica, sans-serif";
   const big = Math.round(Math.min(w * 0.055, h * 0.11));
   const line1 = "THE AI HAS A DESKTOP NOW.";
-  const line2 = `${era.year} — ${era.label.toUpperCase()} · CAPTURED FROM THE REAL SYSTEM`;
+  const line2 = `${era.year} / ${era.label.toUpperCase()} / REAL SYSTEM CAPTURE`;
   ctx.font = `${classic ? "" : "700 "}${big}px ${font}`;
   const tw = ctx.measureText(line1).width;
   const plateW = Math.min(w * 0.92, tw + big * 1.6);
@@ -75,7 +75,7 @@ export function initShareCard(button) {
     panel.innerHTML = `
       <header class="tbar mini-tbar">
         <button type="button" class="close-box mw-close" aria-label="Close snapshot"></button>
-        <h3>Snapshot — ${era.label}</h3>
+        <h3>Snapshot: ${era.label}</h3>
       </header>
       <div class="mini-wbody snapshot-body">
         <div class="snapshot-preview"></div>

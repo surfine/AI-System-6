@@ -1,9 +1,9 @@
 // The machine: every product pixel on this site comes from these frames,
 // captured from the real app by tooling/capture-site-frames.mjs. One desk,
 // six release appearances, pixel-aligned. Each viewer instance is a viewport
-// onto the same frame — full desk, one window, or one icon.
+// onto the same frame: full desk, one window, or one icon.
 
-import { currentEra, onEraChange } from "./eras.js?v=20260814a";
+import { currentEra, onEraChange } from "./eras.js?v=20260814b";
 
 const doc = document;
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -14,8 +14,12 @@ const warmed = new Set();
 const viewers = [];
 
 export async function loadMachine() {
-  const res = await fetch(BASE + "manifest.json?v=20260814a");
+  const res = await fetch(BASE + "manifest.json?v=20260814b");
+  if (!res.ok) throw new Error(`machine manifest returned ${res.status}`);
   manifest = await res.json();
+  if (!manifest?.viewport?.width || !manifest?.viewport?.height || !manifest?.files) {
+    throw new Error("machine manifest is incomplete");
+  }
   return manifest;
 }
 
@@ -28,15 +32,31 @@ export function frameSrc(eraId) {
 }
 
 function warmFrame(eraId) {
-  if (!manifest || warmed.has(eraId)) return;
+  if (!manifest || warmed.has(eraId)) return Promise.resolve();
   warmed.add(eraId);
-  const img = new Image();
-  img.src = frameSrc(eraId);
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.addEventListener("load", resolve, { once: true });
+    img.addEventListener("error", resolve, { once: true });
+    img.src = frameSrc(eraId);
+  });
 }
 
 export function warmAllFrames() {
   if (!manifest) return;
-  Object.keys(manifest.files).forEach(warmFrame);
+  const ids = Object.keys(manifest.files);
+  const current = ids.indexOf(currentEra().id);
+  const order = ids
+    .map((id, index) => ({ id, index }))
+    .filter(({ index }) => index !== current)
+    .sort((left, right) => Math.abs(left.index - current) - Math.abs(right.index - current));
+  let step = 0;
+  const schedule = (fn) => (window.requestIdleCallback || ((callback) => setTimeout(callback, 800)))(fn);
+  const next = () => {
+    if (step >= order.length) return;
+    warmFrame(order[step++].id).then(() => schedule(next));
+  };
+  schedule(next);
 }
 
 // Region lookup: a window name, an icon label, "menuBar", or "full".
@@ -70,6 +90,11 @@ export function createMachine(container, opts = {}) {
   port.className = "machine-port";
   const imgA = doc.createElement("img");
   const imgB = doc.createElement("img");
+  const error = doc.createElement("p");
+  error.className = "machine-error";
+  error.setAttribute("role", "status");
+  error.hidden = true;
+  error.textContent = "This desktop capture could not be loaded. Try the Live System instead.";
   for (const img of [imgA, imgB]) {
     img.className = "machine-frame";
     img.decoding = "async";
@@ -81,42 +106,57 @@ export function createMachine(container, opts = {}) {
   port.appendChild(imgB);
   port.appendChild(imgA);
   container.appendChild(port);
+  container.appendChild(error);
 
   const state = {
     era: currentEra().id,
     region: padRect(regionRect(opts.region), opts.pad),
+    loadId: 0,
   };
 
   function apply() {
     const r = state.region;
     // The port keeps the region's own aspect; the frame is scaled so the
     // region fills the port exactly.
-    port.style.aspectRatio = `${(r.w * frameAspect).toFixed(4)} / ${r.h.toFixed(4)}`;
+    port.style.setProperty("--machine-aspect", `${(r.w * frameAspect).toFixed(4)} / ${r.h.toFixed(4)}`);
     const scale = 1 / r.w;
-    for (const img of [imgA, imgB]) {
-      img.style.transform = `scale(${scale.toFixed(4)}) translate(${(-r.x * 100).toFixed(3)}%, ${(-r.y * 100).toFixed(3)}%)`;
-    }
+    port.style.setProperty(
+      "--machine-transform",
+      `scale(${scale.toFixed(4)}) translate(${(-r.x * 100).toFixed(3)}%, ${(-r.y * 100).toFixed(3)}%)`,
+    );
   }
 
   function setEraFrame(eraId, animate) {
     if (imgA.dataset.era === eraId) return;
+    const loadId = ++state.loadId;
+    error.hidden = true;
+    container.classList.remove("machine-has-error");
     if (animate && !reducedMotion && imgA.src) {
       imgB.src = imgA.src;
       imgB.dataset.era = imgA.dataset.era || "";
-      imgA.style.transition = "none";
-      imgA.style.opacity = "0";
-      imgA.dataset.era = eraId;
-      imgA.src = frameSrc(eraId);
-      const reveal = () => {
-        imgA.style.transition = "opacity 0.28s ease";
-        imgA.style.opacity = "1";
-      };
-      if (imgA.complete) requestAnimationFrame(reveal);
-      else imgA.onload = () => requestAnimationFrame(reveal);
-    } else {
-      imgA.dataset.era = eraId;
-      imgA.src = frameSrc(eraId);
-      imgA.style.opacity = "1";
+    }
+    imgA.classList.add("is-loading");
+    imgA.dataset.era = eraId;
+    let settled = false;
+
+    const reveal = () => {
+      if (settled || loadId !== state.loadId) return;
+      settled = true;
+      requestAnimationFrame(() => imgA.classList.remove("is-loading"));
+    };
+    const fail = () => {
+      if (settled || loadId !== state.loadId) return;
+      settled = true;
+      imgA.classList.remove("is-loading");
+      container.classList.add("machine-has-error");
+      error.hidden = false;
+    };
+    imgA.addEventListener("error", fail, { once: true });
+    imgA.addEventListener("load", reveal, { once: true });
+    imgA.src = frameSrc(eraId);
+    if (imgA.complete) {
+      if (imgA.naturalWidth) reveal();
+      else fail();
     }
   }
 

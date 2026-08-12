@@ -11,36 +11,15 @@
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { SITE_ICON_ERAS, SITE_ICON_NAMES } from "./site-assets-manifest.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const themesRoot = path.join(repoRoot, "apps", "desktop", "assets", "themes");
 const siteThemesRoot = path.join(repoRoot, "site", "img", "themes");
 
-// Every icon name the site references. Keep this list tight: each name costs
-// six era files in the deployed payload.
-const ICON_NAMES = [
-  // Route + flexible tools
-  "searcher", "reader", "scrapbook", "docMap", "teachText", "reviewDesk",
-  "clioStage", "clioChart", "cmfStudio", "assistant", "liquidCover",
-  "timeMachine", "importUtility", "soundscape", "questionSheet", "manuscript",
-  // Desk objects
-  "hardDisk", "fileFloppy", "projectDisc", "trash", "trashFull", "folder",
-  "document", "startupDisk", "controlPanel", "applications",
-  // Model providers
-  "localModel", "cloudModel", "chooser", "endfieldTerminal",
-];
-
 // One deployed file per era per icon: the smallest source that still renders
 // sharp at the site's display sizes (32 px CSS, 2x displays). Classic and
 // Platinum render pixelated on purpose, so their native small sizes win.
-const ERA_SOURCES = {
-  classic: { pattern: (n) => `classic/icons/${n}-32.svg`, ext: "svg" },
-  platinum: { pattern: (n) => `platinum/icons/${n}-32.png`, ext: "png" },
-  aqua: { pattern: (n) => `aqua/icons/${n}-128.png`, ext: "png" },
-  "snow-leopard": { pattern: (n) => `snow-leopard/icons/${n}-128.png`, ext: "png" },
-  yosemite: { pattern: (n) => `yosemite/icons/${n}-64.png`, ext: "png" },
-  "liquid-glass": { pattern: (n) => `liquid-glass/icons/${n}-64-default.png`, ext: "png" },
-};
 
 const checkOnly = process.argv.includes("--check");
 const missing = [];
@@ -51,11 +30,11 @@ function filesMatch(left, right) {
   return existsSync(left) && existsSync(right) && readFileSync(left).equals(readFileSync(right));
 }
 
-for (const [era, source] of Object.entries(ERA_SOURCES)) {
+for (const [era, source] of Object.entries(SITE_ICON_ERAS)) {
   const outDir = path.join(siteThemesRoot, era);
   if (!checkOnly) mkdirSync(outDir, { recursive: true });
   planned.set(era, new Set());
-  for (const name of ICON_NAMES) {
+  for (const name of SITE_ICON_NAMES) {
     const from = path.join(themesRoot, source.pattern(name));
     const outName = `${name}.${source.ext}`;
     planned.get(era).add(outName);
@@ -126,7 +105,7 @@ if (drift.length) {
 
 let total = 0;
 let bytes = 0;
-for (const era of Object.keys(ERA_SOURCES)) {
+for (const era of Object.keys(SITE_ICON_ERAS)) {
   const eraDir = path.join(siteThemesRoot, era);
   if (!existsSync(eraDir)) continue;
   for (const file of readdirSync(eraDir)) {
@@ -135,6 +114,6 @@ for (const era of Object.keys(ERA_SOURCES)) {
   }
 }
 console.log(
-  `sync-site-assets: ${checkOnly ? "verified" : "synced"} ${ICON_NAMES.length} icons × ${Object.keys(ERA_SOURCES).length} eras` +
+  `sync-site-assets: ${checkOnly ? "verified" : "synced"} ${SITE_ICON_NAMES.length} icons × ${Object.keys(SITE_ICON_ERAS).length} eras` +
   (checkOnly ? "" : ` → ${total} files, ${(bytes / 1024).toFixed(0)} KB`)
 );

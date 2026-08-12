@@ -1,4 +1,4 @@
-/* AI System 6 — site 2.0 scene layer.
+/* AI System 6 - site 3.0 scene layer.
    Everything here rides the era tokens defined in site.css: the same DOM
    re-skins across six release appearances with no layout change. */
 
@@ -20,16 +20,30 @@ html[data-theme] .machine-figure { border: 1px solid rgba(0, 0, 0, 0.45); }
   position: relative;
   overflow: hidden;
   width: 100%;
+  aspect-ratio: var(--machine-aspect);
 }
 .machine-frame {
   position: absolute;
   inset: 0;
   width: 100%;
   height: auto;
+  transform: var(--machine-transform);
   transform-origin: 0 0;
-  transition: transform 0.45s ease;
+  opacity: 1;
+  transition: transform 0.45s ease, opacity 0.28s ease;
 }
 .machine-frame.is-under { position: absolute; }
+.machine-frame.is-loading { opacity: 0; transition: transform 0.45s ease, opacity 0s; }
+.machine-error {
+  margin: 0;
+  padding: 28px 18px;
+  background: var(--win-bg, var(--paper));
+  color: var(--ink);
+  text-align: center;
+}
+.machine-error[hidden] { display: none; }
+.machine-error a { color: inherit; font-weight: bold; }
+.machine-has-error .machine-port { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .machine-frame { transition: none; }
 }
@@ -808,10 +822,7 @@ html[data-theme="liquid-glass"] { --sel-bg: rgba(40, 90, 200, 0.8); --gauge-fill
 
 @media (prefers-reduced-motion: reduce) {
   .js .scene { opacity: 1; animation: none; }
-  .win-zoom, .chat-app, .demo-type::after, .demo-scanline, .demo-wave i,
-  .demo-spin .mw-phone, .demo-glass span, .mw-caret { animation: none; }
-  .js .chat-app { opacity: 1; }
-  .demo-stagger li, .demo-late, .demo-years span { opacity: 1; animation: none; }
+  .win-zoom { animation: none; }
   .floppy-stage .floppy-disk { opacity: 0; }
   .floppy-stage .floppy-screen { background-color: #cfd4dc; }
   .floppy-stage .floppy-screen-msg { opacity: 1; animation: none; }
@@ -830,25 +841,14 @@ html[data-theme="liquid-glass"] { --sel-bg: rgba(40, 90, 200, 0.8); --gauge-fill
   .btn-default { margin: 3px; }
   .btn-default::after { inset: -4px; border-width: 2px; }
 
-  .mini-surface { height: 320px; }
   .desk-icon { min-width: 58px; min-height: 44px; }
-  .desk-apps { right: 76px; gap: 0 2px; }
-  .desk-objects { gap: 6px; }
 
   .era-strip { padding: 10px 12px 8px; }
-  .era-tick { min-width: 34px; min-height: 40px; }
+  .era-tick { min-width: 34px; min-height: 44px; }
   .era-tick-name { display: none; }
   .era-strip-big .era-tick-name { display: none; }
 
-  .chat-stage {
-    grid-template-areas: "win win" "appsL appsR" "bubble bubble" "trash trash";
-    grid-template-columns: 1fr 1fr;
-    gap: 18px 8px;
-  }
-  .chat-apps { grid-template-columns: repeat(2, auto); gap: 8px 14px; }
-
   .route-belt { flex-wrap: wrap; gap: 2px; padding-top: 26px; }
-  .route-cell { min-width: 30%; }
   .route-arrow { display: none; }
 
   .finder-body { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }

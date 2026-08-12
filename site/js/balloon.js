@@ -1,5 +1,5 @@
 // Balloon Help. Off by default; the Help menu toggles it. Long-press shows a
-// balloon on touch even when the toggle is off — touch has no hover to spend.
+// balloon on touch even when the toggle is off because touch has no hover.
 
 const doc = document;
 let balloonsOn = false;

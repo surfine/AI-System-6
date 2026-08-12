@@ -15,7 +15,7 @@ export function initQuickTime() {
     const frame = document.createElement("iframe");
     frame.src = EMBED;
     frame.className = "qt-frame";
-    frame.setAttribute("title", "AI System 6 — 50-second film (Bilibili)");
+    frame.setAttribute("title", "AI System 6 - 50-second film (Bilibili)");
     frame.setAttribute("allow", "autoplay; fullscreen");
     frame.setAttribute("scrolling", "no");
     body.replaceChild(frame, poster);

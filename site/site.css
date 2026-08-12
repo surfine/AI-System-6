@@ -1,4 +1,4 @@
-/* AI System 6 — official site. Static, zero JS.
+/* AI System 6 - official site. Static, zero JS.
    Visual vocabulary is cribbed from the app's own System 6 recipes
    (styles/00-foundation.css, styles/10-windows.css): Chicago faces,
    striped title bars, 50% dither desk. */
@@ -182,7 +182,7 @@ details.menu[open] > summary {
 }
 
 
-/* Title bar: the app's racing-stripe recipe — 1px black lines every 2px,
+/* Title bar: the app's racing-stripe recipe, 1px black lines every 2px,
    title on a white plate that interrupts the stripes. */
 .tbar {
   position: relative;
@@ -235,7 +235,7 @@ details.menu[open] > summary {
 
 
 /* The product's own menu mark: a 1-bit happy Macintosh, drawn pixel by pixel.
-   Copied from the app's .apple::before/::after recipe (00-foundation.css) —
+   Copied from the app's .apple::before/::after recipe (00-foundation.css):
    AI System 6 does not wear the Apple logo. */
 .s6-mark {
   position: relative;
@@ -584,7 +584,7 @@ pre {
 }
 
 /* ==========================================================================
-   Appearances — the six release eras, token-only like the app's era skins.
+   Appearances: the six release eras, token-only like the app's era skins.
    Classic (System 6) is the bare :root; each era swaps tokens and, where an
    era genuinely drew different chrome, a few structural rules follow.
    ========================================================================== */

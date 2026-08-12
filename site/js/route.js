@@ -2,7 +2,7 @@
 // desk object in the captured frame. Selecting a station pans the viewer to
 // that region of the real desktop.
 
-import { iconImg } from "./eras.js?v=20260814a";
+import { iconImg } from "./eras.js?v=20260814b";
 
 const doc = document;
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -17,7 +17,7 @@ const STATIONS = [
   { icon: "teachText", label: "TeachText", region: "teachText",
     note: "One manuscript, carried through the whole route." },
   { icon: "reviewDesk", label: "Review Desk", region: "reviewDesk",
-    note: "It already knows the manuscript — and asks you to finish first." },
+    note: "It already knows the manuscript and asks you to finish first." },
   { icon: "hardDisk", label: "Project Hard Disk", region: "Project Hard Disk",
     note: "What you choose to keep, lasts." },
 ];
@@ -63,8 +63,8 @@ export function initRouteScene(stage, machine) {
       b.setAttribute("aria-selected", String(j === i));
     });
     const st = STATIONS[i];
-    machine.focus(st.region, st.region === "teachText" ? 0.015 : 0.03);
-    caption.textContent = st.label + " — " + st.note;
+    machine?.focus(st.region, st.region === "teachText" ? 0.015 : 0.03);
+    caption.textContent = st.label + ": " + st.note;
   }
 
   function stopWalk() {

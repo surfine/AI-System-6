@@ -1,8 +1,8 @@
 // The Finder window of things a 1988 computer should not be able to do.
-// Click selects, double-click opens a small window — no staged mockups:
+// Click selects, double-click opens a small window. There are no staged mockups:
 // each card says what the feature is and boots the real system to prove it.
 
-import { iconImg } from "./eras.js?v=20260814a";
+import { iconImg } from "./eras.js?v=20260814b";
 
 const doc = document;
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -51,12 +51,12 @@ export function initImpossible(body, statusBar) {
       <div class="mini-wbody">
         <p class="imp-line">${item.line}</p>
         <p class="btn-row imp-actions"><a class="btn btn-default" href="${LIVE}">See It Running</a></p>
-        <p class="mw-status">Opens the Live System — the real one, in this browser.</p>
+        <p class="mw-status">Opens the real Live System in this browser.</p>
       </div>`;
     body.appendChild(win);
     if (!reducedMotion) win.classList.add("win-zoom");
     openWin = win;
-    statusBar.textContent = item.label + " — no mockup: boot it and try.";
+    statusBar.textContent = item.label + ". No mockup: boot it and try.";
     const close = win.querySelector(".mw-close");
     close.addEventListener("click", () => { closeCard(); fromBtn.focus(); });
     win.addEventListener("keydown", (e) => { if (e.key === "Escape") { closeCard(); fromBtn.focus(); } });

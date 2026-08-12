@@ -1,24 +1,23 @@
-// AI System 6 official site — entry module. Progressive enhancement only:
+// AI System 6 official site - entry module. Progressive enhancement only:
 // with JS off the page is a readable document with a desktop screenshot.
 
-import { ERAS, setEra, onEraChange, prefetchEras, refreshIcons } from "./eras.js?v=20260814a";
-import { initBalloons, setBalloons, balloonsEnabled, flashBalloon } from "./balloon.js?v=20260814a";
-import { buildEraStrip } from "./timeline.js?v=20260814a";
-import { loadMachine, createMachine, warmAllFrames, machineManifest } from "./machine.js?v=20260814a";
-import { initRouteScene } from "./route.js?v=20260814a";
-import { initImpossible } from "./impossible.js?v=20260814a";
-import { initFloppies } from "./floppies.js?v=20260814a";
-import { initQuickTime } from "./quicktime.js?v=20260814a";
-import { initShareCard } from "./sharecard.js?v=20260814a";
+import { ERAS, setEra, onEraChange, prefetchEras, refreshIcons } from "./eras.js?v=20260814b";
+import { initBalloons, setBalloons, balloonsEnabled, flashBalloon } from "./balloon.js?v=20260814b";
+import { buildEraStrip } from "./timeline.js?v=20260814b";
+import { loadMachine, createMachine, warmAllFrames, machineManifest } from "./machine.js?v=20260814b";
+import { initRouteScene } from "./route.js?v=20260814b";
+import { initImpossible } from "./impossible.js?v=20260814b";
+import { initFloppies } from "./floppies.js?v=20260814b";
+import { initQuickTime } from "./quicktime.js?v=20260814b";
+import { initShareCard } from "./sharecard.js?v=20260814b";
 
 const doc = document;
 doc.documentElement.classList.add("js");
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
-const narrow = matchMedia("(max-width: 700px)").matches;
 
 /* ---------- Boot sequence (once per session) ----------
    The product's startup screen: happy Mac, progress bar, startup ledger.
-   Every ledger line is true for this page — the assets really are loaded,
+   Every ledger line is true for this page: the assets really are loaded,
    and no LLM is required. A click or key press skips ahead. */
 const boot = doc.getElementById("boot");
 let booted = false;
@@ -49,7 +48,7 @@ if (boot && !booted && !reducedMotion) {
   step(1350, () => {
     const llm = doc.getElementById("boot-check-llm");
     llm.classList.add("is-standby");
-    llm.textContent = "LLM — none required";
+    llm.textContent = "LLM: none required";
     fill.style.width = "100%";
     msg.textContent = "Welcome to AI System 6.";
   });
@@ -139,7 +138,7 @@ if (cycleBtn) {
     if (cycleTimer) stopCycle(); else startCycle();
   });
 }
-// Grabbing a timeline by hand ends the show — the visitor took the controls.
+// Grabbing a timeline by hand ends the show because the visitor took control.
 doc.addEventListener("input", (e) => {
   if (e.target.closest(".era-range")) stopCycle();
 });
@@ -181,21 +180,40 @@ if (balloonItem) {
 }
 
 /* ---------- The machine: real frames from the real app ---------- */
-await loadMachine();
+let machineReady = false;
+try {
+  await loadMachine();
+  machineReady = true;
+} catch (error) {
+  console.error("Official desktop capture unavailable:", error);
+  doc.querySelectorAll(".machine-figure").forEach((figure) => {
+    figure.classList.add("machine-has-error");
+    const message = doc.createElement("p");
+    message.className = "machine-error";
+    message.setAttribute("role", "status");
+    message.append("The desktop capture is unavailable. ");
+    const link = doc.createElement("a");
+    link.href = "https://system6.aaronlau.me";
+    link.textContent = "Boot the Live System";
+    message.appendChild(link);
+    figure.appendChild(message);
+  });
+}
 
 const heroMachine = doc.getElementById("hero-machine");
-if (heroMachine) {
+if (heroMachine && machineReady) {
   createMachine(heroMachine, { region: "full" });
-  buildEraStrip(doc.getElementById("hero-era-strip"), { big: false });
   const prov = doc.getElementById("hero-provenance");
   const m = machineManifest();
   if (prov && m.build) {
-    prov.textContent = "Captured from Build " + m.build + " — every frame is the real system, unretouched.";
+    prov.textContent = "REAL SYSTEM CAPTURE / BUILD " + m.build;
+    prov.setAttribute("aria-label", `Every era is captured from the real AI System 6 build ${m.build}.`);
   }
 }
+buildEraStrip(doc.getElementById("hero-era-strip"), { big: false });
 
 const chatMachine = doc.getElementById("chat-machine");
-if (chatMachine) {
+if (chatMachine && machineReady) {
   createMachine(chatMachine, {
     region: "assistant",
     pad: 0.025,
@@ -204,29 +222,36 @@ if (chatMachine) {
 }
 
 const routeMachine = doc.getElementById("route-machine");
-if (routeMachine) {
+if (routeMachine && machineReady) {
   const viewer = createMachine(routeMachine, { region: "scrapbook", pad: 0.03 });
   initRouteScene(doc.getElementById("route-stage"), viewer);
+} else {
+  initRouteScene(doc.getElementById("route-stage"), null);
 }
 
 const eraMachine = doc.getElementById("era-machine");
 if (eraMachine) {
-  createMachine(eraMachine, { region: "full" });
+  if (machineReady) createMachine(eraMachine, { region: "full" });
   buildEraStrip(doc.getElementById("era-strip"), { big: true });
-  initShareCard(doc.getElementById("snapshot-btn"));
+  const snapshotButton = doc.getElementById("snapshot-btn");
+  if (machineReady) initShareCard(snapshotButton);
+  else {
+    snapshotButton.disabled = true;
+    snapshotButton.setAttribute("data-balloon", "Snapshot is unavailable until the desktop capture loads.");
+  }
 }
 
 const modelMachine = doc.getElementById("model-machine");
-if (modelMachine) {
+if (modelMachine && machineReady) {
   createMachine(modelMachine, {
     region: "menuBar",
     pad: 0.004,
-    alt: "The captured menu bar: “Model not connected” — and the desk keeps working.",
+    alt: "The captured menu bar says “Model not connected.” The desk keeps working.",
   });
 }
 
 // Frames for the other five eras load once the visitor is likely to travel.
-addEventListener("load", () => setTimeout(warmAllFrames, 2200));
+if (machineReady) addEventListener("load", () => setTimeout(warmAllFrames, 2200));
 
 initImpossible(doc.getElementById("impossible-body"), doc.getElementById("impossible-status"));
 initFloppies(doc.getElementById("floppy-stage"));

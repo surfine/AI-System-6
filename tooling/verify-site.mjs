@@ -4,6 +4,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { SITE_ICON_NAMES } from "./site-assets-manifest.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const siteRoot = path.join(root, "site");
@@ -61,9 +62,12 @@ for (const file of jsFiles) {
 }
 if (!failures.length) ok(`${jsFiles.length} site modules parse`);
 
+const siteTextFiles = walk(siteRoot, (candidate) => /\.(?:html|css|js)$/i.test(candidate));
+const siteText = new Map(siteTextFiles.map((file) => [file, readFileSync(file, "utf8")]));
+const allSiteText = [...siteText.values()].join("\n");
 const references = [];
-for (const file of walk(siteRoot, (candidate) => /\.(?:html|css|js)$/i.test(candidate))) {
-  const source = readFileSync(file, "utf8");
+for (const file of siteTextFiles) {
+  const source = siteText.get(file);
   const patterns = file.endsWith(".html")
     ? [/(?:src|href)\s*=\s*["']([^"']+)["']/gi, /url\(\s*([^)]+?)\s*\)/gi]
     : file.endsWith(".css")
@@ -82,6 +86,46 @@ for (const reference of references) {
   }
 }
 if (!failures.length) ok(`${references.length} local site references resolve`);
+
+const iconUses = new Set();
+for (const source of siteText.values()) {
+  for (const pattern of [
+    /data-icon=["']([^"']+)["']/g,
+    /\bicon:\s*["']([^"']+)["']/g,
+    /\biconImg\(\s*["']([^"']+)["']/g,
+  ]) {
+    for (const match of source.matchAll(pattern)) iconUses.add(match[1]);
+  }
+}
+const declaredIcons = new Set(SITE_ICON_NAMES);
+const missingIcons = [...iconUses].filter((name) => !declaredIcons.has(name)).sort();
+const unusedIcons = [...declaredIcons].filter((name) => !iconUses.has(name)).sort();
+if (!missingIcons.length && !unusedIcons.length) {
+  ok(`${declaredIcons.size} official-site icon ids have one canonical sync manifest`);
+} else {
+  if (missingIcons.length) fail(`site icon manifest is missing: ${missingIcons.join(", ")}`);
+  if (unusedIcons.length) fail(`site icon manifest still carries unused ids: ${unusedIcons.join(", ")}`);
+}
+
+const imgRoot = path.join(siteRoot, "img");
+const orphanImages = readdirSync(imgRoot, { withFileTypes: true })
+  .filter((entry) => entry.isFile() && !allSiteText.includes(`img/${entry.name}`))
+  .map((entry) => entry.name)
+  .sort();
+if (!orphanImages.length) ok("site/img has no unreferenced top-level legacy assets");
+else fail(`site/img has unreferenced top-level assets: ${orphanImages.join(", ")}`);
+
+const legacySurfaceTokens = [
+  "mini-desktop", "mini-surface", "desk-apps", "desk-objects", "chat-stage",
+  "chat-apps", "chat-app", "route-cell", "route-chip", "demo-wave",
+  "demo-scanline", "demo-stagger", "mw-phone", "mw-caret",
+];
+const legacyResidue = legacySurfaceTokens.filter((token) => allSiteText.includes(token));
+if (!legacyResidue.length) ok("retired replica-desktop selectors are absent");
+else fail(`retired replica-desktop selectors remain: ${legacyResidue.join(", ")}`);
+
+if (!/[—–]/.test(allSiteText)) ok("official-site copy avoids decorative long dashes");
+else fail("official-site text still contains em/en dash characters");
 
 const sync = spawnSync(process.execPath, [path.join(root, "tooling", "sync-site-assets.mjs"), "--check"], {
   cwd: root,
@@ -133,8 +177,9 @@ if (!existsSync(path.join(siteRoot, "img", "hero-desktop.mp4"))) {
 
 const siteFiles = walk(siteRoot);
 const siteBytes = siteFiles.reduce((sum, file) => sum + statSync(file).size, 0);
-if (siteBytes <= 8 * 1024 * 1024) ok(`official site payload ${(siteBytes / 1024 / 1024).toFixed(1)} MiB`);
-else fail(`official site payload ${(siteBytes / 1024 / 1024).toFixed(1)} MiB exceeds 8 MiB`);
+const sitePayloadBudget = 4 * 1024 * 1024;
+if (siteBytes <= sitePayloadBudget) ok(`official site payload ${(siteBytes / 1024 / 1024).toFixed(1)} MiB`);
+else fail(`official site payload ${(siteBytes / 1024 / 1024).toFixed(1)} MiB exceeds 4 MiB`);
 
 if (failures.length) {
   console.error(`\nOfficial-site verification failed with ${failures.length} issue(s).`);
