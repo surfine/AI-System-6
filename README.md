@@ -61,7 +61,7 @@ for the app code.
 9 runtime dependencies      the server is a stateless bridge, not a backend
 153 executable contracts    one per user feature, not per function
 6 icon families             drawn per era, not filtered from one set
-2,941,300 bytes             the whole desktop, measured on every build
+2,941,297 bytes             the whole desktop, measured on every build
 0 databases                 your projects live in your browser
 ```
 
@@ -122,7 +122,7 @@ is a mockup, because a script re-shoots all of it from the running app.
 ## Built under a 1988 constraint
 
 ```text
-boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,941,300 bytes
+boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,941,297 bytes
 two 1.44 MB floppies    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  2,949,120 bytes
 heavy tools             load lazily, from a third disk
 ```

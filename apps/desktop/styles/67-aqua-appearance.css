@@ -2776,7 +2776,10 @@ body[data-theme="snow-leopard"] .window:not(.is-active) .theme-lab-sidebar butto
   display: none;
 }
 
-:where(body[data-theme="aqua"] .sys-icon-svg .sys-icon-aqua, body[data-theme="snow-leopard"] .sys-icon-svg .sys-icon-snow-leopard) {
+/* :is(), not :where(): the shared hide rule in 50-apps.css is a class
+   selector, and a zero-specificity :where() wrapper loses to it, which
+   blanked every Aqua and Snow Leopard icon. */
+:is(body[data-theme="aqua"] .sys-icon-svg .sys-icon-aqua, body[data-theme="snow-leopard"] .sys-icon-svg .sys-icon-snow-leopard) {
   display: block;
 }
 body[data-theme="aqua"] .sys-icon {
