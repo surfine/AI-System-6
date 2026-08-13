@@ -68,12 +68,25 @@ body[data-theme="aqua"] {
      the right edge of the title bar. The lamps are glossy spheres with a
      white top-left highlight, a colored body, a dark rim, and a soft
      contact shadow below-right. */
+  /* 1:1 lamps: pixels lifted from the Jaguar Address Book capture
+     (internal/evidence/drafts/theme-lab-fidelity-cache/aqua, 13x11 gel
+     ellipses with the top sheen band and bottom bounce light), masked to
+     alpha like the platinum azul tile. Gradients cannot reproduce this
+     anatomy honestly, so they no longer try. */
+  /* Measured-band reconstruction of the Jaguar gel (Address Book capture,
+     13x11 ellipse): wide desaturated top sheen, dark upper body, bottom
+     bounce light, maroon rim. Gradients, not the 1x sprite: the sprite
+     blurred on Retina and killed the gloss. Every stop color is sampled
+     from the capture's pixel grid. */
   --traffic-light-close-bg:
-    radial-gradient(circle at 36% 32%, rgba(255, 255, 255, 0.95) 0 1px, rgba(255, 255, 255, 0.4) 2px, rgba(255, 255, 255, 0) 3.5px),
-    radial-gradient(circle at 50% 52%, #ff6a61 0 3.5px, #f34b42 4.5px, #e03830 5.5px, #c02923 6.5px, #941717 7.2px, rgba(0, 0, 0, 0.3) 7.7px, transparent 8.2px);
+    radial-gradient(ellipse 36% 18% at 50% 27%, rgba(255, 242, 242, 0.95) 0 35%, rgba(243, 200, 200, 0.55) 70%, rgba(243, 200, 200, 0) 100%),
+    radial-gradient(ellipse 36% 26% at 50% 76%, #ffbcaf 0 25%, #fe9a8d 60%, rgba(244, 123, 109, 0) 95%),
+    radial-gradient(ellipse 50% 50% at 50% 50%, #d85447 0 42%, #c84034 60%, #ab3227 74%, #7a1717 84%, #4f2323 94%, rgba(67, 61, 61, 0) 100%);
   --traffic-light-resize-bg:
-    radial-gradient(circle at 36% 32%, rgba(255, 255, 255, 0.95) 0 1px, rgba(255, 255, 255, 0.4) 2px, rgba(255, 255, 255, 0) 3.5px),
-    radial-gradient(circle at 50% 52%, #72d95a 0 3.5px, #4fc13b 4.5px, #39a82c 5.5px, #2b8a22 6.5px, #1d6419 7.2px, rgba(0, 0, 0, 0.3) 7.7px, transparent 8.2px);
+    radial-gradient(ellipse 36% 18% at 50% 27%, rgba(244, 252, 238, 0.95) 0 35%, rgba(205, 235, 180, 0.55) 70%, rgba(205, 235, 180, 0) 100%),
+    radial-gradient(ellipse 36% 26% at 50% 76%, #d8fd9b 0 25%, #b8f67b 60%, rgba(142, 205, 82, 0) 95%),
+    radial-gradient(ellipse 50% 50% at 50% 50%, #7fbf46 0 42%, #6cae38 60%, #549427 74%, #2f6414 84%, #23421c 94%, rgba(46, 62, 40, 0) 100%);
+  --traffic-light-sprite-size: 13px 11px;
   --select-control-min-height: 20px;
   --select-control-padding: 1px 27px 1px 9px;
   --select-control-border: 1px solid #00005f;
@@ -974,18 +987,30 @@ body[data-theme="snow-leopard"] {
   --system-button-padding-x: 12px;
   --titlebar-content-padding-inline: 7px;
   --titlebar-title-text-shadow: 0 1px 0 rgba(255, 255, 255, 0.72);
-  /* Real 10.6 capture: 12px lamps with ~22px center spacing. */
-  --traffic-light-size: 12px;
+  /* Real 10.6 capture: 14px lamps (ring included) with ~22px center
+     spacing. */
+  --traffic-light-size: 14px;
   /* 10.6 lamps are the same glossy spheres as early Aqua, scaled to 12px:
      white highlight, colored body, dark rim, soft contact shadow. */
+  /* 1:1 lamps: pixels lifted from the 10.6 Finder capture (14x13, small
+     top specular over a wide bottom glow — the inverse of a point-lit
+     sphere, which is why the old gradients read as fake). */
+  /* Measured-band reconstruction of the 10.6 glass sphere (Finder-Home
+     capture, 14x13): small crisp specular near the top, big soft bottom
+     glow, restrained rim. Gradients for Retina crispness; stop colors
+     sampled from the capture. */
   --traffic-light-close-bg:
-    radial-gradient(circle at 36% 32%, rgba(255, 255, 255, 0.95) 0 1px, rgba(255, 255, 255, 0.4) 1.6px, rgba(255, 255, 255, 0) 2.8px),
-    radial-gradient(circle at 50% 52%, #ff6a61 0 2.8px, #f34b42 3.6px, #e03830 4.4px, #c02923 5.2px, #941717 5.8px, rgba(0, 0, 0, 0.3) 6.2px, transparent 6.6px);
+    radial-gradient(ellipse 28% 15% at 50% 25%, rgba(255, 246, 246, 0.98) 0 40%, rgba(246, 210, 210, 0.5) 75%, rgba(246, 210, 210, 0) 100%),
+    radial-gradient(ellipse 36% 30% at 50% 78%, #ffbcbc 0 22%, #ff8484 60%, rgba(255, 73, 72, 0) 95%),
+    radial-gradient(ellipse 50% 50% at 50% 50%, #f23c3a 0 40%, #de3334 58%, #c22f30 72%, #8c2b2c 82%, #743938 92%, rgba(116, 57, 56, 0) 100%);
   --traffic-light-resize-bg:
-    radial-gradient(circle at 36% 32%, rgba(255, 255, 255, 0.95) 0 1px, rgba(255, 255, 255, 0.4) 1.6px, rgba(255, 255, 255, 0) 2.8px),
-    radial-gradient(circle at 50% 52%, #72d95a 0 2.8px, #4fc13b 3.6px, #39a82c 4.4px, #2b8a22 5.2px, #1d6419 5.8px, rgba(0, 0, 0, 0.3) 6.2px, transparent 6.6px);
+    radial-gradient(ellipse 28% 15% at 50% 25%, rgba(246, 251, 240, 0.98) 0 40%, rgba(216, 235, 200, 0.5) 75%, rgba(216, 235, 200, 0) 100%),
+    radial-gradient(ellipse 36% 30% at 50% 78%, #d2ec98 0 22%, #b2de7d 60%, rgba(144, 205, 103, 0) 95%),
+    radial-gradient(ellipse 50% 50% at 50% 50%, #90c95e 0 40%, #7ab84c 58%, #63a53c 72%, #4a7f2e 82%, #4a6f38 92%, rgba(74, 111, 56, 0) 100%);
+  --traffic-light-sprite-size: 14px 13px;
   --theme-lab-era-titlebar-control-top: 3px;
-  --theme-lab-era-titlebar-control-size: 12px;
+  /* Real 10.6 lamps are 14px with the ring; the board matches the sprite. */
+  --theme-lab-era-titlebar-control-size: 14px;
   --theme-lab-era-titlebar-minimize-bg: radial-gradient(circle at 43% 35%, #fff3d0 0 1px, #f7c94a 1.6px, #e2a921 4.6px, #a97a12 5.4px, transparent 5.8px);
   /* Alarm Clock DA: 10.6 silver chrome, light face, restrained controls. */
   --alarm-clock-frame-border: 1px solid #8e8e8e;
@@ -1395,11 +1420,18 @@ body[data-theme="snow-leopard"] {
      outline (stronger at the caps), a two-lobe bright blue body, and a gray
      right edge. The first layer paints the vertical caps/ends; the second
      paints the horizontal body underneath. */
+  /* 10.6 thumb, sampled from the Quaqua ScrollBar.thumb.v strip (frame 3):
+     a capsule whose caps fade over ~6px at each end and whose body is a
+     two-lobe horizontal ramp with a visible center seam. The caps are
+     pixel-anchored top/bottom layers so they never migrate into the body
+     when the thumb stretches — the old percentage bands did exactly that
+     and read as painted-on stripes. */
   --window-frame-thumb-bg:
-    linear-gradient(180deg, #dcdcdc 0%, #c9c9c9 5%, #24508f 13%, rgba(36, 80, 143, 0.6) 23%, rgba(36, 80, 143, 0) 38%, rgba(36, 80, 143, 0) 62%, rgba(36, 80, 143, 0.6) 77%, #24508f 87%, #c9c9c9 95%, #dcdcdc 100%),
-    linear-gradient(90deg, #24508f 0%, #4a8fdb 10%, #7dbdf6 28%, #a0dcff 45%, #84c4f8 62%, #4a8fdb 80%, #3d4d5f 93%);
-  --window-frame-thumb-border: 1px solid #0b3f8f;
-  --window-frame-thumb-radius: 7px;
+    linear-gradient(180deg, rgba(18, 72, 141, 0.82) 0, rgba(44, 119, 206, 0.5) 2px, rgba(90, 158, 236, 0.18) 5px, rgba(90, 158, 236, 0) 7px) top / 100% 7px no-repeat,
+    linear-gradient(0deg, rgba(13, 69, 139, 0.82) 0, rgba(38, 113, 205, 0.5) 2px, rgba(76, 146, 227, 0.18) 5px, rgba(76, 146, 227, 0) 7px) bottom / 100% 7px no-repeat,
+    linear-gradient(90deg, #4a7fc0 0%, #759fdc 8%, #90bae6 17%, #8bb8e7 26%, #83b4e9 34%, #438de3 46%, #579eee 56%, #6aaefd 65%, #7cc0ff 73%, #88cfff 81%, #92daff 90%, #8bd0ff 100%);
+  --window-frame-thumb-border: 1px solid #1c4f96;
+  --window-frame-thumb-radius: 999px;
   --window-frame-arrow-bg: linear-gradient(#ffffff, #d4d4d4 52%, #f5f5f5);
   --scrollbar-track: var(--window-frame-track-bg);
   --scrollbar-thumb: var(--window-frame-thumb-bg);
@@ -1740,17 +1772,17 @@ body[data-theme="aqua"] .resize-box {
   border: 0;
   border-radius: 50%;
   background-position: center;
-  background-size: var(--traffic-light-size) var(--traffic-light-size);
+  background-size: var(--traffic-light-sprite-size);
   background-repeat: no-repeat;
   filter: none;
 }
 
 body[data-theme="aqua"] .close-box {
-  background: var(--traffic-light-close-bg) center / var(--traffic-light-size) var(--traffic-light-size) no-repeat;
+  background: var(--traffic-light-close-bg) center / var(--traffic-light-sprite-size) no-repeat;
 }
 
 body[data-theme="aqua"] .resize-box {
-  background: var(--traffic-light-resize-bg) center / var(--traffic-light-size) var(--traffic-light-size) no-repeat;
+  background: var(--traffic-light-resize-bg) center / var(--traffic-light-sprite-size) no-repeat;
 }
 
 /* The real Aqua title bar follows the project's fixed constraint: Close on
@@ -1768,7 +1800,10 @@ body[data-theme="aqua"] .title-bar > :is(.close-box, .resize-box) {
   height: var(--traffic-light-size);
   margin: 0;
   background-position: center;
-  background-size: var(--traffic-light-size) var(--traffic-light-size);
+  background-size: var(--traffic-light-sprite-size);
+  /* The lamp tile is smaller than the box; without this the repeat wraps
+     the bottom glow into the gap above the lamp as a pink ghost. */
+  background-repeat: no-repeat;
 }
 
 body[data-theme="aqua"] .title-bar > .close-box {
@@ -1794,12 +1829,21 @@ body[data-theme="aqua"] .title-bar > .close-box::before,
 body[data-theme="snow-leopard"] .title-bar > .close-box::before {
   content: "";
   position: absolute;
+  /* The base close-box art box is 11px anchored at the classic art offset;
+     left/width would beat inset and push the glyph up-left. Pin all four
+     edges and clear the inherited box so the glyph centers on the lamp. */
   inset: 0;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
   border: 0;
   opacity: 0;
+  /* Native glyph scale: a small thin mark (~42% of the lamp), not a bar
+     across the whole gel. */
   background:
-    linear-gradient(45deg, transparent calc(50% - 1px), rgba(0, 0, 0, 0.48) calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px)) center / 58% 58% no-repeat,
-    linear-gradient(-45deg, transparent calc(50% - 1px), rgba(0, 0, 0, 0.48) calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px)) center / 58% 58% no-repeat;
+    linear-gradient(45deg, transparent calc(50% - 0.5px), rgba(0, 0, 0, 0.5) calc(50% - 0.5px) calc(50% + 0.5px), transparent calc(50% + 0.5px)) center / 42% 42% no-repeat,
+    linear-gradient(-45deg, transparent calc(50% - 0.5px), rgba(0, 0, 0, 0.5) calc(50% - 0.5px) calc(50% + 0.5px), transparent calc(50% + 0.5px)) center / 42% 42% no-repeat;
 }
 
 body[data-theme="aqua"] .title-bar > .resize-box::before,
@@ -1807,16 +1851,28 @@ body[data-theme="snow-leopard"] .title-bar > .resize-box::before {
   content: "";
   position: absolute;
   inset: 0;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
   border: 0;
   opacity: 0;
   background:
-    linear-gradient(rgba(0, 0, 0, 0.48), rgba(0, 0, 0, 0.48)) center / 58% 2px no-repeat,
-    linear-gradient(rgba(0, 0, 0, 0.48), rgba(0, 0, 0, 0.48)) center / 2px 58% no-repeat;
+    linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)) center / 42% 1px no-repeat,
+    linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)) center / 1px 42% no-repeat;
 }
 
 body[data-theme="aqua"] .title-bar > :is(.close-box, .resize-box):is(:hover, :focus-visible)::before,
 body[data-theme="snow-leopard"] .title-bar > :is(.close-box, .resize-box):is(:hover, :focus-visible)::before {
   opacity: 1;
+}
+
+/* Native press feedback: the held lamp darkens like backlit gel; release
+   restores it. Filter, not a background swap, so the 1:1 sprite is the
+   single source of the lamp's pixels. */
+body[data-theme="aqua"] .title-bar > :is(.close-box, .resize-box):active,
+body[data-theme="snow-leopard"] .title-bar > :is(.close-box, .resize-box):active {
+  filter: brightness(0.78) saturate(1.12);
 }
 
 body[data-theme="aqua"] .window:not(.is-active) .title-bar > :is(.close-box, .resize-box) {
@@ -2081,7 +2137,10 @@ body[data-theme="snow-leopard"] .title-bar > :is(.close-box, .resize-box) {
   height: var(--traffic-light-size);
   margin: 0;
   background-position: center;
-  background-size: var(--traffic-light-size) var(--traffic-light-size);
+  background-size: var(--traffic-light-sprite-size);
+  /* The lamp tile is smaller than the box; without this the repeat wraps
+     the bottom glow into the gap above the lamp as a pink ghost. */
+  background-repeat: no-repeat;
 }
 
 body[data-theme="snow-leopard"] .title-bar > .close-box {

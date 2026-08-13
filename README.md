@@ -13,9 +13,13 @@ A local-first, file-native AI computer inspired by Macintosh System 6.
 
 <br><br>
 
-<a href="https://system6.aaronlau.me"><img src="site/img/og-poster.png" width="100%" alt="AI System 6 poster showing one computer across six eras from 1988 to 2026"></a>
+<a href="https://system6.aaronlau.me"><picture>
+  <source media="(prefers-color-scheme: dark)" srcset="site/img/frames/liquid-glass.webp">
+  <img src="site/img/frames/classic.png" width="100%" alt="The AI System 6 desktop, captured from the real app: Searcher, ClioTalk, Scrapbook, TeachText, and Review Desk around one manuscript. Light mode shows the 1988 System 6 appearance; dark mode shows 2026 Liquid Glass.">
+</picture></a>
 
-<sub>BOOT IT IN YOUR BROWSER. NO MODEL REQUIRED.</sub>
+<sub>YOUR GITHUB THEME JUST PICKED AN ERA: LIGHT IS 1988, DARK IS 2026.<br>
+THERE ARE FOUR MORE INSIDE. BOOT IT IN YOUR BROWSER. NO MODEL REQUIRED.</sub>
 
 </div>
 
@@ -54,7 +58,7 @@ them.
   <tr>
     <td width="33%" align="center"><img src="site/img/frames/classic.png" alt="System 6 appearance"><br><code>1988 / SYSTEM 6</code></td>
     <td width="33%" align="center"><img src="site/img/frames/platinum.png" alt="Platinum appearance"><br><code>1999 / PLATINUM</code></td>
-    <td width="33%" align="center"><img src="site/img/frames/aqua.webp" alt="Aqua appearance"><br><code>2001 / AQUA</code></td>
+    <td width="33%" align="center"><img src="site/img/frames/aqua.webp" alt="Aqua appearance"><br><code>2002 / AQUA</code></td>
   </tr>
   <tr>
     <td width="33%" align="center"><img src="site/img/frames/snow-leopard.webp" alt="Snow Leopard appearance"><br><code>2009 / SNOW LEOPARD</code></td>
@@ -67,6 +71,8 @@ Every frame is captured from the same live desktop by
 `npm run site:capture-frames`. System 6 begins with real System 6.0.8 resources
 and observed Macintosh behavior. Later eras own independent, Retina-ready icon
 families. This is a time machine with one working state, not six screenshots.
+
+<div align="center"><sub>EVERY DESKTOP PIXEL ON THIS PAGE IS A REAL SYSTEM CAPTURE. NOTHING IS A MOCKUP.</sub></div>
 
 ## Sources go in. Files come out.
 
@@ -99,6 +105,19 @@ chats, backups, or exports.
 The desktop also boots, shuts down, restarts, restores its working session, and
 collapses into focused full-screen applications on a phone. The metaphor
 survives the small screen instead of becoming a generic mobile dashboard.
+
+## The desktop boots in two floppies. Your model doesn't.
+
+```text
+SYSTEM FLOPPY BUDGET ──────────────────────────────── 2 × 1.44 MB
+
+boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░  ~99% of budget
+hard ceiling            2,978,000 bytes, enforced by a release gate
+heavy tools             load lazily, from a third disk
+```
+
+The release pipeline fails when the boot-critical browser payload outgrows
+two 1.44&nbsp;MB floppy disks. Constraint is the product.
 
 ## Open the machine
 
@@ -178,6 +197,10 @@ AI System 6 is MIT licensed. Start with
 contract, or report security problems through [SECURITY.md](SECURITY.md).
 
 <div align="center">
+
+<img src="site/img/themes/classic/hardDisk.svg" width="40" height="40" alt=""> <img src="site/img/themes/platinum/hardDisk.png" width="40" height="40" alt=""> <img src="site/img/themes/aqua/hardDisk.png" width="40" height="40" alt=""> <img src="site/img/themes/snow-leopard/hardDisk.png" width="40" height="40" alt=""> <img src="site/img/themes/yosemite/hardDisk.png" width="40" height="40" alt=""> <img src="site/img/themes/liquid-glass/hardDisk.png" width="40" height="40" alt="">
+
+<sub>ONE DISK. SIX ERAS. SAME WORK.</sub>
 
 ### If AI software should feel like a computer again,
 

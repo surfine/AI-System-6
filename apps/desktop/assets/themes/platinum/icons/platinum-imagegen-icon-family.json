@@ -202,9 +202,9 @@
             "maxY": 14
           },
           "pixels": 120,
-          "colors": 14,
-          "sha256": "a6727b7325ad2a96ec5eeeb7b0e39c99952df871e9f04db4c3f2813d3e4fdd06",
-          "bytes": 383
+          "colors": 12,
+          "sha256": "488a88f769214606cdcba943203f5b5e9cc8e445997e3feecc00b99802a15035",
+          "bytes": 361
         },
         "32": {
           "bbox": {
@@ -214,9 +214,9 @@
             "maxY": 29
           },
           "pixels": 475,
-          "colors": 14,
-          "sha256": "6c8a2aeb65945c5e8ea845898463b0942f6751a3b33fdad31ee4e9a98eb6ab1d",
-          "bytes": 850
+          "colors": 13,
+          "sha256": "d7b40ffe4a0f1124275fe5c845bf3c5aa67c7d7e773e4129a67ac124be53717d",
+          "bytes": 796
         },
         "42": {
           "bbox": {
@@ -226,9 +226,9 @@
             "maxY": 39
           },
           "pixels": 881,
-          "colors": 20,
-          "sha256": "8da052ce27c34ef7145cbf247315d46a555a43f0cac5dce5dc51f60c82581065",
-          "bytes": 1304
+          "colors": 18,
+          "sha256": "129058663306b1176d18f233122c9bb738219005d6000fad1647f62fd7670431",
+          "bytes": 1225
         }
       }
     },
@@ -563,9 +563,9 @@
             "maxY": 37
           },
           "pixels": 945,
-          "colors": 20,
-          "sha256": "ca00ee4775c4e84aa6e5656e0b5ddb7d0c4e391d2af2251cebecc7c22c0606c8",
-          "bytes": 1088
+          "colors": 19,
+          "sha256": "f8dfdbda5f7df705dd88aa38bbcbfdd1749afa021694970a1e4fc096c7fb8c8c",
+          "bytes": 1106
         }
       }
     },

@@ -15,14 +15,14 @@ import { createCanvas, loadImage } from "canvas";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const sourcePath = join(
   root,
-  "assets/themes/classic/icons/src/classic-core-standins.json",
+  "apps/desktop/assets/themes/classic/icons/src/classic-core-standins.json",
 );
 const continuityPath = join(root, "apps/desktop/assets/themes/icon-system-continuity.json");
 const outputDir = join(root, "apps/desktop/assets/themes/classic/icons");
 const draftDir = join(root, "internal/evidence/drafts/era-icons");
 const resourceScript = join(
   root,
-  ".claude/skills/system6-ui-review/tooling/system6_resources.py",
+  ".claude/skills/system6-ui-review/scripts/system6_resources.py",
 );
 
 const source = JSON.parse(readFileSync(sourcePath, "utf8"));

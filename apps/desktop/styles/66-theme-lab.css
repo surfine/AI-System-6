@@ -1571,7 +1571,9 @@
 .theme-lab-sheet-owner-titlebar > i.is-close,
 .theme-lab-finder-window-titlebar > i.is-close {
   left: var(--theme-lab-era-titlebar-close-left, 7px);
-  background: var(--traffic-light-close-bg, transparent);
+  /* The lamp tokens are 1:1 sprites now, not gradients: an image needs an
+     explicit size or a retina sprite paints at its native pixel size. */
+  background: var(--traffic-light-close-bg, transparent) center / var(--traffic-light-sprite-size, 100% 100%) no-repeat;
 }
 
 .theme-lab-sheet-owner-titlebar > i.is-minimize,
@@ -1583,7 +1585,7 @@
 .theme-lab-sheet-owner-titlebar > i.is-zoom,
 .theme-lab-finder-window-titlebar > i.is-zoom {
   left: var(--theme-lab-era-titlebar-zoom-left, 49px);
-  background: var(--traffic-light-resize-bg, transparent);
+  background: var(--traffic-light-resize-bg, transparent) center / var(--traffic-light-sprite-size, 100% 100%) no-repeat;
 }
 
 .theme-lab-sheet-owner-body {

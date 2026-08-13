@@ -12,6 +12,54 @@ export const ICON_PIXEL_BUDGETS = Object.freeze({
   }),
 });
 
+// The Classic and Platinum Image Gen redraws were keyed out of a chroma-green
+// background, and the Platinum quantization palette owns a real period green
+// at the same coordinates (the drive LED, the terminal screen). Leftover edge
+// samples therefore land on a legitimate palette colour and cannot be found by
+// hue alone. What separates them is position: authored green sits inside the
+// subject, extraction spill always borders the alpha edge.
+export const KEY_SPILL_GREEN = Object.freeze([54, 168, 94]);
+
+export function keyGreenSpillPixels(data, width, height) {
+  const isKeyGreen = (offset) => data[offset + 3] > 40
+    && Math.abs(data[offset] - KEY_SPILL_GREEN[0]) <= 6
+    && Math.abs(data[offset + 1] - KEY_SPILL_GREEN[1]) <= 3
+    && Math.abs(data[offset + 2] - KEY_SPILL_GREEN[2]) <= 3;
+  const transparent = (x, y) => x < 0 || y < 0 || x >= width || y >= height
+    || data[(y * width + x) * 4 + 3] <= 40;
+  const green = new Set();
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      if (isKeyGreen((y * width + x) * 4)) green.add(`${x},${y}`);
+    }
+  }
+  const seen = new Set();
+  const spill = [];
+  for (const key of green) {
+    if (seen.has(key)) continue;
+    const run = [];
+    const queue = [key];
+    seen.add(key);
+    let bordersAlphaEdge = false;
+    while (queue.length) {
+      const [x, y] = queue.pop().split(",").map(Number);
+      run.push([x, y]);
+      if (transparent(x - 1, y) || transparent(x + 1, y) || transparent(x, y - 1) || transparent(x, y + 1)) {
+        bordersAlphaEdge = true;
+      }
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+        const next = `${x + dx},${y + dy}`;
+        if (green.has(next) && !seen.has(next)) {
+          seen.add(next);
+          queue.push(next);
+        }
+      }
+    }
+    if (bordersAlphaEdge) spill.push(...run);
+  }
+  return spill;
+}
+
 export function keyHueFringePixels(ctx, size) {
   const data = ctx.getImageData(0, 0, size, size).data;
   let pixels = 0;

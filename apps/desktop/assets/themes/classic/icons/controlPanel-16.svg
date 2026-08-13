@@ -5,9 +5,9 @@
     .sys-icon-detail{display:none}
   </style>
   <g transform="translate(16 16) scale(1.1) translate(-16 -16)">
-    <path d="M5 8h22M5 16h22M5 24h22" />
-    <rect x="9" y="5" width="5" height="6" />
-    <rect x="18" y="13" width="5" height="6" />
-    <rect x="12" y="21" width="5" height="6" />
+    <path d="M4 5h24v22H4z" />
+    <path d="M8 12h16M8 20h16" />
+    <rect x="10" y="9" width="4" height="6" />
+    <rect x="19" y="17" width="4" height="6" />
   </g>
 </svg>

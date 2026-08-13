@@ -7,7 +7,9 @@
   <g transform="translate(16 16) scale(1.1) translate(-16 -16)">
     <path d="M8 5h18v22H8z" />
     <path d="M8 5l-3 3v19h3" />
-    <path d="M12 10h10M12 15h8M12 21h10" />
     <path d="M9 8v16" />
+    <path d="M12 9h11v10H12z" />
+    <path class="sys-icon-detail" d="M12 19l4-5 3 3 2-3 2 5" />
+    <path class="sys-icon-detail" d="M12 23h11" />
   </g>
 </svg>

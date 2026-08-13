@@ -1425,20 +1425,26 @@ body[data-theme="yosemite"] {
      ~20.5px apart — an ~8.5px edge gap, not the 18px spacing of the
      System 6-era titlebar controls. */
   --traffic-light-gap: 8.5px;
-  --traffic-light-close-bg: #f25056;
-  --traffic-light-resize-bg: #39ea49;
+  /* 1:1 lamps: 24px discs lifted from the 10.10 Finder capture, served
+     at 12px (crisp @2x). Flat #fc615c / #33c748 bodies with their real
+     #df4744 / #27aa35 rims — no synthetic highlight; 10.10 has none. */
+  --traffic-light-close-bg: url("./assets/themes/yosemite/lamp-close.png");
+  --traffic-light-resize-bg: url("./assets/themes/yosemite/lamp-zoom.png");
+  --traffic-light-sprite-size: 12px 12px;
   /* Real 10.10: the 12px lamps sit ~4px below the window top edge. */
   --theme-lab-era-titlebar-control-top: 4px;
   --theme-lab-era-titlebar-control-size: 12px;
   --theme-lab-era-titlebar-minimize-bg: #fac636;
   /* Real 10.10 hover: the lamp deepens and draws its dark symbol (×, −, +)
      only while the pointer is over it. Resting lamps stay plain circles. */
+  /* Real 10.10 hover: the resting disc unchanged, plus the dark glyph.
+     Darkening the body on hover was press feedback in the wrong state. */
   --traffic-light-close-hover-bg:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3.8 3.8l4.4 4.4M8.2 3.8l-4.4 4.4' stroke='%238e1017' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") center / 12px 12px no-repeat,
-    #d9434b;
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3.9 3.9l4.2 4.2M8.1 3.9l-4.2 4.2' stroke='%23730b12' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E"),
+    url("./assets/themes/yosemite/lamp-close.png");
   --traffic-light-resize-hover-bg:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 6h6M6 3v6' stroke='%23126317' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") center / 12px 12px no-repeat,
-    #2fbb3c;
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3.1 6h5.8M6 3.1v5.8' stroke='%230d5a15' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E"),
+    url("./assets/themes/yosemite/lamp-zoom.png");
   --theme-lab-era-titlebar-minimize-hover-bg:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 6h6' stroke='%238a5e10' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") center / 12px 12px no-repeat,
     #e0a92a;
@@ -2307,7 +2313,6 @@ body[data-theme="yosemite"] .title-bar > :is(.close-box, .resize-box) {
      antialiased edge and prevents the classic square frame leaking through. */
   border: 0;
   border-radius: 50%;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.14);
   background-position: center;
   background-size: 12px 12px;
   background-repeat: no-repeat;
@@ -2340,6 +2345,12 @@ body[data-theme="yosemite"] .title-bar > .close-box:is(:hover, :focus-visible) {
 
 body[data-theme="yosemite"] .title-bar > .resize-box:is(:hover, :focus-visible) {
   background: var(--traffic-light-resize-hover-bg) center / 12px 12px no-repeat;
+}
+
+/* Native 10.10 press feedback: the held lamp deepens; hover only adds
+   the glyph. */
+body[data-theme="yosemite"] .title-bar > :is(.close-box, .resize-box):active {
+  filter: brightness(0.82) saturate(1.08);
 }
 
 body[data-theme="yosemite"] select:not([multiple]) {
@@ -2442,7 +2453,6 @@ body[data-theme="yosemite"] :is(
   .theme-lab-sheet-owner-titlebar
 ) > i {
   border-radius: 50%;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.14);
 }
 
 body[data-theme="yosemite"] .theme-lab-finder-window:not(.is-inactive) .theme-lab-finder-window-titlebar > i.is-close:hover {

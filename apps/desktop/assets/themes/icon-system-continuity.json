@@ -202,18 +202,153 @@
   },
   "semanticMigration": {
     "finderApp": {
-      "implemented": ["classic", "platinum", "aqua", "snow-leopard", "yosemite", "liquid-glass"],
+      "implemented": [
+        "classic",
+        "platinum",
+        "aqua",
+        "snow-leopard",
+        "yosemite",
+        "liquid-glass"
+      ],
       "pending": []
     },
     "multiFinderApp": {
-      "implemented": ["classic", "platinum", "aqua", "snow-leopard", "yosemite", "liquid-glass"],
+      "implemented": [
+        "classic",
+        "platinum",
+        "aqua",
+        "snow-leopard",
+        "yosemite",
+        "liquid-glass"
+      ],
       "pending": [],
       "chronology": "MultiFinder is later than System 6 Finder evidence. The Classic artwork is an explicitly documented period approximation, not a native System 6 resource claim."
     },
     "assistant": {
-      "implemented": ["classic", "platinum", "aqua", "snow-leopard", "yosemite", "liquid-glass"],
+      "implemented": [
+        "classic",
+        "platinum",
+        "aqua",
+        "snow-leopard",
+        "yosemite",
+        "liquid-glass"
+      ],
       "pending": []
     }
   },
-  "metaphorKeyRule": "Objects with a metaphorKey keep that one physical metaphor in every appearance; each appearance still owns independent artwork, geometry, material, and size-specific hints. Objects without a key are system objects and follow the target operating system's own prototype instead."
+  "metaphorKeyRule": "Objects with a metaphorKey keep that one physical metaphor in every appearance; each appearance still owns independent artwork, geometry, material, and size-specific hints. Objects without a key are system objects and follow the target operating system's own prototype instead.",
+  "historicalValidation": {
+    "purpose": "Record what actually validated each appearance. An accepted review status means a human looked at the artwork and kept it; it is not a claim that the artwork was checked against a period Macintosh. Only the evidence classes below carry that claim.",
+    "evidenceClasses": {
+      "native-resource": "Measured against the real resource fork or Apple .iconset held in internal/evidence. Historical claim allowed.",
+      "period-capture": "Measured against a captured screenshot of the running system held in internal/evidence. Historical claim allowed for silhouette, hue, perspective and visual weight.",
+      "accepted-generated": "Painted by a checked-in generator and kept after human review. NOT historical validation.",
+      "accepted-imagegen": "Drawn by Image Gen against reference material and kept after human review. NOT historical validation."
+    },
+    "byAppearance": {
+      "classic": {
+        "evidence": "native-resource",
+        "source": "internal/evidence/drafts/era-icons/imagegen-redraw/references/classic-native (System 6.0.8 ICN#/SICN exports) and internal/evidence/drafts/classic-icon-references",
+        "validatedObjects": [
+          "folder",
+          "document",
+          "trash",
+          "trashFull",
+          "fileFloppy",
+          "hardDisk",
+          "startupDisk",
+          "daHandler",
+          "teachText",
+          "finderApp"
+        ],
+        "note": "Runtime artwork is a smooth Retina SVG reconstruction of the native silhouette, not a bitmap copy. The remaining objects are product stand-ins with no native prototype."
+      },
+      "platinum": {
+        "evidence": "period-capture",
+        "source": "internal/evidence/drafts/theme-lab-fidelity-cache/platinum (Mac OS 9.0 Finder, desktop and file manager captures)",
+        "validatedObjects": [
+          "trash",
+          "document",
+          "finderApp",
+          "startupDisk"
+        ],
+        "openFindings": [
+          "folder"
+        ],
+        "note": "The capture shows front-facing folders with a hard offset shadow. The shipped folder is a rotated three-quarter view and does not match."
+      },
+      "aqua": {
+        "evidence": "accepted-generated",
+        "comparisonSource": "internal/evidence/drafts/theme-lab-fidelity-cache/aqua/icons (captured Apple 10.x artwork)",
+        "validatedObjects": [],
+        "openFindings": [
+          "folder",
+          "hardDisk",
+          "trash",
+          "document",
+          "daHandler"
+        ],
+        "note": "The whole 56-object family is generator output. The captured Apple artwork disagrees on folder perspective, disk and trash hue, document content, and the generic application object."
+      },
+      "snow-leopard": {
+        "evidence": "accepted-generated",
+        "comparisonSource": "internal/evidence/drafts/snow-leopard-icon-reference/iconsets (Apple .icns exports)",
+        "validatedObjects": [],
+        "openFindings": [
+          "folder",
+          "document",
+          "trash",
+          "daHandler",
+          "hardDisk"
+        ],
+        "note": "The whole 56-object family is generator output. Apple's own .iconset disagrees on folder value and perspective, document colour and content, and the generic application object."
+      },
+      "yosemite": {
+        "evidence": "accepted-generated",
+        "comparisonSource": "internal/evidence/drafts/theme-lab-fidelity-cache/yosemite (10.10 Finder captures)",
+        "validatedObjects": [
+          "folder"
+        ],
+        "openFindings": [
+          "document",
+          "hardDisk",
+          "daHandler"
+        ],
+        "note": "The whole 56-object family is generator output. The folder matches the capture; the generic document carries a solid colour block the real system does not have."
+      },
+      "liquid-glass": {
+        "evidence": "accepted-imagegen",
+        "comparisonSource": "internal/evidence/drafts/liquid-glass-reference",
+        "validatedObjects": [],
+        "openFindings": [
+          "document",
+          "trash"
+        ],
+        "note": "No period Macintosh exists to measure against yet. The generic document has almost no contrast against a light desktop, and the trash reads as a drinking glass rather than a bin."
+      }
+    },
+    "knownIdentityConflicts": [
+      {
+        "object": "finderApp",
+        "conflict": "The ledger keeps one smiling compact Macintosh across all six appearances. Mac OS X 10.0 onward ships a two-tone blue Finder face instead, so the four OS X appearances follow product continuity rather than the real prototype.",
+        "decision": "Held on purpose. Changing it would break the strongest row in the system; it is recorded here so it is never mistaken for an oversight."
+      },
+      {
+        "object": "daHandler",
+        "conflict": "The anchor asks for the target era's generic application container. Aqua, Snow Leopard and Yosemite draw a window instead of Apple's pencil-ruler-brush generic application.",
+        "decision": "Open. Listed in the regeneration brief."
+      },
+      {
+        "object": "manuscript",
+        "conflict": "The object is a stack of paper in System 6 and Mac OS 9, a bound book in Aqua, Snow Leopard and Yosemite, and a page again in Tahoe. The book form also collides with reader.",
+        "decision": "Open. Listed in the regeneration brief."
+      }
+    ],
+    "lastReviewed": "2026-08-13",
+    "reviewBoards": [
+      "internal/evidence/drafts/era-icons/cross-era-lineage-board.png",
+      "internal/evidence/drafts/era-icons/cross-era-mixed-check.png",
+      "internal/evidence/drafts/era-icons/icon-continuity-board.png"
+    ]
+  }
 }

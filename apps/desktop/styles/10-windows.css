@@ -1025,6 +1025,9 @@ html:lang(zh-Hans) .title-bar h2 {
 .window-frame-thumb {
   position: absolute;
   border: var(--window-frame-thumb-border);
+  /* Era skins own the value: 0 keeps the System 6 square thumb, the Aqua
+     family and Liquid Glass set their capsules here. */
+  border-radius: var(--window-frame-thumb-radius, 0);
   background: var(--window-frame-thumb-bg);
 }
 

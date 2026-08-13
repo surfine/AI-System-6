@@ -138,11 +138,16 @@ const systemIconPaths = {
     <path d="M13 25h8v4h-8z" />
     <path d="M11 22h10v7H11zM14 27h4" />
   `,
+  // Searcher reads the same object in all six appearances: a lens held over a
+  // page. The lone magnifier lost that page and drifted toward a modern
+  // "zoom" glyph, so the page carries the identity and the lens stays empty
+  // (the check mark belongs to Review Desk).
   searcher: `
-    <circle cx="13" cy="13" r="7" />
-    <path d="M18 18l8 8" />
-    <path d="M10 13h6M13 10v6" />
-    <path d="M5 25c5-4 10-4 16-1" />
+    <path d="M4 3h13l5 5v21H4z" />
+    <path d="M17 3v6h5" />
+    <path class="sys-icon-detail" d="M8 12h6M8 16h4" />
+    <circle cx="18" cy="18" r="6.5" />
+    <path d="M23 23l6 6" />
   `,
   bureaucracyMeme: `
     <path d="M5 7h22v16H5z" />
@@ -211,11 +216,16 @@ const systemIconPaths = {
     <path d="M8 16h3l2-6 3 12 3-10 2 7h3" />
     <path d="M8 24c3-3 5-3 8 0s5 3 8 0" />
   `,
+  // Scrapbook holds curated material, never a notepad. Ruled lines alone read
+  // as Note Pad, so the album carries a mounted print like the other five
+  // appearances do.
   scrapbook: `
     <path d="M8 5h18v22H8z" />
     <path d="M8 5l-3 3v19h3" />
-    <path d="M12 10h10M12 15h8M12 21h10" />
     <path d="M9 8v16" />
+    <path d="M12 9h11v10H12z" />
+    <path class="sys-icon-detail" d="M12 19l4-5 3 3 2-3 2 5" />
+    <path class="sys-icon-detail" d="M12 23h11" />
   `,
   clipboard: `
     <path d="M8 7h16v21H8zM12 4h8v5h-8z" />
@@ -276,11 +286,15 @@ const systemIconPaths = {
     <path d="M5 11h22v15H5z" />
     <path d="M12 5h8v10h4l-8 7-8-7h4z" />
   `,
+  // System 6 control panels are framed boxes carrying one symbol (see the
+  // native cdev resources in the classic evidence sheet). Free-floating
+  // sliders are a modern flat-icon idiom. Two square slider handles keep this
+  // distinct from \`control\`, which owns three round knobs.
   controlPanel: `
-    <path d="M5 8h22M5 16h22M5 24h22" />
-    <rect x="9" y="5" width="5" height="6" />
-    <rect x="18" y="13" width="5" height="6" />
-    <rect x="12" y="21" width="5" height="6" />
+    <path d="M4 5h24v22H4z" />
+    <path d="M8 12h16M8 20h16" />
+    <rect x="10" y="9" width="4" height="6" />
+    <rect x="19" y="17" width="4" height="6" />
   `,
   control: `
     <path d="M5 6h22v21H5z" />

@@ -836,9 +836,8 @@ html[data-theme="liquid-glass"] { --sel-bg: rgba(40, 90, 200, 0.8); --gauge-fill
   .hero-brand { font-size: 12px; margin-bottom: 8px; }
   .hero-head { font-size: clamp(26px, 8.6vw, 34px); margin-bottom: 12px; }
   :root:not([data-theme]) .hero-head { padding: 4px 14px 7px; box-shadow: 3px 3px 0 var(--ink); }
-  .hero-btns { margin: 0 0 14px; gap: 8px 10px; }
-  .hero-btns .btn { font-size: 15px; padding: 4px 12px; }
-  .btn-default { margin: 3px; }
+  .hero-btns { margin: 0 0 14px; gap: 10px; }
+  .btn { min-width: 220px; }
   .btn-default::after { inset: -4px; border-width: 2px; }
 
   .desk-icon { min-width: 58px; min-height: 44px; }

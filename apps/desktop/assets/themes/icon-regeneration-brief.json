@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Work still owed to the six-appearance icon system, written so it can be handed to Image Gen without re-deriving the evidence. Each entry names the object, the appearance, the evidence that fails it today, and what the redraw must produce.",
+  "rule": "Nothing here may be repainted from another appearance's artwork. Every entry is redrawn from the named period evidence, then re-checked on the cross-era lineage board and the mixed-era check.",
+  "openedBy": "cross-era icon lineage review",
+  "openedOn": "2026-08-13",
+  "boards": [
+    "internal/evidence/drafts/era-icons/cross-era-lineage-board.png",
+    "internal/evidence/drafts/era-icons/cross-era-mixed-check.png"
+  ],
+  "redraw": [
+    {
+      "object": "folder",
+      "appearances": ["platinum", "aqua", "snow-leopard"],
+      "evidence": [
+        "internal/evidence/drafts/theme-lab-fidelity-cache/platinum/guidebook-filemanager-macos90.png",
+        "internal/evidence/drafts/theme-lab-fidelity-cache/aqua/icons/folder-generic-1004.png",
+        "internal/evidence/drafts/snow-leopard-icon-reference/iconsets/GenericFolderIcon.iconset/icon_128x128.png"
+      ],
+      "failure": "All three ship a folder rotated into a standing three-quarter view. Every one of the three real systems draws the folder front-facing, wide, and filling its box; only the tab and a shallow lip carry depth.",
+      "brief": "Redraw front-facing. Mac OS 9: periwinkle body, tab at top left, one-pixel dark keyline, hard offset shadow to the lower right, no rotation. Jaguar: pale sky blue, wide, soft Aqua sheen on the front face, subtle contact shadow. Snow Leopard: light steel blue, matte, restrained overhead key light, no gloss. In all three the folder must fill its box the way Apple's does instead of floating small inside it.",
+      "priority": "high"
+    },
+    {
+      "object": "daHandler",
+      "appearances": ["aqua", "snow-leopard", "yosemite"],
+      "evidence": [
+        "internal/evidence/drafts/theme-lab-fidelity-cache/aqua/icons/application-generic-1004.png",
+        "internal/evidence/drafts/snow-leopard-icon-reference/iconsets/GenericApplicationIcon.iconset/icon_128x128.png"
+      ],
+      "failure": "The three OS X appearances draw a window. The semantic anchor asks for the target era's generic application container, and in every one of those systems that object is a sheet of paper carrying a pencil, a ruler and a brush.",
+      "brief": "Redraw as the era's own generic application: paper with pencil, ruler and brush. Keep the era's material and lighting. The System 6 diamond-and-hand and the Mac OS 9 toolbox already follow their own prototypes and must not change.",
+      "priority": "high"
+    },
+    {
+      "object": "hardDisk",
+      "appearances": ["aqua", "snow-leopard", "yosemite"],
+      "evidence": [
+        "internal/evidence/drafts/theme-lab-fidelity-cache/aqua/icons/harddisk-1004.png"
+      ],
+      "failure": "Jaguar ships a saturated blue drive where the captured Apple artwork is silver-grey. Snow Leopard and Yosemite ship an opened drive showing the platter and head arm; that reading also collapses into an unrecognisable grey blob at 16 px.",
+      "brief": "Redraw as a closed drive body in all three. Jaguar: silver-grey, front-on, wide. Snow Leopard: brushed metal, restrained overhead key. Yosemite: flat light grey with a thin stroke. Compose the 16 px hint separately from a recognisable closed-box silhouette instead of reducing the large master.",
+      "priority": "high"
+    },
+    {
+      "object": "trash",
+      "appearances": ["aqua"],
+      "evidence": [
+        "internal/evidence/drafts/theme-lab-fidelity-cache/aqua/icons/trash-1004.png"
+      ],
+      "failure": "The shipped basket is electric blue. The captured Apple artwork is a graphite translucent wire basket.",
+      "brief": "Redraw in graphite with translucent wire mesh and an Aqua highlight on the rim. Keep the empty and full states as one object.",
+      "priority": "medium"
+    },
+    {
+      "object": "manuscript",
+      "appearances": ["aqua", "snow-leopard", "yosemite"],
+      "evidence": ["internal/evidence/drafts/era-icons/cross-era-lineage-board.png"],
+      "failure": "The object is a stack of paper in System 6 and Mac OS 9, a bound book in the three OS X appearances, and a page again in Tahoe. The bound-book form also collides with reader, which is already an open book.",
+      "brief": "Settle on one identity across the row before redrawing. The finished long document is a squared block of paper, not a published book; reader keeps the book. Redraw the three OS X appearances as a thick, squared, bound-at-the-edge paper block in each era's material.",
+      "priority": "medium"
+    }
+  ],
+  "minorFix": [
+    {
+      "object": "document",
+      "appearances": ["aqua", "snow-leopard", "yosemite", "liquid-glass"],
+      "failure": "Jaguar adds a blue keyline, blue rules and a heavy violet shadow; Snow Leopard tints the page cream and adds a dark keyline; Yosemite adds a solid blue block no real system puts on a generic document; Tahoe has almost no contrast against a light desktop.",
+      "brief": "Every real generic document in these systems is a plain white page with a folded corner and no content. Remove the content and keylines, keep the page white, and give the Tahoe page enough edge contrast to survive on a light desktop.",
+      "priority": "medium"
+    },
+    {
+      "object": "trash",
+      "appearances": ["snow-leopard", "liquid-glass"],
+      "failure": "Snow Leopard is shorter and flatter than Apple's tall chrome basket. Tahoe is a tall tapered tumbler with a dark teal interior and reads as a drinking glass.",
+      "brief": "Snow Leopard: raise the body and restore the chrome specular on the rim. Tahoe: widen the body toward a bin, keep the glass material, drop the dark interior.",
+      "priority": "low"
+    },
+    {
+      "object": "daHandler",
+      "appearances": ["classic"],
+      "evidence": ["internal/evidence/drafts/era-icons/imagegen-redraw/references/classic-native/finder-icn-133-art-32.png"],
+      "failure": "The native ICN# is a hand holding a pen inside the diamond. The shipped hand has lost the pen and reads as a mitten.",
+      "brief": "Restore the pen in the hand as a smooth vector, keeping the diamond and the existing stroke weight.",
+      "priority": "low"
+    },
+    {
+      "object": "trash",
+      "appearances": ["classic"],
+      "evidence": ["internal/evidence/drafts/classic-icon-references/trash.txt"],
+      "failure": "The native ICN# 130 can is wider, has a full-width lid band drawn as two rules, and carries four ribs. The shipped can is narrower with a single lid rule and three ribs.",
+      "brief": "Widen the body toward the native proportion, draw the lid as a band rather than one line, and use four ribs. Keep the smooth vector treatment.",
+      "priority": "low"
+    },
+    {
+      "object": "finderApp",
+      "appearances": ["yosemite", "liquid-glass"],
+      "failure": "The face survives at 128 px but disappears at 16 px, where Yosemite reads as a white box with a blue square and Tahoe as a blue tile.",
+      "brief": "Compose the 16 px hint separately: drop the case detail and keep the two eyes and the smile as the whole icon.",
+      "priority": "low"
+    }
+  ],
+  "evidenceMissing": [
+    {
+      "appearances": ["yosemite"],
+      "need": "Captured 10.10 artwork for the generic document, the generic application and the trash, at icon size rather than inside a Finder screenshot.",
+      "blocks": ["document", "daHandler", "trash"]
+    },
+    {
+      "appearances": ["liquid-glass"],
+      "need": "There is no shipped Tahoe 26 system to measure against in this repository. Every Liquid Glass judgement is currently taste, not evidence.",
+      "blocks": ["folder", "document", "trash", "hardDisk", "finderApp"]
+    },
+    {
+      "appearances": ["aqua"],
+      "need": "The captured Jaguar artwork covers five system objects. There is no captured reference for controlPanel, scrapbook, reader or the writing-route objects, so those stay product judgements.",
+      "blocks": []
+    }
+  ]
+}

@@ -285,28 +285,35 @@ details.menu[open] > summary {
 .btn-row {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: center;
   gap: 14px 18px;
   margin: 4px 0 24px;
 }
 
 .btn {
+  /* One push-button size, everywhere. HIG: buttons in a group share their
+     height and width; labels never resize the control. */
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  height: 34px;
+  min-width: 200px;
   font-family: var(--site-font, var(--ui-font));
-  font-size: 18px;
+  font-size: 16px;
   color: var(--btn-ink, var(--ink));
   text-decoration: none;
   background: var(--btn-bg, var(--paper));
   border: 1px solid var(--btn-border, var(--ink));
   border-radius: var(--btn-radius, 7px);
   box-shadow: var(--btn-shadow, none);
-  padding: 7px 18px 3px;
+  padding: 3px 20px 0;
   line-height: 1;
+  white-space: nowrap;
   cursor: pointer;
 }
-html[data-theme] .btn { padding: 5px 18px; }
+html[data-theme] .btn { padding: 0 20px; }
 .btn:hover,
 .btn:focus-visible {
   background: var(--ink);
@@ -314,10 +321,10 @@ html[data-theme] .btn { padding: 5px 18px; }
 }
 .btn:active { transform: translateY(1px); }
 
-/* Default button: the System 6 heavy outer ring. */
+/* Default button: the System 6 heavy outer ring. The ring is drawn in the
+   row gap; the control itself keeps the shared size and axis. */
 .btn-default {
   position: relative;
-  margin: 4px;
 }
 .btn-default::after {
   content: "";

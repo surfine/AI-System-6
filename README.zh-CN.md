@@ -1,5 +1,5 @@
 <!-- canonical-source: README.md -->
-<!-- source-sha256: 6ff49664619e31ef725f804dedbbcedc84292db02aab7d0b593f6b739d2827d7 -->
+<!-- source-sha256: 15e3d1919911d693e09c5ee703550626e4c365b9390b5271be0ba70224a057a2 -->
 
 > 英文版为准 / 仅供人类参考
 
@@ -18,9 +18,13 @@
 
 <br><br>
 
-<a href="https://system6.aaronlau.me"><img src="site/img/og-poster.png" width="100%" alt="AI System 6 海报，展示同一台电脑从 1988 年跨越六个时代来到 2026 年"></a>
+<a href="https://system6.aaronlau.me"><picture>
+  <source media="(prefers-color-scheme: dark)" srcset="site/img/frames/liquid-glass.webp">
+  <img src="site/img/frames/classic.png" width="100%" alt="从真实应用中捕获的 AI System 6 桌面：Searcher、ClioTalk、Scrapbook、TeachText 和 Review Desk 围绕同一份手稿。浅色模式显示 1988 年的 System 6 外观；深色模式显示 2026 年的 Liquid Glass。">
+</picture></a>
 
-<sub>在浏览器里启动它。不需要先连接模型。</sub>
+<sub>你的 GITHUB 主题刚刚选好了时代：浅色是 1988，深色是 2026。<br>
+里面还有四个时代。在浏览器里启动它。不需要先连接模型。</sub>
 
 </div>
 
@@ -56,7 +60,7 @@ AI System 6 把 Chat 删掉的电脑能力放了回来。
   <tr>
     <td width="33%" align="center"><img src="site/img/frames/classic.png" alt="System 6 外观"><br><code>1988 / SYSTEM 6</code></td>
     <td width="33%" align="center"><img src="site/img/frames/platinum.png" alt="Platinum 外观"><br><code>1999 / PLATINUM</code></td>
-    <td width="33%" align="center"><img src="site/img/frames/aqua.webp" alt="Aqua 外观"><br><code>2001 / AQUA</code></td>
+    <td width="33%" align="center"><img src="site/img/frames/aqua.webp" alt="Aqua 外观"><br><code>2002 / AQUA</code></td>
   </tr>
   <tr>
     <td width="33%" align="center"><img src="site/img/frames/snow-leopard.webp" alt="Snow Leopard 外观"><br><code>2009 / SNOW LEOPARD</code></td>
@@ -68,6 +72,8 @@ AI System 6 把 Chat 删掉的电脑能力放了回来。
 每一帧都由 `npm run site:capture-frames` 从同一张实时桌面抓取。System 6
 从真实的 System 6.0.8 资源与实测 Macintosh 行为出发；后来的时代拥有各自独立、
 适配 Retina 的图标家族。这是一台共享工作状态的时间机器，不是六张效果图。
+
+<div align="center"><sub>本页每一个桌面像素都是真实系统捕获。没有任何示意图。</sub></div>
 
 ## 来源进入，文件出来
 
@@ -98,6 +104,19 @@ AI 是可选项，来源记录不是。服务器只是一座无状态桥梁，�
 
 这张桌面也会启动、关机、重启并恢复工作现场。在手机上，它会收束成一个个聚焦的
 全屏应用，而不是变成普通的移动端仪表板。
+
+## 桌面两张软盘就能启动。你的模型不行。
+
+```text
+系统软盘预算 ────────────────────────────────── 2 × 1.44 MB
+
+启动关键载荷      ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░  约占预算 99%
+硬性上限          2,978,000 字节，由发布门禁强制执行
+重型工具          惰性加载，来自第三张盘
+```
+
+当启动关键的浏览器载荷超出约两张 1.44&nbsp;MB 软盘时，发布流水线直接失败。
+约束本身就是产品。
 
 ## 打开这台机器
 
@@ -175,6 +194,10 @@ AI System 6 采用 MIT 许可证。你可以从
 Issue；安全问题请按 [SECURITY.zh-CN.md](SECURITY.zh-CN.md) 报告。
 
 <div align="center">
+
+<img src="site/img/themes/classic/hardDisk.svg" width="40" height="40" alt=""> <img src="site/img/themes/platinum/hardDisk.png" width="40" height="40" alt=""> <img src="site/img/themes/aqua/hardDisk.png" width="40" height="40" alt=""> <img src="site/img/themes/snow-leopard/hardDisk.png" width="40" height="40" alt=""> <img src="site/img/themes/yosemite/hardDisk.png" width="40" height="40" alt=""> <img src="site/img/themes/liquid-glass/hardDisk.png" width="40" height="40" alt="">
+
+<sub>同一块硬盘。六个时代。同一份工作。</sub>
 
 ### 如果 AI 软件应该重新像一台电脑，
 
