@@ -231,8 +231,7 @@ if (officialSite.status === 0) {
 if (/^\d+\.\d+\.\d+/.test(pkg.version || "")) ok(`package version ${pkg.version}`);
 else fail(`package version is not semver-like: ${pkg.version || "(missing)"}`);
 
-const pkgAssets = new Set(pkg.pkg?.assets || []);
-const pkgTargets = new Set(pkg.pkg?.targets || []);
+const pkgAssets = new Set(pkg.macPackagedAssets?.assets || []);
 [
   "build-info.json",
   "apps/desktop/index.html",
@@ -251,14 +250,15 @@ const pkgTargets = new Set(pkg.pkg?.targets || []);
   "system.css-reference/fonts/*.woff",
   "system.css-reference/fonts/*.woff2",
 ].forEach((asset) => {
-  if (pkgAssets.has(asset)) ok(`pkg asset ${asset}`);
-  else fail(`pkg asset missing: ${asset}`);
+  if (pkgAssets.has(asset)) ok(`packaged asset ${asset}`);
+  else fail(`packaged asset missing: ${asset}`);
 });
 
-["node18-macos-arm64"].forEach((target) => {
-  if (pkgTargets.has(target)) ok(`pkg target ${target}`);
-  else fail(`pkg target missing: ${target}`);
-});
+{
+  const payloadBuilder = readFileSync(join(root, "tooling/build-mac-server-payload.mjs"), "utf8");
+  if (/MIN_PACKAGED_NODE_MAJOR = 24/.test(payloadBuilder)) ok("mac payload refuses pre-24 Node runtimes");
+  else fail("tooling/build-mac-server-payload.mjs lost its packaged-runtime floor");
+}
 
 const fontDir = join(root, "system.css-reference/fonts");
 if (existsSync(fontDir)) {

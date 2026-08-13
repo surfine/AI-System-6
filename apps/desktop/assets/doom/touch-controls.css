@@ -1,0 +1,292 @@
+/* SPDX-License-Identifier: GPL-2.0-only */
+
+.doom-touch-controls-host {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.doom-touch-controls {
+  --doom-touch-ink: #fff;
+  --doom-touch-paper: rgba(0, 0, 0, 0.58);
+  --doom-touch-active-ink: #000;
+  --doom-touch-active-paper: rgba(255, 255, 255, 0.94);
+  --doom-touch-shadow: #000;
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  color: var(--doom-touch-ink);
+  font: 700 11px/1 "Chicago", "Charcoal", "Geneva", monospace;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  contain: layout paint style;
+}
+
+.doom-touch-controls[hidden] {
+  display: none;
+}
+
+.doom-touch-controls__layout {
+  position: absolute;
+  top: max(16px, env(safe-area-inset-top));
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(16px, env(safe-area-inset-bottom));
+  left: max(16px, env(safe-area-inset-left));
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  gap: clamp(8px, 2vmin, 16px);
+}
+
+.doom-touch-controls[data-orientation="portrait"] .doom-touch-controls__layout {
+  grid-template:
+    "tools tools" auto
+    ". turn" minmax(88px, 1fr)
+    "move actions" minmax(150px, 31vh)
+    / minmax(132px, 1fr) minmax(150px, 1fr);
+}
+
+.doom-touch-controls[data-orientation="landscape"] .doom-touch-controls__layout {
+  grid-template:
+    "tools tools tools" auto
+    "move turn actions" minmax(132px, 1fr)
+    / minmax(132px, 24vw) minmax(104px, 1fr) minmax(154px, 29vw);
+}
+
+.doom-touch-controls__tools {
+  grid-area: tools;
+  display: flex;
+  justify-content: center;
+  align-items: start;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.doom-touch-button,
+.doom-touch-pad,
+.doom-touch-turn {
+  box-sizing: border-box;
+  border: 2px solid var(--doom-touch-ink);
+  border-radius: 0;
+  background: var(--doom-touch-paper);
+  box-shadow: 2px 2px 0 var(--doom-touch-shadow);
+  color: var(--doom-touch-ink);
+  touch-action: none;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.doom-touch-button {
+  display: inline-flex;
+  min-width: 48px;
+  min-height: 48px;
+  margin: 0;
+  padding: 5px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 3px;
+  appearance: none;
+  font: inherit;
+  line-height: 1;
+}
+
+.doom-touch-button > span {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.doom-touch-button > small,
+.doom-touch-turn > small {
+  font: inherit;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+}
+
+.doom-touch-button[data-pressed="true"],
+.doom-touch-button:active,
+.doom-touch-button:focus-visible,
+.doom-touch-pad[data-active="true"],
+.doom-touch-turn[data-active="true"] {
+  background: var(--doom-touch-active-paper);
+  color: var(--doom-touch-active-ink);
+  outline: 1px solid var(--doom-touch-shadow);
+  outline-offset: 2px;
+}
+
+.doom-touch-button:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.doom-touch-button--tool {
+  min-width: 58px;
+  min-height: 44px;
+}
+
+.doom-touch-button--fire {
+  min-width: 66px;
+  min-height: 66px;
+  border-width: 3px;
+}
+
+.doom-touch-button--fire > span {
+  font-size: 24px;
+}
+
+.doom-touch-button--weapon {
+  min-width: 48px;
+  min-height: 44px;
+}
+
+.doom-touch-pad {
+  grid-area: move;
+  position: relative;
+  width: clamp(128px, 32vw, 170px);
+  height: clamp(128px, 32vw, 170px);
+  align-self: end;
+  justify-self: start;
+  border-radius: 50%;
+  background:
+    linear-gradient(var(--doom-touch-paper), var(--doom-touch-paper)),
+    repeating-conic-gradient(var(--doom-touch-ink) 0deg 1deg, transparent 1deg 45deg);
+}
+
+.doom-touch-pad__cross {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  color: var(--doom-touch-ink);
+  font-size: 52px;
+  font-weight: 400;
+  line-height: 1;
+  opacity: 0.42;
+  transform: translate(-50%, -52%);
+  pointer-events: none;
+}
+
+.doom-touch-pad__knob {
+  position: absolute;
+  top: calc(50% - 24px);
+  left: calc(50% - 24px);
+  width: 48px;
+  height: 48px;
+  box-sizing: border-box;
+  border: 2px solid var(--doom-touch-ink);
+  border-radius: 50%;
+  background: var(--doom-touch-paper);
+  box-shadow: 1px 1px 0 var(--doom-touch-shadow);
+  pointer-events: none;
+}
+
+.doom-touch-pad[data-direction="n"] .doom-touch-pad__knob { transform: translateY(-18px); }
+.doom-touch-pad[data-direction="ne"] .doom-touch-pad__knob { transform: translate(13px, -13px); }
+.doom-touch-pad[data-direction="e"] .doom-touch-pad__knob { transform: translateX(18px); }
+.doom-touch-pad[data-direction="se"] .doom-touch-pad__knob { transform: translate(13px, 13px); }
+.doom-touch-pad[data-direction="s"] .doom-touch-pad__knob { transform: translateY(18px); }
+.doom-touch-pad[data-direction="sw"] .doom-touch-pad__knob { transform: translate(-13px, 13px); }
+.doom-touch-pad[data-direction="w"] .doom-touch-pad__knob { transform: translateX(-18px); }
+.doom-touch-pad[data-direction="nw"] .doom-touch-pad__knob { transform: translate(-13px, -13px); }
+
+.doom-touch-turn {
+  grid-area: turn;
+  display: flex;
+  width: min(100%, 260px);
+  min-width: 104px;
+  min-height: 84px;
+  max-height: 132px;
+  padding: 10px;
+  align-self: end;
+  justify-self: end;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  border-style: dashed;
+}
+
+.doom-touch-turn > span {
+  font-size: 18px;
+}
+
+.doom-touch-turn[data-direction="left"] > span:first-child,
+.doom-touch-turn[data-direction="right"] > span:last-child {
+  color: var(--doom-touch-active-ink);
+  background: var(--doom-touch-active-paper);
+}
+
+.doom-touch-actions {
+  grid-area: actions;
+  display: flex;
+  min-width: 0;
+  align-self: end;
+  justify-self: end;
+  flex-direction: column;
+  align-items: end;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.doom-touch-actions__primary,
+.doom-touch-actions__weapons {
+  display: flex;
+  align-items: end;
+  justify-content: end;
+  gap: 7px;
+  pointer-events: none;
+}
+
+.doom-touch-controls[data-orientation="portrait"] .doom-touch-actions__primary {
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto auto;
+}
+
+.doom-touch-controls[data-orientation="portrait"] .doom-touch-button--fire {
+  grid-row: 1 / span 2;
+}
+
+.doom-touch-controls[data-size="compact"] .doom-touch-controls__layout {
+  gap: 8px;
+}
+
+.doom-touch-controls[data-size="compact"] .doom-touch-pad {
+  width: 128px;
+  height: 128px;
+}
+
+.doom-touch-controls[data-size="compact"] .doom-touch-turn {
+  min-height: 72px;
+}
+
+@media (orientation: landscape) and (max-height: 430px) {
+  .doom-touch-controls__layout {
+    top: max(10px, env(safe-area-inset-top));
+    right: max(14px, env(safe-area-inset-right));
+    bottom: max(10px, env(safe-area-inset-bottom));
+    left: max(14px, env(safe-area-inset-left));
+  }
+
+  .doom-touch-controls__tools {
+    justify-content: center;
+  }
+
+  .doom-touch-button--tool {
+    min-height: 42px;
+  }
+
+  .doom-touch-actions {
+    gap: 6px;
+  }
+}
+
+@media (forced-colors: active) {
+  .doom-touch-controls {
+    --doom-touch-ink: CanvasText;
+    --doom-touch-paper: Canvas;
+    --doom-touch-active-ink: HighlightText;
+    --doom-touch-active-paper: Highlight;
+    --doom-touch-shadow: CanvasText;
+  }
+}

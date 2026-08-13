@@ -52,7 +52,7 @@ export default defineConfig({
     {
       name: "webkit-desktop",
       use: { ...devices["Desktop Safari"] },
-      testIgnore: /mobile-user-journey\.spec\.mjs$/,
+      testIgnore: /(?:mobile-user-journey|doom-engine)\.spec\.mjs$/,
     },
     {
       name: "iphone-webkit",

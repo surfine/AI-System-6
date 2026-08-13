@@ -1,4 +1,4 @@
-import { copyFileSync, existsSync, mkdirSync, readdirSync, rmSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { copyFileSync, cpSync, existsSync, mkdirSync, readdirSync, rmSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join, resolve } from "node:path";
 import { execFileSync } from "node:child_process";
@@ -26,11 +26,11 @@ const builtBinary = process.env.AI_SYSTEM6_SHELL_BINARY
 const appBinary = join(macOsDir, binaryName);
 const args = process.argv.slice(2);
 const serverArgIndex = args.indexOf("--server");
-const explicitServerBinary = serverArgIndex >= 0 ? args[serverArgIndex + 1] : "";
-const defaultServerBinary = join(distDir, "ai-system-6-macos-arm64");
-const serverBinary = explicitServerBinary
-  ? resolve(repoRoot, explicitServerBinary)
-  : defaultServerBinary;
+const explicitServerPayload = serverArgIndex >= 0 ? args[serverArgIndex + 1] : "";
+const defaultServerPayload = join(distDir, "mac-server-payload");
+const serverPayload = explicitServerPayload
+  ? resolve(repoRoot, explicitServerPayload)
+  : defaultServerPayload;
 const skipSwiftBuild = process.env.AI_SYSTEM6_SKIP_SWIFT_BUILD === "1";
 const allowStaleShell = process.env.AI_SYSTEM6_ALLOW_STALE_SHELL === "1";
 const macosDeploymentTarget = process.env.AI_SYSTEM6_MACOS_DEPLOYMENT_TARGET || "13.0";
@@ -208,13 +208,24 @@ mkdirSync(macOsDir, { recursive: true });
 mkdirSync(resourcesDir, { recursive: true });
 copyFileSync(builtBinary, appBinary);
 const hasIcon = buildIcon(resourcesDir);
-if (existsSync(serverBinary)) {
+if (existsSync(serverPayload)) {
+  // The payload is a repo-shaped tree with its own Node runtime (see
+  // tooling/build-mac-server-payload.mjs). The Swift shell keeps launching
+  // Resources/ai-system-6-server, which now execs into the payload.
+  const bundledPayload = join(resourcesDir, "server-payload");
+  cpSync(serverPayload, bundledPayload, { recursive: true });
   const bundledServer = join(resourcesDir, "ai-system-6-server");
-  copyFileSync(serverBinary, bundledServer);
+  writeFileSync(
+    bundledServer,
+    `#!/bin/sh
+DIR="$(cd "$(dirname "$0")" && pwd)"
+exec "$DIR/server-payload/node" "$DIR/server-payload/apps/server/server.js"
+`
+  );
   execFileSync("/bin/chmod", ["755", bundledServer]);
-  console.log(`Bundled server: ${serverBinary}`);
+  console.log(`Bundled server payload: ${serverPayload}`);
 } else {
-  console.warn(`No bundled server found at ${serverBinary}; app will fall back to npm start from the repo.`);
+  console.warn(`No server payload found at ${serverPayload}; app will fall back to npm start from the repo.`);
 }
 
 writeFileSync(
@@ -259,8 +270,8 @@ writeFileSync(
     appDisplayName,
     "",
     "This is a minimal macOS app shell for the current web beta.",
-    existsSync(serverBinary)
-      ? "It starts the bundled AI System 6 server and opens http://localhost:4173 in WKWebView."
+    existsSync(serverPayload)
+      ? "It starts the bundled AI System 6 server on its bundled Node runtime and opens http://localhost:4173 in WKWebView."
       : "It starts npm from the repository root and opens http://localhost:4173 in WKWebView.",
     "It is a bridge, not the final Swift-native app.",
   ].join("\n")

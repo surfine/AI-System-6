@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/DESIGN.md -->
-<!-- source-sha256: 8df6cf76591f68ef402bbcf80d65846bb67b95cbcc6eaa031335e13f6c61f562 -->
+<!-- source-sha256: 549997aaa17de13bfda19d3f60614169357eef8be107bc29ed5e5c499fc82930 -->
 
 # AI System 6 设计合约
 
@@ -292,7 +292,8 @@ UI 文案应该直接，并且绑定对象：
 4. 哪些 tokens 定义它的几何、材质和状态？
 5. 它相对注册表 `recipeBase` 改变了什么？
 6. 存在哪些状态：default、hover、focus、active、selected、disabled、loading、empty、error？
-7. 哪个验证覆盖了六时代 Theme Lab，以及至少一个窄屏 Classic/Liquid viewport？
+7. 哪个验证覆盖了六时代 Theme Lab，以及 HIG 要求的手机／平板 × 横屏／竖屏矩阵，并同时
+   覆盖 Classic 与 Liquid Glass？
 
 如果答案是“新模式”，先说明理由，再编辑 CSS。
 

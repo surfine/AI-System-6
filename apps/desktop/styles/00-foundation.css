@@ -2580,10 +2580,6 @@ body.has-system-modal .menu-bar {
   color: var(--shade-dark);
 }
 
-.window.is-app-hidden {
-  display: none;
-}
-
 .shutdown-screen {
   --boot-mac-scale: 1.72;
   position: fixed;

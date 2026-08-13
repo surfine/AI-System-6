@@ -282,6 +282,19 @@ Each registry entry declares one model:
 - `immersive`: a Creative Lab may dedicate more area to its artifact while
   preserving shared chrome and escape paths.
 
+The device-orientation matrix is one acceptance contract, not four separate
+products. Phone portrait, phone landscape, tablet portrait, and tablet
+landscape must each preserve a complete primary-task path, confirmed state,
+and an escape or return path. Adapt by container size and input capability;
+orientation may change arrangement or offer a non-blocking recommendation,
+but may not become an entry gate or state reset.
+
+Rotation must not reload a surface or discard unsaved entry, selection,
+operation receipts, or confirmed save state. Release held pointers and keys
+before reconciling the new viewport so a touch begun in the previous geometry
+cannot remain stuck after rotation. No primary action may be hover-only,
+right-click-only, precision-drag-only, or keyboard-only.
+
 Every new app must specify, for each shell region:
 
 | Region | Allowed compact behavior |
@@ -294,9 +307,12 @@ Every new app must specify, for each shell region:
 | Pane split | Collapse to one task with an explicit return path |
 | Bottom controls | Wrap as an owned group or move secondary controls into Commands |
 
-Test at a wide desktop, a constrained resizable window, a narrow touch
-viewport, English, and Chinese. Test the container width that actually fails,
-not only the browser viewport.
+Test at a wide desktop and a constrained resizable window, then test all four
+touch quadrants: phone portrait, phone landscape, tablet portrait, and tablet
+landscape. For text entry, cover the software keyboard both open and closed;
+on tablets, also cover pointer and keyboard operation. Run the matrix in
+English and Chinese, with representative Classic and Liquid Glass passes. Test
+the container width that actually fails, not only the browser viewport.
 
 ## Classic and Liquid Glass
 
@@ -388,7 +404,9 @@ Before handoff:
    and after in Classic and Liquid Glass.
 4. Verify keyboard, pointer, touch alternative, reduced motion, and visible
    operation receipts.
-5. Verify one wide, one constrained, and one narrow layout in both languages.
+5. Verify one wide and one constrained layout plus phone/tablet ×
+   portrait/landscape in both languages; include software-keyboard states when
+   the surface accepts text.
 6. Confirm no new `!important`, arbitrary `z-index`, layout inline style,
    global scrollbar rule, or theme-only structural fork was introduced.
 

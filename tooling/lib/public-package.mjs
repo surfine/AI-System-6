@@ -83,8 +83,8 @@ export function buildPublicPackageJson(privatePkg) {
     Object.entries(scripts).sort(([a], [b]) => a.localeCompare(b))
   );
   result.devDependencies = { ...(privatePkg.devDependencies || {}) };
-  delete result.devDependencies.pkg;
-  delete result.pkg;
+  // The public snapshot deliberately drops the mac packaging surface.
+  delete result.macPackagedAssets;
   return result;
 }
 

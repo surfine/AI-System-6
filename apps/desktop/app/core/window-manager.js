@@ -809,6 +809,12 @@ async function quitApp(appId = activeAppId) {
     window.AISystem6OpenTTD?.handleQuit?.();
   }
 
+  if (appId === "doom") {
+    // The iframe owns IDBFS. Ask it to release held input and flush storage;
+    // an acknowledgement or bounded timeout then reclaims the Wasm instance.
+    window.AISystem6Doom?.handleQuit?.();
+  }
+
   if (appId === "teachText" && shouldPromptForTeachTextFileSave()) {
     const result = await showSystemModal(teachTextUnsavedChangesMessage(), "save");
     if (result === "cancel") return;
@@ -948,6 +954,7 @@ const mobileFullScreenAppIds = new Set([
   "scrapbook",
   "bureaucracyMeme",
   "micropolis",
+  "doom",
   "openttd",
 ]);
 
@@ -2677,6 +2684,10 @@ const lazyWindowModules = {
   openttd: {
     ensure: () => ensureOpenTTDModule(),
     attach: () => window.AISystem6OpenTTD?.attach?.(),
+  },
+  doom: {
+    ensure: () => ensureDoomModule(),
+    attach: () => window.AISystem6Doom?.attach?.(),
   },
   controlStripModules: {
     ensure: () => ensureControlStripModulesFolderModule(),

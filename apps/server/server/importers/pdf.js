@@ -6,6 +6,7 @@ const os = require("node:os");
 const path = require("node:path");
 const zlib = require("node:zlib");
 const { execFile } = require("node:child_process");
+const { pathToFileURL } = require("node:url");
 const { promisify } = require("node:util");
 const { cleanImportedText, decodeUtf16BE } = require("./shared.js");
 const { getCanvas, extractImageText } = require("./image-ocr.js");
@@ -319,6 +320,14 @@ async function getPdfJs() {
   return pdfJsPromise;
 }
 
+// pdfjs 6 no longer guesses where its packaged standard fonts live when it
+// runs under Node; hand it the installed directory so font-dependent pages
+// keep extracting and rendering at full fidelity.
+function pdfJsStandardFontDataUrl() {
+  const packageRoot = path.dirname(require.resolve("pdfjs-dist/package.json"));
+  return pathToFileURL(path.join(packageRoot, "standard_fonts") + path.sep).href;
+}
+
 function makePdfJsData(buffer) {
   return new Uint8Array(buffer);
 }
@@ -507,6 +516,7 @@ async function extractPdfTextLayerWithPdfJs(buffer, options = {}) {
     useWorkerFetch: false,
     isEvalSupported: false,
     useSystemFonts: true,
+    standardFontDataUrl: pdfJsStandardFontDataUrl(),
   });
   const document = await loadingTask.promise;
   const pages = [];
@@ -547,6 +557,7 @@ async function getPdfPageCount(buffer) {
     useWorkerFetch: false,
     isEvalSupported: false,
     useSystemFonts: true,
+    standardFontDataUrl: pdfJsStandardFontDataUrl(),
   });
   const document = await loadingTask.promise;
   try {
@@ -594,6 +605,7 @@ async function renderPdfPagesWithPdfJs(buffer, options = {}) {
     useWorkerFetch: false,
     isEvalSupported: false,
     useSystemFonts: true,
+    standardFontDataUrl: pdfJsStandardFontDataUrl(),
   });
   const document = await loadingTask.promise;
   const pageCount = document.numPages || 0;

@@ -1,5 +1,5 @@
 <!-- canonical-source: CHANGELOG.md -->
-<!-- source-sha256: afbf8a50afee8c32a5a960fb555743907c21d322486a4ef0456f4c846cb2db70 -->
+<!-- source-sha256: 48f6b30ba5f809edadac5bf8240906c4572f2a299dee79119f9a88fb19a51442 -->
 
 # AI System 6 中文更新日志
 
@@ -613,6 +613,37 @@ Liquid Glass 继续作为独立材质存在，而不是被复古修正误伤。
 - 新增失败关闭的真实应用门禁，以 2× 密度渲染六套外观；任何现代位图若小于
   可见界面实际所需像素都会阻止发布，并专门锁住此次 VPS 暴露的 Finder 内
   `mini` 旧标记优先级冲突。
+
+## 公开测试版 1.0.42 — 2026-08-14
+
+- DOOM 落位为第三个、也是最后一个游戏栏位：官方 Chocolate Doom 3.1.1
+  引擎编译为 WebAssembly，在同源 iframe 中运行，配本机专用的 WAD 选择器、
+  明确的「开始」手势、IDBFS 存档，以及触屏与手柄共用的菜单感知输入桥。
+- 手机与平板获得独立的竖屏、横屏触控布局，移动、转向、开火可多指并发；
+  隐藏、切后台或转屏会清零输入并暂停引擎与声音。
+- 手机／平板方向契约升格为产品不变量，写入 CLAUDE.md、DESIGN.md，并在
+  HIG 中形成设备 × 方向 × 输入的验收矩阵。
+- GPL 引擎随对应源码归档、补丁、许可证和可复现构建配方一同交付；任何
+  游戏数据都不进入仓库或发布物。
+
+## 公开测试版 1.0.43 — 2026-08-14
+
+- 退役了已停止维护的 vercel/pkg 打包环节——它只能面向已 EOL 的 Node 18。
+  macOS 应用现在内嵌一棵仓库形状的 server payload，带打包机自己的当前 Node
+  运行时（强制 24 或更新），以及按 lockfile 精确安装的生产依赖树。
+- pdfjs-dist 从 4.8 升级到 6.2，并在每种部署里都从应用自有 URL 提供其
+  JBIG2、JPEG 2000 与 ICC 的 wasm 解码器，让图像密集的 PDF 在浏览器、
+  打包应用和 Web 发布中都保持完整解码质量。
+- https-proxy-agent 升级到 9，服务端类型检查改用 NodeNext 解析——这是纯
+  exports-map 包所要求的。
+- 把 `three` 移入 devDependencies，打包 payload 裁掉 sourcemap 与 PDF.js
+  viewer，并把受支持的 Node 窗口提升到 24–26。
+- DOOM 与 OpenTTD 两款 WebAssembly 游戏用各自的可复现构建脚本在
+  emscripten 6.0.6 上重建，并都做了浏览器内实测。Micropolis 走 JS
+  vendoring，不受影响。
+- 为每份样式表声明了一个 CSS 级联层，并在 bundle 中钉住层序。目前还没有
+  规则被包裹，运行时级联保持不变；这是退役「文件顺序即级联」的脚手架，
+  `verify:css` 现在会阻止某个文件打开不属于它的层。
 
 ## 一个月里真正变大的东西
 

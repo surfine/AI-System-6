@@ -57,3 +57,51 @@ export const allStylePaths = [
   ...styleRuntimePaths,
   ...lazyStyleBundles.flatMap((bundle) => bundle.sources),
 ];
+
+// Cascade-layer assignment: one @layer name per stylesheet. The build prepends
+// a single `@layer <order>;` statement to styles.bundle.css, which pins the
+// layer order for the whole document before any rule loads. Until a file wraps
+// rules in its layer the statement is inert — unlayered rules keep today's
+// cascade. A source file may only open its own assigned layer; verify:css
+// enforces that, because claiming a later layer is the new form of the
+// !important cascade jump. Migration state and the flip-audit workflow:
+// internal/agents/CSS-LAYER-LANE.md.
+export const styleLayerByPath = Object.freeze({
+  "styles/00-foundation.css": "foundation",
+  "styles/10-windows.css": "windows",
+  "styles/20-reader-docmap.css": "reader-docmap",
+  "styles/22-time-machine.css": "time-machine",
+  "styles/30-surfaces.css": "surfaces",
+  "styles/40-icons.css": "icons",
+  "styles/50-apps.css": "apps",
+  "styles/60-responsive.css": "responsive",
+  "styles/65-appearance-themes.css": "appearance-themes",
+  "styles/67-aqua-appearance.css": "aqua-appearance",
+  "styles/70-liquid-glass.css": "liquid-glass",
+  "styles/80-bureaucracy-meme.css": "bureaucracy-meme",
+  "styles/85-liquid-cover.css": "liquid-cover",
+  "styles/86-cmf-studio.css": "cmf-studio",
+  "styles/87-clio-chart.css": "clio-chart",
+  "styles/88-soundscape.css": "soundscape",
+  "styles/89-control-strip.css": "control-strip",
+  "styles/90-endfield-terminal.css": "endfield-terminal",
+  "styles/91-draft-desk.css": "draft-desk",
+  // Lazy sheets load after the boot bundle, so their layers sit after every
+  // eager layer. That matches the cascade the product has today (a lazy sheet
+  // wins ties against everything already loaded); the 66- number of Theme Lab
+  // does NOT put its layer between 65 and 67.
+  "styles/66-theme-lab.css": "theme-lab",
+  "styles/92-micropolis.css": "micropolis",
+  "styles/93-openttd.css": "openttd",
+});
+
+// Layer order = eager files in bundle order, then lazy sheets in declaration
+// order. Derived, so it cannot desync from the path lists above.
+export const styleLayerOrder = [
+  ...styleRuntimePaths,
+  ...lazyStyleBundles.flatMap((bundle) => bundle.sources),
+].map((path) => {
+  const layer = styleLayerByPath[path];
+  if (!layer) throw new Error(`style-manifest: ${path} has no cascade-layer assignment`);
+  return layer;
+});

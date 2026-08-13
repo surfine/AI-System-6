@@ -28,6 +28,17 @@ const requiredAssets = [
   "assets/openttd/openttd.js",
   "assets/openttd/openttd.wasm",
   "assets/openttd/openttd.data",
+  "assets/doom/index.html",
+  "assets/doom/shell.js",
+  "assets/doom/wad-picker.js",
+  "assets/doom/touch-controls.js",
+  "assets/doom/touch-controls.css",
+  "assets/doom/chocolate-doom.js",
+  "assets/doom/chocolate-doom.wasm",
+  "assets/doom/ENGINE-COPYING.txt",
+  "assets/doom/SOURCE.txt",
+  "assets/doom/chocolate-doom-3.1.1-source.tar.gz",
+  "assets/doom/chocolate-doom-3.1.1-ai-system6.patch",
   "app/vendor/markmap/d3.min.js",
   "app/vendor/markmap/markmap-lib.js",
   "app/vendor/markmap/markmap-view.js",
@@ -55,14 +66,15 @@ for (const asset of requiredAssets) {
 }
 
 const packageInfo = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
-const packageAssets = new Set(packageInfo.pkg?.assets || []);
+const packageAssets = new Set(packageInfo.macPackagedAssets?.assets || []);
 for (const pattern of [
   "apps/desktop/styles.micropolis.css",
   "apps/desktop/styles.openttd.css",
   "apps/desktop/app/vendor/micropolis/**/*",
   "apps/desktop/assets/openttd/**/*",
+  "apps/desktop/assets/doom/**/*",
 ]) {
-  if (!packageAssets.has(pattern)) packaging.push(`pkg.assets is missing game payload ${pattern}`);
+  if (!packageAssets.has(pattern)) packaging.push(`macPackagedAssets is missing game payload ${pattern}`);
 }
 for (const report of generatedEraCompatibilityManifestReport(root)) {
   for (const file of report.files) if (file.bytes <= 0) empty.push(file.relativePath);

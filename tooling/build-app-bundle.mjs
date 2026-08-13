@@ -3,7 +3,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { transformSync } from "esbuild";
 import { appRuntimePaths } from "./runtime-manifest.mjs";
-import { lazyStyleBundles, styleRuntimePaths } from "./style-manifest.mjs";
+import { lazyStyleBundles, styleLayerOrder, styleRuntimePaths } from "./style-manifest.mjs";
 import { generateBuildInfo } from "./lib/build-info.mjs";
 import { minifyCss } from "./lib/minify-css.mjs";
 import { desktopRoot, repositoryRoot } from "./lib/paths.mjs";
@@ -78,7 +78,13 @@ if (syntaxCheck.status !== 0) {
 
 console.log(`Built app.bundle.js from ${appRuntimePaths.length} source files.`);
 
-const cssSource = styleRuntimePaths
+// The @layer statement pins the cascade-layer order for the whole document
+// (lazy sheets included) before any rule loads. It is inert for rules that are
+// not wrapped in a layer, so emitting it ahead of the migration is safe; the
+// order itself is single-sourced in style-manifest.mjs.
+const layerPreamble = `@layer ${styleLayerOrder.join(", ")};\n`;
+
+const cssSource = layerPreamble + styleRuntimePaths
   .map((path) => readFileSync(join(desktopRoot, path), "utf8"))
   .join("\n");
 

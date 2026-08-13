@@ -341,8 +341,8 @@ Before changing a UI surface, answer these in the work notes or PR:
 5. What changes from this appearance's registry `recipeBase`?
 6. What states exist: default, hover, focus, active, selected, disabled,
    loading, empty, error?
-7. What verification covers the six-era Theme Lab and at least one narrow
-   Classic/Liquid viewport?
+7. What verification covers the six-era Theme Lab and the HIG phone/tablet ×
+   portrait/landscape matrix in Classic and Liquid Glass?
 
 If an answer is "new pattern", justify it before editing CSS.
 

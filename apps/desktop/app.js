@@ -757,6 +757,7 @@ function getApplicationsItems() {
     return withStaticFinderMetadata([
       { name: t("micropolis_label"), iconId: "clioChart", icon: "tools-icon", action: "open-micropolis", type: "application", kind: t("application") },
       { name: t("openttd_label"), iconId: "timeMachine", icon: "tools-icon", action: "open-openttd", type: "application", kind: t("application") },
+      { name: t("doom_label"), iconId: "multiFinderApp", icon: "app-icon", action: "open-doom", type: "application", kind: t("application") },
     ], location);
   }
   if (applicationsFinderPath === "extras") {
@@ -1740,6 +1741,7 @@ function applyLanguage() {
   renderWritingBell();
   renderAlarmClock();
   if (typeof refreshBureaucracyMemeLanguage === "function") refreshBureaucracyMemeLanguage();
+  window.AISystem6Doom?.refreshLanguage?.();
   refreshWritingBellStatusLanguage();
   renderPuzzle();
   syncStartupSelectedItemsLabel();

@@ -17,6 +17,13 @@
   display: none;
 }
 
+/* MultiFinder "Hide <app>" state. Lives next to .window.is-hidden so the
+   window display states stay in the same file (and, after the layer
+   migration, the same cascade layer) as the .window base rule they beat. */
+.window.is-app-hidden {
+  display: none;
+}
+
 .desktop-icon.is-hidden,
 .desktop-icon[hidden] {
   display: none;

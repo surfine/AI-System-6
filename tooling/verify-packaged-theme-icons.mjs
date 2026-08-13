@@ -14,7 +14,7 @@ import {
 } from "./lib/generated-era-runtime-assets.mjs";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const packagedServer = join(repositoryRoot, "dist", "ai-system-6-macos-arm64");
+const packagedServer = join(repositoryRoot, "dist", "mac-server-payload", "ai-system-6-server");
 
 function delay(milliseconds) {
   return new Promise((resolveDelay) => setTimeout(resolveDelay, milliseconds));
@@ -64,7 +64,7 @@ async function waitForPackagedServer(port, child, output) {
       const response = await getPackagedFile(port, "index.html", 500);
       if (response.statusCode === 200) return;
     } catch {
-      // The pkg snapshot may still be loading its native dependencies.
+      // The payload server may still be loading its native dependencies.
     }
     await delay(100);
   }

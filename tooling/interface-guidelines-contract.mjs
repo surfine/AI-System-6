@@ -241,6 +241,7 @@ export const windowInterfaceRegistry = Object.freeze({
   bureaucracyMeme: creativeLab(),
   micropolis: creativeLab(),
   openttd: creativeLab(),
+  doom: creativeLab(),
   disk: finderSurface("core"),
   projectCd: specializedUtility("writing-route", {
     route: "core",

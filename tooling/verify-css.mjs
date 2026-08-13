@@ -21,6 +21,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { resolveProjectPath } from "./lib/paths.mjs";
+import { styleLayerByPath } from "./style-manifest.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const budget = JSON.parse(readFileSync(join(root, "tooling/css-budget.json"), "utf8"));
@@ -186,6 +187,45 @@ for (const relPath of cssFiles) {
 
 cssFiles.forEach((relPath) => checkCssFile(relPath, budget));
 cssFiles.forEach((relPath) => checkCssBraceBalance(relPath));
+
+// --- Cascade-layer conformance ----------------------------------------------
+//
+// Each stylesheet owns exactly one @layer name (assigned in
+// tooling/style-manifest.mjs); the cross-file layer ORDER is emitted by the
+// build as a single preamble statement. A source file that opens someone
+// else's layer — or ships its own bare `@layer a, b;` order statement — is
+// jumping the cascade the same way a new !important would, so both fail here.
+// Lane state: internal/agents/CSS-LAYER-LANE.md.
+
+const LAYER_USE_PATTERN = /@layer\b([^;{]*)([;{])/g;
+cssFiles.forEach((relPath) => {
+  const assigned = styleLayerByPath[relPath];
+  const text = stripComments(readFileSync(resolveProjectPath(relPath), "utf8"));
+  const problems = [];
+  for (const match of text.matchAll(LAYER_USE_PATTERN)) {
+    const names = match[1].split(",").map((name) => name.trim()).filter(Boolean);
+    if (match[2] === ";") {
+      problems.push(
+        `bare "@layer ${names.join(", ")};" order statement — the document order is emitted by the build from style-manifest.mjs`
+      );
+      continue;
+    }
+    if (!assigned) {
+      problems.push(`file opens @layer but has no styleLayerByPath assignment in style-manifest.mjs`);
+      continue;
+    }
+    if (names.length !== 1 || names[0] !== assigned) {
+      problems.push(
+        `opens @layer ${names.join(", ") || "(anonymous)"} — this file may only open @layer ${assigned}`
+      );
+    }
+  }
+  if (problems.length) {
+    problems.forEach((problem) => fail(`${relPath}: ${problem}`));
+  } else {
+    ok(`${relPath}: cascade-layer usage conforms`);
+  }
+});
 
 // Scrollbar regressions are especially expensive in this project: one broad
 // selector can hit every nested pane, textarea, menu, and writing surface.

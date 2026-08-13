@@ -707,6 +707,43 @@ Version `1.0.12`, build `20260804.2`.
   surface requires, including the legacy `mini`-inside-Finder collision that
   caused the public VPS regression.
 
+## Public Beta 1.0.42 - 2026-08-14
+
+- DOOM landed as the third and final Games slot: the official Chocolate Doom
+  3.1.1 engine compiled to WebAssembly runs in a same-origin iframe with a
+  local-only WAD picker, an explicit Play gesture, IDBFS-backed saves, and a
+  menu-aware input bridge shared by touch and gamepads.
+- Phones and tablets get dedicated portrait and landscape touch layouts with
+  concurrent move, turn, and fire; hiding, backgrounding, or rotating the
+  window zeroes input and pauses the engine and audio.
+- The phone/tablet orientation contract became a product invariant in
+  CLAUDE.md, DESIGN.md, and a device × orientation × input acceptance matrix
+  in the HIG.
+- The GPL engine travels with its corresponding source archive, patch,
+  license, and a reproducible build recipe; no game data enters the
+  repository or the release.
+
+## Public Beta 1.0.43 - 2026-08-14
+
+- Retired the unmaintained vercel/pkg packaging step, which could only target
+  the end-of-life Node 18. The macOS app now bundles a repo-shaped server
+  payload with the packaging machine's own current Node runtime, enforced at
+  24 or newer, plus a lockfile-exact production dependency tree.
+- Upgraded pdfjs-dist from 4.8 to 6.2 and served its JBIG2, JPEG 2000, and ICC
+  wasm decoders from an app-owned URL in every deployment, so image-heavy PDFs
+  keep full fidelity in the browser, the packaged app, and the web release.
+- Upgraded https-proxy-agent to 9 and moved the server typecheck to NodeNext
+  resolution, which is what exports-map-only packages require.
+- Moved `three` to devDependencies, pruned sourcemaps and the PDF.js viewer
+  from the packaged payload, and raised the supported Node window to 24-26.
+- Rebuilt the DOOM and OpenTTD WebAssembly games on emscripten 6.0.6 through
+  their reproducible build scripts, with both verified in-browser. Micropolis
+  vendors JavaScript and is unaffected.
+- Declared one CSS cascade layer per stylesheet and pinned the layer order in
+  the bundle. No rule is wrapped yet, so the runtime cascade is unchanged;
+  this is the scaffolding for retiring the file-order cascade, and
+  `verify:css` now blocks a file from opening any layer but its own.
+
 ## What Changed Most In One Month
 
 - The product moved from "an AI writing prototype" to a local-first writing

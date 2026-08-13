@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/HIG.md -->
-<!-- source-sha256: 04cc13c60b9918d590a6f8501403c534546f4a2c300a55a96ee7770767d4c3dc -->
+<!-- source-sha256: ddcfc9bd2568bff405a7e21fcbd2fe17b71bfd2ec29df2f4648b20468478186e -->
 
 # AI System 6 人机界面指南
 
@@ -243,6 +243,15 @@ disabled > loading > selected/open > pressed/dragging
 - `compact-da`：Desk Accessory 保持为居中的紧凑列；
 - `immersive`：Creative Lab 可以为作品分配更多空间，但保留共享 chrome 与退出路径。
 
+设备与方向的四象限是一份验收契约，不是四套独立产品。手机竖屏、手机横屏、平板竖屏、
+平板横屏都必须保留完整的主要任务路径、已确认状态，以及退出或返回路径。布局应按容器尺寸
+与输入能力适配；方向可以改变排列或给出不阻塞操作的建议，但不能成为进入门槛或状态重置
+条件。
+
+转屏不得重载界面，也不得丢弃未保存输入、选择、操作回执或已确认的保存状态。协调新 viewport
+以前，先释放仍按下的指针与按键，避免旧几何中开始的触控在转屏后卡住。任何主要操作都不能
+只靠 hover、右键、精细拖拽或键盘完成。
+
 每个新应用必须为窗口各区说明紧凑行为：
 
 | 区域 | 允许的紧凑行为 |
@@ -255,7 +264,10 @@ disabled > loading > selected/open > pressed/dragging
 | 分栏 | 收成一个任务，并提供明确返回路径 |
 | 底部控件 | 作为归属明确的一组换行，或把次要控件移入 Commands |
 
-必须测试宽桌面、受限可调整窗口、窄触控视口、英文和中文。测试真正发生问题的容器宽度，不能只测试浏览器 viewport。
+必须先测试宽桌面与受限可调整窗口，再测试四个触控象限：手机竖屏、手机横屏、平板竖屏、
+平板横屏。涉及文字输入时，软件键盘开启与关闭都要覆盖；平板还要覆盖指针与键盘操作。
+矩阵同时测试英文和中文，并选取 Classic 与 Liquid Glass 代表性运行。测试真正发生问题的
+容器宽度，不能只测试浏览器 viewport。
 
 ## Classic 与 Liquid Glass
 
@@ -332,7 +344,8 @@ Liquid Glass 是 chrome 材质，不是内容装饰。不能为了展示主题�
 2. 运行 interface-guidelines contract。
 3. CSS 工作遵守 `css-no-pingpong`，并对准确界面取得 Classic 与 Liquid Glass 的修改前后证据。
 4. 验证键盘、指针、触控替代、Reduced Motion 和可见操作回执。
-5. 在两种语言下验证一个宽布局、一个受限布局和一个窄布局。
+5. 在两种语言下验证一个宽布局、一个受限布局，以及手机／平板 × 横屏／竖屏；界面接受文字
+   输入时，还要覆盖软件键盘状态。
 6. 确认没有新增 `!important`、任意 `z-index`、布局 inline style、全局 scrollbar 规则或主题专属结构分叉。
 
 目标不是让所有应用长得完全一样，而是让每个应用属于同一个桌面，以同样方式表达状态，并在适配时保持自己的对象身份。

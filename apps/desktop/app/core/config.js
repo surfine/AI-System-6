@@ -492,6 +492,11 @@ const ensureMicropolisModule = createLazyModuleLoader("AISystem6MicropolisLoaded
 const ensureOpenTTDModule = createLazyModuleLoader("AISystem6OpenTTDLoaded", [
   "app/features/openttd.js",
 ], false, ["styles.openttd.css"]);
+// Phase one reuses the existing iframe-game window geometry. The GPL engine
+// remains inside assets/doom/ and is fetched only by its same-origin shell.
+const ensureDoomModule = createLazyModuleLoader("AISystem6DoomLoaded", [
+  "app/features/doom.js",
+], false, ["styles.openttd.css"]);
 const ensureWritingDemoModule = createLazyModuleLoader("AISystem6WritingDemoLoaded", [
   "app/data/iphone-17e-demo-corpus.js",
   "app/features/writing-demo.js",

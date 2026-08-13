@@ -30,6 +30,7 @@ const multiFinderAppLabels = {
   bureaucracyMeme: "Bureaucracy Meme",
   micropolis: "Micropolis",
   openttd: "OpenTTD",
+  doom: "DOOM",
   accessories: "Accessories",
   system: "System",
 };
@@ -80,6 +81,7 @@ const windowAppMap = {
   soundscape: "soundscape",
   micropolis: "micropolis",
   openttd: "openttd",
+  doom: "doom",
   dictionary: "accessories",
   imageManager: "teachText",
   systemHelp: "system",

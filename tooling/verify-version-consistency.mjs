@@ -267,15 +267,15 @@ if (shellScript.includes("app/generated/build-info.json")) {
   fail("Mac shell does not read app/generated/build-info.json");
 }
 
-const pkgAssets = new Set((pkg.pkg && pkg.pkg.assets) || []);
-if (!pkg.pkg) {
+const pkgAssets = new Set((pkg.macPackagedAssets && pkg.macPackagedAssets.assets) || []);
+if (!pkg.macPackagedAssets) {
   // The public source snapshot intentionally drops the packaging surface;
   // the pkg asset contract only applies to a tree that packages.
-  ok("no pkg packaging surface in this tree");
+  ok("no mac packaging surface in this tree");
 } else if (pkgAssets.has("apps/desktop/app/generated/*.js")) {
-  ok("pkg assets include apps/desktop/app/generated/*.js");
+  ok("packaged assets include apps/desktop/app/generated/*.js");
 } else {
-  fail("pkg assets missing apps/desktop/app/generated/*.js (packaged app would 404 build-info)");
+  fail("packaged assets missing apps/desktop/app/generated/*.js (packaged app would 404 build-info)");
 }
 
 if (!skipServerCheck) {

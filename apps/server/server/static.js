@@ -68,8 +68,13 @@ const exactPublicFiles = new Set([
 // node_modules route.
 const publicFileAliases = new Map([
   ["app/vendor/paddle-ocr.js", "node_modules/@paddlejs-models/ocr/lib/index.js"],
-  ["app/vendor/pdf.min.js", "node_modules/pdfjs-dist/legacy/build/pdf.min.mjs"],
-  ["app/vendor/pdf.worker.min.js", "node_modules/pdfjs-dist/legacy/build/pdf.worker.min.mjs"],
+  ["app/vendor/pdf.min.js", "node_modules/pdfjs-dist/build/pdf.min.mjs"],
+  ["app/vendor/pdf.worker.min.js", "node_modules/pdfjs-dist/build/pdf.worker.min.mjs"],
+  ["app/vendor/pdfjs-wasm/jbig2.wasm", "node_modules/pdfjs-dist/wasm/jbig2.wasm"],
+  ["app/vendor/pdfjs-wasm/jbig2_nowasm_fallback.js", "node_modules/pdfjs-dist/wasm/jbig2_nowasm_fallback.js"],
+  ["app/vendor/pdfjs-wasm/openjpeg.wasm", "node_modules/pdfjs-dist/wasm/openjpeg.wasm"],
+  ["app/vendor/pdfjs-wasm/openjpeg_nowasm_fallback.js", "node_modules/pdfjs-dist/wasm/openjpeg_nowasm_fallback.js"],
+  ["app/vendor/pdfjs-wasm/qcms_bg.wasm", "node_modules/pdfjs-dist/wasm/qcms_bg.wasm"],
 ]);
 
 const desktopPublicPrefixes = [
@@ -160,8 +165,8 @@ async function handleStatic(req, res) {
       "ETag": etag,
       ...cacheHeaders(relative, ext, url),
     };
-    if (relative.startsWith("assets/openttd/")) {
-      // The OpenTTD shell runs inside the desktop's same-origin iframe, and
+    if (relative.startsWith("assets/openttd/") || relative.startsWith("assets/doom/")) {
+      // Wasm game shells run inside the desktop's same-origin iframe, and
       // WebAssembly compilation needs 'wasm-unsafe-eval'. The global policy
       // (frame-ancestors 'none', no wasm) stays in force everywhere else;
       // foreign origins still cannot embed the game.

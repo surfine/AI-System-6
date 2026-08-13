@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>DOOM engine</title>
+<link rel="stylesheet" href="touch-controls.css">
+<style>
+  :root {
+    --doom-paper: #fff;
+    --doom-ink: #000;
+    --doom-muted: #404040;
+    --doom-shadow: #000;
+    --doom-field: #fff;
+  }
+  html, body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #000;
+    color: #000;
+    font-family: "Chicago", "Charcoal", "Geneva", "Songti SC", "SimSun", monospace;
+  }
+  body {
+    display: grid;
+    place-items: center;
+    box-sizing: border-box;
+    padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    background-image: repeating-conic-gradient(#fff 0% 25%, #bfbfbf 0% 50%);
+    background-size: 2px 2px;
+  }
+  body[data-appearance="liquid-glass"] {
+    --doom-paper: rgba(242, 247, 252, .88);
+    --doom-ink: #101820;
+    --doom-muted: #324252;
+    --doom-shadow: rgba(10, 20, 30, .72);
+    --doom-field: rgba(255, 255, 255, .72);
+  }
+  body[data-engine-state="starting"],
+  body[data-engine-state="running"],
+  body[data-engine-state="paused"] {
+    padding: 0;
+    background: #000;
+  }
+  .game-stage {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #000;
+    touch-action: none;
+  }
+  .game-screen {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+  }
+  #game-canvas {
+    display: block;
+    width: min(100%, calc(100vh * 4 / 3));
+    height: auto;
+    max-height: 100%;
+    aspect-ratio: 4 / 3;
+    image-rendering: pixelated;
+    touch-action: none;
+    background: #000;
+  }
+  .game-receipt {
+    position: absolute;
+    top: max(6px, env(safe-area-inset-top));
+    left: 50%;
+    max-width: min(72%, 420px);
+    transform: translateX(-50%);
+    padding: 3px 8px;
+    border: 1px solid rgba(255, 255, 255, .7);
+    background: rgba(0, 0, 0, .72);
+    color: #fff;
+    font-size: 11px;
+    text-align: center;
+    pointer-events: none;
+  }
+  .engine-card {
+    width: min(440px, 100%);
+    max-height: 100%;
+    overflow: auto;
+    box-sizing: border-box;
+    padding: clamp(14px, 4vw, 24px);
+    border: 2px solid #000;
+    background: var(--doom-paper);
+    box-shadow: 3px 3px 0 var(--doom-shadow);
+    color: var(--doom-ink);
+    text-align: center;
+  }
+  h1 {
+    margin: 0 0 12px;
+    font-size: clamp(16px, 5vw, 22px);
+  }
+  p {
+    margin: 8px 0;
+    font-size: clamp(12px, 3.5vw, 14px);
+    line-height: 1.45;
+  }
+  .engine-phase {
+    padding: 8px;
+    border: 1px solid var(--doom-ink);
+    background: var(--doom-field);
+    font-weight: bold;
+  }
+  .engine-detail {
+    color: var(--doom-muted);
+  }
+  .wad-manager {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--doom-ink);
+    text-align: left;
+  }
+  .wad-manager h2 {
+    margin: 0 0 6px;
+    font-size: 14px;
+  }
+  .wad-list {
+    display: grid;
+    gap: 4px;
+    max-height: min(168px, 28vh);
+    margin: 8px 0;
+    overflow: auto;
+  }
+  .wad-entry {
+    display: grid;
+    grid-template-columns: 14px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    min-height: 34px;
+    margin: 0;
+    padding: 4px 7px;
+    border: 1px solid var(--doom-ink);
+    border-radius: 0;
+    box-shadow: none;
+    text-align: left;
+  }
+  .wad-entry[aria-selected="true"] {
+    background: var(--doom-ink);
+    color: var(--doom-paper);
+  }
+  .wad-entry-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .wad-entry-meta,
+  .wad-empty,
+  .privacy-note,
+  .input-note {
+    font-size: 11px;
+    color: var(--doom-muted);
+  }
+  .wad-entry[aria-selected="true"] .wad-entry-meta {
+    color: inherit;
+  }
+  .button-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  button {
+    min-height: 28px;
+    margin: 0;
+    padding: 3px 16px;
+    border: 2px solid var(--doom-ink);
+    border-radius: 3px;
+    background: var(--doom-field);
+    box-shadow: 1px 1px 0 var(--doom-shadow);
+    color: var(--doom-ink);
+    font: inherit;
+  }
+  button:disabled {
+    color: #777;
+    border-color: #777;
+    box-shadow: none;
+  }
+  button:focus-visible {
+    outline: 1px dotted var(--doom-ink);
+    outline-offset: 3px;
+  }
+  .primary-action {
+    min-width: 112px;
+    font-weight: bold;
+  }
+  [hidden] { display: none; }
+  @media (orientation: landscape) and (max-height: 420px) {
+    .engine-card {
+      display: grid;
+      grid-template-columns: minmax(140px, .8fr) minmax(220px, 1.2fr);
+      align-items: center;
+      gap: 8px 18px;
+      width: min(680px, 100%);
+      padding: 10px 18px;
+    }
+    .engine-summary { min-width: 0; }
+    .wad-manager {
+      margin: 0;
+      padding: 0 0 0 16px;
+      border-top: 0;
+      border-left: 1px solid var(--doom-ink);
+    }
+    h1 { margin-bottom: 6px; }
+    p { margin: 4px 0; }
+    .wad-list { max-height: 80px; }
+  }
+</style>
+</head>
+<body data-engine-state="loading" data-appearance="classic">
+  <section class="game-stage" id="game-stage" aria-label="DOOM game" hidden>
+    <div class="game-screen">
+      <canvas id="game-canvas" tabindex="0" aria-label="DOOM game canvas"></canvas>
+    </div>
+    <div id="touch-controls-root"></div>
+    <p class="game-receipt" id="game-receipt" role="status" aria-live="polite" hidden></p>
+  </section>
+  <main class="engine-card" id="engine-card">
+    <section class="engine-summary">
+      <h1>DOOM</h1>
+      <p class="engine-phase" id="engine-phase" role="status" aria-live="polite">正在装载引擎……</p>
+      <p id="engine-message">请选择你拥有的本机 IWAD；文件不会离开此浏览器。</p>
+      <p class="engine-detail" id="engine-detail">Chocolate Doom 3.1.1 · WebAssembly</p>
+    </section>
+    <section class="wad-manager" aria-labelledby="wad-heading">
+      <h2 id="wad-heading">本机游戏数据</h2>
+      <p class="privacy-note" id="wad-privacy">选择你拥有的 IWAD 或 Freedoom。不会上传，也不会写入 AI System 6 项目备份。</p>
+      <input id="wad-file" type="file" accept=".wad,application/octet-stream" hidden>
+      <div class="wad-list" id="wad-list" role="listbox" aria-labelledby="wad-heading" hidden></div>
+      <p class="wad-empty" id="wad-empty">尚未导入 IWAD。</p>
+      <p class="input-note" id="input-note">支持键盘、鼠标、游戏控制器与多点触控。</p>
+      <div class="button-row">
+        <button id="wad-choose" type="button">选择 WAD…</button>
+        <button id="wad-remove" type="button" hidden>移除所选 WAD</button>
+        <button class="primary-action" id="engine-play" type="button" disabled>开始</button>
+        <button id="engine-retry" type="button" hidden>重试</button>
+      </div>
+    </section>
+  </main>
+  <noscript>This engine bootstrap requires JavaScript.</noscript>
+  <script src="wad-picker.js"></script>
+  <script src="touch-controls.js"></script>
+  <script src="shell.js"></script>
+</body>
+</html>

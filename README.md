@@ -61,7 +61,7 @@ for the app code.
 9 runtime dependencies      the server is a stateless bridge, not a backend
 153 executable contracts    one per user feature, not per function
 6 icon families             drawn per era, not filtered from one set
-2,941,297 bytes             the whole desktop, measured on every build
+2,942,076 bytes             the whole desktop, measured on every build
 0 databases                 your projects live in your browser
 ```
 
@@ -89,6 +89,22 @@ for archived pages, **File Floppy** for imports with OCR and transcription,
 **Scrapbook** for evidence you deliberately clipped, **DocMap** for structure,
 **Writing Studio** and **TeachText** for the manuscript, and **Review Desk**
 for what the draft got wrong.
+
+## It also runs DOOM
+
+Three real games ship on this desktop, in their own windows, next to the
+manuscript you were writing.
+
+| Game | What it is |
+| --- | --- |
+| **Micropolis** | the open-source release of the original SimCity |
+| **OpenTTD** | the open-source Transport Tycoon Deluxe, with touch controls |
+| **DOOM** | DOOM |
+
+They are not GIFs of games. They are the games, compiled to WebAssembly and
+running in the same MultiFinder that holds Searcher and Review Desk. The
+desktop metaphor was never a costume: a computer you can put a game on is a
+computer.
 
 ## One desk. Six systems.
 
@@ -122,7 +138,7 @@ is a mockup, because a script re-shoots all of it from the running app.
 ## Built under a 1988 constraint
 
 ```text
-boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,941,297 bytes
+boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,942,076 bytes
 two 1.44 MB floppies    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  2,949,120 bytes
 heavy tools             load lazily, from a third disk
 ```
@@ -132,6 +148,28 @@ disks. It fits, with a corner of the second disk still empty. Every feature
 has to earn its bytes against a limit nobody is forcing on us, and the number
 above is written by the gate itself, so the claim cannot quietly stop being
 true.
+
+## How this repository keeps itself honest
+
+Claims rot. These run from a fresh clone and fail the build instead.
+
+| Gate | What it refuses to let happen |
+| --- | --- |
+| `verify:floppy` | the boot payload growing past two 1.44&nbsp;MB floppy disks |
+| `site:check` | this page quoting a byte count the gate never measured |
+| `verify:docs` | an English document drifting away from its Chinese mirror |
+| `verify:public` | a command advertised here that fails from a fresh clone |
+
+The payload number above is written by `verify:floppy` itself into
+`site/data/floppy-budget.json`; the website fetches it and this page quotes it.
+On the day that gate was built it caught this README quoting a stale number
+three times in one afternoon.
+
+Every product screenshot on this page and on the
+[product site](https://aisystem6.pages.dev) is re-shot from the running app by
+`npm run site:capture-frames` and `tooling/capture-site-proofs.mjs`. There is no art directory of
+hand-made marketing images to fall out of date, because there are no hand-made
+marketing images.
 
 ## Chat is an app. Not the whole computer.
 

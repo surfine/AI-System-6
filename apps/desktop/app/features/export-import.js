@@ -1032,7 +1032,9 @@ async function extractPdfTextInBrowser(file, options = {}) {
   const pdfjs = await getBrowserPdfJs();
   const data = new Uint8Array(await file.arrayBuffer());
   throwIfAborted(signal);
-  const loadingTask = pdfjs.getDocument({ data });
+  // pdfjs 6 decodes JBIG2 / JPEG 2000 / ICC through wasm; point it at the
+  // served copies so image-heavy scans keep full fidelity.
+  const loadingTask = pdfjs.getDocument({ data, wasmUrl: "/app/vendor/pdfjs-wasm/" });
   const pdfDocument = await loadingTask.promise;
   const pageLimit = Math.min(pdfDocument.numPages, 20);
   const chunks = [];

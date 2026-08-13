@@ -1270,6 +1270,7 @@ function getApplicationActionHandlers() {
     "open-cmf-studio": () => openWindow("cmfStudio"),
     "open-soundscape": () => openWindow("soundscape"),
     "open-openttd": () => openWindow("openttd"),
+    "open-doom": () => openWindow("doom"),
     "open-dictionary": () => openWindow("dictionary"),
     "open-style-sheet": () => openReviewDesk("style"),
     "generate-outline": generateOutline,

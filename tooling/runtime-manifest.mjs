@@ -141,6 +141,7 @@ export const lazyRuntimePaths = [
   "app/vendor/micropolis/micropolis-engine.js",
   "app/features/micropolis.js",
   "app/features/openttd.js",
+  "app/features/doom.js",
   "app/features/endfield-terminal.js",
   "app/features/time-machine.js",
   "app/features/video-transcript.js",

@@ -1,0 +1,485 @@
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index aa9d0a4..1219b46 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -36,8 +36,8 @@ target_include_directories("${PROGRAM_PREFIX}server"
+ if (DEFINED EMSCRIPTEN)
+     set(SDL_FLAGS "-s USE_SDL=2")
+     if(ENABLE_SDL2_MIXER)
+-        set(SDL_FLAGS "${SDL_FLAGS} -s USE_SDL_MIXER=2")
+-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s USE_SDL_MIXER=2")
++        set(SDL_FLAGS "${SDL_FLAGS} -s USE_SDL_MIXER=2 -sSDL2_MIXER_FORMATS=[]")
++        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s USE_SDL_MIXER=2 -sSDL2_MIXER_FORMATS=[]")
+     endif()
+     if(ENABLE_SDL2_NET)
+         set(SDL_FLAGS "${SDL_FLAGS} -s USE_SDL_NET=2")
+@@ -166,6 +166,10 @@ else()
+     add_executable("${PROGRAM_PREFIX}doom" ${SOURCE_FILES_WITH_DEH})
+ endif()
+ 
++if(DEFINED EMSCRIPTEN)
++    target_sources("${PROGRAM_PREFIX}doom" PRIVATE i_web_input.c i_web_input.h)
++endif()
++
+ target_include_directories("${PROGRAM_PREFIX}doom" PRIVATE ${GAME_INCLUDE_DIRS})
+ target_link_libraries("${PROGRAM_PREFIX}doom" doom ${EXTRA_LIBS})
+ set_target_properties("${PROGRAM_PREFIX}doom" PROPERTIES COMPILE_FLAGS "${SDL_FLAGS}")
+@@ -258,11 +262,14 @@ if(MSVC)
+ endif()
+ 
+ if (DEFINED EMSCRIPTEN)
+-    set_target_properties("${PROGRAM_PREFIX}setup" PROPERTIES LINK_FLAGS "${SDL_FLAGS} -s ALLOW_MEMORY_GROWTH=1 -s ASYNCIFY=1 -s EXPORTED_FUNCTIONS=_main,ccall,cwrap,FS,ENV,PATH,ERRNO_CODES")
+-    set_target_properties("${PROGRAM_PREFIX}strife" PROPERTIES LINK_FLAGS "${SDL_FLAGS} -s ALLOW_MEMORY_GROWTH=1 -s ASYNCIFY=1 -s EXPORTED_FUNCTIONS=_main,ccall,cwrap,FS,ENV,PATH,ERRNO_CODES")
+-    set_target_properties("${PROGRAM_PREFIX}doom" PROPERTIES LINK_FLAGS "${SDL_FLAGS} -s ALLOW_MEMORY_GROWTH=1 -s ASYNCIFY=1 -s EXPORTED_FUNCTIONS=_main,ccall,cwrap,FS,ENV,PATH,ERRNO_CODES")
+-    set_target_properties("${PROGRAM_PREFIX}heretic" PROPERTIES LINK_FLAGS "${SDL_FLAGS} -s ALLOW_MEMORY_GROWTH=1 -s ASYNCIFY=1 -s EXPORTED_FUNCTIONS=_main,ccall,cwrap,FS,ENV,PATH,ERRNO_CODES")
+-    set_target_properties("${PROGRAM_PREFIX}hexen" PROPERTIES LINK_FLAGS "${SDL_FLAGS} -s ALLOW_MEMORY_GROWTH=1 -s ASYNCIFY=1 -s EXPORTED_FUNCTIONS=_main,ccall,cwrap,FS,ENV,PATH,ERRNO_CODES")
++    set(EMSCRIPTEN_RUNTIME_FLAGS "${SDL_FLAGS} -sSDL2_MIXER_FORMATS=[] -s ALLOW_MEMORY_GROWTH=1 -s ASYNCIFY=1 -s EXPORTED_RUNTIME_METHODS=callMain,ccall,cwrap,FS,ENV,PATH,ERRNO_CODES -s FORCE_FILESYSTEM=1 -s INVOKE_RUN=0 -lidbfs.js")
++    set(EMSCRIPTEN_DEFAULT_FLAGS "${EMSCRIPTEN_RUNTIME_FLAGS} -s EXPORTED_FUNCTIONS=_main")
++    set(EMSCRIPTEN_DOOM_FLAGS "${EMSCRIPTEN_RUNTIME_FLAGS} -s EXPORTED_FUNCTIONS=_main,_AI_DoomWebInput,_AI_DoomWebReleaseAll,_AI_DoomWebPause,_AI_DoomWebResume")
++    set_target_properties("${PROGRAM_PREFIX}setup" PROPERTIES LINK_FLAGS "${EMSCRIPTEN_DEFAULT_FLAGS}")
++    set_target_properties("${PROGRAM_PREFIX}strife" PROPERTIES LINK_FLAGS "${EMSCRIPTEN_DEFAULT_FLAGS}")
++    set_target_properties("${PROGRAM_PREFIX}doom" PROPERTIES LINK_FLAGS "${EMSCRIPTEN_DOOM_FLAGS}")
++    set_target_properties("${PROGRAM_PREFIX}heretic" PROPERTIES LINK_FLAGS "${EMSCRIPTEN_DEFAULT_FLAGS}")
++    set_target_properties("${PROGRAM_PREFIX}hexen" PROPERTIES LINK_FLAGS "${EMSCRIPTEN_DEFAULT_FLAGS}")
+ endif()
+ 
+ add_executable(midiread midifile.c z_native.c i_system.c m_argv.c m_misc.c d_iwad.c deh_str.c m_config.c)
+diff --git a/src/doom/d_main.c b/src/doom/d_main.c
+index 014e487..a6e0149 100644
+--- a/src/doom/d_main.c
++++ b/src/doom/d_main.c
+@@ -25,6 +25,11 @@
+ #include <stdlib.h>
+ #include <string.h>
+ 
++#ifdef __EMSCRIPTEN__
++#include <emscripten/emscripten.h>
++#include "i_web_input.h"
++#endif
++
+ #include "config.h"
+ #include "deh_main.h"
+ #include "doomdef.h"
+@@ -488,10 +493,18 @@ void D_DoomLoop (void)
+         wipegamestate = gamestate;
+     }
+ 
++#ifdef __EMSCRIPTEN__
++    // The browser owns the outer event loop. Scheduling frames here makes a
++    // delayed Module.callMain() return control to JavaScript instead of
++    // trapping the UI thread in Chocolate Doom's native infinite loop.
++    AI_DoomWebMainLoopWillStart();
++    emscripten_set_main_loop(D_RunFrame, 0, 1);
++#else
+     while (1)
+     {
+         D_RunFrame();
+     }
++#endif
+ }
+ 
+ 
+@@ -1999,4 +2012,3 @@ void D_DoomMain (void)
+ 
+     D_DoomLoop ();  // never returns
+ }
+-
+diff --git a/src/i_web_input.c b/src/i_web_input.c
+new file mode 100644
+index 0000000..1ad0fdc
+--- /dev/null
++++ b/src/i_web_input.c
+@@ -0,0 +1,368 @@
++//
++// Copyright(C) 2026 AI System 6 contributors
++//
++// This program is free software; you can redistribute it and/or
++// modify it under the terms of the GNU General Public License
++// as published by the Free Software Foundation; either version 2
++// of the License, or (at your option) any later version.
++//
++// DESCRIPTION:
++//     Narrow native input and lifecycle ABI for the browser shell.
++//
++
++#ifdef __EMSCRIPTEN__
++
++#include <emscripten/emscripten.h>
++
++#include "d_event.h"
++#include "i_joystick.h"
++#include "m_controls.h"
++
++#define WEB_AXIS_DEAD_ZONE 0.18
++#define WEB_TURN_DEAD_ZONE 0.05
++#define WEB_TURN_SCALE 48
++
++typedef struct
++{
++    int down;
++    int key;
++} web_key_state_t;
++
++static web_key_state_t forward_state;
++static web_key_state_t backward_state;
++static web_key_state_t strafe_left_state;
++static web_key_state_t strafe_right_state;
++static web_key_state_t fire_state;
++static web_key_state_t use_state;
++static web_key_state_t run_state;
++
++static int native_menu_was_active;
++static int native_menu_direction;
++static int native_menu_fire_latched;
++static int native_menu_use_latched;
++static int main_loop_started;
++static int main_loop_paused;
++
++extern boolean menuactive;
++
++static double ClampAxis(double value)
++{
++    if (value > 1.0)
++    {
++        return 1.0;
++    }
++
++    if (value < -1.0)
++    {
++        return -1.0;
++    }
++
++    return value;
++}
++
++static void PostKeyEvent(evtype_t type, int key)
++{
++    event_t event = { type, key, 0, 0, 0, 0, 0 };
++
++    if (type == ev_keydown)
++    {
++        event.data2 = key;
++    }
++
++    D_PostEvent(&event);
++}
++
++static void UpdateKeyState(web_key_state_t *state, int key, int down)
++{
++    down = down != 0;
++
++    // Configuration can change while the shell exists. Always release the
++    // exact key that was pressed before adopting a new binding.
++    if (state->down && (!down || state->key != key))
++    {
++        PostKeyEvent(ev_keyup, state->key);
++        state->down = 0;
++    }
++
++    if (down && !state->down)
++    {
++        PostKeyEvent(ev_keydown, key);
++        state->down = 1;
++        state->key = key;
++    }
++}
++
++static void ReleaseGameplayKeys(void)
++{
++    UpdateKeyState(&forward_state, key_up, 0);
++    UpdateKeyState(&backward_state, key_down, 0);
++    UpdateKeyState(&strafe_left_state, key_strafeleft, 0);
++    UpdateKeyState(&strafe_right_state, key_straferight, 0);
++    UpdateKeyState(&fire_state, key_fire, 0);
++    UpdateKeyState(&use_state, key_use, 0);
++    UpdateKeyState(&run_state, key_speed, 0);
++}
++
++static void PulseKey(int key)
++{
++    PostKeyEvent(ev_keydown, key);
++    PostKeyEvent(ev_keyup, key);
++}
++
++static void PostTurn(double turn)
++{
++    event_t event = { ev_mouse, 0, 0, 0, 0, 0, 0 };
++
++    turn = ClampAxis(turn);
++
++    if (turn > -WEB_TURN_DEAD_ZONE && turn < WEB_TURN_DEAD_ZONE)
++    {
++        return;
++    }
++
++    // Chocolate Doom applies the configured mouse sensitivity and consumes
++    // this delta once. Positive normalized input therefore turns right.
++    event.data2 = (int) (turn * WEB_TURN_SCALE);
++
++    if (event.data2 != 0)
++    {
++        D_PostEvent(&event);
++    }
++}
++
++static double AbsAxis(double value)
++{
++    return value < 0.0 ? -value : value;
++}
++
++static int MenuDirection(double move, double strafe, double turn)
++{
++    double horizontal;
++    int direction = JOY_DIR_NONE;
++
++    horizontal = AbsAxis(strafe) >= AbsAxis(turn) ? strafe : turn;
++
++    if (move > WEB_AXIS_DEAD_ZONE)
++    {
++        direction |= JOY_DIR_UP;
++    }
++    else if (move < -WEB_AXIS_DEAD_ZONE)
++    {
++        direction |= JOY_DIR_DOWN;
++    }
++
++    if (horizontal < -WEB_AXIS_DEAD_ZONE)
++    {
++        direction |= JOY_DIR_LEFT;
++    }
++    else if (horizontal > WEB_AXIS_DEAD_ZONE)
++    {
++        direction |= JOY_DIR_RIGHT;
++    }
++
++    return direction;
++}
++
++static unsigned int SafeJoystickButtonMask(int button)
++{
++    if (button < 0
++     || button >= NUM_VIRTUAL_BUTTONS
++     || button >= (int) (sizeof(unsigned int) * 8))
++    {
++        return 0;
++    }
++
++    return 1U << button;
++}
++
++static void ResetNativeMenuLatches(void)
++{
++    native_menu_direction = JOY_DIR_NONE;
++    native_menu_fire_latched = 0;
++    native_menu_use_latched = 0;
++}
++
++static void PostNativeMenuInput(double move, double strafe, double turn,
++                                int fire, int use)
++{
++    event_t event;
++    int direction;
++    int fire_rising;
++    int use_rising;
++    unsigned int button_mask;
++
++    direction = MenuDirection(move, strafe, turn);
++    fire = fire != 0;
++    use = use != 0;
++    fire_rising = fire && !native_menu_fire_latched;
++    use_rising = use && !native_menu_use_latched;
++
++    if (direction != native_menu_direction)
++    {
++        event = (event_t) { ev_joystick, 0, 0, 0, 0, 0,
++                            direction << DPAD_SHIFT };
++        D_PostEvent(&event);
++    }
++
++    if (fire_rising)
++    {
++        button_mask = SafeJoystickButtonMask(joybfire);
++
++        if (button_mask != 0)
++        {
++            event = (event_t) { ev_joystick, button_mask, 0, 0, 0, 0, 0 };
++            D_PostEvent(&event);
++        }
++    }
++
++    if (use_rising)
++    {
++        button_mask = SafeJoystickButtonMask(joybuse);
++
++        if (button_mask != 0)
++        {
++            event = (event_t) { ev_joystick, button_mask, 0, 0, 0, 0, 0 };
++            D_PostEvent(&event);
++        }
++    }
++
++    native_menu_direction = direction;
++    native_menu_fire_latched = fire;
++    native_menu_use_latched = use;
++}
++
++EMSCRIPTEN_KEEPALIVE
++void AI_DoomWebReleaseAll(void)
++{
++    ReleaseGameplayKeys();
++
++    native_menu_was_active = 0;
++    ResetNativeMenuLatches();
++}
++
++EMSCRIPTEN_KEEPALIVE
++void AI_DoomWebInput(double move, double strafe, double turn,
++                     int fire, int use, int run,
++                     int map, int menu, int weapon_delta)
++{
++    if (!main_loop_started || main_loop_paused)
++    {
++        return;
++    }
++
++    move = ClampAxis(move);
++    strafe = ClampAxis(strafe);
++    turn = ClampAxis(turn);
++
++    if (menuactive)
++    {
++        if (!native_menu_was_active)
++        {
++            ReleaseGameplayKeys();
++            native_menu_direction = MenuDirection(move, strafe, turn);
++            native_menu_fire_latched = fire != 0;
++            native_menu_use_latched = use != 0;
++        }
++
++        native_menu_was_active = 1;
++        PostNativeMenuInput(move, strafe, turn, fire, use);
++
++        // Preserve the dedicated Menu pulse so Escape can close the native
++        // menu even when joybmenu is intentionally left unmapped.
++        if (menu != 0)
++        {
++            PulseKey(key_menu_activate);
++        }
++        return;
++    }
++
++    if (native_menu_was_active)
++    {
++        native_menu_was_active = 0;
++        ResetNativeMenuLatches();
++    }
++
++    UpdateKeyState(&forward_state, key_up, move > WEB_AXIS_DEAD_ZONE);
++    UpdateKeyState(&backward_state, key_down, move < -WEB_AXIS_DEAD_ZONE);
++    UpdateKeyState(&strafe_left_state, key_strafeleft,
++                   strafe < -WEB_AXIS_DEAD_ZONE);
++    UpdateKeyState(&strafe_right_state, key_straferight,
++                   strafe > WEB_AXIS_DEAD_ZONE);
++    UpdateKeyState(&fire_state, key_fire, fire);
++    UpdateKeyState(&use_state, key_use, use);
++    UpdateKeyState(&run_state, key_speed, run);
++
++    PostTurn(turn);
++
++    if (map != 0)
++    {
++        PulseKey(key_map_toggle);
++    }
++
++    if (menu != 0)
++    {
++        PulseKey(key_menu_activate);
++    }
++
++    if (weapon_delta != 0)
++    {
++        PulseKey(weapon_delta > 0 ? key_nextweapon : key_prevweapon);
++    }
++}
++
++EMSCRIPTEN_KEEPALIVE
++void AI_DoomWebPause(void)
++{
++    if (main_loop_paused)
++    {
++        return;
++    }
++
++    AI_DoomWebReleaseAll();
++    main_loop_paused = 1;
++
++    if (main_loop_started)
++    {
++        emscripten_pause_main_loop();
++    }
++}
++
++EMSCRIPTEN_KEEPALIVE
++void AI_DoomWebResume(void)
++{
++    if (!main_loop_paused)
++    {
++        return;
++    }
++
++    main_loop_paused = 0;
++
++    if (main_loop_started)
++    {
++        emscripten_resume_main_loop();
++    }
++}
++
++static void PauseMainLoop(void *unused)
++{
++    (void) unused;
++
++    if (main_loop_paused)
++    {
++        emscripten_pause_main_loop();
++    }
++}
++
++void AI_DoomWebMainLoopWillStart(void)
++{
++    main_loop_started = 1;
++
++    // If the host hid the iframe during startup, pause as soon as the main
++    // loop has been installed and callMain has unwound back to JavaScript.
++    if (main_loop_paused)
++    {
++        emscripten_async_call(PauseMainLoop, NULL, 0);
++    }
++}
++
++#endif /* __EMSCRIPTEN__ */
+diff --git a/src/i_web_input.h b/src/i_web_input.h
+new file mode 100644
+index 0000000..a7827b9
+--- /dev/null
++++ b/src/i_web_input.h
+@@ -0,0 +1,19 @@
++//
++// Copyright(C) 2026 AI System 6 contributors
++//
++// This program is free software; you can redistribute it and/or
++// modify it under the terms of the GNU General Public License
++// as published by the Free Software Foundation; either version 2
++// of the License, or (at your option) any later version.
++//
++
++#ifndef __I_WEB_INPUT__
++#define __I_WEB_INPUT__
++
++#ifdef __EMSCRIPTEN__
++
++void AI_DoomWebMainLoopWillStart(void);
++
++#endif
++
++#endif /* #ifndef __I_WEB_INPUT__ */
