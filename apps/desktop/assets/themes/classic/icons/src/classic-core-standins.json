@@ -15,10 +15,10 @@
   "icons": {
     "finderApp": {
       "label": "Finder / System",
-      "prototype": "friendly one-bit compact Macintosh with two square eyes and a small smile",
-      "metaphorKey": "smiling-compact-macintosh",
+      "prototype": "System 6.0.8 System ICN#3 compact Macintosh with list rows in the screen",
+      "metaphorKey": "system-identity-compact-macintosh",
       "source32": {
-        "kind": "reference-guided-stand-in",
+        "kind": "native-resource-evidence",
         "nativeReference": {
           "file": "System Folder/System",
           "type": "ICN#",
@@ -40,41 +40,14 @@
             16,
             14
           ],
-          [
-            "rect",
-            11,
-            9,
-            2,
-            2
-          ],
-          [
-            "rect",
-            19,
-            9,
-            2,
-            2
-          ],
-        [
-          "line",
-          12,
-          15,
-          13,
-          16
-        ],
-        [
-          "line",
-          13,
-          16,
-          18,
-          16
-        ],
-        [
-          "line",
-          18,
-          16,
-          19,
-          15
-        ],
+          ["line", 9, 10, 10, 10],
+          ["line", 9, 12, 10, 12],
+          ["line", 9, 14, 10, 14],
+          ["line", 9, 16, 10, 16],
+          ["line", 12, 10, 14, 10],
+          ["line", 12, 12, 18, 12],
+          ["line", 12, 14, 16, 14],
+          ["line", 12, 16, 15, 16],
           [
             "line",
             15,
@@ -131,41 +104,10 @@
             6,
             6
           ],
-          [
-            "rect",
-            6,
-            4,
-            1,
-            1
-          ],
-          [
-            "rect",
-            9,
-            4,
-            1,
-            1
-          ],
-        [
-          "line",
-          6,
-          7,
-          7,
-          8
-        ],
-        [
-          "line",
-          7,
-          8,
-          9,
-          8
-        ],
-        [
-          "line",
-          9,
-          8,
-          10,
-          7
-        ],
+          ["line", 6, 4, 6, 4],
+          ["line", 6, 6, 6, 6],
+          ["line", 8, 4, 10, 4],
+          ["line", 8, 6, 9, 6],
           [
             "line",
             6,

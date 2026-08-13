@@ -12,10 +12,12 @@ const appVent = read("app/core/chat-vent-guidance.js");
 const serverVent = read("apps/server/server/chat-vent.js");
 const draftRoute = read("apps/server/server/routes/draft-thesis.js");
 const chatMessages = read("app/core/chat-messages.js");
+const config = read("app/core/config.js");
 
 const SHARED_MARKER = "AI System 6 chat vent intake guardrail";
 
-test.assertIncludes(manifest, '"app/core/chat-vent-guidance.js"', "Chat Vent guardrail loads with the core runtime");
+test.assertNotIncludes(manifest.split("lazyRuntimePaths = [")[0], '"app/core/chat-vent-guidance.js"', "Chat Vent guardrail stays out of the startup bundle");
+test.assertMatches(config, /ensureQuickDraftModule[\s\S]*"app\/core\/chat-vent-guidance\.js"[\s\S]*"app\/features\/draft-desk\.js"/, "Quick Draft installs Chat Vent before its feature modules");
 test.assertIncludes(appVent, "window.AISystem6ChatVent", "Frontend guardrail is exposed on the app namespace");
 test.assertIncludes(appVent, SHARED_MARKER, "Frontend guardrail has a stable marker");
 test.assertIncludes(appVent, "聊天截图是创作素材，不是可靠事实来源", "Frontend guardrail blocks chat screenshots from becoming facts");

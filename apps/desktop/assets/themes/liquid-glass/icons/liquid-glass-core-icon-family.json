@@ -23,7 +23,7 @@
     "finderApp": {
       "label": "Finder / System",
       "genre": "system identity",
-      "metaphorKey": "smiling-compact-macintosh",
+      "metaphorKey": "target-era-finder-identity",
       "container": "rounded-square",
       "identity": [
         "#03c6ff",
@@ -31,13 +31,13 @@
       ],
       "layers": [
         {
-          "name": "background",
+          "name": "base",
           "material": "glass",
           "translucency": 0.35,
           "refraction": 0.2
         },
         {
-          "name": "compact-mac",
+          "name": "panel",
           "material": "glass",
           "translucency": 0.62,
           "refraction": 0.3
@@ -49,7 +49,7 @@
           "refraction": 0
         }
       ],
-      "symbol": "friendly compact glass Macintosh with two eyes and a small smile on its screen",
+      "symbol": "Tahoe Finder enclosure with a separate translucent light face/profile panel, two eyes, and one smile crossing both fields",
       "comparison": {
         "evidence": "macworld-21-icons/macos-15-26-finder-icons.jpg"
       },

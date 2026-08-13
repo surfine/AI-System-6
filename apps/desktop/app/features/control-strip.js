@@ -1054,8 +1054,9 @@ function onModuleClick(descriptor, button, event) {
   popover.className = "menu-popover control-strip-menu";
   popover.dataset.controlStripMenu = descriptor.id;
   popover.setAttribute("role", "menu");
-  popover.style.setProperty("--control-strip-menu-font", controlStripMenuFontStack());
-  popover.style.setProperty("--control-strip-menu-font-size", `${stripPrefs().menuFontSize || 12}px`);
+  // The module menu's face and size are the system's call, not a preference:
+  // 89-control-strip.css takes the era's UI font and 60-responsive.css raises
+  // the size on a touch screen. Nothing to set inline here.
   renderDescriptorMenu(descriptor, popover);
   if (!popover.children.length) return;
   if (typeof descriptor.renderMenu === "function") {
@@ -1189,14 +1190,6 @@ function closeStripMenu({ flush = true, restoreFocus = false } = {}) {
 
 function closeModuleMenuIfOpen(moduleId) {
   if (stripOpenMenu?.moduleId === moduleId) closeStripMenu({ restoreFocus: false });
-}
-
-function controlStripMenuFontStack() {
-  const choice = stripPrefs().menuFont || "";
-  if (choice === "Chicago") return "Chicago_12, Chicago, Charcoal, serif";
-  if (choice === "Monaco") return "Monaco, 'Courier New', monospace";
-  if (choice === "modern") return "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif";
-  return "var(--ui-font)";
 }
 
 // --- Scroll ----------------------------------------------------------------
@@ -1442,19 +1435,6 @@ function renderSettings() {
       : "";
     controlStripHotkeyInput.setAttribute("aria-pressed", stripHotkeyRecording ? "true" : "false");
   }
-  if (controlStripFontSelect) controlStripFontSelect.value = stripPrefs().menuFont || "";
-  if (controlStripFontSizeSelect) {
-    const current = Number(stripPrefs().menuFontSize) || 12;
-    if (controlStripFontSizeSelect.options.length === 0) {
-      [9, 10, 11, 12, 13, 14, 16, 18, 20, 22, 24].forEach((size) => {
-        const option = document.createElement("option");
-        option.value = String(size);
-        option.textContent = String(size);
-        controlStripFontSizeSelect.append(option);
-      });
-    }
-    controlStripFontSizeSelect.value = String(current);
-  }
   renderModuleSettingsList();
 }
 
@@ -1551,21 +1531,6 @@ function setModuleEnabledFromSettings(enabled) {
   }
 }
 
-function setMenuFont(font) {
-  stripSavePrefs({ menuFont: String(font || "") });
-  if (stripOpenMenu) updateOpenMenu(stripOpenMenu.moduleId);
-  renderSettings();
-}
-
-function setMenuFontSize(size) {
-  const next = Math.max(9, Math.min(24, Math.round(Number(size) || 12)));
-  stripSavePrefs({ menuFontSize: next });
-  if (stripOpenMenu) {
-    stripOpenMenu.popover.style.setProperty("--control-strip-menu-font-size", `${next}px`);
-  }
-  renderSettings();
-}
-
 function resetToDefaults() {
   const fallback = typeof defaultControlStripState === "function" ? defaultControlStripState() : {};
   const ordered = [...stripModuleRegistry.values()]
@@ -1584,8 +1549,6 @@ function resetToDefaults() {
     disabledModules,
     scrollOffset: 0,
     hotkey: "",
-    menuFont: "",
-    menuFontSize: 12,
   });
   stripSelectedModuleId = "";
   refreshStrip();
@@ -1611,8 +1574,6 @@ window.AISystem6ControlStrip = Object.freeze({
   beginHotkeyRecording,
   clearHotkey,
   captureHotkey,
-  setMenuFont,
-  setMenuFontSize,
   moveModuleInSettings,
   setModuleEnabledFromSettings,
   selectModuleInSettings,

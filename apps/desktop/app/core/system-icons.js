@@ -915,15 +915,24 @@ function platinumCoreSystemIconArt(iconId, sourceSize) {
   return `<image${rasterClass} href="${systemIconAssetUrl(`assets/themes/platinum/${file}`)}" x="0" y="0" width="32" height="32" preserveAspectRatio="xMidYMid meet" />`;
 }
 
+function completeEraRasterSystemIconArt(era, iconId, sourceSize) {
+  // Transport controls are shared 1-bit UI glyphs rather than members of the
+  // 56-object application family. Keep them present in every modern theme
+  // group so the theme CSS can select one group without blanking playback.
+  if (transportIconPaths[iconId]) return transportIconPaths[iconId];
+  if (!completeEraSystemIconIds.has(iconId)) return "";
+  const stem = systemIconEscape(iconId);
+  const suffix = era === "liquid-glass" ? "-default" : "";
+  const file = `assets/themes/${era}/icons/${stem}-${sourceSize}${suffix}.png`;
+  return `<image class="sys-icon-era-raster" href="${systemIconAssetUrl(file)}" x="0" y="0" width="32" height="32" preserveAspectRatio="xMidYMid meet" />`;
+}
+
 function liquidGlassSystemIconArt(iconId, sourceSize = 32) {
   if (transportIconPaths[iconId]) return transportIconPaths[iconId];
   // `scrap` is a retired pre-Theme-Lab id kept for old saved workspaces. The
   // current 56-object contract calls the same object `scrapbook`.
   const assetId = iconId === "scrap" ? "scrapbook" : iconId;
-  // Liquid Glass raster art is displayed at up to 46 CSS px. A 16/32 px
-  // source is visibly enlarged on Retina displays, so runtime icons use the
-  // reviewed 128 px master and let the browser downsample it.
-  const assetSize = 128;
+  const assetSize = [16, 32, 64, 128].includes(Number(sourceSize)) ? Number(sourceSize) : 32;
   const stem = systemIconEscape(assetId);
   // The complete 56-object Liquid Glass vocabulary owns independent Image Gen
   // raster artwork. Clipboard remains a legacy inline object and keeps the old
@@ -938,6 +947,15 @@ function systemIconUsesSmallSource(options = {}) {
   return ["mini", "small", "tiny", "menu"].includes(String(options.size || ""));
 }
 
+function systemIconModernSourceSize(options = {}, compactSourceSize = 32) {
+  const requested = Number(options.modernSourceSize);
+  if ([16, 32, 64, 128].includes(requested)) return requested;
+  if (Number(options.sourceSize) === 16) return 16;
+  if (Number(options.sourceSize) === 32) return 32;
+  if (typeof options.size === "number") return options.size <= 22 ? 16 : options.size <= 40 ? 32 : 128;
+  return ["desktop", "large"].includes(String(options.size || "")) ? 128 : compactSourceSize;
+}
+
 function systemIconSvg(iconId, options = {}) {
   const id = normalizeSystemIconId(iconId);
   const sourceSize = systemIconUsesSmallSource(options) ? 16 : 32;
@@ -947,11 +965,15 @@ function systemIconSvg(iconId, options = {}) {
     : String(options.size || "") === "desktop" ? 42 : sourceSize;
   const coreArt = classicSystemIconArt(id, sourceSize);
   const platinumArt = platinumCoreSystemIconArt(id, platinumSourceSize);
+  const modernSourceSize = systemIconModernSourceSize(options, sourceSize);
+  const aquaArt = completeEraRasterSystemIconArt("aqua", id, modernSourceSize);
+  const snowArt = completeEraRasterSystemIconArt("snow-leopard", id, modernSourceSize);
+  const yosemiteArt = completeEraRasterSystemIconArt("yosemite", id, modernSourceSize);
   const paths = coreArt || classicPlusSystemIconPaths[id] || systemIconPaths[id] || systemIconPaths.document;
-  const liquidPaths = liquidGlassSystemIconArt(id, sourceSize);
+  const liquidPaths = liquidGlassSystemIconArt(id, modernSourceSize);
   const maskClass = coreArt ? " has-classic-mask" : "";
   const platinumClass = platinumArt ? " has-platinum-core" : "";
-  return `<svg class="sys-icon-svg${maskClass}${platinumClass}" data-classic-source-size="${sourceSize}" data-platinum-source-size="${platinumSourceSize}" viewBox="0 0 32 32" focusable="false" aria-hidden="true"><g class="sys-icon-classic">${paths}</g><g class="sys-icon-platinum-core">${platinumArt}</g><g class="sys-icon-liquid">${liquidPaths}</g></svg>`;
+  return `<svg class="sys-icon-svg${maskClass}${platinumClass}" data-classic-source-size="${sourceSize}" data-platinum-source-size="${platinumSourceSize}" data-modern-source-size="${modernSourceSize}" viewBox="0 0 32 32" focusable="false" aria-hidden="true"><g class="sys-icon-classic">${paths}</g><g class="sys-icon-platinum-core">${platinumArt}</g><g class="sys-icon-aqua">${aquaArt}</g><g class="sys-icon-snow-leopard">${snowArt}</g><g class="sys-icon-yosemite">${yosemiteArt}</g><g class="sys-icon-liquid">${liquidPaths}</g></svg>`;
 }
 
 function renderSystemIcon(iconId, options = {}) {
@@ -977,6 +999,7 @@ function hydrateSystemIcons(root = document) {
     item.innerHTML = systemIconSvg(item.dataset.systemIcon, {
       sourceSize: useSmallSource ? 16 : 32,
       platinumSourceSize: useSmallSource ? 16 : usePlatinumDesktopSource ? 42 : 32,
+      modernSourceSize: useSmallSource ? 16 : usePlatinumDesktopSource ? 128 : 32,
     });
   });
 }

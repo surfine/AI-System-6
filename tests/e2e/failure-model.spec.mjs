@@ -36,7 +36,7 @@ async function bootForFailure(page, scenario) {
   fakeModel.setScenario(scenario);
   await connectFakeModel(page, { port: fakeModelPort });
   await page.click('[data-window="control"] .close-box');
-  await page.waitForFunction(() => document.querySelector('[data-window="control"]')?.classList.contains("is-hidden"), { timeout: 10_000 });
+  await page.waitForFunction(() => document.querySelector('[data-window="control"]')?.classList.contains("is-hidden"), undefined, { timeout: 10_000 });
   await openWindow(page, "questionSheet");
 }
 
@@ -57,6 +57,7 @@ async function waitForVisibleFailure(page) {
         );
         return !busy && errorVisible;
       },
+      undefined,
       { timeout: 60_000 }
     );
   } catch (error) {
@@ -116,6 +117,7 @@ async function assertRetrySucceeds(page, questions) {
   await acceptOutlineOverwriteModalIfPresent(page);
   await page.waitForFunction(
     () => (document.querySelector("#outline-content")?.value || "").includes("## 背景"),
+    undefined,
     { timeout: 60_000 }
   );
   expect(await page.inputValue("#question-sheet-body")).toContain(questions.slice(0, 20));
@@ -160,6 +162,6 @@ for (const [scenario, label] of failureModes) {
     expect(await page.evaluate(() => document.body.dataset.appReady)).toBe("ready");
     expect(await page.evaluate(() => document.body.classList.contains("is-busy"))).toBe(false);
     await assertRetrySucceeds(page, questions);
-    expect(fakeModel.state.chatCalls).toBeGreaterThan(0);
+    expect(fakeModel.state.nativeChatCalls + fakeModel.state.responsesCalls + fakeModel.state.chatCalls).toBeGreaterThan(0);
   });
 }

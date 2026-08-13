@@ -13,8 +13,9 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const assetDir = join(root, "apps/desktop/assets/themes/aqua/icons");
 const acceptedImagegenSourceDir = join(assetDir, "imagegen-source");
 const evidenceDir = join(root, "internal/evidence/drafts/theme-lab-fidelity-cache/aqua");
-const sourceFile = join(assetDir, "apps/server/aqua-core-icons.json");
+const sourceFile = join(assetDir, "src/aqua-core-icons.json");
 const draftDir = join(root, "internal/evidence/drafts/era-icons");
+if (!existsSync(sourceFile)) throw new Error(`Missing Aqua core-icon source ledger: ${sourceFile}`);
 const source = JSON.parse(readFileSync(sourceFile, "utf8"));
 const ids = Object.keys(source.icons);
 const sizes = [128, 32, 16];
@@ -620,7 +621,7 @@ const family = {
   nativeSizes: sizes,
   referenceLedger: "icons/src/aqua-core-icons.json",
   referenceBoard: "internal/evidence/drafts/era-icons/aqua-core-reference-board.png",
-  sizeRule: "Runtime surfaces downscale the 128 px master. The ten programmatic cores own separately composed 32 px and 16 px review hints; accepted Image Gen cores use separately processed ledger artifacts.",
+  sizeRule: "Runtime selects the authored 16, 32, or 128 px tier by context. Programmatic cores own separately composed compact hints; accepted ImageGen cores use the size provenance recorded in their ledger.",
   selectionRecipe: "Finder selection belongs to the label and view surface; normal and selected states use the same Aqua artwork.",
   icons: generated,
 };
@@ -629,7 +630,8 @@ writeFileSync(join(assetDir, "aqua-core-icon-manifest.json"), `${JSON.stringify(
 
 const familyFile = join(root, "apps/desktop/assets/themes/aqua/aqua-icon-family.json");
 const eraFamily = JSON.parse(readFileSync(familyFile, "utf8"));
-eraFamily.runtimeSize = 128;
+eraFamily.runtimeSize = "contextual";
+eraFamily.runtimeSizesByContext = { compactMenuList: 16, ordinary: 32, desktopLargeRetina: 128 };
 eraFamily.reviewedCore = ids;
 eraFamily.coreBuilder = "tooling/build-aqua-core-icons.mjs";
 for (const id of ids) {
@@ -723,6 +725,8 @@ async function referenceBoard() {
       const crop = entry.crop || [0, 0, image.width, image.height];
       ctx.imageSmoothingEnabled = true;
       ctx.drawImage(image, ...crop, x + 15, y + 22, 64, 64);
+    } else {
+      label(ctx, "evidence unavailable", x + 15, y + 53, { font: "10px monospace", color: "#9a3f45" });
     }
     label(ctx, entry.label, x + 90, y + 30, { font: "bold 11px sans-serif" });
     label(ctx, entry.perspective, x + 90, y + 49, { font: "10px sans-serif", color: "#2f6f9d" });
@@ -777,5 +781,11 @@ async function comparisonBoard() {
 }
 
 await rebuildSprite();
-await Promise.all([contactSheet(), referenceBoard(), comparisonBoard()]);
+await Promise.all([contactSheet(), referenceBoard()]);
+const comparisonEvidenceAvailable = ids.every((id) => existsSync(evidencePath(source.icons[id].comparison)));
+if (comparisonEvidenceAvailable) {
+  await comparisonBoard();
+} else {
+  console.warn(`Aqua comparison evidence is unavailable under ${evidenceDir}; production assets and the evidence inventory were still built.`);
+}
 console.log(`Built ${ids.length} Aqua core icons at independent 128 px, 32 px, and 16 px sizes.`);

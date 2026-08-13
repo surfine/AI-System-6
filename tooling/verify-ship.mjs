@@ -30,6 +30,7 @@ const checks = [
   { name: "version-consistency", command: "npm", args: ["run", "verify:version"] },
   { name: "checkjs", command: "npm", args: ["run", "verify:checkjs"] },
   { name: "src-typecheck", command: "npm", args: ["run", "verify:src"] },
+  { name: "server-lint", command: "npm", args: ["run", "lint"] },
   { name: "data-boundary", command: "npm", args: ["run", "verify:data"] },
   { name: "docs", command: "npm", args: ["run", "verify:docs"] },
   { name: "css", command: "npm", args: ["run", "verify:css"] },

@@ -463,11 +463,15 @@ try {
 
   const iconResults = [];
   const familyManifest = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     target: "System 6-era monochrome Macintosh Finder",
     generatedBy: "tooling/build-classic-core-icons.mjs",
     nativeImageSha256: nativeImageHash,
     coreOnly: true,
+    evidenceLayer: true,
+    runtimeAsset: false,
+    overwrittenBy: "tooling/build-classic-family-icons.mjs",
+    evidencePolicy: "Exact one-bit resource reconstructions are retained as the comparison authority. The shipped Classic runtime is a smooth Retina SVG trace whose anatomy is validated against this layer.",
     selectionRecipe: "Invert artwork and paper within the separate mask; never ship a selected bitmap.",
     icons: {},
   };
@@ -479,10 +483,12 @@ try {
     const nativeEvidence = nativeReference
       ? readNativePaths(tempDir, nativeReference, 32)
       : null;
-    // Finder is deliberately a friendly Macintosh in the product continuity
-    // contract. System ICN# 3 supplies its physical geometry, but it is not a
-    // smiling Finder face, so this one object remains a documented adaptation.
-    const replica32 = Boolean(nativeEvidence) && id !== "finderApp";
+    // The evidence layer is deliberately literal. System ICN# 3 is the
+    // System/Finder identity actually present on the fixed 6.0.8 disk: a
+    // compact Macintosh whose screen contains list rows, not a smiling face.
+    // The shipped Classic family may smooth this evidence for Retina displays,
+    // but it must not replace the native anatomy with a product invention.
+    const replica32 = Boolean(nativeEvidence);
     const large = replica32 ? nativeEvidence : customPaths(icon.source32, 32, `${id} 32`);
     const nativeReference16 = icon.source16.nativeReference || null;
     const nativeEvidence16 = nativeReference16

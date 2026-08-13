@@ -24,6 +24,7 @@ const http = require("node:http");
 const https = require("node:https");
 const net = require("node:net");
 const zlib = require("node:zlib");
+const { StringDecoder } = require("node:string_decoder");
 
 const { decodeResponseText } = require("./charset.js");
 const {
@@ -49,6 +50,63 @@ const httpsAgent = new https.Agent(sharedAgentOptions);
  * @property {string} [pinnedAddress]
  * @property {number} [pinnedFamily]
  */
+
+function pinnedLookup(options = {}) {
+  if (!options.pinnedAddress) return undefined;
+  return (_hostname, lookupOptions, callback) => {
+    const family = Number(options.pinnedFamily) || net.isIP(options.pinnedAddress);
+    if (lookupOptions?.all) {
+      callback(null, [{ address: options.pinnedAddress, family }]);
+    } else {
+      callback(null, options.pinnedAddress, family);
+    }
+  };
+}
+
+function createSseJsonParser(onEvent) {
+  const decoder = new StringDecoder("utf8");
+  let buffer = "";
+  let dataLines = [];
+
+  const dispatch = () => {
+    if (!dataLines.length) return;
+    const raw = dataLines.join("\n").trim();
+    dataLines = [];
+    if (!raw || raw === "[DONE]") return;
+    try {
+      onEvent(JSON.parse(raw));
+    } catch {}
+  };
+  const consumeLine = (line) => {
+    const normalized = line.endsWith("\r") ? line.slice(0, -1) : line;
+    if (!normalized) {
+      dispatch();
+      return;
+    }
+    if (normalized.startsWith("data:")) dataLines.push(normalized.slice(5).trimStart());
+  };
+  const consume = (text) => {
+    buffer += text;
+    let newline = buffer.indexOf("\n");
+    while (newline >= 0) {
+      consumeLine(buffer.slice(0, newline));
+      buffer = buffer.slice(newline + 1);
+      newline = buffer.indexOf("\n");
+    }
+  };
+
+  return {
+    push(chunk) {
+      consume(decoder.write(Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk || ""))));
+    },
+    end() {
+      consume(decoder.end());
+      if (buffer) consumeLine(buffer);
+      buffer = "";
+      dispatch();
+    },
+  };
+}
 
 /**
  * @param {number | undefined} maxBytes
@@ -226,6 +284,8 @@ function nodePostJson(targetUrl, payload, signal, extraHeaders = {}, options = {
         path: `${parsed.pathname}${parsed.search}`,
         method: "POST",
         agent: isHttps ? httpsAgent : httpAgent,
+        servername: isHttps ? parsed.hostname : undefined,
+        lookup: pinnedLookup(options),
         headers: {
           "Content-Type": "application/json",
           ...extraHeaders,
@@ -267,8 +327,8 @@ function nodePostJson(targetUrl, payload, signal, extraHeaders = {}, options = {
                 return /** @type {any} */ (response.headers)[String(name).toLowerCase()] || "";
               },
             },
-            async text() {
-              return text;
+            text() {
+              return Promise.resolve(text);
             },
           });
         });
@@ -276,6 +336,7 @@ function nodePostJson(targetUrl, payload, signal, extraHeaders = {}, options = {
     );
 
     request.on("error", reject);
+    if (typeof options.onRequest === "function") request.once("finish", options.onRequest);
     signal?.addEventListener("abort", () => request.destroy(new Error("Request aborted")), { once: true });
     request.end(body);
   });
@@ -309,7 +370,7 @@ function boundedFetchResponse(response, maxBytes) {
  * @param {AbortSignal | null | undefined} signal
  * @param {import("node:http").ServerResponse} res
  * @param {Record<string, string>} [extraHeaders]
- * @param {{ maxBytes?: number, onData?: (chunk: Buffer | string) => void }} [options]
+ * @param {{ maxBytes?: number, onData?: (chunk: Buffer | string) => void, onRequest?: () => void, onBeforeEnd?: () => void, pinnedAddress?: string, pinnedFamily?: number }} [options]
  * @returns {Promise<boolean>}
  */
 function proxyJsonStream(targetUrl, payload, signal, res, extraHeaders = {}, options = {}) {
@@ -327,6 +388,8 @@ function proxyJsonStream(targetUrl, payload, signal, res, extraHeaders = {}, opt
         path: `${parsed.pathname}${parsed.search}`,
         method: "POST",
         agent: isHttps ? httpsAgent : httpAgent,
+        servername: isHttps ? parsed.hostname : undefined,
+        lookup: pinnedLookup(options),
         headers: {
           "Content-Type": "application/json",
           ...extraHeaders,
@@ -355,10 +418,18 @@ function proxyJsonStream(targetUrl, payload, signal, res, extraHeaders = {}, opt
             resolve(false);
           }
         });
-        upstream.pipe(res);
+        upstream.pipe(res, { end: false });
         upstream.on("end", () => {
           if (settled) return;
           settled = true;
+          try {
+            if (typeof options.onBeforeEnd === "function") options.onBeforeEnd();
+          } catch (error) {
+            res.destroy();
+            reject(error);
+            return;
+          }
+          res.end();
           resolve(true);
         });
         upstream.on("error", (error) => {
@@ -370,6 +441,7 @@ function proxyJsonStream(targetUrl, payload, signal, res, extraHeaders = {}, opt
     );
 
     request.on("error", reject);
+    if (typeof options.onRequest === "function") request.once("finish", options.onRequest);
     signal?.addEventListener("abort", () => request.destroy(new Error("Request aborted")), { once: true });
     request.end(body);
   });
@@ -407,16 +479,7 @@ function nodeGetText(targetUrl, signal, headers = { "Accept": "application/json"
         agent: isHttps ? httpsAgent : httpAgent,
         headers,
         servername: isHttps ? parsed.hostname : undefined,
-        lookup: options.pinnedAddress
-          ? (_hostname, lookupOptions, callback) => {
-              const family = Number(options.pinnedFamily) || net.isIP(options.pinnedAddress);
-              if (lookupOptions?.all) {
-                callback(null, [{ address: options.pinnedAddress, family }]);
-              } else {
-                callback(null, options.pinnedAddress, family);
-              }
-            }
-          : undefined,
+        lookup: pinnedLookup(options),
       },
       (response) => {
         const chunks = [];
@@ -601,6 +664,7 @@ function nodeGetTextViaProxy(targetUrl, signal, headers = { "Accept": "applicati
 async function postJsonWithFallback(targetUrl, payload, signal, extraHeaders = {}, options = {}) {
   const forceNodeTransport =
     process.env.AI_SYSTEM6_HTTP_TRANSPORT === "node"
+    || Boolean(options.pinnedAddress)
     || isLoopbackUrl(targetUrl)
     || shouldAvoidNodeFetchForTarget(targetUrl);
   if (forceNodeTransport) {
@@ -753,4 +817,5 @@ module.exports = {
   getTextOnceWithFallback,
   responseTooLargeError,
   isResponseTooLargeError,
+  createSseJsonParser,
 };

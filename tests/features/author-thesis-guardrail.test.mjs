@@ -13,15 +13,17 @@ const serverThesis = read("apps/server/server/author-thesis.js");
 const draftRoute = read("apps/server/server/routes/draft-thesis.js");
 const router = read("apps/server/server/router.js");
 const chatMessages = read("app/core/chat-messages.js");
+const config = read("app/core/config.js");
 
 const SHARED_MARKER = "AI System 6 author thesis guardrail";
 
-// Loads with the core runtime, beside the other model guardrails.
-test.assertIncludes(manifest, '"app/core/author-thesis-guidance.js"', "Author Thesis guardrail loads with the core runtime");
+// Loads with Quick Draft: this guardrail is specific to that low-frequency
+// workspace and does not need to take space on every boot disk.
+test.assertNotIncludes(manifest.split("lazyRuntimePaths = [")[0], '"app/core/author-thesis-guidance.js"', "Author Thesis guardrail stays out of the startup bundle");
 test.assertMatches(
-  manifest,
-  /"app\/core\/writing-tools-prompts\.js",\s*"app\/core\/author-thesis-guidance\.js"/,
-  "Author Thesis sits beside the shared model guardrails",
+  config,
+  /ensureQuickDraftModule[\s\S]*"app\/core\/author-thesis-guidance\.js"[\s\S]*"app\/features\/draft-desk\.js"/,
+  "Quick Draft installs Author Thesis before its feature modules",
 );
 
 // Frontend guardrail.

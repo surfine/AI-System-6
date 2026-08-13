@@ -22,15 +22,21 @@ const WRITE_LEASE_CHANNEL = "ai-system6-instance";
 const LEASE_HEARTBEAT_MS = 5000;
 const LEASE_STALE_MS = 15000;
 const TAKEOVER_TIMEOUT_MS = 4000;
+const WRITE_LEASE_INSTANCE_SESSION_KEY = "ai-system6-write-lease-instance";
 
 let instanceId = "";
 try {
-  instanceId = crypto.randomUUID();
+  const navigationType = performance.getEntriesByType?.("navigation")?.[0]?.type;
+  if (navigationType === "reload") {
+    instanceId = sessionStorage.getItem(WRITE_LEASE_INSTANCE_SESSION_KEY) || "";
+  }
+  if (!instanceId) instanceId = crypto.randomUUID();
+  sessionStorage.setItem(WRITE_LEASE_INSTANCE_SESSION_KEY, instanceId);
 } catch {
   instanceId = `instance-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-let leaseState = { writer: false, readOnly: false, claimedAt: 0, mode: "readonly" };
+let leaseState = { writer: false, readOnly: false, claimedAt: 0, mode: "readonly", epoch: 0 };
 let heartbeatTimer = null;
 let broadcastChannel = null;
 let takeoverInFlight = null;
@@ -69,7 +75,13 @@ function leaseIsFresh(lease) {
 
 function isCurrentStoredWriter() {
   const lease = currentStoredLease();
-  return Boolean(lease && lease.instanceId === instanceId && leaseIsFresh(lease));
+  return Boolean(
+    lease
+    && lease.instanceId === instanceId
+    && Number(lease.epoch) === Number(leaseState.epoch)
+    && Number(lease.epoch) > 0
+    && leaseIsFresh(lease)
+  );
 }
 
 function storedLeaseBelongsToMe() {
@@ -88,7 +100,12 @@ function assertCanWrite() {
     error.code = "READ_ONLY_INSTANCE";
     throw error;
   }
-  return true;
+  if (!Number.isFinite(Number(leaseState.epoch)) || Number(leaseState.epoch) < 1) {
+    const error = new Error("This window does not hold a persistent write fence.");
+    error.code = "READ_ONLY_INSTANCE";
+    throw error;
+  }
+  return { ownerId: instanceId, epoch: Number(leaseState.epoch) };
 }
 
 function notifyLeaseListeners(event) {
@@ -127,11 +144,12 @@ function syncReadOnlySurface() {
   } catch {}
 }
 
-function setWriter(value, claimedAt = 0) {
+function setWriter(value, claimedAt = 0, epoch = 0) {
   leaseState = {
     writer: value,
     readOnly: !value,
     claimedAt: value ? claimedAt : leaseState.claimedAt,
+    epoch: value ? Math.max(0, Number(epoch) || 0) : 0,
     mode: value ? "writer" : "readonly",
   };
   syncWriteModeDataset();
@@ -148,7 +166,12 @@ function startHeartbeat() {
   stopHeartbeat();
   heartbeatTimer = setInterval(() => {
     const stored = currentStoredLease();
-    if (!stored || stored.instanceId !== instanceId || !leaseIsFresh(stored)) {
+    if (
+      !stored
+      || stored.instanceId !== instanceId
+      || Number(stored.epoch) !== Number(leaseState.epoch)
+      || !leaseIsFresh(stored)
+    ) {
       // Never overwrite a lease another instance just took over. The heartbeat
       // only refreshes a lease that is still stored under this instance.
       enterReadOnly("lease-lost");
@@ -156,8 +179,9 @@ function startHeartbeat() {
     }
     const claimedAt = leaseState.claimedAt || Date.now();
     const heartbeatAt = Date.now();
-    writeStoredLease({ instanceId, claimedAt, heartbeatAt });
-    post({ type: "heartbeat", instanceId, claimedAt, heartbeatAt });
+    const epoch = Number(leaseState.epoch) || 0;
+    writeStoredLease({ instanceId, claimedAt, heartbeatAt, epoch });
+    post({ type: "heartbeat", instanceId, claimedAt, heartbeatAt, epoch });
   }, LEASE_HEARTBEAT_MS);
 }
 
@@ -168,12 +192,70 @@ function stopHeartbeat() {
   }
 }
 
-function acquireWriteLease() {
+async function claimPersistentWriteFence() {
+  // VM/source-contract tests do not expose IndexedDB. The production bundle
+  // always has openAppDb and the transaction runtime by boot time.
+  if (typeof indexedDB === "undefined") {
+    return { ownerId: instanceId, epoch: Math.max(1, Number(leaseState.epoch) + 1), updatedAt: Date.now() };
+  }
+  if (
+    typeof openAppDb !== "function"
+    || typeof window.AISystem6StorageTransactions?.claimWriteFence !== "function"
+  ) {
+    const error = new Error("Persistent write fencing is unavailable.");
+    error.code = "READ_ONLY_INSTANCE";
+    throw error;
+  }
+  const db = await openAppDb();
+  try {
+    return await window.AISystem6StorageTransactions.claimWriteFence(db, instanceId);
+  } finally {
+    db.close();
+  }
+}
+
+async function releasePersistentWriteFence(expectedFence) {
+  if (typeof indexedDB === "undefined") return true;
+  if (
+    typeof openAppDb !== "function"
+    || typeof window.AISystem6StorageTransactions?.releaseWriteFence !== "function"
+  ) return false;
+  const db = await openAppDb();
+  try {
+    return await window.AISystem6StorageTransactions.releaseWriteFence(db, expectedFence);
+  } finally {
+    db.close();
+  }
+}
+
+async function ownsPersistentWriteFence(expectedFence) {
+  if (typeof indexedDB === "undefined") return true;
+  if (
+    typeof openAppDb !== "function"
+    || typeof window.AISystem6StorageTransactions?.readWriteFence !== "function"
+  ) return false;
+  const db = await openAppDb();
+  try {
+    const current = await window.AISystem6StorageTransactions.readWriteFence(db);
+    return current?.ownerId === expectedFence?.ownerId
+      && Number(current?.epoch) === Number(expectedFence?.epoch);
+  } finally {
+    db.close();
+  }
+}
+
+async function acquireWriteLease() {
   const existing = currentStoredLease();
-  if (existing && existing.instanceId === instanceId && leaseIsFresh(existing)) {
-    setWriter(true, Number(existing.claimedAt) || Date.now());
+  if (
+    existing
+    && existing.instanceId === instanceId
+    && leaseIsFresh(existing)
+    && Number(existing.epoch) === Number(leaseState.epoch)
+    && Number(existing.epoch) > 0
+  ) {
+    setWriter(true, Number(existing.claimedAt) || Date.now(), Number(existing.epoch));
     startHeartbeat();
-    return { writer: true, readOnly: false };
+    return { writer: true, readOnly: false, epoch: Number(existing.epoch) };
   }
   if (existing && existing.instanceId !== instanceId && leaseIsFresh(existing)) {
     setWriter(false);
@@ -183,13 +265,27 @@ function acquireWriteLease() {
   // instances may both claim near-simultaneously; the read-back makes only
   // the last writer pass.
   const claimedAt = Date.now();
-  writeStoredLease({ instanceId, claimedAt, heartbeatAt: claimedAt });
+  writeStoredLease({ instanceId, claimedAt, heartbeatAt: claimedAt, epoch: 0 });
   const readback = currentStoredLease();
   if (readback?.instanceId === instanceId) {
-    setWriter(true, claimedAt);
-    startHeartbeat();
-    post({ type: "acquired", instanceId, claimedAt });
-    return { writer: true, readOnly: false };
+    try {
+      const fence = await claimPersistentWriteFence();
+      const latest = currentStoredLease();
+      if (latest?.instanceId !== instanceId) {
+        await releasePersistentWriteFence(fence);
+        setWriter(false);
+        return { writer: false, readOnly: true };
+      }
+      writeStoredLease({ instanceId, claimedAt, heartbeatAt: Date.now(), epoch: fence.epoch });
+      setWriter(true, claimedAt, fence.epoch);
+      startHeartbeat();
+      post({ type: "acquired", instanceId, claimedAt, epoch: fence.epoch });
+      return { writer: true, readOnly: false, epoch: fence.epoch };
+    } catch (error) {
+      if (storedLeaseBelongsToMe()) removeStoredLease();
+      setWriter(false);
+      return { writer: false, readOnly: true, error };
+    }
   }
   setWriter(false);
   return { writer: false, readOnly: true };
@@ -198,23 +294,43 @@ function acquireWriteLease() {
 // Dangerous path: claims the lease without a flush handshake. Only allowed
 // when the stored owner is stale, or after explicit user confirmation of the
 // data-loss risk. Broadcasts "takeover" so the old instance drops writes.
-function forceTakeOverWriteLease() {
+async function forceTakeOverWriteLease() {
   const claimedAt = Date.now();
-  writeStoredLease({ instanceId, claimedAt, heartbeatAt: claimedAt });
+  writeStoredLease({ instanceId, claimedAt, heartbeatAt: claimedAt, epoch: 0 });
   const readback = currentStoredLease();
   if (readback?.instanceId !== instanceId) {
     setWriter(false);
     return { writer: false, readOnly: true };
   }
-  setWriter(true, claimedAt);
-  startHeartbeat();
-  post({ type: "takeover", instanceId, claimedAt });
-  notifyLeaseListeners({ type: "writer", instanceId });
-  return { writer: true, readOnly: false };
+  try {
+    const fence = await claimPersistentWriteFence();
+    const latest = currentStoredLease();
+    if (latest?.instanceId !== instanceId) {
+      await releasePersistentWriteFence(fence);
+      setWriter(false);
+      return { writer: false, readOnly: true };
+    }
+    writeStoredLease({ instanceId, claimedAt, heartbeatAt: Date.now(), epoch: fence.epoch });
+    setWriter(true, claimedAt, fence.epoch);
+    startHeartbeat();
+    post({ type: "takeover", instanceId, claimedAt, epoch: fence.epoch });
+    notifyLeaseListeners({ type: "writer", instanceId, epoch: fence.epoch });
+    return { writer: true, readOnly: false, epoch: fence.epoch };
+  } catch (error) {
+    if (storedLeaseBelongsToMe()) removeStoredLease();
+    setWriter(false);
+    return { writer: false, readOnly: true, error };
+  }
 }
 
-function releaseWriteLease() {
+async function releaseWriteLease() {
   stopHeartbeat();
+  const expectedFence = { ownerId: instanceId, epoch: Number(leaseState.epoch) || 0 };
+  try {
+    if (expectedFence.epoch > 0) await releasePersistentWriteFence(expectedFence);
+  } catch (error) {
+    console.warn("Persistent write fence release failed.", error);
+  }
   // Delete only a lease that is still stored under this instance. A late
   // pagehide after a takeover must never remove the new owner's lease.
   if (storedLeaseBelongsToMe()) removeStoredLease();
@@ -230,8 +346,7 @@ function requestSafeTakeover() {
   if (takeoverInFlight) return Promise.resolve({ ok: false, reason: "busy" });
   const stored = currentStoredLease();
   if (!stored || !leaseIsFresh(stored)) {
-    const result = forceTakeOverWriteLease();
-    return Promise.resolve(result.writer
+    return forceTakeOverWriteLease().then((result) => result.writer
       ? { ok: true, writer: true }
       : { ok: false, reason: "claim-failed" });
   }
@@ -320,7 +435,7 @@ async function handleTakeoverRequest(message) {
     });
     return;
   }
-  releaseWriteLease();
+  await releaseWriteLease();
   enterReadOnly("takeover-complete");
   post({
     type: "takeover-ready",
@@ -347,10 +462,11 @@ function handleBroadcast(event) {
   }
   if (message.type === "takeover-ready") {
     if (takeoverInFlight?.requestId === message.requestId) {
-      const result = acquireWriteLease();
-      takeoverInFlight.resolve?.(result.writer
-        ? { ok: true, writer: true }
-        : { ok: false, reason: "claim-failed" });
+      acquireWriteLease().then((result) => {
+        takeoverInFlight?.resolve?.(result.writer
+          ? { ok: true, writer: true }
+          : { ok: false, reason: "claim-failed" });
+      });
     }
     return;
   }
@@ -384,11 +500,24 @@ function handleStorageEvent(event) {
 // Reconcile after BFCache restore or foreground resume: never auto-takeover.
 // If the stored owner is us → writer; no fresh owner → try acquire; other
 // fresh owner → read-only.
-function reconcileWriteLease() {
+async function reconcileWriteLease() {
   const stored = currentStoredLease();
-  if (stored?.instanceId === instanceId) {
+  if (
+    stored?.instanceId === instanceId
+    && Number(stored.epoch) === Number(leaseState.epoch)
+    && Number(stored.epoch) > 0
+  ) {
     if (leaseIsFresh(stored)) {
-      setWriter(true, Number(stored.claimedAt) || Date.now());
+      const persistentOwner = await ownsPersistentWriteFence({
+        ownerId: instanceId,
+        epoch: Number(stored.epoch),
+      }).catch(() => false);
+      if (!persistentOwner) {
+        stopHeartbeat();
+        setWriter(false);
+        return { writer: false, readOnly: true, owner: "persistent-fence" };
+      }
+      setWriter(true, Number(stored.claimedAt) || Date.now(), Number(stored.epoch));
       startHeartbeat();
       return { writer: true, readOnly: false };
     }
@@ -534,7 +663,7 @@ async function requestForceTakeoverWithConfirm() {
     const choice = await showSystemModal(t("write_lease_force_confirm"), "confirm", { defaultAction: "cancel" });
     if (choice !== "yes") return false;
   }
-  const result = forceTakeOverWriteLease();
+  const result = await forceTakeOverWriteLease();
   return result.writer;
 }
 
@@ -547,8 +676,8 @@ function initWriteLeaseUi() {
   });
 }
 
-function acquireWriteLeaseAtBoot() {
-  const result = acquireWriteLease();
+async function acquireWriteLeaseAtBoot() {
+  const result = await acquireWriteLease();
   if (result.readOnly) {
     setTimeout(() => showWriteLeaseDialog({ lost: false }), 0);
   }

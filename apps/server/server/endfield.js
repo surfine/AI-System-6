@@ -22,7 +22,7 @@ const { positiveInteger } = require("./lib/numbers.js");
 const {
   DEEPSEEK_CLOUD_MODELS,
   DEEPSEEK_BASE_URL_DEFAULT,
-  resolveCloudBaseUrl,
+  resolveCloudTarget,
 } = require("./cloud.js");
 const { preparePublicCloudCall } = require("./lib/cloud-route.js");
 const { isPublicDeployment } = require("./runtime-profile.js");
@@ -638,7 +638,7 @@ async function findEndfieldStoryMatches(query, limit = 12) {
     .filter((item) => item.score > 0)
     .sort((a, b) => b.score - a.score || String(a.id).localeCompare(String(b.id)))
     .slice(0, 8)
-    .map(({ score, ...item }) => item);
+    .map(({ score: _score, ...item }) => item);
 
   return {
     meta: {
@@ -778,7 +778,7 @@ function endfieldEvidenceBudget(body = {}, model = "", outputTokens = 1200) {
  * @returns {Promise<{
  *   response: any, source: string, model: string,
  *   autoLoaded?: boolean, autoLoadedModel?: string, autoSelectedModel?: string,
- *   reservation?: { inputTokens: number, outputTokens: number, reservedTokens: number, remainingSessionRequests: number } | null,
+ *   reservation?: { inputTokens: number, outputTokens: number, reservedTokens: number, remainingSessionRequests: number, addUsage: (usage: any) => boolean, markUpstreamStarted: () => void, settle: (options?: any) => any } | null,
  * }>}
  */
 async function postEndfieldChatPayload(payload, body, signal, req) {
@@ -805,22 +805,31 @@ async function postEndfieldChatPayload(payload, body, signal, req) {
       `${cloud.baseUrl}/v1/chat/completions`,
       cloudPayload,
       signal,
-      cloud.authHeaders
+      cloud.authHeaders,
+      {
+        pinnedAddress: cloud.pinnedAddress,
+        pinnedFamily: cloud.pinnedFamily,
+        onRequest: () => cloud.reservation?.markUpstreamStarted(),
+      }
     );
     return { response, source: "cloud", model: cloud.model, reservation: cloud.reservation };
   }
 
-  const cloudApiKey = body._cloud_active
+  const cloudTarget = body._cloud_active
+    ? await resolveCloudTarget(body._cloud_base_url || DEEPSEEK_BASE_URL_DEFAULT)
+    : null;
+  const cloudApiKey = cloudTarget
     ? await resolveCloudCredential({
         credentialId: body._cloud_credential_id,
         provider: "deepseek",
+        targetBaseUrl: cloudTarget.baseUrl,
         suppliedApiKey: body._cloud_api_key,
         allowSupplied: false,
       })
     : "";
   if (body._cloud_active && cloudApiKey) {
     const model = String(body._cloud_model || payload.model || "deepseek-v4-flash").trim();
-    const baseUrl = resolveCloudBaseUrl(body._cloud_base_url || DEEPSEEK_BASE_URL_DEFAULT);
+    const baseUrl = cloudTarget.baseUrl;
     const cloudPayload = enforceMarkdownOnlyChatPayload({ ...payload, model });
     if (/^(?:deepseek-)?v4-(?:pro|flash)$/i.test(model)) {
       // Matches cloud-chat.js: leaving thinking enabled on a long,
@@ -836,6 +845,9 @@ async function postEndfieldChatPayload(payload, body, signal, req) {
     }
     const { response } = await postJsonWithFallback(`${baseUrl}/v1/chat/completions`, cloudPayload, signal, {
       Authorization: `Bearer ${cloudApiKey}`,
+    }, {
+      pinnedAddress: cloudTarget.address,
+      pinnedFamily: cloudTarget.family,
     });
     return { response, source: "cloud", model };
   }

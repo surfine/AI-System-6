@@ -24,13 +24,24 @@ export async function bootApp(page) {
   await page.goto("/");
   await page.waitForFunction(
     () => document.body.dataset.appReady === "ready",
-    { timeout: 45_000 }
+    undefined, { timeout: 45_000 }
   );
 }
 
 export async function dismissGuide(page) {
-  await page.click('[data-action="dismiss-guide"]');
-  await page.waitForSelector('[data-window="guide"]', { state: "hidden", timeout: 10_000 });
+  const guide = page.locator('[data-window="guide"]');
+  if (!await guide.isVisible().catch(() => false)) return;
+
+  const legacyDismiss = guide.locator('[data-action="dismiss-guide"]');
+  if (await legacyDismiss.isVisible().catch(() => false)) {
+    await legacyDismiss.click({ timeout: 5_000 });
+  } else {
+    const continueButton = guide.locator('[data-action="guide-continue"]');
+    for (let step = 0; step < 3 && await guide.isVisible().catch(() => false); step += 1) {
+      await continueButton.click({ timeout: 5_000 });
+    }
+  }
+  await guide.waitFor({ state: "hidden", timeout: 10_000 });
 }
 
 /** Enter Writing Studio (switches the workspace profile to "writing"). */
@@ -38,7 +49,7 @@ export async function enterWritingStudio(page) {
   await page.dblclick("#finder-writing-studio-toggle");
   await page.waitForFunction(
     () => document.body.dataset.workspaceProfile === "writing",
-    { timeout: 15_000 }
+    undefined, { timeout: 15_000 }
   );
   // The writing-flow windows (Question Sheet first) settle after the profile
   // flips; opening other windows before they settle lets the flow layer them
@@ -94,23 +105,29 @@ export async function createProject(page, name = E2E_PROJECT_NAME) {
   // viewport (desktop shows the Project Hard Disk, a phone shows its own
   // mobile page), so verify against the real database record.
   await page.waitForFunction(
-    (projectName) => new Promise((resolve) => {
-      const open = indexedDB.open("ai-system-6-db");
-      open.onsuccess = () => {
-        const database = open.result;
-        const tx = database.transaction("projects", "readonly");
-        const all = tx.objectStore("projects").getAll();
-        all.onsuccess = () => {
-          database.close();
-          resolve((all.result || []).some((project) => project.name === projectName));
+    (projectName) => {
+      if (!activeProjectId
+        || !projects.some((project) => project.id === activeProjectId && project.name === projectName)) {
+        return false;
+      }
+      return new Promise((resolve) => {
+        const open = indexedDB.open("ai-system-6-db");
+        open.onsuccess = () => {
+          const database = open.result;
+          const tx = database.transaction("projects", "readonly");
+          const all = tx.objectStore("projects").getAll();
+          all.onsuccess = () => {
+            database.close();
+            resolve((all.result || []).some((project) => project.name === projectName));
+          };
+          all.onerror = () => {
+            database.close();
+            resolve(false);
+          };
         };
-        all.onerror = () => {
-          database.close();
-          resolve(false);
-        };
-      };
-      open.onerror = () => resolve(false);
-    }),
+        open.onerror = () => resolve(false);
+      });
+    },
     name,
     { timeout: 15_000 }
   );
@@ -139,7 +156,7 @@ export async function importMarkdown(page, markdown, fileName = "notes.md") {
         return /saved|written|record|写入|完成|imported|已写入|成功|写进/i.test(status)
           || (grid.includes(fileName) && /saved|written|record|写入|完成|imported|已写入|成功|写进/i.test(status));
       },
-      { timeout: 20_000 }
+      undefined, { timeout: 20_000 }
     );
   } catch (error) {
     const status = await page.evaluate(() => document.querySelector("#import-status")?.textContent || "(no status)");
@@ -180,7 +197,7 @@ export async function connectFakeModel(page, { port = 12934 } = {}) {
         const input = document.querySelector("#model");
         return input && input.value.trim() !== "";
       },
-      { timeout: 15_000 }
+      undefined, { timeout: 15_000 }
     );
   } catch (error) {
     const state = await page.evaluate(() => ({
@@ -261,7 +278,7 @@ export async function closeToEmptyDesk(page) {
   await page.reload();
   await page.waitForFunction(
     () => document.body.dataset.appReady === "ready",
-    { timeout: 45_000 }
+    undefined, { timeout: 45_000 }
   );
 }
 

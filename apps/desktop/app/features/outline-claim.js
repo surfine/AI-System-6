@@ -1,50 +1,15 @@
 // Feature module: outline-claim.
 
-// Loaded before app.js as a classic script; shares the AI System 6 global scope.
+// Lazy module: loaded as a classic script when a writing-route AI command is
+// summoned; shares the AI System 6 global scope. The Review Desk section
+// machinery and the shared Markdown helpers that eager surfaces call
+// synchronously live in app/core/review-sections.js — see the note there
+// before moving anything back.
 
+window.AISystem6OutlineClaimLoaded = true;
 
-let selectedClaimSectionIndex = 0;
 let currentClaimCheckScope = { type: "manuscript", label: "" };
 let currentClaimCheckFileId = "";
-
-// Shared heuristic for spotting checkable claims (numbers, years, percentages,
-// announcements, absolutes) used by both the local outline extraction and the
-// online claim check.
-const onlineClaimPattern = /(\d{4}|\d+%|\d+\s*(?:个|项|种|users?|features?)|宣布|推出|支持|更新|将|首次|available|announced|supports?|will|new\s+features?)/i;
-
-function stripRebuildMarkdownFence(markdown) {
-  return String(markdown || "")
-    .replace(/^```(?:markdown|md)?\s*/i, "")
-    .replace(/```\s*$/i, "")
-    .trim();
-}
-
-function getRebuildParagraphs(text) {
-  const blocks = String(text || "")
-    .split(/\n\s*\n+/)
-    .map((item) => item.replace(/\s+/g, " ").trim())
-    .filter((item) => item.length > 30);
-
-  if (blocks.length >= 3) return blocks;
-
-  return String(text || "")
-    .split(/(?<=[。！？.!?])\s+/)
-    .map((item) => item.replace(/\s+/g, " ").trim())
-    .filter((item) => item.length > 30);
-}
-
-function inferRebuildClaims(paragraphs) {
-  return paragraphs
-    .filter((paragraph) => onlineClaimPattern.test(paragraph))
-    .slice(0, 6)
-    .map((paragraph) => shortClaimText(paragraph, currentLanguage === "zh" ? 96 : 140));
-}
-
-function shortClaimText(text, max = 80) {
-  const clean = String(text || "").replace(/\s+/g, " ").trim();
-  if (clean.length <= max) return clean;
-  return `${clean.slice(0, Math.max(0, max - 1)).trim()}...`;
-}
 
 function validateGeneratedWritingOutline(markdown) {
   const content = String(markdown || "").trim();
@@ -933,81 +898,6 @@ ${currentDraft || "No draft yet. Give planning suggestions for starting this sec
   applySectionDraftMarkdown(content, { append: true, ai: true, statusKey: "section_draft_suggested" });
 }
 
-function openCitationContextItem(contextItem) {
-  if (!contextItem) {
-    setStatus(t("citation_not_found"));
-    return;
-  }
-
-  if (contextItem.kind === "scrap" && contextItem.id && isInActiveProject(contextItem)) {
-    selectedScrapId = contextItem.id;
-    selectedScrapIds.clear();
-    selectedScrapIds.add(contextItem.id);
-    renderScraps();
-    openWindow("scrapbook");
-    setStatus(contextSourceLabel(contextItem));
-    return;
-  }
-
-  if (contextItem.kind === "file" && contextItem.id && isInActiveProject(contextItem)) {
-    openTextFile(contextItem.id);
-    setStatus(contextSourceLabel(contextItem));
-    return;
-  }
-
-  if (contextItem.fromProjectReference && contextItem.referenceId && contextItem.projectId === activeProjectId) {
-    selectedProjectReferenceId = contextItem.referenceId;
-    renderProjectReferences();
-    openSelectedProjectReference();
-    setStatus(contextSourceLabel(contextItem));
-    return;
-  }
-
-  if (contextItem.source && contextItem.projectId === activeProjectId) {
-    selectedMountedFile = contextItem.source;
-    renderMountedTextDisk();
-    openWindow("textDisk");
-    openMountedTextFile(contextItem.source);
-    setStatus(contextSourceLabel(contextItem));
-    return;
-  }
-
-  setStatus(t("citation_not_found"));
-}
-
-function resolveCitationRef(ref) {
-  const rawRef = String(ref || "");
-  const exact = claimCitationContextItems.find((contextItem) =>
-    contextItem.citationId === rawRef
-  );
-  if (exact) return exact;
-
-  const sourceMatch = rawRef.match(/\[S(\d+)(?::(\d+))?\]/i);
-  if (sourceMatch) {
-    const sourceId = `S${sourceMatch[1]}`;
-    const sourceItem = buildProjectSourceRegistry().find((source) => source.sourceId === sourceId);
-    if (!sourceItem) return null;
-    const sourceKey = sourceItem.key;
-    const contextItems = claimCitationContextItems.filter((contextItem) => getContextSourceKey(contextItem) === sourceKey);
-    if (sourceMatch[2]) return contextItems[Number(sourceMatch[2]) - 1] || contextItems[0] || null;
-    return contextItems[0] || null;
-  }
-
-  const match = rawRef.match(/\[([MR])(\d+)\]/i);
-  if (!match) return null;
-  const prefix = match[1].toUpperCase();
-  const citationId = `[${prefix}${match[2]}]`;
-  const byCitationId = claimCitationContextItems.find((contextItem) =>
-    contextItem.citationId === citationId
-  );
-  if (byCitationId) return byCitationId;
-  const index = parseInt(match[2], 10) - 1;
-  const contextItems = claimCitationContextItems.filter((contextItem) =>
-    prefix === "M" ? contextItem.type === "curated" : contextItem.type === "ranked"
-  );
-  return contextItems[index] || null;
-}
-
 function getClaimCheckWritingObjectContext(project = getActiveProject()) {
   const parts = [];
   if (currentDocMap) {
@@ -1032,186 +922,6 @@ function getClaimCheckWritingObjectContext(project = getActiveProject()) {
   return parts.join("\n\n---\n\n");
 }
 
-function normalizeReviewSectionBlock(block, index = 0) {
-  const title = String(block?.title || "").trim() || `${t("claim_check_section")} ${index + 1}`;
-  const source = String(block?.source || block?.sourceMarkdown || "").trim();
-  const text = source || [`## ${title}`, block?.body || ""].filter(Boolean).join("\n\n");
-  return {
-    index,
-    title,
-    body: String(block?.body || "").trim(),
-    text: text.trim(),
-    offset: Math.max(0, Number(block?.offset) || 0),
-  };
-}
-
-function reviewMarkdownSectionBlocks(raw) {
-  const levelTwoBlocks = markdownDocumentSectionBlocks(raw, 2);
-  if (levelTwoBlocks.length) return levelTwoBlocks;
-
-  const levelOneBlocks = markdownDocumentSectionBlocks(raw, 1);
-  if (levelOneBlocks.length) return levelOneBlocks;
-
-  const levelThreeBlocks = markdownDocumentSectionBlocks(raw, 3);
-  if (levelThreeBlocks.length) return levelThreeBlocks;
-
-  return [];
-}
-
-function looksLikePlainReviewHeading(line, previousLine, nextLine) {
-  const text = String(line || "").replace(/\s+/g, " ").trim();
-  if (!text) return false;
-  if (text.length > 32) return false;
-  if (/^[>“"']/.test(text)) return false;
-  if (/[。！？!?，,；;：:]$/.test(text)) return false;
-  if (/^\s*(?:[-*+]|\d+[.)、])\s+/.test(text)) return false;
-
-  const hasBoundaryBefore = !String(previousLine || "").trim();
-  const hasBodyAfter = String(nextLine || "").trim().length >= 8;
-  if (!hasBoundaryBefore || !hasBodyAfter) return false;
-
-  return /^(?:第.{1,12}[章节]|[一二三四五六七八九十]+[、.]\s*.+|\d+[.)]\s*.+|[\p{L}\p{N}][\p{L}\p{N}\s&/＋+\-—：:·「」《》()（）]{0,31})$/u.test(text);
-}
-
-function plainReviewSectionBlocks(raw) {
-  const lines = normalizeMarkdownText(raw).split("\n");
-  const starts = [];
-
-  lines.forEach((line, index) => {
-    const previousLine = index > 0 ? lines[index - 1] : "";
-    const nextLine = lines.slice(index + 1).find((item) => item.trim()) || "";
-    if (looksLikePlainReviewHeading(line, previousLine, nextLine)) {
-      starts.push({ index, title: line.trim() });
-    }
-  });
-
-  if (starts.length < 2 || starts.length > 24) return [];
-
-  const blocks = starts.map((start, index) => {
-    const endLine = starts[index + 1]?.index ?? lines.length;
-    const sourceLines = trimMarkdownBlockLines(lines.slice(start.index, endLine));
-    const bodyLines = trimMarkdownBlockLines(sourceLines.slice(1));
-    const source = sourceLines.join("\n").trim();
-    return {
-      title: stripMarkdownInlineSyntax(start.title),
-      body: bodyLines.join("\n").trim(),
-      source,
-      offset: raw.indexOf(source),
-    };
-  }).filter((block) => block.source);
-
-  return blocks.length >= 2 ? blocks : [];
-}
-
-function getTeachTextSectionBlocks(body = teachTextBodyInput?.value || "") {
-  const raw = String(body || "").trim();
-  if (!raw) return [];
-
-  const markdownBlocks = reviewMarkdownSectionBlocks(raw);
-  const blocks = markdownBlocks.length ? markdownBlocks : plainReviewSectionBlocks(raw);
-
-  if (blocks.length) {
-    return blocks
-      .map((block, index) => normalizeReviewSectionBlock(block, index))
-      .filter((block) => block.text);
-  }
-
-  return [{
-    index: 0,
-    title: markdownDocumentTitle(raw) || t("claim_scope_manuscript"),
-    body: raw,
-    text: raw,
-    offset: 0,
-  }];
-}
-
-function getClaimCheckSectionBlocks(body = teachTextBodyInput?.value || "") {
-  return getTeachTextSectionBlocks(body);
-}
-
-function revealReviewDeskSection(index = selectedStyleSectionIndex) {
-  if (!reviewDeskBodyInput || getWindow("reviewDesk")?.classList.contains("is-hidden")) return;
-  const source = teachTextBodyInput?.value || "";
-  const sections = getTeachTextSectionBlocks(source);
-  const section = sections[Math.max(0, Math.min(sections.length - 1, Number(index) || 0))];
-  if (!section) return;
-
-  syncReviewDeskFromTeachText({ force: true });
-  reviewDeskBodyInput.classList.remove("is-hidden");
-  reviewDeskPreviewEl?.classList.add("is-hidden");
-  reviewDeskBodyInput.focus({ preventScroll: true });
-  reviewDeskBodyInput.setSelectionRange(0, Math.min(reviewDeskBodyInput.value.length, Math.max(1, section.title.length)));
-  reviewDeskBodyInput.scrollTop = 0;
-  scrollTextareaToOffset(teachTextBodyInput, section.offset || 0);
-}
-
-function selectedClaimCheckSection() {
-  const sections = getClaimCheckSectionBlocks();
-  if (!sections.length) return null;
-  selectedClaimSectionIndex = Math.max(0, Math.min(sections.length - 1, selectedClaimSectionIndex));
-  return sections[selectedClaimSectionIndex];
-}
-
-function renderClaimCheckSections() {
-  if (!claimSectionSelectEl) return;
-  const sections = getClaimCheckSectionBlocks();
-  const previous = selectedClaimSectionIndex;
-  claimSectionSelectEl.replaceChildren();
-
-  if (!sections.length) {
-    selectedClaimSectionIndex = 0;
-    claimSectionSelectEl.disabled = true;
-    [claimSectionPreviousButton, claimSectionNextButton].forEach((button) => {
-      if (button) button.disabled = true;
-    });
-    if (claimSectionMetaEl) claimSectionMetaEl.textContent = t("claim_section_empty");
-    updateReviewDeskStatusTitle?.();
-    return;
-  }
-
-  selectedClaimSectionIndex = Math.max(0, Math.min(sections.length - 1, previous));
-  sections.forEach((section, index) => {
-    const option = document.createElement("option");
-    option.value = String(index);
-    option.textContent = `${index + 1}. ${section.title}`;
-    claimSectionSelectEl.append(option);
-  });
-  claimSectionSelectEl.disabled = false;
-  claimSectionSelectEl.value = String(selectedClaimSectionIndex);
-  [claimSectionPreviousButton, claimSectionNextButton].forEach((button) => {
-    if (button) button.disabled = sections.length < 2;
-  });
-
-  const active = sections[selectedClaimSectionIndex];
-  if (claimSectionMetaEl) {
-    claimSectionMetaEl.textContent = t("claim_section_meta", selectedClaimSectionIndex + 1, sections.length, active.title);
-  }
-  updateReviewDeskStatusTitle?.();
-}
-
-function selectClaimCheckSection(index) {
-  const sections = getClaimCheckSectionBlocks();
-  if (!sections.length) {
-    renderClaimCheckSections();
-    return;
-  }
-  selectedClaimSectionIndex = Math.max(0, Math.min(sections.length - 1, Number.isFinite(index) ? index : 0));
-  selectedStyleSectionIndex = selectedClaimSectionIndex;
-  renderStyleCheckSections();
-  renderClaimCheckSections();
-  revealReviewDeskSection(selectedClaimSectionIndex);
-}
-
-function showAdjacentClaimCheckSection(direction) {
-  const sections = getClaimCheckSectionBlocks();
-  if (!sections.length) {
-    renderClaimCheckSections();
-    return;
-  }
-  const next = selectedClaimSectionIndex + direction;
-  selectClaimCheckSection((next + sections.length) % sections.length);
-}
-
 function claimCheckScopeLabel(scope) {
   if (scope?.type === "section") return scope.label || t("claim_check_section");
   return t("claim_scope_manuscript");
@@ -1227,15 +937,6 @@ function claimCheckQueryText(body) {
     claims.length ? `Likely claims:\n${claims.map((item) => `- ${item}`).join("\n")}` : "",
     clipContextContent(documentModel.plainText || body, 1800),
   ].filter(Boolean).join("\n\n");
-}
-
-function setClaimCheckWaiting(message) {
-  claimResultsEl.replaceChildren();
-  const waiting = document.createElement("div");
-  waiting.className = "empty-folder-note";
-  waiting.textContent = message;
-  claimResultsEl.append(waiting);
-  setStatus(message);
 }
 
 /**
@@ -1367,14 +1068,6 @@ function renderOnlineClaimResults(results, scope = {}) {
 
 function openOnlineCitationInReader(url) {
   return openClioWebCitationInReader(url);
-}
-
-function renderClaimCheckDraft(markdown) {
-  if (!claimResultsEl) return;
-  const clean = stripRebuildMarkdownFence(markdown);
-  claimResultsEl.innerHTML = clean.trim()
-    ? markdownToSystemHtml(clean)
-    : `<div class="empty-folder-note">${escapeHtml(t("running_check"))}</div>`;
 }
 
 async function runClaimCheck(options = {}) {

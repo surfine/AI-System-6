@@ -572,8 +572,9 @@ function lmStudioAutoloadContext(payload = {}, model = "") {
 }
 
 /**
- * Discover the chat models LM Studio knows about. Tries /api/v0/models
- * then /api/v1/models, returning the first non-empty chat-only list.
+ * Discover the chat models LM Studio knows about. Uses the native v1 REST
+ * inventory first and retains v0 only as a compatibility fallback for older
+ * LM Studio installations.
  * Mirrors `discoverLmStudioChatModels`.
  *
  * @param {string} baseUrl
@@ -582,7 +583,7 @@ function lmStudioAutoloadContext(payload = {}, model = "") {
  */
 async function discoverLmStudioChatModels(baseUrl, signal) {
   const root = String(baseUrl || LM_STUDIO_BASE_URL_DEFAULT).replace(/\/$/, "");
-  const candidates = [`${root}/api/v0/models`, `${root}/api/v1/models`];
+  const candidates = [`${root}/api/v1/models`, `${root}/api/v0/models`];
   const errors = [];
   for (const url of candidates) {
     try {

@@ -81,11 +81,11 @@ function connectChannels(instances) {
   const a = createLeaseInstance(storage);
   const b = createLeaseInstance(storage);
   connectChannels([a, b]);
-  const acquiredA = a.lease.acquire();
+  const acquiredA = await a.lease.acquire();
   test.assert(acquiredA.writer === true && acquiredA.readOnly === false, "the first instance acquires the write lease");
   test.assert(a.lease.isOwner() === true, "instance A is the writer");
   a.lease.initUi();
-  const acquiredB = b.lease.acquire();
+  const acquiredB = await b.lease.acquire();
   test.assert(acquiredB.writer === false && acquiredB.readOnly === true, "the second instance starts read-only");
   test.assert(b.lease.isReadOnly() === true, "instance B is read-only");
   test.assert(storage.has("ai-system6-write-lease"), "the lease is stored");
@@ -106,13 +106,13 @@ function connectChannels(instances) {
   test.assert(rejected?.code === "READ_ONLY_INSTANCE", "a read-only instance rejects mutating transactions");
 
   // B takes over: A loses the writer role and cancels its pending autosave.
-  const tookOver = b.lease.takeOver();
+  const tookOver = await b.lease.takeOver();
   test.assert(tookOver.writer === true, "takeover makes instance B the writer");
   test.assert(a.lease.isOwner() === false && a.lease.isReadOnly() === true, "instance A loses write access");
   test.assert(a.context.__autosaveCancelled === true, "the losing instance cancels pending autosave");
 
-  a.lease.release();
-  b.lease.release();
+  await a.lease.release();
+  await b.lease.release();
 }
 
 // A stale lease (heartbeat older than the stale window) can be re-acquired.
@@ -125,10 +125,10 @@ function connectChannels(instances) {
   }));
   const c = createLeaseInstance(storage);
   connectChannels([c]);
-  const acquired = c.lease.acquire();
+  const acquired = await c.lease.acquire();
   test.assert(acquired.writer === true, "a stale lease can be re-acquired");
   test.assert(c.lease.isOwner() === true, "the new instance becomes the writer");
-  c.lease.release();
+  await c.lease.release();
 }
 
 // A takeover through the localStorage fallback path also strips the writer.
@@ -137,8 +137,8 @@ function connectChannels(instances) {
   const a = createLeaseInstance(storage, { noBroadcastChannel: true });
   const b = createLeaseInstance(storage, { noBroadcastChannel: true });
   connectChannels([a, b]);
-  a.lease.acquire();
-  b.lease.acquire();
+  await a.lease.acquire();
+  await b.lease.acquire();
   // Force the storage-event fallback: replace the lease and deliver the event.
   const claim = {
     instanceId: b.lease.instanceId,
@@ -148,8 +148,8 @@ function connectChannels(instances) {
   storage.set("ai-system6-write-lease", JSON.stringify(claim));
   a.window.listeners.storage?.forEach((listener) => listener({ key: "ai-system6-write-lease", newValue: JSON.stringify(claim) }));
   test.assert(a.lease.isOwner() === false, "the storage fallback strips the old writer");
-  a.lease.release();
-  b.lease.release();
+  await a.lease.release();
+  await b.lease.release();
 }
 
 test.finish();

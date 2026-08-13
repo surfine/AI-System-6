@@ -14,12 +14,16 @@ const completeFamily = JSON.parse(read("assets/themes/classic/icons/classic-icon
 const runtime = JSON.parse(read("assets/themes/classic/icons/classic-core-icon-manifest.json"));
 const coreIds = continuity.coreBatches.classic;
 
-test.assert(continuity.schemaVersion === 1, "the six-era continuity ledger has a versioned contract");
+test.assert(continuity.schemaVersion === 2, "the six-era continuity ledger uses the semantic-anchor and provenance schema");
 test.assert(Object.keys(continuity.coreBatches).length === 6, "the ledger defines one progressive core batch for all six appearances");
-for (const ids of Object.values(continuity.coreBatches)) {
-  for (const id of ids) {
-    test.assert(!!continuity.semanticAnchors[id], `${id} has a stable semantic anchor`);
-  }
+for (const id of new Set(Object.values(continuity.coreBatches).flat())) {
+  test.assert(!!continuity.semanticAnchors[id], `${id} has a stable semantic anchor`);
+  test.assert(Boolean(continuity.semanticAnchors[id].semanticIdentity), `${id} names its stable semantic identity`);
+  test.assert(
+    continuity.semanticAnchors[id].identityAnchors.length >= 1
+    && continuity.semanticAnchors[id].identityAnchors.length <= 2,
+    `${id} keeps one or two identity anchors rather than a locked physical composition`,
+  );
 }
 
 test.assert(coreIds.length === 15, "Classic carries the fourteen locked objects plus File Floppy");
@@ -36,19 +40,36 @@ test.assert(family.coreOnly === true, "the family declares that unreviewed legac
 test.assertIncludes(family.selectionRecipe, "separate mask", "selection is documented as artwork plus mask");
 
 const nativeReplicas = Object.values(family.icons).filter((icon) => icon.sourceKind === "native-resource-replica");
-const semanticAdaptations = Object.values(family.icons).filter((icon) => icon.sourceKind === "reference-guided-semantic-adaptation");
 const adaptedIcons = Object.values(family.icons).filter((icon) => icon.sourceKind === "period-metaphor-stand-in");
-test.assert(nativeReplicas.length === 7, "seven direct counterparts reproduce the original System 6 resource exactly in the evidence build");
-test.assert(semanticAdaptations.length === 1, "Finder records the one semantic adaptation required by the smiling-system contract");
+test.assert(family.schemaVersion === 2 && family.runtimeAsset === false,
+  "the exact one-bit core ledger is evidence, not the shipped smooth runtime family");
+test.assert(nativeReplicas.length === 8, "eight direct counterparts, including Finder, reproduce the native System 6 resources in the evidence build");
 test.assert(adaptedIcons.length === 7, "seven product-specific metaphors require period pixel construction");
-test.assert(family.icons.finderApp.sourceKind === "reference-guided-semantic-adaptation", "Finder restores the friendly compact Macintosh from System identity evidence");
+test.assert(family.icons.finderApp.sourceKind === "native-resource-replica", "Finder evidence follows System ICN#3 instead of a remembered smiling-computer redraw");
 test.assert(source.icons.finderApp.source32.nativeReference.id === 3, "Finder records the System suitcase ICN# 3 evidence");
+test.assertIncludes(source.icons.finderApp.prototype, "list rows", "Finder records the native screen anatomy that the smooth runtime must preserve");
 test.assertIncludes(source.icons.assistant.source32.note, "provisional model reply is dashed", "ClioTalk documents the solid-user/dashed-reply contract");
 test.assert(source.icons.assistant.source32.art.some((operation) => operation[0] === "rect" && operation[1] === 12 && operation[2] === 17),
   "ClioTalk authors the reply dash runs on the one-bit grid");
 test.assert(nativeReplicas.every((icon) => icon.referenceDiffPixels === 0), "every direct historical evidence replica is pixel-identical to its native resource");
 
 test.assert(Object.keys(completeFamily.icons).length === 56, "the smooth Classic runtime covers all 56 canonical objects");
+test.assert(completeFamily.schemaVersion === 2 && completeFamily.runtimeAsset === true,
+  "the shipped Classic ledger is explicitly distinct from the exact evidence layer");
+test.assertIncludes(completeFamily.classicRetinaException, "Smooth vector", "Classic records the product-specific Retina SVG exception");
+test.assertIncludes(completeFamily.completeFamilyMeaning, "does not mean", "complete runtime coverage does not claim complete historical review");
+test.assert(completeFamily.icons.finderApp.provenanceClass === "A"
+  && completeFamily.icons.finderApp.historicalReviewStatus === "reference-validated",
+  "Classic Finder keeps direct native-evidence provenance and reference validation");
+test.assert(completeFamily.icons.multiFinderApp.provenanceClass === "C"
+  && completeFamily.icons.multiFinderApp.historicalReviewStatus === "historically-reviewed",
+  "Classic MultiFinder keeps honest original-design provenance and historical review");
+const finderComparison = completeFamily.icons.finderApp.referenceComparison;
+test.assert(finderComparison.result === "pass", "the smooth Finder runtime passes the native-anatomy comparison gate");
+test.assert(finderComparison.tolerantF1Within2px >= finderComparison.thresholds.minimumTolerantF1Within2px,
+  "the smooth Finder trace stays within two pixels of native ICN#3 ink");
+test.assert(finderComparison.bboxEdgeMaxDeltaPx <= finderComparison.thresholds.maximumBboxEdgeDeltaPx,
+  "the smooth Finder trace preserves native ICN#3 occupied bounds");
 for (const [id, entry] of Object.entries(completeFamily.icons)) {
   test.assert(entry.sizes[32] !== entry.sizes[16], `${id} owns separate 32 px and 16 px artwork`);
   test.assert(entry.masks[32] !== entry.masks[16], `${id} owns separate 32 px and 16 px masks`);
@@ -103,11 +124,13 @@ test.assertIncludes(iconCss, "stroke: none", "one-pixel mask runs are not expand
 const themeLab = read("app/features/theme-lab.js");
 const app = read("app.js");
 const labCss = read("styles/66-theme-lab.css");
-test.assertIncludes(themeLab, "Classic System 6 Vector Lab", "Theme Lab has a dedicated Classic vector acceptance surface");
-test.assertIncludes(themeLab, "Fifteen representative Finder objects", "Theme Lab reports its representative evidence batch honestly");
-test.assertIncludes(themeLab, "15 representative objects", "the Classic inspector key matches the evidence batch count");
+test.assertIncludes(themeLab, "Classic Priority Lineage Lab", "Theme Lab has a dedicated Classic smooth-vector lineage surface");
+test.assertIncludes(themeLab, "Sixteen priority objects", "Theme Lab reports the expanded continuity batch honestly");
+test.assertIncludes(themeLab, "16 priority objects", "the Classic inspector key matches the continuity priority count");
+test.assertIncludes(themeLab, "smooth Retina SVG family", "Theme Lab states the product-specific Retina SVG exception");
+test.assertIncludes(themeLab, "separate exact one-bit evidence layer", "Theme Lab keeps native anatomy owned by an exact evidence layer");
 test.assertIncludes(themeLab, "data-classic-icon-lab-grid", "the lab has an object-by-object core grid");
-test.assertIncludes(themeLab, "const coreIcons", "the lab uses the explicit 15-object acceptance list");
+test.assertIncludes(themeLab, "const coreIcons", "the lab uses the explicit 16-object priority list");
 test.assertIncludes(themeLab, "[32, 64, 128, 256]", "every icon is inspected at 1x, 2x, 4x, and 8x integer scales");
 test.assertIncludes(themeLab, "32 Selected", "the lab exercises the 32 px selected state");
 test.assertIncludes(themeLab, "16 Selected", "the lab exercises the 16 px selected state");

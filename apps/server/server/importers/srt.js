@@ -87,11 +87,12 @@ function parseStructuredSubtitleTranslations(content, count) {
  *   userPrompt: string,
  *   count: number,
  *   parseContent: (content: string) => string[] | null,
- *   options: { cloudActive?: boolean, cloudApiKey?: string, cloudBaseUrl?: string, cloudModel?: string, signal?: AbortSignal, onUsage?: (totalTokens: number) => void },
+ *   options: { cloudActive?: boolean, cloudApiKey?: string, cloudBaseUrl?: string, cloudModel?: string, cloudPinnedAddress?: string, cloudPinnedFamily?: number, signal?: AbortSignal, onUsage?: (totalTokens: number) => void, beforeCloudCall?: (payload: any) => any },
  *   model: string,
  *   structured: boolean,
  *   maxOutputTokens?: number,
  *   errorLabel?: string,
+ *   beforeCloudCall?: (payload: any) => any,
  * }} options
  * @returns {Promise<string[] | null>}
  */
@@ -128,6 +129,8 @@ async function runSubtitleCloudTranslation({
   }
 
   const apiKey = options.cloudApiKey;
+  let reservation = null;
+  const settleReservation = () => reservation?.settle();
   if (structured) {
     const payload = buildResponsesPayload({
       model,
@@ -137,34 +140,57 @@ async function runSubtitleCloudTranslation({
       reasoningEffort: responsesEffortForTask("subtitle"),
       maxOutputTokens,
     });
-    const data = await callResponsesJson({ apiKey, payload, signal: options.signal });
-    const content = extractResponsesText(data);
-    if (typeof options.onUsage === "function") {
-      options.onUsage(Number(data?.usage?.total_tokens || 0));
+    try {
+      reservation = options.beforeCloudCall?.(payload) || null;
+      const data = await callResponsesJson({
+        apiKey,
+        payload,
+        signal: options.signal,
+        onRequest: () => reservation?.markUpstreamStarted(),
+      });
+      reservation?.addUsage(data?.usage);
+      if (typeof options.onUsage === "function") {
+        options.onUsage(Number(data?.usage?.total_tokens || 0));
+      }
+      const content = extractResponsesText(data);
+      const structuredTexts = parseStructuredSubtitleTranslations(content, count);
+      if (structuredTexts) return structuredTexts;
+      return parseContent(content);
+    } finally {
+      settleReservation();
     }
-    const structuredTexts = parseStructuredSubtitleTranslations(content, count);
-    if (structuredTexts) return structuredTexts;
-    return parseContent(content);
   }
 
   const baseUrl = (options.cloudBaseUrl || "").replace(/\/$/, "");
   const targetUrl = `${baseUrl}/v1/chat/completions`;
-  const { response } = await postJsonWithFallback(
-    targetUrl,
-    { model, temperature: 0, messages },
-    options.signal,
-    { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" }
-  );
-  const raw = await response.text();
-  let data = {};
-  try { data = JSON.parse(raw); } catch { data = { raw }; }
-  if (!response.ok) {
-    throw new Error(data.detail || data.error?.message || raw || `${errorLabel} (${response.status}).`);
+  try {
+    const payload = { model, temperature: 0, messages };
+    reservation = options.beforeCloudCall?.(payload) || null;
+    const { response } = await postJsonWithFallback(
+      targetUrl,
+      payload,
+      options.signal,
+      { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      {
+        pinnedAddress: options.cloudPinnedAddress,
+        pinnedFamily: options.cloudPinnedFamily,
+        onRequest: () => reservation?.markUpstreamStarted(),
+      }
+    );
+    const raw = await response.text();
+    let data = {};
+    try { data = JSON.parse(raw); } catch { data = { raw }; }
+    if (!response.ok) {
+      throw new Error(data.detail || data.error?.message || raw || `${errorLabel} (${response.status}).`);
+    }
+    reservation?.addUsage(data?.usage);
+    if (typeof options.onUsage === "function") {
+      options.onUsage(Number(data?.usage?.total_tokens || 0));
+    }
+    return parseContent(data?.choices?.[0]?.message?.content || "");
+  } finally {
+    settleReservation();
   }
-  if (typeof options.onUsage === "function") {
-    options.onUsage(Number(data?.usage?.total_tokens || 0));
-  }
-  return parseContent(data?.choices?.[0]?.message?.content || "");
 }
 
 /**
@@ -449,7 +475,7 @@ function buildSubtitleTranslationParagraphs(blocks) {
  * @param {{ cloudActive?: boolean, cloudApiKey?: string, cloudBaseUrl?: string, cloudModel?: string, signal?: AbortSignal }} options
  * @returns {Promise<string[] | null>}
  */
-async function requestParagraphBatchTranslation(paragraphs, mode, options) {
+function requestParagraphBatchTranslation(paragraphs, mode, options) {
   const cloudActive = !!(options.cloudActive && options.cloudApiKey);
   const model = cloudActive ? (options.cloudModel || "deepseek-v4-flash") : visionOcrModel;
   const structured = cloudActive && isResponsesEligible({ baseUrl: options.cloudBaseUrl, model });

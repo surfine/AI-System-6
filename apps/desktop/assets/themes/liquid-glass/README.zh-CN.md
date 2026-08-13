@@ -1,54 +1,62 @@
-<!-- canonical-source: assets/themes/liquid-glass/README.md -->
-<!-- source-sha256: 0ac06566232605eb21a554bf3c8c9ef96e0afb34e1a9d766615227d4f6034c18 -->
+<!-- canonical-source: apps/desktop/assets/themes/liquid-glass/README.md -->
+<!-- source-sha256: c1d9993bcd61ef36910f3e5022ab2b11ff1903db66d7659397b050ff81ec35c5 -->
 <!-- 英文版为准；本译文仅供人类参考。 -->
 
 # Liquid Glass 图标家族
 
-本目录包含 AI System 6 完整的 56 项 macOS Tahoe 26 外观。每个语义对象都有一次
-独立生成的透明 Image Gen 主图；发布图标不包含 Apple 资源、截图裁切或描摹路径。
+本目录发布完整的 56 对象 macOS Tahoe 26 家族。跨时代连续性来自
+[icon-system-continuity.json](../icon-system-continuity.json) 中每个对象的
+`semanticIdentity` 与一至两个 `identityAnchors`，而不是固定容器或物理隐喻。
 
-## 运行时与尺寸政策
+该家族拥有已接受的透明 ImageGen 主图，但创作验收不等于历史验证。
+`priorityCore16` 以外的 40 个 ID 在逐项复核前继续保持历史待审；逐对象来源与状态
+记录于 [icon-provenance-matrix.json](../icon-provenance-matrix.json)。
 
-每个对象经审核的运行时来源是 `128-default` PNG。运行界面由浏览器将它缩小到 CSS
-显示尺寸。64、32、16 px 文件以及 Dark、Clear 外观，都是从同一主图确定性生成的
-Theme Lab 审查派生件。它们可用来检查缩放和材质表现，但不是分别创作的小尺寸图稿，
-也不会进入应用打包清单。
+## 实际运行时映射
 
-这是当前家族刻意选择的诚实方案：不再把机械缩小误称为原生构图。未来若真正创作紧
-凑尺寸家族，必须同时替换此政策与像素级门禁，不能只改构建器注释。
+运行时会按调用场景选择逐对象、逐 appearance PNG：mini／menu／control strip 与
+Finder list 使用 16 px，普通系统图标场景使用 32 px，desktop／large／Retina 场景
+使用 128 px；明确请求 64 px 的调用者与 Theme Lab 使用 64 px 层。其中 52 个对象的
+存储尺寸与 Dark／Clear appearance 仍是烘焙 ImageGen source 的确定性派生件，但
+runtime 不会在所有场景都缩小同一张 `128-default`。Finder、MultiFinder、Review
+Desk、ClioTalk 是已复核的 direct optical 例外。Finder 拥有 `base`／`panel`／`ink`；
+Review Desk 拥有 `backing`／`manuscript`／`correction`；ClioTalk 拥有
+`enclosure`／`panel`／`conversation`／`provisional`。这份图层信用不扩展到
+MultiFinder 或其余 52 个对象。
 
-## 材质与容器
+Theme Lab 显示 16 个优先对象。其 16 px 提示图会正确读取
+`icons/<id>-16-default.png`。Finder 与 MultiFinder 在这里使用已接受的光学运行时
+资产；Review Desk 与 ClioTalk 也使用已接受的 compact optical 图稿；其余对象仍是
+派生审查资产。静态 PNG 也无法折射背后的实时桌面。
 
-应用类对象可以使用系统圆角方形容器。Finder 对象、媒介、文件夹、文档、硬件、废
-纸篓与 Control Strip 保持自由轮廓。全家族不套用“渐变方块 + 白色 glyph”模板。
-视觉语言是薄而通透的玻璃、克制高光、蓝银折射边缘，以及在运行时缩小 128 px 审核
-来源后仍能辨认的简洁前景层。
+## Finder／MultiFinder — P0 已关闭
 
-## 连续性
+Finder 使用已批准的 ImageGen v2 Tahoe 蓝色外壳、独立半透明面孔／侧脸面板与墨迹。
+其独立 `base`、`panel`、`ink` 源图层可重组出创作身份，历史状态为
+`reference-validated`。MultiFinder 以当前 Tahoe Finder 身份加“多个”构成；它是
+C 级来源、`historically-reviewed`，并不宣称为原生复刻。两者在 Default、Dark、
+Clear 下都拥有直接构成的 128/64/32/16 光学运行时资产。
 
-全部 56 项都保持 [icon-system-continuity.json](../icon-system-continuity.json)
-记录的跨时代含义。DocMap 尤其必须是一张文档页，其标题线长成主干与分支；它不是
-地理地图，也不是没有页面的现代节点图。Finder 仍是微笑的紧凑 Macintosh，ClioTalk
-仍是实线用户气泡与虚线临时回复。
+## ClioTalk — Tahoe cell 已关闭
 
-## 文件与重建
+ClioTalk 现在采用 P-B layered glass conversation panel。两个不同的 interlocutor mark
+形成 conversation layer，provisional reply 是独立 source，而不是烘焙在 generic
+messaging glyph 上的 dashed edge。`enclosure`、`panel`、`conversation`、`provisional`
+canvas 在 128、64、32、16 px 分别创作，并在每个 tier 精确重组 Default runtime。
+结果为 `historically-reviewed`，但不是 reference-validated 或 native；blind-mix 状态
+仍为 `not-run`。
 
-- `icons/src/liquid-glass-imagegen-prompts.json` — 每个语义对象一次独立提示、来源和
-  尺寸政策。
-- `liquid-glass-icon-family.json` — 每项来源、尺寸、字节指标与语义测量。
-- `liquid-glass-icon-manifest.json` — 128 px Default 运行时映射。
-- `tooling/build-liquid-glass-imagegen-icons.mjs` — 从已接受透明主图生成确定性派生件、
-  manifest 与证据板。
+## 重建
 
-运行 `npm run build:liquid-glass-imagegen-icons` 可重建此家族。Theme Lab 保留
-64/32/16 与 Dark/Clear 派生件，用于浅色、深色、照片和高频背景的比较。应用包只
-发布 56 个运行时可达的 `*-128-default.png` 文件。
+执行完整家族构建链：
 
-## 证据与限制
+```sh
+npm run build:era-icons -- --theme liquid-glass
+```
 
-Tahoe 26 本地研究证据位于 git 忽略的 `internal/evidence/drafts/liquid-glass-reference/`。静态 PNG
-无法折射真实桌面，因此审查会改在代表性背景上检查可读性。Toolbar 与 sidebar 符号
-仍属于独立家族。
+该链先重建宽泛 ImageGen 家族，再把批准的 Finder 家谱覆盖层作为最终运行时步骤。
+只运行 `build:liquid-glass-imagegen-icons` 是中间的宽泛家族构建，不是 Finder 家谱
+终态。审核状态变化后，再生成来源矩阵与谱系审计。
 
-每项都使用 [icon-grid.mjs](../../../../../tooling/lib/icon-grid.mjs) 的共享网格。摆放保持
-一致且对象比例不变；本家族不修改共享网格目标。
+历史 Tahoe 截图仅作证据；产品图标不发布 Apple 图稿、截图裁片或描摹的 Apple
+路径。

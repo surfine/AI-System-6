@@ -8,7 +8,8 @@
 // Behavior parity with root server.js:
 // - Default provider is "lm-studio". Anything other than "ollama"
 //   falls through to the LM Studio URL shape (via getLocalUrls).
-// - LM Studio candidate order: /api/v0/models, /v1/models, /api/v1/models.
+// - LM Studio candidate order: native /api/v1/models, OpenAI-compatible
+//   /v1/models, then the legacy /api/v0/models compatibility fallback.
 // - Ollama candidate order: /v1/models, /api/tags.
 // - First candidate to return parsed models wins.
 // - Response includes models, chatModels, embeddingModels, source,
@@ -52,9 +53,9 @@ async function handleModels(req, res) {
     ];
   } else {
     candidates = [
-      `${baseUrl}/api/v0/models`,
-      modelsUrl,
       `${baseUrl}/api/v1/models`,
+      modelsUrl,
+      `${baseUrl}/api/v0/models`,
     ];
   }
   const errors = [];

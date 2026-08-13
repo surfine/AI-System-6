@@ -27,10 +27,18 @@ function syncWebInstallUi() {
   const button = document.querySelector("[data-action='install-web-app']");
   const hint = document.getElementById("web-install-hint");
   const standalone = isStandaloneWebApp();
-  if (button) button.hidden = standalone || (!deferredWebInstallPrompt && !isIosWebPlatform());
-  if (hint && standalone) {
-    hint.textContent = t("web_install_installed");
-    hint.hidden = false;
+  // iPhone and iPad have no install prompt to offer, so the Share steps are
+  // written out instead of hidden behind a button the platform cannot honour.
+  const iosSteps = !standalone && !deferredWebInstallPrompt && isIosWebPlatform();
+  if (button) button.hidden = standalone || iosSteps || !deferredWebInstallPrompt;
+  if (hint) {
+    if (standalone) {
+      hint.textContent = t("web_install_installed");
+      hint.hidden = false;
+    } else if (iosSteps) {
+      hint.textContent = t("web_install_ios_steps");
+      hint.hidden = false;
+    }
   }
   const canShare = typeof navigator.share === "function";
   document.querySelectorAll("[data-web-share-action]").forEach((button) => {

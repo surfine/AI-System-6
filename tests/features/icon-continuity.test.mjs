@@ -1,37 +1,22 @@
 // Cross-era icon continuity contract.
 //
 // One product object must stay the same thing across the six appearances while
-// every appearance owns independent artwork. Two rules carry that:
-//
-//   1. Objects with locked metaphors declare a metaphorKey and every migrated era
-//      ledger that draws them must use the same key.
-//   2. System objects deliberately have no key: each era reproduces its own
-//      operating system's prototype, so their prototype text must differ.
+// every appearance owns independent artwork. Schema v2 locks semantic identity
+// plus one or two recognition anchors; it deliberately does not lock one physical
+// enclosure, composition, silhouette, or material across eras.
 //
 // The semantic contract is checked in the ledgers; DocMap's contract is also
 // checked against rendered pixels, so honest prose cannot hide wrong artwork.
 
-import { createFeatureTest, exists, read, resolveProjectPath } from "../helpers/feature-test-harness.mjs";
+import { createFeatureTest, read, resolveProjectPath } from "../helpers/feature-test-harness.mjs";
 import { assertDocMapMetaphor, measureDocMapMetaphor } from "../../tooling/lib/docmap-metaphor-metrics.mjs";
 
 const test = createFeatureTest("icon-continuity");
 const continuity = JSON.parse(read("assets/themes/icon-system-continuity.json"));
 
-const CUSTOM_OBJECTS = ["finderApp", "searcher", "teachText", "assistant", "scrapbook", "reviewDesk", "docMap", "projectDisk"];
-const SYSTEM_OBJECTS = ["folder", "hardDisk", "trash", "document", "daHandler", "controlPanel"];
-const LEDGERS = [
-  { theme: "snow-leopard", path: "assets/themes/snow-leopard/icons/src/snow-leopard-core-icons.json" },
-  { theme: "yosemite", path: "assets/themes/yosemite/icons/src/yosemite-core-icons.json" },
-  { theme: "liquid-glass", path: "assets/themes/liquid-glass/icons/src/liquid-glass-core-icons.json" },
-];
-const MIGRATION_LEDGER_PATHS = {
-  classic: "assets/themes/classic/icons/src/classic-core-standins.json",
-  platinum: "assets/themes/platinum/icons/src/platinum-core-icons.json",
-  aqua: "assets/themes/aqua/icons/src/aqua-core-icons.json",
-  "snow-leopard": "assets/themes/snow-leopard/icons/src/snow-leopard-core-icons.json",
-  yosemite: "assets/themes/yosemite/icons/src/yosemite-core-icons.json",
-  "liquid-glass": "assets/themes/liquid-glass/icons/src/liquid-glass-core-icons.json",
-};
+const eraReference = JSON.parse(read("assets/themes/era-icon-reference.json"));
+const provenance = JSON.parse(read("assets/themes/icon-provenance-matrix.json"));
+const ERAS = ["classic", "platinum", "aqua", "snow-leopard", "yosemite", "liquid-glass"];
 const DOCMAP_ARTWORK = {
   classic: {
     family: "assets/themes/classic/icons/classic-icon-family.json",
@@ -59,92 +44,93 @@ const DOCMAP_ARTWORK = {
   },
 };
 
-// Ledgers name the drawn object either as a historical prototype or, for
-// Liquid Glass, as the symbol the layers build.
-const described = (icon) => icon?.prototype || icon?.symbol;
+test.assert(continuity.schemaVersion === 2, "the continuity ledger uses schema v2");
+test.assert(eraReference.schemaVersion === 2, "the era reference ledger uses schema v2");
+test.assertIncludes(eraReference.statusModel.familyCompleteness, "historical review remains pending",
+  "complete runtime coverage is explicitly independent from historical approval");
+test.assert(continuity.priorityCore16.length === 16, "the cross-era audit names exactly sixteen priority objects");
+test.assertIncludes(continuity.metaphorKeyRule, "DEPRECATED MIGRATION ONLY",
+  "legacy metaphor keys cannot lock one physical composition across eras");
 
-test.assertIncludes(continuity.metaphorKeyRule, "keep that one physical metaphor", "the contract states the metaphor rule");
-test.assertIncludes(continuity.metaphorKeyRule, "own prototype", "the contract states that system objects follow their era instead");
-
-for (const id of CUSTOM_OBJECTS) {
+for (const id of continuity.priorityCore16) {
   const anchor = continuity.semanticAnchors[id];
-  test.assert(Boolean(anchor?.metaphorKey), `${id} declares a metaphorKey in the continuity contract`);
-}
-for (const id of SYSTEM_OBJECTS) {
-  test.assert(!continuity.semanticAnchors[id]?.metaphorKey, `${id} carries no metaphorKey, because each era owns its prototype`);
+  test.assert(Boolean(anchor?.semanticIdentity), `${id} declares one stable semantic identity`);
+  test.assert(anchor.identityAnchors.length >= 1 && anchor.identityAnchors.length <= 2,
+    `${id} declares one or two identity anchors`);
+  test.assert(Array.isArray(anchor.allowedChanges) && anchor.allowedChanges.length > 0,
+    `${id} records what may change across eras`);
+  for (const era of ERAS) {
+    test.assert(Boolean(anchor.genreByEra[era]), `${id}/${era} assigns an era genre`);
+    test.assert(Boolean(anchor.eraTranslationByEra[era]), `${id}/${era} explains the target-era translation`);
+    test.assert(["A", "B", "C"].includes(anchor.provenanceClassByEra[era]), `${id}/${era} declares provenance A, B, or C`);
+    test.assert(["pending", "historically-reviewed", "reference-validated"].includes(anchor.reviewStatusByEra[era]),
+      `${id}/${era} declares an explicit historical-review state`);
+  }
+  test.assert(new Set(ERAS.map((era) => anchor.eraTranslationByEra[era])).size === ERAS.length,
+    `${id} keeps six independently described era translations`);
 }
 
-const ledgers = LEDGERS.filter((entry) => exists(entry.path))
-  .map((entry) => ({ ...entry, data: JSON.parse(read(entry.path)) }));
-test.assert(ledgers.length >= 3, "at least three era ledgers exist to compare");
+const finder = continuity.semanticAnchors.finderApp;
+const multiFinder = continuity.semanticAnchors.multiFinderApp;
+test.assert(ERAS.every((era) => finder.provenanceClassByEra[era] === "A"),
+  "Finder is grounded in a direct target-era prototype in every appearance");
+test.assert(new Set(ERAS.map((era) => finder.historicalPrototypeByEra[era])).size === ERAS.length,
+  "Finder names a different native prototype for every appearance");
+test.assertIncludes(finder.eraTranslationByEra.aqua, "Jaguar split smiling Finder face",
+  "Jaguar follows its split-face identity instead of a recoloured compact Macintosh");
+test.assertIncludes(finder.eraTranslationByEra["liquid-glass"], "separate translucent face layer",
+  "Liquid Glass follows Tahoe Finder anatomy instead of wrapping Classic hardware in glass");
+test.assert(ERAS.every((era) => multiFinder.provenanceClassByEra[era] === "C"),
+  "MultiFinder is honestly class C because no native icon resource is claimed");
+test.assert(Object.keys(multiFinder.historicalPrototypeByEra).length === 0,
+  "MultiFinder does not manufacture a direct native prototype claim");
+test.assert(ERAS.every((era) => Boolean(multiFinder.nearestAnalogByEra[era])),
+  "MultiFinder records its current-era Finder plus multiplicity analog in every appearance");
+const assistant = continuity.semanticAnchors.assistant;
+test.assert(assistant.semanticIdentity.includes("model reply remains provisional"),
+  "ClioTalk keeps the user/model conversation and provisional-reply meaning");
+test.assert(assistant.identityAnchors.includes("user/model duality")
+  && assistant.identityAnchors.includes("provisional reply cue"),
+  "ClioTalk keeps both recognition anchors without locking one physical bubble composition");
+for (const era of ERAS) {
+  test.assert(finder.reviewStatusByEra[era] === "reference-validated", `${era}/Finder passes its target-era native-evidence review`);
+  test.assert(multiFinder.reviewStatusByEra[era] === "historically-reviewed", `${era}/MultiFinder passes its honest class-C historical review`);
+}
 
-const allThemes = Object.keys(MIGRATION_LEDGER_PATHS).sort();
-for (const id of ["finderApp", "assistant"]) {
+for (const id of ["finderApp", "multiFinderApp"]) {
   const migration = continuity.semanticMigration[id];
-  test.assert(Boolean(migration), `${id} records the deliberate cross-era semantic migration`);
-  test.assert(
-    JSON.stringify([...migration.implemented, ...migration.pending].sort()) === JSON.stringify(allThemes),
-    `${id} migration accounts for every appearance without claiming unfinished artwork`,
-  );
-  for (const theme of migration.implemented) {
-    const data = JSON.parse(read(MIGRATION_LEDGER_PATHS[theme]));
-    const icon = data.icons?.[id];
-    test.assert(icon?.metaphorKey === continuity.semanticAnchors[id].metaphorKey,
-      `${theme}/${id} implements the migrated ${continuity.semanticAnchors[id].metaphorKey} metaphor`);
-  }
+  test.assert(JSON.stringify(migration.implemented) === JSON.stringify(ERAS),
+    `${id} records the completed six-appearance evidence/runtime migration`);
+  test.assert(Array.isArray(migration.pending) && migration.pending.length === 0,
+    `${id} has no unresolved era after the approved runtime overlay`);
 }
 
-for (const id of CUSTOM_OBJECTS) {
-  const expected = continuity.semanticAnchors[id].metaphorKey;
-  for (const ledger of ledgers) {
-    const icon = ledger.data.icons?.[id];
-    if (!icon) continue;
-    const migration = continuity.semanticMigration[id];
-    if (migration?.pending.includes(ledger.theme)) continue;
-    test.assert(icon.metaphorKey === expected,
-      `${ledger.theme}/${id} keeps the ${expected} metaphor (found ${icon.metaphorKey || "none"})`);
-  }
-}
-
-// Independent artwork: the prototype sentence itself must be era-specific, for
-// custom and system objects alike. Identical text across two eras is the first
-// symptom of one drawing being recoloured into another era.
-for (const id of [...CUSTOM_OBJECTS, ...SYSTEM_OBJECTS]) {
-  const prototypes = ledgers
-    .map((ledger) => described(ledger.data.icons?.[id]))
-    .filter(Boolean);
-  if (prototypes.length < 2) continue;
-  test.assert(new Set(prototypes).size === prototypes.length, `${id} describes a different prototype in each era`);
-}
-
-const snow = ledgers.find((entry) => entry.theme === "snow-leopard")?.data;
-const yosemite = ledgers.find((entry) => entry.theme === "yosemite")?.data;
-const glass = ledgers.find((entry) => entry.theme === "liquid-glass")?.data;
-if (snow && yosemite) {
-  test.assert(snow.icons.finderApp.prototype !== yosemite.icons.finderApp.prototype,
-    "pending Finder artwork remains independently described per era");
-  test.assert(snow.icons.assistant.metaphorKey === yosemite.icons.assistant.metaphorKey,
-    "the independently redrawn ClioTalk eras keep one semantic contract");
-}
-
-// Liquid Glass is the era most likely to drift into generic AI branding, so the
-// custom objects are checked by name as well as by key.
-if (glass) {
-  test.assert(glass.icons.finderApp.metaphorKey === "smiling-compact-macintosh",
-    "Finder is the friendly compact Macintosh in Liquid Glass");
-  test.assertIncludes(glass.icons.finderApp.symbol, "small smile",
-    "the Finder face is stated by name");
-  test.assert(glass.icons.assistant.metaphorKey === "solid-user-dashed-reply-balloons",
-    "ClioTalk exposes the solid-user/dashed-reply contract in Liquid Glass");
-  test.assertIncludes(glass.icons.assistant.symbol, "clearly dashed provisional model reply",
-    "the ClioTalk entry states why the reply outline is dashed");
-  test.assertIncludes(glass.icons.assistant.symbol, "never a sparkle",
-    "the ClioTalk entry still rules out the generic AI mark");
-  test.assertIncludes(glass.continuityRule, "rather than the Yosemite artwork placed inside a glass tile",
-    "the ledger rules out wrapping the previous era in glass");
-  for (const id of CUSTOM_OBJECTS) {
-    test.assert(described(glass.icons[id]) !== described(yosemite?.icons?.[id] || {}),
-      `${id} is drawn again for Liquid Glass rather than reused from 10.10`);
+test.assertIncludes(provenance.definitions.policy, "never upgrades historicalReviewStatus",
+  "generated acceptance and historical validation remain separate states");
+const priorityIds = new Set(continuity.priorityCore16);
+test.assert(provenance.coverage.priorityCore16Count === 16 && provenance.coverage.iconCountPerEra === 56,
+  "the provenance matrix preserves the 16-priority / 40-pending review boundary");
+for (const era of ERAS) {
+  const cells = provenance.eras[era].icons;
+  test.assert(Object.keys(cells).length === 56, `${era} provenance covers all 56 runtime objects`);
+  for (const [id, cell] of Object.entries(cells)) {
+    test.assert(cell.priorityCore16 === priorityIds.has(id), `${era}/${id} agrees with the priority-16 boundary`);
+    test.assert(cell.runtimeAssetStatus === "mapped", `${era}/${id} identifies the runtime-mapped asset`);
+    test.assert(cell.runtimeAsset === cell.runtimeAssetsByContext.ordinary
+      && Boolean(cell.runtimeAssetsByContext.compactMenuList)
+      && Boolean(cell.runtimeAssetsByContext.desktopLargeRetina)
+      && Boolean(cell.compatibilityManifestAsset),
+    `${era}/${id} separates real context dispatch from the compatibility manifest`);
+    if (["finderApp", "multiFinderApp"].includes(id)) {
+      test.assert(cell.historicalReviewStatus === (id === "finderApp" ? "reference-validated" : "historically-reviewed"),
+        `${era}/${id} carries the final evidence status from the continuity authority`);
+      test.assert(cell.blindMixStatus === "not-run",
+        `${era}/${id} records that the independent blind-mix review has not run`);
+    }
+    if (!cell.priorityCore16) {
+      test.assert(cell.historicalReviewStatus === "pending",
+        `${era}/${id} stays pending outside the priority audit instead of inheriting authoring acceptance`);
+    }
   }
 }
 

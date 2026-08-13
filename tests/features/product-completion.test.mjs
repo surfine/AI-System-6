@@ -26,8 +26,11 @@ const control = html.match(/<aside class="window control-panel[\s\S]*?<aside cla
 const applications = html.match(/<section class="window finder-window applications-window[\s\S]*?<section class="window draft-desk-window/)?.[0] || "";
 const desktop = html.match(/<section class="icon-column"[\s\S]*?<\/section>\s*<\/main>/)?.[0] || "";
 
-test.assertIncludes(guide, 'data-action="guide-start-quick-draft"', "Start Here makes the short-draft route primary");
-test.assertIncludes(guide, 'data-action="guide-start-route"', "Start Here names the long-project route separately");
+// Start Here orients and connects a model; it never opens a writing surface
+// for a first-time visitor. The writing routes stay where they live.
+test.assertNotIncludes(guide, 'data-action="guide-start-quick-draft"', "Start Here does not put a first-time visitor into a draft");
+test.assertIncludes(html, '<button data-workspace-capability="studio" data-action="guide-start-route"', "the long-project route stays in the Special menu");
+test.assertIncludes(desktop, 'data-action="open-quick-draft"', "the short-draft route stays on the desktop");
 test.assertIncludes(quickDraft, 'id="quick-draft-no-project"', "Draft Desk owns a no-project empty state");
 test.assertIncludes(quickDraft, "data-quick-draft-create-project", "one action creates the required project");
 test.assertMatches(desktopRuntime, /createDefaultProjectForDraftDesk[\s\S]*createProjectRecord[\s\S]*isProjectMounted = true[\s\S]*AISystem6QuickDraft\?\.open/, "the one action creates, mounts, and returns to Draft Desk");

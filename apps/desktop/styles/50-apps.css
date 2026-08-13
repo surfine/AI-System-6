@@ -3885,6 +3885,14 @@ body:not(.use-liquid-glass) .desktop-app-icon span[data-liquid-label="DAA Meme"]
   display: none;
 }
 
+/* Modern era rasters share the same semantic SVG envelope. Theme owners opt
+   in exactly one group, while source-size dispatch remains in system-icons.js. */
+.sys-icon-aqua,
+.sys-icon-snow-leopard,
+.sys-icon-yosemite {
+  display: none;
+}
+
 /* Reviewed Platinum PNGs are native 32/16 px pixel art. Preserve each
    authored pixel as an integer device-pixel block on high-density screens. */
 .sys-icon-platinum-raster {

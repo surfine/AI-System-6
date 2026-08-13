@@ -23,8 +23,9 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const themeDir = join(root, "apps/desktop/assets/themes/snow-leopard");
 const assetDir = join(themeDir, "icons");
 const acceptedImagegenSourceDir = join(assetDir, "imagegen-source");
-const sourceFile = join(assetDir, "apps/server/snow-leopard-core-icons.json");
+const sourceFile = join(assetDir, "src/snow-leopard-core-icons.json");
 const draftDir = join(root, "internal/evidence/drafts/era-icons");
+if (!existsSync(sourceFile)) throw new Error(`Missing Snow Leopard core-icon source ledger: ${sourceFile}`);
 const source = JSON.parse(readFileSync(sourceFile, "utf8"));
 const ids = Object.keys(source.icons);
 const sizes = [512, 128, 32, 16];
@@ -1507,7 +1508,7 @@ const family = {
   nativeSizes: sizes,
   referenceLedger: "icons/src/snow-leopard-core-icons.json",
   referenceBoard: "internal/evidence/drafts/era-icons/snow-leopard-core-reference-board.png",
-  sizeRule: "Runtime surfaces downscale the 128 px tier. For the twelve programmatic cores, 512 carries fine texture while 32 and 16 are separately composed review hints; accepted Image Gen cores use separately processed ledger artifacts.",
+  sizeRule: "Runtime selects the authored 16, 32, or 128 px tier by context. The 512 tier is review-only; accepted ImageGen cores use the size provenance recorded in their ledger.",
   selectionRecipe: "Finder selection belongs to the label and the view surface; normal and selected states use the same artwork.",
   icons: generated,
 };
@@ -1516,7 +1517,8 @@ writeFileSync(join(assetDir, "snow-leopard-core-icon-manifest.json"), `${JSON.st
 
 const familyFile = join(themeDir, "snow-leopard-icon-family.json");
 const eraFamily = JSON.parse(readFileSync(familyFile, "utf8"));
-eraFamily.runtimeSize = 128;
+eraFamily.runtimeSize = "contextual";
+eraFamily.runtimeSizesByContext = { compactMenuList: 16, ordinary: 32, desktopLargeRetina: 128 };
 eraFamily.reviewedCore = ids;
 eraFamily.coreBuilder = "tooling/build-snow-leopard-core-icons.mjs";
 for (const id of ids) {

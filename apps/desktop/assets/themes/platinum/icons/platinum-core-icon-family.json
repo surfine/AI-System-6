@@ -14,8 +14,8 @@
     "finderApp": {
       "label": "Finder / System",
       "genre": "system identity",
-      "prototype": "friendly Platinum compact Macintosh with eyes and a small smile on its screen",
-      "metaphorKey": "smiling-compact-macintosh",
+      "prototype": "Mac OS 9 Finder three-quarter lavender folder with a Finder face panel attached at the lower-left front",
+      "metaphorKey": "target-era-finder-identity",
       "referenceId": 31,
       "sourceKind": "measured-independent-pixel-construction",
       "reviewStatus": "accepted-core",
@@ -628,7 +628,7 @@
     "docMap": {
       "label": "DocMap",
       "genre": "application",
-      "prototype": "Platinum page whose heading runs branch into three inset nodes",
+      "prototype": "Platinum document page whose heading lines grow into a stem and three inset right-side branches",
       "metaphorKey": "branching-document-map",
       "referenceId": null,
       "sourceKind": "measured-independent-pixel-construction",

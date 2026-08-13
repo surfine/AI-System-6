@@ -16,8 +16,8 @@
     "finderApp": {
       "label": "Finder / System",
       "genre": "system identity",
-      "prototype": "friendly translucent ice-blue and milky-white compact Macintosh with a split blue-white smiling CRT face and a clear lower drive plinth",
-      "metaphorKey": "smiling-compact-macintosh",
+      "prototype": "Mac OS X 10.2 Jaguar low rectangular blue/light split smiling Finder face plaque with a thin profile division and defined bottom edge",
+      "metaphorKey": "target-era-finder-identity",
       "comparison": {
         "evidence": "guidebook-desktop-full.png",
         "crop": [
@@ -36,67 +36,67 @@
       },
       "metrics": {
         "16": {
-          "pixels": 148,
-          "colors": 45,
+          "pixels": 168,
+          "colors": 152,
           "bbox": {
             "minX": 1,
-            "minY": 1,
+            "minY": 2,
             "maxX": 14,
             "maxY": 13
           },
           "ink": {
             "minX": 1,
-            "minY": 1,
+            "minY": 2,
             "maxX": 14,
             "maxY": 13,
             "width": 14,
-            "height": 13
+            "height": 12
           },
           "gridShape": "square",
-          "sha256": "2e3bf41b2cb534825c0312e207cfff4feeac843608107caff6aac78afe9491b1",
-          "bytes": 418
+          "sha256": "48ceb1224e2cdcd7b20bf924bc1f3e10fe554a5c078735dc85e484d1f27af0fe",
+          "bytes": 523
         },
         "32": {
-          "pixels": 603,
-          "colors": 141,
+          "pixels": 700,
+          "colors": 534,
           "bbox": {
-            "minX": 3,
-            "minY": 3,
-            "maxX": 28,
+            "minX": 2,
+            "minY": 4,
+            "maxX": 29,
             "maxY": 28
           },
           "ink": {
-            "minX": 3,
-            "minY": 3,
-            "maxX": 28,
+            "minX": 2,
+            "minY": 4,
+            "maxX": 29,
             "maxY": 28,
-            "width": 26,
-            "height": 26
+            "width": 28,
+            "height": 25
           },
           "gridShape": "square",
-          "sha256": "8842b8d9940b3b32ff7d4152f6ace23ebca5d5e3312e6672f27d413811f121ec",
-          "bytes": 1092
+          "sha256": "7e2473e770f2465dfd479ee31ff9b6e3799c78dee71ea71f7104772aaa864ff8",
+          "bytes": 1482
         },
         "128": {
-          "pixels": 9650,
-          "colors": 5507,
+          "pixels": 9556,
+          "colors": 3342,
           "bbox": {
-            "minX": 11,
-            "minY": 11,
+            "minX": 12,
+            "minY": 18,
             "maxX": 115,
-            "maxY": 116
+            "maxY": 109
           },
           "ink": {
             "minX": 12,
-            "minY": 12,
+            "minY": 18,
             "maxX": 115,
-            "maxY": 115,
+            "maxY": 109,
             "width": 104,
-            "height": 104
+            "height": 92
           },
           "gridShape": "square",
-          "sha256": "cbfe657d1febf9242f1e613fe108dde5f1bff3f5028477721e701a79027da05e",
-          "bytes": 16852
+          "sha256": "be9d5eb6f4a48eade9b293880046e42affbb7ef00930cfb9ffe2adef8ddff4f3",
+          "bytes": 11475
         }
       },
       "runtimePixelMetrics": {
@@ -104,24 +104,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.6523,
-          "meanLum": 183.34,
-          "lumStd": 50.59,
-          "edgeEnergy": 85
+          "coverage": 0.6563,
+          "meanLum": 157.99,
+          "lumStd": 41.17,
+          "edgeEnergy": 55
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.5967,
-          "meanLum": 182.43,
-          "lumStd": 55.65,
-          "edgeEnergy": 280
+          "coverage": 0.6094,
+          "meanLum": 158.66,
+          "lumStd": 45.14,
+          "edgeEnergy": 186
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.5901,
-          "meanLum": 182.77,
-          "lumStd": 56.32,
-          "edgeEnergy": 416
+          "coverage": 0.5782,
+          "meanLum": 161.74,
+          "lumStd": 42.98,
+          "edgeEnergy": 237
         }
       }
     },

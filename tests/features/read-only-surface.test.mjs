@@ -31,7 +31,7 @@ function controlElement(id, tagName = "TEXTAREA") {
     addEventListener: () => {},
     visibilityState: "visible",
   };
-  instance.lease.acquire();
+  await instance.lease.acquire();
   test.assert(instance.context.document.body.dataset.writeMode === "writer", "the writer instance advertises write mode");
   test.assert(controls.every((control) => control.readOnly === false && control.disabled === false), "writer mode keeps declared mutating surfaces enabled");
   instance.lease.enterReadOnly("test");
@@ -52,7 +52,7 @@ function controlElement(id, tagName = "TEXTAREA") {
     addEventListener: () => {},
     visibilityState: "visible",
   };
-  instance.lease.acquire();
+  await instance.lease.acquire();
   instance.lease.enterHandoff("test");
   test.assert(instance.context.document.body.dataset.writeMode === "handoff", "handoff advertises its write mode");
   test.assert(controls.every((control) => control.readOnly === true && control.disabled === true), "handoff freezes new mutations");
@@ -61,7 +61,7 @@ function controlElement(id, tagName = "TEXTAREA") {
   instance.lease.restoreWriterAfterFailedHandoff();
   test.assert(instance.context.document.body.dataset.writeMode === "writer", "a failed handoff restores writer mode");
   test.assert(controls.every((control) => control.readOnly === false && control.disabled === false), "a failed handoff re-enables the declared surfaces");
-  instance.lease.release();
+  await instance.lease.release();
 }
 
 // Static contract: the freeze is declarative, and the core surfaces declare it.

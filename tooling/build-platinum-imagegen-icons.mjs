@@ -107,6 +107,8 @@ if (!existsSync(familyPath) || !existsSync(manifestPath)) {
 }
 const family = JSON.parse(readFileSync(familyPath, "utf8"));
 const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+const continuity = JSON.parse(readFileSync(join(root, "apps/desktop/assets/themes/icon-system-continuity.json"), "utf8"));
+const priorityCore16 = new Set(continuity.priorityCore16);
 const generated = {};
 
 for (const id of ICON_IDS) {
@@ -135,13 +137,15 @@ for (const id of ICON_IDS) {
     genre: spec.genre,
     physicalMetaphor: spec.body,
     semanticMark: spec.symbol,
-    metaphorKey: id === "finderApp"
-      ? "smiling-compact-macintosh"
-      : id === "multiFinderApp"
-        ? "paired-smiling-compact-macintoshes"
-        : undefined,
     sourceKind: "accepted-imagegen-period-pixel-redraw",
     reviewStatus: "accepted-imagegen",
+    authoringMethod: "image-generation-plus-deterministic-processing",
+    generationStatus: "technically-clean",
+    provenanceClass: continuity.semanticAnchors?.[id]?.provenanceClassByEra?.platinum || "C",
+    historicalReviewStatus: priorityCore16.has(id)
+      ? continuity.semanticAnchors?.[id]?.reviewStatusByEra?.platinum || "pending"
+      : "pending",
+    runtimeAsset: true,
     sourceNote: "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
     sizes,
     metrics,
@@ -152,8 +156,17 @@ generated.docMap.physicalMetaphor = "one Platinum document page whose heading li
 generated.docMap.metaphorMetrics = await measureDocMapMetaphor(join(sourceDir, "docMap-42.png"), "platinum");
 assertDocMapMetaphor(generated.docMap.metaphorMetrics, "platinum/docMap");
 
+family.schemaVersion = 2;
 family.generatedBy = "tooling/build-platinum-imagegen-icons.mjs";
 family.completeFamily = true;
+family.runtimeAsset = true;
+family.completeFamilyMeaning = "All 56 runtime ids resolve to technically accepted artwork. Historical review is a separate per-icon state.";
+family.generatedAcceptanceMeaning = "Authoring acceptance confirms source and technical quality; it never implies historical validation.";
+family.runtimeSize = "contextual";
+family.runtimeSizesByContext = { compactMenuList: 16, ordinary: 32, desktopLarge: 42 };
+family.compatibilityManifest = "platinum-icon-manifest.json";
+family.compatibilityManifestMeaning = "Stable 32 px SVG-wrapper mapping only; app/core/system-icons.js selects 16, 32, or 42 px by rendering context.";
+family.runtimeDispatch = "apps/desktop/app/core/system-icons.js";
 family.nativeSizes = [42, 32, 16];
 family.objects = ICON_IDS.length;
 family.reviewedFamily = ICON_IDS;

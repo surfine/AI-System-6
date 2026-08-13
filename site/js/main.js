@@ -1,15 +1,16 @@
 // AI System 6 official site - entry module. Progressive enhancement only:
 // with JS off the page is a readable document with a desktop screenshot.
 
-import { ERAS, setEra, onEraChange, prefetchEras, refreshIcons } from "./eras.js?v=20260814b";
-import { initBalloons, setBalloons, balloonsEnabled, flashBalloon } from "./balloon.js?v=20260814b";
-import { buildEraStrip } from "./timeline.js?v=20260814b";
-import { loadMachine, createMachine, warmAllFrames, machineManifest } from "./machine.js?v=20260814b";
-import { initRouteScene } from "./route.js?v=20260814b";
-import { initImpossible } from "./impossible.js?v=20260814b";
-import { initFloppies } from "./floppies.js?v=20260814b";
-import { initQuickTime } from "./quicktime.js?v=20260814b";
-import { initShareCard } from "./sharecard.js?v=20260814b";
+import { ERAS, setEra, onEraChange, prefetchEras, refreshIcons } from "./eras.js?v=20260814h";
+import { initBalloons, setBalloons, balloonsEnabled, flashBalloon } from "./balloon.js?v=20260814h";
+import { loadMachine, createMachine, warmAllFrames, machineManifest } from "./machine.js?v=20260814h";
+import { createDissolve } from "./dissolve.js?v=20260814h";
+import { initRouteScene } from "./route.js?v=20260814h";
+import { initImpossible } from "./impossible.js?v=20260814h";
+import { initFloppies } from "./floppies.js?v=20260814h";
+import { initQuickTime } from "./quicktime.js?v=20260814h";
+import { initArgument } from "./argument.js?v=20260814h";
+import { initShareCard } from "./sharecard.js?v=20260814h";
 
 const doc = document;
 doc.documentElement.classList.add("js");
@@ -90,12 +91,6 @@ function syncChecks() {
   appearanceItems.forEach((item) =>
     item.classList.toggle("is-active", item.getAttribute("data-appearance") === active));
   if (cycleItem) cycleItem.classList.toggle("is-active", !!cycleTimer);
-  const cycleBtn = doc.getElementById("cycle-btn");
-  if (cycleBtn) {
-    cycleBtn.setAttribute("aria-pressed", String(!!cycleTimer));
-    cycleBtn.classList.toggle("is-cycling", !!cycleTimer);
-    cycleBtn.querySelector(".cycle-label").textContent = cycleTimer ? "Stop the Show" : "Cycle Eras";
-  }
 }
 function stopCycle() {
   if (!cycleTimer) return;
@@ -129,22 +124,6 @@ if (cycleItem) {
 let wasCycling = false;
 try { wasCycling = localStorage.getItem("s6-site-theme-cycle") === "1"; } catch (e) {}
 if (wasCycling && !reducedMotion) startCycle();
-
-// The Cycle Eras button in the six-eras scene: the old appearance-cycling
-// recording, performed live by the page itself.
-const cycleBtn = doc.getElementById("cycle-btn");
-if (cycleBtn) {
-  cycleBtn.addEventListener("click", () => {
-    if (cycleTimer) stopCycle(); else startCycle();
-  });
-}
-// Grabbing a timeline by hand ends the show because the visitor took control.
-doc.addEventListener("input", (e) => {
-  if (e.target.closest(".era-range")) stopCycle();
-});
-doc.addEventListener("click", (e) => {
-  if (e.target.closest(".era-tick")) stopCycle();
-});
 
 onEraChange(syncChecks);
 syncChecks();
@@ -200,25 +179,15 @@ try {
   });
 }
 
-const heroMachine = doc.getElementById("hero-machine");
-if (heroMachine && machineReady) {
-  createMachine(heroMachine, { region: "full" });
+const heroDissolve = doc.getElementById("hero-dissolve");
+if (heroDissolve) {
+  createDissolve(heroDissolve);
+  initShareCard(doc.getElementById("snapshot-btn"));
   const prov = doc.getElementById("hero-provenance");
   const m = machineManifest();
   if (prov && m.build) {
     prov.textContent = "REAL SYSTEM CAPTURE / BUILD " + m.build;
-    prov.setAttribute("aria-label", `Every era is captured from the real AI System 6 build ${m.build}.`);
   }
-}
-buildEraStrip(doc.getElementById("hero-era-strip"), { big: false });
-
-const chatMachine = doc.getElementById("chat-machine");
-if (chatMachine && machineReady) {
-  createMachine(chatMachine, {
-    region: "assistant",
-    pad: 0.025,
-    alt: "The ClioTalk window from the captured desktop: “Connect AI to send a message.” One chat window among many working apps.",
-  });
 }
 
 const routeMachine = doc.getElementById("route-machine");
@@ -227,18 +196,6 @@ if (routeMachine && machineReady) {
   initRouteScene(doc.getElementById("route-stage"), viewer);
 } else {
   initRouteScene(doc.getElementById("route-stage"), null);
-}
-
-const eraMachine = doc.getElementById("era-machine");
-if (eraMachine) {
-  if (machineReady) createMachine(eraMachine, { region: "full" });
-  buildEraStrip(doc.getElementById("era-strip"), { big: true });
-  const snapshotButton = doc.getElementById("snapshot-btn");
-  if (machineReady) initShareCard(snapshotButton);
-  else {
-    snapshotButton.disabled = true;
-    snapshotButton.setAttribute("data-balloon", "Snapshot is unavailable until the desktop capture loads.");
-  }
 }
 
 const modelMachine = doc.getElementById("model-machine");
@@ -253,8 +210,13 @@ if (modelMachine && machineReady) {
 // Frames for the other five eras load once the visitor is likely to travel.
 if (machineReady) addEventListener("load", () => setTimeout(warmAllFrames, 2200));
 
-initImpossible(doc.getElementById("impossible-body"), doc.getElementById("impossible-status"));
-initFloppies(doc.getElementById("floppy-stage"));
+initImpossible(
+  doc.getElementById("proof-wall"),
+  doc.getElementById("impossible-body"),
+  doc.getElementById("impossible-status"),
+);
+initFloppies(doc.getElementById("floppy-wall"));
+initArgument(doc.getElementById("claim-list"));
 initQuickTime();
 
 /* ---------- Scene reveal ---------- */

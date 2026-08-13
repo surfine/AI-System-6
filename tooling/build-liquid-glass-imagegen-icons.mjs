@@ -19,7 +19,9 @@ const proofDir = join(root, "internal/evidence/drafts/liquid-glass-imagegen");
 const eraProofDir = join(root, "internal/evidence/drafts/era-icons");
 const themeDir = join(root, "apps/desktop/assets/themes/liquid-glass");
 const assetDir = join(themeDir, "icons");
-const ledgerFile = join(assetDir, "apps/server/liquid-glass-imagegen-prompts.json");
+const ledgerFile = join(assetDir, "src/liquid-glass-imagegen-prompts.json");
+const continuity = JSON.parse(readFileSync(join(root, "apps/desktop/assets/themes/icon-system-continuity.json"), "utf8"));
+const priorityCore16 = new Set(continuity.priorityCore16);
 const sizes = [128, 64, 32, 16];
 const appearances = ["default", "dark", "clear"];
 
@@ -84,9 +86,9 @@ function applyAppearance(imageData, appearance, size) {
       alpha *= 0.8;
     }
 
-    // The review-only small derivatives get a deterministic contrast pass
-    // after resampling. They are not separately authored artwork; runtime
-    // surfaces always downsample the reviewed 128 px default asset.
+    // Small derivatives get a deterministic contrast pass after resampling.
+    // They are not separately authored unless the object ledger says so, but
+    // the contextual runtime does consume the 16/32 Default tiers directly.
     if (size <= 32) {
       const contrast = size === 16 ? 1.16 : 1.08;
       red = (red - 128) * contrast + 128;
@@ -316,6 +318,7 @@ for (const id of ICON_IDS) {
 }
 
 const family = {
+  schemaVersion: 2,
   target: "macOS Tahoe 26 Liquid Glass",
   generatedBy: "tooling/build-liquid-glass-imagegen-icons.mjs",
   generationMode: "built-in Image Gen — one independent call per icon",
@@ -323,8 +326,15 @@ const family = {
   referenceBoard: "internal/evidence/drafts/liquid-glass-imagegen/liquid-glass-imagegen-master-board.png",
   sharedGeometryAcrossEras: false,
   completeFamily: true,
-  runtimeSize: 128,
-  sizePolicy: "Runtime surfaces downsample the reviewed 128 px Default asset. The 64/32/16 and Dark/Clear files are deterministic Theme Lab review derivatives, not separately authored artwork.",
+  runtimeAsset: true,
+  completeFamilyMeaning: "All 56 runtime ids resolve to technically accepted artwork. Historical review is a separate per-icon state.",
+  generatedAcceptanceMeaning: "Authoring acceptance confirms source and technical quality; it never implies historical validation.",
+  runtimeSize: "contextual",
+  runtimeSizesByContext: { compactMenuList: 16, ordinary: 32, desktopLargeRetina: 128 },
+  compatibilityManifest: "liquid-glass-icon-manifest.json",
+  compatibilityManifestMeaning: "Stable 128-default semantic mapping only; app/core/system-icons.js selects 16, 32, or 128 px Default art by rendering context.",
+  runtimeDispatch: "apps/desktop/app/core/system-icons.js",
+  sizePolicy: "The runtime selects 16, 32, or 128 px Default assets by context. The broad family's tiers and Dark/Clear appearances remain deterministic derivatives unless an object ledger explicitly records direct optical construction.",
   reviewedFamily: [...ICON_IDS],
   fallback: [],
   icons: {},
@@ -340,14 +350,16 @@ for (const spec of ICON_SPECS) {
     genre: spec.genre,
     physicalMetaphor: spec.body,
     semanticMark: spec.symbol,
-    metaphorKey: id === "finderApp"
-      ? "smiling-compact-macintosh"
-      : id === "multiFinderApp"
-        ? "paired-smiling-compact-macintoshes"
-        : undefined,
     tone: spec.tone,
     sourceKind: "imagegen-original-raster",
     reviewStatus: "accepted-imagegen",
+    authoringMethod: "image-generation-plus-deterministic-processing",
+    generationStatus: "technically-clean",
+    provenanceClass: continuity.semanticAnchors?.[id]?.provenanceClassByEra?.["liquid-glass"] || "C",
+    historicalReviewStatus: priorityCore16.has(id)
+      ? continuity.semanticAnchors?.[id]?.reviewStatusByEra?.["liquid-glass"] || "pending"
+      : "pending",
+    runtimeAsset: true,
     master: `internal/evidence/drafts/liquid-glass-imagegen/alpha/${id}.png`,
     masterSha256: sha256(masterBuffer),
     grid: {
@@ -359,6 +371,13 @@ for (const spec of ICON_SPECS) {
     appearanceSizes: {},
     metrics: {},
   };
+  if (id === "finderApp") {
+    entry.metaphorKey = "target-era-finder-identity";
+    entry.physicalMetaphor = "Tahoe Finder enclosure with a separate translucent light face/profile panel";
+  } else if (id === "multiFinderApp") {
+    entry.metaphorKey = "current-finder-identity-plus-multiplicity";
+    entry.physicalMetaphor = "current-era Finder identity repeated with a period-plausible overlap";
+  }
   for (const size of sizes) {
     for (const appearance of appearances) {
       const file = `${id}-${size}-${appearance}.png`;

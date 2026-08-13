@@ -5,6 +5,10 @@
   const STORAGE_KEY = "ai-system-6-cmf-studio-recipe";
   // How much dielectric specular a lit display keeps (see prepareLiveMaterials).
   const SCREEN_SPECULAR_INTENSITY = 0.15;
+  // Clearcoat is a second, independent specular layer: specularIntensity
+  // does not reach it, so a lit display kept a full-strength varnish that
+  // mirrored the neutral studio environment as an even grey veil.
+  const SCREEN_CLEARCOAT = 0.04;
   const RENDERER_VENDOR_URL = "/app/vendor/cmf-renderer.js?v=three-0.184.0-uv-channel-cache";
   // Only finishes Apple actually shipped on the part. Hexes are sampled from
   // Apple's own store swatches; the server keeps the same ids and values.
@@ -1198,6 +1202,20 @@
         if (material.emissiveMap && "specularIntensity" in material) {
           material.specularIntensity = SCREEN_SPECULAR_INTENSITY;
         }
+        // The MacBook's panel also ships a 0.25 clearcoat. That varnish is a
+        // separate lobe the line above cannot reach, and at envMapIntensity 1 it
+        // mirrored the studio back as the grey wash the demo kept showing. Leave
+        // the trace an anti-glare coating really has.
+        if (material.emissiveMap && "clearcoat" in material && material.clearcoat > SCREEN_CLEARCOAT) {
+          material.clearcoat = SCREEN_CLEARCOAT;
+        }
+        // The viewport grades the enclosure through ACES Filmic so aluminium and
+        // anodising read like a product shot. A lit display is not a surface
+        // being lit — it is a light source showing an already-graded picture, and
+        // the film curve rolled its highlights toward white and pulled the
+        // saturation out, which is the washed-out screen the demo kept showing.
+        // Opt the panel out of the curve so the wallpaper renders as authored.
+        if (material.emissiveMap) material.toneMapped = false;
         material.needsUpdate = true;
       });
       const namedPart = sourceMaterials

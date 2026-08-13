@@ -1,44 +1,55 @@
 {
-  "schemaVersion": 1,
-  "target": "Macintosh System 6-grounded smooth vector desktop object family",
+  "schemaVersion": 2,
+  "target": "Macintosh System 6-grounded smooth Retina SVG desktop object family",
   "generatedBy": "tooling/build-classic-family-icons.mjs",
   "sharedGeometryAcrossEras": false,
   "completeFamily": true,
+  "completeFamilyMeaning": "All 56 runtime ids have artwork and masks. This does not mean all 56 have passed historical review.",
+  "runtimeAsset": true,
+  "runtimeSize": "contextual",
+  "runtimeSizesByContext": {
+    "compactMenuList": 16,
+    "ordinaryDesktop": 32
+  },
+  "compatibilityManifest": "icons/classic-icon-manifest.json",
+  "compatibilityManifestMeaning": "Stable 32 px semantic mapping only; app/core/system-icons.js selects the authored 16 or 32 px SVG by rendering context.",
+  "runtimeDispatch": "apps/desktop/app/core/system-icons.js",
   "nativeSizes": [
     32,
     16
   ],
   "objects": 56,
-  "reviewedCore": [
-    "finderApp",
-    "folder",
+  "referenceValidated": [
     "hardDisk",
-    "trash",
+    "folder",
     "document",
-    "daHandler",
+    "trash",
+    "finderApp",
     "fileFloppy",
-    "projectDisk",
-    "searcher",
-    "teachText",
-    "scrapbook",
-    "assistant",
-    "controlPanel",
-    "reviewDesk",
-    "docMap"
+    "teachText"
   ],
-  "reviewedFamily": [
-    "startupDisk",
+  "historicallyReviewed": [
     "hardDisk",
     "folder",
     "document",
-    "applications",
     "trash",
     "finderApp",
     "fileFloppy",
     "assistant",
+    "projectDisk",
+    "reviewDesk",
+    "searcher",
+    "docMap",
+    "scrapbook",
+    "controlPanel",
+    "teachText",
+    "multiFinderApp"
+  ],
+  "pendingHistoricalReview": [
+    "startupDisk",
+    "applications",
     "quickDraft",
     "writingStudio",
-    "projectDisk",
     "projectDisc",
     "cloudModel",
     "cloudModelOff",
@@ -46,25 +57,19 @@
     "outline",
     "sectionDrafts",
     "manuscript",
-    "reviewDesk",
-    "searcher",
     "reader",
     "timeMachine",
-    "docMap",
     "clioStage",
     "clioChart",
     "liquidCover",
     "cmfStudio",
     "soundscape",
-    "scrapbook",
     "systemFolder",
     "helpFolder",
     "importUtility",
-    "controlPanel",
     "chooser",
     "systemHelp",
     "dictionary",
-    "teachText",
     "writingDemo",
     "chatFile",
     "chatImport",
@@ -76,7 +81,6 @@
     "documents",
     "alias",
     "systemFile",
-    "multiFinderApp",
     "daHandler",
     "writingBell",
     "trashFull",
@@ -85,8 +89,9 @@
     "controlStrip"
   ],
   "fallback": [],
-  "sourceBoundary": "Native System 6 resources own historical prototypes where a counterpart exists. Runtime files are smooth SVG traces or documented semantic adaptations; generated raster sketches never ship.",
-  "imageGenerationMode": "none-in-runtime-family",
+  "sourceBoundary": "Native System 6 resources own anatomy wherever a counterpart exists. Runtime files use the user's explicit smooth-Retina SVG exception; the evidence layer remains exact one-bit and non-runtime. Product-only artwork may use generated candidates, but authoring acceptance never implies historical validation.",
+  "classicRetinaException": "Smooth vector edge expression is intentional for present-day high-density displays. It is not an exact pixel replica and may not alter native silhouette, anatomy, proportions, or mask logic.",
+  "imageGenerationMode": "candidate-only; deterministic SVG is the runtime source",
   "sizePolicy": "32 px and 16 px are separate smooth SVG outputs with independent optical stroke/detail policies; runtime selects the authored size.",
   "selectionRecipe": "Invert artwork and paper within the separate mask; never ship a selected bitmap.",
   "icons": {
@@ -96,7 +101,13 @@
       "physicalMetaphor": "drive",
       "semanticMark": "startup",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "C",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -160,13 +171,19 @@
       "physicalMetaphor": "drive",
       "semanticMark": "disk",
       "sourceKind": "system6-prototype-smooth-vector-trace",
-      "reviewStatus": "accepted-core",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "reference-validated",
+      "blindMixStatus": null,
+      "provenanceClass": "A",
+      "runtimeAsset": true,
+      "reviewStatus": "reference-validated",
       "nativePrototype": {
         "file": "Apple HD SC Setup",
         "type": "ICN#",
         "id": 16646
       },
-      "sourceNote": "The original System 6 resource owns the silhouette and object grammar; the runtime redraw replaces its bitmap staircase with smooth Retina-safe SVG geometry.",
+      "sourceNote": "The original System 6 resource owns silhouette, anatomy, proportions, and object grammar. Per the project-specific Retina exception, runtime replaces only the bitmap staircase with smooth SVG edges.",
       "sizes": {
         "16": "hardDisk-16.svg",
         "32": "hardDisk-32.svg"
@@ -178,48 +195,63 @@
       "metrics": {
         "16": {
           "art": {
-            "pixels": 70,
+            "pixels": 55,
             "bbox": {
               "minX": 0,
-              "minY": 5,
+              "minY": 9,
               "maxX": 15,
-              "maxY": 12
+              "maxY": 14
             }
           },
           "mask": {
-            "pixels": 128,
+            "pixels": 96,
             "bbox": {
               "minX": 0,
-              "minY": 5,
+              "minY": 9,
               "maxX": 15,
-              "maxY": 12
+              "maxY": 14
             }
           },
-          "inkPixels": 70,
-          "inkCoverage": 0.2734
+          "inkPixels": 55,
+          "inkCoverage": 0.2148
         },
         "32": {
           "art": {
-            "pixels": 196,
+            "pixels": 132,
             "bbox": {
-              "minX": 1,
-              "minY": 11,
-              "maxX": 30,
-              "maxY": 25
+              "minX": 0,
+              "minY": 18,
+              "maxX": 31,
+              "maxY": 28
             }
           },
           "mask": {
-            "pixels": 450,
+            "pixels": 352,
             "bbox": {
-              "minX": 1,
-              "minY": 11,
-              "maxX": 30,
-              "maxY": 25
+              "minX": 0,
+              "minY": 18,
+              "maxX": 31,
+              "maxY": 28
             }
           },
-          "inkPixels": 196,
-          "inkCoverage": 0.1914
+          "inkPixels": 132,
+          "inkCoverage": 0.1289
         }
+      },
+      "referenceComparison": {
+        "method": "32px thresholded ink: exact IoU is diagnostic; two-pixel bidirectional tolerant F1 plus bounding-box delta gates smooth-trace anatomy",
+        "nativeInkPixels": 79,
+        "runtimeInkPixels": 132,
+        "inkIntersectionOverUnion": 0.5865,
+        "nativeCoveredByRuntimeWithin2px": 1,
+        "runtimeCoveredByNativeWithin2px": 0.9773,
+        "tolerantF1Within2px": 0.9885,
+        "bboxEdgeMaxDeltaPx": 0,
+        "thresholds": {
+          "minimumTolerantF1Within2px": 0.62,
+          "maximumBboxEdgeDeltaPx": 4
+        },
+        "result": "pass"
       }
     },
     "folder": {
@@ -228,13 +260,19 @@
       "physicalMetaphor": "folder",
       "semanticMark": "none",
       "sourceKind": "system6-prototype-smooth-vector-trace",
-      "reviewStatus": "accepted-core",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "reference-validated",
+      "blindMixStatus": null,
+      "provenanceClass": "A",
+      "runtimeAsset": true,
+      "reviewStatus": "reference-validated",
       "nativePrototype": {
         "file": "System Folder/Finder",
         "type": "ICN#",
         "id": 131
       },
-      "sourceNote": "The original System 6 resource owns the silhouette and object grammar; the runtime redraw replaces its bitmap staircase with smooth Retina-safe SVG geometry.",
+      "sourceNote": "The original System 6 resource owns silhouette, anatomy, proportions, and object grammar. Per the project-specific Retina exception, runtime replaces only the bitmap staircase with smooth SVG edges.",
       "sizes": {
         "16": "folder-16.svg",
         "32": "folder-32.svg"
@@ -246,48 +284,63 @@
       "metrics": {
         "16": {
           "art": {
-            "pixels": 80,
+            "pixels": 57,
             "bbox": {
               "minX": 0,
-              "minY": 2,
+              "minY": 4,
               "maxX": 15,
-              "maxY": 14
+              "maxY": 15
             }
           },
           "mask": {
-            "pixels": 181,
+            "pixels": 173,
             "bbox": {
               "minX": 0,
-              "minY": 2,
+              "minY": 4,
               "maxX": 15,
-              "maxY": 14
+              "maxY": 15
             }
           },
-          "inkPixels": 80,
-          "inkCoverage": 0.3125
+          "inkPixels": 57,
+          "inkCoverage": 0.2227
         },
         "32": {
           "art": {
-            "pixels": 198,
+            "pixels": 155,
             "bbox": {
-              "minX": 1,
-              "minY": 5,
-              "maxX": 30,
-              "maxY": 29
+              "minX": 0,
+              "minY": 8,
+              "maxX": 31,
+              "maxY": 30
             }
           },
           "mask": {
-            "pixels": 670,
+            "pixels": 658,
             "bbox": {
-              "minX": 1,
-              "minY": 5,
-              "maxX": 30,
-              "maxY": 29
+              "minX": 0,
+              "minY": 8,
+              "maxX": 31,
+              "maxY": 30
             }
           },
-          "inkPixels": 198,
-          "inkCoverage": 0.1934
+          "inkPixels": 155,
+          "inkCoverage": 0.1514
         }
+      },
+      "referenceComparison": {
+        "method": "32px thresholded ink: exact IoU is diagnostic; two-pixel bidirectional tolerant F1 plus bounding-box delta gates smooth-trace anatomy",
+        "nativeInkPixels": 113,
+        "runtimeInkPixels": 155,
+        "inkIntersectionOverUnion": 0.1964,
+        "nativeCoveredByRuntimeWithin2px": 1,
+        "runtimeCoveredByNativeWithin2px": 1,
+        "tolerantF1Within2px": 1,
+        "bboxEdgeMaxDeltaPx": 1,
+        "thresholds": {
+          "minimumTolerantF1Within2px": 0.62,
+          "maximumBboxEdgeDeltaPx": 4
+        },
+        "result": "pass"
       }
     },
     "document": {
@@ -296,13 +349,19 @@
       "physicalMetaphor": "paper",
       "semanticMark": "none",
       "sourceKind": "system6-prototype-smooth-vector-trace",
-      "reviewStatus": "accepted-core",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "reference-validated",
+      "blindMixStatus": null,
+      "provenanceClass": "A",
+      "runtimeAsset": true,
+      "reviewStatus": "reference-validated",
       "nativePrototype": {
         "file": "System Folder/Finder",
         "type": "ICN#",
         "id": 132
       },
-      "sourceNote": "The original System 6 resource owns the silhouette and object grammar; the runtime redraw replaces its bitmap staircase with smooth Retina-safe SVG geometry.",
+      "sourceNote": "The original System 6 resource owns silhouette, anatomy, proportions, and object grammar. Per the project-specific Retina exception, runtime replaces only the bitmap staircase with smooth SVG edges.",
       "sizes": {
         "16": "document-16.svg",
         "32": "document-32.svg"
@@ -314,48 +373,63 @@
       "metrics": {
         "16": {
           "art": {
-            "pixels": 85,
+            "pixels": 76,
             "bbox": {
               "minX": 2,
-              "minY": 0,
+              "minY": 1,
               "maxX": 13,
               "maxY": 15
             }
           },
           "mask": {
-            "pixels": 184,
+            "pixels": 175,
             "bbox": {
               "minX": 2,
-              "minY": 0,
+              "minY": 1,
               "maxX": 13,
               "maxY": 15
             }
           },
-          "inkPixels": 85,
-          "inkCoverage": 0.332
+          "inkPixels": 76,
+          "inkCoverage": 0.2969
         },
         "32": {
           "art": {
-            "pixels": 205,
+            "pixels": 181,
             "bbox": {
               "minX": 5,
-              "minY": 1,
+              "minY": 3,
               "maxX": 27,
               "maxY": 30
             }
           },
           "mask": {
-            "pixels": 675,
+            "pixels": 629,
             "bbox": {
               "minX": 5,
-              "minY": 1,
+              "minY": 3,
               "maxX": 27,
               "maxY": 30
             }
           },
-          "inkPixels": 205,
-          "inkCoverage": 0.2002
+          "inkPixels": 181,
+          "inkCoverage": 0.1768
         }
+      },
+      "referenceComparison": {
+        "method": "32px thresholded ink: exact IoU is diagnostic; two-pixel bidirectional tolerant F1 plus bounding-box delta gates smooth-trace anatomy",
+        "nativeInkPixels": 117,
+        "runtimeInkPixels": 181,
+        "inkIntersectionOverUnion": 0.0205,
+        "nativeCoveredByRuntimeWithin2px": 0.7778,
+        "runtimeCoveredByNativeWithin2px": 0.895,
+        "tolerantF1Within2px": 0.8323,
+        "bboxEdgeMaxDeltaPx": 3,
+        "thresholds": {
+          "minimumTolerantF1Within2px": 0.62,
+          "maximumBboxEdgeDeltaPx": 4
+        },
+        "result": "pass"
       }
     },
     "applications": {
@@ -364,7 +438,13 @@
       "physicalMetaphor": "folder",
       "semanticMark": "applications",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "C",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -428,13 +508,19 @@
       "physicalMetaphor": "trash",
       "semanticMark": "empty",
       "sourceKind": "system6-prototype-smooth-vector-trace",
-      "reviewStatus": "accepted-core",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "reference-validated",
+      "blindMixStatus": null,
+      "provenanceClass": "A",
+      "runtimeAsset": true,
+      "reviewStatus": "reference-validated",
       "nativePrototype": {
         "file": "System Folder/Finder",
         "type": "ICN#",
         "id": 130
       },
-      "sourceNote": "The original System 6 resource owns the silhouette and object grammar; the runtime redraw replaces its bitmap staircase with smooth Retina-safe SVG geometry.",
+      "sourceNote": "The original System 6 resource owns silhouette, anatomy, proportions, and object grammar. Per the project-specific Retina exception, runtime replaces only the bitmap staircase with smooth SVG edges.",
       "sizes": {
         "16": "trash-16.svg",
         "32": "trash-32.svg"
@@ -446,48 +532,63 @@
       "metrics": {
         "16": {
           "art": {
-            "pixels": 114,
+            "pixels": 112,
             "bbox": {
-              "minX": 2,
-              "minY": 0,
-              "maxX": 13,
-              "maxY": 15
+              "minX": 3,
+              "minY": 1,
+              "maxX": 12,
+              "maxY": 14
             }
           },
           "mask": {
-            "pixels": 152,
+            "pixels": 118,
             "bbox": {
-              "minX": 2,
-              "minY": 0,
-              "maxX": 13,
-              "maxY": 15
+              "minX": 3,
+              "minY": 1,
+              "maxX": 12,
+              "maxY": 14
             }
           },
-          "inkPixels": 114,
-          "inkCoverage": 0.4453
+          "inkPixels": 112,
+          "inkCoverage": 0.4375
         },
         "32": {
           "art": {
-            "pixels": 325,
+            "pixels": 300,
             "bbox": {
-              "minX": 4,
-              "minY": 1,
-              "maxX": 27,
-              "maxY": 30
+              "minX": 5,
+              "minY": 2,
+              "maxX": 26,
+              "maxY": 29
             }
           },
           "mask": {
-            "pixels": 533,
+            "pixels": 456,
             "bbox": {
-              "minX": 4,
-              "minY": 1,
-              "maxX": 27,
-              "maxY": 30
+              "minX": 5,
+              "minY": 2,
+              "maxX": 26,
+              "maxY": 29
             }
           },
-          "inkPixels": 325,
-          "inkCoverage": 0.3174
+          "inkPixels": 300,
+          "inkCoverage": 0.293
         }
+      },
+      "referenceComparison": {
+        "method": "32px thresholded ink: exact IoU is diagnostic; two-pixel bidirectional tolerant F1 plus bounding-box delta gates smooth-trace anatomy",
+        "nativeInkPixels": 238,
+        "runtimeInkPixels": 300,
+        "inkIntersectionOverUnion": 0.1002,
+        "nativeCoveredByRuntimeWithin2px": 0.958,
+        "runtimeCoveredByNativeWithin2px": 1,
+        "tolerantF1Within2px": 0.9785,
+        "bboxEdgeMaxDeltaPx": 2,
+        "thresholds": {
+          "minimumTolerantF1Within2px": 0.62,
+          "maximumBboxEdgeDeltaPx": 4
+        },
+        "result": "pass"
       }
     },
     "finderApp": {
@@ -495,15 +596,21 @@
       "genre": "application",
       "physicalMetaphor": "finder",
       "semanticMark": "finder",
-      "metaphorKey": "smiling-compact-macintosh",
-      "sourceKind": "system6-evidence-semantic-vector-adaptation",
-      "reviewStatus": "accepted-core",
+      "metaphorKey": "friendly-finder-identity",
+      "sourceKind": "system6-prototype-smooth-vector-trace",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "reference-validated",
+      "blindMixStatus": "not-run",
+      "provenanceClass": "A",
+      "runtimeAsset": true,
+      "reviewStatus": "reference-validated",
       "nativePrototype": {
         "file": "System Folder/System",
         "type": "ICN#",
         "id": 3
       },
-      "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
+      "sourceNote": "The original System 6 resource owns silhouette, anatomy, proportions, and object grammar. Per the project-specific Retina exception, runtime replaces only the bitmap staircase with smooth SVG edges.",
       "sizes": {
         "16": "finderApp-16.svg",
         "32": "finderApp-32.svg"
@@ -515,48 +622,63 @@
       "metrics": {
         "16": {
           "art": {
-            "pixels": 140,
+            "pixels": 113,
             "bbox": {
               "minX": 2,
-              "minY": 0,
+              "minY": 1,
               "maxX": 13,
-              "maxY": 15
+              "maxY": 14
             }
           },
           "mask": {
-            "pixels": 188,
+            "pixels": 164,
             "bbox": {
               "minX": 2,
-              "minY": 0,
+              "minY": 1,
               "maxX": 13,
-              "maxY": 15
+              "maxY": 14
             }
           },
-          "inkPixels": 140,
-          "inkCoverage": 0.5469
+          "inkPixels": 113,
+          "inkCoverage": 0.4414
         },
         "32": {
           "art": {
-            "pixels": 363,
+            "pixels": 184,
             "bbox": {
-              "minX": 4,
-              "minY": 1,
-              "maxX": 27,
-              "maxY": 31
+              "minX": 5,
+              "minY": 3,
+              "maxX": 26,
+              "maxY": 29
             }
           },
           "mask": {
-            "pixels": 700,
+            "pixels": 570,
             "bbox": {
-              "minX": 4,
-              "minY": 1,
-              "maxX": 27,
-              "maxY": 31
+              "minX": 5,
+              "minY": 3,
+              "maxX": 26,
+              "maxY": 29
             }
           },
-          "inkPixels": 363,
-          "inkCoverage": 0.3545
+          "inkPixels": 184,
+          "inkCoverage": 0.1797
         }
+      },
+      "referenceComparison": {
+        "method": "32px thresholded ink: exact IoU is diagnostic; two-pixel bidirectional tolerant F1 plus bounding-box delta gates smooth-trace anatomy",
+        "nativeInkPixels": 203,
+        "runtimeInkPixels": 184,
+        "inkIntersectionOverUnion": 0.0459,
+        "nativeCoveredByRuntimeWithin2px": 0.936,
+        "runtimeCoveredByNativeWithin2px": 0.8967,
+        "tolerantF1Within2px": 0.9159,
+        "bboxEdgeMaxDeltaPx": 2,
+        "thresholds": {
+          "minimumTolerantF1Within2px": 0.62,
+          "maximumBboxEdgeDeltaPx": 4
+        },
+        "result": "pass"
       }
     },
     "fileFloppy": {
@@ -564,14 +686,21 @@
       "genre": "hardware",
       "physicalMetaphor": "floppy",
       "semanticMark": "floppy",
+      "metaphorKey": "temporary-context-floppy",
       "sourceKind": "system6-prototype-smooth-vector-trace",
-      "reviewStatus": "accepted-core",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "reference-validated",
+      "blindMixStatus": null,
+      "provenanceClass": "A",
+      "runtimeAsset": true,
+      "reviewStatus": "reference-validated",
       "nativePrototype": {
         "file": "System Folder/Finder",
         "type": "ICN#",
         "id": 129
       },
-      "sourceNote": "The original System 6 resource owns the silhouette and object grammar; the runtime redraw replaces its bitmap staircase with smooth Retina-safe SVG geometry.",
+      "sourceNote": "The original System 6 resource owns silhouette, anatomy, proportions, and object grammar. Per the project-specific Retina exception, runtime replaces only the bitmap staircase with smooth SVG edges.",
       "sizes": {
         "16": "fileFloppy-16.svg",
         "32": "fileFloppy-32.svg"
@@ -583,48 +712,63 @@
       "metrics": {
         "16": {
           "art": {
-            "pixels": 136,
+            "pixels": 114,
             "bbox": {
-              "minX": 1,
-              "minY": 0,
+              "minX": 2,
+              "minY": 1,
               "maxX": 14,
               "maxY": 15
             }
           },
           "mask": {
-            "pixels": 221,
+            "pixels": 192,
             "bbox": {
-              "minX": 1,
-              "minY": 0,
+              "minX": 2,
+              "minY": 1,
               "maxX": 14,
               "maxY": 15
             }
           },
-          "inkPixels": 136,
-          "inkCoverage": 0.5313
+          "inkPixels": 114,
+          "inkCoverage": 0.4453
         },
         "32": {
           "art": {
-            "pixels": 384,
+            "pixels": 327,
             "bbox": {
-              "minX": 3,
-              "minY": 1,
-              "maxX": 29,
+              "minX": 4,
+              "minY": 2,
+              "maxX": 28,
               "maxY": 30
             }
           },
           "mask": {
-            "pixels": 807,
+            "pixels": 719,
             "bbox": {
-              "minX": 3,
-              "minY": 1,
-              "maxX": 29,
+              "minX": 4,
+              "minY": 2,
+              "maxX": 28,
               "maxY": 30
             }
           },
-          "inkPixels": 384,
-          "inkCoverage": 0.375
+          "inkPixels": 327,
+          "inkCoverage": 0.3193
         }
+      },
+      "referenceComparison": {
+        "method": "32px thresholded ink: exact IoU is diagnostic; two-pixel bidirectional tolerant F1 plus bounding-box delta gates smooth-trace anatomy",
+        "nativeInkPixels": 215,
+        "runtimeInkPixels": 327,
+        "inkIntersectionOverUnion": 0.1268,
+        "nativeCoveredByRuntimeWithin2px": 0.6605,
+        "runtimeCoveredByNativeWithin2px": 0.6667,
+        "tolerantF1Within2px": 0.6636,
+        "bboxEdgeMaxDeltaPx": 4,
+        "thresholds": {
+          "minimumTolerantF1Within2px": 0.62,
+          "maximumBboxEdgeDeltaPx": 4
+        },
+        "result": "pass"
       }
     },
     "assistant": {
@@ -632,9 +776,15 @@
       "genre": "application",
       "physicalMetaphor": "correspondence",
       "semanticMark": "assistant",
-      "metaphorKey": "solid-user-dashed-reply-balloons",
+      "metaphorKey": "conversation-with-provisional-reply",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-core",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "historically-reviewed",
+      "blindMixStatus": null,
+      "provenanceClass": "B",
+      "runtimeAsset": true,
+      "reviewStatus": "historically-reviewed",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -698,7 +848,13 @@
       "physicalMetaphor": "paper",
       "semanticMark": "pencil",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "C",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -762,7 +918,13 @@
       "physicalMetaphor": "typewriter",
       "semanticMark": "writing",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "C",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -825,9 +987,15 @@
       "genre": "hardware",
       "physicalMetaphor": "drive",
       "semanticMark": "project",
-      "metaphorKey": "labelled-external-volume",
+      "metaphorKey": "durable-project-volume",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-core",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "historically-reviewed",
+      "blindMixStatus": null,
+      "provenanceClass": "B",
+      "runtimeAsset": true,
+      "reviewStatus": "historically-reviewed",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -890,8 +1058,15 @@
       "genre": "hardware",
       "physicalMetaphor": "disc",
       "semanticMark": "project",
+      "metaphorKey": "finished-project-optical-media",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "B",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -955,7 +1130,13 @@
       "physicalMetaphor": "server",
       "semanticMark": "cloud",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "C",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -1019,7 +1200,13 @@
       "physicalMetaphor": "server",
       "semanticMark": "cloudOff",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "C",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -1083,7 +1270,13 @@
       "physicalMetaphor": "paper",
       "semanticMark": "question",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "C",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -1147,7 +1340,13 @@
       "physicalMetaphor": "cards",
       "semanticMark": "outline",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "C",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -1211,7 +1410,13 @@
       "physicalMetaphor": "paperStack",
       "semanticMark": "sections",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "C",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -1275,7 +1480,13 @@
       "physicalMetaphor": "manuscript",
       "semanticMark": "manuscript",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "C",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -1338,9 +1549,15 @@
       "genre": "application",
       "physicalMetaphor": "review",
       "semanticMark": "proof",
-      "metaphorKey": "marked-manuscript-with-lens",
+      "metaphorKey": "manuscript-proofing",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-core",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "historically-reviewed",
+      "blindMixStatus": null,
+      "provenanceClass": "B",
+      "runtimeAsset": true,
+      "reviewStatus": "historically-reviewed",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -1403,9 +1620,15 @@
       "genre": "application",
       "physicalMetaphor": "search",
       "semanticMark": "magnify",
-      "metaphorKey": "magnifier-over-page",
+      "metaphorKey": "search-and-discovery",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-core",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "historically-reviewed",
+      "blindMixStatus": null,
+      "provenanceClass": "B",
+      "runtimeAsset": true,
+      "reviewStatus": "historically-reviewed",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -1469,7 +1692,13 @@
       "physicalMetaphor": "book",
       "semanticMark": "reader",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "C",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -1533,7 +1762,13 @@
       "physicalMetaphor": "clock",
       "semanticMark": "archive",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "C",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -1598,7 +1833,13 @@
       "semanticMark": "none",
       "metaphorKey": "branching-document-map",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-core",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "historically-reviewed",
+      "blindMixStatus": null,
+      "provenanceClass": "B",
+      "runtimeAsset": true,
+      "reviewStatus": "historically-reviewed",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -1690,7 +1931,13 @@
       "physicalMetaphor": "stage",
       "semanticMark": "stage",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "C",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -1754,7 +2001,13 @@
       "physicalMetaphor": "easel",
       "semanticMark": "chart",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "C",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -1818,7 +2071,13 @@
       "physicalMetaphor": "cover",
       "semanticMark": "cover",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "C",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -1882,7 +2141,13 @@
       "physicalMetaphor": "swatches",
       "semanticMark": "swatches",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "C",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -1946,7 +2211,13 @@
       "physicalMetaphor": "speaker",
       "semanticMark": "sound",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "C",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -2009,9 +2280,15 @@
       "genre": "application",
       "physicalMetaphor": "album",
       "semanticMark": "scraps",
-      "metaphorKey": "bound-album-with-print",
+      "metaphorKey": "curated-clippings-album",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-core",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "historically-reviewed",
+      "blindMixStatus": null,
+      "provenanceClass": "A",
+      "runtimeAsset": true,
+      "reviewStatus": "historically-reviewed",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -2075,7 +2352,13 @@
       "physicalMetaphor": "folder",
       "semanticMark": "gear",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "C",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -2139,7 +2422,13 @@
       "physicalMetaphor": "folder",
       "semanticMark": "help",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "C",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -2203,7 +2492,13 @@
       "physicalMetaphor": "inbox",
       "semanticMark": "import",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "C",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -2267,7 +2562,13 @@
       "physicalMetaphor": "controlBoard",
       "semanticMark": "sliders",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-core",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "historically-reviewed",
+      "blindMixStatus": null,
+      "provenanceClass": "A",
+      "runtimeAsset": true,
+      "reviewStatus": "historically-reviewed",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -2331,7 +2632,13 @@
       "physicalMetaphor": "network",
       "semanticMark": "chooser",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "C",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -2395,7 +2702,13 @@
       "physicalMetaphor": "book",
       "semanticMark": "help",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "C",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -2459,7 +2772,13 @@
       "physicalMetaphor": "dictionary",
       "semanticMark": "dictionary",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "C",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -2522,15 +2841,21 @@
       "genre": "application",
       "physicalMetaphor": "paperPen",
       "semanticMark": "writing",
-      "metaphorKey": "writing-paper-and-pen",
+      "metaphorKey": "editable-writing-object",
       "sourceKind": "system6-prototype-smooth-vector-trace",
-      "reviewStatus": "accepted-core",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "reference-validated",
+      "blindMixStatus": null,
+      "provenanceClass": "A",
+      "runtimeAsset": true,
+      "reviewStatus": "reference-validated",
       "nativePrototype": {
         "file": "TeachText",
         "type": "ICN#",
         "id": 128
       },
-      "sourceNote": "The original System 6 resource owns the silhouette and object grammar; the runtime redraw replaces its bitmap staircase with smooth Retina-safe SVG geometry.",
+      "sourceNote": "The original System 6 resource owns silhouette, anatomy, proportions, and object grammar. Per the project-specific Retina exception, runtime replaces only the bitmap staircase with smooth SVG edges.",
       "sizes": {
         "16": "teachText-16.svg",
         "32": "teachText-32.svg"
@@ -2542,7 +2867,7 @@
       "metrics": {
         "16": {
           "art": {
-            "pixels": 77,
+            "pixels": 66,
             "bbox": {
               "minX": 1,
               "minY": 1,
@@ -2551,7 +2876,7 @@
             }
           },
           "mask": {
-            "pixels": 136,
+            "pixels": 113,
             "bbox": {
               "minX": 1,
               "minY": 1,
@@ -2559,31 +2884,46 @@
               "maxY": 14
             }
           },
-          "inkPixels": 77,
-          "inkCoverage": 0.3008
+          "inkPixels": 66,
+          "inkCoverage": 0.2578
         },
         "32": {
           "art": {
-            "pixels": 253,
+            "pixels": 290,
             "bbox": {
-              "minX": 1,
-              "minY": 1,
-              "maxX": 30,
-              "maxY": 30
+              "minX": 2,
+              "minY": 2,
+              "maxX": 29,
+              "maxY": 29
             }
           },
           "mask": {
-            "pixels": 483,
+            "pixels": 423,
             "bbox": {
-              "minX": 1,
-              "minY": 1,
-              "maxX": 30,
-              "maxY": 30
+              "minX": 2,
+              "minY": 2,
+              "maxX": 29,
+              "maxY": 29
             }
           },
-          "inkPixels": 253,
-          "inkCoverage": 0.2471
+          "inkPixels": 290,
+          "inkCoverage": 0.2832
         }
+      },
+      "referenceComparison": {
+        "method": "32px thresholded ink: exact IoU is diagnostic; two-pixel bidirectional tolerant F1 plus bounding-box delta gates smooth-trace anatomy",
+        "nativeInkPixels": 196,
+        "runtimeInkPixels": 290,
+        "inkIntersectionOverUnion": 0.1172,
+        "nativeCoveredByRuntimeWithin2px": 0.8673,
+        "runtimeCoveredByNativeWithin2px": 0.7931,
+        "tolerantF1Within2px": 0.8286,
+        "bboxEdgeMaxDeltaPx": 2,
+        "thresholds": {
+          "minimumTolerantF1Within2px": 0.62,
+          "maximumBboxEdgeDeltaPx": 4
+        },
+        "result": "pass"
       }
     },
     "writingDemo": {
@@ -2592,7 +2932,13 @@
       "physicalMetaphor": "paper",
       "semanticMark": "play",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "C",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -2656,7 +3002,13 @@
       "physicalMetaphor": "paper",
       "semanticMark": "chat",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "C",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -2720,7 +3072,13 @@
       "physicalMetaphor": "inbox",
       "semanticMark": "chat",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "C",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -2784,7 +3142,13 @@
       "physicalMetaphor": "monitor",
       "semanticMark": "status",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "C",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -2848,7 +3212,13 @@
       "physicalMetaphor": "indexBox",
       "semanticMark": "context",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "C",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -2912,7 +3282,13 @@
       "physicalMetaphor": "press",
       "semanticMark": "rebuild",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "C",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -2976,7 +3352,13 @@
       "physicalMetaphor": "stamp",
       "semanticMark": "forms",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "C",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -3040,7 +3422,13 @@
       "physicalMetaphor": "terminal",
       "semanticMark": "terminal",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "C",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -3104,7 +3492,13 @@
       "physicalMetaphor": "folder",
       "semanticMark": "documents",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "C",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -3168,7 +3562,13 @@
       "physicalMetaphor": "paper",
       "semanticMark": "alias",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "C",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -3232,7 +3632,13 @@
       "physicalMetaphor": "paper",
       "semanticMark": "gear",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "A",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -3295,9 +3701,15 @@
       "genre": "application",
       "physicalMetaphor": "finderPair",
       "semanticMark": "finder",
-      "metaphorKey": "paired-smiling-compact-macintoshes",
+      "metaphorKey": "current-finder-identity-plus-multiplicity",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "historically-reviewed",
+      "blindMixStatus": "not-run",
+      "provenanceClass": "C",
+      "runtimeAsset": true,
+      "reviewStatus": "historically-reviewed",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -3361,13 +3773,19 @@
       "physicalMetaphor": "briefcase",
       "semanticMark": "deskAccessory",
       "sourceKind": "system6-prototype-smooth-vector-trace",
-      "reviewStatus": "accepted-core",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "A",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": {
         "file": "System Folder/Finder",
         "type": "ICN#",
         "id": 133
       },
-      "sourceNote": "The original System 6 resource owns the silhouette and object grammar; the runtime redraw replaces its bitmap staircase with smooth Retina-safe SVG geometry.",
+      "sourceNote": "The original System 6 resource owns silhouette, anatomy, proportions, and object grammar. Per the project-specific Retina exception, runtime replaces only the bitmap staircase with smooth SVG edges.",
       "sizes": {
         "16": "daHandler-16.svg",
         "32": "daHandler-32.svg"
@@ -3379,7 +3797,7 @@
       "metrics": {
         "16": {
           "art": {
-            "pixels": 89,
+            "pixels": 83,
             "bbox": {
               "minX": 1,
               "minY": 1,
@@ -3388,7 +3806,7 @@
             }
           },
           "mask": {
-            "pixels": 136,
+            "pixels": 112,
             "bbox": {
               "minX": 1,
               "minY": 1,
@@ -3396,31 +3814,46 @@
               "maxY": 14
             }
           },
-          "inkPixels": 89,
-          "inkCoverage": 0.3477
+          "inkPixels": 83,
+          "inkCoverage": 0.3242
         },
         "32": {
           "art": {
-            "pixels": 225,
+            "pixels": 251,
             "bbox": {
-              "minX": 1,
-              "minY": 1,
-              "maxX": 30,
-              "maxY": 30
+              "minX": 2,
+              "minY": 2,
+              "maxX": 29,
+              "maxY": 29
             }
           },
           "mask": {
-            "pixels": 480,
+            "pixels": 420,
             "bbox": {
-              "minX": 1,
-              "minY": 1,
-              "maxX": 30,
-              "maxY": 30
+              "minX": 2,
+              "minY": 2,
+              "maxX": 29,
+              "maxY": 29
             }
           },
-          "inkPixels": 225,
-          "inkCoverage": 0.2197
+          "inkPixels": 251,
+          "inkCoverage": 0.2451
         }
+      },
+      "referenceComparison": {
+        "method": "32px thresholded ink: exact IoU is diagnostic; two-pixel bidirectional tolerant F1 plus bounding-box delta gates smooth-trace anatomy",
+        "nativeInkPixels": 138,
+        "runtimeInkPixels": 251,
+        "inkIntersectionOverUnion": 0.0346,
+        "nativeCoveredByRuntimeWithin2px": 0.6884,
+        "runtimeCoveredByNativeWithin2px": 0.5936,
+        "tolerantF1Within2px": 0.6375,
+        "bboxEdgeMaxDeltaPx": 2,
+        "thresholds": {
+          "minimumTolerantF1Within2px": 0.62,
+          "maximumBboxEdgeDeltaPx": 4
+        },
+        "result": "pass"
       }
     },
     "writingBell": {
@@ -3429,7 +3862,13 @@
       "physicalMetaphor": "bell",
       "semanticMark": "bell",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "C",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -3493,7 +3932,13 @@
       "physicalMetaphor": "trash",
       "semanticMark": "full",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "C",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -3557,7 +4002,13 @@
       "physicalMetaphor": "controlBoard",
       "semanticMark": "knobs",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "C",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -3621,7 +4072,13 @@
       "physicalMetaphor": "chip",
       "semanticMark": "none",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "C",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {
@@ -3685,7 +4142,13 @@
       "physicalMetaphor": "strip",
       "semanticMark": "none",
       "sourceKind": "product-semantic-smooth-vector",
-      "reviewStatus": "accepted-family",
+      "authoringMethod": "deterministic smooth SVG reconstruction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "blindMixStatus": null,
+      "provenanceClass": "C",
+      "runtimeAsset": true,
+      "reviewStatus": "pending",
       "nativePrototype": null,
       "sourceNote": "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
       "sizes": {

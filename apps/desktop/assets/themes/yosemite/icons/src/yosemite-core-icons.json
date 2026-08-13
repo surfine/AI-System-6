@@ -246,9 +246,9 @@
     "finderApp": {
       "label": "Finder / System",
       "genre": "system identity",
-      "prototype": "flat frontal white compact Macintosh with a cyan-blue and white split smiling screen and a simple lower drive plinth",
-      "metaphorKey": "smiling-compact-macintosh",
-      "container": "rounded-square",
+      "prototype": "OS X 10.10 low rounded blue/light split Finder face with pill eyes, a continuous smile, thin keyline, and shallow depth",
+      "metaphorKey": "target-era-finder-identity",
+      "container": "low rounded Finder face plaque",
       "comparison": {
         "evidence": "web/finder.png"
       }

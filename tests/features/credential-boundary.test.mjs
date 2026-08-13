@@ -147,15 +147,100 @@ const stagedId = credentialVault.stageCloudCredential({
 const resolvedSecret = await credentialVault.resolveCloudCredential({
   credentialId: stagedId,
   provider: "test-provider",
+  targetBaseUrl: "https://example.invalid",
 });
 test.assert(resolvedSecret === "server-only-secret", "the local service resolves a staged credential by ID");
+let scopeMismatch = null;
+try {
+  await credentialVault.resolveCloudCredential({
+    credentialId: stagedId,
+    provider: "test-provider",
+    targetBaseUrl: "https://other.example.invalid",
+  });
+} catch (error) {
+  scopeMismatch = error;
+}
+test.assert(
+  scopeMismatch?.code === "credential_scope_mismatch"
+    && !String(scopeMismatch?.message || "").includes("server-only-secret"),
+  "a staged credential is rejected before use when the target scope changes"
+);
 const ignoredDirectSecret = await credentialVault.resolveCloudCredential({
   provider: "test-provider",
+  targetBaseUrl: "https://example.invalid",
   suppliedApiKey: "request-secret",
   allowSupplied: false,
 });
 test.assert(!ignoredDirectSecret, "local routes do not accept a request-supplied key as a model credential");
 credentialVault.discardStagedCredential(stagedId);
+
+const normalizedScopeId = credentialVault.createCredentialId("deepseek", "https://EXAMPLE.invalid/api/");
+test.assert(
+  normalizedScopeId === credentialVault.createCredentialId("DeepSeek", "https://example.invalid/api"),
+  "provider case and a trailing slash normalize to the same credential scope"
+);
+test.assert(
+  normalizedScopeId !== credentialVault.createCredentialId("other", "https://example.invalid/api")
+    && normalizedScopeId !== credentialVault.createCredentialId("deepseek", "https://example.invalid:8443/api")
+    && normalizedScopeId !== credentialVault.createCredentialId("deepseek", "https://example.invalid/other"),
+  "provider, port, and path remain distinct credential scopes"
+);
+
+const expiryStart = 10_000;
+const expiringId = credentialVault.stageCloudCredential({
+  provider: "expiry-test",
+  baseUrl: "https://expiry.example.invalid",
+  apiKey: "expiry-secret",
+  now: expiryStart,
+});
+const expiredSecret = await credentialVault.resolveCloudCredential({
+  credentialId: expiringId,
+  provider: "expiry-test",
+  targetBaseUrl: "https://expiry.example.invalid",
+  now: expiryStart + credentialVault.stagedCredentialConfig.ttlMs,
+});
+test.assert(!expiredSecret, "expired service-session credentials cannot be resolved");
+
+const evictionIds = [];
+for (let index = 0; index <= credentialVault.stagedCredentialConfig.maxEntries; index += 1) {
+  evictionIds.push(credentialVault.stageCloudCredential({
+    provider: "eviction-test",
+    baseUrl: `https://eviction.example.invalid/${index}`,
+    apiKey: `eviction-secret-${index}`,
+    now: 20_000 + index,
+  }));
+}
+const evictedSecret = await credentialVault.resolveCloudCredential({
+  credentialId: evictionIds[0],
+  provider: "eviction-test",
+  targetBaseUrl: "https://eviction.example.invalid/0",
+  now: 30_000,
+});
+const newestSecret = await credentialVault.resolveCloudCredential({
+  credentialId: evictionIds.at(-1),
+  provider: "eviction-test",
+  targetBaseUrl: `https://eviction.example.invalid/${credentialVault.stagedCredentialConfig.maxEntries}`,
+  now: 30_000,
+});
+test.assert(!evictedSecret && newestSecret, "the staged credential cap safely evicts the oldest session entry");
+evictionIds.forEach((credentialId) => credentialVault.discardStagedCredential(credentialId));
+
+const priorDeepSeekKey = process.env.DEEPSEEK_API_KEY;
+process.env.DEEPSEEK_API_KEY = "environment-secret-test";
+const trustedEnvironmentSecret = await credentialVault.resolveCloudCredential({
+  provider: "deepseek",
+  targetBaseUrl: "https://api.deepseek.com",
+});
+const customEnvironmentSecret = await credentialVault.resolveCloudCredential({
+  provider: "deepseek",
+  targetBaseUrl: "https://custom.example.invalid",
+});
+if (priorDeepSeekKey === undefined) delete process.env.DEEPSEEK_API_KEY;
+else process.env.DEEPSEEK_API_KEY = priorDeepSeekKey;
+test.assert(
+  trustedEnvironmentSecret === "environment-secret-test" && !customEnvironmentSecret,
+  "the DeepSeek environment key is available only to a trusted DeepSeek target"
+);
 
 const settingsStart = persistence.indexOf("function settingsSnapshotPayload()");
 const settingsEnd = persistence.indexOf("function storageSnapshotChanged", settingsStart);

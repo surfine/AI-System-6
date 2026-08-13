@@ -1,12 +1,10 @@
 // Cross-era icon continuity board.
 //
 // One row per semantic object, one column per appearance. The board is the
-// acceptance surface for the rule in assets/themes/icon-system-continuity.json:
-// a product object keeps one physical metaphor across the six appearances while
-// every appearance owns independent artwork.
-//
-// It also reports which objects still fall back to the shared generated painter,
-// so the remaining work is visible instead of implied.
+// audit surface for assets/themes/icon-system-continuity.json: a product object
+// keeps its semantic identity while every appearance owns an era translation.
+// Runtime coverage and historical review are intentionally shown as separate
+// facts; technically accepted artwork may still be historically pending.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -49,25 +47,28 @@ function family(theme) {
 
 function resolve(theme, id) {
   const entry = family(theme)?.icons?.[id];
-  const reviewed = String(entry?.reviewStatus || "").startsWith("accepted");
+  const runtimeMapped = Boolean(entry?.runtimeAsset !== false && entry?.sizes);
+  const historicalStatus = entry?.historicalReviewStatus
+    || continuity.semanticAnchors?.[id]?.reviewStatusByEra?.[theme.id]
+    || "pending";
   const familyFile = entry?.sizes?.[32] || entry?.sizes?.["32"];
   if (familyFile) {
     const relative = ["assets/themes", theme.dir, theme.familyBase, familyFile].filter(Boolean).join("/");
-    if (existsSync(join(desktopRoot, relative))) return { path: relative, reviewed };
+    if (existsSync(join(desktopRoot, relative))) return { path: relative, runtimeMapped, historicalStatus };
   }
   for (const size of theme.sizes) {
-    if (reviewed) {
+    if (runtimeMapped) {
       // Liquid Glass writes one file per appearance; the board shows Default.
       const appearance = `assets/themes/${theme.dir}/icons/${id}-${size}-default.png`;
-      if (existsSync(join(desktopRoot, appearance))) return { path: appearance, reviewed: true };
+      if (existsSync(join(desktopRoot, appearance))) return { path: appearance, runtimeMapped: true, historicalStatus };
       const png = `assets/themes/${theme.dir}/icons/${id}-${size}.png`;
-      if (existsSync(join(desktopRoot, png))) return { path: png, reviewed: true };
+      if (existsSync(join(desktopRoot, png))) return { path: png, runtimeMapped: true, historicalStatus };
       const svg = `assets/themes/${theme.dir}/icons/${id}-${size}.svg`;
-      if (existsSync(join(desktopRoot, svg))) return { path: svg, reviewed: true };
+      if (existsSync(join(desktopRoot, svg))) return { path: svg, runtimeMapped: true, historicalStatus };
     }
     const stem = FALLBACK_STEMS[id]?.[theme.id] || id;
     const fallback = `assets/themes/${theme.dir}/${stem}-${size}.svg`;
-    if (existsSync(join(desktopRoot, fallback))) return { path: fallback, reviewed: false };
+    if (existsSync(join(desktopRoot, fallback))) return { path: fallback, runtimeMapped: false, historicalStatus: "pending" };
   }
   return null;
 }
@@ -85,7 +86,7 @@ ctx.font = "bold 20px sans-serif";
 ctx.fillText("Icon continuity board — one object, six appearances", 18, 34);
 ctx.fillStyle = "#5c636b";
 ctx.font = "12px sans-serif";
-ctx.fillText("Solid frame = accepted era artwork. Dashed frame = generated fallback, not yet reviewed.", 18, 56);
+ctx.fillText("Solid = runtime mapped. Blue = historically reviewed/validated. Amber = historical review pending.", 18, 56);
 
 for (let column = 0; column < THEMES.length; column += 1) {
   ctx.fillStyle = "#3a4048";
@@ -127,17 +128,19 @@ for (let row = 0; row < ids.length; row += 1) {
       ctx.fillText("none", x + 34, y + 56);
       continue;
     }
-    if (found.reviewed) accepted.push(theme.id); else fallbacks.push(theme.id);
+    if (found.runtimeMapped) accepted.push(theme.id); else fallbacks.push(theme.id);
     const image = await loadImage(join(desktopRoot, found.path));
     ctx.drawImage(image, x + 24, y + 12, 80, 80);
-    ctx.strokeStyle = found.reviewed ? "#6f8fae" : "#b6bcc3";
-    ctx.lineWidth = found.reviewed ? 1.4 : 1;
-    ctx.setLineDash(found.reviewed ? [] : [3, 3]);
+    const historicallyApproved = found.historicalStatus === "reference-validated"
+      || found.historicalStatus === "historically-reviewed";
+    ctx.strokeStyle = found.runtimeMapped ? (historicallyApproved ? "#547ea7" : "#b07a28") : "#b6bcc3";
+    ctx.lineWidth = found.runtimeMapped ? 1.4 : 1;
+    ctx.setLineDash(found.runtimeMapped ? [] : [3, 3]);
     ctx.strokeRect(x + 20.5, y + 8.5, 88, 88);
     ctx.setLineDash([]);
     ctx.fillStyle = "#7b828a";
     ctx.font = "10px sans-serif";
-    ctx.fillText(found.reviewed ? "accepted" : "fallback", x + 22, y + 110);
+    ctx.fillText(found.runtimeMapped ? found.historicalStatus : "fallback", x + 22, y + 110);
   }
   report.push({ id, missing, fallbacks, accepted });
 }
@@ -145,12 +148,13 @@ for (let row = 0; row < ids.length; row += 1) {
 writeFileSync(join(draftDir, "icon-continuity-board.png"), canvas.toBuffer("image/png"));
 
 const summary = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   generatedBy: "tooling/build-icon-continuity-board.mjs",
   board: "internal/evidence/drafts/era-icons/icon-continuity-board.png",
   objects: report.length,
   // Counted from artwork that actually exists, never from the declared batch.
   reviewedByTheme: Object.fromEntries(THEMES.map((theme) => [theme.id, report.filter((entry) => entry.accepted.includes(theme.id)).length])),
+  reviewedByThemeMeaning: "Technically present and runtime mapped; this count does not imply historical approval.",
   declaredBatch: Object.fromEntries(THEMES.map((theme) => [theme.id, (continuity.coreBatches[theme.id] || []).length])),
   stillFallback: Object.fromEntries(THEMES.map((theme) => [
     theme.id,
@@ -161,7 +165,7 @@ const summary = {
 writeFileSync(join(draftDir, "icon-continuity-report.json"), `${JSON.stringify(summary, null, 2)}\n`);
 for (const theme of THEMES) {
   const fallback = summary.stillFallback[theme.id];
-  console.log(`${theme.id.padEnd(14)} accepted ${String(summary.reviewedByTheme[theme.id]).padStart(2)}/${ids.length}  declared ${String(summary.declaredBatch[theme.id]).padStart(2)}  fallback: ${fallback.length ? fallback.join(", ") : "none"}`);
+  console.log(`${theme.id.padEnd(14)} runtime ${String(summary.reviewedByTheme[theme.id]).padStart(2)}/${ids.length}  declared ${String(summary.declaredBatch[theme.id]).padStart(2)}  fallback: ${fallback.length ? fallback.join(", ") : "none"}`);
 }
 if (summary.missing.length) console.log("missing artwork:", JSON.stringify(summary.missing));
 console.log("board -> internal/evidence/drafts/era-icons/icon-continuity-board.png");

@@ -1665,6 +1665,9 @@ function applyLanguage() {
     }
   });
   if (typeof renderKeyCapsShortcuts === "function") renderKeyCapsShortcuts();
+  // Start Here writes its page counter and its model-state lines itself, so a
+  // language switch has to ask it to redraw them.
+  if (typeof syncGuideWelcomeState === "function") syncGuideWelcomeState();
 
   document.querySelectorAll("[data-i18n-count]").forEach((el) => {
     const count = Number(el.dataset.i18nCountValue || 0);

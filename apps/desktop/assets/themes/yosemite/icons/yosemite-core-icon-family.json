@@ -18,9 +18,9 @@
     "finderApp": {
       "label": "Finder / System",
       "genre": "system identity",
-      "prototype": "flat frontal white compact Macintosh with a cyan-blue and white split smiling screen and a simple lower drive plinth",
-      "metaphorKey": "smiling-compact-macintosh",
-      "container": "rounded-square",
+      "prototype": "OS X 10.10 low rounded blue/light split Finder face with pill eyes, a continuous smile, thin keyline, and shallow depth",
+      "metaphorKey": "target-era-finder-identity",
+      "container": "low rounded Finder face plaque",
       "comparison": {
         "evidence": "web/finder.png"
       },
@@ -34,88 +34,88 @@
       },
       "metrics": {
         "16": {
-          "pixels": 164,
-          "colors": 10,
+          "pixels": 182,
+          "colors": 112,
           "bbox": {
-            "minX": 2,
-            "minY": 1,
-            "maxX": 13,
+            "minX": 1,
+            "minY": 2,
+            "maxX": 14,
             "maxY": 14
           },
           "ink": {
-            "minX": 2,
-            "minY": 1,
-            "maxX": 13,
+            "minX": 1,
+            "minY": 2,
+            "maxX": 14,
             "maxY": 14,
-            "width": 12,
-            "height": 14
+            "width": 14,
+            "height": 13
           },
           "gridShape": "square",
-          "sha256": "d9b7ed544d6a02f85d1140d46c14e1df5262d330792b794041b11216cf63ccb2",
-          "bytes": 213
+          "sha256": "b8f3e5e2978d9452373aeb86bfbf8190e4630eb95358d01e29f0348317d7eed3",
+          "bytes": 455
         },
         "32": {
-          "pixels": 618,
-          "colors": 39,
+          "pixels": 675,
+          "colors": 383,
           "bbox": {
-            "minX": 4,
-            "minY": 3,
-            "maxX": 27,
+            "minX": 3,
+            "minY": 4,
+            "maxX": 29,
             "maxY": 28
           },
           "ink": {
-            "minX": 4,
-            "minY": 3,
-            "maxX": 27,
+            "minX": 3,
+            "minY": 4,
+            "maxX": 29,
             "maxY": 28,
-            "width": 24,
-            "height": 26
+            "width": 27,
+            "height": 25
           },
           "gridShape": "square",
-          "sha256": "0ccc0889fdd7dff70477a0e485f247e2a5a80ae527c42474167744a68b506538",
-          "bytes": 495
+          "sha256": "8e1a7d3382519664a33884ccbe1d59962d8c5ce46bf18b0d8205cdc9d85d2237",
+          "bytes": 1261
         },
         "64": {
-          "pixels": 2552,
-          "colors": 334,
+          "pixels": 2544,
+          "colors": 1011,
           "bbox": {
-            "minX": 8,
-            "minY": 5,
-            "maxX": 55,
-            "maxY": 58
+            "minX": 6,
+            "minY": 8,
+            "maxX": 57,
+            "maxY": 56
           },
           "ink": {
-            "minX": 8,
-            "minY": 6,
-            "maxX": 55,
-            "maxY": 57,
-            "width": 48,
-            "height": 52
+            "minX": 6,
+            "minY": 8,
+            "maxX": 57,
+            "maxY": 56,
+            "width": 52,
+            "height": 49
           },
           "gridShape": "square",
-          "sha256": "f0f608a617ab9c789c467a57e50d993477262f60dd1c6ef69e7742b4ab3f33d8",
-          "bytes": 2507
+          "sha256": "8692e4c421119d82871a750dcc8e1aa0ec5b9a5143ba539cc3e63db3a4486492",
+          "bytes": 3392
         },
         "128": {
-          "pixels": 9856,
-          "colors": 782,
+          "pixels": 10168,
+          "colors": 2535,
           "bbox": {
-            "minX": 17,
-            "minY": 11,
-            "maxX": 110,
-            "maxY": 116
+            "minX": 12,
+            "minY": 15,
+            "maxX": 115,
+            "maxY": 112
           },
           "ink": {
-            "minX": 17,
-            "minY": 12,
-            "maxX": 110,
-            "maxY": 115,
-            "width": 94,
-            "height": 104
+            "minX": 12,
+            "minY": 15,
+            "maxX": 115,
+            "maxY": 112,
+            "width": 104,
+            "height": 98
           },
           "gridShape": "square",
-          "sha256": "79967b57411c354cd0ef0910e823aee8eb5ba19d8a8327d78df5e7643f923de8",
-          "bytes": 9095
+          "sha256": "b44ae9b062eb20750049dd23b10fc5d7fefa9088df4c13c406c5e752da4ef323",
+          "bytes": 10784
         }
       },
       "runtimePixelMetrics": {
@@ -124,23 +124,23 @@
         "derived16": {
           "displaySize": 16,
           "coverage": 0.6563,
-          "meanLum": 200.36,
-          "lumStd": 34.15,
-          "edgeEnergy": 54
+          "meanLum": 173.83,
+          "lumStd": 51.81,
+          "edgeEnergy": 65
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.6035,
-          "meanLum": 199.22,
-          "lumStd": 40.12,
-          "edgeEnergy": 238
+          "coverage": 0.6563,
+          "meanLum": 164.9,
+          "lumStd": 65.93,
+          "edgeEnergy": 206
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.61,
-          "meanLum": 197.97,
-          "lumStd": 41.84,
-          "edgeEnergy": 397
+          "coverage": 0.6168,
+          "meanLum": 174,
+          "lumStd": 57.05,
+          "edgeEnergy": 260
         }
       }
     },

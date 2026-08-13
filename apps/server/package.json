@@ -1,8 +1,8 @@
 {
-  "name": "ai-system-6-rewrite",
+  "name": "ai-system-6-server",
   "version": "0.0.0",
   "private": true,
-  "description": "Mirror rewrite of AI System 6. Shares node_modules with the parent project.",
+  "description": "Canonical AI System 6 HTTP server. Shares dependencies with the parent project.",
   "license": "MIT",
   "main": "server.js",
   "scripts": {

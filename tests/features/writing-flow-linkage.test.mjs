@@ -48,6 +48,11 @@ test.assertIncludes(documentsChat, "if (typeof applyManuscriptEditability === \"
 
 // --- Visible owner indicator (answers the silent-divergence complaint) ---
 test.assertIncludes(teachtextAccessories, "teachtext_mode_readonly_draft", "read-only drafting manuscript shows a visible owner hint");
+test.assertMatches(
+  teachtextAccessories,
+  /function ensureTeachTextManuscriptTab[\s\S]*getDocumentTabs\("teachText", project\)[\s\S]*find\(\(tab\) => tab\.role === "manuscript"\)[\s\S]*if \(existing \|\| typeof upsertDocumentTab/,
+  "manuscript activation reuses the normalized tab before the displayed tab state is captured",
+);
 test.assertIncludes(writingFlow, "if (typeof updateTeachTextDeskState === \"function\") updateTeachTextDeskState();", "owner indicator refreshes when editability changes");
 
 // --- Next-button spine + paired workspaces ---
@@ -55,6 +60,11 @@ test.assertIncludes(html, 'data-action="advance-drafts-to-review"', "Section Dra
 test.assertIncludes(actions, '"advance-drafts-to-review": advanceDraftsToReview', "the forward action is wired");
 test.assertIncludes(config, '"advanceDraftsToReview"', "the To Review action is lazy-loaded before the action table references it");
 test.assertIncludes(writingFlow, "async function advanceDraftsToReview", "advancing to review finalizes the manuscript into the review phase");
+test.assertMatches(
+  writingFlow,
+  /await setTeachTextFileLabel\("final", \{ persist: true \}\);[\s\S]*isPortraitDocumentFlow\(\)[\s\S]*teachTextReviewLabel\(\)[\s\S]*mobileManuscriptForegroundRequested = true;[\s\S]*await openWindow\("teachText"\);/,
+  "after review finalization raises its paired desk, the phone route restores the finalized manuscript foreground",
+);
 test.assertIncludes(windowManager, "function arrangeActiveWritingWorkspace", "openWindow arranges whichever phase workspace is open as a manuscript pair");
 test.assertIncludes(windowManager, "function arrangeDraftingWorkspaceSplit", "drafting pairs Section Drafts beside the manuscript");
 test.assertIncludes(windowManager, "function arrangeReviewWorkspaceSplit", "review pairs the Review Desk beside the finalized manuscript");

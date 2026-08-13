@@ -20,13 +20,12 @@
 "use strict";
 
 const { send, sendJson, readJsonBody, requestSignal, withTimeoutSignal } = require("../lib/http.js");
-const { getTextWithFallback } = require("../lib/fetch.js");
+const { getTextOnceWithFallback } = require("../lib/fetch.js");
 const {
   cloudAuthHeaders,
-  DEEPSEEK_API_KEY_DEFAULT,
   DEEPSEEK_BASE_URL_DEFAULT,
   DEEPSEEK_PUBLIC_BASE_URL,
-  resolveCloudBaseUrl,
+  resolveCloudTarget,
 } = require("../cloud.js");
 const { isPublicDeployment } = require("../runtime-profile.js");
 const { resolveCloudCredential } = require("../credential-vault.js");
@@ -42,10 +41,16 @@ async function handleCloudStatus(req, res) {
   try {
     const body = await readJsonBody(req, { limitBytes: 16 * 1024 });
     const usingSharedCloud = isPublicDeployment && !String(body.api_key || "").trim();
+    const requestedBaseUrl = isPublicDeployment
+      ? DEEPSEEK_PUBLIC_BASE_URL
+      : body.base_url || DEEPSEEK_BASE_URL_DEFAULT;
+    const cloudTarget = await resolveCloudTarget(requestedBaseUrl);
+    const baseUrl = cloudTarget.baseUrl;
     const apiKey = String(await resolveCloudCredential({
       credentialId: body.credential_id,
       provider: body.provider || "deepseek",
-      suppliedApiKey: body.api_key || DEEPSEEK_API_KEY_DEFAULT,
+      targetBaseUrl: baseUrl,
+      suppliedApiKey: body.api_key,
       allowSupplied: isPublicDeployment,
     })).trim();
     if (!apiKey) {
@@ -54,22 +59,24 @@ async function handleCloudStatus(req, res) {
     }
 
     const authHeaders = cloudAuthHeaders(apiKey);
-    const baseUrl = isPublicDeployment
-      ? DEEPSEEK_PUBLIC_BASE_URL
-      : resolveCloudBaseUrl(body.base_url || DEEPSEEK_BASE_URL_DEFAULT);
+    const fetchOptions = {
+      maxBytes: 4 * 1024 * 1024,
+      pinnedAddress: cloudTarget.address,
+      pinnedFamily: cloudTarget.family,
+    };
 
     let connected = false;
     /** @type {string | null} */
     let modelError = null;
     try {
-      const modelResult = await getTextWithFallback(
+      const modelResult = await getTextOnceWithFallback(
         `${baseUrl}/v1/models`,
         signal,
         {
           "Accept": "application/json",
           ...authHeaders,
         },
-        { maxBytes: 4 * 1024 * 1024 }
+        fetchOptions
       );
       connected = modelResult.ok;
       if (!modelResult.ok) {
@@ -96,24 +103,24 @@ async function handleCloudStatus(req, res) {
     let balanceError = null;
     if (connected && !usingSharedCloud) {
       try {
-        let balanceResult = await getTextWithFallback(
+        let balanceResult = await getTextOnceWithFallback(
           `${baseUrl}/v1/user/balance`,
           signal,
           {
             "Accept": "application/json",
             ...authHeaders,
           },
-          { maxBytes: 4 * 1024 * 1024 }
+          fetchOptions
         );
         if (!balanceResult.ok && balanceResult.status === 404) {
-          balanceResult = await getTextWithFallback(
+          balanceResult = await getTextOnceWithFallback(
             `${baseUrl}/user/balance`,
             signal,
             {
               "Accept": "application/json",
               ...authHeaders,
             },
-            { maxBytes: 4 * 1024 * 1024 }
+            fetchOptions
           );
         }
         if (balanceResult.ok) {
@@ -149,9 +156,10 @@ async function handleCloudStatus(req, res) {
     });
   } catch (error) {
     if (/** @type {any} */ (error)?.name === "AbortError") return;
-    send(res, 502, JSON.stringify({
-      error: "Cloud status check failed",
-      detail: /** @type {Error} */ (error).message,
+    const status = Number(/** @type {any} */ (error)?.statusCode) || 502;
+    send(res, status, JSON.stringify({
+      error: status < 500 ? /** @type {Error} */ (error).message : "Cloud status check failed",
+      code: String(/** @type {any} */ (error)?.code || "cloud_status_failed"),
       connected: false,
     }), { "Content-Type": "application/json" });
   } finally {

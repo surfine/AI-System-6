@@ -1,5 +1,5 @@
 import { build } from "esbuild";
-import { mkdir, readFile } from "node:fs/promises";
+import { mkdir, readFile, realpath } from "node:fs/promises";
 import path from "node:path";
 import { desktopRoot, repositoryRoot, toolingRoot } from "./lib/paths.mjs";
 
@@ -17,12 +17,13 @@ const usdComposerPath = path.join(
 );
 const textureCacheNeedle = "let cacheKey = filePath;";
 const textureCacheReplacement = "let cacheKey = filePath + ':uv' + uvChannel;";
+const resolvedUsdComposerPath = await realpath(usdComposerPath);
 
 const usdTextureChannelCacheFix = {
   name: "usd-texture-channel-cache-fix",
   setup(buildContext) {
     buildContext.onLoad({ filter: /[\\/]USDComposer\.js$/ }, async (args) => {
-      if (path.resolve(args.path) !== path.resolve(usdComposerPath)) return null;
+      if (await realpath(args.path) !== resolvedUsdComposerPath) return null;
       const source = await readFile(args.path, "utf8");
       if (!source.includes(textureCacheNeedle)) {
         throw new Error("Three.js USD texture cache implementation changed; review the UV-channel patch.");

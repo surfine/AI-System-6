@@ -4,9 +4,32 @@ const crypto = require("node:crypto");
 const { execFile } = require("node:child_process");
 const { promisify } = require("node:util");
 
+const {
+  isTrustedDeepSeekCredentialTarget,
+  normalizeCloudBaseUrl,
+} = require("./cloud.js");
+
 const execFileAsync = promisify(execFile);
 const keychainService = "AI System 6 Cloud Credential";
 const stagedCredentials = new Map();
+const stagedCredentialTtlMs = boundedInteger(
+  process.env.AI_SYSTEM6_STAGED_CREDENTIAL_TTL_MS,
+  15 * 60 * 1000,
+  1000,
+  24 * 60 * 60 * 1000
+);
+const stagedCredentialMaxEntries = boundedInteger(
+  process.env.AI_SYSTEM6_STAGED_CREDENTIAL_MAX_ENTRIES,
+  128,
+  1,
+  1024
+);
+
+function boundedInteger(value, fallback, minimum, maximum) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  return Math.min(maximum, Math.max(minimum, Math.floor(number)));
+}
 
 function normalizedCredentialId(value) {
   const id = String(value || "").trim();
@@ -16,16 +39,53 @@ function normalizedCredentialId(value) {
 function createCredentialId(provider, baseUrl) {
   const identity = [
     String(provider || "cloud").trim().toLowerCase(),
-    String(baseUrl || "").trim().toLowerCase().replace(/\/+$/, ""),
+    normalizeCloudBaseUrl(baseUrl),
   ].join("\n");
   return `cred-${crypto.createHash("sha256").update(identity).digest("hex").slice(0, 32)}`;
 }
 
-function providerEnvironmentKey(provider) {
-  if (String(provider || "").toLowerCase() === "deepseek") {
+function providerEnvironmentKey(provider, targetBaseUrl) {
+  if (isTrustedDeepSeekCredentialTarget(provider, targetBaseUrl)) {
     return String(process.env.DEEPSEEK_API_KEY || "").trim();
   }
   return "";
+}
+
+function credentialScopeMismatch() {
+  const error = /** @type {Error & { code?: string, statusCode?: number }} */ (
+    new Error("Cloud credential does not match the requested provider endpoint.")
+  );
+  error.code = "credential_scope_mismatch";
+  error.statusCode = 400;
+  return error;
+}
+
+function pruneStagedCredentials(now = Date.now()) {
+  for (const [credentialId, entry] of stagedCredentials) {
+    if (!entry || entry.expiresAt <= now) stagedCredentials.delete(credentialId);
+  }
+  while (stagedCredentials.size > stagedCredentialMaxEntries) {
+    const oldest = stagedCredentials.keys().next().value;
+    if (!oldest) break;
+    stagedCredentials.delete(oldest);
+  }
+}
+
+function stageSecret(credentialId, secret, now = Date.now()) {
+  pruneStagedCredentials(now);
+  stagedCredentials.delete(credentialId);
+  stagedCredentials.set(credentialId, {
+    secret,
+    createdAt: now,
+    expiresAt: now + stagedCredentialTtlMs,
+  });
+  pruneStagedCredentials(now);
+}
+
+function stagedSecret(credentialId, now = Date.now()) {
+  pruneStagedCredentials(now);
+  const entry = stagedCredentials.get(credentialId);
+  return entry && entry.expiresAt > now ? entry.secret : "";
 }
 
 async function readKeychainCredential(credentialId) {
@@ -88,18 +148,18 @@ async function deleteKeychainCredential(credentialId) {
   }
 }
 
-function stageCloudCredential({ provider, baseUrl, apiKey }) {
+function stageCloudCredential({ provider, baseUrl, apiKey, now = Date.now() }) {
   const secret = String(apiKey || "").trim();
   if (!secret) throw new Error("Missing API key.");
   if (Buffer.byteLength(secret, "utf8") > 8192) throw new Error("API key is too large.");
   const credentialId = createCredentialId(provider, baseUrl);
-  stagedCredentials.set(credentialId, secret);
+  stageSecret(credentialId, secret, now);
   return credentialId;
 }
 
 async function persistCloudCredential(credentialId) {
   const id = normalizedCredentialId(credentialId);
-  const secret = id ? stagedCredentials.get(id) : "";
+  const secret = id ? stagedSecret(id) : "";
   if (!id || !secret) throw new Error("Credential is not staged in this local service.");
   const stored = await writeKeychainCredential(id, secret);
   return {
@@ -112,8 +172,10 @@ async function persistCloudCredential(credentialId) {
  * @param {{
  *   credentialId?: string,
  *   provider?: string,
+ *   targetBaseUrl?: string,
  *   suppliedApiKey?: string,
  *   allowSupplied?: boolean,
+ *   now?: number,
  * }} [options]
  * @returns {Promise<string>}
  */
@@ -121,20 +183,27 @@ async function resolveCloudCredential(options = {}) {
   const {
     credentialId,
     provider,
+    targetBaseUrl,
     suppliedApiKey,
     allowSupplied = false,
+    now = Date.now(),
   } = options;
-  if (allowSupplied && suppliedApiKey) return String(suppliedApiKey).trim();
+  const normalizedTargetBaseUrl = normalizeCloudBaseUrl(targetBaseUrl);
   const id = normalizedCredentialId(credentialId);
-  if (id && stagedCredentials.has(id)) return stagedCredentials.get(id);
+  if (id && id !== createCredentialId(provider, normalizedTargetBaseUrl)) {
+    throw credentialScopeMismatch();
+  }
+  if (allowSupplied && suppliedApiKey) return String(suppliedApiKey).trim();
+  const sessionSecret = id ? stagedSecret(id, now) : "";
+  if (sessionSecret) return sessionSecret;
   if (id) {
     const keychainValue = await readKeychainCredential(id);
     if (keychainValue) {
-      stagedCredentials.set(id, keychainValue);
+      stageSecret(id, keychainValue, now);
       return keychainValue;
     }
   }
-  return providerEnvironmentKey(provider);
+  return providerEnvironmentKey(provider, normalizedTargetBaseUrl);
 }
 
 async function deleteCloudCredential(credentialId) {
@@ -158,4 +227,8 @@ module.exports = {
   persistCloudCredential,
   resolveCloudCredential,
   stageCloudCredential,
+  stagedCredentialConfig: Object.freeze({
+    maxEntries: stagedCredentialMaxEntries,
+    ttlMs: stagedCredentialTtlMs,
+  }),
 };

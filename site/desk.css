@@ -91,7 +91,7 @@ html[data-theme="liquid-glass"] .model-providers > span { color: #1c2733; text-s
 .desk { max-width: 980px; }
 
 .scene {
-  margin: 90px 0;
+  margin: 72px 0;
   text-align: center;
 }
 .scene-wide { margin-left: -8px; margin-right: -8px; }
@@ -487,14 +487,88 @@ html[data-theme="liquid-glass"] .route-caption { color: #1c2733; text-shadow: no
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* Four icons, centred as a row. An auto-fill grid spread them across seven
+   columns and left the folder looking half unpacked. */
 .finder-body {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 136px));
+  justify-content: center;
   gap: 14px 6px;
-  padding: 20px 14px 24px;
-  min-height: 240px;
+  padding: 16px 14px 22px;
+  /* Only tall enough to hold the card a double click opens; the folder used to
+     reserve room for eight icons and kept the empty half. */
+  min-height: 156px;
 }
+/* The wall of proof. Four real captures, visible without a click, because the
+   double take is the whole scene and a double take behind an interaction is a
+   double take that never happens. */
+.proof-wall {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  padding: 16px 14px 4px;
+}
+.proof-card {
+  margin: 0;
+  border: 1px solid var(--win-border, var(--ink));
+  border-radius: var(--win-radius, 0);
+  background: var(--paper);
+  overflow: hidden;
+}
+.proof-shot {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  /* Anchored to the top: these windows put their work under the title bar and
+     several of them leave a lot of empty desk at the bottom. */
+  object-position: top center;
+  border-bottom: 1px solid var(--win-border, var(--ink));
+  background: var(--paper);
+}
+.proof-cap {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 2px 10px;
+  padding: 9px 11px 11px;
+  align-items: center;
+}
+.proof-cap .obj-icon { grid-row: span 2; align-self: start; }
+.proof-label {
+  font-family: var(--display-font);
+  font-size: 15px;
+  line-height: 1.2;
+  color: var(--ink);
+}
+.proof-line {
+  grid-column: 2;
+  font-size: 13px;
+  line-height: 1.35;
+  opacity: 0.75;
+  color: var(--ink);
+}
+
+/* The claim belongs against the evidence, not a screen further down. */
+.proof-note {
+  margin: 0;
+  padding: 10px 16px 2px;
+  font-size: 13px;
+  text-align: center;
+  opacity: 0.75;
+  color: var(--ink);
+}
+
+.finder-more {
+  margin: 8px 0 0;
+  padding: 12px 16px 0;
+  border-top: 1px solid var(--win-border, var(--ink));
+  font-size: 13px;
+  text-align: center;
+  opacity: 0.75;
+  color: var(--ink);
+}
+
 .finder-item { min-height: 64px; }
 .finder-item .desk-icon-label { background: transparent; color: var(--ink); }
 .finder-item.selected .desk-icon-label { background: var(--ink); color: var(--paper); }
@@ -510,121 +584,160 @@ html[data-theme] .finder-item.selected .desk-icon-label { background: var(--sel-
   z-index: 8;
 }
 
-/* ---------- Floppy scene ---------- */
+/* ---------- Six appearances, one argument ----------
+   A Finder list view, used as a type specimen sheet. Every row carries its own
+   era's system face in --row-face and that era's monospace in --row-mono, both
+   set inline from js/argument.js out of the single token block in site.css. So
+   the six faces stand next to each other no matter which year the page itself
+   is wearing, which is the only way the argument is visible in one glance. */
 
-.floppy-stage {
-  position: relative;
-  height: 300px;
-  max-width: 460px;
-  margin: 0 auto 8px;
+.claim-window { max-width: 760px; margin: 0 auto; }
+
+.claim-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
-.floppy-mac {
-  position: absolute;
-  left: 50%;
-  bottom: 0;
-  transform: translateX(-50%);
-  width: 220px;
-  height: 264px;
-  background: #e6ddcb;
-  border: 2px solid var(--ink);
-  border-radius: 10px 10px 6px 6px;
-  box-shadow: inset -4px -4px 0 rgba(0,0,0,0.12);
-}
-.floppy-screen {
-  position: absolute;
-  left: 24px;
-  right: 24px;
-  top: 22px;
-  height: 130px;
-  background: #17181c;
-  border: 2px solid var(--ink);
-  border-radius: 4px;
-  display: flex;
+.claim-row + .claim-row { border-top: 1px solid var(--win-border, var(--ink)); }
+
+.claim-hit {
+  display: grid;
+  grid-template-columns: 32px 62px minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: center;
-  overflow: hidden;
+  gap: 0 14px;
+  width: 100%;
+  padding: 12px 16px;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
 }
-.floppy-screen-msg {
-  font-family: var(--display-font);
-  font-size: 13px;
-  color: #000;
-  background: #fff;
-  border: 1px solid #000;
-  border-radius: 6px;
-  padding: 4px 10px;
-  opacity: 0;
-}
-.floppy-slot {
-  position: absolute;
-  right: 34px;
-  top: 182px;
-  width: 74px;
-  height: 7px;
-  background: #17181c;
-  border-radius: 2px;
-  box-shadow: inset 0 2px 0 rgba(0,0,0,0.7);
-}
-.floppy-chin {
-  position: absolute;
-  left: 24px;
-  top: 186px;
-  width: 60px;
-  height: 8px;
-  background: repeating-linear-gradient(to bottom, transparent 0 2px, rgba(0,0,0,0.25) 2px 4px);
-}
-.floppy-disk {
-  position: absolute;
-  left: 50%;
-  width: 96px;
-  height: 96px;
-  margin-left: -48px;
-  background: #2e3138;
-  border: 2px solid var(--ink);
-  border-radius: 4px 10px 4px 4px;
-  color: #ddd;
-  z-index: 3;
-}
-.floppy-label {
-  position: absolute;
-  left: 10px;
-  right: 10px;
-  bottom: 8px;
-  background: #f2ecdc;
-  color: #222;
-  font-family: var(--mono-font);
-  font-size: 9px;
-  text-align: center;
-  padding: 5px 2px;
-  border: 1px solid rgba(0,0,0,0.4);
-}
-.floppy-shutter {
-  position: absolute;
-  top: 6px;
-  left: 24px;
-  width: 48px;
-  height: 22px;
-  background: linear-gradient(#c8ccd4, #9aa0ab);
-  border: 1px solid rgba(0,0,0,0.4);
-}
-/* Each disk carries its own travel vector to the slot, so the narrow-screen
-   Mac (smaller case, higher slot) can retarget with two custom properties. */
-.floppy-disk-1 { top: -6px; --slot-dx: 40px; --slot-dy: 142px; }
-.floppy-disk-2 { top: 104px; --slot-dx: 40px; --slot-dy: 32px; }
+.claim-icon { display: block; width: 32px; height: 32px; }
+/* Each icon is pixelated by its own year, not by the page's: 1988 and 1999
+   drew at 32 pixels and meant it. The later rows are smooth art. */
+.claim-row[data-era="classic"] .claim-icon,
+.claim-row[data-era="platinum"] .claim-icon { image-rendering: pixelated; }
 
-.floppy-run .floppy-disk-1 { animation: floppy-insert 1.5s steps(8, end) 0.2s forwards; }
-.floppy-run .floppy-disk-2 { animation: floppy-insert 1.5s steps(8, end) 2.0s forwards; }
-@keyframes floppy-insert {
-  0%   { transform: translate(0, 0) scale(1); opacity: 1; }
-  55%  { transform: translate(var(--slot-dx), var(--slot-dy)) scale(0.7); opacity: 1; }
-  100% { transform: translate(var(--slot-dx), calc(var(--slot-dy) + 22px)) scale(0.12); opacity: 0; }
+/* The year is set in the monospace of its own decade: Monaco until 2009, then
+   Menlo, then SF Mono. Three faces nobody announces, which is the point. */
+.claim-year {
+  justify-self: start;
+  font-family: var(--row-mono, var(--mono-font));
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  opacity: 0.8;
 }
-.floppy-run .floppy-screen-msg,
-.floppy-booted .floppy-screen-msg { animation: demo-fade 0.4s steps(2, end) 3.8s forwards; }
-.floppy-booted .floppy-screen-msg { animation-delay: 0s; }
-.floppy-run .floppy-screen,
-.floppy-booted .floppy-screen { transition: background-color 0.2s steps(2, end) 3.7s; background-color: #cfd4dc; }
-.floppy-booted .floppy-disk-1,
-.floppy-booted .floppy-disk-2 { opacity: 0; }
+.claim-body { min-width: 0; font-family: var(--row-face, var(--site-font, var(--ui-font))); }
+.claim-era { font-size: 16px; }
+.claim-role {
+  font-size: 12px;
+  opacity: 0.65;
+  margin-left: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.claim-text { display: block; font-size: 14px; margin-top: 2px; }
+.claim-face {
+  font-family: var(--row-mono, var(--mono-font));
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.5;
+  white-space: nowrap;
+}
+
+.claim-hit:hover .claim-text,
+.claim-hit:focus-visible .claim-text { text-decoration: underline; }
+/* Finder selection: the row you are standing in is inverted, like a selected
+   list item, not decorated with a badge the Finder never had. */
+.claim-row.is-current .claim-era {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 0 4px;
+}
+html[data-theme] .claim-row.is-current .claim-era {
+  background: var(--sel-bg, rgba(35, 80, 180, 0.85));
+  color: #fff;
+}
+.claim-row.is-current .claim-year { opacity: 1; }
+
+.claim-kicker {
+  font-family: var(--display-font);
+  font-size: clamp(17px, 2.4vw, 22px);
+  text-align: center;
+  padding: 14px 16px 16px;
+  margin: 0;
+  border-top: 1px solid var(--win-border, var(--ink));
+}
+
+@media (max-width: 700px) {
+  .claim-hit { grid-template-columns: 32px minmax(0, 1fr); gap: 2px 12px; padding: 12px 14px; }
+  .claim-year { grid-column: 2; font-size: 12px; }
+  .claim-body { grid-column: 2; }
+  .claim-face { grid-column: 2; }
+  .claim-role { display: block; margin: 2px 0 0; }
+}
+
+/* ---------- Two floppies ---------- */
+
+.floppy-wall {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px 28px;
+  align-items: end;
+  margin-top: 8px;
+  text-align: left;
+}
+.floppy-side { min-width: 0; }
+.floppy-side-theirs { overflow: hidden; }
+
+.floppy-pile {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  align-items: flex-end;
+}
+.floppy-pile img { display: block; }
+
+/* The second pile is deliberately unreadable: it runs past the right edge
+   and fades, because the point is that you cannot count it. */
+.floppy-pile-wall {
+  flex-wrap: wrap;
+  max-height: 148px;
+  width: 140%;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, #000 55%, transparent 100%);
+  mask-image: linear-gradient(to right, #000 55%, transparent 100%);
+}
+
+.floppy-label-line {
+  margin-top: 8px;
+  font-size: 15px;
+  color: var(--note-ink, var(--ink));
+}
+.floppy-label-line strong {
+  font-family: var(--display-font);
+  font-size: 26px;
+  font-weight: normal;
+  margin-right: 8px;
+  font-variant-numeric: tabular-nums;
+}
+:root:not([data-theme]) .floppy-label-line {
+  background: var(--paper);
+  border: 1px solid var(--ink);
+  padding: 2px 10px;
+  width: fit-content;
+}
+html[data-theme] .floppy-label-line { color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+html[data-theme="liquid-glass"] .floppy-label-line { color: #1c2733; text-shadow: none; }
+.floppy-wall .scene-fine { grid-column: 1 / -1; margin-top: 6px; }
+
+@media (max-width: 700px) {
+  .floppy-wall { grid-template-columns: 1fr; gap: 16px; }
+  .floppy-pile-wall { max-height: 96px; }
+}
 
 /* ---------- QuickTime window ---------- */
 
@@ -746,17 +859,51 @@ html[data-theme] .finder-item.selected .desk-icon-label { background: var(--sel-
 /* ---------- Read Me ---------- */
 
 .readme-window { max-width: 720px; margin: 0 auto; text-align: left; }
-.readme-body details { border-bottom: 1px solid var(--win-border, var(--ink)); padding: 8px 0; }
-.readme-body details:last-child { border-bottom: 0; }
-.readme-body summary {
-  cursor: pointer;
-  font-family: var(--display-font);
-  font-size: 17px;
-  padding: 4px 2px;
-}
-.readme-body summary:focus-visible { outline: 2px dotted var(--ink); outline-offset: 2px; }
 .readme-body p { margin: 8px 2px 6px; font-size: 15px; }
 .readme-body pre { margin-top: 8px; }
+
+/* The Read Me used to be five folded paragraphs, and folded paragraphs are
+   where a reader agrees with you and leaves. It is now eight cards, one real
+   desktop object each: the icon says which object, the line says what it does
+   for you, and nobody has to read a manifesto to get the idea. The two long
+   answers that survive are links, not accordions. */
+.pack-lede { font-size: 14px; opacity: 0.72; margin: 2px 2px 14px; }
+.pack-grid {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+}
+.pack-card {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  /* Cards in a row share a height, so pack the rows at the top: without this
+     a two-line card spreads its own text to match a three-line neighbour. */
+  align-content: start;
+  gap: 2px 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--win-border, var(--ink));
+  border-radius: var(--win-radius, 0);
+  background: var(--card-bg, var(--paper));
+}
+.pack-card .obj-icon { grid-row: span 2; align-self: start; }
+.pack-card h3 {
+  font-family: var(--display-font);
+  font-size: 15px;
+  font-weight: normal;
+  line-height: 1.15;
+  margin: 0;
+}
+.pack-card p { grid-column: 2; margin: 4px 0 0; font-size: 13.5px; line-height: 1.4; }
+.pack-more { margin-top: 14px; font-size: 13.5px; }
+.pack-more a { color: inherit; }
+
+/* The later eras give their windows a tinted body, so a card painted in flat
+   paper would sit on it like a sticker. Follow the window instead. */
+html[data-theme] .pack-card { background: var(--card-bg, rgba(255, 255, 255, 0.5)); }
+html[data-theme="platinum"] .pack-card { background: #eeeeee; }
 
 /* ---------- Balloon Help ---------- */
 
@@ -823,15 +970,12 @@ html[data-theme="liquid-glass"] { --sel-bg: rgba(40, 90, 200, 0.8); --gauge-fill
 @media (prefers-reduced-motion: reduce) {
   .js .scene { opacity: 1; animation: none; }
   .win-zoom { animation: none; }
-  .floppy-stage .floppy-disk { opacity: 0; }
-  .floppy-stage .floppy-screen { background-color: #cfd4dc; }
-  .floppy-stage .floppy-screen-msg { opacity: 1; animation: none; }
 }
 
 /* ---------- Small screens ---------- */
 
 @media (max-width: 700px) {
-  .scene { margin: 64px 0; }
+  .scene { margin: 52px 0; }
   .hero-scene { margin-top: 12px; margin-bottom: 64px; }
   .hero-brand { font-size: 12px; margin-bottom: 8px; }
   .hero-head { font-size: clamp(26px, 8.6vw, 34px); margin-bottom: 12px; }
@@ -850,17 +994,11 @@ html[data-theme="liquid-glass"] { --sel-bg: rgba(40, 90, 200, 0.8); --gauge-fill
   .route-belt { flex-wrap: wrap; gap: 2px; padding-top: 26px; }
   .route-arrow { display: none; }
 
-  .finder-body { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
+  .finder-body { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px 2px; }
   .finder-window .tbar h2 { font-size: 13px; }
+  /* One column, or the captures shrink to thumbnails and stop being proof. */
+  .proof-wall { grid-template-columns: 1fr; padding: 12px 10px 2px; }
 
-  .floppy-stage { height: 260px; }
-  .floppy-mac { width: 190px; height: 230px; }
-  .floppy-screen { height: 110px; }
-  .floppy-slot { top: 158px; }
-  .floppy-chin { top: 162px; }
-  .floppy-disk { width: 82px; height: 82px; margin-left: -41px; }
-  .floppy-disk-1 { --slot-dx: 24px; --slot-dy: 124px; }
-  .floppy-disk-2 { top: 92px; --slot-dx: 24px; --slot-dy: 26px; }
 
   .boot-picker { grid-template-columns: 1fr; max-width: 280px; margin-left: auto; margin-right: auto; }
 }
@@ -868,3 +1006,162 @@ html[data-theme="liquid-glass"] { --sel-bg: rgba(40, 90, 200, 0.8); --gauge-fill
 @keyframes caret-blink {
   50% { opacity: 0; }
 }
+
+/* ---------- The forty-year dissolve ---------- */
+
+.dissolve { margin: 0 auto; }
+
+/* One machine: the screen and the controls that drive it share a body, so the
+   capture never ends in a seam across the desk. The shell wears whatever the
+   current era's window is made of. */
+.dissolve-shell {
+  background: var(--win-bg, var(--paper));
+  border: 1px solid var(--win-border, var(--ink));
+  border-radius: var(--win-radius, 0);
+  box-shadow: var(--win-shadow, 4px 4px 0 rgba(0, 0, 0, 0.55));
+  -webkit-backdrop-filter: var(--win-blur, none);
+  backdrop-filter: var(--win-blur, none);
+  overflow: hidden;
+}
+
+.dissolve-port {
+  position: relative;
+  width: 100%;
+  aspect-ratio: var(--dissolve-aspect, 8 / 5);
+  overflow: hidden;
+  border-bottom: 1px solid var(--win-border, var(--ink));
+  background: #808080;
+}
+
+.dissolve-panel { padding: 13px 18px 11px; }
+
+.dissolve-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Opacity is set per frame by the dissolve; no transition, because the
+     visitor's own hand is the timing function. */
+}
+
+/* A type specimen, not a caption. The year is digits and digits keep their
+   shape across four decades of type, so the era NAME is the thing set large
+   enough to read the letterforms in, and the panel names the face out loud. */
+.dissolve-readout {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 0 0 9px;
+}
+.dissolve-year {
+  font-family: var(--display-font);
+  font-size: clamp(26px, 3.6vw, 38px);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.dissolve-era {
+  font-family: var(--display-font);
+  font-size: clamp(19px, 2.7vw, 29px);
+  line-height: 1.05;
+  color: var(--ink);
+}
+.dissolve-role {
+  align-self: center;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.dissolve-font {
+  margin-left: auto;
+  align-self: center;
+  font-family: var(--mono-font);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  opacity: 0.6;
+  color: var(--ink);
+}
+
+.dissolve-rail {
+  position: relative;
+  margin: 0;
+  padding: 0;
+}
+.dissolve-range {
+  display: block;
+  width: 100%;
+  height: 24px;
+  margin: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+}
+.dissolve-range::-webkit-slider-runnable-track {
+  height: 4px;
+  background: var(--ink);
+  border-radius: var(--btn-radius, 0);
+}
+.dissolve-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  margin-top: -9px;
+  background: var(--btn-bg, var(--paper));
+  border: 2px solid var(--ink);
+  border-radius: var(--btn-radius, 2px);
+  box-shadow: var(--btn-shadow, 1px 1px 0 var(--ink));
+  cursor: ew-resize;
+}
+.dissolve-range::-moz-range-track { height: 4px; background: var(--ink); }
+.dissolve-range::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: var(--btn-bg, var(--paper));
+  border: 2px solid var(--ink);
+  border-radius: var(--btn-radius, 2px);
+  cursor: ew-resize;
+}
+.dissolve-range:focus-visible { outline: 2px dotted var(--ink); outline-offset: 4px; }
+
+.dissolve-ticks { position: relative; height: 20px; }
+.dissolve-tick {
+  position: absolute;
+  left: calc(var(--t) * 100%);
+  transform: translateX(-50%);
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 2px 4px;
+  min-width: 44px;
+  min-height: 20px;
+  font-family: var(--mono-font);
+  font-size: 11px;
+  color: var(--ink);
+  cursor: pointer;
+}
+.dissolve-tick.is-near .dissolve-tick-year {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 0 4px;
+}
+.dissolve-tick:focus-visible { outline: 2px dotted var(--ink); outline-offset: 2px; }
+
+@media (max-width: 700px) {
+  .dissolve-panel { padding: 10px 12px 8px; }
+  .dissolve-readout { gap: 2px 10px; }
+  .dissolve-role { font-size: 11px; letter-spacing: 0.06em; }
+  .dissolve-font { margin-left: 0; width: 100%; }
+  .dissolve-tick { min-width: 30px; font-size: 10px; }
+  .dissolve-tick:not(:first-child):not(:last-child) .dissolve-tick-year { opacity: 0.55; }
+}
+
+/* A proof card shows the real window doing the thing, not a promise. */
+.demo-window.has-proof { width: min(560px, 92%); }
+.imp-proof { margin: -2px 0 10px; border: 1px solid var(--win-border, var(--ink)); overflow: hidden; }
+.imp-proof img { display: block; width: 100%; height: auto; }

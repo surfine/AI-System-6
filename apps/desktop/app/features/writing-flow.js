@@ -952,6 +952,17 @@ async function advanceDraftsToReview() {
   if (typeof setTeachTextFileLabel === "function") {
     await setTeachTextFileLabel("final", { persist: true });
   }
+  // Finalization opens the paired Review Desk, which becomes the last raised
+  // surface. Restore the route's documented destination on phones only after
+  // the confirmation and save have completed; otherwise the finalized,
+  // editable manuscript is immediately hidden behind the review surface.
+  if (typeof isPortraitDocumentFlow === "function"
+    && isPortraitDocumentFlow()
+    && typeof teachTextReviewLabel === "function"
+    && teachTextReviewLabel()) {
+    mobileManuscriptForegroundRequested = true;
+    await openWindow("teachText");
+  }
 }
 
 async function openWritingFlowWindows() {

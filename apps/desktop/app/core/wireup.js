@@ -37,6 +37,11 @@ function wireAppEvents() {
     }
   });
   promptInput.addEventListener("input", () => {
+    // Typing is what turns Send from unavailable to available, so the button
+    // has to be re-synced here. Only "focus" used to sync it, which left the
+    // button one interaction stale: you typed and it stayed dim, then it woke
+    // up when you tapped away and back.
+    if (typeof syncClioTalkSendButton === "function") syncClioTalkSendButton();
     requestAnimationFrame(renderClioTalkRunAssembly);
   });
   promptInput.addEventListener("focus", () => {
@@ -1422,13 +1427,9 @@ function wireAppEvents() {
 
   menuClockInput.addEventListener("change", applyMenuClock);
 
-  controlStripInput.addEventListener("change", () => {
-    setControlStripState({ enabled: controlStripInput.checked });
-    applyControlStripState();
-  });
-
-  // The Control Strip tab mirrors the master switch in General; the bridge
-  // keeps both checkboxes in sync through setControlStripState().
+  // One switch, in the Control Strip's own control panel — the way Mac OS 8/9
+  // shipped it. General used to carry a second checkbox writing the same
+  // `enabled` field, so the desk asked the same question in two places.
   controlStripShowInput?.addEventListener("change", () => {
     setControlStripState({ enabled: controlStripShowInput.checked });
     applyControlStripState();
@@ -1446,8 +1447,6 @@ function wireAppEvents() {
   [
     [controlStripHotkeyRecordButton, () => window.AISystem6ControlStrip?.beginHotkeyRecording?.()],
     [controlStripHotkeyClearButton, () => window.AISystem6ControlStrip?.clearHotkey?.()],
-    [controlStripFontSelect, () => window.AISystem6ControlStrip?.setMenuFont?.(controlStripFontSelect.value)],
-    [controlStripFontSizeSelect, () => window.AISystem6ControlStrip?.setMenuFontSize?.(Number(controlStripFontSizeSelect.value))],
     [controlStripMoveUpButton, () => window.AISystem6ControlStrip?.moveModuleInSettings?.(-1)],
     [controlStripMoveDownButton, () => window.AISystem6ControlStrip?.moveModuleInSettings?.(1)],
     [controlStripEnableButton, () => window.AISystem6ControlStrip?.setModuleEnabledFromSettings?.(true)],

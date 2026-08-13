@@ -12,6 +12,7 @@ const DEFAULT_MAX_OUTPUT_TOKENS = 1800;
 
 let cachedStatePath = "";
 let cachedState = null;
+const lockSleepBuffer = new Int32Array(new SharedArrayBuffer(4));
 
 function positiveInteger(name, fallback) {
   const value = Number(process.env[name]);
@@ -64,6 +65,8 @@ function emptyState(day) {
     reserved_tokens: 0,
     requests: 0,
     sessions: {},
+    reservations: {},
+    settled_reservations: {},
   };
 }
 
@@ -76,18 +79,37 @@ function normalizedState(value, day) {
           .map(([key, count]) => [key, Math.max(0, Math.floor(Number(count)))])
       )
     : {};
+  const reservations = value.reservations && typeof value.reservations === "object"
+    ? Object.fromEntries(
+        Object.entries(value.reservations)
+          .filter(([key, reservation]) => /^[a-f0-9]{32}$/.test(key) && reservation && typeof reservation === "object")
+          .map(([key, reservation]) => [key, {
+            reserved_tokens: Math.max(0, Math.floor(Number(reservation.reserved_tokens) || 0)),
+            created_at: Math.max(0, Math.floor(Number(reservation.created_at) || 0)),
+          }])
+      )
+    : {};
+  const settledReservations = value.settled_reservations && typeof value.settled_reservations === "object"
+    ? Object.fromEntries(
+        Object.entries(value.settled_reservations)
+          .filter(([key, timestamp]) => /^[a-f0-9]{32}$/.test(key) && Number.isFinite(Number(timestamp)))
+          .map(([key, timestamp]) => [key, Math.max(0, Math.floor(Number(timestamp)))])
+      )
+    : {};
   return {
     day,
     reserved_tokens: Math.max(0, Math.floor(Number(value.reserved_tokens) || 0)),
     requests: Math.max(0, Math.floor(Number(value.requests) || 0)),
     sessions,
+    reservations,
+    settled_reservations: settledReservations,
   };
 }
 
-function loadState(now = new Date()) {
+function loadState(now = new Date(), { fresh = false } = {}) {
   const filePath = statePath();
   const day = utcDay(now);
-  if (cachedStatePath === filePath && cachedState?.day === day) return cachedState;
+  if (!fresh && cachedStatePath === filePath && cachedState?.day === day) return cachedState;
   let value = null;
   try {
     value = JSON.parse(fs.readFileSync(filePath, "utf8"));
@@ -95,6 +117,46 @@ function loadState(now = new Date()) {
   cachedStatePath = filePath;
   cachedState = normalizedState(value, day);
   return cachedState;
+}
+
+function withStateLock(callback) {
+  const filePath = statePath();
+  const lockPath = `${filePath}.lock`;
+  fs.mkdirSync(path.dirname(filePath), { recursive: true, mode: 0o700 });
+  const deadline = Date.now() + 5000;
+  while (true) {
+    try {
+      fs.mkdirSync(lockPath, { mode: 0o700 });
+      break;
+    } catch (error) {
+      if (error?.code !== "EEXIST") throw error;
+      try {
+        const ageMs = Date.now() - fs.statSync(lockPath).mtimeMs;
+        if (ageMs > 30000) fs.rmdirSync(lockPath);
+      } catch (lockError) {
+        if (lockError?.code !== "ENOENT" && lockError?.code !== "ENOTEMPTY") throw lockError;
+      }
+      if (Date.now() >= deadline) {
+        const lockTimeout = /** @type {Error & { code?: string }} */ (
+          new Error("Shared cloud budget lock timed out.")
+        );
+        lockTimeout.code = "shared_cloud_budget_lock_timeout";
+        throw lockTimeout;
+      }
+      Atomics.wait(lockSleepBuffer, 0, 0, 10);
+    }
+  }
+  try {
+    return callback();
+  } finally {
+    try { fs.rmdirSync(lockPath); } catch (error) {
+      console.error(JSON.stringify({
+        level: "error",
+        event: "shared_cloud_budget_lock_release_failed",
+        code: String(error?.code || "unknown"),
+      }));
+    }
+  }
 }
 
 function persistState(state) {
@@ -171,41 +233,110 @@ function reserveSharedCloudRequest({ sessionNonce, payload, now = new Date() }) 
     ? Math.min(config.maxOutputTokens, Math.max(1, Math.floor(requestedOutput)))
     : config.maxOutputTokens;
   const reservedTokens = inputTokens + outputTokens;
-  const state = loadState(now);
-  const sessionRequests = Number(state.sessions[sessionId] || 0);
+  return withStateLock(() => {
+    const state = loadState(now, { fresh: true });
+    const sessionRequests = Number(state.sessions[sessionId] || 0);
 
-  if (sessionRequests >= config.sessionRequestLimit) {
-    return quotaFailure(
-      "shared_cloud_session_limit",
-      retryAfter,
-      "This browsing session has used its shared cloud allowance for today."
-    );
-  }
-  if (state.requests >= config.dailyRequestLimit) {
-    return quotaFailure(
-      "shared_cloud_daily_request_limit",
-      retryAfter,
-      "The site's shared cloud allowance has been used for today."
-    );
-  }
-  if (state.reserved_tokens + reservedTokens > config.dailyTokenBudget) {
-    return quotaFailure(
-      "shared_cloud_daily_token_limit",
-      retryAfter,
-      "The site's shared cloud allowance has been used for today."
-    );
-  }
+    if (sessionRequests >= config.sessionRequestLimit) {
+      return quotaFailure(
+        "shared_cloud_session_limit",
+        retryAfter,
+        "This browsing session has used its shared cloud allowance for today."
+      );
+    }
+    if (state.requests >= config.dailyRequestLimit) {
+      return quotaFailure(
+        "shared_cloud_daily_request_limit",
+        retryAfter,
+        "The site's shared cloud allowance has been used for today."
+      );
+    }
+    if (state.reserved_tokens + reservedTokens > config.dailyTokenBudget) {
+      return quotaFailure(
+        "shared_cloud_daily_token_limit",
+        retryAfter,
+        "The site's shared cloud allowance has been used for today."
+      );
+    }
 
-  state.requests += 1;
-  state.reserved_tokens += reservedTokens;
-  state.sessions[sessionId] = sessionRequests + 1;
-  persistState(state);
+    const reservationId = crypto.randomBytes(16).toString("hex");
+    state.requests += 1;
+    state.reserved_tokens += reservedTokens;
+    state.sessions[sessionId] = sessionRequests + 1;
+    state.reservations[reservationId] = {
+      reserved_tokens: reservedTokens,
+      created_at: now.getTime(),
+    };
+    persistState(state);
+    return createReservation({
+      reservationId,
+      inputTokens,
+      outputTokens,
+      reservedTokens,
+      remainingSessionRequests: config.sessionRequestLimit - state.sessions[sessionId],
+    });
+  });
+}
+
+function usageTokenTotal(usage) {
+  if (usage === null || usage === undefined) return null;
+  if (Number.isFinite(Number(usage))) return Math.max(0, Math.floor(Number(usage)));
+  const total = usage?.total_tokens ?? usage?.totalTokens;
+  return Number.isFinite(Number(total)) ? Math.max(0, Math.floor(Number(total))) : null;
+}
+
+function createReservation({ reservationId, inputTokens, outputTokens, reservedTokens, remainingSessionRequests }) {
+  let actualTokens = 0;
+  let usageKnown = false;
+  let requestSent = false;
+  let settled = false;
   return {
     ok: true,
+    reservationId,
     inputTokens,
     outputTokens,
     reservedTokens,
-    remainingSessionRequests: config.sessionRequestLimit - state.sessions[sessionId],
+    remainingSessionRequests,
+    addUsage(usage) {
+      const tokens = usageTokenTotal(usage);
+      if (tokens === null) return false;
+      usageKnown = true;
+      actualTokens += tokens;
+      return true;
+    },
+    markUpstreamStarted() {
+      requestSent = true;
+    },
+    settle(options = {}) {
+      if (settled) return { ok: true, duplicate: true, actualTokens };
+      settled = true;
+      if (options.requestSent === true) requestSent = true;
+      if (options.requestSent === false) requestSent = false;
+      if (options.usage !== undefined) this.addUsage(options.usage);
+      const settledTokens = usageKnown ? actualTokens : (requestSent ? reservedTokens : 0);
+      const reason = usageKnown
+        ? "reported_usage"
+        : requestSent
+          ? "usage_unknown_reservation_retained"
+          : "upstream_not_sent";
+      try {
+        return settleSharedCloudRequest({
+          reservationId,
+          reservedTokens,
+          actualTokens: settledTokens,
+          reason,
+        });
+      } catch (error) {
+        console.error(JSON.stringify({
+          level: "error",
+          event: "shared_cloud_settlement_failed",
+          reservation_id: reservationId,
+          reason,
+          code: String(error?.code || "unknown"),
+        }));
+        return { ok: false, duplicate: false, reason, actualTokens: settledTokens };
+      }
+    },
   };
 }
 
@@ -221,17 +352,41 @@ function reserveSharedCloudRequest({ sessionNonce, payload, now = new Date() }) 
  *   reservedTokens?: number,
  *   actualTokens?: number,
  *   now?: Date,
+ *   reservationId?: string,
+ *   reason?: string,
  * }} options
  * @returns {{ ok: boolean, delta: number, reservedTokens: number }}
  */
-function settleSharedCloudRequest({ reservedTokens = 0, actualTokens = 0, now = new Date() }) {
-  const reserved = Math.max(0, Math.floor(Number(reservedTokens) || 0));
+function settleSharedCloudRequest({ reservationId = "", reservedTokens = 0, actualTokens = 0, now = new Date(), reason = "legacy" }) {
   const actual = Math.max(0, Math.floor(Number(actualTokens) || 0));
-  const delta = actual - reserved;
-  const state = loadState(now);
-  state.reserved_tokens = Math.max(0, state.reserved_tokens + delta);
-  persistState(state);
-  return { ok: true, delta, reservedTokens: state.reserved_tokens };
+  return withStateLock(() => {
+    const state = loadState(now, { fresh: true });
+    if (reservationId && state.settled_reservations[reservationId]) {
+      return { ok: true, duplicate: true, delta: 0, reservedTokens: state.reserved_tokens, reason };
+    }
+    const persistedReservation = reservationId ? state.reservations[reservationId] : null;
+    if (reservationId && !persistedReservation) {
+      return {
+        ok: true,
+        duplicate: false,
+        ignored: true,
+        delta: 0,
+        reservedTokens: state.reserved_tokens,
+        reason: "reservation_missing_or_expired",
+      };
+    }
+    const reserved = persistedReservation
+      ? persistedReservation.reserved_tokens
+      : Math.max(0, Math.floor(Number(reservedTokens) || 0));
+    const delta = actual - reserved;
+    state.reserved_tokens = Math.max(0, state.reserved_tokens + delta);
+    if (reservationId) {
+      delete state.reservations[reservationId];
+      state.settled_reservations[reservationId] = now.getTime();
+    }
+    persistState(state);
+    return { ok: true, duplicate: false, delta, reservedTokens: state.reserved_tokens, reason };
+  });
 }
 
 function resetSharedCloudBudgetCacheForTests() {
@@ -241,6 +396,7 @@ function resetSharedCloudBudgetCacheForTests() {
 
 module.exports = {
   estimatedInputTokens,
+  usageTokenTotal,
   pseudonymousCloudUserId,
   reserveSharedCloudRequest,
   settleSharedCloudRequest,

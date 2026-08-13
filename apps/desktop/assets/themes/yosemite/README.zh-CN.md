@@ -1,49 +1,54 @@
-<!-- canonical-source: assets/themes/yosemite/README.md -->
-<!-- source-sha256: 4ad8ceb358107e4f6d919ed0c810e53bf4172c47bd575a8f5e73a9f259d423f2 -->
+<!-- canonical-source: apps/desktop/assets/themes/yosemite/README.md -->
+<!-- source-sha256: b313f3dab13308cb998bc9979883a0286d614a76a71e09de3d1724621f42f75c -->
 <!-- 英文版为准；本译文仅供人类参考。 -->
 
 # Yosemite 图标家族
 
-本目录包含 AI System 6 完整的 56 项 OS X 10.10 外观。每个语义对象都保持
-[icon-system-continuity.json](../icon-system-continuity.json) 记录的跨时代
-`metaphorKey`，干净色块、浅景深与自由轮廓则遵循 Yosemite 参考世界。
+本目录发布完整的 56 对象 OS X 10.10 家族。稳定的跨时代含义由
+[icon-system-continuity.json](../icon-system-continuity.json) 中的
+`semanticIdentity` 与一至两个 `identityAnchors` 定义。已弃用的 `metaphorKey`
+不能用来把一个物理对象贯穿所有时代。
 
-## 运行时与尺寸政策
+运行时覆盖完整与历史验证是两件事。宽泛家族的 `accepted-generated` 状态只是创作
+决定。`priorityCore16` 以外的 40 个 ID 在逐项复核前继续保持历史待审；对象与时代
+状态记录于 [icon-provenance-matrix.json](../icon-provenance-matrix.json)。
 
-运行时 manifest 将全部对象映射到 32 px PNG。仓库保留的 128、64 与 16 px 文件，
-是从已接受主图确定性生成的 Theme Lab 审查派生件。它们用于检查缩放与材质表现，但
-不是分别创作的小尺寸图稿。应用包会携带所有声明的审查尺寸，Theme Lab 因此不会回退
-到缺失资源或旧图稿。
+## 实际运行时映射
 
-用户可见的 56 项现在全部属于已接受生成式家族。早期实测核心只保留为确定性重建层；
-已接受覆盖始终最后执行，最终家族会拒绝 `accepted-core` 或 fallback 像素残留。
+运行时会按调用场景直接选择逐对象 PNG：mini／menu／control strip 与 Finder list
+使用 16 px，普通系统图标场景使用 32 px，desktop／large／Retina 场景使用 128 px。
+`yosemite-icon-manifest.json` 只保留为兼容与审查 mapping，并非唯一 runtime source。
+仓库中的 64、32、16 px 文件通常是确定性派生件，除非对象账本另有说明；Finder 与
+MultiFinder 在所有列出的尺寸都拥有直接构成的光学运行时资产；Review Desk、
+Searcher、ClioTalk 拥有通过复核的 priority-lineage replacement 与独立 compact 图稿。
 
-这是当前家族刻意选择的诚实政策：机械缩小是审查证据，不是原生紧凑构图。未来若真
-正创作独立小尺寸家族，必须同时替换此政策及其像素门禁，不能只给派生件改名。
+Theme Lab 显示 16 个优先对象与派生尺寸，用于暴露小尺寸失败；它不授予历史批准。
 
-## 连续性
+## Finder／MultiFinder — P0 已关闭
 
-全部 56 项保持记录的跨时代含义。DocMap 仍是一张文档页，其标题线长成主干与分支；
-ClioTalk 仍是实线用户气泡与虚线临时回复。系统对象使用本时代原型，不用其他外观加
-滤镜代替。
+Finder 使用已批准的 ImageGen v2 低矮、较宽的 Yosemite 蓝／浅色分脸，并为
+`reference-validated`。MultiFinder 以当前 Yosemite Finder 身份加“多个”构成；
+它是 C 级来源、`historically-reviewed`，并不宣称为原生复刻。两者的
+128/64/32/16 资产都是直接构成的光学运行时图稿，不是旧的紧凑 Macintosh 派生件。
 
-## 文件与重建
+## ClioTalk — Yosemite cell 已关闭
 
-- `yosemite-icon-manifest.json` — 完整 56 项、32 px 运行时映射。
-- `yosemite-icon-family.json` — 每项来源、尺寸、指标与审核状态；家族已完整，无
-  fallback。
-- `icons/imagegen-source/` — 确定性覆盖重建所用的已接受生成式源文件。
-- `tooling/build-yosemite-core-icons.mjs` 与
-  `tooling/build-accepted-generated-era-icons.mjs` — 重建历史实测层，再重新应用全部 56 项
-  已接受生成式图稿，不改变语义 ID。
+ClioTalk 现在采用 P-B free-form transcript sheet，包含两个不同的 interlocutor mark
+与独立 provisional-reply tab。32 与 16 px 是光学重画，不是 generated master 的缩小。
+它是 `historically-reviewed`，但不是 `reference-validated` 或 native replica；blind-mix
+状态仍为 `not-run`。Platinum、Jaguar、Snow Leopard ClioTalk 继续 pending，本结果不
+升级这些年代。
 
-Theme Lab 直接从工作树读取 128/64/32/16。应用包发布所有声明的 Theme Lab 尺寸，
-但不包含仅供开发溯源的 `imagegen-source`。128 px PNG 直接用于 Retina 桌面显示，
-32 px manifest 则保持稳定的语义顺序与兼容性。本地 10.10 研究证据与早期反面稿继续
-被 git 忽略且仅作证据；截图裁切、提取 bitmap 或描摹路径不会作为运行时图标发布。
+## 重建
 
-## 网格
+执行：
 
-每个对象都位于共享 [icon-grid.mjs](../../../../../tooling/lib/icon-grid.mjs) 网格上。缩放
-保持等比，保留对象比例与视觉补偿；管线把每项摆放记录在家族 JSON 中，本家族不改动
-共享网格。
+```sh
+npm run build:era-icons -- --theme yosemite
+```
+
+该链重建宽泛层与实测层，恢复已接受生成家族，把批准的 Finder 家谱覆盖层应用到每个
+runtime tier，并重新生成兼容 manifest 与审查板。只运行 core 是中间诊断。
+
+历史 10.10 截图与 Apple 图稿仅作证据。Theme Lab 必须在真实显示尺寸检查每个
+派生件。

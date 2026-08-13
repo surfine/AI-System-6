@@ -7,17 +7,10 @@
 import { expect, test } from "@playwright/test";
 import {
   bootApp,
+  dismissGuide,
   dumpIndexedDb,
   E2E_PROJECT_NAME,
 } from "./helpers.mjs";
-
-async function realClose(page, windowName) {
-  const win = await page.$(`[data-window="${windowName}"]:not(.is-hidden)`);
-  if (win) {
-    await page.click(`[data-window="${windowName}"] .close-box`);
-    await page.waitForTimeout(400);
-  }
-}
 
 async function realAdvance(page, windowName, action, { settle = false } = {}) {
   if (settle) {
@@ -39,7 +32,7 @@ async function realAdvance(page, windowName, action, { settle = false } = {}) {
 
 test("mobile journey: a first-time phone user completes the whole route and downloads", async ({ page }) => {
   await bootApp(page);
-  await page.click('[data-action="dismiss-guide"]');
+  await dismissGuide(page);
 
   // Create a Project Hard Disk through the menu-bar switcher.
   await page.click("#project-switcher-button");
@@ -48,11 +41,10 @@ test("mobile journey: a first-time phone user completes the whole route and down
   await page.click("#new-project-disk-confirm");
   await page.waitForSelector("#new-project-disk-modal", { state: "hidden" });
 
-  // Import a source through the Project Hard Disk window's Add… chooser.
-  // Phone desktop icons select on a single tap and open on a double tap.
-  await realClose(page, "projects");
-  await page.dblclick("#active-project-drop-target");
-  await page.waitForSelector('[data-window="projects"]:not(.is-hidden)');
+  // Project creation already opens the mounted disk. On phone the desktop
+  // icon is intentionally hidden behind the foreground app, so continue in
+  // the visible Project Hard Disk instead of attempting to double-tap it.
+  await page.waitForSelector('[data-window="projects"].is-active:not(.is-hidden)');
   await page.click('[data-window="projects"] [data-action="open-import-utility"]');
   await page.waitForSelector('[data-window="importUtility"]:not(.is-hidden)');
   const chooserPromise = page.waitForEvent("filechooser");
@@ -65,13 +57,13 @@ test("mobile journey: a first-time phone user completes the whole route and down
   });
   await page.waitForFunction(
     () => /Source Notes|notes\.md|preview/i.test(document.querySelector("#import-preview")?.textContent || ""),
-    { timeout: 20_000 }
+    undefined, { timeout: 20_000 }
   );
   await page.click("#import-documents");
   await page.waitForFunction(() => {
     const status = document.querySelector("#import-status")?.textContent || "";
     return /saved|written|record|完成|imported|已写入|成功|写进/i.test(status);
-  }, { timeout: 20_000 });
+  }, undefined, { timeout: 20_000 });
 
   // Open the imported document and clip a passage through the Edit menu.
   await page.waitForSelector("#document-icon-grid [data-document-item-type='folder']", { timeout: 10_000 });
@@ -88,7 +80,7 @@ test("mobile journey: a first-time phone user completes the whole route and down
   await editMenu.locator('[data-action="selection-clip-file"]').click();
   await page.waitForFunction(
     () => /clipped|已剪|已保存|clip/i.test(document.querySelector("#status")?.textContent || ""),
-    { timeout: 15_000 }
+    undefined, { timeout: 15_000 }
   );
 
   // Close the whole app stack with real close boxes (the phone shell keeps
@@ -104,40 +96,48 @@ test("mobile journey: a first-time phone user completes the whole route and down
   }
   await page.waitForSelector("#finder-writing-studio-toggle", { state: "visible", timeout: 10_000 });
   await page.dblclick("#finder-writing-studio-toggle");
-  await page.waitForFunction(() => document.body.dataset.workspaceProfile === "writing", { timeout: 15_000 });
+  await page.waitForFunction(() => document.body.dataset.workspaceProfile === "writing", undefined, { timeout: 15_000 });
 
   // Question Sheet -> Outline -> Section Drafts.
   await page.fill("#question-sheet-body", "Recipient: the reader.\n\nQuestion: does the evidence support the claim?");
   await realAdvance(page, "questionSheet", "advance-question-to-outline", { settle: true });
-  await page.waitForSelector('[data-window="outline"]:not(.is-hidden)', { timeout: 15_000 });
+  await page.waitForSelector('[data-window="outline"].is-active:not(.is-hidden)', { timeout: 15_000 });
   await page.fill("#outline-content", "## Section One\n\n## Section Two");
   await realAdvance(page, "outline", "advance-outline-to-drafts");
-  await page.waitForSelector('[data-window="sectionDrafts"]:not(.is-hidden)', { timeout: 15_000 });
+  await page.waitForSelector('[data-window="sectionDrafts"].is-active:not(.is-hidden)', { timeout: 15_000 });
   await page.fill("#draft-body", "Mobile prose grounded in the clipped evidence.");
   await realAdvance(page, "sectionDrafts", "advance-drafts-to-review");
   // The drafts-to-review transition lands on the FINALIZED manuscript.
-  await page.waitForSelector('[data-window="teachText"]:not(.is-hidden)', { timeout: 10_000 });
+  await page.waitForSelector('[data-window="teachText"].is-active:not(.is-hidden)', { timeout: 15_000 });
+  await page.waitForFunction(
+    () => document.querySelector("#system-modal")?.hasAttribute("open")
+      || document.querySelector("#teachtext-label")?.value === "final",
+    undefined,
+    { timeout: 15_000 }
+  );
   const finalModal = page.locator("#system-modal[open]");
   if (await finalModal.count()) {
     await page.click("#system-modal-yes");
     await page.waitForSelector("#system-modal", { state: "hidden", timeout: 10_000 });
   }
+  await expect(page.locator("#teachtext-label")).toHaveValue("final", { timeout: 15_000 });
   await page.waitForFunction(
     () => typeof document.querySelector("#teachtext-body")?.value === "string",
-    { timeout: 10_000 }
+    undefined, { timeout: 10_000 }
   );
   await page.fill("#teachtext-body", "# Manuscript\n\nMobile manuscript prose grounded in the clipped evidence.");
   await page.keyboard.press("Meta+s");
 
   // Project CD: burn (real button) — the CD window opens, then download.
   await page.click("#teachtext-body");
-  await page.waitForTimeout(400);
   const fileMenu = page.locator(".menu-bar > .menu").filter({ has: page.locator(":scope > button", { hasText: /^File$/ }) });
   await fileMenu.locator("> button").click();
   await fileMenu.locator(".menu-submenu-trigger", { hasText: "Export" }).hover();
-  await fileMenu.locator('[data-action="export-teachtext-project-cd"]').click();
+  const burnAction = fileMenu.locator('[data-action="export-teachtext-project-cd"]');
+  await expect(burnAction).toBeEnabled({ timeout: 15_000 });
+  await burnAction.click();
   await page.waitForSelector('[data-window="projectCd"]:not(.is-hidden)', { timeout: 15_000 });
-  await page.waitForFunction(() => (document.querySelector("#project-cd-count")?.textContent || "").includes("1"), { timeout: 15_000 });
+  await page.waitForFunction(() => (document.querySelector("#project-cd-count")?.textContent || "").includes("1"), undefined, { timeout: 15_000 });
   const downloadPromise = page.waitForEvent("download");
   await page.click("#download-project-cd");
   const download = await downloadPromise;
@@ -145,7 +145,7 @@ test("mobile journey: a first-time phone user completes the whole route and down
 
   // Reload: project, clipping, manuscript, and CD item persist.
   await page.reload();
-  await page.waitForFunction(() => document.body.dataset.appReady === "ready", { timeout: 45_000 });
+  await page.waitForFunction(() => document.body.dataset.appReady === "ready", undefined, { timeout: 45_000 });
   const db = await dumpIndexedDb(page);
   expect((db.projects || []).some((project) => project.name === E2E_PROJECT_NAME)).toBe(true);
   expect((db.chatFiles || []).some((file) => file.artifactKind === "clipping")).toBe(true);

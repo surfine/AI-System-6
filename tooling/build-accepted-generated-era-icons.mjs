@@ -16,6 +16,18 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const ledgerPath = join(root, "tooling/icon-generation/accepted-generated-icons.json");
 const ledger = JSON.parse(readFileSync(ledgerPath, "utf8"));
 const specs = Object.fromEntries(ICON_SPECS.map((entry) => [entry.id, entry]));
+const continuity = JSON.parse(readFileSync(join(root, "apps/desktop/assets/themes/icon-system-continuity.json"), "utf8"));
+const priorityCore16 = new Set(continuity.priorityCore16);
+
+function historicalMetadata(iconId, eraId) {
+  const anchor = continuity.semanticAnchors?.[iconId];
+  return {
+    provenanceClass: anchor?.provenanceClassByEra?.[eraId] || "C",
+    historicalReviewStatus: priorityCore16.has(iconId)
+      ? anchor?.reviewStatusByEra?.[eraId] || "pending"
+      : "pending",
+  };
+}
 
 function sha256(buffer) {
   return createHash("sha256").update(buffer).digest("hex");
@@ -103,13 +115,12 @@ export async function buildAcceptedGeneratedIcons(requestedEras = Object.keys(le
         genre: specs[iconId].genre,
         physicalMetaphor: GENERATION_OBJECTS[iconId].subject,
         semanticMark: specs[iconId].symbol,
-        metaphorKey: iconId === "finderApp"
-          ? "smiling-compact-macintosh"
-          : iconId === "multiFinderApp"
-            ? "paired-smiling-compact-macintoshes"
-            : family.icons[iconId]?.metaphorKey,
         sourceKind: "original-generated-era-illustration",
         reviewStatus: "accepted-generated",
+        authoringMethod: "image-generation-plus-deterministic-processing",
+        generationStatus: "technically-clean",
+        ...historicalMetadata(iconId, eraId),
+        runtimeAsset: true,
         sizes: sizeFiles,
         runtimePixelMetrics: pixelMetrics,
       };
@@ -119,8 +130,16 @@ export async function buildAcceptedGeneratedIcons(requestedEras = Object.keys(le
       }
     }
 
+    family.schemaVersion = 2;
     family.generatedOverlayBuilder = "tooling/build-accepted-generated-era-icons.mjs";
-    family.runtimeSize = 128;
+    family.runtimeAsset = true;
+    family.completeFamilyMeaning = "All 56 runtime ids resolve to technically accepted artwork. Historical review is a separate per-icon state.";
+    family.generatedAcceptanceMeaning = "Authoring acceptance confirms source and technical quality; it never implies historical validation.";
+    family.runtimeSize = "contextual";
+    family.runtimeSizesByContext = { compactMenuList: 16, ordinary: 32, desktopLargeRetina: 128 };
+    family.compatibilityManifest = `${eraId}-icon-manifest.json`;
+    family.compatibilityManifestMeaning = "Stable 32 px semantic mapping only; app/core/system-icons.js selects 16, 32, or 128 px by rendering context.";
+    family.runtimeDispatch = "apps/desktop/app/core/system-icons.js";
     family.generatedAcceptanceLedger = "tooling/icon-generation/accepted-generated-icons.json";
     family.imageGenerationSource = `assets/themes/${eraId}/icons/imagegen-source`;
     family.reviewedGenerated = acceptedIds;
@@ -140,5 +159,5 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
     const value = process.argv[index] === "--theme" ? process.argv[++index] : process.argv[index].replace(/^--theme=/, "");
     requested.push(value);
   }
-  await buildAcceptedGeneratedIcons(requested.length ? requested : undefined);
+  await buildAcceptedGeneratedIcons(requested.length ? requested : Object.keys(ledger.eras));
 }

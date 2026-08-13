@@ -7,7 +7,7 @@
 
 const { readJsonBody, requestSignal, send } = require("../lib/http.js");
 const { postJsonWithFallback } = require("../lib/fetch.js");
-const { DEEPSEEK_BASE_URL_DEFAULT, resolveCloudBaseUrl } = require("../cloud.js");
+const { DEEPSEEK_BASE_URL_DEFAULT, resolveCloudTarget } = require("../cloud.js");
 const { resolveCloudCredential } = require("../credential-vault.js");
 const {
   buildImportRepairMessages,
@@ -203,6 +203,8 @@ async function repairTextWithLocalModel(text, signal) {
  * @param {{
  *   cloudApiKey?: string,
  *   cloudBaseUrl?: string,
+ *   cloudPinnedAddress?: string,
+ *   cloudPinnedFamily?: number,
  *   cloudModel?: string,
  *   signal?: AbortSignal,
  * }} options
@@ -222,7 +224,10 @@ async function repairTextWithCloudModel(text, options) {
     "Authorization": `Bearer ${apiKey}`,
     "Content-Type": "application/json",
   };
-  const { response } = await postJsonWithFallback(targetUrl, payload, options.signal, headers);
+  const { response } = await postJsonWithFallback(targetUrl, payload, options.signal, headers, {
+    pinnedAddress: options.cloudPinnedAddress,
+    pinnedFamily: options.cloudPinnedFamily,
+  });
   const responseText = await response.text();
   let data = {};
   try {
@@ -260,6 +265,8 @@ function isOcrOrLayoutHeavyImport(name, mimeType) {
  *   cloudActive?: boolean,
  *   cloudApiKey?: string,
  *   cloudBaseUrl?: string,
+ *   cloudPinnedAddress?: string,
+ *   cloudPinnedFamily?: number,
  *   cloudModel?: string,
  *   language?: string,
  *   modelExecution?: "client" | "server",
@@ -335,10 +342,14 @@ async function handleImportText(req, res) {
     const modelExecution = /** @type {"client" | "server"} */ (
       body.model_execution === "client" ? "client" : "server"
     );
-    const cloudApiKey = body._cloud_active
+    const cloudTarget = body._cloud_active
+      ? await resolveCloudTarget(body._cloud_base_url || DEEPSEEK_BASE_URL_DEFAULT)
+      : null;
+    const cloudApiKey = cloudTarget
       ? await resolveCloudCredential({
           credentialId: body._cloud_credential_id,
           provider: "deepseek",
+          targetBaseUrl: cloudTarget.baseUrl,
           suppliedApiKey: body._cloud_api_key,
           allowSupplied: false,
         })
@@ -348,7 +359,9 @@ async function handleImportText(req, res) {
       ocrEngine,
       cloudActive: !!body._cloud_active,
       cloudApiKey,
-      cloudBaseUrl: resolveCloudBaseUrl(body._cloud_base_url || DEEPSEEK_BASE_URL_DEFAULT),
+      cloudBaseUrl: cloudTarget?.baseUrl || "",
+      cloudPinnedAddress: cloudTarget?.address || "",
+      cloudPinnedFamily: cloudTarget?.family || 0,
       cloudModel: body._cloud_model,
       language: body.language,
       modelExecution,

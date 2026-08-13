@@ -7,6 +7,17 @@ const scheduledRenderTasks = new Set();
 let scheduledRenderFrame = 0;
 const renderSignatureCache = new Map();
 const storageSnapshotCache = new Map();
+const storageRecordFingerprintCache = new Map();
+const dirtyDeskRecords = new Map();
+const deletedDeskRecords = new Map();
+const dirtyDeskCollections = new Set();
+let lastDeskPersistenceStats = {
+  storesTouched: [],
+  puts: 0,
+  deletes: 0,
+  settingsWritten: false,
+  durationMs: 0,
+};
 const localApiTokenSessionKey = "ai-system6-local-api-token";
 let deskPersistenceWritable = true;
 let controlStripCollapsed = false;
@@ -32,8 +43,6 @@ function defaultControlStripState() {
     disabledModules: [],
     scrollOffset: 0,
     hotkey: "",
-    menuFont: "",
-    menuFontSize: 12,
   };
 }
 
@@ -64,8 +73,6 @@ function normalizeControlStripState(raw) {
       : [],
     scrollOffset: Math.max(0, Math.round(clampControlStripNumber(source.scrollOffset, 0, Number.MAX_SAFE_INTEGER, fallback.scrollOffset))),
     hotkey: typeof source.hotkey === "string" ? source.hotkey : "",
-    menuFont: typeof source.menuFont === "string" ? source.menuFont : "",
-    menuFontSize: Math.round(clampControlStripNumber(source.menuFontSize, 9, 24, fallback.menuFontSize)),
   };
 }
 
@@ -78,8 +85,8 @@ function getControlStripState() {
 function setControlStripState(patch = {}) {
   controlStripState = normalizeControlStripState({ ...controlStripState, ...patch });
   controlStripCollapsed = controlStripState.collapsed;
-  if (typeof controlStripInput !== "undefined" && controlStripInput) {
-    controlStripInput.checked = controlStripState.enabled;
+  if (typeof controlStripShowInput !== "undefined" && controlStripShowInput) {
+    controlStripShowInput.checked = controlStripState.enabled;
   }
   saveDeskState();
   return controlStripState;
@@ -102,8 +109,8 @@ function restoreControlStripState(settings) {
     };
   }
   controlStripCollapsed = controlStripState.collapsed;
-  if (typeof controlStripInput !== "undefined" && controlStripInput) {
-    controlStripInput.checked = controlStripState.enabled;
+  if (typeof controlStripShowInput !== "undefined" && controlStripShowInput) {
+    controlStripShowInput.checked = controlStripState.enabled;
   }
   return controlStripState;
 }
@@ -185,9 +192,32 @@ function scheduleStatusRender() {
   scheduleRenderTasks("menuStatus", "aboutMacintosh");
 }
 
-function markDeskDirty(kind = "settings") {
-  storageSnapshotCache.delete(kind);
+function markDeskDirty(kind = "settings", recordId = "") {
+  if (kind === "settings") {
+    storageSnapshotCache.delete("settings");
+    return;
+  }
+  if (!recordId) {
+    dirtyDeskCollections.add(kind);
+    return;
+  }
+  if (!dirtyDeskRecords.has(kind)) dirtyDeskRecords.set(kind, new Set());
+  dirtyDeskRecords.get(kind).add(String(recordId));
+  deletedDeskRecords.get(kind)?.delete(String(recordId));
 }
+
+function markDeskDeleted(kind, recordId) {
+  if (!kind || recordId === undefined || recordId === null || recordId === "") return;
+  if (!deletedDeskRecords.has(kind)) deletedDeskRecords.set(kind, new Set());
+  deletedDeskRecords.get(kind).add(String(recordId));
+  dirtyDeskRecords.get(kind)?.delete(String(recordId));
+}
+
+window.AISystem6DeskPersistence = Object.freeze({
+  markDirty: markDeskDirty,
+  markDeleted: markDeskDeleted,
+  getLastStats: () => ({ ...lastDeskPersistenceStats, storesTouched: [...lastDeskPersistenceStats.storesTouched] }),
+});
 
 function settingsSnapshotPayload() {
   return {
@@ -849,7 +879,17 @@ async function connectLocalLmStudio(options = {}) {
     const embeddingModels = Array.isArray(data.embeddingModels) ? data.embeddingModels : [];
     setModelPickerOptions(chatModels, embeddingModels);
     const loadedModel = syncLoadedLocalModel(data, chatModels);
-    const selectedModel = findMatchingModel(chatModels, modelInput.value.trim());
+    let selectedModel = findMatchingModel(chatModels, modelInput.value.trim());
+    // A previous endpoint can leave its model id in the shared input. Normal
+    // picker mode must select from the new endpoint's actual inventory or the
+    // connection looks successful while every composer remains disabled.
+    // Manual mode intentionally keeps the operator's explicit model id.
+    if (!selectedModel && chatModels.length && !isManualLocalModelMode()) {
+      selectedModel = chatModels[0];
+      modelInput.value = selectedModel.id;
+      if (localModelSelectEl()) localModelSelectEl().value = selectedModel.id;
+      updateContextMaxForCurrentModel();
+    }
     const ready = !!(selectedModel && (data.autoLoad || loadedModel?.id === selectedModel.id));
     if (modelPickerStatusEl) {
       modelPickerStatusEl.textContent = t("models_found_split", chatModels.length, embeddingModels.length);
@@ -1311,11 +1351,47 @@ async function setupLocalLmStudioModel() {
   }
 }
 
+function deskRecordIdentity(kind, item, index) {
+  if (kind === "trash") {
+    if (item._storageId === undefined || item._storageId === null || item._storageId === "") {
+      item._storageId = crypto.randomUUID();
+    }
+    return item._storageId;
+  }
+  return item.id ?? `${kind}-legacy-${index}`;
+}
+
+function deskCollectionPlan(definition) {
+  const previous = storageRecordFingerprintCache.get(definition.key) || new Map();
+  const current = new Map();
+  const puts = [];
+  definition.items.forEach((item, index) => {
+    const id = deskRecordIdentity(definition.key, item, index);
+    const cacheKey = String(id);
+    const fingerprint = JSON.stringify(item);
+    current.set(cacheKey, { id, fingerprint });
+    if (
+      previous.get(cacheKey)?.fingerprint !== fingerprint
+      || dirtyDeskRecords.get(definition.key)?.has(cacheKey)
+    ) {
+      puts.push({ id, item });
+    }
+  });
+  const deletes = [];
+  for (const [cacheKey, cached] of previous) {
+    if (!current.has(cacheKey)) deletes.push(cached.id);
+  }
+  for (const cacheKey of deletedDeskRecords.get(definition.key) || []) {
+    const cached = previous.get(cacheKey);
+    if (cached && !deletes.some((id) => String(id) === String(cached.id))) deletes.push(cached.id);
+  }
+  return { ...definition, current, puts, deletes };
+}
+
 async function persistDeskState() {
   const endPerf = window.AISystem6Perf?.start("state_save");
+  const startedAt = performance.now();
   let db;
-  let tx;
-  let transactionCompletion = null;
   try {
     if (!deskPersistenceWritable) {
       endPerf?.({ blocked: true });
@@ -1323,64 +1399,88 @@ async function persistDeskState() {
     }
     ensureActiveProject();
     syncCurrentNotePadPage();
-    const stores = [
+    const plans = [
       { key: "projects", storeName: projectsStoreName, items: projects },
       { key: "scraps", storeName: scrapsStoreName, items: scraps },
       { key: "trash", storeName: trashStoreName, items: trashItems },
       { key: "chatFolders", storeName: chatFoldersStoreName, items: chatFolders },
       { key: "chatFiles", storeName: chatFilesStoreName, items: chatFiles },
-    ].map((entry) => ({
-      ...entry,
-      snapshot: JSON.stringify(entry.items),
-    })).filter((entry) => storageSnapshotCache.get(entry.key) !== entry.snapshot);
+    ].map(deskCollectionPlan);
+    const changedPlans = plans.filter((plan) => plan.puts.length || plan.deletes.length);
     const settingsPayload = settingsSnapshotPayload();
     const settingsSnapshot = JSON.stringify(settingsPayload);
     const shouldWriteSettings = storageSnapshotCache.get("settings") !== settingsSnapshot;
-    if (!stores.length && !shouldWriteSettings) {
+    if (!changedPlans.length && !shouldWriteSettings) {
+      lastDeskPersistenceStats = {
+        storesTouched: [],
+        puts: 0,
+        deletes: 0,
+        settingsWritten: false,
+        durationMs: performance.now() - startedAt,
+      };
       endPerf?.({ skipped: true });
       return true;
     }
 
     db = await openAppDb();
-    tx = window.AISystem6StorageTransactions.readwriteTransaction(
+    const storeNames = changedPlans.map((plan) => plan.storeName);
+    if (shouldWriteSettings) storeNames.push(keyvalStoreName);
+    await window.AISystem6StorageTransactions.runTransaction(
       db,
-      [
-        projectsStoreName, scrapsStoreName, trashStoreName,
-        chatFoldersStoreName, chatFilesStoreName, keyvalStoreName
-      ]
-    );
-    transactionCompletion = window.AISystem6StorageTransactions.transactionDone(tx);
+      storeNames,
+      "readwrite",
+      async (tx) => {
+        // Queue every request synchronously before awaiting. This keeps the
+        // transaction active in Safari/WebKit and avoids async gaps between
+        // object-store operations.
+        const writes = [];
+        changedPlans.forEach((plan) => {
+          const store = tx.objectStore(plan.storeName);
+          plan.puts.forEach(({ id, item }) => {
+            writes.push(idbRequest(plan.key === "trash" ? store.put(item, id) : store.put(item)));
+          });
+          plan.deletes.forEach((id) => writes.push(idbRequest(store.delete(id))));
+        });
 
-    const clearAndPutAll = async (storeName, snapshot) => {
-      const store = tx.objectStore(storeName);
-      await idbRequest(store.clear());
-      const items = JSON.parse(snapshot);
-      for (const item of items) {
-        await idbRequest(store.put(item));
+        if (shouldWriteSettings) {
+          const settingsStore = tx.objectStore(keyvalStoreName);
+          writes.push(idbRequest(settingsStore.put(settingsPayload, "settings")));
+          writes.push(idbRequest(settingsStore.put(storageVersion, "storageVersion")));
+        }
+        await Promise.all(writes);
       }
-    };
-
-    await Promise.all(stores.map((entry) =>
-      clearAndPutAll(entry.storeName, entry.snapshot)
-    ));
-
-    if (shouldWriteSettings) {
-      const settingsStore = tx.objectStore(keyvalStoreName);
-      await idbRequest(settingsStore.put(JSON.parse(settingsSnapshot), "settings"));
-      await idbRequest(settingsStore.put(storageVersion, "storageVersion"));
-    }
-    await transactionCompletion;
-    stores.forEach((entry) => storageSnapshotCache.set(entry.key, entry.snapshot));
+    );
+    plans.forEach((plan) => storageRecordFingerprintCache.set(plan.key, plan.current));
     if (shouldWriteSettings) storageSnapshotCache.set("settings", settingsSnapshot);
-    endPerf?.({ stores: stores.map((entry) => entry.key).join(","), settings: shouldWriteSettings });
+    changedPlans.forEach((plan) => {
+      dirtyDeskRecords.delete(plan.key);
+      deletedDeskRecords.delete(plan.key);
+      dirtyDeskCollections.delete(plan.key);
+    });
+    lastDeskPersistenceStats = {
+      storesTouched: changedPlans.map((plan) => plan.key),
+      puts: changedPlans.reduce((total, plan) => total + plan.puts.length, 0),
+      deletes: changedPlans.reduce((total, plan) => total + plan.deletes.length, 0),
+      settingsWritten: shouldWriteSettings,
+      durationMs: performance.now() - startedAt,
+    };
+    endPerf?.({
+      stores: lastDeskPersistenceStats.storesTouched.join(","),
+      puts: lastDeskPersistenceStats.puts,
+      deletes: lastDeskPersistenceStats.deletes,
+      settings: shouldWriteSettings,
+    });
     return true;
   } catch (error) {
-    try {
-      tx?.abort();
-    } catch {}
-    await transactionCompletion?.catch(() => {});
     console.error("Failed to save state to IDB:", error);
-    storageSnapshotCache.clear();
+    lastDeskPersistenceStats = {
+      storesTouched: [],
+      puts: 0,
+      deletes: 0,
+      settingsWritten: false,
+      durationMs: performance.now() - startedAt,
+      error: true,
+    };
     endPerf?.({ error: true });
     return false;
   } finally {
@@ -1406,6 +1506,7 @@ async function loadDeskState() {
       storedProjects,
       storedScraps,
       storedTrashItems,
+      storedTrashKeys,
       storedChatFolders,
       storedChatFiles,
       settings,
@@ -1413,6 +1514,7 @@ async function loadDeskState() {
       idbRequest(tx.objectStore(projectsStoreName).getAll()),
       idbRequest(tx.objectStore(scrapsStoreName).getAll()),
       idbRequest(tx.objectStore(trashStoreName).getAll()),
+      idbRequest(tx.objectStore(trashStoreName).getAllKeys()),
       idbRequest(tx.objectStore(chatFoldersStoreName).getAll()),
       idbRequest(tx.objectStore(chatFilesStoreName).getAll()),
       idbRequest(tx.objectStore(keyvalStoreName).get("settings")),
@@ -1426,16 +1528,30 @@ async function loadDeskState() {
     );
     projects.splice(0, projects.length, ...storedProjects);
     scraps.splice(0, scraps.length, ...storedScraps);
+    storedTrashItems.forEach((item, index) => {
+      if (item._storageId === undefined || item._storageId === null || item._storageId === "") {
+        item._storageId = storedTrashKeys[index] ?? crypto.randomUUID();
+      }
+    });
     trashItems.splice(0, trashItems.length, ...storedTrashItems);
     chatFolders.splice(0, chatFolders.length, ...storedChatFolders);
     chatFiles.splice(0, chatFiles.length, ...storedChatFiles);
     deskPersistenceWritable = true;
     storageSnapshotCache.clear();
-    storageSnapshotCache.set("projects", JSON.stringify(projects));
-    storageSnapshotCache.set("scraps", JSON.stringify(scraps));
-    storageSnapshotCache.set("trash", JSON.stringify(trashItems));
-    storageSnapshotCache.set("chatFolders", JSON.stringify(chatFolders));
-    storageSnapshotCache.set("chatFiles", JSON.stringify(chatFiles));
+    storageRecordFingerprintCache.clear();
+    [
+      { key: "projects", storeName: projectsStoreName, items: projects },
+      { key: "scraps", storeName: scrapsStoreName, items: scraps },
+      { key: "trash", storeName: trashStoreName, items: trashItems },
+      { key: "chatFolders", storeName: chatFoldersStoreName, items: chatFolders },
+      { key: "chatFiles", storeName: chatFilesStoreName, items: chatFiles },
+    ].forEach((definition) => {
+      const plan = deskCollectionPlan(definition);
+      storageRecordFingerprintCache.set(definition.key, plan.current);
+    });
+    dirtyDeskRecords.clear();
+    deletedDeskRecords.clear();
+    dirtyDeskCollections.clear();
     if (!shouldRewriteSanitizedSettings) {
       storageSnapshotCache.set("settings", JSON.stringify(settingsSnapshotPayload()));
     }

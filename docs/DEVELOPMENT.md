@@ -29,15 +29,24 @@ browser bundle before starting the server.
 | --- | --- |
 | `npm start` | Build and serve the desktop at port 4173 |
 | `npm run build` | Produce the deterministic browser bundle |
-| `npm test` | Run executable feature contracts |
+| `npm test` | Compatibility alias for executable feature contracts |
+| `npm run lint` | Lint the hardened server and integration-test boundary |
+| `npm run verify:contracts` | Run source and architecture contracts |
+| `npm run test:unit` | Run focused behavior tests for hardened boundaries |
+| `npm run test:integration` | Run route tests against local fake upstreams |
+| `npm run test:e2e:smoke` | Run startup, persistence, and two-window smoke in Chromium and WebKit |
 | `npm run verify:version` | Check package, build, runtime, and release identity |
 | `npm run verify:checkjs` | Type-check the annotated frontend JavaScript |
-| `npm run verify:public` | Verify commands, required files, asset budgets, docs, and CI |
-| `npm run test:e2e` | Optional Playwright browser diagnostics |
+| `npm run verify:src` | Type-check the canonical Node server |
+| `npm run verify:public-tree` | Verify commands, required files, asset budgets, docs, and CI |
+| `npm run verify:public` | Compatibility alias for `verify:public-tree` |
+| `npm run test:e2e` | Run the extended Playwright diagnostics |
 
-The default CI sequence is `npm ci`, `npm run build`, `npm test`,
-`npm run verify:version`, `npm run verify:checkjs`, and
-`npm run verify:public`.
+CI installs from the lockfile, lints, builds, runs contracts, focused unit and
+fake-upstream integration tests, checks version/checkJs/server types/docs/public
+tree, and executes the smoke in separate Chromium and WebKit jobs. In the
+maintainer source tree it also builds a clean public snapshot in a temporary
+directory and really runs `npm ci`, `npm run build`, and `npm test` there.
 
 ## Editing the browser runtime
 
@@ -68,8 +77,9 @@ test when a bug exposed a missing invariant, or when a feature creates a new
 boundary. Prefer testing observable structure or behavior over implementation
 spelling.
 
-Playwright tests are optional diagnostics, not the release condition. A flaky
-browser probe must not replace a deterministic product contract.
+The Chromium and WebKit smoke is a release condition. Broader Playwright tests
+remain diagnostics, and no browser probe replaces a deterministic product
+contract.
 
 ## Assets and generated files
 

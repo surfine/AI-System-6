@@ -28,7 +28,7 @@
 "use strict";
 
 const { send, readJsonBody, requestSignal, withTimeoutSignal } = require("../lib/http.js");
-const { postJsonWithFallback, proxyJsonStream } = require("../lib/fetch.js");
+const { createSseJsonParser, postJsonWithFallback, proxyJsonStream } = require("../lib/fetch.js");
 const { applyChatTaskContract, modelContentFromChatData } = require("../chat.js");
 const {
   findHumanizerOutputHits,
@@ -40,10 +40,9 @@ const {
 const {
   cloudAuthHeaders,
   DEEPSEEK_CLOUD_MODELS,
-  DEEPSEEK_API_KEY_DEFAULT,
   DEEPSEEK_BASE_URL_DEFAULT,
   DEEPSEEK_PUBLIC_BASE_URL,
-  resolveCloudBaseUrl,
+  resolveCloudTarget,
 } = require("../cloud.js");
 const { isPublicDeployment } = require("../runtime-profile.js");
 const { resolveCloudCredential } = require("../credential-vault.js");
@@ -51,8 +50,8 @@ const { sessionFromRequest } = require("../security/public-session.js");
 const {
   pseudonymousCloudUserId,
   reserveSharedCloudRequest,
-  settleSharedCloudRequest,
   sharedCloudBudgetConfig,
+  usageTokenTotal,
 } = require("../shared-cloud-budget.js");
 const { cloudUpstreamWarning, responsesEffortForTask } = require("../responses.js");
 
@@ -112,10 +111,13 @@ function stripCloudLocalOnlyFields(payload) {
  *   targetUrl: string,
  *   signal: AbortSignal | null | undefined,
  *   authHeaders: Record<string, string>,
+ *   transportOptions: { maxBytes?: number, pinnedAddress?: string, pinnedFamily?: number },
+ *   reserveSharedCall?: (payload: any) => any,
+ *   initialUsageTokens?: number,
  * }} options
  */
 async function repairCloudHumanizerOutputIfNeeded(options) {
-  const { payload, taskKind, targetUrl, signal, authHeaders } = options;
+  const { payload, taskKind, targetUrl, signal, authHeaders, transportOptions } = options;
   let data = options.data;
   let content = modelContentFromChatData(data).trim();
   if (!content || !shouldLintHumanizerOutput(taskKind)) return data;
@@ -124,6 +126,7 @@ async function repairCloudHumanizerOutputIfNeeded(options) {
 
   let attempts = 0;
   let repaired = false;
+  let totalUsageTokens = Math.max(0, Number(options.initialUsageTokens) || 0);
   for (; explicitRewrite && attempts < 2 && hits.length; attempts += 1) {
     const repairPayload = {
       ...payload,
@@ -144,34 +147,56 @@ async function repairCloudHumanizerOutputIfNeeded(options) {
         },
       ],
     };
-    const { response } = await postJsonWithFallback(
-      targetUrl,
-      repairPayload,
-      signal,
-      authHeaders,
-      { maxBytes: 16 * 1024 * 1024 }
-    );
-    const text = await response.text();
-    if (!response.ok) break;
-    let repairData = {};
+    let repairReservation = null;
     try {
-      repairData = JSON.parse(text);
-    } catch {
+      repairReservation = options.reserveSharedCall?.(repairPayload) || null;
+      const { response } = await postJsonWithFallback(
+        targetUrl,
+        repairPayload,
+        signal,
+        authHeaders,
+        {
+          ...transportOptions,
+          onRequest: () => repairReservation?.markUpstreamStarted(),
+        }
+      );
+      const text = await response.text();
+      if (!response.ok) break;
+      let repairData = {};
+      try {
+        repairData = JSON.parse(text);
+      } catch {
+        break;
+      }
+      const repairUsage = usageTokenTotal(repairData?.usage);
+      if (repairUsage !== null) {
+        repairReservation?.addUsage(repairData.usage);
+        totalUsageTokens += repairUsage;
+      }
+      const nextContent = modelContentFromChatData(repairData).trim();
+      if (!nextContent) break;
+      if (isHumanizerRepairMetaResponse(nextContent)) break;
+      data = repairData;
+      content = nextContent;
+      repaired = true;
+      hits = findHumanizerOutputHits(content);
+    } catch (error) {
+      console.error(JSON.stringify({
+        level: "error",
+        event: "cloud_humanizer_repair_failed",
+        code: String(/** @type {any} */ (error)?.code || "repair_failed"),
+      }));
       break;
+    } finally {
+      repairReservation?.settle();
     }
-    const nextContent = modelContentFromChatData(repairData).trim();
-    if (!nextContent) break;
-    if (isHumanizerRepairMetaResponse(nextContent)) break;
-    data = repairData;
-    content = nextContent;
-    repaired = true;
-    hits = findHumanizerOutputHits(content);
   }
 
   data.ai_system6_humanizer = {
     mode: explicitRewrite ? "explicit-rewrite" : "lint",
     repaired,
     repair_attempts: attempts,
+    total_usage_tokens: totalUsageTokens,
     remaining_hits: hits,
     diagnostics: findHumanizerStyleDiagnostics(content),
   };
@@ -185,6 +210,7 @@ async function repairCloudHumanizerOutputIfNeeded(options) {
 async function handleCloudChat(req, res) {
   const requestAbortSignal = requestSignal(req, res);
   let timeoutHandle = null;
+  let sharedReservation = null;
   const startedAt = Date.now();
 
   try {
@@ -200,16 +226,24 @@ async function handleCloudChat(req, res) {
       ? String(raw._cloud_api_key || "").trim()
       : "";
     const usingSharedCloud = isPublicDeployment && !suppliedPublicApiKey;
+    const requestedTargetBaseUrl = isPublicDeployment
+      ? DEEPSEEK_PUBLIC_BASE_URL
+      : raw._cloud_base_url || DEEPSEEK_BASE_URL_DEFAULT;
+    const cloudTarget = await resolveCloudTarget(requestedTargetBaseUrl);
+    const targetBaseUrl = cloudTarget.baseUrl;
     const apiKey = await resolveCloudCredential({
       credentialId: raw._cloud_credential_id,
       provider: "deepseek",
-      suppliedApiKey: raw._cloud_api_key || DEEPSEEK_API_KEY_DEFAULT,
+      targetBaseUrl,
+      suppliedApiKey: raw._cloud_api_key,
       allowSupplied: isPublicDeployment,
     });
-    const targetBaseUrl = isPublicDeployment
-      ? DEEPSEEK_PUBLIC_BASE_URL
-      : resolveCloudBaseUrl(raw._cloud_base_url || DEEPSEEK_BASE_URL_DEFAULT);
     const targetUrl = `${targetBaseUrl}/v1/chat/completions`;
+    const transportOptions = {
+      maxBytes: 16 * 1024 * 1024,
+      pinnedAddress: cloudTarget.address,
+      pinnedFamily: cloudTarget.family,
+    };
 
     if (raw._cloud_model) raw.model = raw._cloud_model;
     delete raw._cloud_api_key;
@@ -221,8 +255,6 @@ async function handleCloudChat(req, res) {
     delete raw.ai_system6_enable_thinking;
 
     const payload = raw;
-    /** @type {{ inputTokens: number, outputTokens: number, reservedTokens: number, remainingSessionRequests: number } | null} */
-    let sharedReservation = null;
     if (!apiKey) {
       send(res, 400, JSON.stringify({
         error: "Missing API key",
@@ -247,7 +279,6 @@ async function handleCloudChat(req, res) {
         : 1800;
       const publicSession = sessionFromRequest(req);
       payload.user_id = pseudonymousCloudUserId(publicSession?.nonce || "");
-      let sharedReservation = null;
       if (usingSharedCloud) {
         payload.max_tokens = Math.min(
           payload.max_tokens,
@@ -310,31 +341,25 @@ async function handleCloudChat(req, res) {
     const authHeaders = cloudAuthHeaders(apiKey);
 
     if (payload.stream === true) {
-      let streamUsageTokens = 0;
+      payload.stream_options = {
+        ...(payload.stream_options && typeof payload.stream_options === "object" ? payload.stream_options : {}),
+        include_usage: true,
+      };
+      const streamParser = createSseJsonParser((event) => {
+        if (event?.usage) sharedReservation?.addUsage(event.usage);
+      });
       await proxyJsonStream(targetUrl, payload, signal, res, authHeaders, {
         maxBytes: isPublicDeployment ? 32 * 1024 * 1024 : undefined,
-        onData: (chunk) => {
-          const text = Buffer.isBuffer(chunk) ? chunk.toString("utf8") : String(chunk || "");
-          for (const line of text.split(/\r?\n/)) {
-            const trimmed = String(line || "").trim();
-            if (!trimmed.startsWith("data:")) continue;
-            const raw = trimmed.slice(5).trim();
-            if (!raw || raw === "[DONE]") continue;
-            try {
-              const event = JSON.parse(raw);
-              if (Number(event?.usage?.total_tokens) > 0) {
-                streamUsageTokens = Number(event.usage.total_tokens);
-              }
-            } catch {}
-          }
+        pinnedAddress: cloudTarget.address,
+        pinnedFamily: cloudTarget.family,
+        onRequest: () => sharedReservation?.markUpstreamStarted(),
+        onData: (chunk) => streamParser.push(chunk),
+        onBeforeEnd: () => {
+          streamParser.end();
+          sharedReservation?.settle();
+          sharedReservation = null;
         },
       });
-      if (sharedReservation && streamUsageTokens > 0) {
-        settleSharedCloudRequest({
-          reservedTokens: sharedReservation.reservedTokens,
-          actualTokens: streamUsageTokens,
-        });
-      }
       return;
     }
 
@@ -343,7 +368,10 @@ async function handleCloudChat(req, res) {
       payload,
       signal,
       authHeaders,
-      { maxBytes: 16 * 1024 * 1024 }
+      {
+        ...transportOptions,
+        onRequest: () => sharedReservation?.markUpstreamStarted(),
+      }
     );
     const text = await upstream.text();
     const contentType = upstream.headers.get("content-type") || "application/json";
@@ -353,27 +381,24 @@ async function handleCloudChat(req, res) {
       const status = isAuthError ? 401 : (upstream.ok ? 502 : upstream.status);
       send(res, status, JSON.stringify({
         error: isAuthError ? "Cloud API authentication failed" : "Cloud API request failed",
-        detail: text.substring(0, 1000) || `HTTP ${upstream.status}`,
+        detail: `Cloud API returned HTTP ${upstream.status}`,
       }), { "Content-Type": "application/json" });
       return;
     }
 
     let data = JSON.parse(text);
     if (!upstream.ok) {
-      const errorObj = data.error;
-      const detail = data.detail
-        || (typeof errorObj === "string" ? errorObj : errorObj?.message)
-        || text
-        || `Cloud API returned ${upstream.status}`;
       const warning = cloudUpstreamWarning(upstream.status);
       send(res, upstream.status, JSON.stringify({
-        ...data,
-        error: errorObj || "Cloud API request failed",
+        error: "Cloud API request failed",
         ...(warning ? { warning } : {}),
-        detail,
+        detail: `Cloud API returned HTTP ${upstream.status}`,
       }), { "Content-Type": "application/json" });
       return;
     }
+
+    const initialUsageTokens = usageTokenTotal(data?.usage);
+    if (initialUsageTokens !== null) sharedReservation?.addUsage(data.usage);
 
     data = await repairCloudHumanizerOutputIfNeeded({
       data,
@@ -382,19 +407,32 @@ async function handleCloudChat(req, res) {
       targetUrl,
       signal,
       authHeaders,
+      transportOptions,
+      initialUsageTokens: initialUsageTokens || 0,
+      reserveSharedCall: usingSharedCloud
+        ? (repairPayload) => {
+            const publicSession = sessionFromRequest(req);
+            const reservation = reserveSharedCloudRequest({
+              sessionNonce: publicSession?.nonce || "",
+              payload: repairPayload,
+            });
+            if (!reservation.ok) {
+              const error = /** @type {Error & { code?: string }} */ (new Error(reservation.detail));
+              error.code = reservation.code;
+              throw error;
+            }
+            return reservation;
+          }
+        : undefined,
     });
-    if (sharedReservation) {
-      settleSharedCloudRequest({
-        reservedTokens: sharedReservation.reservedTokens,
-        actualTokens: Number(data?.usage?.total_tokens || 0),
-      });
-    }
     const choice = data && data.choices ? data.choices[0] : {};
     data.ai_system6_metrics = {
       elapsed_ms: Date.now() - startedAt,
       finish_reason: choice.finish_reason || data.stop_reason || "",
       model: data.model || payload.model || "",
-      usage: data.usage || null,
+      usage: data.ai_system6_humanizer?.total_usage_tokens
+        ? { ...(data.usage || {}), total_tokens: data.ai_system6_humanizer.total_usage_tokens }
+        : data.usage || null,
     };
 
     send(res, upstream.status, JSON.stringify(data), {
@@ -402,11 +440,14 @@ async function handleCloudChat(req, res) {
     });
   } catch (error) {
     if (/** @type {any} */ (error)?.name === "AbortError") return;
-    send(res, 502, JSON.stringify({
-      error: "Cloud proxy failed",
-      detail: /** @type {Error} */ (error).message,
+    const status = Number(/** @type {any} */ (error)?.statusCode) || 502;
+    const code = String(/** @type {any} */ (error)?.code || "cloud_proxy_failed");
+    send(res, status, JSON.stringify({
+      error: status < 500 ? /** @type {Error} */ (error).message : "Cloud proxy failed",
+      code,
     }), { "Content-Type": "application/json" });
   } finally {
+    sharedReservation?.settle();
     timeoutHandle?.cleanup();
   }
 }

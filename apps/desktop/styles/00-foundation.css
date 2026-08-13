@@ -229,7 +229,11 @@
   --clio-composer-radius: 0;
   --clio-composer-shadow: 2px 2px 0 var(--shade-dark);
   --clio-composer-focus-shadow: 2px 2px 0 var(--shade-dark), 0 0 0 2px var(--shade);
-  --clio-composer-control-radius: 0;
+  /* The Add and Send buttons are push buttons, so they wear whatever corner
+     that era's push button wears instead of a hard square in all six: System 6
+     8px, Platinum 3px, Aqua a pill, Snow Leopard 6px, Yosemite 5px. Liquid
+     Glass overrides this with 50% for its round send key. */
+  --clio-composer-control-radius: var(--btn-radius);
   --clio-composer-tool-border: var(--ink);
   --clio-action-surface: var(--paper);
   --clio-action-border: 1px solid var(--ink);
@@ -722,8 +726,13 @@
   --control-strip-tile-margin: 0;
   --control-strip-tile-height: calc(var(--control-strip-thickness) - 2px);
   --control-strip-tile-hover-shadow: var(--control-strip-hover-shadow);
-  --control-strip-grip-inset: 6px 6px;
-  --control-strip-grip: repeating-linear-gradient(to bottom, currentColor 0 2px, transparent 2px 4px);
+  /* The grip is a centred patch of fixed width, not a texture stretched across
+     the tab. The tab is 16px on the desk but 44px under a finger, and an
+     inset-sized grip turned that wider tab into a 32px block of ticks that read
+     as a barcode instead of a grab handle. Aqua already carried its ribs this
+     way; every appearance now does. */
+  --control-strip-grip-inset: 6px 0;
+  --control-strip-grip: repeating-linear-gradient(to bottom, currentColor 0 2px, transparent 2px 4px) 50% 50% / 4px 100% no-repeat;
   --control-strip-grip-radius: 0;
   --control-strip-gauge-bg: var(--paper);
   /* Control Panel section chooser: one tablist, era-specific clothes.
@@ -1995,12 +2004,24 @@ body.has-system-modal .menu-bar {
   white-space: nowrap;
 }
 
-.menu-bar > .menu > button:hover,
-.menu:focus-within > button,
+/* System 6 reverses a menu title only while its menu is pulled down. The old
+   rule also reversed it on :hover and on :focus-within, which on a touch screen
+   left the title reversed after the menu had closed — a shut menu that reads as
+   an open one. Hover now needs a real pointer, and keyboard control uses
+   :focus-visible, which a tap never matches. */
+.menu-bar > .menu > button:focus-visible,
 .menu.is-open > button {
   --menu-button-bg: var(--menu-button-active-bg);
   --menu-button-fg: var(--menu-button-active-fg);
   --menu-button-shadow: var(--menu-button-active-shadow);
+}
+
+@media (hover: hover) {
+  .menu-bar > .menu > button:hover {
+    --menu-button-bg: var(--menu-button-active-bg);
+    --menu-button-fg: var(--menu-button-active-fg);
+    --menu-button-shadow: var(--menu-button-active-shadow);
+  }
 }
 
 .menu-popover {

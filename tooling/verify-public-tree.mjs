@@ -222,10 +222,13 @@ if (scripts["prebuild:app"] === publicPrebuildApp) {
   fail(`prebuild:app must be "${publicPrebuildApp}"`);
 }
 
-if (scripts["verify:public"] === "node tooling/verify-public-tree.mjs") {
-  ok("verify:public verifies the tree it runs from");
+if (
+  scripts["verify:public"] === "npm run verify:public-tree"
+  && scripts["verify:public-tree"] === "node tooling/verify-public-tree.mjs"
+) {
+  ok("verify:public aliases the tree-local verify:public-tree command");
 } else {
-  fail("verify:public must run tooling/verify-public-tree.mjs");
+  fail("verify:public must alias a tree-local verify:public-tree command");
 }
 
 if (typeof scripts.build === "string" && scripts.build.trim()) {

@@ -30,7 +30,6 @@
 
 const { send, readJsonBody, requestSignal } = require("../lib/http.js");
 const { modelContentFromChatData } = require("../chat.js");
-const { settleSharedCloudRequest } = require("../shared-cloud-budget.js");
 const {
   classifyLmStudioProxyError,
   getLoadedLmStudioModelInfo,
@@ -49,6 +48,8 @@ const {
 async function handleEndfieldAsk(req, res) {
   const signal = requestSignal(req, res);
   const startedAt = Date.now();
+  /** @type {any} */
+  let sharedReservation = null;
 
   try {
     const body = await readJsonBody(req);
@@ -131,6 +132,7 @@ async function handleEndfieldAsk(req, res) {
 
     const { response: upstream, source, model, autoLoaded, autoLoadedModel, autoSelectedModel, reservation } =
       await postEndfieldChatPayload(payload, body, signal, req);
+    sharedReservation = reservation || null;
     const text = await upstream.text();
     const contentType = upstream.headers.get("content-type") || "application/json";
 
@@ -155,12 +157,7 @@ async function handleEndfieldAsk(req, res) {
       }), { "Content-Type": "application/json" });
       return;
     }
-    if (reservation) {
-      settleSharedCloudRequest({
-        reservedTokens: reservation.reservedTokens,
-        actualTokens: Number(data?.usage?.total_tokens || 0),
-      });
-    }
+    sharedReservation?.addUsage(data?.usage);
 
     const choice = data?.choices?.[0] || {};
     const answer = modelContentFromChatData(data).trim();
@@ -198,6 +195,8 @@ async function handleEndfieldAsk(req, res) {
         ? { warning: /** @type {any} */ (error).warning }
         : {}),
     }), headers);
+  } finally {
+    sharedReservation?.settle();
   }
 }
 

@@ -62,14 +62,13 @@ quickDraftDefs.forEach((quickDraft, index) => {
   }
 });
 
-// Legacy full-family assets remain as runtime fallbacks while the progressive,
-// reference-reviewed core batches replace them. These checks pin coverage and
+// Complete family assets remain the runtime base. These checks pin coverage and
 // prevent byte-for-byte aliases; authenticity is accepted by each era's own
 // focused evidence contract instead of inferred from file differences.
 test.assertMatches(icons, /M20 11L13 19h5L16 26l7-8h-5l2-7z/, "the lightning bolt is defined once in the shared icon registry");
 
 const eraBuilder = read("tooling/build-era-icons.mjs");
-test.assertNotIncludes(eraBuilder, "app/core/system-icons.js", "historical icon families never extract the shared Classic/Liquid paths");
+test.assertNotIncludes(eraBuilder, "readFileSync(join(root, \"apps/desktop/app/core/system-icons.js\")", "historical icon families never extract artwork from the shared runtime registry");
 test.assertNotIncludes(eraBuilder, "ALIASES", "the era builder has no semantic asset aliases");
 test.assertNotIncludes(eraBuilder, "extractBlock", "the era builder does not recolor source SVG blocks");
 test.assertIncludes(eraBuilder, "function aquaBody", "Jaguar owns its body geometry");
@@ -103,7 +102,7 @@ for (const [theme, sizes] of Object.entries(eraSizes)) {
   const missingFiles = [];
   test.assert(ids.length === expectedRuntimeIconCount, `${theme} maps all ${expectedRuntimeIconCount} semantic icon ids`);
   test.assert(new Set(Object.values(runtime)).size === expectedRuntimeIconCount, `${theme} maps every runtime id to a distinct file`);
-  test.assert(family.sharedGeometryAcrossEras === false, `${theme} keeps the legacy fallback family structurally separate`);
+  test.assert(family.sharedGeometryAcrossEras === false, `${theme} keeps its complete runtime family structurally separate`);
   test.assert(Object.keys(family.icons).length === expectedRuntimeIconCount, `${theme} records the full family ledger`);
   for (const id of ids) {
     const entry = family.icons[id];
@@ -133,7 +132,7 @@ for (const [id, family] of era32Bodies) {
 }
 test.assert(
   crossEraDuplicates.length === 0,
-  `legacy fallback files are not byte-identical across appearances${crossEraDuplicates.length ? `; duplicates: ${crossEraDuplicates.join(", ")}` : ""}`
+  `runtime family files are not byte-identical across appearances${crossEraDuplicates.length ? `; duplicates: ${crossEraDuplicates.join(", ")}` : ""}`
 );
 
 const themeLab = read("index.html");
@@ -145,7 +144,7 @@ test.assertIncludes(read("app/features/theme-lab.js"), "theme-lab-icon-hint", "T
 test.assertIncludes(icons, "hardDisk: nativeSystem6HardDiskPath", "hard disk is a real runtime id instead of a document fallback");
 test.assertIncludes(icons, "control: `", "control is a real runtime id instead of a document fallback");
 test.assertIncludes(icons, "assets/themes/liquid-glass/", "Liquid Glass loads its independent SVG family");
-test.assertIncludes(icons, "const liquidPaths = liquidGlassSystemIconArt(id, sourceSize)", "Liquid Glass no longer renders the legacy inline outline pack");
+test.assertIncludes(icons, "const liquidPaths = liquidGlassSystemIconArt(id, modernSourceSize)", "Liquid Glass consumes the context-selected raster tier instead of a legacy inline outline pack");
 
 const liquidCss = read("styles/70-liquid-glass.css");
 test.assertMatches(

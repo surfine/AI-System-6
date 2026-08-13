@@ -15,12 +15,22 @@
 
 "use strict";
 
+const dns = require("node:dns/promises");
+const net = require("node:net");
+
+const { isPrivateAddress } = require("./reader.js");
+
 const DEEPSEEK_API_KEY_DEFAULT = process.env.DEEPSEEK_API_KEY || "";
 const DEEPSEEK_BASE_URL_DEFAULT =
   process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com";
-const DEEPSEEK_PUBLIC_BASE_URL = "https://api.deepseek.com";
+const DEEPSEEK_PUBLIC_BASE_URL = process.env.NODE_ENV === "test"
+  && process.env.AI_SYSTEM6_TEST_DEEPSEEK_PUBLIC_BASE_URL
+  ? process.env.AI_SYSTEM6_TEST_DEEPSEEK_PUBLIC_BASE_URL
+  : "https://api.deepseek.com";
 const allowCustomCloudEndpoints =
   process.env.AI_SYSTEM6_ALLOW_CUSTOM_CLOUD_ENDPOINTS === "1";
+const allowPrivateCloudEndpoints =
+  process.env.AI_SYSTEM6_ALLOW_PRIVATE_CLOUD_ENDPOINTS === "1";
 
 function normalizeCloudBaseUrl(value) {
   const candidate = String(value || "").trim().replace(/\/+$/, "");
@@ -48,6 +58,85 @@ function resolveCloudBaseUrl(requestedBaseUrl) {
   if (normalized === trustedCloudBaseUrl) return normalized;
   if (!allowCustomCloudEndpoints) return trustedCloudBaseUrl;
   return normalized;
+}
+
+/**
+ * Resolve and pin the address used for a cloud request. Custom endpoints use
+ * the same public-address boundary as Reader unless the operator explicitly
+ * opts into private cloud endpoints. The private-endpoint switch never
+ * changes credential scoping; it only changes which addresses may be called.
+ *
+ * @param {string} requestedBaseUrl
+ * @returns {Promise<{ baseUrl: string, address: string, family: number }>}
+ */
+async function resolveCloudTarget(requestedBaseUrl) {
+  const baseUrl = resolveCloudBaseUrl(requestedBaseUrl);
+  const parsed = new URL(baseUrl);
+  const hostname = parsed.hostname.toLowerCase();
+  const localHostname = hostname === "localhost"
+    || hostname === "localhost.localdomain"
+    || hostname.endsWith(".localhost");
+
+  if (localHostname && !allowPrivateCloudEndpoints) {
+    throw cloudEndpointError("Cloud model endpoint cannot use a local machine address.");
+  }
+
+  if (net.isIP(hostname)) {
+    if (isPrivateAddress(hostname) && !allowPrivateCloudEndpoints) {
+      throw cloudEndpointError("Cloud model endpoint cannot use a private network address.");
+    }
+    return { baseUrl, address: hostname, family: net.isIP(hostname) };
+  }
+
+  let addresses;
+  try {
+    addresses = await dns.lookup(hostname, { all: true, verbatim: true });
+  } catch {
+    throw cloudEndpointError("Cloud model endpoint DNS lookup failed.");
+  }
+  if (!addresses.length) {
+    throw cloudEndpointError("Cloud model endpoint DNS lookup returned no addresses.");
+  }
+  if (!allowPrivateCloudEndpoints && addresses.some((entry) => isPrivateAddress(entry.address))) {
+    throw cloudEndpointError("Cloud model endpoint cannot use a private network address.");
+  }
+
+  return {
+    baseUrl,
+    address: addresses[0].address,
+    family: addresses[0].family,
+  };
+}
+
+/**
+ * @param {string} message
+ * @returns {Error & { code?: string, statusCode?: number }}
+ */
+function cloudEndpointError(message) {
+  const error = /** @type {Error & { code?: string, statusCode?: number }} */ (new Error(message));
+  error.code = "invalid_cloud_endpoint";
+  error.statusCode = 400;
+  return error;
+}
+
+/**
+ * Environment credentials are operator-owned and may only leave the service
+ * for an explicitly trusted DeepSeek endpoint. Browser-selected custom
+ * endpoints, including private endpoints, never inherit this trust.
+ *
+ * @param {string} provider
+ * @param {string} targetBaseUrl
+ * @returns {boolean}
+ */
+function isTrustedDeepSeekCredentialTarget(provider, targetBaseUrl) {
+  if (String(provider || "").trim().toLowerCase() !== "deepseek") return false;
+  let normalized;
+  try {
+    normalized = normalizeCloudBaseUrl(targetBaseUrl);
+  } catch {
+    return false;
+  }
+  return normalized === trustedCloudBaseUrl || normalized === DEEPSEEK_PUBLIC_BASE_URL;
 }
 
 /**
@@ -91,4 +180,6 @@ module.exports = {
   DEEPSEEK_PUBLIC_BASE_URL,
   normalizeCloudBaseUrl,
   resolveCloudBaseUrl,
+  resolveCloudTarget,
+  isTrustedDeepSeekCredentialTarget,
 };

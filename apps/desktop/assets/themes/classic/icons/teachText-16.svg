@@ -4,7 +4,7 @@
     .classic-paper{fill:#ffffff;stroke:none}
     .sys-icon-detail{display:none}
   </style>
-  <g transform="translate(16 16) scale(1.1) translate(-16 -16)">
+  <g transform="translate(0 0)">
     <path d="M16 3l13 13-13 13L3 16z" />
     <path class="sys-icon-detail" d="M9 12h10M8 15h9M9 18h7" />
     <path d="M13 23l9-9 3 3-9 9-4 1z" />

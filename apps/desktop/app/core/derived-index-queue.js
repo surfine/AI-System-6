@@ -128,10 +128,12 @@ async function writeDerivedIndexState() {
   let db;
   try {
     db = await openAppDb();
-    const tx = db.transaction(keyvalStoreName, "readwrite");
-    const completion = window.AISystem6StorageTransactions.transactionDone(tx);
-    await idbRequest(tx.objectStore(keyvalStoreName).put(derivedIndexState, derivedIndexStorageKey));
-    await completion;
+    await window.AISystem6StorageTransactions.runTransaction(
+      db,
+      keyvalStoreName,
+      "readwrite",
+      (tx) => idbRequest(tx.objectStore(keyvalStoreName).put(derivedIndexState, derivedIndexStorageKey))
+    );
   } finally {
     db?.close();
   }

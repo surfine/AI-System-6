@@ -1924,7 +1924,12 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
 
 .dictionary-window .window-pane.dictionary-pane {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  /* The middle track stops at its own content instead of collapsing to zero.
+     When the portrait Desk Accessory rail squeezes this window past what its
+     three rows need, the pane scrolls — the rows used to shrink to nothing and
+     let their boxes paint on top of each other. */
+  grid-template-rows: auto minmax(auto, 1fr) auto;
+  overflow-y: auto;
   gap: var(--dictionary-pane-gap);
   padding: var(--dictionary-pane-padding);
   background: var(--dictionary-pane-bg);
@@ -1957,7 +1962,10 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
 }
 
 .dictionary-result {
-  min-height: 170px;
+  /* The pane owns the minimum row size and scrolls when the portrait Desk
+     Accessory rail runs out of height. A 170px floor made this box keep
+     painting across the Recent row instead of participating in that scroll. */
+  min-height: 0;
   max-height: 350px;
   overflow: auto;
   border: var(--dictionary-result-border);

@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import http from "node:http";
 import net from "node:net";
 import { Readable } from "node:stream";
@@ -202,6 +202,28 @@ test.assert(
 test.assert(
   cloud.resolveCloudBaseUrl("https://attacker.example") === cloud.DEEPSEEK_BASE_URL_DEFAULT,
   "request-provided cloud origins cannot override the trusted provider"
+);
+const privateCloudProbe = spawnSync(process.execPath, ["-e", `
+  const cloud = require("./apps/server/server/cloud.js");
+  cloud.resolveCloudTarget("https://127.0.0.1")
+    .then(() => process.exit(2))
+    .catch((error) => {
+      if (error?.code === "invalid_cloud_endpoint" && error?.statusCode === 400) process.exit(0);
+      process.exit(3);
+    });
+`], {
+  cwd: root,
+  env: {
+    ...process.env,
+    AI_SYSTEM6_ALLOW_CUSTOM_CLOUD_ENDPOINTS: "1",
+    AI_SYSTEM6_ALLOW_PRIVATE_CLOUD_ENDPOINTS: "0",
+  },
+  encoding: "utf8",
+  timeout: 5000,
+});
+test.assert(
+  privateCloudProbe.status === 0,
+  "custom cloud routing rejects private addresses before opening a provider connection"
 );
 
 const wrongType = Readable.from([Buffer.from("{}")]);

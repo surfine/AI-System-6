@@ -94,6 +94,16 @@ if (srcTypecheck.status === 0) {
   fail(`server typecheck failed\n${srcTypecheck.stderr || srcTypecheck.stdout}`);
 }
 
+const serverLint = spawnSync(npmCommand, ["run", "lint"], {
+  cwd: root,
+  encoding: "utf8",
+});
+if (serverLint.status === 0) {
+  ok("server lint");
+} else {
+  fail(`server lint failed\n${serverLint.stderr || serverLint.stdout}`);
+}
+
 [
   "build-info.json",
   "index.html",
@@ -236,7 +246,8 @@ const pkgTargets = new Set(pkg.pkg?.targets || []);
   "apps/desktop/styles.css",
   "apps/desktop/styles.bundle.css",
   "apps/desktop/styles.theme-lab.css",
-  "system.css-reference/cursors/watch.png",
+  "apps/desktop/assets/cursors/system6-watch.png",
+  "apps/desktop/assets/themes/snow-leopard/radio-selected.svg",
   "system.css-reference/fonts/*.woff",
   "system.css-reference/fonts/*.woff2",
 ].forEach((asset) => {
@@ -258,9 +269,16 @@ if (existsSync(fontDir)) {
   fail("system.css-reference/fonts is missing");
 }
 
-const cursorPath = "system.css-reference/cursors/watch.png";
-if (existsSync(join(root, cursorPath))) ok(cursorPath);
-else fail(`${cursorPath} is missing`);
+const cursorPath = "apps/desktop/assets/cursors/system6-watch.png";
+if (existsSync(join(root, cursorPath))) {
+  const cursor = readFileSync(join(root, cursorPath));
+  const isPng = cursor.length >= 24
+    && cursor.subarray(0, 8).equals(Buffer.from("89504e470d0a1a0a", "hex"))
+    && cursor.readUInt32BE(16) === 16
+    && cursor.readUInt32BE(20) === 16;
+  if (isPng) ok(`${cursorPath} is a native-size PNG`);
+  else fail(`${cursorPath} must be a valid 16×16 PNG`);
+} else fail(`${cursorPath} is missing`);
 
 const versionRouteSource = readFileSync(join(root, "apps/server/server/routes/version.js"), "utf8");
 if (versionRouteSource.includes("/api/version") || versionRouteSource.includes("handleVersion")) {

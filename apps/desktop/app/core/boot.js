@@ -172,7 +172,7 @@ async function boot() {
     // Single-writer lease: acquire before any durable write can run. A second
     // instance starts read-only and gets the conflict dialog after first paint.
     window.AISystem6WriteLease?.initUi?.();
-    window.AISystem6WriteLease?.acquireAtBoot?.();
+    await window.AISystem6WriteLease?.acquireAtBoot?.();
     // Sad Mac recovery controls (wired once; boot may retry).
     const retryControl = document.getElementById("boot-retry");
     if (retryControl && retryControl.dataset.wired !== "true") {

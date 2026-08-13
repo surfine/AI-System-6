@@ -1,7 +1,7 @@
 "use strict";
 
 const { readJsonBody, sendJson } = require("../lib/http.js");
-const { resolveCloudBaseUrl } = require("../cloud.js");
+const { resolveCloudTarget } = require("../cloud.js");
 const {
   deleteCloudCredential,
   discardStagedCredential,
@@ -16,7 +16,7 @@ async function handleCloudCredentials(req, res) {
 
   if (action === "stage") {
     const provider = String(body.provider || "deepseek");
-    const baseUrl = resolveCloudBaseUrl(body.base_url);
+    const { baseUrl } = await resolveCloudTarget(body.base_url);
     const credentialId = stageCloudCredential({
       provider,
       baseUrl,
@@ -51,9 +51,11 @@ async function handleCloudCredentials(req, res) {
   }
 
   if (action === "available") {
+    const { baseUrl } = await resolveCloudTarget(body.base_url);
     const apiKey = await resolveCloudCredential({
       credentialId: body.credential_id,
-      provider: body.provider,
+      provider: body.provider || "deepseek",
+      targetBaseUrl: baseUrl,
     });
     sendJson(res, 200, { available: !!apiKey }, { "Cache-Control": "no-store" });
     return;

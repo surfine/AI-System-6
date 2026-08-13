@@ -2,47 +2,23 @@
   "use strict";
 
   const coreIcons = Object.freeze([
-    ["finderApp", "Finder / System"], ["folder", "Folder"],
+    ["finderApp", "Finder / System"], ["multiFinderApp", "MultiFinder"],
+    ["folder", "Folder"],
     ["hardDisk", "Hard Disk"], ["trash", "Trash"],
-    ["document", "Generic Document"], ["daHandler", "Generic Application"],
+    ["document", "Generic Document"],
     ["fileFloppy", "Floppy Disk"], ["projectDisk", "Project Disk"],
+    ["projectDisc", "Project CD"],
     ["searcher", "Searcher"], ["teachText", "TeachText"],
     ["scrapbook", "Scrapbook"], ["assistant", "ClioTalk"],
-    ["controlPanel", "Control Panel"], ["reviewDesk", "Review Desk"],
+    ["controlPanel", "Control / Settings"], ["reviewDesk", "Review Desk"],
     ["docMap", "DocMap"],
   ]);
   const coreIds = new Set(coreIcons.map(([id]) => id));
-  const platinumCoreIcons = Object.freeze([
-    ["finderApp", "Finder / System"], ["folder", "Folder"],
-    ["hardDisk", "Hard Disk"], ["trash", "Trash"],
-    ["document", "Generic Document"], ["daHandler", "Generic Application"],
-    ["fileFloppy", "Floppy Disk"], ["projectDisc", "CD"],
-    ["controlPanel", "Control Panel"], ["systemFile", "System"],
-    ["scrapbook", "Scrapbook"], ["clipboard", "Clipboard"],
-    ["assistant", "ClioTalk"],
-    ["searcher", "Searcher"], ["teachText", "TeachText"],
-    ["reviewDesk", "Review Desk"], ["docMap", "DocMap"],
-    ["projectDisk", "Project Hard Disk"],
-  ]);
+  const platinumCoreIcons = coreIcons;
   const platinumCoreIds = new Set(platinumCoreIcons.map(([id]) => id));
-  const aquaCoreIcons = Object.freeze([
-    ["finderApp", "Finder / System"], ["folder", "Folder"],
-    ["hardDisk", "Hard Disk"], ["trash", "Trash"],
-    ["document", "Generic Document"], ["daHandler", "Generic Application"],
-    ["controlPanel", "System Preferences"], ["searcher", "Searcher"],
-    ["teachText", "TeachText"], ["assistant", "ClioTalk"],
-    ["scrapbook", "Scrapbook"], ["projectDisk", "Project Hard Disk"],
-  ]);
+  const aquaCoreIcons = coreIcons;
   const aquaCoreIds = new Set(aquaCoreIcons.map(([id]) => id));
-  const snowCoreIcons = Object.freeze([
-    ["finderApp", "Finder / System"], ["folder", "Folder"],
-    ["hardDisk", "Hard Disk"], ["trash", "Trash"],
-    ["document", "Generic Document"], ["daHandler", "Generic Application"],
-    ["controlPanel", "System Preferences"], ["searcher", "Searcher"],
-    ["teachText", "TeachText"], ["assistant", "ClioTalk"],
-    ["scrapbook", "Scrapbook"], ["reviewDesk", "Review Desk"],
-    ["docMap", "DocMap"], ["projectDisk", "Project Hard Disk"],
-  ]);
+  const snowCoreIcons = coreIcons;
   const snowCoreIds = new Set(snowCoreIcons.map(([id]) => id));
 
   function ensureStructure(lab) {
@@ -50,9 +26,9 @@
     if (section) return section;
     lab.querySelector(".theme-lab-icon-set")?.insertAdjacentHTML("afterend", `
       <section class="theme-lab-group theme-lab-classic-icon-lab" data-classic-icon-lab hidden aria-labelledby="theme-lab-classic-icon-lab-title">
-        <h3 id="theme-lab-classic-icon-lab-title">Classic System 6 Vector Lab</h3>
-        <p class="theme-lab-classic-icon-intro">Fifteen representative Finder objects, reconstructed as smooth SVG from System 6 evidence and checked at independently hinted 32 px and 16 px sizes. Selected icons use the same artwork and separate mask as the desktop.</p>
-        <div class="theme-lab-classic-icon-key" aria-hidden="true"><span>15 representative objects</span><span>Finder states · 32 / 16</span><span>Choose any object for smooth 1× / 2× / 4× / 8× inspection</span></div>
+        <h3 id="theme-lab-classic-icon-lab-title">Classic Priority Lineage Lab</h3>
+        <p class="theme-lab-classic-icon-intro">Sixteen priority objects shown from the smooth Retina SVG family. Finder is reference-validated against a separate exact one-bit evidence layer. MultiFinder is a historically reviewed class-C current-era Finder identity plus multiplicity, not a native replica.</p>
+        <div class="theme-lab-classic-icon-key" aria-hidden="true"><span>16 priority objects</span><span>Runtime 32 / 16 · separate masks</span><span>Finder reference-validated · MultiFinder class C</span></div>
         <div class="theme-lab-classic-icon-grid" data-classic-icon-lab-grid></div>
         <div class="theme-lab-classic-icon-inspector" data-classic-icon-lab-inspector aria-live="polite"></div>
         <div class="theme-lab-classic-contexts" data-classic-icon-lab-contexts aria-label="Classic Finder context checks"></div>
@@ -66,9 +42,9 @@
     if (section) return section;
     ensureStructure(lab).insertAdjacentHTML("afterend", `
       <section class="theme-lab-group theme-lab-classic-icon-lab theme-lab-platinum-icon-lab" data-platinum-icon-lab hidden aria-labelledby="theme-lab-platinum-icon-lab-title">
-        <h3 id="theme-lab-platinum-icon-lab-title">Platinum Core Icon Lab</h3>
-        <p class="theme-lab-classic-icon-intro">Eighteen reviewed Mac OS 9 Finder objects. The 32 px and 16 px PNGs are independently composed from a fixed historical reference board.</p>
-        <div class="theme-lab-classic-icon-key" aria-hidden="true"><span>18 accepted objects</span><span>Normal / Selected · 32 / 16</span><span>Nearest neighbor · 100% / 200% / 400%</span></div>
+        <h3 id="theme-lab-platinum-icon-lab-title">Platinum Priority Lineage Lab</h3>
+        <p class="theme-lab-classic-icon-intro">Sixteen priority Mac OS 9 objects from the official accepted ImageGen family plus the approved Finder-lineage overlay. Finder is reference-validated; MultiFinder is a historically reviewed class-C construction. Their 42/32/16 files are direct optical runtime assets; other objects retain their recorded size provenance.</p>
+        <div class="theme-lab-classic-icon-key" aria-hidden="true"><span>16 priority objects</span><span>Finder lineage · optical 42 / 32 / 16</span><span>Finder reference-validated · MultiFinder class C</span></div>
         <div class="theme-lab-classic-icon-grid" data-platinum-icon-lab-grid></div>
         <div class="theme-lab-classic-icon-inspector" data-platinum-icon-lab-inspector aria-live="polite"></div>
         <div class="theme-lab-classic-contexts" data-platinum-icon-lab-contexts aria-label="Platinum Finder context checks"></div>
@@ -168,7 +144,7 @@
     contexts.innerHTML = `
       ${ctxBox("Light desktop", `${finderItem("hardDisk", labels.hardDisk)}${finderItem("trash", labels.trash, { selected: true })}${finderItem("folder", labels.folder)}`, " is-light-desktop")}
       ${ctxBox("Medium gray desktop", `${finderItem("finderApp", labels.finderApp)}${finderItem("projectDisc", labels.projectDisc, { selected: true })}${finderItem("scrapbook", labels.scrapbook)}`, " is-medium-gray")}
-      ${ctxBox("Finder list · true 16 px", `${finderItem("document", labels.document, { sourceSize: 16, className: "is-list-row" })}${finderItem("controlPanel", labels.controlPanel, { selected: true, sourceSize: 16, className: "is-list-row" })}${finderItem("clipboard", labels.clipboard, { sourceSize: 16, className: "is-list-row" })}`, " is-list-view")}`;
+      ${ctxBox("Finder list · 16 px derivative", `${finderItem("document", labels.document, { sourceSize: 16, className: "is-list-row" })}${finderItem("controlPanel", labels.controlPanel, { selected: true, sourceSize: 16, className: "is-list-row" })}${finderItem("fileFloppy", labels.fileFloppy, { sourceSize: 16, className: "is-list-row" })}`, " is-list-view")}`;
   }
 
   // `variant` carries the Liquid Glass appearance suffix; the older eras have
@@ -197,7 +173,11 @@
         <div class="theme-lab-classic-icon-zooms">${config.grid.map((size) => figure(id, size)).join("")}</div>
       </article>`).join("");
     const showInspector = (id, label) => {
-      inspector.innerHTML = `<h4>${label}<code>${id}</code></h4><div class="theme-lab-classic-icon-zooms">${config.inspect.map(([size, display, caption]) => figure(id, size, display, caption)).join("")}</div>`;
+      const isApprovedFinderLineage = id === "finderApp" || id === "multiFinderApp";
+      const captionFor = (caption) => isApprovedFinderLineage
+        ? caption.replace("derivative", "optical runtime")
+        : caption;
+      inspector.innerHTML = `<h4>${label}<code>${id}</code></h4><div class="theme-lab-classic-icon-zooms">${config.inspect.map(([size, display, caption]) => figure(id, size, display, captionFor(caption))).join("")}</div>`;
       for (const card of grid.querySelectorAll("[data-raster-icon-id]")) {
         const selected = card.dataset.rasterIconId === id;
         card.classList.toggle("is-inspected", selected);
@@ -227,12 +207,12 @@
       dir: "aqua",
       className: "theme-lab-aqua-icon-lab",
       title: "Aqua Core Icon Lab",
-      intro: "Twelve reviewed Mac OS X 10.2 Jaguar objects. Runtime surfaces downscale the 128 px tier; this lab also preserves the separately processed 32 px and 16 px review artifacts. Application and toolbar art remain separate families.",
-      keys: ["12 accepted objects", "Runtime 128 · review artifacts 32 / 16", "One light source · object-owned materials and shadows"],
+      intro: "Sixteen priority Mac OS X 10.2 Jaguar objects from the official accepted-generated family plus the approved Finder-lineage overlay. Runtime dispatches 16 px art to compact/menu/list contexts, 32 px art to ordinary contexts, and 128 px art to desktop/large contexts; the rebuilt sprite is compatibility evidence, not the active renderer. Finder is reference-validated and MultiFinder is class C; their compact files are direct optical runtime assets, while other objects retain derivative tiers.",
+      keys: ["16 priority objects", "Runtime · contextual 16 / 32 / 128", "Finder reference-validated · MultiFinder class C"],
       contextLabel: "Jaguar Finder, Dock, desktop, and toolbar context checks",
       icons: aquaCoreIcons,
       grid: [128, 32, 16],
-      inspect: [[128, 128, "128 native"], [32, 96, "32 · 3× inspection"], [16, 64, "16 · 4× inspection"]],
+      inspect: [[128, 128, "128 desktop source"], [32, 96, "32 ordinary source · 3×"], [16, 64, "16 compact source · 4×"]],
       after: (lab) => ensurePlatinumStructure(lab),
       contexts: (item, labels) => `
       ${ctxBox("Finder icon view · 128 px source", `${item("folder", labels.folder, { displaySize: 64 })}${item("hardDisk", labels.hardDisk, { displaySize: 64 })}${item("teachText", labels.teachText, { displaySize: 64, selected: true })}`, "")}
@@ -246,12 +226,12 @@
       dir: "snow-leopard",
       className: "theme-lab-snow-icon-lab",
       title: "Snow Leopard Core Icon Lab",
-      intro: "Fourteen reviewed Mac OS X 10.6.8 objects. Runtime surfaces downscale the 128 px tier. The 512 px texture source and separately processed 32 px and 16 px files remain review artifacts in this lab.",
-      keys: ["14 accepted objects", "Runtime 128 · review artifacts 512 / 32 / 16", "One overhead light · object-owned material and shadow"],
+      intro: "Sixteen priority Mac OS X 10.6.8 objects from the official accepted-generated family plus the approved Finder-lineage overlay. Runtime dispatches 16 px art to compact/menu/list contexts, 32 px art to ordinary contexts, and 128 px art to desktop/large contexts; the rebuilt sprite is compatibility evidence, not the active renderer. Finder is reference-validated and MultiFinder is class C; their 512/128/32/16 files are direct optical assets, while other objects retain same-master derivatives.",
+      keys: ["16 priority objects", "Runtime · contextual 16 / 32 / 128", "Finder reference-validated · MultiFinder class C"],
       contextLabel: "Snow Leopard Finder, desktop, Dock, and source list context checks",
       icons: snowCoreIcons,
       grid: [128, 32, 16],
-      inspect: [[512, 256, "512 master · 50%"], [128, 128, "128 native"], [32, 96, "32 · 3× inspection"], [16, 64, "16 · 4× inspection"]],
+      inspect: [[512, 256, "512 review tier · 50%"], [128, 128, "128 desktop source"], [32, 96, "32 ordinary source · 3×"], [16, 64, "16 compact source · 4×"]],
       after: (lab) => ensureRasterStructure(lab, rasterLabs[0]),
       contexts: (item, labels) => `
       ${ctxBox("Finder icon view · 128 px source", `${item("folder", labels.folder, { displaySize: 64 })}${item("hardDisk", labels.hardDisk, { displaySize: 64 })}${item("teachText", labels.teachText, { displaySize: 64, selected: true })}${item("reviewDesk", labels.reviewDesk, { displaySize: 64 })}`, "")}
@@ -266,12 +246,12 @@
       dir: "yosemite",
       className: "theme-lab-yosemite-icon-lab",
       title: "Yosemite Core Icon Lab",
-      intro: "Fourteen reviewed OS X 10.10 objects. Runtime surfaces downscale the 128 px tier; 64 px, 32 px, and 16 px remain separately processed review artifacts. The same objects are redrawn in flatter 2014 language.",
-      keys: ["14 accepted objects", "Runtime 128 · review artifacts 64 / 32 / 16", "Free-form silhouettes · one metaphor per object across eras"],
+      intro: "Sixteen priority OS X 10.10 objects from the broad generated family plus reviewed lineage overlays. Runtime dispatches 16 px art to compact/menu/list contexts, 32 px art to ordinary contexts, and 128 px art to desktop/large contexts. Finder is reference-validated; MultiFinder is class C, and their 128/64/32/16 files are direct optical assets. Review Desk, Searcher, and ClioTalk use historically reviewed era-specific replacements with optical compact art, without native-replica claims.",
+      keys: ["16 priority objects", "Runtime · contextual 16 / 32 / 128", "Finder A · MultiFinder C · ClioTalk B"],
       contextLabel: "Yosemite Finder, desktop, Dock, and sidebar context checks",
       icons: snowCoreIcons,
       grid: [128, 32, 16],
-      inspect: [[128, 128, "128 native"], [64, 128, "64 · 2× inspection"], [32, 96, "32 · 3× inspection"], [16, 64, "16 · 4× inspection"]],
+      inspect: [[128, 128, "128 desktop source"], [64, 128, "64 explicit review tier · 2×"], [32, 96, "32 ordinary source · 3×"], [16, 64, "16 compact source · 4×"]],
       after: (lab) => ensureRasterStructure(lab, rasterLabs[1]),
       contexts: (item, labels) => `
       ${ctxBox("Finder icon view · 128 px source", `${item("folder", labels.folder, { displaySize: 64 })}${item("document", labels.document, { displaySize: 64 })}${item("teachText", labels.teachText, { displaySize: 64, selected: true })}${item("docMap", labels.docMap, { displaySize: 64 })}`, "")}
@@ -286,21 +266,21 @@
       dir: "liquid-glass",
       className: "theme-lab-glass-icon-lab",
       title: "Liquid Glass Core Icon Lab",
-      intro: "Fourteen reviewed Tahoe 26 objects. Each one is a layer list plus a symbol; the renderer applies the material stack, so Default, Dark, and Clear are rendered from the same layers instead of filtered from one image.",
-      keys: ["14 accepted objects", "Native 128 / 64 / 32 / 16", "Default / Dark / Clear · background is part of the material"],
+      intro: "Sixteen priority Tahoe 26 objects from the broad ImageGen family plus reviewed lineage overlays. Default runtime art dispatches context-owned 16, 32, or 128 px files; 64 px and Dark/Clear are explicit review or appearance tiers. Finder is reference-validated with base/panel/ink source layers; MultiFinder is class C. Finder, Review Desk, and ClioTalk own direct optical constructions and independently audited semantic layers, while the other 52 icons remain baked and derivative.",
+      keys: ["16 priority objects", "Finder / Review Desk / ClioTalk · layered", "Finder A · MultiFinder C · ClioTalk B"],
       contextLabel: "Liquid Glass appearance, wallpaper, Dock, and Finder context checks",
       icons: snowCoreIcons,
       variant: "-default",
       grid: [128, 32, 16],
-      inspect: [[128, 128, "128 native"], [64, 128, "64 · 2× inspection"], [32, 96, "32 · 3× inspection"], [16, 64, "16 · 4× inspection"]],
+      inspect: [[128, 128, "128 desktop · Default"], [64, 128, "64 explicit review tier · 2×"], [32, 96, "32 ordinary · Default · 3×"], [16, 64, "16 compact · Default · 4×"]],
       after: (lab) => ensureRasterStructure(lab, rasterLabs[2]),
       contexts: (item, labels) => `
       ${ctxBox("Default appearance", `${["finderApp", "assistant", "searcher", "scrapbook", "trash"].map((id) => item(id, labels[id], { displaySize: 64 })).join("")}`, " theme-lab-glass-appearance is-default")}
       ${ctxBox("Dark appearance · dark desktop", `${["finderApp", "assistant", "searcher", "scrapbook", "trash"].map((id) => item(id, labels[id], { displaySize: 64, variant: "-dark" })).join("")}`, " theme-lab-glass-appearance is-dark")}
       ${ctxBox("Clear appearance · photographic desktop", `${["finderApp", "assistant", "searcher", "scrapbook", "trash"].map((id) => item(id, labels[id], { displaySize: 64, variant: "-clear" })).join("")}`, " theme-lab-glass-appearance is-clear")}
       ${ctxBox("High-frequency background · Default", `${["folder", "document", "projectDisk", "controlPanel", "docMap"].map((id) => item(id, labels[id], { displaySize: 64 })).join("")}`, " theme-lab-glass-appearance is-busy")}
-      ${ctxBox("Dock-like large view · 128 px source", `${item("finderApp", labels.finderApp, { displaySize: 72 })}${item("teachText", labels.teachText, { displaySize: 72 })}${item("reviewDesk", labels.reviewDesk, { displaySize: 72 })}${item("daHandler", labels.daHandler, { displaySize: 72 })}`, "")}
-      ${ctxBox("Finder list view · true 16 px", `${item("document", labels.document, { sourceSize: 16, className: "is-list-row" })}${item("folder", labels.folder, { sourceSize: 16, selected: true, className: "is-list-row" })}${item("trash", labels.trash, { sourceSize: 16, className: "is-list-row" })}`, " is-list-view")}
+      ${ctxBox("Dock-like large view · 128 px source", `${item("finderApp", labels.finderApp, { displaySize: 72 })}${item("multiFinderApp", labels.multiFinderApp, { displaySize: 72 })}${item("teachText", labels.teachText, { displaySize: 72 })}${item("reviewDesk", labels.reviewDesk, { displaySize: 72 })}`, "")}
+      ${ctxBox("Finder list view · 16 px derivative review", `${item("document", labels.document, { sourceSize: 16, className: "is-list-row" })}${item("folder", labels.folder, { sourceSize: 16, selected: true, className: "is-list-row" })}${item("trash", labels.trash, { sourceSize: 16, className: "is-list-row" })}`, " is-list-view")}
       ${toolbarNote("Tahoe 26")}`,
     },
   ]);
@@ -360,7 +340,8 @@
       hint.src = theme.id === "classic" ? `assets/themes/classic/icons/${stem}-16.svg`
         : theme.id === "platinum" && platinumCoreIds.has(id) ? `assets/themes/platinum/icons/${id}-16.png`
           : ["aqua", "snow-leopard", "yosemite"].includes(theme.id) ? `assets/themes/${theme.id}/icons/${id}-16.png`
-            : `assets/themes/${theme.id}/${stem}-16.svg`;
+            : theme.id === "liquid-glass" ? `assets/themes/liquid-glass/icons/${id}-16-default.png`
+              : `assets/themes/${theme.id}/${stem}-16.svg`;
       hint.dataset.nativeSize = "16";
       if (!previous) tile.append(hint);
     }

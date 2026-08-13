@@ -28,7 +28,7 @@
     "playwrightVersion": "1.62.1",
     "browserRevision": "1234",
     "browserVersion": "151.0.7922.34",
-    "contentSha256": "12c6e788bd8b2b3d55434f52caa94db77be1f3f65f64c76f6115fa4573b84d52",
+    "contentSha256": "fcaa726df385b8aed48acf95248e30bfd14431de210b88c19793bbdd322eaa25",
     "historicalFontTarget": "Lucida Grande 13 pt",
     "fontProbeSelectors": [
       ".theme-lab-controls h3",
@@ -543,13 +543,13 @@
     },
     {
       "id": "popup-normal",
-      "label": "Normal 20px pop-up button",
+      "label": "Normal 20px pop-up button (swatch-free)",
       "reference": {
         "source": "guidebook.macosx102.general",
         "crop": {
-          "x": 249,
-          "y": 95,
-          "width": 136,
+          "x": 253,
+          "y": 362,
+          "width": 86,
           "height": 21
         }
       },
@@ -558,31 +558,31 @@
         "crop": {
           "x": 0,
           "y": 0,
-          "width": 136,
+          "width": 86,
           "height": 21
         },
         "setup": [
           {
             "selector": ".theme-lab-form-grid > label:nth-child(4) .select-wrap",
             "style": {
-              "width": "136px"
+              "width": "86px"
             }
           },
           {
             "selector": ".theme-lab-form-grid > label:nth-child(4) select",
             "style": {
-              "width": "136px"
+              "width": "86px"
             }
           },
           {
             "selector": ".theme-lab-form-grid > label:nth-child(4) .system-select-button",
-            "text": "Blue"
+            "text": "10"
           },
           {
             "selector": ".theme-lab-form-grid > label:nth-child(4) option",
-            "text": "Blue",
+            "text": "10",
             "attributes": {
-              "label": "Blue"
+              "label": "10"
             }
           }
         ]
@@ -594,7 +594,8 @@
       },
       "floor": {
         "status": "met"
-      }
+      },
+      "note": "Re-pointed 2026-08-13 from the Highlight Color popup to the Number of Recent Items popup in the same capture. The old reference showed the 'Blue' OPTION with its color swatch, and the chrome recipe had copied that swatch as if it were part of every pop-up button."
     },
     {
       "id": "search-field-focused",

@@ -3205,6 +3205,8 @@ function visiblePortraitDeskAccessories() {
 
 function clearPortraitDeskAccessoryPlacement(win) {
   if (!win) return;
+  portraitDeskAccessoryResizeObserver?.unobserve(win);
+  portraitDeskAccessoryHeights.delete(win);
   win.classList.remove("is-mobile-da-arranged");
   [
     "--mobile-da-top",
@@ -3217,6 +3219,31 @@ function mobileSafeAreaBottom() {
   const value = window.getComputedStyle(document.documentElement)
     .getPropertyValue("--safe-area-bottom");
   return Math.max(0, Number.parseFloat(value) || 0);
+}
+
+// A Desk Accessory can change height without the desk resizing — the Control
+// Panel grows when you pick a taller tab. The placement was only recomputed on
+// open/resize, so the window kept the top it was centred at while its bottom
+// slid past the screen edge, stranding the buttons on that pane off-screen with
+// nothing to scroll. Re-centre whenever an arranged DA reports a new height.
+const portraitDeskAccessoryHeights = new WeakMap();
+let portraitDeskAccessoryResizeObserver = null;
+
+function watchPortraitDeskAccessoryHeight(win) {
+  if (typeof ResizeObserver !== "function") return;
+  if (!portraitDeskAccessoryResizeObserver) {
+    portraitDeskAccessoryResizeObserver = new ResizeObserver((entries) => {
+      // The arrange pass itself resizes these windows; only a height the pass
+      // did not just record is a real content change, so this settles in one
+      // extra pass instead of looping.
+      const grew = entries.some((entry) => {
+        const height = Math.round(entry.target.getBoundingClientRect().height);
+        return portraitDeskAccessoryHeights.get(entry.target) !== height;
+      });
+      if (grew && isPortraitDocumentFlow()) arrangePortraitDeskAccessories();
+    });
+  }
+  portraitDeskAccessoryResizeObserver.observe(win);
 }
 
 function arrangePortraitDeskAccessories(frontWin = null) {
@@ -3280,6 +3307,8 @@ function arrangePortraitDeskAccessories(frontWin = null) {
     candidate.style.setProperty("--mobile-da-top", `${Math.round(top)}px`);
     top += heights[index] + gap;
     setWindowLayerZ(candidate, nextWindowLayerZ(8100 + index));
+    portraitDeskAccessoryHeights.set(candidate, Math.round(heights[index]));
+    watchPortraitDeskAccessoryHeight(candidate);
   });
 }
 

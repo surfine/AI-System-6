@@ -1,24 +1,15 @@
-// Two 1.44MB floppies were 2,949,120 bytes; the Yosemite icon family (59 flat
-// 10.10 SVGs wired through 65-appearance-themes.css) plus the traffic-light
-// symbol data URIs raised the floor by ~16KB (bumped with the icon batch).
-// Per-era boot/shutdown surfaces for Platinum/Aqua/Snow Leopard/Yosemite
-// (dark startup screens, Happy Mac re-skins, era progress bars,
-// reduced-motion handling) add ~6KB of theme CSS. Bumped with that batch;
-// keep the reserve above the 512-byte floor.
-// CSS asset cache-busting (every static url() in styles.bundle.css carries
-// ?v=<build> so a new release is never hidden by the 7-day asset cache) adds
-// ~2.7KB of version stamps. Bumped with that change; still well under two
-// 1.44MB floppies.
-// First-user UI hardening adds the remaining ~1.1KB: arrow-key menu
-// navigation (wireup.js), window viewport clamping for wide creative labs
-// (window-manager.js), and the Quick Draft lightning-bolt icon. Bumped with
-// that round; reserve is back at the 512-byte floor.
-// Acceptance-contract hardening (1.0.37 fixes) adds ~2.5KB of runtime code:
-// dispatcher {ok:false} propagation, run-receipt provenance/restore remap,
-// assistant cancellation binding, and teaser transactional rollback. The
-// prior batch left only a 656-byte reserve at the 512-byte floor, so this
-// batch is bumped with the same justification.
-export const floppyBudgetBytes = 2_978_000;
+// Two 1.44MB floppies are 2,949,120 bytes, and the boot payload fits on them
+// again. The budget had drifted up to 2,978,000 over five batches (the Yosemite
+// icon family, per-era boot/shutdown surfaces, CSS asset cache-busting,
+// first-user UI hardening, acceptance-contract fixes), each one bought with a
+// comment instead of with space. Moving the writing-route AI commands and Claim
+// Check into a lazy module (app/features/outline-claim.js, ~57KB of prompt text
+// nobody parses until a menu item asks for it) gave back more than all five
+// batches took, so the line is the real one again.
+//
+// Raising this number is not the way to land a feature. Find the next 50KB the
+// desktop parses at boot and does not need until the user summons it.
+export const floppyBudgetBytes = 2_949_120;
 
 export const coreFiles = [
   "index.html",
@@ -30,14 +21,11 @@ export const appModulePaths = [
   "app/core/config.js",
   "app/core/humanizer-guidance.js",
   "app/core/system-integrity-guidance.js",
-  "app/core/writing-tools-prompts.js",
-  "app/core/author-thesis-guidance.js",
   "app/core/model-roles.js",
   "app/core/state-stores.js",
   "app/core/assistant-activity.js",
   "app/core/run-receipts.js",
   "app/core/application-registry.js",
-  "app/core/chat-vent-guidance.js",
   "app/core/prompt-file-runtime.js",
   "app/core/workspace-profile.js",
   "app/core/public-access.js",
@@ -82,7 +70,7 @@ export const appModulePaths = [
   "app/core/liquid-glass-overlay.js",
   "app/features/dictation.js",
   "app/features/mingming-lens.js",
-  "app/features/outline-claim.js",
+  "app/core/review-sections.js",
   "app/features/file-disk.js",
   "app/core/persistence-status.js",
   "app/core/working-session.js",
@@ -115,6 +103,7 @@ export const appModulePaths = [
 export const lazyRuntimePaths = [
   "app/vendor/stream-markdown-parser.global.js",
   "app/vendor/marked.umd.js",
+  "app/core/writing-tools-prompts.js",
   "app/generated/ai-prompt-files.js",
   "app/data/translations-en.js",
   "app/data/translations-zh.js",
@@ -132,10 +121,13 @@ export const lazyRuntimePaths = [
   "app/features/video-docmap.js",
   "app/content/rebuild-samples.js",
   "app/features/writing-flow.js",
+  "app/features/outline-claim.js",
   "app/features/slides-export.js",
   "app/features/clio-stage.js",
   "app/features/clio-chart.js",
   "app/features/liquid-cover.js",
+  "app/core/author-thesis-guidance.js",
+  "app/core/chat-vent-guidance.js",
   "app/data/draft-desk-presets.js",
   "app/features/draft-desk.js",
   "app/features/quick-draft-intake.js",

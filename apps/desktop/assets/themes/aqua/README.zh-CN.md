@@ -1,42 +1,47 @@
-<!-- canonical-source: assets/themes/aqua/README.md -->
-<!-- source-sha256: 885e052020c57d9c2c0a9d18981bb047da9229a3b01c80406f1ef3a647b67d14 -->
+<!-- canonical-source: apps/desktop/assets/themes/aqua/README.md -->
+<!-- source-sha256: 814e95612a47aff2df782571bf35b27fbfea4bc0bb876aea1be311d71be88fdf -->
 <!-- 英文版为准；本译文仅供人类参考。 -->
 
 # Jaguar Aqua 图标家族
 
-本目录包含 AI System 6 完整的 56 项 Mac OS X 10.2 Jaguar 外观。每个语义对象都
-保持 [icon-system-continuity.json](../icon-system-continuity.json) 记录的跨时代
-`metaphorKey`，材质、光照与透视则遵循 Jaguar 参考世界。
+本目录发布完整的 56 对象 Mac OS X 10.2 Jaguar 家族。跨时代契约是
+[icon-system-continuity.json](../icon-system-continuity.json) 中每个对象的
+`semanticIdentity` 与一至两个 `identityAnchors`，而不是固定的 `metaphorKey`、
+容器、轮廓或材质配方。
 
-## 运行时与尺寸政策
+运行时覆盖完整不等于历史复核完整。`accepted-generated` 只描述创作与技术验收。
+`priorityCore16` 以外的 40 个 ID 在逐项复核前继续保持历史待审；逐对象、逐时代的
+来源与状态记录于
+[icon-provenance-matrix.json](../icon-provenance-matrix.json)。
 
-运行时 manifest 将全部对象映射到 32 px PNG。仓库保留的 128 与 16 px 文件，是从
-已接受主图确定性生成的 Theme Lab 审查派生件。它们用于检查缩放与材质表现，但不是
-分别创作的小尺寸图稿。应用包会携带所有声明的审查尺寸，Theme Lab 因此不会回退到
-缺失资源或旧图稿。
+## 实际运行时映射
 
-用户可见的 56 项现在全部属于已接受生成式家族。早期实测核心只保留为确定性重建层；
-已接受覆盖始终最后执行，最终家族会拒绝 `accepted-core` 或 fallback 像素残留。
+运行时会按调用场景直接选择逐对象 PNG：mini／menu／control strip 与 Finder list
+使用 16 px，普通系统图标场景使用 32 px，desktop／large／Retina 场景使用 128 px。
+`aqua-sprite.png` 与 `aqua-icon-manifest.json` 只保留为兼容与审查资产，并非唯一
+runtime source。仓库中的 32 与 16 px 文件通常是确定性派生件，除非对象账本另有
+说明；Finder 与 MultiFinder 在两个紧凑尺寸都拥有直接构成的光学运行时资产。
 
-这是当前家族刻意选择的诚实政策：机械缩小是审查证据，不是原生紧凑构图。未来若真
-正创作独立小尺寸家族，必须同时替换此政策及其像素门禁，不能只给派生件改名。
+Theme Lab 以 128、32、16 px 显示 16 个优先对象，让派生失败保持可见。它不会把
+派生件或已接受生成稿提升为历史验收结果。
 
-## 文件与重建
+## Finder／MultiFinder — P0 已关闭
 
-- `aqua-icon-manifest.json` — 完整 56 项、32 px 运行时映射。
-- `aqua-icon-family.json` — 每项来源、尺寸、指标与审核状态；家族已完整，无 fallback。
-- `icons/imagegen-source/` — 确定性覆盖重建所用的已接受生成式源文件。
-- `tooling/build-aqua-core-icons.mjs` 与
-  `tooling/build-accepted-generated-era-icons.mjs` — 重建历史实测层，再重新应用全部 56 项
-  已接受生成式图稿，不改变语义 ID。
+Finder 使用已批准的 ImageGen v2 低矮矩形 Jaguar 分脸牌匾，历史状态为
+`reference-validated`。MultiFinder 以当前 Jaguar Finder 身份加“多个”构成；它是
+C 级来源、`historically-reviewed`，并不宣称为原生复刻。运行时按场景选择两者直接
+构成的 16、32 或 128 px 光学资产；它们不是旧的紧凑 Macintosh 派生件。
 
-Theme Lab 直接从工作树读取仓库里的所有尺寸；应用包发布所有声明的 Theme Lab 尺寸，
-但不包含仅供开发溯源的 `imagegen-source`。Aqua 桌面 sprite 从 128 px 层重建以适配
-Retina，32 px manifest 则保持稳定的语义顺序与兼容性。历史 Apple 图稿与截图仅作
-证据，不作为产品资源打包。
+## 重建
 
-## 网格
+执行：
 
-每个对象都位于共享 [icon-grid.mjs](../../../../../tooling/lib/icon-grid.mjs) 网格上。缩放
-保持等比，保留对象比例与视觉补偿；管线把每项摆放记录在家族 JSON 中，本家族不改动
-共享网格。
+```sh
+npm run build:era-icons -- --theme aqua
+```
+
+该链重建宽泛层与实测层，恢复已接受生成家族，应用批准的 Finder 家谱覆盖层，刷新
+兼容 sprite 与 manifest，最后重新生成审查板。只运行 core 是中间诊断，不是最终
+运行时家族。
+
+历史 Apple 图稿与截图仅作证据，不会作为产品运行时资产打包。

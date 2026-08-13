@@ -650,6 +650,49 @@ Version `1.0.12`, build `20260804.2`.
   macOS bundle gate serves all 1,291 UI-referenced theme PNGs from the finished
   pkg binary and compares their bytes with the reviewed sources before signing.
 
+## Public Beta 1.0.40 - 2026-08-13
+
+- Fixed the ClioTalk composer end to end: typing and paste events immediately
+  resynchronize the send button, while the website-AI summary leaves its
+  connecting state after every success, failure, and reset path. Added focused
+  regressions for Enter, the Send button, and both failures reported from the
+  public build.
+- Migrated browser-local LM Studio inference to the current REST APIs:
+  tool-free turns use native `/api/v1/chat`, project-tool turns use stateful
+  `/v1/responses`, and saved response IDs continue without replaying settled
+  history. Older compatible servers retain one bounded fallback; missing,
+  expired, and silent response chains fail visibly without losing the draft or
+  leaving the desk Busy.
+- Replaced first launch with a three-page Start Here path that clearly offers
+  website AI, BYOK, and local-model choices, then links the official site,
+  repository, video guide, and iOS Home Screen instructions without requiring
+  an account.
+- Restored the two-floppy boot budget by moving outline and review surfaces
+  behind their application launch boundaries. The packaged startup payload is
+  2,931,185 of 2,949,120 bytes, leaving 17,935 bytes of headroom; the gate now
+  publishes that measured result for the site and documentation to consume.
+- Completed the mobile/HIG sweep across all six appearances, including narrow
+  window geometry, scroll ownership, selection and default-button feedback,
+  keyboard access, menus, and readable status/help copy.
+- Closed the audited priority icon lineages for Finder, MultiFinder, Searcher,
+  Review Desk, and ClioTalk across six eras; accepted sources, native optical
+  sizes, runtime dispatch, and Theme Lab provenance now fail closed together.
+- Hardened every website-AI transport: credential scope follows the normalized
+  endpoint, DNS results are checked and pinned to the outgoing socket, private
+  targets are blocked, staged credentials expire and are bounded, and shared
+  cloud reservations reconcile streamed and multi-call usage exactly under
+  concurrent processes without double settlement or cross-day corruption.
+- Added a persistent IndexedDB write fence beneath the multi-window lease, so a
+  tab that loses ownership cannot commit with a stale epoch after a handoff.
+  Chromium and WebKit end-to-end tests cover simultaneous pages, late release,
+  read-only controls, and foreground reconciliation.
+- Moved CMF rendering and USDZ work off the HTTP thread into a bounded worker
+  queue with per-session isolation, cancellation, timeouts, result limits, and
+  crash recovery; health checks remain responsive while a render is running.
+- Reworked the official site's era narrative and proof wall around concrete
+  product evidence while keeping site checks and public deployment boundaries
+  intact.
+
 ## What Changed Most In One Month
 
 - The product moved from "an AI writing prototype" to a local-first writing

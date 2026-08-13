@@ -381,6 +381,8 @@ const browserWritingAgentCoordinator = window.AISystem6WritingAgentRuntime.creat
       : [];
     let appendedToolResults = 0;
     let lastResult = null;
+    let activeResponseId = "";
+    let activeResponseApi = "";
     const loopResult = await writingAgentToolRegistry.runToolLoop({
       maxRounds: 3,
       context: {
@@ -403,6 +405,10 @@ const browserWritingAgentCoordinator = window.AISystem6WritingAgentRuntime.creat
         const modelPayload = {
           ...payloadWithoutTools,
           messages,
+          ...(activeResponseId && activeResponseApi ? {
+            _lmstudio_previous_response_id: activeResponseId,
+            _lmstudio_previous_response_api: activeResponseApi,
+          } : {}),
           ...(toolsDisabled || !providerTools.length
             ? {}
             : { tools: providerTools, tool_choice: "auto" }),
@@ -415,6 +421,8 @@ const browserWritingAgentCoordinator = window.AISystem6WritingAgentRuntime.creat
           payload: modelPayload,
           streamPreference: "json",
         });
+        activeResponseId = String(lastResult.responseId || "");
+        activeResponseApi = String(lastResult.responseApi || "");
         const calls = runtime.normalizeProviderToolCalls(lastResult.message);
         if (!calls.length) return { done: true, output: lastResult.text };
         messages.push({

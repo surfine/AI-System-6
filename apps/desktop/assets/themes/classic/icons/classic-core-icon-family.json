@@ -1,21 +1,25 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "target": "System 6-era monochrome Macintosh Finder",
   "generatedBy": "tooling/build-classic-core-icons.mjs",
   "nativeImageSha256": "d1129d50e08064124ecba7423544f753650ceb2b064a3e447f86ef5ce3d6fba2",
   "coreOnly": true,
+  "evidenceLayer": true,
+  "runtimeAsset": false,
+  "overwrittenBy": "tooling/build-classic-family-icons.mjs",
+  "evidencePolicy": "Exact one-bit resource reconstructions are retained as the comparison authority. The shipped Classic runtime is a smooth Retina SVG trace whose anatomy is validated against this layer.",
   "selectionRecipe": "Invert artwork and paper within the separate mask; never ship a selected bitmap.",
   "icons": {
     "finderApp": {
       "label": "Finder / System",
-      "sourceKind": "reference-guided-semantic-adaptation",
+      "sourceKind": "native-resource-replica",
       "nativeReference": {
         "file": "System Folder/System",
         "type": "ICN#",
         "id": 3
       },
       "nativeReference16": null,
-      "referenceDiffPixels": 516,
+      "referenceDiffPixels": 0,
       "sizes": {
         "16": "finderApp-16.svg",
         "32": "finderApp-32.svg"
@@ -27,7 +31,7 @@
       "metrics": {
         "16": {
           "art": {
-            "pixels": 75,
+            "pixels": 78,
             "bbox": {
               "minX": 3,
               "minY": 1,
@@ -47,21 +51,21 @@
         },
         "32": {
           "art": {
-            "pixels": 193,
+            "pixels": 203,
             "bbox": {
-              "minX": 5,
-              "minY": 3,
-              "maxX": 26,
-              "maxY": 29
+              "minX": 4,
+              "minY": 1,
+              "maxX": 27,
+              "maxY": 31
             }
           },
           "mask": {
-            "pixels": 570,
+            "pixels": 732,
             "bbox": {
-              "minX": 5,
-              "minY": 3,
-              "maxX": 26,
-              "maxY": 29
+              "minX": 4,
+              "minY": 1,
+              "maxX": 27,
+              "maxY": 31
             }
           }
         }

@@ -28,6 +28,11 @@ import path from "node:path";
  */
 export const publicScriptNames = new Set([
   "test",
+  "lint",
+  "verify:contracts",
+  "test:unit",
+  "test:integration",
+  "test:e2e:smoke",
   "prestart",
   "start",
   "build",
@@ -54,6 +59,7 @@ export const publicScriptNames = new Set([
   "verify:version",
   "verify:checkjs",
   "verify:public",
+  "verify:public-tree",
   "verify:theme-icons",
 ]);
 
@@ -69,7 +75,8 @@ export function buildPublicPackageJson(privatePkg) {
   scripts["prebuild:app"] = publicPrebuildApp;
   // In the public repo, verify:public checks the tree it runs from. The
   // private repo keeps a snapshot-directed variant of the same command.
-  scripts["verify:public"] = "node tooling/verify-public-tree.mjs";
+  scripts["verify:public"] = "npm run verify:public-tree";
+  scripts["verify:public-tree"] = "node tooling/verify-public-tree.mjs";
 
   const result = { ...privatePkg };
   result.scripts = Object.fromEntries(

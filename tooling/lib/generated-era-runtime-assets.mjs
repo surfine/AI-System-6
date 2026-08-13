@@ -3,18 +3,27 @@ import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-export const GENERATED_RUNTIME_ERAS = Object.freeze(["aqua", "snow-leopard", "yosemite"]);
+export const GENERATED_COMPATIBILITY_MANIFEST_ERAS = Object.freeze(["aqua", "snow-leopard", "yosemite"]);
 export const THEME_LAB_PACKAGED_ERAS = Object.freeze(["aqua", "snow-leopard", "yosemite", "liquid-glass"]);
-export const THEME_RUNTIME_PNG_PATHS = Object.freeze([
+// Standalone PNGs referenced outside the complete per-era icon-family globs.
+// Aqua/Snow sprites remain compatibility artifacts; contextual icon dispatch
+// reads the 16/32/128 family PNGs packaged by themeLabPackagedAssetReport().
+export const THEME_STANDALONE_PNG_PATHS = Object.freeze([
   "apps/desktop/assets/themes/platinum/azul-tile.png",
+  "apps/desktop/assets/themes/aqua/lamp-close.png",
+  "apps/desktop/assets/themes/aqua/lamp-zoom.png",
   "apps/desktop/assets/themes/aqua/aqua-sprite.png",
+  "apps/desktop/assets/themes/snow-leopard/lamp-close.png",
+  "apps/desktop/assets/themes/snow-leopard/lamp-zoom.png",
   "apps/desktop/assets/themes/snow-leopard/snow-leopard-sprite.png",
+  "apps/desktop/assets/themes/yosemite/lamp-close.png",
+  "apps/desktop/assets/themes/yosemite/lamp-zoom.png",
 ]);
 
 const moduleDirectory = dirname(fileURLToPath(import.meta.url));
 
-export function generatedEraRuntimeAssetReport(repositoryRoot = resolve(moduleDirectory, "../..")) {
-  return GENERATED_RUNTIME_ERAS.map((eraId) => {
+export function generatedEraCompatibilityManifestReport(repositoryRoot = resolve(moduleDirectory, "../..")) {
+  return GENERATED_COMPATIBILITY_MANIFEST_ERAS.map((eraId) => {
     const themeRoot = join(repositoryRoot, "apps/desktop/assets/themes", eraId);
     const manifestPath = join(themeRoot, `${eraId}-icon-manifest.json`);
     const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
@@ -24,10 +33,10 @@ export function generatedEraRuntimeAssetReport(repositoryRoot = resolve(moduleDi
 
     for (const [iconId, relativePath] of entries) {
       const match = new RegExp(`^icons/${iconId}-(\\d+)\\.png$`).exec(relativePath);
-      if (!match) throw new Error(`${eraId}/${iconId}: runtime manifest path is not a same-object PNG tier: ${relativePath}`);
+      if (!match) throw new Error(`${eraId}/${iconId}: compatibility manifest path is not a same-object PNG tier: ${relativePath}`);
       tiers.add(Number(match[1]));
       const absolutePath = join(themeRoot, relativePath);
-      if (!existsSync(absolutePath)) throw new Error(`${eraId}/${iconId}: runtime asset is missing: ${relativePath}`);
+      if (!existsSync(absolutePath)) throw new Error(`${eraId}/${iconId}: compatibility asset is missing: ${relativePath}`);
       files.push({
         iconId,
         relativePath: `assets/themes/${eraId}/${relativePath}`,
@@ -35,8 +44,8 @@ export function generatedEraRuntimeAssetReport(repositoryRoot = resolve(moduleDi
       });
     }
 
-    if (entries.length !== 56) throw new Error(`${eraId}: expected 56 runtime manifest entries, found ${entries.length}`);
-    if (tiers.size !== 1) throw new Error(`${eraId}: runtime manifest mixes tiers: ${[...tiers].join(", ")}`);
+    if (entries.length !== 56) throw new Error(`${eraId}: expected 56 compatibility manifest entries, found ${entries.length}`);
+    if (tiers.size !== 1) throw new Error(`${eraId}: compatibility manifest mixes tiers: ${[...tiers].join(", ")}`);
     const [tier] = tiers;
     const pattern = `assets/themes/${eraId}/icons/*-${tier}.png`;
     const matchedNames = readdirSync(join(themeRoot, "icons"))
@@ -60,10 +69,9 @@ export function generatedEraRuntimeAssetReport(repositoryRoot = resolve(moduleDi
 /**
  * Every PNG that the packaged Theme Lab can request.
  *
- * The desktop runtime uses one manifest-selected tier, but Theme Lab is a
- * shipped application and deliberately exposes each reviewed native size (and
- * each Liquid Glass appearance). Packaging only the runtime tier leaves valid
- * UI controls pointing at files that do not exist inside the macOS app.
+ * The contextual desktop renderer and Theme Lab both request files from these
+ * complete families. The separate 32 px manifests are compatibility mappings,
+ * not the authoritative runtime-size selector.
  */
 export function themeLabPackagedAssetReport(repositoryRoot = resolve(moduleDirectory, "../..")) {
   return THEME_LAB_PACKAGED_ERAS.map((eraId) => {
@@ -110,13 +118,15 @@ export function themeLabPackagedAssetReport(repositoryRoot = resolve(moduleDirec
   });
 }
 
-export function themeRuntimePackagedAssets(repositoryRoot = resolve(moduleDirectory, "../..")) {
-  return THEME_RUNTIME_PNG_PATHS.map((relativePath) => {
-    const absolutePath = join(repositoryRoot, relativePath);
-    if (!existsSync(absolutePath)) throw new Error(`Theme runtime PNG is missing: ${relativePath}`);
+export function themeStandalonePackagedAssets(repositoryRoot = resolve(moduleDirectory, "../..")) {
+  return THEME_STANDALONE_PNG_PATHS.map((packagePath) => {
+    const absolutePath = join(repositoryRoot, packagePath);
+    if (!existsSync(absolutePath)) throw new Error(`Standalone theme PNG is missing: ${packagePath}`);
     const bytes = readFileSync(absolutePath);
     return {
-      relativePath,
+      packagePath,
+      packagePattern: `${packagePath.slice(0, packagePath.lastIndexOf("/"))}/*.png`,
+      relativePath: packagePath.replace(/^apps\/desktop\//, ""),
       bytes: bytes.length,
       sha256: createHash("sha256").update(bytes).digest("hex"),
     };

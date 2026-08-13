@@ -4,8 +4,8 @@
     .classic-paper{fill:#ffffff;stroke:none}
     .sys-icon-detail{display:none}
   </style>
-  <g transform="translate(16 16) scale(1.1) translate(-16 -16)">
-    <path d="M3 11h26v17H3z" />
-    <path d="M6 7h9l4 4H6z" />
+  <g transform="translate(0 0)">
+    <path d="M1 12.5h30v18H1z" />
+    <path d="M5 8.5h9l4 4H5z" />
   </g>
 </svg>

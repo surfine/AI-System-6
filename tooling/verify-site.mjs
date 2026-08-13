@@ -41,6 +41,7 @@ const required = [
   "site.css",
   "desk.css",
   "js/main.js",
+  "js/argument.js",
   "img/og-poster.png",
   "img/frames/manifest.json",
   "img/frames/classic.png",
@@ -141,6 +142,7 @@ if (posterWidth === 1200 && posterHeight === 630) ok("Open Graph poster is 1200�
 else fail(`Open Graph poster is ${posterWidth}×${posterHeight}; expected 1200×630`);
 
 const index = readFileSync(path.join(siteRoot, "index.html"), "utf8");
+const argument = readFileSync(path.join(siteRoot, "js", "argument.js"), "utf8");
 const quickTime = readFileSync(path.join(siteRoot, "js", "quicktime.js"), "utf8");
 for (const needle of [
   "THE AI HAS",
@@ -158,10 +160,21 @@ if (index.includes('class="menu-apple s6-mark"') && !index.includes("&#63743;"))
 } else {
   fail("the menu bar still depends on the Apple private-use glyph");
 }
-if (index.includes('id="cycle-btn"') && index.includes('class="cycle-play"')) {
-  ok("era cycling uses a project-owned crisp transport glyph");
+// The hero dissolve replaced era cycling: the six real captures are stacked
+// on one continuous 1988-to-2026 axis, so the page has one timeline, not two.
+if (index.includes('id="hero-dissolve"') && !index.includes('id="era-strip"')) {
+  ok("the six eras live on one continuous dissolve, not a second timeline");
 } else {
-  fail("era cycling is missing its project-owned transport glyph");
+  fail("the page carries a second era timeline besides the hero dissolve");
+}
+if (index.includes('id="argument"')
+  && index.includes('id="claim-list"')
+  && argument.includes("const OBJECT = \"teachText\"")
+  && argument.includes("ERAS.map")
+  && argument.includes("setEra(era.id, true)")) {
+  ok("the six-appearance argument uses canonical manuscript icons and changes the live era");
+} else {
+  fail("the six-appearance argument is incomplete or detached from the live era");
 }
 if (quickTime.includes("https://player.bilibili.com/player.html?bvid=BV1ht3m6UEDb")
   && quickTime.includes('poster.addEventListener("click"')) {
@@ -180,6 +193,22 @@ const siteBytes = siteFiles.reduce((sum, file) => sum + statSync(file).size, 0);
 const sitePayloadBudget = 4 * 1024 * 1024;
 if (siteBytes <= sitePayloadBudget) ok(`official site payload ${(siteBytes / 1024 / 1024).toFixed(1)} MiB`);
 else fail(`official site payload ${(siteBytes / 1024 / 1024).toFixed(1)} MiB exceeds 4 MiB`);
+
+// The floppy claim appears in three places, so only one of them is allowed
+// to be a source: the receipt verify:floppy writes. A hand-edited README is
+// how this number quietly stopped being true before.
+{
+  const receiptPath = path.join(siteRoot, "data", "floppy-budget.json");
+  if (!existsSync(receiptPath)) {
+    fail("site/data/floppy-budget.json is missing; run npm run verify:floppy");
+  } else {
+    const receipt = JSON.parse(readFileSync(receiptPath, "utf8"));
+    const readme = readFileSync(path.join(root, "README.md"), "utf8");
+    const quoted = receipt.bytes.toLocaleString("en-US");
+    if (readme.includes(quoted)) ok(`README quotes the measured payload (${quoted} bytes)`);
+    else fail(`README does not quote the measured payload ${quoted}; rerun npm run verify:floppy and update the gauge`);
+  }
+}
 
 if (failures.length) {
   console.error(`\nOfficial-site verification failed with ${failures.length} issue(s).`);

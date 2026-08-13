@@ -1,15 +1,11 @@
-// Entry point for the apps/server/ rewrite. Boots an HTTP server on its own
-// port (default 4273) and delegates dispatch to server/router.js.
+// Canonical AI System 6 HTTP entry point. Boots on PORT (default 4173) and
+// delegates API dispatch to server/router.js.
 //
-// Dispatch order, mirroring the bottom of root server.js:
-//   1. Exact route match (full request URL incl. query).
+// Dispatch order:
+//   1. Exact API route match.
 //   2. Prefix route match.
-//   3. GET / HEAD fall through to static file serving from the repo
-//      root (index.html, app.bundle.js, styles.bundle.css, etc).
-//   4. Everything else returns a structured "Not migrated yet" JSON.
-//      At this checkpoint all known root API routes are represented in
-//      apps/server/server/router.js; this fallback remains useful for future
-//      route additions and parity checks.
+//   3. GET / HEAD fall through to the apps/desktop static root.
+//   4. Everything else returns a structured 404.
 
 "use strict";
 
@@ -19,7 +15,6 @@ const { sendJson } = require("./server/lib/http.js");
 const {
   resolveRoute,
   listMigratedRoutes,
-  unmigratedRoutes,
 } = require("./server/router.js");
 const { appName, appVersion, appBuild } = require("./server/lib/build-info.js");
 const { handleStatic } = require("./server/static.js");
@@ -71,15 +66,7 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    sendJson(res, 404, deploymentProfile === "public"
-      ? { error: "Not found", request_id: requestId }
-      : {
-          error: "Not migrated yet",
-          detail: `${req.method || "GET"} ${req.url || "/"} is not handled by apps/server/. ` +
-            `Use the root server on its own port for production routes.`,
-          migrated: listMigratedRoutes(),
-          unmigrated: unmigratedRoutes,
-        });
+    sendJson(res, 404, { error: "Not found", request_id: requestId });
   } catch (error) {
     const message =
       error && typeof error === "object" && "message" in error
@@ -99,6 +86,9 @@ const server = http.createServer(async (req, res) => {
     }));
     sendJson(res, status, {
       error: status < 500 ? message : "Unhandled server error",
+      ...(status < 500 && /** @type {any} */ (error)?.code
+        ? { code: String(/** @type {any} */ (error).code) }
+        : {}),
       request_id: requestId,
     });
   }
@@ -110,11 +100,11 @@ server.keepAliveTimeout = 5000;
 server.maxRequestsPerSocket = 100;
 
 server.listen(port, host, () => {
-  console.log(`AI System 6 (apps/server/ rewrite) running at http://${host}:${port}`);
+  console.log(`AI System 6 server running at http://${host}:${port}`);
   console.log(`${appName} ${appVersion} build ${appBuild}`);
   console.log(`Deployment profile: ${deploymentProfile}`);
   console.log(`LAN access: ${localRequestPolicy.allowLan ? "enabled with token" : "disabled"}`);
-  console.log(`Migrated routes: ${listMigratedRoutes().join(", ") || "(none)"}`);
+  console.log(`Routes: ${listMigratedRoutes().join(", ") || "(none)"}`);
 });
 
 let shuttingDown = false;

@@ -19,6 +19,7 @@ import { expect, test } from "@playwright/test";
 import { createFakeModelServer } from "./fake-model.mjs";
 import {
   bootApp,
+  dismissGuide,
   dumpIndexedDb,
   E2E_PROJECT_NAME,
 } from "./helpers.mjs";
@@ -57,13 +58,14 @@ async function importMarkdownThroughUi(page, markdown) {
   await chooser.setFiles({ name: "notes.md", mimeType: "text/markdown", buffer: Buffer.from(markdown, "utf8") });
   await page.waitForFunction(
     () => /Source Notes|notes\.md|preview/i.test(document.querySelector("#import-preview")?.textContent || ""),
+    undefined,
     { timeout: 20_000 }
   );
   await page.click("#import-documents");
   await page.waitForFunction(() => {
     const status = document.querySelector("#import-status")?.textContent || "";
     return /saved|written|record|完成|imported|已写入|成功|写进/i.test(status);
-  }, { timeout: 20_000 });
+  }, undefined, { timeout: 20_000 });
 }
 
 async function openImportedFileAndClip(page) {
@@ -83,13 +85,14 @@ async function openImportedFileAndClip(page) {
   await editMenu.locator('[data-action="selection-clip-file"]').click();
   await page.waitForFunction(
     () => /clipped|已剪|已保存|clip/i.test(document.querySelector("#status")?.textContent || ""),
+    undefined,
     { timeout: 15_000 }
   );
 }
 
 async function enterWritingStudio(page) {
   await page.dblclick("#finder-writing-studio-toggle");
-  await page.waitForFunction(() => document.body.dataset.workspaceProfile === "writing", { timeout: 15_000 });
+  await page.waitForFunction(() => document.body.dataset.workspaceProfile === "writing", undefined, { timeout: 15_000 });
   await page.waitForSelector('[data-window="questionSheet"]:not(.is-hidden)', { timeout: 10_000 });
 }
 
@@ -117,7 +120,7 @@ async function acceptConfirmModalIfPresent(page) {
 
 test("journey A: a first-time user completes the whole route and downloads", async ({ page }) => {
   await bootApp(page);
-  await page.click('[data-action="dismiss-guide"]');
+  await dismissGuide(page);
   await createProjectThroughSwitcher(page);
   await importMarkdownThroughUi(page, "# Source Notes\n\nThis is the evidence line that matters.\n\nSecond sentence stays too.");
   await openImportedFileAndClip(page);
@@ -141,15 +144,13 @@ test("journey A: a first-time user completes the whole route and downloads", asy
   await page.waitForSelector('[data-window="reviewDesk"]:not(.is-hidden)', { timeout: 10_000 });
   await page.click('[data-window="reviewDesk"] [data-action="review-view-manuscript"]');
   await page.waitForSelector('[data-window="teachText"]:not(.is-hidden)', { timeout: 10_000 });
-  await page.waitForSelector(".teachtext-tabs .tdi-tab", { timeout: 10_000 });
-
-  const manuscriptTab = page.locator(".teachtext-tabs .tdi-tab").filter({ hasText: "Manuscript" });
-  await manuscriptTab.click();
-  await page.waitForFunction(() => {
-    const tab = [...document.querySelectorAll(".teachtext-tabs .tdi-tab")]
-      .find((el) => (el.textContent || "").includes("Manuscript"));
-    return tab?.classList.contains("is-active");
-  }, { timeout: 10_000 });
+  // On a narrow paired window the document rail is intentionally replaced by
+  // its compact status-bar switcher. Choose the manuscript through that real
+  // user surface instead of targeting the hidden wide-layout rail.
+  const documentStack = page.locator('[data-tdi-stack-for="teachtext-tabs"] .tdi-document-stack');
+  await documentStack.locator("summary").click();
+  await documentStack.locator(".tdi-stack-open").filter({ hasText: /Manuscript|手稿/ }).click();
+  await expect(documentStack.locator(".tdi-stack-active-copy")).toContainText(/Manuscript|手稿/);
   await page.waitForSelector('#teachtext-label:not([disabled])', { timeout: 10_000 });
   await page.selectOption("#teachtext-label", "final");
   await acceptConfirmModalIfPresent(page);
@@ -161,7 +162,7 @@ test("journey A: a first-time user completes the whole route and downloads", asy
   await page.waitForTimeout(1000);
   await page.dblclick("#desktop-project-cd");
   await page.waitForSelector('[data-window="projectCd"]:not(.is-hidden)', { timeout: 10_000 });
-  await page.waitForFunction(() => (document.querySelector("#project-cd-count")?.textContent || "").includes("1"), { timeout: 15_000 });
+  await page.waitForFunction(() => (document.querySelector("#project-cd-count")?.textContent || "").includes("1"), undefined, { timeout: 15_000 });
   const downloadPromise = page.waitForEvent("download");
   await page.click("#download-project-cd");
   const download = await downloadPromise;
@@ -179,7 +180,7 @@ test("journey A: a first-time user completes the whole route and downloads", asy
 
 test("journey B: returning the next day finds the writing state restored", async ({ page }) => {
   await bootApp(page);
-  await page.click('[data-action="dismiss-guide"]');
+  await dismissGuide(page);
   await createProjectThroughSwitcher(page);
   await enterWritingStudio(page);
 
@@ -188,9 +189,10 @@ test("journey B: returning the next day finds the writing state restored", async
   await page.waitForTimeout(1800); // working-session autosave
 
   await page.reload();
-  await page.waitForFunction(() => document.body.dataset.appReady === "ready", { timeout: 45_000 });
+  await page.waitForFunction(() => document.body.dataset.appReady === "ready", undefined, { timeout: 45_000 });
   await page.waitForFunction(
     () => (document.querySelector("#question-sheet-body")?.value || "").includes("Day two"),
+    undefined,
     { timeout: 20_000 }
   );
   expect(await page.inputValue("#question-sheet-body")).toContain("Day two");
@@ -200,9 +202,10 @@ test("journey B: returning the next day finds the writing state restored", async
   await page.fill("#question-sheet-body", continued);
   await page.waitForTimeout(1800);
   await page.reload();
-  await page.waitForFunction(() => document.body.dataset.appReady === "ready", { timeout: 45_000 });
+  await page.waitForFunction(() => document.body.dataset.appReady === "ready", undefined, { timeout: 45_000 });
   await page.waitForFunction(
     () => (document.querySelector("#question-sheet-body")?.value || "").includes("Added after the refresh"),
+    undefined,
     { timeout: 20_000 }
   );
 
@@ -224,7 +227,7 @@ test.afterAll(async () => {
 
 test("journey C: a failed model call never loses work and the retry succeeds", async ({ page }) => {
   await bootApp(page);
-  await page.click('[data-action="dismiss-guide"]');
+  await dismissGuide(page);
   await createProjectThroughSwitcher(page);
   await enterWritingStudio(page);
 
@@ -236,12 +239,25 @@ test("journey C: a failed model call never loses work and the retry succeeds", a
   await page.click('.apple-menu-popover [data-action="open-control"]');
   await page.waitForSelector('[data-window="control"]:not(.is-hidden)');
   await page.click('#control-tab-local');
+  const manualConnection = page.locator("#local-manual-connection");
+  if (!await manualConnection.evaluate((element) => element.open)) {
+    await manualConnection.locator(":scope > summary").click();
+  }
+  await expect(manualConnection).toHaveJSProperty("open", true);
+  const modelFields = page.locator(".local-model-fields");
+  if (await modelFields.isVisible()) {
+    await page.click("#connect-local-model");
+    await expect(modelFields).toBeHidden();
+  }
+  await expect(page.locator("#endpoint")).toBeVisible();
   await page.fill("#endpoint", `http://127.0.0.1:${fakeModelPort}`);
   await page.click("#connect-local-model");
-  await page.waitForFunction(() => (document.querySelector("#model")?.value || "").trim() !== "", { timeout: 20_000 });
+  await expect(modelFields).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator("#local-connection-status")).toContainText(/Connected|已连接|连接成功/i, { timeout: 20_000 });
+  await page.waitForFunction(() => (document.querySelector("#model")?.value || "").trim() !== "", undefined, { timeout: 20_000 });
 
   await page.click('[data-window="control"] .close-box');
-  await page.waitForFunction(() => document.querySelector('[data-window="control"]')?.classList.contains("is-hidden"), { timeout: 10_000 });
+  await page.waitForFunction(() => document.querySelector('[data-window="control"]')?.classList.contains("is-hidden"), undefined, { timeout: 10_000 });
   await page.click('[data-window="questionSheet"] .title-bar');
   await page.click('[data-window="questionSheet"] .teachtext-command-menu summary');
   const draft = "Keep this exact draft text even when the model call fails.";
@@ -257,6 +273,7 @@ test("journey C: a failed model call never loses work and the retry succeeds", a
       const connection = document.querySelector("#local-connection-status")?.textContent || "";
       return !busy && /Outline generation failed|生成大纲失败|failed|could not|error|无法|失败|出错/i.test(`${status} ${connection}`);
     },
+    undefined,
     { timeout: 60_000 }
   );
   expect(await page.inputValue("#question-sheet-body")).toContain(draft);
@@ -269,14 +286,30 @@ test("journey C: a failed model call never loses work and the retry succeeds", a
     await page.click("#system-modal-yes");
     await page.waitForSelector("#system-modal", { state: "hidden", timeout: 10_000 });
   }
-  await page.click('[data-window="questionSheet"] .title-bar');
+  // Bring the Question Sheet back through the real Writing menu after the
+  // failure surface has taken focus. Do not use product-internal window APIs.
+  await writingGoTo(page, "open-question-sheet");
+  await page.waitForSelector('[data-window="questionSheet"]:not(.is-hidden)', { timeout: 10_000 });
   await page.click('[data-window="questionSheet"] .teachtext-command-menu summary');
   await page.click('[data-window="questionSheet"] [data-action="generate-outline"]');
   await acceptConfirmModalIfPresent(page);
-  await page.waitForFunction(
-    () => (document.querySelector("#outline-content")?.value || "").includes("## 背景"),
-    { timeout: 60_000 }
-  );
+  try {
+    await page.waitForFunction(
+      () => (document.querySelector("#outline-content")?.value || "").includes("## 背景"),
+      undefined,
+      { timeout: 60_000 }
+    );
+  } catch (error) {
+    const diagnostic = await page.evaluate(() => ({
+      busy: document.body.classList.contains("is-busy"),
+      status: document.querySelector("#status")?.textContent || "",
+      connection: document.querySelector("#local-connection-status")?.textContent || "",
+      outline: document.querySelector("#outline-content")?.value || "",
+      model: document.querySelector("#model")?.value || "",
+    }));
+    console.log("JOURNEY-C-RETRY-DIAG", JSON.stringify({ diagnostic, fakeState: fakeModel.state }));
+    throw error;
+  }
   expect(await page.inputValue("#question-sheet-body")).toContain(draft);
 
   const db = await dumpIndexedDb(page);

@@ -23,6 +23,12 @@
   const advancedAiButton = document.querySelector("#show-ai-advanced");
   const simpleAiStatus = document.querySelector("#simple-ai-status");
   const ownKeyDetails = document.querySelector("#cloud-own-key-details");
+
+  function setSimpleAiStatus(key, fallback = "") {
+    if (!simpleAiStatus) return;
+    simpleAiStatus.dataset.i18n = key;
+    simpleAiStatus.textContent = typeof t === "function" ? t(key) : fallback;
+  }
   const DEEPSEEK_BASE_URL = "https:" + String.fromCharCode(47, 47) + "api.deepseek.com";
 
   const PROVIDER_BASE_URLS = {
@@ -600,8 +606,10 @@
     window.syncCloudCredentialUi();
   });
 
-  // Check status button
-  cloudCheckBtn.addEventListener("click", async function () {
+  // Check status button. The body is a named function so that other surfaces —
+  // Start Here, above all — can await the settled result instead of clicking
+  // the control and guessing when the check is done.
+  async function runCloudStatusCheck() {
     setControlLoading(cloudCheckBtn, true, typeof t === "function" ? t("cloud_checking") : "Checking…");
     let stagedCredentialId = "";
     try {
@@ -655,14 +663,16 @@
       setControlLoading(cloudCheckBtn, false);
       updateCheckButtonState();
     }
-  });
+    return !!cloudConfig?.active;
+  }
 
-  websiteAiButton?.addEventListener("click", async function () {
+  cloudCheckBtn.addEventListener("click", runCloudStatusCheck);
+
+  async function connectWebsiteAi() {
     if (!publicSharedCloudAvailable) {
-      if (simpleAiStatus) simpleAiStatus.textContent = typeof t === "function" ? t("website_ai_unavailable") : "Website AI is unavailable.";
+      setSimpleAiStatus("website_ai_unavailable", "Website AI is unavailable.");
       if (ownKeyDetails) ownKeyDetails.open = true;
-      cloudApiKeyEl.focus();
-      return;
+      return false;
     }
     // On a public deployment, verification happens before Website AI is
     // marked ready, not on the first Generate after a 401. The passive retry
@@ -672,8 +682,8 @@
       try {
         await window.AISystem6PublicAccess.ensureSession();
       } catch {
-        if (simpleAiStatus) simpleAiStatus.textContent = typeof t === "function" ? t("website_ai_verification_cancelled") : "Website AI verification was cancelled.";
-        return;
+        setSimpleAiStatus("website_ai_verification_cancelled", "Website AI verification was cancelled.");
+        return false;
       }
     }
     cloudConfig = {
@@ -688,9 +698,16 @@
     setCloudModelControlValue(cloudConfig.model);
     saveCloudConfig();
     updateCheckButtonState();
-    cloudCheckBtn.click();
-    if (simpleAiStatus) simpleAiStatus.textContent = typeof t === "function" ? t("website_ai_connecting") : "Connecting to website AI…";
-  });
+    setSimpleAiStatus("website_ai_connecting", "Connecting to website AI…");
+    const connected = await runCloudStatusCheck();
+    setSimpleAiStatus(
+      connected ? "cloud_connected_shared" : "website_ai_unavailable",
+      connected ? "Connected · Site allowance" : "Website AI is unavailable."
+    );
+    return connected;
+  }
+
+  websiteAiButton?.addEventListener("click", connectWebsiteAi);
 
   localAiButton?.addEventListener("click", function () {
     if (typeof setControlTab === "function") setControlTab("local");
@@ -728,10 +745,52 @@
   } else {
     window.syncCloudModelControls();
   }
+  // The public site hands every visitor a working model with no setup step:
+  // the shared allowance is the default connection, not an offer behind a
+  // button. Verification, if the deployment asks for one, happens on the first
+  // protected request through the public-access gate. A key of the user's own
+  // or a local model replaces this at any time, and the daily-limit message is
+  // what invites BYOK — not a form on the first screen.
+  function enableWebsiteAiByDefault() {
+    if (!publicSharedCloudAvailable || !isPublicCloudCredentialMode()) return false;
+    if (cloudRuntimeApiKey || cloudConfig?.credentialId || cloudConfig?.active) return false;
+    if (typeof localModelState !== "undefined" && (localModelState?.ready || localModelState?.loaded)) return false;
+
+    cloudConfig = {
+      ...(cloudConfig || {}),
+      provider: "deepseek",
+      model: cloudConfig?.model || BUILTIN_PROVIDER_MODELS.deepseek[0].id,
+      baseUrl: DEEPSEEK_BASE_URL,
+      credentialMode: "shared",
+      active: true,
+    };
+    saveCloudConfig();
+    if (cloudProviderEl) cloudProviderEl.value = "deepseek";
+    populateCloudModelDropdown(BUILTIN_PROVIDER_MODELS.deepseek);
+    setCloudModelControlValue(cloudConfig.model);
+    applyCloudActiveState();
+    setSimpleAiStatus("cloud_connected_shared", "Connected · Site allowance");
+    if (typeof syncClioTalkModelAvailability === "function") syncClioTalkModelAvailability();
+    if (typeof syncGuideWelcomeState === "function") syncGuideWelcomeState();
+    return true;
+  }
+
   window.AISystem6PublicAccess?.getCapabilities?.().then(function (capabilities) {
     setPublicSharedCloudAvailable(capabilities?.features?.cloud_shared === true);
+    enableWebsiteAiByDefault();
     updateCheckButtonState();
     window.syncCloudCredentialUi();
+  });
+
+  // Named entry points for the rest of the desk. Start Here connects and reads
+  // the settled result here instead of clicking a Control Panel control.
+  window.AISystem6CloudModel = Object.freeze({
+    connectWebsiteAi,
+    websiteAiAvailable: () => publicSharedCloudAvailable,
+    revealOwnKeyFields() {
+      if (ownKeyDetails) ownKeyDetails.open = true;
+      cloudApiKeyEl?.focus();
+    },
   });
   updateCheckButtonState();
   window.syncCloudCredentialUi();

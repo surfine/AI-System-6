@@ -27,7 +27,7 @@ test("failure storage: IndexedDB write reject keeps content and recovers", async
   await dismissGuide(page);
   await createProject(page);
   await page.dblclick("#finder-writing-studio-toggle");
-  await page.waitForFunction(() => document.body.dataset.workspaceProfile === "writing", { timeout: 15_000 });
+  await page.waitForFunction(() => document.body.dataset.workspaceProfile === "writing", undefined, { timeout: 15_000 });
   await page.waitForSelector('[data-window="questionSheet"]:not(.is-hidden)', { timeout: 10_000 });
   await page.fill("#question-sheet-body", "This text must survive a refused IndexedDB write.");
 

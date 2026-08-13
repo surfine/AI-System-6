@@ -1356,9 +1356,13 @@ async function buildTheme(theme, config) {
     completeFamily,
     reviewedFamily: completeFamily ? ICONS.map(({ id }) => id) : [],
     fallback: completeFamily ? [] : ICONS.map(({ id }) => id),
-    // Aqua and Snow Leopard dispatch 128 px sprite cells; Yosemite dispatches
-    // one 128 px PNG per icon. Smaller files remain review/Theme Lab artifacts.
-    runtimeSize: 128,
+    // The manifest is a stable semantic compatibility mapping. The active
+    // renderer chooses an authored 16, 32, or 128 px raster by context.
+    runtimeSize: "contextual",
+    runtimeSizesByContext: { compactMenuList: 16, ordinary: 32, desktopLargeRetina: 128 },
+    compatibilityManifest: config.manifest,
+    compatibilityManifestMeaning: "Stable semantic mapping only; app/core/system-icons.js selects the authored runtime tier by rendering context.",
+    runtimeDispatch: "apps/desktop/app/core/system-icons.js",
     icons: {}
   };
   const rendered32 = new Map();
@@ -1436,6 +1440,10 @@ if (selectedThemes.includes("snow-leopard")) await import("./build-snow-leopard-
 if (selectedThemes.includes("yosemite")) await import("./build-yosemite-core-icons.mjs");
 if (selectedThemes.includes("liquid-glass")) await import("./build-liquid-glass-imagegen-icons.mjs");
 
+// Platinum's complete accepted ImageGen family is the broad authoring source.
+// Apply it before the narrower historically approved Finder overlay below.
+if (selectedThemes.includes("platinum")) await import("./build-platinum-imagegen-icons.mjs");
+
 // Draft candidates are never accepted implicitly. This last overlay reads
 // only the checked-in human acceptance ledger and checked-in accepted source
 // archive, verifies every PNG hash, and restores those reviewed bytes after
@@ -1443,16 +1451,28 @@ if (selectedThemes.includes("liquid-glass")) await import("./build-liquid-glass-
 const { buildAcceptedGeneratedIcons } = await import("./build-accepted-generated-era-icons.mjs");
 await buildAcceptedGeneratedIcons(selectedThemes);
 
-// Core builders replace accepted ids in the runtime manifest. Rebuild the full
-// sheet afterwards so it shows the bytes users actually receive instead of a
-// stale pre-core fallback for Finder, ClioTalk, or another reviewed object.
+// Historical acceptance is a separate, later gate. Only eras with an
+// explicitly approved Finder ImageGen master are eligible for this overlay;
+// generated candidates that failed evidence or compact-size review never ship.
+const approvedFinderThemes = selectedThemes.filter((theme) => ["platinum", "aqua", "snow-leopard", "yosemite", "liquid-glass"].includes(theme));
+if (approvedFinderThemes.length) {
+  const { buildApprovedFinderLineage } = await import("./build-approved-finder-lineage.mjs");
+  await buildApprovedFinderLineage(approvedFinderThemes);
+}
+
+// Rows beyond Finder cross the historical gate independently. This overlay is
+// deliberately narrow and ledger-driven: a generated candidate is not
+// eligible merely because generation or technical cleanup succeeded.
+const approvedPriorityThemes = selectedThemes.filter((theme) => ["platinum", "aqua", "snow-leopard", "yosemite", "liquid-glass"].includes(theme));
+if (approvedPriorityThemes.length) {
+  const { buildApprovedPriorityLineage } = await import("./build-approved-priority-lineage.mjs");
+  await buildApprovedPriorityLineage(approvedPriorityThemes);
+}
+
+// Contact sheets resolve after every authoring overlay so they show the exact
+// bytes users receive, including historically pending assets.
 for (const theme of selectedThemes) {
   const manifest = JSON.parse(readFileSync(join(root, "apps", "desktop", "assets", "themes", theme, THEMES[theme].manifest), "utf8"));
   await buildContactSheet(theme, manifest);
 }
-// Platinum's complete accepted Image Gen family is the final authority for
-// all 56 objects. Apply it after legacy/core/accepted overlays and after their
-// compatibility sheet so its official PNGs, ledger, and raster proof cannot
-// be overwritten by the broad SVG generator.
-if (selectedThemes.includes("platinum")) await import("./build-platinum-imagegen-icons.mjs");
 if (selectedThemes.includes("liquid-glass")) await buildLiquidAppearanceSheet();

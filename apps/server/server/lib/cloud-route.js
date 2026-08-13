@@ -17,10 +17,10 @@ const {
   sharedCloudBudgetConfig,
 } = require("../shared-cloud-budget.js");
 const {
-  DEEPSEEK_API_KEY_DEFAULT,
   DEEPSEEK_CLOUD_MODELS,
   DEEPSEEK_PUBLIC_BASE_URL,
   cloudAuthHeaders,
+  resolveCloudTarget,
 } = require("../cloud.js");
 
 const PUBLIC_MODEL_IDS = new Set(DEEPSEEK_CLOUD_MODELS.map((item) => item.id));
@@ -55,25 +55,28 @@ function cloudRouteError(status, code, retryAfter, detail, warning) {
  * `warning` straight from their existing catch blocks.
  *
  * @param {object} options
+ * @param {boolean} [options.reserve]
  * @param {string} [options.credentialId]
  * @param {string} [options.suppliedApiKey]
- * @param {string} [options.requestedBaseUrl]
+ * @param {string} [options.requestedBaseUrl] Ignored publicly; kept for caller compatibility.
  * @param {string} [options.model]
  * @param {object} options.payload
  * @param {import("node:http").IncomingMessage} [options.req]
  * @returns {Promise<{
  *   apiKey: string, baseUrl: string, model: string, payload: object,
+ *   pinnedAddress: string, pinnedFamily: number,
  *   authHeaders: object, usingSharedCloud: boolean,
- *   reservation: { ok: true, inputTokens: number, outputTokens: number, reservedTokens: number, remainingSessionRequests: number } | null,
+ *   reservation: { ok: true, inputTokens: number, outputTokens: number, reservedTokens: number, remainingSessionRequests: number, addUsage: (usage: any) => boolean, markUpstreamStarted: () => void, settle: (options?: any) => any } | null,
  * }>}
  */
 async function preparePublicCloudCall({
   credentialId = "",
   suppliedApiKey = "",
-  requestedBaseUrl = "",
+  requestedBaseUrl: _requestedBaseUrl = "",
   model = "deepseek-v4-flash",
   payload,
   req,
+  reserve = true,
 }) {
   if (!isPublicDeployment) {
     throw new Error("preparePublicCloudCall is only for the public deployment");
@@ -81,10 +84,12 @@ async function preparePublicCloudCall({
 
   const suppliedPublicApiKey = String(suppliedApiKey || "").trim();
   const usingSharedCloud = !suppliedPublicApiKey;
+  const cloudTarget = await resolveCloudTarget(DEEPSEEK_PUBLIC_BASE_URL);
   const apiKey = String(await resolveCloudCredential({
     credentialId,
     provider: "deepseek",
-    suppliedApiKey: suppliedPublicApiKey || DEEPSEEK_API_KEY_DEFAULT,
+    targetBaseUrl: cloudTarget.baseUrl,
+    suppliedApiKey: suppliedPublicApiKey,
     allowSupplied: true,
   })).trim();
   const modelName = String(model || "deepseek-v4-flash").trim();
@@ -103,38 +108,6 @@ async function preparePublicCloudCall({
   const sessionNonce = publicSession?.nonce || "";
   const sessionUserId = pseudonymousCloudUserId(sessionNonce);
 
-  /** @type {any} */
-  let reservation = null;
-  if (usingSharedCloud) {
-    payload.max_tokens = Math.min(
-      Number.isFinite(Number(payload.max_tokens)) ? Number(payload.max_tokens) : 1800,
-      sharedCloudBudgetConfig().maxOutputTokens
-    );
-    payload.user_id = sessionUserId;
-    try {
-      reservation = reserveSharedCloudRequest({ sessionNonce, payload });
-    } catch (error) {
-      throw cloudRouteError(
-        503,
-        "shared_cloud_budget_unavailable",
-        60,
-        String(error?.message || "Shared cloud allowance is temporarily unavailable"),
-        "共享云端额度暂时不可用，请稍后再试，或在 Control Panel 配置自己的密钥。"
-      );
-    }
-    if (!reservation.ok) {
-      throw cloudRouteError(
-        reservation.code === "shared_cloud_input_too_large" ? 413 : 429,
-        reservation.code,
-        reservation.retryAfter || 0,
-        reservation.detail,
-        "共享云端额度已用完，请明天再试，或在 Control Panel 配置自己的密钥。"
-      );
-    }
-  } else {
-    payload.user_id = sessionUserId;
-  }
-
   if (!apiKey) {
     throw cloudRouteError(
       usingSharedCloud ? 503 : 400,
@@ -147,9 +120,45 @@ async function preparePublicCloudCall({
     );
   }
 
+  /** @type {any} */
+  let reservation = null;
+  if (usingSharedCloud) {
+    payload.max_tokens = Math.min(
+      Number.isFinite(Number(payload.max_tokens)) ? Number(payload.max_tokens) : 1800,
+      sharedCloudBudgetConfig().maxOutputTokens
+    );
+    payload.user_id = sessionUserId;
+    if (reserve) {
+      try {
+        reservation = reserveSharedCloudRequest({ sessionNonce, payload });
+      } catch (error) {
+        throw cloudRouteError(
+          503,
+          "shared_cloud_budget_unavailable",
+          60,
+          String(error?.message || "Shared cloud allowance is temporarily unavailable"),
+          "共享云端额度暂时不可用，请稍后再试，或在 Control Panel 配置自己的密钥。"
+        );
+      }
+      if (!reservation.ok) {
+        throw cloudRouteError(
+          reservation.code === "shared_cloud_input_too_large" ? 413 : 429,
+          reservation.code,
+          reservation.retryAfter || 0,
+          reservation.detail,
+          "共享云端额度已用完，请明天再试，或在 Control Panel 配置自己的密钥。"
+        );
+      }
+    }
+  } else {
+    payload.user_id = sessionUserId;
+  }
+
   return {
     apiKey,
-    baseUrl: DEEPSEEK_PUBLIC_BASE_URL,
+    baseUrl: cloudTarget.baseUrl,
+    pinnedAddress: cloudTarget.address,
+    pinnedFamily: cloudTarget.family,
     model: modelName,
     payload,
     authHeaders: cloudAuthHeaders(apiKey),

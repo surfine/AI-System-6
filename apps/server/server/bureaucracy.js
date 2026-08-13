@@ -19,7 +19,7 @@ const { getLocalUrls } = require("./lib/local-urls.js");
 const {
   DEEPSEEK_API_KEY_DEFAULT,
   DEEPSEEK_BASE_URL_DEFAULT,
-  resolveCloudBaseUrl,
+  resolveCloudTarget,
 } = require("./cloud.js");
 const { preparePublicCloudCall } = require("./lib/cloud-route.js");
 const { isPublicDeployment } = require("./runtime-profile.js");
@@ -341,7 +341,7 @@ function buildBureaucracyCaptionMessages({ topic, tone, template, imageDataUrl }
  *   autoLoaded?: boolean,
  *   autoLoadedModel?: string,
  *   autoSelectedModel?: string,
- *   reservation?: { inputTokens: number, outputTokens: number, reservedTokens: number, remainingSessionRequests: number } | null,
+ *   reservation?: { inputTokens: number, outputTokens: number, reservedTokens: number, remainingSessionRequests: number, addUsage: (usage: any) => boolean, markUpstreamStarted: () => void, settle: (options?: any) => any } | null,
  * }>}
  */
 async function postBureaucracyChatPayload(payload, route, signal, req) {
@@ -371,14 +371,21 @@ async function postBureaucracyChatPayload(payload, route, signal, req) {
       `${cloud.baseUrl}/v1/chat/completions`,
       cloud.payload,
       signal,
-      cloud.authHeaders
+      cloud.authHeaders,
+      {
+        pinnedAddress: cloud.pinnedAddress,
+        pinnedFamily: cloud.pinnedFamily,
+        onRequest: () => cloud.reservation?.markUpstreamStarted(),
+      }
     );
     return { response, source: "cloud", reservation: cloud.reservation };
   }
 
+  const cloudTarget = await resolveCloudTarget(cloudRoute.baseUrl || DEEPSEEK_BASE_URL_DEFAULT);
   const cloudApiKey = String(await resolveCloudCredential({
     credentialId: cloudRoute.credentialId || cloudRoute.credential_id,
     provider: "deepseek",
+    targetBaseUrl: cloudTarget.baseUrl,
     suppliedApiKey: cloudRoute.apiKey || cloudRoute.api_key || DEEPSEEK_API_KEY_DEFAULT,
     allowSupplied: false,
   })).trim();
@@ -386,7 +393,7 @@ async function postBureaucracyChatPayload(payload, route, signal, req) {
 
   if (canUseCloud) {
     const model = String(cloudRoute.model || "deepseek-v4-flash").trim();
-    const baseUrl = resolveCloudBaseUrl(cloudRoute.baseUrl || DEEPSEEK_BASE_URL_DEFAULT);
+    const baseUrl = cloudTarget.baseUrl;
     const cloudPayload = { ...payload, model };
     if (/^(?:deepseek-)?v4-(?:pro|flash)$/i.test(model)) {
       // v4 defaults to hidden reasoning, which consumes the output budget and
@@ -402,6 +409,9 @@ async function postBureaucracyChatPayload(payload, route, signal, req) {
     }
     const { response } = await postJsonWithFallback(`${baseUrl}/v1/chat/completions`, cloudPayload, signal, {
       Authorization: `Bearer ${cloudApiKey}`,
+    }, {
+      pinnedAddress: cloudTarget.address,
+      pinnedFamily: cloudTarget.family,
     });
     return { response, source: "cloud" };
   }

@@ -128,7 +128,8 @@ build. Verification is layered:
 1. feature contracts pin product behavior and architectural boundaries;
 2. checkJs and the `apps/server/` typecheck guard the JavaScript/TypeScript surfaces;
 3. CSS, design, data, version, and bundle gates guard cross-cutting budgets;
-4. optional browser diagnostics inspect rendered behavior;
+4. Chromium and WebKit smoke tests guard startup, persistence, and the
+   cross-window writer handoff; broader browser diagnostics remain optional;
 5. the public-tree gate proves a fresh clone contains every advertised command
    and no internal publishing machinery.
 

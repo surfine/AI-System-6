@@ -465,9 +465,9 @@ body.use-liquid-glass .menu-bar {
   min-height: var(--system-titlebar-height);
   display: grid;
   grid-template-columns:
-    var(--system-titlebar-control-slot)
+    var(--titlebar-gutter)
     minmax(0, 1fr)
-    var(--system-titlebar-control-slot);
+    var(--titlebar-gutter);
   margin: var(--system-titlebar-margin-y) 0;
   padding: var(--system-titlebar-padding-y) var(--system-titlebar-padding-x);
   border-bottom: var(--titlebar-border);
@@ -1867,10 +1867,15 @@ body.is-writer-mode .system-help-window .system-help-pane {
     flex: 0 1 auto;
   }
 
-  /* On phones Start Here's button group becomes two rows of two so the
-     wrapped layout stays stable across widths; the group stays centered. */
-  body:not(.is-writer-mode) .guide-window.is-mobile-system-page .button-row {
-    display: grid;
+  /* On phones the assistant's two movement buttons share the full width, so
+     neither Go Back nor Continue becomes a thumb-sized target next to a wide
+     one. The page's own choices already stack full width. */
+  body:not(.is-writer-mode) .guide-window.is-mobile-system-page .guide-nav {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: stretch;
+  }
+
+  body:not(.is-writer-mode) .guide-window.is-mobile-system-page .guide-nav .button-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 7px;
     width: 100%;
@@ -2040,6 +2045,23 @@ body.is-writer-mode .system-help-window .system-help-pane {
   body:not(.is-writer-mode) .window:is(.control-panel, .chooser-panel):not(.is-hidden):not(.is-collapsed) .window-pane {
     min-height: 0;
     overflow-y: auto;
+  }
+
+  /* A tab view sizes each tab to its own title. The equal share made every tab
+     80px wide on a phone, which cut "Local Model" and "Control Strip" down to
+     "Local M..." and "Control ..." while "General" sat on 33px of slack. Content
+     widths plus the tighter padding a compact tab uses put all four titles in
+     the 328px strip; the strip scrolls rather than truncating if a longer
+     translation or an era with chooser icons still overruns it.
+     65/67/70 load after this file, so these out-specify their token rules. */
+  body .control-chooser {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  body .control-chooser .system-tab {
+    flex: 0 0 auto;
+    padding-inline: 6px;
   }
 
   body:not(.is-writer-mode) .window.is-mobile-da-arranged:not(.is-hidden):not(.is-collapsed) {
@@ -2615,7 +2637,7 @@ button:disabled {
 
 body.is-busy,
 body.is-busy * {
-  cursor: url("./system.css-reference/cursors/watch.png") 8 8, wait !important;
+  cursor: url("./assets/cursors/system6-watch.png") 8 8, wait !important;
 }
 
 html:lang(zh-Hans) .title-bar h1,
@@ -2967,6 +2989,12 @@ input[type="radio"] {
   /* 89-control-strip.css loads after this file, so these drawer rules must
      out-specify the base strip rules (body prefix), matching how the rest of
      this file wins over later single-feature files. */
+  /* A module menu opened by a finger is read at arm's length, so the system
+     raises its size here instead of asking the writer to pick a point size. */
+  body .control-strip-menu {
+    --control-strip-menu-font-size: 14px;
+  }
+
   body .control-strip {
     --control-strip-handle-width: 44px;
     top: auto;

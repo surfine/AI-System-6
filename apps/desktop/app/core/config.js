@@ -430,8 +430,14 @@ const ensureWritingFlowModule = createLazyModuleLoader("AISystem6WritingFlowLoad
   "app/content/rebuild-samples.js",
   "app/features/writing-flow.js",
 ]);
+const ensureOutlineClaimModule = createLazyModuleLoader("AISystem6OutlineClaimLoaded", [
+  "app/features/outline-claim.js",
+]);
 const ensureMarkdownParser = createLazyModuleLoader("marked", ["app/vendor/marked.umd.js"]);
-const ensurePromptFilesData = createLazyModuleLoader("AISystem6PromptFiles", ["app/generated/ai-prompt-files.js"], true);
+const ensurePromptFilesData = createLazyModuleLoader("AISystem6PromptFiles", [
+  "app/core/writing-tools-prompts.js",
+  "app/generated/ai-prompt-files.js",
+], true);
 const ensureTranslationZh = createLazyModuleLoader("AISystem6TranslationsZh", ["app/data/translations-zh.js"], true);
 const ensureTranslationEn = createLazyModuleLoader("AISystem6TranslationsEn", ["app/data/translations-en.js"], true);
 function ensureLanguageFor(language) {
@@ -457,6 +463,8 @@ const ensureClioStageModule = createLazyModuleLoader("AISystem6ClioStageLoaded",
 const ensureClioChartModule = createLazyModuleLoader("AISystem6ClioChartLoaded", ["app/features/clio-chart.js"]);
 const ensureLiquidCoverModule = createLazyModuleLoader("AISystem6LiquidCoverLoaded", ["app/features/liquid-cover.js"]);
 const ensureQuickDraftModule = createLazyModuleLoader("AISystem6QuickDraftLoaded", [
+  "app/core/author-thesis-guidance.js",
+  "app/core/chat-vent-guidance.js",
   "app/data/draft-desk-presets.js",
   "app/features/draft-desk.js",
   "app/features/quick-draft-intake.js",
@@ -538,7 +546,7 @@ function ensureControlStripModulesFolderModule() {
   return ensureLazySystemModule("app/features/control-strip-modules-folder.js", "AISystem6ControlStripModulesFolderLoaded");
 }
 function applyControlStripState(options = {}) {
-  if (!controlStripInput?.checked) { window.AISystem6ControlStrip?.disable(); return; }
+  if (!getControlStripState().enabled) { window.AISystem6ControlStrip?.disable(); return; }
   const enable = () => ensureControlStripModule().then(() => window.AISystem6ControlStrip?.enable());
   if (options.silent) {
     enable().catch((error) => console.warn("Control Strip failed to load.", error));
@@ -699,3 +707,21 @@ function installLazyFunctionStub(name, ensureModule) {
   "translateTranslationPadSource",
   "sendTranslationPad",
 ].forEach((name) => installLazyFunctionStub(name, ensureTranslationPadModule));
+
+// Writing-route AI commands and Claim Check. Every one of these is summoned by
+// a menu item, a Review Desk button, or the live demo, so a stub that loads the
+// module first is invisible to the user. The synchronous half of the same
+// feature (section blocks, Review Desk rendering, shared Markdown helpers) is
+// eager in app/core/review-sections.js and must stay out of this list.
+[
+  "generateOutline",
+  "organizeQuestionSheet",
+  "organizeQuestionSheetCore",
+  "applyOrganizedQuestionSheet",
+  "expandOutline",
+  "runOutlineOperation",
+  "polishDraft",
+  "suggestDraft",
+  "runClaimCheck",
+  "readRebuildMarkdownPackStream",
+].forEach((name) => installLazyFunctionStub(name, ensureOutlineClaimModule));

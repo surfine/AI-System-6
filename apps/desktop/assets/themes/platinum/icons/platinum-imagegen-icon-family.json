@@ -62,7 +62,7 @@
     "controlStrip"
   ],
   "fallback": [],
-  "runtimeSize": 32,
+  "runtimeSize": "contextual",
   "icons": {
     "startupDisk": {
       "genre": "hardware",
@@ -80,6 +80,11 @@
         "32": "icons/startupDisk-32.png",
         "42": "icons/startupDisk-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -136,6 +141,11 @@
         "32": "icons/hardDisk-32.png",
         "42": "icons/hardDisk-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -192,6 +202,11 @@
         "32": "icons/folder-32.png",
         "42": "icons/folder-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -248,6 +263,11 @@
         "32": "icons/document-32.png",
         "42": "icons/document-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -304,6 +324,11 @@
         "32": "icons/applications-32.png",
         "42": "icons/applications-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -360,6 +385,11 @@
         "32": "icons/trash-32.png",
         "42": "icons/trash-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -401,61 +431,135 @@
       }
     },
     "finderApp": {
-      "genre": "application",
+      "genre": "system identity",
       "grid": {
         "shape": "square",
         "fitted": 0.8125,
         "scale": 1.0947
       },
-      "physicalMetaphor": "finder",
+      "physicalMetaphor": "Mac OS 9 Finder three-quarter lavender folder with a Finder face panel attached at the lower-left front",
       "semanticMark": "finder",
-      "sourceKind": "accepted-imagegen-period-pixel-redraw",
+      "sourceKind": "approved-imagegen-reference-guided-reconstruction",
       "reviewStatus": "accepted-imagegen",
       "sizes": {
         "16": "icons/finderApp-16.png",
         "32": "icons/finderApp-32.png",
         "42": "icons/finderApp-42.png"
       },
-      "metaphorKey": "smiling-compact-macintosh",
+      "authoringMethod": "built-in-imagegen-reference-guided-plus-native-size-optical-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "reference-validated",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
           "bbox": {
-            "minX": 2,
-            "minY": 1,
-            "maxX": 13,
+            "minX": 1,
+            "minY": 2,
+            "maxX": 14,
             "maxY": 14
           },
-          "pixels": 164,
-          "colors": 10,
-          "sha256": "dfcca98d8ae860add78d9d1296d3187d285f70774b25ba8747b9be514601ebb0",
-          "bytes": 290
+          "bounds": [
+            1,
+            2,
+            14,
+            14
+          ],
+          "ink": {
+            "minX": 1,
+            "minY": 2,
+            "maxX": 14,
+            "maxY": 14,
+            "width": 14,
+            "height": 13
+          },
+          "pixels": 152,
+          "inkPixels": 152,
+          "translucent": 1,
+          "colors": 94,
+          "sha256": "17b2728032a77d219b5ad85854e74222472fc860137220772c89c9076266856c",
+          "bytes": 509,
+          "gridShape": "square"
         },
         "32": {
           "bbox": {
-            "minX": 4,
-            "minY": 2,
-            "maxX": 26,
+            "minX": 2,
+            "minY": 3,
+            "maxX": 30,
             "maxY": 29
           },
-          "pixels": 624,
-          "colors": 14,
-          "sha256": "30e81a27c7080246c4823f5b9d934ed4988a77d77531e91d1171054823cc41e6",
-          "bytes": 555
+          "bounds": [
+            2,
+            3,
+            30,
+            29
+          ],
+          "ink": {
+            "minX": 2,
+            "minY": 3,
+            "maxX": 30,
+            "maxY": 29,
+            "width": 29,
+            "height": 27
+          },
+          "pixels": 649,
+          "inkPixels": 649,
+          "translucent": 2,
+          "colors": 293,
+          "sha256": "04850b1738ba60f5dac319b7419ea407b661baa83b702a9e402c52cf3e8f0a53",
+          "bytes": 1462,
+          "gridShape": "square"
         },
         "42": {
           "bbox": {
-            "minX": 5,
-            "minY": 2,
-            "maxX": 36,
-            "maxY": 39
+            "minX": 2,
+            "minY": 4,
+            "maxX": 39,
+            "maxY": 38
           },
-          "pixels": 1175,
-          "colors": 15,
-          "sha256": "33ccd15a5e458ab897695bc0860a894be61651d9e49bb76265392da0da0cbf2c",
-          "bytes": 755
+          "bounds": [
+            2,
+            4,
+            39,
+            38
+          ],
+          "ink": {
+            "minX": 2,
+            "minY": 4,
+            "maxX": 39,
+            "maxY": 38,
+            "width": 38,
+            "height": 35
+          },
+          "pixels": 1100,
+          "inkPixels": 1100,
+          "translucent": 7,
+          "colors": 444,
+          "sha256": "7347e52f52319e81974a39efa07d0691234d3f31d864097cd13c1b6abf1d15f2",
+          "bytes": 2210,
+          "gridShape": "square"
         }
-      }
+      },
+      "semanticIdentity": "friendly Finder and system-navigation identity",
+      "identityAnchors": [
+        "target-era Finder identity",
+        "recognizable system-navigation persona"
+      ],
+      "historicalPrototype": "Mac OS 9 Finder three-quarter lavender folder with a Finder face panel attached at the lower-left front",
+      "nearestHistoricalAnalog": null,
+      "metaphorKey": "target-era-finder-identity",
+      "material": "restrained Platinum pixel-art steps with a selective dark keyline",
+      "generatedMaster": "internal/evidence/drafts/icon-lineage-audit/imagegen-candidates-v2/platinum-finder-v2.png",
+      "reference": "internal/evidence/drafts/theme-lab-fidelity/platinum/icons/finder-app-32.png",
+      "exactPixelReplica": false,
+      "sizeStatus": {
+        "16": "optically-reviewed",
+        "32": "optically-reviewed",
+        "42": "optically-reviewed"
+      },
+      "sizePolicy": "Each target canvas is rendered directly from the approved high-resolution generation; compact tiers use their own bounds and contrast treatment.",
+      "runtimePixelMetrics": null
     },
     "fileFloppy": {
       "genre": "hardware",
@@ -473,6 +577,11 @@
         "32": "icons/fileFloppy-32.png",
         "42": "icons/fileFloppy-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -529,6 +638,11 @@
         "32": "icons/assistant-32.png",
         "42": "icons/assistant-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -585,6 +699,11 @@
         "32": "icons/quickDraft-32.png",
         "42": "icons/quickDraft-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -641,6 +760,11 @@
         "32": "icons/writingStudio-32.png",
         "42": "icons/writingStudio-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -697,6 +821,11 @@
         "32": "icons/projectDisk-32.png",
         "42": "icons/projectDisk-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -753,6 +882,11 @@
         "32": "icons/projectDisc-32.png",
         "42": "icons/projectDisc-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -809,6 +943,11 @@
         "32": "icons/cloudModel-32.png",
         "42": "icons/cloudModel-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -865,6 +1004,11 @@
         "32": "icons/cloudModelOff-32.png",
         "42": "icons/cloudModelOff-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -921,6 +1065,11 @@
         "32": "icons/questionSheet-32.png",
         "42": "icons/questionSheet-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -977,6 +1126,11 @@
         "32": "icons/outline-32.png",
         "42": "icons/outline-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -1033,6 +1187,11 @@
         "32": "icons/sectionDrafts-32.png",
         "42": "icons/sectionDrafts-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -1089,6 +1248,11 @@
         "32": "icons/manuscript-32.png",
         "42": "icons/manuscript-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -1201,6 +1365,11 @@
         "32": "icons/searcher-32.png",
         "42": "icons/searcher-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -1257,6 +1426,11 @@
         "32": "icons/reader-32.png",
         "42": "icons/reader-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -1313,6 +1487,11 @@
         "32": "icons/timeMachine-32.png",
         "42": "icons/timeMachine-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -1369,6 +1548,11 @@
         "32": "icons/docMap-32.png",
         "42": "icons/docMap-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -1454,6 +1638,11 @@
         "32": "icons/clioStage-32.png",
         "42": "icons/clioStage-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -1510,6 +1699,11 @@
         "32": "icons/clioChart-32.png",
         "42": "icons/clioChart-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -1566,6 +1760,11 @@
         "32": "icons/liquidCover-32.png",
         "42": "icons/liquidCover-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -1622,6 +1821,11 @@
         "32": "icons/cmfStudio-32.png",
         "42": "icons/cmfStudio-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -1678,6 +1882,11 @@
         "32": "icons/soundscape-32.png",
         "42": "icons/soundscape-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -1734,6 +1943,11 @@
         "32": "icons/scrapbook-32.png",
         "42": "icons/scrapbook-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -1790,6 +2004,11 @@
         "32": "icons/systemFolder-32.png",
         "42": "icons/systemFolder-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -1846,6 +2065,11 @@
         "32": "icons/helpFolder-32.png",
         "42": "icons/helpFolder-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -1902,6 +2126,11 @@
         "32": "icons/importUtility-32.png",
         "42": "icons/importUtility-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -1958,6 +2187,11 @@
         "32": "icons/controlPanel-32.png",
         "42": "icons/controlPanel-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -2014,6 +2248,11 @@
         "32": "icons/chooser-32.png",
         "42": "icons/chooser-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -2070,6 +2309,11 @@
         "32": "icons/systemHelp-32.png",
         "42": "icons/systemHelp-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -2126,6 +2370,11 @@
         "32": "icons/dictionary-32.png",
         "42": "icons/dictionary-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -2182,6 +2431,11 @@
         "32": "icons/teachText-32.png",
         "42": "icons/teachText-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -2238,6 +2492,11 @@
         "32": "icons/writingDemo-32.png",
         "42": "icons/writingDemo-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -2294,6 +2553,11 @@
         "32": "icons/chatFile-32.png",
         "42": "icons/chatFile-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -2350,6 +2614,11 @@
         "32": "icons/chatImport-32.png",
         "42": "icons/chatImport-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -2406,6 +2675,11 @@
         "32": "icons/systemStatus-32.png",
         "42": "icons/systemStatus-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -2462,6 +2736,11 @@
         "32": "icons/contextPanel-32.png",
         "42": "icons/contextPanel-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -2518,6 +2797,11 @@
         "32": "icons/rebuildArticle-32.png",
         "42": "icons/rebuildArticle-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -2574,6 +2858,11 @@
         "32": "icons/bureaucracyMeme-32.png",
         "42": "icons/bureaucracyMeme-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -2630,6 +2919,11 @@
         "32": "icons/endfieldTerminal-32.png",
         "42": "icons/endfieldTerminal-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -2686,6 +2980,11 @@
         "32": "icons/documents-32.png",
         "42": "icons/documents-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -2742,6 +3041,11 @@
         "32": "icons/alias-32.png",
         "42": "icons/alias-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -2798,6 +3102,11 @@
         "32": "icons/systemFile-32.png",
         "42": "icons/systemFile-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -2839,61 +3148,135 @@
       }
     },
     "multiFinderApp": {
-      "genre": "application",
+      "genre": "system environment",
       "grid": {
         "shape": "square",
         "fitted": 0.8125,
         "scale": 0.9369
       },
-      "physicalMetaphor": "finderPair",
+      "physicalMetaphor": "two overlapping current-era Finder identities",
       "semanticMark": "finder",
-      "sourceKind": "accepted-imagegen-period-pixel-redraw",
+      "sourceKind": "approved-imagegen-period-plausible-construction",
       "reviewStatus": "accepted-imagegen",
       "sizes": {
         "16": "icons/multiFinderApp-16.png",
         "32": "icons/multiFinderApp-32.png",
         "42": "icons/multiFinderApp-42.png"
       },
-      "metaphorKey": "paired-smiling-compact-macintoshes",
+      "authoringMethod": "composition-from-approved-current-era-imagegen-finder-identity",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "historically-reviewed",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
           "bbox": {
             "minX": 1,
             "minY": 1,
-            "maxX": 13,
+            "maxX": 14,
             "maxY": 14
           },
-          "pixels": 142,
-          "colors": 14,
-          "sha256": "557f997d479e9b9965c9e4ea2f75ddec12fd67f4c3f62d4a025760b774f29537",
-          "bytes": 411
+          "bounds": [
+            1,
+            1,
+            14,
+            14
+          ],
+          "ink": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14,
+            "width": 14,
+            "height": 14
+          },
+          "pixels": 127,
+          "inkPixels": 127,
+          "translucent": 57,
+          "colors": 95,
+          "sha256": "fa2950dc93a76b0570bda7651efc8ac486829e94233527a6900d7ddd3638d519",
+          "bytes": 438,
+          "gridShape": "square"
         },
         "32": {
           "bbox": {
-            "minX": 3,
-            "minY": 2,
-            "maxX": 28,
+            "minX": 2,
+            "minY": 3,
+            "maxX": 29,
             "maxY": 29
           },
-          "pixels": 574,
-          "colors": 16,
-          "sha256": "94779362c1d8d77b4357675cf6440a3b60c1e097aadcd5cf0f8ff5dd79fccaed",
-          "bytes": 812
+          "bounds": [
+            2,
+            3,
+            29,
+            29
+          ],
+          "ink": {
+            "minX": 2,
+            "minY": 3,
+            "maxX": 29,
+            "maxY": 29,
+            "width": 28,
+            "height": 27
+          },
+          "pixels": 446,
+          "inkPixels": 446,
+          "translucent": 200,
+          "colors": 240,
+          "sha256": "4ef0eb374935d25b890bd83d349852d68e0f170431eafe48c26ef2abb721fdcc",
+          "bytes": 1033,
+          "gridShape": "square"
         },
         "42": {
           "bbox": {
             "minX": 3,
-            "minY": 2,
+            "minY": 5,
             "maxX": 38,
-            "maxY": 39
+            "maxY": 37
           },
-          "pixels": 1065,
-          "colors": 15,
-          "sha256": "6e7eebd9d56f5bdd8325a9631ae2774fdb62260cff9f6c92ad0ce6410b13169c",
-          "bytes": 983
+          "bounds": [
+            3,
+            5,
+            38,
+            37
+          ],
+          "ink": {
+            "minX": 3,
+            "minY": 5,
+            "maxX": 38,
+            "maxY": 37,
+            "width": 36,
+            "height": 33
+          },
+          "pixels": 843,
+          "inkPixels": 843,
+          "translucent": 305,
+          "colors": 433,
+          "sha256": "d7b84f6cafef5b9b7c1bbf3249a8e9efedd1a6953c91a78570c2259c3b4b967b",
+          "bytes": 2062,
+          "gridShape": "square"
         }
-      }
+      },
+      "semanticIdentity": "multiple concurrent Finder environments",
+      "identityAnchors": [
+        "current-era Finder identity",
+        "multiplicity"
+      ],
+      "historicalPrototype": null,
+      "nearestHistoricalAnalog": "approved current-era Finder identity plus period-plausible overlap",
+      "metaphorKey": "current-finder-identity-plus-multiplicity",
+      "material": "restrained Platinum pixel-art steps with a selective dark keyline",
+      "generatedMaster": "internal/evidence/drafts/icon-lineage-audit/imagegen-candidates-v2/platinum-finder-v2.png",
+      "reference": "No native MultiFinder icon artwork is claimed; multiplicity is a product-semantic construction.",
+      "exactPixelReplica": false,
+      "sizeStatus": {
+        "16": "optically-reviewed",
+        "32": "optically-reviewed",
+        "42": "optically-reviewed"
+      },
+      "sizePolicy": "Each target canvas is rendered directly from the approved high-resolution generation; compact tiers use their own bounds and contrast treatment.",
+      "runtimePixelMetrics": null
     },
     "daHandler": {
       "genre": "utility",
@@ -2911,6 +3294,11 @@
         "32": "icons/daHandler-32.png",
         "42": "icons/daHandler-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -2967,6 +3355,11 @@
         "32": "icons/writingBell-32.png",
         "42": "icons/writingBell-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -3023,6 +3416,11 @@
         "32": "icons/trashFull-32.png",
         "42": "icons/trashFull-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -3079,6 +3477,11 @@
         "32": "icons/control-32.png",
         "42": "icons/control-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -3135,6 +3538,11 @@
         "32": "icons/localModel-32.png",
         "42": "icons/localModel-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -3191,6 +3599,11 @@
         "32": "icons/controlStrip-32.png",
         "42": "icons/controlStrip-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -3253,6 +3666,10 @@
     "projectDisk"
   ],
   "coreBuilder": "tooling/build-platinum-core-icons.mjs",
+  "schemaVersion": 2,
+  "runtimeAsset": true,
+  "completeFamilyMeaning": "All 56 runtime ids resolve to technically accepted artwork. Historical review is a separate per-icon state.",
+  "generatedAcceptanceMeaning": "Authoring acceptance is separate from historical validation; the Finder pair carries explicit per-object historical status.",
   "nativeSizes": [
     42,
     32,
@@ -3319,5 +3736,15 @@
   ],
   "imageGenerationMode": "built-in-imagegen-one-call-per-asset",
   "imageGenerationSource": "assets/themes/platinum/icons/imagegen-source",
-  "sizePolicy": "42 px desktop, 32 px regular, and 16 px compact assets are separately reduced from the accepted high-resolution redraw; the inline Platinum runtime selects the context-owned source size."
+  "sizePolicy": "42 px desktop, 32 px regular, and 16 px compact assets are separately reduced from the accepted high-resolution redraw; the inline Platinum runtime selects the context-owned source size.",
+  "finderLineageBuilder": "tooling/build-approved-finder-lineage.mjs",
+  "finderLineageSource": "built-in ImageGen candidates admitted only after target-era evidence and compact-size review",
+  "runtimeSizesByContext": {
+    "compactMenuList": 16,
+    "ordinary": 32,
+    "desktopLarge": 42
+  },
+  "compatibilityManifest": "platinum-icon-manifest.json",
+  "compatibilityManifestMeaning": "Stable semantic mapping only; app/core/system-icons.js selects the authored runtime tier by rendering context.",
+  "runtimeDispatch": "apps/desktop/app/core/system-icons.js"
 }

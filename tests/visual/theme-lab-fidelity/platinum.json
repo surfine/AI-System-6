@@ -28,7 +28,7 @@
     "playwrightVersion": "1.62.1",
     "browserRevision": "1234",
     "browserVersion": "151.0.7922.34",
-    "contentSha256": "3a2e70b629505523a04dd525c327319bc05c14673588fe553c8e0981fd7a3078",
+    "contentSha256": "6330502fac57c79cfeb5050dde1997b0918b784706b53391e1b002c61290c7fb",
     "historicalFontTarget": "Charcoal 12 pt",
     "legalFallback": "OFL-licensed Asap variable font",
     "fontProbeSelectors": [
@@ -973,10 +973,10 @@
         }
       },
       "current": {
-        "selector": "[data-platinum-icon-id=\"daHandler\"] .theme-lab-classic-icon-states > .finder-item:nth-child(3) .sys-icon",
+        "selector": ".theme-lab-icon-set [data-system-icon=\"daHandler\"]",
         "setup": [
           {
-            "selector": "[data-platinum-icon-id=\"daHandler\"] .theme-lab-classic-icon-states > .finder-item:nth-child(3) .sys-icon",
+            "selector": ".theme-lab-icon-set [data-system-icon=\"daHandler\"]",
             "style": {
               "width": "16px",
               "height": "16px"
@@ -994,7 +994,11 @@
         "materialError": 55
       },
       "floor": {
-        "status": "met"
+        "status": "gap",
+        "failing": [
+          "materialError"
+        ],
+        "note": "The generic application left the sixteen-object priority lineage; its retained top-set 16 px runtime glyph has stable geometry but is not yet palette-calibrated to the pinned Mac OS 9 crop."
       }
     },
     {

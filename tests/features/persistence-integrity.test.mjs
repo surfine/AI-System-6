@@ -88,13 +88,17 @@ const persistStart = persistenceSource.indexOf("async function persistDeskState(
 const persistEnd = persistenceSource.indexOf("async function loadDeskState()", persistStart);
 const persistBlock = persistenceSource.slice(persistStart, persistEnd);
 test.assert(
-  persistBlock.indexOf("await transactionCompletion") < persistBlock.indexOf("storageSnapshotCache.set"),
-  "snapshot cache advances only after transaction completion"
+  persistBlock.indexOf("await window.AISystem6StorageTransactions.runTransaction")
+    < persistBlock.indexOf("storageRecordFingerprintCache.set"),
+  "record fingerprints advance only after transaction completion"
 );
-test.assertIncludes(
-  persistBlock,
-  "storageSnapshotCache.clear()",
-  "a failed persistence attempt invalidates optimistic snapshots"
+const persistCatchStart = persistBlock.indexOf("} catch (error) {");
+const persistCatchBlock = persistBlock.slice(persistCatchStart);
+test.assert(
+  !persistCatchBlock.includes("storageRecordFingerprintCache.set")
+    && !persistCatchBlock.includes("dirtyDeskRecords.delete")
+    && !persistCatchBlock.includes("deletedDeskRecords.delete"),
+  "a failed persistence attempt preserves confirmed fingerprints and dirty records for retry"
 );
 
 const loadStart = persistenceSource.indexOf("async function loadDeskState()");

@@ -30,7 +30,6 @@
 
 const { send, readJsonBody, requestSignal, withTimeoutSignal } = require("../lib/http.js");
 const { isQwen35ModelName, modelContentFromChatData } = require("../chat.js");
-const { settleSharedCloudRequest } = require("../shared-cloud-budget.js");
 const {
   findHumanizerOutputHits,
   findHumanizerStyleDiagnostics,
@@ -53,6 +52,8 @@ const {
 async function handleBureaucracyCaptions(req, res) {
   const baseSignal = requestSignal(req, res);
   let timeout = null;
+  /** @type {any} */
+  let sharedReservation = null;
 
   try {
     // Larger limit than the 64 KiB text default so an optional downscaled
@@ -91,18 +92,14 @@ async function handleBureaucracyCaptions(req, res) {
 
     try {
       const { response, reservation } = await postBureaucracyChatPayload(payload, body.modelRoute || {}, timeout.signal, req);
+      sharedReservation = reservation || null;
       const text = await response.text();
       const contentType = response.headers.get("content-type") || "application/json";
       if (!response.ok || !contentType.includes("application/json")) {
         throw new Error(text.substring(0, 300) || `Model returned ${response.status}`);
       }
       const data = JSON.parse(text);
-      if (reservation) {
-        settleSharedCloudRequest({
-          reservedTokens: reservation.reservedTokens,
-          actualTokens: Number(data?.usage?.total_tokens || 0),
-        });
-      }
+      sharedReservation?.addUsage(data?.usage);
       const rawContent = modelContentFromChatData(data).trim();
       const content = rawContent;
       if (!content) throw new Error("Model response was empty.");
@@ -148,6 +145,7 @@ async function handleBureaucracyCaptions(req, res) {
       detail: /** @type {Error} */ (error).message,
     }), { "Content-Type": "application/json" });
   } finally {
+    sharedReservation?.settle();
     timeout?.cleanup();
   }
 }

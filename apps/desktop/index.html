@@ -17,7 +17,7 @@
     <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png" />
     <link rel="manifest" href="assets/app-icon/manifest.json" />
     <script src="app/core/theme-registry.js"></script>
-    <link rel="stylesheet" href="styles.bundle.css?v=20260813.2" />
+    <link rel="stylesheet" href="styles.bundle.css?v=20260813.6" />
   </head>
   <body class="is-booting">
     <script src="app/core/theme-body-init.js"></script>
@@ -721,7 +721,6 @@
                 <label for="menu-clock" data-i18n="menu_bar_clock">SuperClock! Menu Clock</label>
               </div>
 
-              <div class="field-row"><input id="control-strip" type="checkbox" /><label for="control-strip" data-i18n="control_strip_label" data-balloon-help="balloon_control_strip_settings">Control Strip</label></div>
             </div>
           </section>
 
@@ -774,24 +773,6 @@
               </span>
             </label>
             <p class="hint" data-i18n="control_strip_hotkey_hint">Shows or hides the Control Strip without disabling it. A modifier plus a key is required; a bare letter is rejected.</p>
-          </section>
-          <section class="control-section">
-            <h3 data-i18n="control_strip_desk_appearance">Appearance</h3>
-            <div class="control-strip-field-row">
-              <label class="control-field" for="control-strip-font">
-                <span data-i18n="control_strip_menu_font">Module menu font</span>
-                <div class="select-wrap"><select id="control-strip-font">
-                  <option value="" data-i18n="control_strip_font_system">System</option>
-                  <option value="Chicago">Chicago</option>
-                  <option value="Monaco">Monaco</option>
-                  <option value="modern" data-i18n="control_strip_font_modern">Modern UI</option>
-                </select></div>
-              </label>
-              <label class="control-field" for="control-strip-font-size">
-                <span data-i18n="control_strip_menu_font_size">Module menu font size</span>
-                <div class="select-wrap"><select id="control-strip-font-size"></select></div>
-              </label>
-            </div>
           </section>
           <section class="control-section">
             <h3 data-i18n="control_strip_modules">Modules</h3>
@@ -2604,17 +2585,52 @@
         <div class="window-pane guide-pane">
           <div class="guide-step" id="guide-welcome-step">
             <h3 data-i18n="guide_welcome_heading">This Macintosh did not stop in 1988.</h3>
-            <p data-i18n="guide_welcome_body">Quick Draft turns an idea or material into a short piece. Writing Studio handles research, structure, sections, and review. Connect AI only when you need it.</p>
+            <p data-i18n="guide_welcome_body">This is a computer for writing. You bring the material; it reads, asks, builds the structure, and writes with you section by section. It never speaks for you.</p>
+            <ol class="guide-route">
+              <li data-i18n="guide_route_step_material">Material goes onto a File Floppy.</li>
+              <li data-i18n="guide_route_step_question">The Question Sheet asks who it is for.</li>
+              <li data-i18n="guide_route_step_write">Outline, Section Drafts, then the manuscript.</li>
+              <li data-i18n="guide_route_step_review">The Review Desk looks for weak spots.</li>
+            </ol>
+            <div class="guide-actions">
+              <button class="btn" type="button" data-action="open-guide-promo" data-i18n="guide_watch_promo">Watch Promo</button>
+              <button class="btn" type="button" data-action="play-teaser-demo" data-i18n="guide_play_teaser_demo">30-Second Demo</button>
+            </div>
+          </div>
+
+          <div class="guide-step" id="guide-ai-step" hidden>
+            <h3 id="guide-ai-heading" data-i18n="guide_ai_ready_heading">The AI is already connected.</h3>
+            <p id="guide-ai-body" data-i18n="guide_ai_ready_body">The site's shared allowance is on by default: no account, no key, nothing to set up. When it runs out for the day, AI System 6 says so and offers your own key instead.</p>
+            <div class="guide-actions">
+              <button class="btn" type="button" data-action="guide-connect-website-ai" data-i18n="use_website_ai" hidden>Use Website AI</button>
+              <button class="btn" type="button" data-action="guide-open-local-ai" data-i18n="use_local_ai">Use Local AI</button>
+              <button class="btn" type="button" data-action="guide-open-model-settings" data-i18n="guide_use_own_key">Use My Own API Key…</button>
+            </div>
+            <p class="hint" id="guide-ai-status" role="status" aria-live="polite" data-i18n="cloud_shared_active_hint">Using the site's shared DeepSeek allowance.</p>
+          </div>
+
+          <div class="guide-step" id="guide-ready-step" hidden>
+            <h3 data-i18n="guide_ready_heading">The rest is on the desktop.</h3>
+            <p data-i18n="guide_ready_body">Everything is a visible object you can open: Quick Draft for something short, Writing Studio for a long piece, and the Help Folder when a name is new to you.</p>
+            <div class="guide-actions">
+              <button class="btn" type="button" data-action="install-web-app" data-i18n="web_install_action" hidden>Add to Home Screen</button>
+              <button class="btn" type="button" data-action="guide-continue-last" data-i18n="guide_continue_last" hidden>Continue</button>
+            </div>
             <p id="web-install-hint" class="hint" hidden></p>
           </div>
 
-          <div class="button-row">
-            <button class="btn default" type="button" data-action="guide-start-quick-draft" data-i18n="guide_short_draft" aria-keyshortcuts="Enter">Write a Short Draft</button>
-            <button class="btn" type="button" data-action="guide-start-route" data-i18n="guide_long_project">Start a Long Project</button>
-            <button class="btn" type="button" data-action="play-teaser-demo" data-i18n="guide_play_teaser_demo">30-Second Demo</button>
-            <button class="btn" type="button" data-action="guide-continue-last" data-i18n="guide_continue_last" hidden>Continue</button>
-            <button class="btn" type="button" data-action="guide-open-model-settings" data-i18n="guide_connect_ai">Connect AI…</button>
-            <button class="btn" type="button" data-action="install-web-app" data-i18n="web_install_action" hidden>Add to Home Screen</button>
+          <div class="guide-nav">
+            <span class="guide-step-counter" id="guide-step-counter"></span>
+            <div class="button-row">
+              <button class="btn" type="button" data-action="guide-back" data-i18n="guide_back" hidden>Go Back</button>
+              <button class="btn default" type="button" data-action="guide-continue" data-i18n="guide_continue" aria-keyshortcuts="Enter">Continue</button>
+            </div>
+          </div>
+
+          <div class="guide-links">
+            <button class="btn mini-btn" type="button" data-action="open-project-site" data-i18n="guide_project_site">Project Site</button>
+            <button class="btn mini-btn" type="button" data-action="open-github-repo" data-i18n="guide_source_code">Source Code</button>
+            <button class="btn mini-btn" type="button" data-action="open-guide-promo" data-i18n="guide_promo_short">The Film</button>
           </div>
         </div>
       </section>
@@ -4072,7 +4088,7 @@ Glass</textarea>
       </section>
     </main>
 
-    <script src="app/generated/build-info.js?v=20260813.2"></script>
-    <script src="app.bundle.js?v=20260813.2"></script>
+    <script src="app/generated/build-info.js?v=20260813.6"></script>
+    <script src="app.bundle.js?v=20260813.6"></script>
   </body>
 </html>

@@ -1,102 +1,1274 @@
 {
-  "schemaVersion": 1,
-  "purpose": "Preserve one semantic object identity across six appearances without sharing era artwork, geometry, material, perspective, or size hints.",
+  "schemaVersion": 2,
+  "schemaId": "ai-system-6-icon-continuity-v2",
+  "purpose": "Preserve product identity across six historically distinct Macintosh appearances without freezing one physical object, composition, material, or enclosure forever.",
+  "eras": [
+    "classic",
+    "platinum",
+    "aqua",
+    "snow-leopard",
+    "yosemite",
+    "liquid-glass"
+  ],
+  "priorityCore16": [
+    "finderApp",
+    "multiFinderApp",
+    "folder",
+    "hardDisk",
+    "trash",
+    "document",
+    "fileFloppy",
+    "projectDisk",
+    "projectDisc",
+    "searcher",
+    "teachText",
+    "scrapbook",
+    "assistant",
+    "controlPanel",
+    "reviewDesk",
+    "docMap"
+  ],
+  "definitions": {
+    "semanticIdentity": "The stable product or system role that must remain recognizable even when its historical prototype changes.",
+    "identityAnchors": "At most two recognition cues. An anchor is not permission to freeze a complete composition.",
+    "historicalPrototypeByEra": "A direct target-OS counterpart. Presence supports provenance class A but does not itself prove that the current runtime asset matches it.",
+    "nearestAnalogByEra": "A same-period object or application whose genre grammar may be adapted when no direct counterpart exists.",
+    "eraTranslationByEra": "How the stable identity is expressed in the target era after prototype, genre, and evidence are considered.",
+    "provenanceClassByEra": {
+      "A": "Native prototype reconstruction: a direct system or application counterpart exists; reference comparison is required.",
+      "B": "Period analog adaptation: no direct counterpart, but a close contemporary object or application supplies the genre grammar.",
+      "C": "Original period-plausible design: no sufficiently close counterpart; blind-mix review is required and no fake native target may be claimed."
+    },
+    "authoringStatus": "How the asset was produced and whether it is technically usable. Image generation is an authoring method, not historical evidence.",
+    "historicalReviewStatus": {
+      "pending": "No historical approval is claimed.",
+      "historically-reviewed": "Reviewed against target-era family evidence and anachronism risks, but not asserted as a direct native replica.",
+      "reference-validated": "Compared with the named direct prototype or reference. This status still does not mean pixel-identical unless an exact-diff field explicitly says so."
+    }
+  },
   "continuityRules": [
     "Runtime ids, product names, actions, and state meanings stay stable across appearances.",
-    "Historical system objects use the target operating system's real prototype before custom product objects are drawn.",
-    "Custom objects keep one physical metaphor across eras only when that metaphor remains period-plausible.",
-    "Every appearance owns independent large and small artwork; no appearance is recolored, flattened, thresholded, or glass-wrapped from another.",
-    "Selection, dragging, disabled state, and Finder label treatment belong to the system surface rather than the icon artwork."
+    "Lock no more than two identity anchors per object; container, silhouette, perspective, material, colour, secondary objects, detail density, shadow, and small-size construction may change.",
+    "Historical system objects begin with the target operating system's real prototype. Historical authenticity wins when it conflicts with mechanical cross-era resemblance.",
+    "Every appearance owns its era translation. Recolouring, flattening, thresholding, glass-wrapping, or mechanically reskinning another era is not an era translation.",
+    "Genre is assigned before silhouette or material. Application, utility, document, hardware, removable-media, and system-object grammar are not interchangeable.",
+    "A complete runtime family means every id resolves to artwork; it does not mean every icon has passed historical review.",
+    "Authoring acceptance and historical review are orthogonal. accepted-generated, generated-draft, or technically-clean never imply historically-reviewed or reference-validated.",
+    "Sixteen- and thirty-two-pixel variants are artwork decisions. A derivative may remain only when it preserves the anchors at native display size; otherwise it requires an optical redraw.",
+    "Selection, dragging, disabled state, Finder labels, toolbar symbols, and sidebar symbols belong to their own runtime contexts and must not be inferred from a large application icon."
   ],
+  "classicRenderingPolicy": {
+    "runtimeFormat": "Smooth SVG is allowed and preferred for Retina output under the current product direction.",
+    "nativeEvidenceAuthority": "When a native System 6 resource exists, it constrains anatomy, silhouette, occupied bounds, relative proportions, deliberate asymmetry, internal landmarks, and selection-mask behavior.",
+    "replicaRule": "A smooth runtime replica must remain visibly close to the native evidence. Smoothing may regularize display edges, but it may not replace the native composition with a generic rounded outline or erase historically meaningful irregularity.",
+    "claimRule": "Only an explicit overlay/diff result may support an exact-replica claim. Otherwise use reference-guided reconstruction or semantic adaptation.",
+    "retinaRule": "High-density rendering changes the representation, not the evidence-owned anatomy. Native 32 and 16 compositions remain separate optical targets."
+  },
   "semanticAnchors": {
     "finderApp": {
-      "role": "Finder or system identity",
-      "continuity": "The friendly operating environment: a compact Macintosh whose screen carries two eyes and a small smile. Every era redraws the hardware, material, perspective, and pixel hints independently; the face and compact-computer silhouette stay recognizable.",
-      "metaphorKey": "smiling-compact-macintosh",
-      "productBasis": "Finder is the user's friendly system identity. The browser-window metaphor belongs to the Finder window itself, not to the application icon."
+      "id": "finderApp",
+      "role": "Finder / system identity",
+      "semanticIdentity": "friendly Finder and system-navigation identity",
+      "systemOrProduct": "system",
+      "identityAnchors": [
+        "target-era Finder or System identity",
+        "recognizable system-navigation persona"
+      ],
+      "genreByEra": {
+        "classic": "system identity",
+        "platinum": "system identity",
+        "aqua": "system identity",
+        "snow-leopard": "system identity",
+        "yosemite": "system identity",
+        "liquid-glass": "system identity"
+      },
+      "historicalPrototypeByEra": {
+        "classic": "System 6.0.8 System Folder/System ICN# 3 compact Macintosh with list rows in its screen",
+        "platinum": "Mac OS 9 Finder identity with a Finder face panel",
+        "aqua": "Mac OS X 10.2 Dock Finder two-tone split smiling face",
+        "snow-leopard": "Mac OS X 10.6 FinderIcon split face with curved profile divider",
+        "yosemite": "OS X 10.10 rounded blue/light split Finder face",
+        "liquid-glass": "macOS Tahoe 26 blue enclosure with a separate translucent light face/profile layer"
+      },
+      "nearestAnalogByEra": {},
+      "eraTranslationByEra": {
+        "classic": "Use the native compact-Mac System identity with list rows in its screen; do not invent a smiling face. Native evidence owns its anatomy even when the runtime is a smooth Retina SVG.",
+        "platinum": "Use the Mac OS 9 Finder prototype rather than a grey System 6 recolour.",
+        "aqua": "Move to the Jaguar split smiling Finder face; do not retain a beige compact-Mac chassis.",
+        "snow-leopard": "Use the mature 10.6 split face and profile geometry, not a higher-resolution Jaguar chassis.",
+        "yosemite": "Use the graphic 10.10 split face, palette, side relationship, and shallow depth.",
+        "liquid-glass": "Use the Tahoe 26 Finder enclosure and separate translucent face layer; do not put a beige Macintosh inside a squircle."
+      },
+      "allowedChanges": [
+        "hardware enclosure",
+        "silhouette",
+        "face-side relationship",
+        "profile divider",
+        "material",
+        "palette",
+        "perspective",
+        "detail density",
+        "small-size construction"
+      ],
+      "intentionalAnachronism": false,
+      "anachronismReason": null,
+      "provenanceClassByEra": {
+        "classic": "A",
+        "platinum": "A",
+        "aqua": "A",
+        "snow-leopard": "A",
+        "yosemite": "A",
+        "liquid-glass": "A"
+      },
+      "reviewStatusByEra": {
+        "classic": "reference-validated",
+        "platinum": "reference-validated",
+        "aqua": "reference-validated",
+        "snow-leopard": "reference-validated",
+        "yosemite": "reference-validated",
+        "liquid-glass": "reference-validated"
+      },
+      "metaphorKey": "friendly-finder-identity",
+      "metaphorKeyStatus": "deprecated-migration-hint"
     },
     "multiFinderApp": {
-      "role": "MultiFinder or concurrent Finder environment",
-      "continuity": "Exactly two overlapping friendly compact Macintosh Finder identities. Both smiling screens remain recognizable while every era redraws the cases, material, perspective, overlap, and small-size hints independently.",
-      "metaphorKey": "paired-smiling-compact-macintoshes",
-      "productBasis": "MultiFinder adds concurrent application environments while retaining Finder identity; the pair expresses multiplicity without becoming two generic windows or tabs."
+      "id": "multiFinderApp",
+      "role": "MultiFinder / concurrent Finder environment",
+      "semanticIdentity": "multiple concurrent Finder environments",
+      "systemOrProduct": "product adaptation of a historical system capability",
+      "identityAnchors": [
+        "current-era Finder identity",
+        "multiplicity"
+      ],
+      "genreByEra": {
+        "classic": "system environment",
+        "platinum": "system environment",
+        "aqua": "system environment",
+        "snow-leopard": "system environment",
+        "yosemite": "system environment",
+        "liquid-glass": "system environment"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "classic": "System 6 MultiFinder capability plus the Classic Finder identity",
+        "platinum": "Mac OS 9 Finder identity plus a period-plausible overlap treatment",
+        "aqua": "Jaguar Finder identity plus a period-plausible paired treatment",
+        "snow-leopard": "Snow Leopard Finder identity plus a period-plausible paired treatment",
+        "yosemite": "Yosemite Finder identity plus a period-plausible paired treatment",
+        "liquid-glass": "Tahoe 26 Finder identity plus a layered multiplicity treatment"
+      },
+      "eraTranslationByEra": {
+        "classic": "Express two parallel environments with two readable Classic Finder identities; do not claim a native MultiFinder icon resource.",
+        "platinum": "Pair or overlap the current Mac OS 9 Finder identity.",
+        "aqua": "Pair or overlap the Jaguar split faces rather than two beige computers.",
+        "snow-leopard": "Pair or overlap the 10.6 Finder identities with mature Aqua depth.",
+        "yosemite": "Use two 10.10 Finder identities with restrained flat overlap.",
+        "liquid-glass": "Use the Tahoe layered Finder identity and express concurrency through layer or object multiplicity."
+      },
+      "allowedChanges": [
+        "pairing",
+        "overlap",
+        "relative scale",
+        "enclosure",
+        "material",
+        "perspective",
+        "small-size construction"
+      ],
+      "intentionalAnachronism": false,
+      "anachronismReason": null,
+      "provenanceClassByEra": {
+        "classic": "C",
+        "platinum": "C",
+        "aqua": "C",
+        "snow-leopard": "C",
+        "yosemite": "C",
+        "liquid-glass": "C"
+      },
+      "reviewStatusByEra": {
+        "classic": "historically-reviewed",
+        "platinum": "historically-reviewed",
+        "aqua": "historically-reviewed",
+        "snow-leopard": "historically-reviewed",
+        "yosemite": "historically-reviewed",
+        "liquid-glass": "historically-reviewed"
+      },
+      "metaphorKey": "current-finder-identity-plus-multiplicity",
+      "metaphorKeyStatus": "deprecated-migration-hint"
     },
     "folder": {
+      "id": "folder",
       "role": "Folder",
-      "continuity": "A system-owned container; reproduce the target era's real Finder folder."
+      "semanticIdentity": "system-owned file container",
+      "systemOrProduct": "system",
+      "identityAnchors": [
+        "tabbed folder"
+      ],
+      "genreByEra": {
+        "classic": "system object",
+        "platinum": "system object",
+        "aqua": "system object",
+        "snow-leopard": "system object",
+        "yosemite": "system object",
+        "liquid-glass": "system object"
+      },
+      "historicalPrototypeByEra": {
+        "classic": "System 6 Finder folder resource",
+        "platinum": "Mac OS 9 Finder folder",
+        "aqua": "Mac OS X 10.2 Finder folder",
+        "snow-leopard": "Mac OS X 10.6 Finder folder",
+        "yosemite": "OS X 10.10 Finder folder",
+        "liquid-glass": "macOS Tahoe 26 Finder folder"
+      },
+      "nearestAnalogByEra": {},
+      "eraTranslationByEra": {
+        "classic": "Follow native System 6 folder anatomy; smooth SVG may change edge representation only.",
+        "platinum": "Use compact pixel depth and the Mac OS 9 folder silhouette.",
+        "aqua": "Use the Jaguar Finder folder prototype.",
+        "snow-leopard": "Use the mature 10.6 Finder folder prototype.",
+        "yosemite": "Use the brighter, flatter 10.10 folder prototype.",
+        "liquid-glass": "Use the Tahoe 26 layered folder prototype."
+      },
+      "allowedChanges": [
+        "silhouette",
+        "tab geometry",
+        "perspective",
+        "material",
+        "palette",
+        "shadow",
+        "small-size construction"
+      ],
+      "intentionalAnachronism": false,
+      "anachronismReason": null,
+      "provenanceClassByEra": {
+        "classic": "A",
+        "platinum": "A",
+        "aqua": "A",
+        "snow-leopard": "A",
+        "yosemite": "A",
+        "liquid-glass": "A"
+      },
+      "reviewStatusByEra": {
+        "classic": "reference-validated",
+        "platinum": "pending",
+        "aqua": "pending",
+        "snow-leopard": "pending",
+        "yosemite": "pending",
+        "liquid-glass": "pending"
+      }
     },
     "hardDisk": {
-      "role": "Hard disk",
-      "continuity": "A mounted local storage volume; reproduce the target era's real disk prototype."
+      "id": "hardDisk",
+      "role": "Hard Disk",
+      "semanticIdentity": "mounted local storage volume",
+      "systemOrProduct": "system",
+      "identityAnchors": [
+        "storage volume"
+      ],
+      "genreByEra": {
+        "classic": "hardware",
+        "platinum": "hardware",
+        "aqua": "hardware",
+        "snow-leopard": "hardware",
+        "yosemite": "hardware",
+        "liquid-glass": "hardware"
+      },
+      "historicalPrototypeByEra": {
+        "classic": "System 6 Finder hard-disk resource",
+        "platinum": "Mac OS 9 mounted hard-disk volume",
+        "aqua": "Mac OS X 10.2 hard-drive volume",
+        "snow-leopard": "Mac OS X 10.6 hard-drive volume",
+        "yosemite": "OS X 10.10 hard-drive volume",
+        "liquid-glass": "macOS Tahoe 26 disk or storage volume"
+      },
+      "nearestAnalogByEra": {},
+      "eraTranslationByEra": {
+        "classic": "Follow the native System 6 disk anatomy and optical bounds.",
+        "platinum": "Use compact Mac OS 9 pixel hardware depth.",
+        "aqua": "Render credible Jaguar-era hardware weight and material.",
+        "snow-leopard": "Render a controlled high-resolution 10.6 hardware object.",
+        "yosemite": "Simplify material while keeping a recognizable storage object.",
+        "liquid-glass": "Use Tahoe-era layered material without turning the disk into a generic glass tile."
+      },
+      "allowedChanges": [
+        "hardware model",
+        "silhouette",
+        "perspective",
+        "material",
+        "palette",
+        "shadow",
+        "small-size construction"
+      ],
+      "intentionalAnachronism": false,
+      "anachronismReason": null,
+      "provenanceClassByEra": {
+        "classic": "A",
+        "platinum": "A",
+        "aqua": "A",
+        "snow-leopard": "A",
+        "yosemite": "A",
+        "liquid-glass": "A"
+      },
+      "reviewStatusByEra": {
+        "classic": "reference-validated",
+        "platinum": "pending",
+        "aqua": "pending",
+        "snow-leopard": "pending",
+        "yosemite": "pending",
+        "liquid-glass": "pending"
+      }
     },
     "trash": {
+      "id": "trash",
       "role": "Trash",
-      "continuity": "The system waste container; empty and full are states of the same object."
+      "semanticIdentity": "system waste container",
+      "systemOrProduct": "system",
+      "identityAnchors": [
+        "waste container",
+        "empty/full state relationship"
+      ],
+      "genreByEra": {
+        "classic": "system object",
+        "platinum": "system object",
+        "aqua": "system object",
+        "snow-leopard": "system object",
+        "yosemite": "system object",
+        "liquid-glass": "system object"
+      },
+      "historicalPrototypeByEra": {
+        "classic": "System 6 Finder Trash resource",
+        "platinum": "Mac OS 9 Trash",
+        "aqua": "Mac OS X 10.2 Trash",
+        "snow-leopard": "Mac OS X 10.6 Trash",
+        "yosemite": "OS X 10.10 Trash",
+        "liquid-glass": "macOS Tahoe 26 Trash"
+      },
+      "nearestAnalogByEra": {},
+      "eraTranslationByEra": {
+        "classic": "Preserve native basket anatomy and the shared empty/full object relationship.",
+        "platinum": "Use the compact Mac OS 9 Trash prototype.",
+        "aqua": "Use the Jaguar Trash material and object genre.",
+        "snow-leopard": "Use the mature 10.6 Trash material and lighting.",
+        "yosemite": "Use the cleaner 10.10 Trash construction.",
+        "liquid-glass": "Use the Tahoe system Trash prototype and layered material."
+      },
+      "allowedChanges": [
+        "container construction",
+        "silhouette",
+        "perspective",
+        "material",
+        "palette",
+        "shadow",
+        "small-size construction"
+      ],
+      "intentionalAnachronism": false,
+      "anachronismReason": null,
+      "provenanceClassByEra": {
+        "classic": "A",
+        "platinum": "A",
+        "aqua": "A",
+        "snow-leopard": "A",
+        "yosemite": "A",
+        "liquid-glass": "A"
+      },
+      "reviewStatusByEra": {
+        "classic": "reference-validated",
+        "platinum": "pending",
+        "aqua": "pending",
+        "snow-leopard": "pending",
+        "yosemite": "pending",
+        "liquid-glass": "pending"
+      }
     },
     "document": {
-      "role": "Generic document",
-      "continuity": "A neutral editable paper or document owned by the target system."
-    },
-    "daHandler": {
-      "role": "Generic application",
-      "continuity": "The target era's generic application or utility container, not an AI logo."
+      "id": "document",
+      "role": "Generic Document",
+      "semanticIdentity": "neutral editable document",
+      "systemOrProduct": "system",
+      "identityAnchors": [
+        "paper document"
+      ],
+      "genreByEra": {
+        "classic": "document",
+        "platinum": "document",
+        "aqua": "document",
+        "snow-leopard": "document",
+        "yosemite": "document",
+        "liquid-glass": "document"
+      },
+      "historicalPrototypeByEra": {
+        "classic": "System 6 generic document resource",
+        "platinum": "Mac OS 9 generic document",
+        "aqua": "Mac OS X 10.2 generic document grammar",
+        "snow-leopard": "Mac OS X 10.6 generic document grammar",
+        "yosemite": "OS X 10.10 generic document grammar",
+        "liquid-glass": "macOS Tahoe 26 document grammar"
+      },
+      "nearestAnalogByEra": {},
+      "eraTranslationByEra": {
+        "classic": "Use native System 6 paper anatomy and bounds.",
+        "platinum": "Use compact Mac OS 9 pixel document construction.",
+        "aqua": "Use hovering Jaguar document grammar rather than an application object.",
+        "snow-leopard": "Use the mature 10.6 paper and association grammar.",
+        "yosemite": "Use the flatter 10.10 document treatment without a modern glyph tile.",
+        "liquid-glass": "Use Tahoe layered paper while preserving document identity."
+      },
+      "allowedChanges": [
+        "paper silhouette",
+        "fold geometry",
+        "application association",
+        "perspective",
+        "material",
+        "shadow",
+        "small-size construction"
+      ],
+      "intentionalAnachronism": false,
+      "anachronismReason": null,
+      "provenanceClassByEra": {
+        "classic": "A",
+        "platinum": "A",
+        "aqua": "A",
+        "snow-leopard": "A",
+        "yosemite": "A",
+        "liquid-glass": "A"
+      },
+      "reviewStatusByEra": {
+        "classic": "reference-validated",
+        "platinum": "pending",
+        "aqua": "pending",
+        "snow-leopard": "pending",
+        "yosemite": "pending",
+        "liquid-glass": "pending"
+      }
     },
     "fileFloppy": {
+      "id": "fileFloppy",
       "role": "File Floppy",
-      "continuity": "Temporary removable context media; literal floppy where period-correct, translated to era-appropriate removable media later."
+      "semanticIdentity": "temporary context carried as removable media",
+      "systemOrProduct": "product",
+      "identityAnchors": [
+        "3.5-inch floppy",
+        "temporary removable context"
+      ],
+      "genreByEra": {
+        "classic": "removable media",
+        "platinum": "removable media",
+        "aqua": "intentional legacy media object",
+        "snow-leopard": "intentional legacy media object",
+        "yosemite": "intentional legacy media object",
+        "liquid-glass": "intentional legacy media object"
+      },
+      "historicalPrototypeByEra": {
+        "classic": "System 6 floppy-disk resource",
+        "platinum": "Mac OS 9 floppy/removable-media object"
+      },
+      "nearestAnalogByEra": {
+        "aqua": "Jaguar removable-media icon grammar applied to an intentionally retained floppy",
+        "snow-leopard": "Snow Leopard removable-media icon grammar applied to an intentionally retained floppy",
+        "yosemite": "Yosemite removable-media icon grammar applied to an intentionally retained floppy",
+        "liquid-glass": "Tahoe object and material grammar applied to an intentionally retained floppy"
+      },
+      "eraTranslationByEra": {
+        "classic": "Use the literal native floppy prototype.",
+        "platinum": "Use a literal floppy drawn as a Mac OS 9 removable-media object.",
+        "aqua": "Redraw the retained floppy as a 2002 Aqua object; do not imply Jaguar normally used floppies.",
+        "snow-leopard": "Redraw the retained floppy with 10.6 material and lighting; keep the anachronism explicit.",
+        "yosemite": "Redraw the retained floppy as a clean 2014 object without converting it into a generic save glyph.",
+        "liquid-glass": "Redraw the retained floppy with Tahoe layered material; do not claim it is standard Tahoe removable media."
+      },
+      "allowedChanges": [
+        "perspective",
+        "material",
+        "palette",
+        "label detail",
+        "shadow",
+        "small-size construction"
+      ],
+      "intentionalAnachronism": true,
+      "anachronismReason": "File Floppy is a stable product-level metaphor for temporary context. Later appearances redraw that retained metaphor in their own era; they do not claim the target OS still treats floppy disks as standard removable media.",
+      "provenanceClassByEra": {
+        "classic": "A",
+        "platinum": "A",
+        "aqua": "C",
+        "snow-leopard": "C",
+        "yosemite": "C",
+        "liquid-glass": "C"
+      },
+      "reviewStatusByEra": {
+        "classic": "reference-validated",
+        "platinum": "pending",
+        "aqua": "pending",
+        "snow-leopard": "pending",
+        "yosemite": "pending",
+        "liquid-glass": "pending"
+      },
+      "metaphorKey": "temporary-context-floppy",
+      "metaphorKeyStatus": "deprecated-migration-hint"
     },
     "projectDisk": {
+      "id": "projectDisk",
       "role": "Project Hard Disk",
-      "continuity": "Durable project storage: a period-correct volume with one restrained project label cue.",
-      "metaphorKey": "labelled-external-volume"
-    },
-    "searcher": {
-      "role": "Searcher",
-      "continuity": "A single magnifying glass; material, perspective, and optical construction change per era.",
-      "metaphorKey": "magnifier-over-page"
-    },
-    "teachText": {
-      "role": "TeachText",
-      "continuity": "A writing document with a period-correct writing instrument or text-editor identity.",
-      "metaphorKey": "writing-paper-and-pen"
-    },
-    "scrapbook": {
-      "role": "Scrapbook",
-      "continuity": "A bound album holding selected clippings; never a generic notes page.",
-      "metaphorKey": "bound-album-with-print"
-    },
-    "assistant": {
-      "role": "ClioTalk",
-      "continuity": "Two speech balloons: the user's turn has a solid outline and the model reply has a clearly dashed outline. The dash is semantic, not decoration: model output remains provisional until the user saves, clips, inserts, or exports it.",
-      "metaphorKey": "solid-user-dashed-reply-balloons",
-      "productBasis": "The icon exposes the product's temporary-output rule at the point of recognition. It is distinct from rounded message bubbles inside the ClioTalk window, which remain outside the historical window grammar."
-    },
-    "controlPanel": {
-      "role": "Settings",
-      "continuity": "The target era's real Control Panel, System Preferences, or Settings prototype."
-    },
-    "reviewDesk": {
-      "role": "Review Desk",
-      "continuity": "A document under proofing or correction, reduced to one readable compound object.",
-      "metaphorKey": "marked-manuscript-with-lens"
-    },
-    "docMap": {
-      "role": "DocMap",
-      "continuity": "The document's own structure drawn as a branching map: a page whose headings grow into a stem and branches. It is not a geographic map and not a modern node graph; the branches are the document's headings, which is what the tool actually renders.",
-      "metaphorKey": "branching-document-map",
-      "productBasis": "DocMap renders a Markdown document's heading structure as a mind map with tree, radial, and fishbone layouts, one-sided or symmetric, generated from a selection or a whole source."
+      "semanticIdentity": "durable project storage",
+      "systemOrProduct": "product",
+      "identityAnchors": [
+        "storage volume",
+        "restrained project cue"
+      ],
+      "genreByEra": {
+        "classic": "hardware",
+        "platinum": "hardware",
+        "aqua": "hardware",
+        "snow-leopard": "hardware",
+        "yosemite": "hardware",
+        "liquid-glass": "hardware"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "classic": "System 6 mounted hard disk with a restrained volume-label distinction",
+        "platinum": "Mac OS 9 external or labelled storage volume",
+        "aqua": "Jaguar external hard-drive volume",
+        "snow-leopard": "Snow Leopard external hard-drive volume",
+        "yosemite": "Yosemite external storage volume",
+        "liquid-glass": "Tahoe external or project storage object"
+      },
+      "eraTranslationByEra": {
+        "classic": "Stay inside the native hard-disk world and add only a minimal project cue.",
+        "platinum": "Use a compact labelled Mac OS 9 volume.",
+        "aqua": "Use Jaguar hardware weight and a restrained project distinction.",
+        "snow-leopard": "Use mature 10.6 hardware material and controlled project marking.",
+        "yosemite": "Use cleaner 10.10 storage geometry without becoming a generic cloud tile.",
+        "liquid-glass": "Use Tahoe layered storage material and keep the durable-project cue subordinate."
+      },
+      "allowedChanges": [
+        "hardware model",
+        "silhouette",
+        "label cue",
+        "perspective",
+        "material",
+        "palette",
+        "shadow",
+        "small-size construction"
+      ],
+      "intentionalAnachronism": false,
+      "anachronismReason": null,
+      "provenanceClassByEra": {
+        "classic": "B",
+        "platinum": "B",
+        "aqua": "B",
+        "snow-leopard": "B",
+        "yosemite": "B",
+        "liquid-glass": "B"
+      },
+      "reviewStatusByEra": {
+        "classic": "historically-reviewed",
+        "platinum": "pending",
+        "aqua": "pending",
+        "snow-leopard": "pending",
+        "yosemite": "pending",
+        "liquid-glass": "pending"
+      },
+      "metaphorKey": "durable-project-volume",
+      "metaphorKeyStatus": "deprecated-migration-hint"
     },
     "projectDisc": {
+      "id": "projectDisc",
       "role": "Project CD",
-      "continuity": "Finished export media, represented by the target era's optical or archival medium."
+      "semanticIdentity": "finished export or archival media",
+      "systemOrProduct": "product",
+      "identityAnchors": [
+        "optical disc",
+        "finished project cue"
+      ],
+      "genreByEra": {
+        "classic": "removable media",
+        "platinum": "removable media",
+        "aqua": "removable media",
+        "snow-leopard": "removable media",
+        "yosemite": "archival media",
+        "liquid-glass": "archival media"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "classic": "period CD-ROM or optical-volume object",
+        "platinum": "Mac OS 9 CD-ROM or burned-disc object",
+        "aqua": "Jaguar optical-disc and removable-media grammar",
+        "snow-leopard": "Snow Leopard optical-disc grammar",
+        "yosemite": "Yosemite optical-media object treated as deliberate archival media",
+        "liquid-glass": "Tahoe layered object grammar applied to deliberate archival media"
+      },
+      "eraTranslationByEra": {
+        "classic": "Use a period-plausible optical medium without pretending it is a direct System 6 project-export resource.",
+        "platinum": "Use the native Mac OS 9 optical-media world and add a restrained finished-project cue.",
+        "aqua": "Use Jaguar front-on removable-media grammar.",
+        "snow-leopard": "Use mature 10.6 optical material and diffraction with controlled detail.",
+        "yosemite": "Simplify the disc as an intentionally archival 2014 object.",
+        "liquid-glass": "Use layered Tahoe material while keeping the optical-disc identity."
+      },
+      "allowedChanges": [
+        "sleeve or enclosure",
+        "perspective",
+        "material",
+        "diffraction detail",
+        "project cue",
+        "shadow",
+        "small-size construction"
+      ],
+      "intentionalAnachronism": false,
+      "anachronismReason": null,
+      "provenanceClassByEra": {
+        "classic": "B",
+        "platinum": "B",
+        "aqua": "B",
+        "snow-leopard": "B",
+        "yosemite": "B",
+        "liquid-glass": "B"
+      },
+      "reviewStatusByEra": {
+        "classic": "pending",
+        "platinum": "pending",
+        "aqua": "pending",
+        "snow-leopard": "pending",
+        "yosemite": "pending",
+        "liquid-glass": "pending"
+      },
+      "metaphorKey": "finished-project-optical-media",
+      "metaphorKeyStatus": "deprecated-migration-hint"
+    },
+    "searcher": {
+      "id": "searcher",
+      "role": "Searcher",
+      "semanticIdentity": "writer-controlled search and discovery utility",
+      "systemOrProduct": "product",
+      "identityAnchors": [
+        "magnifying lens",
+        "visible search-result relationship"
+      ],
+      "genreByEra": {
+        "classic": "application utility",
+        "platinum": "application utility",
+        "aqua": "utility",
+        "snow-leopard": "utility",
+        "yosemite": "utility",
+        "liquid-glass": "utility"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "classic": "Finder Find File and period search-tool icon grammar",
+        "platinum": "Sherlock and Mac OS 9 search-tool grammar",
+        "aqua": "Jaguar Sherlock 3 and Finder search grammar",
+        "snow-leopard": "Snow Leopard Finder search and Spotlight grammar",
+        "yosemite": "Yosemite Finder search and Spotlight grammar",
+        "liquid-glass": "Tahoe Finder search and Spotlight grammar"
+      },
+      "eraTranslationByEra": {
+        "classic": "Use a restrained one-colour lens/search relationship inside the System 6 object world.",
+        "platinum": "Use a compact pixel tool with shallow Mac OS 9 depth.",
+        "aqua": "Use an early-Aqua utility object, not a uniform glossy application tile.",
+        "snow-leopard": "Use a mature metal/glass search tool with controlled realism.",
+        "yosemite": "Use a simplified graphic lens while retaining an object silhouette.",
+        "liquid-glass": "Use a layered refractive lens whose material is owned by the Tahoe painter."
+      },
+      "allowedChanges": [
+        "container",
+        "silhouette",
+        "perspective",
+        "material",
+        "colour",
+        "secondary object",
+        "detail density",
+        "shadow",
+        "small-size construction"
+      ],
+      "intentionalAnachronism": false,
+      "anachronismReason": null,
+      "provenanceClassByEra": {
+        "classic": "B",
+        "platinum": "B",
+        "aqua": "B",
+        "snow-leopard": "B",
+        "yosemite": "B",
+        "liquid-glass": "B"
+      },
+      "reviewStatusByEra": {
+        "classic": "historically-reviewed",
+        "platinum": "historically-reviewed",
+        "aqua": "historically-reviewed",
+        "snow-leopard": "historically-reviewed",
+        "yosemite": "historically-reviewed",
+        "liquid-glass": "pending"
+      },
+      "metaphorKey": "search-and-discovery",
+      "metaphorKeyStatus": "deprecated-migration-hint"
+    },
+    "teachText": {
+      "id": "teachText",
+      "role": "TeachText",
+      "semanticIdentity": "editable writing document and text editor",
+      "systemOrProduct": "product with a direct Classic prototype",
+      "identityAnchors": [
+        "writing document",
+        "editing instrument or text-editor cue"
+      ],
+      "genreByEra": {
+        "classic": "application",
+        "platinum": "application",
+        "aqua": "application",
+        "snow-leopard": "application",
+        "yosemite": "application",
+        "liquid-glass": "application"
+      },
+      "historicalPrototypeByEra": {
+        "classic": "System 6 TeachText application icon"
+      },
+      "nearestAnalogByEra": {
+        "platinum": "Mac OS 9 SimpleText",
+        "aqua": "Mac OS X 10.2 TextEdit",
+        "snow-leopard": "Mac OS X 10.6 TextEdit",
+        "yosemite": "OS X 10.10 TextEdit",
+        "liquid-glass": "macOS Tahoe 26 TextEdit"
+      },
+      "eraTranslationByEra": {
+        "classic": "Follow the native TeachText resource anatomy.",
+        "platinum": "Translate the editor into compact Mac OS 9 application grammar.",
+        "aqua": "Use Jaguar writing-application grammar and material.",
+        "snow-leopard": "Use mature 10.6 writing-application realism.",
+        "yosemite": "Use cleaner 10.10 writing-object geometry.",
+        "liquid-glass": "Use a layered Tahoe writing object without reducing it to a generic text glyph."
+      },
+      "allowedChanges": [
+        "paper construction",
+        "editing instrument",
+        "application enclosure",
+        "perspective",
+        "material",
+        "palette",
+        "shadow",
+        "small-size construction"
+      ],
+      "intentionalAnachronism": false,
+      "anachronismReason": null,
+      "provenanceClassByEra": {
+        "classic": "A",
+        "platinum": "B",
+        "aqua": "B",
+        "snow-leopard": "B",
+        "yosemite": "B",
+        "liquid-glass": "B"
+      },
+      "reviewStatusByEra": {
+        "classic": "reference-validated",
+        "platinum": "pending",
+        "aqua": "pending",
+        "snow-leopard": "pending",
+        "yosemite": "pending",
+        "liquid-glass": "pending"
+      },
+      "metaphorKey": "editable-writing-object",
+      "metaphorKeyStatus": "deprecated-migration-hint"
+    },
+    "scrapbook": {
+      "id": "scrapbook",
+      "role": "Scrapbook",
+      "semanticIdentity": "durable user-curated selected clippings",
+      "systemOrProduct": "product with a direct Classic prototype",
+      "identityAnchors": [
+        "album or scrapbook",
+        "mounted clipping"
+      ],
+      "genreByEra": {
+        "classic": "desk accessory",
+        "platinum": "application utility",
+        "aqua": "application",
+        "snow-leopard": "application",
+        "yosemite": "application",
+        "liquid-glass": "application"
+      },
+      "historicalPrototypeByEra": {
+        "classic": "System 6 Scrapbook desk accessory"
+      },
+      "nearestAnalogByEra": {
+        "platinum": "Mac OS 9 Scrapbook and scrapbook-file grammar",
+        "aqua": "Jaguar-era album and clipping utilities",
+        "snow-leopard": "Snow Leopard-era album and clipping utilities",
+        "yosemite": "Yosemite-era album and clipping utilities",
+        "liquid-glass": "Tahoe-era album and clipping object grammar"
+      },
+      "eraTranslationByEra": {
+        "classic": "Stay recognizably inside the System 6 Scrapbook/desk-accessory world.",
+        "platinum": "Use a compact Mac OS 9 album or scrapbook object.",
+        "aqua": "Use an illustrated Jaguar album holding a selected clipping, not a generic notes page.",
+        "snow-leopard": "Use mature 10.6 album material and controlled depth.",
+        "yosemite": "Use a simplified 10.10 album with a mounted clipping.",
+        "liquid-glass": "Use layered Tahoe album material while keeping the clipping relationship."
+      },
+      "allowedChanges": [
+        "binding",
+        "open or closed state",
+        "clipping type",
+        "perspective",
+        "material",
+        "palette",
+        "shadow",
+        "small-size construction"
+      ],
+      "intentionalAnachronism": false,
+      "anachronismReason": null,
+      "provenanceClassByEra": {
+        "classic": "A",
+        "platinum": "B",
+        "aqua": "B",
+        "snow-leopard": "B",
+        "yosemite": "B",
+        "liquid-glass": "B"
+      },
+      "reviewStatusByEra": {
+        "classic": "historically-reviewed",
+        "platinum": "pending",
+        "aqua": "pending",
+        "snow-leopard": "pending",
+        "yosemite": "pending",
+        "liquid-glass": "pending"
+      },
+      "metaphorKey": "curated-clippings-album",
+      "metaphorKeyStatus": "deprecated-migration-hint"
+    },
+    "assistant": {
+      "id": "assistant",
+      "role": "ClioTalk",
+      "semanticIdentity": "conversation between user and model whose model reply remains provisional",
+      "systemOrProduct": "product",
+      "identityAnchors": [
+        "user/model duality",
+        "provisional reply cue"
+      ],
+      "genreByEra": {
+        "classic": "communication application",
+        "platinum": "communication application",
+        "aqua": "communication application",
+        "snow-leopard": "communication application",
+        "yosemite": "communication application",
+        "liquid-glass": "communication application"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "classic": "period Macintosh conversation, correspondence, or transcript tools",
+        "platinum": "period Mac OS 9 instant-messaging and transcript applications",
+        "aqua": "Mac OS X 10.2 iChat communication grammar",
+        "snow-leopard": "Mac OS X 10.6 iChat communication grammar",
+        "yosemite": "OS X 10.10 Messages communication grammar",
+        "liquid-glass": "macOS Tahoe 26 Messages and layered communication grammar"
+      },
+      "eraTranslationByEra": {
+        "classic": "Express conversation and provisional output as a restrained Classic pictogram; exact two-bubble composition is optional.",
+        "platinum": "Use a period-plausible communication or transcript object with a visible reply-status distinction.",
+        "aqua": "Use Jaguar communication grammar; avoid a 2020s messaging-app logo transplanted into Aqua.",
+        "snow-leopard": "Use mature iChat-era communication grammar and preserve provisional reply semantics without locking two identical balloons.",
+        "yosemite": "Use a cleaner communication mark with user/model and provisional distinctions.",
+        "liquid-glass": "Use layered communication shapes; material and exact composition may change while the semantic distinction remains."
+      },
+      "allowedChanges": [
+        "exact number and shape of balloons",
+        "correspondence or transcript object",
+        "container",
+        "silhouette",
+        "perspective",
+        "material",
+        "palette",
+        "reply-status treatment",
+        "small-size construction"
+      ],
+      "intentionalAnachronism": false,
+      "anachronismReason": null,
+      "provenanceClassByEra": {
+        "classic": "B",
+        "platinum": "B",
+        "aqua": "B",
+        "snow-leopard": "B",
+        "yosemite": "B",
+        "liquid-glass": "B"
+      },
+      "reviewStatusByEra": {
+        "classic": "historically-reviewed",
+        "platinum": "pending",
+        "aqua": "pending",
+        "snow-leopard": "pending",
+        "yosemite": "historically-reviewed",
+        "liquid-glass": "historically-reviewed"
+      },
+      "metaphorKey": "conversation-with-provisional-reply",
+      "metaphorKeyStatus": "deprecated-migration-hint",
+      "productBasis": "The dashed or otherwise provisional reply cue communicates that model output is temporary until the user saves, clips, inserts, or exports it. The cue is stable; the exact two-balloon composition is not."
+    },
+    "controlPanel": {
+      "id": "controlPanel",
+      "role": "Control / Settings",
+      "semanticIdentity": "system settings and preferences",
+      "systemOrProduct": "system",
+      "identityAnchors": [
+        "target-era settings identity"
+      ],
+      "genreByEra": {
+        "classic": "desk accessory utility",
+        "platinum": "control-panel utility",
+        "aqua": "system preference utility",
+        "snow-leopard": "system preference utility",
+        "yosemite": "system preference utility",
+        "liquid-glass": "system settings utility"
+      },
+      "historicalPrototypeByEra": {
+        "classic": "System 6 Control Panel desk accessory",
+        "platinum": "Mac OS 9 Control Panels",
+        "aqua": "Mac OS X 10.2 System Preferences",
+        "snow-leopard": "Mac OS X 10.6 System Preferences",
+        "yosemite": "OS X 10.10 System Preferences",
+        "liquid-glass": "macOS Tahoe 26 System Settings"
+      },
+      "nearestAnalogByEra": {},
+      "eraTranslationByEra": {
+        "classic": "Use native Control Panel/physical-control grammar.",
+        "platinum": "Use the target Mac OS 9 control-panel identity.",
+        "aqua": "Use Jaguar System Preferences identity rather than retaining Classic sliders by rule.",
+        "snow-leopard": "Use the 10.6 System Preferences prototype.",
+        "yosemite": "Use the 10.10 System Preferences prototype.",
+        "liquid-glass": "Use the Tahoe System Settings prototype and material."
+      },
+      "allowedChanges": [
+        "control metaphor",
+        "container",
+        "silhouette",
+        "perspective",
+        "material",
+        "palette",
+        "small-size construction"
+      ],
+      "intentionalAnachronism": false,
+      "anachronismReason": null,
+      "provenanceClassByEra": {
+        "classic": "A",
+        "platinum": "A",
+        "aqua": "A",
+        "snow-leopard": "A",
+        "yosemite": "A",
+        "liquid-glass": "A"
+      },
+      "reviewStatusByEra": {
+        "classic": "historically-reviewed",
+        "platinum": "pending",
+        "aqua": "pending",
+        "snow-leopard": "pending",
+        "yosemite": "pending",
+        "liquid-glass": "pending"
+      }
+    },
+    "reviewDesk": {
+      "id": "reviewDesk",
+      "role": "Review Desk",
+      "semanticIdentity": "writer-controlled manuscript proofing and correction application",
+      "systemOrProduct": "product",
+      "identityAnchors": [
+        "marked manuscript",
+        "visible inspection or correction action"
+      ],
+      "genreByEra": {
+        "classic": "application utility",
+        "platinum": "application utility",
+        "aqua": "utility",
+        "snow-leopard": "utility",
+        "yosemite": "utility",
+        "liquid-glass": "utility"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "classic": "period Macintosh word-processor proofing tools",
+        "platinum": "Mac OS 9 word-processor proofing and correction tools",
+        "aqua": "Jaguar text proofing and spell-check grammar",
+        "snow-leopard": "Snow Leopard text proofing and correction grammar",
+        "yosemite": "Yosemite text proofing and markup grammar",
+        "liquid-glass": "Tahoe text proofing and markup grammar"
+      },
+      "eraTranslationByEra": {
+        "classic": "Reduce proofing to one readable manuscript-plus-correction object.",
+        "platinum": "Use compact Mac OS 9 proofing-tool construction.",
+        "aqua": "Use a Jaguar utility composition with appropriate perspective and material.",
+        "snow-leopard": "Use mature 10.6 proofing detail without losing the object at 32/16.",
+        "yosemite": "Simplify to clear 10.10 manuscript and correction shapes.",
+        "liquid-glass": "Separate manuscript and proofing layers under the Tahoe material painter."
+      },
+      "allowedChanges": [
+        "proofing instrument",
+        "marking cue",
+        "container",
+        "silhouette",
+        "perspective",
+        "material",
+        "palette",
+        "small-size construction"
+      ],
+      "intentionalAnachronism": false,
+      "anachronismReason": null,
+      "provenanceClassByEra": {
+        "classic": "B",
+        "platinum": "C",
+        "aqua": "B",
+        "snow-leopard": "B",
+        "yosemite": "B",
+        "liquid-glass": "B"
+      },
+      "reviewStatusByEra": {
+        "classic": "historically-reviewed",
+        "platinum": "historically-reviewed",
+        "aqua": "historically-reviewed",
+        "snow-leopard": "historically-reviewed",
+        "yosemite": "historically-reviewed",
+        "liquid-glass": "historically-reviewed"
+      },
+      "metaphorKey": "manuscript-proofing",
+      "metaphorKeyStatus": "deprecated-migration-hint"
+    },
+    "docMap": {
+      "id": "docMap",
+      "role": "DocMap",
+      "semanticIdentity": "a document's heading structure made visible as a map",
+      "systemOrProduct": "product",
+      "identityAnchors": [
+        "document",
+        "branching heading structure"
+      ],
+      "genreByEra": {
+        "classic": "application utility",
+        "platinum": "application utility",
+        "aqua": "utility",
+        "snow-leopard": "utility",
+        "yosemite": "utility",
+        "liquid-glass": "utility"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "classic": "period Macintosh outliner and structured-document applications such as MORE",
+        "platinum": "Mac OS 9 outliner and diagramming applications",
+        "aqua": "Jaguar-era outliner and mind-mapping applications",
+        "snow-leopard": "Snow Leopard-era outliner and mind-mapping applications",
+        "yosemite": "Yosemite-era outline and document-map applications",
+        "liquid-glass": "Tahoe-era structured-document and spatial-outline applications"
+      },
+      "eraTranslationByEra": {
+        "classic": "Show a document whose headings become a simple branch structure, not a geographic map or modern node network.",
+        "platinum": "Use compact Mac OS 9 document/outliner grammar.",
+        "aqua": "Use a Jaguar utility composition with document and structure both readable.",
+        "snow-leopard": "Use mature 10.6 detail while protecting the branch anchor at 32/16.",
+        "yosemite": "Simplify the document and branch relationship into 10.10 graphic forms.",
+        "liquid-glass": "Separate document, structure, and accent layers under the Tahoe painter."
+      },
+      "allowedChanges": [
+        "branch layout",
+        "page construction",
+        "container",
+        "silhouette",
+        "perspective",
+        "material",
+        "palette",
+        "small-size construction"
+      ],
+      "intentionalAnachronism": false,
+      "anachronismReason": null,
+      "provenanceClassByEra": {
+        "classic": "B",
+        "platinum": "B",
+        "aqua": "B",
+        "snow-leopard": "B",
+        "yosemite": "B",
+        "liquid-glass": "B"
+      },
+      "reviewStatusByEra": {
+        "classic": "historically-reviewed",
+        "platinum": "pending",
+        "aqua": "pending",
+        "snow-leopard": "pending",
+        "yosemite": "pending",
+        "liquid-glass": "pending"
+      },
+      "metaphorKey": "document-heading-structure",
+      "metaphorKeyStatus": "deprecated-migration-hint",
+      "productBasis": "DocMap renders Markdown heading structure as tree, radial, or fishbone layouts; it is not a geographic map."
+    },
+    "daHandler": {
+      "id": "daHandler",
+      "role": "Generic Application / Desk Accessory handler",
+      "semanticIdentity": "generic target-era application or utility container",
+      "systemOrProduct": "system",
+      "identityAnchors": [
+        "target-era generic application identity"
+      ],
+      "genreByEra": {
+        "classic": "application",
+        "platinum": "application",
+        "aqua": "utility",
+        "snow-leopard": "utility",
+        "yosemite": "utility",
+        "liquid-glass": "utility"
+      },
+      "historicalPrototypeByEra": {
+        "classic": "System 6 generic application resource",
+        "platinum": "Mac OS 9 generic application identity",
+        "aqua": "Mac OS X 10.2 generic utility grammar",
+        "snow-leopard": "Mac OS X 10.6 generic utility grammar",
+        "yosemite": "OS X 10.10 generic utility grammar",
+        "liquid-glass": "macOS Tahoe 26 generic utility grammar"
+      },
+      "nearestAnalogByEra": {},
+      "eraTranslationByEra": {
+        "classic": "Use the native generic application anatomy.",
+        "platinum": "Use Mac OS 9 generic application grammar.",
+        "aqua": "Use Jaguar utility grammar.",
+        "snow-leopard": "Use Snow Leopard utility grammar.",
+        "yosemite": "Use Yosemite utility grammar.",
+        "liquid-glass": "Use Tahoe utility grammar."
+      },
+      "allowedChanges": [
+        "container",
+        "silhouette",
+        "material",
+        "perspective",
+        "palette",
+        "small-size construction"
+      ],
+      "intentionalAnachronism": false,
+      "anachronismReason": null,
+      "provenanceClassByEra": {
+        "classic": "A",
+        "platinum": "A",
+        "aqua": "A",
+        "snow-leopard": "A",
+        "yosemite": "A",
+        "liquid-glass": "A"
+      },
+      "reviewStatusByEra": {
+        "classic": "pending",
+        "platinum": "pending",
+        "aqua": "pending",
+        "snow-leopard": "pending",
+        "yosemite": "pending",
+        "liquid-glass": "pending"
+      }
     },
     "systemFile": {
-      "role": "System",
-      "continuity": "The target era's native system software container or identity object."
+      "id": "systemFile",
+      "role": "System File",
+      "semanticIdentity": "target-era system software document or container",
+      "systemOrProduct": "system",
+      "identityAnchors": [
+        "system-owned document"
+      ],
+      "genreByEra": {
+        "classic": "document",
+        "platinum": "document",
+        "aqua": "document",
+        "snow-leopard": "document",
+        "yosemite": "document",
+        "liquid-glass": "document"
+      },
+      "historicalPrototypeByEra": {
+        "classic": "System 6 system-file grammar",
+        "platinum": "Mac OS 9 System file",
+        "aqua": "Mac OS X 10.2 system-owned document grammar",
+        "snow-leopard": "Mac OS X 10.6 system-owned document grammar",
+        "yosemite": "OS X 10.10 system-owned document grammar",
+        "liquid-glass": "macOS Tahoe 26 system-owned document grammar"
+      },
+      "nearestAnalogByEra": {},
+      "eraTranslationByEra": {
+        "classic": "Use System 6 document and system identity grammar.",
+        "platinum": "Follow the Mac OS 9 System file prototype.",
+        "aqua": "Use Jaguar system-document grammar.",
+        "snow-leopard": "Use 10.6 system-document grammar.",
+        "yosemite": "Use 10.10 system-document grammar.",
+        "liquid-glass": "Use Tahoe system-document grammar."
+      },
+      "allowedChanges": [
+        "document association",
+        "system cue",
+        "material",
+        "palette",
+        "small-size construction"
+      ],
+      "intentionalAnachronism": false,
+      "anachronismReason": null,
+      "provenanceClassByEra": {
+        "classic": "A",
+        "platinum": "A",
+        "aqua": "A",
+        "snow-leopard": "A",
+        "yosemite": "A",
+        "liquid-glass": "A"
+      },
+      "reviewStatusByEra": {
+        "classic": "pending",
+        "platinum": "pending",
+        "aqua": "pending",
+        "snow-leopard": "pending",
+        "yosemite": "pending",
+        "liquid-glass": "pending"
+      }
     },
     "clipboard": {
+      "id": "clipboard",
       "role": "Clipboard",
-      "continuity": "A period-correct clipboard for transient copied material; distinct from Scrapbook's durable selected clippings."
+      "semanticIdentity": "transient copied material",
+      "systemOrProduct": "system",
+      "identityAnchors": [
+        "clipboard"
+      ],
+      "genreByEra": {
+        "classic": "desk accessory",
+        "platinum": "desk accessory",
+        "aqua": "utility",
+        "snow-leopard": "utility",
+        "yosemite": "utility",
+        "liquid-glass": "utility"
+      },
+      "historicalPrototypeByEra": {
+        "classic": "Classic Macintosh Clipboard desk accessory",
+        "platinum": "Mac OS 9 Clipboard or clipboard-file grammar"
+      },
+      "nearestAnalogByEra": {
+        "aqua": "Jaguar clipboard utility grammar",
+        "snow-leopard": "Snow Leopard clipboard utility grammar",
+        "yosemite": "Yosemite clipboard utility grammar",
+        "liquid-glass": "Tahoe clipboard utility grammar"
+      },
+      "eraTranslationByEra": {
+        "classic": "Use period clipboard desk-accessory grammar.",
+        "platinum": "Use compact Mac OS 9 clipboard grammar.",
+        "aqua": "Use Jaguar utility construction.",
+        "snow-leopard": "Use mature 10.6 utility construction.",
+        "yosemite": "Use simplified 10.10 clipboard geometry.",
+        "liquid-glass": "Use layered Tahoe clipboard geometry."
+      },
+      "allowedChanges": [
+        "board construction",
+        "paper association",
+        "perspective",
+        "material",
+        "palette",
+        "small-size construction"
+      ],
+      "intentionalAnachronism": false,
+      "anachronismReason": null,
+      "provenanceClassByEra": {
+        "classic": "A",
+        "platinum": "A",
+        "aqua": "B",
+        "snow-leopard": "B",
+        "yosemite": "B",
+        "liquid-glass": "B"
+      },
+      "reviewStatusByEra": {
+        "classic": "pending",
+        "platinum": "pending",
+        "aqua": "pending",
+        "snow-leopard": "pending",
+        "yosemite": "pending",
+        "liquid-glass": "pending"
+      }
     }
   },
   "coreBatches": {
@@ -200,6 +1372,7 @@
       "projectDisk"
     ]
   },
+  "coreBatchMeaning": "Legacy builder scopes retained for compatibility. They are not the audit's priorityCore16, and membership does not confer historical approval.",
   "semanticMigration": {
     "finderApp": {
       "implemented": [
@@ -210,7 +1383,8 @@
         "yosemite",
         "liquid-glass"
       ],
-      "pending": []
+      "pending": [],
+      "migration": "The physical compact-Mac lock is removed. Every implemented cell follows its target-era Finder/System identity; pending eras remain blocked until their generated pixels pass evidence and compact-size review."
     },
     "multiFinderApp": {
       "implemented": [
@@ -222,133 +1396,49 @@
         "liquid-glass"
       ],
       "pending": [],
-      "chronology": "MultiFinder is later than System 6 Finder evidence. The Classic artwork is an explicitly documented period approximation, not a native System 6 resource claim."
+      "chronology": "MultiFinder functionality is historical, but no native icon resource is claimed. Implemented cells combine the approved current-era Finder identity with multiplicity; pending eras remain blocked on their Finder source."
     },
     "assistant": {
+      "status": "implemented",
       "implemented": [
-        "classic",
+        "yosemite",
+        "liquid-glass",
+        "platinum",
+        "aqua",
+        "snow-leopard"
+      ],
+      "pending": [],
+      "migration": "The modern chat-logo bubble lock is removed. Admitted eras show human/model exchange plus one model-owned provisional reply; Platinum, Jaguar, and Snow Leopard remain pending until their compact compositions pass.",
+      "chronology": "Yosemite and Liquid Glass are class B era-idiom reinterpretations with completed expert historical review. Platinum, Jaguar, and Snow Leopard remain pending; blind-mix review has not yet run."
+    },
+    "reviewDesk": {
+      "status": "implemented",
+      "implemented": [
         "platinum",
         "aqua",
         "snow-leopard",
         "yosemite",
         "liquid-glass"
       ],
-      "pending": []
+      "pending": [],
+      "migration": "The page-plus-lens composition lock is removed. Every target era uses a distinct manuscript-correction application object; no native Review Desk artwork is claimed.",
+      "chronology": "Platinum is class C; Jaguar, Snow Leopard, Yosemite, and Liquid Glass are class B era-idiom reinterpretations. Blind-mix review has not yet run."
+    },
+    "searcher": {
+      "status": "in-progress",
+      "implemented": [
+        "platinum",
+        "aqua",
+        "snow-leopard",
+        "yosemite"
+      ],
+      "pending": [
+        "liquid-glass"
+      ],
+      "migration": "The generic page-plus-lens repetition is replaced in each admitted era by a period-specific search utility with an unmistakable lens and visible result relationship. Liquid Glass remains on the prior runtime until its 16 px hierarchy has a separately approved optical drawing.",
+      "chronology": "Platinum, Jaguar Aqua, Snow Leopard, and Yosemite are class B era-idiom reinterpretations with completed historical review. Liquid Glass remains pending; blind-mix review has not yet run."
     }
   },
-  "metaphorKeyRule": "Objects with a metaphorKey keep that one physical metaphor in every appearance; each appearance still owns independent artwork, geometry, material, and size-specific hints. Objects without a key are system objects and follow the target operating system's own prototype instead.",
-  "historicalValidation": {
-    "purpose": "Record what actually validated each appearance. An accepted review status means a human looked at the artwork and kept it; it is not a claim that the artwork was checked against a period Macintosh. Only the evidence classes below carry that claim.",
-    "evidenceClasses": {
-      "native-resource": "Measured against the real resource fork or Apple .iconset held in internal/evidence. Historical claim allowed.",
-      "period-capture": "Measured against a captured screenshot of the running system held in internal/evidence. Historical claim allowed for silhouette, hue, perspective and visual weight.",
-      "accepted-generated": "Painted by a checked-in generator and kept after human review. NOT historical validation.",
-      "accepted-imagegen": "Drawn by Image Gen against reference material and kept after human review. NOT historical validation."
-    },
-    "byAppearance": {
-      "classic": {
-        "evidence": "native-resource",
-        "source": "internal/evidence/drafts/era-icons/imagegen-redraw/references/classic-native (System 6.0.8 ICN#/SICN exports) and internal/evidence/drafts/classic-icon-references",
-        "validatedObjects": [
-          "folder",
-          "document",
-          "trash",
-          "trashFull",
-          "fileFloppy",
-          "hardDisk",
-          "startupDisk",
-          "daHandler",
-          "teachText",
-          "finderApp"
-        ],
-        "note": "Runtime artwork is a smooth Retina SVG reconstruction of the native silhouette, not a bitmap copy. The remaining objects are product stand-ins with no native prototype."
-      },
-      "platinum": {
-        "evidence": "period-capture",
-        "source": "internal/evidence/drafts/theme-lab-fidelity-cache/platinum (Mac OS 9.0 Finder, desktop and file manager captures)",
-        "validatedObjects": [
-          "trash",
-          "document",
-          "finderApp",
-          "startupDisk"
-        ],
-        "openFindings": [
-          "folder"
-        ],
-        "note": "The capture shows front-facing folders with a hard offset shadow. The shipped folder is a rotated three-quarter view and does not match."
-      },
-      "aqua": {
-        "evidence": "accepted-generated",
-        "comparisonSource": "internal/evidence/drafts/theme-lab-fidelity-cache/aqua/icons (captured Apple 10.x artwork)",
-        "validatedObjects": [],
-        "openFindings": [
-          "folder",
-          "hardDisk",
-          "trash",
-          "document",
-          "daHandler"
-        ],
-        "note": "The whole 56-object family is generator output. The captured Apple artwork disagrees on folder perspective, disk and trash hue, document content, and the generic application object."
-      },
-      "snow-leopard": {
-        "evidence": "accepted-generated",
-        "comparisonSource": "internal/evidence/drafts/snow-leopard-icon-reference/iconsets (Apple .icns exports)",
-        "validatedObjects": [],
-        "openFindings": [
-          "folder",
-          "document",
-          "trash",
-          "daHandler",
-          "hardDisk"
-        ],
-        "note": "The whole 56-object family is generator output. Apple's own .iconset disagrees on folder value and perspective, document colour and content, and the generic application object."
-      },
-      "yosemite": {
-        "evidence": "accepted-generated",
-        "comparisonSource": "internal/evidence/drafts/theme-lab-fidelity-cache/yosemite (10.10 Finder captures)",
-        "validatedObjects": [
-          "folder"
-        ],
-        "openFindings": [
-          "document",
-          "hardDisk",
-          "daHandler"
-        ],
-        "note": "The whole 56-object family is generator output. The folder matches the capture; the generic document carries a solid colour block the real system does not have."
-      },
-      "liquid-glass": {
-        "evidence": "accepted-imagegen",
-        "comparisonSource": "internal/evidence/drafts/liquid-glass-reference",
-        "validatedObjects": [],
-        "openFindings": [
-          "document",
-          "trash"
-        ],
-        "note": "No period Macintosh exists to measure against yet. The generic document has almost no contrast against a light desktop, and the trash reads as a drinking glass rather than a bin."
-      }
-    },
-    "knownIdentityConflicts": [
-      {
-        "object": "finderApp",
-        "conflict": "The ledger keeps one smiling compact Macintosh across all six appearances. Mac OS X 10.0 onward ships a two-tone blue Finder face instead, so the four OS X appearances follow product continuity rather than the real prototype.",
-        "decision": "Held on purpose. Changing it would break the strongest row in the system; it is recorded here so it is never mistaken for an oversight."
-      },
-      {
-        "object": "daHandler",
-        "conflict": "The anchor asks for the target era's generic application container. Aqua, Snow Leopard and Yosemite draw a window instead of Apple's pencil-ruler-brush generic application.",
-        "decision": "Open. Listed in the regeneration brief."
-      },
-      {
-        "object": "manuscript",
-        "conflict": "The object is a stack of paper in System 6 and Mac OS 9, a bound book in Aqua, Snow Leopard and Yosemite, and a page again in Tahoe. The book form also collides with reader.",
-        "decision": "Open. Listed in the regeneration brief."
-      }
-    ],
-    "lastReviewed": "2026-08-13",
-    "reviewBoards": [
-      "internal/evidence/drafts/era-icons/cross-era-lineage-board.png",
-      "internal/evidence/drafts/era-icons/cross-era-mixed-check.png",
-      "internal/evidence/drafts/era-icons/icon-continuity-board.png"
-    ]
-  }
+  "metaphorKeyRule": "DEPRECATED MIGRATION ONLY. metaphorKey may help old builders locate an object's former composition, but it cannot lock a physical object, enclosure, full composition, or drawing across eras. semanticIdentity plus one or two identityAnchors are authoritative; historicalPrototypeByEra, genreByEra, and eraTranslationByEra decide the target-era artwork.",
+  "remaining40Policy": "The forty runtime ids outside priorityCore16 remain historicalReviewStatus=pending in the provenance matrix until individually reviewed. Family completeness, accepted-generated, or technically-clean status must not upgrade them."
 }

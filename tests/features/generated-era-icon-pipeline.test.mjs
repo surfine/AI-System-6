@@ -4,6 +4,7 @@ import { CORE_OBJECTS, ERAS, GENERATION_OBJECTS, REMAINING_OBJECTS, allMasterPro
 const test = createFeatureTest("generated-era-icon-pipeline");
 const pipeline = read("tooling/generated-era-icon-pipeline.mjs");
 const promptSource = read("tooling/icon-generation/generated-era-core-prompts.mjs");
+const continuity = JSON.parse(read("assets/themes/icon-system-continuity.json"));
 const records = allMasterPromptRecords();
 
 test.assert(Object.keys(CORE_OBJECTS).length === 14, "the generated family locks fourteen semantic objects");
@@ -28,7 +29,12 @@ test.assertIncludes(buildPrompt("snow-leopard", "hardDisk"), "neutral overhead l
 test.assertIncludes(buildPrompt("snow-leopard", "hardDisk"), "No candy gloss band", "Snow Leopard prompts reject Aqua gloss");
 test.assertIncludes(buildPrompt("yosemite", "document"), "shallow two-stop gradient", "Yosemite prompts cap shading depth");
 test.assertIncludes(buildPrompt("yosemite", "document"), "not a current mobile-app badge", "Yosemite prompts resist modern drift");
-test.assertIncludes(buildPrompt("aqua", "finderApp"), "eyes and a small smile", "Finder keeps the locked friendly Macintosh meaning");
+for (const era of Object.keys(ERAS)) {
+  test.assert(continuity.semanticAnchors.finderApp.reviewStatusByEra[era] === "reference-validated",
+    `${era}/Finder records the later native-evidence validation rather than inheriting it from this prompt batch`);
+  test.assert(continuity.semanticAnchors.multiFinderApp.reviewStatusByEra[era] === "historically-reviewed",
+    `${era}/MultiFinder records its later class-C review rather than inheriting it from this prompt batch`);
+}
 test.assertIncludes(buildPrompt("yosemite", "assistant"), "solid filled balloon", "the user's ClioTalk turn is solid");
 test.assertIncludes(buildPrompt("yosemite", "assistant"), "clearly dashed outline", "the provisional ClioTalk reply remains dashed");
 test.assertIncludes(buildPrompt("aqua", "startupDisk"), "startup indicator", "Startup Disk stays distinct from the plain hard disk");

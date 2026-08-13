@@ -153,6 +153,19 @@ function syncSystemHelpGroupSelect() {
   refreshSystemSelectControl(systemHelpGroupSelect);
 }
 
+// Moves the list selection without re-rendering the rows, so the scroll
+// offset and keyboard focus survive the tap. Only the detail pane redraws.
+function selectSystemHelpEntry(id) {
+  if (!systemHelpListEl || !systemHelpDetailEl) return;
+  selectedSystemHelpEntryId = id;
+  systemHelpListEl.querySelectorAll("[data-help-entry]").forEach((row) => {
+    const isSelected = row.dataset.helpEntry === id;
+    row.classList.toggle("is-selected", isSelected);
+    row.setAttribute("aria-selected", isSelected ? "true" : "false");
+  });
+  renderSystemHelpDetail(getSystemHelpEntryById(id));
+}
+
 function renderSystemHelp() {
   if (!systemHelpListEl || !systemHelpDetailEl) return;
 
@@ -195,6 +208,7 @@ function renderSystemHelp() {
     const button = document.createElement("button");
     button.type = "button";
     button.setAttribute("role", "option");
+    button.dataset.helpEntry = id;
     button.setAttribute("aria-selected", id === selectedSystemHelpEntryId ? "true" : "false");
     button.className = id === selectedSystemHelpEntryId ? "is-selected" : "";
     const secondaryName = currentLanguage === "zh" ? entry.termZh : "";
@@ -203,9 +217,11 @@ function renderSystemHelp() {
       <b>${escapeHtml(entry.term)}</b>
       <small>${escapeHtml(secondaryName && secondaryName !== entry.term ? secondaryName : "")}</small>
     `;
+    // Selecting a row must not rebuild the list: replaceChildren() drops the
+    // scroll offset and the focused element, so on a phone the list snapped
+    // back to the top and lost focus on every tap.
     button.addEventListener("click", () => {
-      selectedSystemHelpEntryId = id;
-      renderSystemHelp();
+      selectSystemHelpEntry(id);
     });
     systemHelpListEl.append(button);
   });

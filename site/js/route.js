@@ -2,24 +2,24 @@
 // desk object in the captured frame. Selecting a station pans the viewer to
 // that region of the real desktop.
 
-import { iconImg } from "./eras.js?v=20260814b";
+import { iconImg } from "./eras.js?v=20260814h";
 
 const doc = document;
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const STATIONS = [
   { icon: "fileFloppy", label: "File Floppy", region: "File Floppy",
-    note: "Sources go in here. Temporary on purpose." },
+    note: "mounted, temporary" },
   { icon: "searcher", label: "Searcher", region: "findPath",
-    note: "Finds sources on the live web. Keeps only what you clip." },
+    note: "tidal power, 0 results yet" },
   { icon: "scrapbook", label: "Scrapbook", region: "scrapbook",
-    note: "Two scraps, each with its source attached." },
+    note: "2 scraps, sources attached" },
   { icon: "teachText", label: "TeachText", region: "teachText",
-    note: "One manuscript, carried through the whole route." },
+    note: "79 words, 4 paragraphs, modified" },
   { icon: "reviewDesk", label: "Review Desk", region: "reviewDesk",
-    note: "It already knows the manuscript and asks you to finish first." },
+    note: "waiting: mark it Final first" },
   { icon: "hardDisk", label: "Project Hard Disk", region: "Project Hard Disk",
-    note: "What you choose to keep, lasts." },
+    note: "everything you chose to keep" },
 ];
 
 export function initRouteScene(stage, machine) {
@@ -87,4 +87,15 @@ export function initRouteScene(stage, machine) {
   });
 
   select(0);
+
+  if ("IntersectionObserver" in window && !reducedMotion) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        io.disconnect();
+        runBtn.click();
+      });
+    }, { threshold: 0.4 });
+    io.observe(stage);
+  }
 }

@@ -19,12 +19,55 @@
   font-display: swap;
 }
 
+/* ==========================================================================
+   Era type: the six system faces, defined once.
+
+   These are worn in three places, so they live here and nowhere else: the era
+   skins at the bottom of this file (as --site-font), the specimen list in the
+   argument scene, which sets all six at the same time, and the share card,
+   which reads them back off the document. The dates are the point of that
+   scene, so each stack carries the evidence for its own.
+
+     1984  Chicago         the system face of System 1 through 7
+     1997  Charcoal        arrives with Mac OS 8 and the Platinum appearance,
+                           on Chicago's metrics. On no current system at all,
+                           so the readout says which face you really see.
+     2001  Lucida Grande   10.0 through 10.9, the longest reign
+     2009  Menlo           replaces Monaco in Terminal, on Bitstream Vera Sans
+                           Mono, the parent of DejaVu Sans Mono
+     2014  Helvetica Neue  10.10 only. Never -apple-system here: that is San
+                           Francisco, which is 10.11 and 2015.
+     2015  PingFang 苹方   the Chinese system face from 10.11. Before it,
+                           华文黑体 STHeiti; before that, 宋体.
+
+   Chicago and Monaco are hosted in site/fonts, so 1988 reads the same on every
+   machine. The rest are Apple faces nobody can ship, so each stack ends in the
+   nearest face other platforms actually have. Chicago stays out of Platinum on
+   purpose: with it there, 1999 looks exactly like 1988 off a Mac, and the
+   whole argument of the timeline disappears.
+   ========================================================================== */
+:root {
+  --face-classic: Chicago_12, Chicago, Geneva, Verdana, "Songti SC", STSong, SimSun, serif;
+  --face-classic-title: Chicago, Geneva, Verdana, "Songti SC", STSong, SimSun, serif;
+  /* Noto Sans before Tahoma: fontconfig maps Tahoma and Verdana to DejaVu
+     Sans, which is what Aqua gets, so Linux would show two eras in one face. */
+  --face-platinum: Charcoal, "Charcoal CY", Geneva, "Noto Sans", Tahoma, Verdana, "Songti SC", STSong, SimSun, sans-serif;
+  --face-aqua: "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", "DejaVu Sans", STHeiti, "Heiti SC", SimHei, sans-serif;
+  --face-snow-leopard: "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", "DejaVu Sans", STHeiti, "Heiti SC", "Hiragino Sans GB", SimHei, sans-serif;
+  --face-yosemite: "Helvetica Neue", Helvetica, Arial, "Liberation Sans", STHeiti, "Heiti SC", "Hiragino Sans GB", SimHei, sans-serif;
+  --face-liquid-glass: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", Roboto, "Noto Sans", "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", sans-serif;
+  --face-liquid-glass-title: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI Variable Display", "Segoe UI", Roboto, "Noto Sans", "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", sans-serif;
+  --face-mono-monaco: Monaco, "Courier New", monospace;
+  --face-mono-menlo: Menlo, "DejaVu Sans Mono", "Bitstream Vera Sans Mono", Consolas, monospace;
+  --face-mono-sf: ui-monospace, "SF Mono", "Cascadia Mono", "Segoe UI Mono", "Noto Sans Mono", monospace;
+}
+
 :root {
   --ink: #000;
   --paper: #fff;
-  --ui-font: Chicago_12, Chicago, Charcoal, sans-serif;
-  --display-font: Chicago, Charcoal, sans-serif;
-  --mono-font: Monaco, "Courier New", monospace;
+  --ui-font: var(--face-classic);
+  --display-font: var(--face-classic-title);
+  --mono-font: var(--face-mono-monaco);
   /* 2x2 checkerboard = the System 6 50% gray desk pattern. */
   --desk-pattern: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="2" height="2"><rect width="2" height="2" fill="%23ffffff"/><rect width="1" height="1" fill="%23000000"/><rect x="1" y="1" width="1" height="1" fill="%23000000"/></svg>');
   --menu-bar-height: 26px;
@@ -112,7 +155,9 @@ details.menu[open] > summary {
   min-width: 218px;
   list-style: none;
   background: var(--menu-bg, var(--paper));
-  border: 1px solid var(--ink);
+  -webkit-backdrop-filter: var(--menu-blur, none);
+  backdrop-filter: var(--menu-blur, none);
+  border: 1px solid var(--menu-border, var(--ink));
   border-top: 0;
   border-radius: var(--menu-radius, 0);
   box-shadow: var(--menu-shadow, 1px 1px 0 var(--ink));
@@ -335,60 +380,16 @@ html[data-theme] .btn { padding: 0 20px; }
   pointer-events: none;
 }
 
-/* ---------- Memory box (About This Macintosh gauge) ---------- */
-
-.memory-box {
-  border: 1px solid var(--ink);
-  padding: 14px 16px;
-  margin-top: 18px;
-}
-.memory-title { margin-bottom: 10px; }
-
-.memory-row {
-  display: grid;
-  grid-template-columns: minmax(90px, 160px) minmax(0, 1fr) 90px;
-  gap: 10px;
-  align-items: center;
-  margin-bottom: 6px;
-  font-size: 16px;
-}
-.memory-bar {
-  display: block;
-  height: 12px;
-  border: 1px solid var(--ink);
-  background: var(--paper);
-}
-.memory-bar > span {
-  display: block;
-  height: 100%;
-  background-image: var(--desk-pattern);
-  background-size: 2px 2px;
-  background-color: #808080;
-}
-.memory-bytes { text-align: right; font-family: var(--mono-font); font-size: 13px; }
-.memory-total { border-top: 1px solid var(--ink); padding-top: 6px; margin-top: 8px; }
-.memory-note { margin-top: 10px; font-size: 15px; }
-
-pre {
-  background: var(--ink);
-  color: var(--paper);
-  font-family: var(--mono-font);
-  font-size: 12px;
-  line-height: 1.7;
-  padding: 10px 12px;
-  overflow-x: auto;
-}
-
 /* ---------- Footer ---------- */
 
 .site-footer {
   text-align: center;
-  color: var(--paper);
+  color: var(--footer-ink, var(--paper));
   font-size: 16px;
-  text-shadow: 1px 1px 0 var(--ink);
+  text-shadow: var(--footer-shadow, 1px 1px 0 var(--ink));
   padding: 8px 0 20px;
 }
-.site-footer a { color: var(--paper); }
+.site-footer a { color: inherit; }
 .site-footer p { margin-bottom: 8px; }
 
 .footer-shutdown {
@@ -583,9 +584,6 @@ pre {
      copy of that link is the one item 375px cannot afford. */
   .menu-link-live { display: none; }
   .menu-bar { gap: 12px; }
-  /* Two-line gauge rows: the three-column row leaves the bar ~9px at 375px. */
-  .memory-row { grid-template-columns: minmax(0, 1fr) 84px; row-gap: 3px; }
-  .memory-label { grid-column: 1 / -1; }
   .wbody { padding: 16px 14px 18px; }
   body { font-size: 17px; }
 }
@@ -598,8 +596,8 @@ pre {
 
 /* ---------- Platinum (Mac OS 8/9): embossed grays, horizontal pinstripes */
 html[data-theme="platinum"] {
-  --site-font: "Charcoal", "Helvetica Neue", Geneva, Arial, sans-serif;
-  --display-font: "Charcoal", "Helvetica Neue", Geneva, Arial, sans-serif;
+  --site-font: var(--face-platinum);
+  --display-font: var(--face-platinum);
   --desk-bg: #666a6e;
   --desk-image: none;
   --win-bg: #dddddd;
@@ -612,13 +610,12 @@ html[data-theme="platinum"] {
   --btn-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #8a8a8a;
   --menu-bg: #dddddd;
   --bar-bg: #dddddd;
-  --gauge-fill: #7a7a7a;
 }
 
 /* ---------- Aqua (Mac OS X 10.0): pinstripes and gel ---------- */
 html[data-theme="aqua"] {
-  --site-font: "Lucida Grande", "Helvetica Neue", Arial, sans-serif;
-  --display-font: "Lucida Grande", "Helvetica Neue", Arial, sans-serif;
+  --site-font: var(--face-aqua);
+  --display-font: var(--face-aqua);
   --desk-bg: #31599e;
   --desk-image: linear-gradient(165deg, #7db2e8 0%, #4a7fc4 45%, #274d8f 100%);
   --desk-size: 100% 100%;
@@ -640,13 +637,15 @@ html[data-theme="aqua"] {
   --menu-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
   --bar-bg: linear-gradient(#fefefe, #d8d8d8);
   --bar-border: #999;
-  --gauge-fill: linear-gradient(#8fc0f4, #4a7fc4);
 }
 
 /* ---------- Snow Leopard (10.6): brushed gray, quiet blue ---------- */
 html[data-theme="snow-leopard"] {
-  --site-font: "Lucida Grande", "Helvetica Neue", Arial, sans-serif;
-  --display-font: "Lucida Grande", "Helvetica Neue", Arial, sans-serif;
+  /* The face does not change here. The monospace does, and that is the
+     whole 2009 story: Menlo took Terminal from Monaco. */
+  --site-font: var(--face-snow-leopard);
+  --display-font: var(--face-snow-leopard);
+  --mono-font: var(--face-mono-menlo);
   --desk-bg: #26364d;
   --desk-image: linear-gradient(170deg, #4a5f80 0%, #26364d 55%, #131c2b 100%);
   --desk-size: 100% 100%;
@@ -669,14 +668,14 @@ html[data-theme="snow-leopard"] {
   --menu-shadow: 0 3px 12px rgba(0, 0, 0, 0.4);
   --bar-bg: linear-gradient(#f4f4f4, #cfcfcf);
   --bar-border: #909090;
-  --gauge-fill: linear-gradient(#9fb6d4, #5c799f);
 }
 
 /* ---------- Yosemite (10.10): flat, translucent, hairlines ---------- */
 html[data-theme="yosemite"] {
   --ink: #2b2b2b;
-  --site-font: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-  --display-font: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  --site-font: var(--face-yosemite);
+  --display-font: var(--face-yosemite);
+  --mono-font: var(--face-mono-menlo);
   --desk-bg: #4568dc;
   --desk-image: linear-gradient(160deg, #b06ab3 0%, #7b5bb8 45%, #4568dc 100%);
   --desk-size: 100% 100%;
@@ -700,14 +699,16 @@ html[data-theme="yosemite"] {
   --bar-bg: rgba(250, 250, 250, 0.85);
   --bar-blur: blur(12px);
   --bar-border: #d9d9d9;
-  --gauge-fill: #0a60ff;
 }
 
 /* ---------- Liquid Glass: refraction, depth, pill geometry ---------- */
 html[data-theme="liquid-glass"] {
   --ink: #1c1c1e;
-  --site-font: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-  --display-font: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  /* Whatever system face the visitor's own machine wears today, which is the
+     true parallel of what Apple does here. */
+  --site-font: var(--face-liquid-glass);
+  --display-font: var(--face-liquid-glass-title);
+  --mono-font: var(--face-mono-sf);
   --desk-bg: #aab6c8;
   --desk-image: linear-gradient(140deg, #f6d5c3 0%, #dcd0e8 35%, #c9d6f0 65%, #9fb3cd 100%);
   --desk-size: 100% 100%;
@@ -728,11 +729,14 @@ html[data-theme="liquid-glass"] {
   --btn-shadow: 0 2px 10px rgba(40, 55, 80, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.9);
   --menu-bg: rgba(255, 255, 255, 0.75);
   --menu-radius: 0 0 14px 14px;
+  --menu-blur: blur(30px) saturate(1.8);
+  --menu-border: rgba(255, 255, 255, 0.55);
+  --footer-ink: #1c2733;
+  --footer-shadow: 0 1px 0 rgba(255, 255, 255, 0.65);
   --menu-shadow: 0 8px 24px rgba(40, 55, 80, 0.3);
   --bar-bg: rgba(255, 255, 255, 0.55);
   --bar-blur: blur(18px) saturate(1.6);
   --bar-border: rgba(255, 255, 255, 0.5);
-  --gauge-fill: linear-gradient(90deg, #7fa8e0, #b48ccb);
 }
 
 /* Aqua-lineage eras close with traffic lights, not a close box. */
@@ -779,13 +783,6 @@ html[data-theme="yosemite"] .btn-default::after,
 html[data-theme="liquid-glass"] .btn-default::after { content: none; }
 html[data-theme="yosemite"] .btn-default { background: #0a60ff; color: #fff; border-color: #0a60ff; }
 html[data-theme="liquid-glass"] .btn-default { background: rgba(20, 40, 80, 0.75); color: #fff; border-color: transparent; }
-
-/* Gauge fill follows the era. */
-html[data-theme] .memory-bar > span {
-  background-image: none;
-  background-color: transparent;
-  background: var(--gauge-fill, #808080);
-}
 
 /* Appearance menu checkmark. */
 .menu-check {

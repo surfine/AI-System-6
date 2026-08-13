@@ -62,7 +62,7 @@
     "controlStrip"
   ],
   "fallback": [],
-  "runtimeSize": 128,
+  "runtimeSize": "contextual",
   "icons": {
     "startupDisk": {
       "genre": "hardware",
@@ -81,6 +81,11 @@
         "64": "icons/startupDisk-64.png",
         "128": "icons/startupDisk-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -148,7 +153,12 @@
           "lumStd": 41.68,
           "edgeEnergy": 175
         }
-      }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true
     },
     "folder": {
       "genre": "file",
@@ -191,7 +201,12 @@
           "lumStd": 27.87,
           "edgeEnergy": 133
         }
-      }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true
     },
     "document": {
       "genre": "document",
@@ -234,7 +249,12 @@
           "lumStd": 51.66,
           "edgeEnergy": 319
         }
-      }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true
     },
     "applications": {
       "genre": "file",
@@ -253,6 +273,11 @@
         "64": "icons/applications-64.png",
         "128": "icons/applications-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -320,18 +345,23 @@
           "lumStd": 33.03,
           "edgeEnergy": 187
         }
-      }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true
     },
     "finderApp": {
-      "genre": "application",
+      "genre": "system identity",
       "grid": {
         "shape": "square",
         "fitted": 0.8125,
         "scale": 1
       },
-      "physicalMetaphor": "a compact beige Macintosh computer, front-facing, whose dark screen carries two friendly eyes and a small smile",
+      "physicalMetaphor": "OS X 10.10 low rounded blue/light split Finder face",
       "semanticMark": "finder",
-      "sourceKind": "original-generated-era-illustration",
+      "sourceKind": "approved-imagegen-reference-guided-reconstruction",
       "reviewStatus": "accepted-generated",
       "sizes": {
         "16": "icons/finderApp-16.png",
@@ -339,32 +369,174 @@
         "64": "icons/finderApp-64.png",
         "128": "icons/finderApp-128.png"
       },
-      "metaphorKey": "smiling-compact-macintosh",
+      "metaphorKey": "target-era-finder-identity",
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
           "coverage": 0.6563,
-          "meanLum": 200.36,
-          "lumStd": 34.15,
-          "edgeEnergy": 54
+          "meanLum": 173.83,
+          "lumStd": 51.81,
+          "edgeEnergy": 65
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.6035,
-          "meanLum": 199.22,
-          "lumStd": 40.12,
-          "edgeEnergy": 238
+          "coverage": 0.6563,
+          "meanLum": 164.9,
+          "lumStd": 65.93,
+          "edgeEnergy": 206
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.61,
-          "meanLum": 197.97,
-          "lumStd": 41.84,
-          "edgeEnergy": 397
+          "coverage": 0.6168,
+          "meanLum": 174,
+          "lumStd": 57.05,
+          "edgeEnergy": 260
         }
-      }
+      },
+      "authoringMethod": "built-in-imagegen-reference-guided-plus-native-size-optical-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "reference-validated",
+      "runtimeAsset": true,
+      "semanticIdentity": "friendly Finder and system-navigation identity",
+      "identityAnchors": [
+        "target-era Finder identity",
+        "recognizable system-navigation persona"
+      ],
+      "historicalPrototype": "OS X 10.10 low rounded blue/light split Finder face",
+      "nearestHistoricalAnalog": null,
+      "material": "clean 10.10 graphic depth with a thin keyline and shallow bottom shadow",
+      "generatedMaster": "internal/evidence/drafts/icon-lineage-audit/imagegen-candidates-v2/yosemite-finder-v2.png",
+      "reference": "internal/evidence/drafts/yosemite-icon-reference/web/finder.png",
+      "exactPixelReplica": false,
+      "sizeStatus": {
+        "16": "optically-reviewed",
+        "32": "optically-reviewed",
+        "64": "optically-reviewed",
+        "128": "optically-reviewed"
+      },
+      "sizePolicy": "Each target canvas is rendered directly from the approved high-resolution generation; compact tiers use their own bounds and contrast treatment.",
+      "metrics": {
+        "16": {
+          "bbox": {
+            "minX": 1,
+            "minY": 2,
+            "maxX": 14,
+            "maxY": 14
+          },
+          "bounds": [
+            1,
+            2,
+            14,
+            14
+          ],
+          "ink": {
+            "minX": 1,
+            "minY": 2,
+            "maxX": 14,
+            "maxY": 14,
+            "width": 14,
+            "height": 13
+          },
+          "pixels": 182,
+          "inkPixels": 182,
+          "translucent": 0,
+          "colors": 112,
+          "sha256": "b8f3e5e2978d9452373aeb86bfbf8190e4630eb95358d01e29f0348317d7eed3",
+          "bytes": 455,
+          "gridShape": "square"
+        },
+        "32": {
+          "bbox": {
+            "minX": 3,
+            "minY": 4,
+            "maxX": 29,
+            "maxY": 28
+          },
+          "bounds": [
+            3,
+            4,
+            29,
+            28
+          ],
+          "ink": {
+            "minX": 3,
+            "minY": 4,
+            "maxX": 29,
+            "maxY": 28,
+            "width": 27,
+            "height": 25
+          },
+          "pixels": 675,
+          "inkPixels": 675,
+          "translucent": 4,
+          "colors": 383,
+          "sha256": "8e1a7d3382519664a33884ccbe1d59962d8c5ce46bf18b0d8205cdc9d85d2237",
+          "bytes": 1261,
+          "gridShape": "square"
+        },
+        "64": {
+          "bbox": {
+            "minX": 6,
+            "minY": 8,
+            "maxX": 57,
+            "maxY": 56
+          },
+          "bounds": [
+            6,
+            8,
+            57,
+            56
+          ],
+          "ink": {
+            "minX": 6,
+            "minY": 8,
+            "maxX": 57,
+            "maxY": 56,
+            "width": 52,
+            "height": 49
+          },
+          "pixels": 2544,
+          "inkPixels": 2544,
+          "translucent": 194,
+          "colors": 1011,
+          "sha256": "8692e4c421119d82871a750dcc8e1aa0ec5b9a5143ba539cc3e63db3a4486492",
+          "bytes": 3392,
+          "gridShape": "square"
+        },
+        "128": {
+          "bbox": {
+            "minX": 12,
+            "minY": 15,
+            "maxX": 115,
+            "maxY": 112
+          },
+          "bounds": [
+            12,
+            15,
+            115,
+            112
+          ],
+          "ink": {
+            "minX": 12,
+            "minY": 15,
+            "maxX": 115,
+            "maxY": 112,
+            "width": 104,
+            "height": 98
+          },
+          "pixels": 10162,
+          "inkPixels": 10162,
+          "translucent": 396,
+          "colors": 2531,
+          "sha256": "b44ae9b062eb20750049dd23b10fc5d7fefa9088df4c13c406c5e752da4ef323",
+          "bytes": 10784,
+          "gridShape": "square"
+        }
+      },
+      "blindMixStatus": "not-run"
     },
     "fileFloppy": {
       "genre": "hardware",
@@ -383,6 +555,11 @@
         "64": "icons/fileFloppy-64.png",
         "128": "icons/fileFloppy-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -416,40 +593,185 @@
         "fitted": 0.8906,
         "scale": 1.0857
       },
-      "physicalMetaphor": "two overlapping speech balloons: the user's turn is a solid filled balloon and the reply is a separate balloon drawn with a clearly dashed outline to show that it remains provisional until saved",
-      "semanticMark": "assistant",
-      "sourceKind": "original-generated-era-illustration",
-      "reviewStatus": "accepted-generated",
+      "physicalMetaphor": "Yosemite free-form conversation sheet with distinct human and model marks plus one attached provisional tab",
+      "semanticMark": "chat",
+      "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
+      "reviewStatus": "accepted-priority-lineage",
       "sizes": {
         "16": "icons/assistant-16.png",
         "32": "icons/assistant-32.png",
         "64": "icons/assistant-64.png",
         "128": "icons/assistant-128.png"
       },
-      "metaphorKey": "solid-user-dashed-reply-balloons",
+      "metaphorKey": "conversation-with-provisional-reply",
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.4922,
-          "meanLum": 175.79,
-          "lumStd": 44.73,
-          "edgeEnergy": 33
+          "coverage": 0.6445,
+          "meanLum": 234.08,
+          "lumStd": 31.2,
+          "edgeEnergy": 72
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.4551,
-          "meanLum": 176.38,
-          "lumStd": 48.38,
-          "edgeEnergy": 127
+          "coverage": 0.5869,
+          "meanLum": 236.82,
+          "lumStd": 33.89,
+          "edgeEnergy": 203
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.4512,
-          "meanLum": 175.76,
-          "lumStd": 49.74,
-          "edgeEnergy": 169
+          "coverage": 0.6241,
+          "meanLum": 230.8,
+          "lumStd": 44.16,
+          "edgeEnergy": 287
+        }
+      },
+      "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "historically-reviewed",
+      "runtimeAsset": true,
+      "semanticIdentity": "conversation between user and model whose model reply remains provisional",
+      "identityAnchors": [
+        "user/model duality",
+        "provisional reply cue"
+      ],
+      "historicalPrototype": null,
+      "nearestHistoricalAnalog": "Yosemite free-form conversation sheet with distinct human and model marks plus one attached provisional tab",
+      "material": "flat white paper, cool gray hairline, navy human mark, cyan model mark, and shallow 10.10 depth",
+      "blindMixStatus": "not-run",
+      "generatedMaster": "internal/evidence/drafts/icon-lineage-audit/imagegen-candidates-v2/cliotalk/yosemite-assistant-v3.png",
+      "reference": "No native ClioTalk icon artwork is claimed; OS X 10.10 communication objects and Tahoe layered communication grammar supply the nearest analogs.",
+      "exactPixelReplica": false,
+      "referenceValidated": false,
+      "nativeReplica": false,
+      "sourceNote": "Original target-era reinterpretation. Two distinct interlocutors and one model-owned provisional reply replace the fixed two-balloon composition; no native artwork is claimed.",
+      "sizeStatus": {
+        "16": "optically-reviewed",
+        "32": "optically-reviewed",
+        "64": "optically-reviewed",
+        "128": "optically-reviewed"
+      },
+      "sizePolicy": "Large tiers derive from the accepted ImageGen direction. The 32 px and 16 px tiers are independent optical paintings with exactly two speaker marks, two exchange bars, and one three-dot provisional cue. Liquid Glass owns independent enclosure, panel, conversation, and provisional source layers at every tier.",
+      "metrics": {
+        "16": {
+          "bbox": {
+            "minX": 2,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14
+          },
+          "bounds": [
+            2,
+            1,
+            14,
+            14
+          ],
+          "ink": {
+            "minX": 2,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14,
+            "width": 13,
+            "height": 14
+          },
+          "pixels": 179,
+          "inkPixels": 179,
+          "translucent": 30,
+          "colors": 47,
+          "sha256": "8620f098aa67f1198f45c1c6428ff56e54a67920ad8bdbbae8a3937761ad3274",
+          "bytes": 439,
+          "gridShape": "square"
+        },
+        "32": {
+          "bbox": {
+            "minX": 5,
+            "minY": 2,
+            "maxX": 28,
+            "maxY": 29
+          },
+          "bounds": [
+            5,
+            2,
+            28,
+            29
+          ],
+          "ink": {
+            "minX": 5,
+            "minY": 2,
+            "maxX": 28,
+            "maxY": 29,
+            "width": 24,
+            "height": 28
+          },
+          "pixels": 657,
+          "inkPixels": 657,
+          "translucent": 95,
+          "colors": 56,
+          "sha256": "47d4d38b2c193493df1becea658b8cd7a6bafec8b913ddb04171ae95a24f0c4f",
+          "bytes": 665,
+          "gridShape": "portrait"
+        },
+        "64": {
+          "bbox": {
+            "minX": 10,
+            "minY": 4,
+            "maxX": 53,
+            "maxY": 59
+          },
+          "bounds": [
+            10,
+            4,
+            53,
+            59
+          ],
+          "ink": {
+            "minX": 10,
+            "minY": 4,
+            "maxX": 53,
+            "maxY": 59,
+            "width": 44,
+            "height": 56
+          },
+          "pixels": 2398,
+          "inkPixels": 2398,
+          "translucent": 185,
+          "colors": 293,
+          "sha256": "14e98a73b043b9f3b832838f2edf346c768d7ba793055e3e66306ea2f3075a84",
+          "bytes": 2231,
+          "gridShape": "portrait"
+        },
+        "128": {
+          "bbox": {
+            "minX": 20,
+            "minY": 8,
+            "maxX": 107,
+            "maxY": 119
+          },
+          "bounds": [
+            20,
+            8,
+            107,
+            119
+          ],
+          "ink": {
+            "minX": 20,
+            "minY": 8,
+            "maxX": 107,
+            "maxY": 119,
+            "width": 88,
+            "height": 112
+          },
+          "pixels": 9602,
+          "inkPixels": 9602,
+          "translucent": 395,
+          "colors": 801,
+          "sha256": "1bb84ae5d783a0edf11944ab50e7beba67525ad5fda9ab48dbfd46ef0c9ac4f1",
+          "bytes": 9423,
+          "gridShape": "portrait"
         }
       }
     },
@@ -470,6 +792,11 @@
         "64": "icons/quickDraft-64.png",
         "128": "icons/quickDraft-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -513,6 +840,11 @@
         "64": "icons/writingStudio-64.png",
         "128": "icons/writingStudio-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -581,7 +913,12 @@
           "lumStd": 35.15,
           "edgeEnergy": 195
         }
-      }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true
     },
     "projectDisc": {
       "genre": "hardware",
@@ -600,6 +937,11 @@
         "64": "icons/projectDisc-64.png",
         "128": "icons/projectDisc-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -643,6 +985,11 @@
         "64": "icons/cloudModel-64.png",
         "128": "icons/cloudModel-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -686,6 +1033,11 @@
         "64": "icons/cloudModelOff-64.png",
         "128": "icons/cloudModelOff-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -729,6 +1081,11 @@
         "64": "icons/questionSheet-64.png",
         "128": "icons/questionSheet-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -772,6 +1129,11 @@
         "64": "icons/outline-64.png",
         "128": "icons/outline-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -815,6 +1177,11 @@
         "64": "icons/sectionDrafts-64.png",
         "128": "icons/sectionDrafts-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -858,6 +1225,11 @@
         "64": "icons/manuscript-64.png",
         "128": "icons/manuscript-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -891,40 +1263,185 @@
         "fitted": 0.8287,
         "scale": 1.02
       },
-      "physicalMetaphor": "a marked manuscript page under a magnifying lens, reduced to one readable proofing object",
+      "physicalMetaphor": "Yosemite free-form manuscript stack with coral proofreading bracket and cyan insertion caret",
       "semanticMark": "proof",
-      "sourceKind": "original-generated-era-illustration",
-      "reviewStatus": "accepted-generated",
+      "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
+      "reviewStatus": "accepted-priority-lineage",
       "sizes": {
         "16": "icons/reviewDesk-16.png",
         "32": "icons/reviewDesk-32.png",
         "64": "icons/reviewDesk-64.png",
         "128": "icons/reviewDesk-128.png"
       },
-      "metaphorKey": "marked-manuscript-with-lens",
+      "metaphorKey": "marked-manuscript-plus-correction-action",
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.5625,
-          "meanLum": 200.83,
-          "lumStd": 33.13,
-          "edgeEnergy": 95
+          "coverage": 0.582,
+          "meanLum": 218.23,
+          "lumStd": 37.47,
+          "edgeEnergy": 70
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.5527,
-          "meanLum": 199.88,
-          "lumStd": 42.74,
-          "edgeEnergy": 321
+          "coverage": 0.5566,
+          "meanLum": 218.62,
+          "lumStd": 43.55,
+          "edgeEnergy": 225
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.5731,
-          "meanLum": 195.92,
-          "lumStd": 47.45,
-          "edgeEnergy": 466
+          "coverage": 0.551,
+          "meanLum": 218.5,
+          "lumStd": 47.46,
+          "edgeEnergy": 263
+        }
+      },
+      "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "historically-reviewed",
+      "runtimeAsset": true,
+      "semanticIdentity": "writer-controlled manuscript proofing and correction application",
+      "identityAnchors": [
+        "marked manuscript",
+        "visible inspection or correction action"
+      ],
+      "historicalPrototype": null,
+      "nearestHistoricalAnalog": "Yosemite free-form manuscript stack with coral proofreading bracket and cyan insertion caret",
+      "material": "shallow white paper planes, cool hairline, charcoal type bars, coral and cyan editorial accents",
+      "blindMixStatus": "not-run",
+      "generatedMaster": "internal/evidence/drafts/icon-lineage-audit/imagegen-candidates-v2/review-desk/yosemite-review-desk-v2.png",
+      "reference": "No native Review Desk icon artwork is claimed; target-era application-icon grammar supplies the nearest analog.",
+      "exactPixelReplica": false,
+      "referenceValidated": false,
+      "nativeReplica": false,
+      "sourceNote": "Original target-era reinterpretation. No native Review Desk artwork is claimed; the lens is deliberately absent so Review Desk cannot collapse into Searcher.",
+      "sizeStatus": {
+        "16": "optically-reviewed",
+        "32": "optically-reviewed",
+        "64": "optically-reviewed",
+        "128": "optically-reviewed"
+      },
+      "sizePolicy": "Large tiers derive from the approved high-resolution candidate. The 32 px and 16 px tiers are independent era-specific optical redraws that delete paragraph texture, preserve the correction anchor, and own their final pixel geometry.",
+      "metrics": {
+        "16": {
+          "bbox": {
+            "minX": 3,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 13
+          },
+          "bounds": [
+            3,
+            1,
+            14,
+            13
+          ],
+          "ink": {
+            "minX": 3,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 13,
+            "width": 12,
+            "height": 13
+          },
+          "pixels": 136,
+          "inkPixels": 136,
+          "translucent": 38,
+          "colors": 45,
+          "sha256": "cc4a08cfedbc1ad19e9318c20f359037a511520181a41975d4fb6c82225ae071",
+          "bytes": 412,
+          "gridShape": "square"
+        },
+        "32": {
+          "bbox": {
+            "minX": 6,
+            "minY": 2,
+            "maxX": 28,
+            "maxY": 27
+          },
+          "bounds": [
+            6,
+            2,
+            28,
+            27
+          ],
+          "ink": {
+            "minX": 6,
+            "minY": 2,
+            "maxX": 28,
+            "maxY": 27,
+            "width": 23,
+            "height": 26
+          },
+          "pixels": 510,
+          "inkPixels": 510,
+          "translucent": 74,
+          "colors": 48,
+          "sha256": "5fd4c416f533c34ee6fdfdfb9d7c80b853cf1d03920739ff4b396609055f57f5",
+          "bytes": 602,
+          "gridShape": "square"
+        },
+        "64": {
+          "bbox": {
+            "minX": 7,
+            "minY": 4,
+            "maxX": 56,
+            "maxY": 59
+          },
+          "bounds": [
+            7,
+            4,
+            56,
+            59
+          ],
+          "ink": {
+            "minX": 7,
+            "minY": 4,
+            "maxX": 56,
+            "maxY": 59,
+            "width": 50,
+            "height": 56
+          },
+          "pixels": 2230,
+          "inkPixels": 2230,
+          "translucent": 164,
+          "colors": 595,
+          "sha256": "ac690e34aeb15ed0a092a96adf7c53425fab28a796ca6bad35d409913a323d06",
+          "bytes": 3560,
+          "gridShape": "square"
+        },
+        "128": {
+          "bbox": {
+            "minX": 14,
+            "minY": 8,
+            "maxX": 113,
+            "maxY": 119
+          },
+          "bounds": [
+            14,
+            8,
+            113,
+            119
+          ],
+          "ink": {
+            "minX": 14,
+            "minY": 8,
+            "maxX": 113,
+            "maxY": 119,
+            "width": 100,
+            "height": 112
+          },
+          "pixels": 8775,
+          "inkPixels": 8775,
+          "translucent": 354,
+          "colors": 1344,
+          "sha256": "a0f952549f687b0889d2cc459c370ef2cc6a12b52f357c2a4d173ae8f0c74113",
+          "bytes": 10403,
+          "gridShape": "square"
         }
       }
     },
@@ -935,40 +1452,185 @@
         "fitted": 0.9084,
         "scale": 1.0668
       },
-      "physicalMetaphor": "a single magnifying glass overlapping a document page, with the lens and page both readable",
+      "physicalMetaphor": "Yosemite free-form shallow cyan lens paired with one minimal search-result slip",
       "semanticMark": "magnify",
-      "sourceKind": "original-generated-era-illustration",
-      "reviewStatus": "accepted-generated",
+      "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
+      "reviewStatus": "accepted-priority-lineage",
       "sizes": {
         "16": "icons/searcher-16.png",
         "32": "icons/searcher-32.png",
         "64": "icons/searcher-64.png",
         "128": "icons/searcher-128.png"
       },
-      "metaphorKey": "magnifier-over-page",
+      "metaphorKey": "lens-plus-visible-search-relationship",
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.5,
-          "meanLum": 200.43,
-          "lumStd": 49.97,
-          "edgeEnergy": 77
+          "coverage": 0.4453,
+          "meanLum": 208.26,
+          "lumStd": 49.21,
+          "edgeEnergy": 54
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.4756,
-          "meanLum": 200.43,
-          "lumStd": 59.9,
-          "edgeEnergy": 277
+          "coverage": 0.416,
+          "meanLum": 210.36,
+          "lumStd": 56.44,
+          "edgeEnergy": 174
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.4666,
-          "meanLum": 201.02,
-          "lumStd": 62.06,
-          "edgeEnergy": 413
+          "coverage": 0.4144,
+          "meanLum": 211.09,
+          "lumStd": 56.15,
+          "edgeEnergy": 257
+        }
+      },
+      "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "historically-reviewed",
+      "runtimeAsset": true,
+      "semanticIdentity": "writer-controlled search and discovery utility",
+      "identityAnchors": [
+        "magnifying lens",
+        "visible search-result relationship"
+      ],
+      "historicalPrototype": null,
+      "nearestHistoricalAnalog": "Yosemite free-form shallow cyan lens paired with one minimal search-result slip",
+      "material": "flat pale cyan, cool charcoal hairline, white paper, and a single cyan result accent",
+      "blindMixStatus": "not-run",
+      "generatedMaster": "internal/evidence/drafts/icon-lineage-audit/imagegen-candidates-v2/searcher/yosemite-searcher-v2.png",
+      "reference": "No native AI System 6 Searcher icon artwork is claimed; target-era Sherlock, Finder search, and Spotlight grammar supplies the nearest analog.",
+      "exactPixelReplica": false,
+      "referenceValidated": false,
+      "nativeReplica": false,
+      "sourceNote": "Original target-era reinterpretation. The lens persists as the semantic anchor while result object, perspective, material, depth, and compact construction are re-authored independently for every admitted era.",
+      "sizeStatus": {
+        "16": "optically-reviewed",
+        "32": "optically-reviewed",
+        "64": "optically-reviewed",
+        "128": "optically-reviewed"
+      },
+      "sizePolicy": "Large tiers derive from the approved high-resolution candidate. The 32 px and 16 px tiers are independent era-specific optical paintings: Platinum uses hard pixels; Aqua simplifies the lens and result cards; Snow Leopard removes texture and fine detail; Yosemite keeps only the lens and one result slip.",
+      "metrics": {
+        "16": {
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14
+          },
+          "bounds": [
+            1,
+            1,
+            14,
+            14
+          ],
+          "ink": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14,
+            "width": 14,
+            "height": 14
+          },
+          "pixels": 141,
+          "inkPixels": 141,
+          "translucent": 58,
+          "colors": 93,
+          "sha256": "bbb669943340bf6a24a1f9dbfa00d7988c20ff0edd580d14f9df8d0a56a13467",
+          "bytes": 633,
+          "gridShape": "square"
+        },
+        "32": {
+          "bbox": {
+            "minX": 2,
+            "minY": 3,
+            "maxX": 28,
+            "maxY": 29
+          },
+          "bounds": [
+            2,
+            3,
+            28,
+            29
+          ],
+          "ink": {
+            "minX": 2,
+            "minY": 3,
+            "maxX": 28,
+            "maxY": 29,
+            "width": 27,
+            "height": 27
+          },
+          "pixels": 492,
+          "inkPixels": 492,
+          "translucent": 96,
+          "colors": 226,
+          "sha256": "db70790310bf8c4b5a877db509b2998a15d49a4e8f0941be49ac5992676fc144",
+          "bytes": 1347,
+          "gridShape": "square"
+        },
+        "64": {
+          "bbox": {
+            "minX": 7,
+            "minY": 6,
+            "maxX": 56,
+            "maxY": 57
+          },
+          "bounds": [
+            7,
+            6,
+            56,
+            57
+          ],
+          "ink": {
+            "minX": 7,
+            "minY": 6,
+            "maxX": 56,
+            "maxY": 57,
+            "width": 50,
+            "height": 52
+          },
+          "pixels": 1667,
+          "inkPixels": 1667,
+          "translucent": 185,
+          "colors": 575,
+          "sha256": "37dee04715a93c9639045f5540463db75c940c7819539be02af7223c9948ca07",
+          "bytes": 3357,
+          "gridShape": "square"
+        },
+        "128": {
+          "bbox": {
+            "minX": 14,
+            "minY": 13,
+            "maxX": 113,
+            "maxY": 115
+          },
+          "bounds": [
+            14,
+            13,
+            113,
+            115
+          ],
+          "ink": {
+            "minX": 14,
+            "minY": 13,
+            "maxX": 113,
+            "maxY": 115,
+            "width": 100,
+            "height": 103
+          },
+          "pixels": 6429,
+          "inkPixels": 6429,
+          "translucent": 372,
+          "colors": 1392,
+          "sha256": "1d75c0777f98ce3e858905a9f8148adf5557295cf8c3541531d36b08b50472af",
+          "bytes": 10229,
+          "gridShape": "square"
         }
       }
     },
@@ -989,6 +1651,11 @@
         "64": "icons/reader-64.png",
         "128": "icons/reader-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -1032,6 +1699,11 @@
         "64": "icons/timeMachine-64.png",
         "128": "icons/timeMachine-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -1128,7 +1800,12 @@
           0,
           0
         ]
-      }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true
     },
     "clioStage": {
       "genre": "application",
@@ -1147,6 +1824,11 @@
         "64": "icons/clioStage-64.png",
         "128": "icons/clioStage-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -1190,6 +1872,11 @@
         "64": "icons/clioChart-64.png",
         "128": "icons/clioChart-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -1233,6 +1920,11 @@
         "64": "icons/liquidCover-64.png",
         "128": "icons/liquidCover-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -1276,6 +1968,11 @@
         "64": "icons/cmfStudio-64.png",
         "128": "icons/cmfStudio-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -1319,6 +2016,11 @@
         "64": "icons/soundscape-64.png",
         "128": "icons/soundscape-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -1387,7 +2089,12 @@
           "lumStd": 45.29,
           "edgeEnergy": 376
         }
-      }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true
     },
     "systemFolder": {
       "genre": "file",
@@ -1406,6 +2113,11 @@
         "64": "icons/systemFolder-64.png",
         "128": "icons/systemFolder-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -1449,6 +2161,11 @@
         "64": "icons/helpFolder-64.png",
         "128": "icons/helpFolder-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -1492,6 +2209,11 @@
         "64": "icons/importUtility-64.png",
         "128": "icons/importUtility-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -1559,7 +2281,12 @@
           "lumStd": 37.58,
           "edgeEnergy": 430
         }
-      }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true
     },
     "chooser": {
       "genre": "utility",
@@ -1578,6 +2305,11 @@
         "64": "icons/chooser-64.png",
         "128": "icons/chooser-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -1621,6 +2353,11 @@
         "64": "icons/systemHelp-64.png",
         "128": "icons/systemHelp-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -1664,6 +2401,11 @@
         "64": "icons/dictionary-64.png",
         "128": "icons/dictionary-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -1732,7 +2474,12 @@
           "lumStd": 45.2,
           "edgeEnergy": 395
         }
-      }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true
     },
     "writingDemo": {
       "genre": "document",
@@ -1751,6 +2498,11 @@
         "64": "icons/writingDemo-64.png",
         "128": "icons/writingDemo-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -1794,6 +2546,11 @@
         "64": "icons/chatFile-64.png",
         "128": "icons/chatFile-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -1837,6 +2594,11 @@
         "64": "icons/chatImport-64.png",
         "128": "icons/chatImport-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -1880,6 +2642,11 @@
         "64": "icons/systemStatus-64.png",
         "128": "icons/systemStatus-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -1923,6 +2690,11 @@
         "64": "icons/contextPanel-64.png",
         "128": "icons/contextPanel-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -1966,6 +2738,11 @@
         "64": "icons/rebuildArticle-64.png",
         "128": "icons/rebuildArticle-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -2009,6 +2786,11 @@
         "64": "icons/bureaucracyMeme-64.png",
         "128": "icons/bureaucracyMeme-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -2052,6 +2834,11 @@
         "64": "icons/endfieldTerminal-64.png",
         "128": "icons/endfieldTerminal-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -2095,6 +2882,11 @@
         "64": "icons/documents-64.png",
         "128": "icons/documents-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -2138,6 +2930,11 @@
         "64": "icons/alias-64.png",
         "128": "icons/alias-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -2181,6 +2978,11 @@
         "64": "icons/systemFile-64.png",
         "128": "icons/systemFile-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -2208,15 +3010,15 @@
       }
     },
     "multiFinderApp": {
-      "genre": "application",
+      "genre": "system environment",
       "grid": {
         "shape": "square",
         "fitted": 0.8125,
         "scale": 0.9286
       },
-      "physicalMetaphor": "two overlapping compact Macintosh computers with friendly dark screens, clearly a paired Finder environment",
+      "physicalMetaphor": "two overlapping current-era Finder identities",
       "semanticMark": "finder",
-      "sourceKind": "original-generated-era-illustration",
+      "sourceKind": "approved-imagegen-period-plausible-construction",
       "reviewStatus": "accepted-generated",
       "sizes": {
         "16": "icons/multiFinderApp-16.png",
@@ -2224,32 +3026,174 @@
         "64": "icons/multiFinderApp-64.png",
         "128": "icons/multiFinderApp-128.png"
       },
-      "metaphorKey": "paired-smiling-compact-macintoshes",
+      "authoringMethod": "composition-from-approved-current-era-imagegen-finder-identity",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "historically-reviewed",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.5352,
-          "meanLum": 200.21,
-          "lumStd": 36.18,
-          "edgeEnergy": 76
+          "coverage": 0.582,
+          "meanLum": 166.3,
+          "lumStd": 52.35,
+          "edgeEnergy": 64
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.5322,
-          "meanLum": 195.39,
-          "lumStd": 44.05,
-          "edgeEnergy": 262
+          "coverage": 0.5479,
+          "meanLum": 161.44,
+          "lumStd": 62.57,
+          "edgeEnergy": 226
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.5028,
-          "meanLum": 198.16,
-          "lumStd": 44.94,
-          "edgeEnergy": 364
+          "coverage": 0.5346,
+          "meanLum": 164.54,
+          "lumStd": 60.16,
+          "edgeEnergy": 301
         }
-      }
+      },
+      "semanticIdentity": "multiple concurrent Finder environments",
+      "identityAnchors": [
+        "current-era Finder identity",
+        "multiplicity"
+      ],
+      "historicalPrototype": null,
+      "nearestHistoricalAnalog": "approved current-era Finder identity plus period-plausible overlap",
+      "metaphorKey": "current-finder-identity-plus-multiplicity",
+      "material": "clean 10.10 graphic depth with a thin keyline and shallow bottom shadow",
+      "generatedMaster": "internal/evidence/drafts/icon-lineage-audit/imagegen-candidates-v2/yosemite-finder-v2.png",
+      "reference": "No native MultiFinder icon artwork is claimed; multiplicity is a product-semantic construction.",
+      "exactPixelReplica": false,
+      "sizeStatus": {
+        "16": "optically-reviewed",
+        "32": "optically-reviewed",
+        "64": "optically-reviewed",
+        "128": "optically-reviewed"
+      },
+      "sizePolicy": "Each target canvas is rendered directly from the approved high-resolution generation; compact tiers use their own bounds and contrast treatment.",
+      "metrics": {
+        "16": {
+          "bbox": {
+            "minX": 1,
+            "minY": 2,
+            "maxX": 14,
+            "maxY": 14
+          },
+          "bounds": [
+            1,
+            2,
+            14,
+            14
+          ],
+          "ink": {
+            "minX": 1,
+            "minY": 2,
+            "maxX": 14,
+            "maxY": 14,
+            "width": 14,
+            "height": 13
+          },
+          "pixels": 164,
+          "inkPixels": 164,
+          "translucent": 86,
+          "colors": 135,
+          "sha256": "15228c58e251e598ca9797da89c8f4be6bfb2ce3d9ff2304a4268a0a3d8734e5",
+          "bytes": 549,
+          "gridShape": "square"
+        },
+        "32": {
+          "bbox": {
+            "minX": 2,
+            "minY": 3,
+            "maxX": 29,
+            "maxY": 29
+          },
+          "bounds": [
+            2,
+            3,
+            29,
+            29
+          ],
+          "ink": {
+            "minX": 2,
+            "minY": 3,
+            "maxX": 29,
+            "maxY": 29,
+            "width": 28,
+            "height": 27
+          },
+          "pixels": 552,
+          "inkPixels": 552,
+          "translucent": 308,
+          "colors": 388,
+          "sha256": "50302290feb8b4d784ac105a3c2ee59c7467d7c4e4b326fb175b4a0783a2b5cf",
+          "bytes": 1230,
+          "gridShape": "square"
+        },
+        "64": {
+          "bbox": {
+            "minX": 5,
+            "minY": 7,
+            "maxX": 57,
+            "maxY": 57
+          },
+          "bounds": [
+            5,
+            7,
+            57,
+            57
+          ],
+          "ink": {
+            "minX": 5,
+            "minY": 7,
+            "maxX": 57,
+            "maxY": 57,
+            "width": 53,
+            "height": 51
+          },
+          "pixels": 2113,
+          "inkPixels": 2113,
+          "translucent": 997,
+          "colors": 1049,
+          "sha256": "216215863aa7d73180006b7d38850ff7dfe33bf8be58ec5cc420e5240fb4b501",
+          "bytes": 3331,
+          "gridShape": "square"
+        },
+        "128": {
+          "bbox": {
+            "minX": 10,
+            "minY": 12,
+            "maxX": 116,
+            "maxY": 114
+          },
+          "bounds": [
+            10,
+            12,
+            116,
+            114
+          ],
+          "ink": {
+            "minX": 10,
+            "minY": 12,
+            "maxX": 116,
+            "maxY": 114,
+            "width": 107,
+            "height": 103
+          },
+          "pixels": 8392,
+          "inkPixels": 8392,
+          "translucent": 3729,
+          "colors": 2754,
+          "sha256": "c775cc54963c332b8bf3cec9c9cbd330924e9542ef4f0a1c671da390fd440715",
+          "bytes": 9871,
+          "gridShape": "square"
+        }
+      },
+      "blindMixStatus": "not-run"
     },
     "daHandler": {
       "genre": "utility",
@@ -2292,7 +3236,12 @@
           "lumStd": 73.36,
           "edgeEnergy": 295
         }
-      }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true
     },
     "writingBell": {
       "genre": "accessory",
@@ -2311,6 +3260,11 @@
         "64": "icons/writingBell-64.png",
         "128": "icons/writingBell-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -2354,6 +3308,11 @@
         "64": "icons/trashFull-64.png",
         "128": "icons/trashFull-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -2397,6 +3356,11 @@
         "64": "icons/control-64.png",
         "128": "icons/control-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -2440,6 +3404,11 @@
         "64": "icons/localModel-64.png",
         "128": "icons/localModel-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -2483,6 +3452,11 @@
         "64": "icons/controlStrip-64.png",
         "128": "icons/controlStrip-128.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -2527,7 +3501,11 @@
     "projectDisk"
   ],
   "coreBuilder": "tooling/build-yosemite-core-icons.mjs",
+  "schemaVersion": 2,
   "generatedOverlayBuilder": "tooling/build-accepted-generated-era-icons.mjs",
+  "runtimeAsset": true,
+  "completeFamilyMeaning": "All 56 runtime ids resolve to technically accepted artwork. Historical review is a separate per-icon state.",
+  "generatedAcceptanceMeaning": "Authoring acceptance is separate from historical validation; the Finder pair carries explicit per-object historical status.",
   "generatedAcceptanceLedger": "tooling/icon-generation/accepted-generated-icons.json",
   "imageGenerationSource": "assets/themes/yosemite/icons/imagegen-source",
   "reviewedGenerated": [
@@ -2587,5 +3565,23 @@
     "controlPanel",
     "teachText",
     "daHandler"
-  ]
+  ],
+  "finderLineageBuilder": "tooling/build-approved-finder-lineage.mjs",
+  "finderLineageSource": "built-in ImageGen candidates admitted only after target-era evidence and compact-size review",
+  "runtimeSizesByContext": {
+    "compactMenuList": 16,
+    "ordinary": 32,
+    "desktopLargeRetina": 128
+  },
+  "compatibilityManifest": "yosemite-icon-manifest.json",
+  "compatibilityManifestMeaning": "Stable semantic mapping only; app/core/system-icons.js selects the authored runtime tier by rendering context.",
+  "runtimeDispatch": "apps/desktop/app/core/system-icons.js",
+  "priorityLineageBuilder": "tooling/build-approved-priority-lineage.mjs",
+  "priorityLineageLedger": "tooling/icon-generation/approved-priority-lineage.json",
+  "priorityLineageObjects": [
+    "reviewDesk",
+    "searcher",
+    "assistant"
+  ],
+  "priorityLineageMeaning": "Only explicitly reviewed v2 rows override the broad generated archive; per-object provenance never implies native replication or reference validation."
 }

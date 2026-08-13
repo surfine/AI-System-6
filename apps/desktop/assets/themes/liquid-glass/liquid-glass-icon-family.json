@@ -1,4 +1,5 @@
 {
+  "schemaVersion": 2,
   "target": "macOS Tahoe 26 Liquid Glass",
   "generatedBy": "tooling/build-liquid-glass-imagegen-icons.mjs",
   "generationMode": "built-in Image Gen — one independent call per icon",
@@ -6,7 +7,10 @@
   "referenceBoard": "internal/evidence/drafts/liquid-glass-imagegen/liquid-glass-imagegen-master-board.png",
   "sharedGeometryAcrossEras": false,
   "completeFamily": true,
-  "runtimeSize": 128,
+  "runtimeAsset": true,
+  "completeFamilyMeaning": "All 56 runtime ids resolve to technically accepted artwork. Historical review is a separate per-icon state.",
+  "generatedAcceptanceMeaning": "Authoring acceptance is separate from historical validation; the Finder pair carries explicit per-object historical status.",
+  "runtimeSize": "contextual",
   "sizePolicy": "Runtime surfaces downsample the reviewed 128 px Default asset. The 64/32/16 and Dark/Clear files are deterministic Theme Lab review derivatives, not separately authored artwork.",
   "reviewedFamily": [
     "startupDisk",
@@ -75,6 +79,11 @@
       "tone": "steel",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/startupDisk.png",
       "masterSha256": "ec4dd4428c62007f684413584e1016ae56fc04c19d35c220186336e2fc3c19be",
       "grid": {
@@ -352,6 +361,11 @@
       "tone": "steel",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/hardDisk.png",
       "masterSha256": "af9327023fbdce8ec2720af035ca48c2b7d9010ff45413cba44b2185956be157",
       "grid": {
@@ -629,6 +643,11 @@
       "tone": "blue",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/folder.png",
       "masterSha256": "d93276fc37605110f07f10a7fabd532ed19e3b22a1f5611bfb8b88ff60bae60e",
       "grid": {
@@ -906,6 +925,11 @@
       "tone": "paper",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/document.png",
       "masterSha256": "1c88aba6892c34d5adb3c5aea445f93dff5f2265afef8a2b07be0c8abe752cf7",
       "grid": {
@@ -1183,6 +1207,11 @@
       "tone": "violet",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/applications.png",
       "masterSha256": "9dace96edd93e57f9b101b265b3c11500d0537a3c346b90a4a2f24568ddf4f1b",
       "grid": {
@@ -1460,6 +1489,11 @@
       "tone": "steel",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/trash.png",
       "masterSha256": "e22754624cf96473081d90e276e50418f6146e22a02794360e6f12f616285c17",
       "grid": {
@@ -1731,15 +1765,19 @@
       }
     },
     "finderApp": {
-      "genre": "application",
-      "physicalMetaphor": "finder",
+      "genre": "system identity",
+      "physicalMetaphor": "macOS Tahoe 26 blue rounded-square enclosure with a separate translucent light face/profile panel",
       "semanticMark": "finder",
-      "metaphorKey": "smiling-compact-macintosh",
       "tone": "blue",
-      "sourceKind": "imagegen-original-raster",
+      "sourceKind": "approved-imagegen-reference-guided-reconstruction",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "built-in-imagegen-reference-guided-plus-native-size-optical-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "reference-validated",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/finderApp.png",
-      "masterSha256": "eb0691491c658f706e840d48acc086aa693514463c682d8d91937b2ba0d5d688",
+      "masterSha256": "dbd465649edce410f333cc974aa0e32473e44e4b2800af8bba4966a239d7dcd9",
       "grid": {
         "canvas": 128,
         "shape": "square",
@@ -1767,246 +1805,417 @@
       },
       "metrics": {
         "128-default": {
-          "sha256": "7c0acea52769b5d209472b5e64398fd762fc67d6ffe232bdb87da27c8d941509",
-          "pixels": 11496,
-          "translucent": 540,
+          "bbox": {
+            "minX": 6,
+            "minY": 6,
+            "maxX": 122,
+            "maxY": 122
+          },
           "bounds": [
-            10,
-            9,
-            117,
-            118
+            6,
+            6,
+            122,
+            122
           ],
           "ink": {
-            "minX": 10,
-            "minY": 9,
-            "maxX": 117,
-            "maxY": 118,
-            "width": 108,
-            "height": 110
+            "minX": 6,
+            "minY": 6,
+            "maxX": 122,
+            "maxY": 122,
+            "width": 117,
+            "height": 117
           },
+          "pixels": 12974,
+          "inkPixels": 12974,
+          "translucent": 226,
+          "colors": 2097,
+          "sha256": "dbd465649edce410f333cc974aa0e32473e44e4b2800af8bba4966a239d7dcd9",
+          "bytes": 11320,
           "gridShape": "square"
         },
         "128-dark": {
-          "sha256": "4a4f7b2fd6e19ac2e3d1f8313bbb1516dcdeeccb6b212969c647061e2bc15f1a",
-          "pixels": 11496,
-          "translucent": 540,
+          "bbox": {
+            "minX": 6,
+            "minY": 6,
+            "maxX": 122,
+            "maxY": 122
+          },
           "bounds": [
-            10,
-            9,
-            117,
-            118
+            6,
+            6,
+            122,
+            122
           ],
           "ink": {
-            "minX": 10,
-            "minY": 9,
-            "maxX": 117,
-            "maxY": 118,
-            "width": 108,
-            "height": 110
+            "minX": 6,
+            "minY": 6,
+            "maxX": 122,
+            "maxY": 122,
+            "width": 117,
+            "height": 117
           },
+          "pixels": 12974,
+          "inkPixels": 12974,
+          "translucent": 226,
+          "colors": 2054,
+          "sha256": "a150d9bf0f338943a5d7cca25320fcbe68c4ed7388ebcc2b70337535f2656be2",
+          "bytes": 11693,
           "gridShape": "square"
         },
         "128-clear": {
-          "sha256": "dbe9ef3f1d757093c2f0adcfc796c6d0e4c451df4bd88a2b6dac9bb7f3544a5d",
-          "pixels": 11494,
-          "translucent": 11494,
+          "bbox": {
+            "minX": 6,
+            "minY": 6,
+            "maxX": 122,
+            "maxY": 122
+          },
           "bounds": [
-            10,
-            9,
-            117,
-            118
+            6,
+            6,
+            122,
+            122
           ],
           "ink": {
-            "minX": 10,
-            "minY": 9,
-            "maxX": 117,
-            "maxY": 118,
-            "width": 108,
-            "height": 110
+            "minX": 6,
+            "minY": 6,
+            "maxX": 122,
+            "maxY": 122,
+            "width": 117,
+            "height": 117
           },
+          "pixels": 12969,
+          "inkPixels": 12969,
+          "translucent": 12969,
+          "colors": 1244,
+          "sha256": "b91472e614389947cd0113a0b8b4ede43b193be53eff2a9322e27f0f61ec79fd",
+          "bytes": 11174,
           "gridShape": "square"
         },
         "64-default": {
-          "sha256": "41b92e28b93583567314b79f89d82f4a0c55f38f0293b7d492d18647200fb987",
-          "pixels": 2979,
-          "translucent": 356,
+          "bbox": {
+            "minX": 3,
+            "minY": 3,
+            "maxX": 61,
+            "maxY": 61
+          },
           "bounds": [
-            5,
-            4,
-            59,
-            59
+            3,
+            3,
+            61,
+            61
           ],
           "ink": {
-            "minX": 5,
-            "minY": 4,
-            "maxX": 59,
-            "maxY": 59,
-            "width": 55,
-            "height": 56
+            "minX": 3,
+            "minY": 3,
+            "maxX": 61,
+            "maxY": 61,
+            "width": 59,
+            "height": 59
           },
+          "pixels": 3316,
+          "inkPixels": 3316,
+          "translucent": 103,
+          "colors": 1016,
+          "sha256": "c9efb004206b7f1372ec41a9e71da30970198d75477c5225a4fae94b102cf2d8",
+          "bytes": 3819,
           "gridShape": "square"
         },
         "64-dark": {
-          "sha256": "8f093b574f5a056f6d846e605415958affc7db1843581e98f47d68b1a1dad9ff",
-          "pixels": 2979,
-          "translucent": 356,
+          "bbox": {
+            "minX": 3,
+            "minY": 3,
+            "maxX": 61,
+            "maxY": 61
+          },
           "bounds": [
-            5,
-            4,
-            59,
-            59
+            3,
+            3,
+            61,
+            61
           ],
           "ink": {
-            "minX": 5,
-            "minY": 4,
-            "maxX": 59,
-            "maxY": 59,
-            "width": 55,
-            "height": 56
+            "minX": 3,
+            "minY": 3,
+            "maxX": 61,
+            "maxY": 61,
+            "width": 59,
+            "height": 59
           },
+          "pixels": 3316,
+          "inkPixels": 3316,
+          "translucent": 103,
+          "colors": 1011,
+          "sha256": "f75d25ed51a1d95e957cae4430bd210e267bbe07c2d15deccf427ae4a906ba34",
+          "bytes": 3964,
           "gridShape": "square"
         },
         "64-clear": {
-          "sha256": "b59e795d055fd3fbca72ac57072460aa51a41f58dedbcd2dc34f4ee070141b8e",
-          "pixels": 2979,
-          "translucent": 2979,
+          "bbox": {
+            "minX": 3,
+            "minY": 3,
+            "maxX": 61,
+            "maxY": 61
+          },
           "bounds": [
-            5,
-            4,
-            59,
-            59
+            3,
+            3,
+            61,
+            61
           ],
           "ink": {
-            "minX": 5,
-            "minY": 4,
-            "maxX": 59,
-            "maxY": 59,
-            "width": 55,
-            "height": 56
+            "minX": 3,
+            "minY": 3,
+            "maxX": 61,
+            "maxY": 61,
+            "width": 59,
+            "height": 59
           },
+          "pixels": 3313,
+          "inkPixels": 3313,
+          "translucent": 3313,
+          "colors": 688,
+          "sha256": "3686f890e0b487607b86ef4afc6d3141c86def1a05756c7c39ee2e3c0a2255f0",
+          "bytes": 3991,
           "gridShape": "square"
         },
         "32-default": {
-          "sha256": "43313d972c1e1a37bfb49fd4d7a0a9c276244a02403907a91f8794f9c0318b34",
-          "pixels": 767,
-          "translucent": 69,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 30,
+            "maxY": 30
+          },
           "bounds": [
-            2,
-            2,
-            29,
-            29
+            1,
+            1,
+            30,
+            30
           ],
           "ink": {
-            "minX": 2,
-            "minY": 2,
-            "maxX": 29,
-            "maxY": 29,
-            "width": 28,
-            "height": 28
+            "minX": 1,
+            "minY": 1,
+            "maxX": 30,
+            "maxY": 30,
+            "width": 30,
+            "height": 30
           },
+          "pixels": 868,
+          "inkPixels": 868,
+          "translucent": 52,
+          "colors": 465,
+          "sha256": "0a4803ef28adf65bdf84edcd9af828f067c30b9b5f14b6bfc53cfb51b1880acf",
+          "bytes": 1530,
           "gridShape": "square"
         },
         "32-dark": {
-          "sha256": "20a344852acd583fa92b59324bfd71b5edf185b0fcbed55312b8ef81a676e0e5",
-          "pixels": 767,
-          "translucent": 69,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 30,
+            "maxY": 30
+          },
           "bounds": [
-            2,
-            2,
-            29,
-            29
+            1,
+            1,
+            30,
+            30
           ],
           "ink": {
-            "minX": 2,
-            "minY": 2,
-            "maxX": 29,
-            "maxY": 29,
-            "width": 28,
-            "height": 28
+            "minX": 1,
+            "minY": 1,
+            "maxX": 30,
+            "maxY": 30,
+            "width": 30,
+            "height": 30
           },
+          "pixels": 868,
+          "inkPixels": 868,
+          "translucent": 52,
+          "colors": 455,
+          "sha256": "334e9d35ce69d7c9b50a20470d137adb5a909d93fec3ba8e83240a62c7bff158",
+          "bytes": 1568,
           "gridShape": "square"
         },
         "32-clear": {
-          "sha256": "6ff69034842af4252c650a5c598f58a8099e3578f256fcb728af6adcbb443c76",
-          "pixels": 767,
-          "translucent": 767,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 30,
+            "maxY": 30
+          },
           "bounds": [
-            2,
-            2,
-            29,
-            29
+            1,
+            1,
+            30,
+            30
           ],
           "ink": {
-            "minX": 2,
-            "minY": 2,
-            "maxX": 29,
-            "maxY": 29,
-            "width": 28,
-            "height": 28
+            "minX": 1,
+            "minY": 1,
+            "maxX": 30,
+            "maxY": 30,
+            "width": 30,
+            "height": 30
           },
+          "pixels": 868,
+          "inkPixels": 868,
+          "translucent": 868,
+          "colors": 342,
+          "sha256": "63375e259361e900fda9813fec84317d7dcd775e88021af86ec205c0bc29a70c",
+          "bytes": 1626,
           "gridShape": "square"
         },
         "16-default": {
-          "sha256": "e0bf8e25de5bee4266a0a4125b8615d864ab1c179ee72f0c36bc412fe50fed07",
-          "pixels": 203,
-          "translucent": 31,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14
+          },
           "bounds": [
             1,
             1,
-            15,
+            14,
             14
           ],
           "ink": {
             "minX": 1,
             "minY": 1,
-            "maxX": 15,
+            "maxX": 14,
             "maxY": 14,
-            "width": 15,
+            "width": 14,
             "height": 14
           },
+          "pixels": 192,
+          "inkPixels": 192,
+          "translucent": 24,
+          "colors": 159,
+          "sha256": "e0311677042b6a033fdca4c2be355ebe623979e4ad70ba09e9b1ba7bfc27fc96",
+          "bytes": 580,
           "gridShape": "square"
         },
         "16-dark": {
-          "sha256": "a035e944e12c74ae74c88c191be8dafed57c09a979d309e928f14a9f691ca0a3",
-          "pixels": 203,
-          "translucent": 31,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14
+          },
           "bounds": [
             1,
             1,
-            15,
+            14,
             14
           ],
           "ink": {
             "minX": 1,
             "minY": 1,
-            "maxX": 15,
+            "maxX": 14,
             "maxY": 14,
-            "width": 15,
+            "width": 14,
             "height": 14
           },
+          "pixels": 192,
+          "inkPixels": 192,
+          "translucent": 24,
+          "colors": 157,
+          "sha256": "e68124286d5ea4c0861203c72c2bcfc5e0618af3c6df55e27082beff37a3700f",
+          "bytes": 577,
           "gridShape": "square"
         },
         "16-clear": {
-          "sha256": "d4d75cd7b398df2afd08d0fcacba7a83652197ebe36117b3e6ec6f420d033ef0",
-          "pixels": 203,
-          "translucent": 203,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14
+          },
           "bounds": [
             1,
             1,
-            15,
+            14,
             14
           ],
           "ink": {
             "minX": 1,
             "minY": 1,
-            "maxX": 15,
+            "maxX": 14,
             "maxY": 14,
-            "width": 15,
+            "width": 14,
             "height": 14
           },
+          "pixels": 192,
+          "inkPixels": 192,
+          "translucent": 192,
+          "colors": 127,
+          "sha256": "04699aae37a7353ab178da38bd660d26f6f2bad68fe5932860215e24dca69165",
+          "bytes": 601,
           "gridShape": "square"
         }
-      }
+      },
+      "metaphorKey": "target-era-finder-identity",
+      "semanticIdentity": "friendly Finder and system-navigation identity",
+      "identityAnchors": [
+        "target-era Finder identity",
+        "recognizable system-navigation persona"
+      ],
+      "historicalPrototype": "macOS Tahoe 26 blue rounded-square enclosure with a separate translucent light face/profile panel",
+      "nearestHistoricalAnalog": null,
+      "material": "launch-era Liquid Glass with independent enclosure, face-panel, and ink layers",
+      "generatedMaster": "internal/evidence/drafts/icon-lineage-audit/imagegen-candidates-v2/liquid-glass-finder-v2.png",
+      "reference": "internal/evidence/drafts/liquid-glass-reference/captures/macworld-21-icons/macos-15-26-finder-icons.jpg",
+      "exactPixelReplica": false,
+      "sizeStatus": {
+        "16": "optically-reviewed",
+        "32": "optically-reviewed",
+        "64": "optically-reviewed",
+        "128": "optically-reviewed"
+      },
+      "sizePolicy": "Each target canvas is rendered directly from the approved high-resolution generation; compact tiers use their own bounds and contrast treatment.",
+      "layerSource": {
+        "architecture": [
+          "base",
+          "panel",
+          "ink"
+        ],
+        "sources": {
+          "base": "icons/src/finder-lineage-layers/finderApp-128-base.png",
+          "panel": "icons/src/finder-lineage-layers/finderApp-128-panel.png",
+          "ink": "icons/src/finder-lineage-layers/finderApp-128-ink.png"
+        },
+        "recompositionOrder": [
+          "base",
+          "panel",
+          "ink"
+        ],
+        "masterBakedGlassIsSource": false
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.8945,
+          "meanLum": 177.78,
+          "lumStd": 33.58,
+          "edgeEnergy": 65
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.8262,
+          "meanLum": 179.45,
+          "lumStd": 36.16,
+          "edgeEnergy": 171
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.8129,
+          "meanLum": 179.41,
+          "lumStd": 37.41,
+          "edgeEnergy": 222
+        }
+      },
+      "blindMixStatus": "not-run"
     },
     "fileFloppy": {
       "genre": "hardware",
@@ -2015,6 +2224,11 @@
       "tone": "steel",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/fileFloppy.png",
       "masterSha256": "a687c7a7ee44d7fee1a9c5ae5c98a5b94a150f9f9219c6a110266ac4d653d4a9",
       "grid": {
@@ -2287,13 +2501,18 @@
     },
     "assistant": {
       "genre": "application",
-      "physicalMetaphor": "correspondence",
-      "semanticMark": "assistant",
+      "physicalMetaphor": "Tahoe layered communication object with blue enclosure, refractive panel, two-party exchange, and model-owned provisional capsule",
+      "semanticMark": "chat",
       "tone": "blue",
-      "sourceKind": "imagegen-original-raster",
-      "reviewStatus": "accepted-imagegen",
-      "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/assistant.png",
-      "masterSha256": "95e3752064da54fd47e32b9ae37e76ac12160e996963693f2eefaa90c1e338b2",
+      "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
+      "reviewStatus": "accepted-priority-lineage",
+      "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "historically-reviewed",
+      "runtimeAsset": true,
+      "master": "apps/desktop/assets/themes/liquid-glass/icons/priority-lineage-source/assistant-128-master.png",
+      "masterSha256": "a06ba3ed84cdee37d6fa625016595c22982c464eaafd4e2763ca2a47613530d7",
       "grid": {
         "canvas": 128,
         "shape": "square",
@@ -2321,244 +2540,458 @@
       },
       "metrics": {
         "128-default": {
-          "sha256": "c33b4ad21c3d3d50ef377908d9a6ae726b8e6f6732fda01cceba237c3b4f14ee",
-          "pixels": 11381,
-          "translucent": 524,
+          "bbox": {
+            "minX": 6,
+            "minY": 6,
+            "maxX": 121,
+            "maxY": 121
+          },
           "bounds": [
-            10,
-            9,
-            116,
-            118
+            6,
+            6,
+            121,
+            121
           ],
           "ink": {
-            "minX": 10,
-            "minY": 9,
-            "maxX": 116,
-            "maxY": 118,
-            "width": 107,
-            "height": 110
+            "minX": 6,
+            "minY": 6,
+            "maxX": 121,
+            "maxY": 121,
+            "width": 116,
+            "height": 116
           },
+          "pixels": 13172,
+          "inkPixels": 13172,
+          "translucent": 5731,
+          "colors": 1333,
+          "sha256": "a06ba3ed84cdee37d6fa625016595c22982c464eaafd4e2763ca2a47613530d7",
+          "bytes": 6787,
           "gridShape": "square"
         },
         "128-dark": {
-          "sha256": "899e6eddf1c69339e45a5bd2c27ff71c40682ce26fc641b2daf2ac3994030e90",
-          "pixels": 11381,
-          "translucent": 524,
+          "bbox": {
+            "minX": 6,
+            "minY": 6,
+            "maxX": 121,
+            "maxY": 121
+          },
           "bounds": [
-            10,
-            9,
-            116,
-            118
+            6,
+            6,
+            121,
+            121
           ],
           "ink": {
-            "minX": 10,
-            "minY": 9,
-            "maxX": 116,
-            "maxY": 118,
-            "width": 107,
-            "height": 110
+            "minX": 6,
+            "minY": 6,
+            "maxX": 121,
+            "maxY": 121,
+            "width": 116,
+            "height": 116
           },
+          "pixels": 13172,
+          "inkPixels": 13172,
+          "translucent": 5731,
+          "colors": 1289,
+          "sha256": "ee2613cf9b23f4c237043476ee0bd8479b4da5f8d1e4b5f79db3c8fa762022a7",
+          "bytes": 6895,
           "gridShape": "square"
         },
         "128-clear": {
-          "sha256": "6ca2454d727359abfddf1f1af6e88c43f610e7d739c466dd56d530bb921b11f0",
-          "pixels": 11379,
-          "translucent": 11379,
+          "bbox": {
+            "minX": 6,
+            "minY": 6,
+            "maxX": 121,
+            "maxY": 121
+          },
           "bounds": [
-            10,
-            9,
-            116,
-            118
+            6,
+            6,
+            121,
+            121
           ],
           "ink": {
-            "minX": 10,
-            "minY": 9,
-            "maxX": 116,
-            "maxY": 118,
-            "width": 107,
-            "height": 110
+            "minX": 6,
+            "minY": 6,
+            "maxX": 121,
+            "maxY": 121,
+            "width": 116,
+            "height": 116
           },
+          "pixels": 13172,
+          "inkPixels": 13172,
+          "translucent": 13172,
+          "colors": 1002,
+          "sha256": "d3775341d136f4bc43c0876f7b6c307a0ab8296bfa099af9f9095768420353ce",
+          "bytes": 6831,
           "gridShape": "square"
         },
         "64-default": {
-          "sha256": "c3170c1d790335844989df4bf46121b30f24682607f855e131c18eb77e2f89eb",
-          "pixels": 2933,
-          "translucent": 291,
+          "bbox": {
+            "minX": 3,
+            "minY": 3,
+            "maxX": 60,
+            "maxY": 60
+          },
           "bounds": [
-            5,
-            4,
-            58,
-            59
+            3,
+            3,
+            60,
+            60
           ],
           "ink": {
-            "minX": 5,
-            "minY": 4,
-            "maxX": 58,
-            "maxY": 59,
-            "width": 54,
-            "height": 56
+            "minX": 3,
+            "minY": 3,
+            "maxX": 60,
+            "maxY": 60,
+            "width": 58,
+            "height": 58
           },
+          "pixels": 3308,
+          "inkPixels": 3308,
+          "translucent": 1382,
+          "colors": 719,
+          "sha256": "876663216bfa0133f2e22fda45f8f35c7efbcac70310c90333823b1a1f01b8e9",
+          "bytes": 3130,
           "gridShape": "square"
         },
         "64-dark": {
-          "sha256": "69199cf3d4a9dea4b2b033060cc8f7ecb735e9b4224458390297173b1606e0fb",
-          "pixels": 2933,
-          "translucent": 291,
+          "bbox": {
+            "minX": 3,
+            "minY": 3,
+            "maxX": 60,
+            "maxY": 60
+          },
           "bounds": [
-            5,
-            4,
-            58,
-            59
+            3,
+            3,
+            60,
+            60
           ],
           "ink": {
-            "minX": 5,
-            "minY": 4,
-            "maxX": 58,
-            "maxY": 59,
-            "width": 54,
-            "height": 56
+            "minX": 3,
+            "minY": 3,
+            "maxX": 60,
+            "maxY": 60,
+            "width": 58,
+            "height": 58
           },
+          "pixels": 3308,
+          "inkPixels": 3308,
+          "translucent": 1382,
+          "colors": 716,
+          "sha256": "3e11ba6d4724dabf0f1fed0f7232ba9060ec5741a7007a8b61a2f569a300e570",
+          "bytes": 3181,
           "gridShape": "square"
         },
         "64-clear": {
-          "sha256": "b8318df8506e6782a5c24daeb42aa7fbd460d635161abf5177ccee45bd66e8a9",
-          "pixels": 2932,
-          "translucent": 2932,
+          "bbox": {
+            "minX": 3,
+            "minY": 3,
+            "maxX": 60,
+            "maxY": 60
+          },
           "bounds": [
-            5,
-            4,
-            58,
-            59
+            3,
+            3,
+            60,
+            60
           ],
           "ink": {
-            "minX": 5,
-            "minY": 4,
-            "maxX": 58,
-            "maxY": 59,
-            "width": 54,
-            "height": 56
+            "minX": 3,
+            "minY": 3,
+            "maxX": 60,
+            "maxY": 60,
+            "width": 58,
+            "height": 58
           },
+          "pixels": 3308,
+          "inkPixels": 3308,
+          "translucent": 3308,
+          "colors": 590,
+          "sha256": "214297929883b152a0b17fe5df6380c945bb445ff95c668e2f44f8414526aeb2",
+          "bytes": 3117,
           "gridShape": "square"
         },
         "32-default": {
-          "sha256": "74ca5cf047abe83a6b2512ede2d7dd7921b055aa4dcfc90b1711a9485ca77b1a",
-          "pixels": 762,
-          "translucent": 66,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 30,
+            "maxY": 30
+          },
           "bounds": [
-            2,
-            2,
-            29,
-            29
+            1,
+            1,
+            30,
+            30
           ],
           "ink": {
-            "minX": 2,
-            "minY": 2,
-            "maxX": 29,
-            "maxY": 29,
-            "width": 28,
-            "height": 28
+            "minX": 1,
+            "minY": 1,
+            "maxX": 30,
+            "maxY": 30,
+            "width": 30,
+            "height": 30
           },
+          "pixels": 880,
+          "inkPixels": 880,
+          "translucent": 372,
+          "colors": 418,
+          "sha256": "71f5cc1c7e624cb1969ce81cd1cdb61d82e930649c57db4ed3dc7da2f2602584",
+          "bytes": 1658,
           "gridShape": "square"
         },
         "32-dark": {
-          "sha256": "732b795417949488bf738f83a181a640ec45eb76f3cf0f600275866836a3a134",
-          "pixels": 762,
-          "translucent": 66,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 30,
+            "maxY": 30
+          },
           "bounds": [
-            2,
-            2,
-            29,
-            29
+            1,
+            1,
+            30,
+            30
           ],
           "ink": {
-            "minX": 2,
-            "minY": 2,
-            "maxX": 29,
-            "maxY": 29,
-            "width": 28,
-            "height": 28
+            "minX": 1,
+            "minY": 1,
+            "maxX": 30,
+            "maxY": 30,
+            "width": 30,
+            "height": 30
           },
+          "pixels": 880,
+          "inkPixels": 880,
+          "translucent": 372,
+          "colors": 413,
+          "sha256": "6398b728ff742ad5c2891f7fa168436fabe45d17038f581b382797d0b09282c2",
+          "bytes": 1666,
           "gridShape": "square"
         },
         "32-clear": {
-          "sha256": "ca80507e5f5398ea98ee2fa3e7fe182331f3085041569ebef24ffb7a44c3cc21",
-          "pixels": 762,
-          "translucent": 762,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 30,
+            "maxY": 30
+          },
           "bounds": [
-            2,
-            2,
-            29,
-            29
+            1,
+            1,
+            30,
+            30
           ],
           "ink": {
-            "minX": 2,
-            "minY": 2,
-            "maxX": 29,
-            "maxY": 29,
-            "width": 28,
-            "height": 28
+            "minX": 1,
+            "minY": 1,
+            "maxX": 30,
+            "maxY": 30,
+            "width": 30,
+            "height": 30
           },
+          "pixels": 880,
+          "inkPixels": 880,
+          "translucent": 880,
+          "colors": 369,
+          "sha256": "eb8b3b84dbf6135d23303cb5fbc4576b375c1c669bae991ff2c825aceff5cad9",
+          "bytes": 1655,
           "gridShape": "square"
         },
         "16-default": {
-          "sha256": "6e1c98569b37b2e2955de779f812c226363690d0951f54768bf1037ad78a41d1",
-          "pixels": 202,
-          "translucent": 38,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14
+          },
           "bounds": [
             1,
             1,
-            15,
+            14,
             14
           ],
           "ink": {
             "minX": 1,
             "minY": 1,
-            "maxX": 15,
+            "maxX": 14,
             "maxY": 14,
-            "width": 15,
+            "width": 14,
             "height": 14
           },
+          "pixels": 192,
+          "inkPixels": 192,
+          "translucent": 80,
+          "colors": 166,
+          "sha256": "bf635590f4a5690c5d6d61e43fbefed36e75b123e458a672d9ca7e2c5a1c49e8",
+          "bytes": 719,
           "gridShape": "square"
         },
         "16-dark": {
-          "sha256": "a9fc11dcfa43381c58ed74e4b587b1b3521304d8ded870fe366774af6a118d86",
-          "pixels": 202,
-          "translucent": 38,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14
+          },
           "bounds": [
             1,
             1,
-            15,
+            14,
             14
           ],
           "ink": {
             "minX": 1,
             "minY": 1,
-            "maxX": 15,
+            "maxX": 14,
             "maxY": 14,
-            "width": 15,
+            "width": 14,
             "height": 14
           },
+          "pixels": 192,
+          "inkPixels": 192,
+          "translucent": 80,
+          "colors": 166,
+          "sha256": "617551bfed10af712114e9e023fd2f01b72f9a136042cd0d94abccb809f26b2f",
+          "bytes": 725,
           "gridShape": "square"
         },
         "16-clear": {
-          "sha256": "c16a921fff2fd3ddea07a21fda73dcdefd4d7173d75f783732cd806c5cb8297b",
-          "pixels": 202,
-          "translucent": 202,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14
+          },
           "bounds": [
             1,
             1,
-            15,
+            14,
             14
           ],
           "ink": {
             "minX": 1,
             "minY": 1,
-            "maxX": 15,
+            "maxX": 14,
             "maxY": 14,
-            "width": 15,
+            "width": 14,
             "height": 14
           },
+          "pixels": 192,
+          "inkPixels": 192,
+          "translucent": 192,
+          "colors": 157,
+          "sha256": "bae48cc693fd9cd4a1f978f61d9db81f9f56967e273c51184ad130b58a0fa229",
+          "bytes": 716,
           "gridShape": "square"
+        }
+      },
+      "semanticIdentity": "conversation between user and model whose model reply remains provisional",
+      "identityAnchors": [
+        "user/model duality",
+        "provisional reply cue"
+      ],
+      "historicalPrototype": null,
+      "nearestHistoricalAnalog": "Tahoe layered communication object with blue enclosure, refractive panel, two-party exchange, and model-owned provisional capsule",
+      "metaphorKey": "conversation-with-provisional-reply",
+      "material": "controlled Liquid Glass refraction with separable enclosure, panel, conversation, and provisional layers",
+      "blindMixStatus": "not-run",
+      "generatedMaster": "internal/evidence/drafts/icon-lineage-audit/imagegen-candidates-v2/cliotalk/liquid-glass-assistant-v3.png",
+      "reference": "No native ClioTalk icon artwork is claimed; OS X 10.10 communication objects and Tahoe layered communication grammar supply the nearest analogs.",
+      "exactPixelReplica": false,
+      "referenceValidated": false,
+      "nativeReplica": false,
+      "sourceNote": "Original target-era reinterpretation. Two distinct interlocutors and one model-owned provisional reply replace the fixed two-balloon composition; no native artwork is claimed.",
+      "sizeStatus": {
+        "16": "optically-reviewed",
+        "32": "optically-reviewed",
+        "64": "optically-reviewed",
+        "128": "optically-reviewed"
+      },
+      "sizePolicy": "Large tiers derive from the accepted ImageGen direction. The 32 px and 16 px tiers are independent optical paintings with exactly two speaker marks, two exchange bars, and one three-dot provisional cue. Liquid Glass owns independent enclosure, panel, conversation, and provisional source layers at every tier.",
+      "layerSource": {
+        "architecture": [
+          "enclosure",
+          "panel",
+          "conversation",
+          "provisional"
+        ],
+        "sourceSizes": [
+          128,
+          64,
+          32,
+          16
+        ],
+        "sources": {
+          "enclosure": "icons/src/priority-lineage-layers/assistant-128-enclosure.png",
+          "panel": "icons/src/priority-lineage-layers/assistant-128-panel.png",
+          "conversation": "icons/src/priority-lineage-layers/assistant-128-conversation.png",
+          "provisional": "icons/src/priority-lineage-layers/assistant-128-provisional.png"
+        },
+        "sourcesBySize": {
+          "16": {
+            "enclosure": "icons/src/priority-lineage-layers/assistant-16-enclosure.png",
+            "panel": "icons/src/priority-lineage-layers/assistant-16-panel.png",
+            "conversation": "icons/src/priority-lineage-layers/assistant-16-conversation.png",
+            "provisional": "icons/src/priority-lineage-layers/assistant-16-provisional.png"
+          },
+          "32": {
+            "enclosure": "icons/src/priority-lineage-layers/assistant-32-enclosure.png",
+            "panel": "icons/src/priority-lineage-layers/assistant-32-panel.png",
+            "conversation": "icons/src/priority-lineage-layers/assistant-32-conversation.png",
+            "provisional": "icons/src/priority-lineage-layers/assistant-32-provisional.png"
+          },
+          "64": {
+            "enclosure": "icons/src/priority-lineage-layers/assistant-64-enclosure.png",
+            "panel": "icons/src/priority-lineage-layers/assistant-64-panel.png",
+            "conversation": "icons/src/priority-lineage-layers/assistant-64-conversation.png",
+            "provisional": "icons/src/priority-lineage-layers/assistant-64-provisional.png"
+          },
+          "128": {
+            "enclosure": "icons/src/priority-lineage-layers/assistant-128-enclosure.png",
+            "panel": "icons/src/priority-lineage-layers/assistant-128-panel.png",
+            "conversation": "icons/src/priority-lineage-layers/assistant-128-conversation.png",
+            "provisional": "icons/src/priority-lineage-layers/assistant-128-provisional.png"
+          }
+        },
+        "recompositionOrder": [
+          "enclosure",
+          "panel",
+          "conversation",
+          "provisional"
+        ],
+        "construction": "independent deterministic enclosure, panel, conversation, provisional canvases are drawn at every optical tier and composed in declared order",
+        "independentTierConstruction": true,
+        "exactRecompositionRequired": true,
+        "generatedCandidateIsDirectionReferenceOnly": true,
+        "masterBakedGlassIsSource": false,
+        "layerExtractionFromBakedMaster": false
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.9219,
+          "meanLum": 167.59,
+          "lumStd": 55.31,
+          "edgeEnergy": 153
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.8477,
+          "meanLum": 162.81,
+          "lumStd": 61.44,
+          "edgeEnergy": 477
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.8073,
+          "meanLum": 159.55,
+          "lumStd": 62.82,
+          "edgeEnergy": 590
         }
       }
     },
@@ -2569,6 +3002,11 @@
       "tone": "paper",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/quickDraft.png",
       "masterSha256": "3de6338d05eb0e5b84323a9ef72c5b4594d3fb91635433aad2e5a7548f4685b2",
       "grid": {
@@ -2846,6 +3284,11 @@
       "tone": "steel",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/writingStudio.png",
       "masterSha256": "106a5c3fbe9792c749cb6a66904a92d5bdac3a171db8656efda70f14ffc8ca06",
       "grid": {
@@ -3123,6 +3566,11 @@
       "tone": "steel",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/projectDisk.png",
       "masterSha256": "fff3a6815df3b90b954b0629bce28726740a67ca26b83d19c85b3950b9be6077",
       "grid": {
@@ -3400,6 +3848,11 @@
       "tone": "rainbow",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/projectDisc.png",
       "masterSha256": "a58c064e89ce05f308461080d222c3f66de73373b9634930a4525d23cc486dff",
       "grid": {
@@ -3677,6 +4130,11 @@
       "tone": "blue",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/cloudModel.png",
       "masterSha256": "6e4109317033dcdbed850ea4fb9bcde0578775d3b92bf7507b475d90a5ef7402",
       "grid": {
@@ -3954,6 +4412,11 @@
       "tone": "gray",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/cloudModelOff.png",
       "masterSha256": "193561741de727fd25a003fd4324c931326c0726f2cba3e50b5247d5599c6c13",
       "grid": {
@@ -4231,6 +4694,11 @@
       "tone": "paper",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/questionSheet.png",
       "masterSha256": "f2509b8b25bfdc52e2975be8389ee8dd0190e2dd240b4599a8e36ac805f1fb45",
       "grid": {
@@ -4508,6 +4976,11 @@
       "tone": "paper",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/outline.png",
       "masterSha256": "9b1ca7b3796301283e5227d3232663e45ef2fc60253f8eed2ab7cfc7d4256395",
       "grid": {
@@ -4785,6 +5258,11 @@
       "tone": "paper",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/sectionDrafts.png",
       "masterSha256": "999e616e65a064366df8a8135bfac7374a09d9b43bc4ad1fd2ffac3570132cd4",
       "grid": {
@@ -5062,6 +5540,11 @@
       "tone": "paper",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/manuscript.png",
       "masterSha256": "5e55a302e581e77472eac4c54f8f71a9f292e460161dec2ca1fbe6a6561aed0a",
       "grid": {
@@ -5334,13 +5817,18 @@
     },
     "reviewDesk": {
       "genre": "application",
-      "physicalMetaphor": "review",
+      "physicalMetaphor": "Tahoe free-form layered manuscript with independent blue backing, frosted sheet, and forward coral correction overlay",
       "semanticMark": "proof",
       "tone": "red",
-      "sourceKind": "imagegen-original-raster",
-      "reviewStatus": "accepted-imagegen",
-      "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/reviewDesk.png",
-      "masterSha256": "6d012789167cd53b788723ee4eab1252e5199b3c7f53b6eeb5fb35053927d374",
+      "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
+      "reviewStatus": "accepted-priority-lineage",
+      "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "historically-reviewed",
+      "runtimeAsset": true,
+      "master": "apps/desktop/assets/themes/liquid-glass/icons/priority-lineage-source/reviewDesk-128-master.png",
+      "masterSha256": "0907c1baeddfedc9c52961d4503bd00047f5ccc32965e9f111b907094febb695",
       "grid": {
         "canvas": 128,
         "shape": "square",
@@ -5368,245 +5856,452 @@
       },
       "metrics": {
         "128-default": {
-          "sha256": "14ca855489ed2257c648c51521bb80baa96e74909a47849907ec2209deab1acb",
-          "pixels": 11585,
-          "translucent": 628,
+          "bbox": {
+            "minX": 7,
+            "minY": 7,
+            "maxX": 116,
+            "maxY": 119
+          },
           "bounds": [
-            11,
             7,
-            115,
+            7,
+            116,
             119
           ],
           "ink": {
-            "minX": 11,
+            "minX": 7,
             "minY": 7,
-            "maxX": 115,
+            "maxX": 116,
             "maxY": 119,
-            "width": 105,
+            "width": 110,
             "height": 113
           },
+          "pixels": 10021,
+          "inkPixels": 10021,
+          "translucent": 4472,
+          "colors": 2537,
+          "sha256": "0907c1baeddfedc9c52961d4503bd00047f5ccc32965e9f111b907094febb695",
+          "bytes": 11633,
           "gridShape": "square"
         },
         "128-dark": {
-          "sha256": "111b2ae95a0443de8abb8146d41ca5a9db9cd9112410ec5ab428550bcc3942d4",
-          "pixels": 11585,
-          "translucent": 628,
+          "bbox": {
+            "minX": 7,
+            "minY": 7,
+            "maxX": 116,
+            "maxY": 119
+          },
           "bounds": [
-            11,
             7,
-            115,
+            7,
+            116,
             119
           ],
           "ink": {
-            "minX": 11,
+            "minX": 7,
             "minY": 7,
-            "maxX": 115,
+            "maxX": 116,
             "maxY": 119,
-            "width": 105,
+            "width": 110,
             "height": 113
           },
+          "pixels": 10021,
+          "inkPixels": 10021,
+          "translucent": 4472,
+          "colors": 2421,
+          "sha256": "2752705dbb73a847fb7e51b39c4f186d1a45bc43982cae681a55cc678fe5f0c4",
+          "bytes": 12013,
           "gridShape": "square"
         },
         "128-clear": {
-          "sha256": "bc2876647aa95a3b6380dd9978ad855a4244f2d567a26c200283be27753671c0",
-          "pixels": 11582,
-          "translucent": 11582,
+          "bbox": {
+            "minX": 7,
+            "minY": 7,
+            "maxX": 116,
+            "maxY": 119
+          },
           "bounds": [
-            11,
             7,
-            115,
+            7,
+            116,
             119
           ],
           "ink": {
-            "minX": 11,
+            "minX": 7,
             "minY": 7,
-            "maxX": 115,
+            "maxX": 116,
             "maxY": 119,
-            "width": 105,
+            "width": 110,
             "height": 113
           },
+          "pixels": 10008,
+          "inkPixels": 10008,
+          "translucent": 10008,
+          "colors": 1754,
+          "sha256": "2dd850a1ca375ea66036aede5793557e69f7c41bb575c942571116dafc03e180",
+          "bytes": 10719,
           "gridShape": "square"
         },
         "64-default": {
-          "sha256": "5320e8cd96a815b6eaa4a714aa392967c9c5f25ea02ab99e0fe92f62eabc6989",
-          "pixels": 2949,
-          "translucent": 296,
+          "bbox": {
+            "minX": 3,
+            "minY": 3,
+            "maxX": 58,
+            "maxY": 59
+          },
           "bounds": [
-            5,
             3,
-            57,
+            3,
+            58,
             59
           ],
           "ink": {
-            "minX": 5,
+            "minX": 3,
             "minY": 3,
-            "maxX": 57,
+            "maxX": 58,
             "maxY": 59,
-            "width": 53,
+            "width": 56,
             "height": 57
           },
+          "pixels": 2547,
+          "inkPixels": 2547,
+          "translucent": 1240,
+          "colors": 1298,
+          "sha256": "35bbd2938d99ea1d9288ff37cb89654d291bb22ebb014dd4897745ee727dd40d",
+          "bytes": 4744,
           "gridShape": "square"
         },
         "64-dark": {
-          "sha256": "1d6183e33438618dd65939fbb2479ecd8d17a7a4f82e6b0df3f8237b5a072514",
-          "pixels": 2949,
-          "translucent": 296,
+          "bbox": {
+            "minX": 3,
+            "minY": 3,
+            "maxX": 58,
+            "maxY": 59
+          },
           "bounds": [
-            5,
             3,
-            57,
+            3,
+            58,
             59
           ],
           "ink": {
-            "minX": 5,
+            "minX": 3,
             "minY": 3,
-            "maxX": 57,
+            "maxX": 58,
             "maxY": 59,
-            "width": 53,
+            "width": 56,
             "height": 57
           },
+          "pixels": 2547,
+          "inkPixels": 2547,
+          "translucent": 1240,
+          "colors": 1253,
+          "sha256": "8a2f8d8ed618e7ea47bebea5c6fa6cba77186ecbd997fbd972e8719ada40d7fc",
+          "bytes": 4889,
           "gridShape": "square"
         },
         "64-clear": {
-          "sha256": "79dc9ded368c5610151970862819885d4030244c9c027f171d90889d6fdb21b1",
-          "pixels": 2947,
-          "translucent": 2947,
+          "bbox": {
+            "minX": 3,
+            "minY": 3,
+            "maxX": 58,
+            "maxY": 59
+          },
           "bounds": [
-            5,
             3,
-            57,
+            3,
+            58,
             59
           ],
           "ink": {
-            "minX": 5,
+            "minX": 3,
             "minY": 3,
-            "maxX": 57,
+            "maxX": 58,
             "maxY": 59,
-            "width": 53,
+            "width": 56,
             "height": 57
           },
+          "pixels": 2545,
+          "inkPixels": 2545,
+          "translucent": 2545,
+          "colors": 978,
+          "sha256": "ba4565166d47b32d634516cb68b727e25fa333f1dfec9226c3ddaf11489eda4e",
+          "bytes": 4601,
           "gridShape": "square"
         },
         "32-default": {
-          "sha256": "329d133e7421edf370fd04d8fcb9a1d1232c4ca963840032dbcd640180f7f24d",
-          "pixels": 818,
-          "translucent": 159,
-          "bounds": [
-            2,
-            1,
-            29,
-            30
-          ],
-          "ink": {
-            "minX": 2,
+          "bbox": {
+            "minX": 1,
             "minY": 1,
             "maxX": 29,
-            "maxY": 30,
-            "width": 28,
-            "height": 30
+            "maxY": 29
           },
+          "bounds": [
+            1,
+            1,
+            29,
+            29
+          ],
+          "ink": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 29,
+            "maxY": 29,
+            "width": 29,
+            "height": 29
+          },
+          "pixels": 671,
+          "inkPixels": 671,
+          "translucent": 340,
+          "colors": 551,
+          "sha256": "99e49a88439bc2c4396983454f87194c215910f7488b2bc88e2352ba2135f590",
+          "bytes": 1908,
           "gridShape": "square"
         },
         "32-dark": {
-          "sha256": "77deb35dffdab2ca3861ccb9ff809d1db8642708cee9621ef0da32a70a457322",
-          "pixels": 818,
-          "translucent": 159,
-          "bounds": [
-            2,
-            1,
-            29,
-            30
-          ],
-          "ink": {
-            "minX": 2,
+          "bbox": {
+            "minX": 1,
             "minY": 1,
             "maxX": 29,
-            "maxY": 30,
-            "width": 28,
-            "height": 30
+            "maxY": 29
           },
+          "bounds": [
+            1,
+            1,
+            29,
+            29
+          ],
+          "ink": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 29,
+            "maxY": 29,
+            "width": 29,
+            "height": 29
+          },
+          "pixels": 671,
+          "inkPixels": 671,
+          "translucent": 340,
+          "colors": 537,
+          "sha256": "f4161849d0e6681b6479021ba665a0747bc9cdb256c59fb2c47183bcbcb6d4fc",
+          "bytes": 1922,
           "gridShape": "square"
         },
         "32-clear": {
-          "sha256": "4f2b007661e5ade2003c6314181b6d4bf3f4a13513501b91cec309b944c0a3a7",
-          "pixels": 818,
-          "translucent": 818,
-          "bounds": [
-            2,
-            1,
-            29,
-            30
-          ],
-          "ink": {
-            "minX": 2,
+          "bbox": {
+            "minX": 1,
             "minY": 1,
             "maxX": 29,
-            "maxY": 30,
-            "width": 28,
-            "height": 30
+            "maxY": 29
           },
+          "bounds": [
+            1,
+            1,
+            29,
+            29
+          ],
+          "ink": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 29,
+            "maxY": 29,
+            "width": 29,
+            "height": 29
+          },
+          "pixels": 668,
+          "inkPixels": 668,
+          "translucent": 668,
+          "colors": 456,
+          "sha256": "f2d511c7cb81e9f52cab872c22996659dd8938c8f1fcc56adb81045be705ef3a",
+          "bytes": 1832,
           "gridShape": "square"
         },
         "16-default": {
-          "sha256": "11ab272b5760372db58c5bffd7f6c176de35de50326c1caaf0f7cca52bf58a82",
-          "pixels": 192,
-          "translucent": 28,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 13,
+            "maxY": 14
+          },
           "bounds": [
             1,
             1,
-            14,
+            13,
             14
           ],
           "ink": {
             "minX": 1,
             "minY": 1,
-            "maxX": 14,
+            "maxX": 13,
             "maxY": 14,
-            "width": 14,
+            "width": 13,
             "height": 14
           },
+          "pixels": 149,
+          "inkPixels": 149,
+          "translucent": 80,
+          "colors": 146,
+          "sha256": "fc49f7b107da0c5463eeff7d6d429e46819d4690f0c0a3b38415c988fc93148b",
+          "bytes": 680,
           "gridShape": "square"
         },
         "16-dark": {
-          "sha256": "f134b6315d5346657c6158deb3fe28ae590475a2ad2d8c9e375d25a3fb5006cf",
-          "pixels": 192,
-          "translucent": 28,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 13,
+            "maxY": 14
+          },
           "bounds": [
             1,
             1,
-            14,
+            13,
             14
           ],
           "ink": {
             "minX": 1,
             "minY": 1,
-            "maxX": 14,
+            "maxX": 13,
             "maxY": 14,
-            "width": 14,
+            "width": 13,
             "height": 14
           },
+          "pixels": 149,
+          "inkPixels": 149,
+          "translucent": 80,
+          "colors": 146,
+          "sha256": "03e6599bc8d0c76e479e74b80111e1d58bdfd63d3c451fa52b334dd5e83af57e",
+          "bytes": 688,
           "gridShape": "square"
         },
         "16-clear": {
-          "sha256": "7a84b171a21bd981025541ce9d9a2263a49cd1eecf5fbfd8d1b3669765b8ff88",
-          "pixels": 192,
-          "translucent": 192,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 13,
+            "maxY": 14
+          },
           "bounds": [
             1,
             1,
-            14,
+            13,
             14
           ],
           "ink": {
             "minX": 1,
             "minY": 1,
-            "maxX": 14,
+            "maxX": 13,
             "maxY": 14,
-            "width": 14,
+            "width": 13,
             "height": 14
           },
+          "pixels": 148,
+          "inkPixels": 148,
+          "translucent": 148,
+          "colors": 138,
+          "sha256": "028656049a050c48dab427daa5ae9226e19b672c387602418c61f6ff38f444d8",
+          "bytes": 669,
           "gridShape": "square"
         }
+      },
+      "semanticIdentity": "writer-controlled manuscript proofing and correction application",
+      "identityAnchors": [
+        "marked manuscript",
+        "visible inspection or correction action"
+      ],
+      "historicalPrototype": null,
+      "nearestHistoricalAnalog": "Tahoe free-form layered manuscript with independent blue backing, frosted sheet, and forward coral correction overlay",
+      "metaphorKey": "marked-manuscript-plus-correction-action",
+      "material": "controlled Liquid Glass refraction with separable manuscript and correction layers, without a shared badge container",
+      "blindMixStatus": "not-run",
+      "generatedMaster": "internal/evidence/drafts/icon-lineage-audit/imagegen-candidates-v2/review-desk/liquid-glass-review-desk-v2.png",
+      "reference": "No native Review Desk icon artwork is claimed; target-era application-icon grammar supplies the nearest analog.",
+      "exactPixelReplica": false,
+      "referenceValidated": false,
+      "nativeReplica": false,
+      "sourceNote": "Original target-era reinterpretation. No native Review Desk artwork is claimed; the lens is deliberately absent so Review Desk cannot collapse into Searcher.",
+      "sizeStatus": {
+        "16": "optically-reviewed",
+        "32": "optically-reviewed",
+        "64": "optically-reviewed",
+        "128": "optically-reviewed"
+      },
+      "sizePolicy": "Large tiers derive from the approved high-resolution candidate. The 32 px and 16 px tiers are independent era-specific optical redraws that delete paragraph texture, preserve the correction anchor, and own their final pixel geometry.",
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.668,
+          "meanLum": 188.33,
+          "lumStd": 44.83,
+          "edgeEnergy": 124
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6309,
+          "meanLum": 189.51,
+          "lumStd": 50.69,
+          "edgeEnergy": 281
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6236,
+          "meanLum": 189.3,
+          "lumStd": 51.58,
+          "edgeEnergy": 398
+        }
+      },
+      "layerSource": {
+        "architecture": [
+          "backing",
+          "manuscript",
+          "correction"
+        ],
+        "sourceSizes": [
+          128,
+          64,
+          32,
+          16
+        ],
+        "sources": {
+          "backing": "icons/src/priority-lineage-layers/reviewDesk-128-backing.png",
+          "manuscript": "icons/src/priority-lineage-layers/reviewDesk-128-manuscript.png",
+          "correction": "icons/src/priority-lineage-layers/reviewDesk-128-correction.png"
+        },
+        "sourcesBySize": {
+          "16": {
+            "backing": "icons/src/priority-lineage-layers/reviewDesk-16-backing.png",
+            "manuscript": "icons/src/priority-lineage-layers/reviewDesk-16-manuscript.png",
+            "correction": "icons/src/priority-lineage-layers/reviewDesk-16-correction.png"
+          },
+          "32": {
+            "backing": "icons/src/priority-lineage-layers/reviewDesk-32-backing.png",
+            "manuscript": "icons/src/priority-lineage-layers/reviewDesk-32-manuscript.png",
+            "correction": "icons/src/priority-lineage-layers/reviewDesk-32-correction.png"
+          },
+          "64": {
+            "backing": "icons/src/priority-lineage-layers/reviewDesk-64-backing.png",
+            "manuscript": "icons/src/priority-lineage-layers/reviewDesk-64-manuscript.png",
+            "correction": "icons/src/priority-lineage-layers/reviewDesk-64-correction.png"
+          },
+          "128": {
+            "backing": "icons/src/priority-lineage-layers/reviewDesk-128-backing.png",
+            "manuscript": "icons/src/priority-lineage-layers/reviewDesk-128-manuscript.png",
+            "correction": "icons/src/priority-lineage-layers/reviewDesk-128-correction.png"
+          }
+        },
+        "recompositionOrder": [
+          "backing",
+          "manuscript",
+          "correction"
+        ],
+        "construction": "independent deterministic backing, manuscript, correction canvases are drawn at every optical tier and composed in declared order",
+        "independentTierConstruction": true,
+        "exactRecompositionRequired": true,
+        "generatedCandidateIsDirectionReferenceOnly": true,
+        "masterBakedGlassIsSource": false,
+        "layerExtractionFromBakedMaster": false
       }
     },
     "searcher": {
@@ -5616,6 +6311,11 @@
       "tone": "blue",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/searcher.png",
       "masterSha256": "962744643c1cbdb98c4ce40eb928914e90d541ec7ed0698593fce93105661bb3",
       "grid": {
@@ -5893,6 +6593,11 @@
       "tone": "blue",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/reader.png",
       "masterSha256": "b96fb567d682f518cc5a19e4050828e788cf60def51caab8f423b06cd91fa95d",
       "grid": {
@@ -6170,6 +6875,11 @@
       "tone": "steel",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/timeMachine.png",
       "masterSha256": "2f09bb9eddee72c86c907095f79b9e5fd1b4b62bf81cb49d8828ae12dc0b9038",
       "grid": {
@@ -6444,10 +7154,14 @@
       "genre": "application",
       "physicalMetaphor": "one translucent document page whose heading lines grow into a stem and three right-side branches",
       "semanticMark": "none",
-      "metaphorKey": "branching-document-map",
       "tone": "blue",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/docMap.png",
       "masterSha256": "01ffa549884dafbd9314b4b17d282dabed1f0a37b319a06439957db1973da616",
       "grid": {
@@ -6717,6 +7431,7 @@
           "gridShape": "square"
         }
       },
+      "metaphorKey": "branching-document-map",
       "metaphorMetrics": {
         "version": 1,
         "sourceSize": [
@@ -6753,6 +7468,11 @@
       "tone": "blue",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/clioStage.png",
       "masterSha256": "4eb04a31bf83dd2184b0d4b99f7526fd6c6ea682659302fdde4ccdd919225ef8",
       "grid": {
@@ -7030,6 +7750,11 @@
       "tone": "blue",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/clioChart.png",
       "masterSha256": "98161f64799721237b4a30321c2d26d5f3b9aadbbdbb5d276c35fd817d6c593c",
       "grid": {
@@ -7307,6 +8032,11 @@
       "tone": "blue",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/liquidCover.png",
       "masterSha256": "46a5e46e16a14f6bad2be1e88f0da9b5bfc196d24cfe8b34020809f005b3dac6",
       "grid": {
@@ -7584,6 +8314,11 @@
       "tone": "rainbow",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/cmfStudio.png",
       "masterSha256": "9af56022676e3b78ac978def4626d46403affc06a0de988b4c2c7d6ada87495b",
       "grid": {
@@ -7861,6 +8596,11 @@
       "tone": "violet",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/soundscape.png",
       "masterSha256": "8509125f38e059d4d4325def43f91c5dd0b7d05ef3254524ef5f7dc256308b55",
       "grid": {
@@ -8138,6 +8878,11 @@
       "tone": "gold",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/scrapbook.png",
       "masterSha256": "2541d802fe41255dc94752553fca2c7594d3a31cacfe71d9d414a3a43cab66ba",
       "grid": {
@@ -8415,6 +9160,11 @@
       "tone": "blue",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/systemFolder.png",
       "masterSha256": "50e8244dad663fcad73b7c6da54c0719c5d07b0d4e7046ce701d92be019df1eb",
       "grid": {
@@ -8692,6 +9442,11 @@
       "tone": "blue",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/helpFolder.png",
       "masterSha256": "c5001ef2855bb6d0f60e50731ba6058552c6c768eef96ed95bddb431cae736d4",
       "grid": {
@@ -8969,6 +9724,11 @@
       "tone": "blue",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/importUtility.png",
       "masterSha256": "6524a76318b78c7a9a37321b18a2ff993652d1f0e912c2c8594e67b2b6a00dd2",
       "grid": {
@@ -9246,6 +10006,11 @@
       "tone": "steel",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/controlPanel.png",
       "masterSha256": "abf0e46c04c32f37087b6effd2f2fec787ca0d83f5669a92de32d1e00a3bc3d2",
       "grid": {
@@ -9523,6 +10288,11 @@
       "tone": "blue",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/chooser.png",
       "masterSha256": "3fb2744f78660eb4a87bd68297ab1cf1f4e1d22a302a2c33326cd7a2677d23f8",
       "grid": {
@@ -9800,6 +10570,11 @@
       "tone": "blue",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/systemHelp.png",
       "masterSha256": "3bf5a25ae99a3b3df372bf7b434d5dc056f9371652a5763c528b4f96380d5b03",
       "grid": {
@@ -10077,6 +10852,11 @@
       "tone": "gold",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/dictionary.png",
       "masterSha256": "18b0f740a87f2642cbbf588e47e1f3f0cc2becdbfb3cb8546a679bdea8fe7e33",
       "grid": {
@@ -10354,6 +11134,11 @@
       "tone": "blue",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/teachText.png",
       "masterSha256": "5835c91dc82f8cbd3f0db297ff75a162071d8965323ca26710b67e09eee4dc9b",
       "grid": {
@@ -10631,6 +11416,11 @@
       "tone": "paper",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/writingDemo.png",
       "masterSha256": "bda8bd88e5c94daba2c04992d9176591ec70ea1907b3c9b44623836659ffe2b5",
       "grid": {
@@ -10908,6 +11698,11 @@
       "tone": "paper",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/chatFile.png",
       "masterSha256": "f557894d6cfbeb4847ec19cbf228281ff712dd36542e8fee05ebb0e314d8a443",
       "grid": {
@@ -11185,6 +11980,11 @@
       "tone": "blue",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/chatImport.png",
       "masterSha256": "2c008498852a5be98373968d43e8991d2e620e4dcd5b49e2db57a3d30dfb18d2",
       "grid": {
@@ -11462,6 +12262,11 @@
       "tone": "steel",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/systemStatus.png",
       "masterSha256": "855b71530736ab674c23311eb72a2ecd09131422079e3b609371e9c948c03cd2",
       "grid": {
@@ -11739,6 +12544,11 @@
       "tone": "gold",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/contextPanel.png",
       "masterSha256": "e4595af3fa157c89cd10b750fd9f79c3fb10018cc8997028f587616b98f6c181",
       "grid": {
@@ -12016,6 +12826,11 @@
       "tone": "blue",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/rebuildArticle.png",
       "masterSha256": "2f4e451b963d85207651c4905fd2fd4db7fa38b8175638585f50781d7719b317",
       "grid": {
@@ -12293,6 +13108,11 @@
       "tone": "red",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/bureaucracyMeme.png",
       "masterSha256": "d011dfbcfeef69421981463db74cfca3c8271c09de54f87b4a18b658990f796a",
       "grid": {
@@ -12570,6 +13390,11 @@
       "tone": "green",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/endfieldTerminal.png",
       "masterSha256": "9663a42222750500656a35f72850cf9cc8ae33c5cc77a7964f12258331931642",
       "grid": {
@@ -12847,6 +13672,11 @@
       "tone": "blue",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/documents.png",
       "masterSha256": "7a1599efb2079cd98bac335f905686587bccf9dc33a0722beb2bab3403f86f8c",
       "grid": {
@@ -13124,6 +13954,11 @@
       "tone": "paper",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/alias.png",
       "masterSha256": "fd2dadf149ac391959f81090d1b3a96a79a93da9370c8382caf73213adf22b6e",
       "grid": {
@@ -13401,6 +14236,11 @@
       "tone": "paper",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/systemFile.png",
       "masterSha256": "0c08d234241b6d8e74d147938fd99c3eca195350b595985f52ade06e99dc0b2a",
       "grid": {
@@ -13672,15 +14512,19 @@
       }
     },
     "multiFinderApp": {
-      "genre": "application",
-      "physicalMetaphor": "finderPair",
+      "genre": "system environment",
+      "physicalMetaphor": "two overlapping current-era Finder identities",
       "semanticMark": "finder",
-      "metaphorKey": "paired-smiling-compact-macintoshes",
       "tone": "blue",
-      "sourceKind": "imagegen-original-raster",
+      "sourceKind": "approved-imagegen-period-plausible-construction",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "composition-from-approved-current-era-imagegen-finder-identity",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "historically-reviewed",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/multiFinderApp.png",
-      "masterSha256": "6e3968be0f9532502e42f96b4973c6f3b92c28275666c592a1ef614d78f7839e",
+      "masterSha256": "151398d5c6dd89c78e481076c1235070342d40e6d49646380d72d8392d0a0218",
       "grid": {
         "canvas": 128,
         "shape": "square",
@@ -13708,189 +14552,273 @@
       },
       "metrics": {
         "128-default": {
-          "sha256": "0a7306ba9a3a453b5d62902e0e9f7fbdab4e3c55f3a6f4533a318e444d2c1c4a",
-          "pixels": 11215,
-          "translucent": 401,
+          "bbox": {
+            "minX": 6,
+            "minY": 6,
+            "maxX": 121,
+            "maxY": 121
+          },
           "bounds": [
-            11,
-            9,
-            116,
-            118
+            6,
+            6,
+            121,
+            121
           ],
           "ink": {
-            "minX": 11,
-            "minY": 9,
-            "maxX": 116,
-            "maxY": 118,
-            "width": 106,
-            "height": 110
+            "minX": 6,
+            "minY": 6,
+            "maxX": 121,
+            "maxY": 121,
+            "width": 116,
+            "height": 116
           },
+          "pixels": 10237,
+          "inkPixels": 10237,
+          "translucent": 4290,
+          "colors": 2406,
+          "sha256": "151398d5c6dd89c78e481076c1235070342d40e6d49646380d72d8392d0a0218",
+          "bytes": 10611,
           "gridShape": "square"
         },
         "128-dark": {
-          "sha256": "de8ac36d3cfe09e0010543aa86c615854c1c773f975aa61db6bd3c06f2094e0c",
-          "pixels": 11215,
-          "translucent": 401,
+          "bbox": {
+            "minX": 6,
+            "minY": 6,
+            "maxX": 121,
+            "maxY": 121
+          },
           "bounds": [
-            11,
-            9,
-            116,
-            118
+            6,
+            6,
+            121,
+            121
           ],
           "ink": {
-            "minX": 11,
-            "minY": 9,
-            "maxX": 116,
-            "maxY": 118,
-            "width": 106,
-            "height": 110
+            "minX": 6,
+            "minY": 6,
+            "maxX": 121,
+            "maxY": 121,
+            "width": 116,
+            "height": 116
           },
+          "pixels": 10237,
+          "inkPixels": 10237,
+          "translucent": 4290,
+          "colors": 2365,
+          "sha256": "72be093d792b2cbee13c0b0e4c4f0f9efbc260677590ca179aa1788e7476fb66",
+          "bytes": 10944,
           "gridShape": "square"
         },
         "128-clear": {
-          "sha256": "205c3ab8040aa446ec6d7aaffe436c198e2cd2a82fc4f7d669b3a9ff6778f208",
-          "pixels": 11215,
-          "translucent": 11215,
+          "bbox": {
+            "minX": 7,
+            "minY": 7,
+            "maxX": 121,
+            "maxY": 121
+          },
           "bounds": [
-            11,
-            9,
-            116,
-            118
+            7,
+            7,
+            121,
+            121
           ],
           "ink": {
-            "minX": 11,
-            "minY": 9,
-            "maxX": 116,
-            "maxY": 118,
-            "width": 106,
-            "height": 110
+            "minX": 7,
+            "minY": 7,
+            "maxX": 121,
+            "maxY": 121,
+            "width": 115,
+            "height": 115
           },
+          "pixels": 10159,
+          "inkPixels": 10159,
+          "translucent": 10159,
+          "colors": 1573,
+          "sha256": "2e60f5f60af8639a5bb6877a222d76ea9c9a22c7b68e87903ecfe5a78e0ccdf9",
+          "bytes": 10653,
           "gridShape": "square"
         },
         "64-default": {
-          "sha256": "81a35703f523c2a99800002b18d3442f0d02962bf033b0374018dd12a395ef3c",
-          "pixels": 2917,
-          "translucent": 357,
+          "bbox": {
+            "minX": 4,
+            "minY": 4,
+            "maxX": 60,
+            "maxY": 60
+          },
           "bounds": [
-            5,
             4,
-            58,
-            59
+            4,
+            60,
+            60
           ],
           "ink": {
-            "minX": 5,
+            "minX": 4,
             "minY": 4,
-            "maxX": 58,
-            "maxY": 59,
-            "width": 54,
-            "height": 56
+            "maxX": 60,
+            "maxY": 60,
+            "width": 57,
+            "height": 57
           },
+          "pixels": 2570,
+          "inkPixels": 2570,
+          "translucent": 1089,
+          "colors": 1215,
+          "sha256": "63557cc3a61c43d4b0e7acd443fc0ae3564d41e281370a7cc1d8fd71582bbba3",
+          "bytes": 3970,
           "gridShape": "square"
         },
         "64-dark": {
-          "sha256": "a4beb2c51ddf4af39c94d7d55c259ff4eb5ff34472b4d41d7c6478202d06b9e7",
-          "pixels": 2917,
-          "translucent": 357,
+          "bbox": {
+            "minX": 4,
+            "minY": 4,
+            "maxX": 60,
+            "maxY": 60
+          },
           "bounds": [
-            5,
             4,
-            58,
-            59
+            4,
+            60,
+            60
           ],
           "ink": {
-            "minX": 5,
+            "minX": 4,
             "minY": 4,
-            "maxX": 58,
-            "maxY": 59,
-            "width": 54,
-            "height": 56
+            "maxX": 60,
+            "maxY": 60,
+            "width": 57,
+            "height": 57
           },
+          "pixels": 2570,
+          "inkPixels": 2570,
+          "translucent": 1089,
+          "colors": 1203,
+          "sha256": "93a9060e5a480d3cba928262006c142ea6bc9ccfc9acb6c21ad0bf293c8ae646",
+          "bytes": 4134,
           "gridShape": "square"
         },
         "64-clear": {
-          "sha256": "9d61a64be882dff422b94abdc3f3ee76c83e410fe676b1f9f1b32b1d977b2404",
-          "pixels": 2917,
-          "translucent": 2917,
+          "bbox": {
+            "minX": 4,
+            "minY": 4,
+            "maxX": 60,
+            "maxY": 60
+          },
           "bounds": [
-            5,
             4,
-            58,
-            59
+            4,
+            60,
+            60
           ],
           "ink": {
-            "minX": 5,
+            "minX": 4,
             "minY": 4,
-            "maxX": 58,
-            "maxY": 59,
-            "width": 54,
-            "height": 56
+            "maxX": 60,
+            "maxY": 60,
+            "width": 57,
+            "height": 57
           },
+          "pixels": 2567,
+          "inkPixels": 2567,
+          "translucent": 2567,
+          "colors": 907,
+          "sha256": "2a08caabe3b0285b13afe1737864c1e301e7945c54b41b5f5f3954c195ced7dd",
+          "bytes": 4221,
           "gridShape": "square"
         },
         "32-default": {
-          "sha256": "8eea2e6670736d644b5257507db18923ff6fe5bddc0359fd49056b116352fd4c",
-          "pixels": 760,
-          "translucent": 72,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 30,
+            "maxY": 30
+          },
           "bounds": [
-            2,
-            2,
-            29,
-            29
+            1,
+            1,
+            30,
+            30
           ],
           "ink": {
-            "minX": 2,
-            "minY": 2,
-            "maxX": 29,
-            "maxY": 29,
-            "width": 28,
-            "height": 28
+            "minX": 1,
+            "minY": 1,
+            "maxX": 30,
+            "maxY": 30,
+            "width": 30,
+            "height": 30
           },
+          "pixels": 664,
+          "inkPixels": 664,
+          "translucent": 365,
+          "colors": 503,
+          "sha256": "27538c2f86c04dad3e409c9babb0ab4910ea5760ec7386db6b5dc613cdf67b7e",
+          "bytes": 1494,
           "gridShape": "square"
         },
         "32-dark": {
-          "sha256": "9d2305c7a29cda07c981add7d3b2eb3be6abfb130b6bca395f78c84db8d9379c",
-          "pixels": 760,
-          "translucent": 72,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 30,
+            "maxY": 30
+          },
           "bounds": [
-            2,
-            2,
-            29,
-            29
+            1,
+            1,
+            30,
+            30
           ],
           "ink": {
-            "minX": 2,
-            "minY": 2,
-            "maxX": 29,
-            "maxY": 29,
-            "width": 28,
-            "height": 28
+            "minX": 1,
+            "minY": 1,
+            "maxX": 30,
+            "maxY": 30,
+            "width": 30,
+            "height": 30
           },
+          "pixels": 664,
+          "inkPixels": 664,
+          "translucent": 365,
+          "colors": 495,
+          "sha256": "1043c7118f294e1b65a1dabad83c01f6d36f266040a1afa98bf75b5eab728579",
+          "bytes": 1661,
           "gridShape": "square"
         },
         "32-clear": {
-          "sha256": "193e9efa911446a7ed2c9ab12d87327d1773b02f2dcfd119b03b4e1f4dcd9f6c",
-          "pixels": 760,
-          "translucent": 760,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 30,
+            "maxY": 30
+          },
           "bounds": [
-            2,
-            2,
-            29,
-            29
+            1,
+            1,
+            30,
+            30
           ],
           "ink": {
-            "minX": 2,
-            "minY": 2,
-            "maxX": 29,
-            "maxY": 29,
-            "width": 28,
-            "height": 28
+            "minX": 1,
+            "minY": 1,
+            "maxX": 30,
+            "maxY": 30,
+            "width": 30,
+            "height": 30
           },
+          "pixels": 664,
+          "inkPixels": 664,
+          "translucent": 664,
+          "colors": 443,
+          "sha256": "f45dee6ddfae544ca41afdf69a4080152496afabd6589977dc451db17ae6e4f9",
+          "bytes": 1750,
           "gridShape": "square"
         },
         "16-default": {
-          "sha256": "bb1ad5f42d4432de4400f91d281e028e336810cdae36a52eac1dd33c033539e6",
-          "pixels": 192,
-          "translucent": 32,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14
+          },
           "bounds": [
             1,
             1,
@@ -13905,12 +14833,21 @@
             "width": 14,
             "height": 14
           },
+          "pixels": 172,
+          "inkPixels": 172,
+          "translucent": 100,
+          "colors": 161,
+          "sha256": "17824e71b22e9551ea24e0935e4de3772f0a3383d16f62122bb10fba00650b32",
+          "bytes": 653,
           "gridShape": "square"
         },
         "16-dark": {
-          "sha256": "fec03048e9f2c7a888b789ba76f1d0027b878ccbafccd1fa615933fa02a62097",
-          "pixels": 192,
-          "translucent": 32,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14
+          },
           "bounds": [
             1,
             1,
@@ -13925,12 +14862,21 @@
             "width": 14,
             "height": 14
           },
+          "pixels": 172,
+          "inkPixels": 172,
+          "translucent": 100,
+          "colors": 161,
+          "sha256": "135f16a9448cd44bfc4761070fde206a4c2baf8a85504c4d5798bac5f235c1e1",
+          "bytes": 671,
           "gridShape": "square"
         },
         "16-clear": {
-          "sha256": "473a26a02a1937371612cc11dc45e952539e6f47002fdb85d66168e5a8427804",
-          "pixels": 192,
-          "translucent": 192,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14
+          },
           "bounds": [
             1,
             1,
@@ -13945,9 +14891,60 @@
             "width": 14,
             "height": 14
           },
+          "pixels": 160,
+          "inkPixels": 160,
+          "translucent": 160,
+          "colors": 147,
+          "sha256": "34798d94ac0b70dc44a71f0e1d20c3420e308d9cce5530beed839696a7590ca1",
+          "bytes": 691,
           "gridShape": "square"
         }
-      }
+      },
+      "metaphorKey": "current-finder-identity-plus-multiplicity",
+      "semanticIdentity": "multiple concurrent Finder environments",
+      "identityAnchors": [
+        "current-era Finder identity",
+        "multiplicity"
+      ],
+      "historicalPrototype": null,
+      "nearestHistoricalAnalog": "approved current-era Finder identity plus period-plausible overlap",
+      "material": "launch-era Liquid Glass with independent enclosure, face-panel, and ink layers",
+      "generatedMaster": "internal/evidence/drafts/icon-lineage-audit/imagegen-candidates-v2/liquid-glass-finder-v2.png",
+      "reference": "No native MultiFinder icon artwork is claimed; multiplicity is a product-semantic construction.",
+      "exactPixelReplica": false,
+      "sizeStatus": {
+        "16": "optically-reviewed",
+        "32": "optically-reviewed",
+        "64": "optically-reviewed",
+        "128": "optically-reviewed"
+      },
+      "sizePolicy": "Each target canvas is rendered directly from the approved high-resolution generation; compact tiers use their own bounds and contrast treatment.",
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.7109,
+          "meanLum": 176.76,
+          "lumStd": 31.94,
+          "edgeEnergy": 57
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6582,
+          "meanLum": 178.33,
+          "lumStd": 34.62,
+          "edgeEnergy": 162
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6355,
+          "meanLum": 179.11,
+          "lumStd": 35.21,
+          "edgeEnergy": 213
+        }
+      },
+      "blindMixStatus": "not-run"
     },
     "daHandler": {
       "genre": "utility",
@@ -13956,6 +14953,11 @@
       "tone": "blue",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/daHandler.png",
       "masterSha256": "f68867cfc7dc390a506339a78e7f80086bd6af2ff2ccf6e85af0376be70922e1",
       "grid": {
@@ -14233,6 +15235,11 @@
       "tone": "gold",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/writingBell.png",
       "masterSha256": "b596598b8c5e9bc1db8914512044dfab99bd2ff78f1367eea96a0989deac3183",
       "grid": {
@@ -14510,6 +15517,11 @@
       "tone": "steel",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/trashFull.png",
       "masterSha256": "257c8c3e2a07d681f55333533c4536210f61a45b4268df956852c555ff4e49ca",
       "grid": {
@@ -14787,6 +15799,11 @@
       "tone": "steel",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/control.png",
       "masterSha256": "99c7dbca991c8752c2598263efdfea5844ee7d5f4fba4a6a355a5c2561ffbf03",
       "grid": {
@@ -15064,6 +16081,11 @@
       "tone": "steel",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/localModel.png",
       "masterSha256": "8776a9fb491730b51fa6342bdf80502926f49fc369a47b8389ef6258a00922cb",
       "grid": {
@@ -15341,6 +16363,11 @@
       "tone": "steel",
       "sourceKind": "imagegen-original-raster",
       "reviewStatus": "accepted-imagegen",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/controlStrip.png",
       "masterSha256": "c9493cc754f706783665e7074a2a399b8ab6c9dc4c40b9362919bc9c8da1b40d",
       "grid": {
@@ -15611,5 +16638,22 @@
         }
       }
     }
-  }
+  },
+  "finderLineageBuilder": "tooling/build-approved-finder-lineage.mjs",
+  "finderLineageSource": "built-in ImageGen candidates admitted only after target-era evidence and compact-size review",
+  "runtimeSizesByContext": {
+    "compactMenuList": 16,
+    "ordinary": 32,
+    "desktopLargeRetina": 128
+  },
+  "compatibilityManifest": "liquid-glass-icon-manifest.json",
+  "compatibilityManifestMeaning": "Stable semantic mapping only; app/core/system-icons.js selects the authored runtime tier by rendering context.",
+  "runtimeDispatch": "apps/desktop/app/core/system-icons.js",
+  "priorityLineageBuilder": "tooling/build-approved-priority-lineage.mjs",
+  "priorityLineageLedger": "tooling/icon-generation/approved-priority-lineage.json",
+  "priorityLineageObjects": [
+    "reviewDesk",
+    "assistant"
+  ],
+  "priorityLineageMeaning": "Only explicitly reviewed v2 rows override the broad generated archive; per-object provenance never implies native replication or reference validation."
 }

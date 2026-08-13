@@ -8,7 +8,7 @@
 
 const { postJsonWithFallback } = require("./lib/fetch.js");
 const { siteFromUrl } = require("./lib/url.js");
-const { cloudAuthHeaders, DEEPSEEK_PUBLIC_BASE_URL } = require("./cloud.js");
+const { cloudAuthHeaders, DEEPSEEK_PUBLIC_BASE_URL, resolveCloudTarget } = require("./cloud.js");
 const { cloudUpstreamWarning, responsesEffortForTask } = require("./responses.js");
 
 const DEEPSEEK_RESPONSES_URL = `${DEEPSEEK_PUBLIC_BASE_URL}/responses`;
@@ -366,13 +366,19 @@ function webSearchUpstreamError(status, text, data) {
  * @param {number} [maxBytes]
  * @returns {Promise<any>}
  */
-async function postWebSearchRequest(payload, signal, apiKey, maxBytes = 16 * 1024 * 1024) {
+async function postWebSearchRequest(payload, signal, apiKey, maxBytes = 16 * 1024 * 1024, onRequest = undefined) {
+  const cloudTarget = await resolveCloudTarget(DEEPSEEK_PUBLIC_BASE_URL);
   const { response } = await postJsonWithFallback(
     DEEPSEEK_RESPONSES_URL,
     payload,
     signal,
     cloudAuthHeaders(apiKey),
-    { maxBytes }
+    {
+      maxBytes,
+      pinnedAddress: cloudTarget.address,
+      pinnedFamily: cloudTarget.family,
+      onRequest,
+    }
   );
   const text = await response.text();
   const contentType = response.headers.get("content-type") || "application/json";
@@ -410,6 +416,7 @@ async function postWebSearchRequest(payload, signal, apiKey, maxBytes = 16 * 102
  *   maxOutputTokens?: number,
  *   userId?: string,
  *   searchCalls?: Array<{ type?: string, id?: string, status?: string, action?: unknown }>,
+ *   onRequest?: () => void,
  * }} options
  * @returns {Promise<{
  *   answer: string,
@@ -428,6 +435,7 @@ async function callWebSearchAnswer({
   maxOutputTokens = WEB_SEARCH_MAX_OUTPUT_TOKENS,
   userId = "",
   searchCalls = [],
+  onRequest,
 }) {
   const normalizedMode = WEB_SEARCH_MODES.has(String(mode || "answer")) ? String(mode) : "answer";
   // Reasoning effort is a server-side policy keyed by task type; callers can
@@ -445,7 +453,7 @@ async function callWebSearchAnswer({
     structured: normalizedMode === "claim",
     searchCalls,
   });
-  const data = await postWebSearchRequest(payload, signal, apiKey);
+  const data = await postWebSearchRequest(payload, signal, apiKey, 16 * 1024 * 1024, onRequest);
   const parsed = parseWebSearchResponse(data, normalizedMode);
   if (!parsed.answer && !parsed.verdict && !parsed.results.length) {
     throw webSearchUpstreamError(502, "Web search returned no readable answer", {
@@ -472,6 +480,7 @@ async function callWebSearchAnswer({
  *   onStatus?: (status: string) => void,
  *   onDelta?: (content: string) => void,
  *   onDone?: (result: ReturnType<typeof parseWebSearchResponse>) => void,
+ *   onRequest?: () => void,
  * }} options
  * @returns {Promise<ReturnType<typeof parseWebSearchResponse> | null>}
  */
@@ -486,6 +495,7 @@ async function callWebSearchAnswerStream({
   onStatus,
   onDelta,
   onDone,
+  onRequest,
 }) {
   const normalizedMode = WEB_SEARCH_MODES.has(String(mode || "answer")) ? String(mode) : "answer";
   const effort = responsesEffortForTask(
@@ -501,12 +511,18 @@ async function callWebSearchAnswerStream({
     searchCalls,
     stream: true,
   });
+  const cloudTarget = await resolveCloudTarget(DEEPSEEK_PUBLIC_BASE_URL);
   const { response } = await postJsonWithFallback(
     DEEPSEEK_RESPONSES_URL,
     payload,
     signal,
     cloudAuthHeaders(apiKey),
-    { maxBytes: 32 * 1024 * 1024 }
+    {
+      maxBytes: 32 * 1024 * 1024,
+      pinnedAddress: cloudTarget.address,
+      pinnedFamily: cloudTarget.family,
+      onRequest,
+    }
   );
   if (!response.ok) {
     const text = await response.text();

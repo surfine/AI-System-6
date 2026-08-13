@@ -392,15 +392,14 @@ body.quick-draft-focus .writing-spine-panel {
   z-index: var(--z-window-pinned);
 }
 
-/* Start Here offers four equal choices, and the window is never wider than
-   430px: one row of four only just fits in Chinese and never in English, so
-   flex-wrap produced three buttons plus a stray fourth pushed to the right
-   edge. Two rows of two is stable at every width and in both languages, and
-   the group is centred instead of right-aligned. */
-.guide-window .button-row {
+/* Start Here now moves page by page, so its only button row is Go Back plus
+   Continue. A two-column grid keeps the pair the same width on every page and
+   in both languages — flex-wrap used to drop a stray button onto its own line
+   — and the row keeps its place when Go Back is hidden on the first page. */
+.guide-window .guide-nav .button-row {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, auto));
-  justify-content: center;
+  justify-content: end;
 }
 
 .guide-window .window-pane {
@@ -631,11 +630,25 @@ body.quick-draft-focus .writing-spine-panel {
      this, iPad/iPhone claim the gesture as scroll / pull-to-refresh and the
      window fights the browser. */
   touch-action: none;
+  /* A control slot is reserved only when its control is really in the bar, and
+     the two ends reserve the same width. The old template always reserved a
+     zoom slot and a shade slot, so a window carrying nothing but a close box
+     (Puzzle, the Desk Accessories) had 32px of empty reservation on the right
+     against 16px on the left and its title sat 9px left of the bar's centre.
+     Mac OS 9 centres the title on the whole bar and yields only to controls
+     that are actually there. The trailing gutter is split between the zoom and
+     WindowShade columns so each control still lands in its own cell. */
+  --titlebar-slot-zoom: var(--system-titlebar-control-slot);
+  --titlebar-slot-shade: var(--system-titlebar-shade-slot);
+  --titlebar-gutter: max(
+    var(--system-titlebar-control-slot),
+    calc(var(--titlebar-slot-zoom) + var(--titlebar-slot-shade))
+  );
   grid-template-columns:
-    var(--system-titlebar-control-slot)
+    var(--titlebar-gutter)
     minmax(0, 1fr)
-    var(--system-titlebar-control-slot)
-    var(--system-titlebar-shade-slot);
+    var(--titlebar-slot-zoom)
+    calc(var(--titlebar-gutter) - var(--titlebar-slot-zoom));
   /* The 40px controls are generous hit targets, not the row's painted height.
      Constraining the implicit row keeps their 13px art on the same centerline
      as the title instead of letting the hit target push both below the bars. */
@@ -660,6 +673,17 @@ body.quick-draft-focus .writing-spine-panel {
   cursor: move;
   user-select: none;
   flex: none;
+}
+
+/* No zoom box / no WindowShade box in the bar means no slot for it. Both
+   controls are omitted from the DOM entirely when a window does not offer them,
+   so :has() is reading real structure, not a state class. */
+.title-bar:not(:has(> .resize-box)) {
+  --titlebar-slot-zoom: 0px;
+}
+
+.title-bar:not(:has(> .shade-box)) {
+  --titlebar-slot-shade: 0px;
 }
 
 .title-bar h1,
@@ -1146,11 +1170,12 @@ html:lang(zh-Hans) .title-bar h2 {
   .title-bar {
     height: var(--system-titlebar-height);
     display: grid;
+    /* Same balanced gutters as the base bar, so the title stays centred. */
     grid-template-columns:
-      var(--system-titlebar-control-slot)
+      var(--titlebar-gutter)
       minmax(0, 1fr)
-      var(--system-titlebar-control-slot)
-      var(--system-titlebar-shade-slot);
+      var(--titlebar-slot-zoom)
+      calc(var(--titlebar-gutter) - var(--titlebar-slot-zoom));
     min-height: var(--system-titlebar-height);
     margin: var(--system-titlebar-margin-y) 0;
     padding: var(--system-titlebar-padding-y) var(--system-titlebar-padding-x);
@@ -1811,10 +1836,10 @@ html:lang(zh-Hans) .title-bar h2 {
 
 .assistant-window .title-bar {
   grid-template-columns:
-    var(--system-titlebar-control-slot)
+    var(--titlebar-gutter)
     minmax(0, 1fr)
-    var(--system-titlebar-control-slot)
-    var(--system-titlebar-shade-slot);
+    var(--titlebar-slot-zoom)
+    calc(var(--titlebar-gutter) - var(--titlebar-slot-zoom));
   background: var(--system-titlebar-active-bg);
 }
 
@@ -3231,8 +3256,25 @@ select:focus {
   box-shadow: var(--btn-hover-shadow);
 }
 
+/* Default actions can own a distinct hover while every era keeps using the
+   shared button state machine. Eras without these tokens fall back to the
+   ordinary hover, so this adds no visual delta outside the explicit recipe. */
+.btn.default:hover:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected) {
+  background: var(--btn-default-hover-bg, var(--btn-hover-bg));
+  color: var(--btn-default-hover-fg, var(--btn-hover-fg));
+}
+
 .btn:focus-visible {
   outline: var(--control-focus-outline);
+  outline-offset: var(--control-focus-offset);
+}
+
+/* An era whose default button already advertises itself (Aqua pulses) sets
+   --btn-default-focus-outline to 0 and suppresses the ring; everyone else
+   inherits the shared focus outline. Token, not a per-era selector, so the
+   choice costs no appearance-selector budget. */
+.btn.default:focus-visible {
+  outline: var(--btn-default-focus-outline, var(--control-focus-outline));
   outline-offset: var(--control-focus-offset);
 }
 
@@ -3423,6 +3465,14 @@ select:focus {
 
 .control-prompt-entry .btn {
   justify-self: start;
+}
+
+/* The prompts button and the checkbox list under it are two separate control
+   groups, and the section's own 8px rhythm is the *within-group* spacing — at
+   that gap the button sat on top of the first checkbox. Platinum separates
+   groups at 13px, so add the difference. */
+.control-prompt-entry + .control-checkbox-grid {
+  margin-top: 5px;
 }
 
 .control-section {

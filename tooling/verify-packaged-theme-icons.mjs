@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 
 import {
   themeLabPackagedAssetReport,
-  themeRuntimePackagedAssets,
+  themeStandalonePackagedAssets,
 } from "./lib/generated-era-runtime-assets.mjs";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -96,7 +96,7 @@ async function main() {
   const reports = themeLabPackagedAssetReport(repositoryRoot);
   const expectedFiles = [
     ...reports.flatMap((report) => report.files),
-    ...themeRuntimePackagedAssets(repositoryRoot),
+    ...themeStandalonePackagedAssets(repositoryRoot),
   ];
   const port = await reserveLoopbackPort();
   let childOutput = "";

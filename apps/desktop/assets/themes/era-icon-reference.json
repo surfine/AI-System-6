@@ -1,9 +1,24 @@
 {
-  "schemaVersion": 1,
-  "copyrightBoundary": "Historical Apple artwork is evidence-only. Product assets are original measured reconstructions and semantic adaptations; no screenshot crops, extracted resources, traced paths, or embedded Apple bitmaps are shipped.",
+  "schemaVersion": 2,
+  "purpose": "Define the historical target, evidence hierarchy, native-size policy, runtime mapping, and honest review state for each icon appearance.",
+  "copyrightBoundary": "Historical Apple artwork is evidence-only. Product runtime assets are project-owned reconstructions or adaptations; screenshots, extracted resources, traced Apple paths, and embedded Apple bitmaps do not ship as product icons.",
+  "statusModel": {
+    "authoring": "generated-draft and technically-clean describe production state only.",
+    "historical": "pending, historically-reviewed, and reference-validated are separate historical states recorded per icon and era in icon-provenance-matrix.json.",
+    "familyCompleteness": "A 56-object runtime family can be complete while historical review remains pending.",
+    "remaining40": "Every runtime id outside icon-system-continuity.json priorityCore16 remains pending until individually reviewed."
+  },
+  "evidencePriority": [
+    "target-OS native resources or real-system captures",
+    "same-period Apple HIG or developer documentation",
+    "same-period verifiable implementation",
+    "high-quality historical screenshot archive",
+    "modern recreation",
+    "visual inference"
+  ],
   "themes": {
-    "platinum": {
-      "target": "Mac OS 9.0 Platinum Finder",
+    "classic": {
+      "target": "System 6.0.8 / late-1980s monochrome Macintosh",
       "referenceSizes": [
         32,
         16
@@ -12,9 +27,48 @@
         32,
         16
       ],
-      "light": "upper-left, discrete one-pixel highlight; lower-right structural shade",
-      "perspective": "compact front or shallow three-quarter object view; removable media front-on",
-      "edge": "integer pixel grid, dark selective keyline, hard alpha, no soft filter shadow",
+      "runtimeManifest": "classic/icons/classic-icon-manifest.json",
+      "runtimeDefault": "32 px SVG; 16 px is selected for compact contexts",
+      "runtimeFormat": "smooth monochrome SVG artwork plus a separate smooth selection mask",
+      "sizePolicy": "The 32 and 16 compositions are separate optical targets. Retina-safe smoothing is permitted, but native evidence owns anatomy, occupied bounds, relative scale, asymmetry, internal landmarks, and selection-mask behavior wherever a direct counterpart exists.",
+      "replicaPolicy": "A direct runtime replica must compare closely with the native resource. Smooth curves are a display representation, not permission to replace native anatomy with a generic geometric icon. Exact-replica claims require an explicit overlay or diff; otherwise the asset is a reference-guided reconstruction.",
+      "light": "monochrome structural contrast; no material lighting recipe",
+      "perspective": "native System 6 object orientation and deliberately varied optical bounds",
+      "edge": "smooth Retina SVG edges under the current product direction; no grey fringe baked into the monochrome artwork",
+      "palette": [
+        "#000000",
+        "#ffffff"
+      ],
+      "sources": [
+        ".claude/skills/system6-ui-review/assets/System 6.0.8 - System Startup.img",
+        ".claude/skills/system6-ui-review/references/native-reference.md",
+        "https://github.com/mihaip/infinite-mac/blob/master/Images/System%206.0.8%20-%20System%20Startup.img"
+      ],
+      "nativeImageSha256": "d1129d50e08064124ecba7423544f753650ceb2b064a3e447f86ef5ce3d6fba2",
+      "authoringStatus": "mixed deterministic reconstruction and generated draft; inspect icon-provenance-matrix.json per object",
+      "historicalReviewStatus": "mixed; direct native counterparts and reviewed adaptations are listed per object in icon-provenance-matrix.json",
+      "remaining40Status": "pending unless an id is explicitly included in priorityCore16 with a stronger status",
+      "acceptance": "Compare direct counterparts against their native resources before judging polish. Inspect 32 and 16 independently at runtime size and high-density scale; smoothing must not alter evidence-owned anatomy."
+    },
+    "platinum": {
+      "target": "Mac OS 9.0 Platinum Finder",
+      "referenceSizes": [
+        42,
+        32,
+        16
+      ],
+      "productSizes": [
+        42,
+        32,
+        16
+      ],
+      "runtimeManifest": "platinum/platinum-icon-manifest.json",
+      "runtimeDefault": "32 px runtime mapping; 16 px compact and 42 px desktop artwork are ledger-declared review tiers",
+      "runtimeFormat": "mixed SVG compatibility assets and PNG family artwork; the runtime manifest is authoritative per id",
+      "sizePolicy": "A 16 px file is historically complete only when independently inspected or optically authored. ImageGen acceptance or the mere presence of 42/32/16 files does not prove this.",
+      "light": "upper-left discrete highlight with lower-right structural shade",
+      "perspective": "compact front or shallow three-quarter object view; removable media generally front-on",
+      "edge": "integer-pixel geometry, selective dark keyline, hard alpha, no theme-wide filter shadow",
       "palette": [
         "#111111",
         "#ffffff",
@@ -29,11 +83,14 @@
       ],
       "sources": [
         "https://guidebookgallery.org/screenshots/macos90",
+        "https://dev.os9.ca/techpubs/mac/pdf/HIGOS8Guidelines.pdf",
         "internal/evidence/drafts/theme-lab-fidelity-cache/platinum/guidebook-filemanager-macos90.png",
-        "internal/evidence/drafts/theme-lab-fidelity-cache/platinum/guidebook-openfile-macos90.png",
-        "internal/evidence/drafts/theme-lab-fidelity/platinum/icon-lab-contact-sheet.png"
+        "internal/evidence/drafts/theme-lab-fidelity-cache/platinum/guidebook-openfile-macos90.png"
       ],
-      "acceptance": "Inspect 32 and 16 independently at 100, 200, and 400 percent with nearest-neighbor scaling. Direct-prototype silhouettes must be compared before palette tuning."
+      "authoringStatus": "the broad family contains accepted ImageGen redraws and deterministic compatibility assets; acceptance is authoring/technical state only",
+      "historicalReviewStatus": "mixed; do not treat accepted-imagegen or a historical prompt as historical validation",
+      "remaining40Status": "pending",
+      "acceptance": "Inspect 42, 32, and 16 at native display size and nearest-neighbour review zoom. Compare direct prototypes before palette tuning; reject both System 6-plus-grey and Windows-95-heavy bevels."
     },
     "aqua": {
       "target": "Mac OS X 10.2 Jaguar Aqua",
@@ -47,9 +104,13 @@
         32,
         16
       ],
-      "light": "above and slightly toward the viewer; bright early-Aqua highlight with object-owned cast shadow",
-      "perspective": "user applications sit on a desk and widen toward the base; utilities are straight-on; documents hover; media is front-on",
-      "edge": "anti-aliased alpha, illustrated material edge, no CSS gloss or global drop shadow",
+      "runtimeManifest": "aqua/aqua-icon-manifest.json",
+      "runtimeDefault": "32 px manifest mapping; the 128 px tier also feeds Retina desktop sprites",
+      "runtimeFormat": "transparent PNG artwork",
+      "sizePolicy": "The broad generated family stores deterministic review derivatives rather than independently authored compact artwork. An object-specific ledger may override that policy only when it explicitly records direct native-size construction. Presence of 128/32/16 files alone is not proof.",
+      "light": "above and slightly toward the viewer, with bright early-Aqua highlight and object-owned cast shadow",
+      "perspective": "genre-specific: user applications use desk perspective, utilities are straighter-on, documents hover, hardware has weight, and removable media is generally front-on",
+      "edge": "anti-aliased illustrated material edge; no CSS gloss or global drop-shadow recipe",
       "palette": [
         "#f8fbff",
         "#cfeaff",
@@ -63,10 +124,13 @@
       "sources": [
         "https://guidebookgallery.org/screenshots/macosx102",
         "https://512pixels.net/projects/aqua-screenshot-library/mac-os-x-10-2-jaguar/",
-        "internal/evidence/drafts/theme-lab-fidelity-cache/aqua/guidebook-finder.png",
-        "internal/evidence/drafts/theme-lab-fidelity-cache/aqua/aqua-icon-lab.png"
+        "internal/evidence/drafts/theme-lab-fidelity-cache/aqua/guidebook-desktop-full.png",
+        "internal/evidence/drafts/theme-lab-fidelity-cache/aqua/guidebook-finder.png"
       ],
-      "acceptance": "The 128 master establishes material and perspective; 32 and 16 are separately composed hints with deleted detail and stronger recognition edges."
+      "authoringStatus": "the broad 56-object family is ImageGen-authored and technically accepted; object-specific deterministic historical overlays are recorded separately",
+      "historicalReviewStatus": "mixed; accepted-generated does not mean historically-reviewed",
+      "remaining40Status": "pending",
+      "acceptance": "Assign genre before material. A 128 px master may establish illustration, but 32 and 16 must be judged independently and redrawn when anchors collapse. Finder must follow the Jaguar split-face prototype."
     },
     "snow-leopard": {
       "target": "Mac OS X 10.6.8 Snow Leopard",
@@ -82,9 +146,13 @@
         32,
         16
       ],
-      "light": "controlled overhead key light with restrained ambient fill and object-specific contact shadow",
-      "perspective": "mature OS X genre split: desk perspective for user apps, shelf perspective for utilities, hovering paper for documents, front-on removable media",
-      "edge": "high-resolution material detail, subtle alpha, no shared Aqua anatomy and no theme-wide CSS shadow",
+      "runtimeManifest": "snow-leopard/snow-leopard-icon-manifest.json",
+      "runtimeDefault": "32 px manifest mapping; the 128 px tier also feeds Retina desktop sprites",
+      "runtimeFormat": "transparent PNG artwork",
+      "sizePolicy": "For the broad generated family, 512/128/32/16 are deterministic review derivatives unless an object ledger explicitly records direct native-size drawing. A scaled 128 is not a detail-authored 512 master, and a reduced 128 is not automatically optical 32/16 artwork.",
+      "light": "controlled overhead key light with restrained ambient fill and an object-specific contact shadow",
+      "perspective": "mature OS X genre split: desk perspective for user applications, shelf or straight-on perspective for utilities, hovering paper for documents, front-on removable media",
+      "edge": "high-resolution material detail and subtle alpha; no shared Jaguar anatomy or theme-wide CSS shadow",
       "palette": [
         "#fafbfc",
         "#dce2e8",
@@ -100,14 +168,14 @@
         "https://512pixels.net/projects/aqua-screenshot-library/mac-os-x-10-6-snow-leopard/",
         "internal/evidence/drafts/snow-leopard-icon-reference/captures/10-6-Snow-Leopard-Applications.png",
         "internal/evidence/drafts/snow-leopard-icon-reference/captures/10-6-Snow-Leopard-Desktop.png",
-        "internal/evidence/drafts/snow-leopard-icon-reference/iconsets/",
-        "internal/evidence/drafts/era-icons/snow-leopard-core-reference-board.png"
+        "internal/evidence/drafts/snow-leopard-icon-reference/iconsets/"
       ],
-      "colorSpace": "References are normalized to sRGB for browser review; source profile provenance remains in the ignored evidence cache.",
-      "acceptance": "512 and 128 own richer texture; 32 and 16 are separately composed and may move details. New application objects must disappear convincingly into a mixed 10.6 family board.",
-      "coreLedger": "assets/themes/snow-leopard/icons/src/snow-leopard-core-icons.json",
-      "coreBatch": "Fourteen reviewed objects own measured 512/128/32/16 PNG artwork; the remaining forty still use the generated fallback family.",
-      "periodCaution": "Exported .icns resources carry sizes newer than 10.6, so they serve only objects whose artwork is unchanged across 10.5-10.9, each confirmed against a genuine 10.6.8 capture."
+      "colorSpace": "References are normalized to sRGB for browser review; source-profile provenance remains in the local evidence cache.",
+      "periodCaution": "Exported .icns sets may include tiers newer than 10.6.8. They may support only an object whose artwork is confirmed against a real 10.6.8 capture; the newer container itself is not 10.6 evidence.",
+      "authoringStatus": "the broad 56-object family is ImageGen-authored with deterministic derivatives; object-specific historical overlays must declare their own construction",
+      "historicalReviewStatus": "mixed; no broad core-reviewed claim is made",
+      "remaining40Status": "pending",
+      "acceptance": "The family must read as mature 10.6 illustration, not a quieter Jaguar pack. Judge 512, 128, 32, and 16 separately, with direct attention to material detail at large size and anchor survival at compact sizes."
     },
     "yosemite": {
       "target": "OS X 10.10 Yosemite",
@@ -123,9 +191,13 @@
         32,
         16
       ],
-      "light": "soft frontal-upper light with shallow shading; no skeuomorphic cast-shadow theatre",
-      "perspective": "flattened but object-specific Finder and application silhouettes; Retina hairlines and compact optical centers",
-      "edge": "clean anti-aliased fill shapes, light steel-blue keyline, limited gradients, no squircle container and no uniform outline-glyph pack",
+      "runtimeManifest": "yosemite/yosemite-icon-manifest.json",
+      "runtimeDefault": "32 px manifest mapping with 128 px artwork used by Retina desktop contexts",
+      "runtimeFormat": "transparent PNG artwork",
+      "sizePolicy": "The broad generated family stores deterministic 128/64/32/16 review derivatives unless an object ledger explicitly records optical construction. Compact variants require redraw when reduction creates modern uniform strokes or loses object identity.",
+      "light": "soft frontal-upper light with shallow shading and no skeuomorphic cast-shadow theatre",
+      "perspective": "flattened but object-specific Finder and application silhouettes with Retina hairlines and compact optical centres",
+      "edge": "clean anti-aliased fills, light steel-blue keyline, limited gradients, no family-wide squircle or outline-glyph pack",
       "palette": [
         "#ffffff",
         "#eef4f9",
@@ -141,14 +213,13 @@
         "https://512pixels.net/projects/aqua-screenshot-library/os-x-10-10-yosemite/",
         "internal/evidence/drafts/yosemite-icon-reference/web/",
         "internal/evidence/drafts/yosemite-icon-reference/folder1.png",
-        "internal/evidence/drafts/theme-lab-fidelity-cache/yosemite/10-10-Yosemite-Finder-Home.png",
-        "internal/evidence/drafts/era-icons/yosemite-core-reference-board.png"
+        "internal/evidence/drafts/theme-lab-fidelity-cache/yosemite/10-10-Yosemite-Finder-Home.png"
       ],
-      "acceptance": "Flatter and cleaner than 10.6 while keeping distinct object silhouettes. The 16 pixel family uses fewer strokes and stronger filled marks.",
-      "coreLedger": "assets/themes/yosemite/icons/src/yosemite-core-icons.json",
-      "coreBatch": "Fourteen reviewed objects own measured 128/64/32/16 PNG artwork; the remaining forty still use the generated fallback family.",
-      "containerRule": "Only Finder and Settings use a rounded square, because only their real 10.10 prototypes do. There is no family-wide container.",
-      "continuity": "System objects follow the 10.10 prototype, including the Finder face reversing sides against 10.6. The seven custom objects keep the metaphorKey in icon-system-continuity.json."
+      "containerRule": "Only objects whose real 10.10 prototypes use a rounded container may use one. There is no family-wide squircle.",
+      "authoringStatus": "the broad 56-object family is ImageGen-authored with deterministic derivatives; object-specific historical overlays are separate",
+      "historicalReviewStatus": "mixed; accepted-generated does not mean the icon belongs in a 2014 Applications folder",
+      "remaining40Status": "pending",
+      "acceptance": "Reject later-macOS squircles, SF-Symbol-like uniform linework, contemporary AI gradients, and excessively perfect geometry. Finder follows the real 10.10 split-face prototype, including its side relationship."
     },
     "liquid-glass": {
       "target": "macOS Tahoe 26 Liquid Glass",
@@ -164,9 +235,13 @@
         32,
         16
       ],
-      "light": "vertical light from above, with crisp specular rims and object-owned contact shadows",
-      "perspective": "simple layered physical metaphors; app objects may use a bounded canvas, while disks, folders, documents, tools, and media retain independent silhouettes",
-      "edge": "translucent layered fills with controlled refraction cues and bright specular edges; no theme-wide CSS glass tile, outline pack, or indiscriminate squircle container",
+      "runtimeManifest": "liquid-glass/liquid-glass-icon-manifest.json",
+      "runtimeDefault": "128 px Default artwork is runtime-mapped; Dark, Clear, and compact tiers are review assets unless an object-specific ledger says otherwise",
+      "runtimeFormat": "transparent PNG composites; core layered objects may retain separate source layers",
+      "sizePolicy": "The broad ImageGen family derives 64/32/16 and Dark/Clear review variants from its accepted master. A core object is independently complete only when its ledger names direct optical construction or layered source files. A reduced or appearance-tinted PNG must not be renamed as independent artwork.",
+      "light": "vertical light from above with crisp specular rims and object-owned contact shadows",
+      "perspective": "simple layered physical metaphors; system masking does not justify one indiscriminate squircle for every object",
+      "edge": "controlled translucent layers, refraction cues, and bright specular edges; no generic glassmorphism tile or uniform outline pack",
       "palette": [
         "#ffffff",
         "#edf7ff",
@@ -184,19 +259,20 @@
         "https://developer.apple.com/icon-composer/",
         "internal/evidence/drafts/liquid-glass-reference/captures/512pixels/",
         "internal/evidence/drafts/liquid-glass-reference/captures/macworld-21-icons/",
-        "internal/evidence/drafts/liquid-glass-reference/captures/wallpapers/",
-        "internal/evidence/drafts/era-icons/liquid-glass-core-reference-board.png"
+        "internal/evidence/drafts/liquid-glass-reference/captures/wallpapers/"
       ],
-      "acceptance": "Every object stays readable in Default, Dark, and Clear over light, dark, photographic, and high-frequency backgrounds, and no object may be recognisable as a generic glassmorphism tile.",
-      "appearances": [
+      "appearanceVariants": [
         "default",
         "dark",
         "clear"
       ],
-      "coreLedger": "assets/themes/liquid-glass/icons/src/liquid-glass-core-icons.json",
-      "coreBatch": "Fourteen reviewed objects own layered 128/64/32/16 px artwork in three appearances; the remaining forty still use the generated fallback family.",
-      "materialModel": "Artwork contributes silhouettes only. One shared material stack applies ambient shadow, identity background, directional specular, and per-layer refraction, tint, and edge. Dark and Clear are re-rendered from the same layers.",
-      "limits": "Refraction acts on the icon own background layer; a static asset cannot sample the live desktop. Tinted appearances and the toolbar family are not drawn yet."
+      "materialArchitecture": "Identity, background, foreground, and accent layers are the preferred source architecture for core icons. Specular, refraction, translucency, and shadow belong to a shared painter; they should not exist only as one baked ImageGen master.",
+      "referenceCutoff": "Real macOS Tahoe 26 captures win over later revisions of Apple design guidance when visual parameters conflict. Current Apple documentation may explain the layer model but may not silently advance the target beyond Tahoe 26.",
+      "limits": "A static asset cannot sample the live desktop behind itself. Toolbar and sidebar symbols remain separate families and are not derived by simply scaling the application icon.",
+      "authoringStatus": "the broad family uses ImageGen masters and deterministic appearance/size derivatives; core layered overlays must declare their separate source architecture",
+      "historicalReviewStatus": "mixed; accepted-imagegen is not Tahoe reference validation",
+      "remaining40Status": "pending",
+      "acceptance": "Every object must remain readable in Default, Dark, and Clear over varied backgrounds and must still look native to Tahoe 26 rather than generic glassmorphism."
     }
   }
 }

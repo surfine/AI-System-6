@@ -1,8 +1,8 @@
 // Snapshot: compose a share card from the CURRENT ERA's real captured frame.
 // No mockups. The desktop on the card is the desktop from the machine.
 
-import { currentEra } from "./eras.js?v=20260814b";
-import { frameSrc, machineManifest } from "./machine.js?v=20260814b";
+import { currentEra, onEraChange } from "./eras.js?v=20260814h";
+import { frameSrc, machineManifest } from "./machine.js?v=20260814h";
 
 function loadImage(src) {
   return new Promise((resolve, reject) => {
@@ -29,12 +29,26 @@ export async function drawShareCard(w, h) {
   ctx.drawImage(frame, (w - dw) / 2, 0, dw, dh);
 
   // Headline plate, System 6 style: white plate, black border, hard shadow.
-  const classic = era.id === "classic" || era.id === "platinum";
-  const font = classic ? "Chicago" : "'Helvetica Neue', Helvetica, sans-serif";
+  // The card wears the face of its era, and site.css already holds the one
+  // researched stack per era. Read it from the document instead of keeping a
+  // second copy here, which is how Platinum ended up sharing Chicago.
+  const tokens = getComputedStyle(document.documentElement);
+  const stack = (name, fallback) => tokens.getPropertyValue(name).trim() || fallback;
+  const display = stack("--display-font", "Chicago");
+  const small = stack("--site-font", stack("--ui-font", display));
+  // Chicago is a bitmap face with no bold; the later system faces have one.
+  const classic = era.id === "classic";
+  // If the canvas cannot parse a stack, ctx.font keeps its old value and the
+  // plate draws at 10px. Set the font, then make sure the size took.
+  const setFont = (size, families) => {
+    const spec = `${classic ? "" : "700 "}${size}px ${families}`;
+    ctx.font = spec;
+    if (!ctx.font.includes(`${size}px`)) ctx.font = `${classic ? "" : "700 "}${size}px sans-serif`;
+  };
   const big = Math.round(Math.min(w * 0.055, h * 0.11));
   const line1 = "THE AI HAS A DESKTOP NOW.";
   const line2 = `${era.year} / ${era.label.toUpperCase()} / REAL SYSTEM CAPTURE`;
-  ctx.font = `${classic ? "" : "700 "}${big}px ${font}`;
+  setFont(big, display);
   const tw = ctx.measureText(line1).width;
   const plateW = Math.min(w * 0.92, tw + big * 1.6);
   const plateH = big * 2.6;
@@ -50,47 +64,83 @@ export async function drawShareCard(w, h) {
   ctx.fillStyle = "#000";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.font = `${classic ? "" : "700 "}${big}px ${font}`;
+  setFont(big, display);
   ctx.fillText(line1, w / 2, py + plateH * 0.38);
-  ctx.font = `${Math.round(big * 0.36)}px ${classic ? "Chicago_12, Chicago" : font}`;
+  setFont(Math.round(big * 0.36), small);
   ctx.fillText(line2, w / 2, py + plateH * 0.76);
 
   return canvas;
 }
 
 export function initShareCard(button) {
+  if (!button) return;
+  const label = button.querySelector(".snapshot-label") || button;
+
+  // The button wears the year you are standing on, so the card is visibly
+  // yours before you press it.
+  function syncLabel() {
+    label.textContent = `Snapshot ${currentEra().year}`;
+  }
+  syncLabel();
+  onEraChange(syncLabel);
+
   button.addEventListener("click", async () => {
     if (!machineManifest()) return;
     const era = currentEra();
-    const wide = await drawShareCard(1200, 630);
-    const square = await drawShareCard(1080, 1080);
+    button.disabled = true;
+    label.textContent = "Developing\u2026";
+    try {
+      const wide = await drawShareCard(1200, 630);
+      // One press, one file: the download starts without a second decision.
+      const blob = await new Promise((r) => wide.toBlob(r, "image/png"));
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `ai-system-6-${era.year}-${era.id}.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 20000);
+      showPanel(button, era, wide);
+    } finally {
+      button.disabled = false;
+      syncLabel();
+    }
+  });
+}
 
-    let panel = document.getElementById("snapshot-panel");
-    if (panel) panel.remove();
-    panel = document.createElement("div");
-    panel.id = "snapshot-panel";
-    panel.className = "mini-window snapshot-panel";
-    panel.setAttribute("role", "dialog");
-    panel.setAttribute("aria-label", "Snapshot ready");
-    panel.innerHTML = `
-      <header class="tbar mini-tbar">
-        <button type="button" class="close-box mw-close" aria-label="Close snapshot"></button>
-        <h3>Snapshot: ${era.label}</h3>
-      </header>
-      <div class="mini-wbody snapshot-body">
-        <div class="snapshot-preview"></div>
-        <p class="btn-row snapshot-actions">
-          <a class="btn" download="ai-system-6-${era.id}-1200x630.png">Save 1200 × 630</a>
-          <a class="btn" download="ai-system-6-${era.id}-1080x1080.png">Save 1080 × 1080</a>
-        </p>
-      </div>`;
-    panel.querySelector(".snapshot-preview").appendChild(wide);
-    const [a, b] = panel.querySelectorAll("a.btn");
-    wide.toBlob((blob) => { if (blob) a.href = URL.createObjectURL(blob); }, "image/png");
-    square.toBlob((blob) => { if (blob) b.href = URL.createObjectURL(blob); }, "image/png");
-    button.closest(".scene").appendChild(panel);
-    panel.querySelector(".mw-close").addEventListener("click", () => { panel.remove(); button.focus(); });
-    panel.addEventListener("keydown", (e) => { if (e.key === "Escape") { panel.remove(); button.focus(); } });
-    panel.querySelector(".mw-close").focus();
+// The card that just downloaded, shown once so the visitor sees what they got
+// and can take the square crop for a feed that wants one.
+function showPanel(button, era, wide) {
+  let panel = document.getElementById("snapshot-panel");
+  if (panel) panel.remove();
+  panel = document.createElement("div");
+  panel.id = "snapshot-panel";
+  panel.className = "mini-window snapshot-panel";
+  panel.setAttribute("role", "dialog");
+  panel.setAttribute("aria-label", `Snapshot saved: ${era.year} ${era.label}`);
+  panel.innerHTML = `
+    <header class="tbar mini-tbar">
+      <button type="button" class="close-box mw-close" aria-label="Close snapshot"></button>
+      <h3>Saved: ${era.year} ${era.label}</h3>
+    </header>
+    <div class="mini-wbody snapshot-body">
+      <div class="snapshot-preview"></div>
+      <p class="btn-row snapshot-actions">
+        <a class="btn" id="snapshot-square" download="ai-system-6-${era.year}-square.png">Also Save Square</a>
+      </p>
+      <p class="mw-status">Saved to your downloads. Every pixel is a real system capture.</p>
+    </div>`;
+  panel.querySelector(".snapshot-preview").appendChild(wide);
+  button.closest("section, header").appendChild(panel);
+  const close = panel.querySelector(".mw-close");
+  close.addEventListener("click", () => { panel.remove(); button.focus(); });
+  panel.addEventListener("keydown", (e) => { if (e.key === "Escape") { panel.remove(); button.focus(); } });
+  close.focus();
+
+  drawShareCard(1080, 1080).then((square) => {
+    square.toBlob((blob) => {
+      if (blob) panel.querySelector("#snapshot-square").href = URL.createObjectURL(blob);
+    }, "image/png");
   });
 }

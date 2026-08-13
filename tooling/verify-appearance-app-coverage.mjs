@@ -171,6 +171,9 @@ try {
   page.on("console", (message) => {
     if (message.type() === "error") diagnostics.push(`console: ${message.text()}`);
   });
+  page.on("response", (response) => {
+    if (response.status() >= 400) diagnostics.push(`response ${response.status()}: ${response.url()}`);
+  });
   await page.goto(server.url, { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => document.body.dataset.appReady === "ready", null, { timeout: 15000 });
   await page.evaluate(() => {

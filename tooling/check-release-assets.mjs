@@ -2,9 +2,9 @@ import { existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  generatedEraRuntimeAssetReport,
+  generatedEraCompatibilityManifestReport,
   themeLabPackagedAssetReport,
-  themeRuntimePackagedAssets,
+  themeStandalonePackagedAssets,
 } from "./lib/generated-era-runtime-assets.mjs";
 import { resolveProjectPath } from "./lib/paths.mjs";
 
@@ -20,7 +20,8 @@ const requiredAssets = [
   "apps/server/assets/ocr/tessdata/eng.traineddata.gz",
   "apps/server/assets/ocr/tessdata/chi_sim.traineddata.gz",
   "apps/server/assets/ocr/tessdata/chi_tra.traineddata.gz",
-  "system.css-reference/cursors/watch.png",
+  "apps/desktop/assets/cursors/system6-watch.png",
+  "apps/desktop/assets/themes/snow-leopard/radio-selected.svg",
   "system.css-reference/fonts/ChicagoFLF.woff2",
   "system.css-reference/fonts/ChiKareGo2.woff2",
   "system.css-reference/fonts/monaco.woff2",
@@ -41,9 +42,9 @@ for (const asset of requiredAssets) {
 
 const packageInfo = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
 const packageAssets = new Set(packageInfo.pkg?.assets || []);
-for (const report of generatedEraRuntimeAssetReport(root)) {
+for (const report of generatedEraCompatibilityManifestReport(root)) {
   for (const file of report.files) if (file.bytes <= 0) empty.push(file.relativePath);
-  console.log(`OK  ${report.eraId} runtime manifest tier ${report.tier} is complete (${report.files.length} files, ${report.bytes} bytes)`);
+  console.log(`OK  ${report.eraId} compatibility manifest tier ${report.tier} is complete (${report.files.length} files, ${report.bytes} bytes)`);
   if (process.argv.includes("--list-icon-assets")) {
     for (const file of report.files) console.log(`    ${file.relativePath}`);
   }
@@ -59,10 +60,10 @@ for (const report of themeLabPackagedAssetReport(root)) {
   console.log(`OK  ${report.eraId} packaged Theme Lab family is complete (${report.files.length} files, ${report.bytes} bytes)`);
 }
 
-for (const file of themeRuntimePackagedAssets(root)) {
-  if (!packageAssets.has(file.relativePath)) packaging.push(`pkg.assets is missing UI-referenced theme PNG ${file.relativePath}`);
+for (const file of themeStandalonePackagedAssets(root)) {
+  if (!packageAssets.has(file.packagePattern)) packaging.push(`pkg.assets is missing root theme PNG family ${file.packagePattern} required by ${file.packagePath}`);
   if (file.bytes <= 0) empty.push(file.relativePath);
-  console.log(`OK  packaged theme runtime asset ${file.relativePath} (${file.bytes} bytes)`);
+  console.log(`OK  packaged standalone theme asset ${file.packagePath} (${file.bytes} bytes)`);
 }
 
 if (!missing.length && !empty.length && !packaging.length) {

@@ -7,6 +7,7 @@ import { lazyStyleBundles, styleRuntimePaths } from "./style-manifest.mjs";
 import { generateBuildInfo } from "./lib/build-info.mjs";
 import { minifyCss } from "./lib/minify-css.mjs";
 import { desktopRoot, repositoryRoot } from "./lib/paths.mjs";
+import { patchTesseractWorker } from "./patch-tesseract-worker.mjs";
 
 const root = repositoryRoot;
 
@@ -15,21 +16,9 @@ const root = repositoryRoot;
 // path (dev, verify:release, web release, packaging) reports one identity.
 const buildIdentity = generateBuildInfo();
 
-// Canonical tesseract.js worker patch. tesseract.js@7's worker file
-// uses `require('..')` which trips Node's CJS resolver in certain
-// pkg-packaged FS layouts; the fix is the explicit `../index.js`
-// path. This patch lives here (build-time only) so the patched file
-// is captured in the pkg snapshot. Do NOT add a runtime copy of this
-// patch in the server; pkg's virtual FS is read-only at runtime,
-// and the build-time patch already covers both dev and packaged
-// flows because `npm start` runs build:app via prestart.
-try {
-  const workerFile = join(root, "node_modules", "tesseract.js", "src", "worker-script", "node", "index.js");
-  const content = readFileSync(workerFile, "utf8");
-  if (content.includes("require('..')")) {
-    writeFileSync(workerFile, content.replace("require('..')", "require('../index.js')"), "utf8");
-  }
-} catch (err) {}
+// pkg needs the explicit worker entrypoint. The versioned patch verifies both
+// dependency version and source hash, and fails the build on any drift.
+patchTesseractWorker(root);
 const cssBundlePath = "styles.bundle.css";
 
 const banner = [

@@ -24,8 +24,9 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const themeDir = join(root, "apps/desktop/assets/themes/yosemite");
 const assetDir = join(themeDir, "icons");
 const acceptedImagegenSourceDir = join(assetDir, "imagegen-source");
-const sourceFile = join(assetDir, "apps/server/yosemite-core-icons.json");
+const sourceFile = join(assetDir, "src/yosemite-core-icons.json");
 const draftDir = join(root, "internal/evidence/drafts/era-icons");
+if (!existsSync(sourceFile)) throw new Error(`Missing Yosemite core-icon source ledger: ${sourceFile}`);
 const source = JSON.parse(readFileSync(sourceFile, "utf8"));
 const ids = Object.keys(source.icons);
 const sizes = [128, 64, 32, 16];
@@ -980,7 +981,7 @@ const family = {
   nativeSizes: sizes,
   referenceLedger: "icons/src/yosemite-core-icons.json",
   referenceBoard: "internal/evidence/drafts/era-icons/yosemite-core-reference-board.png",
-  sizeRule: "Runtime surfaces downscale the 128 px master. The twelve programmatic cores own separately composed 64 px, 32 px, and 16 px review hints; accepted Image Gen cores use separately processed ledger artifacts.",
+  sizeRule: "Runtime selects the authored 16, 32, or 128 px tier by context. The 64 px tier is explicit-review/caller art; accepted ImageGen cores use the size provenance recorded in their ledger.",
   continuityRule: source.continuityRule,
   selectionRecipe: "Finder selection belongs to the label and the view surface; normal and selected states use the same artwork.",
   icons: generated,
@@ -990,7 +991,8 @@ writeFileSync(join(assetDir, "yosemite-core-icon-manifest.json"), `${JSON.string
 
 const familyFile = join(themeDir, "yosemite-icon-family.json");
 const eraFamily = JSON.parse(readFileSync(familyFile, "utf8"));
-eraFamily.runtimeSize = 128;
+eraFamily.runtimeSize = "contextual";
+eraFamily.runtimeSizesByContext = { compactMenuList: 16, ordinary: 32, desktopLargeRetina: 128 };
 eraFamily.reviewedCore = ids;
 eraFamily.coreBuilder = "tooling/build-yosemite-core-icons.mjs";
 for (const id of ids) {

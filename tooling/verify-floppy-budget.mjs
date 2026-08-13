@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { appRuntimePaths, coreFiles, floppyBudgetBytes, lazyStartupExclusions } from "./runtime-manifest.mjs";
@@ -65,6 +65,35 @@ if (remaining < 0) {
 if (failures.length) {
   failures.forEach((failure) => console.error(`NO  ${failure}`));
   process.exit(1);
+}
+
+// The measured payload is a fact the gate already owns. Publishing it here
+// means the website and the README quote a number that was checked, instead
+// of two hand-copied constants that drift apart between releases.
+const receiptDir = join(root, "site", "data");
+const receiptPath = join(receiptDir, "floppy-budget.json");
+mkdirSync(receiptDir, { recursive: true });
+let previousReceipt = null;
+try {
+  previousReceipt = JSON.parse(readFileSync(receiptPath, "utf8"));
+} catch {}
+const receiptFacts = {
+  bytes: total,
+  budgetBytes: floppyBudgetBytes,
+  twoFloppyBytes: 2 * 1_474_560,
+  gate: "npm run verify:floppy",
+};
+const factsUnchanged = previousReceipt
+  && Object.entries(receiptFacts).every(([key, value]) => previousReceipt[key] === value);
+const receipt = {
+  measuredAt: factsUnchanged && previousReceipt.measuredAt
+    ? previousReceipt.measuredAt
+    : new Date().toISOString(),
+  ...receiptFacts,
+};
+const serializedReceipt = `${JSON.stringify(receipt, null, 2)}\n`;
+if (!existsSync(receiptPath) || readFileSync(receiptPath, "utf8") !== serializedReceipt) {
+  writeFileSync(receiptPath, serializedReceipt);
 }
 
 console.log("OK  System Floppy Budget");

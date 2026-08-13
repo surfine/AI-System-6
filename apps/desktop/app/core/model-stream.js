@@ -1,7 +1,7 @@
 // Core module: shared model response streaming helpers.
 
 async function readModelTextStream(response, options = {}) {
-  const { onSnapshot, onUsage, onFinishReason, throttleMs = 80, signal } = options;
+  const { onSnapshot, onUsage, onFinishReason, onResponseId, onResponseApi, throttleMs = 80, signal } = options;
   if (!response?.ok) {
     const text = await response?.text?.().catch(() => "") || "";
     const detail = text || response?.statusText || `HTTP ${response?.status || 0}`;
@@ -24,6 +24,8 @@ async function readModelTextStream(response, options = {}) {
   const readJsonFallback = async () => {
     const data = await response.json();
     if (data?.usage?.prompt_tokens) onUsage?.(data.usage);
+    if (data?.ai_system6_lmstudio_response_id) onResponseId?.(String(data.ai_system6_lmstudio_response_id));
+    if (data?.ai_system6_lmstudio_api) onResponseApi?.(String(data.ai_system6_lmstudio_api));
     const content = data?.choices?.[0]?.message?.content
       ?? data?.choices?.[0]?.text
       ?? data?.choices?.[0]?.delta?.content
@@ -44,6 +46,8 @@ async function readModelTextStream(response, options = {}) {
   let content = "";
   let usage = null;
   let finishReason = "";
+  let responseId = "";
+  let responseApi = "";
   let sawEventFrame = false;
 
   const appendChunk = (chunk) => {
@@ -61,6 +65,8 @@ async function readModelTextStream(response, options = {}) {
     try {
       const data = JSON.parse(raw);
       if (data.usage?.prompt_tokens) usage = data.usage;
+      if (data.ai_system6_lmstudio_response_id) responseId = String(data.ai_system6_lmstudio_response_id);
+      if (data.ai_system6_lmstudio_api) responseApi = String(data.ai_system6_lmstudio_api);
       const nextFinishReason = data?.choices?.[0]?.finish_reason;
       if (nextFinishReason) finishReason = String(nextFinishReason);
       appendChunk(
@@ -112,6 +118,8 @@ async function readModelTextStream(response, options = {}) {
   if (buffer.trim()) consumeEvent(buffer);
   if (usage) onUsage?.(usage);
   if (finishReason) onFinishReason?.(finishReason);
+  if (responseId) onResponseId?.(responseId);
+  if (responseApi) onResponseApi?.(responseApi);
   emitSnapshot(content, true);
   return content;
 }

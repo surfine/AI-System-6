@@ -116,7 +116,15 @@ function applyTeachTextRoleUi() {
 }
 
 function ensureTeachTextManuscriptTab(project = getActiveProject()) {
-  if (!project || typeof upsertDocumentTab !== "function") return null;
+  if (!project || typeof getDocumentTabs !== "function") return null;
+  // getDocumentTabs() normalizes the project and creates its required
+  // manuscript tab without changing the active tab. Calling upsert here used
+  // to activate the manuscript before openTeachTextDocumentTab() captured the
+  // currently displayed Source Notes state, corrupting the manuscript tab
+  // into a second scratch-file tab on the mobile writing route.
+  const existing = getDocumentTabs("teachText", project)
+    .find((tab) => tab.role === "manuscript");
+  if (existing || typeof upsertDocumentTab !== "function") return existing || null;
   return upsertDocumentTab("teachText", "manuscript", {
     title: t("document_role_manuscript"),
     backing: { type: "manuscript" },

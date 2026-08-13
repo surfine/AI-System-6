@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AI System 6 - The AI has a desktop now</title>
-<meta name="description" content="Six Mac eras. One AI desktop. Chat is an app, not the whole computer. AI System 6 is a local-first writing environment where AI work lives in visible apps and files: Searcher, Reader, Scrapbook, DocMap, TeachText, Review Desk. Boot it in your browser.">
+<meta name="description" content="A working AI desktop, not a chat window. AI System 6 is a local-first writing environment where AI work lives in visible apps and files: Searcher, Reader, Scrapbook, DocMap, TeachText, Review Desk. The same desk runs in six Macintosh appearances, 1988 to 2026, because the objects outlive the interface. Boot it in your browser.">
 <link rel="canonical" href="https://aisystem6.pages.dev/">
 <link rel="icon" href="img/app-icon-192.png">
 <link rel="apple-touch-icon" href="img/app-icon-180.png">
 <meta property="og:type" content="website">
 <meta property="og:title" content="AI System 6 - The AI has a desktop now">
-<meta property="og:description" content="Six Mac eras. One AI desktop. Boot it in your browser.">
+<meta property="og:description" content="A working AI desktop, not a chat window. One desk, from System 6 to Liquid Glass. Boot it in your browser.">
 <meta property="og:image" content="https://aisystem6.pages.dev/img/og-poster.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -18,11 +18,11 @@
 <meta property="og:url" content="https://aisystem6.pages.dev/">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="AI System 6 - The AI has a desktop now">
-<meta name="twitter:description" content="Six Mac eras. One AI desktop. Boot it in your browser.">
+<meta name="twitter:description" content="A working AI desktop, not a chat window. One desk, from System 6 to Liquid Glass. Boot it in your browser.">
 <meta name="twitter:image" content="https://aisystem6.pages.dev/img/og-poster.png">
 <script>try{var t=localStorage.getItem("s6-site-theme");if(t&&t!=="classic")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=20260814b">
-<link rel="stylesheet" href="desk.css?v=20260814b">
+<link rel="stylesheet" href="site.css?v=20260814h">
+<link rel="stylesheet" href="desk.css?v=20260814h">
 </head>
 <body>
 
@@ -66,12 +66,11 @@
   <details class="menu menu-extra">
     <summary>View</summary>
     <ul class="menu-list">
-      <li><a href="#chat">Chat Is an App</a></li>
-      <li><a href="#route">The Route</a></li>
-      <li><a href="#eras">Six Mac Eras</a></li>
       <li><a href="#impossible">The 1988 Computer</a></li>
       <li><a href="#floppies">Two Floppies</a></li>
-      <li><a href="#model">Your Model</a></li>
+      <li><a href="#chat">Chat Is an App</a></li>
+      <li><a href="#argument">Six Appearances, One Argument</a></li>
+      <li><a href="#model">Bring Your Own Brain</a></li>
       <li><a href="#demo">50s Demo</a></li>
       <li><a href="#readme">Read Me</a></li>
     </ul>
@@ -110,72 +109,72 @@
   <header class="hero-scene" id="hero" aria-labelledby="hero-title">
     <p class="hero-brand">AI SYSTEM 6</p>
     <h1 class="hero-head" id="hero-title">THE AI HAS<br>A DESKTOP NOW.</h1>
+    <p class="hero-sub">Not a chat window. A desk, with apps, files, and a Trash can.</p>
     <p class="btn-row hero-btns">
       <a class="btn btn-default" href="https://system6.aaronlau.me">Boot the Live System</a>
       <a class="btn" href="#demo">Watch the 50s Demo</a>
     </p>
-    <figure class="machine-figure" id="hero-machine">
+    <figure class="machine-figure dissolve-figure" id="hero-dissolve">
       <noscript>
         <img src="img/frames/classic.png" width="2880" height="1800" style="width:100%;height:auto"
              alt="The AI System 6 desktop, captured from the real app: Searcher, ClioTalk, Scrapbook, TeachText, and Review Desk around one manuscript.">
       </noscript>
     </figure>
+    <p class="btn-row hero-actions">
+      <button type="button" class="btn btn-glyph" id="snapshot-btn" data-balloon="Saves a share card of this desktop, in whatever year you stopped on."><svg viewBox="0 0 32 32" width="16" height="16" fill="currentColor" shape-rendering="crispEdges" aria-hidden="true"><path d="M10 6h12l2 4h6v16H2V10h6zM16 12a6 6 0 1 0 0 12 6 6 0 0 0 0-12z" fill-rule="evenodd"/><path d="M16 14a4 4 0 1 1 0 8 4 4 0 0 1 0-8z"/></svg><span class="snapshot-label">Snapshot 1988</span></button>
+    </p>
     <p class="machine-provenance" id="hero-provenance"></p>
-    <div class="era-strip" id="hero-era-strip" aria-label="Appearance timeline"></div>
   </header>
 
-  <!-- ================= Chat is an app ================= -->
-  <section class="scene" id="chat" aria-labelledby="chat-title">
-    <figure class="machine-figure machine-figure-narrow" id="chat-machine"></figure>
-    <h2 class="scene-head" id="chat-title">CHAT IS AN APP.<br>NOT THE WHOLE COMPUTER.</h2>
-    <p class="scene-note" id="chat-note">ClioTalk waits for a model. The rest of the desk doesn't.</p>
-  </section>
-
-  <!-- ================= The route ================= -->
-  <section class="scene" id="route" aria-labelledby="route-title">
-    <h2 class="scene-head" id="route-title">SOURCES GO IN.<br>FILES COME OUT.</h2>
-    <div class="route-stage" id="route-stage"></div>
-    <figure class="machine-figure machine-figure-narrow" id="route-machine"></figure>
-    <p class="scene-note" id="route-note">Nothing becomes permanent until you choose to keep it.</p>
-  </section>
-
-  <!-- ================= Six eras ================= -->
-  <section class="scene scene-wide" id="eras" aria-labelledby="eras-title">
-    <h2 class="scene-head" id="eras-title">SAME WORK.<br>SIX MAC ERAS.</h2>
-    <p class="scene-note">The interface changes. The work stays.</p>
-    <figure class="machine-figure" id="era-machine"></figure>
-    <div class="era-strip era-strip-big" id="era-strip" aria-label="Era timeline 1988 to 2026"></div>
-    <p class="era-actions">
-      <button type="button" class="btn btn-glyph" id="cycle-btn" aria-pressed="false"
-              data-balloon="Plays the whole timeline from 1988 to 2026, one era every two seconds."><svg class="cycle-glyph" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" shape-rendering="crispEdges" aria-hidden="true"><path class="cycle-play" d="M4 2l10 6L4 14z"/><path class="cycle-stop" d="M3 3h10v10H3z"/></svg><span class="cycle-label">Cycle Eras</span></button>
-      <button type="button" class="btn btn-glyph" id="snapshot-btn" data-balloon="Saves a share card of this desktop, in the current era."><svg viewBox="0 0 32 32" width="16" height="16" fill="currentColor" shape-rendering="crispEdges" aria-hidden="true"><path d="M10 6h12l2 4h6v16H2V10h6zM16 12a6 6 0 1 0 0 12 6 6 0 0 0 0-12z" fill-rule="evenodd"/><path d="M16 14a4 4 0 1 1 0 8 4 4 0 0 1 0-8z"/></svg> Take Snapshot&hellip;</button>
-    </p>
-  </section>
-
-  <!-- ================= Impossible ================= -->
-  <section class="scene" id="impossible" aria-labelledby="impossible-title">
-    <div class="finder-window" id="impossible-window" aria-labelledby="impossible-title">
+  <!-- ================= The proof ================= -->
+  <section class="scene" id="impossible" aria-labelledby="proof-title">
+    <h2 class="scene-head" id="proof-title">THIS IS A 1988 DESKTOP.</h2>
+    <div class="finder-window" id="impossible-window">
       <header class="tbar"><span class="close-box" aria-hidden="true"></span>
         <h2 id="impossible-title">Things This 1988 Computer Should Not Be Able to Do</h2>
       </header>
       <div class="finder-status" id="impossible-status">8 items          2 floppies in disk          38 years available</div>
+      <div class="proof-wall" id="proof-wall"></div>
+      <p class="proof-note">All four are the real app, photographed while running. No mockups.</p>
       <div class="finder-body" id="impossible-body"></div>
     </div>
   </section>
 
   <!-- ================= Two floppies ================= -->
   <section class="scene" id="floppies" aria-labelledby="floppies-title">
-    <div class="floppy-stage" id="floppy-stage" role="img"
-         aria-label="Two 1.44 megabyte floppy disks slide into a Macintosh, and the desktop boots.">
+    <h2 class="scene-head" id="floppies-title">TWO FLOPPIES.</h2>
+    <div class="floppy-wall" id="floppy-wall"></div>
+  </section>
+
+  <!-- ================= Chat is an app, and the route proves it ================= -->
+  <section class="scene" id="chat" aria-labelledby="chat-title">
+    <h2 class="scene-head" id="chat-title">CHAT IS AN APP.<br>NOT THE WHOLE COMPUTER.</h2>
+    <p class="scene-note" id="chat-note">One window asks the questions. The rest of the desk does the work, and it ends in a file that is yours.</p>
+    <div class="route-stage" id="route-stage"></div>
+    <figure class="machine-figure machine-figure-narrow" id="route-machine"></figure>
+  </section>
+
+  <!-- ================= Six appearances, one argument ================= -->
+  <section class="scene" id="argument" aria-labelledby="argument-title">
+    <h2 class="scene-head" id="argument-title">IF AI HAD ARRIVED IN 1988,<br>WOULD IT BE A CHAT BOX?</h2>
+    <p class="scene-note" id="argument-note">Six appearances, and not one of them is a skin. Each has to prove
+    something the one before it could not. Every line below is set in the system face of its own year, beside the
+    manuscript icon as that year drew it. Click a line to put the whole page in it.</p>
+    <div class="finder-window claim-window">
+      <header class="tbar"><span class="close-box" aria-hidden="true"></span>
+        <h2>Appearances</h2>
+      </header>
+      <div class="finder-status">6 items          38 years          1 desk</div>
+      <ol class="claim-list" id="claim-list"></ol>
+      <p class="claim-kicker">Interfaces age. Objects do not.</p>
     </div>
-    <h2 class="scene-head" id="floppies-title">THE DESKTOP BOOTS<br>IN TWO FLOPPIES.</h2>
-    <p class="scene-note">Your model doesn't.</p>
-    <p class="scene-fine">Boot-critical browser payload. Heavy tools load later.</p>
+    <p class="scene-fine">A window became a bevel, then plastic, then silver, then vibrancy, then glass. The
+    document, the folder, the project disk, the Scrapbook and the manuscript never moved.</p>
   </section>
 
   <!-- ================= Your model ================= -->
   <section class="scene" id="model" aria-labelledby="model-title">
-    <h2 class="scene-head" id="model-title">YOUR MODEL.<br>OUR DESKTOP.</h2>
+    <h2 class="scene-head" id="model-title">BRING YOUR<br>OWN BRAIN.</h2>
     <figure class="machine-figure machine-figure-strip" id="model-machine"></figure>
     <p class="scene-note">The menu bar tells the truth. No model is connected, and the desk still works.</p>
     <div class="model-providers" role="list" aria-label="Supported providers">
@@ -184,7 +183,6 @@
       <span role="listitem"><img data-icon="cloudModel" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/cloudModel.svg"><span>DeepSeek</span></span>
       <span role="listitem"><img data-icon="chooser" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/chooser.svg"><span>Any OpenAI-compatible</span></span>
     </div>
-    <p class="scene-fine">Connect one in the Control Panel when you need it. Credentials stay outside projects, chats, backups, and exports.</p>
   </section>
 
   <!-- ================= QuickTime demo ================= -->
@@ -230,67 +228,52 @@
     <div class="window readme-window">
       <header class="tbar"><span class="close-box" aria-hidden="true"></span><h2 id="readme-title">Read Me</h2></header>
       <div class="wbody readme-body">
-        <details>
-          <summary>What this is</summary>
-          <p>AI System 6 is a local-first writing environment for source-based writing,
-          shaped like a Macintosh desktop. AI can search, read, map, write, review,
-          chart, present, and make, but every result lands in a visible object:
-          a scrap, a file, a manuscript, a chart, a disk. AI output stays temporary
-          until you save, clip, insert, or export it. The AI helps read, organize,
-          draft, and review; it does not get to silently become the writer.</p>
-        </details>
-        <details>
-          <summary>The route</summary>
-          <p><strong>Searcher</strong> finds sources; <strong>Reader</strong> opens the evidence;
-          <strong>Time Machine</strong> revisits archived pages. <strong>Scrapbook</strong> keeps only
-          what you deliberately clip. <strong>DocMap</strong> turns research into a visible map.
-          <strong>Question Sheet → Outline → Section Drafts → TeachText</strong> carries one manuscript
-          from messy intent to finished prose. <strong>Review Desk</strong> checks factual and structural
-          risk, including generic AI-mouthpiece drift. <strong>ClioChart, ClioStage, and Cover Glass</strong>
-          turn the same work into charts, slides, and finished visual artifacts.</p>
-        </details>
-        <details>
-          <summary>Local-first, inspectable</summary>
-          <p>Durable project data lives in your browser's IndexedDB; the server is a small,
-          stateless Node.js process with no application database. Model inputs, prompts, and
-          run records are designed to remain visible. Provider credentials stay outside project
-          files, chats, backups, and exports. You can explore the whole desktop with no model connected.</p>
-        </details>
-        <details>
-          <summary>Bring your own model</summary>
-          <p>AI System 6 is model-agnostic: LM Studio or Ollama for local models, DeepSeek or any
-          OpenAI-compatible endpoint in the cloud. The desktop is the product; the model is a setting
-          in the Control Panel.</p>
-        </details>
-        <details>
-          <summary>The floppy budget</summary>
-          <div class="memory-box" role="img" aria-label="Boot payload gauge: 2,950,637 bytes used of a 2,978,000-byte budget">
-            <p class="memory-title">System Floppy Budget</p>
-            <div class="memory-row"><span class="memory-label">index.html</span><span class="memory-bar"><span style="width:11%"></span></span><span class="memory-bytes">326,696</span></div>
-            <div class="memory-row"><span class="memory-label">styles.bundle.css</span><span class="memory-bar"><span style="width:29%"></span></span><span class="memory-bytes">868,956</span></div>
-            <div class="memory-row"><span class="memory-label">app.bundle.js</span><span class="memory-bar"><span style="width:59%"></span></span><span class="memory-bytes">1,754,985</span></div>
-            <div class="memory-row memory-total"><span class="memory-label">Total</span><span class="memory-bar"><span style="width:99%"></span></span><span class="memory-bytes">2,950,637</span></div>
-            <p class="memory-note">A build gate caps the boot-critical payload at 2,978,000 bytes,
-            about two 1.44&nbsp;MB floppy disks. Heavy tools load lazily, from a third disk.</p>
-          </div>
-        </details>
-        <details>
-          <summary>No framework</summary>
-          <p>Plain JavaScript, concatenated. No framework, no transpiler. The classic interface is
-          grounded in real System&nbsp;6.0.8 resources and period Macintosh interaction patterns,
-          not redrawn from memory. This site works the same way.</p>
-          <pre><code>git clone https://github.com/surfine/AI-System-6.git
-cd AI-System-6
-npm install
-npm start</code></pre>
-        </details>
-        <details>
-          <summary>Why System 6?</summary>
-          <p>Because a desktop makes state visible. A disk tells you what lasts. A floppy tells you
-          what is temporary. A Scrapbook contains only what you chose to keep. A Trash can makes
-          deletion honest. The retro interface is not the product. It is the constraint that keeps
-          AI work legible.</p>
-        </details>
+        <p class="pack-lede">Eight cards, one object each. This is the whole thing.</p>
+        <ul class="pack-grid">
+          <li class="pack-card">
+            <img data-icon="hardDisk" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/hardDisk.svg">
+            <h3>A desk, not a chat box</h3>
+            <p>Windows, files and folders you can see. Chat is one window on it, not the whole screen.</p>
+          </li>
+          <li class="pack-card">
+            <img data-icon="fileFloppy" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/fileFloppy.svg">
+            <h3>Nothing saves itself</h3>
+            <p>What the AI writes just sits there until you save it, keep a piece of it, or throw it away.</p>
+          </li>
+          <li class="pack-card">
+            <img data-icon="searcher" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/searcher.svg">
+            <h3>Searcher goes and looks</h3>
+            <p>It reads the live web for you, and anything you keep still knows which page it came from.</p>
+          </li>
+          <li class="pack-card">
+            <img data-icon="scrapbook" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/scrapbook.svg">
+            <h3>Scrapbook holds your picks</h3>
+            <p>Only the bits you clipped on purpose. It never fills itself up behind your back.</p>
+          </li>
+          <li class="pack-card">
+            <img data-icon="teachText" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/teachText.svg">
+            <h3>One piece, start to finish</h3>
+            <p>Your rough questions become an outline, the outline becomes drafts, the drafts become the article.</p>
+          </li>
+          <li class="pack-card">
+            <img data-icon="reviewDesk" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/reviewDesk.svg">
+            <h3>Review Desk reads it back</h3>
+            <p>It checks the facts and the shape, and points at any sentence that sounds like a generic robot.</p>
+          </li>
+          <li class="pack-card">
+            <img data-icon="localModel" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/localModel.svg">
+            <h3>Bring your own model</h3>
+            <p>Run one on your own Mac, or plug in a cloud service. Change your mind whenever you like.</p>
+          </li>
+          <li class="pack-card">
+            <img data-icon="startupDisk" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/startupDisk.svg">
+            <h3>It stays on your machine</h3>
+            <p>No account and no upload. The desktop even opens with no AI connected at all.</p>
+          </li>
+        </ul>
+        <p class="pack-more">Two longer answers, if you want them:
+          <a href="#argument">why six appearances</a> and
+          <a href="#impossible">what a 1988 desktop should not be able to do</a>.</p>
       </div>
     </div>
   </section>
@@ -307,6 +290,6 @@ npm start</code></pre>
   </footer>
 
 </main>
-<script type="module" src="js/main.js?v=20260814b"></script>
+<script type="module" src="js/main.js?v=20260814h"></script>
 </body>
 </html>

@@ -16,8 +16,8 @@ const test = createFeatureTest("takeover-handshake");
   const a = createWriteLeaseInstance(storage);
   const b = createWriteLeaseInstance(storage);
   connectWriteLeaseChannels([a, b]);
-  a.lease.acquire();
-  b.lease.acquire();
+  await a.lease.acquire();
+  await b.lease.acquire();
   const flushed = [];
   a.context.flushPendingQuickDraftCommit = async () => { flushed.push("draft"); return true; };
   a.context.flushWorkingSessionCommit = async () => { flushed.push("session"); };
@@ -36,7 +36,7 @@ const test = createFeatureTest("takeover-handshake");
   test.assert(a.lease.isOwner() === false && a.lease.isReadOnly() === true, "the old writer is read-only after handoff");
   test.assert(b.lease.isOwner() === true, "the requesting instance becomes the writer");
   test.assert(JSON.parse(storage.get("ai-system6-write-lease")).instanceId === b.lease.instanceId, "the stored lease moves to B");
-  b.lease.release();
+  await b.lease.release();
 }
 
 // Handoff freezes new mutations: while A is flushing, its mutating surfaces
@@ -57,8 +57,8 @@ const test = createFeatureTest("takeover-handshake");
     addEventListener: () => {},
     visibilityState: "visible",
   };
-  a.lease.acquire();
-  c.lease.acquire();
+  await a.lease.acquire();
+  await c.lease.acquire();
   let flushedBody = "";
   a.context.flushPendingQuickDraftCommit = async () => {
     // While the flush is in flight the UI must already be frozen.
@@ -72,7 +72,7 @@ const test = createFeatureTest("takeover-handshake");
   test.assert(result.ok === true, "takeover completes after the handoff flush");
   test.assert(flushedBody === "before", "the flushed body is exactly what was saved before handoff");
   test.assert(c.lease.isOwner() === true && a.lease.isReadOnly() === true, "the new writer owns the lease and the old window is read-only");
-  c.lease.release();
+  await c.lease.release();
 }
 
 // Failed flush: A restores writer mode, the lease stays with A, B is denied.
@@ -81,14 +81,14 @@ const test = createFeatureTest("takeover-handshake");
   const a = createWriteLeaseInstance(storage, { saveDesk: false });
   const b = createWriteLeaseInstance(storage);
   connectWriteLeaseChannels([a, b]);
-  a.lease.acquire();
-  b.lease.acquire();
+  await a.lease.acquire();
+  await b.lease.acquire();
   const result = await b.lease.requestTakeover();
   test.assert(result.ok === false && result.reason === "unsaved-work", "a failed flush denies the takeover");
   test.assert(a.lease.isOwner() === true && a.lease.isReadOnly() === false, "the old writer keeps write access after a failed handoff");
   test.assert(JSON.parse(storage.get("ai-system6-write-lease")).instanceId === a.lease.instanceId, "the stored lease still belongs to A");
-  b.lease.release();
-  a.lease.release();
+  await b.lease.release();
+  await a.lease.release();
 }
 
 // Lease moved during flush: A can no longer restore writer, goes read-only,
@@ -98,8 +98,8 @@ const test = createFeatureTest("takeover-handshake");
   const a = createWriteLeaseInstance(storage);
   const c = createWriteLeaseInstance(storage);
   connectWriteLeaseChannels([a, c]);
-  a.lease.acquire();
-  c.lease.acquire();
+  await a.lease.acquire();
+  await c.lease.acquire();
   a.context.flushPendingQuickDraftCommit = async () => {
     // A rival claims the lease while A is flushing.
     storage.set("ai-system6-write-lease", JSON.stringify({ instanceId: "rival", claimedAt: Date.now(), heartbeatAt: Date.now() }));
@@ -109,7 +109,7 @@ const test = createFeatureTest("takeover-handshake");
   const result = await c.lease.requestTakeover();
   test.assert(result.ok === false && result.reason === "lease-lost", "a lease that moves mid-flush denies the handoff");
   test.assert(a.lease.isReadOnly() === true, "the old writer cannot restore writer mode once the lease moved");
-  c.lease.release();
+  await c.lease.release();
 }
 
 // Three instances: A writer, B and C read-only. C's request is answered only
@@ -120,9 +120,9 @@ const test = createFeatureTest("takeover-handshake");
   const b = createWriteLeaseInstance(storage);
   const c = createWriteLeaseInstance(storage);
   connectWriteLeaseChannels([a, b, c]);
-  a.lease.acquire();
-  b.lease.acquire();
-  c.lease.acquire();
+  await a.lease.acquire();
+  await b.lease.acquire();
+  await c.lease.acquire();
   let aFlushed = 0;
   let bFlushed = 0;
   const bReplies = [];
@@ -142,8 +142,8 @@ const test = createFeatureTest("takeover-handshake");
   test.assert(aFlushed === 1 && bFlushed === 0, "only the targeted writer flushes; bystander B never flushes");
   test.assert(bReplies.length === 0, "the read-only bystander never sends ready or denied");
   test.assert(b.lease.isReadOnly() === true, "bystander B stays read-only and uninvolved");
-  c.lease.release();
-  a.lease.release();
+  await c.lease.release();
+  await a.lease.release();
 }
 
 test.finish();

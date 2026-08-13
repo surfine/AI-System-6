@@ -7,9 +7,9 @@ on:
 
 jobs:
   verify:
-    name: npm ci · build · tests · identity · checkJs · public tree
+    name: lint · build · unit · integration · source contracts
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -18,15 +18,55 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
+      - name: Lint changed server boundaries
+        run: npm run lint
       - name: Build the browser bundle
         run: npm run build
-      - name: Feature tests
-        run: npm test
+      - name: Source contract tests
+        run: npm run verify:contracts
+      - name: Focused unit tests
+        run: npm run test:unit
+      - name: Route integration tests
+        run: npm run test:integration
       - name: Version identity consistency
         run: npm run verify:version
       - name: Frontend checkJs
         run: npm run verify:checkjs
+      - name: Server typecheck
+        run: npm run verify:src
       - name: Documentation mirrors
         run: npm run verify:docs
       - name: Public tree verification
-        run: npm run verify:public
+        run: npm run verify:public-tree
+      - name: Clean generated public snapshot smoke
+        if: ${{ hashFiles('tooling/smoke-clean-public-snapshot.mjs') != '' }}
+        run: npm run test:public-clean
+
+  browser-smoke:
+    name: ${{ matrix.browser }} smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
+        project: [chromium-desktop, webkit-desktop]
+        exclude:
+          - browser: chromium
+            project: webkit-desktop
+          - browser: webkit
+            project: chromium-desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Install ${{ matrix.browser }}
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Build the browser bundle
+        run: npm run build
+      - name: Run ${{ matrix.project }} smoke
+        run: npm run test:e2e:smoke -- --project ${{ matrix.project }}

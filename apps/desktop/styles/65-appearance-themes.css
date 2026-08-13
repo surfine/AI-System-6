@@ -749,8 +749,8 @@ body[data-theme="platinum"] {
   --control-strip-active-shadow: inset 0 0 0 1px #6f6f6f, inset 1px 1px 3px rgba(0, 0, 0, 0.35);
   --control-strip-gauge: #333333;
   --control-strip-gauge-bg: #ffffff;
-  --control-strip-grip-inset: 5px 3px;
-  --control-strip-grip: repeating-linear-gradient(to bottom, #f6f6f6 0 1px, #8e8e8e 1px 2px, rgba(0, 0, 0, 0) 2px 4px);
+  --control-strip-grip-inset: 5px 0;
+  --control-strip-grip: repeating-linear-gradient(to bottom, #f6f6f6 0 1px, #8e8e8e 1px 2px, rgba(0, 0, 0, 0) 2px 4px) 50% 50% / 10px 100% no-repeat;
 }
 
 /* Platinum icon family: 56 Mac OS 9-era object painters with dedicated 32 px
@@ -1003,7 +1003,7 @@ body[data-theme="yosemite"] .sys-icon[data-system-icon]:not(:where([data-system-
   border: 0;
   border-radius: 0;
   background-color: transparent;
-  background-image: var(--yosemite-icon, none);
+  background-image: none;
   background-repeat: no-repeat;
   background-position: center;
   background-size: contain;
@@ -1239,17 +1239,15 @@ body[data-theme="yosemite"] .sys-icon[data-system-icon="controlStrip"] {
 }
 
 /* Liquid Glass's selected/hover icon resets use the `background` shorthand at
-   the same specificity as the recipe above but load later, which would wipe
-   the flat Yosemite art on selected Finder items and hovered desktop icons.
-   The per-icon image travels in --yosemite-icon, so this context rule can
-   re-assert it without duplicating every URL. */
+   the same specificity as the recipe above. Keep those contexts transparent;
+   the size-aware Yosemite raster now travels inside the shared SVG envelope. */
 body[data-theme="yosemite"] :is(
   .finder-item.is-selected,
   .desktop-icon:is(:hover, :focus-visible, .is-selected),
   .spine-actions button:is(:hover, :focus-visible, .is-selected)
 ) .sys-icon {
   background-color: transparent;
-  background-image: var(--yosemite-icon, none);
+  background-image: none;
   box-shadow: none;
 }
 
@@ -1294,11 +1292,19 @@ body[data-theme="yosemite"] .desktop-icon:is(:hover, :focus-visible, .is-selecte
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon]:not(:where([data-system-icon="play"], [data-system-icon="pause"], [data-system-icon="previousTrack"], [data-system-icon="nextTrack"], [data-system-icon="shuffleTracks"], [data-system-icon="repeatTracks"], [data-system-icon="speaker"])) .sys-icon-svg {
+  display: block;
+}
+
+body[data-theme="yosemite"] .sys-icon-svg :is(.sys-icon-classic, .sys-icon-platinum-core, .sys-icon-aqua, .sys-icon-snow-leopard, .sys-icon-liquid) {
   display: none;
 }
 
-/* Menus and the control strip keep the light inline glyph: full-color
-   desktop art would read oversized in the 16-20px menu rows. */
+body[data-theme="yosemite"] .sys-icon-svg .sys-icon-yosemite {
+  display: block;
+}
+
+/* Menus and the control strip receive the true 16px Yosemite tier through
+   the same SVG envelope rather than falling back to Classic line art. */
 body[data-theme="yosemite"] :is(.menu-bar, .control-strip) .sys-icon {
   background-color: transparent;
   background-image: none;
@@ -1309,12 +1315,8 @@ body[data-theme="yosemite"] :is(.menu-bar, .control-strip) .sys-icon .sys-icon-s
   display: block;
 }
 
-body[data-theme="yosemite"] :is(.menu-bar, .control-strip) .sys-icon .sys-icon-svg .sys-icon-classic {
+body[data-theme="yosemite"] :is(.menu-bar, .control-strip) .sys-icon .sys-icon-svg .sys-icon-yosemite {
   display: block;
-}
-
-body[data-theme="yosemite"] :is(.menu-bar, .control-strip) .sys-icon .sys-icon-svg .sys-icon-liquid {
-  display: none;
 }
 
 body[data-theme-family="classic"]:not([data-theme="classic"]) .desktop,
@@ -1538,7 +1540,9 @@ body[data-theme="yosemite"] {
   /* 512 Pixels Finder capture: the 10.10 sidebar is a near-opaque light gray
      with a soft blur — not a saturated glass panel. */
   --sidebar-bg: rgba(248, 248, 248, 0.94);
-  --selection-bg: #0e6bff;
+  /* Measured on the native 10.10 Apple menu (selected row): #0d72f3.
+     The old #0e6bff was a plausible guess, 7 points off in green. */
+  --selection-bg: #0d72f3;
   --selection-fg: #ffffff;
   --sidebar-selection-bg: var(--selection-bg);
   --sidebar-selection-fg: #ffffff;
@@ -1757,8 +1761,8 @@ body[data-theme="yosemite"] {
   --control-strip-active-shadow: none;
   --control-strip-gauge: #157efb;
   --control-strip-gauge-bg: rgba(255, 255, 255, 0.9);
-  --control-strip-grip-inset: 6px 7px;
-  --control-strip-grip: repeating-linear-gradient(to bottom, #9a9a9a 0 1px, rgba(0, 0, 0, 0) 1px 4px);
+  --control-strip-grip-inset: 6px 0;
+  --control-strip-grip: repeating-linear-gradient(to bottom, #9a9a9a 0 1px, rgba(0, 0, 0, 0) 1px 4px) 50% 50% / 2px 100% no-repeat;
 }
 
 /* Semantic aliases keep application selectors independent of the era. */
@@ -1864,10 +1868,10 @@ body[data-theme="platinum"] .title-bar {
      shared title bar to three columns. This keeps Zoom and WindowShade at
      the measured five-pixel visual gap without adding another owner. */
   grid-template-columns:
-    var(--system-titlebar-control-slot)
+    var(--titlebar-gutter)
     minmax(0, 1fr)
-    var(--system-titlebar-control-slot)
-    var(--system-titlebar-shade-slot);
+    var(--titlebar-slot-zoom)
+    calc(var(--titlebar-gutter) - var(--titlebar-slot-zoom));
 }
 
 body[data-theme="platinum"] .title-bar :is(h1, h2) {
@@ -1970,11 +1974,14 @@ body[data-theme-family="classic"]:not([data-theme="classic"]) .window:not(.is-ac
   pointer-events: none;
 }
 
+/* 20px is the Platinum push-button height for a one-line title, not a cap: a
+   fixed height made a wrapped two-line title (the Note Pad "Send to …" row on a
+   phone) spill out below the button frame. min-height keeps the standard size
+   and lets the frame grow with its title. */
 body[data-theme="platinum"] .btn {
   position: relative;
   min-width: var(--theme-button-min-width, 58px);
   min-height: 20px;
-  height: 20px;
   padding: 2px 10px;
   border: 1px solid var(--btn-border-color);
   border-radius: var(--btn-radius);
@@ -2229,16 +2236,6 @@ body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) :where(
 
 }
 
-/* The generic .btn:hover recipe repaints the blue 10.10 default button to the
-   white regular-button hover. A default action button stays blue: rest
-   #3484e2, hover #619fe8, pressed #1c6bc7 (GTK 03b6f721 gtk-light.css
-   button.suggested-action). */
-body[data-theme="yosemite"] .btn.default:hover:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected) {
-  background: var(--btn-default-hover-bg);
-  color: var(--btn-default-hover-fg);
-}
-
-
 body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) :is(input, textarea, select):focus  {
 
   border: var(--field-focus-border);
@@ -2292,9 +2289,9 @@ body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) .theme-l
    one fused header material, thin controls, and bounded early vibrancy. */
 body[data-theme="yosemite"] .window > .title-bar {
   grid-template-columns:
-    var(--system-titlebar-control-slot)
+    var(--titlebar-gutter)
     minmax(0, 1fr)
-    var(--system-titlebar-control-slot);
+    var(--titlebar-gutter);
 }
 
 body[data-theme="yosemite"] .window > .title-bar :is(h1, h2) {

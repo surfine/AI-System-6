@@ -113,11 +113,18 @@ function resolvePublicFile(relative) {
   return path.resolve(desktopRoot, relative);
 }
 
-function cacheHeaders(relative, ext) {
+function cacheHeaders(relative, ext, url) {
+  const versioned = Boolean(url?.searchParams?.get("v"));
+  const contentHashed = /(?:^|[.-])[a-f0-9]{8,}(?:[.-]|$)/i.test(path.basename(relative));
+  if (versioned || contentHashed) {
+    return { "Cache-Control": "public, max-age=31536000, immutable" };
+  }
   if (relative === "index.html" || ext === ".html" || ext === ".js" || ext === ".mjs" || ext === ".css") {
     return { "Cache-Control": "no-cache" };
   }
-  return { "Cache-Control": "public, max-age=604800" };
+  // Stable, unversioned asset/data/manifest URLs can change at the next build.
+  // Revalidate them instead of keeping stale bytes for seven days.
+  return { "Cache-Control": "no-cache" };
 }
 
 /**
@@ -149,7 +156,7 @@ async function handleStatic(req, res) {
       "Content-Type": contentType,
       "Content-Length": stat.size,
       "ETag": etag,
-      ...cacheHeaders(relative, ext),
+      ...cacheHeaders(relative, ext, url),
     };
     if (req.headers["if-none-match"] === etag) {
       res.writeHead(304, headers);
@@ -177,4 +184,4 @@ async function handleStatic(req, res) {
   }
 }
 
-module.exports = { handleStatic, mimeTypes, publicRelativePath, resolvePublicFile };
+module.exports = { cacheHeaders, handleStatic, mimeTypes, publicRelativePath, resolvePublicFile };

@@ -1,0 +1,30 @@
+{
+  "capturedAt": "2026-08-13T01:24:18.683Z",
+  "build": "20260812.1",
+  "proofs": [
+    {
+      "id": "slides",
+      "label": "Build Slides",
+      "caption": "A Marp deck, opened and presented on the desktop.",
+      "file": "slides.webp"
+    },
+    {
+      "id": "charts",
+      "label": "Make Charts",
+      "caption": "A Markdown table in the manuscript, projected as a chart.",
+      "file": "charts.webp"
+    },
+    {
+      "id": "cmf",
+      "label": "Design in 3D",
+      "caption": "A 3D colorway on a 1988 desktop, exportable as USDZ for AR.",
+      "file": "cmf.webp"
+    },
+    {
+      "id": "glass",
+      "label": "Render Glass",
+      "caption": "Refractive WebGL typography, rendered in the browser.",
+      "file": "glass.webp"
+    }
+  ]
+}

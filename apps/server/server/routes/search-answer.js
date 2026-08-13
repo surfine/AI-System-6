@@ -10,12 +10,11 @@
 "use strict";
 
 const { send, readJsonBody, requestSignal, withTimeoutSignal } = require("../lib/http.js");
-const { DEEPSEEK_API_KEY_DEFAULT } = require("../cloud.js");
+const { DEEPSEEK_PUBLIC_BASE_URL } = require("../cloud.js");
 const { resolveCloudCredential } = require("../credential-vault.js");
 const { preparePublicCloudCall } = require("../lib/cloud-route.js");
 const { isPublicDeployment } = require("../runtime-profile.js");
 const {
-  settleSharedCloudRequest,
   sharedCloudBudgetConfig,
 } = require("../shared-cloud-budget.js");
 const {
@@ -35,6 +34,8 @@ async function handleSearchAnswer(req, res) {
   const timeoutHandle = withTimeoutSignal(requestAbortSignal, 120000);
   const signal = timeoutHandle.signal;
   const startedAt = Date.now();
+  /** @type {any} */
+  let sharedReservation = null;
   try {
     const body = await readJsonBody(req, { limitBytes: 128 * 1024 });
     const query = String(body.q || "").trim();
@@ -72,7 +73,6 @@ async function handleSearchAnswer(req, res) {
     let apiKey = "";
     let userId = "";
     let effectiveMaxOutputTokens = maxOutputTokens;
-    let sharedReservation = null;
 
     if (isPublicDeployment) {
       // Representative payload so the shared allowance can meter the whole
@@ -101,6 +101,7 @@ async function handleSearchAnswer(req, res) {
       apiKey = String(await resolveCloudCredential({
         credentialId: body._cloud_credential_id,
         provider: "deepseek",
+        targetBaseUrl: DEEPSEEK_PUBLIC_BASE_URL,
         suppliedApiKey: body._cloud_api_key,
         allowSupplied: false,
       })).trim();
@@ -155,17 +156,13 @@ async function handleSearchAnswer(req, res) {
           maxOutputTokens: effectiveMaxOutputTokens,
           userId,
           searchCalls,
+          onRequest: () => sharedReservation?.markUpstreamStarted(),
           onStatus: (status) => writeSse({ ai_system6_status: status }),
           onDelta: (content) => writeSse({ choices: [{ delta: { content } }] }),
           onDone: (result) => writeSse({ ai_system6_result: envelope(result) }),
         });
         if (signal.aborted) return;
-        if (sharedReservation && finalResult) {
-          settleSharedCloudRequest({
-            reservedTokens: sharedReservation.reservedTokens,
-            actualTokens: Number(finalResult.usage?.total_tokens || 0),
-          });
-        }
+        if (finalResult?.usage) sharedReservation?.addUsage(finalResult.usage);
       } catch (error) {
         if (signal.aborted) return;
         streamError = /** @type {any} */ (error);
@@ -193,14 +190,10 @@ async function handleSearchAnswer(req, res) {
       maxOutputTokens: effectiveMaxOutputTokens,
       userId,
       searchCalls,
+      onRequest: () => sharedReservation?.markUpstreamStarted(),
     });
     if (signal.aborted) return;
-    if (sharedReservation) {
-      settleSharedCloudRequest({
-        reservedTokens: sharedReservation.reservedTokens,
-        actualTokens: Number(result.usage?.total_tokens || 0),
-      });
-    }
+    sharedReservation?.addUsage(result.usage);
 
     send(res, 200, JSON.stringify(envelope(result)), { "Content-Type": "application/json" });
   } catch (error) {
@@ -216,6 +209,9 @@ async function handleSearchAnswer(req, res) {
       ...(/** @type {any} */ (error)?.warning ? { warning: /** @type {any} */ (error).warning } : {}),
       detail: String(/** @type {Error} */ (error).message),
     }), headers);
+  } finally {
+    sharedReservation?.settle();
+    timeoutHandle.cleanup();
   }
 }
 

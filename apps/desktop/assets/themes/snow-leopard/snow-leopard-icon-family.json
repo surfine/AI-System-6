@@ -62,7 +62,7 @@
     "controlStrip"
   ],
   "fallback": [],
-  "runtimeSize": 128,
+  "runtimeSize": "contextual",
   "icons": {
     "startupDisk": {
       "genre": "hardware",
@@ -81,6 +81,11 @@
         "128": "icons/startupDisk-128.png",
         "512": "icons/startupDisk-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -148,7 +153,12 @@
           "lumStd": 60.44,
           "edgeEnergy": 417
         }
-      }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true
     },
     "folder": {
       "genre": "file",
@@ -191,7 +201,12 @@
           "lumStd": 37.6,
           "edgeEnergy": 171
         }
-      }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true
     },
     "document": {
       "genre": "document",
@@ -234,7 +249,12 @@
           "lumStd": 63.54,
           "edgeEnergy": 313
         }
-      }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true
     },
     "applications": {
       "genre": "file",
@@ -253,6 +273,11 @@
         "128": "icons/applications-128.png",
         "512": "icons/applications-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -320,18 +345,23 @@
           "lumStd": 38.78,
           "edgeEnergy": 331
         }
-      }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true
     },
     "finderApp": {
-      "genre": "application",
+      "genre": "system identity",
       "grid": {
         "shape": "square",
         "fitted": 0.8437,
         "scale": 1.0093
       },
-      "physicalMetaphor": "a compact beige Macintosh computer, front-facing, whose dark screen carries two friendly eyes and a small smile",
+      "physicalMetaphor": "Mac OS X 10.6 FinderIcon mature split face with a curved black profile divider",
       "semanticMark": "finder",
-      "sourceKind": "original-generated-era-illustration",
+      "sourceKind": "approved-imagegen-reference-guided-reconstruction",
       "reviewStatus": "accepted-generated",
       "sizes": {
         "16": "icons/finderApp-16.png",
@@ -339,32 +369,174 @@
         "128": "icons/finderApp-128.png",
         "512": "icons/finderApp-512.png"
       },
-      "metaphorKey": "smiling-compact-macintosh",
+      "metaphorKey": "target-era-finder-identity",
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.6523,
-          "meanLum": 178.82,
-          "lumStd": 46.7,
-          "edgeEnergy": 87
+          "coverage": 0.6641,
+          "meanLum": 157.78,
+          "lumStd": 48.25,
+          "edgeEnergy": 81
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.6191,
-          "meanLum": 179.71,
-          "lumStd": 48.48,
-          "edgeEnergy": 198
+          "coverage": 0.6172,
+          "meanLum": 156.63,
+          "lumStd": 54.63,
+          "edgeEnergy": 217
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.6111,
-          "meanLum": 179.49,
-          "lumStd": 49.33,
-          "edgeEnergy": 290
+          "coverage": 0.6049,
+          "meanLum": 156.54,
+          "lumStd": 56.06,
+          "edgeEnergy": 341
         }
-      }
+      },
+      "authoringMethod": "built-in-imagegen-reference-guided-plus-native-size-optical-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "reference-validated",
+      "runtimeAsset": true,
+      "semanticIdentity": "friendly Finder and system-navigation identity",
+      "identityAnchors": [
+        "target-era Finder identity",
+        "recognizable system-navigation persona"
+      ],
+      "historicalPrototype": "Mac OS X 10.6 FinderIcon mature split face with a curved black profile divider",
+      "nearestHistoricalAnalog": null,
+      "material": "mature Aqua illustration with restrained lighting and a narrow profile divider",
+      "generatedMaster": "internal/evidence/drafts/icon-lineage-audit/imagegen-candidates-v2/snow-leopard-finder-v2.png",
+      "reference": "internal/evidence/drafts/snow-leopard-icon-reference/iconsets/FinderIcon.iconset/icon_128x128.png",
+      "exactPixelReplica": false,
+      "sizeStatus": {
+        "16": "optically-reviewed",
+        "32": "optically-reviewed",
+        "128": "optically-reviewed",
+        "512": "optically-reviewed"
+      },
+      "sizePolicy": "Each target canvas is rendered directly from the approved high-resolution generation; compact tiers use their own bounds and contrast treatment.",
+      "metrics": {
+        "16": {
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14
+          },
+          "bounds": [
+            1,
+            1,
+            14,
+            14
+          ],
+          "ink": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14,
+            "width": 14,
+            "height": 14
+          },
+          "pixels": 170,
+          "inkPixels": 170,
+          "translucent": 30,
+          "colors": 154,
+          "sha256": "1aabada039da5843284e37ba640ee32486a24e269099f376438e6508ff2d43de",
+          "bytes": 591,
+          "gridShape": "square"
+        },
+        "32": {
+          "bbox": {
+            "minX": 3,
+            "minY": 2,
+            "maxX": 29,
+            "maxY": 30
+          },
+          "bounds": [
+            3,
+            2,
+            29,
+            30
+          ],
+          "ink": {
+            "minX": 3,
+            "minY": 2,
+            "maxX": 29,
+            "maxY": 30,
+            "width": 27,
+            "height": 29
+          },
+          "pixels": 631,
+          "inkPixels": 631,
+          "translucent": 8,
+          "colors": 525,
+          "sha256": "85a03404970ab96e9f22055edf66b610eea2224a504436acc9dc6f8cd66a670c",
+          "bytes": 1534,
+          "gridShape": "square"
+        },
+        "128": {
+          "bbox": {
+            "minX": 12,
+            "minY": 6,
+            "maxX": 115,
+            "maxY": 121
+          },
+          "bounds": [
+            12,
+            6,
+            115,
+            121
+          ],
+          "ink": {
+            "minX": 12,
+            "minY": 6,
+            "maxX": 115,
+            "maxY": 121,
+            "width": 104,
+            "height": 116
+          },
+          "pixels": 9775,
+          "inkPixels": 9775,
+          "translucent": 387,
+          "colors": 3633,
+          "sha256": "f028d444c546211ca35f198dc89e90f38dbf6191bf855565c5f4fef8c2acdf57",
+          "bytes": 12866,
+          "gridShape": "square"
+        },
+        "512": {
+          "bbox": {
+            "minX": 48,
+            "minY": 24,
+            "maxX": 463,
+            "maxY": 487
+          },
+          "bounds": [
+            48,
+            24,
+            463,
+            487
+          ],
+          "ink": {
+            "minX": 48,
+            "minY": 24,
+            "maxX": 463,
+            "maxY": 487,
+            "width": 416,
+            "height": 464
+          },
+          "pixels": 154532,
+          "inkPixels": 154532,
+          "translucent": 2246,
+          "colors": 17076,
+          "sha256": "cdc9d7bd3f52e9e7a6bf80413c81b88a1c16d6029c9adcd95f8672599b523718",
+          "bytes": 137285,
+          "gridShape": "square"
+        }
+      },
+      "blindMixStatus": "not-run"
     },
     "fileFloppy": {
       "genre": "hardware",
@@ -383,6 +555,11 @@
         "128": "icons/fileFloppy-128.png",
         "512": "icons/fileFloppy-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -451,7 +628,12 @@
           "lumStd": 64.27,
           "edgeEnergy": 332
         }
-      }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true
     },
     "quickDraft": {
       "genre": "document",
@@ -470,6 +652,11 @@
         "128": "icons/quickDraft-128.png",
         "512": "icons/quickDraft-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -513,6 +700,11 @@
         "128": "icons/writingStudio-128.png",
         "512": "icons/writingStudio-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -581,7 +773,12 @@
           "lumStd": 57.26,
           "edgeEnergy": 189
         }
-      }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true
     },
     "projectDisc": {
       "genre": "hardware",
@@ -600,6 +797,11 @@
         "128": "icons/projectDisc-128.png",
         "512": "icons/projectDisc-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -643,6 +845,11 @@
         "128": "icons/cloudModel-128.png",
         "512": "icons/cloudModel-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -686,6 +893,11 @@
         "128": "icons/cloudModelOff-128.png",
         "512": "icons/cloudModelOff-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -729,6 +941,11 @@
         "128": "icons/questionSheet-128.png",
         "512": "icons/questionSheet-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -772,6 +989,11 @@
         "128": "icons/outline-128.png",
         "512": "icons/outline-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -815,6 +1037,11 @@
         "128": "icons/sectionDrafts-128.png",
         "512": "icons/sectionDrafts-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -858,6 +1085,11 @@
         "128": "icons/manuscript-128.png",
         "512": "icons/manuscript-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -891,40 +1123,185 @@
         "fitted": 0.8606,
         "scale": 1.0153
       },
-      "physicalMetaphor": "a marked manuscript page under a magnifying lens, reduced to one readable proofing object",
+      "physicalMetaphor": "Snow Leopard professional proofing board with paper stack, aluminum clamp, editorial marks, and docked pencil",
       "semanticMark": "proof",
-      "sourceKind": "original-generated-era-illustration",
-      "reviewStatus": "accepted-generated",
+      "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
+      "reviewStatus": "accepted-priority-lineage",
       "sizes": {
         "16": "icons/reviewDesk-16.png",
         "32": "icons/reviewDesk-32.png",
         "128": "icons/reviewDesk-128.png",
         "512": "icons/reviewDesk-512.png"
       },
-      "metaphorKey": "marked-manuscript-with-lens",
+      "metaphorKey": "marked-manuscript-plus-correction-action",
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.6523,
-          "meanLum": 204.56,
-          "lumStd": 53.77,
-          "edgeEnergy": 95
+          "coverage": 0.6758,
+          "meanLum": 158.86,
+          "lumStd": 64.86,
+          "edgeEnergy": 100
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.6104,
-          "meanLum": 205.51,
-          "lumStd": 58.3,
-          "edgeEnergy": 321
+          "coverage": 0.6426,
+          "meanLum": 162.59,
+          "lumStd": 68.6,
+          "edgeEnergy": 349
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.602,
-          "meanLum": 206.54,
-          "lumStd": 57.65,
-          "edgeEnergy": 470
+          "coverage": 0.6332,
+          "meanLum": 163.25,
+          "lumStd": 69.86,
+          "edgeEnergy": 517
+        }
+      },
+      "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "historically-reviewed",
+      "runtimeAsset": true,
+      "semanticIdentity": "writer-controlled manuscript proofing and correction application",
+      "identityAnchors": [
+        "marked manuscript",
+        "visible inspection or correction action"
+      ],
+      "historicalPrototype": null,
+      "nearestHistoricalAnalog": "Snow Leopard professional proofing board with paper stack, aluminum clamp, editorial marks, and docked pencil",
+      "material": "mature realistic paper, graphite frame, brushed aluminum, and controlled correction red",
+      "blindMixStatus": "not-run",
+      "generatedMaster": "internal/evidence/drafts/icon-lineage-audit/imagegen-candidates-v2/review-desk/snow-leopard-review-desk-v2.png",
+      "reference": "No native Review Desk icon artwork is claimed; target-era application-icon grammar supplies the nearest analog.",
+      "exactPixelReplica": false,
+      "referenceValidated": false,
+      "nativeReplica": false,
+      "sourceNote": "Original target-era reinterpretation. No native Review Desk artwork is claimed; the lens is deliberately absent so Review Desk cannot collapse into Searcher.",
+      "sizeStatus": {
+        "16": "optically-reviewed",
+        "32": "optically-reviewed",
+        "128": "optically-reviewed",
+        "512": "optically-reviewed"
+      },
+      "sizePolicy": "Large tiers derive from the approved high-resolution candidate. The 32 px and 16 px tiers are independent era-specific optical redraws that delete paragraph texture, preserve the correction anchor, and own their final pixel geometry.",
+      "metrics": {
+        "16": {
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14
+          },
+          "bounds": [
+            1,
+            1,
+            14,
+            14
+          ],
+          "ink": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14,
+            "width": 14,
+            "height": 14
+          },
+          "pixels": 184,
+          "inkPixels": 184,
+          "translucent": 47,
+          "colors": 127,
+          "sha256": "146c84dd7e65ba840e8fddada4032acf51ed914483f08235cc3aa5621e1f5658",
+          "bytes": 615,
+          "gridShape": "square"
+        },
+        "32": {
+          "bbox": {
+            "minX": 2,
+            "minY": 3,
+            "maxX": 29,
+            "maxY": 29
+          },
+          "bounds": [
+            2,
+            3,
+            29,
+            29
+          ],
+          "ink": {
+            "minX": 2,
+            "minY": 3,
+            "maxX": 29,
+            "maxY": 29,
+            "width": 28,
+            "height": 27
+          },
+          "pixels": 682,
+          "inkPixels": 682,
+          "translucent": 92,
+          "colors": 283,
+          "sha256": "f3ef1281ea9995a6d2866ccdfe9c056a532c65abd0b848f4bd37e4d0755e289a",
+          "bytes": 1240,
+          "gridShape": "square"
+        },
+        "128": {
+          "bbox": {
+            "minX": 9,
+            "minY": 3,
+            "maxX": 118,
+            "maxY": 125
+          },
+          "bounds": [
+            9,
+            3,
+            118,
+            125
+          ],
+          "ink": {
+            "minX": 9,
+            "minY": 3,
+            "maxX": 118,
+            "maxY": 125,
+            "width": 110,
+            "height": 123
+          },
+          "pixels": 10068,
+          "inkPixels": 10068,
+          "translucent": 407,
+          "colors": 4972,
+          "sha256": "d702d22e2086abfd582d97f43e7bc9103b4617332f7a1d476d7d34bc5a661c36",
+          "bytes": 23338,
+          "gridShape": "square"
+        },
+        "512": {
+          "bbox": {
+            "minX": 36,
+            "minY": 11,
+            "maxX": 475,
+            "maxY": 500
+          },
+          "bounds": [
+            36,
+            11,
+            475,
+            500
+          ],
+          "ink": {
+            "minX": 36,
+            "minY": 11,
+            "maxX": 475,
+            "maxY": 500,
+            "width": 440,
+            "height": 490
+          },
+          "pixels": 158362,
+          "inkPixels": 158362,
+          "translucent": 2120,
+          "colors": 39239,
+          "sha256": "0e12c1eb1631e6231a6f24f8c8d7c32a554ebcdb379ea630625967f9089b64e5",
+          "bytes": 308266,
+          "gridShape": "square"
         }
       }
     },
@@ -935,40 +1312,185 @@
         "fitted": 0.9403,
         "scale": 1.0892
       },
-      "physicalMetaphor": "a single magnifying glass overlapping a document page, with the lens and page both readable",
+      "physicalMetaphor": "Snow Leopard Finder and Spotlight search tool with a controlled clear lens over an indexed ledger",
       "semanticMark": "magnify",
-      "sourceKind": "original-generated-era-illustration",
-      "reviewStatus": "accepted-generated",
+      "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
+      "reviewStatus": "accepted-priority-lineage",
       "sizes": {
         "16": "icons/searcher-16.png",
         "32": "icons/searcher-32.png",
         "128": "icons/searcher-128.png",
         "512": "icons/searcher-512.png"
       },
-      "metaphorKey": "magnifier-over-page",
+      "metaphorKey": "lens-plus-visible-search-relationship",
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.5,
-          "meanLum": 188.63,
-          "lumStd": 64.59,
-          "edgeEnergy": 79
+          "coverage": 0.5469,
+          "meanLum": 159.53,
+          "lumStd": 55.34,
+          "edgeEnergy": 117
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.4756,
-          "meanLum": 193.87,
-          "lumStd": 63.47,
-          "edgeEnergy": 223
+          "coverage": 0.5039,
+          "meanLum": 163.23,
+          "lumStd": 60.31,
+          "edgeEnergy": 309
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.4762,
-          "meanLum": 193.1,
-          "lumStd": 64.49,
-          "edgeEnergy": 343
+          "coverage": 0.4955,
+          "meanLum": 163.33,
+          "lumStd": 61.09,
+          "edgeEnergy": 458
+        }
+      },
+      "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "historically-reviewed",
+      "runtimeAsset": true,
+      "semanticIdentity": "writer-controlled search and discovery utility",
+      "identityAnchors": [
+        "magnifying lens",
+        "visible search-result relationship"
+      ],
+      "historicalPrototype": null,
+      "nearestHistoricalAnalog": "Snow Leopard Finder and Spotlight search tool with a controlled clear lens over an indexed ledger",
+      "material": "mature graphite, brushed aluminum, clear glass, and flat off-white paper with texture removed at compact sizes",
+      "blindMixStatus": "not-run",
+      "generatedMaster": "internal/evidence/drafts/icon-lineage-audit/imagegen-candidates-v2/searcher/snow-leopard-searcher-v2.png",
+      "reference": "No native AI System 6 Searcher icon artwork is claimed; target-era Sherlock, Finder search, and Spotlight grammar supplies the nearest analog.",
+      "exactPixelReplica": false,
+      "referenceValidated": false,
+      "nativeReplica": false,
+      "sourceNote": "Original target-era reinterpretation. The lens persists as the semantic anchor while result object, perspective, material, depth, and compact construction are re-authored independently for every admitted era.",
+      "sizeStatus": {
+        "16": "optically-reviewed",
+        "32": "optically-reviewed",
+        "128": "optically-reviewed",
+        "512": "optically-reviewed"
+      },
+      "sizePolicy": "Large tiers derive from the approved high-resolution candidate. The 32 px and 16 px tiers are independent era-specific optical paintings: Platinum uses hard pixels; Aqua simplifies the lens and result cards; Snow Leopard removes texture and fine detail; Yosemite keeps only the lens and one result slip.",
+      "metrics": {
+        "16": {
+          "bbox": {
+            "minX": 1,
+            "minY": 2,
+            "maxX": 12,
+            "maxY": 13
+          },
+          "bounds": [
+            1,
+            2,
+            12,
+            13
+          ],
+          "ink": {
+            "minX": 1,
+            "minY": 2,
+            "maxX": 12,
+            "maxY": 13,
+            "width": 12,
+            "height": 12
+          },
+          "pixels": 113,
+          "inkPixels": 113,
+          "translucent": 42,
+          "colors": 105,
+          "sha256": "a3ed544db5cd131894411579e761b4c0a30050944e0b2b5704e1c097b83b427c",
+          "bytes": 611,
+          "gridShape": "square"
+        },
+        "32": {
+          "bbox": {
+            "minX": 1,
+            "minY": 4,
+            "maxX": 27,
+            "maxY": 29
+          },
+          "bounds": [
+            1,
+            4,
+            27,
+            29
+          ],
+          "ink": {
+            "minX": 1,
+            "minY": 4,
+            "maxX": 27,
+            "maxY": 29,
+            "width": 27,
+            "height": 26
+          },
+          "pixels": 511,
+          "inkPixels": 511,
+          "translucent": 88,
+          "colors": 348,
+          "sha256": "a402ad3bb60b3581ecb822353076abc733cecf3de3141841856edf2247357e74",
+          "bytes": 1638,
+          "gridShape": "square"
+        },
+        "128": {
+          "bbox": {
+            "minX": 12,
+            "minY": 9,
+            "maxX": 116,
+            "maxY": 118
+          },
+          "bounds": [
+            12,
+            9,
+            116,
+            118
+          ],
+          "ink": {
+            "minX": 12,
+            "minY": 9,
+            "maxX": 116,
+            "maxY": 118,
+            "width": 105,
+            "height": 110
+          },
+          "pixels": 7886,
+          "inkPixels": 7886,
+          "translucent": 380,
+          "colors": 4931,
+          "sha256": "7acf988b29347b907896ec650a3eab290d3f17bfdd1d0950df8a0cfee289fe07",
+          "bytes": 20729,
+          "gridShape": "square"
+        },
+        "512": {
+          "bbox": {
+            "minX": 46,
+            "minY": 36,
+            "maxX": 465,
+            "maxY": 475
+          },
+          "bounds": [
+            46,
+            36,
+            465,
+            475
+          ],
+          "ink": {
+            "minX": 46,
+            "minY": 36,
+            "maxX": 465,
+            "maxY": 475,
+            "width": 420,
+            "height": 440
+          },
+          "pixels": 124296,
+          "inkPixels": 124296,
+          "translucent": 2055,
+          "colors": 34435,
+          "sha256": "ccae3a65a5d0833bed8e8e78f74cdf70141fb4bd052045a4319b70ad2bb48718",
+          "bytes": 249448,
+          "gridShape": "square"
         }
       }
     },
@@ -989,6 +1511,11 @@
         "128": "icons/reader-128.png",
         "512": "icons/reader-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -1032,6 +1559,11 @@
         "128": "icons/timeMachine-128.png",
         "512": "icons/timeMachine-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -1128,7 +1660,12 @@
           0,
           0
         ]
-      }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true
     },
     "clioStage": {
       "genre": "application",
@@ -1147,6 +1684,11 @@
         "128": "icons/clioStage-128.png",
         "512": "icons/clioStage-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -1190,6 +1732,11 @@
         "128": "icons/clioChart-128.png",
         "512": "icons/clioChart-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -1233,6 +1780,11 @@
         "128": "icons/liquidCover-128.png",
         "512": "icons/liquidCover-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -1276,6 +1828,11 @@
         "128": "icons/cmfStudio-128.png",
         "512": "icons/cmfStudio-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -1319,6 +1876,11 @@
         "128": "icons/soundscape-128.png",
         "512": "icons/soundscape-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -1387,7 +1949,12 @@
           "lumStd": 65.75,
           "edgeEnergy": 403
         }
-      }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true
     },
     "systemFolder": {
       "genre": "file",
@@ -1406,6 +1973,11 @@
         "128": "icons/systemFolder-128.png",
         "512": "icons/systemFolder-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -1449,6 +2021,11 @@
         "128": "icons/helpFolder-128.png",
         "512": "icons/helpFolder-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -1492,6 +2069,11 @@
         "128": "icons/importUtility-128.png",
         "512": "icons/importUtility-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -1559,7 +2141,12 @@
           "lumStd": 63.65,
           "edgeEnergy": 530
         }
-      }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true
     },
     "chooser": {
       "genre": "utility",
@@ -1578,6 +2165,11 @@
         "128": "icons/chooser-128.png",
         "512": "icons/chooser-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -1621,6 +2213,11 @@
         "128": "icons/systemHelp-128.png",
         "512": "icons/systemHelp-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -1664,6 +2261,11 @@
         "128": "icons/dictionary-128.png",
         "512": "icons/dictionary-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -1732,7 +2334,12 @@
           "lumStd": 66.51,
           "edgeEnergy": 455
         }
-      }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true
     },
     "writingDemo": {
       "genre": "document",
@@ -1751,6 +2358,11 @@
         "128": "icons/writingDemo-128.png",
         "512": "icons/writingDemo-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -1794,6 +2406,11 @@
         "128": "icons/chatFile-128.png",
         "512": "icons/chatFile-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -1837,6 +2454,11 @@
         "128": "icons/chatImport-128.png",
         "512": "icons/chatImport-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -1880,6 +2502,11 @@
         "128": "icons/systemStatus-128.png",
         "512": "icons/systemStatus-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -1923,6 +2550,11 @@
         "128": "icons/contextPanel-128.png",
         "512": "icons/contextPanel-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -1966,6 +2598,11 @@
         "128": "icons/rebuildArticle-128.png",
         "512": "icons/rebuildArticle-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -2009,6 +2646,11 @@
         "128": "icons/bureaucracyMeme-128.png",
         "512": "icons/bureaucracyMeme-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -2052,6 +2694,11 @@
         "128": "icons/endfieldTerminal-128.png",
         "512": "icons/endfieldTerminal-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -2095,6 +2742,11 @@
         "128": "icons/documents-128.png",
         "512": "icons/documents-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -2138,6 +2790,11 @@
         "128": "icons/alias-128.png",
         "512": "icons/alias-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -2181,6 +2838,11 @@
         "128": "icons/systemFile-128.png",
         "512": "icons/systemFile-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -2208,15 +2870,15 @@
       }
     },
     "multiFinderApp": {
-      "genre": "application",
+      "genre": "system environment",
       "grid": {
         "shape": "square",
         "fitted": 0.8438,
         "scale": 0.9391
       },
-      "physicalMetaphor": "two overlapping compact Macintosh computers with friendly dark screens, clearly a paired Finder environment",
+      "physicalMetaphor": "two overlapping current-era Finder identities",
       "semanticMark": "finder",
-      "sourceKind": "original-generated-era-illustration",
+      "sourceKind": "approved-imagegen-period-plausible-construction",
       "reviewStatus": "accepted-generated",
       "sizes": {
         "16": "icons/multiFinderApp-16.png",
@@ -2224,32 +2886,174 @@
         "128": "icons/multiFinderApp-128.png",
         "512": "icons/multiFinderApp-512.png"
       },
-      "metaphorKey": "paired-smiling-compact-macintoshes",
+      "authoringMethod": "composition-from-approved-current-era-imagegen-finder-identity",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "historically-reviewed",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.5586,
-          "meanLum": 177.49,
-          "lumStd": 60.53,
-          "edgeEnergy": 90
+          "coverage": 0.5313,
+          "meanLum": 155.77,
+          "lumStd": 47.96,
+          "edgeEnergy": 63
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.5518,
-          "meanLum": 180.47,
-          "lumStd": 61.94,
-          "edgeEnergy": 317
+          "coverage": 0.5381,
+          "meanLum": 152.94,
+          "lumStd": 53.27,
+          "edgeEnergy": 246
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.5448,
-          "meanLum": 179.43,
-          "lumStd": 63.03,
-          "edgeEnergy": 476
+          "coverage": 0.5057,
+          "meanLum": 156.01,
+          "lumStd": 52.8,
+          "edgeEnergy": 306
         }
-      }
+      },
+      "semanticIdentity": "multiple concurrent Finder environments",
+      "identityAnchors": [
+        "current-era Finder identity",
+        "multiplicity"
+      ],
+      "historicalPrototype": null,
+      "nearestHistoricalAnalog": "approved current-era Finder identity plus period-plausible overlap",
+      "metaphorKey": "current-finder-identity-plus-multiplicity",
+      "material": "mature Aqua illustration with restrained lighting and a narrow profile divider",
+      "generatedMaster": "internal/evidence/drafts/icon-lineage-audit/imagegen-candidates-v2/snow-leopard-finder-v2.png",
+      "reference": "No native MultiFinder icon artwork is claimed; multiplicity is a product-semantic construction.",
+      "exactPixelReplica": false,
+      "sizeStatus": {
+        "16": "optically-reviewed",
+        "32": "optically-reviewed",
+        "128": "optically-reviewed",
+        "512": "optically-reviewed"
+      },
+      "sizePolicy": "Each target canvas is rendered directly from the approved high-resolution generation; compact tiers use their own bounds and contrast treatment.",
+      "metrics": {
+        "16": {
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14
+          },
+          "bounds": [
+            1,
+            1,
+            14,
+            14
+          ],
+          "ink": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14,
+            "width": 14,
+            "height": 14
+          },
+          "pixels": 152,
+          "inkPixels": 152,
+          "translucent": 90,
+          "colors": 148,
+          "sha256": "4d38ce0782116dda97966ce87a1f6fd7b012526b033e2abe8c063687f171fc03",
+          "bytes": 649,
+          "gridShape": "square"
+        },
+        "32": {
+          "bbox": {
+            "minX": 2,
+            "minY": 2,
+            "maxX": 29,
+            "maxY": 30
+          },
+          "bounds": [
+            2,
+            2,
+            29,
+            30
+          ],
+          "ink": {
+            "minX": 2,
+            "minY": 2,
+            "maxX": 29,
+            "maxY": 30,
+            "width": 28,
+            "height": 29
+          },
+          "pixels": 510,
+          "inkPixels": 510,
+          "translucent": 296,
+          "colors": 462,
+          "sha256": "eedf7b5d0779b8e29d5db328eb411a5b8aadbe6013201fb53333516a0d0ae132",
+          "bytes": 1344,
+          "gridShape": "square"
+        },
+        "128": {
+          "bbox": {
+            "minX": 10,
+            "minY": 7,
+            "maxX": 116,
+            "maxY": 120
+          },
+          "bounds": [
+            10,
+            7,
+            116,
+            120
+          ],
+          "ink": {
+            "minX": 10,
+            "minY": 7,
+            "maxX": 116,
+            "maxY": 120,
+            "width": 107,
+            "height": 114
+          },
+          "pixels": 8151,
+          "inkPixels": 8151,
+          "translucent": 3806,
+          "colors": 4212,
+          "sha256": "350512170a39d4c09b2175c93f754f19546bbba051544705c50b7dd0e6a985ef",
+          "bytes": 12316,
+          "gridShape": "square"
+        },
+        "512": {
+          "bbox": {
+            "minX": 41,
+            "minY": 25,
+            "maxX": 468,
+            "maxY": 485
+          },
+          "bounds": [
+            41,
+            25,
+            468,
+            485
+          ],
+          "ink": {
+            "minX": 41,
+            "minY": 25,
+            "maxX": 468,
+            "maxY": 485,
+            "width": 428,
+            "height": 461
+          },
+          "pixels": 127552,
+          "inkPixels": 127552,
+          "translucent": 55269,
+          "colors": 18779,
+          "sha256": "a31441a6ee4adf15a3a3334aada27ef0d893101d4f8bc8ff3f0773fff46c113c",
+          "bytes": 123353,
+          "gridShape": "square"
+        }
+      },
+      "blindMixStatus": "not-run"
     },
     "daHandler": {
       "genre": "utility",
@@ -2292,7 +3096,12 @@
           "lumStd": 53.45,
           "edgeEnergy": 385
         }
-      }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true
     },
     "writingBell": {
       "genre": "accessory",
@@ -2311,6 +3120,11 @@
         "128": "icons/writingBell-128.png",
         "512": "icons/writingBell-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -2354,6 +3168,11 @@
         "128": "icons/trashFull-128.png",
         "512": "icons/trashFull-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -2397,6 +3216,11 @@
         "128": "icons/control-128.png",
         "512": "icons/control-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -2440,6 +3264,11 @@
         "128": "icons/localModel-128.png",
         "512": "icons/localModel-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -2483,6 +3312,11 @@
         "128": "icons/controlStrip-128.png",
         "512": "icons/controlStrip-512.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
@@ -2527,7 +3361,11 @@
     "projectDisk"
   ],
   "coreBuilder": "tooling/build-snow-leopard-core-icons.mjs",
+  "schemaVersion": 2,
   "generatedOverlayBuilder": "tooling/build-accepted-generated-era-icons.mjs",
+  "runtimeAsset": true,
+  "completeFamilyMeaning": "All 56 runtime ids resolve to technically accepted artwork. Historical review is a separate per-icon state.",
+  "generatedAcceptanceMeaning": "Authoring acceptance is separate from historical validation; the Finder pair carries explicit per-object historical status.",
   "generatedAcceptanceLedger": "tooling/icon-generation/accepted-generated-icons.json",
   "imageGenerationSource": "assets/themes/snow-leopard/icons/imagegen-source",
   "reviewedGenerated": [
@@ -2587,5 +3425,22 @@
     "controlPanel",
     "teachText",
     "daHandler"
-  ]
+  ],
+  "finderLineageBuilder": "tooling/build-approved-finder-lineage.mjs",
+  "finderLineageSource": "built-in ImageGen candidates admitted only after target-era evidence and compact-size review",
+  "runtimeSizesByContext": {
+    "compactMenuList": 16,
+    "ordinary": 32,
+    "desktopLargeRetina": 128
+  },
+  "compatibilityManifest": "snow-leopard-icon-manifest.json",
+  "compatibilityManifestMeaning": "Stable semantic mapping only; app/core/system-icons.js selects the authored runtime tier by rendering context.",
+  "runtimeDispatch": "apps/desktop/app/core/system-icons.js",
+  "priorityLineageBuilder": "tooling/build-approved-priority-lineage.mjs",
+  "priorityLineageLedger": "tooling/icon-generation/approved-priority-lineage.json",
+  "priorityLineageObjects": [
+    "reviewDesk",
+    "searcher"
+  ],
+  "priorityLineageMeaning": "Only explicitly reviewed v2 rows override the broad generated archive; per-object provenance never implies native replication or reference validation."
 }

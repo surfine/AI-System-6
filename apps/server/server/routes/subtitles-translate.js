@@ -1,11 +1,12 @@
 "use strict";
 
 const { readJsonBody, requestSignal, send } = require("../lib/http.js");
-const { DEEPSEEK_BASE_URL_DEFAULT, resolveCloudBaseUrl } = require("../cloud.js");
+const { DEEPSEEK_BASE_URL_DEFAULT, resolveCloudTarget } = require("../cloud.js");
 const { resolveCloudCredential } = require("../credential-vault.js");
 const { preparePublicCloudCall } = require("../lib/cloud-route.js");
 const { isPublicDeployment } = require("../runtime-profile.js");
-const { settleSharedCloudRequest } = require("../shared-cloud-budget.js");
+const { reserveSharedCloudRequest } = require("../shared-cloud-budget.js");
+const { sessionFromRequest } = require("../security/public-session.js");
 const {
   buildSrtFromBlocks,
   translateSubtitleBlocks,
@@ -67,8 +68,6 @@ async function handleSubtitlesTranslate(req, res) {
       cloudModel: "",
       signal,
     };
-    let sharedReservation = null;
-    let actualTokens = 0;
     if (body._cloud_active) {
       if (isPublicDeployment) {
         // Representative payload so the shared allowance can meter the whole
@@ -89,35 +88,46 @@ async function handleSubtitlesTranslate(req, res) {
           model: payload.model,
           payload,
           req,
+          reserve: false,
         });
         options.cloudApiKey = cloud.apiKey;
         options.cloudBaseUrl = cloud.baseUrl;
+        options.cloudPinnedAddress = cloud.pinnedAddress;
+        options.cloudPinnedFamily = cloud.pinnedFamily;
         options.cloudModel = cloud.model;
-        sharedReservation = cloud.reservation;
+        if (cloud.usingSharedCloud) {
+          const sessionNonce = sessionFromRequest(req)?.nonce || "";
+          options.beforeCloudCall = (batchPayload) => {
+            const reservation = reserveSharedCloudRequest({ sessionNonce, payload: batchPayload });
+            if (!reservation.ok) {
+              const error = /** @type {Error & { statusCode?: number, code?: string, retryAfter?: number }} */ (
+                new Error(reservation.detail)
+              );
+              error.statusCode = reservation.code === "shared_cloud_input_too_large" ? 413 : 429;
+              error.code = reservation.code;
+              error.retryAfter = reservation.retryAfter;
+              throw error;
+            }
+            return reservation;
+          };
+        }
       } else {
+        const cloudTarget = await resolveCloudTarget(body._cloud_base_url || DEEPSEEK_BASE_URL_DEFAULT);
+        options.cloudBaseUrl = cloudTarget.baseUrl;
+        options.cloudPinnedAddress = cloudTarget.address;
+        options.cloudPinnedFamily = cloudTarget.family;
         options.cloudApiKey = String(await resolveCloudCredential({
           credentialId: body._cloud_credential_id,
           provider: "deepseek",
+          targetBaseUrl: options.cloudBaseUrl,
           suppliedApiKey: body._cloud_api_key,
           allowSupplied: false,
         })).trim();
-        options.cloudBaseUrl = resolveCloudBaseUrl(body._cloud_base_url || DEEPSEEK_BASE_URL_DEFAULT);
         options.cloudModel = body._cloud_model;
       }
     }
-    if (sharedReservation) {
-      options.onUsage = (total) => {
-        actualTokens += Number(total || 0);
-      };
-    }
     const translatedTexts = await translateSubtitleBlocks(blocks, mode, options);
     if (signal.aborted) return;
-    if (sharedReservation) {
-      settleSharedCloudRequest({
-        reservedTokens: sharedReservation.reservedTokens,
-        actualTokens,
-      });
-    }
     send(res, 200, JSON.stringify({
       mode,
       blockCount: blocks.length,

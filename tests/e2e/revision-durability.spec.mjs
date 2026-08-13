@@ -18,7 +18,7 @@ test("revision durability: a failed phase-advance revision blocks the transition
   await dismissGuide(page);
   await createProject(page);
   await page.dblclick("#finder-writing-studio-toggle");
-  await page.waitForFunction(() => document.body.dataset.workspaceProfile === "writing", { timeout: 15_000 });
+  await page.waitForFunction(() => document.body.dataset.workspaceProfile === "writing", undefined, { timeout: 15_000 });
   await page.waitForSelector('[data-window="questionSheet"]:not(.is-hidden)', { timeout: 10_000 });
 
   // Give the phase-advance a real document to protect; without an active text
@@ -55,7 +55,7 @@ test("revision durability: a failed phase-advance revision blocks the transition
   await page.click('[data-window="questionSheet"] [data-action="advance-question-to-outline"]');
   await page.waitForFunction(
     () => /Could not save the pre-advance|无法保存阶段推进前的版本历史/i.test(document.querySelector("#status")?.textContent || ""),
-    { timeout: 20_000 }
+    undefined, { timeout: 20_000 }
   );
 
   // The transition never happened: the Question Sheet still owns the text.
@@ -140,7 +140,7 @@ test("revision durability: backups carry revisions through a wipe and restore", 
     });
   });
   await page.reload();
-  await page.waitForFunction(() => document.body.dataset.appReady === "ready", { timeout: 45_000 });
+  await page.waitForFunction(() => document.body.dataset.appReady === "ready", undefined, { timeout: 45_000 });
   await runAction(page, "open-import-utility");
   await openWindow(page, "importUtility");
   await page.click("details.backup-preview-section summary");
@@ -150,7 +150,7 @@ test("revision durability: backups carry revisions through a wipe and restore", 
   await chooser.setFiles({ name: "backup.json", mimeType: "application/json", buffer: readFileSync(backupPath) });
   await page.waitForFunction(() => !document.querySelector("#import-project-backup")?.disabled);
   await page.click("#import-project-backup");
-  await page.waitForFunction(() => /Restored|已恢复/.test(document.querySelector("#project-switcher-label")?.textContent || ""), { timeout: 30_000 });
+  await page.waitForFunction(() => /Restored|已恢复/.test(document.querySelector("#project-switcher-label")?.textContent || ""), undefined, { timeout: 30_000 });
 
   const restored = await dumpIndexedDb(page);
   const revisionArrays = (restored.keyval || []).filter((entry) =>
@@ -176,7 +176,7 @@ test("revision durability: backups carry revisions through a wipe and restore", 
   await page.waitForSelector("#document-versions-modal[open]", { timeout: 10_000 });
   await page.waitForFunction(
     () => (document.querySelectorAll("#document-versions-list input[type='checkbox']").length || 0) >= 2,
-    { timeout: 15_000 }
+    undefined, { timeout: 15_000 }
   );
   const versionCount = await page.evaluate(() =>
     document.querySelectorAll("#document-versions-list input[type='checkbox']").length
@@ -188,6 +188,6 @@ test("revision durability: backups carry revisions through a wipe and restore", 
   await page.click("#versions-restore");
   await page.waitForFunction(
     () => (document.querySelector("#teachtext-body")?.value || "").includes("Version one body."),
-    { timeout: 15_000 }
+    undefined, { timeout: 15_000 }
   );
 });

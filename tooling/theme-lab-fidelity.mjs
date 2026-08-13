@@ -197,6 +197,7 @@ async function downloadSource(source, destination) {
   const response = await fetch(source.url, {
     redirect: "follow",
     headers: { "user-agent": "AI-System-6-Theme-Lab-Fidelity/1.0" },
+    signal: AbortSignal.timeout(20_000),
   });
   if (!response.ok) throw new Error(`Could not download ${source.id}: HTTP ${response.status}`);
   const buffer = Buffer.from(await response.arrayBuffer());
@@ -1226,6 +1227,12 @@ try {
       changedRatio: Math.round(comparison.metrics.changedRatio * 1000) / 1000,
       sourceScale: specimen.reference?.scale || manifest.capture?.sourceScale || 1,
     };
+    const diagnosticTilesDir = join(outputDir, "tiles");
+    mkdirSync(diagnosticTilesDir, { recursive: true });
+    writeCanvas(join(diagnosticTilesDir, `${specimen.id}-reference.png`), aligned.referenceCanvas);
+    writeCanvas(join(diagnosticTilesDir, `${specimen.id}-current.png`), aligned.currentCanvas);
+    writeCanvas(join(diagnosticTilesDir, `${specimen.id}-overlay-50.png`), comparison.overlay);
+    writeCanvas(join(diagnosticTilesDir, `${specimen.id}-pixel-diff.png`), comparison.difference);
     assertSpecimenTolerances(specimen, review, manifest.capture?.tolerances || DEFAULT_TOLERANCES);
     const floorResult = assertSpecimenFloor(specimen, review, boardFloor);
     validateComputedAssertions(current.computedAssertions);

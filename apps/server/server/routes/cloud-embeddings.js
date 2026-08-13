@@ -31,10 +31,9 @@ const { getLocalUrls } = require("../lib/local-urls.js");
 const {
   cloudAuthHeaders,
   DEEPSEEK_CLOUD_MODELS,
-  DEEPSEEK_API_KEY_DEFAULT,
   DEEPSEEK_BASE_URL_DEFAULT,
   DEEPSEEK_PUBLIC_BASE_URL,
-  resolveCloudBaseUrl,
+  resolveCloudTarget,
 } = require("../cloud.js");
 const { isPublicDeployment } = require("../runtime-profile.js");
 const { resolveCloudCredential } = require("../credential-vault.js");
@@ -49,15 +48,18 @@ async function handleCloudEmbeddings(req, res) {
 
   try {
     const raw = await readJsonBody(req, { limitBytes: 512 * 1024 });
+    const requestedBaseUrl = isPublicDeployment
+      ? DEEPSEEK_PUBLIC_BASE_URL
+      : raw._cloud_base_url || DEEPSEEK_BASE_URL_DEFAULT;
+    const cloudTarget = await resolveCloudTarget(requestedBaseUrl);
+    const baseUrl = cloudTarget.baseUrl;
     const apiKey = await resolveCloudCredential({
       credentialId: raw._cloud_credential_id,
       provider: "deepseek",
-      suppliedApiKey: raw._cloud_api_key || DEEPSEEK_API_KEY_DEFAULT,
+      targetBaseUrl: baseUrl,
+      suppliedApiKey: raw._cloud_api_key,
       allowSupplied: isPublicDeployment,
     });
-    const baseUrl = isPublicDeployment
-      ? DEEPSEEK_PUBLIC_BASE_URL
-      : resolveCloudBaseUrl(raw._cloud_base_url || DEEPSEEK_BASE_URL_DEFAULT);
     const targetUrl = `${baseUrl}/v1/embeddings`;
 
     const localProvider = raw._local_provider;
@@ -104,14 +106,18 @@ async function handleCloudEmbeddings(req, res) {
         payload,
         signal,
         authHeaders,
-        { maxBytes: 16 * 1024 * 1024 }
+        {
+          maxBytes: 16 * 1024 * 1024,
+          pinnedAddress: cloudTarget.address,
+          pinnedFamily: cloudTarget.family,
+        }
       );
       const text = await upstream.text();
       const contentType = upstream.headers.get("content-type") || "application/json";
 
       if (!upstream.ok || !contentType.includes("application/json")) {
         useFallback = true;
-        fallbackError = new Error(`Cloud API returned status ${upstream.status}: ${text.substring(0, 200)}`);
+        fallbackError = new Error(`Cloud API returned status ${upstream.status}.`);
       } else {
         send(res, upstream.status, text, {
           "Content-Type": "application/json",
@@ -157,9 +163,10 @@ async function handleCloudEmbeddings(req, res) {
     }
   } catch (error) {
     if (/** @type {any} */ (error)?.name === "AbortError") return;
-    send(res, 502, JSON.stringify({
-      error: "Cloud embeddings proxy failed",
-      detail: /** @type {Error} */ (error).message,
+    const status = Number(/** @type {any} */ (error)?.statusCode) || 502;
+    send(res, status, JSON.stringify({
+      error: status < 500 ? /** @type {Error} */ (error).message : "Cloud embeddings proxy failed",
+      code: String(/** @type {any} */ (error)?.code || "cloud_embeddings_failed"),
     }), { "Content-Type": "application/json" });
   } finally {
     timeoutHandle.cleanup();

@@ -31,14 +31,14 @@ import { fileURLToPath } from "node:url";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const BASE_FILES = [
-  "styles/00-foundation.css",
-  "styles/10-windows.css",
-  "styles/20-reader-docmap.css",
-  "styles/30-surfaces.css",
-  "styles/40-icons.css",
-  "styles/50-apps.css",
+  "apps/desktop/styles/00-foundation.css",
+  "apps/desktop/styles/10-windows.css",
+  "apps/desktop/styles/20-reader-docmap.css",
+  "apps/desktop/styles/30-surfaces.css",
+  "apps/desktop/styles/40-icons.css",
+  "apps/desktop/styles/50-apps.css",
 ];
-const RESPONSIVE_FILE = "styles/60-responsive.css";
+const RESPONSIVE_FILE = "apps/desktop/styles/60-responsive.css";
 
 const args = new Set(process.argv.slice(2));
 const fullList = args.has("--full");

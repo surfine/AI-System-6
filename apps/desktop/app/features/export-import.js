@@ -1409,6 +1409,11 @@ function remapProjectDiskBackup(bundle) {
 }
 
 async function commitImportedProjectAtomically(imported) {
+  imported.trash.forEach((item) => {
+    if (item._storageId === undefined || item._storageId === null || item._storageId === "") {
+      item._storageId = crypto.randomUUID();
+    }
+  });
   const db = await openAppDb();
   try {
     const importedProjectCdItems = [
@@ -1442,7 +1447,10 @@ async function commitImportedProjectAtomically(imported) {
         };
         putAll(projectsStoreName, [imported.project]);
         putAll(scrapsStoreName, imported.scraps);
-        putAll(trashStoreName, imported.trash);
+        const trashStore = tx.objectStore(trashStoreName);
+        imported.trash.forEach((item) => {
+          writes.push(idbRequest(trashStore.put(item, item._storageId)));
+        });
         putAll(chatFoldersStoreName, imported.folders);
         putAll(chatFilesStoreName, imported.files);
         putAll(referenceStoreName, imported.references, normalizeProjectReferenceForStorage);

@@ -214,8 +214,8 @@
     "finderApp": {
       "label": "Finder / System",
       "genre": "system identity",
-      "prototype": "friendly translucent ice-blue and milky-white compact Macintosh with a split blue-white smiling CRT face and a clear lower drive plinth",
-      "metaphorKey": "smiling-compact-macintosh",
+      "prototype": "Mac OS X 10.2 Jaguar low rectangular blue/light split smiling Finder face plaque with a thin profile division and defined bottom edge",
+      "metaphorKey": "target-era-finder-identity",
       "comparison": {
         "evidence": "guidebook-desktop-full.png",
         "crop": [

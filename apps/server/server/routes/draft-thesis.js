@@ -22,7 +22,7 @@ const {
   cloudAuthHeaders,
   DEEPSEEK_API_KEY_DEFAULT,
   DEEPSEEK_BASE_URL_DEFAULT,
-  resolveCloudBaseUrl,
+  resolveCloudTarget,
 } = require("../cloud.js");
 const { systemIntegrityInstruction } = require("../system-integrity.js");
 const { authorThesisInstruction } = require("../author-thesis.js");
@@ -30,7 +30,6 @@ const { chatVentIntakeInstruction } = require("../chat-vent.js");
 const { resolveCloudCredential } = require("../credential-vault.js");
 const { preparePublicCloudCall } = require("../lib/cloud-route.js");
 const { isPublicDeployment } = require("../runtime-profile.js");
-const { settleSharedCloudRequest } = require("../shared-cloud-budget.js");
 const {
   findHumanizerOutputHits,
   findHumanizerStyleDiagnostics,
@@ -1317,7 +1316,7 @@ function cloudDraftMaxTokens(body) {
  *   authHeaders: Record<string, string>,
  * }} options
  */
-async function repairCloudDraftOutputIfNeeded(options) {
+function repairCloudDraftOutputIfNeeded(options) {
   const taskKindName = `quick-draft-${taskKind(options.body) || options.body?.stage || "draft"}`;
   const content = String(options.result?.content || "").trim();
   if (!content || !shouldLintHumanizerOutput(taskKindName)) return options.result;
@@ -1354,6 +1353,8 @@ async function callModel(body, messages, signal, req) {
     const payload = { model, messages, stream: false, temperature, max_tokens: cloudDraftMaxTokens(body) };
     let apiKey;
     let baseUrl;
+    let pinnedAddress;
+    let pinnedFamily;
     let finalPayload = payload;
     let sharedReservation = null;
     if (isPublicDeployment) {
@@ -1367,16 +1368,22 @@ async function callModel(body, messages, signal, req) {
       });
       apiKey = cloud.apiKey;
       baseUrl = cloud.baseUrl;
+      pinnedAddress = cloud.pinnedAddress;
+      pinnedFamily = cloud.pinnedFamily;
       finalPayload = cloud.payload;
       sharedReservation = cloud.reservation;
     } else {
+      const cloudTarget = await resolveCloudTarget(body._cloud_base_url || DEEPSEEK_BASE_URL_DEFAULT);
+      baseUrl = cloudTarget.baseUrl;
+      pinnedAddress = cloudTarget.address;
+      pinnedFamily = cloudTarget.family;
       apiKey = await resolveCloudCredential({
         credentialId: body._cloud_credential_id,
         provider: "deepseek",
+        targetBaseUrl: baseUrl,
         suppliedApiKey: body._cloud_api_key || DEEPSEEK_API_KEY_DEFAULT,
         allowSupplied: false,
       });
-      baseUrl = resolveCloudBaseUrl(body._cloud_base_url || DEEPSEEK_BASE_URL_DEFAULT);
     }
     const targetUrl = `${baseUrl}/v1/chat/completions`;
     if (DEEPSEEK_V4_MODELS.has(model)) {
@@ -1384,18 +1391,21 @@ async function callModel(body, messages, signal, req) {
       delete finalPayload.temperature;
     }
     const authHeaders = cloudAuthHeaders(apiKey);
-    const { response } = await postJsonWithFallback(targetUrl, finalPayload, signal, authHeaders);
-    const result = await readModelResponse(response, "Cloud API");
-    const repaired = result.ok
-      ? await repairCloudDraftOutputIfNeeded({ body, result, payload: finalPayload, targetUrl, signal, authHeaders })
-      : result;
-    if (sharedReservation) {
-      settleSharedCloudRequest({
-        reservedTokens: sharedReservation.reservedTokens,
-        actualTokens: Number(repaired?.data?.usage?.total_tokens || 0),
+    try {
+      const { response } = await postJsonWithFallback(targetUrl, finalPayload, signal, authHeaders, {
+        pinnedAddress,
+        pinnedFamily,
+        onRequest: () => sharedReservation?.markUpstreamStarted(),
       });
+      const result = await readModelResponse(response, "Cloud API");
+      const repaired = result.ok
+        ? await repairCloudDraftOutputIfNeeded({ body, result, payload: finalPayload, targetUrl, signal, authHeaders })
+        : result;
+      if (repaired?.data?.usage) sharedReservation?.addUsage(repaired.data.usage);
+      return { ...repaired, model: model || "cloud" };
+    } finally {
+      sharedReservation?.settle();
     }
-    return { ...repaired, model: model || "cloud" };
   }
 
   const endpoint = body._local_endpoint || "";

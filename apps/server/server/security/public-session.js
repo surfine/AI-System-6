@@ -1,6 +1,7 @@
 "use strict";
 
 const crypto = require("node:crypto");
+const net = require("node:net");
 
 const { sendJson, readJsonBody, withTimeoutSignal } = require("../lib/http.js");
 const { isPublicDeployment } = require("../runtime-profile.js");
@@ -15,6 +16,10 @@ const PUBLIC_ORIGIN = String(
   process.env.AI_SYSTEM6_PUBLIC_ORIGIN || "https://system6.aaronlau.me"
 ).replace(/\/$/, "");
 const PUBLIC_HOST = new URL(PUBLIC_ORIGIN).host;
+const TRUST_PROXY_MODE = String(process.env.AI_SYSTEM6_TRUST_PROXY || "").trim().toLowerCase();
+if (TRUST_PROXY_MODE && !new Set(["cloudflare", "nginx"]).has(TRUST_PROXY_MODE)) {
+  throw new Error("AI_SYSTEM6_TRUST_PROXY must be either cloudflare or nginx.");
+}
 
 const unprotectedPaths = new Set([
   "/healthz",
@@ -26,17 +31,53 @@ const unprotectedPaths = new Set([
   "/api/session/status",
 ]);
 
-/** @type {Map<string, { startedAt: number, count: number }>} */
-const generalWindows = new Map();
-/** @type {Map<string, { startedAt: number, count: number }>} */
-const turnstileWindows = new Map();
+class TtlLruWindows {
+  constructor(maxEntries, ttlMs) {
+    this.maxEntries = maxEntries;
+    this.ttlMs = ttlMs;
+    this.entries = new Map();
+  }
+
+  prune(now = Date.now()) {
+    for (const [key, value] of this.entries) {
+      if (now - value.lastUsedAt >= this.ttlMs) this.entries.delete(key);
+    }
+    while (this.entries.size > this.maxEntries) {
+      this.entries.delete(this.entries.keys().next().value);
+    }
+  }
+
+  consume(key, limit, durationMs, now = Date.now()) {
+    this.prune(now);
+    const current = this.entries.get(key);
+    if (!current || now - current.startedAt >= durationMs) {
+      this.entries.delete(key);
+      this.entries.set(key, { startedAt: now, lastUsedAt: now, count: 1 });
+      this.prune(now);
+      return true;
+    }
+    this.entries.delete(key);
+    current.lastUsedAt = now;
+    this.entries.set(key, current);
+    if (current.count >= limit) return false;
+    current.count += 1;
+    return true;
+  }
+
+  get size() {
+    return this.entries.size;
+  }
+}
+
+const generalWindows = new TtlLruWindows(5000, 15 * 60 * 1000);
+const turnstileWindows = new TtlLruWindows(5000, 15 * 60 * 1000);
 /** @type {Map<string, number>} */
 const activeBySession = new Map();
 const activeByGroup = new Map([
   ["cloud", 0],
   ["reader", 0],
+  ["cmf", 0],
 ]);
-let requestCounter = 0;
 
 function base64urlJson(value) {
   return Buffer.from(JSON.stringify(value)).toString("base64url");
@@ -113,37 +154,32 @@ function issueSessionCookie() {
   ].join("; ");
 }
 
+function normalizeClientIp(value) {
+  let candidate = String(Array.isArray(value) ? value[0] : value || "").trim();
+  if (!candidate || candidate.includes(",")) return "";
+  if (candidate.startsWith("[") && candidate.endsWith("]")) candidate = candidate.slice(1, -1);
+  const zoneIndex = candidate.indexOf("%");
+  if (zoneIndex > 0) candidate = candidate.slice(0, zoneIndex);
+  if (candidate.toLowerCase().startsWith("::ffff:")) {
+    const mapped = candidate.slice("::ffff:".length);
+    if (net.isIP(mapped) === 4) return mapped;
+  }
+  return net.isIP(candidate) ? candidate.toLowerCase() : "";
+}
+
 function clientIp(req) {
-  return String(
-    req.headers["cf-connecting-ip"]
-    || req.headers["x-real-ip"]
-    || req.socket.remoteAddress
-    || "unknown"
-  ).trim();
+  const remote = normalizeClientIp(req.socket?.remoteAddress) || "unknown";
+  if (TRUST_PROXY_MODE === "cloudflare") {
+    return normalizeClientIp(req.headers["cf-connecting-ip"]) || remote;
+  }
+  if (TRUST_PROXY_MODE === "nginx") {
+    return normalizeClientIp(req.headers["x-real-ip"]) || remote;
+  }
+  return remote;
 }
 
-function consumeFixedWindow(map, key, limit, durationMs) {
-  const now = Date.now();
-  const current = map.get(key);
-  if (!current || now - current.startedAt >= durationMs) {
-    map.set(key, { startedAt: now, count: 1 });
-    return true;
-  }
-  if (current.count >= limit) return false;
-  current.count += 1;
-  return true;
-}
-
-function pruneWindows() {
-  requestCounter += 1;
-  if (requestCounter % 100 !== 0) return;
-  const now = Date.now();
-  for (const [key, value] of generalWindows) {
-    if (now - value.startedAt > 15 * 60 * 1000) generalWindows.delete(key);
-  }
-  for (const [key, value] of turnstileWindows) {
-    if (now - value.startedAt > 15 * 60 * 1000) turnstileWindows.delete(key);
-  }
+function consumeFixedWindow(container, key, limit, durationMs) {
+  return container.consume(key, limit, durationMs);
 }
 
 function requestPath(req) {
@@ -155,6 +191,7 @@ function requestPath(req) {
 }
 
 function requestGroup(pathname) {
+  if (pathname.startsWith("/api/cmf/")) return "cmf";
   if (pathname.startsWith("/api/cloud/")) return "cloud";
   if (
     pathname.startsWith("/api/reader")
@@ -265,7 +302,6 @@ async function runWithPublicGuard(req, res, handler) {
     return;
   }
 
-  pruneWindows();
   if (!consumeFixedWindow(generalWindows, session.nonce, 120, 60 * 1000)) {
     sendJson(res, 429, { error: "Request rate limit exceeded", code: "rate_limited" }, {
       "Retry-After": "5",
@@ -274,7 +310,7 @@ async function runWithPublicGuard(req, res, handler) {
   }
 
   const group = requestGroup(pathname);
-  const globalLimit = group === "cloud" ? 8 : group === "reader" ? 4 : Infinity;
+  const globalLimit = group === "cmf" ? 1 : group === "cloud" ? 8 : group === "reader" ? 4 : Infinity;
   const sessionLimit = group ? (group === "cloud" ? 2 : 1) : Infinity;
   const sessionKey = `${session.nonce}:${group}`;
   if (
@@ -326,4 +362,11 @@ module.exports = {
   runWithPublicGuard,
   publicReadiness,
   sessionFromRequest,
+  clientIp,
+  normalizeClientIp,
+  TtlLruWindows,
+  rateLimitStateForTests: () => ({
+    general: generalWindows.size,
+    turnstile: turnstileWindows.size,
+  }),
 };

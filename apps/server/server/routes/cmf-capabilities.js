@@ -5,7 +5,7 @@
 const { sendJson } = require("../lib/http.js");
 const { getCapabilities } = require("../cmf/service.js");
 
-async function handleCmfCapabilities(req, res) {
+function handleCmfCapabilities(req, res) {
   sendJson(res, 200, getCapabilities(), { "Cache-Control": "no-store" });
 }
 

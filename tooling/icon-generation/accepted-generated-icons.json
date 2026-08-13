@@ -255,14 +255,14 @@
           "128": "817061f4f2493ff3f8a8091edf89626aa01601bc4494abf8e0ae36388b24b77c"
         },
         "finderApp": {
-          "16": "2e3bf41b2cb534825c0312e207cfff4feeac843608107caff6aac78afe9491b1",
-          "32": "8842b8d9940b3b32ff7d4152f6ace23ebca5d5e3312e6672f27d413811f121ec",
-          "128": "cbfe657d1febf9242f1e613fe108dde5f1bff3f5028477721e701a79027da05e"
+          "16": "48ceb1224e2cdcd7b20bf924bc1f3e10fe554a5c078735dc85e484d1f27af0fe",
+          "32": "7e2473e770f2465dfd479ee31ff9b6e3799c78dee71ea71f7104772aaa864ff8",
+          "128": "be9d5eb6f4a48eade9b293880046e42affbb7ef00930cfb9ffe2adef8ddff4f3"
         },
         "multiFinderApp": {
-          "16": "e4306d3528d4ddb39f9dc54626e089e3ee7bff2836ab061f6f98d12398845f8c",
-          "32": "d33000aac8997fb1af83f5e99939dbf2d2e045185237da3258e1529989b00db2",
-          "128": "284e413f440b46a21f7016096c457fc7fa59b95ea6e2f5eb0eb779a8698696c0"
+          "16": "30852e950f8aec4be560c3301b74749a6ab42cd6a4d0cf1fcd9643934629a3a1",
+          "32": "88239f323976b5ad13b65df04c2e41f8423597ce9dd58599c8cf52402985133b",
+          "128": "5da335f45af85c08a78825d682b31398744da6e68b4fc2de1399665fa3ba72d1"
         },
         "soundscape": {
           "16": "46bcdbc3a71dacaed8e134c262eb13a194bfd7fe3c64a4841cbf12849b02c0f1",
@@ -556,16 +556,16 @@
           "512": "ee9d0acb322d565ac95f36fecfa052404ffc7b4657c887b8c7cf3d7e1729bf3e"
         },
         "finderApp": {
-          "16": "c1fb049d3bde8933b3787da26270303bef4d5c0269016b08d791e97d4c65297e",
-          "32": "8349e916bddba9eba86ca58ccdb510e31c2f130611b54317b50b79a58c712616",
-          "128": "3303b941accae4be5bf67b6887a5c6687589498ad98ffb74663da71aeb5530b4",
-          "512": "a1e96244d9066e5fa49632187aff19be85b61625f5d23c826ca7b154da954891"
+          "16": "1aabada039da5843284e37ba640ee32486a24e269099f376438e6508ff2d43de",
+          "32": "85a03404970ab96e9f22055edf66b610eea2224a504436acc9dc6f8cd66a670c",
+          "128": "f028d444c546211ca35f198dc89e90f38dbf6191bf855565c5f4fef8c2acdf57",
+          "512": "cdc9d7bd3f52e9e7a6bf80413c81b88a1c16d6029c9adcd95f8672599b523718"
         },
         "multiFinderApp": {
-          "16": "54b08d33d589b90db34f52425e6573a068784b1c37f4e8ad8f2e7fa95840a39d",
-          "32": "160635895482cea4e98cbc3d34144064a7beecd7b1890c64fc37cf254338133c",
-          "128": "f715a3e339f738f6d983b1e3aad825ba04df0cd94335c98b0105142045e1602f",
-          "512": "fdc13407690f0aa40a4904d40c5c8098fdb92215a59e0b8a68d6f455683ccfa3"
+          "16": "4d38ce0782116dda97966ce87a1f6fd7b012526b033e2abe8c063687f171fc03",
+          "32": "eedf7b5d0779b8e29d5db328eb411a5b8aadbe6013201fb53333516a0d0ae132",
+          "128": "350512170a39d4c09b2175c93f754f19546bbba051544705c50b7dd0e6a985ef",
+          "512": "a31441a6ee4adf15a3a3334aada27ef0d893101d4f8bc8ff3f0773fff46c113c"
         },
         "soundscape": {
           "16": "ba9de834958ad3b0ae74d78c89e020ac2250a75bcd925d101e52589d7cd63881",
@@ -902,16 +902,16 @@
           "128": "d69fdb2149d0dbab60736c0818f54e34f85e3f088ebc551aead1d36251c86f0c"
         },
         "finderApp": {
-          "16": "d9b7ed544d6a02f85d1140d46c14e1df5262d330792b794041b11216cf63ccb2",
-          "32": "0ccc0889fdd7dff70477a0e485f247e2a5a80ae527c42474167744a68b506538",
-          "64": "f0f608a617ab9c789c467a57e50d993477262f60dd1c6ef69e7742b4ab3f33d8",
-          "128": "79967b57411c354cd0ef0910e823aee8eb5ba19d8a8327d78df5e7643f923de8"
+          "16": "b8f3e5e2978d9452373aeb86bfbf8190e4630eb95358d01e29f0348317d7eed3",
+          "32": "8e1a7d3382519664a33884ccbe1d59962d8c5ce46bf18b0d8205cdc9d85d2237",
+          "64": "8692e4c421119d82871a750dcc8e1aa0ec5b9a5143ba539cc3e63db3a4486492",
+          "128": "b44ae9b062eb20750049dd23b10fc5d7fefa9088df4c13c406c5e752da4ef323"
         },
         "multiFinderApp": {
-          "16": "f1bd232f6099cb35f1dc3f8789c7aea8c31cf03859db58d56cf87e70bd857f60",
-          "32": "eed43797e87de44b462713326d60612d401db7cbc171acacc11dd8b901482b69",
-          "64": "bded966828633c3a249ec9e838b00aa2d6c18a0ed467790ec7205cbcf26b8268",
-          "128": "f741e61b84944663702ecc4ac00d1f2f6500cbf621fc4aa2a450b5ff5b41c765"
+          "16": "15228c58e251e598ca9797da89c8f4be6bfb2ce3d9ff2304a4268a0a3d8734e5",
+          "32": "50302290feb8b4d784ac105a3c2ee59c7467d7c4e4b326fb175b4a0783a2b5cf",
+          "64": "216215863aa7d73180006b7d38850ff7dfe33bf8be58ec5cc420e5240fb4b501",
+          "128": "c775cc54963c332b8bf3cec9c9cbd330924e9542ef4f0a1c671da390fd440715"
         },
         "soundscape": {
           "16": "09a87cb0a4c65efdf3f55134cdaa84f5ccc6fddcc0c3feb7bb0e2662930d6410",
@@ -1113,5 +1113,18 @@
         }
       }
     }
+  },
+  "priorityLineageOverlay": {
+    "builder": "tooling/build-approved-priority-lineage.mjs",
+    "ledger": "tooling/icon-generation/approved-priority-lineage.json",
+    "broadArchive": "icons/imagegen-source",
+    "prioritySource": "icons/priority-lineage-source",
+    "broadArchiveHashesPreserved": true,
+    "meaning": "The accepted generated ledger continues to pin the broad archive. The later priority source is separate, and historical status remains owned by the continuity and priority ledgers.",
+    "objects": [
+      "reviewDesk",
+      "searcher",
+      "assistant"
+    ]
   }
 }

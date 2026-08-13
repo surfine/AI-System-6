@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/ARCHITECTURE.md -->
-<!-- source-sha256: 3bdbd242dfb70640137147ce3dce6d61d2fd755a835f9a574af28e6770b1390b -->
+<!-- source-sha256: 824e84d0dc2f8d02dc8190d079f588f7b2ff1c88fda1c3abb9c5974c8504d885 -->
 
 > 英文版为准 ・ 仅供人类参考
 
@@ -117,7 +117,7 @@ OCR 模型、3D 渲染、演示库与其他大型能力只在被调用时加载�
 1. 功能契约固定产品行为与架构边界；
 2. checkJs 与 `apps/server/` 类型检查保护 JavaScript/TypeScript 表面；
 3. CSS、设计、数据、版本与 bundle 门禁保护跨领域预算；
-4. 可选浏览器诊断检查渲染行为；
+4. Chromium 与 WebKit smoke 测试保护启动、持久化与跨窗口 writer 接管；更广泛的浏览器诊断仍为可选；
 5. 公开树门禁证明全新 clone 拥有所有宣传的命令，且不含内部发布机械。
 
 命令见[开发指南](DEVELOPMENT.zh-CN.md)。

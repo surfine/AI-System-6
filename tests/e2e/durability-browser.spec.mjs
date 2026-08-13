@@ -72,7 +72,7 @@ test("durability: StateStore rollback restores memory, UI, and reload state", as
     });
     database.close();
     return files.some((file) => /Existing file/.test(file.body || ""));
-  }, { timeout: 15_000 });
+  }, undefined, { timeout: 15_000 });
 
   // Break every object-store put, then commit a new file through the store.
   await page.evaluate(() => {
@@ -113,7 +113,7 @@ test("durability: StateStore rollback restores memory, UI, and reload state", as
   // the failed commit.
   await page.evaluate(() => window.__restorePut());
   await page.reload();
-  await page.waitForFunction(() => document.body.dataset.appReady === "ready", { timeout: 45_000 });
+  await page.waitForFunction(() => document.body.dataset.appReady === "ready", undefined, { timeout: 45_000 });
   const db = await dumpIndexedDb(page);
   expect((db.chatFiles || []).some((file) => file.id === "rollback-file")).toBe(false);
   expect((db.chatFiles || []).some((file) => /Existing file/.test(file.body || ""))).toBe(true);
@@ -145,7 +145,7 @@ test("durability: backup export fails closed when version history cannot be read
   await page.click("#export-project-disk");
   await page.waitForFunction(
     () => /version history could not be read|版本历史无法完整读取/.test(document.querySelector("#status")?.textContent || ""),
-    { timeout: 15_000 }
+    undefined, { timeout: 15_000 }
   );
   await page.waitForTimeout(1500);
   expect(downloadFired).toBe(false);
@@ -167,15 +167,27 @@ test("durability: revision restore verifies persistence and rolls back on failur
   await bootApp(page);
   await dismissGuide(page);
   await createProject(page);
-  const { first } = await seedDocumentWithRevisions(page, { bodyV1: "Old body.", bodyV2: "New body." });
+  await seedDocumentWithRevisions(page, { bodyV1: "Old body.", bodyV2: "New body." });
 
+  // Open the seeded document, not a timing-dependent blank TeachText tab.
+  // Chromium can finish the window open before the direct activeTextFileId
+  // assignment made by the fixture survives tab initialization.
+  const openedSeed = await page.evaluate((documentId) => ({
+    opened: window.AISystem6TeachText?.openDocument?.(documentId) === true,
+    activeProjectId,
+    file: chatFiles.find((entry) => entry.id === documentId) || null,
+  }), "durable-doc-1");
+  expect(openedSeed, "the seeded document must still belong to the active project").toMatchObject({
+    opened: true,
+    file: { id: "durable-doc-1", projectId: openedSeed.activeProjectId },
+  });
   // Open the document and its Versions dialog.
   await openWindow(page, "teachText");
   await page.evaluate(() => openDocumentVersions());
   await page.waitForSelector("#document-versions-modal[open]", { timeout: 10_000 });
   await page.waitForFunction(
     () => (document.querySelectorAll("#document-versions-list input[type='checkbox']").length || 0) >= 2,
-    { timeout: 15_000 }
+    undefined, { timeout: 15_000 }
   );
 
   // Force the desk save to fail, then restore the old revision.
@@ -190,44 +202,41 @@ test("durability: revision restore verifies persistence and rolls back on failur
   await page.click("#versions-restore");
   await page.waitForFunction(
     () => /Could not save the restored document|无法保存恢复后的正文/.test(document.querySelector("#status")?.textContent || ""),
-    { timeout: 15_000 }
+    undefined, { timeout: 15_000 }
   );
   expect(await page.evaluate(() => chatFiles.find((file) => file.id === activeTextFileId)?.body)).toBe("New body.");
 
   // Reload: the failed restore must not have persisted.
   await page.evaluate(() => { saveDeskState = window.__originalSaveDeskState; });
   await page.reload();
-  await page.waitForFunction(() => document.body.dataset.appReady === "ready", { timeout: 45_000 });
+  await page.waitForFunction(() => document.body.dataset.appReady === "ready", undefined, { timeout: 45_000 });
   const dbAfterFailed = await dumpIndexedDb(page);
   const failedFile = (dbAfterFailed.chatFiles || []).find((file) => file.id === "durable-doc-1");
   expect(failedFile?.body).toBe("New body.");
 
   // Restore again with writes healthy: the old body persists across reload.
-  await page.evaluate(() => {
-    if (typeof openTextFile === "function") openTextFile("durable-doc-1");
-    activeTextFileId = "durable-doc-1";
-  });
+  await page.evaluate(() => window.AISystem6TeachText.openDocument("durable-doc-1"));
   await openWindow(page, "teachText");
   await page.waitForFunction(
     () => (document.querySelector("#teachtext-body")?.value || "").includes("New body."),
-    { timeout: 15_000 }
+    undefined, { timeout: 15_000 }
   );
   await page.evaluate(() => openDocumentVersions());
   await page.waitForSelector("#document-versions-modal[open]", { timeout: 10_000 });
   await page.waitForFunction(
     () => (document.querySelectorAll("#document-versions-list input[type='checkbox']").length || 0) >= 2,
-    { timeout: 15_000 }
+    undefined, { timeout: 15_000 }
   );
   const checkboxesAfter = page.locator("#document-versions-list input[type='checkbox']");
   await checkboxesAfter.nth((await checkboxesAfter.count()) - 1).check();
   await page.click("#versions-restore");
   await page.waitForFunction(
     () => chatFiles.find((file) => file.id === activeTextFileId)?.body === "Old body.",
-    { timeout: 15_000 }
+    undefined, { timeout: 15_000 }
   );
   expect(await page.evaluate(() => chatFiles.find((file) => file.id === activeTextFileId)?.body)).toBe("Old body.");
   await page.reload();
-  await page.waitForFunction(() => document.body.dataset.appReady === "ready", { timeout: 45_000 });
+  await page.waitForFunction(() => document.body.dataset.appReady === "ready", undefined, { timeout: 45_000 });
   const dbAfterRestore = await dumpIndexedDb(page);
   expect((dbAfterRestore.chatFiles || []).find((file) => file.id === "durable-doc-1")?.body).toBe("Old body.");
 });
@@ -245,7 +254,7 @@ test("durability: Project CD burn aborts when the pre-burn revision cannot be wr
   await openWindow(page, "teachText");
   await page.waitForFunction(
     () => (document.querySelector("#teachtext-body")?.value || "").includes("Burn source"),
-    { timeout: 15_000 }
+    undefined, { timeout: 15_000 }
   );
   await page.evaluate(() => {
     // The CD export only burns a manuscript-surface document.
@@ -288,7 +297,7 @@ test("durability: Project CD burn aborts when the pre-burn revision cannot be wr
   });
   await page.waitForFunction(
     () => /burned to Project CD|已烧录|已导出/.test(document.querySelector("#status")?.textContent || ""),
-    { timeout: 15_000 }
+    undefined, { timeout: 15_000 }
   );
   const after = await dumpIndexedDb(page);
   const cdAfter = (after.keyval || []).filter((entry) =>

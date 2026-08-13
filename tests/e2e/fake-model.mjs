@@ -5,6 +5,8 @@ import { createServer } from "node:http";
  *
  * Speaks the LM Studio wire shape the browser client expects:
  *   GET  /api/v1/models            -> model inventory
+ *   POST /api/v1/chat              -> native v1 JSON or named SSE events
+ *   POST /v1/responses             -> stateful Responses JSON
  *   POST /v1/chat/completions      -> JSON or SSE stream, per scenario
  *   POST /v1/embeddings            -> fixed embedding vector
  *
@@ -97,6 +99,8 @@ export function createFakeModelServer() {
   const state = {
     scenario: "stream",
     chatCalls: 0,
+    nativeChatCalls: 0,
+    responsesCalls: 0,
     modelsCalls: 0,
     embeddingsCalls: 0,
   };
@@ -169,6 +173,121 @@ export function createFakeModelServer() {
         model: "fake-embedding",
         usage: { prompt_tokens: 4, total_tokens: 4 },
       });
+      return;
+    }
+
+    if (request.method === "POST" && url.pathname === "/api/v1/chat") {
+      state.nativeChatCalls += 1;
+      const body = await readRequestBody(request);
+      state.lastNativeBody = body;
+      const responseId = `resp_fake_${state.nativeChatCalls}`;
+      const result = {
+        model_instance_id: FAKE_MODEL_ID,
+        output: [{ type: "message", content: defaultChatText }],
+        stats: {
+          input_tokens: 24,
+          total_output_tokens: 42,
+          reasoning_output_tokens: 0,
+          tokens_per_second: 42,
+          time_to_first_token_seconds: 0.01,
+        },
+        response_id: responseId,
+      };
+      if (state.scenario === "rate-limit") {
+        sendJson(response, 429, { error: { message: "Fake model rate limit reached.", type: "rate_limit" } });
+        return;
+      }
+      if (state.scenario === "server-error") {
+        sendJson(response, 500, { error: { message: "Fake model exploded.", type: "server_error" } });
+        return;
+      }
+      if (state.scenario === "invalid") {
+        response.writeHead(200, { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" });
+        response.end("{not-json");
+        return;
+      }
+      if (state.scenario === "empty") {
+        result.output = [];
+        sendJson(response, 200, result);
+        return;
+      }
+      if (state.scenario === "timeout") return;
+      if (state.scenario === "cutoff") {
+        response.writeHead(200, {
+          "Content-Type": "text/event-stream",
+          "Access-Control-Allow-Origin": "*",
+          "Cache-Control": "no-store",
+          Connection: "keep-alive",
+        });
+        response.write(`event: message.delta\ndata: ${JSON.stringify({ type: "message.delta", content: defaultChatText.slice(0, 12) })}\n\n`);
+        setTimeout(() => response.destroy(), 120);
+        return;
+      }
+      if (body.stream === true) {
+        response.writeHead(200, {
+          "Content-Type": "text/event-stream",
+          "Access-Control-Allow-Origin": "*",
+          "Cache-Control": "no-store",
+          Connection: "keep-alive",
+        });
+        response.write(`event: chat.start\ndata: ${JSON.stringify({ type: "chat.start", model_instance_id: FAKE_MODEL_ID })}\n\n`);
+        const step = Math.max(1, Math.ceil(defaultChatText.length / 5));
+        for (let index = 0; index < defaultChatText.length; index += step) {
+          response.write(`event: message.delta\ndata: ${JSON.stringify({ type: "message.delta", content: defaultChatText.slice(index, index + step) })}\n\n`);
+        }
+        response.write(`event: chat.end\ndata: ${JSON.stringify({ type: "chat.end", result })}\n\n`);
+        response.end();
+      } else {
+        sendJson(response, 200, result);
+      }
+      return;
+    }
+
+    if (request.method === "POST" && url.pathname === "/v1/responses") {
+      state.responsesCalls += 1;
+      const body = await readRequestBody(request);
+      state.lastResponsesBody = body;
+      if (state.scenario === "rate-limit") {
+        sendJson(response, 429, { error: { message: "Fake model rate limit reached.", type: "rate_limit" } });
+        return;
+      }
+      if (state.scenario === "server-error") {
+        sendJson(response, 500, { error: { message: "Fake model exploded.", type: "server_error" } });
+        return;
+      }
+      if (state.scenario === "invalid") {
+        response.writeHead(200, { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" });
+        response.end("{not-json");
+        return;
+      }
+      if (state.scenario === "timeout") return;
+      const result = {
+        id: `resp_responses_${state.responsesCalls}`,
+        object: "response",
+        status: "completed",
+        model: FAKE_MODEL_ID,
+        output: [{
+          id: `msg_responses_${state.responsesCalls}`,
+          type: "message",
+          role: "assistant",
+          status: "completed",
+          content: [{ type: "output_text", text: defaultChatText, annotations: [] }],
+        }],
+        usage: { input_tokens: 24, output_tokens: 42, total_tokens: 66 },
+      };
+      if (state.scenario === "empty") result.output = [];
+      if (state.scenario === "cutoff") {
+        response.writeHead(200, {
+          "Content-Type": "text/event-stream",
+          "Access-Control-Allow-Origin": "*",
+          "Cache-Control": "no-store",
+          Connection: "keep-alive",
+        });
+        response.write(`event: response.output_text.delta\ndata: ${JSON.stringify({ type: "response.output_text.delta", delta: defaultChatText.slice(0, 12) })}\n\n`);
+        setTimeout(() => response.destroy(), 120);
+        return;
+      }
+      sendJson(response, 200, result);
       return;
     }
 

@@ -50,9 +50,8 @@ const SMOOTH_SYSTEM6_PATHS = Object.freeze({
     <path class="classic-ink" d="M20 5h2v5h-2z" />
   `,
   hardDisk: `
-    <path d="M3 12h26v12H3z" />
-    <path d="M3 21h26" />
-    <circle class="classic-ink" cx="7" cy="18" r="1" />
+    <path d="M1 18.5h30v9.5H1z" />
+    <circle class="classic-ink" cx="5" cy="23" r=".85" />
   `,
   projectDisk: `
     <path d="M3 10h26v14H3z" />
@@ -60,17 +59,17 @@ const SMOOTH_SYSTEM6_PATHS = Object.freeze({
     <circle class="classic-ink" cx="7" cy="19" r="1" />
   `,
   fileFloppy: `
-    <path d="M5 3h21l2 2v24H5z" />
-    <path d="M10 3v9h13V3M10 19h13v8H10z" />
+    <path d="M5 2.5h20l3 3V30H5z" />
+    <path d="M10 2.5v9h13v-9M9 19h14v9H9z" />
     <path class="classic-ink" d="M20 5h2v5h-2z" />
   `,
   folder: `
-    <path d="M3 11h26v17H3z" />
-    <path d="M6 7h9l4 4H6z" />
+    <path d="M1 12.5h30v18H1z" />
+    <path d="M5 8.5h9l4 4H5z" />
   `,
   document: `
-    <path d="M7 3h14l5 5v21H7z" />
-    <path d="M21 3v6h5" />
+    <path d="M6 3.5h16l5 5V30H6z" />
+    <path d="M22 3.5V9h5" />
   `,
   trash: `
     <path d="M8 8h16l-1 21H9z" />
@@ -84,10 +83,9 @@ const SMOOTH_SYSTEM6_PATHS = Object.freeze({
     <path d="M8 10c2-4 4-4 6 0 2-5 5-5 7 0 2-3 4-3 5 0" />
   `,
   finderApp: `
-    <path d="M6 3h20v24H6zM9 7h14v14H9z" />
-    <circle class="classic-ink" cx="13" cy="12" r="1" />
-    <circle class="classic-ink" cx="20" cy="12" r="1" />
-    <path d="M12 16c2 3 6 3 8 0M12 27h8M10 30h12" />
+    <path d="M5.5 3.5h21v23H5.5zM8.5 8.5h15v13H8.5z" />
+    <path d="M10.5 11.5h1M10.5 14.5h1M10.5 17.5h1M13.5 11.5h3M13.5 14.5h6M13.5 17.5h4" />
+    <path d="M12 26.5h8M9.5 29.5h13M9.5 27v2.5h13V27" />
   `,
   daHandler: `
     <path d="M16 3l13 13-13 13L3 16z" />
@@ -134,7 +132,7 @@ const SMALL_HINTS = Object.freeze({
 const VECTOR_SCALE = 1.1;
 const VECTOR_TRANSFORM = `translate(16 16) scale(${VECTOR_SCALE}) translate(-16 -16)`;
 
-function sourceSvg(markup, size) {
+function sourceSvg(markup, size, transform = VECTOR_TRANSFORM) {
   const small = size === 16;
   const strokeWidth = small ? 1.75 : 1.25;
   return [
@@ -144,14 +142,14 @@ function sourceSvg(markup, size) {
     ".classic-paper{fill:#fff;stroke:none}",
     small ? ".sys-icon-detail{display:none}" : "",
     "</style>",
-    `<g transform="${VECTOR_TRANSFORM}">${markup}</g>`,
+    `<g transform="${transform}">${markup}</g>`,
     "</svg>",
   ].join("");
 }
 
-async function rasterPixels(id, markup, size) {
+async function rasterPixels(id, markup, size, transform = VECTOR_TRANSFORM) {
   const supersample = 8;
-  const image = await loadImage(Buffer.from(sourceSvg(markup, size)));
+  const image = await loadImage(Buffer.from(sourceSvg(markup, size, transform)));
   const canvas = createCanvas(size * supersample, size * supersample);
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -181,10 +179,10 @@ async function rasterPixels(id, markup, size) {
   return pixels;
 }
 
-async function smoothMaskPixels(markup, size) {
+async function smoothMaskPixels(markup, size, transform = VECTOR_TRANSFORM) {
   const supersample = 8;
   const resolution = size * supersample;
-  const image = await loadImage(Buffer.from(sourceSvg(markup, size)));
+  const image = await loadImage(Buffer.from(sourceSvg(markup, size, transform)));
   const canvas = createCanvas(resolution, resolution);
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, resolution, resolution);
@@ -267,7 +265,78 @@ function metrics(pixels, size) {
   return { pixels: pixels.size, bbox: { minX, minY, maxX, maxY } };
 }
 
-function assetSvg(size, markup) {
+async function svgInkPixels(svg, size) {
+  const supersample = 8;
+  const image = await loadImage(Buffer.from(svg));
+  const canvas = createCanvas(size * supersample, size * supersample);
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+  const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+  const pixels = new Set();
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
+      let ink = 0;
+      for (let sy = 0; sy < supersample; sy += 1) {
+        for (let sx = 0; sx < supersample; sx += 1) {
+          const px = x * supersample + sx;
+          const py = y * supersample + sy;
+          const offset = (py * canvas.width + px) * 4;
+          const alpha = data[offset + 3] / 255;
+          const luminance = (data[offset] * 0.2126 + data[offset + 1] * 0.7152 + data[offset + 2] * 0.0722) / 255;
+          ink += alpha * (1 - luminance);
+        }
+      }
+      if (ink / (supersample * supersample) >= 0.24) pixels.add(`${x},${y}`);
+    }
+  }
+  return pixels;
+}
+
+function compareNativeAnatomy(runtimePixels, nativePixels, size) {
+  let intersection = 0;
+  for (const pixel of runtimePixels) if (nativePixels.has(pixel)) intersection += 1;
+  const union = new Set([...runtimePixels, ...nativePixels]).size;
+  const runtimeBounds = metrics(runtimePixels, size).bbox;
+  const nativeBounds = metrics(nativePixels, size).bbox;
+  const coveredWithin = (source, target, radius) => {
+    let covered = 0;
+    for (const pixel of source) {
+      const [x, y] = pixel.split(",").map(Number);
+      let match = false;
+      for (let dy = -radius; dy <= radius && !match; dy += 1) {
+        for (let dx = -radius; dx <= radius; dx += 1) {
+          if (dx * dx + dy * dy > radius * radius) continue;
+          if (target.has(`${x + dx},${y + dy}`)) { match = true; break; }
+        }
+      }
+      if (match) covered += 1;
+    }
+    return covered / source.size;
+  };
+  const nativeCoveredByRuntime = coveredWithin(nativePixels, runtimePixels, 2);
+  const runtimeCoveredByNative = coveredWithin(runtimePixels, nativePixels, 2);
+  const tolerantF1 = (2 * nativeCoveredByRuntime * runtimeCoveredByNative)
+    / (nativeCoveredByRuntime + runtimeCoveredByNative);
+  const bboxEdgeMaxDeltaPx = Math.max(
+    Math.abs(runtimeBounds.minX - nativeBounds.minX),
+    Math.abs(runtimeBounds.minY - nativeBounds.minY),
+    Math.abs(runtimeBounds.maxX - nativeBounds.maxX),
+    Math.abs(runtimeBounds.maxY - nativeBounds.maxY),
+  );
+  return {
+    method: "32px thresholded ink: exact IoU is diagnostic; two-pixel bidirectional tolerant F1 plus bounding-box delta gates smooth-trace anatomy",
+    nativeInkPixels: nativePixels.size,
+    runtimeInkPixels: runtimePixels.size,
+    inkIntersectionOverUnion: Number((intersection / union).toFixed(4)),
+    nativeCoveredByRuntimeWithin2px: Number(nativeCoveredByRuntime.toFixed(4)),
+    runtimeCoveredByNativeWithin2px: Number(runtimeCoveredByNative.toFixed(4)),
+    tolerantF1Within2px: Number(tolerantF1.toFixed(4)),
+    bboxEdgeMaxDeltaPx,
+  };
+}
+
+function assetSvg(size, markup, transform = VECTOR_TRANSFORM) {
   const small = size === 16;
   const strokeWidth = small ? 1.75 : 1.25;
   return [
@@ -277,7 +346,7 @@ function assetSvg(size, markup) {
     "    .classic-paper{fill:#ffffff;stroke:none}",
     small ? "    .sys-icon-detail{display:none}" : "",
     "  </style>",
-    `  <g transform="${VECTOR_TRANSFORM}">${markup}</g>`,
+    `  <g transform="${transform}">${markup}</g>`,
     "</svg>",
     "",
   ].filter(Boolean).join("\n");
@@ -297,7 +366,15 @@ for (const spec of ICON_SPECS) {
   const markup = SMOOTH_SYSTEM6_PATHS[spec.id] || establishedPaths[spec.id];
   const coreEvidence = coreFamily.icons[spec.id] || null;
   const semanticAnchor = continuity.semanticAnchors[spec.id] || null;
-  const directlyTraced = Boolean(coreEvidence?.nativeReference) && spec.id !== "finderApp";
+  const directlyTraced = Boolean(coreEvidence?.nativeReference)
+    && coreEvidence.sourceKind === "native-resource-replica";
+  const vectorTransform = directlyTraced ? "translate(0 0)" : VECTOR_TRANSFORM;
+  const nativeSvg = directlyTraced
+    ? readFileSync(join(assetDir, `${spec.id}-32.svg`), "utf8")
+    : null;
+  const nativeInk = nativeSvg ? await svgInkPixels(nativeSvg, 32) : null;
+  const classicHistoricalReviewStatus = semanticAnchor?.reviewStatusByEra?.classic || null;
+  const classicProvenanceClass = semanticAnchor?.provenanceClassByEra?.classic || null;
   const entry = {
     label: spec.id,
     genre: spec.genre,
@@ -309,21 +386,30 @@ for (const spec of ICON_SPECS) {
       : coreEvidence?.nativeReference
         ? "system6-evidence-semantic-vector-adaptation"
         : "product-semantic-smooth-vector",
-    reviewStatus: coreIds.has(spec.id) ? "accepted-core" : "accepted-family",
+    authoringMethod: "deterministic smooth SVG reconstruction",
+    generationStatus: "technically-clean",
+    // Direct native evidence may support a comparison without automatically
+    // promoting an object outside the audited priority 16. Historical status
+    // is owned by the continuity ledger, never inferred from source kind.
+    historicalReviewStatus: classicHistoricalReviewStatus || "pending",
+    blindMixStatus: ["finderApp", "multiFinderApp"].includes(spec.id) ? "not-run" : null,
+    provenanceClass: classicProvenanceClass || (directlyTraced ? "A" : coreIds.has(spec.id) ? "B" : "C"),
+    runtimeAsset: true,
+    reviewStatus: classicHistoricalReviewStatus || "pending",
     nativePrototype: coreEvidence?.nativeReference || null,
     sourceNote: directlyTraced
-      ? "The original System 6 resource owns the silhouette and object grammar; the runtime redraw replaces its bitmap staircase with smooth Retina-safe SVG geometry."
+      ? "The original System 6 resource owns silhouette, anatomy, proportions, and object grammar. Per the project-specific Retina exception, runtime replaces only the bitmap staircase with smooth SVG edges."
       : "A smooth, period-grounded SVG construction preserves the documented product metaphor; 16 px hides secondary detail and uses its own optical stroke.",
     sizes: {}, masks: {}, metrics: {},
   };
   for (const size of [32, 16]) {
-    const art = await rasterPixels(spec.id, markup, size);
+    const art = await rasterPixels(spec.id, markup, size, vectorTransform);
     const mask = enclosedMask(art, size);
-    const smoothMask = await smoothMaskPixels(markup, size);
+    const smoothMask = await smoothMaskPixels(markup, size, vectorTransform);
     const maskPath = pixelsToPath(smoothMask.pixels, smoothMask.resolution);
     const artworkFile = `${spec.id}-${size}.svg`;
     const maskFile = `${spec.id}-mask-${size}.svg`;
-    writeFileSync(join(assetDir, artworkFile), assetSvg(size, markup));
+    writeFileSync(join(assetDir, artworkFile), assetSvg(size, markup, vectorTransform));
     writeFileSync(join(assetDir, maskFile), maskSvg(size, maskPath, smoothMask.resolution));
     entry.sizes[size] = artworkFile;
     entry.masks[size] = maskFile;
@@ -333,6 +419,22 @@ for (const spec of ICON_SPECS) {
       inkPixels: art.size,
       inkCoverage: Number((art.size / (size * size)).toFixed(4)),
     };
+    if (size === 32 && nativeInk) {
+      entry.referenceComparison = compareNativeAnatomy(art, nativeInk, size);
+      entry.referenceComparison.thresholds = {
+        minimumTolerantF1Within2px: 0.62,
+        maximumBboxEdgeDeltaPx: 4,
+      };
+      const passes = entry.referenceComparison.tolerantF1Within2px >= 0.62
+        && entry.referenceComparison.bboxEdgeMaxDeltaPx <= 4;
+      entry.referenceComparison.result = passes ? "pass" : "fail";
+      if (!passes) {
+        throw new Error(
+          `Classic ${spec.id}: smooth runtime anatomy drifted from native evidence `
+          + `(F1 ${entry.referenceComparison.tolerantF1Within2px}, bbox delta ${entry.referenceComparison.bboxEdgeMaxDeltaPx})`,
+        );
+      }
+    }
   }
   generated[spec.id] = entry;
 }
@@ -342,18 +444,27 @@ generated.docMap.metaphorMetrics = await measureDocMapMetaphor(join(assetDir, "d
 assertDocMapMetaphor(generated.docMap.metaphorMetrics, "classic/docMap");
 
 const family = {
-  schemaVersion: 1,
-  target: "Macintosh System 6-grounded smooth vector desktop object family",
+  schemaVersion: 2,
+  target: "Macintosh System 6-grounded smooth Retina SVG desktop object family",
   generatedBy: "tooling/build-classic-family-icons.mjs",
   sharedGeometryAcrossEras: false,
   completeFamily: true,
+  completeFamilyMeaning: "All 56 runtime ids have artwork and masks. This does not mean all 56 have passed historical review.",
+  runtimeAsset: true,
+  runtimeSize: "contextual",
+  runtimeSizesByContext: { compactMenuList: 16, ordinaryDesktop: 32 },
+  compatibilityManifest: "icons/classic-icon-manifest.json",
+  compatibilityManifestMeaning: "Stable 32 px semantic mapping only; app/core/system-icons.js selects the authored 16 or 32 px SVG by rendering context.",
+  runtimeDispatch: "apps/desktop/app/core/system-icons.js",
   nativeSizes: [32, 16],
   objects: ICON_IDS.length,
-  reviewedCore: [...coreIds],
-  reviewedFamily: ICON_IDS,
+  referenceValidated: Object.entries(generated).filter(([, icon]) => icon.historicalReviewStatus === "reference-validated").map(([id]) => id),
+  historicallyReviewed: Object.entries(generated).filter(([, icon]) => ["reference-validated", "historically-reviewed"].includes(icon.historicalReviewStatus)).map(([id]) => id),
+  pendingHistoricalReview: Object.entries(generated).filter(([, icon]) => icon.historicalReviewStatus === "pending").map(([id]) => id),
   fallback: [],
-  sourceBoundary: "Native System 6 resources own historical prototypes where a counterpart exists. Runtime files are smooth SVG traces or documented semantic adaptations; generated raster sketches never ship.",
-  imageGenerationMode: "none-in-runtime-family",
+  sourceBoundary: "Native System 6 resources own anatomy wherever a counterpart exists. Runtime files use the user's explicit smooth-Retina SVG exception; the evidence layer remains exact one-bit and non-runtime. Product-only artwork may use generated candidates, but authoring acceptance never implies historical validation.",
+  classicRetinaException: "Smooth vector edge expression is intentional for present-day high-density displays. It is not an exact pixel replica and may not alter native silhouette, anatomy, proportions, or mask logic.",
+  imageGenerationMode: "candidate-only; deterministic SVG is the runtime source",
   sizePolicy: "32 px and 16 px are separate smooth SVG outputs with independent optical stroke/detail policies; runtime selects the authored size.",
   selectionRecipe: coreFamily.selectionRecipe,
   icons: generated,

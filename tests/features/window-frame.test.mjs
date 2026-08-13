@@ -310,7 +310,13 @@ test.assertNotMatches(wireup, /shade-box[\s\S]{0,120}zoomWindow/, "The collapse 
 test.assertMatches(themes, /body\[data-theme="platinum"\] \.title-bar \.resize-box::after \{[^}]*width: 6px;[^}]*height: 6px;[^}]*right top \/ 1px 6px no-repeat,[^}]*left bottom \/ 6px 1px no-repeat;/, "Platinum draws the real six-pixel lower-left Zoom corner");
 test.assertMatches(themes, /body\[data-theme="platinum"\] \.title-bar \.shade-box::after \{[^}]*width: 9px;[^}]*height: 3px;[^}]*left top \/ 9px 1px no-repeat,[^}]*left bottom \/ 9px 1px no-repeat;/, "Platinum draws WindowShade's two native nine-pixel rules");
 test.assertIncludes(themes, "right top / calc(var(--system-titlebar-control-slot) + var(--system-titlebar-shade-slot)) 100% no-repeat", "Platinum clears the striped title field behind both right-side Zoom and WindowShade boxes");
-test.assertMatches(themes, /body\[data-theme="platinum"\] \.title-bar \{[^}]*var\(--system-titlebar-control-slot\)[^}]*var\(--system-titlebar-shade-slot\);/, "Platinum restores the fourth WindowShade lane after responsive title-bar rules");
+test.assertMatches(themes, /body\[data-theme="platinum"\] \.title-bar \{[^}]*var\(--titlebar-gutter\)[^}]*var\(--titlebar-slot-zoom\)[^}]*calc\(var\(--titlebar-gutter\) - var\(--titlebar-slot-zoom\)\);/, "Platinum restores the fourth WindowShade lane after responsive title-bar rules");
+
+// The title is centred on the whole bar, so the two ends reserve the same
+// width and a control slot only exists when its control is in the DOM.
+test.assertMatches(windows, /--titlebar-gutter: max\(\s*var\(--system-titlebar-control-slot\),\s*calc\(var\(--titlebar-slot-zoom\) \+ var\(--titlebar-slot-shade\)\)\s*\);/, "Both ends of the title bar reserve the same width so the title lands on the bar's centre");
+test.assertMatches(windows, /\.title-bar:not\(:has\(> \.resize-box\)\) \{\s*--titlebar-slot-zoom: 0px;/, "A window with no Zoom box reserves no Zoom slot");
+test.assertMatches(windows, /\.title-bar:not\(:has\(> \.shade-box\)\) \{\s*--titlebar-slot-shade: 0px;/, "A window with no WindowShade box reserves no WindowShade slot");
 test.assertMatches(themes, /--system-titlebar-inactive-control-visibility: hidden;\s*\n\s*--system-titlebar-inactive-control-opacity: 1;/, "Platinum background windows erase their title-bar boxes like the finished Mac OS 9 CSS reference");
 test.assertMatches(windows, /\.shade-box:focus,[\s\S]*\.shade-box:focus-visible \{[^}]*--system-titlebar-control-focus/, "WindowShade shares the title-bar keyboard focus painter");
 

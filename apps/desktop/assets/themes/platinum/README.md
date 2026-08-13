@@ -1,39 +1,56 @@
 # Platinum icon family
 
-This directory contains the progressive Mac OS 9-era Platinum icon system.
-The accepted batch is thirteen core objects: Finder, Folder, Hard Disk, Trash,
-Generic Document, Generic Application, Floppy, CD, Control Panel, System,
-Scrapbook, Clipboard, and ClioTalk. ClioTalk joined when its generated fallback
-(an envelope, which states mail rather than a conversation kept as a file) was
-replaced by the clipped transcript the other appearances use. Each owns independently composed 32×32 and
-16×16 PNG artwork. The 16px files are not reductions of the 32px files.
+This directory ships the complete 56-object Mac OS 9-era Platinum runtime
+family. Cross-era continuity is defined by `semanticIdentity` plus one or two
+`identityAnchors` in
+[icon-system-continuity.json](../icon-system-continuity.json), not by a fixed
+physical metaphor. `metaphorKey` remains only as a deprecated migration hint.
 
-The pre-existing 54-object SVG family remains available only as fallback while
-the remaining objects are reviewed. `platinum-icon-family.json` identifies the
-reviewed members; it must not be read as evidence that every fallback has
-passed the new historical acceptance bar.
+Runtime completeness is separate from historical validation. `accepted-imagegen`
+means that generated art passed the authoring pipeline; it does not mean that
+the result matches Mac OS 9. The 40 ids outside `priorityCore16` remain
+historically pending until individually reviewed. Per-object provenance and
+review status live in
+[icon-provenance-matrix.json](../icon-provenance-matrix.json).
 
-The construction is limited to compact physical desktop metaphors, selective
-dark keylines, a small Mac OS 9-like palette, upper-left one-pixel highlights,
-and lower-right structural shade. CSS owns placement and selection only; it
-does not add a retro filter or theme-wide shadow.
+## Actual runtime mapping
 
-`icons/src/platinum-core-icons.json` fixes the reference board, measurement
-rules, source pins, and copyright boundary. `icons/platinum-core-icon-family.json`
-records each accepted object's prototype, native files, bounds, palette count,
-and SHA-256. `tooling/build-platinum-core-icons.mjs` is the accepted-core source;
-the broad `tooling/build-era-icons.mjs` reapplies it last so a full rebuild
-cannot replace the core with legacy artwork.
+The official family is the accepted ImageGen PNG set under `icons/`, with the
+approved Finder-lineage overlay applied last.
+`platinum-icon-manifest.json` retains the stable 32 px compatibility mapping,
+while the inline system-icon runtime selects `icons/<id>-16.png` for compact,
+`-32.png` for regular, and `-42.png` for desktop contexts. Those files are
+separate reductions of the accepted high-resolution redraw; the 16 and 32 px
+files are derivatives unless an object's ledger says otherwise. Finder and
+MultiFinder are the reviewed exception: the approved builder renders each
+target canvas directly with size-owned bounds and contrast.
 
-Run `npm run build:platinum-core-icons` to rebuild the core. Inspect the result
-in Theme Lab at normal/selected 32px and 16px, three Finder backgrounds, and
-100/200/400 percent nearest-neighbor zoom. The generated boards are:
+Compatibility SVGs remain so older paths resolve. Theme Lab displays the 16
+priority objects and the same PNG review tiers, but appearing in Theme Lab is
+not an approval state.
 
-- `internal/evidence/drafts/era-icons/platinum-core-reference-board.png`
-- `internal/evidence/drafts/era-icons/platinum-core-contact-sheet.png`
-- `internal/evidence/drafts/era-icons/platinum-core-comparison-board.png`
+## Finder / MultiFinder — P0 closed
 
-Evidence is also summarized in `../era-icon-reference.json`. Historical
-screenshots and Apple resources remain evidence-only. No screenshot crop,
-extracted Apple bitmap, traced Apple path, or embedded historical resource is
-used as a runtime icon.
+Finder uses the approved ImageGen v2 Mac OS 9 lavender folder with a lower-left
+Finder face panel and is `reference-validated`. MultiFinder composes two
+current-era Finder identities to express multiplicity; it is provenance class C
+and `historically-reviewed`, not a native replica. Their 42/32/16 assets are
+direct optical runtime constructions from the approved source, not the old
+compact-Macintosh derivatives.
+
+## Rebuilding
+
+Run the complete theme chain with:
+
+```sh
+npm run build:platinum-icons
+```
+
+The chain rebuilds the broad family and measured core, restores the accepted
+Platinum ImageGen family, then applies the approved Finder-lineage overlay as
+the final runtime step and regenerates its review sheets. A core-only build is
+an intermediate diagnostic, not the final runtime family. After review statuses
+change, regenerate the provenance matrix and lineage audit.
+
+Historical screenshots and Apple resources remain evidence-only; no extracted
+Apple bitmap is shipped as a runtime icon.

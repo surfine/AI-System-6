@@ -30,6 +30,8 @@ const meme = read("app/features/bureaucracy-meme.js");
 const endfield = read("app/features/endfield-terminal.js");
 const reader = read("app/features/reader.js");
 const vision = read("app/features/teachtext-accessories.js");
+const serverModelRoute = read("apps/server/server/routes/models.js");
+const serverLmStudio = read("apps/server/server/lmstudio.js");
 
 const localStateUpdateSource = persistenceStatus.slice(
   persistenceStatus.indexOf("function updateLocalModelState"),
@@ -96,6 +98,9 @@ function makeClient(fetchImpl, options = {}) {
     URL,
     Headers,
     Response,
+    ReadableStream,
+    TextDecoder,
+    TextEncoder,
     AbortController,
     AbortSignal,
     DOMException,
@@ -200,10 +205,15 @@ const modelPayload = {
   let chatAttempts = 0;
   const client = makeClient(async (url, options) => {
     requests.push({ url, options });
-    if (url.endsWith("/v1/chat/completions")) {
+    if (url.endsWith("/api/v1/chat")) {
       chatAttempts += 1;
       if (chatAttempts === 1) return Response.json({ error: { message: "model not loaded" } }, { status: 400 });
-      return Response.json({ choices: [{ message: { content: "ready" } }] });
+      return Response.json({
+        model_instance_id: "gemma-live",
+        output: [{ type: "message", content: "ready" }],
+        stats: { input_tokens: 4, total_output_tokens: 2 },
+        response_id: "resp_ready",
+      });
     }
     if (url.endsWith("/load")) return Response.json({ status: "loaded", instance_id: "gemma-live" });
     return Response.json(modelPayload);
@@ -214,11 +224,175 @@ const modelPayload = {
     stream: false,
     ai_system6_task_kind: "chat",
   });
-  ok((await response.json()).choices[0].message.content === "ready", "returns OpenAI-compatible chat JSON");
+  const responseData = await response.json();
+  ok(responseData.choices[0].message.content === "ready", "adapts native v1 chat JSON for the shared task runtime");
+  ok(responseData.ai_system6_lmstudio_response_id === "resp_ready", "preserves the native response_id for stateful follow-ups");
   ok(chatAttempts === 2, "performs exactly one load-and-retry when a chat model is not loaded");
   ok(requests.filter((request) => request.url.endsWith("/api/v1/models/load")).length === 1, "does not loop model loading");
-  const chatBody = JSON.parse(requests.find((request) => request.url.endsWith("/v1/chat/completions")).options.body);
+  const chatBody = JSON.parse(requests.find((request) => request.url.endsWith("/api/v1/chat")).options.body);
+  ok(chatBody.input === "hello" && chatBody.store === true, "maps system/user chat payloads to native v1 input and state storage");
   ok(!("ai_system6_task_kind" in chatBody), "does not leak client-only tuning fields to LM Studio");
+}
+
+{
+  const requests = [];
+  const client = makeClient(async (url, options) => {
+    requests.push({ url, options });
+    return Response.json({
+      id: "resp_history",
+      status: "completed",
+      model: "gemma-live",
+      output: [{ type: "message", role: "assistant", content: [{ type: "output_text", text: "responses history" }] }],
+      usage: { input_tokens: 8, output_tokens: 2 },
+    });
+  });
+  const response = await client.chat({
+    model: "google/gemma-4-4b",
+    messages: [
+      { role: "user", content: "first" },
+      { role: "assistant", content: "answer" },
+      { role: "user", content: "follow-up" },
+    ],
+    stream: false,
+  });
+  ok((await response.json()).choices[0].message.content === "responses history", "keeps durable legacy histories usable during migration");
+  ok(requests[0].url.endsWith("/v1/responses"), "uses the stateful Responses REST endpoint when assistant history has no native response_id");
+}
+
+{
+  const requests = [];
+  const client = makeClient(async (url, options) => {
+    requests.push({ url, options });
+    if (url.endsWith("/api/v1/chat")) {
+      return Response.json({ error: "Not Found" }, { status: 404 });
+    }
+    return Response.json({
+      id: "resp_route_fallback",
+      status: "completed",
+      output: [{ type: "message", role: "assistant", content: [{ type: "output_text", text: "responses endpoint" }] }],
+      usage: { input_tokens: 4, output_tokens: 2 },
+    });
+  });
+  const response = await client.chat({
+    model: "google/gemma-4-4b",
+    messages: [{ role: "user", content: "hello" }],
+    stream: false,
+  });
+  ok((await response.json()).choices[0].message.content === "responses endpoint", "keeps inference on a modern REST route when native chat is unavailable");
+  ok(requests[0].url.endsWith("/api/v1/chat") && requests[1].url.endsWith("/v1/responses"), "falls back once from native chat to Responses");
+}
+
+{
+  const requests = [];
+  const client = makeClient(async (url, options) => {
+    requests.push({ url, options });
+    return Response.json({
+      model_instance_id: "gemma-live",
+      output: [{ type: "message", content: "stateful answer" }],
+      stats: { input_tokens: 6, total_output_tokens: 3 },
+      response_id: "resp_next",
+    });
+  });
+  await client.chat({
+    model: "google/gemma-4-4b",
+    messages: [
+      { role: "user", content: "first" },
+      { role: "assistant", content: "answer" },
+      { role: "user", content: "follow-up" },
+    ],
+    _lmstudio_previous_response_id: "resp_previous",
+    _lmstudio_previous_response_api: "lmstudio-native-v1",
+    stream: false,
+  });
+  const body = JSON.parse(requests[0].options.body);
+  ok(requests[0].url.endsWith("/api/v1/chat") && body.previous_response_id === "resp_previous", "continues native v1 chats by response_id");
+  ok(body.input === "follow-up" && !("system_prompt" in body), "sends only the new user turn for a stateful follow-up");
+}
+
+{
+  const requests = [];
+  const client = makeClient(async (url, options) => {
+    requests.push({ url, options });
+    if (url.endsWith("/api/v1/chat")) {
+      return Response.json({ error: { message: "previous_response_id not found" } }, { status: 404 });
+    }
+    return Response.json({
+      id: "resp_recovered",
+      status: "completed",
+      output: [{ type: "message", role: "assistant", content: [{ type: "output_text", text: "recovered history" }] }],
+      usage: { input_tokens: 10, output_tokens: 2 },
+    });
+  });
+  const response = await client.chat({
+    model: "google/gemma-4-4b",
+    messages: [
+      { role: "user", content: "first" },
+      { role: "assistant", content: "answer" },
+      { role: "user", content: "follow-up" },
+    ],
+    _lmstudio_previous_response_id: "resp_stale",
+    _lmstudio_previous_response_api: "lmstudio-native-v1",
+    stream: false,
+  });
+  ok((await response.json()).choices[0].message.content === "recovered history", "recovers when an imported or expired native response chain is unavailable");
+  ok(requests[1].url.endsWith("/v1/responses"), "replays the durable file history once through Responses when response_id recovery is needed");
+}
+
+{
+  const requests = [];
+  const client = makeClient(async (url, options) => {
+    requests.push({ url, options });
+    return Response.json({
+      id: "resp_tool",
+      status: "completed",
+      model: "gemma-live",
+      output: [{ type: "function_call", call_id: "call_1", name: "read_project_file", arguments: "{\"id\":\"f1\"}" }],
+      usage: { input_tokens: 12, output_tokens: 4 },
+    });
+  });
+  const response = await client.chat({
+    model: "google/gemma-4-4b",
+    messages: [{ role: "user", content: "Read the file" }],
+    tools: [{ type: "function", function: { name: "read_project_file", description: "Read", parameters: { type: "object", properties: { id: { type: "string" } } } } }],
+    tool_choice: "auto",
+    stream: false,
+  });
+  const data = await response.json();
+  const body = JSON.parse(requests[0].options.body);
+  ok(requests[0].url.endsWith("/v1/responses") && body.tools[0].name === "read_project_file", "routes custom project tools through the Responses REST endpoint");
+  ok(data.choices[0].message.tool_calls[0].function.name === "read_project_file", "adapts Responses function calls for the existing browser tool loop");
+  ok(data.ai_system6_lmstudio_response_id === "resp_tool" && data.ai_system6_lmstudio_api === "lmstudio-responses-v1", "preserves Responses state for the next tool or chat turn");
+}
+
+{
+  const requests = [];
+  const client = makeClient(async (url, options) => {
+    requests.push({ url, options });
+    return Response.json({
+      id: "resp_after_second_tool",
+      status: "completed",
+      model: "gemma-live",
+      output: [{ type: "message", role: "assistant", content: [{ type: "output_text", text: "done" }] }],
+      usage: { input_tokens: 6, output_tokens: 1 },
+    });
+  });
+  await client.chat({
+    model: "google/gemma-4-4b",
+    messages: [
+      { role: "user", content: "Use two tools" },
+      { role: "assistant", content: null, tool_calls: [{ id: "call_1", type: "function", function: { name: "read_project_file", arguments: "{}" } }] },
+      { role: "tool", tool_call_id: "call_1", content: "first result" },
+      { role: "assistant", content: null, tool_calls: [{ id: "call_2", type: "function", function: { name: "read_project_file", arguments: "{}" } }] },
+      { role: "tool", tool_call_id: "call_2", content: "second result" },
+    ],
+    tools: [{ type: "function", function: { name: "read_project_file", parameters: { type: "object", properties: {} } } }],
+    _lmstudio_previous_response_id: "resp_second_call",
+    _lmstudio_previous_response_api: "lmstudio-responses-v1",
+    stream: false,
+  });
+  const body = JSON.parse(requests[0].options.body);
+  ok(body.previous_response_id === "resp_second_call", "continues a Responses tool chain from the last server-owned response");
+  ok(body.input.length === 1 && body.input[0].call_id === "call_2", "sends only the newest tool output instead of replaying settled call ids");
 }
 
 {
@@ -337,13 +511,50 @@ const modelPayload = {
   const encoder = new TextEncoder();
   const client = makeClient(async () => new Response(new ReadableStream({
     start(controller) {
-      controller.enqueue(encoder.encode("data: {\"choices\":[{\"delta\":{\"content\":\"Hi\"}}]}\n\n"));
-      controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+      controller.enqueue(encoder.encode("event: message.delta\ndata: {\"type\":\"message.delta\",\"content\":\"Hi\"}\n\n"));
+      controller.enqueue(encoder.encode("event: chat.end\ndata: {\"type\":\"chat.end\",\"result\":{\"model_instance_id\":\"stream-model\",\"output\":[{\"type\":\"message\",\"content\":\"Hi\"}],\"stats\":{\"input_tokens\":1,\"total_output_tokens\":1},\"response_id\":\"resp_stream\"}}\n\n"));
       controller.close();
     },
   }), { headers: { "Content-Type": "text/event-stream" } }));
-  const response = await client.chat({ model: "stream-model", messages: [], stream: true });
-  ok((await response.text()).includes("[DONE]"), "passes LM Studio SSE streams to the shared browser stream reader");
+  const response = await client.chat({ model: "stream-model", messages: [{ role: "user", content: "hello" }], stream: true });
+  const streamText = await response.text();
+  ok(streamText.includes("[DONE]") && streamText.includes("resp_stream"), "adapts native named SSE events and preserves the response_id");
+}
+
+{
+  const client = makeClient(async () => new Response(new ReadableStream({
+    start() {
+      // Headers arrive, then the model never emits a byte.
+    },
+  }), { headers: { "Content-Type": "text/event-stream" } }));
+  const response = await client.chat(
+    { model: "idle-model", messages: [{ role: "user", content: "hello" }], stream: true },
+    { timeoutMs: 5 }
+  );
+  await response.text().then(
+    () => ok(false, "times out an idle inference stream"),
+    (error) => ok(String(error.message).includes("lmstudio_timeout"), "times out an idle inference stream")
+  );
+}
+
+{
+  let cancelObserved = false;
+  const client = makeClient(async (_url, options) => new Response(new ReadableStream({
+    start(controller) {
+      options.signal.addEventListener("abort", () => {
+        cancelObserved = true;
+        controller.error(options.signal.reason);
+      }, { once: true });
+    },
+  }), { headers: { "Content-Type": "text/event-stream" } }));
+  const controller = new AbortController();
+  const response = await client.chat(
+    { model: "cancel-stream-model", messages: [{ role: "user", content: "hello" }], stream: true },
+    { signal: controller.signal, timeoutMs: 1000 }
+  );
+  controller.abort();
+  await response.text().catch(() => {});
+  ok(cancelObserved, "keeps user cancellation wired after streaming headers arrive");
 }
 
 {
@@ -399,9 +610,19 @@ const modelPayload = {
 }
 
 ok(!source.includes("/api/v0/"), "never probes the legacy v0 API");
+ok(
+  serverModelRoute.indexOf("`${baseUrl}/api/v1/models`")
+    < serverModelRoute.indexOf("`${baseUrl}/api/v0/models`"),
+  "server model discovery prefers the native v1 inventory over the legacy v0 fallback"
+);
+ok(
+  serverLmStudio.indexOf("const candidates = [`${root}/api/v1/models`, `${root}/api/v0/models`]") !== -1,
+  "server autoload discovery prefers the native v1 inventory"
+);
 ok(!source.includes('"/api/chat"') && !source.includes('"/api/models"'), "client contains no VPS local-model proxy fallback");
 ok(read("app/core/persistence-status.js").includes('local_connection_safari_unsupported'), "control panel maps Safari to a dedicated connection state");
 ok(/connectLocalLmStudio[\s\S]*?setModelPickerOptions\(chatModels, embeddingModels\)[\s\S]*?renderLocalConnectionStatus\("ready", data\)/.test(read("app/core/persistence-status.js")), "a successful connection fills the model pickers before showing ready");
+ok(/connectLocalLmStudio[\s\S]*?if \(!selectedModel && chatModels\.length && !isManualLocalModelMode\(\)\)[\s\S]*?modelInput\.value = selectedModel\.id/.test(persistenceStatus), "switching endpoints selects a model from the new inventory instead of leaving every AI composer disabled");
 ok(read("app/core/persistence-status.js").includes('window.location.assign(`lmstudio:${slashes}`)'), "control panel can open the installed LM Studio app directly");
 ok(/function connectOrLaunchLocalModel\(\)[\s\S]*?openLocalModelApp\(\);[\s\S]*?connectLocalLmStudio\(\{ toggle: false \}\)/.test(read("app/core/persistence-status.js")), "one local-model button launches LM Studio and then attempts the connection");
 ok(boot.includes('isSafariHttpLocalMode') && boot.includes('setControlTab("local")'), "Safari HTTP entry opens directly on local-model setup");

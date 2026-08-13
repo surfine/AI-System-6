@@ -7,7 +7,7 @@
 "use strict";
 
 const { postJsonWithFallback } = require("./lib/fetch.js");
-const { cloudAuthHeaders, DEEPSEEK_PUBLIC_BASE_URL } = require("./cloud.js");
+const { cloudAuthHeaders, DEEPSEEK_PUBLIC_BASE_URL, resolveCloudTarget } = require("./cloud.js");
 
 const DEEPSEEK_RESPONSES_URL = `${DEEPSEEK_PUBLIC_BASE_URL}/responses`;
 const CANONICAL_RESPONSES_MODEL = "deepseek-v4-flash";
@@ -125,7 +125,7 @@ function chatMessagesToResponsesInput(messages = []) {
  * @returns {Record<string, unknown>}
  */
 function buildResponsesPayload({
-  model = CANONICAL_RESPONSES_MODEL,
+  model: _model = CANONICAL_RESPONSES_MODEL,
   instructions = "",
   input,
   textFormat = null,
@@ -157,16 +157,23 @@ function buildResponsesPayload({
  *   payload: Record<string, unknown>,
  *   signal?: AbortSignal | null,
  *   maxBytes?: number,
+ *   onRequest?: () => void,
  * }} options
  * @returns {Promise<any>}
  */
-async function callResponsesJson({ apiKey, payload, signal, maxBytes = 16 * 1024 * 1024 }) {
+async function callResponsesJson({ apiKey, payload, signal, maxBytes = 16 * 1024 * 1024, onRequest }) {
+  const cloudTarget = await resolveCloudTarget(DEEPSEEK_PUBLIC_BASE_URL);
   const { response } = await postJsonWithFallback(
     DEEPSEEK_RESPONSES_URL,
     payload,
     signal,
     cloudAuthHeaders(apiKey),
-    { maxBytes }
+    {
+      maxBytes,
+      pinnedAddress: cloudTarget.address,
+      pinnedFamily: cloudTarget.family,
+      onRequest,
+    }
   );
   const text = await response.text();
   const contentType = response.headers.get("content-type") || "application/json";
@@ -174,7 +181,7 @@ async function callResponsesJson({ apiKey, payload, signal, maxBytes = 16 * 1024
   if (!contentType.includes("application/json")) {
     const isAuthError = /auth|key|unauthorized|authentica/i.test(text);
     const error = /** @type {Error & { statusCode?: number, code?: string }} */ (
-      new Error(text.substring(0, 1000) || `HTTP ${response.status}`)
+      new Error(`Responses API returned HTTP ${response.status}`)
     );
     error.statusCode = isAuthError ? 401 : (response.ok ? 502 : response.status);
     error.code = isAuthError ? "cloud_auth_failed" : "responses_upstream_failed";
@@ -194,11 +201,7 @@ async function callResponsesJson({ apiKey, payload, signal, maxBytes = 16 * 1024
   }
 
   if (!response.ok) {
-    const errorObj = data?.error;
-    const detail = data?.detail
-      || (typeof errorObj === "string" ? errorObj : errorObj?.message)
-      || text
-      || `HTTP ${response.status}`;
+    const detail = `Responses API returned HTTP ${response.status}`;
     const warning = cloudUpstreamWarning(response.status);
     const error = /** @type {Error & { statusCode?: number, code?: string, detail?: string, warning?: string }} */ (
       new Error(warning ? `${warning}（${detail}）` : detail)

@@ -330,13 +330,10 @@ function getElements() {
   const appearanceThemeInput = document.querySelector("#appearance-theme");
   const soundEffectsInput = document.querySelector("#sound-effects");
   const menuClockInput = document.querySelector("#menu-clock");
-  const controlStripInput = document.querySelector("#control-strip");
   const controlStripShowInput = document.querySelector("#control-strip-show");
   const controlStripHotkeyInput = document.querySelector("#control-strip-hotkey");
   const controlStripHotkeyRecordButton = document.querySelector("#control-strip-hotkey-record");
   const controlStripHotkeyClearButton = document.querySelector("#control-strip-hotkey-clear");
-  const controlStripFontSelect = document.querySelector("#control-strip-font");
-  const controlStripFontSizeSelect = document.querySelector("#control-strip-font-size");
   const controlStripModuleList = document.querySelector("#control-strip-module-list");
   const controlStripMoveUpButton = document.querySelector("#control-strip-move-up");
   const controlStripMoveDownButton = document.querySelector("#control-strip-move-down");
@@ -732,13 +729,10 @@ function getElements() {
     appearanceThemeInput,
     soundEffectsInput,
     menuClockInput,
-    controlStripInput,
     controlStripShowInput,
     controlStripHotkeyInput,
     controlStripHotkeyRecordButton,
     controlStripHotkeyClearButton,
-    controlStripFontSelect,
-    controlStripFontSizeSelect,
     controlStripModuleList,
     controlStripMoveUpButton,
     controlStripMoveDownButton,

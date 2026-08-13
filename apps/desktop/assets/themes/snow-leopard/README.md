@@ -1,58 +1,52 @@
 # Snow Leopard icon family
 
-This directory contains the complete 56-object Mac OS X 10.6.8 appearance for
-AI System 6. Every semantic object keeps the cross-era `metaphorKey` recorded
-in [icon-system-continuity.json](../icon-system-continuity.json), while its
-materials, shallow perspective, and lighting follow the Snow Leopard reference
-world.
+This directory ships the complete 56-object Mac OS X 10.6.8 family. Continuity
+is defined by each object's `semanticIdentity` and one or two
+`identityAnchors` in
+[icon-system-continuity.json](../icon-system-continuity.json), not by a fixed
+physical metaphor or a reused Aqua composition.
 
-## Runtime and size policy
+Runtime completeness and `accepted-generated` authoring status do not imply
+historical validation. The 40 ids outside `priorityCore16` remain historically
+pending until individually reviewed; per-era provenance and review status live
+in [icon-provenance-matrix.json](../icon-provenance-matrix.json).
 
-The runtime manifest maps every object to its 32 px PNG. The 512, 128, and
-16 px files retained in the repository are deterministic Theme Lab review
-derivatives produced from the accepted master. They are useful for inspecting
-resampling and material behavior, but they are not separately authored small
-artwork. The packaged app carries every declared review size so Theme Lab never
-falls back to an absent or older asset.
+## Actual runtime mapping
 
-All 56 user-facing objects are the accepted generated family. The earlier
-measured core remains only as a deterministic reconstruction layer; the
-accepted overlay always runs last, and the final family rejects `accepted-core`
-or fallback pixel residue.
+The runtime dispatches directly to the per-object PNG that matches the calling
+surface: 16 px for mini/menu/control-strip and Finder-list contexts, 32 px for
+ordinary system-icon contexts, and 128 px for desktop, large, or Retina
+contexts. `snow-leopard-sprite.png` and
+`snow-leopard-icon-manifest.json` remain compatibility and review artifacts;
+they are not the sole runtime source. The stored 512 px files remain large
+review assets. Other compact tiers are deterministic same-master derivatives
+unless an object's ledger says otherwise; Finder and MultiFinder own direct
+optical constructions at 512/128/32/16.
 
-This is the deliberately honest policy for the current family: mechanical
-reductions are review evidence, not native compact compositions. A future
-separately authored compact family must replace this policy and its pixel
-checks, not merely rename the derivatives.
+Theme Lab displays the 16 priority objects and these derivative sizes so their
+failures remain inspectable. Display in the lab is not historical acceptance.
 
-## Files and rebuilding
+## Finder / MultiFinder — P0 closed
 
-- `snow-leopard-icon-manifest.json` — the complete 56-object, 32 px runtime
-  mapping.
-- `snow-leopard-icon-family.json` — per-object provenance, sizes, metrics, and
-  review status; the family is complete and has no fallback objects.
-- `icons/imagegen-source/` — checked-in accepted generated sources used by the
-  deterministic overlay rebuild.
-- `tooling/build-snow-leopard-core-icons.mjs` and
-  `tooling/build-accepted-generated-era-icons.mjs` — rebuild the historical
-  measured layer and then reapply all 56 accepted generated objects without
-  changing semantic ids.
+Finder uses the approved ImageGen v2 mature 10.6 split face with its curved
+black profile divider and is `reference-validated`. MultiFinder composes the
+current Snow Leopard Finder identity with multiplicity; it is provenance class
+C and `historically-reviewed`, not a native replica. Runtime dispatch selects
+their direct optical 16, 32, or 128 px assets by context; the 512 px tier remains
+available for large-scale review. None is the old compact-Macintosh derivative.
 
-Theme Lab reads 512/128/32/16 directly from the working tree and keeps its
-Finder, Dock-like, desktop, and source-list review contexts. The application
-package ships every declared Theme Lab tier; the checked-in `imagegen-source`
-provenance archive remains development-only. Desktop sprites are rebuilt from
-the 128 px tier for Retina display, while the 32 px manifest keeps stable
-semantic ordering and compatibility.
+## Rebuilding
 
-Local 10.6 research evidence remains git-ignored and evidence-only. No
-screenshot crop, extracted bitmap, traced path, or embedded historical Apple
-resource ships as a runtime icon.
+Run:
 
-## Grid
+```sh
+npm run build:era-icons -- --theme snow-leopard
+```
 
-Every object sits on the shared icon grid in
-[icon-grid.mjs](../../../../../tooling/lib/icon-grid.mjs). Scaling is uniform, never
-a stretch, and each object keeps its proportions and optical allowance. The
-pipeline records placement per object in the family JSON; this family does not
-change the shared grid.
+The chain rebuilds the broad and measured layers, restores the accepted
+generated family, applies the approved Finder-lineage overlay, refreshes the
+compatibility sprite and manifest, and regenerates review sheets. A core-only
+build remains an intermediate diagnostic.
+
+Local 10.6 resources and captures remain evidence-only. Exported iconsets must
+also be checked against a real 10.6.8 capture before supporting a period claim.

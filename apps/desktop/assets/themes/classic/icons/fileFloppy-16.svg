@@ -4,9 +4,9 @@
     .classic-paper{fill:#ffffff;stroke:none}
     .sys-icon-detail{display:none}
   </style>
-  <g transform="translate(16 16) scale(1.1) translate(-16 -16)">
-    <path d="M5 3h21l2 2v24H5z" />
-    <path d="M10 3v9h13V3M10 19h13v8H10z" />
+  <g transform="translate(0 0)">
+    <path d="M5 2.5h20l3 3V30H5z" />
+    <path d="M10 2.5v9h13v-9M9 19h14v9H9z" />
     <path class="classic-ink" d="M20 5h2v5h-2z" />
   </g>
 </svg>

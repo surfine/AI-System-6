@@ -15,6 +15,12 @@ const { desktopRoot } = require("../lib/build-info.js");
 const execFile = promisify(execFileCallback);
 const EXPORT_TIMEOUT_MS = 180000;
 const RENDER_TIMEOUT_MS = 240000;
+const MAX_MODEL_BYTES = 96 * 1024 * 1024;
+const MAX_RENDER_VIEWS = 9;
+const MAX_RENDER_OUTPUT_BYTES = 24 * 1024 * 1024;
+const CAPABILITIES_TTL_MS = 5 * 60 * 1000;
+let capabilitiesCache = null;
+let capabilitiesProbeCount = 0;
 
 // Colors are Apple's own finishes, sampled from the official store swatches
 // (store.storeimages.cdn-apple.com/.../iphone-17*-finish-<color>-2025*). CMF
@@ -336,6 +342,10 @@ function modelPalette(model) {
 }
 
 function getCapabilities() {
+  if (capabilitiesCache && Date.now() - capabilitiesCache.createdAt < CAPABILITIES_TTL_MS) {
+    return capabilitiesCache.value;
+  }
+  capabilitiesProbeCount += 1;
   const commands = [
     checkCommand("unzip", ["-v"]),
     checkCommand("zip", ["--version"]),
@@ -349,7 +359,7 @@ function getCapabilities() {
   // unzip + zip to recolor and repackage it — no USD CLI tools, which is what
   // lets the same code run on a plain Linux VPS.
   const canExport = Boolean(byName.unzip.available && byName.zip.available);
-  return {
+  const value = {
     model: DEFAULT_MODEL_ID,
     palette: MODELS[DEFAULT_MODEL_ID].paletteMeta,
     models: Object.values(MODELS).map((model) => {
@@ -378,6 +388,8 @@ function getCapabilities() {
     renderBackend: byName.swift.available ? "scenekit+software" : "software",
     commands: byName,
   };
+  capabilitiesCache = { createdAt: Date.now(), value };
+  return value;
 }
 
 function checkCommand(name, args) {
@@ -390,14 +402,24 @@ function checkCommand(name, args) {
   return { name, available: true, detail: detail.slice(0, 160) };
 }
 
+async function cmfTempDirectory(prefix) {
+  const configuredRoot = String(process.env.AI_SYSTEM6_CMF_JOB_TEMP_ROOT || "").trim();
+  const root = configuredRoot || os.tmpdir();
+  await fs.mkdir(root, { recursive: true, mode: 0o700 });
+  return fs.mkdtemp(path.join(root, prefix));
+}
+
 async function exportRecipeUsdz(inputRecipe) {
   const recipe = normalizeRecipe(inputRecipe);
-  const workdir = await fs.mkdtemp(path.join(os.tmpdir(), "ai6-cmf-export-"));
+  const workdir = await cmfTempDirectory("ai6-cmf-export-");
   try {
     const source = await materializeModelAsset(workdir, recipe.model, recipe.pose);
     const output = path.join(workdir, `${recipe.slug}.usdz`);
     const result = await makeUsdz(source, output, recipe);
     const buffer = await fs.readFile(output);
+    if (buffer.byteLength > MAX_MODEL_BYTES) {
+      throw httpError(413, "CMF export output is too large.", "cmf_output_too_large");
+    }
     return {
       filename: `${recipe.slug}.usdz`,
       contentType: "model/vnd.usdz+zip",
@@ -412,7 +434,7 @@ async function exportRecipeUsdz(inputRecipe) {
 
 async function renderRecipeViews(inputRecipe) {
   const recipe = normalizeRecipe(inputRecipe);
-  const workdir = await fs.mkdtemp(path.join(os.tmpdir(), "ai6-cmf-render-"));
+  const workdir = await cmfTempDirectory("ai6-cmf-render-");
   try {
     const source = await materializeModelAsset(workdir, recipe.model, recipe.pose);
     const usdzPath = path.join(workdir, `${recipe.slug}.usdz`);
@@ -448,8 +470,16 @@ async function renderRecipeViews(inputRecipe) {
         .sort();
     }
     const views = [];
+    if (files.length > MAX_RENDER_VIEWS) {
+      throw httpError(413, `CMF rendering accepts at most ${MAX_RENDER_VIEWS} views.`);
+    }
+    let outputBytes = 0;
     for (const file of files) {
       const data = await fs.readFile(path.join(viewsDir, file));
+      outputBytes += data.byteLength;
+      if (outputBytes > MAX_RENDER_OUTPUT_BYTES) {
+        throw httpError(413, "CMF rendered output is too large.", "cmf_output_too_large");
+      }
       views.push({
         name: file.replace(/\.png$/, ""),
         filename: file,
@@ -465,13 +495,16 @@ async function renderRecipeViews(inputRecipe) {
 async function renderRecipePreview(inputRecipe, viewName = "02-back") {
   const recipe = normalizeRecipe(inputRecipe);
   const view = resolveSoftwareView(viewName, recipe.model, recipe.pose);
-  const workdir = await fs.mkdtemp(path.join(os.tmpdir(), "ai6-cmf-preview-render-"));
+  const workdir = await cmfTempDirectory("ai6-cmf-preview-render-");
   try {
     const source = await materializeModelAsset(workdir, recipe.model, recipe.pose);
     const usdzPath = path.join(workdir, `${recipe.slug}.usdz`);
     await makeUsdz(source, usdzPath, recipe);
     const scene = await loadSoftwareScene(usdzPath);
     const png = await renderSoftwarePng(scene, view);
+    if (png.byteLength > MAX_RENDER_OUTPUT_BYTES) {
+      throw httpError(413, "CMF rendered output is too large.", "cmf_output_too_large");
+    }
     return {
       recipe,
       view: {
@@ -517,7 +550,7 @@ function softwareViewsFor(modelId, pose) {
 }
 
 async function loadSoftwareScene(input) {
-  const workdir = await fs.mkdtemp(path.join(os.tmpdir(), "ai6-cmf-preview-"));
+  const workdir = await cmfTempDirectory("ai6-cmf-preview-");
   try {
     await execFile("unzip", ["-q", input, "-d", workdir], { timeout: EXPORT_TIMEOUT_MS });
     const rootLayer = (await fs.readdir(workdir))
@@ -606,7 +639,7 @@ function parseSoftwareMaterials(text) {
   return materials;
 }
 
-async function renderSoftwarePng(scene, view) {
+function renderSoftwarePng(scene, view) {
   const width = 1400;
   const height = 1000;
   const pixels = Buffer.alloc(width * height * 4, 0);
@@ -818,7 +851,7 @@ const MACBOOK_NEO_VIEWS = {
 };
 
 function normalizeRecipe(inputRecipe = {}) {
-  const raw = /** @type {{ model?: string, name?: string, pose?: string, parts?: Record<string, unknown> }} */ (
+  const raw = /** @type {{ model?: string, name?: string, slug?: string, pose?: string, parts?: Record<string, unknown> }} */ (
     inputRecipe && typeof inputRecipe === "object" ? inputRecipe : {}
   );
   const modelId = raw.model || DEFAULT_MODEL_ID;
@@ -849,7 +882,7 @@ function normalizeRecipe(inputRecipe = {}) {
   if (!suppliedParts.has("frameSide")) parts.frameSide = parts.frame;
   if (!suppliedParts.has("screwOrSpeaker")) parts.screwOrSpeaker = parts.usbC;
 
-  const slug = safeSlug(raw.name || `${modelId}-${pose || ""}-cmf-${Date.now().toString(36)}`);
+  const slug = safeSlug(raw.slug || raw.name || `${modelId}-${pose || ""}-cmf-${Date.now().toString(36)}`);
   return { model: modelId, pose, parts, slug };
 }
 
@@ -861,13 +894,16 @@ async function materializeModelAsset(workdir, modelId, pose) {
   if (!asset || !fsSync.existsSync(asset)) {
     throw httpError(500, `CMF source model is missing: ${asset}`);
   }
+  if (fsSync.statSync(asset).size > MAX_MODEL_BYTES) {
+    throw httpError(413, "CMF source model is too large.", "cmf_model_too_large");
+  }
   const output = path.join(workdir, `${model.id}-${pose || ""}-source.usdz`);
   await fs.copyFile(asset, output);
   return output;
 }
 
 async function makeUsdz(input, output, recipe) {
-  const workdir = await fs.mkdtemp(path.join(os.tmpdir(), "ai6-cmf-usdz-"));
+  const workdir = await cmfTempDirectory("ai6-cmf-usdz-");
   try {
     await execFile("unzip", ["-q", input, "-d", workdir], { timeout: EXPORT_TIMEOUT_MS });
     const rootLayer = (await fs.readdir(workdir))
@@ -1215,9 +1251,10 @@ function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function httpError(statusCode, message) {
-  const error = /** @type {Error & { statusCode?: number }} */ (new Error(message));
+function httpError(statusCode, message, code = "") {
+  const error = /** @type {Error & { statusCode?: number, code?: string }} */ (new Error(message));
   error.statusCode = statusCode;
+  if (code) error.code = code;
   return error;
 }
 
@@ -1372,4 +1409,5 @@ module.exports = {
   exportRecipeUsdz,
   renderRecipeViews,
   renderRecipePreview,
+  getCapabilitiesProbeCountForTests: () => capabilitiesProbeCount,
 };

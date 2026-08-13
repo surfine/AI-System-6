@@ -450,10 +450,10 @@
     "finderApp": {
       "label": "Finder / System",
       "genre": "system identity",
-      "prototype": "friendly restrained white-polycarbonate compact Macintosh with a split cool-blue and white smiling CRT face",
-      "metaphorKey": "smiling-compact-macintosh",
-      "perspective": "measured front three-quarter object",
-      "material": "white polycarbonate and pale aluminum with narrow highlights",
+      "prototype": "Mac OS X 10.6 frontal split Finder face plaque with a curved black profile divider, two narrow eyes, and one continuous smile",
+      "metaphorKey": "target-era-finder-identity",
+      "perspective": "front-on icon plaque",
+      "material": "mature Aqua illustration with restrained lighting and a narrow profile divider",
       "comparison": {
         "evidence": "iconsets/FinderIcon.iconset/icon_128x128.png"
       }

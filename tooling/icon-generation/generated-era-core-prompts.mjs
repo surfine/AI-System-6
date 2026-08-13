@@ -13,8 +13,8 @@ export const GENERATION_SIZE = "1024x1024";
 export const CORE_OBJECTS = Object.freeze({
   finderApp: {
     label: "Finder / system identity",
-    subject: "a compact beige Macintosh computer, front-facing, whose dark screen carries two friendly eyes and a small smile",
-    shape: "portrait",
+    subject: "the target era's real Finder identity, preserving its documented facial fields, eyes, and continuous smile without importing a computer chassis from another era",
+    shape: "square",
   },
   folder: {
     label: "System folder",
@@ -269,7 +269,7 @@ export const REMAINING_OBJECTS = Object.freeze({
   },
   multiFinderApp: {
     label: "MultiFinder",
-    subject: "two overlapping compact Macintosh computers with friendly dark screens, clearly a paired Finder environment",
+    subject: "the target era's current Finder identity repeated with a clear period-plausible overlap to communicate concurrent Finder environments, without locking the design to two computer chassis",
     shape: "landscape",
   },
   writingBell: {

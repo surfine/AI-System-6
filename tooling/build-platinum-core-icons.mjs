@@ -9,9 +9,10 @@ const { createCanvas, loadImage } = require("canvas");
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const assetDir = join(root, "apps/desktop/assets/themes/platinum/icons");
 const coreAssetDir = join(assetDir, "core-evidence");
-const sourceFile = join(assetDir, "apps/server/platinum-core-icons.json");
+const sourceFile = join(assetDir, "src/platinum-core-icons.json");
 const draftDir = join(root, "internal/evidence/drafts/era-icons");
 const historicalRoot = "/private/tmp/macos9-icon-reference/png 64px";
+if (!existsSync(sourceFile)) throw new Error(`Missing Platinum core-icon source ledger: ${sourceFile}`);
 const source = JSON.parse(readFileSync(sourceFile, "utf8"));
 const ids = Object.keys(source.icons);
 

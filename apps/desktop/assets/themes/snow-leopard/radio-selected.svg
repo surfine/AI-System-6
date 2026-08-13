@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14">
+  <defs>
+    <linearGradient id="well" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#afafe2"/>
+      <stop offset=".21" stop-color="#a4b8e6"/>
+      <stop offset=".29" stop-color="#69a5e1"/>
+      <stop offset=".38" stop-color="#5a9dde"/>
+      <stop offset=".54" stop-color="#6cacec"/>
+      <stop offset=".71" stop-color="#90cefd"/>
+      <stop offset=".88" stop-color="#aff4ff"/>
+      <stop offset="1" stop-color="#cdeded"/>
+    </linearGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#00005e"/>
+      <stop offset=".38" stop-color="#1258c6"/>
+      <stop offset=".72" stop-color="#66889f"/>
+      <stop offset="1" stop-color="#9aa2a2"/>
+    </linearGradient>
+  </defs>
+  <circle cx="7" cy="7" r="6.5" fill="url(#well)" stroke="url(#rim)"/>
+  <rect x="6" y="5.5" width="2" height="3.5" rx=".5" fill="#050505"/>
+</svg>

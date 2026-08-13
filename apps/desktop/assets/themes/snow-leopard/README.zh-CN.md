@@ -1,46 +1,48 @@
-<!-- canonical-source: assets/themes/snow-leopard/README.md -->
-<!-- source-sha256: beb45968760b3c6e88f04d6a8428cfe9f8ed51a68233b5d023c5efb6d5e7a23c -->
+<!-- canonical-source: apps/desktop/assets/themes/snow-leopard/README.md -->
+<!-- source-sha256: 5479bf95773829c8694628fdf62865760d3f39c98e086548f47e05bc7f921599 -->
 <!-- 英文版为准；本译文仅供人类参考。 -->
 
 # Snow Leopard 图标家族
 
-本目录包含 AI System 6 完整的 56 项 Mac OS X 10.6.8 外观。每个语义对象都保持
-[icon-system-continuity.json](../icon-system-continuity.json) 记录的跨时代
-`metaphorKey`，材质、浅透视与光照则遵循 Snow Leopard 参考世界。
+本目录发布完整的 56 对象 Mac OS X 10.6.8 家族。连续性由
+[icon-system-continuity.json](../icon-system-continuity.json) 中每个对象的
+`semanticIdentity` 与一至两个 `identityAnchors` 定义，而不是固定物理隐喻或复用的
+Aqua 构图。
 
-## 运行时与尺寸政策
+运行时完整与 `accepted-generated` 创作状态都不等于历史验证。
+`priorityCore16` 以外的 40 个 ID 在逐项复核前继续保持历史待审；逐时代来源与审核
+状态记录于 [icon-provenance-matrix.json](../icon-provenance-matrix.json)。
 
-运行时 manifest 将全部对象映射到 32 px PNG。仓库保留的 512、128 与 16 px 文件，
-是从已接受主图确定性生成的 Theme Lab 审查派生件。它们用于检查缩放与材质表现，但
-不是分别创作的小尺寸图稿。应用包会携带所有声明的审查尺寸，Theme Lab 因此不会回退
-到缺失资源或旧图稿。
+## 实际运行时映射
 
-用户可见的 56 项现在全部属于已接受生成式家族。早期实测核心只保留为确定性重建层；
-已接受覆盖始终最后执行，最终家族会拒绝 `accepted-core` 或 fallback 像素残留。
+运行时会按调用场景直接选择逐对象 PNG：mini／menu／control strip 与 Finder list
+使用 16 px，普通系统图标场景使用 32 px，desktop／large／Retina 场景使用 128 px。
+`snow-leopard-sprite.png` 与 `snow-leopard-icon-manifest.json` 只保留为兼容与审查
+资产，并非唯一 runtime source。512 px 文件继续作为大尺寸审查资产；其他紧凑尺寸
+通常是同一主图的确定性派生件，除非对象账本另有说明。Finder 与 MultiFinder 在
+512/128/32/16 都拥有直接构成的光学资产。
 
-这是当前家族刻意选择的诚实政策：机械缩小是审查证据，不是原生紧凑构图。未来若真
-正创作独立小尺寸家族，必须同时替换此政策及其像素门禁，不能只给派生件改名。
+Theme Lab 显示 16 个优先对象与这些派生尺寸，让失败保持可检查。显示在实验室里不
+等于通过历史验收。
 
-## 文件与重建
+## Finder／MultiFinder — P0 已关闭
 
-- `snow-leopard-icon-manifest.json` — 完整 56 项、32 px 运行时映射。
-- `snow-leopard-icon-family.json` — 每项来源、尺寸、指标与审核状态；家族已完整，无
-  fallback。
-- `icons/imagegen-source/` — 确定性覆盖重建所用的已接受生成式源文件。
-- `tooling/build-snow-leopard-core-icons.mjs` 与
-  `tooling/build-accepted-generated-era-icons.mjs` — 重建历史实测层，再重新应用全部 56 项
-  已接受生成式图稿，不改变语义 ID。
+Finder 使用已批准的 ImageGen v2 成熟 10.6 分脸与弯曲黑色侧脸分界，并为
+`reference-validated`。MultiFinder 以当前 Snow Leopard Finder 身份加“多个”构成；
+它是 C 级来源、`historically-reviewed`，并不宣称为原生复刻。运行时按场景选择
+两者直接构成的 16、32 或 128 px 光学资产；512 px 层继续用于大比例审查。它们都
+不是旧的紧凑 Macintosh 派生件。
 
-Theme Lab 直接从工作树读取 512/128/32/16，并保留 Finder、Dock、桌面与 source-list
-审查场景。应用包发布所有声明的 Theme Lab 尺寸，但不包含仅供开发溯源的
-`imagegen-source`。桌面 sprite 从 128 px 层重建以适配 Retina，32 px manifest 则
-保持稳定的语义顺序与兼容性。
+## 重建
 
-本地 10.6 研究证据继续被 git 忽略且仅作证据。截图裁切、提取 bitmap、描摹路径或
-历史 Apple 资源都不会作为运行时图标发布。
+执行：
 
-## 网格
+```sh
+npm run build:era-icons -- --theme snow-leopard
+```
 
-每个对象都位于共享 [icon-grid.mjs](../../../../../tooling/lib/icon-grid.mjs) 网格上。缩放
-保持等比，保留对象比例与视觉补偿；管线把每项摆放记录在家族 JSON 中，本家族不改动
-共享网格。
+该链重建宽泛层与实测层，恢复已接受生成家族，应用批准的 Finder 家谱覆盖层，刷新
+兼容 sprite 与 manifest，并重新生成审查板。只运行 core 仍是中间诊断。
+
+本地 10.6 资源与截图仅作证据。导出的 iconset 也必须先与真实 10.6.8 截图核对，
+才能支撑时代声明。

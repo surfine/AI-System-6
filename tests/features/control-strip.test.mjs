@@ -40,18 +40,23 @@ function zValue(source, name) {
 
 // --- Control Panel entry ---------------------------------------------------
 
-test.assertIncludes(html, 'id="control-strip" type="checkbox" />', "Control Panel exposes a Control Strip checkbox");
+test.assertIncludes(html, 'id="control-strip-show" type="checkbox"', "Control Panel exposes one Control Strip switch");
 test.assertNotMatches(html, /id="control-strip"[^>]*checked/, "Control Strip is off by default");
-test.assert(html.indexOf('id="control-strip"') > html.indexOf('id="control-panel-general"'), "the checkbox lives in the General tab");
+// Mac OS 8/9 shipped one Control Strip switch, in the Control Strip's own
+// control panel. General used to carry a second checkbox writing the same
+// `enabled` field, which asked the writer the same question twice.
+test.assertNotIncludes(html, 'id="control-strip"', "the desk carries no duplicate master switch in General");
 test.assertIncludes(html, 'id="control-tab-strip"', "Control Panel has a dedicated Control Strip tab");
 test.assertIncludes(html, 'id="control-panel-strip"', "the Control Strip tab owns a settings panel");
+// The module menu's face and size are the system's call — era font, touch size —
+// not two Control Panel dropdowns a writer has to reason about.
+test.assertNotIncludes(html, 'id="control-strip-font"', "the module menu font is not a preference");
+test.assertNotIncludes(html, 'id="control-strip-font-size"', "the module menu font size is not a preference");
 [
   "control-strip-show",
   "control-strip-hotkey",
   "control-strip-hotkey-record",
   "control-strip-hotkey-clear",
-  "control-strip-font",
-  "control-strip-font-size",
   "control-strip-module-list",
   "control-strip-move-up",
   "control-strip-move-down",
@@ -64,7 +69,7 @@ test.assertIncludes(html, 'id="control-panel-strip"', "the Control Strip tab own
 
 test.assertIncludes(persistence, "controlStripState", "Control Strip preferences live in one record in the desk settings");
 test.assertIncludes(persistence, "function defaultControlStripState", "the record has a real default shape");
-["version", "enabled", "visible", "collapsed", "edge", "offsetRatio", "expandedLength", "moduleOrder", "disabledModules", "scrollOffset", "hotkey", "menuFont", "menuFontSize"]
+["version", "enabled", "visible", "collapsed", "edge", "offsetRatio", "expandedLength", "moduleOrder", "disabledModules", "scrollOffset", "hotkey"]
   .forEach((field) => {
     test.assertIncludes(persistence, `${field}:`, `controlStripState carries ${field}`);
   });
@@ -72,7 +77,7 @@ test.assertIncludes(persistence, "restoreControlStripState(settings)", "the unif
 test.assertIncludes(persistence, "settings.controlStripCollapsed === true", "legacy collapsed data still migrates");
 test.assertIncludes(persistence, "controlStrip: controlStripState.enabled", "the master switch persists through the unified record");
 test.assertIncludes(persistence, "controlStripState,", "the full record is written with saveDeskState");
-test.assertIncludes(domHandles, "controlStripInput", "the checkbox is wired into the shared DOM handles");
+test.assertIncludes(domHandles, "controlStripShowInput", "the switch is wired into the shared DOM handles");
 test.assertIncludes(domHandles, "controlStripHotkeyInput", "the hot key field is wired into the shared DOM handles");
 test.assertIncludes(domHandles, "controlStripModuleList", "the module list is wired into the shared DOM handles");
 test.assertIncludes(wireup, "applyControlStripState()", "toggling the checkbox applies the runtime state");

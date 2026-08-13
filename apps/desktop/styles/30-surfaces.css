@@ -1109,6 +1109,56 @@
   color: var(--card-caption-color);
 }
 
+/* The assistant carries real paragraphs, not captions. Left-aligned at the
+   pane's own width: the shared 34ch centred measure turned four lines of
+   English into eight ragged ones. Headings stay centred. */
+.guide-step > p {
+  max-width: none;
+  text-align: left;
+}
+
+/* One page's own choices, stacked full width like the Control Panel's AI
+   section, so the page reads as one decision instead of a button grid. */
+.guide-actions {
+  display: grid;
+  gap: 7px;
+  width: 100%;
+}
+
+/* A page whose own buttons are all conditional (Add to Home Screen, Continue)
+   must not leave a hole where the row would be. */
+.guide-actions:not(:has(> .btn:not([hidden]))) {
+  display: none;
+}
+
+/* Setup-assistant footer: which page you are on at the left, movement at the
+   right, exactly one default button in the row. */
+.guide-nav {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--guide-pane-gap);
+  width: 100%;
+}
+
+.guide-step-counter {
+  text-align: left;
+  font-size: 10px;
+  color: var(--card-caption-color);
+}
+
+/* The outside world stays reachable from every page and stays quiet: small
+   push buttons under a hairline, never competing with the page's own action. */
+.guide-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  padding-top: 7px;
+  border-top: var(--system-border);
+}
+
 /* A view switch, not two actions. The tabs sit on a rail and the selected one
    merges into the panel below, so the pair reads as one sheet with two faces
    instead of two buttons competing for a tap. The sheet wrapper keeps the rail
@@ -1374,7 +1424,11 @@
   justify-self: center;
   min-width: 0;
   padding: 0 0.35em;
-  background: var(--alarm-clock-title-bg);
+  /* The readout is the Alarm Clock's window title, so it masks the bar the way
+     a window title does. --alarm-clock-title-bg paints the bar itself, and
+     Platinum makes that the striped Mac OS 9 fill: used here it ran the racing
+     stripes straight through the digits. */
+  background: var(--titlebar-title-bg);
   color: var(--ink);
   font-family: var(--title-font);
   font-size: var(--system-title-size);

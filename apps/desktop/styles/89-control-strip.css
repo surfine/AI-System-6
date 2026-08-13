@@ -407,7 +407,10 @@
   z-index: var(--z-control-strip-menu);
   max-height: 60vh;
   overflow-y: auto;
-  font-family: var(--control-strip-menu-font, var(--ui-font));
+  /* The module menu wears the era's own UI face at the system's size; it used
+     to be a pair of Control Panel dropdowns, which is not a choice a writer
+     should have to make. 60-responsive.css raises the size for touch. */
+  font-family: var(--ui-font);
   font-size: var(--control-strip-menu-font-size, 12px);
 }
 

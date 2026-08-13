@@ -222,13 +222,18 @@
   display: none;
 }
 
+/* The Control Panel chooser inverts its whole cell when a tab is current, so
+   its icon needs the same reversal: without it the black 1-bit art sits on the
+   black selection fill and the tab reads as an empty box. */
 .finder-item.is-selected .sys-icon-svg.has-classic-mask .sys-icon-classic-mask,
-.desktop-icon.is-selected .sys-icon-svg.has-classic-mask .sys-icon-classic-mask {
+.desktop-icon.is-selected .sys-icon-svg.has-classic-mask .sys-icon-classic-mask,
+.control-chooser .system-tab.is-active .sys-icon-svg.has-classic-mask .sys-icon-classic-mask {
   display: block;
 }
 
 .finder-item.is-selected .sys-icon-svg.has-classic-mask .sys-icon-classic-art,
-.desktop-icon.is-selected .sys-icon-svg.has-classic-mask .sys-icon-classic-art {
+.desktop-icon.is-selected .sys-icon-svg.has-classic-mask .sys-icon-classic-art,
+.control-chooser .system-tab.is-active .sys-icon-svg.has-classic-mask .sys-icon-classic-art {
   filter: invert(1);
 }
 

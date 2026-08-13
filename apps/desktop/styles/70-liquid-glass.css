@@ -197,8 +197,8 @@ body.use-liquid-glass {
   --control-strip-tile-radius: 999px;
   --control-strip-tile-margin: 3px 1px;
   --control-strip-tile-height: calc(var(--control-strip-thickness) - 6px);
-  --control-strip-grip-inset: 8px 6px;
-  --control-strip-grip: rgba(16, 17, 20, 0.28);
+  --control-strip-grip-inset: 8px 0;
+  --control-strip-grip: linear-gradient(rgba(16, 17, 20, 0.28), rgba(16, 17, 20, 0.28)) 50% 50% / 4px 100% no-repeat;
   --control-strip-grip-radius: 2px;
   --control-strip-gauge-bg: rgba(255, 255, 255, 0.8);
   /* Control Panel section chooser — a glass segmented capsule: the active
@@ -3559,6 +3559,10 @@ body.use-liquid-glass .desktop-app-icon span[data-liquid-label-mode="wrap"] {
   max-width: 92px;
 }
 
+/* A dimmed icon (File Floppy with no floppy in) carries the disabled control's
+   -webkit-text-fill-color, and that inherits past `color` onto the name. On the
+   dark selection plate it painted the name 42% black on 84% black, so the
+   selected item became unreadable. The reversed name has to set the fill too. */
 body.use-liquid-glass .desktop-icon:hover span:last-child,
 body.use-liquid-glass .desktop-icon:focus span:last-child,
 body.use-liquid-glass .desktop-icon.is-selected span:last-child,
@@ -3566,6 +3570,7 @@ body.use-liquid-glass .spine-actions button:hover b,
 body.use-liquid-glass .spine-actions button:focus-visible b {
   background: rgba(16, 17, 20, 0.84);
   color: #ffffff;
+  -webkit-text-fill-color: #ffffff;
 }
 
 body.use-liquid-glass .icon,
