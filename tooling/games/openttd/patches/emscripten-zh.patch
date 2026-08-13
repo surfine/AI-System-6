@@ -1,0 +1,140 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -366,7 +366,7 @@
+     add_definitions(-s DISABLE_EXCEPTION_CATCHING=0)
+
+     # Export functions to Javascript.
+-    target_link_libraries(WASM::WASM INTERFACE "-s EXPORTED_FUNCTIONS='[\"_main\", \"_em_openttd_add_server\"]' -s EXPORTED_RUNTIME_METHODS='[\"cwrap\"]'")
++    target_link_libraries(WASM::WASM INTERFACE "-s EXPORTED_FUNCTIONS='[\"_main\", \"_em_openttd_add_server\", \"_em_openttd_set_resolution\"]' -s EXPORTED_RUNTIME_METHODS='[\"cwrap\", \"ccall\"]'")
+
+     # Preload all the files we generate during build.
+     # As we do not compile with FreeType / FontConfig, we also have no way to
+@@ -374,35 +374,40 @@
+     # line what languages to include and which not? In the end, especially as
+     # the more languages you add the slower downloading becomes, we decided to
+     # only ship the English language.
+-    target_link_libraries(WASM::WASM INTERFACE "--preload-file ${CMAKE_BINARY_DIR}/baseset@/baseset")
+-    target_link_libraries(WASM::WASM INTERFACE "--preload-file ${CMAKE_BINARY_DIR}/lang/english.lng@/lang/english.lng")
+-    target_link_libraries(WASM::WASM INTERFACE "--preload-file ${CMAKE_SOURCE_DIR}/bin/ai@/ai")
+-    target_link_libraries(WASM::WASM INTERFACE "--preload-file ${CMAKE_SOURCE_DIR}/bin/game@/game")
++    target_link_libraries(WASM::WASM INTERFACE "--preload-file \"${CMAKE_BINARY_DIR}/baseset@/baseset\"")
++    target_link_libraries(WASM::WASM INTERFACE "--preload-file \"${CMAKE_BINARY_DIR}/lang/english.lng@/lang/english.lng\"")
++    # AI System 6: ship Simplified Chinese as well. The FindFreetype.cmake
++    # shim compiles FreeType in, and the build script preloads a CJK pixel
++    # font into /font, so the zh_CN UI renders correctly.
++    target_link_libraries(WASM::WASM INTERFACE "--preload-file \"${CMAKE_BINARY_DIR}/lang/simplified_chinese.lng@/lang/simplified_chinese.lng\"")
++    target_link_libraries(WASM::WASM INTERFACE "--preload-file \"${CMAKE_BINARY_DIR}/font@/font\"")
++    target_link_libraries(WASM::WASM INTERFACE "--preload-file \"${CMAKE_SOURCE_DIR}/bin/ai@/ai\"")
++    target_link_libraries(WASM::WASM INTERFACE "--preload-file \"${CMAKE_SOURCE_DIR}/bin/game@/game\"")
+     # Documentation files for the in-game text file viewer
+-    target_link_libraries(WASM::WASM INTERFACE "--preload-file ${CMAKE_SOURCE_DIR}/README.md@/README.md")
+-    target_link_libraries(WASM::WASM INTERFACE "--preload-file ${CMAKE_SOURCE_DIR}/CREDITS.md@/CREDITS.md")
+-    target_link_libraries(WASM::WASM INTERFACE "--preload-file ${CMAKE_SOURCE_DIR}/CONTRIBUTING.md@/CONTRIBUTING.md")
+-    target_link_libraries(WASM::WASM INTERFACE "--preload-file ${CMAKE_SOURCE_DIR}/COPYING.md@/COPYING.md")
+-    target_link_libraries(WASM::WASM INTERFACE "--preload-file ${CMAKE_SOURCE_DIR}/known-bugs.md@/known-bugs.md")
+-    target_link_libraries(WASM::WASM INTERFACE "--preload-file ${CMAKE_SOURCE_DIR}/changelog.md@/changelog.md")
+-    target_link_libraries(WASM::WASM INTERFACE "--preload-file ${CMAKE_SOURCE_DIR}/docs/admin_network.md@/docs/admin_network.md")
+-    target_link_libraries(WASM::WASM INTERFACE "--preload-file ${CMAKE_SOURCE_DIR}/docs/debugging_desyncs.md@/docs/debugging_desyncs.md")
+-    target_link_libraries(WASM::WASM INTERFACE "--preload-file ${CMAKE_SOURCE_DIR}/docs/desync.md@/docs/desync.md")
+-    target_link_libraries(WASM::WASM INTERFACE "--preload-file ${CMAKE_SOURCE_DIR}/docs/directory_structure.md@/docs/directory_structure.md")
+-    target_link_libraries(WASM::WASM INTERFACE "--preload-file ${CMAKE_SOURCE_DIR}/docs/eints.md@/docs/eints.md")
+-    target_link_libraries(WASM::WASM INTERFACE "--preload-file ${CMAKE_SOURCE_DIR}/docs/fonts.md@/docs/fonts.md")
+-    target_link_libraries(WASM::WASM INTERFACE "--preload-file ${CMAKE_SOURCE_DIR}/docs/linkgraph.md@/docs/linkgraph.md")
+-    target_link_libraries(WASM::WASM INTERFACE "--preload-file ${CMAKE_SOURCE_DIR}/docs/logging_and_performance_metrics.md@/docs/logging_and_performance_metrics.md")
+-    target_link_libraries(WASM::WASM INTERFACE "--preload-file ${CMAKE_SOURCE_DIR}/docs/multiplayer.md@/docs/multiplayer.md")
+-    target_link_libraries(WASM::WASM INTERFACE "--preload-file ${CMAKE_SOURCE_DIR}/docs/savegame_format.md@/docs/savegame_format.md")
+-    target_link_libraries(WASM::WASM INTERFACE "--preload-file ${CMAKE_SOURCE_DIR}/docs/symbol_server.md@/docs/symbol_server.md")
++    target_link_libraries(WASM::WASM INTERFACE "--preload-file \"${CMAKE_SOURCE_DIR}/README.md@/README.md\"")
++    target_link_libraries(WASM::WASM INTERFACE "--preload-file \"${CMAKE_SOURCE_DIR}/CREDITS.md@/CREDITS.md\"")
++    target_link_libraries(WASM::WASM INTERFACE "--preload-file \"${CMAKE_SOURCE_DIR}/CONTRIBUTING.md@/CONTRIBUTING.md\"")
++    target_link_libraries(WASM::WASM INTERFACE "--preload-file \"${CMAKE_SOURCE_DIR}/COPYING.md@/COPYING.md\"")
++    target_link_libraries(WASM::WASM INTERFACE "--preload-file \"${CMAKE_SOURCE_DIR}/known-bugs.md@/known-bugs.md\"")
++    target_link_libraries(WASM::WASM INTERFACE "--preload-file \"${CMAKE_SOURCE_DIR}/changelog.md@/changelog.md\"")
++    target_link_libraries(WASM::WASM INTERFACE "--preload-file \"${CMAKE_SOURCE_DIR}/docs/admin_network.md@/docs/admin_network.md\"")
++    target_link_libraries(WASM::WASM INTERFACE "--preload-file \"${CMAKE_SOURCE_DIR}/docs/debugging_desyncs.md@/docs/debugging_desyncs.md\"")
++    target_link_libraries(WASM::WASM INTERFACE "--preload-file \"${CMAKE_SOURCE_DIR}/docs/desync.md@/docs/desync.md\"")
++    target_link_libraries(WASM::WASM INTERFACE "--preload-file \"${CMAKE_SOURCE_DIR}/docs/directory_structure.md@/docs/directory_structure.md\"")
++    target_link_libraries(WASM::WASM INTERFACE "--preload-file \"${CMAKE_SOURCE_DIR}/docs/eints.md@/docs/eints.md\"")
++    target_link_libraries(WASM::WASM INTERFACE "--preload-file \"${CMAKE_SOURCE_DIR}/docs/fonts.md@/docs/fonts.md\"")
++    target_link_libraries(WASM::WASM INTERFACE "--preload-file \"${CMAKE_SOURCE_DIR}/docs/linkgraph.md@/docs/linkgraph.md\"")
++    target_link_libraries(WASM::WASM INTERFACE "--preload-file \"${CMAKE_SOURCE_DIR}/docs/logging_and_performance_metrics.md@/docs/logging_and_performance_metrics.md\"")
++    target_link_libraries(WASM::WASM INTERFACE "--preload-file \"${CMAKE_SOURCE_DIR}/docs/multiplayer.md@/docs/multiplayer.md\"")
++    target_link_libraries(WASM::WASM INTERFACE "--preload-file \"${CMAKE_SOURCE_DIR}/docs/savegame_format.md@/docs/savegame_format.md\"")
++    target_link_libraries(WASM::WASM INTERFACE "--preload-file \"${CMAKE_SOURCE_DIR}/docs/symbol_server.md@/docs/symbol_server.md\"")
+
+     # We use IDBFS for persistent storage.
+     target_link_libraries(WASM::WASM INTERFACE "-lidbfs.js")
+
+     # Use custom pre-js and shell.html.
+-    target_link_libraries(WASM::WASM INTERFACE "--pre-js ${CMAKE_SOURCE_DIR}/os/emscripten/pre.js")
+-    target_link_libraries(WASM::WASM INTERFACE "--shell-file ${CMAKE_SOURCE_DIR}/os/emscripten/shell.html")
++    target_link_libraries(WASM::WASM INTERFACE "--pre-js \"${CMAKE_SOURCE_DIR}/os/emscripten/pre.js\"")
++    target_link_libraries(WASM::WASM INTERFACE "--shell-file \"${CMAKE_SOURCE_DIR}/os/emscripten/shell.html\"")
+
+     # Build the .html (which builds the .js, .wasm, and .data too).
+     set_target_properties(openttd PROPERTIES SUFFIX ".html")
+--- a/os/emscripten/pre.js
++++ b/os/emscripten/pre.js
+@@ -30,6 +30,30 @@
+
+     Module.addRunDependency('syncfs');
+     FS.syncfs(true, function (err) {
++        /* AI System 6: on the first run, write a default openttd.cfg so the
++         * game starts in Simplified Chinese with the bundled CJK pixel font.
++         * The embedding shell page supplies the content, because only the
++         * page knows the screen size (gui_scale). On every later run, only
++         * the resolution line is rewritten: the game reads it once at boot,
++         * and the SDL port does not follow canvas size changes, so a stale
++         * resolution would stretch the whole game surface. */
++        try {
++            var cfg_path = personal_dir + '/openttd.cfg';
++            if (Module.openttdDefaultConfig && !FS.analyzePath(cfg_path).exists) {
++                FS.writeFile(cfg_path, Module.openttdDefaultConfig);
++            }
++            var res = typeof Module.openttdResolution === 'function'
++                ? Module.openttdResolution() : Module.openttdResolution;
++            if (res && FS.analyzePath(cfg_path).exists) {
++                var cfg = FS.readFile(cfg_path, { encoding: 'utf8' });
++                var updated = /^resolution *=.*$/m.test(cfg)
++                    ? cfg.replace(/^resolution *=.*$/m, 'resolution = ' + res)
++                    : cfg.replace(/^\[misc\]$/m, '[misc]\nresolution = ' + res);
++                if (updated !== cfg) FS.writeFile(cfg_path, updated);
++            }
++        } catch (e) {
++            console.error('openttd.cfg seeding failed', e);
++        }
+         Module.removeRunDependency('syncfs');
+     });
+
+--- a/src/network/network.cpp
++++ b/src/network/network.cpp
+@@ -1320,6 +1320,14 @@
+ void CDECL em_openttd_add_server(const char *connection_string)
+ {
+ 	NetworkAddServer(connection_string, false, true);
++}
++
++/* AI System 6: let the embedding page resize the game surface when the
++ * browser viewport changes (phone rotation, desktop window resize). The
++ * SDL emscripten port does not follow canvas size changes on its own. */
++void CDECL em_openttd_set_resolution(int w, int h)
++{
++	ChangeResInGame(std::max(64, w), std::max(64, h));
+ }
+
+ }
+--- a/src/fontcache/freetypefontcache.cpp
++++ b/src/fontcache/freetypefontcache.cpp
+@@ -183,6 +183,12 @@
+ {
+ 	assert(IsPrintable(key));
+
++	/* AI System 6: Fusion Pixel deliberately omits U+00A0 because it has no
++	 * visible outline. OpenTTD's language-pack audit still requires a mapped
++	 * glyph, so treat the non-breaking space as the regular space. They render
++	 * identically; the layout engine keeps the non-breaking behaviour. */
++	if (key == 0x00A0 || key == 0x2003) key = U' ';
++
+ 	FT_UInt glyph = FT_Get_Char_Index(this->face, key);
+
+ 	if (glyph == 0 && allow_fallback && key >= SCC_SPRITE_START && key <= SCC_SPRITE_END) {

@@ -28,6 +28,8 @@ const multiFinderAppLabels = {
   soundscape: "Soundscape",
   scrapbook: "Scrapbook",
   bureaucracyMeme: "Bureaucracy Meme",
+  micropolis: "Micropolis",
+  openttd: "OpenTTD",
   accessories: "Accessories",
   system: "System",
 };
@@ -76,6 +78,8 @@ const windowAppMap = {
   liquidCover: "liquidCover",
   cmfStudio: "cmfStudio",
   soundscape: "soundscape",
+  micropolis: "micropolis",
+  openttd: "openttd",
   dictionary: "accessories",
   imageManager: "teachText",
   systemHelp: "system",

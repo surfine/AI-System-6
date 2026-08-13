@@ -5,7 +5,7 @@ let desktopTapHintShown = false;
 function wireAppEvents() {
   installDesktopScrollLock();
   initializeBalloonHelp();
-  initializeGuideOobe();
+  initializeWelcomeFloppy();
 
   findPathResultsEl.addEventListener("click", (event) => {
     const translateButton = event.target.closest("[data-find-path-translate]");
@@ -1111,12 +1111,9 @@ function wireAppEvents() {
     win.dataset.app = getWindowAppId(win);
     win.addEventListener("pointerdown", () => focusWindow(win));
   
-    win.querySelector(".close-box")?.addEventListener("click", async () => {
-      if (win.dataset.window === "guide") {
-        await dismissGuide();
-        return;
-      }
-      await closeWindow(win.dataset.window);
+    win.querySelector(".close-box")?.addEventListener("click", () => {
+      if (win.dataset.window === "welcomeDisk") return dismissWelcomeFloppy();
+      return closeWindow(win.dataset.window);
     });
   
     win.querySelector(".resize-box")?.addEventListener("click", () => {

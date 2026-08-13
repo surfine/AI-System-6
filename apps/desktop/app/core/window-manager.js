@@ -77,6 +77,7 @@ const windowSaveZ = readZLayerToken("--z-window-save", 8500);
 const writingLayoutWindowNames = new Set(["questionSheet", "outline", "sectionDrafts", "teachText", "reviewDesk"]);
 const finderCascadeWindowNames = new Set([
   "disk",
+  "welcomeDisk",
   "helpFolder",
   "applications",
   "projects",
@@ -802,6 +803,12 @@ async function quitApp(appId = activeAppId) {
     return;
   }
 
+  if (appId === "openttd") {
+    // Flush the game's browser-side storage, then tear the iframe down so
+    // the wasm main loop and its memory actually stop.
+    window.AISystem6OpenTTD?.handleQuit?.();
+  }
+
   if (appId === "teachText" && shouldPromptForTeachTextFileSave()) {
     const result = await showSystemModal(teachTextUnsavedChangesMessage(), "save");
     if (result === "cancel") return;
@@ -940,11 +947,14 @@ const mobileFullScreenAppIds = new Set([
   "soundscape",
   "scrapbook",
   "bureaucracyMeme",
+  "micropolis",
+  "openttd",
 ]);
 
 const mobileFinderPageWindowNames = new Set([
   "rag",
   "textDisk",
+  "welcomeDisk",
   "finder",
   "helpFolder",
   "applications",
@@ -1162,6 +1172,7 @@ function replaceVisibleFinderLocation(targetWindowName) {
 
 const finderParentWindowNames = new Map([
   ["finder", "disk"],
+  ["welcomeDisk", "disk"],
   ["helpFolder", "disk"],
   ["applications", "disk"],
   ["documents", "disk"],
@@ -1177,6 +1188,7 @@ const finderParentWindowNames = new Map([
 
 const finderLocationLabelKeys = new Map([
   ["finder", "system_folder"],
+  ["welcomeDisk", "welcome_floppy"],
   ["helpFolder", "help_folder"],
   ["applications", "applications"],
   ["documents", "documents"],
@@ -1816,6 +1828,7 @@ function isFinderCascadeWindow(winOrName) {
 
 const finderContentFitWindowNames = new Set([
   "finder",
+  "welcomeDisk",
   "helpFolder",
   "applications",
   "disk",
@@ -2657,6 +2670,14 @@ const lazyWindowModules = {
     ensure: () => ensureClioChartModule(),
     attach: () => window.AISystem6ClioChart?.attach?.(),
   },
+  micropolis: {
+    ensure: () => ensureMicropolisModule(),
+    attach: () => window.AISystem6Micropolis?.attach?.(),
+  },
+  openttd: {
+    ensure: () => ensureOpenTTDModule(),
+    attach: () => window.AISystem6OpenTTD?.attach?.(),
+  },
   controlStripModules: {
     ensure: () => ensureControlStripModulesFolderModule(),
     attach: () => {
@@ -2709,6 +2730,10 @@ async function openWindow(name, options = {}) {
       return;
     }
   }
+  // A large optional application may install its window frame with the same
+  // lazy module that owns its interior. This keeps unopened games off the
+  // startup disk while preserving the ordinary window-manager contract.
+  if (!getWindow(name) && lazyWindowModules[name]) await lazyWindowModules[name].ensure();
   const win = getWindow(name);
   if (!win) return;
   const wasAlreadyOpen = !win.classList.contains("is-hidden") && !win.classList.contains("is-app-hidden");
@@ -2945,10 +2970,6 @@ async function openWindow(name, options = {}) {
   // run once the just-opened window actually has the top z.
   if (shouldPlaceWindow && ["outline", "sectionDrafts", "reviewDesk", "teachText"].includes(name)) {
     arrangeActiveWritingWorkspace();
-  }
-
-  if (name === "guide" && typeof syncGuideWelcomeState === "function") {
-    syncGuideWelcomeState({ focusDefault: !skipFocus });
   }
 
   if (name === "about") {
@@ -4057,7 +4078,7 @@ async function closeWindow(name, force = false) {
   }
   delete win.dataset.appHiddenCollapsed;
   playSystemSound("close");
-  if (name === "guide") {
+  if (name === "welcomeDisk") {
     guideSeen = true;
     saveDeskState();
   }

@@ -57,6 +57,8 @@ const exactPublicFiles = new Set([
   "app.bundle.js",
   "styles.bundle.css",
   "styles.theme-lab.css",
+  "styles.micropolis.css",
+  "styles.openttd.css",
   "endfield-terminal.html",
 ]);
 
@@ -158,6 +160,25 @@ async function handleStatic(req, res) {
       "ETag": etag,
       ...cacheHeaders(relative, ext, url),
     };
+    if (relative.startsWith("assets/openttd/")) {
+      // The OpenTTD shell runs inside the desktop's same-origin iframe, and
+      // WebAssembly compilation needs 'wasm-unsafe-eval'. The global policy
+      // (frame-ancestors 'none', no wasm) stays in force everywhere else;
+      // foreign origins still cannot embed the game.
+      headers["X-Frame-Options"] = "SAMEORIGIN";
+      headers["Content-Security-Policy"] = [
+        "default-src 'self'",
+        "script-src 'self' 'wasm-unsafe-eval'",
+        "style-src 'self' 'unsafe-inline'",
+        "img-src 'self' data: blob:",
+        "font-src 'self' data:",
+        "connect-src 'self'",
+        "worker-src 'self' blob:",
+        "object-src 'none'",
+        "base-uri 'none'",
+        "frame-ancestors 'self'",
+      ].join("; ");
+    }
     if (req.headers["if-none-match"] === etag) {
       res.writeHead(304, headers);
       res.end();

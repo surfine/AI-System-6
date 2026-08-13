@@ -10,7 +10,6 @@ const modal = read("app/core/modal.js");
 const wireup = read("app/core/wireup.js");
 const desktopRuntime = read("app/core/desktop-runtime.js");
 const markdownEditor = read("app/core/markdown-editor.js");
-const guide = read("app/features/writer-guide.js");
 const alarmClock = read("app/features/alarm-clock.js");
 const clioChart = read("app/features/clio-chart.js");
 const liquidCover = read("app/features/liquid-cover.js");
@@ -36,7 +35,6 @@ test.assertIncludes(wireup, "projectDiskNameInput.addEventListener", "project na
 test.assertIncludes(wireup, "readerUrlInput.addEventListener", "Reader URL input is guarded");
 test.assertIncludes(desktopRuntime, '!eventIsTextComposition(event)', "the new-project dialog is guarded");
 test.assertIncludes(markdownEditor, '!eventIsTextComposition(event)', "the Markdown editor does not transform during composition");
-test.assertIncludes(guide, '!eventIsTextComposition(event)', "Start Here does not start a draft during composition");
 test.assertIncludes(alarmClock, '!eventIsTextComposition(event)', "Alarm Clock does not commit during composition");
 test.assertIncludes(clioChart, '!eventIsTextComposition(event)', "ClioChart does not edit cells during composition");
 test.assertIncludes(liquidCover, '!eventIsTextComposition(event)', "Cover Glass does not finish during composition");

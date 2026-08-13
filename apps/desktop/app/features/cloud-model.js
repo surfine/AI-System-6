@@ -771,7 +771,7 @@
     applyCloudActiveState();
     setSimpleAiStatus("cloud_connected_shared", "Connected · Site allowance");
     if (typeof syncClioTalkModelAvailability === "function") syncClioTalkModelAvailability();
-    if (typeof syncGuideWelcomeState === "function") syncGuideWelcomeState();
+    if (typeof syncWelcomeFloppyState === "function") syncWelcomeFloppyState();
     return true;
   }
 

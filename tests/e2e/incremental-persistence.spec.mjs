@@ -41,7 +41,7 @@ async function counters(page) {
 
 test("desk persistence writes only changed records and retries failed puts", async ({ page }) => {
   await bootApp(page);
-  if (await page.locator('[data-action="dismiss-guide"]').count()) {
+  if (await page.locator('[data-window="welcomeDisk"]:not(.is-hidden)').isVisible().catch(() => false)) {
     await dismissGuide(page);
   }
   await createProject(page, "Incremental Project");

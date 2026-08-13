@@ -1,130 +1,91 @@
-// Start Here is a quiet system-owned setup assistant: what this machine is,
-// what it uses for a model, then the desktop back. It never opens the writing
-// route for a first-time visitor — that is Writing Studio's job — and the
-// shared website model is already connected rather than offered as a form.
+// Start Here mounts a real, read-only Welcome Floppy. The first-run surface is
+// Finder itself; the writing route, AI calls, and project creation stay opt-in.
 
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("start-here-guide");
 const actions = read("app/core/actions.js");
+const boot = read("app/core/boot.js");
 const desktopRuntime = read("app/core/desktop-runtime.js");
-const wireup = read("app/core/wireup.js");
-const chatMessages = read("app/core/chat-messages.js");
-const workspaceProfile = read("app/core/workspace-profile.js");
-const dictionary = read("app/data/system-dictionary.js");
 const guide = read("app/features/writer-guide.js");
 const html = read("index.html");
 const en = read("app/data/translations-en.js");
 const zh = read("app/data/translations-zh.js");
-const windowCss = read("styles/10-windows.css");
-const responsiveCss = read("styles/60-responsive.css");
-const boot = read("app/core/boot.js");
 const windowManager = read("app/core/window-manager.js");
 const workingSession = read("app/core/working-session.js");
-
-const guideMarkup = html.match(/<section class="window guide-window[\s\S]*?<section class="window rebuild-flow-window/)?.[0] || "";
-
-test.assertIncludes(desktopRuntime, "if (!guideSeen)", "first launch opens Start Here before normal startup items");
-test.assertMatches(desktopRuntime, /if \(!guideSeen\) \{[\s\S]*setWorkspaceProfile\(workspaceProfileDesktop, \{ persist: false \}\)[\s\S]*openWindow\("guide"\)/, "first launch places Start Here on the ordinary Desktop instead of Writing Studio");
-test.assertMatches(desktopRuntime, /if \(!guideSeen\) \{[\s\S]*getWindow\("assistant"\)[\s\S]*classList\.add\("is-hidden"\)[\s\S]*openWindow\("guide"\)/, "first launch does not leave ClioTalk open behind Start Here");
-test.assertMatches(boot, /const resumedWorkingSession = guideSeen[\s\S]*if \(!guideSeen\) \{[\s\S]*openStartupItems\(\)/, "unfinished OOBE skips stale working-session restoration");
+const wireup = read("app/core/wireup.js");
 const cloudModel = read("app/features/cloud-model.js");
-const webPlatform = read("app/core/web-platform.js");
+const chatMessages = read("app/core/chat-messages.js");
+const writingDemo = read("app/features/writing-demo.js");
+const workspaceProfile = read("app/core/workspace-profile.js");
 
-for (const id of ["guide-welcome-step", "guide-ai-step", "guide-ready-step"]) {
-  test.assertIncludes(guideMarkup, `id="${id}"`, `the setup assistant has the ${id} page`);
+const diskMarkup = html.match(/<section class="window finder-window welcome-disk-window[\s\S]*?<section class="window guide-window/)?.[0] || "";
+const readMeMarkup = html.match(/<section class="window guide-window[\s\S]*?<section class="window rebuild-flow-window/)?.[0] || "";
+
+test.assertMatches(desktopRuntime, /if \(!guideSeen\)[\s\S]*setWorkspaceProfile\(workspaceProfileDesktop, \{ persist: false \}\)[\s\S]*openWelcomeFloppy\(\)/, "first launch mounts Welcome Floppy on the ordinary Desktop");
+test.assertNotMatches(desktopRuntime, /if \(!guideSeen\)[\s\S]*openWindow\("guide"\)/, "first launch does not cover Finder with the Read Me window");
+test.assertMatches(desktopRuntime, /if \(!guideSeen\)[\s\S]*getWindow\("assistant"\)[\s\S]*classList\.add\("is-hidden"\)/, "first launch does not leave ClioTalk behind the floppy");
+test.assertMatches(boot, /const resumedWorkingSession = guideSeen[\s\S]*if \(!guideSeen\) \{[\s\S]*openStartupItems\(\)/, "unfinished OOBE skips stale working-session restoration");
+
+test.assertIncludes(diskMarkup, 'data-window="welcomeDisk"', "Welcome Floppy is a named Finder window");
+test.assertIncludes(diskMarkup, 'class="window-pane finder-grid welcome-disk-grid window-frame-scroller"', "the floppy uses the ordinary Finder grid and frame");
+for (const control of ["close-box", "resize-box", "shade-box", "grow-box"]) {
+  test.assertIncludes(diskMarkup, control, `Welcome Floppy keeps the native ${control} control`);
 }
-test.assertIncludes(guide, 'const guideStepIds = ["guide-welcome-step", "guide-ai-step", "guide-ready-step"]', "the assistant moves through what it is, its model, then the desktop");
-test.assertIncludes(guideMarkup, 'id="guide-step-counter"', "the assistant says which page the reader is on");
-test.assertMatches(guideMarkup, /data-action="guide-back"[\s\S]*data-action="guide-continue"/, "movement is Go Back then Continue, in that order");
-test.assertMatches(guideMarkup, /<div class="title-bar">\s*<button class="close-box"[^>]*><\/button>\s*<h2 id="guide-title"[\s\S]*?<\/h2>\s*<\/div>/, "Start Here uses the ordinary close-title structure for a fixed system window");
-test.assertNotMatches(windowCss, /\.guide-window[^,{]*\.title-bar/, "Start Here does not redraw or override the shared title bar");
-test.assertNotIncludes(guideMarkup, "resize-box", "Start Here does not claim the Zoom control reserved for full application windows");
-test.assertMatches(guideMarkup, /class="close-box"[^>]*tabindex="-1"/, "the DA close box does not enter the two-action keyboard loop");
-test.assertIncludes(guideMarkup, 'data-i18n="guide_welcome_heading"', "the welcome states the time-travel premise");
-test.assertIncludes(guideMarkup, 'data-i18n="guide_welcome_body"', "the welcome says what the machine does before it asks for anything");
+test.assertIncludes(html, 'id="mounted-welcome-disk" type="button" data-open="welcomeDisk" hidden', "the mounted floppy is a real desktop object that is absent for returning users");
+test.assertIncludes(guide, 'icon.hidden = false', "mounting Start Here reveals the desktop floppy");
+test.assertMatches(guide, /async function openWelcomeFloppy\(\)[\s\S]*syncWelcomeFloppyState\(\);[\s\S]*openWindow\("welcomeDisk"\)/, "Start Here mounts, synchronizes, and opens the Finder volume");
+
+for (const action of ["open-welcome-read-me", "play-teaser-demo", "open-clio-model-settings", "welcome-iphone-help"]) {
+  test.assertIncludes(diskMarkup, `data-action="${action}"`, `Welcome Floppy carries the ${action} object`);
+}
+test.assertMatches(diskMarkup, /finder-item is-selected[\s\S]*data-action="open-welcome-read-me"/, "Read Me First is the Finder-default selection");
+test.assertIncludes(diskMarkup, 'id="welcome-iphone-item"', "the iPhone handoff is a real conditional Finder object");
+test.assertMatches(guide, /isIosWebPlatform\(\)[\s\S]*isStandaloneWebApp\(\)[\s\S]*iphone\.hidden = !showIphone[\s\S]*showIphone \? 4 : 3/, "the fourth object appears only on iPhone or iPad outside standalone mode");
+
+test.assertIncludes(readMeMarkup, 'data-i18n="guide_welcome_heading"', "Read Me First explains the product premise");
 for (const key of ["guide_route_step_material", "guide_route_step_question", "guide_route_step_write", "guide_route_step_review"]) {
-  test.assertIncludes(guideMarkup, `data-i18n="${key}"`, `the first page shows the route step ${key} as named objects`);
+  test.assertIncludes(readMeMarkup, `data-i18n="${key}"`, `Read Me First introduces ${key}`);
 }
-test.assertIncludes(guideMarkup, 'class="btn default" type="button" data-action="guide-continue" data-i18n="guide_continue" aria-keyshortcuts="Enter"', "Return moves to the next page, and never straight into a draft");
-test.assertNotIncludes(guideMarkup, 'data-action="guide-start-quick-draft"', "OOBE does not open Quick Draft; writing belongs to Writing Studio");
-test.assertNotIncludes(guideMarkup, 'data-action="guide-start-route"', "OOBE does not open the writing route for a first-time visitor");
-test.assertIncludes(guideMarkup, 'data-action="guide-open-model-settings"', "bringing your own API key stays one click away");
-test.assertIncludes(guideMarkup, 'data-action="guide-open-local-ai"', "a model on this machine stays one click away");
-test.assertIncludes(guideMarkup, 'data-action="open-project-site"', "the assistant links out to the project site");
-test.assertIncludes(guideMarkup, 'data-action="open-github-repo"', "the assistant links out to the public source");
-test.assertIncludes(guideMarkup, 'data-action="open-guide-promo"', "the assistant offers the promotional film");
-test.assertIncludes(actions, '"open-github-repo": () => window.open("https://github.com/surfine/AI-System-6"', "Start Here GitHub action is centrally registered and opens the public source snapshot");
-test.assertIncludes(actions, '"open-project-site": () => window.open("https://aisystem6.pages.dev/"', "the project site action is centrally registered");
-test.assertIncludes(actions, '"open-guide-promo": () => window.open("https://www.bilibili.com/video/BV1ht3m6UEDb/"', "the promotional film action is centrally registered");
-test.assertMatches(responsiveCss, /\.guide-window\.is-mobile-system-page \.guide-nav \.button-row \{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/, "mobile gives Go Back and Continue equal thumb targets");
-test.assertNotIncludes(guideMarkup, "guide_ai_later", "AI guidance is folded into the single short paragraph");
-test.assertNotIncludes(guideMarkup, "guide-cloud-key", "OOBE does not duplicate the cloud credential form");
-test.assertNotIncludes(guideMarkup, "data-guide-source", "OOBE does not ask the user to choose a model source");
-test.assertNotIncludes(guideMarkup, "play-writing-demo", "OOBE does not launch the live demo");
-test.assertNotIncludes(guideMarkup, "guide-open-cliotalk", "OOBE does not push the user into chat");
+for (const action of ["open-project-site", "open-github-repo", "open-guide-promo"]) {
+  test.assertIncludes(readMeMarkup, `data-action="${action}"`, `Read Me First keeps ${action} available`);
+}
+test.assertNotIncludes(readMeMarkup, "guide-step", "Read Me First is one document, not a wizard");
+test.assertNotIncludes(readMeMarkup, "guide-nav", "the old page-by-page navigation is gone");
+test.assertNotIncludes(readMeMarkup, "guide-start-route", "onboarding never starts Writing Studio's route");
+test.assertNotIncludes(readMeMarkup, "guide-start-quick-draft", "onboarding never starts a draft");
 
-// The public site gives everyone a model with no setup step. BYOK is invited
-// by the daily-limit message, not by a form on the first screen.
-test.assertMatches(cloudModel, /function enableWebsiteAiByDefault\(\)[\s\S]*publicSharedCloudAvailable[\s\S]*credentialMode: "shared",\n\s*active: true/, "the shared website model is the default connection on a public deployment");
-test.assertMatches(cloudModel, /function enableWebsiteAiByDefault\(\)[\s\S]*cloudRuntimeApiKey \|\| cloudConfig\?\.credentialId \|\| cloudConfig\?\.active/, "an own key or an existing connection is never overwritten by the default");
-test.assertMatches(cloudModel, /function enableWebsiteAiByDefault\(\)[\s\S]*localModelState\?\.ready \|\| localModelState\?\.loaded/, "a loaded local model is never overwritten by the default");
-test.assertIncludes(cloudModel, "async function runCloudStatusCheck()", "the connection check is a named function, not a click handler only");
-test.assertMatches(cloudModel, /async function connectWebsiteAi\(\)[\s\S]*const connected = await runCloudStatusCheck\(\);[\s\S]*connected \? "cloud_connected_shared" : "website_ai_unavailable"[\s\S]*return connected;/, "Website AI replaces its connecting message with the settled result instead of leaving a stale progress state");
-test.assertIncludes(cloudModel, "window.AISystem6CloudModel = Object.freeze({", "model connection is exposed to the rest of the desk as a named API");
-test.assertMatches(guide, /async function connectGuideWebsiteAi\(\)[\s\S]*connected = await connect\(\);[\s\S]*guideAiStatusKey = connected \? "" : "guide_ai_failed"/, "Start Here reports the real connection result, success or failure");
-test.assertMatches(guide, /function syncGuideAiStep[\s\S]*cloudCredentialMode\(\) === "shared"[\s\S]*cloud_shared_active_hint/, "a shared connection keeps saying where the text is sent");
+test.assertMatches(guide, /const aiKey = shared \? "welcome_ai_website_ready" : guideHasReadyModel\(\) \? "welcome_ai_ready" : "welcome_ai_setup"/, "the AI object reflects the real configured source");
+test.assertIncludes(zh, 'welcome_ai_website_ready: "网站 AI 已就绪"', "Chinese AI status says ready rather than inventing a connection");
+test.assertNotIncludes(zh, 'welcome_ai_website_ready: "网站 AI 已连接"', "Welcome Floppy never labels untested website AI as connected");
+test.assertIncludes(cloudModel, 'typeof syncWelcomeFloppyState === "function"', "model changes refresh the mounted floppy");
+test.assertIncludes(chatMessages, 'typeof syncWelcomeFloppyState === "function"', "ClioTalk model changes refresh the mounted floppy");
+test.assertIncludes(actions, '"open-clio-model-settings": openModelSettings', "the AI object reuses Control Panel instead of duplicating setup");
+test.assertIncludes(actions, '"welcome-iphone-help": showWelcomeIphoneHelp', "the iPhone object delegates to the platform instructions");
 
-// The iPhone has no install prompt to offer, so the steps are written out.
-test.assertMatches(webPlatform, /const iosSteps = !standalone && !deferredWebInstallPrompt && isIosWebPlatform\(\);[\s\S]*web_install_ios_steps/, "iOS shows the Share to Home Screen steps without pressing a button first");
+test.assertIncludes(actions, '"play-teaser-demo": playWelcomeTour', "the tour object uses the deterministic teaser entrypoint");
+test.assertMatches(writingDemo, /Teaser mode[\s\S]*needs no model or network/, "the tour does not depend on AI or the network");
+test.assertMatches(writingDemo, /function teaserDemoSnapshot\(\)[\s\S]*durable: teaserDemoSnapshotDurable\(\)/, "the tour snapshots durable user state");
+test.assertMatches(writingDemo, /finally \{[\s\S]*await teaserDemoRestore\(snapshot\)/, "the tour restores the desk on success, failure, or Escape");
 
-test.assertMatches(guide, /async function dismissGuide\(\)[\s\S]*guideSeen = true;[\s\S]*await closeWindow\("guide"\);[\s\S]*saveDeskState\(\);/, "Start Exploring persists completion and closes OOBE");
-test.assertMatches(guide, /function openGuideModelSettings\(\)[\s\S]*guideSeen = true;[\s\S]*closeWindow\("guide"\);[\s\S]*openModelSettings\(\);[\s\S]*saveDeskState\(\);/, "Connect AI completes OOBE and delegates to model settings");
-test.assertMatches(guide, /function openModelSettings\(\)[\s\S]*openWindow\("control"\);[\s\S]*setControlTab\(\);/, "model setup reuses the existing Control Panel");
-test.assertMatches(guide, /function syncGuideWelcomeState[\s\S]*if \(focusDefault\) \{\n\s*guideStepIndex = 0;[\s\S]*guideDefaultActionButton\(guide\)/, "a reopened assistant starts at the first page and focuses its default action");
-test.assertMatches(guide, /function syncGuideWelcomeState[\s\S]*applyGuideStepVisibility\(guide\);\n\s*syncGuideAiStep\(guide\);\n\s*syncGuideReadyStep\(guide\);/, "a model connecting refreshes the assistant without moving the page");
-test.assertMatches(guide, /function initializeGuideOobe[\s\S]*event\.key === "Enter"[\s\S]*guideDefaultActionButton\(guide\)\?\.click\(\)[\s\S]*event\.key === "Escape"[\s\S]*dismissGuide\(\)[\s\S]*event\.key !== "Tab"/, "Return takes the page's own default action while Escape dismisses OOBE");
-test.assertMatches(guide, /async function guideStepContinue\(\)[\s\S]*guideStepIndex < guideStepIds\.length - 1[\s\S]*await dismissGuide\(\);/, "Continue on the last page hands the desktop back");
-test.assertMatches(wireup, /win\.dataset\.window === "guide"[\s\S]*await dismissGuide\(\)/, "the close box completes OOBE instead of leaving it pending");
-test.assertIncludes(chatMessages, 'typeof syncGuideWelcomeState === "function"', "model connection changes refresh an open Start Here window in place");
-test.assertIncludes(actions, '"guide-open-model-settings": openGuideModelSettings', "the welcome action is centrally registered");
-test.assertNotIncludes(guide, "localStorage", "OOBE does not introduce another persistence boundary");
-test.assertMatches(windowCss, /\.guide-window \{[\s\S]*left: 50%;[\s\S]*top: 50%;[\s\S]*transform: translate\(-50%, -50%\);/, "Start Here is centered on the desktop");
-test.assertIncludes(windowManager, 'const centeredSystemWindowNames = new Set(["about", "guide"])', "reopening Start Here discards stale saved coordinates and recenters it");
-test.assertMatches(workingSession, /applyWindowSessionFrame\(win, entry\.frame \|\| \{\}\);[\s\S]*isCenteredSystemWindow\(win\)[\s\S]*placeCenteredSystemWindow\(win\)/, "working-session restore cannot reapply stale coordinates after Start Here is centered");
-test.assertIncludes(workingSession, 'const workingSessionExcludedWindowNames = new Set(["about", "saveChat", "guide"])', "Start Here is a system OOBE, not recoverable work-session content");
-test.assertMatches(workingSession, /visibleWindows = windows[\s\S]*!workingSessionExcludedWindowNames\.has\(entry\.name\)/, "legacy snapshots cannot reopen Start Here after OOBE completion");
-test.assertMatches(responsiveCss, /\.guide-window\.is-mobile-system-page[\s\S]*inset: auto;[\s\S]*top: 50%;[\s\S]*transform: translate\(-50%, -50%\);/, "mobile keeps Start Here as a centered floating window so the desktop remains visible");
-test.assertMatches(responsiveCss, /\.guide-window\.is-mobile-system-page[\s\S]*border-radius: var\(--window-radius, 0\);/, "mobile restores Liquid Glass window corners while Classic remains square");
+test.assertIncludes(actions, '"open-guide": openWelcomeFloppy', "the Start Here menu remounts Welcome Floppy");
+test.assertIncludes(html, '<button data-action="open-guide" data-i18n="start_here">', "Start Here remains in the Apple menu");
+test.assertMatches(windowManager, /if \(name === "welcomeDisk"\) \{\n\s*guideSeen = true;\n\s*saveDeskState\(\);/, "closing Welcome Floppy completes first-run without hiding product features");
+test.assertIncludes(workingSession, 'new Set(["about", "saveChat", "guide", "welcomeDisk"])', "Welcome Floppy and its Read Me never become recoverable work windows");
+test.assertIncludes(windowManager, '"welcomeDisk",\n  "finder"', "mobile treats Welcome Floppy as a Finder page");
+test.assertNotMatches(workspaceProfile, /const studioWindowNames = new Set\(\[[^\]]*"welcomeDisk"/, "Writing Studio does not own Welcome Floppy");
+test.assertNotIncludes(guide, "localStorage", "Welcome Floppy reuses the existing guideSeen boundary");
+test.assertIncludes(wireup, "initializeWelcomeFloppy();", "first paint synchronizes conditional floppy objects");
+test.assertIncludes(read("apps/desktop/styles/40-icons.css"), ".finder-grid .finder-item[hidden]", "appearance display rules cannot reveal an unavailable conditional Finder object");
+test.assertIncludes(read("apps/desktop/styles/10-windows.css"), ".welcome-disk-grid", "the short Welcome Floppy grid stays compact inside a phone-height Finder page");
+test.assertMatches(read("apps/desktop/app.js"), /applyTheme[\s\S]*requestAnimationFrame[\s\S]*\.window\.is-finder-content-fit:not\(\.is-hidden\)[\s\S]*fitFinderWindowToContents/, "live appearance changes refit open Finder windows after icon geometry changes");
 
 for (const key of [
-  "guide_welcome_heading", "guide_welcome_body",
-  "guide_route_step_material", "guide_route_step_question", "guide_route_step_write", "guide_route_step_review",
-  "guide_ai_heading", "guide_ai_body", "guide_ai_body_local",
-  "guide_ai_ready_heading", "guide_ai_ready_body",
-  "guide_ai_connecting", "guide_ai_connected", "guide_ai_failed",
-  "guide_use_own_key", "guide_ready_heading", "guide_ready_body",
-  "guide_back", "guide_continue", "guide_start_using", "guide_step_counter",
-  "guide_project_site", "guide_source_code", "guide_promo_short",
-  "guide_continue_project",
+  "welcome_floppy", "welcome_floppy_read_only", "welcome_read_me", "welcome_read_me_hint",
+  "welcome_ai_setup", "welcome_ai_ready", "welcome_ai_website_ready", "welcome_keep_on_iphone",
 ]) {
   test.assertIncludes(en, `${key}:`, `English copy exists for ${key}`);
   test.assertIncludes(zh, `${key}:`, `Chinese copy exists for ${key}`);
 }
-test.assertIncludes(en, "It never speaks for you: your voice, your judgement and your rough edges stay yours.", "the welcome states the charter before any feature");
-test.assertIncludes(zh, "它不替你说话：你的语气、你的判断、你那些不圆滑的地方，都留着。", "Chinese welcome states the charter before any feature");
-test.assertIncludes(zh, "网站的共享额度默认就给你用着，不注册，不填密钥，没有要设置的东西。", "Chinese copy states that the shared model needs no setup");
-test.assertIncludes(zh, "桌面上摆着的都是能打开的东西：写短的用「钟点稿」，做长稿进「创作坊」", "the last page points at the writing objects instead of opening one");
-test.assertIncludes(dictionary, "the shared website allowance is already connected, so Start Here reports the model instead of asking for one", "System Help matches the no-setup default and the local exception");
-test.assertIncludes(dictionary, "在你自己的机器上，“开始使用”不会强制连接 AI", "Chinese System Help matches the no-setup default and the local exception");
-
-// OOBE is owned by the system, not Writing Studio. It remains reachable from
-// the Desktop while Writing Studio always opens its own default surface.
-test.assertNotMatches(workspaceProfile, /const studioWindowNames = new Set\(\[[^\]]*"guide"/, "Start Here is not a studio-only window");
-test.assertNotMatches(workspaceProfile, /const writingStudioOwnedWindowNames = new Set\(\[[^\]]*"guide"/, "Writing Studio does not own OOBE");
-test.assertNotIncludes(workspaceProfile, '"open-guide",', "Desktop profile does not block reopening OOBE");
-test.assertNotIncludes(workspaceProfile, '"guide-",', "OOBE actions are not classified as studio commands by prefix");
-test.assertIncludes(workspaceProfile, "await openWritingStudioDefaultSurface()", "opening Writing Studio never re-enters OOBE");
-test.assertIncludes(html, '<button data-action="open-guide" data-i18n="start_here">', "Start Here stays available as a system menu item");
 
 test.finish();

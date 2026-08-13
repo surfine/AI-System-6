@@ -45,6 +45,7 @@ const {
   trashStoreName,
   chatFoldersStoreName,
   chatFilesStoreName,
+  citiesStoreName,
 } = storageConfig;
 const {
   defaultProjectName,
@@ -611,6 +612,7 @@ const applicationsFolderPathDefinitions = new Map([
   ["", { labelKey: "applications" }],
   ["create", { labelKey: "applications_create", parentPath: "" }],
   ["extras", { labelKey: "applications_extras", parentPath: "" }],
+  ["games", { labelKey: "applications_games", parentPath: "" }],
 ]);
 
 function applicationsFolderPathLabel(path = applicationsFinderPath) {
@@ -751,6 +753,12 @@ function getApplicationsItems() {
       { name: t("soundscape_label"), iconId: "soundscape", icon: "tools-icon", action: "open-soundscape", type: "application", kind: t("application") },
     ], location);
   }
+  if (applicationsFinderPath === "games") {
+    return withStaticFinderMetadata([
+      { name: t("micropolis_label"), iconId: "clioChart", icon: "tools-icon", action: "open-micropolis", type: "application", kind: t("application") },
+      { name: t("openttd_label"), iconId: "timeMachine", icon: "tools-icon", action: "open-openttd", type: "application", kind: t("application") },
+    ], location);
+  }
   if (applicationsFinderPath === "extras") {
     return withStaticFinderMetadata([
       { name: t("endfield_terminal_label"), iconId: "endfieldTerminal", icon: "tools-icon", action: "open-endfield-terminal", type: "application", kind: t("application") },
@@ -775,6 +783,7 @@ function getApplicationsItems() {
     { name: t("docmap_label"), iconId: "docMap", icon: "folder-icon", action: "open-docmap", type: "application", kind: t("application") },
     { name: t("applications_create"), iconId: "folder", icon: "folder-icon", action: "open-applications-folder-path:create", type: "folder", kind: t("folder_kind") },
     { name: t("applications_extras"), iconId: "folder", icon: "folder-icon", action: "open-applications-folder-path:extras", type: "folder", kind: t("folder_kind") },
+    { name: t("applications_games"), iconId: "folder", icon: "folder-icon", action: "open-applications-folder-path:games", type: "folder", kind: t("folder_kind") },
   ], location);
 }
 
@@ -1634,6 +1643,15 @@ function applyTheme(themeId, options = {}) {
   const fontStrategy = theme?.fontStrategy || "preference";
   if (modernFontsInput) modernFontsInput.disabled = fontStrategy === "theme" || fontStrategy === "modern";
   window.AISystem6LiquidGlassOverlay?.setEnabled(theme?.overlay === "liquid-glass");
+  // Finder icon geometry changes between eras (80 px in Classic, 118 px in
+  // Liquid Glass). Refit every currently visible auto-sized Finder window
+  // after the new CSS wins, otherwise a live appearance switch can clip the
+  // icon labels until the next reload.
+  window.requestAnimationFrame(() => {
+    document.querySelectorAll(".window.is-finder-content-fit:not(.is-hidden)").forEach((win) => {
+      if (typeof fitFinderWindowToContents === "function") fitFinderWindowToContents(win);
+    });
+  });
   if (options.syncUi !== false) {
     if (typeof updateMenuState === "function") updateMenuState();
     if (typeof refreshStrip === "function") refreshStrip("appearance");
@@ -1665,9 +1683,8 @@ function applyLanguage() {
     }
   });
   if (typeof renderKeyCapsShortcuts === "function") renderKeyCapsShortcuts();
-  // Start Here writes its page counter and its model-state lines itself, so a
-  // language switch has to ask it to redraw them.
-  if (typeof syncGuideWelcomeState === "function") syncGuideWelcomeState();
+  // Welcome Floppy owns a live item count and AI-readiness label.
+  if (typeof syncWelcomeFloppyState === "function") syncWelcomeFloppyState();
 
   document.querySelectorAll("[data-i18n-count]").forEach((el) => {
     const count = Number(el.dataset.i18nCountValue || 0);
@@ -1692,8 +1709,6 @@ function applyLanguage() {
   });
 
   if (typeof syncBalloonHelpLanguage === "function") syncBalloonHelpLanguage();
-  if (typeof syncGuideWelcomeState === "function") syncGuideWelcomeState();
-
   document.querySelectorAll("[data-status-key]").forEach((el) => {
     el.textContent = t(el.dataset.statusKey);
   });
@@ -1758,6 +1773,8 @@ function applyLanguage() {
   // Quick Draft owns live receipts, layer descriptions, and generated object
   // labels that do not participate in the static [data-i18n] sweep.
   window.AISystem6QuickDraft?.render?.();
+  // Micropolis paints its palette, HUD, and ticker from live state.
+  window.AISystem6Micropolis?.render?.();
   if (typeof refreshSystemSelectControls === "function") refreshSystemSelectControls();
   renderClioTalkRunAssembly();
 }

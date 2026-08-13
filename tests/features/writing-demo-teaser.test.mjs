@@ -44,11 +44,12 @@ test.assertIncludes(writingDemo, 'writingDemoRun.mode === "teaser"', "Escape sto
 test.assertIncludes(writingDemo, "writingDemoSetTeaserButtons", "the teaser has its own start/stop button state");
 test.assertIncludes(writingDemo, "teaser-demo-running", "the teaser marks its running surface distinctly from the full demo");
 
-// Entry points: Start Here button, registered action, Applications item,
+// Entry points: Welcome Floppy object, registered action, Applications item,
 // and bilingual labels.
 test.assertIncludes(actions, '"play-teaser-demo"', "the teaser action is registered");
-test.assertIncludes(actions, "playTeaserDemoFromGuide", "Start Here can launch the teaser");
-test.assertIncludes(indexHtml, 'data-action="play-teaser-demo"', "Start Here shows a 30-second demo button");
+test.assertIncludes(actions, "playWelcomeTour", "Welcome Floppy can launch the tour");
+test.assertIncludes(indexHtml, 'data-window="welcomeDisk"', "the tour starts from a mounted Finder object");
+test.assertIncludes(indexHtml, 'data-action="play-teaser-demo"', "Welcome Floppy shows the 30-second tour object");
 test.assertIncludes(appJs, "play-teaser-demo", "the Applications folder lists the teaser");
 test.assertIncludes(en, "guide_play_teaser_demo:", "English labels the teaser");
 test.assertIncludes(zh, "guide_play_teaser_demo:", "Chinese labels the teaser");
@@ -69,10 +70,10 @@ test.assertIncludes(finderObjects, "renderRunReceiptInfo", "Get Info renders pro
 test.assertIncludes(finderObjects, "run_receipt_repeat", "Get Info offers Repeat This Run");
 test.assertIncludes(coordinator, "reportRunTransition", "writing agent runs feed the activity state");
 
-// One-time hint is a light pointer, never a carousel.
+// The tour is discoverable as an object, never pushed as a carousel or toast.
 const writerGuide = read("app/features/writer-guide.js");
-test.assertIncludes(writerGuide, "let teaserHintShown = false", "the teaser hint is shown at most once without a new persistence boundary");
-test.assertIncludes(writerGuide, 'actionId: "play-teaser-demo"', "the hint opens the teaser directly");
+test.assertIncludes(writerGuide, 'openWindow("welcomeDisk")', "Start Here opens the Finder volume that owns the tour");
+test.assertNotIncludes(writerGuide, "pushSystemNotification", "onboarding never pushes the tour after dismissal");
 
 // ---- Behavioral state tests ----------------------------------------------
 // The teaser must leave durable user state untouched: complete run, mid-run

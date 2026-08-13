@@ -47,7 +47,7 @@ export function createBackupVm(seed = {}) {
     chatFoldersStoreName: "chatFolders",
     chatFilesStoreName: "chatFiles",
     referenceStoreName: "projectReferences",
-    indexedDbVersion: 2,
+    indexedDbVersion: 3,
     storageVersion: 2,
     window: {
       AISystem6StorageTransactions: {

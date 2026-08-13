@@ -381,7 +381,7 @@ body.quick-draft-focus .writing-spine-panel {
   text-overflow: unset;
 }
 
-/* Start Here is an ordinary Macintosh window: the shared centred-placement
+/* Read Me First is an ordinary Macintosh window: the shared centred-placement
    pass resolves its corner once, so it keeps the standard drag and WindowShade
    behaviour. A standing translate(-50%, -50%) here would re-centre the window
    on every height change, which is what rolled the shade to a new spot instead
@@ -390,16 +390,6 @@ body.quick-draft-focus .writing-spine-panel {
   width: min(430px, calc(100vw - 32px));
   max-height: calc(100vh - 48px);
   z-index: var(--z-window-pinned);
-}
-
-/* Start Here now moves page by page, so its only button row is Go Back plus
-   Continue. A two-column grid keeps the pair the same width on every page and
-   in both languages — flex-wrap used to drop a stray button onto its own line
-   — and the row keeps its place when Go Back is hidden on the first page. */
-.guide-window .guide-nav .button-row {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, auto));
-  justify-content: end;
 }
 
 .guide-window .window-pane {
@@ -4170,6 +4160,13 @@ body.is-cloud-configured .cloud-state-panel {
   align-items: start;
   justify-items: center;
   background-color: var(--pane-bg);
+}
+
+/* This volume has only three or four teaching objects. On a phone its Finder
+   pane grows to the available height; pin the short grid to the top instead of
+   stretching its second row into the middle of an otherwise empty disk. */
+.welcome-disk-grid {
+  align-content: start;
 }
 
 .disk-grid {

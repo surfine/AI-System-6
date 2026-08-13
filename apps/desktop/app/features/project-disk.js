@@ -721,6 +721,9 @@ function openAppDb() {
       if (!db.objectStoreNames.contains(chatFilesStoreName)) {
         db.createObjectStore(chatFilesStoreName, { keyPath: "id" });
       }
+      if (!db.objectStoreNames.contains(citiesStoreName)) {
+        db.createObjectStore(citiesStoreName, { keyPath: "id" });
+      }
     };
 
     request.onblocked = () => finish(

@@ -135,7 +135,8 @@ window.AISystem6Config = (() => {
   const storageConfig = Object.freeze({
     storageVersion: 2,
     indexedDbName: "ai-system-6-db",
-    indexedDbVersion: 2,
+    // Version 3 added the "cities" store (Micropolis saves).
+    indexedDbVersion: 3,
     referenceStoreName: "projectReferences",
     keyvalStoreName: "keyval",
     projectsStoreName: "projects",
@@ -143,6 +144,7 @@ window.AISystem6Config = (() => {
     trashStoreName: "trashItems",
     chatFoldersStoreName: "chatFolders",
     chatFilesStoreName: "chatFiles",
+    citiesStoreName: "cities",
   });
 
   const projectConfig = Object.freeze({
@@ -241,6 +243,7 @@ window.AISystem6Config = (() => {
       "finder",
       "helpFolder",
       "disk",
+      "welcomeDisk",
       "trash",
       "textDisk",
       "projects",
@@ -259,6 +262,7 @@ window.AISystem6Config = (() => {
       "quickDraft",
       "cmfStudio",
       "soundscape",
+      "micropolis",
       "imageManager",
       "systemHelp",
       "projectCd",
@@ -477,6 +481,17 @@ const ensureCmfStudioModule = createLazyModuleLoader("AISystem6CMFStudioLoaded",
 const ensureSoundscapeModule = createLazyModuleLoader("AISystem6SoundscapeLoaded", ["app/features/soundscape.js"]);
 const ensureThemeLabModule = createLazyModuleLoader("AISystem6ThemeLabLoaded", ["app/features/theme-lab.js"], false, ["styles.theme-lab.css"]);
 window.AISystem6EnsureThemeLabModule = ensureThemeLabModule;
+// The GPL engine bundle loads first, then the AI System 6 shell; the shell's
+// flag proves both arrived. Styles ride along as a lazy bundle.
+const ensureMicropolisModule = createLazyModuleLoader("AISystem6MicropolisLoaded", [
+  "app/vendor/micropolis/micropolis-engine.js",
+  "app/features/micropolis.js",
+], false, ["styles.micropolis.css"]);
+// The wasm game itself loads inside the window's iframe, not through this
+// loader; this only fetches the thin System 6 chrome module.
+const ensureOpenTTDModule = createLazyModuleLoader("AISystem6OpenTTDLoaded", [
+  "app/features/openttd.js",
+], false, ["styles.openttd.css"]);
 const ensureWritingDemoModule = createLazyModuleLoader("AISystem6WritingDemoLoaded", [
   "app/data/iphone-17e-demo-corpus.js",
   "app/features/writing-demo.js",

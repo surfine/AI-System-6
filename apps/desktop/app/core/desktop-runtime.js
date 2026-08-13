@@ -665,9 +665,8 @@ async function handleStartupSettingsClose() {
 
 function openStartupItems() {
   if (!guideSeen) {
-    // Start Here is a Finder surface, not the Writing Studio entrance. Keep
-    // the legacy default for returning users, then persist Desktop when the
-    // welcome is dismissed.
+    // Welcome Floppy belongs to Finder, not Writing Studio. First launch gives
+    // the desktop back immediately and mounts one read-only orientation disk.
     setWorkspaceProfile(workspaceProfileDesktop, { persist: false });
   }
   quietStartup();
@@ -675,7 +674,7 @@ function openStartupItems() {
     const assistant = getWindow("assistant");
     assistant?.classList.add("is-hidden");
     if (assistant) forgetWindowFromRunningApps("assistant");
-    openWindow("guide");
+    openWelcomeFloppy();
     return;
   }
   if (workspaceProfile === workspaceProfileDesktop) {

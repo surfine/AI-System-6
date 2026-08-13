@@ -21,13 +21,14 @@ const en = read("app/data/translations-en.js");
 const zh = read("app/data/translations-zh.js");
 
 const guide = html.match(/<section class="window guide-window[\s\S]*?<section class="window rebuild-flow-window/)?.[0] || "";
+const welcomeDisk = html.match(/<section class="window finder-window welcome-disk-window[\s\S]*?<section class="window guide-window/)?.[0] || "";
 const quickDraft = html.match(/<section class="window draft-desk-window[\s\S]*?<section class="window image-manager-window/)?.[0] || "";
 const control = html.match(/<aside class="window control-panel[\s\S]*?<aside class="window chooser-panel/)?.[0] || "";
 const applications = html.match(/<section class="window finder-window applications-window[\s\S]*?<section class="window draft-desk-window/)?.[0] || "";
 const desktop = html.match(/<section class="icon-column"[\s\S]*?<\/section>\s*<\/main>/)?.[0] || "";
 
-// Start Here orients and connects a model; it never opens a writing surface
-// for a first-time visitor. The writing routes stay where they live.
+// Welcome Floppy orients without opening a writing surface. The writing routes
+// stay where they live.
 test.assertNotIncludes(guide, 'data-action="guide-start-quick-draft"', "Start Here does not put a first-time visitor into a draft");
 test.assertIncludes(html, '<button data-workspace-capability="studio" data-action="guide-start-route"', "the long-project route stays in the Special menu");
 test.assertIncludes(desktop, 'data-action="open-quick-draft"', "the short-draft route stays on the desktop");
@@ -73,7 +74,7 @@ test.assert(manifest.display === "standalone" && manifest.start_url === "/" && m
 for (const marker of ["apple-mobile-web-app-capable", "apple-mobile-web-app-title", "apple-touch-icon", "viewport-fit=cover"]) {
   test.assertIncludes(html, marker, `iPhone metadata includes ${marker}`);
 }
-test.assertIncludes(guide, 'data-action="install-web-app"', "Add to Home Screen is discoverable from Start Here");
+test.assertIncludes(welcomeDisk, 'data-action="welcome-iphone-help"', "Add to Home Screen help is discoverable as a conditional Welcome Floppy object");
 test.assertMatches(webPlatform, /beforeinstallprompt[\s\S]*prompt\.prompt\(\)[\s\S]*userChoice/, "supported browsers install only after the user invokes the action");
 test.assertIncludes(webPlatform, "web_install_ios_steps", "iPhone receives the real Share to Add to Home Screen instruction");
 
@@ -93,7 +94,7 @@ test.assertIncludes(documents, "async function shareActiveMarkdown", "TeachText 
 test.assertIncludes(projectCd, "async function shareSelectedProjectCdMarkdown", "Project CD shares the selected Markdown");
 test.assertIncludes(webPlatform, 'button.hidden = !canShare', "unsupported Share controls are hidden before interaction");
 
-test.assertIncludes(guide, 'data-action="guide-continue-last"', "Start Here reserves one light Continue entry");
+test.assertIncludes(guide, 'data-i18n="welcome_read_me_hint"', "Read Me First explicitly leaves the next step to the user");
 test.assertMatches(applications, /open-quick-draft[\s\S]*app_desc_draft_desk[\s\S]*open-writing-studio[\s\S]*app_desc_writing_studio/, "Applications explains both short and long writing apps");
 for (const key of ["app_desc_cliotalk", "app_desc_reader", "app_desc_searcher"]) {
   test.assertIncludes(applications, key, `Applications explains ${key}`);

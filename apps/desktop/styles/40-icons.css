@@ -192,6 +192,13 @@
   cursor: pointer;
 }
 
+/* Finder items set their own flex/grid display in every appearance, so the
+   browser's low-specificity [hidden] rule cannot hide a conditional object.
+   Keep the semantic attribute authoritative without raising override debt. */
+.finder-grid .finder-item[hidden] {
+  display: none;
+}
+
 .finder-item span:last-of-type,
 .finder-item:focus span:last-of-type,
 .finder-item:hover span:last-of-type,

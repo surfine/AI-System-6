@@ -8,7 +8,6 @@ import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 const test = createFeatureTest("working-session");
 const source = read("app/core/working-session.js");
 const switchProjectSource = read("app/core/desktop-runtime.js");
-const guideSource = read("app/features/writer-guide.js");
 
 function createWorkingSessionVm() {
   const snapshots = new Map();
@@ -136,9 +135,9 @@ test.assertIncludes(
   "the unload/best-effort paths use the shared flush boundary"
 );
 test.assertIncludes(
-  guideSource,
-  "flushWorkingSessionCommit()",
-  "Continue flushes before restoring the Working Session"
+  source,
+  'new Set(["about", "saveChat", "guide", "welcomeDisk"])',
+  "Welcome Floppy never replaces the user's recoverable Working Session"
 );
 
 test.finish();

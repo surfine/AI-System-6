@@ -839,6 +839,13 @@ async function runClioChartMenuCommand(command) {
   return chart.ask?.(command);
 }
 
+async function openMicropolisApp() {
+  if (typeof ensureMicropolisModule === "function") {
+    await ensureMicropolisModule();
+  }
+  await window.AISystem6Micropolis?.open?.();
+}
+
 // TeachText hands one table block over to ClioChart; the block goes read-only
 // in the draft until it is handed back, so only one surface can edit it.
 async function seeSelectedTableAsChart() {
@@ -1018,8 +1025,8 @@ async function playWritingDemoFromGuide() {
   await window.AISystem6WritingDemo?.play?.();
 }
 
-async function playTeaserDemoFromGuide() {
-  // The 30-second teaser is seeded and deterministic: it needs no model,
+async function playWelcomeTour() {
+  // The Welcome Floppy tour is seeded and deterministic: it needs no model,
   // network, or profile switch, and always restores the user's desk.
   await ensureWritingDemoModule();
   await window.AISystem6WritingDemo?.playTeaser?.();
@@ -1038,15 +1045,11 @@ function getApplicationActionHandlers() {
     "close-page-setup": () => closeWindow("pageSetup", true),
     "page-setup": openPageSetup,
     "print-current": printCurrentTeachTextDocument,
-    "open-guide": () => openWindow("guide"),
-    "guide-start-quick-draft": startGuidedQuickDraft,
-    "guide-continue-last": continueLastProject,
-    "guide-back": guideStepBack,
-    "guide-continue": guideStepContinue,
-    "guide-connect-website-ai": connectGuideWebsiteAi,
-    "guide-open-local-ai": openGuideLocalAi,
+    "open-guide": openWelcomeFloppy,
+    "open-welcome-read-me": openWelcomeReadMe,
     "open-project-site": () => window.open("https://aisystem6.pages.dev/", "_blank", "noopener"),
     "install-web-app": () => window.AISystem6WebPlatform?.installWebApp?.(),
+    "welcome-iphone-help": showWelcomeIphoneHelp,
     "export-project-backup": exportActiveProjectDisk,
     "open-guide-promo": () => window.open("https://www.bilibili.com/video/BV1ht3m6UEDb/", "_blank", "noopener"),
     "open-system-file-system": () => showSystemModal(t("system_file_not_openable"), "alert"),
@@ -1161,12 +1164,9 @@ function getApplicationActionHandlers() {
     "duplicate-project-disk": duplicateSelectedProjectDisk,
     "archive-project-disk": archiveSelectedProjectDisk,
     "rename-project-disk": renameSelectedProject,
-    "dismiss-guide": dismissGuide,
-    "guide-open-model-settings": openGuideModelSettings,
     "open-clio-model-settings": openModelSettings,
-    "guide-start-route": startGuidedWritingRoute,
     "play-writing-demo": playWritingDemoFromGuide,
-    "play-teaser-demo": playTeaserDemoFromGuide,
+    "play-teaser-demo": playWelcomeTour,
     "open-read-me": () => openSystemFolderDocument("readMe"),
     "open-flow-readme": () => openSystemFolderDocument("flow"),
     "open-memory-readme": () => openSystemFolderDocument("memory"),
@@ -1264,10 +1264,12 @@ function getApplicationActionHandlers() {
     },
     "open-clio-stage": openClioStageApp,
     "open-clio-chart": openClioChartApp,
+    "open-micropolis": () => openMicropolisApp(),
     "see-as-chart": seeSelectedTableAsChart,
     "open-liquid-cover": openLiquidCover,
     "open-cmf-studio": () => openWindow("cmfStudio"),
     "open-soundscape": () => openWindow("soundscape"),
+    "open-openttd": () => openWindow("openttd"),
     "open-dictionary": () => openWindow("dictionary"),
     "open-style-sheet": () => openReviewDesk("style"),
     "generate-outline": generateOutline,
@@ -1714,8 +1716,27 @@ function getApplicationCommandRegistry() {
       shortcut: () => keyboardShortcutRegistry.find((entry) => entry.action === action) || null,
     })])
   );
+  window.AISystem6LazyApplicationCommands?.forEach((definition, action) => {
+    applicationCommandRegistryCache.set(action, Object.freeze({
+      id: action,
+      handler: definition.handler,
+      isAvailable: () => isWorkspaceActionAllowed(action) && definition.isAvailable(),
+      shortcut: () => null,
+    }));
+  });
   return applicationCommandRegistryCache;
 }
+
+globalThis.AISystem6RegisterApplicationCommands = (definitions = {}) => {
+  window.AISystem6LazyApplicationCommands ||= new Map();
+  Object.entries(definitions).forEach(([action, definition]) => {
+    window.AISystem6LazyApplicationCommands.set(action, {
+      handler: definition.handler,
+      isAvailable: definition.isAvailable || (() => true),
+    });
+  });
+  applicationCommandRegistryCache = null;
+};
 
 function handleAction(action, commandContext = {}) {
   if (String(action).startsWith("open-system-folder-path:")) {

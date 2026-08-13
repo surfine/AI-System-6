@@ -6,18 +6,10 @@ import {
 } from "./helpers.mjs";
 
 async function dismissStartupGuide(page) {
-  const guide = page.locator('[data-window="guide"]');
-  if (!await guide.isVisible().catch(() => false)) return;
-  const legacyDismiss = guide.locator('[data-action="dismiss-guide"]');
-  if (await legacyDismiss.isVisible().catch(() => false)) {
-    await legacyDismiss.click();
-  } else {
-    const continueButton = guide.locator('[data-action="guide-continue"]');
-    for (let step = 0; step < 4 && await guide.isVisible().catch(() => false); step += 1) {
-      await continueButton.click();
-    }
-  }
-  await guide.waitFor({ state: "hidden", timeout: 10_000 });
+  const welcomeDisk = page.locator('[data-window="welcomeDisk"]');
+  if (!await welcomeDisk.isVisible().catch(() => false)) return;
+  await welcomeDisk.locator(".close-box").click();
+  await welcomeDisk.waitFor({ state: "hidden", timeout: 10_000 });
 }
 
 async function leaseState(page) {

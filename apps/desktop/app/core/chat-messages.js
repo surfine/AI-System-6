@@ -276,7 +276,7 @@ function syncClioTalkModelAvailability() {
   }
   syncClioTalkSendButton();
   if (typeof syncPromptPlaceholder === "function") syncPromptPlaceholder();
-  if (typeof syncGuideWelcomeState === "function") syncGuideWelcomeState();
+  if (typeof syncWelcomeFloppyState === "function") syncWelcomeFloppyState();
 }
 
 function formatClioTalkContextTokens(tokens) {

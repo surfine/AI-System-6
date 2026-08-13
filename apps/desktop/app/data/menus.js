@@ -601,13 +601,20 @@ const applicationMenuSets = Object.freeze({
   bureaucracyMeme: bureaucracyMemeMenus,
 });
 
+const lazyApplicationMenuSets = new Map();
+globalThis.AISystem6RegisterApplicationMenuSet = (appId, definitions = []) => {
+  lazyApplicationMenuSets.set(appId, [...definitions, specialMenu()]);
+  if ((menuOwnerAppId || activeAppId) === appId) renderAppMenuBar(appId, { force: true });
+};
+
 function menuSetIdForApp(appId = "finder") {
   if (appId === "writingStudio") return "teachText";
-  return applicationMenuSets[appId] ? appId : "system";
+  return applicationMenuSets[appId] || lazyApplicationMenuSets.has(appId) ? appId : "system";
 }
 
 function menuSetForApp(appId = "finder") {
-  return applicationMenuSets[menuSetIdForApp(appId)] || minimalMenus;
+  const setId = menuSetIdForApp(appId);
+  return applicationMenuSets[setId] || lazyApplicationMenuSets.get(setId) || minimalMenus;
 }
 
 function renderApplicationMenuItem(item) {

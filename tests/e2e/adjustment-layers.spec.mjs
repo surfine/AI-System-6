@@ -134,7 +134,7 @@ test("adjustment layers persist across a reload", async ({ page }) => {
   // Reload and let the app restore its windows before asserting.
   await page.reload();
   await bootApp(page);
-  if (await page.locator('[data-window="guide"]:not(.is-hidden)').isVisible().catch(() => false)) {
+  if (await page.locator('[data-window="welcomeDisk"]:not(.is-hidden)').isVisible().catch(() => false)) {
     await dismissGuide(page);
   }
   await ensureWritingProfile(page);

@@ -8,6 +8,8 @@ playwright-report/
 internal/archive/runtime-legacy/
 /apps/desktop/styles.bundle.css
 /apps/desktop/styles.theme-lab.css
+/apps/desktop/styles.micropolis.css
+/apps/desktop/styles.openttd.css
 apps/desktop/app/vendor/markmap/*.js
 .venv-markitdown/
 .venv-markitdown-trim/

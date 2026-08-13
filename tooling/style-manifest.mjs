@@ -36,6 +36,18 @@ export const lazyStyleBundles = [
     loader: "app/core/config.js",
     sources: ["styles/66-theme-lab.css"],
   },
+  {
+    id: "micropolis",
+    output: "styles.micropolis.css",
+    loader: "app/core/config.js",
+    sources: ["styles/92-micropolis.css"],
+  },
+  {
+    id: "openttd",
+    output: "styles.openttd.css",
+    loader: "app/core/config.js",
+    sources: ["styles/93-openttd.css"],
+  },
 ];
 
 // Every stylesheet the product ships, eager or lazy. Checks that reason about

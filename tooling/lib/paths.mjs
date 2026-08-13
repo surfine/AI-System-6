@@ -31,6 +31,8 @@ const desktopEntryFiles = new Set([
   "styles.css",
   "styles.bundle.css",
   "styles.theme-lab.css",
+  "styles.micropolis.css",
+  "styles.openttd.css",
 ]);
 
 /** Resolve a browser-logical source path to its physical repository file. */

@@ -24,7 +24,7 @@ const quickDraftMenusBlock = menus.slice(menus.indexOf("const quickDraftMenus"),
 
 test.assertIncludes(manifest, '"app/core/workspace-profile.js"', "loads the central profile policy");
 test.assertIncludes(profile, 'let workspaceProfile = workspaceProfileWriting', "keeps the existing writing experience as the default");
-test.assertMatches(runtime, /if \(!guideSeen\) \{[\s\S]*setWorkspaceProfile\(workspaceProfileDesktop, \{ persist: false \}\)[\s\S]*openWindow\("guide"\)/, "places first-run OOBE on the Desktop without changing the legacy profile default");
+test.assertMatches(runtime, /if \(!guideSeen\) \{[\s\S]*setWorkspaceProfile\(workspaceProfileDesktop, \{ persist: false \}\)[\s\S]*openWelcomeFloppy\(\)/, "mounts first-run Welcome Floppy on the Desktop without changing the legacy profile default");
 test.assertIncludes(profile, "applyDeploymentWorkspaceDefault", "derives the first-run public default from existing deployment capabilities");
 test.assertMatches(profile, /workspaceProfileWasRestored[\s\S]*public_deployment[\s\S]*workspaceProfileDesktop/, "preserves an explicit user profile before applying the public Desktop default");
 test.assertIncludes(profile, "workspaceCapabilityStudio", "classifies studio-only surfaces centrally");

@@ -218,6 +218,7 @@ export const windowInterfaceRegistry = Object.freeze({
     rationale: "File Floppy reports mount lifetime and retrieval scope above its concrete file objects.",
   }),
   textDisk: finderSurface("core"),
+  welcomeDisk: finderSurface("system"),
   finder: finderSurface("core"),
   controlStripModules: specializedUtility("utility", {
     route: "system",
@@ -238,6 +239,8 @@ export const windowInterfaceRegistry = Object.freeze({
   soundscape: creativeLab(),
   endfieldTerminal: creativeLab(),
   bureaucracyMeme: creativeLab(),
+  micropolis: creativeLab(),
+  openttd: creativeLab(),
   disk: finderSurface("core"),
   projectCd: specializedUtility("writing-route", {
     route: "core",
@@ -301,7 +304,7 @@ export const windowInterfaceRegistry = Object.freeze({
     statusModel: "none",
     statusLayout: "none",
     referenceSurface: "systemHelp",
-    rationale: "Start Here is a short task guide whose cards carry their own progress and actions.",
+    rationale: "Read Me First is a single system-owned orientation document opened from Welcome Floppy.",
   }),
   rebuildFlow: specializedUtility("utility", {
     route: "core",

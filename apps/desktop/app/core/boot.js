@@ -188,7 +188,7 @@ async function boot() {
       ensurePromptFilesData().catch(() => {}),
       ensureLanguageFor(currentLanguage).catch(() => {}),
     ]);
-    // Markdown parsing is not needed for first paint (welcome and guide are
+    // Markdown parsing is not needed for first paint (the Welcome Floppy is
     // plain HTML); load it in the background and rely on the escaped-text
     // fallback in markdown.js until it arrives.
     ensureMarkdownParser().catch(() => {});
@@ -231,7 +231,7 @@ async function boot() {
     initDragAndDrop();
 
     // An unfinished OOBE owns first launch. A stale working-session snapshot
-    // must not reopen applications behind the welcome window.
+    // must not reopen applications behind the Welcome Floppy.
     // Restored chat history re-renders Markdown messages, so the parser must
     // be present before any restored message paints. If it cannot load, the
     // escaped-text fallback still paints usable messages.

@@ -1056,18 +1056,6 @@
   line-height: 1.5;
 }
 
-.guide-start-card {
-  width: 100%;
-  border: var(--guide-start-card-border);
-  border-radius: var(--guide-start-card-radius);
-  background: var(--guide-start-card-bg);
-  box-shadow: var(--guide-start-card-shadow);
-  display: grid;
-  justify-items: center;
-  gap: 7px;
-  padding: var(--guide-start-card-padding);
-}
-
 /* The route shown as named objects rather than sentences. Left-aligned so the
    numbers form one scannable column instead of a ragged centered block. */
 .guide-route {
@@ -1080,17 +1068,6 @@
   line-height: 1.35;
 }
 
-/* First-run steps: the guide shows exactly one of these at a time. The explicit
-   [hidden] rules are required — a `display` declaration outranks the user-agent
-   style for the hidden attribute. */
-.guide-step {
-  display: grid;
-  justify-items: center;
-  gap: var(--guide-pane-gap);
-  width: 100%;
-}
-
-.guide-step[hidden],
 .system-tab-panel[hidden],
 .system-tabs [hidden] {
   display: none;
@@ -1103,51 +1080,20 @@
   display: none;
 }
 
-.guide-step small {
-  max-width: 34ch;
-  line-height: 1.35;
-  color: var(--card-caption-color);
-}
-
-/* The assistant carries real paragraphs, not captions. Left-aligned at the
-   pane's own width: the shared 34ch centred measure turned four lines of
-   English into eight ragged ones. Headings stay centred. */
-.guide-step > p {
+/* Read Me carries real paragraphs, not captions. Headings stay centred. */
+.guide-pane > p {
   max-width: none;
   text-align: left;
 }
 
-/* One page's own choices, stacked full width like the Control Panel's AI
-   section, so the page reads as one decision instead of a button grid. */
+/* One quiet default action below the document. */
 .guide-actions {
   display: grid;
   gap: 7px;
   width: 100%;
 }
 
-/* A page whose own buttons are all conditional (Add to Home Screen, Continue)
-   must not leave a hole where the row would be. */
-.guide-actions:not(:has(> .btn:not([hidden]))) {
-  display: none;
-}
-
-/* Setup-assistant footer: which page you are on at the left, movement at the
-   right, exactly one default button in the row. */
-.guide-nav {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--guide-pane-gap);
-  width: 100%;
-}
-
-.guide-step-counter {
-  text-align: left;
-  font-size: 10px;
-  color: var(--card-caption-color);
-}
-
-/* The outside world stays reachable from every page and stays quiet: small
+/* The outside world stays reachable and stays quiet: small
    push buttons under a hairline, never competing with the page's own action. */
 .guide-links {
   display: flex;
@@ -1304,33 +1250,6 @@
 
 .system-tab-panel .btn {
   width: 100%;
-}
-
-.guide-setup-status {
-  margin: 0;
-  max-width: 40ch;
-  line-height: 1.35;
-}
-
-/* Two ways in once a model answers: open the route, or talk it over first. */
-.guide-ways {
-  display: grid;
-  gap: 8px;
-  width: 100%;
-}
-
-.guide-ways .btn {
-  width: 100%;
-}
-
-.guide-start-card .btn {
-  width: min(220px, 100%);
-}
-
-.guide-start-card small {
-  max-width: 28ch;
-  line-height: 1.35;
-  color: var(--guide-start-card-small-color);
 }
 
 .note-pad-pane {

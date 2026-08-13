@@ -64,13 +64,13 @@
       "border-top-color": "rgb(0, 0, 0)",
       "outline-width": "0px",
       "outline-color": "rgb(0, 0, 0)",
-      "_w": 430,
-      "_h": 377
+      "_w": 420,
+      "_h": 173
     },
     ".window.is-active > .title-bar": {
       "height": "17px",
       "background-color": "rgb(255, 255, 255)",
-      "_w": 428,
+      "_w": 418,
       "_h": 17
     },
     ".window.is-active > .title-bar :is(h1, h2)": {
@@ -91,10 +91,10 @@
     ".window .title-bar .resize-box:not(.hidden):not([disabled])": {
       "width": "40px",
       "height": "40px",
-      "right": "auto",
-      "bottom": "auto",
-      "_w": 0,
-      "_h": 0
+      "right": "0px",
+      "bottom": "0px",
+      "_w": 40,
+      "_h": 40
     },
     ".window.is-active > .window-pane": {
       "padding-top": "8px",
@@ -102,8 +102,8 @@
       "padding-bottom": "8px",
       "padding-left": "8px",
       "background-color": "rgba(0, 0, 0, 0)",
-      "_w": 428,
-      "_h": 356
+      "_w": 418,
+      "_h": 92
     },
     ".btn": {
       "border-radius": "7px",
@@ -113,7 +113,7 @@
       "padding-left": "12px",
       "background-color": "rgb(255, 255, 255)",
       "color": "rgb(0, 0, 0)",
-      "_w": 412,
+      "_w": 72,
       "_h": 26
     },
     ".icon-column > .desktop-icon[data-open=\"applications\"]": {
@@ -194,13 +194,13 @@
       "border-top-color": "rgb(16, 17, 20)",
       "outline-width": "0px",
       "outline-color": "rgb(16, 17, 20)",
-      "_w": 430,
-      "_h": 411
+      "_w": 420,
+      "_h": 173
     },
     ".window.is-active > .title-bar": {
       "height": "34px",
       "background-color": "rgba(255, 255, 255, 0.34)",
-      "_w": 430,
+      "_w": 420,
       "_h": 34
     },
     ".window.is-active > .title-bar :is(h1, h2)": {
@@ -221,10 +221,10 @@
     ".window .title-bar .resize-box:not(.hidden):not([disabled])": {
       "width": "15px",
       "height": "15px",
-      "right": "auto",
-      "bottom": "auto",
-      "_w": 0,
-      "_h": 0
+      "right": "0px",
+      "bottom": "0px",
+      "_w": 15,
+      "_h": 15
     },
     ".window.is-active > .window-pane": {
       "padding-top": "8px",
@@ -232,8 +232,8 @@
       "padding-bottom": "8px",
       "padding-left": "8px",
       "background-color": "rgba(255, 255, 255, 0.12)",
-      "_w": 430,
-      "_h": 374
+      "_w": 420,
+      "_h": 76
     },
     ".btn": {
       "border-radius": "10px",
@@ -243,7 +243,7 @@
       "padding-left": "12px",
       "background-color": "rgb(255, 255, 255)",
       "color": "rgba(16, 17, 20, 0.94)",
-      "_w": 414,
+      "_w": 72,
       "_h": 26
     },
     ".icon-column > .desktop-icon[data-open=\"applications\"]": {

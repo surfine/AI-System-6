@@ -1848,7 +1848,7 @@ body.is-writer-mode .system-help-window .system-help-pane {
     overflow: hidden;
   }
 
-  /* Start Here stays a Macintosh window on phones so the desktop remains
+  /* Read Me First stays a Macintosh window on phones so the desktop remains
      visible around it; System Help keeps the full-page system presentation. */
   body:not(.is-writer-mode) .guide-window.is-mobile-system-page:not(.is-hidden):not(.is-collapsed) {
     inset: auto;
@@ -1865,20 +1865,6 @@ body.is-writer-mode .system-help-window .system-help-pane {
 
   body:not(.is-writer-mode) .guide-window.is-mobile-system-page > .window-pane {
     flex: 0 1 auto;
-  }
-
-  /* On phones the assistant's two movement buttons share the full width, so
-     neither Go Back nor Continue becomes a thumb-sized target next to a wide
-     one. The page's own choices already stack full width. */
-  body:not(.is-writer-mode) .guide-window.is-mobile-system-page .guide-nav {
-    grid-template-columns: minmax(0, 1fr);
-    justify-items: stretch;
-  }
-
-  body:not(.is-writer-mode) .guide-window.is-mobile-system-page .guide-nav .button-row {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 7px;
-    width: 100%;
   }
 
   /* Home = clear this state; the desktop launcher underneath returns. While an

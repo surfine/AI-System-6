@@ -14,6 +14,20 @@ const requiredAssets = [
   "app.bundle.js",
   "styles.bundle.css",
   "styles.theme-lab.css",
+  "styles.micropolis.css",
+  "app/vendor/micropolis/micropolis-engine.js",
+  "app/vendor/micropolis/tiles.png",
+  "app/vendor/micropolis/tilessnow.png",
+  "app/vendor/micropolis/sprites.png",
+  "app/vendor/micropolis/LICENSE",
+  "app/vendor/micropolis/COPYING",
+  "app/vendor/micropolis/NOTICE.md",
+  "styles.openttd.css",
+  "assets/openttd/index.html",
+  "assets/openttd/shell.js",
+  "assets/openttd/openttd.js",
+  "assets/openttd/openttd.wasm",
+  "assets/openttd/openttd.data",
   "app/vendor/markmap/d3.min.js",
   "app/vendor/markmap/markmap-lib.js",
   "app/vendor/markmap/markmap-view.js",
@@ -42,6 +56,14 @@ for (const asset of requiredAssets) {
 
 const packageInfo = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
 const packageAssets = new Set(packageInfo.pkg?.assets || []);
+for (const pattern of [
+  "apps/desktop/styles.micropolis.css",
+  "apps/desktop/styles.openttd.css",
+  "apps/desktop/app/vendor/micropolis/**/*",
+  "apps/desktop/assets/openttd/**/*",
+]) {
+  if (!packageAssets.has(pattern)) packaging.push(`pkg.assets is missing game payload ${pattern}`);
+}
 for (const report of generatedEraCompatibilityManifestReport(root)) {
   for (const file of report.files) if (file.bytes <= 0) empty.push(file.relativePath);
   console.log(`OK  ${report.eraId} compatibility manifest tier ${report.tier} is complete (${report.files.length} files, ${report.bytes} bytes)`);

@@ -1,0 +1,249 @@
+/* Micropolis — the desk toy with a city inside.
+   One window: a tool palette on the left, the tile map on the right, and a
+   one-line ticker under the map. The map canvas owns its own gestures
+   (touch-action: none); everything else keeps System 6 control sizes. This
+   sheet is a lazy style bundle: every selector is scoped to the Micropolis
+   window, so nothing else can lose its styling. */
+
+/* Frame geometry (window size, pane padding) is in 50-apps.css so the frame
+   survives even when this lazy sheet has not arrived. */
+.micropolis-pane {
+  display: flex;
+  min-height: 0;
+  height: 100%;
+  box-sizing: border-box;
+  container-type: inline-size;
+}
+
+.micropolis-details-bar {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+/* On a phone the details bar stacks tight instead of truncating each field. */
+@media (max-width: 700px) {
+  .micropolis-details-bar {
+    gap: 4px 10px;
+    font-size: 11px;
+  }
+
+  .micropolis-details-bar .micropolis-status {
+    margin-left: 0;
+    flex-basis: 100%;
+  }
+}
+
+.micropolis-details-bar .micropolis-status {
+  margin-left: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.micropolis-layout {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+}
+
+.micropolis-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  overflow-y: auto;
+  flex: 0 0 auto;
+  border-right: var(--system-border);
+  background: var(--paper);
+}
+
+.micropolis-tool {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 118px;
+  padding: 3px 6px;
+  border: var(--system-border);
+  background: var(--paper);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.micropolis-tool.is-selected {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.micropolis-tool-cost {
+  font-size: 10px;
+  opacity: 0.8;
+}
+
+.micropolis-map-area {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+}
+
+.micropolis-viewport {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+  background: #000;
+  /* The map canvas owns every gesture: taps build, one-finger drags draw,
+     two-finger drags pan. Nothing here should scroll the page. */
+  touch-action: none;
+}
+
+.micropolis-viewport canvas {
+  display: block;
+}
+
+.micropolis-map-area {
+  position: relative;
+}
+
+/* Budget / evaluation / saved-city panels sit over unusually high-contrast
+   map content. Shared menu geometry keeps Classic hard-edged, while Liquid's
+   reading-surface token preserves a faint sense of place without allowing
+   tile colour to interfere with labels and controls. One panel at a time. */
+.micropolis-panel {
+  position: absolute;
+  z-index: var(--z-local-overlay);
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(360px, calc(100% - 24px));
+  max-height: calc(100% - 48px);
+  overflow-y: auto;
+  border: var(--menu-panel-border);
+  border-radius: var(--menu-panel-radius);
+  background: var(--glass-reading-surface, var(--paper));
+  box-shadow: var(--menu-panel-shadow);
+  padding: 8px;
+  backdrop-filter: var(--glass-reading-blur, none);
+  -webkit-backdrop-filter: var(--glass-reading-blur, none);
+}
+
+.micropolis-panel.is-hidden {
+  display: none;
+}
+
+.micropolis-panel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  border-bottom: var(--system-border);
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+}
+
+.micropolis-panel-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 3px 0;
+}
+
+.micropolis-panel-check {
+  justify-content: flex-start;
+}
+
+.micropolis-panel-note {
+  margin: 4px 0;
+  font-size: 11px;
+}
+
+.micropolis-panel-list {
+  margin: 2px 0 6px;
+  padding-left: 18px;
+}
+
+.micropolis-panel-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 6px;
+}
+
+.micropolis-city-row {
+  border-bottom: var(--system-border);
+}
+
+.micropolis-city-name {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.micropolis-city-meta {
+  font-size: 10px;
+  opacity: 0.8;
+}
+
+.micropolis-ticker {
+  margin: 0;
+  padding: 3px 8px;
+  border-top: var(--system-border);
+  font-size: 11px;
+  min-height: 18px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Narrow layout keys on the window width, not the pointer: a phone and a
+   narrow desktop window both starve the map when the palette owns a side
+   column, so the palette becomes a horizontal strip above the map (Cover
+   Glass @container precedent). */
+@container (max-width: 560px) {
+  .micropolis-layout {
+    flex-direction: column;
+  }
+
+  .micropolis-toolbar {
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border-right: 0;
+    border-bottom: var(--system-border);
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .micropolis-tool {
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    min-width: 64px;
+    justify-content: center;
+  }
+}
+
+/* Touch targets grow to a finger-safe size; the game palette is in-app
+   content, so it may grow past System 6 control sizes (product rule keeps
+   the menu bar and window chrome small). */
+@media (hover: none) and (pointer: coarse) {
+  .micropolis-tool {
+    min-height: 44px;
+  }
+}
+.micropolis-window {
+  width: min(920px, calc(100vw - 72px));
+  height: min(600px, calc(100vh - 88px));
+}
+
+.micropolis-pane {
+  padding: 0;
+}

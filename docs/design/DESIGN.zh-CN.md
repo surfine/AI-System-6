@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/DESIGN.md -->
-<!-- source-sha256: e79261bd2c938e2d3becb8bed3b1409921c131f3cabc2a238fae9a361571304a -->
+<!-- source-sha256: 8df6cf76591f68ef402bbcf80d65846bb67b95cbcc6eaa031335e13f6c61f562 -->
 
 # AI System 6 设计合约
 
@@ -56,8 +56,10 @@ Classic Mac OS 思想，只要能改善产品，就可以被引进、消化和�
 
 渐进式发现应分工，而不是堆成一套教程：
 
-- OOBE 保持为单一、可关闭的系统欢迎窗口。它只指向苹果菜单和「特别」菜单，让 AI 设置保持
-  可选，绝不变成设置向导。
+- OOBE 只挂载一张只读「欢迎软盘」，并在 Finder 中打开。软盘里的「请先读我」指向苹果菜单
+  和「特别」菜单；同层对象分别提供不依赖网络的 30 秒导览、真实 AI 就绪状态，以及仅在 iOS
+  显示的主屏幕保存帮助。它不创建项目，也不进入写作工作室。关闭软盘后，桌面完整交还用户；
+  以后可用「开始使用」重新挂载。
 - MultiFinder 通过启动环境被发现：在用户作出选择的位置简短解释 Finder 与 MultiFinder，
   只有启用 MultiFinder 后，才教学真实出现的菜单栏应用切换器。
 - [Balloon Help](https://en.wikipedia.org/wiki/Balloon_help) 是能感知状态的帮助模式：

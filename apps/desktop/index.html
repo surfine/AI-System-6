@@ -2577,56 +2577,56 @@
         </div>
       </section>
 
+      <section class="window finder-window welcome-disk-window is-hidden" data-window="welcomeDisk" aria-labelledby="welcome-disk-title">
+        <div class="title-bar">
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
+          <h2 id="welcome-disk-title" data-i18n="welcome_floppy">Welcome Floppy</h2>
+          <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
+          <button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button>
+        </div>
+        <div class="details-bar">
+          <span id="welcome-disk-count">3 items</span>
+          <span data-i18n="welcome_floppy_read_only">Read only</span>
+        </div>
+        <div class="window-pane finder-grid welcome-disk-grid window-frame-scroller">
+          <button class="finder-item is-selected" type="button" data-action="open-welcome-read-me">
+            <span class="sys-icon" data-system-icon="document" aria-hidden="true"></span>
+            <span data-i18n="welcome_read_me">Read Me First</span>
+          </button>
+          <button class="finder-item" type="button" data-action="play-teaser-demo">
+            <span class="sys-icon" data-system-icon="writingDemo" aria-hidden="true"></span>
+            <span data-i18n="guide_play_teaser_demo">30-Second Tour</span>
+          </button>
+          <button class="finder-item" type="button" data-action="open-clio-model-settings">
+            <span class="sys-icon" data-system-icon="cloudModel" aria-hidden="true"></span>
+            <span id="welcome-ai-label" data-i18n="welcome_ai_setup">Set Up AI</span>
+          </button>
+          <button class="finder-item" id="welcome-iphone-item" type="button" data-action="welcome-iphone-help" hidden>
+            <span class="sys-icon" data-system-icon="alias" aria-hidden="true"></span>
+            <span data-i18n="welcome_keep_on_iphone">Keep on iPhone</span>
+          </button>
+        </div>
+        <button class="grow-box" type="button" aria-label="Resize window" data-i18n-aria-label="grow_box_aria"></button>
+      </section>
+
       <section class="window guide-window is-hidden" data-window="guide" aria-labelledby="guide-title">
         <div class="title-bar">
-          <button class="close-box" aria-label="Close" data-i18n-aria-label="close" tabindex="-1"></button>
-          <h2 id="guide-title" data-i18n="start_here">Start Here</h2>
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
+          <h2 id="guide-title" data-i18n="welcome_read_me">Read Me First</h2>
         </div>
         <div class="window-pane guide-pane">
-          <div class="guide-step" id="guide-welcome-step">
-            <h3 data-i18n="guide_welcome_heading">This Macintosh did not stop in 1988.</h3>
-            <p data-i18n="guide_welcome_body">This is a computer for writing. You bring the material; it reads, asks, builds the structure, and writes with you section by section. It never speaks for you.</p>
-            <ol class="guide-route">
-              <li data-i18n="guide_route_step_material">Material goes onto a File Floppy.</li>
-              <li data-i18n="guide_route_step_question">The Question Sheet asks who it is for.</li>
-              <li data-i18n="guide_route_step_write">Outline, Section Drafts, then the manuscript.</li>
-              <li data-i18n="guide_route_step_review">The Review Desk looks for weak spots.</li>
-            </ol>
-            <div class="guide-actions">
-              <button class="btn" type="button" data-action="open-guide-promo" data-i18n="guide_watch_promo">Watch Promo</button>
-              <button class="btn" type="button" data-action="play-teaser-demo" data-i18n="guide_play_teaser_demo">30-Second Demo</button>
-            </div>
+          <h3 data-i18n="guide_welcome_heading">This Macintosh did not stop in 1988.</h3>
+          <p data-i18n="guide_welcome_body">This is a computer for writing. You bring the material; it reads, asks, builds the structure, and writes with you section by section. It never speaks for you.</p>
+          <ol class="guide-route">
+            <li data-i18n="guide_route_step_material">Material goes onto a File Floppy.</li>
+            <li data-i18n="guide_route_step_question">The Question Sheet asks who it is for.</li>
+            <li data-i18n="guide_route_step_write">Outline, Section Drafts, then the manuscript.</li>
+            <li data-i18n="guide_route_step_review">The Review Desk looks for weak spots.</li>
+          </ol>
+          <p class="hint" data-i18n="welcome_read_me_hint">Nothing here makes you start a project. Close this file when you are ready; the desktop remains yours.</p>
+          <div class="guide-actions">
+            <button class="btn default" type="button" data-action="play-teaser-demo" data-i18n="guide_play_teaser_demo">30-Second Tour</button>
           </div>
-
-          <div class="guide-step" id="guide-ai-step" hidden>
-            <h3 id="guide-ai-heading" data-i18n="guide_ai_ready_heading">The AI is already connected.</h3>
-            <p id="guide-ai-body" data-i18n="guide_ai_ready_body">The site's shared allowance is on by default: no account, no key, nothing to set up. When it runs out for the day, AI System 6 says so and offers your own key instead.</p>
-            <div class="guide-actions">
-              <button class="btn" type="button" data-action="guide-connect-website-ai" data-i18n="use_website_ai" hidden>Use Website AI</button>
-              <button class="btn" type="button" data-action="guide-open-local-ai" data-i18n="use_local_ai">Use Local AI</button>
-              <button class="btn" type="button" data-action="guide-open-model-settings" data-i18n="guide_use_own_key">Use My Own API Key…</button>
-            </div>
-            <p class="hint" id="guide-ai-status" role="status" aria-live="polite" data-i18n="cloud_shared_active_hint">Using the site's shared DeepSeek allowance.</p>
-          </div>
-
-          <div class="guide-step" id="guide-ready-step" hidden>
-            <h3 data-i18n="guide_ready_heading">The rest is on the desktop.</h3>
-            <p data-i18n="guide_ready_body">Everything is a visible object you can open: Quick Draft for something short, Writing Studio for a long piece, and the Help Folder when a name is new to you.</p>
-            <div class="guide-actions">
-              <button class="btn" type="button" data-action="install-web-app" data-i18n="web_install_action" hidden>Add to Home Screen</button>
-              <button class="btn" type="button" data-action="guide-continue-last" data-i18n="guide_continue_last" hidden>Continue</button>
-            </div>
-            <p id="web-install-hint" class="hint" hidden></p>
-          </div>
-
-          <div class="guide-nav">
-            <span class="guide-step-counter" id="guide-step-counter"></span>
-            <div class="button-row">
-              <button class="btn" type="button" data-action="guide-back" data-i18n="guide_back" hidden>Go Back</button>
-              <button class="btn default" type="button" data-action="guide-continue" data-i18n="guide_continue" aria-keyshortcuts="Enter">Continue</button>
-            </div>
-          </div>
-
           <div class="guide-links">
             <button class="btn mini-btn" type="button" data-action="open-project-site" data-i18n="guide_project_site">Project Site</button>
             <button class="btn mini-btn" type="button" data-action="open-github-repo" data-i18n="guide_source_code">Source Code</button>
@@ -4046,6 +4046,10 @@ Glass</textarea>
         <button class="desktop-icon" type="button" data-open="disk" data-balloon-help="balloon_startup_disk">
           <span class="sys-icon sys-icon-desktop" data-system-icon="startupDisk" aria-hidden="true"></span>
           <span data-i18n="startup_disk">Startup Disk</span>
+        </button>
+        <button class="desktop-icon is-mounted-disk" id="mounted-welcome-disk" type="button" data-open="welcomeDisk" hidden>
+          <span class="sys-icon sys-icon-desktop" data-system-icon="fileFloppy" aria-hidden="true"></span>
+          <span data-i18n="welcome_floppy">Welcome Floppy</span>
         </button>
         <button class="desktop-icon" id="desktop-file-floppy-starter" type="button" data-action="open-rag" data-balloon-help="balloon_text_disk">
           <span class="sys-icon sys-icon-desktop" data-system-icon="fileFloppy" aria-hidden="true"></span>

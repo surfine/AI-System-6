@@ -104,7 +104,7 @@ test.assertIncludes(persistence, "multiFinderSwitcherHintSeen,", "the one-time M
 test.assertIncludes(persistence, "settings.multiFinderSwitcherHintSeen", "the one-time clue restores without a new storage boundary");
 test.assertMatches(desktopRuntime, /nextEnvironment === "multifinder"[\s\S]*multiFinderSwitcherHintSeen = false/, "choosing MultiFinder arms its switcher clue");
 test.assertIncludes(boot, "revealMultiFinderSwitcherHint()", "the clue appears only after the desktop finishes booting");
-test.assertMatches(guide, /function dismissGuide\(\)[\s\S]*requestAnimationFrame\(\(\) => revealMultiFinderSwitcherHint\(\)\)/, "entering the desktop can reveal an already-enabled MultiFinder switcher without another restart");
+test.assertMatches(guide, /function dismissWelcomeFloppy\(\)[\s\S]*requestAnimationFrame\(\(\) => revealMultiFinderSwitcherHint\(\)\)/, "entering the desktop can reveal an already-enabled MultiFinder switcher without another restart");
 test.assertMatches(balloon, /function revealMultiFinderSwitcherHint\(\)[\s\S]*!guideSeen[\s\S]*isMultiFinderMode\(\)[\s\S]*multifinder_switcher_discovery/, "the switcher clue waits for completed OOBE and an active MultiFinder environment");
 
 for (const key of [
@@ -147,7 +147,7 @@ for (const key of [
 
 test.assertIncludes(dictionary, 'id: "balloon-help"', "System Help documents the optional Balloon Help mode");
 test.assertIncludes(dictionary, "adapted from System 7", "Help records Balloon Help's actual historical source");
-test.assertIncludes(dictionary, "points to the Apple and Special menus", "System Help matches the current minimal OOBE");
+test.assertIncludes(dictionary, "mounts the read-only Welcome Floppy", "System Help matches the Finder-owned OOBE");
 test.assertMatches(html, /apple-menu-popover[\s\S]*data-action="open-system-help"/, "System Help is one click away from the Apple menu");
 test.assertIncludes(en, "balloon_system_help:", "English explains the System Help entry");
 test.assertIncludes(zh, "balloon_system_help:", "Chinese explains the System Help entry");

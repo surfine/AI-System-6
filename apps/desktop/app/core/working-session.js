@@ -10,7 +10,7 @@ let workingSessionSaveTimer = null;
 let workingSessionSavePromise = Promise.resolve();
 let workingSessionRestoreInProgress = false;
 let workingSessionAutosaveInstalled = false;
-const workingSessionExcludedWindowNames = new Set(["about", "saveChat", "guide"]);
+const workingSessionExcludedWindowNames = new Set(["about", "saveChat", "guide", "welcomeDisk"]);
 
 function registerWorkingSessionAdapter(adapter) {
   if (!adapter || typeof adapter.id !== "string" || !adapter.id.trim()) return false;

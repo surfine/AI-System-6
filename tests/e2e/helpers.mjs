@@ -29,19 +29,10 @@ export async function bootApp(page) {
 }
 
 export async function dismissGuide(page) {
-  const guide = page.locator('[data-window="guide"]');
-  if (!await guide.isVisible().catch(() => false)) return;
-
-  const legacyDismiss = guide.locator('[data-action="dismiss-guide"]');
-  if (await legacyDismiss.isVisible().catch(() => false)) {
-    await legacyDismiss.click({ timeout: 5_000 });
-  } else {
-    const continueButton = guide.locator('[data-action="guide-continue"]');
-    for (let step = 0; step < 3 && await guide.isVisible().catch(() => false); step += 1) {
-      await continueButton.click({ timeout: 5_000 });
-    }
-  }
-  await guide.waitFor({ state: "hidden", timeout: 10_000 });
+  const welcomeDisk = page.locator('[data-window="welcomeDisk"]');
+  if (!await welcomeDisk.isVisible().catch(() => false)) return;
+  await welcomeDisk.locator(".close-box").click({ timeout: 5_000 });
+  await welcomeDisk.waitFor({ state: "hidden", timeout: 10_000 });
 }
 
 /** Enter Writing Studio (switches the workspace profile to "writing"). */
@@ -256,13 +247,13 @@ export async function dumpIndexedDb(page) {
  * stays unloaded until a user action summons it.
  */
 export async function closeToEmptyDesk(page) {
-  await page.click('[data-action="dismiss-guide"]');
+  await dismissGuide(page);
   await page.evaluate(async () => {
     const visible = [...document.querySelectorAll(".window")]
       .filter((win) => !win.classList.contains("is-hidden") && !win.classList.contains("is-app-hidden"));
     for (const win of visible) {
       const name = win.dataset.window;
-      if (name && name !== "guide" && typeof closeWindow === "function") {
+      if (name && !["guide", "welcomeDisk"].includes(name) && typeof closeWindow === "function") {
         await closeWindow(name, true);
       }
     }

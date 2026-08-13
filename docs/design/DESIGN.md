@@ -69,8 +69,11 @@ Control meanings are load-bearing:
 
 Progressive discovery divides responsibility instead of building one tutorial:
 
-- OOBE stays a single, dismissible system welcome window. It points to the Apple
-  and Special menus, keeps AI setup optional, and never becomes a setup wizard.
+- OOBE mounts one read-only Welcome Floppy and opens it in Finder. Read Me First
+  points to the Apple and Special menus; sibling objects expose a deterministic
+  30-second tour, the real AI readiness state, and iPhone Home Screen help only
+  on iOS. Nothing creates a project or enters Writing Studio. Closing the disk
+  hands the desktop back; Start Here remounts it later.
 - MultiFinder is discovered through the startup environment: briefly explain
   Finder versus MultiFinder where that choice is made, then teach the real
   menu-bar switcher only after MultiFinder is enabled.

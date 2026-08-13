@@ -17,6 +17,7 @@ const finderContinuationWindowNames = new Set([
   "helpFolder",
   "applications",
   "disk",
+  "welcomeDisk",
   "projects",
   "documents",
   "projectCd",
