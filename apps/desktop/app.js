@@ -841,9 +841,11 @@ function getControlStripModuleFinderItems() {
   );
 }
 
-function renderFinderItemIcon(item) {
+function renderFinderItemIcon(item, mode) {
   return renderSystemIcon(item.iconId || item.icon, {
-    size: item.iconBase === "icon" ? "desktop" : "mini"});
+    size: item.iconBase === "icon" ? "desktop" : "mini",
+    displaySize: isFinderListMode(mode) ? 22 : 44,
+  });
 }
 
 function controlStripModuleDragAttributes(item) {
@@ -1108,7 +1110,7 @@ function renderStaticFinderWindow(winName) {
   if (isFinderListMode(mode)) {
     const renderListRow = (item) => `
       <button class="finder-list-row${selected?.action === item.action ? " is-selected" : ""}" data-static-finder-window="${escapeHtml(winName)}" data-static-finder-action="${escapeHtml(item.action)}"${controlStripModuleDragAttributes(item)}${dropletDropAttributes(item)}>
-        <span class="finder-list-name-cell">${renderFinderItemIcon(item)}<span>${escapeHtml(item.name)}</span></span>
+        <span class="finder-list-name-cell">${renderFinderItemIcon(item, mode)}<span>${escapeHtml(item.name)}</span></span>
         <span>${escapeHtml(item.kind)}</span>
         <span>${escapeHtml(item.sizeLabel || "--")}</span>
         <span>${escapeHtml(item.updatedAt ? new Date(item.updatedAt).toLocaleDateString() : "--")}</span>
@@ -1130,7 +1132,7 @@ function renderStaticFinderWindow(winName) {
 
   const renderIconItem = (item) => `
     <button class="finder-item${selected?.action === item.action ? " is-selected" : ""}" data-static-finder-window="${escapeHtml(winName)}" data-static-finder-action="${escapeHtml(item.action)}"${controlStripModuleDragAttributes(item)}${dropletDropAttributes(item)}>
-      ${renderFinderItemIcon(item)}
+      ${renderFinderItemIcon(item, mode)}
       <span>${escapeHtml(item.name)}</span>
     </button>
   `;

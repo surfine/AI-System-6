@@ -207,6 +207,7 @@ function renderClioTalkWelcome() {
   item.setAttribute("aria-label", clioTalkAssistantDisplayName());
 
   item.insertAdjacentHTML("beforeend", renderSystemIcon("assistant", {
+    size: "ordinary",
     className: "clio-welcome-icon",
   }));
 

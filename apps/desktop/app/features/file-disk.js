@@ -140,7 +140,7 @@ function renderMountedTextDisk() {
       button.dataset.projectId = activeProjectId || "";
       button.dataset.mountedFile = name;
       button.innerHTML = `
-        ${renderSystemIcon("document", { size: "mini"})}
+        ${renderSystemIcon("document", { size: "finder"})}
         <span>${escapeHtml(name)}</span>
         <small>${escapeHtml(mountedFileMeta(report))}</small>
         ${hasWarning ? `<small>${escapeHtml(t("file_disk_warning"))}</small>` : ""}

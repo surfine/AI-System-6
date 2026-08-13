@@ -1753,7 +1753,7 @@ function renderProjectRootListItem(item, project, mode, orderedItems = []) {
   }
   const metaInner = item.metaHtml || escapeHtml(getProjectFinderItemMeta(item));
   row.innerHTML = `
-    <span class="finder-list-name-cell">${renderSystemIcon(item.iconId || item.iconClass, { size: "mini"})}<span>${escapeHtml(getFinderItemName(item))}</span></span>
+    <span class="finder-list-name-cell">${renderSystemIcon(item.iconId || item.iconClass, { size: "list"})}<span>${escapeHtml(getFinderItemName(item))}</span></span>
     <span>${escapeHtml(getFinderItemKindLabel(item))}</span>
     <span>${metaInner}</span>
     <span>${getFinderItemModifiedAt(item) ? new Date(getFinderItemModifiedAt(item)).toLocaleDateString() : new Date(project.updatedAt || project.createdAt).toLocaleDateString()}</span>
@@ -1800,7 +1800,7 @@ function renderProjectRootIconItem(item, orderedItems = []) {
     button.dataset.folderId = item.id;
   }
   const metaInner = item.metaHtml || escapeHtml(getProjectFinderItemMeta(item));
-  button.innerHTML = `${renderSystemIcon(item.iconId || item.iconClass, { size: "mini"})}<span>${escapeHtml(getFinderItemName(item))}</span><small>${metaInner}</small>`;
+  button.innerHTML = `${renderSystemIcon(item.iconId || item.iconClass, { size: "finder"})}<span>${escapeHtml(getFinderItemName(item))}</span><small>${metaInner}</small>`;
   attachCitationJumpHandler(button);
   button.addEventListener("click", (event) => {
     if (isSystem) selectProjectRootItem(item.id);
@@ -1854,7 +1854,7 @@ function renderProjectDisks() {
     const empty = document.createElement("button");
     empty.type = "button";
     empty.className = "finder-empty-object project-empty-object";
-    empty.innerHTML = `${renderSystemIcon("projectDisk", { size: "mini"})}<b>${escapeHtml(t("project_disk"))}</b><small>${escapeHtml(t("spine_no_project"))}</small>`;
+    empty.innerHTML = `${renderSystemIcon("projectDisk", { size: "ordinary"})}<b>${escapeHtml(t("project_disk"))}</b><small>${escapeHtml(t("spine_no_project"))}</small>`;
     empty.addEventListener("click", () => openWindow("projects"));
     projectDiskGridEl.append(empty);
     return;
@@ -1907,7 +1907,7 @@ function renderProjectDisks() {
     const empty = document.createElement("button");
     empty.type = "button";
     empty.className = "finder-empty-object project-empty-object";
-    empty.innerHTML = `${renderSystemIcon("projectDisk", { size: "mini" })}<b>${escapeHtml(t("project_disk_empty_title"))}</b><small>${escapeHtml(t("project_disk_empty_hint"))}</small>`;
+    empty.innerHTML = `${renderSystemIcon("projectDisk", { size: "ordinary" })}<b>${escapeHtml(t("project_disk_empty_title"))}</b><small>${escapeHtml(t("project_disk_empty_hint"))}</small>`;
     empty.addEventListener("click", () => handleAction("open-import-utility"));
     projectDiskGridEl.append(empty);
     updateFinderViewButtons(getWindow("projects"), mode);

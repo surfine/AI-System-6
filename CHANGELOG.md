@@ -693,6 +693,20 @@ Version `1.0.12`, build `20260804.2`.
   product evidence while keeping site checks and public deployment boundaries
   intact.
 
+## Public Beta 1.0.41 - 2026-08-13
+
+- Fixed blurry modern-era raster icons on Retina displays by selecting source
+  artwork from the icon's real rendered size and the browser's device-pixel
+  ratio, instead of treating a legacy compact class as the source-size owner.
+- Applied the same dispatch contract to static and dynamic Finder windows,
+  desktop objects, list rows, File Floppy, Project Hard Disk, Documents, and
+  ClioTalk's welcome surface across Aqua, Snow Leopard, Yosemite, and Liquid
+  Glass.
+- Added a fail-closed real-application gate that renders all six appearances at
+  2× density and rejects any modern raster smaller than the pixels its visible
+  surface requires, including the legacy `mini`-inside-Finder collision that
+  caused the public VPS regression.
+
 ## What Changed Most In One Month
 
 - The product moved from "an AI writing prototype" to a local-first writing

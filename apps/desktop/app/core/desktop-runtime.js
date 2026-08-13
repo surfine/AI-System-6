@@ -1239,7 +1239,7 @@ function showEraseDiskPreviewModal(project) {
       const item = document.createElement("div");
       item.className = `finder-operation-item${row.count ? "" : " is-empty"}`;
       item.innerHTML = `
-        ${renderSystemIcon(row.iconId || row.iconClass, { size: "mini"})}
+        ${renderSystemIcon(row.iconId || row.iconClass, { size: "list"})}
         <span class="finder-operation-item-copy">
           <b>${escapeHtml(row.name)}</b>
           <small>${escapeHtml(row.meta)}</small>

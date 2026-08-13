@@ -680,7 +680,7 @@ function renderDocuments() {
         row.dataset.documentItemType = "folder";
         row.dataset.documentItemId = folder.id;
         row.innerHTML = `
-          <span>${renderSystemIcon("folder", { size: "mini"})}${escapeHtml(displayFolderName(folder.name))}</span>
+          <span>${renderSystemIcon("folder", { size: "list"})}${escapeHtml(displayFolderName(folder.name))}</span>
           <span>${t("folder_kind")}</span>
           <span>${t("items_count", getProjectFolderDeepItemCount(folder.id))}</span>
           <span>${new Date(folder.updatedAt || folder.createdAt).toLocaleDateString()}</span>
@@ -703,7 +703,7 @@ function renderDocuments() {
         const fileKind = file.kindLabel || (file.type === "text" ? t("kind_teachtext") : t("kind_chat"));
         const icon = file.iconId || (file.type === "text" ? "teachText" : "chatFile");
         row.innerHTML = `
-          <span>${renderSystemIcon(icon, { size: "mini"})}${escapeHtml(file.name)}</span>
+          <span>${renderSystemIcon(icon, { size: "list"})}${escapeHtml(file.name)}</span>
           <span>${fileKind}${file.label ? ` · ${escapeHtml(labelName(file.label))}` : ""}</span>
           <span>${getFinderItemSizeLabel(file)}</span>
           <span>${new Date(file.updatedAt || file.createdAt).toLocaleDateString()}</span>
@@ -741,7 +741,7 @@ function renderDocuments() {
       button.dataset.folderId = folder.id;
       button.dataset.documentItemType = "folder";
       button.dataset.documentItemId = folder.id;
-      button.innerHTML = `${renderSystemIcon("folder", { size: "mini"})}<span>${escapeHtml(displayFolderName(folder.name))}</span>`;
+      button.innerHTML = `${renderSystemIcon("folder", { size: "finder"})}<span>${escapeHtml(displayFolderName(folder.name))}</span>`;
       button.addEventListener("click", (event) => {
         selectDocumentItemFromEvent("folder", folder.id, event, sortedItems);
       });
@@ -765,7 +765,7 @@ function renderDocuments() {
       const selected = selectedDocumentItemKeys.has(documentSelectionKey("file", file.id)) || file.id === selectedChatFileId;
       button.className = `finder-item label-${file.label || "none"} finder-label-${file.finderLabel || "none"}${selected ? " is-selected" : ""}`;
       const iconId = file.iconId || (file.type === "text" ? "teachText" : "chatFile");
-      button.innerHTML = `${renderSystemIcon(iconId, { size: "mini"})}<span>${escapeHtml(file.name)}</span>${file.label ? `<small>${escapeHtml(labelName(file.label))}</small>` : ""}`;
+      button.innerHTML = `${renderSystemIcon(iconId, { size: "finder"})}<span>${escapeHtml(file.name)}</span>${file.label ? `<small>${escapeHtml(labelName(file.label))}</small>` : ""}`;
       button.addEventListener("click", (event) => {
         selectDocumentItemFromEvent("file", file.id, event, sortedItems);
       });

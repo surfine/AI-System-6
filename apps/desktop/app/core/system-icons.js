@@ -947,13 +947,35 @@ function systemIconUsesSmallSource(options = {}) {
   return ["mini", "small", "tiny", "menu"].includes(String(options.size || ""));
 }
 
+function systemIconDevicePixelRatio() {
+  const ratio = typeof window !== "undefined" ? Number(window.devicePixelRatio) : 1;
+  return Number.isFinite(ratio) && ratio > 0 ? Math.min(ratio, 3) : 1;
+}
+
+function systemIconDisplaySize(options = {}, compactSourceSize = 32) {
+  const requested = Number(options.displaySize);
+  if (Number.isFinite(requested) && requested > 0) return requested;
+  if (typeof options.size === "number" && Number.isFinite(options.size)) return options.size;
+  const semanticSize = String(options.size || "");
+  if (["tiny", "small", "mini", "menu"].includes(semanticSize)) return 17;
+  if (["list", "help-row"].includes(semanticSize)) return 22;
+  if (semanticSize === "finder") return 44;
+  if (semanticSize === "desktop") return 42;
+  if (semanticSize === "large") return 48;
+  if (semanticSize === "help-object") return 32;
+  return Number(compactSourceSize) === 16 ? 17 : 34;
+}
+
 function systemIconModernSourceSize(options = {}, compactSourceSize = 32) {
   const requested = Number(options.modernSourceSize);
   if ([16, 32, 64, 128].includes(requested)) return requested;
-  if (Number(options.sourceSize) === 16) return 16;
-  if (Number(options.sourceSize) === 32) return 32;
-  if (typeof options.size === "number") return options.size <= 22 ? 16 : options.size <= 40 ? 32 : 128;
-  return ["desktop", "large"].includes(String(options.size || "")) ? 128 : compactSourceSize;
+  const requiredPixels = systemIconDisplaySize(options, compactSourceSize) * systemIconDevicePixelRatio();
+  // Aqua and Snow Leopard do not have a 64 px tier, so all four modern
+  // painters share the complete 16/32/128 ladder. A 10% optical tolerance
+  // keeps a 17 px menu icon on the authored 16/32 compact artwork while
+  // preventing Finder, list and welcome icons from being enlarged past their
+  // physical source pixels on Retina displays.
+  return [16, 32, 128].find((size) => size >= requiredPixels * 0.9) || 128;
 }
 
 function systemIconSvg(iconId, options = {}) {
@@ -965,6 +987,7 @@ function systemIconSvg(iconId, options = {}) {
     : String(options.size || "") === "desktop" ? 42 : sourceSize;
   const coreArt = classicSystemIconArt(id, sourceSize);
   const platinumArt = platinumCoreSystemIconArt(id, platinumSourceSize);
+  const modernDisplaySize = systemIconDisplaySize(options, sourceSize);
   const modernSourceSize = systemIconModernSourceSize(options, sourceSize);
   const aquaArt = completeEraRasterSystemIconArt("aqua", id, modernSourceSize);
   const snowArt = completeEraRasterSystemIconArt("snow-leopard", id, modernSourceSize);
@@ -973,7 +996,7 @@ function systemIconSvg(iconId, options = {}) {
   const liquidPaths = liquidGlassSystemIconArt(id, modernSourceSize);
   const maskClass = coreArt ? " has-classic-mask" : "";
   const platinumClass = platinumArt ? " has-platinum-core" : "";
-  return `<svg class="sys-icon-svg${maskClass}${platinumClass}" data-classic-source-size="${sourceSize}" data-platinum-source-size="${platinumSourceSize}" data-modern-source-size="${modernSourceSize}" viewBox="0 0 32 32" focusable="false" aria-hidden="true"><g class="sys-icon-classic">${paths}</g><g class="sys-icon-platinum-core">${platinumArt}</g><g class="sys-icon-aqua">${aquaArt}</g><g class="sys-icon-snow-leopard">${snowArt}</g><g class="sys-icon-yosemite">${yosemiteArt}</g><g class="sys-icon-liquid">${liquidPaths}</g></svg>`;
+  return `<svg class="sys-icon-svg${maskClass}${platinumClass}" data-classic-source-size="${sourceSize}" data-platinum-source-size="${platinumSourceSize}" data-modern-display-size="${modernDisplaySize}" data-modern-source-size="${modernSourceSize}" viewBox="0 0 32 32" focusable="false" aria-hidden="true"><g class="sys-icon-classic">${paths}</g><g class="sys-icon-platinum-core">${platinumArt}</g><g class="sys-icon-aqua">${aquaArt}</g><g class="sys-icon-snow-leopard">${snowArt}</g><g class="sys-icon-yosemite">${yosemiteArt}</g><g class="sys-icon-liquid">${liquidPaths}</g></svg>`;
 }
 
 function renderSystemIcon(iconId, options = {}) {
@@ -995,11 +1018,22 @@ function hydrateSystemIcons(root = document) {
       ".finder-list-name-cell .sys-icon",
       ".finder-list-row .sys-icon",
     ].join(", "));
+    const useListSource = item.matches([
+      ".finder-list-name-cell .sys-icon",
+      ".finder-list-row .sys-icon",
+      ".finder-operation-item .sys-icon",
+      ".sys-icon-help-row",
+    ].join(", "));
+    const useFinderSource = item.matches(".finder-item .sys-icon");
     const usePlatinumDesktopSource = !useSmallSource && item.classList.contains("sys-icon-desktop");
     item.innerHTML = systemIconSvg(item.dataset.systemIcon, {
       sourceSize: useSmallSource ? 16 : 32,
       platinumSourceSize: useSmallSource ? 16 : usePlatinumDesktopSource ? 42 : 32,
-      modernSourceSize: useSmallSource ? 16 : usePlatinumDesktopSource ? 128 : 32,
+      // Finder icon view owns the actual 44 px display contract even when
+      // legacy markup still carries the compact `sys-icon-mini` class.  The
+      // rendered context must win over that historical source-size hint or a
+      // Retina browser will upscale the 16/32 px raster and blur it.
+      displaySize: useListSource ? 22 : useFinderSource ? 44 : useSmallSource ? 17 : usePlatinumDesktopSource ? 42 : 34,
     });
   });
 }

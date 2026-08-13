@@ -29,6 +29,7 @@ const THEME_IDS = Object.freeze([
 
 const REPRESENTATIVE_WINDOWS = Object.freeze([
   { id: "finder", sample: ".finder-item .sys-icon" },
+  { id: "assistant", sample: ".clio-welcome-icon" },
   { id: "pageSetup", sample: ".btn.default" },
   { id: "teachText", sample: "#teachtext-body" },
   { id: "scrapbook", sample: "#scrap-body-input" },
@@ -148,7 +149,7 @@ try {
   const context = await browser.newContext({
     viewport: { width: 1280, height: 820 },
     screen: { width: 1280, height: 820 },
-    deviceScaleFactor: 1,
+    deviceScaleFactor: 2,
     colorScheme: "light",
     reducedMotion: "reduce",
     locale: "en-US",
@@ -298,19 +299,33 @@ try {
             },
           };
         };
+        const sampleElement = target.querySelector(sample);
         return {
           missing: false,
+          devicePixelRatio: window.devicePixelRatio,
           window: capture(target),
           titleBar: capture(target.querySelector(":scope > .title-bar")),
-          sample: capture(target.querySelector(sample)),
+          sample: capture(sampleElement),
+          sampleClassName: sampleElement?.className || "",
+          sampleModernDisplaySize: Number(sampleElement?.querySelector(".sys-icon-svg")?.dataset.modernDisplaySize || 0),
+          sampleModernSourceSize: Number(sampleElement?.querySelector(".sys-icon-svg")?.dataset.modernSourceSize || 0),
         };
       }, contract);
       await page.evaluate(() => new Promise((resolvePaint) => requestAnimationFrame(() => requestAnimationFrame(resolvePaint))));
       assert(!snapshot.missing, `${theme.id}: missing real window ${contract.id}`);
+      assert(snapshot.devicePixelRatio === 2, `${theme.id}/${contract.id}: browser device pixel ratio is ${snapshot.devicePixelRatio}, expected 2`);
       for (const [surface, value] of [["window", snapshot.window], ["title bar", snapshot.titleBar], ["sample", snapshot.sample]]) {
         assert(value, `${theme.id}/${contract.id}: missing ${surface}`);
         assert(value.rect.width > 0 && value.rect.height > 0, `${theme.id}/${contract.id}: ${surface} has no rendered geometry`);
         assert(value.style.display !== "none" && value.style.visibility !== "hidden", `${theme.id}/${contract.id}: ${surface} is not visible`);
+      }
+      if (["aqua", "snow-leopard", "yosemite", "liquid-glass"].includes(theme.id)
+        && snapshot.sampleModernSourceSize) {
+        const requiredPixels = Math.max(snapshot.sample.rect.width, snapshot.sample.rect.height) * 2 * 0.9;
+        assert(
+          snapshot.sampleModernSourceSize >= requiredPixels,
+          `${theme.id}/${contract.id}: ${snapshot.sampleModernSourceSize}px raster (${snapshot.sampleClassName}, declared ${snapshot.sampleModernDisplaySize}px) is below the Retina rendering floor ${requiredPixels.toFixed(1)}px`,
+        );
       }
       const screenshot = `${theme.id}-${contract.id}.png`;
       await page.locator(`.window[data-window="${contract.id}"]`).screenshot({
