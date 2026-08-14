@@ -86,6 +86,11 @@
   var doneDeps = 0;
   var lastDeps = 1;
 
+  /* Runtime-ready flag for the resize path. Do not read Module.calledRun:
+     emscripten stopped setting it on Module after 3.1.x, and a guard on it
+     silently disables live resize on newer toolchains. */
+  var runtimeReady = false;
+
   window.Module = {
     preRun: [],
     postRun: [],
@@ -127,6 +132,7 @@
       }
     },
 
+    onRuntimeInitialized: function () { runtimeReady = true; },
     onExit: function () { showEnd(text.exited, false); post("exited"); },
     onAbort: function () { showEnd(text.crashed, true); post("crashed"); },
     onBootstrap: function () { bootMessage.textContent = text.preparing; },
@@ -156,7 +162,7 @@
       var w = Math.max(320, Math.round(window.innerWidth));
       var h = Math.max(240, Math.round(window.innerHeight));
       try {
-        if (window.Module && Module.calledRun && typeof Module.ccall === "function") {
+        if (runtimeReady && window.Module && typeof Module.ccall === "function") {
           Module.ccall("em_openttd_set_resolution", null, ["number", "number"], [w, h]);
         }
       } catch (e) { /* the game may not be up yet; the boot seed covers that */ }
@@ -175,7 +181,7 @@
        browser, and a stale surface stretches the whole game. Cheap check. */
     setInterval(function () {
       var c = document.getElementById("canvas");
-      if (!c || !window.Module || !Module.calledRun) return;
+      if (!c || !runtimeReady || !window.Module) return;
       var w = Math.max(320, Math.round(window.innerWidth));
       var h = Math.max(240, Math.round(window.innerHeight));
       if (Math.abs(c.width - w) > 2 || Math.abs(c.height - h) > 2) schedule();

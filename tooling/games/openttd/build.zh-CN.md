@@ -1,5 +1,5 @@
 <!-- canonical-source: tooling/games/openttd/build.md -->
-<!-- source-sha256: 2226cb7fc95c3fbcedc241db88d1539225bfc879bda1015f534befcbad8aae27 -->
+<!-- source-sha256: 5f7fd91c83dea21b09a1b6c803754cfd6e966fc221a868fa3a7fb4f1e8dec439 -->
 
 > 英文版为准 ・ 仅供人类参考
 
@@ -17,7 +17,7 @@ FreeType、简体中文语言文件和一套 CJK 像素字体。触控层不在�
 | OpenTTD 源码 | `external/OpenTTD`（git 忽略） | 15.3（cdn.openttd.org 的 `openttd-15.3-source.tar.xz`） | GPLv2 |
 | 基础图形 | `external/openttd-assets/unpacked/opengfx-8.0` | OpenGFX 8.0 | GPLv2 |
 | CJK 像素字体 | `external/openttd-assets/unpacked/fusion-proportional` | 缝合像素字体 12px zh_hans，v2026.08.11 | OFL-1.1 |
-| 工具链 | `~/emsdk` | emsdk 3.1.57（上游 CI 钉住的版本） | — |
+| 工具链 | `~/emsdk` | emsdk 6.0.6（上游 CI 钉住 3.1.57；6.0.6 已在浏览器里验证） | — |
 | 宿主工具 | cmake ≥ 3.16、ninja | Homebrew | — |
 
 声音和音乐保持关闭：上游 wasm 构建用空声音/空音乐驱动启动（`pre.js` 传
@@ -31,7 +31,8 @@ FreeType、简体中文语言文件和一套 CJK 像素字体。触控层不在�
    非 Apple 的 Unix 目标上本来就调用 `find_package(Freetype)`，emscripten
    也在其中。
 2. `patches/emscripten-zh.patch` → CMakeLists.txt、os/emscripten/pre.js、
-   src/network/network.cpp 和 src/fontcache/freetypefontcache.cpp：
+   src/network/network.cpp、src/core/random_func.cpp 和
+   src/fontcache/freetypefontcache.cpp：
    - 预载 `lang/simplified_chinese.lng` 和 `/font` 目录；
    - 给 WASM 链接块里所有路径标志加引号（源码路径带空格 — 比如本仓库 —
      会把裸标志拆散）；
@@ -39,13 +40,19 @@ FreeType、简体中文语言文件和一套 CJK 像素字体。触控层不在�
      以后每次启动改写其中的 `resolution` 行（SDL 端口不会跟随画布尺寸）；
    - 导出 `em_openttd_set_resolution(w, h)`，让外壳页面在手机旋转、窗口
      改变大小时实时调整游戏画面；
+   - 随机种子的 `EM_ASM` 块改用裸的 `HEAPU8` 视图，不再用 `Module.HEAPU8`。
+     emscripten 在 3.1.x 之后不再把堆视图挂到 `Module` 上，新工具链下上游
+     代码会在第一次生成世界时抛出 `TypeError: ... (reading 'subarray')`
+     （标题画面照常启动 — 种子请求是第一个调用方）；
    - 在 FreeType 字形缓存中把 U+00A0 和 U+2003 映射为普通空格。缝合像素
      字体没有为这些不可见空白画字形，OpenTTD 否则会在首次启动时弹出
      “字体缺字”阻断对话框。
-3. emsdk 3.1.57 没有 LibLZMA 端口。把
+3. emsdk 没有 LibLZMA 端口（已核对到 6.0.6）。把
    `os/emscripten/ports/liblzma.py` 复制到
    `~/emsdk/upstream/emscripten/tools/ports/contrib/liblzma.py`
    （与上游 Dockerfile 的做法相同）。存档需要 LZMA。
+   每次安装或升级 emsdk 后都要重做这一步：新版本会替换
+   `upstream/` 目录，复制进去的端口会随之消失。
 
 ## 构建
 

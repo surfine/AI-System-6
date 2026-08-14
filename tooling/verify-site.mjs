@@ -206,7 +206,7 @@ else fail(`official site payload ${(siteBytes / 1024 / 1024).toFixed(1)} MiB exc
     const readme = readFileSync(path.join(root, "README.md"), "utf8");
     const quoted = receipt.bytes.toLocaleString("en-US");
     if (readme.includes(quoted)) ok(`README quotes the measured payload (${quoted} bytes)`);
-    else fail(`README does not quote the measured payload ${quoted}; rerun npm run verify:floppy and update the gauge`);
+    else fail(`README does not quote the measured payload ${quoted}; run npm run sync:readme-payload`);
   }
 }
 

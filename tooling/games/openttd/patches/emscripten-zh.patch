@@ -123,6 +123,25 @@
  }
 
  }
+--- a/src/core/random_func.cpp
++++ b/src/core/random_func.cpp
+@@ -109,10 +109,15 @@
+ 		var crypto = window.crypto;
+ 		if (crypto === undefined || crypto.getRandomValues === undefined) {
+ 			return -1;
+ 		}
+
+-		crypto.getRandomValues(Module.HEAPU8.subarray(buf, buf + bytes));
++		/* AI System 6: use the bare HEAPU8 view, not Module.HEAPU8. Emscripten
++		 * stopped attaching the heap views to Module after 3.1.x, so on newer
++		 * toolchains Module.HEAPU8 is undefined and the first world-generation
++		 * seed request throws. EM_ASM code runs in the glue scope, where the
++		 * bare HEAPU8 exists on every emscripten version we build with. */
++		crypto.getRandomValues(HEAPU8.subarray(buf, buf + bytes));
+ 		return 1;
+ 	}, buf.data(), buf.size());
+ 	if (res > 0) return;
+ #else
 --- a/src/fontcache/freetypefontcache.cpp
 +++ b/src/fontcache/freetypefontcache.cpp
 @@ -183,6 +183,12 @@

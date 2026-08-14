@@ -1,5 +1,5 @@
 <!-- canonical-source: tooling/games/doom/build.md -->
-<!-- source-sha256: 1a7b27ce7adb472ab3749fbab4e8781a3846431b517149f6a5829d56bc0cbe61 -->
+<!-- source-sha256: 31df1eb7dfaccb18607c345e4bacf4334e3f85218a84ecdd61ce63840c5cba97 -->
 
 # Chocolate Doom WebAssembly 本机可玩切片
 
@@ -24,6 +24,14 @@
 OGG、MP3、MOD 或 Timidity MIDI codec。Chocolate Doom 通过默认 Sound Blaster
 音乐设备使用自身内建的 OPL 模拟器。构建明确关闭 FluidSynth，因此不需要
 SoundFont。
+
+**Emscripten 固定在 3.1.57 是有意为之。** 用 emsdk 6.0.6 构建的产物能启动
+外壳，但按下「开始」后浏览器主线程会永远卡死在 `I_InitMusic`（OPL 音乐
+初始化；日志停在 `I_Init: Setting up machine state.` 之后）。加 `-nomusic`
+就不卡，单加 `-nosfx` 仍然卡，说明 SDL2_mixer 的音频设备打开没有问题，
+问题出在新版 SDL2 端口上的 OPL 音乐路径。音乐是产品要求，所以在新构建
+通过下面这个完整检查之前不要升级此固定版本：导入本机 Freedoom IWAD、
+按「开始」、再从游戏菜单真正开一局 — 只验证启动到外壳碰不到这个卡死。
 
 ## 复现引擎载荷
 

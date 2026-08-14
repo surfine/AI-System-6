@@ -21,6 +21,16 @@ optional OGG, MP3, MOD, or Timidity MIDI codecs. Chocolate Doom's built-in OPL
 emulator supplies music through its default Sound Blaster music device. The
 build deliberately disables FluidSynth, so it needs no SoundFont.
 
+**The Emscripten pin stays at 3.1.57 on purpose.** An emsdk 6.0.6 build of
+this target boots the shell, but the Play click hangs the browser main thread
+forever inside `I_InitMusic` (OPL music init; the log stops after
+`I_Init: Setting up machine state.`). `-nomusic` clears the hang and `-nosfx`
+alone does not, so the SDL2_mixer device open is fine and the fault is the OPL
+music path on the newer SDL2 port. Music is a product requirement, so do not
+bump this pin until a build passes the full check below: import a local
+Freedoom IWAD, press Play, and start a level from the game menu — a boot-only
+check does not reach this hang.
+
 ## Reproduce the engine payload
 
 Clone the exact upstream source into the ignored `external/` tree:

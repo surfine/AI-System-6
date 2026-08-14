@@ -1107,15 +1107,25 @@ function wireAppEvents() {
     runShortcut(event);
   });
 
-  document.querySelectorAll(".window").forEach((win) => {
+  // Title-bar chrome for one window. Lazy modules that inject their own
+  // window after boot must call window.AISystem6WireWindowChrome on it —
+  // this loop only ever sees the windows that exist in index.html, and a
+  // window whose close box does nothing is not a window.
+  const chromeWiredWindows = new WeakSet();
+  function wireWindowChrome(win) {
+    // The guard is runtime state, not document state: a data attribute here
+    // would land in every window's markup and move the Theme Lab DOM
+    // fingerprints.
+    if (!win || chromeWiredWindows.has(win)) return;
+    chromeWiredWindows.add(win);
     win.dataset.app = getWindowAppId(win);
     win.addEventListener("pointerdown", () => focusWindow(win));
-  
+
     win.querySelector(".close-box")?.addEventListener("click", () => {
       if (win.dataset.window === "welcomeDisk") return dismissWelcomeFloppy();
       return closeWindow(win.dataset.window);
     });
-  
+
     win.querySelector(".resize-box")?.addEventListener("click", () => {
       zoomWindow(win);
     });
@@ -1125,7 +1135,10 @@ function wireAppEvents() {
     win.querySelector(".shade-box")?.addEventListener("click", () => {
       toggleCollapsed(win);
     });
-  });
+  }
+
+  window.AISystem6WireWindowChrome = wireWindowChrome;
+  document.querySelectorAll(".window").forEach(wireWindowChrome);
 
   const documentVersionsDialog = document.querySelector("#document-versions-modal");
   documentVersionsDialog?.addEventListener("close", () => {

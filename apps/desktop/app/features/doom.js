@@ -25,6 +25,8 @@ window.AISystem6DoomLoaded = true;
         </div>
         <div class="window-pane doom-pane openttd-pane"></div>
       </section>`);
+    // Boot wiring only sees index.html windows; this one arrives later.
+    window.AISystem6WireWindowChrome?.(document.querySelector('[data-window="doom"]'));
   }
 
   installDoomWindow();
