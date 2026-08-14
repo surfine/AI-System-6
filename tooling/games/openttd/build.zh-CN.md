@@ -1,5 +1,5 @@
 <!-- canonical-source: tooling/games/openttd/build.md -->
-<!-- source-sha256: 8cf2beb90e11c91288d55ed8e5851b23074428bc05febb5ca9df1b33f810123c -->
+<!-- source-sha256: 2226cb7fc95c3fbcedc241db88d1539225bfc879bda1015f534befcbad8aae27 -->
 
 > 英文版为准 ・ 仅供人类参考
 
@@ -17,7 +17,7 @@ FreeType、简体中文语言文件和一套 CJK 像素字体。触控层不在�
 | OpenTTD 源码 | `external/OpenTTD`（git 忽略） | 15.3（cdn.openttd.org 的 `openttd-15.3-source.tar.xz`） | GPLv2 |
 | 基础图形 | `external/openttd-assets/unpacked/opengfx-8.0` | OpenGFX 8.0 | GPLv2 |
 | CJK 像素字体 | `external/openttd-assets/unpacked/fusion-proportional` | 缝合像素字体 12px zh_hans，v2026.08.11 | OFL-1.1 |
-| 工具链 | `~/emsdk` | emsdk 6.0.6（上游 CI 钉住 3.1.57；6.0.6 已在浏览器里验证） | — |
+| 工具链 | `~/emsdk` | emsdk 3.1.57（上游 CI 钉住的版本） | — |
 | 宿主工具 | cmake ≥ 3.16、ninja | Homebrew | — |
 
 声音和音乐保持关闭：上游 wasm 构建用空声音/空音乐驱动启动（`pre.js` 传
@@ -42,12 +42,10 @@ FreeType、简体中文语言文件和一套 CJK 像素字体。触控层不在�
    - 在 FreeType 字形缓存中把 U+00A0 和 U+2003 映射为普通空格。缝合像素
      字体没有为这些不可见空白画字形，OpenTTD 否则会在首次启动时弹出
      “字体缺字”阻断对话框。
-3. emsdk 没有 LibLZMA 端口（已核对到 6.0.6）。把
+3. emsdk 3.1.57 没有 LibLZMA 端口。把
    `os/emscripten/ports/liblzma.py` 复制到
    `~/emsdk/upstream/emscripten/tools/ports/contrib/liblzma.py`
    （与上游 Dockerfile 的做法相同）。存档需要 LZMA。
-   每次安装或升级 emsdk 后都要重做这一步：新版本会替换
-   `upstream/` 目录，复制进去的端口会随之消失。
 
 ## 构建
 

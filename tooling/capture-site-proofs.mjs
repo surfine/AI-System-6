@@ -104,6 +104,89 @@ const PROOFS = [
     },
   },
   {
+    id: "micropolis",
+    // The site shows this in a three-up grid (~340 CSS px) and the README
+    // in a third of a table row; 1000 px stays 2x sharp there without
+    // spending the official site's payload budget on invisible pixels.
+    maxWidth: 1000,
+    window: "micropolis",
+    label: "Build",
+    caption: "Micropolis: a fresh map, simulating.",
+    async setup(page) {
+      await page.evaluate(async () => {
+        if (typeof openMicropolisApp === "function") await openMicropolisApp();
+        else openWindow("micropolis");
+      });
+      // Terrain generation plus the first simulation ticks.
+      await page.waitForTimeout(7000);
+    },
+  },
+  {
+    id: "openttd",
+    maxWidth: 1000,
+    window: "openttd",
+    label: "Connect",
+    caption: "OpenTTD: the wasm build at its Chinese title screen.",
+    async setup(page) {
+      // The Chinese build is the point: flip the desk language before the
+      // iframe attaches so the game boots its zh UI, then flip back after
+      // the shot (the teardown below runs before the next proof).
+      await page.evaluate(async () => {
+        if (typeof currentLanguage !== "undefined" && currentLanguage === "en") await switchLanguage();
+        openWindow("openttd");
+      });
+      await page.waitForFunction(() => {
+        const s = document.querySelector("[data-openttd-status]");
+        return /运行|Running/i.test(s?.textContent || "");
+      }, null, { timeout: 120000 });
+      await page.waitForTimeout(4000);
+      // Into a real game, deterministically: the engine console takes a map
+      // seed, so the same 1950 countryside comes back on every re-shoot. The
+      // arrow keys then walk the viewport off the open sea onto the farms.
+      const frame = await page.evaluate(() => {
+        const f = document.querySelector('.window[data-window="openttd"] iframe');
+        const r = f.getBoundingClientRect();
+        return { x: r.x + r.width / 2, y: r.y + r.height * 0.95 };
+      });
+      await page.mouse.click(frame.x, frame.y);
+      await page.waitForTimeout(400);
+      await page.keyboard.press("Backquote");
+      await page.waitForTimeout(600);
+      await page.keyboard.type("newgame 1988", { delay: 60 });
+      await page.keyboard.press("Enter");
+      await page.waitForTimeout(12000);
+      // Escape closes the console even while its text input holds focus;
+      // the console hotkey itself gets swallowed as typed text there.
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(800);
+      for (let i = 0; i < 52; i++) {
+        await page.keyboard.press(i % 2 ? "ArrowUp" : "ArrowLeft");
+        await page.waitForTimeout(60);
+      }
+      await page.waitForTimeout(1500);
+    },
+    async teardown(page) {
+      await page.evaluate(async () => {
+        if (typeof currentLanguage !== "undefined" && currentLanguage === "zh") await switchLanguage();
+      });
+    },
+  },
+  {
+    id: "doom",
+    maxWidth: 1000,
+    window: "doom",
+    label: "Survive",
+    caption: "DOOM: engine compiled and idling, waiting for your own WAD.",
+    async setup(page) {
+      await page.evaluate(() => openWindow("doom"));
+      await page.waitForFunction(() => {
+        const s = document.querySelector("[data-doom-status]");
+        return /WAD/i.test(s?.textContent || "");
+      }, null, { timeout: 90000 });
+      await page.waitForTimeout(800);
+    },
+  },
+  {
     id: "glass",
     window: "liquidCover",
     label: "Render Glass",
@@ -181,12 +264,15 @@ for (const proof of PROOFS) {
   const webp = path.join(outDir, `${proof.id}.webp`);
   let file = `${proof.id}.png`;
   try {
-    execFileSync("cwebp", ["-quiet", "-q", "86", png, "-o", webp]);
+    const encodeArgs = ["-quiet", "-q", proof.maxWidth ? "82" : "86"];
+    if (proof.maxWidth) encodeArgs.push("-resize", String(proof.maxWidth), "0");
+    execFileSync("cwebp", [...encodeArgs, png, "-o", webp]);
     rmSync(png);
     file = `${proof.id}.webp`;
   } catch (e) {
     console.warn("webp encode failed for", proof.id);
   }
+  if (proof.teardown) await proof.teardown(page);
   captured.push({ id: proof.id, label: proof.label, caption: proof.caption, file });
   console.log("captured", proof.id, Math.round(statSync(path.join(outDir, file)).size / 1024) + "KB");
 }

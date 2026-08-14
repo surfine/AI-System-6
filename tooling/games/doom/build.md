@@ -11,7 +11,7 @@ selected, `needs-data` is the expected ready state.
 | Input | Version or setting |
 | --- | --- |
 | Chocolate Doom | 3.1.1, commit `410d96855b5df5410ff591a90efeafa889119224` |
-| Emscripten | 6.0.6 |
+| Emscripten | 3.1.57 |
 | SDL | Emscripten SDL2 port (`USE_SDL=2`) |
 | Audio | Emscripten SDL2_mixer port (`USE_SDL_MIXER=2`, `SDL2_MIXER_FORMATS=[]`) |
 | CMake / Ninja used for the checked build | 4.4.2 / 1.13.2 |
@@ -33,7 +33,7 @@ git -C external/chocolate-doom rev-parse HEAD
 ```
 
 The second command must print
-`410d96855b5df5410ff591a90efeafa889119224`. Activate emsdk 6.0.6 so
+`410d96855b5df5410ff591a90efeafa889119224`. Activate emsdk 3.1.57 so
 `emcmake`, `emcc`, CMake, and Ninja are on `PATH`, then run:
 
 ```sh

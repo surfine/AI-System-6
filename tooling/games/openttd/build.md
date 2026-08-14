@@ -14,7 +14,7 @@ pixel font. The touch layer is not in the engine: the shell page
 | OpenTTD source | `external/OpenTTD` (git-ignored) | 15.3 (`openttd-15.3-source.tar.xz` from cdn.openttd.org) | GPLv2 |
 | Base graphics | `external/openttd-assets/unpacked/opengfx-8.0` | OpenGFX 8.0 | GPLv2 |
 | CJK pixel font | `external/openttd-assets/unpacked/fusion-proportional` | Fusion Pixel 12px zh_hans, v2026.08.11 | OFL-1.1 |
-| Toolchain | `~/emsdk` | emsdk 6.0.6 (upstream CI pins 3.1.57; 6.0.6 is verified in-browser) | — |
+| Toolchain | `~/emsdk` | emsdk 3.1.57 (the version upstream CI pins) | — |
 | Host tools | cmake ≥ 3.16, ninja | Homebrew | — |
 
 Sound and music stay off: upstream starts the wasm build with the null sound
@@ -42,12 +42,10 @@ would only grow the download.
      Fusion Pixel omits these invisible spacing outlines, but OpenTTD otherwise
      treats them as missing-language-glyph errors and blocks first launch with
      a warning.
-3. emsdk has no LibLZMA port (checked through 6.0.6). Copy
+3. emsdk 3.1.57 has no LibLZMA port. Copy
    `os/emscripten/ports/liblzma.py` to
    `~/emsdk/upstream/emscripten/tools/ports/contrib/liblzma.py`
    (the same step upstream's Dockerfile does). Savegames need LZMA.
-   Repeat this copy after each emsdk install or upgrade: a new release
-   replaces the `upstream/` tree and removes the copied port.
 
 ## Build
 

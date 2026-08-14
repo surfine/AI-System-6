@@ -1,5 +1,5 @@
 <!-- canonical-source: tooling/games/doom/build.md -->
-<!-- source-sha256: e7488cda3e120dd3526306df837e23824daf8779e82830717fded3736222ae0e -->
+<!-- source-sha256: 1a7b27ce7adb472ab3749fbab4e8781a3846431b517149f6a5829d56bc0cbe61 -->
 
 # Chocolate Doom WebAssembly 本机可玩切片
 
@@ -15,7 +15,7 @@
 | 输入 | 版本或设置 |
 | --- | --- |
 | Chocolate Doom | 3.1.1，commit `410d96855b5df5410ff591a90efeafa889119224` |
-| Emscripten | 6.0.6 |
+| Emscripten | 3.1.57 |
 | SDL | Emscripten SDL2 port（`USE_SDL=2`） |
 | 音频 | Emscripten SDL2_mixer port（`USE_SDL_MIXER=2`、`SDL2_MIXER_FORMATS=[]`） |
 | 本次受检构建使用的 CMake / Ninja | 4.4.2 / 1.13.2 |
@@ -37,7 +37,7 @@ git -C external/chocolate-doom rev-parse HEAD
 ```
 
 第二条命令必须输出
-`410d96855b5df5410ff591a90efeafa889119224`。激活 emsdk 6.0.6，让
+`410d96855b5df5410ff591a90efeafa889119224`。激活 emsdk 3.1.57，让
 `emcmake`、`emcc`、CMake 与 Ninja 位于 `PATH`，然后运行：
 
 ```sh

@@ -1980,6 +1980,7 @@ async function teaserDemoRestore(snapshot) {
     if (typeof clearProjectTransientState === "function") clearProjectTransientState();
     if (typeof scheduleWorkspaceRender === "function") scheduleWorkspaceRender({ projectReferences: true, mountedTextDisk: true, menuState: true });
     if (typeof renderDocuments === "function") renderDocuments();
+    if (typeof renderTeachTextTabs === "function") renderTeachTextTabs();
     if (typeof renderProjectDisks === "function") renderProjectDisks();
     if (typeof renderScraps === "function") renderScraps();
     if (typeof renderTrash === "function") renderTrash();
@@ -2075,6 +2076,10 @@ async function teaserDemoSceneSource() {
 
 async function teaserDemoSceneTransform() {
   writingDemoAssertRunning();
+  // Clipping objects live in the lazy finder-objects module; a fresh desk has
+  // not loaded it yet, and the bare-name guard below would read that as
+  // "creation failed" and end the tour one scene in.
+  if (typeof ensureFinderObjectsModule === "function") await ensureFinderObjectsModule();
   const clipping = typeof createClippingFile === "function"
     ? createClippingFile({
         text: teaserDemoClippingText(),

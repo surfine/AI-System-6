@@ -565,7 +565,7 @@ test.assertIncludes(sourceReceipt, "wad-picker.js", "the source receipt covers t
 test.assertIncludes(sourceReceipt, "touch-controls.js", "the source receipt covers the GPL touch adapter");
 test.assertIncludes(sourceReceipt, "shell.js", "the source receipt covers the GPL shell adapter");
 test.assertIncludes(buildDoc, "410d96855b5df5410ff591a90efeafa889119224", "build docs pin the exact source commit");
-test.assertIncludes(buildDoc, "Emscripten | 6.0.6", "build docs pin the toolchain");
+test.assertIncludes(buildDoc, "Emscripten | 3.1.57", "build docs pin the toolchain");
 test.assertIncludes(buildScript, 'git -C "$source_dir" archive', "the build emits corresponding upstream source");
 test.assertIncludes(runtimePatch, "INVOKE_RUN=0", "the patch preserves delayed main");
 test.assertIncludes(runtimePatch, "-lidbfs.js", "the patch links persistent storage");

@@ -1,6 +1,6 @@
 {
-  "capturedAt": "2026-08-13T01:24:18.683Z",
-  "build": "20260812.1",
+  "capturedAt": "2026-08-14T01:54:55.628Z",
+  "build": "20260814.2",
   "proofs": [
     {
       "id": "slides",
@@ -19,6 +19,24 @@
       "label": "Design in 3D",
       "caption": "A 3D colorway on a 1988 desktop, exportable as USDZ for AR.",
       "file": "cmf.webp"
+    },
+    {
+      "id": "micropolis",
+      "label": "Build",
+      "caption": "Micropolis: a fresh map, simulating.",
+      "file": "micropolis.webp"
+    },
+    {
+      "id": "openttd",
+      "label": "Connect",
+      "caption": "OpenTTD: the wasm build at its Chinese title screen.",
+      "file": "openttd.webp"
+    },
+    {
+      "id": "doom",
+      "label": "Survive",
+      "caption": "DOOM: engine compiled and idling, waiting for your own WAD.",
+      "file": "doom.webp"
     },
     {
       "id": "glass",

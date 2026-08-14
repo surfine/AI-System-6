@@ -8,7 +8,7 @@
 No framework. No transpiler. No database. Two floppy disks.
 
 [![License](https://img.shields.io/badge/license-MIT-000000?style=flat-square)](LICENSE)
-[![Node](https://img.shields.io/badge/node-20%2B-000000?style=flat-square)](package.json)
+[![Node](https://img.shields.io/badge/node-24%2B-000000?style=flat-square)](package.json)
 [![Payload](https://img.shields.io/badge/payload-2%20floppies-000000?style=flat-square)](#built-under-a-1988-constraint)
 [![Model](https://img.shields.io/badge/model-bring%20your%20own-000000?style=flat-square)](#bring-your-own-model)
 [![Live](https://img.shields.io/badge/live-system6.aaronlau.me-000000?style=flat-square)](https://system6.aaronlau.me)
@@ -29,7 +29,7 @@ THERE ARE FOUR MORE INSIDE. NO MODEL REQUIRED TO LOOK AROUND.</sub>
 
 ## Run it in 60 seconds
 
-Requires Node.js 20+. No API key, no account, no model.
+Requires Node.js 24+. No API key, no account, no model.
 
 ```bash
 git clone https://github.com/surfine/AI-System-6.git
@@ -48,7 +48,8 @@ npm run verify:public    # repository, command, asset, and docs gate
 ```
 
 Or skip the clone and [**boot the live system**](https://system6.aaronlau.me)
-in your browser.
+in your browser. The [Mac beta](https://github.com/surfine/AI-System-6/releases/latest)
+carries its own current Node runtime, so there is nothing to install at all.
 
 ## What you are looking at
 
@@ -57,9 +58,9 @@ are concatenated into one bundle: no framework, no transpiler, no build step
 for the app code.
 
 ```text
-85 JS source files          concatenated, never transpiled
+82 JS source files          concatenated, never transpiled
 9 runtime dependencies      the server is a stateless bridge, not a backend
-153 executable contracts    one per user feature, not per function
+135 executable contracts    one per user feature, not per function
 6 icon families             drawn per era, not filtered from one set
 2,942,076 bytes             the whole desktop, measured on every build
 0 databases                 your projects live in your browser
@@ -98,8 +99,16 @@ manuscript you were writing.
 | Game | What it is |
 | --- | --- |
 | **Micropolis** | the open-source release of the original SimCity |
-| **OpenTTD** | the open-source Transport Tycoon Deluxe, with touch controls |
+| **OpenTTD** | the open-source Transport Tycoon Deluxe, in Chinese, with touch controls |
 | **DOOM** | DOOM |
+
+<table>
+  <tr>
+    <td width="33%"><img src="site/img/proofs/micropolis.webp" alt="Micropolis in an AI System 6 window: the classic tool palette beside a freshly generated river map. Status line: Welcome to your new city, Mayor."><br><sub><b>Micropolis</b> · Jan 1900, $20,000, welcome Mayor</sub></td>
+    <td width="33%"><img src="site/img/proofs/openttd.webp" alt="OpenTTD in Chinese, mid-game in 1950: a coal mine above an autumn forest, under the full game toolbar."><br><sub><b>OpenTTD</b> · 1950, in Chinese, mid-game</sub></td>
+    <td width="33%"><img src="site/img/proofs/doom.webp" alt="The DOOM window asking for a local IWAD you own; the file never leaves the browser."><br><sub><b>DOOM</b> · engine ready, bring your own demons</sub></td>
+  </tr>
+</table>
 
 They are not GIFs of games. They are the games, compiled to WebAssembly and
 running in the same MultiFinder that holds Searcher and Review Desk. The
@@ -164,6 +173,11 @@ The payload number above is written by `verify:floppy` itself into
 `site/data/floppy-budget.json`; the website fetches it and this page quotes it.
 On the day that gate was built it caught this README quoting a stale number
 three times in one afternoon.
+
+These four are the public face of `verify:ship`: twenty-one fail-closed
+checks — visual regression against six eras, canonical fidelity against
+period screenshots, a real-browser pass over the running app — that must
+all exit 0 before a release is allowed to exist.
 
 Every product screenshot on this page and on the
 [product site](https://aisystem6.pages.dev) is re-shot from the running app by

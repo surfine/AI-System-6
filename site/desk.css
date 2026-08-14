@@ -509,6 +509,16 @@ html[data-theme="liquid-glass"] .route-caption { color: #1c2733; text-shadow: no
   gap: 14px;
   padding: 16px 14px 4px;
 }
+/* The games strip stands alone in its scene, outside a finder window. */
+.games-wall {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  max-width: 1080px;
+  margin: 18px auto 6px;
+  padding: 0 14px;
+}
+.games-shot { aspect-ratio: 4 / 3; }
 .proof-card {
   margin: 0;
   border: 1px solid var(--win-border, var(--ink));
@@ -998,6 +1008,7 @@ html[data-theme="liquid-glass"] { --sel-bg: rgba(40, 90, 200, 0.8); --gauge-fill
   .finder-window .tbar h2 { font-size: 13px; }
   /* One column, or the captures shrink to thumbnails and stop being proof. */
   .proof-wall { grid-template-columns: 1fr; padding: 12px 10px 2px; }
+  .games-wall { grid-template-columns: 1fr; }
 
 
   .boot-picker { grid-template-columns: 1fr; max-width: 280px; margin-left: auto; margin-right: auto; }

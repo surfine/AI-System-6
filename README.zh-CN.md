@@ -1,5 +1,5 @@
 <!-- canonical-source: README.md -->
-<!-- source-sha256: 0e75afa19cafae55cc1e00e311309ea7f138948561ab39d4ecff08bbb3f9fd5e -->
+<!-- source-sha256: 5474b9693d9f10b02f792e2eab029a440f19c93654afb8d58453f510b97c4764 -->
 
 > 英文版为准 / 仅供人类参考
 
@@ -13,7 +13,7 @@
 没有框架。没有转译器。没有数据库。两张软盘。
 
 [![License](https://img.shields.io/badge/license-MIT-000000?style=flat-square)](LICENSE)
-[![Node](https://img.shields.io/badge/node-20%2B-000000?style=flat-square)](package.json)
+[![Node](https://img.shields.io/badge/node-24%2B-000000?style=flat-square)](package.json)
 [![Payload](https://img.shields.io/badge/payload-2%20floppies-000000?style=flat-square)](#在一个-1988-年的约束下建造)
 [![Model](https://img.shields.io/badge/model-bring%20your%20own-000000?style=flat-square)](#自带模型)
 [![Live](https://img.shields.io/badge/live-system6.aaronlau.me-000000?style=flat-square)](https://system6.aaronlau.me)
@@ -34,7 +34,7 @@
 
 ## 60 秒跑起来
 
-需要 Node.js 20+。不需要 API key，不需要账号，不需要模型。
+需要 Node.js 24+。不需要 API key，不需要账号，不需要模型。
 
 ```bash
 git clone https://github.com/surfine/AI-System-6.git
@@ -53,16 +53,18 @@ npm run verify:public    # 仓库、命令、资源与文档门禁
 ```
 
 不想克隆，就直接在浏览器里[**启动 Live System**](https://system6.aaronlau.me)。
+[Mac 测试版](https://github.com/surfine/AI-System-6/releases/latest)自带当前版本的
+Node 运行时，什么都不用装。
 
 ## 你正在看的是什么
 
-一套桌面操作环境，用纯 JavaScript 写成。85 个源文件拼接成一个 bundle：没有框架，
+一套桌面操作环境，用纯 JavaScript 写成。82 个源文件拼接成一个 bundle：没有框架，
 没有转译器，应用代码没有构建步骤。
 
 ```text
-85 个 JS 源文件        直接拼接，从不转译
+82 个 JS 源文件        直接拼接，从不转译
 9 个运行时依赖         服务端是无状态桥接，不是后端
-153 条可执行契约       一个用户功能一条，不是一个函数一条
+135 条可执行契约       一个用户功能一条，不是一个函数一条
 6 套图标家族           按时代分别绘制，不是一套滤镜出来的
 2,942,076 字节         整台桌面，每次构建实测
 0 个数据库             你的项目存在你自己的浏览器里
@@ -98,8 +100,16 @@ AI 是你指向这些对象的工具，它的产出在你保存、摘录、插�
 | 游戏 | 是什么 |
 | --- | --- |
 | **Micropolis** | 初代《模拟城市》的开源发行版 |
-| **OpenTTD** | 开源版《运输大亨豪华版》，带触控操作 |
+| **OpenTTD** | 开源版《运输大亨豪华版》，中文界面，带触控操作 |
 | **DOOM** | DOOM |
+
+<table>
+  <tr>
+    <td width="33%"><img src="site/img/proofs/micropolis.webp" alt="AI System 6 窗口里的 Micropolis：经典工具面板旁是刚生成的河流地图，状态栏写着 Welcome to your new city, Mayor."><br><sub><b>Micropolis</b> · 1900 年 1 月，$20,000，市长你好</sub></td>
+    <td width="33%"><img src="site/img/proofs/openttd.webp" alt="中文界面的 OpenTTD，1950 年局内：完整工具栏下，秋林之上的一座煤矿。"><br><sub><b>OpenTTD</b> · 1950 年，中文，局内实拍</sub></td>
+    <td width="33%"><img src="site/img/proofs/doom.webp" alt="DOOM 窗口请求本机 IWAD：选择你拥有的文件，它绝不离开浏览器。"><br><sub><b>DOOM</b> · 引擎就绪，自带恶魔</sub></td>
+  </tr>
+</table>
 
 它们不是游戏的 GIF，就是游戏本身，编译成 WebAssembly，跑在同一个装着 Searcher
 和 Review Desk 的 MultiFinder 里。桌面隐喻从来不是一件戏服：一台你能往上装游戏
@@ -158,6 +168,10 @@ System 6.0.8 资源和实测 Macintosh 行为出发；后来的时代各自拥�
 上面那个字节数由 `verify:floppy` 自己写进 `site/data/floppy-budget.json`，
 官网从那里读取，本页从那里引用。这道门禁建成的当天，就在一个下午里抓到本
 README 引用过期数字三次。
+
+这四条是 `verify:ship` 的公开门面：二十一道 fail-closed 检查——对六个时代的
+视觉回归、对照历史截图的 canonical fidelity、在真实浏览器里跑起来的整机检查
+——全部退出码为 0，一次发布才被允许存在。
 
 本页和[产品官网](https://aisystem6.pages.dev)上的每一张产品截图，都由
 `npm run site:capture-frames` 和 `tooling/capture-site-proofs.mjs` 从运行中的
