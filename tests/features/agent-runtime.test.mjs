@@ -267,7 +267,17 @@ test.assertIncludes(coordinatorSource, 'allowedEffects: ["read", "proposal"]', "
 test.assertIncludes(coordinatorSource, "writingAgentEvidenceSnapshot", "coordinator records a normalized evidence packet");
 test.assertIncludes(coordinatorSource, "runToolLoop", "browser generation executes provider tool calls through the bounded registry");
 test.assertIncludes(coordinatorSource, 'tool_choice: "auto"', "interactive writing tasks expose provider-native tools");
-test.assertIncludes(coordinatorSource, 'streamPreference: "json"', "tool-call turns use complete JSON messages");
+// A tool loop used to force complete JSON messages, so the one route a mounted
+// project actually takes never streamed: the writer waited in silence, and the
+// Stop button had nothing to keep. Every round streams when someone is watching.
+test.assertIncludes(coordinatorSource, 'streamPreference: onToken ? "stream" : "json"', "tool-call turns stream whenever a token listener is watching");
+test.assertIncludes(coordinatorSource, "const combinedText = streamedPrefix + roundText;", "later rounds continue the reply instead of erasing the earlier rounds");
+test.assertIncludes(coordinatorSource, "listener(streamedPrefix + String(snapshot || \"\"))", "each round's snapshots are reported on top of what already streamed");
+test.assertIncludes(
+  coordinatorSource,
+  'error.partialContent = (streamedPrefix + roundPartial).replace(/\\s+$/, "");',
+  "stopping mid-loop keeps every round the writer already read, not just the last one"
+);
 for (const toolName of [
   "searchProjectSources",
   "readCitation",
@@ -293,6 +303,34 @@ test.assertIncludes(chatMessages, 'missing.push(t("clio_grounding_reading_capped
 // proposal also has to reach the writer, or the model can only describe an edit
 // it already worked out.
 test.assertIncludes(coordinatorSource, "input.options?.onToolActivity?.(calls)", "the loop reports which tool is about to run so a surface can say so");
+
+// The live activity line is gone once the answer lands, so the finished turn
+// keeps its own record of what the run opened. Without it the reply reads as
+// the model's own words even after several tools ran, which is the System
+// Integrity rule stood on its head.
+test.assertIncludes(chatMessages, "function clioTalkReadingTrace()", "a finished run keeps a record of what it opened");
+test.assertIncludes(chatMessages, "reading: clioTalkReadingTrace()", "the reading record rides the saved reply, so it survives a reload");
+test.assertIncludes(chatMessages, "function appendClioTalkReadingTrace(", "the finished turn renders what the run opened");
+test.assertMatches(
+  chatMessages,
+  /function clioTalkReadingTrace\(\)[\s\S]*?\.filter\(\(call\) => clioTalkToolActivityKeys\[String\(call\?\.name \|\| ""\)\]\)/,
+  "only tools this desk can name reach the turn; an unknown identifier is left out rather than leaked",
+);
+test.assertMatches(
+  chatMessages,
+  /function appendClioTalkReadingTrace\([\s\S]*?const reading = Array\.isArray\(record\?\.reading\) \? record\.reading : \[\];[\s\S]*?if \(!reading\.length\) return;/,
+  "no reading, no claim: an empty run states nothing rather than inventing a step count",
+);
+test.assertMatches(
+  chatMessages,
+  /list\.className = "message-reading-list";[\s\S]*?list\.hidden = true;/,
+  "the record is a disclosure, closed until asked for, so a quiet desk stays quiet",
+);
+test.assertMatches(
+  chatMessages,
+  /summary\.setAttribute\("aria-expanded", "false"\);\s*\n\s*summary\.setAttribute\("aria-controls", list\.id\);/,
+  "the disclosure states its own collapsed state and what it controls",
+);
 test.assertIncludes(chatMessages, "function clioTalkProposedManuscriptPatch()", "a proposed manuscript patch is lifted out of the finished run");
 test.assertIncludes(chatMessages, 'data.kind !== "manuscript-patch"', "only a real manuscript patch is carried, not any tool result");
 test.assertIncludes(chatMessages, "manuscriptPatch: clioTalkProposedManuscriptPatch()", "the proposal rides the reply, so an older turn still has it on the table");

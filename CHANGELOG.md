@@ -823,6 +823,32 @@ Version `1.0.12`, build `20260804.2`.
   verify:dependency-freshness gate compares the installed tree against
   package.json and the lock file.
 
+## Public Beta 1.0.46 - 2026-08-16
+
+- ClioTalk streams with tools. A tool loop used to force complete JSON
+  messages, so the route a mounted project actually takes waited in silence
+  and Stop had nothing to keep. Streamed tool calls now assemble across
+  fragments: a name that arrives once stays one name, argument JSON is glued
+  from many frames, parallel calls merge by index, snapshots are not appended
+  twice, and truncated arguments fail instead of being guessed. Every round
+  streams whenever a token listener is watching, later rounds continue the
+  reply instead of erasing it, and stopping keeps the cumulative text of every
+  round the writer already read. The JSON fallback path is repaired
+  underneath: the stream reader used to lock the response body with
+  getReader() before checking the content type, so a provider that ignored
+  stream:true could never answer through response.json().
+- The whole iPad family is verified and fitted: standard iPad, Air, Pro and
+  mini, every representative size, both orientations, and iPadOS Split View
+  and Slide Over panes — 1,348 checks green. The window clamp now reads
+  --keyboard-inset, so the window that owns the focused field lifts above the
+  on-screen keyboard like the phone shell does, and its frame returns when the
+  keyboard closes; the clamp also writes max-height with the kebab-case
+  property it always meant to.
+- The Finishing Receipt stays reachable on a phone in landscape: the restore
+  path re-asserts the clamp once the receipt reaches its real height, and on
+  short viewports the pane scrolls instead of clipping a stated fact.
+- Boot payload re-measured at 2,948,416 bytes against the two-floppy budget.
+
 ## What Changed Most In One Month
 
 - The product moved from "an AI writing prototype" to a local-first writing

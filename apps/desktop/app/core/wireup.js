@@ -639,6 +639,8 @@ function wireAppEvents() {
     const covered = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
     const keyboard = keyboardCapableFocus() ? covered : 0;
     document.documentElement.style.setProperty("--keyboard-inset", `${keyboard}px`);
+    // Floating windows re-fit the one owning the focused field above the keys.
+    syncKeyboardWindowFrame?.();
   }
   if (window.visualViewport) {
     window.visualViewport.addEventListener("resize", updateKeyboardInset);
@@ -900,6 +902,19 @@ function wireAppEvents() {
   
     const menuButton = event.target.closest(".menu > button");
     if (menuButton) {
+      // The application-owned eras draw an indicator at the right end, not a
+      // menu. Apple's 1988 guide: clicking it brings forward each open
+      // application in succession. Nothing drops down.
+      //
+      // Ask the era rather than the rendered attribute: a theme preview can
+      // change the era without redrawing the bar, and a stale attribute must
+      // never be what decides whether a menu opens.
+      if (menuButton.id === "multifinder-button" && usesApplicationOwnedMenuBar()) {
+        closeMenus();
+        cycleToNextApp();
+        menuButton.blur();
+        return;
+      }
       const menu = menuButton.closest(".menu");
       const isOpen = menu.classList.contains("is-open");
       closeMenus();
@@ -1100,10 +1115,24 @@ function wireAppEvents() {
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
       const composeMenuWasOpen = composeToolsMenuEl && !composeToolsMenuEl.classList.contains("is-hidden");
+      const anyMenuWasOpen = composeMenuWasOpen || !!document.querySelector(".menu.is-open");
       closeMenus();
       closeTeachTextCommandMenus();
       closeComposeToolsMenu();
       if (composeMenuWasOpen) composeToolsToggleButton?.focus();
+      // Escape means "let me out of here" (1992 HIG p.277). An open menu is
+      // the nearer thing to get out of; with none open, it is the run that is
+      // still going. Deliberately not suppressed while typing — mid-sentence
+      // is exactly when a writer wants the brake.
+      if (!anyMenuWasOpen && stopRunningTaskFromKeyboard()) event.preventDefault();
+      return;
+    }
+
+    // Command-period is Table 4-1's reserved "Terminate an operation" and had
+    // no assignment here. It brakes from anywhere, including a text field,
+    // which is what makes it the panic key rather than a second Stop button.
+    if (event.key === "." && (event.metaKey || event.ctrlKey) && !event.altKey) {
+      if (stopRunningTaskFromKeyboard()) event.preventDefault();
       return;
     }
 
@@ -1366,6 +1395,8 @@ function wireAppEvents() {
   dictationRecordButton.addEventListener("click", () => withDictationPad(() => startDictation()));
 
   dictationStopButton.addEventListener("click", () => withDictationPad(() => stopDictation()));
+
+  dictationShapeButton.addEventListener("click", () => withDictationPad(() => shapeDictationTranscript()));
 
   dictationCleanButton.addEventListener("click", () => withDictationPad(() => cleanTranscript()));
 

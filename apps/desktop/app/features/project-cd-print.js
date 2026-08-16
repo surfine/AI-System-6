@@ -358,6 +358,25 @@ function renderFinishingReceipt(receipt) {
       keptEl.append(when);
     }
   }
+
+  // The restore path fills this window AFTER the window manager has placed it:
+  // attachFinishingReceipt reads the revision chain asynchronously, so an empty
+  // receipt is positioned and clamped, and only then grows to its real height.
+  // On a phone in landscape that left the lower rows below the fold. Re-assert
+  // the clamp now that the height is the real one. The burn path renders before
+  // the window opens, where the clamp correctly does nothing.
+  //
+  // Below 860px the stylesheet owns the frame and centres the window with a
+  // transform, so an absolute left written here would shift it half its own
+  // width off the screen. That is the same boundary applyWindowSessionFrame
+  // keeps, and below it the CSS layout already holds the receipt on screen.
+  const win = document.querySelector('[data-window="finishingReceipt"]');
+  if (win
+      && !win.classList.contains("is-hidden")
+      && !window.matchMedia("(max-width: 860px)").matches
+      && typeof clampWindowToViewport === "function") {
+    clampWindowToViewport(win);
+  }
   return true;
 }
 

@@ -537,6 +537,10 @@ function setComposerSubmitMode(isBusy) {
   button.dataset.i18nTitle = mode;
   button.setAttribute("aria-label", t(mode));
   button.title = t(mode);
+  // The balloon has to follow the button. Left on the Send text, it described
+  // sending while the control did the opposite, and the stop balloon is also
+  // where a writer learns that Esc and Command-period reach the same brake.
+  button.dataset.balloonHelp = isBusy ? "balloon_clio_stop" : "balloon_clio_send";
   const label = button.querySelector(".composer-submit-label");
   if (label) {
     label.dataset.i18n = mode;
@@ -2042,6 +2046,7 @@ function addMessage(role, content, options = {}) {
   if (role === "assistant") {
     lastAssistantText = content;
     appendMessageGrounding(item, options.grounding || null);
+    appendClioTalkReadingTrace(item, options.messageRecord);
     decorateClioTalkInlineCitations(item, options.grounding || null);
   }
   appendClioTalkRunState(item, options.messageRecord);
@@ -2146,9 +2151,10 @@ const clioTalkToolActivityKeys = Object.freeze({
 });
 
 // One line, in the gap where the answer is about to appear, replaced by the
-// next tool and gone when the reply lands. What was read stays visible after
-// the fact in the basis strip, which is the surface that already carries it —
-// so this says what is happening now and leaves no furniture behind.
+// next tool. This says what is happening now; what was read is kept on the
+// finished turn by the reading trace below, because the basis strip only
+// names sources the answer cites and stays silent about reading that cited
+// nothing — which read as "the model's own words" after four tools had run.
 function reportClioTalkToolActivity(item, calls = []) {
   const labels = calls
     .map((call) => clioTalkToolActivityKeys[String(call?.name || "")])
@@ -2159,6 +2165,68 @@ function reportClioTalkToolActivity(item, calls = []) {
   // moving while nothing happens is the fake progress this product forbids.
   stopWaitCycle();
   updatePendingMessage(item, 1, t("clio_tool_activity_line", [...new Set(labels)]));
+}
+
+// What the finished run actually opened, in the writer's vocabulary, small
+// enough to ride the saved reply. Only tools this desk can name are kept: an
+// unrecognized identifier is left out rather than leaked onto the turn.
+function clioTalkReadingTrace() {
+  const calls = window.lastWritingAgentGenerated?.toolCalls;
+  if (!Array.isArray(calls) || !calls.length) return [];
+  return calls
+    .filter((call) => clioTalkToolActivityKeys[String(call?.name || "")])
+    .map((call) => ({
+      name: String(call.name),
+      round: Number(call.round) || 0,
+      ok: call.result?.ok !== false,
+    }));
+}
+
+// Reading is work the writer did not see and cannot otherwise check, so the
+// finished turn keeps a record of it. Collapsed by default: this is evidence
+// on request, not a construction site in the middle of a quiet desk. It never
+// says more than the run reported — no counts are inferred from an empty list.
+function appendClioTalkReadingTrace(item, record) {
+  item.querySelector(".message-reading-trace")?.remove();
+  const reading = Array.isArray(record?.reading) ? record.reading : [];
+  if (!reading.length) return;
+  const body = item.querySelector(".message-content");
+  if (!body) return;
+
+  const trace = document.createElement("div");
+  trace.className = "message-reading-trace";
+
+  // A Finder disclosure row, not a native details element: the message row
+  // owns its own triangle everywhere else in this window, and the verbs in a
+  // turn are never allowed to hide inside a browser widget.
+  const list = document.createElement("ul");
+  list.className = "message-reading-list";
+  list.id = `reading-trace-${crypto.randomUUID()}`;
+  list.hidden = true;
+  reading.forEach((entry) => {
+    const key = clioTalkToolActivityKeys[String(entry?.name || "")];
+    if (!key) return;
+    const row = document.createElement("li");
+    row.textContent = entry?.ok === false
+      ? t("clio_reading_trace_failed", t(key))
+      : t(key);
+    list.append(row);
+  });
+
+  const summary = document.createElement("button");
+  summary.type = "button";
+  summary.className = "message-reading-summary";
+  summary.setAttribute("aria-expanded", "false");
+  summary.setAttribute("aria-controls", list.id);
+  summary.textContent = t("clio_reading_trace_summary", reading.length);
+  summary.onclick = () => {
+    const open = list.hidden;
+    list.hidden = !open;
+    summary.setAttribute("aria-expanded", String(open));
+  };
+
+  trace.append(summary, list);
+  body.append(trace);
 }
 
 function startWaitCycle(item) {
@@ -2202,6 +2270,7 @@ function resolvePendingMessage(item, role, content, options = {}) {
   if (role === "assistant") {
     lastAssistantText = content;
     appendMessageGrounding(item, options.grounding || null);
+    appendClioTalkReadingTrace(item, options.messageRecord);
     decorateClioTalkInlineCitations(item, options.grounding || null);
   }
   appendClioTalkRunState(item, options.messageRecord);
@@ -3361,6 +3430,19 @@ function stopGeneration() {
   activeAbortController?.abort();
 }
 
+// The brake also needs a key. The 1992 HIG asks it as a review question --
+// "If an operation can be interrupted, do you provide a Cancel or Stop
+// button? Can Escape or Command-period be used to cancel or stop these
+// operations?" (ch.10) -- and Escape's documented meaning is "let me out of
+// here" (p.277), with Command-period reserved for "Terminate an operation"
+// (Table 4-1) and unclaimed here. Both reach the same brake as the button, so
+// what is already on screen is kept exactly as pressing Stop keeps it.
+function stopRunningTaskFromKeyboard() {
+  if (!activeAbortController) return false;
+  stopGeneration();
+  return true;
+}
+
 function estimateTokenCount(text) {
   const normalized = typeof text === "string" ? text.trim() : JSON.stringify(text || "");
   if (!normalized) return 0;
@@ -3640,10 +3722,14 @@ async function readChatCompletionStream(response, onToken, signal) {
   let responseApi = "";
   let servedModel = "";
   let latestContent = "";
+  let toolCalls = [];
   try {
     const content = await readModelTextStream(response, {
       signal,
       throttleMs: 60,
+      onToolCalls: (calls) => {
+        toolCalls = Array.isArray(calls) ? calls : [];
+      },
       onSnapshot: (snapshot) => {
         latestContent = String(snapshot || "");
         onToken?.(latestContent);
@@ -3664,7 +3750,7 @@ async function readChatCompletionStream(response, onToken, signal) {
         servedModel = String(name || "");
       },
     });
-    return { content, usage: streamUsage, finishReason, responseId, responseApi, servedModel };
+    return { content, usage: streamUsage, finishReason, responseId, responseApi, servedModel, toolCalls };
   } catch (error) {
     if (latestContent.trim()) {
       error.partialContent = latestContent.trim();
@@ -3892,9 +3978,13 @@ async function sendLocalModelTask(options = {}) {
         responseId,
         responseApi,
         servedModel,
+        toolCalls: streamedToolCalls,
       } = await readChatCompletionStream(response, onToken, signal);
       const text = streamedText.trim();
-      if (!text) throw new Error("LM Studio stream did not include content.");
+      const toolCalls = Array.isArray(streamedToolCalls) ? streamedToolCalls : [];
+      // A turn that only asks for a tool has no visible text, and that is a
+      // complete turn, not an empty one. Mirrors the JSON reader's rule.
+      if (!text && !toolCalls.length) throw new Error("LM Studio stream did not include content.");
       if (isCloud && streamUsage?.prompt_tokens) {
         trackCloudTokenUsage(streamUsage.prompt_tokens, streamUsage.completion_tokens || 0, streamUsage.total_tokens || 0, streamUsage, servedModel);
       }
@@ -3910,6 +4000,10 @@ async function sendLocalModelTask(options = {}) {
         text,
         metrics,
         budget: lastContextBudget,
+        // The tool loop reads the assistant turn back off this result, so a
+        // streamed turn must present the same message shape as a JSON turn.
+        message: { role: "assistant", content: text || null, ...(toolCalls.length ? { tool_calls: toolCalls } : {}) },
+        toolCalls,
         responseId: window.lastLocalModelResponseId,
         responseApi: window.lastLocalModelResponseApi,
       };
@@ -4066,6 +4160,9 @@ function createClioTalkAssistantRecord({
     finishReason: String(finishReason || (stopped ? "stopped" : "stop")),
     temporaryChat: !!temporaryChat,
     grounding: grounding || null,
+    // What the run opened before it answered. Kept on the record so the
+    // evidence survives a reload, not only the moment it scrolled past.
+    reading: clioTalkReadingTrace(),
     // A patch the run proposed but did not apply. It rides the reply so the
     // offer is still on the table when the writer comes back to an older turn,
     // and it stays a proposal until Use Result writes it.

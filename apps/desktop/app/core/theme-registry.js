@@ -18,6 +18,26 @@
   // recipeBase is a maintenance lineage, not a second active CSS class. A
   // child starts from its named parent recipe, then owns an explicit delta;
   // family is reserved for genuinely shared primitives.
+  //
+  // `menuBarModel` is the one place that answers "whose menu bar is this",
+  // because the two lineages answer it differently and no skin can absorb the
+  // difference:
+  //
+  //   "application-owned" (System 5/6 through Mac OS 9) -- the foreground
+  //     application builds the whole bar from its own MBAR/MENU resources,
+  //     Apple menu included, and the right end is an *indicator*: clicking it
+  //     brings the next open application forward. Apple's 1988 System Software
+  //     6.0 guide, p.229: "Clicking the small icon in the menu bar brings
+  //     forward each open application in succession." MultiFinder's own file
+  //     on the bundled System 6.0.8 image carries no MENU resource at all.
+  //
+  //   "system-owned" (Mac OS X) -- the Apple menu belongs to the system and
+  //     cannot be modified, and a bold application-name menu sits next to it.
+  //     Apple's Aqua HIG (June 2002) p.54 calls that menu "new in Mac OS X",
+  //     so it must never appear in the classic or platinum appearance.
+  //
+  // Evidence and citations: internal research notes for this change; the rule
+  // is pinned by tests/features/menu-bar.test.mjs.
   const registry = Object.freeze([
     Object.freeze({
       id: "classic",
@@ -26,6 +46,7 @@
       labelKey: "theme_classic",
       family: "classic",
       recipeBase: null,
+      menuBarModel: "application-owned",
       releaseReady: true,
       systemFont: "Chicago",
       systemFontSize: 12,
@@ -40,6 +61,7 @@
       labelKey: "theme_platinum",
       family: "classic",
       recipeBase: "classic",
+      menuBarModel: "application-owned",
       releaseReady: true,
       systemFont: "Charcoal",
       systemFontSize: 12,
@@ -57,6 +79,7 @@
       // owns its material, geometry, and state rules under data-theme="aqua".
       family: "aqua",
       recipeBase: null,
+      menuBarModel: "system-owned",
       releaseReady: true,
       systemFont: "Lucida Grande",
       systemFontSize: 13,
@@ -74,6 +97,7 @@
       // with its own 10.6 token delta.
       family: "aqua",
       recipeBase: "aqua",
+      menuBarModel: "system-owned",
       releaseReady: true,
       systemFont: "Lucida Grande",
       systemFontSize: 13,
@@ -88,6 +112,7 @@
       labelKey: "theme_yosemite",
       family: "liquid-glass",
       recipeBase: "liquid-glass",
+      menuBarModel: "system-owned",
       releaseReady: true,
       systemFont: "Helvetica Neue",
       systemFontSize: 13,
@@ -102,6 +127,7 @@
       labelKey: "theme_liquid_glass",
       family: "liquid-glass",
       recipeBase: null,
+      menuBarModel: "system-owned",
       releaseReady: true,
       systemFont: "SF Pro",
       systemFontSize: 13,
@@ -150,6 +176,11 @@
     if (!element) return;
     element.dataset.theme = theme.id;
     element.dataset.themeFamily = theme.family;
+    // The menu-bar model is projected, not derived from the family, because it
+    // is a semantic fact the stylesheet and the runtime must agree on. CSS
+    // reads it here; JS reads it through menuBarModel(). One source, two
+    // consumers.
+    element.dataset.menuBarModel = theme.menuBarModel;
     if (theme.recipeBase) element.dataset.themeBase = theme.recipeBase;
     else delete element.dataset.themeBase;
     if (element === global.document?.body) {
@@ -234,6 +265,16 @@
     return getTheme(value).capabilities.includes(String(capability || ""));
   }
 
+  // Whose bar is it. See the registry comment: "application-owned" is the
+  // System 5/6 through Mac OS 9 model, "system-owned" is Mac OS X.
+  function getMenuBarModel(value = currentThemeId) {
+    return getTheme(value).menuBarModel;
+  }
+
+  function isApplicationOwnedMenuBar(value = currentThemeId) {
+    return getMenuBarModel(value) === "application-owned";
+  }
+
   const api = Object.freeze({
     STORAGE_KEY,
     LEGACY_LIQUID_KEY,
@@ -249,6 +290,8 @@
     getReleaseReadyThemes,
     getRecipeChain,
     hasCapability,
+    getMenuBarModel,
+    isApplicationOwnedMenuBar,
     syncBody,
     syncFontStrategy,
   });

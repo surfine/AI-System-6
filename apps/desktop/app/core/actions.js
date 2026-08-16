@@ -1453,6 +1453,12 @@ function getApplicationActionHandlers() {
     "open-project-cd": () => openWindow("projectCd"),
     "copy-project-cd-markdown": copySelectedProjectCdMarkdown,
     "share-project-cd-markdown": shareSelectedProjectCdMarkdown,
+    // Download and Print to PDF reached their handlers through a bare click
+    // listener on a button id, so nothing outside the Project CD window could
+    // dispatch them and Get Info could not offer a burned item its own verbs.
+    // Both handlers already refuse an empty selection with a status line.
+    "download-project-cd-item": () => downloadSelectedProjectCdItem(),
+    "print-project-cd-item": () => printSelectedProjectCdItem(),
     // Lazy module: the identifier must be resolved at dispatch time, not at
     // registry-build time, or the whole registry throws before first use.
     "open-finishing-receipt": () => openFinishingReceiptForSelection(),

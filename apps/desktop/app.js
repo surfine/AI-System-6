@@ -318,6 +318,7 @@ const {
   readerUrlDisplayEl,
   dictationRecordButton,
   dictationStopButton,
+  dictationShapeButton,
   dictationCleanButton,
   dictationClearButton,
   dictationSendButton,
@@ -1655,6 +1656,17 @@ function applyTheme(themeId, options = {}) {
       if (typeof fitFinderWindowToContents === "function") fitFinderWindowToContents(win);
     });
   });
+  // Eras disagree about who owns the menu bar, so an appearance change is also
+  // a menu-bar change: the right end becomes an indicator or a menu, and the
+  // application verbs move between the Apple menu and the bold application
+  // menu. A Theme Lab preview passes syncUi:false to stay cheap, but skipping
+  // the rebuild there would show the previous era's menu bar in the one place
+  // built for comparing eras. The boot call also passes syncUi:false and runs
+  // before there is any bar to rebuild, so the condition is readiness rather
+  // than the caller's chrome preference.
+  if (typeof renderMultiFinderMenu === "function" && document.body.dataset.appReady === "ready") {
+    renderMultiFinderMenu();
+  }
   if (options.syncUi !== false) {
     if (typeof updateMenuState === "function") updateMenuState();
     if (typeof refreshStrip === "function") refreshStrip("appearance");

@@ -255,7 +255,15 @@ async function createProjectFromInput() {
   scheduleWorkspaceRender({ projectReferences: true, mountedTextDisk: true, menuState: true });
   resetAssistantForProject(project.name);
   loadActiveProjectReferences();
-  openWindow("projects");
+  await openWindow("projects");
+  // The projects.commit() above saves through saveDeskState(), but it runs
+  // while activeProjectId still names the previous disk -- so the settings
+  // record kept the old mount until some later, unrelated save corrected it.
+  // Record the mount here instead of leaving it to an accident of timing. This
+  // comes after the window opens, because saveDeskState() also writes the
+  // scene, and the scene must show the desk the new disk actually has.
+  // flushWorkingSessionCommit() above already parked the previous disk's scene.
+  await saveDeskState();
   setStatus(t("project_created", project.name));
 }
 
@@ -883,6 +891,16 @@ function openFileInfo() {
     iconClass = item.iconClass || "doc-icon";
     iconId = item.iconId || "document";
     sizeBytes = item.sizeValue ?? String(item.body || "").length;
+  } else if (item.type === "trashRoot") {
+    kindLabel = item.kindLabel || t("trash_kind");
+    iconClass = item.iconClass || "trash-icon";
+    iconId = item.iconId || "trash";
+    sizeBytes = item.itemCount || 0;
+  } else if (item.type === "trashItem") {
+    kindLabel = item.kindLabel || t("trash_kind");
+    iconClass = item.iconClass || "doc-icon";
+    iconId = item.iconId || "document";
+    sizeBytes = item.sizeValue ?? String(item.body || "").length;
   } else if (projects.includes(item)) {
     kindLabel = t("project_disk");
     iconClass = "project-disk-icon";
@@ -902,17 +920,21 @@ function openFileInfo() {
 
   fileInfoKindEl.textContent = `${t("kind")}: ${kindLabel}`;
   fileInfoSizeEl.textContent = item.sizeLabel
-    || (projects.includes(item) || item.type === "finder-volume" || item.type === "finder-root" || item.type === "folder" ? t("items_count", sizeBytes) : `${sizeBytes} bytes`);
+    || (projects.includes(item) || item.type === "finder-volume" || item.type === "finder-root" || item.type === "trashRoot" || item.type === "folder" ? t("items_count", sizeBytes) : `${sizeBytes} bytes`);
   const project = item.projectId ? projects.find((entry) => entry.id === item.projectId) : getActiveProject();
   fileInfoLocationEl.textContent = item.location || (project ? projectDisplayName(project) : t("project_disk"));
   const folder = item.folderId ? chatFolders.find((entry) => entry.id === item.folderId) : null;
   const sourceMatch = (item.body || "").match(/URL:\s*(https?:\/\/\S+)/i);
-  fileInfoFolderEl.textContent = item.type === "finder-volume"
+  fileInfoFolderEl.textContent = item.type === "finder-volume" || item.type === "trashRoot"
     ? item.name
     : item.type === "finder-root"
     ? getFinderItemPathLabel(item)
     : item.type === "folder"
       ? getFinderItemPathLabel(item)
+    // A trashed object's folder is the place it will go back to, which is the
+    // only address it still has.
+    : item.type === "trashItem"
+      ? item.folderLabel || item.location
     : item.type === "mountedFile" || item.type === "projectCdItem"
       ? item.location
       : folder ? getProjectFolderPathLabel(folder.id, item.projectId || activeProjectId) : getProjectFolderPathLabel(null, item.projectId || activeProjectId);
@@ -921,6 +943,10 @@ function openFileInfo() {
     ? t("local_desktop")
     : item.type === "mountedFile"
       ? t("durable_no")
+    // Trashed material carries a projectId, so without this branch Get Info
+    // read "Saved on Project Hard Disk" for something already thrown away.
+    : item.type === "trashRoot" || item.type === "trashItem"
+      ? t("durable_trash")
       : item.projectId || projects.includes(item) || item.type === "finder-volume" || item.type === "finder-root" || item.type === "folder" ? t("durable_yes") : t("durable_no");
   fileInfoCommentsEl.value = item.comments || "";
   fileInfoCommentsEl.disabled = item.readOnly === true;
@@ -963,17 +989,57 @@ const fileInfoKindActions = [
   { kind: "skill-auto-call-settings", action: "configure-skill-auto-call", labelKey: "configure_skill_auto_call" },
 ];
 
+// Whole-volume verbs, keyed by the Finder volume the Get Info was opened from.
+// Writing a File Floppy through to the Project Hard Disk acts on the mounted
+// volume, not on a selected file, so it belongs to the volume's own window —
+// where it used to be reachable only as one button among three.
+const finderVolumeKindActions = new Map([
+  ["textDisk", [
+    { action: "add-text-disk-project", labelKey: "add_to_project_disk" },
+  ]],
+]);
+
+// A burned Project CD item had four verbs and no surface of its own: Receipt
+// and Copy Markdown were buttons in the volume window, and Download and Print
+// to PDF were bare button ids no command could reach.
+const projectCdItemKindActions = [
+  { action: "open-finishing-receipt", labelKey: "finishing_receipt_ellipsis" },
+  { action: "copy-project-cd-markdown", labelKey: "copy_markdown" },
+  { action: "download-project-cd-item", labelKey: "download" },
+  { action: "print-project-cd-item", labelKey: "print_to_pdf" },
+];
+
+function finderVolumeWindowNameForItem(item) {
+  return String(item?.id || "").startsWith("finder-volume:")
+    ? String(item.id).slice("finder-volume:".length)
+    : "";
+}
+
+function fileInfoActionsForItem(item) {
+  if (item?.type === "mountedFile") {
+    return [
+      { action: "install-mounted-skill", labelKey: "install_skill" },
+      { action: "preview-mounted-skill", labelKey: "preview_skill" },
+    ].filter(() => typeof parseMountedSkillPackage === "function" && parseMountedSkillPackage(item.name).valid);
+  }
+  if (item?.type === "finder-volume") {
+    return finderVolumeKindActions.get(finderVolumeWindowNameForItem(item)) || [];
+  }
+  if (item?.type === "projectCdItem") return projectCdItemKindActions;
+  return fileInfoKindActions.filter((entry) => entry.kind === item?.artifactKind);
+}
+
 function renderFileInfoKindActions(item) {
   const row = document.querySelector("#info-kind-actions");
   if (!row) return;
   row.replaceChildren();
 
-  const entries = item?.type === "mountedFile"
-    ? [
-      { action: "install-mounted-skill", labelKey: "install_skill" },
-      { action: "preview-mounted-skill", labelKey: "preview_skill" },
-    ].filter(() => typeof parseMountedSkillPackage === "function" && parseMountedSkillPackage(item.name).valid)
-    : fileInfoKindActions.filter((entry) => entry.kind === item?.artifactKind);
+  const entries = fileInfoActionsForItem(item);
+  // A kind verb exists only while its object does, but existing is not the
+  // same as being able to act. When the shared availability map answers for
+  // the verb, the button reports that answer the way a menu row does: grey
+  // and genuinely refusing the click, never grey-looking but still live.
+  const availability = typeof getActionAvailability === "function" ? getActionAvailability() : {};
 
   entries.forEach((entry) => {
     const button = document.createElement("button");
@@ -982,9 +1048,71 @@ function renderFileInfoKindActions(item) {
     button.dataset.action = entry.action;
     button.dataset.i18n = entry.labelKey;
     button.textContent = t(entry.labelKey);
+    if (availability[entry.action] !== undefined) {
+      button.disabled = !availability[entry.action];
+      button.classList.toggle("is-disabled", !availability[entry.action]);
+    }
     row.append(button);
   });
   row.hidden = entries.length === 0;
+}
+
+// The Trash has a window, a count, an icon that fills, and a selection the Put
+// Away command already reads — but Get Info could not see any of it. The verb
+// stayed grey in the Trash window forever, and from another Finder window it
+// silently described the project instead of the object the user pointed at.
+// These two shapes give the Trash and a trashed object the same Get Info the
+// rest of Finder's objects have.
+function getTrashRootFinderItem() {
+  const items = typeof getProjectTrashItems === "function" ? getProjectTrashItems() : [];
+  const project = typeof getActiveProject === "function" ? getActiveProject() : null;
+  return {
+    id: "finder-trash",
+    type: "trashRoot",
+    name: t("trash"),
+    title: t("trash"),
+    kindLabel: t("trash_kind"),
+    iconClass: "trash-icon",
+    iconId: items.length ? "trashFull" : "trash",
+    itemCount: items.length,
+    sizeValue: items.length,
+    sizeLabel: t("items_count", items.length),
+    location: project ? projectDisplayName(project) : t("project_disk"),
+    projectId: activeProjectId,
+    readOnly: true,
+    canOpen: false,
+    canDuplicate: false,
+    canRename: false,
+    canTrash: false,
+  };
+}
+
+function getTrashItemFinderItem(item) {
+  if (!item) return null;
+  const originalKind = t(`trash_type_${item.originalType || "note"}`);
+  return {
+    id: item.id,
+    type: "trashItem",
+    name: item.title,
+    title: item.title,
+    kindLabel: t("kind_in_trash", originalKind),
+    iconClass: "doc-icon",
+    iconId: "document",
+    body: item.body || "",
+    sizeValue: String(item.body || "").length,
+    location: t("trash"),
+    folderLabel: typeof getTrashOriginalPath === "function" ? getTrashOriginalPath(item) : "",
+    projectId: item.projectId || activeProjectId,
+    createdAt: item.createdAt || "",
+    // "Modified" is the moment it was thrown away — the last thing that
+    // actually happened to it.
+    updatedAt: item.deletedAt || item.createdAt || "",
+    readOnly: true,
+    canOpen: false,
+    canDuplicate: false,
+    canRename: false,
+    canTrash: false,
+  };
 }
 
 function getActiveItem() {
@@ -1002,6 +1130,9 @@ function getActiveItem() {
     return scraps.find((scrap) => scrap.id === selectedScrapId && isInActiveProject(scrap));
   } else if (name === "projects") {
     return getSelectedProjectRootItem();
+  } else if (name === "trash") {
+    const selected = typeof getSelectedTrashItem === "function" ? getSelectedTrashItem() : null;
+    return selected ? getTrashItemFinderItem(selected) : getTrashRootFinderItem();
   }
   return null;
 }

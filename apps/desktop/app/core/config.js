@@ -470,7 +470,12 @@ const ensurePrintDirectoryModule = createLazyModuleLoader("", ["app/features/pri
 const ensureProjectCdPrintModule = createLazyModuleLoader("", ["app/features/project-cd-print.js"]);
 const ensureTranslationPadModule = createLazyModuleLoader("", ["app/features/translation-pad.js"]);
 const ensureDictionaryHelpModule = createLazyModuleLoader("AISystem6DictionaryHelpLoaded", ["app/features/dictionary-help.js"]);
-const ensureDictationPadModule = createLazyModuleLoader("AISystem6DictationPadLoaded", ["app/features/dictation-pad.js"]);
+// The shaper is pure text and only the pad calls it, so it travels with the
+// pad instead of costing every boot the bytes.
+const ensureDictationPadModule = createLazyModuleLoader("AISystem6DictationPadLoaded", [
+  "app/core/dictation-shape.js",
+  "app/features/dictation-pad.js",
+]);
 const ensureHeldPlaceSlipModule = createLazyModuleLoader("AISystem6HeldPlaceSlipLoaded", ["app/core/held-place-slip.js"]);
 const ensureVideoTranscriptModule = createLazyModuleLoader("AISystem6VideoTranscriptLoaded", ["app/features/video-transcript.js"]);
 const ensureVideoDocMapModule = createLazyModuleLoader("AISystem6VideoDocMapLoaded", ["app/features/video-docmap.js"]);

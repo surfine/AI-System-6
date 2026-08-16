@@ -729,10 +729,19 @@ window.AISystem6LocalLMStudio = (() => {
     });
   }
 
-  function openAiStreamFrame(content = "", finishReason = null, usage = null, responseId = "", responseApi = "lmstudio-native-v1") {
+  function openAiStreamFrame(content = "", finishReason = null, usage = null, responseId = "", responseApi = "lmstudio-native-v1", toolCalls = []) {
+    // Tool calls have to ride the stream too. This adapter used to emit only
+    // text, so a streamed Responses turn could report finish_reason
+    // "tool_calls" while carrying no calls at all, and the loop would read the
+    // turn as a finished reply that had quietly skipped the tool.
+    const calls = Array.isArray(toolCalls) ? toolCalls : [];
+    const delta = {
+      ...(content ? { content } : {}),
+      ...(calls.length ? { tool_calls: calls.map((call, index) => ({ index, ...call })) } : {}),
+    };
     return `data: ${JSON.stringify({
       object: "chat.completion.chunk",
-      choices: [{ index: 0, delta: content ? { content } : {}, finish_reason: finishReason }],
+      choices: [{ index: 0, delta, finish_reason: finishReason }],
       ...(usage ? { usage } : {}),
       ...(responseId ? { ai_system6_lmstudio_response_id: responseId } : {}),
       ai_system6_lmstudio_api: responseApi,
@@ -870,7 +879,8 @@ window.AISystem6LocalLMStudio = (() => {
             envelope.choices[0].finish_reason,
             envelope.usage,
             envelope.ai_system6_lmstudio_response_id,
-            "lmstudio-responses-v1"
+            "lmstudio-responses-v1",
+            envelope.choices[0].message.tool_calls || []
           )));
           controller.enqueue(encoder.encode("data: [DONE]\n\n"));
           controller.close();

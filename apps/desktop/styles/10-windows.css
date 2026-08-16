@@ -2077,6 +2077,43 @@ html:lang(zh-Hans) .title-bar h2 {
   color: var(--clio-muted-copy);
 }
 
+/* What the run opened before it answered. Closed until asked for: the desk
+   stays quiet, and the evidence is still one click away. Same ink and size as
+   the basis strip it sits under, so it reads as a footnote, not a panel. */
+.assistant-window .message-reading-trace {
+  margin-top: 6px;
+  color: var(--clio-muted-copy);
+  font-family: var(--ui-font);
+  font-size: 11px;
+}
+
+/* The row opens the way a Finder list row opens: a triangle that turns. */
+.message-reading-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.message-reading-summary::before {
+  content: "▶";
+  font-size: 9px;
+}
+
+.message-reading-summary[aria-expanded="true"]::before {
+  content: "▼";
+}
+
+.message-reading-list {
+  margin: 4px 0 0;
+  padding-left: 22px;
+}
+
 .clio-basis-chip {
   display: inline-flex;
   align-items: center;
@@ -3186,12 +3223,16 @@ select:focus {
   text-align: center;
 }
 
+/* Not #clipboard-translate: it shares a no-wrap row with three siblings in a
+   340px Desk Accessory, so a fit-content floor let it push the row outside the
+   window frame, and a short label (zh 「翻译」) rendered a 52px runt beside
+   three 72px buttons. On .btn's own floor it keeps the System 6 button width
+   and gives up its tail to the ellipsis instead of the frame. */
 #teachtext-translate,
 #teachtext-download-bilingual,
 #reader-clip-translate-button,
 #toggle-scrap-translation,
-#download-scraps-bilingual,
-#clipboard-translate {
+#download-scraps-bilingual {
   min-width: fit-content;
   max-width: 100%;
 }

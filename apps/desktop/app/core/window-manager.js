@@ -296,6 +296,10 @@ function placeWindowForExplicitLayout(win, frame = {}, options = {}) {
   else markWindowSystemPositioned(win);
 }
 
+function keyboardInsetValue() {
+  return Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--keyboard-inset")) || 0;
+}
+
 // A system-placed window must stay reachable: if its default frame (creative
 // labs and other wide windows after the writing spine) would push the right
 // or bottom edge past the viewport, shift it back inside. User-dragged
@@ -305,11 +309,13 @@ function clampWindowToViewport(win, margin = 16) {
   const r = win.getBoundingClientRect();
   if (r.width <= 0 || r.height <= 0) return;
   const vw = window.innerWidth || document.documentElement.clientWidth;
-  const vh = window.innerHeight || document.documentElement.clientHeight;
+  // The keyboard owns the bottom; --keyboard-inset is 0 at rest.
+  const keyboardInset = keyboardInsetValue();
+  const vh = (window.innerHeight || document.documentElement.clientHeight) - keyboardInset;
   const maxH = Math.max(160, Math.round(vh - Math.max(margin, r.top) - margin));
   if (r.height > maxH) {
     setInlineStyleValue(win, "height", maxH + "px");
-    setInlineStyleValue(win, "maxHeight", maxH + "px");
+    setInlineStyleValue(win, "max-height", maxH + "px");
   }
   const oR = r.right - vw + margin;
   const oB = r.bottom - vh + margin;
@@ -318,6 +324,44 @@ function clampWindowToViewport(win, margin = 16) {
   const t = Number.parseFloat(win.style.top || "") || r.top;
   setInlineStyleValue(win, "left", Math.max(margin, Math.round(l - Math.max(0, oR))) + "px");
   setInlineStyleValue(win, "top", Math.max(margin, Math.round(t - Math.max(0, oB))) + "px");
+}
+
+function saveKeyboardWindowFrame(win) {
+  const frame = windowFrame(win);
+  for (const [key, value] of Object.entries(frame)) {
+    win.dataset[`keyboardRestore${key[0].toUpperCase()}${key.slice(1)}`] = value;
+  }
+  win.dataset.keyboardRestoreActive = "true";
+}
+
+function restoreKeyboardWindowFrame(win) {
+  if (!win || win.dataset.keyboardRestoreActive !== "true") return;
+  applyWindowFrame(win, {
+    left: win.dataset.keyboardRestoreLeft || "",
+    top: win.dataset.keyboardRestoreTop || "",
+    right: win.dataset.keyboardRestoreRight || "auto",
+    width: win.dataset.keyboardRestoreWidth || "",
+    height: win.dataset.keyboardRestoreHeight || "",
+    maxHeight: win.dataset.keyboardRestoreMaxHeight || "",
+    transform: win.dataset.keyboardRestoreTransform || "none",
+  });
+  Object.keys(win.dataset).forEach((key) => {
+    if (key.startsWith("keyboardRestore")) delete win.dataset[key];
+  });
+}
+
+// Pull the focused window above the keys; put its frame back on close.
+// CSS-owned roles and user-dragged windows are left alone.
+function syncKeyboardWindowFrame() {
+  const inset = keyboardInsetValue();
+  const current = document.activeElement?.closest?.(".window") || null;
+  const adjusted = document.querySelector('.window[data-keyboard-restore-active="true"]');
+  if (!inset) { if (adjusted) restoreKeyboardWindowFrame(adjusted); return; }
+  if (!current) return;
+  if (adjusted !== current) restoreKeyboardWindowFrame(adjusted);
+  if (current.dataset.userPositioned === "true" || current.className.includes("is-mobile-")) return;
+  if (current.dataset.keyboardRestoreActive !== "true") saveKeyboardWindowFrame(current);
+  clampWindowToViewport(current);
 }
 
 function saveSideAskRestoreFrame(win) {

@@ -2295,6 +2295,15 @@ body.has-system-modal .menu-bar {
   color: var(--apple-menu-era-glyph-active-color, currentColor);
 }
 
+/* The bold application menu exists only where the system owns the menu bar.
+   The appearance registry projects data-menu-bar-model, so the era-to-model
+   mapping lives in one place and no era file repeats it. The value goes
+   through a token because the compact phone bar still has to hide the menu,
+   and that rule has to win on an equal-specificity selector. */
+body[data-menu-bar-model="system-owned"] {
+  --menu-current-app-display: flex;
+}
+
 .menu-bar-current-app {
   display: var(--menu-current-app-display, none);
 }
@@ -2546,7 +2555,16 @@ body.has-system-modal .menu-bar {
   white-space: nowrap;
 }
 
-.multifinder-app {
+/* Scoped to the popover so this reaches (0,2,0) and beats ".menu-popover
+   button" (0,1,1), which declares two columns. A bare ".multifinder-app" at
+   (0,1,0) lost its three-column template: the check mark took the 1fr column
+   and pushed the name and the window count to the right edge. That stayed
+   invisible while these rows only appeared in the narrow right-end popover --
+   where ".multifinder-popover .multifinder-app" in the last stylesheet was
+   already restoring the template -- and showed up the moment the same rows
+   were rendered into the wide Apple menu. Kept at (0,2,0) on purpose: it ties
+   with that later rule, so the right-end popover keeps its own indent. */
+.menu-popover .multifinder-app {
   display: grid;
   grid-template-columns: 18px minmax(0, 1fr) auto;
   align-items: center;

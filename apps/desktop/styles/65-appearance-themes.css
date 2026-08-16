@@ -1352,6 +1352,9 @@ body[data-theme="yosemite"] {
   --system-control-size: 13px;
   --system-text-size: 13px;
   --system-caption-size: 11px;
+  /* 10.10 still drew the 22px menu bar; the 24px bar arrived later. Without
+     this the era fell back to the System 6 default. */
+  --system-menu-height: 22px;
   --system-titlebar-height: 22px;
   --system-titlebar-control-slot: 24px;
   --system-titlebar-control-size: 12px;

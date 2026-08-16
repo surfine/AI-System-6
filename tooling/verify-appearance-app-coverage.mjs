@@ -191,6 +191,7 @@ try {
     id: theme.id,
     family: theme.family,
     recipeBase: theme.recipeBase,
+    menuBarModel: theme.menuBarModel,
     releaseReady: theme.releaseReady,
     systemFont: theme.systemFont,
     fontStrategy: theme.fontStrategy,
@@ -237,29 +238,77 @@ try {
     );
 
     const applicationMenu = await page.evaluate(() => {
+      // This harness applies the era through the registry directly, so it has
+      // to redraw the bar the way the application's own applyTheme() does.
+      renderMultiFinderMenu();
       const currentMenu = document.querySelector(".menu-bar-current-app");
       const currentLabel = document.querySelector("#current-app-menu-label");
+      const switcher = document.querySelector("#multifinder-button");
+      const verbRows = () => Array.from(
+        document.querySelectorAll("#current-app-menu-section button[data-action]"),
+      ).map((button) => `${button.dataset.action}:${button.textContent.trim()}`);
       renderAppMenuBar("finder", { force: true });
       const finderLabel = currentLabel?.textContent?.trim() || "";
       renderAppMenuBar("reader", { force: true });
       const readerLabel = currentLabel?.textContent?.trim() || "";
       const readerOwner = currentMenu?.getAttribute("data-current-app-id") || "";
+      const readerVerbs = verbRows();
       renderAppMenuBar("finder", { force: true });
       return {
         display: currentMenu ? getComputedStyle(currentMenu).display : "missing",
+        model: document.body.dataset.menuBarModel || "",
+        indicator: switcher?.dataset.appSwitchIndicator || "",
+        hasPopup: switcher?.getAttribute("aria-haspopup") || "",
+        // The verbs act on the application in front, so they are named after
+        // it -- not after the application whose menus the bar is showing. The
+        // two differ only while a Desk Accessory is active.
+        activeLabel: multiFinderAppLabels[activeAppId] || activeAppId,
         finderLabel,
         readerLabel,
         readerOwner,
+        readerVerbs,
       };
     });
     assert(applicationMenu.finderLabel === "Finder", `${theme.id}: foreground Finder is labeled ${applicationMenu.finderLabel}`);
     assert(applicationMenu.readerLabel === "Reader", `${theme.id}: foreground Reader is labeled ${applicationMenu.readerLabel}`);
     assert(applicationMenu.readerOwner === "reader", `${theme.id}: current-application owner did not follow Reader`);
     assert(![applicationMenu.finderLabel, applicationMenu.readerLabel].includes("AI System 6"), `${theme.id}: environment name leaked into the current-application title`);
+    // Two menu-bar models, and the appearance registry decides which one an era
+    // uses. The classic lineage replaces the whole bar and draws an indicator at
+    // the right end; the Mac OS X eras keep the Apple menu with the system and
+    // show the bold application menu. See app/core/theme-registry.js.
     assert(
-      (theme.id === "aqua") === (applicationMenu.display !== "none"),
-      `${theme.id}: Jaguar-only current-application menu visibility is wrong (${applicationMenu.display})`,
+      applicationMenu.model === theme.menuBarModel,
+      `${theme.id}: projected menu-bar model is ${applicationMenu.model}, expected ${theme.menuBarModel}`,
     );
+    const systemOwned = theme.menuBarModel === "system-owned";
+    assert(
+      systemOwned === (applicationMenu.display !== "none"),
+      `${theme.id}: application-menu visibility does not match the ${theme.menuBarModel} bar (${applicationMenu.display})`,
+    );
+    assert(
+      systemOwned === (applicationMenu.indicator !== "cycle"),
+      `${theme.id}: the right end should ${systemOwned ? "drop a menu down" : "be a cycling indicator"}`,
+    );
+    assert(
+      systemOwned === (applicationMenu.hasPopup === "menu"),
+      `${theme.id}: the right end advertises aria-haspopup="${applicationMenu.hasPopup}" under a ${theme.menuBarModel} bar`,
+    );
+    if (systemOwned) {
+      const verbs = applicationMenu.readerVerbs.join(" | ");
+      for (const action of ["hide-active-app", "hide-other-apps", "show-all-apps", "quit-active-app"]) {
+        assert(verbs.includes(`${action}:`), `${theme.id}: the application menu is missing ${action} (${verbs})`);
+      }
+      assert(
+        verbs.includes(applicationMenu.activeLabel),
+        `${theme.id}: the application verbs are not named after the application in front, ${applicationMenu.activeLabel} (${verbs})`,
+      );
+    } else {
+      assert(
+        applicationMenu.readerVerbs.length === 0,
+        `${theme.id}: an application-owned bar must not grow a Mac OS X application menu (${applicationMenu.readerVerbs.join(" | ")})`,
+      );
+    }
 
     const windows = [];
     for (const contract of REPRESENTATIVE_WINDOWS) {

@@ -95,6 +95,13 @@ const specialMenu = (appItems = []) => menu("special", "menu_special", [
 //     only when the project actually contains a Task Config, because their
 //     mutually exclusive grey/black pattern is what says which step a task is
 //     on — and that reads as information only when they sit together.
+//
+// The last group is the exception that proves the rule: Insert and Eject take
+// no selection at all. They are volume verbs, and System 6's Finder kept Eject
+// in File (with Get Info and Duplicate), so its opposite belongs beside it
+// rather than in Special. The 1992 HIG asks for exactly this shape when a
+// feature is either on or off: two rows naming opposite actions, set off by a
+// divider, instead of one row with a conditional checkmark.
 const finderMenus = [
   menu("file", "menu_file", [
     menuItem("new-folder", "new_folder", "new-folder"),
@@ -113,6 +120,7 @@ const finderMenus = [
     menuItem("page-setup", "page_setup"),
     menuItem("print-directory", "print_directory"),
     menuSeparator,
+    menuItem("insert-text-disk", "insert_file_floppy_menu"),
     menuItem("eject-menu-selection", "eject", "eject"),
   ]),
   menu("edit", "menu_edit", editBasics),
@@ -679,8 +687,14 @@ function renderApplicationMenuItem(item) {
 }
 
 let renderedApplicationMenuSetId = "";
+let renderedCurrentApplicationSignature = "";
 
-function syncCurrentApplicationMenuLabel(appId = "finder") {
+// The Mac OS X application menu. Its title is the application whose menus the
+// bar is showing; its verbs are named after the application they act on, and
+// they exist only while the appearance uses the system-owned menu bar. In the
+// classic and platinum appearances this whole menu is hidden, because there the
+// bar already belongs to the foreground application.
+function syncCurrentApplicationMenu(appId = "finder") {
   const label = document.querySelector("#current-app-menu-label");
   if (!label) return;
   const ownerLabel = typeof multiFinderAppLabels !== "undefined"
@@ -688,15 +702,35 @@ function syncCurrentApplicationMenuLabel(appId = "finder") {
     : null;
   label.textContent = ownerLabel || (appId === "finder" ? "Finder" : appId);
   label.closest(".menu-bar-current-app")?.setAttribute("data-current-app-id", appId);
+
+  const section = document.querySelector("#current-app-menu-section");
+  if (!section || typeof applicationVerbRows !== "function") return;
+  const applicationOwned = typeof usesApplicationOwnedMenuBar === "function"
+    && usesApplicationOwnedMenuBar();
+  // Rebuild only when the answer would differ. updateMenuState() runs on many
+  // ordinary events, and replacing these rows under an open menu would fight
+  // the pointer for no gain.
+  const signature = [
+    applicationOwned ? "application-owned" : "system-owned",
+    typeof activeAppLabel === "function" ? activeAppLabel() : "",
+    typeof currentLanguage === "undefined" ? "" : currentLanguage,
+  ].join("|");
+  if (signature === renderedCurrentApplicationSignature) return;
+  renderedCurrentApplicationSignature = signature;
+  section.replaceChildren(...(applicationOwned
+    ? []
+    : [document.createElement("hr"), ...applicationVerbRows()]));
+  if (typeof invalidateMenuActionCache === "function") invalidateMenuActionCache();
+  if (typeof applyApplicationRowAvailability === "function") applyApplicationRowAvailability(section);
 }
 
 function renderAppMenuBar(appId = activeAppId || "finder", { force = false } = {}) {
   const slot = document.querySelector("#app-menu-slot");
   if (!slot) return;
-  // Jaguar's bold application menu belongs to the foreground application,
-  // not to the whole AI System 6 environment. Update it even when two apps
-  // share the same declarative menu set and no menu DOM rebuild is required.
-  syncCurrentApplicationMenuLabel(appId);
+  // The bold application menu belongs to the foreground application, not to
+  // the whole AI System 6 environment. Update it even when two apps share the
+  // same declarative menu set and no menu DOM rebuild is required.
+  syncCurrentApplicationMenu(appId);
   const setId = menuSetIdForApp(appId);
   if (!force && renderedApplicationMenuSetId === setId) return;
 

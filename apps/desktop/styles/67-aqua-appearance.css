@@ -432,7 +432,6 @@ body[data-theme="aqua"] {
   --apple-menu-slot-width: 44px;
   /* The Apple menu icon is the app's own constant pixel glyph in every
      appearance (base opacity 1); no per-era Apple logo character is drawn. */
-  --menu-current-app-display: flex;
   --menu-bar-bg: repeating-linear-gradient(to bottom, #fafafa 0 1px, #ffffff 1px 2px, #fafafa 2px 3px, #e9e9e9 3px 4px);
   --menu-bar-border: 1px solid #8e8e8e;
   --menu-bar-shadow: inset 0 1px 0 #ffffff;
@@ -999,6 +998,9 @@ body[data-theme="snow-leopard"] {
   --system-control-size: 13px;
   --system-text-size: 13px;
   --system-caption-size: 11px;
+  /* 10.6 kept the 22px menu bar Aqua introduced. Without this the era fell
+     back to the System 6 default and drew a 24px bar. */
+  --system-menu-height: 22px;
   --system-titlebar-height: 22px;
   --system-titlebar-control-slot: 24px;
   --system-titlebar-control-size: 14px;

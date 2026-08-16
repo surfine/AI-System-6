@@ -381,6 +381,41 @@ test.assertIncludes(
   'document.addEventListener("focusin", updateKeyboardInset)',
   "moving focus re-decides whether the viewport shrink counts as a keyboard"
 );
+// Floating windows have no shell to read the inset, so the window that owns
+// the focused field is pulled above the keys while the keyboard is up and put
+// back when it closes. That is the iPad analogue of the phone shell's lift:
+// iPad Split View / Slide Over / landscape panes never get the full-screen
+// figure, but the composer must still clear the keys.
+test.assertIncludes(
+  windowManager,
+  "function syncKeyboardWindowFrame()",
+  "the window manager exposes a keyboard-aware frame sync for floating windows"
+);
+test.assertIncludes(
+  windowManager,
+  'getComputedStyle(document.documentElement).getPropertyValue("--keyboard-inset")',
+  "the window clamp reads the keyboard inset instead of assuming the full viewport"
+);
+test.assertIncludes(
+  windowManager,
+  "const vh = (window.innerHeight || document.documentElement.clientHeight) - keyboardInset;",
+  "the clamp's visible height ends above the keyboard, never under it"
+);
+test.assertIncludes(
+  windowManager,
+  'setInlineStyleValue(win, "max-height", maxH + "px")',
+  "the clamp writes the kebab-case property so the cap actually applies"
+);
+test.assertIncludes(
+  windowManager,
+  "restoreKeyboardWindowFrame(adjusted)",
+  "the previously adjusted window gets its frame back when focus moves or the keyboard closes"
+);
+test.assertIncludes(
+  wireup,
+  "syncKeyboardWindowFrame?.()",
+  "the keyboard inset update also re-fits the floating window that owns the focused field"
+);
 
 // Landscape is its own design, not a fallback to a cramped desktop. The three
 // games are the immersive class: their content is the screen, so a sideways

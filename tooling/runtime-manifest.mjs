@@ -114,6 +114,7 @@ export const lazyRuntimePaths = [
   "app/features/print-directory.js",
   "app/features/project-cd-print.js",
   "app/features/translation-pad.js",
+  "app/core/dictation-shape.js",
   "app/features/dictation-pad.js",
   "app/core/held-place-slip.js",
   "app/features/dictionary-help.js",

@@ -72,6 +72,57 @@ test.assertMatches(desktopRuntime, /if \(\["textDisk", "rag"\]\.includes\(active
 test.assertIncludes(printDirectory, 'if (activeName === "textDisk")', "Print Directory supports File Floppy");
 test.assertIncludes(printDirectory, 'if (activeName === "projectCd")', "Print Directory supports Project CD");
 
+// --- Finder objects own their verbs -----------------------------------------
+// Each of these verbs existed and worked, but only as a button inside the
+// object's own window — so the command was invisible to the menu bar, to the
+// keyboard, and to anyone who had not already opened that window. Two homes,
+// one rule: a verb that takes no selection is a volume verb and belongs in
+// File beside Eject; a verb only one kind of object has belongs to that
+// object's Get Info, because System 6 has no contextual menus.
+
+// File Floppy: Insert is Eject's opposite, so it sits in the same File group.
+test.assertIncludes(menus, 'menuItem("insert-text-disk", "insert_file_floppy_menu")', "Finder exposes Insert File Floppy");
+test.assertMatches(
+  menus,
+  /menuItem\("insert-text-disk", "insert_file_floppy_menu"\),\s*\n\s*menuItem\("eject-menu-selection", "eject", "eject"\)/,
+  "Insert and Eject read as one pair of opposite volume verbs"
+);
+// The 1992 ellipsis rule: the mark means the command asks for more information
+// first. Insert opens a file picker, so it earns the mark — and it must be the
+// real U+2026 character, not three periods.
+test.assertIncludes(en, 'insert_file_floppy_menu: "Insert File Floppy…"', "English marks Insert File Floppy as asking first");
+test.assertIncludes(zh, 'insert_file_floppy_menu: "插入文件软盘…"', "Chinese marks Insert File Floppy as asking first");
+// Print Directory opens a preview window and is then done; the 1992 book uses
+// Finder's own Get Info as the worked example of a command that must NOT carry
+// the mark just because a window appears.
+test.assertIncludes(en, 'print_directory: "Print Directory",', "Print Directory does not claim to ask first");
+test.assertIncludes(zh, 'print_directory: "打印目录",', "Chinese Print Directory does not claim to ask first");
+
+// Get Info is the home for kind-specific verbs.
+test.assertIncludes(desktopRuntime, "const finderVolumeKindActions = new Map([", "Finder volumes declare their own whole-volume verbs");
+test.assertIncludes(desktopRuntime, '{ action: "add-text-disk-project", labelKey: "add_to_project_disk" }', "the File Floppy carries its write-through verb");
+test.assertIncludes(desktopRuntime, "const projectCdItemKindActions = [", "a burned Project CD item declares its own verbs");
+for (const action of ["open-finishing-receipt", "copy-project-cd-markdown", "download-project-cd-item", "print-project-cd-item"]) {
+  test.assertIncludes(desktopRuntime, `action: "${action}"`, `Project CD Get Info offers ${action}`);
+}
+// Download and Print to PDF used to hang off a bare button id, so no command
+// could reach them. Both now answer the one registry.
+test.assertIncludes(actions, '"download-project-cd-item": () => downloadSelectedProjectCdItem()', "Download reaches the production Project CD export");
+test.assertIncludes(actions, '"print-project-cd-item": () => printSelectedProjectCdItem()', "Print to PDF reaches the production Project CD print path");
+// A kind verb may exist while being unable to act; then it greys and refuses
+// the click, instead of looking grey but staying live.
+test.assertIncludes(desktopRuntime, "button.disabled = !availability[entry.action];", "a Get Info verb that cannot act is genuinely disabled, not just dimmed");
+
+// The Trash is a Finder object: Get Info must answer for it and for what is
+// inside it, and must never call a thrown-away file "Saved on Project Hard Disk".
+test.assertIncludes(desktopRuntime, "function getTrashRootFinderItem()", "the Trash itself is a Get Info object");
+test.assertIncludes(desktopRuntime, "function getTrashItemFinderItem(item)", "a trashed object is a Get Info object");
+test.assertIncludes(desktopRuntime, 'name === "trash"', "Get Info reads the Trash window's own selection");
+test.assertIncludes(desktopRuntime, 'kindLabel: t("kind_in_trash", originalKind)', "a trashed object keeps its original kind");
+test.assertIncludes(desktopRuntime, 't("durable_trash")', "Get Info states that trashed material is not yet removed");
+test.assertIncludes(en, 'durable_trash: "In Trash, not yet removed"', "English states the Trash durability honestly");
+test.assertIncludes(zh, 'durable_trash: "在废纸篓中，尚未清除"', "Chinese states the Trash durability honestly");
+
 test.assertIncludes(desktopIconColumn, 'data-open="applications"', "the desktop exposes the complete application catalogue through one folder");
 test.assertIncludes(app, 'action: "open-scrapbook"', "the rendered Applications registry exposes Scrapbook");
 test.assertIncludes(appsCss, "grid-template-columns: minmax(0, 1fr);", "desktop icon labels cannot widen the shared icon column and shift an icon off center");

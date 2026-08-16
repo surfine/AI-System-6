@@ -244,25 +244,23 @@ function activeAppLabel() {
   return multiFinderAppLabels[activeAppId] || activeAppId || "Finder";
 }
 
-function renderMultiFinderMenu() {
-  if (activeAppId !== "accessories" && activeAppId !== "system") menuOwnerAppId = activeAppId;
-  if (typeof renderAppMenuBar === "function") renderAppMenuBar(menuOwnerAppId);
-  // MultiFinder-only, on every screen size. A phone presents apps full-screen
-  // in both modes — that is a screen-size consequence, not a task model — so it
-  // must not conjure a switcher in Finder mode, where one app runs at a time and
-  // the close box is the way back to the desktop.
-  const showSwitcher = isMultiFinderMode();
-  document.querySelector(".multifinder-menu")?.classList.toggle("is-hidden", !showSwitcher);
-  syncWorkspaceDesktopIcon();
-  if (!showSwitcher) return;
+// Whose menu bar is this. The appearance registry owns the answer; see the
+// menuBarModel comment in app/core/theme-registry.js. Classic falls back to the
+// System 6 model, which is what the bar is before a theme has been applied.
+function menuBarModel() {
+  return window.AISystem6Theme?.getMenuBarModel?.() || "application-owned";
+}
 
-  const labelEl = document.querySelector("#multifinder-label");
-  const popover = document.querySelector("#multifinder-popover");
-  if (!labelEl || !popover) return;
+function usesApplicationOwnedMenuBar() {
+  return menuBarModel() === "application-owned";
+}
 
-  labelEl.textContent = activeAppLabel();
-  popover.replaceChildren();
-
+// The list of open applications, with a check mark on the current one. In the
+// application-owned eras this belongs at the bottom of the Apple menu, which is
+// where System 6 put it; in the Mac OS X eras it is what the right-end control
+// is for, standing in for the Dock this desktop does not have.
+function runningApplicationRows() {
+  const rows = [];
   const apps = getRunningApps();
   if (!apps.length) {
     const empty = document.createElement("button");
@@ -270,10 +268,8 @@ function renderMultiFinderMenu() {
     empty.disabled = true;
     empty.className = "multifinder-empty";
     empty.textContent = typeof t === "function" ? t("no_running_apps") : "No running applications";
-    popover.append(empty);
-    return;
+    return [empty];
   }
-
   apps.forEach((app) => {
     const button = document.createElement("button");
     button.type = "button";
@@ -284,25 +280,123 @@ function renderMultiFinderMenu() {
       <span>${escapeHtml(app.label)}</span>
       <small>${app.windowCount}</small>
     `;
-    popover.append(button);
+    rows.push(button);
   });
+  rows.push(document.createElement("hr"));
+  rows.push(applicationRow("bring-app-front", t("bring_all_to_front")));
+  return rows;
+}
 
-  popover.append(document.createElement("hr"));
+// The verbs that act on the application as a whole. Mac OS X keeps these in the
+// bold application menu (Aqua HIG p.55-56: Hide, Hide Others, Show All, then a
+// separator and Quit); the application-owned eras keep them with MultiFinder's
+// own rows in the Apple menu, because there the right end is an indicator and
+// has no list to hang them from. They are named after activeAppId, which is
+// exactly the application each one acts on.
+function applicationVerbRows() {
+  return [
+    applicationRow("hide-active-app", t("hide_app", activeAppLabel())),
+    applicationRow("hide-other-apps", t("hide_others")),
+    applicationRow("show-all-apps", t("show_all")),
+    document.createElement("hr"),
+    applicationRow("quit-active-app", t("quit_app", activeAppLabel())),
+  ];
+}
 
-  [
-    ["hide-active-app", t("hide_app", activeAppLabel()), !hiddenAppIds.has(activeAppId) && !nonQuittableAppIds.has(activeAppId)],
-    ["hide-other-apps", t("hide_others"), true],
-    ["show-all-apps", t("show_all"), hiddenAppIds.size > 0],
-    ["bring-app-front", t("bring_all_to_front"), true],
-    ["quit-active-app", t("quit_app", activeAppLabel()), !nonQuittableAppIds.has(activeAppId)],
-  ].forEach(([action, label, enabled]) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.dataset.action = action;
-    button.textContent = label;
-    button.classList.toggle("is-disabled", !enabled);
-    popover.append(button);
+function applicationRow(action, label) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.dataset.action = action;
+  button.textContent = label;
+  return button;
+}
+
+// Availability is not decided here; it is read from the one map that answers
+// for every menu row. It has to be applied at build time as well, because most
+// callers render these rows *after* updateMenuState() has already made its
+// pass (window-manager calls the pair in that order), and a row that cannot
+// act must never spend even one frame looking as if it can.
+function applyApplicationRowAvailability(container) {
+  if (!container || typeof getActionAvailability !== "function") return;
+  const state = getActionAvailability();
+  container.querySelectorAll("button[data-action]").forEach((button) => {
+    const available = state[button.dataset.action];
+    if (available === undefined) return;
+    button.classList.toggle("is-disabled", !available);
+    button.disabled = !available;
   });
+}
+
+// Apple's 1988 System Software 6.0 guide, p.229-230: "Clicking the small icon
+// in the menu bar brings forward each open application in succession. In effect
+// you are paging through all the open applications." No menu drops down.
+function cycleToNextApp() {
+  if (!isMultiFinderMode()) return;
+  const apps = getRunningApps();
+  if (!apps.length) return;
+  const current = apps.findIndex((app) => app.id === activeAppId);
+  const next = apps[(current + 1) % apps.length];
+  if (next) switchToApp(next.id);
+}
+
+function renderMultiFinderMenu() {
+  if (activeAppId !== "accessories" && activeAppId !== "system") menuOwnerAppId = activeAppId;
+  if (typeof renderAppMenuBar === "function") renderAppMenuBar(menuOwnerAppId);
+  // MultiFinder-only, on every screen size. A phone presents apps full-screen
+  // in both modes — that is a screen-size consequence, not a task model — so it
+  // must not conjure a switcher in Finder mode, where one app runs at a time and
+  // the close box is the way back to the desktop.
+  const showSwitcher = isMultiFinderMode();
+  const applicationOwned = usesApplicationOwnedMenuBar();
+  document.querySelector(".multifinder-menu")?.classList.toggle("is-hidden", !showSwitcher);
+  syncWorkspaceDesktopIcon();
+  renderAppleMultiFinderSection(showSwitcher && applicationOwned);
+
+  const labelEl = document.querySelector("#multifinder-label");
+  const button = document.querySelector("#multifinder-button");
+  const popover = document.querySelector("#multifinder-popover");
+  if (!labelEl || !button || !popover) return;
+  labelEl.textContent = activeAppLabel();
+
+  if (applicationOwned) {
+    // An indicator, not a menu: it reports the application in front and pages
+    // to the next one. Nothing drops down, so nothing is rendered into the
+    // popover and the control does not advertise one.
+    button.dataset.appSwitchIndicator = "cycle";
+    button.removeAttribute("aria-haspopup");
+    button.setAttribute("aria-label", t("multifinder_indicator"));
+    button.dataset.balloonHelp = "balloon_multifinder_indicator";
+    popover.replaceChildren();
+  } else {
+    delete button.dataset.appSwitchIndicator;
+    button.setAttribute("aria-haspopup", "menu");
+    button.setAttribute("aria-label", t("multifinder_switcher"));
+    button.dataset.balloonHelp = "balloon_multifinder_switcher";
+    popover.replaceChildren(...(showSwitcher ? runningApplicationRows() : []));
+  }
+  // These rows are rebuilt from scratch, so the element cache updateMenuState()
+  // greys from is now stale. Without this the new rows would never be asked
+  // whether they can act.
+  if (typeof invalidateMenuActionCache === "function") invalidateMenuActionCache();
+  applyApplicationRowAvailability(popover);
+}
+
+function renderAppleMultiFinderSection(visible) {
+  const section = document.querySelector("#apple-multifinder-apps");
+  if (!section) return;
+  section.classList.toggle("is-hidden", !visible);
+  // A leading rule separates MultiFinder's contribution from the desk
+  // accessories above it, the way the gray line separated the sections of the
+  // System 6 Apple menu.
+  section.replaceChildren(...(visible
+    ? [
+      document.createElement("hr"),
+      ...runningApplicationRows(),
+      document.createElement("hr"),
+      ...applicationVerbRows(),
+    ]
+    : []));
+  applyApplicationRowAvailability(section);
 }
 
 function switchToApp(appId) {

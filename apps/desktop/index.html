@@ -17,7 +17,7 @@
     <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png" />
     <link rel="manifest" href="assets/app-icon/manifest.json" />
     <script src="app/core/theme-registry.js"></script>
-    <link rel="stylesheet" href="styles.bundle.css?v=20260816.2" />
+    <link rel="stylesheet" href="styles.bundle.css?v=20260816.3" />
   </head>
   <body class="is-booting">
     <script src="app/core/theme-body-init.js"></script>
@@ -76,15 +76,33 @@
           <button data-action="open-control" data-i18n="control_panel">Control Panel</button>
           <button data-action="open-find-file" data-i18n="find_file">Find File</button>
           <button data-action="open-system-status" data-i18n="system_status">System Status</button>
+          <!-- MultiFinder's contribution to the Apple menu. In the
+               application-owned eras this is where System 6 put the list of
+               open applications (Apple's 1987 MultiFinder guide: "the icons
+               and names of all open applications appear in this section of the
+               Apple menu", with a check mark on the current one), so it is
+               where the switch list and the application verbs live when the
+               right end is an indicator rather than a menu. Rendered by
+               renderMultiFinderMenu(); empty and hidden in the Mac OS X eras,
+               where the same rows belong to the bold application menu. -->
+          <div id="apple-multifinder-apps" class="apple-multifinder-apps is-hidden"></div>
           <hr class="apple-multifinder-about-separator" />
           <button class="apple-multifinder-about-item" data-action="open-about-multifinder" data-i18n="about_multifinder">About MultiFinder...</button>
         </div>
       </div>
+      <!-- The bold application menu is Mac OS X only: Apple's Aqua HIG (June
+           2002, p.54) calls it "new in Mac OS X". The classic and platinum
+           appearances hide it, because there the whole bar already belongs to
+           the foreground application. About and Control Panel are the system's
+           own rows and stay here; the application's verbs are rendered into
+           the section below, named after whichever application is in front. -->
       <div class="menu menu-bar-current-app">
-        <button type="button"><strong id="current-app-menu-label">Finder</strong></button>
+        <button type="button" aria-haspopup="menu"><strong id="current-app-menu-label">Finder</strong></button>
         <div class="menu-popover">
           <button data-action="open-about" data-i18n="about_menu">About AI System 6...</button>
+          <hr />
           <button data-action="open-control" data-i18n="control_panel">Control Panel</button>
+          <div id="current-app-menu-section" class="current-app-menu-section"></div>
         </div>
       </div>
       <span id="app-menu-slot" hidden></span>
@@ -3333,6 +3351,7 @@ Glass</textarea>
           <div class="button-row dictation-bottom-actions">
             <button class="btn" type="button" id="dictation-clear" data-i18n="clear" disabled>Clear</button>
             <span class="spacer"></span>
+            <button class="btn" type="button" id="dictation-shape" data-i18n="dictation_shape" disabled>Shape</button>
             <button class="btn" type="button" id="dictation-clean" data-i18n="clean_transcript" disabled>Organize</button>
             <button class="btn default" type="button" id="dictation-send" data-i18n="send">Send</button>
           </div>
@@ -3403,10 +3422,10 @@ Glass</textarea>
         </div>
         <div class="window-pane clipboard-pane">
           <textarea id="clipboard-text" rows="10" readonly></textarea>
+          <!-- No .spacer: four buttons plus it need 328px of a 322px row. -->
           <div class="button-row is-one-line">
             <button class="btn" type="button" id="clipboard-clear" data-i18n="clear">Clear</button>
-            <span class="spacer"></span>
-            <button class="btn" type="button" id="clipboard-translate" data-i18n="translate_clipboard">Translate Clipboard</button>
+            <button class="btn" type="button" id="clipboard-translate" data-i18n="translate_clipboard">Translate</button>
             <button class="btn" type="button" id="clipboard-docmap" data-i18n="docmap">DocMap</button>
             <button class="btn default" type="button" id="clipboard-insert" data-i18n="insert">Insert</button>
           </div>
@@ -4170,7 +4189,7 @@ Glass</textarea>
       </section>
     </main>
 
-    <script src="app/generated/build-info.js?v=20260816.2"></script>
-    <script src="app.bundle.js?v=20260816.2"></script>
+    <script src="app/generated/build-info.js?v=20260816.3"></script>
+    <script src="app.bundle.js?v=20260816.3"></script>
   </body>
 </html>

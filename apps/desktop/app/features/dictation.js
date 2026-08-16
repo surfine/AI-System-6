@@ -85,6 +85,7 @@ function getInputTargetLabel(target) {
     "draft-body": t("section_draft"),
     "scrap-body-input": t("scrapbook_note"),
     "note-pad-text": t("note_pad"),
+    "sideask-pad-question": t("sideask"),
   };
   if (labelsById[target.id]) return labelsById[target.id];
   if (target.closest?.("[data-outline-section]")) return t("outline");
@@ -110,6 +111,11 @@ function destinationForInputTarget(target) {
     "draft-body": "teachtext",
     "scrap-body-input": "scrapbook",
     "note-pad-text": "notepad",
+    // SideAsk is a question put to ClioTalk, so it organizes like one. Without
+    // this row the pad fell through to inference and named whatever window
+    // happened to be in front -- and "ten minutes of talking, then Send" into
+    // the field you are already in is the one case dictation exists for.
+    "sideask-pad-question": "assistant",
   };
   const windowDestinations = {
     assistant: "assistant",
@@ -117,6 +123,7 @@ function destinationForInputTarget(target) {
     questionSheet: "questionSheet",
     scrapbook: "scrapbook",
     notePad: "notepad",
+    sideAskPad: "assistant",
   };
   return fieldDestinations[target?.id] || windowDestinations[windowName] || null;
 }
@@ -373,6 +380,7 @@ function inferDictationDestination() {
     claimCheck: "teachtext",
     scrapbook: "scrapbook",
     notePad: "notepad",
+    sideAskPad: "assistant",
   };
 
   return windowDestinations[windowName] || (writerMode ? "teachtext" : "assistant");

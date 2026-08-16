@@ -383,6 +383,13 @@ const browserWritingAgentCoordinator = window.AISystem6WritingAgentRuntime.creat
     let lastResult = null;
     let activeResponseId = "";
     let activeResponseApi = "";
+    // Text the earlier rounds already streamed. Each round reports cumulative
+    // snapshots of its own turn, so without this prefix round two would erase
+    // what round one wrote on screen, and stopping mid-loop would keep only
+    // the last fragment instead of everything the writer had already read.
+    let streamedPrefix = "";
+    const listener = typeof input.options?.onToken === "function" ? input.options.onToken : null;
+    const onToken = listener ? (snapshot) => listener(streamedPrefix + String(snapshot || "")) : undefined;
     const loopResult = await writingAgentToolRegistry.runToolLoop({
       maxRounds: 3,
       context: {
@@ -413,18 +420,35 @@ const browserWritingAgentCoordinator = window.AISystem6WritingAgentRuntime.creat
             ? {}
             : { tools: providerTools, tool_choice: "auto" }),
         };
-        lastResult = await sendLocalModelTask({
-          ...input.options,
-          userText: input.userText,
-          signal: input.signal,
-          taskKind: input.taskKind,
-          payload: modelPayload,
-          streamPreference: "json",
-        });
+        try {
+          lastResult = await sendLocalModelTask({
+            ...input.options,
+            userText: input.userText,
+            signal: input.signal,
+            taskKind: input.taskKind,
+            payload: modelPayload,
+            onToken,
+            // Every round of the loop streams when someone is watching the text
+            // arrive. Waiting for a whole tool loop in silence is what made the
+            // Stop button useless: there was nothing yet to keep.
+            streamPreference: onToken ? "stream" : "json",
+          });
+        } catch (error) {
+          // A stopped or broken round reports only its own partial text. The
+          // writer already read the earlier rounds, so the kept reply has to
+          // start where they started, not at the last round's first word.
+          if (streamedPrefix) {
+            const roundPartial = String(error?.partialContent || "");
+            error.partialContent = (streamedPrefix + roundPartial).replace(/\s+$/, "");
+          }
+          throw error;
+        }
         activeResponseId = String(lastResult.responseId || "");
         activeResponseApi = String(lastResult.responseApi || "");
+        const roundText = String(lastResult.text || "");
+        const combinedText = streamedPrefix + roundText;
         const calls = runtime.normalizeProviderToolCalls(lastResult.message);
-        if (!calls.length) return { done: true, output: lastResult.text };
+        if (!calls.length) return { done: true, output: combinedText };
         // The caller owns the surface; the loop only says which tool is about to
         // run. Nothing here draws, so a task with no listener costs nothing.
         input.options?.onToolActivity?.(calls);
@@ -433,7 +457,8 @@ const browserWritingAgentCoordinator = window.AISystem6WritingAgentRuntime.creat
           content: lastResult.message?.content || null,
           tool_calls: lastResult.toolCalls,
         });
-        return { calls, output: lastResult.text };
+        if (roundText.trim()) streamedPrefix = `${combinedText.replace(/\s+$/, "")}\n\n`;
+        return { calls, output: combinedText };
       },
     });
     const result = lastResult || { text: String(loopResult.output || "") };

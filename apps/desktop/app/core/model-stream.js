@@ -1,7 +1,98 @@
 // Core module: shared model response streaming helpers.
 
+/**
+ * Assemble OpenAI-shaped tool calls that arrive in pieces.
+ *
+ * A streamed tool call is not one object: each frame carries a fragment tagged
+ * with `index`, the function name usually appears only in the first fragment,
+ * and `function.arguments` is a JSON string glued together across many frames.
+ * Nothing is decodable until the stream ends, so this collects fragments and
+ * refuses to guess: a call whose arguments never finish is an error, not an
+ * empty object. Guessing here would invent a tool input the model never sent.
+ */
+function createToolCallAssembler() {
+  const drafts = new Map();
+
+  const draftFor = (index) => {
+    const key = Number.isInteger(index) ? index : drafts.size;
+    if (!drafts.has(key)) drafts.set(key, { key, id: "", type: "", name: "", arguments: "" });
+    return drafts.get(key);
+  };
+
+  // A name may arrive whole in the first fragment, or split across fragments.
+  // Providers that repeat the whole name in every fragment must not have it
+  // concatenated into itself, so an identical repeat is ignored.
+  const mergeName = (draft, name) => {
+    if (!name) return;
+    if (!draft.name) draft.name = name;
+    else if (draft.name !== name) draft.name += name;
+  };
+
+  return {
+    /** Merge one incremental `delta.tool_calls` array. */
+    pushDelta(rawCalls) {
+      if (!Array.isArray(rawCalls)) return;
+      rawCalls.forEach((call, position) => {
+        const draft = draftFor(Number.isInteger(call?.index) ? call.index : position);
+        if (call?.id) draft.id = String(call.id);
+        if (call?.type) draft.type = String(call.type);
+        mergeName(draft, String(call?.function?.name || ""));
+        const args = call?.function?.arguments;
+        if (typeof args === "string") draft.arguments += args;
+        else if (args && typeof args === "object") draft.arguments = JSON.stringify(args);
+      });
+    },
+    /**
+     * Replace the drafts with a complete `message.tool_calls` array. Some
+     * providers send the finished message inside a stream frame rather than
+     * deltas; that is a snapshot, so appending it would double every argument.
+     */
+    replaceWithSnapshot(rawCalls) {
+      if (!Array.isArray(rawCalls) || !rawCalls.length) return;
+      drafts.clear();
+      rawCalls.forEach((call, position) => {
+        const draft = draftFor(Number.isInteger(call?.index) ? call.index : position);
+        draft.id = String(call?.id || "");
+        draft.type = String(call?.type || "");
+        draft.name = String(call?.function?.name || "");
+        const args = call?.function?.arguments;
+        draft.arguments = typeof args === "string" ? args : args ? JSON.stringify(args) : "";
+      });
+    },
+    get size() {
+      return drafts.size;
+    },
+    /**
+     * Produce the finished tool calls, or throw when a call's arguments never
+     * became valid JSON. Throwing keeps a half-received argument list from
+     * being run as if the writer's project had asked for it.
+     */
+    finish() {
+      const assembled = [...drafts.values()]
+        .sort((a, b) => a.key - b.key)
+        .map((draft, position) => ({
+          id: draft.id || `tool-call-${position + 1}`,
+          type: draft.type || "function",
+          function: { name: draft.name, arguments: draft.arguments },
+        }));
+      assembled.forEach((call) => {
+        const args = String(call.function.arguments || "").trim();
+        if (!args) return;
+        try {
+          JSON.parse(args);
+        } catch (error) {
+          throw new Error(
+            `Streamed tool arguments for "${call.function.name || call.id}" are incomplete JSON: ${String(error?.message || error)}`
+          );
+        }
+      });
+      return assembled;
+    },
+  };
+}
+
 async function readModelTextStream(response, options = {}) {
-  const { onSnapshot, onUsage, onFinishReason, onResponseId, onResponseApi, onModel, throttleMs = 80, signal } = options;
+  const { onSnapshot, onUsage, onFinishReason, onResponseId, onResponseApi, onModel, onToolCalls, throttleMs = 80, signal } = options;
   if (!response?.ok) {
     const text = await response?.text?.().catch(() => "") || "";
     const detail = text || response?.statusText || `HTTP ${response?.status || 0}`;
@@ -21,12 +112,20 @@ async function readModelTextStream(response, options = {}) {
     };
   })();
 
+  const toolCallAssembler = createToolCallAssembler();
+
   const readJsonFallback = async () => {
     const data = await response.json();
     if (data?.usage?.prompt_tokens) onUsage?.(data.usage);
     if (data?.model) onModel?.(String(data.model));
     if (data?.ai_system6_lmstudio_response_id) onResponseId?.(String(data.ai_system6_lmstudio_response_id));
     if (data?.ai_system6_lmstudio_api) onResponseApi?.(String(data.ai_system6_lmstudio_api));
+    const finishReasonFromJson = data?.choices?.[0]?.finish_reason;
+    if (finishReasonFromJson) onFinishReason?.(String(finishReasonFromJson));
+    // A provider that ignored stream:true still answers with tool calls; the
+    // caller must see them, or the loop would treat the turn as a plain reply.
+    toolCallAssembler.replaceWithSnapshot(data?.choices?.[0]?.message?.tool_calls);
+    if (toolCallAssembler.size) onToolCalls?.(toolCallAssembler.finish());
     const content = data?.choices?.[0]?.message?.content
       ?? data?.choices?.[0]?.text
       ?? data?.choices?.[0]?.delta?.content
@@ -36,10 +135,10 @@ async function readModelTextStream(response, options = {}) {
     return text;
   };
 
-  const reader = response.body?.getReader?.();
   const contentType = response.headers?.get?.("content-type") || "";
   const isEventStream = /event-stream/i.test(contentType);
   if (/json/i.test(contentType) && !/event-stream/i.test(contentType)) return readJsonFallback();
+  const reader = response.body?.getReader?.();
   if (!reader) return readJsonFallback();
 
   const decoder = new TextDecoder();
@@ -74,6 +173,8 @@ async function readModelTextStream(response, options = {}) {
       if (data.ai_system6_lmstudio_api) responseApi = String(data.ai_system6_lmstudio_api);
       const nextFinishReason = data?.choices?.[0]?.finish_reason;
       if (nextFinishReason) finishReason = String(nextFinishReason);
+      toolCallAssembler.pushDelta(data?.choices?.[0]?.delta?.tool_calls);
+      toolCallAssembler.replaceWithSnapshot(data?.choices?.[0]?.message?.tool_calls);
       appendChunk(
         data?.choices?.[0]?.delta?.content
         ?? data?.choices?.[0]?.message?.content
@@ -121,6 +222,17 @@ async function readModelTextStream(response, options = {}) {
   }
   buffer += decoder.decode();
   if (buffer.trim()) consumeEvent(buffer);
+  if (toolCallAssembler.size) {
+    // Assembled only after the last frame: the argument JSON is not complete,
+    // and therefore not decodable, until then. A failure here carries the text
+    // that did stream so the caller can still keep it, clearly marked partial.
+    try {
+      onToolCalls?.(toolCallAssembler.finish());
+    } catch (error) {
+      if (content.trim()) error.partialContent = content.trim();
+      throw error;
+    }
+  }
   if (usage) onUsage?.(usage);
   if (finishReason) onFinishReason?.(finishReason);
   if (responseId) onResponseId?.(responseId);

@@ -74,6 +74,7 @@ function hasDictationTranscript() {
 function updateDictationTranscriptButtons() {
   const hasRaw = !!dictationRawInput.value.trim();
   const hasAny = hasDictationTranscript();
+  dictationShapeButton.disabled = !hasRaw || !!speechRecognition;
   dictationCleanButton.disabled = !hasRaw || !!speechRecognition;
   dictationClearButton.disabled = !hasAny || !!speechRecognition;
   dictationSendButton.disabled = !hasAny;
@@ -84,6 +85,40 @@ function clearDictationTranscript() {
   dictationCleanedInput.value = "";
   updateDictationTranscriptButtons();
   dictationStatusEl.textContent = t("ready");
+}
+
+// Shape is the other half of Organize, and the half that needs nothing: no
+// model, no network, no waiting. It gives ten minutes of talking paragraphs, a
+// list where the speaker counted things off, and a question with its answer
+// under it — and it changes not one word, which app/core/dictation-shape.js
+// proves before anything lands.
+//
+// The transcript is rewritten in place because nothing in it changes except
+// where the lines break. It goes through mdeApply, i.e.
+// execCommand("insertText"), so the field's own undo puts the run-on back with
+// one Cmd+Z, like any other edit the writer made.
+function shapeDictationTranscript() {
+  const raw = dictationRawInput.value;
+  if (!raw.trim() || speechRecognition) return;
+
+  const shaped = shapeDictationText(raw);
+  // The gate said no. Nothing lands, and the pad says why rather than leaving
+  // the writer to compare two long transcripts by eye.
+  if (shaped === null) {
+    dictationStatusEl.textContent = t("dictation_shape_refused");
+    return;
+  }
+  if (shaped === raw) {
+    dictationStatusEl.textContent = t("dictation_shape_none");
+    return;
+  }
+
+  // Back to the top afterwards: the writer pressed this to see a shape, and
+  // replacing the whole field would otherwise leave them at the far end of it.
+  mdeApply(dictationRawInput, { from: 0, to: raw.length, insert: shaped, selStart: 0 });
+  dictationRawInput.scrollTop = 0;
+  updateDictationTranscriptButtons();
+  dictationStatusEl.textContent = t("dictation_shaped", dictationShapeBlockCount(shaped));
 }
 
 function dictationCleanProfile(dest = dictationIntentDestination) {

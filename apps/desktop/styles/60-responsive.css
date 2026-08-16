@@ -717,6 +717,18 @@ select:focus {
   }
 }
 
+/* A phone in landscape is about 400px tall, so the window manager has to
+   shorten a Finishing Receipt to keep it on screen. The window itself carries
+   overflow: hidden, so a shortened receipt would silently cut off its last
+   stated fact — and this window exists to state facts. Let the pane scroll
+   instead of clipping; on a viewport tall enough to hold the whole receipt no
+   scrollbar appears, because the pane is never shortened there. */
+@media (max-height: 700px) {
+  .finishing-receipt-window .info-pane {
+    overflow-y: auto;
+  }
+}
+
 .btn,
 .file-picker .file-picker-button {
   min-height: 28px;

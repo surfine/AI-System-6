@@ -247,6 +247,7 @@ function getElements() {
   const readerUrlDisplayEl = document.querySelector("#reader-url-display");
   const dictationRecordButton = document.querySelector("#dictation-record");
   const dictationStopButton = document.querySelector("#dictation-stop");
+  const dictationShapeButton = document.querySelector("#dictation-shape");
   const dictationCleanButton = document.querySelector("#dictation-clean");
   const dictationClearButton = document.querySelector("#dictation-clear");
   const dictationSendButton = document.querySelector("#dictation-send");
@@ -643,6 +644,7 @@ function getElements() {
     readerUrlDisplayEl,
     dictationRecordButton,
     dictationStopButton,
+    dictationShapeButton,
     dictationCleanButton,
     dictationClearButton,
     dictationSendButton,

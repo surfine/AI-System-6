@@ -13,6 +13,7 @@ const receiptSource = read("app/features/project-cd-print.js");
 const revisionsSource = read("app/core/document-revisions.js");
 const html = read("index.html");
 const css = read("styles/30-surfaces.css");
+const responsiveCss = read("styles/60-responsive.css");
 const config = read("app/core/config.js");
 const actions = read("app/core/actions.js");
 const windowManager = read("app/core/window-manager.js");
@@ -127,6 +128,25 @@ test.assertIncludes(html, 'class="window info-window finishing-receipt-window',
 test.assertIncludes(css, ".receipt-kept {", "the kept-line quotation has its own block style");
 test.assertNotMatches(css, /\.finishing-receipt-window\s*\{[^}]*\bwidth\s*:/,
   "the receipt introduces no window width of its own");
+
+// --- the receipt stays readable on a phone and a tablet ----------------------
+//
+// A phone in landscape is about 400px tall. Two things went wrong there: the
+// restore path fills the window after the window manager has placed it, so a
+// receipt that was 138px tall when it was positioned grew to ~340px and hung
+// below the fold; and the window carries overflow: hidden, so a receipt the
+// manager had shortened cut its last stated fact off instead of scrolling.
+// Measured before the fix at 912x420 (iPhone Air, landscape): the window ran
+// to y=546 against a 420px viewport, with 126px of stated fact unreachable.
+
+test.assertIncludes(receiptSource, "clampWindowToViewport(win)",
+  "a receipt rendered into an already-open window is pulled back onto the screen");
+test.assertIncludes(receiptSource, 'window.matchMedia("(max-width: 860px)").matches',
+  "below 860px the stylesheet owns the frame, so the clamp must not write an absolute left onto a centred window");
+test.assertMatches(receiptSource, /typeof clampWindowToViewport === "function"/,
+  "the lazy module guards the eager helper by typeof, never by a bare reference");
+test.assertMatches(responsiveCss, /@media \(max-height: 700px\) \{\s*\.finishing-receipt-window \.info-pane \{\s*overflow-y: auto;/,
+  "on a short viewport the receipt pane scrolls rather than clipping a stated fact");
 
 // --- the copy states facts and stops -----------------------------------------
 

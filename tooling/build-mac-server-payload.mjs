@@ -53,7 +53,15 @@ function foreignLibraries(binaryPath, selfNames = []) {
   return listed.stdout
     .split("\n")
     .slice(1)
-    .map((line) => line.trim().split(" ")[0])
+    .map((line) => line.trim())
+    // A universal binary makes otool restart its list with a header line,
+    // "<path> (architecture arm64):". That is the file itself, not a library.
+    .filter((line) => !line.endsWith(":"))
+    // otool prints "\t<path> (compatibility version …)". Split on the version
+    // parenthesis, not on whitespace: this repository lives under a path with
+    // a space in it, and splitting on " " reported "~/AI System 6" as a
+    // missing library.
+    .map((line) => line.split(" (compatibility version")[0].trim())
     .filter(Boolean)
     .filter((library) => !own.has(library))
     .filter((library) => !library.startsWith("/usr/lib/") && !library.startsWith("/System/"));

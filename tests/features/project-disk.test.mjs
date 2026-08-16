@@ -39,6 +39,22 @@ test.assertIncludes(indexHtml, 'id="new-project-disk-modal"', "New Project Hard 
 test.assertNotIncludes(desktopRuntime, "window.prompt(t(\"new_project_prompt\")", "new project naming never falls back to a native browser prompt");
 test.assertIncludes(app, 'new_project_disk_create: "Create"', "English UI names the create action");
 test.assertIncludes(app, 'new_project_disk_create: "创建"', "Chinese UI names the create action");
+// Every path that moves the mount persists it before it returns. Creating a
+// disk was the one that did not: projects.commit() saves through
+// saveDeskState() while activeProjectId still names the *previous* disk, so the
+// settings record kept the old mount until some later, unrelated save happened
+// to correct it. The mount is not left to an accident of timing.
+test.assertMatches(
+  desktopRuntime,
+  /async function createProjectFromInput\(\)[\s\S]*?activeProjectId = project\.id[\s\S]*?await saveDeskState\(\);[\s\S]*?\n\}/,
+  "creating a Project Hard Disk records the new mount before the action ends"
+);
+test.assertMatches(
+  desktopRuntime,
+  /async function switchProject\([\s\S]*?saveDeskState\(\);[\s\S]*?\n\}/,
+  "mounting an existing Project Hard Disk records the mount too"
+);
+
 test.assertMatches(desktopRuntime, /async function eraseSelectedProjectDisk\(\)[\s\S]*removeProjectItems\(chatFiles, projectId\)/, "Erase Disk removes project-owned files");
 test.assertMatches(desktopRuntime, /async function eraseSelectedProjectDisk\(\)[\s\S]*removeProjectItems\(scraps, projectId\)/, "Erase Disk removes project-owned scraps");
 test.assertMatches(desktopRuntime, /async function eraseSelectedProjectDisk\(\)[\s\S]*removeProjectItems\(projectReferences, projectId\)/, "Erase Disk removes project-owned references");
