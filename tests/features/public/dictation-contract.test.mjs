@@ -6,7 +6,9 @@ import { createFeatureTest, read } from "../../helpers/feature-test-harness.mjs"
 const test = createFeatureTest("public-dictation");
 const html = read("index.html");
 const actions = read("app/core/actions.js");
-const dictation = read("app/features/dictation.js");
+// The field service boots with the desk; the window is summoned. Both halves
+// answer this contract.
+const dictation = read("app/features/dictation.js") + read("app/features/dictation-pad.js");
 
 test.assertIncludes(html, "dictation", "Dictation Pad has a window surface");
 test.assertIncludes(actions, '"open-dictation": invokeIntentKey', "opening Dictation Pad is a command");

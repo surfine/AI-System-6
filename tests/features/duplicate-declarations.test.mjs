@@ -4,16 +4,20 @@
 // top-level scope, so a file that declares the same function name twice lets
 // the later declaration silently override the earlier one — exactly what
 // happened to Desktop Maintenance's two runDesktopMaintenance() bodies. This
-// gate parses each app source file with the TypeScript AST (available through
-// the repo's devDependencies in both the private and public trees) and fails
-// any file that declares the same function twice in the same scope. The
-// named high-risk entry points are additionally pinned to exactly one
-// declaration across the whole app.
+// gate parses each app source file and fails any file that declares the same
+// function twice in the same scope. The named high-risk entry points are
+// additionally pinned to exactly one declaration across the whole app. The
+// parser lives in the shared harness.
 
-import ts from "typescript";
 import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { createFeatureTest, read, resolveProjectPath } from "../helpers/feature-test-harness.mjs";
+import {
+  createFeatureTest,
+  forEachAstChild,
+  parseJsSource,
+  read,
+  resolveProjectPath,
+} from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("duplicate-declarations");
 
@@ -30,13 +34,14 @@ function walkFiles(dir, extension) {
   return out;
 }
 
+const functionNodeTypes = new Set([
+  "FunctionDeclaration",
+  "FunctionExpression",
+  "ArrowFunctionExpression",
+]);
+
 function isFunctionNode(node) {
-  return ts.isFunctionDeclaration(node)
-    || ts.isFunctionExpression(node)
-    || ts.isArrowFunction(node)
-    || ts.isMethodDeclaration(node)
-    || ts.isGetAccessorDeclaration(node)
-    || ts.isSetAccessorDeclaration(node);
+  return functionNodeTypes.has(node.type);
 }
 
 /**
@@ -46,32 +51,30 @@ function isFunctionNode(node) {
  * @returns {string[]}
  */
 function duplicateNamesInSameScope(source) {
-  const sourceFile = ts.createSourceFile("inline.js", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
   const counts = new Map();
   const duplicates = [];
   function walk(node, inFunction) {
-    if (ts.isFunctionDeclaration(node) && node.name && !inFunction) {
-      const name = node.name.text;
+    if (node.type === "FunctionDeclaration" && node.id && !inFunction) {
+      const name = node.id.name;
       const next = (counts.get(name) || 0) + 1;
       counts.set(name, next);
       if (next === 2) duplicates.push(name);
     }
     const nextInFunction = inFunction || isFunctionNode(node);
-    ts.forEachChild(node, (child) => walk(child, nextInFunction));
+    forEachAstChild(node, (child) => walk(child, nextInFunction));
   }
-  walk(sourceFile, false);
+  walk(parseJsSource(source), false);
   return duplicates;
 }
 
 /** @param {string} source */
 function topLevelFunctionNames(source) {
-  const sourceFile = ts.createSourceFile("inline.js", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
   const names = [];
   function walk(node, inFunction) {
-    if (ts.isFunctionDeclaration(node) && node.name && !inFunction) names.push(node.name.text);
-    ts.forEachChild(node, (child) => walk(child, inFunction || isFunctionNode(node)));
+    if (node.type === "FunctionDeclaration" && node.id && !inFunction) names.push(node.id.name);
+    forEachAstChild(node, (child) => walk(child, inFunction || isFunctionNode(node)));
   }
-  walk(sourceFile, false);
+  walk(parseJsSource(source), false);
   return names;
 }
 

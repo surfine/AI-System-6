@@ -57,7 +57,7 @@
     display: grid;
     place-items: center;
   }
-  #game-canvas {
+  #canvas {
     display: block;
     width: min(100%, calc(100vh * 4 / 3));
     height: auto;
@@ -218,7 +218,15 @@
 <body data-engine-state="loading" data-appearance="classic">
   <section class="game-stage" id="game-stage" aria-label="DOOM game" hidden>
     <div class="game-screen">
-      <canvas id="game-canvas" tabindex="0" aria-label="DOOM game canvas"></canvas>
+      <!-- The id is load-bearing, not cosmetic. Emscripten's SDL resolves its
+           drawing surface with the default selector "#canvas"; under any other
+           id every canvas-size query returns -4 and leaves the width and height
+           it was asked to fill untouched at zero, so SDL believes the drawable
+           is 0x0, sets a zero present viewport, and the whole game renders into
+           nothing while reporting that it is running. OpenTTD next door has
+           always used this id, which is why it never showed the same black
+           screen. Style and script address it by class. -->
+      <canvas id="canvas" class="game-canvas" tabindex="0" aria-label="DOOM game canvas"></canvas>
     </div>
     <div id="touch-controls-root"></div>
     <p class="game-receipt" id="game-receipt" role="status" aria-live="polite" hidden></p>
@@ -227,12 +235,13 @@
     <section class="engine-summary">
       <h1>DOOM</h1>
       <p class="engine-phase" id="engine-phase" role="status" aria-live="polite">正在装载引擎……</p>
-      <p id="engine-message">请选择你拥有的本机 IWAD；文件不会离开此浏览器。</p>
+      <p id="engine-message">选一份你自己的 IWAD 开始。</p>
       <p class="engine-detail" id="engine-detail">Chocolate Doom 3.1.1 · WebAssembly</p>
     </section>
     <section class="wad-manager" aria-labelledby="wad-heading">
       <h2 id="wad-heading">本机游戏数据</h2>
-      <p class="privacy-note" id="wad-privacy">选择你拥有的 IWAD 或 Freedoom。不会上传，也不会写入 AI System 6 项目备份。</p>
+      <p class="privacy-note" id="wad-privacy">文件留在这台机器上：不上传，也不写进项目备份。</p>
+      <p class="privacy-note" id="wad-freedoom"><span id="wad-freedoom-note">手上没有？Freedoom 是一套自由授权的完整游戏，下载后回来选择文件即可：</span> <a id="wad-freedoom-link" href="https://freedoom.github.io/download.html" target="_blank" rel="noopener noreferrer">freedoom.github.io</a></p>
       <input id="wad-file" type="file" accept=".wad,application/octet-stream" hidden>
       <div class="wad-list" id="wad-list" role="listbox" aria-labelledby="wad-heading" hidden></div>
       <p class="wad-empty" id="wad-empty">尚未导入 IWAD。</p>

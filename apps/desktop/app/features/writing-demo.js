@@ -598,6 +598,7 @@ async function writingDemoProbeModel(label, prompt, taskKind, options = {}) {
 async function writingDemoProbeSearch() {
   const label = "Searcher";
   try {
+    await ensureFindPathModule();
     const results = await writingDemoWithTimeout(searchFindPath(writingDemoSearchKeyword), 20000, "search_timeout");
     return { label, ok: Array.isArray(results) && results.length > 0, error: Array.isArray(results) && results.length ? null : "搜索结果为空" };
   } catch (error) {
@@ -1185,6 +1186,9 @@ async function writingDemoGenerateAssistantAnswer({ displayText, prompt, taskKin
 
 async function writingDemoDictate(destination, raw, cleaned = raw, options = {}) {
   writingDemoAssertRunning();
+  // The pad's interior is lazy and the demo drives it directly, so it waits for
+  // the module instead of sliding past a typeof guard into a half-run scene.
+  if (typeof ensureDictationPadModule === "function") await ensureDictationPadModule();
   if (typeof openDictationPad === "function") openDictationPad({ dest: destination, target: options.target || null });
   else openWindow("dictation");
   if (destination && getWindow(destination)) {
@@ -1242,6 +1246,7 @@ function writingDemoCreateProject() {
 
 async function writingDemoSearch() {
   await writingDemoStage([{ name: "findPath", slot: "compact" }]);
+  await ensureFindPathModule();
   await writingDemoTypeInto(findPathQueryInput, writingDemoSearchKeyword, { delay: 12 });
   findPathResultsEl.replaceChildren();
   findPathResults.length = 0;

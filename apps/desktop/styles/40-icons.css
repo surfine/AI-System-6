@@ -271,89 +271,6 @@
   position: relative;
 }
 
-.question-sheet-icon::before {
-  content: "?";
-  position: absolute;
-  left: 7px;
-  right: 6px;
-  top: 4px;
-  bottom: 4px;
-  border: 2px solid var(--ink);
-  background:
-    linear-gradient(135deg, var(--paper) 0 48%, var(--ink) 49% 58%, transparent 59%) right top / 9px 9px no-repeat,
-    var(--paper);
-  font-family: var(--ui-font);
-  font-size: 18px;
-  font-weight: 900;
-  line-height: 26px;
-  text-align: center;
-}
-
-.question-sheet-icon::after {
-  content: "";
-  position: absolute;
-  right: 6px;
-  top: 4px;
-  width: 8px;
-  height: 8px;
-  border-left: 2px solid var(--ink);
-  border-bottom: 2px solid var(--ink);
-  background: var(--paper);
-}
-
-.searcher-icon::before {
-  content: "";
-  position: absolute;
-  left: 5px;
-  top: 5px;
-  width: 16px;
-  height: 16px;
-  border: 3px solid var(--ink);
-  border-radius: 50%;
-  background:
-    linear-gradient(var(--ink), var(--ink)) 7px 2px / 2px 12px no-repeat,
-    linear-gradient(90deg, var(--ink), var(--ink)) 2px 7px / 12px 2px no-repeat,
-    var(--paper);
-}
-
-.searcher-icon::after {
-  content: "";
-  position: absolute;
-  left: 20px;
-  top: 21px;
-  width: 12px;
-  height: 4px;
-  background: var(--ink);
-  transform: rotate(45deg);
-  transform-origin: left center;
-}
-
-.outline-icon::before {
-  content: "";
-  position: absolute;
-  left: 6px;
-  right: 6px;
-  top: 5px;
-  bottom: 5px;
-  border: 2px solid var(--ink);
-  background:
-    linear-gradient(var(--ink), var(--ink)) 5px 5px / 14px 2px no-repeat,
-    linear-gradient(var(--ink), var(--ink)) 9px 12px / 12px 2px no-repeat,
-    linear-gradient(var(--ink), var(--ink)) 13px 19px / 8px 2px no-repeat,
-    var(--paper);
-}
-
-.outline-icon::after {
-  content: "";
-  position: absolute;
-  left: 10px;
-  top: 10px;
-  width: 2px;
-  height: 16px;
-  background: var(--ink);
-  box-shadow: 4px 7px 0 var(--ink), 8px 14px 0 var(--ink);
-}
-
 .drafts-icon::before {
   content: "";
   position: absolute;
@@ -379,36 +296,6 @@
   height: 4px;
   background: var(--ink);
   transform: rotate(-35deg);
-}
-
-.claim-check-icon::before {
-  content: "";
-  position: absolute;
-  left: 6px;
-  right: 6px;
-  top: 5px;
-  bottom: 5px;
-  border: 2px solid var(--ink);
-  background:
-    linear-gradient(var(--ink), var(--ink)) 5px 5px / 14px 2px no-repeat,
-    linear-gradient(var(--ink), var(--ink)) 5px 11px / 12px 2px no-repeat,
-    linear-gradient(var(--ink), var(--ink)) 5px 17px / 14px 2px no-repeat,
-    var(--paper);
-}
-
-.claim-check-icon::after {
-  content: "";
-  position: absolute;
-  right: 2px;
-  bottom: 2px;
-  width: 17px;
-  height: 17px;
-  border: 2px solid var(--ink);
-  border-radius: 50%;
-  background:
-    linear-gradient(135deg, transparent 0 44%, var(--ink) 45% 56%, transparent 57%) 4px 6px / 9px 7px no-repeat,
-    linear-gradient(45deg, transparent 0 42%, var(--ink) 43% 58%, transparent 59%) 2px 8px / 7px 6px no-repeat,
-    var(--paper);
 }
 
 .app-icon::before {
@@ -656,7 +543,6 @@
   flex-basis: 360px;
   padding: 0;
 }
-
 
 .window-pane.project-disk-pane {
   display: grid;

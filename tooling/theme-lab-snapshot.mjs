@@ -11,6 +11,12 @@ import { get } from "node:http";
 import { createServer } from "node:net";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  assertReferenceAssets,
+  describeReferenceAssetLoadFailures,
+  isReferenceAssetPath,
+  watchReferenceAssetLoads,
+} from "./lib/reference-assets.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const require = createRequire(import.meta.url);
@@ -33,6 +39,10 @@ if (!["--verify", "--update"].includes(mode)) {
   console.error("Usage: node tooling/theme-lab-snapshot.mjs --verify|--update");
   process.exit(1);
 }
+
+// Refuse to capture anything on a worktree whose reference submodule is empty:
+// the fallback font shifts every metric and the resulting diff blames innocent code.
+assertReferenceAssets("Theme Lab snapshot", root);
 
 function resolvePlaywright() {
   for (const candidate of ["playwright", process.env.PLAYWRIGHT_MODULE].filter(Boolean)) {
@@ -133,6 +143,7 @@ async function captureTheme(browser, url, themeId) {
     }, themeId);
     const page = await context.newPage();
     const diagnostics = [];
+    const referenceAssetProblems = watchReferenceAssetLoads(page);
     page.on("pageerror", (error) => diagnostics.push(`pageerror: ${error.message}`));
     page.on("console", (message) => {
       if (message.type() === "error") diagnostics.push(`console: ${message.text()}`);
@@ -149,6 +160,11 @@ async function captureTheme(browser, url, themeId) {
     }
     await page.evaluate(() => window.AISystem6EnsureThemeLabModule?.());
     await page.evaluate(({ id, css }) => {
+      // The lab keeps one tab panel in the document at a time so an era switch
+      // repaints one board. A capture wants the whole atlas, so ask for it
+      // before the sync below builds the panels.
+      const labWindow = document.querySelector('[data-window="themeLab"]');
+      if (labWindow) labWindow.dataset.themeLabCapture = "all";
       window.AISystem6Theme?.applyTheme(id, {
         experimental: true,
         persist: false,
@@ -241,6 +257,13 @@ async function captureTheme(browser, url, themeId) {
     const path = join(CURRENT_DIR, `${themeId}.png`);
     const fullPath = join(CURRENT_DIR, `${themeId}-full.png`);
     await page.screenshot({ path: fullPath, fullPage: true, animations: "disabled" });
+    // The full-page paint has now requested every webfont and control SVG. A
+    // reference asset that failed here means this PNG was rendered with
+    // fallback art, so refuse it rather than compare it against a baseline.
+    const assetProblems = referenceAssetProblems();
+    if (assetProblems.length) {
+      throw new Error(describeReferenceAssetLoadFailures(assetProblems, `Theme Lab ${themeId}`));
+    }
     const { createCanvas, loadImage } = require("canvas");
     const fullImage = await loadImage(fullPath);
     const canvas = createCanvas(Math.round(box.width), Math.round(box.height));
@@ -260,6 +283,8 @@ async function captureThemeWithRetry(browser, url, themeId) {
       return await captureTheme(browser, url, themeId);
     } catch (error) {
       lastError = error;
+      // A missing reference asset fails identically on every attempt.
+      if (isReferenceAssetPath(error?.message)) break;
       if (attempt < MAX_CAPTURE_ATTEMPTS) {
         console.warn(`RETRY  Theme Lab ${themeId}: ${error.message}`);
         await wait(250);
@@ -324,6 +349,7 @@ try {
       "--no-sandbox",
       "--force-color-profile=srgb",
       "--disable-lcd-text",
+      "--font-render-hinting=none",
     ],
   };
   const executablePath = chromeExecutablePath();
@@ -366,7 +392,9 @@ try {
     }
   }
 } catch (error) {
-  console.error(`Theme Lab snapshot failed: ${error.stack || error.message}`);
+  // A reference-asset failure is self-explanatory; a stack trace only buries it.
+  const detail = isReferenceAssetPath(error?.message) ? error.message : (error.stack || error.message);
+  console.error(`Theme Lab snapshot failed: ${detail}`);
   process.exitCode = 1;
 } finally {
   if (browser) await browser.close().catch(() => {});

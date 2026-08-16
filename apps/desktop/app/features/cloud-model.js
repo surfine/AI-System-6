@@ -34,6 +34,10 @@
   const PROVIDER_BASE_URLS = {
     deepseek: DEEPSEEK_BASE_URL,
   };
+  // Sentinel the server resolves per task: heavy analysis runs on V4 Pro,
+  // everything else on V4 Flash. Kept out of the model list itself so
+  // /api/cloud/models keeps describing real models.
+  const AUTO_CLOUD_MODEL_ID = "auto";
   const BUILTIN_PROVIDER_MODELS = {
     deepseek: [
       { id: "deepseek-v4-flash", name: "DeepSeek V4 Flash", context_length: 1000000 },
@@ -266,6 +270,16 @@
   function populateCloudModelDropdown(models) {
     cloudModels = Array.isArray(models) ? models : [];
     cloudModelSelectEl?.replaceChildren();
+    // Only DeepSeek has the two tiers the server routes between, so the
+    // automatic entry appears only when they are on offer.
+    const supportsAuto = cloudModels.some((m) => String(m?.id || "").includes("deepseek-v4"));
+    if (supportsAuto) {
+      const option = document.createElement("option");
+      option.value = AUTO_CLOUD_MODEL_ID;
+      option.dataset.i18n = "cloud_model_auto";
+      option.textContent = typeof t === "function" ? t("cloud_model_auto") : "Automatic";
+      cloudModelSelectEl?.append(option);
+    }
     cloudModels.forEach(function (m) {
       const option = document.createElement("option");
       option.value = m.id;
@@ -274,7 +288,7 @@
     });
     if (!cloudConfig) cloudConfig = {};
     if (!cloudConfig.model && cloudModels.length) {
-      cloudConfig.model = cloudModels[0].id;
+      cloudConfig.model = supportsAuto ? AUTO_CLOUD_MODEL_ID : cloudModels[0].id;
       saveCloudConfig();
     }
     setCloudModelControlValue(cloudConfig.model);

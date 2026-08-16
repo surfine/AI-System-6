@@ -425,6 +425,9 @@ const browserWritingAgentCoordinator = window.AISystem6WritingAgentRuntime.creat
         activeResponseApi = String(lastResult.responseApi || "");
         const calls = runtime.normalizeProviderToolCalls(lastResult.message);
         if (!calls.length) return { done: true, output: lastResult.text };
+        // The caller owns the surface; the loop only says which tool is about to
+        // run. Nothing here draws, so a task with no listener costs nothing.
+        input.options?.onToolActivity?.(calls);
         messages.push({
           role: "assistant",
           content: lastResult.message?.content || null,
@@ -457,6 +460,7 @@ const browserWritingAgentCoordinator = window.AISystem6WritingAgentRuntime.creat
 async function runWritingTask(options = {}) {
   const taskKind = String(options.taskKind || "chat");
   const projectId = String(options.projectId || activeProjectId || "");
+  window.lastWritingAgentGenerated = null;
   try {
     const result = await browserWritingAgentCoordinator.run({
       projectId,
@@ -470,6 +474,11 @@ async function runWritingTask(options = {}) {
       options,
     });
     window.lastWritingAgentRun = result.run;
+    // What the loop did, kept where the reply renderer can reach it: the tool
+    // calls it made, and whether it stopped with more it wanted to read. The
+    // second one used to be computed and dropped, which let a shortened answer
+    // arrive looking complete.
+    window.lastWritingAgentGenerated = result.generated || null;
     if (window.lastTaskRunManifest) {
       window.lastTaskRunManifest.agentRun = window.AISystem6WritingAgentRuntime.snapshotAgentRun(result.run);
     }

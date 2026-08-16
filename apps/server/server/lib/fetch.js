@@ -51,6 +51,19 @@ const httpsAgent = new https.Agent(sharedAgentOptions);
  * @property {number} [pinnedFamily]
  */
 
+/**
+ * SNI name for an outgoing TLS request. Node refuses an IP address as the
+ * server name, so an endpoint written as `https://10.0.0.4:8443` throws
+ * before the socket opens unless the name is left out.
+ *
+ * @param {URL} parsed
+ * @returns {string | undefined}
+ */
+function tlsServerName(parsed) {
+  if (parsed.protocol !== "https:") return undefined;
+  return net.isIP(parsed.hostname) ? undefined : parsed.hostname;
+}
+
 function pinnedLookup(options = {}) {
   if (!options.pinnedAddress) return undefined;
   return (_hostname, lookupOptions, callback) => {
@@ -254,6 +267,45 @@ function decodeTextBuffer(buffer, headers, maxBytes) {
 }
 
 /**
+ * Read an upstream node response to the end as text, with the same
+ * size limit as the buffered POST/GET helpers.
+ *
+ * @param {import("node:http").IncomingMessage} response
+ * @param {number | undefined} maxBytes
+ * @returns {Promise<string>}
+ */
+function readIncomingText(response, maxBytes) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let totalBytes = 0;
+    let settled = false;
+    response.on("data", (chunk) => {
+      if (settled) return;
+      const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      totalBytes += buffer.length;
+      if (maxBytes !== undefined && totalBytes > maxBytes) {
+        settled = true;
+        const error = responseTooLargeError(maxBytes);
+        response.destroy(error);
+        reject(error);
+        return;
+      }
+      chunks.push(buffer);
+    });
+    response.on("error", (error) => {
+      if (settled) return;
+      settled = true;
+      reject(error);
+    });
+    response.on("end", () => {
+      if (settled) return;
+      settled = true;
+      resolve(Buffer.concat(chunks).toString("utf8"));
+    });
+  });
+}
+
+/**
  * Direct POST via the node http/https client. Resolves to a
  * fetch-like response with a `.headers.get(name)` accessor and an
  * async `.text()`. Mirrors `nodePostJson`.
@@ -284,7 +336,7 @@ function nodePostJson(targetUrl, payload, signal, extraHeaders = {}, options = {
         path: `${parsed.pathname}${parsed.search}`,
         method: "POST",
         agent: isHttps ? httpsAgent : httpAgent,
-        servername: isHttps ? parsed.hostname : undefined,
+        servername: tlsServerName(parsed),
         lookup: pinnedLookup(options),
         headers: {
           "Content-Type": "application/json",
@@ -342,6 +394,75 @@ function nodePostJson(targetUrl, payload, signal, extraHeaders = {}, options = {
   });
 }
 
+/**
+ * Direct POST via the node http/https client that resolves as soon as the
+ * response headers arrive and exposes the upstream stream as `body`.
+ *
+ * `nodePostJson` buffers the whole response before it resolves, so an SSE
+ * call routed through it loses every incremental event and hands the caller
+ * a response with no `body` to iterate. Streaming callers use this instead;
+ * `text()` still reads the rest of the stream for the error path.
+ *
+ * @param {string} targetUrl
+ * @param {unknown} payload
+ * @param {AbortSignal | null | undefined} signal
+ * @param {Record<string, string>} [extraHeaders]
+ * @returns {Promise<{
+ *   ok: boolean,
+ *   status: number,
+ *   headers: { get: (name: string) => string },
+ *   text: () => Promise<string>,
+ *   body: import("node:http").IncomingMessage,
+ * }>}
+ */
+function nodePostJsonStream(targetUrl, payload, signal, extraHeaders = {}, options = {}) {
+  const maxBytes = normalizedMaxBytes(options.maxBytes);
+  return new Promise((resolve, reject) => {
+    const parsed = new URL(targetUrl);
+    const body = JSON.stringify(payload);
+    const isHttps = parsed.protocol === "https:";
+    const client = isHttps ? https : http;
+    const request = client.request(
+      {
+        protocol: parsed.protocol,
+        hostname: parsed.hostname,
+        port: parsed.port,
+        path: `${parsed.pathname}${parsed.search}`,
+        method: "POST",
+        agent: isHttps ? httpsAgent : httpAgent,
+        servername: tlsServerName(parsed),
+        lookup: pinnedLookup(options),
+        headers: {
+          "Content-Type": "application/json",
+          ...extraHeaders,
+          "Content-Length": Buffer.byteLength(body),
+        },
+      },
+      (response) => {
+        const status = response.statusCode || 0;
+        resolve({
+          ok: status >= 200 && status < 300,
+          status,
+          headers: {
+            get(name) {
+              return /** @type {any} */ (response.headers)[String(name).toLowerCase()] || "";
+            },
+          },
+          text() {
+            return readIncomingText(response, maxBytes);
+          },
+          body: response,
+        });
+      }
+    );
+
+    request.on("error", reject);
+    if (typeof options.onRequest === "function") request.once("finish", options.onRequest);
+    signal?.addEventListener("abort", () => request.destroy(new Error("Request aborted")), { once: true });
+    request.end(body);
+  });
+}
+
 function boundedFetchResponse(response, maxBytes) {
   const limit = normalizedMaxBytes(maxBytes);
   if (limit === undefined) return response;
@@ -388,7 +509,7 @@ function proxyJsonStream(targetUrl, payload, signal, res, extraHeaders = {}, opt
         path: `${parsed.pathname}${parsed.search}`,
         method: "POST",
         agent: isHttps ? httpsAgent : httpAgent,
-        servername: isHttps ? parsed.hostname : undefined,
+        servername: tlsServerName(parsed),
         lookup: pinnedLookup(options),
         headers: {
           "Content-Type": "application/json",
@@ -478,7 +599,7 @@ function nodeGetText(targetUrl, signal, headers = { "Accept": "application/json"
         method: "GET",
         agent: isHttps ? httpsAgent : httpAgent,
         headers,
-        servername: isHttps ? parsed.hostname : undefined,
+        servername: tlsServerName(parsed),
         lookup: pinnedLookup(options),
       },
       (response) => {
@@ -650,10 +771,15 @@ function nodeGetTextViaProxy(targetUrl, signal, headers = { "Accept": "applicati
  * POST is never replayed through a second transport because the first server
  * may already have processed it.
  *
+ * Address pinning forces the node transport, which buffers by default. Set
+ * `options.streamResponse` when the caller iterates `response.body` (SSE), or
+ * the response arrives as one blob with no body.
+ *
  * @param {string} targetUrl
  * @param {unknown} payload
  * @param {AbortSignal | null | undefined} signal
  * @param {Record<string, string>} [extraHeaders]
+ * @param {{ maxBytes?: number, streamResponse?: boolean, pinnedAddress?: string, pinnedFamily?: number, onRequest?: () => void }} [options]
  * @returns {Promise<{
  *   response: any,
  *   fallback: boolean,
@@ -669,7 +795,9 @@ async function postJsonWithFallback(targetUrl, payload, signal, extraHeaders = {
     || shouldAvoidNodeFetchForTarget(targetUrl);
   if (forceNodeTransport) {
     return {
-      response: await nodePostJson(targetUrl, payload, signal, extraHeaders, options),
+      response: options.streamResponse
+        ? await nodePostJsonStream(targetUrl, payload, signal, extraHeaders, options)
+        : await nodePostJson(targetUrl, payload, signal, extraHeaders, options),
       fallback: false,
       directLoopback: isLoopbackUrl(targetUrl),
       transport: "node",

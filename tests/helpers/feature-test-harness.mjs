@@ -1,6 +1,37 @@
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { parse } from "acorn";
+
+// Static contracts that read the shape of the app source parse it here.
+//
+// The parser is Acorn, not the TypeScript compiler API. TypeScript 7 is a
+// native port whose main entry publishes only its version, and it offers an
+// AST solely through an export named "unstable". A release gate must not
+// stand on an API that says it can move.
+
+/** Parse app source. The app files are classic scripts; a module parse is the fallback. */
+export function parseJsSource(source) {
+  const options = { ecmaVersion: "latest", allowReturnOutsideFunction: true };
+  try {
+    return parse(source, { ...options, sourceType: "script" });
+  } catch {
+    return parse(source, { ...options, sourceType: "module" });
+  }
+}
+
+/** Visit every child node, whatever the shape of the parent's fields. */
+export function forEachAstChild(node, visit) {
+  for (const key of Object.keys(node)) {
+    if (key === "type" || key === "start" || key === "end" || key === "loc") continue;
+    const value = node[key];
+    if (Array.isArray(value)) {
+      for (const item of value) if (item && typeof item.type === "string") visit(item);
+    } else if (value && typeof value.type === "string") {
+      visit(value);
+    }
+  }
+}
 
 export const root = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 export const desktopRoot = join(root, "apps", "desktop");

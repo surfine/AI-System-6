@@ -26,6 +26,7 @@ import {
   validateFidelityManifest,
 } from "./theme-lab-fidelity-contract.mjs";
 import { resolveProjectPath } from "./lib/paths.mjs";
+import { assertReferenceAssets } from "./lib/reference-assets.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const require = createRequire(import.meta.url);
@@ -546,6 +547,11 @@ async function prepareCurrentPage(browser, serverUrl, manifest, outputDir) {
   await page.evaluate(() => window.AISystem6EnsureThemeLabModule?.());
   const labCss = readFileSync(join(root, "apps/desktop/styles/66-theme-lab.css"), "utf8");
   await page.evaluate(({ themeId, css }) => {
+    // The lab keeps one tab panel in the document at a time. A canonical crop
+    // needs every specimen present, so open the whole atlas before the sync
+    // below builds the panels.
+    const labWindow = document.querySelector('[data-window="themeLab"]');
+    if (labWindow) labWindow.dataset.themeLabCapture = "all";
     window.AISystem6Theme?.applyTheme(themeId, {
       experimental: true,
       persist: false,
@@ -1115,6 +1121,9 @@ function sourceFileHashes() {
 }
 
 const options = parseArgs(process.argv.slice(2));
+// Fallback fonts move every metric this board measures, so refuse to capture
+// before a server or browser starts.
+assertReferenceAssets("Theme Lab fidelity", root);
 // Keep the repeat contract exact, but let one one-off rasterization wobble be
 // outvoted by a third capture. Three is deliberately bounded: a genuinely
 // animated or unstable specimen still has to produce one contract-matching

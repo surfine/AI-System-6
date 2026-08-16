@@ -42,6 +42,7 @@ const {
   DEEPSEEK_CLOUD_MODELS,
   DEEPSEEK_BASE_URL_DEFAULT,
   DEEPSEEK_PUBLIC_BASE_URL,
+  isTrustedDeepSeekCredentialTarget,
   resolveCloudTarget,
 } = require("../cloud.js");
 const { isPublicDeployment } = require("../runtime-profile.js");
@@ -53,22 +54,15 @@ const {
   sharedCloudBudgetConfig,
   usageTokenTotal,
 } = require("../shared-cloud-budget.js");
-const { cloudUpstreamWarning, responsesEffortForTask } = require("../responses.js");
+const { cloudUpstreamWarning } = require("../responses.js");
+const {
+  autoModelForTask,
+  cloudModelBudgetWeight,
+  isAutoModelId,
+  resolveTaskPolicy,
+} = require("../task-policy.js");
 
 const DEEPSEEK_V4_MODELS = new Set(["deepseek-v4-pro", "deepseek-v4-flash", "v4-pro", "v4-flash"]);
-
-// Cloud-chat task kinds that may run with chain-of-thought enabled. The
-// reasoning effort still comes from the shared task-type policy; everything
-// outside this whitelist stays thinking-off so instant surfaces never slow
-// down or spend hidden reasoning tokens.
-const CLOUD_THINKING_TASKS = new Set([
-  "docmap",
-  "outline",
-  "draft",
-  "review",
-  "thesis",
-  "hkrr",
-]);
 
 /**
  * @param {any} payload
@@ -204,6 +198,66 @@ async function repairCloudHumanizerOutputIfNeeded(options) {
 }
 
 /**
+ * A completion that spent its whole budget thinking: the upstream stops with
+ * `finish_reason: "length"` and no message content at all. DeepSeek counts
+ * reasoning tokens inside `max_tokens`, so this is a budget failure, and it
+ * arrives as a silent blank rather than an error.
+ *
+ * @param {any} data
+ * @returns {boolean}
+ */
+function isBudgetStarvedCompletion(data) {
+  const choice = data && Array.isArray(data.choices) ? data.choices[0] : null;
+  if (!choice) return false;
+  if (String(choice.finish_reason || "") !== "length") return false;
+  return !String(choice.message?.content || "").trim();
+}
+
+/**
+ * Run the same request once more with thinking off. The answer budget is
+ * unchanged, so the tokens that went into the truncated thinking chain go to
+ * the answer instead. Returns null when the retry is not usable.
+ *
+ * @param {{
+ *   payload: any,
+ *   targetUrl: string,
+ *   signal: AbortSignal | null | undefined,
+ *   authHeaders: Record<string, string>,
+ *   transportOptions: { maxBytes?: number, pinnedAddress?: string, pinnedFamily?: number },
+ *   reserveSharedCall?: (payload: any) => any,
+ * }} options
+ * @returns {Promise<any | null>}
+ */
+async function retryWithoutThinking({ payload, targetUrl, signal, authHeaders, transportOptions, reserveSharedCall }) {
+  const retryPayload = { ...payload, thinking: { type: "disabled" } };
+  delete retryPayload.reasoning_effort;
+  /** @type {any} */
+  let reservation = null;
+  try {
+    if (reserveSharedCall) reservation = reserveSharedCall(retryPayload);
+    const { response } = await postJsonWithFallback(
+      targetUrl,
+      retryPayload,
+      signal,
+      authHeaders,
+      transportOptions
+    );
+    reservation?.markUpstreamStarted();
+    const text = await response.text();
+    if (!response.ok) return null;
+    if (!(response.headers.get("content-type") || "").includes("application/json")) return null;
+    const retried = JSON.parse(text);
+    reservation?.addUsage(retried?.usage);
+    if (isBudgetStarvedCompletion(retried)) return null;
+    return retried;
+  } catch {
+    return null;
+  } finally {
+    reservation?.settle();
+  }
+}
+
+/**
  * @param {import("node:http").IncomingMessage} req
  * @param {import("node:http").ServerResponse} res
  */
@@ -262,6 +316,19 @@ async function handleCloudChat(req, res) {
       }), { "Content-Type": "application/json" });
       return;
     }
+    const policy = resolveTaskPolicy(taskKind);
+    const deepSeekTarget = isTrustedDeepSeekCredentialTarget("deepseek", targetBaseUrl);
+    if (isAutoModelId(payload.model)) {
+      if (!deepSeekTarget) {
+        send(res, 400, JSON.stringify({
+          error: "Automatic model choice needs the DeepSeek endpoint",
+          code: "auto_model_unavailable",
+          warning: "自动选择模型只在 DeepSeek 端点上可用，请在 Control Panel 选择一个具体模型。",
+        }), { "Content-Type": "application/json" });
+        return;
+      }
+      payload.model = autoModelForTask(taskKind);
+    }
     if (
       isPublicDeployment
       && !new Set(DEEPSEEK_CLOUD_MODELS.map((item) => item.id)).has(payload.model)
@@ -272,23 +339,36 @@ async function handleCloudChat(req, res) {
       }), { "Content-Type": "application/json" });
       return;
     }
+
+    // The browser's max_tokens is an *answer* budget. DeepSeek counts
+    // reasoning tokens inside max_tokens, so the thinking headroom is added
+    // here and every later clamp applies to the answer part alone. Without
+    // this, a thinking task spends its whole allowance reasoning and returns
+    // an empty message with finish_reason "length".
+    const answerBudget = Number.isFinite(Number(payload.max_tokens))
+      ? Math.max(1, Math.floor(Number(payload.max_tokens)))
+      : policy.answerBudget;
+    const reasoningAllowance = DEEPSEEK_V4_MODELS.has(payload.model)
+      ? policy.reasoningAllowance
+      : 0;
+
     if (isPublicDeployment) {
-      const requestedMaxTokens = Number(payload.max_tokens);
-      payload.max_tokens = Number.isFinite(requestedMaxTokens)
-        ? Math.min(8192, Math.max(1, Math.floor(requestedMaxTokens)))
-        : 1800;
+      const publicAnswerBudget = Math.min(8192, answerBudget);
+      payload.max_tokens = publicAnswerBudget + reasoningAllowance;
       const publicSession = sessionFromRequest(req);
       payload.user_id = pseudonymousCloudUserId(publicSession?.nonce || "");
       if (usingSharedCloud) {
         payload.max_tokens = Math.min(
-          payload.max_tokens,
+          publicAnswerBudget,
           sharedCloudBudgetConfig().maxOutputTokens
-        );
+        ) + reasoningAllowance;
         let reservation;
         try {
           reservation = reserveSharedCloudRequest({
             sessionNonce: publicSession?.nonce || "",
             payload,
+            reasoningAllowance,
+            modelWeight: cloudModelBudgetWeight(payload.model),
           });
         } catch (error) {
           console.error("[cloud-chat] shared budget unavailable:", /** @type {Error} */ (error).message);
@@ -317,16 +397,16 @@ async function handleCloudChat(req, res) {
     }
     stripCloudLocalOnlyFields(payload);
     if (DEEPSEEK_V4_MODELS.has(payload.model)) {
-      const taskKindName = String(taskKind || "chat").toLowerCase();
-      const thinkingEffort = CLOUD_THINKING_TASKS.has(taskKindName)
-        ? responsesEffortForTask(taskKindName)
-        : "none";
-      payload.thinking = thinkingEffort === "none"
-        ? { type: "disabled" }
-        : { type: "enabled" };
+      payload.thinking = policy.thinking
+        ? { type: "enabled" }
+        : { type: "disabled" };
       stripDeepseekV4LocalOnlyFields(payload);
-      if (thinkingEffort !== "none") payload.reasoning_effort = thinkingEffort;
-      if (!Number.isFinite(Number(payload.max_tokens))) payload.max_tokens = 1800;
+      // `reasoning_effort` stays a top-level field: measured 2026-08-14, the
+      // nested `thinking.reasoning_effort` form has no effect on the spend.
+      if (policy.thinking) payload.reasoning_effort = policy.effort;
+      if (!isPublicDeployment) {
+        payload.max_tokens = answerBudget + reasoningAllowance;
+      }
     }
     if (shouldStripDeepseekV4Sampling(payload)) {
       delete payload.temperature;
@@ -395,6 +475,46 @@ async function handleCloudChat(req, res) {
         detail: `Cloud API returned HTTP ${upstream.status}`,
       }), { "Content-Type": "application/json" });
       return;
+    }
+
+    if (policy.thinking && isBudgetStarvedCompletion(data)) {
+      if (usageTokenTotal(data?.usage) !== null) sharedReservation?.addUsage(data.usage);
+      const retried = await retryWithoutThinking({
+        payload,
+        targetUrl,
+        signal,
+        authHeaders,
+        transportOptions,
+        reserveSharedCall: usingSharedCloud
+          ? (retryPayload) => {
+              const publicSession = sessionFromRequest(req);
+              const reservation = reserveSharedCloudRequest({
+                sessionNonce: publicSession?.nonce || "",
+                payload: retryPayload,
+                modelWeight: cloudModelBudgetWeight(retryPayload.model),
+              });
+              if (!reservation.ok) {
+                const error = /** @type {Error & { code?: string }} */ (new Error(reservation.detail));
+                error.code = reservation.code;
+                throw error;
+              }
+              return reservation;
+            }
+          : undefined,
+      });
+      if (!retried) {
+        send(res, 502, JSON.stringify({
+          error: "The reasoning chain used the whole answer budget",
+          code: "reasoning_budget_exhausted",
+          warning: "这次思考用光了回答额度，没有正文返回。请缩短输入或稍后重试。",
+        }), { "Content-Type": "application/json" });
+        return;
+      }
+      retried.ai_system6_thinking_fallback = {
+        reason: "reasoning_budget_exhausted",
+        retried_without_thinking: true,
+      };
+      data = retried;
     }
 
     const initialUsageTokens = usageTokenTotal(data?.usage);

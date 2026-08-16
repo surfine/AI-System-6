@@ -629,6 +629,7 @@ function getOutlineOperationContext(project) {
 }
 
 async function runOutlineOperation(mode) {
+  if (mode === "mingming") await ensureMingmingLensModule();
   await ensureWritingFlowModule();
   const project = getActiveProject();
   if (!project) {

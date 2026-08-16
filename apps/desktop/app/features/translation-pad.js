@@ -42,6 +42,10 @@ function updateTranslationPadButtons() {
   if (translationPadTranslateButton) translationPadTranslateButton.disabled = !hasSource || !needsTranslation;
   if (translationPadClearButton) translationPadClearButton.disabled = !hasSource && !hasTranslation;
   if (translationPadSendButton) translationPadSendButton.disabled = !hasTranslation;
+  // One default at a time, and it is whatever comes next: translate the
+  // passage, then send it. A default button that cannot run is not a default.
+  translationPadTranslateButton?.classList.toggle("default", !hasTranslation);
+  translationPadSendButton?.classList.toggle("default", hasTranslation);
 }
 
 function syncTranslationPadStateFromInputs() {

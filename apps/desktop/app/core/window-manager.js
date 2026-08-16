@@ -35,7 +35,7 @@ const writerModeCssOwnedWindows = new Set(["teachText", "assistant", "findPath",
 // body:not(.is-writer-mode) .window work-area rule (60-responsive.css).
 const mobileWorkAreaExcludedWindowNames = new Set([
   "about", "saveChat", "guide", "control", "chooser", "findFile", "notePad",
-  "clipboard", "dictation", "translationPad", "dictionary", "keyCaps",
+  "clipboard", "dictation", "translationPad", "sideAskPad", "dictionary", "keyCaps",
   "systemStatus", "notificationCenter", "writingBell", "alarmClock",
   "calculator", "puzzle", "memoryCards", "modelMeter",
 ]);
@@ -45,12 +45,12 @@ function isCenteredSystemWindow(winOrName) {
 }
 const deskAccessoryDefaultWidths = new Map([
   ["findFile", 520],
-  ["dictionary", 390],
-  ["notePad", 320],
-  ["clipboard", 340],
+  ["dictionary", readPixelToken("--da-width-wide-pad", 380)],
+  ["notePad", readPixelToken("--da-width-pad", 340)],
+  ["clipboard", readPixelToken("--da-width-pad", 340)],
   ["calculator", 208],
   ["puzzle", 188],
-  ["writingBell", 300],
+  ["writingBell", readPixelToken("--da-width-dial", 300)],
   ["memoryCards", 520],
   ["cmfStudio", 1080],
   ["modelMeter", 230],
@@ -59,6 +59,15 @@ const deskAccessoryDefaultWidths = new Map([
   ["notificationCenter", 360],
   ["guide", 430],
 ]);
+// The accessory ladder lives in 00-foundation.css. Reading it here keeps one
+// source for a width that both the stylesheet and this map have to agree on.
+// Function declarations hoist, so the map above may call this.
+function readPixelToken(name, fallback) {
+  const raw = getComputedStyle(document.documentElement).getPropertyValue(name);
+  const value = Number.parseInt(raw, 10);
+  return Number.isFinite(value) ? value : fallback;
+}
+
 function readZLayerToken(name, fallback) {
   const raw = getComputedStyle(document.documentElement).getPropertyValue(name);
   const value = Number.parseInt(raw, 10);
@@ -719,10 +728,6 @@ function quickDraftClioTalkSlot() {
   return document.getElementById("quick-draft-cliotalk-slot");
 }
 
-function dockAssistantInQuickDraft() {
-  return false;
-}
-
 function restoreQuickDraftIntegratedAssistant() {
   const assistant = getWindow("assistant");
   const slot = quickDraftClioTalkSlot();
@@ -802,6 +807,11 @@ async function quitApp(appId = activeAppId) {
     await exitWritingStudio();
     return;
   }
+
+  // Quitting is the total release: an application that declared onDispose
+  // frees its engine, canvas, timers and audio here. The explicit game calls
+  // below stay as the floor for a build whose lifecycle never registered.
+  window.AISystem6ApplicationRegistry?.disposeApplication?.(appId, "quit");
 
   if (appId === "openttd") {
     // Flush the game's browser-side storage, then tear the iframe down so
@@ -957,6 +967,16 @@ const mobileFullScreenAppIds = new Set([
   "doom",
   "openttd",
 ]);
+
+// Immersive apps are the ones whose content IS the screen: the three games.
+// They earn the full-screen shell in landscape as well, where a floating
+// window would spend most of a phone display on desktop pattern. Every other
+// app keeps the portrait-only figure.
+const mobileImmersiveAppIds = new Set(["micropolis", "doom", "openttd"]);
+
+function isMobileImmersiveWindow(win) {
+  return !!win && mobileImmersiveAppIds.has(getWindowAppId(win));
+}
 
 const mobileFinderPageWindowNames = new Set([
   "rag",
@@ -1213,6 +1233,7 @@ const mobileDialogWindowNames = new Set([
   "saveChat",
   "fileInfo",
   "projectInfo",
+  "finishingReceipt",
   "about",
 ]);
 
@@ -1515,11 +1536,15 @@ function mobileWindowCanFillScreen(win) {
 }
 
 function mobileFullScreenTarget() {
-  if (!isPortraitDocumentFlow()) return null;
+  const immersiveLandscape = !isPortraitDocumentFlow()
+    && isNarrowViewport()
+    && window.matchMedia("(orientation:landscape)").matches;
+  if (!isPortraitDocumentFlow() && !immersiveLandscape) return null;
   const wins = Array.from(
     document.querySelectorAll(".window:not(.is-hidden):not(.is-app-hidden):not(.is-collapsed)")
   ).filter((win) => (
     mobileWindowCanFillScreen(win)
+    && (!immersiveLandscape || isMobileImmersiveWindow(win))
     // Zooming or dragging the grow box restores a window down; it then stays a
     // normal floating window (so several can share the screen) until the zoom
     // box maximizes it again.
@@ -1546,6 +1571,12 @@ function syncMobileAppForeground() {
       .forEach((prop) => { target.style[prop] = ""; });
   }
   document.body.classList.toggle("mobile-app-foreground", !!target);
+  // Landscape geometry is a separate design, so the CSS keys on the state the
+  // shell already computed instead of re-deriving it from a media query.
+  document.body.classList.toggle(
+    "mobile-immersive-landscape",
+    !!target && isMobileImmersiveWindow(target) && !isPortraitDocumentFlow()
+  );
   repairPortraitDeskAccessoryGeometry();
 }
 
@@ -2033,14 +2064,19 @@ function getActionAvailability() {
   const docMapReadiness = resolveDocMapReadiness(selectionContext);
   const canMakeDocMap = isFinderWindow && currentFinderSelection
     ? !!currentFinderSelection.canMakeDocMap
-    : docMapReadiness.ready;
-  const canMakeDocMapSelection = docMapReadiness.selectionReady;
+    : docMapReadiness?.ready;
+  const canMakeDocMapSelection = docMapReadiness?.selectionReady;
   const canMakeDocMapSource = isFinderWindow && currentFinderSelection
     ? !!currentFinderSelection.canMakeDocMap
-    : docMapReadiness.wholeReady;
+    : docMapReadiness?.wholeReady;
   const readerDocMapReadiness = winName === "reader" ? docMapReadinessForSurface("reader") : null;
   const timeMachineDocMapReadiness = winName === "timeMachine"
     ? window.AISystem6TimeMachine?.docMapReadiness?.()
+    : null;
+  // Time Machine's verbs live in a lazy module, so its own state answers for
+  // them. An unloaded module leaves every row grey rather than black-and-inert.
+  const timeMachine = winName === "timeMachine"
+    ? window.AISystem6TimeMachine?.menuState?.() || null
     : null;
   const activeEditable = getActiveEditableElement();
   const hasEditableText = !!String(activeEditable?.value || activeEditable?.textContent || "").trim();
@@ -2285,6 +2321,12 @@ function getActionAvailability() {
     "empty-trash": getProjectTrashItems().length > 0,
     "erase-disk": !!selectedProject,
     "reset-system": showResetSystemMenu,
+    // An empty desk holds no place, and a spent one has nowhere to go back to.
+    "hold-my-place": !!document.querySelector(".window.is-active:not(.is-hidden)"),
+    // A thought needs no window to come from: the slip opens with an origin
+    // when there is one, so this stays live on an empty desk as its key does.
+    "hold-that-thought": true,
+    "resume-my-place": typeof hasHeldPlace === "function" && hasHeldPlace(),
     "toggle-balloon-help": true,
     "open-system-help": true,
     "open-help-folder": true,
@@ -2295,7 +2337,16 @@ function getActionAvailability() {
     "open-dictionary": true,
     "open-docmap": true,
     "open-claim-check": true,
+    // Writing-route navigation is valid from anywhere the route exists, so the
+    // literal is `true` and the workspace pass below is what greys these in the
+    // desktop profile. They have to be listed: an action missing from this map
+    // is never asked about, so its row stayed black and clickable while
+    // isWorkspaceActionAllowed() rejected the click.
+    "open-question-sheet": true,
+    "open-outline": true,
+    "open-section-drafts": true,
     "open-review-desk": true,
+    "open-image-manager": true,
     "toggle-review-preview": reviewDeskReady,
     "review-view-manuscript": true,
     "review-style-section": reviewDeskReady && teachTextCanReview && hasStyleSections,
@@ -2336,9 +2387,8 @@ function getActionAvailability() {
     "docmap-insert-outline": winName === "docMap" && activeControlEnabled("#docmap-insert-outline"),
     "docmap-hkrr": winName === "docMap" && !!currentDocMap,
     "focus-docmap-question": winName === "docMap" && !!currentDocMap,
-    "docmap-layout-tree": winName === "docMap" && !!currentDocMap,
-    "docmap-layout-radial": winName === "docMap" && !!currentDocMap,
-    "docmap-layout-fishbone": winName === "docMap" && !!currentDocMap,
+    "docmap-layout-right": winName === "docMap" && !!currentDocMap,
+    "docmap-layout-balanced": winName === "docMap" && !!currentDocMap,
     "docmap-fit-view": winName === "docMap" && !!currentDocMap,
     "docmap-zoom-out": winName === "docMap" && !!currentDocMap,
     "docmap-zoom-in": winName === "docMap" && !!currentDocMap,
@@ -2346,6 +2396,24 @@ function getActionAvailability() {
     "time-machine-docmap": winName === "timeMachine" && !!timeMachineDocMapReadiness?.ready,
     "time-machine-docmap-selection": winName === "timeMachine" && !!timeMachineDocMapReadiness?.selectionReady,
     "time-machine-docmap-source": winName === "timeMachine" && !!timeMachineDocMapReadiness?.wholeReady,
+    "time-machine-new-tab": !!timeMachine,
+    "time-machine-close-tab": !!timeMachine?.hasTab,
+    "time-machine-back": !!timeMachine?.canGoBack,
+    "time-machine-forward": !!timeMachine?.canGoForward,
+    "time-machine-stop": !!timeMachine?.canStop,
+    "time-machine-refresh": !!timeMachine?.canRefresh,
+    "time-machine-switch-source": !!timeMachine?.canSwitchSource,
+    // The archive band is a mode you turn on and off, so this row is offered
+    // whenever the window is in front; the band itself shows which way it is.
+    "time-machine-toggle": !!timeMachine,
+    "time-machine-web-view": !!timeMachine?.canShowWebView,
+    "time-machine-reader-view": !!timeMachine?.canShowReaderView,
+    "time-machine-preserve-wayback": !!timeMachine?.canPreserve,
+    "time-machine-preserve-archive-is": !!timeMachine?.canPreserve,
+    "time-machine-clip": !!timeMachine?.hasSelection,
+    "time-machine-clip-translate": !!timeMachine?.hasSelection,
+    "time-machine-ask": !!timeMachine?.hasReaderText,
+    "time-machine-send-manuscript": !!timeMachine?.canSendManuscript,
     "clio-stage-docmap": winName === "clioStage" && activeControlEnabled("#clio-stage-docmap"),
     "scrapbook-open-source": winName === "scrapbook" && activeOwnedControlEnabled("#open-scrap-source"),
     "scrapbook-toggle-translation": winName === "scrapbook" && activeOwnedControlEnabled("#toggle-scrap-translation"),
@@ -2380,6 +2448,22 @@ function getActionAvailability() {
     "clio-chart-outliers": winName === "clioChart",
     "clio-chart-gaps": winName === "clioChart",
     "clio-chart-write-up": winName === "clioChart",
+    "micropolis-new-city": winName === "micropolis",
+    "micropolis-save-city": winName === "micropolis" && !!window.AISystem6Micropolis?.hasCity?.(),
+    "micropolis-open-city": winName === "micropolis",
+    "micropolis-budget": winName === "micropolis" && !!window.AISystem6Micropolis?.hasCity?.(),
+    "micropolis-evaluation": winName === "micropolis" && !!window.AISystem6Micropolis?.hasCity?.(),
+    "micropolis-disaster-fire": winName === "micropolis" && !!window.AISystem6Micropolis?.hasCity?.(),
+    "micropolis-disaster-flood": winName === "micropolis" && !!window.AISystem6Micropolis?.hasCity?.(),
+    "micropolis-disaster-tornado": winName === "micropolis" && !!window.AISystem6Micropolis?.hasCity?.(),
+    "micropolis-disaster-earthquake": winName === "micropolis" && !!window.AISystem6Micropolis?.hasCity?.(),
+    "micropolis-disaster-monster": winName === "micropolis" && !!window.AISystem6Micropolis?.hasCity?.(),
+    "micropolis-disaster-crash": winName === "micropolis" && !!window.AISystem6Micropolis?.hasCity?.(),
+    "micropolis-disaster-meltdown": winName === "micropolis" && !!window.AISystem6Micropolis?.hasCity?.(),
+    "micropolis-pause": winName === "micropolis" && !!window.AISystem6Micropolis?.hasCity?.(),
+    "micropolis-speed-slow": winName === "micropolis" && !!window.AISystem6Micropolis?.hasCity?.(),
+    "micropolis-speed-med": winName === "micropolis" && !!window.AISystem6Micropolis?.hasCity?.(),
+    "micropolis-speed-fast": winName === "micropolis" && !!window.AISystem6Micropolis?.hasCity?.(),
     "see-as-chart": winName === "teachText" && teachTextHasChartableMarkdownTable(teachTextBodyInput?.value || ""),
     "clio-stage-import": winName === "clioStage",
     "clio-stage-previous": winName === "clioStage" && activeControlEnabled("#clio-stage-prev"),
@@ -2569,12 +2653,23 @@ function updateMenuState() {
     if (btn.dataset.themeChoice) {
       btn.classList.toggle("is-checked", btn.dataset.themeChoice === getCurrentTheme());
     }
+    if (btn.dataset.layoutChoice) {
+      // Only an open map has a layout; with no map the rows are grey anyway and
+      // stay unchecked rather than claiming a default nothing is using.
+      btn.classList.toggle("is-checked", !!currentDocMap && btn.dataset.layoutChoice === docMapLayoutFor(currentDocMap));
+    }
     if (action === "toggle-balloon-help") {
       btn.textContent = t(balloonHelpEnabled ? "hide_balloon_help" : "show_balloon_help");
       btn.classList.remove("is-checked");
     }
     if (action === "reset-system") {
       btn.classList.toggle("is-hidden", !state[action]);
+    }
+    // The row is the reminder. "Where I Left Off" tells you nothing; "Back to
+    // Section Drafts (12 min ago)" tells you what you came back for before you
+    // have even clicked it.
+    if (action === "resume-my-place" && typeof heldPlaceResumeLabel === "function") {
+      btn.textContent = heldPlaceResumeLabel();
     }
     if (viewTargetIsWritingTools && ["view-by-name", "view-by-date", "view-by-size", "view-by-kind", "view-list"].includes(action)) {
       btn.classList.add("is-disabled");
@@ -2636,10 +2731,17 @@ const lazyWindowModules = {
   outline: { ensure: () => ensureWritingFlowModule() },
   sectionDrafts: { ensure: () => ensureWritingFlowModule() },
   rebuildFlow: { ensure: () => ensureWritingFlowModule() },
+  dictation: { ensure: () => ensureDictationPadModule() },
   dictionary: {
     ensure: async () => {
       await ensureSystemDictionaryData();
       await ensureDictionaryHelpModule();
+    },
+    // The writer's own word list is drawn on the way in. `typeof` and not
+    // `?.()`: an undefined identifier is a ReferenceError, which the optional
+    // call does not catch.
+    attach: () => {
+      if (typeof renderDictionaryWords === "function") renderDictionaryWords();
     },
   },
   systemHelp: {
@@ -2649,12 +2751,20 @@ const lazyWindowModules = {
     },
   },
   memoryCards: { ensure: () => ensureMemoryCardsModule() },
+  finishingReceipt: {
+    ensure: () => ensureProjectCdPrintModule(),
+    attach: () => window.attachFinishingReceipt?.(),
+  },
   themeLab: {
     ensure: () => ensureThemeLabModule(),
     attach: () => window.AISystem6ThemeLab?.attach?.(),
   },
   alarmClock: { ensure: () => ensureAlarmClockModule() },
   translationPad: { ensure: () => ensureTranslationPadModule() },
+  // The pad builds its own markup, so anything that opens it by name — session
+  // restore reopens windows before a menu is ever touched — has to get the
+  // window built first, or it opens nothing at all.
+  sideAskPad: { ensure: () => { sideAskPad(); } },
   bureaucracyMeme: { ensure: () => ensureBureaucracyMemeModule() },
   endfieldTerminal: {
     ensure: () => ensureEndfieldTerminalModule(),
@@ -2688,6 +2798,18 @@ const lazyWindowModules = {
   doom: {
     ensure: () => ensureDoomModule(),
     attach: () => window.AISystem6Doom?.attach?.(),
+  },
+  // Searcher and Find File keep their frames in index.html but their behaviour
+  // in the lazy findpath.js. Both attach a render, because session restore
+  // reopens them with no action handler in the way and startup no longer paints
+  // their result panes.
+  findPath: {
+    ensure: () => ensureFindPathModule(),
+    attach: () => renderFindPathResults(),
+  },
+  findFile: {
+    ensure: () => ensureFindPathModule(),
+    attach: () => renderFindFileResults(),
   },
   controlStripModules: {
     ensure: () => ensureControlStripModulesFolderModule(),
@@ -2746,6 +2868,15 @@ async function openWindow(name, options = {}) {
   // startup disk while preserving the ordinary window-manager contract.
   if (!getWindow(name) && lazyWindowModules[name]) await lazyWindowModules[name].ensure();
   const win = getWindow(name);
+  // A lazy module injects its own window long after the boot loop bound the
+  // title-bar controls, so guarantee the chrome here rather than trusting each
+  // module to remember: a window whose close box does nothing is not a window.
+  // The wiring is idempotent, so this costs one WeakSet lookup per open.
+  window.AISystem6WireWindowChrome?.(win);
+  // Same reason for the grow box: it is installed by a sweep over the windows
+  // that exist, and a lazily injected one misses it. Micropolis is listed as
+  // resizable, so without this its corner cell never appears.
+  installGrowBoxes();
   if (!win) return;
   const wasAlreadyOpen = !win.classList.contains("is-hidden") && !win.classList.contains("is-app-hidden");
   const sourceWindowForSingleTask = !isMultiFinderMode() && !skipFinderMode
@@ -2773,6 +2904,11 @@ async function openWindow(name, options = {}) {
   }
   if (name === "finder") {
     renderFinder();
+  }
+  // A restored Dictation Pad must not keep naming a field that is no longer on
+  // screen; its destination is re-checked on the way in.
+  if (name === "dictation" && typeof refreshDictationDestination === "function") {
+    refreshDictationDestination();
   }
   if (["helpFolder", "applications", "disk", "controlStripModules"].includes(name)) {
     renderStaticFinderWindow(name);
@@ -2864,9 +3000,6 @@ async function openWindow(name, options = {}) {
   }
   if (name === "findPath") {
     document.body.classList.add("has-find-path-open");
-  }
-  if (name === "findFile") {
-    renderFindFileResults();
   }
   if (name === "contextPanel") {
     document.body.classList.add("has-context-panel-open");
@@ -2988,6 +3121,10 @@ async function openWindow(name, options = {}) {
   }
   syncMobileAppForeground();
   updateMenuState();
+  // A lazy application registers its lifecycle while attaching above, after the
+  // class flips the observer watches. Reconcile once here so a restored window
+  // comes back running instead of waiting for the next unrelated flip.
+  scheduleApplicationLifecycleRefresh?.("open-window");
   scheduleWorkingSessionSave?.();
 }
 
@@ -3373,7 +3510,7 @@ function visibleWindowOrNull(candidate) {
 
 function isDeskAccessorySidecar(winOrName) {
   const name = typeof winOrName === "string" ? winOrName : winOrName?.dataset.window;
-  return name === "dictation" || name === "translationPad";
+  return name === "dictation" || name === "translationPad" || name === "sideAskPad";
 }
 
 function isFixedDeskAccessoryWindow(winOrName) {
@@ -3386,7 +3523,7 @@ function isDeskAccessoryPlacementWindow(winOrName) {
 }
 
 function visibleDeskAccessorySidecars() {
-  return ["dictation", "translationPad"]
+  return ["dictation", "translationPad", "sideAskPad"]
     .map(getWindow)
     .filter(visibleWindowOrNull);
 }

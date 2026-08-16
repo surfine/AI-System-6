@@ -610,4 +610,28 @@ for (const key of [
   test.assertIncludes(zh, `${key}:`, `Chinese copy includes ${key}`);
 }
 
+// A visitor with no IWAD used to reach a file picker and a dead end: the copy
+// named Freedoom without saying where it lives. Name the path, and keep it a
+// path -- the desk states where the data is, the visitor decides to go, and no
+// game data is ever pulled down by a desk nobody asked to phone out.
+test.assertIncludes(shellHtml, 'href="https://freedoom.github.io/download.html"', "the chooser names where a free IWAD actually lives");
+test.assertIncludes(shellHtml, 'rel="noopener noreferrer"', "the outbound path cannot reach back into the engine page");
+test.assertMatches(shell, /freedoom: "[^"]*Freedoom[^"]*"/, "English copy explains what Freedoom is, not just that it exists");
+test.assertMatches(shell, /freedoom: "[^"]*自由授权[^"]*"/, "Chinese copy explains what Freedoom is, not just that it exists");
+test.assertNotMatches(
+  shell + wadPicker,
+  /fetch\(\s*["'`]https?:\/\/|XMLHttpRequest[\s\S]{0,80}freedoom/i,
+  "the desk hands over a path and never fetches game data on the visitor's behalf"
+);
+
+// The canvas id is load-bearing. Emscripten's SDL resolves its drawing
+// surface with the default selector "#canvas"; under any other id every
+// canvas-size query fails, SDL reads a 0x0 drawable, sets a zero present
+// viewport, and the engine renders every frame into nothing while still
+// reporting that it is running -- a black window with a working HUD of touch
+// controls over it. It shipped that way. Nothing here may rename it back.
+test.assertIncludes(shellHtml, '<canvas id="canvas"', "the engine canvas keeps the id Emscripten's SDL resolves");
+test.assertNotMatches(shellHtml, /<canvas id="(?!canvas")/, "no engine canvas carries an id SDL cannot find");
+test.assertIncludes(shell, 'querySelector("canvas.game-canvas")', "the shell addresses its canvas by class, leaving the id to SDL");
+
 test.finish();

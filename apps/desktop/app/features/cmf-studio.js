@@ -1103,11 +1103,26 @@
     resizeObserver.observe(viewport);
     rendererState.resizeObserver = resizeObserver;
     resizeModelViewport();
-    renderer.setAnimationLoop(() => {
-      if (canvas.closest(".window")?.classList.contains("is-hidden")) return;
-      if (controls.update()) renderModelFrame();
-    });
+    startModelAnimationLoop();
     return rendererState;
+  }
+
+  // The damping loop is a real rAF every frame for as long as the renderer
+  // lives, so suspending has to take the loop off the renderer — not just skip
+  // work inside it. Kept as one named pair so resume reinstalls the same loop.
+  function startModelAnimationLoop() {
+    const state = rendererState;
+    if (!state) return;
+    state.renderer.setAnimationLoop(() => {
+      if (state.canvas.closest(".window")?.classList.contains("is-hidden")) return;
+      if (state.controls.update()) renderModelFrame();
+    });
+  }
+
+  function stopModelAnimationLoop() {
+    window.cancelAnimationFrame(cameraAnimationFrame);
+    cameraAnimationFrame = 0;
+    rendererState?.renderer.setAnimationLoop(null);
   }
 
   function resizeModelViewport() {
@@ -1581,6 +1596,32 @@
     const el = cmfEl("cmf-status");
     if (el) el.textContent = message;
   }
+
+  // A hidden CMF Studio keeps a WebGL context, a loaded model and a per-frame
+  // damping loop alive. Suspend stops the loop and the in-flight render; the
+  // scene stays built, so coming back is one repaint rather than a reload.
+  window.AISystem6ApplicationRegistry?.registerApplicationLifecycle?.("cmfStudio", {
+    onSuspend: () => {
+      stopModelAnimationLoop();
+      cancelModelRender();
+    },
+    onResume: () => {
+      if (!rendererState) return;
+      startModelAnimationLoop();
+      resizeModelViewport();
+      renderModelFrame();
+    },
+    onDispose: () => {
+      stopModelAnimationLoop();
+      cancelModelRender();
+      const state = rendererState;
+      if (!state) return;
+      rendererState = null;
+      state.resizeObserver?.disconnect();
+      state.controls?.dispose?.();
+      state.renderer?.dispose?.();
+    },
+  });
 
   window.AISystem6CMFStudioLoaded = true;
   window.renderCmfStudio = renderCmfStudio;

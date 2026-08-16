@@ -3,8 +3,9 @@
 // user-facing string must be original AI System 6 copy from the translation
 // tables, never upstream text.
 
+import { readFileSync } from "node:fs";
 import vm from "node:vm";
-import { createFeatureTest, exists, read } from "../helpers/feature-test-harness.mjs";
+import { createFeatureTest, exists, read, resolveProjectPath } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("micropolis");
 
@@ -110,6 +111,98 @@ if (nativePackageContract) {
   // public source carries the distributable engine boundary.
   test.assert(exists("apps/desktop/styles.micropolis.css"), "the public build emits the lazy stylesheet");
 }
+
+// --- HD remaster --------------------------------------------------------------
+//
+// The @2x atlases derive deterministically from the 1x art
+// (npm run build:micropolis-hd); the engine renders them on a scale-sized
+// backing store while every caller-facing coordinate stays in CSS pixels and
+// the logical tile stays 16px. These checks pin the whole geometry contract.
+
+function pngSize(path) {
+  const buffer = readFileSync(resolveProjectPath(path));
+  return { width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20) };
+}
+
+const sdTiles = pngSize("app/vendor/micropolis/tiles.png");
+test.assert(sdTiles.width === 512 && sdTiles.height === 512, "the classic 1x atlas stays the pipeline's source of truth");
+const hdTiles = pngSize("app/vendor/micropolis/tiles@2x.png");
+test.assert(hdTiles.width === 1024 && hdTiles.height === 1024, "the HD tile atlas is exactly 2x the 512px base");
+const hdSnow = pngSize("app/vendor/micropolis/tilessnow@2x.png");
+test.assert(hdSnow.width === hdTiles.width && hdSnow.height === hdTiles.height, "the HD snow atlas matches the HD tile scale");
+const hdSprites = pngSize("app/vendor/micropolis/sprites@2x.png");
+test.assert(hdSprites.width === 1536 && hdSprites.height === 768, "the HD sprite sheet is exactly 2x the 768x384 base");
+test.assertFile("tooling/build-micropolis-hd-assets.mjs", "the HD atlases have a reproducible pipeline");
+test.assertIncludes(packageJson, '"build:micropolis-hd"', "the HD pipeline is an npm script");
+test.assertIncludes(read("tooling/build-micropolis-vendor.mjs"), "micropolisHdPatchPlugin", "the vendor build applies the HD engine patch");
+test.assertIncludes(engineSource, "this._tileSet.scale || 1", "the engine bundle carries the HD scale contract");
+test.assertIncludes(engineSource, "take10Census(this.budget)",
+  "the phase-9 census ReferenceError (undeclared `budget`) stays fixed");
+
+// Headless geometry: HD backing store, CSS-pixel APIs, logical 16px tiles.
+const hdView = {
+  _canvas: { parentNode: { clientWidth: 800, clientHeight: 600 }, style: {} },
+  _tileSet: { tileWidth: 32, scale: 2 },
+  _map: { width: 120, height: 100 },
+  _allowScrolling: true,
+};
+engine.GameCanvas.prototype._calculateDimensions.call(hdView);
+test.assert(hdView.canvasWidth === 1600 && hdView.canvasHeight === 1200, "the HD backing store is CSS size times scale");
+test.assert(hdView._canvas.width === 1600 && hdView._canvas.style.width === "800px",
+  "the canvas pins its CSS size while the backing store scales");
+test.assert(hdView._wholeTilesInViewX === 50 && hdView._wholeTilesInViewY === 37,
+  "the visible map range still counts 16-CSS-px logical tiles");
+hdView.ready = true;
+hdView._originX = 10;
+hdView._originY = 5;
+const hdTile = engine.GameCanvas.prototype.canvasCoordinateToTileCoordinate.call(hdView, 40, 40);
+test.assert(hdTile.x === 12 && hdTile.y === 7, "pointer CSS pixels map to the same logical tile as the classic renderer");
+const hdCss = engine.GameCanvas.prototype.tileToCanvasCoordinate.call(hdView, 12, 7);
+test.assert(hdCss.x === 32 && hdCss.y === 32, "tile positions come back in CSS pixels");
+
+// Sprite frames read from the sheet at 48 x scale and paint at world x scale;
+// damage stays in logical 16px tiles.
+const spriteCalls = [];
+const spriteView = {
+  _tileSet: { tileWidth: 32, scale: 2 },
+  _spriteSheet: { hd: true },
+  _originX: 10,
+  _originY: 5,
+};
+const spriteDamage = engine.GameCanvas.prototype._processSprites.call(
+  spriteView,
+  { drawImage: (...args) => spriteCalls.push(args) },
+  [{ frame: 3, type: 5, width: 48, height: 48, x: 200, y: 100, xOffset: -8, yOffset: -8 }],
+);
+test.assert(
+  spriteCalls.length === 1
+  && spriteCalls[0][1] === 192 && spriteCalls[0][2] === 384
+  && spriteCalls[0][3] === 96 && spriteCalls[0][4] === 96
+  && spriteCalls[0][5] === 64 && spriteCalls[0][6] === 24
+  && spriteCalls[0][7] === 96 && spriteCalls[0][8] === 96,
+  "sprites read 96px HD frames and paint at scaled world coordinates",
+);
+test.assert(
+  spriteDamage[0].x === 2 && spriteDamage[0].xBound === 5
+  && spriteDamage[0].y === 0 && spriteDamage[0].yBound === 4,
+  "sprite damage rectangles stay in logical 16px tiles",
+);
+
+const legacyView = {
+  _canvas: { parentNode: { clientWidth: 800, clientHeight: 600 }, style: {} },
+  _tileSet: { tileWidth: 16 },
+  _map: { width: 120, height: 100 },
+  _allowScrolling: true,
+};
+engine.GameCanvas.prototype._calculateDimensions.call(legacyView);
+test.assert(legacyView.canvasWidth === 800 && legacyView._wholeTilesInViewX === 50,
+  "a classic 1x tile set still renders with the original geometry");
+
+test.assertIncludes(shellSource, 'loadMicropolisImage("tiles@2x.png")', "the shell prefers the HD atlas");
+test.assertMatches(shellSource, /catch\(\(\) => Promise\.all\(\[\s*loadMicropolisImage\("tiles\.png"\)/,
+  "missing HD art falls back to the classic pair as a unit");
+test.assertIncludes(shellSource, 'hd ? "tilessnow@2x.png" : "tilessnow.png"', "the snow set follows the active scale");
+test.assertIncludes(shellSource, "micropolisCssTileWidth", "pan and wheel deltas use the CSS tile width");
 
 // --- city saves are durable desk data -----------------------------------------
 

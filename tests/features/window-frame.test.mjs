@@ -111,8 +111,8 @@ test.assertMatches(
 );
 test.assertMatches(
   windows,
-  /\.is-vertical \.window-frame-arrow\.is-up \{\s*border-bottom: var\(--window-frame-track-border\)/,
-  "An arrow box is closed against the track and open against the frame"
+  /\.is-vertical \.window-frame-arrow\.is-up \{\s*order: var\(--window-frame-arrow-up-order, 0\);\s*border-bottom: var\(--window-frame-arrow-up-border-bottom, var\(--window-frame-track-border\)\)/,
+  "An arrow box is closed against the track and open against the frame, unless an era moves it"
 );
 test.assertMatches(
   windows,
@@ -350,7 +350,7 @@ test.assertMatches(responsive, /\.window \{[^}]*box-shadow: var\(--active-window
 test.assertMatches(responsive, /\.writing-spine-panel \{[^}]*border: 0;[^}]*box-shadow: none;/, "Writing Flow's transparent placement wrapper cannot double its panel frame or shadow");
 test.assertMatches(responsive, /\.spine-toolbox-panel \{[^}]*border: var\(--window-border\);[^}]*box-shadow: var\(--active-window-shadow\);/, "Writing Flow's visible panel shares Classic window frame weight");
 test.assertNotMatches(responsive, /\.title-bar,\n\.spine-title-row \{[^}]*border-bottom: 2px solid var\(--ink\)/, "The late title-bar layer cannot restore a two-pixel seam");
-test.assertMatches(windows, /\.window-frame-arrow\.is-up \{[^}]*background-size: 1px 1px, 3px 1px, 5px 1px, 7px 1px/, "Classic scroll arrows are stepped 1-bit pixels instead of smooth diagonals");
+test.assertMatches(windows, /\.window-frame-arrow\.is-up \{[^}]*background-size: var\(--window-frame-arrow-up-art-size, 1px 1px, 3px 1px, 5px 1px, 7px 1px\)/, "Classic scroll arrows fall back to stepped 1-bit pixels, never to smooth diagonals");
 // System 6 had no resize pointer at all: the arrow stays an arrow.
 test.assertMatches(
   windows,

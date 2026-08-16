@@ -281,7 +281,7 @@ test("an explicitly supplied real IWAD starts a rendered game and native input b
   expect(confirmationCounts).toHaveLength(2);
   expect(confirmationCounts[1]).toBeGreaterThan(confirmationCounts[0]);
 
-  const canvas = page.locator("#game-canvas");
+  const canvas = page.locator("canvas.game-canvas");
   const canvasState = await canvas.evaluate((element) => ({
     width: element.width,
     height: element.height,

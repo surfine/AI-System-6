@@ -406,6 +406,12 @@ function quickDraftConnectedModelName() {
     && cloudCredentialReady()) {
     return String(cloudConfig.model || cloudConfig.provider || "").trim();
   }
+  // A configured name is not a connection. The cloud branch above already
+  // asks whether the credential is ready; the local branch returned whatever
+  // was typed into Control Panel, so Quick Draft announced "Model: local-model"
+  // while the menu bar said "Model not connected" — the desk contradicting
+  // itself, with the false half in the writing window.
+  if (typeof isLocalModelIndicatorReady === "function" && !isLocalModelIndicatorReady()) return "";
   return typeof getLocalModelRequestName === "function"
     ? String(getLocalModelRequestName() || "").trim()
     : String(modelInput?.value || "").trim();

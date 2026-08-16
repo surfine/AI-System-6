@@ -54,8 +54,29 @@
   var smallSide = Math.min(window.innerWidth, window.innerHeight);
   var isPhone = smallSide < 700;
   var guiScale = isPhone ? 200 : 100;
-  var resW = Math.max(320, Math.round(window.innerWidth));
-  var resH = Math.max(240, Math.round(window.innerHeight));
+  /* Ask for the pixels the screen actually has, not the ones CSS counts.
+     A phone reports 390 CSS px across and owns 1170; opening the game at 390
+     and then doubling the GUI for fingers left OpenTTD about 195 units of
+     width to lay out a interface designed against 640x480, so the build
+     toolbar ran off one edge and dialogs off the other. Asking for the device
+     pixels and keeping the doubled GUI gives it room AND keeps touch targets
+     the same physical size -- and it draws at the panel's real resolution
+     instead of a third of it. Capped, because the backing store is memory. */
+  var pixelRatio = Math.min(window.devicePixelRatio || 1, isPhone ? 3 : 2);
+  /* One source of truth for the surface size. The boot seed and the live
+     resize below used to compute this separately and disagree, and since the
+     ResizeObserver fires once on boot, the resize path silently won. */
+  function surfaceSize() {
+    return {
+      w: Math.max(320, Math.min(2560, Math.round(window.innerWidth * pixelRatio))),
+      h: Math.max(240, Math.min(1600, Math.round(window.innerHeight * pixelRatio))),
+    };
+  }
+  window.AISystem6OpenttdSurfaceSize = surfaceSize;
+  var seeded = surfaceSize();
+  var resW = seeded.w;
+  var resH = seeded.h;
+  if (isPhone) guiScale = pixelRatio >= 3 ? 400 : 300;
   var fontPath = "/font/fusion-pixel-12px-proportional-zh_hans.ttf";
   var defaultConfig = [
     "[misc]",
@@ -159,8 +180,9 @@
     var timer = 0;
     function apply() {
       timer = 0;
-      var w = Math.max(320, Math.round(window.innerWidth));
-      var h = Math.max(240, Math.round(window.innerHeight));
+      var size = window.AISystem6OpenttdSurfaceSize();
+      var w = size.w;
+      var h = size.h;
       try {
         if (runtimeReady && window.Module && typeof Module.ccall === "function") {
           Module.ccall("em_openttd_set_resolution", null, ["number", "number"], [w, h]);
@@ -171,6 +193,9 @@
       if (timer) clearTimeout(timer);
       timer = setTimeout(apply, 150);
     }
+    /* A resumed game re-measures through the same debounce: the window may
+       have been resized while its main loop was stopped. */
+    window.AISystem6OpenttdResize = schedule;
     window.addEventListener("resize", schedule);
     /* An embedded iframe does not always get a window resize event when
        its element changes size; a ResizeObserver on the root always fires. */
@@ -182,8 +207,9 @@
     setInterval(function () {
       var c = document.getElementById("canvas");
       if (!c || !runtimeReady || !window.Module) return;
-      var w = Math.max(320, Math.round(window.innerWidth));
-      var h = Math.max(240, Math.round(window.innerHeight));
+      var size = window.AISystem6OpenttdSurfaceSize();
+      var w = size.w;
+      var h = size.h;
       if (Math.abs(c.width - w) > 2 || Math.abs(c.height - h) > 2) schedule();
     }, 2000);
   })();
@@ -242,14 +268,62 @@
       syncInFlight = false;
     }
   }
+  /* ---- Suspend / resume --------------------------------------------- */
+  /* The host asks for this whenever the window, the app, or the whole page
+     leaves the foreground. Stopping the emscripten main loop is what actually
+     stops the game costing CPU and battery; simply hiding the pane leaves a
+     full-speed simulation running behind a blank rectangle. SDL also keeps
+     whatever mouse button was down when the surface went away, so the loop
+     never stops before the buttons are let go. */
+  var loopPaused = false;
+  function releaseHeldButtons() {
+    if (typeof window.AISystem6OpenttdReleaseTouch === "function") {
+      try { window.AISystem6OpenttdReleaseTouch(); } catch (e) { /* best effort */ }
+    }
+    [0, 2].forEach(function (button) {
+      try {
+        canvas.dispatchEvent(new MouseEvent("mouseup", {
+          bubbles: true, cancelable: true, clientX: 0, clientY: 0, button: button, buttons: 0,
+        }));
+      } catch (e) { /* best effort */ }
+    });
+  }
+  function pauseGame() {
+    if (loopPaused) return;
+    releaseHeldButtons();
+    loopPaused = true;
+    try {
+      if (window.Module && typeof window.Module.pauseMainLoop === "function") window.Module.pauseMainLoop();
+    } catch (e) { /* an unbuilt runtime has no loop to pause */ }
+    sync();
+    post("paused");
+  }
+  function resumeGame() {
+    if (!loopPaused) return;
+    loopPaused = false;
+    try {
+      if (window.Module && typeof window.Module.resumeMainLoop === "function") window.Module.resumeMainLoop();
+    } catch (e) { /* nothing to resume */ }
+    /* The canvas may have been resized while the loop was stopped. */
+    if (typeof window.AISystem6OpenttdResize === "function") window.AISystem6OpenttdResize();
+    post("running");
+  }
+
   document.addEventListener("visibilitychange", function () {
-    if (document.visibilityState === "hidden") sync();
+    if (document.visibilityState === "hidden") pauseGame();
+    else resumeGame();
   });
-  window.addEventListener("pagehide", sync);
+  window.addEventListener("pagehide", function () {
+    releaseHeldButtons();
+    sync();
+  });
   window.addEventListener("message", function (event) {
     if (event.origin !== location.origin) return;
     var data = event.data;
-    if (data && data.type === "openttd-host" && data.command === "sync") sync();
+    if (!data || data.type !== "openttd-host") return;
+    if (data.command === "sync") sync();
+    if (data.command === "pause") pauseGame();
+    if (data.command === "resume") resumeGame();
   });
 
   /* ---- Touch layer -------------------------------------------------- */
@@ -318,6 +392,12 @@
       if (mode === "right-drag" || mode === "multi") mouse("mouseup", lastX, lastY, activeButton);
       mode = "idle";
     }
+    /* Suspending mid-drag must not leave the game holding a button: the pane
+       goes visibility:hidden and SDL never sees the finger lift. */
+    window.AISystem6OpenttdReleaseTouch = function () {
+      clearPress();
+      endDrag();
+    };
 
     function onTouchStart(e) {
       if (e.target !== canvas) return;

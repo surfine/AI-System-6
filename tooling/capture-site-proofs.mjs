@@ -45,8 +45,21 @@ The engineers at La Rance never called it renewable energy.
 
 ## 240 GWh, twice a day`;
 
+// A paragraph written to sound like a machine wrote it. It is the input to the
+// Review Desk proof, and it is deliberately the worst kind of prose this
+// product exists to catch: even cadence, borrowed authority, no one in it.
+const SLOP_DRAFT = `# The Tide Comes In Twice
+
+In today's rapidly evolving energy landscape, tidal power represents a compelling
+opportunity for stakeholders seeking sustainable solutions. It is important to note
+that the La Rance facility has consistently demonstrated significant potential.
+Moreover, by leveraging existing infrastructure, operators can unlock considerable
+value while navigating an increasingly complex regulatory environment. Ultimately,
+the future of tidal energy remains bright.`;
+
 // Each proof names the window to shoot and the setup that fills it with real
-// content. Everything here runs offline: no model, no network.
+// content. The first group runs offline: no model, no network. The second
+// group needs a local model, because the work it shows is the model working.
 const PROOFS = [
   {
     id: "slides",

@@ -144,7 +144,7 @@ test.assertIncludes(modules, "window.AISystem6ControlStripModules", "built-in de
 // (network, context, indexing, long tasks, output queue) were removed: their
 // state belongs to System Status, the Context Panel and Searcher, which can
 // actually explain it.
-["soundscape", "projectDisk", "model", "writingBell", "appearance", "balloonHelp", "volume", "finderEnvironment", "notifications", "clock"]
+["soundscape", "projectDisk", "model", "writingBell", "appearance", "balloonHelp", "nowPlaying", "finderEnvironment", "notifications", "clock"]
   .forEach((slot) => {
     test.assertIncludes(modules, `id: "${slot}"`, `${slot} is a declared module descriptor`);
   });
@@ -206,7 +206,7 @@ test.assertNotMatches(soundscape, /classList\.contains\("is-hidden"\)[^\n]*syste
 // --- Balloon Help ----------------------------------------------------------
 
 test.assertIncludes(module, "balloon_${descriptor.labelKey}", "modules carry Balloon Help, not only a tooltip");
-test.assertMatches(zh, /balloon_control_strip_volume:[^\n]*应用音量|control_strip_volume: "应用音量"/,
+test.assertMatches(zh, /balloon_control_strip_now_playing:[^\n]*应用音量|control_strip_volume: "应用音量"/,
   "the volume module never passes itself off as system volume");
 test.assertIncludes(zh, 'control_strip_label: "控制条"', "Chinese UI uses the localized Control Strip brand name");
 test.assertIncludes(zh, 'control_strip_collapse: "收起控制条"', "the collapse affordance is localized in Chinese");
@@ -218,7 +218,7 @@ for (const key of [
   "balloon_control_strip_notifications",
   "balloon_control_strip_clock",
   "balloon_control_strip_writing_bell",
-  "balloon_control_strip_volume",
+  "balloon_control_strip_now_playing",
 ]) {
   test.assertIncludes(en, `${key}:`, `English Balloon Help exists for ${key}`);
   test.assertIncludes(zh, `${key}:`, `Chinese Balloon Help exists for ${key}`);
@@ -295,5 +295,22 @@ test.assertIncludes(appearanceCss, "--control-strip-tile-shadow: inset 0 0 0 1px
 test.assertMatches(aquaCss, /counterfactual[\s\S]*--control-strip-bg/, "the Aqua-family strip materials are labeled counterfactual, not reproduction");
 test.assertMatches(appearanceCss, /counterfactual[\s\S]*--control-strip-bg: rgba\(251, 251, 251, 0\.82\)/, "the Yosemite strip material is labeled counterfactual");
 test.assertNotMatches(aquaCss, /\.control-strip[\s-]/, "Aqua-family eras theme the strip through tokens, never selectors");
+
+// The strip used to report how loud the desk could be. It now reports what is
+// sounding, which is the thing a Control Strip module is for — the classic
+// strip carried an AppleCD Audio Player for exactly this. The honesty rules
+// hold in both directions: a desk with the level at zero is not playing
+// whatever the transport says, and it is muted rather than paused, because
+// those are different facts about different things.
+const strip = read("app/features/control-strip-modules.js");
+test.assertIncludes(strip, 'id: "nowPlaying"', "the strip names what is sounding");
+test.assertNotIncludes(strip, 'id: "volume"', "the volume-only module is retired, not left beside it");
+test.assertMatches(strip, /playing && level > 0 \? title/, "a track counts as playing only when the desk can actually be heard");
+test.assertMatches(strip, /playing \? t\("control_strip_now_playing_muted", title\)/, "a muted desk says muted, not paused");
+test.assertMatches(strip, /if \(!player\?\.queue\?\.length && !snap\) return \{ state: "unknown"/, "a desk with no sound at all renders no player slot");
+for (const key of ["control_strip_now_playing", "control_strip_now_playing_idle", "control_strip_now_playing_muted", "control_strip_play", "control_strip_next"]) {
+  test.assertIncludes(en, `${key}:`, `English copy includes ${key}`);
+  test.assertIncludes(zh, `${key}:`, `Chinese copy includes ${key}`);
+}
 
 test.finish();

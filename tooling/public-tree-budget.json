@@ -1,6 +1,6 @@
 {
-  "maxFiles": 4340,
-  "maxBytes": 86000000,
+  "maxFiles": 4400,
+  "maxBytes": 90000000,
   "maxAssetFiles": 3600,
   "maxAssetBytes": 70000000
 }

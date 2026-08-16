@@ -1115,6 +1115,7 @@ async function praiseReviewDeskText() {
 }
 
 async function reviewSectionAsMingming() {
+  await ensureMingmingLensModule();
   const currentSection = currentReviewDeskSectionBlock() || null;
   const sectionText = (currentSection?.text || reviewDeskBodyInput?.value || "").trim();
   const fullContext = (teachTextBodyInput?.value || reviewDeskBodyInput?.value || "").trim();
@@ -1129,6 +1130,8 @@ async function reviewSectionAsMingming() {
   clearReviewFeedbackSlot("facts", runningLabel);
   openReviewDesk("facts");
   try {
+    // The style contract is a lazy module: load it before the prompt is built.
+    if (typeof ensureMingmingLensModule === "function") await ensureMingmingLensModule();
     const prompt = buildMingmingReviewPrompt({
       language: currentLanguage,
       sectionText: clampPrintToAiText(sectionText, 5200),

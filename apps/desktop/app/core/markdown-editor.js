@@ -17,15 +17,18 @@ const mdeListLinePattern = /^\s*(?:[-*+][ \t]+|\d+\.[ \t]+|>+[ \t]?)/;
 function mdeApply(textarea, { from, to, insert, selStart, selEnd }) {
   textarea.focus();
   textarea.setSelectionRange(from, to);
+  const before = textarea.value;
   let ok = false;
   try {
     ok = document.execCommand("insertText", false, insert);
   } catch {
     ok = false;
   }
-  if (!ok) {
-    const value = textarea.value;
-    textarea.value = value.slice(0, from) + insert + value.slice(to);
+  // execCommand can report success and change nothing — an unrendered control
+  // never takes focus, and the command then quietly no-ops. Trust the buffer,
+  // not the return value, or a paste would vanish after preventDefault.
+  if (!ok || textarea.value === before) {
+    textarea.value = before.slice(0, from) + insert + before.slice(to);
     textarea.dispatchEvent(new Event("input", { bubbles: true }));
   }
   if (typeof selStart === "number") {
@@ -186,10 +189,64 @@ function mdeIndent(textarea, outdent) {
   return true;
 }
 
+// Paste takeover. The clipboard's `text/html` flavour is converted to Markdown
+// locally (app/core/paste-markdown.js) so headings, lists, emphasis, links,
+// tables and code blocks survive the trip into a textarea instead of arriving
+// as one flat run the writer has to rebuild by hand.
+//
+// Three shapes, in this order:
+//   1. a bare URL dropped on a selection  -> [selection](url)
+//   2. clipboard HTML                     -> Markdown, heading levels pushed
+//                                            down to fit the landing surface
+//   3. a multi-line paste inside a list   -> each line keeps the list marker
+//
+// The insertion goes through mdeApply, i.e. execCommand("insertText"), so
+// Cmd/Ctrl+Z still undoes the whole paste in one step. When the result would
+// be identical to what the browser does anyway, the event is left alone.
+function mdePaste(event, textarea) {
+  const runtime = window.AISystem6PasteMarkdown;
+  const clipboard = event.clipboardData;
+  if (!runtime || !clipboard || textarea.readOnly || textarea.disabled) return;
+
+  const plain = clipboard.getData("text/plain") || "";
+  const html = clipboard.getData("text/html") || "";
+  if (!plain && !html) return;
+
+  const value = textarea.value;
+  const from = textarea.selectionStart;
+  const to = textarea.selectionEnd;
+  const selected = value.slice(from, to);
+
+  let insert = "";
+  if (selected && !selected.includes("\n") && runtime.pasteIsBareUrl(plain) && !runtime.pasteIsBareUrl(selected)) {
+    insert = `[${selected}](${plain.trim()})`;
+  } else {
+    const converted = html ? runtime.pasteHtmlToMarkdown(html, { surface: textarea.id }) : "";
+    insert = runtime.pasteContinueListMarkers(value, from, converted || plain);
+    if (!insert || insert === plain) return; // nothing gained: keep the native paste
+    // A block that starts mid-line would fuse with the line above it.
+    if (from > 0 && value[from - 1] !== "\n" && /^(?:#{1,6} |[-*+] |\d+\. |> |\||```)/.test(insert)) {
+      insert = `\n${insert}`;
+    }
+  }
+
+  event.preventDefault();
+  const shift = runtime.pasteLineShift(value, { from, to, insert });
+  mdeApply(textarea, { from, to, insert, selStart: from + insert.length });
+  // Anything holding line or character positions in this buffer has to move
+  // with the text. A stale position is worse than none: it still looks valid.
+  if (typeof notePasteLineShift === "function") notePasteLineShift(textarea, shift);
+  if (typeof setStatus === "function" && typeof t === "function" && html) {
+    setStatus(t("pasted_as_markdown"));
+  }
+}
+
 // Attach the editor behaviours to a textarea. Idempotent.
 function attachMarkdownEditor(textarea) {
   if (!textarea || textarea.dataset.mdeReady === "true") return;
   textarea.dataset.mdeReady = "true";
+
+  textarea.addEventListener("paste", (event) => mdePaste(event, textarea));
 
   textarea.addEventListener("keydown", (event) => {
     const mod = event.metaKey || event.ctrlKey;
@@ -279,6 +336,16 @@ function mdeLineHtml(line, state) {
 
   if (/^\s*([-*_])\1{2,}\s*$/.test(line)) {
     return `<span class="md-marker">${mdeEscapeHtml(line)}</span>`;
+  }
+
+  // A table row: let the pipes retreat so the columns read as columns. The
+  // delimiter row is nothing but machinery, so all of it goes grey.
+  if (/^\s*\|.*\|/.test(line)) {
+    if (/^[\s|:-]+$/.test(line)) return `<span class="md-marker">${mdeEscapeHtml(line)}</span>`;
+    return line
+      .split(/(\|)/)
+      .map((part) => (part === "|" ? '<span class="md-marker">|</span>' : mdeInlineHtml(part)))
+      .join("");
   }
 
   return mdeInlineHtml(line);

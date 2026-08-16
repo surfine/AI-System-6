@@ -1,7 +1,15 @@
 // Feature module: dictation.
-
+//
 // Loaded before app.js as a classic script; shares the AI System 6 global scope.
-
+//
+// This half is the service, and it is why dictation earns its place in the
+// startup disk: the floating Dictate button that finds the caret in any field,
+// keeps clear of the controls around it, remembers the range, and inserts back
+// into it. Speaking into the field you are already in is the front door.
+//
+// The window — record, the two transcripts, organize, send — is the other half
+// and lives in dictation-pad.js, which loads when the window is summoned. Most
+// sessions never summon it.
 
 
 function setDictationDestination(dest) {
@@ -194,7 +202,10 @@ function dictationButtonWouldCoverControl(candidate, target) {
     right: candidate.left + candidate.width,
     bottom: candidate.top + candidate.height,
   };
-  const controls = document.querySelectorAll("button, [role='button'], summary, select, input[type='button'], input[type='submit']");
+  // .da-origin is no control, but it is the row saying where this accessory's
+  // text came from, and it sits directly above the field -- exactly where the
+  // button prefers to go. Covering it is as bad as covering a button.
+  const controls = document.querySelectorAll("button, [role='button'], summary, select, input[type='button'], input[type='submit'], .da-origin");
   return [...controls].some((control) => {
     if (control === dictationFieldButton || control === target || target.contains?.(control)) return false;
     if (control.closest?.(".is-hidden") || control.hidden || control.disabled) return false;
@@ -220,12 +231,32 @@ function positionDictationFieldButton(target = dictationFieldButtonTarget) {
   const button = ensureDictationFieldButton();
   updateDictationFieldButtonLabel();
   dictationFieldButtonTarget = textTarget;
+  // Measure the button at its real width. While hidden it reports 0 and the
+  // 48px guess below stood in, which under-reserved 22px: every candidate and
+  // the clamp both aimed a 70px button at a 48px slot, and it settled on the
+  // window frame. Unhiding here costs no frame -- the position is written
+  // before this task yields, so nothing is painted in between.
+  button.classList.remove("is-hidden");
 
   const gap = 4;
   const margin = 4;
   const buttonWidth = button.offsetWidth || 48;
   const buttonHeight = button.offsetHeight || 28;
-  const canSitOutside = window.innerWidth - rect.right >= buttonWidth + gap + margin;
+  // The button belongs to the window that owns the field, not to the screen.
+  // Clamping against the viewport alone let a field near the right edge of a
+  // narrow window push the button onto the window frame and the scroll lane,
+  // where it read as a control that had escaped its window.
+  const owner = textTarget.closest(".window");
+  const ownerBox = owner ? owner.getBoundingClientRect() : null;
+  const ownerLane = owner
+    ? parseFloat(getComputedStyle(owner).getPropertyValue("--window-frame-lane")) || 0
+    : 0;
+  const limitLeft = ownerBox ? Math.max(margin, ownerBox.left + margin) : margin;
+  const limitRight = ownerBox
+    ? Math.max(limitLeft, ownerBox.right - ownerLane - buttonWidth - margin)
+    : Math.max(margin, window.innerWidth - buttonWidth - margin);
+  const canSitOutside = (ownerBox ? ownerBox.right - ownerLane : window.innerWidth) - rect.right
+    >= buttonWidth + gap + margin;
   const rightSideHasControl = hasAdjacentControlToRight(rect, buttonWidth);
   const candidates = [
     !rightSideHasControl && canSitOutside
@@ -243,19 +274,18 @@ function positionDictationFieldButton(target = dictationFieldButtonTarget) {
 
   const clampedCandidates = candidates.map((candidate) => ({
     ...candidate,
-    left: clampNumber(candidate.left, margin, Math.max(margin, window.innerWidth - buttonWidth - margin)),
+    left: clampNumber(candidate.left, limitLeft, limitRight),
     top: clampNumber(candidate.top, 28, Math.max(28, window.innerHeight - buttonHeight - margin)),
   }));
   const selected = clampedCandidates.find((candidate) => !dictationButtonWouldCoverControl(candidate, textTarget))
     || clampedCandidates[0]
     || {
-      left: clampNumber(rect.right - buttonWidth - gap, margin, Math.max(margin, window.innerWidth - buttonWidth - margin)),
+      left: clampNumber(rect.right - buttonWidth - gap, limitLeft, limitRight),
       top: clampNumber(rect.top + gap, 28, Math.max(28, window.innerHeight - buttonHeight - margin)),
     };
 
   button.style.left = `${selected.left}px`;
   button.style.top = `${selected.top}px`;
-  button.classList.remove("is-hidden");
 }
 
 function showDictationFieldButtonForTarget(target) {
@@ -348,11 +378,31 @@ function inferDictationDestination() {
   return windowDestinations[windowName] || (writerMode ? "teachtext" : "assistant");
 }
 
+// The window can also arrive without going through openDictationPad — session
+// restore opens it by name, and the field it last spoke into may be long gone.
+// A destination that names a window nobody can see is the promise this pad used
+// to break, so it is re-checked whenever the window appears.
+function refreshDictationDestination() {
+  if (getVisibleEditableTextTarget(dictationInputTarget)) return;
+  dictationInputTarget = null;
+  setDictationDestination("notepad");
+}
+
+// The one door into the lazy half. Every control that reaches a window function
+// goes through here: a bare reference resolves at boot, throws a ReferenceError
+// the moment it is touched, and takes the whole command registry with it.
+async function withDictationPad(run) {
+  if (typeof ensureDictationPadModule === "function") await ensureDictationPadModule();
+  return run();
+}
+
 function openDictationPad(options = {}) {
   dictationInputTarget = getVisibleEditableTextTarget(options.target) || getCurrentInputTarget();
   const dest = options.dest || destinationForInputTarget(dictationInputTarget) || inferDictationDestination();
   dictationInputTarget = dictationInputTarget || getVisibleEditableTextTarget(defaultInputTargetForDestination(dest));
-  setDictationDestination(dest);
+  // The window names where the words will actually land. With no field open,
+  // naming ClioTalk was a promise the Send button could not keep.
+  setDictationDestination(dictationInputTarget ? dest : "notepad");
   openWindow("dictation");
   dictationRawInput.focus();
   return dest;
@@ -361,193 +411,4 @@ function openDictationPad(options = {}) {
 function invokeIntentKey() {
   const dest = openDictationPad();
   setStatus(t("intent_ready", dictationDestinationLabel(dest)));
-}
-
-function startDictation() {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    setStatus("Speech recognition not supported in this browser.");
-    return;
-  }
-
-  speechRecognition = new SpeechRecognition();
-  speechRecognition.continuous = true;
-  speechRecognition.interimResults = true;
-  speechRecognition.lang = currentLanguage === "zh" ? "zh-CN" : "en-US";
-
-  speechRecognition.onstart = () => {
-    dictationStatusEl.textContent = t("listening");
-    dictationRecordButton.disabled = true;
-    dictationStopButton.disabled = false;
-  };
-
-  speechRecognition.onresult = (event) => {
-    let interimTranscript = "";
-    let finalTranscript = "";
-
-    for (let i = event.resultIndex; i < event.results.length; ++i) {
-      if (event.results[i].isFinal) {
-        finalTranscript += event.results[i][0].transcript;
-      } else {
-        interimTranscript += event.results[i][0].transcript;
-      }
-    }
-
-    if (finalTranscript) {
-      dictationRawInput.value += (dictationRawInput.value ? " " : "") + finalTranscript;
-      updateDictationTranscriptButtons();
-    }
-  };
-
-  speechRecognition.onerror = (event) => {
-    console.error("Speech recognition error", event.error);
-    stopDictation();
-  };
-
-  speechRecognition.onend = () => {
-    stopDictation();
-  };
-
-  speechRecognition.start();
-}
-
-function stopDictation() {
-  if (speechRecognition) {
-    speechRecognition.stop();
-    speechRecognition = null;
-  }
-  dictationStatusEl.textContent = t("ready");
-  dictationRecordButton.disabled = false;
-  dictationStopButton.disabled = true;
-  updateDictationTranscriptButtons();
-}
-
-function hasDictationTranscript() {
-  return !!(dictationRawInput.value.trim() || dictationCleanedInput.value.trim());
-}
-
-function updateDictationTranscriptButtons() {
-  const hasRaw = !!dictationRawInput.value.trim();
-  const hasAny = hasDictationTranscript();
-  dictationCleanButton.disabled = !hasRaw || !!speechRecognition;
-  dictationClearButton.disabled = !hasAny || !!speechRecognition;
-  dictationSendButton.disabled = !hasAny;
-}
-
-function clearDictationTranscript() {
-  dictationRawInput.value = "";
-  dictationCleanedInput.value = "";
-  updateDictationTranscriptButtons();
-  dictationStatusEl.textContent = t("ready");
-}
-
-function dictationCleanProfile(dest = dictationIntentDestination) {
-  const profiles = {
-    assistant: {
-      zh: "整理成可以发给 ClioTalk 的清楚问题或请求。保留说话者自己的判断、犹豫和限制；不要替说话者扩写成完整方案。",
-      en: "Shape it into a clear question or request for ClioTalk. Keep the speaker's judgment, hesitations, and limits; do not expand it into a full answer.",
-    },
-    questionSheet: {
-      zh: "整理成 Question Sheet 上游意图。可用普通短行保留：真实问题、收件人、反对意见、必须记住的点、术语区分、交付摩擦、输出规则。它们只是可保留的线索，不是必须输出的栏目。不要加 # Question Sheet、粗体标签、表格或空栏目。",
-      en: "Shape it into upstream Question Sheet intent. Use plain short lines to preserve real questions, recipient, objections, must-remember points, term distinctions, handoff friction, and output rules. These are possible clues, not required headings. Do not add a # Question Sheet heading, bold labels, tables, or empty sections.",
-    },
-    teachtext: {
-      zh: "整理成可以插入 TeachText 的正文草稿。保持第一人称、具体细节和不确定处；只修转写错误、标点和段落，不新增事实或论点。",
-      en: "Shape it into manuscript text suitable for TeachText. Keep first person, concrete details, and uncertainty; only fix STT errors, punctuation, and paragraphing, without adding facts or claims.",
-    },
-    scrapbook: {
-      zh: "整理成 Scrapbook 笔记。保留可追溯的观察、引用感强的原话和来源线索；不要把它扩写成文章或总结。",
-      en: "Shape it into a Scrapbook note. Preserve traceable observations, quote-like phrasing, and source leads; do not expand it into an article or summary.",
-    },
-    notepad: {
-      zh: "轻度整理成个人便签。保留跳跃、未完成想法和粗糙表达，只让它更容易回看。",
-      en: "Lightly clean it as a private note. Keep jumps, unfinished thoughts, and rough phrasing; only make it easier to revisit.",
-    },
-  };
-  return profiles[dest] || profiles.assistant;
-}
-
-function buildDictationCleanMessages(raw, options = {}) {
-  const dest = options.dest || dictationIntentDestination || "assistant";
-  const targetLabel = options.targetLabel || dictationDestinationLabel(dest);
-  const isChinese = currentLanguage === "zh";
-  const profile = dictationCleanProfile(dest);
-  const language = isChinese ? "zh" : "en";
-  const projectId = typeof activeProjectId === "undefined" ? null : activeProjectId;
-  const resolved = window.AISystem6PromptFilesRuntime?.resolvePromptFile?.("other-apps.dictation-clean", projectId, language);
-  const record = window.AISystem6PromptFiles?.find?.((item) => item.id === "other-apps.dictation-clean");
-  const base = resolved?.status === "ready"
-    ? resolved.body
-    : (isChinese ? record?.body : record?.en) || "";
-  window.AISystem6PromptFilesRuntime?.recordPromptRun?.(projectId, "other-apps.dictation-clean", resolved);
-  const system = [
-    base,
-    isChinese ? `目标位置：${targetLabel}` : `Target surface: ${targetLabel}`,
-    isChinese ? profile.zh : profile.en,
-    isChinese
-      ? "只返回整理后的正文，不要解释过程，不要加代码围栏。"
-      : "Return only the cleaned text. Do not explain your process. Do not use code fences.",
-  ].filter(Boolean).join("\n");
-  const user = isChinese
-    ? `原始听写文本：\n${raw}`
-    : `Raw dictation transcript:\n${raw}`;
-  return [
-    { role: "system", content: system },
-    { role: "user", content: user },
-  ];
-}
-
-async function cleanTranscript() {
-  const raw = dictationRawInput.value.trim();
-  if (!raw) return;
-
-  dictationCleanButton.disabled = true;
-  dictationStatusEl.textContent = t("cleaning_transcript");
-
-  try {
-    const targetLabel = dictationInputTarget
-      ? getInputTargetLabel(dictationInputTarget)
-      : dictationDestinationLabel(dictationIntentDestination);
-
-    const response = await fetchModelPayload({
-      model: getLocalModelRequestName(),
-      messages: withMarkdownModelMessages(buildDictationCleanMessages(raw, {
-        dest: dictationIntentDestination,
-        targetLabel,
-      })),
-      temperature: 0.25,
-      max_tokens: 900,
-      ai_system6_task_kind: "dictation-clean",
-    }, getLongTaskSignal());
-
-    const data = await readChatJson(response);
-    const cleaned = data?.choices?.[0]?.message?.content;
-
-    if (cleaned) {
-      dictationCleanedInput.value = cleaned.trim();
-      updateDictationTranscriptButtons();
-    }
-  } catch (error) {
-    console.error("Clean transcript failed", error);
-    setStatus(t("reader_error", error.message));
-  } finally {
-    updateDictationTranscriptButtons();
-    dictationStatusEl.textContent = t("ready");
-  }
-}
-
-function sendTranscript() {
-  const text = dictationCleanedInput.value.trim() || dictationRawInput.value.trim();
-  if (!text) return;
-  if (dictationInputTarget && insertTextIntoInputTarget(dictationInputTarget, text)) {
-    const label = getInputTargetLabel(dictationInputTarget);
-    if (dictationInputTarget === teachTextBodyInput) {
-      markTeachTextModified();
-    }
-    setStatus(t("dictation_inserted", label));
-    clearDictationTranscript();
-    return;
-  }
-
-  setStatus(t("select_text_first"));
 }

@@ -25,8 +25,6 @@ window.AISystem6DoomLoaded = true;
         </div>
         <div class="window-pane doom-pane openttd-pane"></div>
       </section>`);
-    // Boot wiring only sees index.html windows; this one arrives later.
-    window.AISystem6WireWindowChrome?.(document.querySelector('[data-window="doom"]'));
   }
 
   installDoomWindow();
@@ -314,6 +312,37 @@ window.AISystem6DoomLoaded = true;
       conditionId: "close-active-window",
     }],
   }]);
+
+  // The shell already owns pause/resume; the lifecycle is what makes a hidden
+  // MultiFinder app and a backgrounded Home Screen App reach it too. Order is
+  // load-bearing: release held input first (SDL keeps whatever key was down
+  // when the pane went dark), then stop the loop, then flush its storage.
+  window.AISystem6ApplicationRegistry?.registerApplicationLifecycle?.("doom", {
+    onSuspend: () => {
+      window.AISystem6WebPlatform?.releaseScreenWakeLock?.("doom");
+      if (!doomState.frame) return;
+      // The pane keeps resizing as the window collapses, and each of those
+      // observations posts at an engine that is meant to be asleep. Stop
+      // watching first, then release input, stop the loop, and flush.
+      stopObservingViewport();
+      postToDoom("release-inputs", { reason: "suspend" });
+      postToDoom("pause");
+      postToDoom("sync");
+    },
+    onResume: () => {
+      if (!doomState.frame || !doomWindowIsVisible() || document.hidden) return;
+      // resume before the viewport: sendDoomViewport also re-releases input,
+      // so a resumed engine never inherits a stuck key from the paused frame.
+      postToDoom("resume");
+      observeViewport();
+      sendDoomViewport();
+      window.AISystem6WebPlatform?.holdScreenWakeLock?.("doom");
+    },
+    onDispose: () => {
+      window.AISystem6WebPlatform?.releaseScreenWakeLock?.("doom");
+      handleDoomQuit();
+    },
+  });
 
   window.AISystem6Doom = Object.freeze({
     protocolVersion: DOOM_PROTOCOL_VERSION,

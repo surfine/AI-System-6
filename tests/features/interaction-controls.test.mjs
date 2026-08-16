@@ -68,6 +68,10 @@ test.assertIncludes(windows, ".btn.is-active:hover", "Classic active buttons kee
 test.assertIncludes(windows, ".btn.is-selected:hover", "Classic selected buttons keep their selected state on hover");
 test.assertIncludes(windows, "--btn-bg: var(--btn-active-bg)", "Classic active buttons preserve active background through tokens");
 test.assertIncludes(windows, '.btn[data-loading="true"]::after', "Busy buttons preserve their original label box and paint status in a separate layer");
+test.assertIncludes(windows, '.btn[data-loading="true"] > * {\n  visibility: hidden;\n}', "The idle label of a busy button is hidden by visibility, which the disabled and theme rules cannot re-ink");
+test.assertNotMatches(windows, /\.btn\[data-loading="true"\] \{[^}]*color: transparent/, "Busy buttons never hide their idle label with transparent ink, which later disabled rules overrode into a double label");
+test.assertIncludes(app, "function wrapControlIdleLabel(control)", "Busy controls wrap bare label text so the busy rule has an element to hide");
+test.assertIncludes(app, "unwrapControlIdleLabel(control)", "Controls give their plain label text back when the run ends");
 test.assertIncludes(windows, ".btn:focus-visible", "Button focus remains visible independently of hover and selection");
 test.assertIncludes(windows, ".system-select-option:not(.is-selected):hover", "System Select hover cannot erase its committed selection");
 test.assertIncludes(windows, ".system-select-option:focus-visible", "System Select option focus is an independent layer");

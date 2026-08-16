@@ -506,6 +506,7 @@ function renderDictionaryResult(result = currentDictionaryResult, message = "") 
   const active = currentDictionaryResult;
   if (dictionaryTermEl) dictionaryTermEl.textContent = active?.term || t("dictionary_no_term");
   if (dictionarySourceEl) dictionarySourceEl.textContent = active?.sourceMode || t("dictionary_no_source");
+  syncDictionaryEntryForResult(active);
 
   const usable = !!active && !message && !!(active.definition || active.chineseExplanation);
   const hasSource = active?.sourceMode !== t("dictionary_no_source");
@@ -647,6 +648,208 @@ ${sourceContextText(context) || "(none)"}`;
   } finally {
     endLongTask("dictionary");
   }
+}
+
+// ---- The writer's own words -------------------------------------------------
+//
+// A project has always carried `dictionaryTerms`. ClioTalk has always read up to
+// twelve of them into the context of every request, and the writing agent has
+// always exposed them as evidence. Nothing in the product could put a word in
+// the list, so the one feature that makes a model keep the writer's own sense of
+// a word was switched off by a missing button. This is the button.
+//
+// The model may draft the wording; only the writer keeps it — the same rule the
+// SideAsk interview runs on. Ask for what only this person knows, then obey it.
+//
+// The parts are found from the window itself. A handle built in dom-handles.js,
+// listed in its return value and destructured in app.js takes the whole boot
+// down when one of the three drifts, and every feature test stays green.
+let dictionaryWordParts = null;
+let dictionaryEntryTerm = "";
+let selectedDictionaryTermId = "";
+
+function dictionaryWordFields() {
+  if (dictionaryWordParts?.list?.isConnected) return dictionaryWordParts;
+  const root = document.querySelector('[data-window="dictionary"]');
+  if (!root) return null;
+  const parts = {
+    list: root.querySelector("#dictionary-word-list"),
+    count: root.querySelector("#dictionary-words-count"),
+    definition: root.querySelector("#dictionary-entry-definition"),
+    avoid: root.querySelector("#dictionary-entry-avoid"),
+    keep: root.querySelector("#dictionary-keep-word"),
+    remove: root.querySelector("#dictionary-delete-word"),
+  };
+  if (!parts.list || !parts.definition || !parts.keep) return null;
+  if (!dictionaryWordParts) {
+    parts.definition.addEventListener("input", syncDictionaryEntryButtons);
+    parts.avoid?.addEventListener("input", syncDictionaryEntryButtons);
+  }
+  dictionaryWordParts = parts;
+  return dictionaryWordParts;
+}
+
+function projectDictionaryTerms() {
+  const project = getActiveProject();
+  return Array.isArray(project?.dictionaryTerms) ? project.dictionaryTerms : [];
+}
+
+// One field, either language: commas, Chinese commas, semicolons, middle dots.
+// A ban list is short by nature, so it stops at twelve.
+function dictionaryAvoidList(text) {
+  return String(text || "")
+    .split(/[,，;；、·]+/)
+    .map((word) => word.trim())
+    .filter(Boolean)
+    .slice(0, 12);
+}
+
+function dictionaryAvoidDisplay(list) {
+  return (Array.isArray(list) ? list : []).join(currentLanguage === "zh" ? "、" : ", ");
+}
+
+function renderDictionaryWords() {
+  const parts = dictionaryWordFields();
+  if (!parts) return;
+  const terms = projectDictionaryTerms();
+  parts.count.textContent = terms.length ? String(terms.length) : "";
+  parts.list.replaceChildren();
+
+  if (!terms.length) {
+    const empty = document.createElement("p");
+    empty.className = "hint";
+    empty.textContent = getActiveProject() ? t("dictionary_words_empty") : t("dictionary_words_need_project");
+    parts.list.append(empty);
+    syncDictionaryEntryButtons();
+    return;
+  }
+
+  terms.forEach((saved) => {
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "dictionary-word-row";
+    row.classList.toggle("is-selected", saved.id === selectedDictionaryTermId);
+    const name = document.createElement("b");
+    name.textContent = saved.term;
+    const note = document.createElement("span");
+    note.textContent = saved.avoid?.length ? t("dictionary_never_count", saved.avoid.length) : "";
+    row.append(name, note);
+    row.addEventListener("click", () => selectDictionaryWord(saved.id));
+    parts.list.append(row);
+  });
+  syncDictionaryEntryButtons();
+}
+
+// A verb that cannot work says so before it is pressed, instead of doing
+// nothing when it is.
+//
+// The read-only sweep over `[data-requires-write]` and this function write the
+// same two `disabled` flags, so this one carries the lease as well. Without it
+// the pad would re-enable its own write buttons in a read-only window the
+// moment the writer typed.
+function syncDictionaryEntryButtons() {
+  const parts = dictionaryWordFields();
+  if (!parts) return;
+  const readOnly = window.AISystem6WriteLease?.canMutate?.() === false;
+  const term = normalizeDictionaryTerm(dictionaryEntryTerm || dictionaryQueryInput?.value || "");
+  parts.keep.disabled = readOnly || !term || !parts.definition.value.trim() || !getActiveProject();
+  parts.remove.disabled = readOnly || !selectedDictionaryTermId;
+}
+
+function fillDictionaryEntry(term, saved = null) {
+  const parts = dictionaryWordFields();
+  if (!parts) return;
+  dictionaryEntryTerm = term || "";
+  parts.definition.value = saved?.definition || "";
+  parts.avoid.value = dictionaryAvoidDisplay(saved?.avoid);
+  syncDictionaryEntryButtons();
+}
+
+// A new word arrives in the window: the writer's own entry wins, and with no
+// entry the model's wording fills the field as a draft to correct. Typing is
+// never interrupted, because the fields only change when the term changes.
+function syncDictionaryEntryForResult(active) {
+  const parts = dictionaryWordFields();
+  if (!parts || !active?.term) return;
+  const term = normalizeDictionaryTerm(active.term);
+  if (!term) return;
+  // A lookup renders twice: an empty shell while the model works, then the
+  // answer. Only the first pass may be skipped as "same term", or the model's
+  // draft would never reach the field.
+  const sameTerm = term.toLowerCase() === normalizeDictionaryTerm(dictionaryEntryTerm).toLowerCase();
+  if (sameTerm && parts.definition.value.trim()) return;
+  const saved = getProjectDictionaryTerm(term);
+  if (sameTerm && !saved && !(active.definition || active.chineseExplanation)) return;
+  selectedDictionaryTermId = saved?.id || "";
+  fillDictionaryEntry(term, saved || { definition: active.definition || active.chineseExplanation || "" });
+  renderDictionaryWords();
+}
+
+function selectDictionaryWord(id) {
+  const saved = projectDictionaryTerms().find((item) => item.id === id);
+  if (!saved) return;
+  selectedDictionaryTermId = id;
+  fillDictionaryEntry(saved.term, saved);
+  renderDictionaryWords();
+  renderDictionaryResult(normalizeDictionaryResult(saved, saved.term, null, t("dictionary_project_source")));
+}
+
+function keepDictionaryWord() {
+  const parts = dictionaryWordFields();
+  if (!parts) return;
+  const project = getActiveProject();
+  if (!project) {
+    setStatus(t("dictionary_words_need_project"));
+    return;
+  }
+  const term = normalizeDictionaryTerm(dictionaryEntryTerm || dictionaryQueryInput?.value || "");
+  if (!term) {
+    setStatus(t("dictionary_select_word"));
+    return;
+  }
+  const definition = parts.definition.value.trim();
+  if (!definition) {
+    parts.definition.focus();
+    setStatus(t("dictionary_keep_needs_definition"));
+    return;
+  }
+
+  if (!Array.isArray(project.dictionaryTerms)) project.dictionaryTerms = [];
+  const key = term.toLowerCase();
+  const existing = project.dictionaryTerms
+    .find((item) => normalizeDictionaryTerm(item.term).toLowerCase() === key);
+  const now = new Date().toISOString();
+  const record = existing || { id: crypto.randomUUID(), term, createdAt: now };
+  record.term = term;
+  record.definition = definition;
+  record.avoid = dictionaryAvoidList(parts.avoid.value);
+  record.kind = record.kind || quickDictionaryKind(term);
+  record.updatedAt = now;
+  if (!existing) project.dictionaryTerms.unshift(record);
+  project.updatedAt = now;
+  saveDeskState();
+
+  selectedDictionaryTermId = record.id;
+  dictionaryEntryTerm = term;
+  renderDictionaryWords();
+  // The window now holds the writer's own entry, so it shows that rather than
+  // the "look something up" note it opened with.
+  renderDictionaryResult(normalizeDictionaryResult(record, term, null, t("dictionary_project_source")));
+  setStatus(t("dictionary_word_kept", term));
+}
+
+function deleteDictionaryWord() {
+  const project = getActiveProject();
+  if (!project || !selectedDictionaryTermId) return;
+  const terms = Array.isArray(project.dictionaryTerms) ? project.dictionaryTerms : [];
+  const index = terms.findIndex((item) => item.id === selectedDictionaryTermId);
+  if (index < 0) return;
+  const [removed] = terms.splice(index, 1);
+  project.updatedAt = new Date().toISOString();
+  saveDeskState();
+  selectedDictionaryTermId = "";
+  renderDictionaryWords();
+  setStatus(t("dictionary_word_deleted", removed.term));
 }
 
 function lookupDictionaryInput(event) {

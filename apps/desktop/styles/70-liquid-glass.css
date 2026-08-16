@@ -1,4 +1,10 @@
 body.use-liquid-glass {
+  /* 苹方, the Simplified system face since El Capitan. Liquid Glass is the
+     only era whose Chinese type is the current one; without this the 2026
+     appearance inherits the foundation stack and sets Chinese in 宋体,
+     thirty-eight years out of period. */
+  --theme-ui-font: "PingFang SC", "Helvetica Neue", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --theme-title-font: var(--theme-ui-font);
   --window-bg: var(--glass-surface);
   --window-radius: var(--liquid-window-radius);
   --window-shadow: var(--system-shadow);
@@ -344,15 +350,6 @@ body.use-liquid-glass {
   --clio-title-font: var(--preview-font);
   --clio-control-font: var(--preview-font);
   --clio-grounding-rule: rgba(16, 17, 20, 0.16);
-  --clio-use-active-border: rgba(16, 17, 20, 0.28);
-  --clio-use-active-bg: rgba(16, 17, 20, 0.92);
-  --clio-use-active-fg: #ffffff;
-  --clio-use-menu-border: 1px solid rgba(255, 255, 255, 0.48);
-  --clio-use-menu-radius: 12px;
-  --clio-use-menu-bg: rgba(247, 250, 255, 0.88);
-  --clio-use-menu-shadow:
-    0 8px 24px rgba(30, 43, 62, 0.16),
-    inset 0 1px 0 rgba(255, 255, 255, 0.76);
   --clio-composer-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(247, 251, 255, 0.46)),
     rgba(246, 250, 255, 0.52);
@@ -2540,8 +2537,7 @@ body.use-liquid-glass .assistant-window .composer-action-row {
 body.use-liquid-glass .window:has(> .grow-box) .window-pane > .button-row:last-child,
 body.use-liquid-glass .window:has(> .grow-box) .teachtext-actions:last-child,
 body.use-liquid-glass .window:has(> .grow-box) .dictation-bottom-actions,
-body.use-liquid-glass .window:has(> .grow-box) .translation-pad-actions,
-body.use-liquid-glass .window:has(> .grow-box) .note-pad-send-row {
+body.use-liquid-glass .window:has(> .grow-box) .translation-pad-actions {
   box-sizing: border-box;
   padding-right: 0;
 }

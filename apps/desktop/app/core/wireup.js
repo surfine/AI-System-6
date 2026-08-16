@@ -4,6 +4,7 @@ let desktopTapHintShown = false;
 
 function wireAppEvents() {
   installDesktopScrollLock();
+  installHeldPlaceTracking();
   initializeBalloonHelp();
   initializeWelcomeFloppy();
 
@@ -48,6 +49,15 @@ function wireAppEvents() {
     if (typeof syncClioTalkSendButton === "function") syncClioTalkSendButton();
   });
 
+  // Selecting a turn brings its verbs back to it. Both events are needed:
+  // pointer users never fire focusin on the article, keyboard users never
+  // fire click.
+  const selectClioTalkTurn = (event) => {
+    const turn = event.target.closest?.(".message");
+    if (turn) markClioTalkCurrentTurn(turn);
+  };
+  messagesEl?.addEventListener("click", selectClioTalkTurn);
+  messagesEl?.addEventListener("focusin", selectClioTalkTurn);
   messagesEl?.addEventListener("scroll", handleClioTalkMessagesScroll, { passive: true });
   clioScrollLatestButton?.addEventListener("click", () => {
     scrollMessagesToLatest({ force: true });
@@ -228,6 +238,11 @@ function wireAppEvents() {
     questionSheetBodyInput,
     outlineContentEl,
     draftBodyInput,
+    // Note Pad holds slips that get sent on to TeachText and Scrapbook, so it
+    // is writing too — it gets the shortcuts. It does NOT get the highlight
+    // overlay below: that carries the shared paper measure, which belongs to a
+    // writing window and not to a 320px Desk Accessory.
+    notePadTextInput,
   ].forEach((el) => attachMarkdownEditor(el));
 
   // Live markdown highlight overlay. All Markdown writing surfaces share the
@@ -353,8 +368,9 @@ function wireAppEvents() {
 
   printDirectoryDownloadButton?.addEventListener("click", downloadPrintedDirectoryMarkdown);
 
-  findFileForm?.addEventListener("submit", (event) => {
+  findFileForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
+    await ensureFindPathModule();
     runFindFileSearch();
   });
 
@@ -362,7 +378,9 @@ function wireAppEvents() {
     event.preventDefault();
     const query = findPathQueryInput.value.trim();
     if (!query) return;
-  
+    // Everything below this line lives in the lazy Searcher module.
+    await ensureFindPathModule();
+
     findPathResultsEl.replaceChildren();
     findPathResults.length = 0;
     selectedFindPathIndex = null;
@@ -494,12 +512,6 @@ function wireAppEvents() {
 
   notePadNextButton.addEventListener("click", goToNextNotePadPage);
 
-  notePadSendTeachTextButton?.addEventListener("click", () => sendNotePadPage("teachtext"));
-
-  notePadSendScrapbookButton?.addEventListener("click", () => sendNotePadPage("scrapbook"));
-
-  notePadSendAssistantButton?.addEventListener("click", () => sendNotePadPage("assistant"));
-
   clipboardInsertButton.addEventListener("click", insertClipboardIntoTeachText);
 
   clipboardClearButton.addEventListener("click", clearClipboardWindow);
@@ -607,17 +619,35 @@ function wireAppEvents() {
   // property (not an inline layout style) that the full-screen app shell reads
   // to keep its composer above the keyboard. visualViewport reports the visible
   // area; the layout viewport (window.innerHeight) does not shrink on iOS.
+  // A shrunken visual viewport is not proof of a keyboard: iOS shrinks it for
+  // its own collapsing address bar too. Without that check every full-screen
+  // app on a phone floats tens of pixels off the bottom edge at rest, showing
+  // the desktop pattern underneath it.
+  function keyboardCapableFocus() {
+    const el = document.activeElement;
+    if (!el || el === document.body) return false;
+    if (el.isContentEditable) return true;
+    if (el.tagName === "TEXTAREA") return true;
+    if (el.tagName !== "INPUT") return false;
+    return !/^(?:button|submit|reset|checkbox|radio|file|range|color|image|hidden)$/i
+      .test(el.getAttribute("type") || "text");
+  }
+
   function updateKeyboardInset() {
     const vv = window.visualViewport;
     if (!vv) return;
     const covered = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
-    document.documentElement.style.setProperty("--keyboard-inset", `${covered}px`);
+    const keyboard = keyboardCapableFocus() ? covered : 0;
+    document.documentElement.style.setProperty("--keyboard-inset", `${keyboard}px`);
   }
   if (window.visualViewport) {
     window.visualViewport.addEventListener("resize", updateKeyboardInset);
     window.visualViewport.addEventListener("scroll", updateKeyboardInset);
     updateKeyboardInset();
   }
+  // Focus decides whether the shrink counts, so recompute when focus moves.
+  document.addEventListener("focusin", updateKeyboardInset);
+  document.addEventListener("focusout", () => setTimeout(updateKeyboardInset, 0));
 
   // iOS still nudges the page to reveal a focused field even when the shell has
   // already made room for it. The app is fixed and fills the screen, so any
@@ -745,7 +775,10 @@ function wireAppEvents() {
   });
 
   searchProviderInput?.addEventListener("change", () => {
-    updateFindPathStatusBar();
+    // The status bar belongs to the lazy Searcher module. Before it loads there
+    // is no bar to refresh, and `?.()` would still throw on the bare name — so
+    // test the identifier itself. The popover label is eager and always runs.
+    if (typeof updateFindPathStatusBar === "function") updateFindPathStatusBar();
     updateSearchProviderLabels();
   });
 
@@ -1360,19 +1393,22 @@ function wireAppEvents() {
     clioStageFileInput.value = "";
   });
 
-  dictationRecordButton.addEventListener("click", startDictation);
+  // The Dictation Pad's interior is a lazy module. These listeners are bound at
+  // boot, so each one must resolve its function at click time, behind the
+  // ensure — a bare reference would throw the moment the button is pressed.
+  dictationRecordButton.addEventListener("click", () => withDictationPad(() => startDictation()));
 
-  dictationStopButton.addEventListener("click", stopDictation);
+  dictationStopButton.addEventListener("click", () => withDictationPad(() => stopDictation()));
 
-  dictationCleanButton.addEventListener("click", cleanTranscript);
+  dictationCleanButton.addEventListener("click", () => withDictationPad(() => cleanTranscript()));
 
-  dictationClearButton.addEventListener("click", clearDictationTranscript);
+  dictationClearButton.addEventListener("click", () => withDictationPad(() => clearDictationTranscript()));
 
-  dictationSendButton.addEventListener("click", () => sendTranscript());
+  dictationSendButton.addEventListener("click", () => withDictationPad(() => sendTranscript()));
 
-  dictationRawInput.addEventListener("input", updateDictationTranscriptButtons);
+  dictationRawInput.addEventListener("input", () => withDictationPad(() => updateDictationTranscriptButtons()));
 
-  dictationCleanedInput.addEventListener("input", updateDictationTranscriptButtons);
+  dictationCleanedInput.addEventListener("input", () => withDictationPad(() => updateDictationTranscriptButtons()));
 
   downloadProjectCdButton?.addEventListener("click", downloadSelectedProjectCdItem);
 

@@ -1,12 +1,17 @@
 // The Finder window of things a 1988 computer should not be able to do.
 //
-// Four of the eight can be proved offline, so the capture rig has photographs
-// of them and they hang on the wall as pictures: the surprise is the whole
-// point of this scene, and a surprise behind a double-click is a surprise
-// nobody sees. The other four need the live web or a file of your own, so they
+// Four of these can be proved offline, so the capture rig has photographs of
+// them and they hang on the wall as pictures: the surprise is the whole point
+// of this scene, and a surprise behind a double click is a surprise nobody
+// sees. The rest need the live web, a model, or a file of your own, so they
 // stay icons that open a card and send you to the running system.
+//
+// The list is deliberately not a feature inventory. It leads with the things
+// that carry the product's judgment, in the words a stranger uses: the sheet
+// that interviews you before you write, the map of your own research, and the
+// desk that tells you your finished draft sounds like a machine.
 
-import { iconImg } from "./eras.js?v=20260814h";
+import { iconImg } from "./eras.js?v=20260814i";
 
 const doc = document;
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -14,13 +19,19 @@ const LIVE = "https://system6.aaronlau.me";
 
 const ITEMS = [
   { icon: "searcher", label: "Search the Web",
-    line: "Searcher reads the live web, and whatever you clip keeps its source." },
+    line: "It goes and reads the live web, and anything you keep remembers where it came from." },
   { icon: "timeMachine", label: "Read the Past",
-    line: "Time Machine opens pages the way they looked years ago." },
+    line: "Opens a page the way it looked years ago, after the site changed it." },
   { icon: "soundscape", label: "Transcribe Audio",
     line: "An interview tape comes back as text you can quote." },
   { icon: "importUtility", label: "OCR Documents",
     line: "Scanned paper becomes words you can search." },
+  { icon: "questionSheet", label: "Interview You First",
+    line: "Before a word of prose, it asks who this is for, what you object to, and what you already know." },
+  { icon: "docMap", label: "Map the Research",
+    line: "A pile of sources becomes one map you can look at and move around." },
+  { icon: "reviewDesk", label: "Catch the AI Voice",
+    line: "It reads your finished draft back and points at the sentences that sound like a machine." },
   { icon: "clioChart", label: "Make Charts",
     line: "One table in your draft, five different charts, all still editable." },
   { icon: "clioStage", label: "Build Slides",
@@ -39,7 +50,7 @@ let proofs = null;
 async function loadProofs() {
   if (proofs) return proofs;
   try {
-    const res = await fetch("img/proofs/proofs.json?v=20260814h");
+    const res = await fetch("img/proofs/proofs.json?v=20260814i");
     const data = await res.json();
     proofs = Object.fromEntries(data.proofs.map((p) => [p.label, p]));
   } catch (e) {
@@ -75,7 +86,7 @@ function renderWall(wall, items, proofsByLabel) {
 }
 
 export async function initImpossible(wall, body, statusBar) {
-  const restingStatus = "8 items          2 floppies in disk          38 years available";
+  const restingStatus = "11 items          2 floppies in disk          38 years available";
   let openWin = null;
 
   function closeCard() {
@@ -137,7 +148,7 @@ export async function initImpossible(wall, body, statusBar) {
   if (walled.length) {
     const more = doc.createElement("p");
     more.className = "finder-more";
-    more.textContent = "Four more need the live web or a file of your own. Double click to open one.";
+    more.textContent = "Seven more need the live web, a model, or a file of your own. Double click one.";
     body.before(more);
   }
 

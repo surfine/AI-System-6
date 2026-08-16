@@ -6,7 +6,7 @@
 // The page chrome follows the nearest era, so the whole document ages with
 // the photograph.
 
-import { ERAS, setEra, currentEra, fontLabel } from "./eras.js?v=20260814h";
+import { ERAS, setEra, currentEra, fontLabel, onEraChange } from "./eras.js?v=20260814h";
 import { frameSrc, machineManifest } from "./machine.js?v=20260814h";
 
 const doc = document;
@@ -190,6 +190,11 @@ export function createDissolve(container, opts = {}) {
   };
   range.addEventListener("change", settle);
   range.addEventListener("pointerup", settle);
+
+  // The readout names the face the visitor is really reading, and the hosted
+  // ones land after first paint. Repaint when the era engine says so, or the
+  // specimen keeps announcing whichever fallback was installed at load.
+  onEraChange(() => paint(position));
 
   // Let the machine play itself once, so a visitor who touches nothing still
   // sees the whole span. Any input takes the controls for good.

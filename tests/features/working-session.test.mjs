@@ -140,4 +140,21 @@ test.assertIncludes(
   "Welcome Floppy never replaces the user's recoverable Working Session"
 );
 
+// A writer typed one sentence, was interrupted, and came back to an empty
+// desk: the resume was gated on `guideSeen`, which only flips when the Welcome
+// Floppy is closed. Anyone who wrote before closing it lost the work, and
+// autosave then wrote the empty desk over their only copy. Nothing about
+// keeping someone's words may depend on whether they finished onboarding.
+const bootSource = read("app/core/boot.js");
+test.assertMatches(
+  bootSource,
+  /const resumedWorkingSession = !writerMode\s*&&\s*await startupTaskWithTimeout\(restoreWorkingSession\(\)/,
+  "resuming the desk never depends on onboarding being finished"
+);
+test.assertMatches(
+  bootSource,
+  /if \(!guideSeen && !resumedWorkingSession\) \{\s*openStartupItems\(\);/,
+  "the Welcome Floppy still owns a true first launch, and only a first launch"
+);
+
 test.finish();

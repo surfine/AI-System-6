@@ -315,3 +315,8 @@ function contextGistStats(cards, revealedCards, rawCards, packetText, usedFallba
     usedFallback,
   };
 }
+
+globalThis.AISystem6ContextGist = Object.freeze({
+  buildContextGistPacket,
+  contextGistStats,
+});

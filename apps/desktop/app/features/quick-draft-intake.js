@@ -546,6 +546,7 @@ function isChatRecordingFile(file) {
   return type.startsWith("video/") || /\.(mp4|m4v|mov|webm)$/i.test(name);
 }
 
+/** @returns {Promise<void>} */
 function seekVideo(video, time) {
   return new Promise((resolve, reject) => {
     const done = () => {

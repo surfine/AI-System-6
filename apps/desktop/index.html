@@ -17,7 +17,7 @@
     <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png" />
     <link rel="manifest" href="assets/app-icon/manifest.json" />
     <script src="app/core/theme-registry.js"></script>
-    <link rel="stylesheet" href="styles.bundle.css?v=20260814.2" />
+    <link rel="stylesheet" href="styles.bundle.css?v=20260816.1" />
   </head>
   <body class="is-booting">
     <script src="app/core/theme-body-init.js"></script>
@@ -40,12 +40,26 @@
           <!-- The Start section keeps items in every workspace profile, so its
                closing rule is not the writing route's to hide. -->
           <hr />
+          <!-- Commands, not a Desk Accessory: hunting for a window to record an
+               interruption is itself the interruption. Two ways to hold one --
+               Hold My Place keeps the caret, Hold That Thought also brings a
+               slip -- and one way back. -->
+          <div class="menu-section-label" data-i18n="apple_menu_place">Your Place</div>
+          <button data-action="hold-my-place" data-i18n="held_place_hold">Hold My Place</button>
+          <button data-action="hold-that-thought" data-i18n="hold_that_thought">Hold That Thought</button>
+          <button data-action="resume-my-place" data-i18n="held_place_resume">Where I Left Off</button>
+          <hr />
           <div class="menu-section-label" data-i18n="apple_menu_writing_da">Writing DA</div>
-          <button data-action="open-writing-bell" data-i18n="writing_bell">Writing Bell</button>
+          <!-- The order is the moment you reach for each one: catch a thought,
+               say it instead of typing it, ask about what is in front of you,
+               carry it across, see what was copied, stop safely. The menu is the
+               only place the whole group is ever seen at once. -->
           <button data-action="open-note-pad" data-i18n="note_pad">Note Pad</button>
-          <button data-action="open-clipboard" data-i18n="clipboard">Clipboard</button>
           <button data-action="open-dictation" data-i18n="dictation_pad">Dictation Pad</button>
+          <button data-action="open-sideask-pad" data-i18n="sideask">SideAsk</button>
           <button data-action="open-translation-pad" data-i18n="translation_pad">Translation Pad</button>
+          <button data-action="open-clipboard" data-i18n="clipboard">Clipboard</button>
+          <button data-action="open-writing-bell" data-i18n="writing_bell">Writing Bell</button>
           <hr />
           <div class="menu-section-label" data-i18n="apple_menu_reference_da">Reference DA</div>
           <button data-action="open-dictionary" data-i18n="dictionary">Dictionary</button>
@@ -721,6 +735,16 @@
                 <label for="menu-clock" data-i18n="menu_bar_clock">SuperClock! Menu Clock</label>
               </div>
 
+              <div class="field-row">
+                <input id="keep-screen-awake" type="checkbox" />
+                <label for="keep-screen-awake" data-i18n="keep_screen_awake" data-balloon-help="balloon_keep_screen_awake">Keep Screen Awake</label>
+              </div>
+
+              <div class="field-row">
+                <input id="pause-audio-in-background" type="checkbox" />
+                <label for="pause-audio-in-background" data-i18n="pause_audio_background" data-balloon-help="balloon_pause_audio_background">Pause Audio in Background</label>
+              </div>
+
             </div>
           </section>
 
@@ -981,9 +1005,9 @@
             <span class="sys-icon" data-system-icon="systemHelp" aria-hidden="true"></span>
             <span data-i18n="control_strip_balloon_help">Balloon Help</span>
           </button>
-          <button class="finder-item" data-control-strip-module="volume" draggable="true">
-            <span class="sys-icon" data-system-icon="speaker" aria-hidden="true"></span>
-            <span data-i18n="control_strip_volume">App Volume</span>
+          <button class="finder-item" data-control-strip-module="nowPlaying" draggable="true">
+            <span class="sys-icon" data-system-icon="soundscape" aria-hidden="true"></span>
+            <span data-i18n="control_strip_now_playing">Now Playing</span>
           </button>
           <button class="finder-item" data-control-strip-module="finderEnvironment" draggable="true">
             <span class="sys-icon" data-system-icon="systemStatus" aria-hidden="true"></span>
@@ -1753,6 +1777,7 @@
         </div>
         <div class="window-pane project-cd-pane">
           <div class="button-row">
+            <button class="btn" type="button" data-action="open-finishing-receipt" data-i18n="finishing_receipt_ellipsis">Receipt…</button>
             <button class="btn" type="button" data-action="copy-project-cd-markdown" data-i18n="copy_markdown">Copy Markdown</button>
             <button class="btn" type="button" id="download-project-cd" data-i18n="download">Download</button>
             <button class="btn" type="button" data-action="share-project-cd-markdown" data-web-share-action data-i18n="share_ellipsis" hidden>Share…</button>
@@ -1760,6 +1785,29 @@
             <button class="btn danger" type="button" id="clear-project-cd" data-i18n="clear">Clear</button>
           </div>
           <div id="project-cd-grid" class="finder-grid project-cd-grid window-frame-scroller"></div>
+        </div>
+      </section>
+
+      <!-- The burn is the end of the writing route, so the receipt is stated
+           in the Get Info shape: labelled facts about one object, nothing that
+           grades the work. Rows are built by openFinishingReceipt() because a
+           fact with no stored source is left out, not estimated. -->
+      <section class="window info-window finishing-receipt-window is-hidden" data-window="finishingReceipt" aria-labelledby="finishing-receipt-title">
+        <div class="title-bar">
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
+          <h2 id="finishing-receipt-title" data-i18n="finishing_receipt">Finishing Receipt</h2>
+        </div>
+        <div class="window-pane info-pane">
+          <div class="info-header">
+            <span class="large-mini-icon sys-icon" data-system-icon="projectDisc" aria-hidden="true"></span>
+            <div class="info-main">
+              <h3 id="finishing-receipt-name">--</h3>
+              <p class="hint" id="finishing-receipt-kind">--</p>
+            </div>
+          </div>
+          <hr />
+          <dl class="info-stats" id="finishing-receipt-stats"></dl>
+          <div class="receipt-kept" id="finishing-receipt-kept" hidden></div>
         </div>
       </section>
 
@@ -3206,13 +3254,31 @@ Glass</textarea>
             <label for="dictionary-query" data-i18n="dictionary_lookup_label">Look up</label>
             <div class="dictionary-query-row">
               <input id="dictionary-query" type="text" data-i18n-placeholder="dictionary_lookup_placeholder" placeholder="Enter a word or phrase..." />
-              <button class="btn default" type="submit" id="dictionary-lookup" data-i18n="system_help_lookup_dictionary">Look Up</button>
+              <button class="btn" type="submit" id="dictionary-lookup" data-i18n="system_help_lookup_dictionary">Look Up</button>
             </div>
           </form>
           <div id="dictionary-result" class="dictionary-result">
             <p class="empty-folder-note" data-i18n="dictionary_empty">Select a word or short phrase, then choose Look Up.</p>
           </div>
+          <div class="dictionary-words">
+            <div class="dictionary-words-head">
+              <b data-i18n="dictionary_my_words">My words</b>
+              <span id="dictionary-words-count"></span>
+            </div>
+            <div id="dictionary-word-list" class="dictionary-word-list" role="list" aria-label="My words in this project" data-i18n-aria-label="dictionary_my_words"></div>
+          </div>
+          <div class="dictionary-entry">
+            <label for="dictionary-entry-definition" data-i18n="dictionary_how_i_use_it">How I use it</label>
+            <textarea id="dictionary-entry-definition" rows="2" data-i18n-placeholder="dictionary_how_i_use_it_hint" placeholder="Your own sense of this word."></textarea>
+            <label for="dictionary-entry-avoid" data-i18n="dictionary_never_say">Never say instead</label>
+            <input id="dictionary-entry-avoid" type="text" data-i18n-placeholder="dictionary_never_say_hint" placeholder="Words you refuse, separated by commas." />
+          </div>
           <div id="dictionary-recent" class="dictionary-recent" aria-label="Recent Dictionary lookups" data-i18n-aria-label="dictionary_recent"></div>
+          <div class="button-row dictionary-actions">
+            <button class="btn" type="button" id="dictionary-delete-word" data-action="dictionary-delete-word" data-requires-write data-i18n="delete" disabled>Delete</button>
+            <span class="spacer"></span>
+            <button class="btn default" type="button" id="dictionary-keep-word" data-action="dictionary-keep-word" data-requires-write data-i18n="dictionary_keep_word" disabled>Keep as my word</button>
+          </div>
         </div>
       </section>
 
@@ -3253,10 +3319,9 @@ Glass</textarea>
         </div>
         <div class="window-pane dictation-pane">
           <div class="dictation-toolbar">
-            <div class="dictation-capture-actions">
-              <button class="btn default" type="button" id="dictation-record" data-i18n="record">Record</button>
-              <button class="btn" type="button" id="dictation-stop" data-i18n="stop" disabled>Stop</button>
-              <button class="btn" type="button" id="dictation-clean" data-i18n="clean_transcript" disabled>AI Clean</button>
+            <div class="segmented-control dictation-capture-actions" aria-label="Dictation" data-i18n-aria-label="dictation_pad">
+              <button type="button" id="dictation-record" data-i18n="record">Record</button>
+              <button type="button" id="dictation-stop" data-i18n="stop" disabled>Stop</button>
             </div>
           </div>
           <div class="dictation-transcripts">
@@ -3265,8 +3330,10 @@ Glass</textarea>
             <label data-i18n="cleaned_transcript">Cleaned Transcript</label>
             <textarea id="dictation-cleaned" rows="4" placeholder="AI cleaned text..." data-i18n-placeholder="dictation_clean_hint"></textarea>
           </div>
-          <div class="dictation-bottom-actions">
+          <div class="button-row dictation-bottom-actions">
             <button class="btn" type="button" id="dictation-clear" data-i18n="clear" disabled>Clear</button>
+            <span class="spacer"></span>
+            <button class="btn" type="button" id="dictation-clean" data-i18n="clean_transcript" disabled>Organize</button>
             <button class="btn default" type="button" id="dictation-send" data-i18n="send">Send</button>
           </div>
         </div>
@@ -3278,8 +3345,8 @@ Glass</textarea>
           <h2 id="translation-pad-title" data-i18n="translation_pad">Translation Pad</h2>
         </div>
         <div class="details-bar compact-status-bar translation-pad-details-bar">
-          <span class="status-bar-leading" id="translation-pad-target" data-i18n="to_english">To English</span>
-          <span class="status-bar-trailing" id="translation-pad-status" data-i18n="ready">Ready</span>
+          <span class="status-bar-leading" id="translation-pad-status" data-i18n="ready">Ready</span>
+          <span class="status-bar-trailing" id="translation-pad-target" data-i18n="to_english">To English</span>
         </div>
         <div class="window-pane translation-pad-pane">
           <div class="translation-pad-textareas">
@@ -3288,10 +3355,11 @@ Glass</textarea>
             <label data-i18n="translation_label">Translation</label>
             <textarea id="translation-pad-result" rows="5" readonly></textarea>
           </div>
-          <div class="translation-pad-actions">
+          <div class="button-row translation-pad-actions">
             <button class="btn" type="button" id="translation-pad-clear" data-i18n="clear">Clear</button>
-            <button class="btn default" type="button" id="translation-pad-translate" data-i18n="translate">Translate</button>
-            <button class="btn" type="button" id="translation-pad-send" data-i18n="send">Send</button>
+            <span class="spacer"></span>
+            <button class="btn" type="button" id="translation-pad-translate" data-i18n="translate">Translate</button>
+            <button class="btn default" type="button" id="translation-pad-send" data-i18n="send">Send</button>
           </div>
         </div>
       </section>
@@ -3301,19 +3369,26 @@ Glass</textarea>
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="note-pad-title" data-i18n="note_pad">Note Pad</h2>
         </div>
-        <div class="details-bar note-pad-details-bar">
-          <button class="btn mini-btn" type="button" id="note-pad-prev" data-i18n="previous_page">Previous</button>
-          <span id="note-pad-page-label">Page 1 / 1</span>
-          <button class="btn mini-btn" type="button" id="note-pad-next" data-i18n="next_page">Next</button>
+        <div class="details-bar compact-status-bar note-pad-details-bar">
+          <span class="status-bar-leading note-pad-pager">
+            <button class="btn mini-btn" type="button" id="note-pad-prev" aria-label="Previous slip" data-i18n-aria-label="previous_page">&#9664;</button>
+            <span id="note-pad-page-label">Slip 1 of 1</span>
+            <button class="btn mini-btn" type="button" id="note-pad-next" aria-label="Next slip" data-i18n-aria-label="next_page">&#9654;</button>
+          </span>
+          <button class="btn mini-btn status-bar-trailing" type="button" id="note-pad-destination" data-action="note-pad-cycle-destination" data-i18n="send_to_teachtext">Send to TeachText</button>
+        </div>
+        <div class="da-origin" id="note-pad-origin" hidden>
+          <span id="note-pad-origin-label"></span>
+          <span id="note-pad-origin-time"></span>
         </div>
         <div class="window-pane note-pad-pane">
-          <textarea id="note-pad-text" rows="10" data-i18n-placeholder="note_pad_placeholder" placeholder="Temporary notes..."></textarea>
-          <div class="button-row note-pad-send-row">
-            <button class="btn" type="button" id="note-pad-send-teachtext" data-i18n="send_to_teachtext">Send to TeachText</button>
-            <button class="btn" type="button" id="note-pad-send-scrapbook" data-i18n="send_to_scrapbook">Send to Scrapbook</button>
-            <button class="btn" type="button" id="note-pad-send-assistant" data-i18n="send_to_assistant">Send to ClioTalk</button>
+          <textarea id="note-pad-text" rows="10" data-i18n-placeholder="note_pad_placeholder" placeholder="Hold the thought here. It stays on this desk."></textarea>
+          <div class="button-row note-pad-actions">
+            <button class="btn" type="button" id="note-pad-new" data-action="note-pad-new-slip" data-i18n="note_pad_new_slip">New Slip</button>
+            <span class="spacer"></span>
+            <button class="btn default" type="button" id="note-pad-send" data-action="note-pad-send" data-i18n="send">Send</button>
+            <button class="btn" type="button" id="note-pad-back" data-action="note-pad-back" hidden>Back</button>
           </div>
-          <p class="hint" data-i18n="note_pad_hint">This is a scratch pad. Save important writing to Documents.</p>
         </div>
       </section>
 
@@ -3324,14 +3399,16 @@ Glass</textarea>
         </div>
         <div class="details-bar compact-status-bar">
           <span class="status-bar-leading" id="clipboard-meta" data-i18n="clipboard_empty">Clipboard is empty.</span>
+          <span class="status-bar-trailing" id="clipboard-destination" data-i18n="insert_into_teachtext">Insert into TeachText</span>
         </div>
         <div class="window-pane clipboard-pane">
           <textarea id="clipboard-text" rows="10" readonly></textarea>
           <div class="button-row">
+            <button class="btn" type="button" id="clipboard-clear" data-i18n="clear">Clear</button>
+            <span class="spacer"></span>
             <button class="btn" type="button" id="clipboard-translate" data-i18n="translate_clipboard">Translate Clipboard</button>
             <button class="btn" type="button" id="clipboard-docmap" data-i18n="docmap">DocMap</button>
-            <button class="btn" type="button" id="clipboard-insert" data-i18n="insert">Insert</button>
-            <button class="btn" type="button" id="clipboard-clear" data-i18n="clear">Clear</button>
+            <button class="btn default" type="button" id="clipboard-insert" data-i18n="insert">Insert</button>
           </div>
         </div>
       </section>
@@ -3428,6 +3505,10 @@ Glass</textarea>
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="writing-bell-title" data-i18n="writing_bell">Writing Bell</h2>
         </div>
+        <div class="details-bar compact-status-bar">
+          <span class="status-bar-leading" id="writing-bell-status" data-i18n="bell_ready">Ready for one quiet writing interval.</span>
+          <span class="status-bar-trailing" id="writing-bell-holds"></span>
+        </div>
         <div class="window-pane writing-bell-pane">
           <div class="writing-bell-time" id="writing-bell-time">25:00</div>
           <div class="segmented-control writing-bell-mode" id="writing-bell-mode" aria-label="Writing Bell mode" data-i18n-aria-label="writing_bell_mode">
@@ -3440,11 +3521,11 @@ Glass</textarea>
             <button class="btn mini-btn" type="button" data-bell-preset="5" data-i18n="bell_5">5 min</button>
           </div>
           <div class="button-row writing-bell-actions">
-            <button class="btn default" type="button" id="writing-bell-start" data-i18n="start">Start</button>
-            <button class="btn" type="button" id="writing-bell-pause" data-i18n="pause" disabled>Pause</button>
             <button class="btn" type="button" id="writing-bell-reset" data-i18n="reset">Reset</button>
+            <span class="spacer"></span>
+            <button class="btn" type="button" id="writing-bell-pause" data-i18n="pause" disabled>Pause</button>
+            <button class="btn default" type="button" id="writing-bell-start" data-i18n="start">Start</button>
           </div>
-          <p class="hint" id="writing-bell-status" data-i18n="bell_ready">Ready for one quiet writing interval.</p>
         </div>
       </section>
 
@@ -4092,7 +4173,7 @@ Glass</textarea>
       </section>
     </main>
 
-    <script src="app/generated/build-info.js?v=20260814.2"></script>
-    <script src="app.bundle.js?v=20260814.2"></script>
+    <script src="app/generated/build-info.js?v=20260816.1"></script>
+    <script src="app.bundle.js?v=20260816.1"></script>
   </body>
 </html>

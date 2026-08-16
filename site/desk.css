@@ -117,12 +117,21 @@ html[data-theme="liquid-glass"] .model-providers > span { color: #1c2733; text-s
   color: var(--note-ink, var(--ink));
   text-shadow: var(--head-shadow, none);
 }
+/* The hero subtitle carries the positioning, so it reads like a scene note
+   rather than inheriting bare body ink onto the desk pattern. */
+.hero-sub {
+  color: var(--note-ink, var(--ink));
+  text-shadow: var(--head-shadow, none);
+  font-size: 17px;
+  margin: 8px 0 18px;
+}
 
 /* Headlines sit straight on the desk pattern: give them a paper plate in
    classic (like a title bar plate), soft ink elsewhere. */
 :root:not([data-theme]) .scene-head,
 :root:not([data-theme]) .scene-note,
 :root:not([data-theme]) .scene-fine,
+:root:not([data-theme]) .hero-sub,
 :root:not([data-theme]) .hero-brand {
   background: var(--paper);
   display: table;
@@ -135,8 +144,10 @@ html[data-theme="liquid-glass"] .model-providers > span { color: #1c2733; text-s
 
 html[data-theme] .scene-head { --head-shadow: 0 1px 2px rgba(0,0,0,0.35); }
 html[data-theme] .scene-head,
+html[data-theme] .hero-sub,
 html[data-theme] .scene-note { color: #fff; }
 html[data-theme="liquid-glass"] .scene-head,
+html[data-theme="liquid-glass"] .hero-sub,
 html[data-theme="liquid-glass"] .scene-note { color: #1c2733; --head-shadow: 0 1px 1px rgba(255,255,255,0.5); }
 html[data-theme] .scene-fine { color: #fff; opacity: 0.8; }
 html[data-theme="liquid-glass"] .scene-fine { color: #1c2733; }
@@ -442,25 +453,115 @@ html[data-theme="platinum"] img.obj-icon { image-rendering: pixelated; }
 }
 .route-obj-label { padding: 0 4px 1px; max-width: 110px; line-height: 1.25; }
 .route-obj.is-active .route-obj-label { background: var(--ink); color: var(--paper); }
-:root:not([data-theme]) .route-obj.is-active img { filter: invert(1); }
-html[data-theme] .route-obj.is-active img { filter: brightness(0.55); }
 html[data-theme] .route-obj.is-active .route-obj-label { background: var(--sel-bg, rgba(35,80,180,0.85)); color: #fff; border-radius: 4px; }
 .route-obj:focus-visible { outline: 2px dotted var(--ink); outline-offset: 2px; }
-.route-arrow { align-self: center; color: var(--ink); padding: 0 2px; }
-.route-controls {
-  margin-top: 14px;
-  display: flex;
+
+/* The route belt is an ordered list of stops, so the numbers carry the
+   sequence and no icon family has to be shipped twice. */
+.route-step { display: contents; }
+.route-ordinal {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 16px;
-  flex-wrap: wrap;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--ink);
+  border-radius: var(--win-radius, 0);
+  font-size: 11px;
+  line-height: 1;
 }
-.route-caption {
-  font-size: 14px;
+.route-obj.is-active .route-ordinal { background: var(--ink); color: var(--paper); }
+html[data-theme] .route-obj.is-active .route-ordinal {
+  background: var(--sel-bg, rgba(35,80,180,0.85));
+  border-color: transparent;
+  color: #fff;
+}
+.route-has-shot { font-size: 9px; line-height: 1; opacity: 0.75; }
+
+/* The panel is a window surface, not floating text: copy set straight on the
+   desk pattern loses contrast in every era except classic. */
+.route-panel {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+  padding: 14px 16px;
+  background: var(--win-bg, var(--paper));
+  border: 1px solid var(--win-border, var(--ink));
+  border-radius: var(--win-radius, 0);
+  box-shadow: var(--win-shadow, 2px 2px 0 var(--ink));
+  -webkit-backdrop-filter: var(--win-blur, none);
+  backdrop-filter: var(--win-blur, none);
+}
+.route-panel:not(:has(.route-shot)) { grid-template-columns: minmax(0, 1fr); }
+.route-shot { margin: 0; }
+.route-shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--win-border, var(--ink));
+  border-radius: var(--win-radius, 0);
+  box-shadow: var(--win-shadow, 2px 2px 0 var(--ink));
+}
+.route-shot figcaption {
+  margin-top: 6px;
+  font-size: 12px;
   color: var(--note-ink, var(--ink));
 }
-html[data-theme] .route-caption { color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.4); }
-html[data-theme="liquid-glass"] .route-caption { color: #1c2733; text-shadow: none; }
+/* Prose, so it reads from the left even though the scene is centred. */
+.route-text { text-align: left; }
+.route-stop-head { margin: 0 0 4px; font-size: 15px; }
+.route-stop-lede { margin: 0 0 8px; font-size: 15px; font-weight: 700; }
+.route-stop-note { margin: 0; font-size: 14px; line-height: 1.5; }
+/* Inside the panel the text sits on the window surface, so it inherits the
+   window's ink in every era and needs no per-theme override. */
+
+/* ---------- Nothing saves itself ---------- */
+
+.temp-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 12px;
+}
+.temp-card {
+  padding: 12px 14px;
+  background: var(--win-bg, var(--paper));
+  border: 1px solid var(--win-border, var(--ink));
+  border-radius: var(--win-radius, 0);
+  box-shadow: var(--win-shadow, 2px 2px 0 var(--ink));
+  -webkit-backdrop-filter: var(--win-blur, none);
+  backdrop-filter: var(--win-blur, none);
+}
+.temp-card { text-align: left; }
+.temp-card h3 { margin: 0 0 6px; font-size: 14px; }
+.temp-card p { margin: 0; font-size: 13.5px; line-height: 1.5; }
+
+/* ---------- Chat is an app: the comparison ---------- */
+
+.compare-wall {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.compare-col {
+  padding: 12px 14px;
+  background: var(--win-bg, var(--paper));
+  border: 1px solid var(--win-border, var(--ink));
+  border-radius: var(--win-radius, 0);
+  box-shadow: var(--win-shadow, 2px 2px 0 var(--ink));
+  -webkit-backdrop-filter: var(--win-blur, none);
+  backdrop-filter: var(--win-blur, none);
+}
+.compare-col { text-align: left; }
+.compare-col h3 { margin: 0 0 8px; font-size: 14px; }
+.compare-col ul { margin: 0; padding-left: 18px; }
+.compare-col li { font-size: 13.5px; line-height: 1.5; margin-bottom: 4px; }
+.compare-col.is-ours { border-width: 2px; }
 
 /* ---------- Finder window (impossible) ---------- */
 
@@ -1002,7 +1103,8 @@ html[data-theme="liquid-glass"] { --sel-bg: rgba(40, 90, 200, 0.8); --gauge-fill
   .era-strip-big .era-tick-name { display: none; }
 
   .route-belt { flex-wrap: wrap; gap: 2px; padding-top: 26px; }
-  .route-arrow { display: none; }
+  /* The shot stacks over its text, or both shrink below reading size. */
+  .route-panel { grid-template-columns: minmax(0, 1fr); }
 
   .finder-body { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px 2px; }
   .finder-window .tbar h2 { font-size: 13px; }

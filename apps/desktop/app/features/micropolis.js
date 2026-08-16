@@ -250,13 +250,24 @@ window.AISystem6MicropolisLoaded = true;
     });
   }
 
+  // The HD (@2x) atlases and the sprite sheet must share one scale, so they
+  // load as a pair: if either HD file is missing, both fall back to the
+  // classic 1x art together. Mixing scales would break the canvas geometry.
+  function loadMicropolisArtPair() {
+    return Promise.all([
+      loadMicropolisImage("tiles@2x.png"),
+      loadMicropolisImage("sprites@2x.png"),
+    ]).catch(() => Promise.all([
+      loadMicropolisImage("tiles.png"),
+      loadMicropolisImage("sprites.png"),
+    ]));
+  }
+
   function ensureMicropolisAssets() {
     if (micropolisState.assetsPromise) return micropolisState.assetsPromise;
     const engine = micropolisEngine();
-    micropolisState.assetsPromise = Promise.all([
-      loadMicropolisImage("tiles.png"),
-      loadMicropolisImage("sprites.png"),
-    ]).then(([tilesImage, spritesImage]) => new Promise((resolve, reject) => {
+    micropolisState.assetsPromise = loadMicropolisArtPair()
+      .then(([tilesImage, spritesImage]) => new Promise((resolve, reject) => {
       const tileSet = new engine.TileSet(
         tilesImage,
         () => {
@@ -402,7 +413,11 @@ window.AISystem6MicropolisLoaded = true;
   function ensureMicropolisSnowTileSet() {
     if (micropolisState.snowTileSet) return Promise.resolve(micropolisState.snowTileSet);
     const engine = micropolisEngine();
-    return loadMicropolisImage("tilessnow.png").then((image) => new Promise((resolve) => {
+    // The snow set must match the active tile set's scale; a cross-scale swap
+    // would resize the backing store mid-season. No cross-scale fallback:
+    // when the matching file is missing, winter simply keeps the green set.
+    const hd = (micropolisState.tileSet?.scale || 1) > 1;
+    return loadMicropolisImage(hd ? "tilessnow@2x.png" : "tilessnow.png").then((image) => new Promise((resolve) => {
       const snowTileSet = new engine.TileSet(
         image,
         () => {
@@ -435,7 +450,12 @@ window.AISystem6MicropolisLoaded = true;
     const paused = sim.isPaused();
     if (!paused) sim.spriteManager.moveObjects(sim._constructSimData());
     const origin = canvas.getTileOrigin();
-    const sprites = sim.spriteManager.getSpritesInView(origin.x, origin.y, canvas.canvasWidth, canvas.canvasHeight);
+    // getSpritesInView expects world pixels (16 per tile); canvasWidth is
+    // backing pixels, which carry the tile set's HD scale.
+    const scale = micropolisState.tileSet ? micropolisState.tileSet.scale || 1 : 1;
+    const sprites = sim.spriteManager.getSpritesInView(
+      origin.x, origin.y, canvas.canvasWidth / scale, canvas.canvasHeight / scale,
+    );
     canvas.paint(null, sprites.length ? sprites : null, paused);
     micropolisState.rafId = requestAnimationFrame(micropolisFrame);
   }
@@ -490,6 +510,13 @@ window.AISystem6MicropolisLoaded = true;
     const observer = new MutationObserver(onVisibilityFlip);
     observer.observe(win, { attributes: true, attributeFilter: ["class"] });
     document.addEventListener("visibilitychange", onVisibilityFlip);
+  }
+
+  // Pointer math runs in CSS pixels: one logical tile is 16 CSS px whatever
+  // the tile set's HD scale, because the backing store carries the scale.
+  function micropolisCssTileWidth() {
+    const tileSet = micropolisState.tileSet;
+    return tileSet ? tileSet.tileWidth / (tileSet.scale || 1) : 16;
   }
 
   function micropolisTileFromEvent(event) {
@@ -625,7 +652,7 @@ window.AISystem6MicropolisLoaded = true;
       x = (points[0].x + points[1].x) / 2;
       y = (points[0].y + points[1].y) / 2;
     }
-    const tileWidth = micropolisState.tileSet ? micropolisState.tileSet.tileWidth : 16;
+    const tileWidth = micropolisCssTileWidth();
     micropolisState.panRemainderX += micropolisState.panLastX - x;
     micropolisState.panRemainderY += micropolisState.panLastY - y;
     micropolisState.panLastX = x;
@@ -645,7 +672,7 @@ window.AISystem6MicropolisLoaded = true;
     event.preventDefault();
     micropolisState.panRemainderX += event.deltaX;
     micropolisState.panRemainderY += event.deltaY;
-    const tileWidth = micropolisState.tileSet ? micropolisState.tileSet.tileWidth : 16;
+    const tileWidth = micropolisCssTileWidth();
     const dxTiles = Math.trunc(micropolisState.panRemainderX / tileWidth);
     const dyTiles = Math.trunc(micropolisState.panRemainderY / tileWidth);
     if (!dxTiles && !dyTiles) return;
@@ -1139,6 +1166,36 @@ window.AISystem6MicropolisLoaded = true;
   }
 
   registerMicropolisDesktopCommands();
+
+  // The engine is plain JS on one rAF loop, so suspending is exactly stopping
+  // that loop — the Simulation object keeps every tile. A city the player
+  // already named is written back on the way out; an unnamed city is not,
+  // because inventing a save record (or raising a name dialog while the app
+  // goes to the background) is not something a suspend may decide.
+  window.AISystem6ApplicationRegistry?.registerApplicationLifecycle?.("micropolis", {
+    onSuspend: async () => {
+      window.AISystem6WebPlatform?.releaseScreenWakeLock?.("micropolis");
+      stopMicropolisLoop();
+      cancelMicropolisPendingTouchTool();
+      micropolisState.pointers.clear();
+      micropolisState.panning = false;
+      if (micropolisState.sim && micropolisState.cityId && micropolisState.dirty) {
+        await saveMicropolisCity();
+      }
+    },
+    onResume: () => {
+      if (!micropolisWindowVisible()) return;
+      // Resume the running city; only a window that never had one starts a
+      // city here, and that path is the same one attach() uses.
+      if (micropolisState.sim) startMicropolisLoop();
+      else if (!micropolisState.starting) startMicropolisCity();
+      window.AISystem6WebPlatform?.holdScreenWakeLock?.("micropolis");
+    },
+    onDispose: () => {
+      window.AISystem6WebPlatform?.releaseScreenWakeLock?.("micropolis");
+      stopMicropolisLoop();
+    },
+  });
 
   window.AISystem6Micropolis = Object.freeze({
     open: openMicropolis,

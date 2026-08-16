@@ -19,6 +19,7 @@ const css = read("styles/20-reader-docmap.css");
 const index = read("index.html");
 const bootstrap = read("app.js");
 const cloudRoute = read("apps/server/server/routes/cloud-chat.js");
+const taskPolicy = read("apps/server/server/task-policy.js");
 const localChat = read("apps/server/server/chat.js");
 const actions = read("app/core/actions.js");
 const sourcePolicy = read("app/core/docmap-source-policy.js");
@@ -44,6 +45,20 @@ test.assertIncludes(actions, '"open-docmap": async () => {', "the DocMap open co
 test.assertIncludes(actions, "await ensureDocMapModule();", "the DocMap open command loads the tool before choosing the tabbed open path");
 test.assertIncludes(app, 'id="docmap-layout-right"', "DocMap exposes the one-side layout as a direct choice");
 test.assertIncludes(app, 'id="docmap-layout-balanced"', "DocMap exposes the symmetric layout as a direct choice");
+// The Map > Layout submenu offered Tree / Radial / Fishbone. The renderer has
+// two layouts, so all three set the same one, and Symmetric could be reached
+// only from the toolbar. Menu and toolbar now name the same two, and the one in
+// use carries a check.
+const menus = read("app/data/menus.js");
+const windowManager = read("app/core/window-manager.js");
+for (const removedLayout of ["docmap-layout-tree", "docmap-layout-radial", "docmap-layout-fishbone"]) {
+  test.assertNotIncludes(menus, removedLayout, `the Layout menu no longer offers ${removedLayout}, which the renderer never had`);
+  test.assertNotIncludes(actions, removedLayout, `${removedLayout} does not survive as a hidden command handler`);
+}
+test.assertIncludes(menus, 'menuItem("docmap-layout-right", "docmap_layout_right", "", { layoutChoice: "right" })', "the Layout menu names the one-side layout exactly as the toolbar does");
+test.assertIncludes(menus, 'menuItem("docmap-layout-balanced", "docmap_layout_balanced", "", { layoutChoice: "balanced" })', "Symmetric is reachable from the menu, not only from the toolbar");
+test.assertIncludes(windowManager, "btn.dataset.layoutChoice === docMapLayoutFor(currentDocMap)", "the Layout menu checks the layout the open map is using");
+test.assertIncludes(app, "function docMapLayoutFor(map = currentDocMap)", "the layout resolver stays eager so a menu redraw never summons the lazy tool");
 test.assertIncludes(app, 'id="docmap-focus-root"', "DocMap exposes a phone-sized branch focus action");
 test.assertIncludes(app, 'data-i18n="docmap_mobile_hint"', "DocMap touch guidance is localized instead of hard-coded");
 test.assertNotIncludes(app, 'id="docmap-detailed"', "DocMap no longer exposes detailed hierarchy as a user toggle");
@@ -130,14 +145,14 @@ test.assertIncludes(app, "delete nextPayload.reasoning_effort", "DeepSeek v4 clo
 test.assertIncludes(app, "delete nextPayload.chat_template_kwargs", "DeepSeek v4 cloud requests do not leak local chat-template kwargs");
 test.assertIncludes(app, "delete nextPayload.top_k", "DeepSeek v4 cloud requests do not leak local top_k sampling");
 test.assertIncludes(app, 'nextPayload.thinking = { type: "disabled" }', "DeepSeek v4 product requests disable thinking client-side");
-test.assertIncludes(cloudRoute, 'payload.thinking = thinkingEffort === "none"', "DeepSeek v4 cloud proxy decides thinking server-side by task type");
-test.assertIncludes(cloudRoute, "CLOUD_THINKING_TASKS.has(taskKindName)", "only whitelisted writing tasks can run chain-of-thought");
+test.assertIncludes(cloudRoute, "payload.thinking = policy.thinking", "DeepSeek v4 cloud proxy decides thinking server-side by task type");
+test.assertIncludes(taskPolicy, 'chat: { tier: "fast", thinking: false', "only whitelisted writing tasks can run chain-of-thought");
 test.assertIncludes(cloudRoute, "function stripDeepseekV4LocalOnlyFields", "DeepSeek v4 cloud proxy strips local-only tuning fields server-side");
 test.assertIncludes(cloudRoute, "\"v4-flash\"", "DeepSeek v4 cloud proxy accepts short model names");
 test.assertIncludes(cloudRoute, "delete payload.reasoning_effort", "DeepSeek v4 cloud proxy removes invalid reasoning_effort=none");
 test.assertIncludes(cloudRoute, "delete payload.chat_template_kwargs", "DeepSeek v4 cloud proxy removes local chat-template kwargs");
 test.assertIncludes(app, 'max_tokens: structuredTask ? cloudTaskMaxTokens(kind) : cloudTaskMaxTokens("chat")', "DeepSeek v4 chat requests have a bounded default output");
-test.assertIncludes(cloudRoute, "payload.max_tokens = 1800", "DeepSeek v4 cloud proxy adds a fast default output cap");
+test.assertIncludes(cloudRoute, "answerBudget + reasoningAllowance", "DeepSeek v4 cloud proxy budgets the answer and the thinking chain separately");
 test.assertIncludes(localChat, "nextPayload.thinking = { type: \"disabled\" }", "Local proxy sends a generic thinking-off hint");
 test.assertIncludes(localChat, "tuneGemma4ChatPayload(tuneQwen35ChatPayload(basePayload))", "Local proxy preserves Qwen family-specific tuning");
 test.assertIncludes(app, 'ai_system6_task_kind: "docmap"', "DocMap model calls identify their structured task kind");

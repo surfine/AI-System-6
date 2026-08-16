@@ -20,6 +20,7 @@ import { createServer } from "node:net";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
+import { assertReferenceAssets } from "./lib/reference-assets.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const require = createRequire(import.meta.url);
@@ -96,6 +97,8 @@ async function stopProcess(child) {
 }
 
 const options = parseArgs(process.argv.slice(2));
+// Screenshots taken with fallback fonts are not evidence of anything.
+assertReferenceAssets("Window screenshot coverage", root);
 const outputDir = join(root, options.out);
 const outRelative = options.out.replace(`${root}/`, "");
 mkdirSync(outputDir, { recursive: true });

@@ -155,6 +155,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     window.title = "AI System 6"
     window.isReleasedWhenClosed = false
     window.collectionBehavior.insert(.moveToActiveSpace)
+    // A desk you arranged should still be arranged tomorrow. Without this the
+    // window returns to a centred 1180x780 on every launch, so coming back to
+    // the work means setting the room up again first. AppKit restores the
+    // saved frame over the one set above when there is one.
+    window.setFrameAutosaveName("AISystem6ShellWindow")
+    // 640x480 is where this desk's own furniture still fits — it is the size
+    // OpenTTD's interface was drawn against, and below it the window is not
+    // small, it is broken.
+    window.minSize = NSSize(width: 640, height: 480)
 
     let container = NSView(frame: window.contentView?.bounds ?? .zero)
     container.autoresizingMask = [.width, .height]
@@ -195,12 +204,48 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     appMenuItem.submenu = appMenu
     menuBar.addItem(appMenuItem)
 
+    // Without these, a Mac cannot paste into this app at all. AppKit routes
+    // Command-X/C/V/A to the first responder through menu key equivalents, so
+    // a web view inside a shell that declares no Edit menu simply never
+    // receives them — in a writing application. Nothing here is custom: the
+    // standard selectors let the responder chain deliver to whatever is
+    // focused, which is the web view's own editing.
+    let editMenuItem = NSMenuItem()
+    let editMenu = NSMenu(title: "Edit")
+    editMenu.addItem(withTitle: "Undo", action: Selector(("undo:")), keyEquivalent: "z")
+    let redo = editMenu.addItem(withTitle: "Redo", action: Selector(("redo:")), keyEquivalent: "z")
+    redo.keyEquivalentModifierMask = [.command, .shift]
+    editMenu.addItem(NSMenuItem.separator())
+    editMenu.addItem(withTitle: "Cut", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
+    editMenu.addItem(withTitle: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+    editMenu.addItem(withTitle: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+    let pasteMatch = editMenu.addItem(
+      withTitle: "Paste and Match Style",
+      action: #selector(NSTextView.pasteAsPlainText(_:)),
+      keyEquivalent: "v"
+    )
+    pasteMatch.keyEquivalentModifierMask = [.command, .option, .shift]
+    editMenu.addItem(withTitle: "Delete", action: #selector(NSText.delete(_:)), keyEquivalent: "")
+    editMenu.addItem(withTitle: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+    editMenuItem.submenu = editMenu
+    menuBar.addItem(editMenuItem)
+
     let viewMenuItem = NSMenuItem()
     let viewMenu = NSMenu(title: "View")
     viewMenu.addItem(withTitle: "Reload", action: #selector(reload), keyEquivalent: "r")
     viewMenu.addItem(withTitle: "Open Local Desktop", action: #selector(openLocalDesktop), keyEquivalent: "l")
     viewMenuItem.submenu = viewMenu
     menuBar.addItem(viewMenuItem)
+
+    // Command-M and the window list are things every Mac window has; a shell
+    // that omits them makes its window the one exception on the desk.
+    let windowMenuItem = NSMenuItem()
+    let windowMenu = NSMenu(title: "Window")
+    windowMenu.addItem(withTitle: "Minimize", action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")
+    windowMenu.addItem(withTitle: "Zoom", action: #selector(NSWindow.performZoom(_:)), keyEquivalent: "")
+    windowMenuItem.submenu = windowMenu
+    menuBar.addItem(windowMenuItem)
+    NSApp.windowsMenu = windowMenu
 
     NSApp.mainMenu = menuBar
   }
@@ -364,7 +409,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
   @objc private func showAbout() {
     let alert = NSAlert()
     alert.messageText = "AI System 6 Shell"
-    alert.informativeText = "A minimal macOS shell for the current AI System 6 web beta. This is a bridge, not the final Swift-native app."
+    alert.informativeText = "AI System 6 running on this Mac. The desk is the web build, served locally by this app; nothing it holds leaves this machine unless you send it."
     alert.addButton(withTitle: "OK")
     alert.beginSheetModal(for: window)
   }
@@ -381,6 +426,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
   func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
     window.title = webView.title?.isEmpty == false ? webView.title! : "AI System 6"
     statusLabel?.isHidden = true
+  }
+
+  // target="_blank" has no second window to open into, and WebKit answers a
+  // nil web view by doing nothing at all — a link that looks live and is not.
+  func webView(
+    _ webView: WKWebView,
+    createWebViewWith configuration: WKWebViewConfiguration,
+    for navigationAction: WKNavigationAction,
+    windowFeatures: WKWindowFeatures
+  ) -> WKWebView? {
+    if let url = navigationAction.request.url, !isLocalDesktopURL(url) {
+      NSWorkspace.shared.open(url)
+    }
+    return nil
   }
 
   func webView(
@@ -465,9 +524,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
   ) {
     if #available(macOS 11.3, *), navigationAction.shouldPerformDownload {
       decisionHandler(.download)
-    } else {
-      decisionHandler(.allow)
+      return
     }
+    // A link out of the desk used to navigate the desk away: the window went
+    // to the web page and the only way home was the View menu. Anything the
+    // visitor clicks that leaves the local server belongs to their browser,
+    // which is also where they are already signed in. The desk stays put.
+    if navigationAction.navigationType == .linkActivated,
+       let url = navigationAction.request.url,
+       !isLocalDesktopURL(url) {
+      NSWorkspace.shared.open(url)
+      decisionHandler(.cancel)
+      return
+    }
+    decisionHandler(.allow)
+  }
+
+  // The desk is whatever this shell is serving; everything else is the web.
+  private func isLocalDesktopURL(_ url: URL) -> Bool {
+    guard let host = url.host else { return true }
+    return host == "127.0.0.1" || host == "localhost" || host == "::1"
   }
 
   func webView(

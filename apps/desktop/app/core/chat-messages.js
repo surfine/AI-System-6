@@ -973,6 +973,13 @@ function captureClioTalkGroundingSnapshot(options = {}) {
   const missing = contextWasRequested && !sources.length
     ? [t("clio_grounding_missing_no_relevant_sources")]
     : [];
+  // A capped tool loop is a kind of missing, so it is stated in the slot that
+  // already exists for missing things rather than in furniture of its own.
+  // Silence here would be the System Integrity rule inverted: the answer is
+  // shorter than the question deserved and nothing on screen says so.
+  if (window.lastWritingAgentGenerated?.toolLoopTruncated === true) {
+    missing.push(t("clio_grounding_reading_capped"));
+  }
   return {
     sources: sources.slice(0, 4),
     sourceCount: sources.length,
@@ -1314,108 +1321,6 @@ function appendClioTalkRunReceipt(item, record) {
   body.append(receipt);
 }
 
-// Only one message menu may stand open. The two menus on an assistant reply
-// ("使用结果" and "•••") anchor to the same row, so a second open menu lands on
-// top of the first and hides the choices underneath it.
-function closeOtherClioTalkMessageMenus(except = null) {
-  document.querySelectorAll(".message-actions details[open]").forEach((other) => {
-    if (other !== except) other.open = false;
-  });
-}
-
-// The menu opens above its row, which is where a reply's actions sit. For the
-// message at the top of the transcript there is no room up there, so it opens
-// downward instead of being cut off by the scroller's edge.
-function placeClioTalkMenu(details, menu) {
-  menu.classList.remove("is-below");
-  const scroller = details.closest(".messages");
-  if (!scroller) return;
-  if (menu.getBoundingClientRect().top < scroller.getBoundingClientRect().top) {
-    menu.classList.add("is-below");
-  }
-}
-
-// Every item in a menu can be conditional — a reply with no saved record has
-// no destination to choose, nothing to undo, and no table to chart. A summary
-// that opens an empty box promises actions this message does not have, so the
-// whole control steps aside instead.
-function syncClioTalkMenuAvailability(details, menu) {
-  const available = menu.querySelector("button:not([hidden]):not(:disabled)");
-  details.hidden = !available;
-  if (details.hidden) details.open = false;
-}
-
-let clioTalkMenuDismissBound = false;
-
-function bindClioTalkMenuDismiss() {
-  if (clioTalkMenuDismissBound) return;
-  clioTalkMenuDismissBound = true;
-  // A System 6 menu closes as soon as the pointer lands somewhere else. On a
-  // phone there is no Escape key, so without this the summary is the only exit.
-  document.addEventListener("pointerdown", (event) => {
-    document.querySelectorAll(".message-actions details[open]").forEach((details) => {
-      if (!details.contains(event.target)) details.open = false;
-    });
-  }, true);
-}
-
-function installClioTalkDetailsMenu(details, summary, menu) {
-  menu.setAttribute("role", "menu");
-  summary.setAttribute("aria-haspopup", "menu");
-  bindClioTalkMenuDismiss();
-  details.addEventListener("toggle", () => {
-    if (!details.open) return;
-    syncClioTalkMenuAvailability(details, menu);
-    if (!details.open) return;
-    closeOtherClioTalkMessageMenus(details);
-    placeClioTalkMenu(details, menu);
-  });
-  // Choosing a menu item closes the menu, the same way every menu here does.
-  menu.addEventListener("click", (event) => {
-    if (!event.target.closest("button:not(:disabled)")) return;
-    requestAnimationFrame(() => {
-      details.open = false;
-    });
-  });
-  details.addEventListener("keydown", (event) => {
-    const items = [...menu.querySelectorAll("button:not(:disabled):not([hidden])")];
-    if (event.key === "Escape") {
-      event.preventDefault();
-      details.open = false;
-      summary.focus();
-      return;
-    }
-    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key) || !items.length) return;
-    event.preventDefault();
-    if (!details.open) details.open = true;
-    const activeIndex = items.indexOf(document.activeElement);
-    const nextIndex = event.key === "Home" ? 0
-      : event.key === "End" ? items.length - 1
-        : event.key === "ArrowUp"
-          ? (activeIndex < 0 ? items.length - 1 : (activeIndex - 1 + items.length) % items.length)
-          : (activeIndex + 1) % items.length;
-    items[nextIndex].focus();
-  });
-}
-
-function createClioTalkActionMenu(className = "message-more-actions") {
-  const details = document.createElement("details");
-  details.className = className;
-  const summary = document.createElement("summary");
-  summary.className = "btn mini-btn message-more-summary";
-  summary.setAttribute("aria-label", t("clio_more_actions"));
-  summary.title = t("clio_more_actions");
-  const glyph = document.createElement("span");
-  glyph.className = "message-more-glyph";
-  glyph.setAttribute("aria-hidden", "true");
-  summary.append(glyph);
-  const menu = document.createElement("div");
-  menu.className = "message-action-menu";
-  details.append(summary, menu);
-  installClioTalkDetailsMenu(details, summary, menu);
-  return { details, menu };
-}
-
 // Before/After are a confirmation, not a reading surface: a short excerpt keeps
 // the pinned outcome block a predictable height in both themes.
 function compactClioTalkUseResultPreview(value, { fromEnd = false, limit = 180 } = {}) {
@@ -1462,10 +1367,21 @@ function replaceClioTalkUseResultSelection(current, addition, selection) {
   return `${before.slice(0, start)}${String(addition || "").trim()}${before.slice(end)}`;
 }
 
-function clioTalkUseResultNextText(target, content, mode) {
+function clioTalkUseResultNextText(target, content, mode, patch = null) {
+  // A proposal writes the sentence it named, not the reply that explained it.
+  // Everything downstream is unchanged: the caller still re-reads the target
+  // and refuses on a hash mismatch, so a manuscript edited since the proposal
+  // is never overwritten from a stale offer.
+  if (mode === "replace-proposal" && patch) {
+    return String(target.before || "").replace(patch.target, patch.replacement);
+  }
   return mode === "replace-selection"
     ? replaceClioTalkUseResultSelection(target.before, content, target.selection)
     : appendClioTalkUseResultText(target.before, content);
+}
+
+function clioTalkPatchFitsTarget(target, patch) {
+  return !!patch && !!target && target.kind !== "create" && String(target.before || "").includes(patch.target);
 }
 
 function clioTalkUseResultTextTarget({
@@ -1658,10 +1574,16 @@ async function chooseClioTalkUseResult(content, messageRecord) {
   if (!dialog || !targetsEl || !modesEl || !beforeEl || !afterEl || !recordEl || !confirmButton) return null;
 
   const targets = getClioTalkUseResultTargets();
+  const patch = messageRecord?.manuscriptPatch || null;
+  const modeForTarget = (target) => {
+    if (target?.kind === "create") return "create";
+    // A proposal is the most specific offer on the table, so it leads when the
+    // sentence it named is still there to replace.
+    if (clioTalkPatchFitsTarget(target, patch)) return "replace-proposal";
+    return target?.selection?.text ? "replace-selection" : "append";
+  };
   let selectedTarget = clioTalkUseResultDefaultTarget(targets);
-  let selectedMode = selectedTarget?.kind === "create"
-    ? "create"
-    : selectedTarget?.selection?.text ? "replace-selection" : "append";
+  let selectedMode = modeForTarget(selectedTarget);
 
   if (subjectEl) subjectEl.textContent = clioTalkUseResultSubjectLine(content);
 
@@ -1673,24 +1595,27 @@ async function chooseClioTalkUseResult(content, messageRecord) {
     }
     const next = selectedTarget.kind === "create"
       ? String(content || "").trim()
-      : clioTalkUseResultNextText(selectedTarget, content, selectedMode);
+      : clioTalkUseResultNextText(selectedTarget, content, selectedMode, patch);
+    // A proposal previews the one sentence it swaps, not the whole document
+    // around it: the writer is deciding on that sentence.
     beforeEl.textContent = selectedTarget.kind === "create"
       ? t("clio_preview_created")
       : compactClioTalkUseResultPreview(
+          selectedMode === "replace-proposal" ? patch?.target || "" :
           selectedMode === "replace-selection" ? selectedTarget.selection.text : selectedTarget.before,
           { fromEnd: selectedMode === "append" }
         );
     afterEl.textContent = compactClioTalkUseResultPreview(
-      selectedMode === "replace-selection"
-        ? String(content || "").trim()
-        : next,
+      selectedMode === "replace-proposal" ? patch?.replacement || "" :
+      selectedMode === "replace-selection" ? String(content || "").trim() : next,
       { fromEnd: selectedMode === "append" }
     );
     recordEl.textContent = messageRecord?.temporaryChat
       ? t("clio_temporary_delivery_record")
       : t("clio_run_record_delivery");
     confirmButton.disabled = !selectedTarget.available
-      || (selectedMode === "replace-selection" && !selectedTarget.selection.text);
+      || (selectedMode === "replace-selection" && !selectedTarget.selection.text)
+      || (selectedMode === "replace-proposal" && !clioTalkPatchFitsTarget(selectedTarget, patch));
   };
 
   const renderModes = () => {
@@ -1698,6 +1623,14 @@ async function chooseClioTalkUseResult(content, messageRecord) {
     const modes = selectedTarget?.kind === "create"
       ? [{ id: "create", label: t("clio_mode_create"), help: t("clio_mode_create_help"), available: true }]
       : [
+          ...(patch ? [{
+            id: "replace-proposal",
+            label: t("clio_mode_replace_proposal"),
+            help: clioTalkPatchFitsTarget(selectedTarget, patch)
+              ? patch.reason || t("clio_mode_replace_proposal_help")
+              : t("clio_mode_replace_proposal_stale"),
+            available: clioTalkPatchFitsTarget(selectedTarget, patch),
+          }] : []),
           { id: "append", label: t("clio_mode_append"), help: t("clio_mode_append_help"), available: true },
           {
             id: "replace-selection",
@@ -1747,9 +1680,7 @@ async function chooseClioTalkUseResult(content, messageRecord) {
     );
     choice.input.addEventListener("change", () => {
       selectedTarget = target;
-      selectedMode = target.kind === "create"
-        ? "create"
-        : target.selection?.text ? "replace-selection" : "append";
+      selectedMode = modeForTarget(target);
       renderModes();
     });
     targetsEl.append(choice.row);
@@ -1764,7 +1695,7 @@ async function chooseClioTalkUseResult(content, messageRecord) {
       modalScrim.classList.add("is-hidden");
       document.body.classList.remove("has-system-modal");
       resolve(dialog.returnValue === "apply" && selectedTarget
-        ? { target: selectedTarget, mode: selectedMode }
+        ? { target: selectedTarget, mode: selectedMode, patch }
         : null);
     };
     if (dialog.open) dialog.close("cancel");
@@ -1847,7 +1778,7 @@ async function applyClioTalkUseResult(content, messageRecord, choice) {
       setStatus(t("clio_result_write_failed"));
       return false;
     }
-    const next = clioTalkUseResultNextText(target, content, choice.mode);
+    const next = clioTalkUseResultNextText(target, content, choice.mode, choice.patch);
     if (!target.write(next)) return false;
     afterHash = contentHash(next);
     destination.id = target.id === "teachtext" ? String(activeTextFileId || "") : target.id;
@@ -1940,6 +1871,24 @@ function syncClioTalkReplyState(item, messageRecord) {
   const kept = ["inserted", "clipped", "saved"].includes(state);
   item.dataset.replyState = kept ? "kept" : "temporary";
   return state;
+}
+
+// Verbs belong to the turn being worked on, not to all of them. Twenty turns
+// used to stack twenty identical rows of Use Result / Copy / Discard, and none
+// of those verbs means anything on a reply from five turns ago.
+//
+// This is not the hover-reveal that was tried and rejected here: nothing
+// depends on where the pointer is, the row is reachable by tap and by Tab, and
+// the state line ("Not saved to project") stays on every reply because it is
+// evidence, not a verb. It is the Finder's own grammar — an unselected object
+// is just an object; select it and the verbs come back to it.
+function markClioTalkCurrentTurn(item) {
+  if (!item || !messagesEl?.contains(item)) return;
+  messagesEl.querySelector(".message.is-current-turn")?.classList.remove("is-current-turn");
+  item.classList.add("is-current-turn");
+  // Older turns stay in the tab order so their verbs can still be reached
+  // without a pointer.
+  item.tabIndex = 0;
 }
 
 function appendMessageActions(item, role, content, options = {}) {
@@ -2098,6 +2047,7 @@ function addMessage(role, content, options = {}) {
   appendClioTalkRunState(item, options.messageRecord);
   appendClioTalkRunReceipt(item, options.messageRecord);
   appendMessageActions(item, role, content, options);
+  markClioTalkCurrentTurn(item);
   renderClioTalkTally();
   updateMenuState();
   scrollMessagesToLatest();
@@ -2180,6 +2130,37 @@ function updatePendingMessage(item, step, copy) {
   });
 }
 
+// The writing tools name themselves in API terms. The wait line is read by the
+// writer, so it names the object instead: "Reading the project dictionary", not
+// "readProjectTerms". A tool with no entry here says nothing rather than
+// leaking its identifier onto the desk.
+const clioTalkToolActivityKeys = Object.freeze({
+  searchProjectSources: "clio_tool_search_sources",
+  readSourceDocMap: "clio_tool_read_docmap",
+  readProjectScrap: "clio_tool_read_scrap",
+  readDraftStructure: "clio_tool_read_draft",
+  checkExistingCitation: "clio_tool_check_citation",
+  readProjectTerms: "clio_tool_read_terms",
+  readCitation: "clio_tool_read_citation",
+  proposeManuscriptPatch: "clio_tool_propose_patch",
+});
+
+// One line, in the gap where the answer is about to appear, replaced by the
+// next tool and gone when the reply lands. What was read stays visible after
+// the fact in the basis strip, which is the surface that already carries it —
+// so this says what is happening now and leaves no furniture behind.
+function reportClioTalkToolActivity(item, calls = []) {
+  const labels = calls
+    .map((call) => clioTalkToolActivityKeys[String(call?.name || "")])
+    .filter(Boolean)
+    .map((key) => t(key));
+  if (!labels.length || !item) return;
+  // Real events replace the timed stage cycle: a rotating caption that keeps
+  // moving while nothing happens is the fake progress this product forbids.
+  stopWaitCycle();
+  updatePendingMessage(item, 1, t("clio_tool_activity_line", [...new Set(labels)]));
+}
+
 function startWaitCycle(item) {
   const stages = [
     `${t("checking_context")}.`,
@@ -2226,6 +2207,7 @@ function resolvePendingMessage(item, role, content, options = {}) {
   appendClioTalkRunState(item, options.messageRecord);
   appendClioTalkRunReceipt(item, options.messageRecord);
   appendMessageActions(item, role, content, options);
+  markClioTalkCurrentTurn(item);
   scrollMessagesToLatest();
 }
 
@@ -2371,7 +2353,12 @@ function formatProjectDictionaryTermsForContext(project = getActiveProject()) {
   return terms.slice(0, 12).map((term, index) => {
     const definition = term.definition || term.chineseExplanation || "";
     const kind = term.kind ? ` (${term.kind})` : "";
-    return `[T${index + 1}] ${term.term}${kind}: ${clipContextContent(definition, 240)}`;
+    // The writer's own ban list travels with the word that owns it. It is the
+    // one part of this context the model must obey rather than consider.
+    const avoid = Array.isArray(term.avoid) && term.avoid.length
+      ? `\n    ${currentLanguage === "zh" ? "不要用" : "never use"}: ${term.avoid.slice(0, 12).join(", ")}`
+      : "";
+    return `[T${index + 1}] ${term.term}${kind}: ${clipContextContent(definition, 240)}${avoid}`;
   }).join("\n");
 }
 
@@ -2685,8 +2672,8 @@ function buildPayload(userText, options = {}) {
   if (projectTermsContext) {
     contextSections.push([
       currentLanguage === "zh"
-        ? "当前项目词典术语。相关时用这些定义保持称呼一致："
-        : "Current Project Terms from Dictionary. Use these definitions to keep wording consistent when relevant:",
+        ? "当前项目词典术语。这些是写作者自己的说法：相关时按这些定义用词，遇到「不要用」列出的词就换成写作者的说法。"
+        : "Current Project Terms from Dictionary. These are the writer's own words: use these definitions when relevant, and never use a word listed after \"never use\" — use the writer's term instead.",
       projectTermsContext,
     ].join("\n"));
   }
@@ -3425,12 +3412,37 @@ function updateModelMeter(metrics) {
 }
 
 
+// DeepSeek prices per million tokens, in CNY. The flat promotional rate runs
+// until 2026-08-17 00:00 Beijing time; after that the rate depends on the
+// hour — peak is 09:00-12:00 and 14:00-18:00 Beijing time, off-peak is every
+// other hour and costs half of peak.
+const CLOUD_PRICING_PROMO_END_MS = Date.UTC(2026, 7, 16, 16, 0, 0);
 const CLOUD_PRICING_CNY_PER_1M = {
-  "deepseek-v4-flash": { inputCacheHit: 0.02, inputCacheMiss: 1.0, output: 2.0 },
-  "deepseek-v4-pro": { inputCacheHit: 0.025, inputCacheMiss: 3.0, output: 6.0 },
-  "v4-flash": { inputCacheHit: 0.02, inputCacheMiss: 1.0, output: 2.0 },
-  "v4-pro": { inputCacheHit: 0.025, inputCacheMiss: 3.0, output: 6.0 },
+  "deepseek-v4-flash": {
+    promo: { inputCacheHit: 0.02, inputCacheMiss: 1.0, output: 2.0 },
+    peak: { inputCacheHit: 0.1, inputCacheMiss: 3.0, output: 9.0 },
+    offPeak: { inputCacheHit: 0.05, inputCacheMiss: 1.5, output: 4.5 },
+  },
+  "deepseek-v4-pro": {
+    promo: { inputCacheHit: 0.025, inputCacheMiss: 3.0, output: 6.0 },
+    peak: { inputCacheHit: 0.3, inputCacheMiss: 9.0, output: 27.0 },
+    offPeak: { inputCacheHit: 0.15, inputCacheMiss: 4.5, output: 13.5 },
+  },
 };
+CLOUD_PRICING_CNY_PER_1M["v4-flash"] = CLOUD_PRICING_CNY_PER_1M["deepseek-v4-flash"];
+CLOUD_PRICING_CNY_PER_1M["v4-pro"] = CLOUD_PRICING_CNY_PER_1M["deepseek-v4-pro"];
+
+function cloudPricingBand(when) {
+  if (when.getTime() < CLOUD_PRICING_PROMO_END_MS) return "promo";
+  const beijingHour = new Date(when.getTime() + 8 * 60 * 60 * 1000).getUTCHours();
+  const peak = (beijingHour >= 9 && beijingHour < 12) || (beijingHour >= 14 && beijingHour < 18);
+  return peak ? "peak" : "offPeak";
+}
+
+function cloudPricingFor(modelName, when) {
+  const table = CLOUD_PRICING_CNY_PER_1M[String(modelName || "").trim()];
+  return table ? table[cloudPricingBand(when || new Date())] : null;
+}
 
 
 var latestCloudUsage = { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0, cached_tokens: 0, reasoning_tokens: 0, cost_cny: 0 };
@@ -3546,8 +3558,10 @@ function formatTokenCount(n) {
   return String(n);
 }
 
-function estimateCloudCostCny(promptTokens, completionTokens, usage = {}) {
-  var pricing = CLOUD_PRICING_CNY_PER_1M[cloudConfig.model] || null;
+function estimateCloudCostCny(promptTokens, completionTokens, usage = {}, modelName = "") {
+  // Price the model that actually ran, not the one the panel shows: on the
+  // automatic setting the server picks the tier per task.
+  var pricing = cloudPricingFor(modelName || cloudConfig.model);
   if (!pricing) return 0;
   var cacheHitTokens = Number(usage.prompt_cache_hit_tokens || 0);
   var cacheMissTokens = Number(usage.prompt_cache_miss_tokens || 0);
@@ -3558,7 +3572,7 @@ function estimateCloudCostCny(promptTokens, completionTokens, usage = {}) {
     + (Number(completionTokens || 0) / 1e6) * pricing.output;
 }
 
-function trackCloudTokenUsage(promptTokens, completionTokens, totalTokens, usage = {}) {
+function trackCloudTokenUsage(promptTokens, completionTokens, totalTokens, usage = {}, modelName = "") {
   if (typeof cloudConfig === "undefined" || !cloudConfig || !cloudConfig.active) return;
 
   const cachedTokens = Number(usage?.input_tokens_details?.cached_tokens || usage?.prompt_tokens_details?.cached_tokens || 0);
@@ -3568,7 +3582,7 @@ function trackCloudTokenUsage(promptTokens, completionTokens, totalTokens, usage
   latestCloudUsage.total_tokens = totalTokens;
   latestCloudUsage.cached_tokens = cachedTokens;
   latestCloudUsage.reasoning_tokens = reasoningTokens;
-  latestCloudUsage.cost_cny = estimateCloudCostCny(promptTokens, completionTokens, usage);
+  latestCloudUsage.cost_cny = estimateCloudCostCny(promptTokens, completionTokens, usage, modelName);
 
   sessionCloudUsage.prompt_tokens += promptTokens;
   sessionCloudUsage.completion_tokens += completionTokens;
@@ -3597,7 +3611,13 @@ function modelMetricsFromResponse(data, content, elapsedMs) {
   const serverMetrics = data?.ai_system6_metrics || {};
   const usage = data?.usage || serverMetrics.usage || {};
   if (typeof cloudConfig !== "undefined" && cloudConfig && cloudConfig.active && usage.prompt_tokens) {
-    trackCloudTokenUsage(usage.prompt_tokens, usage.completion_tokens || 0, usage.total_tokens || 0, usage);
+    trackCloudTokenUsage(
+      usage.prompt_tokens,
+      usage.completion_tokens || 0,
+      usage.total_tokens || 0,
+      usage,
+      String(serverMetrics.model || data?.model || "")
+    );
   }
   const tokens = Number(usage.completion_tokens || usage.total_tokens || estimateTokenCount(content));
   const measuredMs = Number(serverMetrics.elapsed_ms || elapsedMs || 0);
@@ -3618,6 +3638,7 @@ async function readChatCompletionStream(response, onToken, signal) {
   let finishReason = "";
   let responseId = "";
   let responseApi = "";
+  let servedModel = "";
   let latestContent = "";
   try {
     const content = await readModelTextStream(response, {
@@ -3639,8 +3660,11 @@ async function readChatCompletionStream(response, onToken, signal) {
       onResponseApi: (api) => {
         responseApi = String(api || "");
       },
+      onModel: (name) => {
+        servedModel = String(name || "");
+      },
     });
-    return { content, usage: streamUsage, finishReason, responseId, responseApi };
+    return { content, usage: streamUsage, finishReason, responseId, responseApi, servedModel };
   } catch (error) {
     if (latestContent.trim()) {
       error.partialContent = latestContent.trim();
@@ -3867,11 +3891,12 @@ async function sendLocalModelTask(options = {}) {
         finishReason,
         responseId,
         responseApi,
+        servedModel,
       } = await readChatCompletionStream(response, onToken, signal);
       const text = streamedText.trim();
       if (!text) throw new Error("LM Studio stream did not include content.");
       if (isCloud && streamUsage?.prompt_tokens) {
-        trackCloudTokenUsage(streamUsage.prompt_tokens, streamUsage.completion_tokens || 0, streamUsage.total_tokens || 0);
+        trackCloudTokenUsage(streamUsage.prompt_tokens, streamUsage.completion_tokens || 0, streamUsage.total_tokens || 0, streamUsage, servedModel);
       }
       if (isCloud && typeof window.fetchCloudBalanceSilent === "function") {
         window.fetchCloudBalanceSilent().catch(() => {});
@@ -3994,6 +4019,24 @@ function isIncompleteModelFinishReason(reason = "") {
   return ["length", "content_filter", "insufficient_system_resource", "interrupted"].includes(String(reason));
 }
 
+// The eighth writing tool builds a manuscript patch and stops there — nothing
+// applied it, and nothing showed it, so the model could only describe the edit
+// in prose and the writer had to retype it. This lifts the last proposal out of
+// the finished run so the reply can carry it.
+function clioTalkProposedManuscriptPatch() {
+  const calls = window.lastWritingAgentGenerated?.toolCalls;
+  if (!Array.isArray(calls)) return null;
+  const proposal = [...calls]
+    .reverse()
+    .find((call) => call?.name === "proposeManuscriptPatch" && call?.result?.ok !== false);
+  const data = proposal?.result?.data;
+  if (!data || data.kind !== "manuscript-patch") return null;
+  const target = String(data.target || "");
+  const replacement = String(data.replacement || "");
+  if (!target || target === replacement) return null;
+  return { target, replacement, reason: String(data.reason || "") };
+}
+
 function createClioTalkAssistantRecord({
   content,
   taskKind,
@@ -4023,6 +4066,10 @@ function createClioTalkAssistantRecord({
     finishReason: String(finishReason || (stopped ? "stopped" : "stop")),
     temporaryChat: !!temporaryChat,
     grounding: grounding || null,
+    // A patch the run proposed but did not apply. It rides the reply so the
+    // offer is still on the table when the writer comes back to an older turn,
+    // and it stays a proposal until Use Result writes it.
+    manuscriptPatch: clioTalkProposedManuscriptPatch(),
     webSearch: webSearch || null,
     providerResponse: nativeResponseId && nativeResponseApi ? {
       api: nativeResponseApi,
@@ -4404,6 +4451,7 @@ async function submitUserTextCore(userText, options = {}) {
       streamPreference: "auto",
       onToken: (content) => updatePendingStreamContent(pendingMessage, content),
       onAutoSkillCall: (skills) => updatePendingMessage(pendingMessage, 0, currentLanguage === "zh" ? `正在自动调用只读技能：${skills.map((entry) => entry.parsed.manifest.name).join("、")}` : `Auto-calling read-only Skill: ${skills.map((entry) => entry.parsed.manifest.name).join(", ")}`),
+      onToolActivity: (calls) => reportClioTalkToolActivity(pendingMessage, calls),
     });
     const grounding = captureClioTalkGroundingSafely({
       ...runtimeOptions,

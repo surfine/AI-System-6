@@ -18,6 +18,18 @@
   src: url("fonts/monaco.woff2") format("woff2");
   font-display: swap;
 }
+/* The same Charcoal stand-in the app itself wears, carried over so 1999 has
+   one face here and in the product instead of a different one per platform.
+   Charcoal is on no current system; Asap's width axis at 113 was fitted to a
+   measured Charcoal sample's x-height and advance width. OFL 1.1, see
+   fonts/Asap-OFL.txt and apps/desktop/assets/fonts/platinum/README.md. */
+@font-face {
+  font-family: "Platinum Asap";
+  src: url("fonts/Asap-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-stretch: 75% 125%;
+  font-display: swap;
+}
 
 /* ==========================================================================
    Era type: the six system faces, defined once.
@@ -51,7 +63,7 @@
   --face-classic-title: Chicago, Geneva, Verdana, "Songti SC", STSong, SimSun, serif;
   /* Noto Sans before Tahoma: fontconfig maps Tahoma and Verdana to DejaVu
      Sans, which is what Aqua gets, so Linux would show two eras in one face. */
-  --face-platinum: Charcoal, "Charcoal CY", Geneva, "Noto Sans", Tahoma, Verdana, "Songti SC", STSong, SimSun, sans-serif;
+  --face-platinum: Charcoal, "Charcoal CY", "Platinum Asap", Geneva, "Noto Sans", Tahoma, Verdana, "Songti SC", STSong, SimSun, sans-serif;
   --face-aqua: "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", "DejaVu Sans", STHeiti, "Heiti SC", SimHei, sans-serif;
   --face-snow-leopard: "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", "DejaVu Sans", STHeiti, "Heiti SC", "Hiragino Sans GB", SimHei, sans-serif;
   --face-yosemite: "Helvetica Neue", Helvetica, Arial, "Liberation Sans", STHeiti, "Heiti SC", "Hiragino Sans GB", SimHei, sans-serif;
@@ -598,6 +610,9 @@ html[data-theme] .btn { padding: 0 20px; }
 html[data-theme="platinum"] {
   --site-font: var(--face-platinum);
   --display-font: var(--face-platinum);
+  /* The width the app fitted to its Charcoal sample. Ignored by every
+     non-variable face in the stack, so an installed Charcoal is unaffected. */
+  font-variation-settings: "wdth" 113;
   --desk-bg: #666a6e;
   --desk-image: none;
   --win-bg: #dddddd;

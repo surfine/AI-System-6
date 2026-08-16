@@ -13,10 +13,21 @@
 //     for those buttons, and app.js uses two of them to build source lists.
 //   - isExportedDocMapMarkdown() is a synchronous branch in Reader's import
 //     path; it has to answer before the tool exists.
+//   - docMapLayoutFor() names the current map's layout. updateMenuState() ticks
+//     the Layout rows with it on every redraw, so reading it must not summon
+//     the tool.
 //
 // Everything here is cheap and depends only on already-eager state. Do not
 // move rendering, markmap, print, or model code into this file — that is what
 // the lazy module is for.
+
+// The renderer supports exactly two layouts. Anything else normalizes to the
+// one-sided default rather than silently becoming a third, unsupported mode.
+const docMapLayouts = Object.freeze(["right", "balanced"]);
+
+function docMapLayoutFor(map = currentDocMap) {
+  return map?.layout === "balanced" ? "balanced" : "right";
+}
 
 function joinDocMapSourceBlocks(blocks, maxChars = 24000) {
   const parts = [];
@@ -372,11 +383,7 @@ function resolveDocMapReadiness(preferredContext = null, options = {}) {
       sourceChars: wholeSource.text.length,
     });
   }
-  return chooseDocMapSourceCandidate(selectionSource, wholeSource, rangeMode);
-}
-
-function resolveDocMapSource(preferredContext = null, options = {}) {
-  return resolveDocMapReadiness(preferredContext, options).source;
+  return typeof chooseDocMapSourceCandidate === "function" ? chooseDocMapSourceCandidate(selectionSource, wholeSource, rangeMode) : null;
 }
 
 function docMapReadinessForSurface(surface, rangeMode = "auto") {
@@ -385,12 +392,9 @@ function docMapReadinessForSurface(surface, rangeMode = "auto") {
   const enrichedSelection = selectionSource && wholeSource
     ? docMapSourceWithRange(selectionSource, "selection", { sourceChars: wholeSource.text.length })
     : selectionSource;
-  return chooseDocMapSourceCandidate(enrichedSelection, wholeSource, rangeMode);
+  return typeof chooseDocMapSourceCandidate === "function" ? chooseDocMapSourceCandidate(enrichedSelection, wholeSource, rangeMode) : null;
 }
 
-function renderVideoDocMapSwitchers() {
-  return false;
-}
 
 function stripDocMapMarkdownFence(markdown) {
   return String(markdown || "")

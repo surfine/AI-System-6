@@ -36,7 +36,37 @@ const MAX_CONCURRENT_JOBS = 1;
 const MAX_LOG_CHARS = 12000;
 const JOB_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
-/** @type {Map<string, object>} */
+/**
+ * One finished audio file, as the browser queue reads it.
+ *
+ * @typedef {{
+ *   file: string,
+ *   title: string,
+ *   artist: string,
+ *   album: string,
+ *   duration: number,
+ * }} GamdlResult
+ */
+
+/**
+ * One download job. A live job also keeps `dir` and `logTail`; a job read back
+ * from job.json after a server restart has only the persisted fields.
+ *
+ * @typedef {{
+ *   id: string,
+ *   url: string,
+ *   status: string,
+ *   createdAt: number,
+ *   updatedAt: number,
+ *   code: string,
+ *   error: string,
+ *   results: GamdlResult[],
+ *   dir?: string,
+ *   logTail?: string,
+ * }} GamdlJob
+ */
+
+/** @type {Map<string, GamdlJob>} */
 const jobs = new Map();
 
 function gamdlBinary() {
@@ -227,7 +257,8 @@ async function runGamdlProcess(job) {
     job.url,
   ];
 
-  await new Promise((resolve) => {
+  // The type hint keeps `resolve()` callable without a value.
+  await /** @type {Promise<void>} */ (new Promise((resolve) => {
     let child;
     try {
       child = spawn(gamdlBinary(), args, { stdio: ["ignore", "pipe", "pipe"] });
@@ -252,7 +283,7 @@ async function runGamdlProcess(job) {
       }
       resolve();
     });
-  });
+  }));
 
   if (job.status === "running") {
     const files = await findAudioFiles(audioDir);
@@ -274,7 +305,7 @@ async function runGamdlProcess(job) {
  * Start a gamdl download for one Apple Music link.
  *
  * @param {string} rawUrl
- * @returns {Promise<{ ok: boolean, status?: number, code?: string, error?: string, job?: any }>}
+ * @returns {Promise<{ ok: boolean, status?: number, code?: string, error?: string, job?: GamdlJob }>}
  */
 async function startGamdlJob(rawUrl) {
   const urlError = validateAppleMusicUrl(rawUrl);
@@ -331,7 +362,7 @@ async function startGamdlJob(rawUrl) {
  * restart. Returns null for unknown ids.
  *
  * @param {string} jobId
- * @returns {Promise<object | null>}
+ * @returns {Promise<GamdlJob | null>}
  */
 async function getGamdlJob(jobId) {
   if (!JOB_ID_PATTERN.test(jobId)) return null;

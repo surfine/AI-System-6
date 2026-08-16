@@ -5,7 +5,7 @@
 // piles, so we count the disks out in the product's own File Floppy icon and
 // let the second pile run off the edge of the page.
 
-import { iconImg } from "./eras.js?v=20260814h";
+import { iconImg } from "./eras.js?v=20260814i";
 
 const FLOPPY_BYTES = 1_474_560;       // one 1.44 MB disk
 // The payload is not a constant anybody types here: verify:floppy measures it
@@ -25,7 +25,7 @@ export async function initFloppies(wall) {
   if (!wall) return;
   let DESKTOP_BYTES = 2 * FLOPPY_BYTES;
   try {
-    const receipt = await (await fetch(RECEIPT + "?v=20260814h")).json();
+    const receipt = await (await fetch(RECEIPT + "?v=20260814i")).json();
     if (Number.isFinite(receipt?.bytes)) DESKTOP_BYTES = receipt.bytes;
   } catch (e) {
     // Without the receipt the section still reads: two disks is the claim.

@@ -744,6 +744,55 @@ Version `1.0.12`, build `20260804.2`.
   this is the scaffolding for retiring the file-order cascade, and
   `verify:css` now blocks a file from opening any layer but its own.
 
+## Public Beta 1.0.44 - 2026-08-16
+
+- Cloud model routing now lives in one policy: the Automatic choice resolves
+  per task — DeepSeek V4 Pro for critique and HKRR review, V4 Flash elsewhere —
+  and each task reserves reasoning headroom on top of its answer budget. A
+  budget sized for the answer alone had let a long thinking chain consume the
+  whole allowance and return an empty message with `finish_reason: "length"`.
+- Searcher's streamed web-search answers were silently failing: address pinning
+  forced the buffered Node transport, which read the whole response before
+  resolving and handed back no stream. The transport keeps the upstream open
+  until the first delta, with a contract test to match.
+- Micropolis gains deterministic 2× tile and sprite atlases for Retina, built
+  from the upstream 1× art by a new reproducible HD pipeline; caller-facing
+  coordinates stay on the logical 16 px grid.
+- Theme Lab becomes a data-driven appearance workbench: object provenance,
+  per-era art tiers, token homes, and the sixteen-object priority lineage are
+  declared as data and painted through the real runtime renderer.
+- Bonsai City's MIT-clean simulation core lands as headless foundation — seeded
+  deterministic grid rules with no DOM or timers — ready for a window to host.
+- The Project CD burn opens a Finishing Receipt: a Get Info-shaped window whose
+  every line is read back from the stored record — word count, draft count as
+  distinct stored texts, the days from the first revision to the burn, how many
+  times the opening was replaced, and which first-draft lines survive, from a
+  longest-common-subsequence over the two line lists. A fact with no stored
+  source is left out rather than estimated.
+- Writing surfaces take over paste. `app/core/paste-markdown.js` converts the
+  clipboard's `text/html` flavour to Markdown locally and synchronously, so
+  headings, lists, emphasis, links, and tables survive. The heading floor is
+  load-bearing: only the Outline may receive `##`, and elsewhere a fragment is
+  pushed down so its shallowest heading becomes `###`, which stops one paste
+  from cutting the article into new sections.
+- The menu bar answers for itself on five measured defects: shortcut labels
+  survive an application switch through one shared writer, four Go To rows
+  report their real availability instead of refusing a black row, and three
+  rows that printed a borrowed key now own their own Open and New entries.
+- The Application Registry carries an optional lifecycle — `onSuspend`,
+  `onResume`, `onDispose` — and MultiFinder drives it on window class flips,
+  `visibilitychange`, and `pagehide`. Seven applications implement it: the three
+  games stop their real loops and release held SDL input first, CMF Studio
+  takes the render loop off the renderer, and Cover Glass stops its motion
+  preview. An application that registers nothing behaves exactly as before.
+- Four measured defects in the writing Desk Accessories: SideAsk's row keeps
+  Ask on line one (47 px → 20 px), the Writing Bell no longer applies the
+  one-minute setting floor to the time remaining, the floating Dictate button
+  stops overlapping `.da-origin` (1,446 px² → 0), and Hold That Thought joins
+  Hold My Place under Your Place instead of answering only to its key.
+- Searcher moves off the startup disk into `lazyRuntimePaths` through the
+  lazy-window contract, which returns 17,227 bytes of boot headroom.
+
 ## What Changed Most In One Month
 
 - The product moved from "an AI writing prototype" to a local-first writing

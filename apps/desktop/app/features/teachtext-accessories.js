@@ -6,7 +6,14 @@
 
 function setTeachTextStatus(key) {
   teachTextStatusEl.dataset.statusKey = key;
-  teachTextStatusEl.textContent = t(key);
+  // Saving is the moment the writer commits work, so it is where the status
+  // line can afford to say what the work amounts to. It reports one stored
+  // fact — how many drafts this document has behind it — and never an opinion
+  // of it. With no count in hand it says nothing extra rather than guess.
+  const drafts = key === "saved" && typeof cachedRevisions === "function"
+    ? cachedRevisions(activeProjectId, activeTextFileId).length
+    : 0;
+  teachTextStatusEl.textContent = drafts > 1 ? t("saved_drafts", drafts) : t(key);
   syncTeachTextLabelControl();
   syncTeachTextPreview();
   updateMenuState();
@@ -873,29 +880,110 @@ function dictationDestinationLabel(dest) {
   return labels[dest] || t("assistant");
 }
 
+// ---- Note Pad slips ---------------------------------------------------------
+//
+// Being interrupted is normal here, and losing a sentence is the harm this desk
+// exists to prevent. So a Note Pad page is a slip: the words, and where the
+// writer was when the thought arrived. One key holds a thought from anywhere;
+// the slip's own default button puts the writer back on the same sentence.
+//
+// Older desks saved plain strings, so the shape migrates on the way in. Nothing
+// is ever dropped to make room — a page that rolls off is a lost thought.
+function normalizeNotePadOrigin(from) {
+  if (!from?.window) return null;
+  return {
+    window: String(from.window),
+    title: String(from.title || ""),
+    caret: Number.isFinite(from.caret) ? from.caret : null,
+    at: String(from.at || ""),
+  };
+}
+
 function normalizeNotePadPages(pages) {
   const normalized = Array.isArray(pages)
-    ? pages.map((page) => String(page ?? ""))
+    ? pages.map((page) => (typeof page === "string"
+      ? { text: page, from: null }
+      : { text: String(page?.text ?? ""), from: normalizeNotePadOrigin(page?.from) }))
     : [];
-  return normalized.length ? normalized : [""];
+  return normalized.length ? normalized : [{ text: "", from: null }];
+}
+
+function currentNotePadSlip() {
+  notePadPages = normalizeNotePadPages(notePadPages);
+  notePadPageIndex = Math.min(Math.max(0, notePadPageIndex), notePadPages.length - 1);
+  return notePadPages[notePadPageIndex];
+}
+
+// Every part except the four long-standing handles is found from the window
+// itself, so a new control cannot take the boot down by drifting out of one of
+// the three places a DOM handle must be declared.
+let notePadParts = null;
+
+function notePadFields() {
+  if (notePadParts?.origin?.isConnected) return notePadParts;
+  const root = document.querySelector('[data-window="notePad"]');
+  if (!root) return null;
+  notePadParts = {
+    origin: root.querySelector("#note-pad-origin"),
+    originLabel: root.querySelector("#note-pad-origin-label"),
+    originTime: root.querySelector("#note-pad-origin-time"),
+    destination: root.querySelector("#note-pad-destination"),
+    send: root.querySelector("#note-pad-send"),
+    back: root.querySelector("#note-pad-back"),
+  };
+  return notePadParts.origin ? notePadParts : null;
+}
+
+const notePadDestinations = ["teachtext", "scrapbook", "assistant"];
+
+function notePadDestinationLabel(dest = notePadDestination) {
+  const labels = {
+    teachtext: t("send_to_teachtext"),
+    scrapbook: t("send_to_scrapbook"),
+    assistant: t("send_to_assistant"),
+  };
+  return labels[dest] || labels.teachtext;
+}
+
+function cycleNotePadDestination() {
+  const next = (notePadDestinations.indexOf(notePadDestination) + 1) % notePadDestinations.length;
+  notePadDestination = notePadDestinations[next];
+  renderNotePadPage();
+  saveDeskState();
 }
 
 function syncCurrentNotePadPage() {
-  notePadPages = normalizeNotePadPages(notePadPages);
-  notePadPageIndex = Math.min(Math.max(0, notePadPageIndex), notePadPages.length - 1);
-  notePadPages[notePadPageIndex] = notePadTextInput.value;
+  currentNotePadSlip().text = notePadTextInput.value;
+}
+
+function formatNotePadTime(iso) {
+  const date = iso ? new Date(iso) : null;
+  if (!date || Number.isNaN(date.getTime())) return "";
+  return date.toLocaleTimeString(currentLanguage === "zh" ? "zh-CN" : "en-US", { hour: "2-digit", minute: "2-digit" });
 }
 
 function renderNotePadPage() {
-  notePadPages = normalizeNotePadPages(notePadPages);
-  notePadPageIndex = Math.min(Math.max(0, notePadPageIndex), notePadPages.length - 1);
-  notePadTextInput.value = notePadPages[notePadPageIndex];
-  notePadPageLabelEl.textContent = t("note_pad_page", notePadPageIndex + 1, notePadPages.length);
+  const slip = currentNotePadSlip();
+  notePadTextInput.value = slip.text;
+  notePadPageLabelEl.textContent = t("note_pad_slip", notePadPageIndex + 1, notePadPages.length);
   notePadPrevButton.disabled = notePadPageIndex === 0;
-  notePadNextButton.textContent = notePadPageIndex >= notePadPages.length - 1
-    ? t("new_page_short")
-    : t("next_page");
   notePadNextButton.disabled = false;
+
+  const parts = notePadFields();
+  if (!parts) return;
+  parts.destination.textContent = notePadDestinationLabel();
+  // The way back is the slip's own verb, and it is the default when it exists.
+  // With nowhere to go back to, sending is the only thing this window does.
+  const from = slip.from;
+  parts.back.hidden = !from;
+  parts.back.textContent = from ? t("note_pad_back_to", from.title || from.window) : t("back");
+  parts.back.classList.toggle("default", !!from);
+  parts.send.classList.toggle("default", !from);
+  parts.origin.hidden = !from;
+  if (from) {
+    parts.originLabel.textContent = t("note_pad_from", from.title || from.window);
+    parts.originTime.textContent = formatNotePadTime(from.at);
+  }
 }
 
 function goToNotePadPage(index) {
@@ -905,9 +993,9 @@ function goToNotePadPage(index) {
   saveDeskState();
 }
 
-function addNotePadPage() {
+function addNotePadPage(from = null) {
   syncCurrentNotePadPage();
-  notePadPages.splice(notePadPageIndex + 1, 0, "");
+  notePadPages.splice(notePadPageIndex + 1, 0, { text: "", from: normalizeNotePadOrigin(from) });
   notePadPageIndex += 1;
   renderNotePadPage();
   notePadTextInput.focus();
@@ -923,16 +1011,76 @@ function goToNextNotePadPage() {
   goToNotePadPage(notePadPageIndex + 1);
 }
 
-function appendToNotePad(text) {
+// Where the writer is, as the system sees it: the front window and the caret
+// inside it. This is read before anything moves, because once the pad opens the
+// active element is the pad's own field.
+function currentWritingPosition() {
+  const field = document.activeElement;
+  const win = field?.closest?.(".window")
+    || document.querySelector(".window.is-active:not(.is-hidden):not(.is-collapsed)");
+  const name = win?.dataset.window;
+  if (!name || name === "notePad") return null;
+  const inField = !!field
+    && win.contains(field)
+    && (field.tagName === "TEXTAREA" || field.tagName === "INPUT" || field.isContentEditable);
+  return {
+    window: name,
+    title: win.querySelector(".title-bar h2")?.textContent?.trim() || name,
+    caret: inField && Number.isFinite(field.selectionStart) ? field.selectionStart : null,
+    at: new Date().toISOString(),
+  };
+}
+
+// One key from anywhere. The thought lands on a slip that remembers the window
+// and the caret it came from, so the interruption costs the sentence nothing.
+async function holdThatThought() {
+  const from = currentWritingPosition();
+  await openWindow("notePad");
+  // Take what the field is holding before deciding whether this slip is spare.
+  // Waiting for the input listener would let a keystroke that has not been
+  // synced yet decide that a written slip is empty, and overwrite its origin.
   syncCurrentNotePadPage();
-  notePadTextInput.value += `${notePadTextInput.value ? "\n\n" : ""}${text}`;
+  const slip = currentNotePadSlip();
+  // An untouched empty slip is reused rather than stacked on, so pressing the
+  // key twice does not leave a trail of blank pages.
+  if (slip.text.trim()) {
+    addNotePadPage(from);
+  } else {
+    slip.from = normalizeNotePadOrigin(from);
+    renderNotePadPage();
+    saveDeskState();
+  }
+  notePadTextInput.focus();
+  setStatus(from ? t("note_pad_held_from", from.title) : t("note_pad_held"));
+}
+
+// The way back: the window opens and the caret returns to the character the
+// writer left. A window that no longer holds that field still opens — being
+// back in the right room is most of the point.
+async function returnToNotePadOrigin() {
+  const from = currentNotePadSlip().from;
+  if (!from) return;
+  await openWindow(from.window);
+  const field = getWindow(from.window)?.querySelector("textarea, [contenteditable='true']");
+  if (!field) return;
+  field.focus();
+  if (Number.isFinite(from.caret) && typeof field.setSelectionRange === "function") {
+    const caret = Math.min(from.caret, field.value.length);
+    field.setSelectionRange(caret, caret);
+  }
+}
+
+function appendToNotePad(text, from = null) {
   syncCurrentNotePadPage();
+  const slip = currentNotePadSlip();
+  slip.text += `${slip.text ? "\n\n" : ""}${text}`;
+  if (from && !slip.from) slip.from = normalizeNotePadOrigin(from);
   renderNotePadPage();
   openWindow("notePad");
   saveDeskState();
 }
 
-function sendNotePadPage(dest) {
+function sendNotePadPage(dest = notePadDestination) {
   syncCurrentNotePadPage();
   const text = notePadTextInput.value.trim();
   if (!text) {
@@ -958,6 +1106,10 @@ function renderClipboard() {
     : t("clipboard_empty");
   clipboardInsertButton.disabled = !clipboardText;
   clipboardClearButton.disabled = !clipboardText;
+  // Insert used to be the one verb on this desk that never said where it put
+  // things. The right status slot answers that before it is pressed.
+  const destination = document.querySelector("#clipboard-destination");
+  if (destination) destination.textContent = t("insert_into_teachtext");
   renderClipboardTranslation();
   updateDocMapEntryButtons();
 }

@@ -7,8 +7,8 @@
   },
   "deviceScaleFactor": 2,
   "files": {
-    "classic": "classic.png",
-    "platinum": "platinum.png",
+    "classic": "classic.webp",
+    "platinum": "platinum.webp",
     "aqua": "aqua.webp",
     "snow-leopard": "snow-leopard.webp",
     "yosemite": "yosemite.webp",

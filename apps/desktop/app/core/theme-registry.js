@@ -11,12 +11,17 @@
   const LEGACY_LIQUID_KEY = "ai-system-6-liquid-glass";
   const DEFAULT_THEME_ID = "classic";
 
+  // `year` is the release year of the system each appearance reproduces. It is
+  // the axis Theme Lab's timeline is drawn on, and it matches site/js/eras.js
+  // so the product and the public page date the same era the same way.
+  //
   // recipeBase is a maintenance lineage, not a second active CSS class. A
   // child starts from its named parent recipe, then owns an explicit delta;
   // family is reserved for genuinely shared primitives.
   const registry = Object.freeze([
     Object.freeze({
       id: "classic",
+      year: 1988,
       label: "System 6",
       labelKey: "theme_classic",
       family: "classic",
@@ -30,6 +35,7 @@
     }),
     Object.freeze({
       id: "platinum",
+      year: 1999,
       label: "Platinum",
       labelKey: "theme_platinum",
       family: "classic",
@@ -43,6 +49,7 @@
     }),
     Object.freeze({
       id: "aqua",
+      year: 2002,
       label: "Aqua",
       labelKey: "theme_aqua",
       // Aqua is its own recipe root. Liquid Glass was only the engineering
@@ -59,6 +66,7 @@
     }),
     Object.freeze({
       id: "snow-leopard",
+      year: 2009,
       label: "Snow Leopard",
       labelKey: "theme_snow_leopard",
       // Snow Leopard derives from the Aqua branch, not from Liquid Glass.
@@ -75,6 +83,7 @@
     }),
     Object.freeze({
       id: "yosemite",
+      year: 2014,
       label: "Yosemite",
       labelKey: "theme_yosemite",
       family: "liquid-glass",
@@ -88,6 +97,7 @@
     }),
     Object.freeze({
       id: "liquid-glass",
+      year: 2026,
       label: "Liquid Glass",
       labelKey: "theme_liquid_glass",
       family: "liquid-glass",

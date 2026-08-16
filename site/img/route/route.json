@@ -1,0 +1,31 @@
+{
+  "capturedAt": "2026-08-15T15:01:38.651Z",
+  "build": "20260814.2",
+  "note": "Typed by tooling/capture-site-route.mjs in the running app. No model, no network.",
+  "stops": [
+    {
+      "id": "question-sheet",
+      "label": "Question Sheet",
+      "caption": "The writer's own raw questions, before any prose.",
+      "file": "question-sheet.webp"
+    },
+    {
+      "id": "outline",
+      "label": "Outline",
+      "caption": "The same material as structure, still in the writer's words.",
+      "file": "outline.webp"
+    },
+    {
+      "id": "section-drafts",
+      "label": "Section Drafts",
+      "caption": "One section at a time, with the unverified number left standing.",
+      "file": "section-drafts.webp"
+    },
+    {
+      "id": "teachtext",
+      "label": "TeachText",
+      "caption": "The manuscript, on paper the writer owns.",
+      "file": "teachtext.webp"
+    }
+  ]
+}

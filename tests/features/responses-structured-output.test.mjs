@@ -7,6 +7,7 @@ import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("responses-structured-output");
 const responses = read("apps/server/server/responses.js");
+const taskPolicy = read("apps/server/server/task-policy.js");
 const srt = read("apps/server/server/importers/srt.js");
 const webSearch = read("apps/server/server/web-search.js");
 const draftThesis = read("apps/server/server/routes/draft-thesis.js");
@@ -18,9 +19,9 @@ test.assertIncludes(responses, 'textFormat || { type: "text" }', "the transport 
 test.assertIncludes(responses, "function callResponsesJson", "the transport normalizes upstream errors");
 test.assertIncludes(responses, "function extractResponsesText", "the transport reads output_text");
 test.assertIncludes(responses, "function chatMessagesToResponsesInput", "message-shaped prompts convert for later phases");
-test.assertIncludes(responses, "RESPONSES_TASK_EFFORT", "reasoning effort is a task-type policy");
+test.assertIncludes(taskPolicy, "TASK_POLICY", "reasoning effort is a task-type policy");
 test.assertIncludes(responses, "function responsesEffortForTask", "the policy mapping is exported");
-test.assertIncludes(responses, "never exposes the choice to the user", "effort is decided server-side, not by the user");
+test.assertIncludes(taskPolicy, "never exposes the choice to the user", "effort is decided server-side, not by the user");
 test.assertIncludes(responses, "function cloudUpstreamWarning", "upstream 402/429/503 statuses get friendly copy");
 test.assertIncludes(srt, "isResponsesEligible", "subtitle translation opts into Responses only when eligible");
 test.assertIncludes(srt, 'name: "subtitle_translations"', "subtitle output has a named json_schema");

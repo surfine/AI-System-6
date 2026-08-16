@@ -282,4 +282,21 @@ for (const toolName of [
 }
 test.assertIncludes(chatMessages, "assistant content or tool calls", "JSON model routing accepts content-free provider tool calls");
 
+// The loop stops at three rounds. When it stops with more it wanted to read,
+// the answer is shorter than the question deserved, and the run used to compute
+// that fact and drop it — so a truncated answer arrived looking complete.
+test.assertIncludes(coordinatorSource, "window.lastWritingAgentGenerated = result.generated", "a finished run keeps what the tool loop did where the reply renderer can read it");
+test.assertIncludes(chatMessages, "window.lastWritingAgentGenerated?.toolLoopTruncated === true", "a capped tool loop reaches the reply instead of being computed and discarded");
+test.assertIncludes(chatMessages, 'missing.push(t("clio_grounding_reading_capped"))', "truncation is stated in the basis line's existing missing slot, not in furniture of its own");
+
+// The eighth tool proposes and never applies. That is the product rule, but the
+// proposal also has to reach the writer, or the model can only describe an edit
+// it already worked out.
+test.assertIncludes(coordinatorSource, "input.options?.onToolActivity?.(calls)", "the loop reports which tool is about to run so a surface can say so");
+test.assertIncludes(chatMessages, "function clioTalkProposedManuscriptPatch()", "a proposed manuscript patch is lifted out of the finished run");
+test.assertIncludes(chatMessages, 'data.kind !== "manuscript-patch"', "only a real manuscript patch is carried, not any tool result");
+test.assertIncludes(chatMessages, "manuscriptPatch: clioTalkProposedManuscriptPatch()", "the proposal rides the reply, so an older turn still has it on the table");
+test.assertIncludes(chatMessages, 'mode === "replace-proposal" && patch', "taking a proposal writes the sentence it named, not the reply that explained it");
+test.assertIncludes(chatMessages, "function clioTalkPatchFitsTarget(", "a proposal whose sentence is gone from the destination cannot be taken");
+
 test.finish();

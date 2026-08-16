@@ -13,7 +13,7 @@ declare function initSystemSelectControls(): void;
 declare function refreshSystemSelectControls(): void;
 declare function syncRovingTabStops(group: any): void;
 declare function setControlLoading(control: any, loading: boolean, label?: string): void;
-declare function runEditCommand(command: string, target: any): void;
+declare function runEditCommand(command: string): Promise<void>;
 declare function captureTextControlWorkingSession(target: any): any;
 declare function restoreTextControlWorkingSession(target: any, state: any, options?: any): void;
 declare function updateQuickDraftFocusChrome(): void;
@@ -23,6 +23,10 @@ declare function sendLocalModelTask(options: any): Promise<any>;
 declare function fetchModelPayload(payload: any, signal?: AbortSignal): Promise<Response>;
 declare function withMarkdownModelMessages(messages: any): any;
 declare function serviceErrorDetail(status: any, body?: any): string;
+// The lens loads on demand, so the flow awaits this before the builder below.
+// Whether a local model is actually reachable, as opposed to merely named.
+declare function isLocalModelIndicatorReady(): boolean;
+declare function ensureMingmingLensModule(): Promise<void>;
 declare function buildMingmingRewritePrompt(options: any): string;
 declare function arrangeWindowAssistantSplit(name: string): Promise<boolean>;
 declare function isMultiFinderMode(): boolean;
@@ -44,6 +48,7 @@ declare function createDefaultProjectForDraftDesk(): Promise<any>;
 
 interface Window {
   AISystem6ProtectedRanges?: any;
+  AISystem6PasteMarkdown?: any;
   AISystem6DraftDeskPresetsLoaded?: boolean;
   AISystem6DraftDeskPresets?: any;
   AISystem6LocalLMStudio?: any;

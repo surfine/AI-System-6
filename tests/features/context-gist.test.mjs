@@ -20,11 +20,7 @@ const writingFlow = read("app/features/writing-flow.js");
 const mingmingHandoff = read("app/features/mingming-handoff-review.js");
 
 test.assertIncludes(manifest, '"app/core/context-gist.js"', "runtime manifest loads the context gist module");
-test.assertMatches(
-  manifest,
-  /"app\/core\/context-gist\.js"[\s\S]*"app\/core\/context-retrieval\.js"/,
-  "context gist helpers load before context retrieval consumes them"
-);
+test.assertIncludes(retrieval, 'typeof buildContextGistPacket === "function"', "context retrieval guards the lazy gist helper until it loads in the background");
 
 test.assertIncludes(gist, "function buildContextGistPacket", "context gist module exposes packet construction");
 test.assertIncludes(gist, "Hierarchical context gist", "packet sends coarse gist cards before detailed context");

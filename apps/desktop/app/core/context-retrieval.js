@@ -815,7 +815,7 @@ function clampNumber(value, min, max) {
   return Math.max(min, Math.min(value, max));
 }
 
-var CLOUD_MODEL_CONTEXT_LENGTHS = { "deepseek-v4-flash": 1000000, "deepseek-v4-pro": 1000000, "v4-flash": 1000000, "v4-pro": 1000000 };
+var CLOUD_MODEL_CONTEXT_LENGTHS = { "auto": 1000000, "deepseek-v4-flash": 1000000, "deepseek-v4-pro": 1000000, "v4-flash": 1000000, "v4-pro": 1000000 };
 
 function currentModelMaxContextTokens() {
   if (typeof cloudConfig !== "undefined" && cloudConfig && cloudConfig.active && cloudConfig.model) {

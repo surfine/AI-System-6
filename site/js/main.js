@@ -1,16 +1,16 @@
 // AI System 6 official site - entry module. Progressive enhancement only:
 // with JS off the page is a readable document with a desktop screenshot.
 
-import { ERAS, setEra, onEraChange, prefetchEras, refreshIcons } from "./eras.js?v=20260814h";
-import { initBalloons, setBalloons, balloonsEnabled, flashBalloon } from "./balloon.js?v=20260814h";
-import { loadMachine, createMachine, warmAllFrames, machineManifest } from "./machine.js?v=20260814h";
-import { createDissolve } from "./dissolve.js?v=20260814h";
-import { initRouteScene } from "./route.js?v=20260814h";
-import { initImpossible } from "./impossible.js?v=20260814h";
-import { initFloppies } from "./floppies.js?v=20260814h";
-import { initQuickTime } from "./quicktime.js?v=20260814h";
-import { initArgument } from "./argument.js?v=20260814h";
-import { initShareCard } from "./sharecard.js?v=20260814h";
+import { ERAS, setEra, onEraChange, prefetchEras, refreshIcons } from "./eras.js?v=20260814i";
+import { initBalloons, setBalloons, balloonsEnabled, flashBalloon } from "./balloon.js?v=20260814i";
+import { loadMachine, createMachine, warmAllFrames, machineManifest } from "./machine.js?v=20260814i";
+import { createDissolve } from "./dissolve.js?v=20260814i";
+import { initRouteScene } from "./route.js?v=20260814i";
+import { initImpossible } from "./impossible.js?v=20260814i";
+import { initFloppies } from "./floppies.js?v=20260814i";
+import { initQuickTime } from "./quicktime.js?v=20260814i";
+import { initArgument } from "./argument.js?v=20260814i";
+import { initShareCard } from "./sharecard.js?v=20260814i";
 
 const doc = document;
 doc.documentElement.classList.add("js");
@@ -190,12 +190,15 @@ if (heroDissolve) {
   }
 }
 
+initRouteScene(doc.getElementById("route-stage"));
+
 const routeMachine = doc.getElementById("route-machine");
 if (routeMachine && machineReady) {
-  const viewer = createMachine(routeMachine, { region: "scrapbook", pad: 0.03 });
-  initRouteScene(doc.getElementById("route-stage"), viewer);
-} else {
-  initRouteScene(doc.getElementById("route-stage"), null);
+  createMachine(routeMachine, {
+    region: "scrapbook",
+    pad: 0.03,
+    alt: "The Scrapbook window on the captured desk, holding two clips that each remember their source.",
+  });
 }
 
 const modelMachine = doc.getElementById("model-machine");

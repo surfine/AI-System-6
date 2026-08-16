@@ -652,6 +652,36 @@
   font-size: 12px;
 }
 
+/* Finishing Receipt. The window is an ordinary .info-window, so it inherits
+   the Get Info width and needs no geometry of its own. It drops the Get Info
+   floor height because its rows are conditional: a fact with no stored source
+   is left out, and the window must close up rather than print dead air where
+   a claim would have been. */
+.finishing-receipt-window {
+  min-height: 0;
+}
+
+/* Only the quotation of the line that survived from the first draft is new,
+   and it is a quotation block, not a card. */
+.receipt-kept {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border: var(--system-border);
+  font-size: 12px;
+}
+
+.receipt-kept > * {
+  margin: 0;
+}
+
+.receipt-kept-quote {
+  font-family: var(--title-font);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .large-mini-icon {
   width: 48px;
   height: 48px;
@@ -1262,15 +1292,22 @@
 
 .note-pad-details-bar {
   gap: 6px;
-  justify-content: flex-start;
+  justify-content: space-between;
   padding: 4px 6px;
   border: var(--note-pad-details-border);
   border-radius: var(--note-pad-details-radius);
   background: var(--note-pad-details-bg);
 }
 
-.note-pad-details-bar span {
-  flex: 1;
+/* Left slot: the page turn and which slip this is. Right slot: where the slip
+   goes. The two status slots every accessory now shares. */
+.note-pad-pager {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.note-pad-pager span {
   min-width: 72px;
   text-align: center;
 }
@@ -1278,6 +1315,11 @@
 .note-pad-details-bar .mini-btn {
   min-width: 56px;
   padding: 1px 8px;
+}
+
+.note-pad-pager .mini-btn {
+  min-width: 26px;
+  padding: 1px 6px;
 }
 
 .note-pad-pane textarea {
@@ -1984,19 +2026,9 @@ body.alarm-clock-ringing .alarm-clock-menu-icon {
 }
 
 .writing-bell-actions .btn {
-  flex: 1 1 0;
-  min-width: 0;
+  min-width: 72px;
 }
 
-.note-pad-send-row {
-  align-items: stretch;
-}
-
-.note-pad-send-row .btn {
-  flex: 1 1 0;
-  min-width: 0;
-  white-space: normal;
-}
 
 .memory-cards-pane {
   gap: 9px;

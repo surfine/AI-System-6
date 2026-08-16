@@ -297,6 +297,42 @@ async function protectSelectionFromTextarea() {
   return true;
 }
 
+// A protected range and a layer mask are line numbers, so any edit that adds
+// or removes lines above them has to carry them along. The paste takeover
+// (app/core/markdown-editor.js) reports its splice here; without this a
+// multi-line paste would leave the writer's protection pointing at whatever
+// text slid into those line numbers, which reads as protected and is not.
+async function notePasteLineShift(textarea, shift = {}) {
+  if (!refs.draft || textarea !== refs.draft) return false;
+  const runtime = window.AISystem6PasteMarkdown;
+  if (!runtime || !Number(shift.delta)) return false;
+
+  const record = activeProjectQuickDraft({ create: false })?.record;
+  if (!record) return false;
+  const ranges = protectedRangesSnapshot(record);
+  const layers = adjustmentLayersSnapshot();
+  const masked = layers.filter((layer) => (layer.mask || []).length);
+  if (!ranges.length && !masked.length) return false;
+
+  const patch = {};
+  if (ranges.length) {
+    patch.protectedRanges = normalizeAdjustmentLayerMask(runtime.pasteShiftLineRanges(ranges, shift));
+  }
+  if (masked.length) {
+    patch.adjustmentLayers = layers.map((layer) => (
+      (layer.mask || []).length
+        ? { ...layer, mask: normalizeAdjustmentLayerMask(runtime.pasteShiftLineRanges(layer.mask, shift)) }
+        : layer
+    ));
+  }
+  const committed = await commitQuickDraft({ workspace: patch });
+  if (!committed.ok) return false;
+  renderProtectedRangeControls(committed.record);
+  renderAdjustmentLayers(committed.record);
+  updateQuickDraftShellState(committed.record);
+  return true;
+}
+
 async function scopeSelectionToLayer(kind = "") {
   const ranges = selectionLineRanges();
   if (!ranges.length) {
@@ -988,6 +1024,7 @@ window.AISystem6QuickDraftComposition = Object.freeze({
   developAdjustmentLayers,
   grainVersionChain,
   hasRecordedNegative,
+  notePasteLineShift,
   protectSelectionFromTextarea,
   protectedRangesSnapshot,
   quickDraftCompositeSource,

@@ -145,7 +145,7 @@ const finderMenus = [
 const teachTextMenus = [
   menu("file", "menu_file", [
     menuItem("new-document", "new_document", "new-document"),
-    menuItem("open-text-document", "open", "open"),
+    menuItem("open-text-document", "open", "open-text-document"),
     menuItem("close-active-window", "close", "close-window"),
     menuSeparator,
     menuItem("save-current", "save_current", "save"),
@@ -266,7 +266,7 @@ const quickDraftMenus = [
 // only teaches the user to doubt that it saved.
 const clioTalkMenus = [
   menu("file", "menu_file", [
-    menuItem("start-new-clio-chat", "new_conversation", "new-document"),
+    menuItem("start-new-clio-chat", "new_conversation", "start-new-clio-chat"),
     submenu("recent_conversations", [{ type: "recent-chats" }]),
     menuItem("close-active-window", "close", "close-window"),
     menuSeparator,
@@ -300,7 +300,7 @@ const clioTalkMenus = [
 
 const readerMenus = [
   menu("file", "menu_file", [
-    menuItem("reader-open-source", "open_source", "open"),
+    menuItem("reader-open-source", "open_source", "reader-open-source"),
     menuItem("close-active-window", "close", "close-window"),
   ]),
   menu("edit", "menu_edit", [
@@ -367,10 +367,13 @@ const docMapMenus = [
     menuItem("docmap-hkrr", "review_hkrr_section"),
     menuItem("focus-docmap-question", "ask"),
     menuSeparator,
+    // The two layouts the renderer actually has, named exactly as the DocMap
+    // toolbar names them, with a check on the one in use. The menu used to
+    // offer Tree / Radial / Fishbone; all three set the same one-sided layout,
+    // and Symmetric could only be reached from the toolbar.
     submenu("menu_layout", [
-      menuItem("docmap-layout-tree", "docmap_layout_tree"),
-      menuItem("docmap-layout-radial", "docmap_layout_radial"),
-      menuItem("docmap-layout-fishbone", "docmap_layout_fishbone"),
+      menuItem("docmap-layout-right", "docmap_layout_right", "", { layoutChoice: "right" }),
+      menuItem("docmap-layout-balanced", "docmap_layout_balanced", "", { layoutChoice: "balanced" }),
     ]),
     menuItem("docmap-fit-view", "fit_view"),
     menuItem("docmap-zoom-out", "zoom_out"),
@@ -665,6 +668,7 @@ function renderApplicationMenuItem(item) {
   button.dataset.action = item.action;
   button.dataset.i18n = item.labelKey;
   if (item.themeId) button.dataset.themeChoice = item.themeId;
+  if (item.layoutChoice) button.dataset.layoutChoice = item.layoutChoice;
   if (item.shortcutId) button.dataset.shortcutId = item.shortcutId;
   if (item.viewMode) button.dataset.viewMode = item.viewMode;
   if (item.repeatMode) button.dataset.repeatMode = item.repeatMode;

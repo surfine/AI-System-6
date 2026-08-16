@@ -58,13 +58,13 @@ test.assert(gated.size > 200, "getActionAvailability() answers for the menu acti
 // --- the written-down exceptions ---------------------------------------------
 // Each entry is an action that is genuinely valid whenever its menu is open.
 // Adding a row here is a decision, not a default: say why.
+// "Navigation" is not an exemption on its own: the writing-route windows are
+// withheld in the desktop workspace profile, so a row that never reports its
+// availability stays black while the click is refused. Those four now answer
+// through getActionAvailability() like open-review-desk always did.
 const ALWAYS_AVAILABLE = new Map([
-  // Navigation: opening a writing-route window is valid from anywhere.
-  ["open-question-sheet", "navigation"],
-  ["open-outline", "navigation"],
-  ["open-section-drafts", "navigation"],
+  // Navigation: opening the manuscript is valid in every workspace profile.
   ["open-teachtext-manuscript", "navigation"],
-  ["open-image-manager", "navigation"],
   ["new-note", "creating an empty note needs no selection"],
   // Appearance choices are always valid and update their own checked state.
   ["set-theme-classic", "Appearance choice is valid from every application"],
@@ -75,21 +75,36 @@ const ALWAYS_AVAILABLE = new Map([
   ["set-theme-liquid-glass", "Appearance choice is valid from every application"],
 ]);
 
-// Time Machine's own menu is a known, bounded debt: its verbs live in a lazy
-// module whose state getActionAvailability() cannot see at startup. Ratcheted
-// so the debt can shrink but not grow.
+// Time Machine used to be exempt: its verbs live in a lazy module whose state
+// getActionAvailability() cannot read directly. It reads it through the
+// module's public menuState() instead, the same way it already read
+// docMapReadiness(), so the debt is paid and the budget is zero. An unloaded
+// Time Machine returns nothing and every row stays grey.
 const timeMachineActions = menuActions.filter((action) => action.startsWith("time-machine-") && !gated.has(action));
-const TIME_MACHINE_UNGATED_BUDGET = 17;
+const TIME_MACHINE_UNGATED_BUDGET = 0;
 test.assert(
   timeMachineActions.length <= TIME_MACHINE_UNGATED_BUDGET,
   `Time Machine ungated verbs stay within budget (${timeMachineActions.length}/${TIME_MACHINE_UNGATED_BUDGET})`
 );
+test.assertIncludes(
+  windowManager,
+  "window.AISystem6TimeMachine?.menuState?.()",
+  "Time Machine availability comes from the module that owns the state"
+);
+for (const [action, condition] of [
+  ["time-machine-back", "!!timeMachine?.canGoBack"],
+  ["time-machine-forward", "!!timeMachine?.canGoForward"],
+  ["time-machine-stop", "!!timeMachine?.canStop"],
+  ["time-machine-clip", "!!timeMachine?.hasSelection"],
+  ["time-machine-preserve-wayback", "!!timeMachine?.canPreserve"],
+]) {
+  test.assertIncludes(windowManager, `"${action}": ${condition},`, `${action} greys on its own precondition`);
+}
 
 // --- the gate ----------------------------------------------------------------
 const ungated = menuActions.filter((action) => (
   !gated.has(action)
   && !ALWAYS_AVAILABLE.has(action)
-  && !action.startsWith("time-machine-")
 ));
 
 test.assert(

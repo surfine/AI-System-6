@@ -44,8 +44,8 @@ const required = [
   "js/argument.js",
   "img/og-poster.png",
   "img/frames/manifest.json",
-  "img/frames/classic.png",
-  "img/frames/platinum.png",
+  "img/frames/classic.webp",
+  "img/frames/platinum.webp",
   "img/frames/aqua.webp",
   "img/frames/snow-leopard.webp",
   "img/frames/yosemite.webp",
@@ -145,13 +145,26 @@ const index = readFileSync(path.join(siteRoot, "index.html"), "utf8");
 const argument = readFileSync(path.join(siteRoot, "js", "argument.js"), "utf8");
 const quickTime = readFileSync(path.join(siteRoot, "js", "quicktime.js"), "utf8");
 for (const needle of [
-  "THE AI HAS",
+  // The page leads with what the product protects, not with the desktop it
+  // is built on: the writing route is the product, the System 6 desk is the
+  // constraint that keeps it visible.
+  "BECOMES YOUR VOICE",
+  'id="route"',
   "https://system6.aaronlau.me",
   "https://www.bilibili.com/video/BV1ht3m6UEDb/",
   "https://github.com/surfine/AI-System-6",
   'src="js/main.js',
 ]) {
   if (!index.includes(needle)) fail(`site/index.html is missing ${needle}`);
+}
+// The route section must show real captures, not a diagram of itself.
+{
+  const routeModule = readFileSync(path.join(siteRoot, "js", "route.js"), "utf8");
+  const routeShots = ["question-sheet", "outline", "section-drafts", "teachtext"];
+  const missingShots = routeShots.filter((id) =>
+    !routeModule.includes(`"${id}"`) || !existsSync(path.join(siteRoot, "img", "route", `${id}.webp`)));
+  if (!missingShots.length) ok(`${routeShots.length} writing-route stops carry a real capture`);
+  else fail(`writing-route captures are missing: ${missingShots.join(", ")}`);
 }
 if (!index.includes("site.js")) ok("legacy monolithic site.js is absent");
 else fail("site/index.html still references legacy site.js");

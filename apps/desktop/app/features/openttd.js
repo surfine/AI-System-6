@@ -27,8 +27,6 @@ window.AISystem6OpenTTDLoaded = true;
         </div>
         <div class="window-pane openttd-pane"></div>
       </section>`);
-    // Boot wiring only sees index.html windows; this one arrives later.
-    window.AISystem6WireWindowChrome?.(document.querySelector('[data-window="openttd"]'));
   }
 
   installOpenTTDWindow();
@@ -74,6 +72,8 @@ window.AISystem6OpenTTDLoaded = true;
       const data = event.data;
       if (!data || data.type !== "openttd") return;
       if (data.event === "ready") setOpenTTDStatus("openttd_status_running");
+      if (data.event === "running") setOpenTTDStatus("openttd_status_running");
+      if (data.event === "paused") setOpenTTDStatus("openttd_status_paused");
       if (data.event === "exited") setOpenTTDStatus("openttd_status_exited");
       if (data.event === "crashed") setOpenTTDStatus("openttd_status_crashed");
     });
@@ -114,6 +114,45 @@ window.AISystem6OpenTTDLoaded = true;
     }, OPENTTD_QUIT_SYNC_MS);
     setOpenTTDStatus("");
   }
+
+  function postToOpenTTD(command) {
+    const frame = openttdState.frame;
+    if (!frame?.contentWindow) return;
+    try {
+      frame.contentWindow.postMessage({ type: "openttd-host", command }, location.origin);
+    } catch (e) {
+      /* A frame that is going away has nothing left to tell. */
+    }
+  }
+
+  function openttdWindowIsVisible() {
+    const win = openttdWindow();
+    return !!win
+      && !win.classList.contains("is-hidden")
+      && !win.classList.contains("is-app-hidden")
+      && !win.classList.contains("is-collapsed");
+  }
+
+  // A hidden pane does not stop a wasm game: the main loop keeps simulating a
+  // whole transport network behind a blank rectangle. The shell owns the real
+  // stop (emscripten's main loop) and the IDBFS flush; this side only says when.
+  window.AISystem6ApplicationRegistry?.registerApplicationLifecycle?.("openttd", {
+    onSuspend: () => {
+      window.AISystem6WebPlatform?.releaseScreenWakeLock?.("openttd");
+      if (!openttdState.frame) return;
+      postToOpenTTD("pause");
+      setOpenTTDStatus("openttd_status_paused");
+    },
+    onResume: () => {
+      if (!openttdState.frame || !openttdWindowIsVisible() || document.hidden) return;
+      postToOpenTTD("resume");
+      window.AISystem6WebPlatform?.holdScreenWakeLock?.("openttd");
+    },
+    onDispose: () => {
+      window.AISystem6WebPlatform?.releaseScreenWakeLock?.("openttd");
+      handleOpenTTDQuit();
+    },
+  });
 
   function refreshOpenTTDLanguage() {
     // The desktop chrome re-translates itself through data-i18n. The game

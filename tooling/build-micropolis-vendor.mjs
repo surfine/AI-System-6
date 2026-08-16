@@ -9,6 +9,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { build } from "esbuild";
 import { desktopRoot, repositoryRoot, toolingRoot } from "./lib/paths.mjs";
+import { micropolisHdPatchPlugin } from "./vendor/micropolis-hd-patch.mjs";
 
 const upstreamRoot = join(repositoryRoot, "external", "micropolisjs");
 const outputDir = join(desktopRoot, "app", "vendor", "micropolis");
@@ -86,6 +87,27 @@ const spriteConstantsImportFix = {
   },
 };
 
+// Upstream's simulation frame calls the census with a bare `budget`, while the
+// tax branch three lines down correctly says `this.budget`. Under a bundler
+// there is no such global, so the first census tick throws ReferenceError,
+// the simulation loop dies, and the city freezes a few months in — the map
+// still draws, so it reads as "the game does nothing" rather than a crash.
+const censusBudgetScopeFix = {
+  name: "census-budget-scope-fix",
+  setup(buildContext) {
+    buildContext.onLoad({ filter: /[\\/]src[\\/]simulation\.js$/i }, async (args) => {
+      const source = await readFile(args.path, "utf8");
+      if (!source.includes("take10Census(budget)")) return null;
+      return {
+        contents: source
+          .replace("take10Census(budget)", "take10Census(this.budget)")
+          .replace("take120Census(budget)", "take120Census(this.budget)"),
+        loader: "js",
+      };
+    });
+  },
+};
+
 mkdirSync(outputDir, { recursive: true });
 const result = await build({
   entryPoints: [join(toolingRoot, "vendor", "micropolis-engine-entry.mjs")],
@@ -98,7 +120,7 @@ const result = await build({
   legalComments: "inline",
   banner: { js: banner },
   alias: { jquery: join(toolingRoot, "vendor", "jquery-shim.mjs") },
-  plugins: [spriteConstantsImportFix],
+  plugins: [micropolisHdPatchPlugin(readFile), spriteConstantsImportFix, censusBudgetScopeFix],
   metafile: true,
 });
 

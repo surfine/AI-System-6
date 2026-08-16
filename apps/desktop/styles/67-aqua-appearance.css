@@ -25,7 +25,8 @@ body[data-theme="aqua"] {
      Quaqua's own guide warns that Jaguar JButtons fall back to Panther, so its
      common button sprites are material/state evidence only, never ground truth.
      Quaqua artwork is measured but not redistributed. */
-  --theme-ui-font: "Lucida Grande", "Lucida Sans Unicode", "PingFang SC", "Hiragino Sans GB", sans-serif;
+  /* 华文黑体: the Simplified system face of Mac OS X 10.0 through 10.5. */
+  --theme-ui-font: "Lucida Grande", "Lucida Sans Unicode", "STHeiti", "Heiti SC", "Microsoft YaHei", sans-serif;
   --theme-title-font: var(--theme-ui-font);
   /* Aqua pop-up arrow: compact double-arrow well on the right edge. */
   --system-select-arrow-right: 9px;
@@ -462,6 +463,22 @@ body[data-theme="aqua"] {
   --window-frame-thumb-border: 1px solid #617d91;
   --window-frame-thumb-radius: 7px;
   --window-frame-arrow-bg: linear-gradient(#ffffff, #d3d3d3 52%, #f5f5f5);
+  /* Jaguar's own arrow buttons, cut from the 10.2 address-book capture. They
+     reached the specimen board and nothing else, so real windows drew a 1-bit
+     triangle where Jaguar drew a button. Vertical only: the horizontal lane
+     keeps the generic recipe until there is a horizontal capture to cut. */
+  /* Jaguar stacks both boxes under the track. The capture proves it: the
+     buttons run y218-248 and the track ends above them, with no arrow at the
+     top of the lane at all. */
+  --window-frame-arrow-up-order: 1;
+  --window-frame-arrow-down-order: 2;
+  --window-frame-arrow-down-border-top: 0;
+  --window-frame-arrow-up-art: url("./assets/themes/aqua/scrollbar-cap-decrement.svg");
+  --window-frame-arrow-up-art-size: 15px 16px;
+  --window-frame-arrow-up-art-position: left top;
+  --window-frame-arrow-down-art: url("./assets/themes/aqua/scrollbar-cap-increment.svg");
+  --window-frame-arrow-down-art-size: 15px 15px;
+  --window-frame-arrow-down-art-position: center;
   --scrollbar-track: var(--window-frame-track-bg);
   --scrollbar-thumb: var(--window-frame-thumb-bg);
   --scrollbar-button: var(--window-frame-arrow-bg);
@@ -953,7 +970,10 @@ body[data-theme="snow-leopard"] {
      platform-mac-snowleopard rules supply Web-toolbar and compact-scrollbar
      evidence only. Real 10.6 captures win conflicts. No source selectors or
      artwork are imported here. */
-  --theme-ui-font: "Lucida Grande", "Lucida Sans Unicode", "PingFang SC", "Hiragino Sans GB", sans-serif;
+  /* 冬青黑体: Snow Leopard is the release where Apple replaced 华文黑体
+     with Hiragino Sans GB as the Simplified system face, so the era
+     switch has to show it. */
+  --theme-ui-font: "Lucida Grande", "Lucida Sans Unicode", "Hiragino Sans GB", "STHeiti", "Microsoft YaHei", sans-serif;
   --theme-title-font: var(--theme-ui-font);
   /* Snow Leopard pop-up arrow: taller double-arrow with the native steel
      blue stroke, vertically centered. */
@@ -1139,6 +1159,7 @@ body[data-theme="snow-leopard"] {
   --quiet-panel: #f7f7f7;
   --shade: #c4c4c4;
   --shade-dark: #707070;
+  --md-marker-ink: #6b6b6b;  /* ground #ededed */
   --rule: #b5b5b5;
   --pane-bg: #ededed;
   --details-bar-bg: linear-gradient(#f3f3f3, #ebebeb);
@@ -2868,40 +2889,16 @@ body[data-theme="snow-leopard"] .boot-progress span { background: linear-gradien
 @media (prefers-reduced-motion: reduce) { :where(body[data-theme="aqua"], body[data-theme="snow-leopard"]) :is(.boot-screen, .shutdown-screen), :where(body[data-theme="aqua"], body[data-theme="snow-leopard"]) .happy-mac, :where(body[data-theme="aqua"], body[data-theme="snow-leopard"]) .boot-progress span::after { animation: none } }
 
 
-/* Dense displays re-point the lamp tokens at the measured-gradient
-   reconstructions: the 1x canonical sprites blur under Retina scaling.
-   Stop colors are sampled from the same captures the 1x sprites are cut
-   from, so both resolutions share one source of truth. */
-@media (min-resolution: 1.5dppx) {
-  body[data-theme="aqua"] {
-    --traffic-light-sprite-size: 14px 14px;
-    /* Circular Aqua gel, measured from the unscaled Quaqua capture
-       (jscrollbar.png): near-black top rim, translucent gloss crescent on
-       the upper arc, dark saturated upper body falling into a bright
-       bottom bounce glow, soft bottom rim. This is the crystal look the
-       scaled guidebook captures squashed into an ellipse. */
-    --traffic-light-close-bg:
-      radial-gradient(ellipse 58% 30% at 50% 24%, rgba(240, 222, 222, 0.95) 0 40%, rgba(220, 176, 178, 0.6) 72%, rgba(220, 176, 178, 0) 100%),
-      radial-gradient(circle at 50% 64%, rgba(59, 16, 16, 0) 0 78%, #3b1010 88% 97%, rgba(59, 16, 16, 0) 100%),
-      radial-gradient(circle at 50% 50%, rgba(139, 95, 91, 0) 0 84%, #8b5f5b 90% 97%, rgba(139, 95, 91, 0) 100%),
-      radial-gradient(ellipse 44% 36% at 50% 74%, #faa499 0 25%, #f6857e 62%, rgba(231, 116, 107, 0) 100%),
-      radial-gradient(circle at 50% 56%, #f9958c 0 22%, #e7746b 46%, #d45a51 64%, #c2463c 84%, #b03a31 93%, rgba(176, 58, 49, 0) 97%);
-    --traffic-light-resize-bg:
-      radial-gradient(ellipse 58% 30% at 50% 24%, rgba(221, 225, 224, 0.95) 0 40%, rgba(195, 216, 184, 0.6) 72%, rgba(195, 216, 184, 0) 100%),
-      radial-gradient(circle at 50% 64%, rgba(19, 19, 19, 0) 0 78%, #131313 88% 97%, rgba(19, 19, 19, 0) 100%),
-      radial-gradient(circle at 50% 50%, rgba(102, 129, 56, 0) 0 84%, #668138 90% 97%, rgba(102, 129, 56, 0) 100%),
-      radial-gradient(ellipse 44% 36% at 50% 74%, #d1ff8a 0 25%, #b5eb6f 62%, rgba(160, 216, 91, 0) 100%),
-      radial-gradient(circle at 50% 56%, #c4fc7e 0 22%, #a0d85b 46%, #88c341 64%, #75b12d 84%, #679c26 93%, rgba(103, 156, 38, 0) 97%);
-  }
+/* No HiDPI reconstruction for the lamps.
 
-  body[data-theme="snow-leopard"] {
-    --traffic-light-close-bg:
-        radial-gradient(ellipse 28% 15% at 50% 25%, rgba(255, 246, 246, 0.98) 0 40%, rgba(246, 210, 210, 0.5) 75%, rgba(246, 210, 210, 0) 100%),
-        radial-gradient(ellipse 36% 30% at 50% 78%, #ffbcbc 0 22%, #ff8484 60%, rgba(255, 73, 72, 0) 95%),
-        radial-gradient(ellipse 50% 50% at 50% 50%, #f23c3a 0 40%, #de3334 58%, #c22f30 72%, #8c2b2c 82%, #743938 92%, rgba(116, 57, 56, 0) 100%);
-    --traffic-light-resize-bg:
-        radial-gradient(ellipse 28% 15% at 50% 25%, rgba(246, 251, 240, 0.98) 0 40%, rgba(216, 235, 200, 0.5) 75%, rgba(216, 235, 200, 0) 100%),
-        radial-gradient(ellipse 36% 30% at 50% 78%, #d2ec98 0 22%, #b2de7d 60%, rgba(144, 205, 103, 0) 95%),
-        radial-gradient(ellipse 50% 50% at 50% 50%, #90c95e 0 40%, #7ab84c 58%, #63a53c 72%, #4a7f2e 82%, #4a6f38 92%, rgba(74, 111, 56, 0) 100%);
-  }
-}
+   A CSS-gradient rebuild was tried twice here and measured against the
+   canonical sprites both times: two layers (centre column replayed as a
+   linear gradient, plus a radial ring solved from the sprite's own gloss
+   row) still land at RMS 24-44 per channel, with single channels off by as
+   much as 187. A hand-drawn 14px gel is not a function of one radius.
+
+   So the sprite stays the only source of truth. Scaled up on a dense
+   display it goes slightly soft, which is a smaller lie than a lamp with
+   the wrong internal structure -- the rebuild read as matte rubber next to
+   the glass it was copying. If real @2x art ever turns up, ship it as an
+   image-set() here; do not fit gradients to it again. */

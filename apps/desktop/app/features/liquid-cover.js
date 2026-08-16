@@ -3691,5 +3691,34 @@ window.AISystem6LiquidCoverLoaded = true;
     return commands[command]?.();
   }
 
+  // Cover Glass paints on demand, so the continuing cost is the motion preview
+  // loop and the video feeding it — both stop on suspend, matching what the
+  // preview already did when its own window was hidden. An export in progress
+  // is never interrupted: motionExporting keeps its frames running to the end.
+  window.AISystem6ApplicationRegistry?.registerApplicationLifecycle?.("liquidCover", {
+    onSuspend: () => {
+      if (motionExporting) return;
+      if (motionPreviewActive) stopMotionPreview(false);
+      if (motionVideo) {
+        try { motionVideo.pause(); } catch (e) { /* a detached element is fine */ }
+      }
+    },
+    onResume: () => {
+      // Deliberately not restarting the preview: a 2–6 second animation the
+      // user pressed play on does not silently re-run behind their back.
+      if (renderer) renderNow();
+    },
+    onDispose: () => {
+      if (motionPreviewActive) stopMotionPreview(false);
+      if (motionVideo) {
+        try { motionVideo.pause(); } catch (e) { /* a detached element is fine */ }
+      }
+      if (renderer) {
+        renderer.gl?.getExtension("WEBGL_lose_context")?.loseContext();
+        renderer = null;
+      }
+    },
+  });
+
   window.AISystem6LiquidCover = { open, runMenuCommand };
 })();

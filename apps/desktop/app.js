@@ -270,9 +270,6 @@ const {
   notePadPrevButton,
   notePadNextButton,
   notePadPageLabelEl,
-  notePadSendTeachTextButton,
-  notePadSendScrapbookButton,
-  notePadSendAssistantButton,
   clipboardTextInput,
   clipboardMetaEl,
   clipboardInsertButton,
@@ -1512,8 +1509,10 @@ let teachTextLastExportSnapshot = "";
 let reviewDeskDirty = false;
 let reviewDeskScrollSyncing = false;
 const activeLongTasks = new Set();
-let notePadPages = [""];
+// A slip holds the words and where the writer was: { text, from }.
+let notePadPages = [{ text: "", from: null }];
 let notePadPageIndex = 0;
+let notePadDestination = "teachtext";
 let clipboardText = "";
 let clipboardSource = "";
 let clipboardUpdatedAt = "";
@@ -1677,8 +1676,8 @@ function applyLanguage() {
     const value = t(el.dataset.i18n);
     const shortcut = el.dataset.shortcut;
 
-    if (shortcut) {
-      el.innerHTML = `${escapeHtml(value)} <span class="shortcut">${escapeHtml(shortcut)}</span>`;
+    if (shortcut && typeof writeShortcutRowLabel === "function") {
+      writeShortcutRowLabel(el, value);
     } else if (value.includes("<")) {
       el.innerHTML = value;
     } else {
@@ -1742,6 +1741,7 @@ function applyLanguage() {
   renderAlarmClock();
   if (typeof refreshBureaucracyMemeLanguage === "function") refreshBureaucracyMemeLanguage();
   window.AISystem6Doom?.refreshLanguage?.();
+  window.AISystem6ThemeLab?.refreshLanguage?.();
   refreshWritingBellStatusLanguage();
   renderPuzzle();
   syncStartupSelectedItemsLabel();
@@ -1754,10 +1754,9 @@ function applyLanguage() {
 
   document.querySelectorAll("[data-mode-label]").forEach((el) => {
     const value = writerMode ? t("desk_mode") : t("writer_mode");
-    const shortcut = el.dataset.shortcut;
-    el.innerHTML = shortcut
-      ? `${escapeHtml(value)} <span class="shortcut">${escapeHtml(shortcut)}</span>`
-      : escapeHtml(value);
+    if (typeof writeShortcutRowLabel !== "function" || !writeShortcutRowLabel(el, value)) {
+      el.textContent = value;
+    }
   });
 
   [teachTextFolderInput, chatFolderNameInput].forEach((input) => {
@@ -2033,9 +2032,36 @@ function refreshSystemSelectControls() {
   document.querySelectorAll(".select-wrap.has-system-select > select").forEach(refreshSystemSelectControl);
 }
 
+/* A busy control keeps its idle label inside the box so the button never
+   changes width mid-run, but that label must stop painting. Ink colour cannot
+   do it: the disabled and per-theme button rules load after the busy rule and
+   re-ink the text, so both labels printed on top of each other. Bare text nodes
+   get their own wrapper element instead — one wrapper per text node, so the
+   flex item count and spacing stay identical — and the busy rule hides every
+   element child with visibility, which no colour rule can undo. */
+const CONTROL_IDLE_LABEL_CLASS = "control-idle-label";
+
+function wrapControlIdleLabel(control) {
+  [...control.childNodes].forEach((node) => {
+    if (node.nodeType !== Node.TEXT_NODE || !node.nodeValue.trim()) return;
+    const wrapper = document.createElement("span");
+    wrapper.className = CONTROL_IDLE_LABEL_CLASS;
+    control.insertBefore(wrapper, node);
+    wrapper.appendChild(node);
+  });
+}
+
+function unwrapControlIdleLabel(control) {
+  control.querySelectorAll(`:scope > .${CONTROL_IDLE_LABEL_CLASS}`).forEach((wrapper) => {
+    wrapper.replaceWith(...wrapper.childNodes);
+  });
+  control.normalize();
+}
+
 function setControlLoading(control, loading, loadingLabel = "") {
   if (!control) return;
   if (loading) {
+    if (control.dataset.loading !== "true") wrapControlIdleLabel(control);
     control.dataset.wasDisabled = String(control.disabled);
     control.dataset.loading = "true";
     control.dataset.loadingLabel = loadingLabel || "…";
@@ -2044,6 +2070,7 @@ function setControlLoading(control, loading, loadingLabel = "") {
     return;
   }
   const wasDisabled = control.dataset.wasDisabled === "true";
+  unwrapControlIdleLabel(control);
   delete control.dataset.loading;
   delete control.dataset.loadingLabel;
   delete control.dataset.wasDisabled;

@@ -4,8 +4,8 @@
 
 # AI System 6
 
-**A complete AI desktop that runs in a browser tab.**<br>
-No framework. No transpiler. No database. Two floppy disks.
+**A local-first writing desk where the AI never becomes your voice.**<br>
+One route from your raw questions to a finished piece. No framework. No database. Two floppy disks.
 
 [![License](https://img.shields.io/badge/license-MIT-000000?style=flat-square)](LICENSE)
 [![Node](https://img.shields.io/badge/node-24%2B-000000?style=flat-square)](package.json)
@@ -26,6 +26,72 @@ No framework. No transpiler. No database. Two floppy disks.
 THERE ARE FOUR MORE INSIDE. NO MODEL REQUIRED TO LOOK AROUND.</sub>
 
 </div>
+
+## What this protects
+
+Writing with a language model is easy. Coming out the other side still sounding
+like yourself is not.
+
+AI System 6 is built around one belief: your language, your sources, your
+judgment, your feeling for the subject, and your sense of who the piece is for
+are the valuable parts. A model will smooth all five into competent, forgettable
+prose if you let it hold the pen. So here it does not hold the pen.
+
+- **AI output is temporary** until you save, clip, insert, or export it.
+- **You say where a reply lands** — Question Sheet, Outline, the current Section
+  Draft, the manuscript, or the Scrapbook — and whether it appends, replaces
+  only your selection, or creates something new.
+- **Review Desk checks for drift into a model's voice**: over-regular rhythm,
+  generic summary language, personal detail flattened out, hedging that reads
+  like a press release. It is the last stop for a reason.
+- **Your roughness is not a defect.** Hesitation, an unresolved number, a
+  personal aside, a sentence that is a little too blunt: these carry judgment,
+  and the route is built to keep them rather than sand them off.
+
+The Macintosh System 6 desktop is a **constraint, not the pitch**. Visible
+objects, deliberate saving, one writing task at a time. It is there because it
+makes every one of the promises above checkable by looking at the screen.
+
+## The route is the product
+
+```text
+Project Hard Disk → File Floppy → Question Sheet → Outline
+  → Section Drafts → Manuscript → Review Desk → Project CD
+```
+
+Everything else in this repository is a tool you summon onto that route.
+
+| Stop | What it holds |
+| --- | --- |
+| **Project Hard Disk** | durable project state: references, drafts, clips |
+| **File Floppy** | temporary context you mounted: PDFs, pages, audio, images |
+| **Question Sheet** | the recipient, your raw questions, what you saw yourself |
+| **Outline** | structure in your words; each `##` becomes a draftable section |
+| **Section Drafts** | one section at a time, with the editable owner made explicit |
+| **Manuscript** | TeachText; read-only while drafting, so nothing rewrites it |
+| **Review Desk** | facts, structure, and whether it still sounds like you |
+| **Project CD** | the finished work, exported with its sources attached |
+
+<table>
+  <tr>
+    <td width="50%"><img src="site/img/route/question-sheet.webp" alt="The Question Sheet window filled with a writer's own raw notes: the recipient, unanswered questions about a 240 GWh figure, an observation made on the barrage road, and the objection the writer expects."><br><sub><b>Question Sheet</b> · the recipient, the raw questions, the objection you expect</sub></td>
+    <td width="50%"><img src="site/img/route/outline.webp" alt="The Outline window showing four Markdown sections, each with a line of the writer's intent beneath it."><br><sub><b>Outline</b> · four sections, still in the writer's words</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="site/img/route/section-drafts.webp" alt="The Section Drafts window: 80 words, editing section 1 of 4, with a paragraph that openly states the writer still cannot split the 240 GWh figure."><br><sub><b>Section Drafts</b> · the unverified figure stays unverified</sub></td>
+    <td width="50%"><img src="site/img/route/teachtext.webp" alt="The TeachText manuscript window, 82 words across 7 paragraphs, with a status bar reading Read-only, edit in Section Drafts."><br><sub><b>Manuscript</b> · read-only while the drafts own the text</sub></td>
+  </tr>
+</table>
+
+<div align="center"><sub>FOUR STOPS, PHOTOGRAPHED IN THE RUNNING APP BY <code>npm run site:capture-route</code>.<br>THE MATERIAL IS TYPED IN AS A WRITER WOULD TYPE IT. NO MODEL WAS CONNECTED.</sub></div>
+
+Alongside the route, summoned when you need them: **Searcher** and **Reader**
+for the live web, **Time Machine** for archived pages, **File Floppy** for
+imports with OCR and transcription, **Scrapbook** for evidence you deliberately
+clipped, **DocMap** for structure, **ClioTalk** for conversation, and desk
+accessories that belong to writing — a **Note Pad** whose slips can be sent to
+TeachText, the Scrapbook or ClioTalk, a **Dictionary**, and a **Writing Bell**
+for one quiet interval.
 
 ## Run it in 60 seconds
 
@@ -51,26 +117,40 @@ Or skip the clone and [**boot the live system**](https://system6.aaronlau.me)
 in your browser. The [Mac beta](https://github.com/surfine/AI-System-6/releases/latest)
 carries its own current Node runtime, so there is nothing to install at all.
 
-## What you are looking at
+## Chat is an app. Not the whole computer.
 
-A desktop operating environment, written as plain JavaScript. 85 source files
-are concatenated into one bundle: no framework, no transpiler, no build step
-for the app code.
+Chat is excellent at conversation. It is a poor filesystem, workspace,
+provenance model, and long-running project surface.
 
-```text
-82 JS source files          concatenated, never transpiled
-9 runtime dependencies      the server is a stateless bridge, not a backend
-135 executable contracts    one per user feature, not per function
-6 icon families             drawn per era, not filtered from one set
-2,942,269 bytes             the whole desktop, measured on every build
-0 databases                 your projects live in your browser
+| A chat product | This computer |
+| --- | --- |
+| One thread owns the workflow | MultiFinder keeps real working apps open together |
+| Context disappears into a prompt | Sources, scraps, maps, drafts, and outputs stay visible |
+| Generated text quietly becomes truth | AI output stays temporary until you keep it |
+| The answer is the endpoint | The endpoint is a file, chart, deck, cover, or 3D object |
+
+```mermaid
+flowchart LR
+    A["Web / PDF / audio / image"] --> B["Searcher + Reader"]
+    B --> C["Scrapbook"]
+    C --> D["Question Sheet"]
+    D --> E["Outline"]
+    E --> F["Section Drafts"]
+    F --> G["Manuscript"]
+    G --> H["Review Desk"]
+    H --> I["Markdown / PDF / slides / chart / cover"]
+    M{{"LM Studio / Ollama / DeepSeek"}} -. "optional" .-> D
+    M -. "optional" .-> F
+    M -. "optional" .-> H
 ```
 
-Everything durable is a visible object: a disk, a floppy, a scrap, a
-manuscript, a Trash can. AI is a tool you point at those objects, and its
-output stays temporary until you save, clip, insert, or export it.
+> A disk tells you what lasts. A floppy tells you what is temporary. A
+> Scrapbook contains only what you chose to keep.
 
 ## Software a 1988 desktop should not be able to run
+
+The route runs on a real computer, and the point of a real computer is that it
+does not only do the one thing.
 
 <table>
   <tr>
@@ -84,12 +164,6 @@ output stays temporary until you save, clip, insert, or export it.
 </table>
 
 <div align="center"><sub>FOUR WINDOWS OF THE RUNNING APP, CAPTURED OFFLINE. NO MODEL, NO NETWORK, NO MOCKUP.</sub></div>
-
-Alongside them: **Searcher** and **Reader** for the live web, **Time Machine**
-for archived pages, **File Floppy** for imports with OCR and transcription,
-**Scrapbook** for evidence you deliberately clipped, **DocMap** for structure,
-**Writing Studio** and **TeachText** for the manuscript, and **Review Desk**
-for what the draft got wrong.
 
 ## It also runs DOOM
 
@@ -111,9 +185,9 @@ manuscript you were writing.
 </table>
 
 They are not GIFs of games. They are the games, compiled to WebAssembly and
-running in the same MultiFinder that holds Searcher and Review Desk. The
-desktop metaphor was never a costume: a computer you can put a game on is a
-computer.
+running in the same MultiFinder that holds Searcher and Review Desk. A computer
+you can put a game on is a computer — which is the same reason the writing route
+can trust it.
 
 ## One desk. Six systems.
 
@@ -147,8 +221,8 @@ is a mockup, because a script re-shoots all of it from the running app.
 ## Built under a 1988 constraint
 
 ```text
-boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,942,269 bytes
-two 1.44 MB floppies    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  2,942,269 bytes
+boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,939,564 bytes
+two 1.44 MB floppies    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  2,939,564 bytes
 heavy tools             load lazily, from a third disk
 ```
 
@@ -157,61 +231,6 @@ disks. It fits, with a corner of the second disk still empty. Every feature
 has to earn its bytes against a limit nobody is forcing on us, and the number
 above is written by the gate itself, so the claim cannot quietly stop being
 true.
-
-## How this repository keeps itself honest
-
-Claims rot. These run from a fresh clone and fail the build instead.
-
-| Gate | What it refuses to let happen |
-| --- | --- |
-| `verify:floppy` | the boot payload growing past two 1.44&nbsp;MB floppy disks |
-| `site:check` | this page quoting a byte count the gate never measured |
-| `verify:docs` | an English document drifting away from its Chinese mirror |
-| `verify:public` | a command advertised here that fails from a fresh clone |
-
-The payload number above is written by `verify:floppy` itself into
-`site/data/floppy-budget.json`; the website fetches it and this page quotes it.
-On the day that gate was built it caught this README quoting a stale number
-three times in one afternoon.
-
-These four are the public face of `verify:ship`: twenty-one fail-closed
-checks — visual regression against six eras, canonical fidelity against
-period screenshots, a real-browser pass over the running app — that must
-all exit 0 before a release is allowed to exist.
-
-Every product screenshot on this page and on the
-[product site](https://aisystem6.pages.dev) is re-shot from the running app by
-`npm run site:capture-frames` and `tooling/capture-site-proofs.mjs`. There is no art directory of
-hand-made marketing images to fall out of date, because there are no hand-made
-marketing images.
-
-## Chat is an app. Not the whole computer.
-
-Chat is excellent at conversation. It is a poor filesystem, workspace,
-provenance model, and long-running project surface.
-
-| A chat product | This computer |
-| --- | --- |
-| One thread owns the workflow | MultiFinder keeps real working apps open together |
-| Context disappears into a prompt | Sources, scraps, maps, drafts, and outputs stay visible |
-| Generated text quietly becomes truth | AI output stays temporary until you keep it |
-| The answer is the endpoint | The endpoint is a file, chart, deck, cover, or 3D object |
-
-```mermaid
-flowchart LR
-    A["Web / PDF / audio / image"] --> B["Searcher + Reader"]
-    B --> C["Scrapbook"]
-    C --> D["DocMap"]
-    D --> E["Writing Studio"]
-    E --> F["Review Desk"]
-    F --> G["Markdown / PDF / slides / chart / cover / USDZ"]
-    M{{"LM Studio / Ollama / DeepSeek"}} -. "optional" .-> B
-    M -. "optional" .-> E
-    M -. "optional" .-> F
-```
-
-> A disk tells you what lasts. A floppy tells you what is temporary. A
-> Scrapbook contains only what you chose to keep.
 
 ## Bring your own model
 
@@ -226,6 +245,29 @@ flowchart LR
 Durable project state lives in your browser's IndexedDB. The server is a
 stateless bridge with no application database. Credentials never enter project
 files, chats, backups, or exports.
+
+## How this repository keeps itself honest
+
+Claims rot. These run from a fresh clone and fail the build instead.
+
+| Gate | What it refuses to let happen |
+| --- | --- |
+| `verify:floppy` | the boot payload growing past two 1.44&nbsp;MB floppy disks |
+| `site:check` | this page quoting a byte count the gate never measured |
+| `verify:docs` | an English document drifting away from its Chinese mirror |
+| `verify:public` | a command advertised here that fails from a fresh clone |
+
+The payload number above is written by `npm run verify:floppy` itself into
+`site/data/floppy-budget.json`; the website fetches it and this page quotes it.
+On the day that gate was built it caught this README quoting a stale number
+three times in one afternoon.
+
+Every product screenshot on this page and on the
+[product site](https://aisystem6.pages.dev) is re-shot from the running app by
+`npm run site:capture-frames`, `npm run site:capture-route`, and
+`tooling/capture-site-proofs.mjs`. Each of those starts the app and photographs
+real windows, so there is no art directory of hand-made marketing images to fall
+out of date — because there are no hand-made marketing images.
 
 ## How the repository is laid out
 
@@ -261,7 +303,7 @@ clone; the public repository is an independently verifiable source snapshot.
 
 <sub>ONE DISK. SIX ERAS. SAME WORK.</sub>
 
-### If AI software should feel like a computer again,
+### If AI writing tools should leave your voice alone,
 
 # [★ STAR AI SYSTEM 6](https://github.com/surfine/AI-System-6)
 

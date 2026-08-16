@@ -88,11 +88,11 @@ const forbiddenPhrases = ["本期我们来", "接下来我们", "下面我们说
 const polishedPhrases = ["早没用了，但那一下，你还是会停一停", "场景一窄就狼狈", "不是不能用，是场景一窄就狼狈"];
 const exactEnding = "好了，这次节目就到这里了，喜欢的话关注一下也是可以的，我们下次见。";
 
+// The contract is evaluation baseline, not a runtime prompt, so it is read
+// from the fixture rather than scraped out of a shipping module with a regex.
 function extractMingmingInstructions() {
-  const source = readFileSync(join(root, "apps/desktop/app/features/mingming-lens.js"), "utf8");
-  const match = source.match(/const MINGMING_STYLE_CONTRACT = `([\s\S]*?)`;\n/);
-  if (!match) throw new Error("Could not find MINGMING_STYLE_CONTRACT in app/features/mingming-lens.js");
-  return match[1];
+  const source = readFileSync(join(root, "tests/fixtures/mingming-style-contract.txt"), "utf8");
+  return source.replace(/^<!--[\s\S]*?-->\n?/, "").trim();
 }
 
 export function buildMingmingPracticePrompt(input = SAMPLE_IPHONE_17E_INPUT) {

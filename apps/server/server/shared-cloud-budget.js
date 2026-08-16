@@ -212,7 +212,30 @@ function quotaFailure(code, retryAfter, detail) {
   };
 }
 
-function reserveSharedCloudRequest({ sessionNonce, payload, now = new Date() }) {
+/**
+ * Reserve one shared-allowance request.
+ *
+ * `reasoningAllowance` is the thinking headroom the caller added on top of the
+ * answer budget: DeepSeek counts reasoning inside `max_tokens`, so the daily
+ * limit on answer length must not swallow it. `modelWeight` prices a request
+ * against the allowance — v4-pro costs three times v4-flash, so one pro
+ * request must consume three times the budget of a flash one.
+ *
+ * @param {{
+ *   sessionNonce: string,
+ *   payload: any,
+ *   now?: Date,
+ *   reasoningAllowance?: number,
+ *   modelWeight?: number,
+ * }} options
+ */
+function reserveSharedCloudRequest({
+  sessionNonce,
+  payload,
+  now = new Date(),
+  reasoningAllowance = 0,
+  modelWeight = 1,
+}) {
   const config = sharedCloudBudgetConfig();
   const sessionId = sessionBudgetId(sessionNonce);
   const retryAfter = secondsUntilUtcReset(now);
@@ -228,11 +251,16 @@ function reserveSharedCloudRequest({ sessionNonce, payload, now = new Date() }) 
       `Shared access accepts at most ${config.maxInputTokens} estimated input tokens.`
     );
   }
+  const allowance = Math.max(0, Math.floor(Number(reasoningAllowance) || 0));
+  const weight = Number.isFinite(Number(modelWeight)) && Number(modelWeight) >= 1
+    ? Number(modelWeight)
+    : 1;
   const requestedOutput = Number(payload?.max_tokens);
-  const outputTokens = Number.isFinite(requestedOutput)
-    ? Math.min(config.maxOutputTokens, Math.max(1, Math.floor(requestedOutput)))
+  const answerTokens = Number.isFinite(requestedOutput)
+    ? Math.min(config.maxOutputTokens, Math.max(1, Math.floor(requestedOutput) - allowance))
     : config.maxOutputTokens;
-  const reservedTokens = inputTokens + outputTokens;
+  const outputTokens = answerTokens + allowance;
+  const reservedTokens = Math.ceil((inputTokens + outputTokens) * weight);
   return withStateLock(() => {
     const state = loadState(now, { fresh: true });
     const sessionRequests = Number(state.sessions[sessionId] || 0);
@@ -273,6 +301,7 @@ function reserveSharedCloudRequest({ sessionNonce, payload, now = new Date() }) 
       inputTokens,
       outputTokens,
       reservedTokens,
+      weight,
       remainingSessionRequests: config.sessionRequestLimit - state.sessions[sessionId],
     });
   });
@@ -285,7 +314,7 @@ function usageTokenTotal(usage) {
   return Number.isFinite(Number(total)) ? Math.max(0, Math.floor(Number(total))) : null;
 }
 
-function createReservation({ reservationId, inputTokens, outputTokens, reservedTokens, remainingSessionRequests }) {
+function createReservation({ reservationId, inputTokens, outputTokens, reservedTokens, remainingSessionRequests, weight = 1 }) {
   let actualTokens = 0;
   let usageKnown = false;
   let requestSent = false;
@@ -301,7 +330,9 @@ function createReservation({ reservationId, inputTokens, outputTokens, reservedT
       const tokens = usageTokenTotal(usage);
       if (tokens === null) return false;
       usageKnown = true;
-      actualTokens += tokens;
+      // Settlement stays in the same weighted unit as the reservation, so a
+      // v4-pro request keeps costing the allowance three flash-equivalents.
+      actualTokens += Math.ceil(tokens * weight);
       return true;
     },
     markUpstreamStarted() {

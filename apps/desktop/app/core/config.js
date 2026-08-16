@@ -434,9 +434,20 @@ const ensureWritingFlowModule = createLazyModuleLoader("AISystem6WritingFlowLoad
   "app/content/rebuild-samples.js",
   "app/features/writing-flow.js",
 ]);
+// The Luoluo style contract is prompt text, not runtime: only the Mingming
+// commands read it, so it loads with them instead of at boot.
+const ensureMingmingLensModule = createLazyModuleLoader("AISystem6MingmingLensLoaded", [
+  "app/features/mingming-lens.js",
+]);
 const ensureOutlineClaimModule = createLazyModuleLoader("AISystem6OutlineClaimLoaded", [
+  "app/features/mingming-lens.js",
   "app/features/outline-claim.js",
 ]);
+const ensureContextGistModule = createLazyModuleLoader("AISystem6ContextGist", ["app/core/context-gist.js"]);
+const ensureDocMapSourcePolicyModule = createLazyModuleLoader("AISystem6DocMapSourcePolicy", ["app/core/docmap-source-policy.js"]);
+const ensureUserRecoveryMessagesModule = createLazyModuleLoader("AISystem6UserRecoveryMessages", ["app/core/user-recovery-messages.js"]);
+const ensureTeachtextWritingModule = createLazyModuleLoader("AISystem6TeachtextWriting", ["app/features/teachtext-writing.js"]);
+const ensureDocumentRolePolicyModule = createLazyModuleLoader("AISystem6DocumentRolePolicy", ["app/core/document-role-policy.js"]);
 const ensureMarkdownParser = createLazyModuleLoader("marked", ["app/vendor/marked.umd.js"]);
 const ensurePromptFilesData = createLazyModuleLoader("AISystem6PromptFiles", [
   "app/core/writing-tools-prompts.js",
@@ -456,8 +467,11 @@ const ensurePrintDirectoryModule = createLazyModuleLoader("", ["app/features/pri
 const ensureProjectCdPrintModule = createLazyModuleLoader("", ["app/features/project-cd-print.js"]);
 const ensureTranslationPadModule = createLazyModuleLoader("", ["app/features/translation-pad.js"]);
 const ensureDictionaryHelpModule = createLazyModuleLoader("AISystem6DictionaryHelpLoaded", ["app/features/dictionary-help.js"]);
+const ensureDictationPadModule = createLazyModuleLoader("AISystem6DictationPadLoaded", ["app/features/dictation-pad.js"]);
+const ensureHeldPlaceSlipModule = createLazyModuleLoader("AISystem6HeldPlaceSlipLoaded", ["app/core/held-place-slip.js"]);
 const ensureVideoTranscriptModule = createLazyModuleLoader("AISystem6VideoTranscriptLoaded", ["app/features/video-transcript.js"]);
 const ensureVideoDocMapModule = createLazyModuleLoader("AISystem6VideoDocMapLoaded", ["app/features/video-docmap.js"]);
+const ensureFindPathModule = createLazyModuleLoader("AISystem6FindPathLoaded", ["app/features/findpath.js"]);
 const ensureEndfieldTerminalModule = createLazyModuleLoader("AISystem6EndfieldTerminalLoaded", ["app/features/endfield-terminal.js"]);
 const ensureTimeMachineModule = createLazyModuleLoader("AISystem6TimeMachineLoaded", ["app/features/time-machine.js"]);
 const ensureHkrrReviewModule = createLazyModuleLoader("", ["app/features/hkrr-review.js"]);
@@ -467,6 +481,7 @@ const ensureClioStageModule = createLazyModuleLoader("AISystem6ClioStageLoaded",
 const ensureClioChartModule = createLazyModuleLoader("AISystem6ClioChartLoaded", ["app/features/clio-chart.js"]);
 const ensureLiquidCoverModule = createLazyModuleLoader("AISystem6LiquidCoverLoaded", ["app/features/liquid-cover.js"]);
 const ensureQuickDraftModule = createLazyModuleLoader("AISystem6QuickDraftLoaded", [
+  "app/features/mingming-lens.js",
   "app/core/author-thesis-guidance.js",
   "app/core/chat-vent-guidance.js",
   "app/data/draft-desk-presets.js",
@@ -717,6 +732,9 @@ function installLazyFunctionStub(name, ensureModule) {
   "updatePageSetupFromControls",
   "printSelectedProjectCdPdf",
   "printCurrentTeachTextDocument",
+  "openFinishingReceipt",
+  "openFinishingReceiptForSelection",
+  "showFinishingReceiptForBurn",
 ].forEach((name) => installLazyFunctionStub(name, ensureProjectCdPrintModule));
 
 [
@@ -727,6 +745,7 @@ function installLazyFunctionStub(name, ensureModule) {
   "translateTranslationPadSource",
   "sendTranslationPad",
 ].forEach((name) => installLazyFunctionStub(name, ensureTranslationPadModule));
+
 
 // Writing-route AI commands and Claim Check. Every one of these is summoned by
 // a menu item, a Review Desk button, or the live demo, so a stub that loads the

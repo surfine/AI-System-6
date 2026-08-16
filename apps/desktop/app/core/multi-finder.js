@@ -97,6 +97,9 @@ const windowAppMap = {
   modelMeter: "accessories",
   keyCaps: "accessories",
   systemStatus: "accessories",
+  // A Desk Accessory, so summoning it floats over the work instead of
+  // replacing it — a pad that displaced the window it reads would be useless.
+  sideAskPad: "accessories",
   notificationCenter: "accessories",
   fileInfo: "finder",
   projectInfo: "finder",
@@ -367,6 +370,70 @@ function hideOtherApps() {
 function showAllApps() {
   Array.from(hiddenAppIds).forEach((appId) => unhideApp(appId));
   renderMultiFinderMenu();
+}
+
+// ---- Application lifecycle driver -----------------------------------------
+// One place answers "is this application actually on screen right now": it owns
+// at least one window that is open, not app-hidden, not collapsed, and whose
+// app MultiFinder has not hidden. Everything else is background, and a
+// background app is asked to stop costing anything — never to forget its work.
+
+function foregroundApplicationIds() {
+  const ids = new Set();
+  document.querySelectorAll(".window:not(.is-hidden):not(.is-app-hidden):not(.is-collapsed)").forEach((win) => {
+    const appId = getWindowAppId(win);
+    if (appId && !hiddenAppIds.has(appId)) ids.add(appId);
+  });
+  return ids;
+}
+
+let applicationLifecycleFrame = 0;
+
+function refreshApplicationLifecycle(reason = "") {
+  if (applicationLifecycleFrame) {
+    cancelAnimationFrame(applicationLifecycleFrame);
+    applicationLifecycleFrame = 0;
+  }
+  return window.AISystem6ApplicationRegistry?.syncApplicationLifecycle?.({
+    foregroundAppIds: foregroundApplicationIds(),
+    documentHidden: document.visibilityState === "hidden",
+    reason,
+  });
+}
+
+// Window class flips arrive in bursts (focus, Hide Others, session restore), so
+// coalesce them into one pass and never suspend an app mid-transition.
+function scheduleApplicationLifecycleRefresh(reason = "") {
+  if (applicationLifecycleFrame) return;
+  applicationLifecycleFrame = requestAnimationFrame(() => {
+    applicationLifecycleFrame = 0;
+    refreshApplicationLifecycle(reason);
+  });
+}
+
+function installApplicationLifecycleWatch() {
+  const desktop = document.querySelector(".desktop");
+  if (desktop && typeof MutationObserver === "function") {
+    new MutationObserver((records) => {
+      // Window chrome is the only class flip that changes foreground state;
+      // ignore the ordinary interior repaints so a phone does not schedule a
+      // frame for every button that toggles a class.
+      if (!records.some((record) => record.target?.classList?.contains("window"))) return;
+      scheduleApplicationLifecycleRefresh("window");
+    }).observe(desktop, { attributes: true, attributeFilter: ["class"], subtree: true });
+  }
+  // A backgrounded Home Screen App gets no frames at all, so this pass runs
+  // now rather than through the scheduler.
+  document.addEventListener("visibilitychange", () => {
+    refreshApplicationLifecycle(document.visibilityState === "hidden" ? "document-hidden" : "document-visible");
+  });
+  window.addEventListener("pagehide", () => {
+    window.AISystem6ApplicationRegistry?.syncApplicationLifecycle?.({
+      foregroundAppIds: [],
+      documentHidden: true,
+      reason: "pagehide",
+    });
+  });
 }
 
 function bringAppToFront(appId = activeAppId) {

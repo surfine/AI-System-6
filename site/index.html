@@ -3,26 +3,26 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AI System 6 - The AI has a desktop now</title>
-<meta name="description" content="A working AI desktop, not a chat window. AI System 6 is a local-first writing environment where AI work lives in visible apps and files: Searcher, Reader, Scrapbook, DocMap, TeachText, Review Desk. The same desk runs in six Macintosh appearances, 1988 to 2026, because the objects outlive the interface. Boot it in your browser.">
+<title>AI System 6 - AI that never becomes your voice</title>
+<meta name="description" content="A local-first writing desk built around one route: your raw questions, your sources, your outline, your drafts, and a review that checks whether the prose still sounds like you. AI output stays temporary until you keep it. Runs in six Macintosh appearances, 1988 to 2026, because the objects outlive the interface. Boot it in your browser.">
 <link rel="canonical" href="https://aisystem6.pages.dev/">
 <link rel="icon" href="img/app-icon-192.png">
 <link rel="apple-touch-icon" href="img/app-icon-180.png">
 <meta property="og:type" content="website">
-<meta property="og:title" content="AI System 6 - The AI has a desktop now">
-<meta property="og:description" content="A working AI desktop, not a chat window. One desk, from System 6 to Liquid Glass. Boot it in your browser.">
+<meta property="og:title" content="AI System 6 - AI that never becomes your voice">
+<meta property="og:description" content="A local-first writing desk. One route from your raw questions to a finished piece, and AI output that stays temporary until you keep it.">
 <meta property="og:image" content="https://aisystem6.pages.dev/img/og-poster.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="AI System 6 - The AI has a desktop now. Six Macintosh-era icons on a timeline from 1988 to 2026.">
+<meta property="og:image:alt" content="AI System 6. Six Macintosh-era icons on a timeline from 1988 to 2026.">
 <meta property="og:url" content="https://aisystem6.pages.dev/">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="AI System 6 - The AI has a desktop now">
-<meta name="twitter:description" content="A working AI desktop, not a chat window. One desk, from System 6 to Liquid Glass. Boot it in your browser.">
+<meta name="twitter:title" content="AI System 6 - AI that never becomes your voice">
+<meta name="twitter:description" content="A local-first writing desk. One route from your raw questions to a finished piece, and AI output that stays temporary until you keep it.">
 <meta name="twitter:image" content="https://aisystem6.pages.dev/img/og-poster.png">
 <script>try{var t=localStorage.getItem("s6-site-theme");if(t&&t!=="classic")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=20260814h">
-<link rel="stylesheet" href="desk.css?v=20260814h">
+<link rel="stylesheet" href="site.css?v=20260814i">
+<link rel="stylesheet" href="desk.css?v=20260814i">
 </head>
 <body>
 
@@ -66,7 +66,10 @@
   <details class="menu menu-extra">
     <summary>View</summary>
     <ul class="menu-list">
+      <li><a href="#route">The Route</a></li>
+      <li><a href="#temporary">Nothing Saves Itself</a></li>
       <li><a href="#impossible">The 1988 Computer</a></li>
+      <li><a href="#games">It Also Runs DOOM</a></li>
       <li><a href="#floppies">Two Floppies</a></li>
       <li><a href="#chat">Chat Is an App</a></li>
       <li><a href="#argument">Six Appearances, One Argument</a></li>
@@ -108,15 +111,15 @@
   <!-- ================= Hero ================= -->
   <header class="hero-scene" id="hero" aria-labelledby="hero-title">
     <p class="hero-brand">AI SYSTEM 6</p>
-    <h1 class="hero-head" id="hero-title">THE AI HAS<br>A DESKTOP NOW.</h1>
-    <p class="hero-sub">Not a chat window. A desk, with apps, files, and a Trash can.</p>
+    <h1 class="hero-head" id="hero-title">AI THAT NEVER<br>BECOMES YOUR VOICE.</h1>
+    <p class="hero-sub">A local-first writing desk. One route from your raw questions to a finished piece, and everything the AI writes stays temporary until you keep it.</p>
     <p class="btn-row hero-btns">
       <a class="btn btn-default" href="https://system6.aaronlau.me">Boot the Live System</a>
-      <a class="btn" href="#demo">Watch the 50s Demo</a>
+      <a class="btn" href="#route">Walk the Route</a>
     </p>
     <figure class="machine-figure dissolve-figure" id="hero-dissolve">
       <noscript>
-        <img src="img/frames/classic.png" width="2880" height="1800" style="width:100%;height:auto"
+        <img src="img/frames/classic.webp" width="2880" height="1800" style="width:100%;height:auto"
              alt="The AI System 6 desktop, captured from the real app: Searcher, ClioTalk, Scrapbook, TeachText, and Review Desk around one manuscript.">
       </noscript>
     </figure>
@@ -126,6 +129,46 @@
     <p class="machine-provenance" id="hero-provenance"></p>
   </header>
 
+  <!-- ================= The route: the product itself ================= -->
+  <section class="scene" id="route" aria-labelledby="route-title">
+    <h2 class="scene-head" id="route-title">ONE PIECE OF WRITING.<br>EIGHT STOPS.</h2>
+    <p class="scene-note">This route is the product. The desktop around it is a constraint that keeps
+    every step visible: what you brought in, what you asked, what you decided, and what the AI only
+    suggested. Four of these eight stops are photographs of the running app, holding the same article.</p>
+    <div class="route-stage" id="route-stage"></div>
+    <p class="proof-note">Captured by <code>tooling/capture-site-route.mjs</code>, which types the
+    material in and drives the product's own handoffs. No model was connected.</p>
+  </section>
+
+  <!-- ================= AI output is temporary ================= -->
+  <section class="scene" id="temporary" aria-labelledby="temporary-title">
+    <h2 class="scene-head" id="temporary-title">NOTHING SAVES ITSELF.</h2>
+    <p class="scene-note">Every other writing tool decides for you that the generated paragraph is now
+    the document. Here it is not, and the difference is enforced by the objects, not by a preference.</p>
+    <ul class="temp-grid">
+      <li class="temp-card">
+        <h3>Output arrives temporary</h3>
+        <p>A reply from ClioTalk is a reply. It becomes part of your work when you save, clip, insert
+        or export it, and not one moment earlier.</p>
+      </li>
+      <li class="temp-card">
+        <h3>You say where it lands</h3>
+        <p>Question Sheet, Outline, the current Section Draft, the manuscript, or the Scrapbook. You
+        also say whether it appends, replaces just your selection, or creates something new.</p>
+      </li>
+      <li class="temp-card">
+        <h3>Sources stay attached</h3>
+        <p>A clip in the Scrapbook remembers the page it came from. The Scrapbook only ever holds what
+        you deliberately kept, so it never fills itself up behind your back.</p>
+      </li>
+      <li class="temp-card">
+        <h3>The desk never bluffs</h3>
+        <p>It will not tell you something was saved, indexed, searched or fact-checked unless it was.
+        With no model connected it says so in the menu bar, and keeps working.</p>
+      </li>
+    </ul>
+  </section>
+
   <!-- ================= The proof ================= -->
   <section class="scene" id="impossible" aria-labelledby="proof-title">
     <h2 class="scene-head" id="proof-title">THIS IS A 1988 DESKTOP.</h2>
@@ -133,9 +176,9 @@
       <header class="tbar"><span class="close-box" aria-hidden="true"></span>
         <h2 id="impossible-title">Things This 1988 Computer Should Not Be Able to Do</h2>
       </header>
-      <div class="finder-status" id="impossible-status">8 items          2 floppies in disk          38 years available</div>
+      <div class="finder-status" id="impossible-status">11 items          2 floppies in disk          38 years available</div>
       <div class="proof-wall" id="proof-wall"></div>
-      <p class="proof-note">All four are the real app, photographed while running. No mockups.</p>
+      <p class="proof-note">Photographs of the real app, running. No mockups anywhere on this page.</p>
       <div class="finder-body" id="impossible-body"></div>
     </div>
   </section>
@@ -172,17 +215,39 @@
   <!-- ================= Chat is an app, and the route proves it ================= -->
   <section class="scene" id="chat" aria-labelledby="chat-title">
     <h2 class="scene-head" id="chat-title">CHAT IS AN APP.<br>NOT THE WHOLE COMPUTER.</h2>
-    <p class="scene-note" id="chat-note">One window asks the questions. The rest of the desk does the work, and it ends in a file that is yours.</p>
-    <div class="route-stage" id="route-stage"></div>
+    <p class="scene-note" id="chat-note">Chat is very good at conversation. It is a poor filesystem, a poor
+    workspace, and a poor record of where anything came from. So here it is one window, named ClioTalk,
+    sitting on a desk that holds the sources, the drafts and the decisions.</p>
+    <div class="compare-wall">
+      <div class="compare-col">
+        <h3>A chat product</h3>
+        <ul>
+          <li>One thread owns the whole workflow</li>
+          <li>Your context disappears into a prompt</li>
+          <li>Generated text quietly becomes the truth</li>
+          <li>The answer is the endpoint</li>
+        </ul>
+      </div>
+      <div class="compare-col is-ours">
+        <h3>This computer</h3>
+        <ul>
+          <li>Real apps stay open together, MultiFinder style</li>
+          <li>Sources, clips, maps and drafts stay visible as objects</li>
+          <li>Output stays temporary until you keep it</li>
+          <li>The endpoint is a file, a chart, a deck or a cover</li>
+        </ul>
+      </div>
+    </div>
     <figure class="machine-figure machine-figure-narrow" id="route-machine"></figure>
+    <p class="scene-fine">A disk tells you what lasts. A floppy tells you what is temporary. A Scrapbook
+    holds only what you chose to keep.</p>
   </section>
 
   <!-- ================= Six appearances, one argument ================= -->
   <section class="scene" id="argument" aria-labelledby="argument-title">
     <h2 class="scene-head" id="argument-title">IF AI HAD ARRIVED IN 1988,<br>WOULD IT BE A CHAT BOX?</h2>
-    <p class="scene-note" id="argument-note">Six appearances, and not one of them is a skin. Each has to prove
-    something the one before it could not. Every line below is set in the system face of its own year, beside the
-    manuscript icon as that year drew it. Click a line to put the whole page in it.</p>
+    <p class="scene-note" id="argument-note">Six appearances, and not one of them is a skin. Each line below is set
+    in the system face of its own year. Click one to put the whole page in it.</p>
     <div class="finder-window claim-window">
       <header class="tbar"><span class="close-box" aria-hidden="true"></span>
         <h2>Appearances</h2>
@@ -255,8 +320,8 @@
         <ul class="pack-grid">
           <li class="pack-card">
             <img data-icon="hardDisk" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/hardDisk.svg">
-            <h3>A desk, not a chat box</h3>
-            <p>Windows, files and folders you can see. Chat is one window on it, not the whole screen.</p>
+            <h3>One route, start to finish</h3>
+            <p>Your rough questions become an outline, the outline becomes drafts, the drafts become the piece you hand over.</p>
           </li>
           <li class="pack-card">
             <img data-icon="fileFloppy" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/fileFloppy.svg">
@@ -275,13 +340,13 @@
           </li>
           <li class="pack-card">
             <img data-icon="teachText" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/teachText.svg">
-            <h3>One piece, start to finish</h3>
-            <p>Your rough questions become an outline, the outline becomes drafts, the drafts become the article.</p>
+            <h3>The manuscript has one owner</h3>
+            <p>While you draft, the manuscript is read-only and says so. The section you are editing owns the text, so nothing rewrites the article behind your back.</p>
           </li>
           <li class="pack-card">
             <img data-icon="reviewDesk" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/reviewDesk.svg">
             <h3>Review Desk reads it back</h3>
-            <p>It checks the facts and the shape, and points at any sentence that sounds like a generic robot.</p>
+            <p>Facts and structure, and the sentences where your voice has flattened into a model's. That last check is the point of the whole thing.</p>
           </li>
           <li class="pack-card">
             <img data-icon="localModel" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/localModel.svg">
@@ -313,6 +378,6 @@
   </footer>
 
 </main>
-<script type="module" src="js/main.js?v=20260814h"></script>
+<script type="module" src="js/main.js?v=20260814i"></script>
 </body>
 </html>

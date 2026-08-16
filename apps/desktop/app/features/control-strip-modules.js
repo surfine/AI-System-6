@@ -46,6 +46,12 @@ function controlStripVolumeSnapshot() {
     : null;
 }
 
+function controlStripPlayerSnapshot() {
+  return typeof window.AISystem6Soundscape?.getPlayerSnapshot === "function"
+    ? window.AISystem6Soundscape.getPlayerSnapshot()
+    : null;
+}
+
 function controlStripVolumeLevel() {
   const snap = controlStripVolumeSnapshot();
   if (!snap) return -1;
@@ -318,10 +324,21 @@ const controlStripBuiltinModules = Object.freeze([
     ],
   },
   {
-    id: "volume",
-    labelKey: "control_strip_volume",
-    icon: () => "speaker",
-    finderIcon: "speaker",
+    // The classic strip carried an AppleCD Audio Player: it named the track
+    // and gave you the transport, right there. This is that module, for the
+    // only sound this desk actually owns.
+    //
+    // It replaces an App Volume module, which was already careful about whose
+    // sound it moved — the label and its balloon both said "not the Mac's
+    // system volume". What it could not say was whether anything was actually
+    // sounding: a strip that only reports how loud the desk could be tells you
+    // nothing when the desk is silent. The level lives on below. When nothing
+    // is loaded the state stays unknown and the shell renders no slot at all,
+    // so a silent desk still shows no player.
+    id: "nowPlaying",
+    labelKey: "control_strip_now_playing",
+    icon: (state) => (state.playing ? "play" : "speaker"),
+    finderIcon: "soundscape",
     defaultOrder: 6,
     defaultEnabled: true,
     openOwner: "soundscape",
@@ -329,24 +346,47 @@ const controlStripBuiltinModules = Object.freeze([
     subscribe: controlStripSubscribeSoundscape,
     gauge: (state) => (state.state === "ready" ? { ratio: (state.level || 0) / 7 } : null),
     state: () => {
+      const player = controlStripPlayerSnapshot();
       const snap = controlStripVolumeSnapshot();
-      if (!snap) return { state: "unknown", detail: "", source: "soundscape" };
+      if (!player?.queue?.length && !snap) return { state: "unknown", detail: "", source: "soundscape" };
       const level = controlStripVolumeLevel();
+      const title = player?.currentTitle || "";
+      const playing = !!player?.isPlaying;
       return {
         state: "ready",
-        detail: snap.muted ? t("control_strip_volume_off") : t("control_strip_volume_level", level),
+        // Say what is sounding, not what could sound. A muted desk is not
+        // playing, whatever the transport thinks.
+        detail: !title ? t("control_strip_now_playing_idle")
+          : playing && level > 0 ? title
+          // Muted is not paused. The transport is still running; it is the
+          // desk that has been turned down, and saying "paused" would report
+          // the wrong thing about the player.
+          : playing ? t("control_strip_now_playing_muted", title)
+          : t("control_strip_now_playing_paused", title),
         source: "soundscape",
         level,
+        playing: playing && level > 0,
       };
     },
     menu: () => {
+      const player = controlStripPlayerSnapshot();
       const items = [];
-      const level = controlStripVolumeLevel();
-      for (let index = 0; index < 8; index += 1) {
-        const label = index === 0 ? t("control_strip_volume_off") : t("control_strip_volume_level", index);
+      if (player?.queue?.length) {
         items.push({
           type: "action",
-          label,
+          label: player.isPlaying ? t("control_strip_pause") : t("control_strip_play"),
+          run: () => window.AISystem6Soundscape?.runMenuCommand?.("toggle-play"),
+        });
+        items.push({ type: "action", label: t("control_strip_previous"), run: () => window.AISystem6Soundscape?.runMenuCommand?.("previous") });
+        items.push({ type: "action", label: t("control_strip_next"), run: () => window.AISystem6Soundscape?.runMenuCommand?.("next") });
+        items.push({ type: "separator" });
+      }
+      const level = controlStripVolumeLevel();
+      items.push({ type: "section-label", label: t("control_strip_desk_sound") });
+      for (let index = 0; index < 8; index += 1) {
+        items.push({
+          type: "action",
+          label: index === 0 ? t("control_strip_volume_off") : t("control_strip_volume_level", index),
           checked: level === index,
           run: () => window.AISystem6Soundscape?.setVolumeLevel?.(index),
         });

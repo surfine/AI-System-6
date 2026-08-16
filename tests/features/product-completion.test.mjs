@@ -31,6 +31,23 @@ const desktop = html.match(/<section class="icon-column"[\s\S]*?<\/section>\s*<\
 // stay where they live.
 test.assertNotIncludes(guide, 'data-action="guide-start-quick-draft"', "Start Here does not put a first-time visitor into a draft");
 test.assertIncludes(html, '<button data-workspace-capability="studio" data-action="guide-start-route"', "the long-project route stays in the Special menu");
+
+// Pinning the markup is not the same as pressing the item. "Start Writing
+// Route" sat in the Apple menu with no entry in the command registry: it
+// looked live, took the click, and did nothing, while three contracts
+// asserted its markup and none of them dispatched it. Every action the shell
+// declares has to be answerable by something.
+const declaredActions = [...new Set([...html.matchAll(/data-action="([a-z0-9-]+)"/g)].map((m) => m[1]))];
+const answeredActions = new Set([
+  // Registry keys, written as `"id": handler,` in the handler table.
+  ...[...actions.matchAll(/^\s{4}"([a-z0-9-]+)":/gm)].map((m) => m[1]),
+  // Features that answer an id themselves, as `action === "id"`.
+  ...[...cloud.matchAll(/action === "([a-z0-9-]+)"/g)].map((m) => m[1]),
+]);
+for (const action of declaredActions) {
+  test.assert(answeredActions.has(action), `the shell's ${action} reaches a handler`);
+}
+
 test.assertIncludes(desktop, 'data-action="open-quick-draft"', "the short-draft route stays on the desktop");
 test.assertIncludes(quickDraft, 'id="quick-draft-no-project"', "Draft Desk owns a no-project empty state");
 test.assertIncludes(quickDraft, "data-quick-draft-create-project", "one action creates the required project");
@@ -114,5 +131,41 @@ for (const document of ["docs/ARCHITECTURE.md", "docs/design/DESIGN.md", "docs/d
   test.assertMatches(source, /(?:existing|saved) work safer/i, `${document} carries the durability budget`);
   test.assertMatches(source, /(?:returning to\s+work clearer|easier to resume|resumption clearer)/i, `${document} carries the resume budget`);
 }
+
+// SideAsk was a mode reachable from two windows' own buttons. As a Desk
+// Accessory on the Apple menu it must stay a Desk Accessory: summoned from the
+// system menu, floating over the work rather than replacing it, and honest that
+// its reply is not saved. A pad that displaced the window it reads would be
+// useless, and that is exactly what it did before it was registered as one.
+const shell = read("app/core/multi-finder.js");
+const windows = read("app/core/window-manager.js");
+const sideAsk = read("app/features/sideask-pad.js");
+test.assertIncludes(html, 'data-action="open-sideask-pad"', "SideAsk is summonable from the system-wide Apple menu");
+test.assertIncludes(shell, 'sideAskPad: "accessories"', "SideAsk is a Desk Accessory, so summoning it does not displace the front window");
+test.assertMatches(windows, /isDeskAccessorySidecar[\s\S]{0,200}sideAskPad/, "SideAsk sits beside the work as a sidecar, like Dictation and Translation Pad");
+test.assertIncludes(sideAsk, 'sideask_pad_temporary', "the pad says its reply is not saved");
+test.assertIncludes(sideAsk, 'await closeWindow("sideAskPad", true)', "promoting closes the pad, so the desk keeps one place to look");
+test.assertIncludes(sideAsk, "prompt.value = carried", "promotion carries the exchange into ClioTalk instead of starting a second conversation");
+
+// The Question Sheet exists to hold messy human material before any prose, and
+// CLAUDE.md warns that a sparse sheet is what turns the assistant into a
+// mouthpiece later. It was a blank page with one hint, so the writer did the
+// remembering and the organising. Paired with the sheet, SideAsk turns around
+// and interviews them — and the rule that makes the writer feel consulted
+// rather than quizzed is that the interviewer may only ask what it could not
+// answer itself.
+test.assertIncludes(sideAsk, 'sideAskSubject?.name !== "questionSheet"', "the interview only runs against the surface that collects material");
+test.assertIncludes(sideAsk, "Ask exactly ONE short, concrete question", "the interviewer asks one thing at a time, not a form");
+test.assertIncludes(sideAsk, "Only ask what you could not answer yourself", "the interviewer asks for what only this writer knows");
+test.assertMatches(sideAsk, /never praise, never evaluate their answer/, "the interviewer does not substitute flattery for needing the writer");
+test.assertMatches(sideAsk, /function appendToQuestionSheet[\s\S]{0,400}body\.value = /, "answers land in the sheet the writer owns, verbatim");
+
+// Karpathy's half of the method is that you ramble at it instead of composing:
+// "I lean back, switch to voice, and go for ten minutes, complete stream of
+// consciousness". The pad's answer field is an ordinary editable target, so
+// the Dictation Pad already reaches it — verified live, the button lands
+// inside the pad beside the field rather than on the window frame. Keep it an
+// ordinary field: the moment it becomes something clever, dictation loses it.
+test.assertMatches(sideAsk, /<textarea id="sideask-pad-question"/, "the answer field stays an ordinary textarea, which is what dictation can speak into");
 
 test.finish();

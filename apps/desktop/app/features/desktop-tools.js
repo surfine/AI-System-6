@@ -56,10 +56,21 @@ function normalizeWritingBellMode(mode) {
   return mode === "break" ? "break" : "work";
 }
 
+// How long a bell can be *set* for; one minute is the floor.
 function normalizeWritingBellDuration(value, fallback) {
   const seconds = Number(value);
   if (!Number.isFinite(seconds)) return fallback;
   return Math.min(99 * 60, Math.max(60, Math.round(seconds)));
+}
+
+// How much is *left*, a different quantity: a bell paused in its last minute
+// holds less than a minute. Sending the remainder through the duration floor
+// handed those seconds back -- paused at 00:05, reopened at 1 min -- so the
+// read-out disagreed with its own status line. Only the ceiling is shared.
+function normalizeWritingBellRemaining(value, fallback) {
+  const seconds = Number(value);
+  if (!Number.isFinite(seconds)) return fallback;
+  return Math.min(99 * 60, Math.max(0, Math.round(seconds)));
 }
 
 function formatWritingBellTime(seconds) {
@@ -104,10 +115,16 @@ function renderWritingBell() {
     break: normalizeWritingBellDuration(writingBellDurations?.break, 5 * 60),
   };
   if (!writingBellRunning) {
-    writingBellRemaining = normalizeWritingBellDuration(writingBellRemaining, writingBellDurations[writingBellMode]);
+    writingBellRemaining = normalizeWritingBellRemaining(writingBellRemaining, writingBellDurations[writingBellMode]);
   }
 
   if (writingBellTimeEl) writingBellTimeEl.textContent = formatWritingBellDisplay(writingBellRemaining);
+  // The right status slot says what this window holds, the way every other
+  // accessory's right slot says where its text goes.
+  const holds = document.querySelector("#writing-bell-holds");
+  if (holds) {
+    holds.textContent = t("bell_holds", writingBellModeLabel(), Math.round(writingBellDurations[writingBellMode] / 60));
+  }
   if (writingBellModeEl) {
     writingBellModeEl.querySelectorAll("[data-bell-mode]").forEach((button) => {
       button.classList.toggle("is-active", button.dataset.bellMode === writingBellMode);
@@ -142,8 +159,14 @@ function clearWritingBellTimer() {
   }
 }
 
+// Where the writer was when the interval began. This bell is not a timer that
+// measures the writer; it is what lets them stop safely, so it learns the way
+// back before it rings.
+let writingBellStartedFrom = null;
+
 function startWritingBell() {
-  writingBellRemaining = normalizeWritingBellDuration(writingBellRemaining, writingBellDurations[writingBellMode]);
+  writingBellStartedFrom = typeof currentWritingPosition === "function" ? currentWritingPosition() : null;
+  writingBellRemaining = normalizeWritingBellRemaining(writingBellRemaining, writingBellDurations[writingBellMode]);
   writingBellRunning = true;
   writingBellEndsAt = Date.now() + writingBellRemaining * 1000;
   clearWritingBellTimer();
@@ -197,6 +220,26 @@ function setWritingBellMinutes(minutes) {
   saveDeskState();
 }
 
+// The bell does not invent a channel of its own. The desk already has one: a
+// system message with a button that opens and focuses a named window. So the
+// bell knocks there, and the button is the way back to the sentence.
+function knockAfterWritingBell() {
+  const where = (typeof currentWritingPosition === "function" ? currentWritingPosition() : null)
+    || writingBellStartedFrom;
+  if (typeof pushSystemNotification !== "function") return;
+  if (!where) {
+    pushSystemNotification(t("bell_stopped"), { replaceId: writingBellNotificationId });
+    return;
+  }
+  writingBellNotificationId = pushSystemNotification(t("bell_stopped_here", where.title), {
+    windowName: where.window,
+    actionLabel: t("back"),
+    replaceId: writingBellNotificationId,
+  });
+}
+
+let writingBellNotificationId = "";
+
 function completeWritingBell() {
   const completedMode = writingBellMode;
   writingBellRunning = false;
@@ -207,6 +250,7 @@ function completeWritingBell() {
   const message = t("bell_done", writingBellModeLabel(completedMode));
   setWritingBellStatus(t(completedMode === "work" ? "bell_work_done_hint" : "bell_break_done_hint"));
   setStatus(message);
+  knockAfterWritingBell();
   playSystemSound("alert");
   renderWritingBell();
   saveDeskState();
@@ -239,7 +283,7 @@ function restoreWritingBellState(state = {}) {
     work: normalizeWritingBellDuration(state.durations?.work, 25 * 60),
     break: normalizeWritingBellDuration(state.durations?.break, 5 * 60),
   };
-  writingBellRemaining = normalizeWritingBellDuration(state.remaining, writingBellDurations[writingBellMode]);
+  writingBellRemaining = normalizeWritingBellRemaining(state.remaining, writingBellDurations[writingBellMode]);
   writingBellRunning = Boolean(state.running && Number(state.endsAt) > Date.now());
   writingBellEndsAt = writingBellRunning ? Number(state.endsAt) : 0;
   clearWritingBellTimer();

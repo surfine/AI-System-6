@@ -10,6 +10,7 @@ const test = createFeatureTest("mobile-app-shell");
 const foundation = read("styles/00-foundation.css");
 const responsive = read("styles/60-responsive.css");
 const windows = read("styles/10-windows.css");
+const apps = read("styles/50-apps.css");
 const chatMessages = read("app/core/chat-messages.js");
 const readerStyles = read("styles/20-reader-docmap.css");
 const windowManager = read("app/core/window-manager.js");
@@ -366,6 +367,45 @@ test.assertIncludes(
   'window.visualViewport.addEventListener("resize", updateKeyboardInset)',
   "the keyboard inset tracks the visual viewport"
 );
+// iOS shrinks the visual viewport for its collapsing address bar as well, so a
+// shrunken viewport alone is not a keyboard. Without this gate every
+// full-screen app rests tens of pixels above the bottom edge and shows the
+// desktop pattern under itself.
+test.assertIncludes(
+  wireup,
+  "keyboardCapableFocus() ? covered : 0",
+  "the keyboard inset applies only while an editable element holds focus"
+);
+test.assertIncludes(
+  wireup,
+  'document.addEventListener("focusin", updateKeyboardInset)',
+  "moving focus re-decides whether the viewport shrink counts as a keyboard"
+);
+
+// Landscape is its own design, not a fallback to a cramped desktop. The three
+// games are the immersive class: their content is the screen, so a sideways
+// phone hands them the whole of it. Every other app stays a window there.
+const windowManagerSource = read("app/core/window-manager.js");
+test.assertIncludes(
+  windowManagerSource,
+  'mobileImmersiveAppIds = new Set(["micropolis", "doom", "openttd"])',
+  "the immersive class is exactly the three games"
+);
+test.assertIncludes(
+  windowManagerSource,
+  "!immersiveLandscape || isMobileImmersiveWindow(win)",
+  "a landscape phone offers the full-screen shell only to an immersive app"
+);
+test.assertIncludes(
+  responsive,
+  "@media (max-width: 860px) and (orientation: landscape)",
+  "landscape phones own a full-screen block of their own"
+);
+test.assertIncludes(
+  responsive,
+  "var(--safe-area-right)",
+  "the landscape shell insets the notch side instead of running under it"
+);
 
 // Nothing may shift when the keyboard opens: the foregrounded app is fixed and
 // fills the screen, so the page is locked and any scroll iOS performs is undone.
@@ -400,5 +440,36 @@ test.assertIncludes(dictionary, "shows the safe-to-shut-down screen", "System He
 test.assertIncludes(wireup, '"desktop_tap_hint"', "the first touch tap on a desktop icon teaches the double-tap gesture");
 test.assertIncludes(en, 'desktop_tap_hint: "Tap again to open."', "English names the touch hint");
 test.assertIncludes(zh, 'desktop_tap_hint: "再点一次打开。"', "Chinese names the touch hint");
+
+// A phone held sideways reports its sensor housing on BOTH side edges and
+// nothing on top. Padded by design values alone, the Apple menu sat under the
+// island and the whole desktop icon column sat under the opposite corner --
+// unreachable, on the one surface that launches everything. The device states
+// its own inset, so nothing here may hard-code a model's numbers.
+test.assertMatches(
+  foundation,
+  /\.menu-bar \{[^}]*padding: 0 max\(var\(--menu-bar-inline-padding\), var\(--safe-area-right\)\) 0 max\(var\(--menu-bar-inline-padding\), var\(--safe-area-left\)\)/,
+  "the menu bar's one padding rule clears the sensor housing on both edges"
+);
+test.assertMatches(
+  responsive,
+  /@media \(max-width: 860px\)[\s\S]*?\.menu-bar \{[^}]*--menu-bar-inline-padding: 3px/,
+  "a narrow screen tightens the bar through the token, not through a second copy of the rule"
+);
+test.assertMatches(
+  apps,
+  /\.icon-column \{[^}]*right: max\(22px, var\(--safe-area-right\)\);[^}]*bottom: max\(22px, var\(--safe-area-bottom\)\)/,
+  "the desktop icon column clears the housing and the home indicator"
+);
+test.assertMatches(
+  apps,
+  /\.icon-column \{[^}]*flex-wrap: wrap-reverse;\s*align-content: flex-start/,
+  "a column with no room left starts another one instead of dropping icons off the bottom"
+);
+test.assertNotMatches(
+  apps + responsive,
+  /max-height: \d+px\) \{\s*\.icon-column/,
+  "the wrap is decided by the column running out of room, never by a guessed screen height"
+);
 
 test.finish();

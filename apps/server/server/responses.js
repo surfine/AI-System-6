@@ -1,17 +1,25 @@
 // DeepSeek Responses API transport shared by the server-side structured
-// routes. The Responses API exists only on the official DeepSeek endpoint and
-// currently only serves deepseek-v4-flash, so every route that uses this
-// module keeps its existing Chat Completions path as the fallback: local
-// deployments with custom endpoints and models other than flash are untouched.
+// routes. The Responses API exists only on the official DeepSeek endpoint, so
+// every route that uses this module keeps its existing Chat Completions path
+// as the fallback: local deployments with custom endpoints are untouched.
+// Both v4 models are served here — v4-pro was verified against the live API
+// on 2026-08-14, where it ran three web searches for a question flash covered
+// with one.
 
 "use strict";
 
 const { postJsonWithFallback } = require("./lib/fetch.js");
 const { cloudAuthHeaders, DEEPSEEK_PUBLIC_BASE_URL, resolveCloudTarget } = require("./cloud.js");
+const { taskReasoningEffort } = require("./task-policy.js");
 
 const DEEPSEEK_RESPONSES_URL = `${DEEPSEEK_PUBLIC_BASE_URL}/responses`;
 const CANONICAL_RESPONSES_MODEL = "deepseek-v4-flash";
-const RESPONSES_MODELS = new Set(["deepseek-v4-flash", "v4-flash"]);
+const RESPONSES_MODELS = new Set([
+  "deepseek-v4-flash",
+  "v4-flash",
+  "deepseek-v4-pro",
+  "v4-pro",
+]);
 const RESPONSES_EFFORTS = new Set([
   "none",
   "minimal",
@@ -22,36 +30,10 @@ const RESPONSES_EFFORTS = new Set([
   "max",
 ]);
 
-// Task-kind -> reasoning effort policy. The Responses API accepts
-// none/minimal/low/medium/high/xhigh/max; the app decides automatically by
-// task type and never exposes the choice to the user, so instant surfaces
-// stay fast and heavier reasoning is reserved for verification and writing
-// work that actually needs it.
-const RESPONSES_TASK_EFFORT = Object.freeze({
-  // Instant-response surfaces: no chain of thought.
-  chat: "none",
-  sideask: "none",
-  dictation: "none",
-  lookup: "none",
-  // Grounded synthesis from search results: light thinking only.
-  answer: "minimal",
-  clio: "minimal",
-  translation: "minimal",
-  subtitle: "minimal",
-  // Verification: the search/evidence carries most of the work.
-  claim: "low",
-  // Structured writing synthesis: light reasoning pays off.
-  docmap: "low",
-  outline: "low",
-  draft: "low",
-  // Heavier analysis: medium reasoning.
-  thesis: "medium",
-  review: "medium",
-  hkrr: "medium",
-});
-
 /**
- * Pick the reasoning effort for a task kind. Unknown kinds fall back to the
+ * Pick the reasoning effort for a task kind. The table lives in
+ * `task-policy.js` with the model tier, the thinking switch, and the output
+ * budget, because those four are one decision. Unknown kinds fall back to the
  * low tier rather than the strongest one, so a new surface never surprises
  * users with slow, expensive thinking.
  *
@@ -59,8 +41,7 @@ const RESPONSES_TASK_EFFORT = Object.freeze({
  * @returns {string}
  */
 function responsesEffortForTask(taskKind) {
-  const key = String(taskKind || "").toLowerCase().trim();
-  return RESPONSES_TASK_EFFORT[key] || "low";
+  return taskReasoningEffort(taskKind);
 }
 
 /**
@@ -125,7 +106,7 @@ function chatMessagesToResponsesInput(messages = []) {
  * @returns {Record<string, unknown>}
  */
 function buildResponsesPayload({
-  model: _model = CANONICAL_RESPONSES_MODEL,
+  model = CANONICAL_RESPONSES_MODEL,
   instructions = "",
   input,
   textFormat = null,
@@ -134,7 +115,9 @@ function buildResponsesPayload({
   userId = "",
 }) {
   const payload = {
-    model: CANONICAL_RESPONSES_MODEL,
+    model: RESPONSES_MODELS.has(String(model || "").toLowerCase())
+      ? String(model)
+      : CANONICAL_RESPONSES_MODEL,
     instructions,
     input,
     reasoning: { effort: normalizeResponsesEffort(reasoningEffort) },
@@ -257,7 +240,6 @@ function normalizeResponsesUsage(usage) {
 module.exports = {
   CANONICAL_RESPONSES_MODEL,
   DEEPSEEK_RESPONSES_URL,
-  RESPONSES_TASK_EFFORT,
   buildResponsesPayload,
   callResponsesJson,
   chatMessagesToResponsesInput,

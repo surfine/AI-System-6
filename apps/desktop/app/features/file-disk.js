@@ -196,7 +196,6 @@ function renderMountedTextDisk() {
   }
   updateProjectLabels();
   updateDocMapEntryButtons();
-  if (typeof renderVideoDocMapSwitchers === "function") renderVideoDocMapSwitchers();
   updateMenuState();
 }
 

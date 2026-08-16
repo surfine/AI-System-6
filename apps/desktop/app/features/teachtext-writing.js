@@ -32,3 +32,8 @@ function insertLastReplyIntoTeachText() {
     title: t("assistant"),
   });
 }
+
+globalThis.AISystem6TeachtextWriting = Object.freeze({
+  clipLastReplyToScrapbook,
+  insertLastReplyIntoTeachText,
+});

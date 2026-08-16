@@ -53,12 +53,56 @@ const dispatchEntries = [...registrySource.matchAll(/\{([^}\n]+)\}/g)]
   .map((entry) => {
     const key = entry.match(/key: "([^"]+)"/)?.[1];
     if (!key) return null;
-    return `${entry.includes("shift: true") ? "shift+" : ""}${entry.includes("option: true") ? "option+" : ""}${key}`;
+    const scopeList = entry.match(/scope: \[([^\]]*)\]/)?.[1];
+    return {
+      id: entry.match(/id: "([^"]+)"/)?.[1] || key,
+      combination: `${entry.includes("shift: true") ? "shift+" : ""}${entry.includes("option: true") ? "option+" : ""}${key}`,
+      // "global" and "application" reach every foreground app, so they collide
+      // with everything; a list of app ids collides only where it overlaps.
+      apps: scopeList ? [...scopeList.matchAll(/"([^"]+)"/g)].map((match) => match[1]) : null,
+    };
   })
   .filter(Boolean);
+test.assert(dispatchEntries.length > 20, "the registry parses into dispatched shortcut entries");
+
+// runShortcut() picks the first registry entry whose combination and scope both
+// match the foreground application. Two entries may therefore share ⌘O only
+// when no application can reach both — otherwise one silently shadows the
+// other, which is how TeachText's "Open… ⌘O" came to run Finder's Open.
+const reachesSameApp = (left, right) => {
+  if (!left.apps || !right.apps) return true;
+  return left.apps.some((app) => right.apps.includes(app));
+};
+const collisions = [];
+for (let index = 0; index < dispatchEntries.length; index += 1) {
+  for (let other = index + 1; other < dispatchEntries.length; other += 1) {
+    const [left, right] = [dispatchEntries[index], dispatchEntries[other]];
+    if (left.combination !== right.combination) continue;
+    if (reachesSameApp(left, right)) collisions.push(`${left.combination}: ${left.id} vs ${right.id}`);
+  }
+}
 test.assert(
-  new Set(dispatchEntries).size === dispatchEntries.length,
-  "no two dispatched actions claim the same key combination",
+  collisions.length === 0,
+  collisions.length
+    ? `no two dispatched actions claim the same key combination in one application — ${collisions.join("; ")}`
+    : "no two dispatched actions claim the same key combination in one application",
+);
+
+// Every menu row that prints a key must name a registry entry whose action is
+// the row's own action. A row may not advertise another command's key.
+const menuRows = [...menus.matchAll(/menuItem\("([a-z0-9-]+)", "([a-z0-9_]+)", "([a-z0-9-]+)"/g)];
+test.assert(menuRows.length > 10, "menus.js declares rows that print a keyboard shortcut");
+const registryPairs = new Map(
+  [...registrySource.matchAll(/id: "([^"]+)"[^\n]*?action: "([^"]+)"/g)].map((match) => [match[1], match[2]])
+);
+const liars = menuRows
+  .filter(([, action, , shortcutId]) => registryPairs.get(shortcutId) !== action)
+  .map(([, action, , shortcutId]) => `${action} prints ${shortcutId} (${registryPairs.get(shortcutId) || "unknown"})`);
+test.assert(
+  liars.length === 0,
+  liars.length
+    ? `every menu row's printed key dispatches that row's own action — ${liars.join("; ")}`
+    : "every menu row's printed key dispatches that row's own action",
 );
 
 test.assertIncludes(html, 'id="shortcut-grid"', "Key Caps exposes the generated shortcut grid");

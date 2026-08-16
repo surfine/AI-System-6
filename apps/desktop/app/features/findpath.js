@@ -1,12 +1,11 @@
 // Feature module: findpath.
 
-// Loaded before app.js as a classic script; shares the AI System 6 global scope.
+// Lazy classic script; shares the AI System 6 global scope. Loaded through
+// ensureFindPathModule() when the Searcher or Find File window opens.
+// getSearchProviderLabel and updateSearchProviderLabels live in
+// selection-services.js instead, because startup refreshes the selection
+// popover label before this module exists.
 
-
-function getSearchProviderLabel() {
-  const selected = searchProviderInput?.selectedOptions?.[0];
-  return selected?.textContent?.trim() || t("search_auto");
-}
 
 function searchProviderLabel(provider) {
   if (provider === "bing") return t("search_bing");
@@ -20,14 +19,6 @@ function getActiveSearchProviderLabel() {
   if (provider === "auto") return getSearchProviderLabel();
   return searchProviderLabel(provider);
 }
-
-function updateSearchProviderLabels() {
-  const provider = getSearchProviderLabel();
-  document.querySelectorAll('[data-action="selection-find-sources"]').forEach((button) => {
-    button.textContent = t("find_sources", provider);
-  });
-}
-
 
 async function fetchMoreResults() {
   const query = findPathQueryInput.value.trim();
@@ -711,3 +702,5 @@ function revealSelectedFindFileResult() {
   }
   result.reveal?.();
 }
+
+window.AISystem6FindPathLoaded = true;

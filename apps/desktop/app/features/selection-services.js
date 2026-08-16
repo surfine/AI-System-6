@@ -6,6 +6,22 @@
 var lastSelectionServiceContext = null;
 
 
+// Split out of the lazy findpath.js module: startup and the provider-change
+// listener refresh the selection popover's "Find Sources" label before the
+// Searcher module loads, so these two must stay on the startup disk.
+function getSearchProviderLabel() {
+  const selected = searchProviderInput?.selectedOptions?.[0];
+  return selected?.textContent?.trim() || t("search_auto");
+}
+
+function updateSearchProviderLabels() {
+  const provider = getSearchProviderLabel();
+  document.querySelectorAll('[data-action="selection-find-sources"]').forEach((button) => {
+    button.textContent = t("find_sources", provider);
+  });
+}
+
+
 function getReaderSelection() {
   const selection = window.getSelection();
   if (!selection || !selection.rangeCount) {
@@ -406,7 +422,7 @@ function runSelectionClipFile(context = getSelectionServiceContext()) {
   withFinderObjects(() => createClippingFromSelectionContext(context));
 }
 
-function runSelectionFindSources(context = getSelectionServiceContext()) {
+async function runSelectionFindSources(context = getSelectionServiceContext()) {
   if (!context?.text) {
     setStatus(t("select_text_first"));
     return;
@@ -415,6 +431,7 @@ function runSelectionFindSources(context = getSelectionServiceContext()) {
     setStatus(t("selection_long_find_sources"));
     return;
   }
+  await ensureFindPathModule();
   findPathQueryInput.value = context.text.replace(/\s+/g, " ").slice(0, 500);
   findPathResults.length = 0;
   selectedFindPathIndex = null;
@@ -445,12 +462,13 @@ function readerFindSourcesQuery() {
  * and submit it, so the search surface (and its DeepSeek online-answer
  * provider) stays the only place that searches.
  */
-function runReaderFindSources() {
+async function runReaderFindSources() {
   const query = readerFindSourcesQuery();
   if (!query) {
     setStatus(t("select_text_first"));
     return;
   }
+  await ensureFindPathModule();
   findPathQueryInput.value = query;
   findPathResults.length = 0;
   selectedFindPathIndex = null;

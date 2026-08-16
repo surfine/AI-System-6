@@ -139,7 +139,9 @@ function buildWebSearchPayload({
           { type: "message", role: "user", content: String(query || "") },
         ]
       : String(query || ""),
-    tools: [{ type: "web_search" }],
+    // Pin the dated tool so an upstream revision cannot silently change how
+    // Searcher's sources are gathered.
+    tools: [{ type: "web_search_2025_08_26" }],
     tool_choice: { type: "web_search" },
     reasoning: { effort: normalizeWebSearchEffort(effort) },
     text: structured
@@ -338,6 +340,33 @@ function parseWebSearchResponse(data, mode = "answer") {
   };
 }
 
+/**
+ * The Responses API ran out of output budget before it wrote the answer. It
+ * reports this as a successful `incomplete` response whose output array holds
+ * reasoning and search calls but no message, which reads downstream as "the
+ * search found nothing" — a different problem with a different fix.
+ *
+ * @param {any} data
+ * @returns {boolean}
+ */
+function isBudgetStarvedResponse(data) {
+  return String(data?.status || "") === "incomplete"
+    && String(data?.incomplete_details?.reason || "") === "max_output_tokens";
+}
+
+/**
+ * @returns {Error & { statusCode?: number, code?: string, warning?: string }}
+ */
+function webSearchBudgetError() {
+  const error = /** @type {Error & { statusCode?: number, code?: string, warning?: string }} */ (
+    new Error("Web search used its whole output budget before answering")
+  );
+  error.statusCode = 502;
+  error.code = "web_search_budget_exhausted";
+  error.warning = "这次联网搜索的额度在写出答案前就用完了。请把问题问得更具体一些，或稍后重试。";
+  return error;
+}
+
 function webSearchUpstreamError(status, text, data) {
   const errorObj = data?.error;
   const detail = data?.detail
@@ -455,6 +484,9 @@ async function callWebSearchAnswer({
   });
   const data = await postWebSearchRequest(payload, signal, apiKey, 16 * 1024 * 1024, onRequest);
   const parsed = parseWebSearchResponse(data, normalizedMode);
+  if (isBudgetStarvedResponse(data) && !parsed.answer && !parsed.verdict) {
+    throw webSearchBudgetError();
+  }
   if (!parsed.answer && !parsed.verdict && !parsed.results.length) {
     throw webSearchUpstreamError(502, "Web search returned no readable answer", {
       code: "web_search_empty",
@@ -519,6 +551,7 @@ async function callWebSearchAnswerStream({
     cloudAuthHeaders(apiKey),
     {
       maxBytes: 32 * 1024 * 1024,
+      streamResponse: true,
       pinnedAddress: cloudTarget.address,
       pinnedFamily: cloudTarget.family,
       onRequest,
@@ -564,7 +597,11 @@ async function callWebSearchAnswerStream({
       const delta = String(event?.delta || "");
       if (delta) onDelta?.(delta);
     } else if (type === "response.completed" || type === "response.incomplete") {
-      finalResult = parseWebSearchResponse(event?.response, normalizedMode);
+      const parsed = parseWebSearchResponse(event?.response, normalizedMode);
+      if (isBudgetStarvedResponse(event?.response) && !parsed.answer && !parsed.verdict) {
+        throw webSearchBudgetError();
+      }
+      finalResult = parsed;
       onDone?.(finalResult);
     } else if (type === "response.failed") {
       const detail = event?.response?.error?.message || event?.response?.error || "Web search stream failed";

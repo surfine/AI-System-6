@@ -116,7 +116,6 @@ if (serverLint.status === 0) {
   "apps/server/server.js",
   "package.json",
   "CLAUDE.md",
-  "platform/macos/native/README.md",
 ].forEach(assertExists);
 [...appRuntimePaths, ...lazyRuntimePaths].forEach(checkSyntax);
 checkSyntax("app.bundle.js");
@@ -132,25 +131,14 @@ if (dataBoundary.status === 0) {
   fail(`data boundary verification failed\n${dataBoundary.stderr || dataBoundary.stdout}`);
 }
 
-const nativeActionAudit = spawnSync(process.execPath, ["tooling/verify-native-action-audit.mjs"], {
-  cwd: root,
-  encoding: "utf8",
-});
-if (nativeActionAudit.status === 0) {
-  ok("native action audit verification");
-} else {
-  fail(`native action audit verification failed\n${nativeActionAudit.stderr || nativeActionAudit.stdout}`);
-}
-
-const nativeParityLedger = spawnSync(process.execPath, ["tooling/verify-native-parity-ledger.mjs"], {
-  cwd: root,
-  encoding: "utf8",
-});
-if (nativeParityLedger.status === 0) {
-  ok("native parity ledger verification");
-} else {
-  fail(`native parity ledger verification failed\n${nativeParityLedger.stderr || nativeParityLedger.stdout}`);
-}
+// The native Swift rewrite is frozen (platform/macos/native/FROZEN.md). Its
+// action audit and parity ledger used to run here, which meant every new web
+// action had to be entered in ACTION-AUDIT.md, its Chinese mirror, the mirror's
+// hash, and the ledger's verdict counts — four files, to keep the books of an
+// application nobody is building. The audits stay in the tree as an honest
+// record of where the port stopped; they are no longer a release condition.
+// `npm run verify:native-action-audit` still runs them on demand, and should,
+// the day the lane reopens.
 
 const floppyBudget = spawnSync(process.execPath, ["tooling/verify-floppy-budget.mjs"], {
   cwd: root,

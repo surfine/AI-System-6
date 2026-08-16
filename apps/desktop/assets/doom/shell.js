@@ -61,12 +61,13 @@
       exited: "游戏已经退出。重新装载即可再次开始。",
       importFailed: "无法导入这个 WAD。请选择有效的本机文件。",
       storageFailed: "浏览器存储不可用。请检查隐私模式或网站数据权限。",
-      privacyMessage: "请选择你拥有的本机 IWAD；文件不会离开此浏览器。",
+      privacyMessage: "选一份你自己的 IWAD 开始。",
       readyMessage: "点按「开始」会解锁声音并进入游戏。",
       engineMessage: "开源引擎不包含、下载或上传任何游戏 WAD。",
       detail: "Chocolate Doom 3.1.1 · WebAssembly · 本机单人游戏",
       wadHeading: "本机游戏数据",
-      privacy: "选择你拥有的 IWAD 或 Freedoom。不会上传，也不会写入 AI System 6 项目备份。",
+      privacy: "文件留在这台机器上：不上传，也不写进项目备份。",
+      freedoom: "手上没有？Freedoom 是一套自由授权的完整游戏，下载后回来选择文件即可：",
       empty: "尚未导入 IWAD。",
       input: "支持键盘、鼠标、游戏控制器与多点触控。",
       choose: "选择 WAD…",
@@ -96,12 +97,13 @@
       exited: "The game has exited. Reload to start again.",
       importFailed: "That WAD could not be imported. Choose a valid local file.",
       storageFailed: "Browser storage is unavailable. Check private browsing or site-data permissions.",
-      privacyMessage: "Choose a local IWAD you own. The file never leaves this browser.",
+      privacyMessage: "Bring an IWAD of your own to begin.",
       readyMessage: "Press Play to unlock audio and enter the game.",
       engineMessage: "The open-source engine contains, downloads, and uploads no game WAD.",
       detail: "Chocolate Doom 3.1.1 · WebAssembly · Local single-player",
       wadHeading: "Local game data",
-      privacy: "Choose an IWAD you own or Freedoom. It is never uploaded or included in AI System 6 project backups.",
+      privacy: "The file stays on this machine: never uploaded, never written into a project backup.",
+      freedoom: "Have none? Freedoom is a free, complete game in its own right. Download it, then come back and choose the file:",
       empty: "No IWAD has been imported.",
       input: "Keyboard, mouse, game controller, and multi-touch are supported.",
       choose: "Choose WAD…",
@@ -120,7 +122,7 @@
 
   var card = document.getElementById("engine-card");
   var stage = document.getElementById("game-stage");
-  var canvas = document.getElementById("game-canvas");
+  var canvas = document.querySelector("canvas.game-canvas");
   var touchRoot = document.getElementById("touch-controls-root");
   var receiptEl = document.getElementById("game-receipt");
   var phaseEl = document.getElementById("engine-phase");
@@ -128,6 +130,7 @@
   var detailEl = document.getElementById("engine-detail");
   var wadHeadingEl = document.getElementById("wad-heading");
   var wadPrivacyEl = document.getElementById("wad-privacy");
+  var wadFreedoomEl = document.getElementById("wad-freedoom-note");
   var wadListEl = document.getElementById("wad-list");
   var wadEmptyEl = document.getElementById("wad-empty");
   var inputNoteEl = document.getElementById("input-note");
@@ -261,6 +264,11 @@
     detailEl.textContent = strings.detail;
     wadHeadingEl.textContent = strings.wadHeading;
     wadPrivacyEl.textContent = strings.privacy;
+    /* The path out, not a download. A desk that quietly pulls 30 MiB from a
+       host the visitor never named is doing something they did not ask for;
+       naming the site and letting them go and come back keeps the choice, and
+       the traffic, theirs. */
+    if (wadFreedoomEl) wadFreedoomEl.textContent = strings.freedoom;
     wadEmptyEl.textContent = strings.empty;
     inputNoteEl.textContent = strings.input;
     chooseEl.textContent = strings.choose;

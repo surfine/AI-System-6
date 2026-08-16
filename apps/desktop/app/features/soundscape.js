@@ -1895,6 +1895,52 @@
     return true;
   }
 
+  // Suspending always stops the system-music poll — a background window has no
+  // reason to keep asking this Mac what is playing. Audio itself is the user's
+  // call: a music player that goes silent because you opened another window is
+  // usually wrong, so the pause is a Control Panel preference, default off.
+  let resumeLocalPlaybackOnReturn = false;
+
+  function shouldPauseAudioInBackground() {
+    return document.getElementById("pause-audio-in-background")?.checked === true;
+  }
+
+  window.AISystem6ApplicationRegistry?.registerApplicationLifecycle?.("soundscape", {
+    onSuspend: () => {
+      resumeLocalPlaybackOnReturn = false;
+      if (shouldPauseAudioInBackground() && state.source === "local" && isPlaying()) {
+        resumeLocalPlaybackOnReturn = true;
+        localAudio.pause();
+        state.playerState = "paused";
+        updateTransport();
+      }
+      // The Control Strip shows live transport state with no window open, so
+      // the poll only stops once nothing is moving for it to report.
+      if (systemPollTimer && !isPlaying()) {
+        window.clearInterval(systemPollTimer);
+        systemPollTimer = 0;
+      }
+    },
+    onResume: async () => {
+      if (runtimeInitialized && !systemPollTimer) {
+        systemPollTimer = window.setInterval(syncSystemMusic, SYSTEM_POLL_MS);
+      }
+      if (!resumeLocalPlaybackOnReturn) return;
+      resumeLocalPlaybackOnReturn = false;
+      await localAudio.play().catch(() => {});
+      updateTransport();
+    },
+    onDispose: () => {
+      if (systemPollTimer) {
+        window.clearInterval(systemPollTimer);
+        systemPollTimer = 0;
+      }
+      resumeLocalPlaybackOnReturn = false;
+      localAudio.pause();
+      state.playerState = "stopped";
+    },
+  });
+
   window.AISystem6Soundscape = {
     attach,
     ensureRuntime,

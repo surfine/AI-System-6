@@ -180,7 +180,6 @@ function resetReaderDocumentState() {
   if (readerSendManuscriptButton) readerSendManuscriptButton.disabled = true;
   if (readerFindSourcesButton) readerFindSourcesButton.disabled = true;
   updateMenuState();
-  if (typeof renderVideoDocMapSwitchers === "function") renderVideoDocMapSwitchers();
 }
 
 function activeReaderTab() {
@@ -285,7 +284,6 @@ function renderReaderUnavailableTab(tab) {
   if (readerSendManuscriptButton) readerSendManuscriptButton.disabled = true;
   if (readerFindSourcesButton) readerFindSourcesButton.disabled = true;
   updateMenuState();
-  if (typeof renderVideoDocMapSwitchers === "function") renderVideoDocMapSwitchers();
 }
 
 function setReaderLoadingState(message) {
@@ -390,7 +388,6 @@ async function openReaderDocument(readerDoc, options = {}) {
   updateReaderClioStageButton();
   updateReaderTranslationClipButton();
   updateMenuState();
-  if (typeof renderVideoDocMapSwitchers === "function") renderVideoDocMapSwitchers();
 }
 
 function appendReaderDocumentHeader() {
@@ -1603,3 +1600,13 @@ function initReaderDropZone() {
     handleReaderDrop(event);
   }, { capture: true });
 }
+
+// Reader runs no loop of its own; the one thing it wants from the lifecycle is
+// the screen. A long read on a tablet should not dim mid-paragraph, and the
+// hold ends the moment the reader leaves — hiding the window, switching apps,
+// or backgrounding the whole Home Screen App all arrive here.
+window.AISystem6ApplicationRegistry?.registerApplicationLifecycle?.("reader", {
+  onSuspend: () => window.AISystem6WebPlatform?.releaseScreenWakeLock?.("reader"),
+  onResume: () => window.AISystem6WebPlatform?.holdScreenWakeLock?.("reader"),
+  onDispose: () => window.AISystem6WebPlatform?.releaseScreenWakeLock?.("reader"),
+});

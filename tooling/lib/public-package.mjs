@@ -40,9 +40,13 @@ export const publicScriptNames = new Set([
   "build:app",
   "build:cmf-renderer-vendor",
   "build:stream-markdown-vendor",
+  // The HD atlas pipeline ships its tooling file, so the entry that runs it
+  // belongs in the public surface too. Its contract reads package.json.
+  "build:micropolis-hd",
   "site:sync",
   "site:check",
   "site:capture-frames",
+  "site:capture-route",
   "site:render-og",
   "docs:sync-hashes",
   "verify:docs",

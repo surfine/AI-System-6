@@ -1,6 +1,6 @@
 {
   "name": "ai-system-6",
-  "version": "1.0.43",
+  "version": "1.0.44",
   "description": "A local-first, model-agnostic AI desktop inspired by Macintosh System 6.",
   "private": true,
   "license": "MIT",
@@ -20,6 +20,7 @@
     "build": "npm run build:app",
     "build:app": "node tooling/build-app-bundle.mjs",
     "build:cmf-renderer-vendor": "node tooling/build-cmf-renderer-vendor.mjs",
+    "build:micropolis-hd": "node tooling/build-micropolis-hd-assets.mjs",
     "build:stream-markdown-vendor": "node tooling/build-stream-markdown-vendor.mjs",
     "docs:sync-hashes": "node tooling/update-doc-locale-hashes.mjs",
     "lint": "eslint apps/server/server tests/integration",
@@ -27,6 +28,7 @@
     "prebuild:app": "npm run build:stream-markdown-vendor && npm run build:cmf-renderer-vendor",
     "prestart": "npm run build:app",
     "site:capture-frames": "node tooling/capture-site-frames.mjs",
+    "site:capture-route": "node tooling/capture-site-route.mjs",
     "site:check": "node tooling/verify-site.mjs",
     "site:render-og": "node tooling/render-og-poster.mjs",
     "site:sync": "node tooling/sync-site-assets.mjs",
@@ -57,20 +59,21 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",
-    "@types/node": "^18.19.130",
-    "esbuild": "^0.25.10",
-    "eslint": "^9.39.1",
-    "three": "^0.184.0",
-    "typescript": "^6.0.3"
+    "@types/node": "^26.2.0",
+    "acorn": "^8.18.0",
+    "esbuild": "^0.28.2",
+    "eslint": "^10.8.1",
+    "three": "^0.185.1",
+    "typescript": "^7.0.2"
   },
   "dependencies": {
-    "@extractus/article-extractor": "^8.1.0",
+    "@extractus/article-extractor": "^9.0.0",
     "@lmstudio/sdk": "^1.5.0",
     "@paddlejs-models/ocr": "^1.2.4",
     "canvas": "^3.2.3",
     "https-proxy-agent": "^9.1.0",
     "pdfjs-dist": "^6.2.108",
-    "stream-markdown-parser": "^1.0.5",
+    "stream-markdown-parser": "^1.2.6",
     "tesseract.js": "^7.0.0"
   }
 }

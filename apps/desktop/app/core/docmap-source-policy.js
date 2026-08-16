@@ -29,3 +29,5 @@ function chooseDocMapSourceCandidate(selectionSource, wholeSource, rangeMode = "
     fellBackToSource: requestedRange === "auto" && !!selectionSource && !selectionReady && wholeReady,
   };
 }
+
+globalThis.AISystem6DocMapSourcePolicy = Object.freeze({ chooseDocMapSourceCandidate });

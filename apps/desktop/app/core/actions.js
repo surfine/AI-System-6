@@ -7,10 +7,27 @@ let reviewDeskMode = "style";
 const keyboardShortcutRegistry = [
   { id: "new-document", key: "n", action: "new-document", display: "⌘N", labelKey: "new_document", keyCaps: true, scope: ["teachText", "quickDraft"] },
   { id: "new-folder", key: "n", shift: true, action: "new-folder", display: "⇧⌘N", labelKey: "new_folder", keyCaps: true, suppressInEditable: true, scope: ["finder"] },
-  { id: "open", key: "o", action: "open-menu-selection", display: "⌘O", labelKey: "open", keyCaps: true, suppressInEditable: true, scope: ["finder", "teachText"] },
+  // ⌘O means "open what this application opens", so each application claims
+  // the key for its own Open command. One shared entry used to cover Finder and
+  // TeachText, which meant TeachText's "Open… ⌘O" row printed a key that
+  // dispatched Finder's open-menu-selection. Scopes stay disjoint: two entries
+  // may share a combination only when no application can reach both.
+  // Only Finder suppresses ⌘O while a field is editable: its rows compete with
+  // an inline rename box. TeachText and Reader must answer the key with the
+  // caret in the document, the way ⌘S already does — getActiveEditableElement()
+  // reports TeachText's body whenever that window is in front, so a suppressed
+  // ⌘O there would never fire at all.
+  { id: "open", key: "o", action: "open-menu-selection", display: "⌘O", labelKey: "open", keyCaps: true, suppressInEditable: true, scope: ["finder"] },
+  { id: "open-text-document", key: "o", action: "open-text-document", display: "⌘O", labelKey: "open", scope: ["teachText"] },
+  { id: "reader-open-source", key: "o", action: "reader-open-source", display: "⌘O", labelKey: "open_source", scope: ["reader"] },
+  { id: "start-new-clio-chat", key: "n", action: "start-new-clio-chat", display: "⌘N", labelKey: "new_conversation", scope: ["clioTalk"] },
   { id: "save", key: "s", action: "save-current", display: "⌘S", labelKey: "save_current", keyCaps: true, scope: ["teachText", "clioTalk", "quickDraft"] },
   { id: "save-copy", key: "s", shift: true, action: "save-copy", display: "⇧⌘S", labelKey: "save_copy", keyCaps: true, scope: ["teachText"] },
   { id: "close-window", key: "w", action: "close-active-window", display: "⌘W", labelKey: "close_window", keyCaps: true, scope: "global" },
+  // Holding a thought has to work while the writer is typing, so it claims
+  // nothing a text field already uses, and it matches on `code`: with Option
+  // held, `key` is whatever the layout composes, which is not "n" everywhere.
+  { id: "hold-that-thought", key: "n", code: "KeyN", option: true, action: "hold-that-thought", display: "⌥⌘N", labelKey: "hold_that_thought", keyCaps: true, scope: "global" },
   { id: "undo", key: "z", action: "undo", display: "⌘Z / ⇧⌘Z", menuDisplay: "⌘Z", labelKey: "undo_redo", keyCaps: true, scope: "application" },
   { id: "redo", key: "z", shift: true, action: "redo", display: "⇧⌘Z", labelKey: "redo", scope: "application" },
   // display is the Key Caps summary for the whole cut/copy/paste/select-all
@@ -27,6 +44,10 @@ const keyboardShortcutRegistry = [
   { id: "eject", key: "e", action: "eject-menu-selection", display: "⌘E", labelKey: "eject", suppressInEditable: true, scope: ["finder"] },
   { id: "system-help", key: "?", shift: true, action: "open-system-help", display: "⌘?", labelKey: "system_help", keyCaps: true, scope: "global" },
   { id: "control-panel", key: ",", action: "open-control", display: "⌘,", labelKey: "control_panel", keyCaps: true, scope: "global" },
+  // Deliberately not suppressed in an editable: mid-sentence is exactly when
+  // the door goes. Only the holding has a key — coming back is never urgent,
+  // and one key equivalent is one chance to collide with the browser's.
+  { id: "hold-my-place", key: "p", option: true, action: "hold-my-place", display: "⌥⌘P", labelKey: "held_place_hold", keyCaps: true, scope: "global" },
   { id: "clio-chart-view-1", key: "1", action: "clio-chart-bars", display: "⌘1", labelKey: "clio_chart_bars", suppressInEditable: true, scope: ["clioChart"] },
   { id: "clio-chart-view-2", key: "2", action: "clio-chart-matrix", display: "⌘2", labelKey: "clio_chart_matrix", suppressInEditable: true, scope: ["clioChart"] },
   { id: "clio-chart-view-3", key: "3", action: "clio-chart-trace", display: "⌘3", labelKey: "clio_chart_trace", suppressInEditable: true, scope: ["clioChart"] },
@@ -62,6 +83,8 @@ const writeRequiredActions = new Set([
   "insert-text-disk",
   "eject-text-disk",
   "add-text-disk-project",
+  "dictionary-keep-word",
+  "dictionary-delete-word",
 ]);
 
 function keyboardShortcutById(id) {
@@ -92,10 +115,35 @@ function shortcutDisplayLabel(shortcut) {
   return shortcutUsesCommandKey() ? label : label.replace(/⌘/g, "Ctrl");
 }
 
+// The visible "⌘S" in a menu row is a child span, not part of the row's own
+// text. Two code paths write menu rows — applyLanguage() on a language switch
+// and renderAppMenuBar() on every application switch — so the span has to come
+// from one shared writer. While only applyLanguage() painted it, the first
+// application switch replaced every row with plain text and the menu bar
+// stopped teaching its own keys until the next language switch.
+function writeShortcutRowLabel(element, text) {
+  const shortcut = element.dataset.shortcut;
+  if (!shortcut) return false;
+  const display = document.createElement("span");
+  display.className = "shortcut";
+  display.textContent = shortcut;
+  element.replaceChildren(document.createTextNode(`${text} `), display);
+  return true;
+}
+
+function shortcutRowText(element) {
+  if (element.dataset.i18n && typeof t === "function") return t(element.dataset.i18n);
+  const painted = element.querySelector(".shortcut");
+  const own = painted ? element.firstChild?.textContent : element.textContent;
+  return String(own || "").trim();
+}
+
 function syncKeyboardShortcutLabels() {
   document.querySelectorAll("[data-shortcut-id]").forEach((element) => {
     const shortcut = keyboardShortcutById(element.dataset.shortcutId);
-    if (shortcut) element.dataset.shortcut = shortcutDisplayLabel(shortcut);
+    if (!shortcut) return;
+    element.dataset.shortcut = shortcutDisplayLabel(shortcut);
+    writeShortcutRowLabel(element, shortcutRowText(element));
   });
 }
 
@@ -725,8 +773,9 @@ async function exportReviewDeskReport() {
   });
   if (!item) return;
   markTeachTextExported("markdown");
-  openWindow("projectCd");
+  await openWindow("projectCd");
   setStatus(t("export_saved", item.title));
+  await showFinishingReceiptForBurn(item);
 }
 
 async function exportTeachTextToProjectCd() {
@@ -754,8 +803,12 @@ async function exportTeachTextToProjectCd() {
   });
   if (!item) return;
   markTeachTextExported("markdown");
-  openWindow("projectCd");
+  await openWindow("projectCd");
   setStatus(t("export_saved", item.title));
+  // The writing route ends at the burn, so this is where the work is
+  // receipted. The receipt opens last, on top of the disc it describes, and a
+  // receipt that cannot be assembled leaves the finished burn alone.
+  await showFinishingReceiptForBurn(item);
 }
 
 async function printMarkdownToSlidesFromMenu() {
@@ -1187,6 +1240,12 @@ function getApplicationActionHandlers() {
     "duplicate-selection": duplicateFinderMenuSelection,
     "open-assistant": () => openWindow("assistant"),
     "open-writing-studio": openWritingStudio,
+    // The Apple menu's "Start Writing Route" carries its own id because
+    // balloon help and the workspace-capability gate both address it by name.
+    // Without an entry here it dispatched into nothing: the item looked live,
+    // took the click, and did nothing at all. Three feature tests pinned the
+    // markup and none of them pressed it.
+    "guide-start-route": openWritingStudio,
     "exit-writing-studio": exitWritingStudio,
     "open-quick-draft": openQuickDraft,
     "quick-draft-open-writing-studio": enterWritingStudioFromQuickDraft,
@@ -1213,6 +1272,11 @@ function getApplicationActionHandlers() {
     "quick-draft-send-teachtext": () => runQuickDraftMenuCommand("send-teachtext"),
     "quick-draft-send-review": () => runQuickDraftMenuCommand("send-review"),
     "open-writing-bell": () => openWindow("writingBell"),
+    "hold-my-place": async () => { await ensureHeldPlaceSlipModule(); holdMyPlace(); },
+    "resume-my-place": async () => { await ensureHeldPlaceSlipModule(); await resumeMyPlace(); },
+    "held-place-to-question-sheet": async () => { await ensureHeldPlaceSlipModule(); promoteHeldPlace("questionSheet"); },
+    "held-place-to-outline": async () => { await ensureHeldPlaceSlipModule(); promoteHeldPlace("outline"); },
+    "held-place-dismiss": async () => { await ensureHeldPlaceSlipModule(); dismissHeldPlaceSlip(); },
     "open-note-pad": () => openWindow("notePad"),
     "open-clipboard": () => {
       renderClipboard();
@@ -1272,6 +1336,15 @@ function getApplicationActionHandlers() {
     "open-openttd": () => openWindow("openttd"),
     "open-doom": () => openWindow("doom"),
     "open-dictionary": () => openWindow("dictionary"),
+    // Wrapped, not bare: the Dictionary module is lazy, so a bare reference
+    // resolves at boot into nothing and takes the whole registry down with it.
+    "dictionary-keep-word": () => keepDictionaryWord(),
+    "dictionary-delete-word": () => deleteDictionaryWord(),
+    "hold-that-thought": holdThatThought,
+    "note-pad-new-slip": () => addNotePadPage(currentWritingPosition()),
+    "note-pad-send": () => sendNotePadPage(),
+    "note-pad-back": returnToNotePadOrigin,
+    "note-pad-cycle-destination": cycleNotePadDestination,
     "open-style-sheet": () => openReviewDesk("style"),
     "generate-outline": generateOutline,
     "organize-question-sheet": organizeQuestionSheet,
@@ -1381,6 +1454,9 @@ function getApplicationActionHandlers() {
     "open-project-cd": () => openWindow("projectCd"),
     "copy-project-cd-markdown": copySelectedProjectCdMarkdown,
     "share-project-cd-markdown": shareSelectedProjectCdMarkdown,
+    // Lazy module: the identifier must be resolved at dispatch time, not at
+    // registry-build time, or the whole registry throws before first use.
+    "open-finishing-receipt": () => openFinishingReceiptForSelection(),
     "open-import-utility": () => openWindow("importUtility"),
     "open-project-backup": openProjectBackupPanel,
     "open-chooser": () => openWindow("chooser"),
@@ -1403,22 +1479,30 @@ function getApplicationActionHandlers() {
         : false
     ),
     "open-rag": () => openWindow("rag"),
-    "open-find-path": () => {
+    // Searcher and Find File live in a lazy module, so every handler below has
+    // to be an arrow that loads it first: a bare reference here is resolved
+    // when this registry object is built at boot, and one ReferenceError takes
+    // the whole registry with it. openWindow does the loading and the paint.
+    "open-find-path": async () => {
       const selection = teachTextBodyInput.value.slice(teachTextBodyInput.selectionStart || 0, teachTextBodyInput.selectionEnd || 0).trim();
       if (selection && !findPathQueryInput.value.trim()) {
         findPathQueryInput.value = selection;
       }
-      renderFindPathResults();
-      openWindow("findPath");
+      await openWindow("findPath");
       findPathQueryInput.focus();
     },
-    "open-find-file": () => {
-      renderFindFileResults();
-      openWindow("findFile");
+    "open-find-file": async () => {
+      await openWindow("findFile");
       findFileQueryInput?.focus();
     },
-    "open-selected-find-file": openSelectedFindFileResult,
-    "reveal-selected-find-file": revealSelectedFindFileResult,
+    "open-selected-find-file": async () => {
+      await ensureFindPathModule();
+      openSelectedFindFileResult();
+    },
+    "reveal-selected-find-file": async () => {
+      await ensureFindPathModule();
+      revealSelectedFindFileResult();
+    },
     "open-reader": () => {
       if (typeof openReaderWindowWithTabs === "function") {
         openReaderWindowWithTabs();
@@ -1465,7 +1549,10 @@ function getApplicationActionHandlers() {
     "time-machine-docmap-source": () => dispatchTimeMachineMenuCommand("docmap-source"),
     "time-machine-ask": () => dispatchTimeMachineMenuCommand("ask"),
     "time-machine-send-manuscript": () => dispatchTimeMachineMenuCommand("send-manuscript"),
-    "clip-selected-find-path": clipSelectedFindPath,
+    "clip-selected-find-path": async () => {
+      await ensureFindPathModule();
+      clipSelectedFindPath();
+    },
     "open-selected-in-reader": () => {
       if (selectedFindPathIndex === null) {
         setStatus(t("select_find_path_first"));
@@ -1502,9 +1589,18 @@ function getApplicationActionHandlers() {
     "scrapbook-delete": deleteSelectedScrap,
     "focus-scrapbook-question": () => scrapbookQuestionInput?.focus(),
     "focus-search-query": () => findPathQueryInput?.focus(),
-    "synthesize-search-results": synthesizeFindPath,
-    "copy-search-result-markdown": copySelectedFindPath,
-    "insert-search-result": insertFindPathIntoTeachText,
+    "synthesize-search-results": async () => {
+      await ensureFindPathModule();
+      await synthesizeFindPath();
+    },
+    "copy-search-result-markdown": async () => {
+      await ensureFindPathModule();
+      copySelectedFindPath();
+    },
+    "insert-search-result": async () => {
+      await ensureFindPathModule();
+      insertFindPathIntoTeachText();
+    },
     "clio-chart-import": () => runClioChartMenuCommand("import"),
     "clio-chart-hand-back": () => runClioChartMenuCommand("hand-back"),
     "clio-chart-new-cpu-gpu": () => runClioChartMenuCommand("new:cpu-gpu"),
@@ -1584,7 +1680,6 @@ function getApplicationActionHandlers() {
     "meme-generate": () => window.AISystem6BureaucracyMeme?.runMenuCommand?.("generate"),
     "open-trash": () => openWindow("trash"),
     "open-context-panel": () => openWindow("contextPanel"),
-    "focus-sideask-source": focusSideAskSource,
     "save-current": saveCurrentWork,
     "save-chat": openSaveChatDialog,
     "save-conversation": openSaveChatDialog,
@@ -1609,8 +1704,8 @@ function getApplicationActionHandlers() {
     },
     "save-clio-retrospective": saveClioTalkRetrospective,
     "new-note": () => createScrap(null, ""),
-    "clip-last-reply": clipLastReplyToScrapbook,
-    "insert-last-reply": insertLastReplyIntoTeachText,
+    "clip-last-reply": () => ensureTeachtextWritingModule().then(() => clipLastReplyToScrapbook()),
+    "insert-last-reply": () => ensureTeachtextWritingModule().then(() => insertLastReplyIntoTeachText()),
     "clear-chat": startNewClioTalkConversation,
     "clip-assistant-selection": clipAssistantSelection,
     "retry-last-message": () => {
@@ -1626,9 +1721,8 @@ function getApplicationActionHandlers() {
     "docmap-insert-outline": () => withDocMap(() => insertDocMapNodeAsOutline()),
     "docmap-hkrr": () => withDocMap(() => askDocMapHkrrTheoryReview()),
     "focus-docmap-question": () => docMapQuestionInput?.focus(),
-    "docmap-layout-tree": () => withDocMap(() => setCurrentDocMapLayout("tree")),
-    "docmap-layout-radial": () => withDocMap(() => setCurrentDocMapLayout("radial")),
-    "docmap-layout-fishbone": () => withDocMap(() => setCurrentDocMapLayout("fishbone")),
+    "docmap-layout-right": () => withDocMap(() => setCurrentDocMapLayout("right")),
+    "docmap-layout-balanced": () => withDocMap(() => setCurrentDocMapLayout("balanced")),
     "docmap-fit-view": () => {
       const docMapWindow = getWindow("docMap");
       // In a SideAsk split the DocMap window already owns its pane; maximizing
@@ -1684,8 +1778,15 @@ function getApplicationActionHandlers() {
     "view-list": () => setActiveViewMode("name"),
     "tile-windows": tileWindows,
     "hide-sidebars": hideSidebars,
-    "focus-sideask-source": focusSideAskSource,
     "toggle-sideask": toggleSideAsk,
+    // Wrapped, not bare: these resolve at boot into the lazy module's stub and
+    // a bare reference would throw once the module moved out of the bundle.
+    "open-sideask-pad": () => openSideAskPad(),
+    "sideask-pad-ask": () => askSideAskPad(),
+    "sideask-pad-clear": () => clearSideAskPad(),
+    "sideask-pad-promote": () => promoteSideAskPad(),
+    "focus-sideask-source": focusSideAskSource,
+    "sideask-pad-interview": () => interviewQuestionSheet(),
     "set-theme-classic": () => applyTheme("classic"),
     "set-theme-platinum": () => applyTheme("platinum"),
     "set-theme-aqua": () => applyTheme("aqua"),
@@ -1803,7 +1904,9 @@ function runShortcut(event) {
     const candidate = record.shortcut();
     return candidate
       && candidate.dispatch !== false
-      && candidate.key === key
+      // A shortcut may pin the physical key. Option composes a different
+      // character on many layouts, so `key` alone would miss ⌥⌘N.
+      && (candidate.code ? candidate.code === event.code : candidate.key === key)
       && !!candidate.shift === !!event.shiftKey
       && !!candidate.option === !!event.altKey
       && (

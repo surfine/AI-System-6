@@ -175,7 +175,9 @@ async function runWorker(job) {
       finish(resolve, result);
     });
     worker.once("error", (error) => {
-      finish(reject, cmfError(500, "cmf_worker_failed", String(error?.message || "CMF worker failed.")));
+      // The worker error arrives untyped, so read the message only from an Error.
+      const detail = error instanceof Error ? error.message : "";
+      finish(reject, cmfError(500, "cmf_worker_failed", detail || "CMF worker failed."));
     });
     worker.once("exit", (code) => {
       if (!settled && code !== 0) {

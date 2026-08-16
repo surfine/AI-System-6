@@ -325,6 +325,10 @@ function setClioStageMode(mode) {
   if (!clioStageState.parsed) return;
   clioStageState.mode = ["source", "document", "slide", "cue"].includes(mode) ? mode : "document";
   renderClioStage();
+  // Reading the deck is not presenting it: the screen is only held for the
+  // two modes a person actually stands in front of, and let go on the way out.
+  if (clioStageIsPresenting()) window.AISystem6WebPlatform?.holdScreenWakeLock?.("clioStage");
+  else window.AISystem6WebPlatform?.releaseScreenWakeLock?.("clioStage");
 }
 
 function showClioStageSlide(index) {
@@ -486,6 +490,34 @@ function attachClioStage() {
   if (clioStageState.parsed) renderClioStage();
   else renderClioStageEmpty();
 }
+
+// Presenting is the one ClioStage mode that costs anything continuously (the
+// cue clock) and the one that must not let the screen dim mid-sentence. The
+// elapsed time is wall-clock from startedAt, so stopping the interval loses
+// nothing: the returning presenter sees the true time, not a rewound one.
+function clioStageIsPresenting() {
+  return !!clioStageState.parsed && (clioStageState.mode === "cue" || clioStageState.mode === "slide");
+}
+
+window.AISystem6ApplicationRegistry?.registerApplicationLifecycle?.("clioStage", {
+  onSuspend: () => {
+    window.AISystem6WebPlatform?.releaseScreenWakeLock?.("clioStage");
+    window.clearInterval(clioStageState.timerId);
+    clioStageState.timerId = 0;
+  },
+  onResume: () => {
+    if (clioStageState.startedAt && clioStageState.mode === "cue" && !clioStageState.timerId) {
+      clioStageState.timerId = window.setInterval(updateClioStageTimer, 1000);
+      updateClioStageTimer();
+    }
+    if (clioStageIsPresenting()) window.AISystem6WebPlatform?.holdScreenWakeLock?.("clioStage");
+  },
+  onDispose: () => {
+    window.AISystem6WebPlatform?.releaseScreenWakeLock?.("clioStage");
+    window.clearInterval(clioStageState.timerId);
+    clioStageState.timerId = 0;
+  },
+});
 
 window.AISystem6ClioStage = {
   open: openClioStage,

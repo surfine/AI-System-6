@@ -200,9 +200,6 @@ function getElements() {
   const notePadPrevButton = document.querySelector("#note-pad-prev");
   const notePadNextButton = document.querySelector("#note-pad-next");
   const notePadPageLabelEl = document.querySelector("#note-pad-page-label");
-  const notePadSendTeachTextButton = document.querySelector("#note-pad-send-teachtext");
-  const notePadSendScrapbookButton = document.querySelector("#note-pad-send-scrapbook");
-  const notePadSendAssistantButton = document.querySelector("#note-pad-send-assistant");
   const clipboardTextInput = document.querySelector("#clipboard-text");
   const clipboardMetaEl = document.querySelector("#clipboard-meta");
   const clipboardInsertButton = document.querySelector("#clipboard-insert");
@@ -599,9 +596,6 @@ function getElements() {
     notePadPrevButton,
     notePadNextButton,
     notePadPageLabelEl,
-    notePadSendTeachTextButton,
-    notePadSendScrapbookButton,
-    notePadSendAssistantButton,
     clipboardTextInput,
     clipboardMetaEl,
     clipboardInsertButton,

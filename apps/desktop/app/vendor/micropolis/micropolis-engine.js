@@ -968,22 +968,22 @@ var MicropolisEngine = (() => {
       }
     }
   };
-  var apply = function(budget2) {
+  var apply = function(budget) {
     this._worldEffects.apply();
-    budget2.spend(this._applicationCost);
+    budget.spend(this._applicationCost);
     this.clear();
   };
-  var modifyIfEnoughFunding = function(budget2) {
+  var modifyIfEnoughFunding = function(budget) {
     if (this.result !== this.TOOLRESULT_OK) {
       this.clear();
       return false;
     }
-    if (budget2.totalFunds < this._applicationCost) {
+    if (budget.totalFunds < this._applicationCost) {
       this.result = this.TOOLRESULT_NO_MONEY;
       this.clear();
       return false;
     }
-    apply.call(this, budget2);
+    apply.call(this, budget);
     this.clear();
     return true;
   };
@@ -2239,11 +2239,13 @@ var MicropolisEngine = (() => {
   TileSet.prototype._verifyImage = function(image, callback, errorCallback) {
     var width2 = image.width;
     var height2 = image.height;
-    if (width2 !== height2 || width2 !== ACCEPTABLE_DIMENSION) {
+    var scale = width2 / ACCEPTABLE_DIMENSION;
+    if (width2 !== height2 || !(scale >= 1) || Math.floor(scale) !== scale) {
       window.setTimeout(errorCallback, 0);
       return;
     }
-    var tileWidth = this.tileWidth = TILE_SIZE;
+    this.scale = scale;
+    var tileWidth = this.tileWidth = TILE_SIZE * scale;
     var c = document.createElement("canvas");
     c.width = tileWidth;
     c.height = tileWidth;
@@ -2338,12 +2340,17 @@ var MicropolisEngine = (() => {
   };
   GameCanvas.prototype._calculateDimensions = function(force) {
     force = force || false;
-    var canvasWidth = this.canvasWidth = this._canvas.parentNode.clientWidth;
-    var canvasHeight = this.canvasHeight = this._canvas.parentNode.clientHeight;
+    var scale = this._tileSet.scale || 1;
+    var cssWidth = this._canvas.parentNode.clientWidth;
+    var cssHeight = this._canvas.parentNode.clientHeight;
+    var canvasWidth = this.canvasWidth = cssWidth * scale;
+    var canvasHeight = this.canvasHeight = cssHeight * scale;
     if (canvasHeight === this._lastCanvasHeight && canvasWidth === this._lastCanvasWidth && !force)
       return;
     this._canvas.width = canvasWidth;
     this._canvas.height = canvasHeight;
+    this._canvas.style.width = cssWidth + "px";
+    this._canvas.style.height = cssHeight + "px";
     var w = this._tileSet.tileWidth;
     this._wholeTilesInViewX = Math.floor(canvasWidth / w);
     this._wholeTilesInViewY = Math.floor(canvasHeight / w);
@@ -2441,9 +2448,10 @@ var MicropolisEngine = (() => {
       throw new Error("GameCanvas canvasCoordinateToTileOffset called with too few arguments " + [].toString.apply(arguments));
     if (!this.ready)
       throw new Error("Not ready!");
+    var cssTileWidth = this._tileSet.tileWidth / (this._tileSet.scale || 1);
     return {
-      x: Math.floor(x / this._tileSet.tileWidth),
-      y: Math.floor(y / this._tileSet.tileWidth)
+      x: Math.floor(x / cssTileWidth),
+      y: Math.floor(y / cssTileWidth)
     };
   };
   GameCanvas.prototype.canvasCoordinateToTileCoordinate = function(x, y) {
@@ -2451,11 +2459,12 @@ var MicropolisEngine = (() => {
       throw new Error("GameCanvas canvasCoordinateToTileCoordinate called with too few arguments " + [].toString.apply(arguments));
     if (!this.ready)
       throw new Error("Not ready!");
-    if (x >= this.canvasWidth || y >= this.canvasHeight)
+    var scale = this._tileSet.scale || 1;
+    if (x * scale >= this.canvasWidth || y * scale >= this.canvasHeight)
       return null;
     return {
-      x: this._originX + Math.floor(x / this._tileSet.tileWidth),
-      y: this._originY + Math.floor(y / this._tileSet.tileWidth)
+      x: this._originX + Math.floor(x * scale / this._tileSet.tileWidth),
+      y: this._originY + Math.floor(y * scale / this._tileSet.tileWidth)
     };
   };
   GameCanvas.prototype.canvasCoordinateToPosition = function(x, y) {
@@ -2463,10 +2472,11 @@ var MicropolisEngine = (() => {
       throw new Error("GameCanvas canvasCoordinateToPosition called with too few arguments " + [].toString.apply(arguments));
     if (!this.ready)
       throw new Error("Not ready!");
-    if (x >= this.canvasWidth || y >= this.canvasHeight)
+    var scale = this._tileSet.scale || 1;
+    if (x * scale >= this.canvasWidth || y * scale >= this.canvasHeight)
       return null;
-    x = this._originX + Math.floor(x / this._tileSet.tileWidth);
-    y = this._originY + Math.floor(y / this._tileSet.tileWidth);
+    x = this._originX + Math.floor(x * scale / this._tileSet.tileWidth);
+    y = this._originY + Math.floor(y * scale / this._tileSet.tileWidth);
     if (x < 0 || x >= this._map.width || y < 0 || y >= this._map.height)
       return null;
     return new Position(x, y);
@@ -2489,9 +2499,10 @@ var MicropolisEngine = (() => {
       throw e;
     if (x < this._originX || x >= this._originX + this._totalTilesInViewX || y < this._originY || y >= this._originY + this._totalTilesInViewY)
       return null;
+    var cssTileWidth = this._tileSet.tileWidth / (this._tileSet.scale || 1);
     return {
-      x: (x - this._originX) * this._tileSet.tileWidth,
-      y: (y - this._originY) * this._tileSet.tileWidth
+      x: (x - this._originX) * cssTileWidth,
+      y: (y - this._originY) * cssTileWidth
     };
   };
   GameCanvas.prototype.changeTileSet = function(tileSet) {
@@ -2525,20 +2536,21 @@ var MicropolisEngine = (() => {
   };
   GameCanvas.prototype._processSprites = function(ctx, spriteList) {
     var spriteDamage = [];
-    var tileWidth = this._tileSet.tileWidth;
+    var scale = this._tileSet.scale || 1;
+    var tileWidth = this._tileSet.tileWidth / scale;
     for (var i = 0, l = spriteList.length; i < l; i++) {
       var sprite = spriteList[i];
       try {
         ctx.drawImage(
           this._spriteSheet,
-          (sprite.frame - 1) * 48,
-          (sprite.type - 1) * 48,
-          sprite.width,
-          sprite.width,
-          sprite.x + sprite.xOffset - this._originX * 16,
-          sprite.y + sprite.yOffset - this._originY * 16,
-          sprite.width,
-          sprite.width
+          (sprite.frame - 1) * 48 * scale,
+          (sprite.type - 1) * 48 * scale,
+          sprite.width * scale,
+          sprite.width * scale,
+          (sprite.x + sprite.xOffset - this._originX * 16) * scale,
+          (sprite.y + sprite.yOffset - this._originY * 16) * scale,
+          sprite.width * scale,
+          sprite.width * scale
         );
       } catch (e2) {
         throw new Error("Failed to draw sprite " + sprite.type + " frame " + sprite.frame + " at " + sprite.x + ", " + sprite.y);
@@ -2612,7 +2624,7 @@ var MicropolisEngine = (() => {
       var yBound = Math.min(this._lastPaintedHeight, height2);
       for (y = 0; y < yBound; y++) {
         for (x = 0; x < xBound; x++) {
-          index = y * xBound + x;
+          index = y * width2 + x;
           if (lastPaintedTiles[index] === paintData[index])
             continue;
           this._paintOne(ctx, paintData[index], x, y);
@@ -4426,7 +4438,7 @@ var MicropolisEngine = (() => {
     for (var i = 0, l = saveProps3.length; i < l; i++)
       this[saveProps3[i]] = saveData[saveProps3[i]];
   };
-  Census.prototype.take10Census = function(budget2) {
+  Census.prototype.take10Census = function(budget) {
     var resPopDenom = 8;
     rotate10Arrays.call(this);
     this.resHist10[0] = Math.floor(this.resPop / resPopDenom);
@@ -4436,7 +4448,7 @@ var MicropolisEngine = (() => {
     this.crimeHist10[0] = Math.min(this.crimeRamp, 255);
     this.pollutionRamp += Math.floor((this.pollutionAverage - this.pollutionRamp) / 4);
     this.pollutionHist10[0] = Math.min(this.pollutionRamp, 255);
-    var x = Math.floor(budget2.cashFlow / 20) + 128;
+    var x = Math.floor(budget.cashFlow / 20) + 128;
     this.moneyHist10[0] = MiscUtils.clamp(x, 0, 255);
     var resPopScaled = this.resPop >> 8;
     if (this.hospitalPop < this.resPopScaled)
@@ -4810,11 +4822,11 @@ var MicropolisEngine = (() => {
   var getFireSeverity = function(census) {
     return Math.min(census.firePop * 5, 255);
   };
-  Evaluation.prototype.doProblems = function(census, budget2, blockMaps) {
+  Evaluation.prototype.doProblems = function(census, budget, blockMaps) {
     problemData[Evaluation.CRIME] = census.crimeAverage;
     problemData[Evaluation.POLLUTION] = census.pollutionAverage;
     problemData[Evaluation.HOUSING] = census.landValueAverage * 7 / 10;
-    problemData[Evaluation.TAXES] = budget2.cityTax * 10;
+    problemData[Evaluation.TAXES] = budget.cityTax * 10;
     problemData[Evaluation.TRAFFIC] = getTrafficAverage(blockMaps, census);
     problemData[Evaluation.UNEMPLOYMENT] = getUnemployment(census);
     problemData[Evaluation.FIRE] = getFireSeverity(census);
@@ -4830,7 +4842,7 @@ var MicropolisEngine = (() => {
   };
   Evaluation.prototype.getScore = function(simData) {
     var census = simData.census;
-    var budget2 = simData.budget;
+    var budget = simData.budget;
     var valves = simData.valves;
     var cityScoreLast = this.cityScore;
     var score = 0;
@@ -4845,12 +4857,12 @@ var MicropolisEngine = (() => {
       score = Math.round(score * demandPenalty);
     if (valves.indCap)
       score = Math.round(score * demandPenalty);
-    if (budget2.roadEffect < budget2.MAX_ROAD_EFFECT)
-      score -= budget2.MAX_ROAD_EFFECT - budget2.roadEffect;
-    if (budget2.policeEffect < budget2.MAX_POLICE_STATION_EFFECT)
-      score = Math.round(score * (0.9 + budget2.policeEffect / (10 * budget2.MAX_POLICE_STATION_EFFECT)));
-    if (budget2.fireEffect < budget2.MAX_FIRE_STATION_EFFECT)
-      score = Math.round(score * (0.9 + budget2.fireEffect / (10 * budget2.MAX_FIRE_STATION_EFFECT)));
+    if (budget.roadEffect < budget.MAX_ROAD_EFFECT)
+      score -= budget.MAX_ROAD_EFFECT - budget.roadEffect;
+    if (budget.policeEffect < budget.MAX_POLICE_STATION_EFFECT)
+      score = Math.round(score * (0.9 + budget.policeEffect / (10 * budget.MAX_POLICE_STATION_EFFECT)));
+    if (budget.fireEffect < budget.MAX_FIRE_STATION_EFFECT)
+      score = Math.round(score * (0.9 + budget.fireEffect / (10 * budget.MAX_FIRE_STATION_EFFECT)));
     if (valves.resValve < -1e3)
       score = Math.round(score * 0.85);
     if (valves.comValve < -1e3)
@@ -4866,7 +4878,7 @@ var MicropolisEngine = (() => {
       scale = 0.95 + Math.floor(this.cityPopDelta / (this.cityPop - this.cityPopDelta));
     }
     score = Math.round(score * scale);
-    score = score - getFireSeverity(census) - budget2.cityTax;
+    score = score - getFireSeverity(census) - budget.cityTax;
     scale = census.unpoweredZoneCount + census.poweredZoneCount;
     if (scale > 0)
       score = Math.round(score * (census.poweredZoneCount / scale));
@@ -6284,7 +6296,7 @@ var MicropolisEngine = (() => {
     this.indValve = saveData.indValve;
     this._emitEvent(VALVES_UPDATED);
   };
-  Valves.prototype.setValves = function(gameLevel, census, budget2) {
+  Valves.prototype.setValves = function(gameLevel, census, budget) {
     var resPopDenom = 8;
     var birthRate = 0.02;
     var labourBaseMax = 1.3;
@@ -6334,7 +6346,7 @@ var MicropolisEngine = (() => {
     resRatio = Math.min(resRatio, resRatioMax);
     comRatio = Math.min(comRatio, comRatioMax);
     indRatio = Math.min(indRatio, indRatioMax);
-    var z = Math.min(budget2.cityTax + gameLevel, taxMax);
+    var z = Math.min(budget.cityTax + gameLevel, taxMax);
     resRatio = (resRatio - 1) * taxTableScale + taxTable[z];
     comRatio = (comRatio - 1) * taxTableScale + taxTable[z];
     indRatio = (indRatio - 1) * taxTableScale + taxTable[z];
@@ -6574,9 +6586,9 @@ var MicropolisEngine = (() => {
         break;
       case 9:
         if (this._cityTime % CENSUS_FREQUENCY_10 === 0)
-          this._census.take10Census(budget);
+          this._census.take10Census(this.budget);
         if (this._cityTime % CENSUS_FREQUENCY_120 === 0)
-          this._census.take120Census(budget);
+          this._census.take120Census(this.budget);
         if (this._cityTime % TAX_FREQUENCY === 0) {
           this.budget.collectTax(this._gameLevel, this._census);
           this.evaluation.cityEvaluation(simData);

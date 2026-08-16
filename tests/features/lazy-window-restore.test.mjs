@@ -168,4 +168,106 @@ test.assertNotIncludes(
   "lazy-window loading is one registry, not a scatter of per-window ifs"
 );
 
+// --- Searcher / Find File ----------------------------------------------------
+// findpath.js owns two windows but queries none of their element ids (its DOM
+// handles are declared in app.js), so the ownership scoring above cannot see
+// it. Pin the contract by hand instead — the boot budget depends on this module
+// staying off the startup disk.
+const boot = read("app/core/boot.js");
+const findPathSource = read("app/features/findpath.js");
+
+test.assertMatches(
+  manifest,
+  /lazyRuntimePaths[\s\S]*"app\/features\/findpath\.js"/,
+  "Searcher sits in lazyRuntimePaths"
+);
+test.assertNotIncludes(
+  manifest.split("lazyRuntimePaths = [")[0],
+  "app/features/findpath.js",
+  "Searcher is not part of the startup bundle list"
+);
+test.assertIncludes(
+  findPathSource,
+  "window.AISystem6FindPathLoaded = true;",
+  "Searcher installs the flag its lazy loader verifies"
+);
+
+["findPath", "findFile"].forEach((name) => {
+  test.assertMatches(
+    registryBlock,
+    new RegExp(`\\b${name}:\\s*\\{[\\s\\S]{0,200}?ensure: \\(\\) => ensureFindPathModule\\(\\)`),
+    `${name} loads the Searcher module inside openWindow, so session restore cannot leave it inert`
+  );
+  test.assertMatches(
+    registryBlock,
+    new RegExp(`\\b${name}:\\s*\\{[\\s\\S]{0,200}?attach:`),
+    `${name} repaints its result pane on restore`
+  );
+});
+
+// Startup used to paint the Searcher's result pane. That single call is enough
+// to drag the whole module back onto the startup disk.
+test.assertNotIncludes(
+  boot,
+  "renderFindPathResults();",
+  "startup does not reach into the lazy Searcher module"
+);
+
+// A bare `"action": lazyFunction` reference is resolved when the registry
+// object is built, and one ReferenceError takes the entire registry down.
+[
+  ["clip-selected-find-path", "clipSelectedFindPath"],
+  ["synthesize-search-results", "synthesizeFindPath"],
+  ["copy-search-result-markdown", "copySelectedFindPath"],
+  ["insert-search-result", "insertFindPathIntoTeachText"],
+  ["open-selected-find-file", "openSelectedFindFileResult"],
+  ["reveal-selected-find-file", "revealSelectedFindFileResult"],
+].forEach(([action, fn]) => {
+  test.assertNotIncludes(
+    actions,
+    `"${action}": ${fn}`,
+    `the action registry never resolves ${fn} at boot`
+  );
+  test.assertMatches(
+    actions,
+    new RegExp(`"${action}": async \\(\\) => \\{[\\s\\S]{0,120}?await ensureFindPathModule\\(\\);[\\s\\S]{0,80}?${fn}\\(`),
+    `${action} loads the Searcher module before calling into it`
+  );
+});
+
+// The label helpers run during startup language setup, so they must live on the
+// eager side of the split.
+["function getSearchProviderLabel(", "function updateSearchProviderLabels("].forEach((decl) => {
+  test.assertIncludes(selectionServices, decl, `${decl}) stays on the startup disk`);
+  test.assertNotIncludes(findPathSource, decl, `${decl}) is not stranded in the lazy module`);
+});
+test.assertIncludes(
+  appRoot,
+  "updateSearchProviderLabels();",
+  "startup refreshes the Find Sources label without loading the Searcher"
+);
+
+// `?.()` does not guard an undefined identifier — that is a ReferenceError, not
+// a skipped call. The provider-change listener runs before the module exists.
+test.assertNotIncludes(
+  wireup,
+  "updateFindPathStatusBar?.()",
+  "the provider listener does not use optional call on a name that may not exist"
+);
+test.assertIncludes(
+  wireup,
+  'if (typeof updateFindPathStatusBar === "function") updateFindPathStatusBar();',
+  "the provider listener tests the identifier itself before calling it"
+);
+test.assertMatches(
+  wireup,
+  /findPathForm\.addEventListener\("submit", async \(event\) => \{[\s\S]{0,240}?await ensureFindPathModule\(\);/,
+  "the Searcher form loads its module before running a search"
+);
+test.assertMatches(
+  wireup,
+  /findFileForm\?\.addEventListener\("submit", async \(event\) => \{[\s\S]{0,160}?await ensureFindPathModule\(\);/,
+  "the Find File form loads its module before running a search"
+);
+
 test.finish();

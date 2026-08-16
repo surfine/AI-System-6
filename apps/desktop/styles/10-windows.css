@@ -407,7 +407,7 @@ body.quick-draft-focus .writing-spine-panel {
 .note-pad-window {
   top: 76px;
   right: 150px;
-  width: 320px;
+  width: var(--da-width-pad);
 }
 
 .alarm-clock-window {
@@ -433,7 +433,7 @@ body.quick-draft-focus .writing-spine-panel {
 .writing-bell-window {
   top: 86px;
   right: 164px;
-  width: 300px;
+  width: var(--da-width-dial);
   height: auto;
 }
 
@@ -455,7 +455,7 @@ body.quick-draft-focus .writing-spine-panel {
 .clipboard-window {
   top: 126px;
   right: 190px;
-  width: 340px;
+  width: var(--da-width-pad);
 }
 
 .model-meter-window {
@@ -1041,6 +1041,10 @@ html:lang(zh-Hans) .title-bar h2 {
   min-width: 0;
   min-height: 0;
   background: var(--window-frame-track-bg);
+  /* Eras that shade their lane already name the colours; without these hooks
+     the values sat unused and Platinum's beveled scroll bar rendered as three
+     flat rectangles. Classic leaves them unset and stays 1-bit. */
+  box-shadow: var(--window-frame-track-shadow, none);
 }
 
 .window-frame-thumb {
@@ -1050,6 +1054,7 @@ html:lang(zh-Hans) .title-bar h2 {
      family and Liquid Glass set their capsules here. */
   border-radius: var(--window-frame-thumb-radius, 0);
   background: var(--window-frame-thumb-bg);
+  box-shadow: var(--window-frame-thumb-shadow, none);
 }
 
 /* The side that meets the window frame is already a line; drawing the thumb's
@@ -1080,15 +1085,23 @@ html:lang(zh-Hans) .title-bar h2 {
   border: 0;
   background-color: var(--window-frame-arrow-bg);
   background-repeat: no-repeat;
+  box-shadow: var(--window-frame-arrow-shadow, none);
   cursor: default;
 }
 
+/* Where the two boxes sit is an era decision, not a fixed fact. System 6 and
+   Platinum put one at each end of the lane; Aqua stacks both under the track,
+   so the era moves them with `order` and drops the divider that is no longer
+   between a button and the track. The DOM stays [up, track, down] either way,
+   which keeps the tab order and the hit targets exactly where they were. */
 .is-vertical .window-frame-arrow.is-up {
-  border-bottom: var(--window-frame-track-border);
+  order: var(--window-frame-arrow-up-order, 0);
+  border-bottom: var(--window-frame-arrow-up-border-bottom, var(--window-frame-track-border));
 }
 
 .is-vertical .window-frame-arrow.is-down {
-  border-top: var(--window-frame-track-border);
+  order: var(--window-frame-arrow-down-order, 0);
+  border-top: var(--window-frame-arrow-down-border-top, var(--window-frame-track-border));
 }
 
 .is-horizontal .window-frame-arrow.is-left {
@@ -1100,24 +1113,27 @@ html:lang(zh-Hans) .title-bar h2 {
 }
 
 /* Native arrows are stepped 1-bit pixels, not antialiased diagonals. */
+/* An era that owns real arrow-button art hands it over through these three
+   tokens; the stepped 1-bit triangle stays the fallback, so Classic and every
+   era that never drew a button of its own is untouched. */
 .window-frame-arrow.is-up {
-  background-image:
+  background-image: var(--window-frame-arrow-up-art,
     linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)),
     linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)),
     linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)),
-    linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink));
-  background-size: 1px 1px, 3px 1px, 5px 1px, 7px 1px;
-  background-position: left 7px top 5px, left 6px top 6px, left 5px top 7px, left 4px top 8px;
+    linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)));
+  background-size: var(--window-frame-arrow-up-art-size, 1px 1px, 3px 1px, 5px 1px, 7px 1px);
+  background-position: var(--window-frame-arrow-up-art-position, left 7px top 5px, left 6px top 6px, left 5px top 7px, left 4px top 8px);
 }
 
 .window-frame-arrow.is-down {
-  background-image:
+  background-image: var(--window-frame-arrow-down-art,
     linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)),
     linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)),
     linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)),
-    linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink));
-  background-size: 7px 1px, 5px 1px, 3px 1px, 1px 1px;
-  background-position: left 4px top 5px, left 5px top 6px, left 6px top 7px, left 7px top 8px;
+    linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)));
+  background-size: var(--window-frame-arrow-down-art-size, 7px 1px, 5px 1px, 3px 1px, 1px 1px);
+  background-position: var(--window-frame-arrow-down-art-position, left 4px top 5px, left 5px top 6px, left 6px top 7px, left 7px top 8px);
 }
 
 .window-frame-arrow.is-left {
@@ -1240,6 +1256,26 @@ html:lang(zh-Hans) .title-bar h2 {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
+}
+
+/* One shared row across the accessories: what this window is attached to.
+   Note Pad names where a slip came from, SideAsk the window it is paired with,
+   the Translation Pad where the source text came from.
+
+   :not([hidden]) or the author display outranks the attribute, and the row
+   would announce an origin the window does not have. */
+.da-origin {
+  display: none;
+}
+
+.da-origin:not([hidden]) {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 8px;
+  border-bottom: var(--details-bar-border-bottom, 0);
+  color: var(--shade-dark);
+  font-size: 11px;
 }
 
 .status-bar-leading {
@@ -1889,9 +1925,8 @@ html:lang(zh-Hans) .title-bar h2 {
   opacity: 1;
 }
 
-.window-pane {
-  padding: 10px;
-}
+/* .window-pane { padding: 10px } — the same declaration, same value, same file
+   as the base rule above. Audited DEAD on 2026-08-14. */
 
 .messages {
   flex: 1;
@@ -1942,6 +1977,13 @@ html:lang(zh-Hans) .title-bar h2 {
 .message-actions .btn {
   padding: 2px 8px;
   font-size: 11px;
+}
+
+/* Scrollback keeps what it is evidence of — the reply, its basis, and whether
+   it was ever kept — and drops the verbs, which only ever act on the turn being
+   worked on. Selecting an older turn brings them back. */
+.assistant-window .message:not(.is-current-turn) .message-actions .btn {
+  display: none;
 }
 
 .assistant-window .messages {
@@ -2298,100 +2340,6 @@ html:lang(zh-Hans) .title-bar h2 {
   white-space: nowrap;
 }
 
-.message-use-actions,
-.message-more-actions {
-  position: relative;
-  min-width: 0;
-}
-
-.message-use-actions[open] {
-  flex: 0 0 auto;
-}
-
-.message-use-actions > summary,
-.message-more-actions > summary {
-  width: fit-content;
-  list-style: none;
-  cursor: pointer;
-}
-
-.message-use-actions > summary::-webkit-details-marker,
-.message-more-actions > summary::-webkit-details-marker {
-  display: none;
-}
-
-.message-use-actions[open] > summary,
-.message-more-actions[open] > summary {
-  border-color: var(--clio-use-active-border);
-  background: var(--clio-use-active-bg);
-  color: var(--clio-use-active-fg);
-}
-
-.message-actions .message-use-actions > summary,
-.message-actions .message-more-actions > .message-more-summary {
-  box-sizing: border-box;
-  height: 24px;
-  min-height: 24px;
-}
-
-.message-actions .message-use-actions > summary {
-  display: inline-flex;
-  min-width: 0;
-  align-items: center;
-  padding: 1px 7px;
-}
-
-.message-actions .message-more-actions > .message-more-summary {
-  display: inline-grid;
-  width: 24px;
-  min-width: 24px;
-  place-items: center;
-  padding: 0;
-}
-
-.message-more-glyph {
-  display: block;
-  width: 3px;
-  height: 3px;
-  border-radius: 50%;
-  background: currentColor;
-  box-shadow: -5px 0 0 currentColor, 5px 0 0 currentColor;
-}
-
-.message-use-menu,
-.message-action-menu {
-  position: absolute;
-  left: 0;
-  right: auto;
-  bottom: calc(100% + 6px);
-  display: grid;
-  gap: 4px;
-  width: min(224px, calc(100vw - 56px));
-  box-sizing: border-box;
-  padding: 5px;
-  border: var(--clio-action-border);
-  border-radius: var(--clio-action-radius);
-  background: var(--clio-action-surface);
-  box-shadow: var(--clio-action-shadow);
-}
-
-.message.user .message-action-menu {
-  left: auto;
-  right: 0;
-}
-
-.message-use-menu.is-below,
-.message-action-menu.is-below {
-  top: calc(100% + 6px);
-  bottom: auto;
-}
-
-.message-use-menu .btn,
-.message-action-menu .btn {
-  width: 100%;
-  text-align: left;
-}
-
 .message-error {
   padding: 10px 12px;
   border: 1px solid var(--ink);
@@ -2484,6 +2432,9 @@ html:lang(zh-Hans) .title-bar h2 {
   border-top: 2px dotted var(--shade-dark);
   margin: 9px 0;
 }
+
+/* Tables are drawn once for both rendered surfaces, over in 50-apps.css beside
+   the writing preview. */
 
 .assistant-window .message-content h1,
 .assistant-window .message-content h2,
@@ -2976,8 +2927,6 @@ html:lang(zh-Hans) .title-bar h2 {
 }
 
 .compose-tools-menu,
-.message-use-menu,
-.message-action-menu,
 .clio-scroll-latest {
   z-index: var(--z-local-popover);
 }
@@ -3215,6 +3164,24 @@ select:focus {
   min-width: 12px;
 }
 
+/* A row that may not wrap: the shared row wraps before it shrinks, so a pad
+   growing a conditional fourth button dropped its default button -- the
+   writer's target -- onto a line of its own. Labels give up their tail
+   instead. Keep .btn's min-width (min-width: 0 shrinks all four and truncates
+   the default button) and the spacer's 12px floor. inline-block, not the
+   shared inline-flex: text-overflow cannot reach the anonymous flex item a
+   bare label becomes, which sliced labels at both ends instead. */
+.button-row.is-one-line {
+  flex-wrap: nowrap;
+}
+
+.button-row.is-one-line > .btn {
+  display: inline-block;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+}
+
 /* inline-flex, not block flow: a button taller than its own line box (min-height,
    a stretching parent, a smaller-font label span) would otherwise leave the label
    sitting off-centre. inline-flex keeps the inline-level box the layout expects;
@@ -3365,11 +3332,16 @@ select:focus {
 
 .btn[data-loading="true"] {
   position: relative;
-  color: transparent;
   pointer-events: none;
   opacity: 1;
 }
 
+/* The idle label keeps its box (so the button cannot resize while it works) but
+   stops painting. Hiding it by ink colour does not hold: a busy button is also
+   disabled, and the disabled rules in 60-responsive.css and the theme files load
+   later and re-ink the text, which printed the idle and busy labels on top of
+   each other. setControlLoading() wraps bare label text in
+   .control-idle-label so every part of the label is an element child here. */
 .btn[data-loading="true"] > * {
   visibility: hidden;
 }

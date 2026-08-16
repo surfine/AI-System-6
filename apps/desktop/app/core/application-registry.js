@@ -478,6 +478,94 @@ registerApplication({
   },
 });
 
+// ---- Application lifecycle -----------------------------------------------
+// Optional. An application that registers no lifecycle behaves exactly as it
+// did before: the desktop only calls hooks an app declared.
+//
+//   onSuspend()  save recoverable state, stop the continuing cost
+//   onResume()   bring the running app back; never re-initialize it
+//   onDispose()  release everything
+//
+// The registry owns the state machine and the error boundary, and reads no
+// DOM: the caller decides which applications are in the foreground and hands
+// that set in. The same contract therefore covers a hidden window, a hidden
+// MultiFinder app, and a backgrounded Home Screen App.
+
+const applicationLifecycles = new Map();
+
+function registerApplicationLifecycle(appId, handlers = {}) {
+  const id = String(appId || "").trim();
+  if (!id) throw new TypeError("Application lifecycle requires an app id.");
+  const hook = (name) => (typeof handlers[name] === "function" ? handlers[name] : null);
+  // Re-registering (a module reloaded, an app rebuilt after dispose) starts
+  // the app active again — dispose is never the resting state of a live app.
+  const record = {
+    id,
+    state: "active",
+    onSuspend: hook("onSuspend"),
+    onResume: hook("onResume"),
+    onDispose: hook("onDispose"),
+  };
+  applicationLifecycles.set(id, record);
+  return () => {
+    if (applicationLifecycles.get(id) === record) applicationLifecycles.delete(id);
+  };
+}
+
+function getApplicationLifecycleState(appId) {
+  return applicationLifecycles.get(String(appId || ""))?.state || "";
+}
+
+// A throwing hook must not wedge the app: the state still advances, so an app
+// whose suspend half-failed can still be resumed instead of staying dark.
+async function runApplicationLifecycleHook(record, hookName, nextState, reason) {
+  const handler = record[hookName];
+  record.state = nextState;
+  if (!handler) return true;
+  try {
+    await handler({ appId: record.id, reason: String(reason || "") });
+    return true;
+  } catch (error) {
+    console.warn(`Application ${record.id} ${hookName} failed.`, error);
+    return false;
+  }
+}
+
+async function suspendApplication(appId, reason = "") {
+  const record = applicationLifecycles.get(String(appId || ""));
+  if (!record || record.state !== "active") return false;
+  return runApplicationLifecycleHook(record, "onSuspend", "suspended", reason);
+}
+
+async function resumeApplication(appId, reason = "") {
+  const record = applicationLifecycles.get(String(appId || ""));
+  if (!record || record.state !== "suspended") return false;
+  return runApplicationLifecycleHook(record, "onResume", "active", reason);
+}
+
+// Total release. Nothing resumes a disposed app; its next attach registers the
+// lifecycle again, and that is what makes it active.
+async function disposeApplication(appId, reason = "") {
+  const record = applicationLifecycles.get(String(appId || ""));
+  if (!record || record.state === "disposed") return false;
+  return runApplicationLifecycleHook(record, "onDispose", "disposed", reason);
+}
+
+async function syncApplicationLifecycle({ foregroundAppIds = [], documentHidden = false, reason = "" } = {}) {
+  const foreground = foregroundAppIds instanceof Set ? foregroundAppIds : new Set(foregroundAppIds);
+  const pending = [];
+  for (const record of applicationLifecycles.values()) {
+    if (record.state === "disposed") continue;
+    const shouldRun = !documentHidden && foreground.has(record.id);
+    if (shouldRun && record.state === "suspended") {
+      pending.push(resumeApplication(record.id, reason || "foreground"));
+    } else if (!shouldRun && record.state === "active") {
+      pending.push(suspendApplication(record.id, reason || "background"));
+    }
+  }
+  return Promise.all(pending);
+}
+
 window.AISystem6ApplicationRegistry = Object.freeze({
   intents: applicationIntents,
   registerApplication,
@@ -486,4 +574,10 @@ window.AISystem6ApplicationRegistry = Object.freeze({
   dispatchApplicationIntent,
   openProjectObject,
   itemKind: applicationItemKind,
+  registerApplicationLifecycle,
+  getApplicationLifecycleState,
+  suspendApplication,
+  resumeApplication,
+  disposeApplication,
+  syncApplicationLifecycle,
 });

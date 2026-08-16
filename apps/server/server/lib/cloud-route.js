@@ -48,6 +48,18 @@ function cloudRouteError(status, code, retryAfter, detail, warning) {
 }
 
 /**
+ * The model-call payload a route hands to the cloud. The helper meters the
+ * shared allowance, so it reads and writes `max_tokens` and `user_id`. Every
+ * other field stays as the caller built it.
+ *
+ * @typedef {{
+ *   model?: string,
+ *   max_tokens?: number,
+ *   user_id?: string,
+ * } & Record<string, unknown>} CloudCallPayload
+ */
+
+/**
  * Resolve how a server-side model route should call the cloud on the public
  * deployment: the browser-supplied BYOK key when one is present, otherwise the
  * shared allowance with a budget reservation. Failures throw the structured
@@ -60,12 +72,12 @@ function cloudRouteError(status, code, retryAfter, detail, warning) {
  * @param {string} [options.suppliedApiKey]
  * @param {string} [options.requestedBaseUrl] Ignored publicly; kept for caller compatibility.
  * @param {string} [options.model]
- * @param {object} options.payload
+ * @param {CloudCallPayload} options.payload
  * @param {import("node:http").IncomingMessage} [options.req]
  * @returns {Promise<{
- *   apiKey: string, baseUrl: string, model: string, payload: object,
+ *   apiKey: string, baseUrl: string, model: string, payload: CloudCallPayload,
  *   pinnedAddress: string, pinnedFamily: number,
- *   authHeaders: object, usingSharedCloud: boolean,
+ *   authHeaders: Record<string, string>, usingSharedCloud: boolean,
  *   reservation: { ok: true, inputTokens: number, outputTokens: number, reservedTokens: number, remainingSessionRequests: number, addUsage: (usage: any) => boolean, markUpstreamStarted: () => void, settle: (options?: any) => any } | null,
  * }>}
  */

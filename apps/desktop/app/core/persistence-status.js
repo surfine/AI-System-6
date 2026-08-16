@@ -115,14 +115,6 @@ function restoreControlStripState(settings) {
   return controlStripState;
 }
 
-function getControlStripCollapsed() {
-  return controlStripCollapsed;
-}
-
-function setControlStripCollapsed(value) {
-  setControlStripState({ collapsed: value === true });
-}
-
 const renderTasks = [
   ["projectLabels", "updateProjectLabels"],
   ["projectDisks", "renderProjectDisks"],
@@ -245,6 +237,8 @@ function settingsSnapshotPayload() {
     theme: getCurrentTheme(),
     soundEffects: soundEffectsInput.checked,
     menuClock: menuClockInput.checked,
+    keepScreenAwake: document.getElementById("keep-screen-awake")?.checked || false,
+    pauseAudioInBackground: document.getElementById("pause-audio-in-background")?.checked || false,
     controlStrip: controlStripState.enabled,
     controlStripState,
     controlStripCollapsed,
@@ -264,6 +258,8 @@ function settingsSnapshotPayload() {
     notePadText: notePadTextInput.value,
     notePadPages,
     notePadPageIndex,
+    notePadDestination,
+    systemNotifications: serializeSystemNotifications(),
     projectCdItems,
     clipboardText,
     clipboardSource,
@@ -1709,6 +1705,12 @@ function applySettings(settings) {
   } else {
     menuClockInput.checked = false;
   }
+  // Both default off: holding the screen on and silencing a player are things
+  // the user asks for, never things a restored desk decides for them.
+  const keepScreenAwakeInput = document.getElementById("keep-screen-awake");
+  if (keepScreenAwakeInput) keepScreenAwakeInput.checked = settings.keepScreenAwake === true;
+  const pauseAudioInput = document.getElementById("pause-audio-in-background");
+  if (pauseAudioInput) pauseAudioInput.checked = settings.pauseAudioInBackground === true;
   restoreControlStripState(settings);
   if (typeof settings.performanceMeter === "boolean") {
     performanceMeterInput.checked = settings.performanceMeter;
@@ -1743,9 +1745,11 @@ function applySettings(settings) {
   if (Array.isArray(settings.notePadPages)) {
     notePadPages = normalizeNotePadPages(settings.notePadPages);
   } else if (typeof settings.notePadText === "string") {
-    notePadPages = [settings.notePadText];
+    notePadPages = normalizeNotePadPages([settings.notePadText]);
   }
   if (Number.isInteger(settings.notePadPageIndex)) notePadPageIndex = settings.notePadPageIndex;
+  if (typeof settings.notePadDestination === "string") notePadDestination = settings.notePadDestination;
+  restoreSystemNotifications(settings.systemNotifications);
   renderNotePadPage();
   if (Array.isArray(settings.projectCdItems)) {
     projectCdItems.splice(0, projectCdItems.length, ...settings.projectCdItems);
@@ -2161,6 +2165,53 @@ function renderNotificationCenter() {
   });
 }
 
+// A system message is a live channel, but the interruption it matters most for
+// is the one that reloads the desk: the Writing Bell's "you stopped here" used
+// to die with the reload, taking its way back with it. So the messages are
+// saved, and a message keeps its Open button because windowName and actionId
+// travel with it.
+//
+// Only the last day is restored. A "you stopped here" from Tuesday is not a
+// message any more, it is litter.
+const systemNotificationRestoreWindowMs = 24 * 60 * 60 * 1000;
+
+function serializeSystemNotifications() {
+  return systemNotifications.slice(0, 16).map((item) => ({
+    id: item.id,
+    message: item.message,
+    createdAt: new Date(item.createdAt).toISOString(),
+    state: item.state || "",
+    windowName: item.windowName || "",
+    actionId: item.actionId || "",
+    actionLabel: item.actionLabel || "",
+  }));
+}
+
+function restoreSystemNotifications(saved) {
+  if (!Array.isArray(saved)) return;
+  const now = Date.now();
+  const restored = saved
+    .map((item) => ({
+      id: String(item?.id || crypto.randomUUID()),
+      message: String(item?.message || ""),
+      createdAt: new Date(item?.createdAt || 0),
+      state: String(item?.state || ""),
+      windowName: String(item?.windowName || ""),
+      actionId: String(item?.actionId || ""),
+      actionLabel: String(item?.actionLabel || ""),
+    }))
+    .filter((item) => item.message
+      && !Number.isNaN(item.createdAt.getTime())
+      && now - item.createdAt.getTime() < systemNotificationRestoreWindowMs)
+    .slice(0, 16);
+  systemNotifications.splice(0, systemNotifications.length, ...restored);
+  // Restored messages are not new: the desk comes back quiet, and the writer
+  // finds them when they look.
+  unreadSystemNotifications = 0;
+  updateNotificationIndicator();
+  renderNotificationCenter();
+}
+
 function pushSystemNotification(message, options = {}) {
   const text = String(message || "").trim();
   if (!text) return "";
@@ -2207,6 +2258,11 @@ function pushSystemNotification(message, options = {}) {
     }
   }
 
+  // Written through the ordinary desk save, so a message and the way back it
+  // carries are still there after a reload. persistDeskState() posts no
+  // messages of its own, so this cannot feed itself.
+  saveDeskState();
+
   const center = getWindow("notificationCenter");
   if (center && !center.classList.contains("is-hidden")) {
     renderNotificationCenter();
@@ -2234,6 +2290,7 @@ function clearSystemNotifications() {
   unreadSystemNotifications = 0;
   updateNotificationIndicator();
   renderNotificationCenter();
+  saveDeskState();
 }
 
 function isSystemReceiptStatusMessage(message) {

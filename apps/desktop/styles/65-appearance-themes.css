@@ -24,7 +24,9 @@ html[data-theme="platinum"],
 body[data-theme="platinum"] {
   /* Apple names Charcoal as the default system font. The face remains
      local-only; Geneva is the historically adjacent installed fallback. */
-  --theme-ui-font: Charcoal, "Charcoal CY", "Platinum Asap", Geneva, "ChicagoFLF", Chicago, "PingFang SC", "Microsoft YaHei", sans-serif;
+  /* 华文宋体: the Simplified face Mac OS 8.5/9 shipped with the Chinese
+     Language Kit. PingFang did not exist until El Capitan in 2015. */
+  --theme-ui-font: Charcoal, "Charcoal CY", "Platinum Asap", Geneva, "ChicagoFLF", Chicago, "STSong", "Songti SC", "SimSun", serif;
   --theme-title-font: var(--theme-ui-font);
   --system-readable-min: 12px;
   --system-title-size: 12px;
@@ -64,6 +66,7 @@ body[data-theme="platinum"] {
   --quiet-panel: #eeeeee;
   --shade: #999999;
   --shade-dark: #777777;
+  --md-marker-ink: #606060;  /* ground is #dddddd here, the darkest of the six */
   --rule: #888888;
   /* Mac OS 9 "azul" desktop: a deep-mid blue wave pattern, not a light
      gradient. The seamless 96px tile is generated (internal/evidence/drafts/gen-azul-tile.mjs,
@@ -248,11 +251,18 @@ body[data-theme="platinum"] {
   --balloon-help-border: 1px solid #000000;
   --balloon-help-radius: 6px;
   --balloon-help-shadow: 2px 2px 0 #777777;
+  /* Platinum draws depth with 1px bevels, never with flat fill: the lane is a
+     sunk channel, the scroll box and the arrow boxes are raised out of it.
+     The same three recipes the webkit scroll bar below already uses, now
+     reaching the window frame's own scroller as well. */
   --window-frame-track-bg: #aaaaaa;
   --window-frame-track-border: 1px solid #000000;
+  --window-frame-track-shadow: inset 1px 1px #777777, inset -1px -1px #cccccc;
   --window-frame-thumb-bg: #9999ff;
   --window-frame-thumb-border: 1px solid #000000;
+  --window-frame-thumb-shadow: inset 1px 1px #ccccff, inset -1px -1px #6666cc;
   --window-frame-arrow-bg: #dddddd;
+  --window-frame-arrow-shadow: inset 1px 1px #ffffff, inset -1px -1px #999999;
   --scrollbar-track: #aaaaaa;
   --scrollbar-thumb: var(--window-frame-thumb-bg);
   --scrollbar-button: #dddddd;
@@ -1334,7 +1344,8 @@ body[data-theme="yosemite"] {
      6/5px radii and active/backdrop states. Period pure-CSS window studies
      confirm the shell geometry; real 10.10 Finder and System Preferences
      captures calibrate translucency. No GTK selectors or assets are copied. */
-  --theme-ui-font: "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", sans-serif;
+  /* 黑体-简: the Simplified system face from Lion through Yosemite. */
+  --theme-ui-font: "Helvetica Neue", Helvetica, "Heiti SC", "STHeiti", "Microsoft YaHei", sans-serif;
   --theme-title-font: var(--theme-ui-font);
   --system-readable-min: 13px;
   --system-title-size: 13px;
@@ -1483,6 +1494,7 @@ body[data-theme="yosemite"] {
   --quiet-panel: rgba(250, 250, 250, 0.97);
   --shade: #c7c7c7;
   --shade-dark: #777777;
+  --md-marker-ink: #717171;  /* ground #f5f5f5 */
   --rule: rgba(0, 0, 0, 0.11);
   --pane-bg: #f5f5f5;
   --details-bar-bg: rgba(245, 245, 245, 0.96);

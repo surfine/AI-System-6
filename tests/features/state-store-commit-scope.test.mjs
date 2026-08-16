@@ -8,15 +8,22 @@
 // failed commit rolls back only the store's own data. Writing ephemeral state
 // inside the callback leaves the UI claiming a change that never persisted.
 //
-// This is a static contract: it parses every commit callback with the
-// TypeScript AST and fails on any direct write to an ephemeral name. It
-// cannot prove runtime behavior, but it makes the architectural rule
-// mechanically enforced for every future commit.
+// This is a static contract: it parses every commit callback and fails on any
+// direct write to an ephemeral name. It cannot prove runtime behavior, but it
+// makes the architectural rule mechanically enforced for every future commit.
 
-import ts from "typescript";
 import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { createFeatureTest, read, resolveProjectPath } from "../helpers/feature-test-harness.mjs";
+import {
+  createFeatureTest,
+  forEachAstChild,
+  parseJsSource,
+  read,
+  resolveProjectPath,
+} from "../helpers/feature-test-harness.mjs";
+
+const isIdentifier = (node) => node.type === "Identifier";
+const isMemberAccess = (node) => node.type === "MemberExpression" && !node.computed;
 
 const test = createFeatureTest("state-store-commit-scope");
 
@@ -88,59 +95,58 @@ function walkFiles(dir, extension) {
 }
 
 function commitCallbackViolations(source, filePath) {
-  const sourceFile = ts.createSourceFile(filePath, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const sourceFile = parseJsSource(source);
   const violations = [];
 
   function ephemeralName(node) {
-    if (ts.isIdentifier(node)) {
-      const name = node.text;
+    if (isIdentifier(node)) {
+      const name = node.name;
       if (EPHEMERAL_IDENTIFIERS.has(name)) return name;
       return "";
     }
-    if (ts.isPropertyAccessExpression(node) && ts.isIdentifier(node.expression)) {
+    if (isMemberAccess(node) && isIdentifier(node.object)) {
       // selectedProjectCdItemIds.clear() / activeProjectId.value — the object
       // itself is ephemeral even when the property is store-shaped.
-      if (EPHEMERAL_IDENTIFIERS.has(node.expression.text)) return node.expression.text;
+      if (EPHEMERAL_IDENTIFIERS.has(node.object.name)) return node.object.name;
     }
     return "";
   }
 
   function walk(node, inCommit) {
-    if (ts.isCallExpression(node)) {
-      const calleeName = ts.isIdentifier(node.expression)
-        ? node.expression.text
-        : ts.isPropertyAccessExpression(node.expression) && ts.isIdentifier(node.expression.expression)
-        ? node.expression.expression.text
+    if (node.type === "CallExpression") {
+      const calleeName = isIdentifier(node.callee)
+        ? node.callee.name
+        : isMemberAccess(node.callee) && isIdentifier(node.callee.object)
+        ? node.callee.object.name
         : "";
       if (inCommit && EPHEMERAL_CALLS.has(calleeName)) {
         violations.push(`${filePath}: commit callback calls ephemeral UI function ${calleeName}`);
       }
       if (
-        calleeName === "commit"
-        && ts.isPropertyAccessExpression(node.expression)
-        && /^AISystem6StateStores/.test(node.expression.expression.getText(sourceFile))
+        node.callee.property?.name === "commit"
+        && isMemberAccess(node.callee)
+        // The call sites read window.AISystem6StateStores.<store>.commit(...),
+        // so the store name is not at the start of the object expression.
+        && /(^|\.)AISystem6StateStores\b/.test(source.slice(node.callee.object.start, node.callee.object.end))
       ) {
         const callback = node.arguments[0];
         if (callback) walk(callback, true);
         return;
       }
     }
-    if (inCommit && ts.isBinaryExpression(node)) {
-      if (node.operatorToken.kind === ts.SyntaxKind.EqualsToken) {
-        const name = ephemeralName(node.left);
-        if (name && !STORE_COVERED_IDENTIFIERS.has(name)) {
-          violations.push(`${filePath}: commit callback assigns ephemeral state ${name}`);
-        }
+    if (inCommit && node.type === "AssignmentExpression" && node.operator === "=") {
+      const name = ephemeralName(node.left);
+      if (name && !STORE_COVERED_IDENTIFIERS.has(name)) {
+        violations.push(`${filePath}: commit callback assigns ephemeral state ${name}`);
       }
     }
-    if (inCommit && ts.isCallExpression(node)) {
-      const callee = node.expression;
-      const name = ephemeralName(callee);
+    if (inCommit && node.type === "CallExpression") {
+      const name = ephemeralName(node.callee);
       if (name && !STORE_COVERED_IDENTIFIERS.has(name)) {
         violations.push(`${filePath}: commit callback mutates ephemeral state ${name}`);
       }
     }
-    ts.forEachChild(node, (child) => walk(child, inCommit));
+    forEachAstChild(node, (child) => walk(child, inCommit));
   }
 
   walk(sourceFile, false);

@@ -65,44 +65,6 @@
   background: var(--paper);
 }
 
-.export-desk-icon {
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at center, var(--paper) 0 3px, var(--ink) 4px 5px, transparent 6px),
-    radial-gradient(circle at center, transparent 0 11px, var(--ink) 12px 14px, transparent 15px),
-    linear-gradient(var(--ink), var(--ink)) 15px 2px / 2px 8px no-repeat,
-    linear-gradient(var(--ink), var(--ink)) 15px 24px / 2px 8px no-repeat,
-    linear-gradient(90deg, var(--ink), var(--ink)) 2px 15px / 8px 2px no-repeat,
-    linear-gradient(90deg, var(--ink), var(--ink)) 24px 15px / 8px 2px no-repeat,
-    var(--paper);
-}
-
-.export-desk-icon::before {
-  content: "";
-  position: absolute;
-  left: 7px;
-  right: 7px;
-  bottom: -6px;
-  height: 8px;
-  border: var(--system-control-line) solid var(--ink);
-  background:
-    linear-gradient(var(--ink), var(--ink)) 6px 2px / 8px 2px no-repeat,
-    var(--paper);
-}
-
-.export-desk-icon::after {
-  content: "";
-  position: absolute;
-  left: 11px;
-  right: 11px;
-  bottom: -2px;
-  height: 2px;
-  background: var(--ink);
-  box-shadow:
-    0 -4px 0 var(--ink),
-    0 -8px 0 var(--ink);
-}
-
 .icon.teachtext-app-icon {
   background:
     linear-gradient(var(--ink), var(--ink)) 7px 7px / 20px 2px no-repeat,
@@ -365,11 +327,7 @@ body.is-writer-mode .context-panel-window {
 }
 
 .menu-bar {
-  height: 24px;
   min-width: 0;
-  padding: 0 7px;
-  border-bottom: var(--menu-bar-border);
-  box-shadow: inset 0 -1px 0 var(--paper);
 }
 
 /* The glass material (backdrop blur) is structural, so it lives next to its
@@ -746,7 +704,6 @@ select:focus {
     max-width: none;
   }
 
-
   .assistant-details-bar {
     padding-inline: 8px;
   }
@@ -964,7 +921,7 @@ select:focus {
   }
 
   .menu-bar {
-    padding: 0 3px;
+    --menu-bar-inline-padding: 3px;
     gap: 0;
     overflow: visible;
   }
@@ -2175,14 +2132,6 @@ body.use-modern-fonts .mde-surface * {
   font-size: var(--system-readable-min);
 }
 
-.menu-bar {
-  height: var(--menu-bar-height);
-  padding: 0 8px;
-  border-bottom: var(--menu-bar-border);
-  background: var(--menu-bar-bg);
-  box-shadow: var(--menu-bar-shadow);
-}
-
 .menu-bar > .menu > button,
 .project-switcher-button,
 .multifinder-button,
@@ -2793,7 +2742,6 @@ input[type="radio"] {
     min-height: 44px;
   }
 
-
   body.mobile-app-foreground:not(.is-writer-mode) .assistant-window.is-mobile-fullscreen .messages {
     overflow-x: hidden;
     overscroll-behavior: contain;
@@ -2848,7 +2796,6 @@ input[type="radio"] {
     padding-inline: 5px;
   }
 
-
   .reader-pane {
     gap: 6px;
     padding: 6px;
@@ -2884,7 +2831,6 @@ input[type="radio"] {
   .reader-pane:has(#reader-docmap-button:not(:disabled)) .reader-actions {
     display: none;
   }
-
 
   .reader-content {
     padding: 18px 16px;
@@ -2957,7 +2903,6 @@ input[type="radio"] {
   .clio-stage-pane .clio-stage-view-switcher .view-switch-option {
     padding-inline: 4px;
   }
-
 
   body:not(.is-writer-mode) .window.puzzle-window:not(.is-hidden):not(.is-collapsed) {
     --puzzle-window-width: 244px;
@@ -3088,5 +3033,40 @@ input[type="radio"] {
 @media (max-width: 560px) {
   .clio-use-result-modal[open] {
     max-height: calc(100vh - 36px);
+  }
+}
+
+/* A phone held sideways hands the whole screen to an immersive app — the three
+   games, whose content IS the screen. Portrait already does this; without the
+   landscape counterpart a game runs in a small floating window that spends
+   most of the display on desktop pattern and clips its own chrome. Every other
+   app keeps the portrait-only figure and stays a window here. The shell sets
+   the body class, so this rule never has to re-derive the state. */
+@media (max-width: 860px) and (orientation: landscape) {
+  body.mobile-immersive-landscape {
+    overflow: hidden;
+  }
+
+  body.mobile-immersive-landscape .window.is-mobile-fullscreen:not(.is-collapsed) {
+    position: fixed;
+    inset:
+      calc(var(--menu-bar-height) + var(--safe-area-top))
+      var(--safe-area-right)
+      var(--keyboard-inset, 0px)
+      var(--safe-area-left);
+    width: auto;
+    max-width: none;
+    height: auto;
+    max-height: none;
+    min-width: 0;
+    margin: 0;
+    border-width: 0;
+    border-radius: 0;
+    transform: none;
+    aspect-ratio: auto;
+  }
+
+  body.mobile-immersive-landscape .window.is-mobile-fullscreen .window-pane {
+    padding-bottom: var(--safe-area-bottom);
   }
 }

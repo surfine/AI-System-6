@@ -249,6 +249,12 @@ export const windowInterfaceRegistry = Object.freeze({
     referenceSurface: "finder",
     rationale: "Project CD is a Finder-like collection whose bar reports item count and volume location.",
   }),
+  finishingReceipt: specializedUtility("writing-route", {
+    route: "summoned",
+    statusLayout: "receipt",
+    referenceSurface: "finder",
+    rationale: "Finishing Receipt grades one finished work at burn time; its receipt bar is the grading surface itself and does not add a second status bar.",
+  }),
   pageSetup: modalSurface("system", "specialized"),
   importUtility: modalSurface("system", "specialized"),
   projects: finderSurface("core"),
@@ -326,11 +332,13 @@ export const windowInterfaceRegistry = Object.freeze({
   }),
   dictation: deskAccessory("summoned"),
   translationPad: deskAccessory("summoned"),
-  notePad: deskAccessory("system", { documentModel: "sdi", statusLayout: "task-specific" }),
+  // The writing accessories share one status shell: state on the left, and on
+  // the right where the content goes or what the window holds.
+  notePad: deskAccessory("system", { documentModel: "sdi" }),
   clipboard: deskAccessory("system", { documentModel: "sdi" }),
   alarmClock: deskAccessory("system", { statusLayout: "none" }),
   calculator: deskAccessory("system", { statusLayout: "none" }),
-  writingBell: deskAccessory("system", { statusLayout: "none" }),
+  writingBell: deskAccessory("system"),
   memoryCards: specializedUtility("utility", {
     statusLayout: "compact",
     referenceSurface: "control",
@@ -343,5 +351,6 @@ export const windowInterfaceRegistry = Object.freeze({
   notificationCenter: statusSurface(),
   fileInfo: modalSurface(),
   projectInfo: modalSurface("core"),
+  finishingReceipt: modalSurface("core"),
   about: modalSurface(),
 });

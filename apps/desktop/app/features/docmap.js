@@ -87,10 +87,6 @@ function videoDocMapForSwitcherSource(source) {
 }
 
 
-function docMapLayoutFor(map = currentDocMap) {
-  return map?.layout === "balanced" ? "balanced" : "right";
-}
-
 function syncDocMapLayoutControls(map = currentDocMap) {
   const layout = docMapLayoutFor(map);
   if (!docMapLayoutToggleButton) return;
@@ -1992,7 +1988,6 @@ function renderDocMap() {
     [docMapSendQuestionButton, docMapAskHkrrButton, docMapInsertOutlineButton, docMapSaveButton, docMapPrintPdfButton].forEach((button) => {
       if (button) button.disabled = true;
     });
-    renderVideoDocMapSwitchers();
     return;
   }
 
@@ -2020,7 +2015,6 @@ function renderDocMap() {
   if (docMapInsertOutlineButton && map.kind === "videoDocMap") {
     docMapInsertOutlineButton.disabled = true;
   }
-  renderVideoDocMapSwitchers();
 }
 
 function activeDocMapTab() {
@@ -2443,7 +2437,6 @@ function saveCurrentDocMap() {
   selectedFolderId = folder.id;
   renderDocuments();
   renderDocMap();
-  renderVideoDocMapSwitchers();
   saveDeskState();
   setStatus(t("docmap_saved_file", name));
 }

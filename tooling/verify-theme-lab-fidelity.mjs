@@ -10,8 +10,12 @@
 import { spawnSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertReferenceAssets } from "./lib/reference-assets.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
+
+// Fail once here rather than five identical times inside the spawned boards.
+assertReferenceAssets("Theme Lab fidelity", root);
 const THEMES = ["platinum", "aqua", "snow-leopard", "yosemite"];
 // Retina control-acceptance board (2x), supplementary to the 1x contract.
 const DPR2_RUNS = [

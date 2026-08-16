@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="#000000" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" shape-rendering="geometricPrecision">
+  <style>
+    .classic-ink{fill:#000000;stroke:#000000;stroke-width:.25}
+    .classic-paper{fill:#ffffff;stroke:none}
+  </style>
+  <g transform="translate(16 16) scale(1.1) translate(-16 -16)">
+    <path d="M8 4h14l4 4v20H8z" />
+    <path d="M22 4v6h4" />
+    <path d="M15 18c0-3 4-3 4-6 0-2-2-4-5-4-2 0-4 1-5 3" />
+    <path d="M15 22v2" />
+  </g>
+</svg>

@@ -25,7 +25,13 @@ const readMeMarkup = html.match(/<section class="window guide-window[\s\S]*?<sec
 test.assertMatches(desktopRuntime, /if \(!guideSeen\)[\s\S]*setWorkspaceProfile\(workspaceProfileDesktop, \{ persist: false \}\)[\s\S]*openWelcomeFloppy\(\)/, "first launch mounts Welcome Floppy on the ordinary Desktop");
 test.assertNotMatches(desktopRuntime, /if \(!guideSeen\)[\s\S]*openWindow\("guide"\)/, "first launch does not cover Finder with the Read Me window");
 test.assertMatches(desktopRuntime, /if \(!guideSeen\)[\s\S]*getWindow\("assistant"\)[\s\S]*classList\.add\("is-hidden"\)/, "first launch does not leave ClioTalk behind the floppy");
-test.assertMatches(boot, /const resumedWorkingSession = guideSeen[\s\S]*if \(!guideSeen\) \{[\s\S]*openStartupItems\(\)/, "unfinished OOBE skips stale working-session restoration");
+// This used to read `guideSeen && ...`, which skipped the resume until the
+// Welcome Floppy had been closed. It cost a writer their sentence: type before
+// finishing onboarding, get interrupted, and the work was dropped and then
+// overwritten by autosave. Someone who wrote a paragraph is not on first
+// launch. The floppy still owns a true first launch — an empty desk with
+// nothing to resume — which is what the assertion below actually protects.
+test.assertMatches(boot, /const resumedWorkingSession = !writerMode[\s\S]*if \(!guideSeen && !resumedWorkingSession\) \{[\s\S]*openStartupItems\(\)/, "a true first launch still meets the Welcome Floppy, and resumable work is never dropped for onboarding");
 
 test.assertIncludes(diskMarkup, 'data-window="welcomeDisk"', "Welcome Floppy is a named Finder window");
 test.assertIncludes(diskMarkup, 'class="window-pane finder-grid welcome-disk-grid window-frame-scroller"', "the floppy uses the ordinary Finder grid and frame");

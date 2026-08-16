@@ -29,3 +29,9 @@ function activeTeachTextAllows(action) {
   const role = typeof teachTextDocumentRole === "string" ? teachTextDocumentRole : getActiveDocumentTab("teachText")?.role;
   return documentRoleAllows("teachText", role, action);
 }
+
+globalThis.AISystem6DocumentRolePolicy = Object.freeze({
+  getDocumentRolePolicy,
+  documentRoleAllows,
+  activeTeachTextAllows,
+});

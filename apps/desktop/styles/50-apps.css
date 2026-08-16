@@ -2067,6 +2067,88 @@
   font-style: italic;
 }
 
+/* The preview only ever set h1, h2, p, img, lists and blockquote. Everything
+   else a real document contains fell through to the browser default, which on
+   this page reads as broken rather than plain. h1 and h2 carry the article's
+   own furniture (centred title, section marker); h3 and below are subheads
+   inside a section, so they stay quiet. */
+.teachtext-preview h3,
+.teachtext-preview h4,
+.teachtext-preview h5,
+.teachtext-preview h6 {
+  font-family: var(--title-font);
+  font-size: 15px;
+  margin: 1.8em 0 0.6em;
+  line-height: 1.3;
+}
+
+.teachtext-preview h3 { font-size: 16px; }
+
+.teachtext-preview a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.teachtext-preview hr {
+  margin: 2em 0;
+  border: 0;
+  border-top: var(--teachtext-preview-title-divider);
+}
+
+.teachtext-preview pre {
+  margin: 1.4em 0;
+  padding: 10px 12px;
+  overflow-x: auto;
+  border: var(--system-border);
+  background: var(--quiet-panel);
+  line-height: 1.5;
+}
+
+.teachtext-preview code {
+  font-family: var(--mono-font);
+  /* Relative, not absolute: this page's prose size follows the paper measure,
+     and a fixed 13px reads as undersized next to it. */
+  font-size: 0.9em;
+}
+
+.teachtext-preview :not(pre) > code {
+  padding: 0 3px;
+  border: var(--system-border);
+  background: var(--quiet-panel);
+}
+
+/* One grid for both rendered surfaces. A model reaches for a table constantly
+   and neither the writing preview nor ClioTalk had a rule for one, so both
+   printed a run of naked words where a grid belonged. A wide table scrolls
+   inside itself; neither the paper nor the conversation column ever scrolls
+   sideways. */
+.teachtext-preview table,
+.message-content table {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1em 0;
+  border-collapse: collapse;
+}
+
+.teachtext-preview th,
+.teachtext-preview td,
+.message-content th,
+.message-content td {
+  padding: 4px 8px;
+  border: var(--md-table-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.teachtext-preview th,
+.message-content th {
+  background: var(--md-table-heading-bg);
+  font-weight: 700;
+}
+
 .print-directory-window {
   width: 560px;
   height: 520px;
@@ -2222,7 +2304,10 @@
   resize: none;
   overflow-y: auto;
   background: transparent;
-  color: var(--ink);
+  /* The overlay below paints every glyph; this layer stays invisible so the
+     markers can carry their own ink. The caret keeps an explicit colour, so
+     it survives the transparent text. */
+  color: transparent;
   caret-color: var(--ink);
   cursor: text;
   min-height: 0;
@@ -2241,7 +2326,7 @@
 .mde-surface > .mde-highlight {
   overflow: hidden;
   pointer-events: none;
-  color: transparent;
+  color: var(--ink);
   padding-right: calc(var(--mde-scrollbar-gutter, 32px) + var(--mde-page-padding-x, 24px));
   z-index: var(--z-local-control);
 }
@@ -2265,28 +2350,9 @@
   padding-bottom: var(--mde-typewriter-pad, 18px);
 }
 
-.mde-surface.is-focus-mode > .mde-input {
-  color: transparent;
-}
-
-.mde-surface.is-focus-mode > .mde-highlight,
-.mde-surface.is-focus-mode .md-heading,
-.mde-surface.is-focus-mode .md-quote,
-.mde-surface.is-focus-mode .md-code,
-.mde-surface.is-focus-mode .md-url,
-.mde-surface.is-focus-mode .md-link,
-.mde-surface.is-focus-mode .md-strike {
-  color: var(--ink);
-}
-
-.mde-surface.is-focus-mode .md-marker {
-  color: var(--shade-dark);
-}
-
-.mde-surface.is-focus-mode .md-mark {
-  color: var(--ink);
-}
-
+/* Focus mode used to own the whole inked-overlay arrangement. It is the
+   default now, so all that remains here is what focus mode actually means:
+   the paragraph you are in stays lit and the rest steps back. */
 .mde-surface.is-focus-mode .md-focus-muted {
   opacity: 0.24;
 }
@@ -2295,20 +2361,23 @@
   opacity: 1;
 }
 
-/* The textarea paints the actual glyphs so the native caret always aligns.
-   The overlay only adds width-neutral backgrounds/decorations. */
+/* The overlay carries the ink. Everything it paints must stay width-neutral,
+   or the caret drifts away from the glyph it is standing on: markers change
+   colour only, and weight arrives as a stroke rather than a heavier face.
+   Markers and the URL half of a link are machinery — they retreat to the
+   era's grey but stay visible, because the caret has to be able to land on
+   them. */
 .md-marker,
-.md-heading,
-.md-quote,
-.md-code,
-.md-url,
-.md-link,
-.md-strike {
-  color: transparent;
+.md-url {
+  color: var(--md-marker-ink);
 }
-.md-link { text-decoration: underline; text-underline-offset: 2px; text-decoration-color: var(--ink); }
-.md-strike { text-decoration: line-through; text-decoration-color: var(--ink); }
-.md-mark { color: transparent; background: rgba(250, 240, 130, 0.5); }
+.md-heading,
+.md-strong {
+  -webkit-text-stroke: var(--md-weight-stroke) currentColor;
+}
+.md-link { text-decoration: underline; text-underline-offset: 2px; text-decoration-color: currentColor; }
+.md-strike { text-decoration: line-through; text-decoration-color: currentColor; }
+.md-mark { background: var(--md-mark-wash); }
 
 /* Bottom action row, shared by every writing window (TeachText, Question
    Sheet, Outline, Section Drafts, Review Desk). One stable model:
@@ -3693,13 +3762,24 @@ input[type="radio"]:checked:disabled {
 
 .icon-column {
   position: absolute;
-  right: 22px;
+  /* The whole column sat under the sensor housing on a phone held sideways.
+     Portrait reports no side inset, so this is the same 22px there. */
+  right: max(22px, var(--safe-area-right));
   top: 18px;
-  bottom: 22px;
+  bottom: max(22px, var(--safe-area-bottom));
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--desktop-icon-column-gap);
+  /* Eleven icons do not fit down a short screen -- a phone held sideways, a
+     half-open foldable, a resized window -- and the ones that did not fit fell
+     off the bottom with the Trash among them and nothing to scroll. The
+     Finder's own answer is another column beside the first, growing back from
+     the edge the icons live on. No breakpoint decides this: wrapping happens
+     exactly when the column runs out of room, which is the real condition and
+     the one that stays true on hardware nobody has shipped yet. */
+  flex-wrap: wrap-reverse;
+  align-content: flex-start;
 }
 
 .icon-column [data-open="trash"] {
@@ -4140,70 +4220,14 @@ body:not(.use-liquid-glass) .desktop-app-icon span[data-liquid-label="DAA Meme"]
     var(--paper);
 }
 
-.start-here-icon {
-  background:
-    linear-gradient(var(--ink), var(--ink)) 8px 10px / 28px 3px no-repeat,
-    linear-gradient(var(--ink), var(--ink)) 8px 18px / 28px 3px no-repeat,
-    linear-gradient(var(--ink), var(--ink)) 8px 26px / 20px 3px no-repeat,
-    var(--paper);
+/* Micropolis frame geometry lives in the boot bundle on purpose: the window
+   interior loads with the lazy module, but the frame must never collapse to a
+   sliver while (or if) the lazy stylesheet is still on its way. */
+.micropolis-window {
+  width: min(920px, calc(100vw - 72px));
+  height: min(600px, calc(100vh - 88px));
 }
 
-.start-here-icon::before {
-  content: "?";
-  position: absolute;
-  right: -5px;
-  bottom: -5px;
-  width: 16px;
-  height: 16px;
-  border: var(--system-control-line) solid var(--ink);
-  background: var(--paper);
-  font-size: 13px;
-  line-height: 15px;
-  text-align: center;
-}
-
-.system-help-icon {
-  background:
-    linear-gradient(var(--ink), var(--ink)) 8px 7px / 20px 3px no-repeat,
-    linear-gradient(var(--ink), var(--ink)) 8px 15px / 26px 2px no-repeat,
-    linear-gradient(var(--ink), var(--ink)) 8px 22px / 22px 2px no-repeat,
-    linear-gradient(var(--ink), var(--ink)) 8px 29px / 16px 2px no-repeat,
-    var(--paper);
-}
-
-.system-help-icon::before {
-  content: "?";
-  position: absolute;
-  right: -4px;
-  bottom: -5px;
-  width: 15px;
-  height: 15px;
-  border: var(--system-control-line) solid var(--ink);
-  background: var(--paper);
-  font-size: 12px;
-  line-height: 14px;
-  text-align: center;
-}
-
-.rebuild-flow-icon {
-  background:
-    linear-gradient(var(--ink), var(--ink)) 8px 7px / 18px 2px no-repeat,
-    linear-gradient(var(--ink), var(--ink)) 8px 13px / 22px 2px no-repeat,
-    linear-gradient(var(--ink), var(--ink)) 8px 19px / 16px 2px no-repeat,
-    linear-gradient(var(--ink), var(--ink)) 8px 25px / 20px 2px no-repeat,
-    var(--paper);
-}
-
-.rebuild-flow-icon::before {
-  content: "";
-  position: absolute;
-  right: -5px;
-  bottom: -5px;
-  width: 15px;
-  height: 15px;
-  border: var(--system-control-line) solid var(--ink);
-  background:
-    linear-gradient(var(--ink), var(--ink)) 3px 6px / 8px 2px no-repeat,
-    linear-gradient(var(--ink), var(--ink)) 7px 3px / 2px 8px no-repeat,
-    var(--paper);
+.micropolis-pane {
+  padding: 0;
 }

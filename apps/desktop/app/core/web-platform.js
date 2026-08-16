@@ -139,6 +139,74 @@ async function shareMarkdown({ title = "", markdown = "", fileName = "document.m
   }
 }
 
+// ---- Screen Wake Lock -----------------------------------------------------
+// A presentation or a long read should not dim mid-sentence. iOS and iPadOS
+// 18.4 give a Home Screen Web App the Screen Wake Lock API, so the surfaces
+// that ask for one can hold the screen — but only while the user has turned
+// the preference on, and only while somebody is actually holding it. The
+// moment the last holder leaves, the lock is released, not left running.
+
+const screenWakeLockHolders = new Set();
+let screenWakeLockSentinel = null;
+let screenWakeLockRequest = null;
+
+function isScreenWakeLockAllowed() {
+  const input = document.getElementById("keep-screen-awake");
+  return !!input?.checked && !!navigator.wakeLock?.request;
+}
+
+function screenWakeLockHolderIds() {
+  return Array.from(screenWakeLockHolders);
+}
+
+async function applyScreenWakeLock() {
+  const wanted = screenWakeLockHolders.size > 0
+    && isScreenWakeLockAllowed()
+    && document.visibilityState === "visible";
+  if (!wanted) {
+    const sentinel = screenWakeLockSentinel;
+    screenWakeLockSentinel = null;
+    if (sentinel) await sentinel.release().catch(() => {});
+    return false;
+  }
+  if (screenWakeLockSentinel) return true;
+  if (!screenWakeLockRequest) {
+    screenWakeLockRequest = navigator.wakeLock.request("screen")
+      .then((sentinel) => {
+        // The platform drops the lock on its own when the page hides; forget
+        // the stale sentinel so a later request is not skipped as redundant.
+        sentinel.addEventListener("release", () => {
+          if (screenWakeLockSentinel === sentinel) screenWakeLockSentinel = null;
+        });
+        screenWakeLockSentinel = sentinel;
+        return sentinel;
+      })
+      .catch(() => null)
+      .finally(() => { screenWakeLockRequest = null; });
+  }
+  return !!(await screenWakeLockRequest);
+}
+
+function holdScreenWakeLock(holderId) {
+  const id = String(holderId || "").trim();
+  if (!id) return Promise.resolve(false);
+  screenWakeLockHolders.add(id);
+  return applyScreenWakeLock();
+}
+
+function releaseScreenWakeLock(holderId) {
+  const id = String(holderId || "").trim();
+  if (id) screenWakeLockHolders.delete(id);
+  else screenWakeLockHolders.clear();
+  return applyScreenWakeLock();
+}
+
+document.addEventListener("visibilitychange", () => { applyScreenWakeLock(); });
+document.getElementById("keep-screen-awake")?.addEventListener("change", () => {
+  applyScreenWakeLock();
+  if (typeof saveDeskState === "function") saveDeskState();
+});
+
 window.AISystem6WebPlatform = Object.freeze({
   installWebApp,
   isStandaloneWebApp,
@@ -147,6 +215,10 @@ window.AISystem6WebPlatform = Object.freeze({
   requestPersistentProjectStorage,
   shareMarkdown,
   syncWebInstallUi,
+  holdScreenWakeLock,
+  releaseScreenWakeLock,
+  isScreenWakeLockAllowed,
+  screenWakeLockHolderIds,
 });
 
 document.getElementById("keep-projects-on-device")?.addEventListener("click", requestPersistentProjectStorage);

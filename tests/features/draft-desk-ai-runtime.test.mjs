@@ -81,6 +81,9 @@ test.assert(runtime.controls.get("quick-draft-draft").value === "B 的正文绝�
   const projectA = runtime.addProject("project-a", "A 的正文。");
   const projectB = runtime.addProject("project-b", "B 的正文绝不能变化。");
   runtime.controls.get("quick-draft-format").value = "first-day-hands-on";
+  // The lens loads on demand now, so the flow asks for it before it builds a
+  // prompt. The sandbox supplies the loader beside the builder it already had.
+  runtime.context.ensureMingmingLensModule = async () => {};
   runtime.context.buildMingmingRewritePrompt = () => "mingming prompt fixture";
   runtime.context.withMarkdownModelMessages = (messages) => messages;
   const modelGate = runtime.deferred();

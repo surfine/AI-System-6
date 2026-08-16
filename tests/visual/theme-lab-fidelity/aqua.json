@@ -28,7 +28,7 @@
     "playwrightVersion": "1.62.1",
     "browserRevision": "1234",
     "browserVersion": "151.0.7922.34",
-    "contentSha256": "05108485e1ab46e09bf06c0f62486189ef71f2caa030a18902317f7ee49b4cdb",
+    "contentSha256": "f8f412e8c87d86497f216f1e860ece251c9a01a3205890c9560bd29a335c47b1",
     "historicalFontTarget": "Lucida Grande 13 pt",
     "fontProbeSelectors": [
       ".theme-lab-controls h3",
@@ -867,7 +867,7 @@
           "x": 534,
           "y": 61,
           "width": 15,
-          "height": 217
+          "height": 188
         }
       },
       "current": {
@@ -876,19 +876,19 @@
           "x": 0,
           "y": 0,
           "width": 15,
-          "height": 217
+          "height": 188
         },
         "setup": [
           {
             "selector": ".theme-lab-scroll-frame",
             "style": {
-              "height": "219px"
+              "height": "190px"
             }
           },
           {
             "selector": ".theme-lab-scroll-frame > .theme-lab-scrollbar",
             "style": {
-              "height": "217px"
+              "height": "188px"
             }
           }
         ]
@@ -903,7 +903,7 @@
         "failing": [
           "geometryMismatch"
         ],
-        "note": "The 15px Jaguar scrollbar arrow buttons are not yet drawn to the native outline: 9.9% of the reference silhouette has no counterpart. Reference is a native 10.2 capture."
+        "note": "The arrow buttons now carry Jaguar's own art, re-cut from the 10.2 capture at x534 y218 and y234. The earlier cut sat 34px lower, on the window's grow box, and contained no arrow at all; the strip was also 217px, which ran 30 rows past the scroll bar into that same grow box and left the reference buttons 30px above ours. The strip now ends at y248, the last row of the down button. A silhouette residual remains: the lane is still assembled from boxes rather than one continuous native outline. Reference is a native 10.2 capture."
       }
     },
     {

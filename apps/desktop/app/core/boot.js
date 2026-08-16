@@ -185,6 +185,7 @@ async function boot() {
     await Promise.all([
       ensureAlarmClockModule(),
       ensureProjectCdPrintModule(),
+      [ensureContextGistModule, ensureDocMapSourcePolicyModule, ensureUserRecoveryMessagesModule, ensureDocumentRolePolicyModule].forEach((load) => load().catch(() => {})),
       ensurePromptFilesData().catch(() => {}),
       ensureLanguageFor(currentLanguage).catch(() => {}),
     ]);
@@ -217,7 +218,9 @@ async function boot() {
     renderDocuments();
     renderMountedTextDisk();
     renderProjectCd();
-    renderFindPathResults();
+    // Searcher paints itself when its window opens (openWindow loads the lazy
+    // module first); startup must not reach into it, or the module is no longer
+    // lazy.
     loadActiveProjectReferences();
     renderPipeline();
     applyWritingToolsViewMode();
@@ -236,10 +239,20 @@ async function boot() {
     // be present before any restored message paints. If it cannot load, the
     // escaped-text fallback still paints usable messages.
     await ensureMarkdownParser().catch(() => {});
-    const resumedWorkingSession = guideSeen
-      && !writerMode
+    // The writer's words are not part of onboarding. A snapshot exists only if
+    // someone already worked here, so resuming one cannot disturb a true first
+    // launch — while gating it on `guideSeen` meant that anyone who wrote a
+    // sentence before closing the Welcome Floppy lost it on the next reload,
+    // and autosave then wrote the empty desk over their only copy.
+    const resumedWorkingSession = !writerMode
       && await startupTaskWithTimeout(restoreWorkingSession(), "restoreWorkingSession", 3500);
-    if (!guideSeen) {
+    // Someone who wrote a paragraph is not on first launch, whatever the flag
+    // says. An unfinished OOBE owns a first launch — an empty desk, no
+    // snapshot — but it does not own a return to work, and putting the
+    // orientation disk on top of a sentence somebody feared losing is exactly
+    // the interruption this is meant to survive. Start Here stays in the Apple
+    // menu for whenever they want it.
+    if (!guideSeen && !resumedWorkingSession) {
       openStartupItems();
     } else if (writerMode) {
       await enterWriterMode();
@@ -254,6 +267,7 @@ async function boot() {
     updateMenuState();
     refreshSystemSelectControls();
     installWorkingSessionAutosave();
+    installApplicationLifecycleWatch();
     await runBootSequence();
     document.body.dataset.appReady = "ready";
     setTimeout(() => {

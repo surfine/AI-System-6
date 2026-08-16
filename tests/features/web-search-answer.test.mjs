@@ -43,6 +43,7 @@ test.assertIncludes(webSearch, '"web_search_call"', "search results are parsed f
 test.assertIncludes(webSearch, "deepseek-v4-flash", "the Responses client pins the currently supported model");
 test.assertIncludes(webSearch, "function extractInlineCitations", "citations are extracted from inline markdown links");
 test.assertIncludes(webSearch, "function callWebSearchAnswerStream", "the Responses client can stream web-search answers");
+test.assertIncludes(webSearch, "streamResponse: true", "the streaming call asks the transport for an unbuffered body");
 test.assertIncludes(webSearch, "searchCalls = []", "the payload builder accepts replayed web_search_call items");
 test.assertIncludes(webSearch, "stream", "the payload builder can enable streaming");
 test.assertIncludes(webSearch, 'WEB_SEARCH_MODES = new Set(["answer", "claim", "clio"])', "the web-search client whitelists answer, claim, and clio modes");
@@ -78,7 +79,7 @@ test.assertIncludes(chatMessages, "lastClioWebSearchCall = null", "ClioTalk clea
 test.assertIncludes(chatMessages, "onDelta", "ClioTalk streams the web-search answer into the pending message");
 test.assertIncludes(modelStream, "function readWebSearchStream", "the browser has a shared web-search stream reader");
 test.assertNotIncludes(chatMessages, 'effort: "low"', "ClioTalk does not choose reasoning effort");
-test.assertIncludes(cloudChat, "CLOUD_THINKING_TASKS", "cloud chat enables thinking only for whitelisted task kinds");
+test.assertIncludes(cloudChat, "resolveTaskPolicy(taskKind)", "cloud chat takes thinking and effort from the one task policy");
 test.assertIncludes(cloudChat, "payload.reasoning_effort", "cloud chat sets reasoning effort from the task policy");
 test.assertIncludes(chatMessages, "usage_cache_hit", "the cloud usage meter shows cache hits");
 test.assertIncludes(chatMessages, "usage_reasoning_tokens", "the cloud usage meter shows reasoning tokens");

@@ -852,7 +852,7 @@ body.is-resizing-tdi {
 
 .dictation-window,
 .translation-pad-window {
-  width: 380px;
+  width: var(--da-width-wide-pad);
   max-height: calc(100vh - 56px);
 }
 
@@ -903,6 +903,50 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
 }
 
 .dictation-pane,
+/* One field, one answer, one row of verbs. The pad sits beside the work rather
+   than over it, so it stays the size of the question it is holding. A sidecar
+   states its own width; the default-width map serves the fixed accessories. */
+.sideask-pad-window {
+  width: var(--da-width-pad);
+  max-height: calc(100vh - 56px);
+}
+
+.sideask-pad-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.sideask-pad-pane textarea {
+  font-family: var(--text-font);
+  font-size: 13px;
+  resize: none;
+}
+
+/* :not([hidden]) or the author display would outrank the attribute, and the
+   pad would promise "not saved" before it had anything to not save. */
+.sideask-pad-answer:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* The reply is not saved anywhere, and the pad says so before it shows it. */
+.sideask-pad-temporary {
+  font-size: 10px;
+  opacity: 0.75;
+}
+
+.sideask-pad-reply {
+  font-family: var(--text-font);
+  font-size: 13px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .translation-pad-pane {
   display: flex;
   flex-direction: column;
@@ -919,18 +963,8 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
   flex-wrap: wrap;
 }
 
-.dictation-capture-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
 .dictation-bottom-actions,
 .translation-pad-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  flex-wrap: wrap;
   border-top: var(--action-row-divider);
   padding-top: 8px;
 }
@@ -1407,8 +1441,11 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
 .dictionary-window {
   top: 102px;
   right: 150px;
-  width: 390px;
+  width: var(--da-width-wide-pad);
   min-height: 320px;
+  /* The window grows with the word list; the pane scrolls once it would leave
+     the screen. */
+  max-height: calc(100vh - 56px);
 }
 
 .system-help-window {
@@ -1928,7 +1965,8 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
      When the portrait Desk Accessory rail squeezes this window past what its
      three rows need, the pane scrolls — the rows used to shrink to nothing and
      let their boxes paint on top of each other. */
-  grid-template-rows: auto minmax(auto, 1fr) auto;
+  /* Look up, result, my words, my entry, recent, one button row. */
+  grid-template-rows: auto minmax(auto, 1fr) auto auto auto auto;
   overflow-y: auto;
   gap: var(--dictionary-pane-gap);
   padding: var(--dictionary-pane-padding);
@@ -2005,6 +2043,74 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
   margin: 0;
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+/* The writer's own words. A short list the writer reads down, not a table:
+   the row is a button because picking one loads it, and the count sits beside
+   the label rather than inside the list, so an empty list still says so. */
+.dictionary-words {
+  display: grid;
+  gap: 4px;
+}
+
+.dictionary-words-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.dictionary-word-list {
+  max-height: 96px;
+  overflow-y: auto;
+  border: var(--dictionary-result-border);
+  background: var(--dictionary-result-bg);
+}
+
+.dictionary-word-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  padding: 2px 6px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.dictionary-word-row + .dictionary-word-row {
+  border-top: 1px dotted var(--shade-dark);
+}
+
+.dictionary-word-row.is-selected {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.dictionary-word-row span {
+  color: var(--shade-dark);
+  font-size: 11px;
+}
+
+.dictionary-word-row.is-selected span {
+  color: var(--paper);
+}
+
+.dictionary-word-list .hint {
+  margin: 0;
+  padding: 4px 6px;
+}
+
+.dictionary-entry {
+  display: grid;
+  gap: 4px;
+}
+
+.dictionary-entry textarea {
+  resize: none;
 }
 
 .dictionary-recent {

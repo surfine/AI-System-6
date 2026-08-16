@@ -1670,6 +1670,38 @@ function runTimeMachineMenuCommand(command) {
   if (command === "send-manuscript") return sendTimeMachineCopyToManuscript();
 }
 
+// What the Navigate and Edit menus are allowed to offer right now.
+//
+// Every condition here is the same one the command itself already checks before
+// refusing, so the menu greys instead of accepting a click and answering with a
+// status line. Only this module knows the state, and it is lazy, so
+// getActionAvailability() reads it through the public API and treats an
+// unloaded Time Machine as "nothing available".
+function timeMachineMenuState() {
+  const tab = activeTimeMachineTab();
+  const history = timeMachineHistoryState();
+  const address = String(timeMachineAddressInput?.value || tab?.state?.address || "").trim();
+  const readerText = String(currentTimeMachinePage?.reader?.text || "").trim();
+  const selectionText = timeMachineReaderSelection().text;
+  const archiveMode = !!timeMachineEnabledInput?.checked;
+  return {
+    hasTab: !!tab,
+    canGoBack: history.historyIndex > 0,
+    canGoForward: history.historyIndex >= 0 && history.historyIndex < history.history.length - 1,
+    canStop: !!currentTimeMachineRequest,
+    canRefresh: !!address,
+    canSwitchSource: archiveMode && !!address,
+    canShowWebView: currentTimeMachineView !== "web",
+    canShowReaderView: currentTimeMachineView !== "reader" && !!readerText,
+    // Preservation submits a live page to an archive. An address you are
+    // already reading out of an archive has nothing to preserve.
+    canPreserve: !!currentTimeMachinePage?.url && !currentTimeMachinePage?.archive && !archiveMode,
+    hasSelection: !!selectionText,
+    hasReaderText: !!readerText,
+    canSendManuscript: !!(selectionText || readerText),
+  };
+}
+
 function captureTimeMachineSession() {
   captureActiveTimeMachineTabState();
   return {
@@ -1690,6 +1722,7 @@ window.AISystem6TimeMachine = Object.freeze({
   openSnapshot: openTimeMachineSnapshotSource,
   docMapSource: timeMachineDocMapSource,
   docMapReadiness: timeMachineDocMapReadiness,
+  menuState: timeMachineMenuState,
   setStatus: timeMachineSetStatus,
 });
 window.AISystem6TimeMachineLoaded = true;

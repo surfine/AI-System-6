@@ -160,6 +160,21 @@
   --field-focus-ring: 0 0 0 2px var(--shade-dark);
   --shade: #bfbfbf;
   --shade-dark: #696969;
+
+  /* Markdown syntax in the live editor. Markers RETREAT, never vanish: this is
+     a source editor, so the caret has to land on the `**` you want to delete.
+     Each era aims at ~4.5:1 against its own editor ground, so the token moves
+     where the ground moves (#dddddd, #ededed, #f5f5f5) and stays put where the
+     ground is white. The stroke thickens headings and bold without moving a
+     glyph — measured, font-weight:700 costs +9.1% width and font-size:17px
+     +13.3%, while a stroke costs 0.000px. That is what keeps caret and ink
+     together. */
+  --md-marker-ink: #767676;
+  --md-weight-stroke: 0.35px;
+  --md-mark-wash: rgba(250, 240, 130, 0.5);
+  --md-table-border: 1px solid var(--shade);
+  --md-table-heading-bg: var(--quiet-panel);
+
   --desktop: #b6b6b6;
   --desktop-surface:
     radial-gradient(rgba(0, 0, 0, 0.16) 1px, transparent 1px) 0 0 / 12px 12px,
@@ -217,13 +232,6 @@
   --clio-transcript-width: 820px;
   --clio-speaker-gutter: 72px;
   --clio-grounding-rule: var(--shade);
-  --clio-use-active-border: var(--ink);
-  --clio-use-active-bg: var(--ink);
-  --clio-use-active-fg: var(--paper);
-  --clio-use-menu-border: 1px solid var(--ink);
-  --clio-use-menu-radius: 0;
-  --clio-use-menu-bg: var(--paper);
-  --clio-use-menu-shadow: 2px 2px 0 var(--shade-dark);
   --clio-composer-bg: var(--paper);
   --clio-composer-border: var(--system-border);
   --clio-composer-radius: 0;
@@ -335,10 +343,17 @@
   --theme-title-font: var(--theme-ui-font);
   --ui-font: Chicago_12, Chicago, Charcoal, "Songti SC", "SimSun", "STSong", serif;
   --title-font: Chicago_12, Chicago, Charcoal, "Songti SC", "SimSun", "STSong", serif;
-  --text-font: "Songti SC", "SimSun", "STSong", Geneva, serif;
+  /* Latin first, CJK behind it. Fallback is per character, so Chinese still
+     lands on Songti SC either way -- but with the CJK face in front, every
+     English paragraph in the app was set in a Chinese font's Latin glyphs,
+     which is why prose read as an odd serif beside the Chicago chrome. Geneva
+     is the content face the classic system paired with Chicago, and Verdana is
+     its stand-in off the Mac; html:lang(zh-Hans) below still leads with Songti
+     SC, because there the CJK face is the one being read. */
+  --text-font: Geneva, Verdana, "Songti SC", "SimSun", "STSong", sans-serif;
   --mono-font: Monaco, "Courier New", monospace;
   /* Writing surfaces: serif for composing, sans-serif for the rendered preview. */
-  --editor-font: "Songti SC", "SimSun", "STSong", Georgia, "Times New Roman", serif;
+  --editor-font: Georgia, "Times New Roman", "Songti SC", "SimSun", "STSong", serif;
   --preview-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
   /* Single source of truth for the writing-window geometry. The paper is the
      star; the window is sized FROM the paper, never from the button row.
@@ -1011,8 +1026,13 @@
      iOS home screen, where nothing else protects the notch or home indicator. */
   --safe-area-top: env(safe-area-inset-top, 0px);
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  /* A sideways phone puts the notch on one side and the indicator on the
+     other, so a full-bleed landscape app needs both horizontal insets too. */
+  --safe-area-left: env(safe-area-inset-left, 0px);
+  --safe-area-right: env(safe-area-inset-right, 0px);
   /* The menu bar's own height, so each theme sets the value in one place and
      the portrait rule can add the status-bar inset on top of it. */
+  --menu-bar-inline-padding: 8px;
   --menu-bar-height: var(--system-menu-height);
   /* Where a menu-bar popover hangs from: the bar's real bottom, inset included. */
   --menu-popover-top: calc(var(--menu-bar-height) + var(--safe-area-top));
@@ -1433,6 +1453,12 @@
   --character-map-button-hover-fg: var(--character-map-button-fg);
   --character-map-button-active-bg: var(--ink);
   --character-map-button-active-fg: var(--paper);
+  /* The writing accessories stand on three widths, not seven: a dial, a pad,
+     and a pad with two fields. One source for the stylesheet and for the
+     default-width map in window-manager.js, so the ladder cannot drift. */
+  --da-width-dial: 300px;
+  --da-width-pad: 340px;
+  --da-width-wide-pad: 380px;
   /* Native WIND -16000 is 129×18 in compact form and its PICT mode glyphs
      are 23×23, 24×22, and 14×17. Preserve that 1× relationship. */
   --alarm-clock-window-width: 130px;
@@ -1959,16 +1985,22 @@ textarea,
 }
 
 .menu-bar {
-  height: 25px;
+  height: var(--menu-bar-height);
   flex-shrink: 0;
   position: sticky;
   top: 0;
   display: flex;
   align-items: center;
   gap: 2px;
-  padding: 0 8px;
+  /* The bar's only inline padding. Held sideways, a phone reports a sensor
+     inset on both edges and none on top, so a bar padded by its design value
+     alone put the Apple menu under the island; take whichever is larger and
+     let the device state its own number. The narrow value is a token override
+     in styles/60-responsive.css, not a second copy of this rule. */
+  padding: 0 max(var(--menu-bar-inline-padding), var(--safe-area-right)) 0 max(var(--menu-bar-inline-padding), var(--safe-area-left));
   background: var(--menu-bar-bg);
   border-bottom: var(--menu-bar-border);
+  box-shadow: var(--menu-bar-shadow);
   z-index: var(--z-system-menu);
   overflow: visible;
 }
@@ -3159,6 +3191,62 @@ body.has-system-modal .menu-bar {
 
 body.is-balloon-help [data-balloon-help] {
   cursor: help;
+}
+
+/* The Hold My Place slip. Bottom left, because the icon column owns the bottom
+   right, and low enough that it never sits over the sentence it is about. It
+   is a slip of paper on the desk, not a window: no title bar, no close box,
+   nothing to manage. */
+.held-place-slip {
+  position: fixed;
+  left: max(22px, var(--safe-area-left));
+  bottom: max(22px, var(--safe-area-bottom));
+  z-index: 60;
+  width: min(300px, calc(100vw - 44px));
+  padding: 8px 10px;
+  display: grid;
+  gap: 6px;
+  border: var(--window-border);
+  background: var(--window-bg);
+  box-shadow: var(--window-shadow);
+  color: var(--ink);
+  font-family: var(--ui-font);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.held-place-slip-where {
+  margin: 0;
+  font-weight: bold;
+}
+
+/* The sentence is quoted, not retyped: it is evidence of where you were, so it
+   keeps its own shape and never grows past two lines. */
+.held-place-slip-sentence {
+  margin: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-family: var(--text-font);
+  opacity: 0.8;
+}
+
+.held-place-slip-note {
+  width: 100%;
+  font-size: 12px;
+}
+
+.held-place-slip-actions {
+  margin: 0;
+  justify-content: flex-end;
+}
+
+/* [hidden] is a user-agent default, and .button-row's own `display: flex`
+   overrides it — so the outgoing slip grew a button row it had switched off.
+   The row states its own hidden case rather than trusting the attribute. */
+.held-place-slip-actions[hidden] {
+  display: none;
 }
 
 .finder-operation-modal {

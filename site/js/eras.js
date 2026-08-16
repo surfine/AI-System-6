@@ -26,7 +26,8 @@ export const ERAS = [
   },
   {
     id: "platinum", year: 1999, label: "Platinum", ext: "png",
-    font: "Charcoal", alias: ["Charcoal CY"], substitutes: ["Geneva", "Tahoma", "Verdana"],
+    font: "Charcoal", alias: ["Charcoal CY"],
+    substitutes: ["Platinum Asap", "Geneva", "Tahoma", "Verdana"],
     role: "It was never a filter",
     claim: "Color, bevels, a new system font. The same objects survive the repaint.",
   },
@@ -81,17 +82,39 @@ export function hasFont(family) {
   return present;
 }
 
+// The faces this page ships. A metric probe cannot answer for them: an
+// era-only face is not fetched until someone travels to that era, so the
+// probe runs before the bytes exist and caches a "missing" verdict for the
+// session - which is how 1999 announced Geneva while the menu bar was
+// already wearing Asap. Ask the font loader instead, which knows.
+const HOSTED_FACES = ["Chicago", "Chicago_12", "Monaco", "Platinum Asap"];
+
+// A hosted substitute is named for the era in CSS so it cannot collide with a
+// copy the visitor already has installed. The readout wants the plain name.
+const SUBSTITUTE_NAMES = { "Platinum Asap": "Asap" };
+
 // "Set in Charcoal" is a claim about the page, not about 1997. Where the era
 // face is missing, say what the visitor is reading instead.
 export function fontLabel(era) {
   const wearing = [era.font, ...(era.alias || [])];
   if (!era.substitutes.length || wearing.some(hasFont)) return era.font;
   const shown = era.substitutes.find(hasFont);
-  return shown ? `${era.font} (as ${shown})` : era.font;
+  return shown ? `${era.font} (as ${SUBSTITUTE_NAMES[shown] || shown})` : era.font;
 }
 
 const doc = document;
 const listeners = new Set();
+
+// Pull the hosted faces in up front, record each one as present, then tell
+// the readouts to redraw: whichever specimen was drawn during the wait is
+// naming a fallback the visitor is no longer reading.
+if (doc.fonts) {
+  Promise.allSettled(HOSTED_FACES.map((family) =>
+    doc.fonts.load(`16px "${family}"`).then((faces) => {
+      if (faces.length) fontProbe.set(family, true);
+    })
+  )).then(() => listeners.forEach((fn) => fn(currentEra())));
+}
 
 export function currentEra() {
   const id = doc.documentElement.getAttribute("data-theme") || "classic";

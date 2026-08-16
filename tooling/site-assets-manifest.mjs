@@ -9,7 +9,7 @@ export const SITE_ICON_NAMES = [
   "fileFloppy", "searcher", "scrapbook", "teachText", "reviewDesk", "hardDisk",
   // Finder: things this computer should not be able to do
   "timeMachine", "soundscape", "importUtility", "clioChart", "clioStage",
-  "cmfStudio", "liquidCover",
+  "cmfStudio", "liquidCover", "docMap", "questionSheet",
   // Provider choices
   "localModel", "endfieldTerminal", "cloudModel", "chooser",
   // Final boot picker

@@ -391,6 +391,7 @@ ${projectContext}`;
 }
 
 async function requestMingmingQuickDraft() {
+  await ensureMingmingLensModule();
   collectRefs();
   const slot = activeProjectQuickDraft();
   if (!slot) {
