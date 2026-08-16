@@ -36,7 +36,11 @@ function buildSideAskPad() {
     </div>
     <div class="details-bar compact-status-bar">
       <span class="status-bar-leading" id="sideask-pad-status" data-i18n="ready"></span>
-      <span class="status-bar-trailing" id="sideask-pad-destination" data-i18n="sideask_pad_promote"></span>
+      <!-- The right slot of a details bar is a real control here, the same
+           shape the Review Desk and Writing Flow use. It used to print this
+           label while an identical button sat in the row below, which cost the
+           row the width that truncated its neighbours. -->
+      <button class="btn details-bar-button status-bar-trailing" type="button" id="sideask-pad-promote" data-action="sideask-pad-promote" data-i18n="sideask_pad_promote"></button>
     </div>
     <div class="da-origin" id="sideask-pad-origin" hidden>
       <span id="sideask-pad-subject"></span>
@@ -55,7 +59,6 @@ function buildSideAskPad() {
       <div class="button-row is-one-line">
         <button class="btn" type="button" id="sideask-pad-clear" data-action="sideask-pad-clear" data-i18n="clear"></button>
         <button class="btn" type="button" id="sideask-pad-interview" data-action="sideask-pad-interview" data-i18n="sideask_pad_interview" hidden></button>
-        <button class="btn" type="button" id="sideask-pad-promote" data-action="sideask-pad-promote" data-i18n="sideask_pad_promote"></button>
         <span class="spacer"></span>
         <button class="btn default" type="button" id="sideask-pad-ask" data-action="sideask-pad-ask" data-i18n="ask"></button>
       </div>

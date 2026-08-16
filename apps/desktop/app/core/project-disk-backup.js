@@ -3,13 +3,14 @@
 
 window.AISystem6ProjectDiskBackup = (() => {
   const format = "ai-system-6-project-disk";
-  // v3 adds document revisions to the backup schema and the integrity hash.
-  const currentFormatVersion = 3;
+  // v4 adds the project's optional desktop scene (Working Session).
+  const currentFormatVersion = 4;
   // Version history:
   //   v1 — no SHA-256 integrity, no counts, no documentRevisions
   //   v2 — SHA-256 integrity + counts, no documentRevisions
   //   v3 — SHA-256 integrity + counts + documentRevisions
-  const supportedFormatVersions = [1, 2, currentFormatVersion];
+  //   v4 — + optional workingSession (that disk's windows, selection, cursors)
+  const supportedFormatVersions = [1, 2, 3, currentFormatVersion];
   const maxBackupBytes = 100 * 1024 * 1024;
   const maxArrayItems = 100000;
   const maxDepth = 40;
@@ -41,6 +42,11 @@ window.AISystem6ProjectDiskBackup = (() => {
     sourceScrapId: "scrap",
     projectCdItemId: "projectCdItem",
   });
+
+  // A desktop scene is windows and cursors. It must never become a side door
+  // for credentials, and the validator is the fail-closed half of that promise.
+  const sessionPath = "backup.workingSession";
+  const workingSessionForbiddenKeyPattern = /(api[-_]?key|secret|password|passphrase|token|credential|bearer)/i;
 
   const relationArrayFields = Object.freeze({
     childChatIds: "file",
@@ -124,9 +130,14 @@ window.AISystem6ProjectDiskBackup = (() => {
         return;
       }
       seen.add(value);
+      const inScene = path.startsWith(sessionPath);
       Object.entries(value).forEach(([key, item]) => {
         if (forbiddenKeys.has(key)) {
           error(`${path}.${key}`, "unsafe object key");
+          return;
+        }
+        if (inScene && workingSessionForbiddenKeyPattern.test(key)) {
+          error(`${path}.${key}`, "desktop scene must not carry credentials");
           return;
         }
         inspectValue(item, `${path}.${key}`, depth + 1, seen);
@@ -162,11 +173,29 @@ window.AISystem6ProjectDiskBackup = (() => {
     }
 
     arrayKeys.forEach((key) => {
-      if (key === "documentRevisions" && formatVersion < currentFormatVersion) return;
+      if (key === "documentRevisions" && formatVersion < 3) return;
       if (!Array.isArray(bundle[key])) {
         error(`backup.${key}`, "field must be an array");
       }
     });
+    // workingSession is optional in every version: a v4 backup of a disk that
+    // was never opened simply has no scene to carry. Its credential scan
+    // already ran inside inspectValue, above.
+    const scene = bundle.workingSession;
+    if (scene !== undefined && scene !== null) {
+      if (formatVersion < currentFormatVersion) {
+        error(sessionPath, `desktop scene requires format v${currentFormatVersion}`);
+      } else if (!isPlainObject(scene)) {
+        error(sessionPath, "desktop scene must be an object");
+      } else {
+        if (Number(scene.version) !== 2) {
+          error(`${sessionPath}.version`, "unsupported desktop scene version");
+        }
+        if (!isPlainObject(scene.adapters)) {
+          error(`${sessionPath}.adapters`, "desktop scene must carry an adapter map");
+        }
+      }
+    }
     if (errors.length) {
       return { valid: false, errors, warnings, formatVersion };
     }
@@ -258,7 +287,7 @@ window.AISystem6ProjectDiskBackup = (() => {
       });
     });
 
-    if (formatVersion === currentFormatVersion) {
+    if (formatVersion >= 3) {
       const revisionIdsByDocument = new Map();
       bundle.documentRevisions.forEach((revision, revisionIndex) => {
         const path = `backup.documentRevisions[${revisionIndex}]`;
@@ -332,7 +361,7 @@ window.AISystem6ProjectDiskBackup = (() => {
       } else {
         arrayKeys.forEach((key) => {
           // v2 ships counts without documentRevisions (revisions arrived in v3).
-          if (key === "documentRevisions" && formatVersion < currentFormatVersion) return;
+          if (key === "documentRevisions" && formatVersion < 3) return;
           if (Number(bundle.counts[key]) !== bundle[key].length) {
             error(`backup.counts.${key}`, "count does not match the array");
           }
@@ -381,6 +410,9 @@ window.AISystem6ProjectDiskBackup = (() => {
     // v3 always carries the revision array; legacy sources migrate to an
     // explicit empty set rather than silently omitting the field.
     if (!Array.isArray(copy.documentRevisions)) copy.documentRevisions = [];
+    // The desktop scene stays optional: an absent field means "no scene", not
+    // "empty scene", so re-exported legacy backups keep their exact shape.
+    if (!isPlainObject(copy.workingSession)) delete copy.workingSession;
     copy.counts = Object.fromEntries(arrayKeys.map((key) => [key, copy[key].length]));
     const contentHash = await sha256Hex(stableStringify(copy));
     return {
@@ -413,13 +445,13 @@ window.AISystem6ProjectDiskBackup = (() => {
     return mapped ? `${match[1]}:${mapped}` : value;
   }
 
-  function remapRelations(value, idMaps, key = "") {
+  function remapRelations(value, idMaps, key = "", fields = relationFields, arrayFields = relationArrayFields) {
     if (Array.isArray(value)) {
-      const relationType = relationArrayFields[key];
+      const relationType = arrayFields[key];
       if (relationType) {
         return value.map((id) => idMaps[relationType]?.get(id) || "");
       }
-      return value.map((item) => remapRelations(item, idMaps));
+      return value.map((item) => remapRelations(item, idMaps, "", fields, arrayFields));
     }
     if (!isPlainObject(value)) {
       return key === "sourceKey" ? sourceKeyWithRemappedId(value, idMaps) : value;
@@ -429,12 +461,46 @@ window.AISystem6ProjectDiskBackup = (() => {
       return { ...value, id: idMaps[relationType]?.get(recordId(value.id)) || "" };
     }
     return Object.fromEntries(Object.entries(value).map(([field, item]) => {
-      const relationType = relationFields[field];
+      const relationType = fields[field];
       if (relationType && typeof item === "string") {
         return [field, item ? idMaps[relationType]?.get(item) || "" : ""];
       }
-      return [field, remapRelations(item, idMaps, field)];
+      return [field, remapRelations(item, idMaps, field, fields, arrayFields)];
     }));
+  }
+
+  // A backed-up desktop scene names project records with the same id space,
+  // under its own selection field names. An id with no counterpart in the
+  // imported project is cleared, never left pointing at the exporting machine.
+  const sessionRelationFields = Object.freeze({
+    ...relationFields,
+    activeProjectId: "project",
+    selectedProjectId: "project",
+    activeChatFileId: "file",
+    selectedChatFileId: "file",
+    activeTextFileId: "file",
+    selectedFolderId: "folder",
+    selectedDocumentFolderId: "folder",
+    selectedScrapId: "scrap",
+    selectedProjectReferenceId: "reference",
+    selectedProjectCdItemId: "projectCdItem",
+  });
+  const sessionRelationArrayFields = Object.freeze({
+    ...relationArrayFields,
+    selectedScrapIds: "scrap",
+    selectedProjectCdItemIds: "projectCdItem",
+  });
+
+  function remapWorkingSession(session, idMaps, newProjectId) {
+    if (!isPlainObject(session)) return null;
+    const remapped = remapRelations(
+      clone(session),
+      idMaps,
+      "",
+      sessionRelationFields,
+      sessionRelationArrayFields
+    );
+    return { ...remapped, projectId: newProjectId };
   }
 
   function remapRunReceiptRelations(receipt, idMaps) {
@@ -661,6 +727,7 @@ window.AISystem6ProjectDiskBackup = (() => {
       projectCdItems: remapRecords("projectCdItem", bundle.projectCdItems),
       references: importedReferences,
       documentRevisions: importedDocumentRevisions,
+      workingSession: remapWorkingSession(bundle.workingSession, idMaps, newProjectId),
     };
   }
 

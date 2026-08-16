@@ -36,8 +36,9 @@ async function bootRecoveryStatus() {
     storage = "unavailable";
   }
   try {
-    const snapshot = await readWorkingSessionSnapshot();
-    session = snapshot && typeof snapshot.version !== "undefined" ? "available" : "unavailable";
+    // Any disk's scene counts, not just the mounted one.
+    await migrateWorkingSessionStorage();
+    session = (await listWorkingSessionScopeKeys()).length ? "available" : "unavailable";
   } catch {}
   try {
     aiConfig = localStorage.getItem("ai-system6-cloud-config") ? "available" : "unavailable";

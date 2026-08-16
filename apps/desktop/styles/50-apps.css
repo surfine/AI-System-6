@@ -71,76 +71,6 @@
   min-height: 300px;
 }
 
-.quick-draft-pane {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  min-height: 0;
-  overflow: hidden;
-}
-
-.quick-draft-window {
-  container-type: inline-size;
-}
-
-.quick-draft-details {
-  display: grid;
-  grid-template-columns: auto auto minmax(0, 1fr) auto auto;
-  gap: 12px;
-  align-items: center;
-  min-width: 0;
-}
-
-.quick-draft-details > #quick-draft-status {
-  grid-column: 3;
-  justify-self: center;
-  min-width: 0;
-  overflow: hidden;
-  text-align: center;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.quick-draft-details > #quick-draft-stats {
-  grid-column: 1;
-}
-
-.quick-draft-details > #quick-draft-save-state {
-  grid-column: 2;
-}
-
-.quick-draft-details > #quick-draft-protect-state {
-  grid-column: 4;
-}
-
-.quick-draft-details > #quick-draft-stack-state {
-  grid-column: 5;
-}
-
-.quick-draft-details > span {
-  min-width: 0;
-  margin-left: 0;
-}
-
-.quick-draft-status-center {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  justify-content: center;
-  min-width: 0;
-  overflow: visible;
-}
-
-.quick-draft-status-select {
-  flex: 0 1 auto;
-  min-width: 0;
-}
-
-.quick-draft-status-select select {
-  max-width: 10rem;
-  height: 21px;
-  font-weight: bold;
-}
-
 .quick-draft-title-display {
   flex: 0 1 18rem;
   min-width: 0;
@@ -148,15 +78,6 @@
   font-weight: bold;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.quick-draft-title-field {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex: 1 1 16rem;
-  min-width: 12rem;
-  font-weight: bold;
 }
 
 .quick-draft-title-input {
@@ -186,21 +107,6 @@
   text-overflow: ellipsis;
 }
 
-.quick-draft-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(13rem, 0.28fr);
-  grid-template-rows: auto auto auto minmax(0, 1fr);
-  grid-template-areas:
-    "editor shortcuts"
-    "editor strategy"
-    "editor intake"
-    "editor tools";
-  gap: var(--system-window-padding);
-  height: 100%;
-  min-height: 0;
-  align-content: stretch;
-}
-
 .quick-draft-task,
 .quick-draft-intake,
 .quick-draft-editor,
@@ -213,26 +119,11 @@
   align-content: start;
 }
 
-.quick-draft-task {
-  grid-template-rows: auto auto auto;
-}
-
 .quick-draft-intake {
   grid-area: intake;
   grid-template-rows: auto repeat(4, minmax(0, 1fr));
   overflow: auto;
   min-width: 0;
-}
-
-.quick-draft-shortcuts {
-  grid-area: shortcuts;
-  min-width: 0;
-}
-
-.quick-draft-strategy {
-  grid-area: strategy;
-  min-width: 0;
-  min-height: 0;
 }
 
 .quick-draft-editor {
@@ -342,106 +233,18 @@
   margin-bottom: 6px;
 }
 
-.quick-draft-evidence {
-  min-height: 0;
-}
-
-.quick-draft-evidence[open] {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
-  gap: 8px;
-}
-
-.quick-draft-evidence > summary {
-  grid-column: 1 / -1;
-}
-
-.quick-draft-field-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.quick-draft-field-grid label,
-.quick-draft-small-fields,
-.quick-draft-first-day-fields,
-.quick-draft-first-day-setup,
-.quick-draft-first-day-setup label {
-  display: grid;
-  gap: 4px;
-}
-
-.quick-draft-first-day-setup {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.quick-draft-first-day-setup > summary {
-  grid-column: 1 / -1;
-}
-
 .quick-draft-first-day-subject,
 .quick-draft-primary-actions {
   grid-column: 1 / -1;
-}
-
-.quick-draft-first-day-fields[hidden],
-.quick-draft-first-day-setup[hidden] {
-  display: none;
-}
-
-.quick-draft-small-fields {
-  grid-template-columns: max-content minmax(0, 1fr);
-  align-items: center;
-}
-
-.quick-draft-actions,
-.quick-draft-primary-actions,
-.quick-draft-source-actions {
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.quick-draft-primary-actions {
-  justify-content: flex-start;
-  align-items: center;
-}
-
-.quick-draft-result-group {
-  min-height: 8rem;
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  gap: 4px;
-  padding: 6px;
-  border: var(--quick-draft-panel-border);
-  border-radius: var(--quick-draft-panel-radius);
-  background: var(--quick-draft-panel-bg);
-  box-shadow: var(--quick-draft-panel-shadow);
 }
 
 .quick-draft-intake .quick-draft-result-group {
   min-height: 0;
 }
 
-.quick-draft-result-text {
-  min-height: 0;
-  overflow: auto;
-  line-height: 1.42;
-}
-
 .quick-draft-result-text.is-empty,
 .quick-draft-source-empty {
   color: var(--shade-dark);
-}
-
-.quick-draft-result-text p {
-  margin: 0 0 0.6em;
-}
-
-.quick-draft-result-text ul,
-.quick-draft-result-text ol {
-  margin: 0;
-  padding-left: 1.4em;
 }
 
 .quick-draft-source-map {
@@ -453,43 +256,11 @@
   overflow: auto;
 }
 
-.quick-draft-source-preview {
-  flex: 1 0 100%;
-  max-height: 9rem;
-  margin: 2px 0 0;
-  padding: 5px;
-  overflow: auto;
-  border-top: var(--quick-draft-divider-border);
-  white-space: pre-wrap;
-  font: 11px/1.35 var(--mono-font);
-}
-
-.quick-draft-next-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.quick-draft-shortcuts .quick-draft-next-actions {
-  display: grid;
-  grid-template-columns: 1fr;
-}
-
 .quick-draft-layout.is-busy {
   cursor: progress;
 }
 
 @container (max-width: 760px) {
-  .quick-draft-layout {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto;
-    grid-template-areas:
-	      "editor"
-	      "shortcuts"
-	      "strategy"
-	      "intake"
-	      "tools";
-  }
 
 	  .quick-draft-task,
 	  .quick-draft-intake,
@@ -505,51 +276,6 @@
   .quick-draft-editor {
     grid-template-rows: auto minmax(18rem, 1fr) auto auto auto;
   }
-
-  .quick-draft-first-day-setup {
-    grid-template-columns: 1fr;
-  }
-
-  .quick-draft-actions,
-  .quick-draft-source-actions {
-    justify-content: flex-start;
-  }
-
-  .quick-draft-evidence[open] {
-    grid-template-columns: 1fr;
-  }
-}
-
-.quick-draft-layout {
-  grid-template-columns: 1fr;
-  grid-template-rows: minmax(0, 1fr) auto;
-  grid-template-areas:
-    "editor"
-    "cards";
-  gap: 10px;
-}
-
-.quick-draft-layout.quick-draft-reboot {
-  display: flex;
-  flex-direction: column;
-  grid-template-rows: unset;
-  grid-template-areas: unset;
-  gap: 6px;
-  min-height: 0;
-}
-
-/* One window, three regions. The paper is the middle column and never
-   leaves the screen; the shelf and the inspector are the two sides. */
-.quick-draft-desk {
-  display: grid;
-  position: relative;
-  flex: 1 1 auto;
-  grid-template-columns:
-    var(--quick-draft-shelf-width)
-    minmax(0, 1fr)
-    var(--quick-draft-inspector-width);
-  gap: 8px;
-  min-height: 0;
 }
 
 .quick-draft-shelf,
@@ -571,19 +297,6 @@
   grid-template-rows: auto minmax(0, 1fr) auto;
   padding-right: 6px;
   border-right: var(--quick-draft-sidebar-border);
-}
-
-.quick-draft-inspector {
-  grid-column: 3;
-  grid-row: 1;
-}
-
-.quick-draft-region-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  min-width: 0;
 }
 
 /* The drawer close is a phone control; on a desk both regions are on screen. */
@@ -610,96 +323,9 @@
   overflow-y: auto;
 }
 
-/* Material is an object list, drawn like a Finder row: a document mark, the
-   name, and what it came from. Not a stack of buttons. */
-.quick-draft-material-row {
-  display: grid;
-  grid-template-columns: 12px minmax(0, 1fr);
-  align-items: start;
-  gap: 0 6px;
-  width: 100%;
-  padding: 3px 4px;
-  border: var(--radio-border);
-  border-radius: 0;
-  background: none;
-  box-shadow: var(--radio-shadow);
-  text-align: left;
-}
-
-.quick-draft-material-row::before {
-  content: "";
-  grid-row: 1 / span 2;
-  width: 10px;
-  height: 12px;
-  margin-top: 2px;
-  border: var(--system-control-line) solid currentColor;
-  background:
-    linear-gradient(currentColor, currentColor) 2px 3px / 6px 1px no-repeat,
-    linear-gradient(currentColor, currentColor) 2px 6px / 6px 1px no-repeat,
-    linear-gradient(currentColor, currentColor) 2px 9px / 4px 1px no-repeat;
-}
-
-.quick-draft-material-row:hover,
-.quick-draft-material-row:focus-visible {
-  background: var(--quiet-panel);
-}
-
 .quick-draft-material-row.is-selected {
   background: var(--ink);
   color: var(--paper);
-}
-
-.quick-draft-material-row > b {
-  min-width: 0;
-  overflow: hidden;
-  font-weight: normal;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.quick-draft-material-row > small {
-  color: var(--shade-dark);
-  font-size: 11px;
-}
-
-.quick-draft-source-empty {
-  margin: 0;
-  color: var(--shade-dark);
-  font: 12px/1.45 var(--system-font);
-}
-
-.quick-draft-version-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 6px;
-  padding: 2px 0;
-}
-
-.quick-draft-version-row > span {
-  display: grid;
-  min-width: 0;
-}
-
-.quick-draft-version-row b {
-  min-width: 0;
-  overflow: hidden;
-  font-weight: normal;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.quick-draft-version-row small {
-  color: var(--shade-dark);
-  font-size: 11px;
-}
-
-.quick-draft-material-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  align-items: center;
-  min-width: 0;
 }
 
 .quick-draft-paper {
@@ -709,61 +335,6 @@
   grid-template-rows: auto minmax(0, 1fr);
   gap: 6px;
   min-width: 0;
-  min-height: 0;
-}
-
-/* Format and length are properties of this draft, so they ride on the sheet
-   head with the title instead of setting anything from the status bar. */
-.quick-draft-sheet-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  padding-bottom: 5px;
-  border-bottom: var(--quick-draft-divider-border);
-  min-width: 0;
-}
-
-.quick-draft-sheet-title {
-  display: flex;
-  flex: 1 1 14rem;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-}
-
-/* The sheet head is the document's own line: the title fills it and its label
-   stays for screen readers only. */
-.quick-draft-sheet-title > span {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
-.quick-draft-sheet-title input {
-  flex: 1 1 auto;
-  min-width: 0;
-  padding: 3px 6px;
-}
-
-.quick-draft-sheet-select select {
-  max-width: 12rem;
-}
-
-.quick-draft-paper-body {
-  display: grid;
-  grid-template-rows: minmax(0, 1fr);
-  min-width: 0;
-  min-height: 0;
-}
-
-.quick-draft-paper-body > * {
-  grid-row: 1;
-  grid-column: 1;
   min-height: 0;
 }
 
@@ -780,74 +351,6 @@
 .quick-draft-intake-well[hidden],
 .quick-draft-paper-body > [hidden] {
   display: none;
-}
-
-.quick-draft-well-field {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  gap: 5px;
-  min-width: 0;
-  min-height: 0;
-}
-
-.quick-draft-well-field textarea,
-.quick-draft-advanced-field textarea,
-.quick-draft-advanced-field input {
-  width: 100%;
-  min-width: 0;
-  padding: 8px 10px;
-  resize: none;
-}
-
-.quick-draft-well-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.quick-draft-advanced-fields {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  padding: 8px 0 0;
-}
-
-.quick-draft-advanced-field {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  gap: 4px;
-  min-width: 0;
-}
-
-.quick-draft-inspector {
-  grid-template-rows: auto minmax(0, 1fr);
-  padding-left: 6px;
-  border-left: var(--quick-draft-sidebar-border);
-}
-
-/* A dense tool surface is rows and dividers, not stacked cards. */
-.quick-draft-inspector-section {
-  display: grid;
-  align-content: start;
-  gap: 6px;
-  min-width: 0;
-  padding: 0 0 8px;
-}
-
-.quick-draft-inspector-section + .quick-draft-inspector-section {
-  padding-top: 8px;
-  border-top: var(--quick-draft-divider-border);
-}
-
-.quick-draft-versions-section {
-  grid-template-rows: auto minmax(0, 1fr) auto;
-  min-height: 0;
-}
-
-.quick-draft-adjust-note {
-  margin: 0;
-  color: var(--shade-dark);
-  font: 12px/1.45 var(--system-font);
 }
 
 .quick-draft-versions-list {
@@ -871,17 +374,10 @@
   display: none;
 }
 
-.quick-draft-editor-container {
-  height: 100%;
-}
-
 /* One rule decides the collapse: the paper's smallest readable measure. The
    window is the container, so a narrow desk window collapses exactly like a
    phone — same DOM, same task order, one breakpoint. */
 @container (max-width: 800px) {
-  .quick-draft-desk {
-    grid-template-columns: minmax(0, 1fr);
-  }
 
   .quick-draft-paper {
     grid-column: 1;
@@ -890,10 +386,6 @@
   .quick-draft-shelf,
   .quick-draft-inspector {
     display: none;
-  }
-
-  .quick-draft-editor-actions > .quick-draft-drawer-switch {
-    display: inline-flex;
   }
 
   .quick-draft-region-head > .quick-draft-drawer-close {
@@ -939,84 +431,11 @@
     gap: 6px;
   }
 
-  .quick-draft-editor-actions > .quick-draft-actions-gap {
-    display: none;
-  }
-
-  .quick-draft-editor-actions > .quick-draft-display-switch {
-    grid-area: display;
-    justify-self: start;
-  }
-
-  .quick-draft-editor-actions > .quick-draft-drawer-switch {
-    grid-area: drawers;
-    justify-self: end;
-  }
-
-  .quick-draft-editor-actions > #quick-draft-return-sideask {
-    grid-area: sideask;
-  }
-
-  .quick-draft-editor-actions > #quick-draft-tools {
-    grid-area: tools;
-  }
-
-  .quick-draft-editor-actions > #quick-draft-deliver {
-    grid-area: deliver;
-  }
-
   .quick-draft-editor-actions > .btn.default {
     grid-area: primary;
     justify-self: end;
     flex: 0 0 auto;
   }
-
-  /* One field per row: the sheet head stays one line of chrome. */
-  .quick-draft-advanced-fields {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-.quick-draft-reboot-suggestions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  align-items: center;
-  min-width: 0;
-}
-
-.quick-draft-reboot-suggestions:empty {
-  display: none;
-}
-
-.quick-draft-legacy-backing {
-  display: none;
-}
-
-.quick-draft-card-sidebar {
-  grid-area: cards;
-  display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
-  gap: 10px;
-  min-width: 0;
-  min-height: 0;
-  overflow: auto;
-  max-height: 34vh;
-  padding-top: 8px;
-  border-top: var(--quick-draft-sidebar-border);
-}
-
-.quick-draft-card-sidebar h3 {
-  margin: 0;
-  color: var(--shade-dark);
-  font: 13px/1.3 var(--title-font);
-}
-
-.quick-draft-card-group {
-  display: grid;
-  gap: 8px;
-  min-width: 0;
-  min-height: 0;
 }
 
 .quick-draft-ai-cards {
@@ -1030,65 +449,6 @@
 .quick-draft-ai-cards summary {
   cursor: pointer;
   font-weight: bold;
-}
-
-.quick-draft-card {
-  display: grid;
-  gap: 5px;
-  min-width: 0;
-  padding: 9px 0;
-  border-bottom: var(--quick-draft-divider-border);
-}
-
-.quick-draft-card-group > :last-child {
-  border-bottom: 0;
-}
-
-.quick-draft-card h4 {
-  margin: 0;
-  color: var(--shade-dark);
-  font: 11px/1.3 var(--title-font);
-  letter-spacing: 0.04em;
-}
-
-.quick-draft-card h5 {
-  margin: 0 0 3px;
-  color: var(--shade-dark);
-  font: 12px/1.25 var(--title-font);
-}
-
-.quick-draft-card label,
-.quick-draft-command-field {
-  display: grid;
-  gap: 4px;
-  min-width: 0;
-}
-
-.quick-draft-card textarea,
-.quick-draft-command-field textarea {
-  min-height: 0;
-  resize: vertical;
-}
-
-.quick-draft-impression-card textarea {
-  min-height: 48px;
-}
-
-.quick-draft-card-note {
-  margin: 0;
-  color: var(--shade-dark);
-  font-size: 12px;
-  line-height: 1.35;
-}
-
-.quick-draft-card-row {
-  display: flex;
-  gap: 6px;
-  min-width: 0;
-}
-
-.quick-draft-stance-row:empty {
-  display: none;
 }
 
 .quick-draft-result-label {
@@ -1110,65 +470,8 @@
   white-space: normal;
 }
 
-.quick-draft-settings-inline {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 6px;
-  min-width: 0;
-}
-
-.quick-draft-settings-card {
-  order: 4;
-}
-
-.quick-draft-card-status {
-  min-width: 0;
-  padding: 4px 5px;
-  border: var(--quick-draft-status-border);
-  border-radius: var(--quick-draft-panel-radius);
-  background: var(--quick-draft-status-bg);
-  color: var(--ink);
-  font-size: 12px;
-  line-height: 1.35;
-}
-
 .quick-draft-card-status.is-missing {
   color: var(--shade-dark);
-}
-
-.quick-draft-compact-details {
-  display: grid;
-  gap: 6px;
-  min-width: 0;
-}
-
-.quick-draft-compact-details:not([open]) > :not(summary) {
-  display: none;
-}
-
-.quick-draft-compact-details summary {
-  cursor: pointer;
-}
-
-.quick-draft-hands-on-card {
-  order: 3;
-}
-
-.quick-draft-boundary-card {
-  gap: 8px;
-}
-
-.quick-draft-boundary-card > label {
-  padding-top: 7px;
-  border-top: var(--quick-draft-divider-border);
-}
-
-.quick-draft-boundary-card textarea {
-  height: 36px;
-  min-height: 36px;
-  max-height: 48px;
-  overflow: auto;
-  resize: none;
 }
 
 .quick-draft-boundary-card.has-hands-on-choice {
@@ -1187,90 +490,12 @@
   border-style: solid;
 }
 
-.quick-draft-classify-grid {
-  display: grid;
-  gap: 6px;
-}
-
-.quick-draft-classify-grid section {
-  min-width: 0;
-  padding-top: 5px;
-  border-top: var(--quick-draft-divider-border);
-}
-
 .quick-draft-editor {
   grid-template-rows: auto auto minmax(0, 1fr) auto;
 }
 
-.quick-draft-teachtext-strip {
-  display: grid;
-  gap: 5px;
-  min-width: 0;
-  padding-bottom: 6px;
-  border-bottom: var(--quick-draft-divider-border);
-}
-
-.quick-draft-mode-line {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px 8px;
-  align-items: baseline;
-  min-width: 0;
-}
-
-.quick-draft-mode-line strong {
-  font: 14px/1.25 var(--title-font);
-}
-
-.quick-draft-mode-line span {
-  color: var(--shade-dark);
-  font-size: 12px;
-  line-height: 1.35;
-}
-
-.quick-draft-draft-controls {
-  display: grid;
-  grid-template-columns: minmax(9rem, 0.75fr) minmax(8rem, 0.65fr) minmax(12rem, 1.2fr);
-  gap: 8px;
-  min-width: 0;
-  padding-top: 5px;
-}
-
-.quick-draft-draft-controls label,
-.quick-draft-first-impression-line {
-  display: grid;
-  gap: 4px;
-  min-width: 0;
-}
-
-.quick-draft-first-impression-line textarea {
-  min-height: 30px;
-  max-height: 54px;
-  resize: vertical;
-}
-
-.quick-draft-draft-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
 .quick-draft-start-writing {
   min-width: 9rem;
-}
-
-.quick-draft-editor-container {
-  min-width: 0;
-}
-
-.quick-draft-body-pane .quick-draft-editor-container textarea,
-.quick-draft-body-pane .quick-draft-editor-container textarea:focus {
-  border: 0;
-  outline: 0;
-  background: transparent;
-  box-shadow: none;
 }
 
 /* 文字亮室 four-state language (tokens in 00-foundation, values overridden by
@@ -1332,73 +557,14 @@
   }
 }
 
-/* 拼台 — the single-object canvas (task 8). The object level carries only
-   the visual transform (position, size, angle), separate from the semantic
-   adjustment stack; the object's text is the same Markdown as the article
-   view. The stage is a dot grid with no page edge. */
-.quick-draft-canvas {
-  position: absolute;
-  inset: 0;
-  min-height: 0;
-}
-
-.quick-draft-canvas-stage {
-  position: relative;
-  height: 100%;
-  min-height: 0;
-  overflow: hidden;
-  border: var(--quick-draft-sidebar-border);
-  background-image: radial-gradient(var(--quick-draft-canvas-dot) 1px, transparent 1px);
-  background-size: 16px 16px;
-}
-
-.quick-draft-canvas-object {
-  position: absolute;
-  left: var(--canvas-x, 120px);
-  top: var(--canvas-y, 72px);
-  width: var(--canvas-w, 560px);
-  min-height: var(--canvas-h, 0px);
-  transform: rotate(var(--canvas-angle, 0deg));
-  transform-origin: center center;
-  padding: 18px 22px;
-  background: var(--quick-draft-canvas-object-bg);
-  border: var(--quick-draft-canvas-object-border);
-  box-shadow: var(--quick-draft-canvas-object-shadow);
-  cursor: move;
-  user-select: none;
-}
-
-.quick-draft-canvas-object-text {
-  font-family: var(--text-font);
-  font-size: 15px;
-  line-height: 1.75;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  color: var(--ink);
-}
-
 .quick-draft-canvas-object-text.is-empty {
   color: var(--shade-dark);
-}
-
-.quick-draft-canvas-handle,
-.quick-draft-canvas-rotate,
-.quick-draft-canvas-angle {
-  display: none;
 }
 
 .quick-draft-canvas-object.is-selected .quick-draft-canvas-handle,
 .quick-draft-canvas-object.is-selected .quick-draft-canvas-rotate,
 .quick-draft-canvas-object.is-selected .quick-draft-canvas-angle {
   display: block;
-}
-
-.quick-draft-canvas-handle {
-  position: absolute;
-  width: 9px;
-  height: 9px;
-  background: var(--quick-draft-canvas-handle-bg);
-  border: var(--quick-draft-canvas-handle-border);
 }
 
 .quick-draft-canvas-handle.is-nw { left: -5px; top: -5px; cursor: nwse-resize; }
@@ -1409,42 +575,6 @@
 .quick-draft-canvas-handle.is-s { left: calc(50% - 5px); bottom: -5px; cursor: ns-resize; }
 .quick-draft-canvas-handle.is-sw { left: -5px; bottom: -5px; cursor: nesw-resize; }
 .quick-draft-canvas-handle.is-w { left: -5px; top: calc(50% - 5px); cursor: ew-resize; }
-
-.quick-draft-canvas-rotate {
-  position: absolute;
-  left: calc(50% - 7px);
-  top: -30px;
-  width: 14px;
-  height: 14px;
-  border: var(--quick-draft-canvas-handle-border);
-  border-radius: var(--radio-radius);
-  background: var(--quick-draft-canvas-handle-bg);
-  cursor: grab;
-}
-
-.quick-draft-canvas-rotate::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  bottom: 100%;
-  width: 1px;
-  height: 8px;
-  background: var(--quick-draft-canvas-rotate-fg);
-}
-
-.quick-draft-canvas-angle {
-  position: absolute;
-  left: calc(50% - 18px);
-  top: -52px;
-  min-width: 36px;
-  padding: 1px 5px;
-  border: var(--quick-draft-canvas-handle-border);
-  background: var(--quick-draft-canvas-handle-bg);
-  font-family: var(--mono-font);
-  font-size: 10px;
-  text-align: center;
-  color: var(--ink);
-}
 
 .quick-draft-view-switch,
 .quick-draft-display-switch,
@@ -1609,23 +739,6 @@
   flex: 1 1 0;
 }
 
-.quick-draft-editor-actions {
-  flex-wrap: wrap;
-  justify-content: flex-start;
-  gap: 8px;
-  padding-top: 1px;
-  grid-row: 2;
-  grid-column: 1;
-  position: relative;
-}
-
-/* One flexible gap keeps the display switch on the left and the delivery and
-   draft controls on the right, whatever the label lengths are. */
-.quick-draft-actions-gap {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
 .quick-draft-editor-actions .teachtext-command-group {
   flex: 1 1 auto;
   min-width: 0;
@@ -1634,33 +747,6 @@
 .quick-draft-editor-actions > .btn.default {
   flex: 0 0 10rem;
   margin-left: 0;
-}
-
-.quick-draft-command-popover {
-  --teachtext-command-popover-overflow: auto;
-
-  display: grid;
-  gap: 6px;
-  left: 50%;
-  width: min(15rem, calc(100vw - 3rem));
-  max-height: min(48rem, calc(100vh - 6rem));
-  overflow: auto;
-  transform: translateX(-50%);
-}
-
-.quick-draft-command-section {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 6px;
-  padding-bottom: 6px;
-  border-bottom: var(--quick-draft-divider-border);
-}
-
-.quick-draft-command-section > b {
-  padding: 2px 2px 0;
-  color: var(--shade-dark);
-  font-size: 12px;
-  line-height: 1.2;
 }
 
 .quick-draft-command-section > .btn {
@@ -1675,32 +761,8 @@
   color: var(--shade-dark);
 }
 
-.quick-draft-layer-scope {
-  grid-column: 1 / -1;
-  padding-left: 16px;
-  color: var(--shade-dark);
-  font: 11px/1.3 var(--system-font);
-}
-
 .quick-draft-adjustment-layer:has(.quick-draft-layer-detail:not([hidden])) .quick-draft-layer-scope {
   display: none;
-}
-
-.quick-draft-adjustment-row > span {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.quick-draft-adjustment-row {
-  display: grid;
-  grid-template-columns: auto auto minmax(0, 1fr);
-  align-items: center;
-  gap: 6px;
-  padding: 2px 2px;
-  font-size: 13px;
-  line-height: 1.2;
 }
 
 .quick-draft-adjustment-row .select-wrap-inline {
@@ -1717,25 +779,6 @@
   gap: 2px 6px;
 }
 
-.quick-draft-layer-detail-toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  min-width: 0;
-  min-height: 16px;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--ink);
-  font: inherit;
-  cursor: pointer;
-}
-
-.quick-draft-layer-detail-toggle[aria-expanded="true"] {
-  transform: rotate(90deg);
-}
-
 .quick-draft-layer-detail {
   grid-column: 1 / -1;
   display: grid;
@@ -1746,12 +789,6 @@
 
 .quick-draft-layer-detail[hidden] {
   display: none;
-}
-
-.quick-draft-layer-description {
-  margin: 0;
-  color: var(--shade-dark);
-  font: 12px/1.4 var(--system-font);
 }
 
 .quick-draft-adjustment-layer .quick-draft-adjustment-mask {
@@ -1767,42 +804,9 @@
   min-width: 0;
 }
 
-.quick-draft-layer-stack {
-  display: grid;
-  gap: 6px;
-  min-width: 0;
-}
-
-.quick-draft-adjustment-mask {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 0 2px 4px;
-  font-size: 12px;
-  color: var(--shade-dark);
-}
-
-.quick-draft-adjustment-mask input {
-  width: 72px;
-  min-width: 0;
-  padding: 2px 5px;
-  font: inherit;
-}
-
-.quick-draft-adjustment-move {
-  display: inline-flex;
-  gap: 2px;
-  margin-left: auto;
-}
-
 .quick-draft-adjustment-move .mini-btn {
   min-width: 20px;
   padding: 2px 4px;
-}
-
-.quick-draft-command-section:last-child {
-  padding-bottom: 0;
-  border-bottom: 0;
 }
 
 .quick-draft-source-map {
@@ -1815,13 +819,6 @@
   display: none;
 }
 
-.compose-tools-group-label {
-  margin: 0;
-  padding: 2px 6px;
-  font-size: 11px;
-  color: var(--shade-dark);
-}
-
 .quick-draft-cliotalk-hint {
   font-size: 11px;
   color: var(--shade-dark);
@@ -1832,65 +829,12 @@
 }
 
 @container (max-width: 1120px) {
-  .quick-draft-status-center {
-    flex-wrap: wrap;
-  }
 }
 
 @container (max-width: 520px) {
-  .quick-draft-details {
-    grid-template-columns: minmax(0, 1fr) auto auto auto;
-  }
-
-  /* What goes first is the word count, not the guardrail readouts: protected
-     lines and stack depth are evidence, not statistics. */
-  .quick-draft-details > #quick-draft-stats {
-    display: none;
-  }
-
-  .quick-draft-details > #quick-draft-status {
-    grid-row: 1;
-    grid-column: 1;
-    justify-self: start;
-    text-align: left;
-  }
-
-  .quick-draft-details > #quick-draft-save-state {
-    grid-row: 1;
-    grid-column: 2;
-    justify-self: end;
-  }
-
-  .quick-draft-details > #quick-draft-protect-state,
-  .quick-draft-details > #quick-draft-stack-state {
-    grid-row: 1;
-    grid-column: auto;
-  }
 }
 
 @container (max-width: 760px) {
-  .quick-draft-layout {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "editor"
-      "cards";
-  }
-
-  .quick-draft-card-sidebar {
-    max-height: 42vh;
-    border-top: var(--quick-draft-sidebar-border);
-    padding-bottom: 6px;
-  }
-
-  .quick-draft-two-pane {
-    grid-template-columns: 1fr;
-    grid-template-rows: minmax(10rem, 0.34fr) minmax(16rem, 0.66fr);
-  }
-
-  .quick-draft-draft-controls,
-  .quick-draft-draft-row {
-    grid-template-columns: 1fr;
-  }
 }
 
 .teachtext-pane {
@@ -3352,80 +2296,10 @@ body:not(.use-liquid-glass) .scrap-list button.is-multi-selected:not(.is-selecte
   overflow-wrap: anywhere;
 }
 
-.scrap-card-shell {
-  margin-top: 7px;
-  border: var(--system-control-line) solid var(--ink);
-  background:
-    linear-gradient(var(--shade) 0 1px, transparent 1px 100%) 0 0 / 100% 20px,
-    var(--paper);
-}
-
-.scrap-card-header {
-  display: grid;
-  grid-template-columns: 20px minmax(0, 1fr);
-  align-items: center;
-  gap: 6px;
-  padding: 6px 7px;
-  border-bottom: 1px solid var(--ink);
-  background: var(--panel);
-}
-
 .scrap-card-header .mini-icon {
   width: 18px;
   height: 18px;
   border: 1px solid currentColor;
-}
-
-.scrap-card-header b,
-.scrap-card-header small {
-  display: block;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.scrap-card-header small {
-  font-family: var(--mono-font);
-  font-size: 10px;
-  opacity: 0.72;
-}
-
-.scrap-card-fields {
-  display: grid;
-  grid-template-columns: 82px minmax(0, 1fr);
-  gap: 1px 7px;
-  margin: 0;
-  padding: 6px 7px;
-}
-
-.scrap-card-fields dt {
-  font-weight: 700;
-}
-
-.scrap-card-fields dd {
-  min-width: 0;
-  margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.scrap-card-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  padding: 0 7px 7px;
-}
-
-.scrap-card-links span {
-  max-width: 100%;
-  border: 1px solid var(--ink);
-  background: var(--paper);
-  padding: 1px 5px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .tag-cloud {

@@ -11,6 +11,9 @@ const workspaceCapabilityStudio = "studio";
 let workspaceProfile = workspaceProfileWriting;
 let workspaceProfileWasRestored = false;
 
+// The File Floppy is not on this list. A dropped file mounts it and its icon
+// appears in every profile, so withholding the window made the desktop promise
+// something it then refused to open.
 const studioWindowNames = new Set([
   "questionSheet",
   "outline",
@@ -21,7 +24,6 @@ const studioWindowNames = new Set([
   "projectCd",
   "rebuildFlow",
   "rag",
-  "textDisk",
 ]);
 
 const writingStudioOwnedWindowNames = new Set([
@@ -45,7 +47,6 @@ const studioActionNames = new Set([
   "open-project-cd",
   "open-rebuild-flow",
   "open-rag",
-  "open-text-disk",
   "open-image-manager",
   "export-teachtext-project-cd",
   "generate-marp-open-clio-stage",

@@ -1296,7 +1296,6 @@ function getApplicationActionHandlers() {
     "clear-notifications": clearSystemNotifications,
     "open-dictation": invokeIntentKey,
     "open-translation-pad": () => openTranslationPad(),
-    "intent-key": invokeIntentKey,
     "open-rebuild-flow": openRebuildFlow,
     "rebuild-use-reader": useReaderForRebuildFlow,
     "rebuild-use-teachtext": useTeachTextForRebuildFlow,

@@ -11,16 +11,53 @@ const manifest = read("tooling/runtime-manifest.mjs");
 const actions = read("app/core/actions.js");
 const windows = read("app/core/window-manager.js");
 const wireup = read("app/core/wireup.js");
+const stripModules = read("app/features/control-strip-modules.js");
 const foundation = read("styles/00-foundation.css");
 const translationsEn = read("app/data/translations-en.js");
 const translationsZh = read("app/data/translations-zh.js");
 
-// Two commands, not a seventh Desk Accessory: opening an accessory to record an
-// interruption is itself the interruption.
+// Commands and one Control Strip tile, not a seventh Desk Accessory: opening an
+// accessory to record an interruption is itself the interruption.
 test.assertIncludes(html, 'data-action="hold-my-place"', "the Apple menu carries the hold command");
 test.assertIncludes(html, 'data-action="resume-my-place"', "the Apple menu carries the way back");
+test.assertIncludes(html, 'data-action="hold-that-thought"', "the Apple menu carries the passing thought in the same group");
 test.assertNotIncludes(html, 'data-window="heldPlace"', "holding a place opens no window of its own");
 test.assertNotIncludes(heldPlace, 'windowAppMap', "the slip is desk furniture, not an application window");
+
+// --- One home on the desk ---------------------------------------------------
+//
+// Holding a place and holding a thought are one movement, so they share one
+// object: the Control Strip's Your Place module. It registers as an ordinary
+// first-party descriptor — there is no second registration mechanism — and it
+// owns no state and no command, so the tile can never disagree with the menu.
+test.assertIncludes(stripModules, 'id: "heldPlace"', "the Control Strip carries one Your Place module");
+test.assertIncludes(stripModules, 'labelKey: "control_strip_held_place"', "the tile is named, in both languages, from the shared table");
+test.assertIncludes(stripModules, "controlStripBuiltinModules", "the module is one of the first-party descriptors, not a private registry");
+test.assertIncludes(stripModules, 'run: () => handleAction("hold-my-place")', "the tile holds a place through the existing command");
+test.assertIncludes(stripModules, 'run: () => handleAction("resume-my-place")', "and returns through the existing command");
+test.assertIncludes(stripModules, 'run: () => handleAction("hold-that-thought")', "and the same tile carries the passing thought");
+test.assertNotMatches(
+  stripModules.slice(stripModules.indexOf('id: "heldPlace"')),
+  /localStorage|heldPlaceStorageKey|showHeldPlaceSlip/,
+  "the tile reads the held place; it never writes or re-implements one",
+);
+test.assertIncludes(stripModules, "hasHeldPlace()", "the tile says whether a place is actually held");
+test.assertIncludes(stripModules, "heldPlaceResumeLabel()", "the way back names the place, exactly as the menu row does");
+test.assertIncludes(stripModules, 'disabled: !held', "with nowhere to go back to, the row is dim rather than absent");
+test.assertIncludes(
+  heldPlaceCore,
+  'window.AISystem6ControlStrip?.refreshStrip?.("heldPlace")',
+  "a hold from the keyboard or the slip still reaches the tile",
+);
+test.assertIncludes(stripModules, 'openOwner: "notePad"', "the module file opens the window that carries held thoughts");
+
+// The tile is a second door, never the only one: Balloon Help and Key Caps both
+// advertise the menu commands, so both key equivalents keep their meanings.
+test.assertIncludes(
+  actions,
+  'id: "hold-that-thought", key: "n", code: "KeyN", option: true, action: "hold-that-thought", display: "⌥⌘N"',
+  "catching a passing thought keeps its own key equivalent",
+);
 
 test.assertIncludes(
   manifest.slice(0, manifest.indexOf("lazyRuntimePaths")),
@@ -105,5 +142,18 @@ test.assertIncludes(translationsZh, 'held_place_hold: "按下不表"', "Chinese 
 test.assertIncludes(translationsZh, 'held_place_resume: "回头再说"', "and its matching phrase for coming back");
 test.assertIncludes(translationsEn, "held_place_note_placeholder", "the optional line invites a word without demanding one");
 test.assertIncludes(translationsZh, "held_place_note_placeholder", "in both languages");
+
+for (const key of [
+  "control_strip_held_place",
+  "control_strip_held_place_none",
+  "control_strip_held_place_at",
+  "control_strip_held_place_since",
+  "balloon_control_strip_held_place",
+]) {
+  test.assertIncludes(translationsEn, `${key}:`, `English names the tile's ${key}`);
+  test.assertIncludes(translationsZh, `${key}:`, `Chinese names the tile's ${key}`);
+}
+test.assertIncludes(translationsEn, 'control_strip_held_place: "Your Place"', "the tile and the Apple menu section share one name");
+test.assertIncludes(translationsZh, 'control_strip_held_place: "你停在哪"', "and share it in Chinese too");
 
 test.finish();

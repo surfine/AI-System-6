@@ -26,11 +26,17 @@ window.AISystem6ProjectBackupAssembler = (() => {
    *   getProjectCdItems: (id: string) => Promise<any[]>,
    *   getReferences: (id: string) => Promise<any[]>,
    *   getDocumentRevisions: (id: string) => Promise<any[]>,
+   *   getWorkingSession?: (id: string) => Promise<any>,
    * } }} options
    */
   async function assembleProjectBackup({ projectId, source }) {
     const project = await source.getProject(projectId);
     if (!project) return null;
+    // The desktop scene is optional: a disk with no scene exports as before,
+    // and a read failure never fails the backup of the durable data.
+    const workingSession = await Promise.resolve()
+      .then(() => source.getWorkingSession?.(projectId))
+      .catch(() => null);
     const [folders, files, scraps, trash, projectCdItems, references, documentRevisions] = await Promise.all([
       readCollection(source.getFolders, projectId),
       readCollection(source.getFiles, projectId),
@@ -58,6 +64,7 @@ window.AISystem6ProjectBackupAssembler = (() => {
       references,
       documentRevisions,
     };
+    if (workingSession && typeof workingSession === "object") bundle.workingSession = workingSession;
     const attached = await window.AISystem6ProjectDiskBackup.attachIntegrity(bundle);
     const verified = await window.AISystem6ProjectDiskBackup.verifyIntegrity(attached);
     const validation = window.AISystem6ProjectDiskBackup.validateBackup(attached);

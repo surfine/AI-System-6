@@ -106,7 +106,14 @@ for (const surface of [quickDraft, html, html]) {
   test.assertIncludes(surface, "share", "final work has a Share affordance");
 }
 test.assertIncludes(webPlatform, "navigator.canShare?.({ files: [file] })", "Share prefers a Markdown file when supported");
-test.assertMatches(webPlatform, /\? \{ title: safeTitle, files: \[file\] \}[\s\S]*: \{ title: safeTitle, text \}/, "Share falls back from a file to Markdown text");
+// shareArtifact hands the sheet a real file first; when the platform cannot
+// share files, Markdown falls back to a plain-text share (fallback: "text").
+test.assertMatches(
+  webPlatform,
+  /navigator\.share\(\{ title: safeTitle, files: \[file\] \}\)[\s\S]*fallback === "text"[\s\S]*navigator\.share\(\{ title: safeTitle, text: String\(artifact\.text\) \}\)/,
+  "Share falls back from a file to Markdown text"
+);
+test.assertMatches(webPlatform, /shareArtifact\(\{[\s\S]*fallback: "text",/, "Markdown asks for the text fallback by name");
 test.assertIncludes(documents, "async function shareActiveMarkdown", "TeachText shares its current Markdown");
 test.assertIncludes(projectCd, "async function shareSelectedProjectCdMarkdown", "Project CD shares the selected Markdown");
 test.assertIncludes(webPlatform, 'button.hidden = !canShare', "unsupported Share controls are hidden before interaction");

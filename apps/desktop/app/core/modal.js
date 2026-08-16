@@ -30,8 +30,12 @@ function showSystemModal(message, type = "confirm", options = {}) {
       systemModalNo.hidden = true;
       systemModalYes.textContent = t("ok");
     } else {
+      // A confirm dialog can offer one named alternative besides Cancel, for
+      // the rare question with two real answers ("read this source" versus
+      // "keep the text"). It returns "no" so callers keep three outcomes.
       systemModalCancel.hidden = false;
-      systemModalNo.hidden = true;
+      systemModalNo.hidden = !options.altKey;
+      if (options.altKey) systemModalNo.textContent = t(options.altKey);
       systemModalCancel.textContent = t("cancel");
       systemModalYes.textContent = t(options.confirmKey || "ok");
     }

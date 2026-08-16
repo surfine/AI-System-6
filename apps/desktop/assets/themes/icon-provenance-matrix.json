@@ -27,8 +27,8 @@
     "runtimeCells": 336,
     "priorityCore16Count": 16,
     "priorityCells": 96,
-    "pendingCells": 300,
-    "priorityPendingCells": 60,
+    "pendingCells": 283,
+    "priorityPendingCells": 43,
     "remaining40Policy": "The forty runtime ids outside priorityCore16 remain historicalReviewStatus=pending in the provenance matrix until individually reviewed. Family completeness, accepted-generated, or technically-clean status must not upgrade them."
   },
   "eras": {
@@ -430,8 +430,8 @@
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "durable project storage",
           "identityAnchors": [
-            "storage volume",
-            "restrained project cue"
+            "mounted storage volume",
+            "restrained project marker"
           ],
           "provenanceClass": "B",
           "directPrototype": null,
@@ -836,10 +836,10 @@
           },
           "compatibilityManifestAsset": "docMap-32.svg",
           "runtimeAssetStatus": "mapped",
-          "semanticIdentity": "a document's heading structure made visible as a map",
+          "semanticIdentity": "visualize document heading structure",
           "identityAnchors": [
             "document",
-            "branching heading structure"
+            "branching heading hierarchy"
           ],
           "provenanceClass": "B",
           "directPrototype": null,
@@ -1172,9 +1172,10 @@
           },
           "compatibilityManifestAsset": "controlPanel-32.svg",
           "runtimeAssetStatus": "mapped",
-          "semanticIdentity": "system settings and preferences",
+          "semanticIdentity": "system configuration",
           "identityAnchors": [
-            "target-era settings identity"
+            "adjustable system controls",
+            "period control-surface grammar"
           ],
           "provenanceClass": "A",
           "directPrototype": "System 6 Control Panel desk accessory",
@@ -1306,10 +1307,10 @@
           },
           "compatibilityManifestAsset": "teachText-32.svg",
           "runtimeAssetStatus": "mapped",
-          "semanticIdentity": "editable writing document and text editor",
+          "semanticIdentity": "writing and editing application",
           "identityAnchors": [
-            "writing document",
-            "editing instrument or text-editor cue"
+            "editable manuscript",
+            "period writing or editing cue"
           ],
           "provenanceClass": "A",
           "directPrototype": "System 6 TeachText application icon",
@@ -2340,21 +2341,21 @@
             "ordinary": "icons/projectDisk-32.png",
             "desktopLargeRetina": "icons/projectDisk-42.png"
           },
-          "compatibilityManifestAsset": "projectDisk-32.svg",
+          "compatibilityManifestAsset": "icons/projectDisk-32.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "durable project storage",
           "identityAnchors": [
-            "storage volume",
-            "restrained project cue"
+            "mounted storage volume",
+            "restrained project marker"
           ],
-          "provenanceClass": "B",
+          "provenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": "Mac OS 9 external or labelled storage volume",
-          "authoringMethod": "image-generation-plus-deterministic-processing",
+          "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "accepted-imagegen",
-          "historicalReviewStatus": "pending",
-          "blindMixStatus": null,
+          "legacyFamilyReviewStatus": "accepted-priority-lineage",
+          "historicalReviewStatus": "historically-reviewed",
+          "blindMixStatus": "not-run",
           "historicalStatusAuthority": "icon-system-continuity-v2",
           "intentionalAnachronism": false,
           "anachronismReason": null,
@@ -2364,10 +2365,10 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
-          "sourceKind": "accepted-imagegen-period-pixel-redraw",
-          "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px."
+          "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
+          "sourceNote": "Original era-specific storage-volume reinterpretations. The project marker remains secondary to the hardware silhouette."
         },
         "projectDisc": {
           "priorityCore16": true,
@@ -2760,21 +2761,21 @@
             "ordinary": "icons/docMap-32.png",
             "desktopLargeRetina": "icons/docMap-42.png"
           },
-          "compatibilityManifestAsset": "docMap-32.svg",
+          "compatibilityManifestAsset": "icons/docMap-32.png",
           "runtimeAssetStatus": "mapped",
-          "semanticIdentity": "a document's heading structure made visible as a map",
+          "semanticIdentity": "visualize document heading structure",
           "identityAnchors": [
             "document",
-            "branching heading structure"
+            "branching heading hierarchy"
           ],
-          "provenanceClass": "B",
+          "provenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": "Mac OS 9 outliner and diagramming applications",
-          "authoringMethod": "image-generation-plus-deterministic-processing",
+          "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "accepted-imagegen",
-          "historicalReviewStatus": "pending",
-          "blindMixStatus": null,
+          "legacyFamilyReviewStatus": "accepted-priority-lineage",
+          "historicalReviewStatus": "historically-reviewed",
+          "blindMixStatus": "not-run",
           "historicalStatusAuthority": "icon-system-continuity-v2",
           "intentionalAnachronism": false,
           "anachronismReason": null,
@@ -2786,8 +2787,8 @@
             ],
             "construction": "deterministic-derivative"
           },
-          "sourceKind": "accepted-imagegen-period-pixel-redraw",
-          "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px."
+          "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
+          "sourceNote": "Original era-specific document-structure utilities; geographic-map and magnifier metaphors are deliberately excluded."
         },
         "clioStage": {
           "priorityCore16": false,
@@ -3108,9 +3109,10 @@
           },
           "compatibilityManifestAsset": "controlPanel-32.svg",
           "runtimeAssetStatus": "mapped",
-          "semanticIdentity": "system settings and preferences",
+          "semanticIdentity": "system configuration",
           "identityAnchors": [
-            "target-era settings identity"
+            "adjustable system controls",
+            "period control-surface grammar"
           ],
           "provenanceClass": "A",
           "directPrototype": "Mac OS 9 Control Panels",
@@ -3244,21 +3246,21 @@
             "ordinary": "icons/teachText-32.png",
             "desktopLargeRetina": "icons/teachText-42.png"
           },
-          "compatibilityManifestAsset": "teachText-32.svg",
+          "compatibilityManifestAsset": "icons/teachText-32.png",
           "runtimeAssetStatus": "mapped",
-          "semanticIdentity": "editable writing document and text editor",
+          "semanticIdentity": "writing and editing application",
           "identityAnchors": [
-            "writing document",
-            "editing instrument or text-editor cue"
+            "editable manuscript",
+            "period writing or editing cue"
           ],
           "provenanceClass": "B",
           "directPrototype": null,
           "nearestPeriodAnalog": "Mac OS 9 SimpleText",
-          "authoringMethod": "image-generation-plus-deterministic-processing",
+          "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "accepted-imagegen",
-          "historicalReviewStatus": "pending",
-          "blindMixStatus": null,
+          "legacyFamilyReviewStatus": "accepted-priority-lineage",
+          "historicalReviewStatus": "historically-reviewed",
+          "blindMixStatus": "not-run",
           "historicalStatusAuthority": "icon-system-continuity-v2",
           "intentionalAnachronism": false,
           "anachronismReason": null,
@@ -3268,10 +3270,10 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
-          "sourceKind": "accepted-imagegen-period-pixel-redraw",
-          "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px."
+          "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
+          "sourceNote": "Original era-specific writing-application reinterpretations; the exact pen angle and material are not locked across eras."
         },
         "writingDemo": {
           "priorityCore16": false,
@@ -4303,17 +4305,17 @@
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "durable project storage",
           "identityAnchors": [
-            "storage volume",
-            "restrained project cue"
+            "mounted storage volume",
+            "restrained project marker"
           ],
           "provenanceClass": "B",
           "directPrototype": null,
           "nearestPeriodAnalog": "Jaguar external hard-drive volume",
-          "authoringMethod": "image-generation-plus-deterministic-processing",
+          "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "accepted-generated",
-          "historicalReviewStatus": "pending",
-          "blindMixStatus": null,
+          "legacyFamilyReviewStatus": "accepted-priority-lineage",
+          "historicalReviewStatus": "historically-reviewed",
+          "blindMixStatus": "not-run",
           "historicalStatusAuthority": "icon-system-continuity-v2",
           "intentionalAnachronism": false,
           "anachronismReason": null,
@@ -4323,10 +4325,10 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
-          "sourceKind": "original-generated-era-illustration",
-          "sourceNote": null
+          "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
+          "sourceNote": "Original era-specific storage-volume reinterpretations. The project marker remains secondary to the hardware silhouette."
         },
         "projectDisc": {
           "priorityCore16": true,
@@ -4721,19 +4723,19 @@
           },
           "compatibilityManifestAsset": "icons/docMap-32.png",
           "runtimeAssetStatus": "mapped",
-          "semanticIdentity": "a document's heading structure made visible as a map",
+          "semanticIdentity": "visualize document heading structure",
           "identityAnchors": [
             "document",
-            "branching heading structure"
+            "branching heading hierarchy"
           ],
-          "provenanceClass": "B",
+          "provenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": "Jaguar-era outliner and mind-mapping applications",
-          "authoringMethod": "image-generation-plus-deterministic-processing",
+          "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "accepted-generated",
-          "historicalReviewStatus": "pending",
-          "blindMixStatus": null,
+          "legacyFamilyReviewStatus": "accepted-priority-lineage",
+          "historicalReviewStatus": "historically-reviewed",
+          "blindMixStatus": "not-run",
           "historicalStatusAuthority": "icon-system-continuity-v2",
           "intentionalAnachronism": false,
           "anachronismReason": null,
@@ -4745,8 +4747,8 @@
             ],
             "construction": "deterministic-derivative"
           },
-          "sourceKind": "original-generated-era-illustration",
-          "sourceNote": null
+          "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
+          "sourceNote": "Original era-specific document-structure utilities; geographic-map and magnifier metaphors are deliberately excluded."
         },
         "clioStage": {
           "priorityCore16": false,
@@ -5067,18 +5069,19 @@
           },
           "compatibilityManifestAsset": "icons/controlPanel-32.png",
           "runtimeAssetStatus": "mapped",
-          "semanticIdentity": "system settings and preferences",
+          "semanticIdentity": "system configuration",
           "identityAnchors": [
-            "target-era settings identity"
+            "adjustable system controls",
+            "period control-surface grammar"
           ],
-          "provenanceClass": "A",
+          "provenanceClass": "B",
           "directPrototype": "Mac OS X 10.2 System Preferences",
           "nearestPeriodAnalog": null,
-          "authoringMethod": "image-generation-plus-deterministic-processing",
+          "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "accepted-generated",
-          "historicalReviewStatus": "pending",
-          "blindMixStatus": null,
+          "legacyFamilyReviewStatus": "accepted-priority-lineage",
+          "historicalReviewStatus": "historically-reviewed",
+          "blindMixStatus": "not-run",
           "historicalStatusAuthority": "icon-system-continuity-v2",
           "intentionalAnachronism": false,
           "anachronismReason": null,
@@ -5088,10 +5091,10 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
-          "sourceKind": "original-generated-era-illustration",
-          "sourceNote": null
+          "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
+          "sourceNote": "Original era-specific control surfaces replace the repeated page-and-controls composition."
         },
         "chooser": {
           "priorityCore16": false,
@@ -5205,10 +5208,10 @@
           },
           "compatibilityManifestAsset": "icons/teachText-32.png",
           "runtimeAssetStatus": "mapped",
-          "semanticIdentity": "editable writing document and text editor",
+          "semanticIdentity": "writing and editing application",
           "identityAnchors": [
-            "writing document",
-            "editing instrument or text-editor cue"
+            "editable manuscript",
+            "period writing or editing cue"
           ],
           "provenanceClass": "B",
           "directPrototype": null,
@@ -6273,17 +6276,17 @@
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "durable project storage",
           "identityAnchors": [
-            "storage volume",
-            "restrained project cue"
+            "mounted storage volume",
+            "restrained project marker"
           ],
           "provenanceClass": "B",
           "directPrototype": null,
           "nearestPeriodAnalog": "Snow Leopard external hard-drive volume",
-          "authoringMethod": "image-generation-plus-deterministic-processing",
+          "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "accepted-generated",
-          "historicalReviewStatus": "pending",
-          "blindMixStatus": null,
+          "legacyFamilyReviewStatus": "accepted-priority-lineage",
+          "historicalReviewStatus": "historically-reviewed",
+          "blindMixStatus": "not-run",
           "historicalStatusAuthority": "icon-system-continuity-v2",
           "intentionalAnachronism": false,
           "anachronismReason": null,
@@ -6294,10 +6297,10 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
-          "sourceKind": "original-generated-era-illustration",
-          "sourceNote": null
+          "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
+          "sourceNote": "Original era-specific storage-volume reinterpretations. The project marker remains secondary to the hardware silhouette."
         },
         "projectDisc": {
           "priorityCore16": true,
@@ -6703,19 +6706,19 @@
           },
           "compatibilityManifestAsset": "icons/docMap-32.png",
           "runtimeAssetStatus": "mapped",
-          "semanticIdentity": "a document's heading structure made visible as a map",
+          "semanticIdentity": "visualize document heading structure",
           "identityAnchors": [
             "document",
-            "branching heading structure"
+            "branching heading hierarchy"
           ],
-          "provenanceClass": "B",
+          "provenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": "Snow Leopard-era outliner and mind-mapping applications",
-          "authoringMethod": "image-generation-plus-deterministic-processing",
+          "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "accepted-generated",
-          "historicalReviewStatus": "pending",
-          "blindMixStatus": null,
+          "legacyFamilyReviewStatus": "accepted-priority-lineage",
+          "historicalReviewStatus": "historically-reviewed",
+          "blindMixStatus": "not-run",
           "historicalStatusAuthority": "icon-system-continuity-v2",
           "intentionalAnachronism": false,
           "anachronismReason": null,
@@ -6728,8 +6731,8 @@
             ],
             "construction": "deterministic-derivative"
           },
-          "sourceKind": "original-generated-era-illustration",
-          "sourceNote": null
+          "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
+          "sourceNote": "Original era-specific document-structure utilities; geographic-map and magnifier metaphors are deliberately excluded."
         },
         "clioStage": {
           "priorityCore16": false,
@@ -7059,18 +7062,19 @@
           },
           "compatibilityManifestAsset": "icons/controlPanel-32.png",
           "runtimeAssetStatus": "mapped",
-          "semanticIdentity": "system settings and preferences",
+          "semanticIdentity": "system configuration",
           "identityAnchors": [
-            "target-era settings identity"
+            "adjustable system controls",
+            "period control-surface grammar"
           ],
-          "provenanceClass": "A",
+          "provenanceClass": "B",
           "directPrototype": "Mac OS X 10.6 System Preferences",
           "nearestPeriodAnalog": null,
-          "authoringMethod": "image-generation-plus-deterministic-processing",
+          "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "accepted-generated",
-          "historicalReviewStatus": "pending",
-          "blindMixStatus": null,
+          "legacyFamilyReviewStatus": "accepted-priority-lineage",
+          "historicalReviewStatus": "historically-reviewed",
+          "blindMixStatus": "not-run",
           "historicalStatusAuthority": "icon-system-continuity-v2",
           "intentionalAnachronism": false,
           "anachronismReason": null,
@@ -7081,10 +7085,10 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
-          "sourceKind": "original-generated-era-illustration",
-          "sourceNote": null
+          "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
+          "sourceNote": "Original era-specific control surfaces replace the repeated page-and-controls composition."
         },
         "chooser": {
           "priorityCore16": false,
@@ -7201,19 +7205,19 @@
           },
           "compatibilityManifestAsset": "icons/teachText-32.png",
           "runtimeAssetStatus": "mapped",
-          "semanticIdentity": "editable writing document and text editor",
+          "semanticIdentity": "writing and editing application",
           "identityAnchors": [
-            "writing document",
-            "editing instrument or text-editor cue"
+            "editable manuscript",
+            "period writing or editing cue"
           ],
           "provenanceClass": "B",
           "directPrototype": null,
           "nearestPeriodAnalog": "Mac OS X 10.6 TextEdit",
-          "authoringMethod": "image-generation-plus-deterministic-processing",
+          "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "accepted-generated",
-          "historicalReviewStatus": "pending",
-          "blindMixStatus": null,
+          "legacyFamilyReviewStatus": "accepted-priority-lineage",
+          "historicalReviewStatus": "historically-reviewed",
+          "blindMixStatus": "not-run",
           "historicalStatusAuthority": "icon-system-continuity-v2",
           "intentionalAnachronism": false,
           "anachronismReason": null,
@@ -7224,10 +7228,10 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
-          "sourceKind": "original-generated-era-illustration",
-          "sourceNote": null
+          "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
+          "sourceNote": "Original era-specific writing-application reinterpretations; the exact pen angle and material are not locked across eras."
         },
         "writingDemo": {
           "priorityCore16": false,
@@ -8288,17 +8292,17 @@
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "durable project storage",
           "identityAnchors": [
-            "storage volume",
-            "restrained project cue"
+            "mounted storage volume",
+            "restrained project marker"
           ],
           "provenanceClass": "B",
           "directPrototype": null,
           "nearestPeriodAnalog": "Yosemite external storage volume",
-          "authoringMethod": "image-generation-plus-deterministic-processing",
+          "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "accepted-generated",
-          "historicalReviewStatus": "pending",
-          "blindMixStatus": null,
+          "legacyFamilyReviewStatus": "accepted-priority-lineage",
+          "historicalReviewStatus": "historically-reviewed",
+          "blindMixStatus": "not-run",
           "historicalStatusAuthority": "icon-system-continuity-v2",
           "intentionalAnachronism": false,
           "anachronismReason": null,
@@ -8309,10 +8313,10 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
-          "sourceKind": "original-generated-era-illustration",
-          "sourceNote": null
+          "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
+          "sourceNote": "Original era-specific storage-volume reinterpretations. The project marker remains secondary to the hardware silhouette."
         },
         "projectDisc": {
           "priorityCore16": true,
@@ -8718,19 +8722,19 @@
           },
           "compatibilityManifestAsset": "icons/docMap-32.png",
           "runtimeAssetStatus": "mapped",
-          "semanticIdentity": "a document's heading structure made visible as a map",
+          "semanticIdentity": "visualize document heading structure",
           "identityAnchors": [
             "document",
-            "branching heading structure"
+            "branching heading hierarchy"
           ],
-          "provenanceClass": "B",
+          "provenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": "Yosemite-era outline and document-map applications",
-          "authoringMethod": "image-generation-plus-deterministic-processing",
+          "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "accepted-generated",
-          "historicalReviewStatus": "pending",
-          "blindMixStatus": null,
+          "legacyFamilyReviewStatus": "accepted-priority-lineage",
+          "historicalReviewStatus": "historically-reviewed",
+          "blindMixStatus": "not-run",
           "historicalStatusAuthority": "icon-system-continuity-v2",
           "intentionalAnachronism": false,
           "anachronismReason": null,
@@ -8743,8 +8747,8 @@
             ],
             "construction": "deterministic-derivative"
           },
-          "sourceKind": "original-generated-era-illustration",
-          "sourceNote": null
+          "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
+          "sourceNote": "Original era-specific document-structure utilities; geographic-map and magnifier metaphors are deliberately excluded."
         },
         "clioStage": {
           "priorityCore16": false,
@@ -9074,18 +9078,19 @@
           },
           "compatibilityManifestAsset": "icons/controlPanel-32.png",
           "runtimeAssetStatus": "mapped",
-          "semanticIdentity": "system settings and preferences",
+          "semanticIdentity": "system configuration",
           "identityAnchors": [
-            "target-era settings identity"
+            "adjustable system controls",
+            "period control-surface grammar"
           ],
-          "provenanceClass": "A",
+          "provenanceClass": "B",
           "directPrototype": "OS X 10.10 System Preferences",
           "nearestPeriodAnalog": null,
-          "authoringMethod": "image-generation-plus-deterministic-processing",
+          "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "accepted-generated",
-          "historicalReviewStatus": "pending",
-          "blindMixStatus": null,
+          "legacyFamilyReviewStatus": "accepted-priority-lineage",
+          "historicalReviewStatus": "historically-reviewed",
+          "blindMixStatus": "not-run",
           "historicalStatusAuthority": "icon-system-continuity-v2",
           "intentionalAnachronism": false,
           "anachronismReason": null,
@@ -9096,10 +9101,10 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
-          "sourceKind": "original-generated-era-illustration",
-          "sourceNote": null
+          "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
+          "sourceNote": "Original era-specific control surfaces replace the repeated page-and-controls composition."
         },
         "chooser": {
           "priorityCore16": false,
@@ -9216,19 +9221,19 @@
           },
           "compatibilityManifestAsset": "icons/teachText-32.png",
           "runtimeAssetStatus": "mapped",
-          "semanticIdentity": "editable writing document and text editor",
+          "semanticIdentity": "writing and editing application",
           "identityAnchors": [
-            "writing document",
-            "editing instrument or text-editor cue"
+            "editable manuscript",
+            "period writing or editing cue"
           ],
           "provenanceClass": "B",
           "directPrototype": null,
           "nearestPeriodAnalog": "OS X 10.10 TextEdit",
-          "authoringMethod": "image-generation-plus-deterministic-processing",
+          "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "accepted-generated",
-          "historicalReviewStatus": "pending",
-          "blindMixStatus": null,
+          "legacyFamilyReviewStatus": "accepted-priority-lineage",
+          "historicalReviewStatus": "historically-reviewed",
+          "blindMixStatus": "not-run",
           "historicalStatusAuthority": "icon-system-continuity-v2",
           "intentionalAnachronism": false,
           "anachronismReason": null,
@@ -9239,10 +9244,10 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
-          "sourceKind": "original-generated-era-illustration",
-          "sourceNote": null
+          "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
+          "sourceNote": "Original era-specific writing-application reinterpretations; the exact pen angle and material are not locked across eras."
         },
         "writingDemo": {
           "priorityCore16": false,
@@ -10315,17 +10320,17 @@
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "durable project storage",
           "identityAnchors": [
-            "storage volume",
-            "restrained project cue"
+            "mounted storage volume",
+            "restrained project marker"
           ],
           "provenanceClass": "B",
           "directPrototype": null,
           "nearestPeriodAnalog": "Tahoe external or project storage object",
-          "authoringMethod": "image-generation-plus-deterministic-processing",
+          "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "accepted-imagegen",
-          "historicalReviewStatus": "pending",
-          "blindMixStatus": null,
+          "legacyFamilyReviewStatus": "accepted-priority-lineage",
+          "historicalReviewStatus": "historically-reviewed",
+          "blindMixStatus": "not-run",
           "historicalStatusAuthority": "icon-system-continuity-v2",
           "intentionalAnachronism": false,
           "anachronismReason": null,
@@ -10336,10 +10341,10 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
-          "sourceKind": "imagegen-original-raster",
-          "sourceNote": null
+          "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
+          "sourceNote": "Original era-specific storage-volume reinterpretations. The project marker remains secondary to the hardware silhouette."
         },
         "projectDisc": {
           "priorityCore16": true,
@@ -10757,19 +10762,19 @@
           },
           "compatibilityManifestAsset": "icons/docMap-128-default.png",
           "runtimeAssetStatus": "mapped",
-          "semanticIdentity": "a document's heading structure made visible as a map",
+          "semanticIdentity": "visualize document heading structure",
           "identityAnchors": [
             "document",
-            "branching heading structure"
+            "branching heading hierarchy"
           ],
-          "provenanceClass": "B",
+          "provenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": "Tahoe-era structured-document and spatial-outline applications",
-          "authoringMethod": "image-generation-plus-deterministic-processing",
+          "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "accepted-imagegen",
-          "historicalReviewStatus": "pending",
-          "blindMixStatus": null,
+          "legacyFamilyReviewStatus": "accepted-priority-lineage",
+          "historicalReviewStatus": "historically-reviewed",
+          "blindMixStatus": "not-run",
           "historicalStatusAuthority": "icon-system-continuity-v2",
           "intentionalAnachronism": false,
           "anachronismReason": null,
@@ -10782,8 +10787,8 @@
             ],
             "construction": "deterministic-derivative"
           },
-          "sourceKind": "imagegen-original-raster",
-          "sourceNote": null
+          "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
+          "sourceNote": "Original era-specific document-structure utilities; geographic-map and magnifier metaphors are deliberately excluded."
         },
         "clioStage": {
           "priorityCore16": false,
@@ -11123,9 +11128,10 @@
           },
           "compatibilityManifestAsset": "icons/controlPanel-128-default.png",
           "runtimeAssetStatus": "mapped",
-          "semanticIdentity": "system settings and preferences",
+          "semanticIdentity": "system configuration",
           "identityAnchors": [
-            "target-era settings identity"
+            "adjustable system controls",
+            "period control-surface grammar"
           ],
           "provenanceClass": "A",
           "directPrototype": "macOS Tahoe 26 System Settings",
@@ -11269,19 +11275,19 @@
           },
           "compatibilityManifestAsset": "icons/teachText-128-default.png",
           "runtimeAssetStatus": "mapped",
-          "semanticIdentity": "editable writing document and text editor",
+          "semanticIdentity": "writing and editing application",
           "identityAnchors": [
-            "writing document",
-            "editing instrument or text-editor cue"
+            "editable manuscript",
+            "period writing or editing cue"
           ],
           "provenanceClass": "B",
           "directPrototype": null,
           "nearestPeriodAnalog": "macOS Tahoe 26 TextEdit",
-          "authoringMethod": "image-generation-plus-deterministic-processing",
+          "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "accepted-imagegen",
-          "historicalReviewStatus": "pending",
-          "blindMixStatus": null,
+          "legacyFamilyReviewStatus": "accepted-priority-lineage",
+          "historicalReviewStatus": "historically-reviewed",
+          "blindMixStatus": "not-run",
           "historicalStatusAuthority": "icon-system-continuity-v2",
           "intentionalAnachronism": false,
           "anachronismReason": null,
@@ -11292,10 +11298,10 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
-          "sourceKind": "imagegen-original-raster",
-          "sourceNote": null
+          "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
+          "sourceNote": "Original era-specific writing-application reinterpretations; the exact pen angle and material are not locked across eras."
         },
         "writingDemo": {
           "priorityCore16": false,

@@ -840,7 +840,7 @@
       openSystemMusic();
       return;
     }
-    ui("soundscape-local-input")?.click();
+    promptSoundscapeLocalFiles();
   }
 
   function renderAll() {
@@ -1163,6 +1163,12 @@
       finishGamdlForm();
       setStatus(gamdlError(error));
     }
+  }
+
+  // One Choose-button picker for the whole desktop, not a permanent hidden
+  // file input parked in the markup.
+  function promptSoundscapeLocalFiles() {
+    openTransientFilePicker({ accept: "audio/*", multiple: true, onSelect: chooseLocalFiles });
   }
 
   async function chooseLocalFiles(files) {
@@ -1577,8 +1583,7 @@
   function bindDomEvents() {
     ui("soundscape-connect-apple")?.addEventListener("click", () => connectSystemMusic());
     ui("soundscape-open-music")?.addEventListener("click", openSystemMusic);
-    ui("soundscape-choose-local")?.addEventListener("click", () => ui("soundscape-local-input")?.click());
-    ui("soundscape-local-input")?.addEventListener("change", (event) => chooseLocalFiles(event.target.files));
+    ui("soundscape-choose-local")?.addEventListener("click", promptSoundscapeLocalFiles);
     ui("soundscape-search-form")?.addEventListener("submit", (event) => {
       event.preventDefault();
       searchSystemLibrary(ui("soundscape-search-input")?.value);
@@ -1775,7 +1780,7 @@
 
   function runMenuCommand(command) {
     const commands = {
-      "choose-local": () => ui("soundscape-local-input")?.click(),
+      "choose-local": promptSoundscapeLocalFiles,
       "gamdl-download": () => ui("soundscape-gamdl-input")?.focus(),
       "save-moment": saveMoment,
       "toggle-play": togglePlay,

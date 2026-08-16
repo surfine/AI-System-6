@@ -461,7 +461,6 @@ function clioChartElements() {
     owner: document.querySelector("#clio-chart-owner"),
     hint: document.querySelector("#clio-chart-hint"),
     splitter: document.querySelector("#clio-chart-splitter"),
-    fileInput: document.querySelector("#clio-chart-file-input"),
     bars: document.querySelector("#clio-chart-bars-view"),
     matrix: document.querySelector("#clio-chart-matrix-view"),
     trace: document.querySelector("#clio-chart-trace-view"),
@@ -1719,11 +1718,11 @@ function bindClioChartControls() {
   els.spatialGrid?.addEventListener("click", () => setClioChartProjection("grid"));
   els.score?.addEventListener("click", () => setClioChartProjection("score"));
   els.source?.addEventListener("click", () => setClioChartProjection("source"));
-  els.fileInput?.addEventListener("change", () => {
-    importClioChartFiles(els.fileInput.files);
-    els.fileInput.value = "";
-  });
-  document.querySelector("#clio-chart-import-file")?.addEventListener("click", () => els.fileInput?.click());
+
+  document.querySelector("#clio-chart-import-file")?.addEventListener("click", () => openTransientFilePicker({
+    accept: ".csv,.tsv,.md,.markdown,.txt",
+    onSelect: (files) => importClioChartFiles(files),
+  }));
 
   const win = typeof getWindow === "function" ? getWindow("clioChart") : null;
   win?.addEventListener("paste", handleClioChartPaste);

@@ -831,13 +831,6 @@
   font-size: 10px;
 }
 
-.section-draft-controls {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  gap: 7px;
-  margin-bottom: 8px;
-}
-
 .draft-list {
   height: 120px;
   border: var(--draft-list-border);
@@ -2028,7 +2021,6 @@ body.alarm-clock-ringing .alarm-clock-menu-icon {
 .writing-bell-actions .btn {
   min-width: 72px;
 }
-
 
 .memory-cards-pane {
   gap: 9px;

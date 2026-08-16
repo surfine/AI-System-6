@@ -807,27 +807,27 @@
       }
     },
     "projectDisk": {
-      "genre": "hardware",
+      "genre": "application",
       "grid": {
         "shape": "square",
         "fitted": 0.8125,
         "scale": 1.0097
       },
-      "physicalMetaphor": "drive",
+      "physicalMetaphor": "Mac OS 9 external mounted volume with integrated project index",
       "semanticMark": "project",
-      "sourceKind": "accepted-imagegen-period-pixel-redraw",
-      "reviewStatus": "accepted-imagegen",
+      "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
+      "reviewStatus": "accepted-priority-lineage",
       "sizes": {
         "16": "icons/projectDisk-16.png",
         "32": "icons/projectDisk-32.png",
         "42": "icons/projectDisk-42.png"
       },
-      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
       "generationStatus": "technically-clean",
-      "provenanceClass": "B",
-      "historicalReviewStatus": "pending",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "historically-reviewed",
       "runtimeAsset": true,
-      "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
+      "sourceNote": "Original era-specific storage-volume reinterpretations. The project marker remains secondary to the hardware silhouette.",
       "metrics": {
         "16": {
           "bbox": {
@@ -836,36 +836,109 @@
             "maxX": 14,
             "maxY": 11
           },
-          "pixels": 100,
-          "colors": 7,
-          "sha256": "157b8f38bb59ce414e8f9f3e063ed746eefe3e826822f9ed18a4a3f16eaa93cd",
-          "bytes": 209
+          "bounds": [
+            1,
+            4,
+            14,
+            11
+          ],
+          "ink": {
+            "minX": 1,
+            "minY": 4,
+            "maxX": 14,
+            "maxY": 11,
+            "width": 14,
+            "height": 8
+          },
+          "pixels": 110,
+          "inkPixels": 110,
+          "translucent": 18,
+          "colors": 31,
+          "sha256": "7ee8b5351829444277ea8eaf9840aa8a5bdbb3de83df104113e026e1e74c8bcd",
+          "bytes": 324,
+          "gridShape": "landscape"
         },
         "32": {
           "bbox": {
             "minX": 2,
-            "minY": 7,
+            "minY": 8,
             "maxX": 29,
             "maxY": 23
           },
-          "pixels": 430,
-          "colors": 11,
-          "sha256": "02c59e54dd34aeebfddc7ab8946ebe2d0063f74c0c6b24dd5b067c7e5a575711",
-          "bytes": 486
+          "bounds": [
+            2,
+            8,
+            29,
+            23
+          ],
+          "ink": {
+            "minX": 2,
+            "minY": 8,
+            "maxX": 29,
+            "maxY": 23,
+            "width": 28,
+            "height": 16
+          },
+          "pixels": 422,
+          "inkPixels": 422,
+          "translucent": 36,
+          "colors": 43,
+          "sha256": "5ab27c8f1d1c07e96c3b652385bc272611378bea62ac1ffb8e6141d83ae76dbf",
+          "bytes": 525,
+          "gridShape": "landscape"
         },
         "42": {
           "bbox": {
-            "minX": 2,
-            "minY": 9,
-            "maxX": 39,
-            "maxY": 31
+            "minX": 3,
+            "minY": 11,
+            "maxX": 38,
+            "maxY": 30
           },
-          "pixels": 782,
-          "colors": 10,
-          "sha256": "276bad657c5df9c82c05b4f40e03450bb61030ec0f0034f4bccc3c1a1d0bcd23",
-          "bytes": 618
+          "bounds": [
+            3,
+            11,
+            38,
+            30
+          ],
+          "ink": {
+            "minX": 3,
+            "minY": 11,
+            "maxX": 38,
+            "maxY": 30,
+            "width": 36,
+            "height": 20
+          },
+          "pixels": 557,
+          "inkPixels": 557,
+          "translucent": 66,
+          "colors": 320,
+          "sha256": "792e4c95e2bc5f8b6329c039a6d75d9438c8ff75a56554de207010b2567f9b71",
+          "bytes": 1693,
+          "gridShape": "landscape"
         }
-      }
+      },
+      "semanticIdentity": "durable project storage",
+      "identityAnchors": [
+        "mounted storage volume",
+        "restrained project marker"
+      ],
+      "historicalPrototype": null,
+      "nearestHistoricalAnalog": "Mac OS 9 external mounted volume with integrated project index",
+      "metaphorKey": "project-storage-volume",
+      "material": "hard-pixel Platinum gray-violet hardware with restrained index tab",
+      "blindMixStatus": "not-run",
+      "generatedMaster": "internal/evidence/drafts/icon-lineage-audit/imagegen-candidates-v2/project-disk/platinum-projectDisk-v1.png",
+      "reference": "No native Project Disk artwork is claimed; each target era's real hard-disk or mounted-volume grammar supplies the prototype.",
+      "exactPixelReplica": false,
+      "referenceValidated": false,
+      "nativeReplica": false,
+      "sizeStatus": {
+        "16": "optically-reviewed",
+        "32": "optically-reviewed",
+        "42": "optically-reviewed"
+      },
+      "sizePolicy": "Large tiers follow reviewed ImageGen directions; 32 and 16 px are independent optical constructions with the project marker simplified before the storage silhouette.",
+      "runtimePixelMetrics": null
     },
     "projectDisc": {
       "genre": "hardware",
@@ -1691,60 +1764,111 @@
         "fitted": 0.8125,
         "scale": 0.9369
       },
-      "physicalMetaphor": "one Platinum document page whose heading lines grow into a stem and three right-side nodes",
-      "semanticMark": "none",
-      "sourceKind": "accepted-imagegen-period-pixel-redraw",
-      "reviewStatus": "accepted-imagegen",
+      "physicalMetaphor": "Platinum cream document with hard-pixel violet heading tree",
+      "semanticMark": "outline",
+      "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
+      "reviewStatus": "accepted-priority-lineage",
       "sizes": {
         "16": "icons/docMap-16.png",
         "32": "icons/docMap-32.png",
         "42": "icons/docMap-42.png"
       },
-      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
       "generationStatus": "technically-clean",
-      "provenanceClass": "B",
-      "historicalReviewStatus": "pending",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "historically-reviewed",
       "runtimeAsset": true,
-      "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
+      "sourceNote": "Original era-specific document-structure utilities; geographic-map and magnifier metaphors are deliberately excluded.",
       "metrics": {
         "16": {
           "bbox": {
-            "minX": 1,
+            "minX": 3,
             "minY": 1,
-            "maxX": 14,
-            "maxY": 13
+            "maxX": 13,
+            "maxY": 14
           },
-          "pixels": 157,
-          "colors": 14,
-          "sha256": "70c66e0606b4199e5cbe23aea4ca0a8bf89d87d790842585ab9267f5a509133f",
-          "bytes": 422
+          "bounds": [
+            3,
+            1,
+            13,
+            14
+          ],
+          "ink": {
+            "minX": 3,
+            "minY": 1,
+            "maxX": 13,
+            "maxY": 14,
+            "width": 11,
+            "height": 14
+          },
+          "pixels": 151,
+          "inkPixels": 151,
+          "translucent": 3,
+          "colors": 17,
+          "sha256": "d0ce4ab821ac423460396882491e78860e202ad66346a1446e8344b428aa6d13",
+          "bytes": 279,
+          "gridShape": "portrait"
         },
         "32": {
           "bbox": {
-            "minX": 2,
+            "minX": 6,
             "minY": 2,
-            "maxX": 29,
-            "maxY": 28
+            "maxX": 27,
+            "maxY": 29
           },
-          "pixels": 635,
-          "colors": 15,
-          "sha256": "1981dda8cd6b7861972c57301631749652a30c4b80a1cf8390484ac527ddf72b",
-          "bytes": 987
+          "bounds": [
+            6,
+            2,
+            27,
+            29
+          ],
+          "ink": {
+            "minX": 6,
+            "minY": 2,
+            "maxX": 27,
+            "maxY": 29,
+            "width": 22,
+            "height": 28
+          },
+          "pixels": 601,
+          "inkPixels": 601,
+          "translucent": 6,
+          "colors": 21,
+          "sha256": "0a1fa33f9dd8412541fa06f290edae2821974aeea258a1419f443a5ce7383e23",
+          "bytes": 403,
+          "gridShape": "portrait"
         },
         "42": {
           "bbox": {
-            "minX": 2,
-            "minY": 3,
-            "maxX": 39,
-            "maxY": 38
+            "minX": 7,
+            "minY": 4,
+            "maxX": 34,
+            "maxY": 37
           },
-          "pixels": 1157,
-          "colors": 16,
-          "sha256": "2f46f85209988d1953be2356e1d18f45e3c12d30b049e154a82b360275530771",
-          "bytes": 1259
+          "bounds": [
+            7,
+            4,
+            34,
+            37
+          ],
+          "ink": {
+            "minX": 7,
+            "minY": 4,
+            "maxX": 34,
+            "maxY": 37,
+            "width": 28,
+            "height": 34
+          },
+          "pixels": 874,
+          "inkPixels": 874,
+          "translucent": 2,
+          "colors": 370,
+          "sha256": "f6074556a0cfcc2f7f884e944d86f267aa4df87032c753089e0190fa67d04c9f",
+          "bytes": 1835,
+          "gridShape": "portrait"
         }
       },
-      "metaphorKey": "branching-document-map",
+      "metaphorKey": "document-heading-hierarchy",
       "metaphorMetrics": {
         "version": 1,
         "sourceSize": [
@@ -1772,7 +1896,28 @@
           0,
           0
         ]
-      }
+      },
+      "semanticIdentity": "visualize document heading structure",
+      "identityAnchors": [
+        "document",
+        "branching heading hierarchy"
+      ],
+      "historicalPrototype": null,
+      "nearestHistoricalAnalog": "Platinum cream document with hard-pixel violet heading tree",
+      "material": "cream paper, gray-violet bevel and stepped hierarchy",
+      "blindMixStatus": "not-run",
+      "generatedMaster": "internal/evidence/drafts/icon-lineage-audit/imagegen-candidates-v2/doc-map/platinum-docMap-v1.png",
+      "reference": "No exact period application icon is claimed. Each era combines its document grammar with its own outline/tree disclosure idiom.",
+      "exactPixelReplica": false,
+      "referenceValidated": false,
+      "nativeReplica": false,
+      "sizeStatus": {
+        "16": "optically-reviewed",
+        "32": "optically-reviewed",
+        "42": "optically-reviewed"
+      },
+      "sizePolicy": "Large tiers follow reviewed generation directions; 32 and 16 px use independent bold trunks and three nodes rather than reduced detail.",
+      "runtimePixelMetrics": null
     },
     "clioStage": {
       "genre": "application",
@@ -2574,59 +2719,132 @@
         "fitted": 0.7881,
         "scale": 0.9794
       },
-      "physicalMetaphor": "paperPen",
-      "semanticMark": "writing",
-      "sourceKind": "accepted-imagegen-period-pixel-redraw",
-      "reviewStatus": "accepted-imagegen",
+      "physicalMetaphor": "Platinum SimpleText-like cream document with docked mechanical pencil",
+      "semanticMark": "write",
+      "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
+      "reviewStatus": "accepted-priority-lineage",
       "sizes": {
         "16": "icons/teachText-16.png",
         "32": "icons/teachText-32.png",
         "42": "icons/teachText-42.png"
       },
-      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
       "generationStatus": "technically-clean",
       "provenanceClass": "B",
-      "historicalReviewStatus": "pending",
+      "historicalReviewStatus": "historically-reviewed",
       "runtimeAsset": true,
-      "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
+      "sourceNote": "Original era-specific writing-application reinterpretations; the exact pen angle and material are not locked across eras.",
       "metrics": {
         "16": {
           "bbox": {
-            "minX": 2,
+            "minX": 3,
             "minY": 1,
-            "maxX": 12,
-            "maxY": 14
+            "maxX": 13,
+            "maxY": 13
           },
-          "pixels": 141,
-          "colors": 12,
-          "sha256": "2e2a0d3e6584a351a1da9464664c8cd80a9166f254e720cd10b5b7bb2ef97de7",
-          "bytes": 413
+          "bounds": [
+            3,
+            1,
+            13,
+            13
+          ],
+          "ink": {
+            "minX": 3,
+            "minY": 1,
+            "maxX": 13,
+            "maxY": 13,
+            "width": 11,
+            "height": 13
+          },
+          "pixels": 140,
+          "inkPixels": 140,
+          "translucent": 3,
+          "colors": 13,
+          "sha256": "6fe1b39bfdd83c80e107b68732a248af4be9aa0d15e04a5b914403535878e0a3",
+          "bytes": 245,
+          "gridShape": "portrait"
         },
         "32": {
           "bbox": {
-            "minX": 4,
+            "minX": 6,
             "minY": 2,
-            "maxX": 26,
-            "maxY": 29
+            "maxX": 27,
+            "maxY": 27
           },
-          "pixels": 610,
-          "colors": 16,
-          "sha256": "e39a508652d70019112353fc4d25141f0db5b4bed81fdd42917e397ff38f03b6",
-          "bytes": 900
+          "bounds": [
+            6,
+            2,
+            27,
+            27
+          ],
+          "ink": {
+            "minX": 6,
+            "minY": 2,
+            "maxX": 27,
+            "maxY": 27,
+            "width": 22,
+            "height": 26
+          },
+          "pixels": 557,
+          "inkPixels": 557,
+          "translucent": 6,
+          "colors": 7,
+          "sha256": "7baadf5f968c62f397c14567d4767e4b2159716cb6dcb0d7010f061c7d8cf395",
+          "bytes": 260,
+          "gridShape": "portrait"
         },
         "42": {
           "bbox": {
-            "minX": 5,
-            "minY": 2,
+            "minX": 6,
+            "minY": 3,
             "maxX": 35,
-            "maxY": 39
+            "maxY": 38
           },
-          "pixels": 1105,
-          "colors": 16,
-          "sha256": "ca47b3dba6ea0a9d19b338768a9ba0a5c9dde240100aacb855c9693422d5e5ac",
-          "bytes": 1148
+          "bounds": [
+            6,
+            3,
+            35,
+            38
+          ],
+          "ink": {
+            "minX": 6,
+            "minY": 3,
+            "maxX": 35,
+            "maxY": 38,
+            "width": 30,
+            "height": 36
+          },
+          "pixels": 930,
+          "inkPixels": 930,
+          "translucent": 1,
+          "colors": 308,
+          "sha256": "5852e2effbbd7163d64e8a8fbf74328d20b7b6917e5508252a46ed87ef55597f",
+          "bytes": 1794,
+          "gridShape": "portrait"
         }
-      }
+      },
+      "semanticIdentity": "writing and editing application",
+      "identityAnchors": [
+        "editable manuscript",
+        "period writing or editing cue"
+      ],
+      "historicalPrototype": null,
+      "nearestHistoricalAnalog": "Platinum SimpleText-like cream document with docked mechanical pencil",
+      "metaphorKey": "editable-manuscript",
+      "material": "hard-pixel cream paper, lavender-gray bevel, graphite and violet pencil",
+      "blindMixStatus": "not-run",
+      "generatedMaster": "internal/evidence/drafts/icon-lineage-audit/imagegen-candidates-v2/teach-text/platinum-teachText-v1.png",
+      "reference": "No native post-Classic TeachText artwork is claimed; SimpleText and target-era TextEdit grammar supply the nearest analogs.",
+      "exactPixelReplica": false,
+      "referenceValidated": false,
+      "nativeReplica": false,
+      "sizeStatus": {
+        "16": "optically-reviewed",
+        "32": "optically-reviewed",
+        "42": "optically-reviewed"
+      },
+      "sizePolicy": "Large tiers follow reviewed generation directions; 32 and 16 px are independent optical drawings with fewer writing marks and a subordinate editing tool.",
+      "runtimePixelMetrics": null
     },
     "writingDemo": {
       "genre": "document",
@@ -3904,7 +4122,10 @@
   "priorityLineageLedger": "tooling/icon-generation/approved-priority-lineage.json",
   "priorityLineageObjects": [
     "reviewDesk",
-    "searcher"
+    "searcher",
+    "projectDisk",
+    "teachText",
+    "docMap"
   ],
   "priorityLineageMeaning": "Only explicitly reviewed v2 rows override the broad generated archive; per-object provenance never implies native replication or reference validation."
 }

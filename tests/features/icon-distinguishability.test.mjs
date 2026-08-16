@@ -135,11 +135,13 @@ test.assert(
   `runtime family files are not byte-identical across appearances${crossEraDuplicates.length ? `; duplicates: ${crossEraDuplicates.join(", ")}` : ""}`
 );
 
-const themeLab = read("index.html");
-test.assert((themeLab.match(/class="theme-lab-icon-tile"/g) || []).length === 54, "Theme Lab displays all 54 appearance semantic icons");
-test.assertIncludes(themeLab, 'data-system-icon="hardDisk"', "Theme Lab no longer aliases hard disk to startup disk");
-test.assertIncludes(themeLab, 'data-system-icon="control"', "Theme Lab includes the distinct control utility icon");
-test.assertIncludes(read("app/features/theme-lab.js"), 'assets/themes/${theme.id}', "Theme Lab includes every asset-backed appearance");
+const themeLab = read("app/features/theme-lab.js");
+const iconSetBlock = themeLab.slice(themeLab.indexOf("const ICON_SET"));
+const iconSetIds = iconSetBlock.slice(0, iconSetBlock.indexOf("]);")).match(/"[A-Za-z]+"/g) || [];
+test.assert(iconSetIds.length === 54, `Theme Lab displays all 54 appearance semantic icons (found ${iconSetIds.length})`);
+test.assertIncludes(themeLab, '"hardDisk"', "Theme Lab no longer aliases hard disk to startup disk");
+test.assertIncludes(themeLab, '"control",', "Theme Lab includes the distinct control utility icon");
+test.assertIncludes(read("app/features/theme-lab.js"), 'assets/themes/${themeId}', "Theme Lab includes every asset-backed appearance");
 test.assertIncludes(read("app/features/theme-lab.js"), "theme-lab-icon-hint", "Theme Lab displays the native 16px hint beside every asset-backed 32px runtime icon");
 test.assertIncludes(icons, "hardDisk: nativeSystem6HardDiskPath", "hard disk is a real runtime id instead of a document fallback");
 test.assertIncludes(icons, "control: `", "control is a real runtime id instead of a document fallback");

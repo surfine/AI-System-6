@@ -333,7 +333,11 @@ test.assertMatches(aquaThemes, /html\[data-theme="snow-leopard"\],[\s\S]*?--syst
 test.assertIncludes(aquaThemes, "#e2e2e2 0 1px, #d0d0d0 1px 3px", "Snow Leopard paints the sampled silver title-bar ramp");
 test.assertMatches(themes, /html\[data-theme="yosemite"\],[\s\S]*?--system-titlebar-height: 22px;\s*\n\s*--system-titlebar-control-slot: 24px;/, "Yosemite uses the native-scale 22px flat title bar");
 test.assertMatches(themes, /body\[data-theme="yosemite"\] \.title-bar > :is\(\.close-box, \.resize-box\) \{[^}]*border-radius: 50%;/, "Yosemite clips its flat traffic lights to circles");
-test.assertMatches(themes, /--traffic-light-close-bg: url\("\.\/assets\/themes\/yosemite\/lamp-close\.png"\);\s*\n\s*--traffic-light-resize-bg: url\("\.\/assets\/themes\/yosemite\/lamp-zoom\.png"\);/, "Yosemite traffic lights paint with the source lamp assets");
+// The window frame itself carries Close and Zoom, the System 6 pair. The
+// minimize lamp sits between them in the token block because Theme Lab's
+// specimens show the era's own three-lamp cluster, and all three come from the
+// same capture rather than from a hand-mixed colour.
+test.assertMatches(themes, /--traffic-light-close-bg: url\("\.\/assets\/themes\/yosemite\/lamp-close\.png"\);\s*\n\s*--traffic-light-minimize-bg: url\("\.\/assets\/themes\/yosemite\/lamp-minimize\.png"\);\s*\n\s*--traffic-light-resize-bg: url\("\.\/assets\/themes\/yosemite\/lamp-zoom\.png"\);/, "Yosemite traffic lights paint with the source lamp assets");
 test.assertNotIncludes(themes, "radial-gradient(circle at 36% 30%", "Yosemite title-bar lamps never add a synthetic specular highlight");
 test.assertMatches(aquaThemes, /:is\(\.close-box, \.resize-box\):is\(:hover, :focus-visible\)::before \{\s*opacity: 1;/, "Aqua and Snow Leopard expose control glyphs to pointer and keyboard users");
 test.assertNotIncludes(zoomWindowContract, "toggleCollapsed", "Zoom never falls back to WindowShade on a narrow or fixed-size window");

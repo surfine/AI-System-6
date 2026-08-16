@@ -103,6 +103,13 @@ function initDragAndDrop() {
       // A drop inside a window belongs to that window, not the desktop behind it.
       if (dropTarget.dataset.dropTarget === "desktop" && event.target.closest(".window")) return;
       event.preventDefault();
+      // Outside material is always a copy. Asking for "move" on a drag whose
+      // source only allows copy cancels the drop before it starts.
+      if (isExternalDrop(event)) {
+        event.dataTransfer.dropEffect = "copy";
+        if (externalDropTargetAccepts(dropTarget.dataset.dropTarget)) dropTarget.classList.add("is-drag-over");
+        return;
+      }
       if (dropTarget.dataset.dropTarget === "editor-insert") {
         // Editable surfaces show a blinking insertion caret, not the dashed
         // whole-object frame. Validation and caret positioning live in the lazy
@@ -140,6 +147,15 @@ function initDragAndDrop() {
     const dropTarget = event.target.closest("[data-drop-target]");
     if (dropTarget) {
       if (dropTarget.dataset.dropTarget === "desktop" && event.target.closest(".window")) return;
+
+      // Outside material takes the external route before the Finder payload is
+      // read, because it never carries one.
+      if (isExternalDrop(event)) {
+        dropTarget.classList.remove("is-drag-over");
+        await handleExternalDropOnTarget(event, dropTarget.dataset.dropTarget);
+        return;
+      }
+
       event.preventDefault();
       dropTarget.classList.remove("is-drag-over");
 
@@ -185,6 +201,37 @@ function initDragAndDrop() {
       }
     }
   });
+
+  initExternalDropSafetyNet();
+}
+
+// Which Finder drop targets have something to do with outside material. The
+// Trash, a project, a folder, and the Control Strip are internal-object
+// targets: an external drop on them is refused in place rather than quietly
+// turned into an import the user did not ask for.
+const externalDropTargets = new Set(["desktop", "editor-insert", "clio-attachment"]);
+
+function externalDropTargetAccepts(dropTargetType) {
+  return externalDropTargets.has(dropTargetType);
+}
+
+async function handleExternalDropOnTarget(event, dropTargetType) {
+  if (dropTargetType === "desktop") {
+    event.preventDefault();
+    return routeExternalDropToDesktop(event);
+  }
+
+  if (dropTargetType === "editor-insert" || dropTargetType === "clio-attachment") {
+    // Files become File Floppy context, which is what a writing surface and
+    // ClioTalk both read from. Text and links keep the browser's own insertion
+    // at the drop point, so the target window still owns its own behavior.
+    if (!externalDropHasFiles(event)) return false;
+    event.preventDefault();
+    return routeExternalDropFilesOnly(event);
+  }
+
+  event.preventDefault();
+  return declineExternalDrop();
 }
 
 function handleDropToTrash(data) {

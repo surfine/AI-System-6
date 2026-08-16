@@ -1442,12 +1442,15 @@ body[data-theme="yosemite"] {
      at 12px (crisp @2x). Flat #fc615c / #33c748 bodies with their real
      #df4744 / #27aa35 rims — no synthetic highlight; 10.10 has none. */
   --traffic-light-close-bg: url("./assets/themes/yosemite/lamp-close.png");
+  --traffic-light-minimize-bg: url("./assets/themes/yosemite/lamp-minimize.png");
   --traffic-light-resize-bg: url("./assets/themes/yosemite/lamp-zoom.png");
   --traffic-light-sprite-size: 12px 12px;
   /* Real 10.10: the 12px lamps sit ~4px below the window top edge. */
   --theme-lab-era-titlebar-control-top: 4px;
   --theme-lab-era-titlebar-control-size: 12px;
-  --theme-lab-era-titlebar-minimize-bg: #fac636;
+  /* Cut from the same 10.10 Finder capture as its siblings, at their 26 px
+     box. A flat swatch missed the lamp's own edge and inner shading. */
+  --theme-lab-era-titlebar-minimize-bg: var(--traffic-light-minimize-bg) center / var(--traffic-light-sprite-size) no-repeat;
   /* Real 10.10 hover: the lamp deepens and draws its dark symbol (×, −, +)
      only while the pointer is over it. Resting lamps stay plain circles. */
   /* Real 10.10 hover: the resting disc unchanged, plus the dark glyph.
@@ -1461,6 +1464,28 @@ body[data-theme="yosemite"] {
   --theme-lab-era-titlebar-minimize-hover-bg:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 6h6' stroke='%238a5e10' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") center / 12px 12px no-repeat,
     #e0a92a;
+  /* Window-chrome specimen: 10.10 groups the three lamps at the left of the
+     bar in close / minimize / zoom order, on this era's own lamp ladder. */
+  --theme-lab-mini-position: relative;
+  --theme-lab-mini-control-display: block;
+  --theme-lab-mini-control-top: 5px;
+  --theme-lab-mini-control-size: var(--theme-lab-era-titlebar-control-size);
+  --theme-lab-mini-control-radius: 50%;
+  --theme-lab-mini-control-close-left: 7px;
+  --theme-lab-mini-control-close-bg: var(--traffic-light-close-bg) center / var(--traffic-light-sprite-size) no-repeat;
+  --theme-lab-mini-control-minimize-left: 28px;
+  --theme-lab-mini-control-minimize-display: block;
+  --theme-lab-mini-control-minimize-bg: var(--traffic-light-minimize-bg) center / var(--traffic-light-sprite-size) no-repeat;
+  --theme-lab-mini-control-zoom-left: 49px;
+  --theme-lab-mini-control-zoom-right: auto;
+  --theme-lab-mini-control-zoom-bg: var(--traffic-light-resize-bg) center / var(--traffic-light-sprite-size) no-repeat;
+  /* Backdrop windows keep the lamps and grey them. contrast(0) collapses all
+     three to one tone — the 10.10 backdrop lamp is a single flat grey, not a
+     dimmed colour — and the brightness lift places that tone at the light grey
+     of the real capture. Dimming by opacity instead loses the yellow lamp,
+     because grey-of-yellow is already lighter than the title bar. */
+  --theme-lab-mini-inactive-control-display: block;
+  --theme-lab-mini-inactive-control-filter: contrast(0) brightness(1.66);
   /* Alarm Clock: 10.10 flat light chrome, thin borders, blue accent. */
   --alarm-clock-frame-border: 1px solid rgba(0, 0, 0, 0.11);
   --alarm-clock-frame-radius: 6px;

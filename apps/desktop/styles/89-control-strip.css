@@ -444,13 +444,6 @@
   min-width: 0;
 }
 
-.control-strip-field-row {
-  display: flex;
-  gap: 12px;
-  align-items: end;
-  flex-wrap: wrap;
-}
-
 .control-strip-field-row .control-field {
   flex: 1 1 190px;
   min-width: 0;

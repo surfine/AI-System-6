@@ -180,6 +180,15 @@ async function captureTheme(browser, url, themeId) {
         win.classList.add("is-hidden");
         win.classList.remove("is-active");
       }
+      // Not every floating surface is a .window. The Writing Flow spine is a
+      // panel, and a restored desk can put it over the lab — it appeared in one
+      // capture and not the next, which is most of the drift these baselines
+      // were showing. Hide anything else that floats over the desk.
+      for (const panel of document.querySelectorAll(
+        ".writing-spine-panel, .control-strip, .balloon, .popover, [data-window-overlay]"
+      )) {
+        panel.style.setProperty("display", "none", "important");
+      }
       // The guide (Start Here OOBE) opens on first boot and covers the Theme
       // Lab titlebar unless fully suppressed (guideSeen lives in IndexedDB,
       // so the class alone is not enough).
@@ -228,6 +237,17 @@ async function captureTheme(browser, url, themeId) {
       void document.body.offsetHeight;
     }, { id: themeId, css: LAB_CSS });
     await page.evaluate(() => document.fonts?.ready);
+    // Wait for the pixels, not for a guess at how long they take. The lab
+    // builds its icon grid in JS and paints lamps and tiles from dozens of
+    // PNGs; a fixed pause races their decode, and whichever sprites had not
+    // arrived that run came out blank. Two consecutive captures of an
+    // unchanged tree could then differ by a third of a percent, which is more
+    // than the drift budget, so the era that failed changed run to run.
+    await page.evaluate(async () => {
+      const images = [...document.images].filter((image) => !image.complete);
+      await Promise.all(images.map((image) => image.decode().catch(() => {})));
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    });
     await page.waitForTimeout(180);
     const target = page.locator('[data-window="themeLab"]');
     await target.waitFor({ state: "visible" });
@@ -237,10 +257,23 @@ async function captureTheme(browser, url, themeId) {
     // the window's top offset (the observed flake). Capture the full page
     // from a pinned scroll position and crop the window box instead.
     await page.evaluate(() => window.scrollTo(0, 0));
+    // Pin the window's own left and top too, not just the scroll. The desk
+    // places a restored window from saved state and nudges it clear of its
+    // neighbours, so its x could differ by a few pixels between two runs of an
+    // unchanged tree. The crop follows the live box, so that nudge slid the
+    // whole image sideways: one capture kept the leading label and the era
+    // bar's first year, the next cut them off, and the two disagreed by more
+    // than the drift budget.
+    await target.evaluate((el) => {
+      el.style.left = "0px";
+      el.style.top = "0px";
+      el.style.right = "auto";
+      el.style.transform = "none";
+    });
     await page.waitForTimeout(120);
     const box = await target.evaluate((el) => {
       const r = el.getBoundingClientRect();
-      return { x: r.x, y: r.y, width: r.width, height: r.height };
+      return { x: Math.round(r.x), y: Math.round(r.y), width: Math.round(r.width), height: Math.round(r.height) };
     });
     if (!box || box.width <= 0 || box.height <= 0) {
       throw new Error(`Theme Lab has no box for ${themeId}`);
@@ -356,11 +389,17 @@ try {
   if (executablePath) launchOptions.executablePath = executablePath;
   browser = await chromium.launch(launchOptions);
 
-  const captured = await Promise.all(THEMES.map(async (themeId) => {
+  // One era at a time. Capturing all six at once let them compete for font
+  // loading and rasterization inside one browser, so the scheduling decided
+  // the pixels: the eras finished in a different order each run, and the two
+  // runs of an unchanged tree disagreed by more than the drift budget. A
+  // release gate is worth the extra minute.
+  const captured = [];
+  for (const themeId of THEMES) {
     const path = await captureThemeWithRetry(browser, server.url, themeId);
     console.log(`OK  captured Theme Lab: ${themeId}`);
-    return [themeId, path];
-  }));
+    captured.push([themeId, path]);
+  }
   const currentPaths = new Map(captured);
 
   if (mode === "--update") {

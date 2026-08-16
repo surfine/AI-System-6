@@ -2325,11 +2325,23 @@ function teachTextReviewLabel(label = teachTextWorkflowState) {
   return normalizeFileLabel(label) === "final";
 }
 
-function ensureTeachTextReviewState(options = {}) {
+// The same question ensureTeachTextReviewState() answers, without the side
+// effects. The menu asks it before the click so the row can grey; the command
+// asks it again and then acts. One condition, two callers.
+function canEnterTeachTextReviewState({ promoteSavedFinal = false } = {}) {
   if (teachTextReviewLabel()) return true;
-  if (options.promoteSavedFinal && normalizeFileLabel(teachTextFileLabel) === "final" && teachTextBodyInput?.value.trim()) {
-    setTeachTextWorkflowState("final");
-    syncTeachTextLabelControl();
+  return promoteSavedFinal
+    && normalizeFileLabel(teachTextFileLabel) === "final"
+    && !!teachTextBodyInput?.value.trim();
+}
+
+function ensureTeachTextReviewState(options = {}) {
+  if (canEnterTeachTextReviewState(options)) {
+    // Already in review needs no promotion; a saved "final" file does.
+    if (!teachTextReviewLabel()) {
+      setTeachTextWorkflowState("final");
+      syncTeachTextLabelControl();
+    }
     return true;
   }
   setStatus(t("teachtext_review_requires_final"));

@@ -493,14 +493,14 @@ function handleReaderOpenButton() {
   promptReaderFileImport();
 }
 
+// One file picker for the whole desktop: Reader used to build its own bare
+// <input type=file>, which never restricted the file kinds it can read.
 function promptReaderFileImport() {
-  const input = document.createElement("input");
-  input.type = "file";
-  input.multiple = true;
-  input.addEventListener("change", () => {
-    if (input.files?.length) importFilesIntoReader(input.files);
-  }, { once: true });
-  input.click();
+  openTransientFilePicker({
+    accept: importableFileAccept,
+    multiple: true,
+    onSelect: (files) => importFilesIntoReader(files),
+  });
 }
 
 function createReaderFileDocumentTab(fileName) {
@@ -716,19 +716,10 @@ async function importFilesIntoReader(files) {
   }
 }
 
+// One reader for the internal File Floppy drag; Reader used to keep a
+// character-for-character copy of it.
 function readerMountedFileNamesFromDrop(event) {
-  const rawData = event?.dataTransfer?.getData("application/json") || event?.dataTransfer?.getData("text/plain");
-  if (!rawData) return [];
-  try {
-    const data = JSON.parse(rawData);
-    if (data?.type !== "mounted-file") return [];
-    const ids = Array.isArray(data.ids) ? data.ids : [data.id];
-    return ids
-      .map((name) => String(name || "").trim())
-      .filter((name) => name && mountedTextDisk.files.includes(name));
-  } catch {
-    return [];
-  }
+  return mountedFileNamesFromDrop(event);
 }
 
 function readerCanAcceptDrop(event) {
@@ -736,16 +727,10 @@ function readerCanAcceptDrop(event) {
 }
 
 function readerDropEffect(event) {
-  return dropEffectForFilesOrMountedFiles(event);
-}
-
-function describeReaderDropEvent(event, stage) {
-  const types = Array.from(event?.dataTransfer?.types || []).join(",") || "none";
-  const target = event?.target?.id || event?.target?.className || event?.target?.tagName || "unknown";
-  const files = event?.dataTransfer?.files?.length || 0;
-  const message = `Reader drop ${stage}: ${types}; files=${files}; target=${target}`;
-  if (readerStatusEl) readerStatusEl.textContent = message;
-  setStatus(message);
+  // Outside material is always a copy. Asking for "move" on a link dragged
+  // out of a browser cancels the drop before it can start, which is why
+  // dropping a URL on Reader used to do nothing at all.
+  return isExternalDrop(event) ? "copy" : dropEffectForFilesOrMountedFiles(event);
 }
 
 async function openMountedFilesInReader(fileNames = []) {
@@ -763,23 +748,32 @@ async function openMountedFilesInReader(fileNames = []) {
 }
 
 function handleReaderDrop(event) {
-  describeReaderDropEvent(event, "drop");
   if (!readerCanAcceptDrop(event)) return false;
   event.preventDefault();
   event.stopPropagation();
   readerWorkspaceEl?.classList.remove("is-dragging");
   const mountedFileNames = readerMountedFileNamesFromDrop(event);
   if (mountedFileNames.length) {
-    if (readerStatusEl) readerStatusEl.textContent = `Reader drop mounted files: ${mountedFileNames.join(", ")}`;
     openMountedFilesInReader(mountedFileNames);
     return true;
   }
-  if (event.dataTransfer?.files?.length) {
-    if (readerStatusEl) readerStatusEl.textContent = `Reader drop local files: ${event.dataTransfer.files.length}`;
-    importFilesIntoReader(event.dataTransfer.files);
+  // Outside material goes through the shared external-drop reader, so Reader
+  // recognizes the same payloads as the desktop instead of only files.
+  const payload = readExternalDropPayload(event);
+  if (payload?.files.length) {
+    importFilesIntoReader(payload.files);
     return true;
   }
-  if (readerStatusEl) readerStatusEl.textContent = "Reader drop received, but no usable file payload.";
+  // A dropped link is one source to read, not a page to browse: it goes
+  // through the same extraction as the Open field.
+  if (payload?.urls.length) {
+    if (readerUrlInput) readerUrlInput.value = payload.urls[0];
+    if (payload.urls.length > 1) setStatus(t("reader_one_url_only"));
+    fetchReaderPage(payload.urls[0]);
+    return true;
+  }
+  if (readerStatusEl) readerStatusEl.textContent = t("external_drop_needs_source");
+  setStatus(t("external_drop_needs_source"));
   return false;
 }
 
@@ -1573,7 +1567,6 @@ function initReaderDropZone() {
       event.preventDefault();
       event.stopPropagation();
       event.dataTransfer.dropEffect = readerDropEffect(event);
-      describeReaderDropEvent(event, "over");
       readerWorkspaceEl.classList.add("is-dragging");
     }, { capture: true });
 
@@ -1591,7 +1584,6 @@ function initReaderDropZone() {
     event.preventDefault();
     event.stopPropagation();
     event.dataTransfer.dropEffect = readerDropEffect(event);
-    describeReaderDropEvent(event, "over");
     readerWorkspaceEl.classList.add("is-dragging");
   }, { capture: true });
 

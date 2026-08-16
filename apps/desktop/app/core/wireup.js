@@ -1239,6 +1239,14 @@ function wireAppEvents() {
         : getWindowAppId(win) === "accessories";
       if (compactViewport && !allowCompactDrag) return;
   
+      // This press is a window drag, so it must not also be the start of a
+      // text selection. `user-select: none` stops the title from being the
+      // selection's own content, but it does not cancel pointerdown's default
+      // action: WebKit still opens a selection anchored here, and the drag then
+      // sweeps a blue band across the title. Cancelling the default action is
+      // what actually stops it, in every engine. The title bar holds no field
+      // and buttons returned above, so nothing here needs the default focus.
+      event.preventDefault();
       focusWindow(win);
       const rect = win.getBoundingClientRect();
       const offsetX = event.clientX - rect.left;
@@ -1330,67 +1338,26 @@ function wireAppEvents() {
     await insertFilesIntoFileFloppy(Array.from(filesInput.files || []), { source: "fileFloppy", openAfter: "rag" });
   });
 
-  docMapDropZoneEl?.addEventListener("dragenter", (event) => {
-    if (!dropHasFilesOrMountedFiles(event)) return;
-    event.preventDefault();
-    docMapDropZoneEl.classList.add("is-dragging");
+  // DocMap and ClioStage take outside files through the shared external-drop
+  // surface, so the drag feedback, the internal mounted-file passthrough, and
+  // the "this window wants a file" refusal all come from one place.
+  registerExternalFileDropSurface(docMapDropZoneEl, {
+    onFiles: (files) => importDocMapDroppedFiles(files),
+    onMountedFiles: (fileNames) => makeDocMapFromMountedFileDrop(fileNames),
   });
 
-  docMapDropZoneEl?.addEventListener("dragover", (event) => {
-    if (!dropHasFilesOrMountedFiles(event)) return;
-    event.preventDefault();
-    event.dataTransfer.dropEffect = dropEffectForFilesOrMountedFiles(event);
-    docMapDropZoneEl.classList.add("is-dragging");
+  registerExternalFileDropSurface(clioStageViewportEl, {
+    onFiles: (files) => importClioStageDroppedFiles(files),
+    internalDropEffect: () => "copy",
   });
 
-  docMapDropZoneEl?.addEventListener("dragleave", (event) => {
-    if (!docMapDropZoneEl.contains(event.relatedTarget)) {
-      docMapDropZoneEl.classList.remove("is-dragging");
-    }
-  });
-
-  docMapDropZoneEl?.addEventListener("drop", (event) => {
-    if (!dropHasFilesOrMountedFiles(event)) return;
-    event.preventDefault();
-    docMapDropZoneEl.classList.remove("is-dragging");
-    const mountedFileNames = mountedFileNamesFromDrop(event);
-    if (mountedFileNames.length) {
-      makeDocMapFromMountedFileDrop(mountedFileNames);
-      return;
-    }
-    importDocMapDroppedFiles(event.dataTransfer.files);
-  });
-
-  clioStageViewportEl?.addEventListener("dragenter", (event) => {
-    event.preventDefault();
-    clioStageViewportEl.classList.add("is-dragging");
-  });
-
-  clioStageViewportEl?.addEventListener("dragover", (event) => {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = "copy";
-    clioStageViewportEl.classList.add("is-dragging");
-  });
-
-  clioStageViewportEl?.addEventListener("dragleave", (event) => {
-    if (!clioStageViewportEl.contains(event.relatedTarget)) {
-      clioStageViewportEl.classList.remove("is-dragging");
-    }
-  });
-
-  clioStageViewportEl?.addEventListener("drop", (event) => {
-    event.preventDefault();
-    clioStageViewportEl.classList.remove("is-dragging");
-    importClioStageDroppedFiles(event.dataTransfer.files);
-  });
-
+  // One Choose-button picker, no permanent hidden file input in the markup.
   clioStageImportFilesButton?.addEventListener("click", () => {
-    clioStageFileInput?.click();
-  });
-
-  clioStageFileInput?.addEventListener("change", async () => {
-    await importClioStageDroppedFiles(clioStageFileInput.files);
-    clioStageFileInput.value = "";
+    openTransientFilePicker({
+      accept: importableFileAccept,
+      multiple: true,
+      onSelect: (files) => importClioStageDroppedFiles(files),
+    });
   });
 
   // The Dictation Pad's interior is a lazy module. These listeners are bound at
@@ -1419,6 +1386,8 @@ function wireAppEvents() {
   clearProjectCdButton?.addEventListener("click", clearProjectCd);
 
   exportProjectDiskButton?.addEventListener("click", exportActiveProjectDisk);
+
+  shareProjectDiskButton?.addEventListener("click", shareActiveProjectDisk);
 
   filesInput?.addEventListener("change", updateFilePickerLabels);
 

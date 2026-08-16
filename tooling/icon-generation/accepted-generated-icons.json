@@ -1124,7 +1124,11 @@
     "objects": [
       "reviewDesk",
       "searcher",
-      "assistant"
+      "assistant",
+      "projectDisk",
+      "teachText",
+      "controlPanel",
+      "docMap"
     ]
   }
 }

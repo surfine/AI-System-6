@@ -7,7 +7,12 @@
 // say.
 //
 // So this is one command, and it lives on the menu bar because the menu bar
-// belongs to the whole desk rather than to any one window. It costs nothing to
+// belongs to the whole desk rather than to any one window. The Control Strip's
+// Your Place module is the same command with a face: one tile that says whether
+// anything is held, holds or returns from its menu, and carries Hold That
+// Thought beside them, because they are one movement and deserve one home. It
+// is a second door, never the only one — Balloon Help and Key Caps both name
+// the menu rows. It costs nothing to
 // run: it takes no focus, opens nothing, and asks for nothing. It writes down
 // which window, which field, which character, and the sentence that surrounded
 // it. Then a slip appears in the corner with one empty line on it. Leave a
@@ -48,6 +53,10 @@ function writeHeldPlace() {
     else localStorage.removeItem(heldPlaceStorageKey);
   } catch {}
   if (typeof updateMenuState === "function") updateMenuState();
+  // The Control Strip's Your Place tile reads this same record, and a hold can
+  // arrive from the key equivalent or from the slip putting itself away — paths
+  // the strip's own click never sees. One module refresh, not a whole redraw.
+  window.AISystem6ControlStrip?.refreshStrip?.("heldPlace");
 }
 
 function hasHeldPlace() {

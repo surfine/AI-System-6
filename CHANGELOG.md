@@ -793,6 +793,36 @@ Version `1.0.12`, build `20260804.2`.
 - Searcher moves off the startup disk into `lazyRuntimePaths` through the
   lazy-window contract, which returns 17,227 bytes of boot headroom.
 
+## Public Beta 1.0.45 - 2026-08-16
+
+- External drop becomes one router: a dropped File mounts on the File Floppy,
+  a dragged text/uri-list opens in Reader, dropped text reaches the Clipboard.
+  shareArtifact() takes over the download exits each feature had grown, and the
+  four hidden file inputs leave index.html with every reference to them.
+- Working Session moves from one global record to a per-project keyspace
+  (workingSession:v2:desktop and the project scopes under it), migrated once at
+  boot inside a transaction that verifies the new record before deleting the
+  old, and capped at 24 scopes. Project backups move to v4 and carry the scene,
+  with a forbidden-key pattern that keeps credentials out of an exported desk.
+- Hold My Place and Hold That Thought share one Control Strip module that owns
+  no state and no command: its rows dispatch the existing actions and read
+  availability from getActionAvailability(), the map the menu rows use.
+- The File Floppy leaves the studio-only window set, and the writing-route menu
+  rows report whether a project is mounted instead of reporting a literal true.
+- The title-bar drag handler cancels pointerdown's default action, so a drag no
+  longer opens a text selection under WebKit.
+- Theme Lab, its stylesheet, its markup and its eight contracts are restored
+  from 337dac6d, whose content a merge resolution had replaced with its
+  predecessor while keeping the commit in the history.
+- 26,771 bytes of style rules whose every selector names nothing are deleted,
+  checked against template-literal class construction so dynamically built
+  names such as the finder-label family are kept.
+- Every dependency moves to its current release, TypeScript 7 included. The two
+  AST gates move to Acorn, because TypeScript 7 publishes only its version from
+  the main entry and offers its AST under an export named unstable. A new
+  verify:dependency-freshness gate compares the installed tree against
+  package.json and the lock file.
+
 ## What Changed Most In One Month
 
 - The product moved from "an AI writing prototype" to a local-first writing

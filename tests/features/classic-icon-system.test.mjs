@@ -124,17 +124,18 @@ test.assertIncludes(iconCss, "stroke: none", "one-pixel mask runs are not expand
 const themeLab = read("app/features/theme-lab.js");
 const app = read("app.js");
 const labCss = read("styles/66-theme-lab.css");
-test.assertIncludes(themeLab, "Classic Priority Lineage Lab", "Theme Lab has a dedicated Classic smooth-vector lineage surface");
-test.assertIncludes(themeLab, "Sixteen priority objects", "Theme Lab reports the expanded continuity batch honestly");
-test.assertIncludes(themeLab, "16 priority objects", "the Classic inspector key matches the continuity priority count");
-test.assertIncludes(themeLab, "smooth Retina SVG family", "Theme Lab states the product-specific Retina SVG exception");
-test.assertIncludes(themeLab, "separate exact one-bit evidence layer", "Theme Lab keeps native anatomy owned by an exact evidence layer");
-test.assertIncludes(themeLab, "data-classic-icon-lab-grid", "the lab has an object-by-object core grid");
-test.assertIncludes(themeLab, "const coreIcons", "the lab uses the explicit 16-object priority list");
-test.assertIncludes(themeLab, "[32, 64, 128, 256]", "every icon is inspected at 1x, 2x, 4x, and 8x integer scales");
-test.assertIncludes(themeLab, "32 Selected", "the lab exercises the 32 px selected state");
-test.assertIncludes(themeLab, "16 Selected", "the lab exercises the 16 px selected state");
-test.assertIncludes(themeLab, "Finder list view · true 16 px", "the lab includes a true small-icon Finder context");
+// One object lab now serves all six eras, so the Classic contract asserts the
+// shared structure plus the Classic-owned art tiers and evidence statement.
+const labStrings = read("app/data/translations-en.js");
+test.assertIncludes(themeLab, "data-theme-lab-object-grid", "the lab has an object-by-object core grid");
+test.assertIncludes(themeLab, "const OBJECTS", "the lab uses the explicit 16-object priority list");
+test.assertIncludes(themeLab, 'dir: "classic", ext: "svg", tiers: [32, 16]', "Classic declares its authored 32 and 16 px SVG tiers");
+test.assertIncludes(themeLab, "zoom: [[32, 32], [32, 64], [32, 128], [32, 256]]", "every icon is inspected at 1x, 2x, 4x, and 8x integer scales");
+test.assertIncludes(labStrings, "theme_lab_state_selected", "the lab exercises a selected state at both authored tiers");
+test.assertIncludes(labStrings, "theme_lab_context_list_view", "the lab includes a true small-icon Finder context");
+test.assertIncludes(labStrings, "Retina SVG family", "Theme Lab states the product-specific Retina SVG exception");
+test.assertIncludes(labStrings, "separate exact one-bit evidence layer", "Theme Lab keeps native anatomy owned by an exact evidence layer");
+test.assertNotIncludes(themeLab, "Classic Priority Lineage Lab", "no era owns a private lab section any more");
 test.assertIncludes(app, "window.AISystem6ThemeLab?.sync?.(theme)", "appearance changes resync an already-open lazy Theme Lab");
 test.assertIncludes(read("app/core/window-manager.js"), "themeLab: {", "opening Theme Lab loads its inspection code on demand");
 test.assertIncludes(read("tooling/runtime-manifest.mjs"), '"app/features/theme-lab.js"', "Theme Lab stays outside the two-floppy startup budget");

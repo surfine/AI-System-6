@@ -10,6 +10,9 @@ import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("spring-loaded-folders");
 const dragDrop = read("app/core/drag-drop.js");
+// The external-drop router ships with the drag layer and the Finder drop
+// handler calls into it, so the vm runs both, in bundle order.
+const externalDrop = read("app/core/external-drop.js");
 const reader = read("app/features/reader.js");
 const manifest = read("tooling/runtime-manifest.mjs");
 
@@ -123,6 +126,7 @@ function buildContext(pointerFine) {
   const context = vm.createContext({
     window: {
       matchMedia: (query) => ({ matches: pointerFine, media: query }),
+      addEventListener: () => {},
     },
     document: fakeDocument,
     setTimeout,
@@ -167,6 +171,15 @@ function buildContext(pointerFine) {
     renderProjectCd: () => {},
     renderScraps: () => {},
     renderMountedTextDisk: () => {},
+    insertFilesIntoFileFloppy: async () => ({ mountedFileNames: [] }),
+    openWindow: () => {},
+    setClipboard: () => {},
+    fetchReaderPage: async () => {},
+    showSystemModal: async () => "cancel",
+    readerUrlInput: null,
+    dropHasFilesOrMountedFiles: () => false,
+    dropEffectForFilesOrMountedFiles: () => "copy",
+    mountedFileNamesFromDrop: () => [],
   });
   context.openDocumentFolder = (folderId) => {
     state.opened.push(["doc", folderId]);
@@ -227,6 +240,7 @@ const folderADragEl = makeFinderElement({ dragType: "document-folder", id: "f-a"
 const foreignFileEl = makeFinderElement({ dragType: "file", id: "file-9", projectId: "p-2", documentItemType: "file", documentItemId: "file-9" });
 
 const harness = buildContext(true);
+vm.runInContext(externalDrop, harness.context);
 vm.runInContext(dragDrop, harness.context);
 harness.context.initDragAndDrop();
 const handlers = harness.fakeDocument.handlers;
@@ -383,6 +397,7 @@ test.assert(
 
 // pointer: coarse never enables spring folders.
 const coarseHarness = buildContext(false);
+vm.runInContext(externalDrop, coarseHarness.context);
 vm.runInContext(dragDrop, coarseHarness.context);
 coarseHarness.context.initDragAndDrop();
 const coarseHandlers = coarseHarness.fakeDocument.handlers;

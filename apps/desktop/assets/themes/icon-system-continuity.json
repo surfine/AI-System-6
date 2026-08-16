@@ -510,8 +510,8 @@
       "semanticIdentity": "durable project storage",
       "systemOrProduct": "product",
       "identityAnchors": [
-        "storage volume",
-        "restrained project cue"
+        "mounted storage volume",
+        "restrained project marker"
       ],
       "genreByEra": {
         "classic": "hardware",
@@ -552,7 +552,7 @@
       "anachronismReason": null,
       "provenanceClassByEra": {
         "classic": "B",
-        "platinum": "B",
+        "platinum": "C",
         "aqua": "B",
         "snow-leopard": "B",
         "yosemite": "B",
@@ -560,11 +560,11 @@
       },
       "reviewStatusByEra": {
         "classic": "historically-reviewed",
-        "platinum": "pending",
-        "aqua": "pending",
-        "snow-leopard": "pending",
-        "yosemite": "pending",
-        "liquid-glass": "pending"
+        "platinum": "historically-reviewed",
+        "aqua": "historically-reviewed",
+        "snow-leopard": "historically-reviewed",
+        "yosemite": "historically-reviewed",
+        "liquid-glass": "historically-reviewed"
       },
       "metaphorKey": "durable-project-volume",
       "metaphorKeyStatus": "deprecated-migration-hint"
@@ -702,11 +702,11 @@
     "teachText": {
       "id": "teachText",
       "role": "TeachText",
-      "semanticIdentity": "editable writing document and text editor",
+      "semanticIdentity": "writing and editing application",
       "systemOrProduct": "product with a direct Classic prototype",
       "identityAnchors": [
-        "writing document",
-        "editing instrument or text-editor cue"
+        "editable manuscript",
+        "period writing or editing cue"
       ],
       "genreByEra": {
         "classic": "application",
@@ -756,11 +756,11 @@
       },
       "reviewStatusByEra": {
         "classic": "reference-validated",
-        "platinum": "pending",
+        "platinum": "historically-reviewed",
         "aqua": "pending",
-        "snow-leopard": "pending",
-        "yosemite": "pending",
-        "liquid-glass": "pending"
+        "snow-leopard": "historically-reviewed",
+        "yosemite": "historically-reviewed",
+        "liquid-glass": "historically-reviewed"
       },
       "metaphorKey": "editable-writing-object",
       "metaphorKeyStatus": "deprecated-migration-hint"
@@ -901,10 +901,11 @@
     "controlPanel": {
       "id": "controlPanel",
       "role": "Control / Settings",
-      "semanticIdentity": "system settings and preferences",
+      "semanticIdentity": "system configuration",
       "systemOrProduct": "system",
       "identityAnchors": [
-        "target-era settings identity"
+        "adjustable system controls",
+        "period control-surface grammar"
       ],
       "genreByEra": {
         "classic": "desk accessory utility",
@@ -945,17 +946,17 @@
       "provenanceClassByEra": {
         "classic": "A",
         "platinum": "A",
-        "aqua": "A",
-        "snow-leopard": "A",
-        "yosemite": "A",
+        "aqua": "B",
+        "snow-leopard": "B",
+        "yosemite": "B",
         "liquid-glass": "A"
       },
       "reviewStatusByEra": {
         "classic": "historically-reviewed",
         "platinum": "pending",
-        "aqua": "pending",
-        "snow-leopard": "pending",
-        "yosemite": "pending",
+        "aqua": "historically-reviewed",
+        "snow-leopard": "historically-reviewed",
+        "yosemite": "historically-reviewed",
         "liquid-glass": "pending"
       }
     },
@@ -1027,11 +1028,11 @@
     "docMap": {
       "id": "docMap",
       "role": "DocMap",
-      "semanticIdentity": "a document's heading structure made visible as a map",
+      "semanticIdentity": "visualize document heading structure",
       "systemOrProduct": "product",
       "identityAnchors": [
         "document",
-        "branching heading structure"
+        "branching heading hierarchy"
       ],
       "genreByEra": {
         "classic": "application utility",
@@ -1072,19 +1073,19 @@
       "anachronismReason": null,
       "provenanceClassByEra": {
         "classic": "B",
-        "platinum": "B",
-        "aqua": "B",
-        "snow-leopard": "B",
-        "yosemite": "B",
-        "liquid-glass": "B"
+        "platinum": "C",
+        "aqua": "C",
+        "snow-leopard": "C",
+        "yosemite": "C",
+        "liquid-glass": "C"
       },
       "reviewStatusByEra": {
         "classic": "historically-reviewed",
-        "platinum": "pending",
-        "aqua": "pending",
-        "snow-leopard": "pending",
-        "yosemite": "pending",
-        "liquid-glass": "pending"
+        "platinum": "historically-reviewed",
+        "aqua": "historically-reviewed",
+        "snow-leopard": "historically-reviewed",
+        "yosemite": "historically-reviewed",
+        "liquid-glass": "historically-reviewed"
       },
       "metaphorKey": "document-heading-structure",
       "metaphorKeyStatus": "deprecated-migration-hint",
@@ -1437,6 +1438,60 @@
       ],
       "migration": "The generic page-plus-lens repetition is replaced in each admitted era by a period-specific search utility with an unmistakable lens and visible result relationship. Liquid Glass remains on the prior runtime until its 16 px hierarchy has a separately approved optical drawing.",
       "chronology": "Platinum, Jaguar Aqua, Snow Leopard, and Yosemite are class B era-idiom reinterpretations with completed historical review. Liquid Glass remains pending; blind-mix review has not yet run."
+    },
+    "projectDisk": {
+      "status": "implemented",
+      "implemented": [
+        "platinum",
+        "aqua",
+        "snow-leopard",
+        "yosemite",
+        "liquid-glass"
+      ],
+      "pending": [],
+      "migration": "Replace one repeated labeled drive with each era's own volume prototype plus one restrained project marker.",
+      "chronology": "Platinum is class C; Jaguar through Tahoe are class B era-idiom reinterpretations. Blind-mix review has not yet run."
+    },
+    "teachText": {
+      "status": "in-progress",
+      "implemented": [
+        "platinum",
+        "snow-leopard",
+        "yosemite",
+        "liquid-glass"
+      ],
+      "pending": [
+        "aqua"
+      ],
+      "migration": "Replace the repeated page-plus-diagonal-pen lock with target-era manuscript and editing-tool relationships. Jaguar remains pending.",
+      "chronology": "Platinum, Snow Leopard, Yosemite, and Tahoe are class B reinterpretations; Jaguar remains pending and blind-mix review has not run."
+    },
+    "controlPanel": {
+      "status": "in-progress",
+      "implemented": [
+        "aqua",
+        "snow-leopard",
+        "yosemite"
+      ],
+      "pending": [
+        "platinum",
+        "liquid-glass"
+      ],
+      "migration": "Jaguar uses a jewel-like metal control plate, Snow Leopard a sober utility console, and Yosemite a shallow free-form adjustment plate.",
+      "chronology": "Jaguar, Snow Leopard, and Yosemite are class B reinterpretations; Platinum and Tahoe remain outside this overlay."
+    },
+    "docMap": {
+      "status": "implemented",
+      "implemented": [
+        "platinum",
+        "aqua",
+        "snow-leopard",
+        "yosemite",
+        "liquid-glass"
+      ],
+      "pending": [],
+      "migration": "The document container, perspective, material and node geometry change by era while document plus branching headings remain.",
+      "chronology": "All five modern versions are class C period-plausible originals; blind-mix review has not run."
     }
   },
   "metaphorKeyRule": "DEPRECATED MIGRATION ONLY. metaphorKey may help old builders locate an object's former composition, but it cannot lock a physical object, enclosure, full composition, or drawing across eras. semanticIdentity plus one or two identityAnchors are authoritative; historicalPrototypeByEra, genreByEra, and eraTranslationByEra decide the target-era artwork.",

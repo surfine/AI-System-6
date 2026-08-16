@@ -3560,19 +3560,19 @@
       }
     },
     "projectDisk": {
-      "genre": "hardware",
-      "physicalMetaphor": "drive",
+      "genre": "application",
+      "physicalMetaphor": "Tahoe layered free-form project storage volume",
       "semanticMark": "project",
       "tone": "steel",
-      "sourceKind": "imagegen-original-raster",
-      "reviewStatus": "accepted-imagegen",
-      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
+      "reviewStatus": "accepted-priority-lineage",
+      "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
       "generationStatus": "technically-clean",
       "provenanceClass": "B",
-      "historicalReviewStatus": "pending",
+      "historicalReviewStatus": "historically-reviewed",
       "runtimeAsset": true,
-      "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/projectDisk.png",
-      "masterSha256": "fff3a6815df3b90b954b0629bce28726740a67ca26b83d19c85b3950b9be6077",
+      "master": "apps/desktop/assets/themes/liquid-glass/icons/priority-lineage-source/projectDisk-128-master.png",
+      "masterSha256": "8826884bfd360d5ea640d96ca07fda014c22e427de3d3f5227ee42373a8328ea",
       "grid": {
         "canvas": 128,
         "shape": "square",
@@ -3600,244 +3600,458 @@
       },
       "metrics": {
         "128-default": {
-          "sha256": "1b2356955c3f1091722ba59590c33a6a8e72611a2859669cdafe4214dce099e0",
-          "pixels": 10755,
-          "translucent": 595,
+          "bbox": {
+            "minX": 7,
+            "minY": 6,
+            "maxX": 120,
+            "maxY": 113
+          },
           "bounds": [
-            9,
-            10,
-            118,
-            117
+            7,
+            6,
+            120,
+            113
           ],
           "ink": {
-            "minX": 9,
-            "minY": 10,
-            "maxX": 118,
-            "maxY": 117,
-            "width": 110,
+            "minX": 7,
+            "minY": 6,
+            "maxX": 120,
+            "maxY": 113,
+            "width": 114,
             "height": 108
           },
+          "pixels": 11192,
+          "inkPixels": 11192,
+          "translucent": 5156,
+          "colors": 1950,
+          "sha256": "8826884bfd360d5ea640d96ca07fda014c22e427de3d3f5227ee42373a8328ea",
+          "bytes": 10398,
           "gridShape": "square"
         },
         "128-dark": {
-          "sha256": "366d00f732568bc8503b4e89ff42118d24dadb8546aae87902846098538cb73e",
-          "pixels": 10755,
-          "translucent": 595,
+          "bbox": {
+            "minX": 7,
+            "minY": 6,
+            "maxX": 120,
+            "maxY": 113
+          },
           "bounds": [
-            9,
-            10,
-            118,
-            117
+            7,
+            6,
+            120,
+            113
           ],
           "ink": {
-            "minX": 9,
-            "minY": 10,
-            "maxX": 118,
-            "maxY": 117,
-            "width": 110,
+            "minX": 7,
+            "minY": 6,
+            "maxX": 120,
+            "maxY": 113,
+            "width": 114,
             "height": 108
           },
+          "pixels": 11192,
+          "inkPixels": 11192,
+          "translucent": 5156,
+          "colors": 1872,
+          "sha256": "620221c4e76e88b1d5e1405288d674538bd1fc92505b8b553a66a7652732307e",
+          "bytes": 11190,
           "gridShape": "square"
         },
         "128-clear": {
-          "sha256": "469744be48fad6bd0df7da738005372be018617ad63fe39668ade20dc011e004",
-          "pixels": 10752,
-          "translucent": 10752,
+          "bbox": {
+            "minX": 7,
+            "minY": 6,
+            "maxX": 120,
+            "maxY": 113
+          },
           "bounds": [
-            9,
-            10,
-            118,
-            117
+            7,
+            6,
+            120,
+            113
           ],
           "ink": {
-            "minX": 9,
-            "minY": 10,
-            "maxX": 118,
-            "maxY": 117,
-            "width": 110,
+            "minX": 7,
+            "minY": 6,
+            "maxX": 120,
+            "maxY": 113,
+            "width": 114,
             "height": 108
           },
+          "pixels": 11178,
+          "inkPixels": 11178,
+          "translucent": 11178,
+          "colors": 1315,
+          "sha256": "bfc8f4bcb853cc50fe5679378488d899b5619a9d577bb9116d9463ef6c0aef57",
+          "bytes": 10000,
           "gridShape": "square"
         },
         "64-default": {
-          "sha256": "75ad31cab5264e37cbd1cd3e7d8c25f4cd7a92b52ecb328c8a1c63874ef85a8f",
-          "pixels": 2760,
-          "translucent": 287,
+          "bbox": {
+            "minX": 4,
+            "minY": 3,
+            "maxX": 59,
+            "maxY": 56
+          },
           "bounds": [
             4,
-            5,
+            3,
             59,
-            58
+            56
           ],
           "ink": {
             "minX": 4,
-            "minY": 5,
+            "minY": 3,
             "maxX": 59,
-            "maxY": 58,
+            "maxY": 56,
             "width": 56,
             "height": 54
           },
+          "pixels": 2823,
+          "inkPixels": 2823,
+          "translucent": 1393,
+          "colors": 1178,
+          "sha256": "da9fd193b906afd64d5d46e1652c36cee6551868359e81eff076989d32ff36f3",
+          "bytes": 4133,
           "gridShape": "square"
         },
         "64-dark": {
-          "sha256": "238b0fb91e020c919dfcd1359eaa70f48108bcd34fe43f7e411f00dd5899df2c",
-          "pixels": 2760,
-          "translucent": 287,
+          "bbox": {
+            "minX": 4,
+            "minY": 3,
+            "maxX": 59,
+            "maxY": 56
+          },
           "bounds": [
             4,
-            5,
+            3,
             59,
-            58
+            56
           ],
           "ink": {
             "minX": 4,
-            "minY": 5,
+            "minY": 3,
             "maxX": 59,
-            "maxY": 58,
+            "maxY": 56,
             "width": 56,
             "height": 54
           },
+          "pixels": 2823,
+          "inkPixels": 2823,
+          "translucent": 1393,
+          "colors": 1147,
+          "sha256": "7dce87d43f5649d2b63d0c62ead1b4e8cb86fb6bd5b6388bdf8cbdef4766f03a",
+          "bytes": 4474,
           "gridShape": "square"
         },
         "64-clear": {
-          "sha256": "12076cc8b5d4a393efcdc2e8cb36b3e503bce0b73bfe84a63e76cec6768052f4",
-          "pixels": 2759,
-          "translucent": 2759,
+          "bbox": {
+            "minX": 4,
+            "minY": 3,
+            "maxX": 59,
+            "maxY": 56
+          },
           "bounds": [
             4,
-            5,
+            3,
             59,
-            58
+            56
           ],
           "ink": {
             "minX": 4,
-            "minY": 5,
+            "minY": 3,
             "maxX": 59,
-            "maxY": 58,
+            "maxY": 56,
             "width": 56,
             "height": 54
           },
+          "pixels": 2821,
+          "inkPixels": 2821,
+          "translucent": 2821,
+          "colors": 848,
+          "sha256": "c56888bb17310ccc2bb427903fc8e2a7c1577f784c539eaae3443789d1a3bc3f",
+          "bytes": 4166,
           "gridShape": "square"
         },
         "32-default": {
-          "sha256": "b5068767794c3086fd99b98a9a208e098bb4babf95ed3a39b8b7f55c749707ae",
-          "pixels": 720,
-          "translucent": 80,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 30,
+            "maxY": 28
+          },
           "bounds": [
-            2,
-            2,
-            29,
-            29
+            1,
+            1,
+            30,
+            28
           ],
           "ink": {
-            "minX": 2,
-            "minY": 2,
-            "maxX": 29,
-            "maxY": 29,
-            "width": 28,
+            "minX": 1,
+            "minY": 1,
+            "maxX": 30,
+            "maxY": 28,
+            "width": 30,
             "height": 28
           },
+          "pixels": 748,
+          "inkPixels": 748,
+          "translucent": 390,
+          "colors": 569,
+          "sha256": "ef5554b8a1ef8a1eb5316cdcc9b1c27a2debae5ca2cdfa92c1f123381325f01f",
+          "bytes": 1736,
           "gridShape": "square"
         },
         "32-dark": {
-          "sha256": "566b37aca7f1527e222d9c307f5f90e2998c2c49ef323220799f41eda3bf6853",
-          "pixels": 720,
-          "translucent": 80,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 30,
+            "maxY": 28
+          },
           "bounds": [
-            2,
-            2,
-            29,
-            29
+            1,
+            1,
+            30,
+            28
           ],
           "ink": {
-            "minX": 2,
-            "minY": 2,
-            "maxX": 29,
-            "maxY": 29,
-            "width": 28,
+            "minX": 1,
+            "minY": 1,
+            "maxX": 30,
+            "maxY": 28,
+            "width": 30,
             "height": 28
           },
+          "pixels": 748,
+          "inkPixels": 748,
+          "translucent": 390,
+          "colors": 559,
+          "sha256": "e9b7c2c3afef88295064fd1b3c56932ed832ec281dbacb5a4e91fa2de9bcb64f",
+          "bytes": 1832,
           "gridShape": "square"
         },
         "32-clear": {
-          "sha256": "439d75a2f091849859c05a52d71a2128ccdead5b012d70b20dad4cd12b420320",
-          "pixels": 720,
-          "translucent": 720,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 30,
+            "maxY": 28
+          },
           "bounds": [
-            2,
-            2,
-            29,
-            29
+            1,
+            1,
+            30,
+            28
           ],
           "ink": {
-            "minX": 2,
-            "minY": 2,
-            "maxX": 29,
-            "maxY": 29,
-            "width": 28,
+            "minX": 1,
+            "minY": 1,
+            "maxX": 30,
+            "maxY": 28,
+            "width": 30,
             "height": 28
           },
+          "pixels": 747,
+          "inkPixels": 747,
+          "translucent": 747,
+          "colors": 476,
+          "sha256": "a7efd30685c0744e2ffc091e93e3a91d710562bc1c17406942caa95adda7579c",
+          "bytes": 1718,
           "gridShape": "square"
         },
         "16-default": {
-          "sha256": "fef0987502d6df680d0ee2fe8d5b2d0aed65f1429cb99e69ab9c4d8dbdab48ab",
-          "pixels": 194,
-          "translucent": 46,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 13
+          },
           "bounds": [
             1,
             1,
             14,
-            15
+            13
           ],
           "ink": {
             "minX": 1,
             "minY": 1,
             "maxX": 14,
-            "maxY": 15,
+            "maxY": 13,
             "width": 14,
-            "height": 15
+            "height": 13
           },
+          "pixels": 166,
+          "inkPixels": 166,
+          "translucent": 104,
+          "colors": 160,
+          "sha256": "78c33f55d15e8498c070717693aa931710ebafcafa46f4d1f2f8dd43ef56ba95",
+          "bytes": 676,
           "gridShape": "square"
         },
         "16-dark": {
-          "sha256": "17817f7ea7e7699a904803e2b8c4e2e53f688175fa14bb46479498f41c828b65",
-          "pixels": 194,
-          "translucent": 46,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 13
+          },
           "bounds": [
             1,
             1,
             14,
-            15
+            13
           ],
           "ink": {
             "minX": 1,
             "minY": 1,
             "maxX": 14,
-            "maxY": 15,
+            "maxY": 13,
             "width": 14,
-            "height": 15
+            "height": 13
           },
+          "pixels": 166,
+          "inkPixels": 166,
+          "translucent": 104,
+          "colors": 160,
+          "sha256": "88bc1aff392e4caeb5ba73c6e9cb071e4822e2f80beba384d1676e890b491ba2",
+          "bytes": 682,
           "gridShape": "square"
         },
         "16-clear": {
-          "sha256": "7c6c8faec3abfdf507b4b18662c028dc1a0e83f64bfb0fbb06f04437913d5a45",
-          "pixels": 194,
-          "translucent": 194,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 13
+          },
           "bounds": [
             1,
             1,
             14,
-            15
+            13
           ],
           "ink": {
             "minX": 1,
             "minY": 1,
             "maxX": 14,
-            "maxY": 15,
+            "maxY": 13,
             "width": 14,
-            "height": 15
+            "height": 13
           },
+          "pixels": 164,
+          "inkPixels": 164,
+          "translucent": 164,
+          "colors": 156,
+          "sha256": "512abe3a5fa4b6238335a5508dde77ce10968187e3c6236b308697bf7059ccf2",
+          "bytes": 661,
           "gridShape": "square"
+        }
+      },
+      "semanticIdentity": "durable project storage",
+      "identityAnchors": [
+        "mounted storage volume",
+        "restrained project marker"
+      ],
+      "historicalPrototype": null,
+      "nearestHistoricalAnalog": "Tahoe layered free-form project storage volume",
+      "metaphorKey": "project-storage-volume",
+      "material": "separable translucent enclosure, refractive panel, hardware detail, and cobalt project marker",
+      "blindMixStatus": "not-run",
+      "generatedMaster": "internal/evidence/drafts/icon-lineage-audit/imagegen-candidates-v2/project-disk/liquid-glass-projectDisk-v2.png",
+      "reference": "No native Project Disk artwork is claimed; each target era's real hard-disk or mounted-volume grammar supplies the prototype.",
+      "exactPixelReplica": false,
+      "referenceValidated": false,
+      "nativeReplica": false,
+      "sourceNote": "Original era-specific storage-volume reinterpretations. The project marker remains secondary to the hardware silhouette.",
+      "sizeStatus": {
+        "16": "optically-reviewed",
+        "32": "optically-reviewed",
+        "64": "optically-reviewed",
+        "128": "optically-reviewed"
+      },
+      "sizePolicy": "Large tiers follow reviewed ImageGen directions; 32 and 16 px are independent optical constructions with the project marker simplified before the storage silhouette.",
+      "layerSource": {
+        "architecture": [
+          "enclosure",
+          "panel",
+          "hardware",
+          "project"
+        ],
+        "sourceSizes": [
+          128,
+          64,
+          32,
+          16
+        ],
+        "sources": {
+          "enclosure": "icons/src/priority-lineage-layers/projectDisk-128-enclosure.png",
+          "panel": "icons/src/priority-lineage-layers/projectDisk-128-panel.png",
+          "hardware": "icons/src/priority-lineage-layers/projectDisk-128-hardware.png",
+          "project": "icons/src/priority-lineage-layers/projectDisk-128-project.png"
+        },
+        "sourcesBySize": {
+          "16": {
+            "enclosure": "icons/src/priority-lineage-layers/projectDisk-16-enclosure.png",
+            "panel": "icons/src/priority-lineage-layers/projectDisk-16-panel.png",
+            "hardware": "icons/src/priority-lineage-layers/projectDisk-16-hardware.png",
+            "project": "icons/src/priority-lineage-layers/projectDisk-16-project.png"
+          },
+          "32": {
+            "enclosure": "icons/src/priority-lineage-layers/projectDisk-32-enclosure.png",
+            "panel": "icons/src/priority-lineage-layers/projectDisk-32-panel.png",
+            "hardware": "icons/src/priority-lineage-layers/projectDisk-32-hardware.png",
+            "project": "icons/src/priority-lineage-layers/projectDisk-32-project.png"
+          },
+          "64": {
+            "enclosure": "icons/src/priority-lineage-layers/projectDisk-64-enclosure.png",
+            "panel": "icons/src/priority-lineage-layers/projectDisk-64-panel.png",
+            "hardware": "icons/src/priority-lineage-layers/projectDisk-64-hardware.png",
+            "project": "icons/src/priority-lineage-layers/projectDisk-64-project.png"
+          },
+          "128": {
+            "enclosure": "icons/src/priority-lineage-layers/projectDisk-128-enclosure.png",
+            "panel": "icons/src/priority-lineage-layers/projectDisk-128-panel.png",
+            "hardware": "icons/src/priority-lineage-layers/projectDisk-128-hardware.png",
+            "project": "icons/src/priority-lineage-layers/projectDisk-128-project.png"
+          }
+        },
+        "recompositionOrder": [
+          "enclosure",
+          "panel",
+          "hardware",
+          "project"
+        ],
+        "construction": "independent deterministic enclosure, panel, hardware, project canvases are drawn at every optical tier and composed in declared order",
+        "independentTierConstruction": true,
+        "exactRecompositionRequired": true,
+        "generatedCandidateIsDirectionReferenceOnly": true,
+        "masterBakedGlassIsSource": false,
+        "layerExtractionFromBakedMaster": false
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.7656,
+          "meanLum": 155.36,
+          "lumStd": 48.26,
+          "edgeEnergy": 83
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.7129,
+          "meanLum": 151.02,
+          "lumStd": 49.62,
+          "edgeEnergy": 224
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.7007,
+          "meanLum": 149.46,
+          "lumStd": 49.36,
+          "edgeEnergy": 324
         }
       }
     },
@@ -7152,18 +7366,18 @@
     },
     "docMap": {
       "genre": "application",
-      "physicalMetaphor": "one translucent document page whose heading lines grow into a stem and three right-side branches",
-      "semanticMark": "none",
+      "physicalMetaphor": "Tahoe layered enclosure, frosted document and refractive hierarchy",
+      "semanticMark": "outline",
       "tone": "blue",
-      "sourceKind": "imagegen-original-raster",
-      "reviewStatus": "accepted-imagegen",
-      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
+      "reviewStatus": "accepted-priority-lineage",
+      "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
       "generationStatus": "technically-clean",
-      "provenanceClass": "B",
-      "historicalReviewStatus": "pending",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "historically-reviewed",
       "runtimeAsset": true,
-      "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/docMap.png",
-      "masterSha256": "01ffa549884dafbd9314b4b17d282dabed1f0a37b319a06439957db1973da616",
+      "master": "apps/desktop/assets/themes/liquid-glass/icons/priority-lineage-source/docMap-128-master.png",
+      "masterSha256": "61f5e25b678e5eeb22c6adf57f791b5d02c0b34a85d9d458f29398036edd80a7",
       "grid": {
         "canvas": 128,
         "shape": "square",
@@ -7191,247 +7405,355 @@
       },
       "metrics": {
         "128-default": {
-          "sha256": "a495bd43f5fdf30523763e6c20001d4cb9deaeacfa62fa6815f04fee62ce3040",
-          "pixels": 11557,
-          "translucent": 815,
+          "bbox": {
+            "minX": 8,
+            "minY": 8,
+            "maxX": 119,
+            "maxY": 118
+          },
           "bounds": [
-            10,
-            9,
-            118,
+            8,
+            8,
+            119,
             118
           ],
           "ink": {
-            "minX": 10,
-            "minY": 9,
-            "maxX": 118,
+            "minX": 8,
+            "minY": 8,
+            "maxX": 119,
             "maxY": 118,
-            "width": 109,
-            "height": 110
+            "width": 112,
+            "height": 111
           },
+          "pixels": 11865,
+          "inkPixels": 11865,
+          "translucent": 9741,
+          "colors": 1009,
+          "sha256": "61f5e25b678e5eeb22c6adf57f791b5d02c0b34a85d9d458f29398036edd80a7",
+          "bytes": 6213,
           "gridShape": "square"
         },
         "128-dark": {
-          "sha256": "dfd03549468c0c9f2bcbaff117305c603af34c35b3cd40202263bb8ee50b1ff9",
-          "pixels": 11557,
-          "translucent": 815,
+          "bbox": {
+            "minX": 8,
+            "minY": 8,
+            "maxX": 119,
+            "maxY": 118
+          },
           "bounds": [
-            10,
-            9,
-            118,
+            8,
+            8,
+            119,
             118
           ],
           "ink": {
-            "minX": 10,
-            "minY": 9,
-            "maxX": 118,
+            "minX": 8,
+            "minY": 8,
+            "maxX": 119,
             "maxY": 118,
-            "width": 109,
-            "height": 110
+            "width": 112,
+            "height": 111
           },
+          "pixels": 11865,
+          "inkPixels": 11865,
+          "translucent": 9741,
+          "colors": 920,
+          "sha256": "91aa5244a23c02521ecdb7ce059b0b416350a59d2dc718ff23abd973badb4e31",
+          "bytes": 6199,
           "gridShape": "square"
         },
         "128-clear": {
-          "sha256": "78c6ce85c582e2ba8e2073d3bbf6c1ad2374198770a02690bd99166466242700",
-          "pixels": 11552,
-          "translucent": 11552,
+          "bbox": {
+            "minX": 8,
+            "minY": 8,
+            "maxX": 119,
+            "maxY": 118
+          },
           "bounds": [
-            10,
-            9,
-            118,
+            8,
+            8,
+            119,
             118
           ],
           "ink": {
-            "minX": 10,
-            "minY": 9,
-            "maxX": 118,
+            "minX": 8,
+            "minY": 8,
+            "maxX": 119,
             "maxY": 118,
-            "width": 109,
-            "height": 110
+            "width": 112,
+            "height": 111
           },
+          "pixels": 11856,
+          "inkPixels": 11856,
+          "translucent": 11856,
+          "colors": 571,
+          "sha256": "32e92e34a479e417f801f9cad5f029cc5af94d41e411ac9b650096d3667fa40a",
+          "bytes": 5078,
           "gridShape": "square"
         },
         "64-default": {
-          "sha256": "f614e0e4c368853d1b5a98fe16a1a2bb1a85bb53783d7eb3256dd5668f8aa6f3",
-          "pixels": 2966,
-          "translucent": 337,
+          "bbox": {
+            "minX": 4,
+            "minY": 4,
+            "maxX": 59,
+            "maxY": 59
+          },
           "bounds": [
-            5,
+            4,
             4,
             59,
             59
           ],
           "ink": {
-            "minX": 5,
+            "minX": 4,
             "minY": 4,
             "maxX": 59,
             "maxY": 59,
-            "width": 55,
+            "width": 56,
             "height": 56
           },
+          "pixels": 2986,
+          "inkPixels": 2986,
+          "translucent": 2547,
+          "colors": 550,
+          "sha256": "f47abf315fc058a254f05fa37f3b8d6654d15be9d95eeb851a8bbb27e998d998",
+          "bytes": 2888,
           "gridShape": "square"
         },
         "64-dark": {
-          "sha256": "31e8b3167ff4531960188c4d7e57349425cc35e1882ef349da761acad9888eda",
-          "pixels": 2966,
-          "translucent": 337,
+          "bbox": {
+            "minX": 4,
+            "minY": 4,
+            "maxX": 59,
+            "maxY": 59
+          },
           "bounds": [
-            5,
+            4,
             4,
             59,
             59
           ],
           "ink": {
-            "minX": 5,
+            "minX": 4,
             "minY": 4,
             "maxX": 59,
             "maxY": 59,
-            "width": 55,
+            "width": 56,
             "height": 56
           },
+          "pixels": 2986,
+          "inkPixels": 2986,
+          "translucent": 2547,
+          "colors": 505,
+          "sha256": "770bf50ebed6dd86f22b92087554d0b0f6668336dec33e66e09dcf64c2053e5d",
+          "bytes": 2907,
           "gridShape": "square"
         },
         "64-clear": {
-          "sha256": "d37b71dd58b598037d3a16b2b8d8244085560b5eca6ffe49504bb3eef93191f7",
-          "pixels": 2952,
-          "translucent": 2952,
+          "bbox": {
+            "minX": 4,
+            "minY": 4,
+            "maxX": 59,
+            "maxY": 59
+          },
           "bounds": [
-            5,
+            4,
             4,
             59,
             59
           ],
           "ink": {
-            "minX": 5,
+            "minX": 4,
             "minY": 4,
             "maxX": 59,
             "maxY": 59,
-            "width": 55,
+            "width": 56,
             "height": 56
           },
+          "pixels": 2983,
+          "inkPixels": 2983,
+          "translucent": 2983,
+          "colors": 336,
+          "sha256": "c6372930c682484248080e19a123c385c868fdaa3324f64d4183d2c25ca0bb11",
+          "bytes": 2390,
           "gridShape": "square"
         },
         "32-default": {
-          "sha256": "e1801c3d7c0d8d619b3840a8b6e90fbc93b684adade2d9196ce1875ccce669db",
-          "pixels": 783,
-          "translucent": 102,
+          "bbox": {
+            "minX": 2,
+            "minY": 2,
+            "maxX": 29,
+            "maxY": 29
+          },
           "bounds": [
             2,
             2,
-            30,
+            29,
             29
           ],
           "ink": {
             "minX": 2,
             "minY": 2,
-            "maxX": 30,
+            "maxX": 29,
             "maxY": 29,
-            "width": 29,
+            "width": 28,
             "height": 28
           },
+          "pixels": 757,
+          "inkPixels": 757,
+          "translucent": 627,
+          "colors": 307,
+          "sha256": "b6d71ba8ecbc7093d0a9ac4e5a2844d4a444091066b94cee9b06a1bc5b53ea2c",
+          "bytes": 1360,
           "gridShape": "square"
         },
         "32-dark": {
-          "sha256": "a055dd2c7eea55f988eef4a06f0c076e89f9b861ec99a493a4efad3b2c01475b",
-          "pixels": 783,
-          "translucent": 102,
+          "bbox": {
+            "minX": 2,
+            "minY": 2,
+            "maxX": 29,
+            "maxY": 29
+          },
           "bounds": [
             2,
             2,
-            30,
+            29,
             29
           ],
           "ink": {
             "minX": 2,
             "minY": 2,
-            "maxX": 30,
+            "maxX": 29,
             "maxY": 29,
-            "width": 29,
+            "width": 28,
             "height": 28
           },
+          "pixels": 757,
+          "inkPixels": 757,
+          "translucent": 627,
+          "colors": 284,
+          "sha256": "05ed89f525fe8ef635e2b256421deb1965bac7bb30bc3c258d5caa84448b51a0",
+          "bytes": 1337,
           "gridShape": "square"
         },
         "32-clear": {
-          "sha256": "7d91633c99c032e4e3ae05231e5907d359c68a7692102ca319200a4a094263ae",
-          "pixels": 783,
-          "translucent": 783,
+          "bbox": {
+            "minX": 2,
+            "minY": 2,
+            "maxX": 29,
+            "maxY": 29
+          },
           "bounds": [
             2,
             2,
-            30,
+            29,
             29
           ],
           "ink": {
             "minX": 2,
             "minY": 2,
-            "maxX": 30,
+            "maxX": 29,
             "maxY": 29,
-            "width": 29,
+            "width": 28,
             "height": 28
           },
+          "pixels": 756,
+          "inkPixels": 756,
+          "translucent": 756,
+          "colors": 198,
+          "sha256": "ba6469797beb616367237b4948a98d08142dda4212471a1c775b1276888d96a3",
+          "bytes": 1098,
           "gridShape": "square"
         },
         "16-default": {
-          "sha256": "c0a548d895e7e93f1c5d49428d894671e4c8995ab773a0b159b680659ffb5b70",
-          "pixels": 204,
-          "translucent": 33,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 13
+          },
           "bounds": [
             1,
             1,
-            15,
-            14
+            14,
+            13
           ],
           "ink": {
             "minX": 1,
             "minY": 1,
-            "maxX": 15,
-            "maxY": 14,
-            "width": 15,
-            "height": 14
+            "maxX": 14,
+            "maxY": 13,
+            "width": 14,
+            "height": 13
           },
+          "pixels": 164,
+          "inkPixels": 164,
+          "translucent": 145,
+          "colors": 145,
+          "sha256": "5f47b0bcfe727d6254ad5e19a4e1a40c45b3578be6af821c86af74f6d572e7b1",
+          "bytes": 624,
           "gridShape": "square"
         },
         "16-dark": {
-          "sha256": "4378ea9675373a8aa639e22b4e24a3b5be08f77b2b17d9dcd2c351f233daf259",
-          "pixels": 204,
-          "translucent": 33,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 13
+          },
           "bounds": [
             1,
             1,
-            15,
-            14
+            14,
+            13
           ],
           "ink": {
             "minX": 1,
             "minY": 1,
-            "maxX": 15,
-            "maxY": 14,
-            "width": 15,
-            "height": 14
+            "maxX": 14,
+            "maxY": 13,
+            "width": 14,
+            "height": 13
           },
+          "pixels": 164,
+          "inkPixels": 164,
+          "translucent": 145,
+          "colors": 142,
+          "sha256": "3a6768a1b18afba3ba8749b34f8dd85716ef29b713af6a942b602889da2dc32e",
+          "bytes": 631,
           "gridShape": "square"
         },
         "16-clear": {
-          "sha256": "59305848c941113774442e6ad2e194f382697abe591805e466d001211e72a00d",
-          "pixels": 202,
-          "translucent": 202,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 13,
+            "maxY": 13
+          },
           "bounds": [
             1,
             1,
-            15,
-            14
+            13,
+            13
           ],
           "ink": {
             "minX": 1,
             "minY": 1,
-            "maxX": 15,
-            "maxY": 14,
-            "width": 15,
-            "height": 14
+            "maxX": 13,
+            "maxY": 13,
+            "width": 13,
+            "height": 13
           },
+          "pixels": 155,
+          "inkPixels": 155,
+          "translucent": 155,
+          "colors": 111,
+          "sha256": "2f4b9efda9cbd1c7b86983a05aa1d63f89fed5df381de8de702d3db3aa03e825",
+          "bytes": 553,
           "gridShape": "square"
         }
       },
-      "metaphorKey": "branching-document-map",
+      "metaphorKey": "document-heading-hierarchy",
       "metaphorMetrics": {
         "version": 1,
         "sourceSize": [
@@ -7459,6 +7781,111 @@
           1,
           1
         ]
+      },
+      "semanticIdentity": "visualize document heading structure",
+      "identityAnchors": [
+        "document",
+        "branching heading hierarchy"
+      ],
+      "historicalPrototype": null,
+      "nearestHistoricalAnalog": "Tahoe layered enclosure, frosted document and refractive hierarchy",
+      "material": "nearly colorless ice-glass enclosure, frosted manuscript, thin teal connector and restrained selected node",
+      "blindMixStatus": "not-run",
+      "generatedMaster": "internal/evidence/drafts/icon-lineage-audit/imagegen-candidates-v2/doc-map/liquid-glass-docMap-v2-light.png",
+      "reference": "No exact period application icon is claimed. Each era combines its document grammar with its own outline/tree disclosure idiom.",
+      "exactPixelReplica": false,
+      "referenceValidated": false,
+      "nativeReplica": false,
+      "sourceNote": "Original era-specific document-structure utilities; geographic-map and magnifier metaphors are deliberately excluded.",
+      "sizeStatus": {
+        "16": "optically-reviewed",
+        "32": "optically-reviewed",
+        "64": "optically-reviewed",
+        "128": "optically-reviewed"
+      },
+      "sizePolicy": "Large tiers follow reviewed generation directions; 32 and 16 px use independent bold trunks and three nodes rather than reduced detail.",
+      "layerSource": {
+        "architecture": [
+          "enclosure",
+          "manuscript",
+          "hierarchy",
+          "selection"
+        ],
+        "sourceSizes": [
+          128,
+          64,
+          32,
+          16
+        ],
+        "sources": {
+          "enclosure": "icons/src/priority-lineage-layers/docMap-128-enclosure.png",
+          "manuscript": "icons/src/priority-lineage-layers/docMap-128-manuscript.png",
+          "hierarchy": "icons/src/priority-lineage-layers/docMap-128-hierarchy.png",
+          "selection": "icons/src/priority-lineage-layers/docMap-128-selection.png"
+        },
+        "sourcesBySize": {
+          "16": {
+            "enclosure": "icons/src/priority-lineage-layers/docMap-16-enclosure.png",
+            "manuscript": "icons/src/priority-lineage-layers/docMap-16-manuscript.png",
+            "hierarchy": "icons/src/priority-lineage-layers/docMap-16-hierarchy.png",
+            "selection": "icons/src/priority-lineage-layers/docMap-16-selection.png"
+          },
+          "32": {
+            "enclosure": "icons/src/priority-lineage-layers/docMap-32-enclosure.png",
+            "manuscript": "icons/src/priority-lineage-layers/docMap-32-manuscript.png",
+            "hierarchy": "icons/src/priority-lineage-layers/docMap-32-hierarchy.png",
+            "selection": "icons/src/priority-lineage-layers/docMap-32-selection.png"
+          },
+          "64": {
+            "enclosure": "icons/src/priority-lineage-layers/docMap-64-enclosure.png",
+            "manuscript": "icons/src/priority-lineage-layers/docMap-64-manuscript.png",
+            "hierarchy": "icons/src/priority-lineage-layers/docMap-64-hierarchy.png",
+            "selection": "icons/src/priority-lineage-layers/docMap-64-selection.png"
+          },
+          "128": {
+            "enclosure": "icons/src/priority-lineage-layers/docMap-128-enclosure.png",
+            "manuscript": "icons/src/priority-lineage-layers/docMap-128-manuscript.png",
+            "hierarchy": "icons/src/priority-lineage-layers/docMap-128-hierarchy.png",
+            "selection": "icons/src/priority-lineage-layers/docMap-128-selection.png"
+          }
+        },
+        "recompositionOrder": [
+          "enclosure",
+          "manuscript",
+          "hierarchy",
+          "selection"
+        ],
+        "construction": "independent deterministic enclosure, manuscript, hierarchy, selection canvases are drawn at every optical tier and composed in declared order",
+        "independentTierConstruction": true,
+        "exactRecompositionRequired": true,
+        "generatedCandidateIsDirectionReferenceOnly": true,
+        "masterBakedGlassIsSource": false,
+        "layerExtractionFromBakedMaster": false
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.7461,
+          "meanLum": 232.03,
+          "lumStd": 20.05,
+          "edgeEnergy": 39
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.7344,
+          "meanLum": 232.14,
+          "lumStd": 27.21,
+          "edgeEnergy": 90
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.7517,
+          "meanLum": 232.12,
+          "lumStd": 26.25,
+          "edgeEnergy": 167
+        }
       }
     },
     "clioStage": {
@@ -11129,18 +11556,18 @@
     },
     "teachText": {
       "genre": "application",
-      "physicalMetaphor": "paperPen",
-      "semanticMark": "writing",
+      "physicalMetaphor": "Tahoe layered writing object with separate backing, manuscript, marks, and caret",
+      "semanticMark": "write",
       "tone": "blue",
-      "sourceKind": "imagegen-original-raster",
-      "reviewStatus": "accepted-imagegen",
-      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
+      "reviewStatus": "accepted-priority-lineage",
+      "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
       "generationStatus": "technically-clean",
       "provenanceClass": "B",
-      "historicalReviewStatus": "pending",
+      "historicalReviewStatus": "historically-reviewed",
       "runtimeAsset": true,
-      "master": "internal/evidence/drafts/liquid-glass-imagegen/alpha/teachText.png",
-      "masterSha256": "5835c91dc82f8cbd3f0db297ff75a162071d8965323ca26710b67e09eee4dc9b",
+      "master": "apps/desktop/assets/themes/liquid-glass/icons/priority-lineage-source/teachText-128-master.png",
+      "masterSha256": "94982b14c44447682668e55852078ae2fe3fc7409a1e986b98135a38d3e98035",
       "grid": {
         "canvas": 128,
         "shape": "square",
@@ -11168,244 +11595,458 @@
       },
       "metrics": {
         "128-default": {
-          "sha256": "70616ca75e656e645117957d23954ba65678ae09283ffa6bfabfab1d6480500a",
-          "pixels": 10465,
-          "translucent": 575,
+          "bbox": {
+            "minX": 14,
+            "minY": 8,
+            "maxX": 115,
+            "maxY": 115
+          },
           "bounds": [
             14,
-            10,
-            113,
-            117
+            8,
+            115,
+            115
           ],
           "ink": {
             "minX": 14,
-            "minY": 10,
-            "maxX": 113,
-            "maxY": 117,
-            "width": 100,
+            "minY": 8,
+            "maxX": 115,
+            "maxY": 115,
+            "width": 102,
             "height": 108
           },
+          "pixels": 10120,
+          "inkPixels": 10120,
+          "translucent": 3452,
+          "colors": 603,
+          "sha256": "94982b14c44447682668e55852078ae2fe3fc7409a1e986b98135a38d3e98035",
+          "bytes": 4205,
           "gridShape": "square"
         },
         "128-dark": {
-          "sha256": "5170dd0facc9f40eadd0440b5c0723801df5ba7965fb2582c2ae5318215f13f5",
-          "pixels": 10465,
-          "translucent": 575,
+          "bbox": {
+            "minX": 14,
+            "minY": 8,
+            "maxX": 115,
+            "maxY": 115
+          },
           "bounds": [
             14,
-            10,
-            113,
-            117
+            8,
+            115,
+            115
           ],
           "ink": {
             "minX": 14,
-            "minY": 10,
-            "maxX": 113,
-            "maxY": 117,
-            "width": 100,
+            "minY": 8,
+            "maxX": 115,
+            "maxY": 115,
+            "width": 102,
             "height": 108
           },
+          "pixels": 10120,
+          "inkPixels": 10120,
+          "translucent": 3452,
+          "colors": 563,
+          "sha256": "99ae4595174e0d50b6c72b4aa6d28716da0b35d066ea2670360d2be27e2dad18",
+          "bytes": 4279,
           "gridShape": "square"
         },
         "128-clear": {
-          "sha256": "97e65eb926fa1da7ce05b957449ddcd427ff1b46c3677fdf98e7c59c523ba65c",
-          "pixels": 10462,
-          "translucent": 10462,
+          "bbox": {
+            "minX": 14,
+            "minY": 8,
+            "maxX": 115,
+            "maxY": 115
+          },
           "bounds": [
             14,
-            10,
-            113,
-            117
+            8,
+            115,
+            115
           ],
           "ink": {
             "minX": 14,
-            "minY": 10,
-            "maxX": 113,
-            "maxY": 117,
-            "width": 100,
+            "minY": 8,
+            "maxX": 115,
+            "maxY": 115,
+            "width": 102,
             "height": 108
           },
+          "pixels": 10115,
+          "inkPixels": 10115,
+          "translucent": 10115,
+          "colors": 412,
+          "sha256": "929b1ee6ae419fdc6f2a631d48b3d85cb4e6563421515a9bbd651a1b1e17d3ac",
+          "bytes": 3675,
           "gridShape": "square"
         },
         "64-default": {
-          "sha256": "ecb53b1001e66100eb8a1674008c41c0084ea3a88082cb982ad0c6211d3aaf10",
-          "pixels": 2632,
-          "translucent": 149,
+          "bbox": {
+            "minX": 7,
+            "minY": 4,
+            "maxX": 57,
+            "maxY": 57
+          },
           "bounds": [
             7,
-            5,
-            56,
-            58
+            4,
+            57,
+            57
           ],
           "ink": {
             "minX": 7,
-            "minY": 5,
-            "maxX": 56,
-            "maxY": 58,
-            "width": 50,
+            "minY": 4,
+            "maxX": 57,
+            "maxY": 57,
+            "width": 51,
             "height": 54
           },
+          "pixels": 2552,
+          "inkPixels": 2552,
+          "translucent": 929,
+          "colors": 416,
+          "sha256": "f47b41cfdc6c079b33c3468b60f14a43becd6a5854d9841ea9fc5102e0730bfe",
+          "bytes": 2060,
           "gridShape": "square"
         },
         "64-dark": {
-          "sha256": "bed00574e1368011086d0dcbd8c6d8dbd5f5bd2043f227adf15f24cbc15440d7",
-          "pixels": 2632,
-          "translucent": 149,
+          "bbox": {
+            "minX": 7,
+            "minY": 4,
+            "maxX": 57,
+            "maxY": 57
+          },
           "bounds": [
             7,
-            5,
-            56,
-            58
+            4,
+            57,
+            57
           ],
           "ink": {
             "minX": 7,
-            "minY": 5,
-            "maxX": 56,
-            "maxY": 58,
-            "width": 50,
+            "minY": 4,
+            "maxX": 57,
+            "maxY": 57,
+            "width": 51,
             "height": 54
           },
+          "pixels": 2552,
+          "inkPixels": 2552,
+          "translucent": 929,
+          "colors": 400,
+          "sha256": "5080ce4039b4e9dc8c37427059fefd397a4320ca9dd675430729719f4fb11be9",
+          "bytes": 2126,
           "gridShape": "square"
         },
         "64-clear": {
-          "sha256": "3f475e57e1c9327b97a6ac5c3a8b9f11d59ed22f63b0819395ce8efc3ffe823a",
-          "pixels": 2632,
-          "translucent": 2632,
+          "bbox": {
+            "minX": 7,
+            "minY": 4,
+            "maxX": 57,
+            "maxY": 57
+          },
           "bounds": [
             7,
-            5,
-            56,
-            58
+            4,
+            57,
+            57
           ],
           "ink": {
             "minX": 7,
-            "minY": 5,
-            "maxX": 56,
-            "maxY": 58,
-            "width": 50,
+            "minY": 4,
+            "maxX": 57,
+            "maxY": 57,
+            "width": 51,
             "height": 54
           },
+          "pixels": 2547,
+          "inkPixels": 2547,
+          "translucent": 2547,
+          "colors": 307,
+          "sha256": "ff665535ab322c4520481eb93bca636a76559dcba125aae27ea6ea8a9e706d9d",
+          "bytes": 1946,
           "gridShape": "square"
         },
         "32-default": {
-          "sha256": "d160970af8a882a93598dcd3adfe0e9d2d6b7aa834e25fbb92003d87be791924",
-          "pixels": 734,
-          "translucent": 131,
+          "bbox": {
+            "minX": 3,
+            "minY": 1,
+            "maxX": 29,
+            "maxY": 29
+          },
           "bounds": [
             3,
-            2,
+            1,
             29,
             29
           ],
           "ink": {
             "minX": 3,
-            "minY": 2,
+            "minY": 1,
             "maxX": 29,
             "maxY": 29,
             "width": 27,
-            "height": 28
+            "height": 29
           },
+          "pixels": 698,
+          "inkPixels": 698,
+          "translucent": 284,
+          "colors": 227,
+          "sha256": "92a929e9a2fdcf529d92cdeb2c02d3bc78cce553655337d7f63ce3def3fe31ac",
+          "bytes": 1132,
           "gridShape": "square"
         },
         "32-dark": {
-          "sha256": "4dbbdf578ebf69b6480c92d8a6dfab58630dd935bae3f1fdd40b7259542b6a59",
-          "pixels": 734,
-          "translucent": 131,
+          "bbox": {
+            "minX": 3,
+            "minY": 1,
+            "maxX": 29,
+            "maxY": 29
+          },
           "bounds": [
             3,
-            2,
+            1,
             29,
             29
           ],
           "ink": {
             "minX": 3,
-            "minY": 2,
+            "minY": 1,
             "maxX": 29,
             "maxY": 29,
             "width": 27,
-            "height": 28
+            "height": 29
           },
+          "pixels": 698,
+          "inkPixels": 698,
+          "translucent": 284,
+          "colors": 221,
+          "sha256": "f4a8541dec4386bc29585e89e4fc7da8d3455cd16c9fdd926fc63123bb303cbc",
+          "bytes": 1153,
           "gridShape": "square"
         },
         "32-clear": {
-          "sha256": "3ecf837ae68302dba6eecf60cb95710731aca32c8b5256b461eb85e52e29ce89",
-          "pixels": 734,
-          "translucent": 734,
+          "bbox": {
+            "minX": 3,
+            "minY": 1,
+            "maxX": 29,
+            "maxY": 29
+          },
           "bounds": [
             3,
-            2,
+            1,
             29,
             29
           ],
           "ink": {
             "minX": 3,
-            "minY": 2,
+            "minY": 1,
             "maxX": 29,
             "maxY": 29,
             "width": 27,
-            "height": 28
+            "height": 29
           },
+          "pixels": 698,
+          "inkPixels": 698,
+          "translucent": 698,
+          "colors": 181,
+          "sha256": "39d96a17a725749c4b0e9ed61eb596ebc069e0477ab21e5670cc5f9985a86956",
+          "bytes": 1033,
           "gridShape": "square"
         },
         "16-default": {
-          "sha256": "654ea5204fff7a9991c6d858baedc2d33aeaa2f3bda6466f553310a023069d5f",
-          "pixels": 202,
-          "translucent": 52,
+          "bbox": {
+            "minX": 2,
+            "minY": 1,
+            "maxX": 13,
+            "maxY": 13
+          },
           "bounds": [
+            2,
             1,
-            1,
-            14,
-            15
+            13,
+            13
           ],
           "ink": {
-            "minX": 1,
+            "minX": 2,
             "minY": 1,
-            "maxX": 14,
-            "maxY": 15,
-            "width": 14,
-            "height": 15
+            "maxX": 13,
+            "maxY": 13,
+            "width": 12,
+            "height": 13
           },
+          "pixels": 134,
+          "inkPixels": 134,
+          "translucent": 59,
+          "colors": 94,
+          "sha256": "cc380fc23ff1de016c1f2c5246e6eae75063375563e3cfb14055dfa2b59033f4",
+          "bytes": 532,
           "gridShape": "square"
         },
         "16-dark": {
-          "sha256": "e9f711111c34366ea75d63ee2a8c762a58d3b861a681c97ab720258e5bb5a57a",
-          "pixels": 202,
-          "translucent": 52,
+          "bbox": {
+            "minX": 2,
+            "minY": 1,
+            "maxX": 13,
+            "maxY": 13
+          },
           "bounds": [
+            2,
             1,
-            1,
-            14,
-            15
+            13,
+            13
           ],
           "ink": {
-            "minX": 1,
+            "minX": 2,
             "minY": 1,
-            "maxX": 14,
-            "maxY": 15,
-            "width": 14,
-            "height": 15
+            "maxX": 13,
+            "maxY": 13,
+            "width": 12,
+            "height": 13
           },
+          "pixels": 134,
+          "inkPixels": 134,
+          "translucent": 59,
+          "colors": 93,
+          "sha256": "cc246eccc4684fa46c178555d270c487c21d2411faee72c52e6afc655bb3f46c",
+          "bytes": 542,
           "gridShape": "square"
         },
         "16-clear": {
-          "sha256": "c2c3c7d78fcd3d27e39a7a97d3483c8e48439f17203d114b731792891a9d9175",
-          "pixels": 202,
-          "translucent": 202,
+          "bbox": {
+            "minX": 2,
+            "minY": 1,
+            "maxX": 13,
+            "maxY": 13
+          },
           "bounds": [
+            2,
             1,
-            1,
-            14,
-            15
+            13,
+            13
           ],
           "ink": {
-            "minX": 1,
+            "minX": 2,
             "minY": 1,
-            "maxX": 14,
-            "maxY": 15,
-            "width": 14,
-            "height": 15
+            "maxX": 13,
+            "maxY": 13,
+            "width": 12,
+            "height": 13
           },
+          "pixels": 133,
+          "inkPixels": 133,
+          "translucent": 133,
+          "colors": 86,
+          "sha256": "c51839ea330f6560a8655d55ca9f41846887c5c0eb4416a4de2247eb19d90adb",
+          "bytes": 502,
           "gridShape": "square"
+        }
+      },
+      "semanticIdentity": "writing and editing application",
+      "identityAnchors": [
+        "editable manuscript",
+        "period writing or editing cue"
+      ],
+      "historicalPrototype": null,
+      "nearestHistoricalAnalog": "Tahoe layered writing object with separate backing, manuscript, marks, and caret",
+      "metaphorKey": "editable-manuscript",
+      "material": "controlled translucent backing and frosted paper with separate ink and cyan caret",
+      "blindMixStatus": "not-run",
+      "generatedMaster": "internal/evidence/drafts/icon-lineage-audit/imagegen-candidates-v2/teach-text/liquid-glass-teachText-v3.png",
+      "reference": "No native post-Classic TeachText artwork is claimed; SimpleText and target-era TextEdit grammar supply the nearest analogs.",
+      "exactPixelReplica": false,
+      "referenceValidated": false,
+      "nativeReplica": false,
+      "sourceNote": "Original era-specific writing-application reinterpretations; the exact pen angle and material are not locked across eras.",
+      "sizeStatus": {
+        "16": "optically-reviewed",
+        "32": "optically-reviewed",
+        "64": "optically-reviewed",
+        "128": "optically-reviewed"
+      },
+      "sizePolicy": "Large tiers follow reviewed generation directions; 32 and 16 px are independent optical drawings with fewer writing marks and a subordinate editing tool.",
+      "layerSource": {
+        "architecture": [
+          "backing",
+          "manuscript",
+          "marks",
+          "caret"
+        ],
+        "sourceSizes": [
+          128,
+          64,
+          32,
+          16
+        ],
+        "sources": {
+          "backing": "icons/src/priority-lineage-layers/teachText-128-backing.png",
+          "manuscript": "icons/src/priority-lineage-layers/teachText-128-manuscript.png",
+          "marks": "icons/src/priority-lineage-layers/teachText-128-marks.png",
+          "caret": "icons/src/priority-lineage-layers/teachText-128-caret.png"
+        },
+        "sourcesBySize": {
+          "16": {
+            "backing": "icons/src/priority-lineage-layers/teachText-16-backing.png",
+            "manuscript": "icons/src/priority-lineage-layers/teachText-16-manuscript.png",
+            "marks": "icons/src/priority-lineage-layers/teachText-16-marks.png",
+            "caret": "icons/src/priority-lineage-layers/teachText-16-caret.png"
+          },
+          "32": {
+            "backing": "icons/src/priority-lineage-layers/teachText-32-backing.png",
+            "manuscript": "icons/src/priority-lineage-layers/teachText-32-manuscript.png",
+            "marks": "icons/src/priority-lineage-layers/teachText-32-marks.png",
+            "caret": "icons/src/priority-lineage-layers/teachText-32-caret.png"
+          },
+          "64": {
+            "backing": "icons/src/priority-lineage-layers/teachText-64-backing.png",
+            "manuscript": "icons/src/priority-lineage-layers/teachText-64-manuscript.png",
+            "marks": "icons/src/priority-lineage-layers/teachText-64-marks.png",
+            "caret": "icons/src/priority-lineage-layers/teachText-64-caret.png"
+          },
+          "128": {
+            "backing": "icons/src/priority-lineage-layers/teachText-128-backing.png",
+            "manuscript": "icons/src/priority-lineage-layers/teachText-128-manuscript.png",
+            "marks": "icons/src/priority-lineage-layers/teachText-128-marks.png",
+            "caret": "icons/src/priority-lineage-layers/teachText-128-caret.png"
+          }
+        },
+        "recompositionOrder": [
+          "backing",
+          "manuscript",
+          "marks",
+          "caret"
+        ],
+        "construction": "independent deterministic backing, manuscript, marks, caret canvases are drawn at every optical tier and composed in declared order",
+        "independentTierConstruction": true,
+        "exactRecompositionRequired": true,
+        "generatedCandidateIsDirectionReferenceOnly": true,
+        "masterBakedGlassIsSource": false,
+        "layerExtractionFromBakedMaster": false
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6797,
+          "meanLum": 210.87,
+          "lumStd": 44.65,
+          "edgeEnergy": 99
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6279,
+          "meanLum": 209.67,
+          "lumStd": 52.53,
+          "edgeEnergy": 193
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6276,
+          "meanLum": 210.06,
+          "lumStd": 53.65,
+          "edgeEnergy": 284
         }
       }
     },
@@ -16653,7 +17294,10 @@
   "priorityLineageLedger": "tooling/icon-generation/approved-priority-lineage.json",
   "priorityLineageObjects": [
     "reviewDesk",
-    "assistant"
+    "assistant",
+    "projectDisk",
+    "teachText",
+    "docMap"
   ],
   "priorityLineageMeaning": "Only explicitly reviewed v2 rows override the broad generated archive; per-object provenance never implies native replication or reference validation."
 }

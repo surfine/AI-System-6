@@ -1614,11 +1614,7 @@ window.AISystem6LiquidCoverLoaded = true;
       }
       blobSource.toBlob((blob) => {
         if (blob) {
-          const a = document.createElement("a");
-          a.href = URL.createObjectURL(blob);
-          a.download = "liquid-glass-" + d.w + "x" + d.h + ".png";
-          a.click();
-          setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+          downloadBlob(blob, "liquid-glass-" + d.w + "x" + d.h + ".png");
           aiStatusText(tr("liquid_cover_ai_exported", "Exported") + " " + d.w + "×" + d.h + " PNG");
         } else {
           aiStatus("error", "Export failed");
@@ -1659,12 +1655,9 @@ window.AISystem6LiquidCoverLoaded = true;
       setTimeout(done, 600);
     });
   }
+  // Stills and motion covers leave through the shared artifact exit.
   function downloadBlob(blob, name) {
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = name;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    return window.AISystem6WebPlatform.saveArtifact({ blob, fileName: name, mimeType: blob?.type || "" });
   }
   async function exportVideo() {
     if (!renderer) return;

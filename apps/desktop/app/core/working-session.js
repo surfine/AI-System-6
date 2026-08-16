@@ -3,13 +3,22 @@
 // Loaded before app.js as a classic script; shares the AI System 6 global scope.
 
 
-const workingSessionStorageKey = "workingSession:v1";
-const workingSessionVersion = 1;
+// Every Project Hard Disk owns its own desktop scene, stored under one scope
+// key: the desktop (no disk mounted) or one project. The single
+// "workingSession:v1" record is migrated into its v2 scope at boot.
+const workingSessionLegacyStorageKey = "workingSession:v1";
+const workingSessionKeyPrefix = "workingSession:v2:";
+const workingSessionDesktopKey = "workingSession:v2:desktop";
+const workingSessionProjectKeyPrefix = "workingSession:v2:project:";
+const workingSessionVersion = 2;
+// Above this many project scenes, the least recently saved one is dropped.
+const workingSessionScopeLimit = 24;
 const workingSessionAdapters = new Map();
 let workingSessionSaveTimer = null;
 let workingSessionSavePromise = Promise.resolve();
 let workingSessionRestoreInProgress = false;
 let workingSessionAutosaveInstalled = false;
+let workingSessionMigrationPromise = null;
 const workingSessionExcludedWindowNames = new Set(["about", "saveChat", "guide", "welcomeDisk"]);
 
 function registerWorkingSessionAdapter(adapter) {
@@ -75,68 +84,61 @@ function setInlineStyleValue(el, property, value) {
   else el.style.removeProperty(property);
 }
 
-async function readWorkingSessionSnapshot() {
+// Which disk owns the scene right now. With nothing mounted the desktop owns
+// it, so an ejected disk's later scene never lands under a project key.
+function currentWorkingSessionProjectId() {
+  if (typeof isProjectMounted !== "undefined" && !isProjectMounted) return "";
+  return String(typeof activeProjectId === "undefined" ? "" : activeProjectId || "");
+}
+
+function workingSessionScopeKey(projectId) {
+  const id = String(projectId || "").trim();
+  return id ? `${workingSessionProjectKeyPrefix}${id}` : workingSessionDesktopKey;
+}
+
+function currentWorkingSessionKey() {
+  return workingSessionScopeKey(currentWorkingSessionProjectId());
+}
+
+async function workingSessionStoreTask(mode, run) {
   let db;
   try {
     db = await openAppDb();
-    return await window.AISystem6StorageTransactions.runTransaction(
+    const value = await window.AISystem6StorageTransactions.runTransaction(
       db,
       keyvalStoreName,
-      "readonly",
-      (tx) => idbRequest(tx.objectStore(keyvalStoreName).get(workingSessionStorageKey))
+      mode,
+      (tx) => run(tx.objectStore(keyvalStoreName))
     );
+    return { ok: true, value };
   } catch (error) {
-    console.warn("Failed to read Working Session.", error);
-    return null;
+    console.warn("Working Session storage failed.", error);
+    return { ok: false, value: null };
   } finally {
     db?.close();
   }
 }
 
-async function writeWorkingSessionSnapshot(snapshot) {
-  let db;
-  try {
-    db = await openAppDb();
-    await window.AISystem6StorageTransactions.runTransaction(
-      db,
-      keyvalStoreName,
-      "readwrite",
-      (tx) => idbRequest(
-        tx.objectStore(keyvalStoreName).put(snapshot, workingSessionStorageKey)
-      )
-    );
-    return true;
-  } catch (error) {
-    console.warn("Failed to save Working Session.", error);
-    return false;
-  } finally {
-    db?.close();
-  }
+async function readWorkingSessionSnapshot(key = currentWorkingSessionKey()) {
+  return (await workingSessionStoreTask("readonly", (store) => idbRequest(store.get(key)))).value || null;
 }
 
-async function deleteWorkingSessionSnapshot() {
-  let db;
-  try {
-    db = await openAppDb();
-    await window.AISystem6StorageTransactions.runTransaction(
-      db,
-      keyvalStoreName,
-      "readwrite",
-      (tx) => idbRequest(
-        tx.objectStore(keyvalStoreName).delete(workingSessionStorageKey)
-      )
-    );
-    return true;
-  } catch (error) {
-    console.warn("Failed to clear Working Session.", error);
-    return false;
-  } finally {
-    db?.close();
-  }
+async function writeWorkingSessionSnapshot(snapshot, key = currentWorkingSessionKey()) {
+  return (await workingSessionStoreTask("readwrite", (store) => idbRequest(store.put(snapshot, key)))).ok;
 }
+
+async function deleteWorkingSessionSnapshot(key = currentWorkingSessionKey()) {
+  return (await workingSessionStoreTask("readwrite", (store) => idbRequest(store.delete(key)))).ok;
+}
+
+async function listWorkingSessionScopeKeys() {
+  const keys = (await workingSessionStoreTask("readonly", (store) => idbRequest(store.getAllKeys()))).value;
+  return (Array.isArray(keys) ? keys : [])
+    .filter((key) => typeof key === "string" && key.startsWith(workingSessionKeyPrefix));
+}
+
 
 function captureWorkingSessionSnapshot() {
-  const project = typeof getActiveProject === "function" ? getActiveProject() : null;
   const adapters = {};
   workingSessionAdapters.forEach((adapter, id) => {
     if (typeof adapter.capture !== "function") return;
@@ -147,10 +149,11 @@ function captureWorkingSessionSnapshot() {
       console.warn(`Failed to capture Working Session adapter "${id}".`, error);
     }
   });
+  const ownerId = currentWorkingSessionProjectId();
   return {
     version: workingSessionVersion,
     savedAt: new Date().toISOString(),
-    projectId: activeProjectId || project?.id || null,
+    projectId: ownerId || null,
     viewport: {
       width: window.innerWidth || 0,
       height: window.innerHeight || 0,
@@ -172,9 +175,12 @@ function flushWorkingSessionSave() {
   clearTimeout(workingSessionSaveTimer);
   workingSessionSaveTimer = null;
   const snapshot = captureWorkingSessionSnapshot();
+  // Bind the scope key at capture time. The mounted disk can move before the
+  // queued write runs, and one disk's scene must never land under another's.
+  const key = workingSessionScopeKey(snapshot.projectId);
   workingSessionSavePromise = workingSessionSavePromise
     .catch(() => {})
-    .then(() => writeWorkingSessionSnapshot(snapshot));
+    .then(() => writeWorkingSessionSnapshot(snapshot, key));
   return workingSessionSavePromise;
 }
 
@@ -198,17 +204,13 @@ function cancelWorkingSessionAutosave() {
   workingSessionSaveTimer = null;
 }
 
-async function clearWorkingSession(options = {}) {
-  clearTimeout(workingSessionSaveTimer);
-  workingSessionSaveTimer = null;
-  const projectId = options.projectId || null;
-  if (!projectId) return deleteWorkingSessionSnapshot();
-
-  const snapshot = await readWorkingSessionSnapshot();
-  if (!snapshot || snapshot.projectId === projectId) return deleteWorkingSessionSnapshot();
-
+// Scrub an erased project out of a scene that is not its own: an ejected disk
+// can leave its File Floppy behind in the desktop scene.
+async function scrubWorkingSessionScope(key, projectId) {
+  const snapshot = await readWorkingSessionSnapshot(key);
+  if (!snapshot?.adapters) return true;
   let changed = false;
-  const adapters = { ...(snapshot.adapters || {}) };
+  const adapters = { ...snapshot.adapters };
   for (const [id, adapter] of workingSessionAdapters.entries()) {
     if (typeof adapter.clear !== "function" || adapters[id] === undefined) continue;
     try {
@@ -221,11 +223,90 @@ async function clearWorkingSession(options = {}) {
     }
   }
   if (!changed) return true;
-  return writeWorkingSessionSnapshot({
-    ...snapshot,
-    savedAt: new Date().toISOString(),
-    adapters,
-  });
+  return writeWorkingSessionSnapshot({ ...snapshot, savedAt: new Date().toISOString(), adapters }, key);
+}
+
+// No projectId: put the whole desk away (Restart, Shut Down, safe startup,
+// Boot Recovery). With a projectId: that disk was erased, so drop its own
+// scene and scrub it out of every other one.
+async function clearWorkingSession(options = {}) {
+  cancelWorkingSessionAutosave();
+  const projectId = String(options.projectId || "").trim();
+  const keys = await listWorkingSessionScopeKeys();
+  if (!projectId) {
+    for (const key of keys) await deleteWorkingSessionSnapshot(key);
+    return deleteWorkingSessionSnapshot(workingSessionLegacyStorageKey);
+  }
+  const ownKey = workingSessionScopeKey(projectId);
+  await deleteWorkingSessionSnapshot(ownKey);
+  for (const key of keys) {
+    if (key !== ownKey) await scrubWorkingSessionScope(key, projectId);
+  }
+  return true;
+}
+
+// Orphan scenes (the disk is gone) go first; then the least recently saved
+// scenes above the cap. The desktop scene and the mounted disk always stay.
+async function pruneWorkingSessionScopes() {
+  const known = new Set((Array.isArray(projects) ? projects : []).map((project) => project?.id).filter(Boolean));
+  const activeKey = currentWorkingSessionKey();
+  const live = [];
+  for (const key of await listWorkingSessionScopeKeys()) {
+    if (key === workingSessionDesktopKey || key === activeKey) continue;
+    const projectId = key.startsWith(workingSessionProjectKeyPrefix)
+      ? key.slice(workingSessionProjectKeyPrefix.length)
+      : "";
+    if (!projectId || !known.has(projectId)) {
+      await deleteWorkingSessionSnapshot(key);
+      continue;
+    }
+    live.push({ key, savedAt: String((await readWorkingSessionSnapshot(key))?.savedAt || "") });
+  }
+  live.sort((left, right) => (right.savedAt || "").localeCompare(left.savedAt || ""));
+  for (const entry of live.slice(Math.max(0, workingSessionScopeLimit - 1))) {
+    await deleteWorkingSessionSnapshot(entry.key);
+  }
+  return true;
+}
+
+function migratedWorkingSessionIsReadable(written, legacy) {
+  if (!isValidWorkingSessionSnapshot(written)) return false;
+  if (String(written.projectId || "") !== String(legacy.projectId || "")) return false;
+  try {
+    return JSON.stringify(written.adapters) === JSON.stringify(legacy.adapters);
+  } catch {
+    return false;
+  }
+}
+
+// One-way move of "workingSession:v1" into its v2 scope, in a single
+// transaction so the first boot after the upgrade does not spend its restore
+// budget on round trips. Idempotent: a second run finds no legacy record and
+// does nothing. Rollback-safe: the v1 record is deleted only after the v2
+// record reads back with the same adapter payload, and any failure aborts the
+// transaction, so the old scene is still there for the next boot.
+async function migrateWorkingSessionStorage() {
+  if (!workingSessionMigrationPromise) {
+    workingSessionMigrationPromise = workingSessionStoreTask("readwrite", async (store) => {
+      const legacy = await idbRequest(store.get(workingSessionLegacyStorageKey));
+      if (!legacy || typeof legacy !== "object") return { migrated: false, reason: "absent" };
+      const key = workingSessionScopeKey(legacy.projectId);
+      const existing = await idbRequest(store.get(key));
+      // A v2 scene already owning this scope supersedes the legacy record.
+      let reason = "already-migrated";
+      if (!isValidWorkingSessionSnapshot(existing)) {
+        reason = "moved";
+        await idbRequest(store.put({ ...legacy, version: workingSessionVersion, migratedFrom: 1 }, key));
+        const written = await idbRequest(store.get(key));
+        if (!migratedWorkingSessionIsReadable(written, legacy)) {
+          return { migrated: false, reason: "unverified", key };
+        }
+      }
+      await idbRequest(store.delete(workingSessionLegacyStorageKey));
+      return { migrated: true, key, reason };
+    }).then((result) => (result.ok ? result.value : { migrated: false, reason: "write-failed" }));
+  }
+  return workingSessionMigrationPromise;
 }
 
 function isValidWorkingSessionSnapshot(snapshot) {
@@ -235,20 +316,33 @@ function isValidWorkingSessionSnapshot(snapshot) {
     && typeof snapshot.adapters === "object";
 }
 
-async function restoreWorkingSession() {
-  const snapshot = await readWorkingSessionSnapshot();
+// options.projectId picks the scope (default: whatever is mounted now).
+// options.mounted means the caller already mounted it, so ownership stays put.
+async function restoreWorkingSession(options = {}) {
+  await migrateWorkingSessionStorage();
+  const key = options.projectId === undefined
+    ? currentWorkingSessionKey()
+    : workingSessionScopeKey(options.projectId);
+  const snapshot = await readWorkingSessionSnapshot(key);
   if (!isValidWorkingSessionSnapshot(snapshot)) return false;
-  if (snapshot.projectId && !projects.some((project) => project.id === snapshot.projectId && !project.archived)) {
-    await clearWorkingSession();
-    return false;
+  const ownerId = String(snapshot.projectId || "");
+  if (ownerId) {
+    const owner = projects.find((project) => project.id === ownerId);
+    // The disk was erased: its scene has nothing left to open.
+    if (!owner) {
+      await deleteWorkingSessionSnapshot(key);
+      return false;
+    }
+    // An archived disk is put away; it is remounted before its scene returns.
+    if (owner.archived && !options.mounted) return false;
   }
 
   workingSessionRestoreInProgress = true;
   let restored = false;
   try {
-    if (snapshot.projectId) {
-      activeProjectId = snapshot.projectId;
-      selectedProjectId = snapshot.projectId;
+    if (ownerId && !options.mounted) {
+      activeProjectId = ownerId;
+      selectedProjectId = ownerId;
       isProjectMounted = true;
       assignProjectScope(activeProjectId);
     }
@@ -285,6 +379,11 @@ async function restoreWorkingSession() {
 function installWorkingSessionAutosave() {
   if (workingSessionAutosaveInstalled) return;
   workingSessionAutosaveInstalled = true;
+  // Boots that skip restore (Writer Mode, unfinished OOBE) still owe the
+  // legacy record its move, and every boot pays the scene-count rent once.
+  migrateWorkingSessionStorage()
+    .then(() => pruneWorkingSessionScopes())
+    .catch(() => {});
 
   document.addEventListener("input", (event) => {
     if (event.target?.closest?.("input, textarea, select, [contenteditable='true']")) {
@@ -842,3 +941,34 @@ function registerDefaultWorkingSessionAdapters() {
 }
 
 registerDefaultWorkingSessionAdapters();
+
+// What a Project Hard Disk backup may carry — an allow-list, so a future
+// adapter joins a backup only when someone adds it here. File Floppy stays
+// out: it is temporary context, not durable Project Hard Disk state.
+// Credentials, model keys, and Control Panel settings never enter a scene at
+// all; they live in localStorage and the separate "settings" record.
+const workingSessionBackupAdapterIds = Object.freeze([
+  "windows",
+  "selection",
+  "assistant",
+  "teachText",
+  "reader",
+  "timeMachine",
+  "writingFlow",
+  "reviewDesk",
+]);
+
+async function readWorkingSessionForBackup(projectId) {
+  const snapshot = await readWorkingSessionSnapshot(workingSessionScopeKey(projectId));
+  if (!isValidWorkingSessionSnapshot(snapshot)) return null;
+  const adapters = {};
+  workingSessionBackupAdapterIds.forEach((id) => {
+    if (snapshot.adapters[id] !== undefined) adapters[id] = snapshot.adapters[id];
+  });
+  return {
+    version: workingSessionVersion,
+    savedAt: snapshot.savedAt || "",
+    projectId: projectId || null,
+    adapters,
+  };
+}

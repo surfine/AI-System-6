@@ -15,6 +15,7 @@ function makeHarness({ revisionFails = false, commitFails = false } = {}) {
     status: "",
     revisionCalls: [],
     linkClicked: false,
+    savedArtifacts: [],
   };
   const fakeLink = {
     set href(_) {},
@@ -31,6 +32,14 @@ function makeHarness({ revisionFails = false, commitFails = false } = {}) {
     window: {
       location: { protocol: "http:", hostname: "x" },
       AISystem6Config: {},
+      // Every artifact leaves through one exit; the harness watches it.
+      AISystem6WebPlatform: {
+        saveArtifact: (artifact) => {
+          state.linkClicked = true;
+          state.savedArtifacts.push(artifact);
+          return true;
+        },
+      },
     },
     // export-import defines its own renderProjectCd; the null grid handle
     // makes it a no-op in the VM.
@@ -112,6 +121,10 @@ function makeHarness({ revisionFails = false, commitFails = false } = {}) {
   test.assert(context.projectCdItems.length === 0, "downloadMarkdown never writes to the Project CD");
   test.assert(state.status.startsWith("downloaded_markdown_only"), "downloadMarkdown reports a download only");
   test.assert(state.linkClicked === true, "downloadMarkdown triggers the download link");
+  test.assert(
+    state.savedArtifacts.at(-1)?.mimeType === "text/markdown;charset=utf-8",
+    "downloadMarkdown saves through the shared artifact exit"
+  );
 }
 
 {

@@ -516,15 +516,11 @@ async function exportQuickDraftMarkdown() {
   }
   const title = String(refs.titleInput?.value || slot.record.workspace.title || titleFromBody(markdown) || "quick-draft").trim();
   const safeName = title.replace(/[\\/:*?"<>|]/g, "-").slice(0, 80) || "quick-draft";
-  const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `${safeName}.md`;
-  document.body.append(link);
-  link.click();
-  link.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  window.AISystem6WebPlatform.saveArtifact({
+    text: markdown,
+    fileName: `${safeName}.md`,
+    mimeType: "text/markdown;charset=utf-8",
+  });
   setQuickDraftStatus(t("quick_draft_export_done"));
   return true;
 }

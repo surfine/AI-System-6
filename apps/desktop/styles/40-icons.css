@@ -324,33 +324,6 @@
   border-top: 0;
 }
 
-.panel-icon::before {
-  content: "";
-  position: absolute;
-  left: 5px;
-  right: 5px;
-  top: 9px;
-  height: 2px;
-  background: var(--ink);
-  box-shadow: 0 7px 0 var(--ink), 0 14px 0 var(--ink);
-}
-
-.panel-icon::after {
-  content: "";
-  position: absolute;
-  left: 9px;
-  top: 6px;
-  width: 4px;
-  height: 8px;
-  background: var(--paper);
-  border: 2px solid var(--ink);
-  box-shadow:
-    9px 7px 0 -2px var(--paper),
-    9px 7px 0 0 var(--ink),
-    3px 14px 0 -2px var(--paper),
-    3px 14px 0 0 var(--ink);
-}
-
 .folder-icon::before {
   content: "";
   position: absolute;
@@ -399,34 +372,6 @@
   border: 2px solid var(--ink);
   border-bottom: 0;
   background: var(--paper);
-}
-
-.applications-icon::before {
-  content: "";
-  position: absolute;
-  left: 5px;
-  right: 5px;
-  top: 5px;
-  bottom: 5px;
-  border: 2px solid var(--ink);
-  background:
-    linear-gradient(var(--ink), var(--ink)) 0 6px / 100% 2px no-repeat,
-    linear-gradient(90deg, var(--ink), var(--ink)) 50% 0 / 2px 100% no-repeat,
-    var(--paper);
-}
-
-.applications-icon::after {
-  content: "";
-  position: absolute;
-  left: 9px;
-  top: 9px;
-  width: 4px;
-  height: 4px;
-  background: var(--ink);
-  box-shadow:
-    11px 0 0 var(--ink),
-    0 11px 0 var(--ink),
-    11px 11px 0 var(--ink);
 }
 
 .project-disk-icon {
@@ -907,18 +852,8 @@
     max-width: calc(100vw - 32px);
   }
 
-  .project-disk-details-bar {
-    justify-content: center;
-  }
-
   .project-disk-details-bar .view-controls {
     flex: 0 0 auto;
-  }
-
-  .project-disk-details-bar > span {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 
   .project-finder-pathbar {

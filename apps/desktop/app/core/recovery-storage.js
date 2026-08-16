@@ -85,6 +85,7 @@ window.AISystem6RecoveryStorage = (() => {
           getReferences: async () => (Array.isArray(storedReferences) ? storedReferences : [])
             .filter((entry) => entry?.projectId === projectId),
           getDocumentRevisions: () => readProjectDocumentRevisions(projectId),
+          getWorkingSession: () => readWorkingSessionForBackup(projectId),
         },
       });
       return result && result.ready ? result.bundle : null;

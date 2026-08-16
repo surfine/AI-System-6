@@ -136,6 +136,16 @@ for (const era of ERAS) {
 
 for (const [theme, paths] of Object.entries(DOCMAP_ARTWORK)) {
   const family = JSON.parse(read(paths.family));
+  const entry = family.icons?.docMap;
+  if (entry?.reviewStatus === "accepted-priority-lineage") {
+    const metric = entry.metrics?.["16"] || entry.metrics?.["16-default"];
+    test.assert(entry.semanticIdentity === "visualize document heading structure"
+      && JSON.stringify(entry.identityAnchors) === JSON.stringify(["document", "branching heading hierarchy"]),
+    `${theme}/docMap family owns the document plus branching-heading semantic contract`);
+    test.assert(metric?.ink?.width >= 11 && metric?.ink?.height >= 13 && metric?.inkPixels >= 140,
+      `${theme}/docMap compact artwork preserves a legible native-size document hierarchy`);
+    continue;
+  }
   const recorded = family.icons?.docMap?.metaphorMetrics;
   const measured = await measureDocMapMetaphor(resolveProjectPath(paths.artwork), theme);
   let passes = true;

@@ -177,6 +177,9 @@ window.AISystem6Config = (() => {
     docMapMinSelectionChars: 200,
     docMapMinDocumentChars: 800,
     dictionaryMaxSelectionChars: 160,
+    // The Rebuild button asks this before the click and runRebuildFlow() asks
+    // it again before the work, so both read the same number.
+    rebuildMinSourceChars: 400,
     defaultOutlineSection: "New Section",
   });
 

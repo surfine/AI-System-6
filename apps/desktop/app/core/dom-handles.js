@@ -308,7 +308,6 @@ function getElements() {
   const docMapDropZoneEl = document.querySelector("#docmap-drop-zone");
   const clioStageViewportEl = document.querySelector("#clio-stage-viewport");
   const clioStageImportFilesButton = document.querySelector("#clio-stage-import-files");
-  const clioStageFileInput = document.querySelector("#clio-stage-file-input");
   const clioStageAskForm = document.querySelector("#clio-stage-ask-form");
   const clioStageQuestionInput = document.querySelector("#clio-stage-question");
   const dictionaryTermEl = document.querySelector("#dictionary-term");
@@ -349,6 +348,7 @@ function getElements() {
   const infoRefCountEl = document.querySelector("#info-ref-count");
   const infoWordCountEl = document.querySelector("#info-word-count");
   const exportProjectDiskButton = document.querySelector("#export-project-disk");
+  const shareProjectDiskButton = document.querySelector("#share-project-disk");
   const systemModal = document.querySelector("#system-modal");
   const systemModalMessage = document.querySelector("#system-modal-message");
   const systemModalCancel = document.querySelector("#system-modal-cancel");
@@ -704,7 +704,6 @@ function getElements() {
     docMapDropZoneEl,
     clioStageViewportEl,
     clioStageImportFilesButton,
-    clioStageFileInput,
     clioStageAskForm,
     clioStageQuestionInput,
     dictionaryTermEl,
@@ -745,6 +744,7 @@ function getElements() {
     infoRefCountEl,
     infoWordCountEl,
     exportProjectDiskButton,
+    shareProjectDiskButton,
     systemModal,
     systemModalMessage,
     systemModalCancel,

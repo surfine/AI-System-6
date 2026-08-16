@@ -32,6 +32,7 @@ const {
   docMapMinSelectionChars,
   docMapMinDocumentChars,
   dictionaryMaxSelectionChars,
+  rebuildMinSourceChars,
   defaultOutlineSection,
 } = docToolConfig;
 const {
@@ -378,7 +379,6 @@ const {
   docMapDropZoneEl,
   clioStageViewportEl,
   clioStageImportFilesButton,
-  clioStageFileInput,
   clioStageAskForm,
   clioStageQuestionInput,
   dictionaryTermEl,
@@ -422,6 +422,7 @@ const {
   infoRefCountEl,
   infoWordCountEl,
   exportProjectDiskButton,
+  shareProjectDiskButton,
   systemModal,
   systemModalMessage,
   systemModalCancel,

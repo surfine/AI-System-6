@@ -1551,13 +1551,11 @@
         throw new Error(data.detail || data.error || response.statusText);
       }
       const blob = await response.blob();
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = `${recipe.name || "iphone-17-standard-cmf"}.usdz`;
-      document.body.append(link);
-      link.click();
-      link.remove();
-      window.setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+      window.AISystem6WebPlatform.saveArtifact({
+        blob,
+        fileName: `${recipe.name || "iphone-17-standard-cmf"}.usdz`,
+        mimeType: "model/vnd.usdz+zip",
+      });
       setCmfStatus(t("cmf_export_done"));
       playSystemSound?.("save");
     } catch (error) {

@@ -63,6 +63,7 @@ export const appModulePaths = [
   "app/core/quick-draft-workspace.js",
   "app/core/document-revisions.js",
   "app/core/modal.js",
+  "app/core/external-drop.js",
   "app/core/drag-drop.js",
   "app/core/multi-finder.js",
   "app/core/balloon-help.js",

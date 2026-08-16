@@ -28,7 +28,7 @@
     "playwrightVersion": "1.62.1",
     "browserRevision": "1234",
     "browserVersion": "151.0.7922.34",
-    "contentSha256": "820791670709bfa3a60edb15a7edd5ef37a329d7a7b6ec6a63d0af30646775b1",
+    "contentSha256": "60119dc77fe7263633aa571ebcb3bc99ac1e5f13188303ecc9278a2dd334213b",
     "historicalFontTarget": "Charcoal 12 pt",
     "legalFallback": "OFL-licensed Asap variable font",
     "fontProbeSelectors": [
@@ -685,10 +685,10 @@
         }
       },
       "current": {
-        "selector": "[data-platinum-icon-id=\"finderApp\"] .theme-lab-classic-icon-states > .finder-item:first-child .sys-icon",
+        "selector": "[data-theme-lab-object=\"finderApp\"] .theme-lab-object-states > .finder-item:first-child .sys-icon",
         "setup": [
           {
-            "selector": "[data-platinum-icon-id=\"finderApp\"] .theme-lab-classic-icon-states > .finder-item:first-child .sys-icon",
+            "selector": "[data-theme-lab-object=\"finderApp\"] .theme-lab-object-states > .finder-item:first-child .sys-icon",
             "style": {
               "width": "32px",
               "height": "32px"
@@ -726,10 +726,10 @@
         }
       },
       "current": {
-        "selector": "[data-platinum-icon-id=\"folder\"] .theme-lab-classic-icon-states > .finder-item:first-child .sys-icon",
+        "selector": "[data-theme-lab-object=\"folder\"] .theme-lab-object-states > .finder-item:first-child .sys-icon",
         "setup": [
           {
-            "selector": "[data-platinum-icon-id=\"folder\"] .theme-lab-classic-icon-states > .finder-item:first-child .sys-icon",
+            "selector": "[data-theme-lab-object=\"folder\"] .theme-lab-object-states > .finder-item:first-child .sys-icon",
             "style": {
               "width": "32px",
               "height": "32px"
@@ -767,10 +767,10 @@
         }
       },
       "current": {
-        "selector": "[data-platinum-icon-id=\"hardDisk\"] .theme-lab-classic-icon-states > .finder-item:first-child .sys-icon",
+        "selector": "[data-theme-lab-object=\"hardDisk\"] .theme-lab-object-states > .finder-item:first-child .sys-icon",
         "setup": [
           {
-            "selector": "[data-platinum-icon-id=\"hardDisk\"] .theme-lab-classic-icon-states > .finder-item:first-child .sys-icon",
+            "selector": "[data-theme-lab-object=\"hardDisk\"] .theme-lab-object-states > .finder-item:first-child .sys-icon",
             "style": {
               "width": "32px",
               "height": "32px"
@@ -809,10 +809,10 @@
         }
       },
       "current": {
-        "selector": "[data-platinum-icon-id=\"trash\"] .theme-lab-classic-icon-states > .finder-item:first-child .sys-icon",
+        "selector": "[data-theme-lab-object=\"trash\"] .theme-lab-object-states > .finder-item:first-child .sys-icon",
         "setup": [
           {
-            "selector": "[data-platinum-icon-id=\"trash\"] .theme-lab-classic-icon-states > .finder-item:first-child .sys-icon",
+            "selector": "[data-theme-lab-object=\"trash\"] .theme-lab-object-states > .finder-item:first-child .sys-icon",
             "style": {
               "width": "32px",
               "height": "32px"
@@ -850,10 +850,10 @@
         }
       },
       "current": {
-        "selector": "[data-platinum-icon-id=\"document\"] .theme-lab-classic-icon-states > .finder-item:first-child .sys-icon",
+        "selector": "[data-theme-lab-object=\"document\"] .theme-lab-object-states > .finder-item:first-child .sys-icon",
         "setup": [
           {
-            "selector": "[data-platinum-icon-id=\"document\"] .theme-lab-classic-icon-states > .finder-item:first-child .sys-icon",
+            "selector": "[data-theme-lab-object=\"document\"] .theme-lab-object-states > .finder-item:first-child .sys-icon",
             "style": {
               "width": "32px",
               "height": "32px"
@@ -891,10 +891,10 @@
         }
       },
       "current": {
-        "selector": "[data-platinum-icon-id=\"projectDisc\"] .theme-lab-classic-icon-states > .finder-item:first-child .sys-icon",
+        "selector": "[data-theme-lab-object=\"projectDisc\"] .theme-lab-object-states > .finder-item:first-child .sys-icon",
         "setup": [
           {
-            "selector": "[data-platinum-icon-id=\"projectDisc\"] .theme-lab-classic-icon-states > .finder-item:first-child .sys-icon",
+            "selector": "[data-theme-lab-object=\"projectDisc\"] .theme-lab-object-states > .finder-item:first-child .sys-icon",
             "style": {
               "width": "32px",
               "height": "32px"
@@ -932,10 +932,10 @@
         }
       },
       "current": {
-        "selector": "[data-platinum-icon-id=\"fileFloppy\"] .theme-lab-classic-icon-states > .finder-item:first-child .sys-icon",
+        "selector": "[data-theme-lab-object=\"fileFloppy\"] .theme-lab-object-states > .finder-item:first-child .sys-icon",
         "setup": [
           {
-            "selector": "[data-platinum-icon-id=\"fileFloppy\"] .theme-lab-classic-icon-states > .finder-item:first-child .sys-icon",
+            "selector": "[data-theme-lab-object=\"fileFloppy\"] .theme-lab-object-states > .finder-item:first-child .sys-icon",
             "style": {
               "width": "32px",
               "height": "32px"
@@ -1014,10 +1014,10 @@
         }
       },
       "current": {
-        "selector": "[data-platinum-icon-id=\"trash\"] .theme-lab-classic-icon-states > .finder-item:nth-child(3) .sys-icon",
+        "selector": "[data-theme-lab-object=\"trash\"] .theme-lab-object-states > .finder-item:nth-child(3) .sys-icon",
         "setup": [
           {
-            "selector": "[data-platinum-icon-id=\"trash\"] .theme-lab-classic-icon-states > .finder-item:nth-child(3) .sys-icon",
+            "selector": "[data-theme-lab-object=\"trash\"] .theme-lab-object-states > .finder-item:nth-child(3) .sys-icon",
             "style": {
               "width": "16px",
               "height": "16px"

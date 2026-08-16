@@ -87,6 +87,7 @@ body[data-theme="aqua"] {
      get the measured-gradient reconstruction below — the 1x sprite blurs
      under Retina scaling and loses the gloss. */
   --traffic-light-close-bg: url("./assets/themes/aqua/lamp-close.png");
+  --traffic-light-minimize-bg: url("./assets/themes/aqua/lamp-minimize.png");
   --traffic-light-resize-bg: url("./assets/themes/aqua/lamp-zoom.png");
   --traffic-light-sprite-size: 14px 14px;
   --select-control-min-height: 20px;
@@ -723,7 +724,11 @@ body[data-theme="aqua"] {
   --alarm-clock-mode-hover-bg: #e8f3ff;
   --alarm-clock-mode-active-shadow: inset 0 0 0 2px #0a5bd0;
   --alarm-clock-section-gap: 3px;
-  --theme-lab-era-titlebar-minimize-bg: radial-gradient(circle at 43% 35%, #fff3bd 0 1px, #ffdc72 2px, #e6a839 5px, #9b6822 6px, #5c3c16 7px, transparent 7.5px);
+  /* The lamp is a 1:1 sprite like its two siblings, cut from the same 10.2
+     capture at the same 14 px box. The gradient it replaces was drawn by hand:
+     it came out wider, higher, rimless, and lit from the middle instead of the
+     top, so the three lamps did not read as one set. */
+  --theme-lab-era-titlebar-minimize-bg: var(--traffic-light-minimize-bg) center / var(--traffic-light-sprite-size) no-repeat;
   --theme-lab-sheet-display: grid;
   --theme-lab-sheet-position: absolute;
   --theme-lab-sheet-top: 22px;
@@ -813,6 +818,13 @@ body[data-theme="aqua"] {
   --theme-lab-mini-control-border: 0;
   --theme-lab-mini-control-radius: 50%;
   --theme-lab-mini-control-shadow: none;
+  /* 10.2 puts all three lamps at the left in close / minimize / zoom order,
+     on the same ladder as this era's title-bar specimens above. */
+  --theme-lab-mini-control-close-left: var(--theme-lab-era-titlebar-close-left);
+  --theme-lab-mini-control-minimize-left: var(--theme-lab-era-titlebar-minimize-left);
+  --theme-lab-mini-control-minimize-display: block;
+  --theme-lab-mini-control-zoom-left: var(--theme-lab-era-titlebar-zoom-left);
+  --theme-lab-mini-control-zoom-right: auto;
   --theme-lab-mini-inactive-control-display: block;
   --theme-lab-mini-title-position: absolute;
   --theme-lab-mini-title-left: 50%;
@@ -1019,12 +1031,34 @@ body[data-theme="snow-leopard"] {
   /* Resolution split, same as Aqua: 1x serves the canonical Finder pixels
      (14x13), dense displays get the measured-gradient sphere below. */
   --traffic-light-close-bg: url("./assets/themes/snow-leopard/lamp-close.png");
+  --traffic-light-minimize-bg: url("./assets/themes/snow-leopard/lamp-minimize.png");
   --traffic-light-resize-bg: url("./assets/themes/snow-leopard/lamp-zoom.png");
   --traffic-light-sprite-size: 14px 13px;
   --theme-lab-era-titlebar-control-top: 3px;
   /* Real 10.6 lamps are 14px with the ring; the board matches the sprite. */
   --theme-lab-era-titlebar-control-size: 14px;
-  --theme-lab-era-titlebar-minimize-bg: radial-gradient(circle at 43% 35%, #fff3d0 0 1px, #f7c94a 1.6px, #e2a921 4.6px, #a97a12 5.4px, transparent 5.8px);
+  /* Cut from the same 10.6 Finder capture as its two siblings, at the same
+     14x13 box, so the three lamps read as one set. */
+  --theme-lab-era-titlebar-minimize-bg: var(--traffic-light-minimize-bg) center / var(--traffic-light-sprite-size) no-repeat;
+  /* Window-chrome specimen: 10.6 keeps the Aqua lamp cluster at the left in
+     close / minimize / zoom order, on this era's own title-bar ladder. */
+  --theme-lab-mini-position: relative;
+  --theme-lab-mini-control-display: block;
+  --theme-lab-mini-control-top: 4px;
+  --theme-lab-mini-control-size: var(--theme-lab-era-titlebar-control-size);
+  --theme-lab-mini-control-radius: 50%;
+  --theme-lab-mini-control-close-left: 7px;
+  --theme-lab-mini-control-close-bg: var(--traffic-light-close-bg) center / var(--traffic-light-sprite-size) no-repeat;
+  --theme-lab-mini-control-minimize-left: 28px;
+  --theme-lab-mini-control-minimize-display: block;
+  --theme-lab-mini-control-minimize-bg: var(--traffic-light-minimize-bg) center / var(--traffic-light-sprite-size) no-repeat;
+  --theme-lab-mini-control-zoom-left: 49px;
+  --theme-lab-mini-control-zoom-right: auto;
+  --theme-lab-mini-control-zoom-bg: var(--traffic-light-resize-bg) center / var(--traffic-light-sprite-size) no-repeat;
+  /* Backdrop windows keep the lamps; 10.6 greys them, same as the real chrome. */
+  --theme-lab-mini-inactive-control-display: block;
+  --theme-lab-mini-inactive-control-filter: grayscale(1);
+  --theme-lab-mini-inactive-control-opacity: 0.48;
   /* Alarm Clock DA: 10.6 silver chrome, light face, restrained controls. */
   --alarm-clock-frame-border: 1px solid #8e8e8e;
   --alarm-clock-frame-radius: 4px;

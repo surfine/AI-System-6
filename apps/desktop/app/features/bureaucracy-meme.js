@@ -512,6 +512,41 @@
     }
   }
 
+  // The finished picture leaves through the shared artifact exit, so the
+  // download here is the same one every other window uses.
+  // One Choose-button picker for the whole desktop, not a permanent hidden
+  // file input parked in the markup.
+  function promptMemeImage() {
+    openTransientFilePicker({
+      accept: "image/*",
+      onSelect: ([file]) => {
+        if (!file.type.startsWith("image/")) {
+          setError(t("bureaucracy_meme_choose_image"));
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = async () => {
+          state.uploadedImageSrc = String(reader.result || "");
+          state.uploadedImageName = file.name;
+          renderTemplateList();
+          setError("");
+          await drawPreview(currentEditedCaption());
+        };
+        reader.onerror = () => setError(t("bureaucracy_meme_upload_failed"));
+        reader.readAsDataURL(file);
+      },
+    });
+  }
+
+  function saveGeneratedMeme() {
+    if (!state.generatedUrl) return false;
+    return window.AISystem6WebPlatform.saveArtifact({
+      dataUrl: state.generatedUrl,
+      fileName: "bureaucracy-meme.png",
+      mimeType: "image/png",
+    });
+  }
+
   function bindEvents() {
     els.templateList?.addEventListener("click", async (event) => {
       const button = event.target.closest("[data-template-id]");
@@ -545,31 +580,11 @@
       if (state.uploadedImageSrc) {
         state.uploadedImageSrc = "";
         state.uploadedImageName = "";
-        if (els.uploadInput) els.uploadInput.value = "";
         renderTemplateList();
         await drawPreview(currentEditedCaption());
         return;
       }
-      els.uploadInput?.click();
-    });
-
-    els.uploadInput?.addEventListener("change", async () => {
-      const file = els.uploadInput.files?.[0];
-      if (!file) return;
-      if (!file.type.startsWith("image/")) {
-        setError(t("bureaucracy_meme_choose_image"));
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = async () => {
-        state.uploadedImageSrc = String(reader.result || "");
-        state.uploadedImageName = file.name;
-        renderTemplateList();
-        setError("");
-        await drawPreview(currentEditedCaption());
-      };
-      reader.onerror = () => setError(t("bureaucracy_meme_upload_failed"));
-      reader.readAsDataURL(file);
+      promptMemeImage();
     });
 
     els.generateButton?.addEventListener("click", generateCaptions);
@@ -579,13 +594,7 @@
         generateCaptions();
       }
     });
-    els.downloadLink?.addEventListener("click", () => {
-      if (!state.generatedUrl) return;
-      const link = document.createElement("a");
-      link.href = state.generatedUrl;
-      link.download = "bureaucracy-meme.png";
-      link.click();
-    });
+    els.downloadLink?.addEventListener("click", saveGeneratedMeme);
     els.language?.addEventListener("click", async (event) => {
       const button = event.target.closest("[data-caption-language]");
       if (!button) return;
@@ -635,7 +644,6 @@
       vision: byId("bureaucracy-vision"),
       generateButton: byId("bureaucracy-generate-button"),
       uploadButton: byId("bureaucracy-upload-button"),
-      uploadInput: byId("bureaucracy-upload-input"),
       uploadStatus: byId("bureaucracy-upload-status"),
       canvas: byId("bureaucracy-preview-canvas"),
       error: byId("bureaucracy-error"),
@@ -676,15 +684,8 @@
   window.AISystem6BureaucracyMeme = Object.freeze({
     async runMenuCommand(command) {
       await init();
-      if (command === "upload") return els.uploadInput?.click();
-      if (command === "download") {
-        if (!state.generatedUrl) return;
-        const link = document.createElement("a");
-        link.href = state.generatedUrl;
-        link.download = "bureaucracy-meme.png";
-        link.click();
-        return;
-      }
+      if (command === "upload") return promptMemeImage();
+      if (command === "download") return saveGeneratedMeme();
       if (command === "focus-topic") return els.topicInput?.focus();
       if (command === "generate") return generateCaptions();
     },

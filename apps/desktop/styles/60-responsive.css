@@ -1140,23 +1140,11 @@ select:focus {
     gap: 4px;
   }
 
-  .spine-actions-split {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-  }
-
   .spine-section,
   .spine-section-main,
   .spine-section-research {
     grid-template-columns: 1fr;
     gap: 6px;
-  }
-
-  .spine-section-research {
-    padding-left: 0;
-    padding-top: 0;
-    border-left: 0;
-    border-top: 0;
   }
 
   .spine-actions button {
@@ -1197,10 +1185,6 @@ select:focus {
       minmax(0, calc((100% - var(--review-splitter-size)) * 0.45))
       var(--review-splitter-size)
       minmax(0, calc((100% - var(--review-splitter-size)) * 0.55));
-  }
-
-  .review-desk-toolbar {
-    grid-template-columns: 1fr;
   }
 
   .message {
@@ -1351,14 +1335,6 @@ select:focus {
     padding: 4px 5px 5px;
   }
 
-  .spine-actions-split {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 7px;
-    width: 100%;
-    min-width: 0;
-  }
-
   .spine-section,
   .spine-section-main,
   .spine-section-research {
@@ -1373,13 +1349,6 @@ select:focus {
   .spine-flow-toolbox .spine-section {
     grid-template-columns: 1fr;
     gap: 2px;
-  }
-
-  .spine-section-research {
-    padding-top: 0;
-    padding-left: 0;
-    border-top: 0;
-    border-left: 0;
   }
 
   .spine-actions button {
@@ -2713,13 +2682,6 @@ input[type="radio"] {
     grid-template-columns: var(--scrapbook-mobile-pane-columns);
     grid-template-rows: var(--scrapbook-mobile-pane-rows);
     overflow: hidden;
-  }
-
-  /* Phone apps keep one content column and move secondary controls into
-     wrapped, finger-sized rows. Text must survive both English compounds and
-     longer Chinese labels without making the app wider than the viewport. */
-  .quick-draft-editor-actions {
-    gap: 6px;
   }
 
   .quick-draft-editor-actions > .btn.default {

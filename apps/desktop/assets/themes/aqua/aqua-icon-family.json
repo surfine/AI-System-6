@@ -691,16 +691,16 @@
       }
     },
     "projectDisk": {
-      "genre": "hardware",
+      "genre": "application",
       "grid": {
         "shape": "square",
         "fitted": 0.8125,
         "scale": 1.0722
       },
-      "physicalMetaphor": "a labelled external storage volume with one restrained project label cue, distinct from the unlabelled local hard disk",
+      "physicalMetaphor": "Jaguar jewel-cobalt external project volume",
       "semanticMark": "project",
-      "sourceKind": "original-generated-era-illustration",
-      "reviewStatus": "accepted-generated",
+      "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
+      "reviewStatus": "accepted-priority-lineage",
       "sizes": {
         "16": "icons/projectDisk-16.png",
         "32": "icons/projectDisk-32.png",
@@ -711,31 +711,142 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.3242,
-          "meanLum": 87.74,
-          "lumStd": 66.85,
-          "edgeEnergy": 54
+          "coverage": 0.3398,
+          "meanLum": 111.69,
+          "lumStd": 34.52,
+          "edgeEnergy": 34
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.2979,
-          "meanLum": 90.83,
-          "lumStd": 71.31,
-          "edgeEnergy": 132
+          "coverage": 0.3076,
+          "meanLum": 114.53,
+          "lumStd": 37.4,
+          "edgeEnergy": 92
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.2925,
-          "meanLum": 91.37,
-          "lumStd": 72.36,
-          "edgeEnergy": 180
+          "coverage": 0.3061,
+          "meanLum": 114.29,
+          "lumStd": 38.59,
+          "edgeEnergy": 147
         }
       },
-      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
       "generationStatus": "technically-clean",
       "provenanceClass": "B",
-      "historicalReviewStatus": "pending",
-      "runtimeAsset": true
+      "historicalReviewStatus": "historically-reviewed",
+      "runtimeAsset": true,
+      "semanticIdentity": "durable project storage",
+      "identityAnchors": [
+        "mounted storage volume",
+        "restrained project marker"
+      ],
+      "historicalPrototype": null,
+      "nearestHistoricalAnalog": "Jaguar jewel-cobalt external project volume",
+      "metaphorKey": "project-storage-volume",
+      "material": "early Aqua translucent cobalt hardware with cream inset index",
+      "blindMixStatus": "not-run",
+      "generatedMaster": "internal/evidence/drafts/icon-lineage-audit/imagegen-candidates-v2/project-disk/aqua-projectDisk-v1.png",
+      "reference": "No native Project Disk artwork is claimed; each target era's real hard-disk or mounted-volume grammar supplies the prototype.",
+      "exactPixelReplica": false,
+      "referenceValidated": false,
+      "nativeReplica": false,
+      "sourceNote": "Original era-specific storage-volume reinterpretations. The project marker remains secondary to the hardware silhouette.",
+      "sizeStatus": {
+        "16": "optically-reviewed",
+        "32": "optically-reviewed",
+        "128": "optically-reviewed"
+      },
+      "sizePolicy": "Large tiers follow reviewed ImageGen directions; 32 and 16 px are independent optical constructions with the project marker simplified before the storage silhouette.",
+      "metrics": {
+        "16": {
+          "bbox": {
+            "minX": 1,
+            "minY": 4,
+            "maxX": 14,
+            "maxY": 11
+          },
+          "bounds": [
+            1,
+            4,
+            14,
+            11
+          ],
+          "ink": {
+            "minX": 1,
+            "minY": 4,
+            "maxX": 14,
+            "maxY": 11,
+            "width": 14,
+            "height": 8
+          },
+          "pixels": 110,
+          "inkPixels": 110,
+          "translucent": 18,
+          "colors": 31,
+          "sha256": "254d7f0688a3a620ebe1b50e1a3540e74e5300cdd2a9e4616713063e963507e4",
+          "bytes": 316,
+          "gridShape": "landscape"
+        },
+        "32": {
+          "bbox": {
+            "minX": 2,
+            "minY": 8,
+            "maxX": 29,
+            "maxY": 23
+          },
+          "bounds": [
+            2,
+            8,
+            29,
+            23
+          ],
+          "ink": {
+            "minX": 2,
+            "minY": 8,
+            "maxX": 29,
+            "maxY": 23,
+            "width": 28,
+            "height": 16
+          },
+          "pixels": 422,
+          "inkPixels": 422,
+          "translucent": 36,
+          "colors": 43,
+          "sha256": "0ab1365b836ab48bfb940209b26fe4f88ea0eec46c4ee5f21ca2144a7ca8f7c6",
+          "bytes": 511,
+          "gridShape": "landscape"
+        },
+        "128": {
+          "bbox": {
+            "minX": 8,
+            "minY": 34,
+            "maxX": 119,
+            "maxY": 93
+          },
+          "bounds": [
+            8,
+            34,
+            119,
+            93
+          ],
+          "ink": {
+            "minX": 8,
+            "minY": 34,
+            "maxX": 119,
+            "maxY": 93,
+            "width": 112,
+            "height": 60
+          },
+          "pixels": 4772,
+          "inkPixels": 4772,
+          "translucent": 265,
+          "colors": 3460,
+          "sha256": "2670d8331b179bc20e531186eaa57c8b7622c3adad3d7b0cf05152f978420f6b",
+          "bytes": 11276,
+          "gridShape": "landscape"
+        }
+      }
     },
     "projectDisc": {
       "genre": "hardware",
@@ -1483,16 +1594,16 @@
         "fitted": 0.8125,
         "scale": 0.9369
       },
-      "physicalMetaphor": "a document page whose heading lines grow into one simple stem with a few branches and nodes, a document structure map rather than a geographic map",
-      "semanticMark": "none",
-      "sourceKind": "original-generated-era-illustration",
-      "reviewStatus": "accepted-generated",
+      "physicalMetaphor": "Jaguar cobalt glass document stand with jewel hierarchy",
+      "semanticMark": "outline",
+      "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
+      "reviewStatus": "accepted-priority-lineage",
       "sizes": {
         "16": "icons/docMap-16.png",
         "32": "icons/docMap-32.png",
         "128": "icons/docMap-128.png"
       },
-      "metaphorKey": "branching-document-map",
+      "metaphorKey": "document-heading-hierarchy",
       "metaphorMetrics": {
         "version": 1,
         "sourceSize": [
@@ -1521,34 +1632,144 @@
           0.9167
         ]
       },
-      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
       "generationStatus": "technically-clean",
-      "provenanceClass": "B",
-      "historicalReviewStatus": "pending",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "historically-reviewed",
       "runtimeAsset": true,
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.5547,
-          "meanLum": 173.48,
-          "lumStd": 68.33,
-          "edgeEnergy": 121
+          "coverage": 0.5703,
+          "meanLum": 166.72,
+          "lumStd": 51.06,
+          "edgeEnergy": 98
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.5361,
-          "meanLum": 175.59,
-          "lumStd": 75.14,
-          "edgeEnergy": 353
+          "coverage": 0.5479,
+          "meanLum": 166.68,
+          "lumStd": 57.34,
+          "edgeEnergy": 349
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.5397,
-          "meanLum": 174.6,
-          "lumStd": 77.15,
-          "edgeEnergy": 541
+          "coverage": 0.5425,
+          "meanLum": 166.27,
+          "lumStd": 58.51,
+          "edgeEnergy": 516
+        }
+      },
+      "semanticIdentity": "visualize document heading structure",
+      "identityAnchors": [
+        "document",
+        "branching heading hierarchy"
+      ],
+      "historicalPrototype": null,
+      "nearestHistoricalAnalog": "Jaguar cobalt glass document stand with jewel hierarchy",
+      "material": "translucent cobalt support, cream page and jewel nodes",
+      "blindMixStatus": "not-run",
+      "generatedMaster": "internal/evidence/drafts/icon-lineage-audit/imagegen-candidates-v2/doc-map/aqua-docMap-v1.png",
+      "reference": "No exact period application icon is claimed. Each era combines its document grammar with its own outline/tree disclosure idiom.",
+      "exactPixelReplica": false,
+      "referenceValidated": false,
+      "nativeReplica": false,
+      "sourceNote": "Original era-specific document-structure utilities; geographic-map and magnifier metaphors are deliberately excluded.",
+      "sizeStatus": {
+        "16": "optically-reviewed",
+        "32": "optically-reviewed",
+        "128": "optically-reviewed"
+      },
+      "sizePolicy": "Large tiers follow reviewed generation directions; 32 and 16 px use independent bold trunks and three nodes rather than reduced detail.",
+      "metrics": {
+        "16": {
+          "bbox": {
+            "minX": 3,
+            "minY": 1,
+            "maxX": 13,
+            "maxY": 14
+          },
+          "bounds": [
+            3,
+            1,
+            13,
+            14
+          ],
+          "ink": {
+            "minX": 3,
+            "minY": 1,
+            "maxX": 13,
+            "maxY": 14,
+            "width": 11,
+            "height": 14
+          },
+          "pixels": 151,
+          "inkPixels": 151,
+          "translucent": 3,
+          "colors": 17,
+          "sha256": "f7f7b1778e3679ca311bdbfed657e79271d49fa5bfa347b52c3490d71dcfd9cf",
+          "bytes": 277,
+          "gridShape": "portrait"
+        },
+        "32": {
+          "bbox": {
+            "minX": 6,
+            "minY": 2,
+            "maxX": 27,
+            "maxY": 29
+          },
+          "bounds": [
+            6,
+            2,
+            27,
+            29
+          ],
+          "ink": {
+            "minX": 6,
+            "minY": 2,
+            "maxX": 27,
+            "maxY": 29,
+            "width": 22,
+            "height": 28
+          },
+          "pixels": 601,
+          "inkPixels": 601,
+          "translucent": 6,
+          "colors": 22,
+          "sha256": "936467e9a71af0b499662f474cea2bb311684a865a2a81336b547db2600fa62d",
+          "bytes": 398,
+          "gridShape": "portrait"
+        },
+        "128": {
+          "bbox": {
+            "minX": 11,
+            "minY": 8,
+            "maxX": 116,
+            "maxY": 119
+          },
+          "bounds": [
+            11,
+            8,
+            116,
+            119
+          ],
+          "ink": {
+            "minX": 11,
+            "minY": 8,
+            "maxX": 116,
+            "maxY": 119,
+            "width": 106,
+            "height": 112
+          },
+          "pixels": 8602,
+          "inkPixels": 8602,
+          "translucent": 373,
+          "colors": 6442,
+          "sha256": "c3b92f77dde4234b56399d6bb513f111f5068b115f94ddd1afd19266668ba81f",
+          "bytes": 20391,
+          "gridShape": "square"
         }
       }
     },
@@ -1976,16 +2197,16 @@
       }
     },
     "controlPanel": {
-      "genre": "utility",
+      "genre": "application",
       "grid": {
         "shape": "square",
         "fitted": 0.8125,
         "scale": 0.9811
       },
-      "physicalMetaphor": "the era's settings object, expressed as a compact panel of physical controls rather than a modern gear glyph",
-      "semanticMark": "sliders",
-      "sourceKind": "original-generated-era-illustration",
-      "reviewStatus": "accepted-generated",
+      "physicalMetaphor": "Jaguar System Preferences-era jewel control plate",
+      "semanticMark": "adjust",
+      "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
+      "reviewStatus": "accepted-priority-lineage",
       "sizes": {
         "16": "icons/controlPanel-16.png",
         "32": "icons/controlPanel-32.png",
@@ -1996,31 +2217,142 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.5273,
-          "meanLum": 85.9,
-          "lumStd": 41.13,
-          "edgeEnergy": 66
+          "coverage": 0.5859,
+          "meanLum": 156.38,
+          "lumStd": 42.4,
+          "edgeEnergy": 89
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.4883,
-          "meanLum": 87.12,
-          "lumStd": 45.04,
-          "edgeEnergy": 208
+          "coverage": 0.5625,
+          "meanLum": 155,
+          "lumStd": 50.01,
+          "edgeEnergy": 285
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.483,
-          "meanLum": 87.34,
-          "lumStd": 45.49,
-          "edgeEnergy": 270
+          "coverage": 0.5578,
+          "meanLum": 155.41,
+          "lumStd": 50.5,
+          "edgeEnergy": 446
         }
       },
-      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
       "generationStatus": "technically-clean",
-      "provenanceClass": "A",
-      "historicalReviewStatus": "pending",
-      "runtimeAsset": true
+      "provenanceClass": "B",
+      "historicalReviewStatus": "historically-reviewed",
+      "runtimeAsset": true,
+      "semanticIdentity": "system configuration",
+      "identityAnchors": [
+        "adjustable system controls",
+        "period control-surface grammar"
+      ],
+      "historicalPrototype": null,
+      "nearestHistoricalAnalog": "Jaguar System Preferences-era jewel control plate",
+      "metaphorKey": "system-control-surface",
+      "material": "brushed silver, cobalt slider, graphite dial, amber status lamp",
+      "blindMixStatus": "not-run",
+      "generatedMaster": "internal/evidence/drafts/icon-lineage-audit/imagegen-candidates-v2/control-settings/aqua-controlPanel-v1.png",
+      "reference": "Target-era System Preferences supplies the system-utility genre; no native application icon is claimed as a replica.",
+      "exactPixelReplica": false,
+      "referenceValidated": false,
+      "nativeReplica": false,
+      "sourceNote": "Original era-specific control surfaces replace the repeated page-and-controls composition.",
+      "sizeStatus": {
+        "16": "optically-reviewed",
+        "32": "optically-reviewed",
+        "128": "optically-reviewed"
+      },
+      "sizePolicy": "Large tiers follow reviewed generation directions; 32 and 16 px are independently painted control surfaces with two dominant controls.",
+      "metrics": {
+        "16": {
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14
+          },
+          "bounds": [
+            1,
+            1,
+            14,
+            14
+          ],
+          "ink": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14,
+            "width": 14,
+            "height": 14
+          },
+          "pixels": 192,
+          "inkPixels": 192,
+          "translucent": 48,
+          "colors": 80,
+          "sha256": "8a79b5a619f2caf3d5c6439ad7cc0bee1fd07eecadb9d3cd7cb3b0a8c30a9935",
+          "bytes": 644,
+          "gridShape": "square"
+        },
+        "32": {
+          "bbox": {
+            "minX": 2,
+            "minY": 2,
+            "maxX": 29,
+            "maxY": 29
+          },
+          "bounds": [
+            2,
+            2,
+            29,
+            29
+          ],
+          "ink": {
+            "minX": 2,
+            "minY": 2,
+            "maxX": 29,
+            "maxY": 29,
+            "width": 28,
+            "height": 28
+          },
+          "pixels": 712,
+          "inkPixels": 712,
+          "translucent": 92,
+          "colors": 144,
+          "sha256": "919c7b8bab769ef16ce5707ad62b3bf4e2bfbe86764ae511624e885b0928c350",
+          "bytes": 1446,
+          "gridShape": "square"
+        },
+        "128": {
+          "bbox": {
+            "minX": 8,
+            "minY": 14,
+            "maxX": 119,
+            "maxY": 113
+          },
+          "bounds": [
+            8,
+            14,
+            119,
+            113
+          ],
+          "ink": {
+            "minX": 8,
+            "minY": 14,
+            "maxX": 119,
+            "maxY": 113,
+            "width": 112,
+            "height": 100
+          },
+          "pixels": 8828,
+          "inkPixels": 8828,
+          "translucent": 342,
+          "colors": 4488,
+          "sha256": "f9d3e9807e30451b951ad2844fac7546c51f5ea1d1dbf7379690b5c67e07a84b",
+          "bytes": 20333,
+          "gridShape": "square"
+        }
+      }
     },
     "chooser": {
       "genre": "utility",
@@ -3259,7 +3591,10 @@
   "priorityLineageLedger": "tooling/icon-generation/approved-priority-lineage.json",
   "priorityLineageObjects": [
     "reviewDesk",
-    "searcher"
+    "searcher",
+    "projectDisk",
+    "controlPanel",
+    "docMap"
   ],
   "priorityLineageMeaning": "Only explicitly reviewed v2 rows override the broad generated archive; per-object provenance never implies native replication or reference validation."
 }

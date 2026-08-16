@@ -28,7 +28,7 @@
     "playwrightVersion": "1.62.1",
     "browserRevision": "1234",
     "browserVersion": "151.0.7922.34",
-    "contentSha256": "f8f412e8c87d86497f216f1e860ece251c9a01a3205890c9560bd29a335c47b1",
+    "contentSha256": "067d5e220b37d72f5688511af5241693734e3b3808ff02e63169ac4235dc3b9d",
     "historicalFontTarget": "Lucida Grande 13 pt",
     "fontProbeSelectors": [
       ".theme-lab-controls h3",
@@ -517,6 +517,13 @@
         },
         "setup": [
           {
+            "selector": ".theme-lab-controls",
+            "style": {
+              "background": "rgb(241, 241, 241)",
+              "backgroundImage": "none"
+            }
+          },
+          {
             "selector": ".theme-lab-button-row .btn:disabled",
             "style": {
               "width": "73px",
@@ -695,7 +702,16 @@
           "y": 0,
           "width": 18,
           "height": 18
-        }
+        },
+        "setup": [
+          {
+            "selector": ".theme-lab-choice-matrix, .theme-lab-controls",
+            "style": {
+              "background": "rgb(238, 238, 238)",
+              "backgroundImage": "none"
+            }
+          }
+        ]
       },
       "tolerances": {
         "geometryMismatch": 0.02,

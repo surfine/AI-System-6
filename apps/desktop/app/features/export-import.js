@@ -89,16 +89,16 @@ async function copyMarkdown(markdown) {
  * Project CD action) so a download can never claim a CD write that did not
  * happen.
  */
+function saveMarkdownArtifact(markdown, name) {
+  return window.AISystem6WebPlatform.saveArtifact({
+    text: String(markdown || ""),
+    fileName: `${sanitizeFilename(name)}.md`,
+    mimeType: "text/markdown;charset=utf-8",
+  });
+}
+
 function downloadMarkdown(markdown, name) {
-  const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `${sanitizeFilename(name)}.md`;
-  document.body.append(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
+  saveMarkdownArtifact(markdown, name);
   setStatus(t("downloaded_markdown_only"));
 }
 
@@ -120,59 +120,38 @@ async function burnMarkdownToProjectCd(markdown, name, options = {}) {
 async function downloadMarkdownAndBurnToProjectCd(markdown, name, options = {}) {
   const item = await addProjectCdItem(markdown, name, options);
   if (!item) return false;
-  const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `${sanitizeFilename(name)}.md`;
-  document.body.append(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
+  saveMarkdownArtifact(markdown, name);
   setStatus(t("downloaded_markdown_exported", item.title));
   return true;
 }
 
 function downloadPlainMarkdown(markdown, name, statusKey = "downloaded_plain_markdown") {
-  const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `${sanitizeFilename(name)}.md`;
-  document.body.append(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
+  saveMarkdownArtifact(markdown, name);
   setStatus(t(statusKey));
+}
+
+function projectCdItemArtifact(item) {
+  const type = item?.format || "text/markdown";
+  const title = item?.title || "Project CD Item.md";
+  return {
+    text: item?.body || "",
+    fileName: sanitizeFilename(title).replace(/\.md$/i, type === "text/html" ? ".html" : ".md"),
+    mimeType: `${type};charset=utf-8`,
+  };
 }
 
 function downloadProjectCdItem(item) {
   if (!item) return;
-  const type = item.format || "text/markdown";
-  const title = item.title || "Project CD Item.md";
-  const blob = new Blob([item.body || ""], { type: `${type};charset=utf-8` });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = sanitizeFilename(title).replace(/\.md$/i, type === "text/html" ? ".html" : ".md");
-  document.body.append(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-  setStatus(type === "text/html" ? "HTML downloaded." : t("downloaded_plain_markdown"));
+  window.AISystem6WebPlatform.saveArtifact(projectCdItemArtifact(item));
+  setStatus((item.format || "text/markdown") === "text/html" ? "HTML downloaded." : t("downloaded_plain_markdown"));
 }
 
 function downloadJsonFile(data, name) {
-  const json = JSON.stringify(data, null, 2);
-  const blob = new Blob([json], { type: "application/json;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `${sanitizeFilename(name)}.json`;
-  document.body.append(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
+  return window.AISystem6WebPlatform.saveArtifact({
+    text: JSON.stringify(data, null, 2),
+    fileName: `${sanitizeFilename(name)}.json`,
+    mimeType: "application/json;charset=utf-8",
+  });
 }
 
 function countMarkdownWords(text) {
@@ -198,6 +177,7 @@ async function buildProjectDiskExport(project = getActiveProject()) {
       getProjectCdItems: async () => projectCdItems.filter((item) => item.projectId === projectId),
       getReferences: async () => projectReferences.filter((reference) => reference.projectId === projectId),
       getDocumentRevisions: () => collectProjectDocumentRevisions(projectId),
+      getWorkingSession: () => readWorkingSessionForBackup(projectId),
     },
   });
   if (!result) return null;
@@ -243,12 +223,14 @@ async function collectProjectDocumentRevisions(projectId) {
   return revisions;
 }
 
-async function exportActiveProjectDisk() {
+// Assemble the backup once, and report the real reason when it cannot be
+// read. Returns null after it has already told the user what went wrong.
+async function readyProjectDiskBackup() {
   const project = getActiveProject();
   if (!project) {
     setStatus(t("no_project_mounted"));
     openWindow("projects");
-    return;
+    return null;
   }
   let bundle;
   try {
@@ -260,15 +242,50 @@ async function exportActiveProjectDisk() {
       console.error("Project Hard Disk export failed.", error);
       setStatus(t("project_disk_export_failed"));
     }
-    return;
+    return null;
   }
   if (!bundle) {
     setStatus(t("project_disk_export_failed"));
-    return;
+    return null;
   }
-  const name = `${project.name} Project Hard Disk Backup`;
-  downloadJsonFile(bundle, name);
-  setStatus(t("project_disk_exported", project.name));
+  return {
+    project,
+    text: JSON.stringify(bundle, null, 2),
+    fileName: `${sanitizeFilename(`${project.name} Project Hard Disk Backup`)}.json`,
+    mimeType: "application/json;charset=utf-8",
+  };
+}
+
+async function exportActiveProjectDisk() {
+  const backup = await readyProjectDiskBackup();
+  if (!backup) return;
+  window.AISystem6WebPlatform.saveArtifact(backup);
+  setStatus(t("project_disk_exported", backup.project.name));
+}
+
+// The same backup, handed to the system share sheet instead of the disk —
+// AirDrop to another Mac, a message to yourself, a cloud drive. When the
+// platform cannot share files it is saved instead, and the status says which
+// of the two actually happened.
+async function shareActiveProjectDisk() {
+  const backup = await readyProjectDiskBackup();
+  if (!backup) return false;
+  try {
+    const result = await window.AISystem6WebPlatform.shareArtifact({
+      title: `${backup.project.name} — ${t("project_backup")}`,
+      text: backup.text,
+      fileName: backup.fileName,
+      mimeType: backup.mimeType,
+    });
+    if (result.method === "share") setStatus(t("project_disk_shared", backup.project.name), { notify: false });
+    else if (result.method === "download") setStatus(t("project_disk_exported", backup.project.name));
+    else if (result.method === "cancel") setStatus(t("project_disk_share_canceled"), { notify: false });
+    return result.shared;
+  } catch (error) {
+    console.warn("Project Hard Disk share failed.", error);
+    setStatus(t("project_disk_share_failed"));
+    return false;
+  }
 }
 
 function openProjectBackupPanel() {
@@ -316,13 +333,15 @@ async function shareSelectedProjectCdMarkdown() {
     return false;
   }
   try {
-    const shared = await window.AISystem6WebPlatform?.shareMarkdown?.({
+    // The Project CD holds Markdown and HTML; both leave through the one
+    // artifact exit, which shares the real file when the platform can.
+    const result = await window.AISystem6WebPlatform.shareArtifact({
       title: item.title || t("project_cd"),
-      markdown: item.body || "",
-      fileName: item.title || "project-cd.md",
+      ...projectCdItemArtifact(item),
+      fallback: "text",
     });
-    if (shared) setStatus(t("share_markdown_done"), { notify: false });
-    return !!shared;
+    if (result.shared) setStatus(t("share_markdown_done"), { notify: false });
+    return result.shared;
   } catch (error) {
     console.warn("Project CD share failed.", error);
     setStatus(t("share_markdown_failed"));
@@ -1459,6 +1478,15 @@ async function commitImportedProjectAtomically(imported) {
         const settingsStore = tx.objectStore(keyvalStoreName);
         writes.push(idbRequest(settingsStore.put(importedSettings, "settings")));
         writes.push(idbRequest(settingsStore.put(storageVersion, "storageVersion")));
+        // A v4 backup can carry the disk's desktop scene. It lands under the
+        // imported project's own scope key, in the same transaction as its
+        // files, so the desk and the data can never disagree.
+        if (imported.workingSession) {
+          writes.push(idbRequest(settingsStore.put(
+            imported.workingSession,
+            workingSessionScopeKey(imported.project.id)
+          )));
+        }
         const revisionsByDocument = new Map();
         (imported.documentRevisions || []).forEach((revision) => {
           if (!revision?.id || !revision.documentId) return;
@@ -1530,6 +1558,11 @@ async function importProjectBackupAsNewProject() {
     openWindow("projects");
     resetAssistantForProject(imported.project.name);
     await loadActiveProjectReferences();
+    // A v4 backup restores the desk too, not just the files. A scene that
+    // cannot be replayed is never allowed to fail the committed import.
+    if (imported.workingSession) {
+      await restoreWorkingSession({ projectId: imported.project.id, mounted: true }).catch(() => false);
+    }
     storageSnapshotCache.clear();
     const saved = await saveDeskState();
     if (!saved) throw new Error("Imported project committed, but the active workspace state could not be saved.");

@@ -1,6 +1,6 @@
 // First-party Control Strip module descriptors.
 //
-// This file is the single source for the ten built-in modules. It installs
+// This file is the single source for the eleven built-in modules. It installs
 // window.AISystem6ControlStripModules (a frozen descriptor list) that both the
 // Control Strip shell and the Control Strip Modules Finder folder consume.
 // Nothing here executes third-party code: the registry only accepts trusted
@@ -114,6 +114,14 @@ function controlStripSubscribeNotifications(listener) {
 function controlStripProjectName(project) {
   if (typeof projectDisplayName === "function") return projectDisplayName(project);
   return project?.name || t("projects");
+}
+
+// Whether the desk would actually run a command right now, read from the one
+// map the menu rows already use. Mirroring the conditions here would let the
+// tile offer a command the menu knows is unavailable.
+function controlStripActionAvailable(action) {
+  if (typeof getActionAvailability !== "function") return true;
+  return getActionAvailability()[action] !== false;
 }
 
 function controlStripSoundscapeSourceLabel(source) {
@@ -464,6 +472,69 @@ const controlStripBuiltinModules = Object.freeze([
       { type: "action", label: t("alarm_clock"), run: () => openWindow("alarmClock") },
       { type: "action", label: t("system_status"), run: () => openWindow("systemStatus") },
     ],
+  },
+  {
+    // Your Place: one home for the desk's pause button.
+    //
+    // Two commands used to live only as Apple-menu rows. Hold My Place (⌥⌘P)
+    // writes down the window, the field, the character and the sentence around
+    // it; Hold That Thought (⌥⌘N) lands a passing line on a Note Pad slip.
+    // They are the same movement — you are leaving this sentence and you mean
+    // to come back — so the desk carries one object for them, and a small piece
+    // of always-there desk state is what a Control Strip module is for. The
+    // menu rows stay where they are: Balloon Help and Key Caps both name them.
+    //
+    // The module owns no state and no command of its own. It reads the eager
+    // held-place helpers and dispatches the existing actions, so the tile, the
+    // menu rows and the key equivalents can never disagree about what is held.
+    id: "heldPlace",
+    labelKey: "control_strip_held_place",
+    // Two states from two icons already in the vocabulary, no new art: an alias
+    // is the classic stand-in that points back at where the real item lives
+    // (System 7 evidence, adopted as a metaphor only), and an unmarked page is
+    // a desk holding nothing.
+    icon: (state) => (state.state === "ready" ? "alias" : "document"),
+    finderIcon: "alias",
+    defaultOrder: 10,
+    defaultEnabled: true,
+    // A held thought is carried on a Note Pad slip, so that is the window this
+    // module file opens from the Control Strip Modules folder.
+    openOwner: "notePad",
+    state: () => {
+      if (typeof hasHeldPlace !== "function") return { state: "unknown", detail: "", source: "held-place" };
+      // How long ago stays off the tile: a strip button that rewrites itself
+      // every minute is movement without news. The menu says it on arrival.
+      return hasHeldPlace()
+        ? { state: "ready", detail: t("control_strip_held_place_at", heldPlaceWhere()), source: "held-place" }
+        : { state: "idle", detail: t("control_strip_held_place_none"), source: "held-place" };
+    },
+    menu: () => {
+      const held = typeof hasHeldPlace === "function" && hasHeldPlace();
+      const items = [];
+      if (held) items.push({ type: "label", label: t("control_strip_held_place_since", heldPlaceAgo()) });
+      // The rows never move with the state. Only the middle row's own label
+      // changes, and only because it names the place it would take you back to.
+      items.push({
+        type: "action",
+        label: t("held_place_hold"),
+        disabled: !controlStripActionAvailable("hold-my-place"),
+        run: () => handleAction("hold-my-place"),
+      });
+      items.push({
+        type: "action",
+        label: heldPlaceResumeLabel(),
+        disabled: !held,
+        run: () => handleAction("resume-my-place"),
+      });
+      items.push({ type: "separator" });
+      items.push({
+        type: "action",
+        label: t("hold_that_thought"),
+        disabled: !controlStripActionAvailable("hold-that-thought"),
+        run: () => handleAction("hold-that-thought"),
+      });
+      return items;
+    },
   },
 ]);
 

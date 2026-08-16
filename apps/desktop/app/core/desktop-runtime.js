@@ -164,7 +164,10 @@ function updateBootLedger(stage = "startup") {
   );
 }
 
-async function switchProject(projectId) {
+// Mounting a disk brings back that disk's own desktop scene. Pass
+// { resumeScene: false } when the caller owns the windows itself (a writing
+// surface that mounts a disk on the way to opening its own window).
+async function switchProject(projectId, options = {}) {
   const project = projects.find((item) => item.id === projectId);
   if (!project) {
     renderProjectDisks();
@@ -210,6 +213,12 @@ async function switchProject(projectId) {
   scheduleWorkspaceRender({ projectReferences: true, mountedTextDisk: true, menuState: true });
   resetAssistantForProject(project.name);
   loadActiveProjectReferences();
+  // The disk is mounted; give it back the desk it had. Startup Items open only
+  // when this disk has no scene of its own yet.
+  if (options.resumeScene !== false && typeof restoreWorkingSession === "function") {
+    const resumed = await restoreWorkingSession({ projectId: project.id, mounted: true });
+    if (!resumed) openStartupItems();
+  }
   saveDeskState();
   scheduleDesktopMaintenance("project");
   setStatus(wasArchived ? t("project_unarchived", project.name) : t("project_opened", project.name));
@@ -552,6 +561,9 @@ function ejectActiveProject() {
     return;
   }
 
+  // Capture the scene while this disk still owns it: the capture is
+  // synchronous and its write is bound to that disk's scope key.
+  if (typeof flushWorkingSessionCommit === "function") flushWorkingSessionCommit();
   parkConversationInProject(project.id);
   removeProjectReferenceChunks();
   projectReferences.length = 0;

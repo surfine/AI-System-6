@@ -16,9 +16,13 @@
   background: var(--theme-lab-details-bg, var(--details-bar-bg));
 }
 
+/* The pane carries two fixed rows: the era bar, then the tab sheet. Specimen
+   columns live inside a panel, so switching era or tab never reflows the
+   window frame the fidelity captures crop. */
 .theme-lab-pane {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: auto minmax(0, 1fr);
+  align-content: start;
   gap: var(--theme-lab-pane-gap, 10px);
   padding: var(--theme-lab-pane-padding, 10px);
   border: var(--theme-lab-pane-border, 0);
@@ -26,6 +30,171 @@
   overflow: auto;
   background: var(--theme-lab-pane-bg, var(--surface-secondary));
   box-shadow: var(--theme-lab-pane-shadow, none);
+}
+
+/* Era bar — the spine. Six segments in registry order, each naming the era and
+   its system font, plus the recipe lineage the current era derives from. */
+.theme-lab-era-bar {
+  display: grid;
+  gap: 6px;
+}
+
+/* The era axis. Ticks sit at their true distance in years, so 1999 and 2002
+   crowd together and 2014 to 2026 opens up — the shape of the timeline is the
+   point. The rail is lab chrome, not a historical specimen, so it is drawn from
+   shared tokens rather than reproducing any era's real slider. */
+.theme-lab-era-switch {
+  position: relative;
+  display: grid;
+  gap: 0;
+  padding: 0 9px;
+}
+
+.theme-lab-era-range {
+  width: 100%;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.theme-lab-era-range::-webkit-slider-runnable-track {
+  height: 4px;
+  border: 1px solid var(--rule);
+  border-radius: var(--control-radius);
+  background: var(--surface-inset);
+}
+
+.theme-lab-era-range::-moz-range-track {
+  height: 4px;
+  border: 1px solid var(--rule);
+  border-radius: var(--control-radius);
+  background: var(--surface-inset);
+}
+
+.theme-lab-era-range::-webkit-slider-thumb {
+  width: 13px;
+  height: 13px;
+  margin-top: -6px;
+  appearance: none;
+  border: 1px solid var(--ink);
+  border-radius: 50%;
+  background: var(--paper);
+  box-shadow: var(--system-inset);
+}
+
+.theme-lab-era-range::-moz-range-thumb {
+  width: 13px;
+  height: 13px;
+  border: 1px solid var(--ink);
+  border-radius: 50%;
+  background: var(--paper);
+  box-shadow: var(--system-inset);
+}
+
+.theme-lab-era-range:focus-visible {
+  outline: var(--control-focus-outline);
+  outline-offset: var(--control-focus-offset);
+}
+
+.theme-lab-era-ticks {
+  position: relative;
+  height: 26px;
+}
+
+/* Each tick is its own jump target, so the axis stays keyboard- and
+   pointer-reachable without dragging. --theme-lab-era-t is the year's
+   proportional position, set once when the rail is built. */
+.theme-lab-era-tick {
+  position: absolute;
+  left: calc(var(--theme-lab-era-t) * 100%);
+  top: 0;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--shade-dark);
+  font: inherit;
+  font-size: 10px;
+  cursor: pointer;
+  transform: translateX(-50%);
+}
+
+.theme-lab-era-tick > i {
+  width: 1px;
+  height: 5px;
+  background: var(--rule);
+}
+
+.theme-lab-era-tick:hover {
+  color: var(--ink);
+}
+
+.theme-lab-era-tick:focus-visible {
+  outline: var(--control-focus-outline);
+  outline-offset: var(--control-focus-offset);
+}
+
+.theme-lab-era-tick.is-active {
+  color: var(--ink);
+  font-weight: var(--system-strong-weight);
+}
+
+.theme-lab-era-tick.is-active > i {
+  height: 7px;
+  background: var(--ink);
+}
+
+/* The readout the axis writes to: the year and era you have travelled to, the
+   face that era wore, then the lineage and art tiers behind it. */
+.theme-lab-era-lineage {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  margin: 0;
+  color: var(--shade-dark);
+  font-size: 11px;
+}
+
+.theme-lab-era-lineage b {
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: var(--system-emphasis-weight);
+}
+
+.theme-lab-era-lineage em {
+  color: var(--ink);
+  font-style: normal;
+}
+
+.theme-lab-sheet-shell {
+  align-self: start;
+}
+
+/* One panel per tab, each a two-column specimen board. Only the panel on
+   screen holds content, so the era switch repaints one board, not six. */
+.theme-lab-panel {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: var(--theme-lab-pane-gap, 10px);
+}
+
+/* The shared tab panel stacks its actions at full width. A specimen must keep
+   the control's real geometry, so the Lab's panels hand that back. */
+.theme-lab-panel .btn {
+  width: auto;
+}
+
+/* Capture hook. The snapshot and canonical-fidelity harnesses want the whole
+   atlas in one shot, so they set the attribute and every panel opens. It is
+   never set by the interface itself. */
+[data-theme-lab-capture="all"] .theme-lab-panel[hidden] {
+  display: grid;
 }
 
 .theme-lab-group {
@@ -93,19 +262,29 @@
   font-weight: normal;
 }
 
-/* Classic is accepted object by object, not as a themed thumbnail sheet.
-   The 16 and 32 px files have independent optical policies; larger samples
-   inspect the same smooth SVG geometry at Retina-safe scales. */
-.theme-lab-classic-icon-lab {
+/* Every era is accepted object by object, not as a themed thumbnail sheet.
+   One board serves all six: the era supplies its authored tiers and appearance
+   variants, the sixteen objects and four states never change. */
+.theme-lab-object-lab {
   grid-column: 1 / -1;
 }
 
-.theme-lab-classic-icon-intro {
-  margin: 0 0 9px;
+.theme-lab-object-intro {
+  margin: 0 0 6px;
   color: var(--shade-dark);
 }
 
-.theme-lab-classic-icon-key {
+/* The era's own provenance statement. One slot in every era, so the shape
+   stays uniform while the words stay honest about that era's evidence. */
+.theme-lab-object-evidence {
+  margin: 0 0 9px;
+  padding-left: 8px;
+  border-left: 2px solid var(--rule);
+  color: var(--shade-dark);
+  font-size: 11px;
+}
+
+.theme-lab-object-key {
   display: flex;
   justify-content: space-between;
   gap: 10px;
@@ -115,34 +294,53 @@
   font-size: 10px;
 }
 
-.theme-lab-classic-icon-grid {
+.theme-lab-object-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
   padding-top: 6px;
 }
 
-.theme-lab-classic-icon-card {
+.theme-lab-object-card {
   min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0 5px;
   padding: 5px;
   border: 1px solid var(--separator);
   background: var(--paper);
 }
 
-.theme-lab-classic-icon-card.is-inspected {
+/* Provenance class from the icon lineage audit, carried on the object rather
+   than in a paragraph, so each card states its own evidence standing. */
+.theme-lab-object-class {
+  padding: 0 0 4px;
+  border-bottom: 1px solid var(--separator);
+  color: var(--shade-dark);
+  font: 10px/1.2 var(--theme-mono-font);
+  white-space: nowrap;
+}
+
+.theme-lab-object-class.is-class-a {
+  color: var(--ink);
+  font-weight: var(--system-emphasis-weight);
+}
+
+.theme-lab-object-card.is-inspected {
   border-color: var(--ink);
   box-shadow: inset 0 0 0 1px var(--ink);
 }
 
-.theme-lab-classic-icon-inspector h4,
-.theme-lab-classic-context h4 {
+.theme-lab-object-inspector h4,
+.theme-lab-object-context h4 {
   margin: 0;
   font: inherit;
   font-weight: var(--system-emphasis-weight);
 }
 
-.theme-lab-classic-inspect {
-  width: 100%;
+.theme-lab-object-inspect {
+  min-width: 0;
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -157,23 +355,29 @@
   cursor: pointer;
 }
 
-.theme-lab-classic-inspect code,
-.theme-lab-classic-icon-inspector code {
+.theme-lab-object-inspect code,
+.theme-lab-object-inspector code {
   display: block;
   color: var(--shade-dark);
   font: 10px/1.2 var(--theme-mono-font);
 }
 
-.theme-lab-classic-icon-states {
+.theme-lab-object-states {
+  grid-column: 1 / -1;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 3px;
   margin-top: 5px;
 }
 
-.classic-icon-lab-finder-item.finder-item {
+/* A lab cell is not a Finder row: it owns its own stacking, label size, and
+   wrapping so a four-state card reads the same in every era, whatever geometry
+   that era gives its real Finder items. */
+.theme-lab-object-item.finder-item {
   width: 100%;
   min-height: 60px;
+  flex-direction: column;
+  align-items: center;
   justify-content: flex-end;
   gap: 2px;
   padding: 3px 1px;
@@ -183,17 +387,43 @@
   cursor: default;
 }
 
-.classic-icon-lab-finder-item .sys-icon-classic-lab-32 {
-  width: 32px;
-  height: 32px;
+/* Size and wrapping only. Ink stays with the era, so the selected cell keeps
+   whatever inversion that era's Finder item performs. */
+.theme-lab-object-item.finder-item > span:last-child {
+  max-width: 100%;
+  overflow: visible;
+  font-size: 8px;
+  line-height: 1.2;
+  text-align: center;
+  text-overflow: clip;
+  white-space: normal;
 }
 
-.classic-icon-lab-finder-item .sys-icon-classic-lab-16 {
+/* The four display sizes an object cell can ask for. They are the authored
+   tiers themselves (compact, ordinary, the Platinum desktop tier, and the
+   large tier capped so a 128 px file still fits a context box), so they belong
+   here as literal specimen sizes rather than as window geometry tokens. */
+.theme-lab-object-item .theme-lab-object-px-16 {
   width: 16px;
   height: 16px;
 }
 
-.theme-lab-classic-icon-inspector {
+.theme-lab-object-item .theme-lab-object-px-32 {
+  width: 32px;
+  height: 32px;
+}
+
+.theme-lab-object-item .theme-lab-object-px-42 {
+  width: 42px;
+  height: 42px;
+}
+
+.theme-lab-object-item .theme-lab-object-px-72 {
+  width: 72px;
+  height: 72px;
+}
+
+.theme-lab-object-inspector {
   min-height: 280px;
   display: grid;
   grid-template-columns: 150px minmax(0, 1fr);
@@ -204,50 +434,74 @@
   background: var(--surface-inset);
 }
 
-.theme-lab-classic-icon-inspector h4 code {
+.theme-lab-object-inspector h4 code {
   margin-top: 4px;
 }
 
-.theme-lab-classic-icon-zooms {
-  min-height: 280px;
+.theme-lab-object-inspector h4 small {
+  display: block;
+  margin-top: 6px;
+  color: var(--shade-dark);
+  font-size: 10px;
+  font-weight: normal;
+}
+
+/* One row per appearance the era declares. Five eras declare one, so the row
+   heading stays out of their way; Liquid Glass declares three and the same
+   zoom ladder repeats under each. */
+.theme-lab-object-appearances {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.theme-lab-object-appearance h5 {
+  margin: 0 0 4px;
+  color: var(--shade-dark);
+  font: inherit;
+  font-size: 10px;
+  font-weight: normal;
+}
+
+.theme-lab-object-zooms {
   display: flex;
   align-items: flex-end;
   gap: 10px;
   overflow-x: auto;
 }
 
-.theme-lab-classic-icon-zooms figure {
+.theme-lab-object-zooms figure {
   flex: 0 0 auto;
   margin: 0;
   text-align: center;
 }
 
-.theme-lab-classic-icon-zooms img {
+.theme-lab-object-zooms img {
   display: block;
   object-fit: contain;
   image-rendering: auto;
 }
 
-.theme-lab-classic-icon-zooms figcaption {
+.theme-lab-object-zooms figcaption {
   margin-top: 3px;
   color: var(--shade-dark);
   font-size: 10px;
 }
 
-.theme-lab-classic-contexts {
+.theme-lab-object-contexts {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   margin-top: 10px;
 }
 
-.theme-lab-classic-context {
+.theme-lab-object-context {
   padding: 8px;
   border: 1px solid var(--rule);
   background: var(--surface-inset);
 }
 
-.theme-lab-classic-context > div {
+.theme-lab-object-context > div {
   min-height: 94px;
   display: flex;
   align-items: flex-start;
@@ -258,37 +512,51 @@
   background: var(--paper);
 }
 
-.theme-lab-classic-context.is-desktop > div {
+.theme-lab-object-context.is-desktop > div {
   background: var(--desktop-surface);
 }
 
-.theme-lab-platinum-icon-lab .theme-lab-classic-context.is-light-desktop > div {
-  background: #d9d9d9;
+/* Surface check. Every era answers the same question — does the object hold up
+   on the surfaces this era actually has — using its own tokens, so the check
+   needs no per-era selector and no hard-coded material. */
+.theme-lab-object-context.is-surface-check > div {
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
 }
 
-.theme-lab-platinum-icon-lab .theme-lab-classic-context.is-medium-gray > div {
-  background: #929292;
+.theme-lab-object-surface {
+  width: 100%;
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
 }
 
-/* Liquid Glass is judged against its background, so each appearance check
-   carries its own surface. */
-.theme-lab-glass-appearance.is-default > div {
-  background: linear-gradient(160deg, #eef4fb, #cfe0f0);
+.theme-lab-object-surface.is-on-desktop {
+  background: var(--desktop-surface);
 }
 
-.theme-lab-glass-appearance.is-dark > div {
-  background: linear-gradient(160deg, #1b2430, #070b12);
+.theme-lab-object-surface.is-on-paper {
+  background: var(--paper);
 }
 
-.theme-lab-glass-appearance.is-clear > div {
-  background: linear-gradient(120deg, #2b7ea8, #7fc4d8 42%, #d6b98a 70%, #3c4a5e);
+.theme-lab-object-surface.is-on-chrome {
+  background: var(--shade);
 }
 
-.theme-lab-glass-appearance.is-busy > div {
-  background: repeating-linear-gradient(45deg, #16283f 0 6px, #f0faff 6px 12px);
+.theme-lab-object-context.is-surface-check .theme-lab-object-item {
+  width: auto;
+  min-height: 0;
+  gap: 0;
 }
 
-.theme-lab-classic-context .classic-icon-lab-finder-item {
+.theme-lab-object-context.is-surface-check .theme-lab-object-item > span:last-child {
+  display: none;
+}
+
+.theme-lab-object-context .theme-lab-object-item {
   width: 80px;
   min-height: 74px;
   padding: 2px;
@@ -296,13 +564,13 @@
   background: transparent;
 }
 
-.theme-lab-classic-context.is-list-view > div {
+.theme-lab-object-context.is-list-view > div {
   min-height: 94px;
   flex-direction: column;
   gap: 0;
 }
 
-.theme-lab-classic-context .is-list-row {
+.theme-lab-object-context .is-list-row {
   width: 100%;
   min-height: 24px;
   display: grid;
@@ -312,22 +580,196 @@
   text-align: left;
 }
 
-.theme-lab-classic-context .is-list-row span:last-of-type {
+.theme-lab-object-context .is-list-row span:last-of-type {
   width: 100%;
   box-sizing: border-box;
 }
 
+/* Token workbench. Rows are read from the live CSSOM, so this is the only
+   place in the lab whose content is not a specimen; it stays inside the same
+   group frame so the era paints it like everything else. */
+.theme-lab-token-desk {
+  grid-column: 1 / -1;
+}
+
+.theme-lab-token-summary {
+  margin: 0 0 8px;
+  color: var(--shade-dark);
+}
+
+.theme-lab-token-filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.theme-lab-token-filters > label {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.theme-lab-token-table {
+  max-height: 340px;
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  padding: 6px;
+  overflow-y: auto;
+  border: 1px solid var(--rule);
+  background: var(--surface-inset);
+}
+
+.theme-lab-token-row {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) auto minmax(0, 3fr) minmax(0, 5fr);
+  align-items: center;
+  gap: 6px;
+  padding: 2px 4px;
+  background: var(--paper);
+}
+
+.theme-lab-token-row.is-dirty {
+  box-shadow: inset 2px 0 0 var(--ink);
+}
+
+.theme-lab-token-row > code {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 10px/1.4 var(--theme-mono-font);
+}
+
+.theme-lab-token-flag {
+  color: var(--shade-dark);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.theme-lab-token-flag.is-overridden {
+  color: var(--ink);
+}
+
+.theme-lab-token-base {
+  overflow: hidden;
+  color: var(--shade-dark);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 10px/1.4 var(--theme-mono-font);
+}
+
+.theme-lab-token-editor {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.theme-lab-token-editor input {
+  min-width: 0;
+  flex: 1 1 auto;
+  font: 10px/1.4 var(--theme-mono-font);
+}
+
+.theme-lab-token-swatch {
+  flex: 0 0 auto;
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--rule);
+  background: var(--theme-lab-swatch, transparent);
+}
+
+.theme-lab-token-empty {
+  margin: 0;
+  padding: 8px;
+  color: var(--shade-dark);
+}
+
+.theme-lab-desk-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.theme-lab-desk-status {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  color: var(--shade-dark);
+  text-overflow: ellipsis;
+  font-size: 11px;
+}
+
+/* The output is meant to be selected and pasted, so it keeps its own
+   monospaced reading surface rather than borrowing a specimen's. */
+.theme-lab-desk-output {
+  max-height: 300px;
+  margin: 8px 0 0;
+  padding: 8px;
+  overflow: auto;
+  border: 1px solid var(--rule);
+  background: var(--glass-reading-surface, var(--surface-inset));
+  color: var(--ink);
+  font: 11px/1.5 var(--theme-mono-font);
+  white-space: pre;
+  user-select: text;
+}
+
+.theme-lab-new-intro {
+  margin: 0 0 8px;
+  color: var(--shade-dark);
+}
+
+.theme-lab-new-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.theme-lab-new-form > label {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
 @container (max-width: 760px) {
-  .theme-lab-classic-icon-grid {
+  .theme-lab-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .theme-lab-era-switch {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .theme-lab-object-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .theme-lab-classic-icon-inspector {
+  .theme-lab-object-inspector {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .theme-lab-classic-contexts {
+  .theme-lab-object-contexts {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .theme-lab-token-filters,
+  .theme-lab-new-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .theme-lab-token-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .theme-lab-token-row > .theme-lab-token-base {
+    display: none;
+  }
+
+  .theme-lab-token-editor {
+    grid-column: 1 / -1;
   }
 }
 
@@ -1858,12 +2300,27 @@
   box-shadow: var(--theme-lab-mini-control-shadow, none);
 }
 
+/* Lamp placement is a per-era decision, so it is a token here rather than one
+   hard-coded edge. System 6 and Platinum keep the close box and the zoom box on
+   opposite ends of the title bar; Aqua onward group close / minimize / zoom at
+   the left, the same ladder the sheet-owner and Finder title-bar specimens use. */
 .theme-lab-mini-control.is-close {
-  left: var(--theme-lab-mini-control-edge, 0);
+  left: var(--theme-lab-mini-control-close-left, var(--theme-lab-mini-control-edge, 0));
+  background: var(--theme-lab-mini-control-close-bg, var(--theme-lab-mini-control-bg, transparent));
+}
+
+/* The third lamp only exists from Aqua onward, so it stays out of the box until
+   an era opts in. Its art is the same token the era title-bar specimens read. */
+.theme-lab-mini-control.is-minimize {
+  left: var(--theme-lab-mini-control-minimize-left, auto);
+  display: var(--theme-lab-mini-control-minimize-display, none);
+  background: var(--theme-lab-mini-control-minimize-bg, var(--theme-lab-era-titlebar-minimize-bg, transparent));
 }
 
 .theme-lab-mini-control.is-zoom {
-  right: var(--theme-lab-mini-control-edge, 0);
+  left: var(--theme-lab-mini-control-zoom-left, auto);
+  right: var(--theme-lab-mini-control-zoom-right, var(--theme-lab-mini-control-edge, 0));
+  background: var(--theme-lab-mini-control-zoom-bg, var(--theme-lab-mini-control-bg, transparent));
 }
 
 .theme-lab-mini-control.is-zoom::after {
@@ -1877,8 +2334,26 @@
   border-bottom: var(--theme-lab-mini-zoom-mark-border, 0);
 }
 
+/* Backdrop lamps: an era either hides them, greys the art it already has, or
+   repaints all three one flat colour. */
 .theme-lab-mini-window.is-inactive .theme-lab-mini-control {
   display: var(--theme-lab-mini-inactive-control-display, none);
+  filter: var(--theme-lab-mini-inactive-control-filter, none);
+  opacity: var(--theme-lab-mini-inactive-control-opacity, 1);
+}
+
+/* One token repaints the whole cluster; leave it unset and each lamp keeps the
+   art it wears in front, so a sprite era is only greyed rather than erased. */
+.theme-lab-mini-window.is-inactive .theme-lab-mini-control.is-close {
+  background: var(--theme-lab-mini-inactive-control-bg, var(--theme-lab-mini-control-close-bg, var(--theme-lab-mini-control-bg, transparent)));
+}
+
+.theme-lab-mini-window.is-inactive .theme-lab-mini-control.is-minimize {
+  background: var(--theme-lab-mini-inactive-control-bg, var(--theme-lab-mini-control-minimize-bg, var(--theme-lab-era-titlebar-minimize-bg, transparent)));
+}
+
+.theme-lab-mini-window.is-inactive .theme-lab-mini-control.is-zoom {
+  background: var(--theme-lab-mini-inactive-control-bg, var(--theme-lab-mini-control-zoom-bg, var(--theme-lab-mini-control-bg, transparent)));
 }
 
 .theme-lab-mini-window span {

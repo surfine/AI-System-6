@@ -98,13 +98,6 @@ body.quick-draft-focus .writing-spine-panel {
   grid-template-columns: 1fr;
 }
 
-.spine-section-research {
-  padding-left: 0;
-  padding-top: 0;
-  border-left: 0;
-  border-top: 0;
-}
-
 .spine-actions button {
   position: relative;
   z-index: var(--z-local-control);
@@ -121,10 +114,6 @@ body.quick-draft-focus .writing-spine-panel {
 
 .spine-actions button[hidden] {
   display: none;
-}
-
-.spine-actions-split button {
-  width: 100%;
 }
 
 .spine-step-number {
@@ -162,19 +151,7 @@ body.quick-draft-focus .writing-spine-panel {
   overflow-wrap: anywhere;
 }
 
-.spine-brand-label {
-  display: block;
-}
-
-.spine-brand-name,
-.spine-brand-local {
-  display: inline;
-}
-
 @container writing-tools (max-width: 230px) {
-  .spine-brand-local {
-    display: none;
-  }
 }
 
 .spine-actions button:hover b,
@@ -207,10 +184,6 @@ body.quick-draft-focus .writing-spine-panel {
 }
 
 .writing-spine-panel.is-small-icons .spine-brand-local {
-  display: none;
-}
-
-.spine-tool-note {
   display: none;
 }
 
@@ -1339,27 +1312,10 @@ html:lang(zh-Hans) .title-bar h2 {
   white-space: nowrap;
 }
 
-.project-disk-details-bar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.project-disk-details-bar > span {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .project-disk-details-bar .view-controls {
   position: static;
   justify-self: end;
   transform: none;
-}
-
-.project-disk-details-bar > span {
-  text-align: left;
 }
 
 .teachtext-details-bar #teachtext-status {
@@ -1434,10 +1390,6 @@ html:lang(zh-Hans) .title-bar h2 {
 .teachtext-surface-window .select-wrap.is-system-select-open,
 .review-desk-window .select-wrap.is-system-select-open {
   z-index: var(--z-local-popover);
-}
-
-.review-mode-select {
-  font-weight: 600;
 }
 
 .details-bar:has(.view-controls) {
@@ -1829,40 +1781,6 @@ html:lang(zh-Hans) .title-bar h2 {
 }
 
 .clio-chat-file-link:focus-visible {
-  outline: 1px dotted var(--ink);
-  outline-offset: 1px;
-}
-
-.assistant-context-button {
-  appearance: none;
-  min-width: 0;
-  max-width: min(28ch, 34vw);
-  min-height: 30px;
-  margin: 0;
-  padding: 4px 9px;
-  overflow: hidden;
-  border: var(--clio-context-control-border);
-  border-radius: var(--clio-context-control-radius);
-  background: var(--clio-context-control-bg);
-  box-shadow: var(--clio-context-control-shadow);
-  color: var(--clio-muted-copy);
-  font: inherit;
-  font-family: var(--clio-control-font);
-  font-size: 11px;
-  text-align: left;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.assistant-context-button:hover,
-.assistant-context-button:focus-visible {
-  color: var(--ink);
-  background: var(--panel);
-  text-decoration: none;
-}
-
-.assistant-context-button:focus-visible {
   outline: 1px dotted var(--ink);
   outline-offset: 1px;
 }
@@ -2772,8 +2690,6 @@ html:lang(zh-Hans) .title-bar h2 {
 .assistant-window .composer-action-row {
   margin-bottom: 6px;
 }
-
-
 
 .compose-tools-anchor {
   position: relative;

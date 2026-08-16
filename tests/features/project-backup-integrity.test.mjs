@@ -126,7 +126,7 @@ test.assert(
 );
 
 const v3Bundle = await backup.attachIntegrity(legacyBundle);
-test.assert(v3Bundle.formatVersion === 3, "new exports use format v3");
+test.assert(v3Bundle.formatVersion === 4, "new exports use the current format v4");
 test.assert(
   /^[a-f0-9]{64}$/.test(v3Bundle.integrity.contentHash),
   "new exports carry a SHA-256 content hash"
@@ -234,7 +234,7 @@ test.assert(
   "v2 reference chunks point at the imported reference and project"
 );
 const exportedV2 = await backup.attachIntegrity(importedV2);
-test.assert(exportedV2.formatVersion === 3, "imported v2 re-exports as the current v3 format");
+test.assert(exportedV2.formatVersion === 4, "imported v2 re-exports as the current v4 format");
 test.assert(
   Array.isArray(exportedV2.documentRevisions) && exportedV2.documentRevisions.length === 0,
   "the v3 export of an imported v2 backup carries an empty documentRevisions array"
@@ -521,6 +521,146 @@ test.assert(
   helperReceipt.sourceScope.sourceIds[0] === "external-source-id"
     && helperReceipt.sourceScope.citationIds[0] === "external-citation",
   "sourceScope identifiers are retrieval scope, never blind-remapped as file ids"
+);
+
+// --- v4: the optional desktop scene ----------------------------------------
+//
+// A backup may carry the disk's own Working Session so a restored project
+// opens on the desk it had. It stays optional, it never carries credentials,
+// and every id inside it is remapped into the imported project's id space.
+
+const sceneBundle = structuredClone(legacyBundle);
+sceneBundle.workingSession = {
+  version: 2,
+  savedAt: "2026-08-16T09:00:00.000Z",
+  projectId: "project-old",
+  adapters: {
+    windows: {
+      activeAppId: "teachText",
+      activeWindowName: "teachText",
+      windows: [{ name: "teachText", appId: "teachText", visible: true, zIndex: 12, frame: { left: "40px", top: "60px" } }],
+    },
+    selection: {
+      activeProjectId: "project-old",
+      selectedProjectId: "project-old",
+      selectedChatFileId: "file-child",
+      activeTextFileId: "file-child",
+      selectedFolderId: "folder-root",
+      selectedScrapIds: ["scrap-old"],
+      selectedProjectCdItemId: "cd-old",
+      // A disk erased on the exporting machine before the backup was taken.
+      selectedProjectReferenceId: "reference-that-is-gone",
+    },
+    teachText: { projectId: "project-old", activeTextFileId: "file-child", body: "Kept text." },
+  },
+};
+const sceneExport = await backup.attachIntegrity(sceneBundle);
+test.assert(sceneExport.formatVersion === 4, "a backup carrying a desktop scene exports as v4");
+const sceneValidation = backup.validateBackup(sceneExport);
+if (!sceneValidation.valid) console.error(sceneValidation.errors.join("\n"));
+test.assert(sceneValidation.valid, "a v4 bundle with a desktop scene satisfies the schema");
+test.assert(
+  (await backup.verifyIntegrity(sceneExport)).valid,
+  "the desktop scene is covered by the SHA-256 content hash"
+);
+
+// The absence of a scene is not an empty scene: exports without one keep the
+// exact shape older importers expect.
+const sceneless = await backup.attachIntegrity(legacyBundle);
+test.assert(
+  !("workingSession" in sceneless),
+  "a disk with no saved scene exports no workingSession field at all"
+);
+test.assert(
+  backup.validateBackup({ ...v2Fixture }).valid,
+  "v2 backups without a desktop scene stay importable"
+);
+
+// A scene declared on a pre-v4 bundle is a malformed backup, not a silent pass.
+const sceneOnV3 = structuredClone(sceneExport);
+sceneOnV3.formatVersion = 3;
+test.assert(
+  !backup.validateBackup(sceneOnV3).valid,
+  "a desktop scene on a pre-v4 bundle is rejected"
+);
+
+// Credentials must never ride along inside a scene, whatever wrote it.
+const poisoned = structuredClone(sceneExport);
+poisoned.workingSession.adapters.selection.apiKey = "sk-live-should-never-travel";
+const poisonedValidation = backup.validateBackup(poisoned);
+test.assert(!poisonedValidation.valid, "a scene carrying an apiKey fails validation");
+test.assert(
+  poisonedValidation.errors.some((error) => error.includes("must not carry credentials")),
+  "the rejection names the credential rule"
+);
+const poisonedDeep = structuredClone(sceneExport);
+poisonedDeep.workingSession.adapters.windows.windows[0].bearerToken = "abc";
+test.assert(
+  !backup.validateBackup(poisonedDeep).valid,
+  "the credential scan reaches nested scene values"
+);
+// The same key name is ordinary data anywhere else in the bundle.
+const tokenOutsideScene = structuredClone(sceneExport);
+tokenOutsideScene.files[0].tokenCount = 42;
+test.assert(
+  backup.validateBackup(tokenOutsideScene).valid === false
+    || !backup.validateBackup(tokenOutsideScene).errors.some((error) => error.includes("credentials")),
+  "the credential scan is scoped to the desktop scene"
+);
+
+let sceneUuid = 0;
+const importedScene = backup.remapBackup(sceneExport, {
+  now: "2026-08-16T10:00:00.000Z",
+  uuid: () => `scene-${++sceneUuid}`,
+});
+const importedChild = importedScene.files.find((file) => file.name === "Child Chat");
+test.assert(
+  importedScene.workingSession.projectId === importedScene.project.id,
+  "the imported scene belongs to the imported project, not the exporting machine"
+);
+test.assert(
+  importedScene.workingSession.adapters.selection.activeProjectId === importedScene.project.id
+    && importedScene.workingSession.adapters.teachText.projectId === importedScene.project.id,
+  "every project id inside the scene is remapped"
+);
+test.assert(
+  importedChild
+    && importedScene.workingSession.adapters.selection.activeTextFileId === importedChild.id
+    && importedScene.workingSession.adapters.teachText.activeTextFileId === importedChild.id,
+  "document ids inside the scene point at the imported documents"
+);
+const importedScrap = importedScene.scraps[0];
+const importedCdItem = importedScene.projectCdItems[0];
+test.assert(
+  importedScene.workingSession.adapters.selection.selectedProjectCdItemId === importedCdItem.id
+    && importedScene.workingSession.adapters.selection.selectedScrapIds[0] === importedScrap.id,
+  "scrap and Project CD selections in the scene follow their records"
+);
+test.assert(
+  importedScene.workingSession.adapters.selection.selectedProjectReferenceId === "",
+  "an id with no counterpart in the backup is cleared, never left dangling"
+);
+test.assert(
+  importedScene.workingSession.adapters.teachText.body === "Kept text."
+    && importedScene.workingSession.adapters.windows.windows[0].frame.left === "40px",
+  "scene content that is not an id survives the import unchanged"
+);
+test.assert(
+  backup.remapBackup(sceneless, { now: "2026-08-16T10:00:00.000Z", uuid: () => `x-${++sceneUuid}` }).workingSession === null,
+  "importing a backup with no scene yields no scene"
+);
+
+test.assertIncludes(
+  exportImportSource,
+  "workingSessionScopeKey(imported.project.id)",
+  "an imported scene lands under the imported project's own scope key"
+);
+const commitStart = exportImportSource.indexOf("async function commitImportedProjectAtomically(imported)");
+const commitBlock = exportImportSource.slice(commitStart, exportImportSource.indexOf("async function importProjectBackupAsNewProject()", commitStart));
+test.assertIncludes(
+  commitBlock,
+  "workingSessionScopeKey",
+  "the scene is written inside the same transaction as the project's files"
 );
 
 test.assertIncludes(

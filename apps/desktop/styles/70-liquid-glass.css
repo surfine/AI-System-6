@@ -640,9 +640,32 @@ body.use-liquid-glass {
   --system-titlebar-inactive-control-visibility: visible;
   --system-titlebar-inactive-title-color: rgba(16, 17, 20, 0.72);
   --glass-lamp-close: #ff5f57;
+  /* The middle member of the same lamp triple. The product's own title bar has
+     no minimize control, so this value is only read by the Theme Lab specimen. */
+  --glass-lamp-minimize: #febc2e;
   --glass-lamp-zoom: #28c840;
   --glass-lamp-inactive: #d4d5d7;
   --glass-lamp-mark-opacity: 0.62;
+  /* Window-chrome specimen: the lamp cluster sits at the left of the bar in
+     close / minimize / zoom order, the same 15px disc the real chrome draws. */
+  --theme-lab-era-titlebar-minimize-bg: var(--glass-lamp-minimize);
+  --theme-lab-mini-position: relative;
+  --theme-lab-mini-control-display: block;
+  --theme-lab-mini-control-top: 4px;
+  --theme-lab-mini-control-size: 15px;
+  --theme-lab-mini-control-border: 1px solid rgba(16, 17, 20, 0.28);
+  --theme-lab-mini-control-radius: 50%;
+  --theme-lab-mini-control-close-left: 7px;
+  --theme-lab-mini-control-close-bg: var(--glass-lamp-close);
+  --theme-lab-mini-control-minimize-left: 28px;
+  --theme-lab-mini-control-minimize-display: block;
+  --theme-lab-mini-control-zoom-left: 49px;
+  --theme-lab-mini-control-zoom-right: auto;
+  --theme-lab-mini-control-zoom-bg: var(--glass-lamp-zoom);
+  /* Glass keeps backdrop lamps but turns them one flat grey, not a dimmed
+     colour — the same rule the real title bar follows. */
+  --theme-lab-mini-inactive-control-display: block;
+  --theme-lab-mini-inactive-control-bg: var(--glass-lamp-inactive);
   --glass-accent: #0a84ff;
   /* A focused field stays glass. Classic marks focus with a hard dark frame;
      glass marks it by lighting the same material — brighter rim, denser fill,

@@ -897,10 +897,6 @@
   margin-bottom: 7px;
 }
 
-.lc-subtitle {
-  margin-top: 5px;
-}
-
 .lc-note {
   display: block;
   margin: 4px 0 0;
@@ -1054,17 +1050,6 @@
   border-radius: var(--control-radius, 4px);
   background: var(--paper);
   color: var(--ink);
-}
-
-.lc-inspector-tabs {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0;
-  min-width: 0;
-  margin: 12px 0 4px;
-  padding: 2px;
-  border: 1px solid var(--ink);
-  background: var(--shade);
 }
 
 .lc-inspector-tab {
@@ -1497,16 +1482,6 @@
 .lc-layer-glass-group {
   display: grid;
   gap: 2px;
-}
-
-.lc-control-strip {
-  display: grid;
-  grid-template-columns: 74px minmax(0, 1fr);
-  align-items: center;
-  column-gap: 10px;
-  row-gap: 0;
-  padding-block: 10px;
-  border-bottom: 0;
 }
 
 .lc-control-strip .lc-group-title {

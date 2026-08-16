@@ -144,7 +144,7 @@ test.assertIncludes(modules, "window.AISystem6ControlStripModules", "built-in de
 // (network, context, indexing, long tasks, output queue) were removed: their
 // state belongs to System Status, the Context Panel and Searcher, which can
 // actually explain it.
-["soundscape", "projectDisk", "model", "writingBell", "appearance", "balloonHelp", "nowPlaying", "finderEnvironment", "notifications", "clock"]
+["soundscape", "projectDisk", "model", "writingBell", "appearance", "balloonHelp", "nowPlaying", "finderEnvironment", "notifications", "clock", "heldPlace"]
   .forEach((slot) => {
     test.assertIncludes(modules, `id: "${slot}"`, `${slot} is a declared module descriptor`);
   });
@@ -167,6 +167,15 @@ test.assertIncludes(modules, "window.renderCloudModelPopover?.(popover)", "the m
 test.assertIncludes(cloudModel, "targetPopover || document.querySelector(\"#cloud-model-popover\")", "the model renderer keeps its menu-bar host as the default");
 test.assertIncludes(multiFinder, "async function setFinderEnvironment", "Finder mode has one shared state transition");
 test.assertIncludes(quickDraftHandoff, 'setFinderEnvironment("multifinder"', "Quick Draft uses the same Finder mode transition as the strip");
+// Your Place is the desk's one home for holding a place and holding a thought.
+// It is an ordinary descriptor: it dispatches the existing Apple-menu commands
+// instead of owning a command, and it reads the same availability map the menu
+// rows read, so a tile can never offer what the menu knows is unavailable.
+test.assertIncludes(modules, 'id: "heldPlace"', "the strip carries one Your Place module for the pause button");
+test.assertIncludes(modules, 'run: () => handleAction("hold-my-place")', "the tile reuses the desk's own hold command");
+test.assertIncludes(modules, 'run: () => handleAction("hold-that-thought")', "and the same tile carries the passing thought");
+test.assertIncludes(modules, "function controlStripActionAvailable", "module rows read one availability map instead of restating conditions");
+test.assertIncludes(modules, "getActionAvailability()[action] !== false", "that map is the one the menu rows already use");
 test.assertIncludes(modules, "subscribe: controlStripSubscribeNotifications", "the notification module follows the canonical unread indicator");
 test.assertIncludes(modules, "subscribe: controlStripSubscribeClock", "the clock module follows the system clock cadence");
 test.assertIncludes(modules, "formatSystemClockTime()", "the clock module uses the menu clock formatter");
@@ -180,7 +189,11 @@ test.assertIncludes(html, 'data-window="controlStripModules"', "the folder opens
 test.assertIncludes(html, "control-strip-modules-grid", "the folder window has a module grid");
 test.assert(html.match(/data-control-strip-module=/g)?.length >= 10, "the folder window declares every built-in module");
 test.assertIncludes(html, 'data-control-strip-module="finderEnvironment"', "the folder exposes the Finder/MultiFinder module");
-test.assertIncludes(html, "ten_items", "the module folder count matches its ten built-ins");
+// The markup in index.html is the folder's pre-render state; the real listing
+// and its count come from the descriptor list when the window opens, so adding
+// a module cannot leave the folder counting the wrong number of files.
+test.assertIncludes(html, "eleven_items", "the static folder markup ships the built-in module files");
+test.assertIncludes(appBundleSource, 't("items_count", items.length)', "the folder counts what it actually rendered");
 test.assertIncludes(html, 'data-control-strip-counterpart="projectDisk"', "Project Hard Disk declares its Control Strip counterpart");
 test.assertIncludes(html, 'data-control-strip-counterpart="model"', "the model indicator declares its Control Strip counterpart");
 test.assertIncludes(html, 'data-control-strip-counterpart="notifications"', "System Messages declares its Control Strip counterpart");
@@ -219,6 +232,7 @@ for (const key of [
   "balloon_control_strip_clock",
   "balloon_control_strip_writing_bell",
   "balloon_control_strip_now_playing",
+  "balloon_control_strip_held_place",
 ]) {
   test.assertIncludes(en, `${key}:`, `English Balloon Help exists for ${key}`);
   test.assertIncludes(zh, `${key}:`, `Chinese Balloon Help exists for ${key}`);

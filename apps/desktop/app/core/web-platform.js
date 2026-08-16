@@ -122,21 +122,118 @@ async function requestPersistentProjectStorage() {
   return granted;
 }
 
+// ---- One exit for finished material ---------------------------------------
+//
+// Markdown, JSON backups, PNG, USDZ, and every other artifact used to leave
+// through a private copy of the same eight lines in each window: build a
+// Blob, make an <a download>, click it, revoke the URL. A separate share path
+// existed for Markdown only. Both halves live here now.
+//
+// The share sheet is used when the platform can really share the file;
+// otherwise the artifact is saved. Nothing reports a share or a save the
+// browser did not perform: a cancelled sheet returns method "cancel" and
+// writes nothing.
+//
+// This is the outgoing half only. AI System 6 cannot appear as a destination
+// in another app's share sheet — WebKit has never shipped Web Share Target —
+// so material comes back in through the file picker, drag and drop, paste, or
+// the Reader address field.
+
+// Canvas exports arrive as data URLs; decode them here so a PNG leaves
+// through the same exit as Markdown.
+function artifactBlobFromDataUrl(dataUrl) {
+  const match = /^data:([^;,]*)(;base64)?,(.*)$/s.exec(String(dataUrl || ""));
+  if (!match) return null;
+  const type = match[1] || "application/octet-stream";
+  if (!match[2]) return new Blob([decodeURIComponent(match[3])], { type });
+  const binary = atob(match[3]);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+  return new Blob([bytes], { type });
+}
+
+function artifactFileFrom({ file = null, blob = null, dataUrl = "", text = "", fileName = "", mimeType = "" } = {}) {
+  if (typeof File !== "function") return null;
+  if (file instanceof File) return file;
+  const source = blob instanceof Blob ? blob : (dataUrl ? artifactBlobFromDataUrl(dataUrl) : null);
+  const type = mimeType || source?.type || "text/plain";
+  const name = String(fileName || file?.name || "artifact").trim() || "artifact";
+  if (source) return new File([source], name, { type });
+  const body = String(text || "");
+  if (!body) return null;
+  return new File([body], name, { type });
+}
+
+/**
+ * Save one artifact to the user's disk. Returns true when the download was
+ * dispatched; it cannot observe whether the user kept the file.
+ */
+function saveArtifact(artifact) {
+  const file = artifactFileFrom(artifact);
+  if (!file) return false;
+  const url = URL.createObjectURL(file);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = file.name;
+  link.rel = "noopener";
+  document.body.append(link);
+  link.click();
+  link.remove();
+  // Safari reads the object URL after the click returns.
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+  return true;
+}
+
+/**
+ * Hand one artifact to the system share sheet, or save it when the platform
+ * cannot share files. `fallback` picks what happens when file sharing is not
+ * available: "download" saves it, "text" shares the plain text (Markdown's
+ * historical behavior), "none" reports that nothing happened.
+ */
+async function shareArtifact({ title = "", fallback = "download", ...artifact } = {}) {
+  const file = artifactFileFrom(artifact);
+  if (!file || !file.size) return { shared: false, method: "none" };
+  const safeTitle = String(title || file.name || "AI System 6").trim();
+  const canShare = typeof navigator.share === "function";
+
+  if (canShare && navigator.canShare?.({ files: [file] }) === true) {
+    try {
+      await navigator.share({ title: safeTitle, files: [file] });
+      return { shared: true, method: "share" };
+    } catch (error) {
+      if (error?.name === "AbortError") return { shared: false, method: "cancel" };
+      throw error;
+    }
+  }
+
+  if (fallback === "text" && canShare && artifact.text) {
+    try {
+      await navigator.share({ title: safeTitle, text: String(artifact.text) });
+      return { shared: true, method: "share" };
+    } catch (error) {
+      if (error?.name === "AbortError") return { shared: false, method: "cancel" };
+      throw error;
+    }
+  }
+
+  if (fallback === "download") {
+    return { shared: saveArtifact({ file }), method: "download" };
+  }
+  return { shared: false, method: "none" };
+}
+
+/** Markdown keeps its own name; the behavior is now shareArtifact's. */
 async function shareMarkdown({ title = "", markdown = "", fileName = "document.md" } = {}) {
   const text = String(markdown || "").trim();
-  if (!text || typeof navigator.share !== "function") return false;
-  const safeTitle = String(title || "AI System 6").trim();
-  const file = typeof File === "function" ? new File([text], fileName, { type: "text/markdown" }) : null;
-  const payload = file && navigator.canShare?.({ files: [file] })
-    ? { title: safeTitle, files: [file] }
-    : { title: safeTitle, text };
-  try {
-    await navigator.share(payload);
-    return true;
-  } catch (error) {
-    if (error?.name === "AbortError") return false;
-    throw error;
-  }
+  if (!text) return false;
+  const result = await shareArtifact({
+    title,
+    text,
+    fileName,
+    mimeType: "text/markdown",
+    fallback: "text",
+  });
+  return result.shared;
 }
 
 // ---- Screen Wake Lock -----------------------------------------------------
@@ -213,6 +310,8 @@ window.AISystem6WebPlatform = Object.freeze({
   projectStorageSnapshot,
   renderProjectStorageStatus,
   requestPersistentProjectStorage,
+  saveArtifact,
+  shareArtifact,
   shareMarkdown,
   syncWebInstallUi,
   holdScreenWakeLock,

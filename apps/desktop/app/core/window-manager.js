@@ -2018,6 +2018,8 @@ function getActionAvailability() {
   const teachTextWin = getWindow("teachText");
   const teachTextVisible = teachTextWin && !teachTextWin.classList.contains("is-hidden");
   const hasTeachTextBody = teachTextVisible && !!teachTextBodyInput.value.trim();
+  // The writing route is a set of views onto one mounted project.
+  const routeHasProject = typeof getActiveProject === "function" && !!getActiveProject();
   const hasOutlineBody = winName === "outline" && !!outlineContentEl?.value?.trim();
   const hasConversation = conversation.length > 0;
   const isAssistant = winName === "assistant";
@@ -2100,6 +2102,20 @@ function getActionAvailability() {
   const hasStyleSections = !!teachTextBodyInput.value.trim() && getTeachTextSectionBlocks().length > 0;
   const hasReviewDeskBody = !!reviewDeskBodyInput?.value?.trim();
   const reviewDeskReady = !!teachTextReviewLabel();
+  // Wider than reviewDeskReady on purpose: the command promotes a saved "final"
+  // file into review rather than refusing it, so the row must stay black there.
+  const canViewReviewManuscript = canEnterTeachTextReviewState({ promoteSavedFinal: true });
+  // Rebuild Flow asks its own refusals before the click instead of after. The
+  // flow is a lazy module, but every source it reads is eager — the window
+  // markup ships in index.html and the Reader page is a top-level variable — so
+  // a menu redraw answers these without summoning the module.
+  const rebuildFlowWin = getWindow("rebuildFlow");
+  const rebuildFlowOpen = !!rebuildFlowWin && !rebuildFlowWin.classList.contains("is-hidden");
+  const rebuildSourceLength = rebuildFlowOpen ? (rebuildFlowSourceInput?.value || "").trim().length : 0;
+  const hasReaderTextForRebuild = rebuildFlowOpen && !!currentReaderPage?.text?.trim();
+  // Not hasTeachTextBody: that one also requires the TeachText window to be
+  // visible, and the rebuild command reads the manuscript whether or not it is.
+  const hasTeachTextTextForRebuild = rebuildFlowOpen && !!teachTextBodyInput?.value.trim();
   const activeControlEnabled = (selector) => {
     const control = document.querySelector(selector);
     return !!control && !control.disabled && !control.classList.contains("is-disabled") && !control.hidden;
@@ -2131,6 +2147,10 @@ function getActionAvailability() {
     : "";
 
   const availability = {
+    // Both open a scratch document, which never touches the project — that is
+    // why they are not gated on isProjectMounted the way the neighbouring
+    // "new-text-document" is. That row is a different verb: Finder writing a
+    // file into the mounted disk.
     "new-document": true,
     "open-text-document": true,
     "new-folder": winName === "documents"
@@ -2337,18 +2357,20 @@ function getActionAvailability() {
     "open-dictionary": true,
     "open-docmap": true,
     "open-claim-check": true,
-    // Writing-route navigation is valid from anywhere the route exists, so the
-    // literal is `true` and the workspace pass below is what greys these in the
-    // desktop profile. They have to be listed: an action missing from this map
-    // is never asked about, so its row stayed black and clickable while
-    // isWorkspaceActionAllowed() rejected the click.
-    "open-question-sheet": true,
-    "open-outline": true,
-    "open-section-drafts": true,
-    "open-review-desk": true,
-    "open-image-manager": true,
+    // Writing-route navigation needs a mounted Project Hard Disk: every one of
+    // these surfaces is a view of one project's document. With no project the
+    // rows were black and led to the Project Hard Disk instead of where they
+    // said they went, so they report their real condition and grey out. The
+    // workspace pass below additionally greys them in the desktop profile.
+    // They have to be listed: an action missing from this map is never asked
+    // about, so its row stays black and clickable while the click is rejected.
+    "open-question-sheet": routeHasProject,
+    "open-outline": routeHasProject,
+    "open-section-drafts": routeHasProject,
+    "open-review-desk": routeHasProject,
+    "open-image-manager": routeHasProject,
     "toggle-review-preview": reviewDeskReady,
-    "review-view-manuscript": true,
+    "review-view-manuscript": canViewReviewManuscript,
     "review-style-section": reviewDeskReady && teachTextCanReview && hasStyleSections,
     "review-facts-section": reviewDeskReady && teachTextCanReview && hasClaimSections,
     "review-facts-section-online": reviewDeskReady && teachTextCanReview && hasClaimSections,
@@ -2522,16 +2544,25 @@ function getActionAvailability() {
     "open-selected-find-file": selectedFindFileIndex !== null,
     "reveal-selected-find-file": selectedFindFileIndex !== null,
     "open-rebuild-flow": true,
-    "rebuild-use-reader": true,
-    "rebuild-use-teachtext": true,
+    // Each condition below is the one the handler already checked before
+    // refusing with a status line. The other three rows stay available and the
+    // reasons are worth writing down: the OS clipboard cannot be read while the
+    // menu is drawn, so greying Use Clipboard on the System 6 Clipboard alone
+    // would grey a button that works; the sample article ships in the same lazy
+    // bundle as the flow, so it is never missing; and Cancel is reachable only
+    // from inside the window it closes.
+    "rebuild-use-reader": hasReaderTextForRebuild,
+    "rebuild-use-teachtext": hasTeachTextTextForRebuild,
     "rebuild-use-clipboard": true,
     "rebuild-use-sample": true,
-    "run-rebuild-flow": true,
+    "run-rebuild-flow": rebuildSourceLength >= rebuildMinSourceChars,
     "close-rebuild-flow": true,
     "open-context-panel": true,
     "focus-sideask-source": sideAskEnabled && !isMultiFinderMode(),
     "open-model-meter": performanceMeterInput.checked && !!lastModelMetrics,
-    "intent-key": true,
+    // The Dictation Pad names the Note Pad as its destination when no field is
+    // open, so it has no state to refuse on.
+    "open-dictation": true,
     "open-rag": true,
     "open-text-disk": getMountedTextDiskChunks().length > 0,
     "insert-text-disk": isProjectMounted,

@@ -800,7 +800,9 @@ function ensureTeachTextSurfaceProject() {
 
   const selectedProject = getSelectedProject();
   if (selectedProject) {
-    switchProject(selectedProject.id);
+    // The caller opens its own writing window next; resuming that disk's saved
+    // scene here would close it again a tick later.
+    switchProject(selectedProject.id, { resumeScene: false });
     return getActiveProject();
   }
 
@@ -1361,7 +1363,11 @@ function openRebuildFlow() {
 }
 
 function useReaderForRebuildFlow() {
-  const text = (currentReaderPage?.text || readerContentEl?.innerText || "").trim();
+  // The loaded page, not the pane. Reading innerText picked up the Reader's own
+  // empty-state sentence, so with nothing open this reported success and handed
+  // the flow 47 characters of UI chrome. Every other reader of this state asks
+  // currentReaderPage?.text alone.
+  const text = (currentReaderPage?.text || "").trim();
   if (!text) {
     if (rebuildFlowStatusEl) rebuildFlowStatusEl.textContent = t("rebuild_reader_empty");
     openRebuildFlow();
@@ -2249,7 +2255,7 @@ async function runRebuildFlow() {
     if (rebuildFlowStatusEl) rebuildFlowStatusEl.textContent = t("rebuild_need_source");
     return;
   }
-  if (sourceText.length < 400) {
+  if (sourceText.length < rebuildMinSourceChars) {
     if (rebuildFlowStatusEl) rebuildFlowStatusEl.textContent = t("rebuild_source_too_short");
     return;
   }
@@ -2273,7 +2279,7 @@ async function runRebuildFlow() {
       text: sourceText,
       label: sourceLabel,
       scope: "rebuildFlow",
-      threshold: 400,
+      threshold: rebuildMinSourceChars,
     });
     if (!docMapHasMinimumHierarchy(sourceDocMap.nodes, sourceDocMap.edges)) {
       throw new Error("rebuild_docmap_quality_gate");

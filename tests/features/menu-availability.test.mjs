@@ -38,6 +38,11 @@ for (const removedAction of [
   "insert-to-teachtext",
   "open-disk",
   "save-last",
+  // An alias for the Dictation Pad that nothing ever dispatched: no menu row,
+  // no button, no shortcut. It still carried an availability entry, so the map
+  // looked one row more honest than the menu bar was. "open-dictation" is the
+  // live command and shares the same handler.
+  "intent-key",
 ]) {
   test.assertNotIncludes(actions, `"${removedAction}"`, `${removedAction} does not survive as a hidden command handler`);
 }
@@ -167,5 +172,65 @@ test.assertIncludes(
   "btn.disabled = !state[action];",
   "Unavailable menu commands use native disabled semantics as well as visual dimming"
 );
+
+// --- rows that answered with the literal `true` ------------------------------
+// A literal is invisible to the gate above: an action present in the map counts
+// as gated whether its answer is a condition or a permanent yes. These rows had
+// a real precondition hiding behind the literal, and each condition below is
+// the one the handler already checked before refusing with a status line.
+for (const [action, condition] of [
+  ["rebuild-use-reader", "hasReaderTextForRebuild"],
+  ["rebuild-use-teachtext", "hasTeachTextTextForRebuild"],
+  ["run-rebuild-flow", "rebuildSourceLength >= rebuildMinSourceChars"],
+  ["review-view-manuscript", "canViewReviewManuscript"],
+]) {
+  test.assertIncludes(availabilityBlock, `"${action}": ${condition},`, `${action} greys on its own precondition`);
+}
+
+// The Rebuild button and runRebuildFlow() must not drift apart on how much
+// source is enough, so the number has one home.
+test.assertIncludes(
+  read("app/core/config.js"),
+  "rebuildMinSourceChars: 400,",
+  "the rebuild source minimum is one shared constant"
+);
+test.assertIncludes(
+  read("app/features/writing-flow.js"),
+  "if (sourceText.length < rebuildMinSourceChars) {",
+  "runRebuildFlow() refuses on the same number the menu greys on"
+);
+test.assertIncludes(
+  read("app/features/documents-chat.js"),
+  "function canEnterTeachTextReviewState(",
+  "the Review Desk precondition is a predicate the menu can ask without side effects"
+);
+
+// "Use Reader" means the loaded page, not whatever the pane is painting. The
+// innerText fallback captured the Reader's own empty-state sentence, so with
+// nothing open the button reported success and handed the flow 47 characters of
+// UI chrome — and no gate keyed on it could ever grey.
+test.assertNotIncludes(
+  read("app/features/writing-flow.js"),
+  "readerContentEl?.innerText",
+  "the rebuild source is the loaded Reader page, never the pane's empty state"
+);
+
+// The literals that survive, each with the reason it cannot refuse. Listed so
+// deleting the entry — which silently restores the never-asked bug — fails.
+const DELIBERATE_LITERALS = new Map([
+  ["new-document", "a scratch document needs no project; new-text-document is the project-backed verb"],
+  ["open-text-document", "same scratch document, opened from a file the user picks"],
+  ["rebuild-use-clipboard", "the OS clipboard cannot be read while the menu is drawn"],
+  ["rebuild-use-sample", "the sample article ships in the same lazy bundle as the flow"],
+  ["close-rebuild-flow", "Cancel is reachable only from inside the window it closes"],
+  ["open-rebuild-flow", "opening the window is valid wherever the studio is"],
+  ["open-context-panel", "opens a window"],
+  ["open-find-file", "opens a window"],
+  ["open-find-path", "opens a window"],
+  ["open-dictation", "the pad names the Note Pad as its destination when no field is open"],
+]);
+for (const [action, reason] of DELIBERATE_LITERALS) {
+  test.assert(gated.has(action), `${action} still answers getActionAvailability() (${reason})`);
+}
 
 test.finish();
