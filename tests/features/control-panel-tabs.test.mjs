@@ -30,7 +30,7 @@ test.assertMatches(
 );
 test.assertMatches(
   html,
-  /class="control-section control-advanced">[\s\S]*class="control-prompt-entry"[\s\S]*class="control-checkbox-grid">[\s\S]*id="performance-meter"[\s\S]*id="manual-model-fields"[\s\S]*id="show-reset-system-menu"[\s\S]*id="enable-image-gen"/,
+  /class="control-section control-advanced">[\s\S]*class="control-prompt-entry"[\s\S]*class="control-checkbox-grid">[\s\S]*id="performance-meter"[\s\S]*id="manual-model-fields"[\s\S]*id="show-reset-system-menu"/,
   "all advanced checkboxes share one spacing grid"
 );
 

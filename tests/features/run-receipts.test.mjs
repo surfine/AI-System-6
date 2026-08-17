@@ -38,7 +38,7 @@ function createReceiptsContext(overrides = {}) {
   const store = overrides.store || {
     projects: {
       commit: async (updater) => {
-        updater({ projects: [] });
+        updater({ projects: [], chatFiles });
       },
     },
   };

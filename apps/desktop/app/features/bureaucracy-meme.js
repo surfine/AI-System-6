@@ -444,17 +444,19 @@
       let data;
       const cloudActive = typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudCredentialReady();
       if (cloudActive) {
-        const response = await fetch("/api/bureaucracy/captions", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            topic,
-            tone: state.tone,
-            templateId: template().id,
-            modelRoute: currentBureaucracyModelRoute(),
-            imageDataUrl,
-            requireLlm: true,
-          }),
+        const response = await window.AISystem6Capabilities.requestService("bureaucracyMeme.captions", {
+          init: {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              topic,
+              tone: state.tone,
+              templateId: template().id,
+              modelRoute: currentBureaucracyModelRoute(),
+              imageDataUrl,
+              requireLlm: true,
+            }),
+          },
         });
         data = await response.json();
         if (!response.ok) throw new Error(data?.detail || data?.error || `HTTP ${response.status}`);
@@ -689,5 +691,43 @@
       if (command === "focus-topic") return els.topicInput?.focus();
       if (command === "generate") return generateCaptions();
     },
+  });
+
+  const BUREAUCRACY_MEME_COMMAND_NAMES = [
+    "meme-upload",
+    "meme-download",
+    "meme-focus-topic",
+    "meme-generate",
+  ];
+
+  function bureaucracyMemeCommandAvailable(action) {
+    if (action === "open-bureaucracy-meme") return true;
+    const activeWindow = document.querySelector(".window.is-active");
+    if (activeWindow?.dataset.window !== "bureaucracyMeme") return false;
+    if (action === "meme-download") {
+      return document.querySelector("#bureaucracy-download-link")?.getAttribute("aria-disabled") !== "true";
+    }
+    if (action === "meme-generate") {
+      return !!document.querySelector("#bureaucracy-topic-input")?.value.trim();
+    }
+    return true;
+  }
+
+  window.AISystem6Runtime?.registerApplication({
+    id: "bureaucracyMeme",
+    windowName: "bureaucracyMeme",
+    mount: () => renderBureaucracyMemeGenerator(),
+    restore: () => renderBureaucracyMemeGenerator(),
+    commands: Object.fromEntries(
+      ["open-bureaucracy-meme", ...BUREAUCRACY_MEME_COMMAND_NAMES].map((action) => {
+        const handler = action === "open-bureaucracy-meme"
+          ? () => openWindow("bureaucracyMeme")
+          : () => window.AISystem6BureaucracyMeme.runMenuCommand(action.slice("meme-".length));
+        return [action, {
+          handler,
+          isAvailable: () => bureaucracyMemeCommandAvailable(action),
+        }];
+      })
+    ),
   });
 })();

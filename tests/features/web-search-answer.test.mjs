@@ -30,7 +30,7 @@ test.assertIncludes(
   "Chooser offers the DeepSeek search provider"
 );
 test.assertIncludes(findPath, 't("search_deepseek")', "Searcher labels the DeepSeek provider");
-test.assertIncludes(findPath, 'fetch("/api/search/answer"', "Searcher calls the server-side online-answer route");
+test.assertIncludes(findPath, 'requestService("search.remote"', "Searcher calls the online-answer route through the service capability");
 test.assertIncludes(findPath, "cloudCredentialTransportFields()", "Searcher forwards BYOK or shared-cloud transport fields");
 test.assertIncludes(findPath, 't("search_answer_note")', "Searcher warns that online answers are model output, not evidence");
 test.assertIncludes(findPath, "function webSearchCitationsToResults", "DeepSeek citations become the actionable results list");
@@ -65,7 +65,7 @@ test.assertIncludes(findPath, 'mode: "answer"', "Searcher requests the plain ans
 test.assertIncludes(findPath, "stream: true", "Searcher streams the online answer");
 test.assertIncludes(findPath, "readWebSearchStream", "Searcher reads the server-side web-search stream");
 test.assertNotIncludes(findPath, 'effort: "low"', "Searcher does not choose reasoning effort");
-test.assertIncludes(outlineClaim, 'fetch("/api/search/answer"', "Review Desk online claim check calls the same server route");
+test.assertIncludes(outlineClaim, 'requestService("search.remote"', "Review Desk online claim check calls the same server capability");
 test.assertIncludes(outlineClaim, 'mode: "claim"', "Review Desk requests the claim verification mode");
 test.assertNotIncludes(outlineClaim, 'effort: "low"', "Review Desk does not choose reasoning effort");
 test.assertIncludes(outlineClaim, "onlineClaimVerdictFromEnum", "the browser maps the schema verdict enum to localized labels");
@@ -91,7 +91,8 @@ test.assertIncludes(windowsCss, ".composer-web-search-glyph", "the web-search gl
 test.assertIncludes(index, 'clio-web-search-toggle is-hidden"', "the ClioTalk web-search switch starts hidden");
 test.assertIncludes(chatMessages, 'toggle.classList.toggle("is-hidden", !enabled)', "the Control Panel setting gates the switch's visibility");
 test.assertIncludes(persistence, "clioWebSearch:", "the ClioTalk web-search setting persists");
-test.assertIncludes(actions, '"reader-find-sources": runReaderFindSources', "the Reader handoff action is wired");
+test.assertIncludes(read("app/features/reader.js"), '["reader-find-sources"', "the Reader handoff action is declared");
+test.assertIncludes(read("app/features/reader.js"), '["reader-find-sources",runReaderFindSources]', "the Reader handoff action is wired through its registered command");
 test.assertIncludes(actions, '"review-facts-section-online"', "the section online claim check action is wired");
 test.assertIncludes(actions, '"review-facts-online"', "the manuscript online claim check action is wired");
 test.assertIncludes(menus, 'menuItem("review-facts-online"', "the Review Desk menu exposes the online claim check");

@@ -453,7 +453,7 @@ async function timeMachineLoadArchiveCalendar(year = 0) {
   timeMachineSetCalendarStatus(t("time_machine_calendar_loading"));
   try {
     const params = new URLSearchParams({ url: address, year: String(selectedYear) });
-    const result = await timeMachineFetchJson(`/api/time-machine/calendar?${params}`, controller.signal);
+    const result = await timeMachineFetchJson("calendar", params, controller.signal);
     if (controller.signal.aborted) return false;
     if (result.timeline) timeMachineCalendarTimeline = result.timeline;
     timeMachineCalendarDaysByYear[String(selectedYear)] = result.days || [];
@@ -800,11 +800,10 @@ function timeMachineShowHome() {
  * this endpoint wraps the page in.
  */
 function timeMachineFrameRenderUrl(page) {
-  const params = new URLSearchParams({
-    url: page?.fetchedUrl || page?.url || "",
-    original: page?.url || "",
+  return window.AISystem6Capabilities.requestService("timeMachine.renderUrl", {
+    url: page?.url || "",
+    fetchedUrl: page?.fetchedUrl || "",
   });
-  return `/api/time-machine/render?${params}`;
 }
 
 function timeMachineRenderReader() {
@@ -867,7 +866,7 @@ function showTimeMachineReaderView() {
   saveDeskState();
 }
 
-function timeMachineApplyPage(page, archive = null, restoreState = null) {
+async function timeMachineApplyPage(page, archive = null, restoreState = null) {
   currentTimeMachinePage = {
     ...page,
     archive,
@@ -882,7 +881,7 @@ function timeMachineApplyPage(page, archive = null, restoreState = null) {
   // the attribute, not just clear its value.
   timeMachineFrameEl.removeAttribute("srcdoc");
   delete timeMachineFrameEl.dataset.frameReady;
-  timeMachineFrameEl.src = timeMachineFrameRenderUrl(currentTimeMachinePage);
+  timeMachineFrameEl.src = await timeMachineFrameRenderUrl(currentTimeMachinePage);
   timeMachineRenderReader();
   currentTimeMachineView = restoreState?.viewMode === "reader" && page.reader?.text ? "reader" : currentTimeMachineView;
   timeMachineSyncViewButtons();
@@ -903,8 +902,12 @@ function timeMachineApplyPage(page, archive = null, restoreState = null) {
   }
 }
 
-async function timeMachineFetchJson(url, signal) {
-  const response = await fetch(url, { signal });
+async function timeMachineFetchJson(route, params, signal) {
+  const response = await window.AISystem6Capabilities.requestService("timeMachine.remote", {
+    route,
+    params,
+    signal,
+  });
   const text = await response.text();
   let payload = null;
   try {
@@ -978,7 +981,7 @@ async function timeMachineNavigate(value, options = {}) {
         date: tab.state.targetDate,
         provider: providerPreference,
       });
-      const captureResult = await timeMachineFetchJson(`/api/time-machine/captures?${params}`, controller.signal);
+      const captureResult = await timeMachineFetchJson("captures", params, controller.signal);
       timeMachineUpdateDateRange();
       capture = captureResult.closest || null;
       const seenProviders = new Set();
@@ -1005,7 +1008,7 @@ async function timeMachineNavigate(value, options = {}) {
       try {
         const browseTarget = candidate?.browseUrl || candidate?.snapshotUrl || originalUrl;
         const browseParams = new URLSearchParams({ url: browseTarget, original: originalUrl });
-        page = await timeMachineFetchJson(`/api/time-machine/browse?${browseParams}`, controller.signal);
+        page = await timeMachineFetchJson("browse", browseParams, controller.signal);
         let resolvedCapture = candidate;
         const replayCapturedAt = timeMachineCanonicalProvider(candidate?.provider) === "wayback"
           ? timeMachineWaybackCapturedAt(page?.fetchedUrl)
@@ -1032,7 +1035,7 @@ async function timeMachineNavigate(value, options = {}) {
     }
     if (!page) throw browseError || new Error(t("time_machine_no_capture"));
     if (controller.signal.aborted) return false;
-    timeMachineApplyPage(page, capture, options.restoreState || null);
+    await timeMachineApplyPage(page, capture, options.restoreState || null);
     timeMachineSetStatus(
       page.reader?.completeness === "partial"
         ? t("time_machine_reader_partial_status")
@@ -1724,5 +1727,92 @@ window.AISystem6TimeMachine = Object.freeze({
   docMapReadiness: timeMachineDocMapReadiness,
   menuState: timeMachineMenuState,
   setStatus: timeMachineSetStatus,
+});
+
+const TIME_MACHINE_COMMAND_NAMES = [
+  "time-machine-new-tab",
+  "time-machine-close-tab",
+  "time-machine-back",
+  "time-machine-forward",
+  "time-machine-stop",
+  "time-machine-refresh",
+  "time-machine-switch-source",
+  "time-machine-toggle",
+  "time-machine-web-view",
+  "time-machine-reader-view",
+  "time-machine-preserve-wayback",
+  "time-machine-preserve-archive-is",
+  "time-machine-clip",
+  "time-machine-clip-translate",
+  "time-machine-docmap",
+  "time-machine-docmap-selection",
+  "time-machine-docmap-source",
+  "time-machine-ask",
+  "time-machine-send-manuscript",
+];
+
+function timeMachineCommandAvailable(action) {
+  if (action === "open-time-machine") return true;
+  const activeWindow = document.querySelector(".window.is-active");
+  if (activeWindow?.dataset.window !== "timeMachine") return false;
+  const menu = timeMachineMenuState();
+  const readiness = timeMachineDocMapReadiness();
+  switch (action) {
+    case "time-machine-new-tab":
+    case "time-machine-close-tab":
+      return !!menu.hasTab;
+    case "time-machine-back":
+      return !!menu.canGoBack;
+    case "time-machine-forward":
+      return !!menu.canGoForward;
+    case "time-machine-stop":
+      return !!menu.canStop;
+    case "time-machine-refresh":
+      return !!menu.canRefresh;
+    case "time-machine-switch-source":
+      return !!menu.canSwitchSource;
+    case "time-machine-toggle":
+      return true;
+    case "time-machine-web-view":
+      return !!menu.canShowWebView;
+    case "time-machine-reader-view":
+      return !!menu.canShowReaderView;
+    case "time-machine-preserve-wayback":
+    case "time-machine-preserve-archive-is":
+      return !!menu.canPreserve;
+    case "time-machine-clip":
+    case "time-machine-clip-translate":
+      return !!menu.hasSelection;
+    case "time-machine-docmap":
+      return !!readiness?.ready;
+    case "time-machine-docmap-selection":
+      return !!readiness?.selectionReady;
+    case "time-machine-docmap-source":
+      return !!readiness?.wholeReady;
+    case "time-machine-ask":
+      return !!menu.hasReaderText;
+    case "time-machine-send-manuscript":
+      return !!menu.canSendManuscript;
+    default:
+      return false;
+  }
+}
+
+window.AISystem6Runtime?.registerApplication({
+  id: "timeMachine",
+  windowName: "timeMachine",
+  mount: attachTimeMachineWindow,
+  restore: attachTimeMachineWindow,
+  commands: Object.fromEntries(
+    ["open-time-machine", ...TIME_MACHINE_COMMAND_NAMES].map((action) => {
+      const handler = action === "open-time-machine"
+        ? () => openTimeMachineWindow()
+        : () => runTimeMachineMenuCommand(action.slice("time-machine-".length));
+      return [action, {
+        handler,
+        isAvailable: () => timeMachineCommandAvailable(action),
+      }];
+    })
+  ),
 });
 window.AISystem6TimeMachineLoaded = true;

@@ -4,6 +4,10 @@
    enforced by tooling/verify-css.mjs. */
 :root {
   color-scheme: light;
+  /* Chrome faces (Chicago/Charcoal/Geneva) ship without a true bold; forbid
+     browser faux bold on titles, menus, and buttons so weight is real, not
+     synthesized. Inhered by all chrome and content. */
+  font-synthesis: none;
 
   /* Colors */
   --ink: #000000;
@@ -873,6 +877,38 @@
   --system-title-weight: 600;
   --system-emphasis-weight: 600;
   --system-strong-weight: 700;
+
+  /* Classic/Platinum fidelity contract: adaptive sizing layers.
+     Historical size is calibration evidence only; fine/coarse pointer are the
+     live geometry. Fine values alias the current compact defaults so this
+     phase changes no behavior; coarse values are available for the
+     pointer-coarse overrides in 60-responsive.css to consume.
+     Visual size, hit size, and layout slot stay separate — never reuse one for
+     another (see tooling/classic-platinum-fidelity-contract.json). */
+  --fine-pointer-menu-height: var(--menu-button-height);
+  --fine-pointer-button-min-height: var(--system-button-min-height);
+  --fine-pointer-field-min-height: var(--system-control-min-height);
+  --fine-pointer-scrollbar-width: 16px;
+  --coarse-pointer-menu-height: 34px;
+  --coarse-pointer-button-min-height: 40px;
+  --coarse-pointer-field-min-height: 44px;
+  --coarse-pointer-scrollbar-width: 22px;
+  --coarse-pointer-hit-min: 44px;
+  --titlebar-control-visual-size: var(--system-titlebar-control-art-size);
+  --titlebar-control-hit-size: var(--system-titlebar-control-size);
+  --titlebar-control-layout-slot: var(--system-titlebar-control-slot);
+  --titlebar-control-optical-offset-x: 0px;
+  --titlebar-control-optical-offset-y: 0px;
+
+  /* Window and content spacing roles. Chrome stays compact; reading and
+     editing surfaces get their own gutters. */
+  --window-pane-padding: var(--system-window-padding);
+  --window-pane-gap: 8px;
+  --window-toolbar-padding: 6px 8px;
+  --window-status-padding: 4px 8px;
+  --content-reading-padding-x: 16px;
+  --content-reading-padding-y: 12px;
+  --touch-safe-inset: env(safe-area-inset-bottom, 0px);
 
   /* Writing editor */
   --writing-editor-font-size: 14px;

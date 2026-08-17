@@ -366,3 +366,5 @@ async function promoteSideAskPad() {
   }
   setStatus(t("sideask_pad_promoted"));
 }
+
+window.AISystem6Runtime?.registerApplication({id:"sideAskPad",windowName:"sideAskPad",mount:()=>sideAskPad(),restore:()=>sideAskPad(),commands:{"open-sideask-pad":{handler:()=>openSideAskPad(),isAvailable:()=>!0},"sideask-pad-ask":{handler:()=>askSideAskPad(),isAvailable:()=>!0},"sideask-pad-clear":{handler:()=>clearSideAskPad(),isAvailable:()=>!0},"sideask-pad-promote":{handler:()=>promoteSideAskPad(),isAvailable:()=>!0},"sideask-pad-interview":{handler:()=>interviewQuestionSheet(),isAvailable:()=>!0}}});

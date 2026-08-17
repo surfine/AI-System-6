@@ -351,4 +351,5 @@ window.AISystem6DoomLoaded = true;
     refreshLanguage: refreshDoomLanguage,
     isLoaded: () => !!doomState.frame,
   });
+  window.AISystem6Runtime?.registerApplication({id:"doom",windowName:"doom",mount:attachDoom,restore:attachDoom,commands:{"open-doom":{handler:()=>openWindow("doom"),isAvailable:()=>!0}}});
 })();

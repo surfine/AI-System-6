@@ -1257,3 +1257,13 @@ function insertCharacter(character) {
 
   setStatus(t("character_inserted"));
 }
+
+let npmounted=!1;function mountNotePadRuntime(){if(npmounted)return!0;npmounted=!0;notePadTextInput.addEventListener("input",()=>{syncCurrentNotePadPage();saveDeskState()});notePadPrevButton.addEventListener("click",()=>goToNotePadPage(notePadPageIndex-1));notePadNextButton.addEventListener("click",goToNextNotePadPage);return!0}
+function nwin(){return document.querySelector(".window.is-active")?.dataset.window==="notePad"}
+const nav={"open-note-pad":()=>!0,"note-pad-new-slip":()=>nwin(),"note-pad-send":()=>nwin(),"note-pad-back":()=>nwin(),"note-pad-cycle-destination":()=>nwin()};
+const nlist=[["open-note-pad",()=>openWindow("notePad")],["note-pad-new-slip",()=>addNotePadPage(currentWritingPosition())],["note-pad-send",()=>sendNotePadPage()],["note-pad-back",returnToNotePadOrigin],["note-pad-cycle-destination",cycleNotePadDestination]];
+window.AISystem6Runtime?.registerApplication({id:"notePad",windowName:"notePad",mount:mountNotePadRuntime,restore:()=>mountNotePadRuntime(),commands:Object.fromEntries(nlist.map(([a,h])=>[a,{handler:h,isAvailable:()=>a==="open-note-pad"?!0:nav[a]()}]))});
+
+let cmounted=!1;function mountClipboardRuntime(){if(cmounted)return!0;cmounted=!0;clipboardInsertButton.addEventListener("click",insertClipboardIntoTeachText);clipboardClearButton.addEventListener("click",clearClipboardWindow);clipboardTranslateButton?.addEventListener("click",translateClipboardText);clipboardDocMapButton?.addEventListener("click",()=>withDocMap(()=>makeDocMapFromCurrentSource()));clipboardTranslationTeachTextButton?.addEventListener("click",()=>sendClipboardTranslation("teachtext"));clipboardTranslationScrapbookButton?.addEventListener("click",()=>sendClipboardTranslation("scrapbook"));clipboardTranslationAssistantButton?.addEventListener("click",()=>sendClipboardTranslation("assistant"));return!0}
+const clist=[["open-clipboard",()=>{renderClipboard();openWindow("clipboard")}],["clipboard-insert",insertClipboardIntoTeachText],["clipboard-clear",clearClipboardWindow],["clipboard-translate",translateClipboardText],["clipboard-docmap",()=>withDocMap(()=>makeDocMapFromCurrentSource())],["clipboard-translation-teachtext",()=>sendClipboardTranslation("teachtext")],["clipboard-translation-scrapbook",()=>sendClipboardTranslation("scrapbook")],["clipboard-translation-assistant",()=>sendClipboardTranslation("assistant")]];
+window.AISystem6Runtime?.registerApplication({id:"clipboard",windowName:"clipboard",mount:mountClipboardRuntime,restore:()=>mountClipboardRuntime(),commands:Object.fromEntries(clist.map(([a,h])=>[a,{handler:h,isAvailable:()=>a==="open-clipboard"?!0:!0}]))});

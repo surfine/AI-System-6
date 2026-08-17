@@ -1005,6 +1005,7 @@ const mobileFullScreenAppIds = new Set([
   "liquidCover",
   "cmfStudio",
   "soundscape",
+  "themeLab",
   "scrapbook",
   "bureaucracyMeme",
   "micropolis",
@@ -2116,14 +2117,6 @@ function getActionAvailability() {
     ? !!currentFinderSelection.canMakeDocMap
     : docMapReadiness?.wholeReady;
   const readerDocMapReadiness = winName === "reader" ? docMapReadinessForSurface("reader") : null;
-  const timeMachineDocMapReadiness = winName === "timeMachine"
-    ? window.AISystem6TimeMachine?.docMapReadiness?.()
-    : null;
-  // Time Machine's verbs live in a lazy module, so its own state answers for
-  // them. An unloaded module leaves every row grey rather than black-and-inert.
-  const timeMachine = winName === "timeMachine"
-    ? window.AISystem6TimeMachine?.menuState?.() || null
-    : null;
   const activeEditable = getActiveEditableElement();
   const hasEditableText = !!String(activeEditable?.value || activeEditable?.textContent || "").trim();
   const canUseWritingTools = hasEditableText || (hasTeachTextBody && teachTextIsManuscript) || hasSelectionServiceText;
@@ -2284,30 +2277,6 @@ function getActionAvailability() {
     "generate-marp-open-clio-stage": hasTeachTextBody && teachTextCanExport,
     "toggle-teachtext-preview": teachTextVisible,
     "toggle-writing-preview": ["quickDraft", "questionSheet", "outline", "sectionDrafts", "reviewDesk", "teachText"].includes(winName),
-    "quick-draft-menu": winName === "quickDraft",
-    "quick-draft-import-chat": winName === "quickDraft",
-    "quick-draft-open-writing-studio": winName === "quickDraft",
-    "quick-draft-vent-on": winName === "quickDraft" && !quickDraftVentActive,
-    "quick-draft-vent-off": winName === "quickDraft" && quickDraftVentActive,
-    "quick-draft-vent-summary": winName === "quickDraft" && quickDraftHasModel && quickDraftHasOrganizableMaterial,
-    "quick-draft-compose": winName === "quickDraft" && quickDraftHasModel && quickDraftHasInput,
-    "quick-draft-apply": winName === "quickDraft" && quickDraftCanPreview,
-    "quick-draft-develop": winName === "quickDraft" && quickDraftHasBody && quickDraftCanDevelop,
-    "quick-draft-view-body": winName === "quickDraft",
-    "quick-draft-view-grain": winName === "quickDraft" && quickDraftHasBody,
-    "quick-draft-view-read": winName === "quickDraft" && quickDraftHasBody,
-    "quick-draft-toggle-materials": winName === "quickDraft" && quickDraftHasBody,
-    "quick-draft-toggle-adjustments": winName === "quickDraft" && quickDraftHasBody,
-    "quick-draft-toggle-sideask": winName === "quickDraft" && !isMultiFinderMode(),
-    "quick-draft-talk-points": winName === "quickDraft" && quickDraftHasModel && quickDraftHasInput,
-    "quick-draft-mingming": winName === "quickDraft" && quickDraftHasModel && quickDraftHasBody,
-    "quick-draft-luoluo": winName === "quickDraft" && quickDraftHasModel && quickDraftHasBody,
-    "quick-draft-hkrr": winName === "quickDraft" && quickDraftHasModel && quickDraftHasBody,
-    "quick-draft-praise": winName === "quickDraft" && quickDraftHasModel && quickDraftHasBody,
-    "quick-draft-save-project": winName === "quickDraft" && quickDraftHasBody,
-    "quick-draft-copy-markdown": winName === "quickDraft" && quickDraftHasBody,
-    "quick-draft-send-teachtext": winName === "quickDraft" && quickDraftHasBody,
-    "quick-draft-send-review": winName === "quickDraft" && quickDraftHasBody,
     "insert-question-template": winName === "questionSheet",
     "organize-question-sheet": winName === "questionSheet",
     "generate-outline": winName === "questionSheet",
@@ -2438,152 +2407,6 @@ function getActionAvailability() {
     "synthesize-search-results": winName === "findPath" && findPathResults.length > 0,
     "copy-search-result-markdown": winName === "findPath" && selectedFindPathIndex !== null,
     "insert-search-result": winName === "findPath" && selectedFindPathIndex !== null,
-    "reader-open-source": winName === "reader",
-    "reader-clip": winName === "reader" && activeOwnedControlEnabled("#reader-clip-button"),
-    "reader-clip-translate": winName === "reader" && activeOwnedControlEnabled("#reader-clip-translate-button"),
-    "reader-send-manuscript": winName === "reader" && activeOwnedControlEnabled("#reader-send-manuscript"),
-    "reader-make-docmap": winName === "reader" && activeOwnedControlEnabled("#reader-docmap-button"),
-    "reader-docmap-selection": winName === "reader" && !!readerDocMapReadiness?.selectionReady,
-    "reader-docmap-source": winName === "reader" && !!readerDocMapReadiness?.wholeReady,
-    "reader-open-clio-stage": winName === "reader" && activeOwnedControlEnabled("#reader-open-clio-stage"),
-    "focus-reader-question": winName === "reader" && !!currentReaderPage?.text,
-    "docmap-save": winName === "docMap" && !!currentDocMap,
-    "docmap-print-pdf": winName === "docMap" && !!currentDocMap,
-    "docmap-send-question": winName === "docMap" && activeControlEnabled("#docmap-send-question"),
-    "docmap-insert-outline": winName === "docMap" && activeControlEnabled("#docmap-insert-outline"),
-    "docmap-hkrr": winName === "docMap" && !!currentDocMap,
-    "focus-docmap-question": winName === "docMap" && !!currentDocMap,
-    "docmap-layout-right": winName === "docMap" && !!currentDocMap,
-    "docmap-layout-balanced": winName === "docMap" && !!currentDocMap,
-    "docmap-fit-view": winName === "docMap" && !!currentDocMap,
-    "docmap-zoom-out": winName === "docMap" && !!currentDocMap,
-    "docmap-zoom-in": winName === "docMap" && !!currentDocMap,
-    "docmap-retry-pending": winName === "docMap" && !currentDocMap && !!activeDocMapTab()?.state?.pending?.retryable,
-    "time-machine-docmap": winName === "timeMachine" && !!timeMachineDocMapReadiness?.ready,
-    "time-machine-docmap-selection": winName === "timeMachine" && !!timeMachineDocMapReadiness?.selectionReady,
-    "time-machine-docmap-source": winName === "timeMachine" && !!timeMachineDocMapReadiness?.wholeReady,
-    "time-machine-new-tab": !!timeMachine,
-    "time-machine-close-tab": !!timeMachine?.hasTab,
-    "time-machine-back": !!timeMachine?.canGoBack,
-    "time-machine-forward": !!timeMachine?.canGoForward,
-    "time-machine-stop": !!timeMachine?.canStop,
-    "time-machine-refresh": !!timeMachine?.canRefresh,
-    "time-machine-switch-source": !!timeMachine?.canSwitchSource,
-    // The archive band is a mode you turn on and off, so this row is offered
-    // whenever the window is in front; the band itself shows which way it is.
-    "time-machine-toggle": !!timeMachine,
-    "time-machine-web-view": !!timeMachine?.canShowWebView,
-    "time-machine-reader-view": !!timeMachine?.canShowReaderView,
-    "time-machine-preserve-wayback": !!timeMachine?.canPreserve,
-    "time-machine-preserve-archive-is": !!timeMachine?.canPreserve,
-    "time-machine-clip": !!timeMachine?.hasSelection,
-    "time-machine-clip-translate": !!timeMachine?.hasSelection,
-    "time-machine-ask": !!timeMachine?.hasReaderText,
-    "time-machine-send-manuscript": !!timeMachine?.canSendManuscript,
-    "clio-stage-docmap": winName === "clioStage" && activeControlEnabled("#clio-stage-docmap"),
-    "scrapbook-open-source": winName === "scrapbook" && activeOwnedControlEnabled("#open-scrap-source"),
-    "scrapbook-toggle-translation": winName === "scrapbook" && activeOwnedControlEnabled("#toggle-scrap-translation"),
-    "scrapbook-insert": winName === "scrapbook" && activeOwnedControlEnabled("#insert-scrap"),
-    "scrapbook-attach": winName === "scrapbook" && activeOwnedControlEnabled("#attach-scrap-to-assistant"),
-    "scrapbook-send-question": winName === "scrapbook" && activeOwnedControlEnabled("#send-scraps-to-question"),
-    "scrapbook-outline": winName === "scrapbook" && activeOwnedControlEnabled("#outline-scraps"),
-    "scrapbook-export-bilingual": winName === "scrapbook" && activeOwnedControlEnabled("#download-scraps-bilingual"),
-    "scrapbook-delete": winName === "scrapbook" && activeOwnedControlEnabled("#delete-scrap"),
-    "focus-scrapbook-question": winName === "scrapbook" && getSelectedScraps().length > 0,
-    "clio-chart-import": winName === "clioChart",
-    "clio-chart-new-cpu-gpu": winName === "clioChart",
-    "clio-chart-new-gaming": winName === "clioChart",
-    "clio-chart-new-battery-power": winName === "clioChart",
-    "clio-chart-new-noise-heat": winName === "clioChart",
-    "clio-chart-new-display": winName === "clioChart",
-    "clio-chart-new-rating": winName === "clioChart",
-    "clio-chart-new-blank": winName === "clioChart",
-    "clio-chart-save-template": winName === "clioChart",
-    "clio-chart-hand-back": winName === "clioChart" && !!window.AISystem6ClioChart?.hasOwnedBlock?.(),
-    "clio-chart-bars": winName === "clioChart",
-    "clio-chart-matrix": winName === "clioChart",
-    "clio-chart-trace": winName === "clioChart",
-    "clio-chart-grid": winName === "clioChart",
-    "clio-chart-score": winName === "clioChart",
-    "clio-chart-source": winName === "clioChart",
-    "clio-chart-presentation": winName === "clioChart",
-    "clio-chart-send-stage": winName === "clioChart" && !!window.AISystem6ClioChart?.canSendToStage?.(),
-    "clio-chart-reverse-sort": winName === "clioChart",
-    "clio-chart-lower-better": winName === "clioChart",
-    "clio-chart-read": winName === "clioChart",
-    "clio-chart-outliers": winName === "clioChart",
-    "clio-chart-gaps": winName === "clioChart",
-    "clio-chart-write-up": winName === "clioChart",
-    "micropolis-new-city": winName === "micropolis",
-    "micropolis-save-city": winName === "micropolis" && !!window.AISystem6Micropolis?.hasCity?.(),
-    "micropolis-open-city": winName === "micropolis",
-    "micropolis-budget": winName === "micropolis" && !!window.AISystem6Micropolis?.hasCity?.(),
-    "micropolis-evaluation": winName === "micropolis" && !!window.AISystem6Micropolis?.hasCity?.(),
-    "micropolis-disaster-fire": winName === "micropolis" && !!window.AISystem6Micropolis?.hasCity?.(),
-    "micropolis-disaster-flood": winName === "micropolis" && !!window.AISystem6Micropolis?.hasCity?.(),
-    "micropolis-disaster-tornado": winName === "micropolis" && !!window.AISystem6Micropolis?.hasCity?.(),
-    "micropolis-disaster-earthquake": winName === "micropolis" && !!window.AISystem6Micropolis?.hasCity?.(),
-    "micropolis-disaster-monster": winName === "micropolis" && !!window.AISystem6Micropolis?.hasCity?.(),
-    "micropolis-disaster-crash": winName === "micropolis" && !!window.AISystem6Micropolis?.hasCity?.(),
-    "micropolis-disaster-meltdown": winName === "micropolis" && !!window.AISystem6Micropolis?.hasCity?.(),
-    "micropolis-pause": winName === "micropolis" && !!window.AISystem6Micropolis?.hasCity?.(),
-    "micropolis-speed-slow": winName === "micropolis" && !!window.AISystem6Micropolis?.hasCity?.(),
-    "micropolis-speed-med": winName === "micropolis" && !!window.AISystem6Micropolis?.hasCity?.(),
-    "micropolis-speed-fast": winName === "micropolis" && !!window.AISystem6Micropolis?.hasCity?.(),
-    "see-as-chart": winName === "teachText" && teachTextHasChartableMarkdownTable(teachTextBodyInput?.value || ""),
-    "clio-stage-import": winName === "clioStage",
-    "clio-stage-previous": winName === "clioStage" && activeControlEnabled("#clio-stage-prev"),
-    "clio-stage-next": winName === "clioStage" && activeControlEnabled("#clio-stage-next"),
-    "clio-stage-source": winName === "clioStage" && activeControlEnabled("#clio-stage-source-view"),
-    "clio-stage-document": winName === "clioStage" && activeControlEnabled("#clio-stage-document-view"),
-    "clio-stage-slide": winName === "clioStage" && activeControlEnabled("#clio-stage-slide-view"),
-    "clio-stage-cue": winName === "clioStage" && activeControlEnabled("#clio-stage-cue-view"),
-    "focus-clio-stage-question": winName === "clioStage" && activeControlEnabled("#clio-stage-question"),
-    "cover-choose-background": winName === "liquidCover",
-    "cover-choose-video": winName === "liquidCover",
-    "cover-choose-subject": winName === "liquidCover",
-    "cover-export-png": winName === "liquidCover",
-    "cover-export-video": winName === "liquidCover" && activeControlEnabled("#lc-motion-export"),
-    "cover-add-layer": winName === "liquidCover",
-    "cover-delete-layer": winName === "liquidCover" && activeControlEnabled("#lc-del-layer"),
-    "cover-shape-circle": winName === "liquidCover",
-    "cover-shape-squircle": winName === "liquidCover",
-    "cover-shape-capsule": winName === "liquidCover",
-    "cover-toggle-focus": winName === "liquidCover",
-    "cover-preview-motion": winName === "liquidCover" && activeControlEnabled("#lc-motion-preview"),
-    "cover-ai-compose": winName === "liquidCover",
-    "cmf-save-recipe": winName === "cmfStudio",
-    "cmf-export-usdz": winName === "cmfStudio",
-    "cmf-shuffle": winName === "cmfStudio",
-    "cmf-reset": winName === "cmfStudio",
-    "cmf-reset-view": winName === "cmfStudio",
-    "cmf-view-front": winName === "cmfStudio" && !!document.querySelector('[data-cmf-view="01-front"]'),
-    "cmf-view-back": winName === "cmfStudio" && !!document.querySelector('[data-cmf-view="02-back"]'),
-    "cmf-view-side": winName === "cmfStudio" && !!document.querySelector('[data-cmf-view="05-buttons-side"]'),
-    "soundscape-choose-local": winName === "soundscape",
-    "soundscape-gamdl-download": winName === "soundscape",
-    "soundscape-save-moment": winName === "soundscape" && !!window.AISystem6Soundscape?.canSaveMoment?.(),
-    "soundscape-toggle-play": winName === "soundscape" && !!window.AISystem6Soundscape?.hasQueue?.(),
-    "soundscape-previous": winName === "soundscape" && !!window.AISystem6Soundscape?.hasQueue?.(),
-    "soundscape-next": winName === "soundscape" && !!window.AISystem6Soundscape?.hasQueue?.(),
-    "soundscape-shuffle": winName === "soundscape" && !!window.AISystem6Soundscape?.hasQueue?.(),
-    "soundscape-shuffle-on": winName === "soundscape" && !!window.AISystem6Soundscape?.hasQueue?.(),
-    "soundscape-shuffle-off": winName === "soundscape" && !!window.AISystem6Soundscape?.hasQueue?.(),
-    "soundscape-shuffle-songs": winName === "soundscape" && !!window.AISystem6Soundscape?.hasQueue?.(),
-    "soundscape-shuffle-albums": winName === "soundscape" && !!window.AISystem6Soundscape?.hasQueue?.(),
-    "soundscape-shuffle-groupings": winName === "soundscape" && !!window.AISystem6Soundscape?.hasQueue?.(),
-    "soundscape-repeat": winName === "soundscape" && !!window.AISystem6Soundscape?.hasQueue?.(),
-    "soundscape-repeat-off": winName === "soundscape" && !!window.AISystem6Soundscape?.hasQueue?.(),
-    "soundscape-repeat-all": winName === "soundscape" && !!window.AISystem6Soundscape?.hasQueue?.(),
-    "soundscape-repeat-one": winName === "soundscape" && !!window.AISystem6Soundscape?.hasQueue?.(),
-    "soundscape-reset-style": winName === "soundscape",
-    "soundscape-link-project": winName === "soundscape" && !!window.AISystem6Soundscape?.canLinkProject?.(),
-    "endfield-new-session": winName === "endfieldTerminal",
-    "endfield-run-query": winName === "endfieldTerminal" && !!document.querySelector("#endfield-query")?.value.trim(),
-    "meme-upload": winName === "bureaucracyMeme",
-    "meme-download": winName === "bureaucracyMeme" && document.querySelector("#bureaucracy-download-link")?.getAttribute("aria-disabled") !== "true",
-    "meme-focus-topic": winName === "bureaucracyMeme",
-    "meme-generate": winName === "bureaucracyMeme" && !!document.querySelector("#bureaucracy-topic-input")?.value.trim(),
     "open-find-file": true,
     "open-selected-find-file": selectedFindFileIndex !== null,
     "reveal-selected-find-file": selectedFindFileIndex !== null,
@@ -2633,6 +2456,10 @@ function getActionAvailability() {
     "toggle-writer-mode": false,
     "open-theme-lab": true
   };
+  // Explicit runtime commands supply their own availability. Reader has moved
+  // off the hard-coded action map, so these rows are still grey/black in the
+  // menu without window-manager.js knowing Reader's internals.
+  window.AISystem6Runtime?.c?.forEach((command, action) => { if (availability[action] !== undefined) return; try { availability[action] = command.isAvailable() !== false; } catch { availability[action] = false; } });
   Object.keys(availability).forEach((action) => {
     if (!isWorkspaceActionAllowed(action)) availability[action] = false;
   });
@@ -2850,6 +2677,10 @@ const lazyWindowModules = {
     attach: () => window.AISystem6TimeMachine?.attach?.(),
   },
   cmfStudio: { ensure: () => ensureCmfStudioModule() },
+  imagePromptStudio: {
+    ensure: () => ensureImagePromptStudioModule(),
+    attach: () => window.AISystem6ImagePromptStudio?.render?.(),
+  },
   soundscape: {
     ensure: () => ensureSoundscapeModule(),
     attach: () => window.AISystem6Soundscape?.attach?.(),
@@ -2941,7 +2772,7 @@ async function openWindow(name, options = {}) {
   // A large optional application may install its window frame with the same
   // lazy module that owns its interior. This keeps unopened games off the
   // startup disk while preserving the ordinary window-manager contract.
-  if (!getWindow(name) && lazyWindowModules[name]) await lazyWindowModules[name].ensure();
+  if (!getWindow(name) && lazyWindowModules[name]) await loadLazyWindowModule(name);
   const win = getWindow(name);
   // A lazy module injects its own window long after the boot loop bound the
   // title-bar controls, so guarantee the chrome here rather than trusting each
@@ -2974,6 +2805,7 @@ async function openWindow(name, options = {}) {
 
   await loadLazyWindowModule(name);
 
+  window.AISystem6Runtime?.mountApplication?.(getWindowAppId(name), { windowName: name });
   if (name === "projects") {
     renderProjectDisks();
   }

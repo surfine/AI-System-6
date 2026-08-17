@@ -456,7 +456,7 @@ async function fetchReaderPage(urlArg = null) {
 
   setReaderLoadingState(t("reader_fetching"));
   try {
-    const response = await fetch(`/api/reader?url=${encodeURIComponent(url)}`);
+    const response = await window.AISystem6Capabilities.requestService("reader.remote", { url });
     if (!response.ok) {
       throw new Error(serviceErrorDetail(response.status, await response.text()));
     }
@@ -1237,18 +1237,20 @@ async function translateCurrentReaderSubtitleFromQuestion(question) {
   try {
     let translatedSrt = "";
     if (typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudCredentialReady()) {
-      const response = await fetch(apiUrl("/api/subtitles/translate"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          mode,
-          blocks,
-          _cloud_active: true,
-          ...cloudCredentialTransportFields(),
-          _cloud_base_url: cloudConfig.baseUrl,
-          _cloud_model: cloudConfig.model,
-        }),
-        signal: getLongTaskSignal(),
+      const response = await window.AISystem6Capabilities.requestService("reader.subtitlesTranslate", {
+        init: {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            mode,
+            blocks,
+            _cloud_active: true,
+            ...cloudCredentialTransportFields(),
+            _cloud_base_url: cloudConfig.baseUrl,
+            _cloud_model: cloudConfig.model,
+          }),
+          signal: getLongTaskSignal(),
+        },
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.detail || data.error || "Subtitle translation failed");
@@ -1602,3 +1604,9 @@ window.AISystem6ApplicationRegistry?.registerApplicationLifecycle?.("reader", {
   onResume: () => window.AISystem6WebPlatform?.holdScreenWakeLock?.("reader"),
   onDispose: () => window.AISystem6WebPlatform?.releaseScreenWakeLock?.("reader"),
 });
+
+let rmounted=!1;function mountReaderRuntime(){if(rmounted)return!0;rmounted=!0;readerAskForm?.addEventListener("submit",askReaderQuestion);registerAskBarSource("reader",describeReaderAskScope);initReaderSplitHandle();readerUrlInput?.addEventListener("keydown",event=>{if(event.key==="Enter"&&!eventIsTextComposition(event)){event.preventDefault();fetchReaderPage()}});return!0}
+function rwin(){return document.querySelector(".window.is-active")?.dataset.window==="reader"}function rctrl(s){const c=document.querySelector(s);return!!c&&!c.disabled&&!c.hidden}function rready(){return rwin()&&typeof docMapReadinessForSurface=="function"?docMapReadinessForSurface("reader"):null}
+const rav={"open-reader":()=>!0,"reader-open-source":()=>!0,"reader-clip":()=>rctrl("#reader-clip-button"),"reader-clip-translate":()=>rctrl("#reader-clip-translate-button"),"reader-send-manuscript":()=>rctrl("#reader-send-manuscript"),"reader-make-docmap":()=>rctrl("#reader-docmap-button"),"reader-docmap-selection":()=>!!rready()?.selectionReady,"reader-docmap-source":()=>!!rready()?.wholeReady,"reader-open-clio-stage":()=>rctrl("#reader-open-clio-stage"),"reader-find-sources":()=>rctrl("#reader-find-sources"),"focus-reader-question":()=>!!currentReaderPage?.text};
+const rlist=[["open-reader",()=>{if(typeof openReaderWindowWithTabs=="function"){openReaderWindowWithTabs();return}openWindow("reader");readerUrlInput?.focus()}],["reader-open-source",handleReaderOpenButton],["reader-clip",clipReaderSelection],["reader-clip-translate",clipReaderSelectionWithTranslation],["reader-send-manuscript",sendReaderCopyToManuscript],["reader-make-docmap",()=>makeDocMapForRange("auto")],["reader-docmap-selection",()=>{const c=readerSelectionContext();if(!c)return setStatus(t("select_text_first"));return makeDocMapForRange("selection",c)}],["reader-docmap-source",()=>makeDocMapForRange("source")],["reader-find-sources",runReaderFindSources],["reader-open-clio-stage",openCurrentReaderInClioStage],["focus-reader-question",()=>readerQuestionInput?.focus()]];
+window.AISystem6Runtime?.registerApplication({id:"reader",windowName:"reader",mount:mountReaderRuntime,restore:()=>mountReaderRuntime(),commands:Object.fromEntries(rlist.map(([a,h])=>[a,{handler:h,isAvailable:()=>a==="open-reader"?!0:rwin()&&(rav[a]||(()=>!0))()}]))});

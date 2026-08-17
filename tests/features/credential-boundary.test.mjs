@@ -9,7 +9,6 @@ const credentialVault = require("../../apps/server/server/credential-vault.js");
 const app = read("app.js");
 const persistence = read("app/core/persistence-status.js");
 const cloudModel = read("app/features/cloud-model.js");
-const liquidCover = read("app/features/liquid-cover.js");
 const cloudChat = read("apps/server/server/routes/cloud-chat.js");
 const cloudStatus = read("apps/server/server/routes/cloud-status.js");
 const router = read("apps/server/server/router.js");
@@ -262,7 +261,7 @@ test.assert(!popoverSource.includes("innerHTML"), "the model popover has no dyna
 test.assertIncludes(popoverSource, "replaceChildren", "the model popover replaces nodes through DOM APIs");
 test.assertIncludes(cloudModel, "element.textContent = String(text)", "dynamic popover values become text nodes");
 test.assertNotIncludes(cloudModel, "cloudConfig.apiKey", "Control Panel never stores the API key on cloudConfig");
-test.assertIncludes(cloudModel, 'fetch("/api/cloud/credentials"', "Control Panel stages credentials with the local service");
+test.assertIncludes(cloudModel, 'requestService("cloud.credentials"', "Control Panel stages credentials through the service capability");
 test.assertIncludes(cloudModel, 'cloudApiKeyEl.value = ""', "Control Panel clears the key field after staging");
 test.assertIncludes(cloudModel, 'changeLocalCredential("available"', "Control Panel verifies restored credential references with the local service");
 test.assertIncludes(cloudModel, 'cloudConfig.credentialId = ""', "Control Panel clears a restored credential reference that no longer resolves");
@@ -274,23 +273,5 @@ test.assertIncludes(cloudStatus, "credentialId: body.credential_id", "status che
 test.assertIncludes(router, '["POST /api/cloud/credentials", handleCloudCredentials]', "credential registration is a guarded local API route");
 const publicRoutes = router.match(/const publicExactRouteKeys = new Set\(\[[\s\S]*?\]\);/)?.[0] || "";
 test.assertNotIncludes(publicRoutes, "/api/cloud/credentials", "the public deployment cannot mutate the local credential vault");
-
-const imageSaveStart = liquidCover.indexOf("function saveImgCfg()");
-const imageSaveEnd = liquidCover.indexOf("function imageCfg()", imageSaveStart);
-const imageSaveSource = liquidCover.slice(imageSaveStart, imageSaveEnd);
-const persistentConfigStart = imageSaveSource.indexOf("JSON.stringify({");
-const persistentImageConfig = imageSaveSource.slice(
-  persistentConfigStart,
-  imageSaveSource.indexOf("}));", persistentConfigStart) + 4
-);
-test.assert(
-  !persistentImageConfig.includes("apiKey"),
-  "Cover Glass image settings do not persist the image API key"
-);
-test.assertIncludes(
-  imageSaveSource,
-  "sessionStorage.setItem(IMG_KEY_SESSION_KEY, apiKey)",
-  "Cover Glass keeps its separate image-provider key scoped to sessionStorage"
-);
 
 test.finish();

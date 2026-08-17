@@ -212,3 +212,6 @@ function sendTranslationPad() {
   }
   sendTranslationPadToTeachText();
 }
+
+let tpmounted=!1;function mountTranslationPadRuntime(){if(tpmounted)return!0;tpmounted=!0;translationPadSourceInput?.addEventListener("input",syncTranslationPadStateFromInputs);translationPadResultInput?.addEventListener("input",syncTranslationPadStateFromInputs);translationPadClearButton?.addEventListener("click",clearTranslationPad);translationPadTranslateButton?.addEventListener("click",translateTranslationPadSource);translationPadSendButton?.addEventListener("click",sendTranslationPad);return!0}
+window.AISystem6Runtime?.registerApplication({id:"translationPad",windowName:"translationPad",mount:mountTranslationPadRuntime,restore:()=>mountTranslationPadRuntime(),commands:{"open-translation-pad":{handler:()=>openTranslationPad(),isAvailable:()=>!0}}});

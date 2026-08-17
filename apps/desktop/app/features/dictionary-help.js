@@ -870,4 +870,5 @@ function lookupDictionaryInput(event) {
   });
 }
 
+window.AISystem6Runtime?.registerApplication({id:"dictionary",windowName:"dictionary",mount:()=>renderDictionaryWords(),restore:()=>renderDictionaryWords(),commands:{"open-dictionary":{handler:()=>openWindow("dictionary"),isAvailable:()=>!0},"open-system-help":{handler:()=>openSystemHelpEntry(selectedSystemHelpEntryId||"system-help"),isAvailable:()=>!0}}});
 window.AISystem6DictionaryHelpLoaded = true;

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 32 32" fill="none" stroke="#000000" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" shape-rendering="geometricPrecision">
+  <style>
+
+    .classic-ink{fill:#000000;stroke:#000000;stroke-width:.25}
+    .classic-paper{fill:#ffffff;stroke:none}
+    .sys-icon-detail{display:none}
+  </style>
+  <g transform="translate(0 0)">
+
+    <rect x="6" y="10" width="20" height="10" rx="2" />
+    <rect x="9" y="13.5" width="6" height="3" rx="1" />
+    <rect x="17" y="13.5" width="6" height="3" rx="1" />
+    <circle cx="10" cy="21.5" r="2.5" />
+    <circle cx="22" cy="21.5" r="2.5" />
+    <path d="M4 26h24" />
+  </g>
+</svg>

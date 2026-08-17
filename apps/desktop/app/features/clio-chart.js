@@ -1769,3 +1769,97 @@ window.AISystem6ClioChart = {
   setColumnText: setClioChartColumnText,
   setConfig: setClioChartConfig,
 };
+
+// Runtime command surface for ClioChart. The window manager still owns the
+// grey/black availability rules for these rows, so each command asks the same
+// shared availability map instead of duplicating those conditions here.
+const CLIO_CHART_COMMAND_NAMES = [
+  "clio-chart-import",
+  "clio-chart-hand-back",
+  "clio-chart-new-cpu-gpu",
+  "clio-chart-new-gaming",
+  "clio-chart-new-battery-power",
+  "clio-chart-new-noise-heat",
+  "clio-chart-new-display",
+  "clio-chart-new-rating",
+  "clio-chart-new-blank",
+  "clio-chart-save-template",
+  "clio-chart-bars",
+  "clio-chart-matrix",
+  "clio-chart-trace",
+  "clio-chart-grid",
+  "clio-chart-score",
+  "clio-chart-source",
+  "clio-chart-presentation",
+  "clio-chart-send-stage",
+  "clio-chart-reverse-sort",
+  "clio-chart-lower-better",
+  "clio-chart-read",
+  "clio-chart-outliers",
+  "clio-chart-gaps",
+  "clio-chart-write-up",
+];
+
+function clioChartCommandAvailable(action) {
+  if (action === "open-clio-chart") return true;
+  if (action === "see-as-chart") {
+    const activeWindow = document.querySelector(".window.is-active");
+    return activeWindow?.dataset.window === "teachText"
+      && typeof teachTextHasChartableMarkdownTable === "function"
+      && teachTextHasChartableMarkdownTable(teachTextBodyInput?.value || "");
+  }
+  const activeWindow = document.querySelector(".window.is-active");
+  if (activeWindow?.dataset.window !== "clioChart") return false;
+  if (action === "clio-chart-hand-back") {
+    return !!window.AISystem6ClioChart?.hasOwnedBlock?.();
+  }
+  if (action === "clio-chart-send-stage") {
+    return !!window.AISystem6ClioChart?.canSendToStage?.();
+  }
+  return true;
+}
+
+function runClioChartRuntimeCommand(action) {
+  if (action === "open-clio-chart") return openClioChart();
+  if (action === "see-as-chart") return openClioChartFromTeachText();
+  const chart = window.AISystem6ClioChart;
+  if (!chart?.open) return;
+  const command = action.startsWith("clio-chart-")
+    ? action.slice("clio-chart-".length)
+    : action;
+  if (command === "import") {
+    openTransientFilePicker({
+      accept: ".csv,.tsv,.md,.markdown,.txt,text/csv,text/markdown,text/plain",
+      multiple: false,
+      onSelect: (files) => chart.importFiles?.(files),
+    });
+    return;
+  }
+  if (command === "hand-back") return chart.handBack?.();
+  if (command.startsWith("new:")) return chart.newFromTemplate?.(command.slice(4));
+  if (command === "save-template") return chart.saveTemplate?.();
+  if (command === "presentation") return chart.togglePresentation?.();
+  if (command === "send-stage") return chart.sendToStage?.();
+  if (command === "reverse-sort") return chart.reverseSort?.();
+  if (command === "lower-better") return chart.toggleColumnLower?.();
+  if (["bars", "matrix", "trace", "grid", "score", "source"].includes(command)) {
+    return chart.setProjection?.(command);
+  }
+  return chart.ask?.(command);
+}
+
+window.AISystem6Runtime?.registerApplication({
+  id: "clioChart",
+  windowName: "clioChart",
+  mount: attachClioChart,
+  restore: attachClioChart,
+  commands: Object.fromEntries(
+    ["open-clio-chart", "see-as-chart", ...CLIO_CHART_COMMAND_NAMES].map((action) => [
+      action,
+      {
+        handler: () => runClioChartRuntimeCommand(action),
+        isAvailable: () => clioChartCommandAvailable(action),
+      },
+    ])
+  ),
+});

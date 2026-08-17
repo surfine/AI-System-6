@@ -1,6 +1,6 @@
 // The Finder window of things a 1988 computer should not be able to do.
 //
-// Four of these can be proved offline, so the capture rig has photographs of
+// Five of these can be proved offline, so the capture rig has photographs of
 // them and they hang on the wall as pictures: the surprise is the whole point
 // of this scene, and a surprise behind a double click is a surprise nobody
 // sees. The rest need the live web, a model, or a file of your own, so they
@@ -40,11 +40,13 @@ const ITEMS = [
     line: "Spin a 3D phone, repaint every part, and send it to AR." },
   { icon: "liquidCover", label: "Render Glass",
     line: "Refractive glass type, rendered live, saved as a finished cover." },
+  { icon: "liquidCover", label: "Write Image Prompts",
+    line: "One idea becomes two ready-to-paste prompts: GPT-Image and universal. It writes the prompt, not the picture." },
 ];
 
 // The wall reads loudest with the two colour captures on top: a 1-bit window
 // full of colour is the thing people do a double take at.
-const WALL = ["Design in 3D", "Render Glass", "Make Charts", "Build Slides"];
+const WALL = ["Design in 3D", "Render Glass", "Make Charts", "Build Slides", "Write Image Prompts"];
 
 let proofs = null;
 async function loadProofs() {
@@ -86,7 +88,7 @@ function renderWall(wall, items, proofsByLabel) {
 }
 
 export async function initImpossible(wall, body, statusBar) {
-  const restingStatus = "11 items          2 floppies in disk          38 years available";
+  const restingStatus = "12 items          2 floppies in disk          38 years available";
   let openWin = null;
 
   function closeCard() {
@@ -148,7 +150,7 @@ export async function initImpossible(wall, body, statusBar) {
   if (walled.length) {
     const more = doc.createElement("p");
     more.className = "finder-more";
-    more.textContent = "Seven more need the live web, a model, or a file of your own. Double click one.";
+    more.textContent = `${ITEMS.length - walled.length} more need the live web, a model, or a file of your own. Double click one.`;
     body.before(more);
   }
 

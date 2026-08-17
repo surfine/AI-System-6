@@ -535,3 +535,80 @@ window.AISystem6ClioStage = {
     if (status) status.textContent = message;
   },
 };
+
+const CLIO_STAGE_COMMAND_NAMES = [
+  "clio-stage-docmap",
+  "clio-stage-import",
+  "clio-stage-previous",
+  "clio-stage-next",
+  "clio-stage-source",
+  "clio-stage-document",
+  "clio-stage-slide",
+  "clio-stage-cue",
+  "focus-clio-stage-question",
+];
+
+function clioStageCommandAvailable(action) {
+  if (action === "open-clio-stage") return true;
+  const activeWindow = document.querySelector(".window.is-active");
+  if (activeWindow?.dataset.window !== "clioStage") return false;
+  const controlEnabled = (selector) => {
+    const control = document.querySelector(selector);
+    return !!control && !control.disabled && !control.hidden && !control.classList.contains("is-disabled");
+  };
+  switch (action) {
+    case "clio-stage-docmap":
+      return controlEnabled("#clio-stage-docmap");
+    case "clio-stage-previous":
+      return controlEnabled("#clio-stage-prev");
+    case "clio-stage-next":
+      return controlEnabled("#clio-stage-next");
+    case "clio-stage-source":
+      return controlEnabled("#clio-stage-source-view");
+    case "clio-stage-document":
+      return controlEnabled("#clio-stage-document-view");
+    case "clio-stage-slide":
+      return controlEnabled("#clio-stage-slide-view");
+    case "clio-stage-cue":
+      return controlEnabled("#clio-stage-cue-view");
+    case "focus-clio-stage-question":
+      return controlEnabled("#clio-stage-question");
+    default:
+      return true;
+  }
+}
+
+function runClioStageRuntimeCommand(action) {
+  if (action === "open-clio-stage") return openClioStage();
+  if (action === "clio-stage-docmap") return makeClioStageDocMap();
+  if (action === "focus-clio-stage-question") {
+    return document.querySelector("#clio-stage-question")?.focus();
+  }
+  const command = action.slice("clio-stage-".length);
+  if (command === "import") {
+    openTransientFilePicker({
+      accept: ".md,.markdown,.txt,text/markdown,text/plain",
+      multiple: true,
+      onSelect: (files) => importClioStageDroppedFiles(files),
+    });
+    return;
+  }
+  if (command === "previous") return window.AISystem6ClioStage.previous?.();
+  if (command === "next") return window.AISystem6ClioStage.next?.();
+  if (["source", "document", "slide", "cue"].includes(command)) {
+    return window.AISystem6ClioStage.setMode?.(command);
+  }
+}
+
+window.AISystem6Runtime?.registerApplication({
+  id: "clioStage",
+  windowName: "clioStage",
+  mount: attachClioStage,
+  restore: attachClioStage,
+  commands: Object.fromEntries(
+    ["open-clio-stage", ...CLIO_STAGE_COMMAND_NAMES].map((action) => [action, {
+      handler: () => runClioStageRuntimeCommand(action),
+      isAvailable: () => clioStageCommandAvailable(action),
+    }])
+  ),
+});

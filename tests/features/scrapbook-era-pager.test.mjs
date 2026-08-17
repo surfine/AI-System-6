@@ -22,9 +22,9 @@ test.assertIncludes(scrapbook, 'scrap.id === selectedScrap?.id ? "is-active" : "
 test.assertIncludes(scrapbook, 'selectedScrapIds.has(scrap.id) ? "is-multi-selected" : ""', "ticks show multi-selection membership");
 test.assertIncludes(scrapbook, 'tick.setAttribute("aria-pressed", selectedScrapIds.has(scrap.id) ? "true" : "false")', "tick selection state is announced");
 test.assertMatches(scrapbook, /tick\.addEventListener\("click", \(event\) => \{\s*const wasSelected[\s\S]{0,200}event\.metaKey \|\| event\.ctrlKey \|\| event\.shiftKey/, "tick clicks reuse the list rows' modifier multi-select grammar");
-test.assertIncludes(actions, '"scrapbook-page-previous": showPreviousScrapbookPage', "the page arrows use the shared action registry");
+test.assertIncludes(scrapbook, '["scrapbook-page-previous",showPreviousScrapbookPage]', "the page arrows use the shared runtime command list");
 test.assertIncludes(scrapbook, "sendScrapsToQuestionButton.disabled = !selectedCount", "Scrapbook owns the real availability of its batch actions");
-test.assertMatches(read("app/core/window-manager.js"), /"scrapbook-send-question": winName === "scrapbook" && activeOwnedControlEnabled/, "the Scrap menu reads owned availability, not the mirrored is-disabled class");
+test.assertMatches(read("app/features/scrapbook.js"), /"scrapbook-send-question":\(\)=>sctrl\("#send-scraps-to-question"\)/, "the Scrap menu reads owned availability, not the mirrored is-disabled class");
 test.assertIncludes(foundation, "--scrapbook-list-display: none;", "Classic defaults to the native single-item projection");
 test.assertIncludes(foundation, "--scrapbook-pager-display: grid;", "Classic reveals the page rail");
 test.assertIncludes(apps, "display: var(--scrapbook-pager-display);", "the base recipe consumes the era projection token");

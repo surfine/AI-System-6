@@ -2,6 +2,31 @@
 
 let bootInProgress = false;
 
+function registerRuntimeRenderTasks() {
+  const tasks = {
+    projectLabels: updateProjectLabels,
+    projectDisks: renderProjectDisks,
+    documents: renderDocuments,
+    scraps: renderScraps,
+    trash: renderTrash,
+    projectCd: renderProjectCd,
+    projectReferences: renderProjectReferences,
+    mountedTextDisk: renderMountedTextDisk,
+    contextPanel: renderContextPanel,
+    pipeline: renderPipeline,
+    readerTabs: renderReaderTabs,
+    menuState: updateMenuState,
+    menuStatus: updateMenuStatus,
+    aboutMacintosh: renderAboutMacintosh,
+    localModelState: renderLocalModelState,
+  };
+  Object.entries(tasks).forEach(([task, handler]) => {
+    if (typeof handler === "function") {
+      window.AISystem6Runtime?.registerRenderTask?.(task, handler);
+    }
+  });
+}
+
 async function retryBoot() {
   if (bootInProgress) return false;
   // A fresh runtime is the only reliable retry: partial boot state, listeners,
@@ -35,6 +60,12 @@ async function bootRecoveryStatus() {
   } catch {
     storage = "unavailable";
   }
+  try {
+    const platform = await window.AISystem6WebPlatform?.projectStorageSnapshot?.();
+    if (platform?.supported) {
+      storage = platform.persistent ? "persistent" : "managed";
+    }
+  } catch {}
   try {
     // Any disk's scene counts, not just the mounted one.
     await migrateWorkingSessionStorage();
@@ -97,9 +128,14 @@ function openBootRecovery() {
   if (!dialog || typeof dialog.showModal !== "function") return;
   const note = document.getElementById("boot-recovery-note");
   const label = (available) => t(available ? "boot_recovery_available" : "boot_recovery_unavailable");
+  const storageLabel = (status) => ({
+    persistent: t("project_storage_persistent"),
+    managed: t("project_storage_managed"),
+    unavailable: t("project_storage_unavailable"),
+  }[status.storage] || t("boot_recovery_available"));
   const renderStatus = async () => {
     const status = await bootRecoveryStatus();
-    document.getElementById("boot-recovery-storage").textContent = label(status.storage === "readable");
+    document.getElementById("boot-recovery-storage").textContent = storageLabel(status);
     document.getElementById("boot-recovery-projects").textContent = String(status.projectsCount);
     document.getElementById("boot-recovery-session").textContent = label(status.session === "available");
     document.getElementById("boot-recovery-ai").textContent = label(status.aiConfig === "available");
@@ -170,6 +206,7 @@ async function boot() {
   if (bootInProgress) return false;
   bootInProgress = true;
   try {
+    registerRuntimeRenderTasks();
     // Single-writer lease: acquire before any durable write can run. A second
     // instance starts read-only and gets the conflict dialog after first paint.
     window.AISystem6WriteLease?.initUi?.();

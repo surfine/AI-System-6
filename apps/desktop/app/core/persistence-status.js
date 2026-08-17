@@ -3,8 +3,6 @@
 // Loaded before app.js as a classic script; shares the AI System 6 global scope.
 
 
-const scheduledRenderTasks = new Set();
-let scheduledRenderFrame = 0;
 const renderSignatureCache = new Map();
 const storageSnapshotCache = new Map();
 const storageRecordFingerprintCache = new Map();
@@ -115,52 +113,10 @@ function restoreControlStripState(settings) {
   return controlStripState;
 }
 
-const renderTasks = [
-  ["projectLabels", "updateProjectLabels"],
-  ["projectDisks", "renderProjectDisks"],
-  ["documents", "renderDocuments"],
-  ["scraps", "renderScraps"],
-  ["trash", "renderTrash"],
-  ["projectCd", "renderProjectCd"],
-  ["projectReferences", "renderProjectReferences"],
-  ["mountedTextDisk", "renderMountedTextDisk"],
-  ["contextPanel", "renderContextPanel"],
-  ["pipeline", "renderPipeline"],
-  ["readerTabs", "renderReaderTabs"],
-  ["localModelState", "renderLocalModelState"],
-  ["menuStatus", "updateMenuStatus"],
-  ["aboutMacintosh", "renderAboutMacintosh"],
-  ["menuState", "updateMenuState"],
-];
-
-function flushScheduledRenderTasks() {
-  scheduledRenderFrame = 0;
-  const tasks = new Set(scheduledRenderTasks);
-  scheduledRenderTasks.clear();
-  if ([...tasks].some((task) => !["menuState", "menuStatus", "aboutMacintosh", "localModelState"].includes(task))
-    && typeof invalidateMenuActionCache === "function") {
-    invalidateMenuActionCache();
-  }
-  renderTasks.forEach(([task, handler]) => {
-    if (!tasks.has(task)) return;
-    const endPerf = window.AISystem6Perf?.start("render_task", { task });
-    try {
-      window[handler]?.();
-    } catch (error) {
-      console.error(`Failed to render scheduled task: ${task}`, error);
-    } finally {
-      endPerf?.();
-    }
-  });
-}
-
 function scheduleRenderTasks(...tasks) {
-  tasks.flat().filter(Boolean).forEach((task) => scheduledRenderTasks.add(task));
-  if (scheduledRenderFrame) return;
-  const scheduleFrame = typeof requestAnimationFrame === "function"
-    ? requestAnimationFrame
-    : (callback) => setTimeout(callback, 0);
-  scheduledRenderFrame = scheduleFrame(flushScheduledRenderTasks);
+  const list=tasks.flat().filter(Boolean);
+  if(list.some(task=>!["menuState","menuStatus","aboutMacintosh","localModelState"].includes(task))&&typeof invalidateMenuActionCache=="function")invalidateMenuActionCache();
+  list.forEach(task=>window.AISystem6Runtime?.scheduleRenderTask(task));
 }
 
 function scheduleWorkspaceRender(options = {}) {
@@ -234,6 +190,7 @@ function settingsSnapshotPayload() {
     embeddingModel: embeddingModelInput.value,
     remember: rememberInput.checked,
     modernFonts: modernFontsInput.checked,
+    classicLineIcons: classicLineIconsInput.checked,
     theme: getCurrentTheme(),
     soundEffects: soundEffectsInput.checked,
     menuClock: menuClockInput.checked,
@@ -243,7 +200,6 @@ function settingsSnapshotPayload() {
     controlStripState,
     controlStripCollapsed,
     performanceMeter: performanceMeterInput.checked,
-    imageGen: document.getElementById("enable-image-gen")?.checked || false,
     clioWebSearch: document.getElementById("clio-web-search")?.checked || false,
     showResetSystemMenu: showResetSystemMenuInput ? showResetSystemMenuInput.checked : true,
     language: currentLanguage,
@@ -1689,6 +1645,10 @@ function applySettings(settings) {
     modernFontsInput.checked = settings.modernFonts;
     applyModernFonts({ persist: false });
   }
+  if (typeof settings.classicLineIcons === "boolean") {
+    classicLineIconsInput.checked = settings.classicLineIcons;
+    setClassicLineArtEverywhere(settings.classicLineIcons);
+  }
   const restoredTheme = typeof settings.theme === "string"
     ? settings.theme
     : typeof settings.liquidGlass === "boolean"
@@ -1714,11 +1674,6 @@ function applySettings(settings) {
   restoreControlStripState(settings);
   if (typeof settings.performanceMeter === "boolean") {
     performanceMeterInput.checked = settings.performanceMeter;
-  }
-  const imageGenInput = document.getElementById("enable-image-gen");
-  if (imageGenInput) {
-    imageGenInput.checked = settings.imageGen === true;
-    document.body.classList.toggle("image-gen-enabled", settings.imageGen === true);
   }
   const clioWebSearchInput = document.getElementById("clio-web-search");
   if (clioWebSearchInput) {
@@ -1846,7 +1801,7 @@ function formatAppVersionCompact() {
 
 async function loadAppVersion() {
   try {
-    const response = await fetch("/api/version");
+    const response = await window.AISystem6Capabilities.requestService("system.version", {});
     if (!response.ok) throw new Error(response.statusText);
     const info = await response.json();
     appVersionInfo = {

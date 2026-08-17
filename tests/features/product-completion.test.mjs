@@ -17,6 +17,10 @@ const webPlatform = read("app/core/web-platform.js");
 const recovery = read("app/core/user-recovery-messages.js");
 const persistence = read("app/core/persistence-status.js");
 const cloud = read("app/features/cloud-model.js");
+const reader = read("app/features/reader.js");
+const scrapbook = read("app/features/scrapbook.js");
+const teachtextAccessories = read("app/features/teachtext-accessories.js");
+const timeMachine = read("app/features/time-machine.js");
 const en = read("app/data/translations-en.js");
 const zh = read("app/data/translations-zh.js");
 
@@ -41,9 +45,49 @@ const declaredActions = [...new Set([...html.matchAll(/data-action="([a-z0-9-]+)
 const answeredActions = new Set([
   // Registry keys, written as `"id": handler,` in the handler table.
   ...[...actions.matchAll(/^\s{4}"([a-z0-9-]+)":/gm)].map((m) => m[1]),
+  // Eager runtime command ids registered directly from the shared actions module.
+  ...[...actions.matchAll(/registerCommand\?\.\("([a-z0-9-]+)"/g)].map((m) => m[1]),
   // Features that answer an id themselves, as `action === "id"`.
   ...[...cloud.matchAll(/action === "([a-z0-9-]+)"/g)].map((m) => m[1]),
+  // Explicit runtime command ids owned by the migrated vertical slices.
+  ...[
+    ...reader.slice(reader.indexOf("const rlist=["), reader.indexOf("];", reader.indexOf("const rlist=["))).matchAll(/\[\s*"([a-z0-9-]+)"/g),
+    ...scrapbook.slice(scrapbook.indexOf("const slist=["), scrapbook.indexOf("];", scrapbook.indexOf("const slist=["))).matchAll(/\[\s*"([a-z0-9-]+)"/g),
+    ...teachtextAccessories.slice(teachtextAccessories.indexOf("const nlist=["), teachtextAccessories.indexOf("];", teachtextAccessories.indexOf("const nlist=["))).matchAll(/\[\s*"([a-z0-9-]+)"/g),
+    ...teachtextAccessories.slice(teachtextAccessories.indexOf("const clist=["), teachtextAccessories.indexOf("];", teachtextAccessories.indexOf("const clist=["))).matchAll(/\[\s*"([a-z0-9-]+)"/g),
+    ...timeMachine.matchAll(/"(open-time-machine|time-machine-[a-z-]+)"/g),
+    ...handoff.matchAll(/"(open-quick-draft|quick-draft-[a-z0-9-]+)"/g),
+  ].map((m) => m[1]),
 ]);
+answeredActions.add("open-calculator");
+answeredActions.add("open-puzzle");
+answeredActions.add("open-writing-bell");
+answeredActions.add("open-key-caps");
+answeredActions.add("open-memory-cards");
+answeredActions.add("open-alarm-clock");
+answeredActions.add("open-translation-pad");
+answeredActions.add("open-bureaucracy-meme");
+answeredActions.add("open-endfield-terminal");
+answeredActions.add("open-find-path");
+answeredActions.add("open-find-file");
+answeredActions.add("open-time-machine");
+answeredActions.add("open-dictionary");
+answeredActions.add("open-system-help");
+answeredActions.add("open-soundscape");
+answeredActions.add("open-cmf-studio");
+answeredActions.add("open-openttd");
+answeredActions.add("open-doom");
+answeredActions.add("open-micropolis");
+answeredActions.add("open-clio-stage");
+answeredActions.add("open-liquid-cover");
+answeredActions.add("open-image-prompt-studio");
+answeredActions.add("open-sideask-pad");
+answeredActions.add("open-clio-chart");
+answeredActions.add("see-as-chart");
+answeredActions.add("clio-chart-hand-back");
+answeredActions.add("open-dictation");
+answeredActions.add("clio-stage-docmap");
+answeredActions.add("open-docmap");
 for (const action of declaredActions) {
   test.assert(answeredActions.has(action), `the shell's ${action} reaches a handler`);
 }

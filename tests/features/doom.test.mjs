@@ -64,7 +64,7 @@ test.assertNotIncludes(index, 'data-window="doom"', "the DOOM window frame stays
 test.assertIncludes(host, 'data-window="doom" aria-labelledby="doom-title"', "the lazy module installs the window frame");
 test.assertNotIncludes(index, 'data-action="open-doom"', "the dynamic Games folder avoids a duplicate boot-time launcher");
 test.assertIncludes(appJs, 'action: "open-doom"', "the dynamic Games folder includes DOOM");
-test.assertIncludes(actions, '"open-doom": () => openWindow("doom")', "every launcher enters through openWindow");
+test.assertIncludes(read("app/features/doom.js"), '"open-doom":{handler:()=>openWindow("doom")', "every launcher enters through openWindow");
 test.assertIncludes(multiFinder, 'doom: "DOOM"', "MultiFinder labels the app");
 test.assertIncludes(multiFinder, 'doom: "doom"', "the window declares its own app id");
 test.assertIncludes(host, 'AISystem6RegisterApplicationMenuSet?.("doom"', "the lazy module registers its menu set");

@@ -420,3 +420,14 @@ function invokeIntentKey() {
   const dest = openDictationPad();
   setStatus(t("intent_ready", dictationDestinationLabel(dest)));
 }
+
+window.AISystem6Runtime?.registerApplication({
+  id: "dictation",
+  windowName: "dictation",
+  commands: {
+    "open-dictation": {
+      handler: invokeIntentKey,
+      isAvailable: () => true,
+    },
+  },
+});

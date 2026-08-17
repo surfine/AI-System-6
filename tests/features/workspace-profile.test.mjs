@@ -45,7 +45,7 @@ test.assertIncludes(persistence, 'hasOwnProperty.call(settings, "workspaceProfil
 test.assertIncludes(actions, "isWorkspaceActionAllowed(action)", "blocks direct actions outside the active profile");
 test.assertIncludes(windows, "isWorkspaceWindowAllowed(name)", "blocks direct window opens outside the active profile");
 test.assertMatches(profile, /studioActionNames = new Set\(\[[^\]]*"open-rebuild-flow"/, "open-rebuild-flow stays a writing-studio action (Extras is its home)");
-test.assertIncludes(actions, '"open-rebuild-flow": openRebuildFlow', "the Extras entry opens the rebuild flow directly inside Writing Studio");
+test.assertIncludes(actions, 'registerCommand?.("open-rebuild-flow"', "the Extras entry opens the rebuild flow directly inside Writing Studio");
 test.assertMatches(windows, /Object\.keys\(availability\)[\s\S]*isWorkspaceActionAllowed/, "projects profile policy into menu availability");
 test.assertIncludes(session, "isWorkspaceWindowAllowed(entry.name)", "does not restore hidden-profile windows");
 test.assertNotIncludes(profile, "localStorage", "does not create a second settings boundary");
@@ -61,7 +61,7 @@ test.assertNotMatches(profile, /const studioWindowNames = new Set\(\[[^\]]*"quic
 test.assertNotMatches(profile, /const studioActionNames = new Set\(\[[^\]]*"open-quick-draft"/, "Quick Draft launches directly from the Desktop profile");
 test.assertMatches(html, /desktop-app-icon[\s\S]*data-action="open-quick-draft"[\s\S]*data-system-icon="quickDraft"/, "the Desktop has a direct Quick Draft application icon");
 test.assertMatches(app, /function getStaticFinderItems[\s\S]*filterWorkspaceItems/, "existing Finder registries are profile-filtered");
-test.assertIncludes(actions, '"open-writing-studio": openWritingStudio', "Writing Studio launcher uses the central profile transition");
+test.assertIncludes(actions, 'registerCommand?.("open-writing-studio"', "Writing Studio launcher uses the central profile transition");
 test.assertIncludes(actions, '"exit-writing-studio": exitWritingStudio', "Finder desktop toggle exits through the same central transition");
 test.assertMatches(runtime, /workspaceProfile === workspaceProfileDesktop[\s\S]*openWindow\("disk"\)/, "Desktop startup opens Startup Disk");
 test.assertNotIncludes(wireup, 'document.getElementById("workspace-profile")', "Control Panel no longer performs everyday profile switching");
@@ -77,7 +77,7 @@ test.assertMatches(windows, /mobileFullScreenAppIds = new Set\(\[[^\]]*"quickDra
 test.assertNotIncludes(teachTextMenusBlock, 'menuItem("open-quick-draft"', "Writing Studio has no Quick Draft entrance");
 test.assertNotIncludes(teachTextMenusBlock, 'submenu("quick_draft_label"', "Writing Studio has no hidden Quick Draft command submenu");
 test.assertIncludes(quickDraftMenusBlock, 'menuItem("quick-draft-open-writing-studio", "enter_writing_studio")', "Quick Draft owns the one-way entrance into Writing Studio");
-test.assertIncludes(actions, 'flushPendingQuickDraftCommit', "entering Writing Studio flushes pending Quick Draft changes first");
+test.assertIncludes(quickDraftHandoff, 'flushPendingQuickDraftCommit', "entering Writing Studio flushes pending Quick Draft changes first");
 test.assertIncludes(multiFinder, "syncWorkspaceDesktopIcon()", "MultiFinder mode hides the Finder-only desktop toggle");
 test.assertMatches(profile, /finderSingleTask[\s\S]*exit-writing-studio[\s\S]*open-writing-studio/, "one Finder-only icon changes between enter and exit");
 test.assertMatches(windows, /appId === "writingStudio"[\s\S]*exitWritingStudio/, "Quit Writing Studio returns to Desktop instead of closing unrelated apps");
@@ -85,7 +85,7 @@ test.assertMatches(app, /writing_studio[\s\S]*iconId: "writingStudio"/, "Applica
 test.assertMatches(systemIcons, /writingStudio:[\s\S]*M7 2h18v10/, "Writing Studio uses a dedicated typewriter silhouette on the shared Classic grid");
 test.assertIncludes(actions, '"quit-active-app": () => quitApp(activeAppId)', "the existing right-side MultiFinder owns Writing Studio Quit");
 test.assertIncludes(profile, "await openWritingStudioDefaultSurface()", "Writing Studio opens onto the route's current state, never OOBE or ClioTalk");
-test.assertIncludes(actions, '"open-teachtext": openTeachTextForWorkspace', "TeachText entry follows the active profile");
+test.assertIncludes(actions, 'registerCommand?.("open-teachtext"', "TeachText entry follows the active profile");
 test.assertIncludes(actions, '"print-current": printCurrentTeachTextDocument', "TeachText printing reuses the existing print pipeline");
 test.assertIncludes(teachText, "function openDesktopTeachTextWindow()", "Desktop reuses TeachText through a role-aware entry");
 test.assertMatches(teachText, /workspaceProfile !== workspaceProfileDesktop \|\| tab\.role === "scratch_file"/, "Desktop hides manuscript tabs without deleting them");

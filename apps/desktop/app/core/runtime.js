@@ -1,0 +1,13 @@
+const A=new Map(),C=new Map(),L=new Map(),R=new Map(),S=new Set();let f=0;
+const i=v=>String(v||"").trim();
+function registerRuntimeApplication(d){const a=i(d?.id);if(A.has(a))throw new Error();const r={id:a,windowName:i(d?.windowName),mount:typeof d?.mount=="function"?d.mount:null,restore:typeof d?.restore=="function"?d.restore:null,mounted:!1};A.set(a,r);Object.entries(d?.commands||{}).forEach(([c,k])=>registerCommand(c,k));return r}
+const app=a=>A.get(i(a))||null;
+async function mountApplication(a,c={}){const r=app(a);if(!r)return{ok:!1,status:"unregistered"};if(r.mounted)return{ok:!0,status:"ok"};r.mounted=!0;if(!r.mount)return{ok:!0,status:"ok"};try{return{ok:!0,status:"ok",result:await r.mount({appId:r.id,...c})}}catch(e){r.mounted=!1;return{ok:!1,status:"mount-failed",error:e}}}
+async function restoreApplication(a,s={},c={}){const r=app(a);if(!r)return{ok:!1,status:"unregistered"};const m=await mountApplication(a,c);if(!m.ok)return m;if(!r.restore)return{ok:!0,status:"ok"};try{return{ok:!0,status:"ok",result:await r.restore({appId:r.id,state:s,...c})}}catch(e){return{ok:!1,status:"restore-failed",error:e}}}
+function registerCommand(c,d={}){const k=i(c);if(C.has(k))throw new Error();C.set(k,{id:k,handler:d.handler,isAvailable:typeof d?.isAvailable=="function"?d.isAvailable:()=>!0})}
+function registerLazyCommand(c,d={}){const k=i(c);if(C.has(k)||L.has(k))throw new Error();L.set(k,{id:k,ensure:d.ensure,isAvailable:typeof d?.isAvailable=="function"?d.isAvailable:()=>!0})}
+async function dispatchCommand(c,p={}){const r=C.get(i(c))||null;if(!r)return{ok:!1,status:"unregistered"};let a=!0;try{a=r.isAvailable(p)}catch(e){console.warn(e);a=!1}if(a===!1)return{ok:!1,status:"unavailable"};try{return{ok:!0,status:"success",result:await r.handler(p)}}catch(e){return{ok:!1,status:e?.name==="AbortError"||p?.signal?.aborted===!0?"cancelled":"error",error:e}}}
+function registerRenderTask(t,h){const k=i(t);if(R.has(k))throw new Error();R.set(k,h)}
+function scheduleRenderTask(...t){t.flat().map(i).filter(Boolean).forEach(k=>S.add(k));if(!S.size||f)return;f=(typeof requestAnimationFrame=="function"?requestAnimationFrame:c=>setTimeout(c,0))(flushRenderTasks)}
+function flushRenderTasks(){f=0;const t=new Set(S);S.clear();t.forEach(k=>{const hh=R.get(k);const e=window.AISystem6Perf?.start("render_task",{task:k});try{if(!hh)throw new Error(`Unregistered render task: ${k}`);hh()}catch(z){console.error(z)}finally{e?.()}})}
+window.AISystem6Runtime=Object.freeze({registerApplication:registerRuntimeApplication,getApplication:app,mountApplication,restoreApplication,registerCommand,registerLazyCommand,dispatchCommand,c:C,lazyCommands:L,registerRenderTask,scheduleRenderTask,flushRenderTasks});

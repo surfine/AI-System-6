@@ -91,7 +91,9 @@ imports with OCR and transcription, **Scrapbook** for evidence you deliberately
 clipped, **DocMap** for structure, **ClioTalk** for conversation, and desk
 accessories that belong to writing — a **Note Pad** whose slips can be sent to
 TeachText, the Scrapbook or ClioTalk, a **Dictionary**, and a **Writing Bell**
-for one quiet interval.
+for one quiet interval. **Image Prompt Studio** turns a short idea into
+ready-to-paste GPT-Image and universal prompts; it writes the prompt, never the
+picture.
 
 ## Run it in 60 seconds
 
@@ -163,7 +165,12 @@ does not only do the one thing.
   </tr>
 </table>
 
-<div align="center"><sub>FOUR WINDOWS OF THE RUNNING APP, CAPTURED OFFLINE. NO MODEL, NO NETWORK, NO MOCKUP.</sub></div>
+<p align="center">
+  <img src="site/img/proofs/image-prompt.webp" width="640" alt="Image Prompt Studio: an idea field, an aspect selector, and two ready-to-paste prompt outputs.">
+  <br><sub><b>Image Prompt Studio</b> · one idea becomes two ready-to-paste prompts</sub>
+</p>
+
+<div align="center"><sub>FIVE WINDOWS OF THE RUNNING APP, CAPTURED OFFLINE. NO MODEL, NO NETWORK, NO MOCKUP.</sub></div>
 
 ## It also runs DOOM
 
@@ -221,8 +228,8 @@ is a mockup, because a script re-shoots all of it from the running app.
 ## Built under a 1988 constraint
 
 ```text
-boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,948,416 bytes
-two 1.44 MB floppies    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  2,948,416 bytes
+boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,938,921 bytes
+two 1.44 MB floppies    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  2,938,921 bytes
 heavy tools             load lazily, from a third disk
 ```
 

@@ -487,7 +487,8 @@ const ensureMingmingHandoffReviewModule = createLazyModuleLoader("", ["app/featu
 const ensureSlidesExportModule = createLazyModuleLoader("AISystem6SlidesExportLoaded", ["app/features/slides-export.js"]);
 const ensureClioStageModule = createLazyModuleLoader("AISystem6ClioStageLoaded", ["app/features/clio-stage.js"]);
 const ensureClioChartModule = createLazyModuleLoader("AISystem6ClioChartLoaded", ["app/features/clio-chart.js"]);
-const ensureLiquidCoverModule = createLazyModuleLoader("AISystem6LiquidCoverLoaded", ["app/features/liquid-cover.js"]);
+const ensureLiquidCoverModule = createLazyModuleLoader("AISystem6LiquidCoverLoaded", ["app/features/image-prompt-runtime.js", "app/features/liquid-cover.js"]);
+const ensureImagePromptStudioModule = createLazyModuleLoader("AISystem6ImagePromptStudioLoaded", ["app/features/image-prompt-runtime.js", "app/features/image-prompt-studio.js"]);
 const ensureQuickDraftModule = createLazyModuleLoader("AISystem6QuickDraftLoaded", [
   "app/features/mingming-lens.js",
   "app/core/author-thesis-guidance.js",
@@ -500,7 +501,10 @@ const ensureQuickDraftModule = createLazyModuleLoader("AISystem6QuickDraftLoaded
   "app/features/quick-draft-ai.js",
   "app/features/quick-draft-handoff.js",
 ]);
-const ensureCmfStudioModule = createLazyModuleLoader("AISystem6CMFStudioLoaded", ["app/features/cmf-studio.js?cmf=exterior-ao-sanitized"]);
+const ensureCmfStudioModule = createLazyModuleLoader("AISystem6CMFStudioLoaded", [
+  "app/features/cmf-usdz-export.js",
+  "app/features/cmf-studio.js?cmf=exterior-ao-sanitized",
+]);
 const ensureSoundscapeModule = createLazyModuleLoader("AISystem6SoundscapeLoaded", ["app/features/soundscape.js"]);
 const ensureThemeLabModule = createLazyModuleLoader("AISystem6ThemeLabLoaded", ["app/features/theme-lab.js"], false, ["styles.theme-lab.css"]);
 window.AISystem6EnsureThemeLabModule = ensureThemeLabModule;

@@ -860,150 +860,11 @@ async function openClioStageApp(source = null) {
   window.AISystem6ClioStage?.open(clioSource || null);
 }
 
-async function openClioChartApp(source = null) {
-  if (typeof ensureClioChartModule === "function") {
-    await ensureClioChartModule();
-  }
-  await window.AISystem6ClioChart?.open?.(source || null);
-}
-
-async function runClioChartMenuCommand(command) {
-  if (typeof ensureClioChartModule === "function") {
-    await ensureClioChartModule();
-  }
-  const chart = window.AISystem6ClioChart;
-  if (!chart?.open) return;
-  if (command === "import") {
-    openTransientFilePicker({
-      accept: ".csv,.tsv,.md,.markdown,.txt,text/csv,text/markdown,text/plain",
-      multiple: false,
-      onSelect: (files) => chart.importFiles?.(files),
-    });
-    return;
-  }
-  if (command === "hand-back") return chart.handBack?.();
-  if (command.startsWith("new:")) return chart.newFromTemplate?.(command.slice(4));
-  if (command === "save-template") return chart.saveTemplate?.();
-  if (command === "presentation") return chart.togglePresentation?.();
-  if (command === "send-stage") return chart.sendToStage?.();
-  if (command === "reverse-sort") return chart.reverseSort?.();
-  if (command === "lower-better") return chart.toggleColumnLower?.();
-  if (["bars", "matrix", "trace", "grid", "score", "source"].includes(command)) return chart.setProjection?.(command);
-  return chart.ask?.(command);
-}
-
 async function openMicropolisApp() {
   if (typeof ensureMicropolisModule === "function") {
     await ensureMicropolisModule();
   }
   await window.AISystem6Micropolis?.open?.();
-}
-
-// TeachText hands one table block over to ClioChart; the block goes read-only
-// in the draft until it is handed back, so only one surface can edit it.
-async function seeSelectedTableAsChart() {
-  if (typeof ensureClioChartModule === "function") {
-    await ensureClioChartModule();
-  }
-  await window.AISystem6ClioChart?.openFromTeachText?.();
-}
-
-async function openLiquidCover() {
-  if (typeof ensureLiquidCoverModule === "function") {
-    await ensureLiquidCoverModule();
-  }
-  await window.AISystem6LiquidCover?.open();
-}
-
-async function openQuickDraft() {
-  if (typeof ensureQuickDraftModule === "function") {
-    await ensureQuickDraftModule();
-  }
-  await window.AISystem6QuickDraft?.open();
-}
-
-async function enterWritingStudioFromQuickDraft() {
-  if (typeof ensureQuickDraftModule === "function") {
-    await ensureQuickDraftModule();
-  }
-  const saved = await window.AISystem6QuickDraftRuntime?.flushPendingQuickDraftCommit?.();
-  if (saved === false) {
-    window.AISystem6QuickDraftRuntime?.setQuickDraftStatus?.(t("quick_draft_save_failed"));
-    return false;
-  }
-  await openWritingStudio();
-  return true;
-}
-
-async function importQuickDraftChatRecords() {
-  if (typeof ensureQuickDraftModule === "function") {
-    await ensureQuickDraftModule();
-  }
-  await window.AISystem6QuickDraft?.importChatScreenshots?.();
-}
-
-async function runQuickDraftMenuCommand(command) {
-  await ensureQuickDraftModule?.();
-  const quickDraft = window.AISystem6QuickDraft;
-  if (!quickDraft) return;
-  if (command === "vent-on") return quickDraft.setVentMode?.(true);
-  if (command === "vent-off") return quickDraft.setVentMode?.(false);
-  if (command === "vent-summary") return quickDraft.collectVentOutline?.();
-  if (command === "compose") return quickDraft.startWritingNow?.();
-  if (command === "apply") return quickDraft.applyAdjustments?.();
-  if (command === "develop") return quickDraft.develop?.();
-  if (command === "view-body") return quickDraft.setDisplayMode?.("body");
-  if (command === "view-grain") return quickDraft.setDisplayMode?.("grain");
-  if (command === "view-read") return quickDraft.setDisplayMode?.("read");
-  if (command === "toggle-materials") return quickDraft.togglePanel?.("shelf");
-  if (command === "toggle-adjustments") return quickDraft.togglePanel?.("inspector");
-  if (command === "save-project") return quickDraft.saveQuickDraftAsProjectDocument?.();
-  if (command === "copy-markdown") return quickDraft.copyMarkdown?.();
-  if (command === "send-teachtext") return quickDraft.transferQuickDraftToTeachText?.();
-  if (command === "send-review") return quickDraft.sendQuickDraftToReviewDesk?.();
-  return quickDraft.runClioTalkAction?.(command);
-}
-
-async function runClioStageMenuCommand(command) {
-  await ensureClioStageModule?.();
-  const stage = window.AISystem6ClioStage;
-  if (!stage) return;
-  if (command === "import") {
-    openTransientFilePicker({
-      accept: ".md,.markdown,.txt,text/markdown,text/plain",
-      multiple: true,
-      onSelect: (files) => importClioStageDroppedFiles(files),
-    });
-    return;
-  }
-  if (command === "previous") return stage.previous?.();
-  if (command === "next") return stage.next?.();
-  if (["source", "document", "slide", "cue"].includes(command)) return stage.setMode?.(command);
-}
-
-async function runLiquidCoverMenuCommand(command) {
-  await ensureLiquidCoverModule?.();
-  return window.AISystem6LiquidCover?.runMenuCommand?.(command);
-}
-
-async function runCmfMenuCommand(command) {
-  await ensureCmfStudioModule?.();
-  return window.AISystem6CMFStudio?.runMenuCommand?.(command);
-}
-
-async function runSoundscapeMenuCommand(command) {
-  await ensureSoundscapeModule?.();
-  return window.AISystem6Soundscape?.runMenuCommand?.(command);
-}
-
-async function dispatchEndfieldMenuCommand(command) {
-  await ensureEndfieldTerminalModule?.();
-  return window.AISystem6EndfieldTerminal?.runMenuCommand?.(command);
-}
-
-async function dispatchTimeMachineMenuCommand(command) {
-  await ensureTimeMachineModule?.();
-  return window.AISystem6TimeMachine?.runMenuCommand?.(command);
 }
 
 async function openTextDocumentFromDisk() {
@@ -1090,55 +951,20 @@ let applicationCommandRegistryCache = null;
 
 function getApplicationActionHandlers() {
   return applicationActionHandlersCache ||= {
-    "open-about": () => openWindow("about"),
-    "open-about-multifinder": showAboutMultiFinder,
     "close-about": () => closeWindow("about"),
-    "open-github-repo": () => window.open("https://github.com/surfine/AI-System-6", "_blank", "noopener"),
     "close-print-directory": () => closeWindow("printDirectory", true),
     "close-page-setup": () => closeWindow("pageSetup", true),
     "page-setup": openPageSetup,
     "print-current": printCurrentTeachTextDocument,
-    "open-guide": openWelcomeFloppy,
-    "open-welcome-read-me": openWelcomeReadMe,
-    "open-project-site": () => window.open("https://aisystem6.pages.dev/", "_blank", "noopener"),
     "install-web-app": () => window.AISystem6WebPlatform?.installWebApp?.(),
     "welcome-iphone-help": showWelcomeIphoneHelp,
     "export-project-backup": exportActiveProjectDisk,
-    "open-guide-promo": () => window.open("https://www.bilibili.com/video/BV1ht3m6UEDb/", "_blank", "noopener"),
-    "open-system-file-system": () => showSystemModal(t("system_file_not_openable"), "alert"),
-    "open-system-file-finder": () => showSystemModal(t("system_file_not_openable"), "alert"),
-    "open-system-file-multifinder": () => showSystemModal(t("system_file_not_openable"), "alert"),
-    "open-system-file-da-handler": () => showSystemModal(t("system_file_not_openable"), "alert"),
-    "open-system-folder-path": ({ systemFolderPath = "" } = {}) => navigateSystemFolderPath(systemFolderPath),
-    "open-applications-folder-path": ({ applicationsFolderPath = "" } = {}) => navigateApplicationsFolderPath(applicationsFolderPath),
-    "open-system-prompt-file": ({ promptId = "writing-tools.proofread" } = {}) => {
-      if (!activeProjectId) {
-        setStatus(t("no_project_mounted"));
-        openWindow("projects");
-        return;
-      }
-      const file = window.AISystem6PromptFilesRuntime?.ensureProjectPromptOverrideForEditing(activeProjectId, promptId);
-      if (!file) {
-        setStatus(currentLanguage === "zh" ? "该系统提示词只读，或提示词文件缺失。" : "This system prompt is read-only or missing.");
-        return;
-      }
-      selectedChatFileId = file.id;
-      activeTextFileId = file.id;
-      openTextFile(file.id);
-      saveDeskState?.();
-    },
-    "open-system-help": async () => {
-      await ensureSystemDictionaryData();
-      await ensureDictionaryHelpModule();
-      openSystemHelpEntry(selectedSystemHelpEntryId || "system-help");
-    },
     "reveal-active-chat-file": () => {
       const fileId = activeChatFileId || selectedChatFileId;
       if (!fileId || !revealChatFileInFinder(fileId)) setStatus(t("no_project_mounted"));
     },
     "start-new-clio-chat": startNewClioTalkConversation,
     "start-temporary-clio-chat": startTemporaryClioTalkConversation,
-    "open-chat-file": ({ fileId = "" } = {}) => openChatFileWindow(fileId),
     "remember-chat-as-project-memory": async () => {
       const file = await createProjectMemoryDraft();
       if (file) setStatus(currentLanguage === "zh" ? "项目记忆已确认并保存。" : "Project memory confirmed and saved.");
@@ -1196,35 +1022,15 @@ function getApplicationActionHandlers() {
     "preview-mounted-skill": async () => {
       if (!await previewMountedSkillPackage()) setStatus(currentLanguage === "zh" ? "技能包无效或未选择。" : "Skill package is invalid or not selected.");
     },
-    "open-project-disks": () => {
-      openWindow("projects");
-      if (!isProjectMounted) setStatus(t("no_project_mounted"));
-    },
-    "open-droplet": ({ dropletId = "" } = {}) => {
-      const command = typeof getScriptableCommand === "function" ? getScriptableCommand(dropletId) : null;
-      const name = command && typeof dropletName === "function"
-        ? dropletName(command)
-        : t("droplet");
-      showSystemModal(t("droplet_open_explainer", name), "alert");
-    },
-    "open-project-info": openProjectInfo,
-    "open-file-info": openFileInfo,
     "eject-project": ejectActiveProject,
     "eject-menu-selection": ejectMenuSelection,
     "set-startup-project": setStartupProjectFromSelection,
     "new-project-disk": prepareNewProjectDisk,
-    "open-project-disk": openSelectedProject,
     "duplicate-project-disk": duplicateSelectedProjectDisk,
     "archive-project-disk": archiveSelectedProjectDisk,
     "rename-project-disk": renameSelectedProject,
-    "open-clio-model-settings": openModelSettings,
     "play-writing-demo": playWritingDemoFromGuide,
     "play-teaser-demo": playWelcomeTour,
-    "open-read-me": () => openSystemFolderDocument("readMe"),
-    "open-flow-readme": () => openSystemFolderDocument("flow"),
-    "open-memory-readme": () => openSystemFolderDocument("memory"),
-    "open-system-concepts-docmap": openSystemConceptDocMap,
-    "open-system-concepts-clio-stage": openSystemConceptClioStage,
     "new-document": () => {
       // Draft Desk is a first-class application: its commands enter through
       // its public API, never through another app's internal functions.
@@ -1234,12 +1040,8 @@ function getApplicationActionHandlers() {
       }
       return newTextDocument();
     },
-    "open-text-document": openTextDocumentFromDisk,
     "new-folder": createFolderFromMenu,
-    "open-menu-selection": openFinderMenuSelection,
     "duplicate-selection": duplicateFinderMenuSelection,
-    "open-assistant": () => openWindow("assistant"),
-    "open-writing-studio": openWritingStudio,
     // The Apple menu's "Start Writing Route" carries its own id because
     // balloon help and the workspace-capability gate both address it by name.
     // Without an entry here it dispatched into nothing: the item looked live,
@@ -1247,56 +1049,12 @@ function getApplicationActionHandlers() {
     // markup and none of them pressed it.
     "guide-start-route": openWritingStudio,
     "exit-writing-studio": exitWritingStudio,
-    "open-quick-draft": openQuickDraft,
-    "quick-draft-open-writing-studio": enterWritingStudioFromQuickDraft,
-    "quick-draft-import-chat": importQuickDraftChatRecords,
-    "quick-draft-vent-on": () => runQuickDraftMenuCommand("vent-on"),
-    "quick-draft-vent-off": () => runQuickDraftMenuCommand("vent-off"),
-    "quick-draft-vent-summary": () => runQuickDraftMenuCommand("vent-summary"),
-    "quick-draft-compose": () => runQuickDraftMenuCommand("compose"),
-    "quick-draft-apply": () => runQuickDraftMenuCommand("apply"),
-    "quick-draft-develop": () => runQuickDraftMenuCommand("develop"),
-    "quick-draft-view-body": () => runQuickDraftMenuCommand("view-body"),
-    "quick-draft-view-grain": () => runQuickDraftMenuCommand("view-grain"),
-    "quick-draft-view-read": () => runQuickDraftMenuCommand("view-read"),
-    "quick-draft-toggle-materials": () => runQuickDraftMenuCommand("toggle-materials"),
-    "quick-draft-toggle-adjustments": () => runQuickDraftMenuCommand("toggle-adjustments"),
-    "quick-draft-toggle-sideask": toggleQuickDraftSideAsk,
-    "quick-draft-talk-points": () => runQuickDraftMenuCommand("organize"),
-    "quick-draft-mingming": () => runQuickDraftMenuCommand("mingming"),
-    "quick-draft-luoluo": () => runQuickDraftMenuCommand("luoluo"),
-    "quick-draft-hkrr": () => runQuickDraftMenuCommand("hkrr"),
-    "quick-draft-praise": () => runQuickDraftMenuCommand("praise"),
-    "quick-draft-save-project": () => runQuickDraftMenuCommand("save-project"),
-    "quick-draft-copy-markdown": () => runQuickDraftMenuCommand("copy-markdown"),
-    "quick-draft-send-teachtext": () => runQuickDraftMenuCommand("send-teachtext"),
-    "quick-draft-send-review": () => runQuickDraftMenuCommand("send-review"),
-    "open-writing-bell": () => openWindow("writingBell"),
     "hold-my-place": async () => { await ensureHeldPlaceSlipModule(); holdMyPlace(); },
     "resume-my-place": async () => { await ensureHeldPlaceSlipModule(); await resumeMyPlace(); },
     "held-place-to-question-sheet": async () => { await ensureHeldPlaceSlipModule(); promoteHeldPlace("questionSheet"); },
     "held-place-to-outline": async () => { await ensureHeldPlaceSlipModule(); promoteHeldPlace("outline"); },
     "held-place-dismiss": async () => { await ensureHeldPlaceSlipModule(); dismissHeldPlaceSlip(); },
-    "open-note-pad": () => openWindow("notePad"),
-    "open-clipboard": () => {
-      renderClipboard();
-      openWindow("clipboard");
-    },
-    "open-alarm-clock": () => openWindow("alarmClock"),
-    "open-calculator": () => openWindow("calculator"),
-    "open-bureaucracy-meme": () => openWindow("bureaucracyMeme"),
-    "open-endfield-terminal": () => openWindow("endfieldTerminal"),
-    "open-image-manager": () => openWindow("imageManager"),
-    "open-puzzle": () => openWindow("puzzle"),
-    "open-memory-cards": () => openWindow("memoryCards"),
-    "open-key-caps": () => openWindow("keyCaps"),
-    "open-model-meter": () => openWindow("modelMeter"),
-    "open-system-status": () => openWindow("systemStatus"),
-    "open-notification-center": () => openWindow("notificationCenter"),
     "clear-notifications": clearSystemNotifications,
-    "open-dictation": invokeIntentKey,
-    "open-translation-pad": () => openTranslationPad(),
-    "open-rebuild-flow": openRebuildFlow,
     "rebuild-use-reader": useReaderForRebuildFlow,
     "rebuild-use-teachtext": useTeachTextForRebuildFlow,
     "rebuild-use-clipboard": useClipboardForRebuildFlow,
@@ -1304,50 +1062,15 @@ function getApplicationActionHandlers() {
     "run-rebuild-flow": runRebuildFlow,
     "close-rebuild-flow": () => closeWindow("rebuildFlow", true),
     "toggle-compose-tools": toggleComposeToolsMenu,
-    "open-question-sheet": openQuestionSheetSurface,
-    "open-teachtext-manuscript": openTeachTextManuscriptWindow,
-    "open-document-versions": () => openDocumentVersions(),
     "versions-compare": () => compareSelectedDocumentVersions(),
     "versions-restore": () => restoreSelectedDocumentVersion(),
-    "open-outline": openOutlineSurface,
-    "open-section-drafts": openSectionDrafts,
-    "open-claim-check": () => openReviewDesk("facts"),
-    "open-review-desk": () => openReviewDesk("style"),
-    "open-docmap": async () => {
-      // The tabbed open path lives in the lazy DocMap module. Awaiting the
-      // load before choosing the path means the icon always opens the real
-      // tabbed surface instead of an empty window whose toolbar commands are
-      // all disabled (the pre-split fallback raced the lazy load and won).
-      await ensureDocMapModule();
-      if (typeof openDocMapWindowWithTabs === "function") {
-        openDocMapWindowWithTabs();
-        return;
-      }
-      openWindow("docMap");
-    },
-    "open-clio-stage": openClioStageApp,
-    "open-clio-chart": openClioChartApp,
-    "open-micropolis": () => openMicropolisApp(),
-    "see-as-chart": seeSelectedTableAsChart,
-    "open-liquid-cover": openLiquidCover,
-    "open-cmf-studio": () => openWindow("cmfStudio"),
-    "open-soundscape": () => openWindow("soundscape"),
-    "open-openttd": () => openWindow("openttd"),
-    "open-doom": () => openWindow("doom"),
-    "open-dictionary": () => openWindow("dictionary"),
     // Wrapped, not bare: the Dictionary module is lazy, so a bare reference
     // resolves at boot into nothing and takes the whole registry down with it.
     "dictionary-keep-word": () => keepDictionaryWord(),
     "dictionary-delete-word": () => deleteDictionaryWord(),
     "hold-that-thought": holdThatThought,
-    "note-pad-new-slip": () => addNotePadPage(currentWritingPosition()),
-    "note-pad-send": () => sendNotePadPage(),
-    "note-pad-back": returnToNotePadOrigin,
-    "note-pad-cycle-destination": cycleNotePadDestination,
-    "open-style-sheet": () => openReviewDesk("style"),
     "generate-outline": generateOutline,
     "organize-question-sheet": organizeQuestionSheet,
-    "open-writing-flow-windows": openWritingFlowWindows,
     "toggle-question-preview": () => toggleTeachTextSurfacePreview("questionSheet"),
     "toggle-writing-preview": toggleWritingPreviewForActiveWindow,
     "insert-question-template": insertQuestionTemplate,
@@ -1399,7 +1122,6 @@ function getApplicationActionHandlers() {
     "ai-list": () => printTeachTextToAi("list"),
     "ai-table": () => printTeachTextToAi("table"),
     "print-to-ai": () => printTeachTextToAi("proofread"),
-    "open-teachtext": openTeachTextForWorkspace,
     "new-text-document": createTeachTextFileFromFinder,
     "duplicate-file": duplicateActiveFile,
     "rename-file": renameActiveFile,
@@ -1442,15 +1164,6 @@ function getApplicationActionHandlers() {
       openWindow("teachText");
       clipTeachTextSelectionToScrapbook();
     },
-    "open-applications": () => openWindow("applications"),
-    "open-help-folder": () => openWindow("helpFolder"),
-    "open-control-strip-modules": () => openWindow("controlStripModules"),
-    "open-control-strip-module": ({ controlStripModuleId }) => {
-      ensureControlStripModulesFolderModule()
-        .then(() => window.AISystem6ControlStripModulesFolder?.openModule?.(controlStripModuleId))
-        .catch((error) => console.warn("Control Strip Modules folder unavailable.", error));
-    },
-    "open-project-cd": () => openWindow("projectCd"),
     "copy-project-cd-markdown": copySelectedProjectCdMarkdown,
     "share-project-cd-markdown": shareSelectedProjectCdMarkdown,
     // Download and Print to PDF reached their handlers through a bare click
@@ -1461,138 +1174,23 @@ function getApplicationActionHandlers() {
     "print-project-cd-item": () => printSelectedProjectCdItem(),
     // Lazy module: the identifier must be resolved at dispatch time, not at
     // registry-build time, or the whole registry throws before first use.
-    "open-finishing-receipt": () => openFinishingReceiptForSelection(),
-    "open-import-utility": () => openWindow("importUtility"),
-    "open-project-backup": openProjectBackupPanel,
-    "open-chooser": () => openWindow("chooser"),
-    "open-control": () => openWindow("control"),
-    "open-local-ai-settings": () => {
-      openWindow("control");
-      if (typeof setControlTab === "function") setControlTab("local");
-      return true;
-    },
-    "open-cloud-ai-settings": () => {
-      openWindow("control");
-      if (typeof setControlTab === "function") setControlTab("cloud");
-      return true;
-    },
-    // Legacy alias: Website AI lives on the Cloud tab.
-    "open-ai-connection-settings": () => handleAction("open-cloud-ai-settings"),
     "retry-current-ai-action": () => (
       typeof window.AISystem6ModelUserErrors?.runRetryable === "function"
         ? window.AISystem6ModelUserErrors.runRetryable()
         : false
     ),
-    "open-rag": () => openWindow("rag"),
     // Searcher and Find File live in a lazy module, so every handler below has
     // to be an arrow that loads it first: a bare reference here is resolved
     // when this registry object is built at boot, and one ReferenceError takes
     // the whole registry with it. openWindow does the loading and the paint.
-    "open-find-path": async () => {
-      const selection = teachTextBodyInput.value.slice(teachTextBodyInput.selectionStart || 0, teachTextBodyInput.selectionEnd || 0).trim();
-      if (selection && !findPathQueryInput.value.trim()) {
-        findPathQueryInput.value = selection;
-      }
-      await openWindow("findPath");
-      findPathQueryInput.focus();
-    },
-    "open-find-file": async () => {
-      await openWindow("findFile");
-      findFileQueryInput?.focus();
-    },
-    "open-selected-find-file": async () => {
-      await ensureFindPathModule();
-      openSelectedFindFileResult();
-    },
     "reveal-selected-find-file": async () => {
       await ensureFindPathModule();
       revealSelectedFindFileResult();
     },
-    "open-reader": () => {
-      if (typeof openReaderWindowWithTabs === "function") {
-        openReaderWindowWithTabs();
-        return;
-      }
-      openWindow("reader");
-      readerUrlInput.focus();
-    },
-    "reader-open-source": handleReaderOpenButton,
-    "reader-clip": clipReaderSelection,
-    "reader-clip-translate": clipReaderSelectionWithTranslation,
-    "reader-send-manuscript": sendReaderCopyToManuscript,
-    "reader-make-docmap": () => makeDocMapForRange("auto"),
-    "reader-docmap-selection": () => {
-      const context = readerSelectionContext();
-      if (!context) return setStatus(t("select_text_first"));
-      return makeDocMapForRange("selection", context);
-    },
-    "reader-docmap-source": () => makeDocMapForRange("source"),
-    "reader-find-sources": runReaderFindSources,
-    "reader-open-clio-stage": openCurrentReaderInClioStage,
-    "clio-stage-docmap": async () => {
-      await ensureClioStageModule();
-      if (typeof makeClioStageDocMap === "function") makeClioStageDocMap();
-    },
-    "focus-reader-question": () => readerQuestionInput?.focus(),
-    "open-time-machine": () => dispatchTimeMachineMenuCommand("open"),
-    "time-machine-new-tab": () => dispatchTimeMachineMenuCommand("new-tab"),
-    "time-machine-close-tab": () => dispatchTimeMachineMenuCommand("close-tab"),
-    "time-machine-back": () => dispatchTimeMachineMenuCommand("back"),
-    "time-machine-forward": () => dispatchTimeMachineMenuCommand("forward"),
-    "time-machine-stop": () => dispatchTimeMachineMenuCommand("stop"),
-    "time-machine-refresh": () => dispatchTimeMachineMenuCommand("refresh"),
-    "time-machine-switch-source": () => dispatchTimeMachineMenuCommand("switch-source"),
-    "time-machine-toggle": () => dispatchTimeMachineMenuCommand("toggle"),
-    "time-machine-web-view": () => dispatchTimeMachineMenuCommand("web-view"),
-    "time-machine-reader-view": () => dispatchTimeMachineMenuCommand("reader-view"),
-    "time-machine-preserve-wayback": () => dispatchTimeMachineMenuCommand("preserve-wayback"),
-    "time-machine-preserve-archive-is": () => dispatchTimeMachineMenuCommand("preserve-archive-is"),
-    "time-machine-clip": () => dispatchTimeMachineMenuCommand("clip"),
-    "time-machine-clip-translate": () => dispatchTimeMachineMenuCommand("clip-translate"),
-    "time-machine-docmap": () => dispatchTimeMachineMenuCommand("docmap"),
-    "time-machine-docmap-selection": () => dispatchTimeMachineMenuCommand("docmap-selection"),
-    "time-machine-docmap-source": () => dispatchTimeMachineMenuCommand("docmap-source"),
-    "time-machine-ask": () => dispatchTimeMachineMenuCommand("ask"),
-    "time-machine-send-manuscript": () => dispatchTimeMachineMenuCommand("send-manuscript"),
     "clip-selected-find-path": async () => {
       await ensureFindPathModule();
       clipSelectedFindPath();
     },
-    "open-selected-in-reader": () => {
-      if (selectedFindPathIndex === null) {
-        setStatus(t("select_find_path_first"));
-        return;
-      }
-      const result = findPathResults[selectedFindPathIndex];
-      if (!result?.url) return;
-      readerUrlInput.value = result.url;
-      openWindow("reader");
-      fetchReaderPage();
-    },
-    "open-text-disk": () => {
-      renderMountedTextDisk();
-      openWindow("textDisk");
-    },
-    "open-finder": () => {
-      openWindow("finder");
-      navigateSystemFolderPath("");
-    },
-    "open-documents": () => {
-      renderDocuments();
-      openWindow("documents");
-    },
-    "open-scrapbook": () => openWindow("scrapbook"),
-    "scrapbook-open-source": openSelectedScrapSourceInReader,
-    "scrapbook-page-previous": showPreviousScrapbookPage,
-    "scrapbook-page-next": showNextScrapbookPage,
-    "scrapbook-toggle-translation": toggleScrapTranslationView,
-    "scrapbook-insert": insertScrapIntoPrompt,
-    "scrapbook-attach": toggleClipAttachment,
-    "scrapbook-send-question": sendSelectedScrapsToQuestionSheet,
-    "scrapbook-outline": outlineSelectedScraps,
-    "scrapbook-export-bilingual": downloadSelectedScrapsBilingualMarkdown,
-    "scrapbook-delete": deleteSelectedScrap,
-    "focus-scrapbook-question": () => scrapbookQuestionInput?.focus(),
     "focus-search-query": () => findPathQueryInput?.focus(),
     "synthesize-search-results": async () => {
       await ensureFindPathModule();
@@ -1606,85 +1204,6 @@ function getApplicationActionHandlers() {
       await ensureFindPathModule();
       insertFindPathIntoTeachText();
     },
-    "clio-chart-import": () => runClioChartMenuCommand("import"),
-    "clio-chart-hand-back": () => runClioChartMenuCommand("hand-back"),
-    "clio-chart-new-cpu-gpu": () => runClioChartMenuCommand("new:cpu-gpu"),
-    "clio-chart-new-gaming": () => runClioChartMenuCommand("new:gaming"),
-    "clio-chart-new-battery-power": () => runClioChartMenuCommand("new:battery-power"),
-    "clio-chart-new-noise-heat": () => runClioChartMenuCommand("new:noise-heat"),
-    "clio-chart-new-display": () => runClioChartMenuCommand("new:display"),
-    "clio-chart-new-rating": () => runClioChartMenuCommand("new:rating"),
-    "clio-chart-new-blank": () => runClioChartMenuCommand("new:blank"),
-    "clio-chart-save-template": () => runClioChartMenuCommand("save-template"),
-    "clio-chart-bars": () => runClioChartMenuCommand("bars"),
-    "clio-chart-matrix": () => runClioChartMenuCommand("matrix"),
-    "clio-chart-trace": () => runClioChartMenuCommand("trace"),
-    "clio-chart-grid": () => runClioChartMenuCommand("grid"),
-    "clio-chart-score": () => runClioChartMenuCommand("score"),
-    "clio-chart-source": () => runClioChartMenuCommand("source"),
-    "clio-chart-presentation": () => runClioChartMenuCommand("presentation"),
-    "clio-chart-send-stage": () => runClioChartMenuCommand("send-stage"),
-    "clio-chart-reverse-sort": () => runClioChartMenuCommand("reverse-sort"),
-    "clio-chart-lower-better": () => runClioChartMenuCommand("lower-better"),
-    "clio-chart-read": () => runClioChartMenuCommand("read"),
-    "clio-chart-outliers": () => runClioChartMenuCommand("outliers"),
-    "clio-chart-gaps": () => runClioChartMenuCommand("gaps"),
-    "clio-chart-write-up": () => runClioChartMenuCommand("write-up"),
-    "clio-stage-import": () => runClioStageMenuCommand("import"),
-    "clio-stage-previous": () => runClioStageMenuCommand("previous"),
-    "clio-stage-next": () => runClioStageMenuCommand("next"),
-    "clio-stage-source": () => runClioStageMenuCommand("source"),
-    "clio-stage-document": () => runClioStageMenuCommand("document"),
-    "clio-stage-slide": () => runClioStageMenuCommand("slide"),
-    "clio-stage-cue": () => runClioStageMenuCommand("cue"),
-    "focus-clio-stage-question": () => document.querySelector("#clio-stage-question")?.focus(),
-    "cover-choose-background": () => runLiquidCoverMenuCommand("choose-background"),
-    "cover-choose-video": () => runLiquidCoverMenuCommand("choose-video"),
-    "cover-choose-subject": () => runLiquidCoverMenuCommand("choose-subject"),
-    "cover-export-png": () => runLiquidCoverMenuCommand("export-png"),
-    "cover-export-video": () => runLiquidCoverMenuCommand("export-video"),
-    "cover-add-layer": () => runLiquidCoverMenuCommand("add-layer"),
-    "cover-delete-layer": () => runLiquidCoverMenuCommand("delete-layer"),
-    "cover-shape-circle": () => runLiquidCoverMenuCommand("shape-circle"),
-    "cover-shape-squircle": () => runLiquidCoverMenuCommand("shape-squircle"),
-    "cover-shape-capsule": () => runLiquidCoverMenuCommand("shape-capsule"),
-    "cover-toggle-focus": () => runLiquidCoverMenuCommand("toggle-focus"),
-    "cover-preview-motion": () => runLiquidCoverMenuCommand("preview-motion"),
-    "cover-ai-compose": () => runLiquidCoverMenuCommand("ai-compose"),
-    "cmf-save-recipe": () => runCmfMenuCommand("save"),
-    "cmf-export-usdz": () => runCmfMenuCommand("export"),
-    "cmf-shuffle": () => runCmfMenuCommand("shuffle"),
-    "cmf-reset": () => runCmfMenuCommand("reset"),
-    "cmf-reset-view": () => runCmfMenuCommand("reset-view"),
-    "cmf-view-front": () => runCmfMenuCommand("view-front"),
-    "cmf-view-back": () => runCmfMenuCommand("view-back"),
-    "cmf-view-side": () => runCmfMenuCommand("view-side"),
-    "soundscape-choose-local": () => runSoundscapeMenuCommand("choose-local"),
-    "soundscape-gamdl-download": () => runSoundscapeMenuCommand("gamdl-download"),
-    "soundscape-save-moment": () => runSoundscapeMenuCommand("save-moment"),
-    "soundscape-toggle-play": () => runSoundscapeMenuCommand("toggle-play"),
-    "soundscape-previous": () => runSoundscapeMenuCommand("previous"),
-    "soundscape-next": () => runSoundscapeMenuCommand("next"),
-    "soundscape-shuffle": () => runSoundscapeMenuCommand("shuffle"),
-    "soundscape-repeat": () => runSoundscapeMenuCommand("repeat"),
-    "soundscape-shuffle-on": () => runSoundscapeMenuCommand("shuffle-on"),
-    "soundscape-shuffle-off": () => runSoundscapeMenuCommand("shuffle-off"),
-    "soundscape-shuffle-songs": () => runSoundscapeMenuCommand("shuffle-songs"),
-    "soundscape-shuffle-albums": () => runSoundscapeMenuCommand("shuffle-albums"),
-    "soundscape-shuffle-groupings": () => runSoundscapeMenuCommand("shuffle-groupings"),
-    "soundscape-repeat-off": () => runSoundscapeMenuCommand("repeat-off"),
-    "soundscape-repeat-all": () => runSoundscapeMenuCommand("repeat-all"),
-    "soundscape-repeat-one": () => runSoundscapeMenuCommand("repeat-one"),
-    "soundscape-reset-style": () => runSoundscapeMenuCommand("reset-style"),
-    "soundscape-link-project": () => runSoundscapeMenuCommand("link-project"),
-    "endfield-new-session": () => dispatchEndfieldMenuCommand("new-session"),
-    "endfield-run-query": () => dispatchEndfieldMenuCommand("run-query"),
-    "meme-upload": () => window.AISystem6BureaucracyMeme?.runMenuCommand?.("upload"),
-    "meme-download": () => window.AISystem6BureaucracyMeme?.runMenuCommand?.("download"),
-    "meme-focus-topic": () => window.AISystem6BureaucracyMeme?.runMenuCommand?.("focus-topic"),
-    "meme-generate": () => window.AISystem6BureaucracyMeme?.runMenuCommand?.("generate"),
-    "open-trash": () => openWindow("trash"),
-    "open-context-panel": () => openWindow("contextPanel"),
     "save-current": saveCurrentWork,
     "save-chat": openSaveChatDialog,
     "save-conversation": openSaveChatDialog,
@@ -1693,7 +1212,6 @@ function getApplicationActionHandlers() {
     "download-current-chat-markdown": downloadCurrentClioTalkMarkdown,
     "find-in-cliotalk": () => findInClioTalkConversation(),
     "find-next-in-cliotalk": findNextInClioTalkConversation,
-    "open-clio-attachment-picker": beginClioTalkAttachmentPicker,
     "paste-clio-interview": () => {
       promptInput?.focus();
       return runEditCommand("paste");
@@ -1717,29 +1235,6 @@ function getApplicationActionHandlers() {
       if (lastUserText) submitUserText(lastUserText);
     },
     "stop-generation": stopGeneration,
-    // DocMap is lazy, so these stay arrows: the registry is built once on the
-    // first action dispatch, and a bare reference would resolve the name before
-    // the module exists.
-    "docmap-save": () => withDocMap(() => saveCurrentDocMap()),
-    "docmap-print-pdf": () => withDocMap(() => printCurrentDocMapPdf()),
-    "docmap-send-question": () => withDocMap(() => sendDocMapNodeToQuestionSheet()),
-    "docmap-insert-outline": () => withDocMap(() => insertDocMapNodeAsOutline()),
-    "docmap-hkrr": () => withDocMap(() => askDocMapHkrrTheoryReview()),
-    "focus-docmap-question": () => docMapQuestionInput?.focus(),
-    "docmap-layout-right": () => withDocMap(() => setCurrentDocMapLayout("right")),
-    "docmap-layout-balanced": () => withDocMap(() => setCurrentDocMapLayout("balanced")),
-    "docmap-fit-view": () => {
-      const docMapWindow = getWindow("docMap");
-      // In a SideAsk split the DocMap window already owns its pane; maximizing
-      // it would cover the paired assistant. Fit the canvas to the pane.
-      if (docMapWindow?.dataset.sideaskRestoreActive !== "true") {
-        maximizeWindow(docMapWindow);
-      }
-      requestAnimationFrame(() => withDocMap(() => fitDocMapCanvasToView()));
-    },
-    "docmap-zoom-out": () => withDocMap(() => zoomDocMapOut()),
-    "docmap-zoom-in": () => withDocMap(() => zoomDocMapIn()),
-    "docmap-retry-pending": () => withDocMap(() => retryPendingDocMap()),
     "clear-attached-clips": () => {
       attachedClipIds.clear();
       renderAttachedClips();
@@ -1786,19 +1281,13 @@ function getApplicationActionHandlers() {
     "toggle-sideask": toggleSideAsk,
     // Wrapped, not bare: these resolve at boot into the lazy module's stub and
     // a bare reference would throw once the module moved out of the bundle.
-    "open-sideask-pad": () => openSideAskPad(),
-    "sideask-pad-ask": () => askSideAskPad(),
-    "sideask-pad-clear": () => clearSideAskPad(),
-    "sideask-pad-promote": () => promoteSideAskPad(),
     "focus-sideask-source": focusSideAskSource,
-    "sideask-pad-interview": () => interviewQuestionSheet(),
     "set-theme-classic": () => applyTheme("classic"),
     "set-theme-platinum": () => applyTheme("platinum"),
     "set-theme-aqua": () => applyTheme("aqua"),
     "set-theme-snow-leopard": () => applyTheme("snow-leopard"),
     "set-theme-yosemite": () => applyTheme("yosemite"),
     "set-theme-liquid-glass": () => applyTheme("liquid-glass"),
-    "open-theme-lab": () => openWindow("themeLab"),
     "toggle-balloon-help": toggleBalloonHelp,
     "toggle-writer-mode": toggleWriterMode,
     "restart-system": restartSystem,
@@ -1823,29 +1312,11 @@ function getApplicationCommandRegistry() {
       shortcut: () => keyboardShortcutRegistry.find((entry) => entry.action === action) || null,
     })])
   );
-  window.AISystem6LazyApplicationCommands?.forEach((definition, action) => {
-    applicationCommandRegistryCache.set(action, Object.freeze({
-      id: action,
-      handler: definition.handler,
-      isAvailable: () => isWorkspaceActionAllowed(action) && definition.isAvailable(),
-      shortcut: () => null,
-    }));
-  });
+  window.AISystem6Runtime?.c?.forEach((command, action) => applicationCommandRegistryCache.set(action, Object.freeze({ id: action, handler: (context) => command.handler(context), isAvailable: () => isWorkspaceActionAllowed(action) && command.isAvailable() !== false, shortcut: () => keyboardShortcutRegistry.find((entry) => entry.action === action) || null })));
   return applicationCommandRegistryCache;
-}
-
-globalThis.AISystem6RegisterApplicationCommands = (definitions = {}) => {
-  window.AISystem6LazyApplicationCommands ||= new Map();
-  Object.entries(definitions).forEach(([action, definition]) => {
-    window.AISystem6LazyApplicationCommands.set(action, {
-      handler: definition.handler,
-      isAvailable: definition.isAvailable || (() => true),
-    });
-  });
-  applicationCommandRegistryCache = null;
 };
 
-function handleAction(action, commandContext = {}) {
+async function handleAction(action, commandContext = {}) {
   if (String(action).startsWith("open-system-folder-path:")) {
     commandContext = { ...commandContext, systemFolderPath: String(action).slice("open-system-folder-path:".length) };
     action = "open-system-folder-path";
@@ -1870,12 +1341,29 @@ function handleAction(action, commandContext = {}) {
     commandContext = { ...commandContext, controlStripModuleId: String(action).slice("open-control-strip-module:".length) };
     action = "open-control-strip-module";
   }
-  const command = getApplicationCommandRegistry().get(action);
+  let command = getApplicationCommandRegistry().get(action);
+  if (!command) {
+    const lazy = window.AISystem6Runtime?.lazyCommands?.get?.(action);
+    if (lazy) {
+      try {
+        await lazy.ensure();
+        applicationCommandRegistryCache = null;
+        command = getApplicationCommandRegistry().get(action);
+      } catch (error) {
+        console.warn(`Lazy command ${action} failed to load.`, error);
+        updateMenuState();
+        return;
+      }
+    }
+  }
   if (!command?.isAvailable()) {
     updateMenuState();
     return;
   }
-  if (writeRequiredActions.has(action) && window.AISystem6WriteLease?.canMutate?.() !== true) {
+  if (
+    (writeRequiredActions.has(action) || command?.writeRequired === true)
+    && window.AISystem6WriteLease?.canMutate?.() !== true
+  ) {
     if (typeof setStatus === "function") setStatus(t("write_required_status"));
     updateMenuState();
     return;
@@ -1928,3 +1416,95 @@ function runShortcut(event) {
   closeMenus();
   handleAction(command.id);
 }
+
+window.AISystem6Runtime?.registerApplication({id:"keyCaps",windowName:"keyCaps",commands:{"open-key-caps":{handler:()=>openWindow("keyCaps"),isAvailable:()=>!0}}});
+window.AISystem6Runtime?.registerLazyCommand?.("open-memory-cards",{ensure:ensureMemoryCardsModule});
+window.AISystem6Runtime?.registerLazyCommand?.("open-alarm-clock",{ensure:ensureAlarmClockModule});
+window.AISystem6Runtime?.registerLazyCommand?.("open-translation-pad",{ensure:ensureTranslationPadModule});
+window.AISystem6Runtime?.registerLazyCommand?.("open-bureaucracy-meme",{ensure:ensureBureaucracyMemeModule});
+window.AISystem6Runtime?.registerLazyCommand?.("open-endfield-terminal",{ensure:ensureEndfieldTerminalModule});
+window.AISystem6Runtime?.registerLazyCommand?.("open-find-path",{ensure:ensureFindPathModule});
+window.AISystem6Runtime?.registerLazyCommand?.("open-find-file",{ensure:ensureFindPathModule});
+window.AISystem6Runtime?.registerLazyCommand?.("open-time-machine",{ensure:ensureTimeMachineModule});
+window.AISystem6Runtime?.registerLazyCommand?.("open-dictionary",{ensure:ensureDictionaryHelpModule});
+window.AISystem6Runtime?.registerLazyCommand?.("open-system-help",{ensure:ensureDictionaryHelpModule});
+window.AISystem6Runtime?.registerLazyCommand?.("open-soundscape",{ensure:ensureSoundscapeModule});
+window.AISystem6Runtime?.registerLazyCommand?.("open-cmf-studio",{ensure:ensureCmfStudioModule});
+window.AISystem6Runtime?.registerLazyCommand?.("open-image-prompt-studio",{ensure:ensureImagePromptStudioModule});
+window.AISystem6Runtime?.registerLazyCommand?.("open-openttd",{ensure:ensureOpenTTDModule});
+window.AISystem6Runtime?.registerLazyCommand?.("open-doom",{ensure:ensureDoomModule});
+window.AISystem6Runtime?.registerLazyCommand?.("open-micropolis",{ensure:ensureMicropolisModule});
+window.AISystem6Runtime?.registerLazyCommand?.("open-clio-stage",{ensure:ensureClioStageModule});
+window.AISystem6Runtime?.registerLazyCommand?.("open-liquid-cover",{ensure:ensureLiquidCoverModule});
+window.AISystem6Runtime?.registerLazyCommand?.("open-clio-chart",{ensure:ensureClioChartModule});
+window.AISystem6Runtime?.registerLazyCommand?.("see-as-chart",{ensure:ensureClioChartModule});
+window.AISystem6Runtime?.registerLazyCommand?.("open-theme-lab",{ensure:ensureThemeLabModule});
+window.AISystem6Runtime?.registerLazyCommand?.("open-quick-draft",{ensure:ensureQuickDraftModule});
+window.AISystem6Runtime?.registerLazyCommand?.("open-docmap",{ensure:ensureDocMapModule});
+window.AISystem6Runtime?.registerCommand?.("open-about",{handler:()=>openWindow("about"),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-applications",{handler:()=>openWindow("applications"),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-help-folder",{handler:()=>openWindow("helpFolder"),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-chooser",{handler:()=>openWindow("chooser"),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-rag",{handler:()=>openWindow("rag"),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-context-panel",{handler:()=>openWindow("contextPanel"),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-image-manager",{handler:()=>openWindow("imageManager"),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-model-meter",{handler:()=>openWindow("modelMeter"),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-system-status",{handler:()=>openWindow("systemStatus"),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-notification-center",{handler:()=>openWindow("notificationCenter"),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-project-cd",{handler:()=>openWindow("projectCd"),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-import-utility",{handler:()=>openWindow("importUtility"),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-trash",{handler:()=>openWindow("trash"),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-control",{handler:()=>openWindow("control"),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-assistant",{handler:()=>openWindow("assistant"),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-project-info",{handler:openProjectInfo,isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-file-info",{handler:openFileInfo,isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-project-disks",{handler:()=>{openWindow("projects");if(!isProjectMounted)setStatus(t("no_project_mounted"));},isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-text-disk",{handler:()=>{renderMountedTextDisk();openWindow("textDisk");},isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-finder",{handler:()=>{openWindow("finder");navigateSystemFolderPath("");},isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-documents",{handler:()=>{renderDocuments();openWindow("documents");},isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-github-repo",{handler:()=>window.open("https://github.com/surfine/AI-System-6","_blank","noopener"),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-project-site",{handler:()=>window.open("https://aisystem6.pages.dev/","_blank","noopener"),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-guide-promo",{handler:()=>window.open("https://www.bilibili.com/video/BV1ht3m6UEDb/","_blank","noopener"),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-about-multifinder",{handler:showAboutMultiFinder,isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-welcome-read-me",{handler:openWelcomeReadMe,isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-clio-model-settings",{handler:openModelSettings,isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-read-me",{handler:()=>openSystemFolderDocument("readMe"),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-flow-readme",{handler:()=>openSystemFolderDocument("flow"),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-memory-readme",{handler:()=>openSystemFolderDocument("memory"),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-system-concepts-docmap",{handler:openSystemConceptDocMap,isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-system-concepts-clio-stage",{handler:openSystemConceptClioStage,isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-text-document",{handler:openTextDocumentFromDisk,isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-writing-studio",{handler:openWritingStudio,isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-question-sheet",{handler:openQuestionSheetSurface,isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-teachtext-manuscript",{handler:openTeachTextManuscriptWindow,isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-document-versions",{handler:()=>openDocumentVersions(),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-outline",{handler:openOutlineSurface,isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-section-drafts",{handler:openSectionDrafts,isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-claim-check",{handler:()=>openReviewDesk("facts"),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-style-sheet",{handler:()=>openReviewDesk("style"),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-writing-flow-windows",{handler:openWritingFlowWindows,isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-teachtext",{handler:openTeachTextForWorkspace,isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-finishing-receipt",{handler:()=>openFinishingReceiptForSelection(),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-clio-attachment-picker",{handler:beginClioTalkAttachmentPicker,isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-local-ai-settings",{handler:()=>{openWindow("control");if(typeof setControlTab==="function")setControlTab("local");return true;},isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-cloud-ai-settings",{handler:()=>{openWindow("control");if(typeof setControlTab==="function")setControlTab("cloud");return true;},isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-guide",{handler:openWelcomeFloppy,isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-menu-selection",{handler:openFinderMenuSelection,isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-project-disk",{handler:openSelectedProject,isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-rebuild-flow",{handler:openRebuildFlow,isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-review-desk",{handler:()=>openReviewDesk("style"),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-project-backup",{handler:openProjectBackupPanel,isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-system-file-system",{handler:()=>showSystemModal(t("system_file_not_openable"),"alert"),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-system-file-finder",{handler:()=>showSystemModal(t("system_file_not_openable"),"alert"),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-system-file-multifinder",{handler:()=>showSystemModal(t("system_file_not_openable"),"alert"),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-system-file-da-handler",{handler:()=>showSystemModal(t("system_file_not_openable"),"alert"),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-system-folder-path",{handler:({systemFolderPath=""}={})=>navigateSystemFolderPath(systemFolderPath),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-applications-folder-path",{handler:({applicationsFolderPath=""}={})=>navigateApplicationsFolderPath(applicationsFolderPath),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-system-prompt-file",{handler:({promptId="writing-tools.proofread"}={})=>{if(!activeProjectId){setStatus(t("no_project_mounted"));openWindow("projects");return}const file=window.AISystem6PromptFilesRuntime?.ensureProjectPromptOverrideForEditing(activeProjectId,promptId);if(!file){setStatus(currentLanguage==="zh"?"该系统提示词只读，或提示词文件缺失。":"This system prompt is read-only or missing.");return}selectedChatFileId=file.id;activeTextFileId=file.id;openTextFile(file.id);saveDeskState?.();},isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-chat-file",{handler:({fileId=""}={})=>openChatFileWindow(fileId),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-droplet",{handler:({dropletId=""}={})=>{const command=typeof getScriptableCommand==="function"?getScriptableCommand(dropletId):null;const name=command&&typeof dropletName==="function"?dropletName(command):t("droplet");showSystemModal(t("droplet_open_explainer",name),"alert");},isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-control-strip-modules",{handler:()=>openWindow("controlStripModules"),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-control-strip-module",{handler:({controlStripModuleId})=>{ensureControlStripModulesFolderModule().then(()=>window.AISystem6ControlStripModulesFolder?.openModule?.(controlStripModuleId)).catch(error=>console.warn("Control Strip Modules folder unavailable.",error));},isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-ai-connection-settings",{handler:()=>handleAction("open-cloud-ai-settings"),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-selected-find-file",{handler:async()=>{await ensureFindPathModule();openSelectedFindFileResult();},isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-selected-in-reader",{handler:()=>{if(selectedFindPathIndex===null){setStatus(t("select_find_path_first"));return}const result=findPathResults[selectedFindPathIndex];if(!result?.url)return;readerUrlInput.value=result.url;openWindow("reader");fetchReaderPage();},isAvailable:()=>!0});

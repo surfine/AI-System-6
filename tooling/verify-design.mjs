@@ -125,6 +125,46 @@ function hasIndependentNestedCardSelector(selector) {
   return false;
 }
 
+// Extract the body (and the 1-based line of its opening brace) of the first
+// top-level block whose selector contains `selector`. Used to scope fidelity
+// checks to one theme block instead of sweeping all six appearances.
+function extractBlock(text, selector) {
+  const start = text.indexOf(selector);
+  if (start === -1) return { body: "", line: 0 };
+  const open = text.indexOf("{", start);
+  if (open === -1) return { body: "", line: 0 };
+  let depth = 0;
+  for (let i = open; i < text.length; i++) {
+    if (text[i] === "{") depth++;
+    else if (text[i] === "}") {
+      depth--;
+      if (depth === 0) {
+        return { body: text.slice(open + 1, i), line: text.slice(0, open).split("\n").length };
+      }
+    }
+  }
+  return { body: text.slice(open + 1), line: text.slice(0, open).split("\n").length };
+}
+
+// A soft shadow has a non-zero blur radius (third length) and a real shadow
+// declaration; `0 0 0 2px` (a hard spread ring) is excluded by the third-length
+// gate, and padding triples never match because the line must declare a shadow.
+const SOFT_CHROME_SHADOW = /-?\d+(?:\.\d+)?px\s+-?\d+(?:\.\d+)?px\s+[1-9]\d*(?:\.\d+)?px\b/;
+
+function softShadowInBlockFindings(files, selector) {
+  const findings = [];
+  for (const file of files) {
+    const { body, line: base } = extractBlock(file.text, selector);
+    if (!body) continue;
+    body.split("\n").forEach((lineText, i) => {
+      if (/shadow\s*:/.test(lineText) && SOFT_CHROME_SHADOW.test(lineText)) {
+        addFinding(findings, file, base + i + 1, lineText);
+      }
+    });
+  }
+  return findings;
+}
+
 const checks = [
   {
     key: "thickSideAccentDeclarations",
@@ -189,6 +229,24 @@ const checks = [
     findings: () => regexFindings(
       allSourceFiles,
       /\b(feTurbulence|feDisplacementMap|loose-sketch|sketchy|doodle)\b/gi
+    ),
+  },
+  {
+    key: "classicSoftChromeShadow",
+    label: "soft chrome shadows (Classic :root)",
+    reason: "Classic chrome keeps a 1-bit structure; blurred/soft shadows are forbidden in the default (Classic) token block.",
+    findings: () => softShadowInBlockFindings(
+      cssSourceFiles.filter((file) => file.rel.includes("styles/00-foundation.css")),
+      ":root"
+    ),
+  },
+  {
+    key: "platinumSoftChromeShadow",
+    label: "soft chrome shadows (Platinum block)",
+    reason: "Platinum chrome uses 0-blur hard bevels; blurred/soft shadows are forbidden in the Platinum theme block.",
+    findings: () => softShadowInBlockFindings(
+      cssSourceFiles.filter((file) => file.rel.includes("styles/65-appearance-themes.css")),
+      'body[data-theme="platinum"]'
     ),
   },
 ];

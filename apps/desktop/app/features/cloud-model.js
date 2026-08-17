@@ -109,10 +109,12 @@
 
   async function changeLocalCredential(action, payload = {}) {
     if (isPublicCloudCredentialMode()) return null;
-    const response = await fetch("/api/cloud/credentials", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action, ...payload }),
+    const response = await window.AISystem6Capabilities.requestService("cloud.credentials", {
+      init: {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, ...payload }),
+      },
     });
     if (!response.ok) throw new Error(serviceErrorDetail(response.status, await response.text()));
     return response.json();
@@ -183,14 +185,16 @@
     if (cloudCredentialMode() === "shared") return null;
     try {
       const baseUrl = PROVIDER_BASE_URLS[cloudConfig.provider] || DEEPSEEK_BASE_URL;
-      const res = await fetch("/api/cloud/status", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...cloudCredentialTransportFields("status"),
-          provider: cloudConfig.provider,
-          base_url: baseUrl,
-        }),
+      const res = await window.AISystem6Capabilities.requestService("cloud.status", {
+        init: {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...cloudCredentialTransportFields("status"),
+            provider: cloudConfig.provider,
+            base_url: baseUrl,
+          }),
+        },
       });
       if (!res.ok) return null;
       const data = await res.json();
@@ -208,7 +212,7 @@
 
   async function fetchCloudModels() {
     try {
-      const response = await fetch("/api/cloud/models");
+      const response = await window.AISystem6Capabilities.requestService("cloud.models", {});
       if (!response.ok) return [];
       const data = await response.json();
       return Array.isArray(data.models) ? data.models : [];
@@ -229,14 +233,16 @@
     cloudStatusText.textContent = typeof t === "function" ? t("cloud_checking") : "Checking...";
     cloudBalanceEl.textContent = "";
     try {
-      const response = await fetch("/api/cloud/status", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...cloudCredentialTransportFields("status"),
-          provider: cloudConfig.provider,
-          base_url: baseUrl,
-        }),
+      const response = await window.AISystem6Capabilities.requestService("cloud.status", {
+        init: {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...cloudCredentialTransportFields("status"),
+            provider: cloudConfig.provider,
+            base_url: baseUrl,
+          }),
+        },
       });
       if (!response.ok) {
         const error = new Error("HTTP " + response.status);

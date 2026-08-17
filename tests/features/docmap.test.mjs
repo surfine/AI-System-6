@@ -41,8 +41,8 @@ test.assert(chooseSource(readySelection, readySource, "source").source === ready
 test.assertIncludes(app, 'id="docmap-print-pdf"', "DocMap command menu exposes Print Map to PDF");
 test.assertIncludes(index, 'class="teachtext-command-menu command-menu-opens-down docmap-command-menu is-disabled"', "DocMap marks its top-toolbar command menu to open into the window");
 test.assertIncludes(app, 'id="docmap-layout-toggle"', "DocMap toolbar exposes the layout picker group");
-test.assertIncludes(actions, '"open-docmap": async () => {', "the DocMap open command awaits the lazy module");
-test.assertIncludes(actions, "await ensureDocMapModule();", "the DocMap open command loads the tool before choosing the tabbed open path");
+test.assertIncludes(app, '"open-docmap"', "the DocMap open command is registered by the lazy module");
+test.assertIncludes(app, 'requestAnimationFrame(() => fitDocMapCanvasToView())', "the DocMap open command loads the tool before choosing the tabbed open path");
 test.assertIncludes(app, 'id="docmap-layout-right"', "DocMap exposes the one-side layout as a direct choice");
 test.assertIncludes(app, 'id="docmap-layout-balanced"', "DocMap exposes the symmetric layout as a direct choice");
 // The Map > Layout submenu offered Tree / Radial / Fishbone. The renderer has

@@ -820,6 +820,7 @@ function captureReaderWorkingSession() {
 
 async function restoreReaderWorkingSession(state = {}) {
   if (state.projectId && state.projectId !== activeProjectId) return false;
+  await window.AISystem6Runtime?.restoreApplication?.("reader", state);
   if (typeof renderReaderTabs === "function") renderReaderTabs();
   if (state.currentReaderPage?.text) {
     await openReaderDocument(state.currentReaderPage);

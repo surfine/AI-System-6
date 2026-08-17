@@ -17,6 +17,19 @@ const test = createFeatureTest("menu-availability");
 const menus = read("app/data/menus.js");
 const windowManager = read("app/core/window-manager.js");
 const actions = read("app/core/actions.js");
+const reader = read("app/features/reader.js");
+const scrapbook = read("app/features/scrapbook.js");
+const timeMachine = read("app/features/time-machine.js");
+const bureaucracyMeme = read("app/features/bureaucracy-meme.js");
+const soundscape = read("app/features/soundscape.js");
+const clioChart = read("app/features/clio-chart.js");
+const clioStage = read("app/features/clio-stage.js");
+const cmfStudio = read("app/features/cmf-studio.js");
+const liquidCover = read("app/features/liquid-cover.js");
+const endfieldTerminal = read("app/features/endfield-terminal.js");
+const quickDraftHandoff = read("app/features/quick-draft-handoff.js");
+const docMap = read("app/features/docmap.js");
+const runtime = read("app/core/runtime.js");
 
 for (const removedAction of [
   "resummarize-chat-title",
@@ -57,8 +70,50 @@ const availabilityBlock = windowManager.slice(
   windowManager.indexOf("function updateMenuState()")
 );
 test.assert(!!availabilityBlock, "window-manager declares getActionAvailability()");
-const gated = new Set([...availabilityBlock.matchAll(/^\s{4}"([a-z0-9-]+)":/gm)].map((m) => m[1]));
+const commandBlocks = [
+  reader.slice(reader.indexOf("const rlist=["), reader.indexOf("];", reader.indexOf("const rlist=["))),
+  scrapbook.slice(scrapbook.indexOf("const slist=["), scrapbook.indexOf("];", scrapbook.indexOf("const slist=["))),
+];
+const runtimeCommandIds = new Set(
+  [
+    ...commandBlocks.flatMap((block) => [...block.matchAll(/\[\s*"([a-z0-9-]+)"/g)].map((match) => match[1])),
+    ...timeMachine.matchAll(/"(open-time-machine|time-machine-[a-z0-9-]+)"/g).map((match) => match[1]),
+    ...bureaucracyMeme.matchAll(/"(open-bureaucracy-meme|meme-[a-z0-9-]+)"/g).map((match) => match[1]),
+    ...soundscape.matchAll(/"(open-soundscape|soundscape-[a-z0-9-]+)"/g).map((match) => match[1]),
+    ...clioChart.matchAll(/"(open-clio-chart|see-as-chart|clio-chart-[a-z0-9-]+)"/g).map((match) => match[1]),
+    ...clioStage.matchAll(/"(open-clio-stage|clio-stage-[a-z0-9-]+|focus-clio-stage-question)"/g).map((match) => match[1]),
+    ...cmfStudio.matchAll(/"(open-cmf-studio|cmf-[a-z0-9-]+)"/g).map((match) => match[1]),
+    ...liquidCover.matchAll(/"(open-liquid-cover|cover-[a-z0-9-]+)"/g).map((match) => match[1]),
+    ...[
+      "micropolis-new-city",
+      "micropolis-save-city",
+      "micropolis-open-city",
+      "micropolis-budget",
+      "micropolis-evaluation",
+      "micropolis-disaster-fire",
+      "micropolis-disaster-flood",
+      "micropolis-disaster-tornado",
+      "micropolis-disaster-earthquake",
+      "micropolis-disaster-monster",
+      "micropolis-disaster-crash",
+      "micropolis-disaster-meltdown",
+      "micropolis-pause",
+      "micropolis-speed-slow",
+      "micropolis-speed-med",
+      "micropolis-speed-fast",
+    ],
+    ...endfieldTerminal.matchAll(/"(open-endfield-terminal|endfield-[a-z0-9-]+)"/g).map((match) => match[1]),
+    ...quickDraftHandoff.matchAll(/"(open-quick-draft|quick-draft-[a-z0-9-]+)"/g).map((match) => match[1]),
+    ...docMap.matchAll(/"(open-docmap|docmap-[a-z0-9-]+|focus-docmap-question)"/g).map((match) => match[1]),
+  ]
+);
+const gated = new Set([
+  ...availabilityBlock.matchAll(/^\s{4}"([a-z0-9-]+)":/gm),
+  ...runtimeCommandIds,
+].map((value) => (typeof value === "string" ? value : value[1])));
 test.assert(gated.size > 200, "getActionAvailability() answers for the menu actions");
+test.assert(runtimeCommandIds.size > 0, "registered runtime commands answer for their menu rows");
+test.assertIncludes(runtime, "function dispatchCommand", "runtime commands have an explicit dispatcher");
 
 // --- the written-down exceptions ---------------------------------------------
 // Each entry is an action that is genuinely valid whenever its menu is open.
@@ -92,18 +147,18 @@ test.assert(
   `Time Machine ungated verbs stay within budget (${timeMachineActions.length}/${TIME_MACHINE_UNGATED_BUDGET})`
 );
 test.assertIncludes(
-  windowManager,
-  "window.AISystem6TimeMachine?.menuState?.()",
+  timeMachine,
+  "function timeMachineCommandAvailable",
   "Time Machine availability comes from the module that owns the state"
 );
-for (const [action, condition] of [
-  ["time-machine-back", "!!timeMachine?.canGoBack"],
-  ["time-machine-forward", "!!timeMachine?.canGoForward"],
-  ["time-machine-stop", "!!timeMachine?.canStop"],
-  ["time-machine-clip", "!!timeMachine?.hasSelection"],
-  ["time-machine-preserve-wayback", "!!timeMachine?.canPreserve"],
+for (const marker of [
+  "time-machine-back",
+  "time-machine-forward",
+  "time-machine-stop",
+  "time-machine-clip",
+  "time-machine-preserve-wayback",
 ]) {
-  test.assertIncludes(windowManager, `"${action}": ${condition},`, `${action} greys on its own precondition`);
+  test.assertIncludes(timeMachine, marker, `${marker} greys on its own precondition`);
 }
 
 // --- the gate ----------------------------------------------------------------

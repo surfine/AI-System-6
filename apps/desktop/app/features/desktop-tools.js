@@ -419,3 +419,12 @@ function restorePuzzleState(state = {}) {
   }
   renderPuzzle();
 }
+
+let calcmounted=!1;function mountCalculatorRuntime(){if(calcmounted)return!0;calcmounted=!0;calculatorKeys.addEventListener("click",event=>{const key=event.target.closest("[data-calc]")?.dataset.calc;if(key)pressCalculatorKey(key)});return!0}
+window.AISystem6Runtime?.registerApplication({id:"calculator",windowName:"calculator",mount:mountCalculatorRuntime,restore:()=>mountCalculatorRuntime(),commands:{"open-calculator":{handler:()=>openWindow("calculator"),isAvailable:()=>!0}}});
+
+let pmounted=!1;function mountPuzzleRuntime(){if(pmounted)return!0;pmounted=!0;puzzleBoardEl?.addEventListener("click",event=>{const index=Number(event.target.closest("[data-puzzle-index]")?.dataset.puzzleIndex);if(Number.isInteger(index))movePuzzleTile(index)});return!0}
+window.AISystem6Runtime?.registerApplication({id:"puzzle",windowName:"puzzle",mount:mountPuzzleRuntime,restore:()=>mountPuzzleRuntime(),commands:{"open-puzzle":{handler:()=>openWindow("puzzle"),isAvailable:()=>!0}}});
+
+let wbmounted=!1;function mountWritingBellRuntime(){if(wbmounted)return!0;wbmounted=!0;writingBellModeEl?.addEventListener("click",event=>{const mode=event.target.closest("[data-bell-mode]")?.dataset.bellMode;if(mode)setWritingBellMode(mode)});writingBellPresetsEl?.addEventListener("click",event=>{const minutes=Number(event.target.closest("[data-bell-preset]")?.dataset.bellPreset||0);if(minutes)setWritingBellMinutes(minutes)});writingBellStartButton?.addEventListener("click",startWritingBell);writingBellPauseButton?.addEventListener("click",pauseWritingBell);writingBellResetButton?.addEventListener("click",resetWritingBell);return!0}
+window.AISystem6Runtime?.registerApplication({id:"writingBell",windowName:"writingBell",mount:mountWritingBellRuntime,restore:()=>mountWritingBellRuntime(),commands:{"open-writing-bell":{handler:()=>openWindow("writingBell"),isAvailable:()=>!0}}});

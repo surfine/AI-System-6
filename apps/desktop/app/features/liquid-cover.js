@@ -2677,35 +2677,33 @@ window.AISystem6LiquidCoverLoaded = true;
   }
 
   // Ask the model for a BACKGROUND text-to-image prompt (title is overlaid in
-  // glass later). Returns the prompt string; throws Error with .code on failure.
+  // glass later). Returns the prompt string with both GPT-Image and universal
+  // sections; throws Error with .code on failure.
   async function requestBgPromptText() {
     if (typeof fetchModelPayload !== "function") { const e = new Error("no model"); e.code = "unavailable"; throw e; }
     const brief = aiBrief();
     if (!brief) { const e = new Error("empty"); e.code = "empty"; throw e; }
     const aspect = activeAspectKey();
     const imgUrl = aiVisionOn() ? currentBgDataUrl(640) : null;
-    // GPT Image 2 prompting style: ONE natural-language paragraph (not comma
-    // tag-soup), no separate negative prompt — exclusions go in a Constraints
-    // clause. Lead with purpose, then subject, composition (with deliberate
-    // negative space for the overlaid title), lighting/color, medium, aspect.
-    const sys = coverPromptBody("other-apps.liquid-cover-background");
     const titleText = layers.map((l) => l.text.replace(/\n/g, " ")).join(" / ");
-    const ask = "Write a prompt for a BACKGROUND image of a video-cover / title card. A glass title is overlaid later, so the composition MUST keep generous, clean, low-contrast NEGATIVE SPACE where the title sits, pushing richer detail toward the edges."
-      + "\nPurpose & subject: derive an evocative background scene from this brief — " + brief + "."
-      + "\nTitle that will sit on top (describe the scene around it, do NOT render the title): " + titleText + "."
-      + "\nWrite ~4–6 sentences covering, in flowing prose: the scene/subject with concrete visible detail; composition (framing such as wide shot / top-down, where the negative space is, and foreground / mid-ground / background layers); lighting direction and mood"
-      + (imgUrl
-          ? "; take cues from the attached current background and propose a refined, complementary scene, choosing a color palette that contrasts cleanly with the title text"
-          : "; and a specific color palette")
-      + "; medium and visual style; and the aspect ratio " + aspect + "."
-      + "\nEnd with a 'Constraints:' sentence forbidding any text, letters, words, numbers, logos, watermarks, or UI, and keeping the title area uncluttered."
-      + " Be specific with camera and composition terms, but do not dump keywords.";
-    const userMessage = imgUrl
-      ? { role: "user", content: [{ type: "text", text: ask }, { type: "image_url", image_url: { url: imgUrl } }] }
-      : { role: "user", content: ask };
+    const messages = window.AISystem6ImagePromptRuntime
+      ? window.AISystem6ImagePromptRuntime.buildImagePromptMessages({
+          idea: brief,
+          title: titleText,
+          aspect,
+          background: true,
+        })
+      : [];
+    const userMessage = messages.find((message) => message.role === "user");
+    if (imgUrl && userMessage) {
+      userMessage.content = [
+        { type: "text", text: userMessage.content },
+        { type: "image_url", image_url: { url: imgUrl } },
+      ];
+    }
     const response = await fetchModelPayload({
       model: typeof getLocalModelRequestName === "function" ? getLocalModelRequestName() : undefined,
-      messages: [{ role: "system", content: sys }, userMessage],
+      messages: userMessage ? messages : [],
       temperature: 0.8,
       ai_system6_task_kind: "chat",
     }, typeof getLongTaskSignal === "function" ? getLongTaskSignal() : undefined);
@@ -2731,100 +2729,6 @@ window.AISystem6LiquidCoverLoaded = true;
       aiStatus("t2i_done", "Prompt ready — copy it");
     } catch (e) {
       aiStatus(e.code || "error", "Model request failed");
-    } finally {
-      setBusy(button, false);
-    }
-  }
-
-  // ---- GPT Image (OpenAI-compatible) background generation, via server proxy ----
-  const IMG_CFG_KEY = "aiSystem6.liquidCover.imageGen";
-  const IMG_KEY_SESSION_KEY = "aiSystem6.liquidCover.imageGen.apiKey";
-  function loadImgCfgIntoPanel() {
-    let cfg = {};
-    try { cfg = JSON.parse(localStorage.getItem(IMG_CFG_KEY) || "{}") || {}; } catch (e) { cfg = {}; }
-    if (cfg.baseUrl) $("lc-img-base").value = cfg.baseUrl;
-    if (cfg.model) $("lc-img-model").value = cfg.model;
-    let apiKey = "";
-    try {
-      apiKey = sessionStorage.getItem(IMG_KEY_SESSION_KEY) || "";
-      if (!apiKey && cfg.apiKey) {
-        apiKey = String(cfg.apiKey);
-        sessionStorage.setItem(IMG_KEY_SESSION_KEY, apiKey);
-      }
-      if (Object.prototype.hasOwnProperty.call(cfg, "apiKey")) {
-        delete cfg.apiKey;
-        localStorage.setItem(IMG_CFG_KEY, JSON.stringify(cfg));
-      }
-    } catch (e) {
-      apiKey = String(cfg.apiKey || "");
-    }
-    $("lc-img-key").value = apiKey;
-  }
-  function saveImgCfg() {
-    try {
-      localStorage.setItem(IMG_CFG_KEY, JSON.stringify({
-        baseUrl: $("lc-img-base").value.trim(),
-        model: $("lc-img-model").value.trim(),
-      }));
-    } catch (e) { /* noop */ }
-    try {
-      const apiKey = $("lc-img-key").value.trim();
-      if (apiKey) sessionStorage.setItem(IMG_KEY_SESSION_KEY, apiKey);
-      else sessionStorage.removeItem(IMG_KEY_SESSION_KEY);
-    } catch (e) { /* noop */ }
-  }
-  function imageCfg() {
-    return {
-      baseUrl: $("lc-img-base").value.trim() || "https://api.openai.com/v1",
-      apiKey: $("lc-img-key").value.trim(),
-      model: $("lc-img-model").value.trim() || "gpt-image-1",
-    };
-  }
-  function aspectToImageSize() {
-    return activeAspectKey() === "3:4" ? "1024x1536" : "1536x1024";
-  }
-
-  async function generateBg() {
-    const cfg = imageCfg();
-    if (!cfg.apiKey) { aiStatus("img_need_key", "Add an image API key first"); return; }
-    const button = $("lc-img-go");
-    setBusy(button, true, tr("liquid_cover_ai_img_generating", "Generating image…"));
-    try {
-      let prompt = ($("lc-t2i-out").value || "").trim();
-      if (!prompt) {
-        aiStatus("thinking", "Thinking…");
-        prompt = await requestBgPromptText();
-        showBgPrompt(prompt);
-      }
-      aiStatus("img_generating", "Generating image…");
-      const resp = await fetch("/api/image/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, size: aspectToImageSize(), model: cfg.model, apiKey: cfg.apiKey, baseUrl: cfg.baseUrl }),
-      });
-      const data = await resp.json();
-      if (!resp.ok) throw new Error(data && (data.detail || data.error) || ("HTTP " + resp.status));
-      const src = data.b64 ? ("data:image/png;base64," + data.b64) : data.url;
-      if (!src) throw new Error("no image");
-      await new Promise((res, rej) => {
-        const img = new Image();
-        img.onload = () => {
-          clearMotionVideo(false);
-          activeBg = -1;
-          Array.prototype.forEach.call($("lc-bg-row").children, (x) => {
-            x.classList.remove("is-active");
-            x.setAttribute("aria-pressed", "false");
-          });
-          setBg(img);
-          res();
-        };
-        img.onerror = () => rej(new Error("image load failed"));
-        if (data.url && !data.b64) img.crossOrigin = "anonymous";
-        img.src = src;
-      });
-      aiStatus("img_done", "Background generated");
-    } catch (e) {
-      aiStatus((e && e.code) || "img_error", "Image generation failed");
     } finally {
       setBusy(button, false);
     }
@@ -3467,12 +3371,6 @@ window.AISystem6LiquidCoverLoaded = true;
     $("lc-t2i-go").addEventListener("click", writeBgPrompt);
     $("lc-t2i-copy").addEventListener("click", copyBgPrompt);
 
-    // GPT Image background generation + persisted endpoint config
-    $("lc-img-go").addEventListener("click", generateBg);
-    ["lc-img-base", "lc-img-key", "lc-img-model"].forEach((id) => {
-      $(id).addEventListener("input", saveImgCfg);
-    });
-
     // drag positioning
     let drag = null;
     canvas.addEventListener("pointerdown", (e) => {
@@ -3615,7 +3513,6 @@ window.AISystem6LiquidCoverLoaded = true;
     });
     // UI first — these must exist even if WebGL is unavailable right now
     wire();
-    loadImgCfgIntoPanel();
     buildBgRow();
     buildPresetRow();
     renderLayerList();
@@ -3714,4 +3611,51 @@ window.AISystem6LiquidCoverLoaded = true;
   });
 
   window.AISystem6LiquidCover = { open, runMenuCommand };
+  const LIQUID_COVER_COMMAND_NAMES = [
+    "cover-choose-background",
+    "cover-choose-video",
+    "cover-choose-subject",
+    "cover-export-png",
+    "cover-export-video",
+    "cover-add-layer",
+    "cover-delete-layer",
+    "cover-shape-circle",
+    "cover-shape-squircle",
+    "cover-shape-capsule",
+    "cover-toggle-focus",
+    "cover-preview-motion",
+    "cover-ai-compose",
+  ];
+
+  function liquidCoverCommandAvailable(action) {
+    if (action === "open-liquid-cover") return true;
+    const activeWindow = document.querySelector(".window.is-active");
+    if (activeWindow?.dataset.window !== "liquidCover") return false;
+    const controlEnabled = (selector) => {
+      const control = document.querySelector(selector);
+      return !!control && !control.disabled && !control.hidden && !control.classList.contains("is-disabled");
+    };
+    if (action === "cover-export-video") return controlEnabled("#lc-motion-export");
+    if (action === "cover-delete-layer") return controlEnabled("#lc-del-layer");
+    if (action === "cover-preview-motion") return controlEnabled("#lc-motion-preview");
+    return true;
+  }
+
+  window.AISystem6Runtime?.registerApplication({
+    id: "liquidCover",
+    windowName: "liquidCover",
+    mount: open,
+    restore: open,
+    commands: Object.fromEntries(
+      ["open-liquid-cover", ...LIQUID_COVER_COMMAND_NAMES].map((action) => {
+        const handler = action === "open-liquid-cover"
+          ? () => open()
+          : () => runMenuCommand(action.slice("cover-".length));
+        return [action, {
+          handler,
+          isAvailable: () => liquidCoverCommandAvailable(action),
+        }];
+      })
+    ),
+  });
 })();

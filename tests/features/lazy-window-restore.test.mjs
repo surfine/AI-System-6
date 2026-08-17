@@ -18,6 +18,7 @@ import { createFeatureTest, read, resolveProjectPath } from "../helpers/feature-
 const test = createFeatureTest("lazy-window-restore");
 const html = read("index.html");
 const manifest = read("tooling/runtime-manifest.mjs");
+const dictionaryHelp = read("app/features/dictionary-help.js");
 const windowManager = read("app/core/window-manager.js");
 const actions = read("app/core/actions.js");
 const selectionServices = read("app/features/selection-services.js");
@@ -94,11 +95,8 @@ test.assertIncludes(
   "await ensureDictionaryHelpModule();",
   "Dictionary and System Help restore their behavior module as well as their data"
 );
-test.assertMatches(
-  actions,
-  /"open-system-help": async \(\) => \{[\s\S]{0,180}?await ensureDictionaryHelpModule\(\)/,
-  "System Help actions load their behavior before calling its entrypoint"
-);
+test.assertIncludes(actions, 'registerLazyCommand?.("open-system-help",{ensure:ensureDictionaryHelpModule})', "System Help actions load their behavior before calling its entrypoint");
+test.assertIncludes(dictionaryHelp, '"open-system-help":{handler:()=>openSystemHelpEntry', "System Help opens through its registered runtime command");
 test.assertMatches(
   selectionServices,
   /command === "lookup"[\s\S]{0,120}?await ensureDictionaryHelpModule\(\)/,
@@ -230,7 +228,7 @@ test.assertNotIncludes(
   );
   test.assertMatches(
     actions,
-    new RegExp(`"${action}": async \\(\\) => \\{[\\s\\S]{0,120}?await ensureFindPathModule\\(\\);[\\s\\S]{0,80}?${fn}\\(`),
+    new RegExp(`(?:registerCommand\\?\\.\\("${action}"|"${action}": async \\(\\) => \\{)[\\s\\S]{0,120}?await ensureFindPathModule\\(\\)[\\s\\S]{0,80}?${fn}\\(`),
     `${action} loads the Searcher module before calling into it`
   );
 });

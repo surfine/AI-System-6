@@ -28,6 +28,7 @@ test.assertIncludes(recoveryStorage, "listRecoverableProjects", "Recovery lists 
 test.assertIncludes(recoveryStorage, "exportRecoveryProjectBackup", "Recovery exports a backup directly from IndexedDB");
 test.assertIncludes(boot, "AISystem6RecoveryStorage?.recoveryStorageStatus", "the Recovery panel reads storage status from the DB layer");
 test.assertIncludes(boot, "listRecoverableProjects", "the Recovery panel renders the DB project list");
+test.assertIncludes(boot, "projectStorageSnapshot", "the Recovery panel reports real browser persistent-storage status");
 test.assertNotIncludes(recoveryStorage, "handleAction(", "recovery-storage never depends on the action router");
 test.assertNotIncludes(recoveryStorage, "renderProjectDisks", "recovery-storage never depends on the desktop");
 

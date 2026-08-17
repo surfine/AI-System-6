@@ -3377,7 +3377,7 @@ function fitChatPayloadToContext(payload, options = {}) {
 
 function getChatCompletionsEndpoint() {
   if (typeof cloudConfig !== "undefined" && cloudConfig && cloudConfig.active && cloudConfig.provider && cloudCredentialReady()) {
-    return "/api/cloud/chat";
+    return "same-origin-cloud-chat";
   }
 
   const endpoint = endpointInput.value.trim().replace(/\/$/, "");
@@ -3916,7 +3916,18 @@ function fetchModelPayload(payload, signal) {
     });
   }
 
-  return fetch(getChatCompletionsEndpoint(), {
+  const endpoint = getChatCompletionsEndpoint();
+  if (endpoint === "same-origin-cloud-chat") {
+    return window.AISystem6Capabilities.requestService("cloud.chat", {
+      init: {
+        method: "POST",
+        signal,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(nextPayload),
+      },
+    });
+  }
+  return fetch(endpoint, {
     method: "POST",
     signal,
     headers: { "Content-Type": "application/json" },
@@ -4323,17 +4334,20 @@ function refreshClioTalkWebSearchToggle() {
  * @returns {Promise<{ answer: string, citations: Array<{ url: string, title: string }>, results?: Array<object>, searchCalls?: Array<object>, usage?: object }>}
  */
 async function runClioTalkWebSearch(query, signal, options = {}) {
-  const response = await fetch("/api/search/answer", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      q: query,
-      mode: "clio",
-      stream: true,
-      search_calls: lastClioWebSearchCall ? [lastClioWebSearchCall] : [],
-      ...cloudCredentialTransportFields(),
-    }),
-    signal,
+  const response = await window.AISystem6Capabilities.requestService("search.remote", {
+    path: "/api/search/answer",
+    init: {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        q: query,
+        mode: "clio",
+        stream: true,
+        search_calls: lastClioWebSearchCall ? [lastClioWebSearchCall] : [],
+        ...cloudCredentialTransportFields(),
+      }),
+      signal,
+    },
   });
   if (!response.ok) throw new Error(await response.text());
   const result = await readWebSearchStream(response, {

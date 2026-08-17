@@ -398,6 +398,7 @@ const {
   appearanceThemeInput,
   soundEffectsInput,
   menuClockInput,
+  classicLineIconsInput,
   controlStripInput,
   controlStripShowInput,
   controlStripHotkeyInput,
@@ -749,14 +750,15 @@ function getApplicationsItems() {
       { name: t("clio_chart_label"), iconId: "clioChart", icon: "tools-icon", action: "open-clio-chart", type: "application", kind: t("application") },
       { name: t("liquid_cover_label"), iconId: "liquidCover", icon: "tools-icon", action: "open-liquid-cover", type: "application", kind: t("application") },
       { name: t("cmf_studio_label"), iconId: "cmfStudio", icon: "tools-icon", action: "open-cmf-studio", type: "application", kind: t("application") },
+      { name: t("image_prompt_studio_label"), iconId: "imagePromptStudio", action: "open-image-prompt-studio", type: "application", kind: t("application") },
       { name: t("soundscape_label"), iconId: "soundscape", icon: "tools-icon", action: "open-soundscape", type: "application", kind: t("application") },
     ], location);
   }
   if (applicationsFinderPath === "games") {
     return withStaticFinderMetadata([
-      { name: t("micropolis_label"), iconId: "clioChart", icon: "tools-icon", action: "open-micropolis", type: "application", kind: t("application") },
-      { name: t("openttd_label"), iconId: "timeMachine", icon: "tools-icon", action: "open-openttd", type: "application", kind: t("application") },
-      { name: t("doom_label"), iconId: "multiFinderApp", icon: "app-icon", action: "open-doom", type: "application", kind: t("application") },
+      { name: t("micropolis_label"), iconId: "micropolis", action: "open-micropolis", type: "application", kind: t("application") },
+      { name: t("openttd_label"), iconId: "openttd", action: "open-openttd", type: "application", kind: t("application") },
+      { name: t("doom_label"), iconId: "doom", action: "open-doom", type: "application", kind: t("application") },
     ], location);
   }
   if (applicationsFinderPath === "extras") {
@@ -2585,5 +2587,28 @@ window.AISystem6AssistantActivity?.setModelReadySource?.(() => {
   return cloudReady === true || localReady === true;
 });
 
+function applyBootLaunchIntent() {
+  const i = window.AISystem6LaunchIntent?.parse?.(bootSearch) || {};
+  if (i.appearance && i.appearance !== getCurrentTheme()) {
+    applyTheme(i.appearance, { persist: false, announce: false });
+  }
+  if (i.tour === "writing" && typeof enterWriterMode === "function") {
+    enterWriterMode();
+  }
+  if (i.open?.command && typeof handleAction === "function") {
+    setTimeout(() => handleAction(i.open.command), 0);
+  }
+}
+
+function ensureLaunchIntentModule() {
+  return window.AISystem6LaunchIntent
+    ? Promise.resolve(true)
+    : ensureLazySystemModule("app/core/launch-intent.js", "AISystem6LaunchIntentLoaded");
+}
+
 wireAppEvents();
-boot();
+Promise.resolve(boot()).then(() => {
+  if (document.body.dataset.appReady === "ready" && /[?&](?:open|appearance|tour)=/i.test(bootSearch)) {
+    ensureLaunchIntentModule().catch(() => {}).then(applyBootLaunchIntent);
+  }
+});

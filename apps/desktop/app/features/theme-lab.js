@@ -987,4 +987,16 @@
 
   window.AISystem6ThemeLabLoaded = true;
   window.AISystem6ThemeLab = Object.freeze({ attach, sync, refreshLanguage, showPanel });
+  window.AISystem6Runtime?.registerApplication({
+    id: "themeLab",
+    windowName: "themeLab",
+    mount: attach,
+    restore: attach,
+    commands: {
+      "open-theme-lab": {
+        handler: () => openWindow("themeLab"),
+        isAvailable: () => true,
+      },
+    },
+  });
 })();

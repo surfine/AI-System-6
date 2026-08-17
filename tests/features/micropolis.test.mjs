@@ -229,7 +229,7 @@ test.assertIncludes(shellSource, 'data-window="micropolis"', "the lazy module in
 test.assertMatches(styleManifest, /id: "micropolis",\s*\n\s*output: "styles\.micropolis\.css"/,
   "the stylesheet is a lazy style bundle");
 test.assertIncludes(shellSource, 'AISystem6RegisterApplicationMenuSet?.("micropolis"', "the lazy module owns its application menus");
-test.assertIncludes(shellSource, "AISystem6RegisterApplicationCommands", "the lazy module owns its menu command handlers");
+test.assertIncludes(shellSource, "AISystem6Runtime?.registerCommand", "the lazy module owns its menu command handlers through the runtime");
 test.assertNotIncludes(menus, "const micropolisMenus", "Micropolis menu declarations stay off the startup floppy");
 test.assertMatches(shellSource, /id: "city",[\s\S]{0,500}type: "submenu",\s*\n\s*labelKey: "micropolis_menu_disasters"/,
   "disasters live under City so the app keeps at most four top-level menus");

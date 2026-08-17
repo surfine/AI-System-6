@@ -78,7 +78,10 @@ function makeHarness({ revisionFails = false, commitFails = false } = {}) {
     projects: {
       commit: async (updater) => {
         if (commitFails) throw new Error("forced commit failure");
-        updater({ projects: context.projects });
+        updater({
+          projects: context.projects,
+          projectCdItems: context.projectCdItems,
+        });
         return { ok: true };
       },
     },

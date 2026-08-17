@@ -327,6 +327,7 @@ function getElements() {
   const appearanceThemeInput = document.querySelector("#appearance-theme");
   const soundEffectsInput = document.querySelector("#sound-effects");
   const menuClockInput = document.querySelector("#menu-clock");
+  const classicLineIconsInput = document.querySelector("#classic-line-icons");
   const controlStripShowInput = document.querySelector("#control-strip-show");
   const controlStripHotkeyInput = document.querySelector("#control-strip-hotkey");
   const controlStripHotkeyRecordButton = document.querySelector("#control-strip-hotkey-record");
@@ -724,6 +725,7 @@ function getElements() {
     appearanceThemeInput,
     soundEffectsInput,
     menuClockInput,
+    classicLineIconsInput,
     controlStripShowInput,
     controlStripHotkeyInput,
     controlStripHotkeyRecordButton,

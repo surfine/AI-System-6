@@ -412,11 +412,11 @@ async function addProjectCdItem(markdown, name, options = {}) {
       return null;
     }
   }
-  await window.AISystem6StateStores?.projects.commit(() => {
+  await window.AISystem6StateStores?.projects.commit((draft) => {
     if (existingIndex >= 0) {
-      projectCdItems.splice(existingIndex, 1);
+      draft.projectCdItems.splice(existingIndex, 1);
     }
-    projectCdItems.unshift(item);
+    draft.projectCdItems.unshift(item);
   });
   selectedProjectCdItemId = item.id;
   selectedProjectCdItemIds.clear();
@@ -747,7 +747,25 @@ async function refreshImporterStatus() {
       }
       return;
     }
-    const response = await fetch(apiUrl("/api/importer-status"));
+    if (!window.AISystem6Capabilities?.capabilityAvailable?.("importer.remote")) {
+      importerStatusEl.textContent = t("importer_status_browser");
+      importerStatusEl.dataset.state = "ready";
+      importerStatusEl.title = t("importer_status_browser_detail");
+      if (ocrEngineInput) {
+        ocrEngineInput.value = "paddle";
+        ocrEngineInput.disabled = true;
+        refreshSystemSelectControl(ocrEngineInput);
+      }
+      if (importerModeInput) {
+        importerModeInput.value = "builtin";
+        importerModeInput.disabled = true;
+        refreshSystemSelectControl(importerModeInput);
+      }
+      return;
+    }
+    const response = await window.AISystem6Capabilities.requestService("importer.remote", {
+      path: "/api/importer-status",
+    });
     const status = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(status.detail || response.statusText);
 
@@ -1116,15 +1134,17 @@ async function extractRenderedPagesWithBrowserPaddle(file, options = {}) {
   throwIfAborted(signal);
   const fileBuffer = await file.arrayBuffer();
   throwIfAborted(signal);
-  const response = await fetch(apiUrl("/api/import-ocr-pages"), {
-    method: "POST",
-    signal,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      name: file.name,
-      type: file.type,
-      data: arrayBufferToBase64(fileBuffer),
-    }),
+  const response = await window.AISystem6Capabilities.requestService("artifact.import.ocr", {
+    init: {
+      method: "POST",
+      signal,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: file.name,
+        type: file.type,
+        data: arrayBufferToBase64(fileBuffer),
+      }),
+    },
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
@@ -1272,11 +1292,13 @@ async function extractFileText(file, options = {}) {
     payload._cloud_model = cloudConfig.model;
   }
   throwIfAborted(signal);
-  const response = await fetch(apiUrl("/api/import-text"), {
-    method: "POST",
-    signal,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+  const response = await window.AISystem6Capabilities.requestService("artifact.import.text", {
+    init: {
+      method: "POST",
+      signal,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {

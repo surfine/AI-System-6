@@ -611,7 +611,10 @@ async function writingDemoProbeReader() {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 8000);
   try {
-    const response = await fetch(`/api/reader?url=${encodeURIComponent(writingDemoAppleUrl)}`, { signal: controller.signal });
+    const response = await window.AISystem6Capabilities.requestService("reader.remote", {
+      url: writingDemoAppleUrl,
+      signal: controller.signal,
+    });
     if (!response.ok) throw new Error(serviceErrorDetail(response.status, await response.text()));
     const data = await response.json();
     return { label, ok: !!String(data?.text || "").trim(), error: data?.text ? null : "Reader 正文为空" };
@@ -1137,7 +1140,10 @@ async function writingDemoReaderFetchWithTimeout(url, ms = 7000) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), ms);
   try {
-    const response = await fetch(`/api/reader?url=${encodeURIComponent(url)}`, { signal: controller.signal });
+    const response = await window.AISystem6Capabilities.requestService("reader.remote", {
+      url,
+      signal: controller.signal,
+    });
     if (!response.ok) throw new Error(serviceErrorDetail(response.status, await response.text()));
     const data = await response.json();
     const readerDoc = { ...data, kind: "web", source: data.url };

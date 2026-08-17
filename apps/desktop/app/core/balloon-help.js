@@ -295,11 +295,29 @@ function initializeBalloonHelp() {
   });
 
   // In explicit help mode, a touch inspects an object instead of activating
-  // it. Menu-bar buttons remain usable so the user can hide Balloon Help.
+  // it. A second tap on the same object lets the action through, so the
+  // balloon explains once and then gets out of the way. Menu-bar buttons
+  // remain usable so the user can hide Balloon Help.
   document.addEventListener("pointerdown", (event) => {
     if (!balloonHelpTouchedInspect || event.pointerType !== "touch") return;
     const target = event.target.closest?.("[data-balloon-help], [data-balloon-help-disabled]");
+
+    // A tap aimed away from the current object is the user's next action.
+    // Dismiss the old balloon first so it never sits on top of what they are
+    // trying to press next, even though the popover itself is pointer-transparent.
+    if (balloonHelpTarget && !balloonHelpTarget.contains(event.target)) {
+      hideBalloonHelp();
+    }
     if (!target) return;
+
+    if (target === balloonHelpTarget) {
+      // The object is already identified. Let this tap perform its action,
+      // then clear the balloon so the mode stays available for the next
+      // unfamiliar object without swallowing a second press.
+      hideBalloonHelp();
+      return;
+    }
+
     showBalloonHelp(target);
     if (!target.closest(".menu-bar")) {
       event.preventDefault();

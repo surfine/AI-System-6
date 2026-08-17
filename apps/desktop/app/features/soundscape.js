@@ -879,32 +879,15 @@
     return translate("soundscape_system_failed", "Music on this Mac did not respond.");
   }
 
-  function systemMusicEndpoint() {
-    return window.AISystem6LocalLMStudio?.isPublicWebMode?.()
-      ? "http://127.0.0.1:4173/api/music/system"
-      : "/api/music/system";
-  }
-
   async function requestSystemMusic(action = "state", payload = {}) {
     const publicWeb = window.AISystem6LocalLMStudio?.isPublicWebMode?.();
-    const options = action === "state"
-      ? { cache: "no-store" }
-      : {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, ...payload }),
-      };
-    if (publicWeb) {
-      options.mode = "cors";
-      options.credentials = "omit";
-      if (!window.AISystem6LocalLMStudio?.isSafariPublicWebUnsupported?.()
-        && !window.AISystem6LocalLMStudio?.isSafariHttpLocalMode?.()) {
-        options.targetAddressSpace = "loopback";
-      }
-    }
     let response;
     try {
-      response = await fetch(systemMusicEndpoint(), options);
+      response = await window.AISystem6Capabilities.requestService("system.music", {
+        action,
+        payload,
+        publicWeb,
+      });
     } catch {
       const error = new Error("Local Music bridge unavailable.");
       error.code = "local_music_bridge_unavailable";
@@ -1093,7 +1076,9 @@
     }
     let data;
     try {
-      const response = await fetch(`/api/music/gamdl/jobs/${activeGamdlJobId}`, { cache: "no-store" });
+      const response = await window.AISystem6Capabilities.requestService("soundscape.gamdl", {
+        jobId: activeGamdlJobId,
+      });
       data = await response.json().catch(() => ({}));
       if (!response.ok) {
         const error = new Error(data.error || "Download job failed.");
@@ -1141,10 +1126,8 @@
     if (submit) submit.disabled = true;
     setStatus(translate("soundscape_gamdl_started", "Downloading from Apple Music..."));
     try {
-      const response = await fetch("/api/music/gamdl/jobs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: link }),
+      const response = await window.AISystem6Capabilities.requestService("soundscape.gamdl", {
+        url: link,
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -1962,5 +1945,62 @@
     subscribePlayer,
     playSceneIndex,
   };
+  const SOUNDSCAPE_COMMAND_NAMES = [
+    "soundscape-choose-local",
+    "soundscape-gamdl-download",
+    "soundscape-save-moment",
+    "soundscape-toggle-play",
+    "soundscape-previous",
+    "soundscape-next",
+    "soundscape-shuffle",
+    "soundscape-repeat",
+    "soundscape-shuffle-on",
+    "soundscape-shuffle-off",
+    "soundscape-shuffle-songs",
+    "soundscape-shuffle-albums",
+    "soundscape-shuffle-groupings",
+    "soundscape-repeat-off",
+    "soundscape-repeat-all",
+    "soundscape-repeat-one",
+    "soundscape-reset-style",
+    "soundscape-link-project",
+  ];
+
+  function soundscapeCommandAvailable(action) {
+    if (action === "open-soundscape") return true;
+    const activeWindow = document.querySelector(".window.is-active");
+    if (activeWindow?.dataset.window !== "soundscape") return false;
+    if (action === "soundscape-save-moment") {
+      return !!window.AISystem6Soundscape?.canSaveMoment?.();
+    }
+    if (action === "soundscape-link-project") {
+      return !!window.AISystem6Soundscape?.canLinkProject?.();
+    }
+    if (
+      ["soundscape-choose-local", "soundscape-gamdl-download", "soundscape-reset-style"]
+        .includes(action)
+    ) {
+      return true;
+    }
+    return !!window.AISystem6Soundscape?.hasQueue?.();
+  }
+
+  window.AISystem6Runtime?.registerApplication({
+    id: "soundscape",
+    windowName: "soundscape",
+    mount: attach,
+    restore: attach,
+    commands: Object.fromEntries(
+      ["open-soundscape", ...SOUNDSCAPE_COMMAND_NAMES].map((action) => {
+        const command = action === "open-soundscape"
+          ? () => openWindow("soundscape")
+          : () => runMenuCommand(action.slice("soundscape-".length));
+        return [action, {
+          handler: command,
+          isAvailable: () => soundscapeCommandAvailable(action),
+        }];
+      })
+    ),
+  });
   window.AISystem6SoundscapeLoaded = true;
 })();

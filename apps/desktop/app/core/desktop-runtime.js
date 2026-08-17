@@ -243,8 +243,8 @@ async function createProjectFromInput() {
     await flushWorkingSessionCommit();
   }
   parkConversationInProject(previousProjectId);
-  await window.AISystem6StateStores?.projects.commit(() => {
-    projects.unshift(project);
+  await window.AISystem6StateStores?.projects.commit((draft) => {
+    draft.projects.unshift(project);
   });
   isProjectMounted = true;
   activeProjectId = project.id;
@@ -272,8 +272,8 @@ async function createDefaultProjectForDraftDesk() {
   const project = createProjectRecord(name);
   const previousProjectId = activeProjectId;
   parkConversationInProject(previousProjectId);
-  await window.AISystem6StateStores?.projects.commit(() => {
-    projects.unshift(project);
+  await window.AISystem6StateStores?.projects.commit((draft) => {
+    draft.projects.unshift(project);
   });
   isProjectMounted = true;
   activeProjectId = project.id;

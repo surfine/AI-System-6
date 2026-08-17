@@ -875,8 +875,9 @@ async function advanceQuestionSheetToOutline() {
     }
   }
   savePipelineData();
-  await window.AISystem6StateStores?.writing.commit(() => {
-    const project = getActiveProject();
+  await window.AISystem6StateStores?.writing.commit((draft) => {
+    const activeId = getActiveProject()?.id;
+    const project = draft.projects.find((item) => item.id === activeId);
     if (project) project.questionSheet = questionSheetBodyInput?.value || project.questionSheet || "";
   });
   renderPipeline();

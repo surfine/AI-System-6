@@ -131,6 +131,16 @@ if (dataBoundary.status === 0) {
   fail(`data boundary verification failed\n${dataBoundary.stderr || dataBoundary.stdout}`);
 }
 
+const serviceBoundary = spawnSync(process.execPath, ["tooling/verify-service-boundary.mjs"], {
+  cwd: root,
+  encoding: "utf8",
+});
+if (serviceBoundary.status === 0) {
+  ok("service boundary verification");
+} else {
+  fail(`service boundary verification failed\n${serviceBoundary.stderr || serviceBoundary.stdout}`);
+}
+
 // The native Swift rewrite is frozen (platform/macos/native/FROZEN.md). Its
 // action audit and parity ledger used to run here, which meant every new web
 // action had to be entered in ACTION-AUDIT.md, its Chinese mirror, the mirror's

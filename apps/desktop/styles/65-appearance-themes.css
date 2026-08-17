@@ -201,7 +201,7 @@ body[data-theme="platinum"] {
     inset -2px -2px 0 #aaaaaa;
   --btn-active-bg: #666666;
   --btn-active-fg: #ffffff;
-  --btn-active-shadow: inset 1px 1px 1px #333333, inset -1px -1px 1px #999999;
+  --btn-active-shadow: inset 1px 1px 0 #333333, inset -1px -1px 0 #999999;
   --btn-default-bg: var(--btn-bg);
   --btn-default-shadow: var(--btn-shadow);
   --field-bg: #ffffff;
@@ -744,7 +744,7 @@ body[data-theme="platinum"] {
   --control-strip-divider: 1px solid transparent;
   --control-strip-radius: 4px 12px 12px 4px;
   --control-strip-radius-mirrored: 12px 4px 4px 12px;
-  --control-strip-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #9e9e9e, 1px 2px 4px rgba(0, 0, 0, 0.35);
+  --control-strip-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #9e9e9e, 1px 2px 0 rgba(0, 0, 0, 0.35);
   --control-strip-tile-bg: linear-gradient(#f4f4f4, #c9c9c9);
   --control-strip-tile-radius: 3px;
   --control-strip-tile-shadow: inset 0 0 0 1px #7a7a7a, inset 1px 1px 0 rgba(255, 255, 255, 0.85), inset -1px -1px 0 #9a9a9a;
@@ -756,7 +756,7 @@ body[data-theme="platinum"] {
   --control-strip-hover-shadow: none;
   --control-strip-active-bg: linear-gradient(#bfbfbf, #d8d8d8);
   --control-strip-active-fg: #111111;
-  --control-strip-active-shadow: inset 0 0 0 1px #6f6f6f, inset 1px 1px 3px rgba(0, 0, 0, 0.35);
+  --control-strip-active-shadow: inset 0 0 0 1px #6f6f6f, inset 1px 1px 0 rgba(0, 0, 0, 0.35);
   --control-strip-gauge: #333333;
   --control-strip-gauge-bg: #ffffff;
   --control-strip-grip-inset: 5px 0;

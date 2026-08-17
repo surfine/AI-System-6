@@ -39,17 +39,29 @@
       })
         .then(async (response) => {
           if (!response.ok) throw new Error(`Capabilities HTTP ${response.status}`);
+          const contentType = String(response.headers.get("content-type") || "");
+          if (!contentType.includes("application/json")) {
+            throw new Error("Capabilities response is not JSON.");
+          }
           return response.json();
         })
+        .then((capabilities) => {
+          if (!capabilities || typeof capabilities !== "object" || Array.isArray(capabilities)) {
+            throw new Error("Capabilities payload is invalid.");
+          }
+          window.AISystem6SameOriginProviders?.activate?.(capabilities.same_origin_providers);
+          return capabilities;
+        })
         .catch(() => ({
-          deployment_profile: "local",
+          deployment_profile: "static",
           public_deployment: false,
           features: {},
           public_access: {},
         }))
         .then((capabilities) => {
           document.documentElement.dataset.deploymentProfile =
-            capabilities.public_deployment ? "public" : "local";
+            capabilities.deployment_profile
+              || (capabilities.public_deployment ? "public" : "local");
           window.dispatchEvent(new CustomEvent("ai-system6:capabilities", {
             detail: capabilities,
           }));

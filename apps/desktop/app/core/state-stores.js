@@ -152,17 +152,24 @@ window.AISystem6StateStores = Object.freeze({
     folders: () => chatFolders,
     scraps: () => scraps,
     projectCdItems: () => projectCdItems,
-    /** @param {(state: { projects: any[] }) => void} updater */
+    /**
+     * Mutable-draft commit. The updater mutates the passed draft only; the
+     * store applies that draft to the live arrays immediately before
+     * persistence, then rolls back to the pre-commit snapshot on failure.
+     * @param {(draft: Record<string, any[]>)} updater
+     */
     async commit(updater) {
-      const snapshot = snapshotProjectState();
+      const previous = snapshotProjectState();
+      const draft = snapshotProjectState();
       try {
-        updater({ projects });
+        updater(draft);
+        restoreProjectState(draft);
         const saved = await saveDeskState();
         if (!saved) throw storePersistError();
         projectStoreBus.emit({ projects: projects.length });
         return { ok: true };
       } catch (error) {
-        restoreProjectState(snapshot);
+        restoreProjectState(previous);
         projectStoreBus.emitError(error);
         throw error;
       }
@@ -180,19 +187,26 @@ window.AISystem6StateStores = Object.freeze({
     },
     teachTextBody: () => (typeof teachTextBodyInput !== "undefined" ? teachTextBodyInput?.value || "" : ""),
     workflowState: () => (typeof teachTextWorkflowState !== "undefined" ? teachTextWorkflowState : ""),
-    /** @param {(state: { project: any | null }) => void} updater */
+    /**
+     * Mutable-draft commit over the project list. The updater mutates
+     * `draft.projects` only; the store applies that list to the live project
+     * array before persistence and rolls back on failure.
+     * @param {(draft: { projects: any[] }) => void} updater
+     */
     async commit(updater) {
-      const snapshot = snapshotWritingState();
+      const previous = snapshotWritingState();
+      const draft = snapshotWritingState();
       try {
-        const project = typeof getActiveProject === "function" ? getActiveProject() : null;
-        updater({ project });
+        updater(draft);
+        projects.splice(0, projects.length, ...draft.projects);
         const saved = await saveDeskState();
         if (!saved) throw storePersistError();
+        const project = typeof getActiveProject === "function" ? getActiveProject() : null;
         renderPipeline?.();
         writingStoreBus.emit({ projectId: project?.id || "" });
         return { ok: true };
       } catch (error) {
-        restoreWritingState(snapshot);
+        restoreWritingState(previous);
         writingStoreBus.emitError(error);
         throw error;
       }

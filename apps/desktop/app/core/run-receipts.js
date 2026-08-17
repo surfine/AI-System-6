@@ -144,10 +144,10 @@ async function persistReceiptFile(file) {
   if (typeof chatFiles === "undefined") return { ok: false, reason: "no-store" };
   try {
     if (typeof window.AISystem6StateStores?.projects?.commit === "function") {
-      await window.AISystem6StateStores.projects.commit(() => {
-        const index = chatFiles.findIndex((item) => item.id === file.id);
-        if (index >= 0) chatFiles[index] = file;
-        else chatFiles.unshift(file);
+      await window.AISystem6StateStores.projects.commit((draft) => {
+        const index = draft.chatFiles.findIndex((item) => item.id === file.id);
+        if (index >= 0) draft.chatFiles[index] = file;
+        else draft.chatFiles.unshift(file);
       });
     } else {
       const index = chatFiles.findIndex((item) => item.id === file.id);

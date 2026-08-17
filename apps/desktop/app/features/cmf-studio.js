@@ -409,6 +409,7 @@
   const MODELS = [
     {
       id: "iphone-17-standard",
+      asset: "/assets/cmf/iphone-17-standard.usdz",
       labelKey: "cmf_model_iphone_17",
       colors: IPHONE_17_COLORS,
       parts: IPHONE_17_PARTS,
@@ -422,6 +423,7 @@
     },
     {
       id: "iphone-17-pro",
+      asset: "/assets/cmf/iphone-17-pro.usdz",
       labelKey: "cmf_model_iphone_17_pro",
       colors: IPHONE_17_PRO_COLORS,
       parts: IPHONE_17_PRO_PARTS,
@@ -435,6 +437,7 @@
     },
     {
       id: "iphone-17-pro-max",
+      asset: "/assets/cmf/iphone-17-pro-max.usdz",
       labelKey: "cmf_model_iphone_17_pro_max",
       colors: IPHONE_17_PRO_COLORS,
       parts: IPHONE_17_PRO_PARTS,
@@ -448,6 +451,7 @@
     },
     {
       id: "iphone-air",
+      asset: "/assets/cmf/iphone-air.usdz",
       labelKey: "cmf_model_iphone_air",
       colors: IPHONE_AIR_COLORS,
       parts: IPHONE_AIR_PARTS,
@@ -461,6 +465,7 @@
     },
     {
       id: "iphone-17e",
+      asset: "/assets/cmf/iphone-17e.usdz",
       labelKey: "cmf_model_iphone_17e",
       colors: IPHONE_17E_COLORS,
       parts: IPHONE_17E_PARTS,
@@ -476,8 +481,8 @@
       id: "macbook-neo",
       labelKey: "cmf_model_macbook_neo",
       poses: [
-        { id: "closed", labelKey: "cmf_pose_closed" },
-        { id: "open", labelKey: "cmf_pose_open" },
+        { id: "closed", labelKey: "cmf_pose_closed", asset: "/assets/cmf/macbook-neo-closed.usdz" },
+        { id: "open", labelKey: "cmf_pose_open", asset: "/assets/cmf/macbook-neo-open.usdz" },
       ],
       colors: MACBOOK_NEO_COLORS,
       parts: MACBOOK_NEO_PARTS,
@@ -525,6 +530,14 @@
   function activeViews() {
     const views = activeModel().views?.[activePose()];
     return views || VIEW_DEFINITIONS;
+  }
+
+  function activeAssetUrl() {
+    const model = activeModel();
+    if (model.poses) {
+      return (poseSpec(activePose()) || model.poses[0]).asset;
+    }
+    return model.asset;
   }
 
   // The first camera set entry is the natural default for a model or pose.
@@ -615,6 +628,7 @@
     cmfEl("cmf-reset")?.addEventListener("click", resetRecipe);
     cmfEl("cmf-reset-view")?.addEventListener("click", resetCmfView);
     cmfEl("cmf-export")?.addEventListener("click", exportUsdz);
+    cmfEl("cmf-export-views")?.addEventListener("click", exportViewsAsPng);
     cmfEl("cmf-view-strip")?.addEventListener("click", (event) => {
       const button = event.target.closest("[data-cmf-view]");
       if (!button) return;
@@ -972,42 +986,45 @@
   async function refreshCapabilities() {
     const controller = new AbortController();
     const timer = window.setTimeout(() => controller.abort(), CAPABILITIES_TIMEOUT_MS);
+    let canExport = false;
     try {
-      const response = await fetch("/api/cmf/capabilities", {
-        cache: "no-store",
+      const assetResponse = await fetch(activeAssetUrl(), {
+        method: "HEAD",
         signal: controller.signal,
+        cache: "no-store",
       });
-      const data = await response.json();
-      canRenderModel = Boolean(data.canExport);
-      const label = canRenderModel ? t("cmf_cap_ready") : t("cmf_cap_missing");
-      const el = cmfEl("cmf-capabilities");
-      if (el) el.textContent = label;
-      if (cmfEl("cmf-reset-view")) {
-        cmfEl("cmf-reset-view").dataset.capabilityDisabled = String(!canRenderModel);
-        cmfEl("cmf-reset-view").disabled = !canRenderModel;
-      }
-      if (cmfEl("cmf-export")) {
-        cmfEl("cmf-export").dataset.capabilityDisabled = String(!data.canExport);
-        cmfEl("cmf-export").disabled = !data.canExport;
-      }
-      const empty = cmfEl("cmf-preview-empty");
-      if (empty) empty.textContent = canRenderModel ? t("cmf_model_loading") : t("cmf_preview_unavailable");
-      if (canRenderModel) scheduleModelRender(0);
+      canRenderModel = assetResponse.ok;
     } catch {
       canRenderModel = false;
-      const el = cmfEl("cmf-capabilities");
-      if (el) el.textContent = t("cmf_cap_missing");
-      ["cmf-reset-view", "cmf-export"].forEach((id) => {
-        const control = cmfEl(id);
-        if (!control) return;
-        control.dataset.capabilityDisabled = "true";
-        control.disabled = true;
-      });
-      const empty = cmfEl("cmf-preview-empty");
-      if (empty) empty.textContent = t("cmf_preview_unavailable");
-    } finally {
-      window.clearTimeout(timer);
     }
+    try {
+      const response = await window.AISystem6Capabilities.requestService("cmf.capabilities", {
+        init: { cache: "no-store", signal: controller.signal },
+      });
+      const data = await response.json();
+      canExport = Boolean(data.canExport);
+    } catch {
+      canExport = false;
+    }
+    const label = canRenderModel ? t("cmf_cap_ready") : t("cmf_cap_missing");
+    const el = cmfEl("cmf-capabilities");
+    if (el) el.textContent = label;
+    if (cmfEl("cmf-reset-view")) {
+      cmfEl("cmf-reset-view").dataset.capabilityDisabled = String(!canRenderModel);
+      cmfEl("cmf-reset-view").disabled = !canRenderModel;
+    }
+    if (cmfEl("cmf-export")) {
+      cmfEl("cmf-export").dataset.capabilityDisabled = String(!canExport);
+      cmfEl("cmf-export").disabled = !canExport;
+    }
+    if (cmfEl("cmf-export-views")) {
+      cmfEl("cmf-export-views").dataset.capabilityDisabled = String(!canRenderModel);
+      cmfEl("cmf-export-views").disabled = !canRenderModel;
+    }
+    const empty = cmfEl("cmf-preview-empty");
+    if (empty) empty.textContent = canRenderModel ? t("cmf_model_loading") : t("cmf_preview_unavailable");
+    window.clearTimeout(timer);
+    if (canRenderModel) scheduleModelRender(0);
   }
 
   function loadRendererModules() {
@@ -1344,6 +1361,27 @@
     setModelRefreshing(false);
   }
 
+  // Prefer the static source USDZ and recolor it in the browser; fall back to
+  // the server export only when the asset is missing or unreachable (VPS/Mac
+  // can also serve the recolored model, but the browser path removes the
+  // server-side render dependency for the live preview).
+  async function loadModelAsset(requestedRecipe) {
+    try {
+      const assetResponse = await fetch(activeAssetUrl(), { signal: modelAbortController.signal });
+      if (assetResponse.ok) return assetResponse;
+    } catch {
+      // Fall through to the server path below.
+    }
+    return window.AISystem6Capabilities.requestService("cmf.exportUsdz", {
+      init: {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recipe: requestedRecipe }),
+        signal: modelAbortController.signal,
+      },
+    });
+  }
+
   async function renderInteractiveModel(requestId) {
     if (requestId !== modelRequestId) return;
     modelAbortController = new AbortController();
@@ -1351,12 +1389,7 @@
     try {
       const [state, response] = await Promise.all([
         ensureRenderer(),
-        fetch("/api/cmf/export-usdz", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ recipe: requestedRecipe }),
-          signal: modelAbortController.signal,
-        }),
+        loadModelAsset(requestedRecipe),
       ]);
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
@@ -1537,25 +1570,70 @@
     }
   }
 
+  function buildBrowserExportRecipe() {
+    const spec = activeModel();
+    return {
+      modelId: spec.id,
+      pose: spec.poses ? activePose() : undefined,
+      parts: recipe.parts,
+      colors: activeColors().map(({ id, hex }) => ({ id, hex })),
+      exactMeshParts: spec.meshParts || {},
+      exactOnly: spec.id === "macbook-neo",
+      slug: recipe.name || `${spec.id}-cmf`,
+    };
+  }
+
+  function exportFileName() {
+    const name = String(recipe.name || "iphone-17-standard-cmf")
+      .trim()
+      .replace(/\.usdz$/i, "");
+    return `${name || "cmf-studio"}.usdz`;
+  }
+
+  async function exportUsdzBrowser() {
+    const exporter = window.AISystem6CMFUsdzExport;
+    if (!exporter) throw new Error(t("cmf_export_failed") || "Browser USDZ exporter is unavailable.");
+    const assetResponse = await fetch(activeAssetUrl(), { cache: "force-cache" });
+    if (!assetResponse.ok) throw new Error(assetResponse.statusText || `HTTP ${assetResponse.status}`);
+    const buffer = await assetResponse.arrayBuffer();
+    const result = await exporter.exportUsdz({
+      buffer,
+      recipe: buildBrowserExportRecipe(),
+    });
+    window.AISystem6WebPlatform.saveArtifact({
+      blob: result.blob,
+      fileName: exportFileName(),
+      mimeType: "model/vnd.usdz+zip",
+    });
+  }
+
   async function exportUsdz() {
     setBusy(true, t("cmf_exporting"));
     setCmfControlLoading("cmf-export", true, t("cmf_exporting"));
     try {
-      const response = await fetch("/api/cmf/export-usdz", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ recipe }),
-      });
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.detail || data.error || response.statusText);
+      try {
+        await exportUsdzBrowser();
+      } catch (error) {
+        // Static deployments own the source asset and the browser exporter.
+        // Local/VPS deployments can still fall through to the Node engine.
+        const response = await window.AISystem6Capabilities.requestService("cmf.exportUsdz", {
+          init: {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ recipe }),
+          },
+        });
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}));
+          throw new Error(data.detail || data.error || response.statusText);
+        }
+        const blob = await response.blob();
+        window.AISystem6WebPlatform.saveArtifact({
+          blob,
+          fileName: exportFileName(),
+          mimeType: "model/vnd.usdz+zip",
+        });
       }
-      const blob = await response.blob();
-      window.AISystem6WebPlatform.saveArtifact({
-        blob,
-        fileName: `${recipe.name || "iphone-17-standard-cmf"}.usdz`,
-        mimeType: "model/vnd.usdz+zip",
-      });
       setCmfStatus(t("cmf_export_done"));
       playSystemSound?.("save");
     } catch (error) {
@@ -1563,6 +1641,123 @@
       playSystemSound?.("alert");
     } finally {
       setCmfControlLoading("cmf-export", false);
+      setBusy(false);
+    }
+  }
+
+  function cameraPoseForView(view) {
+    const state = rendererState;
+    const { Vector3 } = state.modules;
+    const center = state.bounds.getCenter(new Vector3());
+    const size = state.bounds.getSize(new Vector3());
+    const offset = view.targetOffset || [0, 0, 0];
+    const target = center.clone().add(new Vector3(
+      offset[0] * size.x,
+      offset[1] * size.y,
+      offset[2] * size.z,
+    ));
+    const direction = new Vector3(...view.direction).normalize();
+    const up = new Vector3(...view.up).normalize();
+    const right = new Vector3().crossVectors(up, direction).normalize();
+    const trueUp = new Vector3().crossVectors(direction, right).normalize();
+    const rect = state.viewport.getBoundingClientRect();
+    const aspect = Math.max(rect.width, 1) / Math.max(rect.height, 1);
+    let halfWidth = 0;
+    let halfHeight = 0;
+    for (const x of [state.bounds.min.x, state.bounds.max.x]) {
+      for (const y of [state.bounds.min.y, state.bounds.max.y]) {
+        for (const z of [state.bounds.min.z, state.bounds.max.z]) {
+          const local = new Vector3(x, y, z).sub(target);
+          halfWidth = Math.max(halfWidth, Math.abs(local.dot(right)));
+          halfHeight = Math.max(halfHeight, Math.abs(local.dot(trueUp)));
+        }
+      }
+    }
+    const nextHalfHeight = Math.max(halfHeight, halfWidth / aspect) * 1.14 * view.frame;
+    const distance = Math.max(size.length() * 2.6, 1);
+    return {
+      position: target.clone().add(direction.multiplyScalar(distance)),
+      target,
+      up,
+      halfHeight: nextHalfHeight,
+    };
+  }
+
+  function snapCamera(pose) {
+    const state = rendererState;
+    state.camera.position.copy(pose.position);
+    state.controls.target.copy(pose.target);
+    state.camera.up.copy(pose.up).normalize();
+    state.camera.zoom = 1;
+    updateCameraFrustum(pose.halfHeight);
+    state.camera.lookAt(state.controls.target);
+    state.camera.updateMatrixWorld();
+    state.controls.update();
+    renderModelFrame();
+  }
+
+  function canvasToPngBlob(canvas) {
+    return new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("toBlob failed"))), "image/png");
+    });
+  }
+
+  function createOffscreenRenderer() {
+    const state = rendererState;
+    const rect = state.viewport.getBoundingClientRect();
+    const width = Math.max(1, Math.round(rect.width * 2));
+    const height = Math.max(1, Math.round(rect.height * 2));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const renderer = new state.modules.WebGLRenderer({
+      canvas,
+      antialias: true,
+      alpha: true,
+      preserveDrawingBuffer: true,
+    });
+    renderer.setPixelRatio(1);
+    renderer.outputColorSpace = state.modules.SRGBColorSpace;
+    renderer.toneMapping = state.modules.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.04;
+    renderer.setClearColor(0x000000, 0);
+    renderer.setSize(width, height, false);
+    return { renderer, canvas };
+  }
+
+  // Browser-side WebGL multi-view export: the view presets already drive the
+  // live preview, so each view is re-framed synchronously and read back from
+  // the canvas as a PNG. This removes the server software-rasterizer dependency
+  // for the public/Pages deployment.
+  async function exportViewsAsPng() {
+    const state = rendererState;
+    if (!state?.model || !state.bounds) {
+      setCmfStatus(t("cmf_export_views_unavailable"));
+      return;
+    }
+    setBusy(true, t("cmf_exporting_views"));
+    const previousView = selectedView;
+    try {
+      const views = activeViews();
+      const offscreen = createOffscreenRenderer();
+      for (const view of views) {
+        snapCamera(cameraPoseForView(view));
+        offscreen.renderer.render(state.scene, state.camera);
+        const blob = await canvasToPngBlob(offscreen.canvas);
+        window.AISystem6WebPlatform.saveArtifact({
+          blob,
+          fileName: `${recipe.name || activeModel().id}-${view.name}.png`,
+          mimeType: "image/png",
+        });
+      }
+      offscreen.renderer.dispose();
+      setCmfStatus(t("cmf_export_views_done"));
+      playSystemSound?.("save");
+    } catch (error) {
+      setCmfStatus(`${t("cmf_export_views_failed")} ${error.message}`);
+      playSystemSound?.("alert");
+    } finally {
+      if (previousView) applyCmfView(previousView, { animate: false });
       setBusy(false);
     }
   }
@@ -1580,7 +1775,7 @@
   }
 
   function setBusy(busy, message = "") {
-    ["cmf-shuffle", "cmf-reset", "cmf-reset-view", "cmf-export"].forEach((id) => {
+    ["cmf-shuffle", "cmf-reset", "cmf-reset-view", "cmf-export", "cmf-export-views"].forEach((id) => {
       const button = cmfEl(id);
       if (button) button.disabled = busy || button.dataset.capabilityDisabled === "true";
     });
@@ -1632,11 +1827,57 @@
         shuffle: shuffleRecipe,
         reset: resetRecipe,
         "reset-view": resetCmfView,
+        "export-views": exportViewsAsPng,
         "view-front": () => selectCmfView("01-front"),
         "view-back": () => selectCmfView("02-back"),
         "view-side": () => selectCmfView("05-buttons-side"),
       };
       return commands[command]?.();
     },
+  });
+  const CMF_STUDIO_COMMAND_NAMES = [
+    "cmf-save-recipe",
+    "cmf-export-usdz",
+    "cmf-shuffle",
+    "cmf-reset",
+    "cmf-reset-view",
+    "cmf-export-views",
+    "cmf-view-front",
+    "cmf-view-back",
+    "cmf-view-side",
+  ];
+
+  function cmfStudioCommandAvailable(action) {
+    if (action === "open-cmf-studio") return true;
+    const activeWindow = document.querySelector(".window.is-active");
+    if (activeWindow?.dataset.window !== "cmfStudio") return false;
+    if (action === "cmf-view-front") {
+      return !!document.querySelector('[data-cmf-view="01-front"]');
+    }
+    if (action === "cmf-view-back") {
+      return !!document.querySelector('[data-cmf-view="02-back"]');
+    }
+    if (action === "cmf-view-side") {
+      return !!document.querySelector('[data-cmf-view="05-buttons-side"]');
+    }
+    return true;
+  }
+
+  window.AISystem6Runtime?.registerApplication({
+    id: "cmfStudio",
+    windowName: "cmfStudio",
+    mount: renderCmfStudio,
+    restore: renderCmfStudio,
+    commands: Object.fromEntries(
+      ["open-cmf-studio", ...CMF_STUDIO_COMMAND_NAMES].map((action) => {
+        const handler = action === "open-cmf-studio"
+          ? () => openWindow("cmfStudio")
+          : () => window.AISystem6CMFStudio.runMenuCommand(action.slice("cmf-".length));
+        return [action, {
+          handler,
+          isAvailable: () => cmfStudioCommandAvailable(action),
+        }];
+      })
+    ),
   });
 })();

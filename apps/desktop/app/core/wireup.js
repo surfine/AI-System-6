@@ -116,11 +116,6 @@ function wireAppEvents() {
 
   clipSelectionButton.addEventListener("click", clipAssistantSelection);
 
-  scrapbookAskForm?.addEventListener("submit", askScrapbookQuestion);
-  registerAskBarSource("scrapbook", describeScrapbookAskScope);
-
-  toggleScrapTranslationButton?.addEventListener("click", toggleScrapTranslationView);
-
   rebuildFlowSourceInput?.addEventListener("input", () => {
     rebuildFlowSourceInput.dataset.sourceLabel = t("rebuild_pasted_source");
     resetRebuildProgress();
@@ -412,11 +407,6 @@ function wireAppEvents() {
     }
   });
 
-  readerAskForm?.addEventListener("submit", askReaderQuestion);
-  registerAskBarSource("reader", describeReaderAskScope);
-
-  initReaderSplitHandle();
-
   document.addEventListener("selectionchange", () => {
     updateReaderTranslationClipButton();
     rememberSelectionServiceContext(undefined, { clearMissing: false });
@@ -430,13 +420,6 @@ function wireAppEvents() {
     if (!textControlContextFromElement(event.target)) return;
     rememberSelectionServiceContext(undefined, { clearMissing: false });
     updateMenuState();
-  });
-
-  readerUrlInput.addEventListener("keydown", (event) => {
-    if (event.key === "Enter" && !eventIsTextComposition(event)) {
-      event.preventDefault();
-      fetchReaderPage();
-    }
   });
 
   questionSheetBodyInput.addEventListener("input", () => {
@@ -502,39 +485,6 @@ function wireAppEvents() {
       selectStyleCheckSection(Number(styleSectionSelectEl.value || 0));
     });
   }
-
-  notePadTextInput.addEventListener("input", () => {
-    syncCurrentNotePadPage();
-    saveDeskState();
-  });
-
-  notePadPrevButton.addEventListener("click", () => goToNotePadPage(notePadPageIndex - 1));
-
-  notePadNextButton.addEventListener("click", goToNextNotePadPage);
-
-  clipboardInsertButton.addEventListener("click", insertClipboardIntoTeachText);
-
-  clipboardClearButton.addEventListener("click", clearClipboardWindow);
-
-  clipboardTranslateButton?.addEventListener("click", translateClipboardText);
-
-  clipboardDocMapButton?.addEventListener("click", () => withDocMap(() => makeDocMapFromCurrentSource()));
-
-  clipboardTranslationTeachTextButton?.addEventListener("click", () => sendClipboardTranslation("teachtext"));
-
-  clipboardTranslationScrapbookButton?.addEventListener("click", () => sendClipboardTranslation("scrapbook"));
-
-  clipboardTranslationAssistantButton?.addEventListener("click", () => sendClipboardTranslation("assistant"));
-
-  translationPadSourceInput?.addEventListener("input", syncTranslationPadStateFromInputs);
-
-  translationPadResultInput?.addEventListener("input", syncTranslationPadStateFromInputs);
-
-  translationPadClearButton?.addEventListener("click", clearTranslationPad);
-
-  translationPadTranslateButton?.addEventListener("click", translateTranslationPadSource);
-
-  translationPadSendButton?.addEventListener("click", sendTranslationPad);
 
   docMapTreeEl?.addEventListener("click", (event) => {
     const jumpButton = event.target.closest("[data-video-docmap-jump]");
@@ -680,32 +630,6 @@ function wireAppEvents() {
     window.renderSystemHelp?.();
   });
 
-  calculatorKeys.addEventListener("click", (event) => {
-    const key = event.target.closest("[data-calc]")?.dataset.calc;
-    if (key) pressCalculatorKey(key);
-  });
-
-  writingBellModeEl?.addEventListener("click", (event) => {
-    const mode = event.target.closest("[data-bell-mode]")?.dataset.bellMode;
-    if (mode) setWritingBellMode(mode);
-  });
-
-  writingBellPresetsEl?.addEventListener("click", (event) => {
-    const minutes = Number(event.target.closest("[data-bell-preset]")?.dataset.bellPreset || 0);
-    if (minutes) setWritingBellMinutes(minutes);
-  });
-
-  writingBellStartButton?.addEventListener("click", startWritingBell);
-
-  writingBellPauseButton?.addEventListener("click", pauseWritingBell);
-
-  writingBellResetButton?.addEventListener("click", resetWritingBell);
-
-  puzzleBoardEl?.addEventListener("click", (event) => {
-    const index = Number(event.target.closest("[data-puzzle-index]")?.dataset.puzzleIndex);
-    if (Number.isInteger(index)) movePuzzleTile(index);
-  });
-
   characterMapEl.addEventListener("click", (event) => {
     const character = event.target.closest("[data-character]")?.dataset.character;
     if (character) insertCharacter(character);
@@ -803,10 +727,6 @@ function wireAppEvents() {
   document.getElementById("manual-model-fields")?.addEventListener("change", () => {
     syncLocalModelControls();
     if (typeof syncCloudModelControls === "function") syncCloudModelControls();
-    scheduleSettingsSave();
-  });
-  document.getElementById("enable-image-gen")?.addEventListener("change", (event) => {
-    document.body.classList.toggle("image-gen-enabled", event.target.checked);
     scheduleSettingsSave();
   });
   document.getElementById("clio-web-search")?.addEventListener("change", () => {
@@ -1454,6 +1374,12 @@ function wireAppEvents() {
   appearanceThemeInput?.addEventListener("change", () => applyTheme(appearanceThemeInput.value));
 
   soundEffectsInput.addEventListener("change", () => saveDeskState());
+
+  classicLineIconsInput?.addEventListener("change", () => {
+    setClassicLineArtEverywhere(classicLineIconsInput.checked);
+    hydrateSystemIcons();
+    saveDeskState();
+  });
 
   // The writing surfaces type with a quiet mechanical tick. It is throttled
   // so a paste or fast keystroke produces one click, not a burst, and it is

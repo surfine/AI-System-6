@@ -43,7 +43,7 @@ test.assertIncludes(appJs, '"open-applications-folder-path:games"', "the Games f
 test.assertIncludes(appJs, '["games", { labelKey: "applications_games", parentPath: "" }]', "the Games folder is a defined Applications path");
 test.assertIncludes(app, 'openttd: "OpenTTD"', "MultiFinder labels the app");
 test.assertIncludes(app, 'openttd: "openttd"', "window maps to its own app id");
-test.assertIncludes(app, '"open-openttd": () => openWindow("openttd")', "action opens the window");
+test.assertIncludes(openttd, '"open-openttd":{handler:()=>openWindow("openttd")', "action opens the window through its registered command");
 const lazyBlock = manifest.slice(manifest.indexOf("lazyRuntimePaths"));
 test.assertIncludes(lazyBlock, "app/features/openttd.js", "feature sits in lazyRuntimePaths");
 test.assertIncludes(app, "ensureOpenTTDModule", "openWindow loads OpenTTD on demand");

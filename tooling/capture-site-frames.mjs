@@ -217,7 +217,7 @@ for (const era of ERAS) {
   files[era] = `${era}.png`;
   // Color eras compress far better as WebP; the 1-bit eras stay PNG so the
   // dither pattern keeps its exact pixels.
-  if (era !== "classic" && era !== "platinum") {
+  {
     const webp = path.join(outDir, `${era}.webp`);
     try {
       execFileSync("cwebp", ["-quiet", "-q", "88", "-sharp_yuv", png, "-o", webp]);

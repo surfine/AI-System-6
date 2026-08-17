@@ -298,3 +298,5 @@ function initializeAlarmClock() {
   alarmClockTimer = setInterval(() => checkAlarmClock(new Date()), 1000);
   checkAlarmClock(new Date());
 }
+
+window.AISystem6Runtime?.registerApplication({id:"alarmClock",windowName:"alarmClock",mount:()=>initializeAlarmClock(),restore:()=>initializeAlarmClock(),commands:{"open-alarm-clock":{handler:()=>openWindow("alarmClock"),isAvailable:()=>!0}}});

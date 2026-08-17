@@ -12,8 +12,8 @@ test.assertIncludes(manifest, '"app/features/cmf-studio.js"', "CMF Studio loads 
 test.assertIncludes(cmf, '"cmf-palette"', "CMF Studio owns a supported-device palette");
 test.assertIncludes(cmf, "data-cmf-color-option", "CMF Studio palette entries are declarative");
 test.assertIncludes(cmf, "cmf_color_", "CMF Studio palette labels come from translations");
-test.assertIncludes(actions, '"open-cmf-studio"', "opening CMF Studio is a command");
-test.assertIncludes(actions, '"cmf-export-usdz"', "exporting USDZ is a registered command");
-test.assertIncludes(actions, '"cmf-view-front"', "changing device views is a registered command");
+test.assertIncludes(cmf, '"open-cmf-studio"', "opening CMF Studio is a command");
+test.assertIncludes(cmf, '"cmf-export-usdz"', "exporting USDZ is a registered command");
+test.assertIncludes(cmf, '"cmf-view-front"', "changing device views is a registered command");
 
 test.finish();

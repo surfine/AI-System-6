@@ -1156,13 +1156,16 @@ window.AISystem6MicropolisLoaded = true;
       ...disasters.map((name) => `disaster-${name}`),
       "pause", "speed-slow", "speed-med", "speed-fast",
     ];
-    window.AISystem6RegisterApplicationCommands?.(Object.fromEntries(commands.map((command) => [
-      `micropolis-${command}`,
-      {
+    commands.forEach((command) => {
+      window.AISystem6Runtime?.registerCommand?.(`micropolis-${command}`, {
         handler: () => runMicropolisMenuCommand(command),
-        isAvailable: () => alwaysAvailable.has(command) || !!micropolisState.sim,
-      },
-    ])));
+        isAvailable: () => {
+          const activeWindow = document.querySelector(".window.is-active");
+          if (activeWindow?.dataset.window !== "micropolis") return false;
+          return alwaysAvailable.has(command) || !!micropolisState.sim;
+        },
+      });
+    });
   }
 
   registerMicropolisDesktopCommands();
@@ -1212,4 +1215,5 @@ window.AISystem6MicropolisLoaded = true;
     problemKeys: MICROPOLIS_PROBLEM_KEYS,
     toolIds: MICROPOLIS_TOOLS.map((tool) => tool.id),
   });
+  window.AISystem6Runtime?.registerApplication({id:"micropolis",windowName:"micropolis",mount:attachMicropolis,restore:attachMicropolis,commands:{"open-micropolis":{handler:()=>openMicropolis(),isAvailable:()=>!0}}});
 })();

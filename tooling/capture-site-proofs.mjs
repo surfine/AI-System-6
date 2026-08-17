@@ -63,6 +63,7 @@ the future of tidal energy remains bright.`;
 const PROOFS = [
   {
     id: "slides",
+    maxWidth: 1000,
     window: "clioStage",
     label: "Build Slides",
     caption: "A Marp deck, opened and presented on the desktop.",
@@ -77,6 +78,7 @@ const PROOFS = [
   },
   {
     id: "charts",
+    maxWidth: 1000,
     window: "clioChart",
     label: "Make Charts",
     caption: "A Markdown table in the manuscript, projected as a chart.",
@@ -108,6 +110,7 @@ const PROOFS = [
   },
   {
     id: "cmf",
+    maxWidth: 1000,
     window: "cmfStudio",
     label: "Design in 3D",
     caption: "A 3D colorway on a 1988 desktop, exportable as USDZ for AR.",
@@ -201,6 +204,7 @@ const PROOFS = [
   },
   {
     id: "glass",
+    maxWidth: 1000,
     window: "liquidCover",
     label: "Render Glass",
     caption: "Refractive WebGL typography, rendered in the browser.",
@@ -210,6 +214,39 @@ const PROOFS = [
         else openWindow("liquidCover");
       });
       await page.waitForTimeout(4500);
+    },
+  },
+  {
+    id: "image-prompt",
+    maxWidth: 1000,
+    window: "imagePromptStudio",
+    label: "Write Image Prompts",
+    caption: "Image Prompt Studio turns an idea into two ready-to-paste prompts.",
+    async setup(page) {
+      await page.evaluate(async () => {
+        await openWindow("imagePromptStudio");
+        const idea = document.getElementById("ips-idea");
+        if (idea) {
+          idea.value = "a calm, cinematic tech-blue cover with generous negative space";
+          idea.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+        const title = document.getElementById("ips-title");
+        if (title) {
+          title.value = "The Shape of Quiet";
+          title.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+        const gptOut = document.getElementById("ips-gpt-out");
+        if (gptOut) {
+          gptOut.value = "A calm, cinematic cover in deep tech blue with generous negative space. The scene is a wide, quiet composition built for a title: soft blue gradients fall away to near-black at the edges, leaving the center open and low-contrast. A single, even key light catches faint atmospheric haze. The title \"The Shape of Quiet\" sits small and centered in clean sans-serif type. Editorial minimalism, polished and high-fidelity, 16:9.";
+        }
+        const universalOut = document.getElementById("ips-universal-out");
+        if (universalOut) {
+          universalOut.value = "Subject: a calm cinematic tech-blue cover with generous negative space\nStyle: polished, high-fidelity, editorial minimalism\nLighting: soft, even key light with faint atmospheric haze\nComposition: wide 16:9, low-contrast open center, richer detail toward the edges\nNegative: clutter, high contrast in the center, rendered title text\nAspect ratio: 16:9";
+        }
+        const status = document.getElementById("ips-status");
+        if (status) status.textContent = "Prompt ready — copy it.";
+      });
+      await page.waitForTimeout(900);
     },
   },
 ];

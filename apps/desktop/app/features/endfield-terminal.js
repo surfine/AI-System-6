@@ -192,7 +192,7 @@ function linkEndfieldInlineCitations(root) {
 async function loadEndfieldMeta() {
   if (endfieldMetaLoaded || !endfieldCountEl) return;
   try {
-    const response = await fetch("/api/endfield/search");
+    const response = await window.AISystem6Capabilities.requestService("endfield.search", {});
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
     const meta = data.meta || {};
@@ -224,20 +224,24 @@ async function askEndfield(query) {
     let data;
     const cloudActive = typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudCredentialReady();
     if (cloudActive) {
-      const response = await fetch("/api/endfield/ask", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query: normalized,
-          limit: 18,
-          ...endfieldRoutePayload(),
-        }),
-        signal: endfieldAbortController.signal,
+      const response = await window.AISystem6Capabilities.requestService("endfield.ask", {
+        init: {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query: normalized,
+            limit: 18,
+            ...endfieldRoutePayload(),
+          }),
+          signal: endfieldAbortController.signal,
+        },
       });
       data = await response.json();
       if (!response.ok) throw new Error(data.detail || data.error || `HTTP ${response.status}`);
     } else {
-      const searchResponse = await fetch(`/api/endfield/search?q=${encodeURIComponent(normalized)}&limit=18`, {
+      const searchResponse = await window.AISystem6Capabilities.requestService("endfield.search", {
+        query: normalized,
+        limit: 18,
         signal: endfieldAbortController.signal,
       });
       const matches = await searchResponse.json().catch(() => ({}));
@@ -341,51 +345,7 @@ function renderEndfieldTerminal() {
   endfieldRouteEl.textContent = endfieldRouteLabel();
 }
 
-endfieldForm?.addEventListener("submit", (event) => {
-  event.preventDefault();
-  if (endfieldBusy) return;
-  askEndfield(endfieldQueryInput.value);
-});
-
-endfieldRecentListEl?.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-query]");
-  if (!button) return;
-  endfieldQueryInput.value = button.dataset.query || "";
-  askEndfield(endfieldQueryInput.value);
-});
-
-endfieldMatchListEl?.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-evidence-index]");
-  if (!button) return;
-  const evidence = document.querySelector(`#endfield-evidence-${button.dataset.evidenceIndex}`);
-  if (!evidence) return;
-  evidence.open = true;
-  evidence.scrollIntoView({ block: "nearest" });
-  evidence.focus({ preventScroll: true });
-});
-
-endfieldOutputEl?.addEventListener("click", (event) => {
-  const citation = event.target.closest("[data-endfield-citation]");
-  if (citation) {
-    const evidence = document.querySelector(`#endfield-evidence-${citation.dataset.endfieldCitation}`);
-    if (evidence) {
-      evidence.open = true;
-      evidence.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      evidence.focus({ preventScroll: true });
-    }
-    return;
-  }
-  const queryButton = event.target.closest("[data-query]");
-  if (queryButton) {
-    if (endfieldQueryInput) endfieldQueryInput.value = queryButton.dataset.query || "";
-    askEndfield(queryButton.dataset.query || "");
-    return;
-  }
-  const retryButton = event.target.closest("[data-retry-query]");
-  if (retryButton) askEndfield(retryButton.dataset.retryQuery || "");
-});
-
-endfieldNewSessionBtn?.addEventListener("click", resetEndfieldQuery);
+let eftmounted=!1;function mountEndfieldTerminalRuntime(){if(eftmounted)return!0;eftmounted=!0;endfieldForm?.addEventListener("submit",event=>{event.preventDefault();if(endfieldBusy)return;askEndfield(endfieldQueryInput.value)});endfieldRecentListEl?.addEventListener("click",event=>{const button=event.target.closest("[data-query]");if(!button)return;endfieldQueryInput.value=button.dataset.query||"";askEndfield(endfieldQueryInput.value)});endfieldMatchListEl?.addEventListener("click",event=>{const button=event.target.closest("[data-evidence-index]");if(!button)return;const evidence=document.querySelector(`#endfield-evidence-${button.dataset.evidenceIndex}`);if(!evidence)return;evidence.open=!0;evidence.scrollIntoView({block:"nearest"});evidence.focus({preventScroll:!0})});endfieldOutputEl?.addEventListener("click",event=>{const citation=event.target.closest("[data-endfield-citation]");if(citation){const evidence=document.querySelector(`#endfield-evidence-${citation.dataset.endfieldCitation}`);if(evidence){evidence.open=!0;evidence.scrollIntoView({behavior:"smooth",block:"nearest"});evidence.focus({preventScroll:!0})}return}const queryButton=event.target.closest("[data-query]");if(queryButton){if(endfieldQueryInput)endfieldQueryInput.value=queryButton.dataset.query||"";askEndfield(queryButton.dataset.query||"");return}const retryButton=event.target.closest("[data-retry-query]");if(retryButton)askEndfield(retryButton.dataset.retryQuery||"")});endfieldNewSessionBtn?.addEventListener("click",resetEndfieldQuery);return!0}
 
 function runEndfieldMenuCommand(command) {
   if (command === "new-session") {
@@ -399,3 +359,27 @@ window.AISystem6EndfieldTerminal = Object.freeze({
   runMenuCommand: runEndfieldMenuCommand,
 });
 window.AISystem6EndfieldTerminalLoaded = true;
+window.AISystem6Runtime?.registerApplication({
+  id: "endfieldTerminal",
+  windowName: "endfieldTerminal",
+  mount: mountEndfieldTerminalRuntime,
+  restore: () => mountEndfieldTerminalRuntime(),
+  commands: {
+    "open-endfield-terminal": {
+      handler: () => openWindow("endfieldTerminal"),
+      isAvailable: () => true,
+    },
+    "endfield-new-session": {
+      handler: () => runEndfieldMenuCommand("new-session"),
+      isAvailable: () => document.querySelector(".window.is-active")?.dataset.window === "endfieldTerminal",
+    },
+    "endfield-run-query": {
+      handler: () => runEndfieldMenuCommand("run-query"),
+      isAvailable: () => {
+        const activeWindow = document.querySelector(".window.is-active");
+        return activeWindow?.dataset.window === "endfieldTerminal"
+          && !!endfieldQueryInput?.value.trim();
+      },
+    },
+  },
+});

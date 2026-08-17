@@ -222,15 +222,18 @@ function renderWebSearchStreamingText(text) {
  */
 async function runWebAnswerSearch(query) {
   findPathWebAnswer = null;
-  const response = await fetch("/api/search/answer", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      q: query,
-      mode: "answer",
-      stream: true,
-      ...cloudCredentialTransportFields(),
-    }),
+  const response = await window.AISystem6Capabilities.requestService("search.remote", {
+    path: "/api/search/answer",
+    init: {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        q: query,
+        mode: "answer",
+        stream: true,
+        ...cloudCredentialTransportFields(),
+      }),
+    },
   });
   if (!response.ok) {
     throw new Error(await response.text());
@@ -461,7 +464,12 @@ function clipSelectedFindPath() {
 async function searchFindPath(query, start = 0) {
   const limit = getFindPathResultLimit();
   const provider = searchProviderInput?.value || "auto";
-  const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&limit=${limit}&start=${start}&provider=${encodeURIComponent(provider)}`);
+  const response = await window.AISystem6Capabilities.requestService("search.remote", {
+    query,
+    limit,
+    start,
+    provider,
+  });
 
   if (!response.ok) {
     throw new Error(serviceErrorDetail(response.status, await response.text()));
@@ -703,4 +711,5 @@ function revealSelectedFindFileResult() {
   result.reveal?.();
 }
 
+window.AISystem6Runtime?.registerApplication({id:"findPath",windowName:"findPath",commands:{"open-find-path":{handler:async()=>{const selection=teachTextBodyInput.value.slice(teachTextBodyInput.selectionStart||0,teachTextBodyInput.selectionEnd||0).trim();if(selection&&!findPathQueryInput.value.trim())findPathQueryInput.value=selection;await openWindow("findPath");findPathQueryInput.focus()},isAvailable:()=>!0},"open-find-file":{handler:async()=>{await openWindow("findFile");findFileQueryInput?.focus()},isAvailable:()=>!0}}});
 window.AISystem6FindPathLoaded = true;

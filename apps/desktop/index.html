@@ -17,7 +17,7 @@
     <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png" />
     <link rel="manifest" href="assets/app-icon/manifest.json" />
     <script src="app/core/theme-registry.js"></script>
-    <link rel="stylesheet" href="styles.bundle.css?v=20260816.3" />
+    <link rel="stylesheet" href="styles.bundle.css?v=20260817.1" />
   </head>
   <body class="is-booting">
     <script src="app/core/theme-body-init.js"></script>
@@ -786,12 +786,12 @@
                 <label for="show-reset-system-menu" data-i18n="show_reset_system_menu">Show "Reset System" in Special menu</label>
               </div>
               <div class="field-row">
-                <input id="enable-image-gen" type="checkbox" />
-                <label for="enable-image-gen" data-i18n="enable_image_gen">AI background image generation (GPT Image) in Liquid Cover</label>
-              </div>
-              <div class="field-row">
                 <input id="clio-web-search" type="checkbox" />
                 <label for="clio-web-search" data-i18n="clio_web_search_setting">Allow ClioTalk web search</label>
+              </div>
+              <div class="field-row">
+                <input id="classic-line-icons" type="checkbox" />
+                <label for="classic-line-icons" data-i18n="classic_line_icons">Use line-art icons in other appearances</label>
               </div>
             </div>
           </details>
@@ -1174,6 +1174,10 @@
             <span class="sys-icon" data-system-icon="cmfStudio" aria-hidden="true"></span>
             <span data-i18n="cmf_studio_label">CMF Studio</span>
           </button>
+          <button class="finder-item" data-action="open-image-prompt-studio" data-balloon-help="balloon_image_prompt_studio">
+            <span class="sys-icon" data-system-icon="imagePromptStudio" aria-hidden="true"></span>
+            <span data-i18n="image_prompt_studio_label">Image Prompt Studio</span>
+          </button>
           <button class="finder-item" data-action="open-soundscape">
             <span class="sys-icon" data-system-icon="soundscape" aria-hidden="true"></span>
             <span data-i18n="soundscape_label">Soundscape</span>
@@ -1422,6 +1426,7 @@
                 <span class="mobile-control-long" data-i18n="cmf_export_usdz">Export USDZ</span>
                 <span class="mobile-control-short" data-i18n="cmf_export_short">Export</span>
               </button>
+              <button class="btn" type="button" id="cmf-export-views" data-i18n="cmf_export_views">Export Views</button>
             </div>
           </aside>
           <section class="cmf-preview-panel" aria-labelledby="cmf-preview-title">
@@ -3109,16 +3114,6 @@ Glass</textarea>
               </div>
             </div>
 
-            <div class="lc-group lc-img-group">
-              <div class="lc-group-title" data-i18n="liquid_cover_img">Generate Background (GPT Image)</div>
-              <label class="lc-row"><span data-i18n="liquid_cover_img_base">Endpoint</span><input type="text" id="lc-img-base" placeholder="https://api.openai.com/v1"></label>
-              <label class="lc-row"><span data-i18n="liquid_cover_img_key">API Key</span><input type="password" id="lc-img-key" placeholder="sk-…"></label>
-              <label class="lc-row"><span data-i18n="liquid_cover_img_model">Model</span><input type="text" id="lc-img-model" placeholder="gpt-image-1"></label>
-              <div class="lc-button-row">
-                <button class="btn default" type="button" id="lc-img-go" data-i18n="liquid_cover_img_go">Generate Background</button>
-              </div>
-              <p class="lc-note" data-i18n="liquid_cover_img_note">Writes a prompt, calls your image API, and sets the result as the background. Key is stored locally and sent only to your endpoint via the local server.</p>
-            </div>
             </details>
 
             <div class="lc-group lc-bg-group">
@@ -4189,7 +4184,7 @@ Glass</textarea>
       </section>
     </main>
 
-    <script src="app/generated/build-info.js?v=20260816.3"></script>
-    <script src="app.bundle.js?v=20260816.3"></script>
+    <script src="app/generated/build-info.js?v=20260817.1"></script>
+    <script src="app.bundle.js?v=20260817.1"></script>
   </body>
 </html>

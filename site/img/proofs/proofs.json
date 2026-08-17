@@ -1,6 +1,6 @@
 {
-  "capturedAt": "2026-08-14T01:54:55.628Z",
-  "build": "20260814.2",
+  "capturedAt": "2026-08-17T00:34:58.578Z",
+  "build": "20260817.1",
   "proofs": [
     {
       "id": "slides",
@@ -43,6 +43,12 @@
       "label": "Render Glass",
       "caption": "Refractive WebGL typography, rendered in the browser.",
       "file": "glass.webp"
+    },
+    {
+      "id": "image-prompt",
+      "label": "Write Image Prompts",
+      "caption": "Image Prompt Studio turns an idea into two ready-to-paste prompts.",
+      "file": "image-prompt.webp"
     }
   ]
 }

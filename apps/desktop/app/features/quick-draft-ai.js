@@ -179,11 +179,13 @@ async function requestQuickDraft(stage = "brief", options = {}) {
 
     let data;
     if (typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudCredentialReady()) {
-      const response = await fetch("/api/draft/thesis", {
-        method: "POST",
-        signal: requestController.signal,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+      const response = await window.AISystem6Capabilities.requestService("quickDraft.thesis", {
+        init: {
+          method: "POST",
+          signal: requestController.signal,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
       });
       data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.detail || data.error || response.statusText);

@@ -2,6 +2,7 @@ import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("soundscape");
 const source = read("app/features/soundscape.js");
+const serviceProviders = read("app/core/service-providers.js");
 const html = read("index.html");
 const css = read("styles/88-soundscape.css");
 const foundation = read("styles/00-foundation.css");
@@ -28,7 +29,9 @@ test.assertIncludes(html, 'data-action="open-soundscape"', "Applications has a s
 test.assertIncludes(app, 'action: "open-soundscape"', "dynamic Applications listings include Soundscape");
 test.assertIncludes(multiFinder, 'soundscape: "soundscape"', "the window owns a MultiFinder application");
 test.assertIncludes(menus, "soundscape: soundscapeMenus", "Soundscape owns its menu set");
-test.assertIncludes(actions, '"open-soundscape": () => openWindow("soundscape")', "the launcher opens the System 6 window");
+test.assertIncludes(source, '"open-soundscape"', "the launcher opens the System 6 window through its registered command");
+test.assertIncludes(source, "SOUNDSCAPE_COMMAND_NAMES", "the Soundscape menu commands are registered with the application");
+test.assertIncludes(actions, 'registerLazyCommand?.("open-soundscape",{ensure:ensureSoundscapeModule})', "the launcher loads Soundscape before dispatching");
 test.assertIncludes(runtimeManifest, '"app/features/soundscape.js"', "the module is a lazy runtime path");
 test.assertNotIncludes(html, 'src="app/features/soundscape.js"', "the lazy feature does not inflate startup");
 test.assertIncludes(config, 'createLazyModuleLoader("AISystem6SoundscapeLoaded", ["app/features/soundscape.js"])', "the feature has one guarded lazy loader");
@@ -49,8 +52,9 @@ test.assertIncludes(source, "const localAudio = new Audio()", "local audio uses 
 test.assertIncludes(source, "URL.createObjectURL(file)", "local files play without being copied");
 test.assertIncludes(source, "URL.revokeObjectURL(url)", "temporary local playback URLs are released");
 test.assertIncludes(source, "const sessionLocalUrls = new Map()", "local files can be restored during the current session without being persisted");
-test.assertIncludes(source, '"http://127.0.0.1:4173/api/music/system"', "the public Web app sends Music commands back to the host Mac");
-test.assertIncludes(source, 'options.targetAddressSpace = "loopback"', "Chromium declares the local Music bridge address space");
+test.assertIncludes(serviceProviders, '"http://127.0.0.1:4173/api/music/system"', "the public Web app sends Music commands back to the host Mac");
+test.assertIncludes(source, 'requestService("system.music"', "Soundscape routes Music commands through the service capability");
+test.assertIncludes(serviceProviders, 'init.targetAddressSpace = "loopback"', "Chromium declares the local Music bridge address space");
 test.assertIncludes(source, "isSafariPublicWebUnsupported", "Safari reuses the dedicated HTTP local entry");
 test.assertIncludes(source, 'error.code = "local_music_bridge_unavailable"', "an unavailable Mac bridge has a specific low-friction explanation");
 test.assertIncludes(source, 'requestSystemMusic("state")', "the player reads real Music app state");

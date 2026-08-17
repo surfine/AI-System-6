@@ -476,11 +476,13 @@ test.assertIncludes(wireup, '"desktop_tap_hint"', "the first touch tap on a desk
 test.assertIncludes(en, 'desktop_tap_hint: "Tap again to open."', "English names the touch hint");
 test.assertIncludes(zh, 'desktop_tap_hint: "再点一次打开。"', "Chinese names the touch hint");
 
-// A phone held sideways reports its sensor housing on BOTH side edges and
-// nothing on top. Padded by design values alone, the Apple menu sat under the
-// island and the whole desktop icon column sat under the opposite corner --
-// unreachable, on the one surface that launches everything. The device states
-// its own inset, so nothing here may hard-code a model's numbers.
+// A phone held sideways reports its sensor housing on ONE side edge — left or
+// right, depending on how the phone is rotated — and nothing on top. Padded by
+// design values alone, the Apple menu sat under a left-side island and the
+// whole desktop icon column sat under a right-side island — unreachable, on
+// the one surface that launches everything. The device states its own inset on
+// whichever side the housing is, so both edges must read the device instead of
+// assuming a single orientation.
 test.assertMatches(
   foundation,
   /\.menu-bar \{[^}]*padding: 0 max\(var\(--menu-bar-inline-padding\), var\(--safe-area-right\)\) 0 max\(var\(--menu-bar-inline-padding\), var\(--safe-area-left\)\)/,

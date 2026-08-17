@@ -15,6 +15,7 @@ const clioChart = read("app/features/clio-chart.js");
 const liquidCover = read("app/features/liquid-cover.js");
 const actions = read("app/core/actions.js");
 const askBar = read("app/core/ask-bar.js");
+const reader = read("app/features/reader.js");
 
 // The shared guard treats isComposing and the legacy WebKit 229 as composing.
 {
@@ -32,7 +33,8 @@ test.assertIncludes(actions, "eventIsTextComposition(event)", "global shortcut d
 test.assertIncludes(modal, '!eventIsTextComposition(event)', "the input modal does not confirm during composition");
 test.assertIncludes(wireup, "eventIsTextComposition(event)", "ClioTalk composer skips composition Enter");
 test.assertIncludes(wireup, "projectDiskNameInput.addEventListener", "project name input is guarded");
-test.assertIncludes(wireup, "readerUrlInput.addEventListener", "Reader URL input is guarded");
+test.assertIncludes(reader, "readerUrlInput?.addEventListener", "Reader URL input is guarded");
+test.assertIncludes(reader, "!eventIsTextComposition(event)", "Reader's Enter path uses the shared composition guard");
 test.assertIncludes(desktopRuntime, '!eventIsTextComposition(event)', "the new-project dialog is guarded");
 test.assertIncludes(markdownEditor, '!eventIsTextComposition(event)', "the Markdown editor does not transform during composition");
 test.assertIncludes(alarmClock, '!eventIsTextComposition(event)', "Alarm Clock does not commit during composition");

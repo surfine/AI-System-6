@@ -74,6 +74,8 @@ for (const helpId of ["control-strip", "menu-bar-extras", "system-messages", "sy
   test.assertIncludes(dictionary, `id: "${helpId}"`, `System Help documents ${helpId}`);
 }
 test.assertIncludes(dictionary, 'termZh: "气球帮助"', "System Help uses the product's Chinese Balloon Help name");
+test.assertIncludes(dictionary, 'id: "image-prompt-studio"', "System Help documents the Image Prompt Studio tool");
+test.assertIncludes(dictionary, 'termZh: "图片提示词工作室"', "System Help uses the product's Chinese Image Prompt Studio name");
 test.assertIncludes(dictionary, "Project Hard Disk, model, and System Messages", "System Help scopes mutual exclusion to the three duplicated controls");
 test.assertIncludes(dictionary, "both remain in the menu bar", "System Help preserves the MultiFinder and clock exceptions");
 test.assertIncludes(dictionary, "share the same unread count", "System Help keeps System Messages tied to one source");

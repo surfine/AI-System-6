@@ -66,7 +66,7 @@ test.assertIncludes(zh, 'welcome_ai_website_ready: "网站 AI 已就绪"', "Chin
 test.assertNotIncludes(zh, 'welcome_ai_website_ready: "网站 AI 已连接"', "Welcome Floppy never labels untested website AI as connected");
 test.assertIncludes(cloudModel, 'typeof syncWelcomeFloppyState === "function"', "model changes refresh the mounted floppy");
 test.assertIncludes(chatMessages, 'typeof syncWelcomeFloppyState === "function"', "ClioTalk model changes refresh the mounted floppy");
-test.assertIncludes(actions, '"open-clio-model-settings": openModelSettings', "the AI object reuses Control Panel instead of duplicating setup");
+test.assertIncludes(actions, 'registerCommand?.("open-clio-model-settings"', "the AI object reuses Control Panel instead of duplicating setup");
 test.assertIncludes(actions, '"welcome-iphone-help": showWelcomeIphoneHelp', "the iPhone object delegates to the platform instructions");
 
 test.assertIncludes(actions, '"play-teaser-demo": playWelcomeTour', "the tour object uses the deterministic teaser entrypoint");
@@ -74,7 +74,7 @@ test.assertMatches(writingDemo, /Teaser mode[\s\S]*needs no model or network/, "
 test.assertMatches(writingDemo, /function teaserDemoSnapshot\(\)[\s\S]*durable: teaserDemoSnapshotDurable\(\)/, "the tour snapshots durable user state");
 test.assertMatches(writingDemo, /finally \{[\s\S]*await teaserDemoRestore\(snapshot\)/, "the tour restores the desk on success, failure, or Escape");
 
-test.assertIncludes(actions, '"open-guide": openWelcomeFloppy', "the Start Here menu remounts Welcome Floppy");
+test.assertIncludes(actions, 'registerCommand?.("open-guide"', "the Start Here menu remounts Welcome Floppy");
 test.assertIncludes(html, '<button data-action="open-guide" data-i18n="start_here">', "Start Here remains in the Apple menu");
 test.assertMatches(windowManager, /if \(name === "welcomeDisk"\) \{\n\s*guideSeen = true;\n\s*saveDeskState\(\);/, "closing Welcome Floppy completes first-run without hiding product features");
 test.assertIncludes(workingSession, 'new Set(["about", "saveChat", "guide", "welcomeDisk"])', "Welcome Floppy and its Read Me never become recoverable work windows");

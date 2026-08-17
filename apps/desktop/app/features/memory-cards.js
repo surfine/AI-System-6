@@ -314,10 +314,5 @@ function handleMemoryCardsKeydown(event) {
   focusMemoryCard((next + memoryCards.length) % memoryCards.length, step);
 }
 
-memoryCardsBoardEl?.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-memory-card]");
-  if (!button) return;
-  memoryCardsFocusIndex = Number(button.dataset.memoryCardIndex);
-  flipMemoryCard(button.dataset.memoryCard);
-});
-memoryCardsBoardEl?.addEventListener("keydown", handleMemoryCardsKeydown);
+let mcmounted=!1;function mountMemoryCardsRuntime(){if(mcmounted)return!0;mcmounted=!0;memoryCardsBoardEl?.addEventListener("click",event=>{const button=event.target.closest("[data-memory-card]");if(!button)return;memoryCardsFocusIndex=Number(button.dataset.memoryCardIndex);flipMemoryCard(button.dataset.memoryCard)});memoryCardsBoardEl?.addEventListener("keydown",handleMemoryCardsKeydown);return!0}
+window.AISystem6Runtime?.registerApplication({id:"memoryCards",windowName:"memoryCards",mount:mountMemoryCardsRuntime,restore:()=>mountMemoryCardsRuntime(),commands:{"open-memory-cards":{handler:()=>openWindow("memoryCards"),isAvailable:()=>!0}}});

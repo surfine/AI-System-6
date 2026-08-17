@@ -1,14 +1,4 @@
-// Two 1.44MB floppies are 2,949,120 bytes, and the boot payload fits on them
-// again. The budget had drifted up to 2,978,000 over five batches (the Yosemite
-// icon family, per-era boot/shutdown surfaces, CSS asset cache-busting,
-// first-user UI hardening, acceptance-contract fixes), each one bought with a
-// comment instead of with space. Moving the writing-route AI commands and Claim
-// Check into a lazy module (app/features/outline-claim.js, ~57KB of prompt text
-// nobody parses until a menu item asks for it) gave back more than all five
-// batches took, so the line is the real one again.
-//
-// Raising this number is not the way to land a feature. Find the next 50KB the
-// desktop parses at boot and does not need until the user summons it.
+// Permanent release budget: two 1.44MB floppies.
 export const floppyBudgetBytes = 2_949_120;
 
 export const coreFiles = [
@@ -22,6 +12,9 @@ export const appModulePaths = [
   "app/core/humanizer-guidance.js",
   "app/core/system-integrity-guidance.js",
   "app/core/model-roles.js",
+  "app/core/runtime.js",
+  "app/core/service-capabilities.js",
+  "app/core/service-providers.js",
   "app/core/state-stores.js",
   "app/core/assistant-activity.js",
   "app/core/run-receipts.js",
@@ -99,6 +92,7 @@ export const appModulePaths = [
 
 export const lazyRuntimePaths = [
   "app/vendor/stream-markdown-parser.global.js",
+  "app/core/launch-intent.js",
   "app/vendor/marked.umd.js",
   "app/core/writing-tools-prompts.js",
   "app/generated/ai-prompt-files.js",
@@ -137,7 +131,10 @@ export const lazyRuntimePaths = [
   "app/features/quick-draft-composition.js",
   "app/features/quick-draft-ai.js",
   "app/features/quick-draft-handoff.js",
+  "app/features/cmf-usdz-export.js",
   "app/features/cmf-studio.js",
+  "app/features/image-prompt-runtime.js",
+  "app/features/image-prompt-studio.js",
   "app/features/soundscape.js",
   "app/features/theme-lab.js",
   "app/vendor/micropolis/micropolis-engine.js",

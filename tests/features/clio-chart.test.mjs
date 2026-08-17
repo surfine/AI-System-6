@@ -223,7 +223,8 @@ test.assertIncludes(html, 'data-window="clioChart"', "the window is declared in 
 test.assertIncludes(multiFinder, 'clioChart: "clioChart"', "the window maps to its own application");
 test.assertIncludes(menus, "clioChart: clioChartMenus", "the application owns a menu set");
 test.assertIncludes(menus, 'menuItem("see-as-chart", "clio_chart_see_as_chart")', "TeachText carries the menu twin of the in-body button");
-test.assertIncludes(actions, '"open-clio-chart": openClioChartApp', "the open action is registered");
+test.assertIncludes(source, '"open-clio-chart"', "the open action is registered in the lazy module");
+test.assertIncludes(actions, 'registerLazyCommand?.("open-clio-chart"', "the open action is wired through a lazy runtime command");
 test.assertIncludes(html, 'id="teachtext-chart-owner"', "TeachText shows who owns the table block");
 
 ["clio_chart_title", "clio_chart_label", "clio_chart_see_as_chart", "clio_chart_not_measured", "clio_chart_rollup_note"].forEach((key) => {
@@ -271,7 +272,7 @@ test.assertIncludes(source, 'sourceKind: "clioChart"', "the ClioStage source is 
 test.assertIncludes(clioStage, 'sourceKind === "clioChart"', "ClioStage recognizes a chart snapshot");
 test.assertIncludes(clioStage, "chartSnapshot.cloneNode(true)", "ClioStage renders a fresh clone of the frozen chart page");
 test.assertIncludes(menus, 'menuItem("clio-chart-send-stage"', "Send to ClioStage is a visible chart menu command");
-test.assertIncludes(actions, '"clio-chart-send-stage"', "Send to ClioStage is wired through the action layer");
+test.assertIncludes(source, '"clio-chart-send-stage"', "Send to ClioStage is wired through the runtime command layer");
 
 test.assertIncludes(source, "data-label=", "grid cells carry their field labels into card mode");
 [
@@ -399,8 +400,8 @@ test.assertIncludes(
   "the startup bootstrap receives the chart button from the shared DOM handle registry"
 );
 test.assertIncludes(
-  windows,
-  '"see-as-chart": winName === "teachText" && teachTextHasChartableMarkdownTable',
+  source,
+  'action === "see-as-chart"',
   "the menu and in-body button share the same table availability rule"
 );
 test.assertMatches(

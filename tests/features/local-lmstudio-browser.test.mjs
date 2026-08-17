@@ -636,7 +636,7 @@ ok(context.includes("AISystem6LocalLMStudio.embed"), "RAG embeddings can execute
 ok(imports.includes('model_execution: "client"') && importRoute.includes('body.model_execution === "client"'), "import requests prevent server-side model execution");
 ok(quickDraft.includes("sendLocalModelTask"), "Quick Draft has a direct local-model path");
 ok(meme.includes("sendLocalModelTask"), "Bureaucracy Meme has a direct local-model path");
-ok(endfield.includes('fetch("/api/endfield/search"') && endfield.includes("sendLocalModelTask"), "Endfield separates deterministic VPS search from browser inference");
+ok(endfield.includes('requestService("endfield.search"') && endfield.includes("sendLocalModelTask"), "Endfield separates deterministic VPS search from browser inference");
 ok(reader.includes("translateReaderSubtitleLocally"), "subtitle translation has a browser-local path");
 ok(vision.includes("sendLocalModelTask"), "vision analysis has a browser-local path");
 ok(importRoute.includes('require("../../../desktop/app/shared/model-task-runtime.js")'), "Node import repair uses the same pure prompt and cleanup module");

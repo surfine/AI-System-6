@@ -116,9 +116,8 @@ async function embedTexts(texts, signal) {
   const localModel = String(embeddingModelInput?.value?.trim() || "");
   const isDeepSeekEmbeddingUnsupported = isCloud && cloudConfig?.provider === "deepseek";
 
-  let bodyObj, path;
+  let bodyObj;
   if (useCloudEmbeddings) {
-    path = "/api/cloud/embeddings";
     bodyObj = {
       model: modelForCloudEmbeddings,
       input: texts,
@@ -142,12 +141,14 @@ async function embedTexts(texts, signal) {
   }
 
   let response;
-  if (path) {
-    response = await fetch(path, {
-      method: "POST",
-      signal,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(bodyObj),
+  if (useCloudEmbeddings) {
+    response = await window.AISystem6Capabilities.requestService("cloud.embeddings", {
+      init: {
+        method: "POST",
+        signal,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bodyObj),
+      },
     });
     if (!response.ok && localModel && localLmStudioConnectionEnabled) {
       response = await window.AISystem6LocalLMStudio.embed({

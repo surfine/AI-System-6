@@ -2852,3 +2852,74 @@ async function askDocMapHkrrTheoryReview() {
     taskKind: "docmap-hkrr",
   });
 }
+
+const DOCMAP_COMMAND_NAMES = [
+  "docmap-save",
+  "docmap-print-pdf",
+  "docmap-send-question",
+  "docmap-insert-outline",
+  "docmap-hkrr",
+  "docmap-layout-right",
+  "docmap-layout-balanced",
+  "docmap-fit-view",
+  "docmap-zoom-out",
+  "docmap-zoom-in",
+  "docmap-retry-pending",
+  "focus-docmap-question",
+];
+
+function docMapControlEnabled(selector) {
+  const control = document.querySelector(selector);
+  return !!control && !control.disabled && !control.hidden && !control.classList.contains("is-disabled");
+}
+
+function docMapCommandAvailable(action) {
+  if (action === "open-docmap") return true;
+  const activeWindow = document.querySelector(".window.is-active");
+  if (activeWindow?.dataset.window !== "docMap") return false;
+  if (action === "docmap-retry-pending") {
+    return !currentDocMap && !!activeDocMapTab()?.state?.pending?.retryable;
+  }
+  if (action === "docmap-send-question") return docMapControlEnabled("#docmap-send-question");
+  if (action === "docmap-insert-outline") return docMapControlEnabled("#docmap-insert-outline");
+  return !!currentDocMap;
+}
+
+function runDocMapRuntimeCommand(action) {
+  if (action === "open-docmap") {
+    if (typeof openDocMapWindowWithTabs === "function") {
+      openDocMapWindowWithTabs();
+      return;
+    }
+    openWindow("docMap");
+    return;
+  }
+  if (action === "docmap-save") return saveCurrentDocMap();
+  if (action === "docmap-print-pdf") return printCurrentDocMapPdf();
+  if (action === "docmap-send-question") return sendDocMapNodeToQuestionSheet();
+  if (action === "docmap-insert-outline") return insertDocMapNodeAsOutline();
+  if (action === "docmap-hkrr") return askDocMapHkrrTheoryReview();
+  if (action === "docmap-layout-right") return setCurrentDocMapLayout("right");
+  if (action === "docmap-layout-balanced") return setCurrentDocMapLayout("balanced");
+  if (action === "docmap-fit-view") {
+    const docMapWindow = getWindow("docMap");
+    if (docMapWindow?.dataset.sideaskRestoreActive !== "true") maximizeWindow(docMapWindow);
+    requestAnimationFrame(() => fitDocMapCanvasToView());
+    return;
+  }
+  if (action === "docmap-zoom-out") return zoomDocMapOut();
+  if (action === "docmap-zoom-in") return zoomDocMapIn();
+  if (action === "docmap-retry-pending") return retryPendingDocMap();
+  if (action === "focus-docmap-question") return docMapQuestionInput?.focus();
+}
+
+window.AISystem6Runtime?.registerApplication({
+  id: "docMap",
+  windowName: "docMap",
+  commands: Object.fromEntries(
+    ["open-docmap", ...DOCMAP_COMMAND_NAMES].map((action) => [action, {
+      handler: () => runDocMapRuntimeCommand(action),
+      isAvailable: () => docMapCommandAvailable(action),
+    }])
+  ),
+});

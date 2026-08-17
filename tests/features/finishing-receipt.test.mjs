@@ -107,7 +107,7 @@ test.assertIncludes(html, 'id="finishing-receipt-kept"', "the receipt window car
 test.assertIncludes(html, 'data-system-icon="projectDisc"', "the receipt shows the Project CD it describes");
 test.assertIncludes(html, 'data-action="open-finishing-receipt"',
   "the Project CD window can reopen the receipt for the selected disc");
-test.assertIncludes(actions, '"open-finishing-receipt": () => openFinishingReceiptForSelection()',
+test.assertIncludes(actions, 'registerCommand?.("open-finishing-receipt"',
   "the action resolves the lazy function at dispatch time, not at registry build time");
 test.assertIncludes(actions, "await showFinishingReceiptForBurn(item)",
   "the burn opens the receipt after the Project CD window, so the receipt is not covered");

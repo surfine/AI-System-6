@@ -12,6 +12,7 @@ const SESSION_TTL_SECONDS = 4 * 60 * 60;
 // the client, the capabilities payload, and the verification check in step:
 // changing this on one side alone rejects every token.
 const TURNSTILE_ACTION = "turnstile-spin-v2";
+const MIN_SESSION_SECRET_BYTES = 32;
 const PUBLIC_ORIGIN = String(
   process.env.AI_SYSTEM6_PUBLIC_ORIGIN || "https://system6.aaronlau.me"
 ).replace(/\/$/, "");
@@ -87,6 +88,10 @@ function signingSecret() {
   return String(process.env.AI_SYSTEM6_SESSION_SECRET || "");
 }
 
+function sessionSecretConfigured() {
+  return Buffer.byteLength(signingSecret(), "utf8") >= MIN_SESSION_SECRET_BYTES;
+}
+
 function sign(value) {
   return crypto.createHmac("sha256", signingSecret()).update(value).digest("base64url");
 }
@@ -102,8 +107,7 @@ function parseCookies(req) {
 }
 
 function sessionFromRequest(req) {
-  const secret = signingSecret();
-  if (!secret) return null;
+  if (!sessionSecretConfigured()) return null;
   const token = parseCookies(req)[SESSION_COOKIE] || "";
   const separator = token.lastIndexOf(".");
   if (separator < 1) return null;
@@ -137,6 +141,7 @@ function sessionFromRequest(req) {
 }
 
 function issueSessionCookie() {
+  if (!sessionSecretConfigured()) return "";
   const now = Math.floor(Date.now() / 1000);
   const encoded = base64urlJson({
     v: 1,
@@ -269,8 +274,13 @@ async function handleTurnstileSession(req, res) {
     sendJson(res, 403, { error: "Verification failed", code: "turnstile_failed" });
     return;
   }
+  const sessionCookie = issueSessionCookie();
+  if (!sessionCookie) {
+    sendJson(res, 503, { error: "Session signing is not configured.", code: "session_not_configured" });
+    return;
+  }
   sendJson(res, 200, { verified: true, expires_in: SESSION_TTL_SECONDS }, {
-    "Set-Cookie": issueSessionCookie(),
+    "Set-Cookie": sessionCookie,
     "Cache-Control": "no-store",
   });
 }
@@ -345,8 +355,8 @@ async function runWithPublicGuard(req, res, handler) {
 function publicReadiness() {
   if (!isPublicDeployment) return { ready: true, missing: [] };
   const missing = [];
-  if (Buffer.byteLength(signingSecret(), "utf8") < 32) {
-    missing.push("AI_SYSTEM6_SESSION_SECRET (minimum 32 bytes)");
+  if (!sessionSecretConfigured()) {
+    missing.push(`AI_SYSTEM6_SESSION_SECRET (minimum ${MIN_SESSION_SECRET_BYTES} bytes)`);
   }
   if (!process.env.TURNSTILE_SECRET) missing.push("TURNSTILE_SECRET");
   if (!process.env.TURNSTILE_SITE_KEY) missing.push("TURNSTILE_SITE_KEY");

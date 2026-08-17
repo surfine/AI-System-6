@@ -50,6 +50,7 @@ test.assertIncludes(html, 'data-balloon-help="balloon_qd_develop"', "Quick Draft
 test.assertIncludes(html, 'data-balloon-help="balloon_qd_versions"', "Quick Draft Versions restore can identify itself");
 test.assertIncludes(html, 'data-balloon-help="balloon_qd_save_project"', "Quick Draft Save to Project Hard Disk can identify itself");
 test.assertIncludes(html, 'data-balloon-help="balloon_sound_effects"', "the Control Panel sound switch can identify itself");
+test.assertIncludes(html, 'data-balloon-help="balloon_image_prompt_studio"', "the Image Prompt Studio launcher can identify itself");
 for (const key of [
   "balloon_cmf_model",
   "balloon_cmf_pose",
@@ -74,6 +75,17 @@ for (const key of [
   "balloon_qd_save_project",
   "balloon_qd_export_md",
   "balloon_sound_effects",
+  "balloon_image_prompt_studio",
+  "balloon_ips_idea",
+  "balloon_ips_title",
+  "balloon_ips_aspect",
+  "balloon_ips_style",
+  "balloon_ips_generate",
+  "balloon_ips_ref",
+  "balloon_ips_copy",
+  "balloon_ips_gpt_out",
+  "balloon_ips_universal_out",
+  "balloon_ips_history",
 ]) {
   test.assertIncludes(en, `${key}:`, `English balloon copy exists for ${key}`);
   test.assertIncludes(zh, `${key}:`, `Chinese balloon copy exists for ${key}`);
@@ -84,6 +96,8 @@ test.assertMatches(balloon, /showPopover[\s\S]*positionBalloonHelp/, "showing a 
 test.assertIncludes(balloon, 'matches?.(":popover-open")', "hiding a balloon also removes it from the browser top layer");
 test.assertIncludes(balloon, 'event.pointerType !== "touch"', "touch inspection is distinct from pointer hover");
 test.assertMatches(balloon, /if \(!target\.closest\("\.menu-bar"\)\)[\s\S]*preventDefault\(\)/, "touch help inspects desktop objects without activating them while keeping the menu available");
+test.assertMatches(balloon, /if \(target === balloonHelpTarget\)[\s\S]*hideBalloonHelp\(\)[\s\S]*return;/, "a second tap on the inspected object lets its action through");
+test.assertMatches(balloon, /if \(balloonHelpTarget && !balloonHelpTarget\.contains\(event\.target\)\)[\s\S]*hideBalloonHelp\(\)/, "tapping away dismisses the old balloon before the next press lands");
 test.assertIncludes(balloon, 'const BALLOON_HELP_STORAGE_KEY', "the user's Balloon Help choice persists across sessions");
 test.assertIncludes(balloon, 'window.matchMedia("(hover: hover)")', "the discoverable default applies to hover-capable devices only");
 test.assertIncludes(balloon, "balloonHelpTouchedInspect", "the hover default never arms touch inspect mode");

@@ -11,7 +11,7 @@ const actions = read("app/core/actions.js");
 const dictation = read("app/features/dictation.js") + read("app/features/dictation-pad.js");
 
 test.assertIncludes(html, "dictation", "Dictation Pad has a window surface");
-test.assertIncludes(actions, '"open-dictation": invokeIntentKey', "opening Dictation Pad is a command");
+test.assertIncludes(dictation, '"open-dictation"', "opening Dictation Pad is a runtime command");
 test.assertIncludes(dictation, "function ", "Dictation Pad carries executable behavior");
 test.assertIncludes(dictation, "window.SpeechRecognition || window.webkitSpeechRecognition", "Dictation uses the browser speech recognition permission flow");
 test.assertIncludes(dictation, "intent", "Dictation captures writing intent");

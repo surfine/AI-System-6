@@ -45,6 +45,8 @@ declare function setFinderEnvironment(mode: string, options?: any): Promise<bool
 declare function ensureRunningApp(appId: string, windowName: string): void;
 declare function registerWorkingSessionAdapter(adapter: any): void;
 declare function createDefaultProjectForDraftDesk(): Promise<any>;
+declare function openWritingStudio(): Promise<any>;
+declare function toggleQuickDraftSideAsk(): Promise<any>;
 
 interface Window {
   AISystem6ProtectedRanges?: any;
@@ -64,4 +66,6 @@ interface Window {
   AISystem6QuickDraftHandoff?: any;
   AISystem6ModelUserErrors?: any;
   AISystem6WebPlatform?: any;
+  AISystem6Capabilities?: any;
+  AISystem6Runtime?: any;
 }

@@ -394,287 +394,6 @@ const systemIconPaths = {
   `,
 };
 
-const liquidSystemIconPaths = {
-  ...transportIconPaths,
-  startupDisk: `
-    <path class="icon-fill" d="M6.5 4.5h17L27.5 8v19.5h-21z" />
-    <path d="M10.5 5v8h12V5M20 7v4M10 16.5h14v10H10z" />
-    <path d="M13.2 20c.4-1.5 1.8-2.5 3.6-2.5 2.1 0 3.5 1.2 3.5 2.8 0 2.1-3.2 2.3-3.2 4.1M17.1 25.8h.1" />
-  `,
-  projectDisk: `
-    <path class="icon-fill" d="M5 11.5h22v13a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3z" />
-    <path d="M5.5 16h21M9 20h10M9 23.5h7" />
-    <circle class="icon-accent" cx="23" cy="22" r="1.5" />
-  `,
-  fileFloppy: `
-    <path class="icon-fill" d="M7 5.5h16.5L27 9v17.5H7z" />
-    <path d="M11 6v7h10V6M11 21h10M21 7.5v4" />
-  `,
-  cloudModel: `
-    <path class="icon-fill" d="M8 22.5h16.5a4.2 4.2 0 0 0 .4-8.4 6.2 6.2 0 0 0-11.7-1.9A5.3 5.3 0 0 0 8 22.5z" />
-    <path d="M12 18.5h8M16 14.5v8" />
-  `,
-  cloudModelOff: `
-    <path class="icon-fill" d="M8 22.5h16.5a4.2 4.2 0 0 0 .4-8.4 6.2 6.2 0 0 0-11.7-1.9A5.3 5.3 0 0 0 8 22.5z" />
-    <path d="M8 26L26 8" />
-  `,
-  localModel: `
-    <rect class="icon-fill" x="10" y="10" width="12" height="12" rx="2.5" />
-    <path d="M13.5 10V6.5M16 10V6.5M18.5 10V6.5M13.5 25.5V22M16 25.5V22M18.5 25.5V22" />
-    <path d="M10 13.5H6.5M10 16H6.5M10 18.5H6.5M25.5 13.5H22M25.5 16H22M25.5 18.5H22" />
-    <rect x="14" y="14" width="4" height="4" rx="1" />
-  `,
-  controlStrip: `
-    <rect class="icon-fill" x="4.5" y="12" width="23" height="8.5" rx="4.25" />
-    <path d="M10.5 12.5v7.5M16 12.5v7.5M21.5 12.5v7.5" />
-    <path d="M24.5 14.5v3.5" />
-  `,
-  questionSheet: `
-    <path class="icon-fill" d="M8 5.5h13.5L25.5 10v17H8z" />
-    <path d="M21.5 6v5h4M13 14.5c.8-1.6 2.4-2.5 4.2-2.2 1.7.2 2.9 1.3 2.9 2.8 0 2.7-4 2.8-4 5.4M16.1 24h.1" />
-  `,
-  outline: `
-    <rect class="icon-fill" x="8" y="5.5" width="16" height="21" rx="3" />
-    <path d="M13 11h7M13 16h7M13 21h7M11 11h.1M11 16h.1M11 21h.1" />
-  `,
-  sectionDrafts: `
-    <rect class="icon-fill" x="7" y="8" width="15" height="18" rx="3" />
-    <path d="M11 5.5h12.5v16M11 13h7M11 18h6" />
-    <path class="icon-accent" d="M18 25l6.5-6.5 2.5 2.5-6.5 6.5-3 .5z" />
-  `,
-  manuscript: `
-    <rect class="icon-fill" x="7.5" y="5.5" width="17" height="21" rx="3" />
-    <path d="M12 10h8M12 15h8M12 20h6M16 9v14" />
-  `,
-  reviewDesk: `
-    <path class="icon-fill" d="M7.5 5.5h14L26 10v17H7.5z" />
-    <path d="M21.5 6v5h4M11 13.5h8M11 18h5" />
-    <circle class="icon-fill-soft" cx="21" cy="21.5" r="5.5" />
-    <path class="icon-accent" d="M18.5 21.5l2 2 4-5" />
-  `,
-  projectDisc: `
-    <circle class="icon-fill" cx="16" cy="14.5" r="10" />
-    <circle cx="16" cy="14.5" r="3" />
-    <path d="M12 24.5h8v3.5h-8zM14 26.5h4" />
-  `,
-  searcher: `
-    <circle class="icon-fill" cx="13" cy="13" r="7.2" />
-    <path d="M18.5 18.5L26 26M10 13h6M13 10v6" />
-    <path class="icon-accent" d="M7 24c4.5-2.7 9.2-2.8 14 0" />
-  `,
-  bureaucracyMeme: `
-    <path class="icon-fill" d="M5.5 7.5h21v15h-21z" />
-    <path class="icon-fill-soft" d="M8.5 10.5h15v9h-15z" />
-    <path d="M10 22.5l-2 4.5M22 22.5l2 4.5M11 17h10M12 20h8" />
-    <circle cx="13" cy="14" r="1.8" />
-    <circle cx="19" cy="14" r="1.8" />
-    <path class="icon-accent" d="M14 5h4M16 3v4" />
-  `,
-  endfieldTerminal: `
-    <rect class="icon-fill" x="5.5" y="6.5" width="21" height="19" rx="4" />
-    <path d="M9 11h14M9 15h8M9 19h11" />
-    <path class="icon-accent" d="M20 21.5h4M22 19.5v4" />
-  `,
-  reader: `
-    <path class="icon-fill" d="M5.5 7.5h8.5c1 0 2 1 2 2v17c0-1-1-2-2-2H5.5z" />
-    <path class="icon-fill-soft" d="M26.5 7.5H18c-1 0-2 1-2 2v17c0-1 1-2 2-2h8.5z" />
-    <path d="M9 13h4M9 18h4M19 13h4M19 18h4" />
-  `,
-  timeMachine: `
-    <rect class="icon-fill" x="4.5" y="7" width="23" height="20" rx="4" />
-    <path d="M5 12h22M9 9.5h.1M13 9.5h.1" />
-    <circle class="icon-fill-soft" cx="17" cy="19" r="6" />
-    <path class="icon-accent" d="M17 15v4l3 2M9 19l-3 3 3 3" />
-  `,
-  docMap: `
-    <rect class="icon-fill" x="4.5" y="5.5" width="13" height="21" rx="2" />
-    <path d="M8 11h6M8 15h4" />
-    <path class="icon-accent" d="M17.5 16h4.5M22 9.5v13M22 9.5h3M22 16h3M22 22.5h3" />
-    <rect class="icon-fill-soft" x="25" y="7.5" width="4.5" height="4.5" rx="1.5" />
-    <rect class="icon-fill-soft" x="25" y="13.75" width="4.5" height="4.5" rx="1.5" />
-    <rect class="icon-fill-soft" x="25" y="20.25" width="4.5" height="4.5" rx="1.5" />
-  `,
-  clioStage: `
-    <rect class="icon-fill" x="5.5" y="7" width="21" height="14" rx="3" />
-    <path d="M10 12h12M10 16.5h8M16 21v6M11 27h10" />
-    <path class="icon-accent" d="M23 12l3 2.5-3 2.5" />
-  `,
-  clioChart: `
-    <rect class="icon-fill" x="3.5" y="4.5" width="25" height="23" rx="4" />
-    <path d="M10 8v16" />
-    <path class="icon-fill-soft" d="M10 9.5h14v4H10zM10 20.5h7v4H10z" />
-    <path class="icon-accent" d="M10 15h11v4H10z" />
-  `,
-  liquidCover: `
-    <rect class="icon-fill" x="4.5" y="6" width="23" height="20" rx="3" />
-    <path class="icon-fill-soft" d="M9 21a5 5 0 0 1 10 0z" />
-    <path class="icon-accent" d="M21 9l1.3 2.7 2.7 1.3-2.7 1.3L21 17l-1.3-2.7-2.7-1.3 2.7-1.3z" />
-  `,
-  cmfStudio: `
-    <rect class="icon-fill" x="9" y="5.5" width="14" height="21" rx="3" />
-    <path d="M12 9h8M12 23h8" />
-    <path class="icon-fill-soft" d="M6 10h3v3H6zM6 17h3v3H6zM23 13h3v5h-3z" />
-    <circle class="icon-accent" cx="14" cy="13" r="2" />
-    <circle class="icon-accent" cx="18" cy="18" r="2" />
-  `,
-  soundscape: `
-    <rect class="icon-fill" x="5" y="6" width="22" height="20" rx="3" />
-    <path class="icon-fill-soft" d="M8 23h16v2H8z" />
-    <path d="M8 16h3l2-6 3 12 3-10 2 7h3" />
-    <path class="icon-accent" d="M8 24c3-3 5-3 8 0s5 3 8 0" />
-  `,
-  scrapbook: `
-    <path class="icon-fill" d="M8 5.5h17.5v21H8z" />
-    <path class="icon-fill-soft" d="M5.5 8.5h4v18h-4z" />
-    <path d="M12 11h9M12 16h7M12 21h9" />
-  `,
-  applications: `
-    <rect class="icon-fill" x="6" y="6" width="20" height="20" rx="4" />
-    <path d="M16 6v20M6 16h20" />
-    <circle class="icon-fill-soft" cx="11" cy="11" r="1.8" />
-    <circle class="icon-fill-soft" cx="21" cy="11" r="1.8" />
-    <circle class="icon-fill-soft" cx="11" cy="21" r="1.8" />
-    <circle class="icon-fill-soft" cx="21" cy="21" r="1.8" />
-  `,
-  systemFile: `
-    <rect class="icon-fill" x="5.5" y="10" width="21" height="16.5" rx="3" />
-    <path d="M11 10V6.5h10V10M10 14h12v9H10zM13 18h6" />
-    <path class="icon-accent" d="M15 23h2v3.5h-2z" />
-  `,
-  finderApp: `
-    <rect class="icon-fill" x="7" y="5.5" width="18" height="20.5" rx="4" />
-    <rect class="icon-fill-soft" x="10" y="9" width="12" height="11" rx="2" />
-    <path d="M13 13h.1M19 13h.1M13 17c2 2 4 2 6 0M12 23h8" />
-  `,
-  multiFinderApp: `
-    <rect class="icon-fill-soft" x="4.5" y="6" width="16.5" height="15" rx="3" />
-    <rect class="icon-fill" x="9" y="11" width="19" height="16" rx="3" />
-    <path d="M5 10h16M9 15h19M13 19h11M13 23h7" />
-    <path class="icon-accent" d="M12 13h.1M16 13h.1" />
-  `,
-  daHandler: `
-    <rect class="icon-fill" x="7" y="9" width="18" height="18" rx="3" />
-    <path d="M11 9V6.5h10V9M11 14v8h3c3 0 3-8 0-8zM18 22l3-8 3 8M19 19h4" />
-    <path class="icon-accent" d="M9 25h14" />
-  `,
-  systemFolder: `
-    <path class="icon-fill" d="M4.5 11h23v15.5a2 2 0 0 1-2 2h-19a2 2 0 0 1-2-2z" />
-    <path class="icon-fill-soft" d="M7 7.5h8l3 3.5H7z" />
-    <path class="icon-accent" d="M11 17h2M19 17h2M12 21c3 2 5 2 8 0" />
-  `,
-  helpFolder: `
-    <path class="icon-fill" d="M4.5 11h23v15.5a2 2 0 0 1-2 2h-19a2 2 0 0 1-2-2z" />
-    <path class="icon-fill-soft" d="M7 7.5h8l3 3.5H7z" />
-    <path class="icon-accent" d="M13 16c1-2 6-2 6 1 0 2.5-3 2.5-3 4.5M16 24h.1" />
-  `,
-  writingStudio: `
-    <rect class="icon-fill-soft" x="9" y="4.5" width="14" height="10" rx="2" />
-    <rect class="icon-fill" x="5" y="13" width="22" height="12" rx="3" />
-    <path d="M12 8h8M12 11h8" />
-    <path d="M9 17h3M15 17h3M21 17h2M9 21h3M15 21h3M21 21h2" />
-    <path class="icon-accent" d="M4 24h24v4H4z" />
-  `,
-  folder: `
-    <path class="icon-fill" d="M4.5 11h23v15.5a2 2 0 0 1-2 2h-19a2 2 0 0 1-2-2z" />
-    <path class="icon-fill-soft" d="M7 7.5h8l3 3.5H7z" />
-  `,
-  documents: `
-    <path class="icon-fill" d="M5.5 11h21v15.5a2 2 0 0 1-2 2h-17a2 2 0 0 1-2-2z" />
-    <path class="icon-fill-soft" d="M8.5 7.5H15l3 3.5H8.5z" />
-    <path d="M12 16h9M12 21h7" />
-  `,
-  importUtility: `
-    <path class="icon-fill" d="M5.5 11h21v15H5.5z" />
-    <path class="icon-accent" d="M12 5.5h8v9h4L16 22l-8-7.5h4z" />
-  `,
-  trash: `
-    <path class="icon-fill" d="M8.5 10.5h15l-1 16.5h-13z" />
-    <path d="M6.5 10.5h19M12 7h8M14 7V5h4v2M13 14v9M16 14v9M19 14v9" />
-  `,
-  trashFull: `
-    <path class="icon-fill" d="M8.5 11h15l-1 16h-13z" />
-    <path class="icon-fill-soft" d="M9 10l3-4 4 2 4-3 4 5z" />
-    <path d="M6.5 11h19M12 7h8M14 7V5h4v2M13 15v8M16 15v8M19 15v8" />
-  `,
-  controlPanel: `
-    <path d="M6 9h20M6 16h20M6 23h20" />
-    <rect class="icon-fill" x="9" y="6" width="5.5" height="6" rx="2" />
-    <rect class="icon-fill-soft" x="18" y="13" width="5.5" height="6" rx="2" />
-    <rect class="icon-fill" x="12.5" y="20" width="5.5" height="6" rx="2" />
-  `,
-  chooser: `
-    <rect class="icon-fill" x="5.5" y="7" width="21" height="18" rx="3" />
-    <path d="M10 12h12M10 17h12M10 22h12" />
-    <path class="icon-accent" d="M13 9v16M19 9v16" />
-  `,
-  systemHelp: `
-    <rect class="icon-fill" x="8" y="5.5" width="16" height="21" rx="3" />
-    <path d="M13 13c.6-1.6 2-2.4 3.8-2.2 1.7.2 2.8 1.2 2.8 2.6 0 2.7-4 2.8-4 5.2M15.8 22.5h.1" />
-  `,
-  dictionary: `
-    <rect class="icon-fill" x="7.5" y="5.5" width="17" height="21" rx="3" />
-    <path d="M11 6v20M14 11h7M14 16h6M14 21h7" />
-  `,
-  assistant: `
-    <path class="icon-accent" d="M4.5 5.5h12v8.5H9.5l-4 3.5 1.5-3.5H4.5z" />
-    <path class="icon-fill" d="M13.5 17.5h15v10h-5l3 3-7-3h-6z" stroke-dasharray="3 2" />
-  `,
-  teachText: `
-    <rect class="icon-fill" x="8" y="5.5" width="16" height="21" rx="3" />
-    <path d="M12 10h8M12 15h8M12 20h6M16 9v15" />
-  `,
-  quickDraft: `
-    <rect class="icon-fill" x="8" y="5.5" width="16" height="21" rx="3" />
-    <path d="M12 10.5h8M12 15h6" />
-    <path class="icon-accent" d="M20 11L13 19h5L16 26l7-8h-5l2-7z" />
-  `,
-  writingDemo: `
-    <rect class="icon-fill" x="8" y="5.5" width="16" height="21" rx="3" />
-    <path d="M12 10h8M12 13.5h6" />
-    <path class="classic-ink" d="M13 16l7.5 4.5-7.5 4.5z" />
-  `,
-  document: `
-    <path class="icon-fill" d="M8 5h13.5L26 9.5V27H8z" />
-    <path d="M21.5 5v5h4.5M12 14h10M12 19h10M12 24h7" />
-  `,
-  chatFile: `
-    <path class="icon-fill" d="M6 8h20v13H14l-6.5 5 2.5-5H6z" />
-    <path d="M10 13h12M10 17h8" />
-  `,
-  chatImport: `
-    <path class="icon-fill" d="M6 8h17v12H12l-5 5 2-5H6z" />
-    <path d="M10 12.5h9M10 16.5h6" />
-    <rect class="icon-fill-soft" x="20" y="18" width="7" height="9" rx="1.5" />
-    <path d="M22 21h3M22 24h3" />
-  `,
-  scrap: `
-    <rect class="icon-fill" x="9" y="7" width="16" height="20" rx="3" />
-    <path d="M6 11h3M6 16h3M6 21h3M13 12h8M13 17h7M13 22h8" />
-  `,
-  alias: `
-    <rect class="icon-fill" x="6" y="4" width="16" height="24" rx="2.5" />
-    <path d="M10 9h8M10 14h8M10 19h6" />
-    <path class="icon-accent" d="M24 10l5 6-5 6" />
-  `,
-  systemStatus: `
-    <rect class="icon-fill" x="6" y="7" width="20" height="18" rx="3" />
-    <path class="icon-accent" d="M10 20l4-6 4 4.5 4-8.5" />
-    <path d="M10 28h12" />
-  `,
-  contextPanel: `
-    <rect class="icon-fill" x="6" y="6" width="20" height="20" rx="4" />
-    <path d="M10 11h12M10 16h8M10 21h10M23 9v14" />
-  `,
-  rebuildArticle: `
-    <rect class="icon-fill" x="8" y="5.5" width="16" height="21" rx="3" />
-    <path d="M12 11h8M12 16h6M12 21h8" />
-    <path class="icon-accent" d="M24 11l4 4-4 4M8 21l-4-4 4-4" />
-  `,
-  writingBell: `
-    <path class="classic-ink" d="M14 7h3v1h-3zM13 8h1v1h-1zM17 8h1v1h-1zM12 9h1v1h-1zM18 9h1v1h-1zM12 10h7v1h-7zM11 11h2v1h-2zM18 11h2v1h-2zM10 12h2v1h-2zM15 12h1v1h-1zM19 12h2v1h-2zM10 13h1v1h-1zM15 13h1v1h-1zM20 13h1v1h-1zM9 14h1v1h-1zM15 14h1v1h-1zM21 14h1v1h-1zM9 15h1v1h-1zM15 15h1v1h-1zM21 15h1v1h-1zM9 16h1v1h-1zM15 16h1v1h-1zM21 16h1v1h-1zM9 17h1v1h-1zM16 17h1v1h-1zM21 17h1v1h-1zM9 18h1v1h-1zM17 18h1v1h-1zM21 18h1v1h-1zM10 19h1v1h-1zM20 19h1v1h-1zM10 20h2v1h-2zM19 20h2v1h-2zM11 21h2v1h-2zM18 21h3v1h-3zM10 22h2v1h-2zM13 22h5v1h-5zM20 22h2v1h-2zM9 23h2v1h-2zM21 23h2v1h-2z" />
-  `,
-};
-
 const classicPlusSystemIconPaths = {
   ...nativeSystem6FinderIconPaths,
   /* Custom route/application objects use one Classic drawing grammar:
@@ -859,9 +578,31 @@ const classicPlusSystemIconPaths = {
   `,
 };
 
+const classicOnlyModernFallbackIconId = {
+  imagePromptStudio: "liquidCover",
+  micropolis: "applications",
+  openttd: "applications",
+  doom: "applications",
+};
+
+// Opt-in "line-art everywhere": when enabled, every non-Classic appearance
+// reuses the Classic one-bit SVG family instead of its own era painter. The
+// four new objects already do this unconditionally; this flag extends the
+// behavior to the whole semantic vocabulary so a user can read the desk in a
+// consistent 1-bit glyph language across appearances.
+let classicLineArtEverywhereEnabled = false;
+
+function setClassicLineArtEverywhere(enabled) {
+  classicLineArtEverywhereEnabled = Boolean(enabled);
+}
+
+function classicLineArtEverywhere() {
+  return classicLineArtEverywhereEnabled;
+}
+
 function normalizeSystemIconId(iconId) {
   const raw = String(iconId || "").trim();
-  return systemIconPaths[raw] ? raw : "document";
+  return systemIconPaths[raw] || classicOnlyModernFallbackIconId[raw] ? raw : "document";
 }
 
 // Complete 56-object vocabulary. Kept as one split string because this module
@@ -872,7 +613,7 @@ const completeEraSystemIconIds = new Set(("startupDisk hardDisk folder document 
   + "cmfStudio soundscape scrapbook systemFolder helpFolder importUtility controlPanel chooser systemHelp dictionary "
   + "teachText writingDemo chatFile chatImport systemStatus contextPanel rebuildArticle bureaucracyMeme "
   + "endfieldTerminal documents alias systemFile multiFinderApp daHandler writingBell trashFull control localModel "
-  + "controlStrip").split(" "));
+  + "controlStrip imagePromptStudio micropolis openttd doom").split(" "));
 
 const platinumCoreSystemIconIds = new Set([
   "startupDisk", "hardDisk", "folder", "document", "applications", "trash", "finderApp", "fileFloppy",
@@ -894,6 +635,24 @@ function systemIconAssetUrl(path) {
   return build ? `${path}?v=${encodeURIComponent(build)}` : path;
 }
 
+function classicOnlyModernIconArt(iconId) {
+  if (!classicOnlyModernFallbackIconId[iconId]) return "";
+  const stem = systemIconEscape(iconId);
+  const art = systemIconAssetUrl(`assets/themes/classic/icons/${stem}-32.svg`);
+  return `<image class="sys-icon-era-raster" href="${art}" x="0" y="0" width="32" height="32" preserveAspectRatio="xMidYMid meet" />`;
+}
+
+// Reusable Classic line-art image for the "line-art everywhere" preference.
+// Unlike classicOnlyModernIconArt it covers the full semantic vocabulary, but
+// it still skips transport glyphs and other non-family ids that own no
+// classic SVG file.
+function classicLineArtImage(iconId) {
+  if (!completeEraSystemIconIds.has(iconId)) return "";
+  const stem = systemIconEscape(iconId);
+  const art = systemIconAssetUrl(`assets/themes/classic/icons/${stem}-32.svg`);
+  return `<image class="sys-icon-era-raster" href="${art}" x="0" y="0" width="32" height="32" preserveAspectRatio="xMidYMid meet" />`;
+}
+
 function classicSystemIconArt(iconId, sourceSize) {
   if (!completeEraSystemIconIds.has(iconId)) return "";
   const stem = systemIconEscape(iconId);
@@ -903,6 +662,12 @@ function classicSystemIconArt(iconId, sourceSize) {
 }
 
 function platinumCoreSystemIconArt(iconId, sourceSize) {
+  if (classicLineArtEverywhere()) {
+    const lineArt = classicLineArtImage(iconId);
+    if (lineArt) return lineArt;
+  }
+  const classicOnlyArt = classicOnlyModernIconArt(iconId);
+  if (classicOnlyArt) return classicOnlyArt;
   if (!completeEraSystemIconIds.has(iconId) && !platinumCoreSystemIconIds.has(iconId)) return "";
   const fallbackStem = iconId === "startupDisk" ? "startup-disk"
     : iconId === "finderApp" ? "finder-app"
@@ -920,6 +685,12 @@ function completeEraRasterSystemIconArt(era, iconId, sourceSize) {
   // 56-object application family. Keep them present in every modern theme
   // group so the theme CSS can select one group without blanking playback.
   if (transportIconPaths[iconId]) return transportIconPaths[iconId];
+  if (classicLineArtEverywhere()) {
+    const lineArt = classicLineArtImage(iconId);
+    if (lineArt) return lineArt;
+  }
+  const classicOnlyArt = classicOnlyModernIconArt(iconId);
+  if (classicOnlyArt) return classicOnlyArt;
   if (!completeEraSystemIconIds.has(iconId)) return "";
   const stem = systemIconEscape(iconId);
   const suffix = era === "liquid-glass" ? "-default" : "";
@@ -929,6 +700,12 @@ function completeEraRasterSystemIconArt(era, iconId, sourceSize) {
 
 function liquidGlassSystemIconArt(iconId, sourceSize = 32) {
   if (transportIconPaths[iconId]) return transportIconPaths[iconId];
+  if (classicLineArtEverywhere()) {
+    const lineArt = classicLineArtImage(iconId);
+    if (lineArt) return lineArt;
+  }
+  const classicOnlyArt = classicOnlyModernIconArt(iconId);
+  if (classicOnlyArt) return classicOnlyArt;
   // `scrap` is a retired pre-Theme-Lab id kept for old saved workspaces. The
   // current 56-object contract calls the same object `scrapbook`.
   const assetId = iconId === "scrap" ? "scrapbook" : iconId;

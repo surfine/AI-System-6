@@ -1008,15 +1008,18 @@ function onlineClaimVerdictFromEnum(conclusion) {
  * @returns {Promise<{ answer: string, citations: Array<{ url: string, title: string }> }>}
  */
 async function fetchOnlineClaimVerdict(claim, signal) {
-  const response = await fetch("/api/search/answer", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      q: claim,
-      mode: "claim",
-      ...cloudCredentialTransportFields(),
-    }),
-    signal,
+  const response = await window.AISystem6Capabilities.requestService("search.remote", {
+    path: "/api/search/answer",
+    init: {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        q: claim,
+        mode: "claim",
+        ...cloudCredentialTransportFields(),
+      }),
+      signal,
+    },
   });
   if (!response.ok) throw new Error(await response.text());
   return response.json();

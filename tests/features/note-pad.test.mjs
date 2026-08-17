@@ -35,8 +35,9 @@ test.assertIncludes(indexHtml, 'data-action="note-pad-send"', "sending the slip 
 test.assertNotIncludes(indexHtml, 'id="note-pad-send-teachtext"', "the three competing Send buttons are gone; one destination answers for them");
 test.assertNotIncludes(indexHtml, 'data-i18n="note_pad_hint"', "the three-line hint is replaced by the destination the writer can see");
 
-["hold-that-thought", "note-pad-new-slip", "note-pad-send", "note-pad-back", "note-pad-cycle-destination"].forEach((action) => {
-  test.assertMatches(actions, new RegExp(`^\\s{4}"${action}":`, "m"), `${action} reaches a handler`);
+test.assertMatches(actions, /^\s{4}"hold-that-thought":/m, "hold-that-thought reaches a global handler");
+["note-pad-new-slip", "note-pad-send", "note-pad-back", "note-pad-cycle-destination"].forEach((action) => {
+  test.assertIncludes(accessories, `["${action}"`, `${action} reaches a runtime handler`);
 });
 test.assertIncludes(
   actions,

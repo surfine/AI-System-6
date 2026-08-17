@@ -383,6 +383,108 @@ window.AISystem6QuickDraft = Object.freeze({
   getContextSnapshot: () => quickDraftContextSnapshot(activeProjectQuickDraft({ create: false })?.record || {}),
 });
 
+const QUICK_DRAFT_COMMAND_NAMES = [
+  "quick-draft-open-writing-studio",
+  "quick-draft-import-chat",
+  "quick-draft-vent-on",
+  "quick-draft-vent-off",
+  "quick-draft-vent-summary",
+  "quick-draft-compose",
+  "quick-draft-apply",
+  "quick-draft-develop",
+  "quick-draft-view-body",
+  "quick-draft-view-grain",
+  "quick-draft-view-read",
+  "quick-draft-toggle-materials",
+  "quick-draft-toggle-adjustments",
+  "quick-draft-toggle-sideask",
+  "quick-draft-talk-points",
+  "quick-draft-mingming",
+  "quick-draft-luoluo",
+  "quick-draft-hkrr",
+  "quick-draft-praise",
+  "quick-draft-save-project",
+  "quick-draft-copy-markdown",
+  "quick-draft-send-teachtext",
+  "quick-draft-send-review",
+];
+
+function quickDraftCommandAvailable(action) {
+  if (action === "open-quick-draft") return true;
+  const activeWindow = /** @type {HTMLElement | null} */ (document.querySelector(".window.is-active"));
+  if (activeWindow?.dataset.window !== "quickDraft") return false;
+  const quickDraft = window.AISystem6QuickDraft;
+  if (!quickDraft) return false;
+  if (action === "quick-draft-vent-on") return !quickDraft.isVentIntakeActive?.();
+  if (action === "quick-draft-vent-off") return !!quickDraft.isVentIntakeActive?.();
+  if (action === "quick-draft-vent-summary") return !!quickDraft.modelAvailable?.() && !!quickDraft.hasOrganizableMaterial?.();
+  if (action === "quick-draft-compose") return !!quickDraft.modelAvailable?.() && !!quickDraft.hasInput?.();
+  if (action === "quick-draft-apply") return !!quickDraft.canPreviewAdjustments?.();
+  if (action === "quick-draft-develop") return !!quickDraft.hasBody?.() && !!quickDraft.canDevelop?.();
+  if (["quick-draft-view-grain", "quick-draft-view-read"].includes(action)) return !!quickDraft.hasBody?.();
+  if (action === "quick-draft-view-body") return true;
+  if (["quick-draft-toggle-materials", "quick-draft-toggle-adjustments"].includes(action)) return !!quickDraft.hasBody?.();
+  if (action === "quick-draft-toggle-sideask") return !(typeof isMultiFinderMode === "function" && isMultiFinderMode());
+  if (action === "quick-draft-talk-points") return !!quickDraft.modelAvailable?.() && !!quickDraft.hasInput?.();
+  if (["quick-draft-mingming", "quick-draft-luoluo", "quick-draft-hkrr", "quick-draft-praise"].includes(action)) {
+    return !!quickDraft.modelAvailable?.() && !!quickDraft.hasBody?.();
+  }
+  if (["quick-draft-save-project", "quick-draft-copy-markdown", "quick-draft-send-teachtext", "quick-draft-send-review"].includes(action)) {
+    return !!quickDraft.hasBody?.();
+  }
+  return true;
+}
+
+function runQuickDraftRuntimeCommand(action) {
+  if (action === "open-quick-draft") return window.AISystem6QuickDraft.open();
+  if (action === "quick-draft-open-writing-studio") {
+    return (async () => {
+      const saved = await window.AISystem6QuickDraftRuntime?.flushPendingQuickDraftCommit?.();
+      if (saved === false) {
+        window.AISystem6QuickDraftRuntime?.setQuickDraftStatus?.(t("quick_draft_save_failed"));
+        return false;
+      }
+      await openWritingStudio();
+      return true;
+    })();
+  }
+  if (action === "quick-draft-import-chat") return window.AISystem6QuickDraft.importChatScreenshots?.();
+  if (action === "quick-draft-toggle-sideask") return toggleQuickDraftSideAsk();
+
+  const command = action.slice("quick-draft-".length);
+  const quickDraft = window.AISystem6QuickDraft;
+  if (!quickDraft) return;
+  if (command === "vent-on") return quickDraft.setVentMode?.(true);
+  if (command === "vent-off") return quickDraft.setVentMode?.(false);
+  if (command === "vent-summary") return quickDraft.collectVentOutline?.();
+  if (command === "compose") return quickDraft.startWritingNow?.();
+  if (command === "apply") return quickDraft.applyAdjustments?.();
+  if (command === "develop") return quickDraft.develop?.();
+  if (command === "view-body") return quickDraft.setDisplayMode?.("body");
+  if (command === "view-grain") return quickDraft.setDisplayMode?.("grain");
+  if (command === "view-read") return quickDraft.setDisplayMode?.("read");
+  if (command === "toggle-materials") return quickDraft.togglePanel?.("shelf");
+  if (command === "toggle-adjustments") return quickDraft.togglePanel?.("inspector");
+  if (command === "save-project") return quickDraft.saveQuickDraftAsProjectDocument?.();
+  if (command === "copy-markdown") return quickDraft.copyMarkdown?.();
+  if (command === "send-teachtext") return quickDraft.transferQuickDraftToTeachText?.();
+  if (command === "send-review") return quickDraft.sendQuickDraftToReviewDesk?.();
+  return quickDraft.runClioTalkAction?.(command === "talk-points" ? "organize" : command);
+}
+
+window.AISystem6Runtime?.registerApplication({
+  id: "quickDraft",
+  windowName: "quickDraft",
+  mount: () => window.AISystem6QuickDraft.open(),
+  restore: () => window.AISystem6QuickDraft.render?.(),
+  commands: Object.fromEntries(
+    ["open-quick-draft", ...QUICK_DRAFT_COMMAND_NAMES].map((action) => [action, {
+      handler: () => runQuickDraftRuntimeCommand(action),
+      isAvailable: () => quickDraftCommandAvailable(action),
+    }])
+  ),
+});
+
 window.AISystem6QuickDraftHandoff = Object.freeze({
   commitQuickDraftProjectDocument,
   saveQuickDraftAsProjectDocument,

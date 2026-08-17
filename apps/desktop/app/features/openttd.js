@@ -178,4 +178,5 @@ window.AISystem6OpenTTDLoaded = true;
     refreshLanguage: refreshOpenTTDLanguage,
     isRunning: () => !!openttdState.frame,
   };
+  window.AISystem6Runtime?.registerApplication({id:"openttd",windowName:"openttd",mount:attachOpenTTD,restore:attachOpenTTD,commands:{"open-openttd":{handler:()=>openWindow("openttd"),isAvailable:()=>!0}}});
 })();

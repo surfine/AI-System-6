@@ -10,7 +10,8 @@ const manifest = read("tooling/runtime-manifest.mjs");
 
 test.assertIncludes(manifest, '"app/features/slides-export.js"', "ClioStage loads lazily");
 test.assertIncludes(manifest, '"app/features/clio-stage.js"', "ClioStage is a lazy module");
-test.assertIncludes(actions, '"open-clio-stage": openClioStageApp', "opening ClioStage is a command");
+test.assertIncludes(read("app/features/clio-stage.js"), '"open-clio-stage"', "opening ClioStage is a command");
+test.assertIncludes(read("app/features/clio-stage.js"), "CLIO_STAGE_COMMAND_NAMES", "ClioStage menu commands are registered with the application");
 test.assertIncludes(actions, "generateMarpAndOpenClioStageFromMenu", "ClioStage consumes Markdown");
 test.assertIncludes(html, 'data-window="clioStage"', "ClioStage has a window surface");
 test.assertIncludes(html, 'id="clio-stage-import-files"', "ClioStage exposes an import control");
