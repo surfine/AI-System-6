@@ -19,13 +19,28 @@ One route from your raw questions to a finished piece. No framework. No database
 
 <a href="https://system6.aaronlau.me"><picture>
   <source media="(prefers-color-scheme: dark)" srcset="site/img/frames/liquid-glass.webp">
-  <img src="site/img/frames/classic.png" width="100%" alt="The AI System 6 desktop, captured from the real app: Searcher, ClioTalk, Scrapbook, TeachText, and Review Desk around one manuscript. Light mode shows the 1988 System 6 appearance; dark mode shows 2026 Liquid Glass.">
+  <img src="site/img/frames/classic.webp" width="100%" alt="The AI System 6 desktop, captured from the real app: Searcher, ClioTalk, Scrapbook, TeachText, and Review Desk around one manuscript. Light mode shows the 1988 System 6 appearance; dark mode shows 2026 Liquid Glass.">
 </picture></a>
 
 <sub>YOUR GITHUB THEME JUST PICKED AN ERA: LIGHT IS 1988, DARK IS 2026.<br>
 THERE ARE FOUR MORE INSIDE. NO MODEL REQUIRED TO LOOK AROUND.</sub>
 
 </div>
+
+## Contents
+
+- [What this protects](#what-this-protects)
+- [Run it in 60 seconds](#run-it-in-60-seconds)
+- [The route is the product](#the-route-is-the-product)
+- [Chat is an app. Not the whole computer.](#chat-is-an-app-not-the-whole-computer)
+- [Software a 1988 desktop should not be able to run](#software-a-1988-desktop-should-not-be-able-to-run)
+- [It also runs DOOM](#it-also-runs-doom)
+- [One desk. Six systems.](#one-desk-six-systems)
+- [Built under a 1988 constraint](#built-under-a-1988-constraint)
+- [Bring your own model](#bring-your-own-model)
+- [How this repository keeps itself honest](#how-this-repository-keeps-itself-honest)
+- [How the repository is laid out](#how-the-repository-is-laid-out)
+- [Contributing](#contributing)
 
 ## What this protects
 
@@ -51,6 +66,30 @@ prose if you let it hold the pen. So here it does not hold the pen.
 The Macintosh System 6 desktop is a **constraint, not the pitch**. Visible
 objects, deliberate saving, one writing task at a time. It is there because it
 makes every one of the promises above checkable by looking at the screen.
+
+## Run it in 60 seconds
+
+Requires Node.js 24+. No API key, no account, no model.
+
+```bash
+git clone https://github.com/surfine/AI-System-6.git
+cd AI-System-6
+npm ci
+npm start          # http://localhost:4173
+```
+
+The desktop boots with every non-AI tool working. Connect LM Studio, Ollama,
+DeepSeek, or any OpenAI-compatible endpoint later, from the Control Panel.
+
+```bash
+npm run build            # deterministic desktop bundle
+npm test                 # executable product contracts
+npm run verify:public    # repository, command, asset, and docs gate
+```
+
+Or skip the clone and [**boot the live system**](https://system6.aaronlau.me)
+in your browser. The [Mac beta](https://github.com/surfine/AI-System-6/releases/latest)
+carries its own current Node runtime, so there is nothing to install at all.
 
 ## The route is the product
 
@@ -94,30 +133,6 @@ TeachText, the Scrapbook or ClioTalk, a **Dictionary**, and a **Writing Bell**
 for one quiet interval. **Image Prompt Studio** turns a short idea into
 ready-to-paste GPT-Image and universal prompts; it writes the prompt, never the
 picture.
-
-## Run it in 60 seconds
-
-Requires Node.js 24+. No API key, no account, no model.
-
-```bash
-git clone https://github.com/surfine/AI-System-6.git
-cd AI-System-6
-npm ci
-npm start          # http://localhost:4173
-```
-
-The desktop boots with every non-AI tool working. Connect LM Studio, Ollama,
-DeepSeek, or any OpenAI-compatible endpoint later, from the Control Panel.
-
-```bash
-npm run build            # deterministic desktop bundle
-npm test                 # executable product contracts
-npm run verify:public    # repository, command, asset, and docs gate
-```
-
-Or skip the clone and [**boot the live system**](https://system6.aaronlau.me)
-in your browser. The [Mac beta](https://github.com/surfine/AI-System-6/releases/latest)
-carries its own current Node runtime, so there is nothing to install at all.
 
 ## Chat is an app. Not the whole computer.
 
@@ -203,8 +218,8 @@ them.
 
 <table>
   <tr>
-    <td width="33%" align="center"><img src="site/img/frames/classic.png" alt="System 6 appearance"><br><code>1988 / SYSTEM 6</code></td>
-    <td width="33%" align="center"><img src="site/img/frames/platinum.png" alt="Platinum appearance"><br><code>1999 / PLATINUM</code></td>
+    <td width="33%" align="center"><img src="site/img/frames/classic.webp" alt="System 6 appearance"><br><code>1988 / SYSTEM 6</code></td>
+    <td width="33%" align="center"><img src="site/img/frames/platinum.webp" alt="Platinum appearance"><br><code>1999 / PLATINUM</code></td>
     <td width="33%" align="center"><img src="site/img/frames/aqua.webp" alt="Aqua appearance"><br><code>2002 / AQUA</code></td>
   </tr>
   <tr>
@@ -299,10 +314,14 @@ and the [Design Contract](docs/design/DESIGN.md).
 
 ## Contributing
 
-MIT licensed. Start with [CONTRIBUTING.md](CONTRIBUTING.md), open an issue with
-a reproducible product contract, or report security problems through
-[SECURITY.md](SECURITY.md). Every advertised command must work from a fresh
-clone; the public repository is an independently verifiable source snapshot.
+Start with [CONTRIBUTING.md](CONTRIBUTING.md), open an issue with a reproducible
+product contract, or report security problems through [SECURITY.md](SECURITY.md).
+Every advertised command must work from a fresh clone; the public repository is
+an independently verifiable source snapshot.
+
+## License
+
+[MIT](LICENSE). Independent project — not affiliated with or endorsed by Apple Inc.
 
 <div align="center">
 
@@ -310,12 +329,8 @@ clone; the public repository is an independently verifiable source snapshot.
 
 <sub>ONE DISK. SIX ERAS. SAME WORK.</sub>
 
-### If AI writing tools should leave your voice alone,
-
-# [★ STAR AI SYSTEM 6](https://github.com/surfine/AI-System-6)
+If AI writing tools should leave your voice alone, **[★ star AI System 6](https://github.com/surfine/AI-System-6)**.
 
 [**LIVE DESKTOP**](https://system6.aaronlau.me)&nbsp;&nbsp;·&nbsp;&nbsp;[**BILIBILI FILM**](https://www.bilibili.com/video/BV1ht3m6UEDb/)&nbsp;&nbsp;·&nbsp;&nbsp;[**PRODUCT SITE**](https://aisystem6.pages.dev)&nbsp;&nbsp;·&nbsp;&nbsp;[**LATEST RELEASE**](https://github.com/surfine/AI-System-6/releases/latest)
-
-<sub>Independent project. Not affiliated with or endorsed by Apple Inc.</sub>
 
 </div>

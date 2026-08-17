@@ -1,5 +1,5 @@
 <!-- canonical-source: README.md -->
-<!-- source-sha256: d786ea27d59bca1a0c041884efd8ddec3af6908e661fa41d40e9e22fc1649e34 -->
+<!-- source-sha256: ba011e1f8726a42037059993527f632cbb2038209d5cc331d25238b290c5a7d9 -->
 
 > 英文版为准 / 仅供人类参考
 
@@ -24,13 +24,28 @@
 
 <a href="https://system6.aaronlau.me"><picture>
   <source media="(prefers-color-scheme: dark)" srcset="site/img/frames/liquid-glass.webp">
-  <img src="site/img/frames/classic.png" width="100%" alt="从真实应用中捕获的 AI System 6 桌面：Searcher、ClioTalk、Scrapbook、TeachText 和 Review Desk 围绕同一份手稿。浅色模式显示 1988 年的 System 6 外观；深色模式显示 2026 年的 Liquid Glass。">
+  <img src="site/img/frames/classic.webp" width="100%" alt="从真实应用中捕获的 AI System 6 桌面：Searcher、ClioTalk、Scrapbook、TeachText 和 Review Desk 围绕同一份手稿。浅色模式显示 1988 年的 System 6 外观；深色模式显示 2026 年的 Liquid Glass。">
 </picture></a>
 
 <sub>你的 GITHUB 主题刚刚替你选好了时代：浅色是 1988，深色是 2026。<br>
 里面还有四套。只是随便看看的话，不需要任何模型。</sub>
 
 </div>
+
+## 目录
+
+- [它保护的是什么](#它保护的是什么)
+- [60 秒跑起来](#60-秒跑起来)
+- [路线就是产品](#路线就是产品)
+- [聊天是一个应用，不是整台计算机](#聊天是一个应用不是整台计算机)
+- [一台 1988 年的桌面本不该跑得动的软件](#一台-1988-年的桌面本不该跑得动的软件)
+- [它还能跑 DOOM](#它还能跑-doom)
+- [一张桌子，六个系统](#一张桌子六个系统)
+- [在一个 1988 年的约束下建造](#在一个-1988-年的约束下建造)
+- [自带模型](#自带模型)
+- [这个仓库如何让自己保持诚实](#这个仓库如何让自己保持诚实)
+- [仓库是怎么摆的](#仓库是怎么摆的)
+- [参与贡献](#参与贡献)
 
 ## 它保护的是什么
 
@@ -50,6 +65,31 @@ AI System 6 建立在一个判断上：你的语言、你的来源、你的判�
 
 Macintosh System 6 桌面是**约束，不是卖点**。看得见的对象、要动手才会保存、一次只做
 一件写作的事。它在这里，是因为它让上面每一条承诺都能靠看屏幕来核实。
+
+## 60 秒跑起来
+
+需要 Node.js 24+。不需要 API key，不需要账号，不需要模型。
+
+```bash
+git clone https://github.com/surfine/AI-System-6.git
+cd AI-System-6
+npm ci
+npm start          # http://localhost:4173
+```
+
+桌面启动后，所有不依赖 AI 的工具都能用。之后可以在控制面板里接上 LM Studio、Ollama、
+DeepSeek，或任何兼容 OpenAI 的端点。
+
+```bash
+npm run build            # 确定性的桌面 bundle
+npm test                 # 可执行的产品契约
+npm run verify:public    # 仓库、命令、资源与文档门禁
+```
+
+或者干脆不用克隆，直接在浏览器里
+[**启动线上系统**](https://system6.aaronlau.me)。
+[Mac 测试版](https://github.com/surfine/AI-System-6/releases/latest)
+自带当前的 Node 运行时，什么都不用装。
 
 ## 路线就是产品
 
@@ -89,31 +129,6 @@ Macintosh System 6 桌面是**约束，不是卖点**。看得见的对象、要
 **ClioTalk** 做对话，还有属于写作的桌面附件 —— 便签本（它的纸条可以送去 TeachText、
 Scrapbook 或 ClioTalk）、字典，以及给一个安静写作区间用的写作铃。**图片提示词工作室**
 把一句想法写成可直接粘贴的 GPT-Image 与通用提示词；它只写提示词，从不替你画图。
-
-## 60 秒跑起来
-
-需要 Node.js 24+。不需要 API key，不需要账号，不需要模型。
-
-```bash
-git clone https://github.com/surfine/AI-System-6.git
-cd AI-System-6
-npm ci
-npm start          # http://localhost:4173
-```
-
-桌面启动后，所有不依赖 AI 的工具都能用。之后可以在控制面板里接上 LM Studio、Ollama、
-DeepSeek，或任何兼容 OpenAI 的端点。
-
-```bash
-npm run build            # 确定性的桌面 bundle
-npm test                 # 可执行的产品契约
-npm run verify:public    # 仓库、命令、资源与文档门禁
-```
-
-或者干脆不用克隆，直接在浏览器里
-[**启动线上系统**](https://system6.aaronlau.me)。
-[Mac 测试版](https://github.com/surfine/AI-System-6/releases/latest)
-自带当前的 Node 运行时，什么都不用装。
 
 ## 聊天是一个应用。不是整台计算机。
 
@@ -194,8 +209,8 @@ flowchart LR
 
 <table>
   <tr>
-    <td width="33%" align="center"><img src="site/img/frames/classic.png" alt="System 6 外观"><br><code>1988 / SYSTEM 6</code></td>
-    <td width="33%" align="center"><img src="site/img/frames/platinum.png" alt="Platinum 外观"><br><code>1999 / PLATINUM</code></td>
+    <td width="33%" align="center"><img src="site/img/frames/classic.webp" alt="System 6 外观"><br><code>1988 / SYSTEM 6</code></td>
+    <td width="33%" align="center"><img src="site/img/frames/platinum.webp" alt="Platinum 外观"><br><code>1999 / PLATINUM</code></td>
     <td width="33%" align="center"><img src="site/img/frames/aqua.webp" alt="Aqua 外观"><br><code>2002 / AQUA</code></td>
   </tr>
   <tr>
@@ -284,9 +299,13 @@ AI-System-6/
 
 ## 参与贡献
 
-MIT 许可。从 [CONTRIBUTING.md](CONTRIBUTING.md) 开始，用一条可复现的产品契约开 issue，
+从 [CONTRIBUTING.md](CONTRIBUTING.md) 开始，用一条可复现的产品契约开 issue，
 或通过 [SECURITY.md](SECURITY.md) 报告安全问题。这里宣传的每一条命令都必须在全新克隆里
 能跑通；公开仓库是一份可独立验证的源码快照。
+
+## 许可证
+
+[MIT](LICENSE)。独立项目，与 Apple Inc. 无从属或背书关系。
 
 <div align="center">
 
@@ -294,12 +313,8 @@ MIT 许可。从 [CONTRIBUTING.md](CONTRIBUTING.md) 开始，用一条可复现�
 
 <sub>一块硬盘。六个时代。同一份工作。</sub>
 
-### 如果 AI 写作工具应该放过你的嗓音，
-
-# [★ 给 AI SYSTEM 6 加星](https://github.com/surfine/AI-System-6)
+如果 AI 写作工具应该放过你的嗓音，就 **[★ 给 AI System 6 加星](https://github.com/surfine/AI-System-6)**。
 
 [**线上桌面**](https://system6.aaronlau.me)&nbsp;&nbsp;·&nbsp;&nbsp;[**哔哩哔哩影片**](https://www.bilibili.com/video/BV1ht3m6UEDb/)&nbsp;&nbsp;·&nbsp;&nbsp;[**产品官网**](https://aisystem6.pages.dev)&nbsp;&nbsp;·&nbsp;&nbsp;[**最新版本**](https://github.com/surfine/AI-System-6/releases/latest)
-
-<sub>独立项目。与 Apple Inc. 无从属或背书关系。</sub>
 
 </div>

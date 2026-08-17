@@ -65,8 +65,8 @@
      Sans, which is what Aqua gets, so Linux would show two eras in one face. */
   --face-platinum: Charcoal, "Charcoal CY", "Platinum Asap", Geneva, "Noto Sans", Tahoma, Verdana, "Songti SC", STSong, SimSun, sans-serif;
   --face-aqua: "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", "DejaVu Sans", STHeiti, "Heiti SC", SimHei, sans-serif;
-  --face-snow-leopard: "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", "DejaVu Sans", STHeiti, "Heiti SC", "Hiragino Sans GB", SimHei, sans-serif;
-  --face-yosemite: "Helvetica Neue", Helvetica, Arial, "Liberation Sans", STHeiti, "Heiti SC", "Hiragino Sans GB", SimHei, sans-serif;
+  --face-snow-leopard: "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", "DejaVu Sans", STHeiti, "Heiti SC", SimHei, sans-serif;
+  --face-yosemite: "Helvetica Neue", Helvetica, Arial, "Liberation Sans", "Hiragino Sans GB", "Heiti SC", STHeiti, SimHei, sans-serif;
   --face-liquid-glass: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", Roboto, "Noto Sans", "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", sans-serif;
   --face-liquid-glass-title: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI Variable Display", "Segoe UI", Roboto, "Noto Sans", "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", sans-serif;
   --face-mono-monaco: Monaco, "Courier New", monospace;
@@ -190,7 +190,7 @@ details.menu[open] > summary {
   background: var(--ink);
   color: var(--paper);
 }
-.menu-dim { color: #909090; }
+.menu-dim { color: #6f6f6f; }
 .menu-dim kbd { font-family: var(--ui-font); }
 .menu-sep {
   height: 1px;
