@@ -42,12 +42,17 @@ Three numbers mean three different things and must never be conflated:
 Derived layers (`powered`, `roadOk`, `plantAt`, population, jobs, demand,
 capacity) are rebuilt on load and never saved.
 
+Phase 7 view state (camera, day/night lighting, and decorative traffic
+positions) is derived from `tick` or owned by the shell and is likewise never
+serialized; a reloaded city replays the same simulation regardless of how it
+was last viewed.
+
 ## Migration policy
 
-The future load path is a pure chain:
+The load path is a pure chain (implemented in Phase 2):
 
 ```text
-parse → size/limit validation → (Phase 2: integrity verification) → clone
+parse → structural validation → integrity verification → clone
 → vN → vN+1 pure migration functions → current-version validation
 → rebuild derived layers
 ```
@@ -61,22 +66,31 @@ Rules:
 - `formatVersion`, `rulesetVersion`, and `indexedDbVersion` bumps are
   independent and each requires its own contract/test update.
 
-## Future envelope (Phase 2)
+## Envelope (implemented in Phase 2)
 
-Phase 2 wraps the v1 payload in an envelope that adds:
+`encodeSave` wraps the v1 engine payload in an envelope:
 
 ```json
 {
   "format": "bonsai-city",
   "formatVersion": 1,
+  "metadata": { "cityId": "…", "name": "…", "createdAt": "…", "updatedAt": "…" },
   "engine": { "rulesetVersion": 1, "fixedTickHz": 20 },
   "simulation": { "seed": "...", "rng": { "algorithm": "mulberry32-v1", "state": [0] } },
+  "payload": { "format": "bonsai-city", "version": 1, "…": "the v1 engine save" },
   "integrity": { "algorithm": "SHA-256", "canonicalization": "sorted-json-v1", "digest": "..." }
 }
 ```
 
+`decodeSave` validates the structure, recomputes the digest over the canonical
+JSON of everything except `integrity`, and rejects tampered saves. `migrateSave`
+is the pure chain; v1 is identity and newer versions are rejected explicitly.
 Canonicalization is sorted keys, arrays in order, no whitespace — stable across
 Node and browsers so a checkpoint hash is portable.
+
+The in-memory `createCityRepository` (create/list/get/put/remove) holds live
+state with an injectable clock; an IndexedDB-backed repository may replace it
+in a later phase behind the same contract.
 
 ## Persistence boundary (open)
 

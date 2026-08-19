@@ -6,6 +6,8 @@
 // request leaves the negative, the current body, and any existing composite
 // untouched, and Retry is always possible.
 
+let pendingEli5Rewrite = null;
+
 function quickDraftTaskKind(options = {}) {
   return String(options.taskKind || "").trim();
 }
@@ -167,6 +169,7 @@ async function requestQuickDraft(stage = "brief", options = {}) {
       tone: setup.tone || "",
       mustInclude: setup.mustInclude || "",
       mustAvoid: setup.mustAvoid || "",
+      explanationLens: setup.explanationLens || window.AISystem6ExplanationLens?.blankExplanationLens?.(),
       pastedSources: String(refs.sources?.value || "").trim(),
       userNotes: `${taskPrefix}${options.userNotes || ""}`.trim(),
       intake,
@@ -232,6 +235,7 @@ async function requestQuickDraft(stage = "brief", options = {}) {
         outlineSeed: String(responseIntake.outlineSeed || data.brief?.outline || intake.outlineSeed || ""),
       })
       : intake;
+    const normalizedDraft = String(data.draft ?? data.raw ?? "").trim();
     /** @type {any} */
     const patch = {
       stage: data.stage || stage,
@@ -241,7 +245,6 @@ async function requestQuickDraft(stage = "brief", options = {}) {
       },
       risks: String(data.risks || ""),
       sourceMap: Array.isArray(data.sourceMap) ? data.sourceMap : [],
-      raw: String(data.raw || ""),
       workspace: {
         intake: {
           ...nextIntake,
@@ -251,8 +254,8 @@ async function requestQuickDraft(stage = "brief", options = {}) {
         materials: Array.isArray(data.sourceMap) ? data.sourceMap : [],
       },
     };
-    if (stage === "draft" && data.draft) {
-      if (looksLikePlaceholderDraft(data.draft)) {
+    if (stage === "draft" && normalizedDraft) {
+      if (looksLikePlaceholderDraft(normalizedDraft)) {
         setQuickDraftStatus(t("quick_draft_placeholder_draft_rejected"));
         patch.workspace.intake = {
           ...patch.workspace.intake,
@@ -266,7 +269,7 @@ async function requestQuickDraft(stage = "brief", options = {}) {
         return false;
       }
       const previousBody = String(requestRecord.workspace.body || currentBody).trim();
-      const rawNext = String(data.draft || "").trim();
+      const rawNext = normalizedDraft;
       const verification = protectedTools.verifyProtectedSentinels(rawNext, sentinelized.sentinels);
       if (!verification.valid) {
         await commitQuickDraftForProject(requestProjectId, {}, { captureForm: false });
@@ -337,13 +340,34 @@ async function requestQuickDraft(stage = "brief", options = {}) {
   }
 }
 
-function buildQuickDraftMingmingPrompt({ firstDay, sources, targetFormat, targetDuration, currentBody, humanAnchor, sentinels = [] }) {
+function buildQuickDraftMingmingPrompt({
+  firstDay,
+  sources,
+  targetFormat,
+  targetDuration,
+  currentBody,
+  humanAnchor,
+  sentinels = [],
+  explanationLens = null,
+}) {
   const sourceContext = formatQuickDraftSourcesForMingming(sources);
   const formatText = formatLabel(targetFormat);
   const lengthText = durationLabel(targetDuration, targetFormat);
   const strategy = strategySnapshot();
   const intake = intakeSnapshot();
   const setup = quickDraftSetupSnapshot();
+  const eli5Enabled = !!(explanationLens && explanationLens.enabled === true);
+  const eli5Body = eli5Enabled
+    ? window.AISystem6PromptFilesRuntime?.resolvePromptFile?.("lenses.eli5-explainer", null, currentLanguage)?.body
+    : "";
+  const eli5Block = eli5Body
+    ? [
+        "ELI5 解释规则（styleLens: luoluo-spoken，两者叠加，不要覆盖口吻）：",
+        eli5Body,
+        `观众基础：${explanationLens.baselineKnowledge || "secondary-school"}`,
+        explanationLens.mustKeepTerms?.length ? `必须保留的术语：${explanationLens.mustKeepTerms.join("、")}` : "",
+      ].filter(Boolean).join("\n\n")
+    : "";
   const preset = activeDraftDeskPreset(targetFormat);
   const presetConstraints = preset?.promptConstraints?.[currentLanguage === "zh" ? "zh" : "en"] || [];
   const targetConstraint = targetDuration.endsWith("w")
@@ -388,6 +412,7 @@ function buildQuickDraftMingmingPrompt({ firstDay, sources, targetFormat, target
     outline: outline || "请根据上面的素材池直接生成一版钟点稿正文。",
   })}
 
+${eli5Block ? `ELI5 追加规则：\n${eli5Block}` : ""}
 钟点稿追加约束（优先级高于上面的通用大纲输出格式）：
 ${projectContext}`;
 }
@@ -447,6 +472,7 @@ async function requestMingmingQuickDraft() {
     const targetDuration = normalizeDuration(refs.duration?.value, targetFormat);
     const previousBody = currentBody;
     const humanAnchor = humanAnchorSnapshot() || previousBody;
+    const explanationLens = quickDraftSetupSnapshot(slot.record).explanationLens;
     const protectedRanges = protectedRangesSnapshot(slot.record);
     const protectedTools = window.AISystem6ProtectedRanges;
     const sentinelized = protectedTools.protectTextWithSentinels(previousBody, protectedRanges);
@@ -458,6 +484,7 @@ async function requestMingmingQuickDraft() {
       currentBody: sentinelized.protectedText,
       humanAnchor,
       sentinels: sentinelized.sentinels,
+      explanationLens,
     });
     const response = await fetchModelPayload({
       model: typeof getLocalModelRequestName === "function" ? getLocalModelRequestName() : (modelInput?.value?.trim() || ""),
@@ -703,9 +730,283 @@ function startWritingNow() {
   return requestMingmingQuickDraft();
 }
 
+function quickDraftEli5PromptBody(id = "lenses.eli5-explainer") {
+  return window.AISystem6PromptFilesRuntime?.resolvePromptFile?.(id, null, currentLanguage)?.body || "";
+}
+
+function showQuickDraftEli5Candidate(body = "") {
+  const container = refs.draft?.closest(".teachtext-editor-container");
+  if (!container || !refs.preview || !refs.draft) return;
+  refs.preview.innerHTML = `<div class="quick-draft-reading">${quickDraftMarkdownHtml(String(body || ""))}</div>`;
+  container.classList.add("is-previewing");
+  refs.preview.classList.remove("is-hidden");
+  refs.draft.classList.add("is-hidden");
+  const candidateRow = document.querySelector("[data-quick-draft-eli5-candidate]");
+  if (candidateRow) candidateRow.hidden = false;
+}
+
+function hideQuickDraftEli5Candidate() {
+  const container = refs.draft?.closest(".teachtext-editor-container");
+  if (container && refs.preview && refs.draft) {
+    container.classList.remove("is-previewing", "is-graining");
+    refs.preview.classList.add("is-hidden");
+    refs.preview.classList.remove("quick-draft-grain-pane");
+    refs.draft.classList.remove("is-hidden");
+  }
+  const candidateRow = document.querySelector("[data-quick-draft-eli5-candidate]");
+  if (candidateRow) candidateRow.hidden = true;
+  pendingEli5Rewrite = null;
+}
+
+async function requestEli5Rewrite() {
+  collectRefs();
+  const slot = activeProjectQuickDraft();
+  if (!slot) {
+    setQuickDraftStatus(t("quick_draft_no_project"));
+    return false;
+  }
+  const task = createQuickDraftAsyncTask({ create: false });
+  if (!task) {
+    setQuickDraftStatus(t("quick_draft_no_project"));
+    return false;
+  }
+  const projectId = task.projectId;
+  window.AISystem6ModelUserErrors?.registerRetryable?.({
+    owner: "quickDraft-eli5-rewrite",
+    projectId,
+    callback: () => requestEli5Rewrite(),
+  });
+  const currentBody = String(refs.draft?.value || "").trim();
+  if (!currentBody) {
+    setQuickDraftStatus(t("quick_draft_needs_body"));
+    refs.draft?.focus();
+    return false;
+  }
+  if (!quickDraftModelAvailable()) {
+    setQuickDraftStatus(t("quick_draft_connect_ai"));
+    return false;
+  }
+
+  const explanationLens = quickDraftSetupSnapshot(slot.record).explanationLens;
+  const eli5Body = quickDraftEli5PromptBody("lenses.eli5-explainer");
+  if (!eli5Body) {
+    setQuickDraftStatus(t("quick_draft_eli5_unavailable"));
+    return false;
+  }
+  if (requestController) requestController.abort();
+  requestController = new AbortController();
+  setBusy(true);
+  setQuickDraftStatus(t("quick_draft_eli5_rewriting"));
+  try {
+    const protectedRanges = protectedRangesSnapshot(slot.record);
+    const protectedTools = window.AISystem6ProtectedRanges;
+    const sentinelized = protectedTools.protectTextWithSentinels(currentBody, protectedRanges);
+    const baseline = explanationLens?.baselineKnowledge || "secondary-school";
+    const terms = explanationLens?.mustKeepTerms?.length ? explanationLens.mustKeepTerms.join("、") : "";
+    const userContent = [
+      currentLanguage === "zh" ? "当前正文：" : "Current body:",
+      sentinelized.protectedText,
+      sentinelized.sentinels.length ? protectedSentinelBlock(sentinelized.sentinels, currentLanguage === "zh") : "",
+      `${currentLanguage === "zh" ? "观众基础" : "Audience baseline"}：${baseline}`,
+      terms ? `${currentLanguage === "zh" ? "必须保留的术语" : "Terms to keep"}：${terms}` : "",
+    ].filter(Boolean).join("\n\n");
+    const response = await fetchModelPayload({
+      model: typeof getLocalModelRequestName === "function" ? getLocalModelRequestName() : (modelInput?.value?.trim() || ""),
+      messages: withMarkdownModelMessages([
+        { role: "system", content: eli5Body },
+        { role: "user", content: userContent },
+      ]),
+      temperature: 0.35,
+      max_tokens: 5200,
+      ai_system6_task_kind: "writing.eli5-rewrite",
+      stream: false,
+    }, requestController.signal);
+    if (!response.ok) throw new Error(serviceErrorDetail(response.status, await response.text()));
+    const result = await response.json().catch(() => ({}));
+    const raw = String(result?.choices?.[0]?.message?.content || "").trim();
+    const cleaned = cleanMingmingQuickDraftBody(raw);
+    const verification = protectedTools.verifyProtectedSentinels(cleaned, sentinelized.sentinels);
+    if (!verification.valid) {
+      setQuickDraftStatus(t("quick_draft_protect_failed", verification.errors[0] || ""));
+      return false;
+    }
+    const finalBody = protectedTools.restoreProtectedSentinels(cleaned, sentinelized.sentinels);
+    if (!finalBody) {
+      setQuickDraftStatus(t("quick_draft_parse_failed"));
+      return false;
+    }
+    if (looksLikePlaceholderDraft(finalBody)) {
+      setQuickDraftStatus(t("quick_draft_placeholder_draft_rejected"));
+      return false;
+    }
+    if (!task.stillOwnsActiveProject()) return false;
+    pendingEli5Rewrite = { projectId, body: finalBody };
+    showQuickDraftEli5Candidate(finalBody);
+    setQuickDraftStatus(t("quick_draft_eli5_candidate_ready"));
+    window.AISystem6ModelUserErrors?.clearRetryable?.("quickDraft-eli5-rewrite");
+    return true;
+  } catch (error) {
+    if (error?.name !== "AbortError") presentQuickDraftModelFailure(error);
+    return false;
+  } finally {
+    requestController = null;
+    setBusy(false);
+  }
+}
+
+async function applyQuickDraftEli5Rewrite() {
+  const slot = activeProjectQuickDraft();
+  const candidate = pendingEli5Rewrite;
+  if (!slot || !candidate || candidate.projectId !== activeProjectId) {
+    pendingEli5Rewrite = null;
+    hideQuickDraftEli5Candidate();
+    setQuickDraftStatus(t("quick_draft_eli5_candidate_gone"));
+    return false;
+  }
+  const task = createQuickDraftAsyncTask({ create: false });
+  if (!task || !task.stillOwnsActiveProject()) {
+    pendingEli5Rewrite = null;
+    return false;
+  }
+  const confirmed = await showSystemModal(t("quick_draft_eli5_apply_confirm"), "confirm");
+  if (confirmed !== "yes") {
+    setQuickDraftStatus(t("quick_draft_eli5_cancelled"));
+    return false;
+  }
+  if (!task.stillOwnsActiveProject()) return false;
+  const previousBody = String(refs.draft?.value || slot.record.workspace.body || "").trim();
+  const currentRecord = task.currentRecord();
+  /** @type {any} */
+  const patch = { stage: "draft", workspace: { body: candidate.body } };
+  if (previousBody) {
+    const version = normalizeQuickDraftVersion({
+      id: stableId("version"),
+      body: previousBody,
+      title: currentRecord.workspace.title,
+      createdAt: new Date().toISOString(),
+      reason: "before-eli5-rewrite",
+      source: "quick-draft",
+    });
+    patch.workspace.versions = [...currentRecord.workspace.versions, version].slice(-100);
+  }
+  if (!hasRecordedNegative()) {
+    patch.workspace.composition = {
+      ...currentRecord.workspace.composition,
+      negative: previousBody,
+      negativeUpdatedAt: new Date().toISOString(),
+    };
+  }
+  if (currentRecord.workspace.titleMode !== "manual") {
+    patch.workspace.title = titleFromBody(candidate.body);
+  }
+  refs.draft.value = candidate.body;
+  pendingEli5Rewrite = null;
+  const committed = await task.commit(patch, { captureForm: false });
+  if (!committed.ok) {
+    refs.draft.value = previousBody;
+    setQuickDraftStatus(t("quick_draft_save_failed"));
+    return false;
+  }
+  hideQuickDraftEli5Candidate();
+  renderQuickDraft(committed.record);
+  setQuickDraftStatus(t("quick_draft_eli5_applied"));
+  return true;
+}
+
+async function cancelQuickDraftEli5Rewrite() {
+  pendingEli5Rewrite = null;
+  hideQuickDraftEli5Candidate();
+  setQuickDraftStatus(t("quick_draft_eli5_cancelled"));
+  return true;
+}
+
+async function appendEli5ReviewToClioTalk(markdown = "") {
+  if (!markdown) return false;
+  await ensureQuickDraftClioTalk();
+  if (typeof addMessage === "function") {
+    addMessage("assistant", markdown);
+    return true;
+  }
+  return false;
+}
+
+async function requestEli5Review() {
+  collectRefs();
+  const slot = activeProjectQuickDraft();
+  if (!slot) {
+    setQuickDraftStatus(t("quick_draft_no_project"));
+    return false;
+  }
+  const projectId = slot.project.id;
+  window.AISystem6ModelUserErrors?.registerRetryable?.({
+    owner: "quickDraft-eli5-review",
+    projectId,
+    callback: () => requestEli5Review(),
+  });
+  const currentBody = String(refs.draft?.value || "").trim();
+  if (!currentBody) {
+    setQuickDraftStatus(t("quick_draft_needs_body"));
+    refs.draft?.focus();
+    return false;
+  }
+  if (!quickDraftModelAvailable()) {
+    setQuickDraftStatus(t("quick_draft_connect_ai"));
+    return false;
+  }
+  const reviewBody = quickDraftEli5PromptBody("lenses.eli5-review");
+  if (!reviewBody) {
+    setQuickDraftStatus(t("quick_draft_eli5_unavailable"));
+    return false;
+  }
+  if (requestController) requestController.abort();
+  requestController = new AbortController();
+  setBusy(true);
+  setQuickDraftStatus(t("quick_draft_eli5_reviewing"));
+  try {
+    const response = await fetchModelPayload({
+      model: typeof getLocalModelRequestName === "function" ? getLocalModelRequestName() : (modelInput?.value?.trim() || ""),
+      messages: [
+        { role: "system", content: reviewBody },
+        { role: "user", content: currentBody },
+      ],
+      temperature: 0.2,
+      max_tokens: 2600,
+      ai_system6_task_kind: "writing.eli5-review",
+      stream: false,
+    }, requestController.signal);
+    if (!response.ok) throw new Error(serviceErrorDetail(response.status, await response.text()));
+    const result = await response.json().catch(() => ({}));
+    const raw = String(result?.choices?.[0]?.message?.content || "").trim();
+    const data = window.AISystem6ModelTaskRuntime.parseJsonText(raw);
+    if (!data || typeof data !== "object") {
+      throw new Error(currentLanguage === "zh" ? "ELI5 检查没有返回可解析的 JSON。" : "ELI5 review did not return parseable JSON.");
+    }
+    const markdown = window.AISystem6ModelTaskRuntime.eli5ReviewMarkdown(data, currentLanguage);
+    if (activeProjectId !== projectId) return false;
+    const appended = await appendEli5ReviewToClioTalk(markdown);
+    if (!appended) {
+      setQuickDraftStatus(t("quick_draft_command_empty"));
+      return false;
+    }
+    setQuickDraftStatus(t("quick_draft_done"));
+    window.AISystem6ModelUserErrors?.clearRetryable?.("quickDraft-eli5-review");
+    return true;
+  } catch (error) {
+    if (error?.name !== "AbortError") presentQuickDraftModelFailure(error);
+    return false;
+  } finally {
+    requestController = null;
+    setBusy(false);
+  }
+}
+
 window.AISystem6QuickDraftAI = Object.freeze({
   askClioTalk,
+  applyQuickDraftEli5Rewrite,
+  cancelQuickDraftEli5Rewrite,
   collectVentOutline,
+  requestEli5Review,
+  requestEli5Rewrite,
   requestMingmingQuickDraft,
   requestQuickDraft,
   runClioTalkAction,

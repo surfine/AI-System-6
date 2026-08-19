@@ -1,8 +1,8 @@
 {
   "format": "ai-system-6-city-simulator-foundation",
   "formatVersion": 1,
-  "phase": 0,
-  "phaseName": "foundation-and-construction-rules",
+  "phase": 7,
+  "phaseName": "voxel-visual-showcase",
   "product": {
     "codename": "bonsai-city",
     "displayName": "Bonsai City",
@@ -30,9 +30,19 @@
       ]
     },
     "rendererAndInput": {
-      "status": "not-implemented",
+      "status": "implemented",
       "commandOnly": true,
-      "rendererReadsSnapshots": true
+      "rendererReadsSnapshots": true,
+      "voxelRenderer": {
+        "file": "apps/desktop/app/features/bonsai-renderer-voxel.js",
+        "vendor": "apps/desktop/app/vendor/bonsai-renderer.js",
+        "atlas": "apps/desktop/assets/bonsai/atlas.png",
+        "provenance": "apps/desktop/assets/bonsai/provenance.json",
+        "lazy": true,
+        "projection": "orthographic-isometric",
+        "tintAndFlipVariants": true,
+        "decorativeTrafficIsViewState": true
+      }
     },
     "aiSystem6Shell": {
       "status": "contract-only",
@@ -60,14 +70,90 @@
     },
     "commandSchema": {
       "schemaVersion": 1,
-      "fields": ["schemaVersion", "type", "payload", "targetTick", "clientCommandId"]
+      "fields": ["schemaVersion", "type", "payload", "targetTick", "clientCommandId", "sequence"],
+      "implemented": true,
+      "pendingQueue": true,
+      "rejectedCommandsConsumeNoSequence": true
     },
     "eventSchema": {
       "schemaVersion": 1,
-      "fields": ["schemaVersion", "tick", "sequence", "type", "payload"]
+      "fields": ["schemaVersion", "tick", "sequence", "type", "payload"],
+      "implemented": true,
+      "drainedNotPersisted": true
     },
-    "checkpointHash": "SHA-256-over-canonical-sorted-json-v1",
+    "checkpointHash": {
+      "algorithm": "SHA-256",
+      "canonicalization": "sorted-json-v1",
+      "kernelLevel": "implemented",
+      "saveEnvelopeIntegrity": "phase-2"
+    },
     "forbiddenCoreInputs": ["wall-clock", "locale", "translation-string"]
+  },
+  "phase1Invariants": {
+    "kernelHeadless": true,
+    "noUi": true,
+    "noMapRenderer": true,
+    "noMathRandom": true,
+    "commandsVersioned": true,
+    "eventsVersioned": true,
+    "pendingQueueOrdered": true,
+    "rejectedCommandsLeaveStateUnchanged": true
+  },
+  "phase2Invariants": {
+    "envelopeVersioned": true,
+    "integritySha256": true,
+    "canonicalizationSortedJson": true,
+    "migrationPureChain": true,
+    "futureVersionsRejected": true,
+    "repositoryInMemory": true,
+    "repositoryClockInjected": true,
+    "noIndexedDbYet": true
+  },
+  "phase3Invariants": {
+    "lazyWindow": true,
+    "sdiWindow": true,
+    "windowRegistered": true,
+    "shellHeadlessCorePreserved": true,
+    "lifecyclePausesWhenHidden": true,
+    "dedicatedIndexedDbStore": true,
+    "persistenceUsesSharedFence": true,
+    "mitCleanShell": true
+  },
+  "phase4Invariants": {
+    "isometricProjection": true,
+    "projectionInvertible": true,
+    "painterOrderDeterministic": true,
+    "altitudeVisible": true,
+    "cameraIsViewState": true,
+    "inputProducesCommandsOnly": true,
+    "rendererPureAndHeadless": true
+  },
+  "phase5Invariants": {
+    "playableLoop": true,
+    "buildRoadZonePower": true,
+    "saveRoundTrip": true,
+    "closeSaves": true,
+    "queryIsReadOnly": true,
+    "statusReceipts": true,
+    "deterministicSlice": true
+  },
+  "invariants": {
+    "servicesAndCoverage": true,
+    "fundingLevels": true,
+    "trafficAndCongestion": true,
+    "congestionStopsGrowth": true,
+    "landValue": true,
+    "cityReport": true,
+    "economyCycle": true,
+    "deterministicReplay": true
+  },
+  "phase7Invariants": {
+    "voxelRendererReadsSnapshotOnly": true,
+    "voxelVendorLazyLoaded": true,
+    "textureAtlasHasProvenance": true,
+    "coreDeterminismUnchanged": true,
+    "decorativeTrafficIsViewState": true,
+    "noGplOrMaxisAssetsInAtlas": true
   },
   "saveFormat": {
     "format": "bonsai-city",

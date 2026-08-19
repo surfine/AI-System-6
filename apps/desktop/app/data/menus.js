@@ -202,6 +202,8 @@ const teachTextMenus = [
       menuItem("draft-current-section", "draft_section"),
       menuItem("polish-draft", "polish_draft"),
       menuItem("suggest-draft", "suggest_draft"),
+      menuItem("eli5-rewrite-section", "quick_draft_eli5_rewrite"),
+      menuItem("eli5-review-section", "quick_draft_eli5_review"),
       menuItem("advance-drafts-to-review", "to_review"),
     ], { surface: "sectionDrafts" }),
     submenu("review_desk", [

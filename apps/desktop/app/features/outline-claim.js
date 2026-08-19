@@ -786,6 +786,7 @@ async function polishDraft() {
     await prepareStreamingMarkdownPreview();
     const questionSheet = (context.project.questionSheet || "").trim();
     const projectContext = await buildBudgetedProjectContext([questionSheet, context.outlineMarkdown, body].filter(Boolean).join("\n\n"), { taskKind: "polish-section" });
+    const eli5Block = typeof writingStudioEli5Block === "function" ? writingStudioEli5Block() : "";
     const prompt = `${resolveWritingRoutePrompt("writing-route.section-polish")}
 
 QUESTION SHEET:
@@ -801,7 +802,7 @@ SECTION OUTLINE:
 ${context.outlineMarkdown || context.outlineBody || context.title}
 
 CURRENT DRAFT:
-${body}`;
+${body}${eli5Block ? `\n\n${eli5Block}` : ""}`;
     const response = await fetchModelPayload({
       model: getLocalModelRequestName(),
       messages: withMarkdownModelMessages([{ role: "user", content: prompt }]),
@@ -847,6 +848,7 @@ async function suggestDraft() {
     const questionSheet = (context.project.questionSheet || "").trim();
     const currentDraft = String(draftBodyInput.value || context.body || "").trim();
     const projectContext = await buildBudgetedProjectContext([questionSheet, context.outlineMarkdown, currentDraft].filter(Boolean).join("\n\n"), { taskKind: "review-section" });
+    const eli5Block = typeof writingStudioEli5Block === "function" ? writingStudioEli5Block() : "";
     const prompt = `${resolveWritingRoutePrompt("writing-route.section-suggest")}
 
 QUESTION SHEET:
@@ -862,7 +864,7 @@ SECTION OUTLINE:
 ${context.outlineMarkdown || context.outlineBody || context.title}
 
 CURRENT DRAFT:
-${currentDraft || "No draft yet. Give planning suggestions for starting this section."}`;
+${currentDraft || "No draft yet. Give planning suggestions for starting this section."}${eli5Block ? `\n\n${eli5Block}` : ""}`;
     const response = await fetchModelPayload({
       model: getLocalModelRequestName(),
       messages: withMarkdownModelMessages([{ role: "user", content: prompt }]),

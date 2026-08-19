@@ -871,6 +871,12 @@ async function quitApp(appId = activeAppId) {
     window.AISystem6Doom?.handleQuit?.();
   }
 
+  if (appId === "bonsaiCity") {
+    // Bonsai City saves through the shared write fence on quit; the shell
+    // also stops its pacing loop so a closed window never keeps ticking.
+    window.AISystem6BonsaiCity?.detach?.();
+  }
+
   if (appId === "teachText" && shouldPromptForTeachTextFileSave()) {
     const result = await showSystemModal(teachTextUnsavedChangesMessage(), "save");
     if (result === "cancel") return;
@@ -1013,13 +1019,14 @@ const mobileFullScreenAppIds = new Set([
   "micropolis",
   "doom",
   "openttd",
+  "bonsaiCity",
 ]);
 
 // Immersive apps are the ones whose content IS the screen: the three games.
 // They earn the full-screen shell in landscape as well, where a floating
 // window would spend most of a phone display on desktop pattern. Every other
 // app keeps the portrait-only figure.
-const mobileImmersiveAppIds = new Set(["micropolis", "doom", "openttd"]);
+const mobileImmersiveAppIds = new Set(["micropolis", "doom", "openttd", "bonsaiCity"]);
 
 function isMobileImmersiveWindow(win) {
   return !!win && mobileImmersiveAppIds.has(getWindowAppId(win));
@@ -2296,6 +2303,12 @@ function getActionAvailability() {
     "draft-current-section": winName === "sectionDrafts",
     "polish-draft": winName === "sectionDrafts",
     "suggest-draft": winName === "sectionDrafts",
+    "eli5-rewrite-section": winName === "sectionDrafts" && (typeof writingStudioExplanationLens === "function"
+      ? writingStudioExplanationLens().enabled === true
+      : false),
+    "eli5-review-section": winName === "sectionDrafts" && (typeof writingStudioExplanationLens === "function"
+      ? writingStudioExplanationLens().enabled === true
+      : false),
     "advance-drafts-to-review": winName === "sectionDrafts",
     "translate-teachtext": hasTeachTextTranslation,
     "style-check-teachtext": hasTeachTextBody || hasFinderTextFileSelection,
@@ -2705,6 +2718,10 @@ const lazyWindowModules = {
   openttd: {
     ensure: () => ensureOpenTTDModule(),
     attach: () => window.AISystem6OpenTTD?.attach?.(),
+  },
+  bonsaiCity: {
+    ensure: () => ensureBonsaiCityModule(),
+    attach: () => window.AISystem6BonsaiCity?.attach?.(),
   },
   doom: {
     ensure: () => ensureDoomModule(),

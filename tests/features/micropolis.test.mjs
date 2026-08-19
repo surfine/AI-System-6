@@ -208,7 +208,7 @@ test.assertIncludes(shellSource, "micropolisCssTileWidth", "pan and wheel deltas
 
 const projectDisk = read("app/features/project-disk.js");
 test.assertIncludes(config, 'citiesStoreName: "cities"', "city saves have a declared object store");
-test.assertIncludes(config, "indexedDbVersion: 3", "adding the cities store bumped the database version");
+test.assertIncludes(config, "indexedDbVersion: 4", "the database version keeps the cities store (v4 adds the separate Bonsai store)");
 test.assertIncludes(read("app.js"), "citiesStoreName,", "app.js destructures the store name into the shared scope");
 test.assertIncludes(projectDisk, "db.createObjectStore(citiesStoreName", "the upgrade path creates the cities store");
 test.assertIncludes(shellSource, "AISystem6StorageTransactions.runTransaction", "city writes go through the shared write fence");

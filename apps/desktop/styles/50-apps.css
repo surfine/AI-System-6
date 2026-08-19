@@ -1458,6 +1458,20 @@
   border-top: var(--teachtext-popover-hr-border);
 }
 
+.writing-eli5-popover {
+  min-width: 240px;
+}
+
+.writing-eli5-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.writing-eli5-select {
+  width: 100%;
+}
+
 .teachtext-command-submenu {
   position: relative;
 }
@@ -3104,4 +3118,12 @@ body:not(.use-liquid-glass) .desktop-app-icon span[data-liquid-label="DAA Meme"]
 
 .micropolis-pane {
   padding: 0;
+}
+
+/* Bonsai City frame geometry lives in the boot bundle on purpose: the window
+   interior loads with the lazy module, but the frame must never collapse to a
+   sliver while (or if) the lazy stylesheet is still on its way. */
+.bonsai-window {
+  width: min(760px, calc(100vw - 72px));
+  height: min(680px, calc(100vh - 88px));
 }

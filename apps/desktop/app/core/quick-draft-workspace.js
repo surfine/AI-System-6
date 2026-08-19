@@ -130,6 +130,16 @@ function blankToolInputs() {
     tone: "",
     mustInclude: "",
     mustAvoid: "",
+    explanationLens: window.AISystem6ExplanationLens?.blankExplanationLens?.() || {
+      id: "eli5",
+      enabled: false,
+      audience: "general-public",
+      baselineKnowledge: "secondary-school",
+      medium: "spoken-video",
+      question: "",
+      stuckPointHint: "",
+      mustKeepTerms: [],
+    },
   };
 }
 
@@ -168,6 +178,7 @@ function blankQuickDraftWorkspace() {
 /** @param {Record<string, any>} value @param {Record<string, any>} legacy */
 function normalizeToolInputs(value = {}, legacy = {}) {
   const source = value && typeof value === "object" ? value : {};
+  const normalizeLens = window.AISystem6ExplanationLens?.normalizeExplanationLens;
   return {
     ...blankToolInputs(),
     thesis: String(source.thesis ?? legacy.thesis ?? ""),
@@ -182,6 +193,9 @@ function normalizeToolInputs(value = {}, legacy = {}) {
     tone: String(source.tone ?? legacy.tone ?? ""),
     mustInclude: String(source.mustInclude ?? legacy.mustInclude ?? ""),
     mustAvoid: String(source.mustAvoid ?? legacy.mustAvoid ?? ""),
+    explanationLens: normalizeLens
+      ? normalizeLens(source.explanationLens ?? legacy.explanationLens)
+      : window.AISystem6ExplanationLens?.blankExplanationLens?.() || blankToolInputs().explanationLens,
   };
 }
 

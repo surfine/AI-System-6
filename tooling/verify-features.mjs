@@ -1,4 +1,4 @@
-import { spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { existsSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -45,15 +45,46 @@ if (!selectedTests.length) {
   process.exit(1);
 }
 
-const failures = [];
+// The daily feature suite is the slowest feedback loop in the repo (well over
+// a hundred isolated Node processes). The tests are independent — each spawns
+// its own VM with its own state — so they run concurrently with a bounded
+// worker pool and their output is replayed in the original order afterwards.
+// The concurrency bound keeps port-0 servers and shared evidence files from
+// colliding, and the result is byte-identical to a serial run.
+const CONCURRENCY = 4;
 
-selectedTests.forEach((fileName) => {
+function runFeature(fileName) {
+  return new Promise((resolve) => {
+    const child = spawn(process.execPath, [join(featureDir, fileName)], {
+      cwd: root,
+      encoding: "utf8",
+    });
+    let stdout = "";
+    let stderr = "";
+    child.stdout.on("data", (chunk) => { stdout += chunk; });
+    child.stderr.on("data", (chunk) => { stderr += chunk; });
+    child.on("close", (status) => resolve({ stdout, stderr, status }));
+  });
+}
+
+const results = new Array(selectedTests.length);
+let nextIndex = 0;
+async function worker() {
+  while (nextIndex < selectedTests.length) {
+    const index = nextIndex;
+    nextIndex += 1;
+    results[index] = await runFeature(selectedTests[index]);
+  }
+}
+await Promise.all(
+  Array.from({ length: Math.min(CONCURRENCY, selectedTests.length) }, () => worker())
+);
+
+const failures = [];
+selectedTests.forEach((fileName, index) => {
   const label = featureName(fileName);
   console.log(`\n# ${label}`);
-  const result = spawnSync(process.execPath, [join(featureDir, fileName)], {
-    cwd: root,
-    encoding: "utf8",
-  });
+  const result = results[index];
   if (result.stdout) process.stdout.write(result.stdout);
   if (result.stderr) process.stderr.write(result.stderr);
   if (result.status !== 0) failures.push(label);

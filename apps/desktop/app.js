@@ -47,6 +47,7 @@ const {
   chatFoldersStoreName,
   chatFilesStoreName,
   citiesStoreName,
+  bonsaiCitiesStoreName,
 } = storageConfig;
 const {
   defaultProjectName,
@@ -761,6 +762,7 @@ function getApplicationsItems() {
       { name: t("micropolis_label"), iconId: "micropolis", action: "open-micropolis", type: "application", kind: t("application") },
       { name: t("openttd_label"), iconId: "openttd", action: "open-openttd", type: "application", kind: t("application") },
       { name: t("doom_label"), iconId: "doom", action: "open-doom", type: "application", kind: t("application") },
+      { name: t("bonsai_city_label"), iconId: "applications", action: "open-bonsai-city", type: "application", kind: t("application") },
     ], location);
   }
   if (applicationsFinderPath === "extras") {

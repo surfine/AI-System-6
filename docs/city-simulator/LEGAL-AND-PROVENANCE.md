@@ -33,6 +33,10 @@ written from public, non-copyrightable ideas and first principles.
   (see [OPENSC2K-RESEARCH.md](OPENSC2K-RESEARCH.md)); verbatim extraction is
   not.
 - Any new runtime asset needs a provenance entry before merge.
+- The voxel texture atlas is registered at `assets/bonsai/provenance.json`
+  (author, date, tool, MIT license, `source: original`); the build tool
+  `tooling/build-bonsai-atlas.mjs` regenerates it from hand-authored 16x16
+  grids and never reads an external art source.
 
 ## Naming
 

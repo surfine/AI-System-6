@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/city-simulator/LEGAL-AND-PROVENANCE.md -->
-<!-- source-sha256: f51e3d6fdc0758132947caddde47df5c268303468df4a81fd52345650a2e8765 -->
+<!-- source-sha256: 1a1dacd3dbbd87f5718c5847cd57c180e91fc3c322837f9206ba70789d933a93 -->
 
 > 英文版为准 ・ 仅供人类参考
 
@@ -34,6 +34,9 @@ Bonsai City 路径保持 MIT 洁净：只允许原创代码与原创资产，且
 - 公开格式事实可以用独立措辞记录（见
   [OPENSC2K-RESEARCH.md](OPENSC2K-RESEARCH.zh-CN.md)）；禁止逐字提取。
 - 任何新增运行时资产在合并前都需要 provenance 条目。
+- 体素纹理图集登记于 `assets/bonsai/provenance.json`（作者、日期、工具、
+  MIT 许可、`source: original`）；构建工具 `tooling/build-bonsai-atlas.mjs`
+  从手工编写的 16x16 网格重新生成它，绝不读取外部美术来源。
 
 ## 命名
 

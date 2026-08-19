@@ -61,7 +61,7 @@ test.assertIncludes(styleManifest, "styles.openttd.css", "styles ship as a lazy 
 test.assertIncludes(styles, ".openttd-frame", "the frame styling is scoped to the window");
 
 // --- mobile: full-screen app page ---
-test.assertIncludes(app, '"openttd",\n]);', "appId opts into the mobile full-screen shell");
+test.assertMatches(app, /mobileFullScreenAppIds = new Set\(\[(?:(?!\]\))[\s\S])*"openttd",/, "appId opts into the mobile full-screen shell");
 
 // --- quit handshake keeps saves safe, then frees the wasm loop ---
 test.assertIncludes(app, 'window.AISystem6OpenTTD?.handleQuit?.()', "quitApp tears the game down");

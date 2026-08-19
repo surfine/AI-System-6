@@ -469,6 +469,31 @@
   gap: 5px;
 }
 
+.draft-desk-eli5-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+}
+
+.draft-desk-eli5-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.draft-desk-eli5-actions,
+.draft-desk-eli5-candidate {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.draft-desk-eli5-select {
+  width: max-content;
+}
+
 .draft-desk-layer-scope-row {
   margin: 4px 8px 0;
   padding: 4px 0 7px;

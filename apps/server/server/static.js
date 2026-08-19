@@ -59,6 +59,7 @@ const exactPublicFiles = new Set([
   "styles.theme-lab.css",
   "styles.micropolis.css",
   "styles.openttd.css",
+  "styles.bonsai.css",
   "endfield-terminal.html",
 ]);
 

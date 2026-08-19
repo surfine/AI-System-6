@@ -1249,6 +1249,27 @@
                 </header>
 
                 <div id="quick-draft-paper-view" class="draft-desk-paper-body" role="tabpanel" aria-labelledby="quick-draft-display-body">
+                  <div class="draft-desk-eli5-bar" data-quick-draft-eli5-bar hidden>
+                    <label class="draft-desk-eli5-toggle">
+                      <input type="checkbox" data-quick-draft-eli5-enabled />
+                      <span data-i18n="quick_draft_eli5_enabled">Explain like a five-year-old</span>
+                    </label>
+                    <span class="select-wrap draft-desk-eli5-select" data-quick-draft-eli5-baseline-wrap hidden>
+                      <select data-quick-draft-eli5-baseline-select data-i18n-aria-label="quick_draft_eli5_baseline">
+                        <option value="secondary-school" data-i18n="quick_draft_eli5_baseline_general">General public</option>
+                        <option value="some-familiarity" data-i18n="quick_draft_eli5_baseline_some">Knows a little</option>
+                        <option value="familiar" data-i18n="quick_draft_eli5_baseline_familiar">Familiar with the topic</option>
+                      </select>
+                    </span>
+                    <span class="draft-desk-eli5-actions" data-quick-draft-eli5-actions hidden>
+                      <button class="btn mini-btn" type="button" data-quick-draft-eli5-rewrite data-i18n="quick_draft_eli5_rewrite">Make it listenable</button>
+                      <button class="btn mini-btn" type="button" data-quick-draft-eli5-review data-i18n="quick_draft_eli5_review">Find where it gets lost</button>
+                    </span>
+                    <span class="draft-desk-eli5-candidate" data-quick-draft-eli5-candidate hidden>
+                      <button class="btn mini-btn default" type="button" data-quick-draft-eli5-apply data-i18n="quick_draft_eli5_apply">Apply</button>
+                      <button class="btn mini-btn" type="button" data-quick-draft-eli5-cancel data-i18n="quick_draft_eli5_cancel">Cancel</button>
+                    </span>
+                  </div>
                   <section class="draft-desk-intake" data-quick-draft-intake-well>
                     <label class="draft-desk-intake-field draft-desk-intake-primary" for="quick-draft-say">
                       <span data-i18n="quick_draft_say_label">What I want to say</span>
@@ -2471,7 +2492,25 @@
         <div class="details-bar app-status-bar teachtext-details-bar">
           <span class="status-bar-leading" id="question-count">0 questions</span>
           <span class="status-bar-context linked-manuscript-title" id="question-manuscript-title">Untitled</span>
-          <button class="btn details-bar-button status-bar-trailing" type="button" data-action="open-writing-flow-windows" data-i18n="open_writing_flow">Open Flow</button>
+          <div class="status-bar-trailing writing-eli5-trailing">
+            <details class="teachtext-command-menu command-menu-opens-down writing-eli5-menu">
+              <summary class="btn mini-btn" type="button" role="button" aria-haspopup="menu" aria-expanded="false">Audience Threshold</summary>
+              <div class="teachtext-command-popover writing-eli5-popover" role="menu">
+                <label class="writing-eli5-toggle">
+                  <input type="checkbox" data-writing-eli5-enabled />
+                  <span data-i18n="quick_draft_eli5_enabled">Explain like a five-year-old</span>
+                </label>
+                <span class="select-wrap writing-eli5-select" data-writing-eli5-baseline-wrap>
+                  <select data-writing-eli5-baseline data-i18n-aria-label="quick_draft_eli5_baseline">
+                    <option value="secondary-school" data-i18n="quick_draft_eli5_baseline_general">General public</option>
+                    <option value="some-familiarity" data-i18n="quick_draft_eli5_baseline_some">Knows a little</option>
+                    <option value="familiar" data-i18n="quick_draft_eli5_baseline_familiar">Familiar with the topic</option>
+                  </select>
+                </span>
+              </div>
+            </details>
+            <button class="btn details-bar-button" type="button" data-action="open-writing-flow-windows" data-i18n="open_writing_flow">Open Flow</button>
+          </div>
         </div>
         <div class="window-pane teachtext-surface-pane question-sheet-pane">
           <div class="teachtext-editor-container specialized-teachtext-editor window-frame-scroller">
@@ -2575,6 +2614,8 @@
                     <button class="btn" type="button" data-action="draft-current-section" data-i18n="draft_section">Draft Section</button>
                     <button class="btn" type="button" data-action="polish-draft" data-i18n="polish_draft">AI Polish</button>
                     <button class="btn" type="button" data-action="suggest-draft" data-i18n="suggest_draft">AI Suggestions</button>
+                    <button class="btn writing-eli5-action" type="button" data-action="eli5-rewrite-section" data-i18n="quick_draft_eli5_rewrite" hidden>Make it listenable</button>
+                    <button class="btn writing-eli5-action" type="button" data-action="eli5-review-section" data-i18n="quick_draft_eli5_review" hidden>Find where it gets lost</button>
                   </div>
                 </details>
               </div>

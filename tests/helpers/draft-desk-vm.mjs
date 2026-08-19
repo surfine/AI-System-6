@@ -8,6 +8,7 @@ const sourcePaths = [
   "app/core/protected-ranges.js",
   "app/core/text-compose.js",
   "app/core/grain-diff.js",
+  "app/core/explanation-lens.js",
   "app/core/quick-draft-workspace.js",
   "app/features/draft-desk.js",
   "app/features/quick-draft-intake.js",

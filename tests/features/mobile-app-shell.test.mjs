@@ -423,8 +423,8 @@ test.assertIncludes(
 const windowManagerSource = read("app/core/window-manager.js");
 test.assertIncludes(
   windowManagerSource,
-  'mobileImmersiveAppIds = new Set(["micropolis", "doom", "openttd"])',
-  "the immersive class is exactly the three games"
+  'mobileImmersiveAppIds = new Set(["micropolis", "doom", "openttd", "bonsaiCity"])',
+  "the immersive class is the games and the city simulator"
 );
 test.assertIncludes(
   windowManagerSource,

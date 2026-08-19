@@ -28,7 +28,7 @@
     "playwrightVersion": "1.62.1",
     "browserRevision": "1234",
     "browserVersion": "151.0.7922.34",
-    "contentSha256": "367a5956db74b25c65e2310685b275182546d3ea0831d754b6526514f80d420e",
+    "contentSha256": "b425a8b9640879f197160956e0633a7ea1118903b643a8b56e47d945aa09c773",
     "historicalFontTarget": "Lucida Grande 13 pt",
     "fontProbeSelectors": [
       ".theme-lab-controls h3",

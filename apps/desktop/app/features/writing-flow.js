@@ -4,6 +4,41 @@
 
 window.AISystem6WritingFlowLoaded = true;
 
+function writingStudioExplanationLens() {
+  const project = getActiveProject();
+  const lens = project?.explanationLens;
+  return window.AISystem6ExplanationLens?.normalizeExplanationLens?.(lens)
+    || window.AISystem6ExplanationLens?.blankExplanationLens?.()
+    || {
+      id: "eli5",
+      enabled: false,
+      audience: "general-public",
+      baselineKnowledge: "secondary-school",
+      medium: "spoken-video",
+      question: "",
+      stuckPointHint: "",
+      mustKeepTerms: [],
+    };
+}
+
+function writingStudioEli5Block(language = currentLanguage) {
+  const lens = writingStudioExplanationLens();
+  if (lens.enabled !== true) return "";
+  const body = window.AISystem6PromptFilesRuntime?.resolvePromptFile?.("lenses.eli5-explainer", null, language)?.body;
+  if (!body) return "";
+  const zh = String(language || "").toLowerCase().startsWith("zh");
+  const baseline = `${zh ? "观众基础" : "Audience baseline"}：${lens.baselineKnowledge || "secondary-school"}`;
+  const terms = lens.mustKeepTerms?.length
+    ? `${zh ? "必须保留的术语" : "Terms to keep"}：${lens.mustKeepTerms.join(zh ? "、" : ", ")}`
+    : "";
+  return [
+    "ELI5 解释规则（styleLens: luoluo-spoken，两者叠加，不要覆盖口吻）：",
+    body,
+    baseline,
+    terms,
+  ].filter(Boolean).join("\n\n");
+}
+
 function getProjectEvidenceClips() {
   return getProjectScraps().filter((scrap) =>
     scrap.tags?.includes("reader-clip")
@@ -1079,6 +1114,7 @@ function renderPipeline() {
   // Surfaces are about to be repopulated from project state; any stale
   // last-edited marker from a previous project no longer applies.
   lastEditedWritingSurface = null;
+  syncWritingStudioEli5Ui();
   if (!project) {
     questionSheetBodyInput.value = "";
     if (questionCountEl) questionCountEl.textContent = t("questions_count", 0);
@@ -2391,6 +2427,7 @@ async function draftOutlineSection(sectionTitle) {
     const questionSheet = (project.questionSheet || "").trim();
     const query = [questionSheet, context.outlineMarkdown || context.outlineBody || cleanSectionTitle].filter(Boolean).join("\n\n");
     const projectContext = await buildBudgetedProjectContext(query, { taskKind: "draft-section" });
+    const eli5Block = writingStudioEli5Block();
     const prompt = `${resolveWritingRoutePrompt("writing-route.section-draft")}
 
 QUESTION SHEET:
@@ -2403,7 +2440,7 @@ CURRENT SECTION:
 ${cleanSectionTitle}
 
 SECTION OUTLINE:
-${context.outlineMarkdown || context.outlineBody || cleanSectionTitle}`;
+${context.outlineMarkdown || context.outlineBody || cleanSectionTitle}${eli5Block ? `\n\n${eli5Block}` : ""}`;
     const response = await fetchModelPayload({
       model: getLocalModelRequestName(),
       messages: withMarkdownModelMessages([{ role: "user", content: prompt }]),
@@ -2443,6 +2480,123 @@ ${context.outlineMarkdown || context.outlineBody || cleanSectionTitle}`;
       saveDeskState();
       renderPipeline();
     }
+  }
+}
+
+async function eli5RewriteSection() {
+  const context = currentSectionDraftContext({ ensureDraft: true });
+  if (!context) {
+    setStatus(t("section_draft_needs_section"));
+    openWindow("outline");
+    return false;
+  }
+  const body = String(draftBodyInput?.value || context.body || "").trim();
+  if (!body) {
+    setStatus(t("draft_needs_content"));
+    openWindow("sectionDrafts");
+    requestAnimationFrame(() => draftBodyInput?.focus());
+    return false;
+  }
+  const eli5Body = window.AISystem6PromptFilesRuntime?.resolvePromptFile?.("lenses.eli5-explainer", null, currentLanguage)?.body;
+  if (!eli5Body) {
+    setStatus(t("quick_draft_eli5_unavailable"));
+    return false;
+  }
+  if (!beginLongTask("eli5-rewrite-section", t("section_draft_eli5_rewriting"))) return false;
+  let content = "";
+  try {
+    const lens = writingStudioExplanationLens();
+    const baseline = `${currentLanguage === "zh" ? "观众基础" : "Audience baseline"}：${lens.baselineKnowledge || "secondary-school"}`;
+    const terms = lens.mustKeepTerms?.length
+      ? `${currentLanguage === "zh" ? "必须保留的术语" : "Terms to keep"}：${lens.mustKeepTerms.join(currentLanguage === "zh" ? "、" : ", ")}`
+      : "";
+    const userContent = [
+      currentLanguage === "zh" ? "当前章节草稿：" : "Current section draft:",
+      body,
+      baseline,
+      terms,
+    ].filter(Boolean).join("\n\n");
+    const response = await fetchModelPayload({
+      model: getLocalModelRequestName(),
+      messages: withMarkdownModelMessages([
+        { role: "system", content: eli5Body },
+        { role: "user", content: userContent },
+      ]),
+      temperature: 0.35,
+      max_tokens: 2600,
+      ai_system6_task_kind: "writing.eli5-rewrite",
+      stream: false,
+    }, getLongTaskSignal());
+    if (!response.ok) throw new Error(serviceErrorDetail(response.status, await response.text()));
+    const result = await response.json().catch(() => ({}));
+    content = stripRebuildMarkdownFence(String(result?.choices?.[0]?.message?.content || "").trim());
+  } catch (error) {
+    if (!isAbortError(error)) setStatus(error?.message || t("ready"));
+  } finally {
+    endLongTask("eli5-rewrite-section");
+  }
+  if (!content) {
+    setStatus(t("ready"));
+    return false;
+  }
+  return confirmAndApplySectionDraft(content, "section_draft_eli5_replace_confirm", "section_draft_eli5_applied");
+}
+
+async function eli5ReviewSection() {
+  const context = currentSectionDraftContext({ ensureDraft: true });
+  if (!context) {
+    setStatus(t("section_draft_needs_section"));
+    openWindow("outline");
+    return false;
+  }
+  const body = String(draftBodyInput?.value || context.body || "").trim();
+  if (!body) {
+    setStatus(t("draft_needs_content"));
+    openWindow("sectionDrafts");
+    requestAnimationFrame(() => draftBodyInput?.focus());
+    return false;
+  }
+  const reviewBody = window.AISystem6PromptFilesRuntime?.resolvePromptFile?.("lenses.eli5-review", null, currentLanguage)?.body;
+  if (!reviewBody) {
+    setStatus(t("quick_draft_eli5_unavailable"));
+    return false;
+  }
+  if (!beginLongTask("eli5-review-section", t("section_draft_eli5_reviewing"))) return false;
+  try {
+    const response = await fetchModelPayload({
+      model: getLocalModelRequestName(),
+      messages: [
+        { role: "system", content: reviewBody },
+        { role: "user", content: body },
+      ],
+      temperature: 0.2,
+      max_tokens: 2600,
+      ai_system6_task_kind: "writing.eli5-review",
+      stream: false,
+    }, getLongTaskSignal());
+    if (!response.ok) throw new Error(serviceErrorDetail(response.status, await response.text()));
+    const result = await response.json().catch(() => ({}));
+    const raw = String(result?.choices?.[0]?.message?.content || "").trim();
+    const data = window.AISystem6ModelTaskRuntime.parseJsonText(raw);
+    if (!data || typeof data !== "object") {
+      throw new Error(currentLanguage === "zh" ? "ELI5 检查没有返回可解析的 JSON。" : "ELI5 review did not return parseable JSON.");
+    }
+    const markdown = window.AISystem6ModelTaskRuntime.eli5ReviewMarkdown(data, currentLanguage);
+    if (typeof arrangeWindowAssistantSplit === "function") {
+      await arrangeWindowAssistantSplit("sectionDrafts");
+    } else if (typeof openWindow === "function") {
+      await openWindow("assistant");
+    }
+    if (typeof addMessage === "function") {
+      addMessage("assistant", markdown);
+    }
+    setStatus(t("ready"));
+    return true;
+  } catch (error) {
+    if (!isAbortError(error)) setStatus(error?.message || t("ready"));
+    return false;
+  } finally {
+    endLongTask("eli5-review-section");
   }
 }
 
@@ -2617,3 +2771,49 @@ function updateFlowGuideChecklist({ render = true } = {}) {
 
   if (render) renderPipeline();
 }
+
+function syncWritingStudioEli5Ui() {
+  const lens = writingStudioExplanationLens();
+  const toggle = document.querySelector("[data-writing-eli5-enabled]");
+  const baseline = document.querySelector("[data-writing-eli5-baseline]");
+  const baselineWrap = document.querySelector("[data-writing-eli5-baseline-wrap]");
+  const menu = document.querySelector(".writing-eli5-menu");
+  const summary = document.querySelector(".writing-eli5-menu > summary");
+  if (toggle) toggle.checked = lens.enabled === true;
+  if (baseline) baseline.value = lens.baselineKnowledge || "secondary-school";
+  if (baselineWrap) baselineWrap.hidden = lens.enabled !== true;
+  if (summary) summary.textContent = lens.enabled ? t("quick_draft_eli5_enabled") : t("quick_draft_eli5_title");
+  if (menu) menu.classList.toggle("is-on", lens.enabled === true);
+  document.querySelectorAll(".writing-eli5-action").forEach((button) => {
+    button.hidden = lens.enabled !== true;
+  });
+}
+
+async function updateWritingStudioEli5Lens(nextLens = {}) {
+  const project = getActiveProject();
+  if (!project) return false;
+  const current = project.explanationLens || {};
+  project.explanationLens = window.AISystem6ExplanationLens?.normalizeExplanationLens?.({
+    ...current,
+    ...nextLens,
+  }) || { ...current, ...nextLens };
+  project.updatedAt = new Date().toISOString();
+  saveDeskState();
+  syncWritingStudioEli5Ui();
+  return true;
+}
+
+let writingStudioEli5Wired = false;
+function wireWritingStudioEli5Controls() {
+  if (writingStudioEli5Wired) return;
+  writingStudioEli5Wired = true;
+  document.querySelector("[data-writing-eli5-enabled]")?.addEventListener("change", (event) => {
+    void updateWritingStudioEli5Lens({ enabled: event.target.checked === true });
+  });
+  document.querySelector("[data-writing-eli5-baseline]")?.addEventListener("change", (event) => {
+    void updateWritingStudioEli5Lens({ baselineKnowledge: event.target.value });
+  });
+  syncWritingStudioEli5Ui();
+}
+
+wireWritingStudioEli5Controls();

@@ -8,6 +8,11 @@ AI System 6. It shares the long-term shape of classic city-builder experiences
 written from first principles. No code, art, sound, copy, data, or fixtures
 come from SimCity 2000, Maxis, EA, OpenSC2K, Micropolis, or OpenTTD.
 
+**Inspiration anchor:** the public design ideas of SimCity 2000 — layered tile
+grids, altitude and isometric terrain, RCI demand feedback, power grids, and
+growth milestones. Only public ideas are borrowed; nothing from Maxis or EA
+enters the code, data, art, sound, or copy.
+
 ## Phase 0 scope
 
 Phase 0 establishes the foundation and construction rules only:
@@ -35,6 +40,40 @@ persistence store, or dependencies.
   wired into any window or menu.
 - The core's seed policy is now contract-enforced: the shell must provide an
   integer seed; the core never falls back to `Math.random()`.
+- The kernel now carries a versioned command layer (immediate and
+  future-dated queued commands with monotonic sequences), a versioned event
+  stream, and canonical checkpoint serialization; determinism is pinned by
+  `tests/features/bonsai-kernel.test.mjs`.
+- Phase 2 adds the portable save envelope (`encodeSave`/`decodeSave` with
+  SHA-256 integrity over canonical JSON, pure migration chain) and an
+  in-memory city repository (`createCityRepository`) with an injectable clock;
+  both are pinned by `tests/features/bonsai-save.test.mjs`.
+- Phase 3 wires the lazy System 6 shell: the `bonsaiCity` creative-lab window
+  opens from Applications, runs the core at a 20 Hz pacing loop with
+  pause/slow/medium/fast, turns pointer input into commands on a flat
+  top-down preview canvas, and persists cities to the dedicated
+  `bonsaiCities` IndexedDB store through the shared write-fence helper. Pinned
+  by `tests/features/bonsai-shell.test.mjs`.
+- Phase 4 replaces the preview with the original isometric renderer: 2:1
+  diamond projection, altitude lift, painter-order draw, and camera pan/zoom
+  as pure view state. Pointer input maps through the inverse projection into
+  commands only. Pinned by `tests/features/bonsai-renderer.test.mjs`.
+- Phase 5 is the playable vertical slice: new city, build roads/zones/power,
+  run at 20 Hz with speed control, query tiles, save/load through the
+  integrity envelope, and an Open Cities list. Closing the window saves.
+  Pinned by `tests/features/bonsai-slice.test.mjs`.
+- Phase 6 lands the SimCity 2000-inspired systems: police/fire stations with
+  funding-scaled coverage, traffic and congestion that stalls growth, land
+  value, a deterministic economy cycle, and a city report with a mayor
+  rating. Pinned by `tests/features/bonsai-systems.test.mjs`.
+- Phase 7 replaces the flat diamond painter with a three.js isometric voxel
+  scene: voxel terrain, water, roads/wires/parks, stage-scaled R/C/I
+  buildings, trees, plants and services, a tick-driven day/night cycle, and
+  decorative traffic derived from the congestion layer. The renderer consumes
+  a pure `buildRenderSnapshot` and lazy-loads a bundled three.js vendor; the
+  original 16x16 Minecraft-style atlas is MIT-clean with a provenance record.
+  Pinned by `tests/features/bonsai-voxel.test.mjs` and
+  `tests/features/bonsai-atlas.test.mjs`.
 - The GPL games (Micropolis, OpenTTD, DOOM) are separate shipped products and
   share no code with the Bonsai path.
 

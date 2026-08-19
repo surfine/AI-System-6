@@ -22,10 +22,17 @@ with `createCity`, `advanceTicks`, `applyTool`, `tileInfo`, `ensureDerived`,
 
 ### Renderer and input
 
-Not implemented in Phase 0. When built, the renderer reads snapshots, diffs,
-and events only; pointer, keyboard, and touch produce commands. Camera,
-hover, selection, and temporary previews are view state and never enter the
-save. `requestAnimationFrame` draws; it never advances rules.
+Implemented in Phase 4 as the pure projection module `bonsai-renderer.js` and
+replaced visually in Phase 7 by `bonsai-renderer-voxel.js`. The pure module
+keeps the 2:1 isometric projection, its inverse, and deterministic painter
+order as VM-testable view math. The voxel renderer consumes the pure
+`buildRenderSnapshot` and draws an orthographic isometric three.js scene
+(voxel terrain, water, roads/wires/parks, stage-scaled buildings, trees,
+plants, services, day/night, decorative traffic) while lazy-loading a bundled
+three.js vendor. The renderer reads snapshots only — pointer, keyboard, and
+touch produce commands through `submitCommand`, never direct mutation. Camera
+and lighting are view state and never enter the save; the pacing loop draws
+and never advances rules.
 
 ### AI System 6 shell
 
@@ -46,9 +53,11 @@ generates seeds via `crypto.getRandomValues` and paces ticks.
   arithmetic (`Math.imul`, bitwise ops) and well-defined IEEE-754 math.
 - **Stable iteration.** Every rule pass iterates arrays in fixed order; no
   object-key iteration affects a result.
-- **Checkpoints.** Phase 2 adds a checkpoint hash: SHA-256 over canonical
-  sorted JSON. Same seed + ruleset version + command sequence must produce
-  the same hash in Node and the browser.
+- **Checkpoints.** Phase 1 provides canonical serialization
+  (`canonicalStringify`) and kernel-level checkpoints: SHA-256 over canonical
+  sorted JSON. Same seed + ruleset version + command sequence must produce the
+  same hash in Node and the browser. Phase 2 wraps this digest into the save
+  envelope's integrity record.
 
 ## Commands
 
@@ -56,9 +65,11 @@ generates seeds via `crypto.getRandomValues` and paces ticks.
 { "schemaVersion": 1, "type": "road", "payload": { "x": 5, "y": 8 }, "targetTick": 120, "clientCommandId": "c-1" }
 ```
 
-The shell assigns a monotonically increasing `sequence`; the core applies
-commands in `(targetTick, sequence)` order. Invalid commands never mutate
-state and return a rejected receipt.
+Implemented in Phase 1. The core assigns a monotonically increasing `sequence`
+to every accepted command (immediate or queued); rejected commands consume no
+sequence and never mutate state. Future-dated commands wait in a
+`(targetTick, sequence)` ordered queue and apply exactly at their target tick.
+The shell never mutates state directly — it always submits commands.
 
 ## Events
 
@@ -66,8 +77,10 @@ state and return a rejected receipt.
 { "schemaVersion": 1, "tick": 120, "sequence": 41, "type": "milestone", "payload": { "threshold": 250 } }
 ```
 
-Events are committed domain facts: no DOM references, no translated strings,
-no wall-clock timestamps. UI localizes at render time.
+Implemented in Phase 1. Events are committed domain facts: no DOM references,
+no translated strings, no wall-clock timestamps. The shell drains them with
+`drainEvents`; they are derived from the simulation and never persisted. UI
+localizes at render time.
 
 ## Save format
 

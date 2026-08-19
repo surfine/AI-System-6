@@ -17,6 +17,7 @@ const sources = [
   "app/core/protected-ranges.js",
   "app/core/text-compose.js",
   "app/core/grain-diff.js",
+  "app/core/explanation-lens.js",
   "app/core/quick-draft-workspace.js",
   "app/features/draft-desk.js",
   "app/features/quick-draft-intake.js",
@@ -112,6 +113,10 @@ test.assert(legacyNormalized.workspace.schemaVersion === 3, "legacy records migr
 test.assert(legacyNormalized.workspace.title === "旧稿", "legacy title survives migration");
 test.assert(legacyNormalized.workspace.body === "第一稿正文。", "legacy draft body survives migration");
 test.assert(
+  legacyNormalized.workspace.intake.setup.explanationLens?.enabled === false,
+  "legacy records default explanationLens off"
+);
+test.assert(
   legacyNormalized.workspace.intake.setup.pastedSources === "材料一\n材料二",
   "legacy pasted sources survive migration"
 );
@@ -128,6 +133,17 @@ test.assert(
   legacyNormalized.workspace.strategy.editorial === "取舍",
   "legacy strategyReport migrates into strategy"
 );
+
+const lensed = context.normalizeQuickDraftWorkspace({
+  intake: { setup: { explanationLens: { enabled: true, baselineKnowledge: "familiar", mustKeepTerms: ["缓存", " 引用 "] } } },
+});
+test.assert(lensed.intake.setup.explanationLens.enabled === true, "enabled explanationLens survives normalization");
+test.assert(lensed.intake.setup.explanationLens.baselineKnowledge === "familiar", "baselineKnowledge survives normalization");
+test.assert(
+  JSON.stringify(lensed.intake.setup.explanationLens.mustKeepTerms) === JSON.stringify(["缓存", "引用"]),
+  "mustKeepTerms is trimmed and deduped in quick draft"
+);
+
 const v2WithDumps = context.normalizeQuickDraftWorkspace({
   schemaVersion: 2,
   intake: { ventLog: [

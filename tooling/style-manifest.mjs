@@ -48,6 +48,12 @@ export const lazyStyleBundles = [
     loader: "app/core/config.js",
     sources: ["styles/93-openttd.css"],
   },
+  {
+    id: "bonsai",
+    output: "styles.bonsai.css",
+    loader: "app/core/config.js",
+    sources: ["styles/94-bonsai.css"],
+  },
 ];
 
 // Every stylesheet the product ships, eager or lazy. Checks that reason about
@@ -93,6 +99,7 @@ export const styleLayerByPath = Object.freeze({
   "styles/66-theme-lab.css": "theme-lab",
   "styles/92-micropolis.css": "micropolis",
   "styles/93-openttd.css": "openttd",
+  "styles/94-bonsai.css": "bonsai",
 });
 
 // Layer order = eager files in bundle order, then lazy sheets in declaration

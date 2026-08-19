@@ -1,0 +1,74 @@
+/* Bonsai City window — lazy, scoped to the bonsai window only. */
+
+.bonsai-window {
+  --bonsai-toolbar-gap: 4px;
+  /* Frame size mirrored from 50-apps.css so the lazy sheet and the boot
+     bundle agree; the eager rule prevents the sliver before this loads. */
+  width: min(760px, calc(100vw - 72px));
+  height: min(680px, calc(100vh - 88px));
+}
+
+.bonsai-window .bonsai-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+}
+
+.bonsai-window .bonsai-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--bonsai-toolbar-gap);
+}
+
+.bonsai-window .bonsai-toolbar-separator {
+  width: 1px;
+  height: 18px;
+  margin: 0 3px;
+  background: var(--system-border, #888);
+}
+
+.bonsai-window .bonsai-canvas-wrap {
+  position: relative;
+  overflow: auto;
+  /* The canvas carries the window's intrinsic width; without a min-width the
+     overflow-auto box lets the whole window shrink-to-fit to ~2px. */
+  min-width: 512px;
+  border: var(--system-border, 1px solid #888);
+  background: var(--paper, #fff);
+}
+
+.bonsai-window .bonsai-canvas {
+  display: block;
+  image-rendering: pixelated;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.bonsai-window .bonsai-canvas.is-panning {
+  cursor: grabbing;
+}
+
+.bonsai-window .bonsai-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.bonsai-window .bonsai-cities-list {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  border: var(--system-border, 1px solid #888);
+  background: var(--paper, #fff);
+}
+
+.bonsai-window .bonsai-details-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}

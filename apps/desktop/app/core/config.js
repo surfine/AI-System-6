@@ -106,6 +106,8 @@ window.AISystem6Config = (() => {
     '[data-action="revise-draft"]',
     '[data-action="polish-draft"]',
     '[data-action="suggest-draft"]',
+    '[data-action="eli5-rewrite-section"]',
+    '[data-action="eli5-review-section"]',
     '[data-action="run-claim-check"]',
     '[data-action="review-mingming-handoff"]',
     '[data-action="review-mingming-handoff-backstage"]',
@@ -135,8 +137,10 @@ window.AISystem6Config = (() => {
   const storageConfig = Object.freeze({
     storageVersion: 2,
     indexedDbName: "ai-system-6-db",
-    // Version 3 added the "cities" store (Micropolis saves).
-    indexedDbVersion: 3,
+    // Version 3 added the "cities" store (Micropolis saves); version 4 adds
+    // the separate "bonsaiCities" store so the original simulator's saves
+    // never share provenance with the GPL games.
+    indexedDbVersion: 4,
     referenceStoreName: "projectReferences",
     keyvalStoreName: "keyval",
     projectsStoreName: "projects",
@@ -145,6 +149,7 @@ window.AISystem6Config = (() => {
     chatFoldersStoreName: "chatFolders",
     chatFilesStoreName: "chatFiles",
     citiesStoreName: "cities",
+    bonsaiCitiesStoreName: "bonsaiCities",
   });
 
   const projectConfig = Object.freeze({
@@ -233,6 +238,7 @@ window.AISystem6Config = (() => {
       "importUtility",
       "printDirectory",
       "pageSetup",
+      "bonsaiCity",
     ]),
     resizableWindowNames: Object.freeze([
       // A window that can be sized shows the two scroll bar lanes whose corner
@@ -266,6 +272,7 @@ window.AISystem6Config = (() => {
       "cmfStudio",
       "soundscape",
       "micropolis",
+      "bonsaiCity",
       "imageManager",
       "systemHelp",
       "projectCd",
@@ -519,6 +526,16 @@ const ensureMicropolisModule = createLazyModuleLoader("AISystem6MicropolisLoaded
 const ensureOpenTTDModule = createLazyModuleLoader("AISystem6OpenTTDLoaded", [
   "app/features/openttd.js",
 ], false, ["styles.openttd.css"]);
+// Bonsai City loads its MIT-clean core, the in-memory repository, and the
+// System 6 shell together; the shell's flag proves all three arrived.
+const ensureBonsaiCityModule = createLazyModuleLoader("AISystem6BonsaiCityLoaded", [
+  "app/features/bonsai-city-sim.js",
+  "app/features/bonsai-repository.js",
+  "app/features/bonsai-renderer.js",
+  "app/generated/bonsai-atlas.js",
+  "app/features/bonsai-renderer-voxel.js",
+  "app/features/bonsai-city.js",
+], false, ["styles.bonsai.css"]);
 // Phase one reuses the existing iframe-game window geometry. The GPL engine
 // remains inside assets/doom/ and is fetched only by its same-origin shell.
 const ensureDoomModule = createLazyModuleLoader("AISystem6DoomLoaded", [
@@ -705,6 +722,11 @@ function installLazyWritingFlowStub(name) {
   "createManualSectionDraft",
   "advanceDraftsToReview",
 ].forEach(installLazyWritingFlowStub);
+
+[
+  "eli5RewriteSection",
+  "eli5ReviewSection",
+].forEach((name) => installLazyFunctionStub(name, ensureWritingFlowModule));
 
 function installLazyMemoryCardsStub(name) {
   if (typeof window[name] === "function") return;

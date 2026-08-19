@@ -90,6 +90,26 @@
       protectedSpans: protectedWritingSpans,
       requiresUserCommit: false,
     }),
+    "writing.eli5-rewrite": Object.freeze({
+      id: "writing.eli5-rewrite",
+      output: Object.freeze({ kind: "patch", schemaId: "text-patch-v1" }),
+      sourcePolicy: "registered-only",
+      writeTarget: "manuscript",
+      humanizer: "lint",
+      modelRole: "writer",
+      protectedSpans: protectedWritingSpans,
+      requiresUserCommit: true,
+    }),
+    "writing.eli5-review": Object.freeze({
+      id: "writing.eli5-review",
+      output: Object.freeze({ kind: "json", schemaId: "eli5-review-v1" }),
+      sourcePolicy: "registered-only",
+      writeTarget: "none",
+      humanizer: "off",
+      modelRole: "critic",
+      protectedSpans: protectedWritingSpans,
+      requiresUserCommit: false,
+    }),
   });
   const taskContractAliases = Object.freeze({
     "extract-facts": "source.extract-facts",
@@ -102,6 +122,8 @@
     "humanize-selection": "writing.humanize-selection",
     "humanizer-rewrite": "writing.humanize-selection",
     "json-repair": "system.json-repair",
+    "eli5-rewrite": "writing.eli5-rewrite",
+    "eli5-review": "writing.eli5-review",
   });
   const modelRoleNames = new Set(["default", "researcher", "writer", "critic", "utility"]);
 
@@ -382,6 +404,97 @@
     ];
   }
 
+  /**
+   * @param {{
+   *   verdict?: string,
+   *   premiseStatus?: string,
+   *   question?: string,
+   *   findings?: Array<{
+   *     type?: string,
+   *     quote?: string,
+   *     whyViewerGetsLost?: string,
+   *     minimumChange?: string,
+   *   }>,
+   *   keep?: string[],
+   * }} data
+   * @param {string} [language]
+   */
+  function eli5ReviewMarkdown(data = {}, language = "zh") {
+    const zh = String(language || "").toLowerCase().startsWith("zh");
+    const source = data && typeof data === "object" ? data : {};
+    const typeLabels = zh
+      ? {
+          "missing-step": "少了一步",
+          "undefined-term": "词没解释",
+          "abstract-wording": "太抽象",
+          "ambiguous-reference": "指代不清",
+          "number-context": "数字缺上下文",
+          "analogy-risk": "类比可能误导",
+          "visual-dependence": "太依赖画面",
+          "fact-boundary": "事实边界太满",
+          pace: "节奏",
+        }
+      : {
+          "missing-step": "Missing step",
+          "undefined-term": "Undefined term",
+          "abstract-wording": "Abstract wording",
+          "ambiguous-reference": "Ambiguous reference",
+          "number-context": "Number lacks context",
+          "analogy-risk": "Analogy risk",
+          "visual-dependence": "Visual dependence",
+          "fact-boundary": "Fact boundary too absolute",
+          pace: "Pace",
+        };
+    const premiseLabels = zh
+      ? { sound: "前提成立", needs_correction: "前提需要纠正", uncertain: "前提不确定" }
+      : { sound: "Premise sound", needs_correction: "Premise needs correction", uncertain: "Premise uncertain" };
+    const verdictLabels = zh
+      ? { clear: "已经清楚", needs_revision: "需要修改" }
+      : { clear: "Clear", needs_revision: "Needs revision" };
+    const cell = (value) => String(value || "")
+      .replace(/\|/g, "\\|")
+      .replace(/\r?\n/g, " ")
+      .trim();
+
+    const lines = [];
+    const verdict = String(source.verdict || "");
+    if (verdictLabels[verdict]) {
+      lines.push(`**${zh ? "结论" : "Verdict"}：${verdictLabels[verdict]}**`);
+    }
+    const premise = String(source.premiseStatus || "");
+    if (premiseLabels[premise]) {
+      lines.push(`${zh ? "前提" : "Premise"}：${premiseLabels[premise]}`);
+    }
+    if (String(source.question || "").trim()) {
+      lines.push(`${zh ? "真正的问题" : "The real question"}：${cell(source.question)}`);
+    }
+
+    const findings = Array.isArray(source.findings) ? source.findings.slice(0, 6) : [];
+    lines.push("");
+    lines.push(
+      zh
+        ? "| 原句 | 问题 | 观众为什么会听丢 | 最小修改 |"
+        : "| Quote | Problem | Why the viewer gets lost | Minimal change |"
+    );
+    lines.push("| --- | --- | --- | --- |");
+    for (const finding of findings) {
+      if (!finding || typeof finding !== "object") continue;
+      const type = typeLabels[String(finding.type || "")] || cell(finding.type);
+      lines.push(
+        `| ${cell(finding.quote)} | ${cell(type)} | ${cell(finding.whyViewerGetsLost)} | ${cell(finding.minimumChange)} |`
+      );
+    }
+
+    const keep = (Array.isArray(source.keep) ? source.keep : []).slice(0, 3).filter((item) => String(item || "").trim());
+    if (keep.length) {
+      lines.push("");
+      lines.push(zh ? "**这几处已经讲明白**" : "**Already explained well**");
+      keep.forEach((item) => lines.push(`- ${cell(item)}`));
+    }
+
+    return lines.join("\n").trim();
+  }
+
   return Object.freeze({
     cleanModelOutput,
     parseJsonText,
@@ -399,5 +512,6 @@
     shouldRepairHumanizerOutput,
     findHumanizerOutputHits,
     buildHumanizerRepairMessages,
+    eli5ReviewMarkdown,
   });
 });

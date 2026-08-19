@@ -68,4 +68,18 @@ interface Window {
   AISystem6WebPlatform?: any;
   AISystem6Capabilities?: any;
   AISystem6Runtime?: any;
+  AISystem6ExplanationLens?: {
+    blankExplanationLens?: (options?: any) => any;
+    normalizeExplanationLens?: (lens?: any) => any;
+  };
+  AISystem6PromptFilesRuntime?: {
+    resolvePromptFile?: (id: string, args?: any, language?: string) => { body?: string } | undefined;
+  };
+}
+
+// The quick-draft ELI5 UI toggles `hidden` on elements returned by
+// querySelector, which is typed as Element (the DOM lib only declares the
+// property on HTMLElement).
+interface Element {
+  hidden: boolean;
 }

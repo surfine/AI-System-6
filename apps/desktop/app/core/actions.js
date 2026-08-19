@@ -1091,6 +1091,8 @@ function getApplicationActionHandlers() {
     "revise-draft": polishDraft,
     "polish-draft": polishDraft,
     "suggest-draft": suggestDraft,
+    "eli5-rewrite-section": () => window.AISystem6QuickDraftAI?.requestEli5Rewrite?.(),
+    "eli5-review-section": () => window.AISystem6QuickDraftAI?.requestEli5Review?.(),
     "advance-drafts-to-review": advanceDraftsToReview,
     "run-claim-check": runClaimCheckFromMenu,
     "run-claim-check-section": () => runClaimCheck({ sectionOnly: true }),
@@ -1434,6 +1436,7 @@ window.AISystem6Runtime?.registerLazyCommand?.("open-image-prompt-studio",{ensur
 window.AISystem6Runtime?.registerLazyCommand?.("open-openttd",{ensure:ensureOpenTTDModule});
 window.AISystem6Runtime?.registerLazyCommand?.("open-doom",{ensure:ensureDoomModule});
 window.AISystem6Runtime?.registerLazyCommand?.("open-micropolis",{ensure:ensureMicropolisModule});
+window.AISystem6Runtime?.registerLazyCommand?.("open-bonsai-city",{ensure:ensureBonsaiCityModule});
 window.AISystem6Runtime?.registerLazyCommand?.("open-clio-stage",{ensure:ensureClioStageModule});
 window.AISystem6Runtime?.registerLazyCommand?.("open-liquid-cover",{ensure:ensureLiquidCoverModule});
 window.AISystem6Runtime?.registerLazyCommand?.("open-clio-chart",{ensure:ensureClioChartModule});

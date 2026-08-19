@@ -35,6 +35,9 @@ const REPRESENTATIVE_WINDOWS = Object.freeze([
   { id: "scrapbook", sample: "#scrap-body-input" },
   { id: "liquidCover", sample: ".liquid-cover-window .title-bar, .title-bar" },
   { id: "endfieldTerminal", sample: ".endfield-terminal-window .title-bar, .title-bar" },
+  { id: "quickDraft", sample: ".draft-desk-sheet-head" },
+  { id: "questionSheet", sample: ".writing-eli5-menu" },
+  { id: "sectionDrafts", sample: ".section-draft-nav" },
 ]);
 
 const outputArgument = process.argv.indexOf("--output");

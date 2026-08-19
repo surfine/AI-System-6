@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/city-simulator/ARCHITECTURE.md -->
-<!-- source-sha256: 283b68be2f4772e8a80396525e6cda2963cdb89f0c0ddec668df983bc2eb8323 -->
+<!-- source-sha256: 1bf78b6549650cc044eabb76e3dd39517215ada385095ad8bef001a45aea81e0 -->
 
 > 英文版为准 ・ 仅供人类参考
 
@@ -27,9 +27,14 @@ IndexedDB、翻译表、墙钟、定时器或 `Math.random()`。它以经典脚�
 
 ### 渲染与输入
 
-Phase 0 不实现。建成后渲染器只读快照、diff 与事件；指针、键盘、触摸只产生
-命令。相机、悬停、选择与临时预览属于视图状态，绝不入档。`requestAnimationFrame`
-只绘图，不推进规则。
+Phase 4 实现为纯投影模块 `bonsai-renderer.js`，Phase 7 再由
+`bonsai-renderer-voxel.js` 完成视觉替换。纯模块保留 2:1 等距投影、其逆
+投影与确定性画家序，作为可在 VM 中测试的视图数学。体素渲染器消费纯
+`buildRenderSnapshot`，懒加载打包后的 three.js vendor，绘制正交等距场景
+（体素地形、水面、道路/电线/公园、按阶段缩放的分区建筑、树木、电厂、服务
+设施、昼夜、装饰性交通）。渲染器只读快照——指针、键盘、触摸都通过
+`submitCommand` 产生命令，绝不直接改状态。相机与光照是视图状态，绝不入档；
+循环只绘图，不推进规则。
 
 ### AI System 6 外壳
 
@@ -47,8 +52,9 @@ Working Session 与持久化适配器。它用 `crypto.getRandomValues` 生成�
   （`Math.imul`、位运算）与定义良好的 IEEE-754 数学，因此在 Node 与浏览器
   中确定一致。
 - **稳定遍历。** 每条规则按固定顺序遍历数组；对象键遍历不影响结果。
-- **检查点。** Phase 2 增加 SHA-256 规范化检查点；相同种子、规则版本与命令
-  序列在 Node 与浏览器必须产生相同哈希。
+- **检查点。** Phase 1 提供 canonical 序列化（`canonicalStringify`）与内核级
+  检查点：对规范化 JSON 取 SHA-256。相同种子、规则版本与命令序列在 Node 与
+  浏览器必须产生相同哈希。Phase 2 把该摘要包进取档信封的完整性记录。
 
 ## 命令
 
@@ -56,8 +62,10 @@ Working Session 与持久化适配器。它用 `crypto.getRandomValues` 生成�
 { "schemaVersion": 1, "type": "road", "payload": { "x": 5, "y": 8 }, "targetTick": 120, "clientCommandId": "c-1" }
 ```
 
-外壳分配单调递增 `sequence`；核心按 `(targetTick, sequence)` 顺序应用。
-无效命令不改变状态，只返回拒绝回执。
+Phase 1 已实现。核心给每个被接受命令（即时或排队）分配单调递增 `sequence`；
+被拒绝命令不消耗序号、绝不改变状态。未来定时命令进入
+`(targetTick, sequence)` 有序队列，并恰好在其目标 tick 应用。外壳绝不直接
+改状态——只提交命令。
 
 ## 事件
 
@@ -65,7 +73,8 @@ Working Session 与持久化适配器。它用 `crypto.getRandomValues` 生成�
 { "schemaVersion": 1, "tick": 120, "sequence": 41, "type": "milestone", "payload": { "threshold": 250 } }
 ```
 
-事件是已提交的领域事实：不携带 DOM 引用、翻译字符串或墙钟时间。UI 在渲染时
+Phase 1 已实现。事件是已提交的领域事实：不携带 DOM 引用、翻译字符串或墙钟
+时间。外壳用 `drainEvents` 取出；它们由模拟派生且从不持久化。UI 在渲染时
 本地化。
 
 ## 存档格式

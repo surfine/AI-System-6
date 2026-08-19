@@ -724,6 +724,9 @@ function openAppDb() {
       if (!db.objectStoreNames.contains(citiesStoreName)) {
         db.createObjectStore(citiesStoreName, { keyPath: "id" });
       }
+      if (!db.objectStoreNames.contains(bonsaiCitiesStoreName)) {
+        db.createObjectStore(bonsaiCitiesStoreName, { keyPath: "id" });
+      }
     };
 
     request.onblocked = () => finish(

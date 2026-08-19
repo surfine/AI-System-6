@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/city-simulator/SAVE-FORMAT.md -->
-<!-- source-sha256: 23e8852bd839951c981dae5dd55b34c2806087231d21abde36aebde644414fd2 -->
+<!-- source-sha256: 135375dc4bdea5b8fd5e74eb7663b3e905f4924c272373dfa76e344d154f5dd9 -->
 
 > 英文版为准 ・ 仅供人类参考
 
@@ -45,12 +45,15 @@
 派生层（`powered`、`roadOk`、`plantAt`、人口、岗位、需求、容量）加载时重建，
 绝不保存。
 
+Phase 7 视图状态（相机、昼夜光照与装饰性交通位置）由 `tick` 派生或由外壳
+持有，同样绝不序列化；无论上次以何种视角查看，重载城市都会重放相同的模拟。
+
 ## 迁移策略
 
-未来加载路径是纯函数链：
+加载路径是纯函数链（Phase 2 已实现）：
 
 ```text
-parse → 尺寸/限额验证 →（Phase 2：完整性验证）→ clone
+parse → 结构验证 → 完整性验证 → clone
 → vN → vN+1 纯迁移函数 → 当前版本验证 → 重建派生层
 ```
 
@@ -61,21 +64,28 @@ parse → 尺寸/限额验证 →（Phase 2：完整性验证）→ clone
 - `formatVersion`、`rulesetVersion`、`indexedDbVersion` 的升级彼此独立，
   各自需要对应契约/测试更新。
 
-## 未来信封（Phase 2）
+## 信封（Phase 2 已实现）
 
-Phase 2 把 v1 载荷包进信封，增加：
+`encodeSave` 把 v1 引擎载荷包进信封：
 
 ```json
 {
   "format": "bonsai-city",
   "formatVersion": 1,
+  "metadata": { "cityId": "…", "name": "…", "createdAt": "…", "updatedAt": "…" },
   "engine": { "rulesetVersion": 1, "fixedTickHz": 20 },
   "simulation": { "seed": "...", "rng": { "algorithm": "mulberry32-v1", "state": [0] } },
+  "payload": { "format": "bonsai-city", "version": 1, "…": "v1 引擎存档" },
   "integrity": { "algorithm": "SHA-256", "canonicalization": "sorted-json-v1", "digest": "..." }
 }
 ```
 
+`decodeSave` 校验结构、对除 `integrity` 外的内容重算规范化 JSON 摘要，并拒绝
+被篡改的存档。`migrateSave` 是纯迁移链；v1 恒等，更新的版本显式拒绝。
 规范化 = 键排序、数组保序、无空白，Node 与浏览器结果一致，检查点哈希可移植。
+
+内存版 `createCityRepository`（create/list/get/put/remove）持有实时状态，时钟
+可注入；后续阶段可在同一契约后用 IndexedDB repository 替换。
 
 ## 持久化边界（未决）
 

@@ -2376,6 +2376,8 @@ function longTaskReceiptInfo(key, statusText = "") {
     "revise-draft": { label: t("section_drafts"), windowName: "sectionDrafts" },
     "polish-draft": { label: t("section_drafts"), windowName: "sectionDrafts" },
     "suggest-draft": { label: t("section_drafts"), windowName: "sectionDrafts" },
+    "eli5-rewrite-section": { label: t("section_drafts"), windowName: "sectionDrafts" },
+    "eli5-review-section": { label: t("section_drafts"), windowName: "sectionDrafts" },
     "draft-section": { label: t("section_drafts"), windowName: "sectionDrafts" },
     "claim-check": { label: t("review_desk"), windowName: "reviewDesk" },
     "claim-check-section": { label: t("review_desk"), windowName: "reviewDesk" },

@@ -102,6 +102,12 @@ function collectRefs() {
   refs.counter = $("quick-draft-counter");
   refs.uncertainty = $("quick-draft-uncertainty");
   refs.risks = $("quick-draft-risks");
+  refs.eli5Bar = refs.form?.querySelector("[data-quick-draft-eli5-bar]");
+  refs.eli5Enabled = refs.form?.querySelector("[data-quick-draft-eli5-enabled]");
+  refs.eli5Baseline = refs.form?.querySelector("[data-quick-draft-eli5-baseline-select]");
+  refs.eli5BaselineWrap = refs.form?.querySelector("[data-quick-draft-eli5-baseline-wrap]");
+  refs.eli5Actions = refs.form?.querySelector("[data-quick-draft-eli5-actions]");
+  refs.eli5Candidate = refs.form?.querySelector("[data-quick-draft-eli5-candidate]");
   refs.sourceMap = $("quick-draft-source-map");
   refs.shelfTitle = $("quick-draft-shelf-title");
   refs.versionsList = $("quick-draft-versions-list");
@@ -609,6 +615,44 @@ function updateQuickDraftShellState(record = activeProjectQuickDraft({ create: f
   }
 }
 
+function syncQuickDraftEli5Ui(source = null) {
+  const record = source || normalizeQuickDraftRecord(activeProjectQuickDraft({ create: false })?.record);
+  const hasBody = Boolean(String(record.workspace?.body || "").trim());
+  const lens = window.AISystem6ExplanationLens?.normalizeExplanationLens?.(
+    record.workspace?.intake?.setup?.explanationLens
+  ) || window.AISystem6ExplanationLens?.blankExplanationLens?.() || {
+    enabled: false,
+    baselineKnowledge: "secondary-school",
+  };
+  if (refs.eli5Bar) refs.eli5Bar.hidden = !hasBody;
+  if (refs.eli5Enabled) refs.eli5Enabled.checked = lens.enabled === true;
+  if (refs.eli5Baseline) refs.eli5Baseline.value = lens.baselineKnowledge || "secondary-school";
+  if (refs.eli5BaselineWrap) refs.eli5BaselineWrap.hidden = lens.enabled !== true;
+  if (refs.eli5Actions) refs.eli5Actions.hidden = lens.enabled !== true;
+  if (refs.eli5Candidate) refs.eli5Candidate.hidden = true;
+}
+
+async function updateQuickDraftEli5Lens(nextLens = {}) {
+  const slot = activeProjectQuickDraft({ create: false });
+  if (!slot) return false;
+  const previous = normalizeQuickDraftRecord(slot.record);
+  const current = previous.workspace.intake.setup.explanationLens || {};
+  const lens = window.AISystem6ExplanationLens?.normalizeExplanationLens?.({
+    ...current,
+    ...nextLens,
+  }) || { ...current, ...nextLens };
+  const committed = await commitQuickDraft({
+    workspace: { intake: { setup: { explanationLens: lens } } },
+  }, { captureForm: false });
+  if (!committed.ok) {
+    renderQuickDraft(previous);
+    setQuickDraftStatus(t("quick_draft_save_failed"));
+    return false;
+  }
+  syncQuickDraftEli5Ui(committed.record);
+  return true;
+}
+
 function setBusy(isBusy) {
   refs.form?.classList.toggle("is-busy", !!isBusy);
   refs.form?.setAttribute("aria-busy", String(!!isBusy));
@@ -631,6 +675,10 @@ function setBusy(isBusy) {
       "[data-quick-draft-adjustment-apply]",
       "[data-quick-draft-adjustment-develop]",
       "[data-quick-draft-chat-action]",
+      "[data-quick-draft-eli5-rewrite]",
+      "[data-quick-draft-eli5-review]",
+      "[data-quick-draft-eli5-apply]",
+      "[data-quick-draft-eli5-cancel]",
       '[data-action="quick-draft-import-chat"]',
       "[data-quick-draft-delivery]",
     ].join(", ")) || []),
@@ -756,6 +804,7 @@ function renderQuickDraft(record = activeProjectQuickDraft({ create: false })?.r
   if (refs.officialMaterials) refs.officialMaterials.value = source.officialMaterials;
   if (refs.draft) refs.draft.value = source.workspace.body;
   syncQuickDraftTemplateUi();
+  syncQuickDraftEli5Ui(source);
   renderIntake(source);
   renderStrategyReport(source);
   renderClassifySummaries(source);
@@ -891,6 +940,26 @@ function bind() {
     syncQuickDraftTemplateUi();
     refreshQuickDraftSelectControls();
   }, true);
+  refs.eli5Enabled?.addEventListener("change", () => {
+    void updateQuickDraftEli5Lens({ enabled: refs.eli5Enabled.checked === true });
+  });
+  refs.eli5Baseline?.addEventListener("change", () => {
+    void updateQuickDraftEli5Lens({ baselineKnowledge: refs.eli5Baseline.value });
+  });
+  refs.form?.querySelector("[data-quick-draft-eli5-rewrite]")?.addEventListener("click", async () => {
+    closeQuickDraftMenus();
+    await window.AISystem6QuickDraftAI.requestEli5Rewrite();
+  });
+  refs.form?.querySelector("[data-quick-draft-eli5-review]")?.addEventListener("click", async () => {
+    closeQuickDraftMenus();
+    await window.AISystem6QuickDraftAI.requestEli5Review();
+  });
+  refs.form?.querySelector("[data-quick-draft-eli5-apply]")?.addEventListener("click", async () => {
+    await window.AISystem6QuickDraftAI.applyQuickDraftEli5Rewrite();
+  });
+  refs.form?.querySelector("[data-quick-draft-eli5-cancel]")?.addEventListener("click", async () => {
+    await window.AISystem6QuickDraftAI.cancelQuickDraftEli5Rewrite();
+  });
   const syncQuickDraftSelectionState = () => {
     const el = refs.draft;
     const selected = Boolean(
