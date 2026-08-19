@@ -86,3 +86,5 @@ internal/evidence/drafts/coverage/
 internal/evidence/drafts/liquid-cover/test-shot.jpg
 platform/macos/native/nohup.out
 .wrangler/
+# j-space controller ledger (per-task state, never committed)
+.jspace/

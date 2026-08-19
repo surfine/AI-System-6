@@ -1,0 +1,107 @@
+{
+  "format": "ai-system-6-city-simulator-foundation",
+  "formatVersion": 1,
+  "phase": 0,
+  "phaseName": "foundation-and-construction-rules",
+  "product": {
+    "codename": "bonsai-city",
+    "displayName": "Bonsai City",
+    "displayNameZh": "盆景城市",
+    "status": "deferred-from-public-snapshot",
+    "finalNameApproved": false
+  },
+  "layers": {
+    "simulationCore": {
+      "file": "apps/desktop/app/features/bonsai-city-sim.js",
+      "installedGlobal": "AISystem6BonsaiSim",
+      "headless": true,
+      "forbiddenDependencies": [
+        "DOM",
+        "canvas",
+        "window",
+        "document",
+        "IndexedDB",
+        "Date.now",
+        "performance.now",
+        "setTimeout",
+        "setInterval",
+        "requestAnimationFrame",
+        "Math.random"
+      ]
+    },
+    "rendererAndInput": {
+      "status": "not-implemented",
+      "commandOnly": true,
+      "rendererReadsSnapshots": true
+    },
+    "aiSystem6Shell": {
+      "status": "contract-only",
+      "windowContract": {
+        "role": "creative-lab",
+        "route": "summoned",
+        "documentModel": "sdi",
+        "statusModel": "specialized",
+        "statusLayout": "task-specific",
+        "responsiveModel": "immersive",
+        "workspace": "shared",
+        "launch": "applications-only"
+      }
+    }
+  },
+  "determinism": {
+    "fixedTickHz": 20,
+    "coreTickModel": "integer-tick",
+    "speedScalesTicksPerFrame": true,
+    "prng": {
+      "algorithm": "mulberry32-v1",
+      "stateWidthBits": 32,
+      "seedPolicy": "shell-provided",
+      "coreGeneratesSeed": false
+    },
+    "commandSchema": {
+      "schemaVersion": 1,
+      "fields": ["schemaVersion", "type", "payload", "targetTick", "clientCommandId"]
+    },
+    "eventSchema": {
+      "schemaVersion": 1,
+      "fields": ["schemaVersion", "tick", "sequence", "type", "payload"]
+    },
+    "checkpointHash": "SHA-256-over-canonical-sorted-json-v1",
+    "forbiddenCoreInputs": ["wall-clock", "locale", "translation-string"]
+  },
+  "saveFormat": {
+    "format": "bonsai-city",
+    "formatVersion": 1,
+    "currentEngineSaveVersion": 1,
+    "derivedLayersNeverSaved": true,
+    "integrity": "planned-phase2",
+    "migration": "pure-chain-vN-to-vN+1-input-never-mutated"
+  },
+  "phase0Invariants": {
+    "noWindowRegistration": true,
+    "noRuntimeManifestEntries": true,
+    "noStyleManifestEntries": true,
+    "noIndexedDbSchemaChange": true,
+    "noNpmDependency": true,
+    "noAssetAddition": true,
+    "noSc2Fixtures": true,
+    "noGplCodeInOriginalPath": true,
+    "noMaxisEaOriginalAssets": true,
+    "noCoreMathRandom": true
+  },
+  "license": {
+    "originalPathLicense": "MIT",
+    "prohibitedSources": [
+      "OpenSC2K-GPLv3",
+      "micropolisJS-GPLv3",
+      "OpenTTD-GPLv2",
+      "Maxis-EA-original-assets",
+      "SC2k-docs-CC-BY-SA-verbatim",
+      "SC2-file-fixtures"
+    ]
+  },
+  "verification": {
+    "daily": "npm run verify:quick -- --feature city-simulator-foundation --docs --no-build",
+    "feature": "npm run verify:feature -- city-simulator-foundation"
+  }
+}

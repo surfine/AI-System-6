@@ -1,0 +1,57 @@
+# OpenSC2K Research Notes
+
+Pinned research record for the original city simulator. Purpose: know what
+the reference landscape looks like and where the boundary is. This file is
+not a specification and nothing in it is a template for implementation.
+
+## Baseline
+
+- OpenSC2K repository: `nicholas-ochoa/OpenSC2K`
+  - Pinned HEAD: `efb769bf01fb7ac56a97dd0f259a662fec36f260` (2019-09-22)
+  - License: GPL v3 (LICENSE file); README says "v3 or later"; package.json
+    says `GPL-3.0` — treat as strong copyleft.
+  - Only 11 commits in current history; history was rewritten in 2019, so
+    provenance is weak.
+- SC2k public format notes: `OpenCity2k/SC2k-docs`
+  - Pinned HEAD: `1062334f8cc63b2bd297bb8ebffaefadc6b5b4f8` (2025-04-26)
+  - License: CC BY-SA 4.0 (not MIT)
+  - Self-assessed: `.sc2` spec "largely complete"; simulation spec is a
+    scratchpad, not implementable.
+
+## What exists in OpenSC2K (research prototype only)
+
+- Phaser/WebGL scene, camera, viewport, input bridging.
+- Fixed 128×128 city; `.SC2` chunk/RLE import and layered viewing prototypes.
+- Directly-mutating road tool; no cost, validation, undo, or command log.
+- A disabled ZIP + `data.json` export draft; no import, version, or migration.
+- Simulation loop is an empty stub; several global/micro modules are empty or
+  commented out; no tests, CI, or deterministic seed/command/event layer.
+
+## What is not suitable
+
+- The architecture couples simulation to the render scene; actors own sprites;
+  ticks come from render timers; tools mutate cells directly.
+- `world.js` loads original `LARGE.DAT` and `PAL_MSTR.BMP` — original assets
+  we do not use.
+- Palette, tile/sprite mapping, parser flows are GPL implementations and
+  original-data-adjacent; none may enter the Bonsai path.
+- Its fixtures (`NEWCITY.SC2`, `TESTCITY.SC2`) and screenshots have unclear
+  redistribution rights; treat as unusable.
+
+## What may be adopted
+
+Only abstract problem lists phrased independently: "keep import adapters
+separate from the internal model", "map layers help debugging", "viewport
+needs culling". Not the OpenSC2K type names, function structure, constants,
+or file organization.
+
+## Rules
+
+- No copying, porting, or AI-approximating OpenSC2K code into the MIT path.
+- No committing `.SC2` fixtures or original-game-derived data.
+- Public format facts are cited with attribution and recorded in independent
+  wording; verbatim text from CC BY-SA notes is not copied.
+- If `.SC2` compatibility is ever wanted, it becomes a separate clean-room
+  importer project with its own licensing review. Phase 0 assumes it is off.
+
+This file is an engineering risk record, not legal advice.

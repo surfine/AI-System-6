@@ -25,6 +25,12 @@ that owns your question.
 - [Historical UI Mapping](design/historical-ui-mapping.md) — provenance of the
   classic interaction vocabulary.
 
+## City simulator
+
+- [City Simulator](city-simulator/README.md) — the original Bonsai City
+  simulator foundation: architecture, determinism, save format, license
+  boundaries, and OpenSC2K research.
+
 ## Documentation policy
 
 English files are canonical. Each has a `.zh-CN.md` reference mirror with the

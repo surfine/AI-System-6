@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/README.md -->
-<!-- source-sha256: 3e1710fb05428c1cba752a1b70ed7a0b83589986960ee7bf7e53829eb5447ed9 -->
+<!-- source-sha256: 4635b3aa4595870fdab9d68e0dbed322854c807d32fa0fa9a6e57a343f6283e1 -->
 
 > 英文版为准 ・ 仅供人类参考
 
@@ -22,6 +22,11 @@
 - [外观 QA](design/APPEARANCE-QA.zh-CN.md)——跨正式外观的取证与审查方法。
 - [主题家族契约](design/THEME-FAMILY-CONTRACT.zh-CN.md)——共享资产与行为要求。
 - [历史 UI 映射](design/historical-ui-mapping.zh-CN.md)——经典交互词汇的来源。
+
+## 城市模拟器
+
+- [城市模拟器](city-simulator/README.zh-CN.md)——原创 Bonsai City 模拟器基础：
+  架构、确定性、存档格式、许可边界与 OpenSC2K 研究。
 
 ## 文档策略
 
