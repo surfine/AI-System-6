@@ -6,7 +6,9 @@ import {
   runAction,
 } from "./helpers.mjs";
 
-const baseURL = "https://boot-system6.pages.dev";
+const baseURL =
+  process.env.AI_SYSTEM6_LIVE_URL ||
+  "https://boot-system6.pages.dev";
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);

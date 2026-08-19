@@ -783,10 +783,18 @@
   --control-chooser-item-bg: transparent;
   --control-chooser-item-fg: var(--ink);
   --control-chooser-item-shadow: none;
-  --control-chooser-hover-bg: var(--ink);
-  --control-chooser-hover-fg: var(--paper);
-  --control-chooser-active-bg: var(--ink);
-  --control-chooser-active-fg: var(--paper);
+  /* System 6 selects an icon, not a row: the cell keeps the paper, the
+     icon shows its mask and reverses, and the name carries the black
+     highlight box — the same grammar the Finder icons already use.
+     A filled cell would swallow the 1-bit art it inverts. Pointer
+     hover paints nothing, because 1987 had nothing to paint. */
+  --control-chooser-hover-bg: transparent;
+  --control-chooser-hover-fg: var(--ink);
+  --control-chooser-active-bg: transparent;
+  --control-chooser-active-fg: var(--ink);
+  --control-chooser-label-padding: 1px 3px;
+  --control-chooser-active-label-bg: var(--selection-bg);
+  --control-chooser-active-label-fg: var(--selection-fg);
   --control-chooser-active-weight: inherit;
   --control-chooser-active-shadow: none;
   --control-chooser-icon-display: block;

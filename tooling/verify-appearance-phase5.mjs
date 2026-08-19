@@ -113,11 +113,28 @@ async function stopProcess(child) {
   });
 }
 
+// The desk probes LM Studio's default port while it boots. On a machine or a
+// runner without LM Studio the browser refuses the connection and writes one
+// generic console error, which says nothing about appearance and made this gate
+// fail on a random case in roughly two runs of three. Drop that line, and only
+// that line, and only once per refused probe.
+const LOCAL_MODEL_PROBE = /^https?:\/\/(127\.0\.0\.1|localhost|\[::1\]):1234\//;
+const REFUSED_RESOURCE = "Failed to load resource: net::ERR_CONNECTION_REFUSED";
+
 function attachDiagnostics(page) {
   const errors = [];
+  let refusedLocalModelProbes = 0;
+  page.on("requestfailed", (request) => {
+    if (LOCAL_MODEL_PROBE.test(request.url())) refusedLocalModelProbes += 1;
+  });
   page.on("pageerror", (error) => errors.push(`pageerror: ${error.message}`));
   page.on("console", (message) => {
-    if (message.type() === "error") errors.push(`console: ${message.text()}`);
+    if (message.type() !== "error") return;
+    if (refusedLocalModelProbes > 0 && message.text() === REFUSED_RESOURCE) {
+      refusedLocalModelProbes -= 1;
+      return;
+    }
+    errors.push(`console: ${message.text()}`);
   });
   page.on("response", (response) => {
     if (response.status() >= 400) errors.push(`response ${response.status()}: ${response.url()}`);

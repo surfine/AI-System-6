@@ -1237,6 +1237,13 @@
   box-shadow: var(--control-chooser-active-shadow);
 }
 
+/* Classic hangs the selection on the name; the eras that fill the whole
+   cell pass transparent here, so this rule costs them nothing. */
+.control-chooser .system-tab.is-active .control-chooser-label {
+  background: var(--control-chooser-active-label-bg);
+  color: var(--control-chooser-active-label-fg);
+}
+
 .control-chooser .sys-icon {
   display: var(--control-chooser-icon-display);
   width: var(--control-chooser-icon-size);
@@ -1253,6 +1260,7 @@
 }
 
 .control-chooser .control-chooser-label {
+  padding: var(--control-chooser-label-padding);
   font-size: var(--control-chooser-label-size);
   min-width: 0;
   overflow: hidden;

@@ -1658,6 +1658,7 @@ function applyTheme(themeId, options = {}) {
   } else {
     window.AISystem6LiquidGlassOverlay?.setEnabled(false);
   }
+  if (typeof syncLiquidTintVisibility === "function") syncLiquidTintVisibility();
   // Finder icon geometry changes between eras (80 px in Classic, 118 px in
   // Liquid Glass). Refit every currently visible auto-sized Finder window
   // after the new CSS wins, otherwise a live appearance switch can clip the

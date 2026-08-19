@@ -44,6 +44,12 @@
    point. The rail is lab chrome, not a historical specimen, so it is drawn from
    shared tokens rather than reproducing any era's real slider. */
 .theme-lab-era-switch {
+  /* One thumb width, read by the rail and by the axis. A range thumb's
+     centre travels from half a thumb inside each end, so the tick axis
+     takes the same inset — otherwise the circle never lands on the mark
+     it selects, and the error is worst at 1988 and 2026. */
+  --theme-lab-era-thumb: 13px;
+
   position: relative;
   display: grid;
   gap: 0;
@@ -75,8 +81,8 @@
 }
 
 .theme-lab-era-range::-webkit-slider-thumb {
-  width: 13px;
-  height: 13px;
+  width: var(--theme-lab-era-thumb);
+  height: var(--theme-lab-era-thumb);
   margin-top: -6px;
   appearance: none;
   border: 1px solid var(--ink);
@@ -86,8 +92,8 @@
 }
 
 .theme-lab-era-range::-moz-range-thumb {
-  width: 13px;
-  height: 13px;
+  width: var(--theme-lab-era-thumb);
+  height: var(--theme-lab-era-thumb);
   border: 1px solid var(--ink);
   border-radius: 50%;
   background: var(--paper);
@@ -102,6 +108,7 @@
 .theme-lab-era-ticks {
   position: relative;
   height: 26px;
+  margin-inline: calc(var(--theme-lab-era-thumb) / 2);
   container-type: inline-size;
 }
 
@@ -757,10 +764,6 @@
 @container (max-width: 760px) {
   .theme-lab-panel {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .theme-lab-era-switch {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .theme-lab-object-grid {

@@ -132,6 +132,7 @@ test.assertIncludes(windows, ".system-select-button > .system-select-label", "th
 // Glass a segmented capsule. DOM, tab order, wiring, and keyboard behavior
 // never change per era.
 const surfaces = read("styles/30-surfaces.css");
+const icons = read("styles/40-icons.css");
 const appearance = read("styles/65-appearance-themes.css");
 test.assertIncludes(html, 'class="system-tabs control-chooser"', "the Control Panel tablist is the era-clothed chooser variant");
 for (const [tab, icon] of [["local", "localModel"], ["cloud", "cloudModel"], ["general", "control"], ["strip", "controlStrip"]]) {
@@ -147,5 +148,15 @@ test.assertIncludes(foundation, "--control-settings-columns: 92px minmax(0, 1fr)
 test.assertIncludes(surfaces, "flex-direction: var(--control-chooser-direction);", "the chooser consumes era tokens, not era selectors");
 test.assertIncludes(appearance, "--control-chooser-item-radius: var(--tab-radius) var(--tab-radius) 0 0;", "Platinum pins the OS 8 tab sheet in its token block");
 test.assertNotMatches(appearance, /body\[data-theme="classic"\]/, "Classic stays the foundation default — no classic-scoped selector");
+
+// System 6 selects an icon, not a row: the cell keeps its paper, the icon
+// shows its mask and reverses, and the name carries the highlight box — the
+// grammar the Finder icons already use. A filled cell swallowed the 1-bit art
+// it inverts, and hover painted the same slab over an unselected section.
+test.assertIncludes(foundation, "--control-chooser-active-bg: transparent;", "Classic never fills the selected cell");
+test.assertIncludes(foundation, "--control-chooser-hover-bg: transparent;", "Classic paints no hover state, because System 6 has none");
+test.assertIncludes(foundation, "--control-chooser-active-label-bg: var(--selection-bg);", "the selected section name carries the highlight box");
+test.assertIncludes(surfaces, ".control-chooser .system-tab.is-active .control-chooser-label", "the highlight box is a token recipe, not an era selector");
+test.assertIncludes(icons, ".control-chooser .system-tab.is-active .sys-icon-svg.has-classic-mask .sys-icon-classic-mask", "the selected section icon still shows its silhouette");
 
 test.finish();

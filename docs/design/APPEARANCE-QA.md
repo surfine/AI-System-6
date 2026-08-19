@@ -140,7 +140,7 @@ created for them.
 Liquid Glass is being recalibrated to macOS 27 Golden Gate through the existing
 theme IDs and material tokens; it does not introduce a new theme or family.
 `npm run verify:appearance-apps` separately renders Finder, Page Setup,
-TeachText, Scrapbook, Liquid Cover, and Endfield Terminal under every
+TeachText, Scrapbook, Cover Glass, and Endfield Terminal under every
 appearance, proving that ordinary and visually-special apps receive the same
 system title-bar painter without conflating that propagation check with either
 pixel regression or historical fidelity.

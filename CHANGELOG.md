@@ -924,3 +924,40 @@ every one of them with ink -- and the pop-up button's arrow well was measured
 against the padding box, so it sat a pixel clear of the border and read as a
 separate pill. Snow Leopard's traffic lights are rescaled to the red measured
 off the native 10.6 capture.
+
+## Public Beta 1.0.49 - 2026-08-19
+
+Control Panel and Theme Lab corrections, all of them one-way faults where a
+control existed but could not do its job.
+
+The Liquid Glass tint slider never moved the chrome. `body.use-liquid-glass`
+declared `--liquid-tint-level` itself, which shadowed the value the slider
+writes on the root element, so every CSS surface resolved the 0.5 middle
+setting while only the WebGL overlay followed the control. The declaration is
+gone; every reader already carried the default in its own `var()` fallback.
+
+The same slider showed in all six appearances. `.settings label` sets
+`display: block`, which outranks the browser's `[hidden]` rule, so the
+attribute the runtime set did nothing -- the third instance of that trap after
+the Finder items and the CMF controls. The scoped guard joins them. The
+runtime side was wrong in the other direction: it decided visibility from the
+`themechange` event alone, and boot, settings restore and launch intent all
+apply a theme without announcing one, so the decision moved into `applyTheme`,
+which every path already goes through.
+
+Classic's Control Panel filled the whole rail cell with ink to mark the current
+section. That is a modern sidebar-row highlight, and it swallowed the 1-bit art
+it was supposed to reverse: the icon mask is black, so a selected icon read as a
+hollow outline. Classic now selects the way the Finder selects an icon -- the
+cell keeps its paper, the icon shows its mask and reverses, the name carries the
+highlight box -- and hover paints nothing, because System 6 has no hover state.
+The other five appearances pass neutral values for the new tokens and are
+unchanged.
+
+Theme Lab's era timeline was unusable in portrait: a fixed three-column rule
+left over from the older six-button era switch squeezed the rail into a third
+of the pane with the year labels piled up beside it. The rail is one column at
+every width again, and the tick axis now takes the same half-thumb inset the
+range thumb travels within, so the knob lands exactly on the year mark it
+selects.
+

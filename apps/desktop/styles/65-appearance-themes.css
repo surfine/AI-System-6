@@ -732,6 +732,9 @@ body[data-theme="platinum"] {
   --control-chooser-hover-fg: var(--ink);
   --control-chooser-active-bg: var(--tab-active-bg);
   --control-chooser-active-fg: var(--ink);
+  --control-chooser-label-padding: 0;
+  --control-chooser-active-label-bg: transparent;
+  --control-chooser-active-label-fg: currentColor;
   --control-chooser-active-weight: var(--system-strong-weight);
   --control-chooser-icon-display: none;
   --control-chooser-label-size: inherit;
@@ -1786,6 +1789,9 @@ body[data-theme="yosemite"] {
   --control-chooser-hover-fg: #2b2b2b;
   --control-chooser-active-bg: #dcdcdc;
   --control-chooser-active-fg: #2b2b2b;
+  --control-chooser-label-padding: 0;
+  --control-chooser-active-label-bg: transparent;
+  --control-chooser-active-label-fg: currentColor;
   --control-chooser-active-weight: inherit;
   --control-chooser-active-shadow: none;
   --control-chooser-icon-display: block;

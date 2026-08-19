@@ -2689,6 +2689,14 @@ html:lang(zh-Hans) .title-bar h2 {
   font-weight: 700;
 }
 
+/* The rule above outranks the browser's [hidden] rule, so a conditional
+   field (the Liquid Glass tint slider) stayed on screen in every
+   appearance. Keep the semantic attribute authoritative. */
+.composer label[hidden],
+.settings label[hidden] {
+  display: none;
+}
+
 .composer textarea {
   box-sizing: border-box;
   width: 100%;

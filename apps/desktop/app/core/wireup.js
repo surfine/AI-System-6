@@ -24,6 +24,10 @@ function applyLiquidTintLevel(value) {
     .catch(() => {});
 }
 
+// The tint control belongs to one appearance. applyTheme() calls this on
+// every path, because the boot, restore, and launch-intent paths all apply a
+// theme without announcing a change — listening for the event alone left the
+// slider sitting on a System 6 desk.
 function syncLiquidTintVisibility() {
   const field = liquidTintLevelInput?.closest?.(".liquid-tint-field");
   if (!field) return;
@@ -1419,8 +1423,6 @@ function wireAppEvents() {
     applyLiquidTintLevel();
     scheduleSettingsSave();
   });
-  document.addEventListener("ai-system6-themechange", syncLiquidTintVisibility);
-  syncLiquidTintVisibility();
 
   soundEffectsInput.addEventListener("change", () => saveDeskState());
 

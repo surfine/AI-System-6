@@ -1,5 +1,8 @@
 body.use-liquid-glass {
-  --liquid-tint-level: 0.5;
+  /* The tint level is NOT declared here. The slider writes it on the
+     root element, and a value declared on the body would shadow that
+     inherited value, so the chrome below never moved with the control.
+     Every reader carries the 0.5 default in its var() fallback. */
   --liquid-fill-tint: rgba(255, 255, 255, 0.3);
   --liquid-toolbar-tint: rgba(255, 255, 255, 0.22);
   --liquid-sidebar-tint: rgba(232, 240, 246, 0.46);
@@ -256,6 +259,9 @@ body.use-liquid-glass {
   --control-chooser-hover-fg: rgba(16, 17, 20, 0.9);
   --control-chooser-active-bg: rgba(255, 255, 255, 0.92);
   --control-chooser-active-fg: rgba(16, 17, 20, 0.96);
+  --control-chooser-label-padding: 0;
+  --control-chooser-active-label-bg: transparent;
+  --control-chooser-active-label-fg: currentColor;
   --control-chooser-active-weight: 600;
   --control-chooser-active-shadow: 0 2px 6px rgba(30, 34, 60, 0.18), inset 0 0 0 1px rgba(255, 255, 255, 0.8);
   --control-chooser-icon-display: block;

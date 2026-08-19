@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/APPEARANCE-QA.md -->
-<!-- source-sha256: 65082317e42f1460ed0ea8702a2059d3f39723c75a11a17dabc96d98d96dcb03 -->
+<!-- source-sha256: d1995426a6e08ca6c561afd2f82097dc782ba81da4eee4de9af02dc5d8a94d23 -->
 
 英文版为准。本文档仅供人类参考。
 
@@ -119,7 +119,7 @@ Liquid Glass 没有历史截图 target，继续使用各自的设计契约加回
 Liquid Glass 正在通过现有主题 ID 与材质 token 重校到 macOS 27 Golden Gate；它
 不会新增主题或主题家族。
 `npm run verify:appearance-apps` 另行在六套外观下渲染 Finder、Page Setup、
-TeachText、Scrapbook、Liquid Cover 与 Endfield Terminal，证明普通 App 与视觉
+TeachText、Scrapbook、Cover Glass 与 Endfield Terminal，证明普通 App 与视觉
 特殊 App 都收到同一套系统 title bar painter；这个传播检查不与像素回归或历史
 fidelity 混为一谈。
 
